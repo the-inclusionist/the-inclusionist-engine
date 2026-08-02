@@ -15,6 +15,7 @@ import { ELEV_SPEED, buildElevators, elevAt, getElevShafts, initElevators } from
 import { JUICE, saveJuice, easeOut3, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, drawFx, initFx, tickHitstop, shakeAmp, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
 import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
 import { isGroundType, worldCanvas, worldToTexture, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
+import { drawCane, drawRunCane, drawChair } from './render/wheelchair-sprites.js'; // Estágio 4 (Tier 2): bengala + cadeira (a11y motora)
 import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS, FONT_BY_KEY, loadFontKey, saveFontKey } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
@@ -463,7 +464,7 @@ function setHearingLoss(on){ setHearingLossGraph(on); store.setBool('incl_hearin
 // material sob os pés (Cidade = concreto → 'piso') — usado pelo som do PASSO (game.js); não é pista espacial, fica aqui.
 function surfaceUnder(pl){ const t=tileAt(Math.floor(pl.x/TILE),Math.floor((pl.y+1)/TILE)); if(t!==2&&t!==6&&t!==5)return null; return CENARIO==='cidade'?'piso':'pedra'; }
 const caneOn=(pl)=>{ const m=VIZ_BY_KEY[pl.viz]; return modoCego || !!(m&&(m.kind==='blind'||m.kind==='lowvision')); }; // predicado de visão (movimento/render) — fica no game.js
-const caneColor=(pl)=>{ const m=VIZ_BY_KEY[pl.viz]; return (m&&m.kind==='lowvision') ? 0x35d06a : 0xf2f2f2; }; // cor da bengala (render) — fica no game.js
+// caneColor extraído p/ render/wheelchair-sprites.js (Estágio 4).
 // TTS (narração por voz: Piper neural lazy + fallback Web Speech) extraído p/ platform/tts.ts (Tier 2, #38). Criado ANTES do
 // audio-nav porque o nav injeta narrate. As funções de painel (populateTTS*/reflectTTS) ficam no game.js (→ #54) e usam get/set.
 const tts = createTts({ srSay, srAlert, ensureAC, catNode, audioOut, getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat });
@@ -866,28 +867,9 @@ function drawElevators(g){ g.clear(); if(!wheelchair)return;
     g.beginFill(0xf2c200); g.moveTo(ax,ay+(up?-4:4)); g.lineTo(ax-4,ay); g.lineTo(ax+4,ay); g.closePath(); g.endFill(); }
 }
 const caneLayer=new PIXI.Graphics(); camera.addChild(caneLayer); // bengala (modo cego)
-// Bengala RÍGIDA de MEIO BLOCO (~8px): extensão da mão dianteira, presa ao corpo (não oscila sozinha).
-function drawCane(g,pl){ const dir=pl.facing<0?-1:1, C=caneColor(pl);
-  const hx=pl.x+dir*4, hy=pl.y-9, tx=pl.x+dir*8, ty=pl.y-1;                     // punho na mão → ponteira no chão à frente
-  g.lineStyle(2,C); g.moveTo(hx,hy); g.lineTo(tx,ty);                           // haste curta (branca=cego / verde=baixa visão)
-  g.lineStyle(1,0xd23b3b); g.moveTo(tx-dir*2,ty-2); g.lineTo(tx,ty);            // faixa vermelha (ponta)
-  g.lineStyle(0); g.beginFill(C); g.drawCircle(tx,ty,1.3); g.endFill();         // ponteira
-}
-// Bengala de CORRIDA (item): RODA na ponta, contato constante com o chão (alta performance).
-function drawRunCane(g,pl){ const dir=pl.facing<0?-1:1, C=caneColor(pl);
-  const hx=pl.x+dir*4, hy=pl.y-9, wx=pl.x+dir*10, wy=pl.y-2;                     // haste até o eixo da roda, à frente
-  g.lineStyle(2,C); g.moveTo(hx,hy); g.lineTo(wx,wy-1);
-  g.lineStyle(1.5,C); g.drawCircle(wx,wy,2.4);                                   // RODA na ponta (contato constante)
-  g.lineStyle(1,0xd23b3b); g.moveTo(wx-2.4,wy); g.lineTo(wx+2.4,wy); g.lineStyle(0); // eixo/faixa
-}
+// drawCane/drawRunCane extraídos p/ render/wheelchair-sprites.js (Estágio 4). caneLayer (acima) fica aqui.
 const chairLayer=new PIXI.Graphics(); camera.addChild(chairLayer); // cadeira de rodas (modo cadeirante)
-function drawChair(g,pl){ const cx=pl.x, base=pl.y, f=pl.facing<0?-1:1, MET=0x4a586e, HUB=0x1c2230;
-  g.lineStyle(2,MET); g.drawCircle(cx,base-6,7);                                   // roda grande
-  g.lineStyle(1,MET); for(let a=0;a<6;a++){ const an=a*Math.PI/3; g.moveTo(cx,base-6); g.lineTo(cx+Math.cos(an)*6,base-6+Math.sin(an)*6); } // raios
-  g.lineStyle(0); g.beginFill(HUB); g.drawCircle(cx,base-6,2); g.endFill();        // cubo
-  g.lineStyle(3,MET); g.moveTo(cx-f*5,base-6); g.lineTo(cx-f*5,base-22); g.lineTo(cx-f*2,base-24); // encosto atrás das costas
-  g.moveTo(cx+f*4,base-4); g.lineTo(cx+f*9,base-2);                                 // apoio de pés à frente
-  g.lineStyle(0); }
+// drawChair extraído p/ render/wheelchair-sprites.js (Estágio 4). chairLayer (acima) fica aqui.
 
 /* ===================== L5: VIDA AMBIENTE (Cidade) — pombos, gatos, cães e adultos, 100% procedural =====================
    Cosmético puro: sem colisão, sem dano (revoada de pombo ≠ susto de perigo). ATRÁS do player.
