@@ -13,6 +13,7 @@ import { createAttract } from './game/attract.js'; // modo demonstração (Tier 
 import { puTaken, takePu } from './game/powerups.js'; // Estágio 4 (Tier 2): predicados de coleta de power-up
 import { JUICE, saveJuice, easeOut3, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, drawFx, initFx, tickHitstop, shakeAmp, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
 import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
+import { isGroundType, worldCanvas, worldToTexture, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
 import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS, FONT_BY_KEY, loadFontKey, saveFontKey } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
@@ -75,6 +76,7 @@ import { buildWorldFromText } from './core/world.js';
 const WORLD = buildWorldFromText(await (await fetch('assets/levels/clarity.map.txt')).text());
 const WORLD_W = WORLD[0].length, WORLD_H = WORLD.length;
 const WORLD_PX_W = WORLD_W*TILE, WORLD_PX_H = WORLD_H*TILE;
+initWorldTex({ world: WORLD, W: WORLD_W, H: WORLD_H }); // Estágio 4: liga o builder da textura do mundo ao mapa carregado
 // E12: portão dinâmico — seus tiles são sólidos enquanto fechado (gateOpen=true ⇒ comporta normal)
 let gateTiles=new Set(), gateOpen=true, gate=null;
 // Cadeirante: sólidos SÓ-CADEIRANTE (pontes/plataformas que não existem no modo normal) — não altera CLARITY_MAP.
@@ -159,35 +161,9 @@ const PLAYER_HURT = [
 
 // outlineCanvas/spriteToCanvas (+ _silhouette/OUTLINE_DARK/APP) migrados p/ render/sprite-fx.js (Fase 2.21)
 
-const isGroundType=(t)=>t===2||t===6; // chão/plataforma genéricos → recebem o tileset do tema
-function worldCanvas(tiles){           // canvas NORMAL (tileset do tema ou TILE_COLOR + sombreamento)
-  const cv=makeCanvas(WORLD_PX_W,WORLD_PX_H),c=cv.getContext('2d');
-  const solidAt=(x,y)=> y>=0&&y<WORLD_H&&x>=0&&x<WORLD_W && isSolidType(WORLD[y][x]);
-  for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){
-    const t=WORLD[y][x];
-    if(t===0||t===1) continue;        // ar/interior: transparente → o parallax aparece através da área jogável
-    if(tiles && isGroundType(t)){      // tileset: superfície (topo claro) se há ar acima, senão preenchimento
-      c.drawImage(solidAt(x,y-1)?tiles.fill:tiles.surface, x*TILE, y*TILE); continue;
-    }
-    // DESENHOS DA V3 (drawTile, fiel — fim do "cinza com chanfro"); partes animadas (água/lava) ficam no stepTileFx
-    const X=x*TILE, Y=y*TILE;
-    if(t===2){ c.fillStyle='#555'; c.fillRect(X,Y,TILE,TILE);                                  // pedra + pontos escuros
-      c.fillStyle='#3a3a3a'; c.fillRect(X+2,Y+3,1,1); c.fillRect(X+9,Y+5,1,1); c.fillRect(X+5,Y+11,1,1); c.fillRect(X+12,Y+9,1,1); }
-    else if(t===6){ c.fillStyle='#666'; c.fillRect(X,Y,TILE,TILE);                             // parede dura + linhas
-      c.fillStyle='#444'; c.fillRect(X,Y,TILE,1); c.fillRect(X,Y+TILE-1,TILE,1); }
-    else if(t===4){ c.fillStyle='#777';                                                        // escada VAZADA: trilhos + degraus
-      c.fillRect(X+3,Y,2,TILE); c.fillRect(X+11,Y,2,TILE);
-      c.fillRect(X+3,Y+2,10,2); c.fillRect(X+3,Y+8,10,2); c.fillRect(X+3,Y+14,10,2); }
-    else if(t===5){ c.fillStyle='#E373FA'; c.fillRect(X,Y,TILE,TILE);                          // trampolim SÓLIDO (pedido: bloco inteiro, não o 3-partes da v3)
-      c.fillStyle='#fff'; c.fillRect(X+1,Y+2,TILE-2,1);
-      c.fillStyle='#9a3fb0'; c.fillRect(X,Y+TILE-2,TILE,2); }
-    else if(t===3){ c.fillStyle='rgba(121,220,242,0.4)'; c.fillRect(X,Y,TILE,TILE); }          // água translúcida (sem listras!)
-    else if(t===9){ c.fillStyle='#C93232'; c.fillRect(X,Y,TILE,TILE); }                        // lava (tracinhos animados no stepTileFx)
-    else { c.fillStyle=TILE_COLOR[t]||'#202'; c.fillRect(X,Y,TILE,TILE); }
-  }
-  return cv;
-}
-function worldToTexture(tiles){ return tex(worldCanvas(tiles)); }
+// isGroundType/worldCanvas/worldToTexture extraídos p/ render/world-tex.js (Estágio 4). WORLD injetado por
+// initWorldTex (logo após o mapa carregar). worldToTextureDirect/worldTexFor (alto contraste) + stepTileFx
+// (água/lava animadas) ficam aqui.
 // Renderização Direta (alto contraste de acessibilidade — ver docs/PESQUISA-ALTO-CONTRASTE.md):
 // fundo dessaturado+escuro (recua), estrutura com contorno CLARO, primeiro plano (player/itens) com contorno
 // escuro → o que importa "salta". É a abordagem que a indústria usa; atinge o contraste por construção.
