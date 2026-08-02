@@ -26,6 +26,10 @@ describe('fmtFrac (notações)', () => {
 describe('fracSpeak (pt-BR)', () => {
   it('um meio, 3 quartos', () => { expect(fracSpeak('1/2')).toBe('um meio'); expect(fracSpeak('3/4')).toBe('3 quartos'); });
   it('denominador sem nome → "avos"', () => expect(fracSpeak('1/11')).toBe('um 11 avos'));
+  it('plural com "avos" é invariável (não "avoss")', () => {
+    expect(fracSpeak('5/12')).toBe('5 doze avos');
+    expect(fracSpeak('5/11')).toBe('5 11 avos');
+  });
   it('não-fração passa direto', () => expect(fracSpeak('abc')).toBe('abc'));
 });
 

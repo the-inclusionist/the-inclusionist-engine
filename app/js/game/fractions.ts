@@ -61,12 +61,13 @@ export function fracGraphic(n: number, d: number, shape?: string): string {
   return `<span class="frac-fig" data-frac="${n}/${d}" role="img" aria-label="${fracSpeak(n + '/' + d)}">${svg}</span>`;
 }
 
-/** Speak a bare "n/d" fraction in pt-BR ("um meio", "3 quartos", "5 doze avoss"…). */
+/** Speak a bare "n/d" fraction in pt-BR ("um meio", "3 quartos", "5 doze avos"…). */
 export function fracSpeak(s: string): string {
   const m = /^(\d+)\/(\d+)$/.exec(String(s));
   if (!m) return String(s);
   const n = +m[1]!, d = +m[2]!, nm = DEN_NAME[d] || (d + ' avos');
-  return n === 1 ? ('um ' + nm) : (n + ' ' + nm + 's');
+  const plural = nm.endsWith('avos') ? nm : nm + 's'; // "avos" é invariável (não "avoss")
+  return n === 1 ? ('um ' + nm) : (n + ' ' + plural);
 }
 
 /** Speak any NOTATION: vertical HTML → a/b, mixed → "N inteiros e a/b", the graphic SVG → its fraction. */
