@@ -12,6 +12,7 @@ import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
 import { puTaken, takePu } from './game/powerups.js'; // Estágio 4 (Tier 2): predicados de coleta de power-up
 import { ELEV_SPEED, buildElevators, elevAt, getElevShafts, initElevators } from './game/elevators.js'; // Estágio 4 (Tier 2): geometria de elevador (cadeirante)
+import { gcd, fmtFrac, fracGraphic, fracSpeak, speakChoice } from './game/fractions.js'; // Estágio 4 (Tier 2): matemática/render de frações
 import { JUICE, saveJuice, easeOut3, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, drawFx, initFx, tickHitstop, shakeAmp, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
 import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
 import { isGroundType, worldCanvas, worldToTexture, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
@@ -1903,9 +1904,8 @@ function reallyStart(){ const id=_pendingAct; setActivity(id);
   players.forEach(p=>{ p.alfWins=0; });
   if(pendingPlayers!==numPlayers) setNumPlayers(pendingPlayers); else restartGame();
   setPhase('playing'); hideTips(); srSay(ACTIVITIES[id].nome+'. Jogo iniciado.'); }
-const gcd=(a,b)=>b?gcd(b,a%b):a;
-function fracStr(n,D){ if(n===0)return '0'; const g=gcd(n,D)||1, a=n/g,d=D/g; return d===1?String(a):a+'/'+d; }
-const DEN_NAME={2:'meio',3:'terço',4:'quarto',5:'quinto',6:'sexto',7:'sétimo',8:'oitavo',9:'nono',10:'décimo',12:'doze avos'};
+// gcd/fracStr/DEN_NAME/fmtFrac/fracGraphic/fracSpeak/speakChoice extraídos p/ game/fractions.js (Estágio 4).
+// As NOTAÇÕES (fracNot + FNOT_*) — estado/labels do menu — ficam aqui (painel de frações).
 /* NOTAÇÕES de fração (menu "Fração"): vertical · diagonal · decimal · percentual · mista — toggles persistidos */
 // NOTAÇÕES = opções de jogo (toggles). GRÁFICOS (círculo/quadrado) NÃO são opção — são intrínsecos à atividade (José).
 let fracNot=(()=>{ const d={v:1,d:0,dec:0,pct:0,mix:0};
@@ -1920,39 +1920,7 @@ const FNOT_DESC={ // rodapé (mesmo estilo do menu de pausa): explica cada nota�
   dec:'Liga números que sempre aparecem com uma casa decimal.',
   pct:'Liga números percentuais.',
   mix:'Liga números inteiros e frações reduzidas.' };
-function fmtFrac(n,D,not){ if(n===0)return not==='dec'?'0,0':'0'; const g=gcd(n,D)||1, a=n/g, d=D/g;
-  if(not==='dec')return (Math.round((n/D)*10)/10).toFixed(1).replace('.',','); // SEMPRE 1 casa decimal (José 2026-07-04)
-  if(not==='pct'){ const r=Math.round((n/D)*1000)/10; return (Number.isInteger(r)?r:String(r).replace('.',','))+'%'; }
-  if(d===1)return String(a);
-  if(not==='mix'&&a>d){ const i=Math.floor(a/d), r=a%d; return r? (i+' '+r+'/'+d) : String(i); }
-  if(not==='v')return `<span class="fv"><b>${a}</b><b>${d}</b></span>`;
-  return a+'/'+d; } // diagonal (inline)
-/* GRÁFICOS de fração (José 2026-07-04): NÃO são opção de jogo — cada atividade mostra CÍRCULO (radial) e/ou
-   QUADRADO conforme o denominador: 2→ao meio · 3→3 faixas · 4→2×2 (cruz) · 5→só círculo · 6→2×3 (grade).
-   Zero dependência (offline). Fração imprópria (n>d) = ⌊n/d⌋ figuras cheias + resto. data-frac p/ fala/comparação. */
-const FRAC_GFX={ 2:{cols:2,rows:1}, 3:{cols:3,rows:1}, 4:{cols:2,rows:2}, 5:null, 6:{cols:2,rows:3} }; // quadrado por denominador (5 = sem quadrado)
-function _pieUnit(k,d){ const R=18,C=20,seg=[]; // círculo RADIAL: d setores, k preenchidos (do topo, horário)
-  const pt=deg=>{ const a=(deg-90)*Math.PI/180; return [(C+R*Math.cos(a)).toFixed(2),(C+R*Math.sin(a)).toFixed(2)]; };
-  if(d===1){ seg.push(`<circle cx="${C}" cy="${C}" r="${R}" fill="${k?'var(--frac-fill)':'#fff'}" stroke="#0d0d1a" stroke-width="1.6"/>`); }
-  else for(let i=0;i<d;i++){ const [x0,y0]=pt(i*360/d),[x1,y1]=pt((i+1)*360/d),large=360/d>180?1:0;
-    seg.push(`<path d="M${C} ${C} L${x0} ${y0} A${R} ${R} 0 ${large} 1 ${x1} ${y1} Z" fill="${i<k?'var(--frac-fill)':'#fff'}" stroke="#0d0d1a" stroke-width="1.3"/>`); }
-  return `<svg class="frac-svg" viewBox="0 0 40 40" aria-hidden="true">${seg.join('')}<circle cx="${C}" cy="${C}" r="${R}" fill="none" stroke="#0d0d1a" stroke-width="1.6"/></svg>`; }
-function _sqGrid(k,cols,rows){ const S=40,cw=S/cols,ch=S/rows,seg=[]; // quadrado em grade cols×rows, k células preenchidas
-  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){ const idx=r*cols+c;
-    seg.push(`<rect x="${(c*cw).toFixed(2)}" y="${(r*ch).toFixed(2)}" width="${cw.toFixed(2)}" height="${ch.toFixed(2)}" fill="${idx<k?'var(--frac-fill)':'#fff'}" stroke="#0d0d1a" stroke-width="1.2"/>`); }
-  return `<svg class="frac-svg" viewBox="0 0 40 40" aria-hidden="true">${seg.join('')}<rect x=".8" y=".8" width="38.4" height="38.4" fill="none" stroke="#0d0d1a" stroke-width="1.6"/></svg>`; }
-function fracGraphic(n,d,shape){ if(d<2||d>6||n<1||n>d)return ''; // UM gráfico = UMA forma p/ fração PRÓPRIA (1..d); zero/impróprio → número
-  const sq=FRAC_GFX[d]; // círculo (radial) OU quadrado (grade da atividade), UM só — sorteado se não vier definido
-  const useSq = shape==='square' || (shape==null && sq && rnd()<0.5);
-  const svg = (useSq&&sq) ? _sqGrid(n,sq.cols,sq.rows) : _pieUnit(n,d); // fatiado com bordas pretas, fatias coloridas (não sólido)
-  return `<span class="frac-fig" data-frac="${n}/${d}" role="img" aria-label="${fracSpeak(n+'/'+d)}">${svg}</span>`; }
-function fracSpeak(s){ const m=/^(\d+)\/(\d+)$/.exec(String(s)); if(!m)return String(s);
-  const n=+m[1],d=+m[2],nm=DEN_NAME[d]||(d+' avos'); return n===1?('um '+nm):(n+' '+nm+'s'); }
-function speakChoice(s){ s=String(s); // fala qualquer NOTAÇÃO: vertical (HTML)→a/b · mista → "N inteiros e a/b" · decimal/percentual literais
-  const fig=/data-frac="(\d+)\/(\d+)"/.exec(s); if(fig)return fracSpeak(fig[1]+'/'+fig[2]); // pizza/quadrado (SVG): lê a fração
-  if(/</.test(s)) s=s.replace(/<\/b><b>/,'/').replace(/<[^>]+>/g,'');
-  const m=/^(\d+)\s+(\d+)\/(\d+)$/.exec(s); if(m)return m[1]+(m[1]==='1'?' inteiro e ':' inteiros e ')+fracSpeak(m[2]+'/'+m[3]);
-  return fracSpeak(s); }
+// fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraídos p/ game/fractions.js (Estágio 4).
 const MODE_LABELS={ludico:'🪙 Lúdico',somasub:'🔷 Soma-Sub',silabas:'🔤 Sílabas'};
 const MODES=['ludico','somasub','silabas'];
 function setMode(m){
