@@ -11,6 +11,7 @@ import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
 import { puTaken, takePu } from './game/powerups.js'; // Estágio 4 (Tier 2): predicados de coleta de power-up
+import { ELEV_SPEED, buildElevators, elevAt, getElevShafts, initElevators } from './game/elevators.js'; // Estágio 4 (Tier 2): geometria de elevador (cadeirante)
 import { JUICE, saveJuice, easeOut3, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, drawFx, initFx, tickHitstop, shakeAmp, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
 import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
 import { isGroundType, worldCanvas, worldToTexture, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
@@ -824,9 +825,7 @@ function buildRamps(){ rampLayer.clear(); rampLayer.visible=wheelchair; if(!whee
 }
 // Geometria só-cadeirante: plataformas que dão DESTINO aos elevadores (não existem no modo normal).
 const WC_BRIDGES=[ {x:23,y:47},{x:24,y:47} ]; // ponte do elevador do corredor: liga o poço do trampolim B (x20-22) ao topo da escada (x25)
-// Elevadores SÓ-CADEIRANTE (sem trampolim no modo normal): fosso onde o jogador normalmente PULA.
-// D: fosso x53-54 — sobe do chão (row45) à plataforma (row42), saída à esquerda (x52).
-const WC_ELEVATORS=[ {cols:[53,54], yTop:42*TILE, yBottom:45*TILE, kind:'wide'} ];
+// WC_ELEVATORS (fossos só-cadeirante) movidos p/ game/elevators.js (Estágio 4).
 function buildWcGeom(){ wcSolid=new Set(); if(!wheelchair)return; for(const b of WC_BRIDGES) wcSolid.add(b.x+','+b.y); }
 buildWcGeom();
 buildRamps(); // desenha as rampas + coberturas (lava, pontes) se já iniciar em modo cadeirante
@@ -838,39 +837,17 @@ function buildRopes(){ ropeLayer.clear();
     ropeLayer.beginFill(0x8a6f3a); ropeLayer.drawRect(X+TILE/2-1,Y-1,2,2); ropeLayer.endFill(); } } // nó
 buildRopes();
 // ELEVADOR (cadeirante): trampolim = plataforma LARGA, escada = plataforma FINA. Toque ↑/↓ = viaja até a parada segura.
-const ELEV_SPEED=2.4; let elevShafts=[];
-function buildElevators(){ elevShafts=[]; if(!wheelchair)return;
-  const isE=(x,y)=>{const t=tileAt(x,y);return t===4||t===5;};
-  const wall=(x,y)=>{const t=tileAt(x,y);return !!(TILE_TYPES[t]&&TILE_TYPES[t].solid)&&t!==5;};
-  const seen=new Set();
-  for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){
-    if(!isE(x,y)||seen.has(x+','+y))continue;
-    let x2=x; while(x2+1<WORLD_W&&isE(x2+1,y))x2++;                    // largura do poço (run horizontal)
-    const cols=[]; for(let cx=x;cx<=x2;cx++)cols.push(cx);
-    let yb=y; while(yb+1<WORLD_H&&isE(cols[0],yb+1))yb++;              // base do run vertical
-    for(const cx of cols)for(let yy=y;yy<=yb;yy++)seen.add(cx+','+yy);
-    let ytop=y; while(ytop-1>=0&&!cols.some(cx=>wall(cx,ytop-1)))ytop--; // topo aberto (até um teto sólido)
-    const isTramp=tileAt(cols[0],y)===5;
-    let fr=yb+1; while(fr<WORLD_H&&!wall(cols[0],fr))fr++;             // 1º chão sólido abaixo (p/ escada)
-    const yBottom = isTramp ? y*TILE : fr*TILE;                       // trampolim = CHÃO sólido (para EM CIMA); escada = desce ao chão de baixo
-    const L=cols[0]-1, R=cols[cols.length-1]+1;
-    let yTop=yBottom; for(let r=ytop;r<=yb;r++){ if(surfTop(L,r)||surfTop(R,r)){ yTop=r*TILE; break; } } // 1ª parada c/ piso ao lado
-    elevShafts.push({cols,xMin:cols[0],xMax:cols[cols.length-1],yTop,yBottom,kind:isTramp?'wide':'thin'});
-  }
-  for(const e of WC_ELEVATORS) elevShafts.push({cols:e.cols,xMin:e.cols[0],xMax:e.cols[e.cols.length-1],yTop:e.yTop,yBottom:e.yBottom,kind:e.kind}); // elevadores só-cadeirante (fossos)
-}
-function elevAt(pl){ const l=Math.floor((pl.x-BOX.w/2)/TILE), r=Math.floor((pl.x+BOX.w/2-0.01)/TILE);
-  // tolerância na BASE = 1 tile: ao subir pela rampa o jogador pousa uns px DENTRO do tile do trampolim (levemente
-  // abaixo de yBottom); com +TILE ele ainda conta como "no elevador" (senão não ativava — bug reportado pelo José).
-  for(const s of elevShafts){ if(r>=s.xMin&&l<=s.xMax && pl.y>=s.yTop-3 && pl.y<=s.yBottom+TILE) return s; } return null; }
+// ELEV_SPEED/elevShafts/buildElevators/elevAt extraídos p/ game/elevators.js (Estágio 4). drawElevators (cabine
+// de vidro) fica aqui e lê os poços por getElevShafts(). WC_ELEVATORS foi p/ o módulo; WC_BRIDGES fica (ramps).
+initElevators({ W: WORLD_W, H: WORLD_H, isWheelchair: () => wheelchair }); // liga o módulo às dims + estado
 buildElevators();
 const elevLayer=new PIXI.Graphics(); camera.addChildAt(elevLayer, camera.getChildIndex(worldSprite)+1);
 // Estilo VIDRO PREDIAL (rodoviária/shopping/aeroporto): fosso de vidro translúcido (vê o background),
 // moldura cinza/branco/azul, escada some virando blocos de elevador, e a cabine PERMANECE onde foi deixada.
 function drawElevators(g){ g.clear(); if(!wheelchair)return;
-  for(const s of elevShafts){ if(s.carY==null)s.carY=s.yBottom; for(const pl of players){ if(elevAt(pl)===s) s.carY=pl.y; } } // cabine segue quem está nela; senão fica
+  for(const s of getElevShafts()){ if(s.carY==null)s.carY=s.yBottom; for(const pl of players){ if(elevAt(pl)===s) s.carY=pl.y; } } // cabine segue quem está nela; senão fica
   const GLASS=0x9fd0e6, FRAME=0x8aa0b8, WHITE=0xeaf2f8, BLUE=0x4a78b0, INNER=0x24384d;
-  for(const s of elevShafts){
+  for(const s of getElevShafts()){
     const x0=s.xMin*TILE, x1=(s.xMax+1)*TILE, w=x1-x0, yt=s.yTop-TILE, yb=s.yBottom, h=yb-yt; // vidro só ACIMA do chão (yBottom)
     g.beginFill(GLASS,0.14); g.drawRect(x0,yt,w,h); g.endFill();                                   // fosso de vidro (vê o background)
     for(const cx of s.cols)for(let ry=Math.floor(yt/TILE);ry<=Math.floor((yb-1)/TILE);ry++){ if(tileAt(cx,ry)!==4)continue; const X=cx*TILE,Y=ry*TILE; // ESCADA some → bloco de elevador
@@ -2756,7 +2733,7 @@ window.__incl={app,get player(){return players[0];},players,get numPlayers(){ret
   loadTTS:tts.loadTTS,ttsSpeak:tts.ttsSpeak,narrate:tts.narrate,get ttsEngine(){return tts.getEngine();},get ttsLoading(){return tts.loading;},get ttsFailed(){return tts.failed;},setTtsEngineSel(v){tts.setEngineSel(v);},
   updateWeather,get rainLevel(){return _rainLevel;},set weatherT(v){_weatherT=v;},get weatherT(){return _weatherT;},rm,
   spawnCreature,stepLife,get creatures(){return creatures;},spawnCar,get cars(){return cars;},SEM,STREET_Y,
-  get elevShafts(){return elevShafts;},elevAt,get BOX(){return BOX;},get wheelchair(){return wheelchair;},setWheelchair,buildElevators,buildRamps,solidAt,surfTop, // debug cadeirante
+  get elevShafts(){return getElevShafts();},elevAt,get BOX(){return BOX;},get wheelchair(){return wheelchair;},setWheelchair,buildElevators,buildRamps,solidAt,surfTop, // debug cadeirante
   get clouds(){return sceneSky.getClouds();},get birds(){return sceneSky.getBirds();},stepSky:(dt)=>sceneSky.stepSky(dt),CENARIOS,stepV3Decor:()=>sceneSky.stepV3Decor(),
   get grassDensity(){return grassDensity;},setGrassDensity(v){grassDensity=Math.max(0,Math.min(1,+v||0));}, // 1=todas as superfícies; 0.6=60% (estações)
   get decorCounts(){ const n=g=>g.geometry&&g.geometry.graphicsData?g.geometry.graphicsData.length:0; return {stars:n(starsG),skyDeco:n(skyDecoG),fog:n(fogG),grass:n(grassG),front:n(themeFxG)}; }};
