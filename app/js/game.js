@@ -15,6 +15,7 @@ import { ELEV_SPEED, buildElevators, elevAt, getElevShafts, initElevators } from
 import { gcd, fmtFrac, fracGraphic, fracSpeak, speakChoice } from './game/fractions.js'; // Estágio 4 (Tier 2): matemática/render de frações
 import { BRAILLE, brailleText } from './game/braille.js'; // Estágio 4 (Tier 2): cela braille + fala (atividade cego)
 import { SOMASUB_SHAPES, somaSubName, SILABAS_WORDS, SILABA_POOL, WORD_INITIALS } from './game/activity-content.js'; // Estágio 4 (Tier 2): dados das atividades (formas + sílabas)
+import { LETTER_NAME, soletra, ferreiroDistractors } from './game/literacy-distractors.js'; // Estágio 4 (Tier 2): nomes de letra + distratores pré-silábicos
 import { JUICE, saveJuice, easeOut3, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, drawFx, initFx, tickHitstop, shakeAmp, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
 import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
 import { isGroundType, worldCanvas, worldToTexture, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
@@ -246,27 +247,8 @@ let MODE='ludico'; // 'ludico' | 'somasub' (silabas vem na E7)
    5 escritor cego — montar por LETRAS; o jogo dita a CELA BRAILLE de cada letra. */
 // 'quizLevel' agora vem de core/state.js (Fase 2, mega-variável 2). Leitura = binding vivo; escrita via setQuizLevel().
 const QL_NAME={1:'pré-silábico',2:'silábico',3:'silábico-alfabético',4:'escritor',5:'escritor cego'};
-const LETTER_NAME={a:'á',b:'bê',c:'cê',d:'dê',e:'é',f:'éfe',g:'gê',h:'agá',i:'i',j:'jota',k:'cá',l:'éle',m:'ême',n:'êne',o:'ó',p:'pê',q:'quê',r:'érre',s:'ésse',t:'tê',u:'u',v:'vê',w:'dáblio',x:'xis',y:'ípsilon',z:'zê'};
-const soletra=w=>String(w).split('').map(c=>LETTER_NAME[c]||c).join(', ');
-function malform(w){ const vow='aeiou'; // distrator MALFORMADO plausível: troca uma vogal OU inverte um par vizinho
-  for(let t=0;t<12;t++){ let out=w;
-    if(rnd()<0.5){ const idxs=[...w].map((c,i)=>vow.includes(c)?i:-1).filter(i=>i>=0);
-      if(idxs.length){ const i=idxs[randInt(0,idxs.length-1)], alt=vow.replace(w[i],''); out=w.slice(0,i)+alt[randInt(0,alt.length-1)]+w.slice(i+1); } }
-    else if(w.length>=3){ const a=w.split(''), i=randInt(0,w.length-2); const x=a[i]; a[i]=a[i+1]; a[i+1]=x; out=a.join(''); }
-    if(out!==w && !SILABAS_WORDS.some(x=>x.w===out)) return out; } // nunca devolve palavra real
-  return w.split('').reverse().join(''); }
-// Distratores de FERREIRO & TEBEROSKY (jogo "Descobrindo palavras", pré-silábico): a correta é a palavra normal;
-// as erradas atacam as hipóteses pré-silábicas comuns: (a) símbolo/emoji → refuta hipótese ICÔNICA; (b) 4-8 letras
-// repetidas → falta de VARIEDADE interna; (c) emoji NO MEIO; (d) 1 letra/sílaba (ou menos) OU 4+/sílaba → refuta TAMANHO=objeto.
-const _FER_SYM=['★','◆','#','@','%','&','✦','◇','■','●'];
-const _FER_EMO=['🐱','🍎','🌟','🚗','🐶','🎈','🐸','🍌','⭐','🎲','🌙','🔥'];
-function ferreiroDistractors(item){ const w=item.w, n=item.s.length, L=w.length, pick=a=>a[randInt(0,a.length-1)], mid=Math.max(1,Math.floor(L/2));
-  const a=()=> rnd()<0.5 ? pick(_FER_SYM)+w : w.slice(0,mid)+pick(_FER_SYM)+w.slice(mid);        // (a) símbolo
-  const b=()=> pick(w).repeat(randInt(4,8));                                                      // (b) letra repetida 4-8×
-  const c=()=> w.slice(0,mid)+pick(_FER_EMO)+w.slice(mid);                                        // (c) emoji no meio
-  const d=()=> rnd()<0.5 ? w.slice(0,Math.max(1,n-1))                                             // (d-) ≤1 letra/sílaba
-                         : w.split('').map(ch=>ch+ch+ch+ch).join('').slice(0,Math.max(n*4,8));     // (d+) 4+ letras/sílaba
-  return [a(),b(),c(),d()]; }
+// LETTER_NAME/soletra/ferreiroDistractors extraídos p/ game/literacy-distractors.js (Estágio 4).
+// malform() REMOVIDO: era código morto (0 chamadas) — distrator de sílaba nunca ligado.
 let letterCase='lower'; // 'lower' | 'upper' (E7: selecionável)
 const disp=(s)=> letterCase==='upper'?String(s).toUpperCase():String(s).toLowerCase();
 // E8: Braille (modo pessoa cega). Padrão de pontos da cela por letra (Grau 1, PT).
