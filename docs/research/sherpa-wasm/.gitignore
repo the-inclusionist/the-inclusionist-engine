@@ -1,5 +1,0 @@
-# Downloaded WASM engine + models are large (tens–hundreds of MB) — never commit them.
-# Regenerate with fetch-sherpa-wasm.ps1. Only the script + README are versioned.
-*
-!.gitignore
-!README.md
