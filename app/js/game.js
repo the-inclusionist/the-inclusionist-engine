@@ -12,6 +12,7 @@ import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
 import { puTaken, takePu } from './game/powerups.js'; // Estágio 4 (Tier 2): predicados de coleta de power-up
 import { JUICE, saveJuice, easeOut3, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, drawFx, initFx, tickHitstop, shakeAmp, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
+import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
 import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS, FONT_BY_KEY, loadFontKey, saveFontKey } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
@@ -587,23 +588,8 @@ const THEME_FLORA={ // v3 exato — grama/flores por tema
   floresta: {base:'#3a7a34',top:'#5fa84a',bLt:'#6fc255',bDk:'#2f6329',center:'#ffe14d',petals:['#c98ce0','#ffffff','#ffd166','#ff7eb6']},
 };
 const hexN=s=>parseInt(String(s).slice(1),16);
-function parallaxPlaceholder(i){ // placeholder da CIDADE (os 4 temas v3 têm céu/montanhas próprios abaixo)
-  const w=320,h=LOGICAL_H,cv=makeCanvas(w,h),c=cv.getContext('2d');
-  const pal=[['#0a1024','#1b2350'],['#13284a','#22406e'],['#1d3a52','#356a86']][i];
-  const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,pal[0]); g.addColorStop(1,pal[1]); c.fillStyle=g; c.fillRect(0,0,w,h);
-  c.fillStyle=pal[1];
-  for(let x=0;x<w;x+=44+i*14){ const hh=24+((x*7+i*29)%(46+i*22)); c.fillRect(x,h-hh,30+i*6,hh); }
-  c.fillStyle='rgba(255,255,255,.18)'; for(let k=0;k<8;k++)c.fillRect((k*53+i*17)%w,(k*23+i*11)%(h-40),2,2);
-  return tex(cv);
-}
-function themeSkyTexture(T){ const w=64,h=LOGICAL_H,cv=makeCanvas(w,h),c=cv.getContext('2d'); // drawBackdrop v3: gradiente puro
-  const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,T.sky[0]); g.addColorStop(1,T.sky[1]); c.fillStyle=g; c.fillRect(0,0,w,h); return tex(cv); }
-function themeHillsTexture(T,near){ // drawHillBand v3: dupla senoide (amp 5/9, freq 0.018/0.013, fase 140/0), transparente acima
-  const w=1280,h=LOGICAL_H,cv=makeCanvas(w,h),c=cv.getContext('2d');
-  const horizon=Math.round(h*0.5), amp=near?9:5, freq=near?0.013:0.018, baseY=horizon+(near?16:4), phase=near?0:140;
-  c.fillStyle=T.hills[near?1:0];
-  for(let x=0;x<w;x++){ const hh=Math.sin((x+phase)*freq)*amp+Math.sin((x+phase)*freq*2.3+1.7)*amp*0.4; const top=Math.round(baseY-hh); c.fillRect(x,top,1,h-top); }
-  return tex(cv); }
+// parallaxPlaceholder/themeSkyTexture/themeHillsTexture extraídos p/ render/scene-parallax.js (Estágio 4).
+// updateParallax (scroll/render-graph) fica aqui por ora.
 const parallaxLayers=PARALLAX.map((p,i)=>{
   const ts=new PIXI.TilingSprite(parallaxPlaceholder(i),LOGICAL_W,LOGICAL_H);
   camera.addChildAt(ts,i); // i=0 (sky) fica no fundo; depois far, near; tileset entra por cima
