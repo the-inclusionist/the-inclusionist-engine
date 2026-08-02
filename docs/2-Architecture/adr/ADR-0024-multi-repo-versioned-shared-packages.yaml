@@ -1,6 +1,6 @@
 ---
 metadata:
-  status: "accepted"
+  status: "accepted (repo topology amended by ADR-0025 — hub repo instead of per-lab repo+submodule+domain; versioned packages / no-CDN / scoped COOP-COEP stand)"
   date: 2026-07-07
   decision-makers: [Dev, AI]
   consulted: []

@@ -1,8 +1,12 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # Plano — modularizar o TTS-Lab em produto (TS · Vite · DI · pacotes versionados)
 
-> Decisões que este plano executa: **ADR-0023** (labs = apps de primeira classe) + **ADR-0024** (multi-repo +
-> pacotes versionados; TTS-Lab repo próprio/submódulo + domínio `labs.`; sem CDN; COOP/COEP escopado ao lab).
+> Decisões que este plano executa: **ADR-0023** (labs = apps de primeira classe) + **ADR-0024** (pacotes versionados;
+> sem CDN; COOP/COEP escopado) + **ADR-0025** (o lab vive no repo **hub `inclusionist-lab`**, multi-página, o TTS é a
+> subpágina `/tts/`; `the-inclusionist` fica só com o jogo — substitui o "tts-lab repo próprio/submódulo" do 0024).
+>
+> **Onde o código mora agora:** `inclusionist-lab/src/tts/` (não mais `tts-lab`). As rodadas abaixo que citam "tts-lab"
+> valem para essa subpágina. Rodadas 0–3 **concluídas e verificadas** (Seção 1 = eSpeak + Web Speech por DI).
 > Método: **rodadas pequenas, cada uma com teste e prova**, o monólito atual (`docs/research/sherpa-lab.html`)
 > **fica funcionando até a última rodada**. Nada é "pronto" até o teste do José passar em cada estágio.
 

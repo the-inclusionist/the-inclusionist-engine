@@ -1,0 +1,81 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-07-07
+  decision-makers: [Dev, AI]
+  consulted: []
+  informed: []
+
+title: One inclusionist-lab hub repo (labs as subpages); the-inclusionist holds only the game (amends ADR-0024)
+
+context-and-problem-statement: |
+  ADR-0024 placed the TTS lab in its OWN repo (`tts-lab`), added as a git submodule of `the-inclusionist`, with its
+  own `labs.` Cloudflare domain. As soon as a SECOND experiment was foreseen (Libras, MediaPipe vision, …), one repo +
+  one submodule + one domain PER lab became needless friction. The Dev reframed the labs: there should be a single
+  **`inclusionist-lab`** repository — a hub "onde é possível fazer diversos testes de funcionalidades de bibliotecas e
+  modelos ligados a inclusão" — with each experiment a **subpage** of one landing page; and `the-inclusionist` should
+  contain **only the game**. This amends the repo/topology half of ADR-0024 (the versioned-packages, no-CDN and
+  scoped-COOP/COEP halves are unchanged).
+
+decision-drivers:
+- Many labs, one home: a growing set of inclusion experiments is cheaper to host, deploy and discover as subpages of
+  one multi-page app than as N repos + N submodules + N domains.
+- Clean separation: `the-inclusionist` is the game; experiments do not belong in its tree (not even as a submodule).
+- Keep the wins of ADR-0024: shared code still ships as versioned `@jrocha-io/*` packages; still no runtime CDN; the
+  sherpa multi-thread COOP/COEP headers stay scoped to the lab deploy, never the game.
+- Discoverability: a landing page that lists every lab (and marks planned ones) is the natural index.
+
+considered-options:
+- &perlab "Keep one repo + submodule + domain per lab (ADR-0024 as written)"
+- &hub "One inclusionist-lab hub repo: multi-page app, one subpage per lab; the-inclusionist = game only"
+- &folder "A labs/ folder inside the-inclusionist"
+
+pros-and-cons-of-the-options:
+  perlab:
+    cons:
+    - "N repos + N submodules + N domains for N experiments — friction that grows with every new lab."
+  hub:
+    pros:
+    - &one "One repo, one deploy, one landing index for all inclusion experiments; add a lab = add a page."
+    - &clean "the-inclusionist stays purely the game; no lab code or submodule in its tree."
+    - &share "Still consumes the versioned @jrocha-io/* packages; the winning engine still graduates into the game."
+    cons:
+    - &mig "Requires migrating the standalone tts-lab into the hub and removing the submodule (one-time)."
+  folder:
+    cons:
+    - "Puts experiment code + heavy deps + COOP/COEP back inside the game repo — the opposite of the goal."
+
+decision-outcome:
+  chosen-option:
+    link: *hub
+    justification: |
+      Create **`inclusionist-lab`** (public, GPL-3.0) as a **multi-page Vite + TypeScript** app:
+        · `/` — a landing page listing the labs (TTS live; Libras, vision planned), each a card linking to its subpage.
+        · `/tts/` — the TTS lab (Section 1 = eSpeak NG + Web Speech via DI over `@jrocha-io/*`; sherpa + WebGPU next).
+        · add a lab = `src/<lab>/` + `<lab>/index.html` + a `build.rollupOptions.input` entry + a landing card.
+      The standalone **`tts-lab` repo is superseded** (its working code moved into `inclusionist-lab/src/tts/`), and the
+      **submodule is removed from `the-inclusionist`**, which now holds only the game. Deploy: one Cloudflare Pages
+      project for `inclusionist-lab` on a `labs.`-style domain; COOP/COEP via its own `public/_headers`. Unchanged from
+      ADR-0024: shared code = versioned `@jrocha-io/*` (GitHub Packages); no runtime CDN (meSpeak vendored as a
+      same-origin public asset); headers scoped to the lab.
+  consequences:
+    positive:
+    - *one
+    - *clean
+    - *share
+    neutral:
+    - "The `tts-lab` GitHub repo remains but is superseded/abandoned — archive or delete at will (not deleted here)."
+    - "ARCHITECTURE.md + the migration plan updated to the hub layout."
+    negative:
+    - *mig
+
+  confirmation: |
+    `inclusionist-lab` builds multi-page (`/` + `/tts/`) and both render; the TTS subpage behaves as before (eSpeak
+    synthesizes); `the-inclusionist` has no `labs/` submodule and its game build/deploy is unchanged. Verified in-browser
+    this session (landing + /tts/ render, eSpeak ~200ms, no console errors).
+
+more-information: |
+  Amends ADR-0024 (repo topology only): its "tts-lab own repo + submodule + own domain" is replaced by "inclusionist-lab
+  hub + subpages"; everything else in ADR-0024 (versioned packages, GitHub Packages `@jrocha-io`, no CDN, scoped
+  COOP/COEP) stands. Relates to ADR-0023 (labs are first-class apps). Repos: github.com/jrocha-io/inclusionist-lab (hub),
+  /inclusionist-commons (shared packages), /the-inclusionist (game). Plan: docs/5-Refactoring/plano-tts-lab-modularizacao.md.
