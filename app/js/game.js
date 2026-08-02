@@ -11,6 +11,7 @@ import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
 import { puTaken, takePu } from './game/powerups.js'; // Estágio 4 (Tier 2): predicados de coleta de power-up
+import { JUICE, saveJuice, easeOut3, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, drawFx, initFx, tickHitstop, shakeAmp, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
 import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS, FONT_BY_KEY, loadFontKey, saveFontKey } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
@@ -1191,13 +1192,11 @@ players[0].sprite=playerSprite;
 /* ===================== L2: JUICE — micro-efeitos de resposta (toggles independentes no ?debug) =====================
    Cada efeito respeita o Movimento Reduzido do jogador: partículas→rm.particles, cintilar→rm.items,
    tremor de tela→rm.parallax (movimento de câmera), squash→rmWalk (personagem). Hit-stop é PAUSA, não movimento. */
-const JUICE=(()=>{ const d={dust:true,sparkle:true,squash:true,hitstop:true,shake:true,shimmer:true};
-  try{ const s=JSON.parse(localStorage.getItem('incl_juice')); if(s&&typeof s==='object') for(const k in d) if(k in s) d[k]=!!s[k]; }catch(e){}
-  return d; })();
-function saveJuice(){ try{ localStorage.setItem('incl_juice',JSON.stringify(JUICE)); }catch(e){} }
-const easeOut3=t=>1-Math.pow(1-t,3); // easing padrão (recuperação do squash, fade das partículas)
-let particles=[], fxClock=0, hitstopT=0, shakeT=0, shakeDur=1, shakeMag=0;
+// JUICE/saveJuice/easeOut3/particles/shake/hit-stop extraídos p/ render/fx.js (Estágio 4). fxClock FICA aqui
+// (clock GERAL de animação — o cintilar das moedas + ctx o leem). initFx injeta fxG+rm logo após criar fxG.
+let fxClock=0;
 const fxG=new PIXI.Graphics(); camera.addChild(fxG); // acima dos players (re-erguida em ensureSprites)
+initFx({ fxG, rm }); // Estágio 4: liga o módulo fx à camada PIXI + reduce-motion
 // ===== R1 (#69, ADR-0020): ORDEM-Z CANÔNICA do MUNDO — zIndex declarativo (core/layers.ts) sobrepõe os
 // addChildAt(getChildIndex) + os re-add-ao-topo (que ficam redundantes: o zIndex decide a ordem). Filhos ANINHADOS
 // (grassG/cityDecoG/lavaFxG no lifeLayer; waterFxG no decoLayer) mantêm a ordem interna do pai. Alvo: no-op visual.
@@ -1213,21 +1212,8 @@ lifeLayer.zIndex = Z.FAUNA_BACK; extraLayer.zIndex = Z.ITEMS - 500; coinContaine
 playerSprite.zIndex = Z.PLAYER; caneLayer.zIndex = Z.PLAYER + 10; chairLayer.zIndex = Z.PLAYER + 20;
 fxG.zIndex = Z.VFX_FRONT; carLayer.zIndex = Z.VEHICLES; themeFxG.zIndex = Z.FAUNA_FRONT; themeFxBackG.zIndex = Z.FLORA_BACK + 500; fogG.zIndex = Z.WEATHER - 500;
 darkLayer.zIndex = Z.TILES + 500; easyHitbox.zIndex = Z.WORLD_A11Y; // darkLayer = escuridão da área SECRETA (meio, atrás dos atores), NÃO DARK_WORLD (#69)
-function spawnParticle(x,y,vx,vy,life,color,size,grav){ if(particles.length>=160)particles.shift(); particles.push({x,y,vx,vy,life,max:life,color,size,g:grav||0}); }
-function puffDust(x,y,n){ if(!JUICE.dust||rm.particles)return; for(let i=0;i<n;i++)
-  spawnParticle(x+(rnd()-0.5)*8, y-1-rnd()*2, (rnd()-0.5)*0.9, -0.2-rnd()*0.4, 14+rnd()*10, 0xcfc6b8, rnd()<0.4?2:1, 0.02); }
-function burstSparkle(x,y,color,n){ if(!JUICE.sparkle||rm.particles)return; const N=n||8; for(let i=0;i<N;i++){ const a=(i/N)*Math.PI*2+rnd()*0.5, sp=0.5+rnd()*0.9;
-  spawnParticle(x,y, Math.cos(a)*sp, Math.sin(a)*sp-0.3, 18+rnd()*12, color||0xffd23f, rnd()<0.5?2:1, 0.015); } }
-function addShake(mag,dur){ if(!JUICE.shake||rm.parallax)return; shakeMag=Math.max(shakeMag,mag); shakeDur=dur; shakeT=Math.max(shakeT,dur); }
-function addHitstop(t){ if(!JUICE.hitstop)return; hitstopT=Math.max(hitstopT,t); }
-function setSquash(pl,amt){ if(!JUICE.squash||pl.rmWalk)return; pl.sq=Math.max(-0.28,Math.min(0.2,amt)); pl.sqT=8; }
-function stepFx(dt){ fxClock+=dt;
-  if(shakeT>0)shakeT=Math.max(0,shakeT-dt);
-  for(const pl of players) if(pl.sqT>0)pl.sqT=Math.max(0,pl.sqT-dt);
-  for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.life-=dt; if(p.life<=0){particles.splice(i,1);continue;}
-    p.vy+=p.g*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; } }
-function drawFx(){ fxG.clear(); for(const p of particles){ const f=p.life/p.max;
-  fxG.beginFill(p.color, 0.9*easeOut3(f)); fxG.drawRect(p.x-p.size/2,p.y-p.size/2,p.size,p.size); fxG.endFill(); } }
+// spawnParticle/puffDust/burstSparkle/addShake/addHitstop/setSquash/stepFx/drawFx extraídos p/ render/fx.js
+// (Estágio 4). Importados no topo; fxG+rm injetados por initFx; shake/hit-stop lidos por getters/shakeAmp/tickHitstop.
 /* L2: Estética CRT (menu Sensibilidade visual) — scanlines/vinheta/cantos em 3 NÍVEIS (0=desligado,
    1=pequeno, 2=grande), só CSS. Cantos: 0=tela quadrada, 1=padrão de sempre (8px), 2=arredondadão (24px).
    Migra o formato booleano antigo (true→ligado; round true→2, false→1). */
@@ -1591,7 +1577,8 @@ function stepPlayer(pl,dt){
 }
 function update(dt){
   if(phase!=='playing')return; // E14: congelado no título e na pausa
-  if(hitstopT>0){ hitstopT=Math.max(0,hitstopT-dt); return; } // JUICE: hit-stop congela o mundo por alguns ticks
+  if(tickHitstop(dt)) return; // JUICE: hit-stop congela o mundo por alguns ticks
+  fxClock+=dt; // clock GERAL de animação (o stepFx não o incrementa mais — extraído p/ render/fx)
   stepFx(dt); // partículas + decaimento de tremor/squash (roda até no fim de jogo → confete da vitória anima)
   attractCtl.stepAttract(dt); // attract: robô/replay dirige o P1 (ANTES da física)
   attractCtl.recordTick(); // ?record=1: grava o P1 (fora da demo, jogando) em localStorage
@@ -1625,7 +1612,7 @@ function update(dt){
 function placeCam(pl){
   let camX=pl.x-LOGICAL_W/2, camY=(pl.y-BOX.h/2)-LOGICAL_H/2;
   camX=Math.max(0,Math.min(camX,WORLD_PX_W-LOGICAL_W)); camY=Math.max(0,Math.min(camY,WORLD_PX_H-LOGICAL_H));
-  if(shakeT>0&&shakeMag>0){ const k=shakeMag*(shakeT/shakeDur); // JUICE: tremor decai linearmente; re-clampa p/ não mostrar o vazio
+  const k=shakeAmp(); if(k>0){ // JUICE: tremor decai linearmente (render/fx); re-clampa p/ não mostrar o vazio
     camX=Math.max(0,Math.min(camX+(rnd()*2-1)*k,WORLD_PX_W-LOGICAL_W)); camY=Math.max(0,Math.min(camY+(rnd()*2-1)*k,WORLD_PX_H-LOGICAL_H)); }
   camera.x=-Math.round(camX); camera.y=-Math.round(camY); updateParallax(camX,camY); return {camX,camY};
 }
@@ -2799,7 +2786,7 @@ startLoop(app.ticker, (dt)=>{ pollPads(); update(dt); draw();
   if(phase==='playing'){ updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
 window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads,update,openPadWiz,padWizTick,padMapFor,get padWiz(){return padWiz;},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return powerups;},get gateOpen(){return gateOpen;},get gate(){return gate;},get ended(){return ended;},restartGame,get hcMode(){return hcMode;},setHC(v){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(players[0]),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE;},get letterCase(){return letterCase;},get blindMode(){return blindMode;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
-  JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return particles;},get hitstopT(){return hitstopT;},get shakeT(){return shakeT;},CRT,applyCrt,setLq,get lqT(){return lqT;},
+  JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return lqT;},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
   setMode,setQuizLevel,get quizLevel(){return quizLevel;},openSilabas,quizMove,quizConfirm,quizErase,get quiz(){return players[0].quiz;},INCL_VERSION,fmtFrac,fracGraphic,speakChoice,get fracNot(){return fracNot;},
   setGameFont,openTypo,get fontKey(){return fontKey;},FONT_GROUPS,get mmSeen2(){return minimapSeenCount();},
