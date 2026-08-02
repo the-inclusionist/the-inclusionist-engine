@@ -13,6 +13,7 @@ import { createAttract } from './game/attract.js'; // modo demonstração (Tier 
 import { puTaken, takePu } from './game/powerups.js'; // Estágio 4 (Tier 2): predicados de coleta de power-up
 import { ELEV_SPEED, buildElevators, elevAt, getElevShafts, initElevators } from './game/elevators.js'; // Estágio 4 (Tier 2): geometria de elevador (cadeirante)
 import { gcd, fmtFrac, fracGraphic, fracSpeak, speakChoice } from './game/fractions.js'; // Estágio 4 (Tier 2): matemática/render de frações
+import { BRAILLE, brailleText } from './game/braille.js'; // Estágio 4 (Tier 2): cela braille + fala (atividade cego)
 import { JUICE, saveJuice, easeOut3, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, drawFx, initFx, tickHitstop, shakeAmp, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
 import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
 import { isGroundType, worldCanvas, worldToTexture, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
@@ -283,11 +284,7 @@ function ferreiroDistractors(item){ const w=item.w, n=item.s.length, L=w.length,
 let letterCase='lower'; // 'lower' | 'upper' (E7: selecionável)
 const disp=(s)=> letterCase==='upper'?String(s).toUpperCase():String(s).toLowerCase();
 // E8: Braille (modo pessoa cega). Padrão de pontos da cela por letra (Grau 1, PT).
-const BRAILLE={a:[1],b:[1,2],c:[1,4],d:[1,4,5],e:[1,5],f:[1,2,4],g:[1,2,4,5],h:[1,2,5],i:[2,4],j:[2,4,5],
-  k:[1,3],l:[1,2,3],m:[1,3,4],n:[1,3,4,5],o:[1,3,5],p:[1,2,3,4],q:[1,2,3,4,5],r:[1,2,3,5],s:[2,3,4],t:[2,3,4,5],
-  u:[1,3,6],v:[1,2,3,6],w:[2,4,5,6],x:[1,3,4,6],y:[1,3,4,5,6],z:[1,3,5,6]};
-const NUMW={1:'um',2:'dois',3:'três',4:'quatro',5:'cinco',6:'seis'};
-const brailleText=(ch)=>{const d=BRAILLE[String(ch).toLowerCase()]; return d?d.map(n=>NUMW[n]).join(' '):'';};
+// BRAILLE/NUMW/brailleText extraídos p/ game/braille.js (Estágio 4).
 let blindMode=false; // modo pessoa cega: no Sílabas, dita os pontos Braille
 // Lote C: cada jogador tem SEU conjunto de n itens em posições ALEATÓRIAS próprias e com a COR do dono
 // (owner). Todos os itens de todos os jogadores existem no mundo; cada um coleta só os `owner===seu i`.
