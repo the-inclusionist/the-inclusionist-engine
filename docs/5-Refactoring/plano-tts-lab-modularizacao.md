@@ -1,6 +1,13 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # Plano — modularizar o TTS-Lab em produto (TS · Vite · DI · pacotes versionados)
 
+> ✅ **CONCLUÍDO (2026-08-02).** As Rodadas 0–6 estão feitas: `inclusionist-commons` tem os 4 pacotes
+> `@jrocha-io/*` (tts/audio/logging/model-fetch, 52 testes) com os 4 adapters (Web Speech, eSpeak-NG, sherpa,
+> Kokoro-WebGPU); `inclusionist-lab` tem as 3 seções por DI e o monólito foi aposentado. **Pendências só do Dev:**
+> publicar os pacotes no GitLab Package Registry (precisa do token), colocar os ~18MB de assets sherpa em
+> `public/sherpa-wasm/` (receita em `inclusionist-lab/docs/sherpa-wasm-build.md`), e o deploy Cloudflare.
+> A verificação de **áudio neural real** (sherpa/Kokoro) roda na máquina do Dev (assets + download de modelos).
+
 > Decisões que este plano executa: **ADR-0023** (labs = apps de primeira classe) + **ADR-0024** (pacotes versionados;
 > sem CDN; COOP/COEP escopado) + **ADR-0025** (o lab vive no repo **hub `inclusionist-lab`**, multi-página, o TTS é a
 > subpágina `/tts/`; `the-inclusionist` fica só com o jogo — substitui o "tts-lab repo próprio/submódulo" do 0024).
