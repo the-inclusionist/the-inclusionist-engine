@@ -3,14 +3,19 @@
 Contexto de projeto carregado automaticamente pelo Claude Code. **Enxuto de propósito**: aqui ficam as regras
 de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/js/**`) e em `docs/**`.
 
-- **Idioma (projeto open-source):** **artefatos em inglês** — docs, comentários de código, strings de UI e **mensagens
-  de commit**. **Exceção pt-BR:** conteúdo de domínio intrinsecamente brasileiro (objetivos BNCC, pedagogia de
-  alfabetização, *features* Gherkin das atividades, que são lidas por educadores). **A conversa com o Dev é em pt-BR.**
-  Este arquivo (manual operacional da IA) segue em pt-BR de propósito.
+- **Idioma dos ARTEFATOS (projeto open-source):** **inglês** — docs, comentários de código, strings de UI e
+  **mensagens de commit**. **Exceção pt-BR:** conteúdo de domínio intrinsecamente brasileiro (objetivos BNCC, pedagogia
+  de alfabetização, *features* Gherkin das atividades, que são lidas por educadores). **A conversa com o Dev é em
+  pt-BR.** Este arquivo (manual operacional da IA) segue em pt-BR de propósito.
+- **Idiomas do JOGO — piso de três:** **pt-BR** (base), **inglês** e **espanhol**. Não é meta, é mínimo; toda string de
+  UI nasce localizável (`t()`/`data-i18n`), nunca fixa no código. Ver o pilar 3 do ADR-0010, `1-Discovery/plano-i18n.md`
+  e a **Fase 5** no quadro. **Cuidado com a fronteira:** UI se *traduz*; o currículo de **alfabetização** não — sílaba,
+  grafema↔fonema e a psicogênese de Ferreiro são específicos da língua, então esse conteúdo segue pt-BR e cada idioma
+  novo pede currículo próprio, não tradução.
 
 ## 0. Regra de ouro (operacional — o que mais me guia)
 
-- **Eu faço os commits** (atômicos, pt-BR, na `main`, com trailer `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`).
+- **Eu faço os commits** (atômicos, **em inglês**, na `main`, com trailer `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`).
   **O Dev roda** o push/deploy **e TODO comando Node** (`npm run build` / `npx vitest run` / `npx tsc --noEmit`) —
   eu **não tenho Node** no sandbox.
 - **Loop de trabalho:** eu extraio/edito → o Dev valida (build + vitest + tsc) → **eu confiro o boot no preview**
