@@ -11,13 +11,13 @@
 - **Tests:** every module ships with tests — **Vitest**, two projects: `node` (pure logic, no PIXI/DOM) and
   `browser`/Playwright (render/DOM). Patterns: **ZOMBIES** (didactic) + **Right-BICEP** (rigor).
 - **Validation before "done":** `npm run build` + `npx vitest run` + `npx tsc --noEmit` green.
-- **Backlog & issues:** the executable backlog lives in **GitHub Projects + Issues** (`jrocha-io/the-inclusionist`),
-  **not** in a Markdown file. The roadmap is the **GitHub Project *The Inclusionist Roadmap*** (phase issues #22–#28);
+- **Backlog & issues:** the executable backlog lives in **GitLab Issues + the issue board**
+  (`jrocha-dev/the-inclusionist`), **not** in a Markdown file. The roadmap is the board's **Fase 0–6** issues;
   `docs/ROADMAP.md` holds only the strategy / why-this-order.
   Priority is carried by labels **`P0`/`P1`/`P2`** (until a Project single-select field is set up); area/type labels
   (`a11y`, `curriculum`, `engine`, `docs`, `infra`, `bug`, `feature`, `research`, `pillar`, …) classify them. Commits
   close issues with **`Closes #N`** — the light commit↔requirement trace (the heavy FEAT-### traceability is deferred).
-- **Documentation is actionable:** a doc change becomes a **test** (that verifies it), a **task** (a GitHub issue), or
+- **Documentation is actionable:** a doc change becomes a **test** (that verifies it), a **task** (a GitLab issue), or
   an **ADR** (that decides it). With very few exceptions, a doc that transforms into none of these earns its keep only
   as a map/index. Ask "what does this become?" and create it.
 - The **map of where everything lives** is [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — **the first doc to open**
@@ -56,7 +56,7 @@ So we **split by layer**:
 | Layer | Form | Where |
 |---|---|---|
 | **Curriculum** (large, fixed, BNCC-bound) | **Curriculum Map (Scope & Sequence)** + **Learning Objectives** — each objective = a BNCC skill code + a *measurable* criterion (e.g. "given a phoneme, selects the correct grapheme in ≥80% of attempts") | `docs/educational/` (pt-BR) |
-| **Engine / game** (small, negotiable software features) | light **User Stories** | `docs/1-Discovery/User-Stories.md` + the GitHub backlog |
+| **Engine / game** (small, negotiable software features) | light **User Stories** | `docs/1-Discovery/User-Stories.md` + the GitLab backlog |
 
 > **Layer boundary (Dev's rule):** `1-Discovery/` is **software/engine only**; all pedagogical content — activities,
 > learning objectives, curriculum, pedagogical fundamentals — lives in `docs/educational/`. Which educational

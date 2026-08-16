@@ -6,9 +6,11 @@ student data — LGPD/COPPA) and classic **application security** (XSS, injectio
 
 ## Reporting a vulnerability
 
-**Please do not open a public issue for security problems.** Report privately via GitHub's
-**[Private vulnerability reporting](https://github.com/jrocha-io/the-inclusionist/security/advisories/new)**
-(repository → **Security** → **Report a vulnerability**). This keeps the report confidential until a fix ships.
+**Please do not open a public issue for security problems.** Report it as a
+**[confidential issue](https://gitlab.com/jrocha-dev/the-inclusionist/-/issues/new)** — tick
+**“This issue is confidential…”** before submitting, which restricts it to project members until a fix ships.
+If you cannot reach the tracker, email the maintainer instead; a report that arrives is worth more than a
+report filed in the right place.
 
 Include, when possible: affected version/commit, reproduction steps, impact, and any suggested remediation.
 Reports about **exposure of children's data** are welcome even if you are unsure they qualify.

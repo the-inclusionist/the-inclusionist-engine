@@ -21,14 +21,13 @@ SP-the-inclusionist-tracer/
 ├── dist/                     # build output (git-ignored) → deployed to Cloudflare Pages
 ├── docs/                     # documentation — see §2
 ├── tests/                    # Vitest: *.node.test.js (logic) + *.browser.test.js (render/DOM)
-├── .github/                  # automation only: workflows (ci · a11y · codeql) + dependabot.yml
+├── .gitlab-ci.yml            # the pipeline: test · a11y (axe) · SAST + secret detection · optional CF deploy
 ├── vite.config.ts  tsconfig.json  package.json  .release-it.json  .node-version
 └── CLAUDE.md                 # AI operating rules (entry index for the agent)
 ```
 
 > **Community-health files** (`CONTRIBUTING.md`, `CREDITS.md`, `SECURITY.md`) live in **`docs/`**, not the root:
-> GitHub auto-detects them there (root · `.github/` · `docs/` are all valid), keeping the root lean and `.github/`
-> for automation only.
+> GitLab auto-detects them there (root · `docs/` · `.gitlab/` are all valid), which keeps the root lean.
 
 ## 2. Documentation layout (`docs/`)
 
@@ -39,10 +38,10 @@ Organized by **SDD lifecycle phase** (numbered), mirroring the schema we adopt (
 ```
 docs/
 ├── ARCHITECTURE.md            # THIS FILE — the map (start here)
-├── ROADMAP.md                 # strategy + why-this-order; phases live in the GitHub Project (issues #22–#28)
-├── CONTRIBUTING.md            # how we work + our documentation model      (GitHub health file)
+├── ROADMAP.md                 # strategy + why-this-order; phases live on the GitLab issue board (Fase 0–6)
+├── CONTRIBUTING.md            # how we work + our documentation model      (GitLab health file)
 ├── CREDITS.md                 # acknowledgements / attributions
-├── SECURITY.md                # vulnerability reporting policy             (GitHub health file)
+├── SECURITY.md                # vulnerability reporting policy             (GitLab health file)
 ├── 1-Discovery/               # SOFTWARE / engine requirements & design (NOT pedagogy — that's educational/)
 │   ├── User-Stories.md        #   engine/game features — negotiable layer
 │   ├── NFR.md                 #   non-functional reqs + the 10 pillars      ← ADR-0010
@@ -107,8 +106,8 @@ docs/
 > (e.g. DBML at the corpus DB, OpenAPI/Pact at the backend, K8s at stage 4). The stub **is** the decision — it exists
 > so the choice isn't improvised later; it is not empty ceremony.
 >
-> **Not in `docs/`:** the **executable backlog** lives in **GitHub Projects + Issues** (`jrocha-io/the-inclusionist`),
-> not in a Markdown file. The **roadmap** is the GitHub Project *The Inclusionist Roadmap* (phase issues #22–#28);
+> **Not in `docs/`:** the **executable backlog** lives in **GitLab Issues + the issue board**
+> (`jrocha-dev/the-inclusionist`), not in a Markdown file. The **roadmap** is the board's *Fase 0–6* issues;
 > `ROADMAP.md` keeps only the strategy/why-this-order. See `CONTRIBUTING.md`.
 
 | File / folder | Holds | Used by |

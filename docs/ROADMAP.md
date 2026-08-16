@@ -1,7 +1,8 @@
 # Roadmap
 
-> **The executable roadmap is the GitHub Project [The Inclusionist Roadmap](https://github.com/users/jrocha-io/projects).**
-> The phases are tracked there as issues **#22–#28** (Fase 0–6). This document holds only the **stable strategy** — the
+> **The executable roadmap is the issue board of
+> [gitlab.com/jrocha-dev/the-inclusionist](https://gitlab.com/jrocha-dev/the-inclusionist/-/boards).**
+> The phases are tracked there as the **Fase 0–6** issues. This document holds only the **stable strategy** — the
 > principles and the *why* of the ordering — not the per-phase task lists (those live in the issues).
 
 ## Principles (hold in every phase)

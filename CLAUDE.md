@@ -27,9 +27,9 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 - **Doc alterada VIRA teste, tarefa (issue) ou ADR** — com pouquíssimas exceções, documentação que não se transforma
   em algo acionável (um teste que a verifica, uma issue de trabalho, ou um ADR que a decide) **não serve**. Ao mexer
   num doc, pergunte "isto vira o quê?" e crie.
-- **O TO-DO / BACKLOG do projeto vive no GitHub Project *The Inclusionist Roadmap* + Issues** (`jrocha-io/the-inclusionist`),
+- **O TO-DO / BACKLOG do projeto vive nas Issues + quadro do GitLab** (`jrocha-dev/the-inclusionist`),
   **NÃO em docs**. Trabalho novo → uma **issue** (labels: área + tipo + prioridade P0/P1/P2); o commit fecha com
-  `Closes #N`. `ROADMAP.md` guarda só a estratégia/ordem. (Posso mexer no board por `gh`.)
+  `Closes #N`. `ROADMAP.md` guarda só a estratégia/ordem. (Posso mexer no quadro por `glab`.)
 - **`ARCHITECTURE.md` é O MAPA** — o 1º doc a consultar em QUALQUER prompt (meu e das LLMs que eu coordeno) para achar
   o que ler/alterar. **Toda** mudança de estrutura/nome/convenção de doc **reflete nele no mesmo turno**.
 - **Ensinar-e-deixar-ele-rodar:** para mudanças de estado (git push, npm, sistema), oriento e preparo os arquivos;
@@ -68,7 +68,7 @@ convivência de idosos e pessoas assistidas socialmente). **MVP atual:** *The In
 - **Agora:** **Estágio 4 — modularização** do `game.js` em ES Modules `.ts`, cada um extraído **com teste**
   (ZOMBIES + Right-BICEP). Alvo/ordem: `docs/plano-modularizacao-mapa.md`. **Fundamentos** que guiam a quebra
   (coesão↑, acoplamento↓, DI, DAO, adapters — base arXiv:2409.15152): `docs/plano-modularizacao.md` (= o ADR).
-- **Roadmap por dependência** (fases no **GitHub Project *The Inclusionist Roadmap*** — issues #22–#28; a estratégia/
+- **Roadmap por dependência** (fases como issues **Fase 0–6** no quadro do GitLab; a estratégia/
   ordem em `docs/ROADMAP.md`):
   0 publicar ✅ · 1 nível-glifo + editor de mapa · **2 espinha da engine = a modularização atual** · 3 arte
   procedural semântica · 4 editor de arte + importadores · 5 i18n en/es · 6 features (**Alfabetização 6–9**, webcam/
@@ -103,7 +103,7 @@ navegador) e deixo o Dev rodar o Vitest. Padrões: **ZOMBIES** (didático) + **R
 
 - **Mapa da documentação:** `docs/ARCHITECTURE.md` (estrutura de arquivos) + `docs/CONTRIBUTING.md` (como
   trabalhamos + modelo de documentação). **Comece por aí.** (Health files — CONTRIBUTING/CREDITS/SECURITY —
-  vivem em `docs/`, não na raiz; o GitHub os reconhece lá. `.github/` = só automação.)
+  vivem em `docs/`, não na raiz; o GitLab os reconhece lá. A automação é o `.gitlab-ci.yml` na raiz.)
 - **Documentação canônica por fase SDD:** `docs/1-Discovery/` (**software/engine**: User-Stories·NFR·Design·Event-Storming),
   `docs/educational/` (**camada currículo/pedagogia, pt-BR**: Learning-Objectives·Curriculum-Map·Pedagogical-Model + planos educacionais),
   `docs/2-Architecture/` (C4·adr **YADR**·Feature-Flags·DFD·STRIDE·CI-CD·learning-interop·backend-cloud-roadmap·K8s),
