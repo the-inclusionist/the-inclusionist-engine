@@ -39,6 +39,17 @@ test:
     paths: [dist/]
     expire_in: 1 week
 
+adr:
+  stage: quality
+  # The ADR index promises the records are machine-readable. Nothing checked that for 26 records,
+  # and 5 of them did not parse. This is the promised lint. Its own image because it is the one job
+  # that needs Python, not Node.
+  image: python:3.12-slim
+  before_script:
+    - pip install --quiet pyyaml
+  script:
+    - python scripts/validate-adr.py docs/2-Architecture/adr
+
 a11y:
   stage: quality
   # The a11y gate (#10): axe-core against the app RUNNING, not the source. Any WCAG A/AA violation in

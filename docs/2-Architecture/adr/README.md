@@ -8,6 +8,18 @@ One file per deliberate architectural decision, in **YADR** format — the YAML 
   (`status`, `date`, `decision-makers`, `consulted`, `informed`) → `title` → `context-and-problem-statement` →
   `decision-drivers` → `considered-options` → `pros-and-cons-of-the-options` → `decision-outcome`
   (`chosen-option{link,justification}`, `consequences{positive,neutral,negative}`, `confirmation`) → `more-information`.
+- **Two shapes, and the second is deliberate.** Most records are the **full** form above: one decision, weighed against
+  named alternatives. **ADR-0011–0018 are `bundle` records** — consolidations of the retired
+  `REGISTRO-DE-DECISOES.md` log, where each file gathers a family of decisions that were *already taken*. They carry
+  `metadata` → `title` → `context-and-problem-statement` → `decision-outcome.justification` → `more-information`, and
+  the decisions themselves live as an annotated list in `more-information`, each with its rationale and its source
+  (a study, a commit). They have **no** `considered-options` or `pros-and-cons-of-the-options` because no alternatives
+  were ever weighed — writing some in would be inventing history, not documenting it. A bundle declares itself with
+  `metadata.shape: bundle`; anything without that key is validated as the full form.
+- **Validated, not asserted:** `python scripts/validate-adr.py docs/2-Architecture/adr` parses every record and checks
+  it against its declared shape. It also catches the failure that has no symptom — prose whose `: ` silently turned a
+  list item into a mapping, which parses cleanly and holds the wrong data. This is the "lint against a schema later"
+  promised above; it runs in CI on every push.
 - **Naming:** `ADR-NNNN-short-slug.yaml`, 4-digit zero-padded, monotonic.
 - **Immutable:** to change a decision, write a **new** ADR and set the old one's `metadata.status` to
   `"superseded by ADR-NNNN"`. Never edit an accepted decision — refactors **supersede**, they don't pile up.

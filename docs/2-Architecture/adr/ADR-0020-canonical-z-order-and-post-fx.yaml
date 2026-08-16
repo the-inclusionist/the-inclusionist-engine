@@ -68,6 +68,12 @@ decision-outcome:
     negative:
     - "One-time large mechanical rewiring with visual-regression risk the sandbox can't verify → Dev eyeballs post-build."
 
+  confirmation: |
+    Recorded retroactively on 2026-08-06, and PARTIAL — stated as such rather than ticked. `app/js/core/layers.ts`
+    exists and holds the named registry (`Z`, `POST_FX_ORDER`), so the decision is implemented. It is not yet ADOPTED:
+    `game.js` is the only importer, meaning the ~54 layer sites still place themselves the old way. Rewiring them is
+    issue !52. The decision stands; its rollout is unfinished, and this record should not read as though it were done.
+
 more-information: |
   Registry + filter-chain live in `app/js/core/layers.ts` (`Z`, `POST_FX_ORDER`). Relates to ADR-0011 (visual a11y),
   ADR-0010 (pillars: a11y-first), and the CB-safe UI work. Y-sorting within an actor band is NOT adopted (side-view

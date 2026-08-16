@@ -60,6 +60,11 @@ decision-outcome:
     negative:
     - "Still depends on HF/cdnjs being reachable for the FIRST fetch of a neural voice."
 
+  confirmation: |
+    Not applicable. This decision was superseded by ADR-0022 before anything confirmed it, so there is no verification
+    to report: the HuggingFace/OPFS model plan was replaced by the sherpa-onnx WASM runtime. The field is filled to say
+    that explicitly — an absent confirmation reads like an oversight, and this one is a decision that was overtaken.
+
 more-information: |
   Supersedes the 'lazy-CDN' note in tts.ts / docs/plano-tts-fase-f5.md. Fallback chain confirmed: Piper/Kokoro/Kitten =
   neural (download from HF, cached OPFS); eSpeak NG = embedded (no download); Web Speech = native API. eSpeak + Web Speech

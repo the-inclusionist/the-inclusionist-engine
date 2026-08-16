@@ -47,6 +47,12 @@ decision-outcome:
     negative:
     - "A migration in stages; each extraction is now born `.ts`."
 
+  confirmation: |
+    Recorded retroactively on 2026-08-06 — the field was left empty when the decision was made, so this states what is
+    verifiable NOW rather than what was checked then. The toolchain is in use and machine-checkable: `npm run build` is
+    `vite build` -> `dist/`, `npm run typecheck` is `tsc --noEmit`, and `tsconfig.json` has `strict: true`. 53 of the 54
+    modules under `app/js/` are `.ts`; the single remaining `.js` is the `game.js` monolith that Fase 2 is dissolving.
+
 more-information: |
   Was REGISTRO §5.11. Stage 0 = commit d675b9c. Supersedes the "bundler discarded" note (former §5.8). The mentions of
   "no build" in the old plano-* docs are historical, overridden by this decision + ../plano-typescript-vite.md.
