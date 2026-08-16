@@ -12,11 +12,20 @@ chain** is real (we pull npm deps). So adopt the light, high-value pieces now:
   move bought us this one.
 - **`npm audit`** — ✅ in `.gitlab-ci.yml` as a fast gate (`--omit=dev --audit-level=high`: fails on high+ in the
   deps that actually ship to the browser).
-- **Scheduled dependency updates** — ⛔ **gap opened by the move.** Dependabot was GitHub-only and GitLab's
-  Dependency Scanning is Ultimate-tier, so nothing proposes updates on a schedule any more; `npm audit` only
-  catches what is already known-vulnerable at build time. **Open decision** (candidates: Renovate as a scheduled
-  CI job, or a recurring manual `npm outdated` review). Until it is closed, this is a real hole, named here rather
-  than left to be discovered.
+- **Scheduled dependency updates** — ⏸ **deliberately absent until the MVP ships** (Dev's call, 2026-08-06).
+  Dependabot was GitHub-only and GitLab's Dependency Scanning is Ultimate-tier, so the move left no scheduled
+  updater. Rather than adopt Renovate mid-flight, we run without one until the MVP is done. What this costs, stated
+  so the choice stays informed rather than forgotten:
+  - **What still protects us:** `npm audit --omit=dev --audit-level=high` fails the pipeline on every push, so a
+    *known* high/critical vulnerability in a shipping dependency cannot land silently.
+  - **What we give up:** nothing proposes upgrades. Audit only reacts to advisories already published; a dependency
+    that is merely stale, or vulnerable-but-unadvised, goes unnoticed. And the gap compounds — the longer nothing
+    updates, the larger and riskier the eventual bump becomes.
+  - **Why it is acceptable now:** the app is client-only, has no server, no auth and handles no data at rest; the
+    attack surface is a static bundle (see `../2-Architecture/STRIDE.md`). That reasoning **expires with the
+    backend** — the moment there is a server or child data in transit, this cannot wait for a milestone.
+  - **Revisit trigger:** MVP shipped, or a backend appears, whichever comes first. Tracked as a GitLab issue so
+    "after the MVP" has somewhere to be checked instead of being remembered.
 
 Full application SAST scales up **with the backend** (server code, auth, data handling).
 
