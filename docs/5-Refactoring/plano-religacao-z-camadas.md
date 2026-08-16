@@ -1,4 +1,4 @@
-# Plano — religação das camadas ao `core/layers.ts` (ordem-z canônica) · issue #69 · ADR-0020
+# Plano — religação das camadas ao `core/layers.ts` (ordem-z canônica) · issue !52 · ADR-0020
 
 Converter TODAS as camadas do jogo à ordem-z nomeada (`Z` em `app/js/core/layers.ts`). Fim do
 `addChildAt(camera.getChildIndex(vizinha))` e dos hacks de "re-adicionar ao topo". **Mundo** (dentro da `camera`) passa a

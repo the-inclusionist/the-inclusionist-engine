@@ -2,7 +2,7 @@
 
 The automated quality gates that run in the pipeline (`.gitlab-ci.yml`). Split by "now" vs "with backend".
 
-## a11y — axe-core  ✅ adopt now (#10)
+## a11y — axe-core  ✅ adopt now (!4)
 
 **`scripts/axe-check.mjs`** runs axe-core against the **RUNNING app** (Playwright → the `vite preview` server) — the
 reliable method (live DOM **with CSS**; a DOM-injection unit test gives false contrast/visibility results). Matches the

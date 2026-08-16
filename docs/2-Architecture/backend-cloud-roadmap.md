@@ -1,4 +1,4 @@
-# Backend & Cloud — adoption roadmap (study, #7)
+# Backend & Cloud — adoption roadmap (study, !1)
 
 The staged plan for when/if a backend is needed. It parks the deferred infra artifacts (Terraform, Platform Playbook,
 OpenTelemetry, Canary/Argo) with a **home + a trigger**, and now with **concrete service choices, cost bands, and the
@@ -31,7 +31,7 @@ guards each crossing; the RN-01..04 rules are in `adr/ADR-0017`.
 
 \* Order of magnitude, `sa-east-1`, confirm current pricing. **Most projects never reach stage 3–4.**
 
-## Concrete answers (the #7 research)
+## Concrete answers (the !1 research)
 
 - **Nakama footprint / how many schools per node?** Dev = 1 vCPU / 1GB; production small = **2 vCPU / 2–4GB** VPS
   handles small games/prototypes; a single node serves **~700 req/s** (mean 28ms) and scales horizontally behind a load

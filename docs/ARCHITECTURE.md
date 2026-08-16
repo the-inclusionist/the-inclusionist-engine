@@ -84,7 +84,7 @@ docs/
 │   └── plano-modularizacao.md · plano-modularizacao-mapa.md   # the modularization ADR (arXiv:2409.15152) + extraction map
 ├── 6-DevOps-SRE/              # phase f
 │   ├── CI-QA.md               #   axe-core a11y (now, verifies NFR) · k6 load (backend, verifies SLO)
-│   ├── Security-Pipeline.md   #   SAST/Dependabot (now) · DAST (backend) · Pentest (scheduled)
+│   ├── Security-Pipeline.md   #   SAST + secret detection + npm audit (now) · DAST (backend) · Pentest (scheduled)
 │   └── SLO.md                 #   SLI/SLO/Error-Budget/SLA (backend, rigor by tier)
 ├── 7-Async-Systems/           # phase g — message contracts · idempotency · ordering · DLQ · chaos (all deferred)
 └── research/                  # cross-cutting: studies that back decisions  ← PESQUISA-*, ESTUDO-FONTES, tts-*.md
@@ -114,7 +114,7 @@ docs/
 | File / folder | Holds | Used by |
 |---|---|---|
 | `ARCHITECTURE.md` | This map (files, code layout, system context) | everyone — the entry point |
-| `ROADMAP.md` | Roadmap strategy + dependency-order rationale (phases are issues #22–#28 in the Project) | dev (next work), reviewer (scope) |
+| `ROADMAP.md` | Roadmap strategy + dependency-order rationale (phases are issues !15–!21 on the board) | dev (next work), reviewer (scope) |
 | `educational/` | Curriculum layer (pt-BR): Learning Objectives (BNCC + measurable), Curriculum Map, Pedagogical Model | curriculum author, reviewer |
 | `1-Discovery/User-Stories.md` | Engine/game feature stories (small, negotiable) | dev |
 | `1-Discovery/NFR.md` | The 10 pillars as testable non-functional requirements | dev (constraints), reviewer (audit) |
