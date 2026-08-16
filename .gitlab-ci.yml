@@ -1,0 +1,66 @@
+# CI — the quality gates. Mirrors what GitHub Actions used to run (ci.yml + a11y.yml + codeql.yml),
+# now that the project lives on GitLab. It only VERIFIES; how the site reaches Cloudflare is decided
+# per §deploy below. See docs/2-Architecture/CI-CD.md and docs/6-DevOps-SRE/CI-QA.md.
+
+stages: [test, quality, deploy]
+
+default:
+  image: node:24.14.0            # pinned to .node-version — same Node as local dev and the CF build
+  cache:                          # keyed by the lockfile: a dependency change invalidates it, nothing else does
+    key:
+      files: [package-lock.json]
+    paths: [.npm/]
+  before_script:
+    - npm ci --cache .npm --prefer-offline
+
+workflow:                         # run on main and on merge requests — not twice for the same commit
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# GitLab's own scanners replace the GitHub-only ones: SAST (Semgrep) stands in for CodeQL, and
+# Secret Detection has no GitHub Actions counterpart here — it is a gain. Both are Free-tier.
+# Dependabot has NO GitLab equivalent on Free; the `npm audit` gate below is what guards us for now,
+# and scheduled updates are an open decision (Renovate is the usual answer). See Security-Pipeline.md.
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+test:
+  stage: test
+  script:
+    # supply chain first — production deps are the ones that reach the browser
+    - npm audit --omit=dev --audit-level=high
+    - npm run typecheck
+    - npx playwright install --with-deps chromium
+    - npm test                    # Vitest: node + browser projects
+    - npm run build               # the build must not break
+  artifacts:
+    paths: [dist/]
+    expire_in: 1 week
+
+a11y:
+  stage: quality
+  # The a11y gate (#10): axe-core against the app RUNNING, not the source. Any WCAG A/AA violation in
+  # our app fails the pipeline (the VLibras widget is excluded). Pillar, not a nice-to-have.
+  script:
+    - npx playwright install --with-deps chromium
+    - npm run build
+    - npm run preview -- --port 4173 &
+    - for i in $(seq 1 30); do curl -sf http://localhost:4173/ >/dev/null && break; sleep 1; done
+    - AXE_URL=http://localhost:4173/ node scripts/axe-check.mjs
+
+# --- deploy -------------------------------------------------------------------------------------
+# Only needed if the Cloudflare Pages project is of the DIRECT-UPLOAD kind. If instead you connect
+# Cloudflare to this GitLab repo (git-connected), Cloudflare builds and deploys on its own and this
+# job must stay disabled — otherwise every push deploys twice.
+# Requires CI/CD variables CLOUDFLARE_API_TOKEN (masked, protected) and CLOUDFLARE_ACCOUNT_ID.
+pages_deploy:
+  stage: deploy
+  needs: [test]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CLOUDFLARE_API_TOKEN
+      when: manual              # manual on purpose: flip to `on_success` once the path is chosen
+      allow_failure: true
+  script:
+    - npx wrangler pages deploy dist/ --project-name=the-inclusionist --branch=main
