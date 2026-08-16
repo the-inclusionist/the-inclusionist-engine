@@ -85,8 +85,15 @@ decision-outcome:
     Done when: the GitLab pipeline runs green on a push to `main` (test + a11y + SAST + secret detection); the Fase 0-6
     issues and the open modularization issues exist on the GitLab board; `docs/` contains no reference to a GitHub
     address that is ours; and exactly one Cloudflare delivery path is live, verified by a single deployment per commit.
-    NOT done until the issue migration has actually run — at the time of writing, the docs point at the right home for
-    a backlog that has not arrived yet.
+
+    Backlog — DONE, 2026-08-06. All 52 open issues migrated (GitHub #7-#69 -> GitLab !1-!52), plus the 14 labels that
+    were actually in use, with their original colours and descriptions. Verified by diffing both sides: titles and
+    label sets identical on all 52. Every issue carries a footer naming its GitHub origin, because the numbers did not
+    survive. Cross-references were TRANSLATED, not left alone: a bare `#24` on GitLab silently auto-links to a real but
+    unrelated issue, which is worse than a dead link — 32 bodies were rewritten, and references to the 11 CLOSED
+    GitHub issues (not migrated) are marked `GH#N` so they cannot be mistaken for local ones.
+    Still open: the pipeline has not run yet (nothing pushed), the Cloudflare path is not chosen, and the GitHub repo
+    is intentionally still standing — its 11 closed issues are the only remaining record there.
 
 more-information: |
   Supersedes the hosting/registry half of ADR-0024 (GitHub Packages `@jrocha-io`); the rest of ADR-0024 (multi-repo,
