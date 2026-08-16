@@ -93,7 +93,8 @@ docs/
 > **Labs saem de `research/` e viram produto (ADR-0023/0024/0025).** Os experimentos de inclusão vivem num repo
 > **hub** próprio, **`inclusionist-lab`** (app **multi-página** Vite/TS; uma **subpágina por lab** — `/tts/` pronto,
 > Libras/visão planejados), consumindo **pacotes versionados** `@jrocha-io/*` (`tts`/`audio`/`logging`/`model-fetch`)
-> do repo `inclusionist-commons` publicado no **GitHub Packages**. Deploy próprio no Cloudflare (domínio `labs.`).
+> do repo `inclusionist-commons` publicado no **registry npm do GitLab** (ADR-0026). Deploy próprio no Cloudflare
+> (domínio `labs.`).
 > **`the-inclusionist` fica só com o jogo** (sem submódulo de lab). Os **estudos** (`research/tts-*.md`) permanecem
 > aqui; o **código** dos labs vive em `inclusionist-lab`. Plano: `5-Refactoring/plano-tts-lab-modularizacao.md`.
 

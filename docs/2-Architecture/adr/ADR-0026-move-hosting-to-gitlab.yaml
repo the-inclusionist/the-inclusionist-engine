@@ -1,0 +1,96 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-08-06
+  decision-makers: [Dev, AI]
+  consulted: []
+  informed: []
+
+title: All project hosting moves to GitLab — code, backlog, CI and the npm registry (supersedes the GitHub half of ADR-0024)
+
+context-and-problem-statement: |
+  The repositories (`the-inclusionist`, `inclusionist-lab`, `inclusionist-commons`) were moved to **private GitLab**
+  projects under `jrocha-dev`, and the `@jrocha-io/*` packages were already republished to the GitLab project registry.
+  The rest of the setup did not follow: CI was GitHub Actions, the executable backlog (52 issues, the Fase 0-6 roadmap)
+  stayed on `jrocha-io/the-inclusionist`, and every doc still sent readers to GitHub. The result was a project split
+  across two hosts where **the code and the plan for the code lived in different places** — and where deleting the
+  now-unused GitHub repo, which had been considered, would have destroyed the only backlog that exists.
+  ADR-0024 chose GitHub Packages as the registry "because the org already lives on GitHub". That premise is now false.
+
+decision-drivers:
+- One home: code, backlog, CI and packages in the same place; a plan that lives apart from its code drifts from it.
+- The premise of ADR-0024's registry choice ("the org already lives on GitHub") no longer holds — the org moved.
+- Private by default suits a project handling children's data surfaces long before it is ready to be read publicly.
+- Avoid a silent trap: an unused host that still owns the backlog is one cleanup away from losing the roadmap.
+
+considered-options:
+- &stay "Move the code back to GitHub and keep everything there (revert the move)"
+- &gitlab "Move everything to GitLab: code, backlog, CI, registry"
+- &split "Keep code on GitLab and the backlog/board on GitHub"
+
+pros-and-cons-of-the-options:
+  stay:
+    pros:
+    - "Keeps CodeQL, Dependabot and the existing 52 issues with their numbering, at zero migration cost."
+    cons:
+    - "Undoes a move already made across three repos and the package registry; the private-by-default goal is lost."
+  gitlab:
+    pros:
+    - &home "One host for code, issues, board, CI and the npm registry; nothing to keep in sync across providers."
+    - &secret "Secret detection arrives — there was no equivalent in the previous pipeline."
+    - &registry "The registry stops being a second credential surface: same host, same token as the code."
+    cons:
+    - &scanners "CodeQL is lost; GitLab Free offers Semgrep-based SAST, which is shallower on JS/TS."
+    - &deps "Dependabot has no Free-tier equivalent (Dependency Scanning is Ultimate), so scheduled dependency
+      updates stop until a replacement is chosen."
+    - &migrate "The 52 issues must be migrated by hand or by API, and their numbers will not survive."
+  split:
+    cons:
+    - "The status quo that prompted this ADR: the docs describe one host, the work happens on another, and the
+      backlog sits on a repo nobody deploys from — the failure mode is losing it by cleaning up."
+
+decision-outcome:
+  chosen-option:
+    link: *gitlab
+    justification: |
+      Everything moves to **gitlab.com/jrocha-dev**:
+        · **Code** — `the-inclusionist` (game), `inclusionist-lab` (labs hub), `inclusionist-commons` (packages), private.
+        · **Backlog** — GitLab Issues + issue board; the roadmap phases become the **Fase 0-6** issues. GitHub numbering
+          (#22-#28 and the modularization issues) does NOT survive, so docs name phases instead of numbers.
+        · **CI** — `.gitlab-ci.yml` replaces `.github/workflows/*`: same Node and same order (npm audit -> typecheck ->
+          Playwright chromium -> Vitest -> build), plus the a11y (axe) gate, plus GitLab SAST and Secret Detection.
+        · **Registry** — the `@jrocha-io/*` packages publish to the GitLab project registry (project 85034729). The
+          **scope name is kept**: it is an npm identifier, not an address, and renaming it would churn every consumer
+          for nothing.
+      **Cloudflare Pages** delivery becomes an explicit either/or, recorded because getting it wrong deploys twice:
+      either CF is git-connected to the GitLab repo, or `.gitlab-ci.yml`'s `pages_deploy` job direct-uploads with
+      `wrangler`. Never both.
+  consequences:
+    positive:
+    - *home
+    - *secret
+    - *registry
+    neutral:
+    - "The pipeline badge renders only for project members while the repos are private."
+    - "Third-party GitHub links (Clarity, sherpa-onnx, Piper, eSpeak NG, release-it, yadr) are untouched — they are
+      other people's projects, not our addresses."
+    - "The GitHub repos are NOT deleted by this ADR. `jrocha-io/the-inclusionist` must survive until its issues are
+      migrated; deleting it before that destroys the backlog."
+    negative:
+    - *scanners
+    - *deps
+    - *migrate
+
+  confirmation: |
+    Done when: the GitLab pipeline runs green on a push to `main` (test + a11y + SAST + secret detection); the Fase 0-6
+    issues and the open modularization issues exist on the GitLab board; `docs/` contains no reference to a GitHub
+    address that is ours; and exactly one Cloudflare delivery path is live, verified by a single deployment per commit.
+    NOT done until the issue migration has actually run — at the time of writing, the docs point at the right home for
+    a backlog that has not arrived yet.
+
+more-information: |
+  Supersedes the hosting/registry half of ADR-0024 (GitHub Packages `@jrocha-io`); the rest of ADR-0024 (multi-repo,
+  versioned shared packages, no runtime CDN, scoped COOP/COEP) and ADR-0025's hub topology stand unchanged, with their
+  GitHub addresses read as GitLab ones. Open decision left deliberately unclosed: the Dependabot replacement (Renovate
+  as a scheduled CI job vs a recurring manual `npm outdated` review) — tracked in `../../6-DevOps-SRE/Security-Pipeline.md`.
+  Repos: gitlab.com/jrocha-dev/{the-inclusionist, inclusionist-lab, inclusionist-commons}.

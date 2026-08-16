@@ -1,6 +1,6 @@
 ---
 metadata:
-  status: "accepted"
+  status: "accepted (host addresses superseded by ADR-0026 — the three repos live on gitlab.com/jrocha-dev; the hub topology itself stands)"
   date: 2026-07-07
   decision-makers: [Dev, AI]
   consulted: []
