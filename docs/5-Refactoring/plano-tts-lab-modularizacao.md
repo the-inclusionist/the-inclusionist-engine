@@ -59,7 +59,7 @@ dependência (semver), não por reescrita.
 
 | # | Entregável | Prova | Roda |
 |---|---|---|---|
-| **0** | Stand-up dos repos: `inclusionist-commons` (workspace de pacotes) + `tts-lab` (Vite+TS scaffold, app vazio que monta `main.ts`); GitHub Packages `@jrocha-io` configurado; `tts-lab` como submódulo em `labs/tts-lab/` | `npm run build` do `tts-lab` emite página; `npm publish --dry-run` de um pacote-stub OK | José (git/registry/CF) com meus arquivos |
+| **0** | Stand-up dos repos: `inclusionist-commons` (workspace de pacotes) + `tts-lab` (Vite+TS scaffold, app vazio que monta `main.ts`); registry npm do GitLab com o escopo `@jrocha-io` configurado (era GitHub Packages à época — ADR-0026); `tts-lab` como submódulo em `labs/tts-lab/` | `npm run build` do `tts-lab` emite página; `npm publish --dry-run` de um pacote-stub OK | José (git/registry/CF) com meus arquivos |
 | **1** | `@jrocha-io/tts` **domínio puro**: tipos + catálogos (MODELS/KOKORO/KVOICES) + RTF/ganho/parse, **tipados** + testes **node** | `vitest run` (node) verde | IA escreve · José roda |
 | **2** | `@jrocha-io/audio`, `@jrocha-io/logging`, `@jrocha-io/model-fetch` (ports + impls) + testes **browser** | `vitest run` (browser) verde | IA · José |
 | **3** | Port `TtsEngine` + **WebSpeechEngine** + **MeSpeakEngine** (eSpeak sem CDN — npm/vendored); **Seção 1** do lab ligada por DI | José: seção 1 fala pt/en/es nos 2 motores | IA · José |
