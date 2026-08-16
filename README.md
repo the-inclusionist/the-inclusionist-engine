@@ -1,6 +1,6 @@
 # The Inclusionist
 
-[![CI](https://github.com/jrocha-io/the-inclusionist/actions/workflows/ci.yml/badge.svg)](https://github.com/jrocha-io/the-inclusionist/actions/workflows/ci.yml)
+[![pipeline](https://gitlab.com/jrocha-dev/the-inclusionist/badges/main/pipeline.svg)](https://gitlab.com/jrocha-dev/the-inclusionist/-/pipelines)
 
 Jogo educativo de plataforma **acessível-primeiro**, em PixiJS, feito para escolas públicas
 brasileiras. Alfabetização (base psicogenética de Ferreiro & Teberosky) e matemática dentro de
@@ -43,8 +43,9 @@ npm test           # testes Vitest (node + browser via Playwright); npm run test
 
 ## CI/CD
 
-- **CI** — GitHub Actions (`.github/workflows/ci.yml`): a cada push/PR roda os testes Vitest
-  (node + browser) + o build check. Sinal 🟢/🔴 no commit/PR; não deploya.
+- **CI** — GitLab CI (`.gitlab-ci.yml`): a cada push na `main` / merge request roda `npm audit`, typecheck,
+  os testes Vitest (node + browser), o build check, o gate de a11y (axe) e os scanners SAST + secret
+  detection. Sinal 🟢/🔴 no commit/MR; não deploya.
 - **CD** — Cloudflare Pages (plano gratuito), conectado a este repo. A cada push na `main`:
 
   | Configuração | Valor |

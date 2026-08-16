@@ -8,7 +8,7 @@ Artifacts:
   · **Pentest** (⏸ scheduled, at the child-data surface).
 - **[SLO.md](SLO.md)** — **SLI/SLO/Error-Budget/SLA** (⏸ backend, rigor by tier).
 
-**Live today:** only CI/CD itself — typecheck + Vitest + build on GitHub Actions, Cloudflare Pages deploys `dist/`
+**Live today:** only CI/CD itself — typecheck + Vitest + build on GitLab CI, Cloudflare Pages deploys `dist/`
 (detail in [`../2-Architecture/CI-CD.md`](../2-Architecture/CI-CD.md)).
 
 **Deferred to the backend stages** (see `../2-Architecture/backend-cloud-roadmap.md`): OpenTelemetry (stage 3),

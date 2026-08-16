@@ -5,12 +5,18 @@
 For a client-only TS app the classic SAST payoff is small (no server, no secret handling yet), but the **supply
 chain** is real (we pull npm deps). So adopt the light, high-value pieces now:
 
-- **Dependabot** — `.github/dependabot.yml` ✅ (npm weekly + github-actions weekly; dev-tooling grouped). **Dev must
-  enable** Dependabot alerts/security-updates in the repo *Settings → Security*.
-- **CodeQL** — `.github/workflows/codeql.yml` ✅ (javascript-typescript, security-and-quality, push/PR + weekly).
-  **Dev must enable** Code scanning in *Settings → Security* (or it just runs as an Action and uploads SARIF).
-- **`npm audit`** — ✅ in `ci.yml` as a fast gate (`--omit=dev --audit-level=high`: fails on high+ in the deps that
-  actually ship to the browser).
+- **SAST** — `Security/SAST.gitlab-ci.yml` ✅ (Semgrep-based, Free tier). Replaced **CodeQL** when the project left
+  GitHub. Be honest about the trade: CodeQL's JS/TS analysis was deeper. This is what Free-tier GitLab offers, and
+  for a client-only app with no server and no secret handling the delta is small — but it is a delta, not a wash.
+- **Secret detection** — `Security/Secret-Detection.gitlab-ci.yml` ✅. New: there was no equivalent before, so the
+  move bought us this one.
+- **`npm audit`** — ✅ in `.gitlab-ci.yml` as a fast gate (`--omit=dev --audit-level=high`: fails on high+ in the
+  deps that actually ship to the browser).
+- **Scheduled dependency updates** — ⛔ **gap opened by the move.** Dependabot was GitHub-only and GitLab's
+  Dependency Scanning is Ultimate-tier, so nothing proposes updates on a schedule any more; `npm audit` only
+  catches what is already known-vulnerable at build time. **Open decision** (candidates: Renovate as a scheduled
+  CI job, or a recurring manual `npm outdated` review). Until it is closed, this is a real hole, named here rather
+  than left to be discovered.
 
 Full application SAST scales up **with the backend** (server code, auth, data handling).
 

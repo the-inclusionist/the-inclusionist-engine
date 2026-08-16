@@ -65,15 +65,16 @@ Objetivo: provar que o toolchain roda com o mínimo de mudança (PIXI segue glob
   (ex-`game.js`) encolhe até virar `main.ts` (composition root).
 
 ## Deploy (Cloudflare Pages) — ação do José
-**JÁ EXISTE** um projeto Pages `the-inclusionist` conectado ao GitHub (deploy automático), configurado na era
-sem-build (servia `app/` cru). Com o Vite, atualizar as **Build settings** desse projeto (na UI atual do
-dashboard — não cravar caminhos de menu, que mudam):
+O projeto Pages `the-inclusionist` foi criado na era sem-build (servia `app/` cru) e **estava conectado ao
+GitHub**. Com a mudança para o GitLab a origem precisa ser refeita — um projeto Pages não troca de repositório
+no lugar. **Build settings** (na UI atual do dashboard — não cravar caminhos de menu, que mudam):
 - **Root directory:** raiz do repo (onde está o `package.json`) — NÃO `app/`.
 - **Build command:** `npm run build` (ou `npm run test:node && npm run build` p/ um gate de testes).
 - **Build output directory:** `dist`.
-O `_headers` sai no `dist/` (via `public/`). Node já existe no build do CF. GitHub Actions NÃO é necessário
-(o deploy nativo do CF já faz) — foi removido p/ não duplicar; se um dia quisermos CI com os testes de browser
-no GitHub, adicionamos um workflow SÓ de testes (sem deploy).
+
+O `_headers` sai no `dist/` (via `public/`). Node já existe no build do CF. **Um único caminho de entrega pode
+estar ligado por vez** — ou o CF conectado ao GitLab (ele mesmo builda), ou o job `pages_deploy` do
+`.gitlab-ci.yml` (upload direto por `wrangler`). Os dois juntos deployam duas vezes o mesmo commit.
 
 ## Riscos / notas
 - **Config de Vite/PWA costuma precisar de 1–2 iterações na máquina real** — mando a config, você roda, me cola o

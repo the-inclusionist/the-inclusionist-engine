@@ -76,8 +76,7 @@ npm run test:browser            # só o render (Chromium)
 - **Cada próxima extração** adiciona seus testes no arquivo do project certo, cobrindo Right+B+I+C+E.
 - **Física** (quando extraída de `game.js`): alvo prioritário de testes node (pulo, gravidade, água, trampolim,
   colisão) — determinística, alto valor. É o maior ganho da suíte.
-- **CI (futuro):** GitHub Actions rodando `npx vitest run` no push — trava regressões. Fica para depois de a
-  suíte amadurecer.
+- **CI:** ✅ o GitLab CI (`.gitlab-ci.yml`) roda a suíte no push da `main` e em merge request — trava regressões.
 
 ## 6. (Aposentado) Harness de navegador
 O `app/tests/` (index.html + suite.js) foi REMOVIDO no Estágio 0b da migração TS+Vite (2026-07-04). Motivo: pós-
