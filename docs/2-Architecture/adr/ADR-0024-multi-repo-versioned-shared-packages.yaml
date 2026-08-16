@@ -18,13 +18,14 @@ context-and-problem-statement: |
   game. This ADR fixes the repository + packaging + deploy shape that this implies.
 
 decision-drivers:
-- Reuse across many projects (Dev's platform goal): "o objetivo da modularização é criar bibliotecas em comum" for
-  present + future projects → real package boundaries with semver, not copy-paste or path hacks.
-- Deploy isolation: the lab's heavy deps and its COOP/COEP headers must not touch the game's build or deploy.
-- Supply-chain + offline + a11y determinism: no runtime CDN imports — every dependency is an npm package Vite bundles,
-  so builds are reproducible and the offline pillar holds.
-- Reproducible superproject: The-Inclusionist pins TTS-Lab at a known commit (submodule SHA) for reproducible builds.
-- Registry with least new infra: the org already lives on GitHub → GitHub Packages (npm) needs no extra service.
+- "Reuse across many projects (Dev's platform goal): \"o objetivo da modularização é criar bibliotecas em comum\" for
+  present + future projects → real package boundaries with semver, not copy-paste or path hacks."
+- "Deploy isolation: the lab's heavy deps and its COOP/COEP headers must not touch the game's build or deploy."
+- "Supply-chain + offline + a11y determinism: no runtime CDN imports — every dependency is an npm package Vite
+  bundles, so builds are reproducible and the offline pillar holds."
+- "Reproducible superproject: The-Inclusionist pins TTS-Lab at a known commit (submodule SHA) for reproducible
+  builds."
+- "Registry with least new infra: the org already lives on GitHub → GitHub Packages (npm) needs no extra service."
 
 considered-options:
 - &workspace "Monorepo with workspaces (one repo, packages/*, path deps)"

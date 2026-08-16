@@ -21,16 +21,16 @@ context-and-problem-statement: |
   decoupling like the rest of the project? Decision needed on the labs' engineering status.
 
 decision-drivers:
-- Permanence + public exposure: the labs are a lasting, internet-accessible surface, not a scratch file — so they
-  inherit the project's durability, a11y and maintainability bar, not the spike exemption.
-- Showcase integrity: a public artifact OF this project must EXEMPLIFY its standards (TS/Vite/DI/tested), not contradict
-  them.
-- Graduation de-risking: if the lab's engines are already `TtsEngine` ports + adapters (sherpa / Web Speech / eSpeak /
-  Kokoro-WebGPU), the winning one moves into the game's `tts.ts` as a proven, tested unit instead of a rewrite.
-- Anti-over-engineering tension (Dev, repeatedly): DI/DAO/adapters on a benchmark harness risked being ceremony. The
-  Dev weighed this and chose full standard anyway — recorded here so the choice is not silently re-litigated.
-- Research-first + small rounds: the project migrates in tested increments (arXiv:2409.15152 discipline), so this is a
-  STAGED refactor, never a big-bang rewrite; the working monolith stays until the last stage.
+- "Permanence + public exposure: the labs are a lasting, internet-accessible surface, not a scratch file — so they
+  inherit the project's durability, a11y and maintainability bar, not the spike exemption."
+- "Showcase integrity: a public artifact OF this project must EXEMPLIFY its standards (TS/Vite/DI/tested), not
+  contradict them."
+- "Graduation de-risking: if the lab's engines are already `TtsEngine` ports + adapters (sherpa / Web Speech / eSpeak
+  / Kokoro-WebGPU), the winning one moves into the game's `tts.ts` as a proven, tested unit instead of a rewrite."
+- "Anti-over-engineering tension (Dev, repeatedly): DI/DAO/adapters on a benchmark harness risked being ceremony. The
+  Dev weighed this and chose full standard anyway — recorded here so the choice is not silently re-litigated."
+- "Research-first + small rounds: the project migrates in tested increments (arXiv:2409.15152 discipline), so this is
+  a STAGED refactor, never a big-bang rewrite; the working monolith stays until the last stage."
 
 considered-options:
 - &spike "Keep labs as throwaway spikes in docs/research (vanilla monolith); only the winning engine graduates to app/"

@@ -31,18 +31,20 @@ pros-and-cons-of-the-options:
       (atoms -> molecules -> organisms -> templates -> pages), developed in Storybook (CSF) with Chromatic
       visual regression.
     pros:
-    - &aria-ok "ARIA relationships (aria-labelledby / aria-activedescendant / aria-controls) work — they stay in one DOM tree."
+    - "&aria-ok \"ARIA relationships (aria-labelledby / aria-activedescendant / aria-controls) work — they stay in
+      one DOM tree.\""
     - &agnostic "Framework-agnostic, standards-based, lightweight; coexists with the canvas app."
     - &organized "Atomic Design gives a real structure for a component-rich, repetitive activity UI."
     cons:
-    - &no-encap "No built-in style/DOM encapsulation — must scope CSS by convention (BEM / layers / naming)."
+    - "&no-encap \"No built-in style/DOM encapsulation — must scope CSS by convention (BEM / layers / naming).\""
   shadow:
     description: |
       Custom Elements with a shadow root for style/markup encapsulation.
     pros:
     - "Style and DOM encapsulation out of the box."
     cons:
-    - &aria-break "Shadow DOM BREAKS cross-boundary ARIA references (aria-labelledby/activedescendant/controls do not cross the shadow boundary) -> screen-reader footgun. Directly conflicts with pillar #1."
+    - "&aria-break \"Shadow DOM BREAKS cross-boundary ARIA references (aria-labelledby/activedescendant/controls do
+      not cross the shadow boundary) -> screen-reader footgun. Directly conflicts with pillar #1.\""
   spa:
     description: |
       Adopt React/Vue and use its component/state system for the activities.
@@ -61,10 +63,10 @@ decision-outcome:
       second paradigm next to the canvas engine.
   consequences:
     positive:
-    - *aria-ok
+    - "*aria-ok"
     - *organized
     negative:
-    - *no-encap   # mitigate with scoped-CSS conventions (BEM / @layer)
+    - "*no-encap   # mitigate with scoped-CSS conventions (BEM / @layer)"
     neutral:
     - "Tooling: Storybook (CSF) + Chromatic for these DOM components only; the canvas game keeps the preview screenshot harness."
   confirmation: |

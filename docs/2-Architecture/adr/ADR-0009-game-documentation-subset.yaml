@@ -19,7 +19,7 @@ decision-drivers:
 - Educational-first → the game must connect to learning; the LM-GM map is the bridge to the curriculum layer.
 - No dark patterns / no monetization (ADR-0006) → reject economy/live-ops/matchmaking.
 - No real-time internet netcode in MVP (ADR-0008) → defer the whole networking stack to the internet-MP tier.
-- Reuse: much of this already exists as our REGISTRO decisions + visual/engine plans.
+- "Reuse: much of this already exists as our REGISTRO decisions + visual/engine plans."
 
 considered-options:
 - &tiered "Adopt the light single-player + serious-game subset; defer networking to the internet tier; reject MMO/monetization"

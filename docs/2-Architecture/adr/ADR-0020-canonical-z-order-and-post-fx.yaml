@@ -16,9 +16,9 @@ context-and-problem-statement: |
   and the a11y filters (high-contrast, colour-blind correction, disability simulation) sit, and do they cover the menus?
 
 decision-drivers:
-- Decouple: a layer must place itself by a NAMED z, never by referencing its neighbours.
-- a11y-first (ADR-0010/0011): the accessibility filters must cover EVERYTHING (game + HUD + menus), and must not be
-  degraded by decorative effects.
+- "Decouple: a layer must place itself by a NAMED z, never by referencing its neighbours."
+- "a11y-first (ADR-0010/0011): the accessibility filters must cover EVERYTHING (game + HUD + menus), and must not be
+  degraded by decorative effects."
 - Multiplayer runs on separate viewports via per-screen render-textures — the world stack is per-viewport, the UI is global.
 - The frame is half PIXI canvas (world) and half DOM/CSS (menus/HUD/captions) — one registry must span both.
 - Inserting a future layer must not force renumbering everything.

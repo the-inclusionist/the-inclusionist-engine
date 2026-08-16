@@ -16,7 +16,8 @@ context-and-problem-statement: |
 
 decision-drivers:
 - Clean Vite build (no un-analyzable import).
-- Offline (pillar) — but note: the model is fetched ONCE and cached in OPFS; Web Speech + eSpeak are the immediate fallback.
+- "Offline (pillar) — but note: the model is fetched ONCE and cached in OPFS; Web Speech + eSpeak are the immediate
+  fallback."
 - Cost/complexity of self-hosting vs the actual benefit.
 - Reading the lib's real API before deciding (research-first).
 

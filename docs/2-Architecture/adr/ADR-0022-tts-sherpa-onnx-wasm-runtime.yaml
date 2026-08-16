@@ -17,14 +17,14 @@ context-and-problem-statement: |
   runtime that runs ANY VITS/Piper `.onnx` in the browser, from any (CORS-enabled) host, fully offline after first fetch.
 
 decision-drivers:
-- Voice freedom: run high-quality pt-BR voices (miro-high) + faber/jeff-medium, not just what one lib's map allows.
-- Host freedom: load models from any CORS URL — decouples us from a lib's hardcoded host.
-- Offline (pillar): WASM + model cached (OPFS/Cache API) → offline after the first fetch; schools have no IT/LAN.
-- Stability/maintenance: sherpa-onnx (k2-fsa) is actively maintained across 12 languages/platforms; Mintplex is not.
-- **Tiered quality by hardware** (Dev): the baseline must run on the weakest school machine in use, BUT better hardware
-  must be allowed to opt into better voices (e.g. Kokoro multi-lang, a ~340 MB model) — progressive enhancement, not
-  lowest-common-denominator-only.
-- Research-first: validated model availability + the lib API before deciding.
+- "Voice freedom: run high-quality pt-BR voices (miro-high) + faber/jeff-medium, not just what one lib's map allows."
+- "Host freedom: load models from any CORS URL — decouples us from a lib's hardcoded host."
+- "Offline (pillar): WASM + model cached (OPFS/Cache API) → offline after the first fetch; schools have no IT/LAN."
+- "Stability/maintenance: sherpa-onnx (k2-fsa) is actively maintained across 12 languages/platforms; Mintplex is not."
+- "**Tiered quality by hardware** (Dev): the baseline must run on the weakest school machine in use, BUT better
+  hardware must be allowed to opt into better voices (e.g. Kokoro multi-lang, a ~340 MB model) — progressive
+  enhancement, not lowest-common-denominator-only."
+- "Research-first: validated model availability + the lib API before deciding."
 
 considered-options:
 - &mintplex "Stay on @mintplex-labs/piper-tts-web"

@@ -19,20 +19,22 @@ decision-outcome:
 
 more-information: |
   Decisions (was REGISTRO §5.1–5.6):
-  - **City entirely procedural** (0 generations): rain routine (30s clear → drizzle5/rain5/drizzle5/clear45), ambient
-    life (pigeons take off cosmetically, cats/dogs/adults, pool of 8 near the camera), cars on the FRONT layer +
-    traffic light (green8/yellow2/red6) governing them, zone decor (sidewalk/posts/signs/marquees/water-tank/windows/
-    abandoned under darkLayer). reduce-motion (rm.decor) disables rain+life+cars (WCAG 2.3.1, no flashes). [7729dc4→39c2aa1]
-  - **City model** (spatial correction): building interior; lower part = FAÇADE; the STREET (3× cars, 2× traffic light,
-    STOP signs) is IN FRONT of it at the world base; trees/sidewalk/posts/marquees only in the low band; sky with
-    drifting clouds + birds; pigeons weight 3×. [commit 0019350] · Cars 78×36 native always front; HC dims the front
-    (ambient); adults = 16×32 silhouettes fading in on the façade's open columns. [f1ee6ed]
-  - **v3 themes REDONE as a COPY of the v3.1.100 formulas** (a procedural reinvention was REJECTED — "mixed everything
-    up"): exact THEMES (sky/cloud/hills/decor), Clarity blocks WITHOUT recolour, rain only in the City, screen decor
-    counter-positioned (stars/clouds/birds/mist) + culled world decor (grass/worms/fireflies/butterflies). **Lesson:
-    porting = copy the source, don't reinterpret.** [cf105eb→87d8ef6] · Port gotcha: `(seed>>17)%len` goes negative
-    (signed shift) → PIXI "color NaN"; use `>>>` for array indices. [game.js drawV3Grass]
-  - **Tiles = v3 drawTile** (dotted stone, lined wall, hollow ladder, magenta trampoline, TRANSLUCENT water; water FORE
-    with waves/corals/algae/fish over the player; lava with little strokes). [commit f51f689]
-  - **Start menu = v3 screen** (gradient sky + moving clouds + grass) with Lúdico · Alfabetização · Matemática; alf =
-    3 wins→1 coin no penalty; math = 1 correct; changing game = all leave → menu. [commit 0078c9d]
+  - "**City entirely procedural** (0 generations): rain routine (30s clear → drizzle5/rain5/drizzle5/clear45),
+    ambient life (pigeons take off cosmetically, cats/dogs/adults, pool of 8 near the camera), cars on the FRONT
+    layer + traffic light (green8/yellow2/red6) governing them, zone decor
+    (sidewalk/posts/signs/marquees/water-tank/windows/ abandoned under darkLayer). reduce-motion (rm.decor) disables
+    rain+life+cars (WCAG 2.3.1, no flashes). [7729dc4→39c2aa1]"
+  - "**City model** (spatial correction): building interior; lower part = FAÇADE; the STREET (3× cars, 2× traffic
+    light, STOP signs) is IN FRONT of it at the world base; trees/sidewalk/posts/marquees only in the low band; sky
+    with drifting clouds + birds; pigeons weight 3×. [commit 0019350] · Cars 78×36 native always front; HC dims the
+    front (ambient); adults = 16×32 silhouettes fading in on the façade's open columns. [f1ee6ed]"
+  - "**v3 themes REDONE as a COPY of the v3.1.100 formulas** (a procedural reinvention was REJECTED — \"mixed
+    everything up\"): exact THEMES (sky/cloud/hills/decor), Clarity blocks WITHOUT recolour, rain only in the City,
+    screen decor counter-positioned (stars/clouds/birds/mist) + culled world decor
+    (grass/worms/fireflies/butterflies). **Lesson: porting = copy the source, don't reinterpret.** [cf105eb→87d8ef6]
+    · Port gotcha: `(seed>>17)%len` goes negative (signed shift) → PIXI \"color NaN\"; use `>>>` for array indices.
+    [game.js drawV3Grass]"
+  - "**Tiles = v3 drawTile** (dotted stone, lined wall, hollow ladder, magenta trampoline, TRANSLUCENT water; water
+    FORE with waves/corals/algae/fish over the player; lava with little strokes). [commit f51f689]"
+  - "**Start menu = v3 screen** (gradient sky + moving clouds + grass) with Lúdico · Alfabetização · Matemática; alf
+    = 3 wins→1 coin no penalty; math = 1 correct; changing game = all leave → menu. [commit 0078c9d]"

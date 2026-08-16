@@ -17,7 +17,7 @@ context-and-problem-statement: |
 decision-drivers:
 - No login / no PII (privacy + LGPD/COPPA pillars) — nothing to authenticate.
 - Pre-readers + EN 301 549 / EAA — navigation must not depend on text.
-- Teacher-directed: the adult prepares the lesson; the child just plays.
+- "Teacher-directed: the adult prepares the lesson; the child just plays."
 - Government hardware reached via a shortcut; must be dead-simple in class.
 
 considered-options:

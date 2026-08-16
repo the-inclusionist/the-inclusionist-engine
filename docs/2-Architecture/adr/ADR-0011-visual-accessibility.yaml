@@ -19,29 +19,31 @@ decision-outcome:
 
 more-information: |
   Decisions (was REGISTRO §1):
-  - **High-contrast = Direct Rendering** (outline + colour-blocking + receding background), NOT photographic filters —
-    CLAHE/VCEA/linear-quadratic posterize pixel art, don't separate roles, cost too much on target hardware; direct
-    rendering is the industry practice (PlayStation 1st-party, Saints Row 2022). [PESQUISA-ALTO-CONTRASTE]
-  - **3 contrast levels: 3:1 (default) / 4.5:1 / 7:1** — 3:1 chosen ("7:1 turns everything yellow/black/white,
-    unpleasant"); anchored on WCAG 1.4.11 (3:1 non-text) and 1.4.6 (7:1 AAA text). [commit e1e1f56]
-  - **Two configurable outlines** (None/Thin/Thick): foreground = character/items (WCAG 2.4.7); background = only the
-    outer perimeter of platform/water/lava (delimit navigable vs non-navigable, not every block). [commit 87aed33]
-  - **Colour-blocking by role**: hazard=orange, ladder/trampoline=cyan, water=blue, locked-gate=magenta,
-    structure=gray — role→distinct hue for first-glance function id (GAG/industry). [d235004/7c7a425/4677e85]
-  - **Colour-blind correction (fix-\*)** = canonical matrices C = I + M_err·(I−Sim); Sim = Machado 2009 sev. 1.0;
-    M_err = Fidaner et al.; **simulation (sim-\*)** also Machado 2009 (old "colorjack" were unsourced).
-    [PESQUISA-DALTONIZACAO]
-  - **Brettel 1997 exact tritan deferred** (piecewise, not expressible in feColorMatrix) → Machado tritan as a linear
-    approximation. Filters applied in **sRGB on both paths** (solo SVG ≡ MP PIXI) — solo/MP consistency > colorimetric
-    exactness.
-  - **🚥 button** with a diagnostic bicolour background per deficiency; **protan×deutan don't separate by colour**
-    (same red-green axis) — only tritan isolates cleanly (physical limit; best protan pair leaves deutan ~60% contrast).
-    [commit cf1b920]
-  - **TEA mode (🧩)** with 3 states: off=blue, calm=WHITE background, silent=yellow (signal on the background, not the
-    border — the border belongs to focus). [commit 89e51e2]
-  - **Low-vision = 5 simulations** (myopia/astigmatism, cataract, glaucoma, macular degeneration, diabetic retinopathy)
-    — empathy ≠ help ("don't confuse blind MODE with blind-EMPATHY"). [plano-acessibilidade]
-  - **CB-safe palette applies ONLY to non-scenery** (HUD/menus/items/game-elements) — for the colour-blind, trees keep
-    tree colours, grass keeps grass colours; but HUD/menus/items may switch to a CB-safe palette (Okabe-Ito). Player option.
-  - **UI minimum font = 16px at 640×360, scales WITH the canvas** (≥ 16, never ≤); HUD in high-def DOM, not rasterized
-    on the canvas. [commit 8e95257] · **Noto Color Emoji** in the font stack (cross-OS consistency).
+  - "**High-contrast = Direct Rendering** (outline + colour-blocking + receding background), NOT photographic filters
+    — CLAHE/VCEA/linear-quadratic posterize pixel art, don't separate roles, cost too much on target hardware; direct
+    rendering is the industry practice (PlayStation 1st-party, Saints Row 2022). [PESQUISA-ALTO-CONTRASTE]"
+  - "**3 contrast levels: 3:1 (default) / 4.5:1 / 7:1** — 3:1 chosen (\"7:1 turns everything yellow/black/white,
+    unpleasant\"); anchored on WCAG 1.4.11 (3:1 non-text) and 1.4.6 (7:1 AAA text). [commit e1e1f56]"
+  - "**Two configurable outlines** (None/Thin/Thick): foreground = character/items (WCAG 2.4.7); background = only
+    the outer perimeter of platform/water/lava (delimit navigable vs non-navigable, not every block). [commit
+    87aed33]"
+  - "**Colour-blocking by role**: hazard=orange, ladder/trampoline=cyan, water=blue, locked-gate=magenta,
+    structure=gray — role→distinct hue for first-glance function id (GAG/industry). [d235004/7c7a425/4677e85]"
+  - "**Colour-blind correction (fix-\\*)** = canonical matrices C = I + M_err·(I−Sim); Sim = Machado 2009 sev. 1.0;
+    M_err = Fidaner et al.; **simulation (sim-\\*)** also Machado 2009 (old \"colorjack\" were unsourced).
+    [PESQUISA-DALTONIZACAO]"
+  - "**Brettel 1997 exact tritan deferred** (piecewise, not expressible in feColorMatrix) → Machado tritan as a
+    linear approximation. Filters applied in **sRGB on both paths** (solo SVG ≡ MP PIXI) — solo/MP consistency >
+    colorimetric exactness."
+  - "**🚥 button** with a diagnostic bicolour background per deficiency; **protan×deutan don't separate by colour**
+    (same red-green axis) — only tritan isolates cleanly (physical limit; best protan pair leaves deutan ~60%
+    contrast). [commit cf1b920]"
+  - "**TEA mode (🧩)** with 3 states: off=blue, calm=WHITE background, silent=yellow (signal on the background, not
+    the border — the border belongs to focus). [commit 89e51e2]"
+  - "**Low-vision = 5 simulations** (myopia/astigmatism, cataract, glaucoma, macular degeneration, diabetic
+    retinopathy) — empathy ≠ help (\"don't confuse blind MODE with blind-EMPATHY\"). [plano-acessibilidade]"
+  - "**CB-safe palette applies ONLY to non-scenery** (HUD/menus/items/game-elements) — for the colour-blind, trees
+    keep tree colours, grass keeps grass colours; but HUD/menus/items may switch to a CB-safe palette (Okabe-Ito).
+    Player option."
+  - "**UI minimum font = 16px at 640×360, scales WITH the canvas** (≥ 16, never ≤); HUD in high-def DOM, not
+    rasterized on the canvas. [commit 8e95257] · **Noto Color Emoji** in the font stack (cross-OS consistency)."

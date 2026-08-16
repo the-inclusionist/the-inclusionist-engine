@@ -18,12 +18,12 @@ context-and-problem-statement: |
   scoped-COOP/COEP halves are unchanged).
 
 decision-drivers:
-- Many labs, one home: a growing set of inclusion experiments is cheaper to host, deploy and discover as subpages of
-  one multi-page app than as N repos + N submodules + N domains.
-- Clean separation: `the-inclusionist` is the game; experiments do not belong in its tree (not even as a submodule).
-- Keep the wins of ADR-0024: shared code still ships as versioned `@jrocha-io/*` packages; still no runtime CDN; the
-  sherpa multi-thread COOP/COEP headers stay scoped to the lab deploy, never the game.
-- Discoverability: a landing page that lists every lab (and marks planned ones) is the natural index.
+- "Many labs, one home: a growing set of inclusion experiments is cheaper to host, deploy and discover as subpages of
+  one multi-page app than as N repos + N submodules + N domains."
+- "Clean separation: `the-inclusionist` is the game; experiments do not belong in its tree (not even as a submodule)."
+- "Keep the wins of ADR-0024: shared code still ships as versioned `@jrocha-io/*` packages; still no runtime CDN; the
+  sherpa multi-thread COOP/COEP headers stay scoped to the lab deploy, never the game."
+- "Discoverability: a landing page that lists every lab (and marks planned ones) is the natural index."
 
 considered-options:
 - &perlab "Keep one repo + submodule + domain per lab (ADR-0024 as written)"

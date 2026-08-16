@@ -14,10 +14,11 @@ context-and-problem-statement: |
   supersedes the open player-count question flagged in ADR-0006.
 
 decision-drivers:
-- Cooperative classroom use (ADR-0006): the class plays together, not against each other.
-- Child safety: no exposing children over the internet until it is well understood and securable.
-- Government hardware: up to 4 children per computer; many computers per classroom.
-- Privacy pillars: no accounts; a school-local server keeps data on the school network (see compliance-legal / RN-04).
+- "Cooperative classroom use (ADR-0006): the class plays together, not against each other."
+- "Child safety: no exposing children over the internet until it is well understood and securable."
+- "Government hardware: up to 4 children per computer; many computers per classroom."
+- "Privacy pillars: no accounts; a school-local server keeps data on the school network (see compliance-legal /
+  RN-04)."
 
 considered-options:
 - &two "1–2 players only (the earlier draft)"

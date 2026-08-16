@@ -18,10 +18,10 @@ context-and-problem-statement: |
   ADR-0024 chose GitHub Packages as the registry "because the org already lives on GitHub". That premise is now false.
 
 decision-drivers:
-- One home: code, backlog, CI and packages in the same place; a plan that lives apart from its code drifts from it.
+- "One home: code, backlog, CI and packages in the same place; a plan that lives apart from its code drifts from it."
 - The premise of ADR-0024's registry choice ("the org already lives on GitHub") no longer holds — the org moved.
 - Private by default suits a project handling children's data surfaces long before it is ready to be read publicly.
-- Avoid a silent trap: an unused host that still owns the backlog is one cleanup away from losing the roadmap.
+- "Avoid a silent trap: an unused host that still owns the backlog is one cleanup away from losing the roadmap."
 
 considered-options:
 - &stay "Move the code back to GitHub and keep everything there (revert the move)"
