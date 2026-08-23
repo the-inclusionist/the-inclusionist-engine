@@ -51,6 +51,7 @@ import { coinCanvas, coinTexture, treeCanvas, treeTexture, powerupCanvas } from 
 import { outlineCanvas, spriteToCanvas } from './render/sprite-fx.js'; // Fase 2: voz do letramento (pt-BR sempre-ativa)
 import * as weather from './render/weather.js'; // Onda A: clima visual (chuva/trovao/clarao)
 import { lqFilter, setLq, getLqT, initLqFilter } from './render/lq-filter.js'; // Onda A: realce de contraste L->Q
+import * as traffic from './game/traffic.js'; // Onda A: carros + semaforo da rua da frente
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
@@ -907,41 +908,11 @@ const CAR_TEX=(()=>{ const mk=(body,dark,top)=>{ const cv=makeCanvas(78,36),c=cv
   return [mk('#c8452e','#7d2717','#a03a24'),mk('#2e6fc8','#193f7d','#2757a0'),mk('#3aa15b','#1f6336','#2f8a4c'),mk('#c8a12e','#7d641a','#a8862a')]; })();
 // R-cidade (José 2026-07-03): o cenário é o INTERIOR de um prédio; a parte mais baixa é a FACHADA e a
 // rua fica NA FRENTE dela → carros (3×) e placas de PARE vivem na BASE do mundo, na camada da frente.
-let cars=[], _carT=0; const STREET_Y=WORLD_PX_H;
-const SEM={x:0,y:0,state:'green',t:0,pole:null};
-function drawSemaforo(){ const g=SEM.pole; if(!g)return; g.clear(); const x=SEM.x,y=SEM.y; // 2× (proporção dos carros 3×)
-  g.beginFill(0x3a4152).drawRect(x-2,y-52,4,52).endFill();
-  g.beginFill(0x20242e).drawRect(x-8,y-86,16,36).endFill();
-  const on={red:0xff4b3a,yellow:0xffd23f,green:0x37e15b}, ys={red:-82,yellow:-71,green:-60};
-  for(const k of ['red','yellow','green']) g.beginFill(SEM.state===k?on[k]:0x11141c).drawRect(x-4,y+ys[k],8,8).endFill(); }
-function initTraffic(){ SEM.x=Math.round(WORLD_PX_W/2); SEM.y=STREET_Y;
-  SEM.pole=new PIXI.Graphics(); carLayer.addChild(SEM.pole); drawSemaforo();
-  const g=new PIXI.Graphics(); carLayer.addChild(g); // placas de PARE ao longo da rua da frente (2×)
-  for(let tx=6;tx<WORLD_W-6;tx+=14){ const X=tx*TILE; if(Math.abs(X-SEM.x)<48)continue;
-    g.beginFill(0x8a919f).drawRect(X,STREET_Y-28,2,28).endFill();
-    g.beginFill(0xd23a2e).drawRect(X-5,STREET_Y-42,12,14).endFill();
-    g.beginFill(0xffffff).drawRect(X-3,STREET_Y-37,8,3).endFill(); } }
-function spawnCar(){ if(cars.length>=3)return false; const dir=rnd()<0.5?1:-1;
-  const s=new PIXI.Sprite(CAR_TEX[randInt(0,CAR_TEX.length-1)]); s.anchor.set(0.5,1); s.scale.x=dir; // textura já é 3× nativa
-  s.y=STREET_Y; const x=dir>0?-90:WORLD_PX_W+90; s.x=x; if(_frontDim){ s.tint=0x4a5058; s.alpha=0.55; } carLayer.addChild(s);
-  cars.push({s,x,dir,vx:dir*1.4}); return true; }
-// Alto contraste: carros/placas/semáforo estão NA FRENTE mas são AMBIENTE — escurecem como o fundo
-// para não competir com plataformas/itens (pedido do José 2026-07-03).
-let _frontDim=false;
-function setFrontDim(on){ _frontDim=!!on; const t=on?0x4a5058:0xffffff, a=on?0.55:1;
-  carLayer.children.forEach(ch=>{ ch.tint=t; ch.alpha=a; }); }
-function stepTraffic(dt){ if(CENARIO!=='cidade')return; // L6: trânsito é peculiaridade da Cidade
-  SEM.t+=dt; const cyc=(SEM.t/60)%16, st=cyc<8?'green':cyc<10?'yellow':'red';
-  if(st!==SEM.state){ SEM.state=st; drawSemaforo(); }
-  if(rm.decor){ if(cars.length){ cars.forEach(c=>{ carLayer.removeChild(c.s); c.s.destroy(); }); cars=[]; } return; } // semáforo (sinalização) fica; carros (movimento) saem
-  if(++_carT>=420+randInt(0,300)){ _carT=0; spawnCar(); }
-  for(let i=cars.length-1;i>=0;i--){ const c=cars[i];
-    const before=(SEM.x-c.x)*c.dir>44; let want=c.dir*1.4;                        // linha de parada (carro 3× = 78px)
-    if(SEM.state!=='green'&&before&&(SEM.x-c.x)*c.dir<140) want=0;                // vermelho/amarelo: freia na aproximação
-    c.vx+=Math.max(-0.08,Math.min(0.08,want-c.vx))*dt; if(want===0&&Math.abs(c.vx)<0.03)c.vx=0;
-    c.x+=c.vx*dt; c.s.x=Math.round(c.x);
-    if(c.x<-100||c.x>WORLD_PX_W+100){ c.s.destroy(); carLayer.removeChild(c.s); cars.splice(i,1); } } }
-initTraffic();
+// cars/_carT/STREET_Y/SEM/drawSemaforo/initTraffic/spawnCar/setFrontDim/stepTraffic migraram para
+// game/traffic.ts (Onda A). carLayer e CAR_TEX ficam: a camada tem z-order soldado aqui e a textura
+// e pintura de canvas, nao logica de transito.
+traffic.initTraffic({ carLayer, CAR_TEX, SpriteCtor: PIXI.Sprite, GraphicsCtor: PIXI.Graphics,
+  WORLD_PX_W, WORLD_PX_H, WORLD_W, getRm: () => rm });
 /* ===================== L5: DECORAÇÃO POR ZONA (procedural, desenhada UMA vez) =====================
    Rua: calçada+meio-fio, postes com brilho ESTÁVEL, placas (PARE/faixa), letreiros nas fachadas.
    Caixa d'água: paredes de tanque + linha d'água. Interior de prédio (alto): janelas.
@@ -1007,7 +978,7 @@ const sceneSky = createSceneSky({ skyLayer, starsG, skyDecoG, fogG, grassG, them
 // render/scene-sky.ts (#43). Camadas injetadas. Uso no loop: sceneSky.stepV3Decor().
 function applyCenarioVida(){ const city=CENARIO==='cidade';
   carLayer.visible=city; cityDecoG.visible=city; skyLayer.visible=city; // trânsito/deco/céu-da-cidade SÓ na Cidade
-  if(!city&&cars.length){ cars.forEach(c=>{ carLayer.removeChild(c.s); c.s.destroy(); }); cars=[]; } }
+  if(!city)traffic.clearCars(); }
 _vidaReady=true; applyCenarioVida(); // estado inicial (CENARIO já veio do setCenario do boot)
 /* ===================== Tiles vivos da v3 (água FORE + lava) — drawTile animado, fiel ===================== */
 const lavaFxG=new PIXI.Graphics(); lifeLayer.addChildAt(lavaFxG,0);   // tracinhos da lava (ATRÁS do player, como o map-back)
@@ -1436,7 +1407,7 @@ function update(dt){
   attractCtl.stepAttract(dt); // attract: robô/replay dirige o P1 (ANTES da física)
   attractCtl.recordTick(); // ?record=1: grava o P1 (fora da demo, jogando) em localStorage
   stepLife(dt); // L5: vida ambiente (pombos/gatos/cães/adultos) — cosmética, atrás do player
-  stepTraffic(dt); // L5: carros (frente, na rua da base) + semáforo
+  traffic.stepTraffic(dt); // L5: carros (frente, na rua da base) + semáforo
   sceneSky.stepSky(dt); // L5: nuvens + pássaros no céu
   sceneSky.stepV3Decor(); // L6: decoração viva da v3 (estrelas/nuvens/pássaros/névoa/grama/minhocas/vagalumes/borboletas)
   stepTileFx(); // tiles vivos da v3: água (ondas/corais/algas/peixes, FORE) + lava (tracinhos)
@@ -2121,7 +2092,7 @@ function playerVizTex(base,mode){ if(!base)return base;
 // estáticos (mundo/parallax/moedas/itens) só re-aplicam quando o modo muda (_lastSharedViz declarado no topo do render)
 function applySharedTextures(mode){
   if(mode!==_lastSharedViz){ _lastSharedViz=mode;
-    setFrontDim(!!DIRECT_CFG[mode]); // HC: carros/placas/semáforo (frente) escurecem como fundo
+    traffic.setFrontDim(!!DIRECT_CFG[mode]); // HC: carros/placas/semáforo (frente) escurecem como fundo
     worldSprite.texture=worldTexFor(mode);
     parallaxLayers.forEach((ts,j)=>ts.texture=parallaxTexFor(j,mode));
     decoSprites.forEach(s=>s.texture=treeTexFor(mode));
@@ -2147,7 +2118,7 @@ function applyVizGlobal(mode){
   setVizModeValue(mode); hcMode=(m.kind==='hcnew'); // core/state.js: valor + persistência (incl_viz) + evento
   if(app&&app.view) app.view.style.filter=[VIZ_FILTER[mode]||'',lqFilter()].filter(Boolean).join(' '); // sim. daltonismo/baixa-visão/cegueira + realce L/Q compostos
   camera.filters = (m.kind==='hcnew') ? pixiFilterFor(mode) : null; // solo: alto contraste experimental = filtro GPU na câmera
-  if(typeof setFrontDim==='function')setFrontDim(!!DIRECT_CFG[mode]); // HC: frente (carros/placas/semáforo) escurece como fundo
+  traffic.setFrontDim(!!DIRECT_CFG[mode]); // HC: frente (carros/placas/semáforo) escurece como fundo (a guarda typeof morreu: agora e import)
   worldSprite.texture=worldTexFor(mode);            // alto contraste direto = Renderização Direta · resto=normal
   parallaxLayers.forEach((ts,i)=>{ ts.texture=parallaxTexFor(i,mode); });
   decoSprites.forEach(s=>{ s.texture=treeTexFor(mode); });
@@ -2432,7 +2403,7 @@ window.__incl={app,get player(){return players[0];},players,get numPlayers(){ret
   startAttract:()=>attractCtl.startAttract(),stopAttract:()=>attractCtl.stopAttract(),get attract(){return attractCtl.isAttract();}, // attract → game/attract.ts
   loadTTS:tts.loadTTS,ttsSpeak:tts.ttsSpeak,narrate:tts.narrate,get ttsEngine(){return tts.getEngine();},get ttsLoading(){return tts.loading;},get ttsFailed(){return tts.failed;},setTtsEngineSel(v){tts.setEngineSel(v);},
   updateWeather:weather.updateWeather,get rainLevel(){return weather.getRainLevel();},set weatherT(v){weather.setWeatherT(v);},get weatherT(){return weather.getWeatherT();},rm,
-  spawnCreature,stepLife,get creatures(){return creatures;},spawnCar,get cars(){return cars;},SEM,STREET_Y,
+  spawnCreature,stepLife,get creatures(){return creatures;},spawnCar:traffic.spawnCar,get cars(){return traffic.getCars();},SEM:traffic.SEM,get STREET_Y(){return traffic.getStreetY();},
   get elevShafts(){return getElevShafts();},elevAt,get BOX(){return BOX;},get wheelchair(){return wheelchair;},setWheelchair,buildElevators,buildRamps,solidAt,surfTop, // debug cadeirante
   get clouds(){return sceneSky.getClouds();},get birds(){return sceneSky.getBirds();},stepSky:(dt)=>sceneSky.stepSky(dt),CENARIOS,stepV3Decor:()=>sceneSky.stepV3Decor(),
   get grassDensity(){return grassDensity;},setGrassDensity(v){grassDensity=Math.max(0,Math.min(1,+v||0));}, // 1=todas as superfícies; 0.6=60% (estações)
