@@ -65,6 +65,7 @@ import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activitie
 import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js'; // Onda A: menu de pausa por tela + barra de icones de a11y
 import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/abandono/selo de espera)
 import { screenGrid, screenBaseSize } from './core/screens.js'; // grade de telas (fonte unica)
+import { initViewports } from './render/viewports.js'; // B2: fabrica de imagem dos modos de visao
 import { initVizSetters } from './render/viz-setters.js'; // Onda A: aplicacao dos modos de visao acessivel
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
   buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
@@ -446,7 +447,6 @@ const parallaxLayers=PARALLAX.map((p,i)=>{
   return ts;
 });
 const parallaxTexNormal=parallaxLayers.map(ts=>ts.texture); // texturas normais (recoloridas p/ o fundo no alto contraste)
-const _parallaxTexHC={}; // cache: {mode: [tex,tex,tex]}
 function updateParallax(camX,camY){
   for(let i=0;i<parallaxLayers.length;i++){ const ts=parallaxLayers[i],p=PARALLAX[i];
     ts.x=camX; ts.y=camY;                                  // anula o camera → fixa na tela
@@ -470,12 +470,12 @@ function setCenario(theme){ if(!CENARIOS[theme])theme='cidade';
   const T=CENARIOS[theme];
   if(T.v3){ // fiel à v3: céu-gradiente + 2 bandas de morros (fórmulas de lá); sem PNG (a arte por tema entra depois)
     const texs=[themeSkyTexture(T),themeHillsTexture(T,false),themeHillsTexture(T,true)];
-    parallaxLayers.forEach((ts,i)=>{ parallaxTexNormal[i]=texs[i]; for(const k in _parallaxTexHC)delete _parallaxTexHC[k]; if(vizMode==='normal') ts.texture=texs[i]; });
+    parallaxLayers.forEach((ts,i)=>{ parallaxTexNormal[i]=texs[i]; vp.clearParallaxTexCache(); if(vizMode==='normal') ts.texture=texs[i]; });
   } else parallaxLayers.forEach((ts,i)=>{ const n=[4,3,2][i], img=new Image(); // Cidade: PNG com fallback p/ placeholder
     img.onload=()=>{ if(CENARIO!==theme)return; const t=PIXI.Texture.from(img); t.baseTexture.scaleMode=PIXI.SCALE_MODES.NEAREST;
-      parallaxTexNormal[i]=t; for(const k in _parallaxTexHC)delete _parallaxTexHC[k]; if(vizMode==='normal') ts.texture=t; };
+      parallaxTexNormal[i]=t; vp.clearParallaxTexCache(); if(vizMode==='normal') ts.texture=t; };
     img.onerror=()=>{ if(CENARIO!==theme)return; const t=parallaxPlaceholder(i);
-      parallaxTexNormal[i]=t; for(const k in _parallaxTexHC)delete _parallaxTexHC[k]; if(vizMode==='normal') ts.texture=t; };
+      parallaxTexNormal[i]=t; vp.clearParallaxTexCache(); if(vizMode==='normal') ts.texture=t; };
     img.src='assets/cenarios/'+theme+'/c'+n+'.png'; });
   loadTileImages(theme).then(tiles=>{ if(CENARIO!==theme)return;
     worldCanvasNormal=worldCanvas(tiles); worldTexNormal=tex(worldCanvasNormal); clearWorldTexCache(); // v3: blocos Clarity SEM recolor
@@ -510,6 +510,20 @@ const worldSprite=new PIXI.Sprite(worldTexNormal); camera.addChild(worldSprite);
 var starsG=new PIXI.Graphics();   camera.addChildAt(starsG, camera.getChildIndex(parallaxLayers[1]));  // estrelas ATRÁS dos morros
 var skyDecoG=new PIXI.Graphics(); camera.addChildAt(skyDecoG, camera.getChildIndex(worldSprite));      // nuvens/pássaros à frente dos morros, atrás dos tiles
 var fogG=new PIXI.Graphics();     camera.addChild(fogG);                                                // névoa: FRENTE (re-erguida com o carLayer)
+/* ===== FABRICA de imagem dos modos de visao -> render/viewports.ts (B2) =====
+   AQUI, e nao junto dos outros setters la embaixo: o setCenario logo abaixo ja chama
+   vp.clearParallaxTexCache(), sincrono, DENTRO de um try/catch. Com o init mais tarde, quem tivesse
+   'espaco' ou 'noite' salvo cairia em ReferenceError engolido pelo catch — o tema escolhido sumiria
+   sem uma linha de log. treeTexNormal e lvOverlaySpr nascem depois: entram por getter, por isso.
+   As seis matrizes de daltonismo agora tem UMA fonte (render/cvd-matrices) e o SVG do index.html e
+   GERADO daqui, em vez de escrito a mao — antes eram duas copias, uma por caminho de render. */
+const vp = initViewports({
+  ColorMatrixFilter: PIXI.ColorMatrixFilter, BlurFilter: PIXI.BlurFilter,
+  parallaxTexNormal, getTreeTexNormal: () => treeTexNormal,
+  getLvOverlaySpr: () => lvOverlaySpr, renderer: app.renderer, getVpTex: () => vpTex,
+  cvdDefsHost: $('#cvd-defs'),
+});
+const { parallaxTexFor, treeTexFor, playerVizTex, pixiFilterFor, renderVpOverlay } = vp;
 try{ setCenario((v=>v==='noite'?'espaco':v)(store.get(store.KEYS.cenario,'cidade'))); }catch(e){ setCenario('cidade'); } // migra a chave antiga 'noite'
 const coinCanvasNormal=coinCanvas();
 const coinTex=tex(coinCanvasNormal);
@@ -553,9 +567,7 @@ const darkRegions=buildDarkRegions(WORLD_W, WORLD_H).map(tiles=>{
 // E4: decoração de fundo (árvores) ATRÁS do jogador — sempre visível, NÃO some ao pular
 const decoLayer=new PIXI.Container(); camera.addChild(decoLayer);
 const treeCanvasNormal=treeCanvas(), treeTexNormal=tex(treeCanvasNormal); // árvore = grupo fundo (recolorida no alto contraste)
-const _treeTexHC={}; function treeTexFor(mode){
-  if(DIRECT_CFG[mode]){ if(!_treeTexHC[mode])_treeTexHC[mode]=directBgTexture(treeTexNormal,mode); return _treeTexHC[mode]; } // direto: decoração recua
-  return treeTexNormal; }
+// _treeTexHC/treeTexFor migraram para render/viewports.ts (B2).
 const decoSprites=[];
 (function placeTrees(){ let last=-99; // R-cidade: árvores SÓ na parte mais baixa (por onde o personagem anda)
   for(let tx=2;tx<WORLD_W-2;tx++){
@@ -1596,48 +1608,14 @@ if(soundBtn){ soundBtn.setAttribute('aria-haspopup','dialog'); soundBtn.addEvent
 if(capBtn) capBtn.addEventListener('click',()=>{ captionsOn=!captionsOn; toggleBtn(capBtn,captionsOn); srSay('Legendas '+(captionsOn?'ligadas.':'desligadas.')); });
 const motor = initSettingsMotor({ $, srSay, store, players, getNumPlayers: () => numPlayers, setToggleMove, rebuildCoins }); // painel motor: ui/settings-motor.ts (registra #opt-facil, #opt-altmove e as abas)
 
-/* Modos de visualização: Normal + Alto contraste (Renderização Direta) + simulações/correções (filtro) */
-function parallaxTexFor(i,mode){
-  if(DIRECT_CFG[mode]){ (_parallaxTexHC[mode]=_parallaxTexHC[mode]||[]); if(!_parallaxTexHC[mode][i])_parallaxTexHC[mode][i]=directBgTexture(parallaxTexNormal[i],mode); return _parallaxTexHC[mode][i]; } // direto: fundo recua
-  return parallaxTexNormal[i]; }
-/* ===== Cor POR JOGADOR (E11): cada viewport do multiplayer renderiza no modo do seu jogador.
-   - solo: filtro CSS na canvas + texturas globais + overlay DOM + bolinha (applyVizGlobal).
-   - MP: filtro PIXI por viewport + troca das texturas compartilhadas antes de cada render (no draw). */
-const _vpFilterCache={};
-function pixiFilterFor(mode){ if(mode in _vpFilterCache)return _vpFilterCache[mode]; let f=null;
-  const CM=PIXI.ColorMatrixFilter, BL=PIXI.BlurFilter;
-  // SIMULAÇÃO = Machado 2009 sev. 1.0 · CORREÇÃO = C = I + M_err·(I−Sim), M_err de Fidaner et al. (daltonize).
-  // Valores canônicos — ver docs/PESQUISA-DALTONIZACAO.md. (PIXI aplica em sRGB = aproximação padrão web; idem SVG do solo.)
-  const cvd={'sim-protan':[0.152286,1.052583,-0.204868,0,0, 0.114503,0.786281,0.099216,0,0, -0.003882,-0.048116,1.051998,0,0, 0,0,0,1,0],
-             'sim-deuter':[0.367322,0.860646,-0.227968,0,0, 0.280085,0.672501,0.047413,0,0, -0.011820,0.042940,0.968881,0,0, 0,0,0,1,0],
-             'sim-tritan':[1.255528,-0.076749,-0.178779,0,0, -0.078411,0.930809,0.147602,0,0, 0.004733,0.691367,0.303900,0,0, 0,0,0,1,0],
-             'fix-protan':[1,0,0,0,0, 0.478897,0.476911,0.044192,0,0, 0.597282,-0.688692,1.091410,0,0, 0,0,0,1,0],
-             'fix-deuter':[1,0,0,0,0, 0.162790,0.725047,0.112165,0,0, 0.454695,-0.645392,1.190697,0,0, 0,0,0,1,0],
-             'fix-tritan':[1,0,0,0,0, -0.100459,1.122915,-0.022457,0,0, -0.183603,-0.637643,1.821245,0,0, 0,0,0,1,0]};
-  if(cvd[mode]&&CM){ const c=new CM(); c.matrix=cvd[mode]; f=[c]; }
-  else if(mode==='blind'&&CM){ const c=new CM(); c.brightness(0,false); f=[c]; }
-  else if(mode==='lv-blur'&&BL){ f=[new BL(5)]; }
-  else if(mode==='lv-haze'&&CM){ const c=new CM(); c.contrast(-0.45,false); c.brightness(1.12,true); f=[c]; }
-  else if((mode==='lv-tunnel'||mode==='lv-diabetic'||mode==='lv-macular')&&BL){ f=[new BL(mode==='lv-tunnel'?1.5:2)]; }
-  return _vpFilterCache[mode]=f;
-}
-// overlay de baixa visão como TEXTURA (renderizada no viewport por cima da cena)
-function lvOverlayCanvas(lv){ const W=LOGICAL_W,H=LOGICAL_H,cv=makeCanvas(W,H),c=cv.getContext('2d'),cx=W/2,cy=H/2;
-  if(lv==='haze'){ c.fillStyle='rgba(244,246,250,0.42)'; c.fillRect(0,0,W,H); }
-  else if(lv==='tunnel'){ const g=c.createRadialGradient(cx,cy,H*0.12,cx,cy,H*0.6); g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.5,'rgba(0,0,0,.55)');g.addColorStop(1,'rgba(0,0,0,.99)'); c.fillStyle=g; c.fillRect(0,0,W,H); }
-  else if(lv==='macular'){ const g=c.createRadialGradient(cx,cy,2,cx,cy,H*0.34); g.addColorStop(0,'rgba(12,12,15,.95)');g.addColorStop(.55,'rgba(12,12,15,.5)');g.addColorStop(1,'rgba(12,12,15,0)'); c.fillStyle=g; c.fillRect(0,0,W,H); }
-  else if(lv==='diabetic'){ for(const[fx,fy,fr]of[[.22,.3,.1],[.64,.22,.075],[.8,.58,.11],[.4,.7,.085],[.16,.8,.07],[.54,.48,.06]]){ const x=fx*W,y=fy*H,r=fr*W,g=c.createRadialGradient(x,y,1,x,y,r); g.addColorStop(0,'rgba(10,10,14,.95)');g.addColorStop(.5,'rgba(10,10,14,.7)');g.addColorStop(1,'rgba(10,10,14,0)'); c.fillStyle=g; c.fillRect(x-r,y-r,2*r,2*r); } }
-  return cv; }
-const _lvOverlayTex={}; function lvOverlayTex(lv){ if(lv==='blur')return null; if(!_lvOverlayTex[lv])_lvOverlayTex[lv]=tex(lvOverlayCanvas(lv)); return _lvOverlayTex[lv]; }
+/* Modos de visualização: Normal + Alto contraste + simulações/correções. A FABRICA (parallaxTexFor,
+   treeTexFor, playerVizTex, pixiFilterFor, o overlay de baixa visao e as matrizes CVD) migrou para
+   render/viewports.ts (B2); a POLITICA ja estava em render/viz-setters.ts (Onda A). */
 const lvOverlaySpr=new PIXI.Sprite(PIXI.Texture.EMPTY), vpDot=new PIXI.Graphics();
-let _playerDirect={};
-function playerVizTex(base,mode){ if(!base)return base;
-  if(DIRECT_CFG[mode]){ const mm=(_playerDirect[mode]=_playerDirect[mode]||new Map()); if(!mm.has(base))mm.set(base,directSpriteTexture(base,mode)); return mm.get(base); } // direto: player com contorno escuro → salta
-  return base; }
+// _playerDirect/playerVizTex migraram para render/viewports.ts (B2).
 /* ===================== MODOS DE VISAO ACESSIVEL -> render/viz-setters.ts =====================
-   Saiu a POLITICA (qual modo vale onde); ficou a FABRICA (como um modo vira pixel): pixiFilterFor e as
-   matrizes CVD, playerVizTex/_playerDirect, parallaxTexFor, treeTexFor e o overlay de baixa visao —
-   tudo isso vai com render/viewports no grupo B. _lastSharedViz fica: nao e cache de visao, e o registro
+   Saiu a POLITICA (qual modo vale onde); a FABRICA (como um modo vira pixel) ja mora em
+   render/viewports.ts, extraida no B2. _lastSharedViz fica: nao e cache de visao, e o registro
    de qual modo o pipeline estatico aplicou por ultimo, escrito de sete lugares.
    Init AQUI porque empathy/visual recebem renderVizGroup/setPlayerViz POR REFERENCIA logo abaixo, e
    declaracao icada virou const. Tudo no ctx e arrow preguicosa: nada e avaliado no init. */
@@ -1652,7 +1630,7 @@ const viz = initVizSetters({
   invalidateSharedViz: () => { _lastSharedViz = null; },
   setHcMode: (on) => { hcMode = on; },
   parallaxTexFor, treeTexFor, playerVizTex, pixiFilterFor,
-  clearPlayerDirectCache: () => { _playerDirect = {}; },
+  clearPlayerDirectCache: vp.clearPlayerDirectCache,
   setFrontDim: (on) => traffic.setFrontDim(on),
   rebuildExtras: () => rebuildExtras(), rebuildCoins: () => rebuildCoins(),
   setModoCego: (on) => setModoCego(on),
@@ -1663,9 +1641,7 @@ const viz = initVizSetters({
 const { applySharedTextures, updateVpDots, applyVpFilters, setPlayerViz,
         applyVizGlobal, reapplyVizAll, updateVizIndicator, renderVizGroup } = viz;
 const _rebakeDirect = viz.rebakeDirect;
-function renderVpOverlay(i,mode){ const m=VIZ_BY_KEY[mode]; if(!m||m.kind!=='lowvision')return; // overlay de baixa visão DENTRO da render-texture (a bolinha fica por cima, fora do filtro)
-  const t=lvOverlayTex(m.lv); if(t){ lvOverlaySpr.texture=t; app.renderer.render(lvOverlaySpr,{renderTexture:vpTex[i],clear:false}); }
-}
+// renderVpOverlay migrou para render/viewports.ts (B2).
 // updateVpDots/applyVpFilters migraram para render/viz-setters.ts (Onda A).
 function setModoCego(on){ if(modoCego===on)return; modoCego=on; store.setBool('incl_modocego',on); if(typeof setupExtras==='function')setupExtras(); if(typeof reflectModoCego==='function')audioPanel.reflectModoCego(); srSay('Modo cego '+(on?'ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.':'desligado.')); }
 // setPlayerViz/applyVizGlobal migraram para render/viz-setters.ts (Onda A).

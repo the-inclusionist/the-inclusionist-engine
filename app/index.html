@@ -15,18 +15,15 @@
 <body data-theme="cave">
   <a class="skip-link" href="#game-region" data-i18n="skip.toGame">Pular para o jogo</a>
 
-  <!-- Filtros de SIMULAÇÃO de daltonismo (aplicados na <canvas> via CSS filter:url(#...)). Auditoria + demo. -->
+  <!-- Filtros de SIMULAÇÃO/CORREÇÃO de daltonismo (aplicados na <canvas> via CSS filter:url(#...)). Auditoria + demo.
+       Os seis <filter> NÃO são escritos aqui: são GERADOS no boot por installCvdFilters() a partir de
+       app/js/render/cvd-matrices.ts — a MESMA fonte que o PIXI.ColorMatrixFilter do caminho multi-tela lê.
+       Antes os mesmos 120 números viviam duas vezes: aqui em markup SVG, lá em JS; se divergissem, a mesma
+       pessoa daltônica veria cores diferentes em tela única e em multi-tela, sem erro em lugar nenhum.
+       NÃO escreva um <filter> à mão neste bloco — tests/viewports.node.test.js recusa qualquer matriz no HTML.
+       Base: Machado, Oliveira & Fernandes 2009 + daltonização canônica — docs/research/PESQUISA-DALTONIZACAO.md. -->
   <svg aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute">
-    <defs>
-      <!-- SIMULAÇÃO de daltonismo: Machado, Oliveira & Fernandes 2009 (severidade 1.0) — ver docs/PESQUISA-DALTONIZACAO.md -->
-      <filter id="cvd-protan" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0.152286 1.052583 -0.204868 0 0  0.114503 0.786281 0.099216 0 0  -0.003882 -0.048116 1.051998 0 0  0 0 0 1 0"/></filter>
-      <filter id="cvd-deuter" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0.367322 0.860646 -0.227968 0 0  0.280085 0.672501 0.047413 0 0  -0.011820 0.042940 0.968881 0 0  0 0 0 1 0"/></filter>
-      <filter id="cvd-tritan" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1.255528 -0.076749 -0.178779 0 0  -0.078411 0.930809 0.147602 0 0  0.004733 0.691367 0.303900 0 0  0 0 0 1 0"/></filter>
-      <!-- CORREÇÃO (daltonização canônica): C = I + M_err·(I − Sim); Sim=Machado 2009, M_err=Fidaner et al. (daltonize) -->
-      <filter id="cvd-fix-protan" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0.478897 0.476911 0.044192 0 0  0.597282 -0.688692 1.091410 0 0  0 0 0 1 0"/></filter>
-      <filter id="cvd-fix-deuter" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0.162790 0.725047 0.112165 0 0  0.454695 -0.645392 1.190697 0 0  0 0 0 1 0"/></filter>
-      <filter id="cvd-fix-tritan" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  -0.100459 1.122915 -0.022457 0 0  -0.183603 -0.637643 1.821245 0 0  0 0 0 1 0"/></filter>
-    </defs>
+    <defs id="cvd-defs"></defs>
   </svg>
 
   <!-- Narração para leitores de tela (estado do jogo vive aqui, não no canvas) -->
