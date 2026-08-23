@@ -25,6 +25,7 @@ import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
 import { $, toggleBtn } from './ui/dom.js';
+import { initSettingsMotor } from './ui/settings-motor.js';
 import { initSettingsMotion, motionOpen, setSelectedPlayer as setSelectedMotionPlayer } from './ui/settings-motion.js';
 import { initSettingsTypo } from './ui/settings-typo.js';
 import { initTitle } from './ui/title.js';
@@ -2101,17 +2102,10 @@ function applyLetra(announce){ const s=LETRA[letraIdx]; letterCase=s.caso; blind
 const optLetraBtn=$('#opt-letra'); if(optLetraBtn)optLetraBtn.addEventListener('click',()=>{ letraIdx=(letraIdx+1)%LETRA.length; applyLetra(true); });
 applyLetra(false); // estado inicial = ABC (maiúsculas, padrão)
 // E9: toggles de Som / Legendas / Fácil
-const soundBtn=$('#opt-sound'), capBtn=$('#opt-captions'), facilBtn=$('#opt-facil');
+const soundBtn=$('#opt-sound'), capBtn=$('#opt-captions');
 if(soundBtn){ soundBtn.setAttribute('aria-haspopup','dialog'); soundBtn.addEventListener('click',openAudio); } // botão de áudio agora abre o mixer
 if(capBtn) capBtn.addEventListener('click',()=>{ captionsOn=!captionsOn; toggleBtn(capBtn,captionsOn); srSay('Legendas '+(captionsOn?'ligadas.':'desligadas.')); });
-let selMovPlayer=0; // jogador selecionado no painel Acessibilidade motora
-if(facilBtn) facilBtn.addEventListener('click',()=>{ setEasy(selMovPlayer, !players[selMovPlayer].easy); });
-function reflectFacil(){ const p=players[selMovPlayer], on=!!(p&&p.easy); if(facilBtn){ toggleBtn(facilBtn,on); facilBtn.textContent=on?'❚❚ Ligado':'▶ Desligado'; } reflectMovementBtn(); }
-function reflectMovementBtn(){ const b=$('#opt-movement'); if(b)b.classList.toggle('is-on',players.some(p=>p.easy||p.toggleMove)); } // barra acende se QUALQUER jogador usa Fácil/alternância
-function setEasy(i,on){ const p=players[i]; if(!p)return; p.easy=on; try{localStorage.setItem('incl_easy_p'+i,on?'1':'0');}catch(e){} reflectFacil(); rebuildCoins(); srSay((numPlayers>1?'Jogador '+(i+1)+': ':'')+'Modo Fácil '+(on?'ligado: gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais (segure ↓ para descer).':'desligado.')); }
-function renderMovPlayers(){ const tabs=$('#movement-players'); if(!tabs)return; if(selMovPlayer>=numPlayers)selMovPlayer=0; tabs.hidden=true; // E3: sem abas — cada jogador edita só o seu (escopo = pauseActor)
-  tabs.innerHTML = numPlayers<=1 ? '' : Array.from({length:numPlayers},(_,p)=>`<button class="mode-btn${p===selMovPlayer?' is-on':''}" data-mp="${p}" type="button">Jogador ${p+1}</button>`).join('');
-  tabs.querySelectorAll('button[data-mp]').forEach(b=>b.addEventListener('click',()=>{ selMovPlayer=+b.dataset.mp; renderMovPlayers(); reflectFacil(); reflectAltMove(); })); }
+const motor = initSettingsMotor({ $, srSay, store, players, getNumPlayers: () => numPlayers, setToggleMove, rebuildCoins }); // painel motor: ui/settings-motor.ts (registra #opt-facil, #opt-altmove e as abas)
 
 /* Modos de visualização: Normal + Alto contraste (Renderização Direta) + simulações/correções (filtro) */
 function parallaxTexFor(i,mode){
@@ -2508,12 +2502,8 @@ const ctrlClose=$('#ctrl-close'); if(ctrlClose)ctrlClose.addEventListener('click
 const RM_LABEL={parallax:'Parallax do fundo', decor:'Decoração (nuvens, grama)', items:'Animação de itens (moedas)', walk:'Personagem em movimento (andar, escalar, nadar, pular)', breath:'Respiração (parado)', flavor:'Gracinhas (animações de descanso)', particles:'Partículas e cintilação'};
 const RM_SOON=new Set([]); // todos os alvos agem: parallax (fundo), decor (chuva/vida da Cidade), items (cintilar), particles (juice)
 const motion = initSettingsMotion({ $, srSay, store, frontOverlay, toggleBtn, rm, saveRM, rmKeys: RM_KEYS, rmChar: RM_CHAR }); // painel de movimento/CRT: ui/settings-motion.ts
-function reflectAltMove(){ const p=players[selMovPlayer], on=!!(p&&p.toggleMove); const b=$('#opt-altmove'); if(b){ b.classList.toggle('is-on',on); b.setAttribute('aria-pressed',String(on)); b.textContent=on?'❚❚ Ligado':'▶ Desligado'; }
-  reflectMovementBtn(); } // botão da barra acende se QUALQUER jogador usa Fácil/alternância
-const altMoveBtn=$('#opt-altmove'); if(altMoveBtn)altMoveBtn.addEventListener('click',()=>{ setToggleMove(selMovPlayer, !players[selMovPlayer].toggleMove); reflectAltMove(); });
-reflectFacil(); reflectAltMove();
 // MENU Movimento (GAG: alternância) — separado do menu Animação (WCAG: movimento reduzido)
-function openMovement(){ const ov=$('#movement'); if(!ov)return; renderMovPlayers(); reflectFacil(); reflectAltMove(); renderMapHub(); ov.hidden=false; frontOverlay(ov); movementOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); }
+function openMovement(){ const ov=$('#movement'); if(!ov)return; motor.renderMovPlayers(); motor.reflectFacil(); motor.reflectAltMove(); renderMapHub(); ov.hidden=false; frontOverlay(ov); movementOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); }
 function closeMovement(){ const ov=$('#movement'); if(!ov)return; ov.hidden=true; movementOpen=false; const b=$('#opt-movement'); if(b)b.focus(); }
 // Submenu "Configurar botões de tela touch"
 function openTouchCfg(){ const ov=$('#touchcfg'); if(!ov)return; renderTouchMap(); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('select,button'); if(f)f.focus(); }
@@ -2629,7 +2619,7 @@ const pauseActs={ resume:()=>setPhase('playing'),
         '<div class="vphud-quit vp-wait">Jogador '+(p.i+1)+': aperte um botão do SEU teclado ou de um controle livre para entrar</div>');
       setPhase('playing'); srAlert('Jogador '+(p.i+1)+': aperte um botão para entrar.'); } },
   audio:()=>openAudio(),
-  motora:()=>{ selMovPlayer=pauseActor; openMovement(); },
+  motora:()=>{ motor.setSelPlayer(pauseActor); openMovement(); },
   anim:()=>{ setSelectedMotionPlayer(pauseActor); motion.open(); },
   visual:()=>{ selVizPlayer=pauseActor; openVisual(); },
   empatia:()=>{ selVizPlayer=pauseActor; openEmpathy(); }, print:()=>printMode(), quit:()=>quitGame(), ajuda:()=>openHelp() };
