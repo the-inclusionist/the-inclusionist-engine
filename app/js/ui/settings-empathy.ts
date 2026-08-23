@@ -37,6 +37,9 @@ export interface EmpathySettingsCtx {
   reflectVizButtons(): void;
   /** Brings an overlay to front + fills its footer explanations; shared by every Sensibilidade panel. */
   frontOverlay(el: HTMLElement | null): void;
+  /** Devolve o foco a quem abriu o diálogo (ui/settings-panel `restoreFocus`). Injetado, e não um `#opt-*`
+   *  fixo: o id que este módulo focava não existe no documento, então fechar deixava o foco no `<body>`. */
+  restoreFocus?: (id: string) => boolean;
   /** Persists + applies the audio graph change (and announces); body stays in game.js. */
   setHearingLoss(on: boolean): void;
   /** Persists + applies one-button-only play (and announces); body stays in game.js. */
@@ -84,8 +87,9 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     const ov = ctx.$<HTMLElement>('#empathy');
     if (!ov) return;
     ov.hidden = true;
+    if (ctx.restoreFocus && ctx.restoreFocus('empathy')) return;
     const b = ctx.$<HTMLElement>('#opt-empathy');
-    if (b) b.focus();
+    if (b) b.focus(); // recuo: este id nao existe no documento hoje (gancho de uma barra futura)
   }
 
   const empathyBtn = ctx.$<HTMLElement>('#opt-empathy');

@@ -33,6 +33,10 @@ export interface SettingsMotionCtx {
   store: { setBool: (key: string, on: boolean) => void };
   /** Empilha o overlay (z-index) + liga o rodapé de explicação — compartilhado por todos os painéis "Sensibilidade". */
   frontOverlay: (el: HTMLElement | null) => void;
+  /** Devolve o foco a quem abriu o diálogo (ui/settings-panel `restoreFocus`). Injetado, e não um `#opt-*`
+   *  fixo: o id que este módulo focava não existe no documento, então fechar deixava o foco no `<body>`. */
+  restoreFocus?: (id: string) => boolean;
+
   /** Reflete on/off num botão (classe is-on + aria-pressed) — helper genérico usado por vários botões-mestre. */
   toggleBtn: (el: HTMLElement, on: boolean) => void;
   /** Movimento reduzido de CENA (parallax/decor/items/particles) — objeto VIVO, mutado in-place. Fica em game.js:
@@ -242,8 +246,9 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const ov = ctx.$<HTMLElement>('#animation');
     if (!ov) return;
     ov.hidden = true;
+    if (ctx.restoreFocus && ctx.restoreFocus('animation')) return;
     const b = ctx.$<HTMLElement>('#opt-animation');
-    if (b) b.focus();
+    if (b) b.focus(); // recuo: este id nao existe no documento hoje (gancho de uma barra futura)
   }
 
   const master = ctx.$<HTMLElement>('#motion-master');

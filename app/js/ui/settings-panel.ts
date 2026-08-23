@@ -41,9 +41,10 @@ export interface SettingsPanelCtx {
   $: <T extends Element = Element>(sel: string) => T | null;
   /** ui/dom.ts `$$` — usado só por topVisibleOverlay(), que varre OVERLAY_SCOPE_SELECTOR. */
   $$: <T extends Element = Element>(sel: string) => T[];
-  /** Só `createElement`: fillExplain CRIA o rodapé `.opt-explain` na primeira vez que vê um card. É a única
-   *  coisa que este módulo precisa do `document` global — injetada para não amarrar o módulo a ele. */
-  doc: Pick<Document, 'createElement'>;
+  /** Três coisas do `document`, e só elas: `createElement` (fillExplain CRIA o rodapé `.opt-explain` na
+   *  primeira vez que vê um card), `activeElement` e `contains` (frontOverlay anota quem abriu o diálogo e
+   *  restoreFocus devolve o foco para lá). Injetado para não amarrar o módulo ao global. */
+  doc: Pick<Document, 'createElement' | 'activeElement' | 'contains'>;
   /** z-index EFETIVO de um elemento. No game.js é `+getComputedStyle(el).zIndex||0` (repare: 'auto' vira NaN
    *  e o `||0` o transforma em 0 — comportamento preservado, é responsabilidade de quem injeta). Injetado
    *  porque getComputedStyle só existe no navegador, e porque o teste node precisa simular a pilha. */
@@ -78,6 +79,8 @@ export interface SettingsPanelApi {
   fillExplain: (card: HTMLElement | null) => void;
   /** Registra um diálogo. A ORDEM DE REGISTRO é significativa: é ela que a cadeia de Escape percorre. */
   register: (id: string, entry: OverlayEntry) => void;
+  /** Devolve o foco a quem abriu `id` (o par de `frontOverlay`). Falso se o abridor sumiu ou não é focável. */
+  restoreFocus: (id: string) => boolean;
   /** OVERLAY_CLOSE[id]?.() — devolve true se havia entrada registrada (o `if(c)c()` do dialogBack). */
   closeById: (id: string) => boolean;
   /** Id do diálogo que deve consumir a tecla, ou null. Percorre na ORDEM DE REGISTRO (não por z-index — é o
@@ -161,11 +164,48 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
     });
   }
 
+  /** Quem tinha o foco quando cada diálogo foi trazido para a frente — a chave é o id do diálogo. Usado por
+   *  `restoreFocus`, o par de `frontOverlay`. Não é um `let` global disfarçado: nasce e morre com o registro,
+   *  e a única coisa que o lê é a devolução do foco. */
+  const openerOf = new Map<string, HTMLElement>();
+
   function frontOverlay(el: HTMLElement | null): void {
     if (!el) return;
+    // ANTES de o diálogo aparecer: quem está com o foco agora é quem o abriu, e é para ele que o foco volta
+    // (WCAG 2.4.3). O elemento de verdade, e não um id fixo: o mesmo painel é aberto do menu de pausa, de um
+    // atalho de teclado e de um botão da barra, e só um deles é o certo em cada vez.
+    // Checagem ESTRUTURAL, e não `instanceof HTMLElement`: este módulo roda no project `node`, onde não existe
+    // global de DOM nenhum. O que se pede do abridor é só o que se vai usar dele — saber receber foco.
+    const opener = ctx.doc.activeElement as HTMLElement | null;
+    const focavel = !!opener && typeof opener.focus === 'function';
+    const dentro = !!opener && typeof el.contains === 'function' && el.contains(opener);
+    if (focavel && opener !== el && !dentro) openerOf.set(el.id, opener as HTMLElement);
     el.style.zIndex = String(++ovZ);
     const card = el.querySelector<HTMLElement>('.overlay__card');
     if (card) fillExplain(card);
+  }
+
+  /**
+   * Devolve o foco a quem abriu o diálogo `id`. Verdadeiro se conseguiu.
+   *
+   * Antes disto cada `close*` focava um `#opt-*` fixo — e SEIS desses nove ids não existem no documento
+   * (`#opt-visual`, `#opt-sound`, `#opt-movement`, `#opt-controls`, `#opt-animation`, `#opt-empathy`: são
+   * ganchos para uma barra de botões que ainda não foi feita). O `if (b) b.focus()` engolia isso em silêncio,
+   * então fechar o painel deixava o foco no `<body>`: quem navega por teclado voltava para o começo do
+   * documento, e quem usa leitor de tela perdia o lugar inteiro.
+   *
+   * Só devolve para elemento que ainda está no documento e ainda é focável — um painel pode ter sido aberto de
+   * dentro de outro que já fechou, e nesse caso quem decide é o chamador (daí o booleano).
+   */
+  function restoreFocus(id: string): boolean {
+    const opener = openerOf.get(id);
+    openerOf.delete(id);
+    if (!opener) return false;
+    if (typeof ctx.doc.contains === 'function' && !ctx.doc.contains(opener)) return false; // saiu do documento
+    if (typeof opener.hasAttribute === 'function' && opener.hasAttribute('disabled')) return false;
+    if (opener.offsetParent === null) return false; // escondido: focar nele não levaria o foco a lugar nenhum
+    opener.focus();
+    return ctx.doc.activeElement === opener;
   }
 
   function register(id: string, entry: OverlayEntry): void {
@@ -195,7 +235,7 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
   }
 
   return {
-    frontOverlay, fillExplain, register, closeById, escapeTarget, topVisibleOverlay,
+    frontOverlay, fillExplain, register, closeById, escapeTarget, topVisibleOverlay, restoreFocus,
     registeredIds: () => [...registry.keys()],
   };
 }

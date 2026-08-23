@@ -61,7 +61,7 @@ function boot() {
   const panel = initSettingsPanel(panelCtx());
   const noop = () => {};
   const motion = initSettingsMotion({
-    $, srSay: noop, store: { setBool: noop }, frontOverlay: panel.frontOverlay,
+    $, srSay: noop, store: { setBool: noop }, frontOverlay: panel.frontOverlay, restoreFocus: panel.restoreFocus,
     toggleBtn: (el, on) => { el.classList.toggle('is-on', on); el.setAttribute('aria-pressed', String(on)); },
     rm: { parallax: false, decor: false, items: false, particles: false }, saveRM: noop,
     rmKeys: RM_KEYS, rmChar: RM_CHAR,
@@ -69,7 +69,7 @@ function boot() {
   const empathy = initSettingsEmpathy({
     $, srSay: noop, store: { getBool: () => false },
     renderVizGroup: noop, reflectMotorEmpathy: noop, reflectVizButtons: noop,
-    frontOverlay: panel.frontOverlay,
+    frontOverlay: panel.frontOverlay, restoreFocus: panel.restoreFocus,
     setHearingLoss: noop, setOneButton: noop, setWheelchair: noop,
     getOneButton: () => false, getWheelchair: () => false,
   });
@@ -106,10 +106,56 @@ describe('casca + painéis reais — foco ao abrir e ao fechar', () => {
 
   it('[Right] o mesmo vale para o painel irmão: #empathy devolve o foco a #opt-empathy', () => {
     const { empathy } = boot();
+    // O `beforeEach` deixa o foco em #opt-animation; quem abre a Empatia é o botão DELA. Antes isto não
+    // precisava ser dito, porque o close focava um id fixo e acertava por acaso mesmo tendo sido aberto de
+    // outro lugar — o que é justamente o defeito que este arquivo passou a cobrir logo abaixo.
+    $('#opt-empathy').focus();
     empathy.open();
     expect($('#empathy').contains(document.activeElement)).toBe(true);
     empathy.close();
     expect(document.activeElement).toBe($('#opt-empathy'));
+  });
+
+  // ⚠️ O caso que faltava, e que é o motivo de este defeito ter vivido tanto: a marcação acima INVENTA os
+  // botões `#opt-animation`/`#opt-empathy`, e a página real NÃO os tem — dos nove destinos de foco que os
+  // painéis usavam, só `#opt-touchcfg` existe em app/index.html. O teste construía o DOM que fazia o código
+  // parecer certo, e por isso ficava verde enquanto quem jogava perdia o foco para o `<body>`.
+  // Aqui os botões são removidos de propósito e o painel é aberto de outro lugar — que é o que acontece de
+  // verdade, porque quem abre é o menu de pausa.
+  describe('sem os botões #opt-* (a página real): o foco volta para QUEM ABRIU, não para um id fixo', () => {
+    function semOptButtons() { $('#opt-animation').remove(); $('#opt-empathy').remove(); }
+
+    it('[Right] abre a partir de um botão qualquer e o foco volta para ele ao fechar', () => {
+      const { motion } = boot();
+      semOptButtons();
+      const abridor = document.createElement('button');
+      abridor.textContent = 'Movimento'; document.body.appendChild(abridor); abridor.focus();
+      motion.open();
+      expect($('#animation').contains(document.activeElement)).toBe(true); // o foco entrou no diálogo
+      motion.close();
+      expect(document.activeElement).toBe(abridor);                        // e voltou para quem abriu
+    });
+
+    it('[Right] dois abridores diferentes para o MESMO painel: cada um recebe o foco de volta', () => {
+      const { motion } = boot();
+      semOptButtons();
+      const a = document.createElement('button'); document.body.appendChild(a);
+      const b = document.createElement('button'); document.body.appendChild(b);
+      a.focus(); motion.open(); motion.close();
+      expect(document.activeElement).toBe(a);
+      b.focus(); motion.open(); motion.close();
+      expect(document.activeElement).toBe(b); // um id fixo não conseguiria distinguir os dois
+    });
+
+    it('[Zero/Error] abridor que sumiu do documento: restoreFocus recusa em vez de estourar', () => {
+      const { panel, motion } = boot();
+      semOptButtons();
+      const efemero = document.createElement('button'); document.body.appendChild(efemero); efemero.focus();
+      motion.open();
+      efemero.remove();               // o menu que abriu foi embora enquanto o painel estava aberto
+      expect(() => motion.close()).not.toThrow();
+      expect(panel.restoreFocus('animation')).toBe(false);
+    });
   });
 
   it('[Interface] frontOverlay não mexe no aria-modal nem no role do card', () => {
