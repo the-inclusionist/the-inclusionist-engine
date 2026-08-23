@@ -59,6 +59,7 @@ import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, worldTexFor, coinTexFor, 
   directSpriteCanvas, directSpriteTexture, clearWorldTexCache, clearCoinTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
 import { initCoinSpawning, rebuildCoins, addCoinsForOwner, respawnCoinsForOwner, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
 import { initKeyboardRuntime } from './input/keyboard-runtime.js'; // Onda A: esquema de teclas por jogador
+import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geometria fisica do pad + config de toque
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
   buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
@@ -1964,22 +1965,18 @@ document.querySelectorAll('.mode-btn, .pm-btn').forEach(attachAbbr);
 // Saída de áudio POR JOGADOR (setSinkId): detecta fones/caixas e atribui 1 por jogador
 // DESIGN DOS BOTÕES na tela por controle (Gamepad API: 0=baixo/pulo·sim, 1=direita/especial·não, 2=esquerda/interação, 3=cima/troca-poder)
 // PAD_DESIGNS extraído p/ input/devices.js (Fase 2).
-let padDesign=store.get('incl_paddesign','generic'); // padrão Windows = Genérico (números)
-// Sim/Não nos menus: SÓ Sony e Nintendo invertem os botões 0↔1 (confirmar = ○/A à direita, cultural).
-// Xbox/Genérico: sim = botão 0 (A verde / "0"), não = botão 1 (B vermelho / "1").
-function simNaoGlyphs(){ const set=PAD_DESIGNS[padDesign]||PAD_DESIGNS.generic; const inv=(padDesign==='sony'||padDesign==='nintendo');
+// padDesign/applyPadDesign migraram para input/touch.ts (Onda A). simNaoGlyphs/renderPauseLegend FICAM:
+// sao a legenda Sim/Nao da pausa, nao geometria de toque — o modulo as avisa por onPadDesignApplied.
+function simNaoGlyphs(){ const d=touchCtl.getPadDesign(); const set=PAD_DESIGNS[d]||PAD_DESIGNS.generic; const inv=(d==='sony'||d==='nintendo');
   return { sim:set[inv?'1':'0'], nao:set[inv?'0':'1'] }; }
 function renderPauseLegend(){ const g=simNaoGlyphs();
   const chip=(s,word)=>`<span class="lg"><span class="lg-ico" style="background:${s[1]}">${s[0]}</span> ${word}</span>`;
   const html=chip(g.sim,'Sim')+chip(g.nao,'Não');
   document.querySelectorAll('.pause-legend').forEach(el=>{ el.innerHTML=html; }); } // todas as pausas por tela
-function applyPadDesign(d){ if(d&&PAD_DESIGNS[d])padDesign=d; store.set('incl_paddesign',padDesign); const set=PAD_DESIGNS[padDesign]||PAD_DESIGNS.generic;
-  document.querySelectorAll('#pad-diamond .pad-b').forEach(b=>{ const s=set[b.dataset.btn]; if(s){ b.textContent=s[0]; b.style.background=s[1]; } }); renderPauseLegend(); }
-applyPadDesign(padDesign);
 // START (pílula): função vem do touchMap (padrão pausar) — a fiação fica no touchSetup, junto do doTouch.
-function padLayoutFromId(id){ id=(id||'').toLowerCase(); if(/dualshock|dualsense|playstation|054c/.test(id))return 'sony'; if(/switch|nintendo|joy-con|057e/.test(id))return 'nintendo'; if(/xbox|xinput|microsoft|045e/.test(id))return 'microsoft'; return 'generic'; }
-addEventListener('gamepadconnected', (e)=>{ try{ applyPadDesign(padLayoutFromId(e.gamepad.id)); const sel=$('#pad-design'); if(sel)sel.value=padDesign; srSay('Controle conectado: layout '+padDesign+'.'); }catch(err){} }); // A2: layout pelo id do controle
-const padDesignSel=$('#pad-design'); if(padDesignSel){ padDesignSel.value=padDesign; padDesignSel.addEventListener('change',()=>{ applyPadDesign(padDesignSel.value); srSay('Desenho dos botões: '+padDesignSel.value+'.'); }); } // A4: escolha manual (DirectInput/genérico)
+// padLayoutFromId migrou para input/touch.ts (Onda A) — a deteccao do modelo pelo id do controle e
+// dado de apresentacao dos botoes, nao leitura da Gamepad API. A fiacao (gamepadconnected e o seletor
+// #pad-design) desce para junto do initTouch, abaixo.
 // TAMANHO FÍSICO (mm) dos botões de toque — NÃO px. WCAG mede alvos de toque físicos, não botões
 // virtuais sobre canvas. Conversão mm→px ancorada no iPhone 16 a tela cheia (aresta longa 141,1mm
 // do display 1179×2556 @460ppi → ~6,04 px CSS/mm). No aparelho-alvo fica exato; noutros, proporcional.
@@ -1987,59 +1984,14 @@ const padDesignSel=$('#pad-design'); if(padDesignSel){ padDesignSel.value=padDes
 //  botão 12,5mm (piso 11mm > alvo de polegar Parhi 9,6mm; segurar cansa mais em botão pequeno),
 //  folga 3mm (evita apertar 2 sem esticar o polegar), analógico 18mm (capuz físico ~18–20mm),
 //  deslocamento 4,5mm. Faixa criança↔adulto estreita: crianças NÃO devem ir a alvos minúsculos.
-const IPHONE16_LONG_MM=141.1, IPHONE16_LONG_PX=852, IPHONE16_PXMM=IPHONE16_LONG_PX/IPHONE16_LONG_MM; // ~6,04 px CSS/mm
-// No CELULAR (alvo real), ancora na aresta longa da janela ÷ 141,1mm — funciona em retrato E paisagem (max()) e
-// dá o físico exato por aparelho (no iPhone 16, 6,04 px/mm). No DESKTOP/notebook (ponteiro fino, isMobile=false)
-// a janela larga NÃO é a aresta física de 141mm de um celular: usar o window-anchor inflava o pad (12,5mm→~170px
-// num monitor 1920). Aí fixa no ratio do iPhone 16 → o pad aparece no tamanho FÍSICO do aparelho-alvo (~75px),
-// estável (não cresce com a janela). Preview fiel ao que a criança vê no celular.
-function padPxPerMm(){ return isMobile() ? Math.max(window.innerWidth,window.innerHeight)/IPHONE16_LONG_MM : IPHONE16_PXMM; }
-const padLoad=(k,d)=>store.getNum(k,d);
-let padBtnMm=padLoad('incl_padbtnmm',12.5), padGapMm=padLoad('incl_padgapmm',3);
-let padStickMm=padLoad('incl_padstickmm',18), padTravelMm=padLoad('incl_padtravelmm',4.5);
-let padDpadMm=padLoad('incl_paddpadmm',12); // comprimento do braço da cruz (D-pad físico real ~10–13mm)
-let padDir=store.get('incl_paddir','stick'); // 'stick' | 'cross'
-let _stickTravelPx=42, _stickDeadPx=12; // atualizados por applyPadPhysical; lidos pelo joystick
-function padHandTag(v,lo,hi){ return v<=lo?'crianca':v>=hi?'adulto':'inter'; }
-function applyDirStyle(){ const st=$('#touch-stick'), cr=$('#touch-cross'); if(st)st.hidden=(padDir==='cross'); if(cr)cr.hidden=(padDir!=='cross'); const sel=$('#pad-dir'); if(sel&&sel.value!==padDir)sel.value=padDir; }
-function applyPadPhysical(){ const r=padPxPerMm();
-  const btn=padBtnMm*r, gap=padGapMm*r, diam=btn+Math.SQRT2*(btn+gap); // losango: folga de aresta = gap
-  const knob=padStickMm*r, travel=padTravelMm*r, base=knob+2*travel+16; // base do analógico = contato + curso
-  const arm=padDpadMm*r, aw=arm*0.8, span=2*arm+aw; // cruz: braço (comprimento) + largura (0,8×) → vão total
-  _stickTravelPx=travel; _stickDeadPx=Math.max(6,travel*0.4); // deslocamento útil + zona-morta (~40% do curso)
-  const S=document.documentElement.style;
-  S.setProperty('--pad-btn',btn.toFixed(1)+'px'); S.setProperty('--pad-diam',diam.toFixed(1)+'px');
-  S.setProperty('--stick-knob',knob.toFixed(1)+'px'); S.setProperty('--stick-base',base.toFixed(1)+'px');
-  S.setProperty('--dpad-arm-l',arm.toFixed(1)+'px'); S.setProperty('--dpad-arm-w',aw.toFixed(1)+'px'); S.setProperty('--dpad-span',span.toFixed(1)+'px');
-  const fmt=(n)=>n.toFixed(1).replace('.',','), lbl={crianca:'mão de criança',adulto:'mão de adulto',inter:'intermediário'};
-  const upd=(valId,tagId,mm,lo,hi,slId)=>{ const v=$(valId); if(v)v.textContent=fmt(mm)+' mm'; const t=$(tagId); if(t){ const w=padHandTag(mm,lo,hi); t.dataset.who=w; t.textContent=lbl[w]; } const s=$(slId); if(s&&parseFloat(s.value)!==mm)s.value=mm; };
-  upd('#pad-size-val','#pad-size-tag',padBtnMm,12.5,13,'#pad-size');
-  upd('#pad-gap-val','#pad-gap-tag',padGapMm,3,4.5,'#pad-gap');
-  upd('#pad-stick-val','#pad-stick-tag',padStickMm,17,19,'#pad-stick');
-  upd('#pad-travel-val','#pad-travel-tag',padTravelMm,4,5.5,'#pad-travel');
-  upd('#pad-dpad-val','#pad-dpad-tag',padDpadMm,12,14,'#pad-dpad'); }
-function setPadMm(o){ if(o.btn!=null)padBtnMm=o.btn; if(o.gap!=null)padGapMm=o.gap; if(o.stick!=null)padStickMm=o.stick; if(o.travel!=null)padTravelMm=o.travel; if(o.dpad!=null)padDpadMm=o.dpad;
-  store.set('incl_padbtnmm',padBtnMm);store.set('incl_padgapmm',padGapMm);store.set('incl_padstickmm',padStickMm);store.set('incl_padtravelmm',padTravelMm);store.set('incl_paddpadmm',padDpadMm); applyPadPhysical(); }
-applyPadPhysical(); applyDirStyle();
-addEventListener('resize',applyPadPhysical); // recalcula os px ao girar/redimensionar; os mm são fixos
-const padSizeEl=$('#pad-size'); if(padSizeEl)padSizeEl.addEventListener('input',()=>setPadMm({btn:parseFloat(padSizeEl.value)}));
-const padGapEl=$('#pad-gap'); if(padGapEl)padGapEl.addEventListener('input',()=>setPadMm({gap:parseFloat(padGapEl.value)}));
-const padStickEl=$('#pad-stick'); if(padStickEl)padStickEl.addEventListener('input',()=>setPadMm({stick:parseFloat(padStickEl.value)}));
-const padTravelEl=$('#pad-travel'); if(padTravelEl)padTravelEl.addEventListener('input',()=>setPadMm({travel:parseFloat(padTravelEl.value)}));
-const padDpadEl=$('#pad-dpad'); if(padDpadEl)padDpadEl.addEventListener('input',()=>setPadMm({dpad:parseFloat(padDpadEl.value)}));
-const padDirSel=$('#pad-dir'); if(padDirSel){ padDirSel.value=padDir; padDirSel.addEventListener('change',()=>{ padDir=padDirSel.value; store.set('incl_paddir',padDir); applyDirStyle(); srSay('Direcional: '+(padDir==='cross'?'cruz (D-pad)':'analógico')+'.'); }); }
-const padPresetChild=$('#pad-preset-child'); if(padPresetChild)padPresetChild.addEventListener('click',()=>{ setPadMm({btn:12,gap:2.5,stick:16.5,travel:4,dpad:11.5}); srSay('Controles no tamanho de mão de criança (6 a 12 anos).'); });
-const padPresetAdult=$('#pad-preset-adult'); if(padPresetAdult)padPresetAdult.addEventListener('click',()=>{ setPadMm({btn:14,gap:4.5,stick:20,travel:5.5,dpad:14}); srSay('Controles no tamanho de mão de adulto.'); });
-// REMAPEAR a FUNÇÃO de cada botão de toque (9 posições → ação). Lido ao vivo pelos handlers de toque.
-// TOUCH_ACT_LABELS extraído p/ input/devices.js (Fase 2).
-const TOUCH_ACTS=['left','right','up','down','jump','run','especial','swap','pause'];
-const TOUCH_SLOTS=[ {k:'up',lbl:'Direcional ↑ (cima)'},{k:'down',lbl:'Direcional ↓ (baixo)'},{k:'left',lbl:'Direcional ← (esquerda)'},{k:'right',lbl:'Direcional → (direita)'},{k:'start',lbl:'START (enter)'},{k:'b0',lbl:'Botão 0 (baixo)'},{k:'b1',lbl:'Botão 1 (direita)'},{k:'b2',lbl:'Botão 2 (esquerda)'},{k:'b3',lbl:'Botão 3 (cima)'} ];
-// TOUCH_DEFAULT extraído p/ input/devices.js (Fase 2).
-let touchMap=(()=>{ const s=store.getJSON('incl_touchmap',null); return Object.assign({},TOUCH_DEFAULT, s&&typeof s==='object'?s:{}); })();
-function renderTouchMap(){ const el=$('#touchmap-list'); if(!el)return;
-  el.innerHTML=TOUCH_SLOTS.map(s=>`<div class="ctrl-row"><label for="tm-${s.k}">${s.lbl}</label><select id="tm-${s.k}" class="vol" data-slot="${s.k}">${TOUCH_ACTS.map(a=>`<option value="${a}"${touchMap[s.k]===a?' selected':''}>${TOUCH_ACT_LABELS[a]}</option>`).join('')}</select></div>`).join('');
-  el.querySelectorAll('select[data-slot]').forEach(sel=>sel.addEventListener('change',()=>{ touchMap[sel.dataset.slot]=sel.value; store.setJSON('incl_touchmap',touchMap); srSay((sel.previousElementSibling?sel.previousElementSibling.textContent:'Botão')+': '+TOUCH_ACT_LABELS[sel.value]+'.'); }));
-}
+// Geometria fisica do pad (mm -> px), presets, direcional e o mapa de toque migraram para input/touch.ts
+// (Onda A). As dimensoes de tela entram INJETADAS: o modulo nunca le window.innerWidth.
+const touchCtl = initTouch({ $, srSay, store, root: document.documentElement, isMobile,
+  viewport: () => ({ w: window.innerWidth, h: window.innerHeight }),
+  frontOverlay, onPadDesignApplied: () => { if(typeof renderPauseLegend==='function') renderPauseLegend(); } });
+touchCtl.applyPadDesign(store.get('incl_paddesign','generic'));
+addEventListener('gamepadconnected', (e)=>{ try{ const d=touchCtl.applyPadDesign(padLayoutFromId(e.gamepad.id)); const sel=$('#pad-design'); if(sel)sel.value=d; srSay('Controle conectado: layout '+d+'.'); }catch(err){} }); // A2: layout pelo id do controle
+const padDesignSel=$('#pad-design'); if(padDesignSel){ padDesignSel.value=touchCtl.getPadDesign(); padDesignSel.addEventListener('change',()=>{ touchCtl.applyPadDesign(padDesignSel.value); srSay('Desenho dos botões: '+padDesignSel.value+'.'); }); } // A4: escolha manual
 // JOGAR COM OS OLHOS: eyeMode/eyeSet/onGaze/startEyeControl/stopEyeControl/loadWebGazer → ui/webcam.js (Estágio 4, Tier 1).
 const eyesBtn=$('#opt-eyes'); if(eyesBtn)eyesBtn.addEventListener('click',()=>{ setEyeMode(!eyeMode); toggleBtn(eyesBtn,eyeMode); eyesBtn.textContent=eyeMode?'❚❚ Ligado':'▶ Desligado';
   if(eyeMode){ loadWebGazer(startEyeControl); srSay('Jogar com os olhos: carregando a webcam (permita o acesso).'); } else { stopEyeControl(); srSay('Jogar com os olhos desligado.'); } });
@@ -2072,10 +2024,9 @@ const motion = initSettingsMotion({ $, srSay, store, frontOverlay, toggleBtn, rm
 function openMovement(){ const ov=$('#movement'); if(!ov)return; motor.renderMovPlayers(); motor.reflectFacil(); motor.reflectAltMove(); renderMapHub(); ov.hidden=false; frontOverlay(ov); movementOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); }
 function closeMovement(){ const ov=$('#movement'); if(!ov)return; ov.hidden=true; movementOpen=false; const b=$('#opt-movement'); if(b)b.focus(); }
 // Submenu "Configurar botões de tela touch"
-function openTouchCfg(){ const ov=$('#touchcfg'); if(!ov)return; renderTouchMap(); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('select,button'); if(f)f.focus(); }
-function closeTouchCfg(){ const ov=$('#touchcfg'); if(!ov)return; ov.hidden=true; const b=$('#opt-touchcfg'); if(b)b.focus(); }
-const touchCfgBtn=$('#opt-touchcfg'); if(touchCfgBtn)touchCfgBtn.addEventListener('click',openTouchCfg);
-const touchCfgClose=$('#touchcfg-close'); if(touchCfgClose)touchCfgClose.addEventListener('click',closeTouchCfg);
+// openTouchCfg/closeTouchCfg migraram para input/touch.ts (Onda A).
+const touchCfgBtn=$('#opt-touchcfg'); if(touchCfgBtn)touchCfgBtn.addEventListener('click',()=>touchCtl.openTouchCfg());
+const touchCfgClose=$('#touchcfg-close'); if(touchCfgClose)touchCfgClose.addEventListener('click',()=>touchCtl.closeTouchCfg());
 // HUB de mapeamento (por jogador): teclado funciona (abre o remap); gamepad/olhos/setores/fala = em construção.
 function mapSoon(nome){ srAlert(nome+': em construção — chega junto com os subsistemas de webcam e fala.'); }
 function renderMapHub(){ const el=$('#map-hub'); if(!el)return; const np=numPlayers;
@@ -2150,7 +2101,7 @@ window.__incl.layout=layout; window.__incl.get_librasOpen=()=>librasOpen;
 /* ===================== E14: shell — título/splash + pausa ===================== */
 function setPhase(p){
   setPhaseValue(p); // core/state.js: só o valor + evento; a reação de UI abaixo fica aqui
-  if(p!=='playing'&&typeof hideTouchControls==='function')hideTouchControls(); // menu ativo (título/pausa) = sem controle virtual
+  if(p!=='playing')hideTouchControls(); // menu ativo (título/pausa) = sem controle virtual
   // GAG: na pausa, silencia TODO o som do jogo (loops de ambiente/chuva inclusive) — o áudio volta ao retomar.
   setMasterMuted(p!=='playing'); // nó mestre em platform/audio.js: silencia na pausa/título
   const t=$('#title-overlay'), pa=$('#pause-overlay');
@@ -2169,7 +2120,7 @@ function setPhase(p){
 // NAVEGAÇÃO UNIVERSAL de menus: qualquer menu aberto (pausa OU submenu) é navegável por up/down/left/right/
 // sim/não — as MESMAS ações valem para teclado, controle, olhos e fala. sim = confirma/alterna/entra;
 // não = volta ao menu anterior (na raiz, volta ao jogo = Continuar). left/right ajustam select/slider.
-const OVERLAY_CLOSE={ audio:()=>closeAudio(), movement:()=>closeMovement(), options:()=>closeOptions(), animation:()=>motion.close(), visual:()=>closeVisual(), empathy:()=>empathy.close(), touchcfg:()=>closeTouchCfg(), help:()=>closeHelp(), typo:()=>closeTypo() };
+const OVERLAY_CLOSE={ audio:()=>closeAudio(), movement:()=>closeMovement(), options:()=>closeOptions(), animation:()=>motion.close(), visual:()=>closeVisual(), empathy:()=>empathy.close(), touchcfg:()=>touchCtl.closeTouchCfg(), help:()=>closeHelp(), typo:()=>closeTypo() };
 // Ações do menu de pausa (compartilhadas pelos menus por tela). Ao abrir um submenu de a11y, escopa ao
 // jogador que agiu (pauseActor) — o diálogo abre na aba dele (Etapa 3 remove as abas).
 const pauseActs={ resume:()=>setPhase('playing'),
@@ -2375,13 +2326,12 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
 // minimapa: no toque vai pro canto SUPERIOR DIREITO (o direcional, embaixo à esq., não o cobre); senão, inferior esquerdo
 // setMinimapCorner extraído p/ render/minimap.js (Estágio 4, Tier 1).
 // teclado/controle → esconde os botões e devolve o minimapa ao canto inferior esquerdo
-function hideTouchControls(){ const tc=document.querySelector('#touch-controls'); if(tc && !tc.hidden) tc.hidden=true; document.body.classList.remove('touch-mode'); setMinimapCorner(false); }
-// toque/clique → mostra os botões e move o MINIMAPA p/ o canto sup. direito. Em multi-tela, NÃO ativa.
-function showTouchControls(){ if(numPlayers>1 || phase!=='playing' || players.some(p=>p.quiz)) return; // MENU ativo (splash/pausa/quiz) = sem controle virtual: dá pra tocar direto nos botões da tela
-  const tc=document.querySelector('#touch-controls'); if(tc) tc.hidden=false; document.body.classList.add('touch-mode'); setMinimapCorner(true); }
+// hideTouchControls/showTouchControls migraram para input/touch.ts (Onda A).
+const hideTouchControls = (reason) => touchCtl.hideTouchControls(reason);
+const showTouchControls = () => touchCtl.showTouchControls();
 (function touchSetup(){
   const tc=$('#touch-controls'); if(!tc)return;
-  // alternância por modalidade: toque/clique MOSTRA; teclado/controle OCULTA (hideTouchControls).
+  // alternancia por modalidade: toque/clique MOSTRA; teclado/controle OCULTA (hideTouchControls).
   if(/[?&]touch=1/.test(location.search)){ showTouchControls(); }
   addEventListener('pointerdown',()=>{ if(attractCtl.onInput()){ return; } showTouchControls(); }, true); // toque revela (e encerra a demo)
   addEventListener('touchstart',()=>{ showTouchControls(); }, {capture:true,passive:true});
@@ -2398,8 +2348,8 @@ function showTouchControls(){ if(numPlayers>1 || phase!=='playing' || players.so
   const release=(act)=>{ const c=codeFor(act); if(c)keys.delete(c); };
   const doTouch=(a,on)=>{ if(a==='pause'){ if(on)togglePause(); return; } on?press(a):release(a); }; // ação mapeável (função de cada botão)
   tc.querySelectorAll('.touch-btn').forEach(b=>{ const slot='b'+b.dataset.btn;  // função vem do touchMap (remapeável)
-    const down=(e)=>{ e.preventDefault(); doTouch(touchMap[slot],true); };
-    const up=(e)=>{ e.preventDefault(); doTouch(touchMap[slot],false); };
+    const down=(e)=>{ e.preventDefault(); doTouch(touchCtl.getTouchMap()[slot],true); };
+    const up=(e)=>{ e.preventDefault(); doTouch(touchCtl.getTouchMap()[slot],false); };
     b.addEventListener('pointerdown',down); b.addEventListener('pointerup',up);
     b.addEventListener('pointerleave',up); b.addEventListener('pointercancel',up);
     b.addEventListener('contextmenu',(e)=>e.preventDefault());
@@ -2409,10 +2359,10 @@ function showTouchControls(){ if(numPlayers>1 || phase!=='playing' || players.so
   // joystick digital: base (círculo grande) + manopla (círculo menor) que desliza p/ a direção tocada → 8 direções
   const stick=$('#touch-stick'), knob=stick&&stick.querySelector('.touch-knob');
   if(stick&&knob){
-    let pid=null; // deslocamento (R) e zona-morta (DEAD) vêm de _stickTravelPx/_stickDeadPx (mm, config em A12e motora)
+    let pid=null; // deslocamento (R) e zona-morta (DEAD) vêm de touchCtl.getStickTravelPx()/touchCtl.getStickDeadPx() (mm, config em A12e motora)
     const dirState={left:false,right:false,up:false,down:false};
-    const setDir=(d,on)=>{ if(dirState[d]===on)return; dirState[d]=on; doTouch(touchMap[d],on); }; // direção física → função mapeada
-    const move=(px,py)=>{ const R=_stickTravelPx, DEAD=_stickDeadPx; const r=stick.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+    const setDir=(d,on)=>{ if(dirState[d]===on)return; dirState[d]=on; doTouch(touchCtl.getTouchMap()[d],on); }; // direção física → função mapeada
+    const move=(px,py)=>{ const R=touchCtl.getStickTravelPx(), DEAD=touchCtl.getStickDeadPx(); const r=stick.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
       let dx=px-cx, dy=py-cy; const m=Math.hypot(dx,dy)||1; const f=m>R?R/m:1;
       knob.style.transform=`translate(${dx*f}px,${dy*f}px)`;
       setDir('left',dx<-DEAD); setDir('right',dx>DEAD); setDir('up',dy<-DEAD); setDir('down',dy>DEAD); };
@@ -2428,7 +2378,7 @@ function showTouchControls(){ if(numPlayers>1 || phase!=='playing' || players.so
   const cross=$('#touch-cross');
   if(cross){ const arms={up:cross.querySelector('.dpad-up'),down:cross.querySelector('.dpad-down'),left:cross.querySelector('.dpad-left'),right:cross.querySelector('.dpad-right')};
     const cst={left:false,right:false,up:false,down:false}; let cpid=null;
-    const cset=(d,on)=>{ if(cst[d]===on)return; cst[d]=on; doTouch(touchMap[d],on); if(arms[d])arms[d].classList.toggle('on',on); }; // direção física → função mapeada
+    const cset=(d,on)=>{ if(cst[d]===on)return; cst[d]=on; doTouch(touchCtl.getTouchMap()[d],on); if(arms[d])arms[d].classList.toggle('on',on); }; // direção física → função mapeada
     const at=(px,py)=>{ const r=cross.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2; const dx=px-cx, dy=py-cy; const dead=r.width*0.18; // ~18% do lado = miolo neutro
       cset('left',dx<-dead); cset('right',dx>dead); cset('up',dy<-dead); cset('down',dy>dead); };
     const crst=()=>{ ['left','right','up','down'].forEach(d=>cset(d,false)); cpid=null; };
