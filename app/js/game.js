@@ -61,6 +61,7 @@ import { initCoinSpawning, rebuildCoins, addCoinsForOwner, respawnCoinsForOwner,
 import { initKeyboardRuntime } from './input/keyboard-runtime.js'; // Onda A: esquema de teclas por jogador
 import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geometria fisica do pad + config de toque
 import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad API + assistente de mapeamento
+import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
   buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
@@ -176,7 +177,6 @@ let MODE='ludico'; // 'ludico' | 'somasub' (silabas vem na E7)
    4 escritor (alfabético) — montar por LETRAS numa grade; o jogo fala o NOME da letra.
    5 escritor cego — montar por LETRAS; o jogo dita a CELA BRAILLE de cada letra. */
 // 'quizLevel' agora vem de core/state.js (Fase 2, mega-variável 2). Leitura = binding vivo; escrita via setQuizLevel().
-const QL_NAME={1:'pré-silábico',2:'silábico',3:'silábico-alfabético',4:'escritor',5:'escritor cego'};
 // LETTER_NAME/soletra/ferreiroDistractors extraídos p/ game/literacy-distractors.js (Estágio 4).
 // malform() REMOVIDO: era código morto (0 chamadas) — distrator de sílaba nunca ligado.
 let letterCase='lower'; // 'lower' | 'upper' (E7: selecionável)
@@ -781,7 +781,6 @@ let vpTex=[], vpSpr=[], vpFrames=null, vpDots=[];
 // HUD por jogador em DOM SOBREPOSTO (alta definição, não pixela): moedas (1ª coluna) + poder (2ª coluna), por viewport.
 let gameHudEl=null, vpHudDom=[], vpQuitDom=[], vpScreens=[], vpPause=[], pauseActor=0;
 // Menu de pausa POR TELA (Etapa 2): um por jogador, dentro da .player-screen dele.
-const PM_BTNS=[ {act:'resume',lbl:'▶ Continuar'},{act:'letra',lbl:'🔠 ABC',letra:true},{act:'tipo',lbl:'🔤 Tipografia'},{act:'addplayer',lbl:'👥 Adicionar jogador'},{act:'audio',lbl:'🦻 Acessibilidade auditiva'},{act:'motora',lbl:'♿ Acessibilidade motora'},{act:'anim',lbl:'🎞 Sensibilidade visual'},{act:'visual',lbl:'🎨 Acessibilidade visual'},{act:'empatia',lbl:'🫂 Modo empatia'},{act:'ajuda',lbl:'❓ Ajuda'},{act:'print',lbl:'📷 Print (ver a tela)'},{act:'quit',lbl:'🚪 Sair do jogo'} ];
 // Barra de atalhos de a11y no topo da pausa (por tela). Sons (cego/TTS) só com saída própria; webcam/voz em construção.
 const PAUSE_ICONS=[ {k:'blind',e:'🦯',n:'Modo cego (navegação sonora)'},{k:'tts',e:'🗨️',n:'Narração por voz (TTS)'},{k:'libras',e:'🤟',n:'Modo pessoa surda (Libras)'},{k:'tea',e:'🧩',n:'Modo TEA (calmo / silencioso)'},{k:'altmove',e:'🦾',n:'Teclas de alternância'},{k:'contrast',e:'🌗',n:'Alto contraste'},{k:'cvd',e:'🚥',n:'Correção de daltonismo (protan/deutan/tritan)'},{k:'face',e:'🧑',n:'Webcam — rosto',soon:true},{k:'eyes',e:'👀',n:'Webcam — olhos',soon:true},{k:'voice',e:'👄',n:'Comando de voz',soon:true} ];
 let calmMode=0; // 0=normal · 1=calmo (reduz) · 2=silencioso (desliga) — nunca mexe em TTS/modo cego
@@ -1491,44 +1490,24 @@ function restartGame(){
   srSay(numPlayers>1 ? `${numPlayers} jogadores, cada um na sua tela. Corram pelas moedas.` : MODE==='somasub' ? 'Modo Soma-Sub. Toque nas figuras e resolva as contas.' : MODE==='silabas' ? 'Modo Sílabas. Toque nas letras e monte as palavras.' : 'Nova rodada. Colete 10 moedas.');
 }
 $('#btn-again').addEventListener('click',()=>{ restartGame(); $('#game-region').focus(); });
-/* ===================== ATIVIDADES (menu inicial novo) =====================
-   Lúdico · Alfabetização (5 — 3 vitórias = 1 moeda, SEM penalidade no erro) · Matemática (11).
-   Trocar de atividade = todo mundo sai do jogo → volta ao menu inicial. */
-const ALF_LEVEL={alf1:1,alf2:2,alf3:3,alf4:4,alf5:5};
-if(!isValidActivityId(ACTIVITY)) setActivityValue(DEFAULT_ACTIVITY_ID); // ACTIVITY vem de core/state.js (Fase 2, mega-var 5); valida o valor inicial contra as atividades existentes
-let tabSel=(()=>{ const s=store.getJSON(store.KEYS.tabsel,null); if(Array.isArray(s)&&s.length)return s.filter(n=>n>=0&&n<=10); return [2,3,4,5]; })();
-function actCat(){ return (getActivity(ACTIVITY)||{}).cat||'ludico'; }
-function setActivity(id){ if(!hasActivity(id))id=DEFAULT_ACTIVITY_ID; setActivityValue(id); // core/state.js: valor + persistência (incl_activity) + evento; a validação fica aqui
-  const cat=getActivity(id).cat;
-  if(cat==='alf')setQuizLevel(ALF_LEVEL[id],false); // reusa os 5 níveis da psicogênese
-  MODE = cat==='alf'?'silabas':cat==='mat'?'somasub':'ludico'; }
-let _pendingAct='ludico', pendingPlayers=1, _cenBack='tm-main';
-function startActivity(id){ // R-splash 2: depois do desafio, o JOGADOR 1 escolhe o CENÁRIO (aos demais, "aguarde")
-  _pendingAct=id;
-  _cenBack = (getActivity(id).pick)?'tm-tab' : getActivity(id).dens?'tm-fr' : getActivity(id).cat==='alf'?'tm-alf' : getActivity(id).cat==='mat'?'tm-mat' : 'tm-main';
-  titleUI.show('tm-cen'); srSay('Escolha o cenário.'); }
-function reallyStart(){ const id=_pendingAct; setActivity(id);
-  if(isMobile()){ if(pendingPlayers>1)pendingPlayers=1;
-    try{ const el=document.documentElement, rf=el.requestFullscreen||el.webkitRequestFullscreen; if(rf)rf.call(el); }catch(e){} }
-  players.forEach(p=>{ p.alfWins=0; });
-  if(pendingPlayers!==numPlayers) setNumPlayers(pendingPlayers); else restartGame();
-  setPhase('playing'); hideTips(); srSay(getActivity(id).nome+'. Jogo iniciado.'); }
-// gcd/fracStr/DEN_NAME/fmtFrac/fracGraphic/fracSpeak/speakChoice extraídos p/ game/fractions.js (Estágio 4).
-// As NOTAÇÕES (fracNot + FNOT_*) — estado/labels do menu — ficam aqui (painel de frações).
-/* NOTAÇÕES de fração (menu "Fração"): vertical · diagonal · decimal · percentual · mista — toggles persistidos */
-// NOTAÇÕES = opções de jogo (toggles). GRÁFICOS (círculo/quadrado) NÃO são opção — são intrínsecos à atividade (José).
-let fracNot=(()=>{ const d={v:1,d:0,dec:0,pct:0,mix:0};
-  { const s=store.getJSON(store.KEYS.fracnot,null); if(s&&typeof s==='object')for(const k in d)if(k in s)d[k]=s[k]?1:0; }
-  if(!Object.values(d).some(x=>x))d.v=1; return d; })();
-const FNOT_LBL={v:'Fracionária vertical',d:'Fracionária diagonal',dec:'Decimal',pct:'Percentual',mix:'Mista'};
-// Rótulo do toggle = a PRÓPRIA notação (exemplo x/y), lado a lado → ocupa menos espaço (José). aria-label mantém a palavra.
-const FNOT_SYM={ v:`<span class="fv"><b>x</b><b>y</b></span>`, d:'x/y', dec:'x,y', pct:'x%', mix:`x<span class="fv"><b>y</b><b>z</b></span>` };
-const FNOT_DESC={ // rodapé (mesmo estilo do menu de pausa): explica cada notação
-  v:'Liga a exibição de frações verticais.',
-  d:'Liga a exibição de frações na horizontal.',
-  dec:'Liga números que sempre aparecem com uma casa decimal.',
-  pct:'Liga números percentuais.',
-  mix:'Liga números inteiros e frações reduzidas.' };
+/* ===================== ATIVIDADES (menu inicial) -> ui/activities-menu.ts =====================
+   O menu do titulo, a escolha de atividade e o inicio da partida moram no modulo. Fica aqui so a
+   composicao: MODE entra como ATRIBUICAO NUA (setMode() tambem reinicia a rodada e move o foco, que
+   nao e o que escolher atividade faz), e CENARIOS entra reduzido a {id,nome} — o resto e dado de
+   textura de parallax e nao tem o que fazer dentro de um menu. */
+if(!isValidActivityId(ACTIVITY)) setActivityValue(DEFAULT_ACTIVITY_ID); // valida o valor inicial contra o catalogo
+const activitiesMenu = initActivitiesMenu({
+  $, getActiveElement: () => document.activeElement, srSay, srAlert,
+  titleShow: titleUI.show,
+  cenarios: Object.keys(CENARIOS).map(c => ({ id: c, nome: CENARIOS[c].nome })),
+  setCenario,
+  setModeValue: (m) => { MODE = m; },
+  setQuizLevel, isMobile, fitsN, setNumPlayers, restartGame, setPhase, hideTips,
+  enterFullscreen: () => { try{ const el=document.documentElement, rf=el.requestFullscreen||el.webkitRequestFullscreen; if(rf)rf.call(el); }catch(e){} },
+});
+const { actCat, setActivity, startActivity, reallyStart,
+        navTitle, titleButtons, buildTitleMenus, tabSel, fracNot } = activitiesMenu;
+// fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraidos p/ game/fractions.js (Estagio 4).
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraídos p/ game/fractions.js (Estágio 4).
 const MODE_LABELS={ludico:'🪙 Lúdico',somasub:'🔷 Soma-Sub',silabas:'🔤 Sílabas'};
 const MODES=['ludico','somasub','silabas'];
@@ -1829,15 +1808,8 @@ function closeAudio(){ const ov=$('#audio'); if(!ov)return; ov.hidden=true; audi
 // A12e auditiva: Modo cego (só áudio) + seleção de voz (Web Speech agora; neurais em breve)
 // Botões abreviados: hover/foco DESCOMPACTA o número em letras (o "12" vira as 12 letras contando p/ baixo), suave;
 // recomprime ao sair. Genérico: varre a barra (.mode-btn) E o menu de pausa (.pm-btn) casando A12e/S11e.
-const ABBR_MID={ 'A12e':'cessibilidad', 'S11e':'ensibilidad' }; // token → letras ocultas (Acessibilidade / Sensibilidade)
-function attachAbbr(b){ if(!b||b.dataset.abbrDone)return; const txt=b.textContent; let tok=null;
-  for(const t in ABBR_MID){ if(txt.includes(t)){ tok=t; break; } } if(!tok)return;
-  const i=txt.indexOf(tok), pre=txt.slice(0,i+1), suf=txt.slice(i+tok.length-1), hid=ABBR_MID[tok], N=hid.length; // pre inclui a 1ª letra; suf começa na última
-  b.dataset.abbrDone='1'; let k=0,tgt=0,timer=null;
-  const render=()=>{ b.textContent=pre+hid.slice(0,k)+((N-k>0)?String(N-k):'')+suf; };
-  const tick=()=>{ if(k===tgt){ clearInterval(timer); timer=null; return; } k+=k<tgt?1:-1; render(); };
-  const go=(t)=>{ tgt=t; if(!timer)timer=setInterval(tick,16); };
-  render(); b.addEventListener('mouseenter',()=>go(N)); b.addEventListener('mouseleave',()=>go(0)); b.addEventListener('focus',()=>go(N)); b.addEventListener('blur',()=>go(0)); }
+// ABBR_MID/attachAbbr migraram para ui/activities-menu.ts (Onda A). A VARREDURA abaixo fica onde
+// esta: ela e sensivel a quando os .pm-btn existem.
 document.querySelectorAll('.mode-btn, .pm-btn').forEach(attachAbbr);
 // Saída de áudio POR JOGADOR (setSinkId): detecta fones/caixas e atribui 1 por jogador
 // DESIGN DOS BOTÕES na tela por controle (Gamepad API: 0=baixo/pulo·sim, 1=direita/especial·não, 2=esquerda/interação, 3=cima/troca-poder)
@@ -2082,35 +2054,9 @@ function quitGame(){ // Sair: single → volta ao MENU INICIAL; MP → tela do j
     setPhase('playing'); srSay('Jogador '+(q+1)+' abandonou o jogo.'); } }
 function togglePause(){ if(phase==='playing')setPhase('paused'); else if(phase==='paused')setPhase('playing'); }
 /* ===== Menu inicial (v3): principal → submenus de atividade → (tabuada/divisão) seletor de números ===== */
-let _tabFor='mat5';
-function titleButtons(){ const m=['tm-main','tm-alf','tm-mat','tm-tab','tm-fr','tm-cen'].map(id=>$('#'+id)).find(el=>el&&!el.hidden);
-  return m?[...m.querySelectorAll('button')]:[]; }
-function navTitle(k){ const bs=titleButtons(); if(!bs.length)return;
-  let i=bs.indexOf(document.activeElement);
-  if(k.up||k.down||k.left||k.right){ const d=(k.down||k.right)?1:-1; i=i<0?0:(i+d+bs.length)%bs.length; bs[i].focus(); srSay(bs[i].textContent); }
-  else if(k.yes){ (i<0?bs[0]:bs[i]).click(); }
-  else if(k.no){ const back=bs.find(b=>b.dataset.tmBack); if(back)back.click(); } }
-function buildTitleMenus(){
-  const mk=id=>{ const a=getActivity(id); return `<button class="title-btn" data-act-id="${id}" type="button">${a.nome}${a.sub?`<span class="act-sub">${a.sub}</span>`:''}</button>`; }; // subtítulo de exemplo (letramento)
-  const back=(to)=>`<button class="title-btn ghost" data-tm-back="${to}" type="button">Voltar</button>`;
-  const desc=`<div class="tm-desc" aria-live="polite"></div>`; // rodapé com a descrição do minigame focado
-  const h=t=>`<h3 class="tm-title">${t}</h3>`;                  // título do submenu (pedido do José)
-  const alf=$('#tm-alf'); if(alf)alf.innerHTML=h('Alfabetização')+['alf1','alf2','alf3','alf4','alf5'].map(mk).join('')+back('tm-main')+desc;
-  const mat=$('#tm-mat'); if(mat)mat.innerHTML=h('Matemática')+['mat1','mat2','mat3','mat4','mat5','mat6'].map(mk).join('')+
-    `<button class="title-btn" data-tm-fr="1" type="button">Fração</button>`+back('tm-main')+desc;
-  const fr=$('#tm-fr'); if(fr)fr.innerHTML=h('Soma e subtração de frações')+
-    `<div class="frac-nots" role="group" aria-label="Notação">`+Object.keys(FNOT_LBL).map(k=>`<button class="title-btn tab-num${fracNot[k]?' tab-on':''}" data-fnot="${k}" type="button" aria-pressed="${!!fracNot[k]}" aria-label="${FNOT_LBL[k]}">${FNOT_SYM[k]}</button>`).join('')+`</div>`+
-    ['fr2','fr3','fr42','fr5','fr632','fr2a6'].map(mk).join('')+back('tm-mat')+desc;
-  const rows=r=>r.map(n=>`<button class="title-btn tab-num${tabSel.includes(n)?' tab-on':''}" data-tab-n="${n}" type="button" aria-pressed="${tabSel.includes(n)}">${n}</button>`).join('');
-  const tab=$('#tm-tab'); if(tab)tab.innerHTML=h('Tabuada')+`<div class="game-subtitle">Escolha os números para treinar</div>`+
-    `<div class="tab-row">${rows([0,1,2,3,4,5])}</div><div class="tab-row">${rows([6,7,8,9,10])}</div>`+
-    `<button class="title-btn" id="tab-play" type="button">Jogar</button>`+back('tm-mat');
-  const cen=$('#tm-cen'); if(cen)cen.innerHTML=h('Cenário')+Object.keys(CENARIOS).map(c=>
-    `<button class="title-btn" data-cen="${c}" type="button">${CENARIOS[c].nome}</button>`).join('')+
-    `<button class="title-btn ghost" data-cen-back="1" type="button">Voltar</button>`;
-}
-/* Rodapé do splash: controles conforme o DISPOSITIVO plugado — teclado=letras (J/K/U/I),
-   DirectInput=números (0/1/2/3), XInput=letras COLORIDAS (A/B/X/Y). Pausa: Enter/START. */
+// _tabFor/titleButtons/navTitle/buildTitleMenus migraram para ui/activities-menu.ts (Onda A).
+// padKind/updateTitleLegend + os dois ouvintes de gamepad NAO sao do menu: sao a legenda por
+// dispositivo do splash (slice do gamepad). Estavam no meio do intervalo removido e voltaram.
 function padKind(){ let kind='kb'; const pads=navigator.getGamepads?navigator.getGamepads():[];
   for(const gp of pads){ if(!gp)continue; kind=(gp.mapping==='standard')?'x':'d'; if(kind==='x')break; }
   return kind; }
@@ -2140,53 +2086,15 @@ function updateTitleLegend(){ const el=$('#title-legend'); if(!el)return; // 2 L
   const w=$('#title-wait'); if(w)w.hidden=numPlayers<=1; } // MP: aviso "Aguarde o Jogador 1"
 addEventListener('gamepadconnected',()=>{ if(phase==='title')updateTitleLegend(); });
 addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegend(); });
-(function titleSetup(){ const ov=$('#title-overlay'); if(!ov)return; buildTitleMenus();
-  // Ícones de a11y da pausa TAMBÉM no topo do splash (mesmas ações, escopo do Jogador 1)
+// O despachante do menu do titulo (teclado do #np-btn, rodape de descricao e o click) migrou para
+// ui/activities-menu.ts, que liga os proprios ouvintes no #title-overlay. Sobrou aqui a barra de
+// icones de a11y do splash, que e do slice de pausa.
+(function titleIconsSetup(){ const ov=$('#title-overlay'); if(!ov)return;
+  // Icones de a11y da pausa TAMBEM no topo do splash (mesmas acoes, escopo do Jogador 1)
   const ti=$('#title-icons'); if(ti){ ti.innerHTML=PAUSE_ICONS.map(ic=>'<button class="pi-btn'+(ic.soon?' pi-soon':'')+'" type="button" data-pi="'+ic.k+'" aria-label="'+ic.n+(ic.soon?' (em construção)':'')+'">'+ic.e+'</button>').join('');
     ti.addEventListener('click',(e)=>{ const ib=e.target.closest('.pi-btn'); if(!ib)return; pauseActor=0; iconAct(ib.dataset.pi,0);
-      reflectTitleIcons(); if(typeof reflectPauseIcons==='function')reflectPauseIcons(); srSay(ib.getAttribute('aria-label')||''); }); // reflete no SPLASH também
-    reflectTitleIcons(); } // estado inicial dos ícones do splash
-  // Seletor de jogadores por TECLADO: ←/→ no botão único = −1/+1 (o clique usa o lado; teclado é explícito)
-  ov.addEventListener('keydown',(e)=>{ const b=e.target.closest('#np-btn'); if(!b)return;
-    if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault(); b.dataset.np=e.key==='ArrowLeft'?'-1':'1'; b.click(); } });
-  // Rodapé (mesmo estilo do menu de pausa): descrição do minigame (data-act-id) OU da notação (data-fnot), no foco/hover
-  const showDesc=(e)=>{ const b=e.target.closest('button[data-act-id],button[data-fnot]'); if(!b)return;
-    const d = b.dataset.fnot ? (FNOT_DESC[b.dataset.fnot]||'') : ((getActivity(b.dataset.actId)||{}).d||'');
-    const box=b.closest('.title-menu'); const el=box&&box.querySelector('.tm-desc'); if(el)el.textContent=d; };
-  ov.addEventListener('focusin',showDesc); ov.addEventListener('mouseover',showDesc);
-  ov.addEventListener('click',(e)=>{ const b=e.target.closest('button'); if(!b)return;
-    if(b.classList.contains('title-btn')){ b.classList.remove('act-fx'); void b.offsetWidth; b.classList.add('act-fx'); } // efeito de ATIVAÇÃO
-    const go=fn=>{ if(ov._busy)return; ov._busy=true; setTimeout(()=>{ ov._busy=false; fn(); },230); }; // a animação toca ANTES de trocar de tela
-    if(b.id==='np-btn'){ // UM botão "◀ Nº de jogadores: X ▶": lado clicado (ou ←/→) decide +1 / −1
-      let d=+(b.dataset.np||0); b.dataset.np=''; // ←/→ setam data-np no keydown; clique usa a posição
-      if(!d){ const r=b.getBoundingClientRect(); d=(e.clientX-r.left)<r.width/2?-1:1; }
-      let n=Math.max(1,Math.min(4,pendingPlayers+d));
-      if(n>1&&!fitsN(n)){ srAlert('Não cabem '+n+' telas nesta janela — aumente a janela ou use tela cheia.'); return; }
-      pendingPlayers=n; const nn=$('#np-n'); if(nn)nn.textContent=n;
-      b.setAttribute('aria-label','Número de jogadores: '+n+'. Clique à esquerda para menos, à direita para mais.');
-      srSay(n+(n>1?' jogadores.':' jogador.')); return; }
-    if(b.dataset.tmFr){ go(()=>{ titleUI.show('tm-fr'); srSay('Soma e subtração de frações: escolha a notação e o tipo.'); }); return; }
-    if(b.dataset.fnot){ const k=b.dataset.fnot; // toggle de NOTAÇÃO (imediato; pelo menos 1 SEMPRE ligada)
-      if(fracNot[k]&&Object.values(fracNot).filter(x=>x).length<=1){ srAlert('Deixe ao menos uma notação ligada.'); return; }
-      fracNot[k]=fracNot[k]?0:1; store.setJSON(store.KEYS.fracnot,fracNot);
-      b.classList.toggle('tab-on',!!fracNot[k]); b.setAttribute('aria-pressed',String(!!fracNot[k])); // estado pelo realce, SEM ✔
-      srSay(FNOT_LBL[k]+(fracNot[k]?' ligada.':' desligada.')); return; }
-    if(b.dataset.cen){ const c=b.dataset.cen; go(()=>{ setCenario(c); reallyStart(); }); return; }
-    if(b.dataset.cenBack){ go(()=>titleUI.show(_cenBack)); return; }
-    if(b.dataset.tm==='ludico'){ go(()=>startActivity('ludico')); return; }
-    if(b.dataset.tm==='alf'){ go(()=>titleUI.show('tm-alf')); return; }
-    if(b.dataset.tm==='mat'){ go(()=>titleUI.show('tm-mat')); return; }
-    if(b.dataset.tmBack){ const to=b.dataset.tmBack; go(()=>titleUI.show(to)); return; }
-    if(b.id==='tab-play'){ if(!tabSel.length){ srAlert('Escolha ao menos um número para treinar.'); return; } go(()=>startActivity(_tabFor)); return; }
-    if(b.dataset.tabN!=null){ const n=+b.dataset.tabN, i=tabSel.indexOf(n); // toggle: sem troca de tela → imediato
-      if(i>=0)tabSel.splice(i,1); else tabSel.push(n);
-      store.setJSON(store.KEYS.tabsel,tabSel);
-      b.classList.toggle('tab-on',i<0); b.setAttribute('aria-pressed',String(i<0));
-      srSay('Número '+n+(i<0?' ligado.':' desligado.')); return; }
-    if(b.dataset.actId){ const id=b.dataset.actId;
-      if(getActivity(id).pick){ go(()=>{ _tabFor=id; buildTitleMenus(); const t=$('#tm-tab .tm-title'); if(t)t.textContent=getActivity(id).nome; // título Tabuada/Divisão
-        titleUI.show('tm-tab'); srSay(getActivity(id).nome+': escolha os números.'); }); }
-      else go(()=>startActivity(id)); } });
+      reflectTitleIcons(); if(typeof reflectPauseIcons==='function')reflectPauseIcons(); srSay(ib.getAttribute('aria-label')||''); });
+    reflectTitleIcons(); }
 })();
 (function shellSetup(){
   const wire=(id,fn)=>{ const b=$('#'+id); if(b)b.addEventListener('click',fn); };
