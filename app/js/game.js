@@ -25,6 +25,7 @@ import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
 import { $, toggleBtn } from './ui/dom.js';
+import { initSettingsControls, ACT_LABEL, keyName } from './ui/settings-controls.js';
 import { initSettingsVisual, CONTRAST_LEVELS, CONTRAST_LABELS, ROLE_LABELS } from './ui/settings-visual.js';
 import { initSettingsEmpathy } from './ui/settings-empathy.js';
 import { initSettingsMotor } from './ui/settings-motor.js';
@@ -285,7 +286,7 @@ let collected=0, ended=false; setCoins(pickCoins(COIN_TARGET, coinPools())); // 
 // 'phase' agora vem de core/state.js (Fase 2, mega-variável 1). Leitura = binding vivo; escrita só via setPhase().
 
 /* ===================== input ===================== */
-let jumpEdge=false, captureAction=null, captureMapRef=null, optionsOpen=false, movementOpen=false, visualOpen=false, empathyOpen=false, audioOpen=false;
+let jumpEdge=false, optionsOpen=false, movementOpen=false, visualOpen=false, empathyOpen=false, audioOpen=false;
 // Gamepad (B3/L1): estado por controle. padCur[gi]=ações seguradas neste frame; associação pad↔jogador vive em p.pad.
 // padCur/padPrevAct/padPrevStart + PAD_DEAD movidos p/ input/state.js (Fase 2.22)  // // zona morta = primeira METADE do curso (ergonomia — José 2026-07-02)
 // Config de teclado extraída p/ input/keyboard.js (Fase 2): esquemas, defaults, loadKB/saveKB/resetKB.
@@ -306,16 +307,9 @@ let ownerColors=(()=>{ try{ return localStorage.getItem('incl_ownercolors')!=='0
 function assignControls(){ players.forEach((p,i)=>p.ctrl=kbFor(i)); }
 assignControls();
 // Conflito: uma tecla não pode ser de dois jogadores no MESMO modo. Retorna o índice do outro dono, ou -1.
-function keyUsedByOther(code, mapRef){ for(let i=0;i<numPlayers;i++){ const m=kbFor(i); if(m===mapRef)continue; for(const a in m){ if(m[a]&&m[a].indexOf(code)>=0)return i; } } return -1; }
 addEventListener('keydown',(e)=>{
   if(attractCtl.onInput()){ e.preventDefault(); return; } // qualquer tecla encerra a demo
-  if(captureAction){ // remap: a próxima tecla vira o novo controle (do jogador selecionado)
-    if(e.code==='Escape'){ captureAction=null; captureMapRef=null; if(typeof renderControls==='function')renderControls(); e.preventDefault(); return; }
-    const m=captureMapRef||controls; const other=keyUsedByOther(e.code, m);
-    if(other>=0){ srAlert('Essa tecla já é do Jogador '+(other+1)+'. Escolha outra, ou Esc para cancelar.'); e.preventDefault(); return; } // não associa: segue capturando
-    m[captureAction]=[e.code]; saveKB(KB); applyControls(); assignControls();
-    captureAction=null; captureMapRef=null; if(typeof renderControls==='function')renderControls(); e.preventDefault(); return;
-  }
+  if(ctrlPanel.handleCaptureKeydown(e))return; // remap: a proxima tecla vira o controle (ui/settings-controls.ts)
   // Diálogo aberto: só bloqueia o jogo se o elemento estiver DE FATO visível (flag preso não trava mais o teclado).
   const dlgVis=(id)=>{ const el=$('#'+id); return el && !el.hidden; };
   if(optionsOpen && dlgVis('options')){ if(e.code==='Escape')closeOptions(); return; }
@@ -2437,19 +2431,9 @@ const audioCloseBtn=$('#audio-close'); if(audioCloseBtn)audioCloseBtn.addEventLi
 reflectAudioMaster();
 
 /* E10: remap de controles + persistência (B2) */
-const ACT_LABEL={left:'Esquerda',right:'Direita',up:'Subir / escada',down:'Descer / escada',run:'Correr / interagir',jump:'Pular',swap:'Trocar poder',especial:'Especial'};
-function keyName(code){ return String(code).replace('Arrow','↔').replace('Key','').replace('Space','Espaço').replace('ShiftLeft','Shift').replace('ShiftRight','Shift'); }
-let selPlayer=0; // jogador selecionado no diálogo de Controles
-function renderControls(){ const el=$('#ctrl-list'); if(!el)return;
-  if(selPlayer>=numPlayers) selPlayer=0;
-  const tabs=$('#ctrl-players'); // E3: sem abas de outros jogadores — você edita SÓ o seu controle
-  if(tabs){ tabs.hidden=false; tabs.innerHTML=`<span class="opt-hint" style="width:100%;margin:0">Editando o <strong>seu</strong> controle — modo <strong>${numPlayers===1?'1 jogador':numPlayers+' jogadores'}</strong>.</span>`; }
-  const map=kbFor(selPlayer);
-  el.innerHTML=Object.keys(ACT_LABEL).map(a=>`<div class="ctrl-row"><span>${ACT_LABEL[a]}: ${(map[a]||[]).map(keyName).map(k=>`<kbd>${k}</kbd>`).join(' ')}</span><button class="mode-btn" data-act="${a}" type="button" aria-label="Alterar tecla de ${ACT_LABEL[a]} do Jogador ${selPlayer+1}">Alterar</button></div>`).join('');
-  el.querySelectorAll('button[data-act]').forEach(b=>b.addEventListener('click',()=>{ captureAction=b.dataset.act; captureMapRef=kbFor(selPlayer); b.textContent='Pressione…'; srAlert('Pressione a nova tecla para '+ACT_LABEL[b.dataset.act]+' do Jogador '+(selPlayer+1)+', ou Esc para cancelar.'); }));
-}
-function openOptions(){ const ov=$('#options'); if(!ov)return; selPlayer=pauseActor; renderControls(); ov.hidden=false; frontOverlay(ov); optionsOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); } // E3: edita o controle do jogador que abriu
-function closeOptions(){ const ov=$('#options'); if(!ov)return; ov.hidden=true; optionsOpen=false; captureAction=null; const b=$('#opt-controls'); if(b)b.focus(); }
+const ctrlPanel = initSettingsControls({ $, srSay, srAlert, store: { saveKB, resetKB }, kb: KB, setKB: (k) => { KB = k; }, kbFor, getNumPlayers: () => numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)
+function openOptions(){ const ov=$('#options'); if(!ov)return; ctrlPanel.render(pauseActor); ov.hidden=false; frontOverlay(ov); optionsOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); } // E3: edita o controle do jogador que abriu
+function closeOptions(){ const ov=$('#options'); if(!ov)return; ov.hidden=true; optionsOpen=false; ctrlPanel.cancelCapture(); const b=$('#opt-controls'); if(b)b.focus(); }
 const ctrlBtn=$('#opt-controls'); if(ctrlBtn)ctrlBtn.addEventListener('click',openOptions);
 // AJUDA (do menu de pausa): controles DO jogador que abriu (pauseActor) + notas desta build.
 function openHelp(){ const ov=$('#help'); if(!ov)return; const c=$('#help-content'); const pa=pauseActor||0; const map=kbFor(pa);
@@ -2498,7 +2482,6 @@ function renderMapHub(){ const el=$('#map-hub'); if(!el)return; const np=numPlay
 const movBtn=$('#opt-movement'); if(movBtn)movBtn.addEventListener('click',openMovement);
 const movClose=$('#movement-close'); if(movClose)movClose.addEventListener('click',closeMovement);
 const animClose=$('#animation-close'); if(animClose)animClose.addEventListener('click',()=>motion.close()); // #opt-animation NAO existe no app (era referencia morta); so o fechar e real
-const ctrlReset=$('#ctrl-reset'); if(ctrlReset)ctrlReset.addEventListener('click',()=>{ KB=resetKB(); applyControls(); assignControls(); renderControls(); srSay('Controles restaurados ao padrão.'); });
 
 /* ===================== FPS ===================== */
 let fpsAccum=0,fpsFrames=0,fpsMin=Infinity,fpsWarm=0;
@@ -2622,7 +2605,7 @@ function navPause(menu,pi,k){ const icons=[...menu.querySelectorAll('.pi-btn')],
   else if(k.down)idx=Math.min(items.length-1,idx+cols);
   else if(k.left)idx=Math.max(0,idx-1); else if(k.right)idx=Math.min(items.length-1,idx+1);
   pauseSetSel(menu, items[idx]); }
-function menuNavKey(e){ if(phase!=='paused'||captureAction)return;
+function menuNavKey(e){ if(phase!=='paused'||ctrlPanel.isCapturing())return;
   const pw=$('#padwiz'); if(pw&&!pw.hidden){ if(e.code==='Escape'){ closePadWiz(false); e.preventDefault(); e.stopPropagation(); } return; } // wizard por cima: só Esc (cancela)
   const C=e.code;
   const owner=whichPlayer(C); const pi=owner<0?0:owner; const act=owner>=0?actionOf(C,pi):null;
