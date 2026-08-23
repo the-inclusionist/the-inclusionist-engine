@@ -170,3 +170,56 @@ describe('initKeyboardRuntime — computeControlsState', () => {
     expect(s.gameKeys.length).toBe(expected.size); // sem duplicatas
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// controlsState / refreshControls — a memoria que substituiu oito `let` do game.js (D1)
+// ---------------------------------------------------------------------------------------------
+describe('controlsState / refreshControls — memoria e invalidacao', () => {
+  // Antes o game.js guardava `controls`, KJUMP..KRUN e GAME_KEYS em oito `let`, copiados de
+  // computeControlsState() por um applyControls(). A memoria mudou de lado, e o que estes casos protegem e a
+  // PROPRIEDADE que os oito `let` tinham e que seria facil perder ao mover: nao recalcular sozinho. Se alguem
+  // "melhorar" controlsState() para recalcular a cada leitura, o remapeamento passa a valer antes de aplicado,
+  // e o primeiro caso abaixo fica vermelho.
+  function rt(kbRef, players) {
+    return initKeyboardRuntime({ getKB: () => kbRef.kb, getNumPlayers: () => players.length, getPlayers: () => players });
+  }
+
+  it('[Right] a 1a leitura calcula e as seguintes devolvem O MESMO objeto (nao recalcula)', () => {
+    const r = rt({ kb: { solo } }, [{ ctrl: solo }]);
+    const a = r.controlsState();
+    expect(r.controlsState()).toBe(a); // identidade, nao igualdade
+  });
+
+  it('[Right] mudar o KB NAO muda o estado memorizado ate refreshControls() — era o papel do applyControls()', () => {
+    const ref = { kb: { solo } };
+    const r = rt(ref, [{ ctrl: solo }]);
+    expect(r.controlsState().jump).toEqual(['KeyJ', 'Space']);
+    ref.kb = { solo: { ...solo, jump: ['KeyP'] } };  // o painel de controles remapeou...
+    expect(r.controlsState().jump).toEqual(['KeyJ', 'Space']); // ...e ainda nao aplicou
+    r.refreshControls();
+    expect(r.controlsState().jump).toEqual(['KeyP']);
+  });
+
+  it('[Right] refreshControls devolve o mesmo objeto que a leitura seguinte entrega', () => {
+    const r = rt({ kb: { solo } }, [{ ctrl: solo }]);
+    const novo = r.refreshControls();
+    expect(r.controlsState()).toBe(novo);
+  });
+
+  it('[Boundary] entrar um jogador so entra em gameKeys depois do refresh', () => {
+    // gameKeys vem de kbFor(i), que escolhe a tabela pelo NUMERO de telas (kb.solo / kb.p2 / ...), e nao do
+    // `ctrl` do objeto jogador — por isso o esquema de dois entra por kb.p2, e nao pelo push.
+    const jogadores = [{ ctrl: p2a }];
+    const r = rt({ kb: { solo, p2: [p2a, p2b] } }, jogadores);
+    expect(r.controlsState().gameKeys).not.toContain('Numpad5'); // 1 tela: cai em kb.solo
+    jogadores.push({ ctrl: p2b });                    // joinPlayer em jogo em andamento -> 2 telas
+    expect(r.controlsState().gameKeys).not.toContain('Numpad5'); // memorizado: ainda o estado de 1 tela
+    r.refreshControls();
+    expect(r.controlsState().gameKeys).toContain('Numpad5');
+  });
+
+  it('[Right] o valor memorizado e o mesmo que computeControlsState() devolveria', () => {
+    const r = rt({ kb: { solo } }, [{ ctrl: solo }]);
+    expect(r.controlsState()).toEqual(r.computeControlsState());
+  });
+});

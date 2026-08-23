@@ -59,6 +59,15 @@ export interface KeyboardRuntime {
   assignControls(): void;
   /** Computes the P1-alias `controls` + `GAME_KEYS` (game.js's applyControls, minus the reassignment). */
   computeControlsState(): ControlsState;
+  /** O estado ATUAL, memorizado. Antes eram oito `let` no game.js (`controls`, `KJUMP`..`KRUN`, `GAME_KEYS`)
+   *  copiados de `computeControlsState()` por um `applyControls()` que existia só para fazer a cópia. Eram
+   *  derivados de `KB` + `players`, guardados em variável — a forma de estado que mais apodrece, porque nada
+   *  obriga a cópia a acompanhar a origem. Aqui a memória fica com quem é dono da conta, e a invalidação é
+   *  explícita e única: `refreshControls()`. NÃO recalcula a cada leitura de propósito — recalcular mudaria
+   *  o comportamento (passaria a enxergar remapeamento que ainda não foi aplicado), e isto é refatoração. */
+  controlsState(): ControlsState;
+  /** Recalcula e memoriza. É o `applyControls()` do game.js, agora do lado de cá. */
+  refreshControls(): ControlsState;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -134,5 +143,9 @@ export function initKeyboardRuntime(ctx: KeyboardRuntimeCtx): KeyboardRuntime {
     return { controls, jump, left, right, up, down, run, gameKeys };
   }
 
-  return { kbFor, actionOf, whichPlayer, assignControls, computeControlsState };
+  let cache: ControlsState | null = null; // memória do estado derivado; só refreshControls a invalida
+  function controlsState(): ControlsState { return cache ?? (cache = computeControlsState()); }
+  function refreshControls(): ControlsState { cache = computeControlsState(); return cache; }
+
+  return { kbFor, actionOf, whichPlayer, assignControls, computeControlsState, controlsState, refreshControls };
 }
