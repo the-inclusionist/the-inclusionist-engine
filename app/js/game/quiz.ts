@@ -643,7 +643,12 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     if (cKey(q.choices[q.sel]) === q.answer) { c.sfx('correct'); c.srSay(quizWho(pl) + 'Acertou!'); quizWin(pl, q); }
     else {
       q.tries++;
-      if (q.tries >= 2) { q.revealed = true; c.srAlert(`${quizWho(pl)}A resposta é ${speakChoice(q.answer)}. Pule para seguir.`); } else c.sfx('wrong'); c.srSay('Tente de novo.');
+      // As chaves do `else` importam: sem elas o `srSay('Tente de novo.')` ficava FORA do ramo e era dito
+      // tambem depois de revelar a resposta — a crianca ouvia "A resposta e X. Pule para seguir." e logo
+      // "Tente de novo.", duas instrucoes que se contradizem. Os outros tres ramos deste arquivo sempre
+      // tiveram as chaves; era so este.
+      if (q.tries >= 2) { q.revealed = true; c.srAlert(`${quizWho(pl)}A resposta é ${speakChoice(q.answer)}. Pule para seguir.`); }
+      else { c.sfx('wrong'); c.srSay('Tente de novo.'); }
       renderQuiz(pl);
     }
   }

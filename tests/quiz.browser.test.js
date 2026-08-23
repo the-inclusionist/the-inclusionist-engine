@@ -6,7 +6,7 @@
 // pedagógica entre letramento (moeda FICA, próxima palavra) e matemática (figura re-sorteada).
 // ZOMBIES + Right-BICEP. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (B3).
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { initQuiz, generateBrailleCells } from '../app/js/game/quiz.js';
+import { initQuiz, generateBrailleCells, cKey } from '../app/js/game/quiz.js';
 import { reseed } from '../app/js/core/rng.js';
 import { players, setNumPlayersValue, setCoins, coins, setActivityValue, setQuizLevelValue } from '../app/js/core/state.js';
 
@@ -537,5 +537,39 @@ describe('a11y do markup montado', () => {
     const esperados = generateBrailleCells(players[0].quiz.word).reduce((n, c) => n + c.dots.length, 0);
     expect($('#quiz').querySelectorAll('.bdot.on')).toHaveLength(esperados);
     expect($('#quiz').querySelectorAll('.bdot')).toHaveLength(players[0].quiz.word.length * 6);
+  });
+});
+
+// =================================================================================================
+describe('errar na matemática: o que a criança OUVE em cada tentativa', () => {
+  // O `else` deste ramo estava sem chaves, então o "Tente de novo." ficava FORA dele e era dito TAMBÉM na
+  // tentativa que revela a resposta. A criança ouvia "A resposta é X. Pule para seguir." e, logo depois,
+  // "Tente de novo." — duas instruções que se contradizem, e a segunda manda fazer o que já não dá.
+  // Quem depende do áudio para jogar recebe só isso; não há tela para desempatar.
+  function erra(api, pl) {
+    // escolhe deliberadamente uma alternativa ERRADA
+    const q = pl.quiz;
+    q.sel = q.choices.findIndex((c) => cKey(c) !== q.answer);
+    api.quizConfirm(pl);
+  }
+
+  it('[Right] 1ª tentativa errada: diz "Tente de novo." e NÃO revela', () => {
+    const { ctx, log } = makeCtx(); const api = initQuiz(ctx); const pl = players[0];
+    api.openQuiz(pl, 0, 'circulo');
+    erra(api, pl);
+    expect(pl.quiz.revealed).toBe(false);
+    expect(log.srSay.some((t) => /Tente de novo/.test(t))).toBe(true);
+    expect(log.srAlert.some((t) => /A resposta é/.test(t))).toBe(false);
+  });
+
+  it('[Right] 2ª tentativa errada: revela a resposta e NÃO manda tentar de novo', () => {
+    const { ctx, log } = makeCtx(); const api = initQuiz(ctx); const pl = players[0];
+    api.openQuiz(pl, 0, 'circulo');
+    erra(api, pl);
+    log.srSay.length = 0; log.srAlert.length = 0; // só o que for dito na SEGUNDA
+    erra(api, pl);
+    expect(pl.quiz.revealed).toBe(true);
+    expect(log.srAlert.some((t) => /A resposta é/.test(t))).toBe(true);
+    expect(log.srSay.some((t) => /Tente de novo/.test(t))).toBe(false); // ERA AQUI o defeito
   });
 });
