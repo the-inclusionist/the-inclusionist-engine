@@ -44,7 +44,18 @@ export const KEYS = {
   fontKey: 'incl_font_k', padDesign: 'incl_paddesign', padDir: 'incl_paddir', touchmap: 'incl_touchmap',
   padBtnMm: 'incl_padbtnmm', padGapMm: 'incl_padgapmm', padStickMm: 'incl_padstickmm',
   padTravelMm: 'incl_padtravelmm', padDpadMm: 'incl_paddpadmm',
-  // por jogador (sufixo _p{i}): viz_p, sink_p, easy_p, togglemove_p, rmWalk_p, rmBreath_p, rmFlavor_p
+  // movimento reduzido (objeto inteiro num JSON so) + a chave antiga de alternar-movimento, que
+  // loadPlayerA11y ainda le uma vez para migrar quem vinha da versao anterior
+  reducedMotion: 'inclusionist.reducedmotion.v1', toggleMoveLegacy: 'inclusionist.togglemove',
+  // POR JOGADOR — parametrizadas pelo indice da tela. Eram sufixos '_p'+i montados a mao em varios
+  // pontos do game.js; virar funcao aqui e o que impede que um deles escreva num nome torto.
+  vizP: (i: number): string => 'incl_viz_p' + i,
+  sinkP: (i: number): string => 'incl_sink_p' + i,
+  easyP: (i: number): string => 'incl_easy_p' + i,
+  toggleMoveP: (i: number): string => 'incl_togglemove_p' + i,
+  rmWalkP: (i: number): string => 'incl_rmWalk_p' + i,
+  rmBreathP: (i: number): string => 'incl_rmBreath_p' + i,
+  rmFlavorP: (i: number): string => 'incl_rmFlavor_p' + i,
   // demo/attract: uma gravação por cenário (fn em vez de string — chave parametrizada)
   attract: (cen: string): string => 'incl_attract_' + cen,
 };

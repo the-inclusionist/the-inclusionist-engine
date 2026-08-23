@@ -153,8 +153,8 @@ for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const t=WORLD[y][x];
 //  fg = 1º plano (personagem/itens) — WCAG 2.4.7 foco visível; bg = 2º plano (perímetro externo de
 //  plataforma/água/lava — delimita navegável × não-navegável) — WCAG 1.4.11 contraste ≥3:1.
 let hcOutlineFg=1, hcOutlineBg=1;
-try{ const v=localStorage.getItem('incl_outfg'); if(v!=null)hcOutlineFg=Math.max(0,Math.min(2,+v||0)); }catch(e){}
-try{ const v=localStorage.getItem('incl_outbg'); if(v!=null)hcOutlineBg=Math.max(0,Math.min(2,+v||0)); }catch(e){}
+hcOutlineFg=Math.max(0,Math.min(2,store.getNum(store.KEYS.outfg,1)|0));
+hcOutlineBg=Math.max(0,Math.min(2,store.getNum(store.KEYS.outbg,1)|0));
 // HC_ROLE_DEF/HC_ROLE/saveHcRole (color-blocking por papel, customizavel e persistido) migraram para
 // render/high-contrast.ts (Onda A). rgbHex foi junto e nao voltou: tinha ZERO chamadores aqui.
 const hexRgb=h=>{ const m=/^#?([0-9a-f]{6})$/i.exec(h); if(!m)return null; const n=parseInt(m[1],16); return [n>>16&255,n>>8&255,n&255]; };
@@ -229,9 +229,9 @@ function applyControls(){ const st=kbRuntime.computeControlsState();
 // Tint distintivo por jogador (P1 = normal). L2: paleta CB-SAFE opcional (Okabe & Ito 2008 — laranja/azul-céu/
 // amarelo distinguíveis em protan/deutan/tritan) SÓ para jogadores/itens/efeitos — o CENÁRIO fica com cores naturais.
 const PCOLOR_DEF=[0xffffff,0xff9a9a,0x8affc0,0xffe08a], PCOLOR_CB=[0xffffff,0xe69f00,0x56b4e9,0xf0e442];
-let cbSafe=(()=>{ try{ return localStorage.getItem('incl_cbsafe')==='1'; }catch(e){ return false; } })();
+let cbSafe=store.getBool(store.KEYS.cbsafe,false);
 const PCOLOR=(cbSafe?PCOLOR_CB:PCOLOR_DEF).slice(); // mutável in-place (todos referenciam PCOLOR)
-let ownerColors=(()=>{ try{ return localStorage.getItem('incl_ownercolors')!=='0'; }catch(e){ return true; } })(); // itens na cor do dono (padrão ligado)
+let ownerColors=store.getBool(store.KEYS.ownercolors,true); // itens na cor do dono (padrão ligado)
 const assignControls = () => kbRuntime.assignControls();
 assignControls();
 // Conflito: uma tecla não pode ser de dois jogadores no MESMO modo. Retorna o índice do outro dono, ou -1.
@@ -326,17 +326,17 @@ const RM_KEYS=['parallax','decor','items','particles']; // animações de CENA (
 const RM_CHAR=[ {k:'walk',prop:'rmWalk',lbl:'Personagem em movimento (andar, escalar, nadar, pular)'},
   {k:'breath',prop:'rmBreath',lbl:'Respiração (parado)'}, {k:'flavor',prop:'rmFlavor',lbl:'Gracinhas (animações de descanso)'} ]; // animações do PERSONAGEM (por jogador)
 const RM_DEFAULT=!!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
-const rm=(()=>{ try{ const s=JSON.parse(localStorage.getItem('inclusionist.reducedmotion.v1')); if(s&&typeof s==='object'){ const o={}; RM_KEYS.forEach(k=>o[k]=!!s[k]); return o; } }catch(e){}
+const rm=(()=>{ const s=store.getJSON(store.KEYS.reducedMotion,null); if(s&&typeof s==='object'){ const o={}; RM_KEYS.forEach(k=>o[k]=!!s[k]); return o; }
   const o={}; RM_KEYS.forEach(k=>o[k]=RM_DEFAULT); return o; })();
-function saveRM(){ try{ localStorage.setItem('inclusionist.reducedmotion.v1',JSON.stringify(rm)); }catch(e){} }
+function saveRM(){ store.setJSON(store.KEYS.reducedMotion,rm); }
 // Movimento por alternância (1 dedo): tocar a direção trava a marcha; segurar acelera; pulo não interrompe. Persistido.
-function loadPlayerA11y(p,i){ try{ const v=localStorage.getItem('incl_viz_p'+i); if(v&&VIZ_BY_KEY[v])p.viz=v;
-  p.audioSink=localStorage.getItem('incl_sink_p'+i)||null; // saída de áudio própria do jogador (setSinkId)
-  p.easy=localStorage.getItem('incl_easy_p'+i)==='1'; p.toggleMove=localStorage.getItem('incl_togglemove_p'+i)==='1';
-  p.rmWalk=localStorage.getItem('incl_rmWalk_p'+i)==='1'; p.rmBreath=localStorage.getItem('incl_rmBreath_p'+i)==='1'; p.rmFlavor=localStorage.getItem('incl_rmFlavor_p'+i)==='1';
-  if(i===0){ const ov=localStorage.getItem('incl_viz'); if(ov&&VIZ_BY_KEY[ov]&&localStorage.getItem('incl_viz_p0')==null)p.viz=ov; // migra chaves antigas
-    if(localStorage.getItem('inclusionist.togglemove')==='1'&&localStorage.getItem('incl_togglemove_p0')==null)p.toggleMove=true; } }catch(e){} }
-function setToggleMove(i,on){ const p=players[i]; if(!p)return; p.toggleMove=on; try{localStorage.setItem('incl_togglemove_p'+i,on?'1':'0');}catch(e){} if(!on)p.walkDir=0;
+function loadPlayerA11y(p,i){ const v=store.get(store.KEYS.vizP(i)); if(v&&VIZ_BY_KEY[v])p.viz=v;
+  p.audioSink=store.get(store.KEYS.sinkP(i))||null; // saída de áudio própria do jogador (setSinkId)
+  p.easy=store.getBool(store.KEYS.easyP(i)); p.toggleMove=store.getBool(store.KEYS.toggleMoveP(i));
+  p.rmWalk=store.getBool(store.KEYS.rmWalkP(i)); p.rmBreath=store.getBool(store.KEYS.rmBreathP(i)); p.rmFlavor=store.getBool(store.KEYS.rmFlavorP(i));
+  if(i===0){ const ov=store.get(store.KEYS.viz); if(ov&&VIZ_BY_KEY[ov]&&store.get(store.KEYS.vizP(0))==null)p.viz=ov; // migra chaves antigas
+    if(store.getBool(store.KEYS.toggleMoveLegacy)&&store.get(store.KEYS.toggleMoveP(0))==null)p.toggleMove=true; } }
+function setToggleMove(i,on){ const p=players[i]; if(!p)return; p.toggleMove=on; store.setBool(store.KEYS.toggleMoveP(i),on); if(!on)p.walkDir=0;
   srSay((numPlayers>1?'Jogador '+(i+1)+': ':'')+'Movimento por alternância '+(on?'ligado: toque a direção para andar sem segurar; toque de novo para parar; segure para ir mais rápido. O pulo não interrompe a caminhada.':'desligado.')); }
 function showCaption(txt){ const el=$('#caption'); if(!el||!txt)return; el.textContent=txt; el.classList.add('show'); clearTimeout(capTimer); capTimer=setTimeout(()=>{el.classList.remove('show'); el.textContent='';},1300); }
 // Earcons + ponte com legendas extraídos p/ platform/audio-earcons.ts (Tier 2, áudio rodada 2). captionsOn/showCaption
@@ -506,7 +506,7 @@ const worldSprite=new PIXI.Sprite(worldTexNormal); camera.addChild(worldSprite);
 var starsG=new PIXI.Graphics();   camera.addChildAt(starsG, camera.getChildIndex(parallaxLayers[1]));  // estrelas ATRÁS dos morros
 var skyDecoG=new PIXI.Graphics(); camera.addChildAt(skyDecoG, camera.getChildIndex(worldSprite));      // nuvens/pássaros à frente dos morros, atrás dos tiles
 var fogG=new PIXI.Graphics();     camera.addChild(fogG);                                                // névoa: FRENTE (re-erguida com o carLayer)
-try{ setCenario((v=>v==='noite'?'espaco':v)(localStorage.getItem('incl_cenario')||'cidade')); }catch(e){ setCenario('cidade'); } // migra a chave antiga 'noite'
+try{ setCenario((v=>v==='noite'?'espaco':v)(store.get(store.KEYS.cenario,'cidade'))); }catch(e){ setCenario('cidade'); } // migra a chave antiga 'noite'
 const coinCanvasNormal=coinCanvas();
 const coinTex=tex(coinCanvasNormal);
 // As texturas NORMAIS ja existem: ligue o alto contraste. worldCanvasNormal/worldTexNormal sao `let`
@@ -1496,7 +1496,7 @@ $('#btn-again').addEventListener('click',()=>{ restartGame(); $('#game-region').
    Trocar de atividade = todo mundo sai do jogo → volta ao menu inicial. */
 const ALF_LEVEL={alf1:1,alf2:2,alf3:3,alf4:4,alf5:5};
 if(!isValidActivityId(ACTIVITY)) setActivityValue(DEFAULT_ACTIVITY_ID); // ACTIVITY vem de core/state.js (Fase 2, mega-var 5); valida o valor inicial contra as atividades existentes
-let tabSel=(()=>{ try{ const s=JSON.parse(localStorage.getItem('incl_tabsel')); if(Array.isArray(s)&&s.length)return s.filter(n=>n>=0&&n<=10); }catch(e){} return [2,3,4,5]; })();
+let tabSel=(()=>{ const s=store.getJSON(store.KEYS.tabsel,null); if(Array.isArray(s)&&s.length)return s.filter(n=>n>=0&&n<=10); return [2,3,4,5]; })();
 function actCat(){ return (getActivity(ACTIVITY)||{}).cat||'ludico'; }
 function setActivity(id){ if(!hasActivity(id))id=DEFAULT_ACTIVITY_ID; setActivityValue(id); // core/state.js: valor + persistência (incl_activity) + evento; a validação fica aqui
   const cat=getActivity(id).cat;
@@ -1518,7 +1518,7 @@ function reallyStart(){ const id=_pendingAct; setActivity(id);
 /* NOTAÇÕES de fração (menu "Fração"): vertical · diagonal · decimal · percentual · mista — toggles persistidos */
 // NOTAÇÕES = opções de jogo (toggles). GRÁFICOS (círculo/quadrado) NÃO são opção — são intrínsecos à atividade (José).
 let fracNot=(()=>{ const d={v:1,d:0,dec:0,pct:0,mix:0};
-  try{ const s=JSON.parse(localStorage.getItem('incl_fracnot')); if(s&&typeof s==='object')for(const k in d)if(k in s)d[k]=s[k]?1:0; }catch(e){}
+  { const s=store.getJSON(store.KEYS.fracnot,null); if(s&&typeof s==='object')for(const k in d)if(k in s)d[k]=s[k]?1:0; }
   if(!Object.values(d).some(x=>x))d.v=1; return d; })();
 const FNOT_LBL={v:'Fracionária vertical',d:'Fracionária diagonal',dec:'Decimal',pct:'Percentual',mix:'Mista'};
 // Rótulo do toggle = a PRÓPRIA notação (exemplo x/y), lado a lado → ocupa menos espaço (José). aria-label mantém a palavra.
@@ -1707,7 +1707,7 @@ function updateVpDots(){ for(let i=0;i<vpDots.length;i++){ const g=vpDots[i], m=
   const on=m&&(m.kind==='blind'||m.kind==='lowvision'); g.visible=!!on; if(on){ g.clear(); g.lineStyle(1,0x000000,.6); g.beginFill(m.kind==='blind'?0xffffff:0x36d36a); g.drawCircle(0,0,5); g.endFill(); } } }
 function applyVpFilters(){ for(let i=0;i<numPlayers;i++){ if(vpSpr[i])vpSpr[i].filters=pixiFilterFor(players[i].viz); } }
 function setModoCego(on){ if(modoCego===on)return; modoCego=on; store.setBool('incl_modocego',on); if(typeof setupExtras==='function')setupExtras(); if(typeof reflectModoCego==='function')audioPanel.reflectModoCego(); srSay('Modo cego '+(on?'ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.':'desligado.')); }
-function setPlayerViz(i,mode){ const m=VIZ_BY_KEY[mode]||VIZ_BY_KEY.normal; players[i].viz=m.key; try{localStorage.setItem('incl_viz_p'+i,m.key);}catch(e){} _lastSharedViz=null;
+function setPlayerViz(i,mode){ const m=VIZ_BY_KEY[mode]||VIZ_BY_KEY.normal; players[i].viz=m.key; store.set(store.KEYS.vizP(i),m.key); _lastSharedViz=null;
   if(m.kind==='blind') setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão
   if(numPlayers<=1 && i===0){ applyVizGlobal(m.key); } else { applyVpFilters(); updateVpDots(); }
   reflectVizButtons(); { visual.render(); empathy.render(); } }
@@ -1751,9 +1751,9 @@ function renderVizGroup(listSel,tabsSel,modes){ const el=$(listSel); if(!el)retu
   el.querySelectorAll('button[data-viz]').forEach(btn=>btn.addEventListener('click',()=>{ setPlayerViz(selVizPlayer,btn.dataset.viz); srSay((numPlayers>1?'Jogador '+(selVizPlayer+1)+': ':'')+VIZ_MODES.find(m=>m.key===btn.dataset.viz).nome+'.'); }));
 }
 /* L2: opções de cor — itens por dono (toggle), paleta CB-safe (toggle) e color-blocking customizável (pickers) */
-function setOwnerColors(on){ ownerColors=!!on; try{localStorage.setItem('incl_ownercolors',on?'1':'0');}catch(e){}
+function setOwnerColors(on){ ownerColors=!!on; store.setBool(store.KEYS.ownercolors,ownerColors);
   rebuildCoins(); srSay('Itens na cor do dono '+(on?'ligados.':'desligados: todos na cor original.')); }
-function setCbSafe(on){ cbSafe=!!on; try{localStorage.setItem('incl_cbsafe',on?'1':'0');}catch(e){}
+function setCbSafe(on){ cbSafe=!!on; store.setBool(store.KEYS.cbsafe,cbSafe);
   const src=cbSafe?PCOLOR_CB:PCOLOR_DEF; PCOLOR.length=0; src.forEach(c=>PCOLOR.push(c)); // troca IN-PLACE (todos referenciam PCOLOR)
   rebuildCoins(); ensureSprites(); srSay('Paleta segura para daltonismo '+(on?'ligada (Okabe-Ito).':'desligada.')); }
 function setRoleColor(k,hex){ const rgb=hexRgb(hex); if(!rgb||!HC_ROLE[k])return; HC_ROLE[k]=rgb; saveHcRole();
@@ -1764,8 +1764,8 @@ function resetRoleColors(){ for(const k in HC_ROLE_DEF)HC_ROLE[k]=HC_ROLE_DEF[k]
 function _rebakeDirect(){ // invalida os caches de textura direta (mundo depende de bg; sprites de fg) e re-renderiza
   clearWorldTexCache(); clearCoinTexCache(); resetPupTexCache(); _playerDirect={}; _lastSharedViz=null;
   if(numPlayers<=1)applyVizGlobal(players[0].viz); else applyVpFilters(); }
-function setOutlineFg(v){ hcOutlineFg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outfg',hcOutlineFg);}catch(e){} _rebakeDirect(); visual.render(); srSay('Contorno do primeiro plano: '+['nenhum','fino','grosso'][hcOutlineFg]+'.'); }
-function setOutlineBg(v){ hcOutlineBg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outbg',hcOutlineBg);}catch(e){} _rebakeDirect(); visual.render(); srSay('Contorno do segundo plano: '+['nenhum','fino','grosso'][hcOutlineBg]+'.'); }
+function setOutlineFg(v){ hcOutlineFg=Math.max(0,Math.min(2,v|0)); store.set(store.KEYS.outfg,hcOutlineFg); _rebakeDirect(); visual.render(); srSay('Contorno do primeiro plano: '+['nenhum','fino','grosso'][hcOutlineFg]+'.'); }
+function setOutlineBg(v){ hcOutlineBg=Math.max(0,Math.min(2,v|0)); store.set(store.KEYS.outbg,hcOutlineBg); _rebakeDirect(); visual.render(); srSay('Contorno do segundo plano: '+['nenhum','fino','grosso'][hcOutlineBg]+'.'); }
 const visual = initSettingsVisual({ $, srSay, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: (i) => { selVizPlayer = i; }, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
   const sim=players.some(p=>isSimKind((VIZ_BY_KEY[p.viz]||{}).kind));
@@ -2168,7 +2168,7 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
     if(b.dataset.tmFr){ go(()=>{ titleUI.show('tm-fr'); srSay('Soma e subtração de frações: escolha a notação e o tipo.'); }); return; }
     if(b.dataset.fnot){ const k=b.dataset.fnot; // toggle de NOTAÇÃO (imediato; pelo menos 1 SEMPRE ligada)
       if(fracNot[k]&&Object.values(fracNot).filter(x=>x).length<=1){ srAlert('Deixe ao menos uma notação ligada.'); return; }
-      fracNot[k]=fracNot[k]?0:1; try{localStorage.setItem('incl_fracnot',JSON.stringify(fracNot));}catch(e){}
+      fracNot[k]=fracNot[k]?0:1; store.setJSON(store.KEYS.fracnot,fracNot);
       b.classList.toggle('tab-on',!!fracNot[k]); b.setAttribute('aria-pressed',String(!!fracNot[k])); // estado pelo realce, SEM ✔
       srSay(FNOT_LBL[k]+(fracNot[k]?' ligada.':' desligada.')); return; }
     if(b.dataset.cen){ const c=b.dataset.cen; go(()=>{ setCenario(c); reallyStart(); }); return; }
@@ -2180,7 +2180,7 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
     if(b.id==='tab-play'){ if(!tabSel.length){ srAlert('Escolha ao menos um número para treinar.'); return; } go(()=>startActivity(_tabFor)); return; }
     if(b.dataset.tabN!=null){ const n=+b.dataset.tabN, i=tabSel.indexOf(n); // toggle: sem troca de tela → imediato
       if(i>=0)tabSel.splice(i,1); else tabSel.push(n);
-      try{localStorage.setItem('incl_tabsel',JSON.stringify(tabSel));}catch(e){}
+      store.setJSON(store.KEYS.tabsel,tabSel);
       b.classList.toggle('tab-on',i<0); b.setAttribute('aria-pressed',String(i<0));
       srSay('Número '+n+(i<0?' ligado.':' desligado.')); return; }
     if(b.dataset.actId){ const id=b.dataset.actId;
