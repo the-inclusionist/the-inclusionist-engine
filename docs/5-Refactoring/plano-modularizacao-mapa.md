@@ -95,6 +95,76 @@ Legenda de acoplamento: 🟢 folha (≈zero deps de jogo) · 🟡 subsistema coe
 | `ui/shell.js` + `ui/menu-nav.js` 🔴 | máquina de fases: `setPhase`/`togglePause`/`showTitleMenu`/`quitGame`/`printMode`/`restartGame`/`win` + navegação universal `menuNavKey`/`navDialog`/`navPause`/`pauseSelect`/`menuItems`/`dialogBack` | 2258–2304, 3199–3301 | amarra tudo |
 | `game/session.js` 🔴 | ciclo/multiplayer: `respawnFigure`/`respawnPlayer`/`joinPlayer`/`setNumPlayers`/`fitsN`/`activateScreens`/`resetPlayerState`/`win` | 2246, 2383–2438 | telas dinâmicas |
 
+
+## Plano de conclusao — inventario completo do que resta (2026-08-06)
+
+Medido no `game.js` de **2786 linhas**: 220 funcoes top-level, 64 globais mutaveis, 31 acessos diretos a
+`localStorage`, 60 imports.
+
+**O que decide paralelo vs serie.** Nao e o acoplamento entre funcoes — e o acoplamento no *arquivo*. Enquanto
+os agentes so escrevem modulos NOVOS e ninguem edita `game.js`, a extracao paraleliza quase sem limite (Onda 1:
+10 agentes simultaneos, zero conflito). O que precisa de ordem e (a) contrato entre modulos novos, (b) a
+religacao, que e serial por natureza, e (c) o caso especial da fisica, que exige ancora antes de se mover.
+
+### GRUPO A — paralelizavel de imediato (17 modulos, nenhum depende de outro)
+
+| # | Modulo | Funcoes que saem |
+|---|---|---|
+| A1 | `render/high-contrast` | worldToTextureDirect · directBgTexture · directSpriteCanvas · directSpriteTexture · _dimDesat · _dcfg · _roleOf · saveHcRole · worldTexFor · coinTexFor · _rebakeDirect |
+| A2 | `render/textures` | shapeTexture · letterTexture · pupTexFor · indexedToCanvas · silhouetteCanvasIdx |
+| A3 | `render/weather` | updateWeather · drawWeather (+ _rainLevel, _weatherT, weatherLayer, _rainDrops, _flash, _thunderCD) |
+| A4 | `render/lq-filter` | lqCurve · ensureLqFilter · lqFilter · lqName · setLq (+ lqT) |
+| A5 | `render/scene-city` | buildCityDeco · applyCenarioVida · stepTileFx (+ grassDensity, decorSeed) |
+| A6 | `game/traffic` | drawSemaforo · initTraffic · spawnCar · setFrontDim · stepTraffic (+ cars, _carT, _frontDim) |
+| A7 | `game/life` | spawnCreature · stepLife · inDark · lifeSurfaceAt · lifeSurfaceLowAt · streetCols (+ creatures, _lifeSpawnT, _streetCols) |
+| A8 | `game/level-geometry` | buildRamps · buildWcGeom · buildRopes · drawElevators · setupExtras · rebuildExtras · buildDarkRegions |
+| A9 | `game/coins` | rebuildCoins · addCoinsForOwner · respawnCoinsForOwner · showPower (+ coinSprites, powerups) |
+| A10 | `input/keyboard-runtime` | kbFor · applyControls · assignControls · actionOf · whichPlayer · releaseKey |
+| A11 | `input/gamepad` | stdDirs · padActions · pollPads · padMapFor · bindActive · padWiz* (10 fn) |
+| A12 | `input/touch` | renderTouchMap · open/closeTouchCfg · hide/showTouchControls · padPxPerMm · padHandTag · applyDirStyle · applyPadPhysical · setPadMm · applyPadDesign · padLayoutFromId · padKind |
+| A13 | `ui/hud` | buildGameHud · updateGameHud · updateHud · screenRect · buildScreenPause · renderPauseLegend |
+| A14 | `ui/pause-icons` | PAUSE_ICONS · hasPrivateOutput · applyCalm · iconAct · iconLabel · reflectIconBtn · reflectPauseIcons · reflectTitleIcons (+ calmMode) |
+| A15 | `ui/activities-menu` | buildTitleMenus · updateTitleLegend · setActivity · startActivity · reallyStart · actCat · setMode · setQuizLevel · applyLetra · mapSoon · renderMapHub · simNaoGlyphs · attachAbbr |
+| A16 | `render/viz-setters` | setOwnerColors · setCbSafe · setRoleColor · resetRoleColors · setOutlineFg · setOutlineBg · reflectVizButtons · renderVizGroup · updateVizIndicator · fillExplain |
+| A17 | `platform/storage` (fechar) | os **31** acessos diretos restantes, incluindo `inclusionist.reducedmotion.v1`, de formato diferente das chaves `incl_*` |
+
+### GRUPO B — depois do A (consomem contratos do A), paralelo entre si
+
+| # | Modulo | Depende de | Nota |
+|---|---|---|---|
+| B0 | **caracterizacao de `physics`** | — | testes de no fixando pulo, gravidade, agua, trampolim, colisao. **Vem antes do B1**, nao junto |
+| B1 | `game/physics` | B0, A8, A9, A7, A6 | sampleFeatures · resolveX · resolveY · triggerLava · stepPlayer · update |
+| B2 | `render/viewports` | A1, A2, A4 | parallaxTexFor · pixiFilterFor · lvOverlayCanvas · playerVizTex · applySharedTextures · applyVpFilters · applyVizGlobal · setPlayerViz · reapplyVizAll · renderVpOverlay · updateVpDots |
+| B3 | `game/quiz` | A15, A9 | 29 funcoes — o maior bloco restante (openQuiz, renderQuiz, quizConfirm, os 5 geradores de atividade, os 6 *Html) |
+| B4 | `ui/settings-panel` | os 7 paineis (feitos), A13 | open/close de cada overlay + frontOverlay + _ovZ |
+
+### GRUPO C — serie obrigatoria (mutuamente acoplados, um por vez)
+
+Compartilham `collected`, `ended`, `pauseActor`, `phase` e chamam uns aos outros
+(`win` -> `restartGame` -> `setPhase` -> `pauseSelect`). Extrair em paralelo produz tres modulos que se
+importam em ciclo.
+
+| # | Modulo | Funcoes |
+|---|---|---|
+| C1 | `render/draw` | draw · placeCam · ensureSprites · configureRender — consome praticamente todo o render |
+| C2 | `game/session` | respawnFigure · respawnPlayer · joinPlayer · setNumPlayers · fitsN · activateScreens · resetPlayerState · win · restartGame · isMobile |
+| C3 | `ui/shell` + `ui/menu-nav` | setPhase · togglePause · quitGame · printMode · hideTips · fpsTick + menuItems · menuFocus · dialogBack · navDialog · pauseSetSel · navPause · menuNavKey · pauseSelect · sharedDialogOpen · navTitle · titleButtons |
+
+### GRUPO D — fecho
+
+| # | Trabalho |
+|---|---|
+| D1 | migrar os **64 globais** restantes para `core/state.ts`, um setter por vez (como as mega-variaveis ja feitas) |
+| D2 | `main.js` como composition root; `game.js` **dissolve** |
+
+### Ressalva sobre a medicao de acoplamento
+
+A varredura de "quem escreve qual global" tem ruido conhecido: nomes de variavel local (`s`) e declaracoes de
+topo que caem dentro da faixa atribuida a funcao anterior (por isso `showPower` aparece escrevendo flags de
+overlay). Os hubs que sobrevivem ao ruido e sustentam o GRUPO C: `_lastSharedViz` (7 escritores), `collected`
+(5), `pauseActor` (5), `selVizPlayer` (4), `MODE` (3).
+
+
 ## Fecho
 - **`main.js` (composition root):** importa todos, faz o wiring do boot (os vários `initX()` na ordem certa),
   registra listeners. O `game.js` **dissolve** (vira só o `main.js` ou some).
