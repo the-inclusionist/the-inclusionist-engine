@@ -23,8 +23,9 @@ import { isGroundType, worldCanvas, worldToTexture, initWorldTex } from './rende
 import { drawCane, drawRunCane, drawChair } from './render/wheelchair-sprites.js'; // Estágio 4 (Tier 2): bengala + cadeira (a11y motora)
 import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
-import { FONT_GROUPS, FONT_BY_KEY, loadFontKey, saveFontKey } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
+import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
 import { $ } from './ui/dom.js';
+import { initSettingsTypo } from './ui/settings-typo.js';
 import { initTitle } from './ui/title.js';
 import { createTitleScene } from './render/title-scene.js'; // Fase 2.27: atalho de querySelector (Tier 1)
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, VIZ_CYCLE } from './render/viz-modes.js'; // Fase 2: modos visuais de a11y (dados)
@@ -2312,31 +2313,13 @@ vizReady=true; applyVizGlobal(players[0].viz); // estado inicial (solo)
    3 grupos, UMA fonte ativa (radio), pré-visualização com o pangrama "Juiz foge e bota fita de cetim
    na xícara". Todas as fontes hospedadas são SIL OFL 1.1 (política do fonts.css); as canônicas EdSP
    mantêm o mecanismo antigo (Lexend preserva o espaçamento BDA via data-fonte="dislexia"). */
-// FONT_GROUPS/FONT_BY_KEY/loadFontKey extraídos p/ ui/fonts.js (Fase 2, tipografia).
-let fontKey=loadFontKey();
-function setGameFont(k,announce){ const it=FONT_BY_KEY[k]; if(!it||it.off)return; fontKey=k;
-  saveFontKey(k);
-  const root=document.documentElement;
-  if(k==='atkinson'){ root.dataset.fonte='padrao'; root.style.removeProperty('--font-custom'); }
-  else if(k==='andika'){ root.dataset.fonte='alfabetizacao'; root.style.removeProperty('--font-custom'); }
-  else if(k==='lexend'){ root.dataset.fonte='dislexia'; root.style.removeProperty('--font-custom'); } // mantém o espaçamento BDA
-  else { root.dataset.fonte='custom'; root.style.setProperty('--font-custom', `'${it.fam}'${it.fb==='serif'?',Georgia,serif':it.fb==='cursive'?',cursive':''}`); }
-  const pv=$('#typo-preview'); if(pv)pv.style.fontFamily=`'${it.fam}'`;
-  if(announce)srSay('Tipografia: '+it.fam+'.'); }
-function renderTypo(){ const el=$('#typo-list'); if(!el)return;
-  el.innerHTML=FONT_GROUPS.map(g=>`<h3 class="panel-sub">${g.g}</h3>`+g.items.map(it=>{
-    const on=fontKey===it.k, dis=!!it.off, note=it.d?it.d+(dis?' — '+it.off:''):(dis?it.off:'');
-    return `<div class="ctrl-row"><span style="font-family:'${it.fam}'"><strong>${it.fam}</strong>${note?`<br><span class="opt-hint" style="margin:0;font-family:var(--font)">${note}</span>`:''}</span>`+
-      `<button class="mode-btn switch${on?' is-on':''}" data-font="${it.k}" type="button"${dis?' disabled':''} aria-pressed="${on}" aria-label="${it.fam}${note?' — '+note:''}">${on?'❚❚ Ligado':'▶ Desligado'}</button></div>`; }).join('')).join('');
-  el.querySelectorAll('button[data-font]').forEach(b=>b.addEventListener('click',()=>{ setGameFont(b.dataset.font,true); renderTypo(); }));
-  const cur=FONT_BY_KEY[fontKey]; const pv=$('#typo-preview'); if(pv&&cur)pv.style.fontFamily=`'${cur.fam}'`;
-}
+// Tipografia: catalogo em ui/fonts.js, painel em ui/settings-typo.js. Antes: FONT_GROUPS/loadFontKey extraídos p/ ui/fonts.js (Fase 2, tipografia).
+const typo = initSettingsTypo({ $, srSay, store, root: document.documentElement }); // painel de tipografia: ui/settings-typo.ts (aplica a fonte persistida no init)
 let typoOpen=false;
-function openTypo(){ const ov=$('#typo'); if(!ov)return; renderTypo(); ov.hidden=false; frontOverlay(ov); typoOpen=true;
+function openTypo(){ const ov=$('#typo'); if(!ov)return; typo.render(); ov.hidden=false; frontOverlay(ov); typoOpen=true;
   const f=ov.querySelector('button[data-font]:not([disabled])')||ov.querySelector('button'); if(f)f.focus(); }
 function closeTypo(){ const ov=$('#typo'); if(!ov)return; ov.hidden=true; typoOpen=false; menuFocus(sharedDialogOpen()); }
 { const b=$('#typo-close'); if(b)b.addEventListener('click',closeTypo); }
-setGameFont(fontKey,false);
 
 /* F1: menu de áudio (mixer por categoria) — o botão "Som" abre este menu */
 function reflectAudioMaster(){ const b=$('#audio-master'); if(b){ b.classList.toggle('is-on',soundOn); b.setAttribute('aria-pressed',String(soundOn)); b.textContent=soundOn?'🔊 Ligado':'🔇 Desligado'; } const v=$('#audio-master-vol'); if(v)v.value=Math.round(volume*100); const sb=$('#opt-sound'); if(sb)toggleBtn(sb,soundOn); }
@@ -2613,7 +2596,7 @@ window.__incl={app,get player(){return players[0];},players,get numPlayers(){ret
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return lqT;},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
   setMode,setQuizLevel,get quizLevel(){return quizLevel;},openSilabas,quizMove,quizConfirm,quizErase,get quiz(){return players[0].quiz;},INCL_VERSION,fmtFrac,fracGraphic,speakChoice,get fracNot(){return fracNot;},
-  setGameFont,openTypo,get fontKey(){return fontKey;},FONT_GROUPS,get mmSeen2(){return minimapSeenCount();},
+  setGameFont:typo.setFont,openTypo,get fontKey(){return typo.getFontKey();},FONT_GROUPS,get mmSeen2(){return minimapSeenCount();},
   startAttract:()=>attractCtl.startAttract(),stopAttract:()=>attractCtl.stopAttract(),get attract(){return attractCtl.isAttract();}, // attract → game/attract.ts
   loadTTS:tts.loadTTS,ttsSpeak:tts.ttsSpeak,narrate:tts.narrate,get ttsEngine(){return tts.getEngine();},get ttsLoading(){return tts.loading;},get ttsFailed(){return tts.failed;},setTtsEngineSel(v){tts.setEngineSel(v);},
   updateWeather,get rainLevel(){return _rainLevel;},set weatherT(v){_weatherT=v;},get weatherT(){return _weatherT;},rm,
