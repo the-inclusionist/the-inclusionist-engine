@@ -48,12 +48,13 @@ import { SPR, TEX_IDLE, TEX_WALK, TEX_RUN, FLAVORS, TEX_JUMP_UP, TEX_JUMP_DOWN, 
 import { makeCanvas, tex, pixDisc } from './render/canvas.js';
 import { cloudWrapX, createSceneSky } from './render/scene-sky.js'; // Tier 2 (#43): céu — nuvens (#21) + decor viva da v3
 import { coinCanvas, coinTexture, treeCanvas, treeTexture, powerupCanvas } from './render/props.js';
-import { outlineCanvas, spriteToCanvas } from './render/sprite-fx.js'; // Fase 2: voz do letramento (pt-BR sempre-ativa)
+import { outlineCanvas } from './render/sprite-fx.js'; // Fase 2: voz do letramento (pt-BR sempre-ativa)
 import * as weather from './render/weather.js'; // Onda A: clima visual (chuva/trovao/clarao)
 import { lqFilter, setLq, getLqT, initLqFilter } from './render/lq-filter.js'; // Onda A: realce de contraste L->Q
 import * as traffic from './game/traffic.js'; // Onda A: carros + semaforo da rua da frente
 import * as life from './game/life.js'; // Onda A: vida ambiente (pombos/gatos/caes/adultos)
 import { initSceneCity } from './render/scene-city.js'; // Onda A: deco da Cidade + fx de tiles vivos
+import { initTextures, SHAPE_TEX, letterTexture, pupTexFor, resetPupTexCache } from './render/textures.js'; // Onda A: texturas de moeda/forma/letra + power-up
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
@@ -135,46 +136,9 @@ function buildDarkRegions(){
 }
 
 /* ===================== sprite do personagem ===================== */
-const PLAYER_IDLE = [
-  '................','................','.....HHHHHH.....','....HHHHHHHH....',
-  '....HHSSSSHH....','....HSSSSSSH....','....HSKSSKSH....','....HSSSSSSH....',
-  '....HSSWWSSH....','....HSSSSSSH....','.....HSSSSH.....','......SSSS......',
-  '.....RRRRRR.....','....RRRRRRRR....','...RRRRRRRRRR...','..SRRRRRRRRRRS..',
-  '..SRRRRRRRRRRS..','..SRRRRRRRRRRS..','..SRRRRRRRRRRS..','...RRRRRRRRRR...',
-  '...RRRRRRRRRR...','....RRRRRRRR....','....BBBBBBBB....','....BBBBBBBB....',
-  '....BBB..BBB....','....BBB..BBB....','....BBB..BBB....','....BBB..BBB....',
-  '....BBB..BBB....','....BBB..BBB....','...KKKK..KKKK...','...KKKK..KKKK...',
-];
-const PLAYER_WALK = [
-  '................','................','.....HHHHHH.....','....HHHHHHHH....',
-  '....HHSSSSHH....','....HSSSSSSH....','....HSKSSKSH....','....HSSSSSSH....',
-  '....HSSWWSSH....','....HSSSSSSH....','.....HSSSSH.....','......SSSS......',
-  '.....RRRRRR.....','....RRRRRRRR....','...RRRRRRRRRR...','..SRRRRRRRRRRS..',
-  '..SRRRRRRRRRRS..','..SRRRRRRRRRRS..','..SRRRRRRRRRRS..','...RRRRRRRRRR...',
-  '...RRRRRRRRRR...','....RRRRRRRR....','....BBBBBBBB....','...BBBB..BBB....',
-  '..BBB....BBB....','.BBB.....BBB....','KKKK.....KKKK...','................',
-  '................','................','................','................',
-];
-const PLAYER_CLIMB = [ // vista de costas, ALTURA CHEIA (pés na base) — corrige o "encolhimento" na escada
-  '................','................','.....HHHHHH.....','....HHHHHHHH....',
-  '....HHHHHHHH....','....HHHHHHHH....','....HHHHHHHH....','....HHHHHHHH....',
-  '....HHHHHHHH....','....HHHHHHHH....','.....HHHHHH.....','......SSSS......',
-  '.....RRRRRR.....','....RRRRRRRR....','...RRRRRRRRRR...','..SRRRRRRRRRRS..',
-  '..SRRRRRRRRRRS..','..SRRRRRRRRRRS..','..SRRRRRRRRRRS..','...RRRRRRRRRR...',
-  '...RRRRRRRRRR...','....RRRRRRRR....','....BBBBBBBB....','....BBBBBBBB....',
-  '....BBB..BBB....','....BBB..BBB....','....BBB..BBB....','....BBB..BBB....',
-  '....BBB..BBB....','....BBB..BBB....','...KKKK..KKKK...','...KKKK..KKKK...',
-];
-const PLAYER_HURT = [
-  '................','................','.....HHHHHH.....','....HHHHHHHH....',
-  '....HHSSSSHH....','....HSSSSSSH....','....HSWWWWSH....','....HSWKKWSH....',
-  '....HSSSSSSH....','....HSKKKKSH....','.....HSSSSH.....','......SSSS......',
-  '.....RRRRRR.....','....RRRRRRRR....','...RRRRRRRRRR...','..SRRRRRRRRRRS..',
-  '..SRRRRRRRRR.S..','..SRRRRRRRR.SS..','...RRRRRRRRSS...','...RRRRRRRRRR...',
-  '...RRRRRRRRRR...','....RRRRRRRR....','....BBBBBBBB....','....BBBBBBBB....',
-  '....BBB..BBB....','....BBB..BBB....','....BBB..BBB....','....BBB..BBB....',
-  '....BBB..BBB....','....BBB..BBB....','...KKKK..KKKK...','...KKKK..KKKK...',
-];
+// PLAYER_IDLE/WALK/CLIMB/HURT (mapa de caracteres do sprite anterior ao PixelLab) migraram para
+// render/textures.ts junto do TEX que os consumia — os dois ja nao tinham chamador. Ficavam aqui so
+// como copia.
 // (paleta APP movida p/ render/sprite-fx.js na Fase 2.21)
 
 /* ===================== canvas → textura ===================== */
@@ -595,33 +559,9 @@ function worldTexFor(mode){
 function coinTexFor(mode){
   if(DIRECT_CFG[mode]){ if(!_coinTexHC[mode])_coinTexHC[mode]=tex(directSpriteCanvas(coinCanvasNormal,mode)); return _coinTexHC[mode]; }
   return coinTex; }
-function shapeTexture(id){
-  const cv=makeCanvas(16,16),c=cv.getContext('2d');
-  c.fillStyle='#7fdcff';c.strokeStyle='#04121a';c.lineWidth=1.5;
-  const cx=8,cy=8,r=6; c.beginPath();
-  switch(id){
-    case 'circulo': c.arc(cx,cy,r,0,7); break;
-    case 'oval': c.ellipse(cx,cy,r,r*0.66,0,0,7); break;
-    case 'quadrado': c.rect(cx-r,cy-r,2*r,2*r); break;
-    case 'retangulo': c.rect(cx-r,cy-r*0.6,2*r,r*1.2); break;
-    case 'triangulo': c.moveTo(cx,cy-r);c.lineTo(cx+r,cy+r);c.lineTo(cx-r,cy+r);c.closePath(); break;
-    case 'losango': c.moveTo(cx,cy-r);c.lineTo(cx+r,cy);c.lineTo(cx,cy+r);c.lineTo(cx-r,cy);c.closePath(); break;
-    case 'paralelogramo': c.moveTo(cx-r+3,cy-r*0.6);c.lineTo(cx+r,cy-r*0.6);c.lineTo(cx+r-3,cy+r*0.6);c.lineTo(cx-r,cy+r*0.6);c.closePath(); break;
-    case 'trapezio': c.moveTo(cx-r*0.5,cy-r*0.7);c.lineTo(cx+r*0.5,cy-r*0.7);c.lineTo(cx+r,cy+r*0.7);c.lineTo(cx-r,cy+r*0.7);c.closePath(); break;
-    case 'pentagono': for(let i=0;i<5;i++){const a=-Math.PI/2+i*2*Math.PI/5;c[i?'lineTo':'moveTo'](cx+r*Math.cos(a),cy+r*Math.sin(a));}c.closePath(); break;
-    case 'hexagono': for(let i=0;i<6;i++){const a=i*2*Math.PI/6;c[i?'lineTo':'moveTo'](cx+r*Math.cos(a),cy+r*Math.sin(a));}c.closePath(); break;
-    default: c.arc(cx,cy,r,0,7);
-  }
-  c.fill();c.stroke(); return tex(cv);
-}
-const SHAPE_TEX={}; SOMASUB_SHAPES.forEach(s=>SHAPE_TEX[s.id]=shapeTexture(s.id));
-function letterTexture(ch){
-  const cv=makeCanvas(16,16),c=cv.getContext('2d');
-  c.fillStyle='#ffd23f';c.strokeStyle='#1a1400';c.lineWidth=1.5;
-  c.beginPath(); if(c.roundRect)c.roundRect(2,2,12,12,3); else c.rect(2,2,12,12); c.fill(); c.stroke();
-  c.fillStyle='#1a1400';c.font='bold 11px system-ui,sans-serif';c.textAlign='center';c.textBaseline='middle';
-  c.fillText(disp(ch),8,9); return tex(cv);
-}
+// shapeTexture/SHAPE_TEX/letterTexture migraram para render/textures.ts (Onda A). O init vem AQUI porque
+// o primeiro uso (rebuildCoins, logo abaixo) precisa dos caches ja preenchidos.
+initTextures({ disp, directCfg: DIRECT_CFG, directSpriteCanvas });
 const coinContainer=new PIXI.Container(); camera.addChild(coinContainer);
 let coinSprites=[];
 // positionEasyCoins extraído p/ game/coins.js (Estágio 4, posicionamento — Fácil/cadeirante rebaixam a moeda).
@@ -647,24 +587,8 @@ const darkRegions=buildDarkRegions().map(tiles=>{
   gfx.endFill(); darkLayer.addChild(gfx);
   return { set:new Set(tiles.map(([tx,ty])=>tx+','+ty)), gfx, announced:false };
 });
-const TEX={idle:tex(spriteToCanvas(PLAYER_IDLE)),walk:tex(spriteToCanvas(PLAYER_WALK)),climb:tex(spriteToCanvas(PLAYER_CLIMB)),hurt:tex(spriteToCanvas(PLAYER_HURT))};
-/* E15: personagem em 3/4 (frente-direita, VIVO) — convertido de referência PixelLab v3 → procedural
-   INDEXADO 23×32 (cores chapadas, sem PNG; GPL-clean). Olhos nítidos (largura natural; caixa de
-   colisão segue 10×30, visual transborda). Idle respira por juice; corpo anima no andar; flip por direção. */
-const PIP_W=24,PIP_H=32;
-const PIP_PAL=['#fcd7ab','#e2aa86','#9d6e62','#5d2e22','#472a1e','#231c1c','#1e1011','#ff00ff','#050809','#010909'];
-const PIP_IDLE=['.....99444446666888.....','...9444444444444448.....','..924444444444444488....','.9422442444444444439....','.94424222442424495338...','894444444424224495348...','964664444444444915548...','966664455444449101658...','966666595689998000859...','966659986991891000859...','96656919911011009819....','.99969111890000910119...','990099198999008998819...','902281890990001920929...','91133119889000089099....','.911111121500003409.....','....991100003330009.....','.....9821000000009......','.....999821111198.......','....92223999998429......','...9022222399823229.....','...99888822222283829....','...91118892222281008....','..9910000182224910089...','.939211001844449300829..','.9335821139999999229329.','92355589985335229999939.','939955955255552589..99..','99..99952555958129......','.....928899.9925489.....','....991999..99554339....','........................'];
-const PIP_WALK=[
-  ['.....5566655...........','...69344433365666......','..533344434444336......','.66224444444443466.....','.54324444443444436.....','6644442234424499346....','66466433422323999444...','66666344434434929445...','66666448944939313935...','66666659969856121945...','66666889992191000945...','6699681601102018929....','6921981999900040026....','9013891806960689926....','903382190550009905.....','.41231100220002306.....','...592100000220006.....','.....921100000006......','.....56661111186.......','....9622269999825......','....9522222992525......','....9968862222989......','....8910062222929......','.....810082222828......','.....8100922229919.....','.....9100996699914.....','.....6200092559916.....','.....5100094558988.....','.....98112989689.......','.....99889899119.......','.....9558...95554......','.....94444.............'],
-  ['.....6656655...........','...68443344466665......','..933444444444336......','.98224444443344466.....','.63424444443444435.....','6544442244424499446....','65366434422413695444...','66566444434433618445...','66666449944939213845...','65656869969946122945...','66666889992191000845...','6588690911101019919....','6900881998600080026....','6012891509950499926....','813362191860005805.....','.51131100230002306.....','...992100000220019.....','.....921100000008......','.....98951111189.......','....8422299989924......','...99411222992925......','...89996992222999......','...99910082222999......','....981009222299.......','.....81009222299.......','.....89206198999.......','......9200095499.......','.....54622292499.......','.....9556999659........','.....999999.1198.......','.....9349...64444......','.....83455.............'],
-  ['.....6665656...........','...96444444466665......','..633444443444446......','.55324444443444466.....','.64424444333444435.....','6644432244222369334....','66466433422413699444...','66666444444444929634...','66566339944948813934...','66666649969958121635...','66666999992081000945...','6699681922101016629....','6921991989800081016....','8002961505950499625....','903361160550005506.....','.50131110440003306.....','...861100000330004.....','.....961200000115......','.....59891111189.......','....9222266989926......','...99222222992629......','...99999992222999......','...99920060022999......','....99200610229........','....992229222299.......','.....992200999999......','.....999200925999......','.....55822292598.......','....95599999969........','....985589992289.......','....9489...933223......','....94469..............'],
-  ['.....5665566...........','...98444443366666......','..644444444444446......','.96224444444444456.....','.63313444443443436.....','6543332243424469434....','65466434422324499434...','66666334444444939444...','66665349944936312934...','66666859958968122934...','66666999992081000934...','6686691611101009625....','6922991989800060015....','9013991508960699825....','903381190650006506.....','.51221110420002406.....','...992200000220006.....','.....931100000116......','......9991111169.......','.....522299899315......','...89222222992225......','...99888922222866......','...99200942222929......','....8100992222829......','....810099222298166....','....810899998899216....','....810099925999216....','....91006454459895.....','....91216355928........','.....99959992158.......','......8689.943444......','......94465............'],
-  ['.....6665655...........','...56444444356665......','..633333344443446......','.86314444443444466.....','.83423434433434445.....','6633432243423399434....','66456434422413899434...','66566434434434828636...','66566349944949213935...','66666659969968111636...','66666989982091000645...','6699691922201018829....','6811991999900081016....','6002961505960499625....','603361160560005506.....','.51131100440002206.....','...981100000230015.....','.....961100000116......','.....99991111189.......','....9222296966825......','...89222222992625......','...99998922222996......','...99200932222826......','....62009922229138.....','....810099222299169....','....910699898899206....','....810099525599219....','....91008545559988.....','....82119946529........','.....99899991169.......','......9555.833323......','......95555............'],
-  ['.....6556656...........','...56443344456566......','..833444444443336......','.56224444444443466.....','.64324434343444435.....','6644442244424499349....','65466444422313695444...','66566344444333619446...','66666439944939223945...','65665669969949121945...','66666899982190000845...','6699690911101019919....','6911991996600081026....','8113891609960499925....','913381191980005606.....','.51131100430002306.....','...992100000220019.....','.....821100000006......','.....99961111196.......','....9222269899924......','...99222222992625......','...99998922222995......','...89100922222929......','....92008822229215.....','....920089222299139....','....620099988999108....','....610009523399129....','....91000855249998.....','....9922299989998......','.....899999.81198......','.....99559..943445.....','.....995548............'],
-];
-const isPix=(ch)=>ch>='0'&&ch<='9'&&ch!=='7'; // dígito de cor válido (7 = fundo vazado, ignora); robusto p/ linhas curtas
-function indexedToCanvas(rows){ const cv=makeCanvas(PIP_W,PIP_H),c=cv.getContext('2d'); for(let y=0;y<PIP_H;y++){const r=rows[y];if(!r)continue;for(let x=0;x<PIP_W;x++){const ch=r[x];if(!isPix(ch))continue;c.fillStyle=PIP_PAL[+ch];c.fillRect(x,y,1,1);}} return cv; }
-function silhouetteCanvasIdx(rows){ const cv=makeCanvas(PIP_W,PIP_H),c=cv.getContext('2d'); c.fillStyle='#ffe600'; for(let y=0;y<PIP_H;y++){const r=rows[y];if(!r)continue;for(let x=0;x<PIP_W;x++){if(isPix(r[x]))c.fillRect(x,y,1,1);}} return cv; }
+// TEX (pipeline de sprite anterior ao PixelLab, ZERO chamadores) e o bloco PIP_* (conversao procedural
+// adiada, tambem sem chamador) migraram para render/textures.ts (Onda A) — preservados la, nao apagados.
 // FASE ATUAL: usa o PIXEL ART do PixelLab DIRETO (PNG, tamanho NATIVO de cada frame — aspect ratio
 // próprio, sem padronizar). A conversão procedural (PIP_* acima) fica para uma fase posterior.
 // E15: cadência de animação (ANIM) migrada p/ core/constants.js (Fase 2.16) — regulável no painel ?debug=true.
@@ -690,12 +614,8 @@ const decoSprites=[];
 })();
 /* ===================== E12: power-ups + chave/portão ===================== */
 // powerupCanvas migrado p/ render/props.js (Fase 2.20)
-const PUP_CANVAS={}, PUP_TEX={};
-['superjump','ultrajump','turbo','fly','wallcling','key','runcane'].forEach(k=>{ PUP_CANVAS[k]=powerupCanvas(k); PUP_TEX[k]=tex(PUP_CANVAS[k]); });
-const _pupTexHC={}; // {mode:{kind:tex}} — power-up com contorno (alto contraste direto)
-function pupTexFor(kind,mode){ (_pupTexHC[mode]=_pupTexHC[mode]||{});
-  if(DIRECT_CFG[mode]){ if(!_pupTexHC[mode][kind])_pupTexHC[mode][kind]=tex(directSpriteCanvas(PUP_CANVAS[kind],mode)); return _pupTexHC[mode][kind]; }
-  return PUP_TEX[kind]; }
+// PUP_CANVAS/PUP_TEX/_pupTexHC/pupTexFor migraram para render/textures.ts (Onda A); initTextures acima
+// ja montou o cache.
 const extraLayer=new PIXI.Container(); camera.addChild(extraLayer); // power-ups + portão (atrás do player)
 let powerups=[];
 function rebuildExtras(){
@@ -2080,7 +2000,7 @@ function resetRoleColors(){ for(const k in HC_ROLE_DEF)HC_ROLE[k]=HC_ROLE_DEF[k]
   _rebakeDirect(); rebuildExtras(); visual.render(); srSay('Cores do color-blocking restauradas ao padrão.'); }
 // Dois contornos configuráveis (1º plano personagem/itens · 2º plano perímetro de plataforma/água/lava).
 function _rebakeDirect(){ // invalida os caches de textura direta (mundo depende de bg; sprites de fg) e re-renderiza
-  for(const k in _worldTexHC)delete _worldTexHC[k]; for(const k in _coinTexHC)delete _coinTexHC[k]; for(const k in _pupTexHC)delete _pupTexHC[k]; _playerDirect={}; _lastSharedViz=null;
+  for(const k in _worldTexHC)delete _worldTexHC[k]; for(const k in _coinTexHC)delete _coinTexHC[k]; resetPupTexCache(); _playerDirect={}; _lastSharedViz=null;
   if(numPlayers<=1)applyVizGlobal(players[0].viz); else applyVpFilters(); }
 function setOutlineFg(v){ hcOutlineFg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outfg',hcOutlineFg);}catch(e){} _rebakeDirect(); visual.render(); srSay('Contorno do primeiro plano: '+['nenhum','fino','grosso'][hcOutlineFg]+'.'); }
 function setOutlineBg(v){ hcOutlineBg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outbg',hcOutlineBg);}catch(e){} _rebakeDirect(); visual.render(); srSay('Contorno do segundo plano: '+['nenhum','fino','grosso'][hcOutlineBg]+'.'); }
