@@ -287,9 +287,21 @@ function landingAndTimers(pl: PhysicsPlayer, dt: number, fired: boolean): void {
   if (pl.onGround) pl.airTime = 0; else pl.airTime += dt; // E16: tempo no ar (estabiliza anim — onGround pisca ao repousar)
 }
 
-/** F2: passos por superfície · escada (madeira) · escalada (parede) · bengala. Cadência = ritmo do andar/correr. */
-function stepSounds(pl: PhysicsPlayer, dt: number, dir: number, run: boolean): void {
-  if (!pl.inWater) {
+/**
+ * F2: passos por superfície · escada (madeira) · escalada (parede) · bengala. Cadência = ritmo do andar/correr.
+ *
+ * EXPORTADA pelo mesmo motivo de sampleFeatures/resolveX/resolveY: o teste alcança a peça em vez de repetir o
+ * quadro inteiro. E aqui isso importa mais que nas outras — a cadeia de `else if` daqui já esteve errada por
+ * meses sem que nada acusasse, porque som não aparece em trajetória e a fixture-ouro só olha posição.
+ */
+export function stepSounds(pl: PhysicsPlayer, dt: number, dir: number, run: boolean): void {
+  // A ORDEM aqui e a especificacao. Antes, `escada` e `parede` eram `else if` pendurados em `if (!pl.inWater)`
+  // — ou seja, so eram alcancaveis DENTRO da agua. Fora dela, subir escada e escalar parede nao faziam som
+  // nenhum, e som de passo nao e enfeite: e por onde quem joga sem ver sabe que esta se movendo e em que
+  // superficie. Agora as duas vem primeiro, valendo dentro e fora da agua.
+  if (pl.onLadder && pl.vy !== 0) { pl.stepT += dt; if (pl.stepT >= 20) { pl.stepT = 0; C.noiseHit('madeira'); } }
+  else if (pl.clinging && (pl.vx !== 0 || pl.vy !== 0)) { pl.stepT += dt; if (pl.stepT >= 16) { pl.stepT = 0; C.noiseHit('parede'); } }
+  else if (!pl.inWater) {
     if (C.caneOn(pl)) {
       if (pl.airTime <= 5) { // modo cego: chão ESTÁVEL (coyote) evita o flicker do onGround
         if (dir !== 0) { pl.caneDist = (pl.caneDist || 0) + Math.abs(pl.vx * dt); if (pl.caneDist >= caneBlockPx()) { pl.caneDist = 0; C.nav.caneTap(pl); } } // ANDANDO: batida por DISTÂNCIA
@@ -298,12 +310,10 @@ function stepSounds(pl: PhysicsPlayer, dt: number, dir: number, run: boolean): v
     } else if (pl.onGround && dir !== 0) {
       const cad = (held(pl, 'run') && !pl.easy && !pl.toggleMove) ? 11 : 17; pl.stepT += dt;
       if (pl.stepT >= cad) { pl.stepT = 0; const m = C.surfaceUnder(pl); if (m) C.noiseHit(m); if (run) C.puffDust(pl.x - pl.facing * 5, pl.y, 2); }
-    } // normal: passo no chão sob os pés · JUICE: correndo levanta poeira nos calcanhares
+    }
   }
-  else if (pl.onLadder && pl.vy !== 0) { pl.stepT += dt; if (pl.stepT >= 20) { pl.stepT = 0; C.noiseHit('madeira'); } }
-  else if (pl.clinging && (pl.vx !== 0 || pl.vy !== 0)) { pl.stepT += dt; if (pl.stepT >= 16) { pl.stepT = 0; C.noiseHit('parede'); } }
-  else if (pl.inWater && C.caneOn(pl)) { C.nav.waterNav(pl); } // NADO CEGO: guia por contato (paredes/chão/superfície-cordas)
-  else pl.stepT = 99; // parado → próximo passo soa logo ao recomeçar
+  else if (C.caneOn(pl)) { C.nav.waterNav(pl); } // NADO CEGO: guia por contato (paredes/chao/superficie-cordas)
+  else pl.stepT = 99; // parado -> proximo passo soa logo ao recomecar
 }
 
 /** F3: guarda de beirada — bipa ao caminhar em direção a um fosso (só com a visão comprometida). */

@@ -465,3 +465,71 @@ describe('game/physics — triggerLava (dano da lava)', () => {
     }
   });
 });
+
+/* ===================== stepSounds: a pista de audio de quem nao ve ===================== */
+describe('game/physics — stepSounds (escada, parede, chao, agua)', () => {
+  // Por que este bloco existe: a cadeia de `else if` daqui pendurava em `if (!pl.inWater)`, entao ESCADA e
+  // PAREDE so soavam DENTRO da agua. Fora dela, subir escada e escalar parede eram silencio — e som de passo
+  // nao e enfeite: e por onde quem joga sem ver sabe que esta se movendo e sobre o que. Nada acusava porque
+  // som nao aparece em trajetoria, e a fixture-ouro so compara posicao.
+  const bateu = () => { const sons = []; PHY.initPhysics(CTX({ noiseHit: (m) => sons.push(m) })); return sons; };
+
+  it('[Right] FORA da agua, subindo escada: bate madeira', () => {
+    const sons = bateu();
+    const pl = novo({ onLadder: true, vy: -1.5, inWater: false, stepT: 99 });
+    PHY.stepSounds(pl, 1, 0, false);
+    expect(sons).toEqual(['madeira']);
+  });
+  it('[Right] FORA da agua, escalando parede: bate parede', () => {
+    const sons = bateu();
+    const pl = novo({ clinging: true, vy: -1, inWater: false, stepT: 99 });
+    PHY.stepSounds(pl, 1, 0, false);
+    expect(sons).toEqual(['parede']);
+  });
+  it('[Invariant] o mesmo som sai DENTRO da agua — a correcao nao tirou o caminho que ja funcionava', () => {
+    const sons = bateu();
+    PHY.stepSounds(novo({ onLadder: true, vy: -1.5, inWater: true, stepT: 99 }), 1, 0, false);
+    PHY.stepSounds(novo({ clinging: true, vy: -1, inWater: true, stepT: 99 }), 1, 0, false);
+    expect(sons).toEqual(['madeira', 'parede']);
+  });
+  it('[Boundary] parado na escada (vy=0) nao bate nada', () => {
+    const sons = bateu();
+    PHY.stepSounds(novo({ onLadder: true, vy: 0, inWater: false, stepT: 99 }), 1, 0, false);
+    expect(sons).toEqual([]);
+  });
+  it('[Boundary] a cadencia e respeitada: so bate quando stepT alcanca o limiar (20 na escada)', () => {
+    const sons = bateu();
+    const pl = novo({ onLadder: true, vy: -1.5, inWater: false, stepT: 0 });
+    for (let i = 0; i < 19; i++) PHY.stepSounds(pl, 1, 0, false);
+    expect(sons).toEqual([]);          // 19 ticks: ainda nao
+    PHY.stepSounds(pl, 1, 0, false);
+    expect(sons).toEqual(['madeira']); // o 20o bate, e zera
+    expect(pl.stepT).toBe(0);
+  });
+  it('[Right] no chao, andando: bate o material sob os pes', () => {
+    const sons = [];
+    PHY.initPhysics(CTX({ noiseHit: (m) => sons.push(m), surfaceUnder: () => 'pedra' }));
+    PHY.stepSounds(novo({ onGround: true, inWater: false, stepT: 99 }), 1, 1, false);
+    expect(sons).toEqual(['pedra']);
+  });
+  it('[Right] escada VENCE o chao: quem esta na escada ouve madeira, nao o piso', () => {
+    const sons = [];
+    PHY.initPhysics(CTX({ noiseHit: (m) => sons.push(m), surfaceUnder: () => 'pedra' }));
+    PHY.stepSounds(novo({ onLadder: true, vy: -1.5, onGround: true, inWater: false, stepT: 99 }), 1, 1, false);
+    expect(sons).toEqual(['madeira']);
+  });
+  it('[Right] na agua, modo cego e sem escada/parede: guia por contato, sem passo', () => {
+    const sons = []; const nav = [];
+    PHY.initPhysics(CTX({ noiseHit: (m) => sons.push(m), caneOn: () => true,
+      nav: { ...NAV, waterNav: () => nav.push('waterNav') } }));
+    PHY.stepSounds(novo({ inWater: true, stepT: 99 }), 1, 0, false);
+    expect(sons).toEqual([]);
+    expect(nav).toEqual(['waterNav']);
+  });
+  it('[Zero] parado fora da agua e fora de tudo: rearma o proximo passo (stepT=99)', () => {
+    bateu();
+    const pl = novo({ inWater: true, stepT: 5 }); // o ramo do rearme so e alcancado dentro da agua, verbatim
+    PHY.stepSounds(pl, 1, 0, false);
+    expect(pl.stepT).toBe(99);
+  });
+});
