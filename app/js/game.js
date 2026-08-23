@@ -28,7 +28,7 @@ import { initSettingsControls, ACT_LABEL, keyName } from './ui/settings-controls
 import { initSettingsVisual, ROLE_LABELS } from './ui/settings-visual.js';
 import { initSettingsEmpathy } from './ui/settings-empathy.js';
 import { initSettingsMotor } from './ui/settings-motor.js';
-import { initSettingsMotion, motionOpen, setSelectedPlayer as setSelectedMotionPlayer } from './ui/settings-motion.js';
+import { initSettingsMotion, setSelectedPlayer as setSelectedMotionPlayer } from './ui/settings-motion.js';
 import { initSettingsTypo } from './ui/settings-typo.js';
 import { initTitle } from './ui/title.js';
 import { createTitleScene } from './render/title-scene.js'; // Fase 2.27: atalho de querySelector (Tier 1)
@@ -225,7 +225,8 @@ let collected=0, ended=false; setCoins(pickCoins(COIN_TARGET, coinPools())); // 
    initGamepad, avaliado eager. */
 const overlays = initSettingsPanel({ $, $$, doc: document, computedZ: (el)=>+getComputedStyle(el).zIndex||0 });
 const { frontOverlay } = overlays;
-let jumpEdge=false, optionsOpen=false, movementOpen=false, visualOpen=false, empathyOpen=false, audioOpen=false;
+let jumpEdge=false; // as seis flags `*Open` que moravam aqui morreram: quem sabe se um painel esta aberto e o
+                    // proprio DOM, e o registro de ui/settings-panel le de la (D1).
 // Gamepad (B3/L1): estado por controle. padCur[gi]=ações seguradas neste frame; associação pad↔jogador vive em p.pad.
 // padCur/padPrevAct/padPrevStart + PAD_DEAD movidos p/ input/state.js (Fase 2.22)  // // zona morta = primeira METADE do curso (ergonomia — José 2026-07-02)
 // Config de teclado extraída p/ input/keyboard.js (Fase 2): esquemas, defaults, loadKB/saveKB/resetKB.
@@ -1162,7 +1163,7 @@ const _rebakeDirect = viz.rebakeDirect;
 // updateVpDots/applyVpFilters migraram para render/viz-setters.ts (Onda A).
 function setModoCego(on){ if(modoCego===on)return; modoCego=on; store.setBool('incl_modocego',on); if(typeof setupExtras==='function')setupExtras(); if(typeof reflectModoCego==='function')audioPanel.reflectModoCego(); srSay('Modo cego '+(on?'ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.':'desligado.')); }
 // setPlayerViz/applyVizGlobal migraram para render/viz-setters.ts (Onda A).
-const empathy = initSettingsEmpathy({ $, srSay, store, renderVizGroup, reflectMotorEmpathy, reflectVizButtons, frontOverlay, setHearingLoss, setOneButton, setWheelchair, getOneButton: () => oneButton, getWheelchair: () => wheelchair, setEmpathyOpen: (v) => { empathyOpen = v; } }); // painel de empatia: ui/settings-empathy.ts (registra #opt-empathy, #opt-hearing, #opt-onebtn, #opt-wheelchair + restaura o grafo de audio)
+const empathy = initSettingsEmpathy({ $, srSay, store, renderVizGroup, reflectMotorEmpathy, reflectVizButtons, frontOverlay, setHearingLoss, setOneButton, setWheelchair, getOneButton: () => oneButton, getWheelchair: () => wheelchair }); // painel de empatia: ui/settings-empathy.ts (registra #opt-empathy, #opt-hearing, #opt-onebtn, #opt-wheelchair + restaura o grafo de audio)
 // updateVizIndicator/reapplyVizAll migraram para render/viz-setters.ts (Onda A).
 // Modos que AJUDAM (A12e visual) vs SIMULAÇÕES de empatia (Modo empatia)
 const isSimKind=k=>k==='filter'||k==='lowvision'||k==='blind';
@@ -1194,8 +1195,8 @@ function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.v
   // Botões puramente on/off viram TOGGLE (switch) — o texto "Ligado/Desligado" fica oculto (font-size:0).
   ['opt-facil','opt-altmove','opt-hearing','opt-onebtn','opt-wheelchair','opt-modocego','opt-tts','opt-eyes','audio-master','opt-captions','motion-master'].forEach(id=>{ const b=document.getElementById(id); if(b)b.classList.add('switch'); });
 })();
-function openVisual(){ const ov=$('#visual'); if(!ov)return; visual.render(); ov.hidden=false; frontOverlay(ov); visualOpen=true; const f=ov.querySelector('button[data-viz]')||ov.querySelector('button'); if(f)f.focus(); }
-function closeVisual(){ const ov=$('#visual'); if(!ov)return; ov.hidden=true; visualOpen=false; const b=$('#opt-visual'); if(b)b.focus(); }
+function openVisual(){ const ov=$('#visual'); if(!ov)return; visual.render(); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button[data-viz]')||ov.querySelector('button'); if(f)f.focus(); }
+function closeVisual(){ const ov=$('#visual'); if(!ov)return; ov.hidden=true; const b=$('#opt-visual'); if(b)b.focus(); }
 const visualBtn=$('#opt-visual'); if(visualBtn)visualBtn.addEventListener('click',openVisual);
 const visualClose=$('#visual-close'); if(visualClose)visualClose.addEventListener('click',closeVisual);
 // Empatia motora: um-botão e cadeirante
@@ -1218,15 +1219,13 @@ vizReady=true; applyVizGlobal(players[0].viz); // estado inicial (solo)
    mantêm o mecanismo antigo (Lexend preserva o espaçamento BDA via data-fonte="dislexia"). */
 // Tipografia: catalogo em ui/fonts.js, painel em ui/settings-typo.js. Antes: FONT_GROUPS/loadFontKey extraídos p/ ui/fonts.js (Fase 2, tipografia).
 const typo = initSettingsTypo({ $, srSay, store, root: document.documentElement }); // painel de tipografia: ui/settings-typo.ts (aplica a fonte persistida no init)
-let typoOpen=false;
-function openTypo(){ const ov=$('#typo'); if(!ov)return; typo.render(); ov.hidden=false; frontOverlay(ov); typoOpen=true;
-  const f=ov.querySelector('button[data-font]:not([disabled])')||ov.querySelector('button'); if(f)f.focus(); }
-function closeTypo(){ const ov=$('#typo'); if(!ov)return; ov.hidden=true; typoOpen=false; menuFocus(sharedDialogOpen()); }
+function openTypo(){ const ov=$('#typo'); if(!ov)return; typo.render(); ov.hidden=false; frontOverlay(ov);   const f=ov.querySelector('button[data-font]:not([disabled])')||ov.querySelector('button'); if(f)f.focus(); }
+function closeTypo(){ const ov=$('#typo'); if(!ov)return; ov.hidden=true; menuFocus(sharedDialogOpen()); }
 { const b=$('#typo-close'); if(b)b.addEventListener('click',closeTypo); }
 
 /* F1: menu de áudio (mixer por categoria) — o botão "Som" abre este menu */
-function openAudio(){ const ov=$('#audio'); if(!ov)return; ensureAC(); audioPanel.renderAudio(); audioPanel.reflectModoCego(); audioPanel.reflectTts(); const cd=$('#cane-div'); if(cd)cd.value=String(caneBlockDiv); ov.hidden=false; frontOverlay(ov); audioOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); }
-function closeAudio(){ const ov=$('#audio'); if(!ov)return; ov.hidden=true; audioOpen=false; const b=$('#opt-sound'); if(b)b.focus(); }
+function openAudio(){ const ov=$('#audio'); if(!ov)return; ensureAC(); audioPanel.renderAudio(); audioPanel.reflectModoCego(); audioPanel.reflectTts(); const cd=$('#cane-div'); if(cd)cd.value=String(caneBlockDiv); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); }
+function closeAudio(){ const ov=$('#audio'); if(!ov)return; ov.hidden=true; const b=$('#opt-sound'); if(b)b.focus(); }
 // A12e auditiva: Modo cego (só áudio) + seleção de voz (Web Speech agora; neurais em breve)
 // Botões abreviados: hover/foco DESCOMPACTA o número em letras (o "12" vira as 12 letras contando p/ baixo), suave;
 // recomprime ao sair. Genérico: varre a barra (.mode-btn) E o menu de pausa (.pm-btn) casando A12e/S11e.
@@ -1274,8 +1273,8 @@ const audioPanel = initSettingsAudio({ $, srSay, store, audioCats: AUDIO_CATS, t
 
 /* E10: remap de controles + persistência (B2) */
 const ctrlPanel = initSettingsControls({ $, srSay, srAlert, store: { saveKB, resetKB }, kb: KB, setKB: (k) => { KB = k; }, kbFor, getNumPlayers: () => numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)
-function openOptions(){ const ov=$('#options'); if(!ov)return; ctrlPanel.render(pauseActor); ov.hidden=false; frontOverlay(ov); optionsOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); } // E3: edita o controle do jogador que abriu
-function closeOptions(){ const ov=$('#options'); if(!ov)return; ov.hidden=true; optionsOpen=false; ctrlPanel.cancelCapture(); const b=$('#opt-controls'); if(b)b.focus(); }
+function openOptions(){ const ov=$('#options'); if(!ov)return; ctrlPanel.render(pauseActor); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); } // E3: edita o controle do jogador que abriu
+function closeOptions(){ const ov=$('#options'); if(!ov)return; ov.hidden=true; ctrlPanel.cancelCapture(); const b=$('#opt-controls'); if(b)b.focus(); }
 const ctrlBtn=$('#opt-controls'); if(ctrlBtn)ctrlBtn.addEventListener('click',openOptions);
 // AJUDA (do menu de pausa): controles DO jogador que abriu (pauseActor) + notas desta build.
 function openHelp(){ const ov=$('#help'); if(!ov)return; const c=$('#help-content'); const pa=pauseActor||0; const map=kbFor(pa);
@@ -1295,8 +1294,8 @@ const RM_LABEL={parallax:'Parallax do fundo', decor:'Decoração (nuvens, grama)
 const RM_SOON=new Set([]); // todos os alvos agem: parallax (fundo), decor (chuva/vida da Cidade), items (cintilar), particles (juice)
 const motion = initSettingsMotion({ $, srSay, store, frontOverlay, toggleBtn, rm, saveRM, rmKeys: RM_KEYS, rmChar: RM_CHAR }); // painel de movimento/CRT: ui/settings-motion.ts
 // MENU Movimento (GAG: alternância) — separado do menu Animação (WCAG: movimento reduzido)
-function openMovement(){ const ov=$('#movement'); if(!ov)return; motor.renderMovPlayers(); motor.reflectFacil(); motor.reflectAltMove(); renderMapHub(); ov.hidden=false; frontOverlay(ov); movementOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); }
-function closeMovement(){ const ov=$('#movement'); if(!ov)return; ov.hidden=true; movementOpen=false; const b=$('#opt-movement'); if(b)b.focus(); }
+function openMovement(){ const ov=$('#movement'); if(!ov)return; motor.renderMovPlayers(); motor.reflectFacil(); motor.reflectAltMove(); renderMapHub(); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); }
+function closeMovement(){ const ov=$('#movement'); if(!ov)return; ov.hidden=true; const b=$('#opt-movement'); if(b)b.focus(); }
 // Submenu "Configurar botões de tela touch"
 // openTouchCfg/closeTouchCfg migraram para input/touch.ts (Onda A).
 const touchCfgBtn=$('#opt-touchcfg'); if(touchCfgBtn)touchCfgBtn.addEventListener('click',()=>touchCtl.openTouchCfg());
@@ -1409,15 +1408,15 @@ function updateTitleLegend(){ shell.updateTitleLegend(); }
 // não = volta ao menu anterior (na raiz, volta ao jogo = Continuar). left/right ajustam select/slider.
 // A ORDEM aqui E a cadeia de Escape (verbatim do encadeamento anterior). touchcfg e help entram sem
 // flag: ficam fora da cadeia, exatamente como estavam.
-overlays.register('options',  { close:()=>closeOptions(),  isOpen:()=>optionsOpen });
-overlays.register('movement', { close:()=>closeMovement(), isOpen:()=>movementOpen });
-overlays.register('animation',{ close:()=>motion.close(),  isOpen:()=>motionOpen });
-overlays.register('visual',   { close:()=>closeVisual(),   isOpen:()=>visualOpen });
-overlays.register('empathy',  { close:()=>empathy.close(), isOpen:()=>empathyOpen });
-overlays.register('audio',    { close:()=>closeAudio(),    isOpen:()=>audioOpen });
-overlays.register('typo',     { close:()=>closeTypo(),     isOpen:()=>typoOpen });
-overlays.register('touchcfg', { close:()=>touchCtl.closeTouchCfg() });
-overlays.register('help',     { close:()=>closeHelp() });
+overlays.register('options',  { close:()=>closeOptions(),  inEscapeChain:true });
+overlays.register('movement', { close:()=>closeMovement(), inEscapeChain:true });
+overlays.register('animation',{ close:()=>motion.close(),  inEscapeChain:true });
+overlays.register('visual',   { close:()=>closeVisual(),   inEscapeChain:true });
+overlays.register('empathy',  { close:()=>empathy.close(), inEscapeChain:true });
+overlays.register('audio',    { close:()=>closeAudio(),    inEscapeChain:true });
+overlays.register('typo',     { close:()=>closeTypo(),     inEscapeChain:true });
+overlays.register('touchcfg', { close:()=>touchCtl.closeTouchCfg(), inEscapeChain:false });
+overlays.register('help',     { close:()=>closeHelp(),              inEscapeChain:false });
 const pauseActs = shell.pauseActs; // tabela de acoes dos .pm-btn -> ui/shell.ts (ui/pause-icons le por getPauseActs)
 // Roteamento de input por jogador: cada tecla é do jogador dono dela (kbFor). Genéricas → jogador 0.
 const actionOf = (code,pi) => kbRuntime.actionOf(code,pi);

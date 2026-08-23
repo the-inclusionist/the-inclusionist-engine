@@ -46,8 +46,6 @@ export interface EmpathySettingsCtx {
   /** Live reads of game.js's oneButton/wheelchair booleans (not yet migrated to core/state.ts). */
   getOneButton(): boolean;
   getWheelchair(): boolean;
-  /** Mirrors game.js's local `empathyOpen` flag, read by its Escape-key handler. */
-  setEmpathyOpen(open: boolean): void;
 }
 
 export interface EmpathySettingsApi {
@@ -78,7 +76,6 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     render();
     ov.hidden = false;
     ctx.frontOverlay(ov);
-    ctx.setEmpathyOpen(true);
     const f = ov.querySelector<HTMLElement>('button');
     if (f) f.focus();
   }
@@ -87,7 +84,6 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     const ov = ctx.$<HTMLElement>('#empathy');
     if (!ov) return;
     ov.hidden = true;
-    ctx.setEmpathyOpen(false);
     const b = ctx.$<HTMLElement>('#opt-empathy');
     if (b) b.focus();
   }

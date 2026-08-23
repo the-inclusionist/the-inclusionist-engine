@@ -299,59 +299,71 @@ describe('registro de overlays — fechar por id', () => {
 });
 
 describe('escapeTarget — quem consome a tecla Escape', () => {
-  function scene({ optionsOpen = false, audioOpen = false, optionsHidden = false, audioHidden = false } = {}) {
+  // O que mudou (D1): a entrada nao traz mais `isOpen`. Aberto passou a ser UMA coisa so — o `hidden` do
+  // proprio elemento — e `inEscapeChain` diz apenas se o dialogo participa da cadeia. Antes havia duas fontes:
+  // a flag `*Open` do game.js E a guarda de visibilidade; onde discordassem, quem decidia era a visibilidade.
+  // Caiu com isso um caso que existia aqui, "visivel mas com a flag desligada e pulado": ele descrevia uma
+  // configuracao que o app nunca produz (as sete flags eram escritas na MESMA funcao que revela o painel) e
+  // que agora nao pode nem ser construida. No lugar dele entrou o teste do invariante novo, que PODE falhar:
+  // mexer so no `hidden` vira a resposta nos dois sentidos.
+  function scene({ optionsHidden = true, audioHidden = true } = {}) {
     const options = overlay('options', { hidden: optionsHidden });
     const audio = overlay('audio', { hidden: audioHidden });
     const api = initSettingsPanel(makeCtx({ '#options': options, '#audio': audio }));
     const closed = [];
     // ordem de registro = ordem do encadeamento if/else do game.js (options antes de audio)
-    api.register('options', { close: () => closed.push('options'), isOpen: () => optionsOpen });
-    api.register('audio', { close: () => closed.push('audio'), isOpen: () => audioOpen });
+    api.register('options', { close: () => closed.push('options'), inEscapeChain: true });
+    api.register('audio', { close: () => closed.push('audio'), inEscapeChain: true });
     return { api, options, audio, closed };
   }
 
   it('[Zero] nada aberto: devolve null (a tecla segue para o jogo)', () => {
     expect(scene().api.escapeTarget()).toBe(null);
   });
-  it('[Right] um só aberto e visível: é ele', () => {
-    expect(scene({ audioOpen: true }).api.escapeTarget()).toBe('audio');
+  it('[Right] um so aberto e visivel: e ele', () => {
+    expect(scene({ audioHidden: false }).api.escapeTarget()).toBe('audio');
   });
-  it('[Right] dois abertos: vence a ORDEM DE REGISTRO, não o z-index (divergência verbatim do game.js)', () => {
-    const s = scene({ optionsOpen: true, audioOpen: true });
-    s.options.style.zIndex = '61'; // #options está ATRÁS…
-    s.audio.style.zIndex = '62';   // …e #audio por cima
-    expect(s.api.escapeTarget()).toBe('options'); // ainda assim é o primeiro da cadeia
+  it('[Right] dois abertos: vence a ORDEM DE REGISTRO, nao o z-index (divergencia verbatim do game.js)', () => {
+    const s = scene({ optionsHidden: false, audioHidden: false });
+    s.options.style.zIndex = '61'; // #options esta ATRAS...
+    s.audio.style.zIndex = '62';   // ...e #audio por cima
+    expect(s.api.escapeTarget()).toBe('options'); // ainda assim e o primeiro da cadeia
   });
-  it('[Boundary] fecha só UM: depois de fechar o primeiro, o alvo passa a ser o outro', () => {
-    const options = overlay('options', { hidden: false });
-    const audio = overlay('audio', { hidden: false });
-    const api = initSettingsPanel(makeCtx({ '#options': options, '#audio': audio }));
-    let optionsOpen = true; const audioOpen = true;
-    api.register('options', { close: () => { optionsOpen = false; options.hidden = true; }, isOpen: () => optionsOpen });
-    api.register('audio', { close: () => {}, isOpen: () => audioOpen });
-    const first = api.escapeTarget();
-    api.closeById(first);
-    expect(audio.hidden).toBe(false); // o de baixo continua aberto
-    expect(api.escapeTarget()).toBe('audio');
-  });
-  it('[Boundary] flag ligada mas diálogo INVISÍVEL é pulado (guarda dlgVis)', () => {
-    const s = scene({ optionsOpen: true, optionsHidden: true, audioOpen: true });
+  it('[Boundary] fecha so UM: depois de fechar o primeiro, o alvo passa a ser o outro', () => {
+    const s = scene({ optionsHidden: false, audioHidden: false });
+    const first = s.api.escapeTarget();
+    s.options.hidden = true; // e o que o close() de verdade faz
+    expect(s.audio.hidden).toBe(false); // o de baixo continua aberto
+    expect(first).toBe('options');
     expect(s.api.escapeTarget()).toBe('audio');
   });
-  it('[Boundary] diálogo visível mas com a flag desligada é pulado', () => {
-    const s = scene({ optionsOpen: false, audioOpen: true });
+  it('[Boundary] o primeiro da cadeia, se INVISIVEL, e pulado (a antiga guarda dlgVis)', () => {
+    const s = scene({ optionsHidden: true, audioHidden: false });
     expect(s.api.escapeTarget()).toBe('audio');
   });
-  it('[Edge-case] entrada SEM isOpen fica fora da cadeia (#touchcfg/#help no original)', () => {
+  it('[Right] `hidden` e a UNICA fonte: mexer nele vira a resposta nos dois sentidos', () => {
+    const s = scene(); // ambos escondidos
+    expect(s.api.escapeTarget()).toBe(null);
+    s.audio.hidden = false;
+    expect(s.api.escapeTarget()).toBe('audio');
+    s.options.hidden = false;                       // o primeiro da cadeia aparece e assume
+    expect(s.api.escapeTarget()).toBe('options');
+    s.options.hidden = true;                        // some de novo e devolve a vez
+    expect(s.api.escapeTarget()).toBe('audio');
+    s.audio.hidden = true;
+    expect(s.api.escapeTarget()).toBe(null);
+  });
+  it('[Edge-case] inEscapeChain:false fica de fora MESMO visivel (#touchcfg/#help no original)', () => {
     const touchcfg = overlay('touchcfg', { hidden: false });
     const api = initSettingsPanel(makeCtx({ '#touchcfg': touchcfg }));
-    api.register('touchcfg', { close: () => {} });
-    expect(api.escapeTarget()).toBe(null);
-    expect(api.closeById('touchcfg')).toBe(true); // mas continua fechável pelo dialogBack
+    api.register('touchcfg', { close: () => {}, inEscapeChain: false });
+    expect(touchcfg.hidden).toBe(false);            // visivel de verdade...
+    expect(api.escapeTarget()).toBe(null);          // ...e ainda assim fora da cadeia
+    expect(api.closeById('touchcfg')).toBe(true);   // mas continua fechavel pelo dialogBack
   });
-  it('[Zero/Error] flag ligada e elemento AUSENTE do DOM é pulado, sem lançar', () => {
+  it('[Zero/Error] na cadeia mas com o elemento AUSENTE do DOM e pulado, sem lancar', () => {
     const api = initSettingsPanel(makeCtx({}));
-    api.register('options', { close: () => {}, isOpen: () => true });
+    api.register('options', { close: () => {}, inEscapeChain: true });
     expect(api.escapeTarget()).toBe(null);
   });
 });

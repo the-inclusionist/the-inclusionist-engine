@@ -5,7 +5,7 @@
 // REAIS — mesmos que initSettingsMotion importa direto. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  initSettingsMotion, getSelectedPlayer, setSelectedPlayer, motionOpen,
+  initSettingsMotion, getSelectedPlayer, setSelectedPlayer,
 } from '../app/js/ui/settings-motion.js';
 import { players, setNumPlayersValue } from '../app/js/core/state.js';
 import { CRT, applyCrt } from '../app/js/render/crt.js';
@@ -173,23 +173,21 @@ describe('initSettingsMotion — botão-mestre (#motion-master)', () => {
 });
 
 describe('initSettingsMotion — open()/close()', () => {
-  it('[Interface] open(): renderiza, mostra o overlay, chama frontOverlay, liga motionOpen e foca um botão', () => {
+  it('[Interface] open(): renderiza, mostra o overlay, chama frontOverlay, mostra o diálogo e foca um botão', () => {
     const { ctx, calls } = makeCtx();
     const api = initSettingsMotion(ctx);
     api.open();
     expect($('#animation').hidden).toBe(false);
     expect(calls.frontOverlay.length).toBe(1);
-    expect(motionOpen).toBe(true);
     expect(document.activeElement.tagName).toBe('BUTTON');
   });
 
-  it('[Interface] close(): esconde o overlay, desliga motionOpen e devolve o foco ao botão que abriu', () => {
+  it('[Interface] close(): esconde o overlay e devolve o foco ao botão que abriu', () => {
     const { ctx } = makeCtx();
     const api = initSettingsMotion(ctx);
     api.open();
     api.close();
     expect($('#animation').hidden).toBe(true);
-    expect(motionOpen).toBe(false);
     expect(document.activeElement).toBe($('#opt-animation'));
   });
 });

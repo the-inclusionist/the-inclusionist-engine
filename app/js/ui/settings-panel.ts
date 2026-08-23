@@ -55,11 +55,19 @@ export interface OverlayEntry {
   /** Fecha o diálogo. É o MESMO valor que estava em OVERLAY_CLOSE[id] no game.js: cada painel devolve o foco
    *  do seu jeito lá dentro (uns a um `#opt-*`, outros ao menu de pausa) — a casca não opina. */
   close: () => void;
-  /** Reflete a flag `*Open` do game.js (`optionsOpen`, `audioOpen`, …). SÓ quem tinha flag entra na cadeia de
-   *  Escape; #touchcfg e #help não tinham e por isso ficam de fora (verbatim — ver bugs no relatório).
-   *  É um GETTER, não um valor: as flags são `let` reatribuídos no game.js e um binding importado não pode ser
-   *  reatribuído de fora, então o registro lê o valor atual a cada consulta. */
-  isOpen?: () => boolean;
+  /** Este diálogo entra na cadeia de Escape? #touchcfg e #help NÃO entram — nunca tiveram flag `*Open` no
+   *  monólito, e a exclusão é verbatim (há conserto pendente). É obrigatório e não tem padrão de propósito:
+   *  no monólito a exclusão era a AUSÊNCIA de um campo, o tipo de erro que ninguém comete de novo por escolha,
+   *  só por esquecimento. Aqui quem registra tem de dizer em qual lado está.
+   *
+   *  ANTES aqui havia `isOpen?: () => boolean`, espelhando sete flags `let` do game.js (`optionsOpen`,
+   *  `audioOpen`, …) mais o `export let motionOpen` de ui/settings-motion. Todas eram escritas na linha
+   *  colada ao `ov.hidden` do próprio open/close, e nenhuma tinha outro leitor. Como `escapeTarget` já
+   *  descartava diálogo invisível (a guarda `dlgVis` logo abaixo), a flag era redundante COM a guarda: onde
+   *  concordavam não mudava nada, e onde divergiam quem decidia era o `hidden`. Sete variáveis mutáveis, um
+   *  binding mutável exportado entre módulos e um callback de ctx, todos apagados sem mudar comportamento —
+   *  o teste que pina a divergência (flag presa em true num diálogo escondido) continua verde. */
+  inEscapeChain: boolean;
 }
 
 export interface SettingsPanelApi {
@@ -173,10 +181,9 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
 
   function escapeTarget(): string | null {
     for (const [id, entry] of registry) {
-      if (!entry.isOpen) continue;      // sem flag `*Open` (#touchcfg, #help): fora da cadeia, verbatim
-      if (!entry.isOpen()) continue;
+      if (!entry.inEscapeChain) continue; // #touchcfg e #help ficam de fora, verbatim
       const el = ctx.$<HTMLElement>('#' + id);
-      if (!el || el.hidden) continue;   // `dlgVis`: flag presa num diálogo invisível não trava mais o teclado
+      if (!el || el.hidden) continue;    // aberto = VISÍVEL; era `dlgVis` no monólito, e agora é a única fonte
       return id;
     }
     return null;

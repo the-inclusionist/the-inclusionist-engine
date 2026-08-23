@@ -141,7 +141,6 @@ export function getSelectedPlayer(): number { return selectedPlayer; }
 export function setSelectedPlayer(i: number): void { selectedPlayer = i; }
 
 /** Espelha `animationOpen` do game.js — só LIDO por quem despacha Escape entre os diálogos abertos. */
-export let motionOpen = false;
 
 // ---------------------------------------------------------------------------------------------------------
 // Render/DOM — casca fina em torno da lógica pura acima.
@@ -235,7 +234,6 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     render();
     ov.hidden = false;
     ctx.frontOverlay(ov);
-    motionOpen = true;
     const f = ov.querySelector<HTMLElement>('button');
     if (f) f.focus();
   }
@@ -244,7 +242,6 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const ov = ctx.$<HTMLElement>('#animation');
     if (!ov) return;
     ov.hidden = true;
-    motionOpen = false;
     const b = ctx.$<HTMLElement>('#opt-animation');
     if (b) b.focus();
   }

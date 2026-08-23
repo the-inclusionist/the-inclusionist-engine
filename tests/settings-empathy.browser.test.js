@@ -31,7 +31,6 @@ function fullCtx(over = {}) {
     setWheelchair: (on) => { calls.setWheelchair.push(on); wheelchair = on; },
     getOneButton: () => oneButton,
     getWheelchair: () => wheelchair,
-    setEmpathyOpen: (open) => { calls.setEmpathyOpen.push(open); },
     said,
     calls,
     ...over,
@@ -111,25 +110,23 @@ describe('ui/settings-empathy', () => {
     expect(ctx.calls.setHearingLoss).toHaveLength(0); // restauração usa o grafo direto, não o setter (não persiste/anuncia de novo)
   });
 
-  it('[Right] open() renderiza, mostra o overlay, chama frontOverlay, marca empathyOpen=true e foca o 1º botão', () => {
+  it('[Right] open() renderiza, mostra o overlay, chama frontOverlay, e foca o 1º botão', () => {
     const ctx = fullCtx();
     const api = initSettingsEmpathy(ctx);
     api.open();
     expect($('#empathy').hidden).toBe(false);
     expect(ctx.calls.frontOverlay).toEqual([$('#empathy')]);
-    expect(ctx.calls.setEmpathyOpen).toEqual([true]);
     expect(ctx.calls.renderVizGroup.length).toBeGreaterThan(0);
     expect(document.activeElement.tagName).toBe('BUTTON');
     expect(document.activeElement.closest('#empathy')).not.toBeNull();
   });
 
-  it('[Right] close() esconde o overlay, marca empathyOpen=false e devolve o foco a #opt-empathy', () => {
+  it('[Right] close() esconde o overlay, e devolve o foco a #opt-empathy', () => {
     const ctx = fullCtx();
     const api = initSettingsEmpathy(ctx);
     api.open();
     api.close();
     expect($('#empathy').hidden).toBe(true);
-    expect(ctx.calls.setEmpathyOpen).toEqual([true, false]);
     expect(document.activeElement).toBe($('#opt-empathy'));
   });
 

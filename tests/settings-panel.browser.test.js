@@ -9,7 +9,7 @@
 // diálogo, fechar devolve o foco ao botão que abriu, e Escape fecha UM diálogo só.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initSettingsPanel, EXPLAIN_IDLE } from '../app/js/ui/settings-panel.js';
-import { initSettingsMotion, motionOpen, setSelectedPlayer } from '../app/js/ui/settings-motion.js';
+import { initSettingsMotion, setSelectedPlayer } from '../app/js/ui/settings-motion.js';
 import { initSettingsEmpathy } from '../app/js/ui/settings-empathy.js';
 import { players, setNumPlayersValue } from '../app/js/core/state.js';
 
@@ -66,17 +66,15 @@ function boot() {
     rm: { parallax: false, decor: false, items: false, particles: false }, saveRM: noop,
     rmKeys: RM_KEYS, rmChar: RM_CHAR,
   });
-  let empathyOpen = false; // espelha o `let empathyOpen` do game.js (a flag é dele, não do módulo)
   const empathy = initSettingsEmpathy({
     $, srSay: noop, store: { getBool: () => false },
     renderVizGroup: noop, reflectMotorEmpathy: noop, reflectVizButtons: noop,
     frontOverlay: panel.frontOverlay,
     setHearingLoss: noop, setOneButton: noop, setWheelchair: noop,
     getOneButton: () => false, getWheelchair: () => false,
-    setEmpathyOpen: (v) => { empathyOpen = v; },
   });
-  panel.register('animation', { close: motion.close, isOpen: () => motionOpen });
-  panel.register('empathy', { close: empathy.close, isOpen: () => empathyOpen });
+  panel.register('animation', { close: motion.close, inEscapeChain: true });
+  panel.register('empathy', { close: empathy.close, inEscapeChain: true });
   return { panel, motion, empathy };
 }
 
@@ -195,11 +193,11 @@ describe('Escape fecha UM diálogo — e é o primeiro da cadeia, não o de cima
     expect(panel.escapeTarget()).toBe(null);
   });
 
-  it('[Zero/Error] flag ligada mas diálogo escondido por fora não sequestra a tecla (guarda dlgVis)', () => {
+  it('[Zero/Error] diálogo escondido por fora não sequestra a tecla', () => {
     const { panel, motion, empathy } = boot();
     motion.open();
     empathy.open();
-    $('#animation').hidden = true; // some sem passar pelo close() → a flag motionOpen fica presa em true
+    $('#animation').hidden = true; // some sem passar pelo close(): visibilidade e a unica fonte, entao ele sai da vez
     expect(panel.escapeTarget()).toBe('empathy');
   });
 });

@@ -65,7 +65,7 @@
 //   (a) a cadeia `overlays.escapeTarget()` (ORDEM DE REGISTRO: options→movement→animation→visual→empathy→
 //       audio→typo→touchcfg→help) é código morto com o jogo pausado. Quem decide é o topo da pilha de z-index.
 //       O próprio game.js já anota isso ("MEDIDO no navegador") no ouvinte de bolha.
-//   (b) `#help` e `#touchcfg` estão registrados SEM flag `isOpen` e por isso ficam fora da cadeia de Escape.
+//   (b) `#help` e `#touchcfg` estão registrados com `inEscapeChain:false` e por isso ficam fora da cadeia de Escape.
 //       Enquanto a captura os cobrir por z-index, Escape os fecha; se alguém tirar o `stopPropagation()` ou a
 //       fase de captura sem antes dar flag aos dois, a tecla cai no ouvinte de bolha e o
 //       `if(Escape||Enter) togglePause()` de lá DESPAUSA O JOGO com o diálogo de Ajuda ainda aberto.

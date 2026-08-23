@@ -79,18 +79,17 @@ function boot(over = {}) {
   const log = { phase: [], actor: [], padWiz: [] };
   const panel = initSettingsPanel({ $, $$, doc: document, computedZ: (el) => Number(getComputedStyle(el).zIndex) || 0 });
 
-  // MESMA ordem de registro do game.js para os diálogos que importam aqui. #typo tem flag; #help NÃO tem —
-  // verbatim, e é justamente o que o defeito 2 (b) explora.
-  const open = { typo: false, audio: false };
-  panel.register('audio', { close: () => closeAudio(), isOpen: () => open.audio });
-  panel.register('typo', { close: () => closeTypo(), isOpen: () => open.typo });
-  panel.register('help', { close: () => closeHelp() });
+  // MESMA ordem de registro do game.js para os diálogos que importam aqui. #typo entra na cadeia de Escape;
+  // #help NAO entra — verbatim, e é justamente o que o defeito 2 (b) explora.
+  panel.register('audio', { close: () => closeAudio(), inEscapeChain: true });
+  panel.register('typo', { close: () => closeTypo(), inEscapeChain: true });
+  panel.register('help', { close: () => closeHelp(), inEscapeChain: false });
 
   function openOv(id) { const ov = $('#' + id); ov.hidden = false; panel.frontOverlay(ov); }
-  function openTypo() { openOv('typo'); open.typo = true; $('#font-a').focus(); }
-  function closeTypo() { $('#typo').hidden = true; open.typo = false; nav.menuFocus(nav.sharedDialogOpen()); }
-  function openAudio() { openOv('audio'); open.audio = true; $('#a-first').focus(); }
-  function closeAudio() { $('#audio').hidden = true; open.audio = false; }
+  function openTypo() { openOv('typo'); $('#font-a').focus(); }
+  function closeTypo() { $('#typo').hidden = true; nav.menuFocus(nav.sharedDialogOpen()); }
+  function openAudio() { openOv('audio'); $('#a-first').focus(); }
+  function closeAudio() { $('#audio').hidden = true; }
   function openHelp() { openOv('help'); $('#help-close').focus(); }
   function closeHelp() { $('#help').hidden = true; nav.menuFocus(nav.sharedDialogOpen()); }
 
@@ -372,7 +371,7 @@ describe('menuNavKey — o tradutor de teclado', () => {
   });
 
   // ⚠️ DEFEITO 2, PINADO — a parte que é rede de segurança acidental. #help está registrado SEM flag
-  // `isOpen`, logo está FORA da cadeia de Escape; só não despausa o jogo porque menuNavKey o cobre por
+  // `inEscapeChain:false`, logo está FORA da cadeia de Escape; só não despausa o jogo porque menuNavKey o cobre por
   // z-index e dá stopPropagation. Este caso pina as DUAS metades ao mesmo tempo.
   it('DEFEITO 2 (pinado): #help está fora da cadeia de Escape, e só a captura o salva de despausar', () => {
     const { nav, panel, log, openHelp } = boot();
