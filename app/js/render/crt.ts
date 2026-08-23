@@ -6,6 +6,7 @@
 // Auto-contido: depende de ui/dom ($) + core/state (numPlayers). O applyCrt() de boot é chamado pelo game.js.
 import { $ } from '../ui/dom.js';
 import { numPlayers } from '../core/state.js';
+import { screenGrid } from '../core/screens.js';
 import * as store from '../platform/storage.js';
 
 type CrtCfg = { scan: number; vig: number; round: number };
@@ -28,7 +29,7 @@ export const CRT: CrtCfg = (() => {
 // Ancora a scanline em px REAIS: 1 linha por pixel de ARTE (kDev inteiro) → espaçamento SEMPRE regular em qualquer dpr.
 export function crtScanVars(): void {
   const g = $<HTMLElement>('#game-region'); if (!g || !CRT.scan) return;
-  const rows = numPlayers <= 2 ? 1 : 2, dpr = window.devicePixelRatio || 1;
+  const { rows } = screenGrid(numPlayers), dpr = window.devicePixelRatio || 1;
   const perDev = Math.max(2, Math.round((g.clientHeight || 360) * dpr / (180 * rows))); // kDev = px REAIS por linha de arte (INTEIRO)
   g.style.setProperty('--scan-per', (perDev / dpr) + 'px'); // período = kDev px reais (1 linha de arte)
   g.style.setProperty('--scan-line', (Math.max(1, Math.round(dpr)) / dpr) + 'px'); // linha = 1 px REAL

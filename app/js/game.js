@@ -64,6 +64,7 @@ import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad 
 import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
 import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js'; // Onda A: menu de pausa por tela + barra de icones de a11y
 import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/abandono/selo de espera)
+import { screenGrid, screenBaseSize } from './core/screens.js'; // grade de telas (fonte unica)
 import { initVizSetters } from './render/viz-setters.js'; // Onda A: aplicacao dos modos de visao acessivel
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
   buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
@@ -837,7 +838,7 @@ function configureRender(){
   } else {
     if(camera.parent) camera.parent.removeChild(camera); // câmera renderizada manualmente nas RTs
     setMinimapVisible(false);
-    const cols=numPlayers<=2?numPlayers:2, rows=numPlayers<=2?1:2;
+    const { cols, rows } = screenGrid(numPlayers); // era a copia DIVERGENTE (sem a guarda de 1 tela)
     app.renderer.resize(LOGICAL_W*cols, LOGICAL_H*rows);
     const positions=[];
     for(let i=0;i<numPlayers;i++){
@@ -1504,7 +1505,7 @@ function setNumPlayers(n){
 // Lote B: cabe N telas na janela atual? (piso k=2 ⇒ cada viewport ≥640×360). Espelha a conta do layout().
 function fitsN(n){ const wrap=$('#stage-wrap'); if(!wrap)return true;
   const availW=(wrap.clientWidth||320)-(librasOpen?LIBRAS_RESERVE:0), availH=wrap.clientHeight||180;
-  const cols=n<=1?1:(n<=2?n:2), rows=n<=2?1:2, baseW=320*cols, baseH=180*rows;
+  const { w: baseW, h: baseH } = screenBaseSize(n);
   return availW>=2*(baseW-10) && availH>=2*(baseH-10); }
 // Celular/tablet: ponteiro grosso + sem hover (não dispara em notebook com touch). No mobile o jogo é 1 tela só.
 function isMobile(){ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } }

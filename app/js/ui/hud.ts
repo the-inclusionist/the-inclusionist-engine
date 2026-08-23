@@ -12,6 +12,7 @@
 //
 // Sem I/O no import: `document` só aparece DENTRO das funções → o módulo é importável no project node, onde os
 // testes exercitam só a metade PURA (screenGrid/screenRect/hudRowView/vphudHtml/waitBadgeHtml).
+import { screenGrid } from '../core/screens.js';
 import { COIN_TARGET } from '../core/constants.js';
 import { players, numPlayers } from '../core/state.js';
 
@@ -30,15 +31,11 @@ export interface HudPlayer {
 // ---------------------------------------------------------------------------------------------
 
 /** Grade de telas: 1 → 1×1, 2 → 2×1, 3-4 → 2×2 (a 3ª tela é centralizada na linha de baixo). */
-export interface ScreenGrid { cols: number; rows: number; }
 
-/**
- * Colunas/linhas da grade para `n` jogadores. Verbatim do game.js (screenRect) — e a MESMA conta aparece em
- * ui/layout.ts, em fitsN() e em configureRender(): ver "duplicação" no relatório da extração.
- */
-export function screenGrid(n: number): ScreenGrid {
-  return { cols: n <= 1 ? 1 : (n <= 2 ? n : 2), rows: n <= 2 ? 1 : 2 };
-}
+// A grade agora mora em core/screens (folha, sem dependências), porque o layout e o CRT precisam da MESMA
+// conta e não têm o que fazer importando de um módulo de HUD. Reexportada aqui sob o nome de sempre.
+export { screenGrid } from '../core/screens.js';
+export type { ScreenGrid } from '../core/screens.js';
 
 /** Retângulo da tela `i` em porcentagens de CSS, já prontas para `style.left/top/width/height`. */
 export interface ScreenRect { L: string; T: string; W: string; H: string; }

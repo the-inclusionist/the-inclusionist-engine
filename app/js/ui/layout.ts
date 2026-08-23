@@ -5,6 +5,7 @@
 // avisa mudanças por callback, sem importar daqui → sem ciclo). Deps: ui/dom ($), core/state (numPlayers),
 // render/crt (crtScanVars), ui/vlibras. fpsTick/configureRender seguem no game.js (outro concern).
 import { $ } from './dom.js';
+import { screenGrid, screenBaseSize } from '../core/screens.js';
 import { numPlayers } from '../core/state.js';
 import { crtScanVars } from '../render/crt.js';
 import { librasOpen, LIBRAS_RESERVE } from './vlibras.js';
@@ -16,8 +17,8 @@ export function layout(): void {
   const availW = (wrap.clientWidth || 320) - (librasOpen ? LIBRAS_RESERVE : 0); // clientWidth inclui padding → descontar
   const availH = wrap.clientHeight || 180;
   // E11: a grade de telas define a base (1=320×180, 2=640×180, 3-4=640×360)
-  const cols = numPlayers <= 1 ? 1 : (numPlayers <= 2 ? numPlayers : 2), rows = numPlayers <= 2 ? 1 : 2;
-  const baseW = 320 * cols, baseH = 180 * rows;
+  const { cols, rows } = screenGrid(numPlayers);
+  const { w: baseW, h: baseH } = screenBaseSize(numPlayers);
   // Piso k=2: CADA viewport tem no mínimo 640×360. Assim 2×2 = 1280×720 cabe num Chromebook do governo (1366×768).
   const MIN_K = 2;
   // ADR-001 (CORRIGIDO 2026-07-04): ESCALA travada em PIXELS REAIS INTEIROS. Cada pixel de arte = kDev pixels
