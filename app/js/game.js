@@ -24,7 +24,8 @@ import { drawCane, drawRunCane, drawChair } from './render/wheelchair-sprites.js
 import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
-import { $ } from './ui/dom.js';
+import { $, toggleBtn } from './ui/dom.js';
+import { initSettingsMotion, motionOpen, setSelectedPlayer as setSelectedMotionPlayer } from './ui/settings-motion.js';
 import { initSettingsTypo } from './ui/settings-typo.js';
 import { initTitle } from './ui/title.js';
 import { createTitleScene } from './render/title-scene.js'; // Fase 2.27: atalho de querySelector (Tier 1)
@@ -283,7 +284,7 @@ let collected=0, ended=false; setCoins(pickCoins(COIN_TARGET, coinPools())); // 
 // 'phase' agora vem de core/state.js (Fase 2, mega-variável 1). Leitura = binding vivo; escrita só via setPhase().
 
 /* ===================== input ===================== */
-let jumpEdge=false, captureAction=null, captureMapRef=null, optionsOpen=false, movementOpen=false, animationOpen=false, visualOpen=false, empathyOpen=false, audioOpen=false;
+let jumpEdge=false, captureAction=null, captureMapRef=null, optionsOpen=false, movementOpen=false, visualOpen=false, empathyOpen=false, audioOpen=false;
 // Gamepad (B3/L1): estado por controle. padCur[gi]=ações seguradas neste frame; associação pad↔jogador vive em p.pad.
 // padCur/padPrevAct/padPrevStart + PAD_DEAD movidos p/ input/state.js (Fase 2.22)  // // zona morta = primeira METADE do curso (ergonomia — José 2026-07-02)
 // Config de teclado extraída p/ input/keyboard.js (Fase 2): esquemas, defaults, loadKB/saveKB/resetKB.
@@ -318,7 +319,7 @@ addEventListener('keydown',(e)=>{
   const dlgVis=(id)=>{ const el=$('#'+id); return el && !el.hidden; };
   if(optionsOpen && dlgVis('options')){ if(e.code==='Escape')closeOptions(); return; }
   if(movementOpen && dlgVis('movement')){ if(e.code==='Escape')closeMovement(); return; }
-  if(animationOpen && dlgVis('animation')){ if(e.code==='Escape')closeAnimation(); return; }
+  if(motionOpen && dlgVis('animation')){ if(e.code==='Escape')motion.close(); return; }
   if(visualOpen && dlgVis('visual')){ if(e.code==='Escape')closeVisual(); return; }
   if(empathyOpen && dlgVis('empathy')){ if(e.code==='Escape')closeEmpathy(); return; }
   if(audioOpen && dlgVis('audio')){ if(e.code==='Escape')closeAudio(); return; }
@@ -2100,7 +2101,6 @@ function applyLetra(announce){ const s=LETRA[letraIdx]; letterCase=s.caso; blind
 const optLetraBtn=$('#opt-letra'); if(optLetraBtn)optLetraBtn.addEventListener('click',()=>{ letraIdx=(letraIdx+1)%LETRA.length; applyLetra(true); });
 applyLetra(false); // estado inicial = ABC (maiúsculas, padrão)
 // E9: toggles de Som / Legendas / Fácil
-function toggleBtn(b,on){ b.classList.toggle('is-on',on); b.setAttribute('aria-pressed',String(on)); }
 const soundBtn=$('#opt-sound'), capBtn=$('#opt-captions'), facilBtn=$('#opt-facil');
 if(soundBtn){ soundBtn.setAttribute('aria-haspopup','dialog'); soundBtn.addEventListener('click',openAudio); } // botão de áudio agora abre o mixer
 if(capBtn) capBtn.addEventListener('click',()=>{ captionsOn=!captionsOn; toggleBtn(capBtn,captionsOn); srSay('Legendas '+(captionsOn?'ligadas.':'desligadas.')); });
@@ -2507,31 +2507,7 @@ const ctrlClose=$('#ctrl-close'); if(ctrlClose)ctrlClose.addEventListener('click
 /* Movimento reduzido (WCAG 2.3.3) + Pause/Stop/Hide (2.2.2) */
 const RM_LABEL={parallax:'Parallax do fundo', decor:'Decoração (nuvens, grama)', items:'Animação de itens (moedas)', walk:'Personagem em movimento (andar, escalar, nadar, pular)', breath:'Respiração (parado)', flavor:'Gracinhas (animações de descanso)', particles:'Partículas e cintilação'};
 const RM_SOON=new Set([]); // todos os alvos agem: parallax (fundo), decor (chuva/vida da Cidade), items (cintilar), particles (juice)
-let selAnimPlayer=0;
-function renderMotion(){ const el=$('#motion-list'); if(!el)return; if(selAnimPlayer>=numPlayers)selAnimPlayer=0;
-  const tabs=$('#animation-players'); if(tabs){ tabs.hidden=true; // E3: sem abas — cada jogador edita só o seu
-    tabs.innerHTML='';
-    tabs.querySelectorAll('button[data-ap]').forEach(b=>b.addEventListener('click',()=>{ selAnimPlayer=+b.dataset.ap; renderMotion(); })); }
-  const p=players[selAnimPlayer];
-  // Switch = "animação LIGADA" (rm/prop true = congelado ⇒ switch DESLIGADO). Antes o switch acendia
-  // no congelado e lia-se invertido em relação ao rótulo da linha (report do José 2026-07-02).
-  const row=(lbl,frozen,attr,soon)=>{ const on=!frozen; return `<div class="ctrl-row"><span>${lbl}${soon?' <em style="opacity:.7">(em breve)</em>':''}</span><button class="mode-btn switch${on?' is-on':''}" ${attr} type="button" aria-pressed="${on}" aria-label="${lbl}: ${on?'animação ligada':'animação congelada'}">${on?'▶ Animado':'❄ Congelado'}</button></div>`; };
-  const charRows=RM_CHAR.map(c=>row(c.lbl, p&&p[c.prop], 'data-rmc="'+c.prop+'"', false)).join('');
-  const sceneRows=RM_KEYS.map(k=>row(RM_LABEL[k], rm[k], 'data-rm="'+k+'"', RM_SOON.has(k))).join('');
-  const CRT_LBL={scan:'Scanlines',vig:'Vinheta',round:'Cantos arredondados'};
-  // Scanlines/Vinheta = TOGGLE on/off; Cantos = 3 níveis (desligado=quadrado · pequeno=padrão · grande=24px)
-  const crtTgl=k=>{ const on=!!CRT[k]; return `<div class="ctrl-row"><span>${CRT_LBL[k]}</span><button class="mode-btn switch${on?' is-on':''}" data-crt-tgl="${k}" type="button" aria-pressed="${on}" aria-label="${CRT_LBL[k]}: ${on?'ligado':'desligado'}">${on?'❚❚ Ligado':'▶ Desligado'}</button></div>`; };
-  const crtRound=`<div class="ctrl-row"><span>${CRT_LBL.round}</span><select class="vol" data-crt="round" aria-label="${CRT_LBL.round}"><option value="0"${CRT.round===0?' selected':''}>Desligado (quadrado)</option><option value="1"${CRT.round===1?' selected':''}>Pequeno</option><option value="2"${CRT.round===2?' selected':''}>Grande</option></select></div>`;
-  el.innerHTML=`<h3 class="panel-sub">Personagem${numPlayers>1?' · Jogador '+(selAnimPlayer+1):''} <span class="panel-sub__tag">por jogador</span></h3>`+charRows+`<h3 class="panel-sub">Cena <span class="panel-sub__tag">todos os jogadores</span></h3>`+sceneRows+
-    `<h3 class="panel-sub">Estética CRT <span class="panel-sub__tag">todos os jogadores</span></h3>`+crtTgl('scan')+crtTgl('vig')+crtRound;
-  el.querySelectorAll('button[data-crt-tgl]').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.crtTgl; CRT[k]=CRT[k]?0:1; applyCrt(); renderMotion(); srSay(CRT_LBL[k]+(CRT[k]?' ligada.':' desligada.')); }));
-  el.querySelectorAll('select[data-crt]').forEach(s=>s.addEventListener('change',()=>{ CRT[s.dataset.crt]=+s.value; applyCrt(); srSay(CRT_LBL[s.dataset.crt]+': '+['desligado','pequeno','grande'][+s.value]+'.'); }));
-  el.querySelectorAll('button[data-rmc]').forEach(b=>b.addEventListener('click',()=>{ const pr=b.dataset.rmc, pl=players[selAnimPlayer]; pl[pr]=!pl[pr]; try{localStorage.setItem('incl_'+pr+'_p'+selAnimPlayer,pl[pr]?'1':'0');}catch(e){} renderMotion(); }));
-  el.querySelectorAll('button[data-rm]').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.rm; rm[k]=!rm[k]; saveRM(); renderMotion(); updateMotionMaster(); srSay(RM_LABEL[k]+(rm[k]?' congelado.':' animado.')); }));
-  updateMotionMaster();
-}
-function updateMotionMaster(){ reflectMotionBtn(); const m=$('#motion-master'); if(!m)return; const p=players[selAnimPlayer]; const allOn=RM_KEYS.every(k=>rm[k]) && RM_CHAR.every(c=>p&&p[c.prop]);
-  m.textContent=allOn?'▶ Retomar todas as animações':'⏸ Parar todas as animações'; toggleBtn(m,allOn); }
+const motion = initSettingsMotion({ $, srSay, store, frontOverlay, toggleBtn, rm, saveRM, rmKeys: RM_KEYS, rmChar: RM_CHAR }); // painel de movimento/CRT: ui/settings-motion.ts
 function reflectAltMove(){ const p=players[selMovPlayer], on=!!(p&&p.toggleMove); const b=$('#opt-altmove'); if(b){ b.classList.toggle('is-on',on); b.setAttribute('aria-pressed',String(on)); b.textContent=on?'❚❚ Ligado':'▶ Desligado'; }
   reflectMovementBtn(); } // botão da barra acende se QUALQUER jogador usa Fácil/alternância
 const altMoveBtn=$('#opt-altmove'); if(altMoveBtn)altMoveBtn.addEventListener('click',()=>{ setToggleMove(selMovPlayer, !players[selMovPlayer].toggleMove); reflectAltMove(); });
@@ -2563,17 +2539,9 @@ function renderMapHub(){ const el=$('#map-hub'); if(!el)return; const np=numPlay
       return `<div class="ctrl-row${dis?' row-off':''}"><span>${it.lbl}${note}</span><button class="mode-btn" type="button" data-map="${i}"${dis?' disabled':''}>${it.soon?'Em breve':'Abrir'}</button></div>`; }).join('');
   el.querySelectorAll('button[data-map]').forEach(b=>b.addEventListener('click',()=>{ const it=items[+b.dataset.map]; if(it.soon){ mapSoon(it.lbl.replace(/^\S+\s/,'')); return; } if(it.mode&&it.mode!==np){ srAlert('Disponível só no modo '+it.mode+' jogador'+(it.mode>1?'es':'')+'. Troque o nº de telas na barra do topo.'); return; } it.act(); }));
 }
-function openAnimation(){ const ov=$('#animation'); if(!ov)return; renderMotion(); ov.hidden=false; frontOverlay(ov); animationOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); }
-function closeAnimation(){ const ov=$('#animation'); if(!ov)return; ov.hidden=true; animationOpen=false; const b=$('#opt-animation'); if(b)b.focus(); }
 const movBtn=$('#opt-movement'); if(movBtn)movBtn.addEventListener('click',openMovement);
 const movClose=$('#movement-close'); if(movClose)movClose.addEventListener('click',closeMovement);
-const animBtn=$('#opt-animation'); if(animBtn)animBtn.addEventListener('click',openAnimation);
-const animClose=$('#animation-close'); if(animClose)animClose.addEventListener('click',closeAnimation);
-const motionMaster=$('#motion-master'); if(motionMaster)motionMaster.addEventListener('click',()=>{ const p=players[selAnimPlayer]; const allOn=RM_KEYS.every(k=>rm[k])&&RM_CHAR.every(c=>p&&p[c.prop]); const v=!allOn;
-  RM_KEYS.forEach(k=>rm[k]=v); saveRM(); if(p)RM_CHAR.forEach(c=>{ p[c.prop]=v; try{localStorage.setItem('incl_'+c.prop+'_p'+selAnimPlayer,v?'1':'0');}catch(e){} }); // cena (global) + personagem (jogador selecionado)
-  renderMotion(); srSay(v?'Todas as animações paradas.':'Todas as animações retomadas.'); });
-function reflectMotionBtn(){ const b=$('#opt-animation'); if(b)b.classList.toggle('is-on',RM_KEYS.some(k=>rm[k])); } // realça o botão Animação quando há redução ativa
-reflectMotionBtn(); // estado inicial (ex.: prefers-reduced-motion liga por padrão)
+const animClose=$('#animation-close'); if(animClose)animClose.addEventListener('click',()=>motion.close()); // #opt-animation NAO existe no app (era referencia morta); so o fechar e real
 const ctrlReset=$('#ctrl-reset'); if(ctrlReset)ctrlReset.addEventListener('click',()=>{ KB=resetKB(); applyControls(); assignControls(); renderControls(); srSay('Controles restaurados ao padrão.'); });
 
 /* ===================== FPS ===================== */
@@ -2646,7 +2614,7 @@ function setPhase(p){
 // NAVEGAÇÃO UNIVERSAL de menus: qualquer menu aberto (pausa OU submenu) é navegável por up/down/left/right/
 // sim/não — as MESMAS ações valem para teclado, controle, olhos e fala. sim = confirma/alterna/entra;
 // não = volta ao menu anterior (na raiz, volta ao jogo = Continuar). left/right ajustam select/slider.
-const OVERLAY_CLOSE={ audio:()=>closeAudio(), movement:()=>closeMovement(), options:()=>closeOptions(), animation:()=>closeAnimation(), visual:()=>closeVisual(), empathy:()=>closeEmpathy(), touchcfg:()=>closeTouchCfg(), help:()=>closeHelp(), typo:()=>closeTypo() };
+const OVERLAY_CLOSE={ audio:()=>closeAudio(), movement:()=>closeMovement(), options:()=>closeOptions(), animation:()=>motion.close(), visual:()=>closeVisual(), empathy:()=>closeEmpathy(), touchcfg:()=>closeTouchCfg(), help:()=>closeHelp(), typo:()=>closeTypo() };
 // Ações do menu de pausa (compartilhadas pelos menus por tela). Ao abrir um submenu de a11y, escopa ao
 // jogador que agiu (pauseActor) — o diálogo abre na aba dele (Etapa 3 remove as abas).
 const pauseActs={ resume:()=>setPhase('playing'),
@@ -2662,7 +2630,7 @@ const pauseActs={ resume:()=>setPhase('playing'),
       setPhase('playing'); srAlert('Jogador '+(p.i+1)+': aperte um botão para entrar.'); } },
   audio:()=>openAudio(),
   motora:()=>{ selMovPlayer=pauseActor; openMovement(); },
-  anim:()=>{ selAnimPlayer=pauseActor; openAnimation(); },
+  anim:()=>{ setSelectedMotionPlayer(pauseActor); motion.open(); },
   visual:()=>{ selVizPlayer=pauseActor; openVisual(); },
   empatia:()=>{ selVizPlayer=pauseActor; openEmpathy(); }, print:()=>printMode(), quit:()=>quitGame(), ajuda:()=>openHelp() };
 // Roteamento de input por jogador: cada tecla é do jogador dono dela (kbFor). Genéricas → jogador 0.
