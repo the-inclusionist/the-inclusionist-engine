@@ -8,6 +8,7 @@
 // (behavior-preserving) — see docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import { numPlayers, players } from '../core/state.js';
+import { lqName as lqLabel } from '../render/lq-filter.js';
 
 export type RoleKey = 'hazard' | 'climb' | 'water' | 'gate';
 export type RGB = readonly [number, number, number];
@@ -67,11 +68,12 @@ export function clamp01(t: number): number {
   return Math.max(0, Math.min(1, t));
 }
 
-/** 'desligado'/'linear'/'misto'/'quadrático' — mirrors game.js's lqName(t). */
-export function lqLabel(t: number): string {
-  const c = clamp01(t);
-  return c <= 0 ? 'desligado' : c < 0.34 ? 'linear' : c < 0.67 ? 'misto' : 'quadrático';
-}
+/**
+ * 'desligado'/'linear'/'misto'/'quadrático' for the L->Q slider. The label belongs to the L->Q feature, so it
+ * lives with the filter that owns it (render/lq-filter) and is re-exported here under the name this overlay has
+ * always used. Two copies of one rule is one copy too many: only the owner may change what the levels mean.
+ */
+export { lqName as lqLabel } from '../render/lq-filter.js';
 
 /** t (0..1) -> slider percent (0..100, rounded) — mirrors `Math.round(lqT*100)`. */
 export function lqPercent(t: number): number {

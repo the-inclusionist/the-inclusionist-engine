@@ -119,7 +119,24 @@ religacao, que e serial por natureza, e (c) o caso especial da fisica, que exige
 | A7 | `game/life` | spawnCreature · stepLife · inDark · lifeSurfaceAt · lifeSurfaceLowAt · streetCols (+ creatures, _lifeSpawnT, _streetCols) |
 | A8 | `game/level-geometry` | buildRamps · buildWcGeom · buildRopes · drawElevators · setupExtras · rebuildExtras · buildDarkRegions |
 | A9 | `game/coins` | rebuildCoins · addCoinsForOwner · respawnCoinsForOwner · showPower (+ coinSprites, powerups) |
-| A10 | `input/keyboard-runtime` | kbFor · applyControls · assignControls · actionOf · whichPlayer · releaseKey |
+| A10 | `input/keyboard-runtime` | kbFor · applyControls (virou `computeControlsState`, pura) · assignControls · actionOf · whichPlayer |
+
+> **`core/world-query` — proposto pelo A5, adiado de propósito (2026-08-23).** Três módulos da onda A recebem
+> `solidAt`/`tileAt`/`lifeSurfaceAt` por injeção, e o agente do `scene-city` propôs juntá-los num módulo-folha.
+> A proposta está certa e o momento está errado: essas funções leem o array `map` do mundo, que ainda é um
+> global do `game.js`. Extrair agora criaria um módulo cuja única razão de existir é receber por parâmetro o
+> estado que o **D1** vai mover. Fica para o D1, junto com o `map`; até lá a injeção segue, que é barata e não
+> mente sobre onde o estado mora.
+>
+> **`getRainLevel` não é colisão (A3).** O agente do clima sinalizou choque de nomes com `audio-ambient`. Não há:
+> em `audio-ambient` `getRainLevel` é **chave de ctx** (algo que ele recebe), em `render/weather` é **export**
+> (algo que ele oferece). A religação encaixa uma na outra — `getRainLevel: weather.getRainLevel` — e é
+> exatamente para isso que os dois nomes coincidem.
+
+> **Correção de inventário (A10).** `releaseKey` foi listada aqui por engano: apesar do nome, ela não roteia
+> teclado — devolve o powerup **chave-do-portão** quando um jogador desiste. Fica com o dono do gate/powerups,
+> não com o input. O agente que extraiu o módulo leu o corpo da função e recusou levá-la; a lista é que estava
+> errada, não a extração.
 | A11 | `input/gamepad` | stdDirs · padActions · pollPads · padMapFor · bindActive · padWiz* (10 fn) |
 | A12 | `input/touch` | renderTouchMap · open/closeTouchCfg · hide/showTouchControls · padPxPerMm · padHandTag · applyDirStyle · applyPadPhysical · setPadMm · applyPadDesign · padLayoutFromId · padKind |
 | A13 | `ui/hud` | buildGameHud · updateGameHud · updateHud · screenRect · buildScreenPause · renderPauseLegend |
