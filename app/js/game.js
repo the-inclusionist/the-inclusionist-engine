@@ -6,12 +6,12 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, setPhaseValue, quizLevel, setQuizLevelValue, numPlayers, setNumPlayersValue, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players } from './core/state.js'; // estado (as 8 mega-variáveis)
+import { phase, setPhaseValue, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players } from './core/state.js'; // estado (as 8 mega-variáveis)
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
 import { isValidActivityId, DEFAULT_ACTIVITY_ID } from './game/activities-registry.js';
-import { puTaken, takePu } from './game/powerups.js'; // Estágio 4 (Tier 2): predicados de coleta de power-up
+
 import { buildElevators, elevAt, getElevShafts, initElevators } from './game/elevators.js'; // Estágio 4 (Tier 2): geometria de elevador (cadeirante)
 import { fmtFrac, fracGraphic, speakChoice } from './game/fractions.js'; // Estágio 4 (Tier 2): matemática/render de frações
 import { brailleText } from './game/braille.js'; // Estágio 4 (Tier 2): cela braille + fala (atividade cego)
@@ -53,22 +53,22 @@ import * as life from './game/life.js'; // Onda A: vida ambiente (pombos/gatos/c
 import { initSceneCity } from './render/scene-city.js'; // Onda A: deco da Cidade + fx de tiles vivos
 import { initTextures, SHAPE_TEX, letterTexture, pupTexFor } from './render/textures.js'; // Onda A: texturas de moeda/forma/letra + power-up
 import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, coinTexFor, directSpriteCanvas, clearWorldTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
-import { initCoinSpawning, rebuildCoins, addCoinsForOwner, respawnCoinsForOwner, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
+import { initCoinSpawning, rebuildCoins, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
 import { initKeyboardRuntime } from './input/keyboard-runtime.js'; // Onda A: esquema de teclas por jogador
 import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geometria fisica do pad + config de toque
 import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad API + assistente de mapeamento
 import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
 import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js'; // Onda A: menu de pausa por tela + barra de icones de a11y
 import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/abandono/selo de espera)
-import { screenGrid, screenBaseSize } from './core/screens.js'; // grade de telas (fonte unica)
+import { screenGrid } from './core/screens.js'; // grade de telas (fonte unica)
 import { initPhysics, stepPlayer as stepPhysics } from './game/physics.js'; // B1: fisica do jogador (ancorada nas trajetorias-ouro)
 import { initQuiz } from './game/quiz.js'; // B3: o desafio educativo (geracao + markup + efeito)
 import { initSettingsPanel } from './ui/settings-panel.js'; // B4: o que as cascas dos paineis realmente compartilham
 import { initViewports } from './render/viewports.js'; // B2: fabrica de imagem dos modos de visao
+import { initSession, MODE_LABELS, MODES } from './game/session.js'; // C2: o ciclo de vida da RODADA
 import { initDraw } from './render/draw.js'; // C1: camera + o quadro + a escolha de quadro do personagem
 import { initVizSetters } from './render/viz-setters.js'; // Onda A: aplicacao dos modos de visao acessivel
-import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
-  buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
+import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions, buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
@@ -82,12 +82,12 @@ const INCL_VERSION = String((typeof __BUILD__ !== 'undefined' && __BUILD__.versi
 
 /* ===================== constantes ===================== */
 // Constantes puras extraídas para core/constants.js (modularização Fase B).
-import { LOGICAL_W, LOGICAL_H, TILE, COIN_TARGET, TUNE, ANIM, EASY } from './core/constants.js';
+import { LOGICAL_W, LOGICAL_H, TILE, COIN_TARGET, TUNE, ANIM } from './core/constants.js';
 import { Z } from './core/layers.js'; // #69/ADR-0020: ordem-z canônica (nomeada) do render
 import { rnd, randInt, shuffle } from './core/rng.js'; // Fase 2.26: RNG semeado (Tier 1)
 import { initCollision, tileAt, solidAt, surfTop } from './core/collision.js'; // Estágio 4: colisão de grade (determinística; ctx por closures)
-import { BOX, SPAWN_X, SPAWN_Y, makePlayer } from './game/player.js'; // Estágio 4: entidade + geometria de colisão do jogador
-import { initCoins, findCoinCandidates, pickCoins, takeCoin } from './game/coins.js'; // Estágio 4: posicionamento dos coletáveis (pools vêm daqui)
+import { BOX, makePlayer } from './game/player.js'; // Estágio 4: entidade + geometria de colisão do jogador
+import { initCoins, findCoinCandidates, pickCoins } from './game/coins.js'; // Estágio 4: posicionamento dos coletáveis (pools vêm daqui)
 import { srSay, srAlert, setVlibrasSay } from './core/a11y-sr.js'; // Estágio 4 (Tier 1): anúncios p/ leitor de tela (+ Libras injetado)
 import { CRT, applyCrt } from './render/crt.js'; // Estágio 4 (Tier 1): estética CRT (scanlines/vinheta/cantos)
 import { initMinimap, markSeen, redrawMinimapIfDirty, drawMinimapPlayer, resetMinimap, setMinimapVisible, getMinimap, minimapSeenCount } from './render/minimap.js'; // Estágio 4 (Tier 1): minimapa + fog-of-war
@@ -895,32 +895,7 @@ initPhysics({
 });
 function stepPlayer(pl,dt){
   const _p=stepPhysics(pl,dt); if(!_p.ran)return; const dir=_p.dir; // fisica em game/physics.ts
-  // coletar (P1 abre quiz nos modos didáticos; MP é Lúdico). Fácil: hitbox de coleta +4px por lado.
-  const pad=pl.easy?EASY.pad:0;
-  const box={x:pl.x-BOX.w/2-pad,y:pl.y-BOX.h-pad,w:BOX.w+2*pad,h:BOX.h+2*pad};
-  coins.forEach((cn,i)=>{ if(cn.taken||cn.owner!==pl.i)return; // Lote C: só coleta os itens da SUA cor
-    const big=(MODE!=='ludico'); const sz=big?15:9, ox=big?3:0;
-    if(box.x<cn.x+sz-ox&&box.x+box.w>cn.x-ox&&box.y<cn.y+sz-ox&&box.y+box.h>cn.y-ox){
-      if(MODE==='somasub'&&cn.shape){ if(!pl.quiz) openQuiz(pl,i,cn.shape); }       // L3: quiz POR JOGADOR (MP incluso)
-      else if(MODE==='silabas'&&cn.letter){ if(!pl.quiz) openSilabas(pl,i,cn.letter); }
-      else { takeCoin(cn); getCoinSprites()[i].visible=false; pl.collected++; if(pl===player)collected=pl.collected; earcons.sfx('coin'); // some p/ todas as telas (item tem 1 dono)
-        burstSparkle(cn.x+5,cn.y+5,ownerColors?(PCOLOR[cn.owner]||0xffd23f):0xffd23f,8); // JUICE: brilho na cor do dono (segue a opção)
-        updateHud(); { const msg=(numPlayers>1?`Jogador ${pl.i+1}: `:'')+`Moeda ${pl.collected} de ${COIN_TARGET}.`; srSay(msg); tts.narrate(msg); }
-        if(pl.collected>=COIN_TARGET)win(pl); }
-    }});
-  // E12: power-ups + chave (por jogador) e portão (compartilhado)
-  powerups.forEach(pu=>{ if(puTaken(pu,pl.i))return;
-    if(box.x<pu.x+12 && box.x+box.w>pu.x && box.y<pu.y+12 && box.y+box.h>pu.y){
-      takePu(pu,pl.i); if((numPlayers<=1||pu.kind==='key') && pu.sprite)pu.sprite.visible=false; const who=numPlayers>1?`Jogador ${pl.i+1}: `:''; // chave: some p/ todos; demais: por viewport (no draw)
-      burstSparkle(pu.x+6,pu.y+6,0xfff1a8,10); addHitstop(3); // JUICE: power-up = brilho dourado + micro hit-stop
-      if(pu.kind==='key'){ pl.hasKey=true; earcons.sfx('key'); srAlert(who+'pegou a chave. Toque no portão para abri-lo.'); } // chave individual: só quem pegou fica com ela (mas o portão, aberto, vale p/ todos)
-      else if(pu.kind==='runcane'){ pl.runCane=true; earcons.sfx('power'); const pm=who+'Bengala de corrida! Agora dá para correr — segure Correr.'; srSay(pm); tts.narrate(pm); } // cego: habilita correr (bengala com roda)
-      else { if(!pl.owned.includes(pu.kind))pl.owned.push(pu.kind); pl.activePower=pu.kind; pl.clinging=false; pl.flying=false; earcons.sfx('power'); showPower(pl); const pm=who+(POWER_MSG[pu.kind]||'Poder ativado!'); srSay(pm+' (Trocar poder cicla entre os coletados.)'); tts.narrate(pm); } // entra no inventário; ativo = o último pego
-    }});
-  if(gate && !gateOpen && pl.hasKey){ // portão (vários tiles) abre se o portador da chave o toca (margem: vale por cima/ao lado)
-    const m=4; for(const gt of gate){ const X=gt.tx*TILE, Y=gt.ty*TILE;
-      if(box.x<X+TILE+m && box.x+box.w>X-m && box.y<Y+TILE+m && box.y+box.h>Y-m){ gateOpen=true; rebuildExtras(); earcons.sfx('gate'); earcons.doorSound('madeira'); srAlert('Portão aberto!'); addShake(2,12); break; } } // JUICE: portão pesado sacode a tela
-  }
+  sessionApi.collectFor(pl); // moeda/quiz, power-up/chave e portao -> game/session.ts (C2)
   // E15/E16/E17/E19/E20: a escolha do quadro (decisao PURA em render/player-anim.ts) e a aplicacao dela no
   // sprite (com o recolor do modo de visao) moram em render/draw.ts (C1). `dir` vem da fisica, acima.
   drawApi.animatePlayer(pl,dt,dir);
@@ -1006,30 +981,49 @@ function respawnFigure(i){
 }
 
 /* ===================== vitória ===================== */
-function updateHud(){
-  if(numPlayers<=1) $('#hud-coins').textContent=String(players[0].collected);
-  else $('#hud-coins').textContent=players.map((p,i)=>`P${i+1}:${p.collected}`).join('  ');
-}
-function win(pl){ ended=true; if(captionsOn)showCaption('🔊 Vitória! 🎆'); jingles.playVictory(); $('#hud-objective').textContent='Concluído! 🎉';
-  if(pl&&pl.sprite) for(let i=0;i<4;i++) burstSparkle(pl.x+(rnd()-0.5)*24, pl.y-BOX.h/2-rnd()*12, PCOLOR[i]||0xffd23f, 10); // JUICE: confete nas 4 cores
-  const who = numPlayers>1 ? `Jogador ${(pl?pl.i:0)+1} venceu! ` : '';
-  $('#win-msg').textContent=`${who}Coletou as ${COIN_TARGET} moedas.`;
-  $('#win-overlay').hidden=false; srAlert(`${who}Coletou as ${COIN_TARGET} moedas.`); tts.narrate(`${who}Venceu! Coletou as ${COIN_TARGET} moedas.`); $('#btn-again').focus(); }
-function restartGame(){
-  players.forEach(p=>closeQuiz(p)); // L3: quiz é por jogador
-  setCoins(pickCoins(COIN_TARGET, coinPools()));
-  rebuildCoins();
-  setupExtras(); // E12: re-posiciona power-ups + chave; portão volta a fechar
-  darkRegions.forEach(r=>{ r.announced=false; r.gfx.alpha=1; r.gfx.visible=true; }); // re-escurece segredos
-  resetMinimap(); // fim de fase: o MINIMAPA volta a ficar escuro (fog-of-war zera)
-  collected=0; ended=false;
-  players.forEach(resetPlayerState);
-  updateHud();
-  $('#hud-objective').textContent = numPlayers>1 ? `${numPlayers} jogadores — corrida pelas ${COIN_TARGET} moedas` : MODE==='somasub' ? 'Resolva 10 contas' : MODE==='silabas' ? 'Monte 10 palavras' : 'Colete 10 moedas';
-  $('#win-overlay').hidden=true;
-  // (dicas de início removidas — o rodapé do splash mostra os controles)
-  srSay(numPlayers>1 ? `${numPlayers} jogadores, cada um na sua tela. Corram pelas moedas.` : MODE==='somasub' ? 'Modo Soma-Sub. Toque nas figuras e resolva as contas.' : MODE==='silabas' ? 'Modo Sílabas. Toque nas letras e monte as palavras.' : 'Nova rodada. Colete 10 moedas.');
-}
+/* ===================== rodada -> game/session.ts (C2) =====================
+   updateHud/win/restartGame, setMode, o numero de telas (setNumPlayers/fitsN/isMobile/activateScreens), a vida
+   de UM jogador (resetPlayerState/respawnPlayer/joinPlayer), o abandono (releaseKey/quitGame) e o BLOCO DE
+   COLETA que morava dentro do stepPlayer moram no modulo. Aqui ficam so os ENVOLUCROS — declaracao de funcao,
+   portanto icados, porque os chamadores estao ACIMA: initPhysics captura `updateHud`, o keydown de Alt+1..4
+   chama `activateScreens`, update() chama `respawnPlayer` e initActivitiesMenu captura isMobile/fitsN/
+   setNumPlayers/restartGame. resetPlayerState e releaseKey NAO ganham envolucro: fora do modulo nao tinham
+   chamador nenhum. MODE_LABELS/MODES desceram junto e voltam por import: eram `const` declarados ABAIXO deste
+   ponto, e passa-los por valor cairia em TDZ no boot.
+   O ctx segue a regra da casa: o que o game.js REATRIBUI (MODE, collected, ended, powerups, gate, gateOpen,
+   pauseActor, ownerColors, captionsOn, player) entra por GETTER/SETTER; PCOLOR, darkRegions e os callbacks
+   estaveis entram por valor. `reapplyVizAll` e `const` declarado ABAIXO (viz-setters), por isso vem embrulhado
+   numa seta — passado direto, cairia em TDZ e derrubaria o boot. */
+const sessionApi = initSession({
+  $, librasReserve: ()=>(librasOpen?LIBRAS_RESERVE:0),
+  isCoarsePointer: ()=>{ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } },
+  getMode: ()=>MODE, setModeValue: (m)=>{ MODE=m; },
+  setCollected: (n)=>{ collected=n; }, setEnded: (v)=>{ ended=v; },
+  getPowerups: ()=>powerups, getGate: ()=>gate, isGateOpen: ()=>gateOpen, setGateOpen: (v)=>{ gateOpen=v; },
+  getPauseActor: ()=>pauseActor, ownerColors: ()=>ownerColors, captionsOn: ()=>captionsOn,
+  PCOLOR, darkRegions, getPlayerRef: ()=>player, setPlayerRef: (p)=>{ player=p; },
+  srSay, srAlert, narrate: (t)=>tts.narrate(t),
+  sfx: (n)=>earcons.sfx(n), doorSound: (m)=>earcons.doorSound(m), playVictory: ()=>jingles.playVictory(),
+  showCaption,
+  burstSparkle, addShake, addHitstop, rnd,
+  POWER_MSG,
+  coinPools: ()=>coinPools(), setupExtras, rebuildExtras, resetMinimap,
+  openQuiz: (pl,i,sh)=>openQuiz(pl,i,sh), openSilabas: (pl,i,l)=>openSilabas(pl,i,l), closeQuiz: (pl)=>closeQuiz(pl),
+  loadPlayerA11y, assignControls, ensureSprites, configureRender,
+  reapplyVizAll: ()=>reapplyVizAll(), layout, hideTouchControls, updateGameHud,
+  setPhase, titleShow: (id)=>titleUI.show(id),
+});
+function updateHud(){ sessionApi.updateHud(); }
+function win(pl){ sessionApi.win(pl); }
+function restartGame(){ sessionApi.restartGame(); }
+function setMode(m){ sessionApi.setMode(m); }
+function setNumPlayers(n){ sessionApi.setNumPlayers(n); }
+function fitsN(n){ return sessionApi.fitsN(n); }
+function isMobile(){ return sessionApi.isMobile(); }
+function activateScreens(n){ sessionApi.activateScreens(n); }
+function respawnPlayer(k){ sessionApi.respawnPlayer(k); }
+function joinPlayer(padIdx){ return sessionApi.joinPlayer(padIdx); }
+function quitGame(){ sessionApi.quitGame(); }
 $('#btn-again').addEventListener('click',()=>{ restartGame(); $('#game-region').focus(); });
 /* ===================== ATIVIDADES (menu inicial) -> ui/activities-menu.ts =====================
    O menu do titulo, a escolha de atividade e o inicio da partida moram no modulo. Fica aqui so a
@@ -1065,65 +1059,10 @@ const quizApi = initQuiz({
 });
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraidos p/ game/fractions.js (Estagio 4).
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraídos p/ game/fractions.js (Estágio 4).
-const MODE_LABELS={ludico:'🪙 Lúdico',somasub:'🔷 Soma-Sub',silabas:'🔤 Sílabas'};
-const MODES=['ludico','somasub','silabas'];
-function setMode(m){
-  MODE=m; // modos liberados em qualquer nº de telas (L3: quiz abre POR JOGADOR, na tela de quem tocou)
-  const b=$('#opt-mode'); if(b){ b.textContent=MODE_LABELS[m]; b.setAttribute('aria-label','Modo: '+MODE_LABELS[m]+'. Toque para trocar.'); }
-  restartGame(); $('#game-region').focus();
-}
 const optModeBtn=$('#opt-mode'); // botão único: cicla os 3 modos
 if(optModeBtn)optModeBtn.addEventListener('click',()=>{
   const m=MODES[(MODES.indexOf(MODE)+1)%MODES.length]; setMode(m); srSay('Modo '+MODE_LABELS[m].replace(/^\S+\s/,'')+'.');
 });
-/* E11: nº de jogadores (1–4 telas lado a lado, simulação compartilhada) */
-function setNumPlayers(n){
-  n=Math.max(1,Math.min(4,n|0));
-  if(n>players.length){ for(let i=players.length;i<n;i++){ const p=makePlayer(i); loadPlayerA11y(p,i); players.push(p); } }
-  else if(n<players.length){ players.length=n; }
-  player=players[0]; setNumPlayersValue(n);
-  assignControls(); ensureSprites(); // p.pad é PRESERVADO no objeto do jogador (associação direta, sem lista posicional)
-  const TEL=['👤 1 tela','👥 2 telas','👨‍👧 3 telas','👨‍👩‍👧‍👦 4 telas'];
-  const tb=$('#opt-telas'); if(tb){ tb.textContent=TEL[n-1]; tb.setAttribute('aria-label','Telas: '+n+'. Toque para trocar.'); }
-  if(n>1) hideTouchControls(); // E13: várias telas → sem controle por toque (ambíguo)
-  configureRender();
-  if(typeof reapplyVizAll==='function') reapplyVizAll(); // solo: filtro/overlay/bolinha global; MP: limpa global + filtros por viewport
-  restartGame(); layout(); $('#game-region').focus();
-}
-// Lote B: cabe N telas na janela atual? (piso k=2 ⇒ cada viewport ≥640×360). Espelha a conta do layout().
-function fitsN(n){ const wrap=$('#stage-wrap'); if(!wrap)return true;
-  const availW=(wrap.clientWidth||320)-(librasOpen?LIBRAS_RESERVE:0), availH=wrap.clientHeight||180;
-  const { w: baseW, h: baseH } = screenBaseSize(n);
-  return availW>=2*(baseW-10) && availH>=2*(baseH-10); }
-// Celular/tablet: ponteiro grosso + sem hover (não dispara em notebook com touch). No mobile o jogo é 1 tela só.
-function isMobile(){ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } }
-// Ativa dinamicamente N telas (Alt+1/2/3/4). CRESCER = novos jogadores ENTRAM no jogo em andamento (sem reinício,
-// L1 — correção do José 2026-07-02); DIMINUIR = nova rodada (remover jogador muda a corrida).
-function activateScreens(n){ n=Math.max(1,Math.min(4,n|0));
-  if(isMobile() && n>1){ srAlert('No celular o jogo roda em uma tela só.'); return; } // B2: mobile = 1 jogador
-  if(n===numPlayers){ srSay(n>1?(n+' telas já ativas.'):'1 tela.'); return; }
-  if(n>numPlayers){ if(!fitsN(n)){ srAlert('Não cabem '+n+' telas nesta janela — cada tela precisa de ao menos 640×360. Aumente a janela ou use tela cheia.'); return; }
-    while(numPlayers<n){ if(!joinPlayer(null))break; } srSay(numPlayers+' telas ativas.'); return; }
-  setNumPlayers(n); srSay(n>1?(n+' telas ativas — nova rodada.'):'1 tela — nova rodada.'); }
-
-/* ===================== B3/L1: entrada de gamepad ===================== */
-// Reseta UM jogador ao spawn (rodada nova só na tela dele). Compartilha os campos com o restartGame.
-function resetPlayerState(p,i){ p.x=SPAWN_X+i*22; p.y=SPAWN_Y; p.vx=p.vy=0; p.hurtTimer=0; p.collected=0; p.jumpBuffer=0; p.waterStroke=0; p.onLadder=false; p.quiz=null; p.quit=false; p.runCane=false; p.activePower='off'; p.owned=[]; p.swapEdge=false; p.specialEdge=false; p.hasKey=false; if(i===0)showPower(p); p.jumpChain=0; p.groundIdle=0; p.clinging=false; p.clingN=null; p.flying=false; p.idleTime=0; p.flavor=-1; if(p.sprite){p.sprite.alpha=1;p.sprite.visible=true;} }
-// L1: gera/renova os itens de UM dono sem tocar os dos outros (entrada/recomeço em jogo EM ANDAMENTO).
-// addCoinsForOwner/respawnCoinsForOwner migraram para game/coin-spawning.ts (Onda A).
-function respawnPlayer(k){ const p=players[k]; if(!p)return; resetPlayerState(p,k); respawnCoinsForOwner(k); // recomeça SÓ este jogador: coleta tudo do zero, itens re-sorteados
-  if(typeof updateGameHud==='function')updateGameHud(); srSay('Jogador '+(k+1)+' recomeçou nesta tela.'); }
-// L1: entra num jogo EM ANDAMENTO (sem reiniciar a rodada dos outros): cria o jogador, a tela e os itens dele.
-function joinPlayer(padIdx){
-  if(isMobile()){ srAlert('No celular o jogo roda em uma tela só.'); return false; }
-  if(numPlayers>=4){ srAlert('Já são 4 jogadores.'); return false; }
-  if(!fitsN(numPlayers+1)){ srAlert('Não cabe mais uma tela nesta janela — cada tela precisa de ao menos 640×360.'); return false; }
-  const i=players.length, p=makePlayer(i); loadPlayerA11y(p,i); if(padIdx!=null)p.pad=padIdx; players.push(p); setNumPlayersValue(players.length);
-  assignControls(); ensureSprites(); hideTouchControls(); // teclado migra p/ o esquema N jogadores; toque sai (ambíguo em MP)
-  configureRender(); if(typeof reapplyVizAll==='function')reapplyVizAll(); layout();
-  resetPlayerState(p,i); addCoinsForOwner(i); // itens PRÓPRIOS dão spawn; os dos outros ficam intactos
-  const TEL=['👤 1 tela','👥 2 telas','👨‍👧 3 telas','👨‍👩‍👧‍👦 4 telas']; const tb=$('#opt-telas'); if(tb)tb.textContent=TEL[numPlayers-1];
-  srSay('Jogador '+(i+1)+' entrou no jogo em andamento.'); return true; }
 // Mapa padrão (Gamepad API "standard"): 0=pulo/sim · 1=especial/não · 2=correr/interagir (X/esquerda) · 3=troca ·
 // D-pad 12-15 + analógico esq. · RB/RT também correm · 9=START (pausa). Controles fora do padrão → wizard de mapeamento.
 // Direções pelas FONTES PADRÃO (stick 0/1, D-pad botões 12-15, POV hat em eixos altos ≥6): o controle tem
@@ -1533,15 +1472,6 @@ function printMode(){ vpPause.forEach(sp=>sp.hidden=true); // Print: esconde as 
     if(phase==='paused'){ vpPause.forEach(sp=>sp.hidden=false); pauseSelect(); } };
   setTimeout(()=>{ window.addEventListener('keydown',back,true); window.addEventListener('pointerdown',back,true); }, 80);
   srSay('Modo Print: veja a tela sem menus. Aperte qualquer botão para voltar.'); }
-function releaseKey(pl){ // portador saiu do jogo → a chave volta para a posição inicial (fica disponível de novo)
-  if(!pl||!pl.hasKey)return; pl.hasKey=false;
-  const key=powerups.find(p=>p.kind==='key'); if(key){ key.taken=false; key.by=[]; if(key.sprite)key.sprite.visible=true; srAlert('A chave voltou para o lugar de origem.'); } }
-function quitGame(){ // Sair: single → volta ao MENU INICIAL; MP → tela do jogador fica preta; TODOS saindo → menu inicial
-  if(numPlayers<=1){ restartGame(); setPhase('title'); titleUI.show('tm-main'); srSay('Jogo abandonado. Escolha a próxima atividade.'); }
-  else { const q=pauseActor||0; releaseKey(players[q]); players[q].quit=true;
-    if(players.every(p=>p.quit)){ players.forEach(p=>{p.quit=false;}); restartGame(); setPhase('title'); titleUI.show('tm-main'); // trocar de jogo = todo mundo sai
-      srSay('Todos saíram. Escolham a próxima atividade.'); return; }
-    setPhase('playing'); srSay('Jogador '+(q+1)+' abandonou o jogo.'); } }
 function togglePause(){ if(phase==='playing')setPhase('paused'); else if(phase==='paused')setPhase('playing'); }
 /* ===== Menu inicial (v3): principal → submenus de atividade → (tabuada/divisão) seletor de números ===== */
 // _tabFor/titleButtons/navTitle/buildTitleMenus migraram para ui/activities-menu.ts (Onda A).
