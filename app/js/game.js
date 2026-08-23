@@ -58,6 +58,7 @@ import { initTextures, SHAPE_TEX, letterTexture, pupTexFor, resetPupTexCache } f
 import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, worldTexFor, coinTexFor, directBgTexture,
   directSpriteCanvas, directSpriteTexture, clearWorldTexCache, clearCoinTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
 import { initCoinSpawning, rebuildCoins, addCoinsForOwner, respawnCoinsForOwner, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
+import { initKeyboardRuntime } from './input/keyboard-runtime.js'; // Onda A: esquema de teclas por jogador
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
   buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
@@ -213,19 +214,23 @@ let jumpEdge=false, optionsOpen=false, movementOpen=false, visualOpen=false, emp
 // Config de teclado extraída p/ input/keyboard.js (Fase 2): esquemas, defaults, loadKB/saveKB/resetKB.
 let KB=loadKB();
 // saveKB agora vem de input/keyboard.js (recebe o KB como argumento)
-function kbFor(i){ if(numPlayers<=1)return KB.solo; if(numPlayers<=2)return KB.p2[i]||KB.p2[0]; if(numPlayers<=3)return KB.p3[i]||KB.p3[0]; return KB.p4[i]||KB.p4[0]; } // esquema do jogador i (modo 3 e 4 separados)
+// kbFor/actionOf/whichPlayer/assignControls/applyControls migraram para input/keyboard-runtime.ts (Onda A).
+// KB fica aqui (o painel de controles o edita e persiste); o modulo o le fresco a cada chamada.
+const kbRuntime = initKeyboardRuntime({ getKB: () => KB, getNumPlayers: () => numPlayers, getPlayers: () => players });
+const kbFor = (i) => kbRuntime.kbFor(i);
 let controls=KB.solo; // alias do P1 (navegação do quiz + GAME_KEYS)
 let KJUMP=controls.jump, KLEFT=controls.left, KRIGHT=controls.right, KUP=controls.up, KDOWN=controls.down, KRUN=controls.run;
 let GAME_KEYS=[...KJUMP,...KLEFT,...KRIGHT,...KUP,...KDOWN];
-function applyControls(){ controls=KB.solo; KJUMP=controls.jump;KLEFT=controls.left;KRIGHT=controls.right;KUP=controls.up;KDOWN=controls.down;KRUN=controls.run;
-  const all=[]; players.forEach((p,i)=>{ const m=kbFor(i); for(const a in m) all.push(...m[a]); }); GAME_KEYS=all.length?all:[...KJUMP,...KLEFT,...KRIGHT,...KUP,...KDOWN]; }
+// O modulo CALCULA o estado; a atribuicao fica aqui, porque um modulo nao reatribui o `let` de outro.
+function applyControls(){ const st=kbRuntime.computeControlsState();
+  controls=st.controls; KJUMP=st.jump; KLEFT=st.left; KRIGHT=st.right; KUP=st.up; KDOWN=st.down; KRUN=st.run; GAME_KEYS=st.gameKeys; }
 // Tint distintivo por jogador (P1 = normal). L2: paleta CB-SAFE opcional (Okabe & Ito 2008 — laranja/azul-céu/
 // amarelo distinguíveis em protan/deutan/tritan) SÓ para jogadores/itens/efeitos — o CENÁRIO fica com cores naturais.
 const PCOLOR_DEF=[0xffffff,0xff9a9a,0x8affc0,0xffe08a], PCOLOR_CB=[0xffffff,0xe69f00,0x56b4e9,0xf0e442];
 let cbSafe=(()=>{ try{ return localStorage.getItem('incl_cbsafe')==='1'; }catch(e){ return false; } })();
 const PCOLOR=(cbSafe?PCOLOR_CB:PCOLOR_DEF).slice(); // mutável in-place (todos referenciam PCOLOR)
 let ownerColors=(()=>{ try{ return localStorage.getItem('incl_ownercolors')!=='0'; }catch(e){ return true; } })(); // itens na cor do dono (padrão ligado)
-function assignControls(){ players.forEach((p,i)=>p.ctrl=kbFor(i)); }
+const assignControls = () => kbRuntime.assignControls();
 assignControls();
 // Conflito: uma tecla não pode ser de dois jogadores no MESMO modo. Retorna o índice do outro dono, ou -1.
 addEventListener('keydown',(e)=>{
@@ -2184,8 +2189,8 @@ const pauseActs={ resume:()=>setPhase('playing'),
   visual:()=>{ selVizPlayer=pauseActor; openVisual(); },
   empatia:()=>{ selVizPlayer=pauseActor; empathy.open(); }, print:()=>printMode(), quit:()=>quitGame(), ajuda:()=>openHelp() };
 // Roteamento de input por jogador: cada tecla é do jogador dono dela (kbFor). Genéricas → jogador 0.
-function actionOf(code,pi){ const m=kbFor(pi); for(const a in m){ if(m[a]&&m[a].indexOf(code)>=0)return a; } return null; }
-function whichPlayer(code){ for(let i=0;i<numPlayers;i++){ if(actionOf(code,i))return i; } return -1; }
+const actionOf = (code,pi) => kbRuntime.actionOf(code,pi);
+const whichPlayer = (code) => kbRuntime.whichPlayer(code);
 function sharedDialogOpen(){ const ov=[...document.querySelectorAll('#game-region .overlay')].filter(o=>!o.hidden); if(!ov.length)return null; ov.sort((a,b)=>(+getComputedStyle(a).zIndex||0)-(+getComputedStyle(b).zIndex||0)); return ov[ov.length-1]; }
 function menuItems(menu){ const card=menu.querySelector('.overlay__card, .pause-card')||menu; return [...card.querySelectorAll('button:not([disabled]), select:not([disabled]), input[type=range]:not([disabled])')].filter(el=>el.offsetParent!==null); }
 function menuFocus(menu){ if(!menu)return; const it=menuItems(menu); if(it.length){ const cur=it.indexOf(document.activeElement); (cur>=0?it[cur]:it[0]).focus(); } }
