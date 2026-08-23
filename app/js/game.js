@@ -52,6 +52,7 @@ import { outlineCanvas, spriteToCanvas } from './render/sprite-fx.js'; // Fase 2
 import * as weather from './render/weather.js'; // Onda A: clima visual (chuva/trovao/clarao)
 import { lqFilter, setLq, getLqT, initLqFilter } from './render/lq-filter.js'; // Onda A: realce de contraste L->Q
 import * as traffic from './game/traffic.js'; // Onda A: carros + semaforo da rua da frente
+import * as life from './game/life.js'; // Onda A: vida ambiente (pombos/gatos/caes/adultos)
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
@@ -838,13 +839,8 @@ const ADULT_TEX=(()=>{ const col='#262b38';
     f=>px=>{ px(3,0,10,7); px(4,7,8,9); px(3,16,10,5); arms(px,f); legs(px,f,true); },                 // F3: chanel + saia
   ];
   return V.map(v=>[mk(v(0)),mk(v(1))]); })();
-const LIFE_KINDS=[
-  {k:'pombo', tex:'pombo', spd:0.15, peck:true, fly:true, alpha:0.95},
-  {k:'gato',  tex:'gato',  spd:0.30, alpha:0.9},
-  {k:'cao',   tex:'cao',   spd:0.35, alpha:0.9,  street:true},
-  {k:'adulto',tex:null,   spd:0.25, alpha:0.8,  street:true}, // silhueta 16×32 (ADULT_TEX, 6 formatos M/F)
-];
-let creatures=[], _lifeSpawnT=0;
+// LIFE_KINDS/creatures/_lifeSpawnT/spawnCreature/stepLife migraram para game/life.ts (Onda A).
+// inDark/lifeSurfaceAt/lifeSurfaceLowAt/streetCols FICAM: render/scene-city usa lifeSurfaceAt tambem.
 function inDark(tx,ty){ for(const r of darkRegions){ if(r.set.has(tx+','+ty))return true; } return false; } // célula de área secreta?
 function lifeSurfaceAt(tx){ for(let ty=3;ty<WORLD_H-1;ty++){ if(solidAt(tx,ty)&&!solidAt(tx,ty-1)&&tileAt(tx,ty-1)!==3&&tileAt(tx,ty)!==9&&tileAt(tx,ty-1)!==9&&!inDark(tx,ty-1)) return ty; } return -1; } // superfície AO AR LIVRE (fora das secretas), a MAIS ALTA; ty-1!==9 = nada spawna DENTRO da lava
 function lifeSurfaceLowAt(tx){ for(let ty=WORLD_H-2;ty>3;ty--){ if(solidAt(tx,ty)&&!solidAt(tx,ty-1)&&tileAt(tx,ty-1)!==3&&tileAt(tx,ty)!==9&&tileAt(tx,ty-1)!==9&&!inDark(tx,ty-1)) return ty; } return -1; } // idem, a MAIS BAIXA (calçada/fachada); ty-1!==9 = fora da lava
@@ -852,42 +848,8 @@ let _streetCols=null; // colunas ABERTAS da rua/fachada (superfície mais baixa,
 function streetCols(){ if(_streetCols)return _streetCols; _streetCols=[];
   for(let tx=2;tx<WORLD_W-2;tx++){ const ty=lifeSurfaceLowAt(tx); if(ty>0&&ty*TILE>WORLD_PX_H*0.55)_streetCols.push([tx,ty]); }
   return _streetCols; }
-function spawnCreature(force){ if(creatures.length>=10)return false;
-  const pl=players[randInt(0,Math.max(0,numPlayers-1))]||players[0], ptx=Math.floor(pl.x/TILE);
-  const K=LIFE_KINDS[[0,0,0,1,2,3][randInt(0,5)]]; // pombos com peso 3× ("cadê os pombos no chão?")
-  if(K.street&&CENARIO!=='cidade')return false; // adultos/cães são vida URBANA; campo/floresta ficam com bichos + borboletas
-  let tx,ty,fade=0;
-  if(K.street){ // cães e adultos: banda baixa; CÃO de preferência perto de uma ÁRVORE (pedido do José)
-    if(K.k==='cao'&&decoSprites.length&&rnd()<0.8){ const tr=decoSprites[randInt(0,decoSprites.length-1)];
-      tx=Math.floor(tr.x/TILE)+(rnd()<0.5?-1:1)*randInt(1,3); if(tx<1||tx>=WORLD_W-1)return false;
-      ty=lifeSurfaceLowAt(tx); if(ty<0)return false; fade=30; }
-    else { const open=streetCols().filter(([cx])=>Math.abs(cx-ptx)<=22); if(!open.length)return false;
-      [tx,ty]=open[randInt(0,open.length-1)]; fade=30; } } // rua: coluna aberta da fachada (pode ser visível → FADE-IN)
-  else { tx=ptx+(rnd()<0.5?-1:1)*(Math.floor(LOGICAL_W/TILE/2)+2+randInt(0,5));
-    if(tx<1||tx>=WORLD_W-1)return false; ty=lifeSurfaceAt(tx); if(ty<0)return false;
-    if(CENARIO==='cidade' && ty*TILE>=WORLD_PX_H*0.55)return false; } // cidade: gatos e pombos SÓ nas partes ALTAS
-  const tex2 = K.k==='adulto' ? ADULT_TEX[randInt(0,ADULT_TEX.length-1)] : LIFE_TEX[K.tex]; // adulto sorteia 1 dos 6 formatos
-  const s=new PIXI.Sprite(tex2[0]); s.anchor.set(0.5,1); s.alpha=fade?0:K.alpha; lifeLayer.addChild(s);
-  creatures.push({K,tex2,s,fade,x:tx*TILE+8,y:ty*TILE,dir:rnd()<0.5?-1:1,animT:0,f:0,state:'walk',stateT:0,vy:0});
-  return true; }
-function stepLife(dt){
-  if(rm.decor){ if(creatures.length){ creatures.forEach(c=>c.s.destroy()); lifeLayer.removeChildren(); creatures=[]; } return; }
-  if(++_lifeSpawnT>=60){ _lifeSpawnT=0; spawnCreature(); }
-  for(let i=creatures.length-1;i>=0;i--){ const c=creatures[i], K=c.K;
-    if(c.fade>0){ c.fade=Math.max(0,c.fade-dt); c.s.alpha=K.alpha*(1-c.fade/30); } // fade-in (spawn na rua pode ser visível)
-    c.animT+=dt; if(c.animT>=12){ c.animT=0; c.f=1-c.f; }
-    if(c.state==='fly'){ c.y+=c.vy*dt; c.x+=c.dir*0.9*dt; c.vy=Math.max(-1.6,c.vy-0.04*dt); c.s.texture=LIFE_TEX.pomboFly[c.f]; }
-    else if(c.state==='peck'){ if((c.stateT-=dt)<=0)c.state='walk'; c.s.texture=LIFE_TEX.pombo[1]; }
-    else { c.x+=c.dir*K.spd*dt;
-      const ty=Math.floor(c.y/TILE), nx=Math.floor((c.x+c.dir*6)/TILE);
-      if(nx<1||nx>=WORLD_W-1||!solidAt(nx,ty)||solidAt(nx,ty-1)||tileAt(nx,ty-1)===9) c.dir*=-1; // beirada/parede/LAVA à frente: meia-volta
-      if(K.peck&&rnd()<0.004){ c.state='peck'; c.stateT=30; }
-      c.s.texture=c.tex2[c.f]; }
-    if(K.fly&&c.state!=='fly'){ for(const pl of players){ if(Math.abs(pl.x-c.x)<34&&Math.abs(pl.y-c.y)<26){ c.state='fly'; c.vy=-1.2; c.dir=(c.x<pl.x?-1:1); break; } } } // revoada cosmética
-    c.s.x=Math.round(c.x); c.s.y=Math.round(c.y); c.s.scale.x=c.dir<0?-1:1;
-    let near=false; for(const pl of players){ if(Math.abs(pl.x-c.x)<LOGICAL_W*1.6&&Math.abs(pl.y-c.y)<LOGICAL_H*1.6){near=true;break;} }
-    if(!near||c.y<-30||c.x<8||c.x>WORLD_PX_W-8){ c.s.destroy(); lifeLayer.removeChild(c.s); creatures.splice(i,1); }
-  } }
+life.initLife({ layer: lifeLayer, makeSprite: (t) => new PIXI.Sprite(t), lifeTex: LIFE_TEX, adultTex: ADULT_TEX,
+  lifeSurfaceAt, lifeSurfaceLowAt, streetCols, decoSprites, rm, W: WORLD_W, pxW: WORLD_PX_W, pxH: WORLD_PX_H });
 /* ===================== L5: CARROS (camada da FRENTE) + SEMÁFORO funcional — procedural ===================== */
 // Carros cruzam a rua À FRENTE do player (carLayer re-erguido em ensureSprites); param no vermelho/amarelo
 // do semáforo e seguem no verde. Ciclo LENTO (verde 8s → amarelo 2s → vermelho 6s) — sem flashes (WCAG 2.3.1).
@@ -1406,7 +1368,7 @@ function update(dt){
   stepFx(dt); // partículas + decaimento de tremor/squash (roda até no fim de jogo → confete da vitória anima)
   attractCtl.stepAttract(dt); // attract: robô/replay dirige o P1 (ANTES da física)
   attractCtl.recordTick(); // ?record=1: grava o P1 (fora da demo, jogando) em localStorage
-  stepLife(dt); // L5: vida ambiente (pombos/gatos/cães/adultos) — cosmética, atrás do player
+  life.stepLife(dt); // L5: vida ambiente (pombos/gatos/cães/adultos) — cosmética, atrás do player
   traffic.stepTraffic(dt); // L5: carros (frente, na rua da base) + semáforo
   sceneSky.stepSky(dt); // L5: nuvens + pássaros no céu
   sceneSky.stepV3Decor(); // L6: decoração viva da v3 (estrelas/nuvens/pássaros/névoa/grama/minhocas/vagalumes/borboletas)
@@ -2403,7 +2365,7 @@ window.__incl={app,get player(){return players[0];},players,get numPlayers(){ret
   startAttract:()=>attractCtl.startAttract(),stopAttract:()=>attractCtl.stopAttract(),get attract(){return attractCtl.isAttract();}, // attract → game/attract.ts
   loadTTS:tts.loadTTS,ttsSpeak:tts.ttsSpeak,narrate:tts.narrate,get ttsEngine(){return tts.getEngine();},get ttsLoading(){return tts.loading;},get ttsFailed(){return tts.failed;},setTtsEngineSel(v){tts.setEngineSel(v);},
   updateWeather:weather.updateWeather,get rainLevel(){return weather.getRainLevel();},set weatherT(v){weather.setWeatherT(v);},get weatherT(){return weather.getWeatherT();},rm,
-  spawnCreature,stepLife,get creatures(){return creatures;},spawnCar:traffic.spawnCar,get cars(){return traffic.getCars();},SEM:traffic.SEM,get STREET_Y(){return traffic.getStreetY();},
+  spawnCreature:life.spawnCreature,stepLife:life.stepLife,get creatures(){return life.getCreatures();},spawnCar:traffic.spawnCar,get cars(){return traffic.getCars();},SEM:traffic.SEM,get STREET_Y(){return traffic.getStreetY();},
   get elevShafts(){return getElevShafts();},elevAt,get BOX(){return BOX;},get wheelchair(){return wheelchair;},setWheelchair,buildElevators,buildRamps,solidAt,surfTop, // debug cadeirante
   get clouds(){return sceneSky.getClouds();},get birds(){return sceneSky.getBirds();},stepSky:(dt)=>sceneSky.stepSky(dt),CENARIOS,stepV3Decor:()=>sceneSky.stepV3Decor(),
   get grassDensity(){return grassDensity;},setGrassDensity(v){grassDensity=Math.max(0,Math.min(1,+v||0));}, // 1=todas as superfícies; 0.6=60% (estações)
