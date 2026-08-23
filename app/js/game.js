@@ -799,10 +799,12 @@ const pauseIcons = initPauseIcons({
   getModoCego: () => modoCego, setModoCego,
   getAudioCat: () => audioCat, setCatGain,
   reflectTtsPanel: () => audioPanel.reflectTts(), // LAZY: audioPanel e const bem abaixo
-  // VERBATIM: hoje esta chamada NAO acontece — a guarda `typeof reflectTTS==='function'` e sempre
-  // falsa desde que reflectTTS foi extraida para ui/settings-audio. Religo o comportamento atual e
-  // conserto em commit separado; refactor nao carrega conserto.
-  reflectTtsPanelEnabled: false,
+  // LIGADO. Estava morto desde que reflectTTS foi extraida para ui/settings-audio: a guarda
+  // `typeof reflectTTS==='function'` virou sempre falsa e ninguem notou. O sintoma existe e nao e
+  // cosmetico — o painel de audio e o icone da pausa ficam ambos VISIVEIS ao mesmo tempo, entao
+  // ligar o TTS pelo icone deixava o botao do painel dizendo 'Desligado' com aria-pressed=false,
+  // ou seja, mentindo o estado para leitor de tela.
+  reflectTtsPanelEnabled: true,
   isLibrasOn: vlibrasOpen, toggleLibras,
   rm, saveRM, rmKeys: RM_KEYS, rmChar: RM_CHAR,
   setToggleMove, setPlayerViz,
