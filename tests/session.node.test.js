@@ -205,11 +205,15 @@ describe('game/session — roundStartFields × makePlayer: as duas listas que pr
       expect({ [k]: f[k] }).toEqual({ [k]: m[k] });
     }
   });
-  it('[Zero] os únicos campos do reset que makePlayer NÃO conhece são `quit` e `runCane`', () => {
+  it('[Zero] os campos do reset que makePlayer NÃO conhece são estes três', () => {
+    // `elevTarget` entrou aqui ao ser consertado: o destino do elevador do cadeirante sobrevivia à rodada e
+    // puxava o jogador sozinho no poço seguinte. `makePlayer` não o cria (nasce `undefined`, que a física lê
+    // como "sem destino"), então ele fica na mesma lista de `quit`/`runCane` — campos que só o reset conhece.
     const m = makePlayer(0);
     const orfaos = Object.keys(roundStartFields(0)).filter((k) => !(k in m));
-    expect(orfaos.sort()).toEqual(['quit', 'runCane']);
+    expect(orfaos.sort()).toEqual(['elevTarget', 'quit', 'runCane']);
   });
+
   it('[Right] os campos de makePlayer que o reset NÃO zera são exatamente esta lista (tripwire)', () => {
     const f = roundStartFields(0);
     const naoResetados = Object.keys(makePlayer(0)).filter((k) => !(k in f)).sort();
@@ -557,6 +561,15 @@ describe('game/session — win', () => {
 });
 
 describe('game/session — restartGame', () => {
+  it('[Right] zera o destino do elevador (o cadeirante não é puxado no poço seguinte)', () => {
+    // Reproduzido no navegador antes do conserto: com um destino herdado, o jogador cadeirante subia 108px
+    // em 20 quadros ao entrar num poço, sem ninguém apertar nada. Não disparava no spawn porque `onLadder` é
+    // zerado; a bomba ficava armada esperando a próxima escada.
+    const p = players[0];
+    p.elevTarget = 240;          // como se a rodada anterior tivesse acabado no meio de uma subida
+    S.restartGame();
+    expect(p.elevTarget).toBeNull();
+  });
   it('[One] a rodada nova: itens re-sorteados, segredos reescurecidos, contadores zerados', () => {
     players[0].collected = 7; CTX.estado.collected = 7; CTX.estado.ended = true;
     CTX.estado.darkRegionsAntes = null;

@@ -199,6 +199,12 @@ export function roundStartFields(i: number): Record<string, unknown> {
     swapEdge: false, specialEdge: false,
     jumpChain: 0, groundIdle: 0, clinging: false, clingN: null, flying: false,
     idleTime: 0, flavor: -1,
+    // O elevador do cadeirante guarda para ONDE está viajando, e isto sobrevivia à rodada: quem reiniciasse
+    // no meio de uma subida entrava no poço seguinte já sendo puxado para o destino da rodada anterior, sem
+    // ter apertado nada. Não disparava no spawn só porque `onLadder` é zerado aqui e o elevador só roda
+    // dentro da escada — a bomba ficava armada esperando o próximo poço. Reproduzido no navegador: 108px de
+    // arrasto em 20 quadros, contra zero no mesmo cenário sem o destino velho.
+    elevTarget: null,
   };
 }
 
