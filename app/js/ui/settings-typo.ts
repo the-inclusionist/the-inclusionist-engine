@@ -42,8 +42,6 @@ export interface SettingsTypoApi {
 // Pure logic (no `document`, testable in node)
 // ---------------------------------------------------------------------------------------------
 
-const CURRENT_KEY = 'incl_font_k'; // == platform/storage.ts KEYS.fontKey
-const LEGACY_KEY = 'incl_fonte';   // pre-Phase-2 key: 'alfabetizacao' | 'dislexia' | outro
 
 /** A key is selectable when it exists in the catalog and is not marked `.off` (licence pending, etc.). */
 export function isSelectableFont(k: string): boolean {
@@ -51,23 +49,10 @@ export function isSelectableFont(k: string): boolean {
   return !!it && !it.off;
 }
 
-/**
- * Resolves the font key to use at boot: validated persisted key -> legacy-key migration -> 'atkinson' default.
- * Verbatim port of fonts.ts's loadFontKey(), re-expressed over an injected store (DI requirement) instead of a
- * module-level import, so this module never reaches storage except through `ctx.store`.
- */
-export function resolveFontKey(store: TypoStore): string {
-  const k = store.get(CURRENT_KEY, null);
-  if (k && isSelectableFont(k)) return k;
-  const leg = store.get(LEGACY_KEY, null);
-  if (leg === 'alfabetizacao') return 'andika';
-  if (leg === 'dislexia') return 'lexend';
-  return 'atkinson';
-}
-
-export function persistFontKey(store: TypoStore, k: string): void {
-  store.set(CURRENT_KEY, k);
-}
+// A semantica da chave (validacao + migracao da chave antiga) mora em ui/fonts.ts, que e o dono do
+// catalogo; re-exportada aqui para quem ja consome este modulo. Uma implementacao, nao duas.
+export { resolveFontKey, persistFontKey } from './fonts.js';
+import { resolveFontKey, persistFontKey } from './fonts.js';
 
 export interface FontCssTarget {
   /** Value written to root.dataset.fonte. */

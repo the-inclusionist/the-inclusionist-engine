@@ -30,10 +30,23 @@ export const FONT_GROUPS: FontGroup[] = [
 ];
 export const FONT_BY_KEY: Record<string, FontItem> = {}; FONT_GROUPS.forEach((g) => g.items.forEach((it) => { FONT_BY_KEY[it.k] = it; }));
 
-// escolha inicial: incl_font_k (validada; ignora fontes .off) -> migra a chave antiga incl_fonte -> 'atkinson'.
-export function loadFontKey(): string {
-  const k = store.get('incl_font_k', null); if (k && FONT_BY_KEY[k] && !FONT_BY_KEY[k].off) return k;
-  const leg = store.get('incl_fonte', null); if (leg === 'alfabetizacao') return 'andika'; if (leg === 'dislexia') return 'lexend';
+/** Narrow store shape these need — lets a caller inject a fake without touching real storage. */
+export interface FontStore { get(key: string, fallback: string | null): string | null; set(key: string, v: string): void; }
+
+export const FONT_KEY = 'incl_font_k';
+export const FONT_KEY_LEGACY = 'incl_fonte'; // pre-Fase-2: 'alfabetizacao' | 'dislexia'
+
+/** Boot choice: validated persisted key (ignores .off fonts) -> legacy-key migration -> 'atkinson'. */
+export function resolveFontKey(s: FontStore): string {
+  const k = s.get(FONT_KEY, null);
+  if (k && FONT_BY_KEY[k] && !FONT_BY_KEY[k].off) return k;
+  const leg = s.get(FONT_KEY_LEGACY, null);
+  if (leg === 'alfabetizacao') return 'andika';
+  if (leg === 'dislexia') return 'lexend';
   return 'atkinson';
 }
-export function saveFontKey(k: string): void { store.set('incl_font_k', k); }
+export function persistFontKey(s: FontStore, k: string): void { s.set(FONT_KEY, k); }
+
+// Conveniencia sobre o storage real — mesma logica, sem duplicá-la.
+export function loadFontKey(): string { return resolveFontKey(store); }
+export function saveFontKey(k: string): void { persistFontKey(store, k); }
