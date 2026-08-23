@@ -42,6 +42,8 @@ export const KEYS = {
   ttsEngine: 'incl_tts_engine', ttsVoice: 'incl_tts_voice', lang: 'incl_lang', // audiocat_{k}
   // tipografia / controles / toque
   fontKey: 'incl_font_k', padDesign: 'incl_paddesign', padDir: 'incl_paddir', touchmap: 'incl_touchmap',
+  padBtnMm: 'incl_padbtnmm', padGapMm: 'incl_padgapmm', padStickMm: 'incl_padstickmm',
+  padTravelMm: 'incl_padtravelmm', padDpadMm: 'incl_paddpadmm',
   // por jogador (sufixo _p{i}): viz_p, sink_p, easy_p, togglemove_p, rmWalk_p, rmBreath_p, rmFlavor_p
   // demo/attract: uma gravação por cenário (fn em vez de string — chave parametrizada)
   attract: (cen: string): string => 'incl_attract_' + cen,
