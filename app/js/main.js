@@ -55,6 +55,7 @@ import { PARALLAX, createParallax } from './render/parallax.js'; // D2-b: as 3 c
 import { createSetCenario } from './render/set-cenario.js'; // D2-b: a troca de cenario (orquestracao; leva o loadTileImages)
 import { createSceneSky } from './render/scene-sky.js'; // Tier 2 (#43): céu — nuvens (#21) + decor viva da v3
 import { coinCanvas, treeCanvas } from './render/props.js';
+import { createCityTextures } from './render/city-tex.js'; // D3-a: arte procedural da rua (bichos, pedestres, carros)
 import * as weather from './render/weather.js'; // Onda A: clima visual (chuva/trovao/clarao)
 import { lqFilter, setLq, getLqT, initLqFilter } from './render/lq-filter.js'; // Onda A: realce de contraste L->Q
 import * as traffic from './game/traffic.js'; // Onda A: carros + semaforo da rua da frente
@@ -569,36 +570,7 @@ const chairLayer=new PIXI.Graphics(); camera.addChild(chairLayer); // cadeira de
    Cosmético puro: sem colisão, sem dano (revoada de pombo ≠ susto de perigo). ATRÁS do player.
    Pool de 8, spawn perto da câmera, 2 quadros por bicho; rm.decor (Movimento Reduzido de cena) desliga tudo. */
 const lifeLayer=new PIXI.Container(); camera.addChild(lifeLayer);
-const LIFE_TEX=(()=>{ const mk=(w,h,paint)=>{ const cv=makeCanvas(w,h),c=cv.getContext('2d'); paint((x,y,ww,hh,col)=>{c.fillStyle=col;c.fillRect(x,y,ww,hh);}); return tex(cv); };
-  const pombo=f=>mk(7,6,px=>{ px(1,2,4,2,'#9aa3b2'); px(0,3,2,1,'#7d8695');
-    if(f===0){ px(4,1,2,2,'#b9c2d0'); px(6,2,1,1,'#e0a23c'); } else { px(4,3,2,2,'#b9c2d0'); px(6,4,1,1,'#e0a23c'); } // cabeça alta / bicando
-    px(2,5,1,1,'#c96a2e'); px(4,5,1,1,'#c96a2e'); });
-  const pomboFly=f=>mk(8,7,px=>{ px(2,3,4,2,'#9aa3b2'); px(6,2,2,2,'#b9c2d0'); px(7,3,1,1,'#e0a23c');
-    if(f===0)px(1,0,4,2,'#c8d0dc'); else px(1,5,4,2,'#c8d0dc'); });                                  // asa cima/baixo
-  const gato=f=>mk(12,8,px=>{ px(1,3,8,3,'#454b58'); px(8,1,3,3,'#454b58'); px(8,0,1,1,'#454b58'); px(10,0,1,1,'#454b58');
-    px(0,2,1,3,'#454b58'); px(9,2,1,1,'#9fe07a');
-    if(f===0){ px(2,6,1,2,'#454b58'); px(7,6,1,2,'#454b58'); } else { px(3,6,1,2,'#454b58'); px(6,6,1,2,'#454b58'); } });
-  const cao=f=>mk(13,9,px=>{ px(1,3,9,4,'#8a6a44'); px(9,1,4,4,'#8a6a44'); px(12,2,1,2,'#3a2d1c'); px(9,0,2,2,'#6d5334');
-    px(0,2,1,3,'#8a6a44');
-    if(f===0){ px(2,7,1,2,'#6d5334'); px(8,7,1,2,'#6d5334'); } else { px(3,7,1,2,'#6d5334'); px(7,7,1,2,'#6d5334'); } });
-  return { pombo:[pombo(0),pombo(1)], pomboFly:[pomboFly(0),pomboFly(1)], gato:[gato(0),gato(1)], cao:[cao(0),cao(1)] };
-})();
-// Adultos = SILHUETAS 16×32 (mesma proporção/tamanho do personagem), formatos distintos M/F (pedido do José)
-const ADULT_TEX=(()=>{ const col='#262b38';
-  const mk=paint=>{ const cv=makeCanvas(16,32),c=cv.getContext('2d'); c.fillStyle=col;
-    const px=(x,y,w,h)=>c.fillRect(x,y,w,h); paint(px); return tex(cv); };
-  const legs=(px,f,skirt)=>{ if(skirt){ px(4,20,8,6); if(f===0){px(5,26,2,6);px(9,26,2,6);}else{px(4,26,2,6);px(10,26,2,6);} }
-    else { if(f===0){px(5,20,3,12);px(9,20,3,11);} else {px(4,20,3,11);px(10,20,3,12);} } };
-  const arms=(px,f)=>{ if(f===0){px(2,10,2,8);px(12,10,2,8);} else {px(2,11,2,7);px(12,9,2,8);} };
-  const V=[ // 3 silhuetas masculinas + 3 femininas, todas 16×32
-    f=>px=>{ px(4,0,8,6); px(3,6,10,14); arms(px,f); legs(px,f,false); },                              // M1: ombros largos
-    f=>px=>{ px(5,0,6,5); px(3,1,10,2); px(5,5,6,15); arms(px,f); legs(px,f,false); },                 // M2: magro, de boné
-    f=>px=>{ px(4,1,8,5); px(2,6,12,14); arms(px,f); legs(px,f,false); },                              // M3: troncudo
-    f=>px=>{ px(4,0,8,6); px(11,3,3,10); px(4,6,8,10); px(3,16,10,5); arms(px,f); legs(px,f,true); },  // F1: rabo de cavalo + saia
-    f=>px=>{ px(3,0,10,6); px(2,4,3,13); px(11,4,3,13); px(5,6,6,10); px(4,16,8,5); legs(px,f,true); },// F2: cabelo longo + vestido
-    f=>px=>{ px(3,0,10,7); px(4,7,8,9); px(3,16,10,5); arms(px,f); legs(px,f,true); },                 // F3: chanel + saia
-  ];
-  return V.map(v=>[mk(v(0)),mk(v(1))]); })();
+const CITY_TEX=createCityTextures(); // pombos/gatos/caes, silhuetas de adulto e carros (render/city-tex.ts) — I/O de canvas SO aqui, no boot
 // LIFE_KINDS/creatures/_lifeSpawnT/spawnCreature/stepLife migraram para game/life.ts (Onda A).
 // inDark/lifeSurfaceAt/lifeSurfaceLowAt/streetCols FICAM: render/scene-city usa lifeSurfaceAt tambem.
 function inDark(tx,ty){ for(const r of darkRegions){ if(r.set.has(tx+','+ty))return true; } return false; } // célula de área secreta?
@@ -608,32 +580,18 @@ let _streetCols=null; // colunas ABERTAS da rua/fachada (superfície mais baixa,
 function streetCols(){ if(_streetCols)return _streetCols; _streetCols=[];
   for(let tx=2;tx<WORLD_W-2;tx++){ const ty=lifeSurfaceLowAt(tx); if(ty>0&&ty*TILE>WORLD_PX_H*0.55)_streetCols.push([tx,ty]); }
   return _streetCols; }
-life.initLife({ layer: lifeLayer, makeSprite: (t) => new PIXI.Sprite(t), lifeTex: LIFE_TEX, adultTex: ADULT_TEX,
+life.initLife({ layer: lifeLayer, makeSprite: (t) => new PIXI.Sprite(t), lifeTex: CITY_TEX.lifeTex, adultTex: CITY_TEX.adultTex,
   lifeSurfaceAt, lifeSurfaceLowAt, streetCols, decoSprites, rm, W: WORLD_W, pxW: WORLD_PX_W, pxH: WORLD_PX_H });
 /* ===================== L5: CARROS (camada da FRENTE) + SEMÁFORO funcional — procedural ===================== */
 // Carros cruzam a rua À FRENTE do player (carLayer re-erguido em ensureSprites); param no vermelho/amarelo
 // do semáforo e seguem no verde. Ciclo LENTO (verde 8s → amarelo 2s → vermelho 6s) — sem flashes (WCAG 2.3.1).
 const carLayer=new PIXI.Container(); camera.addChild(carLayer);
-const CAR_TEX=(()=>{ const mk=(body,dark,top)=>{ const cv=makeCanvas(78,36),c=cv.getContext('2d'); // 3× NATIVO (detalhado, sem upscale)
-  const px=(x,y,w,h,cl)=>{c.fillStyle=cl;c.fillRect(x,y,w,h);};
-  px(3,14,72,13,body); px(3,25,72,2,dark);              // corpo + saia escura
-  px(1,16,2,8,dark); px(75,16,2,8,dark);                // para-choques
-  px(15,4,40,11,top); px(17,6,36,9,body);               // cabine (teto escuro + faixa)
-  px(19,7,14,7,'#bcd6ee'); px(37,7,14,7,'#bcd6ee');     // vidros
-  px(20,8,4,2,'#eef6ff'); px(38,8,4,2,'#eef6ff');       // brilho dos vidros
-  px(34,7,3,7,top); px(53,10,4,4,dark);                 // coluna B + retrovisor
-  px(3,14,72,1,'rgba(255,255,255,.28)');                // realce superior da lataria
-  px(0,17,3,5,'#ffd9a0'); px(75,17,3,5,'#ff6a5a');      // farol / lanterna
-  const wheel=(wx)=>{ px(wx-2,22,18,6,dark); px(wx,24,14,11,'#10131a'); px(wx+3,27,8,5,'#2b3140'); px(wx+5,29,4,2,'#8a93a8'); }; // caixa de roda + pneu + calota
-  wheel(11); wheel(53);
-  return tex(cv); };
-  return [mk('#c8452e','#7d2717','#a03a24'),mk('#2e6fc8','#193f7d','#2757a0'),mk('#3aa15b','#1f6336','#2f8a4c'),mk('#c8a12e','#7d641a','#a8862a')]; })();
 // R-cidade (José 2026-07-03): o cenário é o INTERIOR de um prédio; a parte mais baixa é a FACHADA e a
 // rua fica NA FRENTE dela → carros (3×) e placas de PARE vivem na BASE do mundo, na camada da frente.
 // cars/_carT/STREET_Y/SEM/drawSemaforo/initTraffic/spawnCar/setFrontDim/stepTraffic migraram para
-// game/traffic.ts (Onda A). carLayer e CAR_TEX ficam: a camada tem z-order soldado aqui e a textura
-// e pintura de canvas, nao logica de transito.
-traffic.initTraffic({ carLayer, CAR_TEX, SpriteCtor: PIXI.Sprite, GraphicsCtor: PIXI.Graphics,
+// game/traffic.ts (Onda A). carLayer FICA (o z-order dele e soldado aqui); a textura saiu para
+// render/city-tex.ts (D3-a), junto com a dos bichos e a dos pedestres.
+traffic.initTraffic({ carLayer, CAR_TEX: CITY_TEX.carTex, SpriteCtor: PIXI.Sprite, GraphicsCtor: PIXI.Graphics,
   WORLD_PX_W, WORLD_PX_H, WORLD_W, getRm: () => rm });
 /* ===================== L5: DECORAÇÃO POR ZONA (procedural, desenhada UMA vez) =====================
    Rua: calçada+meio-fio, postes com brilho ESTÁVEL, placas (PARE/faixa), letreiros nas fachadas.
