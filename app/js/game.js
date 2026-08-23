@@ -58,6 +58,8 @@ import { initTextures, SHAPE_TEX, letterTexture, pupTexFor, resetPupTexCache } f
 import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, worldTexFor, coinTexFor, directBgTexture,
   directSpriteCanvas, directSpriteTexture, clearWorldTexCache, clearCoinTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
 import { initCoinSpawning, rebuildCoins, addCoinsForOwner, respawnCoinsForOwner, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
+import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
+  buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
@@ -125,18 +127,7 @@ for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const t=WORLD[y][x];
   else if(t===10){ MAP_GATE.push({tx:x,ty:y}); WORLD[y][x]=1; } // portão
 }
 // regiões secretas = componentes conexos de tiles 0 (escuridão). Acendem ao entrar.
-function buildDarkRegions(){
-  const seen=Array.from({length:WORLD_H},()=>new Array(WORLD_W).fill(false)),regions=[];
-  for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){
-    if(tileAt(x,y)!==0||seen[y][x])continue;
-    const stack=[[x,y]],tiles=[]; seen[y][x]=true;
-    while(stack.length){ const [cx,cy]=stack.pop(); tiles.push([cx,cy]);
-      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=cx+dx,ny=cy+dy;
-        if(nx>=0&&nx<WORLD_W&&ny>=0&&ny<WORLD_H&&!seen[ny][nx]&&tileAt(nx,ny)===0){seen[ny][nx]=true;stack.push([nx,ny]);}}}
-    if(tiles.length>=2) regions.push(tiles); // ignora bolsões minúsculos
-  }
-  return regions;
-}
+// buildDarkRegions migrou para game/level-geometry.ts (Onda A) — agora e puro e recebe as dimensoes.
 
 /* ===================== sprite do personagem ===================== */
 // PLAYER_IDLE/WALK/CLIMB/HURT (mapa de caracteres do sprite anterior ao PixelLab) migraram para
@@ -534,7 +525,7 @@ initCoinSpawning({ coinContainer, createSprite: (t) => new PIXI.Sprite(t), coinT
 rebuildCoins();
 // camada de escuridão das áreas secretas (acima de mundo/moedas, ABAIXO do player → player sempre visível)
 const darkLayer=new PIXI.Container(); camera.addChild(darkLayer);
-const darkRegions=buildDarkRegions().map(tiles=>{
+const darkRegions=buildDarkRegions(WORLD_W, WORLD_H).map(tiles=>{
   const gfx=new PIXI.Graphics(); gfx.beginFill(0x04060d,1);
   for(const [tx,ty] of tiles) gfx.drawRect(tx*TILE,ty*TILE,TILE,TILE);
   gfx.endFill(); darkLayer.addChild(gfx);
@@ -571,30 +562,22 @@ const decoSprites=[];
 // ja montou o cache.
 const extraLayer=new PIXI.Container(); camera.addChild(extraLayer); // power-ups + portão (atrás do player)
 let powerups=[];
-function rebuildExtras(){
-  extraLayer.removeChildren().forEach(s=>s.destroy());
-  powerups.forEach(pu=>{ const s=new PIXI.Sprite(pupTexFor(pu.kind,vizMode)); s.x=pu.x; s.y=pu.y; s.visible=!pu.taken; extraLayer.addChild(s); pu.sprite=s; });
-  if(gate && !gateOpen){ const g=new PIXI.Graphics();
-    const hc=!!DIRECT_CFG[vizMode]; // alto contraste: portão trancado = cor do papel "gate" (padrão magenta, customizável); normal = madeira
-    const gc=HC_ROLE.gate, base=hc?((gc[0]<<16)|(gc[1]<<8)|gc[2]):0x8a5a2b, plank=hc?((((gc[0]*0.38)|0)<<16)|(((gc[1]*0.38)|0)<<8)|((gc[2]*0.38)|0)):0x5a3a1b;
-    for(const k of gateTiles){ const [tx,ty]=k.split(',').map(Number); const X=tx*TILE,Y=ty*TILE;
-      g.beginFill(base).drawRect(X,Y,TILE,TILE).endFill();
-      g.beginFill(plank); for(let i=2;i<TILE;i+=5)g.drawRect(X+i,Y+1,2,TILE-2); g.endFill();
-    }
-    extraLayer.addChild(g);
-  }
-  _lastSharedViz=null; // power-ups/porta recriados → força re-aplicar texturas por viewport
-}
+// As camadas do modulo nascem AQUI, mas o addChild/addChildAT de cada uma continua exatamente onde estava:
+// no PixiJS a ordem de insercao E a ordem de desenho, entao icar a construcao e seguro e icar a montagem
+// no grafo NAO e. So o construtor subiu.
+const rampLayer=new PIXI.Graphics();
+const ropeLayer=new PIXI.Graphics();
+initLevelGeometry({ W: WORLD_W, H: WORLD_H, isWheelchair: () => wheelchair,
+  rampLayer, ropeLayer, extraLayer,
+  wcSolid: () => wcSolid, powerups: () => powerups, gateTiles: () => gateTiles, gate: () => gate, gateOpen: () => gateOpen,
+  pupTexFor, isDirectMode: (mode) => !!DIRECT_CFG[mode], gateRoleColor: () => HC_ROLE.gate });
+// Envolucros finos: o modulo CALCULA e DESENHA; o estado compartilhado (powerups/gate/wcSolid) segue morando
+// aqui porque colisao e o laco do jogador tambem o leem e escrevem.
+function rebuildExtras(){ lgRebuildExtras(); _lastSharedViz=null; }
 function setupExtras(){
-  decorSeed = (Math.random()*1e9)>>>0; // #69: nova semente por fase → a densidade escolhe superfícies diferentes a cada carga
-  // itens e portão vêm das posições REAIS do mapa Clarity (não mais aleatórios)
-  const _blind = modoCego || players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='blind';}); // experiência de cego ativa?
-  powerups = MAP_ITEMS.filter(it=> !wheelchair || it.kind==='fly'||it.kind==='turbo'||it.kind==='key') // cadeirante: só voo/super-corrida (chave mantida p/ o portão)
-    .map(it=>({ x:it.tx*TILE+2, y:it.ty*TILE+2, kind:it.kind, taken:false, by:[], sprite:null })); // by[i]=1 → coletado por aquele jogador (chave é global)
-  if(_blind){ const sj=powerups.find(pu=>pu.kind==='superjump'); if(sj) sj.kind='runcane'; } // cego: o item de SUPER-PULO vira a bengala de corrida (habilita correr)
-  gateTiles = new Set(MAP_GATE.map(g=>g.tx+','+g.ty));
-  gate = MAP_GATE.length ? MAP_GATE : null;
-  gateOpen = MAP_GATE.length===0; // havendo portão, começa FECHADO (abre com a chave)
+  decorSeed = (Math.random()*1e9)>>>0; // #69: nova semente por fase
+  const _blind = modoCego || players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='blind';});
+  ({ powerups, gateTiles, gate, gateOpen } = lgSetupExtras(MAP_ITEMS, MAP_GATE, { wheelchair, blind:_blind }));
   rebuildExtras();
 }
 setupExtras();
@@ -602,48 +585,15 @@ setupExtras();
 // Fácil: retângulo translúcido mostrando a hitbox de coleta tolerante (sob o player)
 const easyHitbox=new PIXI.Graphics(); camera.addChild(easyHitbox);
 // Cadeirante: RAMPAS desenhadas sobre os degraus de 1 tile (sobre o mundo, abaixo do player)
-const rampLayer=new PIXI.Graphics(); camera.addChildAt(rampLayer, camera.getChildIndex(worldSprite)+1);
-function buildRamps(){ rampLayer.clear(); rampLayer.visible=wheelchair; if(!wheelchair)return;
-  const sol=(x,y)=>solidTile(x,y), surf=(x,y)=> sol(x,y)&&!sol(x,y-1); // topo caminhável (solidTile já inclui lava/trampolim no cadeira → gera rampa em volta deles)
-  const FILL=0x7b7f8b, EDGE=0x4a4e59, STRIPE=0xf2c200; // STRIPE = faixa amarela de acessibilidade (na superfície da rampa)
-  for(let y=1;y<WORLD_H;y++)for(let x=0;x<WORLD_W-1;x++){ if(!surf(x,y))continue;
-    if(surf(x+1,y-1)){ const X=(x+1)*TILE, yL=y*TILE, yU=(y-1)*TILE;                 // degrau SOBE p/ direita
-      rampLayer.beginFill(FILL); rampLayer.moveTo(X-TILE,yL); rampLayer.lineTo(X,yU); rampLayer.lineTo(X,yL); rampLayer.closePath(); rampLayer.endFill();
-      rampLayer.lineStyle(1,EDGE); rampLayer.moveTo(X-TILE,yL); rampLayer.lineTo(X,yU);
-      rampLayer.lineStyle(2,STRIPE); rampLayer.moveTo(X-TILE,yL-1); rampLayer.lineTo(X,yU-1); rampLayer.lineStyle(0);
-    } else if(surf(x+1,y+1)){ const X=(x+1)*TILE, yL=y*TILE, yD=(y+1)*TILE;          // degrau DESCE p/ direita
-      rampLayer.beginFill(FILL); rampLayer.moveTo(X,yL); rampLayer.lineTo(X+TILE,yD); rampLayer.lineTo(X,yD); rampLayer.closePath(); rampLayer.endFill();
-      rampLayer.lineStyle(1,EDGE); rampLayer.moveTo(X,yL); rampLayer.lineTo(X+TILE,yD);
-      rampLayer.lineStyle(2,STRIPE); rampLayer.moveTo(X,yL-1); rampLayer.lineTo(X+TILE,yD-1); rampLayer.lineStyle(0);
-    }
-  }
-  // cadeirante: LAVA (9) vira CHÃO seguro (bloco de concreto, com borda). O TRAMPOLIM (5) vira CHÃO NORMAL (José):
-  // piso plano pisável, SEM contorno de bloco (era o contorno que o fazia parecer parede/"bloco acima"). Continua
-  // sólido e é a base do elevador — a rampa leva o jogador do chão até ele e a cabine de vidro sobe/desce por cima.
-  for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const t=tileAt(x,y); if(t!==9&&t!==5)continue; const X=x*TILE,Y=y*TILE;
-    rampLayer.beginFill(0x6f7481); rampLayer.drawRect(X,Y,TILE,TILE); rampLayer.endFill();
-    rampLayer.beginFill(0x8a8f9c); rampLayer.drawRect(X,Y,TILE,3); rampLayer.endFill();               // topo claro = superfície pisável (chão)
-    if(t===9){ rampLayer.lineStyle(1,0x4a4e59); rampLayer.drawRect(X+0.5,Y+0.5,TILE-1,TILE-1); rampLayer.lineStyle(0); } // só a LAVA tem borda de bloco; trampolim = chão liso
-  }
-  // cadeirante: PLATAFORMAS só-cadeirante (wcSolid) desenhadas como concreto (ex.: ponte que liga o elevador do corredor à escada)
-  for(const k of wcSolid){ const [x,y]=k.split(',').map(Number); const X=x*TILE,Y=y*TILE;
-    rampLayer.beginFill(0x6f7481); rampLayer.drawRect(X,Y,TILE,TILE); rampLayer.endFill();
-    rampLayer.beginFill(0x8a8f9c); rampLayer.drawRect(X,Y,TILE,2); rampLayer.endFill();
-    rampLayer.lineStyle(1,0x4a4e59); rampLayer.drawRect(X+0.5,Y+0.5,TILE-1,TILE-1); rampLayer.lineStyle(0);
-  }
-}
-// Geometria só-cadeirante: plataformas que dão DESTINO aos elevadores (não existem no modo normal).
-const WC_BRIDGES=[ {x:23,y:47},{x:24,y:47} ]; // ponte do elevador do corredor: liga o poço do trampolim B (x20-22) ao topo da escada (x25)
+camera.addChildAt(rampLayer, camera.getChildIndex(worldSprite)+1); // z-order INTOCADO: mesma posicao de sempre
+// buildRamps + WC_BRIDGES migraram para game/level-geometry.ts (Onda A).
 // WC_ELEVATORS (fossos só-cadeirante) movidos p/ game/elevators.js (Estágio 4).
-function buildWcGeom(){ wcSolid=new Set(); if(!wheelchair)return; for(const b of WC_BRIDGES) wcSolid.add(b.x+','+b.y); }
+function buildWcGeom(){ wcSolid = lgBuildWcGeom(wheelchair); } // envolucro: o modulo calcula, o game.js segue dono do wcSolid
 buildWcGeom();
 buildRamps(); // desenha as rampas + coberturas (lava, pontes) se já iniciar em modo cadeirante
 // CORDAS FLUTUANTES na superfície da água (o cego atravessa por elas; visual para todos)
-const ropeLayer=new PIXI.Graphics(); camera.addChildAt(ropeLayer, camera.getChildIndex(worldSprite)+1);
-function buildRopes(){ ropeLayer.clear();
-  for(let y=1;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ if(tileAt(x,y)!==3||tileAt(x,y-1)===3)continue; const X=x*TILE, Y=y*TILE+1; // topo da poça (superfície)
-    ropeLayer.lineStyle(1,0xcaa96a,0.85); ropeLayer.moveTo(X,Y); ropeLayer.lineTo(X+TILE,Y); ropeLayer.lineStyle(0);
-    ropeLayer.beginFill(0x8a6f3a); ropeLayer.drawRect(X+TILE/2-1,Y-1,2,2); ropeLayer.endFill(); } } // nó
+camera.addChildAt(ropeLayer, camera.getChildIndex(worldSprite)+1); // z-order INTOCADO: mesma posicao de sempre
+// buildRopes migrou para game/level-geometry.ts (Onda A).
 buildRopes();
 // ELEVADOR (cadeirante): trampolim = plataforma LARGA, escada = plataforma FINA. Toque ↑/↓ = viaja até a parada segura.
 // ELEV_SPEED/elevShafts/buildElevators/elevAt extraídos p/ game/elevators.js (Estágio 4). drawElevators (cabine
@@ -653,27 +603,8 @@ buildElevators();
 const elevLayer=new PIXI.Graphics(); camera.addChildAt(elevLayer, camera.getChildIndex(worldSprite)+1);
 // Estilo VIDRO PREDIAL (rodoviária/shopping/aeroporto): fosso de vidro translúcido (vê o background),
 // moldura cinza/branco/azul, escada some virando blocos de elevador, e a cabine PERMANECE onde foi deixada.
-function drawElevators(g){ g.clear(); if(!wheelchair)return;
-  for(const s of getElevShafts()){ if(s.carY==null)s.carY=s.yBottom; for(const pl of players){ if(elevAt(pl)===s) s.carY=pl.y; } } // cabine segue quem está nela; senão fica
-  const GLASS=0x9fd0e6, FRAME=0x8aa0b8, WHITE=0xeaf2f8, BLUE=0x4a78b0, INNER=0x24384d;
-  for(const s of getElevShafts()){
-    const x0=s.xMin*TILE, x1=(s.xMax+1)*TILE, w=x1-x0, yt=s.yTop-TILE, yb=s.yBottom, h=yb-yt; // vidro só ACIMA do chão (yBottom)
-    g.beginFill(GLASS,0.14); g.drawRect(x0,yt,w,h); g.endFill();                                   // fosso de vidro (vê o background)
-    for(const cx of s.cols)for(let ry=Math.floor(yt/TILE);ry<=Math.floor((yb-1)/TILE);ry++){ if(tileAt(cx,ry)!==4)continue; const X=cx*TILE,Y=ry*TILE; // ESCADA some → bloco de elevador
-      g.beginFill(INNER,0.9); g.drawRect(X,Y,TILE,TILE); g.endFill(); g.beginFill(GLASS,0.22); g.drawRect(X,Y,TILE,TILE); g.endFill(); }
-    g.lineStyle(1,BLUE,0.45); for(let yy=yt+TILE; yy<yb; yy+=TILE){ g.moveTo(x0,yy); g.lineTo(x1,yy); } for(let xx=x0+TILE; xx<x1; xx+=TILE){ g.moveTo(xx,yt); g.lineTo(xx,yb); } // divisões dos painéis
-    g.lineStyle(2,FRAME,0.95); g.drawRect(x0,yt,w,h);                                               // contorno da estrutura
-    g.lineStyle(2,WHITE,0.22); g.moveTo(x0+2,yt+h*0.6); g.lineTo(x0+w*0.55,yt+2); g.lineStyle(0);   // reflexo de vidro
-    const cy=Math.round(s.carY);                                                                    // CABINE persistente
-    g.beginFill(INNER,0.92); g.drawRect(x0+1,cy-15,w-2,15); g.endFill();
-    g.beginFill(GLASS,0.35); g.drawRect(x0+2,cy-14,w-4,13); g.endFill();
-    g.lineStyle(2,FRAME); g.drawRect(x0+1,cy-15,w-2,15); g.lineStyle(0);
-    g.beginFill(0x2a3145); g.drawRect(x0,cy,w,4); g.endFill();                                      // piso da cabine
-    g.beginFill(WHITE,0.85); g.drawRect(x0,cy-1,w,2); g.endFill();                                  // faixa clara
-  }
-  for(const pl of players){ if(pl.elevTarget==null)continue; const s=elevAt(pl); if(!s)continue; const y=Math.round(pl.y), up=pl.elevTarget<y, ax=(s.xMin*TILE+(s.xMax+1)*TILE)/2, ay=up?y-9:y+11; // seta de destino
-    g.beginFill(0xf2c200); g.moveTo(ax,ay+(up?-4:4)); g.lineTo(ax-4,ay); g.lineTo(ax+4,ay); g.closePath(); g.endFill(); }
-}
+// drawElevators migrou para game/level-geometry.ts (Onda A) — game/elevators ja registrava que quem desenha
+// a cabine e quem escreve a posicao dela.
 const caneLayer=new PIXI.Graphics(); camera.addChild(caneLayer); // bengala (modo cego)
 // drawCane/drawRunCane extraídos p/ render/wheelchair-sprites.js (Estágio 4). caneLayer (acima) fica aqui.
 const chairLayer=new PIXI.Graphics(); camera.addChild(chairLayer); // cadeira de rodas (modo cadeirante)
