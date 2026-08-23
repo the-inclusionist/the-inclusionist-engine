@@ -25,6 +25,7 @@ import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
 import { $, toggleBtn } from './ui/dom.js';
+import { initSettingsEmpathy } from './ui/settings-empathy.js';
 import { initSettingsMotor } from './ui/settings-motor.js';
 import { initSettingsMotion, motionOpen, setSelectedPlayer as setSelectedMotionPlayer } from './ui/settings-motion.js';
 import { initSettingsTypo } from './ui/settings-typo.js';
@@ -322,7 +323,7 @@ addEventListener('keydown',(e)=>{
   if(movementOpen && dlgVis('movement')){ if(e.code==='Escape')closeMovement(); return; }
   if(motionOpen && dlgVis('animation')){ if(e.code==='Escape')motion.close(); return; }
   if(visualOpen && dlgVis('visual')){ if(e.code==='Escape')closeVisual(); return; }
-  if(empathyOpen && dlgVis('empathy')){ if(e.code==='Escape')closeEmpathy(); return; }
+  if(empathyOpen && dlgVis('empathy')){ if(e.code==='Escape')empathy.close(); return; }
   if(audioOpen && dlgVis('audio')){ if(e.code==='Escape')closeAudio(); return; }
   if(typoOpen && dlgVis('typo')){ if(e.code==='Escape')closeTypo(); return; }
   if(dlgVis('touchcfg')){ if(e.code==='Escape'){ const t=$('#touchcfg'); if(t)t.hidden=true; } return; }
@@ -2168,7 +2169,7 @@ function setModoCego(on){ if(modoCego===on)return; modoCego=on; store.setBool('i
 function setPlayerViz(i,mode){ const m=VIZ_BY_KEY[mode]||VIZ_BY_KEY.normal; players[i].viz=m.key; try{localStorage.setItem('incl_viz_p'+i,m.key);}catch(e){} _lastSharedViz=null;
   if(m.kind==='blind') setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão
   if(numPlayers<=1 && i===0){ applyVizGlobal(m.key); } else { applyVpFilters(); updateVpDots(); }
-  reflectVizButtons(); if(typeof renderVisual==='function'){ renderVisual(); renderEmpathy(); } }
+  reflectVizButtons(); if(typeof renderVisual==='function'){ renderVisual(); empathy.render(); } }
 function applyVizGlobal(mode){
   const m=VIZ_BY_KEY[mode]||VIZ_BY_KEY.normal; mode=m.key;
   setVizModeValue(mode); hcMode=(m.kind==='hcnew'); // core/state.js: valor + persistência (incl_viz) + evento
@@ -2186,8 +2187,9 @@ function applyVizGlobal(mode){
   if(m.kind==='blind'){ hideTouchControls('cegueira'); }
   updateVizIndicator(m.kind);
   if(typeof reflectVizButtons==='function') reflectVizButtons();
-  if(typeof renderVisual==='function'){ renderVisual(); renderEmpathy(); }
+  if(typeof renderVisual==='function'){ renderVisual(); empathy.render(); }
 }
+const empathy = initSettingsEmpathy({ $, srSay, store, renderVizGroup, reflectMotorEmpathy, reflectVizButtons, frontOverlay, setHearingLoss, setOneButton, setWheelchair, getOneButton: () => oneButton, getWheelchair: () => wheelchair, setEmpathyOpen: (v) => { empathyOpen = v; } }); // painel de empatia: ui/settings-empathy.ts (registra #opt-empathy, #opt-hearing, #opt-onebtn, #opt-wheelchair + restaura o grafo de audio)
 // bolinha indicadora (canto sup. dir.): branca=cegueira, verde=baixa visão; toque/clique 2× volta ao normal
 function updateVizIndicator(kind){ const el=$('#viz-indicator'); if(!el)return;
   const on=(kind==='blind'||kind==='lowvision'); el.hidden=!on;
@@ -2201,7 +2203,7 @@ let selVizPlayer=0;
 function renderVizGroup(listSel,tabsSel,modes){ const el=$(listSel); if(!el)return; if(selVizPlayer>=numPlayers)selVizPlayer=0;
   const tabs=$(tabsSel); if(tabs){ tabs.hidden=true; // E3: sem abas — cada jogador edita só o seu
     tabs.innerHTML = '';
-    tabs.querySelectorAll('button[data-vp]').forEach(b=>b.addEventListener('click',()=>{ selVizPlayer=+b.dataset.vp; renderVisual(); renderEmpathy(); })); }
+    tabs.querySelectorAll('button[data-vp]').forEach(b=>b.addEventListener('click',()=>{ selVizPlayer=+b.dataset.vp; renderVisual(); empathy.render(); })); }
   const cur=players[selVizPlayer]?players[selVizPlayer].viz:'normal';
   el.innerHTML=modes.map(m=>{ const sel=m.key===cur; return `<div class="ctrl-row"><span><strong>${m.nome}</strong><br><span class="opt-hint" style="margin:0">${m.desc}</span></span>`+
     `<button class="mode-btn${sel?' is-on':''}" role="radio" aria-checked="${sel}" data-viz="${m.key}" type="button">${sel?'✓ Selecionado':'Selecionar'}</button></div>`; }).join('');
@@ -2250,7 +2252,6 @@ function reflectOutlines(){ const f=$('#opt-outline-fg'), b=$('#opt-outline-bg')
 function setOutlineFg(v){ hcOutlineFg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outfg',hcOutlineFg);}catch(e){} _rebakeDirect(); reflectOutlines(); srSay('Contorno do primeiro plano: '+['nenhum','fino','grosso'][hcOutlineFg]+'.'); }
 function setOutlineBg(v){ hcOutlineBg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outbg',hcOutlineBg);}catch(e){} _rebakeDirect(); reflectOutlines(); srSay('Contorno do segundo plano: '+['nenhum','fino','grosso'][hcOutlineBg]+'.'); }
 { const f=$('#opt-outline-fg'); if(f)f.addEventListener('change',()=>setOutlineFg(+f.value)); const b=$('#opt-outline-bg'); if(b)b.addEventListener('change',()=>setOutlineBg(+b.value)); reflectOutlines(); }
-function renderEmpathy(){ renderVizGroup('#empathy-list','#empathy-players',VIZ_SIM); const h=$('#opt-hearing'); if(h){ toggleBtn(h,hearingLoss); h.textContent=hearingLoss?'❚❚ Ligado':'▶ Desligado'; } if(typeof reflectMotorEmpathy==='function')reflectMotorEmpathy(); }
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
   const sim=players.some(p=>isSimKind((VIZ_BY_KEY[p.viz]||{}).kind));
   const bv=$('#opt-visual'); if(bv)bv.classList.toggle('is-on',help); const be=$('#opt-empathy'); if(be)be.classList.toggle('is-on',sim||hearingLoss||oneButton||wheelchair); }
@@ -2279,14 +2280,8 @@ function frontOverlay(el){ if(!el)return; el.style.zIndex=String(++_ovZ); const 
 })();
 function openVisual(){ const ov=$('#visual'); if(!ov)return; renderVisual(); ov.hidden=false; frontOverlay(ov); visualOpen=true; const f=ov.querySelector('button[data-viz]')||ov.querySelector('button'); if(f)f.focus(); }
 function closeVisual(){ const ov=$('#visual'); if(!ov)return; ov.hidden=true; visualOpen=false; const b=$('#opt-visual'); if(b)b.focus(); }
-function openEmpathy(){ const ov=$('#empathy'); if(!ov)return; renderEmpathy(); ov.hidden=false; frontOverlay(ov); empathyOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); }
-function closeEmpathy(){ const ov=$('#empathy'); if(!ov)return; ov.hidden=true; empathyOpen=false; const b=$('#opt-empathy'); if(b)b.focus(); }
 const visualBtn=$('#opt-visual'); if(visualBtn)visualBtn.addEventListener('click',openVisual);
 const visualClose=$('#visual-close'); if(visualClose)visualClose.addEventListener('click',closeVisual);
-const empathyBtn=$('#opt-empathy'); if(empathyBtn)empathyBtn.addEventListener('click',openEmpathy);
-const empathyClose=$('#empathy-close'); if(empathyClose)empathyClose.addEventListener('click',closeEmpathy);
-const hearingBtn=$('#opt-hearing'); if(hearingBtn)hearingBtn.addEventListener('click',()=>{ setHearingLoss(!hearingLoss); renderEmpathy(); reflectVizButtons(); });
-if(store.getBool('incl_hearingloss')) setHearingLossGraph(true); // hearingLoss vive em platform/audio.js
 // Empatia motora: um-botão e cadeirante
 function reflectMotorEmpathy(){ const a=$('#opt-onebtn'); if(a){ a.classList.toggle('is-on',oneButton); a.setAttribute('aria-pressed',String(oneButton)); a.textContent=oneButton?'❚❚ Ligado':'▶ Desligado'; }
   const b=$('#opt-wheelchair'); if(b){ b.classList.toggle('is-on',wheelchair); b.setAttribute('aria-pressed',String(wheelchair)); b.textContent=wheelchair?'❚❚ Ligado':'▶ Desligado'; } reflectVizButtons(); }
@@ -2295,8 +2290,6 @@ function setWheelchair(on){ wheelchair=on; store.setBool('incl_wheelchair',on);
   players.forEach(p=>{ if(on && p.activePower!=='fly' && p.activePower!=='turbo') p.activePower='off'; if(on) p.owned=p.owned.filter(k=>k==='fly'||k==='turbo'); showPower(p); });
   setupExtras(); rebuildCoins(); buildWcGeom(); buildRamps(); buildElevators(); reflectMotorEmpathy(); // só voo/super-corrida; moedas no chão; escada/trampolim viram elevador; rampas+pontes; lava vira chão
   srSay('Modo cadeirante '+(on?'ligado: sem pulo; rampas e elevadores no lugar de degraus e escada; moedas no chão; só voo e super-corrida.':'desligado.')); }
-const oneBtn=$('#opt-onebtn'); if(oneBtn)oneBtn.addEventListener('click',()=>setOneButton(!oneButton));
-const wheelBtn=$('#opt-wheelchair'); if(wheelBtn)wheelBtn.addEventListener('click',()=>setWheelchair(!wheelchair));
 // bolinha indicadora: duplo toque/clique → volta às cores normais (em cegueira é a única saída visível)
 (function vizIndicator(){ const el=$('#viz-indicator'); if(!el)return; let last=-9999;
   el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); const t=e.timeStamp||0; if(t-last<450){ setPlayerViz(0,'normal'); last=-9999; srSay('Cores normais reativadas.'); } else last=t; }); })();
@@ -2604,7 +2597,7 @@ function setPhase(p){
 // NAVEGAÇÃO UNIVERSAL de menus: qualquer menu aberto (pausa OU submenu) é navegável por up/down/left/right/
 // sim/não — as MESMAS ações valem para teclado, controle, olhos e fala. sim = confirma/alterna/entra;
 // não = volta ao menu anterior (na raiz, volta ao jogo = Continuar). left/right ajustam select/slider.
-const OVERLAY_CLOSE={ audio:()=>closeAudio(), movement:()=>closeMovement(), options:()=>closeOptions(), animation:()=>motion.close(), visual:()=>closeVisual(), empathy:()=>closeEmpathy(), touchcfg:()=>closeTouchCfg(), help:()=>closeHelp(), typo:()=>closeTypo() };
+const OVERLAY_CLOSE={ audio:()=>closeAudio(), movement:()=>closeMovement(), options:()=>closeOptions(), animation:()=>motion.close(), visual:()=>closeVisual(), empathy:()=>empathy.close(), touchcfg:()=>closeTouchCfg(), help:()=>closeHelp(), typo:()=>closeTypo() };
 // Ações do menu de pausa (compartilhadas pelos menus por tela). Ao abrir um submenu de a11y, escopa ao
 // jogador que agiu (pauseActor) — o diálogo abre na aba dele (Etapa 3 remove as abas).
 const pauseActs={ resume:()=>setPhase('playing'),
@@ -2622,7 +2615,7 @@ const pauseActs={ resume:()=>setPhase('playing'),
   motora:()=>{ motor.setSelPlayer(pauseActor); openMovement(); },
   anim:()=>{ setSelectedMotionPlayer(pauseActor); motion.open(); },
   visual:()=>{ selVizPlayer=pauseActor; openVisual(); },
-  empatia:()=>{ selVizPlayer=pauseActor; openEmpathy(); }, print:()=>printMode(), quit:()=>quitGame(), ajuda:()=>openHelp() };
+  empatia:()=>{ selVizPlayer=pauseActor; empathy.open(); }, print:()=>printMode(), quit:()=>quitGame(), ajuda:()=>openHelp() };
 // Roteamento de input por jogador: cada tecla é do jogador dono dela (kbFor). Genéricas → jogador 0.
 function actionOf(code,pi){ const m=kbFor(pi); for(const a in m){ if(m[a]&&m[a].indexOf(code)>=0)return a; } return null; }
 function whichPlayer(code){ for(let i=0;i<numPlayers;i++){ if(actionOf(code,i))return i; } return -1; }
