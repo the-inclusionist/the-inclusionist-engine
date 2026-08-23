@@ -65,6 +65,7 @@ import { initTextures, SHAPE_TEX, letterTexture, pupTexFor } from './render/text
 import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, coinTexFor, directSpriteCanvas, clearWorldTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
 import { initCoinSpawning, rebuildCoins, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
 import { initKeyboardRuntime } from './input/keyboard-runtime.js';
+import { initTouchBindings } from './input/touch-bindings.js'; // D3-b: gesto de toque -> entrada (traducao + geometria)
 import { initKeydown } from './input/keydown.js'; // D2-a: o roteador de teclado (a cadeia de precedencia) // Onda A: esquema de teclas por jogador
 import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geometria fisica do pad + config de toque
 import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad API + assistente de mapeamento
@@ -1365,67 +1366,25 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
 // e so o icamento faz isso funcionar — era assim no original. O corpo so toca touchCtl na hora da chamada.
 function hideTouchControls(reason){ touchCtl.hideTouchControls(reason); }
 function showTouchControls(){ touchCtl.showTouchControls(); }
-(function touchSetup(){
-  const tc=$('#touch-controls'); if(!tc)return;
-  // alternancia por modalidade: toque/clique MOSTRA; teclado/controle OCULTA (hideTouchControls).
-  if(/[?&]touch=1/.test(location.search)){ showTouchControls(); }
-  addEventListener('pointerdown',()=>{ if(attractCtl.onInput()){ return; } showTouchControls(); }, true); // toque revela (e encerra a demo)
-  addEventListener('touchstart',()=>{ showTouchControls(); }, {capture:true,passive:true});
-  const codeFor=(act)=>{ const c=kbRuntime.controlsState().controls; return (c[act]&&c[act][0])||null; }; // mapeia p/ a 1ª tecla de P1 (remapeável)
-  const press=(act)=>{ const c=codeFor(act); if(!c)return; if(!keys.has(c)){ keys.add(c);
-    players.forEach(p=>{ if(!p.ctrl)return;
-      if(act==='jump'&&p.ctrl.jump.includes(c))p.jumpEdge=true;
-      if(act==='run'&&p.ctrl.run.includes(c))p.runEdge=true;
-      if(act==='left'&&p.ctrl.left.includes(c))p.leftEdge=true;   // alternância: tap na direção
-      if(act==='right'&&p.ctrl.right.includes(c))p.rightEdge=true;
-      if(act==='swap'&&p.ctrl.swap&&p.ctrl.swap.includes(c))p.swapEdge=true;
-      if(act==='especial'&&p.ctrl.especial&&p.ctrl.especial.includes(c))p.specialEdge=true; }); }
-    if(act==='jump')hideTips(); };
-  const release=(act)=>{ const c=codeFor(act); if(c)keys.delete(c); };
-  const doTouch=(a,on)=>{ if(a==='pause'){ if(on)togglePause(); return; } on?press(a):release(a); }; // ação mapeável (função de cada botão)
-  tc.querySelectorAll('.touch-btn').forEach(b=>{ const slot='b'+b.dataset.btn;  // função vem do touchMap (remapeável)
-    const down=(e)=>{ e.preventDefault(); doTouch(touchCtl.getTouchMap()[slot],true); };
-    const up=(e)=>{ e.preventDefault(); doTouch(touchCtl.getTouchMap()[slot],false); };
-    b.addEventListener('pointerdown',down); b.addEventListener('pointerup',up);
-    b.addEventListener('pointerleave',up); b.addEventListener('pointercancel',up);
-    b.addEventListener('contextmenu',(e)=>e.preventDefault());
-  });
-  // START (enter): faz a função mapeada (padrão pausar); se for ação momentânea, pressiona e solta.
-  const startBtn=$('#touch-start'); if(startBtn)startBtn.addEventListener('click',()=>{ const a=touchMap.start; if(a==='pause'){ togglePause(); } else { doTouch(a,true); setTimeout(()=>doTouch(a,false),140); } });
-  // joystick digital: base (círculo grande) + manopla (círculo menor) que desliza p/ a direção tocada → 8 direções
-  const stick=$('#touch-stick'), knob=stick&&stick.querySelector('.touch-knob');
-  if(stick&&knob){
-    let pid=null; // deslocamento (R) e zona-morta (DEAD) vêm de touchCtl.getStickTravelPx()/touchCtl.getStickDeadPx() (mm, config em A12e motora)
-    const dirState={left:false,right:false,up:false,down:false};
-    const setDir=(d,on)=>{ if(dirState[d]===on)return; dirState[d]=on; doTouch(touchCtl.getTouchMap()[d],on); }; // direção física → função mapeada
-    const move=(px,py)=>{ const R=touchCtl.getStickTravelPx(), DEAD=touchCtl.getStickDeadPx(); const r=stick.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
-      let dx=px-cx, dy=py-cy; const m=Math.hypot(dx,dy)||1; const f=m>R?R/m:1;
-      knob.style.transform=`translate(${dx*f}px,${dy*f}px)`;
-      setDir('left',dx<-DEAD); setDir('right',dx>DEAD); setDir('up',dy<-DEAD); setDir('down',dy>DEAD); };
-    const reset=()=>{ knob.style.transform='translate(0,0)'; ['left','right','up','down'].forEach(d=>setDir(d,false)); pid=null; };
-    stick.addEventListener('pointerdown',(e)=>{ e.preventDefault(); pid=e.pointerId; try{stick.setPointerCapture(pid);}catch(_){} move(e.clientX,e.clientY); });
-    stick.addEventListener('pointermove',(e)=>{ if(pid!==e.pointerId)return; e.preventDefault(); move(e.clientX,e.clientY); });
-    const end=(e)=>{ if(pid!==e.pointerId)return; e.preventDefault(); reset(); };
-    stick.addEventListener('pointerup',end); stick.addEventListener('pointercancel',end);
-    stick.addEventListener('lostpointercapture',reset); stick.addEventListener('contextmenu',(e)=>e.preventDefault());
-  }
-  // D-pad em CRUZ (estilo alternativo ao analógico): superfície tocável dividida em 8 setores por hit-test
-  // (dá diagonais como um D-pad físico). Zona-morta central evita disparo por encostar no meio.
-  const cross=$('#touch-cross');
-  if(cross){ const arms={up:cross.querySelector('.dpad-up'),down:cross.querySelector('.dpad-down'),left:cross.querySelector('.dpad-left'),right:cross.querySelector('.dpad-right')};
-    const cst={left:false,right:false,up:false,down:false}; let cpid=null;
-    const cset=(d,on)=>{ if(cst[d]===on)return; cst[d]=on; doTouch(touchCtl.getTouchMap()[d],on); if(arms[d])arms[d].classList.toggle('on',on); }; // direção física → função mapeada
-    const at=(px,py)=>{ const r=cross.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2; const dx=px-cx, dy=py-cy; const dead=r.width*0.18; // ~18% do lado = miolo neutro
-      cset('left',dx<-dead); cset('right',dx>dead); cset('up',dy<-dead); cset('down',dy>dead); };
-    const crst=()=>{ ['left','right','up','down'].forEach(d=>cset(d,false)); cpid=null; };
-    cross.addEventListener('pointerdown',(e)=>{ e.preventDefault(); cpid=e.pointerId; try{cross.setPointerCapture(cpid);}catch(_){} at(e.clientX,e.clientY); });
-    cross.addEventListener('pointermove',(e)=>{ if(cpid!==e.pointerId)return; e.preventDefault(); at(e.clientX,e.clientY); });
-    const cend=(e)=>{ if(cpid!==e.pointerId)return; e.preventDefault(); crst(); };
-    cross.addEventListener('pointerup',cend); cross.addEventListener('pointercancel',cend);
-    cross.addEventListener('lostpointercapture',crst); cross.addEventListener('contextmenu',(e)=>e.preventDefault());
-  }
-  window.__incl.showTouch=()=>{ tc.hidden=false; }; // p/ testes em desktop
-})();
+/* Amarras do toque -> input/touch-bindings.ts (D3-b). LAZY de proposito: `attractCtl` e `const` declarado
+   ABAIXO desta linha (TDZ). `keys` e `const` mutado in place -> entra por VALOR; showTouchControls/hideTips/
+   togglePause sao declaracoes icadas e ja existem aqui, entao entram por referencia direta.
+   ATENCAO: `getStartAction` preserva VERBATIM o `touchMap.start` do original — e `touchMap` NAO existe neste
+   escopo. O botao START do pad esta MORTO hoje (ReferenceError no clique, reproduzido no navegador); o corte
+   isola o defeito nesta unica linha para o conserto ser uma palavra, em commit proprio. */
+const touchBindings = initTouchBindings({
+  $, win: window, getSearch: () => location.search,
+  getControls: () => kbRuntime.controlsState().controls,
+  getPlayers: () => players, heldKeys: keys,
+  attractOnInput: () => attractCtl.onInput(),
+  showTouchControls, hideTips, togglePause,
+  getTouchMap: () => touchCtl.getTouchMap(),
+  getStartAction: () => touchMap.start,
+  getStickTravelPx: () => touchCtl.getStickTravelPx(),
+  getStickDeadPx: () => touchCtl.getStickDeadPx(),
+});
+touchBindings.attach();
+window.__incl.showTouch = () => touchBindings.revealForTests(); // p/ testes em desktop
 
 /* ===================== ATTRACT: cria o controlador (deps já definidas) → game/attract.ts ===================== */
 const attractCtl = createAttract({
