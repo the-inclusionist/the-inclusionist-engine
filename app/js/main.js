@@ -1072,6 +1072,16 @@ function setWheelchair(on){ wheelchair=on; store.setBool('incl_wheelchair',on);
 // bolinha indicadora: duplo toque/clique → volta às cores normais (em cegueira é a única saída visível)
 (function vizIndicator(){ const el=$('#viz-indicator'); if(!el)return; let last=-9999;
   el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); const t=e.timeStamp||0; if(t-last<450){ setPlayerViz(0,'normal'); last=-9999; srSay('Cores normais reativadas.'); } else last=t; }); })();
+// O pad de toque nasce AQUI, e nao 50 linhas abaixo, porque a linha seguinte pode precisar dele: aplicar o
+// modo de visao no boot passa por render/viz-setters, que esconde os controles de toque quando o modo e
+// cegueira. O envolucro `hideTouchControls` e declaracao icada, mas o corpo dele dereferencia `touchCtl`, e
+// icar a funcao nao iça a constante: com `incl_viz_p0=blind` salvo, o boot morria inteiro em TDZ — tela
+// branca, sem mensagem, e so voltava limpando o armazenamento. Mesma doenca que o simNaoGlyphs ja teve neste
+// arquivo; ali a cura foi ler do armazenamento, aqui e existir antes de quem chama.
+const touchCtl = initTouch({ $, srSay, store, root: document.documentElement, isMobile,
+  viewport: () => ({ w: window.innerWidth, h: window.innerHeight }),
+  frontOverlay, onPadDesignApplied: () => { if(typeof renderPauseLegend==='function') renderPauseLegend(); } });
+// (o proprio initTouch ja aplica o desenho salvo no fim da sua inicializacao)
 loadPlayerA11y(players[0],0); // carrega viz/easy/alternância persistidos do jogador 1 (migra chaves antigas)
 vizReady=true; applyVizGlobal(players[0].viz); // estado inicial (solo)
 
@@ -1121,10 +1131,6 @@ function renderPauseLegend(){ const g=simNaoGlyphs();
 //  deslocamento 4,5mm. Faixa criança↔adulto estreita: crianças NÃO devem ir a alvos minúsculos.
 // Geometria fisica do pad (mm -> px), presets, direcional e o mapa de toque migraram para input/touch.ts
 // (Onda A). As dimensoes de tela entram INJETADAS: o modulo nunca le window.innerWidth.
-const touchCtl = initTouch({ $, srSay, store, root: document.documentElement, isMobile,
-  viewport: () => ({ w: window.innerWidth, h: window.innerHeight }),
-  frontOverlay, onPadDesignApplied: () => { if(typeof renderPauseLegend==='function') renderPauseLegend(); } });
-// (o proprio initTouch ja aplica o desenho salvo no fim da sua inicializacao)
 addEventListener('gamepadconnected', (e)=>{ try{ const d=touchCtl.applyPadDesign(padLayoutFromId(e.gamepad.id)); const sel=$('#pad-design'); if(sel)sel.value=d; srSay('Controle conectado: layout '+d+'.'); }catch(err){} }); // A2: layout pelo id do controle
 const padDesignSel=$('#pad-design'); if(padDesignSel){ padDesignSel.value=touchCtl.getPadDesign(); padDesignSel.addEventListener('change',()=>{ touchCtl.applyPadDesign(padDesignSel.value); srSay('Desenho dos botões: '+padDesignSel.value+'.'); }); } // A4: escolha manual
 // JOGAR COM OS OLHOS: eyeMode/eyeSet/onGaze/startEyeControl/stopEyeControl/loadWebGazer → ui/webcam.js (Estágio 4, Tier 1).
