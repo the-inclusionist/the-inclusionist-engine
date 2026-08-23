@@ -12,14 +12,13 @@ import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
 import { isValidActivityId, DEFAULT_ACTIVITY_ID } from './game/activities-registry.js';
 import { puTaken, takePu } from './game/powerups.js'; // Estágio 4 (Tier 2): predicados de coleta de power-up
-import { ELEV_SPEED, buildElevators, elevAt, getElevShafts, initElevators } from './game/elevators.js'; // Estágio 4 (Tier 2): geometria de elevador (cadeirante)
-import { fmtFrac, fracGraphic, fracSpeak, speakChoice } from './game/fractions.js'; // Estágio 4 (Tier 2): matemática/render de frações
-import { BRAILLE, brailleText } from './game/braille.js'; // Estágio 4 (Tier 2): cela braille + fala (atividade cego)
-import { SOMASUB_SHAPES, somaSubName, SILABAS_WORDS, SILABA_POOL, WORD_INITIALS } from './game/activity-content.js'; // Estágio 4 (Tier 2): dados das atividades (formas + sílabas)
-import { LETTER_NAME, soletra, ferreiroDistractors } from './game/literacy-distractors.js'; // Estágio 4 (Tier 2): nomes de letra + distratores pré-silábicos
-import { JUICE, saveJuice, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, initFx, tickHitstop, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
+import { buildElevators, elevAt, getElevShafts, initElevators } from './game/elevators.js'; // Estágio 4 (Tier 2): geometria de elevador (cadeirante)
+import { fmtFrac, fracGraphic, speakChoice } from './game/fractions.js'; // Estágio 4 (Tier 2): matemática/render de frações
+import { brailleText } from './game/braille.js'; // Estágio 4 (Tier 2): cela braille + fala (atividade cego)
+import { SOMASUB_SHAPES, WORD_INITIALS } from './game/activity-content.js'; // Estágio 4 (Tier 2): dados das atividades (formas + sílabas)
+import { JUICE, saveJuice, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, initFx, tickHitstop, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
 import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
-import { isGroundType, worldCanvas, worldToTexture, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
+import { worldCanvas, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
 import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
@@ -33,9 +32,9 @@ import { initSettingsMotion, motionOpen, setSelectedPlayer as setSelectedMotionP
 import { initSettingsTypo } from './ui/settings-typo.js';
 import { initTitle } from './ui/title.js';
 import { createTitleScene } from './render/title-scene.js'; // Fase 2.27: atalho de querySelector (Tier 1)
-import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, VIZ_CYCLE } from './render/viz-modes.js'; // Fase 2: modos visuais de a11y (dados)
+import { VIZ_MODES, VIZ_BY_KEY, VIZ_CYCLE } from './render/viz-modes.js'; // Fase 2: modos visuais de a11y (dados)
 import { PAD_DESIGNS } from './input/devices.js'; // Fase 2: rótulos de gamepad/toque (dados)
-import { keys, padCur, padPrevAct, padPrevStart, PAD_DEAD, held } from './input/state.js'; // Fase 2.22: estado de input + held
+import { keys, padCur, padPrevAct, held } from './input/state.js'; // Fase 2.22: estado de input + held
 import { audioCtx, ensureAC, SFX, soundOn, volume, setSoundOn, setVolume, audioOut, hearingLoss, setHearingLossGraph, setMasterMuted, audioCat, initAudioMixer, catNode, setCatGain, tone, tonePan, noiseBuffer, noiseHit, _footCount } from './platform/audio.js'; // Fase 2: base + mestre + mixer + sínteses (oscilador + ruído)
 import { gameSay } from './platform/speech.js';
 import { createAudioJingles } from './platform/audio-jingles.js'; // Tier 2 (áudio r1): jingles de vitória/enigma/fogos
@@ -44,18 +43,16 @@ import { createAudioNav } from './platform/audio-nav.js'; // Tier 2 (áudio r3):
 import { createAudioAmbient } from './platform/audio-ambient.js'; // Tier 2 (áudio r4): trilha de ambiente + trovão
 import { createTts } from './platform/tts.js'; // Tier 2 (#38): narração por voz (Piper neural lazy + fallback Web Speech)
 import { SPR, TEX_IDLE, TEX_WALK, TEX_RUN, FLAVORS, TEX_JUMP_UP, TEX_JUMP_DOWN, TEX_CLIMB, TEX_FLY, TEX_CLING_WALL, TEX_CLING_CEIL, TEX_SWIM, TEX_SWIMIDLE, initCharacterSprites } from './render/sprites.js';
-import { makeCanvas, tex, pixDisc } from './render/canvas.js';
+import { makeCanvas, tex } from './render/canvas.js';
 import { createSceneSky } from './render/scene-sky.js'; // Tier 2 (#43): céu — nuvens (#21) + decor viva da v3
-import { coinCanvas, coinTexture, treeCanvas, treeTexture, powerupCanvas } from './render/props.js';
-import { outlineCanvas } from './render/sprite-fx.js'; // Fase 2: voz do letramento (pt-BR sempre-ativa)
+import { coinCanvas, treeCanvas } from './render/props.js';
 import * as weather from './render/weather.js'; // Onda A: clima visual (chuva/trovao/clarao)
 import { lqFilter, setLq, getLqT, initLqFilter } from './render/lq-filter.js'; // Onda A: realce de contraste L->Q
 import * as traffic from './game/traffic.js'; // Onda A: carros + semaforo da rua da frente
 import * as life from './game/life.js'; // Onda A: vida ambiente (pombos/gatos/caes/adultos)
 import { initSceneCity } from './render/scene-city.js'; // Onda A: deco da Cidade + fx de tiles vivos
 import { initTextures, SHAPE_TEX, letterTexture, pupTexFor } from './render/textures.js'; // Onda A: texturas de moeda/forma/letra + power-up
-import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, worldTexFor, coinTexFor, directBgTexture,
-  directSpriteCanvas, directSpriteTexture, clearWorldTexCache, clearCoinTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
+import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, coinTexFor, directSpriteCanvas, clearWorldTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
 import { initCoinSpawning, rebuildCoins, addCoinsForOwner, respawnCoinsForOwner, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
 import { initKeyboardRuntime } from './input/keyboard-runtime.js'; // Onda A: esquema de teclas por jogador
 import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geometria fisica do pad + config de toque
@@ -85,15 +82,15 @@ const INCL_VERSION = String((typeof __BUILD__ !== 'undefined' && __BUILD__.versi
 
 /* ===================== constantes ===================== */
 // Constantes puras extraídas para core/constants.js (modularização Fase B).
-import { LOGICAL_W, LOGICAL_H, TILE, COIN_TARGET, TUNE, ANIM, EASY, TILE_COLOR } from './core/constants.js';
+import { LOGICAL_W, LOGICAL_H, TILE, COIN_TARGET, TUNE, ANIM, EASY } from './core/constants.js';
 import { Z } from './core/layers.js'; // #69/ADR-0020: ordem-z canônica (nomeada) do render
 import { rnd, randInt, shuffle } from './core/rng.js'; // Fase 2.26: RNG semeado (Tier 1)
-import { initCollision, caneBlockPx, isSolidType, tileAt, solidTile, solidAt, surfTop, isWcRampRiser, rampSurfaceY } from './core/collision.js'; // Estágio 4: colisão de grade (determinística; ctx por closures)
-import { BOX, SPAWN_X, SPAWN_Y, makePlayer, jumpVel, isBouncyGroundBelow, touchingWall, clingSides, firstClingSide, spiderReattach, wrapConvex } from './game/player.js'; // Estágio 4: entidade + geometria de colisão do jogador
+import { initCollision, tileAt, solidAt, surfTop } from './core/collision.js'; // Estágio 4: colisão de grade (determinística; ctx por closures)
+import { BOX, SPAWN_X, SPAWN_Y, makePlayer } from './game/player.js'; // Estágio 4: entidade + geometria de colisão do jogador
 import { initCoins, findCoinCandidates, pickCoins, takeCoin } from './game/coins.js'; // Estágio 4: posicionamento dos coletáveis (pools vêm daqui)
 import { srSay, srAlert, setVlibrasSay } from './core/a11y-sr.js'; // Estágio 4 (Tier 1): anúncios p/ leitor de tela (+ Libras injetado)
-import { CRT, crtScanVars, applyCrt } from './render/crt.js'; // Estágio 4 (Tier 1): estética CRT (scanlines/vinheta/cantos)
-import { initMinimap, markSeen, redrawMinimapIfDirty, drawMinimapPlayer, resetMinimap, setMinimapCorner, setMinimapVisible, getMinimap, minimapSeenCount } from './render/minimap.js'; // Estágio 4 (Tier 1): minimapa + fog-of-war
+import { CRT, applyCrt } from './render/crt.js'; // Estágio 4 (Tier 1): estética CRT (scanlines/vinheta/cantos)
+import { initMinimap, markSeen, redrawMinimapIfDirty, drawMinimapPlayer, resetMinimap, setMinimapVisible, getMinimap, minimapSeenCount } from './render/minimap.js'; // Estágio 4 (Tier 1): minimapa + fog-of-war
 import { vlibrasSay, vlibrasOpen, toggleLibras, vlTick, librasOpen, LIBRAS_RESERVE, setOnLibrasChange } from './ui/vlibras.js'; // Estágio 4 (Tier 1): intérprete VLibras (modo pessoa surda)
 import { layout } from './ui/layout.js'; // Estágio 4 (Tier 1): escala do jogo (múltiplo inteiro de 320×180 em px reais)
 import { eyeMode, setEyeMode, startEyeControl, stopEyeControl, loadWebGazer } from './ui/webcam.js'; // Estágio 4 (Tier 1): jogar com os olhos (WebGazer)
