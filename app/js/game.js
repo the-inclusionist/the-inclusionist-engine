@@ -6,7 +6,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, setPhaseValue, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players } from './core/state.js'; // estado (as 8 mega-variáveis)
+import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players } from './core/state.js'; // estado (as 8 mega-variáveis)
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -58,7 +58,9 @@ import { initKeyboardRuntime } from './input/keyboard-runtime.js'; // Onda A: es
 import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geometria fisica do pad + config de toque
 import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad API + assistente de mapeamento
 import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
-import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js'; // Onda A: menu de pausa por tela + barra de icones de a11y
+import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js';
+import { initShell } from './ui/shell.js'; // C3: a casca — em que TELA o jogo esta (fase, pausa, legenda do titulo)
+import { initMenuNav } from './ui/menu-nav.js'; // C3: navegacao universal de menus (teclado/controle/olhos/fala) // Onda A: menu de pausa por tela + barra de icones de a11y
 import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/abandono/selo de espera)
 import { screenGrid } from './core/screens.js'; // grade de telas (fonte unica)
 import { initPhysics, stepPlayer as stepPhysics } from './game/physics.js'; // B1: fisica do jogador (ancorada nas trajetorias-ouro)
@@ -1370,25 +1372,38 @@ setInterval(vlTick, 250);
 layout(); requestAnimationFrame(layout); setTimeout(layout, 1500);
 window.__incl.layout=layout; window.__incl.get_librasOpen=()=>librasOpen;
 
-/* ===================== E14: shell — título/splash + pausa ===================== */
-function setPhase(p){
-  setPhaseValue(p); // core/state.js: só o valor + evento; a reação de UI abaixo fica aqui
-  if(p!=='playing')hideTouchControls(); // menu ativo (título/pausa) = sem controle virtual
-  // GAG: na pausa, silencia TODO o som do jogo (loops de ambiente/chuva inclusive) — o áudio volta ao retomar.
-  setMasterMuted(p!=='playing'); // nó mestre em platform/audio.js: silencia na pausa/título
-  const t=$('#title-overlay'), pa=$('#pause-overlay');
-  if(t)t.hidden = p!=='title';
-  if(pa)pa.hidden = true; // pausa GLOBAL aposentada (Etapa 2): agora é uma por tela (vpPause)
-  vpPause.forEach(sp=>{ sp.hidden = p!=='paused'; });
-  const tc=$('#touch-controls'); // controles de toque somem na pausa (o menu por tela é clicável direto) e voltam ao retomar
-  if(tc){ if(p==='paused'){ if(!tc.hidden){ tc.dataset.wasOn='1'; tc.hidden=true; } }
-    else if(p==='playing'){ if(tc.dataset.wasOn==='1' && numPlayers<=1)tc.hidden=false; delete tc.dataset.wasOn; }
-    else { tc.hidden=true; delete tc.dataset.wasOn; } }
-  const pb=$('#btn-pause'); if(pb)pb.setAttribute('aria-pressed',String(p==='paused'));
-  if(p==='playing'){ const gr=$('#game-region'); if(gr)gr.focus(); }
-  else if(p==='paused'){ if(typeof pauseSelect==='function')pauseSelect(); if(typeof reflectPauseIcons==='function')reflectPauseIcons(); }
-  else if(p==='title'){ updateTitleLegend(); const b=$('#tm-main button'); if(b)b.focus(); }
-}
+/* ===================== E14: shell — título/splash + pausa -> ui/shell.ts (C3) =====================
+   setPhase/pauseActs/pauseSelect/printMode/togglePause/updateTitleLegend migraram. O que fica aqui sao
+   ENVELOPES ICADOS (`function`), e nao `const`: `setPhase` ja esta nos ctx de game/session, input/gamepad,
+   game/attract e ui/activities-menu, montados em outros pontos do arquivo — so o icamento faz aquelas quatro
+   fiacoes continuarem valendo sem serem tocadas. Mesmo padrao de hideTouchControls/restartGame/quitGame.
+   Tudo o que a tabela de pausa chama entra como CALLBACK, nao como valor: motor/motion/empathy/hud e
+   selVizPlayer sao `const`/`let` declarados ABAIXO, e so a resolucao na hora da chamada os tira da TDZ. */
+const shell = initShell({
+  $, win: window, setMasterMuted, srSay, srAlert,
+  getPauseScreens: () => vpPause,                  // `let` REATRIBUIDO por buildGameHud -> getter
+  getPauseActor: () => pauseActor,                 // `let` com seis leitores -> getter
+  hideTouchControls: () => hideTouchControls(),
+  reflectPauseIcons: () => reflectPauseIcons(),
+  getGamepads: () => (navigator.getGamepads ? navigator.getGamepads() : []),
+  isTouchMode: () => document.body.classList.contains('touch-mode'),
+  padLayoutFromId, padMapFor: (id) => gamepadApi.padMapFor(id), kbFor, keyName,
+  nextLetra: () => { letraIdx=(letraIdx+1)%LETRA.length; applyLetra(true); }, // MESMA expressao do #opt-letra
+  setQuizLevel, getQuizLevel: () => quizLevel,
+  openTypo: () => openTypo(), openAudio: () => openAudio(), openMovement: () => openMovement(),
+  openVisual: () => openVisual(), openHelp: () => openHelp(), quitGame: () => quitGame(),
+  fitsN: (n) => fitsN(n), joinPlayer: (padIdx) => joinPlayer(padIdx),
+  showWaitingBadge: (i) => hud.showWaitingBadge(i),
+  setMotorPlayer: (i) => motor.setSelPlayer(i),
+  setMotionPlayer: (i) => setSelectedMotionPlayer(i),
+  openMotion: () => motion.open(), openEmpathy: () => empathy.open(),
+  setSelVizPlayer: (i) => { selVizPlayer = i; },
+});
+function setPhase(p){ shell.setPhase(p); }
+function togglePause(){ shell.togglePause(); }
+function pauseSelect(){ shell.pauseSelect(); }
+function printMode(){ shell.printMode(); }
+function updateTitleLegend(){ shell.updateTitleLegend(); }
 // NAVEGAÇÃO UNIVERSAL de menus: qualquer menu aberto (pausa OU submenu) é navegável por up/down/left/right/
 // sim/não — as MESMAS ações valem para teclado, controle, olhos e fala. sim = confirma/alterna/entra;
 // não = volta ao menu anterior (na raiz, volta ao jogo = Continuar). left/right ajustam select/slider.
@@ -1403,107 +1418,39 @@ overlays.register('audio',    { close:()=>closeAudio(),    isOpen:()=>audioOpen 
 overlays.register('typo',     { close:()=>closeTypo(),     isOpen:()=>typoOpen });
 overlays.register('touchcfg', { close:()=>touchCtl.closeTouchCfg() });
 overlays.register('help',     { close:()=>closeHelp() });
-// Ações do menu de pausa (compartilhadas pelos menus por tela). Ao abrir um submenu de a11y, escopa ao
-// jogador que agiu (pauseActor) — o diálogo abre na aba dele (Etapa 3 remove as abas).
-const pauseActs={ resume:()=>setPhase('playing'),
-  letra:()=>{ letraIdx=(letraIdx+1)%LETRA.length; applyLetra(true); },
-  nivel:()=>setQuizLevel(quizLevel%5+1,true), // L3: cicla 1..5
-  tipo:()=>openTypo(),
-  addplayer:()=>{ // R-splash 2: só AUMENTA (nunca diminui); a tela nova ESPERA um botão do jogador entrar
-    if(numPlayers>=4){ srAlert('Máximo de 4 jogadores.'); return; }
-    if(!fitsN(numPlayers+1)){ srAlert('Não cabe outra tela nesta janela — aumente a janela ou use tela cheia.'); return; }
-    if(joinPlayer(null)){ const p=players[numPlayers-1]; p.waiting=true;
-      hud.showWaitingBadge(p.i);
-      setPhase('playing'); srAlert('Jogador '+(p.i+1)+': aperte um botão para entrar.'); } },
-  audio:()=>openAudio(),
-  motora:()=>{ motor.setSelPlayer(pauseActor); openMovement(); },
-  anim:()=>{ setSelectedMotionPlayer(pauseActor); motion.open(); },
-  visual:()=>{ selVizPlayer=pauseActor; openVisual(); },
-  empatia:()=>{ selVizPlayer=pauseActor; empathy.open(); }, print:()=>printMode(), quit:()=>quitGame(), ajuda:()=>openHelp() };
+const pauseActs = shell.pauseActs; // tabela de acoes dos .pm-btn -> ui/shell.ts (ui/pause-icons le por getPauseActs)
 // Roteamento de input por jogador: cada tecla é do jogador dono dela (kbFor). Genéricas → jogador 0.
 const actionOf = (code,pi) => kbRuntime.actionOf(code,pi);
 const whichPlayer = (code) => kbRuntime.whichPlayer(code);
-function sharedDialogOpen(){ const ov=[...document.querySelectorAll('#game-region .overlay')].filter(o=>!o.hidden); if(!ov.length)return null; ov.sort((a,b)=>(+getComputedStyle(a).zIndex||0)-(+getComputedStyle(b).zIndex||0)); return ov[ov.length-1]; }
-function menuItems(menu){ const card=menu.querySelector('.overlay__card, .pause-card')||menu; return [...card.querySelectorAll('button:not([disabled]), select:not([disabled]), input[type=range]:not([disabled])')].filter(el=>el.offsetParent!==null); }
-function menuFocus(menu){ if(!menu)return; const it=menuItems(menu); if(it.length){ const cur=it.indexOf(document.activeElement); (cur>=0?it[cur]:it[0]).focus(); } }
-function dialogBack(menu){ if(!overlays.closeById(menu.id))menu.hidden=true; menuFocus(sharedDialogOpen()); }
-function navDialog(menu,k){ const items=menuItems(menu); if(!items.length)return; let idx=items.indexOf(document.activeElement); if(idx<0){ idx=0; items[0].focus(); } const cur=items[idx];
-  if(k.no){ dialogBack(menu); return; }
-  if(k.left||k.right){ const d=k.right?1:-1;
-    if(cur.tagName==='SELECT'){ cur.selectedIndex=Math.max(0,Math.min(cur.options.length-1,cur.selectedIndex+d)); cur.dispatchEvent(new Event('change',{bubbles:true})); return; }
-    if(cur.tagName==='INPUT'){ const st=+cur.step||1; cur.value=Math.max(+cur.min,Math.min(+cur.max,(+cur.value)+d*st)); cur.dispatchEvent(new Event('input',{bubbles:true})); return; }
-    idx=Math.max(0,Math.min(items.length-1,idx+d)); items[idx].focus(); return; }
-  if(k.up||k.down){ idx=Math.max(0,Math.min(items.length-1,idx+(k.down?1:-1))); items[idx].focus(); return; }
-  if(k.yes){ if(cur.tagName==='SELECT'){ cur.selectedIndex=(cur.selectedIndex+1)%cur.options.length; cur.dispatchEvent(new Event('change',{bubbles:true})); return; } if(cur.tagName==='INPUT')return; cur.click(); return; } }
-function pauseSetSel(menu,el){ if(!el)return; menu.querySelectorAll('.pm-sel,.pi-sel').forEach(b=>b.classList.remove('pm-sel','pi-sel')); el.classList.add(el.classList.contains('pi-btn')?'pi-sel':'pm-sel');
-  const cap=menu.querySelector('.pause-icons-cap'); if(cap){ if(el.classList.contains('pi-btn')){ cap.textContent=el.getAttribute('aria-label')||''; } else cap.textContent=''; } }
-function navPause(menu,pi,k){ const icons=[...menu.querySelectorAll('.pi-btn')], items=[...menu.querySelectorAll('.pm-btn')];
-  if(k.no){ setPhase('playing'); return; } // "não" na raiz → volta ao jogo (retoma todos)
-  let cur=menu.querySelector('.pi-sel')||menu.querySelector('.pm-sel'); if(!cur)cur=items[0];
-  if(k.yes){ pauseActor=pi; if(cur)cur.click(); return; }
-  const cols=2;
-  if(cur.classList.contains('pi-btn')){ // zona dos ícones (linha horizontal)
-    let idx=icons.indexOf(cur); if(idx<0)idx=0;
-    if(k.left)idx=Math.max(0,idx-1); else if(k.right)idx=Math.min(icons.length-1,idx+1);
-    else if(k.down){ pauseSetSel(menu, items[0]); return; } // desce da barra → menu (Continuar)
-    pauseSetSel(menu, icons[idx]); return; // "cima" na barra: fica
-  }
-  let idx=items.indexOf(cur); if(idx<0)idx=0;
-  if(k.up){ if(idx<cols && icons.length){ pauseSetSel(menu, icons[Math.min(idx,icons.length-1)]); return; } idx=Math.max(0,idx-cols); } // sobe da 1ª linha → barra de ícones
-  else if(k.down)idx=Math.min(items.length-1,idx+cols);
-  else if(k.left)idx=Math.max(0,idx-1); else if(k.right)idx=Math.min(items.length-1,idx+1);
-  pauseSetSel(menu, items[idx]); }
-function menuNavKey(e){ if(phase!=='paused'||ctrlPanel.isCapturing())return;
-  const pw=$('#padwiz'); if(pw&&!pw.hidden){ if(e.code==='Escape'){ gamepadApi.closePadWiz(false); e.preventDefault(); e.stopPropagation(); } return; } // wizard por cima: só Esc (cancela)
-  const C=e.code;
-  const owner=whichPlayer(C); const pi=owner<0?0:owner; const act=owner>=0?actionOf(C,pi):null;
-  const yes=C==='Space'||C==='KeyJ'||C==='Enter'||C==='NumpadEnter'||act==='jump';
-  const no=C==='Escape'||act==='especial';
-  const up=C==='ArrowUp'||C==='KeyW'||act==='up', down=C==='ArrowDown'||C==='KeyS'||act==='down';
-  const left=C==='ArrowLeft'||C==='KeyA'||act==='left', right=C==='ArrowRight'||C==='KeyD'||act==='right';
-  if(!(yes||no||up||down||left||right))return; e.preventDefault(); e.stopPropagation();
-  const k={yes,no,up,down,left,right};
-  const dlg=sharedDialogOpen(); if(dlg){ navDialog(dlg,k); return; } // diálogo de a11y aberto: navega ele (compartilhado nesta etapa)
-  const menu=vpPause[pi]; if(menu&&!menu.hidden)navPause(menu,pi,k); } // senão: menu de pausa do próprio jogador
-addEventListener('keydown', menuNavKey, true);
-function pauseSelect(){ vpPause.forEach(sp=>{ const items=[...sp.querySelectorAll('.pm-btn')]; items.forEach(b=>b.classList.remove('pm-sel')); if(items[0])items[0].classList.add('pm-sel'); }); } // 1º item (Continuar) selecionado em cada tela
-function printMode(){ vpPause.forEach(sp=>sp.hidden=true); // Print: esconde as pausas → vê a tela limpa; qualquer botão volta
-  const back=(e)=>{ if(e&&e.preventDefault)try{e.preventDefault();}catch(_){} window.removeEventListener('keydown',back,true); window.removeEventListener('pointerdown',back,true);
-    if(phase==='paused'){ vpPause.forEach(sp=>sp.hidden=false); pauseSelect(); } };
-  setTimeout(()=>{ window.addEventListener('keydown',back,true); window.addEventListener('pointerdown',back,true); }, 80);
-  srSay('Modo Print: veja a tela sem menus. Aperte qualquer botão para voltar.'); }
-function togglePause(){ if(phase==='playing')setPhase('paused'); else if(phase==='paused')setPhase('playing'); }
+/* ===================== NAVEGACAO UNIVERSAL de menus -> ui/menu-nav.ts (C3) =====================
+   sharedDialogOpen/menuItems/menuFocus/dialogBack/navDialog/pauseSetSel/navPause/menuNavKey migraram.
+   `sharedDialogOpen` agora e ALIAS de overlays.topVisibleOverlay: as duas eram a MESMA funcao escrita duas
+   vezes — mesmo escopo, mesmo filtro, mesma ordenacao por z-index. Os envelopes abaixo sao `function`
+   (icadas) porque o ctx de input/gamepad, montado bem acima, referencia sharedDialogOpen/navDialog/navPause
+   por NOME; e closeTypo/closeHelp chamam menuFocus(sharedDialogOpen()) de mais acima ainda. */
+const menuNav = initMenuNav({
+  $, getActiveElement: () => document.activeElement,
+  topVisibleOverlay: () => overlays.topVisibleOverlay(), closeById: (id) => overlays.closeById(id),
+  getPauseMenu: (i) => vpPause[i],                 // `let vpPause` REATRIBUIDO por buildGameHud -> getter
+  setPhase: (p) => setPhase(p),
+  setPauseActor: (i) => { pauseActor = i; },
+  isCapturing: () => ctrlPanel.isCapturing(),
+  closePadWiz: (save) => gamepadApi.closePadWiz(save), // LAZY: quebra o ciclo menu-nav <-> input/gamepad
+  whichPlayer, actionOf,
+  win: window,
+});
+function sharedDialogOpen(){ return menuNav.sharedDialogOpen(); }
+function menuItems(menu){ return menuNav.menuItems(menu); }
+function menuFocus(menu){ menuNav.menuFocus(menu); }
+function dialogBack(menu){ menuNav.dialogBack(menu); }
+function navDialog(menu,k){ menuNav.navDialog(menu,k); }
+function navPause(menu,pi,k){ menuNav.navPause(menu,pi,k); }
+menuNav.attach(); // addEventListener('keydown', menuNavKey, true) — MESMA fase de CAPTURA
 /* ===== Menu inicial (v3): principal → submenus de atividade → (tabuada/divisão) seletor de números ===== */
 // _tabFor/titleButtons/navTitle/buildTitleMenus migraram para ui/activities-menu.ts (Onda A).
-// padKind/updateTitleLegend + os dois ouvintes de gamepad NAO sao do menu: sao a legenda por
-// dispositivo do splash (slice do gamepad). Estavam no meio do intervalo removido e voltaram.
-function padKind(){ let kind='kb'; const pads=navigator.getGamepads?navigator.getGamepads():[];
-  for(const gp of pads){ if(!gp)continue; kind=(gp.mapping==='standard')?'x':'d'; if(kind==='x')break; }
-  return kind; }
-function updateTitleLegend(){ const el=$('#title-legend'); if(!el)return; // 2 LINHAS, com o que está CONFIGURADO p/ o jogador da tela
-  const chip=(txt,col,word)=>`<span class="lg"><span class="lg-ico"${col?` style="background:${col}"`:''}>${txt}</span>${word?' '+word:''}</span>`;
-  const touch=document.body.classList.contains('touch-mode');
-  let gp=null; const pads=navigator.getGamepads?navigator.getGamepads():[];
-  const p1pad=(players[0]&&players[0].pad>=0)?players[0].pad:-1;
-  for(const g of pads){ if(!g)continue; if(p1pad>=0){ if(g.index===p1pad){gp=g;break;} } else if(!gp)gp=g; }
-  let l1,l2;
-  if(touch){ const set=PAD_DESIGNS.generic; // joystick VIRTUAL: 0/1/2/3 + START
-    l1=chip('✜',null,'movimentar-se')+chip('START',null,'pausa');
-    l2=chip(set['0'][0],set['0'][1],'pular')+chip(set['1'][0],set['1'][1],'especial')+chip(set['2'][0],set['2'][1],'correr')+chip(set['3'][0],set['3'][1],'trocar');
-  } else if(gp){ // joystick FÍSICO: layout do modelo (XInput colorido / DirectInput números) + mapa custom do wizard
-    const layout=gp.mapping==='standard'?padLayoutFromId(gp.id):'generic';
-    const set=PAD_DESIGNS[layout]||PAD_DESIGNS.generic;
-    const custom=gp.mapping!=='standard'?gamepadApi.padMapFor(gp.id):null;
-    const bOf=(k,def)=>{ const b=custom&&custom[k]; return (b&&typeof b.b==='number')?String(b.b):def; };
-    const gy=k=>set[k]||[k,'#3a4a6a'];
-    const J=gy(bOf('jump','0')),E=gy(bOf('especial','1')),R=gy(bOf('run','2')),S=gy(bOf('swap','3'));
-    l1=chip('✜',null,'movimentar-se')+chip('START',null,'pausa');
-    l2=chip(J[0],J[1],'pular')+chip(E[0],E[1],'especial')+chip(R[0],R[1],'correr')+chip(S[0],S[1],'trocar');
-  } else { const m=kbFor(0), K=a=>keyName((m[a]||[])[0]||'?'); // TECLADO: teclas configuradas (remap respeitado)
-    l1=chip(`${K('up')} ${K('left')} ${K('down')} ${K('right')}`,null,'movimentar-se')+chip('Enter',null,'pausa');
-    l2=chip(K('jump'),null,'pular')+chip(K('especial'),null,'especial')+chip(K('run'),null,'correr')+chip(K('swap'),null,'trocar'); }
-  el.innerHTML=`<span class="lg-row">${l1}</span><span class="lg-row">${l2}</span>`;
-  const w=$('#title-wait'); if(w)w.hidden=numPlayers<=1; } // MP: aviso "Aguarde o Jogador 1"
+// updateTitleLegend migrou para ui/shell.ts (C3) — e legenda da TELA de titulo, nao navegacao de menu; o
+// envelope icado fica la em cima, junto do resto da casca. padKind() foi APAGADO: input/touch.ts ja exporta
+// a mesma funcao desde a Onda A e a copia daqui nao tinha chamador nenhum (codigo morto duplicado).
 addEventListener('gamepadconnected',()=>{ if(phase==='title')updateTitleLegend(); });
 addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegend(); });
 // O despachante do menu do titulo (teclado do #np-btn, rodape de descricao e o click) migrou para
