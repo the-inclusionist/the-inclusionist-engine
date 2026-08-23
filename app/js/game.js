@@ -44,6 +44,9 @@ import { createAudioAmbient } from './platform/audio-ambient.js'; // Tier 2 (áu
 import { createTts } from './platform/tts.js'; // Tier 2 (#38): narração por voz (Piper neural lazy + fallback Web Speech)
 import { SPR, TEX_IDLE, TEX_WALK, TEX_RUN, FLAVORS, TEX_JUMP_UP, TEX_JUMP_DOWN, TEX_CLIMB, TEX_FLY, TEX_CLING_WALL, TEX_CLING_CEIL, TEX_SWIM, TEX_SWIMIDLE, initCharacterSprites } from './render/sprites.js';
 import { makeCanvas, tex } from './render/canvas.js';
+import { CENARIOS, THEME_FLORA, hexN } from './render/cenario-data.js'; // D2-b: catalogo dos cenarios (folha: dado puro, zero deps)
+import { PARALLAX, createParallax } from './render/parallax.js'; // D2-b: as 3 camadas de fundo — fatores, rolagem e troca de tema
+import { createSetCenario } from './render/set-cenario.js'; // D2-b: a troca de cenario (orquestracao; leva o loadTileImages)
 import { createSceneSky } from './render/scene-sky.js'; // Tier 2 (#43): céu — nuvens (#21) + decor viva da v3
 import { coinCanvas, treeCanvas } from './render/props.js';
 import * as weather from './render/weather.js'; // Onda A: clima visual (chuva/trovao/clarao)
@@ -380,79 +383,35 @@ const titleUI = initTitle({ $ }); // navegacao dos submenus do titulo: ui/title.
    O controlador `attractCtl` é criado no fim do módulo (quando players/CENARIO/setCenario/restartGame/
    kbFor/etc. já existem). Aqui ficam só as chamadas: attractCtl.{isAttract,stepAttract,titleIdleTick,onInput,recordTick}. */
 
-/* ===== Parallax: 3 camadas de FUNDO atrás do tileset (Camada 1 = tileset+personagem).
-   Camada 4 (fator 0.10) é a mais distante e "quase não se mexe" — receberá a maior
-   imagem possível do PixelLab. Vivem DENTRO do camera (contra-posicionadas p/ ficarem
-   fixas na tela) para também aparecerem nas render-textures do multiplayer.
-   tilePosition faz o scroll fracionado → ilusão de profundidade. */
-const PARALLAX=[
-  {key:'sky',  factor:0.10, fy:0}, // Camada 4 — mais distante (céu/horizonte), maior imagem
-  {key:'far',  factor:0.28, fy:0}, // Camada 3
-  {key:'near', factor:0.52, fy:0}, // Camada 2 — mais próxima do tileset (fy=0: parallax horizontal clássico; textura=altura do viewport → sem repetição vertical)
-];
-/* L6 (REFEITO — fiel à v3.1.100): os 4 temas usam EXATAMENTE o céu, as nuvens, as montanhas, a grama
-   e a decoração viva de lá (fórmulas copiadas). BLOCOS = Clarity SEM recolor (a v3 não recoloria tiles
-   por tema). NENHUM tema tem chuva — chuva é só da Cidade. */
-const CENARIOS={
-  cidade:   {nome:'Cidade', v3:false},
-  campo:    {nome:'Dia no Campo',       v3:true, sky:['#86c5e8','#cfeecb'], cloud:['#ffffff','#d4e6f5'], hills:['#9fd47e','#6fb84e'], decor:['nuvens','passaros','borboletas']},
-  cemiterio:{nome:'Amanhecer no Campo', v3:true, sky:['#2b2540','#5a4f6b'], cloud:['#d9c4dd','#a98fb6'], hills:['#4a5f55','#33473d'], decor:['nuvens','passaros','sparkles','minhocas','nevoa']},
-  espaco:   {nome:'Noite no Campo',     v3:true, sky:['#05030f','#161033'], cloud:['#3a3550','#262238'], hills:['#1e3030','#142024'], decor:['nuvens','sparkles','vagalumes']},
-  floresta: {nome:'Floresta',           v3:true, sky:['#3f6b50','#8fbf73'], cloud:['#cfe6b8','#a7cf86'], hills:['#2f5e35','#1f4226'], decor:['nuvens','passaros','borboletas']},
-};
-const THEME_FLORA={ // v3 exato — grama/flores por tema
-  campo:    {base:'#52933c',top:'#7cc35a',bLt:'#8fd968',bDk:'#46822f',center:'#ffe14d',petals:['#ffe14d','#ff7eb6','#ffffff','#ff6b6b']},
-  cemiterio:{base:'#46624f',top:'#5e7d68',bLt:'#6f9079',bDk:'#3a5244',center:'#f0e6d0',petals:['#c9b6e8','#e7c9dd','#b6c9e8']},
-  espaco:   {base:'#2d4650',top:'#40606a',bLt:'#557f88',bDk:'#26404a',center:'#fff6c0',petals:['#d6ecff','#ffffff','#cfffe8']},
-  floresta: {base:'#3a7a34',top:'#5fa84a',bLt:'#6fc255',bDk:'#2f6329',center:'#ffe14d',petals:['#c98ce0','#ffffff','#ffd166','#ff7eb6']},
-};
-const hexN=s=>parseInt(String(s).slice(1),16);
-// parallaxPlaceholder/themeSkyTexture/themeHillsTexture extraídos p/ render/scene-parallax.js (Estágio 4).
-// updateParallax (scroll/render-graph) fica aqui por ora.
-const parallaxLayers=PARALLAX.map((p,i)=>{
-  const ts=new PIXI.TilingSprite(parallaxPlaceholder(i),LOGICAL_W,LOGICAL_H);
-  camera.addChildAt(ts,i); // i=0 (sky) fica no fundo; depois far, near; tileset entra por cima
-  return ts;
+/* ===== Parallax: as 3 camadas de FUNDO atras do tileset -> render/parallax.ts (D2-b) =====
+   Os fatores de profundidade (PARALLAX), a conta da rolagem (posicoesParallax/updateParallax) e o vestir das
+   camadas por tema (aplicarTemaParallax) moram la. AQUI fica so a MONTAGEM no render-graph, e ela tem de ficar
+   NESTE ponto: `camera` acabou de nascer, `starsG` (logo abaixo) e inserido relativo a parallaxLayers[1], e o
+   setCenario do boot ja precisa das 3 camadas de pe para vesti-las com o tema salvo.
+   `vp` (viewports) e as camadas de decor de TELA nascem DEPOIS deste ponto -> entram embrulhados em seta. */
+const parallaxApi = createParallax({
+  camera, TilingSprite: PIXI.TilingSprite,
+  placeholderTex: parallaxPlaceholder, skyTex: themeSkyTexture, hillsTex: themeHillsTexture, // render/scene-parallax
+  Imagem: Image, texturaDeImagem: (img) => PIXI.Texture.from(img), escalaNearest: PIXI.SCALE_MODES.NEAREST,
+  rm, getCenario: () => CENARIO, getVizMode: () => vizMode,
+  clearParallaxTexCache: () => vp.clearParallaxTexCache(), // `vp` e const declarado ABAIXO: seta resolve na chamada
+  getDecorDeTela: () => [starsG, skyDecoG, fogG],          // `var` icados: undefined no boot, e o modulo guarda
 });
-const parallaxTexNormal=parallaxLayers.map(ts=>ts.texture); // texturas normais (recoloridas p/ o fundo no alto contraste)
-function updateParallax(camX,camY){
-  for(let i=0;i<parallaxLayers.length;i++){ const ts=parallaxLayers[i],p=PARALLAX[i];
-    ts.x=camX; ts.y=camY;                                  // anula o camera → fixa na tela
-    if(rm.parallax){ ts.tilePosition.set(0,0); continue; } // movimento reduzido: fundo vira papel de parede estático
-    ts.tilePosition.x=-camX*p.factor; ts.tilePosition.y=-camY*p.fy;
-  }
-  // L6: decor de TELA da v3 (estrelas atrás dos morros · nuvens/pássaros à frente deles · névoa na frente de tudo)
-  if(typeof starsG!=='undefined'){ starsG.position.set(camX,camY); skyDecoG.position.set(camX,camY); fogG.position.set(camX,camY); }
-}
-/* Tema de cenário: troca as 3 texturas de parallax por assets/cenarios/<tema>/c{4,3,2}.png.
-   Sem tema definido → placeholders. Persiste em localStorage. */
-let _vidaReady=false; // _vidaReady: camadas de vida/tráfego/tema já existem (applyCenarioVida pode rodar). CENARIO vem de core/state.js (Fase 2, mega-var 4)
-function loadTileImages(theme){ return new Promise(res=>{
-  const fill=new Image(), surf=new Image(); let n=0, fail=false;
-  const done=()=>{ if(fail)return; if(++n===2) res({fill,surface:surf}); };
-  fill.onload=done; surf.onload=done; fill.onerror=surf.onerror=()=>{fail=true;res(null);};
-  fill.src='assets/cenarios/'+theme+'/tile_fill.png'; surf.src='assets/cenarios/'+theme+'/tile_surface.png';
-}); }
-function setCenario(theme){ if(!CENARIOS[theme])theme='cidade';
-  setCenarioValue(theme); // core/state.js: valor + persistência (incl_cenario) + evento; a validação e o trabalho de textura ficam aqui
-  const T=CENARIOS[theme];
-  if(T.v3){ // fiel à v3: céu-gradiente + 2 bandas de morros (fórmulas de lá); sem PNG (a arte por tema entra depois)
-    const texs=[themeSkyTexture(T),themeHillsTexture(T,false),themeHillsTexture(T,true)];
-    parallaxLayers.forEach((ts,i)=>{ parallaxTexNormal[i]=texs[i]; vp.clearParallaxTexCache(); if(vizMode==='normal') ts.texture=texs[i]; });
-  } else parallaxLayers.forEach((ts,i)=>{ const n=[4,3,2][i], img=new Image(); // Cidade: PNG com fallback p/ placeholder
-    img.onload=()=>{ if(CENARIO!==theme)return; const t=PIXI.Texture.from(img); t.baseTexture.scaleMode=PIXI.SCALE_MODES.NEAREST;
-      parallaxTexNormal[i]=t; vp.clearParallaxTexCache(); if(vizMode==='normal') ts.texture=t; };
-    img.onerror=()=>{ if(CENARIO!==theme)return; const t=parallaxPlaceholder(i);
-      parallaxTexNormal[i]=t; vp.clearParallaxTexCache(); if(vizMode==='normal') ts.texture=t; };
-    img.src='assets/cenarios/'+theme+'/c'+n+'.png'; });
-  loadTileImages(theme).then(tiles=>{ if(CENARIO!==theme)return;
-    worldCanvasNormal=worldCanvas(tiles); worldTexNormal=tex(worldCanvasNormal); clearWorldTexCache(); // v3: blocos Clarity SEM recolor
-    if(vizReady) reapplyVizAll(); else if(worldSprite) worldSprite.texture=worldTexNormal; });
-  // (o Cenário saiu do menu de pausa — a escolha é do J1 no splash, antes de começar)
-  if(_vidaReady) sceneCity.applyCenarioVida(); // liga/desliga carros/deco da cidade e semeia as peculiaridades do tema
-  if(vizReady) reapplyVizAll(); // reaplica o cenário recolorido (só após o init montar tudo)
-  // incl_cenario agora é persistido por setCenarioValue (core/state.js)
-}
+const { layers: parallaxLayers, texNormal: parallaxTexNormal, updateParallax } = parallaxApi;
+/* Tema de cenario: valida, persiste, veste o fundo e refaz a textura do mundo -> render/set-cenario.ts (D2-b).
+   `loadTileImages` foi junto (virou carregarTilesDoTema). `_vidaReady` FICA aqui: e a flag de boot da cena da
+   cidade, escrita la embaixo. Tudo o que nasce depois deste ponto entra por getter/seta — o setCenario do boot
+   roda dentro de um try/catch MUDO, e uma dependencia em TDZ aqui nao daria erro: daria "o tema salvo sumiu". */
+let _vidaReady=false; // camadas de vida/trafego/tema ja existem (applyCenarioVida pode rodar). CENARIO vem de core/state.js
+const { setCenario } = createSetCenario({
+  setCenarioValue, getCenario: () => CENARIO,
+  aplicarTemaParallax: parallaxApi.aplicarTemaParallax,
+  Imagem: Image, worldCanvas, tex, clearWorldTexCache,
+  setWorldTextures: (cv, t) => { worldCanvasNormal = cv; worldTexNormal = t; }, // `let` declarados ABAIXO (so escritos no .then)
+  isVizReady: () => vizReady, reapplyVizAll: () => reapplyVizAll(),             // `reapplyVizAll` e const de viz-setters, la embaixo
+  getWorldSprite: () => worldSprite,                                            // nasce depois; so lido no .then
+  isVidaReady: () => _vidaReady, applyCenarioVida: () => sceneCity.applyCenarioVida(),
+});
 // Modos de cor. kind: normal=arte crua · hcnew=Renderização Direta (alto contraste, 3 níveis) ·
 // filter=simulação/correção de daltonismo (SVG na canvas) · lowvision/blind=empatia.
 // VIZ_MODES/VIZ_BY_KEY/VIZ_FILTER/VIZ_CYCLE extraídos p/ render/viz-modes.js (Fase 2, dados de a11y visual).
