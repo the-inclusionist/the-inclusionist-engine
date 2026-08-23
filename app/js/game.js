@@ -53,6 +53,7 @@ import * as weather from './render/weather.js'; // Onda A: clima visual (chuva/t
 import { lqFilter, setLq, getLqT, initLqFilter } from './render/lq-filter.js'; // Onda A: realce de contraste L->Q
 import * as traffic from './game/traffic.js'; // Onda A: carros + semaforo da rua da frente
 import * as life from './game/life.js'; // Onda A: vida ambiente (pombos/gatos/caes/adultos)
+import { initSceneCity } from './render/scene-city.js'; // Onda A: deco da Cidade + fx de tiles vivos
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
@@ -554,7 +555,7 @@ function setCenario(theme){ if(!CENARIOS[theme])theme='cidade';
     worldCanvasNormal=worldCanvas(tiles); worldTexNormal=tex(worldCanvasNormal); _worldTexHC={}; // v3: blocos Clarity SEM recolor
     if(vizReady) reapplyVizAll(); else if(worldSprite) worldSprite.texture=worldTexNormal; });
   // (o Cenário saiu do menu de pausa — a escolha é do J1 no splash, antes de começar)
-  if(_vidaReady) applyCenarioVida(); // liga/desliga carros/deco da cidade e semeia as peculiaridades do tema
+  if(_vidaReady) sceneCity.applyCenarioVida(); // liga/desliga carros/deco da cidade e semeia as peculiaridades do tema
   if(vizReady) reapplyVizAll(); // reaplica o cenário recolorido (só após o init montar tudo)
   // incl_cenario agora é persistido por setCenarioValue (core/state.js)
 }
@@ -881,33 +882,8 @@ traffic.initTraffic({ carLayer, CAR_TEX, SpriteCtor: PIXI.Sprite, GraphicsCtor: 
    Secretas (darkRegions): entulho/viga/pichação — desenhados ABAIXO do darkLayer (só aparecem revelados). */
 const cityDecoG=new PIXI.Graphics(); lifeLayer.addChildAt(cityDecoG,0); // atrás dos bichos, à frente do mundo
 const abandonG=new PIXI.Graphics(); camera.addChildAt(abandonG, camera.getChildIndex(darkLayer)); // SOB a escuridão
-function buildCityDeco(){ const g=cityDecoG; g.clear(); const a=abandonG; a.clear();
-  // ---- FACHADA (banda MAIS BAIXA, por onde o personagem anda): calçada + postes + letreiros.
-  // Placas de PARE saíram daqui → moram na rua da FRENTE (initTraffic), junto dos carros (R-cidade).
-  const BASE_TY=WORLD_H-9;
-  for(let tx=1;tx<WORLD_W-1;tx++){ const ty=lifeSurfaceAt(tx); if(ty<BASE_TY)continue; const X=tx*TILE, y=ty*TILE;
-    g.beginFill(0x9aa0ad,0.9).drawRect(X,y,TILE,2).endFill();            // calçada clara
-    g.beginFill(0x565e70,1).drawRect(X,y+2,TILE,1).endFill();            // meio-fio
-    if(tx%11===4){ g.beginFill(0x3a4152).drawRect(X+7,y-30,2,30).endFill(); g.beginFill(0x3a4152).drawRect(X+7,y-30,8,2).endFill(); // poste + braço
-      g.beginFill(0xffe9a8,1).drawRect(X+13,y-29,3,3).endFill(); g.beginFill(0xffe9a8,0.18).drawRect(X+9,y-31,11,8).endFill(); }   // lâmpada + halo FIXO
-    if(tx%9===2 && solidAt(tx,ty-3)){ const c=[0x37c9a0,0xff8c5a,0x64b0ff,0xffd23f][tx%4];                                          // letreiro na fachada
-      g.beginFill(0x141824).drawRect(X+2,y-3.5*TILE,12,6).endFill(); g.beginFill(c,1).drawRect(X+3,y-3.5*TILE+1,10,4).endFill();
-      g.beginFill(c,0.15).drawRect(X,y-3.5*TILE-2,16,10).endFill(); } }                                                             // brilho estável (sem piscar)
-  // ---- CAIXA D'ÁGUA: paredes metálicas nas bordas do corpo d'água + linha d'água no topo
-  let wx0=1e9,wx1=-1,wy0=1e9,wy1=-1;
-  for(let ty=0;ty<WORLD_H;ty++)for(let tx=0;tx<WORLD_W;tx++){ if(tileAt(tx,ty)===3){ wx0=Math.min(wx0,tx);wx1=Math.max(wx1,tx);wy0=Math.min(wy0,ty);wy1=Math.max(wy1,ty); } }
-  if(wx1>=0){ const X0=wx0*TILE,X1=(wx1+1)*TILE,Y0=wy0*TILE,Y1=(wy1+1)*TILE;
-    g.beginFill(0x6a7486,0.85).drawRect(X0-3,Y0-6,3,Y1-Y0+6).drawRect(X1,Y0-6,3,Y1-Y0+6).endFill(); // paredes do tanque
-    for(let ry=Y0;ry<Y1;ry+=12){ g.beginFill(0x49515f).drawRect(X0-3,ry,3,2).drawRect(X1,ry,3,2).endFill(); } // rebites
-    g.beginFill(0xbfe6ff,0.5).drawRect(X0,Y0,X1-X0,1.5).endFill(); }                                  // linha d'água
-  // (Janelas do "interior de prédio" removidas — não faziam sentido; R-cidade do José 2026-07-03.)
-  // ---- ABANDONADO (darkRegions): entulho, viga e pichação — sob a escuridão
-  for(const reg of darkRegions){ for(const key of reg.set){ const [tx,ty]=key.split(',').map(Number); const X=tx*TILE,Y=ty*TILE, h=(tx*13+ty*7)%10;
-    if(solidAt(tx,ty+1)&&h<3){ a.beginFill(0x555b66).drawRect(X+2,Y+TILE-5,7,5).endFill(); a.beginFill(0x434955).drawRect(X+7,Y+TILE-3,6,3).endFill(); } // entulho
-    else if(h===4){ a.beginFill(0x6b4e2e,0.9).drawRect(X,Y+3,TILE,3).endFill(); }                                                                          // viga exposta
-    else if(h===7){ const c=[0xc94fd6,0x4fd67a,0xd6c94f][tx%3]; a.beginFill(c,0.55).drawRect(X+3,Y+6,9,2).drawRect(X+5,Y+9,6,2).endFill(); } } }          // pichação
-}
-buildCityDeco();
+// buildCityDeco migrou para render/scene-city.ts (Onda A); a chamada de boot desceu para junto do init,
+// depois que TODAS as camadas dele existem (lavaFxG/waterFxG nascem mais abaixo).
 /* ===================== L5+: CÉU — nuvens à deriva + pássaros cruzando (procedural) =====================
    Atrás dos tiles (sobre o parallax). Nuvens derivam devagar e dão a volta; pássaros de 2 quadros cruzam
    o céu de vez em quando. rm.decor congela nuvens e remove pássaros. */
@@ -938,40 +914,18 @@ const sceneSky = createSceneSky({ skyLayer, starsG, skyDecoG, fogG, grassG, them
 // drawV3Cloud + drawV3Grass extraídos p/ render/scene-sky.ts (#43) — funções de desenho puras usadas por stepV3Decor.
 // stepV3Decor (decor viva da v3: estrelas/nuvens/pássaros/névoa/grama/minhocas/vagalumes/borboletas) extraído p/
 // render/scene-sky.ts (#43). Camadas injetadas. Uso no loop: sceneSky.stepV3Decor().
-function applyCenarioVida(){ const city=CENARIO==='cidade';
-  carLayer.visible=city; cityDecoG.visible=city; skyLayer.visible=city; // trânsito/deco/céu-da-cidade SÓ na Cidade
-  if(!city)traffic.clearCars(); }
-_vidaReady=true; applyCenarioVida(); // estado inicial (CENARIO já veio do setCenario do boot)
+// applyCenarioVida migrou para render/scene-city.ts (Onda A): la ele so mexe nas camadas dele e chama de
+// volta o gancho onCenarioChange, por onde o transito reage. O estado inicial e ligado junto do init.
 /* ===================== Tiles vivos da v3 (água FORE + lava) — drawTile animado, fiel ===================== */
 const lavaFxG=new PIXI.Graphics(); lifeLayer.addChildAt(lavaFxG,0);   // tracinhos da lava (ATRÁS do player, como o map-back)
 const waterFxG=new PIXI.Graphics(); decoLayer.addChild(waterFxG);     // corais/algas/peixes no BACKGROUND (camada das árvores — pedido do José; ficam atrás de player E carros)
-function stepTileFx(){ lavaFxG.clear(); waterFxG.clear();
-  if(DIRECT_CFG[vizMode]||rm.decor) return; // HC repinta o mundo (color-blocking); viewDecor off na v3 = só a base estática
-  const t=fxClock, seen=new Set();
-  for(const pl of players){ if(pl.quit)continue;
-    const camX=Math.max(0,Math.min(pl.x-LOGICAL_W/2,WORLD_PX_W-LOGICAL_W)), camY=Math.max(0,Math.min((pl.y-BOX.h/2)-LOGICAL_H/2,WORLD_PX_H-LOGICAL_H));
-    const tx0=Math.max(0,Math.floor(camX/TILE)-1), tx1=Math.min(WORLD_W-1,Math.floor((camX+LOGICAL_W)/TILE)+1);
-    const ty0=Math.max(0,Math.floor(camY/TILE)-1), ty1=Math.min(WORLD_H-1,Math.floor((camY+LOGICAL_H)/TILE)+1);
-    for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){ const tt=tileAt(tx,ty); if(tt!==3&&tt!==9)continue;
-      const k=tx+','+ty; if(seen.has(k))continue; seen.add(k); const X=tx*TILE,Y=ty*TILE;
-      if(tt===9){ const off=(Math.floor(t/8)+X)%4; // lava v3: tracinhos claros que derivam
-        lavaFxG.beginFill(0xff7755).drawRect(X+off,Y+3,3,1).drawRect(X+((off+6)%TILE),Y+8,3,1).endFill(); continue; }
-      // ÁGUA v3: ondulação verde sutil que deriva
-      waterFxG.beginFill(0x46a078,0.12).drawRect(X,Y+7+Math.round(2*Math.sin(tx*1.3+t*0.04)),TILE,2).endFill();
-      if(tileAt(tx,ty-1)!==3){ const off=Math.sin(t*0.05+X*0.1)>0?1:0; // linha de superfície SÓ na borda de cima
-        waterFxG.beginFill(0xffffff,0.35).drawRect(X+off,Y+1,TILE-off,1).endFill(); }
-      if(solidAt(tx,ty+1)){ const h=(tx*2654435761)>>>0, kind=h%3; // leito: coral / algas (determinísticos por coluna)
-        if(kind===0){ waterFxG.beginFill([0xe8743b,0xf2c14e,0x8c2f39][(h>>>3)%3])
-          .drawRect(X+6,Y+9,2,7).drawRect(X+4,Y+10,2,4).drawRect(X+9,Y+8,2,5).drawRect(X+3,Y+12,1,2).drawRect(X+11,Y+11,1,2).endFill(); }
-        else if(kind===1){ waterFxG.beginFill(0x3fae6a); const sway=2*Math.sin(t*0.06+tx); // algas balançando
-          for(let a2=0;a2<9;a2++){ waterFxG.drawRect(X+7+Math.round(sway*(a2/9)),Y+15-a2,1,1);
-            if(a2%2===0)waterFxG.drawRect(X+9+Math.round(sway*(a2/9)),Y+15-a2,1,1); } waterFxG.endFill(); } }
-      else { const fh=(tx*40503+ty*12289)>>>0; // água aberta: peixinho esparso nadando (com olho!)
-        if(fh%7===0){ const fx2=X+6+Math.round(5*Math.sin(t*0.04+tx+ty)), fy2=Y+7+Math.round(2*Math.sin(t*0.07+ty));
-          const dir=Math.cos(t*0.04+tx+ty)>=0?1:-1;
-          waterFxG.beginFill([0xe5484d,0x3a6ea5,0x48b06a][fh%3]).drawRect(fx2,fy2,3,2).drawRect(fx2-dir,fy2,1,2).endFill();
-          waterFxG.beginFill(0xffffff,1).drawRect(fx2+(dir>0?2:0),fy2,1,1).endFill(); } } } }
-}
+const sceneCity = initSceneCity({ cityDecoG, abandonG, lavaFxG, waterFxG, skyLayer, darkRegions,
+  solidAt, tileAt, lifeSurfaceAt, WORLD_W, WORLD_H, TILE, WORLD_PX_W, WORLD_PX_H, LOGICAL_W, LOGICAL_H, BOX,
+  DIRECT_CFG, getCenario: () => CENARIO, getVizMode: () => vizMode, getPlayers: () => players,
+  getFxClock: () => fxClock, getRm: () => rm,
+  onCenarioChange: (city) => { carLayer.visible = city; if(!city) traffic.clearCars(); } });
+sceneCity.buildCityDeco();
+_vidaReady=true; sceneCity.applyCenarioVida(); // estado inicial (CENARIO já veio do setCenario do boot)
 const playerSprite=new PIXI.Sprite(TEX_IDLE[0]); playerSprite.anchor.set(0.5,1); camera.addChild(playerSprite);
 players[0].sprite=playerSprite;
 // (re-add-ao-topo removido — carLayer/themeFxG/fogG posicionados pelo zIndex canônico do bloco R1, logo abaixo; #69)
@@ -1372,7 +1326,7 @@ function update(dt){
   traffic.stepTraffic(dt); // L5: carros (frente, na rua da base) + semáforo
   sceneSky.stepSky(dt); // L5: nuvens + pássaros no céu
   sceneSky.stepV3Decor(); // L6: decoração viva da v3 (estrelas/nuvens/pássaros/névoa/grama/minhocas/vagalumes/borboletas)
-  stepTileFx(); // tiles vivos da v3: água (ondas/corais/algas/peixes, FORE) + lava (tracinhos)
+  sceneCity.stepTileFx(); // tiles vivos da v3: água (ondas/corais/algas/peixes, FORE) + lava (tracinhos)
   if(ended)return;
   players.forEach((p,i)=>{ if(p.quit&&p.jumpEdge){ p.jumpEdge=false; respawnPlayer(i); } }); // L1: quem saiu re-entra pelo PULO do teclado (ou START do pad, no pollPads)
   for(const pl of players) stepPlayer(pl,dt);
