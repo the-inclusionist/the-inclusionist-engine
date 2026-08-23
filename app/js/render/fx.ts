@@ -7,6 +7,7 @@
 
 import { rnd } from '../core/rng.js';
 import { players } from '../core/state.js';
+import * as store from '../platform/storage.js';
 
 export interface Particle {
   x: number; y: number; vx: number; vy: number; life: number; max: number; color: number; size: number; g: number;
@@ -18,14 +19,12 @@ export interface JuiceFlags {
 /** Juice toggles (persisted in localStorage; edited in the ?debug panel + Sensibilidade → Movimento). */
 export const JUICE: JuiceFlags = (() => {
   const d: JuiceFlags = { dust: true, sparkle: true, squash: true, hitstop: true, shake: true, shimmer: true };
-  try {
-    const s = JSON.parse(localStorage.getItem('incl_juice') ?? 'null');
-    if (s && typeof s === 'object') for (const k of Object.keys(d) as (keyof JuiceFlags)[]) if (k in s) d[k] = !!s[k];
-  } catch { /* defaults */ }
+  const s = store.getJSON<Partial<Record<keyof JuiceFlags, boolean>>>(store.KEYS.juice, null);
+  if (s && typeof s === 'object') for (const k of Object.keys(d) as (keyof JuiceFlags)[]) if (k in s) d[k] = !!s[k];
   return d;
 })();
 export function saveJuice(): void {
-  try { localStorage.setItem('incl_juice', JSON.stringify(JUICE)); } catch { /* ignore */ }
+  store.setJSON(store.KEYS.juice, JUICE);
 }
 
 /** Standard easing (squash recovery, particle fade). Shared → exported (game.js render reads it too). */

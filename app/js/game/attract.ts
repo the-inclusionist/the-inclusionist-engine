@@ -5,6 +5,8 @@
 // GETTERS para os bindings vivos (players/CENARIO/phase são reatribuídos no game.js) + as funções que precisa.
 // Extraído do game.js (modularização Tier 1). Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 
+import * as store from '../platform/storage.js';
+
 interface Player { x: number; y: number; facing: number; vx: number; vy: number; onGround: boolean; jumpEdge: boolean; }
 interface Kb { right?: string[]; left?: string[] }
 type Cenarios = Record<string, { nome?: string } | undefined>;
@@ -50,10 +52,8 @@ export function createAttract(ctx: AttractCtx): AttractCtl {
   let recT = 0;
 
   const attractRecFor = (cen: string): number[][] | null => {
-    try {
-      const a = JSON.parse(localStorage.getItem('incl_attract_' + cen) ?? 'null');
-      return Array.isArray(a) && a.length > 10 ? a : null;
-    } catch { return null; }
+    const a = store.getJSON<number[][]>(store.KEYS.attract(cen), null);
+    return Array.isArray(a) && a.length > 10 ? a : null;
   };
 
   function startAttract(): void {
@@ -120,7 +120,7 @@ export function createAttract(ctx: AttractCtx): AttractCtl {
       (recArr = recArr ?? []).push([Math.round(p.x), Math.round(p.y), p.facing]);
       if (recArr.length >= 180) {
         const cen = ctx.getCenario();
-        try { localStorage.setItem('incl_attract_' + cen, JSON.stringify(recArr)); } catch { /* Storage off */ }
+        store.setJSON(store.KEYS.attract(cen), recArr);
         ctx.srAlert('Demo de 30 segundos gravada para ' + (ctx.CENARIOS[cen]?.nome ?? cen) + '.');
         recArr = null; recT = 0;
       }

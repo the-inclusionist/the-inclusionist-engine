@@ -5,6 +5,8 @@
 // PAINEL (populateTTSEngines/Voices/reflectTTS) ficam no game.js (→ ui/settings-audio, #38→#54) e usam get/setEngineSel +
 // get/setVoiceObj daqui. Injeção por closure. Ver docs/plano-tts-fase-f5.md + docs/5-Refactoring/plano-modularizacao-mapa.md.
 
+import * as store from './storage.js';
+
 interface TtsEngine { id: string; speak: (text: string) => void; }
 
 export interface TtsCtx {
@@ -42,7 +44,7 @@ const TTS_SOURCES = { 'pt-BR': { engine: 'piper', voice: 'pt_BR-faber-medium' } 
 export function createTts(ctx: TtsCtx): Tts {
   let ttsEngine: TtsEngine | null = null, ttsLoading = false, ttsFailed = false, _ttsPct = 0, _narrateCount = 0;
   let _ttsVoiceObj: SpeechSynthesisVoice | null = null; // voz do Web Speech selecionada
-  let ttsEngineSel = (() => { try { return localStorage.getItem('incl_tts_engine') || 'webspeech'; } catch (e) { return 'webspeech'; } })(); // webspeech | piper | kokoro | kitten | espeak
+  let ttsEngineSel = store.get(store.KEYS.ttsEngine, null) || 'webspeech'; // webspeech | piper | kokoro | kitten | espeak
 
   function speakWebSpeech(text: string): boolean {
     try {

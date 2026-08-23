@@ -6,14 +6,15 @@
 // Auto-contido: depende de ui/dom ($) + core/state (numPlayers). O applyCrt() de boot é chamado pelo game.js.
 import { $ } from '../ui/dom.js';
 import { numPlayers } from '../core/state.js';
+import * as store from '../platform/storage.js';
 
 type CrtCfg = { scan: number; vig: number; round: number };
 // scanline LIGADA por padrão (decisão do José 2026-07-03). Migra incl_crt (booleano) → incl_crt2 (níveis 0..2).
 export const CRT: CrtCfg = (() => {
   const d: CrtCfg = { scan: 1, vig: 0, round: 1 };
   try {
-    const s = JSON.parse(localStorage.getItem('incl_crt2') || localStorage.getItem('incl_crt') || 'null');
-    const fresh = !localStorage.getItem('incl_crt2'); // migração p/ crt2: herda vig/round; scan volta ao padrão ON uma vez
+    const s = JSON.parse(store.get(store.KEYS.crt, null) || store.get(store.KEYS.crtLegacy, null) || 'null');
+    const fresh = !store.get(store.KEYS.crt, null); // migração p/ crt2: herda vig/round; scan volta ao padrão ON uma vez
     if (s && typeof s === 'object') for (const k in d) if (k in s) {
       const v = s[k];
       if (fresh && k === 'scan') continue;
@@ -40,5 +41,5 @@ export function applyCrt(): void {
   if (CRT.scan) { g.classList.add('crt-scan-' + CRT.scan); crtScanVars(); }
   if (CRT.vig) g.classList.add('crt-vig-' + CRT.vig);
   if (CRT.round !== 1) g.classList.add('crt-round-' + CRT.round); // 1 = visual padrão (8px), sem classe
-  try { localStorage.setItem('incl_crt2', JSON.stringify(CRT)); } catch (e) { /* noop */ }
+  store.setJSON(store.KEYS.crt, CRT);
 }

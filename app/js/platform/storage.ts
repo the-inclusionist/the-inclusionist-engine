@@ -37,9 +37,12 @@ export const KEYS = {
   // visual / contraste / cor
   viz: 'incl_viz', lq: 'incl_lq', cbsafe: 'incl_cbsafe', ownercolors: 'incl_ownercolors',
   outfg: 'incl_outfg', outbg: 'incl_outbg', hcrole: 'incl_hcrole', juice: 'incl_juice', crt: 'incl_crt2',
+  crtLegacy: 'incl_crt', // formato antigo (booleano); crt.ts migra p/ incl_crt2 na 1ª leitura (fresh)
   // áudio / voz / i18n
-  ttsEngine: 'incl_tts_engine', ttsVoice: 'incl_tts_voice', lang: 'incl_lang', // audiocat_{k}, attract_{cen}
+  ttsEngine: 'incl_tts_engine', ttsVoice: 'incl_tts_voice', lang: 'incl_lang', // audiocat_{k}
   // tipografia / controles / toque
   fontKey: 'incl_font_k', padDesign: 'incl_paddesign', padDir: 'incl_paddir', touchmap: 'incl_touchmap',
   // por jogador (sufixo _p{i}): viz_p, sink_p, easy_p, togglemove_p, rmWalk_p, rmBreath_p, rmFlavor_p
+  // demo/attract: uma gravação por cenário (fn em vez de string — chave parametrizada)
+  attract: (cen: string): string => 'incl_attract_' + cen,
 };

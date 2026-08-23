@@ -5,13 +5,14 @@
 // Vite gera um chunk por locale e o SW cacheia). import.meta.glob (em vez de import(`…${code}.ts`) cru) é o
 // jeito nativo do Vite: casa arquivos .ts no build de forma explícita, sem depender do glob "adivinhado".
 import pt from '../i18n/pt.js';
+import * as store from '../platform/storage.js';
 
 type LocaleDict = Record<string, string>;
 
 const AVAILABLE = ['pt', 'en', 'es'];
 const base: LocaleDict = pt;                // dicionário-base (fallback), tipado
 const DICTS: Record<string, LocaleDict> = { pt: base }; // dicionários já carregados (pt embutido)
-const STORE_KEY = 'incl_lang';
+const STORE_KEY = store.KEYS.lang;
 
 // carregadores preguiçosos por locale (chaves: '../i18n/en.ts', '../i18n/es.ts', '../i18n/pt.ts'); pt já é estático.
 const loaders = import.meta.glob<{ default: LocaleDict }>('../i18n/*.ts');
@@ -49,14 +50,15 @@ export async function setLocale(code: string): Promise<void> {
   if (!AVAILABLE.includes(code)) code = 'pt';
   dict = await ensure(code);
   locale = code;
-  try { localStorage.setItem(STORE_KEY, code); } catch (e) { /* noop */ }
+  store.set(STORE_KEY, code);
   document.documentElement.lang = (code === 'pt') ? 'pt-BR' : code;
   applyDom(document);
   window.dispatchEvent(new CustomEvent('i18n:change', { detail: { locale } }));
 }
 
 function pickDefault(): string {
-  try { const saved = localStorage.getItem(STORE_KEY); if (saved && AVAILABLE.includes(saved)) return saved; } catch (e) { /* noop */ }
+  const saved = store.get(STORE_KEY, null);
+  if (saved && AVAILABLE.includes(saved)) return saved;
   const nav = ((navigator.language || 'pt').slice(0, 2)).toLowerCase();
   return AVAILABLE.includes(nav) ? nav : 'pt';
 }
