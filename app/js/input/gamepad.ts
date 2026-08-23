@@ -7,6 +7,7 @@
 // Boundary: this module only READS buttons/axes and maps them to actions; the physical button ARTWORK/labels
 // (PAD_DESIGNS) and the on-screen touch pad are input/devices.ts + input/touch (a parallel extraction) — not here.
 
+import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import type { Phase } from '../core/state.js';
 import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
 import * as store from '../platform/storage.js';
@@ -474,12 +475,11 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
             else if (edge('especial')) ctx.quizErase(p); // ESPECIAL = apagar última sílaba/letra
             continue;
           }
-          if (edge('jump')) p.jumpEdge = true;
-          if (edge('run') && !p.easy) p.runEdge = true;
-          if (edge('left')) p.leftEdge = true;
-          if (edge('right')) p.rightEdge = true;
-          if (edge('swap')) p.swapEdge = true;
-          if (edge('especial')) p.specialEdge = true;
+          // A tabela e a guarda do Fácil vêm de input/edges.ts, as MESMAS que keydown e touch usam. Antes eram
+          // seis `if` à mão aqui, seis lá e seis no toque — e o do toque tinha esquecido o `!p.easy`.
+          for (const [act, flag] of EDGE_BY_ACTION) {
+            if (edgeAllowed(act, p.easy) && edge(act)) p[flag] = true;
+          }
         }
       }
     }

@@ -92,6 +92,7 @@
 //
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D2-a).
 
+import { EDGE_BY_ACTION, edgeAllowed, type EdgeFlag } from './edges.js';
 import { phase } from '../core/state.js'; // binding vivo (fonte única de estado)
 
 /* ===================== interfaces mínimas ===================== */
@@ -115,7 +116,7 @@ export interface KeyupEventLike { code: string }
 export type KeyScheme = Record<string, string[]>;
 
 /** As seis bordas de entrada que o keydown levanta no jogador (consumidas e zeradas pela física). */
-export type EdgeFlag = 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge';
+// `EdgeFlag` vem de input/edges.ts (reexportado mais abaixo) — era declarado aqui e em touch-bindings.
 
 /** O que este módulo lê (e escreve) de um jogador do game.js — e SÓ isso. */
 export interface KeydownPlayer {
@@ -206,11 +207,10 @@ export const EASY_SHORTCUTS: ReadonlySet<string> = new Set(['ControlLeft', 'Cont
 export const SCREEN_DIGITS = /^Digit[1234]$/;
 /** Pausa: Escape ou o Enter CENTRAL. `NumpadEnter` NÃO pausa (E14, verbatim). */
 export const PAUSE_KEYS: ReadonlySet<string> = new Set(['Escape', 'Enter']);
-/** Ação -> borda, na ORDEM em que o original as levanta (a ordem é observável na lista devolvida). */
-export const EDGE_BY_ACTION: ReadonlyArray<readonly [string, EdgeFlag]> = Object.freeze([
-  ['jump', 'jumpEdge'], ['run', 'runEdge'], ['left', 'leftEdge'],
-  ['right', 'rightEdge'], ['swap', 'swapEdge'], ['especial', 'specialEdge'],
-] as ReadonlyArray<readonly [string, EdgeFlag]>);
+// A tabela e a regra do Fácil vivem em input/edges.ts, compartilhadas com gamepad e touch-bindings. Reexporta
+// pelo nome antigo porque quem importa daqui (teste e leitor) espera achá-la aqui.
+export { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
+export type { EdgeFlag } from './edges.js';
 
 /* --- predicados puros (exportados: o teste importa a peça, não repete a expressão) --- */
 
@@ -312,7 +312,7 @@ export function edgesFor(code: string, s: KeydownSnapshot): EdgeRaise[] {
   s.players.forEach((p, idx) => {
     if (!p.ctrl) return;
     for (const [act, edge] of EDGE_BY_ACTION) {
-      if (act === 'run' && p.easy) continue; // Fácil: sem correr
+      if (!edgeAllowed(act, p.easy)) continue; // Fácil: sem correr (input/edges.ts, valendo nos três caminhos)
       if ((p.ctrl?.[act] || []).includes(code)) out.push({ playerIndex: idx, edge });
     }
   });

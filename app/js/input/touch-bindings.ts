@@ -85,6 +85,7 @@
 /* ===================== interfaces mínimas ===================== */
 
 /** `ui/dom.ts` `$` — injetado; o módulo nunca alcança `document`. */
+import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
 /** ação -> lista de códigos físicos. Cópia ESTRUTURAL do `KeyScheme` de `input/keyboard-runtime.ts` — a casa
@@ -147,10 +148,7 @@ export type TouchDecision =
  * `input/gamepad.ts` (seis `if` dentro de `pollPads`). Ver o bloco de aviso no cabeçalho: as três não
  * concordam sobre o modo Fácil, e a divergência está PRESERVADA de propósito.
  */
-export const TOUCH_EDGE_BY_ACTION: ReadonlyArray<readonly [string, EdgeFlag]> = Object.freeze([
-  ['jump', 'jumpEdge'], ['run', 'runEdge'], ['left', 'leftEdge'],
-  ['right', 'rightEdge'], ['swap', 'swapEdge'], ['especial', 'specialEdge'],
-] as ReadonlyArray<readonly [string, EdgeFlag]>);
+export { EDGE_BY_ACTION as TOUCH_EDGE_BY_ACTION } from './edges.js'; // MESMA tabela dos outros dois caminhos
 
 /** `?touch=1` na URL força os controles de toque a aparecerem no desktop (atalho de teste do José). */
 export const TOUCH_FORCE_RE = /[?&]touch=1/;
@@ -191,9 +189,9 @@ export function touchEdgesFor(act: string, code: string, players: readonly Touch
   const out: EdgeRaise[] = [];
   players.forEach((p, idx) => {
     if (!p.ctrl) return; // jogador sem esquema (tela não ativada) não recebe borda
-    for (const [a, edge] of TOUCH_EDGE_BY_ACTION) {
+    for (const [a, edge] of EDGE_BY_ACTION) {
       if (a !== act) continue;
-      if (a === 'run' && p.easy) continue; // Fácil: sem correr — a MESMA guarda de keydown.ts e gamepad.ts
+      if (!edgeAllowed(a, p.easy)) continue; // Fácil: sem correr (input/edges.ts)
       if ((p.ctrl[a] || []).includes(code)) out.push({ playerIndex: idx, edge });
     }
   });

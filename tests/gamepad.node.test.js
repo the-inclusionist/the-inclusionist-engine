@@ -389,6 +389,27 @@ describe('initGamepad — pollPads', () => {
     api.pollPads(); // botão 0 ainda pressionado -> sem NOVA borda
     expect(p.jumpEdge).toBe(false);
   });
+  // A guarda do Fácil (input/edges.ts) vale nos TRÊS caminhos de entrada. Estes dois casos fecham o triângulo:
+  // keydown e touch-bindings já a testavam, e o controle não — a regra podia ser desligada na folha sem que
+  // nada aqui reagisse. `run` no mapa padrão é o botão 5 (ombro direito).
+  it('[Right] Fácil: o botão de correr do controle NÃO levanta runEdge (mesma regra do teclado e do toque)', () => {
+    const p = makePlayer({ pad: 0, easy: true });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [5] })]);
+    api.pollPads();
+    expect(p.runEdge).toBe(false);
+  });
+  it('[Inverse] SEM Fácil, o mesmo botão levanta runEdge — prova que a guarda é o `easy`, não o mapa', () => {
+    const p = makePlayer({ pad: 0, easy: false });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [5] })]);
+    api.pollPads();
+    expect(p.runEdge).toBe(true);
+  });
   it('[Right] fase "title": navTitle recebe as teclas quando algum jogador aciona', () => {
     const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
     const api = initGamepad(ctx);
