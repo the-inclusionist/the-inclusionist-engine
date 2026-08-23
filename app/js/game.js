@@ -65,6 +65,7 @@ import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activitie
 import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js'; // Onda A: menu de pausa por tela + barra de icones de a11y
 import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/abandono/selo de espera)
 import { screenGrid, screenBaseSize } from './core/screens.js'; // grade de telas (fonte unica)
+import { initPhysics, stepPlayer as stepPhysics } from './game/physics.js'; // B1: fisica do jogador (ancorada nas trajetorias-ouro)
 import { initViewports } from './render/viewports.js'; // B2: fabrica de imagem dos modos de visao
 import { initVizSetters } from './render/viz-setters.js'; // Onda A: aplicacao dos modos de visao acessivel
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
@@ -873,166 +874,22 @@ function configureRender(){
 initMinimap(app.stage, WORLD_W, WORLD_H); // render/minimap (Estágio 4, Tier 1): container + fog-of-war (markSeen/redrawMinimapIfDirty/drawMinimapPlayer/resetMinimap/setMinimapCorner/…)
 buildGameHud(); // HUD por jogador no init (single-screen; configureRender só roda ao trocar nº de telas)
 
-/* ===================== física (por jogador — E11) ===================== */
-function sampleFeatures(pl){
-  const l=pl.x-BOX.w/2,r=pl.x+BOX.w/2,t=pl.y-BOX.h,b=pl.y;
-  let water=false,ladder=false,lava=false;
-  for(let ty=Math.floor(t/TILE);ty<=Math.floor((b-0.01)/TILE);ty++)
-    for(let tx=Math.floor(l/TILE);tx<=Math.floor((r-0.01)/TILE);tx++){
-      const tt=tileAt(tx,ty); if(tt===3)water=true; if(tt===4)ladder=true; if(tt===9)lava=true; if(tt===5&&wheelchair)ladder=true; // cadeirante: trampolim = elevador (↑/↓)
-    }
-  if(wheelchair && elevAt(pl)) ladder=true; // cadeirante: toda a coluna do poço "segura" o jogador (plataforma), sem gravidade
-  return {water,ladder,lava};
-}
-function resolveX(pl){
-  const l=pl.x-BOX.w/2,r=pl.x+BOX.w/2,t=pl.y-BOX.h,b=pl.y;
-  const c0=Math.floor(l/TILE),c1=Math.floor((r-0.01)/TILE),r0=Math.floor(t/TILE),r1=Math.floor((b-0.01)/TILE);
-  for(let row=r0;row<=r1;row++)for(let col=c0;col<=c1;col++){ if(!solidAt(col,row))continue;
-    if(wheelchair && isWcRampRiser(col,row))continue; // cadeirante: degrau com rampa não é parede — a rampa guia o Y
-    const tl=col*TILE;
-    if(pl.vx>0)pl.x=tl-BOX.w/2-0.01; else if(pl.vx<0)pl.x=tl+TILE+BOX.w/2+0.01;
-    pl.vx=0; return;
-  }
-}
-function resolveY(pl){
-  const l=pl.x-BOX.w/2,r=pl.x+BOX.w/2,t=pl.y-BOX.h,b=pl.y;
-  const c0=Math.floor(l/TILE),c1=Math.floor((r-0.01)/TILE),r0=Math.floor(t/TILE),r1=Math.floor((b-0.01)/TILE);
-  for(let row=r0;row<=r1;row++)for(let col=c0;col<=c1;col++){ if(!solidAt(col,row))continue;
-    const tt=row*TILE,type=tileAt(col,row);
-    if(pl.vy>0){ pl.y=tt-0.01;
-      if(type===5&&!wheelchair){ pl.vy = pl.easy ? -EASY.tramp : -(held(pl,'jump')?TUNE.trampMax:TUNE.trampBase); } // Fácil: quique suave. Cadeirante: sem quique (é elevador)
-      else { pl.vy=0; pl.onGround=true; }
-    } else if(pl.vy<0){ pl.y=tt+TILE+BOX.h+0.01; pl.vy=0; }
-    return;
-  }
-}
-function triggerLava(pl){
-  if(pl.hurtTimer>0)return;
-  setCoins(pickCoins(COIN_TARGET, coinPools())); rebuildCoins();
-  players.forEach(p=>p.collected=0); collected=0; updateHud();
-  earcons.sfx('hurt'); pl.hurtTimer=60; pl.vy=-10; pl.vx=(rnd()<0.5?-1:1)*5;
-  addShake(3,14); addHitstop(4); // JUICE: dano é o impacto mais forte do jogo
-  srAlert('Cuidado! Tocou na lava. As moedas voltaram para posições aleatórias.');
-}
+/* ===================== física (por jogador — E11) -> game/physics.ts (B1) =====================
+   sampleFeatures/resolveX/resolveY/triggerLava e o CORPO de fisica do stepPlayer moram no modulo, ancorados
+   nos 600 quadros de tests/fixtures/physics-golden.json. O QUE FICA aqui e a outra metade do stepPlayer:
+   coleta de moeda, quiz, power-ups, chave/portao e a animacao do sprite — dependem de MODE, coins, powerups,
+   gate e texturas, que sao render/estado do monolito.
+   `dir` e a unica variavel local que atravessa a fronteira, e por isso stepPlayer devolve {ran, dir}:
+   `ran:false` reproduz o return seco de quiz/quit/waiting, que abortava a funcao INTEIRA, animacao inclusive. */
+initPhysics({
+  isWheelchair: ()=>wheelchair, isModoCego: ()=>modoCego, caneOn, WORLD_PX_H: ()=>WORLD_PX_H,
+  sfx: (n)=>earcons.sfx(n), srSay, srAlert, hideTips, showPower, nav,
+  tonePan, noiseHit, surfaceUnder,
+  puffDust, setSquash, addShake, addHitstop, POWER_MSG,
+  coinPools: ()=>coinPools(), rebuildCoins, updateHud, setCollected: (n)=>{ collected=n; },
+});
 function stepPlayer(pl,dt){
-  if(pl.quiz||pl.quit||pl.waiting)return; // em desafio; abandonou; ou ESPERANDO apertar um botão para entrar
-  const run=held(pl,'run') && !pl.easy && !pl.toggleMove && (!caneOn(pl)||!!pl.runCane), turbo=pl.activePower==='turbo'; // cego só corre com a bengala de corrida
-  let dir;
-  if(pl.toggleMove){ // movimento por alternância (1 dedo): tocar trava a direção; segurar acelera
-    if(pl.leftEdge)  pl.walkDir = pl.walkDir===-1?0:-1;   // toque inverte/para
-    if(pl.rightEdge) pl.walkDir = pl.walkDir=== 1?0: 1;
-    dir=pl.walkDir;
-    const holding=(dir===-1&&held(pl,'left'))||(dir===1&&held(pl,'right'));
-    pl.vx=dir*TUNE.hWalk*(holding?2/3:1/3);               // segurando = 2/3 · travado = 1/3
-  } else {
-    dir=(held(pl,'right')?1:0)-(held(pl,'left')?1:0); // Fácil: sem correr
-    pl.vx=dir*(pl.easy?TUNE.hWalk*EASY.speed:(run?(turbo?TUNE.hTurbo:TUNE.hRun):TUNE.hWalk)); // E18: super-corrida (turbo); Fácil: andar ×0.7
-  }
-  if(dir!==0)pl.facing=dir; pl.leftEdge=false; pl.rightEdge=false;
-  const feat=sampleFeatures(pl); pl.inWater=feat.water; pl.onLadder=feat.ladder;
-  if(pl.hurtTimer>0)pl.hurtTimer-=dt;
-  if(feat.lava && !pl.easy && !wheelchair && !modoCego) triggerLava(pl); // Fácil, cadeirante e CEGO: imunidade (lava vira chão)
-  if(pl.jumpEdge)pl.jumpBuffer=7; else if(pl.jumpBuffer>0)pl.jumpBuffer--;
-  // E18: ventosa (homem-aranha) — gruda na parede ao apertar Correr no ar; solta com Pular
-  if(pl.clinging && (pl.onLadder||pl.inWater||pl.activePower!=='wallcling' || pl.onGround || clingSides(pl).D)) pl.clinging=false; // E18d: pés numa superfície estável (sólido logo abaixo) ENCERRAM; pendurado no teto (pés p/ cima) ou na parede alta continua
-  if(pl.activePower==='wallcling' && !pl.clinging && pl.runEdge && !pl.onGround && !pl.onLadder && !pl.inWater && firstClingSide(pl)){ pl.clinging=true; pl.clingN=firstClingSide(pl); pl.vy=0; pl.vx=0; pl.jumpBuffer=0; earcons.sfx('power'); srSay('Modo aranha! Engatinha em paredes e teto; contorna quinas. Correr solta.'); }
-  else if(pl.clinging && pl.runEdge){ pl.clinging=false; earcons.sfx('power'); srSay('Soltou da superfície.'); } // E18b: CANCELA só com Correr (não com Pular); a caixa não larga a superfície antes disso
-  if(!pl.clinging) pl.clingN=null;
-  // TROCAR PODER / SONAR: tap curto no swap = troca poder; SEGURAR o swap ou o acorde swap+especial = SONAR (F3).
-  const doSwap=()=>{ if(!pl.owned.length)return; const seq=['off',...pl.owned]; let idx=seq.indexOf(pl.activePower); pl.activePower=seq[(idx+1)%seq.length];
-    pl.clinging=false; pl.flying=false; earcons.sfx('power'); showPower(pl); srSay(pl.activePower==='off'?'Sem poder ativo.':(POWER_MSG[pl.activePower]||'Poder ativado!')); };
-  const swapNow=held(pl,'swap');
-  if(swapNow){ pl._swapT+=dt;
-    if(!pl._swapSonar && (pl._swapT>18 || held(pl,'especial'))){ pl._swapSonar=true; nav.sonar(pl); } // segurar ~0,3s OU acorde swap+especial
-  } else { if(pl._swapDown && !pl._swapSonar) doSwap(); pl._swapT=0; pl._swapSonar=false; } // soltou após tap curto → troca
-  pl._swapDown=swapNow;
-  // ESPECIAL: ação ainda não implementada (stub — apenas registra o gatilho)
-  if(pl.specialEdge){ /* TODO: ação especial por poder/contexto */ }
-  pl.jumpEdge=false; pl.runEdge=false; pl.swapEdge=false; pl.specialEdge=false;
-  // E16c: voo é ALTERNADO pelo Pulo NO AR (com o poder ativo): pula no ar → liga; pula voando → desliga.
-  // Tocar o solo ou a água também encerra. (Antes ligava ao coletar; agora exige o pulo no ar.)
-  if(pl.activePower==='fly' && pl.jumpBuffer>0 && !pl.onGround){ pl.flying=!pl.flying; pl.jumpBuffer=0; earcons.sfx('power'); srSay(pl.flying?'Voo ativado! Cima/Baixo sobem e descem; Pular encerra.':'Voo encerrado.'); }
-  if(pl.flying && (pl.onGround||pl.inWater||pl.activePower!=='fly')) pl.flying=false;
-  let fired=false;
-  if(pl.clinging){
-    const sp=TUNE.climbSpeed; // E18c: movimento TANGENTE à face; a caixa fica colada até cancelar com Correr
-    if(pl.clingN==='R')pl.facing=1; else if(pl.clingN==='L')pl.facing=-1;   // E18e: ALPINISMO — vira de frente PARA a parede
-    if(pl.clingN==='U'||pl.clingN==='D'){ pl.vy=0; const h=held(pl,'left')?-1:held(pl,'right')?1:0; pl.vx=h*sp; if(h)pl.facing=h; } // teto/chão: anda na horizontal
-    else { pl.vx=0; pl.vy = held(pl,'up')?-sp : held(pl,'down')?sp : 0; }                                        // parede: sobe/desce
-  } else if(pl.onLadder){
-    pl.vy=0;
-    if(wheelchair){ // ELEVADOR: toque ↑/↓ = viaja sozinho até a parada segura (topo/base); andar p/ L/R numa parada sai
-      const s=elevAt(pl);
-      if(s){ if(pl.elevTarget==null && pl.y>s.yBottom+0.5) pl.y=s.yBottom; // DESAFUNDA: parado, cola no topo (yBottom) — a rampa deixava uns px dentro do tile
-        if(held(pl,'up')&&s.yTop<pl.y-0.5) pl.elevTarget=s.yTop; else if(held(pl,'down')&&s.yBottom>pl.y+0.5) pl.elevTarget=s.yBottom;
-        if((held(pl,'left')||held(pl,'right'))){ const col=held(pl,'right')?s.xMax+1:s.xMin-1, row=Math.floor(pl.y/TILE); if(surfTop(col,row)||surfTop(col,row+1)) pl.elevTarget=null; } } // sai p/ o piso ao lado, mesmo 1 tile ABAIXO (trampolim-bloco sobre o chão)
-      if(pl.elevTarget!=null){ const dy=pl.elevTarget-pl.y;
-        if(Math.abs(dy)<=ELEV_SPEED){ pl.y=pl.elevTarget; pl.vy=0; pl.elevTarget=null; } else pl.vy=Math.sign(dy)*ELEV_SPEED; }
-    } else {
-      if(held(pl,'up'))pl.vy=-TUNE.climbSpeed; else if(held(pl,'down'))pl.vy=TUNE.climbSpeed;
-      if(pl.jumpBuffer>0){ pl.vy=(pl.activePower==='ultrajump')?-TUNE.ultraJumpVel:jumpVel(pl,pl.activePower==='superjump'?9:5); pl.onLadder=false; pl.jumpBuffer=0; earcons.sfx('jump'); hideTips(); }
-    }
-  } else if(pl.flying){ // voo ATIVO: Cima sobe / Baixo desce / plana parado. Pular alterna (tratado acima)
-    pl.waterStroke=0; const fs=turbo?3.9:2.6;
-    if(held(pl,'up')) pl.vy=-fs; else if(held(pl,'down')) pl.vy=fs; else pl.vy*=0.7;
-    pl.vy=Math.max(-fs,Math.min(fs,pl.vy));
-  } else {
-    const g = (pl.inWater?0.10:TUNE.gravity)*(pl.easy?EASY.grav:1); // Fácil: gravidade ×2/3
-    if(!(pl.onGround&&pl.vy>=0)) pl.vy += g*dt;
-    if(pl.easy && held(pl,'jump') && pl.vy>EASY.slowFall && !pl.inWater) pl.vy=EASY.slowFall; // Fácil: segurar pulo = flutua descendo
-    if(pl.inWater){
-      if(held(pl,'jump')){ if(pl.waterStroke<=0){ pl.vy-=run?TUNE.waterJumpRun:TUNE.waterJump; pl.waterStroke=TUNE.waterStrokeFrames; } }
-      else pl.waterStroke=0;
-      if(pl.waterStroke>0)pl.waterStroke-=dt;
-      pl.vy=Math.min(pl.vy,TUNE.waterMaxFall);
-    } else {
-      pl.waterStroke=0;
-      if(pl.onGround&&pl.jumpBuffer>0&&!wheelchair){ // E18: pulo encadeado (bunny-hop). Cadeirante: sem pulo.
-        if(run && isBouncyGroundBelow(pl) && pl.jumpChain>0) pl.jumpChain=Math.min(pl.jumpChain+1,3); else pl.jumpChain=1;
-        pl.vy = (pl.activePower==='ultrajump') ? -TUNE.ultraJumpVel : jumpVel(pl, pl.activePower==='superjump'?9:[0,5,8,9][pl.jumpChain]);
-        pl.onGround=false; pl.jumpBuffer=0; fired=true; earcons.sfx('jump'); hideTips();
-        setSquash(pl,0.16); puffDust(pl.x,pl.y,3); // JUICE: estica ao saltar + poeira do impulso
-      }
-      pl.vy=Math.min(pl.vy,TUNE.maxFall);
-    }
-  }
-  // Proteção de borda (Fácil e alternância) — andar não derruba em fosso; só cai segurando ↓ (não vale na água/escada/voo/aranha)
-  if((pl.easy||pl.toggleMove||wheelchair) && pl.onGround && pl.vx!==0 && !held(pl,'down') && !pl.inWater && !pl.onLadder && !pl.flying && !pl.clinging){
-    const dirX=pl.vx>0?1:-1, leadX=pl.x+dirX*(BOX.w/2)+pl.vx*dt, leadTx=Math.floor(leadX/TILE), belowTy=Math.floor((pl.y+1)/TILE);
-    const grounded = solidAt(leadTx,belowTy) || (wheelchair && solidAt(leadTx,belowTy+1)); // cadeirante: rampa = chão a até 1 tile abaixo (não é fosso)
-    if(!grounded) pl.vx=0;
-  }
-  const _preX=pl.x, _preY=pl.y;
-  pl.x+=pl.vx*dt; resolveX(pl);
-  // Cadeirante: anda COLADO na superfície da rampa 45° (sobe e desce a diagonal desenhada), em vez do antigo empurrão
-  const _ry = (wheelchair && !pl.onLadder && !pl.inWater && !pl.flying) ? rampSurfaceY(pl.x, pl.y) : null;
-  if(_ry!=null && Math.abs(_ry-pl.y)<=TILE+4 && (_ry<pl.y || pl.onGround)){
-    pl.y=_ry; pl.vy=0; pl.onGround=true;                 // superfície da rampa (subindo sempre; descendo só se já apoiado)
-  } else {
-    pl.onGround=false; pl._fallV=pl.vy; pl.y+=pl.vy*dt; resolveY(pl); // _fallV: velocidade ANTES do resolve (p/ juice de pouso)
-  }
-  if(pl.clinging) spiderReattach(pl,_preX,_preY); // E18c: mantém contato e contorna quinas (parede↔teto↔topo)
-  if(pl.onGround && pl.airTime>6 && !pl.inWater){ const v=pl._fallV||0; // JUICE: pouso após queda real (airTime ainda é o valor do ar)
-    if(v>1.2){ puffDust(pl.x,pl.y,Math.min(8,2+Math.round(v))); setSquash(pl,-0.08-0.03*v); if(v>=TUNE.maxFall*0.85)addShake(2.5,10); } }
-  if(pl.onGround && !fired){ if(++pl.groundIdle>10)pl.jumpChain=0; } else pl.groundIdle=0; // zera cadeia parado
-  if(pl.onGround) pl.airTime=0; else pl.airTime+=dt; // E16: tempo no ar (estabiliza anim — onGround pisca ao repousar)
-  // F2: passos por superfície · escada (madeira) · escalada (parede). Cadência = ritmo do andar/correr.
-  if(!pl.inWater){
-    if(caneOn(pl)){ if(pl.airTime<=5){ // modo cego: chão ESTÁVEL (coyote) evita o flicker do onGround
-      if(dir!==0){ pl.caneDist=(pl.caneDist||0)+Math.abs(pl.vx*dt); if(pl.caneDist>=caneBlockPx()){ pl.caneDist=0; nav.caneTap(pl); } } // ANDANDO: batida por DISTÂNCIA
-      else { pl.caneDist=0; if(held(pl,'run')){ pl.stepT+=dt; if(pl.stepT>=25){ pl.stepT=0; nav.caneTap(pl); } } else pl.stepT=99; } } } // PARADO: sem batida; segurar corrida = sondagem (batida no chão à frente)
-    else if(pl.onGround && dir!==0){ const cad=(held(pl,'run')&&!pl.easy&&!pl.toggleMove)?11:17; pl.stepT+=dt; if(pl.stepT>=cad){ pl.stepT=0; const m=surfaceUnder(pl); if(m)noiseHit(m);
-      if(run)puffDust(pl.x-pl.facing*5,pl.y,2); } } } // normal: passo no chão sob os pés · JUICE: correndo levanta poeira nos calcanhares
-  else if(pl.onLadder && pl.vy!==0){ pl.stepT+=dt; if(pl.stepT>=20){ pl.stepT=0; noiseHit('madeira'); } }
-  else if(pl.clinging && (pl.vx!==0||pl.vy!==0)){ pl.stepT+=dt; if(pl.stepT>=16){ pl.stepT=0; noiseHit('parede'); } }
-  else if(pl.inWater && caneOn(pl)){ nav.waterNav(pl); } // NADO CEGO: guia por contato (paredes/chão/superfície-cordas)
-  else pl.stepT=99; // parado → próximo passo soa logo ao recomeçar
-  // F3: guarda de beirada — bipa ao caminhar em direção a um fosso (só quando a visão está comprometida: blind/baixa visão)
-  if(nav.needsAudioCues(pl) && pl.onGround && dir!==0 && !pl.inWater && !pl.onLadder && !pl.flying && !pl.clinging){
-    const leadTx=Math.floor((pl.x+dir*(BOX.w/2+TILE*0.5))/TILE), belowTy=Math.floor((pl.y+1)/TILE);
-    if(!solidAt(leadTx,belowTy)){ pl.guardT+=dt; if(pl.guardT>=9){ pl.guardT=0; tonePan(760,0.06,'guard',nav.panFor((leadTx+0.5)*TILE,pl),0.16,'square',nav.playerCtx(pl)); } } else pl.guardT=99;
-  } else pl.guardT=99;
-  if(pl.y-BOX.h>WORLD_PX_H+40){ pl.x=SPAWN_X; pl.y=SPAWN_Y; pl.vx=pl.vy=0; }
+  const _p=stepPhysics(pl,dt); if(!_p.ran)return; const dir=_p.dir; // fisica em game/physics.ts
   // coletar (P1 abre quiz nos modos didáticos; MP é Lúdico). Fácil: hitbox de coleta +4px por lado.
   const pad=pl.easy?EASY.pad:0;
   const box={x:pl.x-BOX.w/2-pad,y:pl.y-BOX.h-pad,w:BOX.w+2*pad,h:BOX.h+2*pad};
