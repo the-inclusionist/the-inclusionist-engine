@@ -43,16 +43,16 @@
 //      !p.easy) p.runEdge = true;`);
 //   3. AQUI (`TOUCH_EDGE_BY_ACTION` + `touchEdgesFor`), que veio dos seis `if` à mão do main.js — e o do `run`
 //      **NÃO TEM** a guarda do Fácil.
-// Isso está PRESERVADO VERBATIM e é comportamento ATUAL, não desejado.
+// Isso FOI CORRIGIDO: o `run` daqui passou a ter a mesma guarda dos outros dois caminhos.
 //
 // A consequência é de acessibilidade, e é ao contrário do que o nome sugere. `runEdge` não é a velocidade de
 // corrida (isso é `held(pl,'run')`, lido em `game/physics.ts:169-170`): `runEdge` é a BORDA que gruda e solta
 // da parede — a ventosa/homem-aranha de `updateCling`, em `game/physics.ts:177` e `:179`. Logo, hoje, no modo
 // Fácil (deficiência motora), a criança NÃO consegue escalar parede pelo teclado nem pelo controle físico —
 // mas CONSEGUE pelo botão da tela. Três caminhos de entrada, dois comportamentos.
-// NÃO CONSERTE AQUI. O conserto (uma guarda a mais, ou as três tabelas viradas uma só) é decisão do José, e
-// precisa desta rede: `tests/touch-bindings.node.test.js` pina os três caminhos lado a lado, para que quem
-// unificar as tabelas veja o teste vermelho em vez de "limpar" a divergência sem perceber que mudou o jogo.
+// O teste continua comparando os TRÊS caminhos lado a lado, com o `edgesFor` real importado de `keydown.js` —
+// agora exigindo que CONCORDEM. As três tabelas ainda são três; fundi-las numa só é o passo seguinte, e é o
+// que impede a divergência de voltar.
 //
 // ======================= O QUE FICOU DE FORA, E POR QUÊ =======================
 //  · `hideTouchControls`/`showTouchControls` são de `input/touch.ts`. Aqui só se CHAMA `showTouchControls`
@@ -100,8 +100,8 @@ export interface EdgeRaise { playerIndex: number; edge: EdgeFlag }
 /** O que este módulo lê (e escreve) de um jogador — e SÓ isso. */
 export interface TouchBindPlayer {
   ctrl?: KeyScheme | null;
-  /** modo Fácil (deficiência motora). Lido AQUI só pelos testes da divergência: `touchEdgesFor` NÃO o
-   *  consulta — é exatamente esse o defeito preservado. Ver o cabeçalho. */
+  /** modo Fácil (deficiência motora): quem está nele não levanta `runEdge`, e portanto não gruda na parede —
+   *  a mesma regra do teclado e do controle. Ver o cabeçalho. */
   easy?: boolean;
   jumpEdge?: boolean; runEdge?: boolean; leftEdge?: boolean; rightEdge?: boolean;
   swapEdge?: boolean; specialEdge?: boolean;
@@ -193,6 +193,7 @@ export function touchEdgesFor(act: string, code: string, players: readonly Touch
     if (!p.ctrl) return; // jogador sem esquema (tela não ativada) não recebe borda
     for (const [a, edge] of TOUCH_EDGE_BY_ACTION) {
       if (a !== act) continue;
+      if (a === 'run' && p.easy) continue; // Fácil: sem correr — a MESMA guarda de keydown.ts e gamepad.ts
       if ((p.ctrl[a] || []).includes(code)) out.push({ playerIndex: idx, edge });
     }
   });

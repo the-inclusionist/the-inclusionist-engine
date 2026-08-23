@@ -95,29 +95,38 @@ describe('touchEdgesFor — a borda sobe em quem tem AQUELE código no PRÓPRIO 
 
 /* ===================== 3. ⚠️ AS TRÊS CÓPIAS DA TABELA — a divergência do modo Fácil ===================== */
 
-describe('⚠️ modo Fácil e `run`: o toque DISCORDA do teclado — defeito ATUAL, pinado de propósito', () => {
+describe('modo Fácil e `run`: os três caminhos de entrada têm de CONCORDAR', () => {
   // Contexto (medido, não suposto): `runEdge` NÃO é a velocidade de corrida — a velocidade sai de
   // `held(pl,'run')` em game/physics.ts:169-170. `runEdge` é o gatilho de GRUDAR e SOLTAR da parede
   // (updateCling, game/physics.ts:177 e :179). A tabela ação→borda existe três vezes no projeto:
   //   · input/keydown.ts (EDGE_BY_ACTION + a guarda `if (act === 'run' && p.easy) continue;`)
   //   · input/gamepad.ts:478 (`if (edge('run') && !p.easy) p.runEdge = true;`)
-  //   · input/touch-bindings.ts (AQUI) — SEM a guarda.
-  // Resultado: no modo Fácil, a escalada não existe no teclado nem no controle, e existe no botão da tela.
-  // ISTO NÃO É PARA CONSERTAR AQUI. O conserto é decisão do José e mexe nas três de uma vez; este teste é a
-  // rede para que ele não desapareça no meio de um refactor.
+  //   · input/touch-bindings.ts (AQUI)
+  // Durante um tempo só o toque não tinha a guarda: no modo Fácil a escalada não existia no teclado nem no
+  // controle, e existia no botão da tela — quer dizer, a criança com dificuldade motora, no tablet, jogava um
+  // jogo diferente do da mesma criança no teclado. Corrigido; estes casos existem para que não volte.
+  // O `edgesFor` abaixo é o REAL, importado de keydown.js — comparar com uma reimplementação aqui não provaria
+  // nada, porque as duas cópias poderiam derivar juntas.
   const easy = [mkPlayer(SOLO, { easy: true })];
 
-  it('[toque] com `easy`, o botão da tela AINDA levanta runEdge (comportamento atual)', () => {
-    expect(touchEdgesFor('run', 'KeyU', easy)).toEqual([{ playerIndex: 0, edge: 'runEdge' }]);
+  it('[toque] com `easy`, o botão da tela NÃO levanta runEdge', () => {
+    expect(touchEdgesFor('run', 'KeyU', easy)).toEqual([]);
   });
 
   it('[teclado] com `easy`, o keydown NÃO levanta runEdge — a guarda "Fácil: sem correr"', () => {
     const s = { players: [{ i: 0, ctrl: SOLO, easy: true }], numPlayers: 1 };
-    expect(edgesFor('KeyU', s)).toEqual([]); // a mesma tecla, o mesmo jogador, a outra tabela
+    expect(edgesFor('KeyU', s)).toEqual([]);
   });
 
-  it('[teclado] SEM `easy`, o keydown levanta runEdge — prova que a diferença é a guarda, não o esquema', () => {
+  it('[Invariant] com `easy`, toque e teclado dão a MESMA resposta para `run`', () => {
+    const s = { players: [{ i: 0, ctrl: SOLO, easy: true }], numPlayers: 1 };
+    expect(touchEdgesFor('run', 'KeyU', easy)).toEqual(edgesFor('KeyU', s));
+  });
+
+  it('[Inverse] SEM `easy`, os dois levantam runEdge — prova que a guarda é o `easy`, não o esquema', () => {
+    const normal = [mkPlayer(SOLO, { easy: false })];
     const s = { players: [{ i: 0, ctrl: SOLO, easy: false }], numPlayers: 1 };
+    expect(touchEdgesFor('run', 'KeyU', normal)).toEqual([{ playerIndex: 0, edge: 'runEdge' }]);
     expect(edgesFor('KeyU', s)).toEqual([{ playerIndex: 0, edge: 'runEdge' }]);
   });
 
