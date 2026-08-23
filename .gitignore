@@ -26,3 +26,7 @@ _review/
 # e os wasm do sherpa. E artefato BAIXADO, nao fonte: reproduzivel pela URL,
 # pesado, e uma vez dentro da historia do git nao sai mais.
 docs/research/sherpa-wasm/
+
+# Vitest browser-mode artefatos (gerados por rodada, nao versionados)
+.vitest-attachments/
+tests/__screenshots__/
