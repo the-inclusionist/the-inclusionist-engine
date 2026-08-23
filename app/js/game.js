@@ -1967,7 +1967,10 @@ document.querySelectorAll('.mode-btn, .pm-btn').forEach(attachAbbr);
 // PAD_DESIGNS extraído p/ input/devices.js (Fase 2).
 // padDesign/applyPadDesign migraram para input/touch.ts (Onda A). simNaoGlyphs/renderPauseLegend FICAM:
 // sao a legenda Sim/Nao da pausa, nao geometria de toque — o modulo as avisa por onPadDesignApplied.
-function simNaoGlyphs(){ const d=touchCtl.getPadDesign(); const set=PAD_DESIGNS[d]||PAD_DESIGNS.generic; const inv=(d==='sony'||d==='nintendo');
+// Le o desenho do ARMAZENAMENTO, nao de touchCtl: o initTouch chama applyPadDesign() antes de retornar, e
+// esse gancho cai aqui com o `const touchCtl` ainda em TDZ. O modulo persiste o valor ANTES de disparar o
+// gancho, entao o armazenamento e a fonte correta e sempre esta pronta.
+function simNaoGlyphs(){ const d=store.get('incl_paddesign','generic'); const set=PAD_DESIGNS[d]||PAD_DESIGNS.generic; const inv=(d==='sony'||d==='nintendo');
   return { sim:set[inv?'1':'0'], nao:set[inv?'0':'1'] }; }
 function renderPauseLegend(){ const g=simNaoGlyphs();
   const chip=(s,word)=>`<span class="lg"><span class="lg-ico" style="background:${s[1]}">${s[0]}</span> ${word}</span>`;
@@ -1989,7 +1992,7 @@ function renderPauseLegend(){ const g=simNaoGlyphs();
 const touchCtl = initTouch({ $, srSay, store, root: document.documentElement, isMobile,
   viewport: () => ({ w: window.innerWidth, h: window.innerHeight }),
   frontOverlay, onPadDesignApplied: () => { if(typeof renderPauseLegend==='function') renderPauseLegend(); } });
-touchCtl.applyPadDesign(store.get('incl_paddesign','generic'));
+// (o proprio initTouch ja aplica o desenho salvo no fim da sua inicializacao)
 addEventListener('gamepadconnected', (e)=>{ try{ const d=touchCtl.applyPadDesign(padLayoutFromId(e.gamepad.id)); const sel=$('#pad-design'); if(sel)sel.value=d; srSay('Controle conectado: layout '+d+'.'); }catch(err){} }); // A2: layout pelo id do controle
 const padDesignSel=$('#pad-design'); if(padDesignSel){ padDesignSel.value=touchCtl.getPadDesign(); padDesignSel.addEventListener('change',()=>{ touchCtl.applyPadDesign(padDesignSel.value); srSay('Desenho dos botões: '+padDesignSel.value+'.'); }); } // A4: escolha manual
 // JOGAR COM OS OLHOS: eyeMode/eyeSet/onGaze/startEyeControl/stopEyeControl/loadWebGazer → ui/webcam.js (Estágio 4, Tier 1).
@@ -2327,8 +2330,10 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
 // setMinimapCorner extraído p/ render/minimap.js (Estágio 4, Tier 1).
 // teclado/controle → esconde os botões e devolve o minimapa ao canto inferior esquerdo
 // hideTouchControls/showTouchControls migraram para input/touch.ts (Onda A).
-const hideTouchControls = (reason) => touchCtl.hideTouchControls(reason);
-const showTouchControls = () => touchCtl.showTouchControls();
+// DECLARACOES de funcao, nao const: o setPhase('title') do boot chama hideTouchControls antes desta linha,
+// e so o icamento faz isso funcionar — era assim no original. O corpo so toca touchCtl na hora da chamada.
+function hideTouchControls(reason){ touchCtl.hideTouchControls(reason); }
+function showTouchControls(){ touchCtl.showTouchControls(); }
 (function touchSetup(){
   const tc=$('#touch-controls'); if(!tc)return;
   // alternancia por modalidade: toque/clique MOSTRA; teclado/controle OCULTA (hideTouchControls).
