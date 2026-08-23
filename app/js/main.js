@@ -1343,9 +1343,9 @@ function showTouchControls(){ touchCtl.showTouchControls(); }
 /* Amarras do toque -> input/touch-bindings.ts (D3-b). LAZY de proposito: `attractCtl` e `const` declarado
    ABAIXO desta linha (TDZ). `keys` e `const` mutado in place -> entra por VALOR; showTouchControls/hideTips/
    togglePause sao declaracoes icadas e ja existem aqui, entao entram por referencia direta.
-   ATENCAO: `getStartAction` preserva VERBATIM o `touchMap.start` do original — e `touchMap` NAO existe neste
-   escopo. O botao START do pad esta MORTO hoje (ReferenceError no clique, reproduzido no navegador); o corte
-   isola o defeito nesta unica linha para o conserto ser uma palavra, em commit proprio. */
+   `getStartAction` le do dono do mapa (touchCtl). Antes alcancava um `touchMap` pelado, que e variavel
+   privada do closure de input/touch.ts e nunca existiu aqui: o botao START do pad lancava ReferenceError e
+   nao fazia nada. */
 const touchBindings = initTouchBindings({
   $, win: window, getSearch: () => location.search,
   getControls: () => kbRuntime.controlsState().controls,
@@ -1353,7 +1353,7 @@ const touchBindings = initTouchBindings({
   attractOnInput: () => attractCtl.onInput(),
   showTouchControls, hideTips, togglePause,
   getTouchMap: () => touchCtl.getTouchMap(),
-  getStartAction: () => touchMap.start,
+  getStartAction: () => touchCtl.getTouchMap().start, // era `touchMap.start` — nome que nunca existiu neste escopo
   getStickTravelPx: () => touchCtl.getStickTravelPx(),
   getStickDeadPx: () => touchCtl.getStickDeadPx(),
 });
