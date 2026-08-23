@@ -226,8 +226,9 @@ let collected=0, ended=false; setCoins(pickCoins(COIN_TARGET, coinPools())); // 
    initGamepad, avaliado eager. */
 const overlays = initSettingsPanel({ $, $$, doc: document, computedZ: (el)=>+getComputedStyle(el).zIndex||0 });
 const { frontOverlay } = overlays;
-let jumpEdge=false; // as seis flags `*Open` que moravam aqui morreram: quem sabe se um painel esta aberto e o
-                    // proprio DOM, e o registro de ui/settings-panel le de la (D1).
+// As seis flags `*Open` que moravam aqui morreram: quem sabe se um painel esta aberto e o proprio DOM, e o
+// registro de ui/settings-panel le de la (D1). `jumpEdge` estava nesta mesma linha e tambem morreu: era
+// global sem leitor nenhum — a borda de pulo que o jogo usa e `p.jumpEdge`, campo do jogador, outra coisa.
 // Gamepad (B3/L1): estado por controle. padCur[gi]=ações seguradas neste frame; associação pad↔jogador vive em p.pad.
 // padCur/padPrevAct/padPrevStart + PAD_DEAD movidos p/ input/state.js (Fase 2.22)  // // zona morta = primeira METADE do curso (ergonomia — José 2026-07-02)
 // Config de teclado extraída p/ input/keyboard.js (Fase 2): esquemas, defaults, loadKB/saveKB/resetKB.
@@ -279,7 +280,6 @@ const keydownApi = initKeydown({
 });
 keydownApi.attach();
 addEventListener('blur',()=>keys.clear());
-const anyOf=(arr)=>arr.some(k=>keys.has(k));
 // held(pl,act) movido p/ input/state.js (Fase 2.22) // teclado OU gamepad do jogador
 
 /* ===================== a11y ===================== */
