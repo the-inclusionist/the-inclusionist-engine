@@ -439,3 +439,27 @@ describe('initGamepad — padMapFor', () => {
     expect(a).toBe(b);
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// Demonstracao animada do assistente — regressao do `SPR` (ver render/sprites.ts)
+// No game.js o caminho dos PNGs era escrito como `SPR`, um identificador que NUNCA foi declarado nem
+// importado ali: existia so como const privado do render/sprites.ts. Abrir o assistente chamava
+// padWizDemo(null), que caia no ramo do sprite parado e lancava ReferenceError — o remapeamento de
+// controle inteiro estava morto, sem que build, tsc ou teste algum notasse (game.js nao e tipado nem
+// coberto). Aqui a base entra como dependencia declarada, entao a falha e impossivel por construcao;
+// estes testes fixam o VALOR para que ninguem a desligue por engano depois.
+// ---------------------------------------------------------------------------------------------
+
+describe('initGamepad — imagem da demonstracao', () => {
+  it('[Right] abrir o assistente aponta a imagem para o sprite parado, a partir da base injetada', () => {
+    const ctx = buildCtx(); const api = initGamepad(ctx);
+    api.openPadWiz();
+    expect(ctx.dom.get('#padwiz-demo-img').src).toBe('assets/sprites/menino/idle/0.png');
+  });
+
+  it('[Interface] a base vem do ctx, nao esta escrita no modulo', () => {
+    const ctx = buildCtx({ spriteBase: 'x/y/' }); const api = initGamepad(ctx);
+    api.openPadWiz();
+    expect(ctx.dom.get('#padwiz-demo-img').src).toBe('x/y/idle/0.png');
+  });
+});

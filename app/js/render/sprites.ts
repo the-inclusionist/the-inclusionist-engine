@@ -28,7 +28,10 @@ export let TEX_IDLE: PIXI.Texture[] = [], TEX_WALK: PIXI.Texture[] = [], TEX_RUN
 export let TEX_JUMP_UP: PIXI.Texture | null = null, TEX_JUMP_DOWN: PIXI.Texture | null = null, TEX_CLIMB: PIXI.Texture[] = [], TEX_FLY: PIXI.Texture | null = null;
 export let TEX_CLING_WALL: PIXI.Texture[] = [], TEX_CLING_CEIL: PIXI.Texture[] = [], TEX_SWIM: PIXI.Texture[] = [], TEX_SWIMIDLE: PIXI.Texture[] = [];
 
-const SPR = 'assets/sprites/menino/';
+// Base dos PNGs do personagem. EXPORTADA porque o assistente de mapeamento de controle (input/gamepad)
+// monta os caminhos da demonstracao animada a partir dela; era um `const` privado e o game.js usava o
+// nome como se fosse global, o que derrubava o assistente com ReferenceError ao abrir.
+export const SPR = 'assets/sprites/menino/';
 const pngTex = (f: string): PIXI.Texture => { const t = PIXI.Texture.from(SPR + f); t.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST; return t; };
 const A = (anim: string, n: number): PIXI.Texture[] => Array.from({ length: n }, (_, i) => pngTex(anim + '/' + i + '.png')); // frames de cor
 
