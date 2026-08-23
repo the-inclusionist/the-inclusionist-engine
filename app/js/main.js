@@ -74,7 +74,9 @@ import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js';
 import { initShell } from './ui/shell.js'; // C3: a casca — em que TELA o jogo esta (fase, pausa, legenda do titulo)
 import { initMenuNav } from './ui/menu-nav.js'; // C3: navegacao universal de menus (teclado/controle/olhos/fala) // Onda A: menu de pausa por tela + barra de icones de a11y
 import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/abandono/selo de espera)
-import { screenGrid } from './core/screens.js'; // grade de telas (fonte unica)
+import { initScreenPipeline } from './render/screen-pipeline.js'; // D3-c: topologia do render por tela (grade, render-textures, molduras, bolinhas)
+import { initSecretAreas } from './game/secret-areas.js'; // D3-c: area secreta revelada por presenca + anuncio ao leitor de tela
+import { initMapHub } from './ui/map-hub.js'; // D3-c: painel "Mapear controles" do menu de Movimento
 import { initPhysics, stepPlayer as stepPhysics } from './game/physics.js'; // B1: fisica do jogador (ancorada nas trajetorias-ouro)
 import { initQuiz } from './game/quiz.js'; // B3: o desafio educativo (geracao + markup + efeito)
 import { initSettingsPanel } from './ui/settings-panel.js'; // B4: o que as cascas dos paineis realmente compartilham
@@ -731,34 +733,25 @@ const hud = initHud({
 });
 const buildGameHud  = () => hud.buildGameHud();
 const updateGameHud = () => hud.updateGameHud();
-function configureRender(){
-  vpSpr.forEach(s=>s.destroy()); vpSpr=[]; vpTex.forEach(t=>t.destroy(true)); vpTex=[];
-  if(vpFrames){ vpFrames.destroy(); vpFrames=null; }
-  vpDots.forEach(g=>g.destroy()); vpDots=[];
-  if(numPlayers<=1){
-    if(camera.parent!==app.stage) app.stage.addChildAt(camera,0);
-    setMinimapVisible(true); app.renderer.resize(LOGICAL_W,LOGICAL_H); buildGameHud();
-  } else {
-    if(camera.parent) camera.parent.removeChild(camera); // câmera renderizada manualmente nas RTs
-    setMinimapVisible(false);
-    const { cols, rows } = screenGrid(numPlayers); // era a copia DIVERGENTE (sem a guarda de 1 tela)
-    app.renderer.resize(LOGICAL_W*cols, LOGICAL_H*rows);
-    const positions=[];
-    for(let i=0;i<numPlayers;i++){
-      let x=(i%cols)*LOGICAL_W, y=Math.floor(i/cols)*LOGICAL_H;
-      if(numPlayers===3 && i===2) x=(LOGICAL_W*cols-LOGICAL_W)/2; // 3 telas: a 3ª centralizada na linha de baixo
-      const rt=PIXI.RenderTexture.create({width:LOGICAL_W,height:LOGICAL_H}); rt.baseTexture.scaleMode=PIXI.SCALE_MODES.NEAREST;
-      const s=new PIXI.Sprite(rt); s.x=x; s.y=y;
-      app.stage.addChild(s); vpTex.push(rt); vpSpr.push(s); positions.push([x,y]);
-    }
-    // linha de moldura por tela (1px lógico; escala por k junto com o canvas) — separa e enquadra como a tela única
-    vpFrames=new PIXI.Graphics();
-    for(const [x,y] of positions){ vpFrames.lineStyle(1,0xcdd6f2,0.95); vpFrames.drawRect(x+0.5,y+0.5,LOGICAL_W-1,LOGICAL_H-1); }
-    app.stage.addChild(vpFrames);
-    vpDots=positions.map(([x,y])=>{ const g=new PIXI.Graphics(); g.x=x+LOGICAL_W-9; g.y=y+9; g.visible=false; app.stage.addChild(g); return g; }); // bolinhas por viewport (acima de tudo, sem filtro)
-    buildGameHud(); applyVpFilters(); updateVpDots();
-  }
-}
+/* ===================== O PIPELINE DE RENDER POR TELA -> render/screen-pipeline.ts (D3-c) =====================
+   A TOPOLOGIA do render saiu inteira (quantas render-textures, onde cada tela fica, moldura e bolinha). Aqui
+   fica so o ENVOLUCRO — declaracao de funcao, portanto icada, porque initSession o recebe por REFERENCIA.
+   applyVpFilters/updateVpDots sao const ~280 linhas ABAIXO: entram como setas preguicosas, e isso e seguro
+   porque configureRender NUNCA roda no boot (so por setNumPlayers/joinPlayer/restartGame). Os quatro `let`
+   (vpTex/vpSpr/vpFrames/vpDots) FICAM aqui, porque viewports/viz-setters/draw ja os leem por getter — dai o
+   ctx trazer o par getter+setter de cada um, em vez de o modulo ser dono dos arrays. */
+const screenPipeline = initScreenPipeline({
+  RenderTexture: PIXI.RenderTexture, SpriteCtor: PIXI.Sprite, GraphicsCtor: PIXI.Graphics, NEAREST: PIXI.SCALE_MODES.NEAREST,
+  stage: app.stage, renderer: app.renderer, camera,
+  getNumPlayers: ()=>numPlayers,
+  getVpTex: ()=>vpTex, setVpTex: (a)=>{ vpTex=a; },
+  getVpSpr: ()=>vpSpr, setVpSpr: (a)=>{ vpSpr=a; },
+  getVpFrames: ()=>vpFrames, setVpFrames: (g)=>{ vpFrames=g; },
+  getVpDots: ()=>vpDots, setVpDots: (a)=>{ vpDots=a; },
+  setMinimapVisible, buildGameHud: ()=>buildGameHud(),
+  applyVpFilters: ()=>applyVpFilters(), updateVpDots: ()=>updateVpDots(), // LAZY: consts de viz-setters (TDZ)
+});
+function configureRender(){ screenPipeline.configureRender(); }
 
 // E5: minimapa estilo Metroid (canto inferior esquerdo, fixo na tela, fog-of-war)
 initMinimap(app.stage, WORLD_W, WORLD_H); // render/minimap (Estágio 4, Tier 1): container + fog-of-war (markSeen/redrawMinimapIfDirty/drawMinimapPlayer/resetMinimap/setMinimapCorner/…)
@@ -785,6 +778,11 @@ function stepPlayer(pl,dt){
   // sprite (com o recolor do modo de visao) moram em render/draw.ts (C1). `dir` vem da fisica, acima.
   drawApi.animatePlayer(pl,dt,dir);
 }
+/* ===================== AREA SECRETA: presenca -> revelacao + anuncio -> game/secret-areas.ts (D3-c) =====
+   `darkRegions` e const declarado LA EM CIMA e entra por VALOR (o modulo muta gfx.alpha/announced dos
+   objetos, nunca troca o array) — por isso este init tem de vir DEPOIS daquela declaracao. `players` entra
+   por getter: e a lista viva de core/state.ts, que cresce e encolhe. */
+const secretAreas = initSecretAreas({ regions: darkRegions, getPlayers: ()=>players, box: BOX, tile: TILE, srSay });
 function update(dt){
   if(phase!=='playing')return; // E14: congelado no título e na pausa
   if(tickHitstop(dt)) return; // JUICE: hit-stop congela o mundo por alguns ticks
@@ -800,24 +798,7 @@ function update(dt){
   if(ended)return;
   players.forEach((p,i)=>{ if(p.quit&&p.jumpEdge){ p.jumpEdge=false; respawnPlayer(i); } }); // L1: quem saiu re-entra pelo PULO do teclado (ou START do pad, no pollPads)
   for(const pl of players) stepPlayer(pl,dt);
-  // E1 (corrigido): revela a área secreta ENQUANTO houver jogador dentro e RE-ESCURECE ao sair.
-  // Não é inversão — só mostra o que estava escondido e some de novo ao deixar o ambiente.
-  for(const reg of darkRegions){
-    let occ=false;
-    for(const pl of players){
-      const tx0=Math.floor((pl.x-BOX.w/2)/TILE),tx1=Math.floor((pl.x+BOX.w/2-0.01)/TILE);
-      const ty0=Math.floor((pl.y-BOX.h)/TILE),ty1=Math.floor((pl.y-0.01)/TILE);
-      for(let ty=ty0;ty<=ty1&&!occ;ty++)for(let tx=tx0;tx<=tx1;tx++){ if(reg.set.has(tx+','+ty)){occ=true;break;} }
-      if(occ)break;
-    }
-    const target=occ?0:1, step=0.08*dt;
-    if(reg.gfx.alpha!==target){
-      reg.gfx.alpha = target>reg.gfx.alpha ? Math.min(target,reg.gfx.alpha+step) : Math.max(target,reg.gfx.alpha-step);
-      reg.gfx.visible = reg.gfx.alpha>0.001;
-    }
-    if(occ && !reg.announced){ reg.announced=true; srSay('Área secreta revelada.'); }
-    else if(!occ && reg.gfx.alpha>=1) reg.announced=false; // re-anuncia na próxima entrada
-  }
+  secretAreas.stepSecretAreas(dt); // E1: revela a area secreta enquanto houver jogador dentro, re-escurece ao sair e anuncia (game/secret-areas.ts, D3-c)
 }
 /* ===================== camera + quadro -> render/draw.ts (C1) =====================
    placeCam, draw e a cauda de animacao do stepPlayer moram no modulo. Aqui fica so o ENVOLUCRO de `draw` —
@@ -1181,25 +1162,12 @@ function closeMovement(){ const ov=$('#movement'); if(!ov)return; ov.hidden=true
 // openTouchCfg/closeTouchCfg migraram para input/touch.ts (Onda A).
 const touchCfgBtn=$('#opt-touchcfg'); if(touchCfgBtn)touchCfgBtn.addEventListener('click',()=>touchCtl.openTouchCfg());
 const touchCfgClose=$('#touchcfg-close'); if(touchCfgClose)touchCfgClose.addEventListener('click',()=>touchCtl.closeTouchCfg());
-// HUB de mapeamento (por jogador): teclado funciona (abre o remap); gamepad/olhos/setores/fala = em construção.
-function mapSoon(nome){ srAlert(nome+': em construção — chega junto com os subsistemas de webcam e fala.'); }
-function renderMapHub(){ const el=$('#map-hub'); if(!el)return; const np=numPlayers;
-  const items=[
-    {lbl:'⌨ Mapear teclado para modo 1 jogador', mode:1, act:openOptions},
-    {lbl:'⌨ Mapear teclado para modo 2 jogadores', mode:2, act:openOptions},
-    {lbl:'⌨ Mapear teclado para modo 3 jogadores', mode:3, act:openOptions},
-    {lbl:'⌨ Mapear teclado para modo 4 jogadores', mode:4, act:openOptions},
-    {lbl:'🎮 Mapear gamepad', act:()=>gamepadApi.openPadWiz()}, // L1: wizard (DirectInput e afins) — mapa salvo por modelo de controle
-    {lbl:'👁 Mapear olhos e boca', soon:true},
-    {lbl:'🎯 Mapear setores de olhar', soon:true},
-    {lbl:'🎤 Mapear palavras (fala)', soon:true},
-  ];
-  el.innerHTML='<h3 class="panel-sub">Mapear controles <span class="panel-sub__tag">por jogador</span></h3>'+
-    items.map((it,i)=>{ const off=it.mode&&it.mode!==np, dis=it.soon||off; // teclado: só habilita no modo com esse nº de telas (o resto fica cinza)
-      const note=it.soon?' <em style="opacity:.7">(em construção)</em>':'';
-      return `<div class="ctrl-row${dis?' row-off':''}"><span>${it.lbl}${note}</span><button class="mode-btn" type="button" data-map="${i}"${dis?' disabled':''}>${it.soon?'Em breve':'Abrir'}</button></div>`; }).join('');
-  el.querySelectorAll('button[data-map]').forEach(b=>b.addEventListener('click',()=>{ const it=items[+b.dataset.map]; if(it.soon){ mapSoon(it.lbl.replace(/^\S+\s/,'')); return; } if(it.mode&&it.mode!==np){ srAlert('Disponível só no modo '+it.mode+' jogador'+(it.mode>1?'es':'')+'. Troque o nº de telas na barra do topo.'); return; } it.act(); }));
-}
+/* ===================== HUB "MAPEAR CONTROLES" -> ui/map-hub.ts (D3-c) =====================
+   A tabela de linhas, o markup e as duas frases faladas sairam; `mapSoon` foi junto (nao tinha outro
+   chamador). Fica o ENVOLUCRO, declaracao de funcao e portanto icada, porque openMovement — que aparece
+   ACIMA deste ponto — o chama pelo nome. */
+const mapHub = initMapHub({ $, srAlert, getNumPlayers: ()=>numPlayers, openOptions, openPadWiz: ()=>gamepadApi.openPadWiz() });
+function renderMapHub(){ mapHub.render(); }
 const movBtn=$('#opt-movement'); if(movBtn)movBtn.addEventListener('click',openMovement);
 const movClose=$('#movement-close'); if(movClose)movClose.addEventListener('click',closeMovement);
 const animClose=$('#animation-close'); if(animClose)animClose.addEventListener('click',()=>motion.close()); // #opt-animation NAO existe no app (era referencia morta); so o fechar e real
