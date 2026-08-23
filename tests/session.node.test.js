@@ -784,6 +784,13 @@ describe('game/session — joinPlayer', () => {
     expect(S.joinPlayer(null)).toBe(false);
     expect(players).toHaveLength(1);
   });
+  it('[Right] o botão de telas reflete o número novo no TEXTO e no nome falado', () => {
+    // Isto já divergiu: joinPlayer atualizava só o textContent, e o botão ficava dizendo "2 telas" na tela e
+    // "Telas: 1" no leitor. Quem depende do leitor recebia o número errado depois de alguém entrar.
+    S.joinPlayer(null);
+    expect(DOM['#opt-telas'].textContent).toContain('2');
+    expect(DOM['#opt-telas'].attrs['aria-label']).toBe('Telas: 2. Toque para trocar.');
+  });
   it('[Right] o jogador que entra nasce zerado (resetPlayerState roda depois do makePlayer)', () => {
     S.joinPlayer(null);
     expect(players[1].collected).toBe(0);

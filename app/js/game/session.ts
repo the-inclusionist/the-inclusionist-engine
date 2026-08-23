@@ -472,10 +472,17 @@ export function initSession(ctx: SessionCtx): SessionApi {
   /* ===================== nº de telas ===================== */
 
   /** Reflete `n` no botão `#opt-telas`. `aria` distingue os DOIS chamadores — ver o defeito no relatório. */
-  function reflectScreenButton(n: number, aria: boolean): void {
+  /**
+   * Reflete o número de telas no botão da barra — o texto visível E o nome falado, sempre os dois.
+   *
+   * Havia um parâmetro `aria` aqui, e o `joinPlayer` passava `false`: quem entrasse em jogo em andamento
+   * deixava o botão dizendo "3 telas" na tela e "Telas: 2" no leitor. Não existe motivo para um chamador
+   * querer que o rótulo falado minte, então o parâmetro não existe mais.
+   */
+  function reflectScreenButton(n: number): void {
     const tb = ctx.$('#opt-telas'); if (!tb) return;
     tb.textContent = SCREEN_LABELS[n - 1];
-    if (aria) tb.setAttribute('aria-label', 'Telas: ' + n + '. Toque para trocar.');
+    tb.setAttribute('aria-label', 'Telas: ' + n + '. Toque para trocar.');
   }
 
   /** Cresce ou encolhe o array de jogadores até `n`, preservando os que já existem (e o `pad` de cada um). */
@@ -492,7 +499,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
     n = clampScreens(n);
     resizePlayers(n);
     ctx.assignControls(); ctx.ensureSprites(); // p.pad é PRESERVADO no objeto do jogador (associação direta)
-    reflectScreenButton(n, true);
+    reflectScreenButton(n);
     if (n > 1) ctx.hideTouchControls();         // E13: várias telas → sem controle por toque (ambíguo)
     ctx.configureRender();
     ctx.reapplyVizAll();                        // solo: filtro/overlay/bolinha global; MP: filtros por viewport
@@ -559,7 +566,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
     ctx.assignControls(); ctx.ensureSprites(); ctx.hideTouchControls(); // teclado migra p/ N jogadores; toque sai
     ctx.configureRender(); ctx.reapplyVizAll(); ctx.layout();
     resetPlayerState(p, i); addCoinsForOwner(i); // itens PRÓPRIOS dão spawn; os dos outros ficam intactos
-    reflectScreenButton(N(), false);             // sem aria-label — divergência do monólito, preservada
+    reflectScreenButton(N());
     ctx.srSay('Jogador ' + (i + 1) + ' entrou no jogo em andamento.');
     return true;
   }
