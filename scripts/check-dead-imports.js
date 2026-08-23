@@ -51,7 +51,11 @@ function semComentarios(txt) {
   return out;
 }
 
-const corpo = semComentarios(src.split('\n').filter((l) => !/^import\s/.test(l)).join('\n'));
+// Tira as DECLARACOES de import inteiras, e nao as LINHAS que comecam com `import`: um import quebrado em
+// duas linhas deixava a continuacao dentro do corpo, e os nomes escritos ali contavam como uso dos proprios
+// nomes que aquela declaracao importa. Dois mortos sobreviveram assim, invisiveis ate a declaracao ser
+// reescrita numa linha so.
+const corpo = semComentarios(src.replace(/^import\s[^;]*;/gm, ''));
 const escapa = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 let mortos = 0;
