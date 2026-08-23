@@ -83,7 +83,7 @@ function boot(over = {}) {
   // #help NAO entra — verbatim, e é justamente o que o defeito 2 (b) explora.
   panel.register('audio', { close: () => closeAudio(), inEscapeChain: true });
   panel.register('typo', { close: () => closeTypo(), inEscapeChain: true });
-  panel.register('help', { close: () => closeHelp(), inEscapeChain: false });
+  panel.register('help', { close: () => closeHelp(), inEscapeChain: true }); // como o main.js registra
 
   function openOv(id) { const ov = $('#' + id); ov.hidden = false; panel.frontOverlay(ov); }
   function openTypo() { openOv('typo'); $('#font-a').focus(); }
@@ -370,14 +370,15 @@ describe('menuNavKey — o tradutor de teclado', () => {
     expect($('#audio').hidden).toBe(false);
   });
 
-  // ⚠️ DEFEITO 2, PINADO — a parte que é rede de segurança acidental. #help está registrado SEM flag
-  // `inEscapeChain:false`, logo está FORA da cadeia de Escape; só não despausa o jogo porque menuNavKey o cobre por
-  // z-index e dá stopPropagation. Este caso pina as DUAS metades ao mesmo tempo.
-  it('DEFEITO 2 (pinado): #help está fora da cadeia de Escape, e só a captura o salva de despausar', () => {
+  // A #help já esteve FORA da cadeia de Escape, e o jogo só não despausava com ela aberta porque o menuNavKey
+  // a cobre por z-index e dá stopPropagation — uma rede acidental. Quem mexesse na captura sem antes pôr a
+  // #help na cadeia criaria o bug. Agora as duas metades existem, e este caso cobre as duas: a cadeia SABE da
+  // #help, e a captura continua fazendo o seu trabalho.
+  it('[Right] #help está na cadeia de Escape E a captura impede a tecla de despausar o jogo', () => {
     const { nav, panel, log, openHelp } = boot();
     showPauses();
     openHelp();
-    expect(panel.escapeTarget()).toBe(null);    // fora da cadeia: o ouvinte de bolha cairia no togglePause()
+    expect(panel.escapeTarget()).toBe('help');  // na cadeia: o recuo também fecharia a Ajuda
     const e = key('Escape');
     nav.menuNavKey(e);
     expect($('#help').hidden).toBe(true);       // a captura fechou o diálogo…

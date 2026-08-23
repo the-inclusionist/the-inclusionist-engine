@@ -1278,8 +1278,13 @@ overlays.register('visual',   { close:()=>closeVisual(),   inEscapeChain:true })
 overlays.register('empathy',  { close:()=>empathy.close(), inEscapeChain:true });
 overlays.register('audio',    { close:()=>closeAudio(),    inEscapeChain:true });
 overlays.register('typo',     { close:()=>closeTypo(),     inEscapeChain:true });
-overlays.register('touchcfg', { close:()=>touchCtl.closeTouchCfg(), inEscapeChain:false });
-overlays.register('help',     { close:()=>closeHelp(),              inEscapeChain:false });
+// Estes dois ficavam FORA da cadeia — heranca do monolito, onde nunca tiveram flag `*Open`. Media no
+// navegador: com o jogo pausado o Escape nem chega aqui, porque menu-nav o consome na fase de CAPTURA e da
+// stopPropagation. Ou seja, o comportamento certo de hoje vinha de uma rede acidental, e a cadeia — que e o
+// recuo — estava errada. Agora os nove estao nela. Para o #touchcfg isso ainda melhora o fechamento: pela
+// cadeia passa por closeTouchCfg(), que devolve o foco, em vez do ramo do roteador, que so escondia.
+overlays.register('touchcfg', { close:()=>touchCtl.closeTouchCfg(), inEscapeChain:true });
+overlays.register('help',     { close:()=>closeHelp(),              inEscapeChain:true });
 const pauseActs = shell.pauseActs; // tabela de acoes dos .pm-btn -> ui/shell.ts (ui/pause-icons le por getPauseActs)
 // Roteamento de input por jogador: cada tecla é do jogador dono dela (kbFor). Genéricas → jogador 0.
 const actionOf = (code,pi) => kbRuntime.actionOf(code,pi);
