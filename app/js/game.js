@@ -17,10 +17,9 @@ import { fmtFrac, fracGraphic, fracSpeak, speakChoice } from './game/fractions.j
 import { BRAILLE, brailleText } from './game/braille.js'; // Estágio 4 (Tier 2): cela braille + fala (atividade cego)
 import { SOMASUB_SHAPES, somaSubName, SILABAS_WORDS, SILABA_POOL, WORD_INITIALS } from './game/activity-content.js'; // Estágio 4 (Tier 2): dados das atividades (formas + sílabas)
 import { LETTER_NAME, soletra, ferreiroDistractors } from './game/literacy-distractors.js'; // Estágio 4 (Tier 2): nomes de letra + distratores pré-silábicos
-import { JUICE, saveJuice, easeOut3, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, drawFx, initFx, tickHitstop, shakeAmp, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
+import { JUICE, saveJuice, spawnParticle, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, initFx, tickHitstop, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
 import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
 import { isGroundType, worldCanvas, worldToTexture, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
-import { drawCane, drawRunCane, drawChair } from './render/wheelchair-sprites.js'; // Estágio 4 (Tier 2): bengala + cadeira (a11y motora)
 import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
@@ -69,6 +68,7 @@ import { initPhysics, stepPlayer as stepPhysics } from './game/physics.js'; // B
 import { initQuiz } from './game/quiz.js'; // B3: o desafio educativo (geracao + markup + efeito)
 import { initSettingsPanel } from './ui/settings-panel.js'; // B4: o que as cascas dos paineis realmente compartilham
 import { initViewports } from './render/viewports.js'; // B2: fabrica de imagem dos modos de visao
+import { initDraw } from './render/draw.js'; // C1: camera + o quadro + a escolha de quadro do personagem
 import { initVizSetters } from './render/viz-setters.js'; // Onda A: aplicacao dos modos de visao acessivel
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
   buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
@@ -924,51 +924,9 @@ function stepPlayer(pl,dt){
     const m=4; for(const gt of gate){ const X=gt.tx*TILE, Y=gt.ty*TILE;
       if(box.x<X+TILE+m && box.x+box.w>X-m && box.y<Y+TILE+m && box.y+box.h>Y-m){ gateOpen=true; rebuildExtras(); earcons.sfx('gate'); earcons.doorSound('madeira'); srAlert('Portão aberto!'); addShake(2,12); break; } } // JUICE: portão pesado sacode a tela
   }
-  // animação por frames (E15). 'moving' baseado no INPUT (direção segurada), NÃO em vx — a colisão
-  // zera vx por frames e isso resetava o ciclo (só apareciam 2 quadros). Assim os 8 quadros tocam contínuos.
-  // E16: estado aéreo ESTÁVEL — subindo (vy<0) entra na hora; cair/sair de borda só após coyote-time.
-  // Evita o flicker walk↔jump no pouso (onGround pisca 1 frame ao repousar). 'grounded' p/ anim.
-  const COYOTE=5, grounded = pl.airTime<=COYOTE;
-  const airborne = !pl.clinging && ((pl.vy<0 && !pl.onGround) || !grounded);
-  const moving=(dir!==0) && grounded && !pl.clinging;
-  pl.walking = moving && !pl.inWater && !pl.onLadder && !pl.flying; // andando no chão (para a bengala: só aparece andando)
-  pl.running = pl.walking && held(pl,'run') && !!pl.runCane;        // correndo (bengala de corrida): só com o item
-  pl.anim += dt;                                   // idle (1 quadro; clock contínuo)
-  pl.walkAnim += dt;                               // clock do passo NUNCA reseta → ciclo de 8 sem reinício
-  const II=TEX_IDLE;
-  const wcFreeze = wheelchair || pl.rmWalk; // cadeirante: pernas paradas (sentado) — mesma via do movimento reduzido
-  let tx; pl.idleNow=false;
-  // E17: prioridade ventosa → escada → água → voo → aéreo(pulo) → andando → idle
-  // movimento reduzido: pl.rmWalk congela TODA a locomoção (escalar, escada, nado, pulo) num quadro único
-  if(pl.clinging){ const ceil=(pl.clingN==='U'); // E18f: teto e parede usam ciclos distintos
-    const CL = ceil ? TEX_CLING_CEIL : TEX_CLING_WALL;
-    if(!pl.rmWalk && (pl.vx!==0||pl.vy!==0)) pl.climbFrame=(Math.floor(pl.walkAnim/ANIM.clingHold))%CL.length; // só avança ao mover; parado MANTÉM o quadro
-    tx = CL[(pl.rmWalk?0:(pl.climbFrame||0))%CL.length]; }
-  else if(pl.onLadder){ const CB=TEX_CLIMB;
-    if(wheelchair){ tx = II[0]; }                                  // ELEVADOR cadeirante: pose PARADA (idle), não de escada
-    else { const climbing=(pl.vy!==0)&&!pl.rmWalk; tx = climbing ? CB[Math.floor(pl.walkAnim/ANIM.climbHold)%CB.length] : CB[0]; } }
-  else if(pl.inWater){ const stroking=((dir!==0)||held(pl,'jump'))&&!wcFreeze; // movendo = braçada+pernas; parado/congelado/cadeirante = pernas paradas
-    const SW = stroking ? TEX_SWIM : TEX_SWIMIDLE;
-    tx = wcFreeze ? SW[0] : SW[Math.floor(pl.walkAnim/ANIM.swimHold)%SW.length]; }
-  else if(pl.flying)              tx = TEX_FLY;
-  else if(airborne){ if(wcFreeze) tx = wheelchair ? II[0] : TEX_JUMP_UP; // cadeirante caindo = pose neutra sentado; congelado = pulo num quadro
-    else tx = pl.vy<0 ? TEX_JUMP_UP : TEX_JUMP_DOWN; }           // subindo: pernas recolhidas / caindo: estendidas
-  else if(moving){
-    if(wcFreeze){ tx = II[0]; }                                    // cadeirante/movimento reduzido: anda sem ciclo de passos (pose neutra)
-    else { const running=held(pl,'run');                         // E19: correr (Correr segurado) ≠ andar — passada/cadência distintas
-      const M = running ? TEX_RUN : TEX_WALK;
-      const hold = running ? ANIM.runHold : ANIM.walkHold;
-      tx = M[Math.floor(pl.walkAnim/hold)%M.length]; } }
-  else { pl.idleNow=true; pl.idleTime+=dt;                       // E20: parado → respira; após flavorDelay, toca uma gracinha
-    if(!pl.rmFlavor){                                             // gracinhas (toggle próprio — há quem se incomode)
-      if(pl.flavor<0 && pl.idleTime>ANIM.flavorDelay){ pl.flavor=Math.floor(rnd()*FLAVORS.length); pl.flavorT=0; }
-      if(pl.flavor>=0){ const F=FLAVORS[pl.flavor]; const step=Math.floor(pl.flavorT/F.hold); pl.flavorT+=dt;
-        if(step>=F.seq.length){ pl.flavor=-1; pl.idleTime=0; } else { tx=F.tex[F.seq[step]]; } }
-    } else pl.flavor=-1;
-    if(pl.flavor<0) tx = pl.rmBreath ? II[0] : II[Math.floor(pl.anim/ANIM.idleHold)%II.length]; } // respiração: congela (quadro 0) ou cicla
-  if(!pl.idleNow){ pl.idleTime=0; pl.flavor=-1; }                 // saiu do idle → zera gracinha
-  pl._tx=tx;                                                     // quadro base (cor) p/ recolor por viewport
-  if(pl.sprite) pl.sprite.texture=playerVizTex(tx, pl.viz);      // solo/default; no MP o draw troca por viewport
+  // E15/E16/E17/E19/E20: a escolha do quadro (decisao PURA em render/player-anim.ts) e a aplicacao dela no
+  // sprite (com o recolor do modo de visao) moram em render/draw.ts (C1). `dir` vem da fisica, acima.
+  drawApi.animatePlayer(pl,dt,dir);
 }
 function update(dt){
   if(phase!=='playing')return; // E14: congelado no título e na pausa
@@ -1004,53 +962,30 @@ function update(dt){
     else if(!occ && reg.gfx.alpha>=1) reg.announced=false; // re-anuncia na próxima entrada
   }
 }
-function placeCam(pl){
-  let camX=pl.x-LOGICAL_W/2, camY=(pl.y-BOX.h/2)-LOGICAL_H/2;
-  camX=Math.max(0,Math.min(camX,WORLD_PX_W-LOGICAL_W)); camY=Math.max(0,Math.min(camY,WORLD_PX_H-LOGICAL_H));
-  const k=shakeAmp(); if(k>0){ // JUICE: tremor decai linearmente (render/fx); re-clampa p/ não mostrar o vazio
-    camX=Math.max(0,Math.min(camX+(rnd()*2-1)*k,WORLD_PX_W-LOGICAL_W)); camY=Math.max(0,Math.min(camY+(rnd()*2-1)*k,WORLD_PX_H-LOGICAL_H)); }
-  camera.x=-Math.round(camX); camera.y=-Math.round(camY); updateParallax(camX,camY); return {camX,camY};
-}
-function draw(){
-  for(const pl of players){ if(!pl.sprite)continue;
-    pl.sprite.x=pl.x; pl.sprite.y=pl.y+1;
-    const q=(JUICE.squash&&!pl.rmWalk&&pl.sqT>0)?(pl.sq||0)*easeOut3(pl.sqT/8):0; // JUICE: squash&stretch com easing, ancorado nos pés
-    pl.sprite.scale.set((pl.facing<0?-1:1)*(1-q*0.7), 1+q); // sem escala procedural de respiração (parecia mastigar) — respiração é por FRAMES
-    pl.sprite.alpha = pl.hurtTimer>0 ? (Math.floor(pl.hurtTimer/4)%2?0.4:1) : 1;
-  }
-  drawElevators(elevLayer); // cadeirante: plataforma do elevador sob os pés (largo/fino)
-  drawFx(); // JUICE: partículas (poeira/brilhos) na camada acima dos players
-  const shimOn=JUICE.shimmer&&!rm.items; // JUICE: cintilar dos itens (respeita Movimento Reduzido de itens)
-  caneLayer.clear(); // modo cego: bengala SÓ andando (corrida = bengala de roda); nada parado/nadando/voando/escada
-  for(const pl of players){ if(!caneOn(pl)||!pl.sprite||!pl.sprite.visible)continue;
-    if(pl.running) drawRunCane(caneLayer,pl); else if(pl.walking) drawCane(caneLayer,pl); }
-  chairLayer.clear(); // cadeirante: desenha a cadeira nos jogadores (exceto nadando/voando)
-  if(wheelchair){ for(const pl of players){ if(pl.sprite&&pl.sprite.visible&&!pl.inWater&&!pl.flying) drawChair(chairLayer,pl); } }
-  easyHitbox.clear(); // Fácil: hitbox de coleta tolerante (retângulo translúcido) — só para os jogadores em Fácil
-  const pad=EASY.pad; for(const pl of players){ if(!pl.easy)continue;
-    easyHitbox.lineStyle(1,0xffffff,0.45); easyHitbox.beginFill(0xffffff,0.10);
-    easyHitbox.drawRect(pl.x-BOX.w/2-pad, pl.y-BOX.h-pad, BOX.w+2*pad, BOX.h+2*pad); easyHitbox.endFill(); }
-  if(numPlayers<=1){
-    const _cs=getCoinSprites(); for(let j=0;j<_cs.length;j++){ const s=_cs[j]; if(s)s.alpha=shimOn?0.8+0.2*Math.sin(fxClock*0.12+j*1.7):1; }
-    const {camX,camY}=placeCam(players[0]);
-    markSeen(camX,camY); redrawMinimapIfDirty();
-    drawMinimapPlayer(players[0].x, players[0].y - BOX.h/2);
-  } else {
-    // Otimização: se TODOS estão no mesmo modo (caso comum), troca as texturas UMA vez; senão, por viewport.
-    const v0=players[0].viz, allSame=players.every(p=>p.viz===v0), anyOverlay=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='lowvision';});
-    if(allSame) applySharedTextures(v0);
-    for(let i=0;i<numPlayers;i++){ const viz=players[i].viz;
-      if(!allSame) applySharedTextures(viz);                      // só troca por viewport quando os modos diferem
-      const _cs2=getCoinSprites(); for(let j=0;j<_cs2.length;j++){ const s=_cs2[j]; if(!s)continue; const cn=coins[j]; s.visible=!cn.taken;
-        s.alpha=((cn.owner===i)?1:0.4)*(shimOn?0.8+0.2*Math.sin(fxClock*0.12+j*1.7):1); } // Lote C: item alheio esmaecido (cor do dono); JUICE: cintilar multiplicativo
-      for(const pu of powerups){ if(pu.sprite)pu.sprite.visible=!puTaken(pu,i); }                            // chave some p/ todos; demais são por jogador
-      placeCam(players[i]); app.renderer.render(camera,{renderTexture:vpTex[i]});
-      if(anyOverlay) renderVpOverlay(i,viz);                      // passada extra só se algum jogador está em baixa visão
-    }
-  }
-  weather.drawWeather(); // chuva/clarão em tela-espaço, sobre tudo
-  updateGameHud(); // HUD por jogador (moedas + poder) em DOM sobreposto (alta definição)
-}
+/* ===================== camera + quadro -> render/draw.ts (C1) =====================
+   placeCam, draw e a cauda de animacao do stepPlayer moram no modulo. Aqui fica so o ENVOLUCRO de `draw` —
+   declaracao de funcao, portanto icada, porque startLoop e window.__incl o capturam pelo NOME, mais abaixo.
+   placeCam NAO ganha envolucro: fora do proprio draw ele nao tinha chamador nenhum.
+   O ctx segue a regra da casa: o que o game.js REATRIBUI (vpTex, wheelchair, fxClock, powerups) entra por
+   GETTER; camadas, camera e renderer entram por valor. `applySharedTextures` e `const` declarado ABAIXO
+   (viz-setters), por isso entra embrulhado numa seta — passado direto, cairia em TDZ e derrubaria o boot. */
+const drawApi = initDraw({
+  camera, renderer: app.renderer,
+  caneLayer, chairLayer, easyHitbox,
+  getVpTex: ()=>vpTex, isWheelchair: ()=>wheelchair, getFxClock: ()=>fxClock, getPowerups: ()=>powerups,
+  rm, WORLD_PX_W: ()=>WORLD_PX_W, WORLD_PX_H: ()=>WORLD_PX_H,
+  caneOn, updateParallax,
+  drawElevators: ()=>drawElevators(elevLayer),
+  markSeen, redrawMinimapIfDirty, drawMinimapPlayer,
+  applySharedTextures: (viz)=>applySharedTextures(viz),
+  renderVpOverlay, playerVizTex,
+  updateGameHud: ()=>updateGameHud(),
+  playerTextures: ()=>({ idle:TEX_IDLE, walk:TEX_WALK, run:TEX_RUN, jumpUp:TEX_JUMP_UP, jumpDown:TEX_JUMP_DOWN,
+    climb:TEX_CLIMB, fly:TEX_FLY, clingWall:TEX_CLING_WALL, clingCeil:TEX_CLING_CEIL,
+    swim:TEX_SWIM, swimIdle:TEX_SWIMIDLE, flavors:FLAVORS }),
+  held,
+});
+function draw(){ drawApi.drawFrame(); }
 
 /* ===================== quiz -> game/quiz.ts (B3) =====================
    As 29 funcoes do desafio moram no modulo, em tres camadas: geracao (pura, so RNG), apresentacao
