@@ -55,6 +55,8 @@ import * as traffic from './game/traffic.js'; // Onda A: carros + semaforo da ru
 import * as life from './game/life.js'; // Onda A: vida ambiente (pombos/gatos/caes/adultos)
 import { initSceneCity } from './render/scene-city.js'; // Onda A: deco da Cidade + fx de tiles vivos
 import { initTextures, SHAPE_TEX, letterTexture, pupTexFor, resetPupTexCache } from './render/textures.js'; // Onda A: texturas de moeda/forma/letra + power-up
+import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, worldTexFor, coinTexFor, directBgTexture,
+  directSpriteCanvas, directSpriteTexture, clearWorldTexCache, clearCoinTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
@@ -149,64 +151,20 @@ function buildDarkRegions(){
 // isGroundType/worldCanvas/worldToTexture extraídos p/ render/world-tex.js (Estágio 4). WORLD injetado por
 // initWorldTex (logo após o mapa carregar). worldToTextureDirect/worldTexFor (alto contraste) + stepTileFx
 // (água/lava animadas) ficam aqui.
-// Renderização Direta (alto contraste de acessibilidade — ver docs/PESQUISA-ALTO-CONTRASTE.md):
-// fundo dessaturado+escuro (recua), estrutura com contorno CLARO, primeiro plano (player/itens) com contorno
-// escuro → o que importa "salta". É a abordagem que a indústria usa; atinge o contraste por construção.
-function _dimDesat(c,w,h,mul,blue,off){ off=off||0; const img=c.getImageData(0,0,w,h),d=img.data;
-  for(let i=0;i<d.length;i+=4){ if(d[i+3]<8)continue; const l=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2], g=off+l*mul;
-    d[i]=Math.min(255,g)|0; d[i+1]=Math.min(255,g*1.02)|0; d[i+2]=Math.min(255,g*blue)|0; } c.putImageData(img,0,0); }
-// 3 níveis de contraste. off/mul = mapa da plataforma (mais off = mais clara → mais contraste); bgMul = fundo
-// (menor = mais escuro/recuado); outline = espessura do contorno do 1º plano. Contraste plataforma×fundo ≈ 3 / 4,5 / 7.
-const DIRECT_CFG={ 'hc-direto':{off:55,mul:0.5,bgMul:0.30}, 'hc-direto-45':{off:66,mul:0.5,bgMul:0.28}, 'hc-direto-7':{off:100,mul:0.48,bgMul:0.13} };
-function _dcfg(mode){ return DIRECT_CFG[mode]||DIRECT_CFG['hc-direto']; }
+// Renderizacao Direta (alto contraste de acessibilidade) migrou para render/high-contrast.ts (Onda A):
+// _dimDesat, DIRECT_CFG, os 3 niveis de contraste e o repinte por papel vivem la. Aqui ficam so os dois
+// contornos configuraveis, que os paineis mutam e o modulo le por getter.
 // Dois contornos configuráveis (0=nenhum · 1=fino/1px · 2=grosso/2px):
 //  fg = 1º plano (personagem/itens) — WCAG 2.4.7 foco visível; bg = 2º plano (perímetro externo de
 //  plataforma/água/lava — delimita navegável × não-navegável) — WCAG 1.4.11 contraste ≥3:1.
 let hcOutlineFg=1, hcOutlineBg=1;
 try{ const v=localStorage.getItem('incl_outfg'); if(v!=null)hcOutlineFg=Math.max(0,Math.min(2,+v||0)); }catch(e){}
 try{ const v=localStorage.getItem('incl_outbg'); if(v!=null)hcOutlineBg=Math.max(0,Math.min(2,+v||0)); }catch(e){}
-// Color-blocking por PAPEL: perigo=laranja-quente, escalável/interativo(escada/trampolim)=ciano, água=azul,
-// portão=magenta (papel próprio); estrutura(pedra/parede) fica no cinza-azulado do nível.
-// L2: CUSTOMIZÁVEL — o usuário pode trocar a cor de cada papel (persistido); padrão = HC_ROLE_DEF.
-const HC_ROLE_DEF={ hazard:[255,110,45], climb:[55,225,205], water:[70,140,255], gate:[194,58,212] };
-const HC_ROLE=(()=>{ const d=JSON.parse(JSON.stringify(HC_ROLE_DEF));
-  try{ const s=JSON.parse(localStorage.getItem('incl_hcrole')); if(s&&typeof s==='object')
-    for(const k in d) if(Array.isArray(s[k])&&s[k].length===3) d[k]=s[k].map(n=>Math.max(0,Math.min(255,n|0))); }catch(e){}
-  return d; })();
-function saveHcRole(){ try{ localStorage.setItem('incl_hcrole',JSON.stringify(HC_ROLE)); }catch(e){} }
-const rgbHex=a=>'#'+a.map(n=>n.toString(16).padStart(2,'0')).join('');
+// HC_ROLE_DEF/HC_ROLE/saveHcRole (color-blocking por papel, customizavel e persistido) migraram para
+// render/high-contrast.ts (Onda A). rgbHex foi junto e nao voltou: tinha ZERO chamadores aqui.
 const hexRgb=h=>{ const m=/^#?([0-9a-f]{6})$/i.exec(h); if(!m)return null; const n=parseInt(m[1],16); return [n>>16&255,n>>8&255,n&255]; };
-function _roleOf(t){ if(t===9)return 'hazard'; if(t===4||t===5||t===10)return 'climb'; if(t===3)return 'water'; return null; }
-function worldToTextureDirect(srcCanvas, mode){ const cfg=_dcfg(mode);
-  const cv=makeCanvas(srcCanvas.width,srcCanvas.height),c=cv.getContext('2d'); c.drawImage(srcCanvas,0,0);
-  _dimDesat(c,cv.width,cv.height,cfg.mul,1.22,cfg.off); // base: estrutura vira cinza-azulado (mais clara = mais contraste)
-  for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const t=WORLD[y][x], role=_roleOf(t); if(!role)continue; const X=x*TILE,Y=y*TILE; // repinta tiles não-estruturais pela cor do papel
-    if(t===4){ // ESCADA: preto + trilhos e degraus ciano → lê como escada (não faixa verde sólida)
-      c.fillStyle='#0a0e14'; c.fillRect(X,Y,TILE,TILE);
-      c.fillStyle='rgb('+HC_ROLE.climb.join(',')+')'; c.fillRect(X+1,Y,2,TILE); c.fillRect(X+TILE-3,Y,2,TILE);   // trilhos laterais (cor do papel, customizável)
-      for(let ry=2;ry<TILE-1;ry+=5) c.fillRect(X+1,Y+ry,TILE-2,2);                               // degraus
-      continue; }
-    const rc=HC_ROLE[role], img=c.getImageData(X,Y,TILE,TILE), d=img.data, lo=role==='hazard'?0.58:0.44;
-    for(let i=0;i<d.length;i+=4){ if(d[i+3]<8)continue; const g=(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2])/255, f=lo+(1-lo)*g;
-      d[i]=Math.min(255,rc[0]*f)|0; d[i+1]=Math.min(255,rc[1]*f)|0; d[i+2]=Math.min(255,rc[2]*f)|0; }
-    c.putImageData(img,X,Y); }
-  const th=hcOutlineBg; // contorno de 2º plano: SÓ o perímetro externo (bordas voltadas ao ar) — não em cada bloco
-  if(th>0){ const air=(x,y)=>{ const t=tileAt(x,y); return t===0||t===1; }; c.fillStyle='rgba(200,222,255,0.97)';
-    for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const t=WORLD[y][x]; if(t===0||t===1)continue; const X=x*TILE,Y=y*TILE;
-      if(air(x,y-1))c.fillRect(X,Y,TILE,th); if(air(x,y+1))c.fillRect(X,Y+TILE-th,TILE,th);
-      if(air(x-1,y))c.fillRect(X,Y,th,TILE); if(air(x+1,y))c.fillRect(X+TILE-th,Y,th,TILE); } }
-  return tex(cv);
-}
-function directBgTexture(srcTex,mode){ const cfg=_dcfg(mode); const cv=makeCanvas(Math.max(1,srcTex.orig.width),Math.max(1,srcTex.orig.height)); const dst=tex(cv);
-  const paint=()=>{ const s=srcTex.baseTexture.resource&&srcTex.baseTexture.resource.source; if(!s||!s.width)return;
-    cv.width=s.width;cv.height=s.height; const c=cv.getContext('2d'); c.clearRect(0,0,cv.width,cv.height); c.drawImage(s,0,0); _dimDesat(c,cv.width,cv.height,cfg.bgMul,1.2); dst.update(); };
-  if(srcTex.baseTexture.valid)paint(); else srcTex.baseTexture.once('loaded',paint); return dst; }
-// sprite de primeiro plano (player/moeda/power-up): mantém a cor da arte + contorno escuro (salta)
-function directSpriteCanvas(srcCanvas,mode){ return hcOutlineFg>0 ? outlineCanvas(srcCanvas,hcOutlineFg) : srcCanvas; } // fg=0 → sem contorno
-function directSpriteTexture(srcTex,mode){ if(hcOutlineFg<=0) return srcTex; const th=hcOutlineFg; const cv=makeCanvas(Math.max(1,srcTex.orig.width),Math.max(1,srcTex.orig.height)); const dst=tex(cv);
-  const paint=()=>{ const s=srcTex.baseTexture.resource&&srcTex.baseTexture.resource.source; if(!s||!s.width)return;
-    const o=outlineCanvas(s,th); cv.width=o.width;cv.height=o.height; const c=cv.getContext('2d'); c.clearRect(0,0,cv.width,cv.height); c.drawImage(o,0,0); dst.update(); };
-  if(srcTex.baseTexture.valid)paint(); else srcTex.baseTexture.once('loaded',paint); return dst; }
+// _roleOf/worldToTextureDirect/directBgTexture/directSpriteCanvas/directSpriteTexture migraram para
+// render/high-contrast.ts (Onda A).
 // Alto contraste (re-adicionado): recolore cada tile pela PALETA do grupo (gradient-map por matiz, mantém claro-escuro).
 // coinCanvas/coinTexture/treeCanvas/treeTexture migrados p/ render/props.js (Fase 2.19)
 
@@ -516,7 +474,7 @@ function setCenario(theme){ if(!CENARIOS[theme])theme='cidade';
       parallaxTexNormal[i]=t; for(const k in _parallaxTexHC)delete _parallaxTexHC[k]; if(vizMode==='normal') ts.texture=t; };
     img.src='assets/cenarios/'+theme+'/c'+n+'.png'; });
   loadTileImages(theme).then(tiles=>{ if(CENARIO!==theme)return;
-    worldCanvasNormal=worldCanvas(tiles); worldTexNormal=tex(worldCanvasNormal); _worldTexHC={}; // v3: blocos Clarity SEM recolor
+    worldCanvasNormal=worldCanvas(tiles); worldTexNormal=tex(worldCanvasNormal); clearWorldTexCache(); // v3: blocos Clarity SEM recolor
     if(vizReady) reapplyVizAll(); else if(worldSprite) worldSprite.texture=worldTexNormal; });
   // (o Cenário saiu do menu de pausa — a escolha é do J1 no splash, antes de começar)
   if(_vidaReady) sceneCity.applyCenarioVida(); // liga/desliga carros/deco da cidade e semeia as peculiaridades do tema
@@ -551,14 +509,15 @@ var fogG=new PIXI.Graphics();     camera.addChild(fogG);                        
 try{ setCenario((v=>v==='noite'?'espaco':v)(localStorage.getItem('incl_cenario')||'cidade')); }catch(e){ setCenario('cidade'); } // migra a chave antiga 'noite'
 const coinCanvasNormal=coinCanvas();
 const coinTex=tex(coinCanvasNormal);
+// As texturas NORMAIS ja existem: ligue o alto contraste. worldCanvasNormal/worldTexNormal sao `let`
+// (setCenario os reescreve ao trocar de tema), entao entram por getter e nao por valor.
+initHighContrast({ W: WORLD_W, H: WORLD_H, outlineFg: () => hcOutlineFg, outlineBg: () => hcOutlineBg,
+  getWorldCanvasNormal: () => worldCanvasNormal, getWorldTexNormal: () => worldTexNormal,
+  coinCanvasNormal, coinTexNormal: coinTex });
 // caches de modos acessíveis (preguiçosos), invalidados ao trocar de cenário (worldCanvasNormal muda)
-let _worldTexHC={}, _coinTexHC={}, _lastSharedViz=null; // _lastSharedViz: cache do modo aplicado (otimização do render MP)
-function worldTexFor(mode){
-  if(DIRECT_CFG[mode]){ if(!_worldTexHC[mode])_worldTexHC[mode]=worldToTextureDirect(worldCanvasNormal,mode); return _worldTexHC[mode]; }
-  return worldTexNormal; }
-function coinTexFor(mode){
-  if(DIRECT_CFG[mode]){ if(!_coinTexHC[mode])_coinTexHC[mode]=tex(directSpriteCanvas(coinCanvasNormal,mode)); return _coinTexHC[mode]; }
-  return coinTex; }
+let _lastSharedViz=null; // cache do modo aplicado (otimizacao do render MP) — NAO e do alto contraste:
+// e escrito por rebuildCoins/rebuildExtras/applySharedTextures/setPlayerViz/reapplyVizAll. Fica aqui.
+// _worldTexHC/_coinTexHC/worldTexFor/coinTexFor migraram para render/high-contrast.ts (Onda A).
 // shapeTexture/SHAPE_TEX/letterTexture migraram para render/textures.ts (Onda A). O init vem AQUI porque
 // o primeiro uso (rebuildCoins, logo abaixo) precisa dos caches ja preenchidos.
 initTextures({ disp, directCfg: DIRECT_CFG, directSpriteCanvas });
@@ -2000,7 +1959,7 @@ function resetRoleColors(){ for(const k in HC_ROLE_DEF)HC_ROLE[k]=HC_ROLE_DEF[k]
   _rebakeDirect(); rebuildExtras(); visual.render(); srSay('Cores do color-blocking restauradas ao padrão.'); }
 // Dois contornos configuráveis (1º plano personagem/itens · 2º plano perímetro de plataforma/água/lava).
 function _rebakeDirect(){ // invalida os caches de textura direta (mundo depende de bg; sprites de fg) e re-renderiza
-  for(const k in _worldTexHC)delete _worldTexHC[k]; for(const k in _coinTexHC)delete _coinTexHC[k]; resetPupTexCache(); _playerDirect={}; _lastSharedViz=null;
+  clearWorldTexCache(); clearCoinTexCache(); resetPupTexCache(); _playerDirect={}; _lastSharedViz=null;
   if(numPlayers<=1)applyVizGlobal(players[0].viz); else applyVpFilters(); }
 function setOutlineFg(v){ hcOutlineFg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outfg',hcOutlineFg);}catch(e){} _rebakeDirect(); visual.render(); srSay('Contorno do primeiro plano: '+['nenhum','fino','grosso'][hcOutlineFg]+'.'); }
 function setOutlineBg(v){ hcOutlineBg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outbg',hcOutlineBg);}catch(e){} _rebakeDirect(); visual.render(); srSay('Contorno do segundo plano: '+['nenhum','fino','grosso'][hcOutlineBg]+'.'); }
