@@ -49,6 +49,7 @@ import { makeCanvas, tex, pixDisc } from './render/canvas.js';
 import { cloudWrapX, createSceneSky } from './render/scene-sky.js'; // Tier 2 (#43): céu — nuvens (#21) + decor viva da v3
 import { coinCanvas, coinTexture, treeCanvas, treeTexture, powerupCanvas } from './render/props.js';
 import { outlineCanvas, spriteToCanvas } from './render/sprite-fx.js'; // Fase 2: voz do letramento (pt-BR sempre-ativa)
+import * as weather from './render/weather.js'; // Onda A: clima visual (chuva/trovao/clarao)
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
@@ -442,28 +443,14 @@ const nav = createAudioNav({ tileAt, solidAt, held, tonePan, noiseHit, srSay, na
   getCoins: () => coins, getPlayers: () => players, getNumPlayers: () => numPlayers, getCenario: () => CENARIO,
   getModoCego: () => modoCego, getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat });
 // ===== F4: camadas de AMBIENTE (loops sintetizados) + PISTA/GUIA auditivo (beacon em laço) =====
-let _rainLevel=0, _weatherT=0; // _rainLevel = ponte clima→áudio (updateWeather escreve; audio-ambient lê). _ambient/_guideCount migraram
 // Trilha de ambiente sintetizada + trovão extraídos p/ platform/audio-ambient.ts (Tier 2, áudio r4). O clima VISUAL fica no
 // game.js (updateWeather/drawWeather) e migra p/ render depois. Uso: ambient.updateAmbient / ambient.thunder.
 const ambient = createAudioAmbient({ ensureAC, getAudioCtx: () => audioCtx, catNode, audioOut, noiseBuffer, tileAt, TILE,
-  getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat, getPlayers: () => players, getRainLevel: () => _rainLevel });
+  getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat, getPlayers: () => players, getRainLevel: () => weather.getRainLevel() });
 // ===== CLIMA: chuva de verdade (visual + trovão), o áudio segue o visual =====
-let weatherLayer=null, _rainDrops=null, _flash=0, _thunderCD=240; // weatherLayer criado após o `app` existir
+let weatherLayer=null; // criado após o `app` existir; o ESTADO do clima (nivel/gotas/clarao) mora em render/weather
 // thunder (rumor do trovão) extraído p/ platform/audio-ambient.ts (Tier 2, áudio r4). Chamado por updateWeather como ambient.thunder.
-function updateWeather(){ _weatherT++;
-  // L5 (rotina do José): tempo bom nos primeiros 30s; depois LOOP de 60s = garoa 5s → chuva 5s → garoa 5s → bom 45s.
-  // rm.decor (Movimento Reduzido de cena) desliga a chuva visual — o áudio segue o visual (updateAmbient lê _rainLevel).
-  const sec=_weatherT/60; let lvl=0;
-  if(sec>=30 && !rm.decor && CENARIO==='cidade'){ const c=(sec-30)%60; lvl = c<5 ? 0.35 : c<10 ? 1 : c<15 ? 0.35 : 0; } // garoa=0,35 · chuva=1 — SÓ NA CIDADE (nenhum tema v3 tem chuva)
-  const step=1/30; _rainLevel += Math.max(-step, Math.min(step, lvl-_rainLevel)); if(Math.abs(lvl-_rainLevel)<0.02)_rainLevel=lvl; // rampa ~1s (sem ligar "seco")
-  if(_rainLevel>0.45){ _thunderCD--; if(_thunderCD<=0){ _thunderCD=200+Math.floor(rnd()*420); const inten=0.35+rnd()*0.65; _flash=Math.max(_flash,inten); ambient.thunder(inten); } } // trovão SÓ na chuva forte
-  if(_flash>0) _flash=Math.max(0,_flash-0.05); }
-function drawWeather(){ if(!weatherLayer)return; const g=weatherLayer; if(weatherLayer.parent===app.stage) app.stage.setChildIndex(weatherLayer, app.stage.children.length-1); g.clear();
-  const W=app.screen.width, H=app.screen.height; if(_rainLevel<=0 && _flash<=0) return;
-  if(_rainLevel>0){ g.beginFill(0x0a0e1a, _rainLevel*0.34); g.drawRect(0,0,W,H); g.endFill();                         // céu mais escuro
-    if(!_rainDrops){ _rainDrops=[]; for(let i=0;i<110;i++)_rainDrops.push({x:rnd()*W,y:rnd()*H,len:6+rnd()*9,spd:8+rnd()*7}); }
-    const mv=(phase==='playing'); g.lineStyle(1,0xaebfe0,0.5*_rainLevel); for(const d of _rainDrops){ if(mv){ d.y+=d.spd; d.x-=d.spd*0.35; if(d.y>H){ d.y=-d.len; d.x=rnd()*W; } if(d.x<0)d.x+=W; } g.moveTo(d.x,d.y); g.lineTo(d.x-2,d.y+d.len); } g.lineStyle(0); } // GAG: gotas congelam na pausa
-  if(_flash>0){ g.beginFill(0xe4ecff, _flash*0.55); g.drawRect(0,0,W,H); g.endFill(); } }                            // clarão do relâmpago
+// updateWeather/drawWeather migraram para render/weather.ts (Onda A). A camada segue criada aqui.
 // updateGuide (beacon do guia) extraído p/ platform/audio-nav.ts (Tier 2, áudio r3). Chamado no loop como nav.updateGuide.
 // Narração TTS (Piper neural lazy + fallback Web Speech + estado) extraída p/ platform/tts.ts (Tier 2, #38). A instância `tts`
 // é criada acima (antes do audio-nav, que injeta narrate). Uso: tts.narrate / tts.ttsSpeak / tts.loadTTS; o painel usa
@@ -485,6 +472,7 @@ $('#pixi-mount').appendChild(app.view);
 app.view.setAttribute('aria-hidden','true');
 const camera=new PIXI.Container(); app.stage.addChild(camera);
 weatherLayer=new PIXI.Graphics(); app.stage.addChild(weatherLayer); // CLIMA (chuva/clarão) em tela-espaço, mantido no topo em draw
+weather.initWeather({ weatherLayer, stage: app.stage, screen: app.screen, getRm: () => rm, thunder: (i) => ambient.thunder(i) });
 /* Tela de título da v3 (render/title-scene.ts): céu em gradiente + nuvens andando dir→esq + grama pontilhada */
 const titleG=new PIXI.Graphics(); app.stage.addChildAt(titleG, app.stage.getChildIndex(weatherLayer));
 const titleScene = createTitleScene({ titleG, screen: app.screen, getRm: () => rm }); // cena PIXI: render/title-scene.ts (camada criada acima, injetada)
@@ -1528,7 +1516,7 @@ function draw(){
       if(anyOverlay) renderVpOverlay(i,viz);                      // passada extra só se algum jogador está em baixa visão
     }
   }
-  drawWeather(); // chuva/clarão em tela-espaço, sobre tudo
+  weather.drawWeather(); // chuva/clarão em tela-espaço, sobre tudo
   updateGameHud(); // HUD por jogador (moedas + poder) em DOM sobreposto (alta definição)
 }
 
@@ -2444,7 +2432,7 @@ startLoop(app.ticker, (dt)=>{ pollPads(); update(dt); draw();
   attractCtl.titleIdleTick(titleG.visible); // attract após 60s parado no menu (José)
   setMinimapVisible(!titleG.visible&&numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
-  if(phase==='playing'){ updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
+  if(phase==='playing'){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
 window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads,update,openPadWiz,padWizTick,padMapFor,get padWiz(){return padWiz;},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return powerups;},get gateOpen(){return gateOpen;},get gate(){return gate;},get ended(){return ended;},restartGame,get hcMode(){return hcMode;},setHC(v){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(players[0]),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE;},get letterCase(){return letterCase;},get blindMode(){return blindMode;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return lqT;},
@@ -2453,7 +2441,7 @@ window.__incl={app,get player(){return players[0];},players,get numPlayers(){ret
   setGameFont:typo.setFont,openTypo,get fontKey(){return typo.getFontKey();},FONT_GROUPS,get mmSeen2(){return minimapSeenCount();},
   startAttract:()=>attractCtl.startAttract(),stopAttract:()=>attractCtl.stopAttract(),get attract(){return attractCtl.isAttract();}, // attract → game/attract.ts
   loadTTS:tts.loadTTS,ttsSpeak:tts.ttsSpeak,narrate:tts.narrate,get ttsEngine(){return tts.getEngine();},get ttsLoading(){return tts.loading;},get ttsFailed(){return tts.failed;},setTtsEngineSel(v){tts.setEngineSel(v);},
-  updateWeather,get rainLevel(){return _rainLevel;},set weatherT(v){_weatherT=v;},get weatherT(){return _weatherT;},rm,
+  updateWeather:weather.updateWeather,get rainLevel(){return weather.getRainLevel();},set weatherT(v){weather.setWeatherT(v);},get weatherT(){return weather.getWeatherT();},rm,
   spawnCreature,stepLife,get creatures(){return creatures;},spawnCar,get cars(){return cars;},SEM,STREET_Y,
   get elevShafts(){return getElevShafts();},elevAt,get BOX(){return BOX;},get wheelchair(){return wheelchair;},setWheelchair,buildElevators,buildRamps,solidAt,surfTop, // debug cadeirante
   get clouds(){return sceneSky.getClouds();},get birds(){return sceneSky.getBirds();},stepSky:(dt)=>sceneSky.stepSky(dt),CENARIOS,stepV3Decor:()=>sceneSky.stepV3Decor(),
