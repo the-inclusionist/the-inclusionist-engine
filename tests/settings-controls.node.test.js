@@ -1,0 +1,83 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Testes de ui/settings-controls — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
+// Cobre: keyName (código físico -> rótulo pt-BR) e keyUsedByOther (conflito de remapeamento entre jogadores).
+// O render()/handleCaptureKeydown() (tocam DOM) ficam em settings-controls.browser.test.js.
+// Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+import { describe, it, expect } from 'vitest';
+import { keyName, keyUsedByOther, ACT_LABEL } from '../app/js/ui/settings-controls.js';
+
+describe('keyName', () => {
+  it('[Right] KeyX -> X (remove o prefixo "Key")', () => {
+    expect(keyName('KeyA')).toBe('A');
+    expect(keyName('KeyZ')).toBe('Z');
+  });
+  it('[Right] ArrowX -> ↔X (prefixo "Arrow" vira a seta bidirecional)', () => {
+    expect(keyName('ArrowLeft')).toBe('↔Left');
+    expect(keyName('ArrowUp')).toBe('↔Up');
+  });
+  it('[Right] Space -> Espaço', () => {
+    expect(keyName('Space')).toBe('Espaço');
+  });
+  it('[Right] ShiftLeft/ShiftRight -> Shift', () => {
+    expect(keyName('ShiftLeft')).toBe('Shift');
+    expect(keyName('ShiftRight')).toBe('Shift');
+  });
+  it('[Boundary] código sem nenhum prefixo conhecido passa intacto', () => {
+    expect(keyName('Comma')).toBe('Comma');
+    expect(keyName('Numpad4')).toBe('Numpad4');
+    expect(keyName('Semicolon')).toBe('Semicolon');
+  });
+  it('[Zero] string vazia não lança e retorna vazio', () => {
+    expect(keyName('')).toBe('');
+  });
+  it('[Error] entrada não-string é coagida para string (defensivo, como o original String(code))', () => {
+    expect(keyName(undefined)).toBe('undefined');
+    expect(keyName(null)).toBe('null');
+  });
+});
+
+describe('keyUsedByOther', () => {
+  const p0 = { left: ['KeyA'], right: ['KeyD'], jump: ['KeyJ', 'Space'] };
+  const p1 = { left: ['ArrowLeft'], right: ['ArrowRight'], jump: ['Numpad5'] };
+  const p2 = { left: ['KeyF'], right: ['KeyH'], jump: ['KeyJ'] }; // KeyJ colide com p0.jump
+
+  it('[Zero] sem nenhum esquema (schemes vazio) -> -1', () => {
+    expect(keyUsedByOther('KeyA', p0, [])).toBe(-1);
+  });
+  it('[Right] tecla livre entre todos os esquemas -> -1', () => {
+    expect(keyUsedByOther('KeyZ', p0, [p0, p1, p2])).toBe(-1);
+  });
+  it('[Right] tecla usada por OUTRO jogador -> retorna o índice dele', () => {
+    expect(keyUsedByOther('ArrowLeft', p0, [p0, p1, p2])).toBe(1);
+  });
+  it('[Boundary] o próprio mapa sendo editado é excluído por referência (não conflita consigo mesmo)', () => {
+    expect(keyUsedByOther('KeyA', p0, [p0, p1, p2])).toBe(-1); // KeyA é só do p0, e p0===mapRef é pulado
+  });
+  it('[Interface] exclusão é por REFERÊNCIA, não por igualdade estrutural — um objeto igual mas distinto ainda conta', () => {
+    const p0clone = { left: ['KeyA'], right: ['KeyD'], jump: ['KeyJ', 'Space'] }; // mesmo conteúdo, outra referência
+    expect(keyUsedByOther('KeyA', p0, [p0clone, p1, p2])).toBe(0); // agora p0clone (índice 0) não é o mapRef
+  });
+  it('[Right] retorna o primeiro dono na ORDEM dos jogadores quando há duplicidade (dado inconsistente)', () => {
+    const dupA = { jump: ['KeyQ'] };
+    const dupB = { jump: ['KeyQ'] };
+    expect(keyUsedByOther('KeyQ', p0, [dupA, dupB])).toBe(0);
+  });
+  it('[Error] esquema com ação sem teclas (array vazio) não quebra a varredura', () => {
+    const empty = { jump: [] };
+    expect(() => keyUsedByOther('KeyJ', p0, [empty])).not.toThrow();
+    expect(keyUsedByOther('KeyJ', p0, [empty])).toBe(-1);
+  });
+  it('[Many] varre corretamente um esquema com várias ações e teclas por ação', () => {
+    expect(keyUsedByOther('Space', p0, [p1, p2])).toBe(-1);
+    const withSpace = { extra: ['KeyX', 'Space'] };
+    expect(keyUsedByOther('Space', p0, [p1, withSpace])).toBe(1);
+  });
+});
+
+describe('ACT_LABEL', () => {
+  it('[Interface] cobre as 8 ações do jogo, todas com rótulo pt-BR não vazio', () => {
+    const acts = ['left', 'right', 'up', 'down', 'run', 'jump', 'swap', 'especial'];
+    expect(Object.keys(ACT_LABEL)).toEqual(acts);
+    for (const a of acts) expect(ACT_LABEL[a]).toBeTruthy();
+  });
+});
