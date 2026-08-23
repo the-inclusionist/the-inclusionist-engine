@@ -4,6 +4,23 @@ Estudo do `game.js` (v4.164.23, **3555 linhas**) para parar de extrair a conta-g
 (pedido do José 2026-07-04). Companheiro do `plano-modularizacao.md` (§3 alvo, §4 ordem, §8 testes). Cada módulo
 segue o padrão firmado: **import puro, I/O explícito, com teste do contrato** (ver [[project-inclusionist-testes]]).
 
+
+> **Correcao de registro (2026-08-06).** O commit `e30e8af` afirma, como "achado que merece acao", que seis
+> paineis de acessibilidade estariam inalcancaveis por faltarem os botoes `#opt-sound`, `#opt-animation`,
+> `#opt-movement`, `#opt-empathy`, `#opt-controls` e `#opt-visual`. **A afirmacao e falsa.** Os paineis abrem
+> pelo **menu de pausa**: os itens `.pm-btn[data-act]` despacham na tabela de acoes do `game.js`
+> (`audio`, `motora`, `anim`, `visual`, `empatia`, `tipo`, `ajuda`). Verificado no navegador com o jogo rodando:
+> os seis overlays abrem e renderizam (audio 5 linhas, visual 5, empatia 12, animacao 10, tipografia 18,
+> motor via `#opt-facil`/`#opt-altmove`), sem erro de console. O menu tem 21 itens.
+>
+> Os identificadores `#opt-*` sao **ganchos para uma barra de botoes futura**, nao codigo morto: as guardas
+> `if(btn)` existem justamente para que a fiacao passe a valer quando os botoes forem criados. Nada a consertar.
+>
+> A causa do erro fica registrada porque e reutilizavel: eu testei UMA porta (o botao), nao a encontrei, e
+> conclui ausencia de porta em vez de erro de teste — mesmo tendo lido a tabela de despacho do menu duas vezes
+> durante a religacao.
+
+
 ## Já extraído (24 módulos)
 `core/{constants,tiles,world,state,loop,i18n,collision}` · `platform/{storage,audio,audio-mixer,speech}` ·
 `input/{keyboard,devices,state}` · `ui/{fonts,dom}` · `render/{viz-modes,canvas,sprites,props,sprite-fx}` ·
