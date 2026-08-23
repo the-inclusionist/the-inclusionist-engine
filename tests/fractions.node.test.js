@@ -2,7 +2,7 @@
 // Testes de game/fractions — matemática + texto de frações (project node). ZOMBIES + Right-BICEP.
 // Puro (string/número, sem DOM). Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, frações).
 import { describe, it, expect } from 'vitest';
-import { gcd, fracStr, fmtFrac, fracSpeak, speakChoice, fracGraphic } from '../app/js/game/fractions.js';
+import { gcd, fracStr, fmtFrac, fracSpeak, fracSpeakValue, speakChoice, fracGraphic } from '../app/js/game/fractions.js';
 
 describe('gcd / fracStr', () => {
   it('gcd', () => { expect(gcd(12, 8)).toBe(4); expect(gcd(7, 3)).toBe(1); expect(gcd(6, 0)).toBe(6); });
@@ -50,5 +50,39 @@ describe('fracGraphic', () => {
     expect(fracGraphic(5, 4)).toBe(''); // imprópria
     expect(fracGraphic(0, 4)).toBe('');
     expect(fracGraphic(1, 7)).toBe(''); // d>6
+  });
+});
+
+/* ============ fracSpeakValue: o rotulo da FIGURA fala o valor, nao a fracao escrita ============ */
+describe('fracSpeakValue — o nome acessivel da figura', () => {
+  // Por que existe: `fracGraphic(2,2)` desenha um circulo INTEIRO e o rotulo dizia "dois meios", enquanto o
+  // MESMO valor saindo como texto dizia "1". Qual dos dois a crianca recebia era um `rnd() < 0.5` no quiz —
+  // um sorteio invisivel mudando a pergunta para quem usa leitor de tela. E `keyOf`, que corrige a resposta,
+  // sempre usou a forma reduzida.
+  it('[Right] 2/2 é "1", nao "dois meios" — a figura mostra um inteiro', () => {
+    expect(fracSpeakValue(2, 2)).toBe('1'); // digito, igual ao que fmtFrac devolve para o mesmo valor
+  });
+  it('[Right] 4/2 é "2"', () => { expect(fracSpeakValue(4, 2)).toBe('2'); });
+  it('[Right] 2/4 reduz para "um meio"', () => { expect(fracSpeakValue(2, 4)).toBe('um meio'); });
+  it('[Right] 3/4 nao reduz e continua "3 quartos"', () => { expect(fracSpeakValue(3, 4)).toBe('3 quartos'); });
+  it('[Invariant] fracSpeak segue LITERAL: ela le a fracao escrita, sem simplificar', () => {
+    expect(fracSpeak('2/2')).toBe('2 meios'); // continua sendo a leitura de "2/2" como TEXTO
+    expect(fracSpeakValue(2, 2)).toBe('1');   // e o valor que a figura mostra e outro
+  });
+  it('[Right] o aria-label da figura usa o VALOR', () => {
+    const html = fracGraphic(2, 2);
+    expect(html).toContain('aria-label="1"');
+    expect(html).toContain('data-frac="2/2"'); // o dado cru continua la, para quem precisar dele
+  });
+  it('[Invariant] speakChoice concorda com o rotulo da figura que ele le', () => {
+    expect(speakChoice(fracGraphic(2, 2))).toBe('1');
+    expect(speakChoice(fracGraphic(2, 4))).toBe('um meio');
+  });
+  it('[Right] figura e texto falam a MESMA coisa para o mesmo valor — era isso que o sorteio quebrava', () => {
+    for (const [n, d] of [[2, 2], [2, 4], [3, 4], [4, 4], [1, 2]]) {
+      const porFigura = speakChoice(fracGraphic(n, d));
+      const porTexto = speakChoice(fmtFrac(n, d, 'd'));
+      expect(porFigura).toBe(porTexto);
+    }
   });
 });

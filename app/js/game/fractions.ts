@@ -58,10 +58,33 @@ export function fracGraphic(n: number, d: number, shape?: string): string {
   const sq = FRAC_GFX[d];
   const useSq = shape === 'square' || (shape == null && sq && rnd() < 0.5);
   const svg = (useSq && sq) ? _sqGrid(n, sq.cols, sq.rows) : _pieUnit(n, d);
-  return `<span class="frac-fig" data-frac="${n}/${d}" role="img" aria-label="${fracSpeak(n + '/' + d)}">${svg}</span>`;
+  // `data-frac` guarda o n/d CRU (é dado, e speakChoice o relê); o aria-label fala o VALOR, que é o que a
+  // figura mostra.
+  return `<span class="frac-fig" data-frac="${n}/${d}" role="img" aria-label="${fracSpeakValue(n, d)}">${svg}</span>`;
 }
 
-/** Speak a bare "n/d" fraction in pt-BR ("um meio", "3 quartos", "5 doze avos"…). */
+/**
+ * Fala o VALOR de n/d, reduzido — que é o que quem enxerga percebe olhando o desenho.
+ *
+ * `fracGraphic(2, 2)` desenha um círculo INTEIRO, e o rótulo acessível dele dizia "dois meios" enquanto o
+ * mesmo valor, quando saía como texto, dizia "1" — e qual dos dois a criança recebia era um `rnd() < 0.5` em
+ * `game/quiz.ts`. Um sorteio invisível mudava a pergunta para quem usa leitor de tela, e a chave que corrige a
+ * resposta (`keyOf`) sempre foi a reduzida. O nome acessível de uma imagem tem de transmitir o que ela mostra
+ * (WCAG 1.1.1), então aqui se reduz primeiro e fala depois.
+ *
+ * `fracSpeak` continua existindo e continua falando o que recebe, sem reduzir: ela é a leitura LITERAL de uma
+ * fração escrita, e há quem precise dela (ler "3/4" é "três quartos", não um valor a simplificar).
+ */
+export function fracSpeakValue(n: number, d: number): string {
+  const g = gcd(n, d) || 1, a = n / g, b = d / g;
+  // Inteiro sai como DIGITO, igual ao que `fmtFrac` devolve — assim os dois caminhos do sorteio do quiz
+  // (figura e texto) produzem a MESMA string, e não só o mesmo som. "1" e "um" o leitor de tela fala igual,
+  // mas string diferente é divergência esperando para voltar.
+  if (b === 1) return String(a); // 2/2 -> "1" · 4/2 -> "2"
+  return fracSpeak(a + '/' + b);
+}
+
+/** Speak a bare "n/d" fraction in pt-BR ("um meio", "3 quartos", "5 doze avos"…) — LITERAL, sem reduzir. */
 export function fracSpeak(s: string): string {
   const m = /^(\d+)\/(\d+)$/.exec(String(s));
   if (!m) return String(s);
@@ -74,7 +97,7 @@ export function fracSpeak(s: string): string {
 export function speakChoice(s: string): string {
   s = String(s);
   const fig = /data-frac="(\d+)\/(\d+)"/.exec(s);
-  if (fig) return fracSpeak(fig[1] + '/' + fig[2]); // pizza/quadrado (SVG): lê a fração
+  if (fig) return fracSpeakValue(+fig[1]!, +fig[2]!); // pizza/quadrado (SVG): lê o VALOR que a figura mostra
   if (/</.test(s)) s = s.replace(/<\/b><b>/, '/').replace(/<[^>]+>/g, '');
   const m = /^(\d+)\s+(\d+)\/(\d+)$/.exec(s);
   if (m) return m[1] + (m[1] === '1' ? ' inteiro e ' : ' inteiros e ') + fracSpeak(m[2] + '/' + m[3]);
