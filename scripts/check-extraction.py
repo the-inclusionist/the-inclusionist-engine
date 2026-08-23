@@ -36,7 +36,40 @@ VAR = re.compile(r"^(?:export\s+)?(?:const|let|var)\s+(.*)$", re.M)
 NOME = re.compile(r"[A-Za-z_$][\w$]*")
 
 
+def _padrao(resto: str) -> list[str]:
+    """Nomes de um padrão de desestruturação: `{a, b: c, ...d}` / `[a, , b]`.
+    Sem isto, `const { frontOverlay } = overlays;` some do radar e o nome parece removido —
+    o que fez o conferidor gritar em falso a cada onda desta migração."""
+    nomes, i, n = [], 0, len(resto)
+    while i < n:
+        ch = resto[i]
+        if ch in ":":            # `{ a: b }` — quem é declarado é `b`, então descarta o que veio antes
+            nomes.pop() if nomes else None
+            i += 1; continue
+        if ch in "=":            # valor padrão: pula até a próxima vírgula do mesmo nível
+            prof = 0
+            while i < n and not (resto[i] == "," and prof == 0):
+                if resto[i] in "([{": prof += 1
+                elif resto[i] in ")]}": prof -= 1
+                i += 1
+            continue
+        m = NOME.match(resto, i)
+        if m:
+            nomes.append(m.group(0)); i = m.end(); continue
+        i += 1
+    return nomes
+
+
 def _declaradores(resto: str) -> list[str]:
+    corte = resto.lstrip()
+    if corte[:1] in ("{", "["):   # declaração por desestruturação
+        fim, prof = 0, 0
+        for j, ch in enumerate(corte):
+            if ch in "([{": prof += 1
+            elif ch in ")]}":
+                prof -= 1
+                if prof == 0: fim = j; break
+        return _padrao(corte[1:fim])
     nomes, profundidade, atual, esperando_nome = [], 0, "", True
     for ch in resto:
         if ch in "([{":
