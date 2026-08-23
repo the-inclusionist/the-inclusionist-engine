@@ -30,3 +30,7 @@ docs/research/sherpa-wasm/
 # Vitest browser-mode artefatos (gerados por rodada, nao versionados)
 .vitest-attachments/
 tests/__screenshots__/
+
+# Python bytecode dos scripts de manutencao (scripts/*.py)
+__pycache__/
+*.pyc
