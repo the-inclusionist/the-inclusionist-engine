@@ -28,11 +28,50 @@ import sys
 ALVO = "app/js/game.js"
 
 # Declarações de TOPO (coluna 0). Aninhadas não interessam: extração move blocos inteiros.
-DECL = re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^(?:const|let|var)\s+([A-Za-z_$][\w$]*)", re.M)
+FUNC = re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)", re.M)
+VAR = re.compile(r"^(?:export\s+)?(?:const|let|var)\s+(.*)$", re.M)
+# `let a=1, b=[], c=null;` declara TRÊS nomes. Pegar só o primeiro é um ponto cego caro: foi assim que
+# vpHudDom/vpQuitDom/vpScreens ficaram fora do radar na extração do HUD. Varre os declaradores do
+# statement, parando no `=` de cada um e ignorando o que estiver dentro de parênteses/colchetes.
+NOME = re.compile(r"[A-Za-z_$][\w$]*")
+
+
+def _declaradores(resto: str) -> list[str]:
+    nomes, profundidade, atual, esperando_nome = [], 0, "", True
+    for ch in resto:
+        if ch in "([{":
+            profundidade += 1
+        elif ch in ")]}":
+            profundidade -= 1
+        elif profundidade == 0:
+            if ch == ",":
+                esperando_nome = True
+                continue
+            if ch == "=":
+                esperando_nome = False
+                continue
+            if ch == ";":
+                break
+        if esperando_nome and profundidade == 0:
+            atual += ch
+            continue
+        if atual:
+            m = NOME.match(atual.strip())
+            if m:
+                nomes.append(m.group(0))
+            atual = ""
+    if atual:
+        m = NOME.match(atual.strip())
+        if m:
+            nomes.append(m.group(0))
+    return nomes
 
 
 def declaracoes(fonte: str) -> set[str]:
-    return {m.group(1) or m.group(2) for m in DECL.finditer(fonte)}
+    nomes = {m.group(1) for m in FUNC.finditer(fonte)}
+    for m in VAR.finditer(fonte):
+        nomes.update(_declaradores(m.group(1)))
+    return nomes
 
 
 def referencias(fonte: str) -> set[str]:
