@@ -24,7 +24,7 @@ import { drawCane, drawRunCane, drawChair } from './render/wheelchair-sprites.js
 import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
-import { $, toggleBtn } from './ui/dom.js';
+import { $, $$, toggleBtn } from './ui/dom.js';
 import { initSettingsAudio } from './ui/settings-audio.js';
 import { initSettingsControls, ACT_LABEL, keyName } from './ui/settings-controls.js';
 import { initSettingsVisual, CONTRAST_LEVELS, CONTRAST_LABELS, ROLE_LABELS } from './ui/settings-visual.js';
@@ -67,6 +67,7 @@ import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/aba
 import { screenGrid, screenBaseSize } from './core/screens.js'; // grade de telas (fonte unica)
 import { initPhysics, stepPlayer as stepPhysics } from './game/physics.js'; // B1: fisica do jogador (ancorada nas trajetorias-ouro)
 import { initQuiz } from './game/quiz.js'; // B3: o desafio educativo (geracao + markup + efeito)
+import { initSettingsPanel } from './ui/settings-panel.js'; // B4: o que as cascas dos paineis realmente compartilham
 import { initViewports } from './render/viewports.js'; // B2: fabrica de imagem dos modos de visao
 import { initVizSetters } from './render/viz-setters.js'; // Onda A: aplicacao dos modos de visao acessivel
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
@@ -217,6 +218,14 @@ let collected=0, ended=false; setCoins(pickCoins(COIN_TARGET, coinPools())); // 
 // 'phase' agora vem de core/state.js (Fase 2, mega-variável 1). Leitura = binding vivo; escrita só via setPhase().
 
 /* ===================== input ===================== */
+/* B4: o que as nove cascas de painel REALMENTE compartilham — empilhamento de overlay, o rodape de
+   explicacao, e o registro que substitui a tabela de fechamento e a cadeia de Escape. As nove funcoes
+   de abrir e fechar FICAM: elas sao as diferencas (o que renderizam antes, o que focam,
+   para onde o foco volta), e uma casca generica precisaria de seis parametros de excecao para cobri-las.
+   AQUI e nao la embaixo: frontOverlay deixou de ser declaracao icada e a 1a leitura dele e o ctx do
+   initGamepad, avaliado eager. */
+const overlays = initSettingsPanel({ $, $$, doc: document, computedZ: (el)=>+getComputedStyle(el).zIndex||0 });
+const { frontOverlay } = overlays;
 let jumpEdge=false, optionsOpen=false, movementOpen=false, visualOpen=false, empathyOpen=false, audioOpen=false;
 // Gamepad (B3/L1): estado por controle. padCur[gi]=ações seguradas neste frame; associação pad↔jogador vive em p.pad.
 // padCur/padPrevAct/padPrevStart + PAD_DEAD movidos p/ input/state.js (Fase 2.22)  // // zona morta = primeira METADE do curso (ergonomia — José 2026-07-02)
@@ -247,13 +256,11 @@ addEventListener('keydown',(e)=>{
   if(ctrlPanel.handleCaptureKeydown(e))return; // remap: a proxima tecla vira o controle (ui/settings-controls.ts)
   // Diálogo aberto: só bloqueia o jogo se o elemento estiver DE FATO visível (flag preso não trava mais o teclado).
   const dlgVis=(id)=>{ const el=$('#'+id); return el && !el.hidden; };
-  if(optionsOpen && dlgVis('options')){ if(e.code==='Escape')closeOptions(); return; }
-  if(movementOpen && dlgVis('movement')){ if(e.code==='Escape')closeMovement(); return; }
-  if(motionOpen && dlgVis('animation')){ if(e.code==='Escape')motion.close(); return; }
-  if(visualOpen && dlgVis('visual')){ if(e.code==='Escape')closeVisual(); return; }
-  if(empathyOpen && dlgVis('empathy')){ if(e.code==='Escape')empathy.close(); return; }
-  if(audioOpen && dlgVis('audio')){ if(e.code==='Escape')closeAudio(); return; }
-  if(typoOpen && dlgVis('typo')){ if(e.code==='Escape')closeTypo(); return; }
+  // Cadeia de Escape, verbatim do encadeamento que substituiu: fecha o PRIMEIRO registrado que estiver
+  // aberto. MEDIDO no navegador: com o jogo pausado ela nao e alcancada — menuNavKey esta em fase de
+  // CAPTURA, trata Escape como 'voltar', da stopPropagation e resolve pelo topo da pilha (z-index).
+  // Como os paineis so abrem pausado, na pratica quem fecha e sempre o de cima. Mantida como estava.
+  { const id=overlays.escapeTarget(); if(id){ if(e.code==='Escape')overlays.closeById(id); return; } }
   if(dlgVis('touchcfg')){ if(e.code==='Escape'){ const t=$('#touchcfg'); if(t)t.hidden=true; } return; }
   if(dlgVis('padwiz')){ if(e.code==='Escape')gamepadApi.closePadWiz(false); return; } // wizard de gamepad: Esc cancela
   // Fim de fase / título: qualquer tecla com função de PULO (de qualquer jogador) ou de PAUSA aciona o
@@ -1308,22 +1315,7 @@ function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.v
   const bv=$('#opt-visual'); if(bv)bv.classList.toggle('is-on',help); const be=$('#opt-empathy'); if(be)be.classList.toggle('is-on',sim||hearingLoss||oneButton||wheelchair); }
 // "tela = canvas": reparenta os diálogos de a11y para dentro do #game-region (ficam presos ao canvas)
 // e empilha o último aberto por cima (z crescente). frontOverlay é chamado em cada open*.
-let _ovZ=60;
-// Explicações no RODAPÉ (não embaixo de cada opção): coleta a descrição de cada linha para data-explain,
-// deixa só o rótulo na linha e mostra a descrição num rodapé fixo ao focar/passar o mouse. Menos cansativo.
-function fillExplain(card){ if(!card)return;
-  let f=card.querySelector('.opt-explain');
-  if(!f){ f=document.createElement('div'); f.className='opt-explain'; f.setAttribute('aria-live','polite'); f.dataset.idle='Passe o mouse ou navegue pelas opções para ver a explicação.'; f.textContent=f.dataset.idle; card.appendChild(f); }
-  card.querySelectorAll('.ctrl-row').forEach(row=>{ if(row.dataset.explainDone)return;
-    const span=row.querySelector(':scope > span'); const strong=span&&span.querySelector('strong'); if(!span||!strong){ row.dataset.explainDone='1'; return; }
-    const hint=span.querySelector('.opt-hint');
-    let desc = hint ? hint.textContent.trim() : span.textContent.slice(strong.textContent.length).replace(/^\s*[—–-]\s*/,'').trim();
-    row.dataset.explainDone='1'; if(!desc)return;
-    row.dataset.explain=desc; span.innerHTML=strong.outerHTML; // deixa só o rótulo curto
-    const show=()=>{ f.textContent=desc; }; const clear=()=>{ f.textContent=f.dataset.idle||''; };
-    row.addEventListener('mouseenter',show); row.addEventListener('focusin',show); row.addEventListener('mouseleave',clear); });
-}
-function frontOverlay(el){ if(!el)return; el.style.zIndex=String(++_ovZ); const card=el.querySelector('.overlay__card'); if(card)fillExplain(card); }
+// _ovZ/fillExplain/frontOverlay migraram para ui/settings-panel.ts (B4).
 (function inCanvasMenus(){ const gr=document.getElementById('game-region'); if(!gr)return;
   ['audio','movement','options','animation','visual','empathy','touchcfg','help','padwiz','typo','title-overlay'].forEach(id=>{ const el=document.getElementById(id); if(el)gr.appendChild(el); }); // NENHUMA tela fora do canvas (decisão definitiva do José — splash incluso)
   // Botões puramente on/off viram TOGGLE (switch) — o texto "Ligado/Desligado" fica oculto (font-size:0).
@@ -1529,7 +1521,17 @@ function setPhase(p){
 // NAVEGAÇÃO UNIVERSAL de menus: qualquer menu aberto (pausa OU submenu) é navegável por up/down/left/right/
 // sim/não — as MESMAS ações valem para teclado, controle, olhos e fala. sim = confirma/alterna/entra;
 // não = volta ao menu anterior (na raiz, volta ao jogo = Continuar). left/right ajustam select/slider.
-const OVERLAY_CLOSE={ audio:()=>closeAudio(), movement:()=>closeMovement(), options:()=>closeOptions(), animation:()=>motion.close(), visual:()=>closeVisual(), empathy:()=>empathy.close(), touchcfg:()=>touchCtl.closeTouchCfg(), help:()=>closeHelp(), typo:()=>closeTypo() };
+// A ORDEM aqui E a cadeia de Escape (verbatim do encadeamento anterior). touchcfg e help entram sem
+// flag: ficam fora da cadeia, exatamente como estavam.
+overlays.register('options',  { close:()=>closeOptions(),  isOpen:()=>optionsOpen });
+overlays.register('movement', { close:()=>closeMovement(), isOpen:()=>movementOpen });
+overlays.register('animation',{ close:()=>motion.close(),  isOpen:()=>motionOpen });
+overlays.register('visual',   { close:()=>closeVisual(),   isOpen:()=>visualOpen });
+overlays.register('empathy',  { close:()=>empathy.close(), isOpen:()=>empathyOpen });
+overlays.register('audio',    { close:()=>closeAudio(),    isOpen:()=>audioOpen });
+overlays.register('typo',     { close:()=>closeTypo(),     isOpen:()=>typoOpen });
+overlays.register('touchcfg', { close:()=>touchCtl.closeTouchCfg() });
+overlays.register('help',     { close:()=>closeHelp() });
 // Ações do menu de pausa (compartilhadas pelos menus por tela). Ao abrir um submenu de a11y, escopa ao
 // jogador que agiu (pauseActor) — o diálogo abre na aba dele (Etapa 3 remove as abas).
 const pauseActs={ resume:()=>setPhase('playing'),
@@ -1553,7 +1555,7 @@ const whichPlayer = (code) => kbRuntime.whichPlayer(code);
 function sharedDialogOpen(){ const ov=[...document.querySelectorAll('#game-region .overlay')].filter(o=>!o.hidden); if(!ov.length)return null; ov.sort((a,b)=>(+getComputedStyle(a).zIndex||0)-(+getComputedStyle(b).zIndex||0)); return ov[ov.length-1]; }
 function menuItems(menu){ const card=menu.querySelector('.overlay__card, .pause-card')||menu; return [...card.querySelectorAll('button:not([disabled]), select:not([disabled]), input[type=range]:not([disabled])')].filter(el=>el.offsetParent!==null); }
 function menuFocus(menu){ if(!menu)return; const it=menuItems(menu); if(it.length){ const cur=it.indexOf(document.activeElement); (cur>=0?it[cur]:it[0]).focus(); } }
-function dialogBack(menu){ const c=OVERLAY_CLOSE[menu.id]; if(c)c(); else menu.hidden=true; menuFocus(sharedDialogOpen()); }
+function dialogBack(menu){ if(!overlays.closeById(menu.id))menu.hidden=true; menuFocus(sharedDialogOpen()); }
 function navDialog(menu,k){ const items=menuItems(menu); if(!items.length)return; let idx=items.indexOf(document.activeElement); if(idx<0){ idx=0; items[0].focus(); } const cur=items[idx];
   if(k.no){ dialogBack(menu); return; }
   if(k.left||k.right){ const d=k.right?1:-1;
