@@ -3,7 +3,7 @@
 
     python scripts/check-extraction.py [ref]        # ref padrão: HEAD
 
-Compara as declarações de topo de `app/js/game.js` entre `ref` e a cópia de
+Compara as declarações de topo de `app/js/main.js` entre `ref` e a cópia de
 trabalho, e acusa toda declaração que SUMIU mas continua sendo referenciada —
 que é a forma como uma remoção acidental passa por build e testes.
 
@@ -25,7 +25,7 @@ import re
 import subprocess
 import sys
 
-ALVO = "app/js/game.js"
+ALVO = "app/js/main.js"
 
 # Declarações de TOPO (coluna 0). Aninhadas não interessam: extração move blocos inteiros.
 FUNC = re.compile(r"^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)", re.M)

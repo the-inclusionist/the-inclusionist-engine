@@ -135,13 +135,13 @@ This file is structure only.
 
 | Folder | Modules |
 |---|---|
-| `core/` | constants · tiles · world · collision · state · loop · rng · i18n · a11y-sr |
-| `platform/` | storage · audio · audio-mixer · speech |
-| `input/` | state · keyboard · devices |
-| `render/` | canvas · sprites · props · sprite-fx · viz-modes · crt · minimap |
-| `ui/` | dom · fonts · vlibras · layout · webcam |
-| `game/` | player · coins |
-| (root) | `game.js` — dissolving into modules → ends as `main.ts` |
+| `core/` | a11y-sr · collision · constants · i18n · layers · loop · rng · screens · state · tiles · world |
+| `platform/` | audio · audio-ambient · audio-earcons · audio-jingles · audio-mixer · audio-nav · speech · storage · tts |
+| `input/` | devices · gamepad · keyboard · keyboard-runtime · keydown · state · touch |
+| `render/` | canvas · cenario-data · crt · cvd-matrices · draw · fx · hc-role-data · high-contrast · lq-filter · minimap · parallax · player-anim · props · scene-city · scene-parallax · scene-sky · set-cenario · sprite-fx · sprites · textures · title-scene · viewports · viz-modes · viz-setters · weather · wheelchair-sprites · world-tex |
+| `ui/` | activities-menu · debug-panel · dom · fonts · hud · layout · menu-nav · pause-icons · settings-audio · settings-controls · settings-empathy · settings-motion · settings-motor · settings-panel · settings-typo · settings-visual · shell · title · vlibras · webcam |
+| `game/` | activities-registry · activity-content · attract · braille · coin-spawning · coins · elevators · fractions · level-geometry · life · literacy-distractors · physics · player · powerups · quiz · session · traffic |
+| (root) | `main.js` — composition root: builds the instances, wires them together, registers the listeners. Was `game.js` until D2; typing it as `main.ts` is the step that remains. |
 
 Engine constants (TILE_TYPES, TUNE, dimensions) live only in `app/js/core/constants.ts` — never duplicated in docs.
 The **canonical render Z-order** (named layers, world + overlay scopes; PIXI `zIndex` + DOM `z-index`) and the

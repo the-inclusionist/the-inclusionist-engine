@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- The Inclusionist v4 — PixiJS (validação-primeiro). Código: GPL-3.0. Versão completa: INCL_VERSION no game.js (JS preenche o DOM). -->
+<!-- The Inclusionist v4 — PixiJS (validação-primeiro). Código: GPL-3.0. Versão completa: INCL_VERSION no main.js (JS preenche o DOM). -->
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -404,16 +404,16 @@
 
   <noscript><p style="padding:1rem">Este jogo precisa de JavaScript ativado.</p></noscript>
 
-  <!-- Registro do Service Worker em script CLÁSSICO (fora do ES Module game.js) — CRÍTICO p/ resiliência:
-       se um load pegar módulos de cache desatualizado e o game.js falhar no `import` (tela branca), este
+  <!-- Registro do Service Worker em script CLÁSSICO (fora do ES Module main.js) — CRÍTICO p/ resiliência:
+       se um load pegar módulos de cache desatualizado e o main.js falhar no `import` (tela branca), este
        script ainda roda, registra/atualiza o SW (que rebusca o shell inteiro com cache:'reload') e o
-       PRÓXIMO load se autocura. Antes ficava no fim do game.js → nunca rodava quando o boot quebrava. -->
+       PRÓXIMO load se autocura. Antes ficava no fim do main.js → nunca rodava quando o boot quebrava. -->
 
   <!-- PWA/SW (manifest + registro) gerados pelo vite-plugin-pwa no build — ver vite.config.ts. -->
-  <!-- game.js é ES Module (type=module). PIXI vem do npm via `import * as PIXI from 'pixi.js'` (o Vite empacota;
+  <!-- main.js é ES Module (type=module). PIXI vem do npm via `import * as PIXI from 'pixi.js'` (o Vite empacota;
        o antigo <script src=vendor/pixi.min.js> global foi aposentado). Módulo é `defer` por natureza: o DOM já
        está parseado (script no fim do body), então o comportamento de init é idêntico. -->
-  <script type="module" src="js/game.js"></script>
+  <script type="module" src="js/main.js"></script>
 
   <!-- VLibras — tradução para Libras (interina; online). Futuro: motor próprio em zdog (P2/P5). -->
   <div vw class="enabled">

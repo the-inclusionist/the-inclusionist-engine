@@ -1,5 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The Inclusionist v4 — port do Lúdico real sobre PixiJS.
+// ESTE ARQUIVO CHAMAVA-SE game.js ate a etapa D2 da modularizacao. O nome mudou porque o conteudo mudou: o
+// jogo saiu daqui para 55 modulos em core/game/input/platform/render/ui, e o que restou e COMPOSITION ROOT —
+// cria as instancias, liga uma na outra e registra os ouvintes. Se voce veio procurar como o jogo funciona,
+// nao e aqui: e a fisica em game/physics, o desenho em render/draw, a rodada em game/session, o teclado em
+// input/keydown. Os cabecalhos dos modulos ainda dizem 'extraido do game.js', e devem continuar dizendo:
+// aquele era o nome do arquivo quando cada um saiu de la.
 // VERSIONAMENTO (recalculado do git em 2026-07-02): MINOR +1 a cada feature (patch zera);
 // PATCH +1 a cada conserto/ajuste; docs/chore não mudam versão. INCL_VERSION agora é DISPLAY (bump em mudança relevante); o cache é por content-hash do vite-plugin-pwa (Estágio 1) — sem sw.js/bump manual.
 import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposenta o <script> global vendor/pixi.min.js)
@@ -114,7 +120,7 @@ let caneBlockDiv=store.getNum('incl_cane_div',1)||1; // 1 = 1 batida/bloco; 2 = 
 /* ===================== mundo ===================== */
 // Mundo carregado do texto-glifo assets/levels/clarity.map.txt (Fase 1.2). Construtor em core/world.js.
 import { buildWorldFromText } from './core/world.js';
-// top-level await: game.js é módulo → o corpo abaixo só roda após o mapa carregar (pré-cacheado no SW).
+// top-level await: main.js é módulo → o corpo abaixo só roda após o mapa carregar (pré-cacheado no SW).
 const WORLD = buildWorldFromText(await (await fetch('assets/levels/clarity.map.txt')).text());
 const WORLD_W = WORLD[0].length, WORLD_H = WORLD.length;
 const WORLD_PX_W = WORLD_W*TILE, WORLD_PX_H = WORLD_H*TILE;
@@ -331,12 +337,12 @@ function setHearingLoss(on){ setHearingLossGraph(on); store.setBool('incl_hearin
 // audioCat + catNode + setCatGain (mixer por categoria) extraídos p/ platform/audio.js (Fase 2).
 // ===== F2: efeitos de interação com o ambiente (passos por superfície, portas, escada) — ruído filtrado sintetizado =====
 // noiseBuffer + FOOT + noiseHit + _footCount (synth de ruído) extraídos p/ platform/audio.js (Fase 2). _noiseBuf era var morta.
-// material sob os pés (Cidade = concreto → 'piso') — usado pelo som do PASSO (game.js); não é pista espacial, fica aqui.
+// material sob os pés (Cidade = concreto → 'piso') — usado pelo som do PASSO (main.js); não é pista espacial, fica aqui.
 function surfaceUnder(pl){ const t=tileAt(Math.floor(pl.x/TILE),Math.floor((pl.y+1)/TILE)); if(t!==2&&t!==6&&t!==5)return null; return CENARIO==='cidade'?'piso':'pedra'; }
-const caneOn=(pl)=>{ const m=VIZ_BY_KEY[pl.viz]; return modoCego || !!(m&&(m.kind==='blind'||m.kind==='lowvision')); }; // predicado de visão (movimento/render) — fica no game.js
+const caneOn=(pl)=>{ const m=VIZ_BY_KEY[pl.viz]; return modoCego || !!(m&&(m.kind==='blind'||m.kind==='lowvision')); }; // predicado de visão (movimento/render) — fica no main.js
 // caneColor extraído p/ render/wheelchair-sprites.js (Estágio 4).
 // TTS (narração por voz: Piper neural lazy + fallback Web Speech) extraído p/ platform/tts.ts (Tier 2, #38). Criado ANTES do
-// audio-nav porque o nav injeta narrate. As funções de painel (populateTTS*/reflectTTS) ficam no game.js (→ #54) e usam get/set.
+// audio-nav porque o nav injeta narrate. As funções de painel (populateTTS*/reflectTTS) ficam no main.js (→ #54) e usam get/set.
 const tts = createTts({ srSay, srAlert, ensureAC, catNode, audioOut, getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat });
 // Pistas espaciais a11y (bengala · sonar · guarda de beirada · guia · nado, por dispositivo) extraídas p/ platform/audio-nav.ts
 // (Tier 2, áudio r3). playerCtx/panFor/needsAudioCues expostos na API porque a guarda de beirada + o gate de movimento os
@@ -346,7 +352,7 @@ const nav = createAudioNav({ tileAt, solidAt, held, tonePan, noiseHit, srSay, na
   getModoCego: () => modoCego, getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat });
 // ===== F4: camadas de AMBIENTE (loops sintetizados) + PISTA/GUIA auditivo (beacon em laço) =====
 // Trilha de ambiente sintetizada + trovão extraídos p/ platform/audio-ambient.ts (Tier 2, áudio r4). O clima VISUAL fica no
-// game.js (updateWeather/drawWeather) e migra p/ render depois. Uso: ambient.updateAmbient / ambient.thunder.
+// main.js (updateWeather/drawWeather) e migra p/ render depois. Uso: ambient.updateAmbient / ambient.thunder.
 const ambient = createAudioAmbient({ ensureAC, getAudioCtx: () => audioCtx, catNode, audioOut, noiseBuffer, tileAt, TILE,
   getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat, getPlayers: () => players, getRainLevel: () => weather.getRainLevel() });
 // ===== CLIMA: chuva de verdade (visual + trovão), o áudio segue o visual =====
@@ -537,7 +543,7 @@ const easyHitbox=new PIXI.Graphics(); camera.addChild(easyHitbox);
 camera.addChildAt(rampLayer, camera.getChildIndex(worldSprite)+1); // z-order INTOCADO: mesma posicao de sempre
 // buildRamps + WC_BRIDGES migraram para game/level-geometry.ts (Onda A).
 // WC_ELEVATORS (fossos só-cadeirante) movidos p/ game/elevators.js (Estágio 4).
-function buildWcGeom(){ wcSolid = lgBuildWcGeom(wheelchair); } // envolucro: o modulo calcula, o game.js segue dono do wcSolid
+function buildWcGeom(){ wcSolid = lgBuildWcGeom(wheelchair); } // envolucro: o modulo calcula, o main.js segue dono do wcSolid
 buildWcGeom();
 buildRamps(); // desenha as rampas + coberturas (lava, pontes) se já iniciar em modo cadeirante
 // CORDAS FLUTUANTES na superfície da água (o cego atravessa por elas; visual para todos)
@@ -858,7 +864,7 @@ function update(dt){
    placeCam, draw e a cauda de animacao do stepPlayer moram no modulo. Aqui fica so o ENVOLUCRO de `draw` —
    declaracao de funcao, portanto icada, porque startLoop e window.__incl o capturam pelo NOME, mais abaixo.
    placeCam NAO ganha envolucro: fora do proprio draw ele nao tinha chamador nenhum.
-   O ctx segue a regra da casa: o que o game.js REATRIBUI (vpTex, wheelchair, fxClock, powerups) entra por
+   O ctx segue a regra da casa: o que o main.js REATRIBUI (vpTex, wheelchair, fxClock, powerups) entra por
    GETTER; camadas, camera e renderer entram por valor. `applySharedTextures` e `const` declarado ABAIXO
    (viz-setters), por isso entra embrulhado numa seta — passado direto, cairia em TDZ e derrubaria o boot. */
 const drawApi = initDraw({
@@ -910,7 +916,7 @@ function respawnFigure(i){
    setNumPlayers/restartGame. resetPlayerState e releaseKey NAO ganham envolucro: fora do modulo nao tinham
    chamador nenhum. MODE_LABELS/MODES desceram junto e voltam por import: eram `const` declarados ABAIXO deste
    ponto, e passa-los por valor cairia em TDZ no boot.
-   O ctx segue a regra da casa: o que o game.js REATRIBUI (MODE, collected, ended, powerups, gate, gateOpen,
+   O ctx segue a regra da casa: o que o main.js REATRIBUI (MODE, collected, ended, powerups, gate, gateOpen,
    pauseActor, ownerColors, captionsOn, player) entra por GETTER/SETTER; PCOLOR, darkRegions e os callbacks
    estaveis entram por valor. `reapplyVizAll` e `const` declarado ABAIXO (viz-setters), por isso vem embrulhado
    numa seta — passado direto, cairia em TDZ e derrubaria o boot. */
@@ -962,7 +968,7 @@ const activitiesMenu = initActivitiesMenu({
 });
 const { actCat, setActivity, startActivity, reallyStart,
         navTitle, titleButtons, buildTitleMenus, tabSel, fracNot } = activitiesMenu;
-// B3: o desafio educativo. So entra aqui o que um import nao alcanca: as `let` do game.js, as instancias
+// B3: o desafio educativo. So entra aqui o que um import nao alcanca: as `let` do main.js, as instancias
 // criadas no boot (audio/HUD/menu) e os efeitos de outros slices (moeda, HUD, vitoria, toque). Os
 // callbacks sao arrows de proposito: touchCtl, respawnFigure, win e updateHud nascem mais abaixo.
 const quizApi = initQuiz({
@@ -975,7 +981,7 @@ const quizApi = initQuiz({
   hideTouchControls: () => hideTouchControls(),
   updateHud: () => updateHud(), win: (pl) => win(pl),
   respawnFigure: (i) => respawnFigure(i),
-  syncCollected: (pl) => { if(pl===player) collected = pl.collected; }, // `collected` e let do game.js
+  syncCollected: (pl) => { if(pl===player) collected = pl.collected; }, // `collected` e let do main.js
 });
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraidos p/ game/fractions.js (Estagio 4).
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraídos p/ game/fractions.js (Estágio 4).
@@ -989,7 +995,7 @@ if(optModeBtn)optModeBtn.addEventListener('click',()=>{
 // DOIS direcionais — quem mapeou só o stick continua com o D-pad vivo (menus!) e vice-versa.
 // stdDirs/padActions/pollPads + o assistente de mapeamento inteiro migraram para input/gamepad.ts (Onda A).
 // A Gamepad API entra como ADAPTADOR (getGamepads), que e o que torna o assistente testavel sem navegador.
-// spriteBase e dependencia DECLARADA: era o `SPR` que o game.js usava como se fosse global e derrubava o
+// spriteBase e dependencia DECLARADA: era o `SPR` que o main.js usava como se fosse global e derrubava o
 // assistente ao abrir (ver o commit de correcao).
 const gamepadApi = initGamepad({
   getGamepads: () => (navigator.getGamepads ? navigator.getGamepads() : []), $, srSay, srAlert, frontOverlay,

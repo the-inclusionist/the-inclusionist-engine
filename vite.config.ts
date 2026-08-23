@@ -23,7 +23,7 @@ const BUILD = {
 // A config de TESTE vive aqui (Vitest 3 deprecou o workspace → test.projects; cada project usa root=raiz do repo).
 export default defineConfig({
   root: 'app',
-  define: { __BUILD__: JSON.stringify(BUILD) }, // carimbo de build (versão/sha/data/env) — game.js lê __BUILD__.version
+  define: { __BUILD__: JSON.stringify(BUILD) }, // carimbo de build (versão/sha/data/env) — main.js lê __BUILD__.version
   plugins: [
     VitePWA({
       registerType: 'autoUpdate',
@@ -56,7 +56,7 @@ export default defineConfig({
     emptyOutDir: true,
     target: 'es2022',
     // PixiJS (~445KB) em chunk PRÓPRIO (Vite 8/rolldown: output.codeSplitting.groups). Motivo: o engine quase
-    // nunca muda, o game.js muda a cada commit. Com pixi separado, seu hash fica estável entre deploys → o
+    // nunca muda, o main.js muda a cada commit. Com pixi separado, seu hash fica estável entre deploys → o
     // precache do Workbox NÃO rebaixa os 445KB a cada atualização (só o chunk pequeno do jogo re-baixa) — ganho
     // real de banda p/ o pilar offline/máquina fraca. Efeito colateral: os 2 chunks ficam < 500KB → sem o aviso.
     rolldownOptions: {

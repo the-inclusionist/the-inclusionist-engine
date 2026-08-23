@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Acha import nomeado que ficou sem uso em app/js/game.js.
+// Acha import nomeado que ficou sem uso em app/js/main.js.
 //
 //     node scripts/check-dead-imports.js [arquivo]
 //
-// Por que existe: `game.js` é `.js`, então o `tsc` não o typecheca e não reclama de import não usado; o
+// Por que existe: `main.js` é `.js`, então o `tsc` não o typecheca e não reclama de import não usado; o
 // bundler tampouco. Um import morto atravessa build, testes e navegador sem sintoma nenhum. A cada extração
 // alguns nomes deixam de ser usados aqui, e sem isto eles se acumulam — quinze de uma vez, na primeira
 // passada, resíduo de várias ondas.
@@ -19,7 +19,7 @@
 // ('https://...', 'url(#...)') nao abre comentario e cortar a linha ali esconderia o resto dela do exame.
 import { readFileSync } from 'node:fs'; // o package.json declara type:module
 
-const alvo = process.argv[2] || 'app/js/game.js';
+const alvo = process.argv[2] || 'app/js/main.js';
 let src;
 try { src = readFileSync(alvo, 'utf8'); }
 catch (e) { console.error('não consegui ler ' + alvo + ' — ' + e.message); process.exit(2); }
