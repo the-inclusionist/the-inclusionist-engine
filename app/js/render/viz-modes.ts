@@ -2,18 +2,22 @@
 // render/viz-modes.ts — os 16 modos visuais de acessibilidade (dados) + índices derivados. Módulo-folha, ZERO
 // deps. Alto contraste (renderização direta 3 níveis), simulação/correção de daltonismo, baixa visão, cegueira.
 // A aplicação dos modos (setPlayerViz/applyVpFilters/overlays) fica no game.js. Ver docs/PESQUISA-ALTO-CONTRASTE.md.
-export type VizMode = { key: string; kind: string; nome: string; desc: string; filter?: string; lv?: string };
+// SEM campo `filter` aqui, de proposito: quem diz "modo -> filtro CSS" e VIZ_FILTER, logo abaixo. Os seis
+// modos de daltonismo traziam o `url(#cvd-*)` repetido dentro do proprio registro, mas ninguem lia `m.filter`
+// — todo consumo passa por VIZ_FILTER, que alem dos seis cobre baixa visao e cegueira. Duas copias, uma so
+// lida: se divergissem, a errada seria a silenciosa. E como o campo era opcional, o tipo tambem calaria.
+export type VizMode = { key: string; kind: string; nome: string; desc: string; lv?: string };
 export const VIZ_MODES: VizMode[] = [
   {key:'normal', kind:'normal', nome:'Cores normais',        desc:'Arte original do jogo.'},
   {key:'hc-direto', kind:'hcnew', nome:'Alto contraste: Renderização Direta (3:1)', desc:'Fundo recua + contornos + cor por papel; plataforma×fundo ~3:1 (AA gráficos), tons agradáveis.'},
   {key:'hc-direto-45', kind:'hcnew', nome:'Alto contraste: Renderização Direta (4,5:1)', desc:'Mais contraste (AA texto): plataformas mais claras e fundo mais escuro.'},
   {key:'hc-direto-7', kind:'hcnew', nome:'Alto contraste: Renderização Direta (7:1)', desc:'Contraste máximo (AAA texto): quase preto e branco. Menos agradável, para quem precisa do máximo.'},
-  {key:'sim-deuter', kind:'filter', filter:'url(#cvd-deuter)', nome:'Simular Deuteranopia', desc:'Como vê quem não enxerga o verde (mais comum).'},
-  {key:'sim-protan', kind:'filter', filter:'url(#cvd-protan)', nome:'Simular Protanopia',   desc:'Como vê quem não enxerga o vermelho.'},
-  {key:'sim-tritan', kind:'filter', filter:'url(#cvd-tritan)', nome:'Simular Tritanopia',   desc:'Como vê quem não enxerga o azul.'},
-  {key:'fix-protan', kind:'filter', filter:'url(#cvd-fix-protan)', nome:'Correção protanopia', desc:'Daltonização: realça a distinção vermelho/verde para quem tem protanopia.'},
-  {key:'fix-deuter', kind:'filter', filter:'url(#cvd-fix-deuter)', nome:'Correção deuteranopia', desc:'Daltonização: realça a distinção vermelho/verde para quem tem deuteranopia.'},
-  {key:'fix-tritan', kind:'filter', filter:'url(#cvd-fix-tritan)', nome:'Correção tritanopia', desc:'Daltonização: realça a distinção azul/amarelo para quem tem tritanopia.'},
+  {key:'sim-deuter', kind:'filter', nome:'Simular Deuteranopia', desc:'Como vê quem não enxerga o verde (mais comum).'},
+  {key:'sim-protan', kind:'filter', nome:'Simular Protanopia',   desc:'Como vê quem não enxerga o vermelho.'},
+  {key:'sim-tritan', kind:'filter', nome:'Simular Tritanopia',   desc:'Como vê quem não enxerga o azul.'},
+  {key:'fix-protan', kind:'filter', nome:'Correção protanopia', desc:'Daltonização: realça a distinção vermelho/verde para quem tem protanopia.'},
+  {key:'fix-deuter', kind:'filter', nome:'Correção deuteranopia', desc:'Daltonização: realça a distinção vermelho/verde para quem tem deuteranopia.'},
+  {key:'fix-tritan', kind:'filter', nome:'Correção tritanopia', desc:'Daltonização: realça a distinção azul/amarelo para quem tem tritanopia.'},
   {key:'lv-blur',     kind:'lowvision', lv:'blur',     nome:'Baixa visão: desfoque',         desc:'Miopia severa / astigmatismo. (bolinha verde; toque 2× p/ sair)'},
   {key:'lv-haze',     kind:'lowvision', lv:'haze',     nome:'Baixa visão: névoa',            desc:'Catarata — película esbranquiçada, baixo contraste.'},
   {key:'lv-tunnel',   kind:'lowvision', lv:'tunnel',   nome:'Baixa visão: visão de túnel',   desc:'Glaucoma — só o centro é visível.'},
