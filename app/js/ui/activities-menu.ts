@@ -29,6 +29,7 @@ import { activity as ACTIVITY, setActivityValue, numPlayers, players } from '../
 import { getActivity, hasActivity, isValidActivityId, DEFAULT_ACTIVITY_ID, type ActivityDef } from '../game/activities-registry.js';
 import * as store from '../platform/storage.js';
 import type { TitleMenuId } from './title.js';
+import { TITLE_MENU_IDS_ORDERED as TITLE_MENU_ORDER } from './title.js';
 
 // -------------------------------------------------------------------------------------------------------
 // Types
@@ -170,7 +171,9 @@ export const MAT_MENU_IDS: readonly string[] = ['mat1', 'mat2', 'mat3', 'mat4', 
 /** Ids of the fractions submenu, in menu order. */
 export const FR_MENU_IDS: readonly string[] = ['fr2', 'fr3', 'fr42', 'fr5', 'fr632', 'fr2a6'];
 /** The 6 title submenus, in the order game.js has always scanned them for the visible one. */
-export const TITLE_MENU_ORDER: readonly TitleMenuId[] = ['tm-main', 'tm-alf', 'tm-mat', 'tm-tab', 'tm-fr', 'tm-cen'];
+// A lista ordenada vem de ui/title, que e a dona dos submenus; aqui so ganha o nome que este modulo e
+// seus testes ja usavam. Duas copias mantidas em sincronia por disciplina eram uma a mais.
+export { TITLE_MENU_IDS_ORDERED as TITLE_MENU_ORDER } from './title.js';
 /** The two rows of the tabuada number picker (0–5 then 6–10). */
 export const TAB_ROWS: readonly (readonly number[])[] = [[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10]];
 /** Default tabuada selection when storage is empty (or holds something unusable). */

@@ -14,10 +14,17 @@ export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
 export type TitleMenuId = 'tm-main' | 'tm-alf' | 'tm-mat' | 'tm-tab' | 'tm-fr' | 'tm-cen';
 
-/** The 6 submenus of the title screen, in the order game.js has always hidden/shown them. */
-export const TITLE_MENU_IDS: ReadonlySet<TitleMenuId> = new Set([
+/**
+ * The 6 submenus of the title screen, in the order game.js has always hidden/shown them.
+ *
+ * The ORDERED array is the source and the Set is derived from it, not the other way round. A Set carries no
+ * order in its type, so ui/activities-menu - which has to scan the submenus in order to find the visible one -
+ * had declared its own array of the same six ids, kept in step by discipline alone. One list now.
+ */
+export const TITLE_MENU_IDS_ORDERED: readonly TitleMenuId[] = [
   'tm-main', 'tm-alf', 'tm-mat', 'tm-tab', 'tm-fr', 'tm-cen',
-]);
+];
+export const TITLE_MENU_IDS: ReadonlySet<TitleMenuId> = new Set(TITLE_MENU_IDS_ORDERED);
 
 export function isTitleMenuId(v: string): v is TitleMenuId {
   return TITLE_MENU_IDS.has(v as TitleMenuId);
