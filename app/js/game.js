@@ -60,6 +60,7 @@ import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, worldTexFor, coinTexFor, 
 import { initCoinSpawning, rebuildCoins, addCoinsForOwner, respawnCoinsForOwner, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
 import { initKeyboardRuntime } from './input/keyboard-runtime.js'; // Onda A: esquema de teclas por jogador
 import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geometria fisica do pad + config de toque
+import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad API + assistente de mapeamento
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
   buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
@@ -247,7 +248,7 @@ addEventListener('keydown',(e)=>{
   if(audioOpen && dlgVis('audio')){ if(e.code==='Escape')closeAudio(); return; }
   if(typoOpen && dlgVis('typo')){ if(e.code==='Escape')closeTypo(); return; }
   if(dlgVis('touchcfg')){ if(e.code==='Escape'){ const t=$('#touchcfg'); if(t)t.hidden=true; } return; }
-  if(dlgVis('padwiz')){ if(e.code==='Escape')closePadWiz(false); return; } // wizard de gamepad: Esc cancela
+  if(dlgVis('padwiz')){ if(e.code==='Escape')gamepadApi.closePadWiz(false); return; } // wizard de gamepad: Esc cancela
   // Fim de fase / título: qualquer tecla com função de PULO (de qualquer jogador) ou de PAUSA aciona o
   // botão principal — sem depender do foco do mouse (report do José: clicar na tela tirava o foco do botão).
   { const isJump=KJUMP.includes(e.code)||players.some((p,i)=>actionOf(e.code,i)==='jump');
@@ -1592,73 +1593,23 @@ function joinPlayer(padIdx){
 // D-pad 12-15 + analógico esq. · RB/RT também correm · 9=START (pausa). Controles fora do padrão → wizard de mapeamento.
 // Direções pelas FONTES PADRÃO (stick 0/1, D-pad botões 12-15, POV hat em eixos altos ≥6): o controle tem
 // DOIS direcionais — quem mapeou só o stick continua com o D-pad vivo (menus!) e vice-versa.
-const HAT_STEPS=[[-1,1,0,0,0],[-0.7143,1,0,0,1],[-0.4286,0,0,0,1],[-0.1429,0,1,0,1],[0.1429,0,1,0,0],[0.4286,0,1,1,0],[0.7143,0,0,1,0],[1,1,0,1,0]]; // [v,cima,baixo,esq,dir]
-function stdDirs(gp){ const b=i=>!!(gp.buttons[i]&&gp.buttons[i].pressed), ax=i=>gp.axes[i]||0;
-  const d={ left:ax(0)<-PAD_DEAD||b(14), right:ax(0)>PAD_DEAD||b(15), up:ax(1)<-PAD_DEAD||b(12), down:ax(1)>PAD_DEAD||b(13) };
-  for(let i=6;i<gp.axes.length;i++){ const v=gp.axes[i]; if(typeof v!=='number'||Math.abs(v)>1.001)continue; // repouso do hat (~1.286) fica fora de [-1,1]
-    for(const [hv,u,dn,l,r] of HAT_STEPS){ if(Math.abs(v-hv)<=0.09){ if(u)d.up=true; if(dn)d.down=true; if(l)d.left=true; if(r)d.right=true; break; } } }
-  return d; }
-function padActions(gp){
-  const custom=padMapFor(gp.id); // wizard salvo p/ este modelo → usa o mapa do usuário (_skip = cancelou: padrão)
-  if(custom && !custom._skip){ const A=k=>bindActive(gp,custom[k]); const sd=stdDirs(gp);
-    return { left:A('left')||sd.left, right:A('right')||sd.right, up:A('up')||sd.up, down:A('down')||sd.down,
-      jump:A('jump'), run:A('run'), swap:A('swap'), especial:A('especial'), _start:A('jump')||A('start'), _pause:A('start') }; }
-  const b=i=>!!(gp.buttons[i]&&gp.buttons[i].pressed), sd=stdDirs(gp);
-  return { left:sd.left, right:sd.right, up:sd.up, down:sd.down,
-    jump:b(0), run:b(2)||b(5)||b(7), swap:b(3), especial:b(1), _start:b(0)||b(9), _pause:b(9) }; }
-function pollPads(){ if(padWiz)return; // durante o wizard, os pads falam só com ele
-  const pads=navigator.getGamepads?navigator.getGamepads():[]; if(!pads)return;
-  if(attractCtl.isAttract()){ for(const gp of pads){ if(gp&&gp.buttons.some(b=>b&&b.pressed)){ attractCtl.stopAttract(); return; } } return; } // botão de pad encerra a demo
-  for(const gp of pads){ if(!gp)continue; const gi=gp.index;
-    // L1: controle fora do padrão (DirectInput) SEM mapa salvo apertou algo → pausa geral + wizard direto
-    if(gp.mapping!=='standard' && !padMapFor(gp.id) && gp.buttons.some(b=>b&&b.pressed)){
-      padWizAutoResume=(phase==='playing'); if(phase==='playing')setPhase('paused');
-      openPadWizFor(gp); return; }
-    const cur=padActions(gp); const prev=padPrevAct[gi]||{};
-    // botão físico usado → some o gamepad virtual (mesma regra do teclado)
-    if(document.body.classList.contains('touch-mode') && (cur.left||cur.right||cur.up||cur.down||cur.jump||cur.run||cur.swap||cur.especial||cur._start)) hideTouchControls();
-    const startEdge = cur._start && !padPrevStart[gi]; padPrevStart[gi]=cur._start;
-    const pauseEdge = cur._pause && !prev._pause;
-    const edge=k=>cur[k]&&!prev[k];
-    padCur[gi]=cur; padPrevAct[gi]=cur;
-    // Vitória: START/pulo fecham o modal (Jogar de novo)
-    const winOv=$('#win-overlay'); if(winOv&&!winOv.hidden){ if(startEdge){ const b=$('#btn-again'); if(b)b.click(); } continue; }
-    if(phase==='title'){ const k={yes:edge('jump')||startEdge, no:edge('especial'), up:edge('up'), down:edge('down'), left:edge('left'), right:edge('right')};
-      const any=k.yes||k.no||k.up||k.down||k.left||k.right;
-      const owner=players.findIndex(p=>p.pad===gi);
-      if(numPlayers>1&&owner>0){ if(any)srSay('Aguarde o Jogador 1 escolher o jogo.'); continue; } // só o J1 escolhe
-      if(any)navTitle(k); continue; } // menu inicial navegável pelo pad
-    if(phase==='paused'){ const owner=players.findIndex(p=>p.pad===gi); const pi=owner<0?0:owner;
-      if(pauseEdge){ setPhase('playing'); continue; } // START retoma
-      const k={yes:edge('jump'), no:edge('especial'), up:edge('up'), down:edge('down'), left:edge('left'), right:edge('right')};
-      if(k.yes||k.no||k.up||k.down||k.left||k.right){ const dlg=(typeof sharedDialogOpen==='function')&&sharedDialogOpen();
-        if(dlg)navDialog(dlg,k); else { const menu=vpPause[pi]; if(menu&&!menu.hidden)navPause(menu,pi,k); } }
-      continue; }
-    if(phase==='playing'){ const owner=players.findIndex(p=>p.pad===gi);
-      if(owner<0){ // atribuição POR ORDEM DE AÇÃO (R-splash 2): qualquer botão associa — 1º controle a agir → 1º jogador sem pad
-        const anyEdge=edge('jump')||edge('run')||edge('swap')||edge('especial')||startEdge||edge('left')||edge('right')||edge('up')||edge('down');
-        if(anyEdge){ const waitI=players.findIndex(p=>p&&p.waiting); const free=waitI>=0?waitI:players.findIndex(p=>p&&p.pad<0&&!p.quit);
-          if(free>=0){ players[free].pad=gi;
-            if(players[free].waiting){ players[free].waiting=false; const scr=vpScreens[free], w=scr&&scr.querySelector('.vp-wait'); if(w)w.remove(); }
-            srSay('Controle associado ao Jogador '+(free+1)+'. O teclado continua funcionando.'); }
-          else joinPlayer(gi); } }
-      else if(players[owner].quit){ if(startEdge) respawnPlayer(owner); } // tela abandonada → recomeça SÓ ela
-      else { const p=players[owner];
-        if(pauseEdge){ setPhase('paused'); pauseActor=owner; continue; }  // START pausa (todos pausam; cada tela navega a sua)
-        if(p.quiz){ // L3: o pad navega o quiz do PRÓPRIO jogador (o jogo dos outros segue)
-          if(p.quiz.kind==='braille'){ if(edge('up'))announceBraille(p); else if(edge('jump'))quizConfirm(p); continue; }
-          if(edge('left'))quizMove(p,-1); else if(edge('right'))quizMove(p,1);
-          else if(edge('up'))quizMove(p,-3); else if(edge('down'))quizMove(p,3);
-          else if(edge('jump'))quizConfirm(p);
-          else if(edge('especial'))quizErase(p); // ESPECIAL = apagar última sílaba/letra
-          continue; }
-        if(edge('jump'))p.jumpEdge=true;
-        if(edge('run')&&!p.easy)p.runEdge=true;
-        if(edge('left'))p.leftEdge=true;
-        if(edge('right'))p.rightEdge=true;
-        if(edge('swap'))p.swapEdge=true;
-        if(edge('especial'))p.specialEdge=true; } }
-  } }
+// stdDirs/padActions/pollPads + o assistente de mapeamento inteiro migraram para input/gamepad.ts (Onda A).
+// A Gamepad API entra como ADAPTADOR (getGamepads), que e o que torna o assistente testavel sem navegador.
+// spriteBase e dependencia DECLARADA: era o `SPR` que o game.js usava como se fosse global e derrubava o
+// assistente ao abrir (ver o commit de correcao).
+const gamepadApi = initGamepad({
+  getGamepads: () => (navigator.getGamepads ? navigator.getGamepads() : []), $, srSay, srAlert, frontOverlay,
+  getPhase: () => phase, setPhase,
+  isAttractActive: () => attractCtl.isAttract(), stopAttract: () => attractCtl.stopAttract(),
+  isTouchMode: () => document.body.classList.contains('touch-mode'), hideTouchControls: () => hideTouchControls(),
+  getPlayers: () => players, getNumPlayers: () => numPlayers,
+  navTitle, sharedDialogOpen, navDialog, getPauseMenu: (i) => vpPause[i], navPause,
+  setPauseActor: (i) => { pauseActor = i; },
+  quizMove, quizConfirm, quizErase, announceBraille,
+  joinPlayer, respawnPlayer,
+  clearWaitingBadge: (i) => { const scr=vpScreens[i], w=scr&&scr.querySelector('.vp-wait'); if(w)w.remove(); },
+  spriteBase: SPR,
+});
 // Desconectar NÃO abandona o jogo: o teclado é sempre fallback. Só solta a associação do pad.
 addEventListener('gamepaddisconnected',(e)=>{ try{ const owner=players.findIndex(p=>p.pad===e.gamepad.index);
   if(owner>=0){ players[owner].pad=-1; srAlert('Controle do Jogador '+(owner+1)+' desconectado — o teclado continua funcionando. Aperte START para reassociar.'); }
@@ -1668,82 +1619,8 @@ addEventListener('gamepaddisconnected',(e)=>{ try{ const owner=players.findIndex
    Captura botões por índice; analógicos como limiar por eixo/sinal ({ax,s}); D-pad "POV hat" do
    DirectInput como VALOR de eixo ({av,v}, casamento por proximidade ±0.13 — os 8 passos do hat
    distam ~0.286). Mapa salvo por gamepad.id em localStorage → vale p/ aquele modelo de controle. */
-const _padMaps={}; // cache id → mapa custom (null = sem mapa, usa o padrão)
-function padMapFor(id){ if(_padMaps[id]===undefined){ _padMaps[id]=store.getJSON('incl_padmap_'+id,null); } return _padMaps[id]; }
-function bindActive(gp,bd){ if(!bd)return false;
-  if(bd.b!=null) return !!(gp.buttons[bd.b]&&gp.buttons[bd.b].pressed);
-  if(bd.ax!=null) return ((gp.axes[bd.ax]||0)*bd.s)>0.5;                 // analógico: limiar com sinal
-  if(bd.av!=null) return Math.abs((gp.axes[bd.av]||0)-bd.v)<=0.13;       // hat: valor exato do passo
-  return false; }
-let padWiz=null; // {gi,id,step,base,map,timer,release,baseWait}
-let padWizAutoResume=false; // wizard aberto automaticamente no meio do jogo → retoma ao fechar
-const PADWIZ_STEPS=[['up','CIMA'],['down','BAIXO'],['left','ESQUERDA'],['right','DIREITA'],['jump','PULAR'],['run','CORRER / INTERAGIR'],['swap','TROCAR PODER'],['especial','ESPECIAL'],['start','START (pausa)']];
-function padWizSay(t){ const el=$('#padwiz-prompt'); if(el)el.textContent=t; srSay(t); }
-function openPadWiz(){ const ov=$('#padwiz'); if(!ov)return; ov.hidden=false; frontOverlay(ov);
-  padWiz={gi:-1,id:'',step:-1,base:null,map:{},release:false,baseWait:false};
-  padWizSay('Aperte QUALQUER botão no controle que deseja mapear.'); padWizDemo(null);
-  const pr=$('#padwiz-progress'); if(pr)pr.textContent='';
-  padWiz.timer=setInterval(padWizTick,30); }
-// Wizard aberto AUTOMATICAMENTE (controle DirectInput sem mapa apertou algo): já sabemos qual controle é.
-function openPadWizFor(gp){ const ov=$('#padwiz'); if(!ov)return; ov.hidden=false; frontOverlay(ov);
-  padWiz={gi:gp.index,id:gp.id,step:-1,base:null,map:{},release:false,baseWait:true};
-  padWizSay('Controle novo detectado: '+gp.id+'. O jogo pausou para você configurá-lo. SOLTE tudo para começar.'); padWizDemo(null);
-  const pr=$('#padwiz-progress'); if(pr)pr.textContent='';
-  padWiz.timer=setInterval(padWizTick,30); }
-function closePadWiz(save){ if(!padWiz)return; clearInterval(padWiz.timer);
-  if(save&&padWiz.id){ store.setJSON('incl_padmap_'+padWiz.id, padWiz.map);
-    _padMaps[padWiz.id]=padWiz.map; srAlert('Mapeamento salvo para: '+padWiz.id+'.'); }
-  else if(padWiz.id && !_padMaps[padWiz.id]) _padMaps[padWiz.id]={_skip:true}; // cancelou: usa o mapa PADRÃO nesta sessão (não salva; evita reabrir o wizard em loop)
-  const gi=padWiz.gi; padWiz=null; const ov=$('#padwiz'); if(ov)ov.hidden=true;
-  // sem edges fantasmas: o botão ainda SEGURADO do último passo (START) não pode pausar/agir ao retomar
-  try{ const gp=(navigator.getGamepads?navigator.getGamepads():[])[gi]; if(gp){ const c=padActions(gp); padCur[gi]=c; padPrevAct[gi]=c; padPrevStart[gi]=c._start; } }catch(e){}
-  if(padWizAutoResume){ padWizAutoResume=false; if(phase==='paused')setPhase('playing'); } }
-// Demo do wizard com ANIMAÇÃO REAL (frames do jogo): subir/descer escada, andar, pular, correr;
-// TROCA = slide dos ícones de power-up; START = palavra PAUSA; ESPECIAL = a definir (✨ provisório).
-const PADWIZ_ANIM={
-  up:   {seq:['escada/0','escada/1'], hold:9, cls:'pw-up'},
-  down: {seq:['escada/1','escada/0'], hold:9, cls:'pw-down'},
-  left: {seq:['andar/0','andar/1','andar/2','andar/3','andar/4','andar/5','andar/6','andar/7'], hold:4, cls:'pw-left', flip:1},
-  right:{seq:['andar/0','andar/1','andar/2','andar/3','andar/4','andar/5','andar/6','andar/7'], hold:4, cls:'pw-right'},
-  jump: {seq:['pulo/0','pulo/0','pulo/1','pulo/1'], hold:7, cls:'pw-jump'},
-  run:  {seq:['correr/0','correr/1','correr/2','correr/3'], hold:3, cls:'pw-run'},
-  swap: {fx:'👟 🕷️ 🎈 🐇 🦘', cls:'pw-swap', noimg:1},
-  especial:{seq:['idle/0','idle/1','idle/2','idle/3'], hold:8, fx:'✨', cls:'pw-especial'},
-  start:{fx:'PAUSA', cls:'pw-start', noimg:1},
-};
-let padWizAnim=null; // {seq,hold,t} — frames trocados no padWizTick
-function padWizDemo(k){ const d=$('#padwiz-demo'), img=$('#padwiz-demo-img'), fx=$('#padwiz-demo-fx'); if(!d)return;
-  const a=k?PADWIZ_ANIM[k]:null; d.className=a?a.cls:''; padWizAnim=null;
-  if(fx)fx.textContent=(a&&a.fx)||'';
-  if(img){ img.style.display=(a&&a.noimg)?'none':''; img.style.transform=(a&&a.flip)?'scaleX(-1)':'';
-    if(a&&a.seq){ img.src=SPR+a.seq[0]+'.png'; padWizAnim={seq:a.seq,hold:a.hold||6,t:0}; }
-    else if(!a) img.src=SPR+'idle/0.png'; } }
-function padWizDemoTick(){ if(!padWizAnim)return; const a=padWizAnim; a.t++;
-  const img=$('#padwiz-demo-img'); if(img)img.src=SPR+a.seq[Math.floor(a.t/a.hold)%a.seq.length]+'.png'; }
-function padWizPrompt(){ const s=PADWIZ_STEPS[padWiz.step]; padWizSay((padWiz.step+1)+' de '+PADWIZ_STEPS.length+' — aperte: '+s[1]);
-  padWizDemo(s[0]); // demonstração animada do que a ação FAZ
-  const pr=$('#padwiz-progress'); if(pr)pr.textContent='Mapeados: '+(Object.keys(padWiz.map).join(' · ')||'—'); }
-function padWizBind(bd){ padWiz.map[PADWIZ_STEPS[padWiz.step][0]]=bd; padWiz.step++; padWiz.release=true;
-  if(padWiz.step>=PADWIZ_STEPS.length) closePadWiz(true); }
-function padWizTick(){ if(!padWiz)return; padWizDemoTick(); const pads=navigator.getGamepads?navigator.getGamepads():[];
-  if(padWiz.gi<0){ for(const gp of pads){ if(gp&&gp.buttons.some(b=>b&&b.pressed)){ padWiz.gi=gp.index; padWiz.id=gp.id; padWiz.baseWait=true; padWizSay('Controle: '+gp.id+'. Agora SOLTE tudo.'); break; } } return; }
-  const gp=pads[padWiz.gi]; if(!gp)return;
-  if(padWiz.baseWait){ if(!gp.buttons.some(b=>b&&b.pressed)){ padWiz.baseWait=false; padWiz.base={b:gp.buttons.map(x=>!!(x&&x.pressed)), a:gp.axes.slice()}; padWiz.step=0; padWizPrompt(); } return; }
-  if(padWiz.release){ const idle = !gp.buttons.some((b,i)=>b&&b.pressed&&!padWiz.base.b[i]) && gp.axes.every((v,i)=>Math.abs((v||0)-padWiz.base.a[i])<0.35);
-    if(idle){ padWiz.release=false; padWizPrompt(); } return; }
-  // eixo em rastreio (~240ms): classifica pelo COMPORTAMENTO, não pela magnitude — nada de exigir curso
-  // máximo (ergonomia). Valor que VARIA continuamente = analógico → limiar por sinal (ativa na metade do
-  // curso); valor que salta e fica CONSTANTE = D-pad/POV hat (ou stick digital) → valor exato (±0.13).
-  if(padWiz.axTrack){ const t=padWiz.axTrack, v=gp.axes[t.i]||0;
-    if(Math.abs(v-t.last)>0.03)t.changes++; t.last=v;
-    if(Math.abs(v-padWiz.base.a[t.i])>Math.abs(t.v-padWiz.base.a[t.i])) t.v=v;
-    if(++t.ticks>=8){ const pv=t.v; padWiz.axTrack=null;
-      padWizBind(t.changes>=2 ? {ax:t.i,s:pv>0?1:-1} : {av:t.i,v:Math.round(pv*10000)/10000}); }
-    return; }
-  for(let i=0;i<gp.buttons.length;i++){ if(gp.buttons[i]&&gp.buttons[i].pressed&&!padWiz.base.b[i]){ padWizBind({b:i}); return; } }
-  for(let i=0;i<gp.axes.length;i++){ const v=gp.axes[i]||0; if(Math.abs(v-padWiz.base.a[i])>0.45){ padWiz.axTrack={i,v,last:v,changes:0,ticks:0}; return; } }
-}
-{ const c=$('#padwiz-cancel'); if(c)c.addEventListener('click',()=>closePadWiz(false)); }
+// O assistente de mapeamento (padMapFor/bindActive/padWiz*/PADWIZ_STEPS + a fiacao do #padwiz-cancel)
+// migrou inteiro para input/gamepad.ts (Onda A).
 
 const optTelasBtn=$('#opt-telas'); // botão único: cicla 1→2→3→4 telas
 if(optTelasBtn)optTelasBtn.addEventListener('click',()=>{ setNumPlayers((numPlayers%4)+1); srSay(numPlayers+(numPlayers>1?' telas.':' tela.')); });
@@ -2038,7 +1915,7 @@ function renderMapHub(){ const el=$('#map-hub'); if(!el)return; const np=numPlay
     {lbl:'⌨ Mapear teclado para modo 2 jogadores', mode:2, act:openOptions},
     {lbl:'⌨ Mapear teclado para modo 3 jogadores', mode:3, act:openOptions},
     {lbl:'⌨ Mapear teclado para modo 4 jogadores', mode:4, act:openOptions},
-    {lbl:'🎮 Mapear gamepad', act:openPadWiz}, // L1: wizard (DirectInput e afins) — mapa salvo por modelo de controle
+    {lbl:'🎮 Mapear gamepad', act:()=>gamepadApi.openPadWiz()}, // L1: wizard (DirectInput e afins) — mapa salvo por modelo de controle
     {lbl:'👁 Mapear olhos e boca', soon:true},
     {lbl:'🎯 Mapear setores de olhar', soon:true},
     {lbl:'🎤 Mapear palavras (fala)', soon:true},
@@ -2062,13 +1939,13 @@ function fpsTick(){ const fps=app.ticker.FPS; fpsWarm++; fpsAccum+=fps; fpsFrame
 }
 
 /* ===================== loop ===================== */
-startLoop(app.ticker, (dt)=>{ pollPads(); update(dt); draw();
+startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
   titleG.visible=(phase==='title'); if(titleG.visible)titleScene.draw(); // cena do título da v3 cobre o mundo
   attractCtl.titleIdleTick(titleG.visible); // attract após 60s parado no menu (José)
   setMinimapVisible(!titleG.visible&&numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
   if(phase==='playing'){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
-window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads,update,openPadWiz,padWizTick,padMapFor,get padWiz(){return padWiz;},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return powerups;},get gateOpen(){return gateOpen;},get gate(){return gate;},get ended(){return ended;},restartGame,get hcMode(){return hcMode;},setHC(v){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(players[0]),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
+window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id)=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return powerups;},get gateOpen(){return gateOpen;},get gate(){return gate;},get ended(){return ended;},restartGame,get hcMode(){return hcMode;},setHC(v){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(players[0]),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE;},get letterCase(){return letterCase;},get blindMode(){return blindMode;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
@@ -2176,7 +2053,7 @@ function navPause(menu,pi,k){ const icons=[...menu.querySelectorAll('.pi-btn')],
   else if(k.left)idx=Math.max(0,idx-1); else if(k.right)idx=Math.min(items.length-1,idx+1);
   pauseSetSel(menu, items[idx]); }
 function menuNavKey(e){ if(phase!=='paused'||ctrlPanel.isCapturing())return;
-  const pw=$('#padwiz'); if(pw&&!pw.hidden){ if(e.code==='Escape'){ closePadWiz(false); e.preventDefault(); e.stopPropagation(); } return; } // wizard por cima: só Esc (cancela)
+  const pw=$('#padwiz'); if(pw&&!pw.hidden){ if(e.code==='Escape'){ gamepadApi.closePadWiz(false); e.preventDefault(); e.stopPropagation(); } return; } // wizard por cima: só Esc (cancela)
   const C=e.code;
   const owner=whichPlayer(C); const pi=owner<0?0:owner; const act=owner>=0?actionOf(C,pi):null;
   const yes=C==='Space'||C==='KeyJ'||C==='Enter'||C==='NumpadEnter'||act==='jump';
@@ -2250,7 +2127,7 @@ function updateTitleLegend(){ const el=$('#title-legend'); if(!el)return; // 2 L
   } else if(gp){ // joystick FÍSICO: layout do modelo (XInput colorido / DirectInput números) + mapa custom do wizard
     const layout=gp.mapping==='standard'?padLayoutFromId(gp.id):'generic';
     const set=PAD_DESIGNS[layout]||PAD_DESIGNS.generic;
-    const custom=gp.mapping!=='standard'?padMapFor(gp.id):null;
+    const custom=gp.mapping!=='standard'?gamepadApi.padMapFor(gp.id):null;
     const bOf=(k,def)=>{ const b=custom&&custom[k]; return (b&&typeof b.b==='number')?String(b.b):def; };
     const gy=k=>set[k]||[k,'#3a4a6a'];
     const J=gy(bOf('jump','0')),E=gy(bOf('especial','1')),R=gy(bOf('run','2')),S=gy(bOf('swap','3'));
