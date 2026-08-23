@@ -24,7 +24,9 @@ import { drawCane, drawRunCane, drawChair } from './render/wheelchair-sprites.js
 import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS, FONT_BY_KEY, loadFontKey, saveFontKey } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
-import { $ } from './ui/dom.js'; // Fase 2.27: atalho de querySelector (Tier 1)
+import { $ } from './ui/dom.js';
+import { initTitle } from './ui/title.js';
+import { createTitleScene } from './render/title-scene.js'; // Fase 2.27: atalho de querySelector (Tier 1)
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, VIZ_CYCLE } from './render/viz-modes.js'; // Fase 2: modos visuais de a11y (dados)
 import { PAD_DESIGNS, TOUCH_ACT_LABELS, TOUCH_DEFAULT } from './input/devices.js'; // Fase 2: rótulos de gamepad/toque (dados)
 import { keys, padCur, padPrevAct, padPrevStart, PAD_DEAD, held } from './input/state.js'; // Fase 2.22: estado de input + held
@@ -485,23 +487,10 @@ $('#pixi-mount').appendChild(app.view);
 app.view.setAttribute('aria-hidden','true');
 const camera=new PIXI.Container(); app.stage.addChild(camera);
 weatherLayer=new PIXI.Graphics(); app.stage.addChild(weatherLayer); // CLIMA (chuva/clarão) em tela-espaço, mantido no topo em draw
-/* Tela de título da v3 (drawTitleScene): céu em gradiente + nuvens andando dir→esq + grama pontilhada */
+/* Tela de título da v3 (render/title-scene.ts): céu em gradiente + nuvens andando dir→esq + grama pontilhada */
 const titleG=new PIXI.Graphics(); app.stage.addChildAt(titleG, app.stage.getChildIndex(weatherLayer));
-let titleT=0;
-function drawTitleScene(){ const g=titleG; g.clear(); const W=app.screen.width,H=app.screen.height,k=H/LOGICAL_H;
-  const HOR=Math.round(H*0.735);
-  for(let y=0;y<HOR;y++){ const f=y/HOR; // rgb(26→58, 26→76, 58→180) — interpolação exata da v3
-    g.beginFill((Math.round(26+32*f)<<16)|(Math.round(26+50*f)<<8)|Math.round(58+122*f)).drawRect(0,y,W,1).endFill(); }
-  titleT++; const off=rm.parallax?0:titleT/6; // #21a: deriva sub-pixel (não mais Math.floor → sem "pula 1px a cada 6 frames")
-  const cloud=(cx,cy)=>{ const x=cloudWrapX(cx*k-off, -28*k, W+28*k), s=k; // #21b: wrap pelo CORPO INTEIRO (nuvem = 28*k de largura)
-    g.beginFill(0xf6f5f0).drawRect(x,cy*s,28*s,6*s).drawRect(x+6*s,(cy-4)*s,16*s,6*s).drawRect(x+2*s,(cy+6)*s,24*s,4*s).endFill(); };
-  cloud(40,30); cloud(180,52); cloud(265,22); cloud(110,72);
-  g.beginFill(0x3f7d20).drawRect(0,HOR,W,H-HOR).endFill();
-  g.beginFill(0x2d5b16);
-  for(let x=0;x<W;x+=3*k)g.drawRect(x,HOR,k,k);
-  for(let x=1*k;x<W;x+=4*k)g.drawRect(x,HOR+3*k,k,k);
-  for(let x=2*k;x<W;x+=5*k)g.drawRect(x,HOR+6*k,k,k);
-  g.endFill(); }
+const titleScene = createTitleScene({ titleG, screen: app.screen, getRm: () => rm }); // cena PIXI: render/title-scene.ts (camada criada acima, injetada)
+const titleUI = initTitle({ $ }); // navegacao dos submenus do titulo: ui/title.ts
 /* ===================== ATTRACT MODE → extraído para game/attract.ts (Tier 1) =====================
    O controlador `attractCtl` é criado no fim do módulo (quando players/CENARIO/setCenario/restartGame/
    kbFor/etc. já existem). Aqui ficam só as chamadas: attractCtl.{isAttract,stepAttract,titleIdleTick,onInput,recordTick}. */
@@ -1843,7 +1832,7 @@ let _pendingAct='ludico', pendingPlayers=1, _cenBack='tm-main';
 function startActivity(id){ // R-splash 2: depois do desafio, o JOGADOR 1 escolhe o CENÁRIO (aos demais, "aguarde")
   _pendingAct=id;
   _cenBack = (getActivity(id).pick)?'tm-tab' : getActivity(id).dens?'tm-fr' : getActivity(id).cat==='alf'?'tm-alf' : getActivity(id).cat==='mat'?'tm-mat' : 'tm-main';
-  showTitleMenu('tm-cen'); srSay('Escolha o cenário.'); }
+  titleUI.show('tm-cen'); srSay('Escolha o cenário.'); }
 function reallyStart(){ const id=_pendingAct; setActivity(id);
   if(isMobile()){ if(pendingPlayers>1)pendingPlayers=1;
     try{ const el=document.documentElement, rf=el.requestFullscreen||el.webkitRequestFullscreen; if(rf)rf.call(el); }catch(e){} }
@@ -2614,7 +2603,7 @@ function fpsTick(){ const fps=app.ticker.FPS; fpsWarm++; fpsAccum+=fps; fpsFrame
 
 /* ===================== loop ===================== */
 startLoop(app.ticker, (dt)=>{ pollPads(); update(dt); draw();
-  titleG.visible=(phase==='title'); if(titleG.visible)drawTitleScene(); // cena do título da v3 cobre o mundo
+  titleG.visible=(phase==='title'); if(titleG.visible)titleScene.draw(); // cena do título da v3 cobre o mundo
   attractCtl.titleIdleTick(titleG.visible); // attract após 60s parado no menu (José)
   setMinimapVisible(!titleG.visible&&numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
@@ -2749,18 +2738,14 @@ function releaseKey(pl){ // portador saiu do jogo → a chave volta para a posi�
   if(!pl||!pl.hasKey)return; pl.hasKey=false;
   const key=powerups.find(p=>p.kind==='key'); if(key){ key.taken=false; key.by=[]; if(key.sprite)key.sprite.visible=true; srAlert('A chave voltou para o lugar de origem.'); } }
 function quitGame(){ // Sair: single → volta ao MENU INICIAL; MP → tela do jogador fica preta; TODOS saindo → menu inicial
-  if(numPlayers<=1){ restartGame(); setPhase('title'); showTitleMenu('tm-main'); srSay('Jogo abandonado. Escolha a próxima atividade.'); }
+  if(numPlayers<=1){ restartGame(); setPhase('title'); titleUI.show('tm-main'); srSay('Jogo abandonado. Escolha a próxima atividade.'); }
   else { const q=pauseActor||0; releaseKey(players[q]); players[q].quit=true;
-    if(players.every(p=>p.quit)){ players.forEach(p=>{p.quit=false;}); restartGame(); setPhase('title'); showTitleMenu('tm-main'); // trocar de jogo = todo mundo sai
+    if(players.every(p=>p.quit)){ players.forEach(p=>{p.quit=false;}); restartGame(); setPhase('title'); titleUI.show('tm-main'); // trocar de jogo = todo mundo sai
       srSay('Todos saíram. Escolham a próxima atividade.'); return; }
     setPhase('playing'); srSay('Jogador '+(q+1)+' abandonou o jogo.'); } }
 function togglePause(){ if(phase==='playing')setPhase('paused'); else if(phase==='paused')setPhase('playing'); }
 /* ===== Menu inicial (v3): principal → submenus de atividade → (tabuada/divisão) seletor de números ===== */
 let _tabFor='mat5';
-function showTitleMenu(which){ ['tm-main','tm-alf','tm-mat','tm-tab','tm-fr','tm-cen'].forEach(m=>{ const el=$('#'+m); if(el)el.hidden=(m!==which); });
-  const lg=$('#title-legend'); if(lg)lg.hidden=(which!=='tm-main'); // RODAPÉ: legenda de controles no menu principal, DESCRIÇÃO nos submenus
-  const tb=$('#title-overlay .title-block'); if(tb)tb.style.display=(which==='tm-main')?'':'none'; // título do jogo só no menu principal (o submenu usa o próprio tm-title; evita encavalar)
-  const el=$('#'+which), b=el&&el.querySelector('button'); if(b)b.focus(); }
 function titleButtons(){ const m=['tm-main','tm-alf','tm-mat','tm-tab','tm-fr','tm-cen'].map(id=>$('#'+id)).find(el=>el&&!el.hidden);
   return m?[...m.querySelectorAll('button')]:[]; }
 function navTitle(k){ const bs=titleButtons(); if(!bs.length)return;
@@ -2843,18 +2828,18 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
       pendingPlayers=n; const nn=$('#np-n'); if(nn)nn.textContent=n;
       b.setAttribute('aria-label','Número de jogadores: '+n+'. Clique à esquerda para menos, à direita para mais.');
       srSay(n+(n>1?' jogadores.':' jogador.')); return; }
-    if(b.dataset.tmFr){ go(()=>{ showTitleMenu('tm-fr'); srSay('Soma e subtração de frações: escolha a notação e o tipo.'); }); return; }
+    if(b.dataset.tmFr){ go(()=>{ titleUI.show('tm-fr'); srSay('Soma e subtração de frações: escolha a notação e o tipo.'); }); return; }
     if(b.dataset.fnot){ const k=b.dataset.fnot; // toggle de NOTAÇÃO (imediato; pelo menos 1 SEMPRE ligada)
       if(fracNot[k]&&Object.values(fracNot).filter(x=>x).length<=1){ srAlert('Deixe ao menos uma notação ligada.'); return; }
       fracNot[k]=fracNot[k]?0:1; try{localStorage.setItem('incl_fracnot',JSON.stringify(fracNot));}catch(e){}
       b.classList.toggle('tab-on',!!fracNot[k]); b.setAttribute('aria-pressed',String(!!fracNot[k])); // estado pelo realce, SEM ✔
       srSay(FNOT_LBL[k]+(fracNot[k]?' ligada.':' desligada.')); return; }
     if(b.dataset.cen){ const c=b.dataset.cen; go(()=>{ setCenario(c); reallyStart(); }); return; }
-    if(b.dataset.cenBack){ go(()=>showTitleMenu(_cenBack)); return; }
+    if(b.dataset.cenBack){ go(()=>titleUI.show(_cenBack)); return; }
     if(b.dataset.tm==='ludico'){ go(()=>startActivity('ludico')); return; }
-    if(b.dataset.tm==='alf'){ go(()=>showTitleMenu('tm-alf')); return; }
-    if(b.dataset.tm==='mat'){ go(()=>showTitleMenu('tm-mat')); return; }
-    if(b.dataset.tmBack){ const to=b.dataset.tmBack; go(()=>showTitleMenu(to)); return; }
+    if(b.dataset.tm==='alf'){ go(()=>titleUI.show('tm-alf')); return; }
+    if(b.dataset.tm==='mat'){ go(()=>titleUI.show('tm-mat')); return; }
+    if(b.dataset.tmBack){ const to=b.dataset.tmBack; go(()=>titleUI.show(to)); return; }
     if(b.id==='tab-play'){ if(!tabSel.length){ srAlert('Escolha ao menos um número para treinar.'); return; } go(()=>startActivity(_tabFor)); return; }
     if(b.dataset.tabN!=null){ const n=+b.dataset.tabN, i=tabSel.indexOf(n); // toggle: sem troca de tela → imediato
       if(i>=0)tabSel.splice(i,1); else tabSel.push(n);
@@ -2863,7 +2848,7 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
       srSay('Número '+n+(i<0?' ligado.':' desligado.')); return; }
     if(b.dataset.actId){ const id=b.dataset.actId;
       if(getActivity(id).pick){ go(()=>{ _tabFor=id; buildTitleMenus(); const t=$('#tm-tab .tm-title'); if(t)t.textContent=getActivity(id).nome; // título Tabuada/Divisão
-        showTitleMenu('tm-tab'); srSay(getActivity(id).nome+': escolha os números.'); }); }
+        titleUI.show('tm-tab'); srSay(getActivity(id).nome+': escolha os números.'); }); }
       else go(()=>startActivity(id)); } });
 })();
 (function shellSetup(){
