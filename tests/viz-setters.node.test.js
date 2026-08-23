@@ -85,7 +85,7 @@ function setup(over = {}) {
     players,
     numPlayers: over.numPlayers === undefined ? players.length : over.numPlayers,
     sharedViz: over.sharedViz === undefined ? null : over.sharedViz,
-    hcMode: null, sel: over.sel === undefined ? 0 : over.sel,
+    sel: over.sel === undefined ? 0 : over.sel,
     els: Object.assign({ '#viz-overlay': fakeEl(), '#viz-indicator': fakeEl() }, over.els || {}),
     app: over.app === undefined ? { view: { style: { filter: 'ANTES' } } } : over.app,
     camera: filtered(),
@@ -122,7 +122,6 @@ function setup(over = {}) {
     getSharedViz: () => env.sharedViz,
     setSharedViz: (m) => { env.sharedViz = m; env.log.sharedWrites.push(m); },
     invalidateSharedViz: () => { env.sharedViz = null; env.log.invalidate++; },
-    setHcMode: (on) => { env.hcMode = on; },
     parallaxTexFor: (i, mode) => 'PX:' + i + ':' + mode,
     treeTexFor: (mode) => 'TREE:' + mode,
     playerVizTex: (base, mode) => 'PLAYER:' + base + ':' + mode,
@@ -433,7 +432,6 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
     api.applyVizGlobal('inexistente');
     expect(env.app.view.style.filter).toBe('');
     expect(localStorage.getItem('incl_viz')).toBe('normal');
-    expect(env.hcMode).toBe(false);
   });
   it('[Right] baixa visão: classe no body + overlay visível com a classe da variante', () => {
     const { env, api } = setup();

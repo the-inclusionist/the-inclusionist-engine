@@ -61,7 +61,7 @@ function setup(over = {}) {
   const players = over.players || [{ viz: 'normal', sprite: null, _tx: null }];
   const env = {
     players, numPlayers: over.numPlayers === undefined ? players.length : over.numPlayers,
-    sharedViz: null, hcMode: null, sel: over.sel === undefined ? 0 : over.sel,
+    sharedViz: null, sel: over.sel === undefined ? 0 : over.sel,
     app: { view: { style: { filter: '' } } },
     camera: { filters: 'INTOCADO' },
     worldSprite: { texture: null },
@@ -82,7 +82,6 @@ function setup(over = {}) {
     getSelVizPlayer: () => env.sel, setSelVizPlayer: (i) => { env.sel = i; },
     getSharedViz: () => env.sharedViz, setSharedViz: (m) => { env.sharedViz = m; },
     invalidateSharedViz: () => { env.sharedViz = null; },
-    setHcMode: (on) => { env.hcMode = on; },
     parallaxTexFor: (i, mode) => 'PX:' + i + ':' + mode,
     treeTexFor: (mode) => 'TREE:' + mode,
     playerVizTex: (base, mode) => 'PLAYER:' + base + ':' + mode,
@@ -101,10 +100,9 @@ beforeEach(() => { document.body.className = ''; HC.clearWorldTexCache(); HC.cle
 /* ===================================================================================================== */
 
 describe('applyVizGlobal — desvio hcnew (Renderização Direta, canvas real)', () => {
-  it('[Right] alto contraste liga hcMode, escurece a frente e põe o filtro GPU na câmera', () => {
+  it('[Right] alto contraste escurece a frente e põe o filtro GPU na câmera', () => {
     const { env, api } = setup();
     api.applyVizGlobal('hc-direto');
-    expect(env.hcMode).toBe(true);
     expect(env.log.frontDim).toEqual([true]);
     expect(env.camera.filters).toEqual(['FILTER:hc-direto']);
   });
@@ -122,12 +120,11 @@ describe('applyVizGlobal — desvio hcnew (Renderização Direta, canvas real)',
     const texs = ['hc-direto', 'hc-direto-45', 'hc-direto-7'].map((m) => { api.applyVizGlobal(m); return env.worldSprite.texture; });
     expect(new Set(texs).size).toBe(3);
   });
-  it('[Inverse] voltar a normal devolve a textura normal, desliga hcMode e tira o filtro da câmera', () => {
+  it('[Inverse] voltar a normal devolve a textura normal e tira o filtro da câmera', () => {
     const { env, api } = setup();
     api.applyVizGlobal('hc-direto-7');
     api.applyVizGlobal('normal');
     expect(env.worldSprite.texture).toBe(TEX_WORLD_NORMAL);
-    expect(env.hcMode).toBe(false);
     expect(env.camera.filters).toBeNull();
     expect(env.log.frontDim).toEqual([true, false]);
   });

@@ -11,7 +11,7 @@
 //    setPlayerViz/reapplyVizAll). Entra por `getSharedViz`/`setSharedViz`/`invalidateSharedViz`.
 //  · `selVizPlayer` idem: quatro escritores (renderVizGroup, aba de jogador, ui/settings-visual, menu de
 //    pausa) → get/set por ctx, o `let` continua no game.js até o D1.
-//  · `hcMode` e `_playerDirect` são `let` do game.js reatribuídos por estas funções → setter/clear por ctx
+//  · `_playerDirect` é `let` do game.js reatribuído por estas funções → clear por ctx
 //    (binding importado não pode ser reatribuído).
 //
 // As camadas e sprites PIXI (camera/worldSprite/parallaxLayers/decoSprites/vpSpr/vpDots) são CRIADOS no
@@ -123,7 +123,6 @@ export interface VizSettersCtx {
   getSharedViz: () => string | null;                // `_lastSharedViz`: registro do render estático, FICA no game.js
   setSharedViz: (mode: string) => void;
   invalidateSharedViz: () => void;
-  setHcMode: (on: boolean) => void;                 // `let hcMode` do game.js (binding importado não se reatribui)
 
   /* --- fábricas de textura/filtro que ficam no game.js (saem depois em render/viewports) --- */
   parallaxTexFor: (i: number, mode: string) => unknown;
@@ -207,7 +206,12 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   function applyVizGlobal(mode: string): void {
     const m = resolveViz(mode); mode = m.key;
-    setVizModeValue(mode); ctx.setHcMode(m.kind === 'hcnew'); // core/state: valor + persistência (incl_viz) + evento
+    setVizModeValue(mode); // core/state: valor + persistência (incl_viz) + evento
+    // ANTES daqui saía também `ctx.setHcMode(m.kind === 'hcnew')`, alimentando um `let hcMode` no game.js cujo
+    // único leitor era o gancho window.__incl. Era `vizMode` reescrito com outro nome: derivar de VIZ_BY_KEY
+    // custa uma comparação e não pode divergir. (O inicializador daquele `let` usava OUTRA fórmula,
+    // `vizMode!=='normal'`, e discordava do setter — sem efeito, porque applyVizGlobal roda no boot antes de
+    // o gancho existir, mas é o sintoma clássico de cópia de estado.)
     if (ctx.app && ctx.app.view) ctx.app.view.style.filter = cssFilterFor(mode, lqFilter()); // sim. daltonismo/baixa-visão/cegueira + realce L/Q compostos
     ctx.camera.filters = (m.kind === 'hcnew') ? ctx.pixiFilterFor(mode) : null; // solo: alto contraste experimental = filtro GPU na câmera
     ctx.setFrontDim(!!DIRECT_CFG[mode]); // HC: frente (carros/placas/semáforo) escurece como fundo
