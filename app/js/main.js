@@ -963,7 +963,11 @@ addEventListener('gamepaddisconnected',(e)=>{ try{ const owner=players.findIndex
 // migrou inteiro para input/gamepad.ts (Onda A).
 
 const optTelasBtn=$('#opt-telas'); // botão único: cicla 1→2→3→4 telas
-if(optTelasBtn)optTelasBtn.addEventListener('click',()=>{ setNumPlayers((numPlayers%4)+1); srSay(numPlayers+(numPlayers>1?' telas.':' tela.')); });
+// Pelo activateScreens, e nao pelo setNumPlayers cru: o botao e o Alt+N sao o MESMO pedido por dois caminhos,
+// e so um deles checava se as telas cabem. Pelo botao dava para pedir 2 telas numa janela pequena e o canvas
+// saia pela borda, cortado. Vem junto a recusa no celular (1 tela, decisao registrada) e o crescer sem
+// reiniciar a rodada — quem entra, entra no jogo em andamento. O anuncio agora e do proprio activateScreens.
+if(optTelasBtn)optTelasBtn.addEventListener('click',()=>{ activateScreens((numPlayers%4)+1); });
 // Botão único de LETRAS: ABC (padrão) → abc → Braille
 const LETRA=[ // L3: Braille saiu do ciclo — o ditado passivo agora segue o Modo cego (a11y) e o nível 5 é o "escritor cego"
   {lbl:'🔠 ABC',     caso:'upper', blind:false, say:'Letras maiúsculas.'},
