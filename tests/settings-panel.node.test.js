@@ -1,0 +1,395 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Testes de ui/settings-panel — a CASCA comum dos diálogos de configuração (project node, sem `document`
+// real: ctx.$/$$/doc trabalham sobre um DOM FALSO definido aqui). Contrato: DI por closure ($/$$/doc/computedZ),
+// nenhum acesso a globais fora do ctx. O foco de verdade (quem recebe foco ao abrir, para onde volta ao fechar)
+// só o navegador prova → tests/settings-panel.browser.test.js. ZOMBIES + Right-BICEP.
+// Cobre em especial: a cadeia de Escape percorre a ORDEM DE REGISTRO (não o z-index — divergência verbatim do
+// game.js, ver o relatório da extração), a guarda `dlgVis` (flag presa em diálogo invisível não sequestra a
+// tecla), o empilhamento z crescente e a ORDEM DE LEITURA que fillExplain produz (rótulo na linha, descrição
+// num rodapé aria-live).
+import { describe, it, expect, beforeEach } from 'vitest';
+import {
+  initSettingsPanel, rowExplainText, topByZ, EXPLAIN_IDLE, OVERLAY_BASE_Z, OVERLAY_SCOPE_SELECTOR,
+} from '../app/js/ui/settings-panel.js';
+
+// ---------------------------------------------------------------------------------------------
+// DOM falso — só o que settings-panel.ts toca. Seletores suportados: '.classe', 'tag' e
+// ':scope > span'. `textContent` concatena os nós filhos (é assim que o original acha a descrição
+// depois do rótulo em <strong>).
+// ---------------------------------------------------------------------------------------------
+class FakeEl {
+  constructor(tag, cls = '', nodes = []) {
+    this.tag = tag; this.className = cls; this.nodes = nodes;
+    this.dataset = {}; this.attrs = {}; this.style = {}; this.hidden = false;
+    this.listeners = {};
+    this._innerHTML = undefined;
+  }
+  get textContent() { return this.nodes.map((n) => (typeof n === 'string' ? n : n.textContent)).join(''); }
+  set textContent(v) { this.nodes = [String(v)]; this._innerHTML = undefined; }
+  get innerHTML() {
+    if (this._innerHTML !== undefined) return this._innerHTML;
+    return this.nodes.map((n) => (typeof n === 'string' ? n : n.outerHTML)).join('');
+  }
+  // Reparsa a forma única que o módulo escreve (`<strong>rótulo</strong>`) para que uma 2ª passada de
+  // fillExplain enxergue o mesmo que enxergaria no navegador — sem isso o DOM falso mascararia bugs.
+  set innerHTML(v) {
+    this._innerHTML = v;
+    const m = /^<(\w+)(?: class="([^"]*)")?>([\s\S]*)<\/\1>$/.exec(v);
+    this.nodes = m ? [new FakeEl(m[1], m[2] ?? '', [m[3]])] : (v ? [v] : []);
+  }
+  get outerHTML() { return `<${this.tag}${this.className ? ` class="${this.className}"` : ''}>${this.innerHTML}</${this.tag}>`; }
+  setAttribute(k, v) { this.attrs[k] = String(v); }
+  getAttribute(k) { return Object.hasOwn(this.attrs, k) ? this.attrs[k] : null; }
+  appendChild(c) { this.nodes.push(c); return c; }
+  addEventListener(ev, fn) { (this.listeners[ev] ??= []).push(fn); }
+  fire(ev) { (this.listeners[ev] ?? []).forEach((fn) => fn()); }
+  _matches(sel) {
+    if (sel.startsWith('.')) return this.className.split(/\s+/).includes(sel.slice(1));
+    return this.tag === sel;
+  }
+  _kids() { return this.nodes.filter((n) => typeof n !== 'string'); }
+  querySelector(sel) { return this.querySelectorAll(sel)[0] ?? null; }
+  querySelectorAll(sel) {
+    if (sel === ':scope > span') return this._kids().filter((k) => k.tag === 'span');
+    const out = [];
+    const walk = (el) => { for (const k of el._kids()) { if (k._matches(sel)) out.push(k); walk(k); } };
+    walk(this);
+    return out;
+  }
+}
+
+const fakeDoc = { createElement: (tag) => new FakeEl(tag) };
+
+/** Linha de opção como no index.html: <div class="ctrl-row"><span><strong>Rótulo</strong> — descrição</span></div> */
+function ctrlRow(label, sep = ' — ', desc = 'Explicação longa da opção.', hint = null) {
+  const strong = new FakeEl('strong', '', [label]);
+  const kids = [strong];
+  if (desc) kids.push(sep + desc);
+  if (hint !== null) kids.push(new FakeEl('span', 'opt-hint', [hint]));
+  return new FakeEl('div', 'ctrl-row', [new FakeEl('span', '', kids)]);
+}
+
+function overlay(id, { rows = [], hidden = true, withCard = true } = {}) {
+  const card = new FakeEl('div', 'overlay__card', rows);
+  const ov = new FakeEl('div', 'overlay', withCard ? [card] : []);
+  ov.id = id; ov.hidden = hidden;
+  return ov;
+}
+
+/** ctx completo sobre um mapa de `#id` → FakeEl. `zOf` simula o getComputedStyle do navegador. */
+function makeCtx(elements = {}, { scope = [], zOf = (el) => Number(el.style.zIndex) || 0 } = {}) {
+  return {
+    $: (sel) => elements[sel] ?? null,
+    $$: (sel) => (sel === OVERLAY_SCOPE_SELECTOR ? scope : []),
+    doc: fakeDoc,
+    computedZ: zOf,
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Lógica pura
+// ---------------------------------------------------------------------------------------------
+describe('rowExplainText — de onde sai a descrição da linha', () => {
+  it('[Right] com .opt-hint, usa o texto do hint (e ignora o resto do span)', () => {
+    expect(rowExplainText('🎮 Rótulo — texto do span', '🎮 Rótulo', '  texto do hint  ')).toBe('texto do hint');
+  });
+  it('[Right] sem hint, corta o rótulo e o travessão (em dash)', () => {
+    expect(rowExplainText('♿ Modo Fácil — gravidade menor.', '♿ Modo Fácil', null)).toBe('gravidade menor.');
+  });
+  it('[Boundary] aceita en dash e hífen como separador', () => {
+    expect(rowExplainText('A – desc', 'A', null)).toBe('desc');
+    expect(rowExplainText('A - desc', 'A', null)).toBe('desc');
+  });
+  it('[Boundary] sem separador, devolve o resto do span aparado', () => {
+    expect(rowExplainText('A  descrição solta', 'A', null)).toBe('descrição solta');
+  });
+  it('[Zero] rótulo sem descrição devolve string vazia', () => {
+    expect(rowExplainText('Só o rótulo', 'Só o rótulo', null)).toBe('');
+  });
+  it('[Edge-case] hint VAZIO vence o fallback (verbatim: o original testa o elemento, não o texto)', () => {
+    expect(rowExplainText('A — descrição que seria usada', 'A', '')).toBe('');
+  });
+});
+
+describe('topByZ — quem está por cima', () => {
+  it('[Zero] lista vazia devolve null', () => {
+    expect(topByZ([], () => 0)).toBe(null);
+  });
+  it('[Right] devolve o de maior z, mesmo fora de ordem', () => {
+    const list = [{ z: 62 }, { z: 99 }, { z: 61 }];
+    expect(topByZ(list, (e) => e.z)).toBe(list[1]);
+  });
+  it('[Boundary] empate de z: vence o ÚLTIMO da lista (ordem do DOM)', () => {
+    const list = [{ n: 'a', z: 61 }, { n: 'b', z: 61 }];
+    expect(topByZ(list, (e) => e.z).n).toBe('b');
+  });
+  it('[Boundary] z 0/negativo não quebra a comparação', () => {
+    const list = [{ z: 0 }, { z: -5 }];
+    expect(topByZ(list, (e) => e.z)).toBe(list[0]);
+  });
+  it('[Interface] não muta a lista recebida', () => {
+    const list = [{ z: 99 }, { z: 1 }];
+    topByZ(list, (e) => e.z);
+    expect(list[0].z).toBe(99);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// frontOverlay — a pilha
+// ---------------------------------------------------------------------------------------------
+describe('frontOverlay — empilhamento', () => {
+  it('[Right] o primeiro overlay trazido à frente fica em OVERLAY_BASE_Z+1', () => {
+    const api = initSettingsPanel(makeCtx());
+    const ov = overlay('visual');
+    api.frontOverlay(ov);
+    expect(ov.style.zIndex).toBe(String(OVERLAY_BASE_Z + 1));
+  });
+  it('[Right] dois overlays abertos empilham na ordem de abertura (o último por cima)', () => {
+    const api = initSettingsPanel(makeCtx());
+    const a = overlay('animation'); const b = overlay('empathy');
+    api.frontOverlay(a);
+    api.frontOverlay(b);
+    expect(Number(b.style.zIndex)).toBeGreaterThan(Number(a.style.zIndex));
+  });
+  it('[Boundary] reabrir o de baixo o traz de volta para cima', () => {
+    const api = initSettingsPanel(makeCtx());
+    const a = overlay('animation'); const b = overlay('empathy');
+    api.frontOverlay(a); api.frontOverlay(b); api.frontOverlay(a);
+    expect(Number(a.style.zIndex)).toBeGreaterThan(Number(b.style.zIndex));
+  });
+  it('[Zero/Error] elemento nulo é no-op e NÃO consome um nível da pilha', () => {
+    const api = initSettingsPanel(makeCtx());
+    api.frontOverlay(null);
+    const ov = overlay('visual');
+    api.frontOverlay(ov);
+    expect(ov.style.zIndex).toBe(String(OVERLAY_BASE_Z + 1));
+  });
+  it('[Interface] preenche o rodapé de explicação do .overlay__card', () => {
+    const api = initSettingsPanel(makeCtx());
+    const ov = overlay('visual', { rows: [ctrlRow('♿ Modo Fácil')] });
+    api.frontOverlay(ov);
+    const card = ov.querySelector('.overlay__card');
+    expect(card.querySelector('.opt-explain')).not.toBe(null);
+  });
+  it('[Edge-case] overlay sem .overlay__card só empilha, sem criar rodapé', () => {
+    const api = initSettingsPanel(makeCtx());
+    const ov = overlay('padwiz', { withCard: false });
+    api.frontOverlay(ov);
+    expect(ov.style.zIndex).toBe(String(OVERLAY_BASE_Z + 1));
+    expect(ov.querySelector('.opt-explain')).toBe(null);
+  });
+  it('[Interface] a pilha é do INIT, não do módulo: um init novo recomeça do zero', () => {
+    const first = initSettingsPanel(makeCtx());
+    first.frontOverlay(overlay('a')); first.frontOverlay(overlay('b'));
+    const second = initSettingsPanel(makeCtx());
+    const ov = overlay('c');
+    second.frontOverlay(ov);
+    expect(ov.style.zIndex).toBe(String(OVERLAY_BASE_Z + 1));
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// fillExplain — ORDEM DE LEITURA (acessibilidade)
+// ---------------------------------------------------------------------------------------------
+describe('fillExplain — rótulo na linha, descrição no rodapé', () => {
+  let api;
+  beforeEach(() => { api = initSettingsPanel(makeCtx()); });
+
+  it('[Right] cria o rodapé aria-live="polite" com o texto de repouso', () => {
+    const card = new FakeEl('div', 'overlay__card', [ctrlRow('♿ Modo Fácil')]);
+    api.fillExplain(card);
+    const f = card.querySelector('.opt-explain');
+    expect(f.getAttribute('aria-live')).toBe('polite');
+    expect(f.textContent).toBe(EXPLAIN_IDLE);
+    expect(f.dataset.idle).toBe(EXPLAIN_IDLE);
+  });
+  it('[Right] tira a descrição da linha: sobra só o <strong>, e o texto vai para data-explain', () => {
+    const row = ctrlRow('♿ Modo Fácil', ' — ', 'gravidade menor.');
+    const card = new FakeEl('div', 'overlay__card', [row]);
+    api.fillExplain(card);
+    expect(row.dataset.explain).toBe('gravidade menor.');
+    expect(row.querySelector(':scope > span').innerHTML).toBe('<strong>♿ Modo Fácil</strong>');
+  });
+  it('[Interface] foco/hover na linha escreve a descrição no rodapé; sair restaura o repouso', () => {
+    const row = ctrlRow('Contorno', ' — ', 'em volta do personagem.');
+    const card = new FakeEl('div', 'overlay__card', [row]);
+    api.fillExplain(card);
+    const f = card.querySelector('.opt-explain');
+    row.fire('focusin');
+    expect(f.textContent).toBe('em volta do personagem.');
+    row.fire('mouseleave');
+    expect(f.textContent).toBe(EXPLAIN_IDLE);
+    row.fire('mouseenter');
+    expect(f.textContent).toBe('em volta do personagem.');
+  });
+  // A linha carrega texto solto E um .opt-hint: só o hint pode virar a explicação (se o módulo caísse no
+  // fallback, a descrição sairia com o texto solto grudado — é o que este caso distingue).
+  it('[Right] com .opt-hint dentro do span, é o hint que vira a explicação', () => {
+    const row = ctrlRow('🎮 Desenho', ' — ', 'texto solto que NÃO deve virar explicação', 'escolha como rotular os botões.');
+    const card = new FakeEl('div', 'overlay__card', [row]);
+    api.fillExplain(card);
+    expect(row.dataset.explain).toBe('escolha como rotular os botões.');
+  });
+  // NOTA: não testo "não duplica listeners" na 2ª chamada — a marca `explainDone` é defesa MORTA: depois da
+  // 1ª passada o span já foi reescrito para só o <strong>, então a 2ª acha desc vazia e sai sozinha. Removendo
+  // a guarda nenhum comportamento muda (verificado por mutação). O que É observável é o rodapé único:
+  it('[Boundary] duas chamadas no mesmo card não duplicam o rodapé de explicação', () => {
+    const row = ctrlRow('A', ' — ', 'desc');
+    const card = new FakeEl('div', 'overlay__card', [row]);
+    api.fillExplain(card);
+    api.fillExplain(card);
+    expect(card.querySelectorAll('.opt-explain')).toHaveLength(1);
+  });
+  it('[Boundary] linha sem <strong> é marcada como feita e fica intacta', () => {
+    const row = new FakeEl('div', 'ctrl-row', [new FakeEl('span', '', ['texto solto'])]);
+    const card = new FakeEl('div', 'overlay__card', [row]);
+    api.fillExplain(card);
+    expect(row.dataset.explainDone).toBe('1');
+    expect(row.dataset.explain).toBe(undefined);
+    expect(row.querySelector(':scope > span').textContent).toBe('texto solto');
+  });
+  it('[Zero] linha com rótulo e sem descrição não ganha data-explain nem listeners', () => {
+    const row = ctrlRow('Só rótulo', '', '');
+    const card = new FakeEl('div', 'overlay__card', [row]);
+    api.fillExplain(card);
+    expect(row.dataset.explainDone).toBe('1');
+    expect(row.dataset.explain).toBe(undefined);
+    expect(row.listeners.focusin).toBe(undefined);
+  });
+  it('[Zero/Error] card nulo é no-op silencioso', () => {
+    expect(() => api.fillExplain(null)).not.toThrow();
+  });
+  it('[Edge-case] linha nova acrescentada depois é processada, as antigas não', () => {
+    const oldRow = ctrlRow('Velha', ' — ', 'desc velha');
+    const card = new FakeEl('div', 'overlay__card', [oldRow]);
+    api.fillExplain(card);
+    const newRow = ctrlRow('Nova', ' — ', 'desc nova');
+    card.appendChild(newRow);
+    api.fillExplain(card);
+    expect(newRow.dataset.explain).toBe('desc nova');
+    expect(card.querySelectorAll('.opt-explain')).toHaveLength(1); // e o rodapé continua sendo um só
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Registro de overlays: OVERLAY_CLOSE + a cadeia de Escape
+// ---------------------------------------------------------------------------------------------
+describe('registro de overlays — fechar por id', () => {
+  it('[Right] closeById chama o close registrado e devolve true', () => {
+    const api = initSettingsPanel(makeCtx());
+    let closed = 0;
+    api.register('audio', { close: () => { closed++; } });
+    expect(api.closeById('audio')).toBe(true);
+    expect(closed).toBe(1);
+  });
+  it('[Zero/Error] id não registrado devolve false e não lança (o `if(c)c()` do dialogBack)', () => {
+    const api = initSettingsPanel(makeCtx());
+    expect(api.closeById('inexistente')).toBe(false);
+  });
+  it('[Interface] registrar de novo o mesmo id substitui o close e mantém a POSIÇÃO na cadeia', () => {
+    const api = initSettingsPanel(makeCtx());
+    api.register('options', { close: () => {} });
+    api.register('audio', { close: () => {} });
+    let novo = 0;
+    api.register('options', { close: () => { novo++; } });
+    expect(api.registeredIds()).toEqual(['options', 'audio']);
+    api.closeById('options');
+    expect(novo).toBe(1);
+  });
+});
+
+describe('escapeTarget — quem consome a tecla Escape', () => {
+  function scene({ optionsOpen = false, audioOpen = false, optionsHidden = false, audioHidden = false } = {}) {
+    const options = overlay('options', { hidden: optionsHidden });
+    const audio = overlay('audio', { hidden: audioHidden });
+    const api = initSettingsPanel(makeCtx({ '#options': options, '#audio': audio }));
+    const closed = [];
+    // ordem de registro = ordem do encadeamento if/else do game.js (options antes de audio)
+    api.register('options', { close: () => closed.push('options'), isOpen: () => optionsOpen });
+    api.register('audio', { close: () => closed.push('audio'), isOpen: () => audioOpen });
+    return { api, options, audio, closed };
+  }
+
+  it('[Zero] nada aberto: devolve null (a tecla segue para o jogo)', () => {
+    expect(scene().api.escapeTarget()).toBe(null);
+  });
+  it('[Right] um só aberto e visível: é ele', () => {
+    expect(scene({ audioOpen: true }).api.escapeTarget()).toBe('audio');
+  });
+  it('[Right] dois abertos: vence a ORDEM DE REGISTRO, não o z-index (divergência verbatim do game.js)', () => {
+    const s = scene({ optionsOpen: true, audioOpen: true });
+    s.options.style.zIndex = '61'; // #options está ATRÁS…
+    s.audio.style.zIndex = '62';   // …e #audio por cima
+    expect(s.api.escapeTarget()).toBe('options'); // ainda assim é o primeiro da cadeia
+  });
+  it('[Boundary] fecha só UM: depois de fechar o primeiro, o alvo passa a ser o outro', () => {
+    const options = overlay('options', { hidden: false });
+    const audio = overlay('audio', { hidden: false });
+    const api = initSettingsPanel(makeCtx({ '#options': options, '#audio': audio }));
+    let optionsOpen = true; const audioOpen = true;
+    api.register('options', { close: () => { optionsOpen = false; options.hidden = true; }, isOpen: () => optionsOpen });
+    api.register('audio', { close: () => {}, isOpen: () => audioOpen });
+    const first = api.escapeTarget();
+    api.closeById(first);
+    expect(audio.hidden).toBe(false); // o de baixo continua aberto
+    expect(api.escapeTarget()).toBe('audio');
+  });
+  it('[Boundary] flag ligada mas diálogo INVISÍVEL é pulado (guarda dlgVis)', () => {
+    const s = scene({ optionsOpen: true, optionsHidden: true, audioOpen: true });
+    expect(s.api.escapeTarget()).toBe('audio');
+  });
+  it('[Boundary] diálogo visível mas com a flag desligada é pulado', () => {
+    const s = scene({ optionsOpen: false, audioOpen: true });
+    expect(s.api.escapeTarget()).toBe('audio');
+  });
+  it('[Edge-case] entrada SEM isOpen fica fora da cadeia (#touchcfg/#help no original)', () => {
+    const touchcfg = overlay('touchcfg', { hidden: false });
+    const api = initSettingsPanel(makeCtx({ '#touchcfg': touchcfg }));
+    api.register('touchcfg', { close: () => {} });
+    expect(api.escapeTarget()).toBe(null);
+    expect(api.closeById('touchcfg')).toBe(true); // mas continua fechável pelo dialogBack
+  });
+  it('[Zero/Error] flag ligada e elemento AUSENTE do DOM é pulado, sem lançar', () => {
+    const api = initSettingsPanel(makeCtx({}));
+    api.register('options', { close: () => {}, isOpen: () => true });
+    expect(api.escapeTarget()).toBe(null);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// topVisibleOverlay — o sharedDialogOpen
+// ---------------------------------------------------------------------------------------------
+describe('topVisibleOverlay — o diálogo de cima', () => {
+  it('[Zero] nenhum overlay no escopo: null', () => {
+    expect(initSettingsPanel(makeCtx({}, { scope: [] })).topVisibleOverlay()).toBe(null);
+  });
+  it('[Zero] todos escondidos: null', () => {
+    const a = overlay('audio', { hidden: true }); const b = overlay('visual', { hidden: true });
+    expect(initSettingsPanel(makeCtx({}, { scope: [a, b] })).topVisibleOverlay()).toBe(null);
+  });
+  it('[Right] devolve o visível de maior z', () => {
+    const a = overlay('audio', { hidden: false }); a.style.zIndex = '61';
+    const b = overlay('visual', { hidden: false }); b.style.zIndex = '62';
+    expect(initSettingsPanel(makeCtx({}, { scope: [a, b] })).topVisibleOverlay()).toBe(b);
+  });
+  it('[Boundary] ignora o escondido mesmo que tenha o maior z', () => {
+    const a = overlay('audio', { hidden: false }); a.style.zIndex = '61';
+    const b = overlay('visual', { hidden: true }); b.style.zIndex = '99';
+    expect(initSettingsPanel(makeCtx({}, { scope: [a, b] })).topVisibleOverlay()).toBe(a);
+  });
+  it('[Edge-case] z "auto" (NaN) conta como 0 — verbatim do +getComputedStyle(...).zIndex||0', () => {
+    const auto = overlay('help', { hidden: false });
+    const stacked = overlay('audio', { hidden: false }); stacked.style.zIndex = '61';
+    const zOf = (el) => Number(el.style.zIndex ?? 'auto') || 0;
+    expect(initSettingsPanel(makeCtx({}, { scope: [auto, stacked], zOf })).topVisibleOverlay()).toBe(stacked);
+  });
+  it('[Interface] frontOverlay alimenta topVisibleOverlay: o último aberto é o de cima', () => {
+    const a = overlay('audio', { hidden: false }); const b = overlay('visual', { hidden: false });
+    const api = initSettingsPanel(makeCtx({}, { scope: [a, b] }));
+    api.frontOverlay(a);
+    api.frontOverlay(b);
+    expect(api.topVisibleOverlay()).toBe(b);
+    api.frontOverlay(a);
+    expect(api.topVisibleOverlay()).toBe(a);
+  });
+});
