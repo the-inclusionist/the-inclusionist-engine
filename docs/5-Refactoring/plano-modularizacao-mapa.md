@@ -121,6 +121,27 @@ religacao, que e serial por natureza, e (c) o caso especial da fisica, que exige
 | A9 | `game/coins` | rebuildCoins · addCoinsForOwner · respawnCoinsForOwner · showPower (+ coinSprites, powerups) |
 | A10 | `input/keyboard-runtime` | kbFor · applyControls (virou `computeControlsState`, pura) · assignControls · actionOf · whichPlayer |
 
+> **Sexta duplicação: os papéis semânticos (A1) — RESOLVIDA.** `ui/settings-visual` declara
+> `RoleKey`+`ROLE_KEYS` e `render/high-contrast` declara `PaintableRole`+`HcRoleKey` — os mesmos quatro papéis
+> (`hazard`/`climb`/`water`/`gate`), em duas listas que nada liga. Os rótulos pt-BR e as cores **não** estão
+> duplicados; só o tipo e a lista de chaves. O sintoma é amplificação de mudança e é silencioso: um quinto papel
+> adicionado ao render ganharia cor e não ganharia seletor, sem erro de tipo em lugar nenhum.
+>
+> Adiada até a religação de propósito, e a espera valeu — mas não pelo motivo que eu previ. Eu esperava que a
+> injeção de `roleColors` evaporasse; ela **ficou**, e o `game.js` virou passa-fio (importa `HC_ROLE` do
+> `high-contrast` e injeta no painel). Isso está certo: é o `game.js` como raiz de composição, que é onde o
+> **D2** quer chegar.
+>
+> Solução: `render/hc-role-data.ts`, módulo **folha de dependência zero** com o tipo, a ordem canônica das
+> chaves e as cores padrão. Os dois lados importam de lá; `high-contrast` e `settings-visual` reexportam com
+> os nomes que sempre tiveram, então nenhum chamador mudou. Os rótulos pt-BR **não** foram junto: são
+> apresentação e ficam no painel — mas agora digitados por `HcRoleKey`, obrigados a cobrir a lista.
+>
+> O teste que vale é `tests/hc-role-data.node.test.js`, e ele foi verificado ao contrário: com um quinto papel
+> de mentira, fica vermelho. Dois casos que eu havia escrito foram **removidos** por não poderem falhar —
+> `ROLE_KEYS` agora É `HC_ROLE_KEYS` (mesma referência) e `HC_ROLE` nasce de cópia de `HC_ROLE_DEF`; comparar
+> os dois é afirmar que um objeto é igual a si mesmo. Cobertura aparente é pior que nenhuma.
+
 > **`core/world-query` — proposto pelo A5, adiado de propósito (2026-08-23).** Três módulos da onda A recebem
 > `solidAt`/`tileAt`/`lifeSurfaceAt` por injeção, e o agente do `scene-city` propôs juntá-los num módulo-folha.
 > A proposta está certa e o momento está errado: essas funções leem o array `map` do mundo, que ainda é um

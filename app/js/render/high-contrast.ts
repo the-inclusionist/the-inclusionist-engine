@@ -16,17 +16,15 @@ import { makeCanvas, tex } from './canvas.js';
 import { outlineCanvas } from './sprite-fx.js';
 import { TILE } from '../core/constants.js';
 import { tileAt } from '../core/collision.js';
+import { HC_ROLE_DEF, type HcRoleKey, type PaintableRole } from './hc-role-data.js';
 import * as store from '../platform/storage.js';
 
 /* ===================== papel → cor (color-blocking) ===================== */
-export type PaintableRole = 'hazard' | 'climb' | 'water';
-export type HcRoleKey = PaintableRole | 'gate';
-
-/** Cor RGB por papel semântico. L2: customizável pelo jogador (persistida); `gate` não vem de roleOf() — é
- *  usada à parte pelo desenho do portão trancado (game.js, rebuildExtras). */
-export const HC_ROLE_DEF: Record<HcRoleKey, [number, number, number]> = {
-  hazard: [255, 110, 45], climb: [55, 225, 205], water: [70, 140, 255], gate: [194, 58, 212],
-};
+// Os papéis e suas cores padrão moram em render/hc-role-data (folha, sem dependências), porque o painel de
+// acessibilidade visual precisa da MESMA lista para oferecer um seletor de cor por papel. Reexportados aqui
+// para que os importadores deste módulo não precisem saber que houve uma separação.
+export type { PaintableRole, HcRoleKey } from './hc-role-data.js';
+export { HC_ROLE_KEYS, HC_ROLE_DEF } from './hc-role-data.js';
 export const HC_ROLE: Record<HcRoleKey, [number, number, number]> = (() => {
   const d = JSON.parse(JSON.stringify(HC_ROLE_DEF)) as Record<HcRoleKey, [number, number, number]>;
   const s = store.getJSON<Partial<Record<HcRoleKey, number[]>>>(store.KEYS.hcrole, null);

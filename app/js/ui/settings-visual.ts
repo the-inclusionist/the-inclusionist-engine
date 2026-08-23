@@ -10,7 +10,13 @@
 import { numPlayers, players } from '../core/state.js';
 import { lqName as lqLabel } from '../render/lq-filter.js';
 
-export type RoleKey = 'hazard' | 'climb' | 'water' | 'gate';
+// Os quatro papéis do color-blocking vêm de render/hc-role-data (folha, sem dependências) — a mesma fonte
+// que render/high-contrast usa para repintar os tiles. Reexportados com os nomes que este painel sempre
+// teve, para que os chamadores e os testes não mudem. Os RÓTULOS abaixo ficam aqui: são apresentação.
+import type { HcRoleKey } from '../render/hc-role-data.js';
+import { HC_ROLE_KEYS } from '../render/hc-role-data.js';
+export type { HcRoleKey as RoleKey } from '../render/hc-role-data.js';
+type RoleKey = HcRoleKey;
 export type RGB = readonly [number, number, number];
 
 /** Contrast levels, in cycle order — mirrors game.js's HC_SEQ (also used there by the physical contrast-cycle button). */
@@ -19,7 +25,7 @@ const CONTRAST_LEVEL_SET: ReadonlySet<string> = new Set(CONTRAST_LEVELS);
 /** Short announcement labels — mirrors game.js's HC_LABEL. */
 export const CONTRAST_LABELS: Readonly<Record<string, string>> = { normal: 'off', 'hc-direto': '3:1', 'hc-direto-45': '4,5:1', 'hc-direto-7': '7:1' };
 
-export const ROLE_KEYS: readonly RoleKey[] = ['hazard', 'climb', 'water', 'gate'];
+export const ROLE_KEYS: readonly RoleKey[] = HC_ROLE_KEYS;
 /** Readable labels for the color-blocking roles — mirrors game.js's ROLE_LBL. */
 export const ROLE_LABELS: Readonly<Record<RoleKey, string>> = { hazard: 'perigo (lava)', climb: 'escalável (escada/trampolim)', water: 'água', gate: 'portão' };
 
