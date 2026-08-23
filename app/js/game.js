@@ -57,6 +57,7 @@ import { initSceneCity } from './render/scene-city.js'; // Onda A: deco da Cidad
 import { initTextures, SHAPE_TEX, letterTexture, pupTexFor, resetPupTexCache } from './render/textures.js'; // Onda A: texturas de moeda/forma/letra + power-up
 import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, worldTexFor, coinTexFor, directBgTexture,
   directSpriteCanvas, directSpriteTexture, clearWorldTexCache, clearCoinTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
+import { initCoinSpawning, rebuildCoins, addCoinsForOwner, respawnCoinsForOwner, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
@@ -201,7 +202,8 @@ const coinPools=()=>({ shapes: MODE==='somasub'?SOMASUB_SHAPES.map(s=>s.id):[], 
 const POWER_MSG={superjump:'Super-pulo! O pulo fica sempre na altura máxima.',ultrajump:'Ultra-pulo! Pulos de distância gigante.',turbo:'Super-corrida! Correndo você fica bem mais rápido.',fly:'Voo! No ar, aperte Pular para começar a voar; Pular de novo encerra.',wallcling:'Escalada (aranha)! No ar, aperte Correr perto de uma parede/teto para grudar; engatinha e contorna quinas; Correr de novo solta.'};
 // Ícones canônicos dos power-ups (decisão do José 2026-07-02): 👟 corrida/bengala · 🕷️ escalada · 🎈 voo (jetpack) · 🐇 super pulo · 🦘 ultra pulo
 const POWER_SHORT={off:'—',superjump:'🐇 Super-pulo',ultrajump:'🦘 Ultra-pulo',turbo:'👟 Super-corrida',fly:'🎈 Voo',wallcling:'🕷️ Escalada',runcane:'👟 Bengala de corrida'};
-function showPower(pl){ if(pl===players[0]){ const el=document.getElementById('hud-power'); if(el)el.textContent=(POWER_SHORT[pl.activePower]||'—')+(pl.owned&&pl.owned.length>1?' ('+pl.owned.length+')':''); } }
+// showPower migrou para game/coin-spawning.ts (Onda A) — o HUD do poder ativo nasce do mesmo modulo que
+// materializa os itens.
 // jumpVel + isBouncyGroundBelow/touchingWall/clingSides/firstClingSide/spiderReattach/wrapConvex → game/player.js (Estágio 4)
 players.push(makePlayer(0)); let player=players[0]; // 'players' vem de core/state.js (Fase 2, mega-var 8; nunca reatribuído, só mutado in-place); 'player'=players[0] fica local
 // 'numPlayers' agora vem de core/state.js (Fase 2, mega-variável 3). Escrita via setNumPlayers()/joinPlayer.
@@ -522,21 +524,13 @@ let _lastSharedViz=null; // cache do modo aplicado (otimizacao do render MP) —
 // o primeiro uso (rebuildCoins, logo abaixo) precisa dos caches ja preenchidos.
 initTextures({ disp, directCfg: DIRECT_CFG, directSpriteCanvas });
 const coinContainer=new PIXI.Container(); camera.addChild(coinContainer);
-let coinSprites=[];
-// positionEasyCoins extraído p/ game/coins.js (Estágio 4, posicionamento — Fácil/cadeirante rebaixam a moeda).
-function rebuildCoins(){
-  positionEasyCoins();
-  coinContainer.removeChildren().forEach(s=>s.destroy());
-  coinSprites=coins.map(cn=>{
-    let s;
-    if(MODE==='somasub'&&cn.shape){ s=new PIXI.Sprite(SHAPE_TEX[cn.shape]); s.width=15;s.height=15; s.x=cn.x-3;s.y=cn.y-3; }
-    else if(MODE==='silabas'&&cn.letter){ s=new PIXI.Sprite(letterTexture(cn.letter)); s.width=14;s.height=14; s.x=cn.x-2;s.y=cn.y-2; }
-    else { s=new PIXI.Sprite(coinTexFor(vizMode)); s.x=cn.x;s.y=cn.y; }
-    s.tint=ownerColors?(PCOLOR[cn.owner]||0xffffff):0xffffff; // Lote C: cor do dono (opção; solo=branco → sem alteração)
-    s.visible=!cn.taken; coinContainer.addChild(s); return s;
-  });
-  _lastSharedViz=null; // moedas recriadas → força re-aplicar texturas por viewport no próximo draw
-}
+// coinSprites/rebuildCoins migraram para game/coin-spawning.ts (Onda A). rebuildCoins mantem o contrato
+// SEM argumentos: os nove chamadores (boot, novo round, quatro paineis de acessibilidade, Modo Facil,
+// silabas, restart) nao mudam — so a definicao saiu daqui.
+initCoinSpawning({ coinContainer, createSprite: (t) => new PIXI.Sprite(t), coinTexFor,
+  shapeTexFor: (id) => SHAPE_TEX[id], letterTexFor: letterTexture, pcolor: PCOLOR,
+  getMode: () => MODE, getOwnerColors: () => ownerColors, invalidateSharedViz: () => { _lastSharedViz=null; },
+  powerShort: POWER_SHORT, $ });
 rebuildCoins();
 // camada de escuridão das áreas secretas (acima de mundo/moedas, ABAIXO do player → player sempre visível)
 const darkLayer=new PIXI.Container(); camera.addChild(darkLayer);
@@ -1130,7 +1124,7 @@ function stepPlayer(pl,dt){
     if(box.x<cn.x+sz-ox&&box.x+box.w>cn.x-ox&&box.y<cn.y+sz-ox&&box.y+box.h>cn.y-ox){
       if(MODE==='somasub'&&cn.shape){ if(!pl.quiz) openQuiz(pl,i,cn.shape); }       // L3: quiz POR JOGADOR (MP incluso)
       else if(MODE==='silabas'&&cn.letter){ if(!pl.quiz) openSilabas(pl,i,cn.letter); }
-      else { takeCoin(cn); coinSprites[i].visible=false; pl.collected++; if(pl===player)collected=pl.collected; earcons.sfx('coin'); // some p/ todas as telas (item tem 1 dono)
+      else { takeCoin(cn); getCoinSprites()[i].visible=false; pl.collected++; if(pl===player)collected=pl.collected; earcons.sfx('coin'); // some p/ todas as telas (item tem 1 dono)
         burstSparkle(cn.x+5,cn.y+5,ownerColors?(PCOLOR[cn.owner]||0xffd23f):0xffd23f,8); // JUICE: brilho na cor do dono (segue a opção)
         updateHud(); { const msg=(numPlayers>1?`Jogador ${pl.i+1}: `:'')+`Moeda ${pl.collected} de ${COIN_TARGET}.`; srSay(msg); tts.narrate(msg); }
         if(pl.collected>=COIN_TARGET)win(pl); }
@@ -1255,7 +1249,7 @@ function draw(){
     easyHitbox.lineStyle(1,0xffffff,0.45); easyHitbox.beginFill(0xffffff,0.10);
     easyHitbox.drawRect(pl.x-BOX.w/2-pad, pl.y-BOX.h-pad, BOX.w+2*pad, BOX.h+2*pad); easyHitbox.endFill(); }
   if(numPlayers<=1){
-    for(let j=0;j<coinSprites.length;j++){ const s=coinSprites[j]; if(s)s.alpha=shimOn?0.8+0.2*Math.sin(fxClock*0.12+j*1.7):1; }
+    const _cs=getCoinSprites(); for(let j=0;j<_cs.length;j++){ const s=_cs[j]; if(s)s.alpha=shimOn?0.8+0.2*Math.sin(fxClock*0.12+j*1.7):1; }
     const {camX,camY}=placeCam(players[0]);
     markSeen(camX,camY); redrawMinimapIfDirty();
     drawMinimapPlayer(players[0].x, players[0].y - BOX.h/2);
@@ -1265,7 +1259,7 @@ function draw(){
     if(allSame) applySharedTextures(v0);
     for(let i=0;i<numPlayers;i++){ const viz=players[i].viz;
       if(!allSame) applySharedTextures(viz);                      // só troca por viewport quando os modos diferem
-      for(let j=0;j<coinSprites.length;j++){ const s=coinSprites[j]; if(!s)continue; const cn=coins[j]; s.visible=!cn.taken;
+      const _cs2=getCoinSprites(); for(let j=0;j<_cs2.length;j++){ const s=_cs2[j]; if(!s)continue; const cn=coins[j]; s.visible=!cn.taken;
         s.alpha=((cn.owner===i)?1:0.4)*(shimOn?0.8+0.2*Math.sin(fxClock*0.12+j*1.7):1); } // Lote C: item alheio esmaecido (cor do dono); JUICE: cintilar multiplicativo
       for(const pu of powerups){ if(pu.sprite)pu.sprite.visible=!puTaken(pu,i); }                            // chave some p/ todos; demais são por jogador
       placeCam(players[i]); app.renderer.render(camera,{renderTexture:vpTex[i]});
@@ -1463,7 +1457,7 @@ function quizMove(pl,d){ const q=pl.quiz; if(!q)return;
   else srSay(speakChoice(cKey(q.choices[q.sel]))); // matemática: fala pela CHAVE (número/fração), mesmo quando exibido como gráfico
 }
 function quizTake(pl,q){ // coleta a figura do quiz (por jogador) e checa vitória
-  takeCoin(coins[q.coinIndex]); if(coinSprites[q.coinIndex])coinSprites[q.coinIndex].visible=false;
+  takeCoin(coins[q.coinIndex]); if(getCoinSprites()[q.coinIndex])getCoinSprites()[q.coinIndex].visible=false;
   pl.collected++; if(pl===player)collected=pl.collected; updateHud();
   closeQuiz(pl); if(pl.collected>=COIN_TARGET)win(pl); }
 function quizWin(pl,q){ // 3 VITÓRIAS = 1 MOEDA em TODOS os minigames, sem exceção (regra do José 2026-07-04)
@@ -1530,7 +1524,7 @@ function respawnFigure(i){
   const occ=new Set(); coins.forEach((c,j)=>{ if(j!==i)occ.add(c.x+','+c.y); });
   for(const cand of shuffle(findCoinCandidates())){ const x=cand.tx*TILE+3,y=cand.ty*TILE+3;
     if(!occ.has(x+','+y)){ coins[i].x=x;coins[i].y=y;coins[i].taken=false; // dono (owner) preservado
-      const s=coinSprites[i]; s.x=(MODE==='somasub')?x-3:x; s.y=(MODE==='somasub')?y-3:y; s.visible=true; return; } }
+      const s=getCoinSprites()[i]; s.x=(MODE==='somasub')?x-3:x; s.y=(MODE==='somasub')?y-3:y; s.visible=true; return; } }
 }
 
 /* ===================== vitória ===================== */
@@ -1643,12 +1637,7 @@ function activateScreens(n){ n=Math.max(1,Math.min(4,n|0));
 // Reseta UM jogador ao spawn (rodada nova só na tela dele). Compartilha os campos com o restartGame.
 function resetPlayerState(p,i){ p.x=SPAWN_X+i*22; p.y=SPAWN_Y; p.vx=p.vy=0; p.hurtTimer=0; p.collected=0; p.jumpBuffer=0; p.waterStroke=0; p.onLadder=false; p.quiz=null; p.quit=false; p.runCane=false; p.activePower='off'; p.owned=[]; p.swapEdge=false; p.specialEdge=false; p.hasKey=false; if(i===0)showPower(p); p.jumpChain=0; p.groundIdle=0; p.clinging=false; p.clingN=null; p.flying=false; p.idleTime=0; p.flavor=-1; if(p.sprite){p.sprite.alpha=1;p.sprite.visible=true;} }
 // L1: gera/renova os itens de UM dono sem tocar os dos outros (entrada/recomeço em jogo EM ANDAMENTO).
-function addCoinsForOwner(owner){ const a=shuffle(findCoinCandidates());
-  const sh=MODE==='somasub'?shuffle(SOMASUB_SHAPES.map(s=>s.id)):[], lt=MODE==='silabas'?shuffle(WORD_INITIALS):[];
-  a.slice(0,Math.min(COIN_TARGET,a.length)).forEach((c,i2)=>coins.push({ x:c.tx*TILE+3, y:c.ty*TILE+3, owner, taken:false,
-    shape:sh.length?sh[i2%sh.length]:'', letter:lt.length?lt[i2%lt.length]:'' }));
-  rebuildCoins(); }
-function respawnCoinsForOwner(owner){ setCoins(coins.filter(c=>c.owner!==owner)); addCoinsForOwner(owner); }
+// addCoinsForOwner/respawnCoinsForOwner migraram para game/coin-spawning.ts (Onda A).
 function respawnPlayer(k){ const p=players[k]; if(!p)return; resetPlayerState(p,k); respawnCoinsForOwner(k); // recomeça SÓ este jogador: coleta tudo do zero, itens re-sorteados
   if(typeof updateGameHud==='function')updateGameHud(); srSay('Jogador '+(k+1)+' recomeçou nesta tela.'); }
 // L1: entra num jogo EM ANDAMENTO (sem reiniciar a rodada dos outros): cria o jogador, a tela e os itens dele.
@@ -1891,7 +1880,7 @@ function applySharedTextures(mode){
     worldSprite.texture=worldTexFor(mode);
     parallaxLayers.forEach((ts,j)=>ts.texture=parallaxTexFor(j,mode));
     decoSprites.forEach(s=>s.texture=treeTexFor(mode));
-    for(const s of coinSprites){ if(s)s.texture=coinTexFor(mode); }
+    for(const s of getCoinSprites()){ if(s)s.texture=coinTexFor(mode); }
     for(const pu of powerups){ if(pu.sprite)pu.sprite.texture=pupTexFor(pu.kind,mode); }
   }
   for(const pl of players){ if(pl.sprite&&pl._tx)pl.sprite.texture=playerVizTex(pl._tx,mode); } // player muda de quadro toda frame
