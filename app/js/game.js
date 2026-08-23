@@ -63,6 +63,7 @@ import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geomet
 import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad API + assistente de mapeamento
 import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
 import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js'; // Onda A: menu de pausa por tela + barra de icones de a11y
+import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/abandono/selo de espera)
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
   buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
@@ -293,7 +294,7 @@ addEventListener('keydown',(e)=>{
   const isGameKey = easyKey || GAME_KEYS.includes(e.code) || players.some(p=>p.ctrl && Object.values(p.ctrl).some(arr=>arr.includes(e.code)));
   if(isGameKey){ e.preventDefault(); hideTouchControls('teclado'); } // E13: jogar no teclado oculta os botões de toque
   for(const p of players){ if(p.waiting && actionOf(e.code,p.i)){ p.waiting=false; // tecla DAQUELE jogador ativa a tela em espera
-    const scr=vpScreens[p.i], w=scr&&scr.querySelector('.vp-wait'); if(w)w.remove(); srSay('Jogador '+(p.i+1)+' entrou!'); } }
+    hud.clearWaitingBadge(p.i); srSay('Jogador '+(p.i+1)+' entrou!'); } }
   if(!keys.has(e.code)){ for(const p of players){ if(!p.ctrl)continue;
     if(p.ctrl.jump.includes(e.code)) p.jumpEdge=true;
     if(p.ctrl.run.includes(e.code) && !p.easy) p.runEdge=true; // Fácil: sem correr
@@ -780,7 +781,7 @@ function ensureSprites(){
 }
 let vpTex=[], vpSpr=[], vpFrames=null, vpDots=[];
 // HUD por jogador em DOM SOBREPOSTO (alta definição, não pixela): moedas (1ª coluna) + poder (2ª coluna), por viewport.
-let gameHudEl=null, vpHudDom=[], vpQuitDom=[], vpScreens=[], vpPause=[], pauseActor=0;
+let vpPause=[], pauseActor=0; // gameHudEl/vpHudDom/vpQuitDom/vpScreens migraram para ui/hud.ts (Onda A)
 // Menu de pausa POR TELA (Etapa 2): um por jogador, dentro da .player-screen dele.
 // Barra de atalhos de a11y no topo da pausa (por tela). Sons (cego/TTS) só com saída própria; webcam/voz em construção.
 /* ===================== PAUSA POR TELA + ICONES DE A11Y -> ui/pause-icons.ts =====================
@@ -808,27 +809,21 @@ const pauseIcons = initPauseIcons({
 const reflectPauseIcons = () => pauseIcons.reflectPauseIcons();
 function reflectTitleIcons(){ pauseIcons.reflectIconsIn($('#title-icons'),0); } // icones do SPLASH (escopo do J1)
 // Contêiner "tela do jogador" por viewport (Etapa 1): hospeda o HUD; nas próximas etapas, a pausa e os menus.
-function screenRect(i){ const cols=numPlayers<=1?1:(numPlayers<=2?numPlayers:2), rows=numPlayers<=2?1:2;
-  const col=i%cols, row=Math.floor(i/cols); let colFrac=col/cols;
-  if(numPlayers===3 && i===2) colFrac=(1-1/cols)/2; // 3 telas: a 3ª centralizada na linha de baixo (casa com o render)
-  return { L:(colFrac*100)+'%', T:(row/rows*100)+'%', W:(100/cols)+'%', H:(100/rows)+'%' }; }
-function buildGameHud(){ if(!gameHudEl) gameHudEl=$('#game-hud'); if(!gameHudEl)return; gameHudEl.innerHTML=''; vpHudDom=[]; vpQuitDom=[]; vpScreens=[]; vpPause=[];
-  for(let i=0;i<Math.max(1,numPlayers);i++){ const r=screenRect(i);
-    const scr=document.createElement('div'); scr.className='player-screen'; scr.dataset.player=String(i); scr.style.left=r.L; scr.style.top=r.T; scr.style.width=r.W; scr.style.height=r.H;
-    const d=document.createElement('div'); d.className='vphud';
-    d.innerHTML='<span class="vphud-coins"><b class="vphud-ico">🪙</b> <b class="vphud-n">0</b> / '+COIN_TARGET+'</span><span class="vphud-power"><b class="vphud-ico">✨</b> <span class="vphud-pw">—</span></span>';
-    scr.appendChild(d); vpHudDom.push(d);
-    const q=document.createElement('div'); q.className='vphud-quit'; q.hidden=true; q.textContent='Jogo abandonado'; scr.appendChild(q); vpQuitDom.push(q);
-    const sp=pauseIcons.buildScreenPause(i); scr.appendChild(sp); vpPause.push(sp);
-    gameHudEl.appendChild(scr); vpScreens.push(scr); }
-  // reflete ABC + legenda sim/não nos menus recém-criados (no 1º build do init, LETRA/PAD_DESIGNS ainda estão
-  // em TDZ — o try/catch ignora; applyLetra/applyPadDesign preenchem logo depois no fluxo de init).
-  try{ applyLetra(false); }catch(e){}
-  try{ renderPauseLegend(); }catch(e){}
-}
-function updateGameHud(){ for(let i=0;i<vpHudDom.length;i++){ const p=players[i]; if(!p)continue; const d=vpHudDom[i];
-  const n=d.querySelector('.vphud-n'); if(n)n.textContent=String(p.collected); const pw=d.querySelector('.vphud-pw'); if(pw)pw.textContent=POWER_SHORT[p.activePower]||'—';
-  if(vpQuitDom[i])vpQuitDom[i].hidden=!p.quit; if(d)d.style.visibility=p.quit?'hidden':'visible'; } } // jogador que saiu: tela preta "jogo abandonado"
+/* ===================== HUD POR TELA -> ui/hud.ts =====================
+   O painel de pausa NAO e do HUD: entra como fabrica injetada e o modulo so anexa o retorno — foi isso
+   que permitiu extrair os dois em paralelo sem se tocarem. Os paineis criados dentro do laco voltam
+   pelo gancho, porque `vpPause` e binding daqui e modulo nao reatribui binding alheio. */
+const hud = initHud({
+  $, powerShort: POWER_SHORT,
+  buildScreenPause: (i) => pauseIcons.buildScreenPause(i),
+  onScreensBuilt: (panes) => { vpPause = panes;
+    // No 1o build do init, LETRA/PAD_DESIGNS ainda estao em TDZ — o try/catch ignora e o fluxo de init
+    // preenche logo depois. Preservado verbatim, inclusive o engolir de qualquer erro.
+    try{ applyLetra(false); }catch(e){}
+    try{ renderPauseLegend(); }catch(e){} },
+});
+const buildGameHud  = () => hud.buildGameHud();
+const updateGameHud = () => hud.updateGameHud();
 function configureRender(){
   vpSpr.forEach(s=>s.destroy()); vpSpr=[]; vpTex.forEach(t=>t.destroy(true)); vpTex=[];
   if(vpFrames){ vpFrames.destroy(); vpFrames=null; }
@@ -1341,7 +1336,7 @@ function brailleHtml(q){
 }
 // L3: overlay do quiz POR JOGADOR — solo usa o #quiz global; MP cria um .quiz dentro da tela do jogador
 function quizEl(pl){ if(numPlayers<=1) return $('#quiz');
-  const scr=vpScreens[pl.i]; if(!scr) return $('#quiz');
+  const scr=hud.getScreen(pl.i); if(!scr) return $('#quiz');
   let q=scr.querySelector(':scope > .quiz'); if(!q){ q=document.createElement('div'); q.className='quiz'; q.hidden=true; scr.appendChild(q); }
   return q; }
 function renderQuiz(pl){
@@ -1555,7 +1550,7 @@ const gamepadApi = initGamepad({
   setPauseActor: (i) => { pauseActor = i; },
   quizMove, quizConfirm, quizErase, announceBraille,
   joinPlayer, respawnPlayer,
-  clearWaitingBadge: (i) => { const scr=vpScreens[i], w=scr&&scr.querySelector('.vp-wait'); if(w)w.remove(); },
+  clearWaitingBadge: (i) => hud.clearWaitingBadge(i),
   spriteBase: SPR,
 });
 // Desconectar NÃO abandona o jogo: o teclado é sempre fallback. Só solta a associação do pad.
@@ -1952,8 +1947,7 @@ const pauseActs={ resume:()=>setPhase('playing'),
     if(numPlayers>=4){ srAlert('Máximo de 4 jogadores.'); return; }
     if(!fitsN(numPlayers+1)){ srAlert('Não cabe outra tela nesta janela — aumente a janela ou use tela cheia.'); return; }
     if(joinPlayer(null)){ const p=players[numPlayers-1]; p.waiting=true;
-      const scr=vpScreens[p.i]; if(scr&&!scr.querySelector('.vp-wait'))scr.insertAdjacentHTML('beforeend',
-        '<div class="vphud-quit vp-wait">Jogador '+(p.i+1)+': aperte um botão do SEU teclado ou de um controle livre para entrar</div>');
+      hud.showWaitingBadge(p.i);
       setPhase('playing'); srAlert('Jogador '+(p.i+1)+': aperte um botão para entrar.'); } },
   audio:()=>openAudio(),
   motora:()=>{ motor.setSelPlayer(pauseActor); openMovement(); },
