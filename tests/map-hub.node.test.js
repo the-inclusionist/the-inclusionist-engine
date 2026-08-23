@@ -75,20 +75,20 @@ describe('mapHubMarkup — o painel em HTML', () => {
     expect(html.match(/class="ctrl-row/g)).toHaveLength(MAP_HUB_ROWS.length);
   });
 
-  it('[Right] a linha habilitada sai sem `row-off`, sem `disabled` e com o rótulo "Abrir"', () => {
+  it('[Right] a linha habilitada sai sem `row-off`, sem `aria-disabled` e com o rótulo "Abrir"', () => {
     const html = mapHubMarkup(1);
     expect(html).toContain('<div class="ctrl-row"><span>⌨ Mapear teclado para modo 1 jogador</span><button class="mode-btn" type="button" data-map="0">Abrir</button></div>');
   });
 
-  it('[Right] a linha de modo errado sai cinza e desabilitada, mas ainda diz "Abrir"', () => {
+  it('[Right] a linha de modo errado sai cinza e aria-disabled, mas ainda diz "Abrir"', () => {
     const html = mapHubMarkup(1);
-    expect(html).toContain('<div class="ctrl-row row-off"><span>⌨ Mapear teclado para modo 2 jogadores</span><button class="mode-btn" type="button" data-map="1" disabled>Abrir</button></div>');
+    expect(html).toContain('<div class="ctrl-row row-off"><span>⌨ Mapear teclado para modo 2 jogadores</span><button class="mode-btn" type="button" data-map="1" aria-disabled="true">Abrir</button></div>');
   });
 
   it('[Right] a linha em construção ganha a nota em <em> e o botão diz "Em breve"', () => {
     const html = mapHubMarkup(1);
     expect(html).toContain('<span>👁 Mapear olhos e boca <em style="opacity:.7">(em construção)</em></span>');
-    expect(html).toContain('data-map="5" disabled>Em breve</button>');
+    expect(html).toContain('data-map="5" aria-disabled="true">Em breve</button>');
   });
 
   it('[CrossCheck] o `data-map` é o ÍNDICE na tabela — é por ele que o clique acha a linha', () => {
@@ -99,10 +99,10 @@ describe('mapHubMarkup — o painel em HTML', () => {
     expect(html.indexOf('data-map="4"')).toBeLessThan(html.indexOf('data-map="5"'));
   });
 
-  it('[Right] `disabled` aparece exatamente nas linhas que mapHubStates marca', () => {
+  it('[Right] `aria-disabled` aparece exatamente nas linhas que mapHubStates marca', () => {
     for (const np of [1, 2, 3, 4]) {
       const esperado = mapHubStates(np).filter(s => s.dis).length;
-      expect(mapHubMarkup(np).match(/ disabled>/g)).toHaveLength(esperado);
+      expect(mapHubMarkup(np).match(/ aria-disabled="true">/g)).toHaveLength(esperado);
     }
   });
 });

@@ -33,11 +33,9 @@
 // Por isso as duas mensagens de `srAlert` existem, e por isso elas são exportadas como funções puras
 // (`soonMessage`, `wrongModeMessage`): quem clica na linha cinza — por toque, ou porque o leitor lê a linha
 // inteira e não só o botão — recebe o MOTIVO em palavras, não silêncio.
-// ⚠️ PRESERVADO VERBATIM, E É UM DEFEITO CONHECIDO: os botões nascem com o atributo `disabled`, então o
-// `click` deles NÃO dispara e as duas mensagens só chegam por caminhos indiretos. Não é conserto para esta
-// extração (comportamento verbatim é a regra da etapa); é decisão do José, e agora existe teste em cima das
-// duas frases para que o conserto — provavelmente `aria-disabled` no lugar de `disabled` — não as reescreva
-// por acidente.
+// Já foi assim: os botões nasciam com o atributo `disabled`, o `click` deles não disparava, e as duas
+// mensagens eram inalcançáveis — medido no navegador: das oito linhas, seis ficavam fora da ordem de foco e
+// clicar nelas não dizia nada. Agora é `aria-disabled`, que anuncia o estado sem esconder o botão.
 //
 // ======================= O QUE FICOU DE FORA, E POR QUÊ =======================
 //  · Abrir/fechar o overlay `#movement` (`openMovement`/`closeMovement`, `frontOverlay`, o foco no primeiro
@@ -115,8 +113,13 @@ export function mapHubMarkup(np: number, rows: readonly MapHubRow[] = MAP_HUB_RO
     rows.map((it, i) => {
       const dis = st[i]!.dis;
       const note = it.soon ? ' <em style="opacity:.7">(em construção)</em>' : '';
+      // `aria-disabled` e NAO `disabled`: o atributo real tira o botao da ordem de foco e engole o clique,
+      // entao quem navega por teclado pulava seis das oito linhas e nunca ficava sabendo por que elas nao
+      // funcionam — enquanto quem enxerga ve a linha cinza e o "(em construcao)". Com `aria-disabled` o
+      // estado e anunciado, o botao continua alcancavel, e as duas frases de srAlert que ja existiam aqui
+      // finalmente chegam a alguem. O visual nao muda: quem pinta a linha cinza e a classe `row-off`.
       return `<div class="ctrl-row${dis ? ' row-off' : ''}"><span>${it.lbl}${note}</span>` +
-        `<button class="mode-btn" type="button" data-map="${i}"${dis ? ' disabled' : ''}>${it.soon ? 'Em breve' : 'Abrir'}</button></div>`;
+        `<button class="mode-btn" type="button" data-map="${i}"${dis ? ' aria-disabled="true"' : ''}>${it.soon ? 'Em breve' : 'Abrir'}</button></div>`;
     }).join('');
 }
 
