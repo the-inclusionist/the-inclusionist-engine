@@ -62,6 +62,7 @@ import { initKeyboardRuntime } from './input/keyboard-runtime.js'; // Onda A: es
 import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geometria fisica do pad + config de toque
 import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad API + assistente de mapeamento
 import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
+import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js'; // Onda A: menu de pausa por tela + barra de icones de a11y
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
   buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
@@ -782,62 +783,30 @@ let vpTex=[], vpSpr=[], vpFrames=null, vpDots=[];
 let gameHudEl=null, vpHudDom=[], vpQuitDom=[], vpScreens=[], vpPause=[], pauseActor=0;
 // Menu de pausa POR TELA (Etapa 2): um por jogador, dentro da .player-screen dele.
 // Barra de atalhos de a11y no topo da pausa (por tela). Sons (cego/TTS) só com saída própria; webcam/voz em construção.
-const PAUSE_ICONS=[ {k:'blind',e:'🦯',n:'Modo cego (navegação sonora)'},{k:'tts',e:'🗨️',n:'Narração por voz (TTS)'},{k:'libras',e:'🤟',n:'Modo pessoa surda (Libras)'},{k:'tea',e:'🧩',n:'Modo TEA (calmo / silencioso)'},{k:'altmove',e:'🦾',n:'Teclas de alternância'},{k:'contrast',e:'🌗',n:'Alto contraste'},{k:'cvd',e:'🚥',n:'Correção de daltonismo (protan/deutan/tritan)'},{k:'face',e:'🧑',n:'Webcam — rosto',soon:true},{k:'eyes',e:'👀',n:'Webcam — olhos',soon:true},{k:'voice',e:'👄',n:'Comando de voz',soon:true} ];
-let calmMode=0; // 0=normal · 1=calmo (reduz) · 2=silencioso (desliga) — nunca mexe em TTS/modo cego
-function buildScreenPause(i){ const sp=document.createElement('div'); sp.className='screen-pause'; sp.hidden=true; sp.dataset.player=String(i);
-  const icons=PAUSE_ICONS.map(ic=>'<button class="pi-btn'+(ic.soon?' pi-soon':'')+'" type="button" data-pi="'+ic.k+'" aria-label="'+ic.n+(ic.soon?' (em construção)':'')+'">'+ic.e+'</button>').join('');
-  sp.innerHTML='<div class="pause-card" role="dialog" aria-modal="true" aria-label="Menu de pausa do jogador '+(i+1)+'">'+
-    '<div class="pause-icons" role="group" aria-label="Atalhos de acessibilidade">'+icons+'</div><p class="pause-icons-cap" aria-live="polite"></p>'+
-    '<h2><span data-i18n="pause.title">'+i18n.t('pause.title')+'</span>'+(numPlayers>1?' · Jogador '+(i+1):'')+'</h2><div class="pause-menu" role="menu">'+
-    PM_BTNS.map(b=>{ const dyn=b.letra||b.nivel; const lbl=b.nivel?('📚 Nível '+quizLevel+' · '+QL_NAME[quizLevel]):(dyn?b.lbl:i18n.t('pause.'+b.act)); return '<button class="pm-btn'+(b.letra?' pm-letra':'')+(b.nivel?' pm-nivel':'')+'" role="menuitem" type="button" data-act="'+b.act+'"'+(dyn?'':(' data-i18n="pause.'+b.act+'"'))+'>'+lbl+'</button>'; }).join('')+
-    '</div><p class="pause-legend" aria-hidden="true"></p></div>';
-  sp.addEventListener('click',(e)=>{ const b=e.target.closest('.pm-btn'); if(b){ pauseActor=i; const act=b.dataset.act; if(pauseActs[act])pauseActs[act](); return; }
-    const ib=e.target.closest('.pi-btn'); if(ib){ pauseActor=i; iconAct(ib.dataset.pi,i); reflectPauseIcons(); const cp=sp.querySelector('.pause-icons-cap'); if(cp)cp.textContent=ib.getAttribute('aria-label')||''; } });
-  const cap=sp.querySelector('.pause-icons-cap');
-  sp.querySelectorAll('.pi-btn').forEach(b=>{ const show=()=>{ cap.textContent=b.getAttribute('aria-label')||''; }; // legenda = aria-label (reflete o estado on/off atual)
-    b.addEventListener('mouseenter',show); b.addEventListener('focus',show); });
-  return sp; }
-function hasPrivateOutput(i){ if(numPlayers<=1)return true; const p=players[i]; if(!p||!p.audioSink)return false; return !players.some((q,j)=>j!==i&&q&&q.audioSink===p.audioSink); }
-function applyCalm(){ const scene=calmMode>=1; RM_KEYS.forEach(k=>{ rm[k]=scene; }); if(typeof saveRM==='function')saveRM();
-  players.forEach(p=>RM_CHAR.forEach(c=>{ p[c.prop]=(calmMode===2); })); // silencioso congela o personagem também
-  ['ambient','music','earcons','other','interact'].forEach(k=>{ if(audioCat[k]){ if(calmMode===0){audioCat[k].on=true;} else if(calmMode===1){audioCat[k].on=true;audioCat[k].vol=Math.min(audioCat[k].vol,0.3);} else {audioCat[k].on=false;} if(typeof setCatGain==='function')setCatGain(k); } }); } // TTS/sonar/guarda/guia intactos
-function iconAct(k,i){ const ic=PAUSE_ICONS.find(x=>x.k===k);
-  if(ic&&ic.soon){ srAlert(ic.n+': em construção — chega com os subsistemas de webcam/fala e o filtro de daltonismo.'); return; }
-  if((k==='blind'||k==='tts')&&!hasPrivateOutput(i)){ srAlert('Só dá para mexer em som/TTS/modo cego com uma saída de áudio SÓ sua (não compartilhada). Escolha um dispositivo próprio em A12e auditiva.'); return; }
-  if(k==='blind'){ setModoCego(!modoCego); srSay('Modo cego '+(modoCego?'ligado.':'desligado.')); }
-  else if(k==='tts'){ audioCat.tts.on=!audioCat.tts.on; if(typeof setCatGain==='function')setCatGain('tts'); if(typeof reflectTTS==='function')audioPanel.reflectTts(); srSay('Narração '+(audioCat.tts.on?'ligada.':'desligada.')); }
-  else if(k==='libras'){ toggleLibras(); srSay('Modo pessoa surda: Libras '+(vlibrasOpen()?'ligado.':'desligado.')); } // abre/fecha o intérprete VLibras
-  else if(k==='tea'){ calmMode=(calmMode+1)%3; applyCalm(); srSay('Modo TEA: '+['off','calmo','silencioso'][calmMode]+'.'); }
-  else if(k==='altmove'){ if(typeof setToggleMove==='function')setToggleMove(i,!players[i].toggleMove); }
-  else if(k==='contrast'){ const cur=(players[i]||{}).viz; let idx=CONTRAST_LEVELS.indexOf(cur); idx=idx<0?0:idx; const nx=CONTRAST_LEVELS[(idx+1)%CONTRAST_LEVELS.length]; setPlayerViz(i,nx); srSay('Alto contraste: '+CONTRAST_LABELS[nx]+'.'); }
-  else if(k==='cvd'){ const seq=['normal','fix-protan','fix-deuter','fix-tritan']; let idx=seq.indexOf((players[i]||{}).viz); idx=idx<0?1:(idx+1)%seq.length; setPlayerViz(i,seq[idx]); srSay('Correção de daltonismo: '+['off','protanopia','deuteranopia','tritanopia'][idx]+'.'); }
-}
-// Legenda do botão refletindo o ESTADO atual (on/off ou o nível). Vira o aria-label e o rodapé de legenda.
-function iconLabel(k,i){ const ic=PAUSE_ICONS.find(x=>x.k===k); if(!ic)return '';
-  if(ic.soon) return ic.n+' (em construção)';
-  const p=players[i]||{};
-  if(k==='blind')   return 'Modo cego (navegação sonora): '+(modoCego?'on':'off');
-  if(k==='tts')     return 'Narração por voz (TTS): '+((audioCat.tts&&audioCat.tts.on)?'on':'off');
-  if(k==='libras')  return 'Modo pessoa surda (Libras): '+(vlibrasOpen()?'on':'off');
-  if(k==='tea')     return 'Modo TEA: '+['off','calmo','silencioso'][calmMode];
-  if(k==='altmove') return 'Teclas de alternância: '+(p.toggleMove?'on':'off');
-  if(k==='contrast'){ return 'Alto contraste: '+(CONTRAST_LABELS[p.viz]||'off'); }
-  if(k==='cvd'){ const map={'fix-protan':'protanopia','fix-deuter':'deuteranopia','fix-tritan':'tritanopia'}; return 'Correção de daltonismo: '+(map[p.viz]||'off'); }
-  return ic.n; }
-function reflectIconBtn(b,i){ const k=b.dataset.pi; let on=false,dis=false; // aplica o estado visual a UM ícone (pausa OU splash)
-  b.classList.remove('pi-calm','pi-cvd-protan','pi-cvd-deuter','pi-cvd-tritan');
-  if(k==='blind'){ on=modoCego; dis=!hasPrivateOutput(i); }
-  else if(k==='tts'){ on=!!(audioCat.tts&&audioCat.tts.on); dis=!hasPrivateOutput(i); }
-  else if(k==='libras'){ on=vlibrasOpen(); }
-  else if(k==='tea'){ on=(calmMode===2); if(calmMode===1)b.classList.add('pi-calm'); } // TEA: 1=redução (branco, .pi-calm) · 2=desligamento completo (amarelo, .pi-on) · 0=off (base)
-  else if(k==='altmove'){ on=!!(players[i]&&players[i].toggleMove); }
-  else if(k==='contrast'){ on=/^hc-direto/.test((players[i]||{}).viz||''); }
-  else if(k==='cvd'){ const v=(players[i]||{}).viz||''; if(v==='fix-protan')b.classList.add('pi-cvd-protan'); else if(v==='fix-deuter')b.classList.add('pi-cvd-deuter'); else if(v==='fix-tritan')b.classList.add('pi-cvd-tritan'); } // fundo bicolor = o próprio sinal de ativo; off=base
-  b.classList.toggle('pi-on',on); b.classList.toggle('pi-dis',dis);
-  const active=on||b.classList.contains('pi-calm')||/pi-cvd-/.test(b.className); b.setAttribute('aria-pressed',String(active));
-  if(!(PAUSE_ICONS.find(x=>x.k===k)||{}).soon) b.setAttribute('aria-label',iconLabel(k,i)); }
-function reflectPauseIcons(){ vpPause.forEach((sp,i)=>{ sp.querySelectorAll('.pi-btn').forEach(b=>reflectIconBtn(b,i)); }); }
-function reflectTitleIcons(){ const ti=$('#title-icons'); if(ti)ti.querySelectorAll('.pi-btn').forEach(b=>reflectIconBtn(b,0)); } // ícones do SPLASH (escopo do J1) — antes NÃO refletiam (bug do toggle TEA)
+/* ===================== PAUSA POR TELA + ICONES DE A11Y -> ui/pause-icons.ts =====================
+   PAUSE_ICONS, calmMode, buildScreenPause, hasPrivateOutput, applyCalm, iconAct, iconLabel,
+   reflectIconBtn e reflectPauseIcons migraram. `pauseActor` FICA aqui (seis leitores fora do modulo,
+   e o ctx do gamepad ja o escreve); o modulo so escreve, por setPauseActor. `pauseActs` entra por
+   GETTER porque e um const ~1200 linhas abaixo — passa-lo direto explodiria na TDZ no boot. */
+const pauseIcons = initPauseIcons({
+  srSay, srAlert,
+  pmButtons: PM_BTNS, qlName: QL_NAME,
+  getPauseActs: () => pauseActs,            // LAZY: pauseActs e const bem abaixo (TDZ)
+  setPauseActor: (i) => { pauseActor = i; },
+  getPauseScreens: () => vpPause,           // buildGameHud REATRIBUI vpPause -> getter, nao a array
+  getModoCego: () => modoCego, setModoCego,
+  getAudioCat: () => audioCat, setCatGain,
+  reflectTtsPanel: () => audioPanel.reflectTts(), // LAZY: audioPanel e const bem abaixo
+  // VERBATIM: hoje esta chamada NAO acontece — a guarda `typeof reflectTTS==='function'` e sempre
+  // falsa desde que reflectTTS foi extraida para ui/settings-audio. Religo o comportamento atual e
+  // conserto em commit separado; refactor nao carrega conserto.
+  reflectTtsPanelEnabled: false,
+  isLibrasOn: vlibrasOpen, toggleLibras,
+  rm, saveRM, rmKeys: RM_KEYS, rmChar: RM_CHAR,
+  setToggleMove, setPlayerViz,
+});
+const reflectPauseIcons = () => pauseIcons.reflectPauseIcons();
+function reflectTitleIcons(){ pauseIcons.reflectIconsIn($('#title-icons'),0); } // icones do SPLASH (escopo do J1)
 // Contêiner "tela do jogador" por viewport (Etapa 1): hospeda o HUD; nas próximas etapas, a pausa e os menus.
 function screenRect(i){ const cols=numPlayers<=1?1:(numPlayers<=2?numPlayers:2), rows=numPlayers<=2?1:2;
   const col=i%cols, row=Math.floor(i/cols); let colFrac=col/cols;
@@ -850,7 +819,7 @@ function buildGameHud(){ if(!gameHudEl) gameHudEl=$('#game-hud'); if(!gameHudEl)
     d.innerHTML='<span class="vphud-coins"><b class="vphud-ico">🪙</b> <b class="vphud-n">0</b> / '+COIN_TARGET+'</span><span class="vphud-power"><b class="vphud-ico">✨</b> <span class="vphud-pw">—</span></span>';
     scr.appendChild(d); vpHudDom.push(d);
     const q=document.createElement('div'); q.className='vphud-quit'; q.hidden=true; q.textContent='Jogo abandonado'; scr.appendChild(q); vpQuitDom.push(q);
-    const sp=buildScreenPause(i); scr.appendChild(sp); vpPause.push(sp);
+    const sp=pauseIcons.buildScreenPause(i); scr.appendChild(sp); vpPause.push(sp);
     gameHudEl.appendChild(scr); vpScreens.push(scr); }
   // reflete ABC + legenda sim/não nos menus recém-criados (no 1º build do init, LETRA/PAD_DESIGNS ainda estão
   // em TDZ — o try/catch ignora; applyLetra/applyPadDesign preenchem logo depois no fluxo de init).
@@ -2091,8 +2060,8 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
 // icones de a11y do splash, que e do slice de pausa.
 (function titleIconsSetup(){ const ov=$('#title-overlay'); if(!ov)return;
   // Icones de a11y da pausa TAMBEM no topo do splash (mesmas acoes, escopo do Jogador 1)
-  const ti=$('#title-icons'); if(ti){ ti.innerHTML=PAUSE_ICONS.map(ic=>'<button class="pi-btn'+(ic.soon?' pi-soon':'')+'" type="button" data-pi="'+ic.k+'" aria-label="'+ic.n+(ic.soon?' (em construção)':'')+'">'+ic.e+'</button>').join('');
-    ti.addEventListener('click',(e)=>{ const ib=e.target.closest('.pi-btn'); if(!ib)return; pauseActor=0; iconAct(ib.dataset.pi,0);
+  const ti=$('#title-icons'); if(ti){ ti.innerHTML=iconsMarkup(); // fonte unica do markup (antes copiado aqui e no modulo)
+    ti.addEventListener('click',(e)=>{ const ib=e.target.closest('.pi-btn'); if(!ib)return; pauseActor=0; pauseIcons.iconAct(ib.dataset.pi,0);
       reflectTitleIcons(); if(typeof reflectPauseIcons==='function')reflectPauseIcons(); srSay(ib.getAttribute('aria-label')||''); });
     reflectTitleIcons(); }
 })();
