@@ -25,6 +25,7 @@ import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
 import { $, toggleBtn } from './ui/dom.js';
+import { initSettingsVisual, CONTRAST_LEVELS, CONTRAST_LABELS, ROLE_LABELS } from './ui/settings-visual.js';
 import { initSettingsEmpathy } from './ui/settings-empathy.js';
 import { initSettingsMotor } from './ui/settings-motor.js';
 import { initSettingsMotion, motionOpen, setSelectedPlayer as setSelectedMotionPlayer } from './ui/settings-motion.js';
@@ -186,8 +187,6 @@ function _dimDesat(c,w,h,mul,blue,off){ off=off||0; const img=c.getImageData(0,0
 // 3 níveis de contraste. off/mul = mapa da plataforma (mais off = mais clara → mais contraste); bgMul = fundo
 // (menor = mais escuro/recuado); outline = espessura do contorno do 1º plano. Contraste plataforma×fundo ≈ 3 / 4,5 / 7.
 const DIRECT_CFG={ 'hc-direto':{off:55,mul:0.5,bgMul:0.30}, 'hc-direto-45':{off:66,mul:0.5,bgMul:0.28}, 'hc-direto-7':{off:100,mul:0.48,bgMul:0.13} };
-const HC_SEQ=['normal','hc-direto','hc-direto-45','hc-direto-7']; // ciclo do botão de contraste
-const HC_LABEL={'normal':'off','hc-direto':'3:1','hc-direto-45':'4,5:1','hc-direto-7':'7:1'};
 function _dcfg(mode){ return DIRECT_CFG[mode]||DIRECT_CFG['hc-direto']; }
 // Dois contornos configuráveis (0=nenhum · 1=fino/1px · 2=grosso/2px):
 //  fg = 1º plano (personagem/itens) — WCAG 2.4.7 foco visível; bg = 2º plano (perímetro externo de
@@ -1140,7 +1139,7 @@ function iconAct(k,i){ const ic=PAUSE_ICONS.find(x=>x.k===k);
   else if(k==='libras'){ toggleLibras(); srSay('Modo pessoa surda: Libras '+(vlibrasOpen()?'ligado.':'desligado.')); } // abre/fecha o intérprete VLibras
   else if(k==='tea'){ calmMode=(calmMode+1)%3; applyCalm(); srSay('Modo TEA: '+['off','calmo','silencioso'][calmMode]+'.'); }
   else if(k==='altmove'){ if(typeof setToggleMove==='function')setToggleMove(i,!players[i].toggleMove); }
-  else if(k==='contrast'){ const cur=(players[i]||{}).viz; let idx=HC_SEQ.indexOf(cur); idx=idx<0?0:idx; const nx=HC_SEQ[(idx+1)%HC_SEQ.length]; setPlayerViz(i,nx); srSay('Alto contraste: '+HC_LABEL[nx]+'.'); }
+  else if(k==='contrast'){ const cur=(players[i]||{}).viz; let idx=CONTRAST_LEVELS.indexOf(cur); idx=idx<0?0:idx; const nx=CONTRAST_LEVELS[(idx+1)%CONTRAST_LEVELS.length]; setPlayerViz(i,nx); srSay('Alto contraste: '+CONTRAST_LABELS[nx]+'.'); }
   else if(k==='cvd'){ const seq=['normal','fix-protan','fix-deuter','fix-tritan']; let idx=seq.indexOf((players[i]||{}).viz); idx=idx<0?1:(idx+1)%seq.length; setPlayerViz(i,seq[idx]); srSay('Correção de daltonismo: '+['off','protanopia','deuteranopia','tritanopia'][idx]+'.'); }
 }
 // Legenda do botão refletindo o ESTADO atual (on/off ou o nível). Vira o aria-label e o rodapé de legenda.
@@ -1152,7 +1151,7 @@ function iconLabel(k,i){ const ic=PAUSE_ICONS.find(x=>x.k===k); if(!ic)return ''
   if(k==='libras')  return 'Modo pessoa surda (Libras): '+(vlibrasOpen()?'on':'off');
   if(k==='tea')     return 'Modo TEA: '+['off','calmo','silencioso'][calmMode];
   if(k==='altmove') return 'Teclas de alternância: '+(p.toggleMove?'on':'off');
-  if(k==='contrast'){ return 'Alto contraste: '+(HC_LABEL[p.viz]||'off'); }
+  if(k==='contrast'){ return 'Alto contraste: '+(CONTRAST_LABELS[p.viz]||'off'); }
   if(k==='cvd'){ const map={'fix-protan':'protanopia','fix-deuter':'deuteranopia','fix-tritan':'tritanopia'}; return 'Correção de daltonismo: '+(map[p.viz]||'off'); }
   return ic.n; }
 function reflectIconBtn(b,i){ const k=b.dataset.pi; let on=false,dis=false; // aplica o estado visual a UM ícone (pausa OU splash)
@@ -2169,7 +2168,7 @@ function setModoCego(on){ if(modoCego===on)return; modoCego=on; store.setBool('i
 function setPlayerViz(i,mode){ const m=VIZ_BY_KEY[mode]||VIZ_BY_KEY.normal; players[i].viz=m.key; try{localStorage.setItem('incl_viz_p'+i,m.key);}catch(e){} _lastSharedViz=null;
   if(m.kind==='blind') setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão
   if(numPlayers<=1 && i===0){ applyVizGlobal(m.key); } else { applyVpFilters(); updateVpDots(); }
-  reflectVizButtons(); if(typeof renderVisual==='function'){ renderVisual(); empathy.render(); } }
+  reflectVizButtons(); { visual.render(); empathy.render(); } }
 function applyVizGlobal(mode){
   const m=VIZ_BY_KEY[mode]||VIZ_BY_KEY.normal; mode=m.key;
   setVizModeValue(mode); hcMode=(m.kind==='hcnew'); // core/state.js: valor + persistência (incl_viz) + evento
@@ -2187,7 +2186,7 @@ function applyVizGlobal(mode){
   if(m.kind==='blind'){ hideTouchControls('cegueira'); }
   updateVizIndicator(m.kind);
   if(typeof reflectVizButtons==='function') reflectVizButtons();
-  if(typeof renderVisual==='function'){ renderVisual(); empathy.render(); }
+  { visual.render(); empathy.render(); }
 }
 const empathy = initSettingsEmpathy({ $, srSay, store, renderVizGroup, reflectMotorEmpathy, reflectVizButtons, frontOverlay, setHearingLoss, setOneButton, setWheelchair, getOneButton: () => oneButton, getWheelchair: () => wheelchair, setEmpathyOpen: (v) => { empathyOpen = v; } }); // painel de empatia: ui/settings-empathy.ts (registra #opt-empathy, #opt-hearing, #opt-onebtn, #opt-wheelchair + restaura o grafo de audio)
 // bolinha indicadora (canto sup. dir.): branca=cegueira, verde=baixa visão; toque/clique 2× volta ao normal
@@ -2203,7 +2202,7 @@ let selVizPlayer=0;
 function renderVizGroup(listSel,tabsSel,modes){ const el=$(listSel); if(!el)return; if(selVizPlayer>=numPlayers)selVizPlayer=0;
   const tabs=$(tabsSel); if(tabs){ tabs.hidden=true; // E3: sem abas — cada jogador edita só o seu
     tabs.innerHTML = '';
-    tabs.querySelectorAll('button[data-vp]').forEach(b=>b.addEventListener('click',()=>{ selVizPlayer=+b.dataset.vp; renderVisual(); empathy.render(); })); }
+    tabs.querySelectorAll('button[data-vp]').forEach(b=>b.addEventListener('click',()=>{ selVizPlayer=+b.dataset.vp; visual.render(); empathy.render(); })); }
   const cur=players[selVizPlayer]?players[selVizPlayer].viz:'normal';
   el.innerHTML=modes.map(m=>{ const sel=m.key===cur; return `<div class="ctrl-row"><span><strong>${m.nome}</strong><br><span class="opt-hint" style="margin:0">${m.desc}</span></span>`+
     `<button class="mode-btn${sel?' is-on':''}" role="radio" aria-checked="${sel}" data-viz="${m.key}" type="button">${sel?'✓ Selecionado':'Selecionar'}</button></div>`; }).join('');
@@ -2215,43 +2214,17 @@ function setOwnerColors(on){ ownerColors=!!on; try{localStorage.setItem('incl_ow
 function setCbSafe(on){ cbSafe=!!on; try{localStorage.setItem('incl_cbsafe',on?'1':'0');}catch(e){}
   const src=cbSafe?PCOLOR_CB:PCOLOR_DEF; PCOLOR.length=0; src.forEach(c=>PCOLOR.push(c)); // troca IN-PLACE (todos referenciam PCOLOR)
   rebuildCoins(); ensureSprites(); srSay('Paleta segura para daltonismo '+(on?'ligada (Okabe-Ito).':'desligada.')); }
-const ROLE_LBL={hazard:'perigo (lava)',climb:'escalável (escada/trampolim)',water:'água',gate:'portão'};
 function setRoleColor(k,hex){ const rgb=hexRgb(hex); if(!rgb||!HC_ROLE[k])return; HC_ROLE[k]=rgb; saveHcRole();
-  _rebakeDirect(); rebuildExtras(); srSay('Cor de '+ROLE_LBL[k]+' alterada.'); }
+  _rebakeDirect(); rebuildExtras(); srSay('Cor de '+ROLE_LABELS[k]+' alterada.'); }
 function resetRoleColors(){ for(const k in HC_ROLE_DEF)HC_ROLE[k]=HC_ROLE_DEF[k].slice(); saveHcRole();
-  _rebakeDirect(); rebuildExtras(); renderVisual(); srSay('Cores do color-blocking restauradas ao padrão.'); }
-function renderVisual(){ const el=$('#visual-list'); if(!el)return; if(selVizPlayer>=numPlayers)selVizPlayer=0; // Contraste = 1 select (Desligado/3:1/4,5:1/7:1); o contorno tem os 2 selects próprios (no HTML abaixo)
-  const cur=players[selVizPlayer]?players[selVizPlayer].viz:'normal', val=HC_SEQ.includes(cur)?cur:'normal';
-  el.innerHTML='<div class="ctrl-row"><span><strong>Alto contraste</strong> — recolore o cenário para destacar o que importa; escolha o nível de contraste.</span>'+
-    '<select id="opt-contrast" aria-label="Nível de alto contraste"><option value="normal">Desligado</option><option value="hc-direto">3:1 (agradável)</option><option value="hc-direto-45">4,5:1</option><option value="hc-direto-7">7:1 (máximo)</option></select></div>'+
-    '<div class="ctrl-row"><span><strong>Realce de contraste (Linear → Quadrático)</strong> — curva de tom na tela inteira: o começo da faixa estica o contraste (linear), o fim realça sombras e altas-luzes (curva S quadrática). Zero desliga. Vale para todos os jogadores.</span>'+
-    '<span style="display:flex;align-items:center;gap:.4rem"><input type="range" id="opt-lq" min="0" max="100" step="5" style="width:9em" aria-label="Realce de contraste: zero desligado, começo linear, fim quadrático"><strong id="opt-lq-val" aria-hidden="true"></strong></span></div>'+
-    '<div class="ctrl-row"><span><strong>Itens na cor do dono</strong> — no multiplayer, cada jogador vê os próprios itens na cor dele. Desligado: itens na cor original para todos.</span>'+
-    `<button id="opt-ownercolors" class="mode-btn${ownerColors?' is-on':''}" type="button" aria-pressed="${ownerColors}">${ownerColors?'❚❚ Ligado':'▶ Desligado'}</button></div>`+
-    '<div class="ctrl-row"><span><strong>Paleta segura para daltonismo</strong> — troca as cores de jogadores, itens e efeitos pela paleta Okabe-Ito (distinguível em protan/deutan/tritan). O cenário mantém as cores naturais.</span>'+
-    `<button id="opt-cbsafe" class="mode-btn${cbSafe?' is-on':''}" type="button" aria-pressed="${cbSafe}">${cbSafe?'❚❚ Ligado':'▶ Desligado'}</button></div>`+
-    '<div class="ctrl-row"><span><strong>Cores do color-blocking</strong> — nos modos de alto contraste, escolha a cor de cada papel: perigo, escalável, água e portão. ↺ restaura o padrão.</span>'+
-    '<span style="display:flex;gap:.35rem;align-items:center">'+
-    ['hazard','climb','water','gate'].map(k=>`<input type="color" id="opt-role-${k}" value="${rgbHex(HC_ROLE[k])}" aria-label="Cor de ${ROLE_LBL[k]}" style="inline-size:2.2em;block-size:1.8em;padding:0;border:1px solid #666;border-radius:4px;background:none">`).join('')+
-    '<button id="opt-role-reset" class="mode-btn" type="button" aria-label="Restaurar cores padrão">↺</button></span></div>';
-  const s=$('#opt-contrast'); if(s){ s.value=val; s.addEventListener('change',()=>{ setPlayerViz(selVizPlayer,s.value); srSay('Alto contraste: '+HC_LABEL[s.value]+'.'); }); }
-  const lq=$('#opt-lq'), lqv=$('#opt-lq-val');
-  if(lq){ const refl=()=>{ if(lqv)lqv.textContent=lqName(lqT); }; lq.value=String(Math.round(lqT*100)); refl();
-    lq.addEventListener('input',()=>{ setLq(+lq.value/100); refl(); });
-    lq.addEventListener('change',()=>srSay('Realce de contraste: '+lqName(lqT)+'.')); }
-  const oc=$('#opt-ownercolors'); if(oc)oc.addEventListener('click',()=>{ setOwnerColors(!ownerColors); renderVisual(); });
-  const cb=$('#opt-cbsafe'); if(cb)cb.addEventListener('click',()=>{ setCbSafe(!cbSafe); renderVisual(); });
-  ['hazard','climb','water','gate'].forEach(k=>{ const inp=$('#opt-role-'+k); if(inp)inp.addEventListener('change',()=>setRoleColor(k,inp.value)); });
-  const rr=$('#opt-role-reset'); if(rr)rr.addEventListener('click',resetRoleColors);
-  if(typeof reflectOutlines==='function')reflectOutlines(); }
+  _rebakeDirect(); rebuildExtras(); visual.render(); srSay('Cores do color-blocking restauradas ao padrão.'); }
 // Dois contornos configuráveis (1º plano personagem/itens · 2º plano perímetro de plataforma/água/lava).
 function _rebakeDirect(){ // invalida os caches de textura direta (mundo depende de bg; sprites de fg) e re-renderiza
   for(const k in _worldTexHC)delete _worldTexHC[k]; for(const k in _coinTexHC)delete _coinTexHC[k]; for(const k in _pupTexHC)delete _pupTexHC[k]; _playerDirect={}; _lastSharedViz=null;
   if(numPlayers<=1)applyVizGlobal(players[0].viz); else applyVpFilters(); }
-function reflectOutlines(){ const f=$('#opt-outline-fg'), b=$('#opt-outline-bg'); if(f)f.value=String(hcOutlineFg); if(b)b.value=String(hcOutlineBg); }
-function setOutlineFg(v){ hcOutlineFg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outfg',hcOutlineFg);}catch(e){} _rebakeDirect(); reflectOutlines(); srSay('Contorno do primeiro plano: '+['nenhum','fino','grosso'][hcOutlineFg]+'.'); }
-function setOutlineBg(v){ hcOutlineBg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outbg',hcOutlineBg);}catch(e){} _rebakeDirect(); reflectOutlines(); srSay('Contorno do segundo plano: '+['nenhum','fino','grosso'][hcOutlineBg]+'.'); }
-{ const f=$('#opt-outline-fg'); if(f)f.addEventListener('change',()=>setOutlineFg(+f.value)); const b=$('#opt-outline-bg'); if(b)b.addEventListener('change',()=>setOutlineBg(+b.value)); reflectOutlines(); }
+function setOutlineFg(v){ hcOutlineFg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outfg',hcOutlineFg);}catch(e){} _rebakeDirect(); visual.render(); srSay('Contorno do primeiro plano: '+['nenhum','fino','grosso'][hcOutlineFg]+'.'); }
+function setOutlineBg(v){ hcOutlineBg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outbg',hcOutlineBg);}catch(e){} _rebakeDirect(); visual.render(); srSay('Contorno do segundo plano: '+['nenhum','fino','grosso'][hcOutlineBg]+'.'); }
+const visual = initSettingsVisual({ $, srSay, getVisualSettings: () => ({ lq: lqT, ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: (i) => { selVizPlayer = i; }, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
   const sim=players.some(p=>isSimKind((VIZ_BY_KEY[p.viz]||{}).kind));
   const bv=$('#opt-visual'); if(bv)bv.classList.toggle('is-on',help); const be=$('#opt-empathy'); if(be)be.classList.toggle('is-on',sim||hearingLoss||oneButton||wheelchair); }
@@ -2278,7 +2251,7 @@ function frontOverlay(el){ if(!el)return; el.style.zIndex=String(++_ovZ); const 
   // Botões puramente on/off viram TOGGLE (switch) — o texto "Ligado/Desligado" fica oculto (font-size:0).
   ['opt-facil','opt-altmove','opt-hearing','opt-onebtn','opt-wheelchair','opt-modocego','opt-tts','opt-eyes','audio-master','opt-captions','motion-master'].forEach(id=>{ const b=document.getElementById(id); if(b)b.classList.add('switch'); });
 })();
-function openVisual(){ const ov=$('#visual'); if(!ov)return; renderVisual(); ov.hidden=false; frontOverlay(ov); visualOpen=true; const f=ov.querySelector('button[data-viz]')||ov.querySelector('button'); if(f)f.focus(); }
+function openVisual(){ const ov=$('#visual'); if(!ov)return; visual.render(); ov.hidden=false; frontOverlay(ov); visualOpen=true; const f=ov.querySelector('button[data-viz]')||ov.querySelector('button'); if(f)f.focus(); }
 function closeVisual(){ const ov=$('#visual'); if(!ov)return; ov.hidden=true; visualOpen=false; const b=$('#opt-visual'); if(b)b.focus(); }
 const visualBtn=$('#opt-visual'); if(visualBtn)visualBtn.addEventListener('click',openVisual);
 const visualClose=$('#visual-close'); if(visualClose)visualClose.addEventListener('click',closeVisual);
