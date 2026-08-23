@@ -50,6 +50,7 @@ import { cloudWrapX, createSceneSky } from './render/scene-sky.js'; // Tier 2 (#
 import { coinCanvas, coinTexture, treeCanvas, treeTexture, powerupCanvas } from './render/props.js';
 import { outlineCanvas, spriteToCanvas } from './render/sprite-fx.js'; // Fase 2: voz do letramento (pt-BR sempre-ativa)
 import * as weather from './render/weather.js'; // Onda A: clima visual (chuva/trovao/clarao)
+import { lqFilter, setLq, getLqT, initLqFilter } from './render/lq-filter.js'; // Onda A: realce de contraste L->Q
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
@@ -563,22 +564,11 @@ function setCenario(theme){ if(!CENARIOS[theme])theme='cidade';
    linear = α(I−μ)+μ (contrast stretching, α=1.3, μ=0.5) e quadS = curva S por partes (2I² | 1−2(1−I)²).
    GPU via SVG feComponentTransfer type=table (17 amostras, sRGB — mesma decisão da daltonização),
    composto com os filtros CVD no CSS filter do canvas. Global (tela toda; por-viewport = adiado). */
-let lqT=(()=>{ const v=parseFloat(localStorage.getItem('incl_lq')); return isFinite(v)?Math.max(0,Math.min(1,v)):0; })();
-function lqCurve(t){ const N=17,a=1.3,out=[]; for(let i=0;i<N;i++){ const x=i/(N-1);
-  const lin=Math.min(1,Math.max(0,a*(x-0.5)+0.5)), quad=x<0.5?2*x*x:1-2*(1-x)*(1-x);
-  out.push(((1-t)*lin+t*quad).toFixed(4)); } return out.join(' '); }
-function ensureLqFilter(){ let f=document.getElementById('lq-enh'); if(f)return f;
-  const NS='http://www.w3.org/2000/svg', svg=document.createElementNS(NS,'svg');
-  svg.setAttribute('width','0'); svg.setAttribute('height','0'); svg.setAttribute('aria-hidden','true'); svg.style.position='absolute';
-  f=document.createElementNS(NS,'filter'); f.id='lq-enh'; f.setAttribute('color-interpolation-filters','sRGB');
-  const ct=document.createElementNS(NS,'feComponentTransfer');
-  ['feFuncR','feFuncG','feFuncB'].forEach(ch=>{ const fn=document.createElementNS(NS,ch); fn.setAttribute('type','table'); fn.setAttribute('tableValues',lqCurve(lqT)); ct.appendChild(fn); });
-  f.appendChild(ct); svg.appendChild(f); document.body.appendChild(svg); return f; }
-function lqFilter(){ if(lqT<=0)return ''; ensureLqFilter(); return 'url(#lq-enh)'; } // garante o nó ANTES do url() (referência solta esconderia o canvas)
-function lqName(t){ return t<=0?'desligado':t<0.34?'linear':t<0.67?'misto':'quadrático'; }
-function setLq(t){ lqT=Math.max(0,Math.min(1,t)); try{localStorage.setItem('incl_lq',String(lqT));}catch(e){}
-  if(lqT>0){ const f=ensureLqFilter(), tv=lqCurve(lqT); f.querySelectorAll('feFuncR,feFuncG,feFuncB').forEach(fn=>fn.setAttribute('tableValues',tv)); }
-  if(app&&app.view){ if(numPlayers<=1)applyVizGlobal(players[0].viz); else app.view.style.filter=lqFilter(); } } // recompõe o CSS filter
+// lqT / lqCurve / ensureLqFilter / lqFilter / setLq migraram para render/lq-filter.ts (Onda A); lqName tambem,
+// e ja nao tinha chamador aqui (o rotulo do painel vem de ui/settings-visual, que reexporta o do modulo).
+// A RECOMPOSICAO do filtro CSS fica: ela mistura o modo de visao ativo e invalida caches de textura,
+// coisas que nao sao do realce L->Q.
+initLqFilter({ onChange: () => { if(app&&app.view){ if(numPlayers<=1)applyVizGlobal(players[0].viz); else app.view.style.filter=lqFilter(); } } });
 // vizMode vem de core/state.js (Fase 2, mega-var 6). Init de boot SEM persistir (preserva o rastreio de prefers-contrast):
 initVizMode((()=>{ try{ const v=store.get('incl_viz',null); if(VIZ_CYCLE.includes(v))return v; }catch(e){}
   return (window.matchMedia && matchMedia('(prefers-contrast: more)').matches) ? 'hc-direto' : 'normal'; })()); // prefere-contraste → alto contraste 3:1
@@ -2207,7 +2197,7 @@ function _rebakeDirect(){ // invalida os caches de textura direta (mundo depende
   if(numPlayers<=1)applyVizGlobal(players[0].viz); else applyVpFilters(); }
 function setOutlineFg(v){ hcOutlineFg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outfg',hcOutlineFg);}catch(e){} _rebakeDirect(); visual.render(); srSay('Contorno do primeiro plano: '+['nenhum','fino','grosso'][hcOutlineFg]+'.'); }
 function setOutlineBg(v){ hcOutlineBg=Math.max(0,Math.min(2,v|0)); try{localStorage.setItem('incl_outbg',hcOutlineBg);}catch(e){} _rebakeDirect(); visual.render(); srSay('Contorno do segundo plano: '+['nenhum','fino','grosso'][hcOutlineBg]+'.'); }
-const visual = initSettingsVisual({ $, srSay, getVisualSettings: () => ({ lq: lqT, ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: (i) => { selVizPlayer = i; }, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
+const visual = initSettingsVisual({ $, srSay, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: (i) => { selVizPlayer = i; }, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
   const sim=players.some(p=>isSimKind((VIZ_BY_KEY[p.viz]||{}).kind));
   const bv=$('#opt-visual'); if(bv)bv.classList.toggle('is-on',help); const be=$('#opt-empathy'); if(be)be.classList.toggle('is-on',sim||hearingLoss||oneButton||wheelchair); }
@@ -2435,7 +2425,7 @@ startLoop(app.ticker, (dt)=>{ pollPads(); update(dt); draw();
   if(phase==='playing'){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
 window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads,update,openPadWiz,padWizTick,padMapFor,get padWiz(){return padWiz;},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return powerups;},get gateOpen(){return gateOpen;},get gate(){return gate;},get ended(){return ended;},restartGame,get hcMode(){return hcMode;},setHC(v){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(players[0]),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE;},get letterCase(){return letterCase;},get blindMode(){return blindMode;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
-  JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return lqT;},
+  JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
   setMode,setQuizLevel,get quizLevel(){return quizLevel;},openSilabas,quizMove,quizConfirm,quizErase,get quiz(){return players[0].quiz;},INCL_VERSION,fmtFrac,fracGraphic,speakChoice,get fracNot(){return fracNot;},
   setGameFont:typo.setFont,openTypo,get fontKey(){return typo.getFontKey();},FONT_GROUPS,get mmSeen2(){return minimapSeenCount();},
