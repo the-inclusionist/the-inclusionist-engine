@@ -64,6 +64,7 @@ import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad 
 import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
 import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js'; // Onda A: menu de pausa por tela + barra de icones de a11y
 import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/abandono/selo de espera)
+import { initVizSetters } from './render/viz-setters.js'; // Onda A: aplicacao dos modos de visao acessivel
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
   buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
@@ -1630,70 +1631,48 @@ let _playerDirect={};
 function playerVizTex(base,mode){ if(!base)return base;
   if(DIRECT_CFG[mode]){ const mm=(_playerDirect[mode]=_playerDirect[mode]||new Map()); if(!mm.has(base))mm.set(base,directSpriteTexture(base,mode)); return mm.get(base); } // direto: player com contorno escuro → salta
   return base; }
-// estáticos (mundo/parallax/moedas/itens) só re-aplicam quando o modo muda (_lastSharedViz declarado no topo do render)
-function applySharedTextures(mode){
-  if(mode!==_lastSharedViz){ _lastSharedViz=mode;
-    traffic.setFrontDim(!!DIRECT_CFG[mode]); // HC: carros/placas/semáforo (frente) escurecem como fundo
-    worldSprite.texture=worldTexFor(mode);
-    parallaxLayers.forEach((ts,j)=>ts.texture=parallaxTexFor(j,mode));
-    decoSprites.forEach(s=>s.texture=treeTexFor(mode));
-    for(const s of getCoinSprites()){ if(s)s.texture=coinTexFor(mode); }
-    for(const pu of powerups){ if(pu.sprite)pu.sprite.texture=pupTexFor(pu.kind,mode); }
-  }
-  for(const pl of players){ if(pl.sprite&&pl._tx)pl.sprite.texture=playerVizTex(pl._tx,mode); } // player muda de quadro toda frame
-}
+/* ===================== MODOS DE VISAO ACESSIVEL -> render/viz-setters.ts =====================
+   Saiu a POLITICA (qual modo vale onde); ficou a FABRICA (como um modo vira pixel): pixiFilterFor e as
+   matrizes CVD, playerVizTex/_playerDirect, parallaxTexFor, treeTexFor e o overlay de baixa visao —
+   tudo isso vai com render/viewports no grupo B. _lastSharedViz fica: nao e cache de visao, e o registro
+   de qual modo o pipeline estatico aplicou por ultimo, escrito de sete lugares.
+   Init AQUI porque empathy/visual recebem renderVizGroup/setPlayerViz POR REFERENCIA logo abaixo, e
+   declaracao icada virou const. Tudo no ctx e arrow preguicosa: nada e avaliado no init. */
+const viz = initVizSetters({
+  $, body: document.body, srSay,
+  app, camera, worldSprite, parallaxLayers, decoSprites,
+  getVpSpr: () => vpSpr, getVpDots: () => vpDots,
+  getCoinSprites, getPowerups: () => powerups,
+  getPlayers: () => players, getNumPlayers: () => numPlayers,
+  getSelVizPlayer: () => selVizPlayer, setSelVizPlayer: (i) => { selVizPlayer = i; },
+  getSharedViz: () => _lastSharedViz, setSharedViz: (m) => { _lastSharedViz = m; },
+  invalidateSharedViz: () => { _lastSharedViz = null; },
+  setHcMode: (on) => { hcMode = on; },
+  parallaxTexFor, treeTexFor, playerVizTex, pixiFilterFor,
+  clearPlayerDirectCache: () => { _playerDirect = {}; },
+  setFrontDim: (on) => traffic.setFrontDim(on),
+  rebuildExtras: () => rebuildExtras(), rebuildCoins: () => rebuildCoins(),
+  setModoCego: (on) => setModoCego(on),
+  hideTouchControls: (r) => hideTouchControls(r),
+  reflectVizButtons: () => reflectVizButtons(),
+  renderVisualPanel: () => visual.render(), renderEmpathyPanel: () => empathy.render(),
+});
+const { applySharedTextures, updateVpDots, applyVpFilters, setPlayerViz,
+        applyVizGlobal, reapplyVizAll, updateVizIndicator, renderVizGroup } = viz;
+const _rebakeDirect = viz.rebakeDirect;
 function renderVpOverlay(i,mode){ const m=VIZ_BY_KEY[mode]; if(!m||m.kind!=='lowvision')return; // overlay de baixa visão DENTRO da render-texture (a bolinha fica por cima, fora do filtro)
   const t=lvOverlayTex(m.lv); if(t){ lvOverlaySpr.texture=t; app.renderer.render(lvOverlaySpr,{renderTexture:vpTex[i],clear:false}); }
 }
-// bolinhas indicadoras por viewport (sobre os sprites de saída → NÃO sofrem o filtro do viewport, ex. cegueira)
-function updateVpDots(){ for(let i=0;i<vpDots.length;i++){ const g=vpDots[i], m=VIZ_BY_KEY[players[i]&&players[i].viz]; if(!g)continue;
-  const on=m&&(m.kind==='blind'||m.kind==='lowvision'); g.visible=!!on; if(on){ g.clear(); g.lineStyle(1,0x000000,.6); g.beginFill(m.kind==='blind'?0xffffff:0x36d36a); g.drawCircle(0,0,5); g.endFill(); } } }
-function applyVpFilters(){ for(let i=0;i<numPlayers;i++){ if(vpSpr[i])vpSpr[i].filters=pixiFilterFor(players[i].viz); } }
+// updateVpDots/applyVpFilters migraram para render/viz-setters.ts (Onda A).
 function setModoCego(on){ if(modoCego===on)return; modoCego=on; store.setBool('incl_modocego',on); if(typeof setupExtras==='function')setupExtras(); if(typeof reflectModoCego==='function')audioPanel.reflectModoCego(); srSay('Modo cego '+(on?'ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.':'desligado.')); }
-function setPlayerViz(i,mode){ const m=VIZ_BY_KEY[mode]||VIZ_BY_KEY.normal; players[i].viz=m.key; store.set(store.KEYS.vizP(i),m.key); _lastSharedViz=null;
-  if(m.kind==='blind') setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão
-  if(numPlayers<=1 && i===0){ applyVizGlobal(m.key); } else { applyVpFilters(); updateVpDots(); }
-  reflectVizButtons(); { visual.render(); empathy.render(); } }
-function applyVizGlobal(mode){
-  const m=VIZ_BY_KEY[mode]||VIZ_BY_KEY.normal; mode=m.key;
-  setVizModeValue(mode); hcMode=(m.kind==='hcnew'); // core/state.js: valor + persistência (incl_viz) + evento
-  if(app&&app.view) app.view.style.filter=[VIZ_FILTER[mode]||'',lqFilter()].filter(Boolean).join(' '); // sim. daltonismo/baixa-visão/cegueira + realce L/Q compostos
-  camera.filters = (m.kind==='hcnew') ? pixiFilterFor(mode) : null; // solo: alto contraste experimental = filtro GPU na câmera
-  traffic.setFrontDim(!!DIRECT_CFG[mode]); // HC: frente (carros/placas/semáforo) escurece como fundo (a guarda typeof morreu: agora e import)
-  worldSprite.texture=worldTexFor(mode);            // alto contraste direto = Renderização Direta · resto=normal
-  parallaxLayers.forEach((ts,i)=>{ ts.texture=parallaxTexFor(i,mode); });
-  decoSprites.forEach(s=>{ s.texture=treeTexFor(mode); });
-  rebuildExtras(); rebuildCoins();
-  // baixa visão = névoa+manchas (overlay) + bolinha verde; cegueira = tela preta (filtro) + esconde controles + bolinha branca
-  document.body.classList.toggle('lowvision-mode', m.kind==='lowvision');
-  document.body.classList.toggle('blind-mode', m.kind==='blind');
-  const ov=$('#viz-overlay'); if(ov){ ov.hidden=(m.kind!=='lowvision'); ov.className=(m.kind==='lowvision'?('lv-'+m.lv):''); }
-  if(m.kind==='blind'){ hideTouchControls('cegueira'); }
-  updateVizIndicator(m.kind);
-  if(typeof reflectVizButtons==='function') reflectVizButtons();
-  { visual.render(); empathy.render(); }
-}
+// setPlayerViz/applyVizGlobal migraram para render/viz-setters.ts (Onda A).
 const empathy = initSettingsEmpathy({ $, srSay, store, renderVizGroup, reflectMotorEmpathy, reflectVizButtons, frontOverlay, setHearingLoss, setOneButton, setWheelchair, getOneButton: () => oneButton, getWheelchair: () => wheelchair, setEmpathyOpen: (v) => { empathyOpen = v; } }); // painel de empatia: ui/settings-empathy.ts (registra #opt-empathy, #opt-hearing, #opt-onebtn, #opt-wheelchair + restaura o grafo de audio)
-// bolinha indicadora (canto sup. dir.): branca=cegueira, verde=baixa visão; toque/clique 2× volta ao normal
-function updateVizIndicator(kind){ const el=$('#viz-indicator'); if(!el)return;
-  const on=(kind==='blind'||kind==='lowvision'); el.hidden=!on;
-  el.classList.toggle('blind',kind==='blind'); el.classList.toggle('low',kind==='lowvision');
-  el.setAttribute('aria-label',(kind==='blind'?'Modo cegueira total':'Modo baixa visão')+'. Toque duas vezes para voltar às cores normais.'); }
-function reapplyVizAll(){ _lastSharedViz=null; if(numPlayers<=1){ applyVizGlobal(players[0].viz); } else { app&&app.view&&(app.view.style.filter=lqFilter()); camera.filters=null; document.body.classList.remove('lowvision-mode','blind-mode'); const ov=$('#viz-overlay'); if(ov)ov.hidden=true; updateVizIndicator('normal'); applyVpFilters(); } } // MP: filtro CSS/overlay/bolinha globais OFF (por viewport agora)
+// updateVizIndicator/reapplyVizAll migraram para render/viz-setters.ts (Onda A).
 // Modos que AJUDAM (A12e visual) vs SIMULAÇÕES de empatia (Modo empatia)
 const isSimKind=k=>k==='filter'||k==='lowvision'||k==='blind';
 const VIZ_SIM=VIZ_MODES.filter(m=>isSimKind(m.kind));
 let selVizPlayer=0;
-function renderVizGroup(listSel,tabsSel,modes){ const el=$(listSel); if(!el)return; if(selVizPlayer>=numPlayers)selVizPlayer=0;
-  const tabs=$(tabsSel); if(tabs){ tabs.hidden=true; // E3: sem abas — cada jogador edita só o seu
-    tabs.innerHTML = '';
-    tabs.querySelectorAll('button[data-vp]').forEach(b=>b.addEventListener('click',()=>{ selVizPlayer=+b.dataset.vp; visual.render(); empathy.render(); })); }
-  const cur=players[selVizPlayer]?players[selVizPlayer].viz:'normal';
-  el.innerHTML=modes.map(m=>{ const sel=m.key===cur; return `<div class="ctrl-row"><span><strong>${m.nome}</strong><br><span class="opt-hint" style="margin:0">${m.desc}</span></span>`+
-    `<button class="mode-btn${sel?' is-on':''}" role="radio" aria-checked="${sel}" data-viz="${m.key}" type="button">${sel?'✓ Selecionado':'Selecionar'}</button></div>`; }).join('');
-  el.querySelectorAll('button[data-viz]').forEach(btn=>btn.addEventListener('click',()=>{ setPlayerViz(selVizPlayer,btn.dataset.viz); srSay((numPlayers>1?'Jogador '+(selVizPlayer+1)+': ':'')+VIZ_MODES.find(m=>m.key===btn.dataset.viz).nome+'.'); }));
-}
-/* L2: opções de cor — itens por dono (toggle), paleta CB-safe (toggle) e color-blocking customizável (pickers) */
+// renderVizGroup migrou para render/viz-setters.ts (Onda A).
 function setOwnerColors(on){ ownerColors=!!on; store.setBool(store.KEYS.ownercolors,ownerColors);
   rebuildCoins(); srSay('Itens na cor do dono '+(on?'ligados.':'desligados: todos na cor original.')); }
 function setCbSafe(on){ cbSafe=!!on; store.setBool(store.KEYS.cbsafe,cbSafe);
@@ -1704,9 +1683,7 @@ function setRoleColor(k,hex){ const rgb=hexRgb(hex); if(!rgb||!HC_ROLE[k])return
 function resetRoleColors(){ for(const k in HC_ROLE_DEF)HC_ROLE[k]=HC_ROLE_DEF[k].slice(); saveHcRole();
   _rebakeDirect(); rebuildExtras(); visual.render(); srSay('Cores do color-blocking restauradas ao padrão.'); }
 // Dois contornos configuráveis (1º plano personagem/itens · 2º plano perímetro de plataforma/água/lava).
-function _rebakeDirect(){ // invalida os caches de textura direta (mundo depende de bg; sprites de fg) e re-renderiza
-  clearWorldTexCache(); clearCoinTexCache(); resetPupTexCache(); _playerDirect={}; _lastSharedViz=null;
-  if(numPlayers<=1)applyVizGlobal(players[0].viz); else applyVpFilters(); }
+// _rebakeDirect migrou para render/viz-setters.ts (Onda A) como viz.rebakeDirect.
 function setOutlineFg(v){ hcOutlineFg=Math.max(0,Math.min(2,v|0)); store.set(store.KEYS.outfg,hcOutlineFg); _rebakeDirect(); visual.render(); srSay('Contorno do primeiro plano: '+['nenhum','fino','grosso'][hcOutlineFg]+'.'); }
 function setOutlineBg(v){ hcOutlineBg=Math.max(0,Math.min(2,v|0)); store.set(store.KEYS.outbg,hcOutlineBg); _rebakeDirect(); visual.render(); srSay('Contorno do segundo plano: '+['nenhum','fino','grosso'][hcOutlineBg]+'.'); }
 const visual = initSettingsVisual({ $, srSay, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: (i) => { selVizPlayer = i; }, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
