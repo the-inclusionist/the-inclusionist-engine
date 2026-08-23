@@ -54,7 +54,8 @@ import { initSceneCity } from './render/scene-city.js'; // Onda A: deco da Cidad
 import { initTextures, SHAPE_TEX, letterTexture, pupTexFor } from './render/textures.js'; // Onda A: texturas de moeda/forma/letra + power-up
 import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, coinTexFor, directSpriteCanvas, clearWorldTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
 import { initCoinSpawning, rebuildCoins, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
-import { initKeyboardRuntime } from './input/keyboard-runtime.js'; // Onda A: esquema de teclas por jogador
+import { initKeyboardRuntime } from './input/keyboard-runtime.js';
+import { initKeydown } from './input/keydown.js'; // D2-a: o roteador de teclado (a cadeia de precedencia) // Onda A: esquema de teclas por jogador
 import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geometria fisica do pad + config de toque
 import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad API + assistente de mapeamento
 import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
@@ -248,75 +249,35 @@ const PCOLOR=(cbSafe?PCOLOR_CB:PCOLOR_DEF).slice(); // mutável in-place (todos 
 let ownerColors=store.getBool(store.KEYS.ownercolors,true); // itens na cor do dono (padrão ligado)
 const assignControls = () => kbRuntime.assignControls();
 assignControls();
-// Conflito: uma tecla não pode ser de dois jogadores no MESMO modo. Retorna o índice do outro dono, ou -1.
-addEventListener('keydown',(e)=>{
-  const KC=kbRuntime.controlsState(); // memorizado; era o punhado de `let` KJUMP/KLEFT/.../GAME_KEYS
-  if(attractCtl.onInput()){ e.preventDefault(); return; } // qualquer tecla encerra a demo
-  if(ctrlPanel.handleCaptureKeydown(e))return; // remap: a proxima tecla vira o controle (ui/settings-controls.ts)
-  // Diálogo aberto: só bloqueia o jogo se o elemento estiver DE FATO visível (flag preso não trava mais o teclado).
-  const dlgVis=(id)=>{ const el=$('#'+id); return el && !el.hidden; };
-  // Cadeia de Escape, verbatim do encadeamento que substituiu: fecha o PRIMEIRO registrado que estiver
-  // aberto. MEDIDO no navegador: com o jogo pausado ela nao e alcancada — menuNavKey esta em fase de
-  // CAPTURA, trata Escape como 'voltar', da stopPropagation e resolve pelo topo da pilha (z-index).
-  // Como os paineis so abrem pausado, na pratica quem fecha e sempre o de cima. Mantida como estava.
-  { const id=overlays.escapeTarget(); if(id){ if(e.code==='Escape')overlays.closeById(id); return; } }
-  if(dlgVis('touchcfg')){ if(e.code==='Escape'){ const t=$('#touchcfg'); if(t)t.hidden=true; } return; }
-  if(dlgVis('padwiz')){ if(e.code==='Escape')gamepadApi.closePadWiz(false); return; } // wizard de gamepad: Esc cancela
-  // Fim de fase / título: qualquer tecla com função de PULO (de qualquer jogador) ou de PAUSA aciona o
-  // botão principal — sem depender do foco do mouse (report do José: clicar na tela tirava o foco do botão).
-  { const isJump=KC.jump.includes(e.code)||players.some((p,i)=>actionOf(e.code,i)==='jump');
-    const isPause=e.code==='Escape'||e.code==='Enter';
-    const winOv=$('#win-overlay');
-    if(winOv&&!winOv.hidden){ if(isJump||isPause){ e.preventDefault(); const b=$('#btn-again'); if(b)b.click(); } return; }
-    if(phase==='title'){ // menu inicial: setas navegam, PULO/Enter confirma, ESPECIAL/Esc volta — SÓ O JOGADOR 1
-      hideTouchControls(); // teclado no splash oculta os controles virtuais (report do José)
-      const kp=whichPlayer(e.code);
-      if(numPlayers>1&&kp>0){ srSay('Aguarde o Jogador 1 escolher o jogo.'); e.preventDefault(); return; }
-      const k={ yes:isJump||e.code==='Enter', no:e.code==='Escape'||players.some((p,i)=>actionOf(e.code,i)==='especial'),
-        up:KC.up.includes(e.code)||e.code==='ArrowUp', down:KC.down.includes(e.code)||e.code==='ArrowDown',
-        left:KC.left.includes(e.code), right:KC.right.includes(e.code) };
-      if(k.yes||k.no||k.up||k.down||k.left||k.right){ e.preventDefault(); navTitle(k); }
-      return; } }
-  // Lote B: Alt+1/2/3/4 (fileira de números) ativa dinamicamente 1..4 telas (aviso c). Alt fica livre (solo não o usa).
-  const anyQuiz=players.some(p=>p.quiz);
-  if(e.altKey && !e.ctrlKey && /^Digit[1234]$/.test(e.code) && (phase==='playing'||phase==='paused') && !anyQuiz){
-    e.preventDefault(); activateScreens(+e.code.slice(5)); return; }
-  if(!anyQuiz && (e.code==='Escape'||e.code==='Enter') && (phase==='playing'||phase==='paused')){ togglePause(); e.preventDefault(); return; } // E14: Esc ou Enter central (NumpadEnter não pausa)
-  if(anyQuiz){ // L3: navegação do quiz POR JOGADOR — a tecla age no quiz do DONO dela (genéricas → P1)
-    const qpi=whichPlayer(e.code);
-    const qpl = qpi>=0 ? (players[qpi]&&players[qpi].quiz?players[qpi]:null) : (player.quiz?player:null);
-    if(qpl){
-      const act=qpi>=0?actionOf(e.code,qpl.i):null;
-      const L=act?act==='left':KC.left.includes(e.code), R=act?act==='right':KC.right.includes(e.code),
-            U=act?act==='up':KC.up.includes(e.code), D=act?act==='down':KC.down.includes(e.code),
-            J=act?act==='jump':KC.jump.includes(e.code),
-            E=act?act==='especial':((qpl.ctrl.especial||[]).includes(e.code)); // ESPECIAL = apagar última sílaba/letra
-      if(qpl.quiz.kind==='braille'){
-        if(U)announceBraille(qpl); else if(J)quizConfirm(qpl);
-        if(KC.gameKeys.includes(e.code))e.preventDefault(); return;
-      }
-      if(L)quizMove(qpl,-1); else if(R)quizMove(qpl,1); else if(U)quizMove(qpl,-3); else if(D)quizMove(qpl,3); else if(J)quizConfirm(qpl); else if(E)quizErase(qpl);
-      if(KC.gameKeys.includes(e.code))e.preventDefault(); return;
-    }
-    // tecla de um jogador SEM quiz cai no jogo normal (a partida dele continua)
-  }
-  // Fácil (solo): atalhos de acessibilidade — Ctrl=Especial, Shift=Trocar poder (sem usar Win/Alt/AltGr)
-  const easyKey = players[0].easy && numPlayers<=1 && (e.code==='ControlLeft'||e.code==='ControlRight'||e.code==='ShiftLeft'||e.code==='ShiftRight');
-  const isGameKey = easyKey || KC.gameKeys.includes(e.code) || players.some(p=>p.ctrl && Object.values(p.ctrl).some(arr=>arr.includes(e.code)));
-  if(isGameKey){ e.preventDefault(); hideTouchControls('teclado'); } // E13: jogar no teclado oculta os botões de toque
-  for(const p of players){ if(p.waiting && actionOf(e.code,p.i)){ p.waiting=false; // tecla DAQUELE jogador ativa a tela em espera
-    hud.clearWaitingBadge(p.i); srSay('Jogador '+(p.i+1)+' entrou!'); } }
-  if(!keys.has(e.code)){ for(const p of players){ if(!p.ctrl)continue;
-    if(p.ctrl.jump.includes(e.code)) p.jumpEdge=true;
-    if(p.ctrl.run.includes(e.code) && !p.easy) p.runEdge=true; // Fácil: sem correr
-    if(p.ctrl.left.includes(e.code)) p.leftEdge=true;        // alternância: edge de direção
-    if(p.ctrl.right.includes(e.code)) p.rightEdge=true;
-    if(p.ctrl.swap&&p.ctrl.swap.includes(e.code)) p.swapEdge=true;
-    if(p.ctrl.especial&&p.ctrl.especial.includes(e.code)) p.specialEdge=true; }
-    if(easyKey){ if(e.code.startsWith('Control')) player.specialEdge=true; else player.swapEdge=true; } }
-  if(oneButton && isGameKey){ for(const k of [...keys]) if(isGameKeyCode(k)) keys.delete(k); } // empatia: um botão de jogo por vez → solta os demais
-  keys.add(e.code); });
-addEventListener('keyup',(e)=>keys.delete(e.code));
+/* ===================== TECLADO -> input/keydown.ts (D2-a) =====================
+   O roteador inteiro (a cadeia de nove guardas) migrou. O modulo separa DECIDIR de EXECUTAR:
+   `decideKeydown(evento, estado)` e pura e roda no project `node`; so o envelope toca o mundo.
+   `keyup` foi junto (e a outra metade do `keys.add`); `blur` NAO — ele limpa codigos que o toque e a webcam
+   tambem injetam, e e rede de ciclo de vida da JANELA, nao do teclado.
+   TODO o ctx e LAZY de proposito: attractCtl/ctrlPanel/gamepadApi/hud/navTitle/activateScreens/togglePause/
+   hideTouchControls/quiz* sao `const`/`function` declarados centenas de linhas ABAIXO daqui. O ouvinte
+   original so funcionava porque o corpo dele nunca era lido antes da primeira tecla, e e essa preguica que as
+   setas preservam — passar qualquer um deles por VALOR derruba o boot em TDZ.
+   Fica no lugar exato do ouvinte antigo, e nao mais abaixo: descer mudaria a ORDEM DE REGISTRO dos ouvintes
+   de bolha da janela, e hoje este e o primeiro. */
+const keydownApi = initKeydown({
+  attractOnInput: () => attractCtl.onInput(),
+  handleCaptureKeydown: (e) => ctrlPanel.handleCaptureKeydown(e),
+  getNumPlayers: () => numPlayers, getPlayers: () => players,
+  getControls: () => kbRuntime.controlsState(),
+  heldKeys: keys, isOneButton: () => oneButton,
+  actionOf: (code, i) => kbRuntime.actionOf(code, i),
+  whichPlayer: (code) => kbRuntime.whichPlayer(code),
+  $, escapeTarget: () => overlays.escapeTarget(), closeOverlayById: (id) => overlays.closeById(id),
+  closePadWiz: (save) => gamepadApi.closePadWiz(save),
+  hideTouchControls: (r) => hideTouchControls(r), srSay: (m) => srSay(m),
+  navTitle: (k) => navTitle(k), activateScreens: (n) => activateScreens(n), togglePause: () => togglePause(),
+  quizMove: (pl, d) => quizMove(pl, d), quizConfirm: (pl) => quizConfirm(pl), quizErase: (pl) => quizErase(pl),
+  announceBraille: (pl) => announceBraille(pl),
+  clearWaitingBadge: (i) => hud.clearWaitingBadge(i),
+  win: window,
+});
+keydownApi.attach();
 addEventListener('blur',()=>keys.clear());
 const anyOf=(arr)=>arr.some(k=>keys.has(k));
 // held(pl,act) movido p/ input/state.js (Fase 2.22) // teclado OU gamepad do jogador
@@ -329,7 +290,6 @@ setVlibrasSay(vlibrasSay); // registra a fala em Libras (ui/vlibras) no core/a11
 // SFX (definições de som) extraído p/ platform/audio.js (Fase 2).
 let captionsOn=true, capTimer=null; // soundOn/volume/audioCtx vêm de platform/audio.js (Fase 2)
 const anyEasy=()=>players.some(p=>p.easy); // efeitos de MUNDO do Fácil (moedas no chão) ligam se QUALQUER jogador usa Fácil
-const isGameKeyCode=(c)=>kbRuntime.controlsState().gameKeys.includes(c)||players.some(p=>p.ctrl&&Object.values(p.ctrl).some(a=>a.includes(c)));
 // Modo Fácil (deficiência motora): gravidade ×2/3, pulo ×8/7, andar ×0.7, sem perigos, sem correr,
 // hitbox de coleta +4px, moedas no chão, proteção de borda, pula-pula suave (segurar = flutuar descendo).
 // EASY (modo fácil) migrado p/ core/constants.js (Estágio 4, dado de dificuldade — junto de TUNE/ANIM).
