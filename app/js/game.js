@@ -10,6 +10,7 @@ import { phase, setPhaseValue, quizLevel, setQuizLevelValue, numPlayers, setNumP
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
+import { getActivity, hasActivity, isValidActivityId, DEFAULT_ACTIVITY_ID } from './game/activities-registry.js';
 import { puTaken, takePu } from './game/powerups.js'; // Estágio 4 (Tier 2): predicados de coleta de power-up
 import { ELEV_SPEED, buildElevators, elevAt, getElevShafts, initElevators } from './game/elevators.js'; // Estágio 4 (Tier 2): geometria de elevador (cadeirante)
 import { gcd, fmtFrac, fracGraphic, fracSpeak, speakChoice } from './game/fractions.js'; // Estágio 4 (Tier 2): matemática/render de frações
@@ -1574,7 +1575,7 @@ function openQuiz(pl,coinIndex,shapeId){ // MATEMÁTICA: gerador POR ATIVIDADE (
       const dividend=divisor*quo;
       q={...base,prob:`${dividend} ÷ ${divisor} = ?`,answer:String(quo),choices:_mkChoices(quo,0,10)};
       fala=`Quanto é ${dividend} dividido por ${divisor}?`; } }
-  else if(ACTIVITIES[A]&&ACTIVITIES[A].dens){ const dens=ACTIVITIES[A].dens; // FRAÇÕES (soma/sub; NOTAÇÃO sorteada entre as ligadas)
+  else if(getActivity(A)&&getActivity(A).dens){ const dens=getActivity(A).dens; // FRAÇÕES (soma/sub; NOTAÇÃO sorteada entre as ligadas)
     const D=dens.reduce((l,d)=>l*d/gcd(l,d),1);
     let d1=dens[randInt(0,dens.length-1)], d2=dens[randInt(0,dens.length-1)], op=rnd()<0.5?'+':'−';
     let n1=randInt(1,d1), n2=randInt(1,d2);
@@ -1830,45 +1831,25 @@ $('#btn-again').addEventListener('click',()=>{ restartGame(); $('#game-region').
 /* ===================== ATIVIDADES (menu inicial novo) =====================
    Lúdico · Alfabetização (5 — 3 vitórias = 1 moeda, SEM penalidade no erro) · Matemática (11).
    Trocar de atividade = todo mundo sai do jogo → volta ao menu inicial. */
-const ACTIVITIES={ // d = descrição do minigame (rodapé dos menus secundários)
-  ludico:{cat:'ludico',nome:'Coletar 10 moedas'},
-  alf1:{cat:'alf',nome:'Descobrindo palavras', sub:'BABA • BOLA • BEBE',        d:'Elaborado para ajudar a superar as hipóteses pré-silábicas.'},
-  alf2:{cat:'alf',nome:'Descobrindo sílabas',  sub:'BA • BE • BI',              d:'Feito para ajudar a superar a hipótese silábica sem valor sonoro (uma letra errada por sílaba) e com valor sonoro (vogal ou consoante correta por sílaba), deixando claro que cada som é uma sílaba e cada sílaba tem sua forma correta de escrever.'},
-  alf3:{cat:'alf',nome:'Montando palavras',    sub:'BA+BA • BE+BE • BO+LA',     d:'Feito para superar a fase da hipótese silábico-alfabética, desafiando o aluno a encontrar as sílabas corretas para montar a palavra.'},
-  alf4:{cat:'alf',nome:'Escrevendo palavras',  sub:'B-A-B-A • B-O-L-A • B-E-B-E',d:'Atividade com o objetivo de treinar ortografia.'},
-  alf5:{cat:'alf',nome:'Escrevendo em Braille',d:'Escreva letra por letra; o jogo dita os pontos da cela Braille (12 letras).'},
-  mat1:{cat:'mat',nome:'Quantidade',           d:'Conte as bolinhas e escolha o número certo (1 a 9).'},
-  mat2:{cat:'mat',nome:'Soma fácil',           d:'Somas com parcelas de 0 a 5.'},
-  mat3:{cat:'mat',nome:'Soma e Subtração 1',   d:'Contas que dá para fazer nos dedos (até 10).'},
-  mat4:{cat:'mat',nome:'Soma e Subtração 2',   d:'Guarde um número na cabeça e opere o outro nos dedos (até 20).'},
-  mat5:{cat:'mat',nome:'Tabuada',pick:true,    d:'Escolha os números e treine a multiplicação.'},
-  mat6:{cat:'mat',nome:'Divisão',pick:true,    d:'Escolha os números e treine a divisão.'},
-  fr2:{cat:'mat',nome:'Soma e subtração com meios',dens:[2],           d:'Some e subtraia meios.'},
-  fr3:{cat:'mat',nome:'Soma e subtração com terços',dens:[3],          d:'Some e subtraia terços.'},
-  fr42:{cat:'mat',nome:'Soma e subtração com quartos e meios',dens:[4,2], d:'Some e subtraia quartos e meios.'},
-  fr5:{cat:'mat',nome:'Soma e subtração com quintos',dens:[5],         d:'Some e subtraia quintos.'},
-  fr632:{cat:'mat',nome:'Soma e subtração com sextos, terços e meios',dens:[6,3,2], d:'Some e subtraia sextos, terços e meios.'},
-  fr2a6:{cat:'mat',nome:'Soma e subtração com frações de meio a sextos',dens:[2,3,4,5,6], d:'Some e subtraia frações de meios a sextos.'},
-};
 const ALF_LEVEL={alf1:1,alf2:2,alf3:3,alf4:4,alf5:5};
-if(!ACTIVITIES[ACTIVITY]) setActivityValue('ludico'); // ACTIVITY vem de core/state.js (Fase 2, mega-var 5); valida o valor inicial contra as atividades existentes
+if(!isValidActivityId(ACTIVITY)) setActivityValue(DEFAULT_ACTIVITY_ID); // ACTIVITY vem de core/state.js (Fase 2, mega-var 5); valida o valor inicial contra as atividades existentes
 let tabSel=(()=>{ try{ const s=JSON.parse(localStorage.getItem('incl_tabsel')); if(Array.isArray(s)&&s.length)return s.filter(n=>n>=0&&n<=10); }catch(e){} return [2,3,4,5]; })();
-function actCat(){ return (ACTIVITIES[ACTIVITY]||{}).cat||'ludico'; }
-function setActivity(id){ if(!ACTIVITIES[id])id='ludico'; setActivityValue(id); // core/state.js: valor + persistência (incl_activity) + evento; a validação fica aqui
-  const cat=ACTIVITIES[id].cat;
+function actCat(){ return (getActivity(ACTIVITY)||{}).cat||'ludico'; }
+function setActivity(id){ if(!hasActivity(id))id=DEFAULT_ACTIVITY_ID; setActivityValue(id); // core/state.js: valor + persistência (incl_activity) + evento; a validação fica aqui
+  const cat=getActivity(id).cat;
   if(cat==='alf')setQuizLevel(ALF_LEVEL[id],false); // reusa os 5 níveis da psicogênese
   MODE = cat==='alf'?'silabas':cat==='mat'?'somasub':'ludico'; }
 let _pendingAct='ludico', pendingPlayers=1, _cenBack='tm-main';
 function startActivity(id){ // R-splash 2: depois do desafio, o JOGADOR 1 escolhe o CENÁRIO (aos demais, "aguarde")
   _pendingAct=id;
-  _cenBack = (ACTIVITIES[id].pick)?'tm-tab' : ACTIVITIES[id].dens?'tm-fr' : ACTIVITIES[id].cat==='alf'?'tm-alf' : ACTIVITIES[id].cat==='mat'?'tm-mat' : 'tm-main';
+  _cenBack = (getActivity(id).pick)?'tm-tab' : getActivity(id).dens?'tm-fr' : getActivity(id).cat==='alf'?'tm-alf' : getActivity(id).cat==='mat'?'tm-mat' : 'tm-main';
   showTitleMenu('tm-cen'); srSay('Escolha o cenário.'); }
 function reallyStart(){ const id=_pendingAct; setActivity(id);
   if(isMobile()){ if(pendingPlayers>1)pendingPlayers=1;
     try{ const el=document.documentElement, rf=el.requestFullscreen||el.webkitRequestFullscreen; if(rf)rf.call(el); }catch(e){} }
   players.forEach(p=>{ p.alfWins=0; });
   if(pendingPlayers!==numPlayers) setNumPlayers(pendingPlayers); else restartGame();
-  setPhase('playing'); hideTips(); srSay(ACTIVITIES[id].nome+'. Jogo iniciado.'); }
+  setPhase('playing'); hideTips(); srSay(getActivity(id).nome+'. Jogo iniciado.'); }
 // gcd/fracStr/DEN_NAME/fmtFrac/fracGraphic/fracSpeak/speakChoice extraídos p/ game/fractions.js (Estágio 4).
 // As NOTAÇÕES (fracNot + FNOT_*) — estado/labels do menu — ficam aqui (painel de frações).
 /* NOTAÇÕES de fração (menu "Fração"): vertical · diagonal · decimal · percentual · mista — toggles persistidos */
@@ -2788,7 +2769,7 @@ function navTitle(k){ const bs=titleButtons(); if(!bs.length)return;
   else if(k.yes){ (i<0?bs[0]:bs[i]).click(); }
   else if(k.no){ const back=bs.find(b=>b.dataset.tmBack); if(back)back.click(); } }
 function buildTitleMenus(){
-  const mk=id=>{ const a=ACTIVITIES[id]; return `<button class="title-btn" data-act-id="${id}" type="button">${a.nome}${a.sub?`<span class="act-sub">${a.sub}</span>`:''}</button>`; }; // subtítulo de exemplo (letramento)
+  const mk=id=>{ const a=getActivity(id); return `<button class="title-btn" data-act-id="${id}" type="button">${a.nome}${a.sub?`<span class="act-sub">${a.sub}</span>`:''}</button>`; }; // subtítulo de exemplo (letramento)
   const back=(to)=>`<button class="title-btn ghost" data-tm-back="${to}" type="button">Voltar</button>`;
   const desc=`<div class="tm-desc" aria-live="polite"></div>`; // rodapé com a descrição do minigame focado
   const h=t=>`<h3 class="tm-title">${t}</h3>`;                  // título do submenu (pedido do José)
@@ -2848,7 +2829,7 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
     if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault(); b.dataset.np=e.key==='ArrowLeft'?'-1':'1'; b.click(); } });
   // Rodapé (mesmo estilo do menu de pausa): descrição do minigame (data-act-id) OU da notação (data-fnot), no foco/hover
   const showDesc=(e)=>{ const b=e.target.closest('button[data-act-id],button[data-fnot]'); if(!b)return;
-    const d = b.dataset.fnot ? (FNOT_DESC[b.dataset.fnot]||'') : ((ACTIVITIES[b.dataset.actId]||{}).d||'');
+    const d = b.dataset.fnot ? (FNOT_DESC[b.dataset.fnot]||'') : ((getActivity(b.dataset.actId)||{}).d||'');
     const box=b.closest('.title-menu'); const el=box&&box.querySelector('.tm-desc'); if(el)el.textContent=d; };
   ov.addEventListener('focusin',showDesc); ov.addEventListener('mouseover',showDesc);
   ov.addEventListener('click',(e)=>{ const b=e.target.closest('button'); if(!b)return;
@@ -2881,8 +2862,8 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
       b.classList.toggle('tab-on',i<0); b.setAttribute('aria-pressed',String(i<0));
       srSay('Número '+n+(i<0?' ligado.':' desligado.')); return; }
     if(b.dataset.actId){ const id=b.dataset.actId;
-      if(ACTIVITIES[id].pick){ go(()=>{ _tabFor=id; buildTitleMenus(); const t=$('#tm-tab .tm-title'); if(t)t.textContent=ACTIVITIES[id].nome; // título Tabuada/Divisão
-        showTitleMenu('tm-tab'); srSay(ACTIVITIES[id].nome+': escolha os números.'); }); }
+      if(getActivity(id).pick){ go(()=>{ _tabFor=id; buildTitleMenus(); const t=$('#tm-tab .tm-title'); if(t)t.textContent=getActivity(id).nome; // título Tabuada/Divisão
+        showTitleMenu('tm-tab'); srSay(getActivity(id).nome+': escolha os números.'); }); }
       else go(()=>startActivity(id)); } });
 })();
 (function shellSetup(){
