@@ -151,18 +151,32 @@ describe('setPhase — a casca inteira, no documento', () => {
 });
 
 describe('setPhase e os controles de toque', () => {
-  // ⚠️ DEFEITO CONHECIDO, PINADO — não conserte. `hideTouchControls()` roda ANTES do bloco de restauração,
-  // então `dataset.wasOn` nunca chega a ser gravado ao pausar e o direcional virtual não volta ao retomar.
-  it('DEFEITO (pinado): pausar com o direcional visível NÃO grava a marca, e retomar não o devolve', () => {
+  // O ciclo inteiro, que é o que a pessoa faz no celular: jogando com o direcional na tela, pausa, retoma.
+  // Isto já esteve quebrado, e de um jeito que só aparecia no aparelho: `hideTouchControls()` rodava ANTES da
+  // leitura, então a marca `wasOn` nunca era gravada e o direcional não voltava. O `boot()` deste arquivo tem
+  // uma tela só, que é a condição em que o virtual existe.
+  it('[Right] pausar com o direcional visível guarda a marca, e retomar o devolve', () => {
     const { shell } = boot();
     shell.setPhase('playing');
     const tc = $('#touch-controls');
     tc.hidden = false; // como se a pessoa estivesse jogando no toque
     shell.setPhase('paused');
-    expect(tc.hidden).toBe(true);
-    expect(tc.dataset.wasOn).toBe(undefined); // a marca se perdeu: hideTouchControls escondeu antes
+    expect(tc.hidden).toBe(true);              // na pausa ele sai da frente
+    expect(tc.dataset.wasOn).toBe('1');        // mas fica anotado que estava ligado
     shell.setPhase('playing');
-    expect(tc.hidden).toBe(true);             // e por isso o direcional NÃO volta sozinho
+    expect(tc.hidden).toBe(false);             // e volta ao retomar
+    expect(tc.dataset.wasOn).toBe(undefined);  // a marca é consumida
+  });
+
+  it('[Inverse] quem NÃO estava com o direcional na tela não o ganha ao retomar', () => {
+    const { shell } = boot();
+    shell.setPhase('playing');
+    const tc = $('#touch-controls');
+    tc.hidden = true; // jogando no teclado
+    shell.setPhase('paused');
+    expect(tc.dataset.wasOn).toBe(undefined);
+    shell.setPhase('playing');
+    expect(tc.hidden).toBe(true);              // continua escondido: pausar não liga o toque de ninguém
   });
 
   it('com a marca presente na mão, retomar em tela única devolve o direcional (o ramo existe)', () => {

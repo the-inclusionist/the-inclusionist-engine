@@ -174,13 +174,9 @@ export interface TouchControlsState {
  * O ÚNICO pedaço de `setPhase` com memória: esconder os controles de toque ao pausar (guardando que estavam
  * ligados) e devolvê-los ao retomar. Pura, e por isso pinável sem navegador.
  *
- * ⚠️ DEFEITO CONHECIDO, PRESERVADO VERBATIM — não conserte aqui. No `setPhase` real, `hideTouchControls()` roda
- * ANTES deste plano sempre que `p !== 'playing'`, e ele já faz `tc.hidden = true`. Quando `p === 'paused'`,
- * portanto, o `if (!hidden)` abaixo já chega falso e `wasOn` NUNCA é gravado — o ramo de restauração em
- * 'playing' é inalcançável por esse caminho. Consequência real no celular: pausar esconde o direcional virtual
- * e retomar não o traz de volta (só um toque na tela o traz, por `showTouchControls`). O teste
- * `shell.node.test.js` PINA esse encadeamento (chamando o plano com `hidden: true`, como a ordem real entrega)
- * para que o conserto futuro tenha rede. Ver o relatório da extração.
+ * O estado que chega aqui é o de ANTES de `hideTouchControls()` — quem chama lê primeiro e esconde depois.
+ * Já foi o contrário, e o efeito era que `wasOn` nunca era gravado (o plano via o pad como se já estivesse
+ * desligado): pausar no celular sumia com o direcional virtual e retomar não o devolvia.
  */
 export function touchControlsPlan(p: Phase, st: TouchControlsState, screens: number): TouchControlsState {
   if (p === 'paused') {
@@ -422,11 +418,16 @@ export function initShell(ctx: ShellCtx): ShellApi {
     ctx.getPauseScreens().forEach((sp) => { sp.hidden = v.screenPauseHidden; });
   }
 
-  /** A metade IMPURA do plano de toque: lê o estado real do `#touch-controls` e grava o plano de volta. */
-  function applyTouchControls(p: Phase): void {
+  /** O estado do `#touch-controls` ANTES de qualquer coisa desta troca de fase mexer nele. */
+  function readTouchControls(): TouchControlsState | null {
     const tc = ctx.$<HTMLElement>('#touch-controls');
-    if (!tc) return;
-    const before: TouchControlsState = { hidden: tc.hidden, wasOn: tc.dataset.wasOn === '1' };
+    return tc ? { hidden: tc.hidden, wasOn: tc.dataset.wasOn === '1' } : null;
+  }
+
+  /** A metade IMPURA do plano de toque: recebe o estado lido ANTES do hide e grava o plano de volta. */
+  function applyTouchControls(p: Phase, before: TouchControlsState | null): void {
+    const tc = ctx.$<HTMLElement>('#touch-controls');
+    if (!tc || !before) return;
     const after = touchControlsPlan(p, before, numPlayers);
     // Só escreve o que MUDOU — é o que torna o applier equivalente linha a linha ao original (que, no ramo
     // 'paused' já-escondido, não toca em nada; e cujos `delete` nos outros ramos são no-op quando não havia flag).
@@ -445,11 +446,16 @@ export function initShell(ctx: ShellCtx): ShellApi {
   function setPhase(p: Phase): void {
     setPhaseValue(p);        // core/state.js: só o valor + evento; a reação de UI é toda daqui para baixo
     const v = phaseView(p);
+    // LER ANTES DE ESCONDER. Era aqui o defeito: `hideTouchControls()` roda logo abaixo e já põe `tc.hidden`
+    // em true, então o plano — que rodava depois — via o pad como se ele já estivesse desligado, nunca gravava
+    // o `wasOn`, e o ramo que o traz de volta ao retomar era inalcançável. No celular: pausar sumia com o
+    // direcional e retomar não o devolvia.
+    const antesDoHide = readTouchControls();
     if (v.hideTouchControls) ctx.hideTouchControls(); // menu ativo (título/pausa) = sem controle virtual
     // GAG: na pausa, silencia TODO o som do jogo (loops de ambiente/chuva inclusive) — volta ao retomar.
     ctx.setMasterMuted(v.masterMuted);
     applyPhaseView(v);
-    applyTouchControls(p);   // ⚠️ roda DEPOIS do hideTouchControls acima — ver o defeito em touchControlsPlan
+    applyTouchControls(p, antesDoHide); // o estado é o de ANTES do hide — ver o comentário acima
     const pb = ctx.$<HTMLElement>('#btn-pause'); // ORDEM verbatim: o aria-pressed vem DEPOIS do bloco de toque
     if (pb) pb.setAttribute('aria-pressed', String(v.pausePressed));
     applyFocus(v.focus);
