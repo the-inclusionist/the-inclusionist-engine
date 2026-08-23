@@ -25,6 +25,7 @@ import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
 import { $, toggleBtn } from './ui/dom.js';
+import { initSettingsAudio } from './ui/settings-audio.js';
 import { initSettingsControls, ACT_LABEL, keyName } from './ui/settings-controls.js';
 import { initSettingsVisual, CONTRAST_LEVELS, CONTRAST_LABELS, ROLE_LABELS } from './ui/settings-visual.js';
 import { initSettingsEmpathy } from './ui/settings-empathy.js';
@@ -1129,7 +1130,7 @@ function iconAct(k,i){ const ic=PAUSE_ICONS.find(x=>x.k===k);
   if(ic&&ic.soon){ srAlert(ic.n+': em construção — chega com os subsistemas de webcam/fala e o filtro de daltonismo.'); return; }
   if((k==='blind'||k==='tts')&&!hasPrivateOutput(i)){ srAlert('Só dá para mexer em som/TTS/modo cego com uma saída de áudio SÓ sua (não compartilhada). Escolha um dispositivo próprio em A12e auditiva.'); return; }
   if(k==='blind'){ setModoCego(!modoCego); srSay('Modo cego '+(modoCego?'ligado.':'desligado.')); }
-  else if(k==='tts'){ audioCat.tts.on=!audioCat.tts.on; if(typeof setCatGain==='function')setCatGain('tts'); if(typeof reflectTTS==='function')reflectTTS(); srSay('Narração '+(audioCat.tts.on?'ligada.':'desligada.')); }
+  else if(k==='tts'){ audioCat.tts.on=!audioCat.tts.on; if(typeof setCatGain==='function')setCatGain('tts'); if(typeof reflectTTS==='function')audioPanel.reflectTts(); srSay('Narração '+(audioCat.tts.on?'ligada.':'desligada.')); }
   else if(k==='libras'){ toggleLibras(); srSay('Modo pessoa surda: Libras '+(vlibrasOpen()?'ligado.':'desligado.')); } // abre/fecha o intérprete VLibras
   else if(k==='tea'){ calmMode=(calmMode+1)%3; applyCalm(); srSay('Modo TEA: '+['off','calmo','silencioso'][calmMode]+'.'); }
   else if(k==='altmove'){ if(typeof setToggleMove==='function')setToggleMove(i,!players[i].toggleMove); }
@@ -2158,7 +2159,7 @@ function renderVpOverlay(i,mode){ const m=VIZ_BY_KEY[mode]; if(!m||m.kind!=='low
 function updateVpDots(){ for(let i=0;i<vpDots.length;i++){ const g=vpDots[i], m=VIZ_BY_KEY[players[i]&&players[i].viz]; if(!g)continue;
   const on=m&&(m.kind==='blind'||m.kind==='lowvision'); g.visible=!!on; if(on){ g.clear(); g.lineStyle(1,0x000000,.6); g.beginFill(m.kind==='blind'?0xffffff:0x36d36a); g.drawCircle(0,0,5); g.endFill(); } } }
 function applyVpFilters(){ for(let i=0;i<numPlayers;i++){ if(vpSpr[i])vpSpr[i].filters=pixiFilterFor(players[i].viz); } }
-function setModoCego(on){ if(modoCego===on)return; modoCego=on; store.setBool('incl_modocego',on); if(typeof setupExtras==='function')setupExtras(); if(typeof reflectModoCego==='function')reflectModoCego(); srSay('Modo cego '+(on?'ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.':'desligado.')); }
+function setModoCego(on){ if(modoCego===on)return; modoCego=on; store.setBool('incl_modocego',on); if(typeof setupExtras==='function')setupExtras(); if(typeof reflectModoCego==='function')audioPanel.reflectModoCego(); srSay('Modo cego '+(on?'ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.':'desligado.')); }
 function setPlayerViz(i,mode){ const m=VIZ_BY_KEY[mode]||VIZ_BY_KEY.normal; players[i].viz=m.key; try{localStorage.setItem('incl_viz_p'+i,m.key);}catch(e){} _lastSharedViz=null;
   if(m.kind==='blind') setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão
   if(numPlayers<=1 && i===0){ applyVizGlobal(m.key); } else { applyVpFilters(); updateVpDots(); }
@@ -2276,36 +2277,9 @@ function closeTypo(){ const ov=$('#typo'); if(!ov)return; ov.hidden=true; typoOp
 { const b=$('#typo-close'); if(b)b.addEventListener('click',closeTypo); }
 
 /* F1: menu de áudio (mixer por categoria) — o botão "Som" abre este menu */
-function reflectAudioMaster(){ const b=$('#audio-master'); if(b){ b.classList.toggle('is-on',soundOn); b.setAttribute('aria-pressed',String(soundOn)); b.textContent=soundOn?'🔊 Ligado':'🔇 Desligado'; } const v=$('#audio-master-vol'); if(v)v.value=Math.round(volume*100); const sb=$('#opt-sound'); if(sb)toggleBtn(sb,soundOn); }
-// Categorias divididas: NAVEGAÇÃO SONORA (sonar/guarda/guia) e GERAL do jogo. TTS fica na seção Voz.
-const NAV_CATS=['sonar','guard','guide'], GEN_CATS=['music','ambient','interact','earcons','other'];
-function catRowHTML(k){ const c=AUDIO_CATS.find(x=>x.k===k), a=audioCat[k]; return `<div class="ctrl-row"><span>${c.lbl}</span><span style="display:flex;gap:.5rem;align-items:center;flex-shrink:0"><input class="vol" type="range" min="0" max="100" step="5" value="${Math.round(a.vol*100)}" data-avol="${k}" aria-label="Volume de ${c.lbl}"><button class="mode-btn switch${a.on?' is-on':''}" data-acat="${k}" type="button" aria-pressed="${a.on}" aria-label="${c.lbl}"></button></span></div>`; }
-function wireCatControls(el){
-  el.querySelectorAll('button[data-acat]').forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.acat; audioCat[k].on=!audioCat[k].on; setCatGain(k); b.classList.toggle('is-on',audioCat[k].on); b.setAttribute('aria-pressed',String(audioCat[k].on)); }));
-  el.querySelectorAll('input[data-avol]').forEach(s=>s.addEventListener('input',()=>{ const k=s.dataset.avol; audioCat[k].vol=(+s.value)/100; audioCat[k].on=true; setCatGain(k); const bb=el.querySelector('button[data-acat="'+k+'"]'); if(bb){bb.classList.add('is-on');bb.setAttribute('aria-pressed','true');} }));
-}
-function renderNavSound(){ const el=$('#navsound-list'); if(el){ el.innerHTML=NAV_CATS.map(catRowHTML).join(''); wireCatControls(el); }
-  const m=$('#navsound-master'); if(m)m.value=Math.round(Math.max(...NAV_CATS.map(k=>audioCat[k].vol))*100); }
-function renderAudio(){ reflectAudioMaster();
-  const el=$('#audio-list'); if(el){ el.innerHTML=GEN_CATS.map(catRowHTML).join(''); wireCatControls(el); }
-  renderNavSound();
-  const tv=$('#tts-vol'); if(tv)tv.value=Math.round(audioCat.tts.vol*100);
-}
-function openAudio(){ const ov=$('#audio'); if(!ov)return; ensureAC(); renderAudio(); reflectModoCego(); reflectTTS(); populateTTSEngines(); populateTTSVoices(); enumerateSinks(); const cd=$('#cane-div'); if(cd)cd.value=String(caneBlockDiv); ov.hidden=false; frontOverlay(ov); audioOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); }
+function openAudio(){ const ov=$('#audio'); if(!ov)return; ensureAC(); audioPanel.renderAudio(); audioPanel.reflectModoCego(); audioPanel.reflectTts(); const cd=$('#cane-div'); if(cd)cd.value=String(caneBlockDiv); ov.hidden=false; frontOverlay(ov); audioOpen=true; const f=ov.querySelector('button'); if(f)f.focus(); }
 function closeAudio(){ const ov=$('#audio'); if(!ov)return; ov.hidden=true; audioOpen=false; const b=$('#opt-sound'); if(b)b.focus(); }
 // A12e auditiva: Modo cego (só áudio) + seleção de voz (Web Speech agora; neurais em breve)
-function reflectModoCego(){ const b=$('#opt-modocego'); if(b){ toggleBtn(b,modoCego); b.textContent=modoCego?'❚❚ Ligado':'▶ Desligado'; } }
-function reflectTTS(){ const b=$('#opt-tts'); if(b){ toggleBtn(b,audioCat.tts.on); b.textContent=audioCat.tts.on?'❚❚ Ligado':'▶ Desligado'; } const e=$('#tts-engine'); if(e)e.value=tts.getEngineSel(); }
-function populateTTSEngines(){ const sel=$('#tts-engine'); if(!sel||sel.dataset.filled)return; sel.dataset.filled='1';
-  [['webspeech','Voz do navegador (Web Speech)'],['piper','Piper (neural, offline) — baixa no 1º uso'],['kokoro','Kokoro-82M (neural) — baixa no 1º uso'],['kitten','Kitten (neural) — baixa no 1º uso'],['espeak','eSpeak NG (embutido)']]
-    .forEach(([v,l])=>{ const o=document.createElement('option'); o.value=v; o.textContent=l; sel.appendChild(o); }); sel.value=tts.getEngineSel(); }
-function populateTTSVoices(){ const sel=$('#tts-voice'); if(!sel)return; let voices=[]; try{ voices=(window.speechSynthesis&&window.speechSynthesis.getVoices())||[]; }catch(e){}
-  const pt=voices.filter(v=>/^pt/i.test(v.lang)), list=pt.length?pt:voices; sel.innerHTML='';
-  if(!list.length){ const o=document.createElement('option'); o.textContent='(sem vozes do sistema)'; sel.appendChild(o); tts.setVoiceObj(null); return; }
-  list.forEach(v=>{ const o=document.createElement('option'); o.value=v.name; o.textContent=v.name+' ('+v.lang+')'; sel.appendChild(o); });
-  const saved=(()=>{try{return localStorage.getItem('incl_tts_voice');}catch(e){return null;}})(); const pick=list.find(v=>v.name===saved)||list[0]; sel.value=pick.name; tts.setVoiceObj(pick); }
-const mcBtn=$('#opt-modocego'); if(mcBtn)mcBtn.addEventListener('click',()=>{ setModoCego(!modoCego); reflectModoCego(); });
-const caneDivSel=$('#cane-div'); if(caneDivSel){ caneDivSel.value=String(caneBlockDiv); caneDivSel.addEventListener('change',()=>{ caneBlockDiv=+caneDivSel.value||1; store.set('incl_cane_div',String(caneBlockDiv)); srSay('Bengala: '+(caneBlockDiv===2?'uma batida a cada meio bloco pisado.':'uma batida por bloco pisado.')); }); }
 // Botões abreviados: hover/foco DESCOMPACTA o número em letras (o "12" vira as 12 letras contando p/ baixo), suave;
 // recomprime ao sair. Genérico: varre a barra (.mode-btn) E o menu de pausa (.pm-btn) casando A12e/S11e.
 const ABBR_MID={ 'A12e':'cessibilidad', 'S11e':'ensibilidad' }; // token → letras ocultas (Acessibilidade / Sensibilidade)
@@ -2318,32 +2292,7 @@ function attachAbbr(b){ if(!b||b.dataset.abbrDone)return; const txt=b.textConten
   const go=(t)=>{ tgt=t; if(!timer)timer=setInterval(tick,16); };
   render(); b.addEventListener('mouseenter',()=>go(N)); b.addEventListener('mouseleave',()=>go(0)); b.addEventListener('focus',()=>go(N)); b.addEventListener('blur',()=>go(0)); }
 document.querySelectorAll('.mode-btn, .pm-btn').forEach(attachAbbr);
-const ttsBtn=$('#opt-tts'); if(ttsBtn)ttsBtn.addEventListener('click',()=>{ audioCat.tts.on=!audioCat.tts.on; setCatGain('tts'); reflectTTS(); srSay('Narração '+(audioCat.tts.on?'ligada.':'desligada.')); if(audioCat.tts.on)tts.narrate('Narração por voz ligada.'); });
-const ttsEngSel=$('#tts-engine'); if(ttsEngSel)ttsEngSel.addEventListener('change',()=>{ tts.setEngineSel(ttsEngSel.value); try{localStorage.setItem('incl_tts_engine',ttsEngSel.value);}catch(e){} if(ttsEngSel.value!=='webspeech')tts.loadTTS(); tts.narrate('Motor de voz: '+ttsEngSel.options[ttsEngSel.selectedIndex].text+'.'); });
-const ttsVoiceSel=$('#tts-voice'); if(ttsVoiceSel)ttsVoiceSel.addEventListener('change',()=>{ try{ const vs=window.speechSynthesis.getVoices(); tts.setVoiceObj(vs.find(v=>v.name===ttsVoiceSel.value)||null); localStorage.setItem('incl_tts_voice',ttsVoiceSel.value); }catch(e){} tts.narrate('Voz selecionada.'); });
-const ttsTestBtn=$('#opt-tts-test'); if(ttsTestBtn)ttsTestBtn.addEventListener('click',()=>{ const txt='Olá! Esta é a voz da narração do Inclusionista. Um, dois, três, testando.';
-  const _te=tts.getEngine(); if(tts.getEngineSel()!=='webspeech' && _te && _te.speak){ try{ _te.speak(txt); }catch(e){} } // motor neural já carregado
-  else { try{ const ss=window.speechSynthesis; if(ss){ ss.cancel(); const u=new SpeechSynthesisUtterance(txt); u.lang='pt-BR'; const _vo=tts.getVoiceObj(); if(_vo)u.voice=_vo; u.rate=1; u.volume=1; ss.speak(u); } }catch(e){} if(tts.getEngineSel()!=='webspeech')tts.loadTTS(); } // fallback audível (volume 1) + dispara download do neural
-  srSay('Testando a voz selecionada.'); });
-try{ if(window.speechSynthesis) window.speechSynthesis.onvoiceschanged=populateTTSVoices; }catch(e){}
-const navMasterEl=$('#navsound-master'); if(navMasterEl)navMasterEl.addEventListener('input',()=>{ const v=(+navMasterEl.value)/100; NAV_CATS.forEach(k=>{ audioCat[k].vol=v; audioCat[k].on=true; setCatGain(k); }); renderNavSound(); }); // volume geral da navegação sonora (separado do som do jogo)
-const ttsVolEl=$('#tts-vol'); if(ttsVolEl)ttsVolEl.addEventListener('input',()=>{ audioCat.tts.vol=(+ttsVolEl.value)/100; audioCat.tts.on=true; setCatGain('tts'); reflectTTS(); }); // volume da narração vive na seção Voz
 // Saída de áudio POR JOGADOR (setSinkId): detecta fones/caixas e atribui 1 por jogador
-let _audioDevices=[];
-async function detectAudioDevices(){ try{ await navigator.mediaDevices.getUserMedia({audio:true}).then(s=>s.getTracks().forEach(t=>t.stop())).catch(()=>{}); const devs=await navigator.mediaDevices.enumerateDevices(); _audioDevices=devs.filter(d=>d.kind==='audiooutput'); }catch(e){ _audioDevices=[]; } renderAudioSinks(); }
-async function enumerateSinks(){ try{ if(navigator.mediaDevices&&navigator.mediaDevices.enumerateDevices){ const devs=await navigator.mediaDevices.enumerateDevices(); _audioDevices=devs.filter(d=>d.kind==='audiooutput'); } }catch(e){} renderAudioSinks(); } // sem pedir permissão: só lista as saídas na caixa de seleção
-function renderAudioSinks(){ const el=$('#audio-sinks'); if(!el)return; el.innerHTML='';
-  const supported=!!(navigator.mediaDevices&&navigator.mediaDevices.enumerateDevices)&&(typeof (window.AudioContext||window.webkitAudioContext)!=='undefined');
-  if(!_audioDevices.length){ el.innerHTML='<p class="opt-hint">'+(supported?'Clique em Detectar (pede permissão de áudio para listar os aparelhos).':'Este navegador não suporta troca de saída (ex.: Safari/iOS).')+'</p>'; return; }
-  for(let i=0;i<Math.max(1,numPlayers);i++){ const p=players[i]; const row=document.createElement('div'); row.className='ctrl-row';
-    const lbl=document.createElement('label'); lbl.textContent='Jogador '+(i+1); lbl.setAttribute('for','sink-p'+i);
-    const sel=document.createElement('select'); sel.className='vol'; sel.id='sink-p'+i;
-    const o0=document.createElement('option'); o0.value=''; o0.textContent='Padrão (compartilhado)'; sel.appendChild(o0);
-    _audioDevices.forEach((d,k)=>{ const o=document.createElement('option'); o.value=d.deviceId; o.textContent=d.label||('Saída '+(k+1)); sel.appendChild(o); });
-    sel.value=(p&&p.audioSink)||'';
-    sel.addEventListener('change',()=>{ if(!p)return; p.audioSink=sel.value||null; try{localStorage.setItem('incl_sink_p'+i,p.audioSink||'');}catch(e){} if(p._ac){ try{p._ac.close();}catch(e){} p._ac=null; p._acOut=null; } srSay('Jogador '+(i+1)+' — saída de áudio '+(p.audioSink?'trocada.':'padrão.')); });
-    row.appendChild(lbl); row.appendChild(sel); el.appendChild(row); } }
-const audioDetectBtn=$('#audio-detect'); if(audioDetectBtn)audioDetectBtn.addEventListener('click',detectAudioDevices);
 // DESIGN DOS BOTÕES na tela por controle (Gamepad API: 0=baixo/pulo·sim, 1=direita/especial·não, 2=esquerda/interação, 3=cima/troca-poder)
 // PAD_DESIGNS extraído p/ input/devices.js (Fase 2).
 let padDesign=store.get('incl_paddesign','generic'); // padrão Windows = Genérico (números)
@@ -2425,10 +2374,8 @@ function renderTouchMap(){ const el=$('#touchmap-list'); if(!el)return;
 // JOGAR COM OS OLHOS: eyeMode/eyeSet/onGaze/startEyeControl/stopEyeControl/loadWebGazer → ui/webcam.js (Estágio 4, Tier 1).
 const eyesBtn=$('#opt-eyes'); if(eyesBtn)eyesBtn.addEventListener('click',()=>{ setEyeMode(!eyeMode); toggleBtn(eyesBtn,eyeMode); eyesBtn.textContent=eyeMode?'❚❚ Ligado':'▶ Desligado';
   if(eyeMode){ loadWebGazer(startEyeControl); srSay('Jogar com os olhos: carregando a webcam (permita o acesso).'); } else { stopEyeControl(); srSay('Jogar com os olhos desligado.'); } });
-const audioMasterBtn=$('#audio-master'); if(audioMasterBtn)audioMasterBtn.addEventListener('click',()=>{ setSoundOn(!soundOn); reflectAudioMaster(); srSay('Som '+(soundOn?'ligado.':'desligado.')); });
-const audioMasterVol=$('#audio-master-vol'); if(audioMasterVol)audioMasterVol.addEventListener('input',()=>{ setVolume((+audioMasterVol.value)/100); if(volume>0&&!soundOn){ setSoundOn(true); reflectAudioMaster(); } });
 const audioCloseBtn=$('#audio-close'); if(audioCloseBtn)audioCloseBtn.addEventListener('click',closeAudio);
-reflectAudioMaster();
+const audioPanel = initSettingsAudio({ $, srSay, store, audioCats: AUDIO_CATS, toggleBtn, getNumPlayers: () => numPlayers, getPlayers: () => players, getSoundOn: () => soundOn, setSoundOn, getVolume: () => volume, setVolume, getAudioCat: () => audioCat, setCatGain, tts, getModoCego: () => modoCego, setModoCego, getCaneBlockDiv: () => caneBlockDiv, setCaneBlockDiv: (d) => { caneBlockDiv = d; } }); // painel de audio: ui/settings-audio.ts
 
 /* E10: remap de controles + persistência (B2) */
 const ctrlPanel = initSettingsControls({ $, srSay, srAlert, store: { saveKB, resetKB }, kb: KB, setKB: (k) => { KB = k; }, kbFor, getNumPlayers: () => numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)
