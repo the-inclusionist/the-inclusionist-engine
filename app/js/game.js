@@ -66,6 +66,7 @@ import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js'; // Onda A: me
 import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/abandono/selo de espera)
 import { screenGrid, screenBaseSize } from './core/screens.js'; // grade de telas (fonte unica)
 import { initPhysics, stepPlayer as stepPhysics } from './game/physics.js'; // B1: fisica do jogador (ancorada nas trajetorias-ouro)
+import { initQuiz } from './game/quiz.js'; // B3: o desafio educativo (geracao + markup + efeito)
 import { initViewports } from './render/viewports.js'; // B2: fabrica de imagem dos modos de visao
 import { initVizSetters } from './render/viz-setters.js'; // Onda A: aplicacao dos modos de visao acessivel
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions,
@@ -1044,256 +1045,20 @@ function draw(){
   updateGameHud(); // HUD por jogador (moedas + poder) em DOM sobreposto (alta definição)
 }
 
-/* ===================== Soma-Sub: quiz (DOM, acessível) ===================== */
-function quizWho(pl){ return numPlayers>1?('Jogador '+(pl.i+1)+': '):''; } // L3: prefixo nas falas do quiz em MP
-function _mkChoices(answer,lo,hi){ const set=[String(answer)]; let g=0;
-  while(set.length<9&&g++<400){ const s=String(randInt(lo,hi)); if(!set.includes(s))set.push(s); }
-  return shuffle(set); }
-function openQuiz(pl,coinIndex,shapeId){ // MATEMÁTICA: gerador POR ATIVIDADE (menu inicial); grade de 9
-  const A=ACTIVITY, base={kind:'somasub',coinIndex,shape:shapeId,sel:0,tries:0,revealed:false}; let q,fala;
-  if(A==='mat1'){ const n=randInt(1,9); // QUANTIDADE: bolinhas → número (grade fixa 1..9)
-    q={...base,dots:n,answer:String(n),prob:'Quantas bolinhas?',choices:['1','2','3','4','5','6','7','8','9']};
-    fala='Quantas bolinhas você vê?'; }
-  else if(A==='mat2'){ const a=randInt(0,5),b=randInt(0,5); // SOMA FÁCIL: parcelas 0..5
-    q={...base,prob:`${a} + ${b} = ?`,answer:String(a+b),choices:_mkChoices(a+b,0,10)};
-    fala=`Quanto é ${a} mais ${b}?`; }
-  else if(A==='mat4'){ const op=rnd()<0.5?'+':'−'; let a,b,ans; // SOMA E SUBTRAÇÃO 2: guarda na cabeça + dedos
-    if(op==='+'){a=randInt(0,10);b=randInt(0,10);ans=a+b;} else {a=randInt(0,20);b=randInt(0,Math.min(10,a));ans=a-b;}
-    q={...base,prob:`${a} ${op} ${b} = ?`,answer:String(ans),choices:_mkChoices(ans,0,20)};
-    fala=`Quanto é ${a} ${op==='+'?'mais':'menos'} ${b}?`; }
-  else if(A==='mat5'||A==='mat6'){ const on = tabSel.length ? tabSel[randInt(0,tabSel.length-1)] : 2; // número LIGADO (entra em qualquer posição)
-    if(A==='mat5'){ // TABUADA: multiplicando E multiplicador de 0..10; o nº ligado pode ser qualquer um dos dois
-      const other=randInt(0,10); let a,b; if(rnd()<0.5){a=on;b=other;}else{a=other;b=on;}
-      q={...base,prob:`${a} × ${b} = ?`,answer:String(a*b),choices:_mkChoices(a*b,0,100)};
-      fala=`Quanto é ${a} vezes ${b}?`; }
-    else { // DIVISÃO inteira: divisor E quociente de 0..10 (divisor ≥1, sem ÷0); o nº ligado pode ser qualquer um dos dois
-      const other=randInt(0,10); let divisor,quo;
-      if(on===0){ quo=0; divisor=randInt(1,10); }                         // 0 só pode ser QUOCIENTE (0 ÷ divisor = 0)
-      else if(rnd()<0.5){ quo=on; divisor=Math.max(1,other); }            // ligado = quociente
-      else { divisor=on; quo=other; }                                     // ligado = divisor
-      const dividend=divisor*quo;
-      q={...base,prob:`${dividend} ÷ ${divisor} = ?`,answer:String(quo),choices:_mkChoices(quo,0,10)};
-      fala=`Quanto é ${dividend} dividido por ${divisor}?`; } }
-  else if(getActivity(A)&&getActivity(A).dens){ const dens=getActivity(A).dens; // FRAÇÕES (soma/sub; NOTAÇÃO sorteada entre as ligadas)
-    const D=dens.reduce((l,d)=>l*d/gcd(l,d),1);
-    let d1=dens[randInt(0,dens.length-1)], d2=dens[randInt(0,dens.length-1)], op=rnd()<0.5?'+':'−';
-    let n1=randInt(1,d1), n2=randInt(1,d2);
-    if(op==='−' && n1*(D/d1)<n2*(D/d2)){ const t1=n1,td=d1; n1=n2; d1=d2; n2=t1; d2=td; } // sem resultado negativo
-    const N=op==='+'? n1*(D/d1)+n2*(D/d2) : n1*(D/d1)-n2*(D/d2);
-    const ligadas=Object.keys(fracNot).filter(k=>fracNot[k]); const not=ligadas[randInt(0,ligadas.length-1)]||'v';
-    const keyOf=v=>fmtFrac(v,D,'d');          // chave canônica REDUZIDA (compara a resposta), independe da notação
-    // José: "gráficos SUBSTITUEM números" → cada operando/opção exibe GRÁFICO (fatias da atividade) OU número (sorteio)
-    const dispChoice=v=>{ const g=fracGraphic(v,D); return (g&&rnd()<0.5)?g:fmtFrac(v,D,not); };
-    const dispOp=(nn,dd)=>{ const g=fracGraphic(nn,dd); return (g&&rnd()<0.5)?g:fmtFrac(nn,dd,not); };
-    const ansKey=keyOf(N), seen=new Set([ansKey]), vals=[N]; let gd=0; // 9 respostas DISTINTAS (por chave) → matriz 3×3
-    while(vals.length<9&&gd++<400){ const v=randInt(0,4*D), kk=keyOf(v); if(!seen.has(kk)){ seen.add(kk); vals.push(v); } }
-    const choices=shuffle(vals).map(v=>({key:keyOf(v), disp:dispChoice(v)}));
-    q={...base,not,prob:`<span class="frac-op">${dispOp(n1,d1)}</span> ${op} <span class="frac-op">${dispOp(n2,d2)}</span> = ?`,answer:ansKey,choices};
-    fala=`Quanto é ${fracSpeak(n1+'/'+d1)} ${op==='+'?'mais':'menos'} ${fracSpeak(n2+'/'+d2)}?`; }
-  else { // SOMA E SUBTRAÇÃO 1 (padrão — dá para fazer nos dedos): soma ≤10, minuendo ≤10
-    const op=rnd()<0.5?'+':'−'; let a,b,ans;
-    if(op==='+'){a=randInt(0,9);b=randInt(0,10-a);ans=a+b;} else {a=randInt(0,10);b=randInt(0,a);ans=a-b;}
-    q={...base,prob:`${a} ${op} ${b} = ?`,answer:String(ans),choices:_mkChoices(ans,0,10)};
-    fala=`Quanto é ${a} ${op==='+'?'mais':'menos'} ${b}?`; } // sem o nome da forma
-  pl.quiz=q; pl.vx=0;pl.vy=0;
-  srSay(quizWho(pl)+fala);
-  renderQuiz(pl);
-}
-let _recentWords=[]; // NÃO REPETIR a mesma palavra por 5 rounds (José): distância mínima de repetição = 5
-function pickWord(letter){ const byL=SILABAS_WORDS.filter(w=>w.w[0]===letter);
-  let cands=byL.filter(w=>!_recentWords.includes(w.w));                          // prefere a letra da moeda, sem repetir
-  if(!cands.length)cands=SILABAS_WORDS.filter(w=>!_recentWords.includes(w.w));   // sem a letra, mas GARANTE não-repetição (15 palavras > 5)
-  if(!cands.length)cands=byL.length?byL:SILABAS_WORDS;                           // salvaguarda
-  const item=cands[randInt(0,cands.length-1)];
-  _recentWords.push(item.w); if(_recentWords.length>5)_recentWords.shift();      // janela dos últimos 5
-  return item; }
-function openSilabas(pl,coinIndex,letter){ // L3: despacha pelo NÍVEL (1..5); modo cego mantém o ditado passivo (a11y)
-  const cego = blindMode || modoCego || (VIZ_BY_KEY[(pl&&pl.viz)||'']||{}).kind==='blind';
-  if(cego){ openBraille(pl,coinIndex,letter); return; } // E8: ditado de Braille
-  if(quizLevel===1){ openPre(pl,coinIndex,letter); return; }
-  if(quizLevel>=4){ openAlf(pl,coinIndex,letter); return; }
-  const item=pickWord(letter);
-  const correct=item.s.slice(), distract=[];
-  for(const sy of shuffle(SILABA_POOL)){ if(distract.length>=7)break; if(!correct.includes(sy)&&!distract.includes(sy))distract.push(sy); }
-  pl.quiz={kind:'silabas',hearSyl:(quizLevel===2),coinIndex,letter,word:item.w,emoji:item.e,correct,options:shuffle(correct.concat(distract)),boxes:[null,null],sel:0,tries:0,revealed:false}; // hearSyl: Descobrindo sílabas (nível 2) fala a sílaba no hover/seleção; Montando (3) não
-  pl.vx=0;pl.vy=0;
-  srSay(`${quizWho(pl)}Letra ${disp(item.w[0])}. Monte a palavra: ${item.w}.`); // letra da PRÓPRIA palavra (o não-repetir pode trocar a letra da moeda)
-  gameSay(item.w); // ao abrir, fala a palavra SEMPRE (independente do toggle TTS) — José
-  renderQuiz(pl);
-}
-// Nível 1 — pré-silábico: qual das 3 escritas é a certa? O jogo SOLETRA a opção sob o cursor.
-function openPre(pl,coinIndex,letter){
-  const item=pickWord(letter);
-  const opts=[item.w]; // correta = palavra normal; 3 distratores de FERREIRO (símbolo/repetidas/emoji-no-meio/tamanho)
-  for(const d of shuffle(ferreiroDistractors(item))){ if(opts.length>=4)break; if(!opts.includes(d))opts.push(d); }
-  let guard=0; while(opts.length<4&&guard++<20){ const d=ferreiroDistractors(item)[randInt(0,3)]; if(!opts.includes(d))opts.push(d); }
-  pl.quiz={kind:'pre',coinIndex,word:item.w,emoji:item.e,choices:shuffle(opts),sel:0,tries:0,revealed:false};
-  pl.vx=0;pl.vy=0;
-  srSay(`${quizWho(pl)}${item.w}. Qual é a escrita certa? O jogo soletra cada opção.`);
-  gameSay(item.w); // fala o nome da imagem SEMPRE (independente do toggle TTS) — José
-  renderQuiz(pl); quizSpeakSel(pl);
-}
-// Níveis 4/5 — escritor: montar a palavra LETRA a letra numa grade; 5 dita a cela Braille de cada letra.
-function openAlf(pl,coinIndex,letter){
-  const item=pickWord(letter);
-  const need=[...new Set(item.w.split(''))], extra=[];
-  for(const ch of shuffle('abcdefghijlmnoprstuvz'.split(''))){ if(need.length+extra.length>=12)break; if(!need.includes(ch)&&!extra.includes(ch))extra.push(ch); } // grade de 12 letras (espec do José)
-  pl.quiz={kind:'alf',braille:quizLevel===5,coinIndex,word:item.w,emoji:item.e,
-    options:shuffle(need.concat(extra)),boxes:Array(item.w.length).fill(null),sel:0,tries:0,revealed:false};
-  pl.vx=0;pl.vy=0;
-  srSay(`${quizWho(pl)}Escreva a palavra: ${item.w}. ${item.w.length} letras.`);
-  renderQuiz(pl); quizSpeakSel(pl);
-}
-function quizSpeakSel(pl){ const q=pl.quiz; if(!q)return; // fala o item sob o cursor CONFORME O NÍVEL
-  if(q.sel<0){ srSay(disp(q.word)); gameSay(q.word); return; } // cursor na PALAVRA do topo → fala a palavra
-  if(q.kind==='pre'){ srSay(soletra(q.choices[q.sel])); return; }
-  const N=q.options?q.options.length:0;
-  if(q.sel>=N){ srSay(q.sel===N?'apagar':'ok'); return; }
-  const it=q.options[q.sel];
-  if(q.kind==='silabas'){ if(q.hearSyl){ srSay(disp(it)); gameSay(it); }                          // Descobrindo sílabas (2): sílaba INTEIRA, áudio SEMPRE (gameSay)
-    else { srSay(soletra(it)); tts.narrate(soletra(it)); } }                                           // Montando (3): SOLETRA as letras, áudio só com TTS ligado (narrate)
-  else if(q.kind==='alf') srSay(q.braille?brailleText(it):(LETTER_NAME[it]||it)); // 4 nome da letra · 5 SÓ os pontos da cela ("a"→"um")
-}
-function placeLetter(pl,ch){ const q=pl.quiz; if(!q)return; const idx=q.boxes.indexOf(null); if(idx<0)return;
-  q.boxes[idx]=ch; earcons.sfx('place'); srSay(q.braille?brailleText(ch):(LETTER_NAME[ch]||ch)); renderQuiz(pl); } // braille: só os PONTOS
-function eraseLastLetter(pl){ const q=pl.quiz; if(!q)return; for(let i=q.boxes.length-1;i>=0;i--){ if(q.boxes[i]!==null){ q.boxes[i]=null; break; } } renderQuiz(pl); }
-function placeSilaba(pl,sy){ const q=pl.quiz; if(!q)return; const idx=q.boxes[0]===null?0:(q.boxes[1]===null?1:-1); if(idx<0)return; q.boxes[idx]=sy; earcons.sfx('place');
-  if(q.hearSyl){ srSay(disp(sy)); gameSay(sy); } else { srSay(soletra(sy)); tts.narrate(soletra(sy)); } // Descobrindo: confirmação + refala a sílaba (sempre); Montando: SOLETRA as letras (só c/ TTS)
-  renderQuiz(pl); }
-function eraseLastSilaba(pl){ const q=pl.quiz; if(!q)return; if(q.boxes[1]!==null)q.boxes[1]=null; else if(q.boxes[0]!==null)q.boxes[0]=null; renderQuiz(pl); }
-// E8: ditado de Braille (modo pessoa cega) — dita os pontos da cela por letra
-function openBraille(pl,coinIndex,letter){
-  const item=pickWord(letter);
-  const cells=item.w.split('').map(ch=>({l:ch,dots:BRAILLE[ch]||[],text:brailleText(ch)}));
-  pl.quiz={kind:'braille',coinIndex,letter,word:item.w,emoji:item.e,cells,revealed:false};
-  pl.vx=0;pl.vy=0; renderQuiz(pl); announceBraille(pl);
-}
-function announceBraille(pl){ const q=pl.quiz; if(!q||q.kind!=='braille')return;
-  srAlert(`${quizWho(pl)}${q.word}. `+q.cells.map(c=>`${c.l}: ${c.text}.`).join(' ')+' Pule para coletar.'); }
-// choice pode ser STRING (matemática simples) ou {key,disp} (frações: gráfico OU número). key compara; disp exibe.
-function cKey(c){ return (c&&typeof c==='object')?c.key:String(c); }
-function cDisp(c){ return (c&&typeof c==='object')?c.disp:String(c); }
-function somasubHtml(q){ // formato do jogo de sílabas: conta no topo + matriz 3×3 de 9 respostas (números ou gráficos)
-  const choices=q.choices.map((c,i)=>`<button class="quiz-choice${i===q.sel?' sel':''}${q.revealed&&cKey(c)===q.answer?' reveal':''}" data-i="${i}" type="button">${cDisp(c)}</button>`).join('');
-  const dots=q.dots?`<div class="quiz-dots" aria-label="${q.dots} bolinhas">${'●'.repeat(q.dots)}</div>`:'';
-  const hint=q.revealed?'Resposta certa em destaque. Pule (L) para seguir.':(q.tries>0?'Quase! Tente de novo.':'Escolha e pule (L) para confirmar.');
-  return `<div class="quiz-box quiz-box--math" role="dialog" aria-modal="true" aria-label="Desafio de matemática"><div class="quiz-prob">${q.prob||''}</div>${dots}<div class="quiz-grid">${choices}</div><div class="quiz-hint">${hint}</div></div>`;
-}
-function silabaHtml(q){
-  const N=q.options.length;
-  const boxes=`<div class="silaba-boxes">`+q.boxes.map(b=>`<span class="silaba-box${b!==null?' filled':''}">${b!==null?disp(b):''}</span>`).join('')+`</div>`;
-  const opts=q.options.map((sy,i)=>`<button class="quiz-choice${i===q.sel?' sel':''}" data-i="${i}" type="button">${disp(sy)}</button>`).join('');
-  const acts=`<button class="quiz-choice${q.sel===N?' sel':''}" data-i="${N}" type="button">Apagar</button><button class="quiz-choice${q.sel===N+1?' sel':''}" data-i="${N+1}" type="button">OK</button>`;
-  const hint=q.revealed?`A palavra é "${disp(q.word)}". Pule (L) para seguir.`:'Monte a palavra. Pule (L) coloca/confirma.';
-  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Monte a palavra"><button class="quiz-word${q.sel===-1?' sel':''}" data-i="-1" type="button" aria-label="Ouvir a palavra ${q.word} de novo">${q.emoji}</button><div class="quiz-letter">letra: ${disp(q.letter)}</div>${boxes}<div class="quiz-grid">${opts}</div><div class="silaba-actions">${acts}</div><div class="quiz-hint">${hint}</div></div>`;
-}
-function preHtml(q){ // nível 1: 3 escritas, só UMA certa
-  const opts=q.choices.map((w,i)=>`<button class="quiz-choice${i===q.sel?' sel':''}${q.revealed&&w===q.word?' reveal':''}" data-i="${i}" type="button">${disp(w)}</button>`).join('');
-  const hint=q.revealed?`A certa é "${disp(q.word)}". Pule (L) para seguir.`:(q.tries>0?'Quase! Tente de novo.':'Qual é a escrita certa? Pule (L) confirma.');
-  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Escolha a palavra certa"><button class="quiz-word${q.sel===-1?' sel':''}" data-i="-1" type="button" aria-label="Ouvir a palavra ${q.word} de novo">${q.emoji}</button><div class="quiz-letter">nível 1 · ${QL_NAME[1]}</div><div class="quiz-grid">${opts}</div><div class="quiz-hint">${hint}</div></div>`;
-}
-function alfHtml(q){ // níveis 4/5: caixas do tamanho da palavra + grade de letras
-  const N=q.options.length;
-  const boxes=`<div class="silaba-boxes">`+q.boxes.map(b=>`<span class="silaba-box${b!==null?' filled':''}">${b!==null?disp(b):''}</span>`).join('')+`</div>`;
-  const opts=q.options.map((ch,i)=>`<button class="quiz-choice${i===q.sel?' sel':''}" data-i="${i}" type="button">${disp(ch)}</button>`).join('');
-  const acts=`<button class="quiz-choice${q.sel===N?' sel':''}" data-i="${N}" type="button">Apagar</button><button class="quiz-choice${q.sel===N+1?' sel':''}" data-i="${N+1}" type="button">OK</button>`;
-  const hint=q.revealed?`A palavra é "${disp(q.word)}". Pule (L) para seguir.`:(q.braille?'Ouça a cela Braille de cada letra. Pule (L) coloca/confirma.':'Monte a palavra letra a letra. Pule (L) coloca/confirma.');
-  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Escreva a palavra"><div class="quiz-emoji" aria-label="${q.word}">${q.emoji}</div><div class="quiz-letter">${q.braille?'nível 5 · '+QL_NAME[5]:'nível 4 · '+QL_NAME[4]}</div>${boxes}<div class="quiz-grid">${opts}</div><div class="silaba-actions">${acts}</div><div class="quiz-hint">${hint}</div></div>`;
-}
-function brailleHtml(q){
-  const cells=q.cells.map(c=>{
-    const dots=[1,4,2,5,3,6].map(n=>`<span class="bdot${c.dots.includes(n)?' on':''}"></span>`).join('');
-    return `<div class="bcell"><div class="bcell-grid">${dots}</div><div class="bcell-l">${disp(c.l)}</div></div>`;
-  }).join('');
-  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Braille da palavra ${q.word}"><div class="quiz-emoji" aria-hidden="true">${q.emoji}</div><div class="quiz-letter">palavra: ${disp(q.word)}</div><div class="bcells">${cells}</div><div class="quiz-hint">Ouça os pontos. Pule (L) para coletar. (Cima repete)</div></div>`;
-}
-// L3: overlay do quiz POR JOGADOR — solo usa o #quiz global; MP cria um .quiz dentro da tela do jogador
-function quizEl(pl){ if(numPlayers<=1) return $('#quiz');
-  const scr=hud.getScreen(pl.i); if(!scr) return $('#quiz');
-  let q=scr.querySelector(':scope > .quiz'); if(!q){ q=document.createElement('div'); q.className='quiz'; q.hidden=true; scr.appendChild(q); }
-  return q; }
-function renderQuiz(pl){
-  const q=pl.quiz, ov=quizEl(pl); if(!ov)return; if(!q){ov.hidden=true;return;}
-  ov.innerHTML = q.kind==='braille' ? brailleHtml(q) : q.kind==='silabas' ? silabaHtml(q) : q.kind==='pre' ? preHtml(q) : q.kind==='alf' ? alfHtml(q) : somasubHtml(q);
-  const box=ov.querySelector('.quiz-box'); if(box){ const n=Math.min(3,pl.alfWins||0); // 3 luzes de progresso (canto sup. dir.): acesa = amarela com brilho
-    box.insertAdjacentHTML('afterbegin','<div class="quiz-wins" aria-label="'+n+' de 3 acertos para a moeda">'+[0,1,2].map(i=>'<span class="qw-dot'+(i<n?' on':'')+'"></span>').join('')+'</div>'); }
-  ov.querySelectorAll('.quiz-choice,.quiz-word').forEach(b=>b.addEventListener('click',()=>{ if(pl.quiz){pl.quiz.sel=+b.dataset.i; quizConfirm(pl);} })); // .quiz-word (palavra do topo, data-i=-1) → repete a fala
-  ov.hidden=false; hideTouchControls(); // quiz aberto = menu na tela → sem controle virtual
-}
-function quizErase(pl){ const q=pl.quiz; if(!q)return; // ESPECIAL: apaga a última sílaba/letra (jogos que MONTAM a palavra; NÃO no Descobrindo palavras/pre)
-  if(q.kind==='silabas'){ eraseLastSilaba(pl); earcons.sfx('place'); }
-  else if(q.kind==='alf'){ eraseLastLetter(pl); earcons.sfx('place'); } }
-function quizMove(pl,d){ const q=pl.quiz; if(!q)return;
-  const max = (q.kind==='silabas'||q.kind==='alf') ? q.options.length+1 : q.choices.length-1;
-  const min = (q.kind==='pre'||q.kind==='silabas') ? -1 : 0; // -1 = a PALAVRA do topo (selecionável p/ repetir a fala) — jogos 1..3
-  q.sel=Math.max(min,Math.min(max,q.sel+d)); renderQuiz(pl);
-  if(q.kind==='silabas'||q.kind==='alf'||q.kind==='pre') quizSpeakSel(pl); // L3: leitura conforme o nível
-  else srSay(speakChoice(cKey(q.choices[q.sel]))); // matemática: fala pela CHAVE (número/fração), mesmo quando exibido como gráfico
-}
-function quizTake(pl,q){ // coleta a figura do quiz (por jogador) e checa vitória
-  takeCoin(coins[q.coinIndex]); if(getCoinSprites()[q.coinIndex])getCoinSprites()[q.coinIndex].visible=false;
-  pl.collected++; if(pl===player)collected=pl.collected; updateHud();
-  closeQuiz(pl); if(pl.collected>=COIN_TARGET)win(pl); }
-function quizWin(pl,q){ // 3 VITÓRIAS = 1 MOEDA em TODOS os minigames, sem exceção (regra do José 2026-07-04)
-  pl.alfWins=(pl.alfWins||0)+1;
-  if(pl.alfWins<3){
-    if(actCat()==='alf' && q.word){ // LETRAMENTO: som suave (o sfx de acerto já tocou) + REFALA a palavra + PAUSA → próxima palavra
-      q.won=true; gameSay(q.word); srSay(quizWho(pl)+'Muito bem! '+disp(q.word)+'. '+pl.alfWins+' de 3.');
-      setTimeout(()=>{ if(pl.quiz===q)closeQuiz(pl); }, 1200); return; } // a próxima abre ao encostar na moeda e é falada (openSilabas/openPre → gameSay)
-    srSay(quizWho(pl)+'Acertou! '+pl.alfWins+' de 3 para ganhar a moeda.'); closeQuiz(pl); return; } // moeda FICA; encostado nela, a próxima pergunta abre sozinha
-  // 3ª VITÓRIA: acende a 3ª luz + comemoração SUAVE (som tipo enigma-resolvido do Zelda), depois pega a moeda
-  q.celebrating=true;
-  const ov=quizEl(pl), dots=ov&&ov.querySelector('.quiz-wins');
-  if(dots){ dots.querySelectorAll('.qw-dot').forEach(d=>d.classList.add('on')); dots.classList.add('celebrate'); }
-  jingles.playPuzzleSolved(); if(typeof burstSparkle==='function')burstSparkle(pl.x, pl.y-16, 0xffe08a, 10); // faíscas gentis
-  if(actCat()==='alf' && q.word)gameSay(q.word); // letramento: refala a palavra na 3ª vitória também
-  srSay(quizWho(pl)+'Muito bem! Você ganhou a moeda!');
-  setTimeout(()=>{ pl.alfWins=0; quizTake(pl,q); }, 900); } // deixa a 3ª luz + animação aparecerem antes de fechar
-function quizConfirm(pl){
-  const q=pl.quiz; if(!q||q.celebrating||q.won)return; // durante a comemoração/pausa pós-acerto, ignora entrada
-  if(q.sel===-1 && q.word){ gameSay(q.word); return; } // PALAVRA do topo selecionada → repete a fala (VLibras gesticula, na etapa do modo surdo)
-  if(q.revealed){ // SEM PENALIDADE na alfabetização: a moeda fica no lugar (nova pergunta ao tocar); matemática re-sorteia a figura
-    if(actCat()==='alf'){ closeQuiz(pl); } else { respawnFigure(q.coinIndex); closeQuiz(pl); } return; }
-  if(q.kind==='braille'){ earcons.sfx('coin'); srSay(quizWho(pl)+'Coletado!'); quizWin(pl,q); return; }
-  if(q.kind==='pre'){ // nível 1: acertou a escrita?
-    if(q.choices[q.sel]===q.word){
-      earcons.sfx('correct'); srSay(`${quizWho(pl)}Acertou! ${disp(q.word)}: ${soletra(q.word)}.`); quizWin(pl,q);
-    } else { q.tries++;
-      if(q.tries>=2){ q.revealed=true; srAlert(`${quizWho(pl)}A certa é ${disp(q.word)}: ${soletra(q.word)}. Pule para seguir.`); }
-      else { earcons.sfx('wrong'); srSay('Tente de novo.'); }
-      renderQuiz(pl); }
-    return;
-  }
-  if(q.kind==='alf'){ // níveis 4/5: montou a palavra inteira?
-    const N=q.options.length;
-    if(q.sel<N){ placeLetter(pl,q.options[q.sel]); return; }
-    if(q.sel===N){ eraseLastLetter(pl); return; }
-    if(q.boxes.join('')===q.word){ earcons.sfx('correct'); srSay(quizWho(pl)+'Acertou!'); quizWin(pl,q); }
-    else { q.tries++;
-      if(q.tries>=2){ q.revealed=true; q.boxes=q.word.split(''); srAlert(`${quizWho(pl)}A palavra é ${disp(q.word)}: ${soletra(q.word)}. Pule para seguir.`); }
-      else { q.boxes=q.boxes.map(()=>null); earcons.sfx('wrong'); srSay('Tente de novo.'); }
-      renderQuiz(pl); }
-    return;
-  }
-  if(q.kind==='silabas'){
-    const N=q.options.length;
-    if(q.sel<N){ placeSilaba(pl,q.options[q.sel]); return; }
-    if(q.sel===N){ eraseLastSilaba(pl); return; }
-    if(q.boxes[0]===q.correct[0] && q.boxes[1]===q.correct[1]){ earcons.sfx('correct'); srSay(quizWho(pl)+'Acertou!'); quizWin(pl,q); }
-    else { q.tries++;
-      if(q.tries>=2){ q.revealed=true; q.boxes=q.correct.slice(); srAlert(`${quizWho(pl)}A palavra é ${disp(q.word)}. Pule para seguir.`); }
-      else { q.boxes=[null,null]; earcons.sfx('wrong'); srSay('Tente de novo.'); }
-      renderQuiz(pl);
-    }
-    return;
-  }
-  if(cKey(q.choices[q.sel])===q.answer){ earcons.sfx('correct'); srSay(quizWho(pl)+'Acertou!'); quizWin(pl,q); } // matemática também: 3 vitórias = 1 moeda (compara pela CHAVE, não pela exibição)
-  else { q.tries++;
-    if(q.tries>=2){q.revealed=true; srAlert(`${quizWho(pl)}A resposta é ${speakChoice(q.answer)}. Pule para seguir.`);} else earcons.sfx('wrong'); srSay('Tente de novo.');
-    renderQuiz(pl);
-  }
-}
-function closeQuiz(pl){ pl.quiz=null; const ov=quizEl(pl); if(ov)ov.hidden=true; }
+/* ===================== quiz -> game/quiz.ts (B3) =====================
+   As 29 funcoes do desafio moram no modulo, em tres camadas: geracao (pura, so RNG), apresentacao
+   (string->string) e efeito. Aqui ficam so os ENVOLUCROS — declaracao de funcao, portanto icados, para que
+   os chamadores de cima (update, keydown, initGamepad, restartGame, applyLetra, window.__incl) nao mudem.
+   respawnFigure NAO foi junto: apesar de colada ao bloco e chamada so pelo quiz, ela re-sorteia a posicao
+   da moeda — e do slice de moedas, e entra no quiz por injecao. */
+function openQuiz(pl,coinIndex,shapeId){ quizApi.openQuiz(pl,coinIndex,shapeId); }
+function openSilabas(pl,coinIndex,letter){ quizApi.openSilabas(pl,coinIndex,letter); }
+function renderQuiz(pl){ quizApi.renderQuiz(pl); }
+function closeQuiz(pl){ quizApi.closeQuiz(pl); }
+function quizMove(pl,d){ quizApi.quizMove(pl,d); }
+function quizConfirm(pl){ quizApi.quizConfirm(pl); }
+function quizErase(pl){ quizApi.quizErase(pl); }
+function announceBraille(pl){ quizApi.announceBraille(pl); }
 function respawnFigure(i){
   const occ=new Set(); coins.forEach((c,j)=>{ if(j!==i)occ.add(c.x+','+c.y); });
   for(const cand of shuffle(findCoinCandidates())){ const x=cand.tx*TILE+3,y=cand.ty*TILE+3;
@@ -1344,6 +1109,21 @@ const activitiesMenu = initActivitiesMenu({
 });
 const { actCat, setActivity, startActivity, reallyStart,
         navTitle, titleButtons, buildTitleMenus, tabSel, fracNot } = activitiesMenu;
+// B3: o desafio educativo. So entra aqui o que um import nao alcanca: as `let` do game.js, as instancias
+// criadas no boot (audio/HUD/menu) e os efeitos de outros slices (moeda, HUD, vitoria, toque). Os
+// callbacks sao arrows de proposito: touchCtl, respawnFigure, win e updateHud nascem mais abaixo.
+const quizApi = initQuiz({
+  $, getScreen: (i) => hud.getScreen(i),
+  disp, isBlindMode: () => blindMode, isModoCego: () => modoCego,
+  actCat, tabSel, fracNot, QL_NAME,
+  srSay, srAlert, gameSay, narrate: (t) => tts.narrate(t),
+  sfx: (n) => earcons.sfx(n), playPuzzleSolved: () => jingles.playPuzzleSolved(),
+  burstSparkle,
+  hideTouchControls: () => hideTouchControls(),
+  updateHud: () => updateHud(), win: (pl) => win(pl),
+  respawnFigure: (i) => respawnFigure(i),
+  syncCollected: (pl) => { if(pl===player) collected = pl.collected; }, // `collected` e let do game.js
+});
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraidos p/ game/fractions.js (Estagio 4).
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraídos p/ game/fractions.js (Estágio 4).
 const MODE_LABELS={ludico:'🪙 Lúdico',somasub:'🔷 Soma-Sub',silabas:'🔤 Sílabas'};
