@@ -61,6 +61,7 @@
 // função e resolve tarde. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C1).
 
 import { LOGICAL_W, LOGICAL_H, EASY } from '../core/constants.js';
+import type { PlayerView } from '../core/entity.js';
 import { BOX } from '../game/player.js';
 import { rnd } from '../core/rng.js';
 import { JUICE, easeOut3, shakeAmp, drawFx } from './fx.js';
@@ -111,16 +112,14 @@ interface CoinLike { x: number; y: number; taken?: boolean; owner: number }
 interface PowerupWithSprite extends Powerup { sprite?: { visible: boolean } | null }
 
 /** O jogador, do ponto de vista do DESENHO (a animação usa `AnimPlayer`, do qual este é superconjunto). */
-export interface DrawPlayer extends AnimPlayer {
-  i: number;
-  x: number; y: number;
-  facing: number;
-  hurtTimer: number;
-  sq?: number; sqT?: number;    // JUICE: squash&stretch (amplitude e relógio; render/fx.setSquash)
-  easy?: boolean;               // modo Fácil: hitbox de coleta tolerante, desenhada translúcida
-  viz: string;                  // modo de visão do jogador (recolor por viewport)
-  sprite?: PlayerSprite | null;
-}
+/**
+ * O jogador visto pelo DESENHO: tudo o que a animação lê, mais posição, dano e apresentação.
+ * `sq`/`sqT` são o squash&stretch (amplitude e relógio, escritos por render/fx.setSquash); `easy` desenha a
+ * hitbox de coleta tolerante translúcida; `viz` é o modo de visão, que recolore por viewport.
+ */
+export type DrawPlayer = AnimPlayer & PlayerView<
+  'i' | 'x' | 'y' | 'facing' | 'hurtTimer' | 'sq' | 'sqT' | 'easy' | 'viz' | 'sprite'
+>;
 
 /** Flags de Movimento Reduzido que o DESENHO consulta (o objeto `rm` do game.js tem mais chaves). */
 export interface ReducedMotion { items?: boolean }

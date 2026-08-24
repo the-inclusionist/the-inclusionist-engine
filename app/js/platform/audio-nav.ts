@@ -12,8 +12,19 @@
 //   updateGuide()      — beacon automático por frame p/ a moeda mais próxima (sonar contínuo).
 // Extraído do game.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, áudio rodada 3).
 
+import type { PlayerView } from '../core/entity.js';
+
 type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
-interface Player { x: number; y: number; facing: number; viz: string; i: number; audioSink?: string; _ac?: SinkAC; _acOut?: GainNode; wnT?: number; guideT?: number; }
+/**
+ * O jogador visto pela NAVEGAÇÃO SONORA. Os campos de posição e identidade são derivados; os de áudio não.
+ *
+ * Mesma regra de game/quiz, do outro lado: este módulo é DONO dos tipos de áudio, então declara `_ac` como
+ * `SinkAC` (o AudioContext com o `setSinkId` opcional) e `_acOut` como `GainNode`, enquanto core/entity os
+ * declara no mínimo estrutural — `{ close(): void }` e `unknown` — porque `core/` não pode importar tipos de
+ * Web Audio para descrever uma entidade de jogo. Quem é dono do tipo pode saber mais; quem não é, não pode.
+ */
+type Player = PlayerView<'x' | 'y' | 'facing' | 'viz' | 'i' | 'audioSink' | 'wnT' | 'guideT'>
+  & { _ac?: SinkAC | null; _acOut?: GainNode };
 export interface PlayerCtxOut { ac: AudioContext; out: GainNode; }
 interface Coin { x: number; y: number; taken?: boolean; owner: number; }
 type VizDef = { kind?: string } | undefined;

@@ -5,6 +5,7 @@
 // `caneColor` (pure) moves here too — it was only used by the cane draws. See docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import { VIZ_BY_KEY } from './viz-modes.js';
+import type { PlayerView } from '../core/entity.js';
 
 /** Minimal PIXI.Graphics surface these draws use (structural → module stays PIXI-free for node tests). */
 export interface DrawGraphics {
@@ -15,7 +16,8 @@ export interface DrawGraphics {
   endFill(): unknown;
   drawCircle(x: number, y: number, r: number): unknown;
 }
-interface DrawablePlayer { facing: number; x: number; y: number; viz: string }
+/** Cadeira e bengala: onde o jogador está, para que lado olha, e em que modo de visão desenhar. */
+type DrawablePlayer = PlayerView<'facing' | 'x' | 'y' | 'viz'>;
 
 /** Cane color: green for low-vision, white otherwise (blind). */
 export function caneColor(pl: { viz: string }): number {

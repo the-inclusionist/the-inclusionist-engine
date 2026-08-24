@@ -26,6 +26,7 @@
 //   · `PM_BTNS`/`QL_NAME` — owned by ui/activities-menu; injected, never copied.
 
 import { numPlayers, players, quizLevel } from '../core/state.js';
+import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { CONTRAST_LEVELS, CONTRAST_LABELS } from './settings-visual.js';
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
@@ -84,12 +85,16 @@ export const CVD_LABELS: Readonly<Record<string, string>> = {
 // ---------------------------------------------------------------------------------------------
 
 /** The slice of a player object the pause icons touch. `players` (core/state) is typed `unknown[]`. */
-export interface PausePlayer {
-  viz?: string;
-  toggleMove?: boolean;
-  audioSink?: string | null;
-  [prop: string]: unknown; // rmWalk/rmBreath/rmFlavor, written by applyCalm through RM_CHAR[].prop
-}
+/**
+ * A fatia que os ícones de pausa tocam — derivada de core/entity, mais uma assinatura de índice.
+ *
+ * A assinatura fica porque `applyCalm` escreve por NOME CALCULADO (`pl[RM_CHAR[i].prop]`), e nenhum `Pick`
+ * cobre um acesso que só existe em tempo de execução. Mas as três propriedades que ele calcula — rmWalk,
+ * rmBreath, rmFlavor — agora são derivadas por nome, então a assinatura de índice deixou de ser a ÚNICA
+ * coisa que as declara: elas têm tipo, e a assinatura só autoriza o acesso dinâmico.
+ */
+export type PausePlayer = PlayerView<'viz' | 'toggleMove' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>
+  & { [prop: string]: unknown };
 
 /** One `.pm-btn` descriptor — the shape of game.js's PM_BTNS (owned by ui/activities-menu). */
 export interface PauseMenuButton {

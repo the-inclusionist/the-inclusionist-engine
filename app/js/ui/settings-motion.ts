@@ -12,6 +12,7 @@
 // NÃO é referenciada aqui: renderMotion() nunca leu/escreveu JUICE (só o painel ?debug o faz) — ver nota no
 // retorno da extração antes de assumir que falta wiring.
 import { players, numPlayers } from '../core/state.js';
+import type { PlayerView } from '../core/entity.js';
 import { CRT, applyCrt } from '../render/crt.js';
 
 export type MotionSceneKey = 'parallax' | 'decor' | 'items' | 'particles';
@@ -21,7 +22,10 @@ export interface MotionCharDef {
   readonly prop: MotionCharProp;
   readonly lbl: string;
 }
-export type MotionPlayer = Partial<Record<MotionCharProp, boolean>>;
+/** As três chaves de Movimento Reduzido por personagem, derivadas de core/entity. Eram um
+ *  `Partial<Record<MotionCharProp, boolean>>`, o que dizia a forma certa sem dizer que os campos são DO
+ *  JOGADOR — um `Record` aceita qualquer objeto com essas chaves, inclusive um que não seja jogador nenhum. */
+export type MotionPlayer = PlayerView<'rmWalk' | 'rmBreath' | 'rmFlavor'>;
 export type MotionSceneFlags = Record<MotionSceneKey, boolean>;
 
 export interface SettingsMotionCtx {

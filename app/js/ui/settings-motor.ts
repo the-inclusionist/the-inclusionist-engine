@@ -9,6 +9,8 @@
 // Modo Fácil puts coins on the ground). Overlay open/close plumbing (frontOverlay, #movement hidden toggle,
 // Escape handling, renderMapHub) is the SHARED helper used by every settings panel and stays in game.js.
 
+import type { PlayerView } from '../core/entity.js';
+
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
@@ -18,10 +20,8 @@ export interface MotorStore {
 }
 
 /** Minimal per-player shape this module reads/writes (core/state.ts's `players` entries carry much more). */
-export interface MotorPlayer {
-  easy: boolean;
-  toggleMove: boolean;
-}
+/** As duas escolhas motoras por jogador: modo Fácil e teclas de alternância. */
+export type MotorPlayer = PlayerView<'easy' | 'toggleMove'>;
 
 export interface SettingsMotorCtx {
   /** DOM selector (querySelector), injected — never reaches `document` globally. */

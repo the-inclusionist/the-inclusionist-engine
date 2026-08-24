@@ -42,6 +42,7 @@
 // ARMADILHA DE ORDEM DE BOOT: nenhuma. O módulo não tem estado próprio nem toca nada no import.
 
 import { ANIM } from '../core/constants.js';
+import type { ControlledPlayer } from '../core/entity.js';
 
 /** Uma textura de quadro. Opaca de propósito: este módulo ESCOLHE quadros, nunca os desenha. */
 export type Frame = unknown;
@@ -70,31 +71,30 @@ export interface PlayerTextures {
 }
 
 /** Os campos do jogador que a ANIMAÇÃO lê ou escreve. O objeto real (game/player.makePlayer) é superconjunto. */
-export interface AnimPlayer {
-  /* --- lidos (produzidos pela física) --- */
-  vx: number; vy: number;
-  onGround: boolean; onLadder: boolean; inWater: boolean;
-  clinging: boolean; clingN: string | null; flying: boolean;
-  airTime: number;              // quadros desde que saiu do chão — a base do coyote-time
-  runCane?: boolean;            // bengala de corrida (item): sem ela `running` nunca liga
-
-  /* --- preferências de a11y por jogador (Movimento Reduzido) --- */
-  rmWalk?: boolean;             // congela TODA a locomoção num quadro único
-  rmBreath?: boolean;           // congela a respiração do idle
-  rmFlavor?: boolean;           // desliga as gracinhas
-
-  /* --- escritos (relógios e estado de animação; vivem no jogador desde o v3) --- */
-  anim: number;                 // relógio do idle (respiração)
-  walkAnim: number;             // relógio do passo — NUNCA reseta, senão o ciclo de 8 reinicia
-  climbFrame?: number;          // quadro CONGELADO da ventosa (parado na parede mantém a pose)
-  idleNow: boolean; idleTime: number;
-  flavor: number; flavorT: number; // gracinha ativa (-1 = nenhuma) e seu relógio
-  walking: boolean; running: boolean; // lidos pelo desenho da bengala (modo cego), em render/draw
-  _tx?: Frame;                  // quadro-base EM COR: o multi-tela recolore a partir dele, por viewport
-
-  /* --- necessários só para `held` (esquema de teclas / gamepad do jogador) --- */
-  ctrl: Record<string, string[]>; pad: number;
-}
+/**
+ * O jogador visto pela ANIMAÇÃO — derivado de core/entity. O que cada campo significa está documentado lá,
+ * uma vez; o que importa registrar AQUI é o que este módulo faz com eles:
+ *
+ *  · LÊ o que a física produziu: `vx`/`vy`, os três contatos, `clinging`/`clingN`/`flying` e `airTime`
+ *    (quadros desde que saiu do chão — a base do coyote-time). `runCane` decide se `running` pode ligar.
+ *  · LÊ as preferências de Movimento Reduzido: `rmWalk` congela TODA a locomoção num quadro único,
+ *    `rmBreath` congela a respiração do idle, `rmFlavor` desliga as gracinhas.
+ *  · ESCREVE os relógios: `anim` (respiração), `walkAnim` (o passo — NUNCA reseta, senão o ciclo de 8
+ *    reinicia), `climbFrame` (quadro CONGELADO da ventosa), `idleNow`/`idleTime`, `flavor`/`flavorT`,
+ *    `walking`/`running` (lidos pelo desenho da bengala em render/draw) e `_tx`, o quadro-base EM COR a
+ *    partir do qual o multi-tela recolore, por viewport.
+ *  · `ctrl`/`pad` entram só porque `held` precisa deles. `ControlledPlayer`: a animação roda em partida.
+ *
+ * `clingN` era `string | null` aqui e `ClingSide | null` na física — a mesma face da ventosa, uma tipada e
+ * a outra não. Derivar fecha isso sem discussão.
+ */
+export type AnimPlayer = Pick<ControlledPlayer,
+  'vx' | 'vy' | 'onGround' | 'onLadder' | 'inWater' | 'clinging' | 'clingN' | 'flying' | 'airTime' | 'runCane' |
+  'rmWalk' | 'rmBreath' | 'rmFlavor' |
+  'anim' | 'walkAnim' | 'climbFrame' | 'idleNow' | 'idleTime' | 'flavor' | 'flavorT' |
+  'walking' | 'running' | '_tx' |
+  'ctrl' | 'pad'
+>;
 
 /** Tudo que a escolha do quadro precisa e que não mora no jogador. */
 export interface PlayerAnimEnv {

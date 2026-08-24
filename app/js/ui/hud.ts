@@ -13,6 +13,7 @@
 // Sem I/O no import: `document` só aparece DENTRO das funções → o módulo é importável no project node, onde os
 // testes exercitam só a metade PURA (screenGrid/screenRect/hudRowView/vphudHtml/waitBadgeHtml).
 import { screenGrid } from '../core/screens.js';
+import type { PlayerView } from '../core/entity.js';
 import { COIN_TARGET } from '../core/constants.js';
 import { players, numPlayers } from '../core/state.js';
 
@@ -20,11 +21,8 @@ import { players, numPlayers } from '../core/state.js';
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
 /** Só os campos do jogador que o HUD lê. Estrutural de propósito: o `players[]` real é `unknown[]` no core/state. */
-export interface HudPlayer {
-  collected: number;
-  activePower: string;
-  quit: boolean;
-}
+/** O que o HUD mostra: moedas, poder ativo, e se o jogador desistiu. */
+export type HudPlayer = PlayerView<'collected' | 'activePower' | 'quit'>;
 
 // ---------------------------------------------------------------------------------------------
 // Lógica PURA (nenhum `document`; testável no project node)

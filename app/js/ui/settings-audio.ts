@@ -15,6 +15,7 @@
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 import { t } from '../core/i18n.js';
+import type { PlayerView } from '../core/entity.js';
 
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
@@ -39,11 +40,8 @@ export interface TtsPanel {
   narrate: (text: string) => void;
 }
 
-export interface SinkPlayer {
-  audioSink?: string | null;
-  _ac?: { close: () => void } | null;
-  _acOut?: unknown;
-}
+/** Saída de áudio dedicada de um jogador: o id do dispositivo e o AudioContext/ganho que ele abriu. */
+export type SinkPlayer = PlayerView<'audioSink' | '_ac' | '_acOut'>;
 
 export interface SettingsAudioCtx {
   /** DOM selector (querySelector), injected — never reaches `document` globally. */

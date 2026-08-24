@@ -90,6 +90,7 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C3).
 
 import { t } from '../core/i18n.js';
+import type { PlayerView } from '../core/entity.js';
 import { phase, numPlayers, setPhaseValue, players, type Phase } from '../core/state.js';
 import { PAD_DESIGNS } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
 
@@ -99,7 +100,8 @@ import { PAD_DESIGNS } from '../input/devices.js'; // módulo-folha de DADOS (ze
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
 /** O que `pauseActs.addplayer` lê de um jogador. `players` é `unknown[]` em core/state.ts. */
-interface ShellPlayer { i: number; waiting?: boolean }
+/** A casca só precisa saber QUEM é o jogador e se ele está esperando a próxima rodada. */
+type ShellPlayer = PlayerView<'i' | 'waiting'>;
 
 /** O subconjunto de `Window` que `printMode` usa (add/remove de ouvinte em CAPTURA + o adiamento de 80ms). */
 export interface ShellWindow {
