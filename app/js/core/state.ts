@@ -58,3 +58,21 @@ export function setCoins(arr: unknown[]): void { coins = arr; emit('coins', arr)
 //     que também aposenta os dois casts `as unknown as` que existiam só porque o TypeScript, com razão,
 //     recusava converter `unknown[]` direto — e um cast duplo não estreita nada, desliga o verificador. ---
 export let players: Player[] = [];
+
+// --- modoCego: MODO CEGO (A12e auditiva). Só as ajudas de áudio — bengala, sonar, guarda de beirada,
+//     narração —, sem tela preta; a simulação de cegueira do Modo Empatia é outra coisa e liga esta por cima.
+//
+//     Migrado do main.js (ADR-0027 passo 4 / #50). Era a variável com MAIS encanamento de injeção do projeto:
+//     dezesseis sítios em seis módulos passavam `getModoCego`/`setModoCego` por ctx, e a colisão a lia por
+//     closure. Estado que seis módulos consultam não é do composition root; e enquanto for, `createGame()` não
+//     pode existir sem capturá-la, que é justamente o teste de fronteira que o ADR-0027 quer rodar.
+//
+//     O SETTER FAZ TRÊS COISAS E SÓ TRÊS: grava, persiste, avisa. Os efeitos que o main.js pendurava no
+//     antigo `setModoCego` — refazer os extras do nível, refletir o painel, anunciar ao leitor de tela — NÃO
+//     entram aqui: são reação, e quem reage assina o evento. Um setter que sabe redesenhar a tela é um setter
+//     que nenhum teste consegue chamar. ---
+export let modoCego: boolean = store.getBool('incl_modocego');
+export function setModoCegoValue(on: boolean): void {
+  if (modoCego === on) return; // a guarda VEM DO ORIGINAL: sem ela o anúncio repetiria a cada clique redundante
+  modoCego = on; store.setBool('incl_modocego', on); emit('modoCego', on);
+}

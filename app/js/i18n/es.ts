@@ -229,5 +229,7 @@ const es: Record<string, string> = {
   'sr.quiz.tryAgain': 'Inténtalo de nuevo.',
   'sr.quiz.erase': 'borrar',
   'sr.quiz.ok': 'ok',
+  'sr.blind.on': 'Modo ciego activado: bastón y pistas de audio activas. El 1.er objeto de poder pasa a ser el bastón de carrera.',
+  'sr.blind.off': 'Modo ciego desactivado.',
 };
 export default es;

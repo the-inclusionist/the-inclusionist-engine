@@ -228,5 +228,7 @@ const en: Record<string, string> = {
   'sr.quiz.tryAgain': 'Try again.',
   'sr.quiz.erase': 'erase',
   'sr.quiz.ok': 'ok',
+  'sr.blind.on': 'Blind mode on: cane and audio cues active. The first power item becomes the running cane.',
+  'sr.blind.off': 'Blind mode off.',
 };
 export default en;

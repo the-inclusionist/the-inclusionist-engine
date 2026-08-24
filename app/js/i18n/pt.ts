@@ -259,5 +259,7 @@ const pt: Record<string, string> = {
   'sr.quiz.tryAgain': 'Tente de novo.',
   'sr.quiz.erase': 'apagar',
   'sr.quiz.ok': 'ok',
+  'sr.blind.on': 'Modo cego ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.',
+  'sr.blind.off': 'Modo cego desligado.',
 };
 export default pt;
