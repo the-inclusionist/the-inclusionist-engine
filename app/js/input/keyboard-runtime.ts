@@ -8,6 +8,8 @@
 // wrapper is the one that copies the returned fields onto its own `let`s (same trap `core/state.ts` documents
 // for `coins`/`players`).
 
+import type { ControlledPlayer } from '../core/entity.js';
+
 /** action -> list of physical key codes (KeyboardEvent.code), e.g. {jump:['KeyJ','Space']}. Mirrors the shape
  *  ui/settings-controls.ts also defines locally (input/keyboard.ts's KeyScheme is not exported — each consumer
  *  keeps its own structural copy rather than reaching across layers for a type alias). */
@@ -21,10 +23,10 @@ export interface KeyboardConfig {
   p4: KeyScheme[];
 }
 
-/** Minimal player shape this module needs: only `ctrl` (game.js's Player.ctrl) is read/written. */
-export interface KeyboardRuntimePlayer {
-  ctrl: KeyScheme;
-}
+/** Minimal player shape this module needs: only `ctrl` is read/written — derived from core/entity.
+ *  `ControlledPlayer` rather than `Player` because this module runs after assignControls, so `ctrl` is no
+ *  longer null. That was already assumed here; now it is stated. */
+export type KeyboardRuntimePlayer = Pick<ControlledPlayer, 'ctrl'>;
 
 export interface KeyboardRuntimeCtx {
   /** The live keyboard config (game.js's `KB`), read fresh on every call — never cached. */

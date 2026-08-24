@@ -86,6 +86,7 @@
 
 /** `ui/dom.ts` `$` — injetado; o módulo nunca alcança `document`. */
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
+import type { PlayerView } from '../core/entity.js';
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
 /** ação -> lista de códigos físicos. Cópia ESTRUTURAL do `KeyScheme` de `input/keyboard-runtime.ts` — a casa
@@ -98,15 +99,12 @@ export type EdgeFlag = 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swap
 /** Uma borda a levantar: qual jogador (POSIÇÃO no array) e qual flag. */
 export interface EdgeRaise { playerIndex: number; edge: EdgeFlag }
 
-/** O que este módulo lê (e escreve) de um jogador — e SÓ isso. */
-export interface TouchBindPlayer {
-  ctrl?: KeyScheme | null;
-  /** modo Fácil (deficiência motora): quem está nele não levanta `runEdge`, e portanto não gruda na parede —
-   *  a mesma regra do teclado e do controle. Ver o cabeçalho. */
-  easy?: boolean;
-  jumpEdge?: boolean; runEdge?: boolean; leftEdge?: boolean; rightEdge?: boolean;
-  swapEdge?: boolean; specialEdge?: boolean;
-}
+/** O que este módulo lê (e escreve) de um jogador — e SÓ isso. DERIVADA de core/entity.
+ *  `easy`: quem está no modo Fácil não levanta `runEdge`, e portanto não gruda na parede — a mesma regra do
+ *  teclado e do controle, que é justamente a que divergiu em três cópias uma vez. Ver o cabeçalho. */
+export type TouchBindPlayer = PlayerView<
+  'ctrl' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'
+>;
 
 /** TUDO o que a decisão precisa saber do mundo, num objeto só, montado ANTES de qualquer efeito. */
 export interface TouchBindSnapshot {

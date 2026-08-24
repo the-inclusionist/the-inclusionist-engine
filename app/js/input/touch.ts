@@ -7,6 +7,7 @@
 // ./devices.js (not reimplemented). Reading the real Gamepad API (polling, mapping wizard) is input/gamepad's
 // territory, not this module's — see the header note on padKind() for the one deliberate exception.
 import { PAD_DESIGNS, TOUCH_ACT_LABELS, TOUCH_DEFAULT } from './devices.js';
+import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { KEYS } from '../platform/storage.js'; // só as CHAVES (constantes) — leitura/escrita passam por ctx.store (DI)
 import { setMinimapCorner } from '../render/minimap.js'; // já módulo próprio (Estágio 4, Tier 1) — importado direto
@@ -24,8 +25,10 @@ export interface TouchStore {
   setJSON(key: string, obj: unknown): void;
 }
 
-/** The subset of a player object this module reads (players[] is `unknown[]` in core/state.ts). */
-interface TouchPlayer { quiz?: unknown; }
+/** The subset of a player object this module reads — derived from core/entity. It reads only whether a quiz
+ *  is open, never what is in it; `quiz` was plain `unknown` here while four other modules each had their own
+ *  shape for the same field. */
+type TouchPlayer = PlayerView<'quiz'>;
 
 export interface TouchCtx {
   /** DOM selector (querySelector), injected — never reaches `document` globally. */

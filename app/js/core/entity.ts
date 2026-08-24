@@ -188,3 +188,23 @@ export interface Player {
   wnT?: number;
   guideT?: number;
 }
+
+/**
+ * Um jogador DEPOIS de `assignControls` — o `ctrl` deixou de ser `null`.
+ *
+ * Existe para dar nome a uma invariante que hoje é assumida em silêncio: `game/physics` e
+ * `input/keyboard-runtime` declaram `ctrl` como não-nulo porque, no instante em que rodam, ele já foi
+ * atribuído. Isso é verdade e continua verdade — mas era uma afirmação escondida dentro de uma interface
+ * redigitada, onde ninguém a lia como afirmação. Aqui ela tem nome, e quem a usa está dizendo "eu só rodo
+ * depois do boot", que é uma frase verificável, em vez de simplesmente não mencionar o `null`.
+ */
+export type ControlledPlayer = Player & { ctrl: KeyScheme };
+
+/**
+ * Atalho para as visões estreitas: `PlayerView<'x' | 'y'>` em vez de reescrever os campos.
+ *
+ * O ponto de não usar `Player` inteiro está no cabeçalho: o project `node` do Vitest monta jogadores de
+ * mentira com só os campos que o módulo lê, e uma interface gorda obrigaria todo fixture a inventar 52.
+ * Derivando, o módulo continua acoplado à sua fatia e o NOME e o TIPO de cada campo passam a ter fonte única.
+ */
+export type PlayerView<K extends keyof Player> = Pick<Player, K>;

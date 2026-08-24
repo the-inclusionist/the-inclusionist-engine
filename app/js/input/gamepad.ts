@@ -8,6 +8,7 @@
 // (PAD_DESIGNS) and the on-screen touch pad are input/devices.ts + input/touch (a parallel extraction) — not here.
 
 import { t } from '../core/i18n.js';
+import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import type { Phase } from '../core/state.js';
 import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
@@ -155,20 +156,13 @@ export interface WizState {
 
 export type NavKeys = { yes: boolean; no: boolean; up: boolean; down: boolean; left: boolean; right: boolean };
 
-/** Forma mínima de jogador que este módulo lê/escreve (core/state.ts's `players` carrega muito mais). */
-export interface GamepadPlayer {
-  pad: number;
-  quit: boolean;
-  waiting?: boolean;
-  quiz?: { kind: string } | null;
-  easy: boolean;
-  jumpEdge: boolean;
-  runEdge: boolean;
-  leftEdge: boolean;
-  rightEdge: boolean;
-  swapEdge: boolean;
-  specialEdge: boolean;
-}
+/** Forma mínima de jogador que este módulo lê/escreve — DERIVADA de core/entity, não redigitada.
+ *  `quiz` era `{ kind: string } | null` aqui e `{ kind?: string } | null` no keydown: o mesmo objeto, com o
+ *  discriminante obrigatório num módulo e opcional no outro. Agora os dois leem `PlayerQuiz`. */
+export type GamepadPlayer = PlayerView<
+  'pad' | 'quit' | 'waiting' | 'quiz' | 'easy' |
+  'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'
+>;
 
 export interface GamepadCtx {
   /** Adaptador da Gamepad API (substitui `navigator.getGamepads()`) — o ponto de DI para testar sem browser. */

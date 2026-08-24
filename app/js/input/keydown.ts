@@ -93,6 +93,7 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D2-a).
 
 import { t } from '../core/i18n.js';
+import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed, type EdgeFlag } from './edges.js';
 import { phase } from '../core/state.js'; // binding vivo (fonte única de estado)
 
@@ -119,20 +120,19 @@ export type KeyScheme = Record<string, string[]>;
 /** As seis bordas de entrada que o keydown levanta no jogador (consumidas e zeradas pela física). */
 // `EdgeFlag` vem de input/edges.ts (reexportado mais abaixo) — era declarado aqui e em touch-bindings.
 
-/** O que este módulo lê (e escreve) de um jogador do game.js — e SÓ isso. */
-export interface KeydownPlayer {
-  /** índice PRÓPRIO do jogador (`makePlayer(i)`). O original roteia por ele, não pela posição no array. */
-  i: number;
-  ctrl?: KeyScheme | null;
-  /** o desafio educativo aberto deste jogador; `kind==='braille'` tem caminho próprio. */
-  quiz?: { kind?: string } | null;
-  /** tela em espera (multi-tela): a 1ª tecla DAQUELE jogador entra na partida. */
-  waiting?: boolean;
-  /** modo Fácil (deficiência motora): sem correr, e ganha os atalhos Ctrl/Shift no solo. */
-  easy?: boolean;
-  jumpEdge?: boolean; runEdge?: boolean; leftEdge?: boolean; rightEdge?: boolean;
-  swapEdge?: boolean; specialEdge?: boolean;
-}
+/**
+ * O que este módulo lê (e escreve) de um jogador — e SÓ isso. DERIVADA de core/entity.
+ *
+ *  · `i`        — índice PRÓPRIO do jogador (`makePlayer(i)`). O original roteia por ele, não pela posição.
+ *  · `ctrl`     — esquema de teclas; `null` antes do assignControls.
+ *  · `quiz`     — o desafio aberto deste jogador; `kind === 'braille'` tem caminho próprio.
+ *  · `waiting`  — tela em espera (multi-tela): a 1ª tecla DAQUELE jogador entra na partida.
+ *  · `easy`     — modo Fácil (deficiência motora): sem correr, e ganha os atalhos Ctrl/Shift no solo.
+ */
+export type KeydownPlayer = PlayerView<
+  'i' | 'ctrl' | 'quiz' | 'waiting' | 'easy' |
+  'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'
+>;
 
 /** Subconjunto do `ControlsState` de input/keyboard-runtime.ts que a decisão consulta (`controls` não entra:
  *  o original nunca o usa aqui, só os seis aliases e a lista achatada). */
