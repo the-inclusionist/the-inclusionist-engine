@@ -165,5 +165,25 @@ const es: Record<string, string> = {
   'icon.tea.short': 'Modo TEA',
   'icon.cvd.short': 'Corrección de daltonismo',
   'pause.iconBarAria': 'Atajos de accesibilidad',
+
+  // Menú de actividades (portada) — actividad, escenario, número de jugadores y notaciones de fracción.
+  'fnot.v': 'Fraccionaria vertical',
+  'fnot.d': 'Fraccionaria diagonal',
+  'fnot.dec': 'Decimal',
+  'fnot.pct': 'Porcentual',
+  'fnot.mix': 'Mixta',
+  'menu.playerCountAria': 'Número de jugadores: {n}. Pulsa a la izquierda para menos, a la derecha para más.',
+  'sr.menu.pickScenario': 'Elige el escenario.',
+  'sr.menu.gameStarted': '{atividade}. Juego iniciado.',
+  'sr.menu.pickNumbers': '{atividade}: elige los números.',
+  'sr.menu.player1': '{n} jugador.',
+  'sr.menu.playersN': '{n} jugadores.',
+  'sr.menu.fractionsIntro': 'Suma y resta de fracciones: elige la notación y el tipo.',
+  'sr.menu.keepOneNotation': 'Deja al menos una notación activada.',
+  'sr.menu.notationOn': '{notacao} activada.',
+  'sr.menu.notationOff': '{notacao} desactivada.',
+  'sr.menu.pickOneNumber': 'Elige al menos un número para practicar.',
+  'sr.menu.numberOn': 'Número {n} activado.',
+  'sr.menu.numberOff': 'Número {n} desactivado.',
 };
 export default es;

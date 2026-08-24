@@ -164,5 +164,25 @@ const en: Record<string, string> = {
   'icon.tea.short': 'Autism mode',
   'icon.cvd.short': 'Colour-blindness correction',
   'pause.iconBarAria': 'Accessibility shortcuts',
+
+  // Activities menu (splash) — activity, scenario, player count and fraction notations.
+  'fnot.v': 'Stacked fraction',
+  'fnot.d': 'Slanted fraction',
+  'fnot.dec': 'Decimal',
+  'fnot.pct': 'Percentage',
+  'fnot.mix': 'Mixed number',
+  'menu.playerCountAria': 'Number of players: {n}. Click on the left for fewer, on the right for more.',
+  'sr.menu.pickScenario': 'Choose the scenery.',
+  'sr.menu.gameStarted': '{atividade}. Game started.',
+  'sr.menu.pickNumbers': '{atividade}: choose the numbers.',
+  'sr.menu.player1': '{n} player.',
+  'sr.menu.playersN': '{n} players.',
+  'sr.menu.fractionsIntro': 'Adding and subtracting fractions: choose the notation and the type.',
+  'sr.menu.keepOneNotation': 'Keep at least one notation on.',
+  'sr.menu.notationOn': '{notacao} on.',
+  'sr.menu.notationOff': '{notacao} off.',
+  'sr.menu.pickOneNumber': 'Choose at least one number to practise.',
+  'sr.menu.numberOn': 'Number {n} on.',
+  'sr.menu.numberOff': 'Number {n} off.',
 };
 export default en;

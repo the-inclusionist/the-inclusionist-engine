@@ -28,6 +28,7 @@
 import { activity as ACTIVITY, setActivityValue, numPlayers, players } from '../core/state.js';
 import { getActivity, hasActivity, isValidActivityId, DEFAULT_ACTIVITY_ID, type ActivityDef } from '../game/activities-registry.js';
 import * as store from '../platform/storage.js';
+import { t } from '../core/i18n.js';
 import type { TitleMenuId } from './title.js';
 import { TITLE_MENU_IDS_ORDERED as TITLE_MENU_ORDER } from './title.js';
 
@@ -143,9 +144,10 @@ export const PM_BTNS: readonly PauseBtnDef[] = [
   { act: 'ajuda', lbl: '❓ Ajuda' }, { act: 'print', lbl: '📷 Print (ver a tela)' }, { act: 'quit', lbl: '🚪 Sair do jogo' },
 ];
 
-/** Spoken/aria name of each fraction notation. */
+/** i18n KEY of the spoken/aria name of each fraction notation. Keys, not text: a module-level const is
+ *  evaluated once at import and would freeze the language at boot (see the note in input/devices). */
 export const FNOT_LBL: Readonly<Record<FracNotKey, string>> = {
-  v: 'Fracionária vertical', d: 'Fracionária diagonal', dec: 'Decimal', pct: 'Percentual', mix: 'Mista',
+  v: 'fnot.v', d: 'fnot.d', dec: 'fnot.dec', pct: 'fnot.pct', mix: 'fnot.mix',
 };
 /** Visible label = the notation ITSELF (x/y), so the five toggles fit side by side; aria-label keeps the word. */
 export const FNOT_SYM: Readonly<Record<FracNotKey, string>> = {
@@ -389,7 +391,7 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
   function startActivity(id: string): void {
     pendingAct = id;
     cenBack = cenBackMenuFor(id);
-    ctx.titleShow('tm-cen'); ctx.srSay('Escolha o cenário.');
+    ctx.titleShow('tm-cen'); ctx.srSay(t('sr.menu.pickScenario'));
   }
 
   function reallyStart(): void {
@@ -397,7 +399,10 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
     if (ctx.isMobile()) { if (pendingPlayers > 1) pendingPlayers = 1; ctx.enterFullscreen(); }
     (players as { alfWins?: number }[]).forEach((p) => { p.alfWins = 0; });
     if (pendingPlayers !== numPlayers) ctx.setNumPlayers(pendingPlayers); else ctx.restartGame();
-    ctx.setPhase('playing'); ctx.hideTips(); ctx.srSay((getActivity(id) as ActivityDef).nome + '. Jogo iniciado.');
+    // O NOME da atividade atravessa como parâmetro, ainda em pt-BR: os nomes vivem em
+    // game/activities-registry e roçam a fronteira do currículo (Sílabas, Tabuada), que o Dev decide caso
+    // a caso na conversão do quiz. A moldura — ". Jogo iniciado." — é o que traduz aqui.
+    ctx.setPhase('playing'); ctx.hideTips(); ctx.srSay(t('sr.menu.gameStarted', { atividade: (getActivity(id) as ActivityDef).nome }));
   }
 
   function buildTitleMenus(): void {
@@ -456,17 +461,19 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
       let d = +(b.dataset.np || 0); b.dataset.np = ''; // ←/→ set data-np on keydown; a click uses the position
       if (!d) { const r = b.getBoundingClientRect(); d = ((e as MouseEvent).clientX - r.left) < r.width / 2 ? -1 : 1; }
       const n = clampPendingPlayers(pendingPlayers + d);
-      if (n > 1 && !ctx.fitsN(n)) { ctx.srAlert('Não cabem ' + n + ' telas nesta janela — aumente a janela ou use tela cheia.'); return; }
+      // MESMO evento que game/session anuncia, e a frase divergia: esta omitia o mínimo de 640×360. Passa a
+      // usar a chave já unificada, em vez de virar uma terceira redação da mesma recusa.
+      if (n > 1 && !ctx.fitsN(n)) { ctx.srAlert(t('sr.screens.wontFitN', { n })); return; }
       pendingPlayers = n; const nn = ctx.$('#np-n'); if (nn) nn.textContent = String(n);
-      b.setAttribute('aria-label', 'Número de jogadores: ' + n + '. Clique à esquerda para menos, à direita para mais.');
-      ctx.srSay(n + (n > 1 ? ' jogadores.' : ' jogador.')); return;
+      b.setAttribute('aria-label', t('menu.playerCountAria', { n }));
+      ctx.srSay(t(n > 1 ? 'sr.menu.playersN' : 'sr.menu.player1', { n })); return;
     }
-    if (b.dataset.tmFr) { go(() => { ctx.titleShow('tm-fr'); ctx.srSay('Soma e subtração de frações: escolha a notação e o tipo.'); }); return; }
+    if (b.dataset.tmFr) { go(() => { ctx.titleShow('tm-fr'); ctx.srSay(t('sr.menu.fractionsIntro')); }); return; }
     if (b.dataset.fnot) { const k = b.dataset.fnot as FracNotKey; // NOTATION toggle (immediate; at least 1 ALWAYS on)
-      if (!canToggleFracNot(fracNot, k)) { ctx.srAlert('Deixe ao menos uma notação ligada.'); return; }
+      if (!canToggleFracNot(fracNot, k)) { ctx.srAlert(t('sr.menu.keepOneNotation')); return; }
       fracNot[k] = fracNot[k] ? 0 : 1; store.setJSON(store.KEYS.fracnot, fracNot);
       b.classList.toggle('tab-on', !!fracNot[k]); b.setAttribute('aria-pressed', String(!!fracNot[k])); // state by highlight, NO ✔
-      ctx.srSay(FNOT_LBL[k] + (fracNot[k] ? ' ligada.' : ' desligada.')); return;
+      ctx.srSay(t(fracNot[k] ? 'sr.menu.notationOn' : 'sr.menu.notationOff', { notacao: t(FNOT_LBL[k]) })); return;
     }
     if (b.dataset.cen) { const c = b.dataset.cen; go(() => { ctx.setCenario(c); reallyStart(); }); return; }
     if (b.dataset.cenBack) { go(() => ctx.titleShow(cenBack)); return; }
@@ -474,18 +481,18 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
     if (b.dataset.tm === 'alf') { go(() => ctx.titleShow('tm-alf')); return; }
     if (b.dataset.tm === 'mat') { go(() => ctx.titleShow('tm-mat')); return; }
     if (b.dataset.tmBack) { const to = b.dataset.tmBack as TitleMenuId; go(() => ctx.titleShow(to)); return; }
-    if (b.id === 'tab-play') { if (!tabSel.length) { ctx.srAlert('Escolha ao menos um número para treinar.'); return; } go(() => startActivity(tabFor)); return; }
+    if (b.id === 'tab-play') { if (!tabSel.length) { ctx.srAlert(t('sr.menu.pickOneNumber')); return; } go(() => startActivity(tabFor)); return; }
     if (b.dataset.tabN != null) { const n = +b.dataset.tabN, i = tabSel.indexOf(n); // toggle: no screen change → immediate
       if (i >= 0) tabSel.splice(i, 1); else tabSel.push(n);
       store.setJSON(store.KEYS.tabsel, tabSel);
       b.classList.toggle('tab-on', i < 0); b.setAttribute('aria-pressed', String(i < 0));
-      ctx.srSay('Número ' + n + (i < 0 ? ' ligado.' : ' desligado.')); return;
+      ctx.srSay(t(i < 0 ? 'sr.menu.numberOn' : 'sr.menu.numberOff', { n })); return;
     }
     if (b.dataset.actId) { const id = b.dataset.actId;
       if ((getActivity(id) as ActivityDef).pick) {
         go(() => { tabFor = id; buildTitleMenus();
-          const t = ctx.$('#tm-tab .tm-title'); if (t) t.textContent = (getActivity(id) as ActivityDef).nome; // Tabuada/Divisão heading
-          ctx.titleShow('tm-tab'); ctx.srSay((getActivity(id) as ActivityDef).nome + ': escolha os números.'); });
+          const titulo = ctx.$('#tm-tab .tm-title'); if (titulo) titulo.textContent = (getActivity(id) as ActivityDef).nome; // Tabuada/Divisão heading
+          ctx.titleShow('tm-tab'); ctx.srSay(t('sr.menu.pickNumbers', { atividade: (getActivity(id) as ActivityDef).nome })); });
       } else go(() => startActivity(id));
     }
   });
