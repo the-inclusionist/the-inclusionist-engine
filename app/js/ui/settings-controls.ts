@@ -8,6 +8,7 @@
 // plumbing (#options hidden toggle, focus management, Escape-closes-dialog) and the pad-button-design select are
 // shared/unrelated infra and stay in game.js. `openHelp()` (pause-menu help screen) reuses ACT_LABEL/keyName —
 // both are exported here instead of duplicated.
+import { t } from '../core/i18n.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
@@ -68,18 +69,26 @@ export interface SettingsControlsApi {
 // Pure logic (no `document`, testable in node)
 // ---------------------------------------------------------------------------------------------
 
-/** action key -> pt-BR label shown in the panel. Also reused by game.js's openHelp() (pause-menu help screen). */
+/**
+ * action key -> i18n KEY of the label shown in the panel. Also reused by main.js's openHelp() (pause-menu help
+ * screen), which is why it lives here instead of being duplicated in two places.
+ *
+ * Holds keys, not text, for the reason spelled out in input/devices: a module-level const is evaluated once at
+ * import, and core/i18n's `dict` is a `let` that setLocale reassigns — text captured here would freeze the
+ * language at boot. Resolve with `t(ACT_LABEL[a])` at the point of use.
+ */
 export const ACT_LABEL: Record<string, string> = {
-  left: 'Esquerda', right: 'Direita', up: 'Subir / escada', down: 'Descer / escada',
-  run: 'Correr / interagir', jump: 'Pular', swap: 'Trocar poder', especial: 'Especial',
+  left: 'act.left', right: 'act.right', up: 'act.up', down: 'act.down',
+  run: 'act.run', jump: 'act.jump', swap: 'act.swap', especial: 'act.especial',
 };
 
-/** Physical key code -> short readable label (verbatim port of game.js's keyName; pt-BR abbreviations). */
+/** Physical key code -> short readable label. Only 'Space' has a word to translate; the rest are glyphs and
+ *  bare letters, identical in every language (that is why this is a chain of replaces and not a table). */
 export function keyName(code: string): string {
   return String(code)
     .replace('Arrow', '↔')
     .replace('Key', '')
-    .replace('Space', 'Espaço')
+    .replace('Space', t('key.space'))
     .replace('ShiftLeft', 'Shift')
     .replace('ShiftRight', 'Shift');
 }
@@ -131,8 +140,8 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
 
     const map = ctx.kbFor(player);
     el.innerHTML = Object.keys(ACT_LABEL).map((a) =>
-      `<div class="ctrl-row"><span>${ACT_LABEL[a]}: ${(map[a] || []).map(keyName).map((k) => `<kbd>${k}</kbd>`).join(' ')}</span>` +
-      `<button class="mode-btn" data-act="${a}" type="button" aria-label="Alterar tecla de ${ACT_LABEL[a]} do Jogador ${player + 1}">Alterar</button></div>`
+      `<div class="ctrl-row"><span>${t(ACT_LABEL[a]!)}: ${(map[a] || []).map(keyName).map((k) => `<kbd>${k}</kbd>`).join(' ')}</span>` +
+      `<button class="mode-btn" data-act="${a}" type="button" aria-label="${t('ctrl.changeKeyAria', { acao: t(ACT_LABEL[a]!), n: player + 1 })}">${t('ctrl.change')}</button></div>`
     ).join('');
 
     el.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((b) => {
@@ -141,7 +150,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
         if (!act) return;
         capture = { action: act, mapRef: map, player };
         b.textContent = 'Pressione…';
-        ctx.srAlert('Pressione a nova tecla para ' + ACT_LABEL[act] + ' do Jogador ' + (player + 1) + ', ou Esc para cancelar.');
+        ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: t(ACT_LABEL[act]!), n: player + 1 }));
       });
     });
   }
@@ -164,7 +173,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     }
     const other = keyUsedByOther(e.code, capture.mapRef, schemesFor());
     if (other >= 0) {
-      ctx.srAlert('Essa tecla já é do Jogador ' + (other + 1) + '. Escolha outra, ou Esc para cancelar.');
+      ctx.srAlert(t('sr.ctrl.keyTaken', { n: other + 1 }));
       e.preventDefault();
       return true; // não associa: segue capturando
     }
@@ -186,7 +195,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
       ctx.applyControls();
       ctx.assignControls();
       render(lastPlayer);
-      ctx.srSay('Controles restaurados ao padrão.');
+      ctx.srSay(t('sr.ctrl.reset'));
     });
   }
 

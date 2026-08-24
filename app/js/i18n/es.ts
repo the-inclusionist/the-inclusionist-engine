@@ -82,5 +82,21 @@ const es: Record<string, string> = {
   'sr.touch.dirSet': 'Direccional: {tipo}.',
   'sr.touch.presetChild': 'Controles del tamaño de una mano infantil (6 a 12 años).',
   'sr.touch.presetAdult': 'Controles del tamaño de una mano adulta.',
+
+  // Acciones reasignables (panel de controles + pantalla de Ayuda) y los anuncios de la captura de tecla.
+  'act.left': 'Izquierda',
+  'act.right': 'Derecha',
+  'act.up': 'Subir / escalera',
+  'act.down': 'Bajar / escalera',
+  'act.run': 'Correr / interactuar',
+  'act.jump': 'Saltar',
+  'act.swap': 'Cambiar poder',
+  'act.especial': 'Especial',
+  'key.space': 'Espacio',
+  'ctrl.change': 'Cambiar',
+  'ctrl.changeKeyAria': 'Cambiar la tecla de {acao} del Jugador {n}',
+  'sr.ctrl.pressNewKey': 'Pulsa la nueva tecla para {acao} del Jugador {n}, o Esc para cancelar.',
+  'sr.ctrl.keyTaken': 'Esa tecla ya es del Jugador {n}. Elige otra, o Esc para cancelar.',
+  'sr.ctrl.reset': 'Controles restaurados a los valores predeterminados.',
 };
 export default es;

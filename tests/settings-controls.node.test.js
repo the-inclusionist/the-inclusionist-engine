@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Testes de ui/settings-controls — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
-// Cobre: keyName (código físico -> rótulo pt-BR) e keyUsedByOther (conflito de remapeamento entre jogadores).
+// Cobre: keyName (código físico -> rótulo legível, com 'Space' passando por t()) e keyUsedByOther (conflito de
+// remapeamento entre jogadores). Sem trocar de idioma nos testes, `t()` devolve o pt-BR do dicionário-base.
 // O render()/handleCaptureKeydown() (tocam DOM) ficam em settings-controls.browser.test.js.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import { keyName, keyUsedByOther, ACT_LABEL } from '../app/js/ui/settings-controls.js';
+import pt from '../app/js/i18n/pt.js';
 
 describe('keyName', () => {
   it('[Right] KeyX -> X (remove o prefixo "Key")', () => {
@@ -15,7 +17,8 @@ describe('keyName', () => {
     expect(keyName('ArrowLeft')).toBe('↔Left');
     expect(keyName('ArrowUp')).toBe('↔Up');
   });
-  it('[Right] Space -> Espaço', () => {
+  it('[Right] Space -> a palavra traduzida (pt-BR base: Espaço) — a única do mapa que tem tradução', () => {
+    expect(keyName('Space')).toBe(pt['key.space']);
     expect(keyName('Space')).toBe('Espaço');
   });
   it('[Right] ShiftLeft/ShiftRight -> Shift', () => {
@@ -75,9 +78,11 @@ describe('keyUsedByOther', () => {
 });
 
 describe('ACT_LABEL', () => {
-  it('[Interface] cobre as 8 ações do jogo, todas com rótulo pt-BR não vazio', () => {
+  it('[Interface] cobre as 8 ações do jogo, cada uma com uma CHAVE i18n que existe no dicionário', () => {
+    // A tabela guarda chave, não texto (ver a nota no módulo). Aferir só `toBeTruthy()` deixaria passar uma
+    // chave inventada, que renderiza a própria chave na tela — por isso a segunda asserção.
     const acts = ['left', 'right', 'up', 'down', 'run', 'jump', 'swap', 'especial'];
     expect(Object.keys(ACT_LABEL)).toEqual(acts);
-    for (const a of acts) expect(ACT_LABEL[a]).toBeTruthy();
+    for (const a of acts) expect(pt[ACT_LABEL[a]], `chave fora do dicionário: ${ACT_LABEL[a]}`).toBeTypeOf('string');
   });
 });

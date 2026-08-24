@@ -81,5 +81,21 @@ const en: Record<string, string> = {
   'sr.touch.dirSet': 'Directional: {tipo}.',
   'sr.touch.presetChild': 'Controls sized for a child hand (6 to 12 years).',
   'sr.touch.presetAdult': 'Controls sized for an adult hand.',
+
+  // Remappable actions (controls panel + Help screen) and the key-capture flow announcements.
+  'act.left': 'Left',
+  'act.right': 'Right',
+  'act.up': 'Climb up / ladder',
+  'act.down': 'Climb down / ladder',
+  'act.run': 'Run / interact',
+  'act.jump': 'Jump',
+  'act.swap': 'Swap power',
+  'act.especial': 'Special',
+  'key.space': 'Space',
+  'ctrl.change': 'Change',
+  'ctrl.changeKeyAria': 'Change the {acao} key for Player {n}',
+  'sr.ctrl.pressNewKey': 'Press the new key for {acao}, Player {n}, or Esc to cancel.',
+  'sr.ctrl.keyTaken': 'That key already belongs to Player {n}. Pick another, or Esc to cancel.',
+  'sr.ctrl.reset': 'Controls restored to their defaults.',
 };
 export default en;
