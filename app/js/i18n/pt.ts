@@ -274,5 +274,7 @@ const pt: Record<string, string> = {
   'outline.none': 'nenhum',
   'outline.thin': 'fino',
   'outline.thick': 'grosso',
+  'sr.captions.on': 'Legendas ligadas.',
+  'sr.captions.off': 'Legendas desligadas.',
 };
 export default pt;

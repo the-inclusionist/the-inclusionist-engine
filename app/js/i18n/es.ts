@@ -244,5 +244,7 @@ const es: Record<string, string> = {
   'outline.none': 'ninguno',
   'outline.thin': 'fino',
   'outline.thick': 'grueso',
+  'sr.captions.on': 'Subtítulos activados.',
+  'sr.captions.off': 'Subtítulos desactivados.',
 };
 export default es;

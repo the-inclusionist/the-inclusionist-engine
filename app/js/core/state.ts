@@ -77,6 +77,31 @@ export function setModoCegoValue(on: boolean): void {
   modoCego = on; store.setBool('incl_modocego', on); emit('modoCego', on);
 }
 
+// --- letterCase: as letras aparecem em CAIXA ALTA ou minúscula. É escolha pedagógica, não estética: a
+//     alfabetização brasileira costuma começar em caixa alta, e a criança que já passou dessa fase precisa da
+//     minúscula. Lido pelo `disp` que o quiz usa em toda letra que exibe ou soletra.
+//
+// --- captionsOn: legendas dos sons (a11y surdez).
+//
+//     ESTES DOIS NÃO PERSISTEM, e a ausência é deliberada em vez de esquecida: ao contrário de `caneBlockDiv`
+//     — que tinha chave registrada em storage.KEYS e uma gravação faltante, ou seja, uma intenção quebrada —
+//     nenhum dos dois tem chave prevista nem leitura no boot. Não há indício de que alguém tenha decidido que
+//     deviam sobreviver à sessão. Acrescentar persistência aqui seria inventar a decisão, não cumpri-la; a
+//     pergunta está registrada como issue. Por isso o setter faz DUAS coisas: grava e avisa. ---
+export type LetterCase = 'lower' | 'upper';
+export let letterCase: LetterCase = 'upper';
+export function setLetterCaseValue(c: LetterCase): void {
+  if (letterCase === c) return;
+  letterCase = c; emit('letterCase', c);
+}
+
+export let captionsOn = true;
+export function setCaptionsOnValue(on: boolean): void {
+  const v = !!on;
+  if (captionsOn === v) return;
+  captionsOn = v; emit('captionsOn', v);
+}
+
 // --- cbSafe: PALETA SEGURA PARA DALTONISMO (Okabe-Ito). Não é um filtro sobre a imagem — é a escolha das
 //     cores de origem, aplicada IN-PLACE em PCOLOR para que todo mundo que já referencia a array veja a troca. ---
 export let cbSafe: boolean = store.getBool(store.KEYS.cbsafe, false);

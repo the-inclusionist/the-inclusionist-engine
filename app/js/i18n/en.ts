@@ -243,5 +243,7 @@ const en: Record<string, string> = {
   'outline.none': 'none',
   'outline.thin': 'thin',
   'outline.thick': 'thick',
+  'sr.captions.on': 'Captions on.',
+  'sr.captions.off': 'Captions off.',
 };
 export default en;

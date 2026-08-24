@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue } from './core/state.js'; // estado compartilhado
+import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue } from './core/state.js'; // estado compartilhado
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -197,7 +197,7 @@ let MODE='ludico'; // 'ludico' | 'somasub' (silabas vem na E7)
 // 'quizLevel' agora vem de core/state.js (Fase 2, mega-variável 2). Leitura = binding vivo; escrita via setQuizLevel().
 // LETTER_NAME/soletra/ferreiroDistractors extraídos p/ game/literacy-distractors.js (Estágio 4).
 // malform() REMOVIDO: era código morto (0 chamadas) — distrator de sílaba nunca ligado.
-let letterCase='lower'; // 'lower' | 'upper' (E7: selecionável)
+// `letterCase` migrou para core/state.js (#50) — 'lower' | 'upper', escolha pedagógica.
 const disp=(s)=> letterCase==='upper'?String(s).toUpperCase():String(s).toLowerCase();
 // E8: Braille (modo pessoa cega). Padrão de pontos da cela por letra (Grau 1, PT).
 // BRAILLE/NUMW/brailleText extraídos p/ game/braille.js (Estágio 4).
@@ -300,7 +300,7 @@ setVlibrasSay(vlibrasSay); // registra a fala em Libras (ui/vlibras) no core/a11
 
 /* ===== E9: áudio (WebAudio) + legendas (C1) + assistência (C2) ===== */
 // SFX (definições de som) extraído p/ platform/audio.js (Fase 2).
-let captionsOn=true, capTimer=null; // soundOn/volume/audioCtx vêm de platform/audio.js (Fase 2)
+let capTimer=null; // `captionsOn` migrou para core/state.js (#50); soundOn/volume/audioCtx vêm de platform/audio.js
 const anyEasy=()=>players.some(p=>p.easy); // efeitos de MUNDO do Fácil (moedas no chão) ligam se QUALQUER jogador usa Fácil
 // Modo Fácil (deficiência motora): gravidade ×2/3, pulo ×8/7, andar ×0.7, sem perigos, sem correr,
 // hitbox de coleta +4px, moedas no chão, proteção de borda, pula-pula suave (segurar = flutuar descendo).
@@ -976,20 +976,27 @@ const LETRA=[ // L3: Braille saiu do ciclo — o ditado passivo agora segue o Mo
 function setQuizLevel(n,announce){ setQuizLevelValue(n); // core/state.js: clampa 1..5, persiste e emite; a reflexão de UI fica aqui
   document.querySelectorAll('.pm-nivel').forEach(x=>{ x.textContent='📚 Nível '+quizLevel+' · '+QL_NAME[quizLevel]; });
   if(announce) srSay('Nível '+quizLevel+': '+QL_NAME[quizLevel]+'.'); }
-let letraIdx=0;
-function applyLetra(announce){ const s=LETRA[letraIdx]; letterCase=s.caso;
-  const b=$('#opt-letra'); if(b){ b.textContent=s.lbl; b.classList.toggle('is-on',letraIdx>0); b.setAttribute('aria-pressed',String(letraIdx>0)); }
+// `letraIdx` DEIXOU DE EXISTIR: era um cursor de duas posições numa tabela cujas entradas diferem apenas
+// pela caixa da letra, ou seja, `letterCase` disfarçado de índice. Duas variáveis para uma pergunta, no mesmo
+// molde do MODE × activity (#54) — só que aqui a derivação é de uma linha e não custa nada fazer agora.
+const letraIdx=()=>Math.max(0,LETRA.findIndex(s=>s.caso===letterCase));
+// applyLetra REFLETE o estado (rótulo do botão, re-render do quiz, anúncio); nextLetra é quem o MUDA. Antes as
+// duas coisas estavam na mesma função, o que só funcionava porque o estado ERA o índice que ela lia — com
+// `letterCase` como fonte, escrever de volta o que se acabou de ler seria um laço fechado que nunca cicla.
+function applyLetra(announce){ const s=LETRA[letraIdx()];
+  const b=$('#opt-letra'); if(b){ const alt=letraIdx()>0; b.textContent=s.lbl; b.classList.toggle('is-on',alt); b.setAttribute('aria-pressed',String(alt)); }
   document.querySelectorAll('.pm-letra').forEach(x=>{ x.textContent=s.lbl; }); // ABC nos menus de pausa por tela
   if(typeof rebuildCoins==='function' && MODE==='silabas') rebuildCoins();
   players.forEach(p=>{ if(p.quiz)renderQuiz(p); }); // L3: re-renderiza o quiz de quem estiver num
   if(announce) srSay(s.say);
 }
-const optLetraBtn=$('#opt-letra'); if(optLetraBtn)optLetraBtn.addEventListener('click',()=>{ letraIdx=(letraIdx+1)%LETRA.length; applyLetra(true); });
+const optLetraBtn=$('#opt-letra'); if(optLetraBtn)optLetraBtn.addEventListener('click',()=>{ nextLetra(); });
+function nextLetra(){ setLetterCaseValue(LETRA[(letraIdx()+1)%LETRA.length].caso); applyLetra(true); }
 applyLetra(false); // estado inicial = ABC (maiúsculas, padrão)
 // E9: toggles de Som / Legendas / Fácil
 const soundBtn=$('#opt-sound'), capBtn=$('#opt-captions');
 if(soundBtn){ soundBtn.setAttribute('aria-haspopup','dialog'); soundBtn.addEventListener('click',openAudio); } // botão de áudio agora abre o mixer
-if(capBtn) capBtn.addEventListener('click',()=>{ captionsOn=!captionsOn; toggleBtn(capBtn,captionsOn); srSay('Legendas '+(captionsOn?'ligadas.':'desligadas.')); });
+if(capBtn) capBtn.addEventListener('click',()=>{ setCaptionsOnValue(!captionsOn); toggleBtn(capBtn,captionsOn); srSay(t(captionsOn?'sr.captions.on':'sr.captions.off')); });
 const motor = initSettingsMotor({ $, srSay, store, players, getNumPlayers: () => numPlayers, setToggleMove, rebuildCoins }); // painel motor: ui/settings-motor.ts (registra #opt-facil, #opt-altmove e as abas)
 
 /* Modos de visualização: Normal + Alto contraste + simulações/correções. A FABRICA (parallaxTexFor,
@@ -1263,7 +1270,7 @@ const shell = initShell({
   getGamepads: () => (navigator.getGamepads ? navigator.getGamepads() : []),
   isTouchMode: () => document.body.classList.contains('touch-mode'),
   padLayoutFromId, padMapFor: (id) => gamepadApi.padMapFor(id), kbFor, keyName,
-  nextLetra: () => { letraIdx=(letraIdx+1)%LETRA.length; applyLetra(true); }, // MESMA expressao do #opt-letra
+  nextLetra, // MESMA função do #opt-letra — era a expressão duplicada nos dois lugares
   setQuizLevel, getQuizLevel: () => quizLevel,
   openTypo: () => openTypo(), openAudio: () => openAudio(), openMovement: () => openMovement(),
   openVisual: () => openVisual(), openHelp: () => openHelp(), quitGame: () => quitGame(),
