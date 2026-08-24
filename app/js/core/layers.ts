@@ -57,7 +57,21 @@ export const Z = {
 export type LayerName = keyof typeof Z;
 
 // Cadeia de PÓS-PROCESSO — passes sobre o frame COMPOSTO, do interno p/ o externo. NÃO são camadas Z.
-// A11Y_CORRECTION é SEMPRE o último (correção CB/contraste tem de valer sobre a imagem final, inclusive menus). Modos
-// de a11y suprimem CRT_VIGNETTE e flashes decorativos (precedência a11y > estética). Ver ADR-0020.
-export const POST_FX_ORDER = ['CRT_VIGNETTE', 'EMPATHY_SIM', 'A11Y_CORRECTION'] as const;
+// Modos de a11y suprimem CRT_VIGNETTE e flashes decorativos (precedência a11y > estética). Ver ADR-0020.
+//
+// DUAS COISAS DIFERENTES NO FIM DA FILA, e confundi-las é o que este comentário existe para impedir:
+//
+//  · A11Y_CORRECTION é o último passe de CORREÇÃO. Ele decide como a imagem SE PARECE, e por isso precisa ver o
+//    composto final, menus inclusive — é essa a razão de ele vir depois do CRT, que senão re-tinge e desfaz a
+//    correção de daltonismo.
+//  · FLASH_LIMIT é o último passe, ponto. Ele decide se a imagem pode FAZER MAL. A WCAG 2.3.1 limita a variação de
+//    luminância no tempo, e o único quadro cuja luminância importa é o que chega ao olho. Um limitador colocado
+//    ANTES da correção limita uma imagem que já não existe, e a correção fica livre para reabrir a oscilação que
+//    ele acabou de fechar — uma matriz de daltonismo redistribui luminância por definição. Segurança é o passe mais
+//    externo porque é a última coisa verdadeira sobre o quadro.
+//
+// O ADR-0020 dizia "A11Y_CORRECTION sempre por último" sem essa distinção; foi emendado em 2026-08-24. FLASH_LIMIT
+// ainda NÃO está implementado — está declarado aqui, e aferido por teste, para que quem o implementar encontre o
+// lugar certo já ocupado em vez de deduzir a ordem errada a partir da redação antiga.
+export const POST_FX_ORDER = ['CRT_VIGNETTE', 'EMPATHY_SIM', 'A11Y_CORRECTION', 'FLASH_LIMIT'] as const;
 export type PostFx = typeof POST_FX_ORDER[number];

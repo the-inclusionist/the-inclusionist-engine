@@ -365,8 +365,11 @@ open-decisions:
     autopilot for the others.
 
 amendments-required:
-- "ADR-0020 (canonical z-order and post-FX): the flash limiter must be a pass AFTER A11Y_CORRECTION, contradicting
-   the current wording that A11Y_CORRECTION is always last."
+- "DONE (2026-08-24). ADR-0020 (canonical z-order and post-FX): the flash limiter must be a pass AFTER
+   A11Y_CORRECTION, which contradicted the wording that A11Y_CORRECTION is always last. Amended there, and
+   POST_FX_ORDER in core/layers.ts now declares FLASH_LIMIT last with a test anchoring both positions. The
+   resolving distinction is CORRECTION (how it looks — must see the final composite) versus SAFETY (whether it can
+   harm — must see the frame the eye receives)."
 - "ADR-0016, docs/game-design/Art-Bible.md and docs/game-design/character-animation.md: all three declare a 16x32
    sprite; the shipped art is 25x34 and five other sizes, and the Dev has decided there is NO fixed size."
 

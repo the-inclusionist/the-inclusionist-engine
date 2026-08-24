@@ -53,9 +53,18 @@ decision-outcome:
       then overlay: hud · touch-controls · captions · dialogue · game-msg · modal-scrim · menu(range) · transition · debug.
       Two confirmed calls: ITEMS render BEHIND the player (DK barrels / Yoshi / SMW keys); the filters cover EVERYTHING.
       Post-process is NOT a z-layer: CRT/vignette and the a11y filters are a CHAIN over the composited frame
-      (`POST_FX_ORDER`), applied inner→outer, with **A11Y_CORRECTION always last** (else the CRT re-tints and breaks the
-      colour-blind correction), a11y modes **suppress** the decorative CRT/flashes, and the overlay is **palette-aware**
-      (swaps to a CB-safe palette — extends the CB-safe UI work, ADR unlocks the "filter also covers the menu" fix).
+      (`POST_FX_ORDER`), applied inner→outer, with **A11Y_CORRECTION last among the CORRECTION passes** (else the CRT
+      re-tints and breaks the colour-blind correction), a11y modes **suppress** the decorative CRT/flashes, and the
+      overlay is **palette-aware** (swaps to a CB-safe palette — extends the CB-safe UI work, ADR unlocks the "filter
+      also covers the menu" fix).
+      AMENDED 2026-08-24 (see ADR-0027): this record used to say A11Y_CORRECTION is ALWAYS last, full stop. It is not.
+      **FLASH_LIMIT runs after it**, and the distinction that resolves the contradiction is between CORRECTION and
+      SAFETY. A11Y_CORRECTION decides how the image LOOKS and must therefore see the final composite, menus included —
+      that is why it outranks the CRT. FLASH_LIMIT decides whether the image can HARM: WCAG 2.3.1 bounds luminance
+      change over time, and the only frame whose luminance matters is the one the eye actually receives. A limiter
+      placed before the correction clamps an image that no longer exists, and the correction is free to re-open the
+      swing it just closed — a colour-blindness matrix redistributes luminance by design. Safety is the outermost
+      pass because it is the last thing that is true about the frame.
   consequences:
     positive:
     - *decouple
