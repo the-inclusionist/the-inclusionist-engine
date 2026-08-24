@@ -6,6 +6,7 @@
 // See docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import { tileAt, surfTop } from '../core/collision.js';
+import type { PlayerView } from '../core/entity.js';
 import { TILE, TILE_TYPES } from '../core/constants.js';
 import { BOX } from './player.js';
 
@@ -22,7 +23,8 @@ export interface ElevShaft {
   kind: 'wide' | 'thin';
   carY?: number;
 }
-interface RideablePlayer { x: number; y: number }
+/** Quem pode andar de elevador: só a posição importa. */
+type RideablePlayer = PlayerView<'x' | 'y'>;
 
 // Chair-only elevators (no trampoline in normal mode): a pit where the player normally JUMPS.
 // D: pit x53-54 — rises from the floor (row45) to the platform (row42), exit to the left (x52).

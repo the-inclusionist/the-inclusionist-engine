@@ -21,6 +21,7 @@
 // Sem I/O no import: `document`/`setTimeout` só aparecem DENTRO das funções.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (B3).
 import { COIN_TARGET } from '../core/constants.js';
+import type { PlayerView } from '../core/entity.js';
 import { rnd, randInt, shuffle } from '../core/rng.js';
 import { coins, numPlayers, quizLevel, activity as ACTIVITY } from '../core/state.js';
 import { getActivity } from './activities-registry.js';
@@ -70,12 +71,17 @@ export interface BrailleQuiz extends QuizCommon {
 
 export type Quiz = MathQuiz | SilabasQuiz | PreQuiz | AlfQuiz | BrailleQuiz;
 
-/** Só o que o quiz lê/escreve no jogador (`players[]` é `unknown[]` no core/state — estrutural de propósito). */
-export interface QuizPlayer {
-  i: number; x: number; y: number; vx: number; vy: number;
-  collected: number; viz?: string; alfWins?: number;
-  quiz: Quiz | null;
-}
+/**
+ * Só o que o quiz lê/escreve no jogador. Os campos comuns são DERIVADOS de core/entity; `quiz` não é.
+ *
+ * Este é o único módulo autorizado a saber o que há dentro de um quiz — a união `Quiz` é dele. core/entity
+ * declara o campo como `PlayerQuiz`, o mínimo estrutural que as outras camadas precisam (`kind`/`coinIndex`/
+ * `revealed`), porque `core/` não pode importar de `game/` sem inverter a dependência. Aqui o campo é
+ * reintroduzido com a união inteira, que é o que permite estreitar por `kind === 'somasub'`. Não é uma exceção
+ * à regra, é a regra: quem é DONO do tipo pode saber mais que os outros; quem não é, não pode.
+ */
+export type QuizPlayer = PlayerView<'i' | 'x' | 'y' | 'vx' | 'vy' | 'collected' | 'viz' | 'alfWins'>
+  & { quiz: Quiz | null };
 
 /** Selector DOM mínimo (mesma forma do `$` de ui/dom.ts) — injetado, nunca importado. */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;

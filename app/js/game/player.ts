@@ -6,7 +6,7 @@
 // velocidade inicial do pulo (fórmula pura). showPower (DOM/HUD) segue no game.js. Consumido pela física.
 import { TILE, TUNE, EASY } from '../core/constants.js';
 import { solidAt, tileAt } from '../core/collision.js';
-import type { Player } from '../core/entity.js';
+import type { Player, ClingSide } from '../core/entity.js';
 
 export const SPAWN_X = 2 * TILE, SPAWN_Y = 24 * TILE;
 export const BOX = { w: 10, h: 30 };
@@ -15,7 +15,7 @@ export const BOX = { w: 10, h: 30 };
 // dá um empurrão extra no pulo (EASY.jump = 8/7). Negativa porque y cresce p/ baixo. (game.js: física do pulo)
 export function jumpVel(pl: { easy?: boolean }, tiles: number): number { return -TUNE.jumpVel * Math.sqrt(tiles / 5) * (pl.easy ? EASY.jump : 1); }
 
-type Side = 'R' | 'L' | 'U' | 'D';           // lados da ventosa: direita/esquerda/teto/chão
+type Side = ClingSide;                       // lados da ventosa: direita/esquerda/teto/chão (core/entity)
 type Sides = Record<Side, boolean>;
 // corpo mínimo lido pelas queries/contorno (o objeto real de makePlayer tem ~40 campos; game.js os usa por completo)
 type PlayerBody = { x: number; y: number; vx: number; vy: number; clingN: Side | null };

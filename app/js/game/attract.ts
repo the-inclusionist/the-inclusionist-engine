@@ -6,8 +6,10 @@
 // Extraído do game.js (modularização Tier 1). Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import * as store from '../platform/storage.js';
+import type { PlayerView } from '../core/entity.js';
 
-interface Player { x: number; y: number; facing: number; vx: number; vy: number; onGround: boolean; jumpEdge: boolean; }
+/** O bot da demonstração de atração move um jogador de verdade; a fatia é a mesma que o `stepPlayer` lê. */
+type Player = PlayerView<'x' | 'y' | 'facing' | 'vx' | 'vy' | 'onGround' | 'jumpEdge'>;
 interface Kb { right?: string[]; left?: string[] }
 type Cenarios = Record<string, { nome?: string } | undefined>;
 

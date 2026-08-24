@@ -8,6 +8,7 @@
 // See docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import * as PIXI from 'pixi.js';
+import type { PlayerView } from '../core/entity.js';
 import { tileAt, solidTile } from '../core/collision.js';
 import { TILE } from '../core/constants.js';
 import { getElevShafts, elevAt } from './elevators.js';
@@ -33,7 +34,8 @@ export type DarkRegion = [number, number][];
 /** Result of (re)computing the powerup/gate state for a fresh level setup. */
 export interface ExtrasSetup { powerups: Powerup[]; gateTiles: Set<string>; gate: MapGateTile[] | null; gateOpen: boolean }
 
-interface RideablePlayer { x: number; y: number; elevTarget?: number | null }
+/** Quem pode andar de elevador, mais o andar de destino que a geometria escreve. */
+type RideablePlayer = PlayerView<'x' | 'y' | 'elevTarget'>;
 
 /* ===================== DI (mirrors game/elevators.ts) ===================== */
 

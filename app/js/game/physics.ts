@@ -17,6 +17,7 @@
 // ÂNCORA: tests/physics-golden.node.test.js replaya 14 trajetórias capturadas do jogo rodando
 // (tests/fixtures/physics-golden.json). Qualquer mudança de comportamento aqui aparece lá.
 import { TILE, TUNE, EASY, COIN_TARGET } from '../core/constants.js';
+import type { ControlledPlayer } from '../core/entity.js';
 import { tileAt, solidAt, surfTop, isWcRampRiser, rampSurfaceY, caneBlockPx } from '../core/collision.js';
 import { BOX, SPAWN_X, SPAWN_Y, jumpVel, isBouncyGroundBelow, clingSides, firstClingSide, spiderReattach } from './player.js';
 import { ELEV_SPEED, elevAt } from './elevators.js';
@@ -26,29 +27,36 @@ import { players, setCoins } from '../core/state.js';
 import { pickCoins } from './coins.js';
 
 /** Lado da ventosa-aranha (mesma nomenclatura de game/player.ts). */
-export type Side = 'R' | 'L' | 'U' | 'D';
+/** Lados da ventosa-aranha. Reexportado sob o nome que este módulo sempre teve; a definição é uma só, em
+ *  core/entity. Estava escrito por extenso aqui, em game/player e em core/entity — três cópias de uma união
+ *  de quatro literais, que é pouco até divergir. */
+export type { ClingSide as Side } from '../core/entity.js';
 
 /** Os campos do jogador que a FÍSICA lê/escreve. O objeto real (makePlayer, ~45 campos) é um superconjunto. */
-export interface PhysicsPlayer {
-  i: number;
-  x: number; y: number; vx: number; vy: number;
-  onGround: boolean; onLadder: boolean; inWater: boolean;
-  facing: number; jumpBuffer: number; waterStroke: number; hurtTimer: number;
-  jumpEdge: boolean; runEdge: boolean; swapEdge: boolean; specialEdge: boolean;
-  leftEdge: boolean; rightEdge: boolean; walkDir: number;
-  activePower: string; owned: string[];
-  jumpChain: number; groundIdle: number; airTime: number;
-  clinging: boolean; clingN: Side | null; flying: boolean;
-  stepT: number; guardT: number;
-  _swapDown: boolean; _swapT: number; _swapSonar: boolean;
-  easy: boolean; toggleMove: boolean; runCane?: boolean;
-  collected: number;
-  quiz?: unknown; quit?: boolean; waiting?: boolean;
-  elevTarget?: number | null;   // destino do elevador (cadeirante); ausente em makePlayer → undefined == null
-  _fallV?: number;              // vy ANTES do resolve (juice de pouso)
-  caneDist?: number;            // distância pisada desde a última batida de bengala
-  ctrl: Record<string, string[]>; pad: number; viz?: string;
-}
+/**
+ * O jogador visto pela FÍSICA — a fatia mais larga do programa, e agora DERIVADA de core/entity.
+ *
+ * `ControlledPlayer` e não `Player`: a física só roda durante a partida, quando `assignControls` já preencheu
+ * o `ctrl`. Isto estava escrito aqui como `ctrl: Record<string, string[]>`, uma afirmação de não-nulidade
+ * escondida dentro de uma interface redigitada; agora é o nome do tipo que a faz.
+ *
+ * Campos que já não são redigitados e portanto já não podem divergir: `elevTarget` (o destino do elevador do
+ * cadeirante, ausente em makePlayer), `_fallV` (vy ANTES do resolve, para o juice de pouso) e `caneDist`
+ * (distância pisada desde a última batida de bengala) — os três agora documentados uma vez só, em core/entity.
+ */
+export type PhysicsPlayer = Pick<ControlledPlayer,
+  'i' | 'x' | 'y' | 'vx' | 'vy' |
+  'onGround' | 'onLadder' | 'inWater' |
+  'facing' | 'jumpBuffer' | 'waterStroke' | 'hurtTimer' |
+  'jumpEdge' | 'runEdge' | 'swapEdge' | 'specialEdge' | 'leftEdge' | 'rightEdge' | 'walkDir' |
+  'activePower' | 'owned' |
+  'jumpChain' | 'groundIdle' | 'airTime' |
+  'clinging' | 'clingN' | 'flying' |
+  'stepT' | 'guardT' | '_swapDown' | '_swapT' | '_swapSonar' |
+  'easy' | 'toggleMove' | 'runCane' | 'collected' |
+  'quiz' | 'quit' | 'waiting' | 'elevTarget' | '_fallV' | 'caneDist' |
+  'ctrl' | 'pad' | 'viz'
+>;
 
 /** Pistas espaciais de a11y (platform/audio-nav) que a física dispara. */
 export interface PhysicsNav {

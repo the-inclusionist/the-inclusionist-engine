@@ -12,11 +12,13 @@
 // docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, game/life).
 
 import { rnd, randInt } from '../core/rng.js';
+import type { PlayerView } from '../core/entity.js';
 import { players, numPlayers, cenario as CENARIO } from '../core/state.js';
 import { LOGICAL_W, LOGICAL_H, TILE } from '../core/constants.js';
 import { tileAt, solidAt } from '../core/collision.js';
 
-interface LifePlayer { x: number; y: number }
+/** A fauna só precisa saber ONDE o jogador está (fugir/aproximar). */
+type LifePlayer = PlayerView<'x' | 'y'>;
 
 /** A pair of textures/frames [f0, f1] — the 2-frame walk-cycle every creature uses. */
 type TexPair = [unknown, unknown];

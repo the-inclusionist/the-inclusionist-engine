@@ -82,6 +82,7 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C2).
 
 import { t } from '../core/i18n.js';
+import type { PlayerView } from '../core/entity.js';
 import { TILE, COIN_TARGET, EASY } from '../core/constants.js';
 import { BOX, SPAWN_X, SPAWN_Y, makePlayer } from './player.js';
 import { screenBaseSize } from '../core/screens.js';
@@ -212,22 +213,19 @@ export function roundStartFields(i: number): Record<string, unknown> {
 /* ===================== interfaces estruturais ===================== */
 
 /** Os campos do jogador que a SESSÃO lê/escreve. O objeto real (makePlayer, ~45 campos) é um superconjunto. */
-export interface SessionPlayer {
-  i: number;
-  x: number; y: number;
-  easy?: boolean;
-  collected: number;
-  hasKey?: boolean;
-  runCane?: boolean;
-  quit?: boolean;
-  quiz?: unknown;
-  activePower: string;
-  owned: string[];
-  clinging: boolean; flying: boolean;
-  jumpEdge?: boolean;
-  pad?: number;
-  sprite?: { alpha: number; visible: boolean } | null;
-}
+/**
+ * O jogador visto pela SESSÃO (entrar, sair, recomeçar rodada). Derivado de core/entity, com uma exceção.
+ *
+ * `sprite` fica declarado aqui à mão de propósito: a sessão só toca em `alpha` e `visible` (apaga e reacende
+ * o jogador entre rodadas), e `Pick` não sabe estreitar um objeto ANINHADO — derivar traria `x`, `y`, `scale`
+ * e `texture` junto, e todo fixture de teste desta sessão teria de inventar um sprite PIXI completo para
+ * exercitar duas propriedades. Estreitamento aninhado é legítimo e Pick não o expressa; o que não é legítimo
+ * é redigitar os campos que Pick EXPRESSA, e esses todos saíram daqui.
+ */
+export type SessionPlayer = PlayerView<
+  'i' | 'x' | 'y' | 'easy' | 'collected' | 'hasKey' | 'runCane' | 'quit' | 'quiz' |
+  'activePower' | 'owned' | 'clinging' | 'flying' | 'jumpEdge' | 'pad'
+> & { sprite?: { alpha: number; visible: boolean } | null };
 
 /** Uma moeda/coletável (game/coins). `owner` é o dono (Lote C: cada um só coleta a própria cor). */
 export interface SessionCoin {
