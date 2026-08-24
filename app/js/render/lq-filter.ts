@@ -29,11 +29,15 @@ export function lqCurve(t: number): string {
 }
 
 /**
- * Continuous `t` -> screen-reader/UI label ('desligado'/'linear'/'misto'/'quadrático'). NOT clamped — mirrors
- * game.js's lqName verbatim (t<=0 and t>=1-ish inputs fall through to the end labels naturally).
+ * Continuous `t` -> the i18n KEY of the screen-reader/UI label. NOT clamped — mirrors game.js's lqName verbatim
+ * (t<=0 and t>=1-ish inputs fall through to the end labels naturally).
+ *
+ * Returns a key rather than resolved text for two reasons. This module is a render leaf and stays free of the
+ * i18n dependency; and its parameter is already called `t`, so importing i18n's `t` here would shadow it — a
+ * rename to dodge a name clash is a worse reason to change a signature than the boundary itself.
  */
 export function lqName(t: number): string {
-  return t <= 0 ? 'desligado' : t < 0.34 ? 'linear' : t < 0.67 ? 'misto' : 'quadrático';
+  return t <= 0 ? 'lq.off' : t < 0.34 ? 'lq.linear' : t < 0.67 ? 'lq.mixed' : 'lq.quadratic';
 }
 
 // ---------- Thin DOM shell ----------

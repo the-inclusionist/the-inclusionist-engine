@@ -198,9 +198,9 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     b.click();
     expect(state.modoCego).toBe(true);
     expect(state.pauseActor).toBe(0);
-    expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora): on');
+    expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora): ligado');
     expect(b.getAttribute('aria-pressed')).toBe('true');
-    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo cego (navegação sonora): on');
+    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo cego (navegação sonora): ligado');
   });
 
   it('clicar de novo desliga e a legenda acompanha (Right-BICEP: inverso)', () => {
@@ -208,7 +208,7 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     const b = sp.querySelector('.pi-btn[data-pi="blind"]');
     b.click(); b.click();
     expect(b.getAttribute('aria-pressed')).toBe('false');
-    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo cego (navegação sonora): off');
+    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo cego (navegação sonora): desligado');
   });
 
   it('BORDA do TEA: 3 cliques passam por .pi-calm → .pi-on → base, com a legenda certa em cada passo', () => {
@@ -247,7 +247,7 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     s0.querySelector('.pi-btn[data-pi="cvd"]').click();
     expect(s0.querySelector('.pi-btn[data-pi="cvd"]').classList.contains('pi-cvd-protan')).toBe(true);
     expect(s1.querySelector('.pi-btn[data-pi="cvd"]').classList.contains('pi-cvd-protan')).toBe(false);
-    expect(s1.querySelector('.pi-btn[data-pi="cvd"]').getAttribute('aria-label')).toBe('Correção de daltonismo: off');
+    expect(s1.querySelector('.pi-btn[data-pi="cvd"]').getAttribute('aria-label')).toBe('Correção de daltonismo: desligado');
   });
 });
 
@@ -272,7 +272,7 @@ describe('buildScreenPause — a legenda segue o foco e o mouse', () => {
     api.reflectPauseIcons();
     const b = sp.querySelector('.pi-btn[data-pi="blind"]');
     b.dispatchEvent(new FocusEvent('focus'));
-    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo cego (navegação sonora): on');
+    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo cego (navegação sonora): ligado');
   });
 });
 

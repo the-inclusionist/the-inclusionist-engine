@@ -11,6 +11,7 @@
 // quando o estado muda, e um ícone `em construção` nunca se declara ligado.
 // ZOMBIES (Zero/One/Many/Boundary/Interface/Exception/Simple) + Right-BICEP.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import pt from '../app/js/i18n/pt.js';
 import {
   PAUSE_ICONS, CALM_AUDIO_CATS, CVD_SEQ, CVD_NAMES,
   hasPrivateOutputIn, nextCalmMode, nextContrast, nextCvd, calmAudioPlan, calmMotionPlan,
@@ -195,8 +196,10 @@ describe('ciclos dos ícones', () => {
 
   it('INVARIANTE: os nomes de anúncio estão alinhados por índice com a sequência de modos', () => {
     expect(CVD_NAMES).toHaveLength(CVD_SEQ.length);
-    expect(CVD_NAMES[nextCvd('normal').idx]).toBe('protanopia');
-    expect(CVD_NAMES[nextCvd('fix-tritan').idx]).toBe('off');
+    // CVD_NAMES guarda CHAVES i18n desde a Fase 5; a assercao atravessa o dicionario para continuar
+    // afirmando o que a pessoa ouve, e nao apenas que ha alguma chave la.
+    expect(pt[CVD_NAMES[nextCvd('normal').idx]]).toBe('protanopia');
+    expect(pt[CVD_NAMES[nextCvd('fix-tritan').idx]]).toBe('desligado');
   });
 });
 
@@ -259,35 +262,37 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
       ['altmove', 'toggleMove', 'Teclas de alternância'],
     ];
     for (const [k, flag, prefix] of cases) {
-      expect(computeIconLabel(k, snap({ [flag]: false }))).toBe(prefix + ': off');
-      expect(computeIconLabel(k, snap({ [flag]: true }))).toBe(prefix + ': on');
+      // 'on'/'off' eram palavras INGLESAS dentro de uma frase em portugues — o defeito exato que a passada
+      // de i18n existe para remover. Agora o estado tambem passa pelo dicionario.
+      expect(computeIconLabel(k, snap({ [flag]: false }))).toBe(prefix + ': desligado');
+      expect(computeIconLabel(k, snap({ [flag]: true }))).toBe(prefix + ': ligado');
     }
   });
 
   it('TEA tem TRÊS estados no rótulo — não é booleano', () => {
     expect([0, 1, 2].map((c) => computeIconLabel('tea', snap({ calmMode: c }))))
-      .toEqual(['Modo TEA: off', 'Modo TEA: calmo', 'Modo TEA: silencioso']);
+      .toEqual(['Modo TEA: desligado', 'Modo TEA: calmo', 'Modo TEA: silencioso']);
   });
 
   it('contraste diz a RAZÃO de contraste do nível, e "off" fora da lista', () => {
-    expect(computeIconLabel('contrast', snap({ viz: 'normal' }))).toBe('Alto contraste: off');
+    expect(computeIconLabel('contrast', snap({ viz: 'normal' }))).toBe('Alto contraste: desligado');
     expect(computeIconLabel('contrast', snap({ viz: 'hc-direto' }))).toBe('Alto contraste: 3:1');
     expect(computeIconLabel('contrast', snap({ viz: 'hc-direto-45' }))).toBe('Alto contraste: 4,5:1');
     expect(computeIconLabel('contrast', snap({ viz: 'hc-direto-7' }))).toBe('Alto contraste: 7:1');
-    expect(computeIconLabel('contrast', snap({ viz: 'fix-protan' }))).toBe('Alto contraste: off');
+    expect(computeIconLabel('contrast', snap({ viz: 'fix-protan' }))).toBe('Alto contraste: desligado');
   });
 
   it('daltonismo nomeia a deficiência corrigida, e "off" fora da lista', () => {
     expect(computeIconLabel('cvd', snap({ viz: 'fix-protan' }))).toBe('Correção de daltonismo: protanopia');
     expect(computeIconLabel('cvd', snap({ viz: 'fix-deuter' }))).toBe('Correção de daltonismo: deuteranopia');
     expect(computeIconLabel('cvd', snap({ viz: 'fix-tritan' }))).toBe('Correção de daltonismo: tritanopia');
-    expect(computeIconLabel('cvd', snap({ viz: 'hc-direto' }))).toBe('Correção de daltonismo: off');
+    expect(computeIconLabel('cvd', snap({ viz: 'hc-direto' }))).toBe('Correção de daltonismo: desligado');
   });
 
   it('ícone EM CONSTRUÇÃO diz que está em construção — e nunca diz on/off', () => {
     for (const ic of PAUSE_ICONS.filter((x) => x.soon)) {
       const lbl = computeIconLabel(ic.k, snap({ modoCego: true, ttsOn: true, calmMode: 2 }));
-      expect(lbl).toBe(ic.n + ' (em construção)');
+      expect(lbl).toBe(pt[ic.n] + ' (em construção)'); // `n` e a chave i18n; o rotulo e o texto dela
       expect(lbl).not.toMatch(/: on$/);
     }
   });
@@ -470,7 +475,7 @@ describe('initPauseIcons — ações dos ícones', () => {
     const { ctx, said } = buildCtx();
     const api = initPauseIcons(ctx);
     api.iconAct('tea', 0); api.iconAct('tea', 0); api.iconAct('tea', 0);
-    expect(said).toEqual(['Modo TEA: calmo.', 'Modo TEA: silencioso.', 'Modo TEA: off.']);
+    expect(said).toEqual(['Modo TEA: calmo.', 'Modo TEA: silencioso.', 'Modo TEA: desligado.']);
     expect(api.getCalmMode()).toBe(0);
   });
 
@@ -613,7 +618,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-on')).toBe(true);
     expect(b.getAttribute('aria-pressed')).toBe('true');
-    expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora): on');
+    expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora): ligado');
   });
 
   it('o reflexo é IDEMPOTENTE e reversível: desligar limpa a classe e corrige o rótulo', () => {
@@ -626,7 +631,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     state.modoCego = false;
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-on')).toBe(false);
-    expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora): off');
+    expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora): desligado');
   });
 
   it('BORDA: sair do daltonismo LIMPA a classe bicolor anterior (o remove roda antes do add)', () => {
@@ -664,7 +669,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     expect(s0._btns.map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'true']);
     expect(s1._btns.map((b) => b.getAttribute('aria-pressed'))).toEqual(['false', 'false']);
     expect(s0._btns[0].getAttribute('aria-label')).toBe('Alto contraste: 3:1');
-    expect(s1._btns[0].getAttribute('aria-label')).toBe('Alto contraste: off');
+    expect(s1._btns[0].getAttribute('aria-label')).toBe('Alto contraste: desligado');
   });
 
   it('INVARIANTE: depois do reflexo, TODO .pi-btn tem aria-label não-vazio e aria-pressed definido', () => {
@@ -703,9 +708,9 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     setPlayers([{ viz: 'normal', toggleMove: false }]);
     const { ctx } = buildCtx();
     const api = initPauseIcons(ctx);
-    expect(api.iconLabel('altmove', 0)).toBe('Teclas de alternância: off');
+    expect(api.iconLabel('altmove', 0)).toBe('Teclas de alternância: desligado');
     players[0].toggleMove = true;
-    expect(api.iconLabel('altmove', 0)).toBe('Teclas de alternância: on');
+    expect(api.iconLabel('altmove', 0)).toBe('Teclas de alternância: ligado');
   });
 
   it('o ciclo COMPLETO (agir → refletir) mantém rótulo e classe em acordo', () => {
@@ -714,11 +719,11 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     state.screens = [fakeScreen(['contrast'])];
     const api = initPauseIcons(ctx);
     const b = state.screens[0]._btns[0];
-    for (const esperado of ['3:1', '4,5:1', '7:1', 'off']) {
+    for (const esperado of ['3:1', '4,5:1', '7:1', 'desligado']) {
       api.iconAct('contrast', 0);
       api.reflectPauseIcons();
       expect(b.getAttribute('aria-label')).toBe('Alto contraste: ' + esperado);
-      expect(b.getAttribute('aria-pressed')).toBe(String(esperado !== 'off'));
+      expect(b.getAttribute('aria-pressed')).toBe(String(esperado !== 'desligado'));
     }
   });
 });

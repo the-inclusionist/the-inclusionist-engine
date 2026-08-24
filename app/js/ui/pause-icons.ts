@@ -40,7 +40,7 @@ export interface PauseIcon {
   k: string;
   /** The emoji glyph rendered inside the button. */
   e: string;
-  /** Base name; also the `aria-label` when the icon carries no state (or is `soon`). */
+  /** i18n KEY of the base name; also the `aria-label` when the icon carries no state (or is `soon`). */
   n: string;
   /** Under construction: the button announces itself and does nothing else. */
   soon?: boolean;
@@ -48,34 +48,35 @@ export interface PauseIcon {
 
 /** The accessibility shortcut bar at the top of every pause screen (and of the splash `#title-icons`).
  *  Sound-bound icons (blind/TTS) require a private audio output; webcam/voice are still `soon`.
- *  VERBATIM from game.js — including the pt-BR-only names (see the i18n note in the report). */
+ *  VERBATIM from game.js in order and behaviour; the names became i18n keys in the Fase-5 pass. */
+// `n` é a CHAVE i18n do nome do ícone (o emoji `e` não traduz — é o mesmo glifo em toda língua).
 export const PAUSE_ICONS: readonly PauseIcon[] = [
-  { k: 'blind', e: '🦯', n: 'Modo cego (navegação sonora)' },
-  { k: 'tts', e: '🗨️', n: 'Narração por voz (TTS)' },
-  { k: 'libras', e: '🤟', n: 'Modo pessoa surda (Libras)' },
-  { k: 'tea', e: '🧩', n: 'Modo TEA (calmo / silencioso)' },
-  { k: 'altmove', e: '🦾', n: 'Teclas de alternância' },
-  { k: 'contrast', e: '🌗', n: 'Alto contraste' },
-  { k: 'cvd', e: '🚥', n: 'Correção de daltonismo (protan/deutan/tritan)' },
-  { k: 'face', e: '🧑', n: 'Webcam — rosto', soon: true },
-  { k: 'eyes', e: '👀', n: 'Webcam — olhos', soon: true },
-  { k: 'voice', e: '👄', n: 'Comando de voz', soon: true },
+  { k: 'blind', e: '🦯', n: 'icon.blind' },
+  { k: 'tts', e: '🗨️', n: 'icon.tts' },
+  { k: 'libras', e: '🤟', n: 'icon.libras' },
+  { k: 'tea', e: '🧩', n: 'icon.tea' },
+  { k: 'altmove', e: '🦾', n: 'icon.altmove' },
+  { k: 'contrast', e: '🌗', n: 'icon.contrast' },
+  { k: 'cvd', e: '🚥', n: 'icon.cvd' },
+  { k: 'face', e: '🧑', n: 'icon.face', soon: true },
+  { k: 'eyes', e: '👀', n: 'icon.eyes', soon: true },
+  { k: 'voice', e: '👄', n: 'icon.voice', soon: true },
 ];
 
 const ICON_BY_KEY: ReadonlyMap<string, PauseIcon> = new Map(PAUSE_ICONS.map((ic) => [ic.k, ic]));
 export function pauseIcon(k: string): PauseIcon | undefined { return ICON_BY_KEY.get(k); }
 
 /** TEA cycle: 0 = normal · 1 = calmo (reduces) · 2 = silencioso (switches off). Never touches TTS/blind mode. */
-export const CALM_NAMES: readonly string[] = ['off', 'calmo', 'silencioso'];
+export const CALM_NAMES: readonly string[] = ['calm.off', 'calm.quiet', 'calm.silent'];
 /** The audio categories `applyCalm` governs. TTS/sonar/guarda/guia stay untouched — a calm player still needs them. */
 export const CALM_AUDIO_CATS: readonly string[] = ['ambient', 'music', 'earcons', 'other', 'interact'];
 /** Colour-vision-deficiency cycle, in `player.viz` values. */
 export const CVD_SEQ: readonly string[] = ['normal', 'fix-protan', 'fix-deuter', 'fix-tritan'];
-/** Announcement names for CVD, indexed the same as CVD_SEQ. */
-export const CVD_NAMES: readonly string[] = ['off', 'protanopia', 'deuteranopia', 'tritanopia'];
-/** `player.viz` → label used by iconLabel (anything else is "off"). */
+/** i18n keys of the CVD announcement names, indexed the same as CVD_SEQ. */
+export const CVD_NAMES: readonly string[] = ['cvd.off', 'cvd.protan', 'cvd.deuter', 'cvd.tritan'];
+/** `player.viz` → i18n key of the label used by iconLabel (anything else falls back to the 'off' key). */
 export const CVD_LABELS: Readonly<Record<string, string>> = {
-  'fix-protan': 'protanopia', 'fix-deuter': 'deuteranopia', 'fix-tritan': 'tritanopia',
+  'fix-protan': 'cvd.protan', 'fix-deuter': 'cvd.deuter', 'fix-tritan': 'cvd.tritan',
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -163,15 +164,22 @@ export function calmMotionPlan(calmMode: number): { sceneReduced: boolean; charF
 export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   const ic = ICON_BY_KEY.get(k);
   if (!ic) return '';
-  if (ic.soon) return ic.n + ' (em construção)';
-  if (k === 'blind') return 'Modo cego (navegação sonora): ' + (s.modoCego ? 'on' : 'off');
-  if (k === 'tts') return 'Narração por voz (TTS): ' + (s.ttsOn ? 'on' : 'off');
-  if (k === 'libras') return 'Modo pessoa surda (Libras): ' + (s.librasOn ? 'on' : 'off');
-  if (k === 'tea') return 'Modo TEA: ' + CALM_NAMES[s.calmMode];
-  if (k === 'altmove') return 'Teclas de alternância: ' + (s.toggleMove ? 'on' : 'off');
-  if (k === 'contrast') return 'Alto contraste: ' + (CONTRAST_LABELS[s.viz] || 'off');
-  if (k === 'cvd') return 'Correção de daltonismo: ' + (CVD_LABELS[s.viz] || 'off');
-  return ic.n;
+  // O estado vira SEMPRE um parâmetro (`{v}`), nunca uma concatenação: 'on'/'off' eram palavras inglesas
+  // presas numa frase em português, e uma língua que anteponha o estado ao nome precisa do dicionário para
+  // reordenar. `nomeDoIcone: estado` é a moldura; o estado é o conteúdo, e ele também é traduzido.
+  if (ic.soon) return t('icon.soon', { nome: t(ic.n) });
+  const rotulo = (v: string): string => t('icon.state', { nome: t(ic.n), v: t(v) });
+  if (k === 'blind') return rotulo(s.modoCego ? 'state.on' : 'state.off');
+  if (k === 'tts') return rotulo(s.ttsOn ? 'state.on' : 'state.off');
+  if (k === 'libras') return rotulo(s.librasOn ? 'state.on' : 'state.off');
+  // TEA e daltonismo usam um nome CURTO aqui, diferente do nome do botão: o rótulo já diz o nível, e
+  // repetir a lista de níveis do nome ("(calmo / silencioso)", "(protan/deutan/tritan)") a diria duas vezes.
+  // Era assim antes da conversão, com o texto curto embutido — preservado, não reinventado.
+  if (k === 'tea') return t('icon.state', { nome: t('icon.tea.short'), v: t(CALM_NAMES[s.calmMode]!) });
+  if (k === 'altmove') return rotulo(s.toggleMove ? 'state.on' : 'state.off');
+  if (k === 'contrast') return rotulo(CONTRAST_LABELS[s.viz] || 'contrast.off');
+  if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CVD_LABELS[s.viz] || 'cvd.off') });
+  return t(ic.n);
 }
 
 /** The visual state of one icon button. `active` is what becomes `aria-pressed`. */
@@ -210,10 +218,13 @@ export const ICON_STATE_CLASSES: readonly string[] = ['pi-calm', 'pi-cvd-protan'
 
 // --- markup (pure string builders; the DOM shell below just assigns them) ---
 
-/** One `.pi-btn`. `soon` icons get `.pi-soon` and the "(em construção)" suffix baked into the aria-label. */
+/** One `.pi-btn`. `soon` icons get `.pi-soon` and the "under construction" suffix baked into the aria-label.
+ *  The label is the RESTING one: reflectIconBtn overwrites it with the stateful label as soon as the bar is
+ *  reflected. `ic.n` is an i18n key, so it must be resolved here too — the markup is rendered once at build
+ *  time and would otherwise ship the raw key to a screen reader. */
 export function iconBtnMarkup(ic: PauseIcon): string {
   return '<button class="pi-btn' + (ic.soon ? ' pi-soon' : '') + '" type="button" data-pi="' + ic.k +
-    '" aria-label="' + ic.n + (ic.soon ? ' (em construção)' : '') + '">' + ic.e + '</button>';
+    '" aria-label="' + (ic.soon ? t('icon.soon', { nome: t(ic.n) }) : t(ic.n)) + '">' + ic.e + '</button>';
 }
 
 /** The whole icon bar. Used by the pause screen AND by the splash `#title-icons` (which built the same string
@@ -246,7 +257,7 @@ export interface ScreenPauseMarkupOpts {
 /** The full innerHTML of a `.screen-pause`. Pure — every input is a parameter. */
 export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
   return '<div class="pause-card" role="dialog" aria-modal="true" aria-label="Menu de pausa do jogador ' + (o.player + 1) + '">' +
-    '<div class="pause-icons" role="group" aria-label="Atalhos de acessibilidade">' + iconsMarkup() + '</div><p class="pause-icons-cap" aria-live="polite"></p>' +
+    '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup() + '</div><p class="pause-icons-cap" aria-live="polite"></p>' +
     '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>' + (o.numPlayers > 1 ? ' · Jogador ' + (o.player + 1) : '') + '</h2><div class="pause-menu" role="menu">' +
     o.pmButtons.map((b) => pmBtnMarkup(b, o.quizLevel, o.qlName, o.t)).join('') +
     '</div><p class="pause-legend" aria-hidden="true"></p></div>';
@@ -380,23 +391,23 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   const ICON_ACTS: Record<string, (i: number) => void> = {
     blind: () => {
       ctx.setModoCego(!ctx.getModoCego());
-      ctx.srSay('Modo cego ' + (ctx.getModoCego() ? 'ligado.' : 'desligado.'));
+      ctx.srSay(t(ctx.getModoCego() ? 'sr.icon.blindOn' : 'sr.icon.blindOff'));
     },
     tts: () => {
       const cat = ctx.getAudioCat();
       cat.tts.on = !cat.tts.on; // verbatim: no guard here, unlike iconLabel's `audioCat.tts &&`
       ctx.setCatGain('tts');
       if (ctx.reflectTtsPanelEnabled) ctx.reflectTtsPanel();
-      ctx.srSay('Narração ' + (cat.tts.on ? 'ligada.' : 'desligada.'));
+      ctx.srSay(t(cat.tts.on ? 'sr.audio.ttsOn' : 'sr.audio.ttsOff'));
     },
     libras: () => {
       ctx.toggleLibras();
-      ctx.srSay('Modo pessoa surda: Libras ' + (ctx.isLibrasOn() ? 'ligado.' : 'desligado.'));
+      ctx.srSay(t(ctx.isLibrasOn() ? 'sr.icon.librasOn' : 'sr.icon.librasOff'));
     },
     tea: () => {
       calmMode = nextCalmMode(calmMode);
       applyCalm();
-      ctx.srSay('Modo TEA: ' + CALM_NAMES[calmMode] + '.');
+      ctx.srSay(t('sr.icon.tea', { v: t(CALM_NAMES[calmMode]!) }));
     },
     altmove: (i) => {
       // verbatim: `players[i].toggleMove` with no `||{}` guard (unlike contrast/cvd below).
@@ -405,23 +416,23 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     contrast: (i) => {
       const nx = nextContrast((P()[i] || {}).viz);
       ctx.setPlayerViz(i, nx);
-      ctx.srSay('Alto contraste: ' + CONTRAST_LABELS[nx] + '.');
+      ctx.srSay(t('sr.visual.contrast', { v: t(CONTRAST_LABELS[nx] || 'contrast.off') }));
     },
     cvd: (i) => {
       const nx = nextCvd((P()[i] || {}).viz);
       ctx.setPlayerViz(i, nx.mode);
-      ctx.srSay('Correção de daltonismo: ' + CVD_NAMES[nx.idx] + '.');
+      ctx.srSay(t('sr.icon.cvd', { v: t(CVD_NAMES[nx.idx]!) }));
     },
   };
 
   function iconAct(k: string, i: number): void {
     const ic = ICON_BY_KEY.get(k);
     if (ic && ic.soon) {
-      ctx.srAlert(ic.n + ': em construção — chega com os subsistemas de webcam/fala e o filtro de daltonismo.');
+      ctx.srAlert(t('sr.icon.underConstruction', { nome: t(ic.n) }));
       return;
     }
     if ((k === 'blind' || k === 'tts') && !hasPrivateOutput(i)) {
-      ctx.srAlert('Só dá para mexer em som/TTS/modo cego com uma saída de áudio SÓ sua (não compartilhada). Escolha um dispositivo próprio em A12e auditiva.');
+      ctx.srAlert(t('sr.icon.needsPrivateOutput'));
       return;
     }
     const act = ICON_ACTS[k];

@@ -3,6 +3,8 @@
 // Acessibilidade visual (nível de contraste, rótulos, realce L→Q, clamp do jogador selecionado, cor do papel,
 // e a montagem do HTML de #visual-list) não dependem de DOM. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
+import pt from '../app/js/i18n/pt.js';
+import en from '../app/js/i18n/en.js';
 import {
   CONTRAST_LEVELS, CONTRAST_LABELS, ROLE_KEYS, ROLE_LABELS,
   resolveContrastValue, contrastLabel, clamp01, lqLabel, lqPercent, lqFromPercent,
@@ -26,11 +28,16 @@ describe('ui/settings-visual — resolveContrastValue', () => {
 });
 
 describe('ui/settings-visual — contrastLabel', () => {
-  it('[Right] rótulo curto de cada nível (off/3:1/4,5:1/7:1)', () => {
-    expect(contrastLabel('normal')).toBe('off');
-    expect(contrastLabel('hc-direto')).toBe('3:1');
-    expect(contrastLabel('hc-direto-45')).toBe('4,5:1');
-    expect(contrastLabel('hc-direto-7')).toBe('7:1');
+  // contrastLabel devolve a CHAVE i18n; as asserções atravessam o dicionário pt para continuarem a afirmar o
+  // rótulo que a pessoa ouve, e não só que existe alguma chave. 'desligado' era 'off' — palavra inglesa dentro
+  // de uma frase em português, corrigida nesta passada; '4,5:1' vira '4.5:1' em inglês, o que é a razão de a
+  // razão de contraste, que parece um número universal, precisar de tradução.
+  it('[Right] rótulo curto de cada nível (desligado/3:1/4,5:1/7:1)', () => {
+    expect(pt[contrastLabel('normal')]).toBe('desligado');
+    expect(pt[contrastLabel('hc-direto')]).toBe('3:1');
+    expect(pt[contrastLabel('hc-direto-45')]).toBe('4,5:1');
+    expect(pt[contrastLabel('hc-direto-7')]).toBe('7:1');
+    expect(en[contrastLabel('hc-direto-45')]).toBe('4.5:1');
   });
   it('[Error] chave desconhecida cai para "off"', () => {
     expect(contrastLabel('bogus')).toBe(CONTRAST_LABELS.normal);
@@ -46,18 +53,19 @@ describe('ui/settings-visual — clamp01', () => {
 });
 
 describe('ui/settings-visual — lqLabel', () => {
+  // Reexporta lqName de render/lq-filter, que passou a devolver a CHAVE i18n; as asserções vão pelo dicionário.
   it('[Boundary] 0 é desligado; logo acima de 0 é linear; 0,34 vira misto; 0,67 vira quadrático; 1 é quadrático', () => {
-    expect(lqLabel(0)).toBe('desligado');
-    expect(lqLabel(0.1)).toBe('linear');
-    expect(lqLabel(0.33)).toBe('linear');
-    expect(lqLabel(0.34)).toBe('misto');
-    expect(lqLabel(0.66)).toBe('misto');
-    expect(lqLabel(0.67)).toBe('quadrático');
-    expect(lqLabel(1)).toBe('quadrático');
+    expect(pt[lqLabel(0)]).toBe('desligado');
+    expect(pt[lqLabel(0.1)]).toBe('linear');
+    expect(pt[lqLabel(0.33)]).toBe('linear');
+    expect(pt[lqLabel(0.34)]).toBe('misto');
+    expect(pt[lqLabel(0.66)]).toBe('misto');
+    expect(pt[lqLabel(0.67)]).toBe('quadrático');
+    expect(pt[lqLabel(1)]).toBe('quadrático');
   });
   it('[Error] entradas fora de 0..1 são saturadas antes de rotular', () => {
-    expect(lqLabel(-1)).toBe('desligado');
-    expect(lqLabel(2)).toBe('quadrático');
+    expect(pt[lqLabel(-1)]).toBe('desligado');
+    expect(pt[lqLabel(2)]).toBe('quadrático');
   });
 });
 

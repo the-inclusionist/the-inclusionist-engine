@@ -83,6 +83,9 @@ describe('dicionários de locale — estrutura', () => {
       // 'Motor de voz: {motor}.' — "motor de voz" é a mesma expressão em pt-BR e es, palavra por palavra;
       // e o nome do motor (Piper, Kokoro) é nome próprio e chega pelo parâmetro, já sem tradução.
       'sr.audio.engineSet',
+      // 'Modo TEA: {v}.' — "TEA" (Transtorno do Espectro Autista / Trastorno del Espectro Autista) é a mesma
+      // sigla nas duas línguas, e o nível chega pelo parâmetro, esse sim traduzido (calmo/calmado).
+      'sr.icon.tea',
     ]);
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const iguais = chavesSr.filter((k) => k in d && d[k] === pt[k] && !COINCIDEM_DE_PROPOSITO.has(k));

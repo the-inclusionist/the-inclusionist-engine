@@ -24,7 +24,9 @@ export type RGB = readonly [number, number, number];
 export const CONTRAST_LEVELS: readonly string[] = ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7'];
 const CONTRAST_LEVEL_SET: ReadonlySet<string> = new Set(CONTRAST_LEVELS);
 /** Short announcement labels — mirrors game.js's HC_LABEL. */
-export const CONTRAST_LABELS: Readonly<Record<string, string>> = { normal: 'off', 'hc-direto': '3:1', 'hc-direto-45': '4,5:1', 'hc-direto-7': '7:1' };
+// Chaves i18n, não texto. Os dois extremos parecem números universais, mas '4,5:1' usa a vírgula decimal do
+// pt-BR e vira '4.5:1' em inglês — e 'off' era uma palavra inglesa dentro de uma frase em português.
+export const CONTRAST_LABELS: Readonly<Record<string, string>> = { normal: 'contrast.off', 'hc-direto': 'contrast.3', 'hc-direto-45': 'contrast.45', 'hc-direto-7': 'contrast.7' };
 
 export const ROLE_KEYS: readonly RoleKey[] = HC_ROLE_KEYS;
 /** Readable labels for the color-blocking roles — mirrors game.js's ROLE_LBL. */
@@ -66,7 +68,7 @@ export function resolveContrastValue(viz: string): string {
   return CONTRAST_LEVEL_SET.has(viz) ? viz : 'normal';
 }
 
-/** Announcement label for a contrast level ('3:1', '4,5:1', '7:1', 'off'); unknown keys fall back to 'off'. */
+/** i18n KEY of a contrast level's label; unknown modes fall back to the 'off' key. Resolve with `t()`. */
 export function contrastLabel(mode: string): string {
   return CONTRAST_LABELS[mode] ?? CONTRAST_LABELS.normal;
 }
@@ -76,9 +78,10 @@ export function clamp01(t: number): number {
 }
 
 /**
- * 'desligado'/'linear'/'misto'/'quadrático' for the L->Q slider. The label belongs to the L->Q feature, so it
- * lives with the filter that owns it (render/lq-filter) and is re-exported here under the name this overlay has
- * always used. Two copies of one rule is one copy too many: only the owner may change what the levels mean.
+ * i18n KEY of the L->Q slider label ('lq.off'/'lq.linear'/'lq.mixed'/'lq.quadratic'). The label belongs to the
+ * L->Q feature, so it lives with the filter that owns it (render/lq-filter) and is re-exported here under the
+ * name this overlay has always used. Two copies of one rule is one copy too many: only the owner may change
+ * what the levels mean. Callers resolve with `t()` — see the note on lqName about the `t` shadowing.
  */
 export { lqName as lqLabel } from '../render/lq-filter.js';
 
@@ -175,25 +178,27 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
       s.value = contrastValue;
       s.addEventListener('change', () => {
         ctx.setPlayerViz(selected, s.value);
-        ctx.srSay(t('sr.visual.contrast', { v: contrastLabel(s.value) }));
+        ctx.srSay(t('sr.visual.contrast', { v: t(contrastLabel(s.value)) }));
       });
     }
 
     const lq = ctx.$<HTMLInputElement>('#opt-lq');
     const lqv = ctx.$<HTMLElement>('#opt-lq-val');
     if (lq) {
-      const reflect = (t: number): void => {
-        if (lqv) lqv.textContent = lqLabel(t);
+      // O parâmetro chamava-se `t` e passou a `amount`: `lqLabel` agora devolve uma chave que precisa de
+      // `t()` para virar texto, e o nome antigo sombreava justamente a função que faltava chamar aqui.
+      const reflect = (amount: number): void => {
+        if (lqv) lqv.textContent = t(lqLabel(amount));
       };
       lq.value = String(lqPercent(settings.lq));
       reflect(settings.lq);
       lq.addEventListener('input', () => {
-        const t = lqFromPercent(Number(lq.value));
-        ctx.setLq(t);
-        reflect(t);
+        const amount = lqFromPercent(Number(lq.value));
+        ctx.setLq(amount);
+        reflect(amount);
       });
       lq.addEventListener('change', () => {
-        ctx.srSay(t('sr.visual.lq', { v: lqLabel(lqFromPercent(Number(lq.value))) }));
+        ctx.srSay(t('sr.visual.lq', { v: t(lqLabel(lqFromPercent(Number(lq.value)))) }));
       });
     }
 

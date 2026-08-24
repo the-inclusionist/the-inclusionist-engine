@@ -4,6 +4,7 @@
 // Right-BICEP): bordas 0/1, os três limiares do rótulo, e valores fora de faixa (não clampados, verbatim).
 // A casca DOM (ensureLqFilter/lqFilter/setLq) fica fora daqui — precisa de `document` (project browser).
 import { describe, it, expect } from 'vitest';
+import pt from '../app/js/i18n/pt.js';
 import { lqCurve, lqName } from '../app/js/render/lq-filter.js';
 
 // Reimplementação de referência da fórmula (PESQUISA-ALTO-CONTRASTE §2.3) p/ conferir lqCurve ponto a ponto,
@@ -69,34 +70,37 @@ describe('lqCurve', () => {
   });
 });
 
+// lqName passou a devolver a CHAVE i18n (ver a nota no módulo: o parâmetro já se chama `t`). As asserções
+// atravessam o dicionário pt — assim continuam a afirmar a MESMA coisa que antes ("t=0 é desligado") e ainda
+// pegam uma chave inventada, que sairia `undefined` aqui em vez de aparecer crua na tela.
 describe('lqName', () => {
   it('[Boundary] t=0 → desligado', () => {
-    expect(lqName(0)).toBe('desligado');
+    expect(pt[lqName(0)]).toBe('desligado');
   });
   it('[Boundary] t=1 → quadrático', () => {
-    expect(lqName(1)).toBe('quadrático');
+    expect(pt[lqName(1)]).toBe('quadrático');
   });
   it('[Right] limiar 0.34: logo abaixo é linear, no limiar e logo acima é misto', () => {
-    expect(lqName(0.33)).toBe('linear');
-    expect(lqName(0.339999)).toBe('linear');
-    expect(lqName(0.34)).toBe('misto');
-    expect(lqName(0.341)).toBe('misto');
+    expect(pt[lqName(0.33)]).toBe('linear');
+    expect(pt[lqName(0.339999)]).toBe('linear');
+    expect(pt[lqName(0.34)]).toBe('misto');
+    expect(pt[lqName(0.341)]).toBe('misto');
   });
   it('[Right] limiar 0.67: logo abaixo é misto, no limiar e logo acima é quadrático', () => {
-    expect(lqName(0.66)).toBe('misto');
-    expect(lqName(0.669999)).toBe('misto');
-    expect(lqName(0.67)).toBe('quadrático');
-    expect(lqName(0.671)).toBe('quadrático');
+    expect(pt[lqName(0.66)]).toBe('misto');
+    expect(pt[lqName(0.669999)]).toBe('misto');
+    expect(pt[lqName(0.67)]).toBe('quadrático');
+    expect(pt[lqName(0.671)]).toBe('quadrático');
   });
   it('[Right] meio de cada faixa: 0.1 linear · 0.5 misto · 0.9 quadrático', () => {
-    expect(lqName(0.1)).toBe('linear');
-    expect(lqName(0.5)).toBe('misto');
-    expect(lqName(0.9)).toBe('quadrático');
+    expect(pt[lqName(0.1)]).toBe('linear');
+    expect(pt[lqName(0.5)]).toBe('misto');
+    expect(pt[lqName(0.9)]).toBe('quadrático');
   });
   it('[Range] valores fora de [0,1] não são clampados — negativo cai em desligado, >1 cai em quadrático', () => {
-    expect(lqName(-1)).toBe('desligado');
-    expect(lqName(-0.01)).toBe('desligado');
-    expect(lqName(1.5)).toBe('quadrático');
-    expect(lqName(100)).toBe('quadrático');
+    expect(pt[lqName(-1)]).toBe('desligado');
+    expect(pt[lqName(-0.01)]).toBe('desligado');
+    expect(pt[lqName(1.5)]).toBe('quadrático');
+    expect(pt[lqName(100)]).toBe('quadrático');
   });
 });
