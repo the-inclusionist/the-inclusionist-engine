@@ -244,5 +244,14 @@ const pt: Record<string, string> = {
   'cen.cemiterio': 'Amanhecer no Campo',
   'cen.espaco': 'Noite no Campo',
   'cen.floresta': 'Floresta',
+
+  // Narração por voz (TTS).
+  'audio.noSystemVoices': '(sem vozes do sistema)',
+  'sr.tts.engineNoLanguage': 'Este motor ainda não fala este idioma — por enquanto, use Piper (neural) ou a voz do navegador.',
+  'sr.tts.noNeuralForLanguage': 'Ainda não há voz neural para este idioma — seguindo com a voz do navegador, que fala a língua certa.',
+  'sr.tts.downloading': 'Baixando a voz neural (precisa de internet só no 1º uso)…',
+  'sr.tts.progress': 'Voz neural: {pct}%.',
+  'sr.tts.ready': 'Voz neural pronta, em {s} segundos.',
+  'sr.tts.loadFailed': 'Não deu para carregar a voz neural (precisa de internet no 1º uso) — seguindo com a voz do navegador.',
 };
 export default pt;

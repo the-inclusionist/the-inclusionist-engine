@@ -14,7 +14,7 @@
 // game.js's own `setModoCego()` and the pause-menu icon bar (`iconAct('tts'|'blind', …)`) call them directly.
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-import { t } from '../core/i18n.js';
+import { t, bcp47 } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
@@ -149,10 +149,22 @@ export const TTS_ENGINE_OPTIONS: readonly (readonly [string, string])[] = [
 
 export interface VoiceLike { name: string; lang: string; }
 
-/** pt-* voices when available, else the full list (verbatim port of populateTTSVoices' filter/fallback). */
-export function pickPtVoices<T extends VoiceLike>(voices: readonly T[]): readonly T[] {
-  const pt = voices.filter((v) => /^pt/i.test(v.lang));
-  return pt.length ? pt : voices;
+/**
+ * As vozes do sistema no idioma pedido; sem nenhuma, a lista inteira.
+ *
+ * Chamava-se `pickPtVoices` e filtrava `/^pt/i` fixo, de modo que o jogo em inglês oferecia à pessoa uma
+ * lista de vozes PORTUGUESAS para ler texto em inglês. O nome dizia a verdade sobre o que fazia e mentia
+ * sobre o que devia fazer.
+ *
+ * A comparação é pelo PREFIXO de idioma, não pela etiqueta inteira: quem joga em pt-BR também deve poder
+ * escolher uma voz pt-PT se for a única instalada, e o navegador de uma escola raramente tem a variante
+ * exata. O recuo para a lista inteira fica: uma lista vazia seria pior que uma lista no idioma errado, que
+ * ao menos a pessoa pode ouvir e rejeitar.
+ */
+export function pickVoicesFor<T extends VoiceLike>(voices: readonly T[], lang: string): readonly T[] {
+  const pref = lang.slice(0, 2).toLowerCase();
+  const iguais = voices.filter((v) => v.lang.slice(0, 2).toLowerCase() === pref);
+  return iguais.length ? iguais : voices;
 }
 
 /** "<name> (<lang>)" option label. */
@@ -261,10 +273,10 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (!sel) return;
     let voices: SpeechSynthesisVoice[] = [];
     try { voices = (window.speechSynthesis && window.speechSynthesis.getVoices()) || []; } catch (e) { /* noop */ }
-    const list = pickPtVoices(voices);
+    const list = pickVoicesFor(voices, bcp47());
     sel.innerHTML = '';
     if (!list.length) {
-      const o = document.createElement('option'); o.textContent = '(sem vozes do sistema)'; sel.appendChild(o);
+      const o = document.createElement('option'); o.textContent = t('audio.noSystemVoices'); sel.appendChild(o);
       ctx.tts.setVoiceObj(null);
       return;
     }

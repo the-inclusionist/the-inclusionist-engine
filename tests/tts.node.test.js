@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Testes de platform/tts (project NODE: window.speechSynthesis + SpeechSynthesisUtterance stubados; NÃO exercito o
 // caminho Piper, que faz import() de CDN). Contratos: narrate é gated por soundOn + audioCat.tts.on + texto não-vazio;
-// o fallback Web Speech fala; loadTTS avisa em motor sem pt-BR. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (#38).
+// o fallback Web Speech fala NO IDIOMA DO JOGO; loadTTS avisa em motor que não fala o idioma. Ver
+// docs/5-Refactoring/plano-modularizacao-mapa.md (#38).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import pt from '../app/js/i18n/pt.js';
 import { createTts } from '../app/js/platform/tts.js';
 
 let spoke, cancels;
@@ -81,11 +83,14 @@ describe('platform/tts', () => {
     expect(tts.getVoiceObj()).toBe(v);
   });
 
-  it('[Interface] loadTTS em motor sem pt-BR (kokoro) avisa e não carrega', () => {
+  it('[Interface] loadTTS num motor que não fala o idioma avisa e não carrega', () => {
+    // A frase dizia "ainda não fala PORTUGUÊS", e o teste aferia esse literal. Num jogo em inglês a mensagem
+    // estaria errada — o motor não fala o idioma DO JOGO, seja ele qual for. A asserção passa pelo dicionário
+    // em vez de repetir o texto: continua provando que a pessoa foi avisada, sem congelar a redação.
     const { tts, alerted } = setup();
     tts.setEngineSel('kokoro');
     tts.loadTTS();
-    expect(alerted.some((a) => /ainda não fala português/.test(a))).toBe(true);
+    expect(alerted).toContain(pt['sr.tts.engineNoLanguage']);
     expect(tts.loading).toBe(false);
   });
 });

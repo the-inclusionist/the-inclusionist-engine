@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   NAV_CATS, GEN_CATS, volPercent, catRowHTML, catsListHTML, navMasterVolume,
-  parseCaneDiv, caneDivMessage, TTS_ENGINE_OPTIONS, pickPtVoices, voiceLabel,
+  parseCaneDiv, caneDivMessage, TTS_ENGINE_OPTIONS, pickVoicesFor, voiceLabel,
   sinksSupported, sinkOptionLabel, sinkSelectValue,
 } from '../app/js/ui/settings-audio.js';
 
@@ -108,17 +108,25 @@ describe('ui/settings-audio — TTS_ENGINE_OPTIONS', () => {
   });
 });
 
-describe('ui/settings-audio — pickPtVoices', () => {
-  it('[Right] filtra só as vozes com lang começando em "pt" (case-insensitive)', () => {
+describe('ui/settings-audio — pickVoicesFor', () => {
+  // Era `pickPtVoices`, com o `/^pt/i` fixo — o jogo em inglês oferecia uma lista de vozes PORTUGUESAS para
+  // ler texto em inglês. Agora recebe o idioma; a comparação é por PREFIXO, para que pt-BR possa cair numa
+  // voz pt-PT quando é a única instalada, que é o caso comum num computador de escola.
+  it('[Right] filtra pelo prefixo de idioma pedido, ignorando a região e a caixa', () => {
     const voices = [{ name: 'A', lang: 'en-US' }, { name: 'B', lang: 'pt-BR' }, { name: 'C', lang: 'PT-PT' }];
-    expect(pickPtVoices(voices).map((v) => v.name)).toEqual(['B', 'C']);
+    expect(pickVoicesFor(voices, 'pt-BR').map((v) => v.name)).toEqual(['B', 'C']);
+    expect(pickVoicesFor(voices, 'en').map((v) => v.name)).toEqual(['A']);
   });
-  it('[Boundary] sem nenhuma voz pt-* cai de volta na lista inteira', () => {
+  it('[Right] o idioma pedido MANDA — pedir espanhol não devolve as portuguesas', () => {
+    const voices = [{ name: 'B', lang: 'pt-BR' }, { name: 'D', lang: 'es-ES' }];
+    expect(pickVoicesFor(voices, 'es').map((v) => v.name)).toEqual(['D']);
+  });
+  it('[Boundary] sem nenhuma voz no idioma cai de volta na lista inteira', () => {
     const voices = [{ name: 'A', lang: 'en-US' }, { name: 'D', lang: 'es-ES' }];
-    expect(pickPtVoices(voices)).toEqual(voices);
+    expect(pickVoicesFor(voices, 'pt-BR')).toEqual(voices);
   });
   it('[Zero] lista vazia -> lista vazia (não a lista inteira "de volta")', () => {
-    expect(pickPtVoices([])).toEqual([]);
+    expect(pickVoicesFor([], 'pt-BR')).toEqual([]);
   });
 });
 

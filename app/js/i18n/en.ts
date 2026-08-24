@@ -214,5 +214,14 @@ const en: Record<string, string> = {
   'cen.cemiterio': 'Daybreak in the Fields',
   'cen.espaco': 'Night in the Fields',
   'cen.floresta': 'Forest',
+
+  // Voice narration (TTS).
+  'audio.noSystemVoices': '(no system voices)',
+  'sr.tts.engineNoLanguage': 'This engine does not speak this language yet — for now, use Piper (neural) or the browser voice.',
+  'sr.tts.noNeuralForLanguage': 'There is no neural voice for this language yet — carrying on with the browser voice, which speaks it.',
+  'sr.tts.downloading': 'Downloading the neural voice (needs the internet on the first use only)…',
+  'sr.tts.progress': 'Neural voice: {pct}%.',
+  'sr.tts.ready': 'Neural voice ready, in {s} seconds.',
+  'sr.tts.loadFailed': 'The neural voice could not be loaded (it needs the internet on the first use) — carrying on with the browser voice.',
 };
 export default en;

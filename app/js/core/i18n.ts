@@ -28,6 +28,20 @@ export function t(key: string, params?: Record<string, string | number>): string
 }
 
 export function getLocale(): string { return locale; }
+
+/**
+ * A etiqueta BCP-47 do idioma corrente — o que se escreve em `<html lang>` e o que se entrega a APIs do
+ * navegador que falam (Web Speech) ou comparam idioma.
+ *
+ * Só o português precisa de região: 'pt' sozinho deixaria o navegador escolher entre pt-PT e pt-BR, e a
+ * diferença de prosódia é audível para uma criança brasileira. Inglês e espanhol ficam sem região de
+ * propósito — o navegador escolhe a variante local, que é o certo, e fixar 'en-US' imporia sotaque americano
+ * a quem estivesse na Índia ou na Nigéria.
+ *
+ * `setLocale` calculava isto em linha, ao escrever `<html lang>`. Agora os dois leem daqui: uma regra, dois
+ * consumidores — que é exatamente a forma que este projeto já viu divergir quatro vezes.
+ */
+export function bcp47(code: string = locale): string { return code === 'pt' ? 'pt-BR' : code; }
 export function availableLocales(): string[] { return AVAILABLE.slice(); }
 
 // Aplica as traduções declarativas do HTML: [data-i18n] → textContent; [data-i18n-aria] → aria-label.
@@ -51,7 +65,7 @@ export async function setLocale(code: string): Promise<void> {
   dict = await ensure(code);
   locale = code;
   store.set(STORE_KEY, code);
-  document.documentElement.lang = (code === 'pt') ? 'pt-BR' : code;
+  document.documentElement.lang = bcp47(code);
   applyDom(document);
   window.dispatchEvent(new CustomEvent('i18n:change', { detail: { locale } }));
 }
