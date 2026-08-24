@@ -234,5 +234,14 @@ const en: Record<string, string> = {
   'sr.motor.oneButtonOff': 'One button at a time off.',
   'sr.motor.wheelchairOn': 'Wheelchair mode on: no jumping; ramps and lifts instead of steps and ladders; coins on the ground; flight and super-run only.',
   'sr.motor.wheelchairOff': 'Wheelchair mode off.',
+  'sr.visual.ownerColorsOn': 'Items coloured by owner: on.',
+  'sr.visual.ownerColorsOff': 'Items coloured by owner: off — everything in its original colour.',
+  'sr.visual.cbSafeOn': 'Colour-blind safe palette on (Okabe-Ito).',
+  'sr.visual.cbSafeOff': 'Colour-blind safe palette off.',
+  'sr.visual.outlineFg': 'Foreground outline: {v}.',
+  'sr.visual.outlineBg': 'Background outline: {v}.',
+  'outline.none': 'none',
+  'outline.thin': 'thin',
+  'outline.thick': 'thick',
 };
 export default en;

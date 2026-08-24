@@ -77,6 +77,49 @@ export function setModoCegoValue(on: boolean): void {
   modoCego = on; store.setBool('incl_modocego', on); emit('modoCego', on);
 }
 
+// --- cbSafe: PALETA SEGURA PARA DALTONISMO (Okabe-Ito). Não é um filtro sobre a imagem — é a escolha das
+//     cores de origem, aplicada IN-PLACE em PCOLOR para que todo mundo que já referencia a array veja a troca. ---
+export let cbSafe: boolean = store.getBool(store.KEYS.cbsafe, false);
+export function setCbSafeValue(on: boolean): void {
+  const v = !!on;
+  if (cbSafe === v) return;
+  cbSafe = v; store.setBool(store.KEYS.cbsafe, v); emit('cbSafe', v);
+}
+
+// --- ownerColors: no multijogador, cada item aparece na cor de QUEM pode pegá-lo. Desligado, todos veem a cor
+//     original — o que é preferível para quem não distingue as cores dos donos. ---
+export let ownerColors: boolean = store.getBool(store.KEYS.ownercolors, true);
+export function setOwnerColorsValue(on: boolean): void {
+  const v = !!on;
+  if (ownerColors === v) return;
+  ownerColors = v; store.setBool(store.KEYS.ownercolors, v); emit('ownerColors', v);
+}
+
+/** Espessura de contorno: 0 nenhum · 1 fino · 2 grosso. Fora da faixa satura, não rejeita. */
+export type OutlineLevel = 0 | 1 | 2;
+const nivelContorno = (v: number): OutlineLevel => Math.max(0, Math.min(2, v | 0)) as OutlineLevel;
+
+// --- hcOutlineFg / hcOutlineBg: CONTORNOS do alto contraste, e são dois porque servem a critérios diferentes.
+//     `fg` contorna o primeiro plano — personagem e itens — e atende a WCAG 2.4.7 (foco visível). `bg` contorna
+//     o perímetro externo de plataforma, água e lava, delimitando navegável × não-navegável, e atende a
+//     WCAG 1.4.11 (contraste de componente ≥ 3:1). Confundi-los apagaria uma das duas garantias.
+//
+//     A saturação em 0..2 vem do original e é dupla: no boot (contra um localStorage corrompido) e na escrita
+//     (contra um chamador). No main.js isso obrigava a declarar com um valor provisório e reatribuir na linha
+//     seguinte, porque a leitura saturada não cabia no mesmo `let`; aqui a função a resolve de uma vez. ---
+export let hcOutlineFg: OutlineLevel = nivelContorno(store.getNum(store.KEYS.outfg, 1));
+export function setOutlineFgValue(v: number): void {
+  const n = nivelContorno(v);
+  if (hcOutlineFg === n) return;
+  hcOutlineFg = n; store.set(store.KEYS.outfg, n); emit('hcOutlineFg', n);
+}
+export let hcOutlineBg: OutlineLevel = nivelContorno(store.getNum(store.KEYS.outbg, 1));
+export function setOutlineBgValue(v: number): void {
+  const n = nivelContorno(v);
+  if (hcOutlineBg === n) return;
+  hcOutlineBg = n; store.set(store.KEYS.outbg, n); emit('hcOutlineBg', n);
+}
+
 // --- caneBlockDiv: espaçamento da batida da BENGALA, em blocos pisados. 1 = uma batida por bloco;
 //     2 = uma batida a cada meio bloco. Não é preferência de som: é a resolução com que uma criança cega
 //     mede a distância que andou, e por isso a colisão a lê a cada passo. ---

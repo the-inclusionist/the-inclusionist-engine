@@ -235,5 +235,14 @@ const es: Record<string, string> = {
   'sr.motor.oneButtonOff': 'Un botón a la vez desactivado.',
   'sr.motor.wheelchairOn': 'Modo silla de ruedas activado: sin salto; rampas y ascensores en lugar de escalones y escalera; monedas en el suelo; solo vuelo y súper carrera.',
   'sr.motor.wheelchairOff': 'Modo silla de ruedas desactivado.',
+  'sr.visual.ownerColorsOn': 'Objetos en el color de su dueño: activado.',
+  'sr.visual.ownerColorsOff': 'Objetos en el color de su dueño: desactivado — todos en su color original.',
+  'sr.visual.cbSafeOn': 'Paleta segura para daltonismo activada (Okabe-Ito).',
+  'sr.visual.cbSafeOff': 'Paleta segura para daltonismo desactivada.',
+  'sr.visual.outlineFg': 'Contorno del primer plano: {v}.',
+  'sr.visual.outlineBg': 'Contorno del segundo plano: {v}.',
+  'outline.none': 'ninguno',
+  'outline.thin': 'fino',
+  'outline.thick': 'grueso',
 };
 export default es;

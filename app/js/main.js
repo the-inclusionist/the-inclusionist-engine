@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue } from './core/state.js'; // estado compartilhado
+import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue } from './core/state.js'; // estado compartilhado
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -172,9 +172,8 @@ for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const t=WORLD[y][x];
 // Dois contornos configuráveis (0=nenhum · 1=fino/1px · 2=grosso/2px):
 //  fg = 1º plano (personagem/itens) — WCAG 2.4.7 foco visível; bg = 2º plano (perímetro externo de
 //  plataforma/água/lava — delimita navegável × não-navegável) — WCAG 1.4.11 contraste ≥3:1.
-let hcOutlineFg=1, hcOutlineBg=1;
-hcOutlineFg=Math.max(0,Math.min(2,store.getNum(store.KEYS.outfg,1)|0));
-hcOutlineBg=Math.max(0,Math.min(2,store.getNum(store.KEYS.outbg,1)|0));
+// hcOutlineFg/hcOutlineBg migraram para core/state.js (#50), com a saturação 0..2 e a leitura do
+// armazenamento numa passada só — aqui eram um `let` provisório seguido de duas reatribuições.
 // HC_ROLE_DEF/HC_ROLE/saveHcRole (color-blocking por papel, customizavel e persistido) migraram para
 // render/high-contrast.ts (Onda A). rgbHex foi junto e nao voltou: tinha ZERO chamadores aqui.
 const hexRgb=h=>{ const m=/^#?([0-9a-f]{6})$/i.exec(h); if(!m)return null; const n=parseInt(m[1],16); return [n>>16&255,n>>8&255,n&255]; };
@@ -256,9 +255,9 @@ function applyControls(){ kbRuntime.refreshControls(); }
 // Tint distintivo por jogador (P1 = normal). L2: paleta CB-SAFE opcional (Okabe & Ito 2008 — laranja/azul-céu/
 // amarelo distinguíveis em protan/deutan/tritan) SÓ para jogadores/itens/efeitos — o CENÁRIO fica com cores naturais.
 const PCOLOR_DEF=[0xffffff,0xff9a9a,0x8affc0,0xffe08a], PCOLOR_CB=[0xffffff,0xe69f00,0x56b4e9,0xf0e442];
-let cbSafe=store.getBool(store.KEYS.cbsafe,false);
+// `cbSafe` migrou para core/state.js (#50).
 const PCOLOR=(cbSafe?PCOLOR_CB:PCOLOR_DEF).slice(); // mutável in-place (todos referenciam PCOLOR)
-let ownerColors=store.getBool(store.KEYS.ownercolors,true); // itens na cor do dono (padrão ligado)
+// `ownerColors` migrou para core/state.js (#50) — itens na cor do dono (padrão ligado).
 const assignControls = () => kbRuntime.assignControls();
 assignControls();
 /* ===================== TECLADO -> input/keydown.ts (D2-a) =====================
@@ -1039,19 +1038,24 @@ const isSimKind=k=>k==='filter'||k==='lowvision'||k==='blind';
 const VIZ_SIM=VIZ_MODES.filter(m=>isSimKind(m.kind));
 let selVizPlayer=0;
 // renderVizGroup migrou para render/viz-setters.ts (Onda A).
-function setOwnerColors(on){ ownerColors=!!on; store.setBool(store.KEYS.ownercolors,ownerColors);
-  rebuildCoins(); srSay('Itens na cor do dono '+(on?'ligados.':'desligados: todos na cor original.')); }
-function setCbSafe(on){ cbSafe=!!on; store.setBool(store.KEYS.cbsafe,cbSafe);
+function setOwnerColors(on){ const antes=ownerColors; setOwnerColorsValue(on); if(ownerColors===antes)return;
+  rebuildCoins(); srSay(t(ownerColors?'sr.visual.ownerColorsOn':'sr.visual.ownerColorsOff')); }
+function setCbSafe(on){ const antes=cbSafe; setCbSafeValue(on); if(cbSafe===antes)return;
   const src=cbSafe?PCOLOR_CB:PCOLOR_DEF; PCOLOR.length=0; src.forEach(c=>PCOLOR.push(c)); // troca IN-PLACE (todos referenciam PCOLOR)
-  rebuildCoins(); ensureSprites(); srSay('Paleta segura para daltonismo '+(on?'ligada (Okabe-Ito).':'desligada.')); }
+  rebuildCoins(); ensureSprites(); srSay(t(cbSafe?'sr.visual.cbSafeOn':'sr.visual.cbSafeOff')); }
 function setRoleColor(k,hex){ const rgb=hexRgb(hex); if(!rgb||!HC_ROLE[k])return; HC_ROLE[k]=rgb; saveHcRole();
   _rebakeDirect(); rebuildExtras(); srSay('Cor de '+ROLE_LABELS[k]+' alterada.'); }
 function resetRoleColors(){ for(const k in HC_ROLE_DEF)HC_ROLE[k]=HC_ROLE_DEF[k].slice(); saveHcRole();
   _rebakeDirect(); rebuildExtras(); visual.render(); srSay('Cores do color-blocking restauradas ao padrão.'); }
 // Dois contornos configuráveis (1º plano personagem/itens · 2º plano perímetro de plataforma/água/lava).
 // _rebakeDirect migrou para render/viz-setters.ts (Onda A) como viz.rebakeDirect.
-function setOutlineFg(v){ hcOutlineFg=Math.max(0,Math.min(2,v|0)); store.set(store.KEYS.outfg,hcOutlineFg); _rebakeDirect(); visual.render(); srSay('Contorno do primeiro plano: '+['nenhum','fino','grosso'][hcOutlineFg]+'.'); }
-function setOutlineBg(v){ hcOutlineBg=Math.max(0,Math.min(2,v|0)); store.set(store.KEYS.outbg,hcOutlineBg); _rebakeDirect(); visual.render(); srSay('Contorno do segundo plano: '+['nenhum','fino','grosso'][hcOutlineBg]+'.'); }
+// A tabela ['nenhum','fino','grosso'] estava escrita DUAS vezes, uma em cada função, para o mesmo trio de
+// espessuras — e em pt-BR fixo. Virou chave i18n indexada pelo próprio nível.
+const OUTLINE_KEY=['outline.none','outline.thin','outline.thick'];
+function setOutlineFg(v){ const antes=hcOutlineFg; setOutlineFgValue(v); if(hcOutlineFg===antes)return;
+  _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineFg',{v:t(OUTLINE_KEY[hcOutlineFg])})); }
+function setOutlineBg(v){ const antes=hcOutlineBg; setOutlineBgValue(v); if(hcOutlineBg===antes)return;
+  _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineBg',{v:t(OUTLINE_KEY[hcOutlineBg])})); }
 const visual = initSettingsVisual({ $, srSay, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: (i) => { selVizPlayer = i; }, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
   const sim=players.some(p=>isSimKind((VIZ_BY_KEY[p.viz]||{}).kind));

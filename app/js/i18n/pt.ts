@@ -265,5 +265,14 @@ const pt: Record<string, string> = {
   'sr.motor.oneButtonOff': 'Um botão por vez desligado.',
   'sr.motor.wheelchairOn': 'Modo cadeirante ligado: sem pulo; rampas e elevadores no lugar de degraus e escada; moedas no chão; só voo e super-corrida.',
   'sr.motor.wheelchairOff': 'Modo cadeirante desligado.',
+  'sr.visual.ownerColorsOn': 'Itens na cor do dono ligados.',
+  'sr.visual.ownerColorsOff': 'Itens na cor do dono desligados: todos na cor original.',
+  'sr.visual.cbSafeOn': 'Paleta segura para daltonismo ligada (Okabe-Ito).',
+  'sr.visual.cbSafeOff': 'Paleta segura para daltonismo desligada.',
+  'sr.visual.outlineFg': 'Contorno do primeiro plano: {v}.',
+  'sr.visual.outlineBg': 'Contorno do segundo plano: {v}.',
+  'outline.none': 'nenhum',
+  'outline.thin': 'fino',
+  'outline.thick': 'grosso',
 };
 export default pt;
