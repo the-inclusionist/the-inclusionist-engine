@@ -22,6 +22,7 @@ import { tileAt, solidAt, surfTop, isWcRampRiser, rampSurfaceY, caneBlockPx } fr
 import { BOX, SPAWN_X, SPAWN_Y, jumpVel, isBouncyGroundBelow, clingSides, firstClingSide, spiderReattach } from './player.js';
 import { ELEV_SPEED, elevAt } from './elevators.js';
 import { held } from '../input/state.js';
+import { nextLatchedDir, latchedDrive, type LatchDir } from '../input/latch.js';
 import { rnd } from '../core/rng.js';
 import { players, setCoins } from '../core/state.js';
 import { pickCoins } from './coins.js';
@@ -166,12 +167,10 @@ export function triggerLava(pl: PhysicsPlayer): void {
 
 /** Movimento HORIZONTAL: alternância (1 dedo) ou direita/esquerda; devolve a direção do INPUT (-1/0/1). */
 function horizontalMove(pl: PhysicsPlayer, run: boolean, turbo: boolean): number {
-  if (pl.toggleMove) { // movimento por alternância (1 dedo): tocar trava a direção; segurar acelera
-    if (pl.leftEdge) pl.walkDir = pl.walkDir === -1 ? 0 : -1;   // toque inverte/para
-    if (pl.rightEdge) pl.walkDir = pl.walkDir === 1 ? 0 : 1;
-    const dir = pl.walkDir;
-    const holding = (dir === -1 && held(pl, 'left')) || (dir === 1 && held(pl, 'right'));
-    pl.vx = dir * TUNE.hWalk * (holding ? 2 / 3 : 1 / 3);       // segurando = 2/3 · travado = 1/3
+  if (pl.toggleMove) { // movimento por alternância (1 dedo): a política é de ENTRADA e mora em input/latch
+    const dir = nextLatchedDir(pl.walkDir as LatchDir, pl.leftEdge, pl.rightEdge);
+    pl.walkDir = dir;
+    pl.vx = TUNE.hWalk * latchedDrive(dir, held(pl, 'left'), held(pl, 'right'));
     return dir;
   }
   const dir = (held(pl, 'right') ? 1 : 0) - (held(pl, 'left') ? 1 : 0); // Fácil: sem correr
