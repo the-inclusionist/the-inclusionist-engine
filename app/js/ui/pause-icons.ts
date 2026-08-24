@@ -86,15 +86,19 @@ export const CVD_LABELS: Readonly<Record<string, string>> = {
 
 /** The slice of a player object the pause icons touch. `players` (core/state) is typed `unknown[]`. */
 /**
- * A fatia que os ícones de pausa tocam — derivada de core/entity, mais uma assinatura de índice.
+ * A fatia que os ícones de pausa tocam — derivada de core/entity, e SEM assinatura de índice.
  *
- * A assinatura fica porque `applyCalm` escreve por NOME CALCULADO (`pl[RM_CHAR[i].prop]`), e nenhum `Pick`
- * cobre um acesso que só existe em tempo de execução. Mas as três propriedades que ele calcula — rmWalk,
- * rmBreath, rmFlavor — agora são derivadas por nome, então a assinatura de índice deixou de ser a ÚNICA
- * coisa que as declara: elas têm tipo, e a assinatura só autoriza o acesso dinâmico.
+ * Havia uma (`[prop: string]: unknown`), posta ali porque `applyCalm` escreve por nome calculado
+ * (`p[c.prop] = …`). Era andaime: `c.prop` tem tipo `MotionCharProp`, que é a união literal
+ * `'rmWalk' | 'rmBreath' | 'rmFlavor'`, e o TypeScript verifica acesso por chave literal sem precisar de
+ * assinatura nenhuma — bastava que os três campos tivessem nome, que é o que a derivação deu.
+ *
+ * E ela custava caro: uma assinatura de índice aceita QUALQUER propriedade, com valor `unknown`. Enquanto
+ * existiu, um erro de digitação em qualquer campo deste objeto compilava em silêncio. Quem a denunciou foi
+ * tipar `core/state.players` como `Player[]`: o compilador recusou converter um `Player` — que não tem
+ * assinatura de índice — para ela, e essa recusa é a informação.
  */
-export type PausePlayer = PlayerView<'viz' | 'toggleMove' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>
-  & { [prop: string]: unknown };
+export type PausePlayer = PlayerView<'viz' | 'toggleMove' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>;
 
 /** One `.pm-btn` descriptor — the shape of game.js's PM_BTNS (owned by ui/activities-menu). */
 export interface PauseMenuButton {

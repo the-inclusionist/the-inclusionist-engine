@@ -2,6 +2,8 @@
 // core/state.ts — estado/cena do jogo (FONTE ÚNICA). Módulo-folha. As 8 mega-variáveis migram do game.js
 // UMA A UMA, lidas como binding vivo (import) e escritas por setter.
 // Bus mínimo (Map<evento, Set<fn>>) para os poucos leitores "de longe" que virão com os outros subsistemas.
+import type { Player } from './entity.js';
+
 import * as store from '../platform/storage.js'; // persistência (as mega-vars com chave leem/gravam aqui)
 
 type Listener = (val: unknown) => void;
@@ -48,6 +50,11 @@ export let coins: unknown[] = [];
 export function setCoins(arr: unknown[]): void { coins = arr; emit('coins', arr); }
 
 // --- players[]: jogadores (1..4). NUNCA reatribuído (só mutado in-place: push/splice/length/players[i]) → não
-//     precisa de setter; o game.js muta a referência importada. O array inicial (makePlayer) é populado no boot
-//     pelo game.js (makePlayer é função de lá). A variável irmã `player` (= players[0]) fica local no game.js. ---
-export let players: unknown[] = [];
+//     precisa de setter; o main.js muta a referência importada. O array inicial (makePlayer) é populado no boot
+//     pelo main.js (makePlayer é função de lá). A variável irmã `player` (= players[0]) fica local no main.js.
+//
+//     Era `unknown[]`, e essa era a origem das 23 visões estruturais: o tipo se perdia AQUI, na fronteira em
+//     que a entidade atravessa o programa, e cada consumidor reconstruía o seu palpite. Agora é `Player[]`, o
+//     que também aposenta os dois casts `as unknown as` que existiam só porque o TypeScript, com razão,
+//     recusava converter `unknown[]` direto — e um cast duplo não estreita nada, desliga o verificador. ---
+export let players: Player[] = [];

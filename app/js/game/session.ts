@@ -343,7 +343,7 @@ export interface SessionApi {
 }
 
 export function initSession(ctx: SessionCtx): SessionApi {
-  const P = () => players as unknown as SessionPlayer[];
+  const P = () => players as SessionPlayer[]; // já não precisa do salto por `unknown`: players é Player[]
   const N = () => numPlayers; // binding VIVO de core/state (setNumPlayersValue o atualiza)
   /** Prefixo "Jogador N: " nas falas — some quando só há uma tela. */
   const who = (pl: SessionPlayer): string => (N() > 1 ? `Jogador ${pl.i + 1}: ` : '');

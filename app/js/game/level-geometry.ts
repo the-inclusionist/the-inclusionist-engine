@@ -189,7 +189,7 @@ export function buildRopes(): void {
 export function drawElevators(g: PIXI.Graphics): void {
   g.clear();
   if (!isWheelchair()) return;
-  const pls = players as unknown as RideablePlayer[];
+  const pls = players as RideablePlayer[]; // já não precisa do salto por `unknown`: players é Player[]
   for (const s of getElevShafts()) { if (s.carY == null) s.carY = s.yBottom; for (const pl of pls) { if (elevAt(pl) === s) s.carY = pl.y; } }
   const GLASS = 0x9fd0e6, FRAME = 0x8aa0b8, WHITE = 0xeaf2f8, BLUE = 0x4a78b0, INNER = 0x24384d;
   for (const s of getElevShafts()) {
