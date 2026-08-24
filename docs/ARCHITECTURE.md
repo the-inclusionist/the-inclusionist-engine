@@ -146,3 +146,6 @@ This file is structure only.
 Engine constants (TILE_TYPES, TUNE, dimensions) live only in `app/js/core/constants.ts` — never duplicated in docs.
 The **canonical render Z-order** (named layers, world + overlay scopes; PIXI `zIndex` + DOM `z-index`) and the
 **post-process filter chain** (`POST_FX_ORDER`, a11y-correction-last) live only in `app/js/core/layers.ts` — see ADR-0020.
+> ⚠️ **Contested by ADR-0027**: a measured flash limiter (WCAG 2.3.1) must run AFTER `A11Y_CORRECTION`,
+> because the correction *increases* inter-frame luminance delta and nothing measures downstream of it. Today 2.3.1
+> is met by content discipline, which does not scale to 35 games. ADR-0020 needs an amendment.

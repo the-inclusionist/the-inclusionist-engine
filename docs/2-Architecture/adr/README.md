@@ -58,6 +58,6 @@ One file per deliberate architectural decision, in **YADR** format — the YAML 
 | [ADR-0024](ADR-0024-multi-repo-versioned-shared-packages.yaml) | Multi-repo + versioned shared packages (`@jrocha-io/*`); no CDN; scoped COOP/COEP | accepted (topology amended by 0025; registry/host superseded by 0026) |
 | [ADR-0025](ADR-0025-inclusionist-lab-hub-repo.yaml) | One `inclusionist-lab` hub repo (labs as subpages of a multi-page app); `the-inclusionist` = game only (amends 0024) | accepted (host addresses superseded by 0026) |
 | [ADR-0026](ADR-0026-move-hosting-to-gitlab.yaml) | All hosting on GitLab — code, backlog, CI and the npm registry (supersedes the GitHub half of 0024) | accepted |
-
+| [ADR-0027](ADR-0027-inclusionist-pixel-engine.yaml) | Inclusionist Pixel: the fantasy-console engine — console filter for scope, machine spec, the engine/game boundary, and the a11y contract that must survive every genre |
 > ADRs 0011–0019 replaced the informal `REGISTRO-DE-DECISOES.md` log (a decision is an ADR). The exhaustive per-row
 > detail of the old log is in git history; these ADRs carry the decisions + rationale.
