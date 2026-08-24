@@ -443,8 +443,8 @@ let worldCanvasNormal=worldCanvas();
 let worldTexNormal=tex(worldCanvasNormal);
 const worldSprite=new PIXI.Sprite(worldTexNormal); camera.addChild(worldSprite);
 // L6: camadas de decor de TELA da v3 (contra-posicionadas no updateParallax, como o parallax)
-var starsG=new PIXI.Graphics();   camera.addChildAt(starsG, camera.getChildIndex(parallaxLayers[1]));  // estrelas ATRÁS dos morros
-var skyDecoG=new PIXI.Graphics(); camera.addChildAt(skyDecoG, camera.getChildIndex(worldSprite));      // nuvens/pássaros à frente dos morros, atrás dos tiles
+var starsG=new PIXI.Graphics();   camera.addChild(starsG);   // estrelas ATRÁS dos morros — pelo zIndex 3500 (bloco R1)
+var skyDecoG=new PIXI.Graphics(); camera.addChild(skyDecoG); // nuvens/pássaros à frente dos morros, atrás dos tiles — zIndex 6500
 var fogG=new PIXI.Graphics();     camera.addChild(fogG);                                                // névoa: FRENTE (re-erguida com o carLayer)
 /* ===== FABRICA de imagem dos modos de visao -> render/viewports.ts (B2) =====
    AQUI, e nao junto dos outros setters la embaixo: o setCenario logo abaixo ja chama
@@ -544,14 +544,14 @@ setupExtras();
 // Fácil: retângulo translúcido mostrando a hitbox de coleta tolerante (sob o player)
 const easyHitbox=new PIXI.Graphics(); camera.addChild(easyHitbox);
 // Cadeirante: RAMPAS desenhadas sobre os degraus de 1 tile (sobre o mundo, abaixo do player)
-camera.addChildAt(rampLayer, camera.getChildIndex(worldSprite)+1); // z-order INTOCADO: mesma posicao de sempre
+camera.addChild(rampLayer);   // ordem pelo Z.SCENERY_INTERACT (bloco R1), não pela posição de inserção
 // buildRamps + WC_BRIDGES migraram para game/level-geometry.ts (Onda A).
 // WC_ELEVATORS (fossos só-cadeirante) movidos p/ game/elevators.js (Estágio 4).
 function buildWcGeom(){ wcSolid = lgBuildWcGeom(wheelchair); } // envolucro: o modulo calcula, o main.js segue dono do wcSolid
 buildWcGeom();
 buildRamps(); // desenha as rampas + coberturas (lava, pontes) se já iniciar em modo cadeirante
 // CORDAS FLUTUANTES na superfície da água (o cego atravessa por elas; visual para todos)
-camera.addChildAt(ropeLayer, camera.getChildIndex(worldSprite)+1); // z-order INTOCADO: mesma posicao de sempre
+camera.addChild(ropeLayer);   // ordem pelo Z.SCENERY_INTERACT+10 (bloco R1)
 // buildRopes migrou para game/level-geometry.ts (Onda A).
 buildRopes();
 // ELEVADOR (cadeirante): trampolim = plataforma LARGA, escada = plataforma FINA. Toque ↑/↓ = viaja até a parada segura.
@@ -559,7 +559,7 @@ buildRopes();
 // de vidro) fica aqui e lê os poços por getElevShafts(). WC_ELEVATORS foi p/ o módulo; WC_BRIDGES fica (ramps).
 initElevators({ W: WORLD_W, H: WORLD_H, isWheelchair: () => wheelchair }); // liga o módulo às dims + estado
 buildElevators();
-const elevLayer=new PIXI.Graphics(); camera.addChildAt(elevLayer, camera.getChildIndex(worldSprite)+1);
+const elevLayer=new PIXI.Graphics(); camera.addChild(elevLayer); // ordem pelo Z.SCENERY_INTERACT+20 (bloco R1)
 // Estilo VIDRO PREDIAL (rodoviária/shopping/aeroporto): fosso de vidro translúcido (vê o background),
 // moldura cinza/branco/azul, escada some virando blocos de elevador, e a cabine PERMANECE onde foi deixada.
 // drawElevators migrou para game/level-geometry.ts (Onda A) — game/elevators ja registrava que quem desenha
@@ -601,13 +601,13 @@ traffic.initTraffic({ carLayer, CAR_TEX: CITY_TEX.carTex, SpriteCtor: PIXI.Sprit
    Caixa d'água: paredes de tanque + linha d'água. Interior de prédio (alto): janelas.
    Secretas (darkRegions): entulho/viga/pichação — desenhados ABAIXO do darkLayer (só aparecem revelados). */
 const cityDecoG=new PIXI.Graphics(); lifeLayer.addChildAt(cityDecoG,0); // atrás dos bichos, à frente do mundo
-const abandonG=new PIXI.Graphics(); camera.addChildAt(abandonG, camera.getChildIndex(darkLayer)); // SOB a escuridão
+const abandonG=new PIXI.Graphics(); camera.addChild(abandonG); // SOB a escuridão — pelo Z.TILES+400 contra o TILES+500 do darkLayer
 // buildCityDeco migrou para render/scene-city.ts (Onda A); a chamada de boot desceu para junto do init,
 // depois que TODAS as camadas dele existem (lavaFxG/waterFxG nascem mais abaixo).
 /* ===================== L5+: CÉU — nuvens à deriva + pássaros cruzando (procedural) =====================
    Atrás dos tiles (sobre o parallax). Nuvens derivam devagar e dão a volta; pássaros de 2 quadros cruzam
    o céu de vez em quando. rm.decor congela nuvens e remove pássaros. */
-const skyLayer=new PIXI.Container(); camera.addChildAt(skyLayer, camera.getChildIndex(worldSprite));
+const skyLayer=new PIXI.Container(); camera.addChild(skyLayer); // ordem pelo zIndex 6700 (bloco R1)
 const CLOUD_TEX=[0,1].map(v=>{ const w=v?46:30,h=v?12:9,cv=makeCanvas(w,h),c=cv.getContext('2d');
   c.fillStyle='rgba(225,232,244,0.85)';
   c.fillRect(4,4,w-8,h-5); c.fillRect(0,6,w,h-7); c.fillRect(8,0,w-20,6); c.fillRect(w-16,2,10,5);
