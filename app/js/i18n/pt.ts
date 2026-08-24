@@ -20,12 +20,6 @@ const pt: Record<string, string> = {
   'sr.typo.font': 'Tipografia: {fam}.',
   'sr.visual.contrast': 'Alto contraste: {v}.',
   'sr.visual.lq': 'Realce de contraste: {v}.',
-  // ⚠️ DUPLICAÇÃO PRESERVADA, NÃO CONSERTADA: ui/shell e game/session anunciam o MESMO evento com
-  // frases diferentes — 'Máximo de 4 jogadores.' × 'Já são 4 jogadores.', e a de session ainda informa o
-  // mínimo de 640×360 que a de shell omite. Unificar é melhora, mas seria mudança de comportamento no
-  // meio de uma passada de i18n que se propôs a preservar. Fica registrado para conserto próprio.
-  'sr.shell.maxPlayers': 'Máximo de 4 jogadores.',
-  'sr.shell.wontFitOneMore': 'Não cabe outra tela nesta janela — aumente a janela ou use tela cheia.',
   'sr.gate.open': 'Portão aberto!',
   'sr.key.taken': '{who}pegou a chave. Toque no portão para abri-lo.',
   'sr.key.returned': 'A chave voltou para o lugar de origem.',
@@ -40,7 +34,7 @@ const pt: Record<string, string> = {
   'sr.screens.alreadyN': '{n} telas já ativas.',
   'sr.screens.already1': '1 tela.',
   'sr.screens.wontFitN': 'Não cabem {n} telas nesta janela — cada tela precisa de ao menos 640×360. Aumente a janela ou use tela cheia.',
-  'sr.screens.wontFitOneMore': 'Não cabe mais uma tela nesta janela — cada tela precisa de ao menos 640×360.',
+  'sr.screens.wontFitOneMore': 'Não cabe mais uma tela nesta janela — cada tela precisa de ao menos 640×360. Aumente a janela ou use tela cheia.',
   'sr.screens.activeN': '{n} telas ativas.',
   'sr.screens.newRoundN': '{n} telas ativas — nova rodada.',
   'sr.screens.newRound1': '1 tela — nova rodada.',

@@ -478,8 +478,8 @@ export function initShell(ctx: ShellCtx): ShellApi {
     tipo: () => ctx.openTypo(),
     // R-splash 2: só AUMENTA (nunca diminui); a tela nova ESPERA um botão do jogador entrar
     addplayer: () => {
-      if (numPlayers >= 4) { ctx.srAlert(t('sr.shell.maxPlayers')); return; }
-      if (!ctx.fitsN(numPlayers + 1)) { ctx.srAlert(t('sr.shell.wontFitOneMore')); return; }
+      if (numPlayers >= 4) { ctx.srAlert(t('sr.screens.maxPlayers')); return; }
+      if (!ctx.fitsN(numPlayers + 1)) { ctx.srAlert(t('sr.screens.wontFitOneMore')); return; }
       if (!ctx.joinPlayer(null)) return;
       const p = players[numPlayers - 1] as ShellPlayer;
       p.waiting = true;

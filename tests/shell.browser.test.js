@@ -311,14 +311,19 @@ describe('pauseActs — a tabela do menu de pausa', () => {
     const { shell, log } = boot();
     setNumPlayersValue(4);
     shell.pauseActs.addplayer();
-    expect(log.alerted.at(-1)).toBe('Máximo de 4 jogadores.');
+    // A frase mudou ao ser unificada com a de game/session: os dois anunciavam o MESMO evento com palavras
+    // diferentes ('Máximo de 4 jogadores.' aqui, 'Já são 4 jogadores.' lá). Uma frase por evento.
+    expect(log.alerted.at(-1)).toBe('Já são 4 jogadores.');
     expect(log.acts).toEqual([]);
   });
 
   it('se a tela nova não couber na janela, avisa e NÃO cria — o jogo não fica ilegível', () => {
     const { shell, log } = boot({ fitsN: () => false });
     shell.pauseActs.addplayer();
-    expect(log.alerted.at(-1)).toContain('Não cabe outra tela');
+    // Unificada com a de game/session, que informava o mínimo de 640×360 que esta omitia; a metade acionável
+    // ('aumente a janela') veio desta. A frase única diz as duas coisas.
+    expect(log.alerted.at(-1)).toContain('cada tela precisa de ao menos 640×360');
+    expect(log.alerted.at(-1)).toContain('Aumente a janela ou use tela cheia');
     expect(log.acts).toEqual([]);
   });
 
