@@ -11,7 +11,7 @@
 // tela dentro do próprio setter, e por isso nenhum teste conseguia chamá-lo. A separação entre gravar e
 // reagir é o que torna este arquivo possível, então é ela que os casos protegem.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { modoCego, setModoCegoValue, on, off } from '../app/js/core/state.js';
+import { modoCego, setModoCegoValue, setCaneBlockDivValue, on, off } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
 // `modoCego` é um binding VIVO: reimportar não é preciso, mas ler o valor antigo de uma cópia local seria o
@@ -48,7 +48,7 @@ function escuta(evt) {
   return vistos;
 }
 
-describe('core/state — modoCego', () => {
+describe('core/state — modoCego e o espaçamento da bengala', () => {
   it('[Right] o setter grava, e a leitura vê o valor novo pelo binding vivo', () => {
     expect(state.modoCego).toBe(false);
     setModoCegoValue(true);
@@ -96,6 +96,27 @@ describe('core/state — modoCego', () => {
     off('modoCego', fn);
     setModoCegoValue(false);
     expect(vistos).toEqual([true]);
+  });
+
+  it('[Regressão] o espaçamento da bengala PERSISTE — antes era lido no boot e nunca gravado', () => {
+    // DEFEITO ENCONTRADO PELA MIGRAÇÃO, não por busca. O main.js lia `incl_cane_div` no boot e o setter era
+    // `(d) => { caneBlockDiv = d; }`, sem gravar — a chave estava até registrada em `storage.KEYS.caneDiv`,
+    // então a intenção existia e a escrita nunca foi escrita. Efeito: a criança cega que escolhia uma batida
+    // a cada MEIO bloco (resolução fina para medir distância andada) reencontrava o padrão a cada sessão,
+    // sem aviso e sem explicação.
+    setCaneBlockDivValue(2);
+    expect(state.caneBlockDiv).toBe(2);
+    expect(store.getNum('incl_cane_div', 1)).toBe(2);
+  });
+
+  it('[Error] valor corrompido no armazenamento não desliga a bengala', () => {
+    // O `|| 1` vem do original e não é defensividade decorativa: um `incl_cane_div` corrompido viraria NaN,
+    // e uma bengala que bate a cada NaN blocos não bate nunca — o modo de falha mais silencioso que existe
+    // para quem navega por som.
+    setCaneBlockDivValue(Number.NaN);
+    expect(state.caneBlockDiv).toBe(1);
+    setCaneBlockDivValue(0);
+    expect(state.caneBlockDiv).toBe(1);
   });
 
   it('[Boundary] o import nomeado é uma FOTOGRAFIA; o binding do módulo é que é vivo', () => {

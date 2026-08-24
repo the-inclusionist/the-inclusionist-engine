@@ -77,6 +77,16 @@ export function setModoCegoValue(on: boolean): void {
   modoCego = on; store.setBool('incl_modocego', on); emit('modoCego', on);
 }
 
+// --- caneBlockDiv: espaçamento da batida da BENGALA, em blocos pisados. 1 = uma batida por bloco;
+//     2 = uma batida a cada meio bloco. Não é preferência de som: é a resolução com que uma criança cega
+//     mede a distância que andou, e por isso a colisão a lê a cada passo. ---
+export let caneBlockDiv: number = store.getNum('incl_cane_div', 1) || 1;
+export function setCaneBlockDivValue(div: number): void {
+  const d = (+div) || 1; // o `|| 1` vem do original: um valor corrompido no localStorage viraria NaN e a
+  if (caneBlockDiv === d) return; //  bengala pararia de bater, que é o modo de falha mais silencioso possível
+  caneBlockDiv = d; store.set('incl_cane_div', d); emit('caneBlockDiv', d);
+}
+
 // --- wheelchair: MODO CADEIRANTE. Muda a geometria do nível inteiro — degraus e escada viram rampas e
 //     elevadores, moedas descem para o chão, lava vira chão, e só voo e super-corrida sobrevivem como poderes.
 //     Por isso a colisão a lê: `isSolidType` responde diferente com ela ligada. ---
