@@ -57,6 +57,47 @@ decision-outcome:
       buttons are IN — held buttons convert to toggles and the Dev has designs for every case. INPUT CAPABILITY IS
       NEVER A SCOPING CRITERION.
 
+  consequences:
+    positive:
+    - "The scope filter is a MEASURABLE question ('did this genre ship on a cartridge for these five machines?')
+       instead of a matter of taste, so a game can be argued in or out with evidence."
+    - "The 320x180 / 16px tile / limited-palette budget stops being a platformer inheritance and becomes the
+       console specification every future game is written against — one target instead of one per game."
+    - "Accessibility stays a property of the ENGINE rather than of The Inclusionist: the same sonar, high
+       contrast, menu navigation, TTS, Libras and touch serve any game the filter admits."
+    - "The step order front-loads the cheap, reversible work (entity model, input as data, i18n) and puts the
+       irreversible split behind a test that can veto it."
+    neutral:
+    - "The DOUBTFUL bucket stays large on purpose — Snake and Pong are in it — because an honest 'I do not know'
+       is verifiable and an invented example is not."
+    - "Roughly sixteen cartridge genres the catalogue lacks (world bigger than the screen, progression between
+       sessions, password/save) become known gaps rather than surprises."
+    - "TypeScript everywhere until the MVP ships; the Rust/WASM analysis is recorded to be re-read, not re-derived."
+    negative:
+    - "Genres that need a keyboard, particle/fluid/cloth simulation, microphone FFT or idle accumulation are out,
+       and some of them are genuinely good educational games."
+    - "The packaging payoff arrives late: two packages only after a second consumer exists, so for several steps
+       the work buys structure with no visible feature."
+    - "Every performance number in this record is an estimate until the Positivo/Chromebook hardware exists."
+
+  confirmation: |
+    PARTIAL, and stated as such rather than ticked.
+
+    Step 1 (entity model) is DONE and machine-checked: `app/js/core/entity.ts` holds one `Player`; all 23 module
+    views derive from it via `PlayerView<K>`; `core/state.players` is `Player[]`. The confirmation is `tsc
+    --noEmit` plus mutation — renaming `viz` in core/entity breaks seven files in one compile, and a misspelled
+    player field is now TS2551 where it used to compile in silence.
+
+    Step 3 (i18n of the announcements) is under way with `tests/i18n-dicts.node.test.js` guarding structure
+    across pt/en/es, plus a browser scan of every aria-label for un-resolved keys.
+
+    THE REAL CONFIRMATION OF THIS RECORD IS STEP 4, and it has not been run. If `createGame()` cannot be written
+    without a parameter called `coinTarget`, the boundary this ADR proposes is wrong and steps 5 to 7 must not
+    start. Until that test runs, everything after it is a plan, not a decision that has been shown to work.
+
+    The end-state confirmation is step 6: a 200-line non-platformer consumer using the engine's a11y stack. Two
+    packages without it would be a folder rename, and this record should not be read as satisfied before it.
+
   machine-spec:
     regimes: |
       FORM is imposed (API shape, validator or type — verifiable in a node test). BUDGET is advised (dev warning plus
@@ -241,6 +282,10 @@ decision-outcome:
     migration-order: |
       0. Fix the module map. (Done: it was stale by four modules.)
       1. Entity model, moving nothing. `tsc --noEmit` is the test. Zero runtime risk, and prerequisite to everything.
+         DONE (1e99b41 → 782fa37). core/entity.ts holds one Player; the 23 views derive from it with
+         `PlayerView<K>` (= Pick) so the node-project fixtures stay narrow; core/state.players is `Player[]`.
+         Closed on the way: `quiz` had four shapes, `clingN` two, `'R'|'L'|'U'|'D'` was written three times, and
+         ui/pause-icons carried an index signature that silently accepted any misspelled field.
       2. Input actions as data — closes the divergence that already cost an a11y defect.
       3. i18n the announcements in pt-BR, en and es — DECIDED, starting now. Mechanical, large,
          parallelisable, and cheap while nothing has moved yet. It is also the step that proves the a11y layer is a
@@ -297,7 +342,8 @@ open-decisions:
     Easier: fixed-step determinism is native; zero-allocation hot paths are native; "the grid core is the only one
     testable without float tolerance" stops being discipline and becomes a type.
     Harder: THE INTEROP SURFACE BECOMES THE NEW PLACE WHERE TWO SOURCES OF TRUTH DIVERGE — and within a single
-    language this project already carries ten player interfaces, three copies of one table that DID diverge and broke
+    language this project already carried TWENTY-THREE player interfaces (this record said ten; they were counted
+    one by one during step 1 and there were 23), three copies of one table that DID diverge and broke
     Easy-mode wall climbing, and documentation claiming 16x32 while the code ships six other sizes. A language
     boundary multiplies those opportunities. Also: 2194 tests are TypeScript and the golden trajectories would need
     re-anchoring; and the toolchain (three antivirus products, re-signed TLS, Add-Type already blocked) makes cargo
@@ -336,3 +382,18 @@ confidence: |
   criteria and the Game Accessibility Guidelines labels; on-device pt-BR speech recognition availability in Chrome;
   which sherpa-onnx WASM keyword-spotting builds and pt-BR models exist; and whether dual-rumble works on ChromeOS
   with a generic USB controller.
+
+more-information: |
+  The engine spine lives in `app/js/core/` (entity, state, layers, constants, collision, i18n, loop, rng,
+  screens, tiles, world). The catalogue this record filters is
+  `_IMATURE/EdSP/Research/minigames-catalog-v2.html`, outside the repository.
+
+  Relates to: ADR-0010 (the ten non-negotiable pillars — 320x180, a11y-first, i18n, offline, GPL);
+  ADR-0020 (canonical z-order and the post-FX chain, which this record amends: the flash limiter must run
+  AFTER A11Y_CORRECTION); ADR-0013 (motor input, which the three/four-button controller and the
+  held-to-toggle latch extend); ADR-0016 and `docs/game-design/Art-Bible.md` (which this record also amends:
+  they declare a 16x32 sprite and the shipped art has six sizes); ADR-0018 (art and visual design);
+  ADR-0024 (multi-repo versioned shared packages — the destination of step 6).
+
+  The ordering rationale, and what is deliberately deferred, is kept in `docs/ROADMAP.md`; the per-step work
+  lives in the GitLab issue board, not here.
