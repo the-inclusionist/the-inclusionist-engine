@@ -92,6 +92,7 @@
 //
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D2-a).
 
+import { t } from '../core/i18n.js';
 import { EDGE_BY_ACTION, edgeAllowed, type EdgeFlag } from './edges.js';
 import { phase } from '../core/state.js'; // binding vivo (fonte única de estado)
 
@@ -461,7 +462,7 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
       case 'win': { if (!d.again) return; const b = ctx.$<HTMLElement>('#btn-again'); if (b) (b as HTMLElement & { click(): void }).click(); return; }
       case 'title':
         ctx.hideTouchControls(); // teclado no splash oculta os controles virtuais — ANTES do aviso, verbatim
-        if (d.wait) { ctx.srSay('Aguarde o Jogador 1 escolher o jogo.'); return; }
+        if (d.wait) { ctx.srSay(t('sr.title.waitP1')); return; }
         if (d.nav) ctx.navTitle(d.nav);
         return;
       case 'screens': ctx.activateScreens(d.count); return;
@@ -480,7 +481,7 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
         if (d.gameKey) ctx.hideTouchControls('teclado'); // E13: jogar no teclado oculta os botões de toque
         for (const idx of d.wake) { // a tecla DAQUELE jogador ativa a tela em espera
           const p = players[idx]; if (!p) continue;
-          p.waiting = false; ctx.clearWaitingBadge(p.i); ctx.srSay('Jogador ' + (p.i + 1) + ' entrou!');
+          p.waiting = false; ctx.clearWaitingBadge(p.i); ctx.srSay(t('sr.player.entered', { n: p.i + 1 }));
         }
         for (const { playerIndex, edge } of d.edges) { const p = players[playerIndex]; if (p) p[edge] = true; }
         for (const k of d.releaseKeys) ctx.heldKeys.delete(k);

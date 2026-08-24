@@ -8,6 +8,21 @@ const es: Record<string, string> = {
   // alfabetizacion es especifico de cada lengua: el deletreo, la relacion grafema-fonema y la psicogenesis de
   // Ferreiro no se traducen, se reescriben por idioma (ADR-0010, pilar 3). Una clave nueva con contenido curricular
   // dentro es un error.
+  'sr.pad.mapSaved': 'Mapeo guardado para: {id}.',
+  'sr.pad.assigned': 'Mando asignado al Jugador {n}. El teclado sigue funcionando.',
+  'sr.title.waitP1': 'Espera a que el Jugador 1 elija el juego.',
+  'sr.player.entered': '¡Jugador {n} entró!',
+  'sr.print.on': 'Modo Foto: mira la pantalla sin menús. Aprieta cualquier botón para volver.',
+  'sr.player.pressToJoin': 'Jugador {n}: aprieta un botón para entrar.',
+  'sr.libras.loading': 'El intérprete de lengua de señas todavía está cargando — inténtalo de nuevo en un momento.',
+  'sr.eyes.loadFailed': 'WebGazer no cargó.',
+  'sr.eyes.calibrate': 'Jugar con los ojos: mira por la pantalla y haz clic en algunos puntos para calibrar. Mirar izquierda y derecha camina; mirar arriba salta.',
+  'sr.eyes.needsInternet': 'No se pudo cargar WebGazer (necesita internet la primera vez).',
+  'sr.typo.font': 'Tipografía: {fam}.',
+  'sr.visual.contrast': 'Alto contraste: {v}.',
+  'sr.visual.lq': 'Realce de contraste: {v}.',
+  'sr.shell.maxPlayers': 'Máximo de 4 jugadores.',
+  'sr.shell.wontFitOneMore': 'No cabe otra pantalla en esta ventana — agrándala o usa pantalla completa.',
   'sr.gate.open': '¡Portón abierto!',
   'sr.key.taken': '{who}recogió la llave. Toca el portón para abrirlo.',
   'sr.key.returned': 'La llave volvió a su lugar de origen.',

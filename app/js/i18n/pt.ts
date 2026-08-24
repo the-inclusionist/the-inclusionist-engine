@@ -7,6 +7,25 @@ const pt: Record<string, string> = {
   // número de telas, e sobretudo CONTEÚDO DE CURRÍCULO (palavra, sílaba, letra, cela braille). O currículo de
   // alfabetização é específico da língua: soletração, grafema↔fonema e a psicogênese de Ferreiro não se traduzem,
   // reescrevem-se por idioma (pilar 3 do ADR-0010). Chave nova que embuta conteúdo de currículo é bug.
+  'sr.pad.mapSaved': 'Mapeamento salvo para: {id}.',
+  'sr.pad.assigned': 'Controle associado ao Jogador {n}. O teclado continua funcionando.',
+  'sr.title.waitP1': 'Aguarde o Jogador 1 escolher o jogo.',
+  'sr.player.entered': 'Jogador {n} entrou!',
+  'sr.print.on': 'Modo Print: veja a tela sem menus. Aperte qualquer botão para voltar.',
+  'sr.player.pressToJoin': 'Jogador {n}: aperte um botão para entrar.',
+  'sr.libras.loading': 'Intérprete de Libras ainda carregando — tente de novo em instantes.',
+  'sr.eyes.loadFailed': 'WebGazer não carregou.',
+  'sr.eyes.calibrate': 'Jogar com os olhos: olhe pela tela e clique em alguns pontos para calibrar. Olhar esquerda/direita anda; olhar para cima pula.',
+  'sr.eyes.needsInternet': 'Não foi possível carregar o WebGazer (precisa de internet no 1º uso).',
+  'sr.typo.font': 'Tipografia: {fam}.',
+  'sr.visual.contrast': 'Alto contraste: {v}.',
+  'sr.visual.lq': 'Realce de contraste: {v}.',
+  // ⚠️ DUPLICAÇÃO PRESERVADA, NÃO CONSERTADA: ui/shell e game/session anunciam o MESMO evento com
+  // frases diferentes — 'Máximo de 4 jogadores.' × 'Já são 4 jogadores.', e a de session ainda informa o
+  // mínimo de 640×360 que a de shell omite. Unificar é melhora, mas seria mudança de comportamento no
+  // meio de uma passada de i18n que se propôs a preservar. Fica registrado para conserto próprio.
+  'sr.shell.maxPlayers': 'Máximo de 4 jogadores.',
+  'sr.shell.wontFitOneMore': 'Não cabe outra tela nesta janela — aumente a janela ou use tela cheia.',
   'sr.gate.open': 'Portão aberto!',
   'sr.key.taken': '{who}pegou a chave. Toque no portão para abri-lo.',
   'sr.key.returned': 'A chave voltou para o lugar de origem.',

@@ -71,7 +71,12 @@ describe('dicionários de locale — estrutura', () => {
   it('[Right] traduzir de verdade: nenhum anúncio en/es é idêntico ao pt', () => {
     // Salvo os que legitimamente coincidem — número puro, sigla, nome próprio. Se um dia coincidirem de fato,
     // acrescente a chave à lista COM o motivo, em vez de afrouxar a asserção.
-    const COINCIDEM_DE_PROPOSITO = new Set([]);
+    // pt e es coincidem PALAVRA POR PALAVRA nestas duas — não é tradução esquecida, é a mesma frase nas duas
+    // línguas. Cada entrada precisa do motivo escrito; lista sem motivo é afrouxamento disfarçado.
+    const COINCIDEM_DE_PROPOSITO = new Set([
+      'sr.visual.contrast', // 'Alto contraste: {v}.' é idêntico em pt-BR e es
+      'sr.visual.lq',       // 'Realce de contraste: {v}.' idem
+    ]);
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const iguais = chavesSr.filter((k) => k in d && d[k] === pt[k] && !COINCIDEM_DE_PROPOSITO.has(k));
       expect(iguais, `${nome} copiou o português nestas chaves`).toEqual([]);

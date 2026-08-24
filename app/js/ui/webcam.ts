@@ -3,6 +3,7 @@
 // Tier 1. WebGazer entra lazy (script do CDN no 1º uso; vendorizar p/ offline é futuro). onGaze mapeia o olhar
 // para teclas SINTÉTICAS (olhar esq/dir = andar A/D; olhar p/ cima = pular Espaço) → reusa o input do teclado.
 // O botão (#opt-eyes) fica no game.js (usa toggleBtn); aqui a lógica. Deps: ui/dom ($) + core/a11y-sr (srSay/srAlert).
+import { t } from '../core/i18n.js';
 import { $ } from './dom.js';
 import { srAlert } from '../core/a11y-sr.js';
 
@@ -31,10 +32,10 @@ export function onGaze(data: unknown): void {
 }
 export function startEyeControl(): void {
   try {
-    const g = wg(); if (!g) { srAlert('WebGazer não carregou.'); return; }
+    const g = wg(); if (!g) { srAlert(t('sr.eyes.loadFailed')); return; }
     g.setRegression('ridge').setGazeListener(onGaze).begin();
     try { g.showVideoPreview(true).showPredictionPoints(true); } catch (e) { /* noop */ }
-    srAlert('Jogar com os olhos: olhe pela tela e clique em alguns pontos para calibrar. Olhar esquerda/direita anda; olhar para cima pula.');
+    srAlert(t('sr.eyes.calibrate'));
   } catch (e) { /* noop */ }
 }
 export function stopEyeControl(): void {
@@ -46,6 +47,6 @@ export function loadWebGazer(cb?: () => void): void {
   if (wg()) { if (cb) cb(); return; }
   const s = document.createElement('script'); s.src = 'https://webgazer.cs.brown.edu/webgazer.js'; s.async = true;
   s.onload = () => { if (cb) cb(); };
-  s.onerror = () => srAlert('Não foi possível carregar o WebGazer (precisa de internet no 1º uso).');
+  s.onerror = () => srAlert(t('sr.eyes.needsInternet'));
   document.head.appendChild(s);
 }

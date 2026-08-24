@@ -7,6 +7,7 @@
 // Boundary: this module only READS buttons/axes and maps them to actions; the physical button ARTWORK/labels
 // (PAD_DESIGNS) and the on-screen touch pad are input/devices.ts + input/touch (a parallel extraction) — not here.
 
+import { t } from '../core/i18n.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import type { Phase } from '../core/state.js';
 import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
@@ -314,7 +315,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     if (save && padWiz.id) {
       store.setJSON('incl_padmap_' + padWiz.id, padWiz.map);
       _padMaps.set(padWiz.id, padWiz.map);
-      ctx.srAlert('Mapeamento salvo para: ' + padWiz.id + '.');
+      ctx.srAlert(t('sr.pad.mapSaved', { id: padWiz.id }));
     } else if (padWiz.id && !_padMaps.get(padWiz.id)) {
       _padMaps.set(padWiz.id, { _skip: true }); // cancelou: usa o mapa PADRÃO nesta sessão (não persiste, evita reabrir em loop)
     }
@@ -431,7 +432,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         const k: NavKeys = { yes: edge('jump') || startEdge, no: edge('especial'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
         const any = k.yes || k.no || k.up || k.down || k.left || k.right;
         const owner = players.findIndex((p) => p.pad === gi);
-        if (ctx.getNumPlayers() > 1 && owner > 0) { if (any) ctx.srSay('Aguarde o Jogador 1 escolher o jogo.'); continue; } // só o J1 escolhe
+        if (ctx.getNumPlayers() > 1 && owner > 0) { if (any) ctx.srSay(t('sr.title.waitP1')); continue; } // só o J1 escolhe
         if (any) ctx.navTitle(k); // menu inicial navegável pelo pad
         continue;
       }
@@ -456,7 +457,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
             if (free >= 0) {
               players[free].pad = gi;
               if (players[free].waiting) { players[free].waiting = false; ctx.clearWaitingBadge(free); }
-              ctx.srSay('Controle associado ao Jogador ' + (free + 1) + '. O teclado continua funcionando.');
+              ctx.srSay(t('sr.pad.assigned', { n: free + 1 }));
             } else { ctx.joinPlayer(gi); }
           }
         } else if (players[owner].quit) {

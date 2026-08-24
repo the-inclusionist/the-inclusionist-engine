@@ -7,6 +7,7 @@
 // handling) is the SHARED helper used by every settings panel and stays in game.js. The font catalog itself
 // (FONT_GROUPS/FONT_BY_KEY) stays in ./fonts.js (Phase 2 extraction) — imported here, never duplicated.
 
+import { t } from '../core/i18n.js';
 import { FONT_GROUPS, FONT_BY_KEY, type FontItem } from './fonts.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
@@ -138,7 +139,7 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     else ctx.root.style.removeProperty('--font-custom');
     const pv = ctx.$<HTMLElement>('#typo-preview');
     if (pv) pv.style.fontFamily = `'${it.fam}'`;
-    if (announce) ctx.srSay('Tipografia: ' + it.fam + '.');
+    if (announce) ctx.srSay(t('sr.typo.font', { fam: it.fam }));
   }
 
   function render(): void {

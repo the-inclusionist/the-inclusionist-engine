@@ -89,6 +89,7 @@
 //
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C3).
 
+import { t } from '../core/i18n.js';
 import { phase, numPlayers, setPhaseValue, players, type Phase } from '../core/state.js';
 import { PAD_DESIGNS } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
 
@@ -405,7 +406,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
       ctx.win.addEventListener('keydown', back, true);
       ctx.win.addEventListener('pointerdown', back, true);
     }, 80);
-    ctx.srSay('Modo Print: veja a tela sem menus. Aperte qualquer botão para voltar.');
+    ctx.srSay(t('sr.print.on'));
   }
 
   /* ===================== a troca de fase ===================== */
@@ -477,14 +478,14 @@ export function initShell(ctx: ShellCtx): ShellApi {
     tipo: () => ctx.openTypo(),
     // R-splash 2: só AUMENTA (nunca diminui); a tela nova ESPERA um botão do jogador entrar
     addplayer: () => {
-      if (numPlayers >= 4) { ctx.srAlert('Máximo de 4 jogadores.'); return; }
-      if (!ctx.fitsN(numPlayers + 1)) { ctx.srAlert('Não cabe outra tela nesta janela — aumente a janela ou use tela cheia.'); return; }
+      if (numPlayers >= 4) { ctx.srAlert(t('sr.shell.maxPlayers')); return; }
+      if (!ctx.fitsN(numPlayers + 1)) { ctx.srAlert(t('sr.shell.wontFitOneMore')); return; }
       if (!ctx.joinPlayer(null)) return;
       const p = players[numPlayers - 1] as ShellPlayer;
       p.waiting = true;
       ctx.showWaitingBadge(p.i);
       setPhase('playing');
-      ctx.srAlert('Jogador ' + (p.i + 1) + ': aperte um botão para entrar.');
+      ctx.srAlert(t('sr.player.pressToJoin', { n: p.i + 1 }));
     },
     audio: () => ctx.openAudio(),
     motora: () => { ctx.setMotorPlayer(ctx.getPauseActor()); ctx.openMovement(); },

@@ -5,6 +5,7 @@
 // abrir/fechar, reflui o layout via CALLBACK injetado (setOnLibrasChange) — evita acoplar a ui/vlibras ao ui/layout
 // (que ainda não saiu). Importa srAlert de core/a11y-sr (a11y-sr NÃO importa daqui — a fala em Libras entra lá por
 // injeção, sem ciclo). librasOpen (binding vivo) e LIBRAS_RESERVE são lidos pelo layout do game.js.
+import { t } from '../core/i18n.js';
 import { srAlert } from '../core/a11y-sr.js';
 
 export const LIBRAS_RESERVE = 380; // px reservados p/ o painel do VLibras quando aberto (slot 5:9 à direita)
@@ -35,7 +36,7 @@ const vwBtn = (): HTMLElement | null => document.querySelector<HTMLElement>('[vw
 export function vlibrasOpen(): boolean { const b = vwBtn(); if (!b) return false; const r = b.getBoundingClientRect(); return r.width === 0 || r.height === 0 || b.offsetParent === null; }
 // Liga/desliga o intérprete. Abre clicando o botão de acesso; fecha pelo evento oficial do widget (DOM/Unity na própria origem).
 export function toggleLibras(): void {
-  const b = vwBtn(); if (!b) { srAlert('Intérprete de Libras ainda carregando — tente de novo em instantes.'); return; }
+  const b = vwBtn(); if (!b) { srAlert(t('sr.libras.loading')); return; }
   if (vlibrasOpen()) { try { window.dispatchEvent(new CustomEvent('vp-widget-close')); } catch (e) { /* noop */ } }
   else { try { b.click(); } catch (e) { /* noop */ } }
 }

@@ -7,6 +7,21 @@ const en: Record<string, string> = {
   // player name, screen count, and above all CURRICULUM CONTENT (word, syllable, letter, braille cell). The literacy
   // curriculum is language-specific: spelling, grapheme-phoneme mapping and Ferreiro's psychogenesis are not
   // translated, they are rewritten per language (ADR-0010, pillar 3). A new key embedding curriculum is a bug.
+  'sr.pad.mapSaved': 'Mapping saved for: {id}.',
+  'sr.pad.assigned': 'Controller assigned to Player {n}. The keyboard still works.',
+  'sr.title.waitP1': 'Wait for Player 1 to choose the game.',
+  'sr.player.entered': 'Player {n} joined!',
+  'sr.print.on': 'Print mode: see the screen without menus. Press any button to go back.',
+  'sr.player.pressToJoin': 'Player {n}: press a button to join.',
+  'sr.libras.loading': 'The sign-language interpreter is still loading — try again in a moment.',
+  'sr.eyes.loadFailed': 'WebGazer did not load.',
+  'sr.eyes.calibrate': 'Play with your eyes: look around the screen and click a few spots to calibrate. Looking left and right walks; looking up jumps.',
+  'sr.eyes.needsInternet': 'WebGazer could not be loaded (it needs the internet the first time).',
+  'sr.typo.font': 'Typeface: {fam}.',
+  'sr.visual.contrast': 'High contrast: {v}.',
+  'sr.visual.lq': 'Contrast boost: {v}.',
+  'sr.shell.maxPlayers': 'At most 4 players.',
+  'sr.shell.wontFitOneMore': 'Another screen does not fit in this window — make it bigger or go full screen.',
   'sr.gate.open': 'Gate open!',
   'sr.key.taken': '{who}picked up the key. Touch the gate to open it.',
   'sr.key.returned': 'The key went back to where it started.',

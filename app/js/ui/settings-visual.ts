@@ -7,6 +7,7 @@
 // live from core/state.js (same source game.js itself uses). Extracted verbatim from renderVisual() in game.js
 // (behavior-preserving) — see docs/5-Refactoring/plano-modularizacao-mapa.md.
 
+import { t } from '../core/i18n.js';
 import { numPlayers, players } from '../core/state.js';
 import { lqName as lqLabel } from '../render/lq-filter.js';
 
@@ -174,7 +175,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
       s.value = contrastValue;
       s.addEventListener('change', () => {
         ctx.setPlayerViz(selected, s.value);
-        ctx.srSay('Alto contraste: ' + contrastLabel(s.value) + '.');
+        ctx.srSay(t('sr.visual.contrast', { v: contrastLabel(s.value) }));
       });
     }
 
@@ -192,7 +193,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
         reflect(t);
       });
       lq.addEventListener('change', () => {
-        ctx.srSay('Realce de contraste: ' + lqLabel(lqFromPercent(Number(lq.value))) + '.');
+        ctx.srSay(t('sr.visual.lq', { v: lqLabel(lqFromPercent(Number(lq.value))) }));
       });
     }
 
