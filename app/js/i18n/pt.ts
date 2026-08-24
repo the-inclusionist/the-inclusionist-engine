@@ -81,5 +81,34 @@ const pt: Record<string, string> = {
   // Acessibilidade (leitores de tela)
   'a11y.gameRegion': 'Área de jogo. Mova com A e D ou setas; pule com L ou Espaço; suba e desça escadas (e nade na água) com W e S ou setas; corra com P ou Shift. Colete 10 moedas.',
   'game.instructions': 'Mova o personagem pela caverna e colete 10 moedas. Sem limite de tempo. Controles: A e D ou setas movem; L ou Espaço pulam; W e S (ou setas cima/baixo) sobem/descem escadas e nadam; P ou Shift correm.',
+
+  // Controles de toque — rótulos das 9 posições e das 9 ações mapeáveis (painel #touchcfg) e os anúncios.
+  // Rótulo é MOLDURA inteira: em inglês "(cima)" vira "(up)" e a seta fica onde está, então a seta viaja
+  // dentro da tradução em vez de ser concatenada fora dela.
+  'touch.slot.up': 'Direcional ↑ (cima)',
+  'touch.slot.down': 'Direcional ↓ (baixo)',
+  'touch.slot.left': 'Direcional ← (esquerda)',
+  'touch.slot.right': 'Direcional → (direita)',
+  'touch.slot.start': 'START (enter)',
+  'touch.slot.b0': 'Botão 0 (baixo)',
+  'touch.slot.b1': 'Botão 1 (direita)',
+  'touch.slot.b2': 'Botão 2 (esquerda)',
+  'touch.slot.b3': 'Botão 3 (cima)',
+  'touch.slot.fallback': 'Botão',
+  'touch.act.left': 'Andar à esquerda',
+  'touch.act.right': 'Andar à direita',
+  'touch.act.up': 'Subir / escada',
+  'touch.act.down': 'Descer / escada',
+  'touch.act.jump': 'Pular',
+  'touch.act.run': 'Correr / interagir',
+  'touch.act.especial': 'Especial',
+  'touch.act.swap': 'Trocar poder',
+  'touch.act.pause': 'Pausar (START)',
+  'touch.dir.cross': 'cruz (D-pad)',
+  'touch.dir.stick': 'analógico',
+  'sr.touch.slotSet': '{slot}: {acao}.',
+  'sr.touch.dirSet': 'Direcional: {tipo}.',
+  'sr.touch.presetChild': 'Controles no tamanho de mão de criança (6 a 12 anos).',
+  'sr.touch.presetAdult': 'Controles no tamanho de mão de adulto.',
 };
 export default pt;

@@ -76,6 +76,10 @@ describe('dicionários de locale — estrutura', () => {
     const COINCIDEM_DE_PROPOSITO = new Set([
       'sr.visual.contrast', // 'Alto contraste: {v}.' é idêntico em pt-BR e es
       'sr.visual.lq',       // 'Realce de contraste: {v}.' idem
+      // '{slot}: {acao}.' — a moldura aqui é só pontuação: os dois lados são parâmetros e já chegam
+      // traduzidos. Existe como chave, e não como concatenação no código, porque uma língua que inverta a
+      // ordem (ação antes da posição) precisa poder inverter — e só consegue se a ordem morar no dicionário.
+      'sr.touch.slotSet',
     ]);
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const iguais = chavesSr.filter((k) => k in d && d[k] === pt[k] && !COINCIDEM_DE_PROPOSITO.has(k));

@@ -9,7 +9,8 @@ import {
   padPxPerMm, padHandTag, computePadPhysicalPx, padLayoutFromId, normalizeTouchMap, padKind,
   IPHONE16_LONG_MM, IPHONE16_LONG_PX, IPHONE16_PXMM, TOUCH_SLOTS, TOUCH_ACTS,
 } from '../app/js/input/touch.js';
-import { TOUCH_DEFAULT } from '../app/js/input/devices.js';
+import { TOUCH_DEFAULT, TOUCH_ACT_LABELS } from '../app/js/input/devices.js';
+import pt from '../app/js/i18n/pt.js';
 
 describe('padPxPerMm', () => {
   it('[Right] desktop (mobile=false): sempre o ratio fixo do iPhone 16, ignora a janela', () => {
@@ -149,12 +150,20 @@ describe('normalizeTouchMap', () => {
 });
 
 describe('TOUCH_SLOTS / TOUCH_ACTS (dados de apresentação do painel)', () => {
-  it('[Right] 9 posições de toque, cada uma com chave e rótulo pt-BR', () => {
+  it('[Right] 9 posições de toque, cada uma com chave e chave-i18n de rótulo', () => {
     expect(TOUCH_SLOTS.length).toBe(9);
     for (const s of TOUCH_SLOTS) { expect(typeof s.k).toBe('string'); expect(typeof s.lbl).toBe('string'); }
   });
-  it('[Right] 9 ações mapeáveis, todas cobertas por TOUCH_ACT_LABELS (verificado no devices.ts real)', () => {
+  // ESTE TESTE ANTES NÃO PODIA FALHAR: dizia verificar a cobertura "no devices.ts real" e só aferia
+  // `TOUCH_ACTS.length === 9` — passaria com TOUCH_ACT_LABELS vazio. Agora percorre as duas tabelas e o
+  // dicionário: uma ação sem chave, ou uma chave sem entrada em pt, deixa um <option> em branco no painel.
+  it('[Right] toda ação mapeável tem chave i18n em TOUCH_ACT_LABELS, e a chave existe no dicionário', () => {
     expect(TOUCH_ACTS.length).toBe(9);
+    for (const a of TOUCH_ACTS) {
+      expect(TOUCH_ACT_LABELS[a], `ação sem chave i18n: ${a}`).toBeTypeOf('string');
+      expect(pt[TOUCH_ACT_LABELS[a]], `chave fora do dicionário: ${TOUCH_ACT_LABELS[a]}`).toBeTypeOf('string');
+    }
+    for (const s of TOUCH_SLOTS) expect(pt[s.lbl], `slot sem tradução: ${s.lbl}`).toBeTypeOf('string');
   });
   it('[Invariant] toda ação em TOUCH_DEFAULT é uma das TOUCH_ACTS válidas', () => {
     for (const v of Object.values(TOUCH_DEFAULT)) expect(TOUCH_ACTS).toContain(v);

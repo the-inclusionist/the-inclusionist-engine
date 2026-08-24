@@ -7,6 +7,7 @@
 // ./devices.js (not reimplemented). Reading the real Gamepad API (polling, mapping wizard) is input/gamepad's
 // territory, not this module's — see the header note on padKind() for the one deliberate exception.
 import { PAD_DESIGNS, TOUCH_ACT_LABELS, TOUCH_DEFAULT } from './devices.js';
+import { t } from '../core/i18n.js';
 import { KEYS } from '../platform/storage.js'; // só as CHAVES (constantes) — leitura/escrita passam por ctx.store (DI)
 import { setMinimapCorner } from '../render/minimap.js'; // já módulo próprio (Estágio 4, Tier 1) — importado direto
 import { players, numPlayers, phase } from '../core/state.js'; // bindings vivos (fonte única de estado)
@@ -97,13 +98,16 @@ export function padLayoutFromId(id: string | null | undefined): PadLayout {
   return 'generic';
 }
 
-/** As 9 posições de toque remapeáveis (direcional×4, START, botões 0–3) — rótulos pt-BR do painel. */
+/** As 9 posições de toque remapeáveis (direcional×4, START, botões 0–3) — `lbl` é a chave i18n do rótulo. */
+// `lbl` guarda a CHAVE i18n, não o texto: tabela de módulo resolvida no import congelaria o idioma no boot
+// (ver a nota em input/devices). A seta e o nome do botão viajam DENTRO da tradução, porque em inglês o
+// "(cima)" vira "(up)" e a seta fica onde está — é moldura inteira, não conteúdo interpolado.
 export const TOUCH_SLOTS: ReadonlyArray<{ k: string; lbl: string }> = [
-  { k: 'up', lbl: 'Direcional ↑ (cima)' }, { k: 'down', lbl: 'Direcional ↓ (baixo)' },
-  { k: 'left', lbl: 'Direcional ← (esquerda)' }, { k: 'right', lbl: 'Direcional → (direita)' },
-  { k: 'start', lbl: 'START (enter)' },
-  { k: 'b0', lbl: 'Botão 0 (baixo)' }, { k: 'b1', lbl: 'Botão 1 (direita)' },
-  { k: 'b2', lbl: 'Botão 2 (esquerda)' }, { k: 'b3', lbl: 'Botão 3 (cima)' },
+  { k: 'up', lbl: 'touch.slot.up' }, { k: 'down', lbl: 'touch.slot.down' },
+  { k: 'left', lbl: 'touch.slot.left' }, { k: 'right', lbl: 'touch.slot.right' },
+  { k: 'start', lbl: 'touch.slot.start' },
+  { k: 'b0', lbl: 'touch.slot.b0' }, { k: 'b1', lbl: 'touch.slot.b1' },
+  { k: 'b2', lbl: 'touch.slot.b2' }, { k: 'b3', lbl: 'touch.slot.b3' },
 ];
 /** As 9 ações mapeáveis a uma posição de toque (opções do <select> de cada slot). */
 export const TOUCH_ACTS: readonly string[] = ['left', 'right', 'up', 'down', 'jump', 'run', 'especial', 'swap', 'pause'];
@@ -184,8 +188,8 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     const el = ctx.$<HTMLElement>('#touchmap-list');
     if (!el) return;
     el.innerHTML = TOUCH_SLOTS.map((s) =>
-      `<div class="ctrl-row"><label for="tm-${s.k}">${s.lbl}</label><select id="tm-${s.k}" class="vol" data-slot="${s.k}">` +
-      TOUCH_ACTS.map((a) => `<option value="${a}"${touchMap[s.k] === a ? ' selected' : ''}>${TOUCH_ACT_LABELS[a]}</option>`).join('') +
+      `<div class="ctrl-row"><label for="tm-${s.k}">${t(s.lbl)}</label><select id="tm-${s.k}" class="vol" data-slot="${s.k}">` +
+      TOUCH_ACTS.map((a) => `<option value="${a}"${touchMap[s.k] === a ? ' selected' : ''}>${t(TOUCH_ACT_LABELS[a]!)}</option>`).join('') +
       `</select></div>`
     ).join('');
     el.querySelectorAll<HTMLSelectElement>('select[data-slot]').forEach((sel) => {
@@ -193,8 +197,8 @@ export function initTouch(ctx: TouchCtx): TouchApi {
         const slot = sel.dataset.slot || '';
         touchMap[slot] = sel.value;
         ctx.store.setJSON(KEYS.touchmap, touchMap);
-        const label = sel.previousElementSibling ? sel.previousElementSibling.textContent : 'Botão';
-        ctx.srSay((label || 'Botão') + ': ' + TOUCH_ACT_LABELS[sel.value] + '.');
+        const label = sel.previousElementSibling ? sel.previousElementSibling.textContent : null;
+        ctx.srSay(t('sr.touch.slotSet', { slot: label || t('touch.slot.fallback'), acao: t(TOUCH_ACT_LABELS[sel.value]!) }));
       });
     });
   }
@@ -307,7 +311,7 @@ export function initTouch(ctx: TouchCtx): TouchApi {
       padDir = padDirSel.value;
       ctx.store.set(KEYS.padDir, padDir);
       applyDirStyle();
-      ctx.srSay('Direcional: ' + (padDir === 'cross' ? 'cruz (D-pad)' : 'analógico') + '.');
+      ctx.srSay(t('sr.touch.dirSet', { tipo: t(padDir === 'cross' ? 'touch.dir.cross' : 'touch.dir.stick') }));
     });
   }
   const padSizeEl = ctx.$<HTMLInputElement>('#pad-size'); if (padSizeEl) padSizeEl.addEventListener('input', () => setPadMm({ btn: parseFloat(padSizeEl.value) }));
@@ -316,9 +320,9 @@ export function initTouch(ctx: TouchCtx): TouchApi {
   const padTravelEl = ctx.$<HTMLInputElement>('#pad-travel'); if (padTravelEl) padTravelEl.addEventListener('input', () => setPadMm({ travel: parseFloat(padTravelEl.value) }));
   const padDpadEl = ctx.$<HTMLInputElement>('#pad-dpad'); if (padDpadEl) padDpadEl.addEventListener('input', () => setPadMm({ dpad: parseFloat(padDpadEl.value) }));
   const padPresetChild = ctx.$<HTMLElement>('#pad-preset-child');
-  if (padPresetChild) padPresetChild.addEventListener('click', () => { setPadMm({ btn: 12, gap: 2.5, stick: 16.5, travel: 4, dpad: 11.5 }); ctx.srSay('Controles no tamanho de mão de criança (6 a 12 anos).'); });
+  if (padPresetChild) padPresetChild.addEventListener('click', () => { setPadMm({ btn: 12, gap: 2.5, stick: 16.5, travel: 4, dpad: 11.5 }); ctx.srSay(t('sr.touch.presetChild')); });
   const padPresetAdult = ctx.$<HTMLElement>('#pad-preset-adult');
-  if (padPresetAdult) padPresetAdult.addEventListener('click', () => { setPadMm({ btn: 14, gap: 4.5, stick: 20, travel: 5.5, dpad: 14 }); ctx.srSay('Controles no tamanho de mão de adulto.'); });
+  if (padPresetAdult) padPresetAdult.addEventListener('click', () => { setPadMm({ btn: 14, gap: 4.5, stick: 20, travel: 5.5, dpad: 14 }); ctx.srSay(t('sr.touch.presetAdult')); });
   addEventListener('resize', applyPadPhysical); // recalcula os px ao girar/redimensionar; os mm são fixos
 
   // estado inicial (equivalente aos `applyPadDesign(padDesign); applyPadPhysical(); applyDirStyle();` de boot no game.js)
