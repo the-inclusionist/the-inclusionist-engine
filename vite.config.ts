@@ -45,7 +45,15 @@ export default defineConfig({
       workbox: {
         // precacheia TUDO que o jogo usa offline: bundle (js/css/html) + sprites (png) + fontes (woff2) +
         // nível (txt) + tileset (json) + ícone (svg). O maior arquivo é o pixi (445KB) < 2MB (limite default).
-        globPatterns: ['**/*.{js,css,html,png,svg,woff2,txt,json,webmanifest}'],
+        // `wasm` entra aqui para o runtime do TTS neural (sherpa-onnx/ort, ~25,6 MB) ser PRECACHEADO.
+        // Sem ele o arquivo ficava fora do cache do PWA — e sem `runtimeCaching` tambem — entao dependia do cache
+        // HTTP comum, que o navegador despeja quando quer: em laboratorio de escola com maquina restaurada, a voz
+        // neural simplesmente nao carregava offline (pilar 8). O teto por arquivo SOBE junto porque o padrao do
+        // Workbox e 2 MB: so acrescentar a extensao faria ele PULAR o arquivo com um aviso, e o sintoma seria
+        // identico ao de antes. A troca e consciente: o precache passa de ~2 MB para ~28 MB, e a primeira visita
+        // online passa a baixar tudo — que e exatamente o contrato de um PWA que precisa funcionar sem rede depois.
+        globPatterns: ['**/*.{js,css,html,png,svg,woff2,txt,json,webmanifest,wasm}'],
+        maximumFileSizeToCacheInBytes: 32 * 1024 * 1024, // 32 MB: cabe o runtime de 25,6 MB com folga
         cleanupOutdatedCaches: true,
       },
       // PWA fica DESLIGADA no dev (default) — sem SW/cache atrapalhando o HMR; testar via `npm run build` + `preview`.
