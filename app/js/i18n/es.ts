@@ -191,5 +191,29 @@ const es: Record<string, string> = {
   'fnot.desc.pct': 'Muestra porcentajes.',
   'fnot.desc.mix': 'Muestra números enteros junto con fracciones reducidas.',
   'menu.notationGroupAria': 'Notación',
+
+  // Física (lava, ventosa araña), navegación sonora y el modo demostración.
+  'sr.physics.lava': '¡Cuidado! Tocaste la lava. Las monedas volvieron a posiciones aleatorias.',
+  'sr.physics.spiderOn': '¡Modo araña! Trepa por paredes y techos; rodea las esquinas. Correr suelta.',
+  'sr.physics.spiderOff': 'Soltaste la superficie.',
+  'sr.nav.noCoinNear': 'No hay ninguna moneda cerca.',
+  'sr.attract.demo': 'Demostración.',
+  'sr.attract.recorded': 'Demo de 30 segundos grabada para {cenario}.',
+
+  // Marcos de los submenús de título y los nombres de los escenarios.
+  'menu.back': 'Volver',
+  'menu.play': 'Jugar',
+  'menu.alf': 'Alfabetización',
+  'menu.mat': 'Matemáticas',
+  'menu.frac': 'Fracción',
+  'menu.fracTitle': 'Suma y resta de fracciones',
+  'menu.tab': 'Tablas de multiplicar',
+  'menu.tabHint': 'Elige los números para practicar',
+  'menu.cen': 'Escenario',
+  'cen.cidade': 'Ciudad',
+  'cen.campo': 'Día en el Campo',
+  'cen.cemiterio': 'Amanecer en el Campo',
+  'cen.espaco': 'Noche en el Campo',
+  'cen.floresta': 'Bosque',
 };
 export default es;

@@ -6,6 +6,7 @@
 // Extraído do game.js (modularização Tier 1). Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import * as store from '../platform/storage.js';
+import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 
 /** O bot da demonstração de atração move um jogador de verdade; a fatia é a mesma que o `stepPlayer` lê. */
@@ -71,7 +72,7 @@ export function createAttract(ctx: AttractCtx): AttractCtl {
     } else {
       ctx.$('#attract-banner')!.hidden = false;
     }
-    ctx.srSay('Demonstração.');
+    ctx.srSay(t('sr.attract.demo'));
   }
 
   function stopAttract(): void {
@@ -123,7 +124,10 @@ export function createAttract(ctx: AttractCtx): AttractCtl {
       if (recArr.length >= 180) {
         const cen = ctx.getCenario();
         store.setJSON(store.KEYS.attract(cen), recArr);
-        ctx.srAlert('Demo de 30 segundos gravada para ' + (ctx.CENARIOS[cen]?.nome ?? cen) + '.');
+        // Ferramenta de AUTORIA (só com `?record=1`), não caminho de jogador — mas passa por srAlert e chega a um
+        // leitor de tela de verdade, então é moldura como qualquer outra. O NOME do cenário entra por parâmetro:
+        // ele vive na tabela CENARIOS de render/cenario-data e viaja com ela quando ela for convertida.
+        ctx.srAlert(t('sr.attract.recorded', { cenario: t(ctx.CENARIOS[cen]?.nome ?? cen) }));
         recArr = null; recT = 0;
       }
     },

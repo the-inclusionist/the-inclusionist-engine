@@ -272,18 +272,19 @@ export function activityBtnHtml(id: string): string {
   return `<button class="title-btn" data-act-id="${id}" type="button">${a.nome}${a.sub ? `<span class="act-sub">${a.sub}</span>` : ''}</button>`;
 }
 /** The "Voltar" ghost button of a submenu. */
-export function backBtnHtml(to: TitleMenuId): string { return `<button class="title-btn ghost" data-tm-back="${to}" type="button">Voltar</button>`; }
+export function backBtnHtml(to: TitleMenuId): string { return `<button class="title-btn ghost" data-tm-back="${to}" type="button">${t('menu.back')}</button>`; }
 /** The live-region footer that shows the focused minigame's description. */
 export const TM_DESC_HTML = `<div class="tm-desc" aria-live="polite"></div>`;
-/** A submenu heading. */
-export function tmTitleHtml(t: string): string { return `<h3 class="tm-title">${t}</h3>`; }
+/** A submenu heading. O parâmetro chamava-se `t` e sombreava a função de tradução — quarta colisão desse
+ *  nome no projeto; recebe o texto JÁ resolvido, e agora se chama `titulo` para dizê-lo. */
+export function tmTitleHtml(titulo: string): string { return `<h3 class="tm-title">${titulo}</h3>`; }
 
 export function alfMenuHtml(): string {
-  return tmTitleHtml('Alfabetização') + ALF_MENU_IDS.map(activityBtnHtml).join('') + backBtnHtml('tm-main') + TM_DESC_HTML;
+  return tmTitleHtml(t('menu.alf')) + ALF_MENU_IDS.map(activityBtnHtml).join('') + backBtnHtml('tm-main') + TM_DESC_HTML;
 }
 export function matMenuHtml(): string {
-  return tmTitleHtml('Matemática') + MAT_MENU_IDS.map(activityBtnHtml).join('')
-    + `<button class="title-btn" data-tm-fr="1" type="button">Fração</button>` + backBtnHtml('tm-main') + TM_DESC_HTML;
+  return tmTitleHtml(t('menu.mat')) + MAT_MENU_IDS.map(activityBtnHtml).join('')
+    + `<button class="title-btn" data-tm-fr="1" type="button">${t('menu.frac')}</button>` + backBtnHtml('tm-main') + TM_DESC_HTML;
 }
 export function fracNotsHtml(f: FracNot): string {
   return `<div class="frac-nots" role="group" aria-label="${t('menu.notationGroupAria')}">`
@@ -291,20 +292,21 @@ export function fracNotsHtml(f: FracNot): string {
     + `</div>`;
 }
 export function frMenuHtml(f: FracNot): string {
-  return tmTitleHtml('Soma e subtração de frações') + fracNotsHtml(f)
+  return tmTitleHtml(t('menu.fracTitle')) + fracNotsHtml(f)
     + FR_MENU_IDS.map(activityBtnHtml).join('') + backBtnHtml('tm-mat') + TM_DESC_HTML;
 }
 export function tabRowHtml(row: readonly number[], sel: readonly number[]): string {
   return row.map((n) => `<button class="title-btn tab-num${sel.includes(n) ? ' tab-on' : ''}" data-tab-n="${n}" type="button" aria-pressed="${sel.includes(n)}">${n}</button>`).join('');
 }
 export function tabMenuHtml(sel: readonly number[]): string {
-  return tmTitleHtml('Tabuada') + `<div class="game-subtitle">Escolha os números para treinar</div>`
+  return tmTitleHtml(t('menu.tab')) + `<div class="game-subtitle">${t('menu.tabHint')}</div>`
     + TAB_ROWS.map((r) => `<div class="tab-row">${tabRowHtml(r, sel)}</div>`).join('')
-    + `<button class="title-btn" id="tab-play" type="button">Jogar</button>` + backBtnHtml('tm-mat');
+    + `<button class="title-btn" id="tab-play" type="button">${t('menu.play')}</button>` + backBtnHtml('tm-mat');
 }
 export function cenMenuHtml(cenarios: readonly CenarioOption[]): string {
-  return tmTitleHtml('Cenário') + cenarios.map((c) => `<button class="title-btn" data-cen="${c.id}" type="button">${c.nome}</button>`).join('')
-    + `<button class="title-btn ghost" data-cen-back="1" type="button">Voltar</button>`;
+  // `c.nome` é a CHAVE do cenário (render/cenario-data); resolve aqui, no ponto de exibição.
+  return tmTitleHtml(t('menu.cen')) + cenarios.map((c) => `<button class="title-btn" data-cen="${c.id}" type="button">${t(c.nome)}</button>`).join('')
+    + `<button class="title-btn ghost" data-cen-back="1" type="button">${t('menu.back')}</button>`;
 }
 
 // -------------------------------------------------------------------------------------------------------

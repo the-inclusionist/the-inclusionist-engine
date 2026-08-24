@@ -190,5 +190,29 @@ const en: Record<string, string> = {
   'fnot.desc.pct': 'Shows percentages.',
   'fnot.desc.mix': 'Shows whole numbers together with reduced fractions.',
   'menu.notationGroupAria': 'Notation',
+
+  // Physics (lava, spider cling), audio navigation and the attract-mode demo.
+  'sr.physics.lava': 'Careful! You touched the lava. The coins moved back to random places.',
+  'sr.physics.spiderOn': 'Spider mode! Crawl on walls and ceilings; go around corners. Run lets go.',
+  'sr.physics.spiderOff': 'Let go of the surface.',
+  'sr.nav.noCoinNear': 'No coin nearby.',
+  'sr.attract.demo': 'Demo.',
+  'sr.attract.recorded': '30-second demo recorded for {cenario}.',
+
+  // Title submenu chrome and the scenery names.
+  'menu.back': 'Back',
+  'menu.play': 'Play',
+  'menu.alf': 'Literacy',
+  'menu.mat': 'Maths',
+  'menu.frac': 'Fractions',
+  'menu.fracTitle': 'Adding and subtracting fractions',
+  'menu.tab': 'Times tables',
+  'menu.tabHint': 'Choose the numbers to practise',
+  'menu.cen': 'Scenery',
+  'cen.cidade': 'City',
+  'cen.campo': 'Day in the Fields',
+  'cen.cemiterio': 'Daybreak in the Fields',
+  'cen.espaco': 'Night in the Fields',
+  'cen.floresta': 'Forest',
 };
 export default en;

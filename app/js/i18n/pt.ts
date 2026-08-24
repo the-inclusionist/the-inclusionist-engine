@@ -220,5 +220,29 @@ const pt: Record<string, string> = {
   'fnot.desc.pct': 'Liga números percentuais.',
   'fnot.desc.mix': 'Liga números inteiros e frações reduzidas.',
   'menu.notationGroupAria': 'Notação',
+
+  // Física (lava, ventosa-aranha), navegação sonora e o modo de demonstração.
+  'sr.physics.lava': 'Cuidado! Tocou na lava. As moedas voltaram para posições aleatórias.',
+  'sr.physics.spiderOn': 'Modo aranha! Engatinha em paredes e teto; contorna quinas. Correr solta.',
+  'sr.physics.spiderOff': 'Soltou da superfície.',
+  'sr.nav.noCoinNear': 'Nenhuma moeda por perto.',
+  'sr.attract.demo': 'Demonstração.',
+  'sr.attract.recorded': 'Demo de 30 segundos gravada para {cenario}.',
+
+  // Molduras dos submenus de título e os nomes dos cenários.
+  'menu.back': 'Voltar',
+  'menu.play': 'Jogar',
+  'menu.alf': 'Alfabetização',
+  'menu.mat': 'Matemática',
+  'menu.frac': 'Fração',
+  'menu.fracTitle': 'Soma e subtração de frações',
+  'menu.tab': 'Tabuada',
+  'menu.tabHint': 'Escolha os números para treinar',
+  'menu.cen': 'Cenário',
+  'cen.cidade': 'Cidade',
+  'cen.campo': 'Dia no Campo',
+  'cen.cemiterio': 'Amanhecer no Campo',
+  'cen.espaco': 'Noite no Campo',
+  'cen.floresta': 'Floresta',
 };
 export default pt;

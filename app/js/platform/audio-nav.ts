@@ -13,6 +13,7 @@
 // Extraído do game.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, áudio rodada 3).
 
 import type { PlayerView } from '../core/entity.js';
+import { t } from '../core/i18n.js';
 
 type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
 /**
@@ -126,7 +127,7 @@ export function createAudioNav(ctx: AudioNavCtx): AudioNav {
   function sonar(pl: Player): void {
     _sonarCount++; let best: Coin | null = null, bd = 1e9;
     for (const cn of ctx.getCoins()) { if (cn.taken || cn.owner !== pl.i) continue; const d = Math.hypot(cn.x - pl.x, cn.y - pl.y); if (d < bd) { bd = d; best = cn; } }
-    const pc = playerCtx(pl); if (!best) { ctx.tonePan(300, 0.2, 'sonar', 0, 0.2, 'sine', pc); ctx.srSay('Nenhuma moeda por perto.'); return; }
+    const pc = playerCtx(pl); if (!best) { ctx.tonePan(300, 0.2, 'sonar', 0, 0.2, 'sine', pc); ctx.srSay(t('sr.nav.noCoinNear')); return; }
     const pan = panFor(best.x, pl), near = Math.max(0, 1 - bd / (12 * ctx.TILE)); ctx.tonePan(380 + 740 * near, 0.16, 'sonar', pan, 0.26, 'sine', pc); // mais perto = mais agudo
     const lado = best.x < pl.x - 4 ? 'à esquerda' : best.x > pl.x + 4 ? 'à direita' : 'à frente', dist = bd < 4 * ctx.TILE ? 'bem perto' : bd < 9 * ctx.TILE ? 'perto' : 'longe';
     const msg = (ctx.getNumPlayers() > 1 ? 'Jogador ' + (pl.i + 1) + ': ' : '') + 'Sonar: moeda ' + lado + ', ' + dist + '.'; ctx.srSay(msg); ctx.narrate(msg);

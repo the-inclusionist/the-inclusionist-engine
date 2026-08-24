@@ -17,6 +17,8 @@
 //  · `carregarTilesDoTema` NUNCA rejeita: tema sem arte é caminho normal (a Cidade não tem tileset próprio), e
 //    uma rejeição derrubaria a troca de cenário inteira dentro do `try/catch` mudo do boot.
 import { describe, it, expect } from 'vitest';
+import pt from '../app/js/i18n/pt.js';
+import { CENARIOS } from '../app/js/render/cenario-data.js';
 import { createSetCenario, carregarTilesDoTema } from '../app/js/render/set-cenario.js';
 
 /* ===================== dublês ===================== */
@@ -36,6 +38,9 @@ function ambiente(over = {}) {
   const ctx = {
     setCenarioValue: (t) => { log.push(['setCenarioValue', t]); estado.cenario = t; },
     getCenario: () => estado.cenario,
+    // Registra `T.nome` para provar que o TEMA INTEIRO atravessa, não só o id. Desde a Fase 5 `nome` é a
+    // CHAVE i18n do cenário (render/cenario-data), então as asserções abaixo passam pelo dicionário — assim
+    // continuam afirmando o nome que a criança lê, e não apenas que alguma string chegou.
     aplicarTemaParallax: (theme, T) => log.push(['parallax', theme, T.nome]),
     Imagem: fabricaDeImagem(imgs),
     worldCanvas: (tiles) => { log.push(['worldCanvas', tiles === null ? null : 'tiles']); return 'CANVAS'; },
@@ -105,14 +110,16 @@ describe('setCenario — validação', () => {
     const { api, log } = ambiente();
     api.setCenario('floresta');
     expect(log[0]).toEqual(['setCenarioValue', 'floresta']);
-    expect(log[1]).toEqual(['parallax', 'floresta', 'Floresta']);
+    expect(log[1]).toEqual(['parallax', 'floresta', CENARIOS.floresta.nome]);
+    expect(pt[log[1][2]]).toBe('Floresta');
   });
 
   it('tema DESCONHECIDO cai para a Cidade — e é a Cidade que é persistida e pintada', () => {
     const { api, log, imgs } = ambiente();
     api.setCenario('praia');
     expect(log[0]).toEqual(['setCenarioValue', 'cidade']);
-    expect(log[1]).toEqual(['parallax', 'cidade', 'Cidade']);
+    expect(log[1]).toEqual(['parallax', 'cidade', CENARIOS.cidade.nome]);
+    expect(pt[log[1][2]]).toBe('Cidade');
     expect(imgs[0].src).toBe('assets/cenarios/cidade/tile_fill.png'); // e não .../praia/...
   });
 

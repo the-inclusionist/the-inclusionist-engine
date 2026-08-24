@@ -17,6 +17,7 @@
 // ÂNCORA: tests/physics-golden.node.test.js replaya 14 trajetórias capturadas do jogo rodando
 // (tests/fixtures/physics-golden.json). Qualquer mudança de comportamento aqui aparece lá.
 import { TILE, TUNE, EASY, COIN_TARGET } from '../core/constants.js';
+import { t } from '../core/i18n.js';
 import type { ControlledPlayer } from '../core/entity.js';
 import { tileAt, solidAt, surfTop, isWcRampRiser, rampSurfaceY, caneBlockPx } from '../core/collision.js';
 import { BOX, SPAWN_X, SPAWN_Y, jumpVel, isBouncyGroundBelow, clingSides, firstClingSide, spiderReattach } from './player.js';
@@ -160,7 +161,7 @@ export function triggerLava(pl: PhysicsPlayer): void {
   (players as PhysicsPlayer[]).forEach((p) => { p.collected = 0; }); C.setCollected(0); C.updateHud();
   C.sfx('hurt'); pl.hurtTimer = 60; pl.vy = -10; pl.vx = (rnd() < 0.5 ? -1 : 1) * 5;
   C.addShake(3, 14); C.addHitstop(4); // JUICE: dano é o impacto mais forte do jogo
-  C.srAlert('Cuidado! Tocou na lava. As moedas voltaram para posições aleatórias.');
+  C.srAlert(t('sr.physics.lava'));
 }
 
 /* ===================== o passo, em pedaços ===================== */
@@ -182,8 +183,8 @@ function horizontalMove(pl: PhysicsPlayer, run: boolean, turbo: boolean): number
 function updateCling(pl: PhysicsPlayer): void {
   if (pl.clinging && (pl.onLadder || pl.inWater || pl.activePower !== 'wallcling' || pl.onGround || clingSides(pl).D)) pl.clinging = false; // E18d: pés numa superfície estável (sólido logo abaixo) ENCERRAM; pendurado no teto (pés p/ cima) ou na parede alta continua
   if (pl.activePower === 'wallcling' && !pl.clinging && pl.runEdge && !pl.onGround && !pl.onLadder && !pl.inWater && firstClingSide(pl)) {
-    pl.clinging = true; pl.clingN = firstClingSide(pl); pl.vy = 0; pl.vx = 0; pl.jumpBuffer = 0; C.sfx('power'); C.srSay('Modo aranha! Engatinha em paredes e teto; contorna quinas. Correr solta.');
-  } else if (pl.clinging && pl.runEdge) { pl.clinging = false; C.sfx('power'); C.srSay('Soltou da superfície.'); } // E18b: CANCELA só com Correr (não com Pular); a caixa não larga a superfície antes disso
+    pl.clinging = true; pl.clingN = firstClingSide(pl); pl.vy = 0; pl.vx = 0; pl.jumpBuffer = 0; C.sfx('power'); C.srSay(t('sr.physics.spiderOn'));
+  } else if (pl.clinging && pl.runEdge) { pl.clinging = false; C.sfx('power'); C.srSay(t('sr.physics.spiderOff')); } // E18b: CANCELA só com Correr (não com Pular); a caixa não larga a superfície antes disso
   if (!pl.clinging) pl.clingN = null;
 }
 

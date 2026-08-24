@@ -75,6 +75,8 @@ export interface Flora {
 
 /** Um cenário. `v3:false` = Cidade (fundo em PNG + cena própria); `v3:true` = fundo GERADO das cores abaixo. */
 export interface CenarioTema {
+  /** CHAVE i18n do nome exibido. Chave e não texto: tabela de módulo resolvida no import congelaria o idioma
+   *  no boot (ver a nota em input/devices). Quem exibe resolve com `t()`. */
   nome: string;
   v3: boolean;
   sky?: [string, string];   // gradiente vertical do céu (topo → horizonte) — só `v3`
@@ -90,11 +92,11 @@ export const CENARIO_PADRAO = 'cidade';
    e a decoração viva de lá (fórmulas copiadas). BLOCOS = Clarity SEM recolor (a v3 não recoloria tiles
    por tema). NENHUM tema tem chuva — chuva é só da Cidade. */
 export const CENARIOS: Record<string, CenarioTema> = {
-  cidade:    { nome: 'Cidade', v3: false },
-  campo:     { nome: 'Dia no Campo',       v3: true, sky: ['#86c5e8', '#cfeecb'], cloud: ['#ffffff', '#d4e6f5'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens', 'passaros', 'borboletas'] },
-  cemiterio: { nome: 'Amanhecer no Campo', v3: true, sky: ['#2b2540', '#5a4f6b'], cloud: ['#d9c4dd', '#a98fb6'], hills: ['#4a5f55', '#33473d'], decor: ['nuvens', 'passaros', 'sparkles', 'minhocas', 'nevoa'] },
-  espaco:    { nome: 'Noite no Campo',     v3: true, sky: ['#05030f', '#161033'], cloud: ['#3a3550', '#262238'], hills: ['#1e3030', '#142024'], decor: ['nuvens', 'sparkles', 'vagalumes'] },
-  floresta:  { nome: 'Floresta',           v3: true, sky: ['#3f6b50', '#8fbf73'], cloud: ['#cfe6b8', '#a7cf86'], hills: ['#2f5e35', '#1f4226'], decor: ['nuvens', 'passaros', 'borboletas'] },
+  cidade:    { nome: 'cen.cidade', v3: false },
+  campo:     { nome: 'cen.campo',          v3: true, sky: ['#86c5e8', '#cfeecb'], cloud: ['#ffffff', '#d4e6f5'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens', 'passaros', 'borboletas'] },
+  cemiterio: { nome: 'cen.cemiterio',      v3: true, sky: ['#2b2540', '#5a4f6b'], cloud: ['#d9c4dd', '#a98fb6'], hills: ['#4a5f55', '#33473d'], decor: ['nuvens', 'passaros', 'sparkles', 'minhocas', 'nevoa'] },
+  espaco:    { nome: 'cen.espaco',         v3: true, sky: ['#05030f', '#161033'], cloud: ['#3a3550', '#262238'], hills: ['#1e3030', '#142024'], decor: ['nuvens', 'sparkles', 'vagalumes'] },
+  floresta:  { nome: 'cen.floresta',       v3: true, sky: ['#3f6b50', '#8fbf73'], cloud: ['#cfe6b8', '#a7cf86'], hills: ['#2f5e35', '#1f4226'], decor: ['nuvens', 'passaros', 'borboletas'] },
 };
 
 /** v3 exato — grama/flores por tema. SÓ dos temas `v3`: a Cidade não tem flora (por isso o `| undefined`). */
