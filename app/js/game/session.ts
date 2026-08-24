@@ -81,6 +81,7 @@
 //
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C2).
 
+import { t } from '../core/i18n.js';
 import { TILE, COIN_TARGET, EASY } from '../core/constants.js';
 import { BOX, SPAWN_X, SPAWN_Y, makePlayer } from './player.js';
 import { screenBaseSize } from '../core/screens.js';
@@ -168,18 +169,18 @@ export function fitsScreens(n: number, availW: number, availH: number): boolean 
 
 /** Objetivo no HUD (`#hud-objective`) ao começar a rodada. Multi-tela vira corrida e ignora o modo. */
 export function objectiveText(mode: string, n: number): string {
-  if (n > 1) return `${n} jogadores — corrida pelas ${COIN_TARGET} moedas`;
-  if (mode === 'somasub') return 'Resolva 10 contas';
-  if (mode === 'silabas') return 'Monte 10 palavras';
-  return 'Colete 10 moedas';
+  if (n > 1) return t('hud.objective.multi', { n, alvo: COIN_TARGET });
+  if (mode === 'somasub') return t('hud.objective.somasub');
+  if (mode === 'silabas') return t('hud.objective.silabas');
+  return t('hud.objective.ludico');
 }
 
 /** O que o leitor de tela anuncia ao começar a rodada. Mesma árvore de decisão do objetivo. */
 export function restartAnnounce(mode: string, n: number): string {
-  if (n > 1) return `${n} jogadores, cada um na sua tela. Corram pelas moedas.`;
-  if (mode === 'somasub') return 'Modo Soma-Sub. Toque nas figuras e resolva as contas.';
-  if (mode === 'silabas') return 'Modo Sílabas. Toque nas letras e monte as palavras.';
-  return 'Nova rodada. Colete 10 moedas.';
+  if (n > 1) return t('sr.round.multi', { n });
+  if (mode === 'somasub') return t('sr.round.somasub');
+  if (mode === 'silabas') return t('sr.round.silabas');
+  return t('sr.round.ludico');
 }
 
 /* ===================== "um jogador no começo de uma rodada" (fonte única) ===================== */
@@ -384,7 +385,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
       const w = who(pl);
       if (pu.kind === 'key') { // chave individual: só o portador a tem — mas o portão, aberto, vale p/ todos
         pl.hasKey = true; ctx.sfx('key');
-        ctx.srAlert(w + 'pegou a chave. Toque no portão para abri-lo.');
+        ctx.srAlert(t('sr.key.taken', { who: w })); // `who` atravessa sem traduzir: é 'Jogador N: ' ou vazio
         return;
       }
       if (pu.kind === 'runcane') { // cego: a bengala com roda habilita CORRER
@@ -396,7 +397,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
       pl.activePower = pu.kind; pl.clinging = false; pl.flying = false;
       ctx.sfx('power'); showPower(pl);
       const pm = w + (ctx.POWER_MSG[pu.kind] || 'Poder ativado!');
-      ctx.srSay(pm + ' (Trocar poder cicla entre os coletados.)'); ctx.narrate(pm);
+      ctx.srSay(t('sr.power.swapHint', { msg: pm })); ctx.narrate(pm);
     });
   }
 
@@ -407,7 +408,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
       if (!overlaps(box, gateTileBox(gt))) continue;
       ctx.setGateOpen(true); ctx.rebuildExtras();
       ctx.sfx('gate'); ctx.doorSound('madeira');
-      ctx.srAlert('Portão aberto!');
+      ctx.srAlert(t('sr.gate.open'));
       ctx.addShake(2, 12); // JUICE: portão pesado sacode a tela
       break;
     }
@@ -529,16 +530,16 @@ export function initSession(ctx: SessionCtx): SessionApi {
    */
   function activateScreens(n: number): void {
     n = clampScreens(n);
-    if (isMobile() && n > 1) { ctx.srAlert('No celular o jogo roda em uma tela só.'); return; } // B2: mobile = 1 jogador
-    if (n === N()) { ctx.srSay(n > 1 ? (n + ' telas já ativas.') : '1 tela.'); return; }
+    if (isMobile() && n > 1) { ctx.srAlert(t('sr.screens.mobileOnly')); return; } // B2: mobile = 1 jogador
+    if (n === N()) { ctx.srSay(n > 1 ? t('sr.screens.alreadyN', { n }) : t('sr.screens.already1')); return; }
     if (n > N()) {
-      if (!fitsN(n)) { ctx.srAlert('Não cabem ' + n + ' telas nesta janela — cada tela precisa de ao menos 640×360. Aumente a janela ou use tela cheia.'); return; }
+      if (!fitsN(n)) { ctx.srAlert(t('sr.screens.wontFitN', { n })); return; }
       while (N() < n) { if (!joinPlayer(null)) break; }
-      ctx.srSay(N() + ' telas ativas.');
+      ctx.srSay(t('sr.screens.activeN', { n: N() }));
       return;
     }
     setNumPlayers(n);
-    ctx.srSay(n > 1 ? (n + ' telas ativas — nova rodada.') : '1 tela — nova rodada.');
+    ctx.srSay(n > 1 ? t('sr.screens.newRoundN', { n }) : t('sr.screens.newRound1'));
   }
 
   /* ===================== a vida de UM jogador ===================== */
@@ -556,14 +557,14 @@ export function initSession(ctx: SessionCtx): SessionApi {
     resetPlayerState(p, k);
     respawnCoinsForOwner(k);
     ctx.updateGameHud();
-    ctx.srSay('Jogador ' + (k + 1) + ' recomeçou nesta tela.');
+    ctx.srSay(t('sr.player.restarted', { n: k + 1 }));
   }
 
   /** L1: entra num jogo EM ANDAMENTO (sem reiniciar a rodada dos outros): cria o jogador, a tela e os itens. */
   function joinPlayer(padIdx: number | null): boolean {
-    if (isMobile()) { ctx.srAlert('No celular o jogo roda em uma tela só.'); return false; }
-    if (N() >= 4) { ctx.srAlert('Já são 4 jogadores.'); return false; }
-    if (!fitsN(N() + 1)) { ctx.srAlert('Não cabe mais uma tela nesta janela — cada tela precisa de ao menos 640×360.'); return false; }
+    if (isMobile()) { ctx.srAlert(t('sr.screens.mobileOnly')); return false; }
+    if (N() >= 4) { ctx.srAlert(t('sr.screens.maxPlayers')); return false; }
+    if (!fitsN(N() + 1)) { ctx.srAlert(t('sr.screens.wontFitOneMore')); return false; }
     const ps = P();
     const i = ps.length, p = makePlayer(i) as unknown as SessionPlayer;
     ctx.loadPlayerA11y(p, i);
@@ -573,7 +574,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
     ctx.configureRender(); ctx.reapplyVizAll(); ctx.layout();
     resetPlayerState(p, i); addCoinsForOwner(i); // itens PRÓPRIOS dão spawn; os dos outros ficam intactos
     reflectScreenButton(N());
-    ctx.srSay('Jogador ' + (i + 1) + ' entrou no jogo em andamento.');
+    ctx.srSay(t('sr.player.joined', { n: i + 1 }));
     return true;
   }
 
@@ -587,7 +588,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
     if (!key) return;
     key.taken = false; key.by = [];
     if (key.sprite) key.sprite.visible = true;
-    ctx.srAlert('A chave voltou para o lugar de origem.');
+    ctx.srAlert(t('sr.key.returned'));
   }
 
   /** Volta ao menu inicial (mesmo caminho do "sair" solo e do "todo mundo saiu" em MP). */
@@ -607,7 +608,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
       return;
     }
     ctx.setPhase('playing');
-    ctx.srSay('Jogador ' + (q + 1) + ' abandonou o jogo.');
+    ctx.srSay(t('sr.player.quit', { n: q + 1 }));
   }
 
   return {
