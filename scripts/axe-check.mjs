@@ -21,11 +21,25 @@ try {
   // let the a11y shell settle (fonts/DOM); the canvas render itself isn't axe-scannable — its a11y is the DOM shell.
   await page.waitForSelector('#sr-status', { timeout: 10_000 });
 
+  // VLibras (gov.br, third-party, interim — pillar #2/#5) is excluded by DECISION: we do not control its
+  // markup and the plan is our own zdog interpreter. Getting the exclusion right is subtler than it looks.
+  //
+  // The `[vw*]` attributes below are OUR mount point in index.html. The widget USED to render inside them;
+  // it no longer does — `vlibras-plugin.js` appends `#vlibras-access-wrapper` directly to <body>, as a shadow
+  // host, outside our div entirely. So those three selectors were excluding an empty container while the real
+  // widget sailed straight into the report, and the gate failed on an <img> with no alt that is not ours.
+  //
+  // The lesson is which side of the boundary the selector belongs to: an exclusion must name the THIRD PARTY's
+  // namespace, because that is what the third party is guaranteed to keep, not our markup, which they can stop
+  // using without telling us. Hence the `[id^="vlibras-"]` prefix rather than the exact id — it survives them
+  // renaming the wrapper, and it is still narrow enough that it can never hide a violation of ours.
+  // The `[vw*]` selectors stay: the legacy markup is still in index.html and still theirs to render into.
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-    .exclude('[vw]')                 // VLibras widget (gov.br, third-party, interim — pillar #2/#5)
+    .exclude('[vw]')
     .exclude('[vw-access-button]')
     .exclude('[vw-plugin-wrapper]')
+    .exclude('[id^="vlibras-"]')
     .analyze();
 
   if (results.violations.length) {
