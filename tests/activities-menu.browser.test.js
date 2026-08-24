@@ -208,6 +208,25 @@ describe('navegação por setas no DOM real', () => {
     vi.advanceTimersByTime(230);
     expect(calls.shown).toEqual(['tm-alf', 'tm-main']);
   });
+
+  // REGRESSÃO — GAG A1. Este caso faltava, e por isso o defeito passou: o "voltar" só era exercitado na
+  // tm-alf. Cinco das seis telas marcam o botão com `data-tm-back` e a de CENÁRIO com `data-cen-back` (o alvo
+  // dela é dinâmico, calculado por cenBackMenuFor), e o navTitle só conhecia o primeiro atributo. Efeito no
+  // jogo: na última tela antes da partida — por onde passa TODA partida — o botão Voltar do controle não
+  // fazia nada, enquanto o "Voltar" visível continuava clicável com mouse ou toque. Quem depende do controle
+  // só conseguia ir para a frente.
+  it('[Regressão] voltar funciona também na tela de CENÁRIO, que marca o botão com outro atributo', () => {
+    const { ctx, calls } = makeCtx();
+    const api = initActivitiesMenu(ctx);
+    api.buildTitleMenus();          // escreve o #tm-cen (é ele que traz o data-cen-back)
+    api.startActivity('ludico');    // trava o cenBack e mostra a tela de cenário
+    expect(calls.shown.at(-1)).toBe('tm-cen');
+    const alvos = [...$('#tm-cen').querySelectorAll('button')].filter((b) => b.dataset.cenBack != null);
+    expect(alvos.length, 'a tela de cenário precisa ter um botão Voltar para o teste dizer algo').toBe(1);
+    api.navTitle({ no: true });
+    vi.advanceTimersByTime(230);
+    expect(calls.shown.at(-1)).toBe('tm-main');
+  });
 });
 
 describe('nº de jogadores com geometria real', () => {

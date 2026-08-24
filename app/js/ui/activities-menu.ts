@@ -417,6 +417,20 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
     return m ? [...m.querySelectorAll<HTMLElement>('button')] : [];
   }
 
+  /**
+   * O botão "Voltar" desta tela, seja qual for o atributo que o marca.
+   *
+   * São DOIS atributos porque os alvos são de naturezas diferentes: cinco telas voltam para um destino FIXO
+   * (`data-tm-back="tm-main"`), e a de cenário volta para a tela de onde se veio, calculada em `cenBackMenuFor`
+   * — daí `data-cen-back`, sem valor. A distinção é legítima; o defeito era `navTitle` conhecer só a primeira.
+   *
+   * O EFEITO ERA ESTE: na tela de cenário — a última antes do jogo começar, por onde passa TODA partida — o
+   * botão Voltar do controle não fazia nada. Quem usa mouse ou toque vê e clica o "Voltar" que está ali; quem
+   * depende do controle só conseguia ir para a frente, para dentro de um jogo. É a GAG A1 (menu navegável por
+   * controle) quebrada na única tela que ninguém consegue evitar.
+   */
+  const isBackButton = (b: HTMLElement): boolean => b.dataset.tmBack != null || b.dataset.cenBack != null;
+
   function navTitle(k: NavKeys): void {
     const bs = titleButtons(); if (!bs.length) return;
     const i = bs.indexOf(ctx.getActiveElement() as HTMLElement);
@@ -424,7 +438,7 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
       const n = nextTitleIndex(i, bs.length, k);
       bs[n].focus(); ctx.srSay(bs[n].textContent || '');
     } else if (k.yes) { (i < 0 ? bs[0] : bs[i]).click(); }
-    else if (k.no) { const back = bs.find((b) => b.dataset.tmBack); if (back) back.click(); }
+    else if (k.no) { const back = bs.find(isBackButton); if (back) back.click(); }
   }
 
   // --- wiring -------------------------------------------------------------------------------------------
