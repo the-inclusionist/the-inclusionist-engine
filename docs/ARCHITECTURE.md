@@ -135,7 +135,7 @@ This file is structure only.
 
 | Folder | Modules |
 |---|---|
-| `core/` | a11y-sr · collision · constants · i18n · layers · loop · rng · screens · state · tiles · world |
+| `core/` | a11y-sr · collision · constants · **entity** · i18n · layers · loop · rng · screens · state · tiles · world |
 | `platform/` | audio · audio-ambient · audio-earcons · audio-jingles · audio-mixer · audio-nav · speech · storage · tts |
 | `input/` | devices · edges · gamepad · keyboard · keyboard-runtime · keydown · state · touch · touch-bindings |
 | `render/` | canvas · cenario-data · city-tex · crt · cvd-matrices · draw · fx · hc-role-data · high-contrast · lq-filter · minimap · parallax · player-anim · props · scene-city · scene-parallax · scene-sky · screen-pipeline · set-cenario · sprite-fx · sprites · textures · title-scene · viewports · viz-modes · viz-setters · weather · wheelchair-sprites · world-tex |
