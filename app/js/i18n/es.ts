@@ -224,5 +224,10 @@ const es: Record<string, string> = {
   'sr.tts.progress': 'Voz neuronal: {pct} %.',
   'sr.tts.ready': 'Voz neuronal lista, en {s} segundos.',
   'sr.tts.loadFailed': 'No se pudo cargar la voz neuronal (necesita internet en el 1.er uso) — seguimos con la voz del navegador.',
+
+  // Quiz — solo el MARCO; el currículo de alfabetización se mantiene en pt-BR por decisión.
+  'sr.quiz.tryAgain': 'Inténtalo de nuevo.',
+  'sr.quiz.erase': 'borrar',
+  'sr.quiz.ok': 'ok',
 };
 export default es;

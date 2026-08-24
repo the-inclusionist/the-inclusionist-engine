@@ -253,5 +253,11 @@ const pt: Record<string, string> = {
   'sr.tts.progress': 'Voz neural: {pct}%.',
   'sr.tts.ready': 'Voz neural pronta, em {s} segundos.',
   'sr.tts.loadFailed': 'Não deu para carregar a voz neural (precisa de internet no 1º uso) — seguindo com a voz do navegador.',
+
+  // Quiz — só a MOLDURA. O currículo de alfabetização (palavra, letra, sílaba, soletração, célula Braille) NÃO
+  // entra aqui: é específico da língua e pede currículo próprio por idioma, não tradução. Ver o CLAUDE.md.
+  'sr.quiz.tryAgain': 'Tente de novo.',
+  'sr.quiz.erase': 'apagar',
+  'sr.quiz.ok': 'ok',
 };
 export default pt;

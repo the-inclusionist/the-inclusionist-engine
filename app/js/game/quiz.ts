@@ -21,6 +21,7 @@
 // Sem I/O no import: `document`/`setTimeout` só aparecem DENTRO das funções.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (B3).
 import { COIN_TARGET } from '../core/constants.js';
+import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { rnd, randInt, shuffle } from '../core/rng.js';
 import { coins, numPlayers, quizLevel, activity as ACTIVITY } from '../core/state.js';
@@ -496,7 +497,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     if (q.kind === 'pre') { c.srSay(soletra(q.choices[q.sel])); return; }
     const opts = (q as SilabasQuiz | AlfQuiz).options;
     const N = opts ? opts.length : 0;
-    if (q.sel >= N) { c.srSay(q.sel === N ? 'apagar' : 'ok'); return; }
+    if (q.sel >= N) { c.srSay(t(q.sel === N ? 'sr.quiz.erase' : 'sr.quiz.ok')); return; }
     const it = opts[q.sel];
     if (q.kind === 'silabas') {
       if (q.hearSyl) { c.srSay(c.disp(it)); c.gameSay(it); }                  // Descobrindo sílabas (2): sílaba INTEIRA, áudio SEMPRE (gameSay)
@@ -614,7 +615,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
       } else {
         q.tries++;
         if (q.tries >= 2) { q.revealed = true; c.srAlert(`${quizWho(pl)}A certa é ${c.disp(q.word)}: ${soletra(q.word)}. Pule para seguir.`); }
-        else { c.sfx('wrong'); c.srSay('Tente de novo.'); }
+        else { c.sfx('wrong'); c.srSay(t('sr.quiz.tryAgain')); }
         renderQuiz(pl);
       }
       return;
@@ -627,7 +628,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
       else {
         q.tries++;
         if (q.tries >= 2) { q.revealed = true; q.boxes = q.word.split(''); c.srAlert(`${quizWho(pl)}A palavra é ${c.disp(q.word)}: ${soletra(q.word)}. Pule para seguir.`); }
-        else { q.boxes = q.boxes.map(() => null); c.sfx('wrong'); c.srSay('Tente de novo.'); }
+        else { q.boxes = q.boxes.map(() => null); c.sfx('wrong'); c.srSay(t('sr.quiz.tryAgain')); }
         renderQuiz(pl);
       }
       return;
@@ -640,7 +641,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
       else {
         q.tries++;
         if (q.tries >= 2) { q.revealed = true; q.boxes = q.correct.slice(); c.srAlert(`${quizWho(pl)}A palavra é ${c.disp(q.word)}. Pule para seguir.`); }
-        else { q.boxes = [null, null]; c.sfx('wrong'); c.srSay('Tente de novo.'); }
+        else { q.boxes = [null, null]; c.sfx('wrong'); c.srSay(t('sr.quiz.tryAgain')); }
         renderQuiz(pl);
       }
       return;
@@ -649,12 +650,12 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     if (cKey(q.choices[q.sel]) === q.answer) { c.sfx('correct'); c.srSay(quizWho(pl) + 'Acertou!'); quizWin(pl, q); }
     else {
       q.tries++;
-      // As chaves do `else` importam: sem elas o `srSay('Tente de novo.')` ficava FORA do ramo e era dito
+      // As chaves do `else` importam: sem elas o `srSay(sr.quiz.tryAgain)` ficava FORA do ramo e era dito
       // tambem depois de revelar a resposta — a crianca ouvia "A resposta e X. Pule para seguir." e logo
       // "Tente de novo.", duas instrucoes que se contradizem. Os outros tres ramos deste arquivo sempre
       // tiveram as chaves; era so este.
       if (q.tries >= 2) { q.revealed = true; c.srAlert(`${quizWho(pl)}A resposta é ${speakChoice(q.answer)}. Pule para seguir.`); }
-      else { c.sfx('wrong'); c.srSay('Tente de novo.'); }
+      else { c.sfx('wrong'); c.srSay(t('sr.quiz.tryAgain')); }
       renderQuiz(pl);
     }
   }

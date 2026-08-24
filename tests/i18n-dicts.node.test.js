@@ -86,6 +86,10 @@ describe('dicionários de locale — estrutura', () => {
       // 'Modo TEA: {v}.' — "TEA" (Transtorno do Espectro Autista / Trastorno del Espectro Autista) é a mesma
       // sigla nas duas línguas, e o nível chega pelo parâmetro, esse sim traduzido (calmo/calmado).
       'sr.icon.tea',
+      // 'ok' — empréstimo do inglês que entrou nas três línguas com a mesma grafia e o mesmo som. Traduzir
+      // por "de acordo"/"aceptar" seria trocar a palavra que a criança já reconhece no botão por uma mais
+      // longa e menos familiar, justamente no cursor de confirmar.
+      'sr.quiz.ok',
     ]);
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const iguais = chavesSr.filter((k) => k in d && d[k] === pt[k] && !COINCIDEM_DE_PROPOSITO.has(k));

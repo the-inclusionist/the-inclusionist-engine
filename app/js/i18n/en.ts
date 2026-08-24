@@ -223,5 +223,10 @@ const en: Record<string, string> = {
   'sr.tts.progress': 'Neural voice: {pct}%.',
   'sr.tts.ready': 'Neural voice ready, in {s} seconds.',
   'sr.tts.loadFailed': 'The neural voice could not be loaded (it needs the internet on the first use) — carrying on with the browser voice.',
+
+  // Quiz — the FRAME only; the literacy curriculum itself stays in pt-BR by decision.
+  'sr.quiz.tryAgain': 'Try again.',
+  'sr.quiz.erase': 'erase',
+  'sr.quiz.ok': 'ok',
 };
 export default en;
