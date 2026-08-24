@@ -14,6 +14,8 @@
 // game.js's own `setModoCego()` and the pause-menu icon bar (`iconAct('tts'|'blind', …)`) call them directly.
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
+import { t } from '../core/i18n.js';
+
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
 /** Minimal platform/storage.ts shape this module needs (get/set only — no direct localStorage access). */
@@ -131,18 +133,20 @@ export function parseCaneDiv(raw: string): number {
   return (+raw) || 1;
 }
 
-/** srSay text for a cane-hit spacing choice (verbatim port of the inline ternary in the old change handler). */
+/** srSay text for a cane-hit spacing choice. The two halves are ONE sentence per case, not a shared prefix
+ *  plus a tail: a language that renders this as "One tap per block (cane)" needs to move the word "cane". */
 export function caneDivMessage(div: number): string {
-  return 'Bengala: ' + (div === 2 ? 'uma batida a cada meio bloco pisado.' : 'uma batida por bloco pisado.');
+  return t(div === 2 ? 'sr.audio.caneHalfBlock' : 'sr.audio.canePerBlock');
 }
 
-/** #tts-engine's option catalog (value, label). Pure data — verbatim port of the old inline array literal. */
+/** #tts-engine's option catalog: (value, i18n KEY of the label). The engine NAMES are proper nouns and stay
+ *  put; what translates is the parenthetical that explains each one. Keys, not text — see input/devices. */
 export const TTS_ENGINE_OPTIONS: readonly (readonly [string, string])[] = [
-  ['webspeech', 'Voz do navegador (Web Speech)'],
-  ['piper', 'Piper (neural, offline) — baixa no 1º uso'],
-  ['kokoro', 'Kokoro-82M (neural) — baixa no 1º uso'],
-  ['kitten', 'Kitten (neural) — baixa no 1º uso'],
-  ['espeak', 'eSpeak NG (embutido)'],
+  ['webspeech', 'tts.engine.webspeech'],
+  ['piper', 'tts.engine.piper'],
+  ['kokoro', 'tts.engine.kokoro'],
+  ['kitten', 'tts.engine.kitten'],
+  ['espeak', 'tts.engine.espeak'],
 ];
 
 export interface VoiceLike { name: string; lang: string; }
@@ -168,7 +172,7 @@ export interface SinkDeviceLike { deviceId: string; label?: string; }
 /** A device's option label, falling back to a 1-based "Saída N" when the browser withholds the real label
  *  (no getUserMedia permission granted yet). */
 export function sinkOptionLabel(d: SinkDeviceLike, index: number): string {
-  return d.label || ('Saída ' + (index + 1));
+  return d.label || t('audio.sinkFallback', { n: index + 1 });
 }
 
 /** A player's current sink select value ('' = default/shared). */
@@ -249,7 +253,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (!sel || sel.dataset.filled) return;
     sel.dataset.filled = '1';
     TTS_ENGINE_OPTIONS.forEach(([v, l]) => {
-      const o = document.createElement('option'); o.value = v; o.textContent = l; sel.appendChild(o);
+      const o = document.createElement('option'); o.value = v; o.textContent = t(l); sel.appendChild(o);
     });
     sel.value = ctx.tts.getEngineSel();
   }
@@ -290,7 +294,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (!devices.length) {
       const supported = sinksSupported(hasEnumerateDevices(), hasAudioContextCtor());
       el.innerHTML = '<p class="opt-hint">' +
-        (supported ? 'Clique em Detectar (pede permissão de áudio para listar os aparelhos).' : 'Este navegador não suporta troca de saída (ex.: Safari/iOS).') +
+        t(supported ? 'audio.sinksHint' : 'audio.sinksUnsupported') +
         '</p>';
       return;
     }
@@ -299,9 +303,9 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     for (let i = 0; i < n; i++) {
       const p = players[i];
       const row = document.createElement('div'); row.className = 'ctrl-row';
-      const lbl = document.createElement('label'); lbl.textContent = 'Jogador ' + (i + 1); lbl.setAttribute('for', 'sink-p' + i);
+      const lbl = document.createElement('label'); lbl.textContent = t('audio.playerN', { n: i + 1 }); lbl.setAttribute('for', 'sink-p' + i);
       const sel = document.createElement('select'); sel.className = 'vol'; sel.id = 'sink-p' + i;
-      const o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Padrão (compartilhado)'; sel.appendChild(o0);
+      const o0 = document.createElement('option'); o0.value = ''; o0.textContent = t('audio.sinkShared'); sel.appendChild(o0);
       devices.forEach((d, k) => {
         const o = document.createElement('option'); o.value = d.deviceId; o.textContent = sinkOptionLabel(d, k); sel.appendChild(o);
       });
@@ -311,7 +315,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
         p.audioSink = sel.value || null;
         ctx.store.set('incl_sink_p' + i, p.audioSink || '');
         if (p._ac) { try { p._ac.close(); } catch (e) { /* noop */ } p._ac = null; p._acOut = null; }
-        ctx.srSay('Jogador ' + (i + 1) + ' — saída de áudio ' + (p.audioSink ? 'trocada.' : 'padrão.'));
+        ctx.srSay(t(p.audioSink ? 'sr.audio.sinkChanged' : 'sr.audio.sinkDefault', { n: i + 1 }));
       });
       row.appendChild(lbl); row.appendChild(sel); el.appendChild(row);
     }
@@ -361,7 +365,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     const next = !ctx.getSoundOn();
     ctx.setSoundOn(next);
     reflectMaster();
-    ctx.srSay('Som ' + (next ? 'ligado.' : 'desligado.'));
+    ctx.srSay(t(next ? 'sr.audio.soundOn' : 'sr.audio.soundOff'));
   });
   const audioMasterVol = ctx.$<HTMLInputElement>('#audio-master-vol');
   if (audioMasterVol) audioMasterVol.addEventListener('input', () => {
@@ -397,8 +401,8 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     state.tts.on = !state.tts.on;
     ctx.setCatGain('tts');
     reflectTts();
-    ctx.srSay('Narração ' + (state.tts.on ? 'ligada.' : 'desligada.'));
-    if (state.tts.on) ctx.tts.narrate('Narração por voz ligada.');
+    ctx.srSay(t(state.tts.on ? 'sr.audio.ttsOn' : 'sr.audio.ttsOff'));
+    if (state.tts.on) ctx.tts.narrate(t('sr.audio.ttsOnSpoken'));
   });
   const ttsEngSel = ctx.$<HTMLSelectElement>('#tts-engine');
   if (ttsEngSel) ttsEngSel.addEventListener('change', () => {
@@ -406,7 +410,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     ctx.store.set('incl_tts_engine', ttsEngSel.value);
     if (ttsEngSel.value !== 'webspeech') ctx.tts.loadTTS();
     const opt = ttsEngSel.options[ttsEngSel.selectedIndex];
-    ctx.tts.narrate('Motor de voz: ' + (opt ? opt.text : '') + '.');
+    ctx.tts.narrate(t('sr.audio.engineSet', { motor: opt ? opt.text : '' }));
   });
   const ttsVoiceSel = ctx.$<HTMLSelectElement>('#tts-voice');
   if (ttsVoiceSel) ttsVoiceSel.addEventListener('change', () => {
@@ -415,11 +419,11 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
       ctx.tts.setVoiceObj(vs.find((v) => v.name === ttsVoiceSel.value) || null);
       ctx.store.set('incl_tts_voice', ttsVoiceSel.value);
     } catch (e) { /* noop */ }
-    ctx.tts.narrate('Voz selecionada.');
+    ctx.tts.narrate(t('sr.audio.voicePicked'));
   });
   const ttsTestBtn = ctx.$<HTMLButtonElement>('#opt-tts-test');
   if (ttsTestBtn) ttsTestBtn.addEventListener('click', () => {
-    const txt = 'Olá! Esta é a voz da narração do Inclusionista. Um, dois, três, testando.';
+    const txt = t('audio.voiceSample');
     const engine = ctx.tts.getEngine();
     if (ctx.tts.getEngineSel() !== 'webspeech' && engine && engine.speak) {
       try { engine.speak(txt); } catch (e) { /* noop */ } // motor neural já carregado
@@ -438,7 +442,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
       } catch (e) { /* noop */ } // fallback audível (volume 1) + dispara download do neural
       if (ctx.tts.getEngineSel() !== 'webspeech') ctx.tts.loadTTS();
     }
-    ctx.srSay('Testando a voz selecionada.');
+    ctx.srSay(t('sr.audio.testingVoice'));
   });
   try { if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = populateTtsVoices; } catch (e) { /* noop */ }
 

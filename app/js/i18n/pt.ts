@@ -126,5 +126,31 @@ const pt: Record<string, string> = {
   'sr.ctrl.pressNewKey': 'Pressione a nova tecla para {acao} do Jogador {n}, ou Esc para cancelar.',
   'sr.ctrl.keyTaken': 'Essa tecla já é do Jogador {n}. Escolha outra, ou Esc para cancelar.',
   'sr.ctrl.reset': 'Controles restaurados ao padrão.',
+
+  // Painel de áudio (#audio) — saídas por jogador, som/narração, bengala, motores de voz.
+  'audio.playerN': 'Jogador {n}',
+  'audio.sinkShared': 'Padrão (compartilhado)',
+  'audio.sinkFallback': 'Saída {n}',
+  'audio.sinksHint': 'Clique em Detectar (pede permissão de áudio para listar os aparelhos).',
+  'audio.sinksUnsupported': 'Este navegador não suporta troca de saída (ex.: Safari/iOS).',
+  'audio.voiceSample': 'Olá! Esta é a voz da narração do Inclusionista. Um, dois, três, testando.',
+  // Os NOMES dos motores são nomes próprios e ficam; o que traduz é a explicação entre parênteses.
+  'tts.engine.webspeech': 'Voz do navegador (Web Speech)',
+  'tts.engine.piper': 'Piper (neural, offline) — baixa no 1º uso',
+  'tts.engine.kokoro': 'Kokoro-82M (neural) — baixa no 1º uso',
+  'tts.engine.kitten': 'Kitten (neural) — baixa no 1º uso',
+  'tts.engine.espeak': 'eSpeak NG (embutido)',
+  'sr.audio.sinkChanged': 'Jogador {n} — saída de áudio trocada.',
+  'sr.audio.sinkDefault': 'Jogador {n} — saída de áudio padrão.',
+  'sr.audio.soundOn': 'Som ligado.',
+  'sr.audio.soundOff': 'Som desligado.',
+  'sr.audio.ttsOn': 'Narração ligada.',
+  'sr.audio.ttsOff': 'Narração desligada.',
+  'sr.audio.ttsOnSpoken': 'Narração por voz ligada.',
+  'sr.audio.canePerBlock': 'Bengala: uma batida por bloco pisado.',
+  'sr.audio.caneHalfBlock': 'Bengala: uma batida a cada meio bloco pisado.',
+  'sr.audio.engineSet': 'Motor de voz: {motor}.',
+  'sr.audio.voicePicked': 'Voz selecionada.',
+  'sr.audio.testingVoice': 'Testando a voz selecionada.',
 };
 export default pt;

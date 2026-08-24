@@ -80,6 +80,9 @@ describe('dicionários de locale — estrutura', () => {
       // traduzidos. Existe como chave, e não como concatenação no código, porque uma língua que inverta a
       // ordem (ação antes da posição) precisa poder inverter — e só consegue se a ordem morar no dicionário.
       'sr.touch.slotSet',
+      // 'Motor de voz: {motor}.' — "motor de voz" é a mesma expressão em pt-BR e es, palavra por palavra;
+      // e o nome do motor (Piper, Kokoro) é nome próprio e chega pelo parâmetro, já sem tradução.
+      'sr.audio.engineSet',
     ]);
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const iguais = chavesSr.filter((k) => k in d && d[k] === pt[k] && !COINCIDEM_DE_PROPOSITO.has(k));
