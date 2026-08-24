@@ -201,7 +201,9 @@ let letterCase='lower'; // 'lower' | 'upper' (E7: selecionável)
 const disp=(s)=> letterCase==='upper'?String(s).toUpperCase():String(s).toLowerCase();
 // E8: Braille (modo pessoa cega). Padrão de pontos da cela por letra (Grau 1, PT).
 // BRAILLE/NUMW/brailleText extraídos p/ game/braille.js (Estágio 4).
-let blindMode=false; // modo pessoa cega: no Sílabas, dita os pontos Braille
+// `blindMode` REMOVIDO: era escrito só por applyLetra a partir de `LETRA[i].blind`, e as duas entradas da
+// tabela têm `blind:false` desde que o Braille saiu do ciclo do botão ABC (ver o comentário da LETRA). Nascia
+// falso e nunca mudava. Quem decide o ditado passivo hoje é o Modo cego (a11y) e o nível 5.
 // Lote C: cada jogador tem SEU conjunto de n itens em posições ALEATÓRIAS próprias e com a COR do dono
 // (owner). Todos os itens de todos os jogadores existem no mundo; cada um coleta só os `owner===seu i`.
 // pickCoins extraído p/ game/coins.js; aqui só o cálculo dos POOLS a partir do MODE (coins não conhece MODE/quiz).
@@ -910,7 +912,7 @@ const { actCat, setActivity, startActivity, reallyStart,
 // callbacks sao arrows de proposito: touchCtl, respawnFigure, win e updateHud nascem mais abaixo.
 const quizApi = initQuiz({
   $, getScreen: (i) => hud.getScreen(i),
-  disp, isBlindMode: () => blindMode, isModoCego: () => modoCego,
+  disp, isModoCego: () => modoCego,
   actCat, tabSel, fracNot, QL_NAME,
   srSay, srAlert, gameSay, narrate: (t) => tts.narrate(t),
   sfx: (n) => earcons.sfx(n), playPuzzleSolved: () => jingles.playPuzzleSolved(),
@@ -967,15 +969,15 @@ const optTelasBtn=$('#opt-telas'); // botão único: cicla 1→2→3→4 telas
 if(optTelasBtn)optTelasBtn.addEventListener('click',()=>{ activateScreens((numPlayers%4)+1); });
 // Botão único de LETRAS: ABC (padrão) → abc → Braille
 const LETRA=[ // L3: Braille saiu do ciclo — o ditado passivo agora segue o Modo cego (a11y) e o nível 5 é o "escritor cego"
-  {lbl:'🔠 ABC',     caso:'upper', blind:false, say:'Letras maiúsculas.'},
-  {lbl:'🔡 abc',     caso:'lower', blind:false, say:'Letras minúsculas.'},
+  {lbl:'🔠 ABC',     caso:'upper', say:'Letras maiúsculas.'},
+  {lbl:'🔡 abc',     caso:'lower', say:'Letras minúsculas.'},
 ];
 // L3: nível do quiz de alfabetização (1..5), persistido; rótulo vivo nos menus de pausa
 function setQuizLevel(n,announce){ setQuizLevelValue(n); // core/state.js: clampa 1..5, persiste e emite; a reflexão de UI fica aqui
   document.querySelectorAll('.pm-nivel').forEach(x=>{ x.textContent='📚 Nível '+quizLevel+' · '+QL_NAME[quizLevel]; });
   if(announce) srSay('Nível '+quizLevel+': '+QL_NAME[quizLevel]+'.'); }
 let letraIdx=0;
-function applyLetra(announce){ const s=LETRA[letraIdx]; letterCase=s.caso; blindMode=s.blind;
+function applyLetra(announce){ const s=LETRA[letraIdx]; letterCase=s.caso;
   const b=$('#opt-letra'); if(b){ b.textContent=s.lbl; b.classList.toggle('is-on',letraIdx>0); b.setAttribute('aria-pressed',String(letraIdx>0)); }
   document.querySelectorAll('.pm-letra').forEach(x=>{ x.textContent=s.lbl; }); // ABC nos menus de pausa por tela
   if(typeof rebuildCoins==='function' && MODE==='silabas') rebuildCoins();
@@ -1213,7 +1215,7 @@ startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
   fpsTick();
   if(phase==='playing'){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
 window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id)=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return powerups;},get gateOpen(){return gateOpen;},get gate(){return gate;},get ended(){return ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(players[0]),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
-  get mmSeen(){return minimapSeenCount();},get MODE(){return MODE;},get letterCase(){return letterCase;},get blindMode(){return blindMode;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
+  get mmSeen(){return minimapSeenCount();},get MODE(){return MODE;},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
   setMode,setQuizLevel,get quizLevel(){return quizLevel;},openSilabas,quizMove,quizConfirm,quizErase,get quiz(){return players[0].quiz;},INCL_VERSION,fmtFrac,fracGraphic,speakChoice,get fracNot(){return fracNot;},

@@ -11,7 +11,7 @@
 //      recebem `disp`/`QL_NAME` como PARÂMETRO — nenhum toca `document`.
 //   3. EFEITO (`initQuiz(ctx)`): abrir/fechar, navegar, confirmar, som, narração, luzes de vitória e coleta
 //      da moeda. Tudo o que é impuro entra por INJEÇÃO — o módulo nunca importa PIXI, nem `ui/dom`, nem lê
-//      as `let` que ainda moram no game.js (`letterCase` via `disp`, `blindMode`, `modoCego`, `collected`).
+//      as `let` que ainda moram no main.js (`letterCase` via `disp`, `collected`; `modoCego` vem de core/state).
 //
 // CONTEÚDO PEDAGÓGICO: as strings pt-BR do currículo de alfabetização (sílaba, grafema↔fonema, psicogênese de
 // Ferreiro) são específicas da língua e NÃO se traduzem — ficam em pt-BR de propósito (ver CLAUDE.md §i18n).
@@ -369,8 +369,7 @@ export interface QuizCtx {
   getScreen: (i: number) => Element | null;
   /** `disp` do game.js: aplica `letterCase` ('lower'/'upper'), que é uma `let` reatribuída por applyLetra. */
   disp: (s: string) => string;
-  /** `blindMode` (ciclo do botão ABC) — `let` do game.js. */
-  isBlindMode: () => boolean;
+
   /** `modoCego` (empatia auditiva) — `let` do game.js. */
   isModoCego: () => boolean;
   /** `actCat()` da instância de ui/activities-menu: 'alf' muda a regra de penalidade e refala a palavra. */
@@ -440,7 +439,11 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
 
   /** LETRAMENTO: despacha pelo NÍVEL (1..5); modo cego mantém o ditado passivo (a11y). */
   function openSilabas(pl: QuizPlayer, coinIndex: number, letter: string): void {
-    const cego = c.isBlindMode() || c.isModoCego() || (VIZ_BY_KEY[(pl && pl.viz) || ''] || {}).kind === 'blind';
+    // DUAS fontes para uma pergunta ("esta pessoa está jogando sem enxergar?"), e eram três: `isBlindMode`
+    // saiu porque nada em produção conseguia torná-lo verdadeiro. As duas que ficam são reais e diferentes —
+    // o Modo cego é escolha da pessoa, e `viz.kind === 'blind'` é a simulação de empatia. Vale a nota: se um
+    // dia aparecer uma terceira, o certo é um predicado só, e não mais um `||`.
+    const cego = c.isModoCego() || (VIZ_BY_KEY[(pl && pl.viz) || ''] || {}).kind === 'blind';
     const kind = literacyKindFor(quizLevel, cego);
     if (kind === 'braille') { openBraille(pl, coinIndex, letter); return; } // E8: ditado de Braille
     if (kind === 'pre') { openPre(pl, coinIndex, letter); return; }

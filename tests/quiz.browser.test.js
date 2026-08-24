@@ -23,7 +23,6 @@ function makeCtx(over = {}) {
     $,
     getScreen: (i) => document.querySelector(`#screen-${i}`),
     disp: (s) => String(s).toLowerCase(),
-    isBlindMode: () => false,
     isModoCego: () => false,
     actCat: () => 'mat',
     tabSel: [],
@@ -190,11 +189,17 @@ describe('letramento: o nível escolhe o desafio e a voz do jogo fala a palavra'
   });
 
   it('modo cego troca QUALQUER nível pelo ditado de Braille (a11y vence)', () => {
-    for (const cego of [{ isBlindMode: () => true }, { isModoCego: () => true }]) {
+    // Eram DOIS duplos aqui: `isBlindMode` e `isModoCego`. O primeiro saiu com a fonte que ele representava —
+    // nada em produção conseguia torná-lo verdadeiro, então o caso exercitava um caminho inalcançável. A
+    // simulação de empatia (`viz.kind === 'blind'`) entra no lugar, e essa é alcançável de verdade.
+    for (const cego of [{ isModoCego: () => true }, { vizBlind: true }]) {
       setGame({ level: 3, activity: 'alf3' });
-      const { ctx } = makeCtx({ actCat: () => 'alf', ...cego }); const api = initQuiz(ctx);
+      const extra = cego.vizBlind ? {} : cego;
+      const { ctx } = makeCtx({ actCat: () => 'alf', ...extra }); const api = initQuiz(ctx);
+      if (cego.vizBlind) players[0].viz = 'blind'; // a chave real do modo de visão cujo `kind` é 'blind'
       api.openSilabas(players[0], 0, 'g');
       expect(players[0].quiz.kind).toBe('braille');
+      players[0].viz = 'normal';
     }
   });
 
