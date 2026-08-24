@@ -45,10 +45,9 @@ export type FracNotKey = 'v' | 'd' | 'dec' | 'pct' | 'mix';
 /** On/off state per notation, stored as 0/1 (game.js persisted numbers, not booleans — kept verbatim). */
 export type FracNot = Record<FracNotKey, number>;
 
-/** The 6 directional/confirm flags the title menu reacts to (same shape input/gamepad.ts and the keydown build). */
-export interface NavKeys {
-  up?: boolean; down?: boolean; left?: boolean; right?: boolean; yes?: boolean; no?: boolean;
-}
+/** The 6 directional/confirm flags the title menu reacts to. Single definition in input/edges. */
+import type { NavKeys } from '../input/edges.js';
+export type { NavKeys } from '../input/edges.js';
 
 /** One scenario as the "Cenário" submenu needs it — id + display name only (CENARIOS' texture data stays put). */
 export interface CenarioOption { readonly id: string; readonly nome: string }

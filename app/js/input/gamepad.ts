@@ -154,7 +154,8 @@ export interface WizState {
 // DI runtime — pollPads (dispatcher) + o wizard. Nada aqui toca `document`/`navigator` diretamente.
 // ---------------------------------------------------------------------------------------------
 
-export type NavKeys = { yes: boolean; no: boolean; up: boolean; down: boolean; left: boolean; right: boolean };
+import type { NavKeys } from './edges.js';
+export type { NavKeys } from './edges.js'; // reexportado sob o nome que os consumidores já usam
 
 /** Forma mínima de jogador que este módulo lê/escreve — DERIVADA de core/entity, não redigitada.
  *  `quiz` era `{ kind: string } | null` aqui e `{ kind?: string } | null` no keydown: o mesmo objeto, com o

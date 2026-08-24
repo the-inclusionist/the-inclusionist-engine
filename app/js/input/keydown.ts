@@ -141,9 +141,10 @@ export interface ControlsSnapshot {
   gameKeys: string[];
 }
 
-/** A intenção de navegação do menu inicial. MESMA forma que `NavKeys` de ui/activities-menu.ts e de
- *  ui/menu-nav.ts — de novo cópia estrutural, de propósito. */
-export interface TitleNav { yes: boolean; no: boolean; up: boolean; down: boolean; left: boolean; right: boolean }
+/** A intenção de navegação do menu inicial. Era uma quarta cópia estrutural, sob outro nome; agora é o
+ *  `NavKeys` de input/edges, reexportado com o nome que os chamadores deste módulo já usam. */
+import type { NavKeys as TitleNav } from './edges.js';
+export type { NavKeys as TitleNav } from './edges.js';
 
 /** TUDO o que a decisão precisa saber do mundo, num objeto só, montado ANTES de qualquer efeito. */
 export interface KeydownSnapshot {
@@ -251,10 +252,9 @@ export function titleNavOf(code: string, s: KeydownSnapshot, jump: boolean): Tit
   };
 }
 
-/** Alguma intenção foi expressa? Sem intenção, a tecla NÃO é consumida (nem `preventDefault`, nem `navTitle`). */
-export function hasTitleIntent(k: TitleNav): boolean {
-  return k.yes || k.no || k.up || k.down || k.left || k.right;
-}
+/** Alguma intenção foi expressa? Definição única em input/edges; aqui só o nome que este módulo sempre teve. */
+import { hasNavIntent as hasTitleIntent } from './edges.js';
+export { hasNavIntent as hasTitleIntent } from './edges.js';
 
 /**
  * Quem é o dono do quiz que esta tecla comanda? Devolve a POSIÇÃO no array, ou -1.

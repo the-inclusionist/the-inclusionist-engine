@@ -112,8 +112,9 @@ import { phase } from '../core/state.js'; // binding vivo (fonte única de estad
 /** ui/dom.ts `$` — injetado; o módulo nunca alcança `document`. */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
-/** A intenção, não a tecla. MESMA forma que input/gamepad.ts monta (`NavKeys` de lá). */
-export interface NavKeys { yes: boolean; no: boolean; up: boolean; down: boolean; left: boolean; right: boolean }
+/** A intenção, não a tecla. Definição única em input/edges; aqui só reexportada. */
+import type { NavKeys } from '../input/edges.js';
+export type { NavKeys } from '../input/edges.js';
 
 /** O que este módulo lê de um `KeyboardEvent`. */
 export interface NavKeyEvent {
@@ -153,10 +154,9 @@ export function menuKeyIntent(code: string, act: string | null): NavKeys {
   };
 }
 
-/** Alguma intenção foi expressa? Se não, a tecla NÃO é consumida (nem preventDefault, nem stopPropagation). */
-export function hasIntent(k: NavKeys): boolean {
-  return k.yes || k.no || k.up || k.down || k.left || k.right;
-}
+/** Alguma intenção foi expressa? Definição única em input/edges; aqui só o nome que este módulo sempre teve. */
+import { hasNavIntent as hasIntent } from '../input/edges.js';
+export { hasNavIntent as hasIntent } from '../input/edges.js';
 
 /** Anda um passo numa lista, sem dar a volta (o original nunca faz wrap em lista de itens). */
 export function clampIndex(len: number, idx: number, delta: number): number {

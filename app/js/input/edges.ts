@@ -39,3 +39,53 @@ export const EDGE_BY_ACTION: ReadonlyArray<readonly [EdgeAction, EdgeFlag]> = Ob
 export function edgeAllowed(action: EdgeAction, easy: boolean | undefined): boolean {
   return !(action === 'run' && !!easy);
 }
+
+// ---------------------------------------------------------------------------------------------
+// A INTENÇÃO DE NAVEGAR UM MENU
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * As seis intenções de navegação de menu — a mesma história das bordas, um andar acima.
+ *
+ * Estava declarada QUATRO vezes: `input/gamepad`, `ui/menu-nav`, `ui/activities-menu` e, sob o nome
+ * `TitleNav`, `input/keydown`. Três delas traziam um comentário dizendo "MESMA forma que…", que é uma cópia
+ * pedindo para ser notada. E já tinham divergido: a de `ui/activities-menu` declarava os seis campos
+ * OPCIONAIS e as outras três, obrigatórios — de modo que `navTitle` aceitava `{}` enquanto quem a alimenta
+ * sempre manda os seis.
+ *
+ * Mora em `input/` porque é uma intenção de ENTRADA: quem a produz são os tradutores (teclado, controle,
+ * toque, e amanhã voz e webcam) e quem a consome é a UI. `input/` nunca importa de `ui/`; `ui/` já importa de
+ * `input/devices`. A direção é essa.
+ *
+ * OPCIONAIS de propósito, ao contrário das bordas: um tradutor manda só o que aconteceu. `{ down: true }` é
+ * uma frase completa — "para baixo" —, e obrigar os outros cinco `false` faria cada chamada carregar cinco
+ * negações que ninguém lê. É a forma que `ui/activities-menu` já usava, e é a certa; o que estava errado era
+ * as outras três discordarem dela.
+ */
+export interface NavKeys {
+  up?: boolean;
+  down?: boolean;
+  left?: boolean;
+  right?: boolean;
+  /** Confirmar / entrar. */
+  yes?: boolean;
+  /** Voltar / cancelar. */
+  no?: boolean;
+}
+
+/**
+ * Alguma intenção foi expressa neste quadro? Sem intenção, a tecla NÃO é consumida — nem `preventDefault`,
+ * nem `stopPropagation`, nem `navTitle`.
+ *
+ * Estava escrita DUAS vezes, com o mesmo corpo e nomes diferentes: `hasIntent` em `ui/menu-nav` e
+ * `hasTitleIntent` em `input/keydown`. Quase deixei as duas onde estavam, no raciocínio de que mover o tipo
+ * para cá e criar uma função nova seria trocar seis por meia dúzia — o raciocínio estava certo e o número,
+ * errado: não era uma cópia, eram duas, e o canônico apaga as duas. Os dois módulos reexportam com o nome
+ * que os chamadores e os testes deles já usam.
+ *
+ * O `!!` importa: com os campos opcionais, a cadeia de `||` devolve `boolean | undefined`. Foi o compilador
+ * que apontou, ao estreitar o tipo — as duas funções vinham devolvendo `undefined` como se fosse `false`.
+ */
+export function hasNavIntent(k: NavKeys): boolean {
+  return !!(k.yes || k.no || k.up || k.down || k.left || k.right);
+}
