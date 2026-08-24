@@ -261,5 +261,9 @@ const pt: Record<string, string> = {
   'sr.quiz.ok': 'ok',
   'sr.blind.on': 'Modo cego ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.',
   'sr.blind.off': 'Modo cego desligado.',
+  'sr.motor.oneButtonOn': 'Um botão por vez ligado: só uma tecla/botão de cada vez.',
+  'sr.motor.oneButtonOff': 'Um botão por vez desligado.',
+  'sr.motor.wheelchairOn': 'Modo cadeirante ligado: sem pulo; rampas e elevadores no lugar de degraus e escada; moedas no chão; só voo e super-corrida.',
+  'sr.motor.wheelchairOff': 'Modo cadeirante desligado.',
 };
 export default pt;

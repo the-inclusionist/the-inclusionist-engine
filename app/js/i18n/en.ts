@@ -230,5 +230,9 @@ const en: Record<string, string> = {
   'sr.quiz.ok': 'ok',
   'sr.blind.on': 'Blind mode on: cane and audio cues active. The first power item becomes the running cane.',
   'sr.blind.off': 'Blind mode off.',
+  'sr.motor.oneButtonOn': 'One button at a time on: only one key or button at once.',
+  'sr.motor.oneButtonOff': 'One button at a time off.',
+  'sr.motor.wheelchairOn': 'Wheelchair mode on: no jumping; ramps and lifts instead of steps and ladders; coins on the ground; flight and super-run only.',
+  'sr.motor.wheelchairOff': 'Wheelchair mode off.',
 };
 export default en;

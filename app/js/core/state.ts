@@ -76,3 +76,20 @@ export function setModoCegoValue(on: boolean): void {
   if (modoCego === on) return; // a guarda VEM DO ORIGINAL: sem ela o anúncio repetiria a cada clique redundante
   modoCego = on; store.setBool('incl_modocego', on); emit('modoCego', on);
 }
+
+// --- wheelchair: MODO CADEIRANTE. Muda a geometria do nível inteiro — degraus e escada viram rampas e
+//     elevadores, moedas descem para o chão, lava vira chão, e só voo e super-corrida sobrevivem como poderes.
+//     Por isso a colisão a lê: `isSolidType` responde diferente com ela ligada. ---
+export let wheelchair: boolean = store.getBool('incl_wheelchair');
+export function setWheelchairValue(on: boolean): void {
+  if (wheelchair === on) return;
+  wheelchair = on; store.setBool('incl_wheelchair', on); emit('wheelchair', on);
+}
+
+// --- oneButton: UM BOTÃO POR VEZ. Ignora combinações simultâneas, para quem não consegue pressionar duas
+//     teclas ao mesmo tempo. ---
+export let oneButton: boolean = store.getBool('incl_onebtn');
+export function setOneButtonValue(on: boolean): void {
+  if (oneButton === on) return;
+  oneButton = on; store.setBool('incl_onebtn', on); emit('oneButton', on);
+}

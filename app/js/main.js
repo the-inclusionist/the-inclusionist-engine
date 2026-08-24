@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue } from './core/state.js'; // estado compartilhado
+import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue } from './core/state.js'; // estado compartilhado
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -110,9 +110,8 @@ import { initMinimap, markSeen, redrawMinimapIfDirty, drawMinimapPlayer, resetMi
 import { vlibrasSay, vlibrasOpen, toggleLibras, vlTick, librasOpen, LIBRAS_RESERVE, setOnLibrasChange } from './ui/vlibras.js'; // Estágio 4 (Tier 1): intérprete VLibras (modo pessoa surda)
 import { layout } from './ui/layout.js'; // Estágio 4 (Tier 1): escala do jogo (múltiplo inteiro de 320×180 em px reais)
 import { eyeMode, setEyeMode, startEyeControl, stopEyeControl, loadWebGazer } from './ui/webcam.js'; // Estágio 4 (Tier 1): jogar com os olhos (WebGazer)
-// Empatia MOTORA (global, muda a jogabilidade) — declarados cedo pois isSolidType os usa (cadeirante: trampolim vira elevador atravessável)
-let oneButton=store.getBool('incl_onebtn');
-let wheelchair=store.getBool('incl_wheelchair');
+// Empatia MOTORA (global, muda a jogabilidade): `oneButton`/`wheelchair` migraram para core/state.js (#50) —
+// bindings vivos, escrita pelos setEfeito abaixo. isSolidType os usa, e continua vendo sempre o valor atual.
 // Modo cego (A12e auditiva) migrou para core/state.js (#50): `modoCego` é binding vivo, escrita por setModoCego() abaixo.
 let caneBlockDiv=store.getNum('incl_cane_div',1)||1; // 1 = 1 batida/bloco; 2 = 1 batida/meio bloco (por DISTÂNCIA pisada)
 // caneBlockPx/isSolidType/tileAt/solidTile/solidAt/surfTop/isWcRampRiser/rampSurfaceY extraídos p/ core/collision.js
@@ -1076,11 +1075,15 @@ const visualClose=$('#visual-close'); if(visualClose)visualClose.addEventListene
 // Empatia motora: um-botão e cadeirante
 function reflectMotorEmpathy(){ const a=$('#opt-onebtn'); if(a){ a.classList.toggle('is-on',oneButton); a.setAttribute('aria-pressed',String(oneButton)); a.textContent=oneButton?'❚❚ Ligado':'▶ Desligado'; }
   const b=$('#opt-wheelchair'); if(b){ b.classList.toggle('is-on',wheelchair); b.setAttribute('aria-pressed',String(wheelchair)); b.textContent=wheelchair?'❚❚ Ligado':'▶ Desligado'; } reflectVizButtons(); }
-function setOneButton(on){ oneButton=on; store.setBool('incl_onebtn',on); reflectMotorEmpathy(); srSay('Um botão por vez '+(on?'ligado: só uma tecla/botão de cada vez.':'desligado.')); }
-function setWheelchair(on){ wheelchair=on; store.setBool('incl_wheelchair',on);
+// Estado em core/state; aqui só os EFEITOS (refletir o painel, anunciar). Mesma forma que setModoCego.
+function setOneButton(on){ const antes=oneButton; setOneButtonValue(on); if(oneButton===antes)return;
+  reflectMotorEmpathy(); srSay(t(on?'sr.motor.oneButtonOn':'sr.motor.oneButtonOff')); }
+// Estado em core/state; aqui a REAÇÃO, que neste caso é grande: o modo cadeirante refaz a geometria do
+// nível inteiro. Por isso ele não caberia dentro de um setter — e por isso o setter não o conhece.
+function setWheelchair(on){ const antes=wheelchair; setWheelchairValue(on); if(wheelchair===antes)return;
   players.forEach(p=>{ if(on && p.activePower!=='fly' && p.activePower!=='turbo') p.activePower='off'; if(on) p.owned=p.owned.filter(k=>k==='fly'||k==='turbo'); showPower(p); });
   setupExtras(); rebuildCoins(); buildWcGeom(); buildRamps(); buildElevators(); reflectMotorEmpathy(); // só voo/super-corrida; moedas no chão; escada/trampolim viram elevador; rampas+pontes; lava vira chão
-  srSay('Modo cadeirante '+(on?'ligado: sem pulo; rampas e elevadores no lugar de degraus e escada; moedas no chão; só voo e super-corrida.':'desligado.')); }
+  srSay(t(on?'sr.motor.wheelchairOn':'sr.motor.wheelchairOff')); }
 // bolinha indicadora: duplo toque/clique → volta às cores normais (em cegueira é a única saída visível)
 (function vizIndicator(){ const el=$('#viz-indicator'); if(!el)return; let last=-9999;
   el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); const t=e.timeStamp||0; if(t-last<450){ setPlayerViz(0,'normal'); last=-9999; srSay('Cores normais reativadas.'); } else last=t; }); })();

@@ -231,5 +231,9 @@ const es: Record<string, string> = {
   'sr.quiz.ok': 'ok',
   'sr.blind.on': 'Modo ciego activado: bastón y pistas de audio activas. El 1.er objeto de poder pasa a ser el bastón de carrera.',
   'sr.blind.off': 'Modo ciego desactivado.',
+  'sr.motor.oneButtonOn': 'Un botón a la vez activado: solo una tecla o botón cada vez.',
+  'sr.motor.oneButtonOff': 'Un botón a la vez desactivado.',
+  'sr.motor.wheelchairOn': 'Modo silla de ruedas activado: sin salto; rampas y ascensores en lugar de escalones y escalera; monedas en el suelo; solo vuelo y súper carrera.',
+  'sr.motor.wheelchairOff': 'Modo silla de ruedas desactivado.',
 };
 export default es;
