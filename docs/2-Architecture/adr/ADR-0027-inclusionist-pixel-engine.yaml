@@ -242,7 +242,9 @@ decision-outcome:
       0. Fix the module map. (Done: it was stale by four modules.)
       1. Entity model, moving nothing. `tsc --noEmit` is the test. Zero runtime risk, and prerequisite to everything.
       2. Input actions as data — closes the divergence that already cost an a11y defect.
-      3. i18n the announcements: mechanical, large, parallelisable, and cheap while nothing has moved yet.
+      3. i18n the announcements in pt-BR, en and es — DECIDED, starting now. Mechanical, large,
+         parallelisable, and cheap while nothing has moved yet. It is also the step that proves the a11y layer is a
+         product rather than a feature of one game, since it breaks at the second LANGUAGE before the second GAME.
       4. createGame() inside the same repository. THIS IS THE BOUNDARY TEST: if it needs a parameter called
          coinTarget, the boundary is wrong and step 5 must not start.
       5. Split the 49 frontier modules in four batches, leaf-first.
@@ -285,7 +287,9 @@ decision-outcome:
 
 open-decisions:
   rust-wasm: |
-    OPEN. The Dev is seriously considering writing the games in Rust rather than TypeScript, compiled to WASM.
+    DEFERRED TO POST-MVP — DECIDED. Everything stays in TypeScript until the MVP ships. Recorded here because the
+    analysis holds and the decision should be re-read, not re-derived, when the time comes.
+    The Dev is considering writing the games in Rust rather than TypeScript, compiled to WASM.
     It splits along a line the audit already found on its own: the a11y layer is DOM-NATIVE — aria-live regions, DOM
     text (which is WHY text is never rasterised), VLibras, menu-nav, the settings panels — and cannot and should not
     move; the core — grid, physics, collision, RNG, turn machines — is exactly what benefits. The boundary would be
@@ -302,13 +306,12 @@ open-decisions:
     screen reader — serialisation cost plus divergence risk — or does Rust EMIT EVENTS while JS holds the
     presentational state? The second works. The first recreates the project's existing failure mode at larger scale.
   wasm-precache: |
-    OPEN, and one word to fix. ort-wasm-simd-threaded.jsep is 25.6 MB, sits in dist/, and appears ZERO times in
-    sw.js: globPatterns lists js, css, html, png, svg, woff2, txt, json and webmanifest, omitting wasm, and there is
-    no runtimeCaching either. So it is outside the PWA cache entirely and depends on the ordinary HTTP cache, which a
-    browser evicts whenever it likes — in a school lab with restored machines or tight storage, exactly the case that
-    fails. The Dev's position is that 25 MB for a game is fine and that a PWA needs a first online load anyway; that
-    position becomes TRUE the moment `wasm` joins globPatterns. Until then the guarantee does not exist. The trade is
-    precache size against the offline guarantee.
+    RESOLVED — DECIDED and implemented. `wasm` joined globPatterns and maximumFileSizeToCacheInBytes rose to 32 MB,
+    because Workbox caps precached files at 2 MB by default and would otherwise have SKIPPED the 25.6 MB runtime with
+    a warning, reproducing the same symptom. Precache went from 2.2 MB to 28.4 MB; the first online visit now
+    downloads everything, which is the contract of a PWA that must work without a network afterwards. Verified in
+    the browser: the file is physically in Cache Storage at full byte length, not merely named in sw.js.
+
   multiplayer-scanning: |
     OPEN, and pedagogical rather than technical. Freezing the world for player three's scan freezes players one, two
     and four; per-player time bubbles are impossible with shared physics. Precedent exists in the code (`p.waiting`,
