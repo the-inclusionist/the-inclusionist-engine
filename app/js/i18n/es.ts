@@ -185,5 +185,11 @@ const es: Record<string, string> = {
   'sr.menu.pickOneNumber': 'Elige al menos un número para practicar.',
   'sr.menu.numberOn': 'Número {n} activado.',
   'sr.menu.numberOff': 'Número {n} desactivado.',
+  'fnot.desc.v': 'Muestra fracciones verticales, un número sobre el otro.',
+  'fnot.desc.d': 'Muestra fracciones en una línea, con barra.',
+  'fnot.desc.dec': 'Muestra números que siempre llevan un decimal.',
+  'fnot.desc.pct': 'Muestra porcentajes.',
+  'fnot.desc.mix': 'Muestra números enteros junto con fracciones reducidas.',
+  'menu.notationGroupAria': 'Notación',
 };
 export default es;

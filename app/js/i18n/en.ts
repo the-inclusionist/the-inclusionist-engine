@@ -184,5 +184,11 @@ const en: Record<string, string> = {
   'sr.menu.pickOneNumber': 'Choose at least one number to practise.',
   'sr.menu.numberOn': 'Number {n} on.',
   'sr.menu.numberOff': 'Number {n} off.',
+  'fnot.desc.v': 'Shows fractions stacked, one number above the other.',
+  'fnot.desc.d': 'Shows fractions on one line, with a slash.',
+  'fnot.desc.dec': 'Shows numbers that always carry one decimal place.',
+  'fnot.desc.pct': 'Shows percentages.',
+  'fnot.desc.mix': 'Shows whole numbers together with reduced fractions.',
+  'menu.notationGroupAria': 'Notation',
 };
 export default en;

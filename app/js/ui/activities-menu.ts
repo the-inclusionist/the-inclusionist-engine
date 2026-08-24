@@ -154,13 +154,9 @@ export const FNOT_SYM: Readonly<Record<FracNotKey, string>> = {
   v: `<span class="fv"><b>x</b><b>y</b></span>`, d: 'x/y', dec: 'x,y', pct: 'x%',
   mix: `x<span class="fv"><b>y</b><b>z</b></span>`,
 };
-/** Footer text (same style as the pause menu) shown on focus/hover of a notation toggle. */
+/** i18n KEY of the footer text (same style as the pause menu) shown on focus/hover of a notation toggle. */
 export const FNOT_DESC: Readonly<Record<FracNotKey, string>> = {
-  v: 'Liga a exibição de frações verticais.',
-  d: 'Liga a exibição de frações na horizontal.',
-  dec: 'Liga números que sempre aparecem com uma casa decimal.',
-  pct: 'Liga números percentuais.',
-  mix: 'Liga números inteiros e frações reduzidas.',
+  v: 'fnot.desc.v', d: 'fnot.desc.d', dec: 'fnot.desc.dec', pct: 'fnot.desc.pct', mix: 'fnot.desc.mix',
 };
 
 /** The notation keys in menu order — also the defaults' key order (`v` on, rest off). */
@@ -261,9 +257,11 @@ export function nextTitleIndex(cur: number, len: number, k: NavKeys): number {
   return cur < 0 ? 0 : (cur + d + len) % len;
 }
 
-/** Footer description for a focused/hovered title button: notation text wins, else the activity's `d`. */
+/** Footer description for a focused/hovered title button: notation text wins, else the activity's `d`.
+ *  The notation half resolves its key here; the activity's `d` comes from game/activities-registry and is
+ *  still pt-BR, for the same curriculum-boundary reason as the activity `nome`. */
 export function titleDescFor(actId: string | undefined, fnotKey: string | undefined): string {
-  if (fnotKey) return FNOT_DESC[fnotKey as FracNotKey] || '';
+  if (fnotKey) { const k = FNOT_DESC[fnotKey as FracNotKey]; return k ? t(k) : ''; }
   return (getActivity(actId ?? '') || ({} as Partial<ActivityDef>)).d || '';
 }
 
@@ -289,8 +287,8 @@ export function matMenuHtml(): string {
     + `<button class="title-btn" data-tm-fr="1" type="button">Fração</button>` + backBtnHtml('tm-main') + TM_DESC_HTML;
 }
 export function fracNotsHtml(f: FracNot): string {
-  return `<div class="frac-nots" role="group" aria-label="Notação">`
-    + FNOT_KEYS.map((k) => `<button class="title-btn tab-num${f[k] ? ' tab-on' : ''}" data-fnot="${k}" type="button" aria-pressed="${!!f[k]}" aria-label="${FNOT_LBL[k]}">${FNOT_SYM[k]}</button>`).join('')
+  return `<div class="frac-nots" role="group" aria-label="${t('menu.notationGroupAria')}">`
+    + FNOT_KEYS.map((k) => `<button class="title-btn tab-num${f[k] ? ' tab-on' : ''}" data-fnot="${k}" type="button" aria-pressed="${!!f[k]}" aria-label="${t(FNOT_LBL[k])}">${FNOT_SYM[k]}</button>`).join('')
     + `</div>`;
 }
 export function frMenuHtml(f: FracNot): string {

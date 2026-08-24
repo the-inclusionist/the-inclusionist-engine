@@ -7,6 +7,7 @@
 // `tabSel` corrompido não derruba o boot (e o que ele DE FATO aceita — que é mais do que deveria, ver o
 // relatório da extração), e o "Voltar" de cada categoria leva ao menu certo.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import pt from '../app/js/i18n/pt.js';
 import {
   QL_NAME, PM_BTNS, ALF_LEVEL, FNOT_LBL, FNOT_KEYS, TITLE_MENU_ORDER,
   activityCategory, modeForCategory, normalizeActivityId, cenBackMenuFor,
@@ -339,7 +340,11 @@ describe('markup dos submenus', () => {
 
   it('cada notação vira um toggle com aria-label falado e aria-pressed coerente', () => {
     const html = fracNotsHtml({ v: 1, d: 0, dec: 0, pct: 0, mix: 0 });
-    for (const k of FNOT_KEYS) expect(html).toContain(`aria-label="${FNOT_LBL[k]}"`);
+    // A asserção antiga era `aria-label="${FNOT_LBL[k]}"` — comparava o HTML contra a MESMA tabela que o
+    // gera, então continuou verde quando a tabela passou a guardar chaves e o markup passou a vazar
+    // 'fnot.v' para o leitor de tela. Quem pegou foi o navegador. Agora atravessa o dicionário, que é uma
+    // fonte independente do módulo sob teste.
+    for (const k of FNOT_KEYS) expect(html).toContain(`aria-label="${pt[FNOT_LBL[k]]}"`);
     expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
   });
 

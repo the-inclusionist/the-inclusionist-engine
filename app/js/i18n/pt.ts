@@ -214,5 +214,11 @@ const pt: Record<string, string> = {
   'sr.menu.pickOneNumber': 'Escolha ao menos um número para treinar.',
   'sr.menu.numberOn': 'Número {n} ligado.',
   'sr.menu.numberOff': 'Número {n} desligado.',
+  'fnot.desc.v': 'Liga a exibição de frações verticais.',
+  'fnot.desc.d': 'Liga a exibição de frações na horizontal.',
+  'fnot.desc.dec': 'Liga números que sempre aparecem com uma casa decimal.',
+  'fnot.desc.pct': 'Liga números percentuais.',
+  'fnot.desc.mix': 'Liga números inteiros e frações reduzidas.',
+  'menu.notationGroupAria': 'Notação',
 };
 export default pt;
