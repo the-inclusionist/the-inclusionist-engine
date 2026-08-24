@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue } from './core/state.js'; // estado compartilhado
+import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue } from './core/state.js'; // estado compartilhado
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -127,10 +127,10 @@ const WORLD = buildWorldFromText(await (await fetch('assets/levels/clarity.map.t
 const WORLD_W = WORLD[0].length, WORLD_H = WORLD.length;
 const WORLD_PX_W = WORLD_W*TILE, WORLD_PX_H = WORLD_H*TILE;
 initWorldTex({ world: WORLD, W: WORLD_W, H: WORLD_H }); // Estágio 4: liga o builder da textura do mundo ao mapa carregado
-// E12: portão dinâmico — seus tiles são sólidos enquanto fechado (gateOpen=true ⇒ comporta normal)
-let gateTiles=new Set(), gateOpen=true, gate=null;
+// E12: o portão dinâmico (gateTiles/gateOpen/gate) migrou para core/state.js (#50) — seus tiles são
+// sólidos enquanto fechado.
 // Cadeirante: sólidos SÓ-CADEIRANTE (pontes/plataformas que não existem no modo normal) — não altera CLARITY_MAP.
-let wcSolid=new Set();
+// `wcSolid` migrou para core/state.js (#50).
 // Mundo + estado prontos → liga a colisão (core/collision.js). As closures leem o estado VIVO daqui:
 // wheelchair/modoCego/caneBlockDiv/wcSolid/gateTiles/gateOpen mudam neste módulo e a colisão sempre vê o atual.
 initCollision({ world: WORLD, W: WORLD_W, H: WORLD_H,
@@ -519,7 +519,7 @@ const decoSprites=[];
 // PUP_CANVAS/PUP_TEX/_pupTexHC/pupTexFor migraram para render/textures.ts (Onda A); initTextures acima
 // ja montou o cache.
 const extraLayer=new PIXI.Container(); camera.addChild(extraLayer); // power-ups + portão (atrás do player)
-let powerups=[];
+// `powerups` migrou para core/state.js (#50) — nasce junto com o portão, em setLevelExtras.
 // As camadas do modulo nascem AQUI, mas o addChild/addChildAT de cada uma continua exatamente onde estava:
 // no PixiJS a ordem de insercao E a ordem de desenho, entao icar a construcao e seguro e icar a montagem
 // no grafo NAO e. So o construtor subiu.
@@ -535,7 +535,7 @@ function rebuildExtras(){ lgRebuildExtras(); _lastSharedViz=null; }
 function setupExtras(){
   decorSeed = (Math.random()*1e9)>>>0; // #69: nova semente por fase
   const _blind = modoCego || players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='blind';});
-  ({ powerups, gateTiles, gate, gateOpen } = lgSetupExtras(MAP_ITEMS, MAP_GATE, { wheelchair, blind:_blind }));
+  setLevelExtras(lgSetupExtras(MAP_ITEMS, MAP_GATE, { wheelchair, blind:_blind })); // era desestruturação em bloco; binding importado não se atribui
   rebuildExtras();
 }
 setupExtras();
@@ -546,7 +546,7 @@ const easyHitbox=new PIXI.Graphics(); camera.addChild(easyHitbox);
 camera.addChild(rampLayer);   // ordem pelo Z.SCENERY_INTERACT (bloco R1), não pela posição de inserção
 // buildRamps + WC_BRIDGES migraram para game/level-geometry.ts (Onda A).
 // WC_ELEVATORS (fossos só-cadeirante) movidos p/ game/elevators.js (Estágio 4).
-function buildWcGeom(){ wcSolid = lgBuildWcGeom(wheelchair); } // envolucro: o modulo calcula, o main.js segue dono do wcSolid
+function buildWcGeom(){ setWcSolidValue(lgBuildWcGeom(wheelchair)); } // o módulo calcula; o estado mora em core/state
 buildWcGeom();
 buildRamps(); // desenha as rampas + coberturas (lava, pontes) se já iniciar em modo cadeirante
 // CORDAS FLUTUANTES na superfície da água (o cego atravessa por elas; visual para todos)
@@ -864,7 +864,7 @@ const sessionApi = initSession({
   isCoarsePointer: ()=>{ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } },
   getMode: ()=>MODE, setModeValue: (m)=>{ MODE=m; },
   setCollected: (n)=>{ collected=n; }, setEnded: (v)=>{ ended=v; },
-  getPowerups: ()=>powerups, getGate: ()=>gate, isGateOpen: ()=>gateOpen, setGateOpen: (v)=>{ gateOpen=v; },
+  getPowerups: ()=>powerups, getGate: ()=>gate, isGateOpen: ()=>gateOpen, setGateOpen: setGateOpenValue,
   getPauseActor: ()=>pauseActor, ownerColors: ()=>ownerColors, captionsOn: ()=>captionsOn,
   PCOLOR, darkRegions, getPlayerRef: ()=>player, setPlayerRef: (p)=>{ player=p; },
   srSay, srAlert, narrate: (t)=>tts.narrate(t),

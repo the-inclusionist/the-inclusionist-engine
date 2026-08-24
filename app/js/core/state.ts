@@ -77,6 +77,62 @@ export function setModoCegoValue(on: boolean): void {
   modoCego = on; store.setBool('incl_modocego', on); emit('modoCego', on);
 }
 
+// --- O ESTADO DO NÍVEL: portão, sólidos-só-cadeirante e power-ups.
+//
+//     Estes cinco não são preferência de ninguém: são o RESULTADO de `game/level-geometry.setupExtras()`, que
+//     lê o mapa e devolve os quatro primeiros de uma vez, mais `buildWcGeom()`, que devolve o quinto. Moravam
+//     no main.js porque `core/collision` precisa lê-los a cada consulta de tile e o main.js era o único lugar
+//     que as duas pontas alcançavam.
+//
+//     Agora as duas pontas alcançam `core/state`, que é da mesma camada da colisão. A injeção da colisão FICA
+//     como está de propósito: tirá-la tocaria treze arquivos de teste que hoje montam mundos falsos por
+//     `initCollision(ctx)`, e trocar treze montagens de teste é mudança de arquitetura, não arrumação. O que
+//     este passo faz é menor e suficiente: o main.js deixa de ser DONO do estado, que é o que `createGame()`
+//     precisa para existir sem capturá-lo.
+//
+//     `setLevelExtras` recebe os quatro juntos porque é assim que nascem — uma desestruturação única no
+//     main.js, que em ESM não pode mais existir (não se atribui a um binding importado). Separá-los em quatro
+//     chamadas convidaria alguém a atualizar três e esquecer a quarta. ---
+
+/**
+ * Um tile do portão. O portão é uma LISTA deles, não um objeto com posição — escrevi `{x, y}` na primeira
+ * versão e o navegador me desmentiu: `gate` é `[{tx:29,ty:36}, {tx:30,ty:36}, …]`.
+ *
+ * O `tsc` não podia pegar. Quem chama `setLevelExtras` é o `main.js`, que é JavaScript, então o tipo declarado
+ * aqui não tinha do outro lado nada que o contradissesse. É um argumento concreto para o `createGame()` do
+ * passo 4 nascer em TypeScript: enquanto o composition root for JS, todo contrato que só ele exercita é uma
+ * afirmação sem verificador.
+ *
+ * Mínimo ESTRUTURAL, como o `PlayerQuiz`: o `MapGateTile` de verdade mora em `game/level-geometry` e é
+ * atribuível a este. `core/` não importa de `game/`.
+ */
+export interface GateTile { readonly tx: number; readonly ty: number }
+
+export let gateTiles: ReadonlySet<string> = new Set(); // "tx,ty" dos tiles do portão
+export let gateOpen = true;                            // fechado ⇒ os tiles acima são sólidos
+export let gate: readonly GateTile[] | null = null;
+/** Os power-ups do nível. `unknown` de propósito: o `Powerup` real carrega um `PIXI.Sprite`, e `core/` não
+ *  conhece PIXI — nem precisa, porque ninguém aqui olha para dentro deles. */
+export let powerups: readonly unknown[] = [];
+
+/** O que `game/level-geometry.setupExtras()` devolve — gravado em bloco, como nasce. */
+export function setLevelExtras(x: {
+  powerups: readonly unknown[]; gateTiles: ReadonlySet<string>; gate: readonly GateTile[] | null; gateOpen: boolean;
+}): void {
+  powerups = x.powerups; gateTiles = x.gateTiles; gate = x.gate; gateOpen = x.gateOpen;
+  emit('levelExtras', x);
+}
+
+/** O portão abriu (ou fechou) durante a partida — o único dos cinco que muda fora da montagem do nível. */
+export function setGateOpenValue(v: boolean): void {
+  if (gateOpen === v) return;
+  gateOpen = v; emit('gateOpen', v);
+}
+
+/** Sólidos que existem SÓ no modo cadeirante — pontes e plataformas que substituem degraus. */
+export let wcSolid: ReadonlySet<string> = new Set();
+export function setWcSolidValue(s: ReadonlySet<string>): void { wcSolid = s; emit('wcSolid', s); }
+
 // --- letterCase: as letras aparecem em CAIXA ALTA ou minúscula. É escolha pedagógica, não estética: a
 //     alfabetização brasileira costuma começar em caixa alta, e a criança que já passou dessa fase precisa da
 //     minúscula. Lido pelo `disp` que o quiz usa em toda letra que exibe ou soletra.
