@@ -174,8 +174,17 @@ export interface Player {
   caneDist?: number;
   /** game/session, render/player-anim: usa a bengala de corrida (o cego só corre com ela). */
   runCane?: boolean;
-  /** render/draw: fator de esmagamento (squash) do quadro corrente. */
+  /** render/fx → render/draw: fator de esmagamento (squash) e o temporizador que o decai (8 → 0).
+   *  Os dois ANDAM JUNTOS — `stepSquash` escreve os dois e `drawPlayers` lê os dois. Declarar só o `sq`, como
+   *  esta interface fazia até a conferência no navegador, é o erro de meia-dupla: o campo que sobra fica sem
+   *  tipo nenhum e ninguém percebe, porque metade da regra continua compilando. */
   sq?: number;
+  sqT?: number;
+  /** render/player-anim → render/draw: o jogador está andando / correndo. Derivados por quadro a partir da
+   *  velocidade e do estado de contato; existem porque a BENGALA precisa saber (a de corrida só aparece
+   *  correndo, e correr exige `runCane`). Escritos pelo render, nunca pela fábrica. */
+  walking?: boolean;
+  running?: boolean;
   /** game/quiz: vitórias na atividade de alfabetização, zeradas a cada nova partida. */
   alfWins?: number;
   /** ui/settings-audio, ui/pause-icons: saída de áudio própria; `null`/ausente = compartilhada. */
