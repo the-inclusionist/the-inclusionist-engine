@@ -67,6 +67,7 @@ import { initSceneCity } from './render/scene-city.js'; // Onda A: deco da Cidad
 import { initTextures, SHAPE_TEX, letterTexture, pupTexFor } from './render/textures.js'; // Onda A: texturas de moeda/forma/letra + power-up
 import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, spriteTexFor, directSpriteCanvas, clearWorldTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
 import { initCoinSpawning, rebuildCoins, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
+import { puTaken } from './game/powerups.js'; // item 19: a regra "chave e global, o resto e por jogador" saiu do render/draw
 import { initKeyboardRuntime } from './input/keyboard-runtime.js';
 import { initTouchBindings } from './input/touch-bindings.js'; // D3-b: gesto de toque -> entrada (traducao + geometria)
 import { initKeydown } from './input/keydown.js'; // D2-a: o roteador de teclado (a cadeia de precedencia) // Onda A: esquema de teclas por jogador
@@ -888,6 +889,14 @@ const drawApi = initDraw({
   BOX, // a caixa do jogador ENTRA (como ja entrava em scene-city/scene-sky/audio-nav), nao e' importada la
   caneLayer, chairLayer, easyHitbox,
   getVpTex: ()=>vpTex, isWheelchair: ()=>wheelchair, getFxClock: ()=>fxClock, getPowerups: ()=>powerups,
+  // OS ITENS DECLARADOS (item 19). O `render/draw` importava `getCoinSprites` de `game/coin-spawning` e
+  // `puTaken` de `game/powerups` — as duas ultimas arestas de importacao da engine para o jogo. E trazia
+  // junto TRES regras que sao deste jogo: item coletado some, item de outro dono fica esmaecido, e a chave
+  // vale para todos enquanto os demais poderes sao por jogador. As tres moram aqui agora.
+  getItemSprites: () => getCoinSprites(),
+  itemVisibleTo: (j, i) => !coins[j]?.taken,
+  itemOwnedBy: (j, i) => coins[j]?.owner === i,
+  powerupVisibleTo: (pu, i) => !puTaken(pu, i),
   rm, WORLD_PX_W: ()=>WORLD_PX_W, WORLD_PX_H: ()=>WORLD_PX_H,
   caneOn, updateParallax,
   drawElevators: ()=>drawElevators(elevLayer),

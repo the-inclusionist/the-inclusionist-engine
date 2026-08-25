@@ -65,7 +65,15 @@ const IMPORTS_CONHECIDOS = {
   // `game/player.js` SAIU (2026-08-25): era só `BOX`, a caixa de colisão, e três módulos de engine
   // (`render/scene-city`, `render/scene-sky`, `platform/audio-nav`) já a recebiam por injeção — o `draw` era
   // o único da camada de render ainda importando-a do jogo. Não foi política nova, foi alinhar o retardatário.
-  'render/draw.ts': ['game/powerups.js', 'game/coin-spawning.js'],
+  // `render/draw.ts` SAIU (2026-08-25, item 19), e com ele a lista inteira ESVAZIOU — ver o caso do contador
+  // logo abaixo. Eram `game/powerups` (o predicado `puTaken`) e `game/coin-spawning` (`getCoinSprites`), e o
+  // que atravessou não foram as funções: foram TRÊS REGRAS do jogo que moravam no desenho — item coletado
+  // some, item de outro dono fica esmaecido, e a chave vale para todos enquanto os demais poderes são por
+  // jogador. As três entraram por ctx, e o desenho ficou com o que é dele: o cintilar.
+  //
+  // O `import type { Powerup }` saiu junto, e vale dizer por quê: tipo apagado em compilação não entra no
+  // pacote, mas obriga o arquivo a existir para o `tsc` e obriga qualquer jogo a ter um power-up com aquela
+  // forma. O desenho toca `sprite` e mais nada.
   // `render/textures.ts` SAIU DAQUI (2026-08-25): importava `SOMASUB_SHAPES` por causa de UMA linha do
   // `initTextures`, e agora recebe os ids das formas pelo ctx. A aresta era pequena e o efeito não: era
   // também a única razão de `render/viz-setters` arrastar `game/` por transitividade — duas de quatro.
@@ -110,10 +118,21 @@ describe('fronteira engine↔jogo — arestas de importação (ADR-0027 passo 4)
     }
   });
 
-  it('[Boundary] a dívida de game/ cabe em UM módulo — o número é o que diz quão perto a fronteira está', () => {
-    // Não é decoração: é a diferença entre "a fronteira está errada" e "a fronteira está a um módulo de
-    // valer". O ADR-0027 pergunta se o passo 5 pode começar, e é este número que responde. Era três, e dois.
-    expect(Object.keys(IMPORTS_CONHECIDOS)).toHaveLength(1);
+  it('[Zero] NENHUM módulo de engine importa de game/ — a lista esvaziou em 2026-08-25', () => {
+    // O número que este caso guarda foi TRÊS, depois dois, depois um, e agora é zero. Vale dizer o que isso
+    // significa e o que NÃO significa.
+    //
+    // SIGNIFICA que a camada de engine não arrasta o jogo pelo compilador: nenhum dos 89 módulos precisa que
+    // `game/` exista para ser empacotado. É a pergunta literal do passo 4 do ADR-0027, e a resposta virou sim.
+    //
+    // NÃO SIGNIFICA que a fronteira está pronta. Sobra VOCABULÁRIO — nove módulos ainda dizem `quiz` ou
+    // `coin` no código, e o maior deles (`input/keydown`) carrega a grade do desafio deste jogo. Nome não é
+    // seguido pelo compilador e não impede um pacote de se separar; por isso é dívida menor, e por isso ela
+    // continua contada na seção 2 em vez de sumir junto.
+    //
+    // A lista fica AQUI, vazia, e não é apagada: ela é o lugar onde a próxima aresta terá de se declarar, e
+    // uma lista ausente convida a acrescentar o import sem pensar duas vezes.
+    expect(Object.keys(IMPORTS_CONHECIDOS)).toHaveLength(0);
   });
 });
 
@@ -188,7 +207,6 @@ const MOEDA_CONHECIDA = new Set([
   // PROPÓSITO é engine, o TIPO é do jogo" — e a saída não foi uma renomeação: o módulo VIROU DOIS. A
   // navegação sonora está em `platform/audio-sonar` e recebe o contrato (topologia, alvos, nome); aqui
   // ficaram a bengala e o nado cego, que leem tile e chão porque é isso que eles são.
-  'render/draw.ts',         // já contado acima pelas importações
   'core/state.ts',          // `coins: unknown[]` — estado do jogo morando no estado compartilhado
   'platform/audio.ts',      // earcon de chave 'coin': conteúdo sonoro do jogo na tabela da engine
   // `ui/settings-motion.ts` SAIU (2026-08-25): a única menção era o rótulo 'Animação de itens (moedas)', que

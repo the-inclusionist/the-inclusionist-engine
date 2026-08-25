@@ -67,10 +67,9 @@ import { JUICE, easeOut3, shakeAmp, drawFx } from './fx.js';
 import { criarCamera, type CameraObj } from './camera.js';
 import { drawCane, drawRunCane, drawChair } from './wheelchair-sprites.js';
 import { VIZ_BY_KEY } from './viz-modes.js';
-import { puTaken, type Powerup } from '../game/powerups.js';
-import { getCoinSprites, type CoinSprite } from '../game/coin-spawning.js';
+// (`game/powerups` e `game/coin-spawning` SAÍRAM daqui no item 19 — ver o bloco "ITENS DECLARADOS" abaixo.)
 import { drawWeather } from './weather.js';
-import { coins, players, numPlayers } from '../core/state.js';
+import { players, numPlayers } from '../core/state.js';
 import { choosePlayerFrame, type AnimPlayer, type Frame, type PlayerTextures } from './player-anim.js';
 
 /* ===================== interfaces estruturais (PIXI sem importar PIXI) ===================== */
@@ -103,13 +102,34 @@ export interface RendererLike { render(displayObject: unknown, options: { render
 // O `CoinSprite` de game/coin-spawning declara o que AQUELE módulo toca (x/y/tint/visible) e não inclui
 // `alpha` — quem escreve alpha na moeda é só o desenho (o cintilar e o esmaecer do item alheio). Widening
 // local em vez de mexer no módulo vizinho; ver o relatório da extração (C1).
-type CoinSpriteDrawn = CoinSprite & { alpha: number };
+/* ===================== ITENS DECLARADOS (item 19) =====================
+ *
+ * Este módulo importava DUAS coisas de `game/` — as duas últimas arestas de importação da engine para o jogo:
+ *
+ *   · `getCoinSprites()` de `game/coin-spawning` — os sprites das moedas;
+ *   · `puTaken(pu, pi)` de `game/powerups` — "a chave some para todos, os demais são por jogador".
+ *
+ * E o pior não eram as arestas: eram as REGRAS. Três linhas deste desenho decidiam, por conta própria, coisas
+ * que são do jogo — que item coletado some (`!cn.taken`), que item de outro jogador fica esmaecido
+ * (`cn.owner === i`), e que a chave é global enquanto o resto é por jogador. Um segundo jogo com outra ideia
+ * de posse — cooperativo, sem dono; ou com item que reaparece — não tinha como dizer isso ao desenho.
+ *
+ * Agora ele PERGUNTA. O ADR-0030 chama isto de "draw recebe entidades declaradas", e é literalmente o que a
+ * assinatura passou a dizer: uma lista de sprites e duas perguntas por (item, jogador). O desenho continua
+ * dono do que é dele — o CINTILAR, que é juice da engine e vale em qualquer jogo. */
 
-/** Uma moeda do estado global (`core/state.coins`) — o que o desenho lê dela. */
-interface CoinLike { x: number; y: number; taken?: boolean; owner: number }
+/** O sprite de um item declarado: o mínimo que o desenho toca. */
+export interface ItemSprite { visible: boolean; alpha: number }
 
-/** Um power-up com sprite materializado (a parte visual do `let powerups` do game.js). */
-interface PowerupWithSprite extends Powerup { sprite?: { visible: boolean } | null }
+/**
+ * Um power-up, do ponto de vista do DESENHO: um sprite, e nada mais.
+ *
+ * Era `extends Powerup`, importado de `game/powerups` — e esse `import type` era a ÚLTIMA aresta deste módulo
+ * para o jogo. Tipo apagado em tempo de compilação não entra no pacote, é verdade; mas ele obriga o arquivo a
+ * existir para o `tsc`, e obriga QUALQUER jogo a ter um power-up com aquela forma. O desenho toca `sprite` e
+ * mais nada — declarar só isso é a fatia mínima, a mesma regra de `core/entity`.
+ */
+interface PowerupWithSprite { sprite?: { visible: boolean } | null }
 
 /** O jogador, do ponto de vista do DESENHO (a animação usa `AnimPlayer`, do qual este é superconjunto). */
 /**
@@ -147,6 +167,23 @@ export interface DrawCtx {
   isWheelchair(): boolean;      // `let wheelchair`
   getFxClock(): number;         // `let fxClock`: relógio geral de animação (fase do cintilar dos itens)
   getPowerups(): PowerupWithSprite[]; // `let powerups`
+  /**
+   * Os sprites dos ITENS declarados, na ordem em que o jogo os declara. Era `getCoinSprites()`, importado de
+   * `game/coin-spawning` — o desenho sabia que os itens são moedas.
+   */
+  getItemSprites(): readonly (ItemSprite | null | undefined)[];
+  /** O item `j` aparece para o jogador `i`? Era `!cn.taken` — a regra "coletado some" é do jogo. */
+  itemVisibleTo(j: number, playerIndex: number): boolean;
+  /**
+   * O item `j` é DESTE jogador? Era `cn.owner === i`, e o que o desenho faz com a resposta é esmaecer o item
+   * alheio (lote C). A ideia de POSSE é do jogo: um cooperativo responde `true` sempre e ninguém esmaece nada.
+   */
+  itemOwnedBy(j: number, playerIndex: number): boolean;
+  /**
+   * O power-up `pu` aparece para o jogador `i`? Era `!puTaken(pu, i)`, que trazia a regra "chave é global,
+   * o resto é por jogador" — uma frase sobre ESTE jogo, dentro do desenho.
+   */
+  powerupVisibleTo(pu: PowerupWithSprite, playerIndex: number): boolean;
 
   /* --- estado estável do game.js --- */
   rm: ReducedMotion;            // `const rm`, mutado in place pelos toggles de Movimento Reduzido
@@ -271,8 +308,9 @@ export function initDraw(ctx: DrawCtx): DrawApi {
     }
 
     if (numPlayers <= 1) {
-      const _cs = getCoinSprites() as CoinSpriteDrawn[];
-      for (let j = 0; j < _cs.length; j++) { const s = _cs[j]; if (s) s.alpha = shimOn ? 0.8 + 0.2 * Math.sin(fxClock * 0.12 + j * 1.7) : 1; }
+      // O CINTILAR fica: é juice da engine (render/fx), e vale para moeda, estrela ou peça de tabuleiro.
+      const itens = ctx.getItemSprites();
+      for (let j = 0; j < itens.length; j++) { const s = itens[j]; if (s) s.alpha = shimOn ? 0.8 + 0.2 * Math.sin(fxClock * 0.12 + j * 1.7) : 1; }
       const { camX, camY } = placeCam(PLS[0]);
       ctx.markSeen(camX, camY); ctx.redrawMinimapIfDirty();
       ctx.drawMinimapPlayer(PLS[0].x, PLS[0].y - ctx.BOX.h / 2);
@@ -281,18 +319,17 @@ export function initDraw(ctx: DrawCtx): DrawApi {
       const v0 = PLS[0].viz, allSame = PLS.every((p) => p.viz === v0);
       const anyOverlay = PLS.some((p) => { const m = VIZ_BY_KEY[p.viz]; return !!m && m.kind === 'lowvision'; });
       if (allSame) ctx.applySharedTextures(v0);
-      const CNS = coins as CoinLike[];
       for (let i = 0; i < numPlayers; i++) {
         const viz = PLS[i].viz;
         if (!allSame) ctx.applySharedTextures(viz);            // só troca por viewport quando os modos diferem
-        const _cs2 = getCoinSprites() as CoinSpriteDrawn[];
-        for (let j = 0; j < _cs2.length; j++) {
-          const s = _cs2[j]; if (!s) continue; const cn = CNS[j]; s.visible = !cn.taken;
-          // Lote C: item alheio esmaecido (cor do dono); JUICE: cintilar multiplicativo
-          s.alpha = ((cn.owner === i) ? 1 : 0.4) * (shimOn ? 0.8 + 0.2 * Math.sin(fxClock * 0.12 + j * 1.7) : 1);
+        const itens2 = ctx.getItemSprites();
+        for (let j = 0; j < itens2.length; j++) {
+          const s = itens2[j]; if (!s) continue;
+          s.visible = ctx.itemVisibleTo(j, i);
+          // Lote C: item alheio esmaecido — quem é "alheio" é o jogo que diz; JUICE: cintilar multiplicativo
+          s.alpha = (ctx.itemOwnedBy(j, i) ? 1 : 0.4) * (shimOn ? 0.8 + 0.2 * Math.sin(fxClock * 0.12 + j * 1.7) : 1);
         }
-        // chave some p/ todos; demais são por jogador
-        for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.visible = !puTaken(pu, i); }
+        for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.visible = ctx.powerupVisibleTo(pu, i); }
         placeCam(PLS[i], i); ctx.renderer.render(ctx.camera, { renderTexture: ctx.getVpTex()[i] });
         if (anyOverlay) ctx.renderVpOverlay(i, viz);           // passada extra só se algum jogador está em baixa visão
       }

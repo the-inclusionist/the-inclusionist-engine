@@ -160,11 +160,19 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
 });
 
 describe('a dívida do passo 5 é CONCENTRADA, e é isso que torna a divisão barata', () => {
-  /** Dívida CONHECIDA em 2026-08-25. Só encolhe — mesma regra de engine-boundary.
-   *  `ui/activities-menu` saiu com o ADR-0032: o catálogo que ele arrastava era CURRÍCULO em `game/`, e mudou
-   *  de camada. Vale registrar o que isso significa e o que NÃO significa — o módulo deixou de arrastar o
-   *  JOGO, e continua conhecendo um catálogo (`educational/`), que `engine-boundary` conta em lista própria. */
-  const ARRASTAM_JOGO = ['render/draw'];
+  /**
+   * Dívida CONHECIDA — VAZIA desde 2026-08-25. Só encolhe, e encolheu até o fim.
+   *
+   * O caminho, porque cada saída ensinou uma coisa diferente:
+   *   · `render/textures`    — saiu por INJEÇÃO (os ids das formas), e levou `render/viz-setters` junto, que
+   *                            só arrastava `game/` por transitividade. Uma aresta pequena, dois módulos.
+   *   · `ui/activities-menu` — saiu por MUDANÇA DE ENDEREÇO (ADR-0032): o catálogo era currículo arquivado em
+   *                            `game/`. Não foi conserto, e o `engine-boundary` conta a aresta nova em lista
+   *                            própria justamente para que a mudança de pasta não passe por reparo.
+   *   · `render/draw`        — saiu por CONTRATO: recebe entidades declaradas, que é o que o ADR-0030 manda.
+   *                            As duas importações levavam TRÊS regras do jogo dentro do desenho.
+   */
+  const ARRASTAM_JOGO = [];
 
   it('[Right] só estes módulos de engine arrastam game/, direta ou transitivamente', () => {
     const sujos = ENGINE.filter((m) => [...arrasta(m)].some((d) => d.startsWith('game/'))).sort();

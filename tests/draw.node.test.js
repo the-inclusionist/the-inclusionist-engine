@@ -44,6 +44,12 @@ function makeCtx(over = {}) {
     isWheelchair: () => false,
     getFxClock: () => 0,
     getPowerups: () => [],
+    // OS ITENS DECLARADOS (item 19). O fixture responde o mínimo: nenhum item, e as duas perguntas de posse
+    // com a resposta que não esconde nem esmaece nada. Os casos que se importam com item declaram o seu.
+    getItemSprites: () => [],
+    itemVisibleTo: () => true,
+    itemOwnedBy: () => true,
+    powerupVisibleTo: () => true,
     rm: {},
     WORLD_PX_W: () => WPW, WORLD_PX_H: () => WPH,
     caneOn: () => false,
@@ -299,14 +305,50 @@ describe('render/draw — tela única × multi-tela', () => {
   it('power-ups: a visibilidade é reavaliada POR JOGADOR antes de cada passada', () => {
     setPlayers(2);
     const vistos = [];
-    const pu = { kind: 'turbo', by: [1, 0], sprite: { visible: true } }; // pego pelo P1, não pelo P2
+    const pu = { sprite: { visible: true } };
     const { api } = makeCtx({
       getPowerups: () => [pu],
+      // A REGRA é do jogo agora (item 19): era `puTaken(pu, i)` importado de `game/powerups`, com o
+      // "chave é global, o resto é por jogador" dentro do desenho. O fixture declara a regra que o caso
+      // precisa — pego pelo P1, não pelo P2 — e o que se mede é que o DESENHO pergunta uma vez por jogador.
+      powerupVisibleTo: (_pu, i) => i !== 0,
       renderer: { render: () => vistos.push(pu.sprite.visible) },
     });
     api.drawFrame();
     expect(vistos).toEqual([false, true]); // some para quem pegou, aparece para quem não pegou
   });
+  it('[Right] a VISIBILIDADE de cada item é perguntada por (item, jogador) — e o sprite obedece', () => {
+    // A regra "item coletado some" era `s.visible = !cn.taken`, lida de `core/state.coins` dentro do desenho.
+    // Saiu para o ctx no item 19. Sem este caso, `itemVisibleTo` poderia nunca ser chamada e nada acusaria:
+    // o fixture padrão responde `true`, que é o mesmo que o desenho faria por conta própria.
+    setPlayers(2);
+    const sprites = [{ visible: true, alpha: 1 }, { visible: true, alpha: 1 }];
+    const perguntas = [];
+    const { api } = makeCtx({
+      getItemSprites: () => sprites,
+      itemVisibleTo: (j, i) => { perguntas.push([j, i]); return j === 0; }, // só o item 0 aparece
+    });
+    api.drawFrame();
+    expect(sprites.map((s) => s.visible)).toEqual([true, false]);
+    // dois itens × dois jogadores: a pergunta é feita para cada par, e não uma vez por quadro
+    expect(perguntas).toEqual([[0, 0], [1, 0], [0, 1], [1, 1]]);
+  });
+
+  it('[Right] item de OUTRO dono sai esmaecido — e quem diz quem é o dono é o jogo', () => {
+    // Era `cn.owner === i` dentro do desenho. O 0.4 fica (é juice da engine); a ideia de POSSE saiu.
+    // Um cooperativo responde `true` sempre, e ninguém esmaece nada.
+    setPlayers(2);
+    // Compara o MESMO item nas duas respostas, e não dois itens entre si: o cintilar tem uma FASE POR ITEM
+    // (`sin(clock*0.12 + j*1.7)`), então dois sprites diferentes nunca partem do mesmo alpha. Minha primeira
+    // versão deste caso comparava item 0 com item 1 e reprovou por causa da fase — o teste estava errado, o
+    // código não. Fica registrado porque é o tipo de erro que se "conserta" afrouxando a tolerância.
+    const comDono = [{ visible: true, alpha: 1 }];
+    makeCtx({ getItemSprites: () => comDono, itemOwnedBy: () => true }).api.drawFrame();
+    const semDono = [{ visible: true, alpha: 1 }];
+    makeCtx({ getItemSprites: () => semDono, itemOwnedBy: () => false }).api.drawFrame();
+    expect(semDono[0].alpha).toBeCloseTo(0.4 * comDono[0].alpha, 5);
+  });
+
   it('o HUD e os elevadores saem UMA vez por quadro, nos dois caminhos', () => {
     setPlayers(1);
     const um = makeCtx(); um.api.drawFrame();
