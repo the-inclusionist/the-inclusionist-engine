@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/scene-parallax — parallax background TEXTURE generators (Estágio 4, Tier 2). Pure builders: given a
 // theme (or a city-placeholder index) they return a PIXI texture. Formulas verbatim from game.js (v3 drawBackdrop
 // / drawHillBand). The per-frame scroll (`updateParallax`) stays in game.js — it is render-graph glue (moves the

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/crt.ts — estética CRT (menu Sensibilidade visual): scanlines/vinheta/cantos, só CSS (classes em
 // #game-region). Extraído do game.js (Estágio 4, Tier 1). CRT = config {scan,vig,round} (0=off,1,2; scan/vig são
 // on/off) carregada do localStorage com migração do formato antigo booleano. crtScanVars ancora a scanline em

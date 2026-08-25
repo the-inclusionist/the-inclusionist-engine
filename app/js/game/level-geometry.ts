@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/level-geometry — wheelchair-mode LEVEL GEOMETRY (Estágio 4, Tier 2): step→ramp detection, wc-only
 // bridge platforms, floating rope anchors over water, the elevator-cabin draw, dark-region discovery, and the
 // powerup/gate spawn+draw pass. Pure detection (node-testable, no PIXI) is split from the PIXI drawing, which

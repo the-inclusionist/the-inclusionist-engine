@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/menu-nav — a DECISÃO de navegação, sem DOM (project node): traduzir tecla em intenção, andar
 // numa lista, ajustar select/slider e atravessar a fronteira entre a barra de ícones e a grade de itens.
 //

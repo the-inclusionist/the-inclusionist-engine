@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/rng.ts — RNG semeado (LCG determinístico) p/ reprodutibilidade (coin placement / testes estáveis).
 // Módulo-folha PURO, ZERO deps. _seed é privado; a sequência é IDÊNTICA à do monólito (mesma semente + mesma
 // ordem de chamada). reseed() permite reproduzir/randomizar (o jogo final pode semear por nível). (Fase 2.26 / Tier 1)

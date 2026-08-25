@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de input/keydown — a CADEIA DE DECISÃO do teclado, sem DOM (project node). ZOMBIES + Right-BICEP.
 //
 // O que este arquivo protege não é aritmética: é a ORDEM DE PRECEDÊNCIA de nove guardas. A pergunta que cada

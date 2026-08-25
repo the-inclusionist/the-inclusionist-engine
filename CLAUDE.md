@@ -59,7 +59,8 @@ convivência de idosos e pessoas assistidas socialmente). **MVP atual:** *The In
   hardware de escola pública BR (Positivo/Chromebook) · a11y (WCAG 2.2 + GAG; Libras em motor zdog à parte) · i18n ·
   conformidade LGPD/COPPA/China/Nórdicos (regra mais rígida vence) · pixel 320×180 (Libras 420×180) · telemetria
   1EdTech+xAPI com privacidade infantil rígida · multiplayer em telas separadas (sem split-screen) · offline (PWA) ·
-  LAN + telemetria store-and-forward · **GPL-3.0** (código) + **arte não-FOSS** + gratuito + fomento.
+  LAN + telemetria store-and-forward · **AGPL-3.0** (código; era GPL-3.0 até 2026-08-25 — ver o pilar 10 do
+  ADR-0010) + **arte não-FOSS** + gratuito + fomento.
 - **Arte = dados:** nenhum PNG embutido no jogo. O alvo é **arte procedural semântica** (imagem semântica
   `(região, luminosidade)` + dicionário de paletas → recolor infinito, unificado personagens+tiles). PNG/Aseprite/
   Tiled só na **autoria**. Plano: `docs/plano-arte-procedural.md`, importadores em `docs/plano-tiled-aseprite.md`.

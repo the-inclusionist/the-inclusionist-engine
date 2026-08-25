@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-empathy — render()/open()/close() (project BROWSER: usa document). Contrato: DI por
 // closure (ctx.$/srSay/store/setters/getters/reflect-helpers), nenhum acesso a globais fora do ctx. A lógica pura
 // (catálogo/rótulos) está coberta em settings-empathy.node.test.js. Modelo: tests/a11y-sr.browser.test.js,

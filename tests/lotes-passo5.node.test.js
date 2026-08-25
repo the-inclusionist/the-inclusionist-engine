@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // OS LOTES DO PASSO 5 — "dividir os módulos de fronteira em 4 lotes, FOLHA PRIMEIRO" (project node: só lê o disco).
 //
 // ========================= POR QUE ISTO É TESTE, E NÃO UM DOCUMENTO =========================

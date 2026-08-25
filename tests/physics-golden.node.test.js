@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // REPLAY DAS TRAJETÓRIAS-OURO da física do jogador (project node) — âncora de caracterização da extração
 // game/physics. tests/fixtures/physics-golden.json foi capturado do JOGO RODANDO (build index-CUzRAHot.js,
 // commit a437845) dirigindo __incl.update(1) quadro a quadro; cada quadro é [x,y,vx,vy,onGround,inWater,onLadder].

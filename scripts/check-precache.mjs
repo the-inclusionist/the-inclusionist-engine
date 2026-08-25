@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Precache gate — runs against the BUILT `dist/sw.js`, and answers one question: can every precached file
 // ever be updated? Fails (exit 1) when one cannot.
 //

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // input/latch — SEGURAR VIRA ALTERNAR. Passo 2 do ADR-0027, metade da "entrada como dado".
 //
 // O QUE É. Quem não consegue MANTER um botão pressionado — espasticidade, tremor, fadiga, um único dedo, um

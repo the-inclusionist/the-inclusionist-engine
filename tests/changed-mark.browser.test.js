@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/changed-mark — a marca de "saiu do padrão" (ADR-0029, project BROWSER: usa document).
 //
 // O caso que mantém este módulo honesto NÃO é o de marcar: é o de DESMARCAR. Uma marca que só soubesse

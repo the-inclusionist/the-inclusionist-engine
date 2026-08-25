@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/password — O CODEC DE CÓDIGOS CURTOS copiados à mão. Módulo-FOLHA: zero dependências, zero I/O, zero DOM.
 //
 // ========================= PARA QUE ESTE CODEC EXISTE — E PARA QUE ELE NÃO EXISTE MAIS =========================

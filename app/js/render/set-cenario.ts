@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/set-cenario — TROCAR DE CENÁRIO: a única porta por onde o jogo muda de mundo visual.
 //
 // `setCenario(tema)` é chamado de quatro lugares muito diferentes — o splash (a criança escolhe antes de

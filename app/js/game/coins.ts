@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/coins.ts — POSICIONAMENTO dos coletáveis no mapa (Estágio 4). findCoinCandidates acha as células onde
 // cabe um item (tile de ar(1)/água(3) com chão sólido logo abaixo, fora da zona de spawn); pickCoins sorteia n
 // posições POR JOGADOR (Lote C: cada dono tem seu conjunto) e carimba shape/letter dos POOLS RECEBIDOS;

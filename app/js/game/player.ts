@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/player.ts — entidade JOGADOR (fábrica de estado) + geometria de colisão do jogador. Extraído do game.js
 // (Estágio 4). As queries (isBouncyGroundBelow/touchingWall/clingSides/firstClingSide) e o contorno de quina da
 // ventosa-aranha (spiderReattach/wrapConvex) leem o mundo via core/collision (solidAt/tileAt) → puras, testáveis

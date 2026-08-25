@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/viz-setters — APLICAÇÃO dos modos de visão acessível (daltonismo, baixa visão, cegueira, alto
 // contraste), por jogador e globalmente. Extraído verbatim do game.js. É a camada de POLÍTICA — "qual modo
 // vale onde" — e não a de FÁBRICA: quem constrói pixel (pixiFilterFor / parallaxTexFor / playerVizTex /

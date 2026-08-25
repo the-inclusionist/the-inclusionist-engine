@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de educational/activities-registry — catálogo de atividades + validação de id (project node). ZOMBIES + Right-BICEP.
 // Puro (sem DOM/PIXI). Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, ACTIVITIES).
 import { describe, it, expect } from 'vitest';

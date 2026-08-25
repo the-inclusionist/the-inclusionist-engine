@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/shell — a CASCA de DOM (project BROWSER): foco de verdade (document.activeElement), o
 // `dataset` do `#touch-controls`, o innerHTML da legenda do título e os dois ouvintes em CAPTURA do modo
 // Print. A projeção pura (`phaseView`, `touchControlsPlan`, os chips) está em shell.node.test.js e NÃO é

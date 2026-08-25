@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/weather (project NODE: weatherLayer/stage falsos injetados). Contratos: a curva de chuva (bom 30s
 // → garoa/chuva/garoa/bom em loop de 60s, só na Cidade e sem rm.decor), a rampa ~1s sem "quase seco", o trovão só
 // na chuva forte (>0,45) com cadência aleatória, as gotas com wrap + congelamento fora de 'playing' (GAG da pausa),

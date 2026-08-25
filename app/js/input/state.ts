@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // input/state.ts — ESTADO de input em runtime + query genérica, compartilhado pelos handlers (que ficam no
 // game.js e mutam estes objetos IN-PLACE): teclas seguradas (keys), estado de gamepad por controle
 // (padCur/padPrevAct/padPrevStart) e a zona morta do analógico (PAD_DEAD). held(pl,act) = o jogador está

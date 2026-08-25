@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/canvas.ts — primitivas-folha de desenho: canvas offscreen → textura PixiJS + disco pixel-art nítido.
 // Base de toda a arte procedural do jogo (coin/tree/powerup/world/…). Depende só de document + PIXI (npm),
 // ZERO estado de jogo. NEAREST em tudo (pixel art, sem anti-aliasing). (Fase 2, subsistema render)

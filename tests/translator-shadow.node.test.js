@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // O SOMBREAMENTO DO TRADUTOR, como gate (project node: só lê arquivos).
 //
 // `t` é o tradutor de core/i18n. Um local chamado `t` no mesmo escopo o esconde, e a chamada `t('sr.algo')`

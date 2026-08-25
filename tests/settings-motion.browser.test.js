@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-motion — render/DOM real (project BROWSER: usa document + querySelector). Injeção por
 // closure (mesmo padrão de ui/debug-panel): ctx com $/srSay/store/frontOverlay/toggleBtn/rm/saveRM/rmKeys/rmChar
 // FALSOS (spies), mas `players`/`numPlayers` (core/state.ts) e `CRT`/`applyCrt` (render/crt.ts) são os módulos

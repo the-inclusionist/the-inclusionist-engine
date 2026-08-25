@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-caa — o painel (project BROWSER: usa document). ADR-0028 (7º menu) + ADR-0029 (marca).
 // A lógica pura (catálogo, motivos, montagem) está em caa-sets.node.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';

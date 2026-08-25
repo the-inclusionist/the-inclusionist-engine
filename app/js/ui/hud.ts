@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/hud.ts — HUD POR TELA + a infraestrutura de TELAS do jogo (Estágio 4). Duas responsabilidades coladas
 // desde sempre no game.js: (a) a GRADE de `.player-screen` dentro de `#game-hud` — um contêiner por jogador,
 // posicionado em %, que hospeda o HUD, o selo "jogo abandonado", o selo "aperte um botão para entrar"

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-motion — lógica PURA (project node, sem `document`). ZOMBIES + Right-BICEP.
 // Cobre: clamp do jogador selecionado, montagem de linhas (HTML string), allOn do botão-mestre e os
 // textos de anúncio ao leitor de tela. O render/DOM real (querySelector/addEventListener/focus) é coberto

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/sprite-fx.ts — helpers de canvas p/ SPRITES/silhuetas, sobre render/canvas.ts. Módulo-folha (só makeCanvas):
 //  • spriteToCanvas: pinta arte ASCII 16×32 (1 char = 1 px) pela paleta unificada APP.
 //  • outlineCanvas: contorno ESCURO único atrás da arte (1º plano do alto contraste) — silhueta deslocada em anel

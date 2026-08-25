@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/caa-sets + a lógica pura de ui/settings-caa (project node, sem document). ADR-0028, issue #57.
 //
 // O que estes casos protegem NÃO é a lista — é a REGRA que a ordena: a camada de cada conjunto é decidida pela

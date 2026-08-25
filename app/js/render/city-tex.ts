@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/city-tex — a ARTE PROCEDURAL DA RUA: os bichos, os pedestres e os carros do cenário Cidade.
 //
 // Três blocos que viviam soltos no main.js (`LIFE_TEX`, `ADULT_TEX`, `CAR_TEX`) e que são a MESMA coisa vista

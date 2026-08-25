@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de core/collision — consultas de grade (project node, sem PIXI/DOM). Padrões: ZOMBIES + Right-BICEP.
 // A colisão recebe um ctx com CLOSURES (estado vivo). Aqui passamos um ctx FALSO controlável → funções puras.
 // Ver docs/plano-testes.md + docs/plano-modularizacao-mapa.md (Estágio 4, core/collision).

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/fx — Juice / micro-feedback (Estágio 4, Tier 2): particles (dust/sparkle), screen shake, hit-stop,
 // squash&stretch, + the JUICE toggles. Formulas are verbatim from game.js (behavior-preserving). The reduce-
 // motion flags (`rm`) and the PIXI graphics layer (`fxG`) are INJECTED via initFx; `rnd`/`players` are imported.

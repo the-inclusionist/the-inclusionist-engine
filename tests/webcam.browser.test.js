@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/webcam — jogar com os olhos (project BROWSER: usa DOM + KeyboardEvent). Padrões: ZOMBIES + Right-BICEP.
 // WebGazer é lib externa (não existe no teste) → checamos os fallbacks + o mapeamento olhar→tecla (onGaze).
 // Ver docs/plano-modularizacao-mapa.md (Estágio 4, Tier 1, ui/webcam).

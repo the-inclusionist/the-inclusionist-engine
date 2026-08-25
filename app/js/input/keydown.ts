@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // input/keydown.ts — O ROTEADOR DE TECLADO: o que UMA tecla SIGNIFICA, aqui e agora.
 //
 // Este é o ouvinte de `keydown` de BOLHA do game.js — o único ponto do jogo por onde passa toda tecla que não

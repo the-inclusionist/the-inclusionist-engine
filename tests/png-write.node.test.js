@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // tools/png-write — o codificador de PNG da AUTORIA (project node).
 //
 // Ele não embarca: vive em `tools/` e nada do jogo o importa. Tem teste mesmo assim, e por um motivo

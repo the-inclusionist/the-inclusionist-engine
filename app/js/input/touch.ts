@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // input/touch.ts — on-screen touch controls (Estágio 4): the physical geometry of the touch pad (mm→px) and
 // its config UI (#touchcfg, #touch-controls visibility). Extracted from game.js's E13 block. Geometry/layout/
 // touch-map-merge are pure (padPxPerMm/padHandTag/computePadPhysicalPx/padLayoutFromId/normalizeTouchMap —

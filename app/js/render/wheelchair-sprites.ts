@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/wheelchair-sprites — the a11y mobility props (Estágio 4, Tier 2): the white/green cane (blind /
 // low-vision), the running cane (item), and the wheelchair. Stateless PIXI drawing (verbatim from game.js):
 // each takes a Graphics `g` + the player. The layers (caneLayer/chairLayer) stay in game.js and are passed in.

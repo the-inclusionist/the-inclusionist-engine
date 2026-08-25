@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/lq-filter — casca DOM (project BROWSER): cria/reusa o nó <filter id="lq-enh">, monta a
 // string de CSS filter, persiste lqT em platform/storage (KEYS.lq = 'incl_lq', migrado do localStorage direto)
 // e dispara o `onChange` injetado (game.js recompõe o CSS filter ali — não é responsabilidade deste módulo).

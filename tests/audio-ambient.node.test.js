@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de platform/audio-ambient (project NODE: Web Audio falso injetado). Contratos: updateAmbient é gated por
 // audioCat.ambient.on, constrói a trilha UMA vez (lazy), o ganho de chuva segue _rainLevel e o de água segue a
 // proximidade de tiles de água (tipo 3); thunder respeita soundOn/volume. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.

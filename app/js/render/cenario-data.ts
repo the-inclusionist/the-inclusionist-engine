@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/cenario-data — O CATÁLOGO DE CENÁRIOS: os quatro temas do jogo como DADO, e nada além disso.
 //
 // Este é o módulo-FOLHA da etapa D2-b: zero imports, zero PIXI, zero DOM, zero I/O. Ele responde a uma única

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/screens — a grade de telas do multiplayer, num só lugar.
 //
 // O jogo divide a janela em uma tela por jogador (pilar: multiplayer em telas SEPARADAS, sem split-screen —

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/map-hub — o painel "Mapear controles" do menu de Movimento (parte PURA, project node).
 // ZOMBIES + Right-BICEP. A amarração de DOM (innerHTML + os cliques) está em map-hub.browser.test.js.
 //

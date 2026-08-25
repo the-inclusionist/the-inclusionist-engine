@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/set-cenario — a ORQUESTRAÇÃO da troca de mundo visual (project node). ZOMBIES + Right-BICEP.
 //
 // `setCenario` não desenha nada: ela decide QUEM é avisado e EM QUE ORDEM. É por isso que quase todos os casos

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/quiz.ts — O DESAFIO EDUCATIVO (Estágio 4, bloco B3): as 29 funções do quiz do game.js, verbatim.
 //
 // Três camadas, deliberadamente separadas (a Fase 6 reusa a primeira):

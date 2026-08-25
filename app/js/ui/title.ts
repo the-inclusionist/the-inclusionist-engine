@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/title — title-screen submenu NAVIGATION (Estágio 4): extracted from game.js's showTitleMenu(). Shows one
 // submenu (`tm-main`/`tm-alf`/`tm-mat`/`tm-tab`/`tm-fr`/`tm-cen`) and hides the rest, toggles the footer legend
 // (only on `tm-main`) and the game-title block (only on `tm-main` — submenus show their own `.tm-title` instead),

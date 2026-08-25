@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/powerups — predicados de coleta (project node). Padrões: ZOMBIES + Right-BICEP.
 // Funções PURAS: operam num objeto power-up + índice do jogador. Chave = global; demais = por jogador.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, game/powerups).

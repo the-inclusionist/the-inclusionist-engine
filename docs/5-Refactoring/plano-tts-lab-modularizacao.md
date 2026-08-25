@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 # Plano — modularizar o TTS-Lab em produto (TS · Vite · DI · pacotes versionados)
 
 > ✅ **CONCLUÍDO (2026-08-02).** As Rodadas 0–6 estão feitas: `inclusionist-commons` tem os 4 pacotes

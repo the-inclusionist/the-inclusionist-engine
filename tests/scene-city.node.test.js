@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/scene-city (project NODE: camadas Graphics/Layer falsas injetadas). Cobre a seleção de
 // tile/decoração por posição (funções puras, hash em tx/ty — sem PIXI) e o contrato de initSceneCity:
 // buildCityDeco (fachada/caixa-d'água/abandonado), applyCenarioVida (orquestrador fino, chama onCenarioChange

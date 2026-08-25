@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/audio-mixer.ts — categorias do mixer de áudio (dados) + carga/persistência. Módulo-folha (storage).
 // O grafo de áudio (catNode/setCatGain/_catNodes/audioCtx) e o objeto audioCat VIVO ficam no game.js — aqui só
 // a lista das categorias, o estado inicial (com o default TTS-off) e o save por categoria. (Fase 2, áudio)

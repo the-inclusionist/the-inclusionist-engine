@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/secret-areas — A ÁREA SECRETA QUE ACENDE QUANDO ALGUÉM ENTRA, E QUE AVISA QUEM NÃO VÊ.
 //
 // Este módulo é o miolo do laço `for(const reg of darkRegions)` que vivia dentro do `update(dt)` do main.js —

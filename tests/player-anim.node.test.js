@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/player-anim — a ESCOLHA DO QUADRO do personagem (project node). ZOMBIES + Right-BICEP.
 // A função é a única parte da antiga cauda do `stepPlayer` que é decisão pura, então dá para cobrir a CADEIA
 // DE PRIORIDADE E17 inteira (ventosa → escada → água → voo → aéreo → andando → idle) e, mais importante, as

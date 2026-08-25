@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/activities-menu — lógica PURA (categoria, mapeamento do "Voltar", saneamento do armazenamento,
 // travessia por setas, rótulos abreviados, builders de HTML) + a casca via initActivitiesMenu(ctx) no project
 // NODE, com DOM FALSIFICADO por objetos simples (mesmo truque de tests/gamepad.node.test.js: ctx.$ devolve

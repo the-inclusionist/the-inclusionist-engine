@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de platform/audio-sonar — a NAVEGAÇÃO SONORA depois do corte do item 19 (project node).
 //
 // ========================= O FIXTURE É A PROVA =========================

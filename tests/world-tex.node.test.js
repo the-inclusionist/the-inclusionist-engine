@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/world-tex (project node). ZOMBIES + Right-BICEP. O builder worldCanvas usa canvas/PIXI
 // (verificado no boot: a textura do nível inteiro); aqui testamos o predicado puro isGroundType.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, render/world-tex).

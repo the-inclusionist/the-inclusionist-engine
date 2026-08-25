@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/physics.ts — FÍSICA DO JOGADOR (um passo de simulação por jogador, por quadro). Extraída verbatim do
 // monólito game.js (stepPlayer/sampleFeatures/resolveX/resolveY/triggerLava). Cobre: movimento horizontal
 // (andar/correr/turbo/alternância/Fácil), pulo + buffer + cadeia (bunny-hop), escalada de escada, elevador

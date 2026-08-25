@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/shell — a DECISÃO de fase, sem DOM (project node). É aqui que se prova a razão de a extração
 // ter separado projeção de efeito: `phaseView` e `touchControlsPlan` respondem "o que esta fase manda fazer"
 // sem overlay, sem áudio e sem PIXI, e um `!==` trocado vira asserção em vez de sintoma silencioso.

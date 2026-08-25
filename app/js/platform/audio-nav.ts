@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/audio-nav — BENGALA e NADO CEGO: as pistas sonoras que só existem onde há MUNDO (item 19).
 //
 // ========================= ESTE MÓDULO ERA DOIS =========================

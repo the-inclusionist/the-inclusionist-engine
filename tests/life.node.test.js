@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/life — vida ambiente (pombos/gatos/cães/adultos) (project node). ZOMBIES + Right-BICEP.
 // PIXI é injetado como fakes estruturais (sprite/layer); lifeSurfaceAt/lifeSurfaceLowAt/streetCols também são
 // injetados (a implementação REAL continua em game.js, compartilhada com render/scene-city — não é escopo

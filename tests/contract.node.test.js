@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de core/contract — os SETE CAMPOS do ADR-0030 como interface (project node). ZOMBIES + Right-BICEP.
 //
 // O RISCO DESTE ARQUIVO, dito de saída: um contrato sem consumidor tenta virar teste tautológico — "a função

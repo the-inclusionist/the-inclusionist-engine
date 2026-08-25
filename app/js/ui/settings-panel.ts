@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/settings-panel.ts — a CASCA COMUM dos diálogos de configuração (#visual, #typo, #audio, #options,
 // #movement, #animation, #empathy, #touchcfg, #help). Os SETE painéis já saíram para ui/settings-*.ts; o que
 // sobrou no game.js em volta deles era: (a) a pilha de z-index dos overlays (`_ovZ` + frontOverlay), (b) o

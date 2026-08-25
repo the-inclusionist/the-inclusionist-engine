@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/audio-earcons — earcons (ícones sonoros) do jogo + a ponte com as LEGENDAS visuais (a11y surdez).
 // Tier 2 do áudio, rodada 2. Depende das primitivas de platform/audio (SFX/ensureAC/catNode/audioOut/noiseHit) e,
 // por injeção, do estado de legenda que VIVE no game.js (captionsOn é alternado pela UI; showCaption toca o #caption

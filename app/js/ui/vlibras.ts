@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/vlibras.ts — MODO PESSOA SURDA (intérprete de Libras) — Estágio 4, Tier 1.
 //
 // DOIS DEFEITOS CONSERTADOS AQUI, e eles têm a mesma raiz.

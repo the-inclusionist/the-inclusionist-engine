@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/audio-jingles — recompensas sonoras (jingles) SEM estado de jogo: vitória, enigma resolvido e fogos.
 // Primeiro passo do Tier 2 (áudio): o cluster mais puro — só depende das primitivas de platform/audio (tone/ensureAC/
 // catNode/audioOut) + soundOn/volume vivos. Sem tiles, players, coins nem DOM. Injeção por closure (padrão Tier 1).

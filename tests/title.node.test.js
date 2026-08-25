@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/title (navegação pura entre submenus) e render/title-scene (geometria da cena PIXI do título) —
 // project NODE: sem document/PIXI reais, só a lógica + camadas falsas injetadas (padrão de scene-sky-decor).
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4).

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/layout — escala do #game-region (project BROWSER: usa #stage-wrap/#game-region + devicePixelRatio).
 // Padrões: ZOMBIES + Right-BICEP. VLibras fechado por padrão (librasOpen=false). Ver docs/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';

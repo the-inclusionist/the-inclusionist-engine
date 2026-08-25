@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/viz-modes — a tabela dos 16 modos visuais e as listas DERIVADAS dela (project node).
 //
 // ========================= ESTE ARQUIVO NÃO EXISTIA =========================

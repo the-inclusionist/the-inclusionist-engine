@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/fractions — matemática + texto de frações (project node). ZOMBIES + Right-BICEP.
 // Puro (string/número, sem DOM). Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, frações).
 import { describe, it, expect } from 'vitest';

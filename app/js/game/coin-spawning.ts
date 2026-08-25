@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/coin-spawning.ts — MATERIALIZAÇÃO e CICLO das moedas (Estágio 4). A ponte entre o DADO (game/coins.ts:
 // findCoinCandidates/positionEasyCoins) e o RENDER (rebuildCoins cria os sprites; addCoinsForOwner/
 // respawnCoinsForOwner geram+renovam o conjunto de UM dono; showPower reflete o poder ativo no HUD). PIXI

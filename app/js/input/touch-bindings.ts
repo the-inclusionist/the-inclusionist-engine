@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // input/touch-bindings.ts — AS AMARRAS DO CONTROLE POR TOQUE: o gesto vira TECLA.
 //
 // Este módulo é a outra metade de `input/touch.ts`. Aquele é o DONO DO PAD — a geometria física (mm→px), o

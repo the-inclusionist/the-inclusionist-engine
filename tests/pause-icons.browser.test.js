@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/pause-icons — a CASCA de DOM (project BROWSER: buildScreenPause usa document.createElement +
 // innerHTML, coisa que o project node não consegue exercitar). A lógica pura (rótulos, ciclos, plano do TEA,
 // markup como string) está em pause-icons.node.test.js e NÃO é repetida aqui — aqui provamos só o que só o

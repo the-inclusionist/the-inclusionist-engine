@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/player-anim.ts — A ESCOLHA DO QUADRO do personagem: dado o estado do jogador, QUAL textura desenhar.
 // Extraída verbatim da segunda metade do `stepPlayer` do game.js (o trecho E15/E16/E17/E19/E20, de
 // `const COYOTE=5` até `pl._tx=tx`). Ela morava dentro da função de física por acidente histórico — mas não é

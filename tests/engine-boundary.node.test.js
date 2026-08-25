@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // A FRONTEIRA ENGINE ↔ JOGO, como TESTE (ADR-0027, passo 4). Project node: só lê arquivos.
 //
 // O ADR-0027 traz uma heurística e a chama de decisiva:

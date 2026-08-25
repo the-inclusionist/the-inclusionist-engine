@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/weather — visual CLIMA: rain intensity ramp, thunder cadence/flash, and the rain-drop layer drawn in
 // screen-space on top of everything. Extracted from game.js's updateWeather/drawWeather (behavior-preserving,
 // formulas verbatim). `weatherLayer` (the PIXI.Graphics) and `stage` are CREATED in game.js — the layer's z-order

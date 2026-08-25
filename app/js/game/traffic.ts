@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/traffic — city street TRAFFIC: cars (obstacle) + the functional semáforo (accessibility signal, not
 // decor — WCAG 2.3.1 no-flash cycle: 8s green → 2s yellow → 6s red). Pure cadence/spawn/physics/off-screen
 // math is exported standalone (no PIXI) for deterministic node tests with the seeded `rnd`. The PIXI layer

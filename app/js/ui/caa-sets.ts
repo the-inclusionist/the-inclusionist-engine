@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/caa-sets.ts — O CATÁLOGO DA COMUNICAÇÃO AUMENTADA E ALTERNATIVA (ADR-0028). Módulo-folha: dados puros e
 // dois predicados, zero DOM, zero I/O. Quem desenha o menu é ui/settings-caa; quem decide o que ele oferece
 // é este arquivo, porque a decisão é de LICENÇA e não de interface.

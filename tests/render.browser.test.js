@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de RENDER/DOM (project browser — Chromium/Playwright; PIXI global via vitest.setup.browser.js).
 // Padrões: ZOMBIES + Right-BICEP (rótulos no nome). Ver docs/plano-testes.md. Módulos: canvas, props,
 // sprites, sprite-fx, storage. Testes ESTRUTURAIS (dimensões/tipos) — não dependem dos PNGs de asset.

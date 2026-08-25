@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-controls — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
 // Cobre: keyName (código físico -> rótulo legível, com 'Space' passando por t()) e keyUsedByOther (conflito de
 // remapeamento entre jogadores). Sem trocar de idioma nos testes, `t()` devolve o pt-BR do dicionário-base.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/settings-controls — Keyboard-remap panel (Estágio 4): extracted from game.js's renderControls()/keyName()/
 // the captureAction+captureMapRef remap flow. Pure logic (key→label, cross-player conflict lookup) is separated
 // from the thin DOM-touching render()/handleCaptureKeydown(). DI via initSettingsControls(ctx): `$` (DOM

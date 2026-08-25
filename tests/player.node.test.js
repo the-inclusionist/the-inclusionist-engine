@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/player — entidade + geometria de colisão (project node). Padrões: ZOMBIES + Right-BICEP.
 // As queries leem o mundo via core/collision → inicializamos a colisão com um mundo FALSO e sondamos o jogador
 // em coordenadas calculadas (BOX 10×30, TILE 16; pl.y = pés, pl.x = centro). Ver docs/plano-modularizacao-mapa.md.

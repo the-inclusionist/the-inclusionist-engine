@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-motor — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
 // Cobre: clamp do jogador selecionado (Boundary: sel >= numPlayers), o predicado "algum jogador ativo"
 // (liga a barra), o texto do anúncio de Modo Fácil e a construção das abas por jogador (mantidas `hidden`,

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/world-tex — the NORMAL world tile texture builder (Estágio 4, Tier 2). Draws the whole level to a
 // canvas (theme tileset on ground, else the v3 per-tile art). Verbatim from game.js. The loaded level grid is
 // runtime state (fetched at boot) → injected via initWorldTex, like core/coins. The high-contrast variant

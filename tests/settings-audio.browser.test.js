@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-audio — render/wiring DOM (project BROWSER: usa document + navigator.mediaDevices +
 // window.speechSynthesis). A lógica pura (rótulos/percentuais/validação) já é coberta no teste node; aqui só o
 // que exige DOM real: renderAudio() recria as listas de categoria e refia os widgets estáticos; os cliques mutam

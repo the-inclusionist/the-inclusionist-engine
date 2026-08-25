@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // O QUE EMBARCA — o gate do item 18, reformulado (project node: só lê o disco).
 //
 // A NOTA DA PIPELINE PEDIA "nenhum PNG fora de sprites/", e essa regra estava errada. O Dev decidiu em

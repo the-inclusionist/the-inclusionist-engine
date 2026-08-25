@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/map-hub — o que só o DOM de verdade prova (project browser: Chromium/Playwright).
 // A parte pura (tabela, habilitação por modo, markup, as duas frases faladas) está em map-hub.node.test.js.
 //

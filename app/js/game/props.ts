@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/props.ts — arte procedural dos "props" DESTE JOGO: a moeda, a árvore urbana e os sete ícones de
 // power-up. Desenhados por ALGORITMO (pixel a pixel, sem PNG embutido) sobre as primitivas de
 // `render/canvas`. As variantes *Texture embrulham o canvas numa PIXI.Texture. (Fase 2.19)

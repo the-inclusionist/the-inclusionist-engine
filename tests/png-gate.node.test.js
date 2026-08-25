@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ITEM 18 — "nenhum PNG fora de sprites/", como gate (project node: só lê arquivos; roda no CI via `npm test`).
 //
 // ========================= O QUE ESTE ARQUIVO TORNA VERIFICÁVEL =========================

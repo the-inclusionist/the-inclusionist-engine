@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de core/scenes — a pilha de cenas (item 22, C3). Project node: nada de DOM, nada de PIXI.
 //
 // As três regras da pilha não são convenção de biblioteca: cada uma reproduz um comportamento que o jogo já

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/settings-motion.ts — "Sensibilidade visual" → painel Movimento (#animation overlay): reduce-motion (WCAG
 // 2.3.3 + Pause/Stop/Hide 2.2.2) por PERSONAGEM (andar/respirar/gracinhas) e por CENA (parallax/decor/itens/
 // partículas), o botão-mestre "Parar/Retomar todas as animações", a seleção de jogador (selAnimPlayer) e a

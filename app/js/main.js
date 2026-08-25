@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // The Inclusionist v4 — port do Lúdico real sobre PixiJS.
 // ESTE ARQUIVO CHAMAVA-SE game.js ate a etapa D2 da modularizacao. O nome mudou porque o conteudo mudou: o
 // jogo saiu daqui para 55 modulos em core/game/input/platform/render/ui, e o que restou e COMPOSITION ROOT —

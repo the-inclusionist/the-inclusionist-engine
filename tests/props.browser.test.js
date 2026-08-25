@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/props — a arte procedural DESTE jogo (project browser: precisa de canvas de verdade).
 //
 // Saiu de `tests/render.browser.test.js` no item 19, junto com o módulo. O teste viaja com o módulo, e aqui

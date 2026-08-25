@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 # E13 — Auditoria de acessibilidade + 5 gates do ADR-001
 
 > Motor **v4.0.0** (PixiJS). Auditoria automatizada executada em 2026-06-01 via **axe-core 4.10.2**

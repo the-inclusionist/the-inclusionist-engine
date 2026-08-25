@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/scene-sky.createSceneSky (project NODE: camadas Graphics/Sprite falsas injetadas). Contratos: seed de
 // 7 nuvens no boot; stepSky move nuvens e faz wrap em WORLD_PX_W+50; rm.decor limpa pássaros; stepV3Decor SEMPRE limpa as
 // 5 camadas e sai cedo em tema não-v3 / alto-contraste. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (#43).

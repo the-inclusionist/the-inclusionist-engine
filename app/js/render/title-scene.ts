@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/title-scene — title-screen BACKDROP: sky gradient + 4 drifting clouds + dotted grass, drawn into
 // `titleG` (v3.1.100 formulas, verbatim). Extracted from game.js's drawTitleScene(). The `titleG` PIXI.Graphics
 // layer is CREATED in game.js (`app.stage.addChildAt(titleG, app.stage.getChildIndex(weatherLayer))`) — its

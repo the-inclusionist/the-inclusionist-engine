@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/life — ambient life of the Cidade theme (pigeons/cats/dogs/adults): 100% procedural, purely cosmetic
 // (no collision, no damage). spawnCreature decides WHO/WHERE spawns (pool of 10, near the camera);
 // stepLife advances dt (walk/fly/peck, u-turn at ledge/lava, pigeon flees near a player, despawn out of

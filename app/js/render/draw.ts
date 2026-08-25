@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/draw.ts — O QUADRO. Onde a câmera para e o que é carimbado nela, uma vez por tick, depois que
 // `update()` já simulou o mundo. Extraído verbatim do game.js (`placeCam` + `draw`), mais a aplicação da
 // textura escolhida no sprite do jogador (a última linha do antigo `stepPlayer`).

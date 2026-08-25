@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de input/keyboard — o MAPA DE TECLAS e seu dono (project node: sem DOM, sem PIXI).
 //
 // O arquivo não tinha teste: `loadKB`/`saveKB`/`resetKB` moravam aqui desde a Fase 2, mas o VALOR que elas

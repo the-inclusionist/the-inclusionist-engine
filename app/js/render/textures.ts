@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/textures — procedural texture generators for in-world GLYPHS: soma/subtração SHAPES, sílabas LETTERS,
 // and power-up ICONS (+ their alto-contraste variant). Verbatim from game.js (behavior-preserving). `disp`
 // (letterCase-aware) and the DIRECT_CFG/directSpriteCanvas alto-contraste plumbing are SHARED with other texture

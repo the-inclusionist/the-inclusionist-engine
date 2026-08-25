@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // tools/png-write.mjs — ESCREVE um PNG a partir de pixels, sem dependência nenhuma.
 //
 // Ferramenta de AUTORIA, não do jogo: vive em `tools/`, não em `app/`, e nada do pacote a importa. Existe

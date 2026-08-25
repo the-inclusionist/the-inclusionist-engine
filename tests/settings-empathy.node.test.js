@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-empathy — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
 // Cobre: quais modos do catálogo VIZ_MODES contam como simulação de empatia (vs. as correções, que desde a
 // #60 moram no menu visual), o recorte EMPATHY_VIZ_MODES resultante e o mapeamento valor→rótulo dos botões. O render()/open()/

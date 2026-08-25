@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de input/gamepad — lógica PURA de leitura (stdDirs/bindActive/padActions) + a máquina de estados do
 // wizard de mapeamento via initGamepad(ctx) (project node, sem document real: ctx.$ devolve elementos FAKE).
 // Contrato: DI por closure (ctx.getGamepads/$/srSay/srAlert/frontOverlay/phase/attract/touch/players/nav/

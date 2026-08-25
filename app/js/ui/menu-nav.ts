@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/menu-nav.ts — NAVEGAÇÃO UNIVERSAL de menus e diálogos: andar, escolher e voltar sem mouse.
 //
 // Este módulo é acessibilidade pura, e é o coração do pilar de a11y no que diz respeito a operação por

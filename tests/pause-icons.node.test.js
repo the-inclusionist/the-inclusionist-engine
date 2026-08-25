@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/pause-icons — a barra de ícones de acessibilidade da pausa (.pi-btn) e o menu por tela.
 // Project NODE: lógica PURA (rótulos, ciclos, plano do modo TEA, markup) + as cascas de reflexo com DOM FALSO
 // (objetos simples, no estilo de tests/gamepad.node.test.js — nenhum `document` real). A casca que só existe

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/braille — the Braille cell per letter (dot numbers 1..6) + speaking those dots in pt-BR, for the
 // "escritor cego" literacy activity. Pure data + one pure helper (verbatim from game.js).
 // See docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, game/quiz — braille).

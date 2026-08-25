@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de LÓGICA PURA (project node — sem PIXI/document/localStorage). Padrões: ZOMBIES (ordem/didática) +
 // Right-BICEP (rigor). Rótulos no nome do teste. Ver docs/plano-testes.md. Módulos: constants, tiles, world, input/state.
 import { describe, it, expect } from 'vitest';

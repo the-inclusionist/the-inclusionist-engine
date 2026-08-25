@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/wheelchair-sprites — cor da bengala (project node). ZOMBIES + Right-BICEP. As draws são
 // PIXI (verificadas no boot); aqui testamos o predicado puro caneColor.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, render/wheelchair-sprites).

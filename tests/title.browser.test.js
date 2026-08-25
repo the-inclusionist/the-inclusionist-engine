@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/title.initTitle (project BROWSER: precisa de `document` real — hidden/focus). Contrato: show(which)
 // esconde os OUTROS 5 submenus, mostra `which`, alterna a legenda do rodapé e o bloco de título (só em tm-main),
 // e foca o 1º <button> do submenu agora visível. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4).

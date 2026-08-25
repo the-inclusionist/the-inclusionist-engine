@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/dom — as duas metades do botão de alternância (project node: sem DOM, só as funções puras).
 //
 // ESTES CASOS VIERAM DE `settings-empathy.node.test.js`, e a mudança de arquivo é o registro: `toggleLabel`

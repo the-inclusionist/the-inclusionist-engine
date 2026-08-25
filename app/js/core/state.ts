@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/state.ts — estado/cena do jogo (FONTE ÚNICA). Módulo-folha. As 8 mega-variáveis migram do game.js
 // UMA A UMA, lidas como binding vivo (import) e escritas por setter.
 // Bus mínimo (Map<evento, Set<fn>>) para os poucos leitores "de longe" que virão com os outros subsistemas.

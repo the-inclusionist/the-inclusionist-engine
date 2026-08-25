@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // input/keyboard-runtime.ts — keyboard ROUTING at play time: which key belongs to which player, which action
 // it fires. Extracted from game.js (kbFor/actionOf/whichPlayer/assignControls/applyControls). Pure logic, DI
 // via initKeyboardRuntime(ctx): reads the live KB config (input/keyboard.ts owns load/save/reset) and the live

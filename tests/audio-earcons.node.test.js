@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de platform/audio-earcons (project NODE: Web Audio/SFX/showCaption/noiseHit falsos injetados por closure).
 // Contrato-chave de a11y: a LEGENDA sai ANTES da checagem de som → surdo "vê" o earcon mesmo com áudio OFF. sfx toca
 // 1 oscilador; doorSound escolhe timbre por material + dispara noiseHit. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // OS TILES DA CIDADE contra a ARTE DE ORIGEM (project node: decodifica o PNG com o zlib do próprio node).
 //
 // O `render/city-tiles` afirma reproduzir `tile_fill.png` e `tile_surface.png` PIXEL A PIXEL. Uma afirmação

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/activities-menu — casca de DOM REAL (project BROWSER: document + parsing de innerHTML + foco de
 // verdade + eventos que borbulham). Complementa tests/activities-menu.node.test.js, que cobre a lógica pura com
 // elementos falsos: aqui provamos o que o fake NÃO consegue provar — que o markup gerado por buildTitleMenus

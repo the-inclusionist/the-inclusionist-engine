@@ -22,7 +22,7 @@ Where a requirement is machine-verifiable, it carries a **threshold** (the testa
 | 7 | **Multiplayer** | Separate screens per player (no split-screen), local | independent viewports over one shared in-memory sim; no netcode in MVP |
 | 8 | **Offline** | Fully playable offline (PWA now; Tauri / Tauri Mobile later) | works with network disabled after first load; one PWA base wrapped by Tauri per target — never duplicate logic per target |
 | 9 | **LAN** | LAN + store-and-forward telemetry | (deferred) queue in IndexedDB + Background Sync; batch on reconnect |
-| 10 | **Licensing** | GPL-3.0 code + non-FOSS art + free + funded | no embedded PNG in-game (art = data); license gate before publish; art protected by trademark (selective), not by GPL |
+| 10 | **Licensing** | AGPL-3.0 code + non-FOSS art + free + funded | no embedded PNG in-game (art = data); license gate before publish; art protected by trademark (selective), not by GPL |
 
 > These 10 are the non-negotiable pillars **as testable constraints**. Their strategic values, tensions, and the
 > ratified decisions/legal analysis behind them live in the constitution index + `adr/` + `research/` (see the note above).

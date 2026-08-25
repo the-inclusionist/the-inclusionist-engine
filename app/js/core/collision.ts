@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/collision.ts — consultas de colisão da GRADE do mundo (determinístico). Extraído do game.js (Estágio 4).
 // Design testável: o módulo NÃO guarda cópias do estado mutável — recebe CLOSURES em initCollision() que leem o
 // estado VIVO do game.js (wheelchair/modoCego/caneBlockDiv/wcSolid/gateTiles/gateOpen). Assim a colisão sempre

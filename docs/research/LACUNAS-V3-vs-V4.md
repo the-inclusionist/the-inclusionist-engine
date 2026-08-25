@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 ---
 title: Análise de lacunas — v3.1.100 (monólito) → v4.0.0 (PixiJS)
 data: 2026-06-01

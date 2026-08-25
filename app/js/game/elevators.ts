@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/elevators — wheelchair-mode elevator GEOMETRY (Estágio 4, Tier 2). buildElevators scans the tile map
 // for shafts (ladders/trampolines become elevators) + adds the chair-only shafts; elevAt tests whether a
 // player is riding one. Pure geometry (verbatim from game.js) — the glass-cabin DRAWING (drawElevators)

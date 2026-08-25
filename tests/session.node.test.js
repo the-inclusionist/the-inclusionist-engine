@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/session — o CICLO DE VIDA DA RODADA (project node). ZOMBIES + Right-BICEP.
 //
 // A parte mais valiosa do módulo é a que não parece lógica de jogo: a CAIXA DE COLETA contra a CAIXA DO ITEM

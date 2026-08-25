@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de platform/audio-jingles (project NODE: sem Web Audio real — AudioContext/tone falsos injetados por closure).
 // Contrato: playVictory = 6 tons square + 4 fogos; playPuzzleSolved = 5 tons sine; firework = 6 osciladores (1 assobio
 // + 5 crepitar) e respeita soundOn/volume/when. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, áudio r1).

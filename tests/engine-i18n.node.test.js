@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // O BURACO DO GATE DE i18n: `tests/main-i18n.node.test.js` vigia UM arquivo, e o problema não mora só nele.
 //
 // ========================= DOIS ACHADOS NO MESMO DIA =========================

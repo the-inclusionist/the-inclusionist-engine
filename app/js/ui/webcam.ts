@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/webcam.ts — JOGAR COM OS OLHOS (acessibilidade motora): controle por olhar via WebGazer (webcam). Estágio 4,
 // Tier 1. WebGazer entra lazy (script do CDN no 1º uso; vendorizar p/ offline é futuro). onGaze mapeia o olhar
 // para teclas SINTÉTICAS (olhar esq/dir = andar A/D; olhar p/ cima = pular Espaço) → reusa o input do teclado.

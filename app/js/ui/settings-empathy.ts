@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/settings-empathy.ts — Empathy/simulation panel (Sensibilidade → Empatia): lets a player WITHOUT a disability
 // experience one (VIZ_SIM: color-blindness/low-vision/blindness simulation, simulated hearing loss, one-button
 // play, wheelchair). This is the opposite of settings-visual, which CORRECTS the game for a player who has the

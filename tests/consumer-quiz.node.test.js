@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // O SEGUNDO CONSUMIDOR — lógica pura (project node). ADR-0027 passo 6, antecipado pelo Dev em 2026-08-25.
 //
 // Este arquivo tem uma função que os outros testes não têm: ele é parte do INSTRUMENTO. O consumidor existe

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/scene-sky — céu de tela: deriva de nuvens (math pura + bug #21) + trilha viva da v3 (nuvens/pássaros do mundo,
 // estrelas/névoa, grama/minhocas/vagalumes/borboletas). Extraído do game.js (#43). As 6 CAMADAS (skyLayer/starsG/
 // skyDecoG/fogG/grassG/themeFxG) continuam sendo CRIADAS no game.js — a ordem-z delas está soldada na montagem do

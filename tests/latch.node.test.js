@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de input/latch — SEGURAR VIRA ALTERNAR (project node: puro, sem DOM nem PIXI). ZOMBIES + Right-BICEP.
 //
 // POR QUE ESTE ARQUIVO IMPORTA MAIS QUE O TAMANHO DO MÓDULO SUGERE. Estas 15 linhas são a diferença entre

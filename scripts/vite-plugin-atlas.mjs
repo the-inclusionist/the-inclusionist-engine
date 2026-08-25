@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // scripts/vite-plugin-atlas — o plugin que EMPACOTA os sprites no build (item 22, X2).
 //
 // Usa `scripts/atlas.mjs` (decodificador/codificador/empacotador, sem dependência nova) e entrega duas coisas:

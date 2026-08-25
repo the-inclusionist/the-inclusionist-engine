@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/audio-sonar — NAVEGAÇÃO SONORA, a metade de `audio-nav` que serve a QUALQUER gênero (item 19).
 //
 // ========================= O ACHADO 9, VIRADO CORTE =========================

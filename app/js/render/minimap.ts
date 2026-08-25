@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/minimap.ts — minimapa com FOG-OF-WAR (Estágio 4, Tier 1). Um container PixiJS no canto do stage: fundo
 // + tiles JÁ VISTOS (revelados pela câmera) + ponto do jogador. O que já foi visto persiste até o fim da fase.
 // initMinimap cria os objetos (import PURO — nada de PIXI no import); markSeen revela; redrawMinimapIfDirty

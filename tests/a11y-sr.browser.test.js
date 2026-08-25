@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de core/a11y-sr — anúncios p/ leitor de tela (project BROWSER: usa document + requestAnimationFrame).
 // Contrato: limpa a região → escreve no próximo frame (força reanúncio) e espelha no VLibras INJETADO.
 // Ver docs/plano-modularizacao-mapa.md (Estágio 4, Tier 1, core/a11y-sr).

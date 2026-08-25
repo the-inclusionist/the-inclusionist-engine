@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 # TTS engine comparison — pt-BR · en · es (research-first table)
 
 **Goal:** pick the neural TTS engine(s) for The Inclusionist's narration, plus the always-available

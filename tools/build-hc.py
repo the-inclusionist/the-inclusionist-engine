@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Gera as silhuetas de ALTO CONTRASTE (_hc.png) a partir dos frames de cor.
 # Fonte da verdade = assets/sprites/menino/<animacao>/<i>.png  (editados no Aseprite)
 # Saida            = assets/sprites/menino/<animacao>/<i>_hc.png (silhueta amarela #ffe600)

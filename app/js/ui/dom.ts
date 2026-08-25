@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/dom.ts — atalhos de seleção do DOM, usados em toda a UI (menus/HUD/pausa/quiz/opções). PURO no import:
 // só define as funções (não toca no DOM → importável em node). $ = querySelector; $$ = querySelectorAll
 // como Array. Genéricos: $<HTMLInputElement>('#x') já tipa o retorno. (Fase 2.27 / Tier 1)

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/viz-modes.ts — os 16 modos visuais de acessibilidade (dados) + índices derivados. Módulo-folha, ZERO
 // deps. Alto contraste (renderização direta 3 níveis), simulação/correção de daltonismo, baixa visão, cegueira.
 // A aplicação dos modos (setPlayerViz/applyVpFilters/overlays) fica no game.js. Ver docs/PESQUISA-ALTO-CONTRASTE.md.

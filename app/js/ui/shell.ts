@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/shell.ts — A CASCA: em que TELA o jogo está, e o que a tela liga e desliga ao trocar.
 //
 // Este módulo responde a UMA pergunta: "estamos no título, jogando ou pausados — e o que isso significa para o

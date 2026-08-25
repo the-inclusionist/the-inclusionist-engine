@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de core/password — o codec de códigos curtos copiados à mão. Project node: nada de DOM, nada de PIXI.
 //
 // O arquivo tem duas metades, e a segunda é a que justifica o módulo existir.

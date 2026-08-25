@@ -23,7 +23,7 @@
     "./educational/*": "./app/js/educational/*",
     "./package.json": "./package.json"
   },
-  "license": "GPL-3.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "engines": {
     "node": ">=24"
   },

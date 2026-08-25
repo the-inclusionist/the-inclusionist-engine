@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-controls — render()/handleCaptureKeydown() (project BROWSER: usa document). Contrato: DI
 // por closure (ctx.$/srSay/srAlert/store/kb/setKB/kbFor/getNumPlayers/applyControls/assignControls), nenhum
 // acesso a globais fora do ctx. A lógica pura (keyName/keyUsedByOther) está coberta em settings-controls.node.test.js.

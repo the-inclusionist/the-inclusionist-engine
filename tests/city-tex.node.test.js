@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/city-tex + o pintor `pixelCanvas`/`pixelTexture` de render/canvas (project node).
 //
 // O QUE ESTE ARQUIVO EXISTE PARA PEGAR: isto é ARTE. Se um retângulo sair 1px fora do lugar, se duas cores

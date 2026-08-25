@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de scripts/atlas — o empacotador de sprites (item 22, X2). Project node: só lê arquivos e bytes.
 //
 // ========================= POR QUE ESTE ARQUIVO EXISTE ANTES DO PLUGIN =========================

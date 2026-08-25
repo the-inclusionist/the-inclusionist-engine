@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 # Neural TTS on sherpa-onnx-wasm — integration plan (ADR-0022)
 
 Runtime decided in **[ADR-0022](../2-Architecture/adr/ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml)**: run VITS/Piper

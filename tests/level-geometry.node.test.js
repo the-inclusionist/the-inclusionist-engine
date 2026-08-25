@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/level-geometry — geometria derivada do nível (project node). ZOMBIES + Right-BICEP.
 // Cobre só a parte PURA (sem PIXI): detecção de degrau→rampa, chão de lava/trampolim, cordas, regiões escuras
 // e a lista de power-ups + portão. tileAt/solidTile vêm de core/collision (ligado a um mundo FALSO por teste).

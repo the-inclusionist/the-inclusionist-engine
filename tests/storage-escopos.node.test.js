@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // OS DOIS ESCOPOS DE PERSISTÊNCIA (project node: só lê a tabela de chaves, sem localStorage).
 //
 // O namespacing óbvio — um prefixo por jogo em TUDO — seria um defeito de acessibilidade grave, e é isso que

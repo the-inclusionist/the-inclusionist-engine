@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/viewports — a FÁBRICA de imagem dos modos de visão acessível: como um MODO vira PIXEL.
 //
 // Par de render/viz-setters, que levou a POLÍTICA ("qual modo vale onde": por jogador, global, overlays, painéis).

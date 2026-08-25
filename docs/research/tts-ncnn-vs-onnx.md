@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 # Por que ONNX e não NCNN para o TTS neural (estudo)
 
 Justifica a escolha do runtime **ONNX** (via sherpa-onnx-wasm) em vez de **NCNN** (via sherpa-ncnn), decidida em

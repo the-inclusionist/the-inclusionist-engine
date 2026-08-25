@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/physics — as partes PURAS da física do jogador (project node). Padrões: ZOMBIES + Right-BICEP.
 // A física lê o mundo por core/collision → aqui montamos mundos FALSOS minúsculos (initCollision) e sondamos
 // um jogador em coordenadas calculadas (BOX 10×30, TILE 16; pl.y = pés, pl.x = centro). O ctx do game.js entra

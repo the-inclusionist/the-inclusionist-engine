@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/parallax — AS TRÊS CAMADAS DE FUNDO: onde cada uma fica, e de que tema ela é feita.
 //
 // Camada 1 do jogo é o tileset + o personagem. Atrás dele vêm três `TilingSprite`, e é isso que este módulo

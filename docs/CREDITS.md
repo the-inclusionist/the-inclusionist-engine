@@ -1,6 +1,6 @@
 # Créditos e atribuições de terceiros
 
-O código de **The Inclusionist** é GPL-3.0-or-later. Partes de terceiros abaixo mantêm suas próprias licenças.
+O código de **The Inclusionist** é AGPL-3.0-or-later. Partes de terceiros abaixo mantêm suas próprias licenças.
 
 ## Clarity — Adam Brooks (dissimulate) — MIT
 
@@ -39,7 +39,7 @@ SOFTWARE.
 ```
 
 > Nota: confirmar o ano/linha exata de copyright no `LICENSE` do repositório do Clarity e alinhar aqui antes de
-> qualquer distribuição formal. MIT é compatível com GPL-3.0 (as porções MIT mantêm seu aviso; o todo é GPL-3.0).
+> qualquer distribuição formal. MIT é compatível com AGPL-3.0 (as porções MIT mantêm seu aviso; o todo é AGPL-3.0).
 
 ## Voz neural (TTS) — Next-gen Kaldi, Piper, eSpeak NG
 

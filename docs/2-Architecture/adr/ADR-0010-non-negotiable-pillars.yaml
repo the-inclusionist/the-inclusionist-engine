@@ -59,9 +59,13 @@ more-information: |
     7. Multiplayer on separate screens (no split-screen) — N viewports, one sim; scaling in ADR-0008.
     8. Offline — PWA (base) + Tauri/Tauri Mobile; never duplicate logic per target.
     9. LAN + store-and-forward telemetry — playing needs no internet; queue + batch on reconnect.
-    10. Open + free + funded — GPL-3.0 code + non-FOSS art (selective trademark); free; no dark patterns (ADR-0006).
+    10. Open + free + funded — AGPL-3.0 code + non-FOSS art (selective trademark); free; no dark patterns (ADR-0006).
+        AMENDED 2026-08-25: the code licence moved from GPL-3.0 to AGPL-3.0-or-later. GPL treats RUNNING a service
+        as not distributing, so a hosted classroom-room server would owe its source to nobody; AGPL section 13
+        closes exactly that. The requerimento filed with the Municipio proposes AGPLv3, and the Municipio is the
+        patrimonial owner (Lei 9.609 art. 4). The non-FOSS art, the "free" and the funding half are untouched.
 
   Conflict resolutions (synthesis): packaging vs weak hw -> Tauri+PWA; research-data vs child-privacy -> no open data (RN-01);
-  AAA text vs 320x180 -> text in the DOM; FOSS grants vs character protection -> GPL code + non-FOSS art; split-screen vs
+  AAA text vs 320x180 -> text in the DOM; FOSS grants vs character protection -> AGPL code + non-FOSS art; split-screen vs
   separate screens -> N viewports one page; Libras 21:9 vs 16:9 -> additive 100px panel. The RN-01..04 data rules + the
   local-law-wins model are detailed in `../../research/compliance-legal.md`.

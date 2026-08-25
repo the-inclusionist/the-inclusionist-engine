@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/quiz — a camada de GERAÇÃO e a de APRESENTAÇÃO (project node: nenhuma toca `document`).
 // O foco é a PEDAGOGIA, não a mecânica: a resposta certa sempre está entre as alternativas, nunca há
 // alternativa repetida, o NÍVEL escolhe o tipo de desafio, a tabuada só sorteia número que a pessoa ligou,

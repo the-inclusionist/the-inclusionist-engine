@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // input/devices.ts — rótulos/mapeamentos de gamepad e toque (dados). Módulo-folha, ZERO deps.
 // PAD_DESIGNS: como rotular os 4 botões de ação por modelo de controle (o navegador detecta genérico no
 // Windows). TOUCH_ACT_LABELS: CHAVES i18n das ações de toque. TOUCH_DEFAULT: mapa padrão dos 9 slots de toque.

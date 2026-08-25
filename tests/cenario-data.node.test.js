@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/cenario-data — o CATÁLOGO de cenários (project node). ZOMBIES + Right-BICEP.
 //
 // Estas duas tabelas eram, até a etapa D2-b, o dado mais lido e menos protegido do jogo: `render/scene-sky`,

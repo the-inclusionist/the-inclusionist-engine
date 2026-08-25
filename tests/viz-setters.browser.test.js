@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/viz-setters no DOM/canvas REAIS (project browser: Chromium/Playwright). O .node.test.js
 // cobre a lógica pura e as cascas com PIXI/DOM falsos; aqui ficam as duas coisas que o falso não pode provar:
 //  (a) o desvio 'hcnew' (Renderização Direta) — worldTexFor precisa de getImageData/putImageData de verdade;

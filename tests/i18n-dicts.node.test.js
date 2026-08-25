@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes dos DICIONÁRIOS de locale (project node — nenhum toca `document`).
 //
 // POR QUE ESTE ARQUIVO EXISTE

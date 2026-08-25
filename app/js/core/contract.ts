@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/contract — OS SETE CAMPOS. A interface que o ADR-0030 escolheu como o eixo da engine.
 //
 // ========================= O QUE ISTO É, E O QUE NÃO É =========================

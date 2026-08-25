@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/layers — ORDEM-Z CANÔNICA (fonte única de verdade). Cada camada tem um Z NOMEADO; ninguém mais faz
 // addChildAt(getChildIndex(...)) nem "re-adiciona ao topo" — a inserção passa a ser pelo Z (fim do acoplamento).
 // Duas escalas: MUNDO (por viewport — PIXI zIndex dentro da câmera, com sortableChildren) e OVERLAY (global, tela —

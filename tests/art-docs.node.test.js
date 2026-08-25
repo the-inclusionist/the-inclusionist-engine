@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // A DOCUMENTAÇÃO DE ARTE CONTRA A ARTE (item 15 da pipeline, project node: só lê arquivos).
 //
 // ========================= POR QUE ISTO EXISTE =========================

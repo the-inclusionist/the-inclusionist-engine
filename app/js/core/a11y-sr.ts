@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/a11y-sr.ts — anúncios para LEITOR DE TELA (Estágio 4, Tier 1). srSay = região aria-live "polite" (status);
 // srAlert = região "assertive" (alertas). O padrão limpar→requestAnimationFrame→escrever força o leitor a
 // reanunciar mesmo texto repetido. Também espelha a fala em LIBRAS: como ui/vlibras ainda não foi extraído, o

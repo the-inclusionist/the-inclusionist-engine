@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/state — o estado que é DESTE JOGO, e não da engine (item 19, regra do ADR-0033).
 //
 // ========================= A MESMA REGRA, APLICADA AO ESTADO =========================

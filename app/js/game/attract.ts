@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/attract — modo demonstração (attract): 60s parado no título → 30s de demo. Prefere uma GRAVAÇÃO do cenário
 // (?record=1 grava o P1 em localStorage), senão um ROBÔ joga; qualquer entrada encerra e volta ao menu.
 // Módulo com estado próprio via fábrica: createAttract(ctx) devolve o controlador. Injeção por closure — recebe

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/storage.ts — Camada única de persistência (localStorage) — módulo-folha. À prova de exceção:
 // localStorage LANÇA em file:// e no modo privado de alguns navegadores, e isso derrubava o boot inteiro (por
 // isso todo acesso é try/catch). Centralizar aqui: um lugar para trocar a estratégia (namespacing, IndexedDB…)

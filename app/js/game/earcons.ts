@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/earcons — a TABELA de earcons DESTE jogo (item 19).
 //
 // ========================= POR QUE ISTO SAIU DE `platform/audio` =========================

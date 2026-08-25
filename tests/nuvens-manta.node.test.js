@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // A MANTA DE NUVENS DA FLORESTA (project node: só a conta, sem PIXI).
 //
 // O pedido do Dev foi de um MOVIMENTO com causa: cúmulos brancos abundantes que se JUNTAM, chove, e depois se

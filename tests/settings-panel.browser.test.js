@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-panel — o que SÓ o navegador prova (project BROWSER): foco de verdade
 // (document.activeElement), z-index EFETIVO (getComputedStyle) e os seletores CSS reais (`:scope > span`,
 // `#game-region .overlay`). A lógica pura e o registro estão cobertos em settings-panel.node.test.js.

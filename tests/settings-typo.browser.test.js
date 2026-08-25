@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-typo — render()/setFont() (project BROWSER: usa document). Contrato: DI por closure
 // (ctx.$/srSay/store/root), nenhum acesso a globais fora do ctx. A lógica pura (mapeamento/validação/view-model)
 // está coberta em settings-typo.node.test.js. Modelo: tests/a11y-sr.browser.test.js, tests/debug-panel.browser.test.js.

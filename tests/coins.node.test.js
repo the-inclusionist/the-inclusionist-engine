@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/coins — posicionamento dos coletáveis (project node). Padrões: ZOMBIES + Right-BICEP.
 // coins lê o mundo via initCoins(ctx) e a colisão via solidAt → inicializamos ambos com um mundo FALSO.
 // Ver docs/plano-modularizacao-mapa.md (Estágio 4, game/coins — só posicionamento).

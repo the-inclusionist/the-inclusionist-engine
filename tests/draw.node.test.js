@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/draw — a câmera e a montagem do quadro (project node). ZOMBIES + Right-BICEP.
 // O módulo é PIXI por natureza, mas entra por interface ESTRUTURAL: aqui as camadas de Graphics, a câmera e
 // o renderer são DUBLÊS que gravam chamadas, e os colaboradores que importam PIXI (elevador, minimapa) entram

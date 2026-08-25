@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/high-contrast (project node: sem canvas/DOM — WORLD_TEX/DIRECT/SPRITE que desenham em canvas
 // ficam no .browser.test.js). Aqui: a lógica PURA (mapa tile→papel, os 3 níveis de contraste, a paleta HC_ROLE
 // persistida) + a guarda de DI de initHighContrast + o desvio "normal" de worldTexFor/spriteTexFor (não toca

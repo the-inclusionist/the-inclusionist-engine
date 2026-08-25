@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/traffic — trânsito da Cidade: cadência do semáforo, nascimento/física dos carros e a camada
 // PIXI injetada (project NODE: Graphics/Sprite falsos). Padrões: ZOMBIES + Right-BICEP. Comportamento verbatim
 // do monólito (game.js drawSemaforo/initTraffic/spawnCar/setFrontDim/stepTraffic). Ver docs/plano-modularizacao-mapa.md.

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/entity — O JOGADOR, escrito UMA vez. Passo 1 do ADR-0027, e o único que o ADR chama de pré-requisito
 // de todos os outros. Não move nada e não muda nada em tempo de execução: `tsc --noEmit` é o teste inteiro.
 //

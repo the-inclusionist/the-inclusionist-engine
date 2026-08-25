@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // input/keyboard.ts — esquemas de teclado (config) + persistência. Módulo-folha (só depende de storage).
 // 8 ações: up,left,down,right,run(corre/interage),jump,swap(troca poder),especial. Esquemas por contagem de
 // jogadores (solo/p2/p3/p4). A INSTÂNCIA atual (KB) e o remap ficam no game.js — aqui só config/load/save/reset.

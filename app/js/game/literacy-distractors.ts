@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/literacy-distractors — letter names + the pre-syllabic distractor generator for the literacy
 // activities (Estágio 4). `ferreiroDistractors` builds plausible wrong answers that attack the common
 // pre-syllabic hypotheses (Ferreiro & Teberosky): (a) a symbol/emoji → refutes the ICONIC hypothesis;

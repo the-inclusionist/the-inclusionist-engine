@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/literacy-distractors — nomes de letra + distratores Ferreiro (project node). ZOMBIES + Right-BICEP.
 // ferreiroDistractors usa rng → semeamos p/ determinismo. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect, beforeEach } from 'vitest';

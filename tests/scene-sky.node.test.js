@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/scene-sky.cloudWrapX (project NODE: função pura). Contrato (#21): x float (sub-pixel) no intervalo
 // [enterAt, enterAt+span); periódico em span; com enterAt=-w e span=telaW+w a nuvem entra/sai INTEIRA (sem meia-borda).
 // Serve os dois sentidos de deriva. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (#43).

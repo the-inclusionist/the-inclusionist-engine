@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/powerups — collection-state predicates for power-ups (Estágio 4, Tier 2). Pure: they operate on a
 // power-up object + a player index. The gate KEY is GLOBAL (one key opens the gate for the whole team);
 // every other power-up is PER-PLAYER (tracked in `by[i]`). The spawn/render/gate logic (setupExtras/

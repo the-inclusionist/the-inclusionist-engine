@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/settings-motor — MOTOR / MOVIMENTO POR JOGADOR panel (Estágio 4): extracted from game.js's
 // renderMovPlayers()/reflectFacil()/reflectAltMove()/setEasy() (~line 2136). Pure logic (per-player tab
 // clamp/view-model, the "any player active" predicate, the Modo Fácil announcement text) is separated from the

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/scenes — A PILHA DE CENAS (item 22, opção C3 do ADR-0030). Módulo-FOLHA: zero dependências, zero I/O.
 //
 // ========================= O QUE ELA SUBSTITUI, E POR QUE NÃO É UM ENUM MAIOR =========================

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/elevators — geometria de elevador do cadeirante (project node). ZOMBIES + Right-BICEP.
 // buildElevators varre o mapa (tile 4=escada / 5=trampolim) via tileAt/surfTop (colisão) → ligamos ambos a
 // um mundo FALSO. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, game/elevators).

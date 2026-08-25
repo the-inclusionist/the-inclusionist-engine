@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/hc-role-data — os PAPÉIS SEMÂNTICOS do color-blocking, num só lugar.
 //
 // Existiam duas listas dos mesmos quatro papéis: `RoleKey`/`ROLE_KEYS` em ui/settings-visual (que desenha um

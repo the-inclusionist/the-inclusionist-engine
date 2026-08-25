@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de platform/tts que só o NAVEGADOR prova: que a narração fala no IDIOMA DO JOGO.
 //
 // POR QUE NÃO NO project node. Trocar de idioma passa por `setLocale`, que reaplica o DOM (`applyDom`),

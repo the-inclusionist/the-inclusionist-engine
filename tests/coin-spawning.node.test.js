@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/coin-spawning — materialização e ciclo das moedas (project node). Padrões: ZOMBIES + Right-BICEP.
 // PIXI (container/fábrica de sprite/texturas) é 100% fake (o módulo nunca importa PIXI) — as fábricas devolvem
 // só uma etiqueta string, o suficiente pra afirmar QUAL textura foi pedida. O mundo/colisão usa o mesmo mundo

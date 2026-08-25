@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/tiles.ts — Legend de tiles + parser do mapa em texto-glifo (1 glifo significativo por tile). Módulo-folha,
 // ZERO deps. O jogo NÃO lê Tiled/Aseprite em runtime — só este texto-glifo, legível/diffável como ascii art.
 

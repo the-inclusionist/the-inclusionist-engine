@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/vlibras — MODO PESSOA SURDA (project BROWSER: usa DOM e localStorage).
 //
 // ESTE ARQUIVO MUDOU DE CONTRATO, e o motivo é um defeito que ele estava FIXANDO em vez de pegar.

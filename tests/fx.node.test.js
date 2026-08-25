@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/fx — juice (partículas/shake/hit-stop/squash) (project node). ZOMBIES + Right-BICEP.
 // Fórmulas verbatim do game.js. O estado do módulo é singleton → drenamos no beforeEach p/ isolar.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, render/fx).

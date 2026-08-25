@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/settings-visual — the "Acessibilidade visual" overlay: high-contrast level, L→Q contrast enhancement,
 // owner-colored items, CB-safe (Okabe-Ito) palette, color-blocking role colors, and the two outline selects
 // (foreground/background). `selVizPlayer` (chosen player), `setPlayerViz`/`setLq`/`setOwnerColors`/`setCbSafe`/

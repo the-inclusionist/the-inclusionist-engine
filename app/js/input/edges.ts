@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // input/edges — a tabela "ação → borda de entrada", e a regra de quem pode levantá-la. Módulo FOLHA: zero
 // imports, nada de DOM, nada de estado.
 //

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de input/touch — lógica PURA (project node, sem `document`). ZOMBIES + Right-BICEP.
 // Cobre: mm→px (padPxPerMm/computePadPhysicalPx — dpr alto/baixo simulado via tela pequena/grande, extremos),
 // a classificação mão-de-criança/adulto (padHandTag), a detecção de layout por id de controle (padLayoutFromId),

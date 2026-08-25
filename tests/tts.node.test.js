@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de platform/tts (project NODE: window.speechSynthesis + SpeechSynthesisUtterance stubados; NÃO exercito o
 // caminho Piper, que faz import() de CDN). Contratos: narrate é gated por soundOn + audioCat.tts.on + texto não-vazio;
 // o fallback Web Speech fala NO IDIOMA DO JOGO; loadTTS avisa em motor que não fala o idioma. Ver

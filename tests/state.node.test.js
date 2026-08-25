@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de core/state — o estado compartilhado e o seu barramento de eventos (project node).
 //
 // POR QUE SÓ AGORA. `core/state` é importado por 37 arquivos de teste e não tinha nenhum PRÓPRIO: todos o

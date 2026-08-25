@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/high-contrast — Renderização Direta (Estágio 4, Tier 2): o motor de alto contraste de acessibilidade
 // (ADR-0011) — outline + color-blocking por papel + fundo recuado (dessaturado/escurecido), 3 níveis de
 // contraste (3:1/4,5:1/7:1). worldToTextureDirect/directBgTexture/directSprite{Canvas,Texture} + os caches

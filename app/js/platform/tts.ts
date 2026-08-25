@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/tts — narração por voz. Motor NEURAL Piper pt-BR carregado LAZY (import de CDN + cache OPFS → a 2ª sessão fala
 // offline), com FALLBACK imediato p/ a voz nativa do navegador (Web Speech) enquanto o neural não chega. narrate() é o
 // ponto de entrada, gated pelo toggle 'Narração (TTS)' do mixer (audioCat.tts.on) — independe das legendas. As funções de

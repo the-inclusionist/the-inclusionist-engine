@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/cvd-matrices — as SEIS matrizes de daltonismo (3 SIMULAÇÕES Machado 2009 sev. 1.0 + 3 CORREÇÕES
 // C = I + M_err·(I − Sim), M_err de Fidaner et al.), num só lugar. Módulo-folha: ZERO dependências.
 //

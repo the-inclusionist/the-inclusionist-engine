@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/scene-parallax — matemática pura do relevo (project node). ZOMBIES + Right-BICEP.
 // Os geradores de textura usam canvas/PIXI (verificados no boot); aqui testamos o helper puro hillHeight.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, render/scene-parallax).

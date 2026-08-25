@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/camera — a conta que estava enterrada no `placeCam` (project node: nada de PIXI, nada de aleatório).
 //
 // A câmera é o subsistema mais barato de quebrar em SILÊNCIO que existe num jogo: inverta um sinal e tudo

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/secret-areas — a área secreta que acende quando alguém entra, e o ANÚNCIO que ela faz.
 // ZOMBIES + Right-BICEP. project NODE: o módulo inteiro é aritmética + dois campos (`alpha`, `visible`), então
 // o `PIXI.Graphics` é um objeto literal. Não há nada que precise de navegador.

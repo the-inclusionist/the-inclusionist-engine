@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de input/keydown — o que SÓ o navegador prova (project BROWSER): a PROPAGAÇÃO de verdade entre os
 // dois ouvintes de teclado do jogo, e a visibilidade de verdade (`.hidden` de um elemento real).
 // A cadeia de decisão está em keydown.node.test.js e NÃO é repetida aqui.

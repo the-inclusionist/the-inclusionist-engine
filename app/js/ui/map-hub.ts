@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/map-hub — O PAINEL "MAPEAR CONTROLES", dentro do menu de Movimento.
 //
 // Este módulo é o antigo `renderMapHub()` do main.js (mais o seu ajudante `mapSoon`, que não tinha outro

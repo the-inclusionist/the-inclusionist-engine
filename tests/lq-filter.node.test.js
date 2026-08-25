@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/lq-filter — curva de realce Linear→Quadrático e o rótulo de baixa visão (project node).
 // `lqCurve`/`lqName` são matemática pura e determinística — o melhor alvo de teste do módulo (ZOMBIES +
 // Right-BICEP): bordas 0/1, os três limiares do rótulo, e valores fora de faixa (não clampados, verbatim).

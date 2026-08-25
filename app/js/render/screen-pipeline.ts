@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/screen-pipeline — QUANTAS TELAS EXISTEM, ONDE ELAS FICAM, E O QUE CADA UMA GANHA DE OBJETO PIXI.
 //
 // Este módulo é o antigo `configureRender()` do main.js. Ele roda toda vez que o número de jogadores muda

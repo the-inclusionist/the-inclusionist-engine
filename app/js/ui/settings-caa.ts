@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/settings-caa.ts — O SÉTIMO MENU: COMUNICAÇÃO AUMENTADA E ALTERNATIVA (ADR-0028, issue #57).
 //
 // O catálogo (quem existe, sob qual licença, em qual camada) mora em ./caa-sets.js; aqui só a tela. DI por

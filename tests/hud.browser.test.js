@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/hud.initHud (project BROWSER: precisa de `document` real — createElement/hidden/style/remove).
 // Contrato da casca: buildGameHud() esvazia #game-hud e monta UMA .player-screen por jogador (HUD + selo de
 // abandono + painel de pausa INJETADO), avisa por onScreensBuilt; updateGameHud() reescreve moedas/poder e

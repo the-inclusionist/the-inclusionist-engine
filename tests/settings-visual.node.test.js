@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-visual (project NODE: só lógica pura, sem document). Contrato: as regras do painel
 // Acessibilidade visual (nível de contraste, rótulos, realce L→Q, clamp do jogador selecionado, cor do papel,
 // e a montagem do HTML de #visual-list) não dependem de DOM. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.

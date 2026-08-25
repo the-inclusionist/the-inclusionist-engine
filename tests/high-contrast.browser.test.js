@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/high-contrast — Renderização Direta em canvas REAL (project browser: Chromium/Playwright).
 // A lógica pura (dcfg/roleOf/HC_ROLE) já está no .node.test.js; aqui cobrimos o que exige getImageData/
 // putImageData/drawImage de verdade: worldToTextureDirect (repintura por papel + contorno de 2º plano),

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/attract (project BROWSER: usa document + localStorage). Contrato: inicia a demo aos 60s (>3600
 // ticks) no título; o robô/replay dirige o P1; qualquer entrada encerra; ?record=1 grava o P1. Injeção por closure
 // (getters p/ bindings vivos). Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 1, game/attract).

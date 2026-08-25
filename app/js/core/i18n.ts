@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // i18n — internacionalização (ver docs/plano-i18n.md).
 // O idioma padrão (pt) é import ESTÁTICO → dicionário pronto antes do game.js rodar (boot síncrono, sem
 // refatorar o init para async). Os demais entram sob demanda ao trocar de idioma, via import.meta.glob (o

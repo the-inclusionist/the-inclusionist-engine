@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 # E15 — Personagem em camadas + animações (spec)
 
 **Decisões do José (2026-06-01):**

@@ -1,4 +1,4 @@
-<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 # Estudo — acelerar o Kokoro fp32 no navegador (meta: RTF < 1)
 
 **Motivação:** na avaliação do Dev, **Kokoro fp32 pt-BR (`pf_dora`/`pm_alex`/`pm_santa`) = 4.5/5**, o melhor som — mas

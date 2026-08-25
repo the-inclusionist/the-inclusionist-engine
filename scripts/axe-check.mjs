@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // a11y gate (#10) — runs axe-core against the RUNNING app (live DOM + CSS), the reliable method (cf. the old
 // AUDITORIA-E13). Excludes the third-party VLibras widget. Fails (exit 1) on any WCAG A/AA violation in OUR app.
 //

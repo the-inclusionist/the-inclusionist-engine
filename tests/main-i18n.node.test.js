@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // O ITEM 14 VIRANDO GATE: nenhum texto de interface em português cru dentro de `app/js/main.js`.
 //
 // ========================= POR QUE ISTO PRECISA DE UM TESTE =========================

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/audio-ambient — trilha de AMBIENTE sintetizada (loops de ruído filtrado) + trovão. Última rodada do Tier 2 de
 // áudio (r4). O clima VISUAL (updateWeather/drawWeather/chuva) fica no game.js e migra p/ render depois — aqui só o SOM.
 // Ponte com o clima: `_rainLevel` (0..1) é calculado por updateWeather (game.js) e LIDO aqui por getter → o volume da

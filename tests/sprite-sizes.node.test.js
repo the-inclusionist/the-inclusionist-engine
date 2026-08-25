@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // OS TAMANHOS DE SPRITE, medidos (project node: lê o cabeçalho dos PNG, sem biblioteca).
 //
 // Existe porque três documentos afirmavam um **sprite 16×32** e a arte entregue não tem um único arquivo

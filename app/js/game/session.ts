@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/session.ts — O CICLO DE VIDA DA RODADA: começar, coletar, vencer, recomeçar, entrar, sair.
 //
 // Este módulo responde a UMA pergunta: "o que é uma rodada, e o que acontece nas suas bordas?". Tudo o que

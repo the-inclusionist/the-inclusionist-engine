@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de input/touch-bindings — a TRADUÇÃO gesto→tecla e a GEOMETRIA do direcional, sem DOM (project node).
 // ZOMBIES + Right-BICEP.
 //

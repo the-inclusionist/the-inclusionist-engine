@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/viewports + render/cvd-matrices — a FÁBRICA de imagem dos modos de visão acessível
 // ("como um modo vira pixel"), par de render/viz-setters (que leva a POLÍTICA, "qual modo vale onde").
 //

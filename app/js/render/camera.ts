@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/camera — ONDE A CÂMERA FICA. Item 22 (ADR-0027 passo 7), opção M1: a conta sai de dentro do efeito.
 //
 // ========================= POR QUE ISTO É UM MÓDULO, E POR QUE SÓ AGORA =========================

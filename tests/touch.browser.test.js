@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de input/touch — render/DOM real (project BROWSER: usa document + querySelector). Injeção por closure
 // (mesmo padrão de ui/settings-motion.browser.test.js): ctx com $/srSay/store/root/isMobile/viewport/
 // frontOverlay/onPadDesignApplied FALSOS (spies), mas `players`/`numPlayers`/`phase` (core/state.js) e

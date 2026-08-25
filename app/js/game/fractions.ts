@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/fractions — the fraction MATH + rendering for the math activities (Estágio 4). Pure string/number:
 // simplify, format per notation, build the circle/square SVG graphic, and speak a fraction in pt-BR. Verbatim
 // from game.js. The notation TOGGLES (fracNot) + their menu labels stay in game.js (fraction settings panel).

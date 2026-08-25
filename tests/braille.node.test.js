@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/braille — cela braille + fala dos pontos (project node). ZOMBIES + Right-BICEP.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, game/quiz — braille).
 import { describe, it, expect } from 'vitest';

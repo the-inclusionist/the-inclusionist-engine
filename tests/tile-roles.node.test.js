@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/tile-roles — a tabela tile → papel semântico (project node: função pura, sem nada).
 //
 // ESTES CASOS VIERAM DE `high-contrast.node.test.js`, e a mudança de arquivo É o registro: a regra do item 19

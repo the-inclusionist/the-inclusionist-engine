@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/hud (project NODE: só a metade PURA, sem `document`). Contrato: a GRADE de telas
 // (screenGrid/screenRect/screenCount), o MARKUP estático (vphudHtml/waitBadgeHtml) e a PROJEÇÃO do HUD de um
 // jogador (hudRowView) são funções de valor — não dependem de DOM nem de estado global. A casca

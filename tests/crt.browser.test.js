@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/crt — estética CRT (project BROWSER: usa #game-region, classList, style, localStorage).
 // CRT é config MUTÁVEL (o menu ajusta as props) → fixamos CRT.scan/vig/round no teste e checamos as classes CSS.
 // Ver docs/plano-modularizacao-mapa.md (Estágio 4, Tier 1, render/crt).

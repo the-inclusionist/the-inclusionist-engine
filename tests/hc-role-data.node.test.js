@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/hc-role-data — a fonte única dos papéis do color-blocking.
 //
 // O que estes testes existem para pegar: os papéis viviam em DUAS listas independentes (uma no painel visual,

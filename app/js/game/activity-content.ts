@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/activity-content — pure DATA for the learning activities (Estágio 4): the soma/subtração shapes and
 // the syllable words (glyph/emoji, zero binary images), + their derivations. Verbatim from game.js.
 // Domain content (pt-BR, read by educators). See docs/5-Refactoring/plano-modularizacao-mapa.md.

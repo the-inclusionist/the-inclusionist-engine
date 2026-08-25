@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/screen-pipeline — a TOPOLOGIA do render: quantas telas, onde, e o que cada uma ganha.
 // ZOMBIES + Right-BICEP. project NODE: PIXI é FALSIFICADO por interface estrutural (mesmo precedente de
 // viewports.node/traffic.node), porque aqui não há um pixel para conferir — há uma GRADE e um CICLO DE VIDA.

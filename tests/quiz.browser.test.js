@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/quiz.initQuiz — a camada de EFEITO (project BROWSER: precisa de `document` real —
 // innerHTML/hidden/click/:scope). A geração e o markup puro são cobertos em tests/quiz.node.test.js.
 // Aqui o que importa é o CONTRATO com o jogo: onde o overlay mora (solo × multi-tela), o que o leitor de

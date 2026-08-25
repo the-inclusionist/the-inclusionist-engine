@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // educational/activities-registry — the ACTIVITIES catalog: every playable activity's id → metadata
 // (category, display name, sub-label, description, fraction denominators, "pick numbers" flag). This module
 // owns only the CATALOG + id validation — it does NOT hold the current selection (that stays `activity` +

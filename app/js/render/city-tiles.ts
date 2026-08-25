@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/city-tiles.ts — OS DOIS TILES DA CIDADE, como DADOS e não como PNG (pilar "arte = dados", ADR-0010).
 //
 // `tile_fill` e `tile_surface` eram dois PNG de 16×16 baixados por `carregarTilesDoTema`. Aqui eles voltam como

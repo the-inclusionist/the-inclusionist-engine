@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/debug-panel (project BROWSER: usa document). Contrato: só monta com ?debug=true; os sliders mutam os
 // objetos TUNE/ANIM VIVOS (mesma referência do jogo); os toggles mutam JUICE + chamam saveJuice. Injeção por closure.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 1, ui/debug-panel).

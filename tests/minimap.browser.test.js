@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de render/minimap — fog-of-war + visibilidade (project BROWSER: usa PIXI real). Padrões: ZOMBIES + Right-BICEP.
 // PIXI global vem do setup (mesma instância npm do módulo). Colisão inicializada p/ o tileAt do redraw.
 // Ver docs/plano-modularizacao-mapa.md (Estágio 4, Tier 1, render/minimap).

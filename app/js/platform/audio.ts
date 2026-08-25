@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/audio.ts — base do áudio: ciclo do AudioContext (ensureAC) + definições de SFX (dados). Módulo-folha.
 // O grafo (master/mixer), soundOn/volume e as sínteses (tone/noiseHit/tonePan/sfx) ainda ficam no game.js —
 // migram numa rodada dedicada (injeção de dependência). audioCtx é binding vivo; só ensureAC o (re)cria. (Fase 2)

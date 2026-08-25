@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/changed-mark.ts — MARCA O QUE SAIU DO PADRÃO (ADR-0029). Módulo-folha: só DOM e i18n, nenhuma dep de
 // estado. Quem sabe o que é padrão é cada painel, que já leu DEFAULTS (ADR-0028); aqui mora só o COMO marcar.
 //

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-panel — a CASCA comum dos diálogos de configuração (project node, sem `document`
 // real: ctx.$/$$/doc trabalham sobre um DOM FALSO definido aqui). Contrato: DI por closure ($/$$/doc/computedZ),
 // nenhum acesso a globais fora do ctx. O foco de verdade (quem recebe foco ao abrir, para onde volta ao fechar)

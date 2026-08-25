@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-motor — render/reflect/setEasy (project BROWSER: usa document). Contrato: DI por
 // closure (ctx.$/srSay/store/players/getNumPlayers/setToggleMove/rebuildCoins), nenhum acesso a globais fora
 // do ctx. A lógica pura (clamp/predicado/anúncio/HTML das abas) está coberta em settings-motor.node.test.js.

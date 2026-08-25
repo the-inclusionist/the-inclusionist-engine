@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/activities-menu.ts — the TITLE-SCREEN menus and the "pick an activity" flow (Estágio 4). Owns everything
 // between "the player is looking at the splash" and "the round actually starts": the activity submenus' markup
 // (buildTitleMenus), arrow-key traversal (titleButtons/navTitle), the whole `#title-overlay` click dispatcher

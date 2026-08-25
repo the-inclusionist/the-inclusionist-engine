@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de game/activity-content — dados das atividades (project node). ZOMBIES + Right-BICEP.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, conteúdo das atividades).
 import { describe, it, expect } from 'vitest';

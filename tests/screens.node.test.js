@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // core/screens — a grade de telas, fonte única.
 //
 // Por que estes testes existem: a conta estava copiada em cinco lugares (layout, CRT, HUD, configureRender e

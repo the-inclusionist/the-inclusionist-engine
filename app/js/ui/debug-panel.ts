@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/debug-panel — the ?debug=true live-tuning panel (physics/animation sliders + juice toggles). Leaf UI module.
 // Built via closure DI: receives the LIVE TUNE/ANIM/JUICE objects (mutated in place) + saveJuice from the composition
 // root, so the sliders/checkboxes tune the same state the game reads. Extracted from game.js (modularization Tier 1).

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // scripts/atlas — O EMPACOTADOR DE SPRITES (item 22, opção X2), sem dependência nova.
 //
 // ========================= POR QUE X2, E POR QUE ZERO DEPENDÊNCIA =========================

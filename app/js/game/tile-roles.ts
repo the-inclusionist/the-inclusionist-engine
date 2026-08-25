@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // game/tile-roles — O QUE CADA TILE SIGNIFICA PARA A ACESSIBILIDADE, e por que isto é do JOGO.
 //
 // ========================= O ACOPLAMENTO Nº 1 DO ADR-0027 =========================

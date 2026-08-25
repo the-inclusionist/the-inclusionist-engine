@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de platform/audio-nav — BENGALA e NADO CEGO (project NODE: tiles/colisão + noiseHit/tonePan falsos).
 //
 // A METADE DO SONAR SAIU DAQUI no item 19, junto com o módulo: está em `tests/audio-sonar.node.test.js`, e o

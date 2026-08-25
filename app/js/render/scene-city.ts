@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/scene-city — city scenario decoration: sidewalk/streetlamp/signage facade band, water-tank walls,
 // abandoned-interior clutter (darkRegions, drawn under the darkness layer), and the live water/lava tile fx
 // (waves/coral/algae/fish, lava streaks). Extracted from game.js. The layers (cityDecoG/abandonG/lavaFxG/

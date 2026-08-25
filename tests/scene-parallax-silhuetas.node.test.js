@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // AS SILHUETAS DO FUNDO (project node: sem canvas real — um contexto 2D de mentira registra o que foi pedido).
 //
 // As duas faixas de morro eram lisas: uma floresta e um campo tinham o mesmo desenho em cores diferentes.

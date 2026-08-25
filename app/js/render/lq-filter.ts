@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // render/lq-filter.ts — Realce de contraste Linear→Quadrático (baixa visão, PESQUISA-ALTO-CONTRASTE §2.3).
 // Curva de tom POR PIXEL na tela inteira, composta via SVG feComponentTransfer (17 amostras, sRGB) no CSS
 // filter do canvas. `lqCurve`/`lqName` são puros (project node); `ensureLqFilter`/`setLq` são a casca fina que

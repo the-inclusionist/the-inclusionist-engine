@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de ui/settings-typo — lógica PURA (project node, sem document). ZOMBIES + Right-BICEP.
 // Cobre: validação/migração da chave persistida, mapeamento chave→CSS (data-fonte/--font-custom) e o
 // view-model das linhas do painel (seleção/desabilitado/nota). O render() em si (toca DOM) fica no

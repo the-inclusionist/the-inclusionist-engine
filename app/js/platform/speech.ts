@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // platform/speech.ts — voz do LETRAMENTO (gameSay): fala pt-BR SEMPRE-ativa (independe do toggle 'Narração
 // (TTS)' do mixer), pela voz nativa do navegador. Escolhe uma voz pt-BR e evita pt-PT. Módulo-folha (só áudio).
 // O TTS do MENU (narrate/ttsSpeak + motores neurais Piper/Kokoro/…) é outro caminho, gated pelo mixer — fica no game.js.

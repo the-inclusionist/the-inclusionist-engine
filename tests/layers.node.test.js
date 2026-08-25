@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de core/layers — a ORDEM-Z canônica e a cadeia de pós-processo (project node: dados puros).
 //
 // POR QUE ISTO EXISTE. `Z` e `POST_FX_ORDER` são um registro: números e nomes que ninguém executa, e que por
