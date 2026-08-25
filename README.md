@@ -1,6 +1,6 @@
 # The Inclusionist
 
-[![pipeline](https://gitlab.com/jrocha-dev/the-inclusionist/badges/main/pipeline.svg)](https://gitlab.com/jrocha-dev/the-inclusionist/-/pipelines)
+[![pipeline](https://gitlab.com/jrocha-dev/inclusionist-engine/badges/main/pipeline.svg)](https://gitlab.com/jrocha-dev/inclusionist-engine/-/pipelines)
 
 Jogo educativo de plataforma **acessível-primeiro**, em PixiJS, feito para escolas públicas
 brasileiras. Alfabetização (base psicogenética de Ferreiro & Teberosky) e matemática dentro de

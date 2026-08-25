@@ -7,7 +7,7 @@ student data — LGPD/COPPA) and classic **application security** (XSS, injectio
 ## Reporting a vulnerability
 
 **Please do not open a public issue for security problems.** Report it as a
-**[confidential issue](https://gitlab.com/jrocha-dev/the-inclusionist/-/issues/new)** — tick
+**[confidential issue](https://gitlab.com/jrocha-dev/inclusionist-engine/-/issues/new)** — tick
 **“This issue is confidential…”** before submitting, which restricts it to project members until a fix ships.
 If you cannot reach the tracker, email the maintainer instead; a report that arrives is worth more than a
 report filed in the right place.

@@ -10,7 +10,7 @@
 
 > Decisões que este plano executa: **ADR-0023** (labs = apps de primeira classe) + **ADR-0024** (pacotes versionados;
 > sem CDN; COOP/COEP escopado) + **ADR-0025** (o lab vive no repo **hub `inclusionist-lab`**, multi-página, o TTS é a
-> subpágina `/tts/`; `the-inclusionist` fica só com o jogo — substitui o "tts-lab repo próprio/submódulo" do 0024).
+> subpágina `/tts/`; `inclusionist-engine` fica só com a engine (era "só com o jogo" até o ADR-0036 inverter os dois repositórios) — substitui o "tts-lab repo próprio/submódulo" do 0024).
 >
 > **Onde o código mora agora:** `inclusionist-lab/src/tts/` (não mais `tts-lab`). As rodadas abaixo que citam "tts-lab"
 > valem para essa subpágina. Rodadas 0–3 **concluídas e verificadas** (Seção 1 = eSpeak + Web Speech por DI).

@@ -95,7 +95,7 @@ docs/
 > Libras/visão planejados), consumindo **pacotes versionados** `@jrocha-io/*` (`tts`/`audio`/`logging`/`model-fetch`)
 > do repo `inclusionist-commons` publicado no **registry npm do GitLab** (ADR-0026). Deploy próprio no Cloudflare
 > (domínio `labs.`).
-> **`the-inclusionist` fica só com o jogo** (sem submódulo de lab). Os **estudos** (`research/tts-*.md`) permanecem
+> **`inclusionist-engine` fica só com a ENGINE** — o jogo saiu para `inclusionist-demos` (ADR-0036, que emenda o ADR-0025; a frase anterior, "fica só com o jogo", valia enquanto o jogo era o produto). Os **estudos** (`research/tts-*.md`) permanecem
 > aqui; o **código** dos labs vive em `inclusionist-lab`. Plano: `5-Refactoring/plano-tts-lab-modularizacao.md`.
 
 > **Dead docs are NOT kept in the tree (YAGNI).** `git history` is the archive — retired docs (the E1–E13 roadmap,
@@ -108,7 +108,7 @@ docs/
 > so the choice isn't improvised later; it is not empty ceremony.
 >
 > **Not in `docs/`:** the **executable backlog** lives in **GitLab Issues + the issue board**
-> (`jrocha-dev/the-inclusionist`), not in a Markdown file. The **roadmap** is the board's *Fase 0–6* issues;
+> (`jrocha-dev/inclusionist-engine`), not in a Markdown file. The **roadmap** is the board's *Fase 0–6* issues;
 > `ROADMAP.md` keeps only the strategy/why-this-order. See `CONTRIBUTING.md`.
 
 | File / folder | Holds | Used by |

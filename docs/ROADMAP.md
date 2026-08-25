@@ -1,7 +1,7 @@
 # Roadmap
 
 > **The executable roadmap is the issue board of
-> [gitlab.com/jrocha-dev/the-inclusionist](https://gitlab.com/jrocha-dev/the-inclusionist/-/boards).**
+> [gitlab.com/jrocha-dev/inclusionist-engine](https://gitlab.com/jrocha-dev/inclusionist-engine/-/boards).**
 > The phases are tracked there as the **Fase 0–6** issues. This document holds only the **stable strategy** — the
 > principles and the *why* of the ordering — not the per-phase task lists (those live in the issues).
 

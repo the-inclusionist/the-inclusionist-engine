@@ -1,9 +1,28 @@
 {
-  "name": "the-inclusionist",
+  "name": "@pm-monte/inclusionist-engine",
   "version": "4.164.25",
   "private": true,
   "type": "module",
-  "description": "The Inclusionist — an accessibility-first (WCAG 2.2) educational 2D pixel-art platformer built with PixiJS; the MVP game of the EdSP educational-game engine for Brazilian basic education.",
+  "description": "Accessibility-first (WCAG 2.2 + GAG) engine for educational 2D pixel-art games, built with PixiJS. Screen reader, sonar, high contrast by role, colour-vision filters, remappable input as intent, i18n and offline PWA — the parts every game inherits (ADR-0035, ADR-0036).",
+  "comment:exports": [
+    "The import surface, and it is a DECISION rather than whatever a relative path can reach (ADR-0036).",
+    "`.` is boot/create-game: the composition entry a consumer calls. The layer subpaths are open because",
+    "the single `game-api` module that will replace them does not exist yet — it is Task 12 of the demos",
+    "Phase 1. What is ALREADY closed is the important half: `app/js/game/**` is unreachable from outside,",
+    "so a consumer cannot accidentally depend on The Inclusionist while depending on the engine.",
+    "The targets are .ts on purpose: the consumer is a Vite app and compiles them. A build step and a",
+    "`types` condition are owed at the moment this package is first published, not before."
+  ],
+  "exports": {
+    ".": "./app/js/boot/create-game.ts",
+    "./core/*": "./app/js/core/*",
+    "./input/*": "./app/js/input/*",
+    "./render/*": "./app/js/render/*",
+    "./platform/*": "./app/js/platform/*",
+    "./ui/*": "./app/js/ui/*",
+    "./educational/*": "./app/js/educational/*",
+    "./package.json": "./package.json"
+  },
   "license": "GPL-3.0-or-later",
   "engines": {
     "node": ">=24"

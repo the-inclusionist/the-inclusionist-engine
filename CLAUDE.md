@@ -39,7 +39,7 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 - **Doc alterada VIRA teste, tarefa (issue) ou ADR** — com pouquíssimas exceções, documentação que não se transforma
   em algo acionável (um teste que a verifica, uma issue de trabalho, ou um ADR que a decide) **não serve**. Ao mexer
   num doc, pergunte "isto vira o quê?" e crie.
-- **O TO-DO / BACKLOG do projeto vive nas Issues + quadro do GitLab** (`jrocha-dev/the-inclusionist`),
+- **O TO-DO / BACKLOG do projeto vive nas Issues + quadro do GitLab** (`jrocha-dev/inclusionist-engine`),
   **NÃO em docs**. Trabalho novo → uma **issue** (labels: área + tipo + prioridade P0/P1/P2); o commit fecha com
   `Closes #N`. `ROADMAP.md` guarda só a estratégia/ordem. (Posso mexer no quadro por `glab`.)
 - **`ARCHITECTURE.md` é O MAPA** — o 1º doc a consultar em QUALQUER prompt (meu e das LLMs que eu coordeno) para achar
