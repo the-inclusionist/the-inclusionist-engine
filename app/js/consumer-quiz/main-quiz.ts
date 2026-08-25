@@ -46,7 +46,22 @@
 //     vazio, sem erro. Uma engine que exige ids fixos e não os declara está exigindo que cada consumidor
 //     redescubra a mesma lista.
 //
-//  (os demais achados entram conforme este consumidor for crescendo — alto contraste, sonar, menu-nav, Libras)
+//  7. A CORREÇÃO DE DALTONISMO VIAJA. `installCvdFilters(host)` monta os seis filtros SVG em tempo de execução
+//     dentro de um host que o consumidor fornece, e `VIZ_FILTER` diz qual `url(#...)` aplicar — em QUALQUER
+//     elemento. O quiz ganhou correção protan/deutan/tritan sem PIXI e sem copiar uma linha de markup. É o
+//     desenho certo, e vale registrar por contraste com o achado 6: aqui a engine ENTREGA o markup em vez de
+//     exigir que o consumidor o adivinhe.
+//
+//  8. O ALTO CONTRASTE NÃO VIAJA, e a razão é estrutural, não um defeito. Os modos `hcnew` REPINTAM TEXTURAS
+//     de tile na PIXI; um quiz não tem tiles, e não há o que repintar. Ou seja: o que o menu chama de
+//     "acessibilidade visual" são DUAS pilhas com um nome só —
+//        · uma de DOM/CSS (filtros de daltonismo, tipografia, caixa alta) que serve a qualquer jogo;
+//        · uma de CANVAS (renderização direta, contornos, cores de papel) que só existe onde há mundo.
+//     O painel as apresenta numa lista única de 7 modos, o que é certo para a plataforma e deixa um segundo
+//     consumidor podendo oferecer só metade da lista. A divisão do passo 5 precisa cortar AQUI, e este é o
+//     tipo de corte que só um consumidor sem tiles revela.
+//
+//  (faltam: sonar, menu-nav por gamepad, Libras e os botões de toque)
 import { initI18n, t, applyDom } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createTts } from '../platform/tts.js';
@@ -54,6 +69,8 @@ import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer 
 import { initSettingsTypo } from '../ui/settings-typo.js';
 import { initSettingsPanel } from '../ui/settings-panel.js';
 import * as store from '../platform/storage.js';
+import { installCvdFilters } from '../render/cvd-matrices.js';
+import { VIZ_MODES, VIZ_FILTER, simulatesDisability } from '../render/viz-modes.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
 interface Pergunta {
@@ -158,6 +175,21 @@ export function bootQuiz(): void {
   const fechar = $<HTMLElement>('#typo-close');
   if (fechar) fechar.addEventListener('click', () => { const ov = $<HTMLElement>('#typo'); if (ov) ov.hidden = true; });
   overlays.register('typo', { close: () => { const ov = $<HTMLElement>('#typo'); if (ov) ov.hidden = true; }, inEscapeChain: true });
+
+  // VISÃO: as correções de daltonismo, sem PIXI e sem copiar markup. `installCvdFilters` monta os seis
+  // filtros SVG dentro de um host que o consumidor fornece, e `VIZ_FILTER` diz qual `url(#...)` usar.
+  const host = $<SVGElement>('#q-cvd');
+  const instalados = installCvdFilters(host);
+  const seletor = $<HTMLSelectElement>('#q-viz');
+  const alvoViz = $<HTMLElement>('#game-region');
+  if (seletor && alvoViz && instalados > 0) {
+    const opcoes = VIZ_MODES.filter((m) => m.kind === 'normal' || (m.kind === 'filter' && !simulatesDisability(m.key)));
+    seletor.innerHTML = opcoes.map((m) => `<option value="${m.key}">${m.nome}</option>`).join('');
+    seletor.addEventListener('change', () => {
+      alvoViz.style.filter = VIZ_FILTER[seletor.value] || '';
+      srSay(seletor.options[seletor.selectedIndex]?.text ?? '');
+    });
+  }
 
   const região = $<HTMLElement>('#game-region');
   if (região) região.addEventListener('keydown', aoTeclado);
