@@ -30,9 +30,21 @@ context-and-problem-statement: |
   (ABC / abc). The Dev's decision retires that button and folds letter case into a new AUGMENTATIVE AND
   ALTERNATIVE COMMUNICATION menu, where the choice of how the game presents written language ranges from
   uppercase-only through pictogram sets — ARASAAC, Sclera, Mulberry, Blissymbolics, Tawasol — for children who
-  read symbols rather than letters. Several of those cannot ship with the game for licensing reasons and must be
-  fetched separately, which collides with the offline pillar unless handled like the neural TTS voice already is.
-  Three more — PCS, SymbolStix, Widgit — are shown but not selectable, pending negotiation.
+  read symbols rather than letters.
+
+  THE FIRST PASS OF THIS RECORD GOT THE LICENCES WRONG, and the correction changes the decision rather than a
+  detail of it. It assumed most of the sets could not be redistributed and had to be fetched by the user, so it
+  chose fetch-and-cache and made the letter modes the offline floor. The Dev then read the terms and reported
+  them: MULBERRY SYMBOLS, BLISSYMBOLICS and TAWASOL are CC BY-SA — redistributable, so they can ship inside the
+  game and work with no network at all. ARASAAC must be downloaded. SCLERA needs permission negotiated before it
+  can be used. PCS, SymbolStix and Widgit are to be negotiated later, and the reason the Dev gives for bothering
+  is the one that matters: THERE ARE CHILDREN FLUENT ONLY IN THOSE SYSTEMS, and a set nobody can reach is, for
+  them, a language the game does not speak.
+
+  The correction moves in the generous direction. The offline floor stops being "letters" and becomes "letters
+  plus three complete pictogram systems", which is a different promise to a school with no network — the child
+  who reads symbols gets symbols, not a fallback to text they cannot read. The fetch-and-cache machinery still
+  has to exist, but now for exactly one set instead of five.
 
 decision-drivers:
 - "Pillar 2 (a11y): a settings surface a child can enter and not leave is worse than no settings surface."
@@ -47,6 +59,8 @@ considered-options:
 - "Persist nothing new; treat settings as session-scoped and let the shared-computer problem decide it."
 - "Bundle the pictogram sets that permit it and offer only those."
 - "Fetch every pictogram set on demand, cache it, and treat the built-in letter modes as the offline floor."
+- "Sort each set by what its licence actually permits: bundle what may be redistributed, fetch what may not, and
+   show what is not yet permitted at all."
 
 pros-and-cons-of-the-options:
   uniform-persist-and-reset:
@@ -73,7 +87,22 @@ pros-and-cons-of-the-options:
     good:
     - "Works offline from the first launch, no download, no API."
     bad:
-    - "Offers the child a smaller set for a reason that is about our licence rather than about them."
+    - "Written when the answer was believed to be 'almost nothing may be bundled'. Once three of the five turned
+       out to be CC BY-SA, the objection — that the child gets a rump set for reasons that are about us — stopped
+       applying to the choice and started applying only to what remains behind a licence."
+  sort-by-what-the-licence-permits:
+    good:
+    - "The offline floor becomes three real pictogram systems instead of a fallback to letters. On a school
+       machine with no network, that is the difference between serving the child who reads symbols and telling
+       them to read text."
+    - "The fetch path still gets built — ARASAAC needs it — so the offline-first case costs nothing in machinery
+       that was going to exist anyway."
+    - "Each set is handled by what its own terms say, which is the only basis that survives the terms changing."
+    bad:
+    - "Bundling means WE are the redistributor. A licence misread stops being the user's download and becomes our
+       liability, so the bar for the bundled three is higher than it ever was for the fetched ones."
+    - "CC BY-SA carries obligations that outlive the download: attribution has to be visible somewhere, and any
+       pictogram we alter stays CC BY-SA."
   fetch-and-cache:
     good:
     - "The full set is reachable, and the licence line stays clean: the user fetches, we never redistribute."
@@ -84,7 +113,7 @@ pros-and-cons-of-the-options:
 
 decision-outcome:
   chosen-option:
-    link: "Persist and reset EVERY menu, uniformly + fetch-and-cache the pictogram sets"
+    link: "Persist and reset EVERY menu, uniformly + sort each pictogram set by what its licence permits"
     justification: |
       EVERY settings menu persists, and every settings menu ends with a control that restores ITS OWN defaults —
       same position, same wording, in all eight. The reset is scoped to the menu it closes, not global: a child
@@ -95,23 +124,37 @@ decision-outcome:
       accessibility, and empathy mode.
 
       Letter case leaves the ABC pause button and becomes one choice inside the AAC menu, alongside the
-      pictogram sets. The built-in letter modes are the OFFLINE FLOOR — always present, never downloaded — and
-      any pictogram set that fails to load falls back to them without ceremony.
+      pictogram sets. Everything BUNDLED is the offline floor — always present, never downloaded — and the one
+      set that is fetched falls back into that floor without ceremony when it cannot load.
 
-      THE MENU, in three tiers, and the tiers matter more than the list:
+      THE MENU, in three tiers. THE TIER IS DECIDED BY THE LICENCE AND BY NOTHING ELSE — not by how good the
+      set is, not by how many pictograms it has, not by how easy it would be. That is the whole discipline here:
+      the moment a set moves tier for a reason other than its terms, the record has stopped being true.
 
-        BUILT IN — uppercase + lowercase; uppercase only. Ship with the game, work offline, always selectable.
+        BUNDLED — uppercase + lowercase; uppercase only; MULBERRY SYMBOLS, BLISSYMBOLICS and TAWASOL, all three
+        CC BY-SA and therefore ours to redistribute. Ship inside the game, work with no network ever, always
+        selectable. This is the offline floor and it is no longer made of letters: a child who reads symbols and
+        has no network gets symbols. Tawasol is an Arabic-culture set and belongs here for a reason worth
+        stating — a pictogram is not neutral, it is drawn by and for a culture, and a child recognises the
+        objects, clothes and faces of their own world faster than someone else's.
 
-        FETCHED ON DEMAND — ARASAAC, Sclera, Mulberry Symbols, Blissymbolics, Tawasol. Selectable; downloaded
-        once and cached; fall back to letters if the network is not there. Tawasol is an Arabic-culture set and
-        is in the list for a reason worth stating: a pictogram is not neutral, it is drawn by and for a culture,
-        and a child recognises the objects, clothes and faces of their own world faster than someone else's.
+        FETCHED ON DEMAND — ARASAAC, which must be downloaded rather than redistributed. Selectable; fetched
+        once and cached; falls back to a BUNDLED set, not to letters, when the network is not there. This is the
+        same shape platform/tts already runs for the Piper neural voice — precedent in this repository, not
+        invention.
 
-        PRESENT BUT UNAVAILABLE — PCS, SymbolStix, Widgit Symbols. Shown in the menu, not selectable, labelled
-        "aguardando negociação". They are the sets a Brazilian school is most likely to already own through
-        another product, so hiding them would answer the wrong question: the educator who looks for PCS and does
-        not find it concludes the game cannot do it. Listing them as pending says the truth, which is that the
-        obstacle is a licence and not a capability.
+        PRESENT BUT UNAVAILABLE — SCLERA, PCS, SymbolStix, Widgit Symbols. Shown in the menu, not selectable,
+        labelled "aguardando negociação". Sclera needs permission negotiated before any use; the other three are
+        to be negotiated later. They stay visible because hiding them would answer the wrong question: the
+        educator who looks for PCS and does not find it concludes the game cannot do it. Listing them as pending
+        says the truth, which is that the obstacle is a licence and not a capability. And the reason to pursue
+        them at all is not completeness — it is that some children are fluent in ONE of these systems and no
+        other, so for them the pending sets are not alternatives, they are the only way in.
+
+      WHAT GETS BUNDLED IS THE GAME'S VOCABULARY, NOT THE WHOLE SET. Three complete pictogram systems are tens
+      of thousands of files; the game shows a finite, known list of words. Shipping everything would spend the
+      target hardware's disk and the school's patience on pictograms nobody will ever see. The bundle carries
+      what the game can actually display, and grows when the game's vocabulary grows.
 
   consequences:
     positive:
@@ -119,8 +162,10 @@ decision-outcome:
        possible at all."
     - "The eight menus stop being eight conventions."
     - "AAC reaches children for whom pictograms ARE literacy — an audience this project names and does not yet serve."
-    - "The licence line gets cleaner, not muddier: sets that forbid redistribution are fetched by the user and
-       never enter our bundle."
+    - "The licence line gets cleaner, not muddier: the set that forbids redistribution is fetched by the user and
+       never enters our bundle."
+    - "The offline case stops being a degraded case. Three full pictogram systems ship with the game, so no
+       network means no ARASAAC — it does not mean no AAC."
     neutral:
     - "Persistence is cheap now because #50 moved the setters into core/state; had this been decided six months
        ago it would have meant touching eight panels."
@@ -128,11 +173,21 @@ decision-outcome:
     negative:
     - "Shared school machines inherit the previous child's settings. The per-menu reset is the mitigation and it
        has to be reachable by someone who cannot read the label."
-    - "Pictogram sets need a network once. On the target hardware that is the least dependable assumption in the
-       whole project, so the letter fallback is not a courtesy — it is the design."
-    - "Five fetchable sets plus three pending ones mean eight licence surfaces to keep verified as they change."
+    - "ARASAAC needs a network once. On the target hardware that is the least dependable assumption in the whole
+       project, so falling back to a bundled set is not a courtesy — it is the design."
+    - "Eight licence surfaces to keep verified as they change, and they are no longer equal. For the three
+       BUNDLED sets we are the redistributor: getting one wrong is our liability and ships in every copy, where a
+       fetched set's mistake would at least stop at the user's own download."
+    - "CC BY-SA has a second half. BY means every bundled set needs visible attribution — author, licence, link —
+       on a credits surface that does not exist yet. SA means any pictogram WE alter stays CC BY-SA, and this
+       project has two standing reasons to alter them: the high-contrast palette (ADR-0011) and fitting art to
+       the pixel grid. That is fine, and it has to be stated rather than discovered."
+    - "The licence VERSIONS are not recorded. Blissymbolics and Tawasol were given as CC BY-SA 4.0; Mulberry was
+       given as CC BY-SA with no version, and the version is not a formality — 2.0 UK and 4.0 differ in how
+       attribution is satisfied and in what they are compatible with. Pin it before bundling."
     - "Naming sets as 'awaiting negotiation' is a promise in public. It has to be revisited, or removed, rather
-       than left to age into a lie."
+       than left to age into a lie — and Sclera joining that list is a real loss, not a formality: it is free,
+       large, and its flat black-and-white drawings are the ones that survive a high-contrast palette best."
 
   confirmation: |
     PARTIAL, and the halves are very different in maturity.
@@ -143,14 +198,30 @@ decision-outcome:
     reset does not reach outside itself. That last one matters more than it sounds: a reset that quietly clears
     the motor settings would be a worse trap than the one being removed.
 
-    The AAC half is NOT specified yet and this record does not pretend otherwise. What the licences actually
-    permit is stated here as the Dev stated it — ARASAAC and Sclera cannot be redistributed, Mulberry was not
-    named as a problem, and PCS, SymbolStix and Widgit are pending negotiation — and EVERY ONE of those MUST be
-    verified against the current licence text before a single byte is fetched, because getting this wrong is a
-    legal problem and not a bug. Blissymbolics and Tawasol arrived with the second pass and carry no licence
-    claim in this record at all; treat their status as unknown until someone reads the terms. The rendering question (a pictogram is not a
-    glyph: it has a size, a caption, and a meaning that must survive a screen reader) is open, and so is where
-    the cache lives, though platform/tts's OPFS/Cache-Storage handling is the obvious precedent.
+    The AAC half is NOT specified yet and this record does not pretend otherwise.
+
+    The licences are now stated as the Dev read them: Mulberry CC BY-SA, Blissymbolics CC BY-SA 4.0 and Tawasol
+    CC BY-SA 4.0, all three redistributable and bundled; ARASAAC downloaded; Sclera requiring negotiated
+    permission; PCS, SymbolStix and Widgit to be negotiated later. That is a real correction — the first pass of
+    this record assumed the opposite and picked its architecture accordingly — and it is why the check has to be
+    a step in the work rather than a line in a document.
+
+    THE VERIFICATION THAT REMAINS IS SMALLER BUT SHARPER, because the direction of the risk flipped. It is no
+    longer "do not fetch until you have read the terms"; it is "do not SHIP until you have read the terms", and
+    shipping is the harder one to take back. Before the first bundled byte: pin each set's licence VERSION and
+    URL in the repository next to the assets, satisfy BY with an attribution surface, and confirm that altering
+    pictograms for high contrast or the pixel grid is being done knowing the derivative stays CC BY-SA. A licence
+    file committed beside the assets is the artifact; a sentence in an ADR is not.
+
+    The rendering question (a pictogram is not a glyph: it has a size, a caption, and a meaning that must survive
+    a screen reader) is open, and so is where the ARASAAC cache lives, though platform/tts's OPFS/Cache-Storage
+    handling is the obvious precedent.
+
+    ONE MORE QUESTION THE CORRECTION CREATED, and it is not obvious: WHICH bundled set does ARASAAC fall back to,
+    and does the child get told? Falling back to letters was at least unmistakable — the child could see that the
+    pictograms were gone. Falling back from ARASAAC to Mulberry substitutes one symbol system for another, and
+    the two do not draw the same concept the same way. A silent swap could leave a child staring at a picture
+    they have never been taught, with nothing on screen saying why. Whatever the answer is, it cannot be silence.
 
 more-information: |
   Answers issue #55 (letterCase and captionsOn not surviving a session), which came out of #50's migration of
