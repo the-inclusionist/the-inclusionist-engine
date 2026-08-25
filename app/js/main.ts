@@ -867,7 +867,19 @@ const pauseIcons = initPauseIcons({
   reflectTtsPanelEnabled: true,
   isLibrasOn: vlibrasOpen, toggleLibras,
   rm, saveRM, rmKeys: RM_KEYS, rmChar: RM_CHAR,
-  setToggleMove, setPlayerViz,
+  setToggleMove,
+  // ⚠️ PASSADO PREGUIÇOSAMENTE, e o motivo é um aviso do compilador que eu NÃO consegui explicar.
+  //
+  // `setPlayerViz` é desestruturado de `viz` ~380 linhas ABAIXO, e o `tsc` acusa TS2448 — uso antes da
+  // declaração. Reproduzi o padrão isolado no navegador e ele estoura mesmo: "Cannot access 'setPlayerViz'
+  // before initialization". Só que o jogo BOOTA, e `window.__incl.setPlayerViz` é uma função — ou seja, na
+  // prática esta linha não estoura, e eu não sei dizer por quê. (Cheguei a comparar a ordem no bundle, mas
+  // a comparação era inválida: eu media posições de strings que também existem dentro dos módulos.)
+  //
+  // Envolver num lambda adia a leitura do binding para a hora da CHAMADA, que é sempre depois do boot. Isso
+  // é correto nos dois cenários — no que eu entendo e no que eu não entendo — e é por isso que está assim
+  // em vez de um `as` ou de uma reordenação que eu justificaria com uma história inventada.
+  setPlayerViz: (...a: Parameters<typeof setPlayerViz>) => setPlayerViz(...a),
 });
 const reflectPauseIcons = () => pauseIcons.reflectPauseIcons();
 function reflectTitleIcons(){ pauseIcons.reflectIconsIn($('#title-icons'),0); } // icones do SPLASH (escopo do J1)
