@@ -1,0 +1,137 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-25
+  decision-makers: [Dev]
+  consulted: [ADR-0027 (the boundary and its step 4), ADR-0030 (the declared contract),
+              the second consumer's findings 10 and 11, the measurement in GitLab issue #75]
+  informed: []
+
+title: The engine's entity declares what the ENGINE owns — and input arrives as intent, never as meaning
+
+context-and-problem-statement: |
+  Item 19 removed the engine-to-game import debt to zero. What remained was VOCABULARY, and the largest block
+  was one field: `Player.quiz`, in `core/entity` — the canonical entity of the ENGINE — read by
+  `input/keydown` (8 lines), `input/gamepad` (3) and, until this record, `input/touch`.
+
+  It was never merely a name. `keydown` did not just ask whether a challenge was open; it routed keys INTO it,
+  with THIS game's layout hardcoded: a three-column grid (`up/down = ±3`, `left/right = ±1`) and a special
+  case for `kind === 'braille'`, where "up dictates the cell". `gamepad` repeated the same logic for the pad.
+
+  So the engine knew the LAYOUT of one game's challenge. A game with four columns, or with a vertical list,
+  would have needed a different `keydown`.
+
+  THE FIRST FRAMING WAS WRONG, and the Dev's question is what exposed it. The options were written as
+  alternatives — rename the field, or move the layout out — and they are not alternatives. They answer two
+  different questions, and each option answered one while leaving the other silently in place.
+
+decision-drivers:
+  - "The engine cannot know the layout of one game's challenge: a second genre would need a second `keydown`."
+  - "The cost is not the READ. `keydown` already receives the players by injection (`ctx.getPlayers()`), so
+     there is no global here. The cost is that reading the field forces `core/entity.Player` to DECLARE it."
+  - "Finding 11 measured that remappable keyboard is the base's best cut — key SCHEME and nothing else. The
+     translation from key to intent is engine work; what the intent MEANS is not."
+  - "The same move has worked four times in this item: `isNavigable()`, `Objective`, the sprite registry,
+     `padAllowed()`. Inject the decision, not the state."
+
+considered-options:
+  - "Q1 — rename `Player.quiz` to `Player.modal` (and `PlayerQuiz` to `PlayerModal`)"
+  - "Q2 — the engine delivers directional INTENT; the game decides what it means"
+  - "Q3 — leave it and record it as accepted debt of the first genre"
+  - "Q4 — Q2 AND the field leaves `core/entity`, with no rename"
+
+pros-and-cons-of-the-options:
+  rename-the-field:
+    good: ["Cheap and mechanical: 13 files, about 59 mentions."]
+    bad: ["DOES NOT FIX THE GRID. The 3xN and the braille case stay inside `keydown`; it measures the same
+           thing under a better name.",
+          "Keeps a game-shaped concept in the engine's canonical entity."]
+  intent-only:
+    good: ["Removes the layout, which is the part that would need a second `keydown`."]
+    bad: ["Leaves the READ intact: without the layout, the engine still needs to know WHETHER a modal is open,
+           so it keeps reading `p.quiz` — and `core/entity` keeps declaring it."]
+  accept-the-debt:
+    good: ["Zero risk today."]
+    bad: ["It is the only block between item 19 and a boundary that holds, so step 21 would package an engine
+           that still knows what a quiz is."]
+  intent-and-remove-the-field:
+    good: ["Answers BOTH questions: the engine stops knowing the layout AND stops requiring the field.",
+           "The field can leave rather than be renamed — a game extends its own player.",
+           "It is the pattern that already worked four times in this item."]
+    bad: ["Touches the keyboard dispatcher, whose eight-branch precedence sequence is the most delicate in the
+           base, and whose test is the largest fixture left on the list."]
+
+decision-outcome:
+  chosen-option: "Q4 — the engine delivers intent, and the field leaves `core/entity`"
+
+  rationale: |
+    THE RULE THIS RECORD FIXES, and the reason it is an ADR rather than a commit message:
+
+        The engine's entity may declare what the ENGINE owns. It may not declare what the GAME owns.
+
+    The line is visible in the slice `keydown` already asks for:
+
+        PlayerView<'i' | 'ctrl' | 'quiz' | 'waiting' | 'easy' |
+                   'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'>
+
+    Eleven fields, and the engine reads all eleven without discomfort. TEN are its own concepts: identity, key
+    scheme, waiting screen, Easy mode, the six edge flags. ONE names game content. That is the exception, and
+    the rule above is what makes it an exception rather than a matter of taste.
+
+    THE MECHANISM WAS CORRECTED BEFORE IT WAS BUILT, and the correction came from the Dev asking why Q4 does
+    not read the field. The first draft proposed `ctx.hasModal(i)` and `ctx.anyModalOpen()`. That fixes the
+    type, but it is too much machinery for THIS module: `keydown` already builds a snapshot before any effect.
+    Adding two ctx functions to a module that already has a snapshot is more parts, not fewer.
+
+    The answer goes IN THE SNAPSHOT instead of the OBJECT:
+
+        modalOpen: readonly boolean[];   // beside `players`, which stays the real array
+
+    Two alternatives were rejected with reasons, not by preference: a `modalOpen` field on `KeydownPlayer`
+    would push the requirement back into `core/entity` (a better name in the same wrong place), and wrapping
+    (`players.map(p => ({...p, modalOpen}))`) would break WRITES — the module mutates `jumpEdge`/`runEdge` on
+    the real players, and a copy would lose that.
+
+    WHAT THE ENGINE KEEPS is what finding 11 measured as the base's best cut: translating a key into a
+    DIRECTIONAL INTENT through the player's remappable scheme. What it stops doing is deciding that "left"
+    means minus one and "up" means minus three.
+
+  consequences:
+    good:
+      - "`core/entity.Player` stops declaring a game's content type; the vocabulary debt loses its largest block."
+      - "A game with a different challenge layout — four columns, a vertical list, a Braille cell — supplies
+         its own meaning without a second keyboard dispatcher."
+      - "The braille path stops being a special case inside the engine and becomes what it always was: a
+         decision of the literacy activity."
+    bad:
+      - "The eight-branch precedence sequence is touched, and it is the most delicate ordering in the base."
+      - "`game/quiz` grows: it receives the grid and the braille rule, which is correct and still growth."
+      - "Two modules (`keydown`, `gamepad`) must be changed together or the pad and the keyboard disagree
+         about what a challenge is."
+    neutral:
+      - "Q1 stays OPEN rather than rejected. If a second subsystem starts asking 'is a modal open?' — scanning,
+         TTS — then a field on the entity earns its place; but a field the ENGINE defines for its own question,
+         not one mirroring the game's object. Today there is one asker, in two forms, and both take a snapshot."
+
+  confirmation: |
+    Held by `tests/engine-boundary.node.test.js`, in the section that only shrinks: `input/keydown.ts`,
+    `input/gamepad.ts` and `core/entity.ts` leave the vocabulary debt list, and any return fails.
+
+    The behaviour that must not change is the PRECEDENCE, and it already has cases: a modal open blocks
+    Alt+1..4 and the pause key; a player's key with no modal of their own falls through to normal play rather
+    than landing on player 1; and the braille path answers to "up" and "confirm" only.
+
+    NOT confirmed by this record, and it is the honest limit: that the intent vocabulary
+    (left/right/up/down/confirm/erase) is enough for a genre that is not this one. Six intents cover a grid
+    and a list; a challenge needing free text or a pointer would need more. Like ADR-0030's contract, that
+    stays a claim until a second game asks.
+
+more-information: |
+  Closes the last block of item 19 (GitLab issue #75), whose full measurement — 11 modules, 30 lines, and the
+  five reads that three questions replace — lives in the issue rather than being copied here.
+
+  The correction of the mechanism is recorded because a record that keeps the worse design is the same defect
+  as ADR-0030's filed X1 argument: a future reader would re-derive it as new.
+
+  Relates to: ADR-0027 (the boundary, step 4, and the `coinTarget` verdict); ADR-0030 (the declared contract —
+  the engine is told, never guesses); ADR-0032 (the curriculum layer, which moved by address rather than by
+  repair, and is counted separately for that reason).
