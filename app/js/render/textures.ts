@@ -8,7 +8,6 @@
 
 import { makeCanvas, tex } from './canvas.js';
 import { spriteToCanvas } from './sprite-fx.js';
-import { powerupCanvas } from './props.js';
 
 type Tex = ReturnType<typeof tex>;
 
@@ -28,6 +27,16 @@ export interface TexturesCtx {
    * português. Pedir a estrutura inteira seria pedir mais do que se usa, que é como uma aresta volta.
    */
   shapes: readonly string[];
+  /**
+   * OS PODERES a pré-desenhar, com a arte pronta. Mesma razão de `shapes`, um passo adiante: além da lista,
+   * entra o CANVAS de cada um — porque o ícone de voo, o de ventosa e o da bengala de corrida são arte deste
+   * jogo, e não geometria que a engine saiba desenhar sozinha.
+   *
+   * Era `PUP_KINDS` cravado aqui + `import { powerupCanvas } from './props.js'`. A arte mudou de camada no
+   * item 19 (`game/props`), e esta era a única aresta que a mudança criaria — some por injeção, e não por
+   * mudança de endereço.
+   */
+  powerups: readonly { readonly kind: string; readonly canvas: HTMLCanvasElement }[];
   disp: (s: string) => string;
   directCfg: Record<string, { off: number; mul: number; bgMul: number }>;
   directSpriteCanvas: (src: HTMLCanvasElement, mode: string) => HTMLCanvasElement;
@@ -84,7 +93,16 @@ export function letterTexture(ch: string): Tex {
 }
 
 /* ===================== power-ups: ícone (+ alto contraste) ===================== */
-const PUP_KINDS = ['superjump', 'ultrajump', 'turbo', 'fly', 'wallcling', 'key', 'runcane'] as const;
+//
+// A LISTA E A ARTE ENTRAM JUNTAS, e nenhuma das duas mora aqui (item 19). Era
+//     const PUP_KINDS = ['superjump', 'ultrajump', 'turbo', 'fly', 'wallcling', 'key', 'runcane'] as const;
+// mais `import { powerupCanvas } from './props.js'` — os sete poderes DESTE jogo e o desenho deles, dentro de
+// um módulo de render. É o mesmo defeito que `SHAPE_TEX` tinha e pelo qual `shapes` já entra por ctx: um
+// segundo jogo herdava sete ícones que não são dele e não tinha como não herdar.
+//
+// A diferença em relação a `shapes` vale nota: das formas, a engine recebe só os IDS e DESENHA (`shapeTexture`
+// é geometria — polígono, arco, retângulo — e serve a qualquer jogo). Dos power-ups ela recebe o CANVAS
+// PRONTO, porque uma ventosa, uma asa e uma bengala de corrida não são geometria: são arte, e arte é do jogo.
 const PUP_CANVAS: Record<string, HTMLCanvasElement> = {};
 /** Normal-mode cache — filled by initTextures. */
 export const PUP_TEX: Record<string, Tex> = {};
@@ -113,7 +131,11 @@ export function initTextures(ctx: TexturesCtx): void {
   // tem matemática. Achado por um teste meu que afirmava a coisa errada e reprovou por isso.
   for (const k of Object.keys(SHAPE_TEX)) delete SHAPE_TEX[k];
   for (const id of ctx.shapes) SHAPE_TEX[id] = shapeTexture(id);
-  for (const k of PUP_KINDS) { PUP_CANVAS[k] = powerupCanvas(k); PUP_TEX[k] = tex(PUP_CANVAS[k]); }
+  // Mesma regra de limpar-antes-de-encher, pelo mesmo motivo do bloco acima: com a lista INJETADA, um segundo
+  // consumidor herdaria os poderes do primeiro por cima dos dele.
+  for (const k of Object.keys(PUP_CANVAS)) delete PUP_CANVAS[k];
+  for (const k of Object.keys(PUP_TEX)) delete PUP_TEX[k];
+  for (const p of ctx.powerups) { PUP_CANVAS[p.kind] = p.canvas; PUP_TEX[p.kind] = tex(p.canvas); }
 }
 
 /* ===================== personagem: arte indexada (DEFERRED — não é código morto) =====================

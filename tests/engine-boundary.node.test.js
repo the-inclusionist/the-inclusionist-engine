@@ -206,7 +206,12 @@ const MOEDA_CONHECIDA = new Set([
   // unificação do casador que o revelou. Era `PlayerView<'quiz'>` a serviço de UMA linha, que lia `numPlayers`,
   // `phase` e `players[].quiz` por importação de `core/state`. Virou `ctx.padAllowed()`: injeta-se o BOOLEANO,
   // não o estado — o mesmo movimento do achado 10. O módulo deixou de importar `core/state`.
-  'render/props.ts',        // `coinCanvas()`/`coinTexture()`: a engine tem um PINTOR de moeda
+  // `render/props.ts` SAIU (2026-08-25, item 19) — por MUDANÇA DE ENDEREÇO, e vale dizer com todas as letras
+  // porque as duas saídas se parecem no gate e não se parecem em nada mais. O código é o mesmo, byte por
+  // byte: uma moeda de 11×11, uma árvore de rua e sete ícones de poder. Nada disso é de engine, e o módulo
+  // foi para `game/props`. O que a mudança REALMENTE consertou está do outro lado: `render/textures`
+  // importava `powerupCanvas` de lá e trazia `PUP_KINDS` cravado, e essa era a única aresta que a mudança de
+  // pasta teria criado — some por INJEÇÃO (`ctx.powerups`), como `shapes` já fazia.
   'core/entity.ts',         // `quiz: PlayerQuiz | null` no jogador canônico
   'platform/storage.ts',    // a chave `quizlevel` no registro (é a chave que o namespace isola)
   'render/viz-setters.ts',  // `spriteTexFor('coin', mode)` — o cache deixou de ter forma de moeda; o
@@ -305,7 +310,10 @@ const FIXTURES_CONHECIDOS = {
   // `viewports.browser.test.js` SAIU (2026-08-25): a única linha era `coinCanvasNormal: null`, passada só
   // para satisfazer o ctx do alto contraste. O ctx deixou de ter forma de moeda (`sprites: () => ({})`), e
   // com isso a linha não precisou ser reescrita — ela deixou de existir.
-  'render.browser.test.js': 1,         // `render/props.coinCanvas()`: a engine tem um pintor de MOEDA
+  // `render.browser.test.js` SAIU (2026-08-25, item 19): a única linha era `render/props.coinCanvas()`, e ela
+  // foi com o módulo para `tests/props.browser.test.js` — que a varredura agora pula, por importar de `game/`.
+  // NÃO é a dívida sumindo: é ela mudando de lado da fronteira, que é onde ela sempre pertenceu. O pintor de
+  // moeda continua existindo; ele deixou de estar na engine.
   // Estes três só ficaram visíveis quando o crivo passou a enxergar `await import()` — a dívida deles é a
   // mesma dos de cima (o ctx do alto contraste exige um canvas/textura de moeda), não é dívida nova.
   'viz-setters.node.test.js': 1,

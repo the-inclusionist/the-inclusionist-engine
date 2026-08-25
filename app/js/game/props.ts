@@ -1,8 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// render/props.ts — arte procedural de "props" coletáveis/decorativos: moeda (coin) e árvore urbana (tree).
-// Desenhados por ALGORITMO (pixel a pixel, sem PNG embutido) sobre as primitivas de render/canvas.ts. Módulo-
-// folha de dados visuais: zero estado de jogo. As variantes *Texture embrulham o canvas numa PIXI.Texture. (Fase 2.19)
-import { makeCanvas, tex, pixDisc } from './canvas.js';
+// game/props.ts — arte procedural dos "props" DESTE JOGO: a moeda, a árvore urbana e os sete ícones de
+// power-up. Desenhados por ALGORITMO (pixel a pixel, sem PNG embutido) sobre as primitivas de
+// `render/canvas`. As variantes *Texture embrulham o canvas numa PIXI.Texture. (Fase 2.19)
+//
+// ========================= POR QUE ISTO SAIU DE `render/` (item 19) =========================
+// Estava em `render/props.ts`, na camada de ENGINE, e nada aqui é de engine: uma moeda, uma árvore de rua e
+// os ícones de super-pulo, voo e bengala de corrida são o CONTEÚDO de The Inclusionist. Um segundo jogo do
+// catálogo não quer nenhum dos três, e não teria como não os levar — eles vinham dentro do pacote.
+//
+// A saída é MUDANÇA DE ENDEREÇO, e não conserto. Vale dizer com todas as letras, porque as duas se parecem
+// no gate e não se parecem em nada mais: o código é o mesmo, byte por byte. O que muda é que ele deixou de
+// estar do lado errado da fronteira — e, com isso, `render/` perdeu o único módulo que PINTAVA uma moeda.
+//
+// O que fica em `render/canvas` é a primitiva (`makeCanvas`, `pixDisc`, `tex`): desenhar um disco de pixels
+// serve a qualquer jogo; desenhar UMA MOEDA de 11×11 com brilho no canto superior esquerdo, não.
+import { makeCanvas, tex, pixDisc } from '../render/canvas.js';
 
 export function coinCanvas(): HTMLCanvasElement {
   const cv = makeCanvas(11, 11), c = cv.getContext('2d')!;

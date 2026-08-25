@@ -21,6 +21,15 @@ const ctx = {
   // texturas; um conjunto inventado aqui os faria medir o fixture em vez do módulo.
   shapes: ['circulo', 'triangulo', 'quadrado', 'retangulo', 'losango',
     'paralelogramo', 'trapezio', 'pentagono', 'hexagono', 'oval'],
+  // OS PODERES entram como (kind, canvas). Eram uma lista cravada no módulo mais um import de arte; no item
+  // 19 a lista virou do jogo e a arte mudou de camada. O fixture desenha um canvas MÍNIMO por poder: o que
+  // este módulo faz com ele é embrulhar em textura, e um retângulo de 12×12 exercita isso tão bem quanto o
+  // ícone de verdade — e melhor, porque não amarra o teste ao desenho.
+  powerups: ['superjump', 'ultrajump', 'turbo', 'fly', 'wallcling', 'key', 'runcane'].map((kind) => {
+    const cv = document.createElement('canvas'); cv.width = 12; cv.height = 12;
+    const c = cv.getContext('2d'); c.fillStyle = '#123456'; c.fillRect(0, 0, 12, 12);
+    return { kind, canvas: cv };
+  }),
   disp: (s) => (letterCase === 'upper' ? String(s).toUpperCase() : String(s).toLowerCase()),
   directCfg: { 'hc-direto': { off: 55, mul: 0.5, bgMul: 0.30 } },
   // clona o canvas (em vez de devolver `src` intacto): PIXI.Texture.from cacheia por RESOURCE, então devolver o
@@ -40,7 +49,17 @@ describe('initTextures', () => {
     // sobrevive à função construindo um décimo do que devia não estava medindo o que o título dizia.
     // Com as formas agora INJETADAS, isto é o que precisa ser verdade: a lista de fora é a lista de dentro.
     expect(Object.keys(SHAPE_TEX).sort()).toEqual([...ctx.shapes].sort());
-    expect(Object.keys(PUP_TEX)).toEqual(['superjump', 'ultrajump', 'turbo', 'fly', 'wallcling', 'key', 'runcane']);
+    expect(Object.keys(PUP_TEX)).toEqual(ctx.powerups.map((p) => p.kind));
+  });
+
+  it('[Interface] injetar OUTROS poderes dá outro PUP_TEX — e o anterior NÃO fica de herança', () => {
+    // O par do caso das formas, e pelo mesmo motivo: com a lista injetada, "encher" não pode significar
+    // "acrescentar". Um segundo consumidor que inicializasse com os poderes dele herdaria os nossos por cima,
+    // e o sintoma seria um ícone de bengala de corrida num jogo que não tem corrida.
+    const cv = document.createElement('canvas'); cv.width = 12; cv.height = 12;
+    initTextures({ ...ctx, powerups: [{ kind: 'planar', canvas: cv }] });
+    expect(Object.keys(PUP_TEX)).toEqual(['planar']);
+    initTextures(ctx); // devolve o estado que o beforeEach promete aos casos seguintes
   });
 
   it('[Interface] injetar OUTRA lista dá outro SHAPE_TEX — a fonte é o ctx, não uma tabela interna', () => {

@@ -57,7 +57,7 @@ import { CENARIOS, THEME_FLORA, hexN } from './render/cenario-data.js'; // D2-b:
 import { PARALLAX, createParallax } from './render/parallax.js'; // D2-b: as 3 camadas de fundo — fatores, rolagem e troca de tema
 import { createSetCenario } from './render/set-cenario.js'; // D2-b: a troca de cenario (orquestracao; leva o loadTileImages)
 import { createSceneSky } from './render/scene-sky.js'; // Tier 2 (#43): céu — nuvens (#21) + decor viva da v3
-import { coinCanvas, treeCanvas } from './render/props.js';
+import { coinCanvas, treeCanvas, powerupCanvas } from './game/props.js'; // item 19: a arte dos props e do JOGO, nao da engine
 import { createCityTextures } from './render/city-tex.js'; // D3-a: arte procedural da rua (bichos, pedestres, carros)
 import * as weather from './render/weather.js'; // Onda A: clima visual (chuva/trovao/clarao)
 import { lqFilter, setLq, getLqT, initLqFilter } from './render/lq-filter.js'; // Onda A: realce de contraste L->Q
@@ -192,7 +192,7 @@ const hexRgb=h=>{ const m=/^#?([0-9a-f]{6})$/i.exec(h); if(!m)return null; const
 // _roleOf/worldToTextureDirect/directBgTexture/directSpriteCanvas/directSpriteTexture migraram para
 // render/high-contrast.ts (Onda A).
 // Alto contraste (re-adicionado): recolore cada tile pela PALETA do grupo (gradient-map por matiz, mantém claro-escuro).
-// coinCanvas/coinTexture/treeCanvas/treeTexture migrados p/ render/props.js (Fase 2.19)
+// coinCanvas/coinTexture/treeCanvas/treeTexture migrados p/ render/props.js (Fase 2.19), e de la para game/props.js (item 19)
 
 /* ===================== moedas (spawn real) ===================== */
 // findCoinCandidates/pickCoins/takeCoin extraídos p/ game/coins.js (Estágio 4, posicionamento).
@@ -530,7 +530,12 @@ let _lastSharedViz=null; // cache do modo aplicado (otimizacao do render MP) —
 // _worldTexHC/_coinTexHC/worldTexFor/coinTexFor migraram para render/high-contrast.ts (Onda A).
 // shapeTexture/SHAPE_TEX/letterTexture migraram para render/textures.ts (Onda A). O init vem AQUI porque
 // o primeiro uso (rebuildCoins, logo abaixo) precisa dos caches ja preenchidos.
-initTextures({ shapes: SOMASUB_SHAPES.map(s => s.id), disp, directCfg: DIRECT_CFG, directSpriteCanvas });
+// OS SETE PODERES DESTE JOGO, com a arte deles. A lista era `PUP_KINDS` cravada dentro do `render/textures`
+// e o desenho vinha por import de `render/props` — os dois sairam no item 19: a lista e do jogo, e a arte
+// mudou de camada para `game/props`.
+const PODERES = ['superjump', 'ultrajump', 'turbo', 'fly', 'wallcling', 'key', 'runcane'];
+initTextures({ shapes: SOMASUB_SHAPES.map(s => s.id), powerups: PODERES.map((kind) => ({ kind, canvas: powerupCanvas(kind) })),
+  disp, directCfg: DIRECT_CFG, directSpriteCanvas });
 const coinContainer=new PIXI.Container(); camera.addChild(coinContainer);
 // coinSprites/rebuildCoins migraram para game/coin-spawning.ts (Onda A). rebuildCoins mantem o contrato
 // SEM argumentos: os nove chamadores (boot, novo round, quatro paineis de acessibilidade, Modo Facil,

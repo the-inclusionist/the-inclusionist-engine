@@ -2,9 +2,13 @@
 // Testes de RENDER/DOM (project browser — Chromium/Playwright; PIXI global via vitest.setup.browser.js).
 // Padrões: ZOMBIES + Right-BICEP (rótulos no nome). Ver docs/plano-testes.md. Módulos: canvas, props,
 // sprites, sprite-fx, storage. Testes ESTRUTURAIS (dimensões/tipos) — não dependem dos PNGs de asset.
+//
+// O bloco de `props` SAIU no item 19, junto com o módulo: a arte da moeda, da árvore e dos poderes é do JOGO
+// e foi para `game/props` — logo o teste dela foi para `tests/props.browser.test.js`. Não é organização: se
+// ele tivesse ficado, este arquivo passaria a importar de `game/` e os OUTROS quatro módulos que ele cobre
+// (canvas, sprite-fx, storage, dom) sumiriam da varredura de fixtures, que pula testes de jogo por desenho.
 import { describe, it, expect } from 'vitest';
 import * as CV from '../app/js/render/canvas.js';
-import * as P from '../app/js/render/props.js';
 import * as FX from '../app/js/render/sprite-fx.js';
 import * as ST from '../app/js/platform/storage.js';
 import * as DOM from '../app/js/ui/dom.js';
@@ -33,23 +37,6 @@ describe('render/canvas — primitivas', () => {
   it('[Boundary] pixDisc de raio pequeno não estoura', () => {
     const x = CV.makeCanvas(3, 3).getContext('2d');
     expect(() => CV.pixDisc(x, 1, 1, 0.5, '#0f0')).not.toThrow();
-  });
-});
-
-describe('render/props — arte procedural', () => {
-  it('[Right] coinCanvas 11×11 e treeCanvas 30×52', () => {
-    expect([P.coinCanvas().width, P.coinCanvas().height]).toEqual([11, 11]);
-    expect([P.treeCanvas().width, P.treeCanvas().height]).toEqual([30, 52]);
-  });
-  it('[Many] powerupCanvas — os 7 tipos, todos 12×12', () => {
-    for (const k of ['superjump', 'ultrajump', 'turbo', 'fly', 'wallcling', 'key', 'runcane']) {
-      const c = P.powerupCanvas(k);
-      expect([c.width, c.height], k).toEqual([12, 12]);
-    }
-  });
-  it('[Boundary/Error] powerupCanvas de tipo desconhecido ainda devolve 12×12 (fallback)', () => {
-    const c = P.powerupCanvas('__nao_existe__');
-    expect([c.width, c.height]).toEqual([12, 12]);
   });
 });
 
