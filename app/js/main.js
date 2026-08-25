@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
+import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -310,15 +310,20 @@ const anyEasy=()=>players.some(p=>p.easy); // efeitos de MUNDO do Fácil (moedas
 const RM_KEYS=['parallax','decor','items','particles']; // animações de CENA (globais)
 const RM_CHAR=[ {k:'walk',prop:'rmWalk',lbl:'Personagem em movimento (andar, escalar, nadar, pular)'},
   {k:'breath',prop:'rmBreath',lbl:'Respiração (parado)'}, {k:'flavor',prop:'rmFlavor',lbl:'Gracinhas (animações de descanso)'} ]; // animações do PERSONAGEM (por jogador)
-const RM_DEFAULT=!!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+// O padrão ganhou nome em core/state (defaultReducedMotion) porque o reset do painel precisa do MESMO valor.
 const rm=(()=>{ const s=store.getJSON(store.KEYS.reducedMotion,null); if(s&&typeof s==='object'){ const o={}; RM_KEYS.forEach(k=>o[k]=!!s[k]); return o; }
-  const o={}; RM_KEYS.forEach(k=>o[k]=RM_DEFAULT); return o; })();
+  const o={}; RM_KEYS.forEach(k=>o[k]=defaultReducedMotion()); return o; })();
 function saveRM(){ store.setJSON(store.KEYS.reducedMotion,rm); }
 // Movimento por alternância (1 dedo): tocar a direção trava a marcha; segurar acelera; pulo não interrompe. Persistido.
 function loadPlayerA11y(p,i){ const v=store.get(store.KEYS.vizP(i)); if(v&&VIZ_BY_KEY[v])p.viz=v;
   p.audioSink=store.get(store.KEYS.sinkP(i))||null; // saída de áudio própria do jogador (setSinkId)
   p.easy=store.getBool(store.KEYS.easyP(i)); p.toggleMove=store.getBool(store.KEYS.toggleMoveP(i));
-  p.rmWalk=store.getBool(store.KEYS.rmWalkP(i)); p.rmBreath=store.getBool(store.KEYS.rmBreathP(i)); p.rmFlavor=store.getBool(store.KEYS.rmFlavorP(i));
+  // CONSERTO: os três alvos de PERSONAGEM nasciam SEMPRE `false`, embora o comentário do bloco acima diga
+  // "5 alvos; padrão herda prefers-reduced-motion". Só os 4 de CENA herdavam. Quem pediu menos movimento no
+  // sistema ganhava o parallax congelado e o personagem andando — metade do pedido, e a metade que se move
+  // mais. Agora os cinco herdam, que é o que o código já dizia fazer.
+  const rmDef=defaultReducedMotion();
+  p.rmWalk=store.getBool(store.KEYS.rmWalkP(i),rmDef); p.rmBreath=store.getBool(store.KEYS.rmBreathP(i),rmDef); p.rmFlavor=store.getBool(store.KEYS.rmFlavorP(i),rmDef);
   if(i===0){ const ov=store.get(store.KEYS.viz); if(ov&&VIZ_BY_KEY[ov]&&store.get(store.KEYS.vizP(0))==null)p.viz=ov; // migra chaves antigas
     if(store.getBool(store.KEYS.toggleMoveLegacy)&&store.get(store.KEYS.toggleMoveP(0))==null)p.toggleMove=true; } }
 function setToggleMove(i,on){ const p=players[i]; if(!p)return; p.toggleMove=on; store.setBool(store.KEYS.toggleMoveP(i),on); if(!on)p.walkDir=0;

@@ -11,8 +11,13 @@ import * as store from '../platform/storage.js';
 
 type CrtCfg = { scan: number; vig: number; round: number };
 // scanline LIGADA por padrão (decisão do José 2026-07-03). Migra incl_crt (booleano) → incl_crt2 (níveis 0..2).
+/** O CRT de fábrica. Ganhou nome porque o "restaurar padrões" do menu (ADR-0028) precisa do MESMO valor que
+ *  a carga do boot usa quando nada foi salvo — duas cópias seriam duas chances de o reset devolver um CRT que
+ *  o jogo nunca mostrou. Congelado: um padrão que alguém consiga escrever em tempo de execução não é padrão. */
+export const CRT_DEFAULT: Readonly<CrtCfg> = Object.freeze({ scan: 1, vig: 0, round: 1 });
+
 export const CRT: CrtCfg = (() => {
-  const d: CrtCfg = { scan: 1, vig: 0, round: 1 };
+  const d: CrtCfg = { ...CRT_DEFAULT };
   try {
     const s = JSON.parse(store.get(store.KEYS.crt, null) || store.get(store.KEYS.crtLegacy, null) || 'null');
     const fresh = !store.get(store.KEYS.crt, null); // migração p/ crt2: herda vig/round; scan volta ao padrão ON uma vez

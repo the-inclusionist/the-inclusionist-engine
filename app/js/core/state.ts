@@ -72,6 +72,23 @@ export let players: Player[] = [];
  * `as const` + `Object.freeze` de propósito: um padrão que alguém consiga escrever em tempo de execução deixa
  * de ser padrão.
  */
+/**
+ * O padrão do MOVIMENTO REDUZIDO não é uma constante — é o que o sistema operacional pede.
+ *
+ * Mora aqui, ao lado do DEFAULTS, porque a regra do ADR-0029 é que existe UMA fonte sobre o que é padrão, e
+ * um padrão calculado não deixa de ser padrão por não caber num objeto congelado. Quem lê isto: a carga do
+ * boot (main.js) e o "restaurar padrões" do menu de sensibilidade visual.
+ *
+ * Por que importa que o reset leia isto em vez de `false`: numa máquina cujo dono pediu menos movimento,
+ * devolver `false` RELIGARIA a animação — o reset passaria a fazer, sozinho, exatamente o que a WCAG 2.3.3
+ * existe para impedir, e faria isso na tela de quem já tinha dito que não aguenta.
+ *
+ * `matchMedia` é guardado: este módulo roda no projeto `node` dos testes, onde `window` não existe.
+ */
+export function defaultReducedMotion(): boolean {
+  return !!(typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
 export const DEFAULTS = Object.freeze({
   // auditiva
   modoCego: false,

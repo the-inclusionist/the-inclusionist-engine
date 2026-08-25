@@ -11,7 +11,7 @@
 // tela dentro do próprio setter, e por isso nenhum teste conseguia chamá-lo. A separação entre gravar e
 // reagir é o que torna este arquivo possível, então é ela que os casos protegem.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, setLetterCaseValue, setCaptionsOnValue, on, off } from '../app/js/core/state.js';
+import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, setLetterCaseValue, setCaptionsOnValue, on, off, defaultReducedMotion } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
 // `modoCego` é um binding VIVO: reimportar não é preciso, mas ler o valor antigo de uma cópia local seria o
@@ -156,5 +156,21 @@ describe('core/state — modoCego e o espaçamento da bengala', () => {
     expect(copia).toBe(false);        // a cópia local não acompanha
     expect(state.modoCego).toBe(true); // o binding do módulo, sim
     expect(modoCego).toBe(true);       // e o import nomeado também: ESM re-lê a célula
+  });
+});
+
+describe('defaultReducedMotion — o padrão que o sistema decide', () => {
+  // Este é o único DEFAULT do projeto que não é constante, e o motivo importa: devolver `false` numa máquina
+  // cujo dono pediu menos movimento RELIGARIA a animação. O reset passaria a fazer, sozinho, o que a
+  // WCAG 2.3.3 existe para impedir — e na tela de quem já tinha dito que não aguenta.
+  it('[Zero] sem `window` (projeto node) responde false, em vez de explodir', () => {
+    expect(typeof window).toBe('undefined');
+    expect(defaultReducedMotion()).toBe(false);
+  });
+
+  it('[Interface] é uma FUNÇÃO, não um valor congelado no import', () => {
+    // Se virasse `export const RM_DEFAULT = matchMedia(...)`, o valor seria lido uma vez no boot e nunca mais.
+    // O sistema pode mudar a preferência com o jogo aberto, e um padrão que não acompanha deixa de ser padrão.
+    expect(typeof defaultReducedMotion).toBe('function');
   });
 });
