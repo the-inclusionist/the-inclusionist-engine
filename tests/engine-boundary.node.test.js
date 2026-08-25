@@ -167,7 +167,10 @@ const MOEDA_CONHECIDA = new Set([
   // 4 matou a DEPENDÊNCIA (`coinTarget` virou parâmetro obrigatório) e este item matou o ASSUNTO — o contador
   // recebe um `Objective` (campo 5 do contrato) e o ícone entra por injeção. O módulo não tem mais linha de
   // código que fale de moeda, e a lista não guarda quem já se limpou.
-  'platform/audio-nav.ts',  // o sonar aponta para a `Coin` mais próxima; o PROPÓSITO é engine, o TIPO é do jogo
+  // `platform/audio-nav.ts` SAIU (2026-08-25, item 19). Era "o sonar aponta para a `Coin` mais próxima; o
+  // PROPÓSITO é engine, o TIPO é do jogo" — e a saída não foi uma renomeação: o módulo VIROU DOIS. A
+  // navegação sonora está em `platform/audio-sonar` e recebe o contrato (topologia, alvos, nome); aqui
+  // ficaram a bengala e o nado cego, que leem tile e chão porque é isso que eles são.
   'render/draw.ts',         // já contado acima pelas importações
   'core/state.ts',          // `coins: unknown[]` — estado do jogo morando no estado compartilhado
   'platform/audio.ts',      // earcon de chave 'coin': conteúdo sonoro do jogo na tabela da engine
@@ -257,7 +260,10 @@ const FIXTURES_CONHECIDOS = {
   // O núcleo da dívida: o ctx do módulo EXIGE uma moeda ou um quiz para ser montado.
   'high-contrast.browser.test.js': 17, // `coinTexFor`/`coinTexNormal` — o alto contraste tem caminho de moeda
   'high-contrast.node.test.js': 6,
-  'audio-nav.node.test.js': 7,         // o sonar pede `getCoins` (achado 9 do segundo consumidor)
+  // `audio-nav.node.test.js` SAIU (2026-08-25, item 19) e o fixture que sobrou é de PLATAFORMA de propósito:
+  // a bengala sonda material à frente, o nado procura parede e fundo. Declarar tiles para testá-los não é
+  // dívida — é a descrição correta. A metade que precisava de moeda foi para `audio-sonar.node.test.js`, e
+  // lá o fixture declara topologia e alvos, sem uma moeda sequer.
   // `hud.node.test.js` SAIU (2026-08-25, item 19): o fixture declarava um jogador com `collected` e um
   // view-model com `coins`. Agora declara um OBJETIVO, cujo nome padrão é 'itens' — de propósito, porque um
   // teste de HUD dizendo "moedas" a cada linha reafirmaria por hábito o que o módulo acabou de largar.
@@ -363,14 +369,20 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
     // É o que faz esta seção valer a pena existir ao lado das outras duas: se os testes acusassem um conjunto
     // DIFERENTE de subsistemas, uma das duas medidas estaria errada. Elas concordam — alto contraste, sonar,
     // HUD e entrada —, e essa concordância é o que dá confiança de que o passo 5 sabe onde mexer.
-    // `hud` SAIU desta lista em 2026-08-25 (item 19), e a saída é o resultado, não uma concessão: era o
-    // subsistema cuja dívida o ADR-0027 usava como exemplo, e foi o primeiro a se limpar dos dois lados —
-    // módulo e fixture. Os três que sobram são os que o passo 5 ainda tem de resolver.
+    // DOIS subsistemas já saíram desta lista em 2026-08-25 (item 19), e as duas saídas são de naturezas
+    // diferentes — vale distinguir, porque só uma delas é replicável:
+    //   · `hud` saiu por TROCA DE PERGUNTA: o contador passou a receber um `Objective`. Mesmo módulo, mesmo
+    //     arquivo, outra interface.
+    //   · `audio-nav` saiu por PARTIÇÃO: o módulo virou dois, e o fixture de moeda foi com a metade que
+    //     viajou (`audio-sonar`), onde deixou de ser de moeda. Quem fica lê tile porque é o que ele faz.
+    // Os dois que sobram são os que o passo 5 ainda tem de resolver, e são justamente os dois maiores.
     const porSubsistema = new Set(Object.keys(FIXTURES_CONHECIDOS).map((f) => f.split('.')[0]));
-    for (const esperado of ['high-contrast', 'audio-nav', 'keydown']) {
+    for (const esperado of ['high-contrast', 'keydown']) {
       expect(porSubsistema, esperado).toContain(esperado);
     }
-    expect(porSubsistema, 'hud voltou a precisar de moeda no fixture — o item 19 andou para trás')
-      .not.toContain('hud');
+    for (const limpo of ['hud', 'audio-nav', 'audio-sonar']) {
+      expect(porSubsistema, `${limpo} voltou a precisar de moeda no fixture — o item 19 andou para trás`)
+        .not.toContain(limpo);
+    }
   });
 });

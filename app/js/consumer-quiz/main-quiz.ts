@@ -224,6 +224,10 @@ export function declararQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
       name: { text: 'perguntas', gender: 'f', plural: true },
       have: acertos, need: perguntas.length,
     }),
+    // A segunda metade do campo 5: ONDE está o que ainda conta. Num quiz é uma posição só — a pergunta
+    // corrente —, e é justamente por ser tão pobre que ela mostra a forma certa da pergunta: a engine não
+    // varre nada, ela recebe a lista e compara distâncias na métrica declarada.
+    targetsOf: () => (atual < perguntas.length ? [{ x: atual, y: 0 }] : []),
   };
 }
 

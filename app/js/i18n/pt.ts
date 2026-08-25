@@ -57,6 +57,7 @@ const pt: Record<string, string> = {
   // substantivo comum da interface, e a criança que joga em inglês tem de ouvir "coins". Por isso o nome
   // atravessa por `{nome}` JÁ RESOLVIDO pelo jogo, e a chave mora aqui.
   'hud.nome.moedas': 'moedas',
+  'hud.nome.moeda': 'moeda',
 
   // Chrome / navegação
   'skip.toGame': 'Pular para o jogo',
@@ -233,7 +234,7 @@ const pt: Record<string, string> = {
   'sr.physics.lava': 'Cuidado! Tocou na lava. As moedas voltaram para posições aleatórias.',
   'sr.physics.spiderOn': 'Modo aranha! Engatinha em paredes e teto; contorna quinas. Correr solta.',
   'sr.physics.spiderOff': 'Soltou da superfície.',
-  'sr.nav.noCoinNear': 'Nenhuma moeda por perto.',
+  'sr.nav.noTargetNear': 'Nada por perto.',
   'sr.attract.demo': 'Demonstração.',
   'sr.attract.recorded': 'Demo de 30 segundos gravada para {cenario}.',
 
@@ -325,7 +326,11 @@ const pt: Record<string, string> = {
   'sr.caa.caixaAltaOff': 'Letras maiúsculas desligadas: maiúsculas e minúsculas.',
   'sr.quiz.bemVindo': 'Quiz. Use as setas para escolher e Enter para responder.',
   'sr.nav.sonarFound': 'Sonar: {alvo} {lado}, {dist}.',
+  // `sr.nav.coin` ficou para o JOGO nomear o alvo (item 19): o sonar recebe o nome por `nameAt`, campo 3 do
+  // contrato. `sr.nav.target` e o que ele diz quando o jogo declara um alvo SEM nome — melhor uma palavra
+  // generica do que uma chave crua na boca do leitor de tela.
   'sr.nav.coin': 'moeda',
+  'sr.nav.target': 'alvo',
   'sr.nav.left': 'à esquerda',
   'sr.nav.right': 'à direita',
   'sr.nav.ahead': 'à frente',

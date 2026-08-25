@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Testes de platform/audio-nav (project NODE: tiles/colisão/moedas/jogadores + tonePan/noiseHit/srSay/narrate falsos).
-// Contratos: caneProbe classifica o material À FRENTE; sonar/updateGuide miram a moeda + dona (owner) mais próxima;
-// updateGuide é gated por audioCat.guide.on + needsAudioCues; contadores incrementam. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
+// Testes de platform/audio-nav — BENGALA e NADO CEGO (project NODE: tiles/colisão + noiseHit/tonePan falsos).
+//
+// A METADE DO SONAR SAIU DAQUI no item 19, junto com o módulo: está em `tests/audio-sonar.node.test.js`, e o
+// fixture de lá não tem uma moeda sequer. O que sobrou neste arquivo declara tiles e chão — e DEVE declarar:
+// a bengala sonda o material à frente e o nado procura parede, fundo e superfície. Um fixture de plataforma
+// para um módulo de plataforma não é dívida; é a descrição correta do que o módulo faz.
+//
+// O ctx encolheu junto: eram 19 coisas, são 8. As onze que saíram foram com o sonar.
 import { describe, it, expect } from 'vitest';
 import { createAudioNav } from '../app/js/platform/audio-nav.js';
 
@@ -14,24 +19,25 @@ function makeWorld(cells = {}) {
 }
 
 function setup(over = {}) {
-  const tone = [], hits = [], said = [], narrated = [];
+  const tone = [], hits = [];
   const world = over.world || makeWorld();
   const ctx = {
     tileAt: world.tileAt, solidAt: world.solidAt,
     held: () => false,
     tonePan: (freq, dur, cat, pan) => tone.push({ freq, cat, pan }),
     noiseHit: (mat, pan) => hits.push({ mat, pan }),
-    srSay: (t) => said.push(t), narrate: (t) => narrated.push(t),
-    BOX: { w: 12, h: 24 }, TILE, LOGICAL_W: 320,
-    VIZ_BY_KEY: { normal: { kind: 'normal' }, cego: { kind: 'blind' }, baixa: { kind: 'lowvision' } },
-    getCoins: () => over.coins || [], getPlayers: () => over.players || [],
-    getNumPlayers: () => over.numPlayers || 1, getCenario: () => over.cenario || 'cidade',
-    getModoCego: () => over.modoCego || false,
-    getAudioCtx: () => over.audioCtx === undefined ? {} : over.audioCtx,
-    getSoundOn: () => over.soundOn === undefined ? true : over.soundOn,
-    getAudioCat: () => over.audioCat === undefined ? { guide: { on: true } } : over.audioCat,
+    BOX: { w: 12, h: 24 }, TILE,
+    getCenario: () => over.cenario || 'cidade',
+    // A NAVEGAÇÃO SONORA entra pronta, e o dublê é minúsculo de propósito: este arquivo não testa o sonar —
+    // testa que a bengala e o nado continuam funcionando sem saber que ele existe. O único método realmente
+    // usado aqui é `playerCtx`, porque a batida da bengala sai no dispositivo do jogador.
+    sonar: {
+      playerCtx: () => null, panFor: () => 0, needsAudioCues: () => true,
+      sonar: () => {}, updateGuide: () => {}, sonarCount: 0, guideCount: 0,
+      ...(over.sonar || {}),
+    },
   };
-  return { nav: createAudioNav({ ...ctx, ...(over.ctx || {}) }), tone, hits, said, narrated };
+  return { nav: createAudioNav({ ...ctx, ...(over.ctx || {}) }), tone, hits };
 }
 
 // Jogador em x=32 (tile 2), y=32 (tile 2), virado p/ direita. À frente (dir=+1) o probe olha ~tile 3.
@@ -69,50 +75,4 @@ describe('platform/audio-nav', () => {
     expect(s2.hits).toEqual([{ mat: 'piso', pan: 0.5 }]);
   });
 
-  it('[Boundary] needsAudioCues: modoCego=true sempre; blind/lowvision sim; normal não', () => {
-    expect(setup({ modoCego: true }).nav.needsAudioCues(pl({ viz: 'normal' }))).toBe(true);
-    expect(setup().nav.needsAudioCues(pl({ viz: 'cego' }))).toBe(true);
-    expect(setup().nav.needsAudioCues(pl({ viz: 'baixa' }))).toBe(true);
-    expect(setup().nav.needsAudioCues(pl({ viz: 'normal' }))).toBe(false);
-  });
-
-  it('[Simple] panFor: à direita > 0, à esquerda < 0, centrado ~0', () => {
-    const { nav } = setup();
-    expect(nav.panFor(320, pl({ x: 0 }))).toBeGreaterThan(0);
-    expect(nav.panFor(0, pl({ x: 320 }))).toBeLessThan(0);
-    expect(nav.panFor(32, pl({ x: 32 }))).toBe(0);
-  });
-
-  it('[Many] sonar: escolhe a moeda mais próxima do dono e fala; conta', () => {
-    const coins = [
-      { x: 300, y: 32, owner: 0 }, // longe
-      { x: 48, y: 32, owner: 0 },  // perto
-      { x: 40, y: 32, owner: 1 },  // pertíssimo, mas de OUTRO dono → ignorada
-    ];
-    const { nav, said, narrated } = setup({ coins });
-    nav.sonar(pl());
-    expect(nav.sonarCount).toBe(1);
-    expect(said[0]).toContain('à direita'); // a moeda (48) está à direita do jogador (32)
-    expect(narrated.length).toBe(1);
-  });
-
-  it('[Zero] sonar sem moedas do dono: avisa "Nenhuma moeda por perto."', () => {
-    const { nav, said } = setup({ coins: [{ x: 48, y: 32, owner: 5 }] });
-    nav.sonar(pl());
-    expect(said).toEqual(['Nenhuma moeda por perto.']);
-  });
-
-  it('[Zero] updateGuide não faz nada se a categoria guide está OFF', () => {
-    const { nav, tone } = setup({ audioCat: { guide: { on: false } }, players: [pl()], coins: [{ x: 48, y: 32, owner: 0 }] });
-    for (let i = 0; i < 60; i++) nav.updateGuide();
-    expect(tone.length).toBe(0);
-    expect(nav.guideCount).toBe(0);
-  });
-
-  it('[Interface] updateGuide pinga (~0,8s) p/ jogador que precisa de pistas', () => {
-    const { nav, tone } = setup({ players: [pl({ viz: 'cego' })], coins: [{ x: 60, y: 32, owner: 0 }] });
-    for (let i = 0; i < 48; i++) nav.updateGuide(); // 48º frame → pinga
-    expect(nav.guideCount).toBe(1);
-    expect(tone.some((t) => t.cat === 'guide')).toBe(true);
-  });
 });

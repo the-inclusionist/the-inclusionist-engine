@@ -51,6 +51,7 @@ const en: Record<string, string> = {
   'hud.objective.ludico': 'Collect 10 coins',
   'hud.contador': '{have} of {need} {nome}',
   'hud.nome.moedas': 'coins',
+  'hud.nome.moeda': 'coin',
 
   'skip.toGame': 'Skip to the game',
   'menu.ludico': 'Free Play',
@@ -197,7 +198,7 @@ const en: Record<string, string> = {
   'sr.physics.lava': 'Careful! You touched the lava. The coins moved back to random places.',
   'sr.physics.spiderOn': 'Spider mode! Crawl on walls and ceilings; go around corners. Run lets go.',
   'sr.physics.spiderOff': 'Let go of the surface.',
-  'sr.nav.noCoinNear': 'No coin nearby.',
+  'sr.nav.noTargetNear': 'Nothing nearby.',
   'sr.attract.demo': 'Demo.',
   'sr.attract.recorded': '30-second demo recorded for {cenario}.',
 
@@ -289,6 +290,7 @@ const en: Record<string, string> = {
   'sr.quiz.bemVindo': 'Quiz. Use the arrow keys to choose and Enter to answer.',
   'sr.nav.sonarFound': 'Sonar: {alvo} {lado}, {dist}.',
   'sr.nav.coin': 'coin',
+  'sr.nav.target': 'target',
   'sr.nav.left': 'to the left',
   'sr.nav.right': 'to the right',
   'sr.nav.ahead': 'ahead',

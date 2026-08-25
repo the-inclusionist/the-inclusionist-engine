@@ -111,6 +111,17 @@ export interface Focus {
 //
 // `have`/`need` em vez de uma frase pronta: é o que deixa a MOLDURA traduzir ("{have} de {need}") enquanto o
 // NOME atravessa — a mesma regra que o pilar 3 aplica a currículo.
+//
+// ========================= O CAMPO TEM DUAS METADES, E A PRIMEIRA VERSÃO SÓ TINHA UMA =========================
+// O ADR-0027 chama este campo de "objetivo E ALVO". Escrevi só o objetivo — quanto de quanto —, e a segunda
+// metade só cobrou quando o SONAR tentou usar o contrato: ele pergunta "qual alvo está mais perto e de que
+// lado", e `Objective` não sabe ONDE nada está. Um contador não localiza nada.
+//
+// `targetsOf` é a metade que faltava. Ela é uma FUNÇÃO e devolve posições, não uma varredura do mapa, e isso
+// é o ponto: `roleAt` diz o que há num ponto, mas num espaço CONTÍNUO não há como enumerar os pontos, e num
+// mapa grande enumerar seria caro por quadro. Quem sabe onde estão os alvos é o jogo — sempre foi ele que
+// mantinha essa lista — e o que muda é que ele passa a ENTREGÁ-LA em vez de a engine ir buscá-la num array
+// de moedas com dono e flag de coletada.
 
 export interface Objective {
   /** O que se está juntando/resolvendo: "moedas", "palavras", "contas". */
@@ -161,6 +172,17 @@ export interface GameDeclaration {
   focusOf(playerIndex: number): Focus | null;
   /** O que a rodada pede deste jogador. */
   objectiveOf(playerIndex: number): Objective;
+  /**
+   * ONDE estão os alvos ainda válidos deste jogador — a segunda metade do campo 5.
+   *
+   * É o que substitui o `getCoins()` do sonar: em vez de a engine varrer um array de moedas e filtrar por
+   * `taken`/`owner`, o jogo devolve os pontos que ainda contam para ESTE jogador. Um quiz devolve o índice da
+   * pergunta em aberto; uma plataforma devolve as moedas não coletadas; um Sokoban devolve as caixas fora do
+   * lugar. A engine só compara distâncias, e é por isso que o sonar passa a servir a qualquer gênero.
+   *
+   * Vazio é resposta legítima e significa "não há para onde apontar" — não é erro.
+   */
+  targetsOf(playerIndex: number): readonly Spot[];
 }
 
 /* ===================== CONFORMIDADE ===================== */
@@ -194,7 +216,7 @@ export function conformanceProblems(d: Partial<GameDeclaration> | null | undefin
 
   if (d.tick !== 'player' && d.tick !== 'clock') p.push('tick: precisa ser "player" ou "clock"');
 
-  for (const f of ['roleAt', 'nameAt', 'focusOf', 'objectiveOf'] as const) {
+  for (const f of ['roleAt', 'nameAt', 'focusOf', 'objectiveOf', 'targetsOf'] as const) {
     if (typeof d[f] !== 'function') p.push(`${f}: ausente`);
   }
   return p;

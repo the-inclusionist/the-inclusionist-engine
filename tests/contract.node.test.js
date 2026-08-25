@@ -32,6 +32,7 @@ const plataforma = () => ({
   nameAt: () => ({ text: 'parede', gender: 'f', plural: false }),
   focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'e' }),
   objectiveOf: () => ({ name: { text: 'alvos', gender: 'm', plural: true }, have: 0, need: 10 }),
+  targetsOf: () => [{ x: 100, y: 200 }],
 });
 
 /** A mesma coisa num gênero que não tem espaço nenhum — só ordem. */
@@ -131,7 +132,7 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
   });
 
   it('[Interface] cada uma das quatro funções ausente é UM problema, e o nome dela aparece', () => {
-    for (const f of ['roleAt', 'nameAt', 'focusOf', 'objectiveOf']) {
+    for (const f of ['roleAt', 'nameAt', 'focusOf', 'objectiveOf', 'targetsOf']) {
       const d = plataforma();
       delete d[f];
       const p = conformanceProblems(d);
@@ -145,10 +146,11 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
     expect(conformanceProblems({ ...plataforma(), roleAt: null })).toHaveLength(1);
   });
 
-  it('[Many] uma declaração vazia acusa os SEIS campos de uma vez', () => {
-    // topology + tick + as quatro funções. É o número que diz a quem escreve um preset quanto falta, de uma vez
-    // só — e é a diferença entre "faltam seis coisas" e seis rodadas de conserto às cegas.
-    expect(conformanceProblems({})).toHaveLength(6);
+  it('[Many] uma declaração vazia acusa os SETE campos de uma vez', () => {
+    // topology + tick + as CINCO funções. É o número que diz a quem escreve um preset quanto falta, de uma vez
+    // só — e é a diferença entre "faltam sete coisas" e sete rodadas de conserto às cegas.
+    // Era SEIS até `targetsOf` completar o campo 5 (a metade "alvo", que o sonar cobrou).
+    expect(conformanceProblems({})).toHaveLength(7);
   });
 
   it('[Cross-check] conformidade é FORMA, não verdade — um `roleAt` que mente passa, e tem de passar', () => {

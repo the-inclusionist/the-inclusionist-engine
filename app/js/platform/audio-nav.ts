@@ -1,34 +1,44 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// platform/audio-nav — pistas de áudio ESPACIAIS de a11y (cego / baixa visão): bengala, sonar, guarda de beirada, guia
-// (beacon em laço) e nado cego. O cluster mais acoplado do Tier 2: lê tiles, colisão, moedas e jogadores. Cada pista pode
-// sair por um AudioContext POR JOGADOR (playerCtx → setSinkId no dispositivo escolhido). Injeção por closure (padrão Tier 1).
-//   playerCtx(pl)      — AudioContext do jogador (ou null → contexto global).   [exposto: a guarda de beirada o usa]
-//   caneProbe(pl)      — material À FRENTE (agua/vazio/madeira/chão do tema).
-//   caneTap(pl)        — batida da bengala no material adiante (ou tom grave oco no vazio).
-//   waterNav(pl)       — nado cego: contato com paredes/chão/superfície (cordas).
-//   panFor(wx,pl)      — pan −1..1 pela posição relativa.                        [exposto: a guarda de beirada o usa]
-//   needsAudioCues(pl) — visão comprometida? (modo cego OU blind/lowvision).     [exposto: o gate de movimento o usa]
-//   sonar(pl)          — aponta a moeda-alvo mais próxima (tom + fala).
-//   updateGuide()      — beacon automático por frame p/ a moeda mais próxima (sonar contínuo).
+// platform/audio-nav — BENGALA e NADO CEGO: as pistas sonoras que só existem onde há MUNDO (item 19).
+//
+// ========================= ESTE MÓDULO ERA DOIS =========================
+// O achado 9 do segundo consumidor: "o módulo é DOIS módulos com um nome só — `caneProbe`/`caneTap`/
+// `waterNav` são bengala e natação, isto é, plataforma; `sonar`/`panFor`/`needsAudioCues` são navegação
+// sonora, que serve a qualquer jogo". A navegação sonora saiu para `platform/audio-sonar` e recebe o
+// CONTRATO em vez de tiles; aqui ficou a metade que lê o mundo, e que lê sem disfarce.
+//
+// O QUE SOBROU É PLATAFORMA, e é bom que o nome não esconda isso:
+//   caneProbe(pl) — material À FRENTE (água/vazio/madeira/chão do tema), lendo tile e chão.
+//   caneTap(pl)   — batida da bengala no material adiante (ou tom grave oco no vazio).
+//   waterNav(pl)  — nado cego: contato com paredes/chão/superfície (cordas).
+//
+// A bengala precisa de `facing`, `BOX.w` e `TILE` para saber o que é "à frente"; o nado precisa de `solidAt`
+// em três alturas. Nada disso é traduzível para um jogo sem corpo e sem mundo, e por isso NÃO foi traduzido:
+// o corte separa o que viaja do que não viaja, em vez de fingir que tudo viaja.
+//
+// ========================= A METADE QUE VIAJOU CONTINUA SAINDO DAQUI =========================
+// `playerCtx`, `panFor`, `needsAudioCues`, `sonar` e `updateGuide` seguem no retorno, delegados ao
+// `AudioSonar` injetado. Não é preguiça de mexer no chamador: a bengala PRECISA do `playerCtx` (a batida sai
+// no dispositivo do jogador) e o `main.js` monta um objeto só de navegação. O que mudou é que este módulo
+// deixou de IMPLEMENTAR a metade genérica — ele a repassa, e quem quiser só ela importa o outro arquivo.
 // Extraído do game.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, áudio rodada 3).
 
 import type { PlayerView } from '../core/entity.js';
-import { t } from '../core/i18n.js';
+import type { AudioSonar, PlayerCtxOut, SonarPlayer } from './audio-sonar.js';
 
-type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
+export type { PlayerCtxOut };
+
 /**
- * O jogador visto pela NAVEGAÇÃO SONORA. Os campos de posição e identidade são derivados; os de áudio não.
+ * O jogador visto pela BENGALA e pelo NADO. `facing` e `wnT` são desta metade; a outra não os usa.
  *
  * Mesma regra de game/quiz, do outro lado: este módulo é DONO dos tipos de áudio, então declara `_ac` como
  * `SinkAC` (o AudioContext com o `setSinkId` opcional) e `_acOut` como `GainNode`, enquanto core/entity os
  * declara no mínimo estrutural — `{ close(): void }` e `unknown` — porque `core/` não pode importar tipos de
  * Web Audio para descrever uma entidade de jogo. Quem é dono do tipo pode saber mais; quem não é, não pode.
  */
+type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
 type Player = PlayerView<'x' | 'y' | 'facing' | 'viz' | 'i' | 'audioSink' | 'wnT' | 'guideT'>
   & { _ac?: SinkAC | null; _acOut?: GainNode };
-export interface PlayerCtxOut { ac: AudioContext; out: GainNode; }
-interface Coin { x: number; y: number; taken?: boolean; owner: number; }
-type VizDef = { kind?: string } | undefined;
 
 export interface AudioNavCtx {
   tileAt: (x: number, y: number) => number;
@@ -36,20 +46,15 @@ export interface AudioNavCtx {
   held: (pl: Player, act: string) => boolean;
   tonePan: (freq: number, dur: number, cat: string, pan?: number | null, vol?: number, type?: OscillatorType, pc?: PlayerCtxOut | null) => void;
   noiseHit: (mat: string, pan?: number, pc?: PlayerCtxOut | null) => void;
-  srSay: (t: string) => void;
-  narrate: (t: string) => void;
   BOX: { w: number; h: number };
   TILE: number;
-  LOGICAL_W: number;
-  VIZ_BY_KEY: Record<string, VizDef>;
-  getCoins: () => Coin[];
-  getPlayers: () => Player[];
-  getNumPlayers: () => number;
   getCenario: () => string;
-  getModoCego: () => boolean;
-  getAudioCtx: () => AudioContext | null;
-  getSoundOn: () => boolean;
-  getAudioCat: () => Record<string, { on: boolean }> | null;
+  /**
+   * A NAVEGAÇÃO SONORA, pronta (`platform/audio-sonar`). Entra por injeção e não por importação: é o que
+   * permite empacotar o sonar sem levar a bengala junto — e é a diferença entre "dois arquivos" e "dois
+   * módulos". Onze coisas do ctx antigo saíram com ela.
+   */
+  sonar: AudioSonar;
 }
 
 export interface AudioNav {
@@ -69,21 +74,10 @@ export interface AudioNav {
 
 export function createAudioNav(ctx: AudioNavCtx): AudioNav {
   const SURF_MAT: Record<string, string> = { cidade: 'piso', campo: 'grama', floresta: 'grama', cemiterio: 'terra', espaco: 'pedra', classico: 'pedra' }; // chão por tema
-  let _caneCount = 0, _waterNavCount = 0, _sonarCount = 0, _guideCount = 0;
+  let _caneCount = 0, _waterNavCount = 0;
 
-  function playerCtx(pl: Player): PlayerCtxOut | null {
-    if (!pl || !pl.audioSink) return null;
-    try {
-      if (!pl._ac) {
-        const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-        if (!AC) return null;
-        pl._ac = new AC(); pl._acOut = pl._ac.createGain(); pl._acOut.connect(pl._ac.destination);
-        if (pl._ac.setSinkId) pl._ac.setSinkId(pl.audioSink).catch(() => {});
-      }
-      if (pl._ac.state === 'suspended') pl._ac.resume();
-      return { ac: pl._ac, out: pl._acOut! };
-    } catch (e) { return null; }
-  }
+  const som = ctx.sonar; // a metade que viaja, injetada
+  const playerCtx = (pl: Player): PlayerCtxOut | null => som.playerCtx(pl as unknown as SonarPlayer);
 
   function caneProbe(pl: Player): string { // material À FRENTE
     const dir = pl.facing < 0 ? -1 : 1;
@@ -118,43 +112,17 @@ export function createAudioNav(ctx: AudioNavCtx): AudioNav {
     if (played) { pl.wnT = 0; _waterNavCount++; } else pl.wnT = 17; // sem contato = SEM som (pronto p/ tocar ao encostar)
   }
 
-  function panFor(wx: number, pl: Player): number { return Math.max(-1, Math.min(1, (wx - pl.x) / (ctx.LOGICAL_W * 0.55))); }
-
-  function needsAudioCues(pl: Player): boolean { // guarda/guia só quando a visão está comprometida ou no modo cego
-    if (ctx.getModoCego()) return true; const m = ctx.VIZ_BY_KEY[pl.viz]; return !!(m && (m.kind === 'blind' || m.kind === 'lowvision'));
-  }
-
-  function sonar(pl: Player): void {
-    _sonarCount++; let best: Coin | null = null, bd = 1e9;
-    for (const cn of ctx.getCoins()) { if (cn.taken || cn.owner !== pl.i) continue; const d = Math.hypot(cn.x - pl.x, cn.y - pl.y); if (d < bd) { bd = d; best = cn; } }
-    const pc = playerCtx(pl); if (!best) { ctx.tonePan(300, 0.2, 'sonar', 0, 0.2, 'sine', pc); ctx.srSay(t('sr.nav.noCoinNear')); return; }
-    const pan = panFor(best.x, pl), near = Math.max(0, 1 - bd / (12 * ctx.TILE)); ctx.tonePan(380 + 740 * near, 0.16, 'sonar', pan, 0.26, 'sine', pc); // mais perto = mais agudo
-    // O ANÚNCIO DO SONAR NÃO PASSAVA POR `t()`. Sete cadeias em pt-BR cruas, aqui, no meio do único módulo
-    // cuja saída É a interface da criança cega: num jogo em inglês, o sonar dela continuava falando português.
-    // E a incoerência denunciava sozinha — o caso de NÃO ACHAR já usava `sr.nav.noCoinNear`; só o de ACHAR,
-    // que é o que ela ouve o tempo todo, ficou fora. Ver o pilar 3 do ADR-0010.
-    const lado = best.x < pl.x - 4 ? 'sr.nav.left' : best.x > pl.x + 4 ? 'sr.nav.right' : 'sr.nav.ahead';
-    const dist = bd < 4 * ctx.TILE ? 'sr.nav.veryClose' : bd < 9 * ctx.TILE ? 'sr.nav.close' : 'sr.nav.far';
-    const corpo = t('sr.nav.sonarFound', { alvo: t('sr.nav.coin'), lado: t(lado), dist: t(dist) });
-    const msg = (ctx.getNumPlayers() > 1 ? t('sr.player.prefix', { n: pl.i + 1 }) : '') + corpo;
-    ctx.srSay(msg); ctx.narrate(msg);
-  }
-
-  function updateGuide(): void {
-    const cat = ctx.getAudioCat(); if (!ctx.getAudioCtx() || !ctx.getSoundOn() || !cat || !cat.guide || !cat.guide.on) return;
-    for (const pl of ctx.getPlayers()) {
-      if (!needsAudioCues(pl)) continue; pl.guideT = (pl.guideT || 0) + 1; if (pl.guideT < 48) continue; pl.guideT = 0; // pinga ~0,8s
-      let best: Coin | null = null, bd = 1e9;
-      for (const cn of ctx.getCoins()) { if (cn.taken || cn.owner !== pl.i) continue; const d = Math.hypot(cn.x - pl.x, cn.y - pl.y); if (d < bd) { bd = d; best = cn; } }
-      if (best) { const pan = panFor(best.x, pl), near = Math.max(0, 1 - bd / (14 * ctx.TILE)); ctx.tonePan(300 + 380 * near, 0.12, 'guide', pan, 0.11, 'triangle', playerCtx(pl)); _guideCount++; }
-    }
-  }
-
   return {
-    playerCtx, caneProbe, caneTap, waterNav, panFor, needsAudioCues, sonar, updateGuide,
+    playerCtx, caneProbe, caneTap, waterNav,
+    // Delegação PURA para a metade que viajou. Sem lógica no meio: um adaptador que decidisse alguma coisa
+    // seria uma terceira implementação escondida entre as duas.
+    panFor: (wx, pl) => som.panFor(wx, pl as unknown as SonarPlayer),
+    needsAudioCues: (pl) => som.needsAudioCues(pl as unknown as SonarPlayer),
+    sonar: (pl) => som.sonar(pl as unknown as SonarPlayer),
+    updateGuide: () => som.updateGuide(),
     get caneCount() { return _caneCount; },
     get waterNavCount() { return _waterNavCount; },
-    get sonarCount() { return _sonarCount; },
-    get guideCount() { return _guideCount; },
+    get sonarCount() { return som.sonarCount; },
+    get guideCount() { return som.guideCount; },
   };
 }

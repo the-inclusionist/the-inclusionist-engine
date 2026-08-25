@@ -52,6 +52,7 @@ const es: Record<string, string> = {
   'hud.objective.ludico': 'Junta 10 monedas',
   'hud.contador': '{have} de {need} {nome}',
   'hud.nome.moedas': 'monedas',
+  'hud.nome.moeda': 'moneda',
 
   'skip.toGame': 'Saltar al juego',
   'menu.ludico': 'Juego libre',
@@ -198,7 +199,7 @@ const es: Record<string, string> = {
   'sr.physics.lava': '¡Cuidado! Tocaste la lava. Las monedas volvieron a posiciones aleatorias.',
   'sr.physics.spiderOn': '¡Modo araña! Trepa por paredes y techos; rodea las esquinas. Correr suelta.',
   'sr.physics.spiderOff': 'Soltaste la superficie.',
-  'sr.nav.noCoinNear': 'No hay ninguna moneda cerca.',
+  'sr.nav.noTargetNear': 'No hay nada cerca.',
   'sr.attract.demo': 'Demostración.',
   'sr.attract.recorded': 'Demo de 30 segundos grabada para {cenario}.',
 
@@ -290,6 +291,7 @@ const es: Record<string, string> = {
   'sr.quiz.bemVindo': 'Cuestionario. Use las flechas para elegir y Enter para responder.',
   'sr.nav.sonarFound': 'Sonar: {alvo} {lado}, {dist}.',
   'sr.nav.coin': 'moneda',
+  'sr.nav.target': 'objetivo',
   'sr.nav.left': 'a la izquierda',
   'sr.nav.right': 'a la derecha',
   'sr.nav.ahead': 'al frente',

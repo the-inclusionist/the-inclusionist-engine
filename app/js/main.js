@@ -47,7 +47,8 @@ import { audioCtx, ensureAC, SFX, soundOn, volume, setSoundOn, setVolume, audioO
 import { gameSay } from './platform/speech.js';
 import { createAudioJingles } from './platform/audio-jingles.js'; // Tier 2 (áudio r1): jingles de vitória/enigma/fogos
 import { createAudioEarcons } from './platform/audio-earcons.js'; // Tier 2 (áudio r2): earcons (sfx) + porta + legendas
-import { createAudioNav } from './platform/audio-nav.js'; // Tier 2 (áudio r3): pistas espaciais (bengala/sonar/guarda/guia/nado)
+import { createAudioSonar } from './platform/audio-sonar.js'; // item 19: navegacao sonora, a metade que serve a QUALQUER genero
+import { createAudioNav } from './platform/audio-nav.js'; // Tier 2 (áudio r3): bengala e nado cego (a metade que le o mundo)
 import { createAudioAmbient } from './platform/audio-ambient.js'; // Tier 2 (áudio r4): trilha de ambiente + trovão
 import { createTts } from './platform/tts.js'; // Tier 2 (#38): narração por voz (Piper neural lazy + fallback Web Speech)
 import { SPR, TEX_IDLE, TEX_WALK, TEX_RUN, FLAVORS, TEX_JUMP_UP, TEX_JUMP_DOWN, TEX_CLIMB, TEX_FLY, TEX_CLING_WALL, TEX_CLING_CEIL, TEX_SWIM, TEX_SWIMIDLE, initCharacterSprites } from './render/sprites.js';
@@ -384,9 +385,23 @@ const tts = createTts({ srSay, srAlert, ensureAC, catNode, audioOut, getSoundOn:
 // Pistas espaciais a11y (bengala · sonar · guarda de beirada · guia · nado, por dispositivo) extraídas p/ platform/audio-nav.ts
 // (Tier 2, áudio r3). playerCtx/panFor/needsAudioCues expostos na API porque a guarda de beirada + o gate de movimento os
 // chamam de fora do cluster. Estado do guia (_guideCount) e SURF_MAT vivem agora no módulo. Uso: nav.<fn>.
-const nav = createAudioNav({ tileAt, solidAt, held, tonePan, noiseHit, srSay, narrate: tts.narrate, BOX, TILE, LOGICAL_W, VIZ_BY_KEY,
-  getCoins: () => coins, getPlayers: () => players, getNumPlayers: () => numPlayers, getCenario: () => CENARIO,
-  getModoCego: () => modoCego, getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat });
+// A NAVEGACAO SONORA, contra o CONTRATO (item 19). As tres perguntas que substituiram `getCoins`+`TILE`:
+//   · `topology()`  — a metrica. Esta plataforma e um espaco CONTINUO com `unit = TILE`, e por isso os
+//     limiares de "muito perto/perto/longe" continuam valendo 4 e 9 TILES, como no original.
+//   · `targetsOf(i)` — onde estao os alvos deste jogador. Era o laco `if (cn.taken || cn.owner !== pl.i)`
+//     dentro do sonar; agora e o JOGO que filtra, e o sonar so compara distancias.
+//   · `nameAt(at)`   — como se chama o que esta ali. Era `t('sr.nav.coin')` cravado.
+const sonarNav = createAudioSonar({
+  topology: () => ({ kind: 'continuous', width: WORLD_PX_W, height: WORLD_PX_H, unit: TILE }),
+  targetsOf: (i) => coins.filter((cn) => !cn.taken && cn.owner === i).map((cn) => ({ x: cn.x, y: cn.y })),
+  nameAt: () => ({ text: t('hud.nome.moeda'), gender: 'f', plural: false }),
+  tonePan, srSay, narrate: tts.narrate,
+  VIZ_BY_KEY, getModoCego: () => modoCego, LOGICAL_W,
+  getPlayers: () => players, getNumPlayers: () => numPlayers,
+  getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat,
+});
+const nav = createAudioNav({ tileAt, solidAt, held, tonePan, noiseHit, BOX, TILE,
+  getCenario: () => CENARIO, sonar: sonarNav });
 // ===== F4: camadas de AMBIENTE (loops sintetizados) + PISTA/GUIA auditivo (beacon em laço) =====
 // Trilha de ambiente sintetizada + trovão extraídos p/ platform/audio-ambient.ts (Tier 2, áudio r4). O clima VISUAL fica no
 // main.js (updateWeather/drawWeather) e migra p/ render depois. Uso: ambient.updateAmbient / ambient.thunder.
