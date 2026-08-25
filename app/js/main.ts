@@ -563,7 +563,7 @@ const { setCenario } = createSetCenario({
 // coisas que nao sao do realce L->Q.
 initLqFilter({ onChange: () => { if(app&&view){ if(numPlayers<=1)applyVizGlobal(players[0].viz); else view.style.filter=lqFilter(); } } });
 // vizMode vem de core/state.js (Fase 2, mega-var 6). Init de boot SEM persistir (preserva o rastreio de prefers-contrast):
-initVizMode((()=>{ try{ const v=store.get('incl_viz',null); if(VIZ_CYCLE.includes(v))return v; }catch(e){}
+initVizMode((()=>{ try{ const v=store.get('incl_viz',null); if(v&&VIZ_CYCLE.includes(v))return v; }catch(e){}
   return (window.matchMedia && matchMedia('(prefers-contrast: more)').matches) ? 'hc-direto' : 'normal'; })()); // prefere-contraste → alto contraste 3:1
 let vizReady=false; // só após todas as dependências de applyViz existirem (evita TDZ no init via setCenario)
 let worldCanvasNormal=worldCanvas();
@@ -1301,7 +1301,7 @@ function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.v
   // Botões puramente on/off viram TOGGLE (switch) — o texto "Ligado/Desligado" fica oculto (font-size:0).
   ['opt-facil','opt-altmove','opt-hearing','opt-onebtn','opt-wheelchair','opt-modocego','opt-tts','opt-eyes','audio-master','opt-captions','motion-master'].forEach(id=>{ const b=document.getElementById(id); if(b)b.classList.add('switch'); });
 })();
-function openVisual(){ const ov=$('#visual'); if(!ov)return; visual.render(); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button[data-viz]')||ov.querySelector('button'); if(f)f.focus(); }
+function openVisual(){ const ov=$('#visual'); if(!ov)return; visual.render(); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector<HTMLElement>('button[data-viz]')||ov.querySelector('button'); if(f)f.focus(); }
 // Foco de volta para QUEM ABRIU (WCAG 2.4.3), pelo registro de ui/settings-panel. Antes cada um focava um
 // `#opt-*` fixo, e SEIS desses nove ids nao existem no documento — sao ganchos de uma barra de botoes futura.
 // O `if(b)b.focus()` engolia isso calado, entao o foco caia no <body> e quem navega por teclado voltava ao
@@ -1351,7 +1351,7 @@ vizReady=true; applyVizGlobal(players[0].viz); // estado inicial (solo)
    mantêm o mecanismo antigo (Lexend preserva o espaçamento BDA via data-fonte="dislexia"). */
 // Tipografia: catalogo em ui/fonts.js, painel em ui/settings-typo.js. Antes: FONT_GROUPS/loadFontKey extraídos p/ ui/fonts.js (Fase 2, tipografia).
 const typo = initSettingsTypo({ $, srSay, store, root: document.documentElement }); // painel de tipografia: ui/settings-typo.ts (aplica a fonte persistida no init)
-function openTypo(){ const ov=$('#typo'); if(!ov)return; typo.render(); ov.hidden=false; frontOverlay(ov);   const f=ov.querySelector('button[data-font]:not([disabled])')||ov.querySelector('button'); if(f)f.focus(); }
+function openTypo(){ const ov=$('#typo'); if(!ov)return; typo.render(); ov.hidden=false; frontOverlay(ov);   const f=ov.querySelector<HTMLElement>('button[data-font]:not([disabled])')||ov.querySelector('button'); if(f)f.focus(); }
 function closeTypo(){ const ov=$('#typo'); if(!ov)return; ov.hidden=true; if(!overlays.restoreFocus('typo'))menuFocus(sharedDialogOpen()); }
 { const b=$('#typo-close'); if(b)b.addEventListener('click',closeTypo); }
 
