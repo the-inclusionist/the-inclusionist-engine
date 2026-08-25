@@ -3,30 +3,36 @@
 // (só depende de storage). A instância `fontKey` e o setGameFont (aplica família/espaçamento) ficam no game.js.
 import * as store from '../platform/storage.js';
 
+/**
+ * Uma fonte do catálogo. `fam` é o NOME DA FONTE — nome próprio, nunca traduzido. `d` guarda CHAVE i18n da
+ * descrição, não o texto: mesma decisão de `VIZ_MODES` e `RM_LABEL`, e pelo mesmo motivo — uma tabela de
+ * `const` com texto resolve uma vez, no import, e fica congelada no idioma do boot.
+ */
 export type FontItem = { k: string; fam: string; fb: string; d?: string; off?: string };
+/** Um grupo do catálogo. `g` também guarda CHAVE ('font.group.sans'), pelo mesmo motivo. */
 export type FontGroup = { g: string; items: FontItem[] };
 export const FONT_GROUPS: FontGroup[] = [
-  {g:'Sem serifa', items:[
-    {k:'atkinson',   fam:'Atkinson Hyperlegible', fb:'sans', d:'feita pelo Braille Institute para pessoas com baixa visão (padrão do jogo)'},
-    {k:'lexend',     fam:'Lexend',                fb:'sans', d:'feita para reduzir stress visual e atender pessoas disléxicas (ativa o espaçamento extra)'},
-    {k:'quattro',    fam:'iA Writer Quattro',     fb:'sans', d:'criada para diminuir a fadiga visual de quem passa muito tempo na tela'},
-    {k:'andika',     fam:'Andika',                fb:'sans', d:'baseada na Sassoon; fruto de pesquisa sobre como crianças leem e escrevem'},
+  {g:'font.group.sans', items:[
+    {k:'atkinson',   fam:'Atkinson Hyperlegible', fb:'sans', d:'font.desc.atkinson'},
+    {k:'lexend',     fam:'Lexend',                fb:'sans', d:'font.desc.lexend'},
+    {k:'quattro',    fam:'iA Writer Quattro',     fb:'sans', d:'font.desc.quattro'},
+    {k:'andika',     fam:'Andika',                fb:'sans', d:'font.desc.andika'},
     {k:'sourcesans', fam:'Source Sans 3',         fb:'sans'},
     {k:'inter',      fam:'Inter',                 fb:'sans'},
     {k:'opensans',   fam:'Open Sans',             fb:'sans'},
     {k:'lato',       fam:'Lato',                  fb:'sans'} ]},
-  {g:'Serifada', items:[
+  {g:'font.group.serif', items:[
     {k:'literata',    fam:'Literata',       fb:'serif'},
     {k:'sourceserif', fam:'Source Serif 4', fb:'serif'},
     {k:'newsreader',  fam:'Newsreader',     fb:'serif'} ]},
-  {g:'Manuscrita', items:[
-    {k:'greatvibes', fam:'Great Vibes',         fb:'cursive', d:'caligráfica inglesa'},
-    {k:'pinyon',     fam:'Pinyon Script',       fb:'cursive', d:'caligráfica inglesa'},
-    {k:'ufcook',     fam:'UnifrakturCook',      fb:'cursive', d:'blackletter alemã'},
-    {k:'ufmag',      fam:'UnifrakturMaguntia',  fb:'cursive', d:'blackletter alemã'},
-    {k:'comicneue',  fam:'Comic Neue',          fb:'cursive', d:'bola e bastão (alfabetização)'},
-    {k:'learningcurve', fam:'Learning Curve',   fb:'cursive', d:'cursiva inglesa', off:'licença a confirmar — ainda não embarcada'},
-    {k:'kindergarten',  fam:'Kindergarten Pro', fb:'cursive', d:'cursiva brasileira', off:'licença em negociação'} ]},
+  {g:'font.group.hand', items:[
+    {k:'greatvibes', fam:'Great Vibes',         fb:'cursive', d:'font.desc.greatvibes'},
+    {k:'pinyon',     fam:'Pinyon Script',       fb:'cursive', d:'font.desc.pinyon'},
+    {k:'ufcook',     fam:'UnifrakturCook',      fb:'cursive', d:'font.desc.ufcook'},
+    {k:'ufmag',      fam:'UnifrakturMaguntia',  fb:'cursive', d:'font.desc.ufmag'},
+    {k:'comicneue',  fam:'Comic Neue',          fb:'cursive', d:'font.desc.comicneue'},
+    {k:'learningcurve', fam:'Learning Curve',   fb:'cursive', d:'font.desc.learningcurve', off:'font.off.pending'},
+    {k:'kindergarten',  fam:'Kindergarten Pro', fb:'cursive', d:'font.desc.kindergarten', off:'font.off.negotiating'} ]},
 ];
 export const FONT_BY_KEY: Record<string, FontItem> = {}; FONT_GROUPS.forEach((g) => g.items.forEach((it) => { FONT_BY_KEY[it.k] = it; }));
 

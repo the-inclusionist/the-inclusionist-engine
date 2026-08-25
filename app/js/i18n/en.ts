@@ -459,5 +459,22 @@ const en: Record<string, string> = {
   'legend.especial': 'special',
   'legend.run': 'run',
   'legend.swap': 'switch',
+  // ===================== FONT CATALOGUE =====================
+  'font.group.sans': 'Sans serif',
+  'font.group.serif': 'Serif',
+  'font.group.hand': 'Handwritten',
+  'font.desc.atkinson': 'made by the Braille Institute for people with low vision (the game default)',
+  'font.desc.lexend': 'made to reduce visual stress and serve dyslexic readers (turns on the extra spacing)',
+  'font.desc.quattro': 'built to ease the eye strain of long hours on a screen',
+  'font.desc.andika': 'based on Sassoon; the fruit of research into how children read and write',
+  'font.desc.greatvibes': 'English calligraphy',
+  'font.desc.pinyon': 'English calligraphy',
+  'font.desc.ufcook': 'German blackletter',
+  'font.desc.ufmag': 'German blackletter',
+  'font.desc.comicneue': 'ball and stick (early literacy)',
+  'font.desc.learningcurve': 'English cursive',
+  'font.desc.kindergarten': 'Brazilian cursive',
+  'font.off.pending': 'licence to be confirmed — not shipped yet',
+  'font.off.negotiating': 'licence under negotiation',
 };
 export default en;

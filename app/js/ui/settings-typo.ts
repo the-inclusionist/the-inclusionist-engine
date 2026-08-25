@@ -94,10 +94,13 @@ export interface TypoGroupView {
 /** Pure view-model for the typography list: which row is selected/disabled and its note, per catalog group. */
 export function typoGroups(fontKey: string): TypoGroupView[] {
   return FONT_GROUPS.map((g) => ({
-    g: g.g,
+    g: t(g.g),  // `g` guarda CHAVE i18n desde o item 14 (ver ui/fonts)
     rows: g.items.map((it): TypoRow => {
       const disabled = !!it.off;
-      const note = it.d ? it.d + (disabled ? ' — ' + it.off : '') : disabled ? (it.off ?? '') : '';
+      // `d` e `off` também guardam CHAVE. O travessão que junta os dois é pontuação, não frase — as duas
+      // metades são independentes e cada uma traduz por si.
+      const desc = it.d ? t(it.d) : '', motivo = it.off ? t(it.off) : '';
+      const note = desc ? desc + (disabled ? ' — ' + motivo : '') : disabled ? motivo : '';
       return { key: it.k, fam: it.fam, selected: fontKey === it.k, disabled, note };
     }),
   }));

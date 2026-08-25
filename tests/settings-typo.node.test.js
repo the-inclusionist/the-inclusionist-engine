@@ -4,6 +4,7 @@
 // view-model das linhas do painel (seleção/desabilitado/nota). O render() em si (toca DOM) fica no
 // settings-typo.browser.test.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
+import { t } from '../app/js/core/i18n.js'; // o catálogo de fontes guarda CHAVE desde o item 14
 import {
   isSelectableFont, resolveFontKey, persistFontKey, fontCssTarget, typoGroups, typoListHTML,
 } from '../app/js/ui/settings-typo.js';
@@ -111,9 +112,13 @@ describe('typoGroups — view-model das linhas', () => {
     expect(row.disabled).toBe(false);
     expect(row.note).toBe('');
   });
-  it('[Right] preserva os 3 grupos do catálogo (Sem serifa/Serifada/Manuscrita)', () => {
+  it('[Right] preserva os 3 grupos do catálogo, TRADUZIDOS (a chave nunca chega à tela)', () => {
     const groups = typoGroups('atkinson');
-    expect(groups.map((g) => g.g)).toEqual(['Sem serifa', 'Serifada', 'Manuscrita']);
+    // Contra `t()` e não contra o português: o catálogo guarda CHAVE desde o item 14, e fixar as três
+    // palavras aqui devolveria ao teste o texto que saiu do código. O que este caso guarda é que os três
+    // grupos continuam existindo, na ordem, JÁ RESOLVIDOS.
+    expect(groups.map((g) => g.g)).toEqual(['font.group.sans', 'font.group.serif', 'font.group.hand'].map(t));
+    for (const g of groups) expect(g.g, 'chave crua na tela').not.toMatch(/^font\./);
   });
 });
 

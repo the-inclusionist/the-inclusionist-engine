@@ -497,5 +497,25 @@ const pt: Record<string, string> = {
   'legend.especial': 'especial',
   'legend.run': 'correr',
   'legend.swap': 'trocar',
+  // ===================== CATÁLOGO DE FONTES =====================
+  // Os NOMES das fontes (Atkinson Hyperlegible, Lexend, …) NÃO entram aqui: são nomes próprios e ficam no
+  // catálogo, como os nomes dos motores de voz. O que traduz é o nome do GRUPO e a descrição — que é o texto
+  // que explica à criança (ou a quem a acompanha) POR QUE aquela fonte existe na lista.
+  'font.group.sans': 'Sem serifa',
+  'font.group.serif': 'Serifada',
+  'font.group.hand': 'Manuscrita',
+  'font.desc.atkinson': 'feita pelo Braille Institute para pessoas com baixa visão (padrão do jogo)',
+  'font.desc.lexend': 'feita para reduzir stress visual e atender pessoas disléxicas (ativa o espaçamento extra)',
+  'font.desc.quattro': 'criada para diminuir a fadiga visual de quem passa muito tempo na tela',
+  'font.desc.andika': 'baseada na Sassoon; fruto de pesquisa sobre como crianças leem e escrevem',
+  'font.desc.greatvibes': 'caligráfica inglesa',
+  'font.desc.pinyon': 'caligráfica inglesa',
+  'font.desc.ufcook': 'blackletter alemã',
+  'font.desc.ufmag': 'blackletter alemã',
+  'font.desc.comicneue': 'bola e bastão (alfabetização)',
+  'font.desc.learningcurve': 'cursiva inglesa',
+  'font.desc.kindergarten': 'cursiva brasileira',
+  'font.off.pending': 'licença a confirmar — ainda não embarcada',
+  'font.off.negotiating': 'licença em negociação',
 };
 export default pt;

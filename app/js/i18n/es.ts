@@ -458,5 +458,22 @@ const es: Record<string, string> = {
   'legend.especial': 'especial',
   'legend.run': 'correr',
   'legend.swap': 'cambiar',
+  // ===================== CATÁLOGO DE FUENTES =====================
+  'font.group.sans': 'Sin serifa',
+  'font.group.serif': 'Con serifa',
+  'font.group.hand': 'Manuscrita',
+  'font.desc.atkinson': 'hecha por el Braille Institute para personas con baja visión (la predeterminada del juego)',
+  'font.desc.lexend': 'hecha para reducir el estrés visual y atender a personas disléxicas (activa el espaciado extra)',
+  'font.desc.quattro': 'creada para reducir la fatiga visual de quien pasa mucho tiempo ante la pantalla',
+  'font.desc.andika': 'basada en la Sassoon; fruto de la investigación sobre cómo leen y escriben los niños',
+  'font.desc.greatvibes': 'caligráfica inglesa',
+  'font.desc.pinyon': 'caligráfica inglesa',
+  'font.desc.ufcook': 'blackletter alemana',
+  'font.desc.ufmag': 'blackletter alemana',
+  'font.desc.comicneue': 'bola y palo (alfabetización)',
+  'font.desc.learningcurve': 'cursiva inglesa',
+  'font.desc.kindergarten': 'cursiva brasileña',
+  'font.off.pending': 'licencia por confirmar — aún no incluida',
+  'font.off.negotiating': 'licencia en negociación',
 };
 export default es;
