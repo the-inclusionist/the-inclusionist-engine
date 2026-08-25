@@ -1,0 +1,134 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-25
+  decision-makers: [Dev]
+  consulted: [ADR-0010 pillars 2 and 3, WCAG 2.4.3 (focus order) and 3.2.x, the i18n sweep of 2026-08-25,
+              ADR-0012 (typography)]
+  informed: []
+
+title: What changes under the child's hands redraws itself — and never loses her place
+
+context-and-problem-statement: |
+  The i18n sweep that closed pipeline item 14 kept finding the same shape of defect, and the last two were not
+  about missing words at all.
+
+  THE FIRST. `core/i18n` dispatches an `i18n:change` event and NOBODY LISTENS. Panels are built once. Change
+  the language with the game open and the panel in front of you stays in the old one until it is closed and
+  reopened. The machinery is half-assembled: the event exists, the listener does not.
+
+  THE SECOND. About a hundred strings in `index.html` are prose whose EXPLANATION is a sibling text node:
+
+      <strong>♿ Modo Fácil</strong> — para quem ainda não tem coordenação motora fina: gravidade menor…
+
+  The label sits in an element; the sentence after it sits in no element at all. `applyDom` writes
+  `textContent`, so there is nothing to hang a key on without either letting the dictionary carry markup or
+  giving every prose node an element of its own.
+
+  Both questions have a cheap answer that is wrong for the same reason: they are about what a child sees while
+  she is USING the thing, and this game's users include people for whom a redraw is not a cosmetic event.
+
+decision-drivers:
+  - "Pillar 3 is a FLOOR of three languages, not a goal — pt-BR, English, Spanish (ADR-0010)."
+  - "Pillar 2: the people most likely to change these settings mid-game are the ones the settings exist for."
+  - "A redraw moves the DOM. For a mouse user that is invisible; for keyboard and screen-reader users it is
+     the difference between continuing and starting over."
+  - "The dictionary is ours, not user input — but a door left open is still a door."
+
+considered-options:
+  - "R1 — reopening is enough (today's behaviour)"
+  - "R2 — every panel listens to the change and redraws itself"
+  - "R3 — the whole boot re-runs on a language change"
+  - "H1 — `data-i18n` grows to accept markup from the dictionary (innerHTML)"
+  - "H2 — every prose node gets its own `<span data-i18n>`"
+
+pros-and-cons-of-the-options:
+  reopen-is-enough:
+    good: ["Costs nothing; it is what happens now."]
+    bad: ["A child who changes language mid-game watches half the screen change and the other half not. She
+           has no way to know the second half is stale rather than untranslated."]
+  each-panel-listens:
+    good: ["The event already exists and is already dispatched — this finishes a mechanism rather than adding
+            one.", "Granular: only what is on screen pays."]
+    bad: ["A panel redrawn while focus is inside it THROWS THE FOCUS AWAY, and keyboard and screen-reader users
+           land back at the top of the document. Done carelessly this is an accessibility regression inside an
+           accessibility fix."]
+  reboot-everything:
+    good: ["Trivial to describe and impossible to get partially wrong."]
+    bad: ["Loses game state, loses focus, and is violent for a change that should feel like a preference."]
+  dictionary-carries-markup:
+    good: ["Handles prose with `<em>`/`<strong>` inside without touching the markup at all."]
+    bad: ["Trades a closed door for an open one: `innerHTML` from a data file, forever, for every future
+           contributor and every future dictionary."]
+  wrap-every-prose-node:
+    good: ["Keeps `textContent` — the mechanism stays incapable of injecting markup.",
+           "Each sentence becomes addressable, which is what the footer rule needs anyway."]
+    bad: ["Verbose: roughly a hundred places in `index.html`."]
+
+decision-outcome:
+  chosen-option: "R2 with MANDATORY focus restoration, widened beyond panels; and H2"
+
+  rationale: |
+    R2 is chosen with a condition that is part of the decision and not a refinement of it: FOCUS RESTORATION IS
+    MANDATORY. A panel open with focus inside it must come back with that focus where it was. Without it, the
+    fix trades a stale label for a lost place, and the person who pays is the one who cannot see the label
+    anyway.
+
+    The Dev widened the scope past what was asked, and the widening is the substance of this record. It is not
+    only panels, and not only language:
+
+      · every PANEL,
+      · every ACTIVITY IN PROGRESS,
+      · every TEXT MENU,
+
+    and the trigger is not only the language. A FONT change does the same thing, and so does any other change
+    that reaches panels and activities. The rule generalises to: what the child changes under her own hands
+    redraws itself, and does not move her.
+
+    H2 is chosen for a reason that is about sequencing, not about security alone. The menu rule already
+    recorded in CLAUDE.md §4 says the explanation belongs in the FOOTER, not inline in the row — so a large
+    share of those hundred prose nodes are going to move into `.opt-hint` regardless. They will acquire an
+    element on the way. H2 is therefore cheap where it looks expensive, and it keeps `applyDom` unable to write
+    markup, which is worth keeping for its own sake.
+
+  consequences:
+    good:
+      - "The event stops being decorative. `i18n:change` gains listeners, and the same path serves font changes."
+      - "Prose becomes addressable one sentence at a time, which is exactly the granularity the footer rule needs."
+      - "`applyDom` keeps writing `textContent` only — the injection surface never opens."
+    bad:
+      - "Every redrawing surface now owes focus restoration, and a surface that forgets fails SILENTLY for
+         sighted mouse users while breaking keyboard and screen-reader users completely."
+      - "An activity in progress redrawing mid-question is a new class of bug: it must preserve not just focus
+         but the answer being typed and the position in the challenge."
+      - "About a hundred edits in `index.html`, most of which the footer migration will touch again."
+    neutral:
+      - "Nothing here changes the dictionaries, which are already complete and gated at parity across the
+         three languages."
+
+  confirmation: |
+    Three things are testable and one is a trap.
+
+    THE REDRAW: change the locale with a panel open and assert the panel's text changed WITHOUT reopening it.
+    That is the case R1 fails and R2 passes.
+
+    THE FOCUS: the case that matters, and the one to write first. Focus a control inside an open panel, fire
+    the change, and assert `document.activeElement` is the SAME control afterwards. A redraw that restores
+    focus to the panel, or to its first button, passes a careless version of this test and still loses the
+    child's place — so the assertion is identity of the control, not merely "focus is somewhere inside".
+
+    THE ACTIVITY: an activity in progress must survive the redraw with its state intact — the challenge, the
+    typed answer, the position. This one is worth writing before the implementation, because it is the piece
+    most likely to be discovered by a child rather than by us.
+
+    THE TRAP: a gate that only asserts "no `data-i18n` key leaks to the screen" would pass a panel that never
+    redraws at all. Staleness has to be tested as staleness.
+
+more-information: |
+  Continues the i18n work of pipeline item 14, which closed with `app/js/main.js` at zero raw interface
+  strings and a gate holding it there (`tests/main-i18n.node.test.js`), the three dictionaries at parity and
+  gated (`tests/i18n-dicts.node.test.js`), 41 `aria-label`s moved out of the markup, and `initI18n()` moved to
+  the TOP of boot so the interface is never built before the language is known.
+
+  Relates to: ADR-0010 pillars 2 and 3; ADR-0012 (typography — the font change is the second trigger this
+  record names); ADR-0028 and ADR-0029 (the panels that will do the listening, and the marks that must survive
+  a redraw); CLAUDE.md §4 (the footer rule that makes H2 cheap).
