@@ -970,10 +970,10 @@ function draw(){ drawApi.drawFrame(); }
    os chamadores de cima (update, keydown, initGamepad, restartGame, applyLetra, window.__incl) nao mudem.
    respawnFigure NAO foi junto: apesar de colada ao bloco e chamada so pelo quiz, ela re-sorteia a posicao
    da moeda — e do slice de moedas, e entra no quiz por injecao. */
-function openQuiz(pl: Player,coinIndex: number,shapeId: Parameters<typeof quizApi.openQuiz>[2]){ quizApi.openQuiz(pl,coinIndex,shapeId); }
-function openSilabas(pl: Player,coinIndex: number,letter: Parameters<typeof quizApi.openSilabas>[2]){ quizApi.openSilabas(pl,coinIndex,letter); }
-function renderQuiz(pl: Player){ quizApi.renderQuiz(pl); }
-function closeQuiz(pl: Player){ quizApi.closeQuiz(pl); }
+function openQuiz(pl: Parameters<typeof quizApi.openQuiz>[0],coinIndex: number,shapeId: Parameters<typeof quizApi.openQuiz>[2]){ quizApi.openQuiz(pl,coinIndex,shapeId); }
+function openSilabas(pl: Parameters<typeof quizApi.openSilabas>[0],coinIndex: number,letter: Parameters<typeof quizApi.openSilabas>[2]){ quizApi.openSilabas(pl,coinIndex,letter); }
+function renderQuiz(pl: Parameters<typeof quizApi.renderQuiz>[0]){ quizApi.renderQuiz(pl); }
+function closeQuiz(pl: Parameters<typeof quizApi.closeQuiz>[0]){ quizApi.closeQuiz(pl); }
 // A INTENCAO chega da engine; QUEM DECIDE o que ela significa e este jogo (ADR-0033). A grade de tres
 // colunas e o desvio de Braille moravam dentro do `input/keydown` e do `input/gamepad`, em duas COPIAS —
 // que e a pior forma de ter uma regra. Agora ela existe uma vez, aqui, do lado de quem e dono do desafio.
@@ -992,10 +992,10 @@ function modalInput(pl: Player, intent: ModalIntent) {
   else if (intent === 'erase') quizErase(pl);
 }
 const temModal = (i: number) => !!(jogadores()[i] && jogadores()[i].quiz);
-function quizMove(pl: Player,d: Parameters<typeof quizApi.quizMove>[1]){ quizApi.quizMove(pl,d); }
-function quizConfirm(pl: Player){ quizApi.quizConfirm(pl); }
-function quizErase(pl: Player){ quizApi.quizErase(pl); }
-function announceBraille(pl: Player){ quizApi.announceBraille(pl); }
+function quizMove(pl: Parameters<typeof quizApi.quizMove>[0],d: Parameters<typeof quizApi.quizMove>[1]){ quizApi.quizMove(pl,d); }
+function quizConfirm(pl: Parameters<typeof quizApi.quizConfirm>[0]){ quizApi.quizConfirm(pl); }
+function quizErase(pl: Parameters<typeof quizApi.quizErase>[0]){ quizApi.quizErase(pl); }
+function announceBraille(pl: Parameters<typeof quizApi.announceBraille>[0]){ quizApi.announceBraille(pl); }
 function respawnFigure(i: number){
   const occ=new Set(); coins.forEach((c,j)=>{ if(j!==i)occ.add(c.x+','+c.y); });
   for(const cand of shuffle(findCoinCandidates())){ const x=cand.tx*TILE+3,y=cand.ty*TILE+3;
@@ -1031,13 +1031,27 @@ const sessionApi = initSession({
   burstSparkle, addShake, addHitstop, rnd,
   POWER_MSG,
   coinPools: ()=>coinPools(), setupExtras, rebuildExtras, resetMinimap,
-  openQuiz: (pl,i,sh)=>openQuiz(pl,i,sh), openSilabas: (pl,i,l)=>openSilabas(pl,i,l), closeQuiz: (pl)=>closeQuiz(pl),
+  // A PONTE ENTRE DUAS VISTAS QUE NÃO SE FALAM. `game/session` declara o que ELE lê do jogador
+  // (`SessionPlayer`) e `game/quiz` declara o que ELE lê (`QuizPlayer`). O objeto que atravessa é o mesmo
+  // `GamePlayer`, e as duas são DESCRIÇÕES PARCIAIS dele — o `session` aqui só REPASSA um jogador que não
+  // interpreta, e declarar uma vista para um valor repassado é o que produz o conflito.
+  //
+  // ⚠️ O `as` NÃO CONSERTA O ERRO, e está aqui de propósito: ele troca um erro que ENGANA ("SessionPlayer
+  // não é QuizPlayer", que soa como vista mal escolhida) por um que APONTA A CAUSA ("GamePlayer não é
+  // QuizPlayer, porque `PlayerQuiz` não é `Quiz`"). O defeito real é que `game/entity` redescreve como
+  // `PlayerQuiz` o que `game/quiz` já possui como união `Quiz` — issue #79, mesmo formato do #78.
+  openQuiz: (pl,i,sh)=>openQuiz(pl as GamePlayer,i,sh),
+  openSilabas: (pl,i,l)=>openSilabas(pl as GamePlayer,i,l),
+  closeQuiz: (pl)=>closeQuiz(pl as GamePlayer),
   loadPlayerA11y, assignControls, ensureSprites, configureRender,
   reapplyVizAll: ()=>reapplyVizAll(), layout, hideTouchControls, updateGameHud,
   setPhase, titleShow: (id)=>titleUI.show(id),
 });
 function updateHud(){ sessionApi.updateHud(); }
-function win(pl: Player){ sessionApi.win(pl); }
+// Os invólucros que só REPASSAM tomam o tipo do delegado. O passe mecânico tinha posto `Player` neles pela
+// tabela de nomes, enquanto os OUTROS parâmetros dos mesmos invólucros já usavam `Parameters<>` — a
+// inconsistência era minha, e é ela que produzia metade dos conflitos `XPlayer` ↔ `Player`.
+function win(pl: Parameters<typeof sessionApi.win>[0]){ sessionApi.win(pl); }
 function restartGame(){ sessionApi.restartGame(); }
 function setMode(m: Parameters<typeof sessionApi.setMode>[0]){ sessionApi.setMode(m); }
 function setNumPlayers(n: number){ sessionApi.setNumPlayers(n); }
