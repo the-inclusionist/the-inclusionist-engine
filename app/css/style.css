@@ -2,6 +2,7 @@
 :root{
   --bg:#0b1020; --panel:#1b2440; --ink:#f5f8ff; --ink-soft:#cdd6f2;
   --accent:#ffd23f; --accent-ink:#1a1400; --focus:#ffd23f; --good:#34e29b;
+  --changed:#fff; /* ADR-0029: moldura de quem saiu do padrão */
   --maxw:1000px; --tap:44px;
   --ui-fs:16px; /* fonte-base da UI (<p>): 16px = MÍNIMO a 640×360; o JS (layout) aumenta conforme o canvas cresce */
   /* ===== Tipografia oficial EdSP ===== */
@@ -94,7 +95,10 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 .quiz-prob .frac-svg{width:2.6em;height:2.6em}
 .quiz-dots{font-size:1.3em;letter-spacing:.15em;line-height:1.3;margin:.3rem 0;max-width:12em}
 @media (prefers-contrast: more){
-  :root{ --bg:#000; --panel:#000; --ink:#fff; --ink-soft:#fff; --accent:#ffe600; }
+  /* Aqui `--ink-soft` JÁ é branco: a moldura de "alterado" tem que deixar de ser branca, ou marcado e
+     não-marcado viram a mesma moldura — justamente para a criança cujos ajustes têm mais chance de estar
+     fora do padrão. Uma marca cuja visibilidade depende do tema não é uma marca (ADR-0029). */
+  :root{ --bg:#000; --panel:#000; --ink:#fff; --ink-soft:#fff; --accent:#ffe600; --changed:#ffe600; }
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:var(--lh);letter-spacing:var(--ls);word-spacing:var(--ws)}
@@ -358,6 +362,14 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 .ctrl-players .mode-btn{padding:.3em .7em;font-size:.95rem}
 .ctrl-list{display:flex;flex-direction:column;gap:.45rem;text-align:left}
 .ctrl-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;background:#0e1326;border:2px solid var(--ink-soft);border-radius:8px;padding:.4rem .6rem}
+/* ADR-0029 — SAIU DO PADRÃO. Dois canais visuais no mesmo lugar: a COR da moldura e a FORMA, que é uma
+   moldura DUPLA (borda, respiro, anel). O anel transparente de 2px revela o fundo do próprio elemento e é o
+   que cria o respiro; sem ele os dois anéis colariam e viraria só uma borda mais grossa — uma diferença de
+   espessura que ninguém percebe sem ter o não-marcado ao lado para comparar. A contagem de anéis sobrevive a
+   escala de cinza, a daltonismo e a toda paleta do jogo, porque não é uma matiz. */
+.is-changed{border-color:var(--changed)!important;box-shadow:inset 0 0 0 2px transparent,inset 0 0 0 4px var(--changed)}
+/* A marca CEDE ao foco: perder o lugar é pior que perder uma dica. */
+.is-changed:focus-visible,.is-changed:focus{box-shadow:none}
 .ctrl-row kbd{background:var(--ink);color:var(--bg);border-radius:5px;padding:.05em .45em;font-weight:700}
 .ctrl-row.row-off{opacity:.42} /* item desabilitado (ex.: modo de teclado indisponível) = só cinza claro, sem texto extra */
 .ctrl-row .mode-btn[disabled]{cursor:not-allowed;opacity:.7}

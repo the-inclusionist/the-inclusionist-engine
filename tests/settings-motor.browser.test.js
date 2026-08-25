@@ -34,9 +34,10 @@ function mountDom() {
   document.body.innerHTML =
     '<div id="opt-movement" class="mode-btn"></div>' +
     '<div id="movement-players"></div>' +
-    '<button id="opt-facil" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button>' +
-    '<button id="opt-altmove" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button>' +
+    '<div class="ctrl-row"><span>Modo Fácil</span><button id="opt-facil" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>' +
+    '<div class="ctrl-row"><span>Alternância</span><button id="opt-altmove" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>' +
     '<button id="movement-reset" class="mode-btn" type="button">Restaurar</button>' +
+    '<button data-act="motora" class="pm-btn" type="button">Acessibilidade motora</button>' +
     '<button id="opt-eyes" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button>';
 }
 
@@ -188,5 +189,37 @@ describe('ui/settings-motor — restaurar padrões DESTE menu (ADR-0028)', () =>
     $('#movement-reset').click();
     expect(ctx.toggleMoveCalls).toEqual([]);
     expect(ctx.storeMap.size).toBe(0);
+  });
+});
+
+describe('ui/settings-motor — marca o que saiu do padrão (ADR-0029)', () => {
+  beforeEach(() => { mountDom(); });
+
+  const linha = (id) => $(id).closest('.ctrl-row');
+
+  it('[Right] Modo Fácil ligado marca a linha dele e o botão do menu', () => {
+    const ctx = fullCtx({ players: [{ easy: true, toggleMove: false }] });
+    initSettingsMotor(ctx);
+    expect(linha('#opt-facil').classList.contains('is-changed')).toBe(true);
+    expect(linha('#opt-altmove').classList.contains('is-changed')).toBe(false);
+    expect($('[data-act="motora"]').classList.contains('is-changed')).toBe(true);
+  });
+
+  it('[Boundary] o menu só desmarca quando a ÚLTIMA opção volta — não quando a primeira volta', () => {
+    // Se o menu limpasse a marca cedo demais, a opção ainda alterada ficaria escondida atrás de um menu que
+    // diz estar intocado, e a criança procuraria em todo lugar menos onde está.
+    const players = [{ easy: true, toggleMove: true }];
+    const ctx = fullCtx({ players });
+    const api = initSettingsMotor(ctx);
+    api.setEasy(0, false);
+    expect($('[data-act="motora"]').classList.contains('is-changed')).toBe(true);
+    $('#movement-reset').click();
+    expect($('[data-act="motora"]').classList.contains('is-changed')).toBe(false);
+  });
+
+  it('[Zero] tudo no padrão: nada marcado', () => {
+    const ctx = fullCtx();
+    initSettingsMotor(ctx);
+    expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
   });
 });

@@ -178,3 +178,45 @@ describe('ui/settings-typo — restaurar padrões DESTE menu (ADR-0028)', () => 
     expect(api.getFontKey()).toBe('atkinson');
   });
 });
+
+describe('ui/settings-typo — marca o que saiu do padrão (ADR-0029)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<button data-act="tipo" class="pm-btn" type="button">Tipografia</button>' +
+      '<div id="typo"><div id="typo-list"></div><span id="typo-preview"></span>' +
+      '<button id="typo-reset" type="button">Restaurar</button></div>';
+    document.documentElement.removeAttribute('data-fonte');
+  });
+
+  const linhaDe = (k) => $(`#typo-list button[data-font="${k}"]`).closest('.ctrl-row');
+
+  it('[Right] a fonte escolhida fora do padrão é marcada, e o botão do menu junto', () => {
+    const ctx = fullCtx({ store: fakeStore({ incl_font_k: 'lexend' }) });
+    initSettingsTypo(ctx).render();
+    expect(linhaDe('lexend').classList.contains('is-changed')).toBe(true);
+    expect($('[data-act="tipo"]').classList.contains('is-changed')).toBe(true);
+  });
+
+  it('[Boundary] as outras quinze NÃO são marcadas — elas foram oferecidas, não alteradas', () => {
+    const ctx = fullCtx({ store: fakeStore({ incl_font_k: 'lexend' }) });
+    initSettingsTypo(ctx).render();
+    expect($('#typo-list').querySelectorAll('.is-changed')).toHaveLength(1);
+    expect(linhaDe('atkinson').classList.contains('is-changed')).toBe(false);
+  });
+
+  it('[Right] voltar ao padrão APAGA a marca, na linha e no botão do menu', () => {
+    // O caso que mantém a marca honesta: uma marca que só soubesse aparecer acabaria em tudo.
+    const ctx = fullCtx({ store: fakeStore({ incl_font_k: 'lexend' }) });
+    const api = initSettingsTypo(ctx);
+    api.render();
+    $('#typo-reset').click();
+    expect($('#typo-list').querySelectorAll('.is-changed')).toHaveLength(0);
+    expect($('[data-act="tipo"]').classList.contains('is-changed')).toBe(false);
+    expect(api.getFontKey()).toBe('atkinson');
+  });
+
+  it('[Interface] a marca também sai no NOME acessível — quem não enxerga a moldura ouve o sufixo', () => {
+    const ctx = fullCtx({ store: fakeStore({ incl_font_k: 'lexend' }) });
+    initSettingsTypo(ctx).render();
+    expect($('#typo-list button[data-font="lexend"]').getAttribute('aria-label')).toContain('alterado');
+  });
+});

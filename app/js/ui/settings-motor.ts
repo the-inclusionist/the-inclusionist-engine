@@ -11,6 +11,8 @@
 
 import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
+import { markChanged, markMenuChanged } from './changed-mark.js';
+import { DEFAULTS } from '../core/state.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
@@ -116,6 +118,24 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
   function reflectMovementBtn(): void {
     const b = ctx.$<HTMLElement>('#opt-movement');
     if (b) b.classList.toggle('is-on', anyMotorActive(ctx.players));
+    refreshMarks();
+  }
+
+  /**
+   * A marca de "saiu do padrão" (ADR-0029). Pendurada no reflect que JÁ roda a cada mudança dos dois
+   * controles, porque uma marca que precise de uma chamada própria é uma marca que alguém vai esquecer —
+   * e uma marca errada manda a criança desfazer o que ela nunca mexeu.
+   *
+   * O escopo segue o do reset deste menu: as duas PREFERÊNCIAS. Os métodos de entrada (olhos, mapeamento)
+   * ficam de fora aqui também — não porque não possam mudar, mas porque o padrão deles não mora em DEFAULTS,
+   * e marcar sem uma fonte única de "o que é padrão" seria inventar uma segunda opinião sobre isso.
+   */
+  function refreshMarks(): void {
+    const easy = ctx.players.some((p) => !!p.easy) !== DEFAULTS.easy;
+    const alt = ctx.players.some((p) => !!p.toggleMove) !== DEFAULTS.toggleMove;
+    markChanged(facilBtn?.closest<HTMLElement>('.ctrl-row') ?? null, easy);
+    markChanged(altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null, alt);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="motora"]'), [easy, alt]);
   }
 
   function reflectFacil(): void {

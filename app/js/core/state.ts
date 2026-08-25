@@ -80,6 +80,8 @@ export const DEFAULTS = Object.freeze({
   // motora
   wheelchair: false,
   oneButton: false,
+  easy: false,        // por jogador (Modo Fácil)
+  toggleMove: false,  // por jogador (movimento por alternância)
   // visual
   cbSafe: false,
   ownerColors: true,

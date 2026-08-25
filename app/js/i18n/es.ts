@@ -269,5 +269,6 @@ const es: Record<string, string> = {
   'sr.empathy.reset': 'Modo empatía restaurado a sus valores predeterminados: simulaciones desactivadas. Las correcciones de daltonismo y los demás menús no cambiaron.',
   'sr.motor.reset': 'Modo Fácil y movimiento por alternancia restaurados a sus valores predeterminados. El control con los ojos y el mapeo de teclas siguen igual.',
   'sr.typo.reset': 'Tipografía restaurada a su valor predeterminado: {fam}, diseñada para personas con baja visión.',
+  'a11y.changed': 'modificado',
 };
 export default es;

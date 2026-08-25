@@ -1,0 +1,162 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-24
+  decision-makers: [Dev]
+  consulted: [ADR-0028 (the DEFAULTS this marker reads), ADR-0010 pillars 2/11, WCAG 1.4.1 and 1.4.11]
+  informed: []
+
+title: Anything that departs from its default is marked — and the mark is not only a colour
+
+context-and-problem-statement: |
+  ADR-0028 gave every settings menu a way BACK: a control that restores its own defaults. Four of the seven
+  are done. Using them surfaced the half that was missing, and the Dev named it: a way back is only useful to
+  someone who knows there is something to go back FROM.
+
+  A child explores the accessibility menus. Something gets worse — the screen, the sound, the controls. They
+  now face seven menus and roughly forty controls, and nothing on screen distinguishes the one they moved from
+  the thirty-nine they did not. The reset button is reachable, but only if they can find WHICH menu to open,
+  and today that means opening all of them and remembering what each one looked like before.
+
+  THE MENUS ARE UNSEARCHABLE. Not badly labelled — unsearchable, because current state and default state look
+  identical. The Dev's decision closes that: anything that has departed from its default carries a mark, at
+  both levels. The menu itself is marked, so it can be found from outside; each altered option is marked, so
+  it can be found inside.
+
+  There is a second question the decision raises but does not settle, and this record settles it rather than
+  leaving it to the implementation. The Dev asked for a WHITE FRAME in place of the default blue/grey, and
+  added "ou algum sinal semelhante". A frame colour is a colour. Three of this game's own users cannot use one:
+
+    - a colour-blind child, for whom the difference may not exist (WCAG 1.4.1, Use of Colour);
+    - a child in HIGH CONTRAST, where `--ink-soft` is ALREADY `#fff` — the very white the mark would use, so
+      the marked and unmarked frames become the same frame;
+    - a blind child, for whom the mark does not exist at all, and who is the one least able to reconstruct
+      what changed by looking at everything.
+
+  The third is the one that decides it. A game that names accessibility as its subject cannot ship a
+  find-what-changed feature that only sighted children can use.
+
+decision-drivers:
+- "The reset (ADR-0028) is only reachable if the child can find WHICH menu holds what they changed."
+- "Pillar 2 (a11y): the person most likely to be lost in these menus is the one they exist for."
+- "WCAG 1.4.1: colour must never be the only visual means of conveying information."
+- "WCAG 1.4.11: a non-text indicator needs 3:1 contrast against what surrounds it."
+- "The marker reads DEFAULTS (ADR-0028). No second source of truth about what 'default' means."
+- "It has to be cheap to keep true: a mark that silently stops updating is worse than no mark."
+
+considered-options:
+- "White frame only, as first described."
+- "White frame plus a second, non-colour channel (shape) plus an accessible-name suffix."
+- "A written summary screen listing everything that departs from default."
+- "Mark only the menus, not the individual options."
+
+pros-and-cons-of-the-options:
+  colour-only:
+    good:
+    - "One CSS rule per surface; nothing to keep in sync."
+    - "Reads instantly for the children who can see it."
+    bad:
+    - "Fails WCAG 1.4.1, and not academically: in high contrast the default frame is already white, so the
+       mark disappears for exactly the child whose settings are most likely to be non-default."
+    - "Gives a blind child nothing, in the menu where they have the most to lose and the least way to look."
+  colour-plus-shape-plus-name:
+    good:
+    - "Three channels, and any one of them alone is enough to find the changed option."
+    - "The accessible name makes the marks READABLE IN SEQUENCE by a screen reader, which is closer to the
+       written summary than to a visual hint — a blind child can walk the menu and hear what moved."
+    bad:
+    - "Every panel has to tell the marker what its own defaults are, so the wiring is per-menu, not global."
+    - "A mark that is wrong is worse than absent: it would send a child to undo something they never touched."
+  written-summary-screen:
+    good:
+    - "One place, complete, easy to read aloud."
+    bad:
+    - "It is a NINTH surface to find, and it answers 'what changed' without answering 'where do I fix it'."
+    - "Does not remove the need for the in-menu mark; it postpones it."
+  menus-only:
+    good:
+    - "Cheapest bubble-up: seven booleans."
+    bad:
+    - "Narrows the search from seven menus to one, then abandons the child in front of a dozen controls."
+
+decision-outcome:
+  chosen-option:
+    link: "White frame plus a second, non-colour channel plus an accessible-name suffix"
+    justification: |
+      ANYTHING THAT DEPARTS FROM ITS DEFAULT IS MARKED, at two levels, and the mark carries THREE CHANNELS.
+
+      THE LEVELS. The option row is marked when its own value differs from its default. The menu is marked
+      when any option inside it is marked — on the pause-menu entry that opens it, so the trail starts OUTSIDE
+      the menu. Marking only the open card would answer the question only for someone who already guessed
+      right about which menu to open.
+
+      THE CHANNELS, and none of them is decorative:
+
+        COLOUR — a white frame in place of the default blue/grey, as decided. In HIGH CONTRAST the token
+        switches to the accent instead, because there the default frame is already white and white-on-white
+        conveys nothing. A mark whose visibility depends on the theme is not a mark.
+
+        SHAPE — a doubled frame (an inset ring inside the border). Survives greyscale, colour blindness and
+        every palette in the game, because it is a count of rings and not a hue.
+
+        NAME — the accessible name of the control gains a suffix saying it is altered. This is the channel
+        that does the most work and costs the least attention: a blind child walking the menu HEARS which
+        controls moved, in order, without asking for a summary.
+
+      THE MARK READS `DEFAULTS` AND NOTHING ELSE (ADR-0028). If a value's default is not in DEFAULTS, that
+      value cannot be marked — and that is the correct failure, because the alternative is a second opinion
+      about what "default" means, and the two would diverge exactly when it mattered.
+
+      THE QUICK ACCESSIBILITY BAR GETS NO RESET. Decided here because it came up in the same breath: its
+      reset would mean "turn everything in it off", and the Dev judged the bar easy enough to reach that the
+      control is not worth its own risk. It still gets MARKED, because being findable is a separate question
+      from being resettable — and the bar is the surface a child is most likely to have touched by accident.
+
+  consequences:
+    positive:
+    - "The reset from ADR-0028 becomes usable: the child can find what to undo instead of undoing everything."
+    - "The child who cannot see the mark gets the same information, in order, from the screen reader — which
+       for this feature is not a fallback but the better interface."
+    - "An educator can glance at a shared machine and see which settings the previous child left behind."
+    - "It gives DEFAULTS a second consumer. A default that is wrong now shows up on screen instead of hiding
+       inside a reset nobody pressed."
+    neutral:
+    - "The mark is derived, never stored: it is recomputed from current-vs-default, so it cannot go stale in
+       storage. It CAN go stale on screen if a panel forgets to refresh after a change — which is why the
+       refresh belongs to the same function that already re-reflects the control."
+    negative:
+    - "Per-menu wiring. Each panel must say what its own defaults are; there is no global sweep that could
+       discover this, and pretending otherwise would produce marks that are confidently wrong."
+    - "A wrong mark is worse than no mark: it sends a child to undo something they never touched, and costs
+       them the trust that makes the rest of the menu usable."
+    - "Two more things to keep contrast-checked (the frame and the ring), under WCAG 1.4.11's 3:1 for
+       non-text indicators, in every palette the game ships."
+    - "The white frame is a THIRD meaning for a border in these panels, next to focus and selected state. If
+       they ever collide on one control, the mark yields to focus — losing your place is worse than losing a
+       hint."
+
+  confirmation: |
+    Testable, and in three separate pieces that fail differently.
+
+    The PREDICATE — value vs DEFAULTS — is pure and belongs in node. Its boundary cases are the ones that
+    matter: a value equal to its default must not be marked, and an option with NO default in DEFAULTS must
+    not be marked either, rather than being marked "just in case".
+
+    The APPLICATION — class, ring, accessible name — is DOM and belongs in browser. The case worth writing is
+    the one that keeps it honest over time: mark, change back to the default, and assert the mark is GONE.
+    A marker that only ever adds is a marker that ends up on everything.
+
+    The BUBBLE-UP — menu marked when any option inside is — is where the interesting failure lives: the menu
+    must UNMARK when the last altered option returns to its default, not when the first one does.
+
+    What is NOT confirmed here is the contrast of the chosen colours against every palette the game ships
+    (normal, the three direct-rendering high-contrast levels, and the colour-blindness corrections). WCAG
+    1.4.11 asks 3:1 for a non-text indicator, and this record does not claim it has been measured. It has
+    not. The shape channel is what makes that a defect to fix rather than a feature that fails silently.
+
+more-information: |
+  Extends ADR-0028 (per-menu persistence and reset), whose `DEFAULTS`, `defaultAudioCat` and
+  `DEFAULT_FONT_KEY` are the only sources this marker may read.
+
+  Relates to: ADR-0010 (pillars 2 accessibility and 11 UI); ADR-0011 (visual accessibility — the palettes the
+  mark has to survive); ADR-0012 (typography). The per-menu wiring and the contrast measurement live in the
+  GitLab issues, not here.

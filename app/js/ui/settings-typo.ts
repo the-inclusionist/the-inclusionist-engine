@@ -9,6 +9,7 @@
 
 import { t } from '../core/i18n.js';
 import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, type FontItem } from './fonts.js';
+import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
@@ -157,6 +158,25 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     const cur = FONT_BY_KEY[fontKey];
     const pv = ctx.$<HTMLElement>('#typo-preview');
     if (pv && cur) pv.style.fontFamily = `'${cur.fam}'`;
+    refreshMarks();
+  }
+
+  /**
+   * A marca de "saiu do padrão" (ADR-0029). Mora DENTRO do render porque é derivada, nunca guardada: ela é
+   * recalculada de valor-atual-contra-padrão a cada desenho, então não tem como envelhecer no armazenamento.
+   * Envelhecer na TELA ela tem — se algum dia alguém mudar a fonte sem redesenhar —, e é por isso que a
+   * atualização anda junto com quem já redesenha, e não numa função própria que se possa esquecer de chamar.
+   *
+   * Aqui a linha marcada é a da fonte ESCOLHIDA, e só quando ela não é a padrão: as outras quinze não saíram
+   * do padrão, foram apenas oferecidas.
+   */
+  function refreshMarks(): void {
+    const changed = fontKey !== DEFAULT_FONT_KEY;
+    const list = ctx.$<HTMLElement>('#typo-list');
+    list?.querySelectorAll<HTMLElement>('.' + CHANGED_CLASS).forEach((el) => markChanged(el, false));
+    const sel = list?.querySelector<HTMLElement>(`button[data-font="${fontKey}"]`);
+    markChanged(sel?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="tipo"]'), [changed]);
   }
 
   // ---- restaurar os padrões DESTE menu (ADR-0028) ----
