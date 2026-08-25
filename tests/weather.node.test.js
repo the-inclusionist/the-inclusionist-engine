@@ -10,13 +10,14 @@ import {
   initWeather, updateWeather, drawWeather, getRainLevel, getWeatherT, setWeatherT,
 } from '../app/js/render/weather.js';
 import { setCenarioValue, setPhaseValue } from '../app/js/core/state.js';
+import { CENARIOS } from '../app/js/render/cenario-data.js';
 
 describe('rainLevelTarget (curva L5: bom 30s → loop de 60s garoa/chuva/garoa/bom)', () => {
-  it('[Zero] antes de 30s: sempre seco, mesmo na Cidade', () => {
+  it('[Zero] antes de 30s: sempre seco, mesmo num tema que tem chuva', () => {
     expect(rainLevelTarget(0, true, false)).toBe(0);
     expect(rainLevelTarget(29.9, true, false)).toBe(0);
   });
-  it('[Boundary] fora da Cidade ou com rm.decor: sempre seco', () => {
+  it('[Boundary] tema sem chuva, ou com rm.decor: sempre seco', () => {
     expect(rainLevelTarget(40, false, false)).toBe(0);
     expect(rainLevelTarget(40, true, true)).toBe(0);
   });
@@ -32,6 +33,16 @@ describe('rainLevelTarget (curva L5: bom 30s → loop de 60s garoa/chuva/garoa/b
   });
   it('[Boundary] o loop repete a cada 60s (c volta a 0)', () => {
     expect(rainLevelTarget(90, true, false)).toBe(0.35); // c=(90-30)%60=0
+  });
+});
+
+describe('quem tem chuva é o TEMA, e não um `if` dentro do clima', () => {
+  it('[Interface] a Cidade e a Floresta declaram chuva; os outros três, não', () => {
+    // Era `cenario === 'cidade'` dentro de render/weather: verdade enquanto a Cidade fosse o único tema
+    // molhado, e invisível para quem fosse dar chuva a um tema novo — a pessoa abre a tabela de cenários e não
+    // acha nada para mudar, porque não havia nada lá. Este caso é o que trava a volta daquele `if`.
+    const comChuva = Object.keys(CENARIOS).filter((id) => CENARIOS[id].chuva);
+    expect(comChuva.sort()).toEqual(['cidade', 'floresta']);
   });
 });
 

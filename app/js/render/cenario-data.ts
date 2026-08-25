@@ -104,6 +104,8 @@ export interface CenarioTema {
   hills?: [string, string]; // as duas bandas de morro: [fundo, frente] — só `fundo:'gerado'`
   /** Sol baixo com leque de raios, assado na textura do céu. Ausente = céu de puro gradiente. */
   sol?: { cor: string; x: number; y: number };
+  /** Este tema tem CHUVA (ciclo do clima em render/weather). Ausente = sempre seco. */
+  chuva?: true;
   decor?: string[];         // decoração viva ligada neste tema (render/scene-sky.stepV3Decor)
 }
 
@@ -112,7 +114,8 @@ export const CENARIO_PADRAO = 'cidade';
 
 /* L6 (REFEITO — fiel à v3.1.100): os 4 temas usam EXATAMENTE o céu, as nuvens, as montanhas, a grama
    e a decoração viva de lá (fórmulas copiadas). BLOCOS = Clarity SEM recolor (a v3 não recoloria tiles
-   por tema). NENHUM tema tem chuva — chuva é só da Cidade. */
+   por tema). A CHUVA deixou de ser privilégio da Cidade: é o campo `chuva` abaixo que a concede, e a
+   Floresta também a tem (decisão do Dev, 2026-08-25). */
 // ⚠️ TRÊS IDS MENTEM, e o rótulo é que está certo. `cemiterio` é "Amanhecer no Campo" e `espaco` é "Noite no
 // Campo" (ver `cen.*` nos dicionários): os temas mudaram, os ids ficaram. Com `campo` = "Dia no Campo", os três
 // são o MESMO lugar em três horas do dia, e é por isso que compartilham a silhueta em render/scene-parallax.
@@ -124,7 +127,11 @@ export const CENARIO_PADRAO = 'cidade';
 // nível viram partes de estação espacial — não é só trocar o céu. E o de Halloween é uma FESTA de Halloween,
 // não um cemitério: abóboras, fantasias e doces, não túmulos.
 export const CENARIOS: Record<string, CenarioTema> = {
-  cidade:    { nome: 'cen.cidade', fundo: 'png' },
+  // `chuva` estava ESCRITA NO CÓDIGO do clima, como `cenario === 'cidade'`. Era verdade e virou mentira no dia
+  // em que o Dev pediu chuva na Floresta — e o pior de uma condição dessas é que ela não avisa: quem lê
+  // `render/weather` não tem como saber que existe uma lista de temas, porque não existe lista, existe um `if`.
+  // Aqui a capacidade é DADO, e um tema novo declara a sua ao nascer.
+  cidade:    { nome: 'cen.cidade', fundo: 'png', chuva: true },
   campo:     { nome: 'cen.campo',          fundo: 'gerado', sky: ['#86c5e8', '#cfeecb'], cloud: ['#ffffff', '#d4e6f5'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens', 'passaros', 'borboletas'] },
   cemiterio: { nome: 'cen.cemiterio',      fundo: 'gerado', sky: ['#2b2540', '#5a4f6b'], cloud: ['#d9c4dd', '#a98fb6'], hills: ['#4a5f55', '#33473d'], decor: ['nuvens', 'passaros', 'sparkles', 'minhocas', 'nevoa'] },
   espaco:    { nome: 'cen.espaco',         fundo: 'gerado', sky: ['#05030f', '#161033'], cloud: ['#3a3550', '#262238'], hills: ['#1e3030', '#142024'], decor: ['nuvens', 'sparkles', 'vagalumes'] },
@@ -140,6 +147,7 @@ export const CENARIOS: Record<string, CenarioTema> = {
                sky: ['#231a52', '#a34a6e', '#ffd166', '#e0392c', '#8e2320', '#5a1a1c', '#3a1418'],
                sol: { cor: '#ffe9a8', x: 0.30, y: 0.46 },
                cloud: ['#ffffff', '#e9a06a'], // corpo branco, sombra alaranjada: é a luz baixa batendo por baixo
+               chuva: true,
                hills: ['#2f5e35', '#1f4226'], decor: ['nuvens', 'passaros', 'borboletas'] },
 };
 

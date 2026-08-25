@@ -10,6 +10,7 @@
 
 import { rnd } from '../core/rng.js';
 import { cenario, phase } from '../core/state.js';
+import { CENARIOS } from './cenario-data.js';
 
 // ---------------------------------------------------------------------------------------------
 // Pure logic (no PIXI/DOM) — rain intensity curve, thunder cadence, drop positions over time.
@@ -20,14 +21,20 @@ export interface RainDrop { x: number; y: number; len: number; spd: number; }
 
 /**
  * L5 (rotina do José): tempo bom nos primeiros 30s; depois LOOP de 60s = garoa 5s → chuva 5s → garoa 5s → bom 45s.
- * Rain is CIDADE-only (nenhum tema v3 tem chuva) and is skipped when scene decor is reduced-motion.
+ * Skipped when scene decor is reduced-motion.
+ *
+ * QUEM TEM CHUVA É DADO DO TEMA (`CENARIOS[...].chuva`), e não uma condição escrita aqui. Era
+ * `cenario === 'cidade'` — verdade enquanto a Cidade era o único tema com chuva, e mentira no dia em que o Dev
+ * pediu chuva na Floresta. O defeito de uma condição dessas não é estar errada, é ser INVISÍVEL de onde a
+ * pessoa procura: quem abre a tabela de cenários para dar chuva a um tema novo não encontra nada para mudar.
+ *
  * @param sec elapsed weather-clock time, in seconds
- * @param cidade true when the active theme is 'cidade'
+ * @param temChuva true when the active theme declares `chuva`
  * @param reduceDecor true when reduced-motion scene decor (rm.decor) is on
  * @returns target rain level: 0 (dry), 0.35 (garoa) or 1 (chuva)
  */
-export function rainLevelTarget(sec: number, cidade: boolean, reduceDecor: boolean): number {
-  if (!(sec >= 30 && !reduceDecor && cidade)) return 0;
+export function rainLevelTarget(sec: number, temChuva: boolean, reduceDecor: boolean): number {
+  if (!(sec >= 30 && !reduceDecor && temChuva)) return 0;
   const c = (sec - 30) % 60;
   return c < 5 ? 0.35 : c < 10 ? 1 : c < 15 ? 0.35 : 0;
 }
@@ -124,7 +131,7 @@ export function updateWeather(): void {
   _weatherT++;
   const sec = _weatherT / 60;
   const rm = _getRm ? _getRm() : {};
-  const target = rainLevelTarget(sec, cenario === 'cidade', !!rm.decor);
+  const target = rainLevelTarget(sec, !!(cenario && CENARIOS[cenario]?.chuva), !!rm.decor);
   _rainLevel = rampRainLevel(_rainLevel, target, 1 / 30); // rampa ~1s
   const step = stepThunder(_rainLevel, _thunderCD, _flash, rnd, (inten) => { if (_thunder) _thunder(inten); });
   _thunderCD = step.thunderCD; _flash = step.flash;
