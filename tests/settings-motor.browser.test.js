@@ -35,7 +35,9 @@ function mountDom() {
     '<div id="opt-movement" class="mode-btn"></div>' +
     '<div id="movement-players"></div>' +
     '<button id="opt-facil" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button>' +
-    '<button id="opt-altmove" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button>';
+    '<button id="opt-altmove" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button>' +
+    '<button id="movement-reset" class="mode-btn" type="button">Restaurar</button>' +
+    '<button id="opt-eyes" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button>';
 }
 
 describe('ui/settings-motor', () => {
@@ -145,5 +147,46 @@ describe('ui/settings-motor', () => {
     const ctx = fullCtx();
     const api = initSettingsMotor(ctx);
     expect(() => { api.renderMovPlayers(); api.reflectFacil(); api.reflectAltMove(); }).not.toThrow();
+  });
+});
+
+describe('ui/settings-motor — restaurar padrões DESTE menu (ADR-0028)', () => {
+  beforeEach(() => { mountDom(); });
+
+  it('[Right] devolve Modo Fácil e alternância de TODOS os jogadores, não só o selecionado', () => {
+    // O painel edita um jogador por vez, mas o reset é do MENU: deixar o jogador 2 em Modo Fácil porque a aba
+    // aberta era a do jogador 1 daria dois estados diferentes com um só nome.
+    const players = [{ easy: true, toggleMove: true }, { easy: true, toggleMove: false }];
+    const ctx = fullCtx({ players });
+    initSettingsMotor(ctx);
+    $('#movement-reset').click();
+    expect(players).toEqual([{ easy: false, toggleMove: false }, { easy: false, toggleMove: false }]);
+  });
+
+  it('[Interface] NÃO desliga o controle pelos olhos — um reset não pode tirar o ponteiro de quem clica com ele', () => {
+    // A criança que joga com os olhos aponta com os olhos. Desligar a webcam a deixaria sem como clicar o
+    // botão de volta: o reset teria criado a armadilha que existe para desfazer.
+    const ctx = fullCtx();
+    initSettingsMotor(ctx);
+    $('#opt-eyes').setAttribute('aria-pressed', 'true');
+    $('#movement-reset').click();
+    expect($('#opt-eyes').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('[Interface] o anúncio DIZ o que ficou de fora — senão a criança conclui que o botão não funcionou', () => {
+    const ctx = fullCtx({ players: [{ easy: true, toggleMove: false }] });
+    initSettingsMotor(ctx);
+    $('#movement-reset').click();
+    expect(ctx.said.at(-1)).toContain('olhos');
+    expect(ctx.said.at(-1)).toContain('mapeamento');
+  });
+
+  it('[Zero] com tudo já no padrão, não escreve nem chama setToggleMove', () => {
+    const ctx = fullCtx();
+    initSettingsMotor(ctx);
+    ctx.storeMap.clear();
+    $('#movement-reset').click();
+    expect(ctx.toggleMoveCalls).toEqual([]);
+    expect(ctx.storeMap.size).toBe(0);
   });
 });

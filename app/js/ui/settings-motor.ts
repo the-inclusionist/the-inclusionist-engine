@@ -10,6 +10,7 @@
 // Escape handling, renderMapHub) is the SHARED helper used by every settings panel and stays in game.js.
 
 import type { PlayerView } from '../core/entity.js';
+import { t } from '../core/i18n.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
@@ -175,6 +176,34 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
       reflectAltMove();
     });
   }
+
+  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
+  //
+  // O alcance aqui é MENOR que a tela, e de propósito. A Acessibilidade motora hospeda quatro coisas: Modo
+  // Fácil, movimento por alternância, o controle pelos olhos (#opt-eyes) e o mapeamento de teclas (#map-hub).
+  // O reset devolve as duas PREFERÊNCIAS e não encosta nos dois MÉTODOS DE ENTRADA, por uma razão que vale
+  // mais que a simetria:
+  //
+  //   UM RESET SÓ PODE DESFAZER O QUE ELE TAMBÉM CONSEGUE REFAZER.
+  //
+  // A criança que joga com os olhos aponta com os olhos. Desligar o controle pela webcam tira dela o ponteiro
+  // com que ela clicaria o botão de volta — o reset deixaria de remover uma armadilha para virar uma, e a
+  // saída passaria a depender de outra pessoa estar por perto. O mesmo vale para quem remapeou as teclas
+  // porque só alcança algumas: devolver o mapa de fábrica é devolver teclas que a mão dela não chega. Esse
+  // mapeamento, aliás, já tem o reset dele (#ctrl-reset), onde a escolha é explícita e não um efeito colateral.
+  //
+  // Por isso o anúncio DIZ o que ficou de fora: um botão que restaura menos do que o nome promete precisa
+  // dizer isso em voz alta, ou a criança conclui que ele não funcionou.
+  const resetBtn = ctx.$<HTMLButtonElement>('#movement-reset');
+  if (resetBtn) resetBtn.addEventListener('click', () => {
+    ctx.players.forEach((p, i) => {
+      if (p.easy) setEasy(i, false);
+      if (p.toggleMove) ctx.setToggleMove(i, false);
+    });
+    reflectFacil();
+    reflectAltMove();
+    ctx.srSay(t('sr.motor.reset'));
+  });
 
   reflectFacil();
   reflectAltMove();
