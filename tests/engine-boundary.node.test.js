@@ -59,7 +59,10 @@ function linhasDeCodigo(texto) {
 
 /** Dívida CONHECIDA em 2026-08-25. Esta lista só encolhe. Cada linha é uma issue esperando. */
 const IMPORTS_CONHECIDOS = {
-  'render/draw.ts': ['game/player.js', 'game/powerups.js', 'game/coin-spawning.js'],
+  // `game/player.js` SAIU (2026-08-25): era só `BOX`, a caixa de colisão, e três módulos de engine
+  // (`render/scene-city`, `render/scene-sky`, `platform/audio-nav`) já a recebiam por injeção — o `draw` era
+  // o único da camada de render ainda importando-a do jogo. Não foi política nova, foi alinhar o retardatário.
+  'render/draw.ts': ['game/powerups.js', 'game/coin-spawning.js'],
   // `render/textures.ts` SAIU DAQUI (2026-08-25): importava `SOMASUB_SHAPES` por causa de UMA linha do
   // `initTextures`, e agora recebe os ids das formas pelo ctx. A aresta era pequena e o efeito não: era
   // também a única razão de `render/viz-setters` arrastar `game/` por transitividade — duas de quatro.

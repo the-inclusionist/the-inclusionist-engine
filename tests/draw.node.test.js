@@ -35,6 +35,10 @@ function makeCtx(over = {}) {
   const ctx = {
     camera: { x: 0, y: 0 },
     renderer: { render: (disp, opt) => log.render.push(opt.renderTexture) },
+    // A caixa do jogador ENTRA pelo ctx (como já entrava em scene-city/scene-sky/audio-nav). Os valores são
+    // os reais de `game/player` — os casos da câmera abaixo conferem `y - BOX.h/2`, então inventar aqui faria
+    // o teste medir o fixture em vez do módulo.
+    BOX: { w: 10, h: 30 },
     caneLayer: gfx(), chairLayer: gfx(), easyHitbox: gfx(),
     getVpTex: () => ['RT0', 'RT1', 'RT2', 'RT3'],
     isWheelchair: () => false,
@@ -94,6 +98,15 @@ describe('render/draw — placeCam', () => {
     expect(ctx.camera.y).toBe(-r.camY);
     expect(log.parallax).toEqual([[r.camX, r.camY]]); // o parallax recebe os MESMOS valores
   });
+  it('[Interface] a caixa vem do CTX: outra altura, outro enquadramento', () => {
+    // Verifiquei com uma mutação — cravar `30` no lugar de `ctx.BOX.h` — e os 29 casos deste arquivo passaram,
+    // porque o fixture usa justamente a altura real. Um teste que não distingue "injetado" de "cravado com o
+    // número certo" não mede injeção nenhuma; é o mesmo buraco que o SHAPE_TEX tinha. Aqui a caixa é OUTRA,
+    // e o enquadramento tem de andar com ela: `pl.y` é o pé, e meia caixa acima é o meio do corpo.
+    const { api } = makeCtx({ BOX: { w: 10, h: 60 } });
+    expect(api.placeCam(pl(500, 400)).camY).toBe((400 - 30) - LOGICAL_H / 2);
+  });
+
   it('[Boundary] clampa na borda ESQUERDA/SUPERIOR (nunca mostra fora do mundo)', () => {
     const { api } = makeCtx();
     expect(api.placeCam(pl(0, 0))).toEqual({ camX: 0, camY: 0 });

@@ -62,7 +62,6 @@
 
 import { LOGICAL_W, LOGICAL_H, EASY } from '../core/constants.js';
 import type { PlayerView } from '../core/entity.js';
-import { BOX } from '../game/player.js';
 import { rnd } from '../core/rng.js';
 import { JUICE, easeOut3, shakeAmp, drawFx } from './fx.js';
 import { enquadrar, tremer } from './camera.js';
@@ -131,6 +130,16 @@ export interface DrawCtx {
   renderer: RendererLike;       // `app.renderer`
   caneLayer: GraphicsLike;      // bengala (modo cego)
   chairLayer: GraphicsLike;     // cadeira de rodas (empatia motora)
+  /**
+   * CAIXA DE COLISÃO do jogador (largura × altura, em px). ENTRA em vez de ser importada de `game/player`, e
+   * isso não é política nova: `render/scene-city`, `render/scene-sky` e `platform/audio-nav` já a recebem
+   * assim — este módulo é que tinha ficado para trás, sozinho na camada de render importando do jogo.
+   *
+   * Ela aparece em três lugares e sempre pela mesma razão: `pl.y` é o PÉ do jogador, e meia caixa acima é o
+   * meio do corpo. É conhecimento de gênero — um top-down não ancora no pé, um quiz não tem corpo — e por
+   * isso pertence a quem tem corpo, não a quem desenha.
+   */
+  BOX: { w: number; h: number };
   easyHitbox: GraphicsLike;     // retângulo translúcido do modo Fácil
 
   /* --- estado REATRIBUÍDO no game.js → getters (ver o cabeçalho) --- */
@@ -181,7 +190,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
     const mundo = { w: ctx.WORLD_PX_W(), h: ctx.WORLD_PX_H() }, tela = { w: LOGICAL_W, h: LOGICAL_H };
     // `pl.y` é o PÉ do jogador; o meio do corpo fica meia caixa acima. Esta conversão é a única coisa de
     // PLATAFORMA que havia no enquadramento, e agora ela mora aqui, onde o corpo existe — e não na câmera.
-    let cam = enquadrar(pl.x, pl.y - BOX.h / 2, mundo, tela);
+    let cam = enquadrar(pl.x, pl.y - ctx.BOX.h / 2, mundo, tela);
     const k = shakeAmp(); // JUICE: tremor decai linearmente (render/fx)
     // Os dois sorteios ficam DENTRO do `if`, como no original: com `k === 0` ele não chamava `rnd()`, e
     // chamá-lo duas vezes por quadro deslocaria o fluxo do gerador COMPARTILHADO — mesma semente, outro jogo.
@@ -235,7 +244,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
     for (const pl of PLS) {
       if (!pl.easy) continue;
       ctx.easyHitbox.lineStyle(1, 0xffffff, 0.45); ctx.easyHitbox.beginFill(0xffffff, 0.10);
-      ctx.easyHitbox.drawRect(pl.x - BOX.w / 2 - pad, pl.y - BOX.h - pad, BOX.w + 2 * pad, BOX.h + 2 * pad); ctx.easyHitbox.endFill();
+      ctx.easyHitbox.drawRect(pl.x - ctx.BOX.w / 2 - pad, pl.y - ctx.BOX.h - pad, ctx.BOX.w + 2 * pad, ctx.BOX.h + 2 * pad); ctx.easyHitbox.endFill();
     }
 
     if (numPlayers <= 1) {
@@ -243,7 +252,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
       for (let j = 0; j < _cs.length; j++) { const s = _cs[j]; if (s) s.alpha = shimOn ? 0.8 + 0.2 * Math.sin(fxClock * 0.12 + j * 1.7) : 1; }
       const { camX, camY } = placeCam(PLS[0]);
       ctx.markSeen(camX, camY); ctx.redrawMinimapIfDirty();
-      ctx.drawMinimapPlayer(PLS[0].x, PLS[0].y - BOX.h / 2);
+      ctx.drawMinimapPlayer(PLS[0].x, PLS[0].y - ctx.BOX.h / 2);
     } else {
       // Otimização: se TODOS estão no mesmo modo (caso comum), troca as texturas UMA vez; senão, por viewport.
       const v0 = PLS[0].viz, allSame = PLS.every((p) => p.viz === v0);
