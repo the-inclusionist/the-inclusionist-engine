@@ -39,15 +39,6 @@ export const HC_ROLE: Record<HcRoleKey, [number, number, number]> = (() => {
 /** Persiste HC_ROLE (chamado por setRoleColor/resetRoleColors no game.js). Migrado de localStorage direto → store. */
 export function saveHcRole(): void { store.setJSON(store.KEYS.hcrole, HC_ROLE); }
 
-/** Tile → papel semântico (null = estrutura, sem repintura). t===10 (portão) nunca chega aqui na prática — o
- *  boot do game.js remove o tile 10 do grid (vira MAP_GATE + ar); branch mantida verbatim do original. */
-export function roleOf(t: number): PaintableRole | null {
-  if (t === 9) return 'hazard';
-  if (t === 4 || t === 5 || t === 10) return 'climb';
-  if (t === 3) return 'water';
-  return null;
-}
-
 /* ===================== 3 níveis de contraste ===================== */
 export interface DirectCfg { off: number; mul: number; bgMul: number }
 // off/mul = mapa da plataforma (mais off = mais clara → mais contraste); bgMul = fundo (menor = mais escuro/
@@ -80,6 +71,18 @@ export interface HighContrastCtx {
   getWorldTexNormal: () => unknown; // worldTexNormal idem
   coinCanvasNormal: HTMLCanvasElement; // const, nunca reatribuído após o boot → valor direto
   coinTexNormal: unknown;
+  /**
+   * TILE → PAPEL SEMÂNTICO, e é o consumidor quem sabe. `null` = estrutura (sem repintura).
+   *
+   * Era uma tabela fixa AQUI DENTRO — `9` perigo, `4|5|10` escalável, `3` água — e o ADR-0027 a nomeia como o
+   * acoplamento nº 1 da base: quatro linhas das quais TODO o alto contraste dependia. Elas diziam, pela
+   * estrutura, que "perigo é o tile 9" era verdade da engine. É verdade DESTE MAPA. Um segundo jogo com outra
+   * numeração pintava o chão de laranja e a lava de cinza — sem erro, sem teste vermelho, para quem menos
+   * pode conferir isso olhando.
+   *
+   * A tabela do jogo de plataforma mora em `game/tile-roles`. Trocar de tabela é trocar de jogo, e é só isso.
+   */
+  roleOf: (t: number) => PaintableRole | null;
 }
 let ctx: HighContrastCtx | null = null;
 export function initHighContrast(c: HighContrastCtx): void { ctx = c; }
@@ -99,8 +102,13 @@ export function worldToTextureDirect(srcCanvas: HTMLCanvasElement, mode: string)
   c.drawImage(srcCanvas, 0, 0);
   dimDesat(c, cv.width, cv.height, cfg.mul, 1.22, cfg.off); // base: estrutura vira cinza-azulado (mais clara = mais contraste)
   for (let y = 0; y < hc.H; y++) for (let x = 0; x < hc.W; x++) {
-    const t = tileAt(x, y), role = roleOf(t); if (!role) continue; // repinta tiles não-estruturais pela cor do papel
+    const t = tileAt(x, y), role = hc.roleOf(t); if (!role) continue; // repinta tiles não-estruturais pela cor do papel
     const X = x * TILE, Y = y * TILE;
+    // ⚠️ O QUE SOBRA DE PLATAFORMA AQUI. A escada é desenhada com trilhos e degraus porque uma faixa sólida
+    // não LÊ como escada — decisão de acessibilidade, que serviria a qualquer jogo com algo escalável. Mas a
+    // forma da pergunta injetada ("este tile se desenha como escada?" · "que pintor este papel usa?") ainda
+    // não tem evidência que a escolha, e foi um consumidor que mostrou, no menu-nav, que a forma importa mais
+    // que a existência da injeção. Declarado em vez de adivinhado. Ver game/tile-roles.
     if (t === 4) { // ESCADA: preto + trilhos e degraus ciano → lê como escada (não faixa verde sólida)
       c.fillStyle = '#0a0e14'; c.fillRect(X, Y, TILE, TILE);
       c.fillStyle = 'rgb(' + HC_ROLE.climb.join(',') + ')'; c.fillRect(X + 1, Y, 2, TILE); c.fillRect(X + TILE - 3, Y, 2, TILE); // trilhos laterais (cor do papel, customizável)

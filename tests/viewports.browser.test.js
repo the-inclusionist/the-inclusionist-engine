@@ -22,7 +22,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 initHighContrast({
   W: 1, H: 1, outlineFg: () => 1, outlineBg: () => 0,
   getWorldCanvasNormal: () => null, getWorldTexNormal: () => null,
-  coinCanvasNormal: null, coinTexNormal: null,
+  coinCanvasNormal: null, coinTexNormal: null, roleOf: () => null,
 });
 
 const flatCanvas = (w, h, css) => {

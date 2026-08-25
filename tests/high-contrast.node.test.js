@@ -4,8 +4,9 @@
 // persistida) + a guarda de DI de initHighContrast + o desvio "normal" de worldTexFor/coinTexFor (não toca
 // canvas). ZOMBIES + Right-BICEP. Ver docs/2-Architecture/adr/ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect } from 'vitest';
+import { roleOf } from '../app/js/game/tile-roles.js'; // a tabela tile→papel é do JOGO; a engine a RECEBE
 import {
-  DIRECT_CFG, dcfg, roleOf, HC_ROLE_DEF, HC_ROLE, saveHcRole,
+  DIRECT_CFG, dcfg, HC_ROLE_DEF, HC_ROLE, saveHcRole,
   initHighContrast, worldTexFor, coinTexFor,
 } from '../app/js/render/high-contrast.js';
 
@@ -33,21 +34,6 @@ describe('render/high-contrast — dcfg (3 níveis de contraste)', () => {
     expect(dcfg('normal')).toBe(DIRECT_CFG['hc-direto']);
     expect(dcfg('sim-deuter')).toBe(DIRECT_CFG['hc-direto']);
     expect(dcfg('')).toBe(DIRECT_CFG['hc-direto']);
-  });
-});
-
-describe('render/high-contrast — roleOf (tile → papel semântico)', () => {
-  it('[Right] lava(9)=hazard · escada(4)/trampolim(5)=climb · água(3)=water', () => {
-    expect(roleOf(9)).toBe('hazard');
-    expect(roleOf(4)).toBe('climb');
-    expect(roleOf(5)).toBe('climb');
-    expect(roleOf(3)).toBe('water');
-  });
-  it('[Boundary] portão (10) também mapeia climb — branch verbatim do original (na prática nunca chega aqui: o boot remove o tile 10 do grid)', () => {
-    expect(roleOf(10)).toBe('climb');
-  });
-  it('[Inverse] estrutura/ar (0,1,2,6) não tem papel → null (fica no cinza-azulado dessaturado)', () => {
-    for (const t of [0, 1, 2, 6]) expect(roleOf(t)).toBeNull();
   });
 });
 
@@ -80,7 +66,7 @@ describe('render/high-contrast — worldTexFor/coinTexFor (desvio "normal": não
       getWorldCanvasNormal: () => { throw new Error('não deveria construir canvas em modo normal'); },
       getWorldTexNormal: () => worldTexNormal,
       coinCanvasNormal: /** @type {any} */ (null),
-      coinTexNormal,
+      coinTexNormal, roleOf,
     });
     expect(worldTexFor('normal')).toBe(worldTexNormal);
     expect(coinTexFor('normal')).toBe(coinTexNormal);

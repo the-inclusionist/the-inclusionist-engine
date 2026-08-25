@@ -86,6 +86,7 @@ import { initViewports } from './render/viewports.js'; // B2: fabrica de imagem 
 import { initSession, MODE_LABELS, MODES } from './game/session.js'; // C2: o ciclo de vida da RODADA
 import { initDraw } from './render/draw.js'; // C1: camera + o quadro + a escolha de quadro do personagem
 import { initVizSetters } from './render/viz-setters.js'; // Onda A: aplicacao dos modos de visao acessivel
+import { roleOf } from './game/tile-roles.js'; // Passo 7: a tabela tile->papel e' do JOGO, nao do alto contraste
 import { initLevelGeometry, buildRamps, buildRopes, drawElevators, buildDarkRegions, buildWcGeom as lgBuildWcGeom, rebuildExtras as lgRebuildExtras, setupExtras as lgSetupExtras } from './game/level-geometry.js'; // Onda A: rampas/cordas/elevador/escuridao/extras
 if(typeof window!=='undefined') window.__tiles = tiles; // hook de teste (Preview); world.js passa a usar na etapa 2
 initCharacterSprites(); // cria as texturas do personagem no boot — o import de sprites.js é PURO (sem I/O). Fase 2.24
@@ -479,7 +480,7 @@ const coinCanvasNormal=coinCanvas();
 const coinTex=tex(coinCanvasNormal);
 // As texturas NORMAIS ja existem: ligue o alto contraste. worldCanvasNormal/worldTexNormal sao `let`
 // (setCenario os reescreve ao trocar de tema), entao entram por getter e nao por valor.
-initHighContrast({ W: WORLD_W, H: WORLD_H, outlineFg: () => hcOutlineFg, outlineBg: () => hcOutlineBg,
+initHighContrast({ W: WORLD_W, H: WORLD_H, roleOf, outlineFg: () => hcOutlineFg, outlineBg: () => hcOutlineBg,
   getWorldCanvasNormal: () => worldCanvasNormal, getWorldTexNormal: () => worldTexNormal,
   coinCanvasNormal, coinTexNormal: coinTex });
 // caches de modos acessíveis (preguiçosos), invalidados ao trocar de cenário (worldCanvasNormal muda)

@@ -6,6 +6,7 @@
 //      + querySelectorAll do original, incluindo o querySelectorAll das abas que NÃO acha nada — ver relatório).
 // ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeEach } from 'vitest';
+import { roleOf } from '../app/js/game/tile-roles.js'; // a tabela tile→papel e do JOGO; a engine a RECEBE
 
 // lqT é lido no IMPORT de render/lq-filter → zerar antes do import dinâmico, senão um resíduo de 'incl_lq'
 // entraria compondo o filtro CSS e as asserções de string exata ficariam dependentes de outro teste.
@@ -39,7 +40,7 @@ const worldCanvasNormal = flatCanvas(W * TILE, H * TILE, 'rgb(120,120,140)');
 const coinCanvasNormal = flatCanvas(8, 8, 'rgb(240,200,60)');
 const TEX_WORLD_NORMAL = { NORMAL: 'world' };
 const TEX_COIN_NORMAL = { NORMAL: 'coin' };
-HC.initHighContrast({
+HC.initHighContrast({ roleOf,
   W, H, outlineFg: () => 1, outlineBg: () => 1,
   getWorldCanvasNormal: () => worldCanvasNormal, getWorldTexNormal: () => TEX_WORLD_NORMAL,
   coinCanvasNormal, coinTexNormal: TEX_COIN_NORMAL,
