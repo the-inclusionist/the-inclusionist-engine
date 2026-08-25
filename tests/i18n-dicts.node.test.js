@@ -90,6 +90,15 @@ describe('dicionários de locale — estrutura', () => {
       // por "de acordo"/"aceptar" seria trocar a palavra que a criança já reconhece no botão por uma mais
       // longa e menos familiar, justamente no cursor de confirmar.
       'sr.quiz.ok',
+      // '{efeito}: {nivel}.' — a moldura é DOIS parâmetros, dois-pontos e um ponto final. O efeito do CRT e o
+      // nível chegam já traduzidos; não sobra palavra nenhuma para traduzir. Existe como chave, e não como
+      // concatenação no código, pelo mesmo motivo do slotSet: uma língua que precise inverter a ordem só
+      // consegue se a ordem morar no dicionário.
+      'sr.crt.round',
+      // '{alvo} congelado.' e '{alvo} animado.' — "congelado" e "animado" são a MESMA palavra em pt-BR e es,
+      // com a mesma grafia e o mesmo sentido, e o alvo chega pelo parâmetro já traduzido. Mesmo caso do
+      // `sr.visual.contrast` acima: coincidência de verdade entre as duas línguas, não tradução esquecida.
+      'sr.rm.frozen', 'sr.rm.animated',
       // 'Sonar: {alvo} {lado}, {dist}.' — a moldura é TRÊS parâmetros e pontuação. "Sonar" é empréstimo do
       // inglês com a mesma grafia nas três línguas, e tudo que carrega sentido (o alvo, o lado, a distância)
       // chega já traduzido. Existe como chave, e não como concatenação, pelo mesmo motivo do slotSet: uma

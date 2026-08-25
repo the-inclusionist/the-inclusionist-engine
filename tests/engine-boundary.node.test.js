@@ -115,7 +115,9 @@ const MOEDA_CONHECIDA = new Set([
   'render/draw.ts',         // já contado acima pelas importações
   'core/state.ts',          // `coins: unknown[]` — estado do jogo morando no estado compartilhado
   'platform/audio.ts',      // earcon de chave 'coin': conteúdo sonoro do jogo na tabela da engine
-  'platform/audio-mixer.ts', 'ui/settings-motion.ts', 'ui/settings-motor.ts', // rótulos/anúncios, não dependência
+  // `ui/settings-motion.ts` SAIU (2026-08-25): a única menção era o rótulo 'Animação de itens (moedas)', que
+  // foi para o dicionário no item 14. Ganho lateral da i18n — texto que sai do código sai também da fronteira.
+  'platform/audio-mixer.ts', 'ui/settings-motor.ts', // rótulos/anúncios, não dependência
 ]);
 
 describe('fronteira engine↔jogo — o vocabulário do ADR', () => {

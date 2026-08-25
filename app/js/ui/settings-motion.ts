@@ -57,17 +57,23 @@ export interface SettingsMotionCtx {
   rmChar: readonly MotionCharDef[];
 }
 
-// Rótulos das linhas de CENA. Mantido VERBATIM do game.js original (7 chaves), embora só as 4 de RM_KEYS sejam
-// lidas por este painel — walk/breath/flavor ficam redundantes com rmChar[].lbl. Não podei por fidelidade de porte.
+/**
+ * Alvo → CHAVE i18n do rótulo. CHAVES, e não texto, pelo motivo de sempre: uma tabela de `const` com texto
+ * resolve UMA vez, no import, e fica congelada no idioma do boot.
+ *
+ * E é UMA tabela onde eram DUAS. A nota anterior dizia que `walk/breath/flavor` ficavam "redundantes com
+ * rmChar[].lbl" e que não haviam sido podados "por fidelidade de porte" — havia uma terceira cópia, morta, no
+ * main.js. Três tabelas dos mesmos rótulos, sem nada ligando as três: mudar um rótulo pedia três edições e
+ * esquecer uma era silencioso. Agora `rmChar[].lbl` guarda a chave DESTA tabela, e a do main.js foi apagada.
+ */
 export const RM_LABEL: Record<string, string> = {
-  parallax: 'Parallax do fundo', decor: 'Decoração (nuvens, grama)', items: 'Animação de itens (moedas)',
-  walk: 'Personagem em movimento (andar, escalar, nadar, pular)', breath: 'Respiração (parado)',
-  flavor: 'Gracinhas (animações de descanso)', particles: 'Partículas e cintilação',
+  parallax: 'rm.parallax', decor: 'rm.decor', items: 'rm.items',
+  walk: 'rm.walk', breath: 'rm.breath', flavor: 'rm.flavor', particles: 'rm.particles',
 };
 // Alvos de cena "em breve" (hoje nenhum — os 4 já agem).
 export const RM_SOON: ReadonlySet<MotionSceneKey> = new Set([]);
 
-const CRT_LBL: Record<'scan' | 'vig' | 'round', string> = { scan: 'Scanlines', vig: 'Vinheta', round: 'Cantos arredondados' };
+const CRT_LBL: Record<'scan' | 'vig' | 'round', string> = { scan: 'rm.crt.scan', vig: 'rm.crt.vig', round: 'rm.crt.round' }; // CHAVES i18n (ver RM_LABEL)
 const CRT_ROUND_LEVELS: readonly string[] = ['desligado', 'pequeno', 'grande'];
 
 // ---------------------------------------------------------------------------------------------------------
@@ -91,12 +97,12 @@ export function motionRowHtml(label: string, frozen: boolean, attr: string, soon
 
 /** Linhas "Personagem" (por jogador selecionado). */
 export function buildCharRowsHtml(rmChar: readonly MotionCharDef[], player: MotionPlayer | undefined): string {
-  return rmChar.map((c) => motionRowHtml(c.lbl, !!(player && player[c.prop]), `data-rmc="${c.prop}"`, false)).join('');
+  return rmChar.map((c) => motionRowHtml(t(c.lbl), !!(player && player[c.prop]), `data-rmc="${c.prop}"`, false)).join('');
 }
 
 /** Linhas "Cena" (globais, valem para todos os jogadores). */
 export function buildSceneRowsHtml(rmKeys: readonly MotionSceneKey[], rm: MotionSceneFlags, labels: Record<string, string>, soon: ReadonlySet<MotionSceneKey>): string {
-  return rmKeys.map((k) => motionRowHtml(labels[k], !!rm[k], `data-rm="${k}"`, soon.has(k))).join('');
+  return rmKeys.map((k) => motionRowHtml(t(labels[k]), !!rm[k], `data-rm="${k}"`, soon.has(k))).join('');
 }
 
 /** Toggle liga/desliga da estética CRT (scanlines/vinheta). */
@@ -124,22 +130,24 @@ export function motionMasterLabel(allFrozen: boolean): string {
   return allFrozen ? '▶ Retomar todas as animações' : '⏸ Parar todas as animações';
 }
 
+/** `label` chega JÁ TRADUZIDO; o que era concatenação (' congelado.') virou moldura com `{alvo}` — é o que
+ *  permite a uma língua pôr o estado ANTES do alvo, coisa que uma concatenação não deixa. */
 export function sceneMotionAnnouncement(label: string, frozen: boolean): string {
-  return label + (frozen ? ' congelado.' : ' animado.');
+  return t(frozen ? 'sr.rm.frozen' : 'sr.rm.animated', { alvo: label });
 }
 export function crtToggleAnnouncement(label: string, on: boolean): string {
-  return label + (on ? ' ligada.' : ' desligada.');
+  return t(on ? 'sr.crt.on' : 'sr.crt.off', { efeito: label });
 }
 export function crtLevelLabel(level: number): string {
   return CRT_ROUND_LEVELS[level] as string;
 }
 export function crtRoundAnnouncement(label: string, level: number): string {
-  return label + ': ' + crtLevelLabel(level) + '.';
+  return t('sr.crt.round', { efeito: label, nivel: crtLevelLabel(level) });
 }
 /** `nowFrozen` = o NOVO valor de rm[k]/player[prop] aplicado pelo botão-mestre (true = acabou de congelar
  *  tudo; false = acabou de descongelar/retomar tudo) — mesma variável `v` do game.js original. */
 export function stopResumeAllAnnouncement(nowFrozen: boolean): string {
-  return nowFrozen ? 'Todas as animações paradas.' : 'Todas as animações retomadas.';
+  return t(nowFrozen ? 'sr.rm.allStopped' : 'sr.rm.allResumed');
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -200,7 +208,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const player = (players as MotionPlayer[])[selectedPlayer];
     const charRows = buildCharRowsHtml(ctx.rmChar, player);
     const sceneRows = buildSceneRowsHtml(ctx.rmKeys, ctx.rm, RM_LABEL, RM_SOON);
-    const crtRows = crtToggleRowHtml(CRT_LBL.scan, 'scan', !!CRT.scan) + crtToggleRowHtml(CRT_LBL.vig, 'vig', !!CRT.vig) + crtRoundRowHtml(CRT_LBL.round, CRT.round);
+    const crtRows = crtToggleRowHtml(t(CRT_LBL.scan), 'scan', !!CRT.scan) + crtToggleRowHtml(t(CRT_LBL.vig), 'vig', !!CRT.vig) + crtRoundRowHtml(t(CRT_LBL.round), CRT.round);
 
     el.innerHTML =
       `<h3 class="panel-sub">Personagem${numPlayers > 1 ? ' · Jogador ' + (selectedPlayer + 1) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` +
@@ -212,13 +220,13 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       CRT[k] = CRT[k] ? 0 : 1;
       applyCrt();
       render();
-      ctx.srSay(crtToggleAnnouncement(CRT_LBL[k], !!CRT[k]));
+      ctx.srSay(crtToggleAnnouncement(t(CRT_LBL[k]), !!CRT[k]));
     }));
     el.querySelectorAll<HTMLSelectElement>('select[data-crt]').forEach((s) => s.addEventListener('change', () => {
       const key = s.dataset.crt as 'round';
       CRT[key] = +s.value;
       applyCrt();
-      ctx.srSay(crtRoundAnnouncement(CRT_LBL[key], CRT[key]));
+      ctx.srSay(crtRoundAnnouncement(t(CRT_LBL[key]), CRT[key]));
     }));
     el.querySelectorAll<HTMLButtonElement>('button[data-rmc]').forEach((b) => b.addEventListener('click', () => {
       const prop = b.dataset.rmc as MotionCharProp;
@@ -233,7 +241,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       ctx.saveRM();
       render();
       updateMotionMaster();
-      ctx.srSay(sceneMotionAnnouncement(RM_LABEL[k], ctx.rm[k]));
+      ctx.srSay(sceneMotionAnnouncement(t(RM_LABEL[k]), ctx.rm[k]));
     }));
 
     updateMotionMaster();

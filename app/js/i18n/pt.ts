@@ -356,5 +356,25 @@ const pt: Record<string, string> = {
   'hud.power.fly': '🎈 Voo',
   'hud.power.wallcling': '🕷️ Escalada',
   'hud.power.runcane': '👟 Bengala de corrida',
+  // ===================== MOVIMENTO REDUZIDO (WCAG 2.3.3) + CRT =====================
+  // Os rótulos ficavam em DUAS tabelas `const` de texto — uma em main.js e outra em ui/settings-motion — com
+  // três entradas repetidas palavra por palavra e nada ligando as duas. Agora a tabela guarda a CHAVE.
+  'rm.parallax': 'Parallax do fundo',
+  'rm.decor': 'Decoração (nuvens, grama)',
+  'rm.items': 'Animação de itens (moedas)',
+  'rm.walk': 'Personagem em movimento (andar, escalar, nadar, pular)',
+  'rm.breath': 'Respiração (parado)',
+  'rm.flavor': 'Gracinhas (animações de descanso)',
+  'rm.particles': 'Partículas e cintilação',
+  'rm.crt.scan': 'Scanlines',
+  'rm.crt.vig': 'Vinheta',
+  'rm.crt.round': 'Cantos arredondados',
+  'sr.rm.frozen': '{alvo} congelado.',
+  'sr.rm.animated': '{alvo} animado.',
+  'sr.rm.allStopped': 'Todas as animações paradas.',
+  'sr.rm.allResumed': 'Todas as animações retomadas.',
+  'sr.crt.on': '{efeito} ligada.',
+  'sr.crt.off': '{efeito} desligada.',
+  'sr.crt.round': '{efeito}: {nivel}.',
 };
 export default pt;

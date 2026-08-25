@@ -323,5 +323,23 @@ const es: Record<string, string> = {
   'hud.power.fly': '🎈 Vuelo',
   'hud.power.wallcling': '🕷️ Escalada',
   'hud.power.runcane': '👟 Bastón de carrera',
+  // ===================== MOVIMIENTO REDUCIDO (WCAG 2.3.3) + CRT =====================
+  'rm.parallax': 'Parallax del fondo',
+  'rm.decor': 'Decoración (nubes, hierba)',
+  'rm.items': 'Animación de objetos (monedas)',
+  'rm.walk': 'Personaje en movimiento (andar, trepar, nadar, saltar)',
+  'rm.breath': 'Respiración (quieto)',
+  'rm.flavor': 'Gracias (animaciones de descanso)',
+  'rm.particles': 'Partículas y destellos',
+  'rm.crt.scan': 'Líneas de barrido',
+  'rm.crt.vig': 'Viñeta',
+  'rm.crt.round': 'Esquinas redondeadas',
+  'sr.rm.frozen': '{alvo} congelado.',
+  'sr.rm.animated': '{alvo} animado.',
+  'sr.rm.allStopped': 'Todas las animaciones detenidas.',
+  'sr.rm.allResumed': 'Todas las animaciones reanudadas.',
+  'sr.crt.on': '{efeito} activada.',
+  'sr.crt.off': '{efeito} desactivada.',
+  'sr.crt.round': '{efeito}: {nivel}.',
 };
 export default es;

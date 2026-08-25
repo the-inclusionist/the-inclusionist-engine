@@ -4,6 +4,7 @@
 // textos de anúncio ao leitor de tela. O render/DOM real (querySelector/addEventListener/focus) é coberto
 // em tests/settings-motion.browser.test.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (ui/settings-motion).
 import { describe, it, expect } from 'vitest';
+import { t } from '../app/js/core/i18n.js'; // RM_LABEL guarda CHAVE desde o item 14; o HTML tem de trazer o TEXTO
 import {
   clampSelectedPlayer, motionRowHtml, buildCharRowsHtml, buildSceneRowsHtml,
   crtToggleRowHtml, crtRoundRowHtml, allMotionFrozen, motionMasterLabel,
@@ -70,7 +71,10 @@ describe('buildSceneRowsHtml', () => {
   it('[Right] uma linha por chave de RM_KEYS, usando o rótulo certo e o estado de `rm`', () => {
     const rm = { parallax: true, decor: false, items: false, particles: false };
     const html = buildSceneRowsHtml(RM_KEYS, rm, RM_LABEL, RM_SOON);
-    expect(html).toContain(RM_LABEL.parallax);
+    // `RM_LABEL` guarda CHAVE i18n desde o item 14, e o HTML tem de trazer o TEXTO. Este caso comparava com
+    // `RM_LABEL.parallax` cru e reprovou — com razão: se passasse, estaria aceitando `rm.parallax` na tela.
+    expect(html).toContain(t(RM_LABEL.parallax));
+    expect(html).not.toContain('rm.parallax'); // a chave NUNCA vaza para a interface
     expect((html.match(/ctrl-row/g) || []).length).toBe(4);
   });
   it('[Boundary] alvo marcado em RM_SOON aparece com "(em breve)"', () => {

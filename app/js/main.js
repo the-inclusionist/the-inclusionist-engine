@@ -326,8 +326,11 @@ const anyEasy=()=>players.some(p=>p.easy); // efeitos de MUNDO do Fácil (moedas
 // Movimento reduzido (WCAG 2.3.3 AA). 5 alvos; padrão herda prefers-reduced-motion; persistido.
 // Hoje agem 'parallax' e 'walk'; 'decor/items/particles' ficam prontos e ligam quando a Cidade animar.
 const RM_KEYS=['parallax','decor','items','particles']; // animações de CENA (globais)
-const RM_CHAR=[ {k:'walk',prop:'rmWalk',lbl:'Personagem em movimento (andar, escalar, nadar, pular)'},
-  {k:'breath',prop:'rmBreath',lbl:'Respiração (parado)'}, {k:'flavor',prop:'rmFlavor',lbl:'Gracinhas (animações de descanso)'} ]; // animações do PERSONAGEM (por jogador)
+// `lbl` guarda a CHAVE i18n, nao o texto: ui/settings-motion resolve com t() na hora de desenhar a linha.
+// Era texto em portugues repetido palavra por palavra na RM_LABEL daquele modulo — tres tabelas dos mesmos
+// rotulos (esta, a de la, e uma TERCEIRA morta aqui embaixo), e mudar um rotulo pedia tres edicoes.
+const RM_CHAR=[ {k:'walk',prop:'rmWalk',lbl:'rm.walk'},
+  {k:'breath',prop:'rmBreath',lbl:'rm.breath'}, {k:'flavor',prop:'rmFlavor',lbl:'rm.flavor'} ]; // animações do PERSONAGEM (por jogador)
 // O padrão ganhou nome em core/state (defaultReducedMotion) porque o reset do painel precisa do MESMO valor.
 const rm=(()=>{ const s=store.getJSON(store.KEYS.reducedMotion,null); if(s&&typeof s==='object'){ const o={}; RM_KEYS.forEach(k=>o[k]=!!s[k]); return o; }
   const o={}; RM_KEYS.forEach(k=>o[k]=defaultReducedMotion()); return o; })();
@@ -1237,8 +1240,8 @@ const helpCloseBtn=$('#help-close'); if(helpCloseBtn)helpCloseBtn.addEventListen
 const ctrlClose=$('#ctrl-close'); if(ctrlClose)ctrlClose.addEventListener('click',closeOptions);
 
 /* Movimento reduzido (WCAG 2.3.3) + Pause/Stop/Hide (2.2.2) */
-const RM_LABEL={parallax:'Parallax do fundo', decor:'Decoração (nuvens, grama)', items:'Animação de itens (moedas)', walk:'Personagem em movimento (andar, escalar, nadar, pular)', breath:'Respiração (parado)', flavor:'Gracinhas (animações de descanso)', particles:'Partículas e cintilação'};
-const RM_SOON=new Set([]); // todos os alvos agem: parallax (fundo), decor (chuva/vida da Cidade), items (cintilar), particles (juice)
+// (RM_LABEL e RM_SOON eram CODIGO MORTO aqui: nenhum leitor neste arquivo. Os que o painel usa vivem em
+//  ui/settings-motion, e eram copia palavra por palavra destes. Apagados no item 14.)
 const motion = initSettingsMotion({ $, srSay, store, frontOverlay, restoreFocus: (id)=>overlays.restoreFocus(id), toggleBtn, rm, saveRM, rmKeys: RM_KEYS, rmChar: RM_CHAR }); // painel de movimento/CRT: ui/settings-motion.ts
 // MENU Movimento (GAG: alternância) — separado do menu Animação (WCAG: movimento reduzido)
 function openMovement(){ const ov=$('#movement'); if(!ov)return; motor.renderMovPlayers(); motor.reflectFacil(); motor.reflectAltMove(); renderMapHub(); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); }

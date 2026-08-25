@@ -322,5 +322,23 @@ const en: Record<string, string> = {
   'hud.power.fly': '🎈 Flight',
   'hud.power.wallcling': '🕷️ Climb',
   'hud.power.runcane': '👟 Running cane',
+  // ===================== REDUCED MOTION (WCAG 2.3.3) + CRT =====================
+  'rm.parallax': 'Background parallax',
+  'rm.decor': 'Decoration (clouds, grass)',
+  'rm.items': 'Item animation (coins)',
+  'rm.walk': 'Character in motion (walk, climb, swim, jump)',
+  'rm.breath': 'Breathing (standing still)',
+  'rm.flavor': 'Idle antics (resting animations)',
+  'rm.particles': 'Particles and sparkle',
+  'rm.crt.scan': 'Scanlines',
+  'rm.crt.vig': 'Vignette',
+  'rm.crt.round': 'Rounded corners',
+  'sr.rm.frozen': '{alvo} frozen.',
+  'sr.rm.animated': '{alvo} animated.',
+  'sr.rm.allStopped': 'All animations stopped.',
+  'sr.rm.allResumed': 'All animations resumed.',
+  'sr.crt.on': '{efeito} on.',
+  'sr.crt.off': '{efeito} off.',
+  'sr.crt.round': '{efeito}: {nivel}.',
 };
 export default en;
