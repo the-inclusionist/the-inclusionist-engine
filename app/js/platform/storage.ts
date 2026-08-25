@@ -25,15 +25,67 @@ export function getJSON<T = unknown>(key: string, fallback: T | null = null): T 
 }
 export function setJSON(key: string, obj: unknown): void { try { set(key, JSON.stringify(obj)); } catch { /* noop */ } }
 
+/* ===================== os DOIS escopos (save com namespace, ADR-0027 passo 7) ===================== */
+//
+// O namespacing óbvio — um prefixo por jogo em TUDO — seria um defeito de acessibilidade grave, e vale dizer
+// por quê antes de dizer o que foi feito.
+//
+// Uma criança cega configura o modo cego, a bengala, a voz, a velocidade da narração. Uma criança daltônica
+// escolhe a correção. Uma criança disléxica escolhe a fonte. Se cada jogo do catálogo tivesse o próprio
+// espaço de nomes, ela teria de REFAZER tudo isso em cada um dos 35 jogos — e quem mais depende dos ajustes
+// é justamente quem tem menos margem para refazê-los.
+//
+// Então são DOIS escopos, e a linha entre eles não é técnica, é de quem a coisa pertence:
+//
+//   · COMPARTILHADO (`incl_*`, como sempre foi) — o que pertence à CRIANÇA: acessibilidade, tipografia,
+//     idioma, voz, controles, toque. Segue com ela de jogo em jogo, de propósito. O segundo consumidor (o
+//     quiz) já lê a fonte escolhida no jogo de plataforma, e isso está CERTO.
+//   · DO JOGO (`incl.<jogo>.*`) — o que pertence a ESTA partida: atividade, nível, cenário, gravação da
+//     demonstração. Dois jogos com um "nível 3" não são o mesmo nível 3.
+//
+// A LEITURA HERDA DA CHAVE ANTIGA e a escrita vai só para a nova (`getComLegado`). Sem passo de migração no
+// boot, porque `core/state` lê no IMPORT — uma migração agendada chegaria tarde. E a chave velha fica onde
+// está: é dado da criança, não meu para apagar, e a sua permanência é o que torna um retorno possível.
+
+/** Id deste jogo dentro do catálogo. O prefixo do escopo DO JOGO sai daqui. */
+export const JOGO_ID = 'inclusionist';
+
+/** Nome completo de uma chave do escopo DO JOGO. */
+export function kJogo(nome: string): string { return 'incl.' + JOGO_ID + '.' + nome; }
+
+/**
+ * Lê a chave NOVA; se ela ainda não existe, herda o valor da LEGADA. Só de leitura: quem grava, grava na nova.
+ * É o que permite renomear chave sem um passo de migração e sem perder o ajuste de ninguém.
+ */
+export function getComLegado(nova: string, legada: string, fallback: string | null = null): string | null {
+  const v = get(nova, null);
+  if (v !== null) return v;
+  const antigo = get(legada, null);
+  return antigo !== null ? antigo : fallback;
+}
+
+/** O par de `getComLegado` para valor em JSON — a herança tem de valer para os dois formatos, senão metade
+ *  das chaves migra e a outra metade some, que é o pior dos dois mundos. */
+export function getJSONComLegado<T = unknown>(nova: string, legada: string, fallback: T | null = null): T | null {
+  const v = getJSON<T>(nova, null);
+  if (v !== null) return v;
+  const antigo = getJSON<T>(legada, null);
+  return antigo !== null ? antigo : fallback;
+}
+
 // Registro das chaves conhecidas (documentação em UM lugar; a fonte de verdade ainda é o uso). Vai sendo
 // completado à medida que os lotes migram. Chaves com {i}/{cen}/{id} são parametrizadas por jogador/cenário/controle.
 export const KEYS = {
   // empatia motora/auditiva
   onebtn: 'incl_onebtn', wheelchair: 'incl_wheelchair', modocego: 'incl_modocego', caneDiv: 'incl_cane_div',
   hearingloss: 'incl_hearingloss',
-  // atividade / quiz / cenário
-  activity: 'incl_activity', quizlevel: 'incl_quizlevel', cenario: 'incl_cenario', tabsel: 'incl_tabsel',
-  fracnot: 'incl_fracnot',
+  // atividade / quiz / cenário — ESCOPO DO JOGO (ver os dois escopos acima). `*Legado` é o nome antigo, de
+  // onde a leitura herda uma vez; a escrita vai só para o novo.
+  activity: kJogo('activity'), activityLegado: 'incl_activity',
+  quizlevel: kJogo('quizlevel'), quizlevelLegado: 'incl_quizlevel',
+  cenario: kJogo('cenario'), cenarioLegado: 'incl_cenario',
+  tabsel: kJogo('tabsel'), tabselLegado: 'incl_tabsel',
+  fracnot: kJogo('fracnot'), fracnotLegado: 'incl_fracnot',
   // visual / contraste / cor
   viz: 'incl_viz', lq: 'incl_lq', cbsafe: 'incl_cbsafe', ownercolors: 'incl_ownercolors',
   outfg: 'incl_outfg', outbg: 'incl_outbg', hcrole: 'incl_hcrole', juice: 'incl_juice', crt: 'incl_crt2',
@@ -58,6 +110,8 @@ export const KEYS = {
   rmWalkP: (i: number): string => 'incl_rmWalk_p' + i,
   rmBreathP: (i: number): string => 'incl_rmBreath_p' + i,
   rmFlavorP: (i: number): string => 'incl_rmFlavor_p' + i,
-  // demo/attract: uma gravação por cenário (fn em vez de string — chave parametrizada)
-  attract: (cen: string): string => 'incl_attract_' + cen,
+  // demo/attract: uma gravação por cenário (fn em vez de string — chave parametrizada). ESCOPO DO JOGO: a
+  // gravação é de uma fase DESTE jogo e não faz sentido nenhum em outro.
+  attract: (cen: string): string => kJogo('attract_' + cen),
+  attractLegado: (cen: string): string => 'incl_attract_' + cen,
 };

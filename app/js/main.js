@@ -472,7 +472,7 @@ const vp = initViewports({
   cvdDefsHost: $('#cvd-defs'),
 });
 const { parallaxTexFor, treeTexFor, playerVizTex, pixiFilterFor, renderVpOverlay } = vp;
-try{ setCenario((v=>v==='noite'?'espaco':v)(store.get(store.KEYS.cenario,'cidade'))); }catch(e){ setCenario('cidade'); } // migra a chave antiga 'noite'
+try{ setCenario((v=>v==='noite'?'espaco':v)(store.getComLegado(store.KEYS.cenario,store.KEYS.cenarioLegado,'cidade'))); }catch(e){ setCenario('cidade'); } // herda a chave de escopo antigo; 'noite' e a migracao mais velha ainda
 const coinCanvasNormal=coinCanvas();
 const coinTex=tex(coinCanvasNormal);
 // As texturas NORMAIS ja existem: ligue o alto contraste. worldCanvasNormal/worldTexNormal sao `let`

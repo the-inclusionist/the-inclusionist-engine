@@ -55,7 +55,7 @@ export function createAttract(ctx: AttractCtx): AttractCtl {
   let recT = 0;
 
   const attractRecFor = (cen: string): number[][] | null => {
-    const a = store.getJSON<number[][]>(store.KEYS.attract(cen), null);
+    const a = store.getJSONComLegado<number[][]>(store.KEYS.attract(cen), store.KEYS.attractLegado(cen), null);
     return Array.isArray(a) && a.length > 10 ? a : null;
   };
 

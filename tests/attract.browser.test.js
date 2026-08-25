@@ -83,7 +83,10 @@ describe('game/attract', () => {
     const { ctl, alerted, state } = setup({ search: '?record=1' });
     state.phase = 'playing';
     for (let i = 0; i < 180 * 10; i++) ctl.recordTick(); // 1 amostra a cada 10 ticks
-    const saved = localStorage.getItem('incl_attract_campo');
+    // A GRAVAÇÃO passou a ir para o escopo DO JOGO (`incl.inclusionist.attract_campo`): uma demonstração é de
+    // uma fase DESTE jogo e não significa nada em outro do catálogo. A LEITURA ainda herda do nome antigo —
+    // é o caso logo acima, que continua semeando pelo nome velho e continua verde.
+    const saved = localStorage.getItem('incl.inclusionist.attract_campo');
     expect(saved).not.toBeNull();
     expect(JSON.parse(saved).length).toBe(180);
     expect(alerted.length).toBe(1);

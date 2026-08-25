@@ -371,8 +371,9 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
   // opinion about which ids exist), so a value left over from an activity that no longer ships falls back here.
   if (!isValidActivityId(ACTIVITY ?? '')) setActivityValue(DEFAULT_ACTIVITY_ID);
 
-  const tabSel: number[] = sanitizeTabSel(store.getJSON(store.KEYS.tabsel, null));
-  const fracNot: FracNot = sanitizeFracNot(store.getJSON(store.KEYS.fracnot, null));
+  // Escopo DO JOGO agora (ver os dois escopos em platform/storage); a leitura herda do nome antigo.
+  const tabSel: number[] = sanitizeTabSel(store.getJSONComLegado(store.KEYS.tabsel, store.KEYS.tabselLegado, null));
+  const fracNot: FracNot = sanitizeFracNot(store.getJSONComLegado(store.KEYS.fracnot, store.KEYS.fracnotLegado, null));
 
   let pendingAct = 'ludico';
   let pendingPlayers = 1;

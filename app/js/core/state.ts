@@ -20,8 +20,14 @@ export let phase: Phase = 'title';
 export function setPhaseValue(p: Phase): void { phase = p; emit('phase', p); }
 
 // --- quizLevel: 1..5 (nível do quiz de alfabetização; persistido em incl_quizlevel) ---
-export let quizLevel: number = (() => { const v = store.getNum('incl_quizlevel', 2); return v >= 1 && v <= 5 ? v : 2; })();
-export function setQuizLevelValue(n: number): void { quizLevel = Math.max(1, Math.min(5, n | 0)); store.set('incl_quizlevel', String(quizLevel)); emit('quizLevel', quizLevel); }
+export let quizLevel: number = (() => {
+  // Escrevia `'incl_quizlevel'` à mão, contornando o registro que se diz a documentação das chaves. Agora
+  // passa por `KEYS`, e a leitura HERDA do nome antigo — o nível de quem já jogava não se perde.
+  const bruto = store.getComLegado(store.KEYS.quizlevel, store.KEYS.quizlevelLegado, null);
+  const v = bruto == null ? 2 : parseFloat(bruto);
+  return isFinite(v) && v >= 1 && v <= 5 ? v : 2;
+})();
+export function setQuizLevelValue(n: number): void { quizLevel = Math.max(1, Math.min(5, n | 0)); store.set(store.KEYS.quizlevel, String(quizLevel)); emit('quizLevel', quizLevel); }
 
 // --- numPlayers: 1..4 (nº de telas/jogadores; não persistido) ---
 export let numPlayers = 1;
@@ -78,12 +84,12 @@ export function setSelVizPlayerValue(i: number): void { selVizPlayer = i; emit('
 // --- cenario: tema visual ativo (cidade/campo/…; persistido em incl_cenario). A validação contra CENARIOS e
 //     o trabalho de textura ficam no setCenario() do game.js — aqui só o valor + persistência + evento. ---
 export let cenario: string | null = null;
-export function setCenarioValue(theme: string): void { cenario = theme; store.set('incl_cenario', theme); emit('cenario', theme); }
+export function setCenarioValue(theme: string): void { cenario = theme; store.set(store.KEYS.cenario, theme); emit('cenario', theme); }
 
 // --- activity: id da atividade selecionada (persistido em incl_activity). A validação contra ACTIVITIES
 //     (objeto do game.js) fica no setActivity() do game.js — aqui só o valor cru + persistência + evento. ---
-export let activity: string | null = store.get('incl_activity', 'ludico');
-export function setActivityValue(id: string): void { activity = id; store.set('incl_activity', id); emit('activity', id); }
+export let activity: string | null = store.getComLegado(store.KEYS.activity, store.KEYS.activityLegado, 'ludico');
+export function setActivityValue(id: string): void { activity = id; store.set(store.KEYS.activity, id); emit('activity', id); }
 
 // --- vizMode: modo visual/cor ativo (persistido em incl_viz). A validação (VIZ_CYCLE) e o default por
 //     prefers-contrast ficam no game.js. initVizMode NÃO persiste (o default de mídia deve seguir o SO a cada
