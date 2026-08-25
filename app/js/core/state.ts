@@ -153,23 +153,28 @@ export function setWcSolidValue(s: ReadonlySet<string>): void { wcSolid = s; emi
 //
 // --- captionsOn: legendas dos sons (a11y surdez).
 //
-//     ESTES DOIS NÃO PERSISTEM, e a ausência é deliberada em vez de esquecida: ao contrário de `caneBlockDiv`
-//     — que tinha chave registrada em storage.KEYS e uma gravação faltante, ou seja, uma intenção quebrada —
-//     nenhum dos dois tem chave prevista nem leitura no boot. Não há indício de que alguém tenha decidido que
-//     deviam sobreviver à sessão. Acrescentar persistência aqui seria inventar a decisão, não cumpri-la; a
-//     pergunta está registrada como issue. Por isso o setter faz DUAS coisas: grava e avisa. ---
+//     OS DOIS PERSISTEM (ADR-0028). A pergunta foi feita ao Dev justamente porque nenhum deles tinha chave
+//     nem leitura no boot, e inventar persistência seria inventar a decisão. A resposta foi mais ampla que a
+//     pergunta: TODO menu de configuração persiste, e todo menu termina com um controle que restaura os
+//     próprios padrões. O motivo é de acessibilidade e não de conveniência — uma criança surda que liga as
+//     legendas e as encontra desligadas amanhã paga o preço todo dia, e quem mais precisa do menu é quem menos
+//     tem margem para perdê-lo.
+//
+//     `letterCase` ainda é 'lower' | 'upper' aqui, mas por pouco tempo: o ADR-0028 o move do botão ABC para um
+//     menu de Comunicação Aumentada e Alternativa, onde ele passa a conviver com conjuntos de pictogramas
+//     (ARASAAC, Sclera, Mulberry). As duas caixas de letra são o PISO OFFLINE desse menu. ---
 export type LetterCase = 'lower' | 'upper';
-export let letterCase: LetterCase = 'upper';
+export let letterCase: LetterCase = store.get(store.KEYS.letterCase, 'upper') === 'lower' ? 'lower' : 'upper';
 export function setLetterCaseValue(c: LetterCase): void {
   if (letterCase === c) return;
-  letterCase = c; emit('letterCase', c);
+  letterCase = c; store.set(store.KEYS.letterCase, c); emit('letterCase', c);
 }
 
-export let captionsOn = true;
+export let captionsOn = store.getBool(store.KEYS.captions, true);
 export function setCaptionsOnValue(on: boolean): void {
   const v = !!on;
   if (captionsOn === v) return;
-  captionsOn = v; emit('captionsOn', v);
+  captionsOn = v; store.setBool(store.KEYS.captions, v); emit('captionsOn', v);
 }
 
 // --- cbSafe: PALETA SEGURA PARA DALTONISMO (Okabe-Ito). Não é um filtro sobre a imagem — é a escolha das

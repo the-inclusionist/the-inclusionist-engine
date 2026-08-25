@@ -40,6 +40,8 @@ export const KEYS = {
   crtLegacy: 'incl_crt', // formato antigo (booleano); crt.ts migra p/ incl_crt2 na 1ª leitura (fresh)
   // áudio / voz / i18n
   ttsEngine: 'incl_tts_engine', ttsVoice: 'incl_tts_voice', lang: 'incl_lang', // audiocat_{k}
+  // comunicação / legendas (ADR-0028: todo menu persiste)
+  letterCase: 'incl_lettercase', captions: 'incl_captions',
   // tipografia / controles / toque
   fontKey: 'incl_font_k', padDesign: 'incl_paddesign', padDir: 'incl_paddir', touchmap: 'incl_touchmap',
   padBtnMm: 'incl_padbtnmm', padGapMm: 'incl_padgapmm', padStickMm: 'incl_padstickmm',

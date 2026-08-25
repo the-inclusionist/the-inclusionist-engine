@@ -994,6 +994,12 @@ function nextLetra(){ setLetterCaseValue(LETRA[(letraIdx()+1)%LETRA.length].caso
 applyLetra(false); // estado inicial = ABC (maiúsculas, padrão)
 // E9: toggles de Som / Legendas / Fácil
 const soundBtn=$('#opt-sound'), capBtn=$('#opt-captions');
+// REFLETE O VALOR PERSISTIDO no boot. O markup do #opt-captions crava `is-on`/`aria-pressed="true"`, e isso
+// era correto por acidente enquanto `captionsOn` sempre nascia ligado. Com a persistência do ADR-0028 o markup
+// passou a poder mentir: a criança desliga as legendas, recarrega, e o botão diz que estão ligadas enquanto
+// elas não estão — o pior estado possível para um controle de acessibilidade, porque quem depende dele não
+// tem como desempatar. Acrescentar persistência a um valor expõe todo lugar que presumia o padrão.
+if(capBtn) toggleBtn(capBtn, captionsOn);
 if(soundBtn){ soundBtn.setAttribute('aria-haspopup','dialog'); soundBtn.addEventListener('click',openAudio); } // botão de áudio agora abre o mixer
 if(capBtn) capBtn.addEventListener('click',()=>{ setCaptionsOnValue(!captionsOn); toggleBtn(capBtn,captionsOn); srSay(t(captionsOn?'sr.captions.on':'sr.captions.off')); });
 const motor = initSettingsMotor({ $, srSay, store, players, getNumPlayers: () => numPlayers, setToggleMove, rebuildCoins }); // painel motor: ui/settings-motor.ts (registra #opt-facil, #opt-altmove e as abas)
@@ -1165,6 +1171,12 @@ const eyesBtn=$('#opt-eyes'); if(eyesBtn)eyesBtn.addEventListener('click',()=>{ 
   if(eyeMode){ loadWebGazer(startEyeControl); srSay('Jogar com os olhos: carregando a webcam (permita o acesso).'); } else { stopEyeControl(); srSay('Jogar com os olhos desligado.'); } });
 const audioCloseBtn=$('#audio-close'); if(audioCloseBtn)audioCloseBtn.addEventListener('click',closeAudio);
 const audioPanel = initSettingsAudio({ $, srSay, store, audioCats: AUDIO_CATS, toggleBtn, getNumPlayers: () => numPlayers, getPlayers: () => players, getSoundOn: () => soundOn, setSoundOn, getVolume: () => volume, setVolume, getAudioCat: () => audioCat, setCatGain, tts, getModoCego: () => modoCego, setModoCego, getCaneBlockDiv: () => caneBlockDiv, setCaneBlockDiv: setCaneBlockDivValue }); // painel de audio: ui/settings-audio.ts
+// REFLETE O MODO CEGO PERSISTIDO no boot. `incl_modocego` sobrevive à sessão desde sempre, mas nada refletia o
+// valor no botão ao abrir o jogo: com o modo LIGADO, o `#opt-modocego` dizia "Desligado" e reportava
+// `aria-pressed="false"`. Para quem usa leitor de tela isso é WCAG 4.1.2 (nome, papel, VALOR) quebrado no
+// controle de que essa pessoa depende — e sem a tela para desempatar, a informação errada é a única que há.
+// Verificado numa carga limpa: gravado "1", botão "Desligado". O cadeirante, ao lado, refletia certo.
+audioPanel.reflectModoCego();
 
 /* E10: remap de controles + persistência (B2) */
 const ctrlPanel = initSettingsControls({ $, srSay, srAlert, store: { saveKB, resetKB }, kb: KB, setKB: (k) => { KB = k; }, kbFor, getNumPlayers: () => numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)

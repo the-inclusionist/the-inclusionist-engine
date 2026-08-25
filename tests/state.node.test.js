@@ -11,7 +11,7 @@
 // tela dentro do próprio setter, e por isso nenhum teste conseguia chamá-lo. A separação entre gravar e
 // reagir é o que torna este arquivo possível, então é ela que os casos protegem.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, on, off } from '../app/js/core/state.js';
+import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, setLetterCaseValue, setCaptionsOnValue, on, off } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
 // `modoCego` é um binding VIVO: reimportar não é preciso, mas ler o valor antigo de uma cópia local seria o
@@ -36,7 +36,7 @@ beforeEach(() => {
   setModoCegoValue(false); desinscrever = [];
 });
 afterEach(() => {
-  desinscrever.forEach((f) => f()); setModoCegoValue(false); setEndedValue(false);
+  desinscrever.forEach((f) => f()); setModoCegoValue(false); setEndedValue(false); setLetterCaseValue('upper'); setCaptionsOnValue(true);
   if (localAntigo === undefined) delete globalThis.localStorage; else globalThis.localStorage = localAntigo;
 });
 
@@ -133,6 +133,19 @@ describe('core/state — modoCego e o espaçamento da bengala', () => {
     expect(vistos).toEqual([true]);
     setEndedValue(false);
     expect(state.ended).toBe(false);
+  });
+
+  it('[Right] caixa da letra e legendas PERSISTEM — decisão do ADR-0028: todo menu persiste', () => {
+    // A pergunta foi feita porque nenhum dos dois tinha chave nem leitura no boot, e inventar persistência
+    // seria inventar a decisão. A resposta do Dev foi mais ampla: todo menu persiste E todo menu ganha um
+    // reset dos próprios padrões. O motivo é acessibilidade, não conveniência — uma criança surda que liga as
+    // legendas e as encontra desligadas amanhã paga esse preço todo dia.
+    setLetterCaseValue('lower');
+    expect(store.get('incl_lettercase', null)).toBe('lower');
+    setCaptionsOnValue(false);
+    expect(store.getBool('incl_captions', true)).toBe(false);
+    setCaptionsOnValue(true);
+    expect(store.getBool('incl_captions', false)).toBe(true);
   });
 
   it('[Boundary] o import nomeado é uma FOTOGRAFIA; o binding do módulo é que é vivo', () => {

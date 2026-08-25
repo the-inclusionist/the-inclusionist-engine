@@ -1,0 +1,144 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-24
+  decision-makers: [Dev]
+  consulted: [survey of the eight settings panels and their persistence, ADR-0010 pillars 2/8/10]
+  informed: []
+
+title: Every settings menu persists and can be reset — and letter case becomes an AAC menu
+
+context-and-problem-statement: |
+  Two questions arrived together and turned out to be one.
+
+  The first was narrow. Migrating the composition root's globals into core/state (#50) surfaced that
+  `letterCase` (ABC / abc) and `captionsOn` do not survive a session: no key in storage.KEYS, no read at boot.
+  That is unlike `caneBlockDiv`, which HAD a key and a missing write — a broken intent, fixed as a defect. For
+  these two there was no evidence of intent, so adding persistence would have been inventing a decision. The
+  question went to the Dev as #55.
+
+  The answer was wider than the question, and it exposes a real inconsistency the survey confirms. Across the
+  eight settings surfaces, persistence is arbitrary: some values persist, some do not, and nothing says which
+  should. Two panels have a "restore defaults" control (`#ctrl-reset` in the keyboard remap, `#opt-role-reset`
+  for the colour-blocking roles); the other six have none. A child who explores an accessibility menu and makes
+  it worse has, in six of eight cases, no way back except knowing which of a dozen controls they moved.
+
+  THAT IS AN ACCESSIBILITY DEFECT WEARING A UX COSTUME. These menus exist for people who need them; the person
+  most likely to end up in a state they cannot undo is the one with the least margin to lose. An accessibility
+  setting without a way back is a trap laid in the room built for the person least able to escape it.
+
+  The second half is a feature, not a correction. `letterCase` today is a two-position cycle on a pause button
+  (ABC / abc). The Dev's decision retires that button and folds letter case into a new AUGMENTATIVE AND
+  ALTERNATIVE COMMUNICATION menu, where the choice of how the game presents written language ranges from
+  uppercase-only through pictogram sets — ARASAAC, Sclera, Mulberry — for children who read symbols rather than
+  letters. Two of those sets cannot ship with the game for licensing reasons and must be fetched separately,
+  which collides with the offline pillar unless handled like the neural TTS voice already is.
+
+decision-drivers:
+- "Pillar 2 (a11y): a settings surface a child can enter and not leave is worse than no settings surface."
+- "Pillar 8 (offline): the game must play with no network, so anything downloaded is downloaded ONCE and cached."
+- "Pillar 10 (GPL code + non-FOSS art): asset licences that forbid redistribution must never enter the bundle."
+- "Consistency is itself accessibility: eight menus behaving eight ways is eight things to learn."
+- "AAC is not a nice-to-have for the audience this project names — for some children, pictograms are literacy."
+
+considered-options:
+- "Persist and reset EVERY menu, uniformly, with the reset control in the same place in each."
+- "Persist only what already has a storage key, and add resets case by case as someone asks."
+- "Persist nothing new; treat settings as session-scoped and let the shared-computer problem decide it."
+- "Bundle the pictogram sets that permit it and offer only those."
+- "Fetch every pictogram set on demand, cache it, and treat the built-in letter modes as the offline floor."
+
+pros-and-cons-of-the-options:
+  uniform-persist-and-reset:
+    good:
+    - "One rule to learn, in eight places, instead of eight behaviours."
+    - "The reset is the escape hatch: exploring a menu stops being risky, which is what lets a child explore it."
+    - "Persistence is nearly free now — the setters moved into core/state during #50 and already write."
+    bad:
+    - "On a shared school machine, one child's preference greets the next. The reset is the answer, and it has to
+       be findable without reading."
+  case-by-case:
+    good:
+    - "No work until someone asks."
+    bad:
+    - "It is what produced the current state: two menus with a reset, six without, and nobody able to say why."
+  session-scoped:
+    good:
+    - "Sidesteps the shared-machine question entirely."
+    bad:
+    - "A deaf child turns captions on, closes the game, and turns them on again tomorrow. Forever. The cost lands
+       on exactly the people the menus exist for."
+    - "The project already chose the other side: incl_modocego and incl_wheelchair persist today."
+  bundle-what-we-can:
+    good:
+    - "Works offline from the first launch, no download, no API."
+    bad:
+    - "Offers the child a smaller set for a reason that is about our licence rather than about them."
+  fetch-and-cache:
+    good:
+    - "The full set is reachable, and the licence line stays clean: the user fetches, we never redistribute."
+    - "Exactly the pattern platform/tts already runs for the Piper neural voice — precedent, not invention."
+    bad:
+    - "Needs a network once, and a school's network is the least reliable thing about a school."
+    - "A failed download must degrade to letters, silently and immediately, or it becomes a broken game."
+
+decision-outcome:
+  chosen-option:
+    link: "Persist and reset EVERY menu, uniformly + fetch-and-cache the pictogram sets"
+    justification: |
+      EVERY settings menu persists, and every settings menu ends with a control that restores ITS OWN defaults —
+      same position, same wording, in all eight. The reset is scoped to the menu it closes, not global: a child
+      undoing a visual experiment must not lose the motor settings that let them play at all.
+
+      The eight surfaces: the quick accessibility bar (the pause icon row), Augmented and Alternative
+      Communication, typography, hearing accessibility, motor accessibility, visual sensitivity, visual
+      accessibility, and empathy mode.
+
+      Letter case leaves the ABC pause button and becomes one choice inside the AAC menu, alongside the
+      pictogram sets. The built-in letter modes are the OFFLINE FLOOR — always present, never downloaded — and
+      any pictogram set that fails to load falls back to them without ceremony.
+
+  consequences:
+    positive:
+    - "A child can explore any accessibility menu knowing there is a way back, which is what makes exploring it
+       possible at all."
+    - "The eight menus stop being eight conventions."
+    - "AAC reaches children for whom pictograms ARE literacy — an audience this project names and does not yet serve."
+    - "The licence line gets cleaner, not muddier: sets that forbid redistribution are fetched by the user and
+       never enter our bundle."
+    neutral:
+    - "Persistence is cheap now because #50 moved the setters into core/state; had this been decided six months
+       ago it would have meant touching eight panels."
+    - "The ABC pause button disappears; its cycle becomes a menu choice with more than two positions."
+    negative:
+    - "Shared school machines inherit the previous child's settings. The per-menu reset is the mitigation and it
+       has to be reachable by someone who cannot read the label."
+    - "Pictogram sets need a network once. On the target hardware that is the least dependable assumption in the
+       whole project, so the letter fallback is not a courtesy — it is the design."
+    - "Three third-party asset sets mean three licence surfaces to keep verified as they change."
+
+  confirmation: |
+    PARTIAL, and the halves are very different in maturity.
+
+    The persistence-and-reset half is mechanical and testable: each menu's values round-trip through
+    platform/storage, and each reset restores exactly its own menu's defaults and nothing else. The regression
+    shape is the one caneBlockDiv already has — set, reload, still there — plus a case per menu asserting the
+    reset does not reach outside itself. That last one matters more than it sounds: a reset that quietly clears
+    the motor settings would be a worse trap than the one being removed.
+
+    The AAC half is NOT specified yet and this record does not pretend otherwise. What the licences actually
+    permit is stated here as the Dev stated it — ARASAAC and Sclera cannot be redistributed, Mulberry was not
+    named as a problem — and MUST be verified against the current licence text before a single byte is fetched,
+    because getting this wrong is a legal problem and not a bug. The rendering question (a pictogram is not a
+    glyph: it has a size, a caption, and a meaning that must survive a screen reader) is open, and so is where
+    the cache lives, though platform/tts's OPFS/Cache-Storage handling is the obvious precedent.
+
+more-information: |
+  Answers issue #55 (letterCase and captionsOn not surviving a session), which came out of #50's migration of
+  the composition root's state into `app/js/core/state.ts`.
+
+  Relates to: ADR-0010 (pillars 2 accessibility, 8 offline, 10 GPL code + non-FOSS art — all three are load
+  bearing here); ADR-0012 (typography, whose menu is one of the eight); ADR-0013 (motor input accessibility);
+  ADR-0014 (auditory accessibility); ADR-0011 (visual accessibility); ADR-0021 and ADR-0022 (the TTS model
+  fetch-and-cache, which is the precedent this record borrows for the pictogram sets).
+
+  The per-menu work list, the AAC menu itself and the licence verification live in the GitLab issues, not here.
