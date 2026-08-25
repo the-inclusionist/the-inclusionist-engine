@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
+import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -695,7 +695,7 @@ function ensureSprites(){
 }
 let vpTex=[], vpSpr=[], vpFrames=null, vpDots=[];
 // HUD por jogador em DOM SOBREPOSTO (alta definição, não pixela): moedas (1ª coluna) + poder (2ª coluna), por viewport.
-let vpPause=[], pauseActor=0; // gameHudEl/vpHudDom/vpQuitDom/vpScreens migraram para ui/hud.ts (Onda A)
+let vpPause=[]; // `pauseActor` migrou para core/state.js (#50). gameHudEl/vpHudDom/vpQuitDom/vpScreens -> ui/hud.ts
 // Menu de pausa POR TELA (Etapa 2): um por jogador, dentro da .player-screen dele.
 // Barra de atalhos de a11y no topo da pausa (por tela). Sons (cego/TTS) só com saída própria; webcam/voz em construção.
 /* ===================== PAUSA POR TELA + ICONES DE A11Y -> ui/pause-icons.ts =====================
@@ -707,7 +707,7 @@ const pauseIcons = initPauseIcons({
   srSay, srAlert,
   pmButtons: PM_BTNS, qlName: QL_NAME,
   getPauseActs: () => pauseActs,            // LAZY: pauseActs e const bem abaixo (TDZ)
-  setPauseActor: (i) => { pauseActor = i; },
+  setPauseActor: setPauseActorValue,
   getPauseScreens: () => vpPause,           // buildGameHud REATRIBUI vpPause -> getter, nao a array
   getModoCego: () => modoCego, setModoCego,
   getAudioCat: () => audioCat, setCatGain,
@@ -950,7 +950,7 @@ const gamepadApi = initGamepad({
   isTouchMode: () => document.body.classList.contains('touch-mode'), hideTouchControls: () => hideTouchControls(),
   getPlayers: () => players, getNumPlayers: () => numPlayers,
   navTitle, sharedDialogOpen, navDialog, getPauseMenu: (i) => vpPause[i], navPause,
-  setPauseActor: (i) => { pauseActor = i; },
+  setPauseActor: setPauseActorValue,
   quizMove, quizConfirm, quizErase, announceBraille,
   joinPlayer, respawnPlayer,
   clearWaitingBadge: (i) => hud.clearWaitingBadge(i),
@@ -1335,7 +1335,7 @@ const menuNav = initMenuNav({
   topVisibleOverlay: () => overlays.topVisibleOverlay(), closeById: (id) => overlays.closeById(id),
   getPauseMenu: (i) => vpPause[i],                 // `let vpPause` REATRIBUIDO por buildGameHud -> getter
   setPhase: (p) => setPhase(p),
-  setPauseActor: (i) => { pauseActor = i; },
+  setPauseActor: setPauseActorValue,
   isCapturing: () => ctrlPanel.isCapturing(),
   closePadWiz: (save) => gamepadApi.closePadWiz(save), // LAZY: quebra o ciclo menu-nav <-> input/gamepad
   whichPlayer, actionOf,
@@ -1361,7 +1361,7 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
 (function titleIconsSetup(){ const ov=$('#title-overlay'); if(!ov)return;
   // Icones de a11y da pausa TAMBEM no topo do splash (mesmas acoes, escopo do Jogador 1)
   const ti=$('#title-icons'); if(ti){ ti.innerHTML=iconsMarkup(); // fonte unica do markup (antes copiado aqui e no modulo)
-    ti.addEventListener('click',(e)=>{ const ib=e.target.closest('.pi-btn'); if(!ib)return; pauseActor=0; pauseIcons.iconAct(ib.dataset.pi,0);
+    ti.addEventListener('click',(e)=>{ const ib=e.target.closest('.pi-btn'); if(!ib)return; setPauseActorValue(0); pauseIcons.iconAct(ib.dataset.pi,0);
       reflectTitleIcons(); if(typeof reflectPauseIcons==='function')reflectPauseIcons(); srSay(ib.getAttribute('aria-label')||''); });
     reflectTitleIcons(); }
 })();

@@ -27,6 +27,21 @@ export function setQuizLevelValue(n: number): void { quizLevel = Math.max(1, Mat
 export let numPlayers = 1;
 export function setNumPlayersValue(n: number): void { numPlayers = n; emit('numPlayers', n); }
 
+// --- pauseActor: QUEM abriu o menu de pausa. Define o ESCOPO de tudo o que se faz dentro dele. ---
+//
+// Migrado do composition root (#50) pelo mesmo critério do `selVizPlayer`: o próprio comentário que o cercava
+// já dizia "`let` com seis leitores", e havia QUATRO envoltórios `setPauseActor: (i) => { pauseActor = i; }`
+// espalhados pelo main.js, mais uma escrita direta. Cinco lugares reescrevendo a mesma variável à mão é a
+// definição de estado sem dono.
+//
+// Por que importa mais do que parece: no multiplayer em telas separadas, este índice é o que faz o menu de
+// pausa do jogador 2 editar as configurações DELE. Errar aqui não dá erro — dá a criança certa mexendo nos
+// ajustes da criança errada, em silêncio.
+//
+// NÃO é persistido: é quem apertou pausa agora, não uma preferência.
+export let pauseActor = 0;
+export function setPauseActorValue(i: number): void { pauseActor = i; emit('pauseActor', i); }
+
 // --- selVizPlayer: QUAL jogador os painéis de acessibilidade visual estão editando. ---
 //
 // Migrado do composition root (#50) pelo critério do ADR-0027: TRÊS superfícies o consultam — o painel visual,

@@ -11,7 +11,7 @@
 // tela dentro do próprio setter, e por isso nenhum teste conseguia chamá-lo. A separação entre gravar e
 // reagir é o que torna este arquivo possível, então é ela que os casos protegem.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, setLetterCaseValue, setCaptionsOnValue, on, off, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, setNumPlayersValue } from '../app/js/core/state.js';
+import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, setLetterCaseValue, setCaptionsOnValue, on, off, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, setNumPlayersValue, pauseActor, setPauseActorValue } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
 // `modoCego` é um binding VIVO: reimportar não é preciso, mas ler o valor antigo de uma cópia local seria o
@@ -197,5 +197,31 @@ describe('selVizPlayer — qual jogador os painéis visuais editam (#50)', () =>
     const chaves = Object.keys(globalThis.localStorage ?? {});
     expect(chaves.some((k) => k.toLowerCase().includes('vizplayer'))).toBe(false);
     setSelVizPlayerValue(0);
+  });
+});
+
+describe('pauseActor — quem abriu a pausa define o ESCOPO do menu (#50)', () => {
+  // O comentário que cercava esta `let` no main.js já dizia "seis leitores", e havia QUATRO envoltórios
+  // `setPauseActor: (i) => { pauseActor = i; }` espalhados pelo arquivo, mais uma escrita direta. Cinco
+  // lugares reescrevendo a mesma variável à mão é a definição de estado sem dono.
+  it('[Zero] começa em 0', () => {
+    expect(pauseActor).toBe(0);
+  });
+
+  it('[Right] o setter escreve, e o binding vivo acompanha quem importa', () => {
+    setPauseActorValue(2);
+    expect(pauseActor).toBe(2);
+    setPauseActorValue(0);
+    expect(pauseActor).toBe(0);
+  });
+
+  it('[Interface] NÃO persiste — é quem apertou pausa agora, não uma preferência', () => {
+    // No multiplayer em telas separadas este índice é o que faz o menu do jogador 2 editar os ajustes DELE.
+    // Guardá-lo entre sessões faria a pausa de amanhã começar apontando para uma criança que talvez nem esteja
+    // jogando — e o erro não dá erro: dá a criança certa mexendo nas configurações da errada, em silêncio.
+    setPauseActorValue(1);
+    const chaves = Object.keys(globalThis.localStorage ?? {});
+    expect(chaves.some((k) => k.toLowerCase().includes('pauseactor'))).toBe(false);
+    setPauseActorValue(0);
   });
 });
