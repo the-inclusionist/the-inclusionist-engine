@@ -13,8 +13,8 @@ import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
 import { phase, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
-import type { Player } from './core/entity.js'; // a entidade da ENGINE
-import type { GamePlayer } from './game/entity.js'; // a deste JOGO — ver a nota de `jogadores` abaixo
+import type { Player, PlayerView } from './core/entity.js'; // a entidade da ENGINE, e a vista mínima dela
+import type { GamePlayer, ControlledGamePlayer } from './game/entity.js'; // as deste JOGO — ver `jogadores`/`controlados`
 import type { ModalIntent } from './input/keydown.js'; // a intenção direcional do ADR-0033
 import type { RenderTextureLike, SpriteLike, GraphicsLike } from './render/screen-pipeline.js'; // o ctx de lá declara estes
 import type { HcRoleKey } from './render/hc-role-data.js'; // HC_ROLE é Record<HcRoleKey, …>: a chave não é `string`
@@ -282,7 +282,39 @@ initKB(); // o mapa de teclas vive em input/keyboard (#50); aqui só o disparo d
 // saveKB agora vem de input/keyboard.js (recebe o KB como argumento)
 // kbFor/actionOf/whichPlayer/assignControls/applyControls migraram para input/keyboard-runtime.ts (Onda A).
 // KB fica aqui (o painel de controles o edita e persiste); o modulo o le fresco a cada chamada.
-const kbRuntime = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => numPlayers, getPlayers: () => players });
+/**
+ * OS JOGADORES DESTE JOGO, e o único lugar onde a vista se estreita.
+ *
+ * `core/state.players` é `Player[]` porque a engine não conhece `quiz` — foi exatamente isso que o ADR-0033
+ * decidiu ao tirar o campo de `core/entity`. Quem PÕE `GamePlayer` naquele array é este arquivo, que é a raiz
+ * de composição do jogo, então é aqui que ele volta a ser lido como tal. O `as` não afirma nada que este
+ * arquivo já não garanta.
+ *
+ * É função e não constante DE PROPÓSITO: `players` é `export let`, e uma constante congelaria a referência no
+ * instante do import. Hoje ninguém reatribui (conferido em toda a árvore) — mas "hoje ninguém" é a premissa
+ * que envelhece pior, e a função custa uma chamada.
+ */
+const jogadores = (): GamePlayer[] => players as GamePlayer[];
+
+/**
+ * OS JOGADORES DEPOIS DE `assignControls`, que é a mesma vista com uma invariante a mais.
+ *
+ * `Player.ctrl` é `KeyScheme | null` porque ANTES do boot ele é mesmo nulo. `input/keyboard-runtime` e
+ * `game/physics` declaram `ctrl` não-nulo porque só rodam depois — e o `core/entity` já dá nome a isso em
+ * `ControlledPlayer`, dizendo que usá-lo é afirmar "eu só rodo depois do boot".
+ *
+ * Quem pode afirmar isso é a raiz de composição, porque é ela que chama `assignControls`. Então a afirmação
+ * mora aqui, uma vez, em vez de cada módulo redeclarar `ctrl` como não-nulo e ninguém ler aquilo como
+ * afirmação — que é exatamente o que o comentário do `core/entity` diz ter acontecido antes.
+ */
+const controlados = (): ControlledGamePlayer[] => players as ControlledGamePlayer[];
+
+// ⚠️ AS DUAS VISTAS MORAM AQUI, ANTES DO PRIMEIRO CONSUMIDOR, e a posição é o contrato.
+// `controlados()` nasceu 500 linhas abaixo, ao lado de `jogadores()`, e o boot morreu com
+// "b_ is not a function": o `initKeyboardRuntime` desta linha chama `getPlayers()` durante a própria
+// inicialização, quando o `const` ainda não tinha sido avaliado. `jogadores()` não sofria disso por
+// acidente — todos os usos dele vêm depois. Quem mover isto daqui quebra o boot, e não o tsc.
+const kbRuntime = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => numPlayers, getPlayers: () => controlados() });
 const kbFor = (i: number) => kbRuntime.kbFor(i);
 // controls/KJUMP..KRUN/GAME_KEYS nao moram mais aqui (D1): eram oito copias de kbRuntime.computeControlsState(),
 // e `applyControls` existia so para refaze-las. A memoria foi para dentro de input/keyboard-runtime, que e quem
@@ -384,8 +416,10 @@ function setHearingLoss(on: boolean){ setHearingLossGraph(on); store.setBool('in
 // ===== F2: efeitos de interação com o ambiente (passos por superfície, portas, escada) — ruído filtrado sintetizado =====
 // noiseBuffer + FOOT + noiseHit + _footCount (synth de ruído) extraídos p/ platform/audio.js (Fase 2). _noiseBuf era var morta.
 // material sob os pés (Cidade = concreto → 'piso') — usado pelo som do PASSO (main.js); não é pista espacial, fica aqui.
-function surfaceUnder(pl: Player){ const tile=tileAt(Math.floor(pl.x/TILE),Math.floor((pl.y+1)/TILE)); if(tile!==2&&tile!==6&&tile!==5)return null; return CENARIO==='cidade'?'piso':'pedra'; }
-const caneOn=(pl: Player)=>{ const m=VIZ_BY_KEY[pl.viz]; return modoCego || !!(m&&(m.kind==='blind'||m.kind==='lowvision')); }; // predicado de visão (movimento/render) — fica no main.js
+function surfaceUnder(pl: PlayerView<'x' | 'y'>){ const tile=tileAt(Math.floor(pl.x/TILE),Math.floor((pl.y+1)/TILE)); if(tile!==2&&tile!==6&&tile!==5)return null; return CENARIO==='cidade'?'piso':'pedra'; }
+// Tipado pelo que LÊ, não pelo que recebe: assim serve ao `Player` inteiro e às vistas estreitas que os
+// módulos declaram (`PhysicsPlayer` é um `Pick`, e um `Player` inteiro não é atribuível a ele).
+const caneOn=(pl: PlayerView<'viz'>)=>{ const m=VIZ_BY_KEY[pl.viz]; return modoCego || !!(m&&(m.kind==='blind'||m.kind==='lowvision')); }; // predicado de visão (movimento/render) — fica no main.js
 // caneColor extraído p/ render/wheelchair-sprites.js (Estágio 4).
 // TTS (narração por voz: Piper neural lazy + fallback Web Speech) extraído p/ platform/tts.ts (Tier 2, #38). Criado ANTES do
 // audio-nav porque o nav injeta narrate. As funções de painel (populateTTS*/reflectTTS) ficam no main.js (→ #54) e usam get/set.
@@ -769,20 +803,6 @@ function ensureSprites(){
 }
 let vpTex: RenderTextureLike[] = [], vpSpr: SpriteLike[] = [], vpFrames: GraphicsLike | null = null, vpDots: GraphicsLike[] = [];
 // HUD por jogador em DOM SOBREPOSTO (alta definição, não pixela): moedas (1ª coluna) + poder (2ª coluna), por viewport.
-/**
- * OS JOGADORES DESTE JOGO, e o único lugar onde a vista se estreita.
- *
- * `core/state.players` é `Player[]` porque a engine não conhece `quiz` — foi exatamente isso que o ADR-0033
- * decidiu ao tirar o campo de `core/entity`. Quem PÕE `GamePlayer` naquele array é este arquivo, que é a raiz
- * de composição do jogo, então é aqui que ele volta a ser lido como tal. O `as` não afirma nada que este
- * arquivo já não garanta.
- *
- * É função e não constante DE PROPÓSITO: `players` é `export let`, e uma constante congelaria a referência no
- * instante do import. Hoje ninguém reatribui (conferido em toda a árvore) — mas "hoje ninguém" é a premissa
- * que envelhece pior, e a função custa uma chamada.
- */
-const jogadores = (): GamePlayer[] => players as GamePlayer[];
-
 let vpPause: HTMLElement[] = []; // `pauseActor` migrou para core/state.js (#50). gameHudEl/vpHudDom/vpQuitDom/vpScreens -> ui/hud.ts
 // Menu de pausa POR TELA (Etapa 2): um por jogador, dentro da .player-screen dele.
 // Barra de atalhos de a11y no topo da pausa (por tela). Sons (cego/TTS) só com saída própria; webcam/voz em construção.
