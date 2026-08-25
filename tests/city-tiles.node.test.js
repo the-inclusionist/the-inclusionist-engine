@@ -7,17 +7,20 @@
 // O teste não usa PIXI nem canvas: ele executa o `PixelPainter` com um pincel de mentira que escreve numa
 // matriz, e compara com o PNG decodificado. É o mesmo desenho que o navegador faria, sem navegador.
 //
-// ⚠️ ESTE TESTE MORRE COM O ITEM 18 (nenhum PNG fora de sprites/). Quando os dois PNG saírem do pacote, o
-// painter passa a ser a fonte da verdade e não haverá contra o que comparar. O substituto natural é congelar
-// aqui a matriz esperada — mas isso só depois que os PNG saírem, porque uma cópia da arte convivendo com a
-// arte é a duplicação que este projeto já viu divergir quatro vezes.
+// ⚠️ EU ACHEI QUE ESTE TESTE MORRERIA COM O ITEM 18, e estava errado. A previsão era que os PNG seriam
+// APAGADOS e o painter viraria a única fonte da verdade, sem nada contra o que comparar. O que aconteceu foi
+// melhor: eles saíram do PACOTE e ficaram no REPOSITÓRIO, em `docs/art-ref`. Arte de autoria é fonte, não
+// produto — não embarca, e continua existindo para responder "isto ainda é a mesma arte?".
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
 import { join } from 'node:path';
 import { paintTileFill, paintTileSurface } from '../app/js/render/city-tiles.js';
 
-const DIR = join(process.cwd(), 'app', 'public', 'assets', 'cenarios', 'cidade');
+// A ARTE DE ORIGEM MUDOU DE LUGAR (#18): saiu de `app/public`, que EMBARCA, para `docs/art-ref`, que não.
+// Ela deixou de ser asset do jogo no dia em que o `render/city-tiles` passou a desenhá-la — mas continua
+// versionada, porque é contra ela que este teste afirma fidelidade. Arte de autoria é fonte, não produto.
+const DIR = join(process.cwd(), 'docs', 'art-ref', 'cenarios', 'cidade');
 
 /** PNG 8 bits (RGB/RGBA) → matriz de '#rrggbb'. Sem dependência nova: o IDAT é zlib e o filtro é o do spec. */
 function decodePng(p) {
@@ -89,7 +92,7 @@ describe('render/city-tiles — a arte virou dados, e continua a mesma arte', ()
 
     it(`[Right] ${arquivo}: cada pixel bate com o PNG de origem`, () => {
       // Se este caso falhar, ou o painter mudou ou a arte mudou. Os dois são notícia; nenhum é ruído.
-      expect(existsSync(p), `${arquivo} sumiu — se foi o item 18, veja a nota no topo deste arquivo`).toBe(true);
+      expect(existsSync(p), `${arquivo} sumiu de docs/art-ref — a referência de fidelidade não pode evaporar`).toBe(true);
       const alvo = decodePng(p);
       const meu = pintar(painter, alvo.w, alvo.h);
       const difs = [];
