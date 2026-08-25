@@ -13,6 +13,8 @@ import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
 import { phase, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
+import type { Player } from './core/entity.js';
+import type { ModalIntent } from './input/keydown.js'; // a intenção direcional do ADR-0033 // o tipo da entidade, para os parâmetros que a recebem
 import { quizLevel, setQuizLevelValue, coins, setCoins } from './game/state.js'; // item 19: o estado DESTE jogo
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
@@ -190,7 +192,7 @@ for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const tile=WORLD[y][x]; //
 // armazenamento numa passada só — aqui eram um `let` provisório seguido de duas reatribuições.
 // HC_ROLE_DEF/HC_ROLE/saveHcRole (color-blocking por papel, customizavel e persistido) migraram para
 // render/high-contrast.ts (Onda A). rgbHex foi junto e nao voltou: tinha ZERO chamadores aqui.
-const hexRgb=h=>{ const m=/^#?([0-9a-f]{6})$/i.exec(h); if(!m)return null; const n=parseInt(m[1],16); return [n>>16&255,n>>8&255,n&255]; };
+const hexRgb=(h: string)=>{ const m=/^#?([0-9a-f]{6})$/i.exec(h); if(!m)return null; const n=parseInt(m[1],16); return [n>>16&255,n>>8&255,n&255]; };
 // _roleOf/worldToTextureDirect/directBgTexture/directSpriteCanvas/directSpriteTexture migraram para
 // render/high-contrast.ts (Onda A).
 // Alto contraste (re-adicionado): recolore cada tile pela PALETA do grupo (gradient-map por matiz, mantém claro-escuro).
@@ -214,7 +216,7 @@ let MODE='ludico'; // 'ludico' | 'somasub' (silabas vem na E7)
 // `letterCase` migrou para core/state.js (#50) — 'mixed' | 'upper', escolha pedagógica, hoje feita no menu de
 // CAA (ADR-0028). 'mixed' NÃO força minúscula: devolve o texto como ele é, que é o que "maiúsculas e
 // minúsculas" quer dizer. Forçar minúscula num nome próprio ensinaria a criança a escrevê-lo errado.
-const disp=(s)=> letterCase==='upper'?String(s).toUpperCase():String(s);
+const disp=(s: unknown)=> letterCase==='upper'?String(s).toUpperCase():String(s);
 // E8: Braille (modo pessoa cega). Padrão de pontos da cela por letra (Grau 1, PT).
 // BRAILLE/NUMW/brailleText extraídos p/ game/braille.js (Estágio 4).
 // `blindMode` REMOVIDO: era escrito só por applyLetra a partir de `LETRA[i].blind`, e as duas entradas da
@@ -241,10 +243,10 @@ const coinPools=()=>({ shapes: MODE==='somasub'?SOMASUB_SHAPES.map(s=>s.id):[], 
 const POWER_KINDS = ['superjump', 'ultrajump', 'turbo', 'fly', 'wallcling'];
 const POWER_SHORT_KINDS = [...POWER_KINDS, 'runcane'];
 /** Frase falada do poder. `off` tem frase propria; o que nao for poder conhecido cai no generico. */
-const POWER_MSG = (k) => t(k === 'off' ? 'sr.power.none' : POWER_KINDS.includes(k) ? 'sr.power.' + k : 'sr.power.generic');
+const POWER_MSG = (k: string) => t(k === 'off' ? 'sr.power.none' : POWER_KINDS.includes(k) ? 'sr.power.' + k : 'sr.power.generic');
 // Ícones canônicos dos power-ups (decisão do José 2026-07-02): 👟 corrida/bengala · 🕷️ escalada · 🎈 voo (jetpack) · 🐇 super pulo · 🦘 ultra pulo
 /** Rótulo curto do HUD. Desconhecido cai em `off` ('—'), que era o `|| '—'` de cada consumidor. */
-const POWER_SHORT = (k) => t('hud.power.' + (POWER_SHORT_KINDS.includes(k) ? k : 'off'));
+const POWER_SHORT = (k: string) => t('hud.power.' + (POWER_SHORT_KINDS.includes(k) ? k : 'off'));
 // showPower migrou para game/coin-spawning.ts (Onda A) — o HUD do poder ativo nasce do mesmo modulo que
 // materializa os itens.
 // jumpVel + isBouncyGroundBelow/touchingWall/clingSides/firstClingSide/spiderReattach/wrapConvex → game/player.js (Estágio 4)
@@ -278,7 +280,7 @@ initKB(); // o mapa de teclas vive em input/keyboard (#50); aqui só o disparo d
 // kbFor/actionOf/whichPlayer/assignControls/applyControls migraram para input/keyboard-runtime.ts (Onda A).
 // KB fica aqui (o painel de controles o edita e persiste); o modulo o le fresco a cada chamada.
 const kbRuntime = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => numPlayers, getPlayers: () => players });
-const kbFor = (i) => kbRuntime.kbFor(i);
+const kbFor = (i: number) => kbRuntime.kbFor(i);
 // controls/KJUMP..KRUN/GAME_KEYS nao moram mais aqui (D1): eram oito copias de kbRuntime.computeControlsState(),
 // e `applyControls` existia so para refaze-las. A memoria foi para dentro de input/keyboard-runtime, que e quem
 // faz a conta; aqui sobrou o gatilho de invalidacao, que e o que o painel de controles precisa chamar.
@@ -348,7 +350,7 @@ const rm=(()=>{ const s=store.getJSON(store.KEYS.reducedMotion,null); if(s&&type
   const o={}; RM_KEYS.forEach(k=>o[k]=defaultReducedMotion()); return o; })();
 function saveRM(){ store.setJSON(store.KEYS.reducedMotion,rm); }
 // Movimento por alternância (1 dedo): tocar a direção trava a marcha; segurar acelera; pulo não interrompe. Persistido.
-function loadPlayerA11y(p,i){ const v=store.get(store.KEYS.vizP(i)); if(v&&VIZ_BY_KEY[v])p.viz=v;
+function loadPlayerA11y(p: Player,i: number){ const v=store.get(store.KEYS.vizP(i)); if(v&&VIZ_BY_KEY[v])p.viz=v;
   p.audioSink=store.get(store.KEYS.sinkP(i))||null; // saída de áudio própria do jogador (setSinkId)
   p.easy=store.getBool(store.KEYS.easyP(i)); p.toggleMove=store.getBool(store.KEYS.toggleMoveP(i));
   // CONSERTO: os três alvos de PERSONAGEM nasciam SEMPRE `false`, embora o comentário do bloco acima diga
@@ -359,9 +361,9 @@ function loadPlayerA11y(p,i){ const v=store.get(store.KEYS.vizP(i)); if(v&&VIZ_B
   p.rmWalk=store.getBool(store.KEYS.rmWalkP(i),rmDef); p.rmBreath=store.getBool(store.KEYS.rmBreathP(i),rmDef); p.rmFlavor=store.getBool(store.KEYS.rmFlavorP(i),rmDef);
   if(i===0){ const ov=store.get(store.KEYS.viz); if(ov&&VIZ_BY_KEY[ov]&&store.get(store.KEYS.vizP(0))==null)p.viz=ov; // migra chaves antigas
     if(store.getBool(store.KEYS.toggleMoveLegacy)&&store.get(store.KEYS.toggleMoveP(0))==null)p.toggleMove=true; } }
-function setToggleMove(i,on){ const p=players[i]; if(!p)return; p.toggleMove=on; store.setBool(store.KEYS.toggleMoveP(i),on); if(!on)p.walkDir=0;
+function setToggleMove(i: number,on: boolean){ const p=players[i]; if(!p)return; p.toggleMove=on; store.setBool(store.KEYS.toggleMoveP(i),on); if(!on)p.walkDir=0;
   srSay(playerPrefix(i,numPlayers)+t(on?'sr.motor.toggleMoveOn':'sr.motor.toggleMoveOff')); }
-function showCaption(txt){ const el=$('#caption'); if(!el||!txt)return; el.textContent=txt; el.classList.add('show'); clearTimeout(capTimer); capTimer=setTimeout(()=>{el.classList.remove('show'); el.textContent='';},1300); }
+function showCaption(txt: string){ const el=$('#caption'); if(!el||!txt)return; el.textContent=txt; el.classList.add('show'); clearTimeout(capTimer); capTimer=setTimeout(()=>{el.classList.remove('show'); el.textContent='';},1300); }
 // Earcons + ponte com legendas extraídos p/ platform/audio-earcons.ts (Tier 2, áudio rodada 2). captionsOn/showCaption
 // VIVEM aqui (UI alterna captionsOn; win() reusa showCaption) → entram por injeção. Chamado como earcons.sfx(...).
 const earcons = createAudioEarcons({ SFX, ensureAC, catNode, audioOut, noiseHit,
@@ -371,7 +373,7 @@ const earcons = createAudioEarcons({ SFX, ensureAC, catNode, audioOut, noiseHit,
 // Modo empatia — perda auditiva: passa-baixas (perda de agudos) + EXPANSÃO DESCENDENTE (frames fracos abafados → dificulta a fala).
 // Todos os sons passam por um nó mestre; a cadeia é religada quando o modo liga/desliga.
 // Nó mestre (hearingLoss/audioOut/buildHearingChain/wireMaster) extraído p/ platform/audio.js (Fase 2).
-function setHearingLoss(on){ setHearingLossGraph(on); store.setBool('incl_hearingloss',on); // grafo em platform/audio.js; persistência via store
+function setHearingLoss(on: boolean){ setHearingLossGraph(on); store.setBool('incl_hearingloss',on); // grafo em platform/audio.js; persistência via store
   srSay(t(on?'sr.empathy.hearingOn':'sr.empathy.hearingOff')); }
 // ===== F1: barramento de áudio por CATEGORIA (cada uma: liga/desliga + volume). Pendura no nó mestre. =====
 // AUDIO_CATS (categorias) + carga/persistência + default TTS-off extraídos p/ platform/audio-mixer.js (Fase 2).
@@ -379,8 +381,8 @@ function setHearingLoss(on){ setHearingLossGraph(on); store.setBool('incl_hearin
 // ===== F2: efeitos de interação com o ambiente (passos por superfície, portas, escada) — ruído filtrado sintetizado =====
 // noiseBuffer + FOOT + noiseHit + _footCount (synth de ruído) extraídos p/ platform/audio.js (Fase 2). _noiseBuf era var morta.
 // material sob os pés (Cidade = concreto → 'piso') — usado pelo som do PASSO (main.js); não é pista espacial, fica aqui.
-function surfaceUnder(pl){ const tile=tileAt(Math.floor(pl.x/TILE),Math.floor((pl.y+1)/TILE)); if(tile!==2&&tile!==6&&tile!==5)return null; return CENARIO==='cidade'?'piso':'pedra'; }
-const caneOn=(pl)=>{ const m=VIZ_BY_KEY[pl.viz]; return modoCego || !!(m&&(m.kind==='blind'||m.kind==='lowvision')); }; // predicado de visão (movimento/render) — fica no main.js
+function surfaceUnder(pl: Player){ const tile=tileAt(Math.floor(pl.x/TILE),Math.floor((pl.y+1)/TILE)); if(tile!==2&&tile!==6&&tile!==5)return null; return CENARIO==='cidade'?'piso':'pedra'; }
+const caneOn=(pl: Player)=>{ const m=VIZ_BY_KEY[pl.viz]; return modoCego || !!(m&&(m.kind==='blind'||m.kind==='lowvision')); }; // predicado de visão (movimento/render) — fica no main.js
 // caneColor extraído p/ render/wheelchair-sprites.js (Estágio 4).
 // TTS (narração por voz: Piper neural lazy + fallback Web Speech) extraído p/ platform/tts.ts (Tier 2, #38). Criado ANTES do
 // audio-nav porque o nav injeta narrate. As funções de painel (populateTTS*/reflectTTS) ficam no main.js (→ #54) e usam get/set.
@@ -640,9 +642,9 @@ const lifeLayer=new PIXI.Container(); camera.addChild(lifeLayer);
 const CITY_TEX=createCityTextures(); // pombos/gatos/caes, silhuetas de adulto e carros (render/city-tex.ts) — I/O de canvas SO aqui, no boot
 // LIFE_KINDS/creatures/_lifeSpawnT/spawnCreature/stepLife migraram para game/life.ts (Onda A).
 // inDark/lifeSurfaceAt/lifeSurfaceLowAt/streetCols FICAM: render/scene-city usa lifeSurfaceAt tambem.
-function inDark(tx,ty){ for(const r of darkRegions){ if(r.set.has(tx+','+ty))return true; } return false; } // célula de área secreta?
-function lifeSurfaceAt(tx){ for(let ty=3;ty<WORLD_H-1;ty++){ if(solidAt(tx,ty)&&!solidAt(tx,ty-1)&&tileAt(tx,ty-1)!==3&&tileAt(tx,ty)!==9&&tileAt(tx,ty-1)!==9&&!inDark(tx,ty-1)) return ty; } return -1; } // superfície AO AR LIVRE (fora das secretas), a MAIS ALTA; ty-1!==9 = nada spawna DENTRO da lava
-function lifeSurfaceLowAt(tx){ for(let ty=WORLD_H-2;ty>3;ty--){ if(solidAt(tx,ty)&&!solidAt(tx,ty-1)&&tileAt(tx,ty-1)!==3&&tileAt(tx,ty)!==9&&tileAt(tx,ty-1)!==9&&!inDark(tx,ty-1)) return ty; } return -1; } // idem, a MAIS BAIXA (calçada/fachada); ty-1!==9 = fora da lava
+function inDark(tx: number,ty: number){ for(const r of darkRegions){ if(r.set.has(tx+','+ty))return true; } return false; } // célula de área secreta?
+function lifeSurfaceAt(tx: number){ for(let ty=3;ty<WORLD_H-1;ty++){ if(solidAt(tx,ty)&&!solidAt(tx,ty-1)&&tileAt(tx,ty-1)!==3&&tileAt(tx,ty)!==9&&tileAt(tx,ty-1)!==9&&!inDark(tx,ty-1)) return ty; } return -1; } // superfície AO AR LIVRE (fora das secretas), a MAIS ALTA; ty-1!==9 = nada spawna DENTRO da lava
+function lifeSurfaceLowAt(tx: number){ for(let ty=WORLD_H-2;ty>3;ty--){ if(solidAt(tx,ty)&&!solidAt(tx,ty-1)&&tileAt(tx,ty-1)!==3&&tileAt(tx,ty)!==9&&tileAt(tx,ty-1)!==9&&!inDark(tx,ty-1)) return ty; } return -1; } // idem, a MAIS BAIXA (calçada/fachada); ty-1!==9 = fora da lava
 let _streetCols=null; // colunas ABERTAS da rua/fachada (superfície mais baixa, fora das secretas) — computadas 1×
 function streetCols(){ if(_streetCols)return _streetCols; _streetCols=[];
   for(let tx=2;tx<WORLD_W-2;tx++){ const ty=lifeSurfaceLowAt(tx); if(ty>0&&ty*TILE>WORLD_PX_H*0.55)_streetCols.push([tx,ty]); }
@@ -854,7 +856,7 @@ initPhysics({
   puffDust, setSquash, addShake, addHitstop, POWER_MSG,
   coinPools: ()=>coinPools(), rebuildCoins, updateHud,
 });
-function stepPlayer(pl,dt){
+function stepPlayer(pl: Player,dt: number){
   const _p=stepPhysics(pl,dt); if(!_p.ran)return; const dir=_p.dir; // fisica em game/physics.ts
   sessionApi.collectFor(pl); // moeda/quiz, power-up/chave e portao -> game/session.ts (C2)
   // E15/E16/E17/E19/E20: a escolha do quadro (decisao PURA em render/player-anim.ts) e a aplicacao dela no
@@ -866,7 +868,7 @@ function stepPlayer(pl,dt){
    objetos, nunca troca o array) — por isso este init tem de vir DEPOIS daquela declaracao. `players` entra
    por getter: e a lista viva de core/state.ts, que cresce e encolhe. */
 const secretAreas = initSecretAreas({ regions: darkRegions, getPlayers: ()=>players, box: BOX, tile: TILE, srSay });
-function update(dt){
+function update(dt: number){
   if(phase!=='playing')return; // E14: congelado no título e na pausa
   if(tickHitstop(dt)) return; // JUICE: hit-stop congela o mundo por alguns ticks
   fxClock+=dt; // clock GERAL de animação (o stepFx não o incrementa mais — extraído p/ render/fx)
@@ -923,14 +925,14 @@ function draw(){ drawApi.drawFrame(); }
    os chamadores de cima (update, keydown, initGamepad, restartGame, applyLetra, window.__incl) nao mudem.
    respawnFigure NAO foi junto: apesar de colada ao bloco e chamada so pelo quiz, ela re-sorteia a posicao
    da moeda — e do slice de moedas, e entra no quiz por injecao. */
-function openQuiz(pl,coinIndex,shapeId){ quizApi.openQuiz(pl,coinIndex,shapeId); }
-function openSilabas(pl,coinIndex,letter){ quizApi.openSilabas(pl,coinIndex,letter); }
-function renderQuiz(pl){ quizApi.renderQuiz(pl); }
-function closeQuiz(pl){ quizApi.closeQuiz(pl); }
+function openQuiz(pl: Player,coinIndex: number,shapeId: Parameters<typeof quizApi.openQuiz>[2]){ quizApi.openQuiz(pl,coinIndex,shapeId); }
+function openSilabas(pl: Player,coinIndex: number,letter: Parameters<typeof quizApi.openSilabas>[2]){ quizApi.openSilabas(pl,coinIndex,letter); }
+function renderQuiz(pl: Player){ quizApi.renderQuiz(pl); }
+function closeQuiz(pl: Player){ quizApi.closeQuiz(pl); }
 // A INTENCAO chega da engine; QUEM DECIDE o que ela significa e este jogo (ADR-0033). A grade de tres
 // colunas e o desvio de Braille moravam dentro do `input/keydown` e do `input/gamepad`, em duas COPIAS —
 // que e a pior forma de ter uma regra. Agora ela existe uma vez, aqui, do lado de quem e dono do desafio.
-function modalInput(pl, intent) {
+function modalInput(pl: Player, intent: ModalIntent) {
   if (pl.quiz && pl.quiz.kind === 'braille') {   // cego: cima DITA a cela, confirmar responde. Nada mais anda.
     if (intent === 'up') announceBraille(pl);
     else if (intent === 'confirm') quizConfirm(pl);
@@ -943,12 +945,12 @@ function modalInput(pl, intent) {
   else if (intent === 'confirm') quizConfirm(pl);
   else if (intent === 'erase') quizErase(pl);
 }
-const temModal = (i) => !!(players[i] && players[i].quiz);
-function quizMove(pl,d){ quizApi.quizMove(pl,d); }
-function quizConfirm(pl){ quizApi.quizConfirm(pl); }
-function quizErase(pl){ quizApi.quizErase(pl); }
-function announceBraille(pl){ quizApi.announceBraille(pl); }
-function respawnFigure(i){
+const temModal = (i: number) => !!(players[i] && players[i].quiz);
+function quizMove(pl: Player,d: Parameters<typeof quizApi.quizMove>[1]){ quizApi.quizMove(pl,d); }
+function quizConfirm(pl: Player){ quizApi.quizConfirm(pl); }
+function quizErase(pl: Player){ quizApi.quizErase(pl); }
+function announceBraille(pl: Player){ quizApi.announceBraille(pl); }
+function respawnFigure(i: number){
   const occ=new Set(); coins.forEach((c,j)=>{ if(j!==i)occ.add(c.x+','+c.y); });
   for(const cand of shuffle(findCoinCandidates())){ const x=cand.tx*TILE+3,y=cand.ty*TILE+3;
     if(!occ.has(x+','+y)){ coins[i].x=x;coins[i].y=y;coins[i].taken=false; // dono (owner) preservado
@@ -989,15 +991,15 @@ const sessionApi = initSession({
   setPhase, titleShow: (id)=>titleUI.show(id),
 });
 function updateHud(){ sessionApi.updateHud(); }
-function win(pl){ sessionApi.win(pl); }
+function win(pl: Player){ sessionApi.win(pl); }
 function restartGame(){ sessionApi.restartGame(); }
-function setMode(m){ sessionApi.setMode(m); }
-function setNumPlayers(n){ sessionApi.setNumPlayers(n); }
-function fitsN(n){ return sessionApi.fitsN(n); }
+function setMode(m: Parameters<typeof sessionApi.setMode>[0]){ sessionApi.setMode(m); }
+function setNumPlayers(n: number){ sessionApi.setNumPlayers(n); }
+function fitsN(n: number){ return sessionApi.fitsN(n); }
 function isMobile(){ return sessionApi.isMobile(); }
-function activateScreens(n){ sessionApi.activateScreens(n); }
-function respawnPlayer(k){ sessionApi.respawnPlayer(k); }
-function joinPlayer(padIdx){ return sessionApi.joinPlayer(padIdx); }
+function activateScreens(n: number){ sessionApi.activateScreens(n); }
+function respawnPlayer(k: Parameters<typeof sessionApi.respawnPlayer>[0]){ sessionApi.respawnPlayer(k); }
+function joinPlayer(padIdx: Parameters<typeof sessionApi.joinPlayer>[0]){ return sessionApi.joinPlayer(padIdx); }
 function quitGame(){ sessionApi.quitGame(); }
 $('#btn-again').addEventListener('click',()=>{ restartGame(); $('#game-region').focus(); });
 /* ===================== ATIVIDADES (menu inicial) -> ui/activities-menu.ts =====================
@@ -1078,7 +1080,7 @@ const optTelasBtn=$('#opt-telas'); // botão único: cicla 1→2→3→4 telas
 if(optTelasBtn)optTelasBtn.addEventListener('click',()=>{ activateScreens((numPlayers%4)+1); });
 // Botão único de LETRAS: ABC (padrão) → abc → Braille
 // L3: nível do quiz de alfabetização (1..5), persistido; rótulo vivo nos menus de pausa
-function setQuizLevel(n,announce){ setQuizLevelValue(n); // core/state.js: clampa 1..5, persiste e emite; a reflexão de UI fica aqui
+function setQuizLevel(n: number, announce: boolean){ setQuizLevelValue(n); // core/state.js: clampa 1..5, persiste e emite; a reflexão de UI fica aqui
   // `QL_NAME` atravessa por PARAMETRO e NAO vira chave: sao os niveis da psicogenese de Ferreiro, e o pilar 3
   // do ADR-0010 diz que curriculo de alfabetizacao nao se traduz — reescreve-se por idioma. A moldura traduz.
   document.querySelectorAll('.pm-nivel').forEach(x=>{ x.textContent=t('pause.level',{n:quizLevel,v:QL_NAME[quizLevel]}); });
@@ -1099,7 +1101,7 @@ function applyLetra(){
   players.forEach(p=>{ if(p.quiz)renderQuiz(p); }); // L3: re-renderiza o quiz de quem estiver num
 }
 applyLetra(); // estado inicial: reflete a caixa persistida no atributo que o CSS lê
-function setLetterCaseAndApply(c){ setLetterCaseValue(c); applyLetra(); }
+function setLetterCaseAndApply(c: Parameters<typeof setLetterCaseValue>[0]){ setLetterCaseValue(c); applyLetra(); }
 const optLetraBtn=$('#opt-letra'); if(optLetraBtn)optLetraBtn.addEventListener('click',()=>{ caa.open(); });
 // E9: toggles de Som / Legendas / Fácil
 const soundBtn=$('#opt-sound'), capBtn=$('#opt-captions');
@@ -1151,7 +1153,7 @@ const _rebakeDirect = viz.rebakeDirect;
 // O ESTADO mora em core/state (setModoCegoValue: grava, persiste, avisa). Aqui ficam só os EFEITOS — refazer
 // os extras do nível, refletir o painel, anunciar —, que são reação e pertencem ao composition root. A guarda
 // de igualdade também está no setter: se o valor não mudou, ele não avisa e nada disto roda.
-function setModoCego(on){ const antes=modoCego; setModoCegoValue(on); if(modoCego===antes)return;
+function setModoCego(on: boolean){ const antes=modoCego; setModoCegoValue(on); if(modoCego===antes)return;
   if(typeof setupExtras==='function')setupExtras(); if(typeof reflectModoCego==='function')audioPanel.reflectModoCego();
   srSay(t(on?'sr.blind.on':'sr.blind.off')); }
 // setPlayerViz/applyVizGlobal migraram para render/viz-setters.ts (Onda A).
@@ -1163,12 +1165,12 @@ const empathy = initSettingsEmpathy({ $, srSay, store, renderVizGroup, reflectMo
 // local respondia pelo `kind` e contava as 3 correções de daltonismo como simulação (#60); `VIZ_SIM`, derivada
 // dela, era declarada e nunca lida — a terceira cópia do mesmo erro, e morta.
 // renderVizGroup migrou para render/viz-setters.ts (Onda A).
-function setOwnerColors(on){ const antes=ownerColors; setOwnerColorsValue(on); if(ownerColors===antes)return;
+function setOwnerColors(on: boolean){ const antes=ownerColors; setOwnerColorsValue(on); if(ownerColors===antes)return;
   rebuildCoins(); srSay(t(ownerColors?'sr.visual.ownerColorsOn':'sr.visual.ownerColorsOff')); }
-function setCbSafe(on){ const antes=cbSafe; setCbSafeValue(on); if(cbSafe===antes)return;
+function setCbSafe(on: boolean){ const antes=cbSafe; setCbSafeValue(on); if(cbSafe===antes)return;
   const src=cbSafe?PCOLOR_CB:PCOLOR_DEF; PCOLOR.length=0; src.forEach(c=>PCOLOR.push(c)); // troca IN-PLACE (todos referenciam PCOLOR)
   rebuildCoins(); ensureSprites(); srSay(t(cbSafe?'sr.visual.cbSafeOn':'sr.visual.cbSafeOff')); }
-function setRoleColor(k,hex){ const rgb=hexRgb(hex); if(!rgb||!HC_ROLE[k])return; HC_ROLE[k]=rgb; saveHcRole();
+function setRoleColor(k: string,hex: string){ const rgb=hexRgb(hex); if(!rgb||!HC_ROLE[k])return; HC_ROLE[k]=rgb; saveHcRole();
   _rebakeDirect(); rebuildExtras(); srSay(t('sr.visual.roleColorSet',{v:ROLE_LABELS[k]})); } // ROLE_LABELS ainda é pt-BR
 function resetRoleColors(){ for(const k in HC_ROLE_DEF)HC_ROLE[k]=HC_ROLE_DEF[k].slice(); saveHcRole();
   _rebakeDirect(); rebuildExtras(); visual.render(); srSay(t('sr.visual.roleColorsReset')); }
@@ -1177,9 +1179,9 @@ function resetRoleColors(){ for(const k in HC_ROLE_DEF)HC_ROLE[k]=HC_ROLE_DEF[k]
 // A tabela ['nenhum','fino','grosso'] estava escrita DUAS vezes, uma em cada função, para o mesmo trio de
 // espessuras — e em pt-BR fixo. Virou chave i18n indexada pelo próprio nível.
 const OUTLINE_KEY=['outline.none','outline.thin','outline.thick'];
-function setOutlineFg(v){ const antes=hcOutlineFg; setOutlineFgValue(v); if(hcOutlineFg===antes)return;
+function setOutlineFg(v: number){ const antes=hcOutlineFg; setOutlineFgValue(v); if(hcOutlineFg===antes)return;
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineFg',{v:t(OUTLINE_KEY[hcOutlineFg])})); }
-function setOutlineBg(v){ const antes=hcOutlineBg; setOutlineBgValue(v); if(hcOutlineBg===antes)return;
+function setOutlineBg(v: number){ const antes=hcOutlineBg; setOutlineBgValue(v); if(hcOutlineBg===antes)return;
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineBg',{v:t(OUTLINE_KEY[hcOutlineBg])})); }
 const visual = initSettingsVisual({ $, srSay, renderVizGroup, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: setSelVizPlayerValue, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
@@ -1210,11 +1212,11 @@ const visualClose=$('#visual-close'); if(visualClose)visualClose.addEventListene
 function reflectMotorEmpathy(){ const a=$('#opt-onebtn'); if(a){ toggleBtn(a,oneButton); a.textContent=toggleLabel(oneButton); }
   const b=$('#opt-wheelchair'); if(b){ toggleBtn(b,wheelchair); b.textContent=toggleLabel(wheelchair); } reflectVizButtons(); }
 // Estado em core/state; aqui só os EFEITOS (refletir o painel, anunciar). Mesma forma que setModoCego.
-function setOneButton(on){ const antes=oneButton; setOneButtonValue(on); if(oneButton===antes)return;
+function setOneButton(on: boolean){ const antes=oneButton; setOneButtonValue(on); if(oneButton===antes)return;
   reflectMotorEmpathy(); srSay(t(on?'sr.motor.oneButtonOn':'sr.motor.oneButtonOff')); }
 // Estado em core/state; aqui a REAÇÃO, que neste caso é grande: o modo cadeirante refaz a geometria do
 // nível inteiro. Por isso ele não caberia dentro de um setter — e por isso o setter não o conhece.
-function setWheelchair(on){ const antes=wheelchair; setWheelchairValue(on); if(wheelchair===antes)return;
+function setWheelchair(on: boolean){ const antes=wheelchair; setWheelchairValue(on); if(wheelchair===antes)return;
   players.forEach(p=>{ if(on && p.activePower!=='fly' && p.activePower!=='turbo') p.activePower='off'; if(on) p.owned=p.owned.filter(k=>k==='fly'||k==='turbo'); showPower(p); });
   setupExtras(); rebuildCoins(); buildWcGeom(); buildRamps(); buildElevators(); reflectMotorEmpathy(); // só voo/super-corrida; moedas no chão; escada/trampolim viram elevador; rampas+pontes; lava vira chão
   srSay(t(on?'sr.motor.wheelchairOn':'sr.motor.wheelchairOff')); }
@@ -1272,7 +1274,7 @@ document.querySelectorAll('.mode-btn, .pm-btn').forEach(attachAbbr);
 function simNaoGlyphs(){ const d=store.get('incl_paddesign','generic'); const set=PAD_DESIGNS[d]||PAD_DESIGNS.generic; const inv=(d==='sony'||d==='nintendo');
   return { sim:set[inv?'1':'0'], nao:set[inv?'0':'1'] }; }
 function renderPauseLegend(){ const g=simNaoGlyphs();
-  const chip=(s,word)=>`<span class="lg"><span class="lg-ico" style="background:${s[1]}">${s[0]}</span> ${word}</span>`;
+  const chip=(s: readonly string[],word: string)=>`<span class="lg"><span class="lg-ico" style="background:${s[1]}">${s[0]}</span> ${word}</span>`;
   const html=chip(g.sim,t('menu.yes'))+chip(g.nao,t('menu.no'));
   document.querySelectorAll('.pause-legend').forEach(el=>{ el.innerHTML=html; }); } // todas as pausas por tela
 // START (pílula): função vem do touchMap (padrão pausar) — a fiação fica no touchSetup, junto do doTouch.
@@ -1314,7 +1316,7 @@ function openHelp(){ const ov=$('#help'); if(!ov)return; const c=$('#help-conten
   // um sufixo: uma lingua que ponha o numero do jogador ANTES do titulo so consegue se a frase inteira morar
   // no dicionario. Mesma decisao de `sr.audio.*` e dos anuncios motores.
   const titulo=numPlayers>1?t('help.controlsPlayer',{n:pa+1}):t('help.controls');
-  const nota=(txt)=>`<div class="ctrl-row"><span>${txt}</span></div>`;
+  const nota=(txt: string)=>`<div class="ctrl-row"><span>${txt}</span></div>`;
   if(c)c.innerHTML=`<h3 class="panel-sub">${titulo} <span class="panel-sub__tag">${t('help.keyboard')}</span></h3><div class="ctrl-list">${rows}</div>`+
     `<h3 class="panel-sub">${t('help.buildNotes')}</h3><div class="ctrl-list">`+
     nota(t('help.powerups'))+nota(t('help.multiplayer'))+nota(t('help.tech',{v:INCL_VERSION}))+`</div>`;
@@ -1359,20 +1361,20 @@ startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
   setMinimapVisible(!titleG.visible&&numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
   if(phase==='playing'){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
-window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id)=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return powerups;},get gateOpen(){return gateOpen;},get gate(){return gate;},get ended(){return ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(players[0]),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
+window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return powerups;},get gateOpen(){return gateOpen;},get gate(){return gate;},get ended(){return ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(players[0]),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE;},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
   setMode,setQuizLevel,get quizLevel(){return quizLevel;},openSilabas,quizMove,quizConfirm,quizErase,get quiz(){return players[0].quiz;},INCL_VERSION,fmtFrac,fracGraphic,speakChoice,get fracNot(){return fracNot;},
   setGameFont:typo.setFont,openTypo,get fontKey(){return typo.getFontKey();},FONT_GROUPS,get mmSeen2(){return minimapSeenCount();},
   startAttract:()=>attractCtl.startAttract(),stopAttract:()=>attractCtl.stopAttract(),get attract(){return attractCtl.isAttract();}, // attract → game/attract.ts
-  loadTTS:tts.loadTTS,ttsSpeak:tts.ttsSpeak,narrate:tts.narrate,get ttsEngine(){return tts.getEngine();},get ttsLoading(){return tts.loading;},get ttsFailed(){return tts.failed;},setTtsEngineSel(v){tts.setEngineSel(v);},
+  loadTTS:tts.loadTTS,ttsSpeak:tts.ttsSpeak,narrate:tts.narrate,get ttsEngine(){return tts.getEngine();},get ttsLoading(){return tts.loading;},get ttsFailed(){return tts.failed;},setTtsEngineSel(v: Parameters<typeof tts.setEngineSel>[0]){tts.setEngineSel(v);},
   updateWeather:weather.updateWeather,get rainLevel(){return weather.getRainLevel();},set weatherT(v){weather.setWeatherT(v);},get weatherT(){return weather.getWeatherT();},rm,
   spawnCreature:life.spawnCreature,stepLife:life.stepLife,get creatures(){return life.getCreatures();},spawnCar:traffic.spawnCar,get cars(){return traffic.getCars();},SEM:traffic.SEM,get STREET_Y(){return traffic.getStreetY();},
   get elevShafts(){return getElevShafts();},elevAt,get BOX(){return BOX;},get wheelchair(){return wheelchair;},setWheelchair,buildElevators,buildRamps,solidAt,surfTop, // debug cadeirante
-  get clouds(){return sceneSky.getClouds();},get birds(){return sceneSky.getBirds();},stepSky:(dt)=>sceneSky.stepSky(dt),CENARIOS,stepV3Decor:()=>sceneSky.stepV3Decor(),
+  get clouds(){return sceneSky.getClouds();},get birds(){return sceneSky.getBirds();},stepSky:(dt: number)=>sceneSky.stepSky(dt),CENARIOS,stepV3Decor:()=>sceneSky.stepV3Decor(),
   get grassDensity(){return grassDensity;},setGrassDensity:setGrassDensityValue, // o clamp mora no setter de core/state, não aqui
-  get decorCounts(){ const n=g=>g.geometry&&g.geometry.graphicsData?g.geometry.graphicsData.length:0; return {stars:n(starsG),skyDeco:n(skyDecoG),fog:n(fogG),grass:n(grassG),front:n(themeFxG)}; }};
+  get decorCounts(){ const n=(g: PIXI.Graphics)=>g.geometry&&g.geometry.graphicsData?g.geometry.graphicsData.length:0; return {stars:n(starsG),skyDeco:n(skyDecoG),fog:n(fogG),grass:n(grassG),front:n(themeFxG)}; }};
 { const v='v'+INCL_VERSION; document.title=`The Inclusionist · ${v} (PixiJS)`; // versão: fonte única = INCL_VERSION
   const e1=document.querySelector('h1 .ver'); if(e1)e1.textContent='· '+v;
   const e2=document.getElementById('title-ver'); if(e2)e2.textContent=v; }
@@ -1420,7 +1422,7 @@ const shell = initShell({
   openMotion: () => motion.open(), openEmpathy: () => empathy.open(),
   setSelVizPlayer: setSelVizPlayerValue,
 });
-function setPhase(p){ shell.setPhase(p); }
+function setPhase(p: Parameters<typeof shell.setPhase>[0]){ shell.setPhase(p); }
 function togglePause(){ shell.togglePause(); }
 function pauseSelect(){ shell.pauseSelect(); }
 function printMode(){ shell.printMode(); }
@@ -1447,8 +1449,8 @@ overlays.register('touchcfg', { close:()=>touchCtl.closeTouchCfg(), inEscapeChai
 overlays.register('help',     { close:()=>closeHelp(),              inEscapeChain:true });
 const pauseActs = shell.pauseActs; // tabela de acoes dos .pm-btn -> ui/shell.ts (ui/pause-icons le por getPauseActs)
 // Roteamento de input por jogador: cada tecla é do jogador dono dela (kbFor). Genéricas → jogador 0.
-const actionOf = (code,pi) => kbRuntime.actionOf(code,pi);
-const whichPlayer = (code) => kbRuntime.whichPlayer(code);
+const actionOf = (code: Parameters<typeof kbRuntime.actionOf>[0],pi: number) => kbRuntime.actionOf(code,pi);
+const whichPlayer = (code: Parameters<typeof kbRuntime.whichPlayer>[0]) => kbRuntime.whichPlayer(code);
 /* ===================== NAVEGACAO UNIVERSAL de menus -> ui/menu-nav.ts (C3) =====================
    sharedDialogOpen/menuItems/menuFocus/dialogBack/navDialog/pauseSetSel/navPause/menuNavKey migraram.
    `sharedDialogOpen` agora e ALIAS de overlays.topVisibleOverlay: as duas eram a MESMA funcao escrita duas
@@ -1468,11 +1470,11 @@ const menuNav = initMenuNav({
   win: window,
 });
 function sharedDialogOpen(){ return menuNav.sharedDialogOpen(); }
-function menuItems(menu){ return menuNav.menuItems(menu); }
-function menuFocus(menu){ menuNav.menuFocus(menu); }
-function dialogBack(menu){ menuNav.dialogBack(menu); }
-function navDialog(menu,k){ menuNav.navDialog(menu,k); }
-function navPause(menu,pi,k){ menuNav.navPause(menu,pi,k); }
+function menuItems(menu: Parameters<typeof menuNav.menuItems>[0]){ return menuNav.menuItems(menu); }
+function menuFocus(menu: Parameters<typeof menuNav.menuFocus>[0]){ menuNav.menuFocus(menu); }
+function dialogBack(menu: Parameters<typeof menuNav.dialogBack>[0]){ menuNav.dialogBack(menu); }
+function navDialog(menu: Parameters<typeof menuNav.navDialog>[0],k: Parameters<typeof menuNav.navDialog>[1]){ menuNav.navDialog(menu,k); }
+function navPause(menu: Parameters<typeof menuNav.navPause>[0],pi: number,k: Parameters<typeof menuNav.navPause>[2]){ menuNav.navPause(menu,pi,k); }
 menuNav.attach(); // addEventListener('keydown', menuNavKey, true) — MESMA fase de CAPTURA
 /* ===== Menu inicial (v3): principal → submenus de atividade → (tabuada/divisão) seletor de números ===== */
 // _tabFor/titleButtons/navTitle/buildTitleMenus migraram para ui/activities-menu.ts (Onda A).
@@ -1492,7 +1494,7 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
     reflectTitleIcons(); }
 })();
 (function shellSetup(){
-  const wire=(id,fn)=>{ const b=$('#'+id); if(b)b.addEventListener('click',fn); };
+  const wire=(id: string, fn: EventListener)=>{ const b=$('#'+id); if(b)b.addEventListener('click',fn); };
   wire('btn-pause', togglePause); // (o botão saiu da barra; a fiação fica guardada p/ compat)
   // Barra de topo (título da PÁGINA + ferramentas): só com ?debug=true. O jogo já mostra o título no splash,
   // então a barra fica oculta por padrão (CSS body:not(.dbg) .topbar) e libera a vertical p/ o canvas.
@@ -1513,7 +1515,7 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
 // hideTouchControls/showTouchControls migraram para input/touch.ts (Onda A).
 // DECLARACOES de funcao, nao const: o setPhase('title') do boot chama hideTouchControls antes desta linha,
 // e so o icamento faz isso funcionar — era assim no original. O corpo so toca touchCtl na hora da chamada.
-function hideTouchControls(reason){ touchCtl.hideTouchControls(reason); }
+function hideTouchControls(reason: Parameters<typeof touchCtl.hideTouchControls>[0]){ touchCtl.hideTouchControls(reason); }
 function showTouchControls(){ touchCtl.showTouchControls(); }
 /* Amarras do toque -> input/touch-bindings.ts (D3-b). LAZY de proposito: `attractCtl` e `const` declarado
    ABAIXO desta linha (TDZ). `keys` e `const` mutado in place -> entra por VALOR; showTouchControls/hideTips/
