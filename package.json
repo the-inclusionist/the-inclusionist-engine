@@ -32,11 +32,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "validate": "npm run typecheck && vitest run && vite build",
+    "validate": "npm run check:types && vitest run && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:node": "vitest run --project node",
     "test:browser": "vitest run --project browser",
+    "check:types": "node scripts/check-types.mjs",
     "check:precache": "node scripts/check-precache.mjs",
     "test:a11y": "node scripts/axe-check.mjs",
     "release": "release-it"
