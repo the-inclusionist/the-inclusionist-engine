@@ -45,6 +45,10 @@
           <label class="opt-hint" for="q-viz">Visão:</label>
           <select id="q-viz" aria-label="Correção de daltonismo"></select>
           <svg id="q-cvd" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute"></svg>
+          <!-- MODO PESSOA SURDA sem o widget do VLibras carregado. É o caso que o conserto de b0239e9 tornou
+               possível: o estado é NOSSO e o intérprete é um tradutor opcional. Se o modo só ligasse com a
+               biblioteca de terceiro presente, ele não seria da engine — seria da página que a carrega. -->
+          <button id="q-libras" class="mode-btn" type="button" aria-pressed="false">🤟 Modo pessoa surda</button>
           <div id="typo" class="overlay" hidden>
             <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="typo-title">
               <h2 id="typo-title">Tipografia</h2>

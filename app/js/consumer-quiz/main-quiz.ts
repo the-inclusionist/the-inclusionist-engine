@@ -89,7 +89,21 @@
 //     `window` real não casa com isso. Todo consumidor vai escrever o mesmo adaptador de uma linha — a engine
 //     pede uma forma de `window` que o `window` não tem.
 //
-//  (faltam: Libras e os botões de toque)
+// 13. O MODO PESSOA SURDA VIAJA, e isto valida o conserto de b0239e9 por um ângulo que eu não podia testar
+//     ontem: a página do quiz NÃO CARREGA o widget do VLibras, e mesmo assim o modo liga, desliga, persiste e
+//     anuncia. Enquanto o estado era deduzido da geometria do widget, ele pertencia à página que carregava a
+//     biblioteca — não à engine. Agora é da engine.
+//     O que NÃO viaja é o intérprete em si: sem o widget, o modo está ligado e nada traduz. É a #59, e é uma
+//     lacuna honesta — o estado é nosso, o tradutor ainda é de terceiro.
+//
+// 14. O TOQUE SE PARTE COMO O VISUAL. `input/touch` tem duas metades:
+//        · ERGONOMIA — `padPxPerMm`, a classificação de mão, o milímetro real ancorado no aparelho (WCAG
+//          2.5.5). Funções PURAS, folha, que o quiz usou para dimensionar os próprios botões. Viaja inteira.
+//        · O PAD — uma cruz direcional e quatro botões chamados `jump`, `run`, `especial`, `swap`, mais DOZE
+//          ids fixos de markup que o consumidor teria de reproduzir. Um quiz quer dois alvos grandes
+//          ("próxima" e "confirmar"), não um direcional de plataforma.
+//     Não liguei o `initTouch`: reproduzir doze ids para um conjunto de controles que o quiz não quer seria o
+//     mesmo tipo de mentira do sonar. Usei a metade pura, que é exatamente o que a divisão deveria separar.
 import { initI18n, t, applyDom } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createTts } from '../platform/tts.js';
@@ -102,6 +116,8 @@ import { VIZ_MODES, VIZ_FILTER, simulatesDisability } from '../render/viz-modes.
 import { initMenuNav } from '../ui/menu-nav.js';
 import { initKeyboardRuntime } from '../input/keyboard-runtime.js';
 import { setPhaseValue } from '../core/state.js';
+import { toggleLibras, vlibrasOpen, setOnLibrasChange } from '../ui/vlibras.js';
+import { padPxPerMm } from '../input/touch.js';
 import { kb, initKB } from '../input/keyboard.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
@@ -254,6 +270,20 @@ export function bootQuiz(): void {
   // injeção — não há como o consumidor trazer o próprio modelo de fases. Esta linha é a evidência, deixada
   // visível de propósito: ela não conserta a fronteira, ela mostra onde ela está.
   setPhaseValue('paused');
+
+  // MODO PESSOA SURDA. Nenhum script do VLibras nesta página — de propósito.
+  const libras = $<HTMLButtonElement>('#q-libras');
+  if (libras) {
+    setOnLibrasChange(() => { libras.setAttribute('aria-pressed', String(vlibrasOpen())); });
+    libras.setAttribute('aria-pressed', String(vlibrasOpen()));
+    libras.addEventListener('click', () => { toggleLibras(); srSay(t(vlibrasOpen() ? 'sr.icon.librasOn' : 'sr.icon.librasOff')); });
+  }
+
+  // TOQUE: o quiz usa a ERGONOMIA e recusa o PAD. `padPxPerMm` é puro e ancora o milímetro real no aparelho
+  // (WCAG 2.5.5 / GAG); as alternativas do quiz passam a ter alvo de 9 mm de altura MEDIDOS, em vez de um
+  // palpite em pixels. O `initTouch` inteiro não foi ligado de propósito — ver o achado 14.
+  const pxmm = padPxPerMm(matchMedia('(pointer: coarse)').matches, window.innerWidth, window.innerHeight);
+  document.documentElement.style.setProperty('--quiz-alt-min', (9 * pxmm).toFixed(1) + 'px');
 
   const região = $<HTMLElement>('#game-region');
   if (região) região.addEventListener('keydown', aoTeclado);

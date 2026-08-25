@@ -337,6 +337,10 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
    "maiúsculas" e os menus continuavam mistos.
    `text-transform` e NÃO transformar o texto: o conteúdo acessível fica intacto, e um leitor de tela não passa
    a soletrar letra por letra, que é o que ALL CAPS de verdade provoca em NVDA/JAWS. */
+/* Alternativas do quiz (segundo consumidor): altura mínima em MILÍMETROS REAIS, calculada por
+   `input/touch.padPxPerMm` — WCAG 2.5.5 / GAG. O valor chega em `--quiz-alt-min`. */
+.quiz-alt{min-height:var(--quiz-alt-min,44px);display:block;width:100%;margin:.25rem 0}
+.quiz-alts{display:flex;flex-direction:column;gap:.25rem}
 :root[data-letras="upper"] body,
 :root[data-letras="upper"] button,
 :root[data-letras="upper"] select,
