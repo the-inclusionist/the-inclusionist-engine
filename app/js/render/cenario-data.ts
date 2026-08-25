@@ -108,6 +108,16 @@ export const CENARIO_PADRAO = 'cidade';
 /* L6 (REFEITO — fiel à v3.1.100): os 4 temas usam EXATAMENTE o céu, as nuvens, as montanhas, a grama
    e a decoração viva de lá (fórmulas copiadas). BLOCOS = Clarity SEM recolor (a v3 não recoloria tiles
    por tema). NENHUM tema tem chuva — chuva é só da Cidade. */
+// ⚠️ TRÊS IDS MENTEM, e o rótulo é que está certo. `cemiterio` é "Amanhecer no Campo" e `espaco` é "Noite no
+// Campo" (ver `cen.*` nos dicionários): os temas mudaram, os ids ficaram. Com `campo` = "Dia no Campo", os três
+// são o MESMO lugar em três horas do dia, e é por isso que compartilham a silhueta em render/scene-parallax.
+// Renomear os ids é migração de dado persistido (`incl_cenario` e as gravações de demonstração os guardam),
+// então fica para uma rodada própria — e este aviso é a rede até lá. Quem ler só o id planta a arte errada;
+// foi o que quase aconteceu.
+//
+// SE UM DIA HOUVER TEMA DE ESPAÇO OU DE HALLOWEEN (decisão do Dev, 2026-08-25): no de espaço, os BLOCOS do
+// nível viram partes de estação espacial — não é só trocar o céu. E o de Halloween é uma FESTA de Halloween,
+// não um cemitério: abóboras, fantasias e doces, não túmulos.
 export const CENARIOS: Record<string, CenarioTema> = {
   cidade:    { nome: 'cen.cidade', fundo: 'png' },
   campo:     { nome: 'cen.campo',          fundo: 'gerado', sky: ['#86c5e8', '#cfeecb'], cloud: ['#ffffff', '#d4e6f5'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens', 'passaros', 'borboletas'] },

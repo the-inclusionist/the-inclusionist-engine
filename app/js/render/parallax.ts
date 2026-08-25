@@ -158,7 +158,8 @@ export interface ParallaxCtx {
   /* --- geradores de textura (render/scene-parallax): injetados, não importados, p/ rodar no project node --- */
   placeholderTex: (i: number) => unknown;                       // parallaxPlaceholder — fundo da Cidade sem PNG
   skyTex: (T: CenarioTema) => unknown;                          // themeSkyTexture — gradiente do céu do tema
-  hillsTex: (T: CenarioTema, near: boolean) => unknown;         // themeHillsTexture — banda de morros
+  /** themeHillsTexture — banda de morros. O `tema` escolhe a SILHUETA plantada em cima (árvores, cerca). */
+  hillsTex: (T: CenarioTema, near: boolean, tema: string) => unknown;
 
   /* --- carga do PNG da Cidade --- */
   Imagem: ImagemCtor;                                  // `Image` do DOM
@@ -215,7 +216,7 @@ export function createParallax(ctx: ParallaxCtx): ParallaxApi {
 
   function aplicarTemaParallax(theme: string, T: CenarioTema): void {
     if (T.fundo === 'gerado') { // céu-gradiente + 2 bandas de morros (fórmulas da v3); síncrono, sem corrida
-      const texs = [ctx.skyTex(T), ctx.hillsTex(T, false), ctx.hillsTex(T, true)];
+      const texs = [ctx.skyTex(T), ctx.hillsTex(T, false, theme), ctx.hillsTex(T, true, theme)];
       layers.forEach((_ts, i) => vestir(i, texs[i]));
       return;
     }
