@@ -14,7 +14,7 @@
 //
 // A segunda EXECUTA, num DOM de mentira. Ela existe porque a primeira metade é cega para o que importa
 // depois: se a ordem obrigatória é mesmo obrigatória, se declarar mal explode, se faltar marcação não explode.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -106,6 +106,19 @@ const declaracaoValida = () => ({
 });
 
 describe('createGame em execução', () => {
+  // AQUECE O MÓDULO UMA VEZ, FORA DA JANELA DE 5s DE CADA CASO.
+  //
+  // Os seis `await import()` deste bloco são de propósito: a primeira metade do arquivo lê a FONTE, e um
+  // import estático faria um `create-game` quebrado derrubar também os casos que só leem texto — que é
+  // exatamente o que se quer medindo separado.
+  //
+  // O preço disso era um teste INTERMITENTE: o primeiro `import` paga a transformação a frio do grafo de boot
+  // inteiro (engine + i18n + áudio + overlays), e isso passa dos 5s padrão do vitest quando a máquina está
+  // carregada ou quando uma edição invalidou o cache de transformação — foi o que aconteceu ao mudar o padrão
+  // de `ui/dom`. Falhava com "Test timed out in 5000ms", que lê como teste lento e é, na verdade, um teste
+  // medindo a compilação. Aquecendo aqui, os seis imports seguintes saem do cache e medem só o que deviam.
+  beforeAll(async () => { await import('../app/js/boot/create-game.js'); }, 30000);
+
   it('[Zero] declaração MALFORMADA explode — um jogo meio declarado é pior que um que não abre', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();

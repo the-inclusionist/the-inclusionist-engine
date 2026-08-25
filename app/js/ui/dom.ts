@@ -9,8 +9,13 @@
 // dependências, e o que se ganhou está escrito no comentário de `toggleLabel`.
 import { t } from '../core/i18n.js';
 
-export const $ = <T extends Element = Element>(s: string): T | null => document.querySelector<T>(s);
-export const $$ = <T extends Element = Element>(s: string): T[] => [...document.querySelectorAll<T>(s)];
+// O PADRAO E `HTMLElement`, NAO `Element`, e a diferenca aparece em dezessete pontos de chamada: `.hidden`,
+// `.focus()` e `.value` nao existem em `Element`, e sao exatamente o que uma aplicacao faz com o que
+// seleciona. `Element` e o padrao do lib.dom porque `querySelector` tambem serve para SVG e MathML —
+// nenhum seletor deste projeto pega um desses (conferido). Quem precisar de um tipo mais estreito passa
+// o parametro: `$<HTMLSelectElement>('#pad-design')`.
+export const $ = <T extends Element = HTMLElement>(s: string): T | null => document.querySelector<T>(s);
+export const $$ = <T extends Element = HTMLElement>(s: string): T[] => [...document.querySelectorAll<T>(s)];
 
 /**
  * Reflects an on/off state onto a toggle button: the visual class AND `aria-pressed`.
