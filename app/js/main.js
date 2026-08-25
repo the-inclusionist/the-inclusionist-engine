@@ -729,7 +729,7 @@ function reflectTitleIcons(){ pauseIcons.reflectIconsIn($('#title-icons'),0); } 
    que permitiu extrair os dois em paralelo sem se tocarem. Os paineis criados dentro do laco voltam
    pelo gancho, porque `vpPause` e binding daqui e modulo nao reatribui binding alheio. */
 const hud = initHud({
-  $, powerShort: POWER_SHORT,
+  hudTarget: COIN_TARGET, $, powerShort: POWER_SHORT,
   buildScreenPause: (i) => pauseIcons.buildScreenPause(i),
   onScreensBuilt: (panes) => { vpPause = panes;
     // No 1o build do init, LETRA/PAD_DESIGNS ainda estao em TDZ — o try/catch ignora e o fluxo de init

@@ -93,9 +93,16 @@ decision-outcome:
 
     THE REAL CONFIRMATION OF THIS RECORD IS STEP 4. IT HAS NOW BEEN RUN — 2026-08-25 — AND IT SAYS NO.
 
-    `coinTarget` is not a hypothetical. `ui/hud.vphudHtml(coinTarget: number = COIN_TARGET)` takes it today,
-    and the HUD is engine. A game without coins has nothing to pass there. By this record's own rule, step 5
-    does not start.
+    `coinTarget` was not a hypothetical: `ui/hud.vphudHtml(coinTarget: number = COIN_TARGET)` took it, and the
+    HUD is engine — a game without coins had nothing to pass there, and got the platformer's 10 by default.
+
+    FIXED 2026-08-25, and the verdict on that sentence has flipped: the target is now a REQUIRED parameter,
+    injected by the consumer exactly as `powerShort` already was, and ui/hud no longer imports core/constants.
+    What remains in that module is VOCABULARY — the 🪙 glyph, the `vphud-coins` class, the `coins` field of the
+    view model. That is debt of a different kind and a smaller one: names are not followed by the compiler and
+    do not stop a package from separating.
+
+    The rest of the list below still stands, so step 5 still does not start — but it is one module shorter.
 
     But the answer is narrower and more useful than "the boundary is wrong", and the number is what makes it
     useful: THREE engine modules import from `game/`, across five edges —

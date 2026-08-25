@@ -130,8 +130,12 @@ describe('ui/hud · screenCount', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('ui/hud · vphudHtml', () => {
-  it('[Right] o alvo de moedas do jogo entra por padrão no denominador', () => {
-    expect(vphudHtml()).toContain('/ ' + COIN_TARGET);
+  it('[Interface] NÃO há mais padrão: o alvo é OBRIGATÓRIO, e o HUD deixou de conhecer o do jogo', () => {
+    // Era `vphudHtml(coinTarget = COIN_TARGET)`, com o comentário "parâmetro só para o teste" — um padrão
+    // posto no lugar de uma fronteira. O ADR-0027 usa esse nome como o veredito do passo 4. Agora o HUD, que
+    // é da engine, não importa mais a constante do jogo de plataforma: quem tem alvo é quem tem objetivo.
+    expect(vphudHtml(COIN_TARGET)).toContain('/ ' + COIN_TARGET);
+    expect(vphudHtml(3)).toContain('/ 3');
   });
 
   it('[Interface] o denominador é parâmetro: outro alvo muda o texto', () => {

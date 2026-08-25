@@ -123,10 +123,16 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
     expect(novos, 'módulo de engine falando de moeda — o corte não pegou aqui').toEqual([]);
   });
 
-  it('[Interface] `coinTarget` continua na assinatura de ui/hud — é o veredito do passo 4, não um detalhe', () => {
-    // Enquanto esta linha passar, `createGame()` não pode ser escrito sem um alvo de moedas em algum lugar da
-    // cadeia, e o ADR-0027 diz o que isso significa: o passo 5 (a divisão em pacotes) NÃO COMEÇA.
-    expect(fonte('ui/hud.ts')).toMatch(/vphudHtml\s*\(\s*coinTarget/);
+  it('[Right] `ui/hud` NÃO importa mais a constante do jogo — o veredito do passo 4 mudou de lado', () => {
+    // Este caso já foi o contrário. Enquanto `vphudHtml(coinTarget = COIN_TARGET)` existia, o ADR-0027 dizia
+    // que a fronteira estava errada e o passo 5 não podia começar. O alvo virou parâmetro obrigatório,
+    // injetado pelo consumidor como `powerShort` já era — e a aresta morreu.
+    //
+    // O que SOBRA em ui/hud é vocabulário: o ícone 🪙, a classe `vphud-coins`, o campo `coins` do view-model.
+    // É dívida menor e de outra natureza: nomes não são seguidos pelo compilador, e não impedem um pacote de
+    // se separar. Por isso o módulo continua na lista de vocabulário abaixo, e saiu da de importações.
+    expect(fonte('ui/hud.ts')).not.toMatch(/from '\.\.\/core\/constants\.js'/);
+    expect(fonte('ui/hud.ts')).toMatch(/vphudHtml\(alvo: number\)/);
   });
 
   it('[Zero] a lista de dívida de vocabulário não guarda módulo que já se limpou', () => {

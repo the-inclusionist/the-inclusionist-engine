@@ -14,7 +14,6 @@
 // testes exercitam só a metade PURA (screenGrid/screenRect/hudRowView/vphudHtml/waitBadgeHtml).
 import { screenGrid } from '../core/screens.js';
 import type { PlayerView } from '../core/entity.js';
-import { COIN_TARGET } from '../core/constants.js';
 import { players, numPlayers } from '../core/state.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
@@ -54,9 +53,20 @@ export function screenRect(i: number, n: number): ScreenRect {
 /** Quantas telas o HUD monta: ao menos uma, mesmo antes de `players[]` existir no boot. Verbatim (Math.max(1,…)). */
 export function screenCount(n: number): number { return Math.max(1, n); }
 
-/** Markup do contador (moedas na 1ª coluna, poder na 2ª). `coinTarget` é parâmetro só para o teste. */
-export function vphudHtml(coinTarget: number = COIN_TARGET): string {
-  return '<span class="vphud-coins"><b class="vphud-ico">🪙</b> <b class="vphud-n">0</b> / ' + coinTarget
+/**
+ * Markup do contador (objetivo na 1ª coluna, poder na 2ª). `alvo` é OBRIGATÓRIO, e essa é a mudança.
+ *
+ * Era `coinTarget: number = COIN_TARGET`, com o comentário "parâmetro só para o teste" — sinal de que alguém
+ * já tinha sentido o incômodo e o resolvera com um padrão em vez de uma fronteira. O ADR-0027 usa exatamente
+ * este nome como o veredito do passo 4: se `createGame()` não pode ser escrito sem um parâmetro chamado
+ * `coinTarget`, a fronteira está errada. O HUD é engine; um jogo sem moedas não tinha o que passar aqui, e
+ * mesmo assim recebia o 10 do jogo de plataforma por padrão.
+ *
+ * O ícone e o nome da classe seguem falando de moeda — isso é dívida de VOCABULÁRIO, e é menor: o que morreu
+ * foi a DEPENDÊNCIA, que é o que o compilador segue e o que impede um pacote de se separar.
+ */
+export function vphudHtml(alvo: number): string {
+  return '<span class="vphud-coins"><b class="vphud-ico">🪙</b> <b class="vphud-n">0</b> / ' + alvo
     + '</span><span class="vphud-power"><b class="vphud-ico">✨</b> <span class="vphud-pw">—</span></span>';
 }
 
@@ -104,6 +114,12 @@ export interface HudCtx {
    */
   powerShort: Record<string, string>;
   /**
+   * O ALVO do contador do HUD — quantos o jogador precisa juntar. Injetado pelo MESMO motivo que `powerShort`:
+   * é dado do jogo, e o HUD é da engine. Antes vinha de `COIN_TARGET` por importação, o que amarrava o
+   * contador de qualquer jogo ao número de moedas deste (ADR-0027 passo 4).
+   */
+  hudTarget: number;
+  /**
    * Painel de pausa da tela `i`. NÃO é deste módulo (slice de pausa/ícones): entra por injeção e o HUD só
    * anexa o retorno dentro da `.player-screen` correspondente.
    */
@@ -149,7 +165,7 @@ export function initHud(ctx: HudCtx): HudApi {
 
       const d = document.createElement('div');
       d.className = 'vphud';
-      d.innerHTML = vphudHtml();
+      d.innerHTML = vphudHtml(ctx.hudTarget);
       scr.appendChild(d); vpHudDom.push(d);
 
       const q = document.createElement('div');
