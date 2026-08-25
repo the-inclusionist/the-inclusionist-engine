@@ -82,7 +82,17 @@ export function setSelVizPlayerValue(i: number): void { selVizPlayer = i; emit('
 
 // --- cenario: tema visual ativo (cidade/campo/…; persistido em incl_cenario). A validação contra CENARIOS e
 //     o trabalho de textura ficam no setCenario() do game.js — aqui só o valor + persistência + evento. ---
-export let cenario: string | null = null;
+// `string` e não `string | null`, e o padrão mora AQUI, junto dos outros.
+//
+// Ele já era 'cidade': o `main.ts` lia `getComLegado(KEYS.cenario, …, 'cidade')` e chamava `setCenario`. Só
+// que essa chamada mora dentro de um `try/catch`, então o `null` era ALCANÇÁVEL — e seis módulos declaravam
+// `getCenario: () => string`, cada um confiando num boot que pode falhar. O tipo dizia a verdade e ninguém
+// a escutava.
+//
+// Ninguém usa `null` como sinal de "ainda não escolhido" (conferido em toda a árvore, inclusive no alias
+// `CENARIO` do composition root), e o `render/cenario-data` já cai em 'cidade' para tema desconhecido —
+// então o efeito observável é o mesmo, com uma diferença: agora é o tipo que garante, não a sorte.
+export let cenario: string = 'cidade';
 export function setCenarioValue(theme: string): void { cenario = theme; store.set(store.KEYS.cenario, theme); emit('cenario', theme); }
 
 // --- activity: id da atividade selecionada (persistido em incl_activity). A validação contra ACTIVITIES
