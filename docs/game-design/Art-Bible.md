@@ -21,12 +21,23 @@ overlays) for diversity and per-player distinction. Full spec + the animation li
 
 ### Sprite size: there is none, and the docs said otherwise
 
-**AMENDED 2026-08-25.** This file and `character-animation.md` both declared a **16×32 sprite**. Measured against
-the 83 PNGs actually shipped, **not one of them is 16×32.**
+**AMENDED 2026-08-25, and RE-MEASURED the same day** — the first amendment fixed the 16×32 and got three of its
+own counts wrong, which is the same error at a smaller size. The numbers below are read out of the PNG headers,
+not summarised from memory; the script is in the commit that added this paragraph.
 
-The 77 character frames span **14 animation states** and **14 distinct sizes**: widths 24–34 px, heights 29–36 px.
-The most common single size is 25×34 (the 16 walk frames); `parede` is 31×36, `nadar` is 34×32 and 34×29,
-`teto` is 25×36.
+This file and `character-animation.md` both declared a **16×32 sprite**. Of the **80 PNGs** in `app/` — 77 sprite
+frames plus three city backgrounds — **not one is 16×32.**
+
+The 77 sprite frames cover **13 animations** and come in **15 distinct sizes**: widths 24–34 px, heights 29–36 px,
+plus one 64×64 leftover. The most common size is 25×34 (the walk cycle); `parede` is 31×36, `teto` 25×36.
+
+Two things the first count missed, and they are the ones that matter:
+
+- **Only 39 of the 77 are frames the game draws.** The other 38 are `_hc` high-contrast variants that nothing
+  loads — high contrast recolours the colour frame in real time. They ship anyway (issue #71).
+- **The size varies INSIDE an animation.** `nadar` is 34×29 and 34×32; `nadar-parado` is 26×35 and 28×35;
+  `pulo` is 26×32 and 28×30. So there is not even a per-animation size to fall back on — which is a stronger
+  statement than "no fixed sprite size", and it is the one that binds the atlas.
 
 The Dev's decision is that **there is no fixed size** — multiples of 16 px are preferred, other sizes are
 explicitly welcome because they make the art richer (ADR-0027, `machine-spec.sprite-size`). So the docs were
@@ -34,9 +45,10 @@ wrong, not the art.
 
 Two consequences that follow from the measurement rather than from taste:
 
-- **The atlas cannot assume a uniform grid**, and **every sprite carries its own pivot**. Heights vary by 7 px
-  across states, so a feet anchor derived from a fixed frame height would make the character sink or float
-  whenever the state changed — and `render/draw` anchors squash & stretch AT THE FEET.
+- **The atlas cannot assume a uniform grid** — not per sheet and not per animation — and **every sprite carries
+  its own pivot**. Heights vary by 7 px across states and by up to 3 px WITHIN one state, so a feet anchor
+  derived from a fixed frame height would make the character sink or float whenever the frame changed — and
+  `render/draw` anchors squash & stretch AT THE FEET.
 - **48×48 stays cancelled**, and the reason is unchanged: it was a TDAH concern, not a size-arithmetic one.
   Recorded here so the cancellation is not read as a consequence of this amendment.
 

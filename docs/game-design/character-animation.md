@@ -3,11 +3,13 @@
 
 **Decisões do José (2026-06-01):**
 - **Resolução mantida** (320×180, tiles 16px) — 48×48 cancelado (estudo TDAH pendente). **SEM TAMANHO FIXO de
-  sprite** (emendado em 2026-08-25): este documento dizia 16×32 e nenhum dos 83 PNG entregues tem esse tamanho.
-  Os 77 quadros de personagem ocupam **14 tamanhos distintos**, larguras 24–34 e alturas 29–36. Ver a seção
-  "Sprite size" do [`Art-Bible.md`](Art-Bible.md) para a medição e as duas consequências (o atlas não pode supor
-  grade uniforme; cada sprite carrega o próprio pivô, porque a altura varia 7 px entre estados e o
-  `render/draw` ancora o squash & stretch NOS PÉS).
+  sprite** (emendado e REMEDIDO em 2026-08-25): este documento dizia 16×32 e nenhum dos 80 PNG entregues tem esse
+  tamanho. Os 77 quadros de sprite cobrem **13 animações** em **15 tamanhos distintos**, larguras 24–34 e alturas
+  29–36, mais um 64×64 esquecido. E o tamanho **varia dentro da mesma animação** (`nadar` 34×29 e 34×32; `pulo`
+  26×32 e 28×30) — não há nem tamanho por animação em que se apoiar. Ver a seção "Sprite size" do
+  [`Art-Bible.md`](Art-Bible.md) para a medição e as consequências (o atlas não pode supor grade uniforme, nem
+  por folha nem por animação; cada sprite carrega o próprio pivô, porque o `render/draw` ancora o squash &
+  stretch NOS PÉS).
 - **Orientação:** personagem em **perfil**, virado para a **última direção** (E/W). **Sempre respira/anima** (idle nunca estático).
 - **Camadas procedurais:** corpo + cabelo + roupa como camadas (palette-swap por chave + overlays) → diversidade
   (5 tons Fitzpatrick, vários cabelos/roupas), jogadores distintos no multiplayer. **Sem PNG embutido** (GPL-clean);
