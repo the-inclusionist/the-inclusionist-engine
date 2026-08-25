@@ -5,12 +5,22 @@
 // TilingSprites + the sky-deco layers). See docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import { makeCanvas, tex } from './canvas.js';
-import { LOGICAL_H } from '../core/constants.js';
+import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
+
+/** Um sol baixo com leque de raios, assado na textura do céu. Ver `pintarSol`. */
+export interface Sol {
+  cor: string;   // a cor dos raios e do disco (a mesma; o que os separa é a opacidade)
+  x: number;     // centro do disco, em fração da LARGURA da textura
+  y: number;     // centro do disco, em fração da ALTURA (0.5 = a linha do horizonte)
+}
 
 /** A scenery theme's parallax colors. */
 export interface ParallaxTheme {
-  sky: readonly [string, string];
+  /** Paradas do gradiente vertical do céu, do topo (índice 0) ao rodapé. DUAS ou MAIS — ver `themeSkyTexture`. */
+  sky: readonly string[];
   hills: readonly [string, string];
+  /** Sol + raios. Ausente = céu de puro gradiente, que é o que os outros temas são. */
+  sol?: Sol;
 }
 
 /** Hill silhouette height at column `x` (v3 drawHillBand: double sine). `near` = the front (taller) band. */
@@ -21,7 +31,7 @@ export function hillHeight(x: number, near: boolean): number {
 
 /** City placeholder backdrop (the 4 v3 themes have their own sky/hills below). */
 export function parallaxPlaceholder(i: number): unknown {
-  const w = 320, h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
+  const w = LOGICAL_W, h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
   const pal = [['#0a1024', '#1b2350'], ['#13284a', '#22406e'], ['#1d3a52', '#356a86']][i]!;
   const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, pal[0]!); g.addColorStop(1, pal[1]!); c.fillStyle = g; c.fillRect(0, 0, w, h);
   c.fillStyle = pal[1]!;
@@ -30,10 +40,85 @@ export function parallaxPlaceholder(i: number): unknown {
   return tex(cv);
 }
 
-/** Theme sky: pure vertical gradient (v3 drawBackdrop). */
+/* ===================== o céu ===================== */
+//
+// O CÉU ERA DUAS CORES, e isso bastava enquanto todo tema era um céu liso. A Floresta pedida pelo Dev não é:
+// é um PÔR DO SOL — vermelho junto ao horizonte, laranja acima, raios amarelos e nuvens brancas. Um gradiente
+// de duas paradas não consegue dizer isso: interpolar do topo direto ao horizonte dá UMA transição, e um pôr
+// do sol são três ou quatro empilhadas.
+//
+// Então `sky` virou uma LISTA de paradas em vez de um par, distribuídas por igual do topo ao rodapé. Duas
+// paradas continuam significando exatamente o que significavam — é por isso que os outros três temas não
+// mudaram de aparência nem de linha. Com N paradas, a de índice i fica em `i/(N-1)`, e como a textura tem a
+// altura do viewport (180), a conta de onde uma cor cai é direta: y = 180 · i/(N-1). É essa previsibilidade
+// que permite ESCOLHER a altura de uma cor pela quantidade de paradas, e é assim que o vermelho da Floresta
+// foi posto na linha do horizonte (y=90) em vez de no rodapé invisível.
+
+/** `'#rrggbb'` → o mesmo tom com alfa ZERO. É o fim de todo gradiente radial daqui — ver `pintarSol`. */
+function rgba0(hex: string): string {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',0)';
+}
+
+/** Largura da textura do céu. 64 basta para um gradiente (ele é constante em x); um SOL precisa da tela toda. */
+export function larguraDoCeu(T: ParallaxTheme): number { return T.sol ? LOGICAL_W : 64; }
+
+/**
+ * Onde cada cor do céu cai, em PIXELS de altura. Separado do desenho porque é a parte que se pode AFERIR: o
+ * desenho precisa de um canvas, esta conta não, e é ela que decide se o vermelho do pôr do sol vai parar na
+ * linha do horizonte ou atrás dos morros.
+ */
+export function paradasDoCeu(cores: readonly string[], h: number = LOGICAL_H): { y: number; cor: string }[] {
+  const n = cores.length;
+  return cores.map((cor, i) => ({ y: n === 1 ? 0 : (h * i) / (n - 1), cor }));
+}
+
+/**
+ * Sol baixo e leque de raios, DENTRO da textura do céu (e não numa camada própria).
+ *
+ * Aqui e não em `render/scene-sky` de propósito: o sol pertence ao FUNDO mais distante, e é na textura do céu
+ * que ele herda de graça as duas coisas que o fazem parecer distante — a rolagem de fator 0,10 (ele quase não
+ * anda) e o recolor de alto contraste (viz-setters repinta a textura crua; um sol desenhado por fora ficaria
+ * de fora do recolor e brilharia em amarelo no modo de contraste, que é exatamente o que a opção existe para
+ * eliminar).
+ *
+ * O leque aponta para CIMA, com abertura de ±35°, e cada raio desbota até zero por um gradiente radial. As
+ * duas coisas juntas mantêm o desenho longe das bordas da textura: um raio cortado na borda reapareceria do
+ * outro lado a cada repetição do azulejo, e essa emenda é o defeito mais visível que um céu pode ter.
+ */
+export function pintarSol(c: CanvasRenderingContext2D, w: number, h: number, sol: Sol): void {
+  const sx = w * sol.x, sy = h * sol.y, alcance = h * 0.85;
+  // O fim do gradiente é A MESMA COR com alfa 0, e não `transparent`/branco transparente: o canvas interpola
+  // os quatro canais, então desbotar para branco-transparente passa por um branco leitoso a meio caminho — um
+  // halo pálido em volta do sol, que é o oposto do que um pôr do sol faz.
+  const halo = c.createRadialGradient(sx, sy, 0, sx, sy, alcance);
+  halo.addColorStop(0, sol.cor); halo.addColorStop(1, rgba0(sol.cor));
+  c.save();
+  c.globalAlpha = 0.10; c.fillStyle = halo;
+  for (let i = 0; i < 9; i++) {
+    // Larguras alternadas (largo/estreito): raios de mesma espessura em leque regular leem como uma roda de
+    // bicicleta. A irregularidade é o que os faz parecer luz atravessando nuvem.
+    const meio = -Math.PI / 2 + (i - 4) * (Math.PI * 70 / 180) / 8, meia = (i % 2 ? 0.9 : 2.2) * Math.PI / 180;
+    c.beginPath(); c.moveTo(sx, sy);
+    c.lineTo(sx + Math.cos(meio - meia) * alcance, sy + Math.sin(meio - meia) * alcance);
+    c.lineTo(sx + Math.cos(meio + meia) * alcance, sy + Math.sin(meio + meia) * alcance);
+    c.closePath(); c.fill();
+  }
+  // Brilho em volta do disco e o disco: é o disco que ancora os raios: sem ele o leque não tem de onde sair.
+  const brilho = c.createRadialGradient(sx, sy, 0, sx, sy, 26);
+  brilho.addColorStop(0, sol.cor); brilho.addColorStop(1, rgba0(sol.cor));
+  c.globalAlpha = 0.55; c.fillStyle = brilho; c.beginPath(); c.arc(sx, sy, 26, 0, Math.PI * 2); c.fill();
+  c.globalAlpha = 1; c.fillStyle = sol.cor; c.beginPath(); c.arc(sx, sy, 8, 0, Math.PI * 2); c.fill();
+  c.restore();
+}
+
+/** Theme sky: vertical gradient over `T.sky` (evenly spaced stops), plus the theme's sun when it has one. */
 export function themeSkyTexture(T: ParallaxTheme): unknown {
-  const w = 64, h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
-  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, T.sky[0]); g.addColorStop(1, T.sky[1]); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  const w = larguraDoCeu(T), h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
+  const g = c.createLinearGradient(0, 0, 0, h);
+  for (const p of paradasDoCeu(T.sky, h)) g.addColorStop(p.y / h, p.cor);
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+  if (T.sol) pintarSol(c, w, h, T.sol);
   return tex(cv);
 }
 

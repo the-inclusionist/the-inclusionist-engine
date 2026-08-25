@@ -96,9 +96,14 @@ export interface CenarioTema {
   nome: string;
   /** De onde vêm as 3 camadas de fundo: `'gerado'` das cores abaixo, ou `'png'` de `cenarios/<tema>/c4|3|2.png`. */
   fundo: 'gerado' | 'png';
-  sky?: [string, string];   // gradiente vertical do céu (topo → horizonte) — só `fundo:'gerado'`
+  /** Paradas do gradiente vertical do céu, do TOPO ao rodapé, distribuídas por igual. DUAS ou MAIS: com N
+   *  paradas, a de índice i cai em y = 180·i/(N-1) — é assim que se escolhe a ALTURA de uma cor. Só
+   *  `fundo:'gerado'`. Ver `render/scene-parallax.themeSkyTexture`. */
+  sky?: readonly string[];
   cloud?: [string, string]; // nuvem de tela: corpo + sombra — só `fundo:'gerado'`
   hills?: [string, string]; // as duas bandas de morro: [fundo, frente] — só `fundo:'gerado'`
+  /** Sol baixo com leque de raios, assado na textura do céu. Ausente = céu de puro gradiente. */
+  sol?: { cor: string; x: number; y: number };
   decor?: string[];         // decoração viva ligada neste tema (render/scene-sky.stepV3Decor)
 }
 
@@ -123,7 +128,19 @@ export const CENARIOS: Record<string, CenarioTema> = {
   campo:     { nome: 'cen.campo',          fundo: 'gerado', sky: ['#86c5e8', '#cfeecb'], cloud: ['#ffffff', '#d4e6f5'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens', 'passaros', 'borboletas'] },
   cemiterio: { nome: 'cen.cemiterio',      fundo: 'gerado', sky: ['#2b2540', '#5a4f6b'], cloud: ['#d9c4dd', '#a98fb6'], hills: ['#4a5f55', '#33473d'], decor: ['nuvens', 'passaros', 'sparkles', 'minhocas', 'nevoa'] },
   espaco:    { nome: 'cen.espaco',         fundo: 'gerado', sky: ['#05030f', '#161033'], cloud: ['#3a3550', '#262238'], hills: ['#1e3030', '#142024'], decor: ['nuvens', 'sparkles', 'vagalumes'] },
-  floresta:  { nome: 'cen.floresta',       fundo: 'gerado', sky: ['#3f6b50', '#8fbf73'], cloud: ['#cfe6b8', '#a7cf86'], hills: ['#2f5e35', '#1f4226'], decor: ['nuvens', 'passaros', 'borboletas'] },
+  // A FLORESTA É UM PÔR DO SOL, e antes era um céu VERDE (`#3f6b50`→`#8fbf73`) com nuvens verdes por cima.
+  // Verde no céu não é só feio: com os morros em `#2f5e35`, a silhueta das coníferas ficava a um passo da cor
+  // do fundo e sumia — plantei árvores que ninguém via, e só depois de ver na tela é que a causa apareceu.
+  //
+  // As sete paradas caem de 30 em 30 px (y = 180·i/6), e é por isso que são sete: é o que põe o AMARELO em
+  // y=60 e o VERMELHO em y=90, que é a linha do horizonte. O laranja entre eles não é declarado — ele nasce da
+  // interpolação, como o violeta nasce entre o índigo do topo e o rosa. As três últimas paradas ficam ATRÁS
+  // dos morros; existem para o degradê não terminar num corte seco na beira da tela.
+  floresta:  { nome: 'cen.floresta', fundo: 'gerado',
+               sky: ['#231a52', '#a34a6e', '#ffd166', '#e0392c', '#8e2320', '#5a1a1c', '#3a1418'],
+               sol: { cor: '#ffe9a8', x: 0.30, y: 0.46 },
+               cloud: ['#ffffff', '#e9a06a'], // corpo branco, sombra alaranjada: é a luz baixa batendo por baixo
+               hills: ['#2f5e35', '#1f4226'], decor: ['nuvens', 'passaros', 'borboletas'] },
 };
 
 /** v3 exato — grama/flores por tema. SÓ dos temas `v3`: a Cidade não tem flora (por isso o `| undefined`). */

@@ -46,10 +46,10 @@ describe('CENARIOS — o catálogo', () => {
     expect(GERADOS).toHaveLength(4);
   });
 
-  it('CONTRATO: todo tema de fundo GERADO traz sky/cloud/hills como PARES de #rrggbb e decor não vazio', () => {
+  it('CONTRATO: todo tema de fundo GERADO traz cloud/hills como PARES de #rrggbb e decor não vazio', () => {
     for (const id of GERADOS) {
       const T = CENARIOS[id];
-      for (const campo of ['sky', 'cloud', 'hills']) {
+      for (const campo of ['cloud', 'hills']) {
         expect(T[campo], id + '.' + campo).toBeDefined();
         expect(T[campo], id + '.' + campo).toHaveLength(2);
         for (const c of T[campo]) expect(c, id + '.' + campo).toMatch(HEX);
@@ -57,6 +57,41 @@ describe('CENARIOS — o catálogo', () => {
       expect(T.decor, id + '.decor').toBeDefined();
       expect(T.decor.length, id + '.decor').toBeGreaterThan(0);
     }
+  });
+
+  it('CONTRATO: o céu é uma LISTA de paradas — duas ou mais, todas #rrggbb', () => {
+    // Este caso exigia exatamente DUAS e reprovou o pôr do sol da Floresta, com razão: o contrato tinha
+    // mudado. Um par continua sendo válido (é o que os outros três temas são), mas "par" deixou de ser a
+    // regra — o que a regra sempre quis dizer é "cores de verdade, e mais de uma".
+    for (const id of GERADOS) {
+      const ceu = CENARIOS[id].sky;
+      expect(ceu, id + '.sky').toBeDefined();
+      expect(ceu.length, id + '.sky').toBeGreaterThanOrEqual(2);
+      for (const c of ceu) expect(c, id + '.sky').toMatch(HEX);
+    }
+  });
+
+  it('a Floresta é um PÔR DO SOL: vermelho na linha do horizonte, amarelo acima dela', () => {
+    // O que este caso guarda não é o gosto, é a ARITMÉTICA que põe a cor na altura certa. Com N paradas
+    // igualmente espaçadas, a de índice i cai em y = 180·i/(N-1); com sete, o índice 3 é y=90 — a linha do
+    // horizonte — e o índice 2 é y=60. Trocar a quantidade de paradas sem refazer a conta desloca o pôr do
+    // sol inteiro para fora da tela, em silêncio, porque nada além disto confere onde uma cor cai.
+    const ceu = CENARIOS.floresta.sky, n = ceu.length;
+    const y = (i) => 180 * i / (n - 1);
+    const vermelho = ceu.indexOf('#e0392c'), amarelo = ceu.indexOf('#ffd166');
+    expect(y(vermelho)).toBe(90);
+    expect(y(amarelo)).toBe(60);
+    expect(amarelo).toBeLessThan(vermelho); // amarelo ACIMA do vermelho: é o que faz o laranja no meio
+  });
+
+  it('a Floresta é o único tema com SOL, e ele fica na altura do horizonte', () => {
+    // `y` acima de 0.5 esconderia o disco inteiro atrás dos morros e o leque de raios sairia do nada; muito
+    // abaixo e ele vira um sol de meio-dia, que é o oposto do que foi pedido.
+    expect(CENARIOS.floresta.sol).toBeDefined();
+    expect(CENARIOS.floresta.sol.cor).toMatch(HEX);
+    expect(CENARIOS.floresta.sol.y).toBeGreaterThan(0.40);
+    expect(CENARIOS.floresta.sol.y).toBeLessThanOrEqual(0.50);
+    expect(GERADOS.filter((id) => CENARIOS[id].sol)).toEqual(['floresta']);
   });
 
   it('CONTRATO: todo nome de decor é do vocabulário que scene-sky sabe interpretar', () => {
