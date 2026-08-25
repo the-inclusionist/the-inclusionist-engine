@@ -44,6 +44,7 @@
 import { initI18n } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
+import { criarPilha, type SceneStack } from '../core/scenes.js';
 import { createTts } from '../platform/tts.js';
 import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer, tonePan, audioCtx } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
@@ -118,6 +119,18 @@ export interface Engine {
    * "ligá-lo exigiria MENTIR para a engine" —, e a mentira era exigida pela FORMA da pergunta, não pelo som.
    */
   readonly sonar: AudioSonar;
+  /**
+   * A PILHA DE CENAS (item 22, C3 do ADR-0030), vazia e pronta.
+   *
+   * Vem de `createGame` e não de cada jogo pelo mesmo motivo do sonar: é infraestrutura, e um jogo que a
+   * montasse sozinho montaria a décima quinta versão de push/pop. O que ela substitui é o
+   * `phase: 'title' | 'playing' | 'paused'` — um enum DESTE jogo que doze módulos leem, e que um jogo com
+   * mapa de fases ou tela de resultados não teria como estender sem pedir constante nova à engine (o ADR-0030
+   * registra alargar a união como NÃO-opção, e é essa a razão).
+   *
+   * Nasce VAZIA: quem empilha é o jogo, porque quais são as cenas é a única parte disto que é dele.
+   */
+  readonly cenas: SceneStack;
   /** Quantos filtros de daltonismo foram montados. `0` = não havia host, e o menu visual perde metade. */
   readonly cvdFilters: number;
   /** O que FALTOU no documento do consumidor. Vazia = o hospedeiro cumpriu o contrato de marcação. */
@@ -218,5 +231,5 @@ export function createGame(o: CreateGameOptions): Engine {
     win: { addEventListener: (tipo, fn, captura) => win.addEventListener(tipo, fn as EventListener, captura) },
   });
 
-  return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, cvdFilters, problems, declines };
+  return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, cenas: criarPilha(), cvdFilters, problems, declines };
 }

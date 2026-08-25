@@ -205,7 +205,10 @@ function aoTeclado(e: KeyboardEvent): void {
   const total = p.alternativas.length;
   if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { foco = proximoFoco(foco, 1, total); render(); e.preventDefault(); }
   else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { foco = proximoFoco(foco, -1, total); render(); e.preventDefault(); }
-  else if (e.code === 'Enter' || e.code === 'Space') { responder(foco); e.preventDefault(); }
+  // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se
+  // consumiu. Aqui só há uma cena, então o efeito é o mesmo — e é por ser o mesmo que a troca é conferível:
+  // se o comportamento mudasse junto, não daria para saber qual metade quebrou.
+  else if (e.code === 'Enter' || e.code === 'Space') { motor?.cenas.input('confirm'); e.preventDefault(); }
 }
 
 /**
@@ -298,6 +301,23 @@ export function bootQuiz(): void {
 
   motor.nav.attach();
 
+  // A PILHA DE CENAS (item 22, C3). Este quiz tem UMA cena, e ela não é inventada para o teste: `render()` já
+  // era o `draw` e `aoTeclado` já era o `input` — o que faltava era o lugar onde os dois se declaram juntos.
+  //
+  // Uma cena só não prova pilha nenhuma, e não é o que ela está fazendo aqui. O que ela mostra é mais modesto
+  // e é o que o item 22 precisa: que a forma (`nome`/`draw`/`input`) cabe num jogo que NÃO tem fases — sem
+  // `title`, sem `paused`, sem nada do enum da plataforma. Um segundo consumidor que precisasse inventar uma
+  // fase para usar a pilha seria o achado 10 outra vez.
+  motor.cenas.push({
+    nome: 'perguntas',
+    draw: () => render(),
+    input: (intent) => {
+      if (intent !== 'confirm') return false;
+      responder(foco);
+      return true;
+    },
+  });
+
   // MODO PESSOA SURDA. Nenhum script do VLibras nesta página — de propósito.
   const libras = $<HTMLButtonElement>('#q-libras');
   if (libras) {
@@ -314,7 +334,7 @@ export function bootQuiz(): void {
 
   const região = $<HTMLElement>('#game-region');
   if (região) região.addEventListener('keydown', aoTeclado);
-  render();
+  motor.cenas.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
   srSay(t('sr.quiz.bemVindo'));
 }
 
