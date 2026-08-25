@@ -27,6 +27,27 @@ export function setQuizLevelValue(n: number): void { quizLevel = Math.max(1, Mat
 export let numPlayers = 1;
 export function setNumPlayersValue(n: number): void { numPlayers = n; emit('numPlayers', n); }
 
+// --- flora: densidade da grama e semente do decor. Parâmetros de GERAÇÃO do cenário (#69). ---
+//
+// Migrados do composition root (#50), últimos da leva. Tinham a forma de sempre: um `let` do main.js com
+// acessórios feitos à mão — dois getters para o `render/scene-sky` e um par getter/setter no `__incl`.
+//
+// O CLAMP MORA NO SETTER, e é a razão de o setter existir. `grassDensity` é uma FRAÇÃO: 1 = todas as
+// superfícies com grama, 0.6 = 60% (a base das ESTAÇÕES que virão). Estava no `__incl`, ou seja, só quem
+// entrasse por ali era protegido — qualquer outro caminho podia escrever 5 ou -1 e o cenário nasceria errado
+// sem nada reclamar. Um valor com faixa válida que depende de quem escreve é um valor sem faixa válida.
+//
+// Nenhum dos dois PERSISTE: `decorSeed` é sorteado a cada fase de propósito (é o que faz duas partidas da
+// mesma fase não terem a mesma grama), e `grassDensity` é do cenário, não da pessoa.
+export let grassDensity = 1;
+export function setGrassDensityValue(v: number): void {
+  grassDensity = Math.max(0, Math.min(1, +v || 0));
+  emit('grassDensity', grassDensity);
+}
+
+export let decorSeed = 0;
+export function setDecorSeedValue(s: number): void { decorSeed = s >>> 0; emit('decorSeed', decorSeed); }
+
 // --- pauseActor: QUEM abriu o menu de pausa. Define o ESCOPO de tudo o que se faz dentro dele. ---
 //
 // Migrado do composition root (#50) pelo mesmo critério do `selVizPlayer`: o próprio comentário que o cercava

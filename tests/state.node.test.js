@@ -11,7 +11,7 @@
 // tela dentro do próprio setter, e por isso nenhum teste conseguia chamá-lo. A separação entre gravar e
 // reagir é o que torna este arquivo possível, então é ela que os casos protegem.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, setLetterCaseValue, setCaptionsOnValue, on, off, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, setNumPlayersValue, pauseActor, setPauseActorValue } from '../app/js/core/state.js';
+import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, setLetterCaseValue, setCaptionsOnValue, on, off, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, setNumPlayersValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
 // `modoCego` é um binding VIVO: reimportar não é preciso, mas ler o valor antigo de uma cópia local seria o
@@ -223,5 +223,46 @@ describe('pauseActor — quem abriu a pausa define o ESCOPO do menu (#50)', () =
     const chaves = Object.keys(globalThis.localStorage ?? {});
     expect(chaves.some((k) => k.toLowerCase().includes('pauseactor'))).toBe(false);
     setPauseActorValue(0);
+  });
+});
+
+describe('flora — densidade da grama e semente do decor (#50, #69)', () => {
+  // O CLAMP é o motivo de o setter existir. Ele morava no `__incl`, ou seja, protegia só quem entrasse por
+  // ali; qualquer outro caminho podia escrever 5 ou -1 e o cenário nascia errado sem nada reclamar. Um valor
+  // com faixa válida que depende de quem escreve é um valor sem faixa válida.
+  it('[Right] aceita a faixa 0..1 inteira', () => {
+    for (const v of [0, 0.6, 1]) { setGrassDensityValue(v); expect(grassDensity).toBe(v); }
+  });
+
+  it('[Boundary] prende acima de 1 e abaixo de 0, em vez de gerar um cenário impossível', () => {
+    setGrassDensityValue(5);
+    expect(grassDensity).toBe(1);
+    setGrassDensityValue(-1);
+    expect(grassDensity).toBe(0);
+  });
+
+  it('[Zero/Error] lixo vira 0, não NaN — NaN atravessaria o clamp e envenenaria o desenho', () => {
+    setGrassDensityValue(Number('abc'));
+    expect(grassDensity).toBe(0);
+    setGrassDensityValue(1);
+  });
+
+  it('[Right] a semente é inteira sem sinal — é assim que o gerador a consome', () => {
+    setDecorSeedValue(1234567890);
+    expect(decorSeed).toBe(1234567890);
+    setDecorSeedValue(-1);
+    expect(decorSeed).toBe(4294967295); // >>> 0
+    setDecorSeedValue(0);
+  });
+
+  it('[Interface] nenhum dos dois PERSISTE', () => {
+    // A semente é sorteada a cada fase de propósito: é o que faz duas partidas da mesma fase não terem a mesma
+    // grama. Guardá-la apagaria essa variedade sem que ninguém notasse o porquê.
+    setGrassDensityValue(0.3);
+    setDecorSeedValue(42);
+    const chaves = Object.keys(globalThis.localStorage ?? {});
+    expect(chaves.some((k) => /grass|decor|seed/i.test(k))).toBe(false);
+    setGrassDensityValue(1);
+    setDecorSeedValue(0);
   });
 });

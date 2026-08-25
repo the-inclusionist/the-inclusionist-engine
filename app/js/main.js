@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
+import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -541,7 +541,7 @@ initLevelGeometry({ W: WORLD_W, H: WORLD_H, isWheelchair: () => wheelchair,
 // aqui porque colisao e o laco do jogador tambem o leem e escrevem.
 function rebuildExtras(){ lgRebuildExtras(); _lastSharedViz=null; }
 function setupExtras(){
-  decorSeed = (Math.random()*1e9)>>>0; // #69: nova semente por fase
+  setDecorSeedValue((Math.random()*1e9)>>>0); // #69: nova semente por fase
   const _blind = modoCego || players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='blind';});
   setLevelExtras(lgSetupExtras(MAP_ITEMS, MAP_GATE, { wheelchair, blind:_blind })); // era desestruturação em bloco; binding importado não se atribui
   rebuildExtras();
@@ -632,7 +632,6 @@ const themeFxG=new PIXI.Graphics(); camera.addChild(themeFxG);          // fauna
 const themeFxBackG=new PIXI.Graphics(); camera.addChild(themeFxBackG);  // fauna ao FUNDO (vaga-lumes + metade das borboletas) — #69
 // Lógica do céu (stepSky/stepV3Decor + nuvens/pássaros/estrelas/névoa/grama/bichos) extraída p/ render/scene-sky.ts (#43).
 // As 6 camadas acima são criadas AQUI (z-order do render-graph, intocado) e INJETADAS; o módulo só as anima. getFxClock é lazy.
-let grassDensity=1, decorSeed=0; // flora: fração de superfícies com grama (0..1; base p/ ESTAÇÕES) + semente randômica por fase — #69
 const sceneSky = createSceneSky({ skyLayer, starsG, skyDecoG, fogG, grassG, themeFxG, themeFxBackG, CLOUD_TEX, BIRD_TEX, SpriteCtor: PIXI.Sprite,
   hexN, rnd, randInt, WORLD_PX_W, WORLD_PX_H, WORLD_W, WORLD_H, TILE, LOGICAL_W, LOGICAL_H, BOX,
   CENARIOS, THEME_FLORA, DIRECT_CFG, solidAt, tileAt,
@@ -1255,7 +1254,7 @@ window.__incl={app,get player(){return players[0];},players,get numPlayers(){ret
   spawnCreature:life.spawnCreature,stepLife:life.stepLife,get creatures(){return life.getCreatures();},spawnCar:traffic.spawnCar,get cars(){return traffic.getCars();},SEM:traffic.SEM,get STREET_Y(){return traffic.getStreetY();},
   get elevShafts(){return getElevShafts();},elevAt,get BOX(){return BOX;},get wheelchair(){return wheelchair;},setWheelchair,buildElevators,buildRamps,solidAt,surfTop, // debug cadeirante
   get clouds(){return sceneSky.getClouds();},get birds(){return sceneSky.getBirds();},stepSky:(dt)=>sceneSky.stepSky(dt),CENARIOS,stepV3Decor:()=>sceneSky.stepV3Decor(),
-  get grassDensity(){return grassDensity;},setGrassDensity(v){grassDensity=Math.max(0,Math.min(1,+v||0));}, // 1=todas as superfícies; 0.6=60% (estações)
+  get grassDensity(){return grassDensity;},setGrassDensity:setGrassDensityValue, // o clamp mora no setter de core/state, não aqui
   get decorCounts(){ const n=g=>g.geometry&&g.geometry.graphicsData?g.geometry.graphicsData.length:0; return {stars:n(starsG),skyDeco:n(skyDecoG),fog:n(fogG),grass:n(grassG),front:n(themeFxG)}; }};
 { const v='v'+INCL_VERSION; document.title=`The Inclusionist · ${v} (PixiJS)`; // versão: fonte única = INCL_VERSION
   const e1=document.querySelector('h1 .ver'); if(e1)e1.textContent='· '+v;
