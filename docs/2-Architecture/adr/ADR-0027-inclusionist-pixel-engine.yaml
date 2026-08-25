@@ -91,9 +91,32 @@ decision-outcome:
     Step 3 (i18n of the announcements) is under way with `tests/i18n-dicts.node.test.js` guarding structure
     across pt/en/es, plus a browser scan of every aria-label for un-resolved keys.
 
-    THE REAL CONFIRMATION OF THIS RECORD IS STEP 4, and it has not been run. If `createGame()` cannot be written
-    without a parameter called `coinTarget`, the boundary this ADR proposes is wrong and steps 5 to 7 must not
-    start. Until that test runs, everything after it is a plan, not a decision that has been shown to work.
+    THE REAL CONFIRMATION OF THIS RECORD IS STEP 4. IT HAS NOW BEEN RUN — 2026-08-25 — AND IT SAYS NO.
+
+    `coinTarget` is not a hypothetical. `ui/hud.vphudHtml(coinTarget: number = COIN_TARGET)` takes it today,
+    and the HUD is engine. A game without coins has nothing to pass there. By this record's own rule, step 5
+    does not start.
+
+    But the answer is narrower and more useful than "the boundary is wrong", and the number is what makes it
+    useful: THREE engine modules import from `game/`, across five edges —
+      · render/draw.ts     → game/player.js (BOX), game/powerups.js, game/coin-spawning.js
+      · render/textures.ts → game/activity-content.js (SOMASUB_SHAPES)
+      · ui/activities-menu.ts → game/activities-registry.js
+    Import edges are the hard evidence: not a name, but a dependency the compiler follows. A module with one
+    cannot be packaged without dragging the game along.
+
+    Five more modules speak of coins in CODE without importing: ui/hud (the case above), platform/audio-nav
+    (the sonar's `Coin` type — the PURPOSE is engine, the TYPE is the game's), core/state (`coins: unknown[]`),
+    platform/audio (an earcon keyed 'coin'), plus three that only carry the word inside a label or an
+    announcement, which is prose and not dependency.
+
+    So the verdict is: the boundary does not hold yet, and it is THREE MODULES away from holding. That is a
+    work list, not a veto on the design.
+
+    The heuristic itself is no longer prose: `tests/engine-boundary.node.test.js` runs it on every suite. The
+    known debt is a list that may only SHRINK — the suite stays green today, the debt is countable, and any NEW
+    edge fails immediately. A test that simply failed would have been weakened the first time someone was in a
+    hurry.
 
     The end-state confirmation is step 6: a 200-line non-platformer consumer using the engine's a11y stack. Two
     packages without it would be a folder rename, and this record should not be read as satisfied before it.
