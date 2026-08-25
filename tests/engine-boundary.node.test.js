@@ -360,7 +360,9 @@ const FIXTURES_CONHECIDOS = {
   // `viz-setters.node.test.js` SAIU (2026-08-25, item 19): o fixture declarava `coinSprites` e a textura
   // `TEX_COIN_NORMAL`. Agora declara ITENS com o id 'alvo' — de propósito, porque um fixture que dissesse
   // 'coin' reafirmaria por hábito o que o corte acabou de tirar do módulo.
-  'viz-setters.browser.test.js': 3,
+  // `viz-setters.browser.test.js` SAIU (2026-08-25, item 19), fechando o subsistema: o irmão node tinha saído
+  // no mesmo item, e este ficou por eu ter parado na metade. O fixture declara o item como 'alvo' — o id vem
+  // do jogo por `ctx.itemTexId`, e um teste dizendo "coin" a cada linha reafirmaria o que o corte tirou.
   // (`city-tex.node.test.js` também estava invisível e saiu LIMPO — por isso não entra aqui. O caso
   //  "a lista não guarda teste que já se limpou" me obrigou a conferir em vez de supor.)
   // O jogador da engine tem um campo `quiz`: a camada de ENTRADA sabe que existe atividade de alfabetização.
@@ -476,14 +478,13 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
     //
     // SOBRAM SEIS, e elas não são todas da mesma natureza — escrevo a separação porque um número sozinho
     // convida a "zerar a lista", que é como um gate passa a mentir:
-    //   · `viz-setters.browser` (3) — dívida de verdade: o irmão node saiu, este não.
     //   · `activities-menu.*` (7)   — o menu do CURRÍCULO. Sai com a EdSP (ADR-0032), não antes.
     //   · `i18n-dicts` (3)          — as chaves `sr.quiz.*`. É o ACHADO 2 do segundo consumidor (peso morto
     //     no dicionário), e não acoplamento: um segundo jogo herda 253 chaves e usa um punhado.
     //   · `storage-escopos` (2)     — a chave `quizlevel`, pelo mesmo motivo de `platform/storage`: `kJogo()`
     //     É o mecanismo de escopo de jogo, e a palavra é que chama a atenção do casador.
     // As duas últimas são o casador notando uma PALAVRA, não a fronteira notando um vazamento.
-    expect(Object.keys(FIXTURES_CONHECIDOS)).toHaveLength(5);
+    expect(Object.keys(FIXTURES_CONHECIDOS)).toHaveLength(4);
     const porSubsistema = new Set(Object.keys(FIXTURES_CONHECIDOS).map((f) => f.split('.')[0]));
     for (const limpo of ['hud', 'audio-nav', 'audio-sonar', 'high-contrast', 'viewports', 'keydown', 'gamepad', 'pause-icons']) {
       expect(porSubsistema, `${limpo} voltou a precisar de moeda/quiz no fixture — o item 19 andou para trás`)

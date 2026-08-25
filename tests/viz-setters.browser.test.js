@@ -37,13 +37,15 @@ function flatCanvas(w, h, css) {
   return cv;
 }
 const worldCanvasNormal = flatCanvas(W * TILE, H * TILE, 'rgb(120,120,140)');
-const coinCanvasNormal = flatCanvas(8, 8, 'rgb(240,200,60)');
+// O ITEM do fixture chama-se 'alvo' e não 'moeda' (item 19): um teste de `viz-setters` dizendo "coin" a
+// cada linha reafirmaria por hábito o que o corte tirou do módulo — o id vem do jogo, por `ctx.itemTexId`.
+const itemCanvasNormal = flatCanvas(8, 8, 'rgb(240,200,60)');
 const TEX_WORLD_NORMAL = { NORMAL: 'world' };
-const TEX_COIN_NORMAL = { NORMAL: 'coin' };
+const TEX_ITEM_NORMAL = { NORMAL: 'alvo' };
 HC.initHighContrast({ roleOf,
   W, H, outlineFg: () => 1, outlineBg: () => 1,
   getWorldCanvasNormal: () => worldCanvasNormal, getWorldTexNormal: () => TEX_WORLD_NORMAL,
-  sprites: () => ({ coin: { canvas: coinCanvasNormal, tex: TEX_COIN_NORMAL } }),
+  sprites: () => ({ alvo: { canvas: itemCanvasNormal, tex: TEX_ITEM_NORMAL } }),
 });
 
 /* ===================== palco real: os elementos que o módulo procura por seletor ===================== */
