@@ -452,5 +452,12 @@ const en: Record<string, string> = {
   'a11y.switchScreens': 'Switch the number of screens (players)',
   'a11y.btnSwap': 'Switch power (button 3)',
   'menu.playerCount': '◀ Number of players: {n} ▶',
+  // ===================== CONTROL LEGEND (row under the title) =====================
+  'legend.move': 'move',
+  'legend.pause': 'pause',
+  'legend.jump': 'jump',
+  'legend.especial': 'special',
+  'legend.run': 'run',
+  'legend.swap': 'switch',
 };
 export default en;

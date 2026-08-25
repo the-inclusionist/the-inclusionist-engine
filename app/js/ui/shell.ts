@@ -209,15 +209,21 @@ export interface ActionGlyphs {
   swap: readonly [string, string | null];
 }
 
-/** Linha 1 da legenda: direcional + START/Enter. Igual para toque e gamepad; o teclado sobrescreve os rótulos. */
+/**
+ * Linha 1 da legenda: direcional + START/Enter. Igual para toque e gamepad; o teclado sobrescreve os rótulos.
+ *
+ * As palavras vêm de `legend.*` e são resolvidas AQUI, a cada chamada — não numa tabela de módulo, que
+ * congelaria o idioma no boot. Registro CURTO de propósito: esta fileira fica embaixo de um glifo e não tem
+ * largura para o "Correr / interagir" que a lista de mapeamento usa (ver a nota em pt.ts).
+ */
 export function legendRow1(dirTxt: string, pauseTxt: string): string {
-  return chip(dirTxt, null, 'movimentar-se') + chip(pauseTxt, null, 'pausa');
+  return chip(dirTxt, null, t('legend.move')) + chip(pauseTxt, null, t('legend.pause'));
 }
 
 /** Linha 2 da legenda: os quatro botões de ação. */
 export function legendRow2(g: ActionGlyphs): string {
-  return chip(g.jump[0], g.jump[1], 'pular') + chip(g.especial[0], g.especial[1], 'especial')
-    + chip(g.run[0], g.run[1], 'correr') + chip(g.swap[0], g.swap[1], 'trocar');
+  return chip(g.jump[0], g.jump[1], t('legend.jump')) + chip(g.especial[0], g.especial[1], t('legend.especial'))
+    + chip(g.run[0], g.run[1], t('legend.run')) + chip(g.swap[0], g.swap[1], t('legend.swap'));
 }
 
 /** O innerHTML final de `#title-legend`: duas `.lg-row`. */

@@ -485,5 +485,17 @@ const pt: Record<string, string> = {
   // `<span id="np-n">` com o número, e o `applyDom` escreve `textContent`, o que destruiria o span. A saída é
   // o JavaScript passar a ser dono do rótulo inteiro — o número já é dinâmico, então o texto sempre foi dele.
   'menu.playerCount': '◀ Nº de jogadores: {n} ▶',
+  // ===================== A LEGENDA DE CONTROLES (fileira sob o título) =====================
+  // TERCEIRA família de rótulos para as mesmas ações, e de propósito. `act.*` serve à LISTA de mapeamento
+  // ("Correr / interagir") e `touch.act.*` ao painel de toque ("Pausar (START)"); os dois cabem lá porque
+  // aquelas telas têm largura. A legenda é uma FILEIRA APERTADA embaixo de um glifo, e nela só cabe o registro
+  // curto. Duas das seis coincidem com `act.*` palavra por palavra; reusar as outras quatro trocaria "correr"
+  // por "Correr / interagir" e quebraria a linha.
+  'legend.move': 'movimentar-se',
+  'legend.pause': 'pausa',
+  'legend.jump': 'pular',
+  'legend.especial': 'especial',
+  'legend.run': 'correr',
+  'legend.swap': 'trocar',
 };
 export default pt;

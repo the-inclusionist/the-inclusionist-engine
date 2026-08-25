@@ -451,5 +451,12 @@ const es: Record<string, string> = {
   'a11y.switchScreens': 'Cambiar el número de pantallas (jugadores)',
   'a11y.btnSwap': 'Cambiar poder (botón 3)',
   'menu.playerCount': '◀ Nº de jugadores: {n} ▶',
+  // ===================== LEYENDA DE CONTROLES (fila bajo el título) =====================
+  'legend.move': 'moverse',
+  'legend.pause': 'pausa',
+  'legend.jump': 'saltar',
+  'legend.especial': 'especial',
+  'legend.run': 'correr',
+  'legend.swap': 'cambiar',
 };
 export default es;

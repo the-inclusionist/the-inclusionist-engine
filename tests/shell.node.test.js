@@ -5,6 +5,7 @@
 //
 // A casca (foco de verdade, innerHTML da legenda, os ouvintes do modo Print) está em shell.browser.test.js.
 import { describe, it, expect } from 'vitest';
+import { t } from '../app/js/core/i18n.js'; // a legenda vem do dicionário desde o item 14
 import {
   PHASES, phaseView, touchControlsPlan, chip, legendRow1, legendRow2, legendHtml,
   padActionGlyphs, touchActionGlyphs, pickLegendPad,
@@ -94,15 +95,17 @@ describe('touchControlsPlan — o único pedaço da troca de fase com memória',
 
 describe('legenda do título — os chips de dispositivo', () => {
   it('chip sem cor não emite style; com cor, emite', () => {
-    expect(chip('A', null, 'pular')).toBe('<span class="lg"><span class="lg-ico">A</span> pular</span>');
+    expect(chip('A', null, 'pular')).toBe('<span class="lg"><span class="lg-ico">A</span> pular</span>'); // `chip` recebe a palavra PRONTA: quem traduz é quem chama
     expect(chip('A', '#2fae4e')).toBe('<span class="lg"><span class="lg-ico" style="background:#2fae4e">A</span></span>');
   });
 
   it('as duas linhas saem na ordem fixa: direcional+pausa, depois pular/especial/correr/trocar', () => {
     const l1 = legendRow1('✜', 'START');
     const l2 = legendRow2({ jump: ['A', null], especial: ['B', null], run: ['C', null], swap: ['D', null] });
-    expect(l1.indexOf('movimentar-se')).toBeLessThan(l1.indexOf('pausa'));
-    const pos = ['pular', 'especial', 'correr', 'trocar'].map((w) => l2.indexOf(w));
+    // Contra `t()` e não contra o português: fixar as palavras aqui devolveria ao teste o texto que saiu do
+    // código. A ORDEM é o que este caso guarda, e ela não depende de idioma nenhum.
+    expect(l1.indexOf(t('legend.move'))).toBeLessThan(l1.indexOf(t('legend.pause')));
+    const pos = ['legend.jump', 'legend.especial', 'legend.run', 'legend.swap'].map((k) => l2.indexOf(t(k)));
     expect(pos.every((n) => n >= 0)).toBe(true);
     expect(pos).toEqual([...pos].sort((a, b) => a - b)); // estritamente na ordem declarada
     expect(new Set(pos).size).toBe(4);

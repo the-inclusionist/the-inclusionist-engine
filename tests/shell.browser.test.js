@@ -7,6 +7,7 @@
 // `phase`/`numPlayers`/`players` são os módulos REAIS (core/state.ts) — os mesmos bindings vivos que o
 // game.js usa; o resto do ctx é falso (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
+import { t } from '../app/js/core/i18n.js'; // a legenda vem do dicionário desde o item 14
 import { initShell } from '../app/js/ui/shell.js';
 import { phase, setPhaseValue, setNumPlayersValue, players } from '../app/js/core/state.js';
 
@@ -206,7 +207,8 @@ describe('updateTitleLegend — a legenda por dispositivo', () => {
     const html = $('#title-legend').innerHTML;
     expect(html).toContain('K:KeyW');   // veio do kbFor, não de um literal
     expect(html).toContain('K:Space');
-    expect(html).toContain('movimentar-se');
+    expect(html).toContain(t('legend.move')); // do dicionário, não do código
+    expect(html).not.toMatch(/legend\./);      // e a chave nunca vaza para a tela
     expect($('#title-legend').querySelectorAll('.lg-row').length).toBe(2);
   });
 
