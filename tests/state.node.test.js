@@ -11,7 +11,7 @@
 // tela dentro do próprio setter, e por isso nenhum teste conseguia chamá-lo. A separação entre gravar e
 // reagir é o que torna este arquivo possível, então é ela que os casos protegem.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { modoCego, setModoCegoValue, setCaneBlockDivValue, on, off } from '../app/js/core/state.js';
+import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, on, off } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
 // `modoCego` é um binding VIVO: reimportar não é preciso, mas ler o valor antigo de uma cópia local seria o
@@ -36,7 +36,7 @@ beforeEach(() => {
   setModoCegoValue(false); desinscrever = [];
 });
 afterEach(() => {
-  desinscrever.forEach((f) => f()); setModoCegoValue(false);
+  desinscrever.forEach((f) => f()); setModoCegoValue(false); setEndedValue(false);
   if (localAntigo === undefined) delete globalThis.localStorage; else globalThis.localStorage = localAntigo;
 });
 
@@ -117,6 +117,22 @@ describe('core/state — modoCego e o espaçamento da bengala', () => {
     expect(state.caneBlockDiv).toBe(1);
     setCaneBlockDivValue(0);
     expect(state.caneBlockDiv).toBe(1);
+  });
+
+  it('[Right] `ended` grava e avisa — e não tinha teste nenhum antes desta migração', () => {
+    // `ended` é controle de fluxo de verdade: o laço de atualização faz `if (ended) return;` para parar de
+    // simular depois da vitória. Descobri que ninguém o cobria ao mutar o setter para não gravar e ver a
+    // suíte inteira passar. Um valor lido pelo laço principal do jogo e por nenhum teste é o pior dos dois
+    // mundos: importa e ninguém percebe se parar de funcionar.
+    const vistos = escuta('ended');
+    expect(state.ended).toBe(false);
+    setEndedValue(true);
+    expect(state.ended).toBe(true);
+    expect(vistos).toEqual([true]);
+    setEndedValue(true);            // repetido não avisa de novo
+    expect(vistos).toEqual([true]);
+    setEndedValue(false);
+    expect(state.ended).toBe(false);
   });
 
   it('[Boundary] o import nomeado é uma FOTOGRAFIA; o binding do módulo é que é vivo', () => {

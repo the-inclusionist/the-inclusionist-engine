@@ -77,6 +77,20 @@ export function setModoCegoValue(on: boolean): void {
   modoCego = on; store.setBool('incl_modocego', on); emit('modoCego', on);
 }
 
+// --- ended: a rodada acabou (alguém juntou as 10 moedas). Lido no laço de atualização para não continuar
+//     simulando depois da vitória.
+//
+//     O irmão dele, o contador `collected`, NÃO veio junto — foi apagado. Era espelho de
+//     `players[0].collected`, mantido por três pontos de sincronia (physics, session e quiz), e lido em UM
+//     lugar só: o `window.__incl`. Três escritas para alimentar um getter de depuração, com a divergência
+//     silenciosa de brinde. Agora o `__incl` deriva do jogador. ---
+export let ended = false;
+export function setEndedValue(v: boolean): void {
+  const b = !!v;
+  if (ended === b) return;
+  ended = b; emit('ended', b);
+}
+
 // --- O ESTADO DO NÍVEL: portão, sólidos-só-cadeirante e power-ups.
 //
 //     Estes cinco não são preferência de ninguém: são o RESULTADO de `game/level-geometry.setupExtras()`, que

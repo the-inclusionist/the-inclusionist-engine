@@ -265,7 +265,6 @@ export interface SessionCtx {
 
   /* --- estado REATRIBUÍDO no game.js (obrigatoriamente getters) --- */
   getMode(): string; setModeValue(m: string): void;      // `let MODE`
-  setCollected(n: number): void;                          // `let collected` (contador legado de tela única)
   setEnded(v: boolean): void;                             // `let ended`
   getPowerups(): SessionPowerup[];                        // `let powerups` — setupExtras() REATRIBUI
   getGate(): GateTile[] | null;                           // `let gate` — idem
@@ -363,7 +362,6 @@ export function initSession(ctx: SessionCtx): SessionApi {
       takeCoin(cn);
       const spr = getCoinSprites()[i]; if (spr) spr.visible = false; // some p/ todas as telas (item tem 1 dono)
       pl.collected++;
-      if (pl === ctx.getPlayerRef()) ctx.setCollected(pl.collected);
       ctx.sfx('coin');
       ctx.burstSparkle(cn.x + 5, cn.y + 5, ctx.ownerColors() ? (ctx.PCOLOR[cn.owner] || 0xffd23f) : 0xffd23f, 8); // JUICE: brilho na cor do dono (segue a opção)
       updateHud();
@@ -454,7 +452,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
     ctx.setupExtras();                                   // E12: re-posiciona power-ups + chave; portão volta a fechar
     ctx.darkRegions.forEach(r => { r.announced = false; r.gfx.alpha = 1; r.gfx.visible = true; }); // re-escurece segredos
     ctx.resetMinimap();                                  // fim de fase: o MINIMAPA volta a ficar escuro
-    ctx.setCollected(0); ctx.setEnded(false);
+    ctx.setEnded(false);
     P().forEach(resetPlayerState);
     updateHud();
     const obj = ctx.$('#hud-objective'); if (obj) obj.textContent = objectiveText(ctx.getMode(), N());

@@ -39,7 +39,6 @@ function makeCtx(over = {}) {
     updateHud: () => { log.updateHud++; },
     win: (pl) => log.win.push(pl.i),
     respawnFigure: (i) => log.respawn.push(i),
-    syncCollected: (pl) => log.sync.push(pl.collected),
     ...over,
   };
   return { ctx, log };
@@ -465,7 +464,11 @@ describe('3 vitórias = 1 moeda (a regra vale para TODOS os minijogos)', () => {
     expect(coins[0].taken).toBe(true);
     expect(pl.alfWins).toBe(0); // o contador reinicia para a próxima moeda
     expect(log.updateHud).toBeGreaterThan(0);
-    expect(log.sync).toContain(1);
+    // Era `expect(log.sync).toContain(1)`, aferindo que o quiz mandou espelhar a contagem numa `let` do
+    // main.js. Esse espelho foi apagado — não tinha um único leitor —, então o que resta aferir é o que
+    // sempre importou: o JOGADOR ficou com a moeda. Já está duas linhas acima (`pl.collected` vira 1), o que
+    // torna esta linha redundante em vez de perdida.
+    expect(pl.collected).toBe(1);
   });
 
   it('durante a comemoração o desafio ignora entrada (não dá para acertar 2× no mesmo)', () => {

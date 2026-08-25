@@ -93,7 +93,6 @@ export interface PhysicsCtx {
   coinPools(): { shapes: string[]; letters: string[] }; // pools por MODO (o sorteio da lava precisa)
   rebuildCoins(): void;         // re-materializa os sprites das moedas sorteadas
   updateHud(): void;            // HUD de contagem
-  setCollected(n: number): void; // `collected` é um `let` do game.js — binding importado não se reatribui
 }
 
 const NOOP = (): void => { /* até initPhysics() */ };
@@ -104,7 +103,7 @@ const DEFAULT_CTX: PhysicsCtx = {
   tonePan: NOOP, noiseHit: NOOP, surfaceUnder: () => null,
   puffDust: NOOP, setSquash: NOOP, addShake: NOOP, addHitstop: NOOP,
   POWER_MSG: {},
-  coinPools: () => ({ shapes: [], letters: [] }), rebuildCoins: NOOP, updateHud: NOOP, setCollected: NOOP,
+  coinPools: () => ({ shapes: [], letters: [] }), rebuildCoins: NOOP, updateHud: NOOP,
 };
 let C: PhysicsCtx = DEFAULT_CTX;
 
@@ -158,7 +157,7 @@ export function resolveY(pl: PhysicsPlayer): void {
 export function triggerLava(pl: PhysicsPlayer): void {
   if (pl.hurtTimer > 0) return;
   setCoins(pickCoins(COIN_TARGET, C.coinPools())); C.rebuildCoins();
-  (players as PhysicsPlayer[]).forEach((p) => { p.collected = 0; }); C.setCollected(0); C.updateHud();
+  (players as PhysicsPlayer[]).forEach((p) => { p.collected = 0; }); C.updateHud();
   C.sfx('hurt'); pl.hurtTimer = 60; pl.vy = -10; pl.vx = (rnd() < 0.5 ? -1 : 1) * 5;
   C.addShake(3, 14); C.addHitstop(4); // JUICE: dano é o impacto mais forte do jogo
   C.srAlert(t('sr.physics.lava'));

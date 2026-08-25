@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue } from './core/state.js'; // estado compartilhado
+import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -221,7 +221,7 @@ const POWER_SHORT={off:'—',superjump:'🐇 Super-pulo',ultrajump:'🦘 Ultra-p
 // jumpVel + isBouncyGroundBelow/touchingWall/clingSides/firstClingSide/spiderReattach/wrapConvex → game/player.js (Estágio 4)
 players.push(makePlayer(0)); let player=players[0]; // 'players' vem de core/state.js (Fase 2, mega-var 8; nunca reatribuído, só mutado in-place); 'player'=players[0] fica local
 // 'numPlayers' agora vem de core/state.js (Fase 2, mega-variável 3). Escrita via setNumPlayers()/joinPlayer.
-let collected=0, ended=false; setCoins(pickCoins(COIN_TARGET, coinPools())); // coins: mega-var 7 em core/state.js (reatribuição via setCoins)
+setCoins(pickCoins(COIN_TARGET, coinPools())); // coins: mega-var 7 em core/state.js (reatribuição via setCoins)
 // Itens INDIVIDUAIS por jogador (multiplayer em telas separadas): cada moeda/letra/forma é coletada
 // independentemente por cada jogador. Só a CHAVE é compartilhada (ver powerups). taken = espelho do P1 (solo).
 // takeCoin extraído p/ game/coins.js (Estágio 4)
@@ -768,7 +768,7 @@ initPhysics({
   sfx: (n)=>earcons.sfx(n), srSay, srAlert, hideTips, showPower, nav,
   tonePan, noiseHit, surfaceUnder,
   puffDust, setSquash, addShake, addHitstop, POWER_MSG,
-  coinPools: ()=>coinPools(), rebuildCoins, updateHud, setCollected: (n)=>{ collected=n; },
+  coinPools: ()=>coinPools(), rebuildCoins, updateHud,
 });
 function stepPlayer(pl,dt){
   const _p=stepPhysics(pl,dt); if(!_p.ran)return; const dir=_p.dir; // fisica em game/physics.ts
@@ -863,7 +863,7 @@ const sessionApi = initSession({
   $, librasReserve: ()=>(librasOpen?LIBRAS_RESERVE:0),
   isCoarsePointer: ()=>{ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } },
   getMode: ()=>MODE, setModeValue: (m)=>{ MODE=m; },
-  setCollected: (n)=>{ collected=n; }, setEnded: (v)=>{ ended=v; },
+  setEnded: setEndedValue,
   getPowerups: ()=>powerups, getGate: ()=>gate, isGateOpen: ()=>gateOpen, setGateOpen: setGateOpenValue,
   getPauseActor: ()=>pauseActor, ownerColors: ()=>ownerColors, captionsOn: ()=>captionsOn,
   PCOLOR, darkRegions, getPlayerRef: ()=>player, setPlayerRef: (p)=>{ player=p; },
@@ -920,7 +920,6 @@ const quizApi = initQuiz({
   hideTouchControls: () => hideTouchControls(),
   updateHud: () => updateHud(), win: (pl) => win(pl),
   respawnFigure: (i) => respawnFigure(i),
-  syncCollected: (pl) => { if(pl===player) collected = pl.collected; }, // `collected` e let do main.js
 });
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraidos p/ game/fractions.js (Estagio 4).
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraídos p/ game/fractions.js (Estágio 4).

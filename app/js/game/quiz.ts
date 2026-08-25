@@ -418,8 +418,6 @@ export interface QuizCtx {
   win: (pl: QuizPlayer) => void;
   /** `respawnFigure(i)` do game.js: re-sorteia a figura da moeda (penalidade FORA do letramento). */
   respawnFigure: (coinIndex: number) => void;
-  /** Espelha `pl.collected` na `let collected` do game.js quando pl é o jogador 1 — reatribuição de `let`. */
-  syncCollected: (pl: QuizPlayer) => void;
 }
 
 /** A superfície que o game.js religa. */
@@ -597,7 +595,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
   function quizTake(pl: QuizPlayer, q: Quiz): void {
     takeCoin(coins[q.coinIndex] as { taken: boolean });
     const sprites = getCoinSprites(); if (sprites[q.coinIndex]) sprites[q.coinIndex].visible = false;
-    pl.collected++; c.syncCollected(pl); c.updateHud();
+    pl.collected++; c.updateHud();
     closeQuiz(pl); if (pl.collected >= COIN_TARGET) c.win(pl);
   }
 

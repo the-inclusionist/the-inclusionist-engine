@@ -267,7 +267,6 @@ function novoCtx(over = {}) {
     librasReserve: () => 0,
     isCoarsePointer: () => false,
     getMode: () => estado.mode, setModeValue: (m) => { estado.mode = m; },
-    setCollected: (n) => { estado.collected = n; },
     setEnded: (v) => { estado.ended = v; },
     getPowerups: () => estado.powerups,
     getGate: () => estado.gate,
@@ -428,7 +427,11 @@ describe('game/session — collectFor: moedas', () => {
     setCoins([{ x: 46, y: 50, owner: 1, taken: false, shape: '', letter: '' }]);
     S.collectFor(Object.assign(players[1], { x: 48, y: 64 }));
     expect(players[1].collected).toBe(1);
-    expect(CTX.estado.collected).toBe(0); // o jogador 2 não mexe no contador de tela única
+    // A segunda asserção era `estado.collected === 0`: o jogador 2 não devia tocar num contador espelhado que
+    // o main.js mantinha para a tela única. Esse contador foi apagado — quatro escritas, zero leituras —, e
+    // com ele a propriedade deixou de precisar de vigilância: não há o que o jogador 2 possa sujar. O que
+    // sobra de verdadeiro é que a contagem de cada um é SUA.
+    expect(players[0].collected).toBe(0);
   });
 });
 
@@ -571,10 +574,9 @@ describe('game/session — restartGame', () => {
     expect(p.elevTarget).toBeNull();
   });
   it('[One] a rodada nova: itens re-sorteados, segredos reescurecidos, contadores zerados', () => {
-    players[0].collected = 7; CTX.estado.collected = 7; CTX.estado.ended = true;
+    players[0].collected = 7; CTX.estado.ended = true;
     CTX.estado.darkRegionsAntes = null;
     S.restartGame();
-    expect(CTX.estado.collected).toBe(0);
     expect(CTX.estado.ended).toBe(false);
     expect(players[0].collected).toBe(0);
     expect(CTX.darkRegions[0]).toEqual({ announced: false, gfx: { alpha: 1, visible: true } });
