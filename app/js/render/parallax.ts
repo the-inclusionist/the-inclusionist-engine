@@ -138,7 +138,15 @@ export function posicoesParallax(
 /** `tilePosition` de um `TilingSprite` — só o `set`, que é como o original o escreve. */
 interface PontoObservavel { set(x: number, y: number): void }
 /** O que tocamos de um `PIXI.TilingSprite`, e só isso. */
-export interface TilingSpriteLike { x: number; y: number; texture: unknown; tilePosition: PontoObservavel }
+export interface TilingSpriteLike {
+  x: number; y: number; texture: unknown; tilePosition: PontoObservavel;
+  /**
+   * A ordem-z. Este módulo NÃO a lê — quem a escreve é a raiz de composição, ao encaixar as três camadas
+   * no registro canônico do ADR-0020. Está aqui porque a interface é EXPORTADA: ela não descreve só o que
+   * o parallax toca, descreve o que ele DEVOLVE, e o consumidor precisa deste campo para posicionar.
+   */
+  zIndex: number;
+}
 interface TilingSpriteCtor { new (texture: unknown, width: number, height: number): TilingSpriteLike }
 /** `camera` — só a inserção em posição de z fixa. */
 interface ContainerLike { addChildAt(child: unknown, index: number): unknown }
