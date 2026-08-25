@@ -4,10 +4,11 @@
 // estado VIVO do game.js (wheelchair/modoCego/caneBlockDiv/wcSolid/gateTiles/gateOpen). Assim a colisão sempre
 // enxerga o valor atual (sem risco de dessincronização) e os testes passam um ctx falso → funções 100% puras.
 // TILE/TILE_TYPES são constantes (import direto). Consumido pela física (resolveX/resolveY/stepPlayer) no game.js.
-import { TILE, TILE_TYPES } from './constants.js';
+import { TILE, TILE_TYPES, ehPerigo, ehTrampolim } from './constants.js';
 
-type TileType = { solid?: boolean; bounce?: number; water?: boolean; jump?: boolean; ladder?: boolean; tramp?: boolean; hazard?: boolean; gate?: boolean; key?: boolean };
-const TYPES = TILE_TYPES as Record<number, TileType>;
+// (`TileType` era declarado AQUI, privado, e era por isso que a tabela semântica não era usável de fora.
+//  Mudou de casa para `core/constants`, junto da tabela que ele descreve.)
+const TYPES = TILE_TYPES;
 
 export type CollisionCtx = {
   world: number[][];          // grade WORLD[y][x] (tipos de tile)
@@ -39,9 +40,11 @@ export function initCollision(ctx: CollisionCtx): void {
 // distância (px) entre batidas de bengala = TILE / divisor.
 export const caneBlockPx = (): number => TILE / _caneDiv();
 
-// Um TIPO de tile é sólido? Cadeirante: lava(9)+trampolim(5) viram chão. Modo cego: lava(9) vira chão.
+// Um TIPO de tile é sólido? Cadeirante: PERIGO e TRAMPOLIM viram chão. Modo cego: o PERIGO vira chão.
+// Pelas perguntas e não pelos números 9 e 5: a regra é sobre o que o tile É, e assim ela continua verdadeira
+// num mapa com outra numeração — que é exatamente o que um segundo jogo tem.
 export const isSolidType = (t: number): boolean =>
-  ((_isWheelchair() && (t === 9 || t === 5)) || (_isModoCego() && t === 9)) ? true : !!(TYPES[t] && TYPES[t].solid);
+  ((_isWheelchair() && (ehPerigo(t) || ehTrampolim(t))) || (_isModoCego() && ehPerigo(t))) ? true : !!TYPES[t]?.solid;
 
 // Tile na posição (fora do mundo = pedra(2), parede natural). Coordenadas em TILES.
 export const tileAt = (tx: number, ty: number): number =>

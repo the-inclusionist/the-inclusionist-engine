@@ -31,6 +31,7 @@
 // seria chutar. Fica declarado em vez de adivinhado.
 
 import type { PaintableRole } from '../render/hc-role-data.js';
+import { ehPerigo, ehAgua, ehEscada, ehTrampolim, ehPortao } from '../core/constants.js';
 
 /**
  * Tile → papel semântico. `null` = ESTRUTURA (pedra, parede, ar): não recebe repintura, fica no cinza-azulado
@@ -41,8 +42,12 @@ import type { PaintableRole } from '../render/hc-role-data.js';
  * escondida dentro de uma mudança de lugar.
  */
 export function roleOf(t: number): PaintableRole | null {
-  if (t === 9) return 'hazard';
-  if (t === 4 || t === 5 || t === 10) return 'climb';
-  if (t === 3) return 'water';
+  if (ehPerigo(t)) return 'hazard';
+  // ESCADA, TRAMPOLIM e PORTÃO dividem o ciano, e a linha agora diz POR QUÊ em vez de listar 4, 5 e 10: os
+  // três são coisas com que se INTERAGE para mudar de altura. Um trampolim não se escala no sentido literal,
+  // mas para o color-blocking ele pertence ao mesmo grupo — e essa é uma decisão de acessibilidade que
+  // merecia estar escrita, não codificada em três números.
+  if (ehEscada(t) || ehTrampolim(t) || ehPortao(t)) return 'climb';
+  if (ehAgua(t)) return 'water';
   return null;
 }
