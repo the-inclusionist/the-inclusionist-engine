@@ -142,3 +142,133 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------
+// 3. OS FIXTURES DOS TESTES — a prova que o ADR-0027 chama de decisiva, e a única que faltava aqui.
+//
+//    "Um teste de um módulo de ENGINE cujo fixture precisa de uma MOEDA é prova de que o corte não pegou.
+//     Não dá para ver isso lendo o módulo — só lendo o teste dele."
+//
+//    As duas seções acima leem MÓDULOS. Esta lê TESTES, e a diferença não é simetria: um módulo pode parecer
+//    genérico e só se revelar acoplado quando alguém tenta montar o ctx dele. Foi assim que o segundo
+//    consumidor (`consumer-quiz`) descobriu que o sonar pede `getCoins` — não lendo `platform/audio-nav`, mas
+//    tentando usá-lo. O fixture é onde a exigência aparece escrita.
+//
+//    A REGRA É ESTREITA DE PROPÓSITO: só MOEDA e QUIZ. Não entra "cenário", e vale dizer por quê — o catálogo
+//    de temas (`render/cenario-data` e quem o consome) é engine de verdade, e pôr `cenario` na regra produziria
+//    uma lista de "dívida" que ninguém pode pagar porque não há nada de errado com ela. Um gate que aponta
+//    para o lugar certo pela razão errada é pior que gate nenhum: ele treina a pessoa a ignorá-lo.
+// ---------------------------------------------------------------------------------------------------------
+
+const T_DIR = join(process.cwd(), 'tests');
+const VOCAB_JOGO = /\b(coin|coins|coinTarget|coinTex\w*|coinCanvas\w*|moeda|moedas|quiz|quizLevel|quizlevel)\b/i;
+const IMPORTA_ENGINE = /from '\.\.\/app\/js\/(core|input|render|platform|ui|audio|i18n)\//;
+const IMPORTA_JOGO = /from '\.\.\/app\/js\/game\//;
+/** Título de caso: `it('… moeda …')` é PROSA, e prosa descreve o jogo sem amarrar o teste a ele. */
+const TITULO_DE_CASO = /^\s*(it|describe|test)\s*\(/;
+
+/**
+ * Dívida CONHECIDA em 2026-08-25: quantas linhas de CÓDIGO de cada teste falam de moeda/quiz. É um TETO —
+ * só encolhe. Acrescentar vocabulário a um destes arquivos reprova; um arquivo novo na lista reprova.
+ */
+// ⚠️ OS NÚMEROS SAEM DAQUI, e não de uma medição à parte. A primeira versão desta tabela foi preenchida com
+// um script meu de fora, e ele contou MENOS: eu tinha esquecido `coinCanvas` no casador. O gate reprovou e
+// estava certo — `render/props.coinCanvas()` é um pintor de moeda dentro da engine, dívida legítima que a
+// minha conta de fora não viu. Quem for atualizar esta tabela, atualize-a pelo que ESTE arquivo reporta.
+const FIXTURES_CONHECIDOS = {
+  // O núcleo da dívida: o ctx do módulo EXIGE uma moeda ou um quiz para ser montado.
+  'high-contrast.browser.test.js': 17, // `coinTexFor`/`coinTexNormal` — o alto contraste tem caminho de moeda
+  'high-contrast.node.test.js': 6,
+  'audio-nav.node.test.js': 7,         // o sonar pede `getCoins` (achado 9 do segundo consumidor)
+  'hud.node.test.js': 3,               // o campo `coins` do view-model: o caso do ADR ao pé da letra
+  'viewports.browser.test.js': 1,      // passa `coinCanvasNormal: null` só para satisfazer o ctx
+  'render.browser.test.js': 1,         // `render/props.coinCanvas()`: a engine tem um pintor de MOEDA
+  // O jogador da engine tem um campo `quiz`: a camada de ENTRADA sabe que existe atividade de alfabetização.
+  'keydown.node.test.js': 17,
+  'keydown.browser.test.js': 1,
+  'gamepad.node.test.js': 2,
+  'touch.browser.test.js': 2,
+  // Nível de quiz atravessando menus e pausa.
+  'pause-icons.node.test.js': 3,
+  'activities-menu.browser.test.js': 2,
+  // Conteúdo do jogo em tabelas da engine.
+  'audio-earcons.node.test.js': 4,     // earcon de chave 'coin'
+  'i18n-dicts.node.test.js': 3,        // `sr.quiz.*`: 253 chaves das quais um 2º jogo usa um punhado (achado 2)
+  'storage-escopos.node.test.js': 2,   // `quizlevel` no registro de chaves — é a chave que o namespace isola
+};
+
+/**
+ * NÃO É DÍVIDA, e a distinção é a mesma que o topo deste arquivo já faz para os módulos: "moedas no chão"
+ * dentro do anúncio do Modo Fácil é uma FRASE EM PORTUGUÊS que descreve o jogo para a criança. O teste
+ * compara o texto do anúncio; ele não precisa de moeda nenhuma para rodar.
+ */
+const PROSA_EM_STRING = new Set(['settings-motor.node.test.js', 'settings-motor.browser.test.js']);
+
+/** Linhas de CÓDIGO de um teste, sem comentários e sem títulos de caso. */
+function linhasDeFixture(arquivo) {
+  const txt = readFileSync(join(T_DIR, arquivo), 'utf8').split(CR).join('');
+  return linhasDeCodigo(txt).filter(([, ln]) => !TITULO_DE_CASO.test(ln));
+}
+
+/** Testes que exercitam um módulo de ENGINE e nenhum de `game/`. Um teste de `game/` fala do jogo por dever. */
+function testesDeEngine() {
+  return readdirSync(T_DIR).filter((f) => f.endsWith('.test.js')).sort().filter((f) => {
+    const s = readFileSync(join(T_DIR, f), 'utf8').split(CR).join('');
+    return IMPORTA_ENGINE.test(s) && !IMPORTA_JOGO.test(s);
+  });
+}
+
+/** Quantas linhas de código deste teste falam de moeda/quiz. */
+function sujeira(arquivo) {
+  return linhasDeFixture(arquivo).filter(([, ln]) => VOCAB_JOGO.test(ln)).length;
+}
+
+describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova decisiva)', () => {
+  it('[Right] nenhum teste de engine NOVO precisa de moeda ou de quiz para rodar', () => {
+    const novos = testesDeEngine()
+      .filter((f) => !(f in FIXTURES_CONHECIDOS) && !PROSA_EM_STRING.has(f))
+      .flatMap((f) => linhasDeFixture(f).filter(([, ln]) => VOCAB_JOGO.test(ln))
+        .map(([n, ln]) => `${f}:${n}  ${ln.trim().slice(0, 90)}`));
+    expect(novos, 'fixture de engine exigindo moeda/quiz — o corte não pegou aqui').toEqual([]);
+  });
+
+  it('[Boundary] a dívida de cada teste é um TETO: só encolhe', () => {
+    // Teto e não igualdade: um teste ganha e perde linhas por mil razões que não têm nada a ver com moeda, e
+    // um caso que reprovasse a cada edição inocente seria afrouxado na primeira pressa. O que ele proíbe é a
+    // única coisa que importa — que o acoplamento CRESÇA.
+    const cresceram = {};
+    for (const [f, teto] of Object.entries(FIXTURES_CONHECIDOS)) {
+      const agora = sujeira(f);
+      if (agora > teto) cresceram[f] = `${teto} → ${agora}`;
+    }
+    expect(cresceram, 'fixture ficou MAIS acoplado ao jogo').toEqual({});
+  });
+
+  it('[Zero] a lista não guarda teste que já se limpou', () => {
+    for (const f of Object.keys(FIXTURES_CONHECIDOS)) {
+      expect(sujeira(f), `${f} já não fala de moeda/quiz — apague-o de FIXTURES_CONHECIDOS`).toBeGreaterThan(0);
+    }
+  });
+
+  it('[Interface] a exceção de prosa é REAL — se o texto sumir, a exceção some junto', () => {
+    // Sem este caso, `PROSA_EM_STRING` viraria uma porta de fuga: bastaria pôr um arquivo ali para o gate
+    // parar de olhá-lo. Aqui ele tem de continuar sendo o que a exceção diz que é — uma FRASE, e não um ctx.
+    for (const f of PROSA_EM_STRING) {
+      const linhas = linhasDeFixture(f).filter(([, ln]) => VOCAB_JOGO.test(ln));
+      expect(linhas.length, `${f}: a exceção não se aplica mais`).toBeGreaterThan(0);
+      for (const [n, ln] of linhas) {
+        expect(ln, `${f}:${n} não é mais uma frase — reveja a exceção`).toMatch(/moedas no chão/);
+      }
+    }
+  });
+
+  it('[Interface] a dívida dos fixtures cai nos MESMOS subsistemas que a dos módulos', () => {
+    // É o que faz esta seção valer a pena existir ao lado das outras duas: se os testes acusassem um conjunto
+    // DIFERENTE de subsistemas, uma das duas medidas estaria errada. Elas concordam — alto contraste, sonar,
+    // HUD e entrada —, e essa concordância é o que dá confiança de que o passo 5 sabe onde mexer.
+    const porSubsistema = new Set(Object.keys(FIXTURES_CONHECIDOS).map((f) => f.split('.')[0]));
+    for (const esperado of ['high-contrast', 'audio-nav', 'hud', 'keydown']) {
+      expect(porSubsistema, esperado).toContain(esperado);
+    }
+  });
+});
