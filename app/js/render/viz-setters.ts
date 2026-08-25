@@ -21,7 +21,7 @@
 
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, type VizMode } from './viz-modes.js';
 import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
-import { DIRECT_CFG, worldTexFor, coinTexFor, clearWorldTexCache, clearCoinTexCache } from './high-contrast.js';
+import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
 import { lqFilter } from './lq-filter.js';
 import { setVizModeValue } from '../core/state.js';
@@ -173,7 +173,10 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       ctx.worldSprite.texture = worldTexFor(mode);
       ctx.parallaxLayers.forEach((ts, j) => { ts.texture = ctx.parallaxTexFor(j, mode); });
       ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(mode); });
-      for (const s of ctx.getCoinSprites()) { if (s) s.texture = coinTexFor(mode); }
+      // ⚠️ O `'coin'` AQUI é dívida deste módulo, e não do alto contraste. O cache deixou de ter forma de
+      // moeda (`spriteTexFor(id, modo)`); quem ainda nomeia a moeda é `viz-setters`, que também recebe
+      // `getCoinSprites` por ctx. Está na lista de vocabulário de `engine-boundary`, e é o próximo corte.
+      for (const s of ctx.getCoinSprites()) { if (s) s.texture = spriteTexFor('coin', mode); }
       for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.texture = pupTexFor(pu.kind, mode); }
     }
     for (const pl of ctx.getPlayers()) { if (pl.sprite && pl._tx) pl.sprite.texture = ctx.playerVizTex(pl._tx, mode); } // player muda de quadro toda frame
@@ -254,7 +257,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   // invalida os caches de textura direta (mundo depende de bg; sprites de fg) e re-renderiza
   function rebakeDirect(): void {
-    clearWorldTexCache(); clearCoinTexCache(); resetPupTexCache(); ctx.clearPlayerDirectCache(); ctx.invalidateSharedViz();
+    clearWorldTexCache(); clearSpriteTexCache(); resetPupTexCache(); ctx.clearPlayerDirectCache(); ctx.invalidateSharedViz();
     if (ctx.getNumPlayers() <= 1) applyVizGlobal(ctx.getPlayers()[0].viz); else applyVpFilters();
   }
 

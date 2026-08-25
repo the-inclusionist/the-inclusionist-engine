@@ -65,7 +65,7 @@ import * as traffic from './game/traffic.js'; // Onda A: carros + semaforo da ru
 import * as life from './game/life.js'; // Onda A: vida ambiente (pombos/gatos/caes/adultos)
 import { initSceneCity } from './render/scene-city.js'; // Onda A: deco da Cidade + fx de tiles vivos
 import { initTextures, SHAPE_TEX, letterTexture, pupTexFor } from './render/textures.js'; // Onda A: texturas de moeda/forma/letra + power-up
-import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, coinTexFor, directSpriteCanvas, clearWorldTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
+import { DIRECT_CFG, HC_ROLE, HC_ROLE_DEF, saveHcRole, spriteTexFor, directSpriteCanvas, clearWorldTexCache, initHighContrast } from './render/high-contrast.js'; // Onda A: Renderizacao Direta (alto contraste)
 import { initCoinSpawning, rebuildCoins, showPower, getCoinSprites } from './game/coin-spawning.js'; // Onda A: materializacao dos sprites de moeda
 import { initKeyboardRuntime } from './input/keyboard-runtime.js';
 import { initTouchBindings } from './input/touch-bindings.js'; // D3-b: gesto de toque -> entrada (traducao + geometria)
@@ -521,7 +521,9 @@ const coinTex=tex(coinCanvasNormal);
 // (setCenario os reescreve ao trocar de tema), entao entram por getter e nao por valor.
 initHighContrast({ W: WORLD_W, H: WORLD_H, roleOf, outlineFg: () => hcOutlineFg, outlineBg: () => hcOutlineBg,
   getWorldCanvasNormal: () => worldCanvasNormal, getWorldTexNormal: () => worldTexNormal,
-  coinCanvasNormal, coinTexNormal: coinTex });
+  // Os sprites que ESTE jogo quer recoloridos por modo. A engine cacheia por (id, modo) e nao sabe o que
+  // 'coin' significa — outro jogo declara 'peca', 'silaba', o que for.
+  sprites: () => ({ coin: { canvas: coinCanvasNormal, tex: coinTex } }) });
 // caches de modos acessíveis (preguiçosos), invalidados ao trocar de cenário (worldCanvasNormal muda)
 let _lastSharedViz=null; // cache do modo aplicado (otimizacao do render MP) — NAO e do alto contraste:
 // e escrito por rebuildCoins/rebuildExtras/applySharedTextures/setPlayerViz/reapplyVizAll. Fica aqui.
@@ -533,7 +535,7 @@ const coinContainer=new PIXI.Container(); camera.addChild(coinContainer);
 // coinSprites/rebuildCoins migraram para game/coin-spawning.ts (Onda A). rebuildCoins mantem o contrato
 // SEM argumentos: os nove chamadores (boot, novo round, quatro paineis de acessibilidade, Modo Facil,
 // silabas, restart) nao mudam — so a definicao saiu daqui.
-initCoinSpawning({ coinContainer, createSprite: (t) => new PIXI.Sprite(t), coinTexFor,
+initCoinSpawning({ coinContainer, createSprite: (t) => new PIXI.Sprite(t), coinTexFor: (m) => spriteTexFor('coin', m),
   shapeTexFor: (id) => SHAPE_TEX[id], letterTexFor: letterTexture, pcolor: PCOLOR,
   getMode: () => MODE, getOwnerColors: () => ownerColors, invalidateSharedViz: () => { _lastSharedViz=null; },
   powerShort: POWER_SHORT, $ });

@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Testes de render/high-contrast (project node: sem canvas/DOM — WORLD_TEX/DIRECT/SPRITE que desenham em canvas
 // ficam no .browser.test.js). Aqui: a lógica PURA (mapa tile→papel, os 3 níveis de contraste, a paleta HC_ROLE
-// persistida) + a guarda de DI de initHighContrast + o desvio "normal" de worldTexFor/coinTexFor (não toca
+// persistida) + a guarda de DI de initHighContrast + o desvio "normal" de worldTexFor/spriteTexFor (não toca
 // canvas). ZOMBIES + Right-BICEP. Ver docs/2-Architecture/adr/ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect } from 'vitest';
 import { roleOf } from '../app/js/game/tile-roles.js'; // a tabela tile→papel é do JOGO; a engine a RECEBE
 import {
   DIRECT_CFG, dcfg, HC_ROLE_DEF, HC_ROLE, saveHcRole,
-  initHighContrast, worldTexFor, coinTexFor,
+  initHighContrast, worldTexFor, spriteTexFor,
 } from '../app/js/render/high-contrast.js';
 
 describe('render/high-contrast — DI (initHighContrast ainda não chamado)', () => {
-  it('[Error] worldTexFor/coinTexFor lançam antes de initHighContrast', () => {
+  it('[Error] worldTexFor/spriteTexFor lançam antes de initHighContrast', () => {
     expect(() => worldTexFor('normal')).toThrow(/initHighContrast/);
-    expect(() => coinTexFor('normal')).toThrow(/initHighContrast/);
+    expect(() => spriteTexFor('coin', 'normal')).toThrow(/initHighContrast/);
   });
 });
 
@@ -57,19 +57,22 @@ describe('render/high-contrast — HC_ROLE / HC_ROLE_DEF (paleta do color-blocki
   });
 });
 
-describe('render/high-contrast — worldTexFor/coinTexFor (desvio "normal": não toca canvas)', () => {
+describe('render/high-contrast — worldTexFor/spriteTexFor (desvio "normal": não toca canvas)', () => {
   it('[Right] modo "normal" devolve a textura NORMAL injetada, sem passar por DIRECT_CFG/worldToTextureDirect', () => {
-    const worldTexNormal = { tag: 'world-normal' }, coinTexNormal = { tag: 'coin-normal' };
+    const worldTexNormal = { tag: 'world-normal' }, texDeclarada = { tag: 'sprite-normal' };
     initHighContrast({
       W: 4, H: 4,
       outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => { throw new Error('não deveria construir canvas em modo normal'); },
       getWorldTexNormal: () => worldTexNormal,
-      coinCanvasNormal: /** @type {any} */ (null),
-      coinTexNormal, roleOf,
+      sprites: () => ({}),
+      sprites: () => ({ alvo: { canvas: null, tex: texDeclarada } }), roleOf,
     });
     expect(worldTexFor('normal')).toBe(worldTexNormal);
-    expect(coinTexFor('normal')).toBe(coinTexNormal);
+    expect(spriteTexFor('alvo', 'normal')).toBe(texDeclarada);
+    // e um id que o jogo NÃO declarou devolve `undefined` em vez de lançar: um sprite ausente vira "sem
+    // textura" no desenho, e derrubar o quadro inteiro por causa de um item seria pior.
+    expect(spriteTexFor('nao-declarado', 'normal')).toBeUndefined();
   });
   it('[Boundary] "normal" nunca está em DIRECT_CFG (senão o desvio acima nem seria exercitado)', () => {
     expect(DIRECT_CFG['normal']).toBeUndefined();

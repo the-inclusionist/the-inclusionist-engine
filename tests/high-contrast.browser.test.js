@@ -3,14 +3,14 @@
 // A lógica pura (dcfg/roleOf/HC_ROLE) já está no .node.test.js; aqui cobrimos o que exige getImageData/
 // putImageData/drawImage de verdade: worldToTextureDirect (repintura por papel + contorno de 2º plano),
 // directBgTexture (dessaturação assíncrona), directSprite{Canvas,Texture} (contorno de 1º plano) e o cache
-// de worldTexFor/coinTexFor. ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
+// de worldTexFor/spriteTexFor. ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeAll } from 'vitest';
 import { roleOf } from '../app/js/game/tile-roles.js'; // a tabela tile→papel é do JOGO; a engine a RECEBE
 import { initCollision } from '../app/js/core/collision.js';
 import { TILE } from '../app/js/core/constants.js';
 import {
   dimDesat, worldToTextureDirect, directBgTexture, directSpriteCanvas, directSpriteTexture,
-  worldTexFor, coinTexFor, clearWorldTexCache, clearCoinTexCache, initHighContrast, HC_ROLE,
+  worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache, initHighContrast, HC_ROLE,
 } from '../app/js/render/high-contrast.js';
 
 // Mundo de teste 4×3 (TILE=16): col0=pedra(2, estrutura) · col1=lava(9, hazard) · col2=escada(4, climb,
@@ -66,8 +66,7 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
       W, H, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
-      coinCanvasNormal: flatCanvas(11, 11, '#ffd23f'),
-      coinTexNormal: 'NORMAL_COIN_TEX', roleOf,
+      sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'TEX_NORMAL' } }), roleOf,
     });
   });
 
@@ -120,8 +119,7 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
       W, H, outlineFg: () => 1, outlineBg: () => 0,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
-      coinCanvasNormal: flatCanvas(11, 11, '#ffd23f'),
-      coinTexNormal: 'NORMAL_COIN_TEX', roleOf,
+      sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'TEX_NORMAL' } }), roleOf,
     });
     const cv = canvasOf(worldToTextureDirect(flatCanvas(W * TILE, H * TILE, '#888888'), 'hc-direto'));
     const bordaInferior = pixelAt(cv, 0 * TILE + 8, 1 * TILE + TILE - 1);
@@ -133,8 +131,7 @@ describe('render/high-contrast — worldToTextureDirect (repintura por papel + c
       W, H, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
-      coinCanvasNormal: flatCanvas(11, 11, '#ffd23f'),
-      coinTexNormal: 'NORMAL_COIN_TEX', roleOf,
+      sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'TEX_NORMAL' } }), roleOf,
     });
     const lumaEstrutura = (mode) => {
       const cv = canvasOf(worldToTextureDirect(flatCanvas(W * TILE, H * TILE, '#888888'), mode));
@@ -164,7 +161,7 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
     initHighContrast({
       W, H, outlineFg: () => 0, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
-      getWorldTexNormal: () => 'N', coinCanvasNormal: flatCanvas(11, 11, '#ffd23f'), coinTexNormal: 'N', roleOf,
+      getWorldTexNormal: () => 'N', sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'N' } }), roleOf,
     });
     const src = flatCanvas(11, 11, '#ffd23f');
     expect(directSpriteCanvas(src, 'hc-direto')).toBe(src);
@@ -173,7 +170,7 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
     initHighContrast({
       W, H, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
-      getWorldTexNormal: () => 'N', coinCanvasNormal: flatCanvas(11, 11, '#ffd23f'), coinTexNormal: 'N', roleOf,
+      getWorldTexNormal: () => 'N', sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'N' } }), roleOf,
     });
     const src = flatCanvas(11, 11, '#ffd23f');
     const out = directSpriteCanvas(src, 'hc-direto');
@@ -184,7 +181,7 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
     initHighContrast({
       W, H, outlineFg: () => 0, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
-      getWorldTexNormal: () => 'N', coinCanvasNormal: flatCanvas(11, 11, '#ffd23f'), coinTexNormal: 'N', roleOf,
+      getWorldTexNormal: () => 'N', sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'N' } }), roleOf,
     });
     const srcTex = fakeTex(flatCanvas(11, 11, '#ffd23f'));
     expect(directSpriteTexture(srcTex, 'hc-direto')).toBe(srcTex);
@@ -193,7 +190,7 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
     initHighContrast({
       W, H, outlineFg: () => 2, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
-      getWorldTexNormal: () => 'N', coinCanvasNormal: flatCanvas(11, 11, '#ffd23f'), coinTexNormal: 'N', roleOf,
+      getWorldTexNormal: () => 'N', sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'N' } }), roleOf,
     });
     const src = flatCanvas(11, 11, '#ffd23f');
     const dst = directSpriteTexture(fakeTex(src), 'hc-direto');
@@ -203,37 +200,36 @@ describe('render/high-contrast — directSpriteCanvas/directSpriteTexture (1º p
   });
 });
 
-describe('render/high-contrast — worldTexFor/coinTexFor (cache preguiçoso por modo)', () => {
+describe('render/high-contrast — worldTexFor/spriteTexFor (cache preguiçoso por modo)', () => {
   beforeAll(() => {
     initHighContrast({
       W, H, outlineFg: () => 1, outlineBg: () => 1,
       getWorldCanvasNormal: () => flatCanvas(W * TILE, H * TILE, '#888'),
       getWorldTexNormal: () => 'NORMAL_WORLD_TEX',
-      coinCanvasNormal: flatCanvas(11, 11, '#ffd23f'),
-      coinTexNormal: 'NORMAL_COIN_TEX', roleOf,
+      sprites: () => ({ alvo: { canvas: flatCanvas(11, 11, '#ffd23f'), tex: 'TEX_NORMAL' } }), roleOf,
     });
   });
   it('[Right] "normal" devolve a textura NORMAL injetada (identidade, sem tocar canvas)', () => {
     expect(worldTexFor('normal')).toBe('NORMAL_WORLD_TEX');
-    expect(coinTexFor('normal')).toBe('NORMAL_COIN_TEX');
+    expect(spriteTexFor('alvo', 'normal')).toBe('TEX_NORMAL');
   });
   it('[Right] modo hc-* é CACHEADO: duas chamadas com o mesmo modo devolvem a MESMA textura', () => {
     const a = worldTexFor('hc-direto'), b = worldTexFor('hc-direto');
     expect(a).toBe(b);
-    const ca = coinTexFor('hc-direto'), cb = coinTexFor('hc-direto');
+    const ca = spriteTexFor('alvo', 'hc-direto'), cb = spriteTexFor('alvo', 'hc-direto');
     expect(ca).toBe(cb);
   });
   it('[Right] modos diferentes NÃO compartilham cache (7:1 ≠ 3:1)', () => {
     expect(worldTexFor('hc-direto')).not.toBe(worldTexFor('hc-direto-7'));
   });
-  it('[Boundary] clearWorldTexCache/clearCoinTexCache força reconstrução (nova referência)', () => {
+  it('[Boundary] clearWorldTexCache/clearSpriteTexCache força reconstrução (nova referência)', () => {
     const before = worldTexFor('hc-direto');
     clearWorldTexCache();
     const after = worldTexFor('hc-direto');
     expect(after).not.toBe(before);
-    const coinBefore = coinTexFor('hc-direto');
-    clearCoinTexCache();
-    const coinAfter = coinTexFor('hc-direto');
+    const coinBefore = spriteTexFor('alvo', 'hc-direto');
+    clearSpriteTexCache();
+    const coinAfter = spriteTexFor('alvo', 'hc-direto');
     expect(coinAfter).not.toBe(coinBefore);
   });
 });

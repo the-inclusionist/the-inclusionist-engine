@@ -159,7 +159,24 @@ describe('fronteira engine↔currículo — a aresta que a mudança de endereço
 //    um alvo de moedas. Um jogo sem moedas não tem o que passar ali, e o HUD é engine.
 // ---------------------------------------------------------------------------------------------------------
 
-const MOEDA = /\b(coin|coins|coinTarget|moeda|moedas)\b/i;
+// ⚠️ ESTE CASADOR ERA MAIS ESTREITO QUE O DOS FIXTURES, E O GATE FALHAVA ABERTO.
+//
+// Ele nao tinha `coinTex`, nem `coinCanvas`, nem `quiz`. O casador da secao 3 tem os tres, e o comentario
+// de la ate registra a licao: "eu tinha esquecido `coinCanvas` no casador... o gate reprovou e estava
+// certo". A licao foi aplicada LA e nunca voltou para ca, e as duas secoes ficaram medindo coisas
+// diferentes com o mesmo nome.
+//
+// O preco, MEDIDO ao unificar: OITO modulos de engine carregavam vocabulario que este gate nao via, sete
+// deles fora da lista de divida. `input/keydown` com oito linhas de `quiz`, `render/props` com
+// `coinCanvas`, `ui/pause-icons` com `quizLevel`. E a assimetria explicava um misterio da secao 3: a
+// divida de FIXTURE tinha `keydown`, `gamepad`, `touch` e `pause-icons` enquanto os MODULOS deles
+// pareciam limpos. Nao eram.
+//
+// Um gate mais fraco que o teste que ele deveria proteger e pior que gate nenhum: ele da por resolvida uma
+// fronteira que ninguem mediu. Agora e UM casador so, usado nas duas secoes, e drift vira impossivel.
+// (`VOCAB_JOGO` e declarado na secao 2 - e o MESMO casador, e agora so existe um.)
+const VOCAB_JOGO = /\b(coin|coins|coinTarget|coinTex\w*|coinCanvas\w*|moeda|moedas|quiz|quizLevel|quizlevel)\b/i;
+const MOEDA = VOCAB_JOGO;
 
 /** Dívida CONHECIDA de VOCABULÁRIO em 2026-08-25 — só encolhe, mesma regra. */
 const MOEDA_CONHECIDA = new Set([
@@ -179,6 +196,18 @@ const MOEDA_CONHECIDA = new Set([
   // `ui/settings-motor.ts` SAIU (2026-08-25): a única menção era 'moedas no chão', dentro do anúncio do Modo
   // Fácil, que foi para o dicionário no item 14. Segundo módulo que a i18n tira daqui de carona.
   'platform/audio-mixer.ts', // rótulos/anúncios, não dependência
+  // ---- OITO MÓDULOS que só ficaram VISÍVEIS quando o casador foi unificado (2026-08-25). A dívida deles é
+  //      antiga; o que era novo é o gate conseguir vê-la. A maioria já tinha o par dela na lista de FIXTURES
+  //      abaixo — a correspondência que a seção 3 afirma só passou a ser verdadeira agora.
+  'input/keydown.ts',       // 8 linhas: o jogador da engine tem um campo `quiz`, e a entrada o consulta
+  'ui/pause-icons.ts',      // `quizLevel` importado de core/state e exposto no ctx
+  'input/gamepad.ts',       // idem keydown: `p.quiz` no despacho de ação
+  'input/touch.ts',         // `PlayerView<'quiz'>` — o toque sabe que existe atividade de alfabetização
+  'render/props.ts',        // `coinCanvas()`/`coinTexture()`: a engine tem um PINTOR de moeda
+  'core/entity.ts',         // `quiz: PlayerQuiz | null` no jogador canônico
+  'platform/storage.ts',    // a chave `quizlevel` no registro (é a chave que o namespace isola)
+  'render/viz-setters.ts',  // `spriteTexFor('coin', mode)` — o cache deixou de ter forma de moeda; o
+                            // chamador ainda nomeia uma. Ver o comentário no próprio módulo.
 ]);
 
 describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
@@ -236,7 +265,7 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
 // ---------------------------------------------------------------------------------------------------------
 
 const T_DIR = join(process.cwd(), 'tests');
-const VOCAB_JOGO = /\b(coin|coins|coinTarget|coinTex\w*|coinCanvas\w*|moeda|moedas|quiz|quizLevel|quizlevel)\b/i;
+// (`VOCAB_JOGO` e declarado na secao 2 - e o MESMO casador, e agora so existe um.)
 // IMPORT ESTÁTICO **E** DINÂMICO. A primeira versão só via `from '…'`, e por isso era CEGA para todo teste
 // que carrega o módulo com `await import('…')` — coisa que alguns fazem por necessidade, para instalar um
 // shim de `localStorage` ANTES de o módulo tocar em persistência. Eram quatro arquivos fora do alcance, e o
@@ -258,8 +287,11 @@ const TITULO_DE_CASO = /^\s*(it|describe|test)\s*\(/;
 // minha conta de fora não viu. Quem for atualizar esta tabela, atualize-a pelo que ESTE arquivo reporta.
 const FIXTURES_CONHECIDOS = {
   // O núcleo da dívida: o ctx do módulo EXIGE uma moeda ou um quiz para ser montado.
-  'high-contrast.browser.test.js': 17, // `coinTexFor`/`coinTexNormal` — o alto contraste tem caminho de moeda
-  'high-contrast.node.test.js': 6,
+  // `high-contrast.browser.test.js` e `high-contrast.node.test.js` SAÍRAM (2026-08-25, item 19). Eram 23
+  // linhas, a maior dívida de fixture da lista, e todas diziam a mesma coisa: o ctx do alto contraste pedia
+  // `coinCanvasNormal` + `coinTexNormal`, um par cravado para UM sprite de UM jogo. Virou `sprites()`, um
+  // registro por id — a engine cacheia por `(id, modo)` e não sabe o que o id significa. Os fixtures passaram
+  // a declarar um sprite chamado 'alvo', e a dívida não foi reescrita: deixou de existir.
   // `audio-nav.node.test.js` SAIU (2026-08-25, item 19) e o fixture que sobrou é de PLATAFORMA de propósito:
   // a bengala sonda material à frente, o nado procura parede e fundo. Declarar tiles para testá-los não é
   // dívida — é a descrição correta. A metade que precisava de moeda foi para `audio-sonar.node.test.js`, e
@@ -267,7 +299,9 @@ const FIXTURES_CONHECIDOS = {
   // `hud.node.test.js` SAIU (2026-08-25, item 19): o fixture declarava um jogador com `collected` e um
   // view-model com `coins`. Agora declara um OBJETIVO, cujo nome padrão é 'itens' — de propósito, porque um
   // teste de HUD dizendo "moedas" a cada linha reafirmaria por hábito o que o módulo acabou de largar.
-  'viewports.browser.test.js': 1,      // passa `coinCanvasNormal: null` só para satisfazer o ctx
+  // `viewports.browser.test.js` SAIU (2026-08-25): a única linha era `coinCanvasNormal: null`, passada só
+  // para satisfazer o ctx do alto contraste. O ctx deixou de ter forma de moeda (`sprites: () => ({})`), e
+  // com isso a linha não precisou ser reescrita — ela deixou de existir.
   'render.browser.test.js': 1,         // `render/props.coinCanvas()`: a engine tem um pintor de MOEDA
   // Estes três só ficaram visíveis quando o crivo passou a enxergar `await import()` — a dívida deles é a
   // mesma dos de cima (o ctx do alto contraste exige um canvas/textura de moeda), não é dívida nova.
@@ -377,10 +411,14 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
     //     viajou (`audio-sonar`), onde deixou de ser de moeda. Quem fica lê tile porque é o que ele faz.
     // Os dois que sobram são os que o passo 5 ainda tem de resolver, e são justamente os dois maiores.
     const porSubsistema = new Set(Object.keys(FIXTURES_CONHECIDOS).map((f) => f.split('.')[0]));
-    for (const esperado of ['high-contrast', 'keydown']) {
+    // `high-contrast` SAIU em 2026-08-25 pela TERCEIRA forma de sair vista neste item, e vale distinguir das
+    // outras duas: `hud` saiu trocando a pergunta, `audio-nav` saiu partido em dois, e este saiu porque a
+    // API deixou de ter FORMA de moeda — o ctx pedia um par `coinCanvasNormal`/`coinTexNormal` e passou a
+    // pedir um registro de sprites por id. Nenhuma linha de fixture foi reescrita; elas deixaram de existir.
+    for (const esperado of ['keydown']) {
       expect(porSubsistema, esperado).toContain(esperado);
     }
-    for (const limpo of ['hud', 'audio-nav', 'audio-sonar']) {
+    for (const limpo of ['hud', 'audio-nav', 'audio-sonar', 'high-contrast', 'viewports']) {
       expect(porSubsistema, `${limpo} voltou a precisar de moeda no fixture — o item 19 andou para trás`)
         .not.toContain(limpo);
     }

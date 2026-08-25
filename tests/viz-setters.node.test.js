@@ -26,12 +26,12 @@ const {
   lvOverlayClassFor, vizGroupHtml, vizGroupSay,
 } = await import('../app/js/render/viz-setters.js');
 
-// worldTexFor/coinTexFor exigem o ctx do high-contrast. Nos modos NÃO-diretos elas devolvem a textura normal
+// worldTexFor/spriteTexFor exigem o ctx do high-contrast. Nos modos NÃO-diretos elas devolvem a textura normal
 // sem tocar em canvas — é exatamente o desvio exercitado aqui.
 initHighContrast({
   W: 1, H: 1, outlineFg: () => 0, outlineBg: () => 0,
   getWorldCanvasNormal: () => null, getWorldTexNormal: () => 'TEX_WORLD_NORMAL',
-  coinCanvasNormal: null, coinTexNormal: 'TEX_COIN_NORMAL',
+  sprites: () => ({ coin: { canvas: null, tex: 'TEX_COIN_NORMAL' } }),
 });
 
 /* ===================== fakes: DOM e PIXI por interface estrutural ===================== */

@@ -43,7 +43,7 @@ const TEX_COIN_NORMAL = { NORMAL: 'coin' };
 HC.initHighContrast({ roleOf,
   W, H, outlineFg: () => 1, outlineBg: () => 1,
   getWorldCanvasNormal: () => worldCanvasNormal, getWorldTexNormal: () => TEX_WORLD_NORMAL,
-  coinCanvasNormal, coinTexNormal: TEX_COIN_NORMAL,
+  sprites: () => ({ coin: { canvas: coinCanvasNormal, tex: TEX_COIN_NORMAL } }),
 });
 
 /* ===================== palco real: os elementos que o módulo procura por seletor ===================== */
@@ -96,7 +96,7 @@ function setup(over = {}) {
   return { env, api: initVizSetters(ctx) };
 }
 
-beforeEach(() => { document.body.className = ''; HC.clearWorldTexCache(); HC.clearCoinTexCache(); });
+beforeEach(() => { document.body.className = ''; HC.clearWorldTexCache(); HC.clearSpriteTexCache(); });
 
 /* ===================================================================================================== */
 

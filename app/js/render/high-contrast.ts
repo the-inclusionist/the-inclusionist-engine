@@ -69,8 +69,18 @@ export interface HighContrastCtx {
   outlineBg: () => number; // hcOutlineBg (0/1/2) — mutado por setOutlineBg (game.js)
   getWorldCanvasNormal: () => HTMLCanvasElement; // worldCanvasNormal É `let` (reescrito por setCenario ao trocar tema) → getter
   getWorldTexNormal: () => unknown; // worldTexNormal idem
-  coinCanvasNormal: HTMLCanvasElement; // const, nunca reatribuído após o boot → valor direto
-  coinTexNormal: unknown;
+  /**
+   * OS SPRITES QUE O JOGO QUER RECOLORIDOS, POR ID. A engine cacheia por `(id, modo)` e nunca sabe o que o id
+   * significa — pode ser uma moeda, uma sílaba, uma peça de tabuleiro.
+   *
+   * Era um par cravado, `coinCanvasNormal` + `coinTexNormal`, e o nome era a dívida: a API do cache de alto
+   * contraste tinha a forma de UM sprite de UM jogo. Um segundo jogo que quisesse recolorir a peça dele não
+   * tinha por onde — teria de chamar a peça de "moeda", ou de reimplementar o cache.
+   *
+   * Função e não valor porque o canvas de um sprite pode ser reescrito no boot (o mesmo motivo do
+   * `getWorldCanvasNormal`), e um valor lido uma vez congelaria o do primeiro instante.
+   */
+  sprites: () => Record<string, { canvas: HTMLCanvasElement | null; tex: unknown }>;
   /**
    * TILE → PAPEL SEMÂNTICO, e é o consumidor quem sabe. `null` = estrutura (sem repintura).
    *
@@ -199,7 +209,8 @@ export function directSpriteTexture(srcTex: DirectTexSource, mode: string): unkn
 
 /* ===================== caches preguiçosos (mundo/moeda) + seletor por modo ===================== */
 const _worldTexHC: Record<string, unknown> = {};
-const _coinTexHC: Record<string, unknown> = {};
+/** Cache de sprite recolorido, chaveado por `id|modo`. Era `_coinTexHC[modo]` — um cache por jogo. */
+const _spriteTexHC: Record<string, unknown> = {};
 
 /** Textura do MUNDO para `mode` (normal → a textura viva; hc-* → Renderização Direta, cacheada). */
 export function worldTexFor(mode: string): unknown {
@@ -210,16 +221,33 @@ export function worldTexFor(mode: string): unknown {
   }
   return hc.getWorldTexNormal();
 }
-/** Textura da MOEDA para `mode` (mesma lógica de worldTexFor, cache próprio). */
-export function coinTexFor(mode: string): unknown {
+/**
+ * Textura do sprite `id` para `mode` (mesma lógica de `worldTexFor`, cache por `id|modo`).
+ *
+ * Fora dos modos de renderização direta devolve a textura normal declarada pelo jogo — e devolve `undefined`
+ * para um id que o jogo não declarou, em vez de lançar: um sprite ausente vira "sem textura" no desenho, que
+ * é degradação; lançar aqui derrubaria o quadro inteiro por causa de um item.
+ */
+export function spriteTexFor(id: string, mode: string): unknown {
   const hc = requireCtx();
+  const src = hc.sprites()[id];
+  if (!src) return undefined;
   if (DIRECT_CFG[mode]) {
-    if (!_coinTexHC[mode]) _coinTexHC[mode] = tex(directSpriteCanvas(hc.coinCanvasNormal, mode));
-    return _coinTexHC[mode];
+    const chave = id + '|' + mode;
+    if (!_spriteTexHC[chave] && src.canvas) _spriteTexHC[chave] = tex(directSpriteCanvas(src.canvas, mode));
+    return _spriteTexHC[chave] ?? src.tex;
   }
-  return hc.coinTexNormal;
+  return src.tex;
 }
 /** Invalida o cache de mundo (tema/cenário mudou → worldCanvasNormal é outro canvas). */
 export function clearWorldTexCache(): void { for (const k in _worldTexHC) delete _worldTexHC[k]; }
-/** Invalida o cache de moeda (cor de papel mudou → _rebakeDirect no game.js). */
-export function clearCoinTexCache(): void { for (const k in _coinTexHC) delete _coinTexHC[k]; }
+/**
+ * Invalida o cache de sprites (cor de papel mudou → `_rebakeDirect` no game.js). Sem argumento limpa TUDO;
+ * com um `id`, só as entradas daquele sprite — o que um jogo com muitos sprites vai querer, e o que um cache
+ * chaveado só por modo não conseguia oferecer.
+ */
+export function clearSpriteTexCache(id?: string): void {
+  for (const k in _spriteTexHC) {
+    if (id === undefined || k.startsWith(id + '|')) delete _spriteTexHC[k];
+  }
+}
