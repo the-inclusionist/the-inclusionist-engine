@@ -49,19 +49,54 @@ function inpaintSeams1px(id: ImageData): void {
     }
   }
 }
-// Recarrega o PNG, aplica o inpaint e SUBSTITUI o binding vivo arr[idx] (o game.js lê a textura por frame → pega a nova).
+/** Pinta `img` num canvas, tapa as costuras e SUBSTITUI o binding vivo `arr[idx]` (o game.js lê por quadro). */
+function aplicarInpaint(img: HTMLImageElement, arr: PIXI.Texture[], idx: number): void {
+  try {
+    const cv = makeCanvas(img.width, img.height), c = cv.getContext('2d'); if (!c) return;
+    c.imageSmoothingEnabled = false; c.drawImage(img, 0, 0);
+    const id = c.getImageData(0, 0, img.width, img.height);
+    inpaintSeams1px(id); c.putImageData(id, 0, 0);
+    arr[idx] = tex(cv);
+  } catch (e) { /* falhou -> mantem o PNG cru */ }
+}
+
+/**
+ * Tapa as costuras do quadro `idx` REUSANDO a imagem que o PIXI já baixou.
+ *
+ * ========================= 55 REQUISIÇÕES PARA 38 ARQUIVOS =========================
+ * Isto aqui abria um `new Image()` com a MESMA url que o `pngTex` acabara de pedir. Medido no navegador:
+ * 55 requisições para 38 arquivos distintos, 16 deles baixados duas vezes — e `idle/0.png`, três. São
+ * exatamente os 16 quadros que passam por aqui (idle, andar, correr), ou seja, os que a criança mais vê.
+ *
+ * Na minha máquina o custo foi ZERO em bytes (tudo do cache do navegador), e é justamente por isso que o
+ * defeito sobreviveu tanto tempo: ele não aparece em nada que se meça daqui. Numa rede de escola com cache
+ * frio, porém, são 16 idas e voltas a mais — e latência é o que dói lá, não os 66 KB do conjunto inteiro.
+ *
+ * A textura CRUA continua sendo criada pelo `pngTex` antes desta chamada, e tem de ser: o `TEX_*` precisa
+ * existir e ser desenhável no primeiro quadro, muito antes de o inpaint terminar. O que muda é que o segundo
+ * carregamento deixou de existir — a imagem que o PIXI já tem é a mesma que este código queria.
+ *
+ * MEXE NO INTERIOR DO PIXI (`baseTexture.resource.source`), e por isso o caminho antigo continua aqui como
+ * REDE: se um dia essa forma mudar, o `instanceof HTMLImageElement` falha, o `new Image()` assume e as
+ * costuras seguem tapadas. Sem a rede, a falha seria silenciosa e VISUAL — as frestas de 1px voltariam no
+ * tronco do personagem e nenhum teste diria nada.
+ */
 function inpaintInto(file: string, arr: PIXI.Texture[], idx: number): void {
-  const img = new Image();
-  img.onload = () => {
-    try {
-      const cv = makeCanvas(img.width, img.height), c = cv.getContext('2d'); if (!c) return;
-      c.imageSmoothingEnabled = false; c.drawImage(img, 0, 0);
-      const id = c.getImageData(0, 0, img.width, img.height);
-      inpaintSeams1px(id); c.putImageData(id, 0, 0);
-      arr[idx] = tex(cv);
-    } catch (e) { /* falhou → mantém o PNG cru */ }
+  const base = arr[idx]?.baseTexture as (PIXI.BaseTexture & { resource?: { source?: unknown } }) | undefined;
+  const doPixi = (): boolean => {
+    const src = base?.resource?.source;
+    if (!(src instanceof HTMLImageElement) || !src.complete || !src.naturalWidth) return false;
+    aplicarInpaint(src, arr, idx);
+    return true;
   };
-  img.src = SPR + file;
+  const buscarDeNovo = (): void => { // rede: só roda se a imagem do PIXI não estiver acessível
+    const img = new Image();
+    img.onload = () => aplicarInpaint(img, arr, idx);
+    img.src = SPR + file;
+  };
+  if (doPixi()) return;
+  if (base) base.once('loaded', () => { if (!doPixi()) buscarDeNovo(); });
+  else buscarDeNovo();
 }
 
 let _loaded = false;
