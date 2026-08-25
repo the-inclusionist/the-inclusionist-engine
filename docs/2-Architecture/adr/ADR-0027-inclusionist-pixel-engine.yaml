@@ -102,15 +102,29 @@ decision-outcome:
     view model. That is debt of a different kind and a smaller one: names are not followed by the compiler and
     do not stop a package from separating.
 
-    The rest of the list below still stands, so step 5 still does not start — but it is one module shorter.
+    The rest of the list below still stands — but the module count fell from three to one; see below.
 
     But the answer is narrower and more useful than "the boundary is wrong", and the number is what makes it
-    useful: THREE engine modules import from `game/`, across five edges —
+    useful. When this was written, THREE engine modules imported from `game/`, across five edges —
       · render/draw.ts     → game/player.js (BOX), game/powerups.js, game/coin-spawning.js
       · render/textures.ts → game/activity-content.js (SOMASUB_SHAPES)
       · ui/activities-menu.ts → game/activities-registry.js
     Import edges are the hard evidence: not a name, but a dependency the compiler follows. A module with one
     cannot be packaged without dragging the game along.
+
+    THE COUNT IS NOW ONE, and how each of the other two left is worth more than the number:
+      · `render/textures.ts` LEFT BY INJECTION — it imported `SOMASUB_SHAPES` for a single line and now
+        receives the shape ids by ctx. It was also the only reason `render/viz-setters` dragged `game/`
+        transitively, so one small edge freed two modules.
+      · `ui/activities-menu.ts` LEFT BY CHANGE OF ADDRESS — the catalogue it imported was CURRICULUM filed in
+        `game/`, and ADR-0032 moved it to `educational/`. That edge did not get fixed; it got smaller, and it
+        is counted in a list of its own so the rename cannot be mistaken for a repair.
+      · `render/draw.ts` REMAINS, with `game/powerups` and `game/coin-spawning`. It is the "does draw draw a
+        platform world" question, and ADR-0030 answers it: draw receives declared entities. That is step 5's
+        work, not a leftover.
+
+    AND STEP 4 ITSELF HAS SINCE BEEN EXECUTED, not merely reasoned about: `boot/create-game.ts` exists, takes
+    no `coinTarget`, and the second consumer boots on it (2026-08-25, commit 169b9bd). See step 4 below.
 
     Five more modules speak of coins in CODE without importing: ui/hud (the case above), platform/audio-nav
     (the sonar's `Coin` type — the PURPOSE is engine, the TYPE is the game's), core/state (`coins: unknown[]`),
