@@ -350,5 +350,16 @@ const en: Record<string, string> = {
   'sr.motor.easyOff': 'Easy Mode off.',
   'sr.motor.toggleMoveOn': 'Tap-to-move on: tap a direction to walk without holding; tap again to stop; hold to go faster. Jumping does not interrupt the walk.',
   'sr.motor.toggleMoveOff': 'Tap-to-move off.',
+  // ===================== HELP (pause menu) + level label =====================
+  'pause.level': '📚 Level {n} · {v}',
+  'help.controls': 'Your controls',
+  'help.controlsPlayer': 'Your controls · Player {n}',
+  'help.keyboard': 'keyboard',
+  'help.buildNotes': 'Notes on this build',
+  'help.powerups': 'Power-ups: 👟 super run · 🕷️ climb · 🎈 flight · 🐇 super jump · 🦘 ultra jump · 🔑 the key opens the 🚪 gate.',
+  'help.multiplayer': '2–4 players: screens side by side, each with its own menu and its own settings.',
+  'help.tech': 'v{v} — PixiJS (WebGL, Canvas fallback) · text/UI in the DOM (accessibility) · offline via PWA.',
+  'menu.yes': 'Yes',
+  'menu.no': 'No',
 };
 export default en;

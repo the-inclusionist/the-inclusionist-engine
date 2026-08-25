@@ -391,5 +391,20 @@ const pt: Record<string, string> = {
   'sr.motor.easyOff': 'Modo Fácil desligado.',
   'sr.motor.toggleMoveOn': 'Movimento por alternância ligado: toque a direção para andar sem segurar; toque de novo para parar; segure para ir mais rápido. O pulo não interrompe a caminhada.',
   'sr.motor.toggleMoveOff': 'Movimento por alternância desligado.',
+  // ===================== AJUDA (menu de pausa) + rótulo de nível =====================
+  // `pause.level` é MOLDURA: `{v}` é o nome do nível da psicogênese de Ferreiro e atravessa SEM TRADUÇÃO —
+  // currículo de alfabetização não se traduz, reescreve-se por idioma (pilar 3 do ADR-0010). Ver `QL_NAME`.
+  'pause.level': '📚 Nível {n} · {v}',
+  'help.controls': 'Seus controles',
+  'help.controlsPlayer': 'Seus controles · Jogador {n}',
+  'help.keyboard': 'teclado',
+  'help.buildNotes': 'Notas desta build',
+  'help.powerups': 'Power-ups: 👟 super-corrida · 🕷️ escalada · 🎈 voo · 🐇 super-pulo · 🦘 ultra-pulo · 🔑 chave abre o 🚪 portão.',
+  'help.multiplayer': '2–4 jogadores: telas lado a lado, cada uma com seu menu e sua configuração.',
+  'help.tech': 'v{v} — PixiJS (WebGL, fallback Canvas) · texto/UI no DOM (acessibilidade) · offline via PWA.',
+  // A legenda 'Sim'/'Não' do rodapé de cada pausa (os dois botões do controle). Achado pelo crivo LARGO do
+  // item 14: o estreito não o pegou porque 'Sim' não tem acento e 'Não' tem três letras.
+  'menu.yes': 'Sim',
+  'menu.no': 'Não',
 };
 export default pt;

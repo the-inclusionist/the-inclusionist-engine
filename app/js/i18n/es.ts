@@ -351,5 +351,16 @@ const es: Record<string, string> = {
   'sr.motor.easyOff': 'Modo Fácil desactivado.',
   'sr.motor.toggleMoveOn': 'Movimiento por alternancia activado: toca la dirección para andar sin mantener; toca de nuevo para parar; mantén para ir más rápido. El salto no interrumpe la marcha.',
   'sr.motor.toggleMoveOff': 'Movimiento por alternancia desactivado.',
+  // ===================== AYUDA (menú de pausa) + etiqueta de nivel =====================
+  'pause.level': '📚 Nivel {n} · {v}',
+  'help.controls': 'Tus controles',
+  'help.controlsPlayer': 'Tus controles · Jugador {n}',
+  'help.keyboard': 'teclado',
+  'help.buildNotes': 'Notas de esta versión',
+  'help.powerups': 'Poderes: 👟 súper carrera · 🕷️ escalada · 🎈 vuelo · 🐇 súper salto · 🦘 ultra salto · 🔑 la llave abre la 🚪 puerta.',
+  'help.multiplayer': '2–4 jugadores: pantallas una al lado de la otra, cada una con su menú y su configuración.',
+  'help.tech': 'v{v} — PixiJS (WebGL, Canvas de reserva) · texto e interfaz en el DOM (accesibilidad) · sin conexión vía PWA.',
+  'menu.yes': 'Sí',
+  'menu.no': 'No',
 };
 export default es;

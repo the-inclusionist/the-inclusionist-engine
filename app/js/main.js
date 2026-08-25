@@ -1006,8 +1006,10 @@ if(optTelasBtn)optTelasBtn.addEventListener('click',()=>{ activateScreens((numPl
 // Botão único de LETRAS: ABC (padrão) → abc → Braille
 // L3: nível do quiz de alfabetização (1..5), persistido; rótulo vivo nos menus de pausa
 function setQuizLevel(n,announce){ setQuizLevelValue(n); // core/state.js: clampa 1..5, persiste e emite; a reflexão de UI fica aqui
-  document.querySelectorAll('.pm-nivel').forEach(x=>{ x.textContent='📚 Nível '+quizLevel+' · '+QL_NAME[quizLevel]; });
-  if(announce) srSay(t('sr.quiz.levelSet',{n:quizLevel,v:QL_NAME[quizLevel]})); } // QL_NAME ainda é pt-BR
+  // `QL_NAME` atravessa por PARAMETRO e NAO vira chave: sao os niveis da psicogenese de Ferreiro, e o pilar 3
+  // do ADR-0010 diz que curriculo de alfabetizacao nao se traduz — reescreve-se por idioma. A moldura traduz.
+  document.querySelectorAll('.pm-nivel').forEach(x=>{ x.textContent=t('pause.level',{n:quizLevel,v:QL_NAME[quizLevel]}); });
+  if(announce) srSay(t('sr.quiz.levelSet',{n:quizLevel,v:QL_NAME[quizLevel]})); } // QL_NAME é CURRÍCULO: atravessa sem traduzir
 // A TABELA `LETRA` E O CICLO MORRERAM (ADR-0028). Eram duas posições — ABC/abc — num botão da pausa, e a
 // caixa da letra virou UMA escolha dentro do menu de Comunicação Aumentada e Alternativa, ao lado dos
 // conjuntos de pictogramas. Um ciclo de duas posições não comporta nove opções, e o motivo de o menu existir
@@ -1192,7 +1194,7 @@ function simNaoGlyphs(){ const d=store.get('incl_paddesign','generic'); const se
   return { sim:set[inv?'1':'0'], nao:set[inv?'0':'1'] }; }
 function renderPauseLegend(){ const g=simNaoGlyphs();
   const chip=(s,word)=>`<span class="lg"><span class="lg-ico" style="background:${s[1]}">${s[0]}</span> ${word}</span>`;
-  const html=chip(g.sim,'Sim')+chip(g.nao,'Não');
+  const html=chip(g.sim,t('menu.yes'))+chip(g.nao,t('menu.no'));
   document.querySelectorAll('.pause-legend').forEach(el=>{ el.innerHTML=html; }); } // todas as pausas por tela
 // START (pílula): função vem do touchMap (padrão pausar) — a fiação fica no touchSetup, junto do doTouch.
 // padLayoutFromId migrou para input/touch.ts (Onda A) — a deteccao do modelo pelo id do controle e
@@ -1229,11 +1231,14 @@ const ctrlBtn=$('#opt-controls'); if(ctrlBtn)ctrlBtn.addEventListener('click',op
 // AJUDA (do menu de pausa): controles DO jogador que abriu (pauseActor) + notas desta build.
 function openHelp(){ const ov=$('#help'); if(!ov)return; const c=$('#help-content'); const pa=pauseActor||0; const map=kbFor(pa);
   const rows=Object.keys(ACT_LABEL).map(a=>`<div class="ctrl-row"><span>${t(ACT_LABEL[a])}</span><span>${(map[a]||[]).map(keyName).map(k=>'<kbd>'+k+'</kbd>').join(' ')||'—'}</span></div>`).join('');
-  if(c)c.innerHTML=`<h3 class="panel-sub">Seus controles${numPlayers>1?' · Jogador '+(pa+1):''} <span class="panel-sub__tag">teclado</span></h3><div class="ctrl-list">${rows}</div>`+
-    `<h3 class="panel-sub">Notas desta build</h3><div class="ctrl-list">`+
-    `<div class="ctrl-row"><span>Power-ups: 👟 super-corrida · 🕷️ escalada · 🎈 voo · 🐇 super-pulo · 🦘 ultra-pulo · 🔑 chave abre o 🚪 portão.</span></div>`+
-    `<div class="ctrl-row"><span>2–4 jogadores: telas lado a lado, cada uma com seu menu e sua configuração.</span></div>`+
-    `<div class="ctrl-row"><span>v${INCL_VERSION} — PixiJS (WebGL, fallback Canvas) · texto/UI no DOM (acessibilidade) · offline via PWA.</span></div></div>`;
+  // O cabecalho e' UMA FRASE por caso ('Seus controles' / 'Seus controles · Jogador N'), e nao um prefixo mais
+  // um sufixo: uma lingua que ponha o numero do jogador ANTES do titulo so consegue se a frase inteira morar
+  // no dicionario. Mesma decisao de `sr.audio.*` e dos anuncios motores.
+  const titulo=numPlayers>1?t('help.controlsPlayer',{n:pa+1}):t('help.controls');
+  const nota=(txt)=>`<div class="ctrl-row"><span>${txt}</span></div>`;
+  if(c)c.innerHTML=`<h3 class="panel-sub">${titulo} <span class="panel-sub__tag">${t('help.keyboard')}</span></h3><div class="ctrl-list">${rows}</div>`+
+    `<h3 class="panel-sub">${t('help.buildNotes')}</h3><div class="ctrl-list">`+
+    nota(t('help.powerups'))+nota(t('help.multiplayer'))+nota(t('help.tech',{v:INCL_VERSION}))+`</div>`;
   ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); }
 function closeHelp(){ const ov=$('#help'); if(!ov)return; ov.hidden=true; if(!overlays.restoreFocus('help'))menuFocus(sharedDialogOpen()); }
 const helpCloseBtn=$('#help-close'); if(helpCloseBtn)helpCloseBtn.addEventListener('click',closeHelp);
