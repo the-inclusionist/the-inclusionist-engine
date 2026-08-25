@@ -266,5 +266,6 @@ const es: Record<string, string> = {
   'sr.quiz.correctSoFar': '¡Acertaste! {n} de 3 para ganar la moneda.',
   'menu.restoreDefaults': 'Restaurar los valores predeterminados de este menú',
   'sr.audio.reset': 'Accesibilidad auditiva restaurada a sus valores predeterminados. Los demás menús no cambiaron.',
+  'sr.empathy.reset': 'Modo empatía restaurado a sus valores predeterminados: simulaciones desactivadas. Las correcciones de daltonismo y los demás menús no cambiaron.',
 };
 export default es;

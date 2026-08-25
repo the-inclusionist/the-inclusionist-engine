@@ -10,8 +10,10 @@
 // Pure catalog/label logic (isSimKind/EMPATHY_VIZ_MODES/toggleLabel) is unit-tested in node; render/open/close
 // are a thin DOM shell tested in browser. Model: app/js/render/fx.ts.
 
-import { VIZ_MODES, type VizMode } from '../render/viz-modes.js';
+import { VIZ_MODES, simulatesDisability, type VizMode } from '../render/viz-modes.js';
 import { hearingLoss, setHearingLossGraph } from '../platform/audio.js';
+import { t } from '../core/i18n.js';
+import { DEFAULTS } from '../core/state.js';
 
 /** Kinds treated as *simulation* here (vs. the 'hcnew' *correction* kind that settings-visual owns). */
 export const isSimKind = (kind: string): boolean => kind === 'filter' || kind === 'lowvision' || kind === 'blind';
@@ -49,6 +51,10 @@ export interface EmpathySettingsCtx {
   /** Live reads of game.js's oneButton/wheelchair booleans (not yet migrated to core/state.ts). */
   getOneButton(): boolean;
   getWheelchair(): boolean;
+  /** Jogadores vivos (core/state `players`), só para saber QUAL modo visual cada um está usando agora. */
+  getPlayers(): readonly { viz: string }[];
+  /** Mesmo setPlayerViz do painel visual e do atalho de contraste; usado aqui só pelo "restaurar padrões". */
+  setPlayerViz(i: number, mode: string): void;
 }
 
 export interface EmpathySettingsApi {
@@ -105,6 +111,31 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
   if (oneBtn) oneBtn.addEventListener('click', () => ctx.setOneButton(!ctx.getOneButton()));
   const wheelBtn = ctx.$<HTMLElement>('#opt-wheelchair');
   if (wheelBtn) wheelBtn.addEventListener('click', () => ctx.setWheelchair(!ctx.getWheelchair()));
+
+  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
+  //
+  // De todos os oito, este é o reset que mais precisa existir e o que mais precisa ter cuidado, pelo mesmo
+  // motivo: é o menu que simula deficiências. Uma criança que liga "Simular cegueira total" fica com a tela
+  // preta, e a saída — o toque duplo na bolinha — é justamente o que ela acabou de perder a capacidade de ver.
+  //
+  // E o cuidado: A LISTA DESTE PAINEL NÃO É A LISTA QUE O RESET DESLIGA, e a diferença é deliberada. O painel
+  // mostra também `fix-protan/fix-deuter/fix-tritan`, que são CORREÇÃO de daltonismo, porque hoje elas não têm
+  // outro lugar onde morar — o painel visual só cobre os 4 níveis de contraste. Desligá-las junto tiraria de
+  // uma criança daltônica a única correção que ela tem, a mando de um menu feito para quem não é daltônico.
+  // Por isso o reset pergunta `simulatesDisability`, que responde pelo modo, e não `isSimKind`, que responde
+  // pelo `kind` e não distingue simular de corrigir.
+  const resetBtn = ctx.$<HTMLButtonElement>('#empathy-reset');
+  if (resetBtn) resetBtn.addEventListener('click', () => {
+    // Cada setter já é idempotente e anuncia sozinho ao mudar; chamar só na diferença evita anúncio falso de
+    // "desligado" para algo que nunca esteve ligado. O anúncio-resumo vem por último, e é o que fica no
+    // `#sr-status` — uma ação, uma frase, em vez de três.
+    ctx.getPlayers().forEach((p, i) => { if (simulatesDisability(p.viz)) ctx.setPlayerViz(i, 'normal'); });
+    if (hearingLoss) ctx.setHearingLoss(false);
+    if (ctx.getOneButton() !== DEFAULTS.oneButton) ctx.setOneButton(DEFAULTS.oneButton);
+    if (ctx.getWheelchair() !== DEFAULTS.wheelchair) ctx.setWheelchair(DEFAULTS.wheelchair);
+    render(); ctx.reflectVizButtons();
+    ctx.srSay(t('sr.empathy.reset'));
+  });
 
   return { render, open, close };
 }

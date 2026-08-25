@@ -3,8 +3,9 @@
 // closure (ctx.$/srSay/store/setters/getters/reflect-helpers), nenhum acesso a globais fora do ctx. A lógica pura
 // (catálogo/rótulos) está coberta em settings-empathy.node.test.js. Modelo: tests/a11y-sr.browser.test.js,
 // tests/settings-typo.browser.test.js.
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initSettingsEmpathy, EMPATHY_VIZ_MODES } from '../app/js/ui/settings-empathy.js';
+import { hearingLoss, setHearingLossGraph } from '../app/js/platform/audio.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -16,8 +17,9 @@ function fakeStore(seed = {}) {
 
 function fullCtx(over = {}) {
   const said = [];
-  const calls = { renderVizGroup: [], reflectMotorEmpathy: 0, reflectVizButtons: 0, frontOverlay: [], setHearingLoss: [], setOneButton: [], setWheelchair: [], setEmpathyOpen: [] };
+  const calls = { renderVizGroup: [], reflectMotorEmpathy: 0, reflectVizButtons: 0, frontOverlay: [], setHearingLoss: [], setOneButton: [], setWheelchair: [], setEmpathyOpen: [], setPlayerViz: [] };
   let oneButton = false, wheelchair = false;
+  const players = [{ viz: 'normal' }, { viz: 'normal' }];
   return {
     $,
     srSay: (msg) => said.push(msg),
@@ -31,6 +33,9 @@ function fullCtx(over = {}) {
     setWheelchair: (on) => { calls.setWheelchair.push(on); wheelchair = on; },
     getOneButton: () => oneButton,
     getWheelchair: () => wheelchair,
+    getPlayers: () => players,
+    setPlayerViz: (i, mode) => { calls.setPlayerViz.push([i, mode]); players[i].viz = mode; },
+    players,
     said,
     calls,
     ...over,
@@ -40,6 +45,7 @@ function fullCtx(over = {}) {
 const EMPATHY_HTML = `
   <div id="empathy" class="overlay" hidden>
     <button id="empathy-close" type="button">x</button>
+    <button id="empathy-reset" type="button">Restaurar</button>
     <button id="opt-onebtn" type="button" aria-pressed="false">▶ Desligado</button>
     <button id="opt-wheelchair" type="button" aria-pressed="false">▶ Desligado</button>
     <button id="opt-hearing" type="button" aria-pressed="false">▶ Desligado</button>
@@ -53,6 +59,11 @@ describe('ui/settings-empathy', () => {
   beforeEach(() => {
     document.body.innerHTML = EMPATHY_HTML;
   });
+
+  // `hearingLoss` vive em platform/audio, não no ctx: um caso que o liga e não devolve contamina todos os
+  // seguintes, em silêncio e na ordem do arquivo. Foi assim que o [Zero] do reset abaixo falhou pela primeira
+  // vez — acusando o código certo pelo estado que outro caso tinha deixado para trás.
+  afterEach(() => { if (hearingLoss) setHearingLossGraph(false); });
 
   it('[Right] render() desenha a lista de simulação via renderVizGroup injetado com EMPATHY_VIZ_MODES', () => {
     const ctx = fullCtx();
@@ -108,6 +119,8 @@ describe('ui/settings-empathy', () => {
     const ctx = fullCtx({ store: fakeStore({ incl_hearingloss: '1' }) });
     initSettingsEmpathy(ctx);
     expect(ctx.calls.setHearingLoss).toHaveLength(0); // restauração usa o grafo direto, não o setter (não persiste/anuncia de novo)
+    expect(hearingLoss).toBe(true);
+    setHearingLossGraph(false); // DEVOLVE o grafo: `hearingLoss` é estado de MÓDULO, não do ctx
   });
 
   it('[Right] open() renderiza, mostra o overlay, chama frontOverlay, e foca o 1º botão', () => {
@@ -137,6 +150,89 @@ describe('ui/settings-empathy', () => {
     expect($('#empathy').hidden).toBe(false);
     $('#empathy-close').click();
     expect($('#empathy').hidden).toBe(true);
+  });
+
+  // ---- "restaurar padrões deste menu" (ADR-0028) ----
+  //
+  // O caso que importa não é o reset funcionar: é ele NÃO ALCANÇAR FORA DE SI. Este menu é o mais perigoso dos
+  // oito porque simula deficiências — a criança que liga "cegueira total" fica sem ver o botão que desliga —,
+  // e é também o que tem a fronteira mais traiçoeira, porque a lista dele inclui três CORREÇÕES de daltonismo
+  // que não têm outro lugar onde morar.
+  describe('#empathy-reset', () => {
+    it('[Right] desliga as três simulações globais e volta o visual dos jogadores para normal', () => {
+      const ctx = fullCtx();
+      initSettingsEmpathy(ctx);
+      ctx.setOneButton(true); ctx.setWheelchair(true);
+      ctx.players[0].viz = 'blind'; ctx.players[1].viz = 'lv-tunnel';
+      ctx.calls.setOneButton.length = 0; ctx.calls.setWheelchair.length = 0;
+
+      $('#empathy-reset').click();
+
+      expect(ctx.players[0].viz).toBe('normal');
+      expect(ctx.players[1].viz).toBe('normal');
+      expect(ctx.calls.setOneButton).toEqual([false]);
+      expect(ctx.calls.setWheelchair).toEqual([false]);
+    });
+
+    it('[Interface] NÃO desliga a correção de daltonismo — o menu lista `fix-*`, o reset não os toca', () => {
+      // Se isto quebrar, o botão passou a tirar de uma criança daltônica a única correção que ela tem, a
+      // mando do menu que existe para quem NÃO é daltônico. É a armadilha que o reset deveria desfazer,
+      // instalada pelo próprio reset.
+      const ctx = fullCtx();
+      initSettingsEmpathy(ctx);
+      ctx.players[0].viz = 'fix-deuter';
+      ctx.players[1].viz = 'blind';
+
+      $('#empathy-reset').click();
+
+      expect(ctx.players[0].viz).toBe('fix-deuter');
+      expect(ctx.players[1].viz).toBe('normal');
+      expect(ctx.calls.setPlayerViz).toEqual([[1, 'normal']]);
+    });
+
+    it('[Interface] NÃO desliga o alto contraste — esse é do menu visual, e o reset não sai do seu', () => {
+      const ctx = fullCtx();
+      initSettingsEmpathy(ctx);
+      ctx.players[0].viz = 'hc-direto-7';
+
+      $('#empathy-reset').click();
+
+      expect(ctx.players[0].viz).toBe('hc-direto-7');
+      expect(ctx.calls.setPlayerViz).toEqual([]);
+    });
+
+    it('[Right] desliga a simulação de perda auditiva quando ela está ligada', () => {
+      const ctx = fullCtx();
+      initSettingsEmpathy(ctx);
+      setHearingLossGraph(true);
+
+      $('#empathy-reset').click();
+
+      expect(ctx.calls.setHearingLoss).toEqual([false]);
+    });
+
+    it('[Zero] com tudo já no padrão, não chama setter nenhum — nada de anunciar desligamento do que nunca ligou', () => {
+      const ctx = fullCtx();
+      initSettingsEmpathy(ctx);
+
+      $('#empathy-reset').click();
+
+      expect(ctx.calls.setOneButton).toEqual([]);
+      expect(ctx.calls.setWheelchair).toEqual([]);
+      expect(ctx.calls.setHearingLoss).toEqual([]);
+      expect(ctx.calls.setPlayerViz).toEqual([]);
+    });
+
+    it('[Interface] anuncia uma frase só, e ela é a última — uma ação, um anúncio', () => {
+      const ctx = fullCtx();
+      initSettingsEmpathy(ctx);
+      ctx.players[0].viz = 'blind';
+
+      $('#empathy-reset').click();
+
+      expect(ctx.said.at(-1)).toContain('empatia');
+      expect(ctx.calls.reflectVizButtons).toBeGreaterThan(0);
+    });
   });
 
   it('[Zero] sem #empathy no DOM, open()/close() não lançam (só não fazem nada)', () => {
