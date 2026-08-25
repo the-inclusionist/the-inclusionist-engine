@@ -405,7 +405,7 @@ function loadPlayerA11y(p: Player,i: number){ const v=store.get(store.KEYS.vizP(
     if(store.getBool(store.KEYS.toggleMoveLegacy)&&store.get(store.KEYS.toggleMoveP(0))==null)p.toggleMove=true; } }
 function setToggleMove(i: number,on: boolean){ const p=players[i]; if(!p)return; p.toggleMove=on; store.setBool(store.KEYS.toggleMoveP(i),on); if(!on)p.walkDir=0;
   srSay(playerPrefix(i,numPlayers)+t(on?'sr.motor.toggleMoveOn':'sr.motor.toggleMoveOff')); }
-function showCaption(txt: string){ const el=$('#caption'); if(!el||!txt)return; el.textContent=txt; el.classList.add('show'); clearTimeout(capTimer); capTimer=setTimeout(()=>{el.classList.remove('show'); el.textContent='';},1300); }
+function showCaption(txt: string){ const el=$('#caption'); if(!el||!txt)return; el.textContent=txt; el.classList.add('show'); if(capTimer!==null)clearTimeout(capTimer); capTimer=setTimeout(()=>{el.classList.remove('show'); el.textContent='';},1300); }
 // Earcons + ponte com legendas extraídos p/ platform/audio-earcons.ts (Tier 2, áudio rodada 2). captionsOn/showCaption
 // VIVEM aqui (UI alterna captionsOn; win() reusa showCaption) → entram por injeção. Chamado como earcons.sfx(...).
 const earcons = createAudioEarcons({ SFX, ensureAC, catNode, audioOut, noiseHit,
@@ -564,7 +564,10 @@ const { setCenario } = createSetCenario({
 initLqFilter({ onChange: () => { if(app&&view){ if(numPlayers<=1)applyVizGlobal(players[0].viz); else view.style.filter=lqFilter(); } } });
 // vizMode vem de core/state.js (Fase 2, mega-var 6). Init de boot SEM persistir (preserva o rastreio de prefers-contrast):
 initVizMode((()=>{ try{ const v=store.get('incl_viz',null); if(v&&VIZ_CYCLE.includes(v))return v; }catch(e){}
-  return (window.matchMedia && matchMedia('(prefers-contrast: more)').matches) ? 'hc-direto' : 'normal'; })()); // prefere-contraste → alto contraste 3:1
+  // A guarda `window.matchMedia &&` saiu: o `tsc` acusa TS2774 porque ela testa uma função que SEMPRE existe
+  // no DOM, e uma condição sempre verdadeira lida por quem revisa parece proteção contra algo. Ela vinha de
+  // antes do TypeScript; `matchMedia` existe desde o IE10 e o alvo do pilar 1 é Chromium.
+  return matchMedia('(prefers-contrast: more)').matches ? 'hc-direto' : 'normal'; })()); // prefere-contraste → alto contraste 3:1
 let vizReady=false; // só após todas as dependências de applyViz existirem (evita TDZ no init via setCenario)
 let worldCanvasNormal=worldCanvas();
 let worldTexNormal=tex(worldCanvasNormal);
