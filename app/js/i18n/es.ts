@@ -50,6 +50,8 @@ const es: Record<string, string> = {
   'hud.objective.somasub': 'Resuelve 10 cuentas',
   'hud.objective.silabas': 'Arma 10 palabras',
   'hud.objective.ludico': 'Junta 10 monedas',
+  'hud.contador': '{have} de {need} {nome}',
+  'hud.nome.moedas': 'monedas',
 
   'skip.toGame': 'Saltar al juego',
   'menu.ludico': 'Juego libre',

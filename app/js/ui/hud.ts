@@ -3,7 +3,18 @@
 // desde sempre no game.js: (a) a GRADE de `.player-screen` dentro de `#game-hud` — um contêiner por jogador,
 // posicionado em %, que hospeda o HUD, o selo "jogo abandonado", o selo "aperte um botão para entrar"
 // (`.vp-wait`), o menu de pausa daquele jogador e (em MP) o overlay de quiz dele; e (b) o CONTEÚDO do HUD —
-// moedas coletadas / poder ativo — reescrito a cada frame por updateGameHud().
+// o OBJETIVO do jogador e o poder ativo — reescrito a cada frame por updateGameHud().
+//
+// ========================= O CONTADOR DEIXOU DE SER DE MOEDA (item 19) =========================
+// O passo 4 do ADR-0027 matou a DEPENDÊNCIA (`vphudHtml(coinTarget = COIN_TARGET)` virou parâmetro
+// obrigatório); o que sobrou era VOCABULÁRIO — o ícone cravado no markup, a classe `vphud-coins`, o campo
+// `coins` do view-model. Nome não é seguido pelo compilador e não impede um pacote de se separar, e por isso
+// a dívida era menor. Não era nula: ela dizia, em toda tela, que este HUD é de um jogo de plataforma.
+//
+// Agora o contador recebe um `Objective` — campo 5 de `core/contract` — e o ícone entra por injeção. E a
+// mudança compra mais do que um nome: com `Objective.name` o contador GANHOU NOME ACESSÍVEL. Até aqui a
+// criança cega ouvia o contador como "3 / 10", dois números sem substantivo — não havia o que falar porque a
+// engine não sabia o nome do que se junta. Agora sabe, porque o jogo declara.
 //
 // O HUD é DOM SOBREPOSTO (não pixela: fica em alta definição sobre o canvas 320×180) — por isso vive aqui e
 // não no render. O menu de pausa NÃO é deste módulo: `buildScreenPause(i)` entra por injeção e este módulo só
@@ -14,14 +25,17 @@
 // testes exercitam só a metade PURA (screenGrid/screenRect/hudRowView/vphudHtml/waitBadgeHtml).
 import { screenGrid } from '../core/screens.js';
 import type { PlayerView } from '../core/entity.js';
+import type { Objective } from '../core/contract.js';
 import { players, numPlayers } from '../core/state.js';
+import { t } from '../core/i18n.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
 /** Só os campos do jogador que o HUD lê. Estrutural de propósito: o `players[]` real é `unknown[]` no core/state. */
-/** O que o HUD mostra: moedas, poder ativo, e se o jogador desistiu. */
-export type HudPlayer = PlayerView<'collected' | 'activePower' | 'quit'>;
+/** O que o HUD lê do JOGADOR: o poder ativo e se ele desistiu. O progresso vem do `Objective`, não daqui —
+ *  `collected` saiu da fatia, e com ele a última coisa que o HUD sabia sobre juntar objetos. */
+export type HudPlayer = PlayerView<'activePower' | 'quit'>;
 
 // ---------------------------------------------------------------------------------------------
 // Lógica PURA (nenhum `document`; testável no project node)
@@ -53,20 +67,24 @@ export function screenRect(i: number, n: number): ScreenRect {
 /** Quantas telas o HUD monta: ao menos uma, mesmo antes de `players[]` existir no boot. Verbatim (Math.max(1,…)). */
 export function screenCount(n: number): number { return Math.max(1, n); }
 
+/** O texto que o leitor de tela ouve no contador. A MOLDURA é a chave; o NOME do objetivo atravessa por
+ *  parâmetro — a regra do pilar 3 (ADR-0010), a mesma que o currículo segue. */
+export const contadorLabel = (o: Objective): string =>
+  t('hud.contador', { have: String(o.have), need: String(o.need), nome: o.name.text });
+
 /**
- * Markup do contador (objetivo na 1ª coluna, poder na 2ª). `alvo` é OBRIGATÓRIO, e essa é a mudança.
+ * Markup do contador (objetivo na 1ª coluna, poder na 2ª).
  *
- * Era `coinTarget: number = COIN_TARGET`, com o comentário "parâmetro só para o teste" — sinal de que alguém
- * já tinha sentido o incômodo e o resolvera com um padrão em vez de uma fronteira. O ADR-0027 usa exatamente
- * este nome como o veredito do passo 4: se `createGame()` não pode ser escrito sem um parâmetro chamado
- * `coinTarget`, a fronteira está errada. O HUD é engine; um jogo sem moedas não tinha o que passar aqui, e
- * mesmo assim recebia o 10 do jogo de plataforma por padrão.
+ * O objetivo entra INTEIRO — nome, quanto tem, quanto precisa — em vez de só o alvo numérico, e o ícone entra
+ * por injeção. É o que tira o desenho da moeda de dentro da engine: o HUD mostra o que o jogo declarou
+ * (campo 5 do contrato), sem saber se é moeda, palavra ou conta.
  *
- * O ícone e o nome da classe seguem falando de moeda — isso é dívida de VOCABULÁRIO, e é menor: o que morreu
- * foi a DEPENDÊNCIA, que é o que o compilador segue e o que impede um pacote de se separar.
+ * O `aria-label` é a parte que não é renomeação: sem o nome do objetivo não havia o que dizer, e o contador
+ * era mudo para quem não vê a tela.
  */
-export function vphudHtml(alvo: number): string {
-  return '<span class="vphud-coins"><b class="vphud-ico">🪙</b> <b class="vphud-n">0</b> / ' + alvo
+export function vphudHtml(objetivo: Objective, icone: string): string {
+  return '<span class="vphud-obj" aria-label="' + contadorLabel(objetivo) + '"><b class="vphud-ico">' + icone
+    + '</b> <b class="vphud-n">' + objetivo.have + '</b> / ' + objetivo.need
     + '</span><span class="vphud-power"><b class="vphud-ico">✨</b> <span class="vphud-pw">—</span></span>';
 }
 
@@ -78,8 +96,11 @@ export function waitBadgeHtml(i: number): string {
 
 /** Projeção do HUD de UMA tela: tudo que updateGameHud() escreve no DOM, sem tocar no DOM. */
 export interface HudRowView {
-  /** Texto do contador de moedas (verbatim: `String(p.collected)` — sem formatação nem clamp). */
-  coins: string;
+  /** Texto do contador: quanto o jogador tem, verbatim (sem formatação nem clamp). */
+  have: string;
+  /** O que o leitor de tela ouve no contador — reescrito junto com o número, senão ele ficaria falando o
+   *  valor do primeiro quadro a partida inteira. É o defeito que um `aria-label` estático teria. */
+  label: string;
   /** Rótulo curto do poder ativo, com o travessão como fallback de poder desconhecido/ausente. */
   power: string;
   /** `hidden` do selo "Jogo abandonado": escondido enquanto o jogador NÃO desistiu. */
@@ -93,9 +114,10 @@ export interface HudRowView {
  * `powerShort` é o POWER_SHORT do game.js (injetado — a mesma FUNÇÃO que game/coin-spawning.ts já recebe).
  * Função e não tabela: o texto depende do idioma ATUAL, e uma tabela lida no boot ficaria congelada nele.
  */
-export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string): HudRowView {
+export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string, objetivo: Objective): HudRowView {
   return {
-    coins: String(p.collected),
+    have: String(objetivo.have),
+    label: contadorLabel(objetivo),
     // O `|| '—'` FICA, mesmo com o resolvedor já tratando desconhecido. Não é redundância: é a garantia de
     // que o campo do poder NUNCA aparece em branco no HUD, e ela não pode depender de todo consumidor futuro
     // lembrar de tratar o caso. Um teste meu ia perdê-la nesta mudança e reprovou por isso.
@@ -118,11 +140,15 @@ export interface HudCtx {
    */
   powerShort: (kind: string) => string;
   /**
-   * O ALVO do contador do HUD — quantos o jogador precisa juntar. Injetado pelo MESMO motivo que `powerShort`:
-   * é dado do jogo, e o HUD é da engine. Antes vinha de `COIN_TARGET` por importação, o que amarrava o
-   * contador de qualquer jogo ao número de moedas deste (ADR-0027 passo 4).
+   * O OBJETIVO do jogador `i` — campo 5 do contrato (`core/contract.Objective`): o nome do que se junta,
+   * quanto tem e quanto precisa. FUNÇÃO e não valor, porque `have` muda a cada quadro.
+   *
+   * Era `hudTarget: number`, e antes disso `COIN_TARGET` por importação. Cada passo tirou uma coisa que o HUD
+   * sabia sobre o jogo: primeiro a dependência, agora o assunto.
    */
-  hudTarget: number;
+  hudObjective: (playerIndex: number) => Objective;
+  /** O ícone do contador. Era o desenho da moeda cravado no markup da engine; é do jogo, como o nome. */
+  hudIcon: string;
   /**
    * Painel de pausa da tela `i`. NÃO é deste módulo (slice de pausa/ícones): entra por injeção e o HUD só
    * anexa o retorno dentro da `.player-screen` correspondente.
@@ -169,7 +195,7 @@ export function initHud(ctx: HudCtx): HudApi {
 
       const d = document.createElement('div');
       d.className = 'vphud';
-      d.innerHTML = vphudHtml(ctx.hudTarget);
+      d.innerHTML = vphudHtml(ctx.hudObjective(i), ctx.hudIcon);
       scr.appendChild(d); vpHudDom.push(d);
 
       const q = document.createElement('div');
@@ -192,8 +218,11 @@ export function initHud(ctx: HudCtx): HudApi {
       const p = players[i] as HudPlayer | undefined;
       if (!p) continue;
       const d = vpHudDom[i];
-      const v = hudRowView(p, ctx.powerShort);
-      const n = d.querySelector('.vphud-n'); if (n) n.textContent = v.coins;
+      const v = hudRowView(p, ctx.powerShort, ctx.hudObjective(i));
+      const n = d.querySelector('.vphud-n'); if (n) n.textContent = v.have;
+      // O rótulo acessível acompanha o número. Escrevê-lo só na montagem deixaria o leitor de tela repetindo
+      // "0 de 10" a partida inteira — pior do que não ter rótulo, porque soa como informação.
+      const obj = d.querySelector('.vphud-obj'); if (obj) obj.setAttribute('aria-label', v.label);
       const pw = d.querySelector('.vphud-pw'); if (pw) pw.textContent = v.power;
       if (vpQuitDom[i]) vpQuitDom[i].hidden = v.quitHidden;
       if (d) d.style.visibility = v.visibility; // jogador que saiu: tela preta "jogo abandonado"

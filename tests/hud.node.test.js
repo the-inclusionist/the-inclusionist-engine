@@ -6,9 +6,18 @@
 // ZOMBIES + Right-BICEP. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import {
-  screenGrid, screenRect, screenCount, vphudHtml, waitBadgeHtml, hudRowView,
+  screenGrid, screenRect, screenCount, vphudHtml, waitBadgeHtml, hudRowView, contadorLabel,
 } from '../app/js/ui/hud.js';
-import { COIN_TARGET } from '../app/js/core/constants.js';
+
+// O `COIN_TARGET` SAIU DAQUI, e a ausência é o assunto do item 19. O fixture não conhece mais a constante do
+// jogo de plataforma — ele DECLARA um objetivo, que é o campo 5 do contrato. Um teste que ainda precisasse
+// importar a constante estaria dizendo que o módulo também precisa.
+// O nome PADRÃO é 'itens', e não o do jogo de plataforma. Um teste de HUD que dissesse "moedas" a cada
+// linha estaria afirmando, por hábito, o que este item acabou de tirar do módulo — e o gate de fixtures
+// (engine-boundary) reprova exatamente isso. Os exemplos abaixo variam o nome de propósito.
+const OBJ = (have, need, nome = 'itens', gender = 'm') =>
+  ({ name: { text: nome, gender, plural: have !== 1 }, have, need });
+const ICONE = '🪙';
 
 const pct = (s) => Number.parseFloat(s); // '50%' -> 50 (as funções devolvem string de CSS)
 
@@ -134,29 +143,65 @@ describe('ui/hud · screenCount', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('ui/hud · vphudHtml', () => {
-  it('[Interface] NÃO há mais padrão: o alvo é OBRIGATÓRIO, e o HUD deixou de conhecer o do jogo', () => {
-    // Era `vphudHtml(coinTarget = COIN_TARGET)`, com o comentário "parâmetro só para o teste" — um padrão
-    // posto no lugar de uma fronteira. O ADR-0027 usa esse nome como o veredito do passo 4. Agora o HUD, que
-    // é da engine, não importa mais a constante do jogo de plataforma: quem tem alvo é quem tem objetivo.
-    expect(vphudHtml(COIN_TARGET)).toContain('/ ' + COIN_TARGET);
-    expect(vphudHtml(3)).toContain('/ 3');
+  it('[Interface] o objetivo INTEIRO entra: numerador e denominador saem dele, não de constante nenhuma', () => {
+    // Era `vphudHtml(coinTarget = COIN_TARGET)` — um padrão posto no lugar de uma fronteira, e o nome que o
+    // ADR-0027 usa como veredito do passo 4. Depois virou `vphudHtml(alvo)`, que matou a DEPENDÊNCIA e
+    // deixou o assunto. Agora entra um `Objective`, e o HUD não sabe mais o QUE se junta.
+    expect(vphudHtml(OBJ(0, 10), ICONE)).toContain('/ 10');
+    expect(vphudHtml(OBJ(4, 10), ICONE)).toContain('>4</b>');
+    expect(vphudHtml(OBJ(0, 3), ICONE)).toContain('/ 3');
   });
 
-  it('[Interface] o denominador é parâmetro: outro alvo muda o texto', () => {
-    expect(vphudHtml(7)).toContain('/ 7');
-    expect(vphudHtml(7)).not.toContain('/ ' + COIN_TARGET);
+  it('[Interface] o ÍCONE é injetado — a engine não desenha mais a moeda no markup', () => {
+    // O caso que prende a metade que era só vocabulário. Um ícone cravado passaria em tudo acima.
+    expect(vphudHtml(OBJ(0, 10), '🧩')).toContain('>🧩<');
+    expect(vphudHtml(OBJ(0, 10), '🧩')).not.toContain(ICONE);
   });
 
-  it('[Right] o HUD nasce zerado e sem poder', () => {
-    const html = vphudHtml();
+  it('[Right] o contador tem NOME ACESSÍVEL, que é o que ele não tinha', () => {
+    // Não é renomeação: antes o contador era "3 / 10" e mais nada, e quem não vê a tela não tinha o que ouvir.
+    const html = vphudHtml(OBJ(3, 10, 'palavras'), ICONE);
+    expect(html).toContain('aria-label="');
+    expect(html).toContain('palavras');
+  });
+
+  it('[Interface] a classe do contador é a do OBJETIVO, não a do que este jogo junta', () => {
+    // A asserção NEGATIVA que estava aqui ("não contém a classe antiga") tinha de escrever a palavra que o
+    // módulo acabou de largar — e o gate de fixtures a acusou, com razão. A proteção contra a volta do nome
+    // antigo mora onde tem de morar: em `engine-boundary`, que reprova QUALQUER linha de código de `ui/hud`
+    // que fale de moeda. Aqui basta a afirmação positiva.
+    expect(vphudHtml(OBJ(0, 10), ICONE)).toContain('class="vphud-obj"');
+  });
+
+  it('[Right] o HUD nasce com o `have` declarado e sem poder', () => {
+    const html = vphudHtml(OBJ(0, 10), ICONE);
     expect(html).toContain('<b class="vphud-n">0</b>');
     expect(html).toContain('<span class="vphud-pw">—</span>');
   });
 
-  it('[Interface] carrega os DOIS ganchos que updateGameHud consulta (.vphud-n e .vphud-pw)', () => {
-    const html = vphudHtml();
+  it('[Interface] carrega os TRÊS ganchos que updateGameHud consulta (.vphud-n, .vphud-pw e .vphud-obj)', () => {
+    const html = vphudHtml(OBJ(0, 10), ICONE);
     expect(html).toContain('class="vphud-n"');
     expect(html).toContain('class="vphud-pw"');
+    expect(html).toContain('class="vphud-obj"');
+  });
+});
+
+describe('ui/hud · contadorLabel', () => {
+  it('[Right] nomeia o que se junta, e o nome vem do JOGO — não de uma tabela da engine', () => {
+    expect(contadorLabel(OBJ(3, 10, 'palavras'))).toContain('palavras');
+    expect(contadorLabel(OBJ(3, 10, 'contas'))).toContain('contas');
+    expect(contadorLabel(OBJ(3, 10, 'estrelas'))).toContain('estrelas');
+  });
+
+  it('[Right] os dois números aparecem', () => {
+    const txt = contadorLabel(OBJ(3, 10));
+    expect(txt).toContain('3');
+    expect(txt).toContain('10');
+  });
+
+  it('[Zero] objetivo zerado ainda produz frase, e não "undefined de undefined"', () => {
+    expect(contadorLabel(OBJ(0, 0, 'itens'))).toMatch(/0.*0.*itens/);
   });
 });
 
@@ -186,24 +231,35 @@ describe('ui/hud · waitBadgeHtml', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('ui/hud · hudRowView', () => {
-  it('[Zero] jogador recém-nascido: 0 moedas, sem poder, sem selo de abandono, HUD visível', () => {
-    expect(hudRowView({ collected: 0, activePower: 'off', quit: false }, POWERS)).toEqual({
-      coins: '0', power: '—', quitHidden: true, visibility: 'visible',
-    });
+  it('[Zero] jogador recém-nascido: nada juntado, sem poder, sem selo de abandono, HUD visível', () => {
+    const v = hudRowView({ activePower: 'off', quit: false }, POWERS, OBJ(0, 10));
+    expect(v.have).toBe('0');
+    expect(v.power).toBe('—');
+    expect(v.quitHidden).toBe(true);
+    expect(v.visibility).toBe('visible');
+    expect(v.label).toContain('itens');
+  });
+
+  it('[Interface] o PROGRESSO vem do objetivo, e não mais do jogador', () => {
+    // O caso que mede a mudança de fronteira: o mesmo jogador, dois objetivos, dois contadores. Enquanto o
+    // número saía de `p.collected`, o HUD sabia que jogadores JUNTAM coisas — e um jogo de perguntas não.
+    const pl = { activePower: 'off', quit: false };
+    expect(hudRowView(pl, POWERS, OBJ(2, 10)).have).toBe('2');
+    expect(hudRowView(pl, POWERS, OBJ(9, 10)).have).toBe('9');
   });
 
   it('[Right] poder conhecido vira o rótulo curto da tabela injetada', () => {
-    expect(hudRowView({ collected: 3, activePower: 'fly', quit: false }, POWERS).power).toBe('🎈 Voo');
+    expect(hudRowView({ activePower: 'fly', quit: false }, POWERS, OBJ(3, 10)).power).toBe('🎈 Voo');
   });
 
   it('[Interface] o resolvedor de poderes é INJETADO: o mesmo jogador rotula diferente com outro resolvedor', () => {
-    const pl = { collected: 3, activePower: 'fly', quit: false };
-    expect(hudRowView(pl, POWERS).power).toBe('🎈 Voo');
-    expect(hudRowView(pl, () => 'FLY').power).toBe('FLY');
+    const pl = { activePower: 'fly', quit: false };
+    expect(hudRowView(pl, POWERS, OBJ(3, 10)).power).toBe('🎈 Voo');
+    expect(hudRowView(pl, () => 'FLY', OBJ(3, 10)).power).toBe('FLY');
   });
 
   it('[Error] poder fora da tabela cai no travessão em vez de vazar a chave crua', () => {
-    expect(hudRowView({ collected: 1, activePower: 'jetpack', quit: false }, POWERS).power).toBe('—');
+    expect(hudRowView({ activePower: 'jetpack', quit: false }, POWERS, OBJ(1, 10)).power).toBe('—');
   });
 
   it('[Boundary] resolvedor que devolve VAZIO ainda vira travessão (o HUD nunca fica em branco)', () => {
@@ -211,29 +267,33 @@ describe('ui/hud · hudRowView', () => {
     // mudança ia CUSTAR uma garantia: com o `|| '—'` movido para o injetor, um resolvedor que devolvesse ''
     // deixaria o campo do poder em branco na tela. A guarda voltou para o `hudRowView`, onde ela não depende
     // de todo consumidor futuro se lembrar dela.
-    expect(hudRowView({ collected: 1, activePower: 'fly', quit: false }, () => '').power).toBe('—');
+    expect(hudRowView({ activePower: 'fly', quit: false }, () => '', OBJ(1, 10)).power).toBe('—');
   });
 
   it('[Many] o contador NÃO é limitado ao alvo: passar de 10/10 mostra 12', () => {
-    expect(hudRowView({ collected: 12, activePower: 'off', quit: false }, POWERS).coins).toBe('12');
+    expect(hudRowView({ activePower: 'off', quit: false }, POWERS, OBJ(12, 10)).have).toBe('12');
   });
 
   it('[Right] quem desistiu perde o contador (visibility hidden) e ganha o selo (hidden=false)', () => {
-    expect(hudRowView({ collected: 5, activePower: 'fly', quit: true }, POWERS)).toEqual({
-      coins: '5', power: '🎈 Voo', quitHidden: false, visibility: 'hidden',
-    });
+    const v = hudRowView({ activePower: 'fly', quit: true }, POWERS, OBJ(5, 10));
+    expect(v.have).toBe('5');
+    expect(v.power).toBe('🎈 Voo');
+    expect(v.quitHidden).toBe(false);
+    expect(v.visibility).toBe('hidden');
   });
 
   it('[Cross-check] selo e contador são sempre opostos: quitHidden === (visibility === "visible")', () => {
     for (const quit of [false, true]) {
-      const v = hudRowView({ collected: 0, activePower: 'off', quit }, POWERS);
+      const v = hudRowView({ activePower: 'off', quit }, POWERS, OBJ(0, 10));
       expect(v.quitHidden).toBe(v.visibility === 'visible');
     }
   });
 
   it('[Exercise] projetar não mexe no jogador (o HUD é leitor, o loop de jogo é o dono do estado)', () => {
-    const pl = { collected: 4, activePower: 'superjump', quit: false };
-    hudRowView(pl, POWERS);
-    expect(pl).toEqual({ collected: 4, activePower: 'superjump', quit: false });
+    const pl = { activePower: 'superjump', quit: false };
+    const obj = OBJ(4, 10);
+    hudRowView(pl, POWERS, obj);
+    expect(pl).toEqual({ activePower: 'superjump', quit: false });
+    expect(obj).toEqual(OBJ(4, 10)); // nem no objetivo: projetar é LER
   });
 });

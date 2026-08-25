@@ -766,7 +766,18 @@ function reflectTitleIcons(){ pauseIcons.reflectIconsIn($('#title-icons'),0); } 
    que permitiu extrair os dois em paralelo sem se tocarem. Os paineis criados dentro do laco voltam
    pelo gancho, porque `vpPause` e binding daqui e modulo nao reatribui binding alheio. */
 const hud = initHud({
-  hudTarget: COIN_TARGET, $, powerShort: POWER_SHORT,
+  // O OBJETIVO deste jogo, na forma do campo 5 do contrato (core/contract.Objective). O HUD nao sabe mais o
+  // QUE se junta: quem declara e a raiz de composicao, ou seja, o jogo. O nome segue em pt-BR porque ele
+  // atravessa como PARAMETRO (pilar 3), e o genero/plural existem para as frases que precisam concordar.
+  hudObjective: (i) => ({
+    // Resolvido a CADA quadro, e nao no boot: uma tabela lida uma vez ficaria congelada no idioma do boot —
+    // o mesmo defeito que o item 14 tirou dos rotulos de poder.
+    name: { text: t('hud.nome.moedas'), gender: 'f', plural: true },
+    have: (players[i] && players[i].collected) || 0,
+    need: COIN_TARGET,
+  }),
+  hudIcon: '🪙',
+  $, powerShort: POWER_SHORT,
   buildScreenPause: (i) => pauseIcons.buildScreenPause(i),
   onScreensBuilt: (panes) => { vpPause = panes;
     // No 1o build do init, LETRA/PAD_DESIGNS ainda estao em TDZ — o try/catch ignora e o fluxo de init

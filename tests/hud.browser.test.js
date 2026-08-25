@@ -30,6 +30,15 @@ function makeCtx(over = {}) {
   return {
     $,
     powerShort: POWERS,
+    // O OBJETIVO entra pelo ctx, como no `main.js`: o HUD não lê mais `collected` do jogador (item 19). O
+    // fixture continua declarando jogadores com `collected` porque é o jogo QUE OS TEM — a diferença é que
+    // agora quem traduz isso para "quanto de quanto" é a raiz de composição, e não o módulo de engine.
+    hudObjective: (i) => ({
+      name: { text: 'itens', gender: 'm', plural: true },
+      have: (players[i] && players[i].collected) || 0,
+      need: 10,
+    }),
+    hudIcon: '🎯',
     buildScreenPause: (i) => { built.push(i); return fakePause(i); },
     onScreensBuilt: (panes) => announced.push(panes),
     built, announced, // helpers de teste (não fazem parte de HudCtx)
@@ -144,7 +153,7 @@ describe('ui/hud · initHud(ctx).buildGameHud', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('ui/hud · initHud(ctx).updateGameHud', () => {
-  it('[Right] escreve as moedas e o rótulo do poder de cada jogador na SUA tela', () => {
+  it('[Right] escreve o progresso e o rótulo do poder de cada jogador na SUA tela', () => {
     mount();
     setPlayers([mk({ collected: 3, activePower: 'fly' }), mk({ collected: 7, activePower: 'superjump' })]);
     const api = initHud(makeCtx());

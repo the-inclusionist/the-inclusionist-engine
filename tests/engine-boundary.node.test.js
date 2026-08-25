@@ -163,7 +163,10 @@ const MOEDA = /\b(coin|coins|coinTarget|moeda|moedas)\b/i;
 
 /** Dívida CONHECIDA de VOCABULÁRIO em 2026-08-25 — só encolhe, mesma regra. */
 const MOEDA_CONHECIDA = new Set([
-  'ui/hud.ts',              // vphudHtml(coinTarget) + o campo `coins` do view-model: o caso do ADR, ao pé da letra
+  // `ui/hud.ts` SAIU (2026-08-25, item 19). Era o caso do ADR ao pé da letra, e saiu em dois tempos: o passo
+  // 4 matou a DEPENDÊNCIA (`coinTarget` virou parâmetro obrigatório) e este item matou o ASSUNTO — o contador
+  // recebe um `Objective` (campo 5 do contrato) e o ícone entra por injeção. O módulo não tem mais linha de
+  // código que fale de moeda, e a lista não guarda quem já se limpou.
   'platform/audio-nav.ts',  // o sonar aponta para a `Coin` mais próxima; o PROPÓSITO é engine, o TIPO é do jogo
   'render/draw.ts',         // já contado acima pelas importações
   'core/state.ts',          // `coins: unknown[]` — estado do jogo morando no estado compartilhado
@@ -185,16 +188,23 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
     expect(novos, 'módulo de engine falando de moeda — o corte não pegou aqui').toEqual([]);
   });
 
-  it('[Right] `ui/hud` NÃO importa mais a constante do jogo — o veredito do passo 4 mudou de lado', () => {
+  it('[Right] `ui/hud` não conhece a constante do jogo NEM o assunto dele — os dois tempos do conserto', () => {
     // Este caso já foi o contrário. Enquanto `vphudHtml(coinTarget = COIN_TARGET)` existia, o ADR-0027 dizia
-    // que a fronteira estava errada e o passo 5 não podia começar. O alvo virou parâmetro obrigatório,
-    // injetado pelo consumidor como `powerShort` já era — e a aresta morreu.
+    // que a fronteira estava errada e o passo 5 não podia começar.
     //
-    // O que SOBRA em ui/hud é vocabulário: o ícone 🪙, a classe `vphud-coins`, o campo `coins` do view-model.
-    // É dívida menor e de outra natureza: nomes não são seguidos pelo compilador, e não impedem um pacote de
-    // se separar. Por isso o módulo continua na lista de vocabulário abaixo, e saiu da de importações.
-    expect(fonte('ui/hud.ts')).not.toMatch(/from '\.\.\/core\/constants\.js'/);
-    expect(fonte('ui/hud.ts')).toMatch(/vphudHtml\(alvo: number\)/);
+    // O primeiro tempo matou a DEPENDÊNCIA: o alvo virou parâmetro obrigatório, injetado como `powerShort` já
+    // era. Sobrou VOCABULÁRIO — o ícone cravado, a classe `vphud-coins`, o campo `coins` do view-model —, que
+    // é dívida menor porque nome não é seguido pelo compilador e não impede um pacote de se separar.
+    //
+    // O segundo tempo (item 19) matou o ASSUNTO: entra um `Objective` inteiro, o ícone é injetado, e o HUD
+    // deixou até de ler `collected` do jogador. Três asserções, uma por camada da mudança.
+    expect(fonte('ui/hud.ts'), 'a dependência').not.toMatch(/from '\.\.\/core\/constants\.js'/);
+    expect(fonte('ui/hud.ts'), 'o assunto').toMatch(/vphudHtml\(objetivo: Objective, icone: string\)/);
+    // Contra as LINHAS DE CÓDIGO, e não contra o arquivo: a prosa deste módulo explica que `collected` saiu,
+    // e um crivo que confundisse a explicação com o uso reprovaria justamente quem documentou o conserto. É a
+    // mesma armadilha que o `getPhase` já tinha armado uma vez.
+    const usaCollected = linhasDeCodigo(fonte('ui/hud.ts')).some(([, ln]) => /collected/.test(ln));
+    expect(usaCollected, 'o progresso vinha do jogador e agora vem do objetivo').toBe(false);
   });
 
   it('[Zero] a lista de dívida de vocabulário não guarda módulo que já se limpou', () => {
@@ -248,7 +258,9 @@ const FIXTURES_CONHECIDOS = {
   'high-contrast.browser.test.js': 17, // `coinTexFor`/`coinTexNormal` — o alto contraste tem caminho de moeda
   'high-contrast.node.test.js': 6,
   'audio-nav.node.test.js': 7,         // o sonar pede `getCoins` (achado 9 do segundo consumidor)
-  'hud.node.test.js': 3,               // o campo `coins` do view-model: o caso do ADR ao pé da letra
+  // `hud.node.test.js` SAIU (2026-08-25, item 19): o fixture declarava um jogador com `collected` e um
+  // view-model com `coins`. Agora declara um OBJETIVO, cujo nome padrão é 'itens' — de propósito, porque um
+  // teste de HUD dizendo "moedas" a cada linha reafirmaria por hábito o que o módulo acabou de largar.
   'viewports.browser.test.js': 1,      // passa `coinCanvasNormal: null` só para satisfazer o ctx
   'render.browser.test.js': 1,         // `render/props.coinCanvas()`: a engine tem um pintor de MOEDA
   // Estes três só ficaram visíveis quando o crivo passou a enxergar `await import()` — a dívida deles é a
@@ -351,9 +363,14 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
     // É o que faz esta seção valer a pena existir ao lado das outras duas: se os testes acusassem um conjunto
     // DIFERENTE de subsistemas, uma das duas medidas estaria errada. Elas concordam — alto contraste, sonar,
     // HUD e entrada —, e essa concordância é o que dá confiança de que o passo 5 sabe onde mexer.
+    // `hud` SAIU desta lista em 2026-08-25 (item 19), e a saída é o resultado, não uma concessão: era o
+    // subsistema cuja dívida o ADR-0027 usava como exemplo, e foi o primeiro a se limpar dos dois lados —
+    // módulo e fixture. Os três que sobram são os que o passo 5 ainda tem de resolver.
     const porSubsistema = new Set(Object.keys(FIXTURES_CONHECIDOS).map((f) => f.split('.')[0]));
-    for (const esperado of ['high-contrast', 'audio-nav', 'hud', 'keydown']) {
+    for (const esperado of ['high-contrast', 'audio-nav', 'keydown']) {
       expect(porSubsistema, esperado).toContain(esperado);
     }
+    expect(porSubsistema, 'hud voltou a precisar de moeda no fixture — o item 19 andou para trás')
+      .not.toContain('hud');
   });
 });
