@@ -17,6 +17,7 @@
 // ÂNCORA: tests/physics-golden.node.test.js replaya 14 trajetórias capturadas do jogo rodando
 // (tests/fixtures/physics-golden.json). Qualquer mudança de comportamento aqui aparece lá.
 import { TILE, TUNE, EASY, COIN_TARGET } from '../core/constants.js';
+import { ehTrampolim } from '../core/constants.js';
 import { t } from '../core/i18n.js';
 import type { ControlledPlayer } from '../core/entity.js';
 import { tileAt, solidAt, surfTop, isWcRampRiser, rampSurfaceY, caneBlockPx } from '../core/collision.js';
@@ -146,7 +147,7 @@ export function resolveY(pl: PhysicsPlayer): void {
     const tt = row * TILE, type = tileAt(col, row);
     if (pl.vy > 0) {
       pl.y = tt - 0.01;
-      if (type === 5 && !C.isWheelchair()) { pl.vy = pl.easy ? -EASY.tramp : -(held(pl, 'jump') ? TUNE.trampMax : TUNE.trampBase); } // Fácil: quique suave. Cadeirante: sem quique (é elevador)
+      if (ehTrampolim(type) && !C.isWheelchair()) { pl.vy = pl.easy ? -EASY.tramp : -(held(pl, 'jump') ? TUNE.trampMax : TUNE.trampBase); } // Fácil: quique suave. Cadeirante: sem quique (é elevador)
       else { pl.vy = 0; pl.onGround = true; }
     } else if (pl.vy < 0) { pl.y = tt + TILE + BOX.h + 0.01; pl.vy = 0; }
     return;

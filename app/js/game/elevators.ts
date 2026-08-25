@@ -6,6 +6,7 @@
 // See docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import { tileAt, surfTop } from '../core/collision.js';
+import { ehEscada, ehTrampolim } from '../core/constants.js';
 import type { PlayerView } from '../core/entity.js';
 import { TILE, TILE_TYPES } from '../core/constants.js';
 import { BOX } from './player.js';
@@ -42,14 +43,16 @@ export function initElevators(ctx: { W: number; H: number; isWheelchair: () => b
 /** The current shafts (mutable ref — the cabin drawing writes `carY`). */
 export const getElevShafts = (): ElevShaft[] => elevShafts;
 
-const solidTypeAt = (t: number): boolean => !!(TILE_TYPES as Record<number, { solid?: boolean }>)[t]?.solid;
+// (Era a TERCEIRA reimplementação do mesmo cast — `core/collision` tinha a sua, este arquivo a sua, e o
+//  tipo público não existia. Agora a tabela é tipada na origem e isto é só uma leitura.)
+const solidTypeAt = (t: number): boolean => !!TILE_TYPES[t]?.solid;
 
 /** Recompute the elevator shafts from the tile map (ladders/trampolines) + the chair-only pits. */
 export function buildElevators(): void {
   elevShafts = [];
   if (!isWheelchair()) return;
-  const isE = (x: number, y: number): boolean => { const t = tileAt(x, y); return t === 4 || t === 5; };
-  const wall = (x: number, y: number): boolean => { const t = tileAt(x, y); return solidTypeAt(t) && t !== 5; };
+  const isE = (x: number, y: number): boolean => { const t = tileAt(x, y); return ehEscada(t) || ehTrampolim(t); };
+  const wall = (x: number, y: number): boolean => { const t = tileAt(x, y); return solidTypeAt(t) && !ehTrampolim(t); };
   const seen = new Set<string>();
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (!isE(x, y) || seen.has(x + ',' + y)) continue;
@@ -58,7 +61,7 @@ export function buildElevators(): void {
     let yb = y; while (yb + 1 < H && isE(cols[0]!, yb + 1)) yb++; // base do run vertical
     for (const cx of cols) for (let yy = y; yy <= yb; yy++) seen.add(cx + ',' + yy);
     let ytop = y; while (ytop - 1 >= 0 && !cols.some((cx) => wall(cx, ytop - 1))) ytop--; // topo aberto (até um teto sólido)
-    const isTramp = tileAt(cols[0]!, y) === 5;
+    const isTramp = ehTrampolim(tileAt(cols[0]!, y));
     let fr = yb + 1; while (fr < H && !wall(cols[0]!, fr)) fr++; // 1º chão sólido abaixo (p/ escada)
     const yBottom = isTramp ? y * TILE : fr * TILE; // trampolim = CHÃO sólido (para EM CIMA); escada = desce ao chão de baixo
     const L = cols[0]! - 1, R = cols[cols.length - 1]! + 1;

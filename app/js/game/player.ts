@@ -31,6 +31,13 @@ export function makePlayer(i: number): Player { return {i,x:SPAWN_X+i*22,y:SPAWN
   rmWalk:false, rmBreath:false, rmFlavor:false, stepT:0, guardT:0, _swapDown:false, _swapT:0, _swapSonar:false}; } // stepT/guardT = cadência de áudio; _swap* = detecção segurar-swap p/ sonar
 
 // Há PEDRA(2) logo abaixo dos pés? (chão que dá pique — bounce). Varre a largura da caixa na linha y+1.
+/**
+ * ⚠️ COMPARA O TILE, e NÃO uma pergunta semântica — de propósito. A pedra(2) quica (`bounce: 0.28`) e a
+ * parede(6) não (`bounce: 0`), então "tem bounce" pareceria a pergunta certa; mas o TRAMPOLIM(5) também tem
+ * (`1.1`), e incluí-lo mudaria o comportamento: o encadeamento de pulos em corrida passaria a valer em cima
+ * de trampolim, que já arremessa sozinho. A pergunta verdadeira aqui é "o chão é PEDRA", e pedra é um tile,
+ * não um papel. É o caso-limite que mostra que nem toda comparação de número é dívida.
+ */
 export function isBouncyGroundBelow(pl: PlayerBody): boolean { const ty=Math.floor((pl.y+1)/TILE),x0=Math.floor((pl.x-BOX.w/2)/TILE),x1=Math.floor((pl.x+BOX.w/2-0.01)/TILE); for(let tx=x0;tx<=x1;tx++) if(tileAt(tx,ty)===2)return true; return false; }
 // Há parede sólida encostando à esquerda OU à direita (na altura do corpo)?
 export function touchingWall(pl: PlayerBody): boolean { const y0=Math.floor((pl.y-BOX.h)/TILE),y1=Math.floor((pl.y-1)/TILE),lx=Math.floor((pl.x-BOX.w/2-1)/TILE),rx=Math.floor((pl.x+BOX.w/2+1)/TILE); for(let ty=y0;ty<=y1;ty++) if(solidAt(lx,ty)||solidAt(rx,ty))return true; return false; }

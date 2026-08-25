@@ -8,6 +8,7 @@
 // See docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import * as PIXI from 'pixi.js';
+import { ehPerigo, ehTrampolim, ehAgua, ehEscada, ehSecreto } from '../core/constants.js';
 import type { PlayerView } from '../core/entity.js';
 import { tileAt, solidTile } from '../core/collision.js';
 import { TILE } from '../core/constants.js';
@@ -101,8 +102,9 @@ export function computeFloorOverlay(mapW: number, mapH: number): FloorOverlayTil
   const out: FloorOverlayTile[] = [];
   for (let y = 0; y < mapH; y++) for (let x = 0; x < mapW; x++) {
     const t = tileAt(x, y);
-    if (t !== 9 && t !== 5) continue;
-    out.push({ x, y, lava: t === 9 });
+    // PERIGO e TRAMPOLIM recebem o mesmo overlay de chão; o campo `lava` é o que os separa no desenho.
+    if (!ehPerigo(t) && !ehTrampolim(t)) continue;
+    out.push({ x, y, lava: ehPerigo(t) });
   }
   return out;
 }
@@ -164,7 +166,7 @@ export function buildWcGeom(wheelchair: boolean): Set<string> {
 export function computeRopeAnchors(mapW: number, mapH: number): RopeAnchor[] {
   const anchors: RopeAnchor[] = [];
   for (let y = 1; y < mapH; y++) for (let x = 0; x < mapW; x++) {
-    if (tileAt(x, y) !== 3 || tileAt(x, y - 1) === 3) continue;
+    if (!ehAgua(tileAt(x, y)) || ehAgua(tileAt(x, y - 1))) continue; // superfície: água com NÃO-água em cima
     anchors.push({ x, y });
   }
   return anchors;
@@ -196,7 +198,7 @@ export function drawElevators(g: PIXI.Graphics): void {
     const x0 = s.xMin * TILE, x1 = (s.xMax + 1) * TILE, w = x1 - x0, yt = s.yTop - TILE, yb = s.yBottom, h = yb - yt;
     g.beginFill(GLASS, 0.14); g.drawRect(x0, yt, w, h); g.endFill();
     for (const cx of s.cols) for (let ry = Math.floor(yt / TILE); ry <= Math.floor((yb - 1) / TILE); ry++) {
-      if (tileAt(cx, ry) !== 4) continue;
+      if (!ehEscada(tileAt(cx, ry))) continue;
       const X = cx * TILE, Y = ry * TILE;
       g.beginFill(INNER, 0.9); g.drawRect(X, Y, TILE, TILE); g.endFill(); g.beginFill(GLASS, 0.22); g.drawRect(X, Y, TILE, TILE); g.endFill();
     }
@@ -225,7 +227,7 @@ export function buildDarkRegions(mapW: number, mapH: number): DarkRegion[] {
   const seen: boolean[][] = Array.from({ length: mapH }, () => new Array(mapW).fill(false));
   const regions: DarkRegion[] = [];
   for (let y = 0; y < mapH; y++) for (let x = 0; x < mapW; x++) {
-    if (tileAt(x, y) !== 0 || seen[y]![x]) continue;
+    if (!ehSecreto(tileAt(x, y)) || seen[y]![x]) continue;
     const stack: [number, number][] = [[x, y]];
     const tiles: [number, number][] = [];
     seen[y]![x] = true;
@@ -234,7 +236,7 @@ export function buildDarkRegions(mapW: number, mapH: number): DarkRegion[] {
       tiles.push([cx, cy]);
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
         const nx = cx + dx, ny = cy + dy;
-        if (nx >= 0 && nx < mapW && ny >= 0 && ny < mapH && !seen[ny]![nx] && tileAt(nx, ny) === 0) { seen[ny]![nx] = true; stack.push([nx, ny]); }
+        if (nx >= 0 && nx < mapW && ny >= 0 && ny < mapH && !seen[ny]![nx] && ehSecreto(tileAt(nx, ny))) { seen[ny]![nx] = true; stack.push([nx, ny]); }
       }
     }
     if (tiles.length >= 2) regions.push(tiles);

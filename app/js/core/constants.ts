@@ -37,10 +37,13 @@ export const EASY = { grav: 2 / 3, jump: 8 / 7, speed: 0.7, pad: 4, slowFall: 1.
 export type TileType = {
   solid?: boolean; bounce?: number; water?: boolean; jump?: boolean;
   ladder?: boolean; tramp?: boolean; hazard?: boolean; gate?: boolean; key?: boolean;
+  /** Ar de REGIÃO SECRETA (o tile 0). A propriedade é nova; o significado não — `TILE_NAME[0]` já dizia
+   *  "ar escuro/secreto". Estava só na tabela de NOMES, que ninguém consulta para decidir nada. */
+  secreto?: boolean;
 };
 
 export const TILE_TYPES: Record<number, TileType> = {
-  0:{solid:false}, 1:{solid:false}, 2:{solid:true,bounce:0.28}, 3:{solid:false,water:true,jump:true},
+  0:{solid:false,secreto:true}, 1:{solid:false}, 2:{solid:true,bounce:0.28}, 3:{solid:false,water:true,jump:true},
   4:{solid:false,ladder:true}, 5:{solid:true,bounce:1.1,tramp:true}, 6:{solid:true,bounce:0},
   7:{solid:false}, 8:{solid:false}, 9:{solid:false,hazard:true}, 10:{solid:true,gate:true},
   11:{solid:false,key:true}, 12:{solid:false}, 13:{solid:false}, 14:{solid:false},
@@ -64,6 +67,8 @@ export const ehTrampolim = (t: number): boolean => prop(t, 'tramp');
 export const ehPortao = (t: number): boolean => prop(t, 'gate');
 /** A chave que abre o portão. */
 export const ehChave = (t: number): boolean => prop(t, 'key');
+/** Ar de região secreta: o que a escuridão cobre até alguém entrar. */
+export const ehSecreto = (t: number): boolean => prop(t, 'secreto');
 
 export const TILE_COLOR = {
   0:'#0a0a14',1:'#241f38',2:'#6b6480',3:'#2f6fae',4:'#8a5a2b',5:'#34e29b',6:'#3a3a46',
