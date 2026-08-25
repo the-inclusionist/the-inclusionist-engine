@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// O ITEM 14 VIRANDO GATE: nenhum texto de interface em português cru dentro de `app/js/main.js`.
+// O ITEM 14 VIRANDO GATE: nenhum texto de interface em português cru dentro de `app/js/main.ts`.
+// (Era `main.js` até a conversão para TypeScript; o gate segue o arquivo, e o caso [Zero] abaixo é o que
+// avisa quando ele deixa de olhar alguma coisa — foi ele que pegou o renome.)
 //
 // ========================= POR QUE ISTO PRECISA DE UM TESTE =========================
 // O item 14 começou com 26 literais pt-BR no main.js e terminou com zero. Sem um gate, o 27º entra na
@@ -23,7 +25,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const CR = String.fromCharCode(13);
-const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'main.js'), 'utf8').split(CR).join('');
+const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'main.ts'), 'utf8').split(CR).join('');
 
 /** Linhas de CÓDIGO: sem comentário de bloco, de linha, nem de fim de linha. Prosa não é interface. */
 function linhasDeCodigo(texto) {
