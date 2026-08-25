@@ -48,6 +48,21 @@ export const TILE_TYPES: Record<number, TileType> = {
   7:{solid:false}, 8:{solid:false}, 9:{solid:false,hazard:true}, 10:{solid:true,gate:true},
   11:{solid:false,key:true}, 12:{solid:false}, 13:{solid:false}, 14:{solid:false},
 };
+/* ===================== QUEM PODE IMPORTAR ESTAS PERGUNTAS =====================
+ *
+ * Nem todo módulo que lê tile pode ler a TABELA. Quatro de engine — `render/scene-sky`, `render/scene-city`,
+ * `platform/audio-ambient` e `platform/audio-nav` — recebem `tileAt` por INJEÇÃO, de propósito: é o que os
+ * deixa rodar no project `node` com um mundo de mentira, e é o que os faz não conhecer a numeração DESTE mapa.
+ * Importar a tabela neles trocaria um número mágico por uma dependência nova, o que é pior.
+ *
+ * Eles ficam com as comparações que têm até a decisão do eixo (#64): sob contrato declarado, quem recebe
+ * `tileAt` por injeção deve receber TAMBÉM a semântica, e a forma dessa entrega ainda não tem evidência que a
+ * escolha. Acrescentar campos de ctx agora seria chutar a forma da pergunta — o erro que o `menu-nav` ensinou
+ * a não cometer (`getPhase()` contra `isNavigable()`).
+ *
+ * Regra prática: importe daqui se o módulo já importa `core/collision`; se ele recebe `tileAt` por ctx, não.
+ */
+
 /* ===================== as perguntas, com nome =====================
  * Uma função por propriedade, e não `TILE_TYPES[t]?.hazard` espalhado: o nome é o que torna a intenção legível
  * no ponto de uso (`ehPerigo(t)` contra `t === 9`) e é o que dá UM lugar para mudar no dia em que a resposta

@@ -12,6 +12,7 @@
 // docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, game/life).
 
 import { rnd, randInt } from '../core/rng.js';
+import { ehPerigo } from '../core/constants.js';
 import type { PlayerView } from '../core/entity.js';
 import { players, numPlayers, cenario as CENARIO } from '../core/state.js';
 import { LOGICAL_W, LOGICAL_H, TILE } from '../core/constants.js';
@@ -172,7 +173,7 @@ export function stepLife(dt: number): void {
     } else {
       c.x += c.dir * K.spd * dt;
       const ty = Math.floor(c.y / TILE), nx = Math.floor((c.x + c.dir * 6) / TILE);
-      if (nx < 1 || nx >= W - 1 || !solidAt(nx, ty) || solidAt(nx, ty - 1) || tileAt(nx, ty - 1) === 9) c.dir = (c.dir * -1) as 1 | -1; // ledge/wall/LAVA ahead: u-turn
+      if (nx < 1 || nx >= W - 1 || !solidAt(nx, ty) || solidAt(nx, ty - 1) || ehPerigo(tileAt(nx, ty - 1))) c.dir = (c.dir * -1) as 1 | -1; // beirada/parede/PERIGO à frente: meia-volta
       if (K.peck && rnd() < 0.004) { c.state = 'peck'; c.stateT = 30; }
       c.s.texture = c.tex2[c.f];
     }

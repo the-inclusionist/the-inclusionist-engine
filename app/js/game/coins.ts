@@ -23,6 +23,10 @@ export function initCoins(ctx: { world: number[][]; W: number; H: number; anyEas
 export function findCoinCandidates(): { tx: number; ty: number }[] {
   const cand: { tx: number; ty: number }[] = [], maxJ = 10;
   for (let ty = 0; ty < _H; ty++) for (let tx = 0; tx < _W; tx++) {
+    // ⚠️ PAR ESPECÍFICO, não classe semântica — mesmo caso do `isBouncyGroundBelow` em game/player. Moeda
+    // nasce no AR ILUMINADO(1) ou na ÁGUA(3). "Não sólido" pareceria a pergunta certa e incluiria a ESCADA(4)
+    // e o AR SECRETO(0) — a escada ganharia moedas penduradas, e a região secreta deixaria de ser recompensa
+    // para virar rota obrigatória. O ar iluminado é um tile, não um papel.
     const t = _world[ty][tx]; if (t !== 1 && t !== 3) continue;
     if (tx <= 4 && ty >= 16) continue; // zona de spawn/queda: sem moeda (evita auto-coleta)
     let below = -1;
