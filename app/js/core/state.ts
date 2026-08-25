@@ -97,7 +97,10 @@ export function setCenarioValue(theme: string): void { cenario = theme; store.se
 
 // --- activity: id da atividade selecionada (persistido em incl_activity). A validação contra ACTIVITIES
 //     (objeto do game.js) fica no setActivity() do game.js — aqui só o valor cru + persistência + evento. ---
-export let activity: string | null = store.getComLegado(store.KEYS.activity, store.KEYS.activityLegado, 'ludico');
+// `string`, não `string | null`: a leitura tem padrão `'ludico'`, e desde as sobrecargas de `platform/storage`
+// o tipo diz isso. Era a mesma mentira do `cenario` — um anulável que nunca é nulo, obrigando cada
+// consumidor a tratar um caso impossível.
+export let activity: string = store.getComLegado(store.KEYS.activity, store.KEYS.activityLegado, 'ludico');
 export function setActivityValue(id: string): void { activity = id; store.set(store.KEYS.activity, id); emit('activity', id); }
 
 // --- vizMode: modo visual/cor ativo (persistido em incl_viz). A validação (VIZ_CYCLE) e o default por
