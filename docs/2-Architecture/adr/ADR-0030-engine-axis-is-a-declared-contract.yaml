@@ -132,10 +132,25 @@ more-information: |
       arithmetic out of `render/draw`) shipped first and is the common prefix M2 builds on.
 
   The SPRITE ATLAS (X2, packed at build time by a Vite plugin) is a build decision, not an architectural one,
-  and lives in the GitLab issue. This record notes only that it was chosen against this author's
-  recommendation of X1: with 66.8 KB of sprites and one player sprite at a time, the batching argument does
-  not hold, and ADR-0010 declares the destination is procedural art. The Dev's call stands; the reasoning is
-  filed so a future reader does not re-derive it as new.
+  and lives in the GitLab issue. It was chosen against this author's recommendation of X1, and the
+  recommendation is now WITHDRAWN — recorded here rather than deleted, because a future reader deserves to
+  know the argument was tried and why it failed.
+
+  X1 rested on two legs and both broke. It measured BYTES (66.8 KB of sprites, one player sprite drawn at a
+  time) and concluded batching bought nothing — but the atlas does not buy bytes, it buys REQUESTS, and this
+  repo already had that measurement written down: `render/sprites.ts` records 55 requests for 38 distinct
+  files at boot, and says in as many words that the cost is LATENCY on a school network with a cold cache,
+  invisible from a developer machine. Pillar 1 is school hardware; the argument against X2 was made in the
+  one unit that pillar does not care about. The second leg was that PNGs are transitional because ADR-0010
+  aims at procedural art — and the Dev's prediction is that PNG stays in use for a long while yet, which
+  makes "transitional" a word doing work it has not earned.
+
+  The measurement that follows from the Dev's premise, and that X1 never looked for: of 77 sprite PNGs, 38
+  are `_hc` high-contrast variants that NOTHING loads — high contrast is done by recolouring the colour
+  frame in real time (`main.js`: "sem silhuetas _hc"). They ship into `dist/` and the PWA precaches them by
+  glob. A build-time packer only packs what is referenced, so X2 removes them by construction rather than by
+  somebody remembering. Tracked as its own issue, since deleting dead assets should not hide inside a
+  build-pipeline change.
 
   THE CURRICULUM (ADR-0004's pedagogy layer): the activities catalogue belongs to the EdSP PLATFORM, with
   each game pulling the activities that suit it — and the EdSP platform does not exist yet. This ADR fixed
