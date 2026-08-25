@@ -10,8 +10,15 @@ import { players, setNumPlayersValue } from '../app/js/core/state.js';
 
 const PANEL_HTML =
   '<div id="visual"><div id="visual-list"></div>' +
-  '<select id="opt-outline-fg"><option value="0">Nenhum</option><option value="1">Fino</option><option value="2">Grosso</option></select>' +
-  '<select id="opt-outline-bg"><option value="0">Nenhum</option><option value="1">Fino</option><option value="2">Grosso</option></select></div>';
+  // Os dois selects de contorno vivem dentro de `.ctrl-row` no documento real. O fixture os tinha soltos, e
+  // isso bastava enquanto ninguém procurava a linha deles — a marca do ADR-0029 procura, e um fixture menos
+  // fiel que o documento não testaria justamente o que passou a existir.
+  '<div class="ctrl-row"><span>Contorno de 1º plano</span>' +
+  '<select id="opt-outline-fg"><option value="0">Nenhum</option><option value="1">Fino</option><option value="2">Grosso</option></select></div>' +
+  '<div class="ctrl-row"><span>Contorno de 2º plano</span>' +
+  '<select id="opt-outline-bg"><option value="0">Nenhum</option><option value="1">Fino</option><option value="2">Grosso</option></select></div>' +
+  '<button id="visual-reset" type="button">Restaurar</button></div>' +
+  '<button data-act="visual" class="pm-btn" type="button">Acessibilidade visual</button>';
 
 function makeCtx(overrides = {}) {
   const state = {
@@ -200,5 +207,83 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     panel.render();
     expect(document.querySelector('#opt-outline-fg').value).toBe('2');
     expect(document.querySelector('#opt-outline-bg').value).toBe('0');
+  });
+});
+
+describe('ui/settings-visual — restaurar padrões DESTE menu (ADR-0028) + marca (ADR-0029)', () => {
+  // O beforeEach zera `players` — ele é o array VIVO de core/state, compartilhado com o resto da suíte —,
+  // então cada caso planta o jogador de que precisa em vez de assumir que existe um.
+  const comViz = (viz) => { players.length = 0; players.push({ viz }); };
+
+  it('[Right] devolve realce, cores de dono, paleta segura, contornos e cores de papel', () => {
+    const { ctx, calls, state } = makeCtx();
+    state.lq = 0.6; state.ownerColors = false; state.cbSafe = true; state.outlineFg = 2; state.outlineBg = 0;
+    state.roleColors.hazard = [1, 2, 3];
+    initSettingsVisual(ctx).render();
+
+    document.querySelector('#visual-reset').click();
+
+    expect(calls.setLq).toEqual([0]);
+    expect(calls.setOwnerColors).toEqual([true]);
+    expect(calls.setCbSafe).toEqual([false]);
+    expect(calls.setOutlineFg).toEqual([1]);
+    expect(calls.setOutlineBg).toEqual([1]);
+    expect(calls.resetRoleColors).toBe(1);
+    expect(calls.srSay.at(-1)).toContain('visual');
+  });
+
+  it('[Right] devolve o contraste ao normal quando é um NÍVEL DE CONTRASTE', () => {
+    const { ctx, calls } = makeCtx();
+    comViz('hc-direto-7');
+    initSettingsVisual(ctx).render();
+    document.querySelector('#visual-reset').click();
+    expect(calls.setPlayerViz).toEqual([[0, 'normal']]);
+  });
+
+  it('[Interface] NÃO apaga a correção de daltonismo nem a simulação — `viz` é de três menus', () => {
+    // O espelho do cuidado que o menu de empatia precisou ter, visto do outro lado. Apagar em silêncio a
+    // correção de quem é daltônico, a partir do menu de contraste, é o mesmo estrago com outra porta.
+    for (const modo of ['fix-deuter', 'lv-tunnel', 'blind']) {
+      const { ctx, calls } = makeCtx();
+      comViz(modo);
+      initSettingsVisual(ctx).render();
+      document.querySelector('#visual-reset').click();
+      expect(calls.setPlayerViz).toEqual([]);
+    }
+  });
+
+  it('[Zero] com tudo no padrão, nenhum setter é chamado', () => {
+    const { ctx, calls, state } = makeCtx();
+    state.outlineFg = 1; // o fixture nasce fora do padrão neste campo
+    comViz('normal');
+    initSettingsVisual(ctx).render();
+    document.querySelector('#visual-reset').click();
+    expect(calls.setLq).toEqual([]);
+    expect(calls.setOutlineFg).toEqual([]);
+    expect(calls.resetRoleColors).toBe(0);
+    expect(calls.setPlayerViz).toEqual([]);
+  });
+
+  it('[Right] a marca aparece só nas linhas fora do padrão, e sobe para o botão do menu', () => {
+    const { ctx, state } = makeCtx();
+    state.outlineFg = 1; state.cbSafe = true;
+    comViz('normal');
+    initSettingsVisual(ctx).render();
+    const linha = (sel) => document.querySelector(sel).closest('.ctrl-row');
+    expect(linha('#opt-cbsafe').classList.contains('is-changed')).toBe(true);
+    expect(linha('#opt-ownercolors').classList.contains('is-changed')).toBe(false);
+    expect(linha('#opt-outline-fg').classList.contains('is-changed')).toBe(false);
+    expect(document.querySelector('[data-act="visual"]').classList.contains('is-changed')).toBe(true);
+  });
+
+  it('[Boundary] cor de papel IGUAL ao padrão não marca — comparar arrays por identidade diria "alterado"', () => {
+    // `[255,110,45] === [255,110,45]` é false em JS. Esse false mandaria a criança desfazer o que não fez.
+    const { ctx, state } = makeCtx();
+    state.outlineFg = 1;
+    comViz('normal');
+    initSettingsVisual(ctx).render();
+    const linha = document.querySelector('#opt-role-reset').closest('.ctrl-row');
+    expect(linha.classList.contains('is-changed')).toBe(false);
+    expect(document.querySelector('[data-act="visual"]').classList.contains('is-changed')).toBe(false);
   });
 });

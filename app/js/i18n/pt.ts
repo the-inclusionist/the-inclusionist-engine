@@ -300,5 +300,6 @@ const pt: Record<string, string> = {
   'sr.motor.reset': 'Modo Fácil e movimento por alternância restaurados aos padrões. O controle pelos olhos e o mapeamento de teclas continuam como estavam.',
   'sr.typo.reset': 'Tipografia restaurada ao padrão: {fam}, desenhada para quem tem baixa visão.',
   'a11y.changed': 'alterado',
+  'sr.visual.reset': 'Acessibilidade visual restaurada aos padrões: contraste, realce, cores e contornos. As legendas e os outros menus não mudaram.',
 };
 export default pt;

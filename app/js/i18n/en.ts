@@ -269,5 +269,6 @@ const en: Record<string, string> = {
   'sr.motor.reset': 'Easy Mode and latched movement restored to their defaults. Eye control and the key mapping are unchanged.',
   'sr.typo.reset': 'Typography restored to its default: {fam}, designed for low vision.',
   'a11y.changed': 'changed',
+  'sr.visual.reset': 'Visual accessibility restored to its defaults: contrast, enhancement, colours and outlines. Captions and the other menus did not change.',
 };
 export default en;

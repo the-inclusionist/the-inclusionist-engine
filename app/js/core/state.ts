@@ -85,6 +85,7 @@ export const DEFAULTS = Object.freeze({
   // visual
   cbSafe: false,
   ownerColors: true,
+  lq: 0,              // realce de contraste L→Q desligado
   hcOutlineFg: 1,
   hcOutlineBg: 1,
   // comunicação (hoje só a caixa da letra; o menu de CAA do ADR-0028 amplia isto)

@@ -15,7 +15,9 @@ import { lqName as lqLabel } from '../render/lq-filter.js';
 // que render/high-contrast usa para repintar os tiles. Reexportados com os nomes que este painel sempre
 // teve, para que os chamadores e os testes não mudem. Os RÓTULOS abaixo ficam aqui: são apresentação.
 import type { HcRoleKey } from '../render/hc-role-data.js';
-import { HC_ROLE_KEYS } from '../render/hc-role-data.js';
+import { HC_ROLE_KEYS, HC_ROLE_DEF } from '../render/hc-role-data.js';
+import { DEFAULTS } from '../core/state.js';
+import { markChanged, markMenuChanged } from './changed-mark.js';
 export type { HcRoleKey as RoleKey } from '../render/hc-role-data.js';
 type RoleKey = HcRoleKey;
 export type RGB = readonly [number, number, number];
@@ -138,6 +140,13 @@ export function renderVisualPanelHtml(contrastValue: string, s: VisualSettings):
   );
 }
 
+/** Duas cores de papel são a mesma? Comparação por componente — `[0,0,0] === [0,0,0]` é `false` em JS, e
+ *  esse `false` diria "alterado" para uma cor que ninguém tocou, mandando a criança desfazer o que não fez. */
+export function sameRgb(a: RGB | undefined, b: RGB | undefined): boolean {
+  if (!a || !b) return false;
+  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+}
+
 // ---------- Thin DOM shell ----------
 
 export interface SettingsVisual {
@@ -213,10 +222,68 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
       if (inp) inp.addEventListener('change', () => ctx.setRoleColor(k, inp.value));
     }
     const rr = ctx.$<HTMLButtonElement>('#opt-role-reset');
-    if (rr) rr.addEventListener('click', () => ctx.resetRoleColors());
+    if (rr) rr.addEventListener('click', () => { ctx.resetRoleColors(); render(); });
 
     reflectOutlines();
+    refreshMarks();
   }
+
+  /**
+   * A marca de "saiu do padrão" (ADR-0029). Cada linha contra o SEU padrão, e o botão do menu por cima.
+   *
+   * O contraste é comparado pelo valor RESOLVIDO, não pelo `viz` cru: quem está com uma simulação ou uma
+   * correção de daltonismo ligada tem `resolveContrastValue` respondendo 'normal', que é a verdade sobre
+   * ESTE menu — o modo dela não saiu do padrão daqui, saiu do padrão de outro painel, e é lá que a marca
+   * precisa aparecer para levar a criança ao lugar certo.
+   */
+  function refreshMarks(): void {
+    const s = ctx.getVisualSettings();
+    const contraste = resolveContrastValue(playerViz(players, ctx.getSelectedPlayer())) !== 'normal';
+    const lqOff = s.lq !== DEFAULTS.lq;
+    const owner = s.ownerColors !== DEFAULTS.ownerColors;
+    const cb = s.cbSafe !== DEFAULTS.cbSafe;
+    const fg = s.outlineFg !== DEFAULTS.hcOutlineFg;
+    const bg = s.outlineBg !== DEFAULTS.hcOutlineBg;
+    const papeis = ROLE_KEYS.some((k) => !sameRgb(s.roleColors[k], HC_ROLE_DEF[k]));
+    const linha = (sel: string): HTMLElement | null =>
+      ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null;
+    markChanged(linha('#opt-contrast'), contraste);
+    markChanged(linha('#opt-lq'), lqOff);
+    markChanged(linha('#opt-ownercolors'), owner);
+    markChanged(linha('#opt-cbsafe'), cb);
+    markChanged(linha('#opt-outline-fg'), fg);
+    markChanged(linha('#opt-outline-bg'), bg);
+    markChanged(linha('#opt-role-reset'), papeis);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="visual"]'), [contraste, lqOff, owner, cb, fg, bg, papeis]);
+  }
+
+  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
+  //
+  // O espelho exato do cuidado que o menu de EMPATIA precisou ter, e pelo mesmo motivo visto do outro lado:
+  // `p.viz` é UM campo compartilhado por três menus. Aqui ele só pode voltar a 'normal' se o que estiver nele
+  // for um NÍVEL DE CONTRASTE. Se a criança está com uma simulação de baixa visão ou com a correção de
+  // daltonismo dela ligada, este botão não tem nada a dizer sobre isso — e apagar em silêncio a correção de
+  // quem é daltônico, a partir do menu de contraste, seria o mesmo estrago com outra porta de entrada.
+  //
+  // As LEGENDAS (#opt-captions) estão nesta tela mas ficam de fora: quem as liga e persiste é o main.js, e a
+  // pergunta de a qual menu elas pertencem está aberta (#58 — são uma acomodação de surdez morando no menu
+  // visual). Puxá-las para cá agora responderia essa pergunta por acidente, num commit sobre outra coisa.
+  const resetBtn = ctx.$<HTMLButtonElement>('#visual-reset');
+  if (resetBtn) resetBtn.addEventListener('click', () => {
+    players.forEach((p, i) => {
+      const viz = playerViz(players, i);
+      if (CONTRAST_LEVEL_SET.has(viz) && viz !== 'normal') ctx.setPlayerViz(i, 'normal');
+    });
+    const s = ctx.getVisualSettings();
+    if (s.lq !== DEFAULTS.lq) ctx.setLq(DEFAULTS.lq);
+    if (s.ownerColors !== DEFAULTS.ownerColors) ctx.setOwnerColors(DEFAULTS.ownerColors);
+    if (s.cbSafe !== DEFAULTS.cbSafe) ctx.setCbSafe(DEFAULTS.cbSafe);
+    if (s.outlineFg !== DEFAULTS.hcOutlineFg) ctx.setOutlineFg(DEFAULTS.hcOutlineFg);
+    if (s.outlineBg !== DEFAULTS.hcOutlineBg) ctx.setOutlineBg(DEFAULTS.hcOutlineBg);
+    if (ROLE_KEYS.some((k) => !sameRgb(s.roleColors[k], HC_ROLE_DEF[k]))) ctx.resetRoleColors();
+    render();
+    ctx.srSay(t('sr.visual.reset'));
+  });
 
   return { render };
 }
