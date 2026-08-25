@@ -61,7 +61,17 @@
 //     consumidor podendo oferecer só metade da lista. A divisão do passo 5 precisa cortar AQUI, e este é o
 //     tipo de corte que só um consumidor sem tiles revela.
 //
-//  (faltam: sonar, menu-nav por gamepad, Libras e os botões de toque)
+//  9. O SONAR NÃO PODE SER USADO POR QUEM NÃO É PLATAFORMA, e o quiz não o ligou de propósito: ligá-lo exigiria
+//     MENTIR para a engine. O ctx de `platform/audio-nav` pede 19 coisas, e seis delas são de plataforma pura —
+//     `tileAt`, `solidAt`, `BOX`, `TILE`, `getCoins`, `getCenario`. Um quiz teria de inventar tiles falsos, uma
+//     caixa de colisão falsa e um cenário falso para pedir "aponte a alternativa mais próxima".
+//     E o módulo é DOIS módulos com um nome só: `caneProbe`/`caneTap`/`waterNav` são bengala e natação, isto é,
+//     plataforma; `sonar`/`panFor`/`needsAudioCues` são navegação sonora, que serve a qualquer jogo. Contornar
+//     com dublês teria produzido um "funciona" falso — o instrumento existe justamente para não fazer isso.
+//     ACHADO LATERAL, já consertado à parte (7e72da9): o anúncio do sonar não passava por `t()`. Sete cadeias
+//     em pt-BR cruas no único módulo cuja saída É a interface da criança cega.
+//
+//  (faltam: menu-nav por gamepad, Libras e os botões de toque)
 import { initI18n, t, applyDom } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createTts } from '../platform/tts.js';
