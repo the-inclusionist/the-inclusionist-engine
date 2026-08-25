@@ -58,7 +58,7 @@ import { createAudioNav } from './platform/audio-nav.js'; // Tier 2 (áudio r3):
 import { createAudioAmbient } from './platform/audio-ambient.js'; // Tier 2 (áudio r4): trilha de ambiente + trovão
 import { createTts } from './platform/tts.js'; // Tier 2 (#38): narração por voz (Piper neural lazy + fallback Web Speech)
 import { SPR, TEX_IDLE, TEX_WALK, TEX_RUN, FLAVORS, TEX_JUMP_UP, TEX_JUMP_DOWN, TEX_CLIMB, TEX_FLY, TEX_CLING_WALL, TEX_CLING_CEIL, TEX_SWIM, TEX_SWIMIDLE, initCharacterSprites } from './render/sprites.js';
-import { makeCanvas, tex } from './render/canvas.js';
+import { tex, pixelTexture } from './render/canvas.js'; // `makeCanvas` saiu junto: o painter é quem o chama agora
 import { CENARIOS, THEME_FLORA, hexN } from './render/cenario-data.js'; // D2-b: catalogo dos cenarios (folha: dado puro, zero deps)
 import { PARALLAX, createParallax } from './render/parallax.js'; // D2-b: as 3 camadas de fundo — fatores, rolagem e troca de tema
 import { createSetCenario } from './render/set-cenario.js'; // D2-b: a troca de cenario (orquestracao; leva o loadTileImages)
@@ -677,13 +677,21 @@ const abandonG=new PIXI.Graphics(); camera.addChild(abandonG); // SOB a escurid�
    Atrás dos tiles (sobre o parallax). Nuvens derivam devagar e dão a volta; pássaros de 2 quadros cruzam
    o céu de vez em quando. rm.decor congela nuvens e remove pássaros. */
 const skyLayer=new PIXI.Container(); camera.addChild(skyLayer); // ordem pelo zIndex 6700 (bloco R1)
-const CLOUD_TEX=[0,1].map(v=>{ const w=v?46:30,h=v?12:9,cv=makeCanvas(w,h),c=cv.getContext('2d');
-  c.fillStyle='rgba(225,232,244,0.85)';
-  c.fillRect(4,4,w-8,h-5); c.fillRect(0,6,w,h-7); c.fillRect(8,0,w-20,6); c.fillRect(w-16,2,10,5);
-  return tex(cv); });
-const BIRD_TEX=[0,1].map(f=>{ const cv=makeCanvas(7,4),c=cv.getContext('2d'); c.fillStyle='#20242e';
-  if(f===0){ c.fillRect(0,0,3,1); c.fillRect(4,0,3,1); c.fillRect(2,1,3,1); } else { c.fillRect(0,2,3,1); c.fillRect(4,2,3,1); c.fillRect(2,1,3,1); }
-  return tex(cv); });
+// Estes dois usavam `makeCanvas` + `getContext('2d')` na mão — o par que `render/canvas.pixelTexture` existe
+// para eliminar, e cujo comentário já cita "os três `mk` locais do main.js". Eram mais dois que ficaram para
+// trás. Reusar o painter também resolve, de graça, onze avisos de `getContext` possivelmente nulo: o `!` mora
+// num lugar só, dentro do helper, em vez de aparecer em cada bloco de arte.
+const NUVEM = 'rgba(225,232,244,0.85)';
+const CLOUD_TEX = [0, 1].map((v) => { const w = v ? 46 : 30, h = v ? 12 : 9;
+  return pixelTexture(w, h, (px) => {
+    px(4, 4, w - 8, h - 5, NUVEM); px(0, 6, w, h - 7, NUVEM); px(8, 0, w - 20, 6, NUVEM); px(w - 16, 2, 10, 5, NUVEM);
+  });
+});
+const PASSARO = '#20242e';
+const BIRD_TEX = [0, 1].map((f) => pixelTexture(7, 4, (px) => {
+  if (f === 0) { px(0, 0, 3, 1, PASSARO); px(4, 0, 3, 1, PASSARO); px(2, 1, 3, 1, PASSARO); }
+  else { px(0, 2, 3, 1, PASSARO); px(4, 2, 3, 1, PASSARO); px(2, 1, 3, 1, PASSARO); }
+}));
 // clouds/birds + seedClouds + stepSky extraídos p/ render/scene-sky.ts (#43). skyLayer/CLOUD_TEX/BIRD_TEX ficam aqui
 // (criação = z-order do render-graph) e são injetados. Uso no loop: sceneSky.stepSky(dt).
 /* ===================== L6 (fiel à v3): decoração viva por tema — fórmulas COPIADAS da v3.1.100 =====================
@@ -1512,7 +1520,7 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
 (function titleIconsSetup(){ const ov=$('#title-overlay'); if(!ov)return;
   // Icones de a11y da pausa TAMBEM no topo do splash (mesmas acoes, escopo do Jogador 1)
   const ti=$('#title-icons'); if(ti){ ti.innerHTML=iconsMarkup(); // fonte unica do markup (antes copiado aqui e no modulo)
-    ti.addEventListener('click',(e)=>{ const ib=e.target.closest('.pi-btn'); if(!ib)return; setPauseActorValue(0); pauseIcons.iconAct(ib.dataset.pi,0);
+    ti.addEventListener('click',(e)=>{ const ib=(e.target as Element | null)?.closest('.pi-btn'); if(!ib)return; setPauseActorValue(0); pauseIcons.iconAct(ib.dataset.pi,0);
       reflectTitleIcons(); if(typeof reflectPauseIcons==='function')reflectPauseIcons(); srSay(ib.getAttribute('aria-label')||''); });
     reflectTitleIcons(); }
 })();
