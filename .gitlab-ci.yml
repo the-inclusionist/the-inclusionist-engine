@@ -73,8 +73,12 @@ pages_deploy:
   stage: deploy
   needs: [test]
   rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CLOUDFLARE_API_TOKEN
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CLOUDFLARE_API_TOKEN && $CF_PAGES_PROJECT
       when: manual              # manual on purpose: flip to `on_success` once the path is chosen
       allow_failure: true
   script:
-    - npx wrangler pages deploy dist/ --project-name=the-inclusionist --branch=main
+    # The project name is a VARIABLE, not a literal. A Pages project cannot change its connected repository,
+    # so this repo's project gets REPLACED rather than repointed when the game leaves (ADR-0036) — and a
+    # hardcoded name would then push this repository's `dist/` into whatever project still answers to it.
+    # The rule above requires `$CF_PAGES_PROJECT` so an unset variable SKIPS the job instead of guessing.
+    - npx wrangler pages deploy dist/ --project-name="$CF_PAGES_PROJECT" --branch=main
