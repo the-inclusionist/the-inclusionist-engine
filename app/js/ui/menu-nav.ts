@@ -105,8 +105,6 @@
 //
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C3).
 
-import { phase } from '../core/state.js'; // binding vivo (fonte única de estado)
-
 /* ===================== interfaces mínimas ===================== */
 
 /** ui/dom.ts `$` — injetado; o módulo nunca alcança `document`. */
@@ -239,6 +237,20 @@ export interface MenuNavCtx {
   /** `let pauseActor` do game.js: "sim" no menu de pausa marca QUEM agiu (o submenu abre na aba dele).
    *  ui/pause-icons.ts já recebe o mesmo setter — o `let` continua sendo do game.js, com seis leitores. */
   setPauseActor: (playerIndex: number) => void;
+  /**
+   * ESTE É O MOMENTO DE NAVEGAR MENU? Se `false`, toda tecla passa direto.
+   *
+   * Era `if (phase !== 'paused') return`, com `phase` vindo por IMPORTAÇÃO de `core/state` — e o segundo
+   * consumidor mostrou o preço (achado 10 de `consumer-quiz`): um quiz cujos ajustes estão SEMPRE disponíveis
+   * precisava se declarar "pausado" para poder navegar os próprios menus. Não havia como trazer o próprio
+   * modelo de fases, porque não havia por onde.
+   *
+   * A pergunta injetada é PROPOSITALMENTE um booleano, e não a fase. Injetar `getPhase()` teria consertado a
+   * importação e mantido a mentira: o consumidor continuaria obrigado a devolver a string `'paused'`, que é
+   * um conceito do jogo de plataforma. Perguntando "dá para navegar agora?", o jogo de plataforma responde
+   * `phase === 'paused'` e um quiz responde `true` — cada um na sua língua, e nenhum dos dois mentindo.
+   */
+  isNavigable: () => boolean;
   /** ui/settings-controls.ts: um remap em andamento consome a tecla — o menu não pode roubá-la. */
   isCapturing: () => boolean;
   /** input/gamepad.ts: o assistente de mapeamento fica POR CIMA de tudo; só Escape (cancela) o alcança. */
@@ -386,7 +398,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   }
 
   function menuNavKey(e: NavKeyEvent): void {
-    if (phase !== 'paused') return;
+    if (!ctx.isNavigable()) return;
     if (ctx.isCapturing()) return;   // remap em andamento: a tecla é dele
     if (padWizKey(e)) return;
 

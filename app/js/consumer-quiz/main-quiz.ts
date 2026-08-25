@@ -71,12 +71,16 @@
 //     ACHADO LATERAL, já consertado à parte (7e72da9): o anúncio do sonar não passava por `t()`. Sete cadeias
 //     em pt-BR cruas no único módulo cuja saída É a interface da criança cega.
 //
-// 10. A NAVEGAÇÃO DE MENU FUNCIONA FORA DO GÊNERO — mas só depois de o quiz MENTIR SOBRE A PRÓPRIA FASE.
-//     `menu-nav` abre com `if (phase !== 'paused') return`, e `phase` chega por IMPORTAÇÃO de core/state, não
-//     por injeção: o consumidor não tem como trazer o próprio modelo de fases. Um quiz cujos ajustes estão
-//     sempre disponíveis precisa se declarar "pausado" para poder navegar os próprios menus.
-//     De dentro da plataforma isso é invisível — lá os menus só abrem em pausa mesmo. É a terceira vez que
-//     este consumidor mostra uma fronteira que nenhuma leitura de código mostraria.
+// 10. ✅ CONSERTADO. A NAVEGAÇÃO DE MENU FUNCIONAVA FORA DO GÊNERO — mas só depois de o quiz MENTIR SOBRE A
+//     PRÓPRIA FASE. `menu-nav` abria com `if (phase !== 'paused') return`, e `phase` chegava por IMPORTAÇÃO
+//     de core/state, não por injeção: o consumidor não tinha como trazer o próprio modelo de fases. Um quiz
+//     cujos ajustes estão sempre disponíveis precisava se declarar "pausado" para navegar os próprios menus.
+//     De dentro da plataforma isso é invisível — lá os menus só abrem em pausa mesmo. Foi a terceira vez que
+//     este consumidor mostrou uma fronteira que nenhuma leitura de código mostraria.
+//     AGORA o ctx pede `isNavigable()`, um BOOLEANO e não a fase: injetar `getPhase()` teria matado a
+//     importação e mantido a mentira, porque o consumidor continuaria devolvendo a string `'paused'`. A
+//     plataforma responde `phase === 'paused'`; este quiz responde `true`; ninguém mente. A linha
+//     `setPhaseValue('paused')` que ficava aqui foi apagada, e `menu-nav` não importa mais de core/state.
 //     Provado: com `setPhaseValue('paused')`, `S` desce atkinson→lexend→quattro e `W` volta, pelo esquema de
 //     teclas remapeável. Sem ela, tecla nenhuma chega.
 //
@@ -115,7 +119,6 @@ import { installCvdFilters } from '../render/cvd-matrices.js';
 import { VIZ_MODES, VIZ_FILTER, simulatesDisability } from '../render/viz-modes.js';
 import { initMenuNav } from '../ui/menu-nav.js';
 import { initKeyboardRuntime } from '../input/keyboard-runtime.js';
-import { setPhaseValue } from '../core/state.js';
 import { toggleLibras, vlibrasOpen, setOnLibrasChange } from '../ui/vlibras.js';
 import { padPxPerMm } from '../input/touch.js';
 import { kb, initKB } from '../input/keyboard.js';
@@ -256,6 +259,8 @@ export function bootQuiz(): void {
     $, getActiveElement: () => document.activeElement,
     topVisibleOverlay: overlays.topVisibleOverlay, closeById: overlays.closeById,
     getPauseMenu: () => null,
+    // Este quiz não tem pausa: os ajustes estão SEMPRE disponíveis, e é isso que ele responde. Ver o achado 10.
+    isNavigable: () => true,
     setPhase: () => {}, setPauseActor: () => {},
     isCapturing: () => false, closePadWiz: () => {},
     whichPlayer: (code) => kbRuntime.whichPlayer(code), actionOf: (code, i) => kbRuntime.actionOf(code, i),
@@ -265,11 +270,7 @@ export function bootQuiz(): void {
     win: { addEventListener: (tipo, fn, captura) => window.addEventListener(tipo, fn as EventListener, captura) },
   });
   nav.attach();
-  // O QUIZ PRECISA SE DECLARAR "PAUSADO" PARA PODER NAVEGAR OS PRÓPRIOS MENUS. Ver o achado 10: `menu-nav`
-  // começa com `if (phase !== 'paused') return`, e `phase` entra por IMPORTAÇÃO de core/state, não por
-  // injeção — não há como o consumidor trazer o próprio modelo de fases. Esta linha é a evidência, deixada
-  // visível de propósito: ela não conserta a fronteira, ela mostra onde ela está.
-  setPhaseValue('paused');
+  // (Aqui ficava `setPhaseValue('paused')` — a mentira que o achado 10 registrava. Saiu junto com a causa.)
 
   // MODO PESSOA SURDA. Nenhum script do VLibras nesta página — de propósito.
   const libras = $<HTMLButtonElement>('#q-libras');

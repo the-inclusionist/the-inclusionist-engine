@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initKeydown } from '../app/js/input/keydown.js';
 import { initMenuNav } from '../app/js/ui/menu-nav.js';
-import { setPhaseValue } from '../app/js/core/state.js';
+import { setPhaseValue, phase } from '../app/js/core/state.js';
 
 const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], run: ['KeyU'], jump: ['KeyJ', 'Space'], swap: ['KeyI'], especial: ['KeyK'] };
 const CONTROLS = { ...SOLO, gameKeys: Object.values(SOLO).flat() };
@@ -36,6 +36,7 @@ function wire({ pauseMenu = null } = {}) {
     getPauseMenu: () => pauseMenu,
     setPhase: spy('menuNav:setPhase'),
     setPauseActor: spy('menuNav:setPauseActor'),
+    isNavigable: () => phase === 'paused', // a plataforma navega menu na pausa; ver o ctx de ui/menu-nav
     isCapturing: () => false,
     closePadWiz: spy('menuNav:closePadWiz'),
     whichPlayer: (code) => (actionOf(code) ? 0 : -1),

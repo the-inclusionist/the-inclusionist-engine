@@ -10,6 +10,8 @@
 // A casca de DOM (foco de verdade, `offsetParent`, z-index, Escape) está em menu-nav.browser.test.js e NÃO é
 // repetida aqui.
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   KEY_YES, KEY_NO, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, PAUSE_COLS,
   menuKeyIntent, hasIntent, clampIndex, selectStep, selectWrap, rangeStep, pauseGridMove,
@@ -151,5 +153,28 @@ describe('pauseGridMove — a grade do menu de pausa e a fronteira ícones↔ite
     }
     for (let i = 0; i < ITEMS; i++) expect(seen.has(JSON.stringify({ zone: 'items', index: i })), 'item ' + i).toBe(true);
     for (let i = 0; i < ICONS; i++) expect(seen.has(JSON.stringify({ zone: 'icons', index: i })), 'ícone ' + i).toBe(true);
+  });
+});
+
+describe('a independência do módulo — o que ele NÃO conhece', () => {
+  const fonte = readFileSync(join(process.cwd(), 'app', 'js', 'ui', 'menu-nav.ts'), 'utf8');
+
+  it('[Right] NÃO importa `core/state` — o modelo de fases é de quem consome, não deste módulo', () => {
+    // Enquanto ele importava `phase`, um segundo jogo não tinha como trazer o próprio modelo de fases: o quiz
+    // do `consumer-quiz` teve de se declarar "pausado" para navegar os próprios menus (achado 10). A aresta
+    // morreu quando a pergunta virou `isNavigable()` no ctx. Se voltar, este caso reprova — e o custo de ela
+    // voltar é invisível de dentro da plataforma, onde menu SEMPRE é coisa de pausa.
+    expect(fonte).not.toMatch(/from '\.\.\/core\/state\.js'/);
+  });
+
+  it('[Interface] o ctx pergunta um BOOLEANO, e não a fase — é o que evita a mentira', () => {
+    // Injetar `getPhase()` teria matado a importação e mantido o problema: o consumidor continuaria obrigado
+    // a devolver a string `'paused'`, que é vocabulário do jogo de plataforma. Perguntar "dá para navegar
+    // agora?" deixa cada jogo responder na própria língua. A diferença é pequena no diff e é o ponto inteiro.
+    // A 2a asserção era `not.toMatch(/getPhase/)` e reprovou na MINHA PRÓPRIA PROSA: o módulo explica, em
+    // comentário, por que `getPhase` foi recusado. Proibir a palavra proibia a explicação junto. O que importa
+    // é que não exista o CAMPO — daí o dois-pontos, que a prosa (`getPhase()`, com parênteses) não tem.
+    expect(fonte).toMatch(/isNavigable: \(\) => boolean/);
+    expect(fonte).not.toMatch(/getPhase\s*:/);
   });
 });

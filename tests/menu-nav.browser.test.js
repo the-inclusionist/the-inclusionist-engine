@@ -16,7 +16,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initMenuNav } from '../app/js/ui/menu-nav.js';
 import { initSettingsPanel } from '../app/js/ui/settings-panel.js';
-import { setPhaseValue } from '../app/js/core/state.js';
+import { setPhaseValue, phase } from '../app/js/core/state.js';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -101,6 +101,10 @@ function boot(over = {}) {
     getPauseMenu: (i) => $('#sp' + i),
     setPhase: (p) => { log.phase.push(p); setPhaseValue(p); },
     setPauseActor: (i) => log.actor.push(i),
+    // A PLATAFORMA responde na língua dela: menu é coisa de pausa. Era `if (phase !== 'paused')` DENTRO do
+    // módulo; virou pergunta injetada, e por isso os casos abaixo — que já mexiam em `setPhaseValue` —
+    // continuam medindo exatamente o mesmo comportamento. Um quiz responderia `true` e não mentiria (achado 10).
+    isNavigable: () => phase === 'paused',
     isCapturing: () => false,
     closePadWiz: (save) => log.padWiz.push(save),
     whichPlayer: () => -1,        // só teclas genéricas nestes casos (o roteamento por jogador é de outro módulo)
@@ -316,6 +320,29 @@ describe('menuNavKey — o tradutor de teclado', () => {
     const { nav } = boot();
     setPhaseValue('playing');
     const e = key('Escape');
+    nav.menuNavKey(e);
+    expect(e.stops).toBe(0);
+  });
+
+  it('QUEM DECIDE É `isNavigable`, e não a fase — um jogo sem pausa navega os menus dele', () => {
+    // É o achado 10 do segundo consumidor virando teste. O quiz precisava se declarar "pausado" para poder
+    // navegar os próprios menus, porque `menu-nav` lia `phase` por IMPORTAÇÃO. Aqui a fase é 'title' — nada
+    // de pausa em lugar nenhum — e a navegação funciona, porque quem responde é o consumidor.
+    setPhaseValue('title');
+    const { nav } = boot({ isNavigable: () => true });
+    showPauses();
+    const e = key('ArrowDown');
+    nav.menuNavKey(e);
+    expect(e.stops).toBe(1);
+  });
+
+  it('e o contrário também: em plena pausa, `isNavigable` falso cala tudo', () => {
+    // O par do caso acima. Sem ele, `isNavigable` poderia estar sendo IGNORADO e o de cima passaria assim
+    // mesmo — bastaria o módulo ter voltado a olhar a fase e a fase ser 'paused' aqui.
+    const { nav } = boot({ isNavigable: () => false });
+    setPhaseValue('paused');
+    showPauses();
+    const e = key('ArrowDown');
     nav.menuNavKey(e);
     expect(e.stops).toBe(0);
   });

@@ -1355,6 +1355,7 @@ const whichPlayer = (code) => kbRuntime.whichPlayer(code);
    por NOME; e closeTypo/closeHelp chamam menuFocus(sharedDialogOpen()) de mais acima ainda. */
 const menuNav = initMenuNav({
   $, getActiveElement: () => document.activeElement,
+  isNavigable: () => phase === 'paused', // aqui menu e' coisa de pausa; noutro jogo pode ser sempre (ver o ctx)
   topVisibleOverlay: () => overlays.topVisibleOverlay(), closeById: (id) => overlays.closeById(id),
   getPauseMenu: (i) => vpPause[i],                 // `let vpPause` REATRIBUIDO por buildGameHud -> getter
   setPhase: (p) => setPhase(p),
