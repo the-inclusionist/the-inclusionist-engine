@@ -41,4 +41,26 @@ export function loadKB(): KBDefaults {
   return d;
 }
 export function saveKB(kb: KBDefaults): void { store.setJSON(CKEY, kb); }
+
+/**
+ * O MAPA DE TECLAS VIVO. Migrado do composition root (#50): era um `let KB` do main.js com um envoltório
+ * `setKB: (k) => { KB = k; }` fabricado à mão para o painel de controles reatribuí-lo.
+ *
+ * Mora AQUI, e não em core/state como os outros migrados, porque o dono é evidente: `loadKB`, `saveKB` e
+ * `resetKB` já viviam neste arquivo. Separar o valor das três funções que o gerenciam seria mover o problema
+ * de lugar em vez de resolvê-lo.
+ *
+ * NASCE COM OS PADRÕES E NÃO LÊ DISCO NO IMPORT. `initKB()` é quem lê, chamado uma vez pelo boot. A regra vale
+ * para todo módulo do projeto, e aqui ela tem um custo concreto se for quebrada: um teste que importe qualquer
+ * coisa deste arquivo passaria a depender do localStorage do ambiente, e um mapa de teclas herdado de outro
+ * caso é uma falha que aparece longe da causa.
+ */
+export let kb: KBDefaults = JSON.parse(JSON.stringify(KB_DEFAULTS));
+
+/** Lê o mapa persistido para dentro de `kb`. O boot chama uma vez; devolve o valor para quem quiser encadear. */
+export function initKB(): KBDefaults { kb = loadKB(); return kb; }
+
+/** Troca o mapa inteiro. Só o "restaurar padrões" do painel de controles precisa disto — remapear uma tecla
+ *  MUTA o objeto, e reatribuir por engano faria as referências vivas apontarem para o mapa antigo. */
+export function setKB(next: KBDefaults): void { kb = next; }
 export function resetKB(): KBDefaults { store.remove(CKEY); return JSON.parse(JSON.stringify(KB_DEFAULTS)); }

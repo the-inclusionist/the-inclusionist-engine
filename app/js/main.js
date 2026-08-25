@@ -25,7 +25,7 @@ import { SOMASUB_SHAPES, WORD_INITIALS } from './game/activity-content.js'; // E
 import { JUICE, saveJuice, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, initFx, tickHitstop, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
 import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
 import { worldCanvas, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
-import { loadKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
+import { kb, initKB, setKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
 import { $, $$, toggleBtn } from './ui/dom.js';
@@ -247,11 +247,11 @@ const { frontOverlay } = overlays;
 // Gamepad (B3/L1): estado por controle. padCur[gi]=ações seguradas neste frame; associação pad↔jogador vive em p.pad.
 // padCur/padPrevAct/padPrevStart + PAD_DEAD movidos p/ input/state.js (Fase 2.22)  // // zona morta = primeira METADE do curso (ergonomia — José 2026-07-02)
 // Config de teclado extraída p/ input/keyboard.js (Fase 2): esquemas, defaults, loadKB/saveKB/resetKB.
-let KB=loadKB();
+initKB(); // o mapa de teclas vive em input/keyboard (#50); aqui só o disparo da leitura persistida
 // saveKB agora vem de input/keyboard.js (recebe o KB como argumento)
 // kbFor/actionOf/whichPlayer/assignControls/applyControls migraram para input/keyboard-runtime.ts (Onda A).
 // KB fica aqui (o painel de controles o edita e persiste); o modulo o le fresco a cada chamada.
-const kbRuntime = initKeyboardRuntime({ getKB: () => KB, getNumPlayers: () => numPlayers, getPlayers: () => players });
+const kbRuntime = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => numPlayers, getPlayers: () => players });
 const kbFor = (i) => kbRuntime.kbFor(i);
 // controls/KJUMP..KRUN/GAME_KEYS nao moram mais aqui (D1): eram oito copias de kbRuntime.computeControlsState(),
 // e `applyControls` existia so para refaze-las. A memoria foi para dentro de input/keyboard-runtime, que e quem
@@ -1181,7 +1181,7 @@ const audioPanel = initSettingsAudio({ $, srSay, store, audioCats: AUDIO_CATS, t
 audioPanel.reflectModoCego();
 
 /* E10: remap de controles + persistência (B2) */
-const ctrlPanel = initSettingsControls({ $, srSay, srAlert, store: { saveKB, resetKB }, kb: KB, setKB: (k) => { KB = k; }, kbFor, getNumPlayers: () => numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)
+const ctrlPanel = initSettingsControls({ $, srSay, srAlert, store: { saveKB, resetKB }, kb, setKB, kbFor, getNumPlayers: () => numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)
 function openOptions(){ const ov=$('#options'); if(!ov)return; ctrlPanel.render(pauseActor); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); } // E3: edita o controle do jogador que abriu
 function closeOptions(){ const ov=$('#options'); if(!ov)return; ov.hidden=true; ctrlPanel.cancelCapture(); if(!overlays.restoreFocus('options'))menuFocus(sharedDialogOpen()); }
 const ctrlBtn=$('#opt-controls'); if(ctrlBtn)ctrlBtn.addEventListener('click',openOptions);
