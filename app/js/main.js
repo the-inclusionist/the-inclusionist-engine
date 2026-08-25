@@ -126,6 +126,14 @@ import { eyeMode, setEyeMode, startEyeControl, stopEyeControl, loadWebGazer } fr
 // Mundo carregado do texto-glifo assets/levels/clarity.map.txt (Fase 1.2). Construtor em core/world.js.
 import { buildWorldFromText } from './core/world.js';
 // top-level await: main.js é módulo → o corpo abaixo só roda após o mapa carregar (pré-cacheado no SW).
+/* ===================== O IDIOMA VEM ANTES DE QUALQUER COISA SER MONTADA =====================
+   `initI18n()` era a ULTIMA linha do boot, e para pt isso nao custava nada. Para en/es custava metade da
+   interface: o `applyDom` conserta o markup estatico (`data-i18n`), mas o que o JavaScript monta — os botoes
+   de cenario, os de atividade — ja tinha capturado o texto de pt, e nada reconstruia. O sintoma era
+   `t('cen.cidade')` devolver "City" com o botao na tela dizendo "Cidade".
+   O `await` custa UM chunk, e so' para quem nao joga em portugues; em pt ele resolve na hora. */
+i18n.initI18n();
+await i18n.idiomaPronto();
 const WORLD = buildWorldFromText(await (await fetch('assets/levels/clarity.map.txt')).text());
 const WORLD_W = WORLD[0].length, WORLD_H = WORLD.length;
 const WORLD_PX_W = WORLD_W*TILE, WORLD_PX_H = WORLD_H*TILE;
@@ -1422,7 +1430,8 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
     const db=$('#btn-debug'); if(db)db.addEventListener('click',()=>{ const p=$('#debug-panel'); if(p){ p.hidden=!p.hidden; db.setAttribute('aria-pressed',String(!p.hidden)); } }); } // abre/fecha o painel de afinação
   // Menu de pausa: agora é POR TELA (buildScreenPause + pauseActs no escopo do módulo). Nada aqui.
   setPhase('title'); // estado inicial: tela de título
-  i18n.initI18n(); // aplica as traduções data-i18n (docs/plano-i18n.md)
+  // (o `initI18n()` que ficava aqui subiu para o TOPO do arquivo — ver a nota la'. Ficar por ultimo era o
+  //  defeito: a interface toda ja tinha sido montada no idioma errado.)
 })();
 
 /* ===================== E13: controles de toque (mobile) ===================== */

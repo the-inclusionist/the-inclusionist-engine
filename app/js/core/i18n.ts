@@ -77,14 +77,42 @@ function pickDefault(): string {
   return AVAILABLE.includes(nav) ? nav : 'pt';
 }
 
-// Boot: aplica pt (síncrono) e, se o idioma preferido for outro, troca de forma assíncrona (não bloqueia).
+/** Promessa do carregamento pedido no boot. Resolve na hora quando o idioma é pt (dicionário estático). */
+let pendente: Promise<void> = Promise.resolve();
+
+/**
+ * Boot: aplica pt (síncrono, para a página nunca ficar em branco) e, se o idioma preferido for outro, PEDE a
+ * troca — que é assíncrona, porque os outros locales são chunks sob demanda.
+ *
+ * Continua devolvendo o locale de forma síncrona e NÃO bloqueia por si: quem precisar esperar chama
+ * `idiomaPronto()`. Foi essa separação que faltava — ver o comentário lá embaixo.
+ */
 export function initI18n(): string {
   applyDom(document);
   const def = pickDefault();
-  if (def !== 'pt') setLocale(def);
+  // `.catch` mudo de propósito: um chunk de locale que não carrega degrada para pt, e degradar é MUITO melhor
+  // que travar o boot. Sem ele, um `await idiomaPronto()` lá fora derrubaria o jogo inteiro por causa do idioma.
+  if (def !== 'pt') pendente = setLocale(def).catch(() => { /* fica em pt */ });
   return locale;
 }
 
-const i18n = { t, getLocale, availableLocales, applyDom, setLocale, initI18n };
+/**
+ * Resolve quando o idioma escolhido no boot terminou de carregar (na hora, se for pt).
+ *
+ * ========================= POR QUE ISTO PRECISOU EXISTIR =========================
+ * O `initI18n()` do main.js era a ÚLTIMA linha do boot, depois de o HUD, os menus de título e as telas de
+ * pausa já estarem montados. Para pt isso não custava nada — já estava tudo em português. Para en/es, custava
+ * metade da interface: o `applyDom` conserta o markup ESTÁTICO (`data-i18n`), mas o que o JavaScript monta
+ * (os botões de cenário, os de atividade) tinha capturado o texto de pt e ninguém reconstruía.
+ *
+ * O sintoma era desconcertante: `t('cen.cidade')` devolvia "City" e o botão na tela dizia "Cidade".
+ *
+ * Isto NÃO responde à pergunta maior — QUANDO a interface se reconstrói ao trocar de idioma EM EXECUÇÃO —,
+ * que segue com o Dev. Responde à menor, que não tem duas respostas: a interface não se constrói antes de o
+ * idioma ser conhecido.
+ */
+export function idiomaPronto(): Promise<void> { return pendente; }
+
+const i18n = { t, getLocale, availableLocales, applyDom, setLocale, initI18n, idiomaPronto };
 export default i18n;
 if (typeof window !== 'undefined') (window as Window & { __i18n?: unknown }).__i18n = i18n; // exposto p/ teste/preview
