@@ -14,6 +14,7 @@
 // game.js's own `setModoCego()` and the pause-menu icon bar (`iconAct('tts'|'blind', …)`) call them directly.
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
+import { toggleLabel } from './dom.js';
 import { t, bcp47 } from '../core/i18n.js';
 import { DEFAULTS } from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
@@ -258,7 +259,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     const b = ctx.$<HTMLButtonElement>('#opt-tts');
     const state = ctx.getAudioCat();
     const on = !!(state && state.tts && state.tts.on);
-    if (b) { ctx.toggleBtn(b, on); b.textContent = on ? '❚❚ Ligado' : '▶ Desligado'; }
+    if (b) { ctx.toggleBtn(b, on); b.textContent = toggleLabel(on); }
     const e = ctx.$<HTMLSelectElement>('#tts-engine');
     if (e) e.value = ctx.tts.getEngineSel();
   }
@@ -357,7 +358,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
 
   function reflectModoCego(): void {
     const b = ctx.$<HTMLButtonElement>('#opt-modocego');
-    if (b) { ctx.toggleBtn(b, ctx.getModoCego()); b.textContent = ctx.getModoCego() ? '❚❚ Ligado' : '▶ Desligado'; }
+    if (b) { ctx.toggleBtn(b, ctx.getModoCego()); b.textContent = toggleLabel(ctx.getModoCego()); }
   }
 
   function renderAudio(): void {

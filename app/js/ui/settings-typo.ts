@@ -7,6 +7,7 @@
 // handling) is the SHARED helper used by every settings panel and stays in game.js. The font catalog itself
 // (FONT_GROUPS/FONT_BY_KEY) stays in ./fonts.js (Phase 2 extraction) — imported here, never duplicated.
 
+import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
 import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, type FontItem } from './fonts.js';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
@@ -107,7 +108,7 @@ function rowHTML(row: TypoRow): string {
     ? `<br><span class="opt-hint" style="margin:0;font-family:var(--font)">${row.note}</span>`
     : '';
   const ariaLabel = row.fam + (row.note ? ' — ' + row.note : '');
-  const stateLabel = row.selected ? '❚❚ Ligado' : '▶ Desligado';
+  const stateLabel = toggleLabel(row.selected);
   return (
     `<div class="ctrl-row"><span style="font-family:'${row.fam}'"><strong>${row.fam}</strong>${noteHTML}</span>` +
     `<button class="mode-btn switch${row.selected ? ' is-on' : ''}" data-font="${row.key}" type="button"` +

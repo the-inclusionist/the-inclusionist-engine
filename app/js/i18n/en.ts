@@ -340,5 +340,10 @@ const en: Record<string, string> = {
   'sr.crt.on': '{efeito} on.',
   'sr.crt.off': '{efeito} off.',
   'sr.crt.round': '{efeito}: {nivel}.',
+  // ===================== ON / OFF =====================
+  'ui.toggle.on': '❚❚ On',
+  'ui.toggle.off': '▶ Off',
+  'ui.toggle.ariaOn': '{alvo}: on',
+  'ui.toggle.ariaOff': '{alvo}: off',
 };
 export default en;

@@ -376,5 +376,12 @@ const pt: Record<string, string> = {
   'sr.crt.on': '{efeito} ligada.',
   'sr.crt.off': '{efeito} desligada.',
   'sr.crt.round': '{efeito}: {nivel}.',
+  // ===================== LIGADO / DESLIGADO =====================
+  // Duas palavras que estavam copiadas TREZE vezes, em nove arquivos — e dois desses arquivos declaravam um
+  // helper "compartilhado" que só eles usavam. Agora é um só, em ui/dom, ao lado do `toggleBtn`.
+  'ui.toggle.on': '❚❚ Ligado',
+  'ui.toggle.off': '▶ Desligado',
+  'ui.toggle.ariaOn': '{alvo}: ligado',
+  'ui.toggle.ariaOff': '{alvo}: desligado',
 };
 export default pt;

@@ -28,7 +28,7 @@ import { worldCanvas, initWorldTex } from './render/world-tex.js'; // Estágio 4
 import { kb, initKB, setKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
 import { FONT_GROUPS } from './ui/fonts.js'; // Fase 2: tipografia (catálogo + persistência)
-import { $, $$, toggleBtn } from './ui/dom.js';
+import { $, $$, toggleBtn, toggleLabel } from './ui/dom.js';
 import { initSettingsAudio } from './ui/settings-audio.js';
 import { initSettingsControls, ACT_LABEL, keyName } from './ui/settings-controls.js';
 import { initSettingsVisual, ROLE_LABELS } from './ui/settings-visual.js';
@@ -1131,8 +1131,8 @@ function closeVisual(){ const ov=$('#visual'); if(!ov)return; ov.hidden=true; if
 const visualBtn=$('#opt-visual'); if(visualBtn)visualBtn.addEventListener('click',openVisual);
 const visualClose=$('#visual-close'); if(visualClose)visualClose.addEventListener('click',closeVisual);
 // Empatia motora: um-botão e cadeirante
-function reflectMotorEmpathy(){ const a=$('#opt-onebtn'); if(a){ a.classList.toggle('is-on',oneButton); a.setAttribute('aria-pressed',String(oneButton)); a.textContent=oneButton?'❚❚ Ligado':'▶ Desligado'; }
-  const b=$('#opt-wheelchair'); if(b){ b.classList.toggle('is-on',wheelchair); b.setAttribute('aria-pressed',String(wheelchair)); b.textContent=wheelchair?'❚❚ Ligado':'▶ Desligado'; } reflectVizButtons(); }
+function reflectMotorEmpathy(){ const a=$('#opt-onebtn'); if(a){ toggleBtn(a,oneButton); a.textContent=toggleLabel(oneButton); }
+  const b=$('#opt-wheelchair'); if(b){ toggleBtn(b,wheelchair); b.textContent=toggleLabel(wheelchair); } reflectVizButtons(); }
 // Estado em core/state; aqui só os EFEITOS (refletir o painel, anunciar). Mesma forma que setModoCego.
 function setOneButton(on){ const antes=oneButton; setOneButtonValue(on); if(oneButton===antes)return;
   reflectMotorEmpathy(); srSay(t(on?'sr.motor.oneButtonOn':'sr.motor.oneButtonOff')); }
@@ -1210,7 +1210,7 @@ function renderPauseLegend(){ const g=simNaoGlyphs();
 addEventListener('gamepadconnected', (e)=>{ try{ const d=touchCtl.applyPadDesign(padLayoutFromId(e.gamepad.id)); const sel=$('#pad-design'); if(sel)sel.value=d; srSay(t('sr.pad.connected',{v:d})); }catch(err){} }); // A2: layout pelo id do controle
 const padDesignSel=$('#pad-design'); if(padDesignSel){ padDesignSel.value=touchCtl.getPadDesign(); padDesignSel.addEventListener('change',()=>{ touchCtl.applyPadDesign(padDesignSel.value); srSay(t('sr.pad.design',{v:padDesignSel.value})); }); } // A4: escolha manual
 // JOGAR COM OS OLHOS: eyeMode/eyeSet/onGaze/startEyeControl/stopEyeControl/loadWebGazer → ui/webcam.js (Estágio 4, Tier 1).
-const eyesBtn=$('#opt-eyes'); if(eyesBtn)eyesBtn.addEventListener('click',()=>{ setEyeMode(!eyeMode); toggleBtn(eyesBtn,eyeMode); eyesBtn.textContent=eyeMode?'❚❚ Ligado':'▶ Desligado';
+const eyesBtn=$('#opt-eyes'); if(eyesBtn)eyesBtn.addEventListener('click',()=>{ setEyeMode(!eyeMode); toggleBtn(eyesBtn,eyeMode); eyesBtn.textContent=toggleLabel(eyeMode);
   if(eyeMode){ loadWebGazer(startEyeControl); srSay(t('sr.eyes.loading')); } else { stopEyeControl(); srSay(t('sr.eyes.off')); } });
 const audioCloseBtn=$('#audio-close'); if(audioCloseBtn)audioCloseBtn.addEventListener('click',closeAudio);
 const audioPanel = initSettingsAudio({ $, srSay, store, audioCats: AUDIO_CATS, toggleBtn, getNumPlayers: () => numPlayers, getPlayers: () => players, getSoundOn: () => soundOn, setSoundOn, getVolume: () => volume, setVolume, getAudioCat: () => audioCat, setCatGain, tts, getModoCego: () => modoCego, setModoCego, getCaneBlockDiv: () => caneBlockDiv, setCaneBlockDiv: setCaneBlockDivValue }); // painel de audio: ui/settings-audio.ts

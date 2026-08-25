@@ -7,6 +7,7 @@
 // live from core/state.js (same source game.js itself uses). Extracted verbatim from renderVisual() in game.js
 // (behavior-preserving) — see docs/5-Refactoring/plano-modularizacao-mapa.md.
 
+import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
 import { numPlayers, players } from '../core/state.js';
 import { lqName as lqLabel } from '../render/lq-filter.js';
@@ -130,7 +131,7 @@ export function rgbToHex(rgb: RGB): string {
 
 /** Shared on/off button label used by this panel's toggle buttons. */
 export function onOffLabel(on: boolean): string {
-  return on ? '❚❚ Ligado' : '▶ Desligado';
+  return toggleLabel(on);
 }
 
 /** Reads player[i].viz defensively (no player at that index -> 'normal'), without a Player type import. */

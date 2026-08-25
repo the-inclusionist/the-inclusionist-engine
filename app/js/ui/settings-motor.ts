@@ -9,6 +9,7 @@
 // Modo Fácil puts coins on the ground). Overlay open/close plumbing (frontOverlay, #movement hidden toggle,
 // Escape handling, renderMapHub) is the SHARED helper used by every settings panel and stays in game.js.
 
+import { toggleLabel } from './dom.js';
 import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
@@ -77,10 +78,9 @@ export function anyMotorActive(players: MotorPlayer[]): boolean {
   return players.some((p) => p.easy || p.toggleMove);
 }
 
-/** '❚❚ Ligado' / '▶ Desligado' — shared label for both #opt-facil and #opt-altmove. */
-export function onOffLabel(on: boolean): string {
-  return on ? '❚❚ Ligado' : '▶ Desligado';
-}
+/** '❚❚ Ligado' / '▶ Desligado' para #opt-facil e #opt-altmove. Reexporta o de ui/dom, que é o único que
+ *  existe desde o item 14 — o corpo daqui era uma cópia, e o comentário já dizia "shared" sem sê-lo. */
+export const onOffLabel = toggleLabel;
 
 /**
  * Full innerHTML for #movement-players, given the player count and the active index. Pure string building —

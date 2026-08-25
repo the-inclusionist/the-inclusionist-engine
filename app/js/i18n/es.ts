@@ -341,5 +341,10 @@ const es: Record<string, string> = {
   'sr.crt.on': '{efeito} activada.',
   'sr.crt.off': '{efeito} desactivada.',
   'sr.crt.round': '{efeito}: {nivel}.',
+  // ===================== ENCENDIDO / APAGADO =====================
+  'ui.toggle.on': '❚❚ Activado',
+  'ui.toggle.off': '▶ Desactivado',
+  'ui.toggle.ariaOn': '{alvo}: activado',
+  'ui.toggle.ariaOff': '{alvo}: desactivado',
 };
 export default es;

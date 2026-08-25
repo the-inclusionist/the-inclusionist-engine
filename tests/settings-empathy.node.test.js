@@ -4,7 +4,7 @@
 // #60 moram no menu visual), o recorte EMPATHY_VIZ_MODES resultante e o mapeamento valor→rótulo dos botões. O render()/open()/
 // close() (tocam DOM) ficam em settings-empathy.browser.test.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
-import { EMPATHY_VIZ_MODES, toggleLabel } from '../app/js/ui/settings-empathy.js';
+import { EMPATHY_VIZ_MODES } from '../app/js/ui/settings-empathy.js';
 import { VIZ_MODES, simulatesDisability } from '../app/js/render/viz-modes.js';
 
 describe('EMPATHY_VIZ_MODES — só o que SIMULA', () => {
@@ -40,18 +40,8 @@ describe('EMPATHY_VIZ_MODES — só o que SIMULA', () => {
   });
 });
 
-describe('toggleLabel', () => {
-  it('[Right] ligado → "❚❚ Ligado"', () => {
-    expect(toggleLabel(true)).toBe('❚❚ Ligado');
-  });
-  it('[Right] desligado → "▶ Desligado"', () => {
-    expect(toggleLabel(false)).toBe('▶ Desligado');
-  });
-  it('[Boundary] valores truthy/falsy não-booleanos seguem a mesma regra (uso defensivo)', () => {
-    expect(toggleLabel(1)).toBe('❚❚ Ligado');
-    expect(toggleLabel(0)).toBe('▶ Desligado');
-  });
-});
+// (Os casos de `toggleLabel` mudaram de arquivo: a função foi para `ui/dom`, ao lado do `toggleBtn`, e o
+//  teste viajou com ela — tests/dom.node.test.js. Ver a regra do item 19.)
 
 // `simulatesDisability` mora ao lado de `isSimKind` neste arquivo de propósito: as duas parecem responder à
 // mesma pergunta e não respondem, e é justamente aí que um reset erra. `isSimKind` diz o que o PAINEL LISTA;

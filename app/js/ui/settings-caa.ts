@@ -17,6 +17,7 @@
 // LETRA vs PICTOGRAMA: a escolha de caixa é `letterCase` (core/state). NÃO existe um `caaMode` paralelo, e
 // isso é decisão: enquanto só duas opções forem escolhíveis, uma segunda variável para a mesma pergunta
 // seria duplicação com aparência de arquitetura. Ver a nota em core/state.
+import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
 import { DEFAULTS } from '../core/state.js';
 import type { LetterCase } from '../core/state.js';
@@ -39,7 +40,7 @@ export function letrasRowHtml(ligado: boolean): string {
     '<span class="opt-hint">Ligado: o jogo inteiro em caixa alta, como a alfabetização brasileira costuma ' +
     'começar. Desligado: maiúsculas e minúsculas, a escrita do dia a dia.</span></span>' +
     `<button class="mode-btn switch${ligado ? ' is-on' : ''}" id="caa-caixa-alta" type="button"` +
-    ` aria-pressed="${ligado}" aria-label="Letras maiúsculas">${ligado ? '❚❚ Ligado' : '▶ Desligado'}</button></div>`
+    ` aria-pressed="${ligado}" aria-label="Letras maiúsculas">${toggleLabel(ligado)}</button></div>`
   );
 }
 
@@ -59,7 +60,7 @@ export function caaRowHtml(s: CaaSet, selecionada: boolean): string {
   const explica = [s.nota, s.licenca ? `Licença: ${s.licenca}` : '', motivo ? t(motivo) : '']
     .filter(Boolean).join(' · ');
   const hint = explica ? `<span class="opt-hint">${explica}</span>` : '';
-  const estado = selecionada ? '❚❚ Ligado' : '▶ Desligado';
+  const estado = toggleLabel(selecionada);
   return (
     `<div class="ctrl-row"><span><strong>${s.nome}</strong>${hint}</span>` +
     `<button class="mode-btn switch${selecionada ? ' is-on' : ''}" data-caa="${s.key}" type="button"` +

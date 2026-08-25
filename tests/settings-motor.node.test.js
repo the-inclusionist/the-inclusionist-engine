@@ -5,6 +5,7 @@
 // decisão E3). O render()/reflect() em si (toca DOM) fica no settings-motor.browser.test.js.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
+import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel é alias dele desde o item 14
 import {
   easyKey, clampSelPlayer, anyMotorActive, onOffLabel, playerTabsHTML, easyAnnouncement,
 } from '../app/js/ui/settings-motor.js';
@@ -46,9 +47,11 @@ describe('anyMotorActive', () => {
 });
 
 describe('onOffLabel', () => {
-  it('[Right] rótulos exatos ligado/desligado', () => {
-    expect(onOffLabel(true)).toBe('❚❚ Ligado');
-    expect(onOffLabel(false)).toBe('▶ Desligado');
+  it('[Interface] é o MESMO rótulo de ui/dom — o alias continua ligado à fonte única', () => {
+    // O corpo daqui era uma cópia das mesmas duas palavras, com um comentário que dizia "shared" sem que
+    // fosse. Virou alias de `ui/dom.toggleLabel`. O que este caso guarda não é mais o texto (isso mora em
+    // tests/dom.node.test.js): é que o alias não volte a ser uma cópia.
+    expect(onOffLabel).toBe(toggleLabel);
   });
 });
 

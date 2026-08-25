@@ -11,6 +11,7 @@
 // (render/crt.ts, já extraído) são importados DIRETO — são módulos-folha, não game.js. A API de render/fx.ts
 // NÃO é referenciada aqui: renderMotion() nunca leu/escreveu JUICE (só o painel ?debug o faz) — ver nota no
 // retorno da extração antes de assumir que falta wiring.
+import { toggleLabel, toggleAria } from './dom.js';
 import { players, numPlayers } from '../core/state.js';
 import type { PlayerView } from '../core/entity.js';
 import { CRT, CRT_DEFAULT, applyCrt } from '../render/crt.js';
@@ -108,7 +109,7 @@ export function buildSceneRowsHtml(rmKeys: readonly MotionSceneKey[], rm: Motion
 /** Toggle liga/desliga da estética CRT (scanlines/vinheta). */
 export function crtToggleRowHtml(label: string, key: string, on: boolean): string {
   const cls = 'mode-btn switch' + (on ? ' is-on' : '');
-  return `<div class="ctrl-row"><span>${label}</span><button class="${cls}" data-crt-tgl="${key}" type="button" aria-pressed="${on}" aria-label="${label}: ${on ? 'ligado' : 'desligado'}">${on ? '❚❚ Ligado' : '▶ Desligado'}</button></div>`;
+  return `<div class="ctrl-row"><span>${label}</span><button class="${cls}" data-crt-tgl="${key}" type="button" aria-pressed="${on}" aria-label="${toggleAria(label, on)}">${toggleLabel(on)}</button></div>`;
 }
 
 /** Cantos CRT: 3 níveis (0=quadrado · 1=pequeno · 2=grande). */

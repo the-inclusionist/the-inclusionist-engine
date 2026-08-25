@@ -7,9 +7,10 @@
 // setOneButton/setWheelchair — still game.js: they touch the audio graph, player powers and world geometry far
 // beyond this panel) plus their live getters, and the shared reflect/overlay helpers (renderVizGroup,
 // reflectMotorEmpathy, reflectVizButtons, frontOverlay — used by sibling panels too, so they stay in game.js).
-// Pure catalog/label logic (isSimKind/EMPATHY_VIZ_MODES/toggleLabel) is unit-tested in node; render/open/close
+// Pure catalog logic (isSimKind/EMPATHY_VIZ_MODES) is unit-tested in node; render/open/close
 // are a thin DOM shell tested in browser. Model: app/js/render/fx.ts.
 
+import { toggleLabel } from './dom.js';
 import { VIZ_MODES, simulatesDisability, type VizMode } from '../render/viz-modes.js';
 import { hearingLoss, setHearingLossGraph } from '../platform/audio.js';
 import { t } from '../core/i18n.js';
@@ -31,7 +32,7 @@ import { markChanged, markMenuChanged } from './changed-mark.js';
 export const EMPATHY_VIZ_MODES: VizMode[] = VIZ_MODES.filter((m) => simulatesDisability(m.key));
 
 /** On/off label shared by every toggle button in this panel (hearing, one-button, wheelchair). */
-export const toggleLabel = (on: boolean): string => (on ? '❚❚ Ligado' : '▶ Desligado');
+// `toggleLabel` foi para ui/dom, ao lado do `toggleBtn`: era uma das TREZE cópias das mesmas duas palavras.
 
 export interface EmpathySettingsCtx {
   /** ui/dom.ts querySelector shortcut. */
@@ -83,7 +84,7 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     if (h) {
       h.classList.toggle('is-on', hearingLoss);
       h.setAttribute('aria-pressed', String(hearingLoss));
-      h.textContent = toggleLabel(hearingLoss);
+      h.textContent = toggleLabel(hearingLoss);  // ui/dom
     }
     ctx.reflectMotorEmpathy();
     refreshMarks();
