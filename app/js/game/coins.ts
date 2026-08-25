@@ -37,7 +37,19 @@ export function findCoinCandidates(): { tx: number; ty: number }[] {
   return cand;
 }
 
-export type Coin = { x: number; y: number; owner: number; taken: boolean; shape: string; letter: string };
+export type Coin = {
+  x: number; y: number; owner: number; taken: boolean; shape: string; letter: string;
+  /**
+   * O `y` ORIGINAL, guardado na primeira vez que o modo Fácil (ou a cadeira de rodas) rebaixa a moeda até
+   * o chão, para que desligar devolva a altura de antes. Opcional porque nasce preguiçoso: só existe depois
+   * que `positionEasyCoins` roda uma vez.
+   *
+   * ESTAVA FALTANDO AQUI, e a falta tinha um preço visível: este mesmo arquivo declarava um segundo tipo,
+   * `EasyCoin = { x, y, y0? }`, com um cast, só para poder tocar no campo. Duas descrições concorrentes do
+   * mesmo objeto no mesmo arquivo, e a canônica era a incompleta.
+   */
+  y0?: number;
+};
 // Sorteia n itens POR JOGADOR (posições independentes por dono). pools.shapes/letters vêm do game.js (derivados
 // do MODE): 'somasub' passa as formas; 'silabas' passa as iniciais; 'ludico' passa vazio → shape/letter = ''.
 export function pickCoins(n: number, pools: { shapes?: string[]; letters?: string[] } = {}): Coin[] {
@@ -57,9 +69,8 @@ export function pickCoins(n: number, pools: { shapes?: string[]; letters?: strin
 
 // Fácil/cadeirante: rebaixa cada moeda até o chão logo abaixo (scan ≤10 tiles); guarda y0 p/ reverter ao desligar.
 // A moeda (10px) repousa com 1px de folga (fy-11). Sem Fácil nem cadeira: volta ao y0 original.
-type EasyCoin = { x: number; y: number; y0?: number };
 export function positionEasyCoins(): void {
-  (coins as EasyCoin[]).forEach((cn) => {
+  coins.forEach((cn) => {
     const y0 = (cn.y0 ??= cn.y);
     if (_anyEasy() || _isWheelchair()) {
       const tx = Math.floor((cn.x + 5) / TILE); let fy: number | null = null;

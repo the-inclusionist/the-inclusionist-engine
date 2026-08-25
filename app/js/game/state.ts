@@ -26,6 +26,12 @@
 // gate de vocabulário, e chama porque o casador contém a palavra "quiz" — não porque a fronteira vazou ali.
 import * as store from '../platform/storage.js';
 import { emit } from '../core/state.js';
+// O TIPO DA MOEDA, e por que ele só pôde chegar aqui agora. Enquanto `coins` morava em `core/state`, ele era
+// obrigatoriamente `unknown[]` — a engine não pode conhecer uma moeda, e o comentário de lá dizia isso. O item
+// 19 trouxe o binding para cá, que é do JOGO, e deixou o `unknown` para trás; este import é o resto daquela
+// mudança. É `import type` porque `game/coins` importa o binding `coins` DAQUI: o tipo é apagado na compilação,
+// então não há aresta em tempo de execução e o ciclo não existe.
+import type { Coin } from './coins.js';
 
 /* ===================== quizLevel: 1..5 (nível da atividade de alfabetização) ===================== */
 //
@@ -47,5 +53,5 @@ export function setQuizLevelValue(n: number): void {
 //
 // Mutado IN-PLACE (push/forEach — usa a referência importada) mas TAMBÉM reatribuído, por `setCoins`. As duas
 // coisas ao mesmo tempo são o motivo de o setter existir: quem só muta veria a troca de array como um sumiço.
-export let coins: unknown[] = [];
-export function setCoins(arr: unknown[]): void { coins = arr; emit('coins', arr); }
+export let coins: Coin[] = [];
+export function setCoins(arr: Coin[]): void { coins = arr; emit('coins', arr); }

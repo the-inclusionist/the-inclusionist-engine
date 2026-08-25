@@ -70,7 +70,7 @@ export function rebuildCoins(): void {
   positionEasyCoins();
   c.coinContainer.removeChildren().forEach((s) => s.destroy());
   const mode = c.getMode();
-  _coinSprites = (coins as Coin[]).map((cn) => {
+  _coinSprites = coins.map((cn) => {
     let s: CoinSprite;
     if (mode === 'somasub' && cn.shape) { s = c.createSprite(c.shapeTexFor(cn.shape)); s.width = 15; s.height = 15; s.x = cn.x - 3; s.y = cn.y - 3; }
     else if (mode === 'silabas' && cn.letter) { s = c.createSprite(c.letterTexFor(cn.letter)); s.width = 14; s.height = 14; s.x = cn.x - 2; s.y = cn.y - 2; }
@@ -88,7 +88,7 @@ export function addCoinsForOwner(owner: number): void {
   const mode = c.getMode();
   const sh = mode === 'somasub' ? shuffle(SOMASUB_SHAPES.map((s) => s.id)) : [];
   const lt = mode === 'silabas' ? shuffle(WORD_INITIALS) : [];
-  a.slice(0, Math.min(COIN_TARGET, a.length)).forEach((cand, i2) => (coins as Coin[]).push({
+  a.slice(0, Math.min(COIN_TARGET, a.length)).forEach((cand, i2) => coins.push({
     x: cand.tx * TILE + 3, y: cand.ty * TILE + 3, owner, taken: false,
     shape: sh.length ? sh[i2 % sh.length] : '', letter: lt.length ? lt[i2 % lt.length] : '',
   }));
@@ -97,7 +97,7 @@ export function addCoinsForOwner(owner: number): void {
 
 // Recomeço SÓ de um jogador: descarta os itens dele e sorteia um conjunto novo. Verbatim.
 export function respawnCoinsForOwner(owner: number): void {
-  setCoins((coins as Coin[]).filter((cn) => cn.owner !== owner));
+  setCoins(coins.filter((cn) => cn.owner !== owner));
   addCoinsForOwner(owner);
 }
 
