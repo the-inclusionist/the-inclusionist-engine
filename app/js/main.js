@@ -107,7 +107,7 @@ import { initCoins, findCoinCandidates, pickCoins } from './game/coins.js'; // E
 import { srSay, srAlert, setVlibrasSay } from './core/a11y-sr.js'; // Estágio 4 (Tier 1): anúncios p/ leitor de tela (+ Libras injetado)
 import { CRT, applyCrt } from './render/crt.js'; // Estágio 4 (Tier 1): estética CRT (scanlines/vinheta/cantos)
 import { initMinimap, markSeen, redrawMinimapIfDirty, drawMinimapPlayer, resetMinimap, setMinimapVisible, getMinimap, minimapSeenCount } from './render/minimap.js'; // Estágio 4 (Tier 1): minimapa + fog-of-war
-import { vlibrasSay, vlibrasOpen, toggleLibras, vlTick, librasOpen, LIBRAS_RESERVE, setOnLibrasChange } from './ui/vlibras.js'; // Estágio 4 (Tier 1): intérprete VLibras (modo pessoa surda)
+import { vlibrasSay, vlibrasOpen, toggleLibras, vlTick, librasOpen, setOnLibrasChange } from './ui/vlibras.js'; // Estágio 4 (Tier 1): intérprete VLibras (modo pessoa surda)
 import { layout } from './ui/layout.js'; // Estágio 4 (Tier 1): escala do jogo (múltiplo inteiro de 320×180 em px reais)
 import { eyeMode, setEyeMode, startEyeControl, stopEyeControl, loadWebGazer } from './ui/webcam.js'; // Estágio 4 (Tier 1): jogar com os olhos (WebGazer)
 // Empatia MOTORA (global, muda a jogabilidade): `oneButton`/`wheelchair` migraram para core/state.js (#50) —
@@ -295,7 +295,7 @@ addEventListener('blur',()=>keys.clear());
 // held(pl,act) movido p/ input/state.js (Fase 2.22) // teclado OU gamepad do jogador
 
 /* ===================== a11y ===================== */
-// vlibrasSay + _vl* + vlibrasOpen/toggleLibras/vlTick/librasOpen/LIBRAS_RESERVE extraídos p/ ui/vlibras.js (Estágio 4, Tier 1).
+// vlibrasSay + _vl* + vlibrasOpen/toggleLibras/vlTick/librasOpen extraídos p/ ui/vlibras.js (Estágio 4, Tier 1).
 setVlibrasSay(vlibrasSay); // registra a fala em Libras (ui/vlibras) no core/a11y-sr
 
 /* ===== E9: áudio (WebAudio) + legendas (C1) + assistência (C2) ===== */
@@ -860,7 +860,7 @@ function respawnFigure(i){
    estaveis entram por valor. `reapplyVizAll` e `const` declarado ABAIXO (viz-setters), por isso vem embrulhado
    numa seta — passado direto, cairia em TDZ e derrubaria o boot. */
 const sessionApi = initSession({
-  $, librasReserve: ()=>(librasOpen?LIBRAS_RESERVE:0),
+  $, librasReserve: ()=>0, // o intérprete NÃO empurra mais a tela (ver ui/vlibras + ui/layout); fica p/ o overlay sob demanda
   isCoarsePointer: ()=>{ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } },
   getMode: ()=>MODE, setModeValue: (m)=>{ MODE=m; },
   setEnded: setEndedValue,
@@ -1258,7 +1258,7 @@ function hideTips(){} // dicas de início REMOVIDAS (José 2026-07-04); stub man
    Usa o BOTÃO NATIVO do VLibras (reposicionado à direita do jogo). Detecta abertura/fechamento
    por polling e, ao abrir, reserva o slot 5:9 (jogo desloca à esquerda, conjunto 21:9 centraliza)
    e encaixa+escala o painel no slot. */
-// layout() extraído p/ ui/layout.js (Estágio 4, Tier 1) — fecha o cluster: importa librasOpen/LIBRAS_RESERVE de ui/vlibras.
+// layout() extraído p/ ui/layout.js (Estágio 4, Tier 1). O acoplamento com ui/vlibras acabou: o intérprete não empurra.
 addEventListener('resize', layout);
 setOnLibrasChange(layout); // ui/vlibras: reflui o layout ao abrir/fechar o intérprete (callback injetado)
 setInterval(vlTick, 250);

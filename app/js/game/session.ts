@@ -260,7 +260,7 @@ export interface DarkRegion { announced: boolean; gfx: { alpha: number; visible:
 export interface SessionCtx {
   /* --- DOM e mídia --- */
   $: DomQuery;
-  librasReserve(): number;        // ui/vlibras: `librasOpen ? LIBRAS_RESERVE : 0` — `librasOpen` é `let` de lá
+  librasReserve(): number;        // hoje sempre 0: o intérprete não empurra mais a tela (ver ui/vlibras)
   isCoarsePointer(): boolean;     // adaptador de matchMedia (pointer:coarse + hover:none) — é o que torna isMobile testável
 
   /* --- estado REATRIBUÍDO no game.js (obrigatoriamente getters) --- */

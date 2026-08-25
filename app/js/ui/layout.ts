@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // ui/layout.ts — ESCALA do jogo (Estágio 4, Tier 1). Trava o #game-region num múltiplo inteiro de PIXELS REAIS
-// de 320×180 (por jogador), reservando espaço à direita quando o intérprete VLibras abre, e reescala as vars de
-// UI escopadas ao canvas. Fecha o cluster vlibras↔layout: importa librasOpen/LIBRAS_RESERVE de ui/vlibras (que
-// avisa mudanças por callback, sem importar daqui → sem ciclo). Deps: ui/dom ($), core/state (numPlayers),
-// render/crt (crtScanVars), ui/vlibras. fpsTick/configureRender seguem no game.js (outro concern).
+// de 320×180 (por jogador) e reescala as vars de UI escopadas ao canvas. Deps: ui/dom ($), core/screens,
+// core/state (numPlayers), render/crt (crtScanVars). fpsTick/configureRender seguem no main.js (outro concern).
+//
+// JÁ NÃO RESERVA ESPAÇO PARA O INTÉRPRETE. Reservava 380px à direita quando o painel do VLibras "abria", e o
+// jogo deslocava para a esquerda — decisão revista pelo Dev: o intérprete deve aparecer NA FRENTE da tela
+// enquanto um áudio toca, e sumir. E a reserva estava sendo aplicada O TEMPO TODO, porque o detector de
+// "aberto" lia um div vazio (ver o cabeçalho de ui/vlibras): o canvas vivia em `left: -136`, fora da tela,
+// com ou sem modo pessoa surda. O acoplamento vlibras↔layout desaparece junto.
 import { $ } from './dom.js';
 import { screenGrid, screenBaseSize } from '../core/screens.js';
 import { numPlayers } from '../core/state.js';
 import { crtScanVars } from '../render/crt.js';
-import { librasOpen, LIBRAS_RESERVE } from './vlibras.js';
 
 export function layout(): void {
   const wrap = $<HTMLElement>('#stage-wrap'); if (!wrap) return;
-  // ao abrir o VLibras, reserva espaço à direita → o jogo desloca p/ a esquerda e o conjunto centraliza
-  wrap.style.paddingRight = librasOpen ? LIBRAS_RESERVE + 'px' : '0px';
-  const availW = (wrap.clientWidth || 320) - (librasOpen ? LIBRAS_RESERVE : 0); // clientWidth inclui padding → descontar
+  wrap.style.paddingRight = '0px';
+  const availW = wrap.clientWidth || 320;
   const availH = wrap.clientHeight || 180;
   // E11: a grade de telas define a base (1=320×180, 2=640×180, 3-4=640×360)
   const { cols, rows } = screenGrid(numPlayers);

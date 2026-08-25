@@ -1,15 +1,35 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// ui/vlibras.ts — integração com o intérprete VLibras (modo pessoa surda) — Estágio 4, Tier 1. Com o painel
-// ABERTO, as narrações do jogo vão para o intérprete (o plugin traduz o TEXTO do elemento clicado → usamos um nó
-// quase invisível e disparamos o clique; fila de 1, ~4s por fala). vlTick faz polling do estado do painel; ao
-// abrir/fechar, reflui o layout via CALLBACK injetado (setOnLibrasChange) — evita acoplar a ui/vlibras ao ui/layout
-// (que ainda não saiu). Importa srAlert de core/a11y-sr (a11y-sr NÃO importa daqui — a fala em Libras entra lá por
-// injeção, sem ciclo). librasOpen (binding vivo) e LIBRAS_RESERVE são lidos pelo layout do game.js.
+// ui/vlibras.ts — MODO PESSOA SURDA (intérprete de Libras) — Estágio 4, Tier 1.
+//
+// DOIS DEFEITOS CONSERTADOS AQUI, e eles têm a mesma raiz.
+//
+// `librasOpen` era deduzido da GEOMETRIA do botão de acesso do VLibras: altura zero ou sem `offsetParent`
+// significava "o painel está aberto". Isso funcionava enquanto o widget renderizava dentro do nosso
+// `<div vw>`. Ele parou — hoje ele anexa `#vlibras-access-wrapper` direto no `<body>` —, e o que sobrou no
+// nosso markup é um div VAZIO, de 747×0. Altura zero. Então o detector respondia "aberto" para sempre:
+//
+//   1. o layout reservava 380px à direita para um intérprete inexistente e empurrava o jogo para fora da
+//      tela (medido: canvas em `left: -136`);
+//   2. o toggle não desligava, porque mandava um evento de fechar a um widget que não estava ali.
+//
+// (É a mesma raiz da falha do gate axe-core, consertada em 0657578: o VLibras mudou de lugar e três coisas
+// que o localizavam pelo nosso markup pararam juntas, em silêncio.)
+//
+// O ESTADO AGORA É NOSSO. `librasOpen` é uma escolha da pessoa, persistida, e não a leitura de um retângulo
+// de terceiro. Um modo de acessibilidade cujo estado é inferido da geometria de outra biblioteca é um modo
+// que desliga sozinho quando essa biblioteca muda — e quem paga é quem depende dele.
+//
+// O QUE AINDA NÃO É: o Dev decidiu que o intérprete deve aparecer NA FRENTE da tela quando um áudio toca e
+// sumir depois, sem clicar em nada e sem depender de clicar em textos. O widget do VLibras não faz isso (é um
+// painel encaixado, que traduz o texto do elemento clicado), então essa é a razão de o pilar 2 do ADR-0010
+// prever um motor próprio em zdog. Este arquivo para de empurrar a tela e passa a ter um toggle honesto; o
+// intérprete sob demanda é trabalho à parte.
 import { t } from '../core/i18n.js';
 import { srAlert } from '../core/a11y-sr.js';
+import * as store from '../platform/storage.js';
 
-export const LIBRAS_RESERVE = 380; // px reservados p/ o painel do VLibras quando aberto (slot 5:9 à direita)
-export let librasOpen = false;      // espelho VIVO do estado do painel (o vlTick atualiza; layout/__incl leem)
+/** Estado do modo pessoa surda. Escolha da PESSOA, persistida — não inferência sobre um widget de terceiro. */
+export let librasOpen = store.getBool('incl_libras', false);
 
 let _vlOpen = false, _vlNode: HTMLElement | null = null, _vlBusyUntil = 0, _vlNext: string | null = null;
 let _onLibrasChange: () => void = () => { /* game.js registra o layout() */ };
@@ -32,17 +52,21 @@ export function vlibrasSay(text: string): void {
 }
 
 const vwBtn = (): HTMLElement | null => document.querySelector<HTMLElement>('[vw-access-button]');
-// Painel aberto? O botão de acesso do VLibras fica escondido/zerado quando o intérprete está aberto.
-export function vlibrasOpen(): boolean { const b = vwBtn(); if (!b) return false; const r = b.getBoundingClientRect(); return r.width === 0 || r.height === 0 || b.offsetParent === null; }
-// Liga/desliga o intérprete. Abre clicando o botão de acesso; fecha pelo evento oficial do widget (DOM/Unity na própria origem).
+/** O modo pessoa surda está ligado? Lê o NOSSO estado — nunca mais a geometria do widget. */
+export function vlibrasOpen(): boolean { return librasOpen; }
+
+/** Liga/desliga o modo pessoa surda. Um toggle de verdade: o estado é nosso, então ele sempre alterna. */
 export function toggleLibras(): void {
-  const b = vwBtn(); if (!b) { srAlert(t('sr.libras.loading')); return; }
-  if (vlibrasOpen()) { try { window.dispatchEvent(new CustomEvent('vp-widget-close')); } catch (e) { /* noop */ } }
-  else { try { b.click(); } catch (e) { /* noop */ } }
+  librasOpen = !librasOpen; _vlOpen = librasOpen;
+  store.setBool('incl_libras', librasOpen);
+  // Tentativa BEST-EFFORT de acordar o widget do VLibras, se ele estiver carregado. Falhar aqui não pode
+  // impedir o modo de ligar: o estado é a escolha da pessoa, o widget é só um tradutor possível para ela.
+  const b = vwBtn();
+  if (librasOpen && b) { try { b.click(); } catch (e) { /* noop */ } }
+  else if (!librasOpen) { try { window.dispatchEvent(new CustomEvent('vp-widget-close')); } catch (e) { /* noop */ } }
+  _onLibrasChange();
+  if (librasOpen) vlibrasSay(t('sr.libras.on'));
 }
-// Polling (250ms): detecta abrir/fechar → atualiza librasOpen, reflui o layout (callback) e anuncia ao ligar.
-// _vlOpen guia o vlibrasSay (setado aqui p/ evitar TDZ de librasOpen no boot).
-export function vlTick(): void {
-  const o = vlibrasOpen(); _vlOpen = o;
-  if (o !== librasOpen) { librasOpen = o; _onLibrasChange(); if (o) vlibrasSay('Tradução em Libras ligada.'); }
-}
+
+/** Mantido para o laço do jogo, que o chama a cada quadro. Já não decide nada — o estado é nosso. */
+export function vlTick(): void { _vlOpen = librasOpen; }
