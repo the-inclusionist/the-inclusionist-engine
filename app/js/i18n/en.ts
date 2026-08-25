@@ -267,5 +267,6 @@ const en: Record<string, string> = {
   'sr.audio.reset': 'Hearing accessibility restored to its defaults. The other menus did not change.',
   'sr.empathy.reset': 'Empathy mode restored to its defaults: simulations off. Colour-blindness corrections and the other menus did not change.',
   'sr.motor.reset': 'Easy Mode and latched movement restored to their defaults. Eye control and the key mapping are unchanged.',
+  'sr.typo.reset': 'Typography restored to its default: {fam}, designed for low vision.',
 };
 export default en;

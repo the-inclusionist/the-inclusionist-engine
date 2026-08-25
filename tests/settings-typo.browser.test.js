@@ -27,7 +27,8 @@ function fullCtx(over = {}) {
 
 describe('ui/settings-typo', () => {
   beforeEach(() => {
-    document.body.innerHTML = '<div id="typo"><div id="typo-list"></div><span id="typo-preview"></span></div>';
+    document.body.innerHTML = '<div id="typo"><div id="typo-list"></div><span id="typo-preview"></span>' +
+      '<button id="typo-reset" type="button">Restaurar</button></div>';
     document.documentElement.removeAttribute('data-fonte');
     document.documentElement.style.removeProperty('--font-custom');
   });
@@ -122,5 +123,58 @@ describe('ui/settings-typo', () => {
     const ctx = fullCtx();
     const api = initSettingsTypo(ctx);
     expect(() => api.render()).not.toThrow();
+  });
+});
+
+describe('ui/settings-typo — restaurar padrões DESTE menu (ADR-0028)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="typo"><div id="typo-list"></div><span id="typo-preview"></span>' +
+      '<button id="typo-reset" type="button">Restaurar</button></div>';
+    document.documentElement.removeAttribute('data-fonte');
+    document.documentElement.style.removeProperty('--font-custom');
+  });
+
+  it('[Right] volta para a Atkinson — persistida, aplicada ao root e refletida na lista', () => {
+    const ctx = fullCtx({ store: fakeStore({ incl_font_k: 'lexend' }) });
+    const api = initSettingsTypo(ctx);
+    api.render();
+    expect(api.getFontKey()).toBe('lexend');
+
+    $('#typo-reset').click();
+
+    expect(api.getFontKey()).toBe('atkinson');
+    expect(document.documentElement.dataset.fonte).toBe('padrao');
+    expect(ctx.store.map.get('incl_font_k')).toBe('atkinson');
+    expect($('#typo-list').querySelector('button[data-font="atkinson"]').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('[Interface] limpa o --font-custom que uma fonte de catálogo tinha deixado no root', () => {
+    // A volta tem que apagar o rastro da ida. Uma fonte "custom" escreve a propriedade; se o reset trocasse só
+    // o data-fonte, a criança ficaria com o padrão declarado e a fonte anterior ainda desenhada na tela.
+    const ctx = fullCtx();
+    const api = initSettingsTypo(ctx);
+    api.setFont('comicneue', true); // fonte de catálogo → passa pelo --font-custom, não por um data-fonte próprio
+    api.render();
+    const antes = document.documentElement.style.getPropertyValue('--font-custom');
+
+    $('#typo-reset').click();
+
+    expect(antes).toContain('Comic Neue');
+    expect(document.documentElement.style.getPropertyValue('--font-custom')).toBe('');
+    expect(document.documentElement.dataset.fonte).toBe('padrao');
+  });
+
+  it('[Interface] anuncia NOMEANDO a fonte — a mudança é visível para quem enxerga e muda para quem não', () => {
+    const ctx = fullCtx({ store: fakeStore({ incl_font_k: 'lexend' }) });
+    initSettingsTypo(ctx);
+    $('#typo-reset').click();
+    expect(ctx.said.at(-1)).toContain('Atkinson');
+  });
+
+  it('[Zero] já no padrão, clicar o reset não quebra nem muda a chave', () => {
+    const ctx = fullCtx();
+    const api = initSettingsTypo(ctx);
+    expect(() => $('#typo-reset').click()).not.toThrow();
+    expect(api.getFontKey()).toBe('atkinson');
   });
 });

@@ -298,5 +298,6 @@ const pt: Record<string, string> = {
   'sr.audio.reset': 'Acessibilidade auditiva restaurada aos padrões. Os outros menus não mudaram.',
   'sr.empathy.reset': 'Modo empatia restaurado aos padrões: simulações desligadas. Correções de daltonismo e os outros menus não mudaram.',
   'sr.motor.reset': 'Modo Fácil e movimento por alternância restaurados aos padrões. O controle pelos olhos e o mapeamento de teclas continuam como estavam.',
+  'sr.typo.reset': 'Tipografia restaurada ao padrão: {fam}, desenhada para quem tem baixa visão.',
 };
 export default pt;

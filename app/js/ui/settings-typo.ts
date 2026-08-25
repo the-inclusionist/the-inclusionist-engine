@@ -8,7 +8,7 @@
 // (FONT_GROUPS/FONT_BY_KEY) stays in ./fonts.js (Phase 2 extraction) — imported here, never duplicated.
 
 import { t } from '../core/i18n.js';
-import { FONT_GROUPS, FONT_BY_KEY, type FontItem } from './fonts.js';
+import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, type FontItem } from './fonts.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
@@ -158,6 +158,21 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     const pv = ctx.$<HTMLElement>('#typo-preview');
     if (pv && cur) pv.style.fontFamily = `'${cur.fam}'`;
   }
+
+  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
+  //
+  // O menu mais simples dos oito: a tipografia guarda uma escolha só, então o reset é uma linha. Ainda assim
+  // vale dizer para onde ele volta — a Atkinson Hyperlegible não é o padrão por ser bonita, é o padrão por ter
+  // sido desenhada para quem tem baixa visão. Uma criança que experimentou seis fontes e não consegue mais ler
+  // a tela precisa de um caminho de volta que termine na MAIS legível, não numa qualquer.
+  //
+  // O anúncio nomeia a fonte porque a mudança é visível para quem enxerga e invisível para quem não enxerga.
+  const resetBtn = ctx.$<HTMLButtonElement>('#typo-reset');
+  if (resetBtn) resetBtn.addEventListener('click', () => {
+    setFont(DEFAULT_FONT_KEY, false);
+    render();
+    ctx.srSay(t('sr.typo.reset', { fam: FONT_BY_KEY[DEFAULT_FONT_KEY].fam }));
+  });
 
   setFont(fontKey, false); // aplica a fonte persistida ao boot (== antigo `setGameFont(fontKey,false)`)
 
