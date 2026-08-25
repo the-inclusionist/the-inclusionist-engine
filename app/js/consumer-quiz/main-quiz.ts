@@ -71,7 +71,25 @@
 //     ACHADO LATERAL, já consertado à parte (7e72da9): o anúncio do sonar não passava por `t()`. Sete cadeias
 //     em pt-BR cruas no único módulo cuja saída É a interface da criança cega.
 //
-//  (faltam: menu-nav por gamepad, Libras e os botões de toque)
+// 10. A NAVEGAÇÃO DE MENU FUNCIONA FORA DO GÊNERO — mas só depois de o quiz MENTIR SOBRE A PRÓPRIA FASE.
+//     `menu-nav` abre com `if (phase !== 'paused') return`, e `phase` chega por IMPORTAÇÃO de core/state, não
+//     por injeção: o consumidor não tem como trazer o próprio modelo de fases. Um quiz cujos ajustes estão
+//     sempre disponíveis precisa se declarar "pausado" para poder navegar os próprios menus.
+//     De dentro da plataforma isso é invisível — lá os menus só abrem em pausa mesmo. É a terceira vez que
+//     este consumidor mostra uma fronteira que nenhuma leitura de código mostraria.
+//     Provado: com `setPhaseValue('paused')`, `S` desce atkinson→lexend→quattro e `W` volta, pelo esquema de
+//     teclas remapeável. Sem ela, tecla nenhuma chega.
+//
+// 11. O TECLADO REMAPEÁVEL É O MELHOR RECORTE DA BASE. `KeyboardRuntimePlayer` é `Pick<ControlledPlayer,'ctrl'>`
+//     — um esquema de teclas e nada mais. O quiz fornece UM jogador de verdade, sem posição, sem física, sem
+//     entidade de mundo, e recebe `whichPlayer`/`actionOf` prontos. É o contraste exato do sonar (achado 9):
+//     mesmo subsistema de entrada, um pede o mundo inteiro, o outro pede o que realmente usa.
+//
+// 12. DETALHE QUE CUSTA UMA LINHA E VALE REGISTRAR: `menu-nav` tipa `win` com `fn: (e: never) => void`, e o
+//     `window` real não casa com isso. Todo consumidor vai escrever o mesmo adaptador de uma linha — a engine
+//     pede uma forma de `window` que o `window` não tem.
+//
+//  (faltam: Libras e os botões de toque)
 import { initI18n, t, applyDom } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createTts } from '../platform/tts.js';
@@ -81,6 +99,10 @@ import { initSettingsPanel } from '../ui/settings-panel.js';
 import * as store from '../platform/storage.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 import { VIZ_MODES, VIZ_FILTER, simulatesDisability } from '../render/viz-modes.js';
+import { initMenuNav } from '../ui/menu-nav.js';
+import { initKeyboardRuntime } from '../input/keyboard-runtime.js';
+import { setPhaseValue } from '../core/state.js';
+import { kb, initKB } from '../input/keyboard.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
 interface Pergunta {
@@ -200,6 +222,38 @@ export function bootQuiz(): void {
       srSay(seletor.options[seletor.selectedIndex]?.text ?? '');
     });
   }
+
+  // NAVEGAÇÃO DE MENU pela engine. O ctx pede doze coisas; o quiz fornece nove de verdade e DECLINA três —
+  // `getPauseMenu` devolve null porque um quiz não tem menu de pausa por tela, `closePadWiz` é vazio porque
+  // não há assistente de pad, e `setPauseActor` é vazio porque não há ator. Declinar não é o mesmo que MENTIR:
+  // com o sonar eu teria de inventar tiles e um cenário para obter uma resposta; aqui eu digo "não tenho isso",
+  // e a engine segue funcionando na parte que serve. A diferença é o que separa um achado de um falso verde.
+  // O TECLADO REMAPEÁVEL veio junto, e barato: `KeyboardRuntimePlayer` é `Pick<ControlledPlayer,'ctrl'>` —
+  // um esquema de teclas e nada mais. Sem posição, sem física, sem entidade de mundo. O quiz fornece UM
+  // jogador de verdade e recebe `whichPlayer`/`actionOf` prontos, que é o que faz o menu-nav responder.
+  initKB();
+  const jogadores = [{ ctrl: {} as Record<string, string[]> }];
+  const kbRuntime = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => 1, getPlayers: () => jogadores });
+  kbRuntime.assignControls();
+
+  const nav = initMenuNav({
+    $, getActiveElement: () => document.activeElement,
+    topVisibleOverlay: overlays.topVisibleOverlay, closeById: overlays.closeById,
+    getPauseMenu: () => null,
+    setPhase: () => {}, setPauseActor: () => {},
+    isCapturing: () => false, closePadWiz: () => {},
+    whichPlayer: (code) => kbRuntime.whichPlayer(code), actionOf: (code, i) => kbRuntime.actionOf(code, i),
+    // O ctx tipa `win` com `fn: (e: never) => void` (o `never` é o que torna o ouvinte contravariante e
+    // seguro do lado de quem despacha). `window.addEventListener` não casa com isso, e o adaptador de uma
+    // linha é o preço — vale registrar: a engine pede uma forma de `window` que o `window` real não tem.
+    win: { addEventListener: (tipo, fn, captura) => window.addEventListener(tipo, fn as EventListener, captura) },
+  });
+  nav.attach();
+  // O QUIZ PRECISA SE DECLARAR "PAUSADO" PARA PODER NAVEGAR OS PRÓPRIOS MENUS. Ver o achado 10: `menu-nav`
+  // começa com `if (phase !== 'paused') return`, e `phase` entra por IMPORTAÇÃO de core/state, não por
+  // injeção — não há como o consumidor trazer o próprio modelo de fases. Esta linha é a evidência, deixada
+  // visível de propósito: ela não conserta a fronteira, ela mostra onde ela está.
+  setPhaseValue('paused');
 
   const região = $<HTMLElement>('#game-region');
   if (região) região.addEventListener('keydown', aoTeclado);
