@@ -9,6 +9,7 @@
 // Extraído do game.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, áudio rodada 2).
 
 interface SfxDef { t: OscillatorType; f: number; d: number; cap?: string; }
+import { t } from '../core/i18n.js'; // item 19: `cap` guarda CHAVE, e quem exibe resolve
 
 export interface AudioEarconsCtx {
   SFX: Record<string, SfxDef | undefined>;      // tabela de earcons (de platform/audio)
@@ -30,7 +31,10 @@ export interface AudioEarcons {
 export function createAudioEarcons(ctx: AudioEarconsCtx): AudioEarcons {
   function sfx(name: string): void {
     const c = ctx.SFX[name]; if (!c) return;
-    if (ctx.getCaptionsOn() && c.cap) ctx.showCaption(c.cap); // LEGENDA primeiro (visual + aria-live via role=status)
+    // LEGENDA primeiro (visual + aria-live via role=status) — e RESOLVIDA no ponto de uso: `cap` guarda a
+    // CHAVE desde o item 19, porque a tabela vive no jogo e uma tabela de `const` com texto congelaria no
+    // idioma do boot. Quem exibe resolve; é a mesma regra de `render/viz-modes`.
+    if (ctx.getCaptionsOn() && c.cap) ctx.showCaption(t(c.cap));
     if (!ctx.getSoundOn() || ctx.getVolume() <= 0) return;    // ...só então o som — surdez: a legenda já saiu
     try {
       const ac = ctx.ensureAC(); if (!ac) return;

@@ -17,7 +17,10 @@ function fakeAC() {
   return { rec, ac: { currentTime: 0, destination: {}, createOscillator: mkOsc, createGain: mkGain } };
 }
 
-const SFX = { coin: { t: 'square', f: 880, d: 0.1, cap: '🔊 moeda' }, plain: { t: 'sine', f: 440, d: 0.1 } };
+// A tabela é do JOGO (item 19) e `cap` guarda a CHAVE, não o texto. O fixture usa uma chave que NÃO existe
+// no dicionário de propósito: `t()` devolve a própria chave quando não acha, então o caso continua podendo
+// afirmar o que interessa — que a legenda sai — sem depender do texto de nenhum idioma.
+const SFX = { alvo: { t: 'square', f: 880, d: 0.1, cap: 'sfx.teste' }, plain: { t: 'sine', f: 440, d: 0.1 } };
 
 function setup(over = {}) {
   const caps = [], hits = [];
@@ -47,14 +50,14 @@ describe('platform/audio-earcons', () => {
 
   it('[Cross-check a11y] som OFF mas legendas ON: legenda SAI, mas 0 osciladores', () => {
     const { earcons, rec, caps } = setup({ getSoundOn: () => false });
-    earcons.sfx('coin');
-    expect(caps).toEqual(['🔊 moeda']); // surdo vê o earcon mesmo sem áudio
+    earcons.sfx('alvo');
+    expect(caps).toEqual(['sfx.teste']); // surdo vê o earcon mesmo sem áudio
     expect(rec.osc).toBe(0);
   });
 
   it('[Interface] legendas OFF: nenhuma legenda mesmo com .cap (mas o som toca)', () => {
     const { earcons, rec, caps } = setup({ getCaptionsOn: () => false });
-    earcons.sfx('coin');
+    earcons.sfx('alvo');
     expect(caps).toEqual([]);
     expect(rec.osc).toBe(1);
   });

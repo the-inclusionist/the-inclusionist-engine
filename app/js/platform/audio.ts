@@ -76,17 +76,14 @@ export function noiseHit(mat: string, pan?: number | null, pc?: PlayerCtx | null
   src.connect(bq).connect(g); node.connect(pc ? pc.out : (catNode('interact') || audioOut() || ac.destination)); src.start(t); src.stop(t + f.d + 0.03); _footCount++;
 } catch (e) { /* noop */ } }
 
-// Efeitos sonoros básicos: frequência (f), duração (d), timbre (t) e legenda (cap, para captions/aria-live).
-type Sfx = { f: number; d: number; t: OscillatorType; cap: string };
-export const SFX: Record<string, Sfx> = {
-  jump:{f:520,d:0.12,t:'square',cap:'🔊 Pulo'},
-  coin:{f:880,d:0.14,t:'triangle',cap:'🔊 Coletou'},
-  hurt:{f:120,d:0.25,t:'sawtooth',cap:'🔊 Ai! Dano'},
-  win:{f:700,d:0.5,t:'triangle',cap:'🔊 Vitória!'},
-  place:{f:640,d:0.08,t:'sine',cap:''},
-  correct:{f:990,d:0.18,t:'triangle',cap:'🔊 Acertou!'},
-  wrong:{f:180,d:0.15,t:'square',cap:'🔊 Tente de novo'},
-  power:{f:760,d:0.18,t:'triangle',cap:'🔊 Power-up!'},
-  key:{f:990,d:0.16,t:'sine',cap:'🔊 Chave'},
-  gate:{f:300,d:0.30,t:'sawtooth',cap:'🔊 Portão abriu'},
-};
+/* A TABELA DE EARCONS SAIU daqui em 2026-08-25 (item 19) — está em `game/earcons`.
+ *
+ * De dez earcons, sete eram deste jogo: `coin`/`key`/`gate`/`power` são objetos deste mundo e
+ * `correct`/`wrong`/`place` são eventos da atividade. O gate acusava só a linha do `coin`, porque é a única
+ * com palavra que o casador conhece — e a linha acusada era a menos interessante das dez.
+ *
+ * As legendas eram pt-BR CRU (`'🔊 Coletou'`, `'🔊 Portão abriu'`): nove frases dentro de um módulo de
+ * plataforma, que o gate de i18n do `main.js` não alcança. Viraram CHAVES, e quem exibe resolve.
+ *
+ * O que ficou aqui é a SÍNTESE — oscilador, envelope, ruído, roteamento por categoria —, que serve a
+ * qualquer jogo. O que é 880 Hz de triangular por 0,14 s ao pegar uma moeda, não. */

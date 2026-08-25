@@ -61,6 +61,18 @@ const pt: Record<string, string> = {
   // O rótulo do botão dinâmico do menu de pausa. `{nome}` é o nome do nível, que o JOGO resolve — currículo
   // não se traduz (pilar 3); a MOLDURA, sim, e é ela que mora aqui.
   'pause.nivel': '📚 Nível {n} · {nome}',
+  // LEGENDAS DOS EARCONS (item 19). Eram texto cru dentro de `platform/audio` — nove frases numa camada de
+  // engine, invisíveis ao gate de i18n do `main.js`. É o que a criança SURDA lê no lugar do som: deixá-las em
+  // português num build em inglês tirava dela exatamente a informação que a legenda existe para dar.
+  'sfx.jump': '🔊 Pulo',
+  'sfx.coin': '🔊 Coletou',
+  'sfx.hurt': '🔊 Ai! Dano',
+  'sfx.win': '🔊 Vitória!',
+  'sfx.correct': '🔊 Acertou!',
+  'sfx.wrong': '🔊 Tente de novo',
+  'sfx.power': '🔊 Power-up!',
+  'sfx.key': '🔊 Chave',
+  'sfx.gate': '🔊 Portão abriu',
 
   // Chrome / navegação
   'skip.toGame': 'Pular para o jogo',

@@ -44,7 +44,7 @@ import { createTitleScene } from './render/title-scene.js'; // Fase 2.27: atalho
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_CYCLE, simulatesDisability } from './render/viz-modes.js'; // Fase 2: modos visuais de a11y (dados)
 import { PAD_DESIGNS } from './input/devices.js'; // Fase 2: rótulos de gamepad/toque (dados)
 import { keys, padCur, padPrevAct, held } from './input/state.js'; // Fase 2.22: estado de input + held
-import { audioCtx, ensureAC, SFX, soundOn, volume, setSoundOn, setVolume, audioOut, hearingLoss, setHearingLossGraph, setMasterMuted, audioCat, initAudioMixer, catNode, setCatGain, tone, tonePan, noiseBuffer, noiseHit, _footCount } from './platform/audio.js'; // Fase 2: base + mestre + mixer + sínteses (oscilador + ruído)
+import { audioCtx, ensureAC, soundOn, volume, setSoundOn, setVolume, audioOut, hearingLoss, setHearingLossGraph, setMasterMuted, audioCat, initAudioMixer, catNode, setCatGain, tone, tonePan, noiseBuffer, noiseHit, _footCount } from './platform/audio.js'; // Fase 2: base + mestre + mixer + sínteses (oscilador + ruído)
 import { gameSay } from './platform/speech.js';
 import { createAudioJingles } from './platform/audio-jingles.js'; // Tier 2 (áudio r1): jingles de vitória/enigma/fogos
 import { createAudioEarcons } from './platform/audio-earcons.js'; // Tier 2 (áudio r2): earcons (sfx) + porta + legendas
@@ -327,7 +327,9 @@ addEventListener('blur',()=>keys.clear());
 setVlibrasSay(vlibrasSay); // registra a fala em Libras (ui/vlibras) no core/a11y-sr
 
 /* ===== E9: áudio (WebAudio) + legendas (C1) + assistência (C2) ===== */
-// SFX (definições de som) extraído p/ platform/audio.js (Fase 2).
+// SFX (definicoes de som) extraido p/ platform/audio.js (Fase 2), e de la para game/earcons.js (item 19):
+// sete dos dez earcons sao deste jogo, e as legendas eram pt-BR cru dentro da engine.
+import { SFX } from './game/earcons.js';
 let capTimer=null; // `captionsOn` migrou para core/state.js (#50); soundOn/volume/audioCtx vêm de platform/audio.js
 const anyEasy=()=>players.some(p=>p.easy); // efeitos de MUNDO do Fácil (moedas no chão) ligam se QUALQUER jogador usa Fácil
 // Modo Fácil (deficiência motora): gravidade ×2/3, pulo ×8/7, andar ×0.7, sem perigos, sem correr,

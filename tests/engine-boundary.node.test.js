@@ -214,7 +214,10 @@ const MOEDA_CONHECIDA = new Set([
   //
   // `ui/pause-icons` saiu junto, e por injeção: ele importava `quizLevel` para desenhar o rótulo do nível.
   // O nome do nível (`qlName`) já vinha do jogo; faltava o número vir pelo mesmo caminho.
-  'platform/audio.ts',      // earcon de chave 'coin': conteúdo sonoro do jogo na tabela da engine
+  // `platform/audio.ts` SAIU (2026-08-25, item 19). O gate acusava UMA linha — a do `coin` — e ela era a
+  // menos interessante das dez: `key`, `gate`, `power` são objetos deste mundo e `correct`, `wrong`, `place`
+  // são eventos da atividade. Tirar só a linha acusada teria deixado o gate verde com o problema no lugar.
+  // A tabela inteira foi para `game/earcons`; a SÍNTESE (oscilador, envelope, ruído, roteamento) ficou.
   // `ui/settings-motion.ts` SAIU (2026-08-25): a única menção era o rótulo 'Animação de itens (moedas)', que
   // foi para o dicionário no item 14. Ganho lateral da i18n — texto que sai do código sai também da fronteira.
   // `ui/settings-motor.ts` SAIU (2026-08-25): a única menção era 'moedas no chão', dentro do anúncio do Modo
@@ -383,7 +386,9 @@ const FIXTURES_CONHECIDOS = {
   // cegueira voltaria com outro nome. Currículo não é jogo — a lista é o lugar certo para isto.
   'activities-menu.node.test.js': 5,
   // Conteúdo do jogo em tabelas da engine.
-  'audio-earcons.node.test.js': 4,     // earcon de chave 'coin'
+  // `audio-earcons.node.test.js` SAIU junto: o fixture declarava um earcon chamado 'coin' com a legenda em
+  // texto. Agora declara 'alvo' com uma CHAVE que nem existe no dicionário — `t()` devolve a própria chave
+  // quando não acha, então o caso afirma o que interessa (a legenda sai) sem depender de idioma nenhum.
   'i18n-dicts.node.test.js': 3,        // `sr.quiz.*`: 253 chaves das quais um 2º jogo usa um punhado (achado 2)
   'storage-escopos.node.test.js': 2,   // `quizlevel` no registro de chaves — é a chave que o namespace isola
 };
@@ -473,13 +478,12 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
     // convida a "zerar a lista", que é como um gate passa a mentir:
     //   · `viz-setters.browser` (3) — dívida de verdade: o irmão node saiu, este não.
     //   · `activities-menu.*` (7)   — o menu do CURRÍCULO. Sai com a EdSP (ADR-0032), não antes.
-    //   · `audio-earcons` (4)       — o earcon de chave 'coin': conteúdo sonoro do jogo na tabela da engine.
     //   · `i18n-dicts` (3)          — as chaves `sr.quiz.*`. É o ACHADO 2 do segundo consumidor (peso morto
     //     no dicionário), e não acoplamento: um segundo jogo herda 253 chaves e usa um punhado.
     //   · `storage-escopos` (2)     — a chave `quizlevel`, pelo mesmo motivo de `platform/storage`: `kJogo()`
     //     É o mecanismo de escopo de jogo, e a palavra é que chama a atenção do casador.
     // As duas últimas são o casador notando uma PALAVRA, não a fronteira notando um vazamento.
-    expect(Object.keys(FIXTURES_CONHECIDOS)).toHaveLength(6);
+    expect(Object.keys(FIXTURES_CONHECIDOS)).toHaveLength(5);
     const porSubsistema = new Set(Object.keys(FIXTURES_CONHECIDOS).map((f) => f.split('.')[0]));
     for (const limpo of ['hud', 'audio-nav', 'audio-sonar', 'high-contrast', 'viewports', 'keydown', 'gamepad', 'pause-icons']) {
       expect(porSubsistema, `${limpo} voltou a precisar de moeda/quiz no fixture — o item 19 andou para trás`)
