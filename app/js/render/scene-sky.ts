@@ -85,7 +85,10 @@ export function createSceneSky(ctx: SceneSkyCtx): SceneSky {
   function stepV3Decor(): void {
     const T = ctx.CENARIOS[ctx.getCenario()] || {};
     ctx.starsG.clear(); ctx.skyDecoG.clear(); ctx.fogG.clear(); ctx.grassG.clear(); ctx.themeFxG.clear(); ctx.themeFxBackG.clear();
-    if (!T.v3 || ctx.DIRECT_CFG[ctx.getVizMode()]) return; // Cidade tem o próprio céu; alto contraste dispensa decor
+    // A pergunta é "este tema tem decoração viva?", e ela se responde OLHANDO A DECORAÇÃO. Antes era
+    // `!T.v3`, que respondia "este tema não é a Cidade" — o mesmo resultado por acidente, enquanto a Cidade
+    // era o único tema sem céu vivo. Um tema de fundo raster COM borboletas quebrava aquilo; este não.
+    if (!T.decor?.length || ctx.DIRECT_CFG[ctx.getVizMode()]) return; // alto contraste dispensa decor
     const t = ctx.getFxClock(), d = T.decor || [], vw = ctx.LOGICAL_W, vh = ctx.LOGICAL_H, reduzido = !!ctx.getRm().decor;
     // TELA: estrelas (sparkles v3) — cintilam a ~0,3Hz
     if (!reduzido && d.includes('sparkles')) { const top = Math.max(1, Math.floor(vh * 0.7));

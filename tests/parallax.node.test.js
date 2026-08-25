@@ -56,8 +56,8 @@ function ambiente(over = {}) {
   return { ctx, log, estado, api: createParallax(ctx) };
 }
 
-const TEMA_V3 = { nome: 'Campo', v3: true, sky: ['#86c5e8', '#cfeecb'], cloud: ['#fff', '#eee'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens'] };
-const TEMA_CIDADE = { nome: 'Cidade', v3: false };
+const TEMA_V3 = { nome: 'Campo', fundo: 'gerado', sky: ['#86c5e8', '#cfeecb'], cloud: ['#fff', '#eee'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens'] };
+const TEMA_CIDADE = { nome: 'Cidade', fundo: 'png' };
 
 /* ===================== PARALLAX (dado) ===================== */
 

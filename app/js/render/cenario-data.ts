@@ -73,15 +73,32 @@ export interface Flora {
   petals: string[]; // pétalas sorteadas por hash do tile
 }
 
-/** Um cenário. `v3:false` = Cidade (fundo em PNG + cena própria); `v3:true` = fundo GERADO das cores abaixo. */
+/**
+ * Um cenário.
+ *
+ * O CAMPO `v3` FOI SEPARADO EM DOIS (2026-08-25), e o motivo é um pedido que ele não conseguia atender.
+ * Ele significava três coisas ao mesmo tempo — "meu fundo é gerado das cores", "tenho céu vivo compartilhado"
+ * e "tenho flora" — e isso funcionava enquanto só existiam dois tipos de tema: a Cidade (PNG, cena própria,
+ * sem flora) e os quatro gerados (cores, céu vivo, flora).
+ *
+ * O Dev pediu FUNDO RASTER PARA A FLORESTA, mantendo a floresta como floresta. Isso é uma combinação nova —
+ * PNG **com** flora e céu vivo — e ela não cabia num booleano só: virar `v3` para false teria tirado a grama,
+ * as flores e as borboletas dela junto com o fundo gerado.
+ *
+ * Agora são duas perguntas independentes, e cada leitor faz a sua:
+ *   · `fundo`     — de onde vêm as três camadas de parallax. Lido por render/parallax.
+ *   · `decor`     — que decoração viva o céu recebe. Lido por render/scene-sky, pela PRESENÇA, não por rótulo.
+ * A flora segue a mesma regra: quem tem entrada em THEME_FLORA tem flora, e ponto.
+ */
 export interface CenarioTema {
   /** CHAVE i18n do nome exibido. Chave e não texto: tabela de módulo resolvida no import congelaria o idioma
    *  no boot (ver a nota em input/devices). Quem exibe resolve com `t()`. */
   nome: string;
-  v3: boolean;
-  sky?: [string, string];   // gradiente vertical do céu (topo → horizonte) — só `v3`
-  cloud?: [string, string]; // nuvem de tela: corpo + sombra — só `v3`
-  hills?: [string, string]; // as duas bandas de morro: [fundo, frente] — só `v3`
+  /** De onde vêm as 3 camadas de fundo: `'gerado'` das cores abaixo, ou `'png'` de `cenarios/<tema>/c4|3|2.png`. */
+  fundo: 'gerado' | 'png';
+  sky?: [string, string];   // gradiente vertical do céu (topo → horizonte) — só `fundo:'gerado'`
+  cloud?: [string, string]; // nuvem de tela: corpo + sombra — só `fundo:'gerado'`
+  hills?: [string, string]; // as duas bandas de morro: [fundo, frente] — só `fundo:'gerado'`
   decor?: string[];         // decoração viva ligada neste tema (render/scene-sky.stepV3Decor)
 }
 
@@ -92,11 +109,11 @@ export const CENARIO_PADRAO = 'cidade';
    e a decoração viva de lá (fórmulas copiadas). BLOCOS = Clarity SEM recolor (a v3 não recoloria tiles
    por tema). NENHUM tema tem chuva — chuva é só da Cidade. */
 export const CENARIOS: Record<string, CenarioTema> = {
-  cidade:    { nome: 'cen.cidade', v3: false },
-  campo:     { nome: 'cen.campo',          v3: true, sky: ['#86c5e8', '#cfeecb'], cloud: ['#ffffff', '#d4e6f5'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens', 'passaros', 'borboletas'] },
-  cemiterio: { nome: 'cen.cemiterio',      v3: true, sky: ['#2b2540', '#5a4f6b'], cloud: ['#d9c4dd', '#a98fb6'], hills: ['#4a5f55', '#33473d'], decor: ['nuvens', 'passaros', 'sparkles', 'minhocas', 'nevoa'] },
-  espaco:    { nome: 'cen.espaco',         v3: true, sky: ['#05030f', '#161033'], cloud: ['#3a3550', '#262238'], hills: ['#1e3030', '#142024'], decor: ['nuvens', 'sparkles', 'vagalumes'] },
-  floresta:  { nome: 'cen.floresta',       v3: true, sky: ['#3f6b50', '#8fbf73'], cloud: ['#cfe6b8', '#a7cf86'], hills: ['#2f5e35', '#1f4226'], decor: ['nuvens', 'passaros', 'borboletas'] },
+  cidade:    { nome: 'cen.cidade', fundo: 'png' },
+  campo:     { nome: 'cen.campo',          fundo: 'gerado', sky: ['#86c5e8', '#cfeecb'], cloud: ['#ffffff', '#d4e6f5'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens', 'passaros', 'borboletas'] },
+  cemiterio: { nome: 'cen.cemiterio',      fundo: 'gerado', sky: ['#2b2540', '#5a4f6b'], cloud: ['#d9c4dd', '#a98fb6'], hills: ['#4a5f55', '#33473d'], decor: ['nuvens', 'passaros', 'sparkles', 'minhocas', 'nevoa'] },
+  espaco:    { nome: 'cen.espaco',         fundo: 'gerado', sky: ['#05030f', '#161033'], cloud: ['#3a3550', '#262238'], hills: ['#1e3030', '#142024'], decor: ['nuvens', 'sparkles', 'vagalumes'] },
+  floresta:  { nome: 'cen.floresta',       fundo: 'gerado', sky: ['#3f6b50', '#8fbf73'], cloud: ['#cfe6b8', '#a7cf86'], hills: ['#2f5e35', '#1f4226'], decor: ['nuvens', 'passaros', 'borboletas'] },
 };
 
 /** v3 exato — grama/flores por tema. SÓ dos temas `v3`: a Cidade não tem flora (por isso o `| undefined`). */

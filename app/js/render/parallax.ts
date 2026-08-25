@@ -214,7 +214,7 @@ export function createParallax(ctx: ParallaxCtx): ParallaxApi {
   }
 
   function aplicarTemaParallax(theme: string, T: CenarioTema): void {
-    if (T.v3) { // fiel à v3: céu-gradiente + 2 bandas de morros (fórmulas de lá); síncrono, sem corrida
+    if (T.fundo === 'gerado') { // céu-gradiente + 2 bandas de morros (fórmulas da v3); síncrono, sem corrida
       const texs = [ctx.skyTex(T), ctx.hillsTex(T, false), ctx.hillsTex(T, true)];
       layers.forEach((_ts, i) => vestir(i, texs[i]));
       return;
