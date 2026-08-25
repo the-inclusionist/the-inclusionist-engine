@@ -14,7 +14,9 @@ import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
 import { phase, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
 import type { Player } from './core/entity.js';
-import type { ModalIntent } from './input/keydown.js'; // a intenção direcional do ADR-0033 // o tipo da entidade, para os parâmetros que a recebem
+import type { ModalIntent } from './input/keydown.js'; // a intenção direcional do ADR-0033
+import type { RenderTextureLike, SpriteLike, GraphicsLike } from './render/screen-pipeline.js'; // o ctx de lá declara estes
+import type { HcRoleKey } from './render/hc-role-data.js'; // HC_ROLE é Record<HcRoleKey, …>: a chave não é `string` // o tipo da entidade, para os parâmetros que a recebem
 import { quizLevel, setQuizLevelValue, coins, setCoins } from './game/state.js'; // item 19: o estado DESTE jogo
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
@@ -155,7 +157,7 @@ initCollision({ world: WORLD, W: WORLD_W, H: WORLD_H,
 initCoins({ world: WORLD, W: WORLD_W, H: WORLD_H, anyEasy: ()=>anyEasy(), isWheelchair: ()=>wheelchair }); // Estágio 4: posicionamento de coletáveis (usa solidAt já ligado acima)
 // Itens do mapa Clarity → viram ITENS/barreira (não tiles): 7=pulo-turbo, 8=voo, 11=chave; 10=portão.
 // Removemos o tile do grid (vira ar) e o item/barreira é desenhado/colidido à parte; some ao pegar/abrir.
-const MAP_ITEMS=[], MAP_GATE=[];
+const MAP_ITEMS: { tx: number; ty: number; kind: string }[] = [], MAP_GATE: { tx: number; ty: number }[] = [];
 for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const tile=WORLD[y][x]; // `tile` e não `t`: o `t` local esconde o tradutor (ver tests/translator-shadow)
   if(tile===7){ MAP_ITEMS.push({tx:x,ty:y,kind:'superjump'}); WORLD[y][x]=1; }  // super-pulo (máximo)
   else if(tile===8){ MAP_ITEMS.push({tx:x,ty:y,kind:'fly'}); WORLD[y][x]=1; }    // voo
@@ -332,7 +334,7 @@ setVlibrasSay(vlibrasSay); // registra a fala em Libras (ui/vlibras) no core/a11
 // SFX (definicoes de som) extraido p/ platform/audio.js (Fase 2), e de la para game/earcons.js (item 19):
 // sete dos dez earcons sao deste jogo, e as legendas eram pt-BR cru dentro da engine.
 import { SFX } from './game/earcons.js';
-let capTimer=null; // `captionsOn` migrou para core/state.js (#50); soundOn/volume/audioCtx vêm de platform/audio.js
+let capTimer: ReturnType<typeof setTimeout> | null = null; // `captionsOn` migrou para core/state.js (#50); soundOn/volume/audioCtx vêm de platform/audio.js
 const anyEasy=()=>players.some(p=>p.easy); // efeitos de MUNDO do Fácil (moedas no chão) ligam se QUALQUER jogador usa Fácil
 // Modo Fácil (deficiência motora): gravidade ×2/3, pulo ×8/7, andar ×0.7, sem perigos, sem correr,
 // hitbox de coleta +4px, moedas no chão, proteção de borda, pula-pula suave (segurar = flutuar descendo).
@@ -346,8 +348,8 @@ const RM_KEYS=['parallax','decor','items','particles']; // animações de CENA (
 const RM_CHAR=[ {k:'walk',prop:'rmWalk',lbl:'rm.walk'},
   {k:'breath',prop:'rmBreath',lbl:'rm.breath'}, {k:'flavor',prop:'rmFlavor',lbl:'rm.flavor'} ]; // animações do PERSONAGEM (por jogador)
 // O padrão ganhou nome em core/state (defaultReducedMotion) porque o reset do painel precisa do MESMO valor.
-const rm=(()=>{ const s=store.getJSON(store.KEYS.reducedMotion,null); if(s&&typeof s==='object'){ const o={}; RM_KEYS.forEach(k=>o[k]=!!s[k]); return o; }
-  const o={}; RM_KEYS.forEach(k=>o[k]=defaultReducedMotion()); return o; })();
+const rm=(()=>{ const s=store.getJSON(store.KEYS.reducedMotion,null); if(s&&typeof s==='object'){ const o: Record<string, boolean> = {}; RM_KEYS.forEach(k=>o[k]=!!s[k]); return o; }
+  const o: Record<string, boolean> = {}; RM_KEYS.forEach(k=>o[k]=defaultReducedMotion()); return o; })();
 function saveRM(){ store.setJSON(store.KEYS.reducedMotion,rm); }
 // Movimento por alternância (1 dedo): tocar a direção trava a marcha; segurar acelera; pulo não interrompe. Persistido.
 function loadPlayerA11y(p: Player,i: number){ const v=store.get(store.KEYS.vizP(i)); if(v&&VIZ_BY_KEY[v])p.viz=v;
@@ -530,7 +532,7 @@ initHighContrast({ W: WORLD_W, H: WORLD_H, roleOf, outlineFg: () => hcOutlineFg,
   // 'coin' significa — outro jogo declara 'peca', 'silaba', o que for.
   sprites: () => ({ coin: { canvas: coinCanvasNormal, tex: coinTex } }) });
 // caches de modos acessíveis (preguiçosos), invalidados ao trocar de cenário (worldCanvasNormal muda)
-let _lastSharedViz=null; // cache do modo aplicado (otimizacao do render MP) — NAO e do alto contraste:
+let _lastSharedViz: string | null = null; // cache do modo aplicado (otimizacao do render MP) — NAO e do alto contraste:
 // e escrito por rebuildCoins/rebuildExtras/applySharedTextures/setPlayerViz/reapplyVizAll. Fica aqui.
 // _worldTexHC/_coinTexHC/worldTexFor/coinTexFor migraram para render/high-contrast.ts (Onda A).
 // shapeTexture/SHAPE_TEX/letterTexture migraram para render/textures.ts (Onda A). O init vem AQUI porque
@@ -645,7 +647,7 @@ const CITY_TEX=createCityTextures(); // pombos/gatos/caes, silhuetas de adulto e
 function inDark(tx: number,ty: number){ for(const r of darkRegions){ if(r.set.has(tx+','+ty))return true; } return false; } // célula de área secreta?
 function lifeSurfaceAt(tx: number){ for(let ty=3;ty<WORLD_H-1;ty++){ if(solidAt(tx,ty)&&!solidAt(tx,ty-1)&&tileAt(tx,ty-1)!==3&&tileAt(tx,ty)!==9&&tileAt(tx,ty-1)!==9&&!inDark(tx,ty-1)) return ty; } return -1; } // superfície AO AR LIVRE (fora das secretas), a MAIS ALTA; ty-1!==9 = nada spawna DENTRO da lava
 function lifeSurfaceLowAt(tx: number){ for(let ty=WORLD_H-2;ty>3;ty--){ if(solidAt(tx,ty)&&!solidAt(tx,ty-1)&&tileAt(tx,ty-1)!==3&&tileAt(tx,ty)!==9&&tileAt(tx,ty-1)!==9&&!inDark(tx,ty-1)) return ty; } return -1; } // idem, a MAIS BAIXA (calçada/fachada); ty-1!==9 = fora da lava
-let _streetCols=null; // colunas ABERTAS da rua/fachada (superfície mais baixa, fora das secretas) — computadas 1×
+let _streetCols: [number, number][] | null = null; // colunas ABERTAS da rua/fachada (superfície mais baixa, fora das secretas) — computadas 1×
 function streetCols(){ if(_streetCols)return _streetCols; _streetCols=[];
   for(let tx=2;tx<WORLD_W-2;tx++){ const ty=lifeSurfaceLowAt(tx); if(ty>0&&ty*TILE>WORLD_PX_H*0.55)_streetCols.push([tx,ty]); }
   return _streetCols; }
@@ -756,9 +758,9 @@ function ensureSprites(){
   // (re-add-ao-topo removido — fxG/carLayer/themeFxG/fogG governados pelo zIndex canônico (bloco R1); sortableChildren re-ordena; #69)
   allPSprites.forEach((s,i)=>{ s.visible=i<numPlayers; s.tint=PCOLOR[i]||0xffffff; if(i<numPlayers)players[i].sprite=s; });
 }
-let vpTex=[], vpSpr=[], vpFrames=null, vpDots=[];
+let vpTex: RenderTextureLike[] = [], vpSpr: SpriteLike[] = [], vpFrames: GraphicsLike | null = null, vpDots: GraphicsLike[] = [];
 // HUD por jogador em DOM SOBREPOSTO (alta definição, não pixela): moedas (1ª coluna) + poder (2ª coluna), por viewport.
-let vpPause=[]; // `pauseActor` migrou para core/state.js (#50). gameHudEl/vpHudDom/vpQuitDom/vpScreens -> ui/hud.ts
+let vpPause: HTMLElement[] = []; // `pauseActor` migrou para core/state.js (#50). gameHudEl/vpHudDom/vpQuitDom/vpScreens -> ui/hud.ts
 // Menu de pausa POR TELA (Etapa 2): um por jogador, dentro da .player-screen dele.
 // Barra de atalhos de a11y no topo da pausa (por tela). Sons (cego/TTS) só com saída própria; webcam/voz em construção.
 /* ===================== PAUSA POR TELA + ICONES DE A11Y -> ui/pause-icons.ts =====================
@@ -1170,9 +1172,14 @@ function setOwnerColors(on: boolean){ const antes=ownerColors; setOwnerColorsVal
 function setCbSafe(on: boolean){ const antes=cbSafe; setCbSafeValue(on); if(cbSafe===antes)return;
   const src=cbSafe?PCOLOR_CB:PCOLOR_DEF; PCOLOR.length=0; src.forEach(c=>PCOLOR.push(c)); // troca IN-PLACE (todos referenciam PCOLOR)
   rebuildCoins(); ensureSprites(); srSay(t(cbSafe?'sr.visual.cbSafeOn':'sr.visual.cbSafeOff')); }
-function setRoleColor(k: string,hex: string){ const rgb=hexRgb(hex); if(!rgb||!HC_ROLE[k])return; HC_ROLE[k]=rgb; saveHcRole();
+function setRoleColor(k: HcRoleKey, hex: string){ const rgb=hexRgb(hex); if(!rgb||!HC_ROLE[k])return; HC_ROLE[k]=rgb; saveHcRole();
   _rebakeDirect(); rebuildExtras(); srSay(t('sr.visual.roleColorSet',{v:ROLE_LABELS[k]})); } // ROLE_LABELS ainda é pt-BR
-function resetRoleColors(){ for(const k in HC_ROLE_DEF)HC_ROLE[k]=HC_ROLE_DEF[k].slice(); saveHcRole();
+function resetRoleColors(){
+  // `for…in` devolve `string`, e HC_ROLE é `Record<HcRoleKey, …>` — o `as` cobre uma limitação do TS ao
+  // enumerar chaves, não uma dúvida sobre o dado. O `.slice()` continua sendo o que impede o reset de
+  // APONTAR para o array de padrões em vez de copiá-lo, e é a razão de ele existir.
+  for (const k of Object.keys(HC_ROLE_DEF) as HcRoleKey[]) HC_ROLE[k] = HC_ROLE_DEF[k].slice() as [number, number, number];
+  saveHcRole();
   _rebakeDirect(); rebuildExtras(); visual.render(); srSay(t('sr.visual.roleColorsReset')); }
 // Dois contornos configuráveis (1º plano personagem/itens · 2º plano perímetro de plataforma/água/lava).
 // _rebakeDirect migrou para render/viz-setters.ts (Onda A) como viz.rebakeDirect.
