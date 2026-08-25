@@ -26,7 +26,8 @@ const AUDIO_HTML = `
     <div id="audio-list"></div>
     <button id="opt-sound" type="button">Som</button>
     <button id="audio-reset" type="button">Restaurar padrões deste menu</button>
-  </div>`;
+  </div>
+  <button data-act="audio" class="pm-btn" type="button">Acessibilidade auditiva</button>`;
 
 const AUDIO_CATS = [
   { k: 'music', lbl: 'Música' }, { k: 'ambient', lbl: 'Sons ambiente' }, { k: 'interact', lbl: 'Interação' },
@@ -358,5 +359,37 @@ describe('ui/settings-audio — restaurar padrões DESTE menu (ADR-0028)', () =>
     document.querySelector('#audio-reset').click();
     expect(tts.getEngineSel()).toBe('piper');
     expect(players[0].audioSink).toBe('fone-da-crianca');
+  });
+});
+
+describe('ui/settings-audio — marca o que saiu do padrão (ADR-0029)', () => {
+  // `#audio-list` nasce vazio: quem o preenche é `renderAudio()`, como no jogo ao abrir o painel.
+  const montar = (over) => { const { ctx } = fullCtx(over); initSettingsAudio(ctx).renderAudio(); return ctx; };
+  // Estes casos existem porque os primeiros não existiam. Eu tinha pendurado a marca no `renderAudio()`, e os
+  // testes chamavam `render()` explicitamente — então passavam. No jogo a marca não aparecia: mexer numa
+  // categoria atualiza a linha sozinha, sem redesenhar o painel. Por isso aqui se CLICA, como a criança faz.
+  it('[Right] clicar uma categoria marca a linha dela e o botão do menu', () => {
+    montar();
+    document.querySelector('#audio-list button[data-acat="music"]').click();
+    const linha = document.querySelector('#audio-list button[data-acat="music"]').closest('.ctrl-row');
+    expect(linha.classList.contains('is-changed')).toBe(true);
+    expect(document.querySelector('[data-act="audio"]').classList.contains('is-changed')).toBe(true);
+  });
+
+  it('[Right] clicar de volta APAGA a marca — a música volta ao padrão, e a marca some com ela', () => {
+    montar();
+    const b = () => document.querySelector('#audio-list button[data-acat="music"]');
+    b().click();
+    b().click();
+    expect(b().closest('.ctrl-row').classList.contains('is-changed')).toBe(false);
+    expect(document.querySelector('[data-act="audio"]').classList.contains('is-changed')).toBe(false);
+  });
+
+  it('[Right] o reset limpa todas as marcas do menu', () => {
+    montar({ modoCego: true });
+    document.querySelector('#audio-list button[data-acat="music"]').click();
+    expect(document.querySelectorAll('.is-changed').length).toBeGreaterThan(0);
+    document.querySelector('#audio-reset').click();
+    expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
   });
 });

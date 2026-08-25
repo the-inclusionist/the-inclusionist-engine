@@ -16,6 +16,7 @@
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 import { t, bcp47 } from '../core/i18n.js';
 import { DEFAULTS } from '../core/state.js';
+import { markChanged, markMenuChanged } from './changed-mark.js';
 import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
 
@@ -221,6 +222,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
         ctx.setCatGain(k);
         b.classList.toggle('is-on', state[k].on);
         b.setAttribute('aria-pressed', String(state[k].on));
+        refreshMarks(); // a marca acompanha a MUDANÇA, não só o redesenho — ver a nota em refreshMarks
       });
     });
     el.querySelectorAll<HTMLInputElement>('input[data-avol]').forEach((s) => {
@@ -232,6 +234,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
         ctx.setCatGain(k);
         const bb = el.querySelector<HTMLButtonElement>('button[data-acat="' + k + '"]');
         if (bb) { bb.classList.add('is-on'); bb.setAttribute('aria-pressed', 'true'); }
+        refreshMarks();
       });
     });
   }
@@ -368,6 +371,38 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     const cd = ctx.$<HTMLSelectElement>('#cane-div');
     if (cd) cd.value = String(ctx.getCaneBlockDiv());
     void enumerateSinks(); // sem await no original: dispara e segue (lista assíncrona atualiza sozinha)
+    refreshMarks();
+  }
+
+  /**
+   * A marca de "saiu do padrão" (ADR-0029).
+   *
+   * Chamada de dentro dos HANDLERS de mudança, e não só do `renderAudio()`. Pendurei-a primeiro no render, e
+   * no jogo a marca não aparecia: mexer numa categoria atualiza aquela linha sozinha, sem redesenhar o painel.
+   * O ADR-0029 já avisava disso — "pode envelhecer na tela se um painel esquecer de atualizar depois de uma
+   * mudança" — e eu escrevi o aviso e caí nele na mesma tarde. A regra que sobra: a marca anda com quem
+   * ESCREVE o valor, nunca com quem desenha.
+   *
+   * O recorte é o MESMO do reset deste menu, e isso não é economia —
+   * é a regra: só pode ser marcado o que tem padrão em DEFAULTS/`defaultAudioCat`. O motor de voz e a saída
+   * de áudio por jogador não têm, porque são escolha de DISPOSITIVO e não preferência restaurável; marcá-los
+   * exigiria inventar uma segunda opinião sobre o que é "padrão" para um fone.
+   */
+  function refreshMarks(): void {
+    const state = ctx.getAudioCat();
+    const mudou: boolean[] = [];
+    const marcar = (sel: string, changed: boolean): void => {
+      mudou.push(changed);
+      markChanged(ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
+    };
+    marcar('#opt-modocego', ctx.getModoCego() !== DEFAULTS.modoCego);
+    marcar('#cane-div', ctx.getCaneBlockDiv() !== DEFAULTS.caneBlockDiv);
+    for (const c of ctx.audioCats) {
+      const d = defaultAudioCat(c.k);
+      const a = state?.[c.k];
+      marcar(`[data-acat="${c.k}"]`, !!a && (a.on !== d.on || a.vol !== d.vol));
+    }
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="audio"]'), mudou);
   }
 
   // ----- widgets estáticos (existem sempre no #audio; fiados UMA vez, nunca recriados por renderAudio) -----

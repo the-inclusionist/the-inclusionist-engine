@@ -13,7 +13,10 @@
 // retorno da extração antes de assumir que falta wiring.
 import { players, numPlayers } from '../core/state.js';
 import type { PlayerView } from '../core/entity.js';
-import { CRT, applyCrt } from '../render/crt.js';
+import { CRT, CRT_DEFAULT, applyCrt } from '../render/crt.js';
+import { defaultReducedMotion } from '../core/state.js';
+import { markChanged, markMenuChanged } from './changed-mark.js';
+import { t } from '../core/i18n.js';
 
 export type MotionSceneKey = 'parallax' | 'decor' | 'items' | 'particles';
 export type MotionCharProp = 'rmWalk' | 'rmBreath' | 'rmFlavor';
@@ -234,7 +237,59 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     }));
 
     updateMotionMaster();
+    refreshMarks();
   }
+
+  /**
+   * A marca de "saiu do padrão" (ADR-0029), contra o padrão CALCULADO — não contra `false`.
+   *
+   * Numa máquina cujo dono pediu menos movimento, o padrão das cinco linhas de animação é CONGELADO. Marcar
+   * contra `false` acusaria "alterado" em cinco linhas que a criança nunca tocou, e mandaria justamente ela
+   * desfazer a preferência do próprio sistema. Uma marca errada é pior que marca nenhuma, e aqui ela erraria
+   * na direção mais cara.
+   */
+  function refreshMarks(): void {
+    const padraoRm = defaultReducedMotion();
+    const el = ctx.$<HTMLElement>('#motion-list');
+    const player = (players as MotionPlayer[])[selectedPlayer];
+    const mudou: boolean[] = [];
+    const marcar = (sel: string, changed: boolean): void => {
+      mudou.push(changed);
+      markChanged(el?.querySelector<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
+    };
+    for (const c of ctx.rmChar) marcar(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== padraoRm);
+    for (const k of ctx.rmKeys) marcar(`[data-rm="${k}"]`, !!ctx.rm[k] !== padraoRm);
+    marcar('[data-crt-tgl="scan"]', !!CRT.scan !== !!CRT_DEFAULT.scan);
+    marcar('[data-crt-tgl="vig"]', !!CRT.vig !== !!CRT_DEFAULT.vig);
+    marcar('[data-crt="round"]', CRT.round !== CRT_DEFAULT.round);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="anim"]'), mudou);
+  }
+
+  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
+  //
+  // O único dos sete cujo padrão NÃO é uma constante: o das cinco linhas de animação é o que o sistema
+  // operacional pede (`prefers-reduced-motion`). Devolver `false` aqui RELIGARIA a animação na tela de quem
+  // já pediu menos movimento — o reset faria sozinho o que a WCAG 2.3.3 existe para impedir. Por isso ele
+  // chama `defaultReducedMotion()` e não escreve o valor à mão.
+  //
+  // O escopo é TODOS os jogadores, como no menu motor: o painel edita um por vez, mas o reset é do menu, e
+  // deixar o jogador 2 congelado porque a aba aberta era a do jogador 1 daria dois estados com um nome só.
+  const resetBtn = ctx.$<HTMLButtonElement>('#animation-reset');
+  if (resetBtn) resetBtn.addEventListener('click', () => {
+    const padraoRm = defaultReducedMotion();
+    for (const k of ctx.rmKeys) ctx.rm[k] = padraoRm;
+    ctx.saveRM();
+    (players as MotionPlayer[]).forEach((p, i) => {
+      for (const c of ctx.rmChar) {
+        p[c.prop] = padraoRm;
+        ctx.store.setBool('incl_' + c.prop + '_p' + i, padraoRm);
+      }
+    });
+    CRT.scan = CRT_DEFAULT.scan; CRT.vig = CRT_DEFAULT.vig; CRT.round = CRT_DEFAULT.round;
+    applyCrt();
+    render();
+    ctx.srSay(t('sr.motion.reset'));
+  });
 
   function open(): void {
     const ov = ctx.$<HTMLElement>('#animation');

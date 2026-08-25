@@ -36,7 +36,19 @@ const BASE_ATTR = 'markBase';
 /** Marca que o `aria-label` foi criado por NÓS: desmarcar tira o atributo inteiro em vez de restaurar algo. */
 const OWNED_ATTR = 'markOwnsLabel';
 
-/** O nó cujo NOME acessível recebe o sufixo: o controle da linha, ou a própria linha se ela for o controle. */
+/**
+ * O nó cujo NOME acessível recebe o sufixo: o PRIMEIRO controle da linha em ordem de documento, ou a própria
+ * linha quando ela não tem controle dentro.
+ *
+ * "O primeiro" é decisão, não acaso — e ela apareceu ao verificar no jogo. Uma linha do mixer tem DOIS
+ * controles: o volume e o liga/desliga. O sufixo foi para o volume, que vem antes no markup, e isso está
+ * certo por dois motivos: é o controle que a criança alcança primeiro ao tabular, então ela ouve "alterado"
+ * ANTES de decidir se para nesta linha; e repetir o sufixo nos dois faria o leitor de tela dizer a mesma
+ * coisa duas vezes ao atravessar uma linha só, que é ruído com cara de informação.
+ *
+ * O que isto deixa frágil, e por isso está preso por teste: reordenar o markup move o sufixo de controle sem
+ * quebrar nada visível.
+ */
 function namedNode(el: HTMLElement): HTMLElement {
   return el.querySelector<HTMLElement>('button, select, input, [role="button"]') ?? el;
 }

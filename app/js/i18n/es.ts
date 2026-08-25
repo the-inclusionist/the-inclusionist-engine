@@ -271,5 +271,6 @@ const es: Record<string, string> = {
   'sr.typo.reset': 'Tipografía restaurada a su valor predeterminado: {fam}, diseñada para personas con baja visión.',
   'a11y.changed': 'modificado',
   'sr.visual.reset': 'Accesibilidad visual restaurada a sus valores predeterminados: contraste, realce, colores y contornos. Los subtítulos y los demás menús no cambiaron.',
+  'sr.motion.reset': 'Sensibilidad visual restaurada a sus valores predeterminados: animaciones y estética CRT. Las animaciones vuelven a lo que pide su sistema.',
 };
 export default es;

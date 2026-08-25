@@ -46,13 +46,14 @@ const EMPATHY_HTML = `
   <div id="empathy" class="overlay" hidden>
     <button id="empathy-close" type="button">x</button>
     <button id="empathy-reset" type="button">Restaurar</button>
-    <button id="opt-onebtn" type="button" aria-pressed="false">▶ Desligado</button>
-    <button id="opt-wheelchair" type="button" aria-pressed="false">▶ Desligado</button>
-    <button id="opt-hearing" type="button" aria-pressed="false">▶ Desligado</button>
+    <div class="ctrl-row"><span>Um botão</span><button id="opt-onebtn" type="button" aria-pressed="false">▶ Desligado</button></div>
+    <div class="ctrl-row"><span>Cadeirante</span><button id="opt-wheelchair" type="button" aria-pressed="false">▶ Desligado</button></div>
+    <div class="ctrl-row"><span>Perda auditiva</span><button id="opt-hearing" type="button" aria-pressed="false">▶ Desligado</button></div>
     <div id="empathy-players"></div>
     <div id="empathy-list"></div>
   </div>
   <button id="opt-empathy" type="button">Empatia</button>
+  <button data-act="empatia" class="pm-btn" type="button">Modo empatia</button>
 `;
 
 describe('ui/settings-empathy', () => {
@@ -248,5 +249,42 @@ describe('ui/settings-empathy', () => {
     const ctx = fullCtx();
     const api = initSettingsEmpathy(ctx);
     expect(() => api.render()).not.toThrow();
+  });
+});
+
+describe('ui/settings-empathy — marca o que saiu do padrão (ADR-0029)', () => {
+  // O beforeEach do arquivo monta só as regiões do leitor de tela; o painel vem do describe irmão. Sem isto,
+  // `$('#opt-onebtn')` é null e o caso falha por falta de fixture, não por falta de marca.
+  beforeEach(() => { document.body.innerHTML = EMPATHY_HTML + '<p id="sr-status"></p><p id="sr-alert"></p>'; });
+  // Neste menu a marca quer dizer "esta simulação está LIGADA", e é a mais útil dos sete: a criança que ligou
+  // a simulação de cegueira está com a tela preta e não lê nada — mas o leitor de tela percorre o menu e diz
+  // qual linha saiu do padrão. Os casos CLICAM porque estes dois setters não passam por render().
+  it('[Right] ligar "um botão" marca a linha e o botão do menu', () => {
+    const ctx = fullCtx();
+    initSettingsEmpathy(ctx).render();
+    $('#opt-onebtn').click();
+    expect($('#opt-onebtn').closest('.ctrl-row').classList.contains('is-changed')).toBe(true);
+    expect($('[data-act="empatia"]').classList.contains('is-changed')).toBe(true);
+  });
+
+  it('[Right] desligar apaga a marca', () => {
+    const ctx = fullCtx();
+    initSettingsEmpathy(ctx).render();
+    $('#opt-onebtn').click();
+    $('#opt-onebtn').click();
+    expect($('#opt-onebtn').closest('.ctrl-row').classList.contains('is-changed')).toBe(false);
+    expect($('[data-act="empatia"]').classList.contains('is-changed')).toBe(false);
+  });
+
+  it('[Interface] uma SIMULAÇÃO ligada marca a lista; uma CORREÇÃO de daltonismo não', () => {
+    const ctx = fullCtx();
+    const api = initSettingsEmpathy(ctx);
+    ctx.players[0].viz = 'blind';
+    api.render();
+    expect($('#empathy-list').classList.contains('is-changed')).toBe(true);
+
+    ctx.players[0].viz = 'fix-deuter';
+    api.render();
+    expect($('#empathy-list').classList.contains('is-changed')).toBe(false);
   });
 });

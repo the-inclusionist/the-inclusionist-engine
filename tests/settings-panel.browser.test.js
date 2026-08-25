@@ -72,6 +72,9 @@ function boot() {
     frontOverlay: panel.frontOverlay, restoreFocus: panel.restoreFocus,
     setHearingLoss: noop, setOneButton: noop, setWheelchair: noop,
     getOneButton: () => false, getWheelchair: () => false,
+    // Exigidos desde que o painel passou a marcar o que saiu do padrão (ADR-0029). `tsc` não pegou a falta
+    // porque este arquivo é JavaScript — o mesmo motivo pelo qual o `main.js` já escapou de três contratos hoje.
+    getPlayers: () => [], setPlayerViz: noop,
   });
   panel.register('animation', { close: motion.close, inEscapeChain: true });
   panel.register('empathy', { close: empathy.close, inEscapeChain: true });

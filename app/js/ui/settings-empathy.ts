@@ -14,6 +14,7 @@ import { VIZ_MODES, simulatesDisability, type VizMode } from '../render/viz-mode
 import { hearingLoss, setHearingLossGraph } from '../platform/audio.js';
 import { t } from '../core/i18n.js';
 import { DEFAULTS } from '../core/state.js';
+import { markChanged, markMenuChanged } from './changed-mark.js';
 
 /** Kinds treated as *simulation* here (vs. the 'hcnew' *correction* kind that settings-visual owns). */
 export const isSimKind = (kind: string): boolean => kind === 'filter' || kind === 'lowvision' || kind === 'blind';
@@ -77,6 +78,30 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
       h.textContent = toggleLabel(hearingLoss);
     }
     ctx.reflectMotorEmpathy();
+    refreshMarks();
+  }
+
+  /**
+   * A marca de "saiu do padrão" (ADR-0029). Neste menu ela quer dizer "esta simulação está LIGADA", e por
+   * isso é a mais útil dos sete: uma criança que ligou a simulação de cegueira está com a tela preta e não
+   * consegue ler nada — mas o leitor de tela dela percorre o menu e diz qual linha saiu do padrão.
+   *
+   * O recorte é o do reset, pelo mesmo motivo dele: as três CORREÇÕES de daltonismo que este painel lista
+   * não são deste menu. Marcá-las aqui mandaria a criança daltônica desfazer, no menu de empatia, a correção
+   * que a faz enxergar o jogo.
+   */
+  function refreshMarks(): void {
+    const simulando = ctx.getPlayers().some((p) => simulatesDisability(p.viz));
+    const surdez = hearingLoss;
+    const um = ctx.getOneButton() !== DEFAULTS.oneButton;
+    const cadeira = ctx.getWheelchair() !== DEFAULTS.wheelchair;
+    const linha = (sel: string): HTMLElement | null =>
+      ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null;
+    markChanged(linha('#opt-hearing'), surdez);
+    markChanged(linha('#opt-onebtn'), um);
+    markChanged(linha('#opt-wheelchair'), cadeira);
+    markChanged(ctx.$<HTMLElement>('#empathy-list'), simulando);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="empatia"]'), [simulando, surdez, um, cadeira]);
   }
 
   function open(): void {
@@ -107,10 +132,12 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
   if (hearingBtn) hearingBtn.addEventListener('click', () => { ctx.setHearingLoss(!hearingLoss); render(); ctx.reflectVizButtons(); });
   if (ctx.store.getBool('incl_hearingloss')) setHearingLossGraph(true); // restaura o grafo de áudio persistido no boot
 
+  // `refreshMarks()` depois de CADA um: estes dois setters não passam por `render()` — eles refletem o botão
+  // por conta própria —, então a marca precisa ser puxada aqui ou nunca acompanha a mudança.
   const oneBtn = ctx.$<HTMLElement>('#opt-onebtn');
-  if (oneBtn) oneBtn.addEventListener('click', () => ctx.setOneButton(!ctx.getOneButton()));
+  if (oneBtn) oneBtn.addEventListener('click', () => { ctx.setOneButton(!ctx.getOneButton()); refreshMarks(); });
   const wheelBtn = ctx.$<HTMLElement>('#opt-wheelchair');
-  if (wheelBtn) wheelBtn.addEventListener('click', () => ctx.setWheelchair(!ctx.getWheelchair()));
+  if (wheelBtn) wheelBtn.addEventListener('click', () => { ctx.setWheelchair(!ctx.getWheelchair()); refreshMarks(); });
 
   // ---- restaurar os padrões DESTE menu (ADR-0028) ----
   //

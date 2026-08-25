@@ -29,7 +29,9 @@ function markup() {
         <div id="animation-players"></div>
         <button id="motion-master" type="button">⏸ Parar todas as animações</button>
         <div id="motion-list"></div>
+        <button id="animation-reset" type="button">Restaurar</button>
       </div>
+      <button data-act="anim" class="pm-btn" type="button">Sensibilidade visual</button>
     </div>`;
 }
 
@@ -197,5 +199,101 @@ describe('getSelectedPlayer / setSelectedPlayer', () => {
     setSelectedPlayer(2);
     expect(getSelectedPlayer()).toBe(2);
     setSelectedPlayer(0);
+  });
+});
+
+describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marca (ADR-0029)', () => {
+  // O padrão deste menu é o ÚNICO que não é constante: é `prefers-reduced-motion`. No ambiente de teste a
+  // consulta responde `false`, então "padrão" aqui é animado — e é contra ISSO que os casos comparam, nunca
+  // contra um `false` escrito à mão, que é justamente o erro que este menu convida a cometer.
+  beforeEach(() => {
+    markup();
+    players.length = 0;
+    players.push({ rmWalk: false, rmBreath: false, rmFlavor: false });
+    setNumPlayersValue(1);
+    CRT.scan = 1; CRT.vig = 0; CRT.round = 1;
+    applyCrt();
+  });
+
+  const linha = (sel) => $('#motion-list').querySelector(sel).closest('.ctrl-row');
+
+  it('[Right] descongela cena e personagem e devolve o CRT de fábrica', () => {
+    const { ctx, calls } = makeCtx();
+    const rm = ctx.rm;
+    rm.parallax = true; rm.decor = true;
+    players[0].rmWalk = true;
+    CRT.scan = 0; CRT.vig = 1; CRT.round = 2;
+    initSettingsMotion(ctx).render();
+
+    $('#animation-reset').click();
+
+    expect(rm).toEqual({ parallax: false, decor: false, items: false, particles: false });
+    expect(players[0].rmWalk).toBe(false);
+    expect({ ...CRT }).toEqual({ scan: 1, vig: 0, round: 1 });
+    expect(calls.saveRM).toBeGreaterThan(0);
+    expect(calls.srSay.at(-1)).toContain('sistema');
+  });
+
+  it('[Right] alcança TODOS os jogadores, não só o da aba aberta', () => {
+    players.push({ rmWalk: true, rmBreath: true, rmFlavor: true });
+    setNumPlayersValue(2);
+    const { ctx } = makeCtx();
+    initSettingsMotion(ctx).render();
+    $('#animation-reset').click();
+    expect(players[1]).toEqual({ rmWalk: false, rmBreath: false, rmFlavor: false });
+  });
+
+  it('[Right] a marca aparece só nas linhas fora do padrão, e sobe para o botão do menu', () => {
+    const { ctx } = makeCtx();
+    const rm = ctx.rm;
+    rm.items = true;
+    CRT.vig = 1;
+    initSettingsMotion(ctx).render();
+    expect(linha('[data-rm="items"]').classList.contains('is-changed')).toBe(true);
+    expect(linha('[data-rm="parallax"]').classList.contains('is-changed')).toBe(false);
+    expect(linha('[data-crt-tgl="vig"]').classList.contains('is-changed')).toBe(true);
+    expect(linha('[data-crt-tgl="scan"]').classList.contains('is-changed')).toBe(false);
+    expect($('[data-act="anim"]').classList.contains('is-changed')).toBe(true);
+  });
+
+  it('[Right] o reset APAGA as marcas, inclusive a do botão do menu', () => {
+    const { ctx } = makeCtx();
+    const rm = ctx.rm;
+    rm.items = true; players[0].rmFlavor = true; CRT.round = 0;
+    initSettingsMotion(ctx).render();
+    expect(document.querySelectorAll('.is-changed').length).toBeGreaterThan(0);
+    $('#animation-reset').click();
+    expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
+  });
+
+  it('[Right] numa máquina que pede MENOS movimento, o reset CONGELA em vez de religar', () => {
+    // O caso que este menu existe para não errar, e que os outros quatro casos não conseguiam pegar: com
+    // `defaultReducedMotion()` respondendo false no ambiente de teste, "ler o padrão" e "escrever false" dão
+    // o mesmo resultado, e uma mutação trocando um pelo outro passava despercebida. Aqui o sistema diz
+    // `reduce`, e aí os dois deixam de ser a mesma coisa: escrever false RELIGARIA a animação na tela de
+    // quem já pediu para não ter — o reset fazendo, sozinho, o que a WCAG 2.3.3 existe para impedir.
+    const real = window.matchMedia;
+    window.matchMedia = (q) => ({ matches: q.includes('prefers-reduced-motion'), media: q,
+      addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+    try {
+      const { ctx } = makeCtx();
+      const rm = ctx.rm;
+      initSettingsMotion(ctx).render();
+
+      $('#animation-reset').click();
+
+      expect(rm).toEqual({ parallax: true, decor: true, items: true, particles: true });
+      expect(players[0]).toEqual({ rmWalk: true, rmBreath: true, rmFlavor: true });
+      // E nada disso conta como "alterado": é o padrão desta máquina, não escolha da criança.
+      expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('[Zero] tudo no padrão: nada marcado', () => {
+    const { ctx } = makeCtx();
+    initSettingsMotion(ctx).render();
+    expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
   });
 });

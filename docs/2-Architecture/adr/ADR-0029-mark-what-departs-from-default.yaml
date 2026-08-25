@@ -106,10 +106,17 @@ decision-outcome:
       value cannot be marked — and that is the correct failure, because the alternative is a second opinion
       about what "default" means, and the two would diverge exactly when it mattered.
 
-      THE QUICK ACCESSIBILITY BAR GETS NO RESET. Decided here because it came up in the same breath: its
-      reset would mean "turn everything in it off", and the Dev judged the bar easy enough to reach that the
-      control is not worth its own risk. It still gets MARKED, because being findable is a separate question
-      from being resettable — and the bar is the surface a child is most likely to have touched by accident.
+      THE QUICK ACCESSIBILITY BAR GETS NEITHER, and the second half is a correction to this record's own
+      first pass. No RESET: the Dev judged the bar easy enough to reach that the control is not worth its own
+      risk. This record then added that it should still be MARKED, reasoning that being findable and being
+      resettable are separate questions. Implementing it showed that reasoning was wrong HERE, for a reason
+      specific to the bar: its ten icons ARE their own indicator. Every one of them defaults to off or zero,
+      and `pi-on` plus `aria-pressed="true"` already carry exactly the information the mark would add. A mark
+      that always coincides with an existing state is not a second channel, it is the same channel drawn
+      twice — and this record's own rule says a mark that ends up on everything stops being a mark.
+
+      The distinction that makes the menus different: a menu ENTRY shows nothing about what is inside it, so
+      the mark is the only information there is. A toggle shows its own state by being a toggle.
 
   consequences:
     positive:

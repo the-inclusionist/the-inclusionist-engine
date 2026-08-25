@@ -88,6 +88,22 @@ describe('ui/changed-mark — o nome acessível, pelos dois caminhos', () => {
     expect(btn.getAttribute('aria-label')).toBe('Modo Fácil, desligado, alterado');
   });
 
+  it('[Interface] linha com DOIS controles: o sufixo vai no PRIMEIRO, e só nele', () => {
+    // Uma linha do mixer tem volume + liga/desliga. Quem tabula alcança o volume primeiro, então é ali que
+    // "alterado" precisa sair — antes de a criança decidir se para nesta linha. E só ali: repetir nos dois
+    // faria o leitor dizer a mesma coisa duas vezes ao atravessar uma linha só.
+    //
+    // Este caso existe porque a escolha era um ACIDENTE de ordem do DOM até eu conferir no jogo. Agora
+    // reordenar o markup quebra aqui, em vez de mover o sufixo em silêncio.
+    document.body.innerHTML =
+      '<div class="ctrl-row" id="mix"><span>Música</span>' +
+      '<input type="range" aria-label="Volume de Música">' +
+      '<button type="button" aria-label="Música"></button></div>';
+    markChanged($('#mix'), true);
+    expect($('#mix input').getAttribute('aria-label')).toBe('Volume de Música, alterado');
+    expect($('#mix button').getAttribute('aria-label')).toBe('Música');
+  });
+
   it('[Interface] a linha SEM controle dentro recebe o sufixo nela mesma', () => {
     document.body.innerHTML = '<div class="ctrl-row" id="solo">Contraste</div>';
     markChanged($('#solo'), true);

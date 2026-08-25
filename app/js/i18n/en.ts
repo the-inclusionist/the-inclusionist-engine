@@ -270,5 +270,6 @@ const en: Record<string, string> = {
   'sr.typo.reset': 'Typography restored to its default: {fam}, designed for low vision.',
   'a11y.changed': 'changed',
   'sr.visual.reset': 'Visual accessibility restored to its defaults: contrast, enhancement, colours and outlines. Captions and the other menus did not change.',
+  'sr.motion.reset': 'Visual sensitivity restored to its defaults: animations and CRT look. Animations go back to what your system asks for.',
 };
 export default en;
