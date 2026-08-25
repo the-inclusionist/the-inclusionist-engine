@@ -316,5 +316,14 @@ const pt: Record<string, string> = {
   'sr.caa.caixaAltaOn': 'Letras maiúsculas ligadas: o jogo inteiro em caixa alta.',
   'sr.caa.caixaAltaOff': 'Letras maiúsculas desligadas: maiúsculas e minúsculas.',
   'sr.quiz.bemVindo': 'Quiz. Use as setas para escolher e Enter para responder.',
+  'sr.nav.sonarFound': 'Sonar: {alvo} {lado}, {dist}.',
+  'sr.nav.coin': 'moeda',
+  'sr.nav.left': 'à esquerda',
+  'sr.nav.right': 'à direita',
+  'sr.nav.ahead': 'à frente',
+  'sr.nav.veryClose': 'bem perto',
+  'sr.nav.close': 'perto',
+  'sr.nav.far': 'longe',
+  'sr.player.prefix': 'Jogador {n}: ',
 };
 export default pt;

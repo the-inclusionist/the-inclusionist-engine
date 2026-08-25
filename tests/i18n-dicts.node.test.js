@@ -90,6 +90,12 @@ describe('dicionários de locale — estrutura', () => {
       // por "de acordo"/"aceptar" seria trocar a palavra que a criança já reconhece no botão por uma mais
       // longa e menos familiar, justamente no cursor de confirmar.
       'sr.quiz.ok',
+      // 'Sonar: {alvo} {lado}, {dist}.' — a moldura é TRÊS parâmetros e pontuação. "Sonar" é empréstimo do
+      // inglês com a mesma grafia nas três línguas, e tudo que carrega sentido (o alvo, o lado, a distância)
+      // chega já traduzido. Existe como chave, e não como concatenação, pelo mesmo motivo do slotSet: uma
+      // língua que anuncie a distância antes do lado precisa poder inverter, e só consegue se a ordem morar
+      // no dicionário.
+      'sr.nav.sonarFound',
     ]);
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const iguais = chavesSr.filter((k) => k in d && d[k] === pt[k] && !COINCIDEM_DE_PROPOSITO.has(k));

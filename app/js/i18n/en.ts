@@ -285,5 +285,14 @@ const en: Record<string, string> = {
   'sr.caa.caixaAltaOn': 'Uppercase letters on: the whole game in capitals.',
   'sr.caa.caixaAltaOff': 'Uppercase letters off: capitals and lowercase.',
   'sr.quiz.bemVindo': 'Quiz. Use the arrow keys to choose and Enter to answer.',
+  'sr.nav.sonarFound': 'Sonar: {alvo} {lado}, {dist}.',
+  'sr.nav.coin': 'coin',
+  'sr.nav.left': 'to the left',
+  'sr.nav.right': 'to the right',
+  'sr.nav.ahead': 'ahead',
+  'sr.nav.veryClose': 'very close',
+  'sr.nav.close': 'close',
+  'sr.nav.far': 'far',
+  'sr.player.prefix': 'Player {n}: ',
 };
 export default en;

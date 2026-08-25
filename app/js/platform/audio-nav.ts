@@ -129,8 +129,15 @@ export function createAudioNav(ctx: AudioNavCtx): AudioNav {
     for (const cn of ctx.getCoins()) { if (cn.taken || cn.owner !== pl.i) continue; const d = Math.hypot(cn.x - pl.x, cn.y - pl.y); if (d < bd) { bd = d; best = cn; } }
     const pc = playerCtx(pl); if (!best) { ctx.tonePan(300, 0.2, 'sonar', 0, 0.2, 'sine', pc); ctx.srSay(t('sr.nav.noCoinNear')); return; }
     const pan = panFor(best.x, pl), near = Math.max(0, 1 - bd / (12 * ctx.TILE)); ctx.tonePan(380 + 740 * near, 0.16, 'sonar', pan, 0.26, 'sine', pc); // mais perto = mais agudo
-    const lado = best.x < pl.x - 4 ? 'à esquerda' : best.x > pl.x + 4 ? 'à direita' : 'à frente', dist = bd < 4 * ctx.TILE ? 'bem perto' : bd < 9 * ctx.TILE ? 'perto' : 'longe';
-    const msg = (ctx.getNumPlayers() > 1 ? 'Jogador ' + (pl.i + 1) + ': ' : '') + 'Sonar: moeda ' + lado + ', ' + dist + '.'; ctx.srSay(msg); ctx.narrate(msg);
+    // O ANÚNCIO DO SONAR NÃO PASSAVA POR `t()`. Sete cadeias em pt-BR cruas, aqui, no meio do único módulo
+    // cuja saída É a interface da criança cega: num jogo em inglês, o sonar dela continuava falando português.
+    // E a incoerência denunciava sozinha — o caso de NÃO ACHAR já usava `sr.nav.noCoinNear`; só o de ACHAR,
+    // que é o que ela ouve o tempo todo, ficou fora. Ver o pilar 3 do ADR-0010.
+    const lado = best.x < pl.x - 4 ? 'sr.nav.left' : best.x > pl.x + 4 ? 'sr.nav.right' : 'sr.nav.ahead';
+    const dist = bd < 4 * ctx.TILE ? 'sr.nav.veryClose' : bd < 9 * ctx.TILE ? 'sr.nav.close' : 'sr.nav.far';
+    const corpo = t('sr.nav.sonarFound', { alvo: t('sr.nav.coin'), lado: t(lado), dist: t(dist) });
+    const msg = (ctx.getNumPlayers() > 1 ? t('sr.player.prefix', { n: pl.i + 1 }) : '') + corpo;
+    ctx.srSay(msg); ctx.narrate(msg);
   }
 
   function updateGuide(): void {
