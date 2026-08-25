@@ -137,8 +137,8 @@ more-information: |
   know the argument was tried and why it failed.
 
   X1 rested on two legs and both broke. It measured BYTES (66.8 KB of sprites, one player sprite drawn at a
-  time) and concluded batching bought nothing — but the atlas does not buy bytes, it buys REQUESTS, and this
-  repo already had that measurement written down: `render/sprites.ts` records 55 requests for 38 distinct
+  time) and concluded batching bought nothing — but the atlas buys REQUESTS, and this repo already had that
+  measurement written down: `render/sprites.ts` records 55 requests for 38 distinct
   files at boot, and says in as many words that the cost is LATENCY on a school network with a cold cache,
   invisible from a developer machine. Pillar 1 is school hardware; the argument against X2 was made in the
   one unit that pillar does not care about. The second leg was that PNGs are transitional because ADR-0010
@@ -151,6 +151,16 @@ more-information: |
   glob. A build-time packer only packs what is referenced, so X2 removes them by construction rather than by
   somebody remembering. Tracked as its own issue, since deleting dead assets should not hide inside a
   build-pipeline change.
+
+  AND THE BYTE ARGUMENT WAS WRONG IN THE OTHER DIRECTION TOO — measured 2026-08-25, once the packer existed
+  and could be run on the real art. The 39 colour frames pack into a 256×207 atlas of 25.4 KB plus a 1.6 KB
+  manifest, against 56.4 KB as 39 separate files: TWENTY-NINE KB LESS, a 52% reduction. One zlib stream over
+  all frames compresses far better than 39 tiny streams, each carrying its own header and starting its
+  dictionary from nothing.
+
+  So X2 wins on both axes, and X1 lost on the axis it chose to fight on. The lesson is not about atlases: I
+  argued from a plausible model of what an atlas does instead of running one. The correction of the
+  correction is filed here for the same reason as the original — so a future reader does not re-derive it.
 
   THE CURRICULUM (ADR-0004's pedagogy layer): the activities catalogue belongs to the EdSP PLATFORM, with
   each game pulling the activities that suit it — and the EdSP platform does not exist yet. This ADR fixed
