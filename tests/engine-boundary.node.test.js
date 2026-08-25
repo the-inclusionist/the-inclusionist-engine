@@ -60,7 +60,9 @@ function linhasDeCodigo(texto) {
 /** Dívida CONHECIDA em 2026-08-25. Esta lista só encolhe. Cada linha é uma issue esperando. */
 const IMPORTS_CONHECIDOS = {
   'render/draw.ts': ['game/player.js', 'game/powerups.js', 'game/coin-spawning.js'],
-  'render/textures.ts': ['game/activity-content.js'],
+  // `render/textures.ts` SAIU DAQUI (2026-08-25): importava `SOMASUB_SHAPES` por causa de UMA linha do
+  // `initTextures`, e agora recebe os ids das formas pelo ctx. A aresta era pequena e o efeito não: era
+  // também a única razão de `render/viz-setters` arrastar `game/` por transitividade — duas de quatro.
   'ui/activities-menu.ts': ['game/activities-registry.js'],
 };
 
@@ -89,10 +91,10 @@ describe('fronteira engine↔jogo — arestas de importação (ADR-0027 passo 4)
     }
   });
 
-  it('[Boundary] a dívida cabe em TRÊS módulos — o número é o que diz quão perto a fronteira está', () => {
-    // Não é decoração: é a diferença entre "a fronteira está errada" e "a fronteira está a três módulos de
-    // valer". O ADR-0027 pergunta se o passo 5 pode começar, e é este número que responde.
-    expect(Object.keys(IMPORTS_CONHECIDOS)).toHaveLength(3);
+  it('[Boundary] a dívida cabe em DOIS módulos — o número é o que diz quão perto a fronteira está', () => {
+    // Não é decoração: é a diferença entre "a fronteira está errada" e "a fronteira está a dois módulos de
+    // valer". O ADR-0027 pergunta se o passo 5 pode começar, e é este número que responde. Era três.
+    expect(Object.keys(IMPORTS_CONHECIDOS)).toHaveLength(2);
   });
 });
 

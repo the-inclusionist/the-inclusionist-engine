@@ -18,9 +18,10 @@
 // O item 19 estima QUATRO lotes; a medição diz CINCO camadas (30, 24, 21, 13 e uma), e a quinta é um módulo
 // só. Ou seja: quatro lotes de verdade e uma cauda. Está cobrado abaixo em vez de arredondado.
 //
-// O achado que muda a expectativa é o tamanho da dívida: QUATRO módulos de engine arrastam `game/` (direta ou
-// transitivamente). Os outros ~85 são limpos. Ou seja, o trabalho do passo 5 não está espalhado pelos lotes —
-// está concentrado, e os lotes existem para mover o resto COM SEGURANÇA, não para consertá-lo.
+// O achado que muda a expectativa é o tamanho da dívida: eram QUATRO módulos de engine arrastando `game/`
+// (direta ou transitivamente), hoje são DOIS. Os outros ~87 são limpos. Ou seja, o trabalho do passo 5 não
+// está espalhado pelos lotes — está concentrado, e os lotes existem para mover o resto COM SEGURANÇA, não
+// para consertá-lo.
 //
 // ========================= O QUE ESTE ARQUIVO NÃO DECIDE =========================
 // Nada sobre o EIXO (por gênero · por subsistema · por contrato declarado). A ordenação folha-primeiro é a
@@ -160,19 +161,24 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
 
 describe('a dívida do passo 5 é CONCENTRADA, e é isso que torna a divisão barata', () => {
   /** Dívida CONHECIDA em 2026-08-25. Só encolhe — mesma regra de engine-boundary. */
-  const ARRASTAM_JOGO = ['render/draw', 'render/textures', 'render/viz-setters', 'ui/activities-menu'];
+  const ARRASTAM_JOGO = ['render/draw', 'ui/activities-menu'];
 
   it('[Right] só estes módulos de engine arrastam game/, direta ou transitivamente', () => {
     const sujos = ENGINE.filter((m) => [...arrasta(m)].some((d) => d.startsWith('game/'))).sort();
     expect(sujos, 'módulo de engine NOVO arrastando game/').toEqual([...ARRASTAM_JOGO].sort());
   });
 
-  it('[Interface] `render/viz-setters` está aqui por TRANSITIVIDADE, e é por isso que a lista não é a de engine-boundary', () => {
-    // engine-boundary conta ARESTAS DIRETAS e acha três módulos. Este conta o que o empacotador realmente
-    // arrasta, e acha quatro: `viz-setters` não importa de `game/` — importa `render/textures`, que importa.
-    // A diferença entre as duas contas é a diferença entre "quem eu culpo" e "o que vai junto no pacote".
+  it('[Zero] `render/viz-setters` NÃO arrasta mais nada — a conta transitiva voltou a bater com a direta', () => {
+    // Este caso já disse o CONTRÁRIO, e a inversão é o registro do conserto. Ele existia para mostrar que as
+    // duas medidas divergiam: `viz-setters` não importava de `game/`, importava `render/textures`, que
+    // importava — quatro arrastadores contra três culpados. Tirar `SOMASUB_SHAPES` de dentro do `textures`
+    // resolveu os dois de uma vez, e é a razão de a aresta pequena ter valido a pena.
+    //
+    // O caso FICA (invertido) em vez de ser apagado: enquanto ele existir, ninguém reintroduz a importação em
+    // `render/textures` sem ver aqui que o custo não é uma aresta, são duas.
     expect(DEPS.get('render/viz-setters').some((d) => d.startsWith('game/'))).toBe(false);
-    expect([...arrasta('render/viz-setters')].some((d) => d.startsWith('game/'))).toBe(true);
+    expect([...arrasta('render/viz-setters')].some((d) => d.startsWith('game/'))).toBe(false);
+    expect([...arrasta('render/textures')].some((d) => d.startsWith('game/'))).toBe(false);
   });
 
   it('[Boundary] a esmagadora maioria da engine é LIMPA — o passo 5 move, não conserta', () => {

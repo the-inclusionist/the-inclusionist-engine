@@ -16,6 +16,11 @@ import {
 // simulam o alto-contraste-direto sem depender do resto do jogo.
 let letterCase = 'lower';
 const ctx = {
+  // As formas ENTRAM agora. Eram importadas de `game/activity-content` DENTRO do módulo — uma aresta da
+  // engine para o jogo por causa de uma linha. O fixture usa as dez de verdade porque os casos abaixo contam
+  // texturas; um conjunto inventado aqui os faria medir o fixture em vez do módulo.
+  shapes: ['circulo', 'triangulo', 'quadrado', 'retangulo', 'losango',
+    'paralelogramo', 'trapezio', 'pentagono', 'hexagono', 'oval'],
   disp: (s) => (letterCase === 'upper' ? String(s).toUpperCase() : String(s).toLowerCase()),
   directCfg: { 'hc-direto': { off: 55, mul: 0.5, bgMul: 0.30 } },
   // clona o canvas (em vez de devolver `src` intacto): PIXI.Texture.from cacheia por RESOURCE, então devolver o
@@ -29,10 +34,21 @@ const ctx = {
 beforeEach(() => { letterCase = 'lower'; resetPupTexCache(); initTextures(ctx); });
 
 describe('initTextures', () => {
-  it('[Right] enche SHAPE_TEX (uma textura por forma de SOMASUB_SHAPES) e PUP_TEX (7 power-ups)', () => {
-    expect(Object.keys(SHAPE_TEX).length).toBeGreaterThan(0);
-    expect(SHAPE_TEX.circulo).toBeDefined();
+  it('[Right] enche SHAPE_TEX com EXATAMENTE as formas injetadas, e PUP_TEX com os 7 power-ups', () => {
+    // Este caso dizia `length > 0` e `SHAPE_TEX.circulo definido`. Verifiquei com uma mutação — trocar o
+    // laço por `['circulo']`, ignorando o ctx inteiro — e os ONZE casos deste arquivo passaram. Um teste que
+    // sobrevive à função construindo um décimo do que devia não estava medindo o que o título dizia.
+    // Com as formas agora INJETADAS, isto é o que precisa ser verdade: a lista de fora é a lista de dentro.
+    expect(Object.keys(SHAPE_TEX).sort()).toEqual([...ctx.shapes].sort());
     expect(Object.keys(PUP_TEX)).toEqual(['superjump', 'ultrajump', 'turbo', 'fly', 'wallcling', 'key', 'runcane']);
+  });
+
+  it('[Interface] injetar OUTRA lista dá outro SHAPE_TEX — a fonte é o ctx, não uma tabela interna', () => {
+    // O par do caso acima, e o que fecha a porta de vez: se alguém reintroduzir uma lista fixa no módulo, o
+    // caso de cima continuaria passando (a fixa provavelmente seria a mesma dez), mas este reprova.
+    initTextures({ ...ctx, shapes: ['triangulo', 'oval'] });
+    expect(Object.keys(SHAPE_TEX).sort()).toEqual(['oval', 'triangulo']);
+    initTextures(ctx); // devolve o estado que o beforeEach promete aos casos seguintes
   });
 });
 

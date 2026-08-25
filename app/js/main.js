@@ -489,7 +489,7 @@ let _lastSharedViz=null; // cache do modo aplicado (otimizacao do render MP) —
 // _worldTexHC/_coinTexHC/worldTexFor/coinTexFor migraram para render/high-contrast.ts (Onda A).
 // shapeTexture/SHAPE_TEX/letterTexture migraram para render/textures.ts (Onda A). O init vem AQUI porque
 // o primeiro uso (rebuildCoins, logo abaixo) precisa dos caches ja preenchidos.
-initTextures({ disp, directCfg: DIRECT_CFG, directSpriteCanvas });
+initTextures({ shapes: SOMASUB_SHAPES.map(s => s.id), disp, directCfg: DIRECT_CFG, directSpriteCanvas });
 const coinContainer=new PIXI.Container(); camera.addChild(coinContainer);
 // coinSprites/rebuildCoins migraram para game/coin-spawning.ts (Onda A). rebuildCoins mantem o contrato
 // SEM argumentos: os nove chamadores (boot, novo round, quatro paineis de acessibilidade, Modo Facil,

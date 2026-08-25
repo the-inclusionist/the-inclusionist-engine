@@ -9,7 +9,6 @@
 import { makeCanvas, tex } from './canvas.js';
 import { spriteToCanvas } from './sprite-fx.js';
 import { powerupCanvas } from './props.js';
-import { SOMASUB_SHAPES } from '../game/activity-content.js';
 
 type Tex = ReturnType<typeof tex>;
 
@@ -17,6 +16,18 @@ type Tex = ReturnType<typeof tex>;
  *  (world/coin/tree/parallax texture pipelines share the same DIRECT_CFG/directSpriteCanvas; `disp` also
  *  serves quiz rendering outside textures). Call once at boot, before the first letterTexture/pupTexFor. */
 export interface TexturesCtx {
+  /**
+   * IDS DAS FORMAS a pré-desenhar. Eram importados de `game/activity-content` (as dez formas da atividade de
+   * soma e subtração) — uma aresta de importação da ENGINE para o JOGO por causa de UMA linha do `initTextures`.
+   *
+   * O ADR-0027 conta essas arestas porque elas decidem o que um pacote arrasta: um módulo de render que importa
+   * conteúdo de matemática não se empacota sem levar o currículo junto. E o custo escondido era maior que a
+   * aresta — esta era também a única razão de `render/viz-setters` arrastar `game/`, por transitividade.
+   *
+   * Só os IDS, e não a lista de formas: este módulo desenha por id (`shapeTexture(id)`) e nunca leu o nome em
+   * português. Pedir a estrutura inteira seria pedir mais do que se usa, que é como uma aresta volta.
+   */
+  shapes: readonly string[];
   disp: (s: string) => string;
   directCfg: Record<string, { off: number; mul: number; bgMul: number }>;
   directSpriteCanvas: (src: HTMLCanvasElement, mode: string) => HTMLCanvasElement;
@@ -56,7 +67,7 @@ export function shapeTexture(id: string): Tex {
   c.fill(); c.stroke();
   return tex(cv);
 }
-/** Cache keyed by shape id — filled by initTextures (SOMASUB_SHAPES never changes at runtime). */
+/** Cache keyed by shape id — filled by initTextures (the injected id list never changes at runtime). */
 export const SHAPE_TEX: Record<string, Tex> = {};
 
 /* ===================== sílabas: letra ===================== */
@@ -95,7 +106,13 @@ export function resetPupTexCache(): void {
  *  forEach, just deferred past import time so this module stays side-effect-free to import (node tests included). */
 export function initTextures(ctx: TexturesCtx): void {
   disp = ctx.disp; directCfg = ctx.directCfg; directSpriteCanvas = ctx.directSpriteCanvas;
-  for (const s of SOMASUB_SHAPES) SHAPE_TEX[s.id] = shapeTexture(s.id);
+  // LIMPA ANTES DE ENCHER. Enquanto as formas eram uma tabela FIXA importada, o cache só podia ser preenchido
+  // com o mesmo conteúdo e a diferença nunca apareceu — a função é chamada uma vez no boot. Com a lista
+  // INJETADA, "encher" tinha de deixar de significar "acrescentar": um segundo consumidor que inicializasse
+  // com as formas dele herdaria as nossas por cima, e o sintoma seria texturas de matemática num jogo que não
+  // tem matemática. Achado por um teste meu que afirmava a coisa errada e reprovou por isso.
+  for (const k of Object.keys(SHAPE_TEX)) delete SHAPE_TEX[k];
+  for (const id of ctx.shapes) SHAPE_TEX[id] = shapeTexture(id);
   for (const k of PUP_KINDS) { PUP_CANVAS[k] = powerupCanvas(k); PUP_TEX[k] = tex(PUP_CANVAS[k]); }
 }
 
