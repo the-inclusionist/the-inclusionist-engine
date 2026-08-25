@@ -7,7 +7,7 @@ import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import {
   CONTRAST_LEVELS, CONTRAST_LABELS, ROLE_KEYS, ROLE_LABELS,
-  resolveContrastValue, contrastLabel, clamp01, lqLabel, lqPercent, lqFromPercent,
+  resolveVisualMode, VISUAL_MODES, visualModeAnnouncement, contrastLabel, clamp01, lqLabel, lqPercent, lqFromPercent,
   clampSelectedPlayer, rgbToHex, onOffLabel, renderVisualPanelHtml,
 } from '../app/js/ui/settings-visual.js';
 
@@ -16,14 +16,33 @@ const baseSettings = () => ({
   roleColors: { hazard: [255, 110, 45], climb: [55, 225, 205], water: [70, 140, 255], gate: [194, 58, 212] },
 });
 
-describe('ui/settings-visual — resolveContrastValue', () => {
-  it('[Right] devolve o próprio valor quando é um dos 4 níveis de contraste', () => {
-    for (const lvl of CONTRAST_LEVELS) expect(resolveContrastValue(lvl)).toBe(lvl);
+describe('ui/settings-visual — resolveVisualMode', () => {
+  // Chamava-se `resolveContrastValue` enquanto o menu só tinha contraste. Com as correções de daltonismo
+  // mudando de casa (#60), o nome antigo passaria a mentir ao devolver 'fix-deuter'.
+  it('[Right] devolve o próprio valor nos 4 níveis de contraste', () => {
+    for (const lvl of CONTRAST_LEVELS) expect(resolveVisualMode(lvl)).toBe(lvl);
   });
-  it('[Boundary/Error] valor desconhecido cai para "normal"', () => {
-    expect(resolveContrastValue('sim-deuter')).toBe('normal');
-    expect(resolveContrastValue('')).toBe('normal');
-    expect(resolveContrastValue('lixo')).toBe('normal');
+
+  it('[Right] e também nas 3 correções de daltonismo, que agora são deste menu', () => {
+    for (const k of ['fix-protan', 'fix-deuter', 'fix-tritan']) expect(resolveVisualMode(k)).toBe(k);
+  });
+
+  it('[Boundary] SIMULAÇÃO cai para "normal" — ela é do menu de empatia, e este menu não fala por ela', () => {
+    // Não é um "desconhecido": `sim-deuter` existe e está ligado. Responder 'normal' aqui é a verdade sobre
+    // ESTE menu, e é o que impede a marca de aparecer no painel errado.
+    expect(resolveVisualMode('sim-deuter')).toBe('normal');
+    expect(resolveVisualMode('blind')).toBe('normal');
+    expect(resolveVisualMode('lv-tunnel')).toBe('normal');
+  });
+
+  it('[Zero/Error] vazio e desconhecido caem para "normal"', () => {
+    expect(resolveVisualMode('')).toBe('normal');
+    expect(resolveVisualMode('lixo')).toBe('normal');
+  });
+
+  it('[Interface] VISUAL_MODES são 7: os 4 de contraste mais as 3 correções, nessa ordem', () => {
+    expect(VISUAL_MODES).toEqual(['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7',
+      'fix-protan', 'fix-deuter', 'fix-tritan']);
   });
 });
 
@@ -153,5 +172,27 @@ describe('ui/settings-visual — renderVisualPanelHtml (montagem pura do HTML)',
   });
   it('[Zero] inclui o botão de restaurar cores padrão', () => {
     expect(renderVisualPanelHtml('normal', baseSettings())).toContain('id="opt-role-reset"');
+  });
+});
+
+describe('ui/settings-visual — visualModeAnnouncement', () => {
+  // Nasceu de um defeito meu, visto no jogo: escolher "Correção deuteranopia" anunciava "Alto contraste:
+  // desligado", porque `contrastLabel` só conhece os 4 níveis e cai no rótulo de desligado para o resto.
+  // Dizer "desligado" a quem acabou de LIGAR a correção é pior que não dizer nada, e quem depende do anúncio
+  // é justamente quem não vê a tela mudar de cor.
+  it('[Right] nomeia a correção escolhida, em vez de falar de contraste', () => {
+    expect(visualModeAnnouncement('fix-deuter')).toBe('Correção deuteranopia ativada.');
+    expect(visualModeAnnouncement('fix-deuter')).not.toContain('Alto contraste');
+    // Sem gagueira: o nome do modo já traz "Correção", então a moldura pt-BR não repete a palavra.
+    expect(visualModeAnnouncement('fix-deuter').match(/Correção/g)).toHaveLength(1);
+  });
+
+  it('[Right] os níveis de contraste seguem anunciando contraste', () => {
+    expect(visualModeAnnouncement('hc-direto-7')).toContain('Alto contraste');
+    expect(visualModeAnnouncement('normal')).toContain('Alto contraste');
+  });
+
+  it('[Zero/Error] chave desconhecida não quebra — cai no rótulo de desligado', () => {
+    expect(visualModeAnnouncement('lixo')).toContain('Alto contraste');
   });
 });

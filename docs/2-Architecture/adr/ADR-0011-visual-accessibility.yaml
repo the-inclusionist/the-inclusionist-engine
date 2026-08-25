@@ -19,6 +19,24 @@ decision-outcome:
     Adopt the decisions listed in more-information; each was validated against the pillars + the a11y research.
 
 more-information: |
+  AMENDED 2026-08-24 (Dev, issue #60) — THE COLOUR-BLINDNESS CORRECTIONS BELONG TO THIS MENU, NOT TO EMPATHY.
+
+  `fix-protan`, `fix-deuter` and `fix-tritan` daltonize the screen for a child who HAS the condition. They
+  had been listed in the Empathy panel — the menu whose subtitle is "sentir como é ter uma deficiência" —
+  next to the buttons that SIMULATE colour blindness for a child who does not have it. Two opposite
+  audiences in one list, and the child who needed the correction had to go looking for it in the menu about
+  pretending.
+
+  It was not a choice. `render/viz-modes` gave `sim-deuter` (simulate) and `fix-deuter` (correct) the same
+  `kind:'filter'`, and the empathy panel sliced the catalogue by `kind`. The catalogue now carries a `sim`
+  field that answers the question the `kind` never could, and both menus slice by it.
+
+  Consequence worth stating, because it is now visible where it used to be hidden: `p.viz` holds ONE value,
+  so contrast and correction are MUTUALLY EXCLUSIVE. They live in a single select — with the two options
+  grouped — precisely so that the exclusivity is honest. Two separate controls would have overwritten each
+  other in silence, and a child would have lost the correction by choosing a contrast level, with nothing
+  saying so.
+
   Decisions (was REGISTRO §1):
   - "**High-contrast = Direct Rendering** (outline + colour-blocking + receding background), NOT photographic filters
     — CLAHE/VCEA/linear-quadratic posterize pixel art, don't separate roles, cost too much on target hardware; direct

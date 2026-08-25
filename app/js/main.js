@@ -38,7 +38,7 @@ import { initSettingsMotion, setSelectedPlayer as setSelectedMotionPlayer } from
 import { initSettingsTypo } from './ui/settings-typo.js';
 import { initTitle } from './ui/title.js';
 import { createTitleScene } from './render/title-scene.js'; // Fase 2.27: atalho de querySelector (Tier 1)
-import { VIZ_MODES, VIZ_BY_KEY, VIZ_CYCLE } from './render/viz-modes.js'; // Fase 2: modos visuais de a11y (dados)
+import { VIZ_MODES, VIZ_BY_KEY, VIZ_CYCLE, simulatesDisability } from './render/viz-modes.js'; // Fase 2: modos visuais de a11y (dados)
 import { PAD_DESIGNS } from './input/devices.js'; // Fase 2: rótulos de gamepad/toque (dados)
 import { keys, padCur, padPrevAct, held } from './input/state.js'; // Fase 2.22: estado de input + held
 import { audioCtx, ensureAC, SFX, soundOn, volume, setSoundOn, setVolume, audioOut, hearingLoss, setHearingLossGraph, setMasterMuted, audioCat, initAudioMixer, catNode, setCatGain, tone, tonePan, noiseBuffer, noiseHit, _footCount } from './platform/audio.js'; // Fase 2: base + mestre + mixer + sínteses (oscilador + ruído)
@@ -1052,9 +1052,9 @@ function setModoCego(on){ const antes=modoCego; setModoCegoValue(on); if(modoCeg
 // setPlayerViz/applyVizGlobal migraram para render/viz-setters.ts (Onda A).
 const empathy = initSettingsEmpathy({ $, srSay, store, renderVizGroup, reflectMotorEmpathy, reflectVizButtons, frontOverlay, restoreFocus: (id)=>overlays.restoreFocus(id), setHearingLoss, setOneButton, setWheelchair, getOneButton: () => oneButton, getWheelchair: () => wheelchair, getPlayers: () => players, setPlayerViz }); // painel de empatia: ui/settings-empathy.ts (registra #opt-empathy, #opt-hearing, #opt-onebtn, #opt-wheelchair + restaura o grafo de audio)
 // updateVizIndicator/reapplyVizAll migraram para render/viz-setters.ts (Onda A).
-// Modos que AJUDAM (A12e visual) vs SIMULAÇÕES de empatia (Modo empatia)
-const isSimKind=k=>k==='filter'||k==='lowvision'||k==='blind';
-const VIZ_SIM=VIZ_MODES.filter(m=>isSimKind(m.kind));
+// Simulações de empatia: o predicado mora em render/viz-modes (simulatesDisability), fonte única. A cópia
+// local respondia pelo `kind` e contava as 3 correções de daltonismo como simulação (#60); `VIZ_SIM`, derivada
+// dela, era declarada e nunca lida — a terceira cópia do mesmo erro, e morta.
 let selVizPlayer=0;
 // renderVizGroup migrou para render/viz-setters.ts (Onda A).
 function setOwnerColors(on){ const antes=ownerColors; setOwnerColorsValue(on); if(ownerColors===antes)return;
@@ -1077,7 +1077,7 @@ function setOutlineBg(v){ const antes=hcOutlineBg; setOutlineBgValue(v); if(hcOu
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineBg',{v:t(OUTLINE_KEY[hcOutlineBg])})); }
 const visual = initSettingsVisual({ $, srSay, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: (i) => { selVizPlayer = i; }, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
-  const sim=players.some(p=>isSimKind((VIZ_BY_KEY[p.viz]||{}).kind));
+  const sim=players.some(p=>simulatesDisability(p.viz));
   const bv=$('#opt-visual'); if(bv)bv.classList.toggle('is-on',help); const be=$('#opt-empathy'); if(be)be.classList.toggle('is-on',sim||hearingLoss||oneButton||wheelchair); }
 // "tela = canvas": reparenta os diálogos de a11y para dentro do #game-region (ficam presos ao canvas)
 // e empilha o último aberto por cima (z crescente). frontOverlay é chamado em cada open*.

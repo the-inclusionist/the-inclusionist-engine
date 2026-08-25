@@ -240,16 +240,48 @@ describe('ui/settings-visual — restaurar padrões DESTE menu (ADR-0028) + marc
     expect(calls.setPlayerViz).toEqual([[0, 'normal']]);
   });
 
-  it('[Interface] NÃO apaga a correção de daltonismo nem a simulação — `viz` é de três menus', () => {
-    // O espelho do cuidado que o menu de empatia precisou ter, visto do outro lado. Apagar em silêncio a
-    // correção de quem é daltônico, a partir do menu de contraste, é o mesmo estrago com outra porta.
-    for (const modo of ['fix-deuter', 'lv-tunnel', 'blind']) {
+  it('[Right] a correção de daltonismo AGORA é zerada — ela mudou para este menu (#60)', () => {
+    // Desfazê-la é legítimo aqui, e só aqui: a criança a reencontra no MESMO seletor que acabou de usar.
+    // A regra continua sendo "um reset só pode desfazer o que ele também consegue refazer".
+    const { ctx, calls } = makeCtx();
+    comViz('fix-deuter');
+    initSettingsVisual(ctx).render();
+    document.querySelector('#visual-reset').click();
+    expect(calls.setPlayerViz).toEqual([[0, 'normal']]);
+  });
+
+  it('[Interface] NÃO apaga as SIMULAÇÕES — essas são do menu de empatia, e `viz` é um campo só', () => {
+    for (const modo of ['lv-tunnel', 'blind', 'sim-deuter']) {
       const { ctx, calls } = makeCtx();
       comViz(modo);
       initSettingsVisual(ctx).render();
       document.querySelector('#visual-reset').click();
       expect(calls.setPlayerViz).toEqual([]);
     }
+  });
+
+  it('[Interface] o seletor oferece os 7 modos em dois grupos, e a correção é escolhível daqui', () => {
+    // A prova de que a mudança de casa chegou à TELA: antes desta issue, uma criança daltônica não tinha
+    // como achar a correção dela sem abrir o menu de empatia.
+    const { ctx, calls } = makeCtx();
+    comViz('normal');
+    initSettingsVisual(ctx).render();
+    const sel = document.querySelector('#opt-contrast');
+    expect(sel.querySelectorAll('optgroup')).toHaveLength(2);
+    expect([...sel.querySelectorAll('option')].map((o) => o.value)).toEqual(
+      ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7', 'fix-protan', 'fix-deuter', 'fix-tritan']);
+    sel.value = 'fix-deuter';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(calls.setPlayerViz).toEqual([[0, 'fix-deuter']]);
+  });
+
+  it('[Interface] com a correção ligada, a linha do modo visual fica MARCADA', () => {
+    const { ctx, state } = makeCtx();
+    state.outlineFg = 1;
+    comViz('fix-tritan');
+    initSettingsVisual(ctx).render();
+    const linha = document.querySelector('#opt-contrast').closest('.ctrl-row');
+    expect(linha.classList.contains('is-changed')).toBe(true);
   });
 
   it('[Zero] com tudo no padrão, nenhum setter é chamado', () => {

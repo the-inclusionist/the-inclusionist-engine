@@ -51,3 +51,14 @@ export const VIZ_CYCLE: string[] = VIZ_MODES.map((m) => m.key);
 export function simulatesDisability(key: string): boolean {
   return VIZ_BY_KEY[key]?.sim === true;
 }
+
+/**
+ * As CORREÇÕES de daltonismo: daltonizam a tela para quem TEM a condição. Derivadas do catálogo, nunca
+ * listadas à mão — são exatamente os filtros que não simulam.
+ *
+ * Existem como lista própria porque moram no menu de ACESSIBILIDADE VISUAL, e não no de empatia (decisão do
+ * Dev, issue #60). Ficaram anos no menu errado por um motivo que este arquivo agora conserta: `kind` não
+ * distinguia simular de corrigir, então o painel de empatia, que se recorta por `kind:'filter'`, arrastava as
+ * três junto. Dois públicos opostos na mesma lista — quem quer sentir como é ser daltônico e quem é.
+ */
+export const VIZ_CORRECTIONS: readonly VizMode[] = VIZ_MODES.filter((m) => m.kind === 'filter' && !m.sim);

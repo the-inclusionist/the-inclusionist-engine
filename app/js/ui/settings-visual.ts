@@ -16,6 +16,7 @@ import { lqName as lqLabel } from '../render/lq-filter.js';
 // teve, para que os chamadores e os testes não mudem. Os RÓTULOS abaixo ficam aqui: são apresentação.
 import type { HcRoleKey } from '../render/hc-role-data.js';
 import { HC_ROLE_KEYS, HC_ROLE_DEF } from '../render/hc-role-data.js';
+import { VIZ_CORRECTIONS, VIZ_BY_KEY } from '../render/viz-modes.js';
 import { DEFAULTS } from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 export type { HcRoleKey as RoleKey } from '../render/hc-role-data.js';
@@ -24,7 +25,18 @@ export type RGB = readonly [number, number, number];
 
 /** Contrast levels, in cycle order — mirrors game.js's HC_SEQ (also used there by the physical contrast-cycle button). */
 export const CONTRAST_LEVELS: readonly string[] = ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7'];
-const CONTRAST_LEVEL_SET: ReadonlySet<string> = new Set(CONTRAST_LEVELS);
+
+/**
+ * TUDO que este menu escreve em `p.viz`: os 4 níveis de contraste MAIS as 3 correções de daltonismo, que
+ * mudaram de casa por decisão do Dev (#60). Elas moravam no Modo empatia, onde a criança daltônica precisava
+ * entrar no menu "sentir como é ter uma deficiência" para achar a correção da deficiência que ela tem.
+ *
+ * Os sete vivem num CONTROLE SÓ, e isso não é economia de espaço: `p.viz` guarda UM valor. Dois controles
+ * separados se sobrescreveriam em silêncio — a criança escolheria a correção, depois o contraste, e perderia
+ * a correção sem nada dizer que perdeu. Uma lista só conta a verdade sobre a exclusividade.
+ */
+export const VISUAL_MODES: readonly string[] = [...CONTRAST_LEVELS, ...VIZ_CORRECTIONS.map((m) => m.key)];
+const VISUAL_MODE_SET: ReadonlySet<string> = new Set(VISUAL_MODES);
 /** Short announcement labels — mirrors game.js's HC_LABEL. */
 // Chaves i18n, não texto. Os dois extremos parecem números universais, mas '4,5:1' usa a vírgula decimal do
 // pt-BR e vira '4.5:1' em inglês — e 'off' era uma palavra inglesa dentro de uma frase em português.
@@ -65,9 +77,14 @@ export interface SettingsVisualCtx {
 
 // ---------- Pure logic (Right-BICEP/ZOMBIES-tested in node) ----------
 
-/** `viz` if it's one of the 4 contrast levels, else 'normal' — mirrors `HC_SEQ.includes(cur)?cur:'normal'`. */
-export function resolveContrastValue(viz: string): string {
-  return CONTRAST_LEVEL_SET.has(viz) ? viz : 'normal';
+/**
+ * `viz` quando ele é um modo DESTE menu (contraste ou correção), senão 'normal'.
+ *
+ * Chamava-se `resolveContrastValue` enquanto o menu só tinha contraste. O nome antigo passaria a mentir ao
+ * devolver `fix-deuter`, e um nome que mente sobre o que devolve é pior que um nome comprido.
+ */
+export function resolveVisualMode(viz: string): string {
+  return VISUAL_MODE_SET.has(viz) ? viz : 'normal';
 }
 
 /** i18n KEY of a contrast level's label; unknown modes fall back to the 'off' key. Resolve with `t()`. */
@@ -119,14 +136,31 @@ function playerViz(list: readonly unknown[], i: number): string {
 }
 
 /** Builds the #visual-list innerHTML — pure string templating, no DOM access. Mirrors renderVisual()'s markup. */
+/**
+ * As opções do seletor, em dois grupos. O `<optgroup>` não é enfeite: ele separa o que AJUDA a enxergar melhor
+ * do que CORRIGE uma condição, e o leitor de tela anuncia o nome do grupo antes da opção — sem ele, "Correção
+ * protanopia" chegaria solta no meio dos níveis de contraste.
+ */
+export function visualModeOptions(): string {
+  const opt = (v: string, txt: string): string => `<option value="${v}">${txt}</option>`;
+  return (
+    opt('normal', 'Desligado') +
+    '<optgroup label="Alto contraste">' +
+    opt('hc-direto', '3:1 (agradável)') + opt('hc-direto-45', '4,5:1') + opt('hc-direto-7', '7:1 (máximo)') +
+    '</optgroup><optgroup label="Correção de daltonismo">' +
+    VIZ_CORRECTIONS.map((m) => opt(m.key, m.nome)).join('') +
+    '</optgroup>'
+  );
+}
+
 export function renderVisualPanelHtml(contrastValue: string, s: VisualSettings): string {
   const roleInputs = ROLE_KEYS.map(
     (k) =>
       `<input type="color" id="opt-role-${k}" value="${rgbToHex(s.roleColors[k])}" aria-label="Cor de ${ROLE_LABELS[k]}" style="inline-size:2.2em;block-size:1.8em;padding:0;border:1px solid #666;border-radius:4px;background:none">`,
   ).join('');
   return (
-    '<div class="ctrl-row"><span><strong>Alto contraste</strong> — recolore o cenário para destacar o que importa; escolha o nível de contraste.</span>' +
-    '<select id="opt-contrast" aria-label="Nível de alto contraste"><option value="normal">Desligado</option><option value="hc-direto">3:1 (agradável)</option><option value="hc-direto-45">4,5:1</option><option value="hc-direto-7">7:1 (máximo)</option></select></div>' +
+    '<div class="ctrl-row"><span><strong>Modo visual</strong> — alto contraste recolore o cenário para destacar o que importa; a correção de daltonismo realça as cores que a sua visão não distingue. Só um por vez.</span>' +
+    `<select id="opt-contrast" aria-label="Modo visual: contraste ou correção de daltonismo">${visualModeOptions()}</select></div>` +
     '<div class="ctrl-row"><span><strong>Realce de contraste (Linear → Quadrático)</strong> — curva de tom na tela inteira: o começo da faixa estica o contraste (linear), o fim realça sombras e altas-luzes (curva S quadrática). Zero desliga. Vale para todos os jogadores.</span>' +
     '<span style="display:flex;align-items:center;gap:.4rem"><input type="range" id="opt-lq" min="0" max="100" step="5" style="width:9em" aria-label="Realce de contraste: zero desligado, começo linear, fim quadrático"><strong id="opt-lq-val" aria-hidden="true"></strong></span></div>' +
     '<div class="ctrl-row"><span><strong>Itens na cor do dono</strong> — no multiplayer, cada jogador vê os próprios itens na cor dele. Desligado: itens na cor original para todos.</span>' +
@@ -138,6 +172,18 @@ export function renderVisualPanelHtml(contrastValue: string, s: VisualSettings):
     roleInputs +
     '<button id="opt-role-reset" class="mode-btn" type="button" aria-label="Restaurar cores padrão">↺</button></span></div>'
   );
+}
+
+/**
+ * O anúncio da escolha de modo visual. Existe porque a primeira versão anunciava "Alto contraste: desligado"
+ * ao escolher "Correção deuteranopia": `contrastLabel` só conhece os 4 níveis e caía no rótulo de desligado
+ * para qualquer outra chave. Dizer "desligado" a quem acabou de LIGAR a correção é pior que não dizer nada —
+ * e quem depende do anúncio é justamente quem não vê a tela mudar de cor.
+ */
+export function visualModeAnnouncement(mode: string): string {
+  const correcao = VIZ_CORRECTIONS.find((m) => m.key === mode);
+  if (correcao) return t('sr.visual.correction', { v: correcao.nome });
+  return t('sr.visual.contrast', { v: t(contrastLabel(mode)) });
 }
 
 /** Duas cores de papel são a mesma? Comparação por componente — `[0,0,0] === [0,0,0]` é `false` em JS, e
@@ -178,7 +224,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     const selected = clampSelectedPlayer(rawSelected, numPlayers);
     if (selected !== rawSelected) ctx.setSelectedPlayer(selected);
 
-    const contrastValue = resolveContrastValue(playerViz(players, selected));
+    const contrastValue = resolveVisualMode(playerViz(players, selected));
     const settings = ctx.getVisualSettings();
     el.innerHTML = renderVisualPanelHtml(contrastValue, settings);
 
@@ -187,7 +233,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
       s.value = contrastValue;
       s.addEventListener('change', () => {
         ctx.setPlayerViz(selected, s.value);
-        ctx.srSay(t('sr.visual.contrast', { v: t(contrastLabel(s.value)) }));
+        ctx.srSay(visualModeAnnouncement(s.value));
       });
     }
 
@@ -232,13 +278,13 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
    * A marca de "saiu do padrão" (ADR-0029). Cada linha contra o SEU padrão, e o botão do menu por cima.
    *
    * O contraste é comparado pelo valor RESOLVIDO, não pelo `viz` cru: quem está com uma simulação ou uma
-   * correção de daltonismo ligada tem `resolveContrastValue` respondendo 'normal', que é a verdade sobre
-   * ESTE menu — o modo dela não saiu do padrão daqui, saiu do padrão de outro painel, e é lá que a marca
-   * precisa aparecer para levar a criança ao lugar certo.
+   * O modo visual é comparado pelo valor RESOLVIDO: quem está com uma SIMULAÇÃO ligada (empatia) tem
+   * `resolveVisualMode` respondendo 'normal', que é a verdade sobre ESTE menu — aquele modo não saiu do
+   * padrão daqui, e é no menu de empatia que a marca precisa aparecer para levar a criança ao lugar certo.
    */
   function refreshMarks(): void {
     const s = ctx.getVisualSettings();
-    const contraste = resolveContrastValue(playerViz(players, ctx.getSelectedPlayer())) !== 'normal';
+    const contraste = resolveVisualMode(playerViz(players, ctx.getSelectedPlayer())) !== 'normal';
     const lqOff = s.lq !== DEFAULTS.lq;
     const owner = s.ownerColors !== DEFAULTS.ownerColors;
     const cb = s.cbSafe !== DEFAULTS.cbSafe;
@@ -259,11 +305,14 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
 
   // ---- restaurar os padrões DESTE menu (ADR-0028) ----
   //
-  // O espelho exato do cuidado que o menu de EMPATIA precisou ter, e pelo mesmo motivo visto do outro lado:
-  // `p.viz` é UM campo compartilhado por três menus. Aqui ele só pode voltar a 'normal' se o que estiver nele
-  // for um NÍVEL DE CONTRASTE. Se a criança está com uma simulação de baixa visão ou com a correção de
-  // daltonismo dela ligada, este botão não tem nada a dizer sobre isso — e apagar em silêncio a correção de
-  // quem é daltônico, a partir do menu de contraste, seria o mesmo estrago com outra porta de entrada.
+  // `p.viz` é UM campo compartilhado com o menu de empatia, então o reset só pode zerá-lo quando o que
+  // estiver lá for um modo DESTE menu. Se a criança está com uma simulação de baixa visão ou de cegueira
+  // ligada, este botão não tem nada a dizer sobre isso.
+  //
+  // As correções de daltonismo AGORA entram no que ele zera, e isso mudou com a #60: elas passaram a morar
+  // aqui. Desfazê-las é legítimo porque a criança as reencontra no MESMO seletor que acabou de usar — a
+  // regra é "um reset só pode desfazer o que ele também consegue refazer", e aqui ela é satisfeita. Por isso
+  // o anúncio nomeia o modo visual entre o que voltou.
   //
   // As LEGENDAS (#opt-captions) estão nesta tela mas ficam de fora: quem as liga e persiste é o main.js, e a
   // pergunta de a qual menu elas pertencem está aberta (#58 — são uma acomodação de surdez morando no menu
@@ -272,7 +321,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
   if (resetBtn) resetBtn.addEventListener('click', () => {
     players.forEach((p, i) => {
       const viz = playerViz(players, i);
-      if (CONTRAST_LEVEL_SET.has(viz) && viz !== 'normal') ctx.setPlayerViz(i, 'normal');
+      if (VISUAL_MODE_SET.has(viz) && viz !== 'normal') ctx.setPlayerViz(i, 'normal');
     });
     const s = ctx.getVisualSettings();
     if (s.lq !== DEFAULTS.lq) ctx.setLq(DEFAULTS.lq);

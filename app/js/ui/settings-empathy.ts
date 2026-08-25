@@ -16,11 +16,19 @@ import { t } from '../core/i18n.js';
 import { DEFAULTS } from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 
-/** Kinds treated as *simulation* here (vs. the 'hcnew' *correction* kind that settings-visual owns). */
-export const isSimKind = (kind: string): boolean => kind === 'filter' || kind === 'lowvision' || kind === 'blind';
-
-/** This panel's slice of the shared viz-mode catalog: color-blindness/low-vision/blindness simulations. */
-export const EMPATHY_VIZ_MODES: VizMode[] = VIZ_MODES.filter((m) => isSimKind(m.kind));
+/**
+ * A fatia do catálogo que ESTE painel mostra: só o que SIMULA uma deficiência.
+ *
+ * Era `VIZ_MODES.filter(m => isSimKind(m.kind))`, e `kind` não distingue simular de corrigir — então as três
+ * "Correção de daltonismo" vinham junto, num menu chamado "sentir como é ter uma deficiência". A criança
+ * daltônica precisava entrar ali para achar a correção da própria condição, ao lado do botão que simula a
+ * condição dela para quem não a tem. Dois públicos opostos na mesma lista.
+ *
+ * O Dev decidiu (#60): as correções vão para a Acessibilidade visual, e a lista passa a se recortar pelo
+ * campo `sim` do catálogo, que responde a pergunta certa. `isSimKind` foi apagado — havia TRÊS cópias dele
+ * (aqui, no main.js e uma derivada morta), todas respondendo pelo `kind`, todas errando junto.
+ */
+export const EMPATHY_VIZ_MODES: VizMode[] = VIZ_MODES.filter((m) => simulatesDisability(m.key));
 
 /** On/off label shared by every toggle button in this panel (hearing, one-button, wheelchair). */
 export const toggleLabel = (on: boolean): string => (on ? '❚❚ Ligado' : '▶ Desligado');
