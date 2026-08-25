@@ -16,8 +16,11 @@ export type CollisionCtx = {
   isWheelchair: () => boolean; // empatia motora: lava(9)+trampolim(5) viram chão atravessável
   isModoCego: () => boolean;   // empatia cegueira (auditiva): lava(9) vira chão (remove o perigo)
   caneDiv: () => number;       // divisor da batida de bengala (1 = 1/bloco; 2 = 1/meio-bloco)
-  wcSolid: () => Set<string>;  // sólidos SÓ-cadeirante ("x,y") — pontes/plataformas que não existem no modo normal
-  gateTiles: () => Set<string>; // tiles do portão dinâmico ("tx,ty")
+  // `ReadonlySet` e não `Set`: este módulo só chama `.has()`. Pedir `Set` era pedir capacidade de escrita
+  // que ele não usa — o mesmo erro que `PlayerView` existe para impedir do lado do jogador, e o que fazia
+  // o `ReadonlySet` do `core/state` não conseguir atravessar até aqui.
+  wcSolid: () => ReadonlySet<string>;  // sólidos SÓ-cadeirante ("x,y") — pontes/plataformas que não existem no modo normal
+  gateTiles: () => ReadonlySet<string>; // tiles do portão dinâmico ("tx,ty")
   gateOpen: () => boolean;     // portão aberto? (fechado ⇒ seus tiles são sólidos)
 };
 
@@ -26,8 +29,8 @@ let _world: number[][] = [], _W = 0, _H = 0;
 let _isWheelchair: () => boolean = () => false;
 let _isModoCego: () => boolean = () => false;
 let _caneDiv: () => number = () => 1;
-let _wcSolid: () => Set<string> = () => new Set();
-let _gateTiles: () => Set<string> = () => new Set();
+let _wcSolid: () => ReadonlySet<string> = () => new Set();
+let _gateTiles: () => ReadonlySet<string> = () => new Set();
 let _gateOpen: () => boolean = () => true;
 
 // Liga a colisão ao mundo + estado vivo. Chamado UMA vez no boot do game.js (após WORLD pronto). Idempotente.
