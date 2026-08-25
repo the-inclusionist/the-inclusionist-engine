@@ -218,9 +218,22 @@ const coinPools=()=>({ shapes: MODE==='somasub'?SOMASUB_SHAPES.map(s=>s.id):[], 
 // $ (querySelector) migrado p/ ui/dom.js (Fase 2.27 / Tier 1)
 // BOX/SPAWN_X/SPAWN_Y/makePlayer + geometria de colisão do jogador (isBouncyGroundBelow/touchingWall/clingSides/
 // firstClingSide/spiderReattach/wrapConvex) extraídos p/ game/player.js (Estágio 4). P1 = players[0] (compat solo).
-const POWER_MSG={superjump:'Super-pulo! O pulo fica sempre na altura máxima.',ultrajump:'Ultra-pulo! Pulos de distância gigante.',turbo:'Super-corrida! Correndo você fica bem mais rápido.',fly:'Voo! No ar, aperte Pular para começar a voar; Pular de novo encerra.',wallcling:'Escalada (aranha)! No ar, aperte Correr perto de uma parede/teto para grudar; engatinha e contorna quinas; Correr de novo solta.'};
+/* ===================== o vocabulario dos PODERES (item 14: i18n) =====================
+   ERAM DUAS TABELAS DE `const` COM TEXTO EM PORTUGUES, e por isso estavam CONGELADAS no idioma do boot: um
+   `const` de modulo resolve UMA vez e nunca mais. Trocar de idioma no menu deixaria o poder falando portugues
+   no meio do ingles — e `POWER_MSG` e' FALADO pelo leitor de tela quando o poder muda, ou seja, o defeito
+   caia justamente em quem nao tem a tela para desempatar.
+   Sao FUNCOES, e nao tabelas de chaves, de proposito: uma tabela de chaves obriga cada consumidor a lembrar
+   de chamar `t()`, e esquecer e' silencioso (o HUD mostraria `hud.power.fly`). Uma funcao resolve no momento
+   do uso e nao tem como ficar velha. Os quatro consumidores (ui/hud, game/coin-spawning, game/physics,
+   game/session) recebem a funcao por injecao, como ja recebiam a tabela. */
+const POWER_KINDS = ['superjump', 'ultrajump', 'turbo', 'fly', 'wallcling'];
+const POWER_SHORT_KINDS = [...POWER_KINDS, 'runcane'];
+/** Frase falada do poder. `off` tem frase propria; o que nao for poder conhecido cai no generico. */
+const POWER_MSG = (k) => t(k === 'off' ? 'sr.power.none' : POWER_KINDS.includes(k) ? 'sr.power.' + k : 'sr.power.generic');
 // Ícones canônicos dos power-ups (decisão do José 2026-07-02): 👟 corrida/bengala · 🕷️ escalada · 🎈 voo (jetpack) · 🐇 super pulo · 🦘 ultra pulo
-const POWER_SHORT={off:'—',superjump:'🐇 Super-pulo',ultrajump:'🦘 Ultra-pulo',turbo:'👟 Super-corrida',fly:'🎈 Voo',wallcling:'🕷️ Escalada',runcane:'👟 Bengala de corrida'};
+/** Rótulo curto do HUD. Desconhecido cai em `off` ('—'), que era o `|| '—'` de cada consumidor. */
+const POWER_SHORT = (k) => t('hud.power.' + (POWER_SHORT_KINDS.includes(k) ? k : 'off'));
 // showPower migrou para game/coin-spawning.ts (Onda A) — o HUD do poder ativo nasce do mesmo modulo que
 // materializa os itens.
 // jumpVel + isBouncyGroundBelow/touchingWall/clingSides/firstClingSide/spiderReattach/wrapConvex → game/player.js (Estágio 4)

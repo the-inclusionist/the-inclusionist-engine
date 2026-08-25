@@ -308,5 +308,20 @@ const es: Record<string, string> = {
   'sr.eyes.loading': 'Jugar con los ojos: cargando la cámara web (permita el acceso).',
   'sr.eyes.off': 'Jugar con los ojos desactivado.',
   'sr.boot.loaded': 'Juego cargado. Recoge {n} monedas. Sube escaleras con W/S, nada manteniendo el salto en el agua.',
+  // ===================== PODERES =====================
+  'sr.power.superjump': '¡Súper salto! El salto llega siempre a su altura máxima.',
+  'sr.power.ultrajump': '¡Ultra salto! Saltos de distancia gigante.',
+  'sr.power.turbo': '¡Súper carrera! Al correr te vuelves mucho más rápido.',
+  'sr.power.fly': '¡Vuelo! En el aire, pulsa Saltar para empezar a volar; Saltar de nuevo lo termina.',
+  'sr.power.wallcling': '¡Escalada (araña)! En el aire, pulsa Correr cerca de una pared o techo para pegarte; gateas y rodeas las esquinas; Correr de nuevo te suelta.',
+  'sr.power.none': 'Sin poder activo.',
+  'sr.power.generic': '¡Poder activado!',
+  'hud.power.off': '—',
+  'hud.power.superjump': '🐇 Súper salto',
+  'hud.power.ultrajump': '🦘 Ultra salto',
+  'hud.power.turbo': '👟 Súper carrera',
+  'hud.power.fly': '🎈 Vuelo',
+  'hud.power.wallcling': '🕷️ Escalada',
+  'hud.power.runcane': '👟 Bastón de carrera',
 };
 export default es;

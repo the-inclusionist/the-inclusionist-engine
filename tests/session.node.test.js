@@ -282,7 +282,7 @@ function novoCtx(over = {}) {
     playVictory: marca('playVictory'), showCaption: (t) => LOG.chamadas.push('caption:' + t),
     burstSparkle: (x, y, c) => LOG.chamadas.push('sparkle:' + c), addShake: marca('shake'), addHitstop: marca('hitstop'),
     rnd: () => 0.5,
-    POWER_MSG: { superjump: 'Super-pulo!', fly: 'Voo!' },
+    POWER_MSG: (k) => ({ superjump: 'Super-pulo!', fly: 'Voo!' })[k] || 'Poder ativado!',
     coinPools: () => ({ shapes: [], letters: [] }),
     setupExtras: marca('setupExtras'), rebuildExtras: marca('rebuildExtras'), resetMinimap: marca('resetMinimap'),
     openQuiz: (pl, i, s) => LOG.chamadas.push('openQuiz:' + pl.i + ':' + i + ':' + s),
@@ -318,7 +318,7 @@ function montar(n = 1, over = {}) {
     createSprite: () => ({ x: 0, y: 0, tint: 0, visible: true, destroy() { /* noop */ } }),
     coinTexFor: () => null, shapeTexFor: () => null, letterTexFor: () => null,
     pcolor: ctx.PCOLOR, getMode: () => ctx.estado.mode, getOwnerColors: () => ctx.estado.ownerColors,
-    invalidateSharedViz() { /* noop */ }, powerShort: {}, $: ctx.$,
+    invalidateSharedViz() { /* noop */ }, powerShort: () => '—', $: ctx.$,
   });
   S = initSession(ctx);
   return S;

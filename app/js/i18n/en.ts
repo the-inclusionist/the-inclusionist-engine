@@ -307,5 +307,20 @@ const en: Record<string, string> = {
   'sr.eyes.loading': 'Play with your eyes: loading the webcam (please allow access).',
   'sr.eyes.off': 'Play with your eyes off.',
   'sr.boot.loaded': 'Game loaded. Collect {n} coins. Climb ladders with W/S, swim by holding jump in water.',
+  // ===================== POWER-UPS =====================
+  'sr.power.superjump': 'Super jump! Your jump always reaches its highest point.',
+  'sr.power.ultrajump': 'Ultra jump! Enormous leaps across the gap.',
+  'sr.power.turbo': 'Super run! Running makes you much faster.',
+  'sr.power.fly': 'Flight! In the air, press Jump to start flying; press Jump again to stop.',
+  'sr.power.wallcling': 'Spider climb! In the air, press Run near a wall or ceiling to stick; you crawl along and around corners; press Run again to let go.',
+  'sr.power.none': 'No power active.',
+  'sr.power.generic': 'Power activated!',
+  'hud.power.off': '—',
+  'hud.power.superjump': '🐇 Super jump',
+  'hud.power.ultrajump': '🦘 Ultra jump',
+  'hud.power.turbo': '👟 Super run',
+  'hud.power.fly': '🎈 Flight',
+  'hud.power.wallcling': '🕷️ Climb',
+  'hud.power.runcane': '👟 Running cane',
 };
 export default en;

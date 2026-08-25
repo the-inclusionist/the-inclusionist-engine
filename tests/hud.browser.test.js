@@ -10,7 +10,11 @@ import { initHud } from '../app/js/ui/hud.js';
 import { players, setNumPlayersValue } from '../app/js/core/state.js';
 
 const $ = (sel) => document.querySelector(sel);
-const POWERS = { off: '—', fly: '🎈 Voo', superjump: '🐇 Super-pulo' };
+// `powerShort`/`POWER_MSG` são FUNÇÕES desde o item 14: eram tabelas de texto em português, congeladas no
+// idioma do boot. O fixture continua sendo uma tabela — é o que se lê melhor num teste — e vira função na
+// injeção, o que também prova que o módulo não indexa nada: ele PERGUNTA.
+const POWERS_TAB = { off: '—', fly: '🎈 Voo', superjump: '🐇 Super-pulo' };
+const POWERS = (k) => POWERS_TAB[k] || '—';
 
 /** Painel de pausa FALSO: o real vem do slice de pausa/ícones e nunca é construído aqui. */
 function fakePause(i) {

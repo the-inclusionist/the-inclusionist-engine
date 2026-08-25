@@ -288,8 +288,9 @@ export interface SessionCtx {
   playVictory(): void;                      // jingles.playVictory
   showCaption(txt: string): void;           // legenda visual do som (só se captionsOn)
 
-  /** POWER_MSG do game.js: a frase de cada poder. Dado puro, `const` — entra por valor (igual em physics). */
-  POWER_MSG: Record<string, string>;
+  /** POWER_MSG do game.js: a frase de cada poder, JÁ TRADUZIDA. Entra como FUNÇÃO (igual em physics) porque
+   *  o idioma muda em tempo de execução — uma tabela lida uma vez ficaria congelada no idioma do boot. */
+  POWER_MSG: (kind: string) => string;
 
   /* --- juice (render/fx) --- */
   burstSparkle(x: number, y: number, color: number, n: number): void;
@@ -392,7 +393,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
       if (!pl.owned.includes(pu.kind)) pl.owned.push(pu.kind); // entra no inventário; ativo = o último pego
       pl.activePower = pu.kind; pl.clinging = false; pl.flying = false;
       ctx.sfx('power'); showPower(pl);
-      const pm = w + (ctx.POWER_MSG[pu.kind] || 'Poder ativado!');
+      const pm = w + ctx.POWER_MSG(pu.kind);
       ctx.srSay(t('sr.power.swapHint', { msg: pm })); ctx.narrate(pm);
     });
   }

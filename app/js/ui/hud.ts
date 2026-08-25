@@ -90,12 +90,16 @@ export interface HudRowView {
 
 /**
  * Estado do HUD de um jogador. Verbatim do corpo de updateGameHud(), só que como valor.
- * `powerShort` é o POWER_SHORT do game.js (injetado — o mesmo objeto que game/coin-spawning.ts já recebe).
+ * `powerShort` é o POWER_SHORT do game.js (injetado — a mesma FUNÇÃO que game/coin-spawning.ts já recebe).
+ * Função e não tabela: o texto depende do idioma ATUAL, e uma tabela lida no boot ficaria congelada nele.
  */
-export function hudRowView(p: HudPlayer, powerShort: Record<string, string>): HudRowView {
+export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string): HudRowView {
   return {
     coins: String(p.collected),
-    power: powerShort[p.activePower] || '—',
+    // O `|| '—'` FICA, mesmo com o resolvedor já tratando desconhecido. Não é redundância: é a garantia de
+    // que o campo do poder NUNCA aparece em branco no HUD, e ela não pode depender de todo consumidor futuro
+    // lembrar de tratar o caso. Um teste meu ia perdê-la nesta mudança e reprovou por isso.
+    power: powerShort(p.activePower) || '—',
     quitHidden: !p.quit,
     visibility: p.quit ? 'hidden' : 'visible',
   };
@@ -112,7 +116,7 @@ export interface HudCtx {
    * POWER_SHORT: rótulos curtos de poder mostrados no HUD. Fica no game.js porque game/coin-spawning.ts
    * (showPower) também o recebe — injetar evita a 2ª cópia da tabela.
    */
-  powerShort: Record<string, string>;
+  powerShort: (kind: string) => string;
   /**
    * O ALVO do contador do HUD — quantos o jogador precisa juntar. Injetado pelo MESMO motivo que `powerShort`:
    * é dado do jogo, e o HUD é da engine. Antes vinha de `COIN_TARGET` por importação, o que amarrava o

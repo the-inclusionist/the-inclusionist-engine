@@ -49,7 +49,7 @@ const baseCtx = () => ({
   getMode: () => mode,
   getOwnerColors: () => ownerColors,
   invalidateSharedViz: () => { invalidated = true; },
-  powerShort: { off: '—', superjump: '🐇 Super-pulo' },
+  powerShort: (k) => ({ off: '—', superjump: '🐇 Super-pulo' })[k] || '—',
   $: (sel) => (sel === '#hud-power' ? elByHudPower : null),
 });
 

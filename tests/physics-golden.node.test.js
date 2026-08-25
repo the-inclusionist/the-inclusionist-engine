@@ -63,7 +63,7 @@ function wireCtx(over = {}) {
     sfx: noop, srSay: noop, srAlert: noop, hideTips: noop, showPower: noop,
     nav: NAV_STUB, tonePan: noop, noiseHit: noop, surfaceUnder: () => null,
     puffDust: noop, setSquash: noop, addShake: noop, addHitstop: noop,
-    POWER_MSG: {},
+    POWER_MSG: () => '',
     coinPools: () => ({ shapes: [], letters: [] }), rebuildCoins: noop, updateHud: noop, setCollected: noop,
     ...over,
   });

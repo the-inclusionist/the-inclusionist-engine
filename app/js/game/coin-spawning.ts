@@ -41,7 +41,7 @@ export interface CoinSpawningCtx {
   getMode: () => string;                                  // MODE ('ludico'|'somasub'|'silabas') — ainda local ao game.js
   getOwnerColors: () => boolean;                          // itens na cor do dono? (opção de acessibilidade)
   invalidateSharedViz: () => void;                        // reseta o cache _lastSharedViz do game.js (força reaplicar viz por viewport)
-  powerShort: Record<string, string>;                     // POWER_SHORT — ícones/rótulos curtos do HUD (dado do game.js)
+  powerShort: (kind: string) => string;                   // POWER_SHORT — rótulo curto do HUD, JÁ traduzido (função: o idioma muda)
   $: DomQuery;                                             // seletor DOM (ui/dom.ts's `$`), injetado — showPower nunca toca `document`
 }
 
@@ -107,5 +107,5 @@ export function showPower(pl: { activePower: string; owned?: string[] }): void {
   const c = need();
   const el = c.$('#hud-power');
   if (!el) return;
-  el.textContent = (c.powerShort[pl.activePower] || '—') + (pl.owned && pl.owned.length > 1 ? ' (' + pl.owned.length + ')' : '');
+  el.textContent = c.powerShort(pl.activePower) + (pl.owned && pl.owned.length > 1 ? ' (' + pl.owned.length + ')' : '');
 }

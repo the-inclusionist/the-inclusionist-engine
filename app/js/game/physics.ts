@@ -89,7 +89,7 @@ export interface PhysicsCtx {
   setSquash(pl: PhysicsPlayer, k: number): void;   // juice: esticar/achatar
   addShake(amp: number, t: number): void;          // juice: tremor de tela
   addHitstop(t: number): void;                     // juice: congela o mundo alguns ticks (dano)
-  POWER_MSG: Record<string, string>;               // textos dos poderes (troca de poder)
+  POWER_MSG: (kind: string) => string;             // frase do poder, JÁ traduzida (função: o idioma muda)
   coinPools(): { shapes: string[]; letters: string[] }; // pools por MODO (o sorteio da lava precisa)
   rebuildCoins(): void;         // re-materializa os sprites das moedas sorteadas
   updateHud(): void;            // HUD de contagem
@@ -102,7 +102,7 @@ const DEFAULT_CTX: PhysicsCtx = {
   nav: { sonar: NOOP, caneTap: NOOP, waterNav: NOOP, needsAudioCues: () => false, panFor: () => 0, playerCtx: () => null },
   tonePan: NOOP, noiseHit: NOOP, surfaceUnder: () => null,
   puffDust: NOOP, setSquash: NOOP, addShake: NOOP, addHitstop: NOOP,
-  POWER_MSG: {},
+  POWER_MSG: () => '',
   coinPools: () => ({ shapes: [], letters: [] }), rebuildCoins: NOOP, updateHud: NOOP,
 };
 let C: PhysicsCtx = DEFAULT_CTX;
@@ -191,7 +191,7 @@ function updateCling(pl: PhysicsPlayer): void {
 function updatePowerSwap(pl: PhysicsPlayer, dt: number): void {
   const doSwap = (): void => {
     if (!pl.owned.length) return; const seq = ['off', ...pl.owned]; const idx = seq.indexOf(pl.activePower); pl.activePower = seq[(idx + 1) % seq.length]!;
-    pl.clinging = false; pl.flying = false; C.sfx('power'); C.showPower(pl); C.srSay(pl.activePower === 'off' ? 'Sem poder ativo.' : (C.POWER_MSG[pl.activePower] || 'Poder ativado!'));
+    pl.clinging = false; pl.flying = false; C.sfx('power'); C.showPower(pl); C.srSay(C.POWER_MSG(pl.activePower));
   };
   const swapNow = held(pl, 'swap');
   if (swapNow) {

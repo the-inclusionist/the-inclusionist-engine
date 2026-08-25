@@ -14,7 +14,11 @@ const pct = (s) => Number.parseFloat(s); // '50%' -> 50 (as funções devolvem s
 
 // Tabela de poderes FALSA — de propósito diferente do POWER_SHORT real: hudRowView tem que ler a tabela
 // INJETADA, não uma cópia interna.
-const POWERS = { off: '—', superjump: '🐇 Super-pulo', fly: '🎈 Voo' };
+// `powerShort`/`POWER_MSG` são FUNÇÕES desde o item 14: eram tabelas de texto em português, congeladas no
+// idioma do boot. O fixture continua sendo uma tabela — é o que se lê melhor num teste — e vira função na
+// injeção, o que também prova que o módulo não indexa nada: ele PERGUNTA.
+const POWERS_TAB = { off: '—', superjump: '🐇 Super-pulo', fly: '🎈 Voo' };
+const POWERS = (k) => POWERS_TAB[k] || '—';
 
 // ---------------------------------------------------------------------------------------------
 // screenGrid — colunas/linhas da grade de telas
@@ -192,18 +196,22 @@ describe('ui/hud · hudRowView', () => {
     expect(hudRowView({ collected: 3, activePower: 'fly', quit: false }, POWERS).power).toBe('🎈 Voo');
   });
 
-  it('[Interface] a tabela de poderes é INJETADA: o mesmo jogador rotula diferente com outra tabela', () => {
+  it('[Interface] o resolvedor de poderes é INJETADO: o mesmo jogador rotula diferente com outro resolvedor', () => {
     const pl = { collected: 3, activePower: 'fly', quit: false };
     expect(hudRowView(pl, POWERS).power).toBe('🎈 Voo');
-    expect(hudRowView(pl, { fly: 'FLY' }).power).toBe('FLY');
+    expect(hudRowView(pl, () => 'FLY').power).toBe('FLY');
   });
 
   it('[Error] poder fora da tabela cai no travessão em vez de vazar a chave crua', () => {
     expect(hudRowView({ collected: 1, activePower: 'jetpack', quit: false }, POWERS).power).toBe('—');
   });
 
-  it('[Boundary] tabela vazia: todo poder vira travessão (o HUD nunca fica em branco)', () => {
-    expect(hudRowView({ collected: 1, activePower: 'fly', quit: false }, {}).power).toBe('—');
+  it('[Boundary] resolvedor que devolve VAZIO ainda vira travessão (o HUD nunca fica em branco)', () => {
+    // Este caso dizia "tabela vazia" e reprovou quando a tabela virou função — e ao reprovar mostrou que a
+    // mudança ia CUSTAR uma garantia: com o `|| '—'` movido para o injetor, um resolvedor que devolvesse ''
+    // deixaria o campo do poder em branco na tela. A guarda voltou para o `hudRowView`, onde ela não depende
+    // de todo consumidor futuro se lembrar dela.
+    expect(hudRowView({ collected: 1, activePower: 'fly', quit: false }, () => '').power).toBe('—');
   });
 
   it('[Many] o contador NÃO é limitado ao alvo: passar de 10/10 mostra 12', () => {

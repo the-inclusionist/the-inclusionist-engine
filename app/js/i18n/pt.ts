@@ -338,5 +338,23 @@ const pt: Record<string, string> = {
   'sr.eyes.loading': 'Jogar com os olhos: carregando a webcam (permita o acesso).',
   'sr.eyes.off': 'Jogar com os olhos desligado.',
   'sr.boot.loaded': 'Jogo carregado. Colete {n} moedas. Suba escadas com W/S, nade segurando pulo na água.',
+  // ===================== PODERES =====================
+  // `sr.power.*` é FALADO quando o poder muda (game/physics, game/session); `hud.power.*` é o rótulo curto do
+  // HUD. Eram duas tabelas de `const` no main.js, e por isso estavam CONGELADAS no idioma do boot: um `const`
+  // de módulo resolve uma vez e nunca mais. Agora a tabela guarda a CHAVE e quem exibe resolve com `t()`.
+  'sr.power.superjump': 'Super-pulo! O pulo fica sempre na altura máxima.',
+  'sr.power.ultrajump': 'Ultra-pulo! Pulos de distância gigante.',
+  'sr.power.turbo': 'Super-corrida! Correndo você fica bem mais rápido.',
+  'sr.power.fly': 'Voo! No ar, aperte Pular para começar a voar; Pular de novo encerra.',
+  'sr.power.wallcling': 'Escalada (aranha)! No ar, aperte Correr perto de uma parede/teto para grudar; engatinha e contorna quinas; Correr de novo solta.',
+  'sr.power.none': 'Sem poder ativo.',
+  'sr.power.generic': 'Poder ativado!',
+  'hud.power.off': '—',
+  'hud.power.superjump': '🐇 Super-pulo',
+  'hud.power.ultrajump': '🦘 Ultra-pulo',
+  'hud.power.turbo': '👟 Super-corrida',
+  'hud.power.fly': '🎈 Voo',
+  'hud.power.wallcling': '🕷️ Escalada',
+  'hud.power.runcane': '👟 Bengala de corrida',
 };
 export default pt;

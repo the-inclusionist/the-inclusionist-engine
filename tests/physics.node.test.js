@@ -20,7 +20,7 @@ const CTX = (over = {}) => ({
   isWheelchair: () => false, isModoCego: () => false, caneOn: () => false, WORLD_PX_H: () => 10000,
   sfx: noop, srSay: noop, srAlert: noop, hideTips: noop, showPower: noop, nav: NAV,
   tonePan: noop, noiseHit: noop, surfaceUnder: () => null,
-  puffDust: noop, setSquash: noop, addShake: noop, addHitstop: noop, POWER_MSG: {},
+  puffDust: noop, setSquash: noop, addShake: noop, addHitstop: noop, POWER_MSG: () => '',
   coinPools: () => ({ shapes: [], letters: [] }), rebuildCoins: noop, updateHud: noop, setCollected: noop,
   ...over,
 });
