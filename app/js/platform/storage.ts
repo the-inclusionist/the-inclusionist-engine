@@ -4,6 +4,11 @@
 // isso todo acesso é try/catch). Centralizar aqui: um lugar para trocar a estratégia (namespacing, IndexedDB…)
 // sem caçar ~60 pontos. Migração gradual — nem todo game.js usa isto ainda.
 
+// SOBRECARGAS PORQUE O PADRÃO DECIDE O TIPO DE RETORNO. Com um `fallback: string`, o resultado NÃO pode ser
+// nulo — a assinatura antiga devolvia `string | null` de qualquer jeito, e cada chamador com padrão pagava
+// por um `null` impossível. Isso apareceu como erro em quatro pontos do composition root, todos com padrão.
+export function get(key: string, fallback: string): string;
+export function get(key: string, fallback?: null): string | null;
 export function get(key: string, fallback: string | null = null): string | null {
   try { const v = localStorage.getItem(key); return v == null ? fallback : v; } catch { return fallback; }
 }
@@ -57,6 +62,8 @@ export function kJogo(nome: string): string { return 'incl.' + JOGO_ID + '.' + n
  * Lê a chave NOVA; se ela ainda não existe, herda o valor da LEGADA. Só de leitura: quem grava, grava na nova.
  * É o que permite renomear chave sem um passo de migração e sem perder o ajuste de ninguém.
  */
+export function getComLegado(nova: string, legada: string, fallback: string): string;
+export function getComLegado(nova: string, legada: string, fallback?: null): string | null;
 export function getComLegado(nova: string, legada: string, fallback: string | null = null): string | null {
   const v = get(nova, null);
   if (v !== null) return v;
