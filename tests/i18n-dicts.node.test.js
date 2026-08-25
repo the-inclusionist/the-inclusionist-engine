@@ -31,6 +31,21 @@ describe('dicionários de locale — estrutura', () => {
     }
   });
 
+  it('[Right] os TRÊS dicionários têm as MESMAS chaves — o fallback deixou de ser rotina', () => {
+    // Este caso não existia, e não podia: en/es andaram meses incompletos de propósito, com o cabeçalho de
+    // pt.ts dizendo que cairiam no fallback "até serem completados (Etapa 4)". Faltavam 18 chaves em cada, e
+    // não eram quaisquer 18: eram o MENU DE PAUSA inteiro, o título e a tela de vitória — as telas mais vistas
+    // do jogo. Quem escolhesse inglês apertava Enter e via "Pausado".
+    //
+    // O fallback continua existindo, e é bom que exista: uma chave nova sem tradução mostra português em vez
+    // de mostrar a chave crua. O que ele não pode voltar a ser é o CAMINHO NORMAL, porque nesse regime
+    // ninguém percebe que uma tela inteira ficou para trás — foi assim que o menu de pausa passou despercebido.
+    for (const [nome, d] of Object.entries(TRADUZIDOS)) {
+      const faltando = Object.keys(pt).filter((k) => !(k in d));
+      expect(faltando, `${nome} não traduziu estas chaves — traduza, ou explique aqui por que não`).toEqual([]);
+    }
+  });
+
   it('[Right] toda chave `sr.*` existe nos três idiomas', () => {
     // A regra é mais dura para `sr.*` que para o resto: uma chave de UI ausente cai no fallback pt e a pessoa vê
     // português no meio do inglês, o que é feio. Um ANÚNCIO ausente cai em português no ouvido de quem depende do

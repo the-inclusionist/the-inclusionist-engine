@@ -394,5 +394,26 @@ const en: Record<string, string> = {
   'viz.desc.lv-diabetic': 'Diabetic retinopathy — patches scattered about.',
   'viz.blind': 'Simulate total blindness',
   'viz.desc.blind': 'Black screen — play as a blind person does (touch and sound feedback). (white dot; tap twice to leave)',
+  // ===================== O QUE FALTAVA (item 14, rodada final) =====================
+  // Estas 18 chaves existiam só em pt e caíam no fallback — e são as MAIS VISTAS do jogo: o menu de pausa
+  // inteiro, o título e a tela de vitória. Quem escolhesse inglês via a pausa em português.
+  'title.byline': 'by Prof. José Rocha',
+  'title.wait': 'Wait for Player 1 to choose the game',
+  'win.title': '🎉 You collected all 10 coins!',
+  'win.again': 'Play again',
+  'pause.title': 'Paused',
+  'pause.resume': '▶ Resume',
+  'pause.tipo': '🔤 Typography',
+  'pause.addplayer': '👥 Add player',
+  'pause.audio': '🦻 Hearing accessibility',
+  'pause.motora': '♿ Motor accessibility',
+  'pause.anim': '🎞 Visual sensitivity',
+  'pause.visual': '🎨 Visual accessibility',
+  'pause.empatia': '🫂 Empathy mode',
+  'pause.ajuda': '❓ Help',
+  'pause.print': '📷 Print (see the screen)',
+  'pause.quit': '🚪 Quit the game',
+  'a11y.gameRegion': 'Game area. Move with A and D or the arrow keys; jump with L or Space; climb ladders up and down (and swim in water) with W and S or the arrow keys; run with P or Shift. Collect 10 coins.',
+  'game.instructions': 'Move the character through the cave and collect 10 coins. No time limit. Controls: A and D or the arrow keys move; L or Space jump; W and S (or up/down arrows) climb ladders and swim; P or Shift run.',
 };
 export default en;
