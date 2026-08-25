@@ -489,8 +489,21 @@ const pixiMount = $('#pixi-mount');
 // dá o lugar, e a explicação fica onde quem edita o código a encontra. Antes disto, a mesma falha vinha
 // como "Cannot read properties of null (reading 'appendChild')", que não diz nem o quê nem onde.
 if (!pixiMount) throw new Error('#pixi-mount');
-pixiMount.appendChild(app.view);
-app.view.setAttribute('aria-hidden','true');
+/**
+ * A TELA, uma vez, com o tipo que ela tem em EXECUÇÃO.
+ *
+ * No PixiJS 7 o `app.view` é `ICanvas` — uma interface que existe para o Pixi poder desenhar fora do DOM
+ * (worker, OffscreenCanvas). Ela não é `Node` e não tem `setAttribute`, então `appendChild`, o atributo
+ * `aria-hidden` e o `style.filter` do filtro de baixa qualidade não compilam contra ela. Mas o que este
+ * arquivo cria é uma `PIXI.Application` de navegador, e ali o `view` É um `<canvas>` do DOM.
+ *
+ * A afirmação mora aqui, uma vez, em vez de três `as` espalhados — e o `aria-hidden` explica por que ela
+ * importa: a tela é escondida do leitor de tela DE PROPÓSITO, porque o jogo fala pelo DOM (pilar 2), e um
+ * `as` esquecido num desses pontos é uma regressão de acessibilidade, não um aviso de tipo.
+ */
+const view = app.view as unknown as HTMLCanvasElement;
+pixiMount.appendChild(view);
+view.setAttribute('aria-hidden','true');
 const camera=new PIXI.Container(); app.stage.addChild(camera);
 weatherLayer=new PIXI.Graphics(); app.stage.addChild(weatherLayer); // CLIMA (chuva/clarão) em tela-espaço, mantido no topo em draw
 weather.initWeather({ weatherLayer, stage: app.stage, screen: app.screen, getRm: () => rm, thunder: (i) => ambient.thunder(i) });
@@ -548,7 +561,7 @@ const { setCenario } = createSetCenario({
 // e ja nao tinha chamador aqui (o rotulo do painel vem de ui/settings-visual, que reexporta o do modulo).
 // A RECOMPOSICAO do filtro CSS fica: ela mistura o modo de visao ativo e invalida caches de textura,
 // coisas que nao sao do realce L->Q.
-initLqFilter({ onChange: () => { if(app&&app.view){ if(numPlayers<=1)applyVizGlobal(players[0].viz); else app.view.style.filter=lqFilter(); } } });
+initLqFilter({ onChange: () => { if(app&&view){ if(numPlayers<=1)applyVizGlobal(players[0].viz); else view.style.filter=lqFilter(); } } });
 // vizMode vem de core/state.js (Fase 2, mega-var 6). Init de boot SEM persistir (preserva o rastreio de prefers-contrast):
 initVizMode((()=>{ try{ const v=store.get('incl_viz',null); if(VIZ_CYCLE.includes(v))return v; }catch(e){}
   return (window.matchMedia && matchMedia('(prefers-contrast: more)').matches) ? 'hc-direto' : 'normal'; })()); // prefere-contraste → alto contraste 3:1
