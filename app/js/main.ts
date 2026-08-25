@@ -17,6 +17,7 @@ import type { Player, PlayerView } from './core/entity.js'; // a entidade da ENG
 import type { GamePlayer, ControlledGamePlayer } from './game/entity.js'; // as deste JOGO — ver `jogadores`/`controlados`
 import type { ModalIntent } from './input/keydown.js'; // a intenção direcional do ADR-0033
 import type { RenderTextureLike, SpriteLike, GraphicsLike } from './render/screen-pipeline.js'; // o ctx de lá declara estes
+import type { MotionSceneKey, MotionSceneFlags } from './ui/settings-motion.js'; // as quatro chaves de movimento reduzido
 import type { HcRoleKey } from './render/hc-role-data.js'; // HC_ROLE é Record<HcRoleKey, …>: a chave não é `string`
 import { quizLevel, setQuizLevelValue, coins, setCoins } from './game/state.js'; // item 19: o estado DESTE jogo
 import { startLoop } from './core/loop.js'; // driver do loop
@@ -374,15 +375,21 @@ const anyEasy=()=>players.some(p=>p.easy); // efeitos de MUNDO do Fácil (moedas
 // EASY (modo fácil) migrado p/ core/constants.js (Estágio 4, dado de dificuldade — junto de TUNE/ANIM).
 // Movimento reduzido (WCAG 2.3.3 AA). 5 alvos; padrão herda prefers-reduced-motion; persistido.
 // Hoje agem 'parallax' e 'walk'; 'decor/items/particles' ficam prontos e ligam quando a Cidade animar.
-const RM_KEYS=['parallax','decor','items','particles']; // animações de CENA (globais)
+// `MotionSceneKey`, e não `string[]`: quem declara as quatro chaves é `ui/settings-motion`, que também as
+// desenha. Como texto solto, um erro de digitação aqui só apareceria em execução — como uma linha de menu
+// que simplesmente não aparece.
+const RM_KEYS: readonly MotionSceneKey[] = ['parallax', 'decor', 'items', 'particles']; // animações de CENA (globais)
 // `lbl` guarda a CHAVE i18n, nao o texto: ui/settings-motion resolve com t() na hora de desenhar a linha.
 // Era texto em portugues repetido palavra por palavra na RM_LABEL daquele modulo — tres tabelas dos mesmos
 // rotulos (esta, a de la, e uma TERCEIRA morta aqui embaixo), e mudar um rotulo pedia tres edicoes.
 const RM_CHAR=[ {k:'walk',prop:'rmWalk',lbl:'rm.walk'},
   {k:'breath',prop:'rmBreath',lbl:'rm.breath'}, {k:'flavor',prop:'rmFlavor',lbl:'rm.flavor'} ]; // animações do PERSONAGEM (por jogador)
 // O padrão ganhou nome em core/state (defaultReducedMotion) porque o reset do painel precisa do MESMO valor.
-const rm=(()=>{ const s=store.getJSON(store.KEYS.reducedMotion,null); if(s&&typeof s==='object'){ const o: Record<string, boolean> = {}; RM_KEYS.forEach(k=>o[k]=!!s[k]); return o; }
-  const o: Record<string, boolean> = {}; RM_KEYS.forEach(k=>o[k]=defaultReducedMotion()); return o; })();
+// O `as MotionSceneFlags` nos dois acumuladores abaixo: o laço preenche EXATAMENTE as quatro chaves de
+// `RM_KEYS`, que é o que o tipo exige — mas o objeto nasce vazio, e o compilador não acompanha um
+// preenchimento por laço. É afirmação sobre o laço logo ao lado, não sobre dado de fora.
+const rm=(()=>{ const s=store.getJSON(store.KEYS.reducedMotion,null); if(s&&typeof s==='object'){ const o = {} as MotionSceneFlags; RM_KEYS.forEach(k=>o[k]=!!s[k]); return o; }
+  const o = {} as MotionSceneFlags; RM_KEYS.forEach(k=>o[k]=defaultReducedMotion()); return o; })();
 function saveRM(){ store.setJSON(store.KEYS.reducedMotion,rm); }
 // Movimento por alternância (1 dedo): tocar a direção trava a marcha; segurar acelera; pulo não interrompe. Persistido.
 function loadPlayerA11y(p: Player,i: number){ const v=store.get(store.KEYS.vizP(i)); if(v&&VIZ_BY_KEY[v])p.viz=v;
