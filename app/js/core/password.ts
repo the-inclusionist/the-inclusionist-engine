@@ -1,17 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// core/password — A SENHA ENTRE SESSÕES (item 23). Módulo-FOLHA: zero dependências, zero I/O, zero DOM.
+// core/password — O CODEC DE CÓDIGOS CURTOS copiados à mão. Módulo-FOLHA: zero dependências, zero I/O, zero DOM.
 //
-// ========================= POR QUE UMA SENHA, EM 2026 =========================
-// Não é nostalgia de cartucho. O ADR-0027 fecha a análise do catálogo dizendo que falta ao motor, entre
-// outras coisas, "PASSWORD AND SAVE BETWEEN SESSIONS, which the catalogue lacks entirely because it was
-// written for 'one game in one prompt'". A razão de produto é o pilar 1 (hardware de escola):
-// `vite.config.ts` já registra, no comentário do Workbox, que este jogo roda "em laboratorio de escola com
-// maquina restaurada" — a máquina volta ao estado de fábrica no fim do dia. E `localStorage` morre com ela.
+// ========================= PARA QUE ESTE CODEC EXISTE — E PARA QUE ELE NÃO EXISTE MAIS =========================
+// Ele nasceu para outra coisa, e a honestidade do arquivo depende de dizer isso.
 //
-// A consequência é concreta: hoje a criança que chegou ao nível 4 da alfabetização recomeça no 2 na segunda
-// de manhã, e ninguém no laboratório tem como devolver o nível a ela. Uma senha é a progressão escrita num
-// caderno — sobrevive à máquina restaurada, ao computador diferente, ao navegador em modo anônimo, e não
-// depende de conta, de rede nem de nuvem. É a solução mais barata para o problema real que a escola tem.
+// A primeira versão era uma SENHA DE PROGRESSÃO: a criança anotava quatro letras no caderno e recuperava o
+// nível de alfabetização numa máquina de escola restaurada de madrugada. O ADR-0034 registrou o desenho
+// inteiro; o ADR-0037 o enterrou, e a razão veio do Dev, não de um defeito: **não existe salvar jogo, e não
+// deve existir**. Os jogos têm cinco fases e terminam em quinze minutos. Uma senha para recuperar progresso
+// de uma partida que acaba antes do recreio é máquina sem carga.
+//
+// O QUE SOBROU, e é o motivo de o arquivo continuar aqui: a única senha que o desenho tem é a que o PROFESSOR
+// cria para a turma entrar na mesma sala. Enquanto não houver servidor, essa sala é o computador do professor
+// na rede local. E um código de sala é o mesmo problema de engenharia que uma senha de progressão — poucos
+// bits, copiados do quadro por uma criança de sete anos, onde um erro de cópia ACEITO é pior que um recusado.
+// Por isso o codec permaneceu inteiro e o registro do lado do jogo (`game/progress`) foi apagado: o que morreu
+// foi o significado dos campos, não a aritmética.
+//
+// ⚠️ NENHUM CHAMADOR HOJE. Este módulo está sem consumidor desde que `game/progress` saiu, e isso está dito
+// aqui em vez de descoberto por alguém daqui a três meses. Ele fica porque a tela de sala vai precisar dele e
+// porque apagá-lo custaria reescrever a verificação exaustiva que já está testada — não porque esteja em uso.
 //
 // ========================= O QUE ESTE MÓDULO SABE, E O QUE ELE NUNCA SABERÁ =========================
 // A regra do ADR-0033 vale aqui inteira: "a entidade da engine pode declarar o que a ENGINE possui; não pode
@@ -23,7 +31,7 @@
 // declara — e sabe empacotar inteiros pequenos em símbolos legíveis, com sobra de detecção de erro. O que a
 // engine possui é a CODIFICAÇÃO; o que o jogo possui é o significado de cada campo.
 //
-// ========================= AS TRÊS DECISÕES QUE FAZEM A SENHA SERVIR A UMA CRIANÇA =========================
+// ========================= AS TRÊS DECISÕES QUE FAZEM O CÓDIGO SERVIR A UMA CRIANÇA =========================
 //
 // 1. O ALFABETO É DE 32 SÍMBOLOS, SEM I, L, O E U (o de Crockford). Os três primeiros saem por ambiguidade
 //    visual — I/1, L/1, O/0 são o erro clássico de quem copia de um caderno a lápis; o U sai porque sem ele
@@ -34,9 +42,9 @@
 //    32 símbolos cabem numa grade 8x4 legível a 320x180, que é o que a grade precisa desenhar.
 //
 // 2. A VERIFICAÇÃO É EXATA PARA OS DOIS ERROS QUE A CRIANÇA COMETE, e não "provável". Um dígito de soma
-//    simples de 5 bits deixaria 1 senha errada em 32 passar — e uma senha errada que PASSA é pior que uma
-//    rejeitada: ela carrega silenciosamente a progressão de outra pessoa, e a criança perde o nível sem
-//    ninguém entender por quê. Aqui a soma é PONDERADA PELA POSIÇÃO, módulo 1021, em 2 símbolos:
+//    simples de 5 bits deixaria 1 código errado em 32 passar — e um código errado que PASSA é pior que um
+//    rejeitado: ele leva a criança para OUTRA SALA, com a atividade de outra turma, e ninguém na sala entende
+//    por quê. Aqui a soma é PONDERADA PELA POSIÇÃO, módulo 1021, em 2 símbolos:
 //      · trocar UM símbolo por outro, em qualquer posição → SEMPRE detectado (a diferença que ele causa na
 //        soma é (i+1)·d, e |(i+1)·d| < 1021, logo nunca cai em zero por acaso do módulo);
 //      · TROCAR DOIS símbolos DO CORPO de lugar           → SEMPRE detectado ((i−j)·(vj−vi), idem).

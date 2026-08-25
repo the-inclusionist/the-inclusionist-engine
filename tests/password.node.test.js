@@ -1,24 +1,29 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Testes de core/password — a senha entre sessões (item 23). Project node: nada de DOM, nada de PIXI.
+// Testes de core/password — o codec de códigos curtos copiados à mão. Project node: nada de DOM, nada de PIXI.
 //
 // O arquivo tem duas metades, e a segunda é a que justifica o módulo existir.
 //
 // A primeira é o de sempre: ida e volta, extremos, esquema malformado. A segunda é a VERIFICAÇÃO, e ela não
-// é feita por amostragem — é EXAUSTIVA sobre os dois erros que uma criança comete ao copiar do caderno:
-// trocar um símbolo, e trocar dois de lugar. Para uma senha do tamanho real do jogo isso são algumas centenas
-// de casos, todos gerados aqui. Um teste que sorteasse dez deles diria "provavelmente"; este diz "sempre", e
-// "sempre" é exatamente a afirmação que o módulo faz no comentário do topo.
+// é feita por amostragem — é EXAUSTIVA sobre os dois erros que uma criança comete ao copiar do quadro: trocar
+// um símbolo, e trocar dois de lugar. Para um código do tamanho real isso são algumas centenas de casos, todos
+// gerados aqui. Um teste que sorteasse dez deles diria "provavelmente"; este diz "sempre", e "sempre" é
+// exatamente a afirmação que o módulo faz no comentário do topo.
 //
-// Por que a afirmação importa tanto: uma senha errada que PASSA carrega a progressão de outra pessoa. A
-// criança perde o nível a que chegou e ninguém no laboratório da escola descobre por quê — não há mensagem
-// de erro, não há log, só uma tela que abriu no nível 2 em vez do 4.
+// Por que a afirmação importa tanto: um código errado que PASSA leva a criança para OUTRA SALA — a atividade
+// de outra turma, escolhida por outro professor. Não há mensagem de erro, não há log, só uma criança fazendo
+// a lição errada e ninguém na sala entendendo por quê.
+//
+// O que estes testes NÃO cobrem, dito para ninguém confiar demais: o significado dos campos. Ele morreu junto
+// com `game/progress` (ADR-0037) e o da sala do professor ainda não nasceu. O que está provado aqui é a
+// aritmética — e era ela que valia a pena guardar quando o resto foi apagado.
 import { describe, it, expect } from 'vitest';
 import { criarCodec, formatar, ALFABETO } from '../app/js/core/password.js';
 
 /**
- * Um esquema do PORTE de um jogo de verdade — quatro campos, 13 bits, 5 caracteres. Não é o deste jogo (o de
- * `game/progress` tem dois campos e 4 caracteres): aqui interessa um corpo com três símbolos, para que os
- * casos exaustivos de troca de posição tenham pares de posições para trocar.
+ * Um esquema do PORTE de um código real — quatro campos, 13 bits, 5 caracteres. Não corresponde a nenhum
+ * esquema em uso: o do jogo (`game/progress`) foi APAGADO com o ADR-0037, e o da sala do professor ainda não
+ * existe. O que interessa aqui é um corpo com três símbolos, para que os casos exaustivos de troca de posição
+ * tenham pares de posições para trocar.
  */
 const ESQUEMA = [
   { nome: 'atividade', bits: 5 },
