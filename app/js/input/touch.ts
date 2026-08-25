@@ -11,7 +11,6 @@ import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { KEYS } from '../platform/storage.js'; // só as CHAVES (constantes) — leitura/escrita passam por ctx.store (DI)
 import { setMinimapCorner } from '../render/minimap.js'; // já módulo próprio (Estágio 4, Tier 1) — importado direto
-import { players, numPlayers, phase } from '../core/state.js'; // bindings vivos (fonte única de estado)
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
@@ -25,10 +24,9 @@ export interface TouchStore {
   setJSON(key: string, obj: unknown): void;
 }
 
-/** The subset of a player object this module reads — derived from core/entity. It reads only whether a quiz
- *  is open, never what is in it; `quiz` was plain `unknown` here while four other modules each had their own
- *  shape for the same field. */
-type TouchPlayer = PlayerView<'quiz'>;
+/* O `TouchPlayer` SAIU no item 19. Era `PlayerView<'quiz'>` — a camada de TOQUE declarando que sabe existir
+ * atividade de alfabetização — e servia a UMA linha, que virou `ctx.padAllowed()`. Um tipo que sobrevive ao
+ * único uso vira documentação de um acoplamento que já não existe. Ver `padAllowed` no ctx. */
 
 export interface TouchCtx {
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
@@ -49,6 +47,20 @@ export interface TouchCtx {
   /** Optional hook fired after applyPadDesign() changes padDesign — game.js's renderPauseLegend() (Sim/Não
    *  glyphs in the pause menu) is NOT part of this module's boundary but must still refresh; see report. */
   onPadDesignApplied?: () => void;
+  /**
+   * PODE mostrar o pad virtual AGORA? Injetado, e é o corte do item 19 neste módulo.
+   *
+   * Era uma linha que lia TRÊS coisas por importação de `core/state`:
+   *     `if (numPlayers > 1 || phase !== 'playing' || players.some((p) => p.quiz)) return;`
+   * — o número de jogadores, a fase, e se algum jogador tem um QUIZ aberto. A última é a que denunciava: a
+   * camada de TOQUE sabia que existe atividade de alfabetização. E as três juntas eram uma POLÍTICA do jogo
+   * escrita dentro da engine.
+   *
+   * É o mesmo movimento do achado 10 (`isNavigable`): injetar o BOOLEANO, não o estado. A plataforma responde
+   * "um jogador, jogando, sem desafio aberto"; um jogo de outro gênero responde o que for verdade nele. E o
+   * módulo deixou de importar `core/state` — não sobrou leitura de estado compartilhado nenhuma.
+   */
+  padAllowed: () => boolean;
 }
 
 // ===================== PURO (sem DOM/store — project node) =====================
@@ -230,8 +242,8 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     setMinimapCorner(false);
   }
   function showTouchControls(): void {
-    // MENU ativo (splash/pausa/quiz) = sem controle virtual: dá pra tocar direto nos botões da tela
-    if (numPlayers > 1 || phase !== 'playing' || (players as TouchPlayer[]).some((p) => p.quiz)) return;
+    // MENU ativo = sem controle virtual: dá pra tocar direto nos botões da tela. QUEM decide é o jogo.
+    if (!ctx.padAllowed()) return;
     const tc = ctx.$<HTMLElement>('#touch-controls');
     if (tc) tc.hidden = false;
     ctx.$<HTMLElement>('body')?.classList.add('touch-mode');

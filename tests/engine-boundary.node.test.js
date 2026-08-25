@@ -202,7 +202,10 @@ const MOEDA_CONHECIDA = new Set([
   'input/keydown.ts',       // 8 linhas: o jogador da engine tem um campo `quiz`, e a entrada o consulta
   'ui/pause-icons.ts',      // `quizLevel` importado de core/state e exposto no ctx
   'input/gamepad.ts',       // idem keydown: `p.quiz` no despacho de ação
-  'input/touch.ts',         // `PlayerView<'quiz'>` — o toque sabe que existe atividade de alfabetização
+  // `input/touch.ts` SAIU (2026-08-25, item 19) — na mesma rodada em que ENTRAU nesta lista, porque foi a
+  // unificação do casador que o revelou. Era `PlayerView<'quiz'>` a serviço de UMA linha, que lia `numPlayers`,
+  // `phase` e `players[].quiz` por importação de `core/state`. Virou `ctx.padAllowed()`: injeta-se o BOOLEANO,
+  // não o estado — o mesmo movimento do achado 10. O módulo deixou de importar `core/state`.
   'render/props.ts',        // `coinCanvas()`/`coinTexture()`: a engine tem um PINTOR de moeda
   'core/entity.ts',         // `quiz: PlayerQuiz | null` no jogador canônico
   'platform/storage.ts',    // a chave `quizlevel` no registro (é a chave que o namespace isola)
@@ -313,7 +316,9 @@ const FIXTURES_CONHECIDOS = {
   'keydown.node.test.js': 17,
   'keydown.browser.test.js': 1,
   'gamepad.node.test.js': 2,
-  'touch.browser.test.js': 2,
+  // `touch.browser.test.js` SAIU (2026-08-25, item 19): três casos que mexiam em `core/state` para exercitar
+  // uma linha viraram um que declara a política, mais um novo que prende que ela é lida A CADA chamada.
+
   // Nível de quiz atravessando menus e pausa.
   'pause-icons.node.test.js': 3,
   'activities-menu.browser.test.js': 2,

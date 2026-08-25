@@ -61,6 +61,9 @@ function makeCtx(over = {}) {
     viewport: () => ({ w: 1280, h: 800 }),
     frontOverlay: (el) => calls.frontOverlay.push(el),
     onPadDesignApplied: () => { calls.onPadDesignApplied++; },
+    // A POLÍTICA do pad entra por ctx (item 19). O padrão é "pode": os casos que testam o CONTRÁRIO passam
+    // `padAllowed: () => false` e dizem, no título, qual condição do jogo estão representando.
+    padAllowed: () => true,
     ...over,
   };
   return { ctx, calls, store };
@@ -69,7 +72,7 @@ function makeCtx(over = {}) {
 beforeEach(() => {
   markup();
   players.length = 0;
-  players.push({ quiz: false });
+  players.push({}); // este módulo não lê mais jogador nenhum (item 19) — o array existe para o resto do estado
   setNumPlayersValue(1);
   setPhaseValue('playing');
 });
@@ -146,26 +149,31 @@ describe('initTouch — hideTouchControls / showTouchControls', () => {
     expect($('#touch-controls').hidden).toBe(true);
     expect(document.body.classList.contains('touch-mode')).toBe(false);
   });
-  it('[Boundary] com mais de 1 jogador, showTouchControls não faz nada (multi-tela = sem toque, ambíguo)', () => {
-    setNumPlayersValue(2);
-    const { ctx } = makeCtx();
+  it('[Boundary] o jogo dizendo NÃO cala o pad, e é a ÚNICA coisa que este módulo consulta', () => {
+    // Eram TRÊS casos aqui — mais de um jogador, fora de "playing", e quiz aberto —, e os três mexiam em
+    // `core/state` para exercitar uma linha do módulo. Viraram um: o módulo pergunta `padAllowed()` e nada
+    // mais. As três condições continuam existindo, no `main.js`, onde a política do jogo mora.
+    //
+    // O que se perdeu ao juntar: os três títulos documentavam POR QUE o pad some. Isso não some do projeto —
+    // muda de lugar, para o comentário do ctx no `main.js`. O que se ganhou: este fixture parou de precisar
+    // de um jogador com `quiz` para testar a camada de TOQUE.
+    const { ctx } = makeCtx({ padAllowed: () => false });
     const api = initTouch(ctx);
     api.showTouchControls();
     expect($('#touch-controls').hidden).toBe(true);
   });
-  it('[Boundary] fora de "playing" (menu/pausa), showTouchControls não faz nada', () => {
-    setPhaseValue('paused');
-    const { ctx } = makeCtx();
+
+  it('[Interface] a resposta é lida A CADA chamada, não guardada no init', () => {
+    // Sem isto, um módulo que lesse `padAllowed()` uma vez no init passaria em tudo acima e ficaria preso à
+    // resposta do primeiro instante — e o pad nunca mais apareceria depois de uma pausa.
+    let pode = false;
+    const { ctx } = makeCtx({ padAllowed: () => pode });
     const api = initTouch(ctx);
     api.showTouchControls();
     expect($('#touch-controls').hidden).toBe(true);
-  });
-  it('[Boundary] com quiz aberto num jogador, showTouchControls não faz nada', () => {
-    players[0].quiz = true;
-    const { ctx } = makeCtx();
-    const api = initTouch(ctx);
+    pode = true;
     api.showTouchControls();
-    expect($('#touch-controls').hidden).toBe(true);
+    expect($('#touch-controls').hidden).toBe(false);
   });
   it('[Right] o parâmetro `reason` de hideTouchControls é aceito mas ignorado (fachada — mesmo comportamento do original)', () => {
     const { ctx } = makeCtx();
