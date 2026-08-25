@@ -4,7 +4,7 @@ metadata:
   decision-makers: [Dev]
   consulted: [ADR-0004 (Discovery é software, pedagogia é educational/), ADR-0010 pillar 3,
               ADR-0027 (the engine/game boundary), ADR-0030 (the axis is a declared contract),
-              the measurement in GitLab issue #68]
+              "the measurement in GitLab issue #68"]
   informed: []
 
 title: The curriculum is a layer of its own — it belongs to the platform, not to this game
@@ -55,21 +55,21 @@ pros-and-cons-of-the-options:
           "A layer whose declared owner does not exist yet is a layer with nobody to hand it to."]
 
 decision-outcome:
-  chosen-option: "E2 — a layer of its own, at `app/js/educational/`, mirroring `docs/educational/`"
+  chosen-option:
+    link: "E2 — a layer of its own, at `app/js/educational/`, mirroring `docs/educational/`"
+    justification: |
+      The catalogue belongs to the EdSP PLATFORM, with each game pulling the activities that suit it. EdSP does
+      not exist yet, so the catalogue stays in this repo — but shaped like where it is going instead of like
+      where it was.
 
-  rationale: |
-    The catalogue belongs to the EdSP PLATFORM, with each game pulling the activities that suit it. EdSP does
-    not exist yet, so the catalogue stays in this repo — but shaped like where it is going instead of like
-    where it was.
+      `educational/` and not `curriculum/`: ADR-0004 already fixed the word for this layer, and inventing a
+      second name for one concept is how a repo ends up with two vocabularies for the same thing.
 
-    `educational/` and not `curriculum/`: ADR-0004 already fixed the word for this layer, and inventing a
-    second name for one concept is how a repo ends up with two vocabularies for the same thing.
-
-    WHAT THIS DOES NOT FIX, stated plainly because the cheap reading of it is wrong: the menu still imports
-    ONE named catalogue. `ui/activities-menu -> educational/activities-registry` is a real dependency, and
-    calling the boundary resolved because the folder changed would be the cheapest possible way for a gate to
-    lie. The real fix is EdSP handing the catalogue over — injection, at that point, against a platform
-    interface rather than against this file. Until then the edge is COUNTED, in a list of its own.
+      WHAT THIS DOES NOT FIX, stated plainly because the cheap reading of it is wrong: the menu still imports
+      ONE named catalogue. `ui/activities-menu -> educational/activities-registry` is a real dependency, and
+      calling the boundary resolved because the folder changed would be the cheapest possible way for a gate to
+      lie. The real fix is EdSP handing the catalogue over — injection, at that point, against a platform
+      interface rather than against this file. Until then the edge is COUNTED, in a list of its own.
 
   consequences:
     good:

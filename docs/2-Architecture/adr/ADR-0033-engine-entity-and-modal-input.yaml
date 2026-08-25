@@ -3,7 +3,7 @@ metadata:
   date: 2026-08-25
   decision-makers: [Dev]
   consulted: [ADR-0027 (the boundary and its step 4), ADR-0030 (the declared contract),
-              the second consumer's findings 10 and 11, the measurement in GitLab issue #75]
+              the second consumer's findings 10 and 11, "the measurement in GitLab issue #75"]
   informed: []
 
 title: The engine's entity declares what the ENGINE owns — and input arrives as intent, never as meaning
@@ -61,39 +61,39 @@ pros-and-cons-of-the-options:
            base, and whose test is the largest fixture left on the list."]
 
 decision-outcome:
-  chosen-option: "Q4 — the engine delivers intent, and the field leaves `core/entity`"
+  chosen-option:
+    link: "Q4 — the engine delivers intent, and the field leaves `core/entity`"
+    justification: |
+      THE RULE THIS RECORD FIXES, and the reason it is an ADR rather than a commit message:
 
-  rationale: |
-    THE RULE THIS RECORD FIXES, and the reason it is an ADR rather than a commit message:
+          The engine's entity may declare what the ENGINE owns. It may not declare what the GAME owns.
 
-        The engine's entity may declare what the ENGINE owns. It may not declare what the GAME owns.
+      The line is visible in the slice `keydown` already asks for:
 
-    The line is visible in the slice `keydown` already asks for:
+          PlayerView<'i' | 'ctrl' | 'quiz' | 'waiting' | 'easy' |
+                     'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'>
 
-        PlayerView<'i' | 'ctrl' | 'quiz' | 'waiting' | 'easy' |
-                   'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'>
+      Eleven fields, and the engine reads all eleven without discomfort. TEN are its own concepts: identity, key
+      scheme, waiting screen, Easy mode, the six edge flags. ONE names game content. That is the exception, and
+      the rule above is what makes it an exception rather than a matter of taste.
 
-    Eleven fields, and the engine reads all eleven without discomfort. TEN are its own concepts: identity, key
-    scheme, waiting screen, Easy mode, the six edge flags. ONE names game content. That is the exception, and
-    the rule above is what makes it an exception rather than a matter of taste.
+      THE MECHANISM WAS CORRECTED BEFORE IT WAS BUILT, and the correction came from the Dev asking why Q4 does
+      not read the field. The first draft proposed `ctx.hasModal(i)` and `ctx.anyModalOpen()`. That fixes the
+      type, but it is too much machinery for THIS module: `keydown` already builds a snapshot before any effect.
+      Adding two ctx functions to a module that already has a snapshot is more parts, not fewer.
 
-    THE MECHANISM WAS CORRECTED BEFORE IT WAS BUILT, and the correction came from the Dev asking why Q4 does
-    not read the field. The first draft proposed `ctx.hasModal(i)` and `ctx.anyModalOpen()`. That fixes the
-    type, but it is too much machinery for THIS module: `keydown` already builds a snapshot before any effect.
-    Adding two ctx functions to a module that already has a snapshot is more parts, not fewer.
+      The answer goes IN THE SNAPSHOT instead of the OBJECT:
 
-    The answer goes IN THE SNAPSHOT instead of the OBJECT:
+          modalOpen: readonly boolean[];   // beside `players`, which stays the real array
 
-        modalOpen: readonly boolean[];   // beside `players`, which stays the real array
+      Two alternatives were rejected with reasons, not by preference: a `modalOpen` field on `KeydownPlayer`
+      would push the requirement back into `core/entity` (a better name in the same wrong place), and wrapping
+      (`players.map(p => ({...p, modalOpen}))`) would break WRITES — the module mutates `jumpEdge`/`runEdge` on
+      the real players, and a copy would lose that.
 
-    Two alternatives were rejected with reasons, not by preference: a `modalOpen` field on `KeydownPlayer`
-    would push the requirement back into `core/entity` (a better name in the same wrong place), and wrapping
-    (`players.map(p => ({...p, modalOpen}))`) would break WRITES — the module mutates `jumpEdge`/`runEdge` on
-    the real players, and a copy would lose that.
-
-    WHAT THE ENGINE KEEPS is what finding 11 measured as the base's best cut: translating a key into a
-    DIRECTIONAL INTENT through the player's remappable scheme. What it stops doing is deciding that "left"
-    means minus one and "up" means minus three.
+      WHAT THE ENGINE KEEPS is what finding 11 measured as the base's best cut: translating a key into a
+      DIRECTIONAL INTENT through the player's remappable scheme. What it stops doing is deciding that "left"
+      means minus one and "up" means minus three.
 
   consequences:
     good:

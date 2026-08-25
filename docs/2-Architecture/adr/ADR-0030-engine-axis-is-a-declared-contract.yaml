@@ -73,17 +73,17 @@ pros-and-cons-of-the-options:
           "Needs a gate: no engine module may import from `genre-*`."]
 
 decision-outcome:
-  chosen-option: "A4 — declared contract, with genre packages as ready-made presets of it"
+  chosen-option:
+    link: "A4 — declared contract, with genre packages as ready-made presets of it"
+    justification: |
+      A4 is A3 — the only axis the measurement supports — with the remedy for A3's one real defect. The contract
+      is what the engine knows; the preset is what saves a small game from paying for it.
 
-  rationale: |
-    A4 is A3 — the only axis the measurement supports — with the remedy for A3's one real defect. The contract
-    is what the engine knows; the preset is what saves a small game from paying for it.
-
-    The distinction that makes this more than naming: a genre package under A1 is a LAYER, and layers accrete.
-    A genre package under A4 is an IMPLEMENTATION OF AN INTERFACE, and interfaces can be checked. `genre-platform`
-    declares continuous topology with a tile grid, `facing`, and the clock owning the tick; `genre-quiz`
-    declares an ordered hotspot list and the player owning the tick. Both satisfy the same seven fields, and
-    that is the whole point — the accessibility stack never learns which one it is talking to.
+      The distinction that makes this more than naming: a genre package under A1 is a LAYER, and layers accrete.
+      A genre package under A4 is an IMPLEMENTATION OF AN INTERFACE, and interfaces can be checked. `genre-platform`
+      declares continuous topology with a tile grid, `facing`, and the clock owning the tick; `genre-quiz`
+      declares an ordered hotspot list and the player owning the tick. Both satisfy the same seven fields, and
+      that is the whole point — the accessibility stack never learns which one it is talking to.
 
   consequences:
     good:

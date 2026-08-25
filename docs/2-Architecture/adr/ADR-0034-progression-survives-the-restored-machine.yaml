@@ -69,41 +69,41 @@ pros-and-cons-of-the-options:
           "A lost notebook loses the progress, and no support can recover it."]
 
 decision-outcome:
-  chosen-option: "P4 — a password, split in two along the boundary of ADR-0033"
+  chosen-option:
+    link: "P4 — a password, split in two along the boundary of ADR-0033"
+    justification: |
+      THE SPLIT IS THE DECISION. `core/password` knows how to pack small integers into legible symbols with
+      verification, and it knows no field names at all: it receives a SCHEMA — a list of `{nome, bits}` the game
+      declares — and returns a codec. `game/progress` declares that this game's schema is `atividade` (6 bits)
+      and `nivel` (3 bits), and maps them to and from live state. The engine owns the ENCODING; the game owns
+      the MEANING. A second consumer with no notion of "level" gets a password by declaring its own two fields.
 
-  rationale: |
-    THE SPLIT IS THE DECISION. `core/password` knows how to pack small integers into legible symbols with
-    verification, and it knows no field names at all: it receives a SCHEMA — a list of `{nome, bits}` the game
-    declares — and returns a codec. `game/progress` declares that this game's schema is `atividade` (6 bits)
-    and `nivel` (3 bits), and maps them to and from live state. The engine owns the ENCODING; the game owns
-    the MEANING. A second consumer with no notion of "level" gets a password by declaring its own two fields.
+      THREE CHOICES INSIDE THE CODEC, each answering "what does a child do?":
 
-    THREE CHOICES INSIDE THE CODEC, each answering "what does a child do?":
+      1. THE ALPHABET IS CROCKFORD BASE32 — 32 symbols with no I, L, O or U. The first three go for visual
+         ambiguity (I/1, L/1, O/0 is the classic error of copying pencil handwriting); U goes so the generator
+         cannot spell an obscenity by accident on a classroom screen. Crockford's leniency is applied on READING
+         only: typing I, L or O yields 1, 1 and 0, while writing never produces them. 32 symbols is also exactly
+         a legible 8x4 letter grid at 320x180 — the selector ADR-0027 says the engine needs.
 
-    1. THE ALPHABET IS CROCKFORD BASE32 — 32 symbols with no I, L, O or U. The first three go for visual
-       ambiguity (I/1, L/1, O/0 is the classic error of copying pencil handwriting); U goes so the generator
-       cannot spell an obscenity by accident on a classroom screen. Crockford's leniency is applied on READING
-       only: typing I, L or O yields 1, 1 and 0, while writing never produces them. 32 symbols is also exactly
-       a legible 8x4 letter grid at 320x180 — the selector ADR-0027 says the engine needs.
+      2. THE CHECKSUM IS EXACT FOR THE TWO ERRORS A CHILD MAKES, not probable. A 5-bit check digit would let one
+         wrong password in 32 through, and a wrong password that PASSES is worse than one that is rejected: it
+         loads another child's progress silently. Two symbols carry a POSITION-WEIGHTED sum modulo 1021, which
+         detects every single-symbol substitution and every transposition of two body symbols — by arithmetic,
+         not by probability, because the largest change either error can cause is smaller than the modulus. That
+         bound is also why `criarCodec` REFUSES a schema above 32 body symbols instead of quietly degrading.
 
-    2. THE CHECKSUM IS EXACT FOR THE TWO ERRORS A CHILD MAKES, not probable. A 5-bit check digit would let one
-       wrong password in 32 through, and a wrong password that PASSES is worse than one that is rejected: it
-       loads another child's progress silently. Two symbols carry a POSITION-WEIGHTED sum modulo 1021, which
-       detects every single-symbol substitution and every transposition of two body symbols — by arithmetic,
-       not by probability, because the largest change either error can cause is smaller than the modulus. That
-       bound is also why `criarCodec` REFUSES a schema above 32 body symbols instead of quietly degrading.
+      3. THE ACTIVITY INDEX COMES FROM AN APPEND-ONLY LIST (`ORDEM_SENHA`), not from the catalogue order. The
+         catalogue order is MENU order, and inserting `alf6` between `alf5` and `mat1` is a natural interface
+         change — one that would invalidate every password ever written in a notebook, with no error anywhere:
+         the child would type the right password and land in the wrong activity.
 
-    3. THE ACTIVITY INDEX COMES FROM AN APPEND-ONLY LIST (`ORDEM_SENHA`), not from the catalogue order. The
-       catalogue order is MENU order, and inserting `alf6` between `alf5` and `mat1` is a natural interface
-       change — one that would invalidate every password ever written in a notebook, with no error anywhere:
-       the child would type the right password and land in the wrong activity.
-
-    WHAT THE PASSWORD DOES NOT CARRY, decided by the same question: scenario, screen count, high contrast,
-    voice. None is progression; all are preferences, all remount in seconds, and all live in the SHARED
-    settings of ADR-0028. The in-round "lights" (0..3 correct in a row) were written and then removed: they
-    count answers INSIDE an open question, and there is no open question at the moment a password is typed, so
-    applying them would light up progress the child never made. Showing them to the teacher was the only use
-    left, and it cost a fifth character. A field nobody applies does not pay for a letter.
+      WHAT THE PASSWORD DOES NOT CARRY, decided by the same question: scenario, screen count, high contrast,
+      voice. None is progression; all are preferences, all remount in seconds, and all live in the SHARED
+      settings of ADR-0028. The in-round "lights" (0..3 correct in a row) were written and then removed: they
+      count answers INSIDE an open question, and there is no open question at the moment a password is typed, so
+      applying them would light up progress the child never made. Showing them to the teacher was the only use
+      left, and it cost a fifth character. A field nobody applies does not pay for a letter.
 
   consequences:
     good:
@@ -147,3 +147,18 @@ decision-outcome:
     `ORDEM_SENHA` — is unreachable today because the two lists are still in the same order, and is written
     down in the test as the gap it is, with the note that the five pinned passwords are what will catch it on
     the day the two orders diverge.
+
+more-information: |
+  Closes item 23 of the boundary pipeline, the last one ADR-0027 left named. The screen that SHOWS the
+  password and the letter grid that types it are not built; they are GitLab issue #77, which carries the open
+  question of where the grid lives (engine, shell, or split).
+
+  A CHANGE IS ALREADY EXPECTED, and it is recorded here rather than left to be discovered. The Dev's design
+  for the classroom makes the password the TEACHER'S: the teacher chooses the activities, the system emits a
+  code, and the child uses it to join the class over the LAN — the only way to play networked. Under that
+  design the activity is no longer the child's choice, so the `atividade` field of `game/progress` is the
+  wrong field, and the codec of `core/password` stays exactly as it is with a different schema on top.
+
+  This record insists that a password is a contract with paper. That contract has no installed base yet: no
+  password has been written in any notebook, because nothing displays one. That makes now — and only now —
+  the free moment to change the schema. After the first classroom uses it, this record's own rule applies.

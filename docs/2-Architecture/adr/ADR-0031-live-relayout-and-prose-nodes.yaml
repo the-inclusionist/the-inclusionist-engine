@@ -65,30 +65,30 @@ pros-and-cons-of-the-options:
     bad: ["Verbose: roughly a hundred places in `index.html`."]
 
 decision-outcome:
-  chosen-option: "R2 with MANDATORY focus restoration, widened beyond panels; and H2"
+  chosen-option:
+    link: "R2 with MANDATORY focus restoration, widened beyond panels; and H2"
+    justification: |
+      R2 is chosen with a condition that is part of the decision and not a refinement of it: FOCUS RESTORATION IS
+      MANDATORY. A panel open with focus inside it must come back with that focus where it was. Without it, the
+      fix trades a stale label for a lost place, and the person who pays is the one who cannot see the label
+      anyway.
 
-  rationale: |
-    R2 is chosen with a condition that is part of the decision and not a refinement of it: FOCUS RESTORATION IS
-    MANDATORY. A panel open with focus inside it must come back with that focus where it was. Without it, the
-    fix trades a stale label for a lost place, and the person who pays is the one who cannot see the label
-    anyway.
+      The Dev widened the scope past what was asked, and the widening is the substance of this record. It is not
+      only panels, and not only language:
 
-    The Dev widened the scope past what was asked, and the widening is the substance of this record. It is not
-    only panels, and not only language:
+        · every PANEL,
+        · every ACTIVITY IN PROGRESS,
+        · every TEXT MENU,
 
-      · every PANEL,
-      · every ACTIVITY IN PROGRESS,
-      · every TEXT MENU,
+      and the trigger is not only the language. A FONT change does the same thing, and so does any other change
+      that reaches panels and activities. The rule generalises to: what the child changes under her own hands
+      redraws itself, and does not move her.
 
-    and the trigger is not only the language. A FONT change does the same thing, and so does any other change
-    that reaches panels and activities. The rule generalises to: what the child changes under her own hands
-    redraws itself, and does not move her.
-
-    H2 is chosen for a reason that is about sequencing, not about security alone. The menu rule already
-    recorded in CLAUDE.md §4 says the explanation belongs in the FOOTER, not inline in the row — so a large
-    share of those hundred prose nodes are going to move into `.opt-hint` regardless. They will acquire an
-    element on the way. H2 is therefore cheap where it looks expensive, and it keeps `applyDom` unable to write
-    markup, which is worth keeping for its own sake.
+      H2 is chosen for a reason that is about sequencing, not about security alone. The menu rule already
+      recorded in CLAUDE.md §4 says the explanation belongs in the FOOTER, not inline in the row — so a large
+      share of those hundred prose nodes are going to move into `.opt-hint` regardless. They will acquire an
+      element on the way. H2 is therefore cheap where it looks expensive, and it keeps `applyDom` unable to write
+      markup, which is worth keeping for its own sake.
 
   consequences:
     good:
