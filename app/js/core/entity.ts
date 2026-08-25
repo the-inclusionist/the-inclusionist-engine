@@ -42,16 +42,7 @@ export type KeyScheme = Record<string, string[]>;
 /** Lados da ventosa-aranha: direita, esquerda, teto, chão. */
 export type ClingSide = 'R' | 'L' | 'U' | 'D';
 
-/**
- * O mínimo que QUALQUER camada precisa saber de um quiz aberto. Todas as cinco variantes de `Quiz`
- * (game/quiz) satisfazem isto por construção: `kind` é o discriminante da união e `coinIndex`/`revealed`
- * vêm de `QuizCommon`. Quem precisa do quiz de verdade — só game/quiz — usa a união, não isto.
- */
-export interface PlayerQuiz {
-  kind: string;
-  coinIndex: number;
-  revealed: boolean;
-}
+/* (`PlayerQuiz` SAIU daqui em 2026-08-25 — ADR-0033. Está em `game/entity`, com o campo que o usava.) */
 
 /**
  * O sprite do jogador visto pelo jogo: posição, opacidade, escala e textura. Mesma forma que render/draw
@@ -127,8 +118,10 @@ export interface Player {
   owned: string[];
   activePower: string;
   hasKey: boolean;
-  /** Quiz aberto, ou `null`. `game/quiz` estreita isto para a união `Quiz`. */
-  quiz: PlayerQuiz | null;
+  /* (`quiz` SAIU daqui em 2026-08-25 — ADR-0033: a entidade da ENGINE declara o que a engine possui, e um
+   *  desafio de alfabetização é do JOGO. Está em `game/entity.GamePlayer`, com os três módulos que o leem de
+   *  verdade — `game/physics`, `game/session` e `game/quiz`. A camada de ENTRADA deixou de precisar dele
+   *  quando passou a entregar INTENÇÃO em vez de rotear a tecla para dentro do desafio.) */
 
   // --- configuração por jogador ---
   /**

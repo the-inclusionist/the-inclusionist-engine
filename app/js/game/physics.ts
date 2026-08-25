@@ -19,7 +19,7 @@
 import { TILE, TUNE, EASY, COIN_TARGET } from '../core/constants.js';
 import { ehTrampolim } from '../core/constants.js';
 import { t } from '../core/i18n.js';
-import type { ControlledPlayer } from '../core/entity.js';
+import type { ControlledGamePlayer } from './entity.js'; // ADR-0033: a fatia do JOGO — `quiz` mora aqui
 import { tileAt, solidAt, surfTop, isWcRampRiser, rampSurfaceY, caneBlockPx } from '../core/collision.js';
 import { BOX, SPAWN_X, SPAWN_Y, jumpVel, isBouncyGroundBelow, clingSides, firstClingSide, spiderReattach } from './player.js';
 import { ELEV_SPEED, elevAt } from './elevators.js';
@@ -47,7 +47,7 @@ export type { ClingSide as Side } from '../core/entity.js';
  * cadeirante, ausente em makePlayer), `_fallV` (vy ANTES do resolve, para o juice de pouso) e `caneDist`
  * (distância pisada desde a última batida de bengala) — os três agora documentados uma vez só, em core/entity.
  */
-export type PhysicsPlayer = Pick<ControlledPlayer,
+export type PhysicsPlayer = Pick<ControlledGamePlayer,
   'i' | 'x' | 'y' | 'vx' | 'vy' |
   'onGround' | 'onLadder' | 'inWater' |
   'facing' | 'jumpBuffer' | 'waterStroke' | 'hurtTimer' |
@@ -158,7 +158,10 @@ export function resolveY(pl: PhysicsPlayer): void {
 export function triggerLava(pl: PhysicsPlayer): void {
   if (pl.hurtTimer > 0) return;
   setCoins(pickCoins(COIN_TARGET, C.coinPools())); C.rebuildCoins();
-  (players as PhysicsPlayer[]).forEach((p) => { p.collected = 0; }); C.updateHud();
+  // `core/state.players` é `Player[]`: a visão da ENGINE. Este jogo sabe que os seus jogadores carregam mais
+  // (ADR-0033), e o salto por `unknown` é o preço honesto disso — a engine não pode declarar o campo, e o
+  // jogo não pode fingir que ela declara. É o mesmo caso de `coins: unknown[]` no estado compartilhado.
+  (players as unknown as PhysicsPlayer[]).forEach((p) => { p.collected = 0; }); C.updateHud();
   C.sfx('hurt'); pl.hurtTimer = 60; pl.vy = -10; pl.vx = (rnd() < 0.5 ? -1 : 1) * 5;
   C.addShake(3, 14); C.addHitstop(4); // JUICE: dano é o impacto mais forte do jogo
   C.srAlert(t('sr.physics.lava'));

@@ -82,7 +82,7 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C2).
 
 import { t } from '../core/i18n.js';
-import type { PlayerView } from '../core/entity.js';
+import type { GamePlayerView } from './entity.js'; // ADR-0033: a fatia do JOGO — `quiz` mora aqui
 import { TILE, COIN_TARGET, EASY } from '../core/constants.js';
 import { BOX, SPAWN_X, SPAWN_Y, makePlayer } from './player.js';
 import { screenBaseSize } from '../core/screens.js';
@@ -222,7 +222,7 @@ export function roundStartFields(i: number): Record<string, unknown> {
  * exercitar duas propriedades. Estreitamento aninhado é legítimo e Pick não o expressa; o que não é legítimo
  * é redigitar os campos que Pick EXPRESSA, e esses todos saíram daqui.
  */
-export type SessionPlayer = PlayerView<
+export type SessionPlayer = GamePlayerView<
   'i' | 'x' | 'y' | 'easy' | 'collected' | 'hasKey' | 'runCane' | 'quit' | 'quiz' |
   'activePower' | 'owned' | 'clinging' | 'flying' | 'jumpEdge' | 'pad'
 > & { sprite?: { alpha: number; visible: boolean } | null };
@@ -343,7 +343,11 @@ export interface SessionApi {
 }
 
 export function initSession(ctx: SessionCtx): SessionApi {
-  const P = () => players as SessionPlayer[]; // já não precisa do salto por `unknown`: players é Player[]
+  // O salto por `unknown` VOLTOU em 2026-08-25, e por um motivo melhor do que o de antes: `core/state.players`
+  // é `Player[]`, a visão da ENGINE, e o campo `quiz` saiu de lá (ADR-0033). Este jogo sabe que os jogadores
+  // dele carregam mais; a engine não pode saber. Antes o salto existia porque o tipo era frouxo — agora
+  // existe porque a fronteira é firme.
+  const P = () => players as unknown as SessionPlayer[];
   const N = () => numPlayers; // binding VIVO de core/state (setNumPlayersValue o atualiza)
   /** Prefixo "Jogador N: " nas falas — some quando só há uma tela. */
   const who = (pl: SessionPlayer): string => (N() > 1 ? `Jogador ${pl.i + 1}: ` : '');

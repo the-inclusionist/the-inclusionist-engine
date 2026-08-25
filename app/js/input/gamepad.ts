@@ -155,13 +155,15 @@ export interface WizState {
 // ---------------------------------------------------------------------------------------------
 
 import type { NavKeys } from './edges.js';
+import type { ModalIntent } from './keydown.js';
 export type { NavKeys } from './edges.js'; // reexportado sob o nome que os consumidores já usam
 
 /** Forma mínima de jogador que este módulo lê/escreve — DERIVADA de core/entity, não redigitada.
- *  `quiz` era `{ kind: string } | null` aqui e `{ kind?: string } | null` no keydown: o mesmo objeto, com o
- *  discriminante obrigatório num módulo e opcional no outro. Agora os dois leem `PlayerQuiz`. */
+ *  (`quiz` SAIU em 2026-08-25 — ADR-0033. Era `{ kind: string } | null` aqui e `{ kind?: string } | null` no
+ *  keydown, o mesmo objeto do JOGO com o discriminante obrigatório num módulo e opcional no outro. Hoje
+ *  nenhum dos dois o lê: a pergunta é `ctx.hasModal(i)` e a resposta é uma INTENÇÃO.) */
 export type GamepadPlayer = PlayerView<
-  'pad' | 'quit' | 'waiting' | 'quiz' | 'easy' |
+  'pad' | 'quit' | 'waiting' | 'easy' |
   'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'
 >;
 
@@ -195,11 +197,16 @@ export interface GamepadCtx {
   navPause: (menu: { hidden: boolean }, playerIndex: number, k: NavKeys) => void;
   /** Qual jogador abre o submenu de a11y em seguida (game.js's `pauseActor`). */
   setPauseActor: (playerIndex: number) => void;
-  /** Navegação do quiz do PRÓPRIO jogador (game.js). */
-  quizMove: (p: GamepadPlayer, delta: number) => void;
-  quizConfirm: (p: GamepadPlayer) => void;
-  quizErase: (p: GamepadPlayer) => void;
-  announceBraille: (p: GamepadPlayer) => void;
+  /**
+   * MODAL do PRÓPRIO jogador: a engine entrega a INTENÇÃO, o jogo decide (ADR-0033).
+   *
+   * Eram quatro — `quizMove(p, delta)`, `quizConfirm`, `quizErase`, `announceBraille` — e as quatro existiam
+   * porque a decisão de qual chamar morava aqui, com a grade de três colunas e o desvio de Braille. O pad e
+   * o teclado tinham CÓPIAS dessa mesma decisão, o que é a pior forma de tê-la: duas para divergir.
+   */
+  modalInput: (p: GamepadPlayer, intent: ModalIntent) => void;
+  /** Este jogador tem um modal aberto? Uma pergunta, e não o objeto do jogo. */
+  hasModal: (playerIndex: number) => boolean;
   /** Entra num jogo em andamento com uma tela nova (game.js's joinPlayer). */
   joinPlayer: (padIndex: number) => boolean;
   /** Recomeça só a tela deste jogador (game.js's respawnPlayer). */
@@ -460,15 +467,14 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         } else {
           const p = players[owner];
           if (pauseEdge) { ctx.setPhase('paused'); ctx.setPauseActor(owner); continue; } // START pausa (todos pausam; cada tela navega a sua)
-          if (p.quiz) { // o pad navega o quiz do PRÓPRIO jogador (o jogo dos outros segue)
-            if (p.quiz.kind === 'braille') {
-              if (edge('up')) ctx.announceBraille(p); else if (edge('jump')) ctx.quizConfirm(p);
-              continue;
-            }
-            if (edge('left')) ctx.quizMove(p, -1); else if (edge('right')) ctx.quizMove(p, 1);
-            else if (edge('up')) ctx.quizMove(p, -3); else if (edge('down')) ctx.quizMove(p, 3);
-            else if (edge('jump')) ctx.quizConfirm(p);
-            else if (edge('especial')) ctx.quizErase(p); // ESPECIAL = apagar última sílaba/letra
+          if (ctx.hasModal(owner)) { // o pad navega o modal do PRÓPRIO jogador (o jogo dos outros segue)
+            // A ORDEM é a do original: esquerda, direita, cima, baixo, confirmar, apagar. O que saiu foi o
+            // SIGNIFICADO — o ±1/±3 da grade e o desvio de Braille, que agora são decisão do jogo.
+            const intent: ModalIntent | null =
+              edge('left') ? 'left' : edge('right') ? 'right'
+              : edge('up') ? 'up' : edge('down') ? 'down'
+              : edge('jump') ? 'confirm' : edge('especial') ? 'erase' : null;
+            if (intent) ctx.modalInput(p, intent);
             continue;
           }
           // A tabela e a guarda do Fácil vêm de input/edges.ts, as MESMAS que keydown e touch usam. Antes eram

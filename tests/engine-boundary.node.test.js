@@ -217,9 +217,13 @@ const MOEDA_CONHECIDA = new Set([
   // ---- OITO MÓDULOS que só ficaram VISÍVEIS quando o casador foi unificado (2026-08-25). A dívida deles é
   //      antiga; o que era novo é o gate conseguir vê-la. A maioria já tinha o par dela na lista de FIXTURES
   //      abaixo — a correspondência que a seção 3 afirma só passou a ser verdadeira agora.
-  'input/keydown.ts',       // 8 linhas: o jogador da engine tem um campo `quiz`, e a entrada o consulta
+  // `input/keydown.ts` e `input/gamepad.ts` SAÍRAM (2026-08-25, ADR-0033), e `core/entity.ts` com eles — os
+  // três eram o MESMO campo. Não foi renomeação: a engine parou de rotear a tecla para dentro do desafio e
+  // passou a entregar uma INTENÇÃO (`left`/`right`/`up`/`down`/`confirm`/`erase`), com a grade de três
+  // colunas e o caso do Braille indo para `game/quiz`, de quem sempre foram. Sem precisar do significado, a
+  // entrada também deixou de precisar do objeto: a pergunta virou `modalOpen[i]`, um booleano no snapshot
+  // que o módulo já montava.
   'ui/pause-icons.ts',      // `quizLevel` importado de core/state e exposto no ctx
-  'input/gamepad.ts',       // idem keydown: `p.quiz` no despacho de ação
   // `input/touch.ts` SAIU (2026-08-25, item 19) — na mesma rodada em que ENTRAU nesta lista, porque foi a
   // unificação do casador que o revelou. Era `PlayerView<'quiz'>` a serviço de UMA linha, que lia `numPlayers`,
   // `phase` e `players[].quiz` por importação de `core/state`. Virou `ctx.padAllowed()`: injeta-se o BOOLEANO,
@@ -230,7 +234,6 @@ const MOEDA_CONHECIDA = new Set([
   // foi para `game/props`. O que a mudança REALMENTE consertou está do outro lado: `render/textures`
   // importava `powerupCanvas` de lá e trazia `PUP_KINDS` cravado, e essa era a única aresta que a mudança de
   // pasta teria criado — some por INJEÇÃO (`ctx.powerups`), como `shapes` já fazia.
-  'core/entity.ts',         // `quiz: PlayerQuiz | null` no jogador canônico
   'platform/storage.ts',    // a chave `quizlevel` no registro (é a chave que o namespace isola)
   // `render/viz-setters.ts` SAIU (2026-08-25, item 19). Era `spriteTexFor('coin', mode)` — o cache já não
   // tinha forma de moeda (chaveia por `(id, modo)`), e quem ainda nomeava uma era este módulo. O id virou
@@ -343,9 +346,10 @@ const FIXTURES_CONHECIDOS = {
   // (`city-tex.node.test.js` também estava invisível e saiu LIMPO — por isso não entra aqui. O caso
   //  "a lista não guarda teste que já se limpou" me obrigou a conferir em vez de supor.)
   // O jogador da engine tem um campo `quiz`: a camada de ENTRADA sabe que existe atividade de alfabetização.
-  'keydown.node.test.js': 17,
-  'keydown.browser.test.js': 1,
-  'gamepad.node.test.js': 2,
+  // `keydown.node.test.js` (17 linhas, o maior fixture da lista), `keydown.browser.test.js` e
+  // `gamepad.node.test.js` SAÍRAM (2026-08-25, ADR-0033). O fixture ENCOLHEU junto com o acoplamento: um
+  // objeto de desafio de mentira (`{ kind: 'shape' }`, `{ kind: 'braille' }`) virou um booleano por posição,
+  // e quatro espiões (`quizMove`/`quizConfirm`/`quizErase`/`announceBraille`) viraram um.
   // `touch.browser.test.js` SAIU (2026-08-25, item 19): três casos que mexiam em `core/state` para exercitar
   // uma linha viraram um que declara a política, mais um novo que prende que ela é lida A CADA chamada.
 
@@ -435,26 +439,23 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
   });
 
   it('[Interface] a dívida dos fixtures cai nos MESMOS subsistemas que a dos módulos', () => {
-    // É o que faz esta seção valer a pena existir ao lado das outras duas: se os testes acusassem um conjunto
-    // DIFERENTE de subsistemas, uma das duas medidas estaria errada. Elas concordam — alto contraste, sonar,
-    // HUD e entrada —, e essa concordância é o que dá confiança de que o passo 5 sabe onde mexer.
-    // DOIS subsistemas já saíram desta lista em 2026-08-25 (item 19), e as duas saídas são de naturezas
-    // diferentes — vale distinguir, porque só uma delas é replicável:
-    //   · `hud` saiu por TROCA DE PERGUNTA: o contador passou a receber um `Objective`. Mesmo módulo, mesmo
-    //     arquivo, outra interface.
-    //   · `audio-nav` saiu por PARTIÇÃO: o módulo virou dois, e o fixture de moeda foi com a metade que
-    //     viajou (`audio-sonar`), onde deixou de ser de moeda. Quem fica lê tile porque é o que ele faz.
-    // Os dois que sobram são os que o passo 5 ainda tem de resolver, e são justamente os dois maiores.
+    // É o que faz esta seção valer a pena ao lado das outras duas: se os testes acusassem um conjunto
+    // DIFERENTE de subsistemas, uma das duas medidas estaria errada.
+    //
+    // CINCO subsistemas já saíram, e as saídas foram por cinco mecanismos diferentes — vale distinguir,
+    // porque só quem sabe QUAL deles se aplica consegue repetir:
+    //   · `hud`           — trocou a PERGUNTA (o contador recebe um `Objective`).
+    //   · `audio-nav`     — PARTIU EM DOIS, e a metade genérica viajou com o contrato.
+    //   · `high-contrast` — a API perdeu a FORMA do objeto do jogo (registro de sprites por id).
+    //   · `viewports`     — saiu de carona no anterior: a linha dele era um campo do ctx que sumiu.
+    //   · `keydown`/`gamepad` — a engine passou a entregar INTENÇÃO e o jogo a decidir (ADR-0033).
+    //
+    // O que sobra é `pause-icons`, e ele é de outra natureza: `quizLevel` é um AJUSTE do jogo morando no
+    // estado compartilhado, não um objeto que a engine manipula. Sai com `core/state`, não sozinho.
     const porSubsistema = new Set(Object.keys(FIXTURES_CONHECIDOS).map((f) => f.split('.')[0]));
-    // `high-contrast` SAIU em 2026-08-25 pela TERCEIRA forma de sair vista neste item, e vale distinguir das
-    // outras duas: `hud` saiu trocando a pergunta, `audio-nav` saiu partido em dois, e este saiu porque a
-    // API deixou de ter FORMA de moeda — o ctx pedia um par `coinCanvasNormal`/`coinTexNormal` e passou a
-    // pedir um registro de sprites por id. Nenhuma linha de fixture foi reescrita; elas deixaram de existir.
-    for (const esperado of ['keydown']) {
-      expect(porSubsistema, esperado).toContain(esperado);
-    }
-    for (const limpo of ['hud', 'audio-nav', 'audio-sonar', 'high-contrast', 'viewports']) {
-      expect(porSubsistema, `${limpo} voltou a precisar de moeda no fixture — o item 19 andou para trás`)
+    expect(porSubsistema, 'pause-icons').toContain('pause-icons');
+    for (const limpo of ['hud', 'audio-nav', 'audio-sonar', 'high-contrast', 'viewports', 'keydown', 'gamepad']) {
+      expect(porSubsistema, `${limpo} voltou a precisar de moeda/quiz no fixture — o item 19 andou para trás`)
         .not.toContain(limpo);
     }
   });

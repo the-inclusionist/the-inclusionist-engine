@@ -18,7 +18,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { actionForCode } from '../app/js/input/keyboard-runtime.js';
 import {
   decideKeydown, initKeydown, isJumpKey, isGameKeyCode, isEasyShortcut,
-  titleNavOf, hasTitleIntent, quizOwnerIndex, quizActOf, edgesFor,
+  titleNavOf, hasTitleIntent, modalOwnerIndex, modalIntentOf, edgesFor,
   EASY_SHORTCUTS, PAUSE_KEYS, SCREEN_DIGITS, EDGE_BY_ACTION,
 } from '../app/js/input/keydown.js';
 import { setPhaseValue } from '../app/js/core/state.js';
@@ -29,7 +29,10 @@ const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: [
 const P2A = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], run: ['KeyU'], jump: ['KeyJ'], swap: ['KeyI'], especial: ['KeyK'] };
 const P2B = { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], run: ['Numpad8'], jump: ['Numpad5'], swap: ['Numpad9'], especial: ['Numpad6'] };
 
-const mkPlayer = (i, ctrl, extra = {}) => ({ i, ctrl, quiz: null, waiting: false, easy: false, ...extra });
+// O JOGADOR NÃO CARREGA MAIS O DESAFIO (ADR-0033): `quiz` saiu de `core/entity`, e com ele saiu daqui. Quem
+// diz se há modal aberto é o SNAPSHOT, por posição — `modal: [true, false]` nos casos abaixo. É a mudança que
+// este arquivo inteiro mede, e ela encolheu o fixture: um objeto de desafio de mentira virou um booleano.
+const mkPlayer = (i, ctrl, extra = {}) => ({ i, ctrl, waiting: false, easy: false, ...extra });
 
 /** Reconstrói o `ControlsState` como input/keyboard-runtime.ts o computa: aliases SEMPRE do esquema solo,
  *  `gameKeys` = união de TODOS os esquemas ativos. (Repetir a conta aqui seria trapaça; a forma é copiada,
@@ -52,6 +55,10 @@ function snap(over = {}) {
     numPlayers,
     players,
     controls: over.controls || controlsFrom(active),
+    // `modal` no `over` é atalho de escrita: os casos dizem `{ modal: [true] }` e o snapshot recebe
+    // `modalOpen`. Sem ele, cada caso teria de montar um array do tamanho de `players`, e o ruído esconderia
+    // o que o caso mede.
+    modalOpen: over.modal || players.map(() => false),
     heldKeys: over.heldKeys || new Set(),
     oneButton: false,
     escapeTargetId: null,
@@ -61,7 +68,7 @@ function snap(over = {}) {
     actionOf: (code, i) => actionForCode(schemes[i] || {}, code),
     whichPlayer: (code) => { for (let i = 0; i < active.length; i++) if (actionForCode(active[i], code)) return i; return -1; },
   };
-  const { players: _p, schemes: _s, ...rest } = over;
+  const { players: _p, schemes: _s, modal: _m, ...rest } = over;
   return { ...base, ...rest, players, numPlayers };
 }
 
@@ -71,7 +78,7 @@ const decide = (code, over = {}, mods = {}) => decideKeydown(ev(code, mods), sna
 /* ===================== 1. PRECEDÊNCIA — os casos que valem por dez ===================== */
 
 describe('a ORDEM das guardas É a especificação', () => {
-  const withQuiz = { players: [mkPlayer(0, SOLO, { quiz: { kind: 'shape' } })] };
+  const withQuiz = { players: [mkPlayer(0, SOLO)], modal: [true] };
 
   it('[precedência] diálogo REGISTRADO aberto vence o quiz aberto — o Escape fecha o diálogo, não confirma o desafio', () => {
     const d = decide('Escape', { ...withQuiz, escapeTargetId: 'audio' });
@@ -102,23 +109,23 @@ describe('a ORDEM das guardas É a especificação', () => {
     expect(d.again).toBe(true);
   });
 
-  it('[precedência] com QUIZ aberto, Alt+2 NÃO troca o número de telas', () => {
+  it('[precedência] com MODAL aberto, Alt+2 NÃO troca o número de telas', () => {
     const d = decideKeydown(ev('Digit2', { altKey: true }), snap(withQuiz));
     expect(d.kind).not.toBe('screens');
   });
 
-  it('[precedência] com QUIZ aberto, Enter CONFIRMA o desafio em vez de pausar', () => {
+  it('[precedência] com MODAL aberto, Enter CONFIRMA o desafio em vez de pausar', () => {
     // Enter não é tecla de nenhum esquema → genérica → cai no quiz do P1, onde não é nada
     const d = decide('Enter', withQuiz);
-    expect(d.kind).toBe('quiz');
-    expect(d.kind === 'quiz' && d.act).toBeNull();
+    expect(d.kind).toBe('modal');
+    expect(d.kind === 'modal' && d.intent).toBeNull();
     // e a tecla de PULO do P1 (que é `jump` no esquema) confirma de verdade
     const j = decide('KeyJ', withQuiz);
-    expect(j.kind).toBe('quiz');
-    expect(j.act).toEqual({ type: 'confirm' });
+    expect(j.kind).toBe('modal');
+    expect(j.intent).toBe('confirm');
   });
 
-  it('[precedência] SEM quiz, o mesmo Enter pausa', () => {
+  it('[precedência] SEM modal, o mesmo Enter pausa', () => {
     expect(decide('Enter').kind).toBe('pause');
   });
 
@@ -250,68 +257,89 @@ describe('Escape/Enter = pausa', () => {
   });
 });
 
-/* ===================== 7. quiz — roteamento por DONO ===================== */
+/* ===================== 7. modal — roteamento por DONO ===================== */
 
-describe('quiz: a tecla age no quiz do DONO dela', () => {
-  const quiz = { kind: 'shape' };
-  const doisComQuizNoJ2 = () => ({
-    players: [mkPlayer(0, P2A), mkPlayer(1, P2B, { quiz })],
+describe('modal: a tecla age no modal do DONO dela', () => {
+  const doisComModalNoJ2 = () => ({
+    players: [mkPlayer(0, P2A), mkPlayer(1, P2B)], modal: [false, true],
     schemes: [P2A, P2B], numPlayers: 2,
   });
-  const doisComQuizNoJ1 = () => ({
-    players: [mkPlayer(0, P2A, { quiz }), mkPlayer(1, P2B)],
+  const doisComModalNoJ1 = () => ({
+    players: [mkPlayer(0, P2A), mkPlayer(1, P2B)], modal: [true, false],
     schemes: [P2A, P2B], numPlayers: 2,
   });
 
-  it('[Right] a tecla do J2 comanda o quiz do J2', () => {
-    const d = decide('ArrowLeft', doisComQuizNoJ2());
-    expect(d.kind).toBe('quiz');
+  it('[Right] a tecla do J2 comanda o modal do J2', () => {
+    const d = decide('ArrowLeft', doisComModalNoJ2());
+    expect(d.kind).toBe('modal');
     expect(d.playerIndex).toBe(1);
-    expect(d.act).toEqual({ type: 'move', delta: -1 });
+    expect(d.intent).toBe('left');
   });
 
   it('[Right] a tecla GENÉRICA cai no Jogador 1 (e em NINGUÉM mais)', () => {
-    const d = decide('Enter', doisComQuizNoJ1());
-    expect(d.kind).toBe('quiz');
+    const d = decide('Enter', doisComModalNoJ1());
+    expect(d.kind).toBe('modal');
     expect(d.playerIndex).toBe(0);
   });
 
-  it('[Boundary] a tecla do J2 quando quem tem quiz é o J1 NÃO comanda o quiz do J1 — cai no jogo (a partida do J2 continua)', () => {
-    const d = decide('ArrowLeft', doisComQuizNoJ1());
+  it('[Boundary] a tecla do J2 quando quem tem modal é o J1 NÃO comanda o modal do J1 — cai no jogo (a partida do J2 continua)', () => {
+    const d = decide('ArrowLeft', doisComModalNoJ1());
     expect(d.kind).toBe('play');
   });
 
-  it('[Right] as quatro direções andam na grade de 3 colunas; pulo confirma; especial apaga', () => {
-    const solo1 = { players: [mkPlayer(0, SOLO, { quiz })] };
-    expect(decide('KeyA', solo1).act).toEqual({ type: 'move', delta: -1 });
-    expect(decide('KeyD', solo1).act).toEqual({ type: 'move', delta: 1 });
-    expect(decide('KeyW', solo1).act).toEqual({ type: 'move', delta: -3 });
-    expect(decide('KeyS', solo1).act).toEqual({ type: 'move', delta: 3 });
-    expect(decide('KeyJ', solo1).act).toEqual({ type: 'confirm' });
-    expect(decide('KeyK', solo1).act).toEqual({ type: 'erase' });
+  it('[Right] as seis intenções saem do esquema de teclas — e SÓ isso sai daqui', () => {
+    // Este caso mudou de assunto no ADR-0033, e a mudança É o item: ele afirmava a GRADE
+    // (`{type:'move', delta:-3}` para cima, `-1` para a esquerda) e o desvio de Braille. Isso é layout do
+    // desafio DESTE jogo, e saiu para `game/quiz`. O que a engine entrega é a direção; o que ela significa
+    // não é mais pergunta que este arquivo possa responder.
+    const solo1 = { players: [mkPlayer(0, SOLO)], modal: [true] };
+    expect(decide('KeyA', solo1).intent).toBe('left');
+    expect(decide('KeyD', solo1).intent).toBe('right');
+    expect(decide('KeyW', solo1).intent).toBe('up');
+    expect(decide('KeyS', solo1).intent).toBe('down');
+    expect(decide('KeyJ', solo1).intent).toBe('confirm');
+    expect(decide('KeyK', solo1).intent).toBe('erase');
   });
 
-  it('[Right] braille tem caminho PRÓPRIO: cima DITA a cela, pulo confirma, e mais nada anda', () => {
-    const cego = { players: [mkPlayer(0, SOLO, { quiz: { kind: 'braille' } })] };
-    expect(decide('KeyW', cego).act).toEqual({ type: 'braille-announce' });
-    expect(decide('KeyJ', cego).act).toEqual({ type: 'confirm' });
-    expect(decide('KeyA', cego).act).toBeNull(); // esquerda NÃO move no braille
-    expect(decide('KeyK', cego).act).toBeNull(); // especial NÃO apaga no braille
+  it('[Right] a ORDEM das seis é a especificação: uma tecla que é `left` E `jump` vale `left`', () => {
+    // Este caso NASCEU de uma mutação que passou. Inverti a ordem no módulo — `confirm` antes de `left` — e
+    // os 74 casos continuaram verdes, o que significa que a ordem estava escrita só num comentário. Uma
+    // afirmação sem teste é uma afirmação que a próxima refatoração apaga sem avisar.
+    //
+    // O caminho GENÉRICO é onde a ordem pode ser exercida: sem dono, as seis leituras saem das listas de
+    // `controls`, e um mesmo código pode estar em duas delas. Com dono, `actionOf` devolve UMA ação e o
+    // conflito não existe.
+    const s2 = snap({
+      players: [mkPlayer(0, SOLO)], modal: [true],
+      controls: { ...controlsFrom([SOLO]), left: ['Numpad0'], jump: ['Numpad0'], right: [], up: [], down: [], run: [], gameKeys: ['Numpad0'] },
+    });
+    // `Numpad0` não pertence a esquema nenhum → genérica → as seis leituras vêm de `controls`
+    expect(modalIntentOf('Numpad0', s2, 0, true)).toBe('left');
   });
 
-  it('[Right] tecla de jogo sem significado no quiz mesmo assim PREVINE o padrão (senão `run` rolaria a página)', () => {
-    const solo1 = { players: [mkPlayer(0, SOLO, { quiz })] };
+  it('[Zero] tecla sem significado no esquema vira intenção NULA — e ainda assim é do modal', () => {
+    // A distinção que o `preventDefault` depende: a tecla É do modal (o desafio a engole), mesmo quando não
+    // exprime intenção nenhuma. Se este caso caísse para `play`, a tecla vazaria para o jogo por baixo do
+    // desafio aberto.
+    const solo1 = { players: [mkPlayer(0, SOLO)], modal: [true] };
+    const d = decide('KeyZ', solo1);
+    expect(d.kind).toBe('modal');
+    expect(d.intent).toBeNull();
+  });
+
+  it('[Right] tecla de jogo sem significado no modal mesmo assim PREVINE o padrão (senão `run` rolaria a página)', () => {
+    const solo1 = { players: [mkPlayer(0, SOLO)], modal: [true] };
     const d = decide('KeyU', solo1); // `run`: não é nenhuma das seis
-    expect(d.act).toBeNull();
+    expect(d.intent).toBeNull();
     expect(d.preventDefault).toBe(true);
   });
 
-  it('[Boundary] tecla que NÃO é de jogo não previne o padrão dentro do quiz', () => {
-    const solo1 = { players: [mkPlayer(0, SOLO, { quiz })] };
+  it('[Boundary] tecla que NÃO é de jogo não previne o padrão dentro do modal', () => {
+    const solo1 = { players: [mkPlayer(0, SOLO)], modal: [true] };
     expect(decide('Enter', solo1).preventDefault).toBe(false);
   });
 
-  it('[Zero] ninguém com quiz aberto: o ramo do quiz nem é consultado', () => {
+  it('[Zero] ninguém com modal aberto: o ramo do modal nem é consultado', () => {
     expect(decide('KeyA').kind).toBe('play');
   });
 });
@@ -404,15 +432,15 @@ describe('predicados puros', () => {
     expect(hasTitleIntent(titleNavOf('KeyQ', s, false))).toBe(false);
     expect(hasTitleIntent(titleNavOf('Enter', s, false))).toBe(true);
   });
-  it('quizOwnerIndex: -1 quando o dono da tecla não tem quiz aberto', () => {
-    const s = snap({ players: [mkPlayer(0, P2A, { quiz: { kind: 'shape' } }), mkPlayer(1, P2B)], schemes: [P2A, P2B], numPlayers: 2 });
-    expect(quizOwnerIndex('KeyJ', s)).toBe(0);
-    expect(quizOwnerIndex('Numpad5', s)).toBe(-1);
-    expect(quizOwnerIndex('Enter', s)).toBe(0); // genérica → J1
+  it('modalOwnerIndex: -1 quando o dono da tecla não tem modal aberto', () => {
+    const s = snap({ players: [mkPlayer(0, P2A), mkPlayer(1, P2B)], modal: [true, false], schemes: [P2A, P2B], numPlayers: 2 });
+    expect(modalOwnerIndex('KeyJ', s)).toBe(0);
+    expect(modalOwnerIndex('Numpad5', s)).toBe(-1);
+    expect(modalOwnerIndex('Enter', s)).toBe(0); // genérica → J1
   });
-  it('quizActOf: jogador inexistente não estoura', () => {
-    expect(() => quizActOf('KeyJ', snap(), 9, true)).not.toThrow();
-    expect(quizActOf('KeyJ', snap(), 9, true)).toBeNull();
+  it('modalIntentOf: jogador inexistente não estoura', () => {
+    expect(() => modalIntentOf('KeyJ', snap(), 9, true)).not.toThrow();
+    expect(modalIntentOf('KeyJ', snap(), 9, true)).toBeNull();
   });
   it('edgesFor: esquema sem a ação não estoura (guarda NOVA, declarada no cabeçalho)', () => {
     const torto = snap({ players: [mkPlayer(0, { left: ['KeyA'] })] });
@@ -453,10 +481,11 @@ function mkCtx(over = {}) {
     navTitle: spy('navTitle'),
     activateScreens: spy('activateScreens'),
     togglePause: spy('togglePause'),
-    quizMove: spy('quizMove'),
-    quizConfirm: spy('quizConfirm'),
-    quizErase: spy('quizErase'),
-    announceBraille: spy('announceBraille'),
+    // UMA entrada onde havia quatro (ADR-0033): `quizMove`/`quizConfirm`/`quizErase`/`announceBraille` só
+    // existiam porque a decisão de qual chamar morava no módulo. O espião registra a INTENÇÃO, que é o que
+    // a engine passou a entregar.
+    modalInput: spy('modalInput'),
+    hasModal: (i) => !!(players[i] && players[i].modalAberto),
     clearWaitingBadge: spy('clearWaitingBadge'),
     win: { addEventListener: spy('addEventListener') },
   };
@@ -559,19 +588,28 @@ describe('initKeydown — o efeito de cada ramo', () => {
     expect(b.calls).toEqual([['togglePause']]);
   });
 
-  it('quiz: as quatro funções são chamadas com o OBJETO do jogador dono', () => {
-    const players = [mkPlayer(0, P2A), mkPlayer(1, P2B, { quiz: { kind: 'shape' } })];
+  it('modal: a INTENÇÃO chega com o OBJETO do jogador dono', () => {
+    // Eram QUATRO funções no ctx (`quizMove`/`quizConfirm`/`quizErase`/`announceBraille`) e este caso as
+    // afirmava uma a uma, com os deltas da grade. Virou uma, e o que resta a afirmar é o que a engine de
+    // fato decide: QUEM é o dono e QUAL direção foi pedida (ADR-0033).
+    const players = [mkPlayer(0, P2A), mkPlayer(1, P2B, { modalAberto: true })];
     const { ctx, calls } = mkCtx({ players });
     const api = initKeydown(ctx);
     fire(api, 'ArrowLeft'); fire(api, 'Numpad5'); fire(api, 'Numpad6');
-    expect(calls).toEqual([['quizMove', players[1], -1], ['quizConfirm', players[1]], ['quizErase', players[1]]]);
+    expect(calls).toEqual([
+      ['modalInput', players[1], 'left'],
+      ['modalInput', players[1], 'confirm'],
+      ['modalInput', players[1], 'erase'],
+    ]);
   });
 
-  it('quiz braille: cima dita a cela', () => {
-    const players = [mkPlayer(0, SOLO, { quiz: { kind: 'braille' } })];
+  it('modal: CIMA é uma intenção como as outras — o Braille deixou de ser caso especial AQUI', () => {
+    // O caso dizia "quiz braille: cima dita a cela", e a frase é verdadeira sobre o JOGO, não sobre a engine.
+    // Ditar a cela é o que a atividade de alfabetização faz com `up`; o despacho de teclado só entrega `up`.
+    const players = [mkPlayer(0, SOLO, { modalAberto: true })];
     const { ctx, calls } = mkCtx({ players });
     fire(initKeydown(ctx), 'KeyW');
-    expect(calls).toEqual([['announceBraille', players[0]]]);
+    expect(calls).toEqual([['modalInput', players[0], 'up']]);
   });
 
   it('jogo: a tecla entra em `keys`, a borda sobe e os botões de toque somem com motivo "teclado"', () => {

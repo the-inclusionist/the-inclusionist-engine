@@ -125,12 +125,13 @@ export type KeyScheme = Record<string, string[]>;
  *
  *  · `i`        — índice PRÓPRIO do jogador (`makePlayer(i)`). O original roteia por ele, não pela posição.
  *  · `ctrl`     — esquema de teclas; `null` antes do assignControls.
- *  · `quiz`     — o desafio aberto deste jogador; `kind === 'braille'` tem caminho próprio.
+ *  (`quiz` SAIU em 2026-08-25 — ADR-0033. O desafio aberto chega por `modalOpen` no snapshot, e o que a
+ *   tecla SIGNIFICA lá dentro é decisão do jogo. Ver o bloco "MODAL" abaixo.)
  *  · `waiting`  — tela em espera (multi-tela): a 1ª tecla DAQUELE jogador entra na partida.
  *  · `easy`     — modo Fácil (deficiência motora): sem correr, e ganha os atalhos Ctrl/Shift no solo.
  */
 export type KeydownPlayer = PlayerView<
-  'i' | 'ctrl' | 'quiz' | 'waiting' | 'easy' |
+  'i' | 'ctrl' | 'waiting' | 'easy' |
   'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'
 >;
 
@@ -151,6 +152,20 @@ export interface KeydownSnapshot {
   phase: string;
   numPlayers: number;
   players: readonly KeydownPlayer[];
+  /**
+   * Há MODAL aberto para o jogador de cada POSIÇÃO? — a resposta, ao lado dos jogadores (ADR-0033).
+   *
+   * Era `players[i].quiz`, e o custo nunca foi a leitura: `players` já chega por injeção. O custo era que
+   * ler o campo obrigava `core/entity.Player` — a entidade canônica da ENGINE — a DECLARÁ-LO, e com isso
+   * todo jogo do catálogo a ter um "quiz" com aquele formato.
+   *
+   * Por que aqui e não em duas funções de ctx: este módulo já monta um snapshot antes de qualquer efeito, e
+   * acrescentar ctx a quem já tem snapshot é peça a mais. Por que um array PARALELO e não um campo no
+   * `KeydownPlayer`: aquele tipo é `PlayerView<>` derivado de `Player`, então o campo voltaria a ser exigido
+   * na entidade — nome melhor, mesmo lugar errado. E por que não embrulhar os jogadores numa cópia: este
+   * módulo ESCREVE neles (as seis bordas), e a cópia perderia a escrita.
+   */
+  modalOpen: readonly boolean[];
   controls: ControlsSnapshot;
   /** `keys` de input/state.ts: as teclas seguradas AGORA (inclui códigos injetados por toque/webcam). */
   heldKeys: ReadonlySet<string>;
@@ -167,12 +182,17 @@ export interface KeydownSnapshot {
 
 /* ===================== a decisão ===================== */
 
-/** O que o quiz do dono da tecla deve fazer. `null` = a tecla é dele mas não significa nada no quiz. */
-export type QuizAct =
-  | { type: 'move'; delta: number }
-  | { type: 'confirm' }
-  | { type: 'erase' }
-  | { type: 'braille-announce' };
+/* ===================== MODAL: a engine entrega INTENÇÃO, o jogo decide (ADR-0033) =====================
+ *
+ * Era `QuizAct`, e ele carregava o SIGNIFICADO: `{ type:'move', delta:-3 }` para cima, `delta:-1` para a
+ * esquerda — a grade de três colunas DESTE jogo, dentro do despacho de teclado. Mais um ramo
+ * `braille-announce`, que existia porque o módulo lia `pl.quiz.kind === 'braille'`.
+ *
+ * Agora ele entrega a INTENÇÃO e nada mais. Traduzir tecla em direção, pelo esquema remapeável do jogador, é
+ * trabalho de engine — o achado 11 do segundo consumidor mediu que esse é o melhor recorte da base. Decidir
+ * que "cima" anda três casas, ou que "cima" dita a cela Braille, é do jogo.
+ */
+export type ModalIntent = 'left' | 'right' | 'up' | 'down' | 'confirm' | 'erase';
 
 /** Uma borda a levantar: qual jogador (POSIÇÃO no array) e qual flag. */
 export interface EdgeRaise { playerIndex: number; edge: EdgeFlag }
@@ -196,8 +216,8 @@ export type KeydownDecision =
   | { kind: 'screens'; count: number; preventDefault: boolean }
   /** 7º · Escape/Enter = pausa. */
   | { kind: 'pause'; preventDefault: boolean }
-  /** 8º · quiz aberto: a tecla age no quiz do DONO dela (`playerIndex` = posição no array). */
-  | { kind: 'quiz'; playerIndex: number; act: QuizAct | null; preventDefault: boolean }
+  /** 8º · modal aberto: a tecla age no modal do DONO dela (`playerIndex` = posição no array). */
+  | { kind: 'modal'; playerIndex: number; intent: ModalIntent | null; preventDefault: boolean }
   /** 9º · jogo normal. */
   | { kind: 'play'; gameKey: boolean; wake: number[]; edges: EdgeRaise[]; releaseKeys: string[]; preventDefault: boolean };
 
@@ -257,23 +277,25 @@ import { hasNavIntent as hasTitleIntent } from './edges.js';
 export { hasNavIntent as hasTitleIntent } from './edges.js';
 
 /**
- * Quem é o dono do quiz que esta tecla comanda? Devolve a POSIÇÃO no array, ou -1.
- * Regra verbatim: tecla de um jogador vai para o quiz DAQUELE jogador (e só se ele tiver quiz aberto); tecla
- * genérica cai no Jogador 1. Tecla de um jogador SEM quiz aberto não cai no P1 — ela desce para o jogo normal,
- * que é o que deixa a partida dele continuar enquanto o outro resolve o desafio.
+ * Quem é o dono do modal que esta tecla comanda? Devolve a POSIÇÃO no array, ou -1.
+ * Regra verbatim: tecla de um jogador vai para o modal DAQUELE jogador (e só se ele tiver um aberto); tecla
+ * genérica cai no Jogador 1. Tecla de um jogador SEM modal aberto não cai no P1 — ela desce para o jogo
+ * normal, que é o que deixa a partida dele continuar enquanto o outro resolve o desafio.
  */
-export function quizOwnerIndex(code: string, s: KeydownSnapshot): number {
+export function modalOwnerIndex(code: string, s: KeydownSnapshot): number {
   const owner = s.whichPlayer(code);
-  if (owner >= 0) return s.players[owner]?.quiz ? owner : -1;
-  return s.players[0]?.quiz ? 0 : -1;
+  if (owner >= 0) return s.modalOpen[owner] ? owner : -1;
+  return s.modalOpen[0] ? 0 : -1;
 }
 
 /**
- * O que a tecla faz DENTRO do quiz do dono. `owner` é a posição no array; `generic` diz se a tecla chegou sem
- * dono (aí as seis leituras usam os aliases do J1 em vez da ação remapeada).
- * A grade do quiz é de 3 colunas: cima/baixo andam ±3, esquerda/direita ±1.
+ * Que INTENÇÃO esta tecla exprime dentro do modal do dono. `owner` é a posição no array; `generic` diz se a
+ * tecla chegou sem dono (aí as seis leituras usam os aliases do J1 em vez da ação remapeada).
+ *
+ * As seis leituras são as mesmas de antes, letra por letra. O que saiu foi a linha seguinte: a que trocava
+ * "cima" por `delta:-3` e "esquerda" por `delta:-1`, e o desvio de Braille. Isso é grade, e grade é do jogo.
  */
-export function quizActOf(code: string, s: KeydownSnapshot, owner: number, generic: boolean): QuizAct | null {
+export function modalIntentOf(code: string, s: KeydownSnapshot, owner: number, generic: boolean): ModalIntent | null {
   const pl = s.players[owner];
   if (!pl) return null;
   const act = generic ? null : s.actionOf(code, pl.i); // `qpl.i`, não a posição — verbatim
@@ -287,17 +309,13 @@ export function quizActOf(code: string, s: KeydownSnapshot, owner: number, gener
   // original preservada (não existe alias `KESPECIAL` em ControlsState; o original alcançava `qpl.ctrl`).
   const E = act ? act === 'especial' : ((pl.ctrl?.especial || []).includes(code));
 
-  if (pl.quiz?.kind === 'braille') { // cego: cima DITA a cela, pulo confirma. Nada mais anda.
-    if (U) return { type: 'braille-announce' };
-    if (J) return { type: 'confirm' };
-    return null;
-  }
-  if (L) return { type: 'move', delta: -1 };
-  if (R) return { type: 'move', delta: 1 };
-  if (U) return { type: 'move', delta: -3 };
-  if (D) return { type: 'move', delta: 3 };
-  if (J) return { type: 'confirm' };
-  if (E) return { type: 'erase' };
+  // A ORDEM é a do original e importa: com um esquema em que a mesma tecla é `left` e `jump`, ganha `left`.
+  if (L) return 'left';
+  if (R) return 'right';
+  if (U) return 'up';
+  if (D) return 'down';
+  if (J) return 'confirm';
+  if (E) return 'erase';
   return null;
 }
 
@@ -351,22 +369,22 @@ export function decideKeydown(ev: { code: string; altKey?: boolean; ctrlKey?: bo
 
   // 6..7 · número de telas e pausa. As DUAS exigem quiz FECHADO: com um desafio aberto na tela, Alt+3 não pode
   // reconfigurar o jogo por baixo dele, e Enter é a confirmação do quiz, não a pausa.
-  const anyQuiz = s.players.some((p) => !!p.quiz);
+  const anyModal = s.modalOpen.some(Boolean);
   const inGame = s.phase === 'playing' || s.phase === 'paused';
-  if (ev.altKey && !ev.ctrlKey && SCREEN_DIGITS.test(code) && inGame && !anyQuiz) {
+  if (ev.altKey && !ev.ctrlKey && SCREEN_DIGITS.test(code) && inGame && !anyModal) {
     return { kind: 'screens', count: +code.slice(5), preventDefault: true };
   }
-  if (!anyQuiz && pauseKey && inGame) return { kind: 'pause', preventDefault: true };
+  if (!anyModal && pauseKey && inGame) return { kind: 'pause', preventDefault: true };
 
-  // 8 · quiz. A tecla age no quiz do DONO dela; genérica cai no P1. `preventDefault` é o mesmo dos dois
-  // caminhos (braille e normal) e NÃO depende de a tecla ter significado: basta ser tecla de jogo.
-  if (anyQuiz) {
-    const owner = quizOwnerIndex(code, s);
+  // 8 · modal. A tecla age no modal do DONO dela; genérica cai no P1. `preventDefault` NÃO depende de a
+  // tecla ter significado lá dentro: basta ser tecla de jogo — o desafio engole a tecla de qualquer forma.
+  if (anyModal) {
+    const owner = modalOwnerIndex(code, s);
     if (owner >= 0) {
-      return { kind: 'quiz', playerIndex: owner, act: quizActOf(code, s, owner, s.whichPlayer(code) < 0),
+      return { kind: 'modal', playerIndex: owner, intent: modalIntentOf(code, s, owner, s.whichPlayer(code) < 0),
         preventDefault: s.controls.gameKeys.includes(code) };
     }
-    // tecla de um jogador SEM quiz cai no jogo normal (a partida dele continua) — segue adiante
+    // tecla de um jogador SEM modal cai no jogo normal (a partida dele continua) — segue adiante
   }
 
   // 9 · jogo normal.
@@ -416,10 +434,17 @@ export interface KeydownCtx {
   navTitle: (k: TitleNav) => void;
   activateScreens: (n: number) => void;
   togglePause: () => void;
-  quizMove: (pl: KeydownPlayer, delta: number) => void;
-  quizConfirm: (pl: KeydownPlayer) => void;
-  quizErase: (pl: KeydownPlayer) => void;
-  announceBraille: (pl: KeydownPlayer) => void;
+  /**
+   * A INTENÇÃO chega, e o JOGO decide o que ela significa (ADR-0033).
+   *
+   * Eram quatro: `quizMove(pl, delta)`, `quizConfirm`, `quizErase` e `announceBraille` — e as quatro só
+   * existiam porque a decisão de qual chamar morava aqui, com a grade de três colunas e o desvio de Braille.
+   * Viraram uma. Um jogo com grade de quatro colunas, ou com lista vertical, responde diferente sem que este
+   * módulo saiba que existe grade.
+   */
+  modalInput: (pl: KeydownPlayer, intent: ModalIntent) => void;
+  /** O jogador da POSIÇÃO `i` tem um modal aberto? Uma pergunta, e não o objeto: ver `modalOpen` no snapshot. */
+  hasModal: (playerIndex: number) => boolean;
   /** ui/hud.ts: some com o selo "tela em espera" quando o jogador daquela tela entra. */
   clearWaitingBadge: (playerIndex: number) => void;
 
@@ -446,6 +471,8 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
   function snapshot(): KeydownSnapshot {
     return {
       phase, numPlayers: ctx.getNumPlayers(), players: ctx.getPlayers(), controls: ctx.getControls(),
+      // A RESPOSTA, ao lado dos jogadores — e montada aqui, onde eles já estão na mão (ADR-0033).
+      modalOpen: ctx.getPlayers().map((_, i) => ctx.hasModal(i)),
       heldKeys: ctx.heldKeys, oneButton: ctx.isOneButton(),
       escapeTargetId: ctx.escapeTarget(),
       touchCfgVisible: visible('touchcfg'), padWizVisible: visible('padwiz'), winVisible: visible('win-overlay'),
@@ -467,13 +494,10 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
         return;
       case 'screens': ctx.activateScreens(d.count); return;
       case 'pause': ctx.togglePause(); return;
-      case 'quiz': {
+      case 'modal': {
         const pl = ctx.getPlayers()[d.playerIndex];
-        if (!pl || !d.act) return;
-        if (d.act.type === 'braille-announce') ctx.announceBraille(pl);
-        else if (d.act.type === 'confirm') ctx.quizConfirm(pl);
-        else if (d.act.type === 'erase') ctx.quizErase(pl);
-        else ctx.quizMove(pl, d.act.delta);
+        if (!pl || !d.intent) return;
+        ctx.modalInput(pl, d.intent);
         return;
       }
       case 'play': {

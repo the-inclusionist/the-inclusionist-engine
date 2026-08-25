@@ -48,7 +48,7 @@ function buildCtx(over = {}) {
   let pads = [];
   let phase = 'playing';
   const players = over.players ?? [];
-  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], quizMove: [], quizConfirm: [], quizErase: [], announceBraille: [], clearWaitingBadge: [], hideTouchControls: 0, stopAttract: 0 };
+  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], hideTouchControls: 0, stopAttract: 0 };
   return {
     $: (sel) => dom.get(sel) ?? null,
     getGamepads: () => pads,
@@ -69,10 +69,10 @@ function buildCtx(over = {}) {
     getPauseMenu: () => null,
     navPause: (menu, pi, k) => calls.navPause.push([menu, pi, k]),
     setPauseActor: (i) => calls.setPauseActor.push(i),
-    quizMove: (p, d) => calls.quizMove.push([p, d]),
-    quizConfirm: (p) => calls.quizConfirm.push(p),
-    quizErase: (p) => calls.quizErase.push(p),
-    announceBraille: (p) => calls.announceBraille.push(p),
+    // UMA entrada onde havia quatro (ADR-0033). O pad e o teclado tinham CÓPIAS da mesma decisão — a grade
+    // de três colunas e o desvio de Braille — e duas cópias de uma regra são duas chances de divergir.
+    modalInput: (p, intent) => calls.modalInput.push([p, intent]),
+    hasModal: (i) => !!(players[i] && players[i].modalAberto),
     joinPlayer: (gi) => { calls.joinPlayer.push(gi); return true; },
     respawnPlayer: (i) => calls.respawnPlayer.push(i),
     clearWaitingBadge: (i) => calls.clearWaitingBadge.push(i),
@@ -86,7 +86,7 @@ function buildCtx(over = {}) {
 }
 
 function makePlayer(over = {}) {
-  return { pad: -1, quit: false, waiting: false, quiz: null, easy: false, jumpEdge: false, runEdge: false, leftEdge: false, rightEdge: false, swapEdge: false, specialEdge: false, ...over };
+  return { pad: -1, quit: false, waiting: false, easy: false, jumpEdge: false, runEdge: false, leftEdge: false, rightEdge: false, swapEdge: false, specialEdge: false, ...over };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -428,14 +428,17 @@ describe('initGamepad — pollPads', () => {
     expect(ctx.calls.navTitle).toHaveLength(0);
     expect(ctx.said.some((m) => m.includes('Aguarde o Jogador 1'))).toBe(true);
   });
-  it('[Right] fase "playing", quiz braille aberto: CIMA anuncia a célula, PULO confirma (não mexe jumpEdge)', () => {
-    const p = makePlayer({ pad: 0, quiz: { kind: 'braille' } });
+  it('[Right] fase "playing", MODAL aberto: CIMA vira intenção e NÃO mexe jumpEdge', () => {
+    // O caso dizia "quiz braille: CIMA anuncia a célula". Ditar a cela é o que a atividade de alfabetização
+    // faz com `up`; o pad só entrega `up` (ADR-0033). O que continua sendo afirmado — e é o que importa —
+    // é que a tecla vai para o modal em vez de virar borda de jogo.
+    const p = makePlayer({ pad: 0, modalAberto: true });
     const ctx = buildCtx({ players: [p] });
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
     ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [12] })]); // D-pad cima
     api.pollPads();
-    expect(ctx.calls.announceBraille).toHaveLength(1);
+    expect(ctx.calls.modalInput).toEqual([[p, 'up']]);
     expect(p.jumpEdge).toBe(false);
   });
   it('[Right] jogador ausente (owner<0) que aperta algo em "playing" e não há tela esperando: chama joinPlayer', () => {

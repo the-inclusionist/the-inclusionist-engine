@@ -6,7 +6,8 @@
 // velocidade inicial do pulo (fórmula pura). showPower (DOM/HUD) segue no game.js. Consumido pela física.
 import { TILE, TUNE, EASY } from '../core/constants.js';
 import { solidAt, tileAt } from '../core/collision.js';
-import type { Player, ClingSide } from '../core/entity.js';
+import type { ClingSide } from '../core/entity.js';
+import type { GamePlayer } from './entity.js'; // ADR-0033: a fábrica devolve o jogador DO JOGO
 
 export const SPAWN_X = 2 * TILE, SPAWN_Y = 24 * TILE;
 export const BOX = { w: 10, h: 30 };
@@ -24,7 +25,7 @@ type PlayerBody = { x: number; y: number; vx: number; vy: number; clingN: Side |
 // O tipo de retorno é a ÚNICA aferição do core/entity: se a fábrica e a interface discordarem em um campo,
 // em um nome ou em um tipo, isto não compila. Era `unknown` na prática até aqui — o literal inferia `quiz: null`
 // e `ctrl: null` como o TIPO `null`, não como `X | null`, e por isso `core/state.players` teve de ser `unknown[]`.
-export function makePlayer(i: number): Player { return {i,x:SPAWN_X+i*22,y:SPAWN_Y,vx:0,vy:0,onGround:false,onLadder:false,inWater:false,
+export function makePlayer(i: number): GamePlayer { return {i,x:SPAWN_X+i*22,y:SPAWN_Y,vx:0,vy:0,onGround:false,onLadder:false,inWater:false,
   facing:1,anim:0,walkAnim:0,jumpBuffer:0,waterStroke:0,hurtTimer:0,quiz:null,jumpEdge:false,collected:0,ctrl:null,sprite:null,
   activePower:'off',owned:[],hasKey:false,jumpChain:0,groundIdle:0,clinging:false,clingN:null,runEdge:false,swapEdge:false,specialEdge:false,airTime:99,flying:false,idleNow:false,idleTime:0,flavor:-1,flavorT:0,climbFrame:0,
   walkDir:0,leftEdge:false,rightEdge:false, viz:'normal', _tx:null, easy:false, toggleMove:false, pad:-1,

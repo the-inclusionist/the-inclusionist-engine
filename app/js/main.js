@@ -313,8 +313,7 @@ const keydownApi = initKeydown({
   closePadWiz: (save) => gamepadApi.closePadWiz(save),
   hideTouchControls: (r) => hideTouchControls(r), srSay: (m) => srSay(m),
   navTitle: (k) => navTitle(k), activateScreens: (n) => activateScreens(n), togglePause: () => togglePause(),
-  quizMove: (pl, d) => quizMove(pl, d), quizConfirm: (pl) => quizConfirm(pl), quizErase: (pl) => quizErase(pl),
-  announceBraille: (pl) => announceBraille(pl),
+  modalInput: (pl, intent) => modalInput(pl, intent), hasModal: (i) => temModal(i),
   clearWaitingBadge: (i) => hud.clearWaitingBadge(i),
   win: window,
 });
@@ -921,6 +920,23 @@ function openQuiz(pl,coinIndex,shapeId){ quizApi.openQuiz(pl,coinIndex,shapeId);
 function openSilabas(pl,coinIndex,letter){ quizApi.openSilabas(pl,coinIndex,letter); }
 function renderQuiz(pl){ quizApi.renderQuiz(pl); }
 function closeQuiz(pl){ quizApi.closeQuiz(pl); }
+// A INTENCAO chega da engine; QUEM DECIDE o que ela significa e este jogo (ADR-0033). A grade de tres
+// colunas e o desvio de Braille moravam dentro do `input/keydown` e do `input/gamepad`, em duas COPIAS —
+// que e a pior forma de ter uma regra. Agora ela existe uma vez, aqui, do lado de quem e dono do desafio.
+function modalInput(pl, intent) {
+  if (pl.quiz && pl.quiz.kind === 'braille') {   // cego: cima DITA a cela, confirmar responde. Nada mais anda.
+    if (intent === 'up') announceBraille(pl);
+    else if (intent === 'confirm') quizConfirm(pl);
+    return;
+  }
+  if (intent === 'left') quizMove(pl, -1);
+  else if (intent === 'right') quizMove(pl, 1);
+  else if (intent === 'up') quizMove(pl, -3);    // a GRADE e de 3 colunas — e e deste jogo
+  else if (intent === 'down') quizMove(pl, 3);
+  else if (intent === 'confirm') quizConfirm(pl);
+  else if (intent === 'erase') quizErase(pl);
+}
+const temModal = (i) => !!(players[i] && players[i].quiz);
 function quizMove(pl,d){ quizApi.quizMove(pl,d); }
 function quizConfirm(pl){ quizApi.quizConfirm(pl); }
 function quizErase(pl){ quizApi.quizErase(pl); }
@@ -1030,7 +1046,7 @@ const gamepadApi = initGamepad({
   getPlayers: () => players, getNumPlayers: () => numPlayers,
   navTitle, sharedDialogOpen, navDialog, getPauseMenu: (i) => vpPause[i], navPause,
   setPauseActor: setPauseActorValue,
-  quizMove, quizConfirm, quizErase, announceBraille,
+  modalInput, hasModal: temModal,
   joinPlayer, respawnPlayer,
   clearWaitingBadge: (i) => hud.clearWaitingBadge(i),
   spriteBase: SPR,

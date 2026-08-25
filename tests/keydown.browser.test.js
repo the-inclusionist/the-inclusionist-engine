@@ -26,7 +26,7 @@ const actionOf = (code) => { for (const a in SOLO) if (SOLO[a].includes(code)) r
 let host, target, log, players;
 
 function wire({ pauseMenu = null } = {}) {
-  players = [{ i: 0, ctrl: SOLO, quiz: null, waiting: false, easy: false }];
+  players = [{ i: 0, ctrl: SOLO, waiting: false, easy: false }];
   const spy = (name) => (...args) => { log.push([name, ...args]); };
   const menuNav = initMenuNav({
     $: (sel) => document.querySelector(sel),
@@ -62,10 +62,9 @@ function wire({ pauseMenu = null } = {}) {
     navTitle: spy('keydown:navTitle'),
     activateScreens: spy('keydown:activateScreens'),
     togglePause: spy('keydown:togglePause'),
-    quizMove: spy('keydown:quizMove'),
-    quizConfirm: spy('keydown:quizConfirm'),
-    quizErase: spy('keydown:quizErase'),
-    announceBraille: spy('keydown:announceBraille'),
+    // UMA entrada onde havia quatro, e uma pergunta em vez do objeto (ADR-0033).
+    modalInput: spy('keydown:modalInput'),
+    hasModal: () => false,
     clearWaitingBadge: spy('keydown:clearWaitingBadge'),
     win: host,
   });
