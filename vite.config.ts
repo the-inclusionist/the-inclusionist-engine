@@ -68,6 +68,11 @@ export default defineConfig({
     // precache do Workbox NÃO rebaixa os 445KB a cada atualização (só o chunk pequeno do jogo re-baixa) — ganho
     // real de banda p/ o pilar offline/máquina fraca. Efeito colateral: os 2 chunks ficam < 500KB → sem o aviso.
     rolldownOptions: {
+      // DUAS páginas: o jogo e o SEGUNDO CONSUMIDOR (ADR-0027 passo 6). Mora aqui, e não em `rollupOptions`,
+      // porque este projeto builda com ROLLDOWN — o campo do rollup é ignorado em silêncio, e o único sintoma
+      // é o `dist/quiz.html` que não aparece. O consumidor existe para medir a fronteira engine↔jogo, e um
+      // consumidor que não é construído de verdade não mede nada.
+      input: { main: 'app/index.html', quiz: 'app/quiz.html' },
       output: {
         codeSplitting: {
           groups: [

@@ -284,5 +284,6 @@ const en: Record<string, string> = {
   'pause.caa': '🔠 Communication',
   'sr.caa.caixaAltaOn': 'Uppercase letters on: the whole game in capitals.',
   'sr.caa.caixaAltaOff': 'Uppercase letters off: capitals and lowercase.',
+  'sr.quiz.bemVindo': 'Quiz. Use the arrow keys to choose and Enter to answer.',
 };
 export default en;

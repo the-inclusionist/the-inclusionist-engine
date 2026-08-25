@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Segundo consumidor — quiz sem plataforma</title>
+<!--
+  O SEGUNDO CONSUMIDOR (ADR-0027, passo 6, antecipado pelo Dev em 2026-08-25).
+
+  Isto NÃO é um jogo para crianças ainda: é um INSTRUMENTO DE MEDIDA. Um quiz sem física, sem tiles, sem mundo
+  — e por isso mesmo capaz de responder a pergunta que nenhuma leitura de código responde: o que desta base é
+  ENGINE e o que é O JOGO DE PLATAFORMA que ela hospeda hoje?
+
+  A regra desta página é uma só, e é ela que produz a medida:
+
+      SÓ PODE IMPORTAR DE core/, input/, render/, platform/, ui/ e audio/. NUNCA de game/.
+
+  Toda vez que ele precisar de algo que só existe em `game/`, isso é um ACHADO — anotado, não contornado. A
+  lista de achados é o que o passo 5 (a divisão em pacotes) vai consertar. Contornar um achado aqui destruiria
+  o instrumento: ele mede exatamente aquilo que a gente for tentado a esconder.
+-->
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Regiões vivas do leitor de tela: o par que core/a11y-sr procura. Se este consumidor precisasse de mais
+       do que isto para anunciar, a camada de a11y não seria reutilizável — seria uma função do jogo. -->
+  <p id="sr-status" class="sr-only" role="status" aria-live="polite"></p>
+  <p id="sr-alert" class="sr-only" role="alert" aria-live="assertive"></p>
+
+  <main>
+    <div class="stage-wrap">
+      <div id="stage" class="stage">
+        <!-- Mesmo id que ui/layout escala e para dentro do qual os diálogos são reparentados. Sem canvas: um
+             quiz não desenha mundo, e é isso que o teste quer descobrir se a engine tolera. -->
+        <section id="game-region" class="game-region" tabindex="-1" aria-label="Quiz">
+          <div id="quiz-app" class="quiz-app"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="js/consumer-quiz/main-quiz.ts"></script>
+</body>
+</html>

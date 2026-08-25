@@ -315,10 +315,22 @@ decision-outcome:
          product rather than a feature of one game, since it breaks at the second LANGUAGE before the second GAME.
       4. createGame() inside the same repository. THIS IS THE BOUNDARY TEST: if it needs a parameter called
          coinTarget, the boundary is wrong and step 5 must not start.
-      5. Split the 49 frontier modules in four batches, leaf-first.
+      STEPS 5 AND 6 SWAPPED — Dev, 2026-08-25. The consumer comes FIRST, and this record's own reasoning is why:
+      it already says that without the second consumer "engine is just a folder with a different name". If the
+      consumer is what makes the word true, it is also what REVEALS the boundary — it does not merely confirm
+      it. Cleaning the five leaking edges before writing it would be cutting by guesswork, and a cut in the
+      wrong place is more expensive than no cut at all, because it looks finished.
+      The 200-line quiz is also CHEAPER than the cleanup, and unlike the cleanup it produces an answer instead
+      of an opinion: whatever it needs from the engine IS the engine; whatever it never touches is not.
+      The order below reads 5 → 6 as written; execution order is 6, then 5.
+
+      5. Split the 49 frontier modules in four batches, leaf-first. AFTER step 6.
       6. Two packages — but ONLY after a fake second consumer exists: a 200-line game that is NOT a platformer, a
          pure quiz with no physics and no tiles, proving sonar, high contrast, menu-nav, TTS, Libras and touch work
          outside the genre. WITHOUT THAT CONSUMER, "ENGINE" IS JUST A FOLDER WITH A DIFFERENT NAME.
+         The consumer is built against the SINGLE package as it stands today. Every dependency it cannot satisfy
+         without reaching into `game/` is a finding, recorded rather than worked around — that list, not a guess,
+         is what step 5 then acts on.
       7. The remaining gaps: tilemap with layers, sprite atlas, namespaced save, scene manager, camera.
       RULE THROUGHOUT: tests migrate with their module, and any ENGINE-module test whose fixture mentions coin, quiz
       or scenario is rewritten in the SAME step, never later. Deferring that is exactly how three copies of the edge

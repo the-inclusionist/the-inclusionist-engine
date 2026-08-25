@@ -285,5 +285,6 @@ const es: Record<string, string> = {
   'pause.caa': '🔠 Comunicación',
   'sr.caa.caixaAltaOn': 'Letras mayúsculas activadas: todo el juego en mayúsculas.',
   'sr.caa.caixaAltaOff': 'Letras mayúsculas desactivadas: mayúsculas y minúsculas.',
+  'sr.quiz.bemVindo': 'Cuestionario. Use las flechas para elegir y Enter para responder.',
 };
 export default es;
