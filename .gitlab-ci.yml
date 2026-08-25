@@ -35,6 +35,9 @@ test:
     - npx playwright install --with-deps chromium
     - npm test                    # Vitest: node + browser projects
     - npm run build               # the build must not break
+    # The precache manifest must not FREEZE a file: `revision: null` on a URL with no build hash means an
+    # installed service worker serves those bytes forever (97 of 141 entries were frozen on 2026-08-25).
+    - npm run check:precache
   artifacts:
     paths: [dist/]
     expire_in: 1 week

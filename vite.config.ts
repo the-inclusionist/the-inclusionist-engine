@@ -65,6 +65,18 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg,woff2,txt,json,webmanifest,wasm}'],
         maximumFileSizeToCacheInBytes: 32 * 1024 * 1024, // 32 MB: cabe o runtime de 25,6 MB com folga
         cleanupOutdatedCaches: true,
+        // A ARTE NUNCA MAIS ATUALIZAVA, e ninguem veria: o padrao do vite-plugin-pwa e
+        // `dontCacheBustURLsMatching = /^assets/` — ele assume que TUDO sob `assets/` tem hash no nome, o que
+        // vale para o que o Vite emite e NAO vale para `app/public/assets/**`, que e copiado verbatim. Os 38
+        // PNGs do personagem, os 3 fundos da Cidade e o `clarity.map.txt` entravam no precache com
+        // `revision: null`, e `revision: null` quer dizer "o hash esta no nome": o Workbox guarda uma vez e
+        // nunca mais busca. Trocar a arte deixava a crianca com a arte velha para sempre — e em laboratorio
+        // de escola esse e justamente o cache que sobrevive.
+        // O padrao abaixo casa SO o que o Vite hasheia de verdade: UM segmento sob `assets/`, terminado em
+        // `-<hash de 8+>`. Tudo o mais passa a ganhar revisao por CONTEUDO, que e o que faz o cache virar.
+        // Falso positivo possivel e assumido: um arquivo de `public/assets/` na raiz chamado `foo-abcdefgh.png`
+        // seria lido como hasheado. `scripts/check-precache.mjs` e o gate que vigia o resultado, nao a regra.
+        dontCacheBustURLsMatching: /^assets\/[^/]+-[A-Za-z0-9_-]{8,}\.[^.]+$/,
       },
       // PWA fica DESLIGADA no dev (default) — sem SW/cache atrapalhando o HMR; testar via `npm run build` + `preview`.
     }),
