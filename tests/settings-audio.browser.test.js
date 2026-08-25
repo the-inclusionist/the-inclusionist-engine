@@ -25,6 +25,7 @@ const AUDIO_HTML = `
     <input id="audio-master-vol" type="range" min="0" max="100" step="5" value="60">
     <div id="audio-list"></div>
     <button id="opt-sound" type="button">Som</button>
+    <button id="audio-reset" type="button">Restaurar padrões deste menu</button>
   </div>`;
 
 const AUDIO_CATS = [
@@ -326,5 +327,36 @@ describe('ui/settings-audio — saídas de áudio (sinks)', () => {
     document.querySelector('#audio-detect').click();
     await flush();
     expect(asked).toBe(true);
+  });
+});
+
+describe('ui/settings-audio — restaurar padrões DESTE menu (ADR-0028)', () => {
+  // O caso que importa mais não é o de o reset funcionar: é o de ele NÃO alcançar fora de si. Um reset que
+  // apagasse em silêncio a configuração motora seria pior que a armadilha que ele existe para desfazer — a
+  // criança desfaz um ajuste de som e perde o que a deixava jogar, sem relação visível entre uma coisa e outra.
+  it('[Right] devolve modo cego, bengala e as categorias do mixer ao padrão de fábrica', () => {
+    const cat = freshAudioCat();
+    cat.music.on = false; cat.music.vol = 0.1;   // mexido
+    cat.tts.on = true;                            // o TTS nasce DESLIGADO, então isto é desvio
+    const { ctx, said, getModoCego, getCaneBlockDiv } = fullCtx({ audioCat: cat, modoCego: true, caneBlockDiv: 2 });
+    initSettingsAudio(ctx);
+    document.querySelector('#audio-reset').click();
+    expect(getModoCego()).toBe(false);
+    expect(getCaneBlockDiv()).toBe(1);
+    expect(cat.music).toEqual({ on: true, vol: 0.8 });
+    expect(cat.tts).toEqual({ on: false, vol: 0.8 }); // volta a DESLIGADO, o padrão dele
+    expect(said.at(-1)).toContain('auditiva');
+  });
+
+  it('[Interface] NÃO toca no que não é deste menu — motor de voz e saída de áudio ficam', () => {
+    // Escolha de DISPOSITIVO não é preferência restaurável: zerar a saída tiraria da criança o fone que é
+    // dela numa sala compartilhada, e trocar o motor de voz a deixaria sem a voz que ela entende.
+    const players = [{ audioSink: 'fone-da-crianca' }];
+    const { ctx, tts } = fullCtx({ players });
+    tts.setEngineSel('piper');
+    initSettingsAudio(ctx);
+    document.querySelector('#audio-reset').click();
+    expect(tts.getEngineSel()).toBe('piper');
+    expect(players[0].audioSink).toBe('fone-da-crianca');
   });
 });

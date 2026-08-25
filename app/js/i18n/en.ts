@@ -263,5 +263,7 @@ const en: Record<string, string> = {
   'sr.quiz.brailleDictation': '{palavra}. {celas} Jump to collect.',
   'sr.quiz.wellDone': 'Well done! {palavra}. {n} out of 3.',
   'sr.quiz.correctSoFar': 'Correct! {n} out of 3 to win the coin.',
+  'menu.restoreDefaults': 'Restore this menu to its defaults',
+  'sr.audio.reset': 'Hearing accessibility restored to its defaults. The other menus did not change.',
 };
 export default en;

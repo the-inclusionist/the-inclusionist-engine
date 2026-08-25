@@ -17,10 +17,21 @@ export const AUDIO_CATS: AudioCat[] = [
 // Estado inicial por categoria. O TTS geral nasce DESLIGADO: útil p/ cegos e alguns em alfabetização, mas voz
 // (robótica) irrita/sobrecarrega pessoas com TEA — quem precisa liga no menu. As demais nascem ligadas. (O TTS
 // do letramento é o gameSay(), independente disto e sempre ativo.) O que estiver salvo sobrepõe o default.
+/**
+ * O estado de FÁBRICA de uma categoria. Existe com nome porque dois lugares precisam dele: a leitura do boot
+ * (quando nada foi salvo) e o "restaurar padrões" do menu auditivo (ADR-0028). Escrever `k !== 'tts'` e `0.8`
+ * nos dois seria a mesma cópia sem dono que este repositório já viu divergir — e aqui a divergência colocaria
+ * a criança num terceiro estado, nem o dela nem o de fábrica.
+ */
+export function defaultAudioCat(k: string): AudioCatState {
+  return { on: k !== 'tts', vol: 0.8 };
+}
+
 export function loadAudioCat(): Record<string, AudioCatState> {
   const cat: Record<string, AudioCatState> = {};
   AUDIO_CATS.forEach((c) => {
-    let on = (c.k !== 'tts'), vol = 0.8;
+    const d = defaultAudioCat(c.k);
+    let on = d.on, vol = d.vol;
     const o = store.getJSON<AudioCatState>('incl_audiocat_' + c.k, null);
     if (o) { on = !!o.on; vol = +o.vol; }
     cat[c.k] = { on, vol };

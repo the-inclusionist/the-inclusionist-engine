@@ -59,6 +59,36 @@ export function setCoins(arr: unknown[]): void { coins = arr; emit('coins', arr)
 //     recusava converter `unknown[]` direto — e um cast duplo não estreita nada, desliga o verificador. ---
 export let players: Player[] = [];
 
+/**
+ * OS PADRÕES, com nome. Um valor por linha, e cada um usado em DOIS lugares: a leitura do boot (quando não há
+ * nada gravado) e o "restaurar padrões" do menu que o contém (ADR-0028).
+ *
+ * Existe porque a alternativa é escrever o mesmo padrão duas vezes — uma no `store.getBool(chave, X)` e outra
+ * no reset — e este repositório já mostrou quatro vezes o que acontece com duas cópias que ninguém obriga a
+ * concordar. Aqui a divergência seria pior que as anteriores: um reset que restaura um valor DIFERENTE do que
+ * o jogo usa quando nunca foi configurado deixa a criança num terceiro estado, que não é nem o dela nem o de
+ * fábrica, e que ela não tem como nomear para pedir ajuda.
+ *
+ * `as const` + `Object.freeze` de propósito: um padrão que alguém consiga escrever em tempo de execução deixa
+ * de ser padrão.
+ */
+export const DEFAULTS = Object.freeze({
+  // auditiva
+  modoCego: false,
+  caneBlockDiv: 1,
+  captionsOn: true,
+  // motora
+  wheelchair: false,
+  oneButton: false,
+  // visual
+  cbSafe: false,
+  ownerColors: true,
+  hcOutlineFg: 1,
+  hcOutlineBg: 1,
+  // comunicação (hoje só a caixa da letra; o menu de CAA do ADR-0028 amplia isto)
+  letterCase: 'upper',
+} as const);
+
 // --- modoCego: MODO CEGO (A12e auditiva). Só as ajudas de áudio — bengala, sonar, guarda de beirada,
 //     narração —, sem tela preta; a simulação de cegueira do Modo Empatia é outra coisa e liga esta por cima.
 //
@@ -71,7 +101,7 @@ export let players: Player[] = [];
 //     antigo `setModoCego` — refazer os extras do nível, refletir o painel, anunciar ao leitor de tela — NÃO
 //     entram aqui: são reação, e quem reage assina o evento. Um setter que sabe redesenhar a tela é um setter
 //     que nenhum teste consegue chamar. ---
-export let modoCego: boolean = store.getBool('incl_modocego');
+export let modoCego: boolean = store.getBool('incl_modocego', DEFAULTS.modoCego);
 export function setModoCegoValue(on: boolean): void {
   if (modoCego === on) return; // a guarda VEM DO ORIGINAL: sem ela o anúncio repetiria a cada clique redundante
   modoCego = on; store.setBool('incl_modocego', on); emit('modoCego', on);
@@ -164,13 +194,13 @@ export function setWcSolidValue(s: ReadonlySet<string>): void { wcSolid = s; emi
 //     menu de Comunicação Aumentada e Alternativa, onde ele passa a conviver com conjuntos de pictogramas
 //     (ARASAAC, Sclera, Mulberry). As duas caixas de letra são o PISO OFFLINE desse menu. ---
 export type LetterCase = 'lower' | 'upper';
-export let letterCase: LetterCase = store.get(store.KEYS.letterCase, 'upper') === 'lower' ? 'lower' : 'upper';
+export let letterCase: LetterCase = store.get(store.KEYS.letterCase, DEFAULTS.letterCase) === 'lower' ? 'lower' : 'upper';
 export function setLetterCaseValue(c: LetterCase): void {
   if (letterCase === c) return;
   letterCase = c; store.set(store.KEYS.letterCase, c); emit('letterCase', c);
 }
 
-export let captionsOn = store.getBool(store.KEYS.captions, true);
+export let captionsOn = store.getBool(store.KEYS.captions, DEFAULTS.captionsOn);
 export function setCaptionsOnValue(on: boolean): void {
   const v = !!on;
   if (captionsOn === v) return;
@@ -179,7 +209,7 @@ export function setCaptionsOnValue(on: boolean): void {
 
 // --- cbSafe: PALETA SEGURA PARA DALTONISMO (Okabe-Ito). Não é um filtro sobre a imagem — é a escolha das
 //     cores de origem, aplicada IN-PLACE em PCOLOR para que todo mundo que já referencia a array veja a troca. ---
-export let cbSafe: boolean = store.getBool(store.KEYS.cbsafe, false);
+export let cbSafe: boolean = store.getBool(store.KEYS.cbsafe, DEFAULTS.cbSafe);
 export function setCbSafeValue(on: boolean): void {
   const v = !!on;
   if (cbSafe === v) return;
@@ -188,7 +218,7 @@ export function setCbSafeValue(on: boolean): void {
 
 // --- ownerColors: no multijogador, cada item aparece na cor de QUEM pode pegá-lo. Desligado, todos veem a cor
 //     original — o que é preferível para quem não distingue as cores dos donos. ---
-export let ownerColors: boolean = store.getBool(store.KEYS.ownercolors, true);
+export let ownerColors: boolean = store.getBool(store.KEYS.ownercolors, DEFAULTS.ownerColors);
 export function setOwnerColorsValue(on: boolean): void {
   const v = !!on;
   if (ownerColors === v) return;
@@ -207,13 +237,13 @@ const nivelContorno = (v: number): OutlineLevel => Math.max(0, Math.min(2, v | 0
 //     A saturação em 0..2 vem do original e é dupla: no boot (contra um localStorage corrompido) e na escrita
 //     (contra um chamador). No main.js isso obrigava a declarar com um valor provisório e reatribuir na linha
 //     seguinte, porque a leitura saturada não cabia no mesmo `let`; aqui a função a resolve de uma vez. ---
-export let hcOutlineFg: OutlineLevel = nivelContorno(store.getNum(store.KEYS.outfg, 1));
+export let hcOutlineFg: OutlineLevel = nivelContorno(store.getNum(store.KEYS.outfg, DEFAULTS.hcOutlineFg));
 export function setOutlineFgValue(v: number): void {
   const n = nivelContorno(v);
   if (hcOutlineFg === n) return;
   hcOutlineFg = n; store.set(store.KEYS.outfg, n); emit('hcOutlineFg', n);
 }
-export let hcOutlineBg: OutlineLevel = nivelContorno(store.getNum(store.KEYS.outbg, 1));
+export let hcOutlineBg: OutlineLevel = nivelContorno(store.getNum(store.KEYS.outbg, DEFAULTS.hcOutlineBg));
 export function setOutlineBgValue(v: number): void {
   const n = nivelContorno(v);
   if (hcOutlineBg === n) return;
@@ -223,7 +253,7 @@ export function setOutlineBgValue(v: number): void {
 // --- caneBlockDiv: espaçamento da batida da BENGALA, em blocos pisados. 1 = uma batida por bloco;
 //     2 = uma batida a cada meio bloco. Não é preferência de som: é a resolução com que uma criança cega
 //     mede a distância que andou, e por isso a colisão a lê a cada passo. ---
-export let caneBlockDiv: number = store.getNum('incl_cane_div', 1) || 1;
+export let caneBlockDiv: number = store.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
 export function setCaneBlockDivValue(div: number): void {
   const d = (+div) || 1; // o `|| 1` vem do original: um valor corrompido no localStorage viraria NaN e a
   if (caneBlockDiv === d) return; //  bengala pararia de bater, que é o modo de falha mais silencioso possível
@@ -233,7 +263,7 @@ export function setCaneBlockDivValue(div: number): void {
 // --- wheelchair: MODO CADEIRANTE. Muda a geometria do nível inteiro — degraus e escada viram rampas e
 //     elevadores, moedas descem para o chão, lava vira chão, e só voo e super-corrida sobrevivem como poderes.
 //     Por isso a colisão a lê: `isSolidType` responde diferente com ela ligada. ---
-export let wheelchair: boolean = store.getBool('incl_wheelchair');
+export let wheelchair: boolean = store.getBool('incl_wheelchair', DEFAULTS.wheelchair);
 export function setWheelchairValue(on: boolean): void {
   if (wheelchair === on) return;
   wheelchair = on; store.setBool('incl_wheelchair', on); emit('wheelchair', on);
@@ -241,7 +271,7 @@ export function setWheelchairValue(on: boolean): void {
 
 // --- oneButton: UM BOTÃO POR VEZ. Ignora combinações simultâneas, para quem não consegue pressionar duas
 //     teclas ao mesmo tempo. ---
-export let oneButton: boolean = store.getBool('incl_onebtn');
+export let oneButton: boolean = store.getBool('incl_onebtn', DEFAULTS.oneButton);
 export function setOneButtonValue(on: boolean): void {
   if (oneButton === on) return;
   oneButton = on; store.setBool('incl_onebtn', on); emit('oneButton', on);

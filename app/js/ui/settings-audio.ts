@@ -15,6 +15,8 @@
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 import { t, bcp47 } from '../core/i18n.js';
+import { DEFAULTS } from '../core/state.js';
+import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
 
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
@@ -454,6 +456,30 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     }
     ctx.srSay(t('sr.audio.testingVoice'));
   });
+  // ---- restaurar os padrões DESTE menu (ADR-0028) ----
+  //
+  // A regra dura é o escopo: este botão restaura o que o menu AUDITIVO contém e nada mais. Um reset que
+  // alcançasse fora de si seria pior que a armadilha que ele existe para desfazer — a criança que desfaz um
+  // ajuste de som e perde de quebra a configuração motora fica sem conseguir jogar, e sem entender por quê.
+  //
+  // O que é deste menu: o modo cego, o espaçamento da bengala e as nove categorias do mixer. O motor de voz
+  // e a saída de áudio por jogador NÃO entram — são escolha de dispositivo, não preferência restaurável, e
+  // zerá-las tiraria da criança o fone que é dela numa sala compartilhada.
+  const resetBtn = ctx.$<HTMLButtonElement>('#audio-reset');
+  if (resetBtn) resetBtn.addEventListener('click', () => {
+    ctx.setModoCego(DEFAULTS.modoCego);
+    ctx.setCaneBlockDiv(DEFAULTS.caneBlockDiv);
+    const state = ctx.getAudioCat();
+    if (state) for (const c of ctx.audioCats) {
+      const d = defaultAudioCat(c.k);
+      if (!state[c.k]) continue;
+      state[c.k]!.on = d.on; state[c.k]!.vol = d.vol;
+      ctx.setCatGain(c.k);
+    }
+    renderAudio(); reflectModoCego(); reflectTts();
+    ctx.srSay(t('sr.audio.reset'));
+  });
+
   try { if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = populateTtsVoices; } catch (e) { /* noop */ }
 
   const ttsVolEl = ctx.$<HTMLInputElement>('#tts-vol');

@@ -294,5 +294,7 @@ const pt: Record<string, string> = {
   'sr.quiz.brailleDictation': '{palavra}. {celas} Pule para coletar.',
   'sr.quiz.wellDone': 'Muito bem! {palavra}. {n} de 3.',
   'sr.quiz.correctSoFar': 'Acertou! {n} de 3 para ganhar a moeda.',
+  'menu.restoreDefaults': 'Restaurar padrões deste menu',
+  'sr.audio.reset': 'Acessibilidade auditiva restaurada aos padrões. Os outros menus não mudaram.',
 };
 export default pt;
