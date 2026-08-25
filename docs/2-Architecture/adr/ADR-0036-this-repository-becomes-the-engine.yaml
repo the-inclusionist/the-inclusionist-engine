@@ -1,0 +1,151 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-25
+  decision-makers: [Dev]
+  consulted: [ADR-0024 (multi-repo, versioned packages, scope @jrocha-io), ADR-0025 (the hub repo — AMENDED here),
+              ADR-0026 (hosting and registry on GitLab), ADR-0027 (the engine/game boundary and its step 21),
+              ADR-0032 (the curriculum is its own layer), ADR-0035 (the engine stays ours),
+              "the engine-boundary gate: tests/engine-boundary.node.test.js"]
+  informed: []
+
+title: THIS repository becomes the ENGINE — the game leaves for the demos repository as one cartridge among many, and the shell above the games leaves with it
+
+context-and-problem-statement: |
+  ADR-0035 settled that the engine is ours. This record settles WHERE IT LIVES, because the two repositories
+  just swapped roles: the goal is every game in the `SP-the-inclusionist-demos` catalogue running on our
+  engine, so The Inclusionist stops being the product and becomes one cartridge among hundreds.
+
+  The Dev's instruction is precise and its order matters: separate the game from the engine; IMPORT the game
+  into the demos repository and TEST it there; only then remove it from the engine repository; and configure
+  the engine as a module of the demos repository so it can be adjusted as the games demand.
+
+  THE MEASUREMENT THAT MAKES THIS A MOVE AND NOT SURGERY, taken on 2026-08-25:
+
+      game/     23 files   3,685 lines
+      main.js    1 file    1,549 lines
+      ONLY main.js imports game/. No engine module imports the game — zero, held by the item-19 gate.
+
+  That number is the entire dividend of the boundary pipeline (items 12 to 23). A year ago this separation
+  would have been a rewrite; today it is `git mv` plus a `package.json`.
+
+decision-drivers:
+  - "The engine's real proof is a SECOND consumer, and it now gets hundreds. Whatever the games cannot express
+     through the engine is a defect in the engine, and it will surface immediately instead of in theory."
+  - "The Dev must be able to adjust the engine WHILE building games. A publish-bump-install loop between two
+     repositories would make every engine fix cost a release, and the fixes are the point."
+  - "Copy-test-then-delete is safer than move-and-pray, and it is what was asked. Its cost is a window with
+     two copies, which needs a rule or it becomes a fork."
+  - "ADR-0032 already decided the curriculum belongs to the EdSP platform, not to the game. The new shell is
+     the closest thing to EdSP that exists, so the curriculum follows the shell rather than the cartridge."
+
+considered-options:
+  - "S1 — move the game out, this repository becomes the engine (what was asked)"
+  - "S2 — keep the game here and extract the engine into a THIRD repository"
+  - "S3 — one monorepo holding engine, shell and every game"
+
+pros-and-cons-of-the-options:
+  game-leaves:
+    good: ["Preserves the history of the engine, which is where almost all the work is.",
+           "Matches the measurement: the thing that leaves is the small, well-isolated part.",
+           "The demos repository becomes the single place where a game is built, played and catalogued."]
+    bad: ["This repository's name and its GitLab project (`jrocha-dev/the-inclusionist`) stop describing it.",
+          "It amends ADR-0025, which said `the-inclusionist` = game only."]
+  extract-the-engine-elsewhere:
+    good: ["Every repository ends up named after what it holds."]
+    bad: ["The engine's history — the boundary work, the ADRs, the gates — either stays behind with the game
+           or is rewritten into a new repository. The expensive artefact travels worst."]
+  one-monorepo:
+    good: ["No cross-repository loop at all; an engine fix and its game are one commit."]
+    bad: ["Contradicts ADR-0024/0025/0026 without new evidence, and folds the 383-game catalogue and the
+           engine into one CI pipeline whose slowest job gates everything."]
+
+decision-outcome:
+  chosen-option:
+    link: "S1 — the game leaves; this repository becomes the engine"
+    justification: |
+      THREE DESTINATIONS, NOT TWO. The obvious split is engine-versus-game and it is wrong, because a third
+      thing already exists in this repository without a name: THE SHELL. The Dev's flow — screen 1 chooses
+      activities or takes the teacher's password, screen 2 chooses a game, then the game runs — is not part of
+      any game. And `ui/activities-menu.ts` IS screen 1 already: it reads the curriculum, it groups by
+      category, it is menu-nav-driven and screen-reader-complete. Shipped inside the cartridge it would be
+      rewritten from scratch in the demos repository a week later.
+
+        · ENGINE (stays here): `core/`, `input/`, `platform/`, `boot/`, `audio-*`, most of `render/`, most of
+          `ui/`, the i18n mechanism, and `consumer-quiz/` + `quiz.html`, which are the engine's own proof.
+        · THE GAME (goes to demos as ONE cartridge): `game/` (23 files), `main.js`, `index.html`, the level,
+          the character art, and the grey-zone render modules listed below.
+        · THE SHELL (goes to demos, ABOVE the games): `ui/activities-menu.ts` as screen 1, the catalogue as
+          screen 2, and the room client for the teacher's password. The curriculum layer (`educational/`)
+          follows the shell — ADR-0032's destination is unchanged, only its address.
+
+      THE GREY ZONE, named so it is decided once instead of argued five times: `render/cenario-data.ts`,
+      `render/city-tiles.ts`, `render/scene-parallax.ts` and `render/set-cenario.ts` are THIS GAME'S visual
+      themes wearing engine filenames. They pass the boundary gate because they import nothing from `game/`,
+      which proves the gate measures imports and not ownership. They go with the cartridge; what stays is the
+      generic half they sit on (`render/canvas.ts`, the parallax primitive, the Z-order registry).
+
+      THE ORDER IS PART OF THE DECISION, and so is the rule that protects it. Copy into demos, make it boot
+      and pass the verification protocol there, and only then delete from here. During that window the copy in
+      THIS repository is FROZEN: no commit may touch the paths being moved. Without that rule the two copies
+      diverge and the deletion becomes a merge.
+
+      HOW THE ENGINE IS CONSUMED, and why not a published package on day one. ADR-0024 decided versioned
+      `@jrocha-io/*` packages and ADR-0026 put the registry on GitLab; both stand for RELEASE. For daily work
+      they are the wrong tool: an engine fix would cost a publish, a bump and an install, and this phase
+      exists precisely to produce many small engine fixes. So the loop is LINK LOCALLY, PIN REMOTELY — demos
+      resolves the engine from a local path (workspace/`file:`) while a developer has both checkouts, and from
+      a version-pinned package in CI and deploy. The engine's `package.json` gains an `exports` map so the
+      import surface is a decision rather than whatever a relative path can reach.
+
+  consequences:
+    good:
+      - "The engine gets hundreds of consumers instead of one and a half, which is the only honest test of the
+         word 'engine' — ADR-0027's step 21 stops being a plan and becomes the working arrangement."
+      - "The boundary gates travel with the engine and keep their meaning: an import from a game into the
+         engine is now impossible by construction, not by convention."
+      - "The Inclusionist stops being a special case. Whatever it needs that the engine cannot give is a
+         feature request against the engine, visible as such."
+    bad:
+      - "This repository's name and GitLab project no longer describe it, and every existing link, CI variable
+         and Cloudflare Pages project points at the old meaning."
+      - "A window with two copies of the game, protected by a rule that a person has to honour."
+      - "Cross-repository work becomes the normal case: a change that spans engine and game is two commits in
+         two histories, and bisecting a regression means bisecting both."
+    neutral:
+      - "AMENDS ADR-0025, which stated `the-inclusionist` = game only. That sentence was correct when the game
+         was the product; it is wrong now. ADR-0025's hub-repo topology for the labs is untouched."
+      - "The naming of the engine repository and of its package is the one thing this record leaves OPEN —
+         see `more-information`. Everything else here is decided."
+
+  confirmation: |
+    Four checks, and none of them is an opinion:
+
+      · The game BOOTS in the demos repository with the engine as a dependency, verified by this project's own
+        protocol: a canvas, `typeof window.__incl === 'object'`, and the loaded `<script src>` compared against
+        the hash in the built `index.html` — if they differ the verification is void.
+      · `npm run check:precache` and the axe gate pass in the demos repository, not only here.
+      · A CI job fails on any diff under the frozen paths while the window is open; it is deleted with the
+        paths themselves, so it cannot outlive its reason.
+      · `tests/engine-boundary.node.test.js` stays in the engine repository and gains one clause: the engine
+        may not import from a games directory that no longer exists here — a rule that can now only be broken
+        on purpose.
+
+more-information: |
+  THE ONE OPEN QUESTION, deliberately not decided alone because it is identity rather than structure: what the
+  engine repository and its package are CALLED.
+
+    · Keep `jrocha-dev/the-inclusionist` as the engine and let the name become historical, as happened to more
+      than one well-known project. Cheapest: no links break, no CI variables move, Cloudflare Pages keeps
+      pointing where it points.
+    · Rename to something that says engine (`edsp-engine`, `inclusionist-engine`). GitLab redirects the old
+      path, but every hardcoded reference — CI variables, the Pages project, the ADR index, this file — has to
+      be walked.
+
+  The package scope is `@jrocha-io/*` by ADR-0024 unless the Dev says otherwise, which would make the engine
+  `@jrocha-io/inclusionist-engine`. The recommendation is to rename the repository once, now, while the only
+  consumer is a repository that has not started — a rename after 383 games exist is a different animal.
+
+  WHAT THIS RECORD DOES NOT COVER: the room server (the teacher logs in, opens a room, picks activities, gets
+  a password and watches performance) and the privacy shape that makes it legal for a seven-year-old — the
+  school as controller, a nickname chosen by the teacher instead of a name, short retention. That is its own
+  record, and it is the next one.

@@ -1,6 +1,6 @@
 ---
 metadata:
-  status: "accepted (host addresses superseded by ADR-0026 — the three repos live on gitlab.com/jrocha-dev; the hub topology itself stands)"
+  status: "accepted (host addresses superseded by ADR-0026 — the three repos live on gitlab.com/jrocha-dev; the hub topology itself stands) — repo NAMING amended by ADR-0036: `the-inclusionist` is no longer 'game only', it becomes the ENGINE and the game moves to the demos repository; the hub topology for the labs is untouched)"
   date: 2026-07-07
   decision-makers: [Dev, AI]
   consulted: []
