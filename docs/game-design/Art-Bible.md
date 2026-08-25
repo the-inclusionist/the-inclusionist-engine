@@ -14,10 +14,38 @@ to procedural. Active pipeline plans: [`plano-arte-procedural.md`](plano-arte-pr
 
 ## Character & animation
 
-320×180 canvas, 16px tiles, **16×32 sprite** (48×48 cancelled — TDAH concern). In **profile**, facing the last
+320×180 canvas, 16px tiles, **no fixed sprite size** (48×48 cancelled — TDAH concern; see below). In **profile**, facing the last
 direction; **always breathing** (idle never static). **Layered** (Fitzpatrick skin + hair + clothes via colour-key +
 overlays) for diversity and per-player distinction. Full spec + the animation list →
 [`character-animation.md`](character-animation.md).
+
+### Sprite size: there is none, and the docs said otherwise
+
+**AMENDED 2026-08-25.** This file and `character-animation.md` both declared a **16×32 sprite**. Measured against
+the 83 PNGs actually shipped, **not one of them is 16×32.**
+
+The 77 character frames span **14 animation states** and **14 distinct sizes**: widths 24–34 px, heights 29–36 px.
+The most common single size is 25×34 (the 16 walk frames); `parede` is 31×36, `nadar` is 34×32 and 34×29,
+`teto` is 25×36.
+
+The Dev's decision is that **there is no fixed size** — multiples of 16 px are preferred, other sizes are
+explicitly welcome because they make the art richer (ADR-0027, `machine-spec.sprite-size`). So the docs were
+wrong, not the art.
+
+Two consequences that follow from the measurement rather than from taste:
+
+- **The atlas cannot assume a uniform grid**, and **every sprite carries its own pivot**. Heights vary by 7 px
+  across states, so a feet anchor derived from a fixed frame height would make the character sink or float
+  whenever the state changed — and `render/draw` anchors squash & stretch AT THE FEET.
+- **48×48 stays cancelled**, and the reason is unchanged: it was a TDAH concern, not a size-arithmetic one.
+  Recorded here so the cancellation is not read as a consequence of this amendment.
+
+One file does not belong: `sprites/menino/teto/3-noroeste-candidato.png` is **64×64** while its eight siblings
+are 25×36. The name says candidate; it is not a size decision, it is a leftover.
+
+**`ADR-0016` was NOT amended, and that is deliberate.** It says "adults = 16×32 silhouettes" about the CITY
+BACKGROUND, and `render/city-tex.ts` really does draw six 16×32 adult silhouettes procedurally. Different asset
+class, still true. Changing it would have put an error into a record that was right.
 
 ## Typography
 
