@@ -413,7 +413,7 @@ const parallaxApi = createParallax({
   Imagem: Image, texturaDeImagem: (img) => PIXI.Texture.from(img), escalaNearest: PIXI.SCALE_MODES.NEAREST,
   rm, getCenario: () => CENARIO, getVizMode: () => vizMode,
   clearParallaxTexCache: () => vp.clearParallaxTexCache(), // `vp` e const declarado ABAIXO: seta resolve na chamada
-  getDecorDeTela: () => [starsG, skyDecoG, fogG],          // `var` icados: undefined no boot, e o modulo guarda
+  getDecorDeTela: () => [starsG, nuvemG, skyDecoG, fogG],  // `var` icados: undefined no boot, e o modulo guarda
 });
 const { layers: parallaxLayers, texNormal: parallaxTexNormal, updateParallax } = parallaxApi;
 /* Tema de cenario: valida, persiste, veste o fundo e refaz a textura do mundo -> render/set-cenario.ts (D2-b).
@@ -456,6 +456,7 @@ let worldTexNormal=tex(worldCanvasNormal);
 const worldSprite=new PIXI.Sprite(worldTexNormal); camera.addChild(worldSprite);
 // L6: camadas de decor de TELA da v3 (contra-posicionadas no updateParallax, como o parallax)
 var starsG=new PIXI.Graphics();   camera.addChild(starsG);   // estrelas ATRÁS dos morros — pelo zIndex 3500 (bloco R1)
+var nuvemG=new PIXI.Graphics();   camera.addChild(nuvemG);   // MANTA de nuvens: na frente do céu (esconde o sol), ATRÁS dos morros
 var skyDecoG=new PIXI.Graphics(); camera.addChild(skyDecoG); // nuvens/pássaros à frente dos morros, atrás dos tiles — zIndex 6500
 var fogG=new PIXI.Graphics();     camera.addChild(fogG);                                                // névoa: FRENTE (re-erguida com o carLayer)
 /* ===== FABRICA de imagem dos modos de visao -> render/viewports.ts (B2) =====
@@ -637,10 +638,11 @@ const themeFxG=new PIXI.Graphics(); camera.addChild(themeFxG);          // fauna
 const themeFxBackG=new PIXI.Graphics(); camera.addChild(themeFxBackG);  // fauna ao FUNDO (vaga-lumes + metade das borboletas) — #69
 // Lógica do céu (stepSky/stepV3Decor + nuvens/pássaros/estrelas/névoa/grama/bichos) extraída p/ render/scene-sky.ts (#43).
 // As 6 camadas acima são criadas AQUI (z-order do render-graph, intocado) e INJETADAS; o módulo só as anima. getFxClock é lazy.
-const sceneSky = createSceneSky({ skyLayer, starsG, skyDecoG, fogG, grassG, themeFxG, themeFxBackG, CLOUD_TEX, BIRD_TEX, SpriteCtor: PIXI.Sprite,
+const sceneSky = createSceneSky({ skyLayer, starsG, skyDecoG, nuvemG, fogG, grassG, themeFxG, themeFxBackG, CLOUD_TEX, BIRD_TEX, SpriteCtor: PIXI.Sprite,
   hexN, rnd, randInt, WORLD_PX_W, WORLD_PX_H, WORLD_W, WORLD_H, TILE, LOGICAL_W, LOGICAL_H, BOX,
   CENARIOS, THEME_FLORA, DIRECT_CFG, solidAt, tileAt,
   getCenario: () => CENARIO, getVizMode: () => vizMode, getPlayers: () => players, getFxClock: () => fxClock, getRm: () => rm,
+  getAglomeracao: () => weather.getAglomeracao(), // o MESMO relógio da chuva: as nuvens fecham antes da 1ª gota
   getGrassDensity: () => grassDensity, getDecorSeed: () => decorSeed });
 // drawV3Cloud + drawV3Grass extraídos p/ render/scene-sky.ts (#43) — funções de desenho puras usadas por stepV3Decor.
 // stepV3Decor (decor viva da v3: estrelas/nuvens/pássaros/névoa/grama/minhocas/vagalumes/borboletas) extraído p/
@@ -673,6 +675,10 @@ initFx({ fxG, rm }); // Estágio 4: liga o módulo fx à camada PIXI + reduce-mo
 // (grassG/cityDecoG/lavaFxG no lifeLayer; waterFxG no decoLayer) mantêm a ordem interna do pai. Alvo: no-op visual.
 camera.sortableChildren = true;
 parallaxLayers[0].zIndex = Z.PARALLAX_4; starsG.zIndex = 3500; parallaxLayers[1].zIndex = Z.PARALLAX_3; parallaxLayers[2].zIndex = Z.PARALLAX_2;
+// A manta de nuvens entra em PARALLAX_4+600, que é o slot que core/layers já reservava para "nuvens de céu em
+// PARALLAX_*+offset": à FRENTE do gradiente de céu (3000) — é assim que ela esconde o sol — e ATRÁS das duas
+// bandas de morro (4000 e 5000), que é o que faz as árvores do fundo passarem na frente dela. Pedido do Dev.
+nuvemG.zIndex = Z.PARALLAX_4 + 600;
 skyDecoG.zIndex = 6500; skyLayer.zIndex = 6700; decoLayer.zIndex = Z.BG_DECOR;
 // Área SECRETA (darkRegions): conteúdo (abandonG) + escuridão que o cobre — camada do MEIO, à frente dos tiles mas ATRÁS
 // da fauna/itens/player (NÃO é o DARK_WORLD de modo cego). Senão a escuridão da região cobre borboletas/grama. (#69)

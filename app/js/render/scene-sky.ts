@@ -16,23 +16,108 @@ export function cloudWrapX(phase: number, enterAt: number, span: number): number
   return ((phase % span) + span) % span + enterAt;
 }
 
+/* ===================== a manta de nuvens ===================== */
+//
+// ERAM TRÊS NUVENS EM ALTURAS FIXAS, à deriva e nada mais. O Dev pediu, para a Floresta, cúmulos brancos
+// ABUNDANTES que se JUNTAM, chove, e depois se SEPARAM mostrando o pôr do sol nas frestas — ou seja, pediu um
+// movimento com causa, não uma decoração a mais.
+//
+// A conta disso está aqui e é PURA: dado o relógio, a largura da tela, quantas nuvens e o quanto elas estão
+// aglomeradas, existe UMA disposição determinada. Separá-la do desenho é o que a torna aferível — dá para
+// afirmar que a 1 elas se sobrepõem e a 0 sobra céu entre elas, que é exatamente a diferença que o pedido
+// descreve, e que de outro modo só se confere olhando.
+//
+// FECHAR É COBRIR O CÉU INTEIRO, E NÃO ENGROSSAR UMA FAIXA NO TOPO. A primeira versão alinhava tudo numa faixa
+// alta: o céu ficava com uma barra branca em cima e o pôr do sol inteiro — sol incluído — continuava à vista
+// embaixo dela, o que não é tempo fechado, é uma tarja. O Dev viu e disse o que faltava: as nuvens têm de se
+// aglomerar NO CÉU INTEIRO, escondendo o Sol.
+//
+// Daí as TRÊS FILEIRAS. Cada nuvem tem uma fileira fixa (`i % 3`), e fechar é ir da altura de repouso para a
+// altura da sua fileira — 0, 27 e 54 px, que com a altura de cada cúmulo cobrem do topo até a linha do
+// horizonte. As fileiras ficam DEFASADAS em x (as de índices vizinhos distam um terço do passo), e é essa
+// defasagem que impede as três de terem buraco no mesmo lugar.
+//
+// E O CÉU ABERTO NÃO PODE TER 27 NUVENS, senão nunca há tempo bom. Só a fileira 0 está SEMPRE lá; as outras
+// duas SURGEM conforme o céu fecha (`surge`), e é isso que dá a leitura de "estão chegando mais nuvens" em vez
+// de "as nuvens desceram". Elas somem de novo na abertura, e o pôr do sol reaparece por trás.
+//
+// O QUE NUNCA MUDA COM `junta` é o x. Puxar todas para um mesmo x faria um bolo num canto do céu e céu limpo
+// no resto — e aí choveria ao lado da criança, não sobre ela.
+
+/** Uma nuvem de tela neste quadro. `esc` multiplica o desenho base; `alpha`, a opacidade. */
+export interface NuvemDeTela { x: number; y: number; esc: number; alpha: number }
+
+/** Largura e altura do cúmulo base, antes de `esc`. Quem mede cobertura precisa das duas. */
+export const NUVEM_W = 26, NUVEM_H = 13;
+
+/** Quantas fileiras a manta fechada tem. É o que a faz cobrir do topo ao horizonte em vez de só o topo. */
+const FILEIRAS = 3;
+
+/**
+ * Onde estão as `n` nuvens de tela neste instante.
+ *
+ * Os fatores 37, 13, 7 e 5 são PRIMOS COM 3 de propósito: a fileira é `i % 3`, e qualquer variação tirada de
+ * `i` com um fator múltiplo de 3 sairia CONSTANTE dentro de uma fileira — a fileira 0, que é a que se vê no
+ * tempo bom, teria todas as nuvens do mesmo tamanho, à mesma velocidade e na mesma altura. Já aconteceu.
+ *
+ * @param t relógio de efeitos (0 congela a deriva — movimento reduzido)
+ * @param vw largura do viewport
+ * @param n quantas nuvens no total (a fileira 0, ~n/3, é a que aparece no tempo bom)
+ * @param junta 0 = poucas e altas (o pôr do sol aparece) · 1 = as três fileiras cobrindo o céu inteiro
+ */
+export function nuvensDeTela(t: number, vw: number, n: number, junta: number): NuvemDeTela[] {
+  const j = Math.max(0, Math.min(1, junta)), nuvens: NuvemDeTela[] = [];
+  for (let i = 0; i < n; i++) {
+    const sp = 0.05 + ((i * 7) % 4) * 0.021;          // velocidades diferentes: elas se alcançam e se abrem
+    const esc = (1.15 + ((i * 37) % 5) * 0.18) * (1 + 0.6 * j); // crescem ao fechar até uma encostar na outra
+    const larg = NUVEM_W * esc;
+    const x = cloudWrapX(t * sp + (i * (vw + larg)) / Math.max(1, n), -larg, vw + larg);
+    const aberto = 4 + ((i * 37) % 26);               // altura de repouso: a faixa alta do céu
+    const fechado = (i % FILEIRAS) * 27 + ((i * 13) % 7); // altura de manta: a fileira desta nuvem
+    // A fileira 0 é permanente; as outras entram entre 0,15 e 0,65 de aglomeração — antes da chuva, portanto.
+    const surge = i % FILEIRAS === 0 ? 1 : Math.max(0, Math.min(1, (j - 0.15) / 0.5));
+    nuvens.push({ x, y: (1 - j) * aberto + j * fechado, esc, alpha: (0.72 + 0.28 * j) * surge });
+  }
+  return nuvens;
+}
+
+/**
+ * Um cúmulo em retângulos: laje de base e três lóbulos de alturas diferentes. Retângulos e não arcos porque é
+ * o que o `Gfx` do PIXI oferece aqui e porque é o que combina com o resto — a nuvem é pixel art, não um
+ * desenho vetorial reduzido. `[x, y, w, h]` no espaço da nuvem base (NUVEM_W×NUVEM_H), multiplicado por `esc`.
+ */
+const CUMULO: readonly (readonly [number, number, number, number])[] = [
+  [0, 8, 26, 4], [2, 5, 9, 3], [3, 3, 6, 2], [4, 2, 4, 1],
+  [9, 4, 9, 4], [11, 2, 6, 2], [12, 1, 4, 1],
+  [17, 5, 7, 3], [18, 3, 4, 2],
+];
+/** A sombra sob a base — uma linha só. Na Floresta ela é alaranjada: a luz baixa bate por baixo. */
+const CUMULO_SOMBRA: readonly [number, number, number, number] = [1, 12, 24, 1];
+
 interface Gfx { clear(): void; beginFill(color: number, alpha?: number): Gfx; drawRect(x: number, y: number, w: number, h: number): Gfx; endFill(): Gfx; }
 interface Sprite { x: number; y: number; alpha: number; texture: unknown; scale: { x: number }; _v?: number; destroy(): void; }
 interface Layer { addChild(c: unknown): unknown; removeChild(c: unknown): unknown; }
 interface SpriteCtor { new (tex: unknown): Sprite; }
 interface Bird { s: Sprite; dir: number; f: number; t: number; }
 interface Flora { base: string; top: string; bDk: string; bLt: string; petals: string[]; center: string; }
-interface Theme { v3?: boolean; decor?: string[]; cloud?: [string, string]; }
+interface Theme { v3?: boolean; decor?: string[]; cloud?: [string, string]; nuvens?: number }
 interface Pl { x: number; y: number; quit?: boolean; }
 
 export interface SceneSkyCtx {
   skyLayer: Layer; starsG: Gfx; skyDecoG: Gfx; fogG: Gfx; grassG: Gfx; themeFxG: Gfx; themeFxBackG: Gfx; // camadas (criadas no game.js)
+  /** A MANTA de nuvens, e ela tem camada PRÓPRIA por causa da ordem-z: fica na frente do céu (por isso
+   *  esconde o sol) e ATRÁS das duas bandas de morro (por isso as árvores do fundo passam à frente dela).
+   *  `skyDecoG`, onde moram os pássaros e as nuvens dos outros temas, está à frente dos morros e não serve. */
+  nuvemG: Gfx;
   CLOUD_TEX: unknown[]; BIRD_TEX: unknown[]; SpriteCtor: SpriteCtor; // texturas + PIXI.Sprite
   hexN: (s: string) => number; rnd: () => number; randInt: (a: number, b: number) => number;
   WORLD_PX_W: number; WORLD_PX_H: number; WORLD_W: number; WORLD_H: number; TILE: number; LOGICAL_W: number; LOGICAL_H: number; BOX: { h: number };
   CENARIOS: Record<string, Theme>; THEME_FLORA: Record<string, Flora | undefined>; DIRECT_CFG: Record<string, unknown>;
   solidAt: (x: number, y: number) => boolean; tileAt: (x: number, y: number) => number;
   getCenario: () => string; getVizMode: () => string; getPlayers: () => Pl[]; getFxClock: () => number; getRm: () => { decor?: boolean; parallax?: boolean };
+  /** 0..1 — o quanto as nuvens estão fechadas neste quadro (render/weather.getAglomeracao). Um só relógio
+   *  para a chuva e para as nuvens: dois desandariam um do outro depois de alguns minutos. */
+  getAglomeracao: () => number;
   getGrassDensity: () => number; // 0..1: fração das superfícies com flora (grama/flores). 1 = todas; 0.6 = 60%. Base p/ estações.
   getDecorSeed: () => number;    // semente por FASE: quais superfícies são escolhidas na densidade (randômico no load).
 }
@@ -65,6 +150,14 @@ export function createSceneSky(ctx: SceneSkyCtx): SceneSky {
     g.beginFill(ctx.hexN(col[1])).drawRect(x + 1, y + 11, 22, 1).endFill();
   }
 
+  function drawCumulo(g: Gfx, nv: NuvemDeTela, col: [string, string]): void { // cúmulo escalável (ver CUMULO)
+    const e = nv.esc, R = (r: readonly [number, number, number, number]): void => {
+      g.drawRect(Math.round(nv.x + r[0] * e), Math.round(nv.y + r[1] * e), Math.round(r[2] * e), Math.round(r[3] * e));
+    };
+    g.beginFill(ctx.hexN(col[0]), nv.alpha); for (const r of CUMULO) R(r); g.endFill();
+    g.beginFill(ctx.hexN(col[1]), nv.alpha); R(CUMULO_SOMBRA); g.endFill();
+  }
+
   function drawV3Grass(g: Gfx, tx: number, ty: number, fl: Flora, t: number): void { // drawSurfaceGrass v3 (tufos ao vento + flor)
     const TILE = ctx.TILE, x = tx * TILE, y = ty * TILE, wind = ctx.getRm().decor ? 0 : Math.sin(t * 0.045 + tx * 0.6);
     g.beginFill(ctx.hexN(fl.base)).drawRect(x, y, TILE, 2).endFill();
@@ -84,7 +177,7 @@ export function createSceneSky(ctx: SceneSkyCtx): SceneSky {
 
   function stepV3Decor(): void {
     const T = ctx.CENARIOS[ctx.getCenario()] || {};
-    ctx.starsG.clear(); ctx.skyDecoG.clear(); ctx.fogG.clear(); ctx.grassG.clear(); ctx.themeFxG.clear(); ctx.themeFxBackG.clear();
+    ctx.starsG.clear(); ctx.skyDecoG.clear(); ctx.nuvemG.clear(); ctx.fogG.clear(); ctx.grassG.clear(); ctx.themeFxG.clear(); ctx.themeFxBackG.clear();
     // A pergunta é "este tema tem decoração viva?", e ela se responde OLHANDO A DECORAÇÃO. Antes era
     // `!T.v3`, que respondia "este tema não é a Cidade" — o mesmo resultado por acidente, enquanto a Cidade
     // era o único tema sem céu vivo. Um tema de fundo raster COM borboletas quebrava aquilo; este não.
@@ -94,8 +187,16 @@ export function createSceneSky(ctx: SceneSkyCtx): SceneSky {
     if (!reduzido && d.includes('sparkles')) { const top = Math.max(1, Math.floor(vh * 0.7));
       for (let i = 0; i < 22; i++) { const a = 0.3 + 0.35 * Math.sin(t * 0.03 + i * 1.3); if (a <= 0.05) continue;
         ctx.starsG.beginFill(0xffffff, a).drawRect((i * 73) % vw, (i * 49) % top, 1, 1).endFill(); } }
-    // TELA: nuvens (3, derivas 0.08/0.05/0.11) — v3 exato; wrap sub-pixel + corpo inteiro (#21)
-    if (d.includes('nuvens') && T.cloud) { const col = T.cloud, defs = [{ y: 6, sp: 0.08, off: 0 }, { y: 20, sp: 0.05, off: 130 }, { y: 12, sp: 0.11, off: 250 }];
+    // TELA: nuvens. Dois caminhos, e a diferença é DADO, não gosto:
+    //  · tema com `nuvens: N` (hoje só a Floresta) — manta viva de N cúmulos que fecha e abre com a chuva;
+    //  · os outros três — as 3 lajes da v3, derivas 0.08/0.05/0.11, VERBATIM. Não passaram por aqui de graça:
+    //    o Dev pediu o céu novo para a Floresta, e mudar a aparência dos outros três de carona seria alargar
+    //    o pedido por conta própria. Quando ele quiser, é trocar um número na tabela de cenários.
+    if (d.includes('nuvens') && T.cloud && T.nuvens) {
+      const col = T.cloud, junta = reduzido ? 0 : ctx.getAglomeracao();
+      // `nuvemG` e não `skyDecoG`: a manta fica ATRÁS das bandas de morro (ver a nota no ctx).
+      for (const nv of nuvensDeTela(reduzido ? 0 : t, vw, T.nuvens, junta)) drawCumulo(ctx.nuvemG, nv, col);
+    } else if (d.includes('nuvens') && T.cloud) { const col = T.cloud, defs = [{ y: 6, sp: 0.08, off: 0 }, { y: 20, sp: 0.05, off: 130 }, { y: 12, sp: 0.11, off: 250 }];
       for (const c0 of defs) { const x = cloudWrapX((reduzido ? 0 : t) * c0.sp + c0.off, -44, vw + 64); drawV3Cloud(ctx.skyDecoG, x, c0.y, col); } }
     if (!reduzido && d.includes('passaros')) { ctx.skyDecoG.beginFill(0x282837, 0.7);
       for (let i = 0; i < 3; i++) { const bx = ((t * (0.25 + i * 0.07) + i * 90) % (vw + 20)) - 10, by = 14 + i * 9 + Math.sin(t * 0.04 + i) * 2, f = Math.sin(t * 0.2 + i) > 0 ? 1 : 2;

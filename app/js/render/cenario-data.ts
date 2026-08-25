@@ -106,6 +106,9 @@ export interface CenarioTema {
   sol?: { cor: string; x: number; y: number };
   /** Este tema tem CHUVA (ciclo do clima em render/weather). Ausente = sempre seco. */
   chuva?: true;
+  /** Quantos cúmulos na MANTA de tela, que fecha e abre com a chuva. Múltiplo de 3 (são 3 fileiras), e só a
+   *  de cima aparece no tempo bom. Ausente = as 3 lajes fixas da v3. */
+  nuvens?: number;
   decor?: string[];         // decoração viva ligada neste tema (render/scene-sky.stepV3Decor)
 }
 
@@ -147,7 +150,7 @@ export const CENARIOS: Record<string, CenarioTema> = {
                sky: ['#231a52', '#a34a6e', '#ffd166', '#e0392c', '#8e2320', '#5a1a1c', '#3a1418'],
                sol: { cor: '#ffe9a8', x: 0.30, y: 0.46 },
                cloud: ['#ffffff', '#e9a06a'], // corpo branco, sombra alaranjada: é a luz baixa batendo por baixo
-               chuva: true,
+               chuva: true, nuvens: 27, // 3 fileiras de 9: a de cima sempre, as outras duas ao fechar o tempo
                hills: ['#2f5e35', '#1f4226'], decor: ['nuvens', 'passaros', 'borboletas'] },
 };
 

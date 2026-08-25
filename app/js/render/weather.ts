@@ -39,6 +39,30 @@ export function rainLevelTarget(sec: number, temChuva: boolean, reduceDecor: boo
   return c < 5 ? 0.35 : c < 10 ? 1 : c < 15 ? 0.35 : 0;
 }
 
+/** Onde estamos DENTRO do ciclo de 60s, em segundos. 0 = a primeira gota; 59 = um segundo antes dela. */
+export function faseDoClima(sec: number): number { return (((sec - 30) % 60) + 60) % 60; }
+
+/**
+ * AGLOMERAÇÃO DAS NUVENS: 0 = espalhadas e altas, com o céu aparecendo entre elas; 1 = fechadas numa manta.
+ *
+ * O pedido do Dev foi de um MOVIMENTO, não de um estado: as nuvens se juntam, chove, elas se separam e o pôr
+ * do sol aparece nas frestas. Quem faz isso ler como causa e não como coincidência é a ANTECEDÊNCIA — a manta
+ * fecha OITO SEGUNDOS ANTES da primeira gota. Se fechasse junto, a chuva pareceria vir do nada e as nuvens
+ * pareceriam reagir a ela; fechando antes, é a nuvem que traz a chuva, que é o que uma criança já sabe.
+ *
+ * Anda no MESMO ciclo da chuva (`faseDoClima`), e não num relógio próprio, porque dois relógios independentes
+ * desandam um do outro — não de imediato, mas depois de alguns minutos, e aí ninguém liga o defeito à causa.
+ * Devolve uma rampa contínua: não precisa de suavização depois.
+ */
+export function aglomeracaoAlvo(sec: number, temChuva: boolean, reduceDecor: boolean): number {
+  if (!(sec >= 22 && !reduceDecor && temChuva)) return 0; // 22s = exatamente a fase 52, onde a rampa começa
+  const f = faseDoClima(sec);
+  if (f >= 52) return (f - 52) / 8;     // 8s juntando, antes da primeira gota
+  if (f < 12) return 1;                 // fechado durante a garoa e a chuva
+  if (f < 22) return 1 - (f - 12) / 10; // 10s abrindo — é aqui que o pôr do sol reaparece
+  return 0;
+}
+
 /** Ramps `current` toward `target` by at most `step`, snapping to `target` once within 0.02 (no "quase seco" flicker). */
 export function rampRainLevel(current: number, target: number, step: number): number {
   let next = current + Math.max(-step, Math.min(step, target - current));
@@ -115,7 +139,7 @@ let _screen: { width: number; height: number } | null = null;
 let _getRm: (() => { decor?: boolean }) | null = null;
 let _thunder: ((inten: number) => void) | null = null;
 
-let _rainLevel = 0, _weatherT = 0, _flash = 0, _thunderCD = 240;
+let _rainLevel = 0, _weatherT = 0, _flash = 0, _thunderCD = 240, _aglomeracao = 0;
 let _rainDrops: RainDrop[] | null = null;
 
 export function initWeather(ctx: WeatherCtx): void {
@@ -131,8 +155,10 @@ export function updateWeather(): void {
   _weatherT++;
   const sec = _weatherT / 60;
   const rm = _getRm ? _getRm() : {};
-  const target = rainLevelTarget(sec, !!(cenario && CENARIOS[cenario]?.chuva), !!rm.decor);
+  const temChuva = !!(cenario && CENARIOS[cenario]?.chuva);
+  const target = rainLevelTarget(sec, temChuva, !!rm.decor);
   _rainLevel = rampRainLevel(_rainLevel, target, 1 / 30); // rampa ~1s
+  _aglomeracao = aglomeracaoAlvo(sec, temChuva, !!rm.decor); // já é rampa: nada a suavizar aqui
   const step = stepThunder(_rainLevel, _thunderCD, _flash, rnd, (inten) => { if (_thunder) _thunder(inten); });
   _thunderCD = step.thunderCD; _flash = step.flash;
 }
@@ -158,6 +184,8 @@ export function drawWeather(): void {
 
 /** The clima→áudio bridge: platform/audio-ambient.ts reads this (never the raw value) so its rain track follows the visual. */
 export function getRainLevel(): number { return _rainLevel; }
+/** A ponte clima→céu: render/scene-sky lê isto para juntar e separar as nuvens no compasso da chuva. */
+export function getAglomeracao(): number { return _aglomeracao; }
 /** Weather-clock read/write — the game.js `window.__incl.weatherT` debug hook fast-forwards the cycle via this. */
 export function getWeatherT(): number { return _weatherT; }
 export function setWeatherT(v: number): void { _weatherT = v; }
