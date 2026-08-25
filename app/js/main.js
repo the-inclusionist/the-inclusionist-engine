@@ -35,7 +35,7 @@ import { initSettingsVisual, ROLE_LABELS } from './ui/settings-visual.js';
 import { initSettingsCaa } from './ui/settings-caa.js';
 import { cityTiles } from './render/city-tiles.js'; // #16: os tiles da Cidade como dados, não como PNG // 7º menu: Comunicação Aumentada e Alternativa (ADR-0028)
 import { initSettingsEmpathy } from './ui/settings-empathy.js';
-import { initSettingsMotor } from './ui/settings-motor.js';
+import { initSettingsMotor, playerPrefix } from './ui/settings-motor.js';
 import { initSettingsMotion, setSelectedPlayer as setSelectedMotionPlayer } from './ui/settings-motion.js';
 import { initSettingsTypo } from './ui/settings-typo.js';
 import { initTitle } from './ui/title.js';
@@ -348,7 +348,7 @@ function loadPlayerA11y(p,i){ const v=store.get(store.KEYS.vizP(i)); if(v&&VIZ_B
   if(i===0){ const ov=store.get(store.KEYS.viz); if(ov&&VIZ_BY_KEY[ov]&&store.get(store.KEYS.vizP(0))==null)p.viz=ov; // migra chaves antigas
     if(store.getBool(store.KEYS.toggleMoveLegacy)&&store.get(store.KEYS.toggleMoveP(0))==null)p.toggleMove=true; } }
 function setToggleMove(i,on){ const p=players[i]; if(!p)return; p.toggleMove=on; store.setBool(store.KEYS.toggleMoveP(i),on); if(!on)p.walkDir=0;
-  srSay((numPlayers>1?'Jogador '+(i+1)+': ':'')+'Movimento por alternância '+(on?'ligado: toque a direção para andar sem segurar; toque de novo para parar; segure para ir mais rápido. O pulo não interrompe a caminhada.':'desligado.')); }
+  srSay(playerPrefix(i,numPlayers)+t(on?'sr.motor.toggleMoveOn':'sr.motor.toggleMoveOff')); }
 function showCaption(txt){ const el=$('#caption'); if(!el||!txt)return; el.textContent=txt; el.classList.add('show'); clearTimeout(capTimer); capTimer=setTimeout(()=>{el.classList.remove('show'); el.textContent='';},1300); }
 // Earcons + ponte com legendas extraídos p/ platform/audio-earcons.ts (Tier 2, áudio rodada 2). captionsOn/showCaption
 // VIVEM aqui (UI alterna captionsOn; win() reusa showCaption) → entram por injeção. Chamado como earcons.sfx(...).

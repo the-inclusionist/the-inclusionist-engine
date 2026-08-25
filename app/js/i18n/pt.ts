@@ -383,5 +383,13 @@ const pt: Record<string, string> = {
   'ui.toggle.off': '▶ Desligado',
   'ui.toggle.ariaOn': '{alvo}: ligado',
   'ui.toggle.ariaOff': '{alvo}: desligado',
+  // ===================== AS DUAS ESCOLHAS MOTORAS POR JOGADOR =====================
+  // Modo Fácil e movimento por alternância. Cada estado é UMA frase inteira, e não um prefixo compartilhado
+  // com um sufixo variável: é a mesma decisão que `sr.audio.*` já registra — uma língua que reordene a frase
+  // só consegue se a frase inteira morar no dicionário. O 'Jogador N: ' vem de `sr.player.prefix`.
+  'sr.motor.easyOn': 'Modo Fácil ligado: gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais (segure ↓ para descer).',
+  'sr.motor.easyOff': 'Modo Fácil desligado.',
+  'sr.motor.toggleMoveOn': 'Movimento por alternância ligado: toque a direção para andar sem segurar; toque de novo para parar; segure para ir mais rápido. O pulo não interrompe a caminhada.',
+  'sr.motor.toggleMoveOff': 'Movimento por alternância desligado.',
 };
 export default pt;

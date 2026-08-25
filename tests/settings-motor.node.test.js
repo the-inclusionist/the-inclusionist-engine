@@ -6,6 +6,7 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel é alias dele desde o item 14
+import { t } from '../app/js/core/i18n.js'; // os anúncios vêm do dicionário desde o item 14
 import {
   easyKey, clampSelPlayer, anyMotorActive, onOffLabel, playerTabsHTML, easyAnnouncement,
 } from '../app/js/ui/settings-motor.js';
@@ -78,18 +79,21 @@ describe('playerTabsHTML', () => {
 });
 
 describe('easyAnnouncement', () => {
+  // Comparado contra `t()` e não contra a frase em português. Fixar a frase aqui devolveria ao teste o texto
+  // que o item 14 acabou de tirar do código — e o caso continua pegando chave TROCADA, porque `t('…easyOn')`
+  // e `t('…easyOff')` são diferentes.
   it('[Right] 1 jogador: sem prefixo "Jogador N"', () => {
-    expect(easyAnnouncement(0, 1, true)).toBe(
-      'Modo Fácil ligado: gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais (segure ↓ para descer).',
-    );
+    expect(easyAnnouncement(0, 1, true)).toBe(t('sr.motor.easyOn'));
   });
   it('[Right] multiplayer: prefixa "Jogador N: "', () => {
-    expect(easyAnnouncement(1, 2, true)).toBe(
-      'Jogador 2: Modo Fácil ligado: gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais (segure ↓ para descer).',
-    );
+    expect(easyAnnouncement(1, 2, true)).toBe(t('sr.player.prefix', { n: 2 }) + t('sr.motor.easyOn'));
+  });
+  it('[Zero] a chave NUNCA vaza para o anúncio', () => {
+    // O modo silencioso de falhar da i18n por chave: um `t()` esquecido faz o leitor de tela LER a chave.
+    for (const on of [true, false]) expect(easyAnnouncement(0, 1, on)).not.toMatch(/sr\./);
   });
   it('[Boundary] desligado: mensagem curta', () => {
-    expect(easyAnnouncement(0, 1, false)).toBe('Modo Fácil desligado.');
-    expect(easyAnnouncement(2, 3, false)).toBe('Jogador 3: Modo Fácil desligado.');
+    expect(easyAnnouncement(0, 1, false)).toBe(t('sr.motor.easyOff'));
+    expect(easyAnnouncement(2, 3, false)).toBe(t('sr.player.prefix', { n: 3 }) + t('sr.motor.easyOff'));
   });
 });

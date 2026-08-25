@@ -346,5 +346,10 @@ const es: Record<string, string> = {
   'ui.toggle.off': '▶ Desactivado',
   'ui.toggle.ariaOn': '{alvo}: activado',
   'ui.toggle.ariaOff': '{alvo}: desactivado',
+  // ===================== LAS DOS OPCIONES MOTORAS POR JUGADOR =====================
+  'sr.motor.easyOn': 'Modo Fácil activado: menos gravedad, salto más alto, recogida tolerante, monedas en el suelo, sin peligros ni caídas accidentales (mantén ↓ para bajar).',
+  'sr.motor.easyOff': 'Modo Fácil desactivado.',
+  'sr.motor.toggleMoveOn': 'Movimiento por alternancia activado: toca la dirección para andar sin mantener; toca de nuevo para parar; mantén para ir más rápido. El salto no interrumpe la marcha.',
+  'sr.motor.toggleMoveOff': 'Movimiento por alternancia desactivado.',
 };
 export default es;

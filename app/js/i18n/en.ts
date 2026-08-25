@@ -345,5 +345,10 @@ const en: Record<string, string> = {
   'ui.toggle.off': '▶ Off',
   'ui.toggle.ariaOn': '{alvo}: on',
   'ui.toggle.ariaOff': '{alvo}: off',
+  // ===================== THE TWO PER-PLAYER MOTOR CHOICES =====================
+  'sr.motor.easyOn': 'Easy Mode on: lower gravity, higher jump, forgiving pickup, coins on the ground, no hazards and no accidental falls (hold ↓ to climb down).',
+  'sr.motor.easyOff': 'Easy Mode off.',
+  'sr.motor.toggleMoveOn': 'Tap-to-move on: tap a direction to walk without holding; tap again to stop; hold to go faster. Jumping does not interrupt the walk.',
+  'sr.motor.toggleMoveOff': 'Tap-to-move off.',
 };
 export default en;

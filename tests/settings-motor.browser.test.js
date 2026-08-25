@@ -4,6 +4,7 @@
 // do ctx. A lógica pura (clamp/predicado/anúncio/HTML das abas) está coberta em settings-motor.node.test.js.
 // Modelo: tests/a11y-sr.browser.test.js, tests/settings-typo.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
+import { t } from '../app/js/core/i18n.js'; // os anúncios vêm do dicionário desde o item 14
 import { initSettingsMotor } from '../app/js/ui/settings-motor.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -72,9 +73,9 @@ describe('ui/settings-motor', () => {
     expect(ctx.storeMap.get('incl_easy_p0')).toBe('1');
     expect($('#opt-facil').classList.contains('is-on')).toBe(true);
     expect(ctx.rebuildCoinsCalls).toBe(1);
-    expect(ctx.said).toEqual([
-      'Modo Fácil ligado: gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais (segure ↓ para descer).',
-    ]);
+    // Contra `t()` e não contra a frase: fixar o português aqui devolveria ao teste o texto que o item 14
+    // tirou do código. O caso continua pegando chave trocada — `easyOn` e `easyOff` dão frases diferentes.
+    expect(ctx.said).toEqual([t('sr.motor.easyOn')]);
   });
 
   it('[Right] clicar de novo em #opt-facil desliga e anuncia a versão curta', () => {

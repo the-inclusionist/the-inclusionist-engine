@@ -95,13 +95,17 @@ export function playerTabsHTML(numPlayers: number, selected: number): string {
   ).join('');
 }
 
-/** srSay text for a Modo Fácil change. Verbatim port of the string built inside the old setEasy(). */
+/**
+ * O 'Jogador N: ' que abre um anúncio quando há mais de uma tela. Uma tela só não leva prefixo — dizer
+ * "Jogador 1" para quem está sozinho é ruído, e ruído no leitor de tela custa tempo de escuta.
+ */
+export function playerPrefix(i: number, numPlayers: number): string {
+  return numPlayers > 1 ? t('sr.player.prefix', { n: i + 1 }) : '';
+}
+
+/** srSay text for a Modo Fácil change. A frase inteira vem do dicionário — ver `sr.motor.easyOn`. */
 export function easyAnnouncement(i: number, numPlayers: number, on: boolean): string {
-  const prefix = numPlayers > 1 ? 'Jogador ' + (i + 1) + ': ' : '';
-  const state = on
-    ? 'ligado: gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais (segure ↓ para descer).'
-    : 'desligado.';
-  return prefix + 'Modo Fácil ' + state;
+  return playerPrefix(i, numPlayers) + t(on ? 'sr.motor.easyOn' : 'sr.motor.easyOff');
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -117,7 +117,9 @@ const MOEDA_CONHECIDA = new Set([
   'platform/audio.ts',      // earcon de chave 'coin': conteúdo sonoro do jogo na tabela da engine
   // `ui/settings-motion.ts` SAIU (2026-08-25): a única menção era o rótulo 'Animação de itens (moedas)', que
   // foi para o dicionário no item 14. Ganho lateral da i18n — texto que sai do código sai também da fronteira.
-  'platform/audio-mixer.ts', 'ui/settings-motor.ts', // rótulos/anúncios, não dependência
+  // `ui/settings-motor.ts` SAIU (2026-08-25): a única menção era 'moedas no chão', dentro do anúncio do Modo
+  // Fácil, que foi para o dicionário no item 14. Segundo módulo que a i18n tira daqui de carona.
+  'platform/audio-mixer.ts', // rótulos/anúncios, não dependência
 ]);
 
 describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
@@ -205,11 +207,15 @@ const FIXTURES_CONHECIDOS = {
 };
 
 /**
- * NÃO É DÍVIDA, e a distinção é a mesma que o topo deste arquivo já faz para os módulos: "moedas no chão"
- * dentro do anúncio do Modo Fácil é uma FRASE EM PORTUGUÊS que descreve o jogo para a criança. O teste
- * compara o texto do anúncio; ele não precisa de moeda nenhuma para rodar.
+ * ESTA LISTA ESVAZIOU, e o caminho até aqui é o registro. Ela existia para um único caso: "moedas no chão",
+ * dentro do anúncio do Modo Fácil, era uma FRASE EM PORTUGUÊS que descrevia o jogo para a criança — os dois
+ * testes de `settings-motor` comparavam o texto do anúncio e não precisavam de moeda nenhuma para rodar.
+ *
+ * O item 14 levou a frase para o dicionário, os testes passaram a comparar contra `t()`, e a exceção deixou
+ * de ter do que excetuar. Fica VAZIA em vez de apagada porque a distinção continua valendo: prosa que
+ * descreve o jogo não é dependência do jogo, e o próximo a encontrar um caso desses precisa achar o lugar.
  */
-const PROSA_EM_STRING = new Set(['settings-motor.node.test.js', 'settings-motor.browser.test.js']);
+const PROSA_EM_STRING = new Set([]);
 
 /** Linhas de CÓDIGO de um teste, sem comentários e sem títulos de caso. */
 function linhasDeFixture(arquivo) {
@@ -259,14 +265,13 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
 
   it('[Interface] a exceção de prosa é REAL — se o texto sumir, a exceção some junto', () => {
     // Sem este caso, `PROSA_EM_STRING` viraria uma porta de fuga: bastaria pôr um arquivo ali para o gate
-    // parar de olhá-lo. Aqui ele tem de continuar sendo o que a exceção diz que é — uma FRASE, e não um ctx.
+    // parar de olhá-lo. Ele já cobrou uma vez: quando a frase 'moedas no chão' foi para o dicionário, o caso
+    // reprovou e a entrada teve de sair. Hoje a lista está vazia e ele guarda a regra para a próxima.
     for (const f of PROSA_EM_STRING) {
       const linhas = linhasDeFixture(f).filter(([, ln]) => VOCAB_JOGO.test(ln));
       expect(linhas.length, `${f}: a exceção não se aplica mais`).toBeGreaterThan(0);
-      for (const [n, ln] of linhas) {
-        expect(ln, `${f}:${n} não é mais uma frase — reveja a exceção`).toMatch(/moedas no chão/);
-      }
     }
+    expect(PROSA_EM_STRING.size, 'lista de exceções cresceu — cada entrada precisa do motivo escrito').toBeLessThan(3);
   });
 
   it('[Interface] a dívida dos fixtures cai nos MESMOS subsistemas que a dos módulos', () => {
