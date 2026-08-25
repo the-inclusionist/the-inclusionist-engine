@@ -282,5 +282,7 @@ const en: Record<string, string> = {
   'sr.caa.escolha': 'Communication: {v}.',
   'sr.caa.reset': 'Communication restored to its default: uppercase letters, where literacy usually starts.',
   'pause.caa': '🔠 Communication',
+  'sr.caa.caixaAltaOn': 'Uppercase letters on: the whole game in capitals.',
+  'sr.caa.caixaAltaOff': 'Uppercase letters off: capitals and lowercase.',
 };
 export default en;

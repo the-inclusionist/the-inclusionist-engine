@@ -313,5 +313,7 @@ const pt: Record<string, string> = {
   'sr.caa.escolha': 'Comunicação: {v}.',
   'sr.caa.reset': 'Comunicação restaurada ao padrão: letras maiúsculas, como a alfabetização costuma começar.',
   'pause.caa': '🔠 Comunicação',
+  'sr.caa.caixaAltaOn': 'Letras maiúsculas ligadas: o jogo inteiro em caixa alta.',
+  'sr.caa.caixaAltaOff': 'Letras maiúsculas desligadas: maiúsculas e minúsculas.',
 };
 export default pt;

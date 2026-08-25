@@ -331,6 +331,22 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* Cegueira total: a canvas vira preta (filter brightness(0)); escondemos HUD e controles na tela */
 body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-tips, body.blind-mode #caption{visibility:hidden}
 [hidden]{display:none!important}
+/* CAIXA ALTA (menu de CAA, ADR-0028). O jogo tem DOIS caminhos de texto e por isso dois mecanismos, que não
+   são redundância: o `disp()` do main.js cobre o que a PIXI desenha na canvas, e esta regra cobre o que o
+   navegador desenha no DOM — menus, HUD, legendas. O botão só ligava o primeiro, então a criança escolhia
+   "maiúsculas" e os menus continuavam mistos.
+   `text-transform` e NÃO transformar o texto: o conteúdo acessível fica intacto, e um leitor de tela não passa
+   a soletrar letra por letra, que é o que ALL CAPS de verdade provoca em NVDA/JAWS. */
+:root[data-letras="upper"] body,
+:root[data-letras="upper"] button,
+:root[data-letras="upper"] select,
+:root[data-letras="upper"] option,
+:root[data-letras="upper"] input,
+:root[data-letras="upper"] textarea{text-transform:uppercase}
+/* Os controles de formulário estão na lista porque a folha do NAVEGADOR lhes impõe `text-transform:none`, e
+   `none` numa regra do UA vence a herança. Sem eles a caixa alta pegava no texto das telas e falhava em cada
+   BOTÃO — que é justamente onde os rótulos dos menus moram. Foi o que o Dev viu: "não torna todas as letras
+   do menu maiúsculas". */
 /* menus nunca ultrapassam a tela: limitados à altura do viewport e roláveis (rodapé de ações fica fixo embaixo) */
 .overlay__card{background:var(--panel);border:3px solid var(--accent);border-radius:12px;padding:1.5rem;max-width:420px;width:100%;text-align:center;font-size:var(--ui-fs,16px);
   max-height:92dvh;overflow-y:auto;overscroll-behavior:contain} /* base = --ui-fs (16 mín, escala com o canvas); internos em em */

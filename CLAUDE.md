@@ -94,6 +94,13 @@ convivência de idosos e pessoas assistidas socialmente). **MVP atual:** *The In
 - **Commits FREQUENTES e atômicos** (um bloco lógico por commit; nunca um "initial" gigante). Sem caminhos
   absolutos em arquivos versionados; to-dos pessoais ficam em arquivo git-ignored, não no README.
 - **a11y honesto:** não vender "AAA em bloco" — marcar onde só dá AA (detalhe em §1).
+- **DESIGN DE MENU (decisão do Dev, 2026-08-25): a explicação mora no RODAPÉ, e fica lá.** A linha carrega o
+  rótulo curto em `<strong>` e nada mais à vista; toda a prosa entra num único `.opt-hint` dentro do `<span>`,
+  que a casca (`ui/settings-panel` → `fillExplain`) MOVE para o rodapé `.opt-explain` (`aria-live`), mostrado
+  ao foco/hover. A introdução do painel, quando houver, é o texto de REPOUSO desse rodapé, via
+  `data-explain-idle` no `.overlay__card` — **nunca** um `<p>` de prosa no topo. Menu é menu de videogame/TV,
+  não arquivo `.conf`. **Painel que re-renderiza precisa chamar `fillExplain` a cada render**, senão a prosa
+  volta para dentro das linhas no primeiro clique.
 
 ## 5. Testes
 

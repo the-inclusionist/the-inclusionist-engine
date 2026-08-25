@@ -138,8 +138,12 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
       f = ctx.doc.createElement('div');
       f.className = 'opt-explain';
       f.setAttribute('aria-live', 'polite'); // rodapé anunciado ao mudar (foco/hover na linha)
-      f.dataset.idle = EXPLAIN_IDLE;
-      f.textContent = EXPLAIN_IDLE;
+      // O texto de repouso pode ser DO PAINEL, via `data-explain-idle` no card. É onde uma introdução de menu
+      // deve morar: um parágrafo de prosa no topo transforma o menu num manual, e o rodapé já é o lugar da
+      // explicação — o painel só passa a ter algo a dizer enquanto ninguém aponta para nenhuma linha.
+      const idle = card.dataset.explainIdle || EXPLAIN_IDLE;
+      f.dataset.idle = idle;
+      f.textContent = idle;
       card.appendChild(f);
     }
     const footer = f; // estreita o tipo para os closures abaixo

@@ -15,6 +15,9 @@ function fullCtx(over = {}) {
     getLetterCase: () => caso,
     setLetterCase: (c) => { caso = c; },
     frontOverlay: () => {},
+    // Dublê do `fillExplain` da casca. Ele existe no ctx porque o painel o chama a CADA render: sem isso a
+    // prosa volta para dentro das linhas ao primeiro clique, e o menu vira manual de novo.
+    fillExplain: () => {},
     restoreFocus: () => true,
     said,
     getCaso: () => caso,
@@ -26,19 +29,24 @@ beforeEach(() => {
   document.body.innerHTML = `
     <button data-act="caa" class="pm-btn" type="button">Comunicação</button>
     <div id="caa" hidden>
+      <div class="overlay__card">
       <div id="caa-list"></div>
       <button id="caa-reset" type="button">Restaurar</button>
       <button id="caa-close" type="button">Fechar</button>
+      </div>
     </div>`;
 });
 
 describe('ui/settings-caa — escolher', () => {
-  it('[Right] clicar numa caixa de letra disponível muda `letterCase` e anuncia o nome escolhido', () => {
+  it('[Right] o interruptor liga e DESLIGA — e o desligado significa maiúsculas E minúsculas', () => {
     const ctx = fullCtx();
     initSettingsCaa(ctx).render();
-    $('#caa-list button[data-caa="letras-mistas"]').click();
+    $('#caa-caixa-alta').click();
     expect(ctx.getCaso()).toBe('mixed');
     expect(ctx.said.at(-1)).toContain('minúsculas');
+    $('#caa-caixa-alta').click();
+    expect(ctx.getCaso()).toBe('upper');
+    expect(ctx.said.at(-1)).toContain('caixa alta');
   });
 
   it('[Interface] clicar num conjunto INDISPONÍVEL não muda nada e não anuncia', () => {
@@ -76,7 +84,7 @@ describe('ui/settings-caa — restaurar padrões (ADR-0028) e marca (ADR-0029)',
   it('[Right] o reset volta para maiúsculas — onde a alfabetização costuma começar', () => {
     const ctx = fullCtx();
     initSettingsCaa(ctx).render();
-    $('#caa-list button[data-caa="letras-mistas"]').click();
+    $('#caa-caixa-alta').click();
     $('#caa-reset').click();
     expect(ctx.getCaso()).toBe('upper');
     expect(ctx.said.at(-1)).toContain('padrão');
@@ -87,9 +95,8 @@ describe('ui/settings-caa — restaurar padrões (ADR-0028) e marca (ADR-0029)',
     initSettingsCaa(ctx).render();
     expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
 
-    $('#caa-list button[data-caa="letras-mistas"]').click();
-    expect($('#caa-list button[data-caa="letras-mistas"]').closest('.ctrl-row')
-      .classList.contains('is-changed')).toBe(true);
+    $('#caa-caixa-alta').click();
+    expect($('#caa-letras').classList.contains('is-changed')).toBe(true);
     expect($('[data-act="caa"]').classList.contains('is-changed')).toBe(true);
 
     $('#caa-reset').click();

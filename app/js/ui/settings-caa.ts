@@ -23,26 +23,45 @@ import type { LetterCase } from '../core/state.js';
 import { CAA_SETS, CAA_BY_KEY, caaMotivo, type CaaSet } from './caa-sets.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 
-/** A caixa de letra que cada entrada de LETRA representa — a ponte entre o catálogo e `letterCase`. */
-const CASO_POR_CHAVE: Readonly<Record<string, LetterCase>> = {
-  'letras-mistas': 'mixed',
-  'letras-maiusculas': 'upper',
-};
-
-/** A entrada do catálogo que corresponde à caixa de letra atual. Pura, testável em node. */
-export function chaveSelecionada(caso: LetterCase): string {
-  return caso === 'upper' ? 'letras-maiusculas' : 'letras-mistas';
+/**
+ * A linha das LETRAS é um INTERRUPTOR, não duas opções (decisão do Dev). Ligado = só maiúsculas; desligado =
+ * maiúsculas e minúsculas. Uma pergunta binária apresentada como duas linhas obriga a criança a comparar as
+ * duas para descobrir que são a mesma pergunta.
+ */
+export function caixaAltaLigada(caso: LetterCase): boolean {
+  return caso === 'upper';
 }
 
-/** Uma linha do menu. Indisponível vira `disabled` + o motivo no rótulo — nunca um botão que não faz nada. */
+/** O interruptor das letras. Sempre disponível: é o piso offline, e nunca dependeu de arquivo nenhum. */
+export function letrasRowHtml(ligado: boolean): string {
+  return (
+    '<div class="ctrl-row" id="caa-letras"><span><strong>Letras maiúsculas</strong>' +
+    '<span class="opt-hint">Ligado: o jogo inteiro em caixa alta, como a alfabetização brasileira costuma ' +
+    'começar. Desligado: maiúsculas e minúsculas, a escrita do dia a dia.</span></span>' +
+    `<button class="mode-btn switch${ligado ? ' is-on' : ''}" id="caa-caixa-alta" type="button"` +
+    ` aria-pressed="${ligado}" aria-label="Letras maiúsculas">${ligado ? '❚❚ Ligado' : '▶ Desligado'}</button></div>`
+  );
+}
+
+/**
+ * Uma linha do menu: RÓTULO CURTO e nada mais à vista.
+ *
+ * Tudo o que explica — nota, licença, situação — entra num único `.opt-hint`, que é o que a casca
+ * (`fillExplain`) reconhece e MOVE para o rodapé. A primeira versão pendurava três blocos de prosa dentro da
+ * linha, e o Dev viu o resultado: o menu virou um manual, mais parecido com um arquivo de configuração do que
+ * com um menu de videogame. A explicação já tinha um lugar; eu é que não a pus lá.
+ *
+ * O `disabled` fica: a situação some do TEXTO, não do controle. E o `aria-label` guarda o motivo, para quem
+ * navega por teclado ouvir por que a linha não responde sem precisar caçar o rodapé.
+ */
 export function caaRowHtml(s: CaaSet, selecionada: boolean): string {
   const motivo = caaMotivo(s);
-  const nota = s.nota ? `<br><span class="opt-hint" style="margin:0">${s.nota}</span>` : '';
-  const lic = s.licenca ? `<br><span class="opt-hint" style="margin:0">Licença: ${s.licenca}</span>` : '';
-  const marca = motivo ? `<br><span class="opt-hint" style="margin:0"><strong>${t(motivo)}</strong></span>` : '';
+  const explica = [s.nota, s.licenca ? `Licença: ${s.licenca}` : '', motivo ? t(motivo) : '']
+    .filter(Boolean).join(' · ');
+  const hint = explica ? `<span class="opt-hint">${explica}</span>` : '';
   const estado = selecionada ? '❚❚ Ligado' : '▶ Desligado';
   return (
-    `<div class="ctrl-row"><span><strong>${s.nome}</strong>${nota}${lic}${marca}</span>` +
+    `<div class="ctrl-row"><span><strong>${s.nome}</strong>${hint}</span>` +
     `<button class="mode-btn switch${selecionada ? ' is-on' : ''}" data-caa="${s.key}" type="button"` +
     `${s.disponivel ? '' : ' disabled'} aria-pressed="${selecionada}"` +
     ` aria-label="${s.nome}${motivo ? ', ' + t(motivo) : ''}">${estado}</button></div>`
@@ -51,18 +70,13 @@ export function caaRowHtml(s: CaaSet, selecionada: boolean): string {
 
 /** O corpo do menu, em três seções — a seção diz de quem é a vez de agir. */
 export function caaListHtml(caso: LetterCase): string {
-  const sel = chaveSelecionada(caso);
-  const bloco = (titulo: string, tag: string, sets: readonly CaaSet[]): string =>
-    sets.length
-      ? `<h3 class="panel-sub">${titulo} <span class="panel-sub__tag">${tag}</span></h3>` +
-        sets.map((s) => caaRowHtml(s, s.key === sel)).join('')
-      : '';
+  const bloco = (titulo: string, tag: string, corpo: string): string =>
+    corpo ? `<h3 class="panel-sub">${titulo} <span class="panel-sub__tag">${tag}</span></h3>${corpo}` : '';
+  const sets = (f: (s: CaaSet) => boolean): string => CAA_SETS.filter(f).map((s) => caaRowHtml(s, false)).join('');
   return (
-    bloco(t('caa.secao.agora'), t('caa.secao.agoraTag'), CAA_SETS.filter((s) => s.disponivel)) +
-    bloco(t('caa.secao.preparo'), t('caa.secao.preparoTag'),
-      CAA_SETS.filter((s) => !s.disponivel && s.tier !== 'negotiating')) +
-    bloco(t('caa.secao.negociacao'), t('caa.secao.negociacaoTag'),
-      CAA_SETS.filter((s) => s.tier === 'negotiating'))
+    bloco(t('caa.secao.agora'), t('caa.secao.agoraTag'), letrasRowHtml(caixaAltaLigada(caso))) +
+    bloco(t('caa.secao.preparo'), t('caa.secao.preparoTag'), sets((s) => s.tier !== 'negotiating')) +
+    bloco(t('caa.secao.negociacao'), t('caa.secao.negociacaoTag'), sets((s) => s.tier === 'negotiating'))
   );
 }
 
@@ -74,6 +88,10 @@ export interface SettingsCaaCtx {
   /** `setLetterCaseValue` de core/state MAIS a reflexão que o jogo precisa (re-render do quiz, rótulos). */
   setLetterCase: (c: LetterCase) => void;
   frontOverlay: (el: HTMLElement | null) => void;
+  /** Move a prosa das linhas para o rodapé (ui/settings-panel `fillExplain`). Chamado a CADA render, e não só
+   *  ao abrir: `render()` reconstrói as linhas, e sem esta chamada a explicação volta para dentro delas — foi
+   *  exatamente o que aconteceu, e o menu virou manual de novo ao primeiro clique. */
+  fillExplain: (card: HTMLElement | null) => void;
   restoreFocus?: (id: string) => boolean;
 }
 
@@ -88,30 +106,30 @@ export function initSettingsCaa(ctx: SettingsCaaCtx): SettingsCaaApi {
     const el = ctx.$<HTMLElement>('#caa-list');
     if (!el) return;
     el.innerHTML = caaListHtml(ctx.getLetterCase());
+    const alta = el.querySelector<HTMLButtonElement>('#caa-caixa-alta');
+    if (alta) alta.addEventListener('click', () => {
+      const ligar = !caixaAltaLigada(ctx.getLetterCase());
+      ctx.setLetterCase(ligar ? 'upper' : 'mixed');
+      render();
+      ctx.srSay(t(ligar ? 'sr.caa.caixaAltaOn' : 'sr.caa.caixaAltaOff'));
+    });
     el.querySelectorAll<HTMLButtonElement>('button[data-caa]').forEach((b) => {
       b.addEventListener('click', () => {
-        const chave = b.dataset.caa;
-        const set = chave ? CAA_BY_KEY[chave] : undefined;
-        // Botão indisponível já vem `disabled`; a guarda existe para o dia em que alguém remover o atributo
-        // "só para testar" — um conjunto que não está aqui não pode virar a escolha da criança por acidente.
+        const set = b.dataset.caa ? CAA_BY_KEY[b.dataset.caa] : undefined;
+        // Nenhum conjunto está disponível hoje, e todos vêm `disabled`. A guarda existe para o dia em que
+        // alguém remover o atributo "só para testar": um conjunto que não está no jogo não pode virar a
+        // escolha da criança por acidente, deixando a tela sem nada para desenhar.
         if (!set || !set.disponivel) return;
-        const caso = CASO_POR_CHAVE[set.key];
-        if (!caso) return;
-        ctx.setLetterCase(caso);
-        render();
-        ctx.srSay(t('sr.caa.escolha', { v: set.nome }));
       });
     });
+    ctx.fillExplain(ctx.$<HTMLElement>('#caa .overlay__card'));
     refreshMarks();
   }
 
   /** A marca de "saiu do padrão" (ADR-0029), na linha escolhida e no botão do menu. */
   function refreshMarks(): void {
     const mudou = ctx.getLetterCase() !== DEFAULTS.letterCase;
-    const el = ctx.$<HTMLElement>('#caa-list');
-    el?.querySelectorAll<HTMLElement>('.is-changed').forEach((x) => markChanged(x, false));
-    const sel = el?.querySelector<HTMLElement>(`button[data-caa="${chaveSelecionada(ctx.getLetterCase())}"]`);
-    markChanged(sel?.closest<HTMLElement>('.ctrl-row') ?? null, mudou);
+    markChanged(ctx.$<HTMLElement>('#caa-letras'), mudou);
     markMenuChanged(ctx.$<HTMLElement>('[data-act="caa"]'), [mudou]);
   }
 

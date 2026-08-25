@@ -35,12 +35,13 @@ export interface CaaSet {
   readonly nota?: string;
 }
 
+// AS LETRAS NÃO ESTÃO NESTA LISTA, e a ausência é decisão do Dev. Elas eram duas entradas — "maiúsculas e
+// minúsculas" e "maiúsculas somente" — e viraram UM interruptor: "Letras maiúsculas", ligado ou desligado,
+// com o desligado significando as duas caixas. Uma escolha binária apresentada como duas opções faz a criança
+// comparar duas linhas para descobrir que são a mesma pergunta; um interruptor pergunta uma vez.
+//
+// Sobra aqui o que é de verdade uma LISTA: os conjuntos de pictogramas, entre os quais se escolhe um.
 export const CAA_SETS: readonly CaaSet[] = [
-  // --- LETRAS: o piso. Embutidas, sempre presentes, e as únicas que funcionam hoje. ---
-  { key: 'letras-mistas', nome: 'Letras maiúsculas e minúsculas', tier: 'bundled', licenca: null, disponivel: true },
-  { key: 'letras-maiusculas', nome: 'Letras maiúsculas somente', tier: 'bundled', licenca: null, disponivel: true,
-    nota: 'A alfabetização brasileira costuma começar por aqui.' },
-
   // --- PICTOGRAMAS que PODEM viajar com o jogo (CC BY-SA, verificado pelo Dev em 2026-08-24). ---
   { key: 'mulberry', nome: 'Mulberry Symbols', tier: 'bundled', licenca: 'CC BY-SA', disponivel: false },
   { key: 'blissymbolics', nome: 'Blissymbolics', tier: 'bundled', licenca: 'CC BY-SA 4.0', disponivel: false,
@@ -60,7 +61,8 @@ export const CAA_SETS: readonly CaaSet[] = [
 
 export const CAA_BY_KEY: Readonly<Record<string, CaaSet>> = Object.fromEntries(CAA_SETS.map((s) => [s.key, s]));
 
-/** O que a criança pode escolher HOJE. Hoje são as duas caixas de letra, e o menu não finge o contrário. */
+/** Quais CONJUNTOS a criança pode escolher hoje: nenhum. O menu não finge o contrário — os pictogramas são
+ *  milhares de arquivos que ainda não entraram no repositório, e quatro deles dependem de negociação. */
 export function caaDisponiveis(): CaaSet[] {
   return CAA_SETS.filter((s) => s.disponivel);
 }

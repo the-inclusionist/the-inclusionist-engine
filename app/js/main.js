@@ -988,9 +988,13 @@ function setQuizLevel(n,announce){ setQuizLevelValue(n); // core/state.js: clamp
 // do modo sílabas, rótulo do atalho). Quem MUDA agora é o painel; quem ANUNCIA também é ele, com o nome do
 // conjunto escolhido — daí o `announce` sair daqui.
 function applyLetra(){
+  // O DOM (menus, HUD, legendas) via CSS; a canvas via `disp()`, que a PIXI usa ao desenhar. São dois caminhos
+  // de texto no jogo, e o botão só ligava um deles — daí "letras maiúsculas" não alcançar os menus.
+  document.documentElement.dataset.letras = letterCase;
   if(typeof rebuildCoins==='function' && MODE==='silabas') rebuildCoins();
   players.forEach(p=>{ if(p.quiz)renderQuiz(p); }); // L3: re-renderiza o quiz de quem estiver num
 }
+applyLetra(); // estado inicial: reflete a caixa persistida no atributo que o CSS lê
 function setLetterCaseAndApply(c){ setLetterCaseValue(c); applyLetra(); }
 const optLetraBtn=$('#opt-letra'); if(optLetraBtn)optLetraBtn.addEventListener('click',()=>{ caa.open(); });
 // E9: toggles de Som / Legendas / Fácil
@@ -1046,7 +1050,7 @@ function setModoCego(on){ const antes=modoCego; setModoCegoValue(on); if(modoCeg
   if(typeof setupExtras==='function')setupExtras(); if(typeof reflectModoCego==='function')audioPanel.reflectModoCego();
   srSay(t(on?'sr.blind.on':'sr.blind.off')); }
 // setPlayerViz/applyVizGlobal migraram para render/viz-setters.ts (Onda A).
-const caa = initSettingsCaa({ $, srSay, frontOverlay, restoreFocus: (id)=>overlays.restoreFocus(id),
+const caa = initSettingsCaa({ $, srSay, frontOverlay, fillExplain: (c)=>overlays.fillExplain(c), restoreFocus: (id)=>overlays.restoreFocus(id),
   getLetterCase: () => letterCase, setLetterCase: setLetterCaseAndApply }); // 7º menu (ADR-0028): ui/settings-caa.ts
 const empathy = initSettingsEmpathy({ $, srSay, store, renderVizGroup, reflectMotorEmpathy, reflectVizButtons, frontOverlay, restoreFocus: (id)=>overlays.restoreFocus(id), setHearingLoss, setOneButton, setWheelchair, getOneButton: () => oneButton, getWheelchair: () => wheelchair, getPlayers: () => players, setPlayerViz }); // painel de empatia: ui/settings-empathy.ts (registra #opt-empathy, #opt-hearing, #opt-onebtn, #opt-wheelchair + restaura o grafo de audio)
 // updateVizIndicator/reapplyVizAll migraram para render/viz-setters.ts (Onda A).
@@ -1080,7 +1084,12 @@ function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.v
 // e empilha o último aberto por cima (z crescente). frontOverlay é chamado em cada open*.
 // _ovZ/fillExplain/frontOverlay migraram para ui/settings-panel.ts (B4).
 (function inCanvasMenus(){ const gr=document.getElementById('game-region'); if(!gr)return;
-  ['audio','movement','options','animation','visual','empathy','touchcfg','help','padwiz','typo','title-overlay'].forEach(id=>{ const el=document.getElementById(id); if(el)gr.appendChild(el); }); // NENHUMA tela fora do canvas (decisão definitiva do José — splash incluso)
+  // NENHUMA tela fora do canvas (decisão definitiva do José — splash incluso). A regra agora é ESTRUTURAL:
+  // todo `.overlay` que ainda esteja fora do #game-region entra. Era uma lista de 11 ids escrita à mão, e ela
+  // já tinha esquecido DOIS — o menu de CAA, que por isso abria do tamanho da janela em vez do tamanho do
+  // jogo, e o #win-overlay, que nunca esteve na lista. Uma lista que precisa ser lembrada esquece em silêncio:
+  // não há erro, só uma tela no lugar errado, e ninguém liga uma coisa à outra.
+  document.querySelectorAll('.overlay').forEach(el=>{ if(!gr.contains(el))gr.appendChild(el); });
   // Botões puramente on/off viram TOGGLE (switch) — o texto "Ligado/Desligado" fica oculto (font-size:0).
   ['opt-facil','opt-altmove','opt-hearing','opt-onebtn','opt-wheelchair','opt-modocego','opt-tts','opt-eyes','audio-master','opt-captions','motion-master'].forEach(id=>{ const b=document.getElementById(id); if(b)b.classList.add('switch'); });
 })();
