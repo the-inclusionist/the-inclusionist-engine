@@ -406,5 +406,41 @@ const pt: Record<string, string> = {
   // item 14: o estreito não o pegou porque 'Sim' não tem acento e 'Não' tem três letras.
   'menu.yes': 'Sim',
   'menu.no': 'Não',
+  // ===================== OS 16 MODOS DE VISÃO =====================
+  // Eram uma tabela `const` de texto em `render/viz-modes` — congelada no idioma do boot, e é o menu que uma
+  // criança de baixa visão ou daltônica lê para configurar o PRÓPRIO jogo. A tabela guarda a CHAVE; quem
+  // exibe (render/viz-setters, consumer-quiz) resolve com `t()`, e o módulo continua folha.
+  'viz.normal': 'Cores normais',
+  'viz.desc.normal': 'Arte original do jogo.',
+  'viz.hc-direto': 'Alto contraste: Renderização Direta (3:1)',
+  'viz.desc.hc-direto': 'Fundo recua + contornos + cor por papel; plataforma×fundo ~3:1 (AA gráficos), tons agradáveis.',
+  'viz.hc-direto-45': 'Alto contraste: Renderização Direta (4,5:1)',
+  'viz.desc.hc-direto-45': 'Mais contraste (AA texto): plataformas mais claras e fundo mais escuro.',
+  'viz.hc-direto-7': 'Alto contraste: Renderização Direta (7:1)',
+  'viz.desc.hc-direto-7': 'Contraste máximo (AAA texto): quase preto e branco. Menos agradável, para quem precisa do máximo.',
+  'viz.sim-deuter': 'Simular Deuteranopia',
+  'viz.desc.sim-deuter': 'Como vê quem não enxerga o verde (mais comum).',
+  'viz.sim-protan': 'Simular Protanopia',
+  'viz.desc.sim-protan': 'Como vê quem não enxerga o vermelho.',
+  'viz.sim-tritan': 'Simular Tritanopia',
+  'viz.desc.sim-tritan': 'Como vê quem não enxerga o azul.',
+  'viz.fix-protan': 'Correção protanopia',
+  'viz.desc.fix-protan': 'Daltonização: realça a distinção vermelho/verde para quem tem protanopia.',
+  'viz.fix-deuter': 'Correção deuteranopia',
+  'viz.desc.fix-deuter': 'Daltonização: realça a distinção vermelho/verde para quem tem deuteranopia.',
+  'viz.fix-tritan': 'Correção tritanopia',
+  'viz.desc.fix-tritan': 'Daltonização: realça a distinção azul/amarelo para quem tem tritanopia.',
+  'viz.lv-blur': 'Baixa visão: desfoque',
+  'viz.desc.lv-blur': 'Miopia severa / astigmatismo. (bolinha verde; toque 2× p/ sair)',
+  'viz.lv-haze': 'Baixa visão: névoa',
+  'viz.desc.lv-haze': 'Catarata — película esbranquiçada, baixo contraste.',
+  'viz.lv-tunnel': 'Baixa visão: visão de túnel',
+  'viz.desc.lv-tunnel': 'Glaucoma — só o centro é visível.',
+  'viz.lv-macular': 'Baixa visão: mancha central',
+  'viz.desc.lv-macular': 'Degeneração macular — borrão no centro.',
+  'viz.lv-diabetic': 'Baixa visão: manchas dispersas',
+  'viz.desc.lv-diabetic': 'Retinopatia diabética — manchas espalhadas.',
+  'viz.blind': 'Simular cegueira total',
+  'viz.desc.blind': 'Tela preta — jogue como uma pessoa cega (resposta tátil/sonora). (bolinha branca; toque 2× p/ sair)',
 };
 export default pt;

@@ -4,6 +4,7 @@
 // #60 moram no menu visual), o recorte EMPATHY_VIZ_MODES resultante e o mapeamento valor→rótulo dos botões. O render()/open()/
 // close() (tocam DOM) ficam em settings-empathy.browser.test.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
+import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
 import { EMPATHY_VIZ_MODES } from '../app/js/ui/settings-empathy.js';
 import { VIZ_MODES, simulatesDisability } from '../app/js/render/viz-modes.js';
 
@@ -35,8 +36,10 @@ describe('EMPATHY_VIZ_MODES — só o que SIMULA', () => {
 
   it('[Right] cada entrada preserva nome/desc do catálogo (a lista não reescreve os dados)', () => {
     const blind = EMPATHY_VIZ_MODES.find((m) => m.key === 'blind');
-    expect(blind.nome).toBe('Simular cegueira total');
-    expect(blind.desc).toContain('Tela preta');
+    // Contra `t()` e não contra o português: fixar a frase aqui devolveria ao teste o texto que o item 14
+    // tirou do catálogo. O caso segue pegando entrada trocada — cada modo tem chave própria.
+    expect(t(blind.nome)).toBe(t('viz.blind'));
+    expect(t(blind.desc)).toContain('Tela preta');
   });
 });
 

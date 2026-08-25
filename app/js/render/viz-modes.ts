@@ -18,24 +18,33 @@
  *
  * Só os 9 modos marcados simulam. Os 3 `fix-*` corrigem, os 3 `hc-direto*` corrigem, e `normal` não faz nada.
  */
+/**
+ * Um modo de visão. `nome` e `desc` guardam CHAVE i18n, não texto — mesma decisão de `CenarioTema.nome` e
+ * `RM_LABEL`, e pelo mesmo motivo: uma tabela de `const` com texto resolve UMA vez, no import, e fica
+ * congelada no idioma do boot. Este menu é o que uma criança de baixa visão ou daltônica lê para configurar o
+ * PRÓPRIO jogo; deixá-lo em português numa build em inglês tira dela a única página que ela precisava ler.
+ *
+ * Quem EXIBE resolve (`render/viz-setters`, `consumer-quiz`), e por isso este módulo continua FOLHA: dado
+ * puro, sem dependência nenhuma, importável dos dois lados da fronteira.
+ */
 export type VizMode = { key: string; kind: string; nome: string; desc: string; lv?: string; sim?: true };
 export const VIZ_MODES: VizMode[] = [
-  {key:'normal', kind:'normal', nome:'Cores normais',        desc:'Arte original do jogo.'},
-  {key:'hc-direto', kind:'hcnew', nome:'Alto contraste: Renderização Direta (3:1)', desc:'Fundo recua + contornos + cor por papel; plataforma×fundo ~3:1 (AA gráficos), tons agradáveis.'},
-  {key:'hc-direto-45', kind:'hcnew', nome:'Alto contraste: Renderização Direta (4,5:1)', desc:'Mais contraste (AA texto): plataformas mais claras e fundo mais escuro.'},
-  {key:'hc-direto-7', kind:'hcnew', nome:'Alto contraste: Renderização Direta (7:1)', desc:'Contraste máximo (AAA texto): quase preto e branco. Menos agradável, para quem precisa do máximo.'},
-  {key:'sim-deuter', sim:true, kind:'filter', nome:'Simular Deuteranopia', desc:'Como vê quem não enxerga o verde (mais comum).'},
-  {key:'sim-protan', sim:true, kind:'filter', nome:'Simular Protanopia',   desc:'Como vê quem não enxerga o vermelho.'},
-  {key:'sim-tritan', sim:true, kind:'filter', nome:'Simular Tritanopia',   desc:'Como vê quem não enxerga o azul.'},
-  {key:'fix-protan', kind:'filter', nome:'Correção protanopia', desc:'Daltonização: realça a distinção vermelho/verde para quem tem protanopia.'},
-  {key:'fix-deuter', kind:'filter', nome:'Correção deuteranopia', desc:'Daltonização: realça a distinção vermelho/verde para quem tem deuteranopia.'},
-  {key:'fix-tritan', kind:'filter', nome:'Correção tritanopia', desc:'Daltonização: realça a distinção azul/amarelo para quem tem tritanopia.'},
-  {key:'lv-blur',     sim:true, kind:'lowvision', lv:'blur',     nome:'Baixa visão: desfoque',         desc:'Miopia severa / astigmatismo. (bolinha verde; toque 2× p/ sair)'},
-  {key:'lv-haze',     sim:true, kind:'lowvision', lv:'haze',     nome:'Baixa visão: névoa',            desc:'Catarata — película esbranquiçada, baixo contraste.'},
-  {key:'lv-tunnel',   sim:true, kind:'lowvision', lv:'tunnel',   nome:'Baixa visão: visão de túnel',   desc:'Glaucoma — só o centro é visível.'},
-  {key:'lv-macular',  sim:true, kind:'lowvision', lv:'macular',  nome:'Baixa visão: mancha central',   desc:'Degeneração macular — borrão no centro.'},
-  {key:'lv-diabetic', sim:true, kind:'lowvision', lv:'diabetic', nome:'Baixa visão: manchas dispersas',desc:'Retinopatia diabética — manchas espalhadas.'},
-  {key:'blind', sim:true, kind:'blind', nome:'Simular cegueira total', desc:'Tela preta — jogue como uma pessoa cega (resposta tátil/sonora). (bolinha branca; toque 2× p/ sair)'},
+  {key:'normal', kind:'normal', nome:'viz.normal',        desc:'viz.desc.normal'},
+  {key:'hc-direto', kind:'hcnew', nome:'viz.hc-direto', desc:'viz.desc.hc-direto'},
+  {key:'hc-direto-45', kind:'hcnew', nome:'viz.hc-direto-45', desc:'viz.desc.hc-direto-45'},
+  {key:'hc-direto-7', kind:'hcnew', nome:'viz.hc-direto-7', desc:'viz.desc.hc-direto-7'},
+  {key:'sim-deuter', sim:true, kind:'filter', nome:'viz.sim-deuter', desc:'viz.desc.sim-deuter'},
+  {key:'sim-protan', sim:true, kind:'filter', nome:'viz.sim-protan',   desc:'viz.desc.sim-protan'},
+  {key:'sim-tritan', sim:true, kind:'filter', nome:'viz.sim-tritan',   desc:'viz.desc.sim-tritan'},
+  {key:'fix-protan', kind:'filter', nome:'viz.fix-protan', desc:'viz.desc.fix-protan'},
+  {key:'fix-deuter', kind:'filter', nome:'viz.fix-deuter', desc:'viz.desc.fix-deuter'},
+  {key:'fix-tritan', kind:'filter', nome:'viz.fix-tritan', desc:'viz.desc.fix-tritan'},
+  {key:'lv-blur',     sim:true, kind:'lowvision', lv:'blur',     nome:'viz.lv-blur',         desc:'viz.desc.lv-blur'},
+  {key:'lv-haze',     sim:true, kind:'lowvision', lv:'haze',     nome:'viz.lv-haze',            desc:'viz.desc.lv-haze'},
+  {key:'lv-tunnel',   sim:true, kind:'lowvision', lv:'tunnel',   nome:'viz.lv-tunnel',   desc:'viz.desc.lv-tunnel'},
+  {key:'lv-macular',  sim:true, kind:'lowvision', lv:'macular',  nome:'viz.lv-macular',   desc:'viz.desc.lv-macular'},
+  {key:'lv-diabetic', sim:true, kind:'lowvision', lv:'diabetic', nome:'viz.lv-diabetic',desc:'viz.desc.lv-diabetic'},
+  {key:'blind', sim:true, kind:'blind', nome:'viz.blind', desc:'viz.desc.blind'},
 ];
 export const VIZ_BY_KEY: Record<string, VizMode> = Object.fromEntries(VIZ_MODES.map((m): [string, VizMode] => [m.key, m]));
 export const VIZ_FILTER: Record<string, string> = {'sim-deuter':'url(#cvd-deuter)','sim-protan':'url(#cvd-protan)','sim-tritan':'url(#cvd-tritan)',

@@ -171,8 +171,14 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
 
 const T_DIR = join(process.cwd(), 'tests');
 const VOCAB_JOGO = /\b(coin|coins|coinTarget|coinTex\w*|coinCanvas\w*|moeda|moedas|quiz|quizLevel|quizlevel)\b/i;
-const IMPORTA_ENGINE = /from '\.\.\/app\/js\/(core|input|render|platform|ui|audio|i18n)\//;
-const IMPORTA_JOGO = /from '\.\.\/app\/js\/game\//;
+// IMPORT ESTÁTICO **E** DINÂMICO. A primeira versão só via `from '…'`, e por isso era CEGA para todo teste
+// que carrega o módulo com `await import('…')` — coisa que alguns fazem por necessidade, para instalar um
+// shim de `localStorage` ANTES de o módulo tocar em persistência. Eram quatro arquivos fora do alcance, e o
+// buraco só apareceu quando um deles ganhou um import estático por outro motivo e o gate acordou acusando
+// dívida que sempre esteve lá. Um gate cego em silêncio é o que este arquivo inteiro existe para não ser.
+const DE = String.raw`(?:from |await import\()'\.\./app/js/`;
+const IMPORTA_ENGINE = new RegExp(DE + '(core|input|render|platform|ui|audio|i18n)/');
+const IMPORTA_JOGO = new RegExp(DE + 'game/');
 /** Título de caso: `it('… moeda …')` é PROSA, e prosa descreve o jogo sem amarrar o teste a ele. */
 const TITULO_DE_CASO = /^\s*(it|describe|test)\s*\(/;
 
@@ -192,6 +198,12 @@ const FIXTURES_CONHECIDOS = {
   'hud.node.test.js': 3,               // o campo `coins` do view-model: o caso do ADR ao pé da letra
   'viewports.browser.test.js': 1,      // passa `coinCanvasNormal: null` só para satisfazer o ctx
   'render.browser.test.js': 1,         // `render/props.coinCanvas()`: a engine tem um pintor de MOEDA
+  // Estes três só ficaram visíveis quando o crivo passou a enxergar `await import()` — a dívida deles é a
+  // mesma dos de cima (o ctx do alto contraste exige um canvas/textura de moeda), não é dívida nova.
+  'viz-setters.node.test.js': 1,
+  'viz-setters.browser.test.js': 3,
+  // (`city-tex.node.test.js` também estava invisível e saiu LIMPO — por isso não entra aqui. O caso
+  //  "a lista não guarda teste que já se limpou" me obrigou a conferir em vez de supor.)
   // O jogador da engine tem um campo `quiz`: a camada de ENTRADA sabe que existe atividade de alfabetização.
   'keydown.node.test.js': 17,
   'keydown.browser.test.js': 1,

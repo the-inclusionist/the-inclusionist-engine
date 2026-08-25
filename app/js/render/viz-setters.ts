@@ -20,6 +20,7 @@
 // SEM I/O no import: initVizSetters(ctx) só fecha closures, não chama nada.
 
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, type VizMode } from './viz-modes.js';
+import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
 import { DIRECT_CFG, worldTexFor, coinTexFor, clearWorldTexCache, clearCoinTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
 import { lqFilter } from './lq-filter.js';
@@ -65,7 +66,7 @@ export function lvOverlayClassFor(m: VizMode): string {
 export function vizGroupHtml(modes: VizMode[], cur: string): string {
   return modes.map((m) => {
     const sel = m.key === cur;
-    return `<div class="ctrl-row"><span><strong>${m.nome}</strong><br><span class="opt-hint" style="margin:0">${m.desc}</span></span>`
+    return `<div class="ctrl-row"><span><strong>${t(m.nome)}</strong><br><span class="opt-hint" style="margin:0">${t(m.desc)}</span></span>`
       + `<button class="mode-btn${sel ? ' is-on' : ''}" role="radio" aria-checked="${sel}" data-viz="${m.key}" type="button">${sel ? '✓ Selecionado' : 'Selecionar'}</button></div>`;
   }).join('');
 }
@@ -276,7 +277,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     el.querySelectorAll('button[data-viz]').forEach((btn) => btn.addEventListener('click', () => {
       const key = btn.dataset.viz as string;
       setPlayerViz(ctx.getSelVizPlayer(), key);
-      ctx.srSay(vizGroupSay(ctx.getNumPlayers(), ctx.getSelVizPlayer(), VIZ_MODES.find((m) => m.key === key)!.nome));
+      ctx.srSay(vizGroupSay(ctx.getNumPlayers(), ctx.getSelVizPlayer(), t(VIZ_MODES.find((m) => m.key === key)!.nome)));
     }));
   }
 

@@ -5,6 +5,7 @@
 // próprio game.js usa). DI por closure — modelo: tests/debug-panel.browser.test.js.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, ui/settings-visual).
 import { describe, it, expect, beforeEach } from 'vitest';
+import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
 import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
 import { players, setNumPlayersValue } from '../app/js/core/state.js';
 
@@ -47,7 +48,7 @@ function makeCtx(overrides = {}) {
       if (!el) return;
       const cur = players[selected] ? players[selected].viz : 'normal';
       el.innerHTML = modes.map((m) =>
-        `<div class="ctrl-row"><span><strong>${m.nome}</strong> ${m.desc}</span>` +
+        `<div class="ctrl-row"><span><strong>${t(m.nome)}</strong> ${t(m.desc)}</span>` +
         `<button data-viz="${m.key}" type="button" aria-pressed="${m.key === cur}"></button></div>`).join('');
       el.querySelectorAll('button[data-viz]').forEach((b) => b.addEventListener('click', () => {
         calls.setPlayerViz.push([selected, b.dataset.viz]);

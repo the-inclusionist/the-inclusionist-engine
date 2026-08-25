@@ -235,7 +235,7 @@ export function bootQuiz(): void {
   const alvoViz = $<HTMLElement>('#game-region');
   if (seletor && alvoViz && instalados > 0) {
     const opcoes = VIZ_MODES.filter((m) => m.kind === 'normal' || (m.kind === 'filter' && !simulatesDisability(m.key)));
-    seletor.innerHTML = opcoes.map((m) => `<option value="${m.key}">${m.nome}</option>`).join('');
+    seletor.innerHTML = opcoes.map((m) => `<option value="${m.key}">${t(m.nome)}</option>`).join('');
     seletor.addEventListener('change', () => {
       alvoViz.style.filter = VIZ_FILTER[seletor.value] || '';
       srSay(seletor.options[seletor.selectedIndex]?.text ?? '');

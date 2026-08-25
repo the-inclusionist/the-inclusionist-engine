@@ -3,6 +3,7 @@
 // Acessibilidade visual (nível de contraste, rótulos, realce L→Q, clamp do jogador selecionado, cor do papel,
 // e a montagem do HTML de #visual-list) não dependem de DOM. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
+import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import {
@@ -190,8 +191,10 @@ describe('ui/settings-visual — VISUAL_MODE_LIST', () => {
 
   it('[Interface] cada linha leva nome E descrição — é o que a torna achável, e o que o select tirava', () => {
     for (const m of VISUAL_MODE_LIST) {
-      expect(m.nome.length).toBeGreaterThan(0);
-      expect(m.desc.length).toBeGreaterThan(0);
+      // Os campos guardam CHAVE; o que precisa existir é a TRADUÇÃO delas. Cobrar só o comprimento da chave
+      // deixaria passar um modo cuja chave não está no dicionário — e ele apareceria no menu como 'viz.xyz'.
+      expect(t(m.nome), m.key).not.toBe(m.nome);
+      expect(t(m.desc), m.key).not.toBe(m.desc);
     }
   });
 

@@ -7,6 +7,7 @@
 // ZOMBIES + Right-BICEP. Comportamento verbatim do game.js (setPlayerViz/applyVizGlobal/reapplyVizAll/
 // applySharedTextures/applyVpFilters/updateVpDots/_rebakeDirect/updateVizIndicator/renderVizGroup).
 import { describe, it, expect, beforeEach } from 'vitest';
+import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
 
 // localStorage de mentira ANTES de qualquer coisa do jogo tocar em persistência: platform/storage engole a
 // exceção (try/catch), então sem este shim `store.set` vira no-op e o teste de persistência não poderia falhar.
@@ -269,8 +270,11 @@ describe('vizGroupHtml — grupo de rádios dos modos', () => {
   });
   it('[Right] nome e descrição de cada modo entram na linha (é o que o leitor de tela lê)', () => {
     const html = vizGroupHtml([VIZ_BY_KEY.blind], 'normal');
-    expect(html).toContain(VIZ_BY_KEY.blind.nome);
-    expect(html).toContain(VIZ_BY_KEY.blind.desc);
+    // `nome`/`desc` guardam CHAVE desde o item 14; a linha tem de trazer o TEXTO. Comparar com a chave crua
+    // passaria aceitando `viz.blind` na tela — que é o modo silencioso de falhar da i18n por chave.
+    expect(html).toContain(t(VIZ_BY_KEY.blind.nome));
+    expect(html).toContain(t(VIZ_BY_KEY.blind.desc));
+    expect(html).not.toContain('viz.blind');
   });
 });
 
