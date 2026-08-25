@@ -108,20 +108,15 @@
 //          ("próxima" e "confirmar"), não um direcional de plataforma.
 //     Não liguei o `initTouch`: reproduzir doze ids para um conjunto de controles que o quiz não quer seria o
 //     mesmo tipo de mentira do sonar. Usei a metade pura, que é exatamente o que a divisão deveria separar.
-import { initI18n, t, applyDom } from '../core/i18n.js';
+import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
-import { createTts } from '../platform/tts.js';
-import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer } from '../platform/audio.js';
+import { createGame, type Engine } from '../boot/create-game.js';
+import type { GameDeclaration } from '../core/contract.js';
 import { initSettingsTypo } from '../ui/settings-typo.js';
-import { initSettingsPanel } from '../ui/settings-panel.js';
 import * as store from '../platform/storage.js';
-import { installCvdFilters } from '../render/cvd-matrices.js';
 import { VIZ_MODES, VIZ_FILTER, simulatesDisability } from '../render/viz-modes.js';
-import { initMenuNav } from '../ui/menu-nav.js';
-import { initKeyboardRuntime } from '../input/keyboard-runtime.js';
 import { toggleLibras, vlibrasOpen, setOnLibrasChange } from '../ui/vlibras.js';
 import { padPxPerMm } from '../input/touch.js';
-import { kb, initKB } from '../input/keyboard.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
 interface Pergunta {
@@ -139,7 +134,7 @@ const PERGUNTAS: readonly Pergunta[] = [
 let atual = 0;
 let foco = 0;
 let acertos = 0;
-let tts: ReturnType<typeof createTts> | null = null;
+let motor: Engine | null = null;
 
 const $ = <T extends Element = Element>(sel: string): T | null => document.querySelector<T>(sel);
 
@@ -171,7 +166,7 @@ function render(): void {
   const p = PERGUNTAS[atual];
   if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">Fim! ${acertos} de ${PERGUNTAS.length}.</h2>`; return; }
   app.innerHTML = perguntaHtml(p, foco);
-  tts?.narrate(p.enunciado); // a narração do enunciado é do consumidor: a engine só empresta a voz
+  motor?.tts.narrate(p.enunciado); // a narração do enunciado é do consumidor: a engine só empresta a voz
   app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {
     b.addEventListener('click', () => responder(Number(b.dataset.alt)));
   });
@@ -199,22 +194,60 @@ function aoTeclado(e: KeyboardEvent): void {
   else if (e.code === 'Enter' || e.code === 'Space') { responder(foco); e.preventDefault(); }
 }
 
+/**
+ * A DECLARAÇÃO DESTE JOGO — os sete campos do `core/contract` (ADR-0030).
+ *
+ * Um quiz é o caso extremo de propósito: SEM ESPAÇO NENHUM, só ordem. A topologia é `hotspots`, a distância é
+ * diferença de índice, e o turno é do JOGADOR — o tempo não pressiona, que é o que a WCAG 2.2.1 pede e o que
+ * separa este gênero da plataforma sem uma linha de condicional na engine.
+ *
+ * Não é o `genre-quiz` do ADR-0030: um preset é um pacote que outros quizzes reusam, e isto é a declaração de
+ * UM jogo. Mas é a primeira declaração escrita por um consumidor de verdade, que boota e roda — e é o que
+ * mostra que os sete campos cabem num jogo que não tem mundo.
+ */
+export function declararQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
+  const ordem = perguntas.map((_, i) => `q${i + 1}`);
+  return {
+    topology: { kind: 'hotspots', order: ordem },
+    tick: 'player',
+    // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
+    roleAt: (at) => (at.x === atual ? 'goal' : 'free'),
+    nameAt: (at) => {
+      const p = perguntas[at.x];
+      return p ? { text: p.enunciado, gender: 'f', plural: false } : null;
+    },
+    // O foco é o do teclado: qual alternativa está sob o cursor. Sem corpo, sem `facing` — daí `heading:'none'`.
+    focusOf: () => ({ id: 'p0', at: { x: atual, y: foco }, heading: 'none' }),
+    // ESTE É O CAMPO QUE APOSENTA O `coinTarget`: o alvo é "acertos de perguntas", e a engine não sabe
+    // (nem precisa saber) o que é uma moeda para montar a mesma frase de progresso.
+    objectiveOf: () => ({
+      name: { text: 'perguntas', gender: 'f', plural: true },
+      have: acertos, need: perguntas.length,
+    }),
+  };
+}
+
 /** Boot. Exportado para o teste poder montá-lo num DOM de mentira sem depender do carregamento do módulo. */
 export function bootQuiz(): void {
-  initI18n();
-  applyDom(document);
-  // ORDEM OBRIGATÓRIA e não declarada por tipo nenhum: sem `initAudioMixer()`, `audioCat` é null e o
-  // `narrate` desiste calado. Ver o achado 3 no cabeçalho.
-  initAudioMixer();
-  tts = createTts({
-    srSay, srAlert, ensureAC, catNode, audioOut,
-    getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
+  // A ENGINE INTEIRA, numa chamada. Antes eram nove inicializações à mão nesta função, em ordem que só o
+  // achado 3 revelava — e o consumidor tinha de acertá-la sozinho. O que sobrou aqui embaixo é o que é
+  // realmente DESTE jogo: o painel de tipografia, o seletor de visão, o botão de Libras, a ergonomia do
+  // toque e o desenho das perguntas.
+  motor = createGame({
+    declaration: declararQuiz(PERGUNTAS),
+    host: { doc: document, win: window, cvdHost: $<SVGElement>('#q-cvd') },
+    // Um quiz não tem pausa, nem assistente de pad, nem ator de pausa. Declarado, e não deduzido de getters
+    // que devolvem null — ver o achado 10 e o cabeçalho do `boot/create-game`.
+    declines: { semMenuDePausa: true, semAssistenteDePad: true, semAtorDePausa: true },
+    // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
+    isNavigable: () => true,
   });
-  // A CASCA DOS DIÁLOGOS e UM painel emprestados, para medir se a pilha de menus serve fora do gênero.
-  const overlays = initSettingsPanel({
-    $, $$: <T extends Element = Element>(sel: string): T[] => [...document.querySelectorAll<T>(sel)],
-    doc: document, computedZ: (el) => +getComputedStyle(el).zIndex || 0,
-  });
+  const { overlays } = motor;
+  // O que o hospedeiro não entregou vira lista legível em vez de painel vazio (achado 6). Num jogo de
+  // verdade isto iria para a tela; aqui basta o console, porque o instrumento é lido por quem desenvolve.
+  if (motor.problems.length) console.warn('[quiz] lacunas do hospedeiro:', motor.problems);
+
+  // PAINEL DE TIPOGRAFIA — emprestado da engine, ligado por este jogo. Ver o achado 5.
   const typo = initSettingsTypo({ $, srSay, store, root: document.documentElement });
   const abrir = $<HTMLElement>('#q-abrir-typo');
   if (abrir) abrir.addEventListener('click', () => {
@@ -227,13 +260,10 @@ export function bootQuiz(): void {
   if (fechar) fechar.addEventListener('click', () => { const ov = $<HTMLElement>('#typo'); if (ov) ov.hidden = true; });
   overlays.register('typo', { close: () => { const ov = $<HTMLElement>('#typo'); if (ov) ov.hidden = true; }, inEscapeChain: true });
 
-  // VISÃO: as correções de daltonismo, sem PIXI e sem copiar markup. `installCvdFilters` monta os seis
-  // filtros SVG dentro de um host que o consumidor fornece, e `VIZ_FILTER` diz qual `url(#...)` usar.
-  const host = $<SVGElement>('#q-cvd');
-  const instalados = installCvdFilters(host);
+  // VISÃO: o SELETOR é deste jogo; os filtros já foram montados pelo `createGame` (achado 7).
   const seletor = $<HTMLSelectElement>('#q-viz');
   const alvoViz = $<HTMLElement>('#game-region');
-  if (seletor && alvoViz && instalados > 0) {
+  if (seletor && alvoViz && motor.cvdFilters > 0) {
     const opcoes = VIZ_MODES.filter((m) => m.kind === 'normal' || (m.kind === 'filter' && !simulatesDisability(m.key)));
     seletor.innerHTML = opcoes.map((m) => `<option value="${m.key}">${t(m.nome)}</option>`).join('');
     seletor.addEventListener('change', () => {
@@ -242,35 +272,7 @@ export function bootQuiz(): void {
     });
   }
 
-  // NAVEGAÇÃO DE MENU pela engine. O ctx pede doze coisas; o quiz fornece nove de verdade e DECLINA três —
-  // `getPauseMenu` devolve null porque um quiz não tem menu de pausa por tela, `closePadWiz` é vazio porque
-  // não há assistente de pad, e `setPauseActor` é vazio porque não há ator. Declinar não é o mesmo que MENTIR:
-  // com o sonar eu teria de inventar tiles e um cenário para obter uma resposta; aqui eu digo "não tenho isso",
-  // e a engine segue funcionando na parte que serve. A diferença é o que separa um achado de um falso verde.
-  // O TECLADO REMAPEÁVEL veio junto, e barato: `KeyboardRuntimePlayer` é `Pick<ControlledPlayer,'ctrl'>` —
-  // um esquema de teclas e nada mais. Sem posição, sem física, sem entidade de mundo. O quiz fornece UM
-  // jogador de verdade e recebe `whichPlayer`/`actionOf` prontos, que é o que faz o menu-nav responder.
-  initKB();
-  const jogadores = [{ ctrl: {} as Record<string, string[]> }];
-  const kbRuntime = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => 1, getPlayers: () => jogadores });
-  kbRuntime.assignControls();
-
-  const nav = initMenuNav({
-    $, getActiveElement: () => document.activeElement,
-    topVisibleOverlay: overlays.topVisibleOverlay, closeById: overlays.closeById,
-    getPauseMenu: () => null,
-    // Este quiz não tem pausa: os ajustes estão SEMPRE disponíveis, e é isso que ele responde. Ver o achado 10.
-    isNavigable: () => true,
-    setPhase: () => {}, setPauseActor: () => {},
-    isCapturing: () => false, closePadWiz: () => {},
-    whichPlayer: (code) => kbRuntime.whichPlayer(code), actionOf: (code, i) => kbRuntime.actionOf(code, i),
-    // O ctx tipa `win` com `fn: (e: never) => void` (o `never` é o que torna o ouvinte contravariante e
-    // seguro do lado de quem despacha). `window.addEventListener` não casa com isso, e o adaptador de uma
-    // linha é o preço — vale registrar: a engine pede uma forma de `window` que o `window` real não tem.
-    win: { addEventListener: (tipo, fn, captura) => window.addEventListener(tipo, fn as EventListener, captura) },
-  });
-  nav.attach();
-  // (Aqui ficava `setPhaseValue('paused')` — a mentira que o achado 10 registrava. Saiu junto com a causa.)
+  motor.nav.attach();
 
   // MODO PESSOA SURDA. Nenhum script do VLibras nesta página — de propósito.
   const libras = $<HTMLButtonElement>('#q-libras');

@@ -86,9 +86,15 @@ let pendente: Promise<void> = Promise.resolve();
  *
  * Continua devolvendo o locale de forma síncrona e NÃO bloqueia por si: quem precisar esperar chama
  * `idiomaPronto()`. Foi essa separação que faltava — ver o comentário lá embaixo.
+ *
+ * `root` ENTRA em vez de ser lido do global, e foi o `boot/createGame()` que cobrou (item 13): a raiz de
+ * composição recebe o documento do hospedeiro por injeção e não tinha como repassá-lo — esta linha alcançava
+ * o `document` global por baixo dela. Num navegador dá no mesmo; no project `node` é a diferença entre
+ * bootar contra um DOM de mentira e não bootar. O padrão continua sendo o global, então nenhum chamador
+ * muda: é a mesma regra do `applyDom` logo acima.
  */
-export function initI18n(): string {
-  applyDom(document);
+export function initI18n(root: ParentNode = document): string {
+  applyDom(root);
   const def = pickDefault();
   // `.catch` mudo de propósito: um chunk de locale que não carrega degrada para pt, e degradar é MUITO melhor
   // que travar o boot. Sem ele, um `await idiomaPronto()` lá fora derrubaria o jogo inteiro por causa do idioma.

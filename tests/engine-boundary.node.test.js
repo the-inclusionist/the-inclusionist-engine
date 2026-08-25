@@ -21,7 +21,10 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const RAIZ = join(process.cwd(), 'app', 'js');
-const CAMADAS_ENGINE = ['core', 'input', 'render', 'platform', 'ui', 'audio'];
+// `boot` entrou em 2026-08-25 com o `createGame()` (item 13). É camada de ENGINE e por isso é varrida como
+// as outras: uma raiz de composição que importasse de `game/` levaria o jogo inteiro dentro do pacote, que é
+// precisamente o que ela existe para não fazer.
+const CAMADAS_ENGINE = ['core', 'input', 'render', 'platform', 'ui', 'audio', 'boot'];
 
 function modulosDe(camada) {
   const dir = join(RAIZ, camada);
