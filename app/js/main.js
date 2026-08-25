@@ -1074,7 +1074,7 @@ function setOutlineFg(v){ const antes=hcOutlineFg; setOutlineFgValue(v); if(hcOu
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineFg',{v:t(OUTLINE_KEY[hcOutlineFg])})); }
 function setOutlineBg(v){ const antes=hcOutlineBg; setOutlineBgValue(v); if(hcOutlineBg===antes)return;
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineBg',{v:t(OUTLINE_KEY[hcOutlineBg])})); }
-const visual = initSettingsVisual({ $, srSay, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: setSelVizPlayerValue, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
+const visual = initSettingsVisual({ $, srSay, renderVizGroup, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: setSelVizPlayerValue, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
   const sim=players.some(p=>simulatesDisability(p.viz));
   const bv=$('#opt-visual'); if(bv)bv.classList.toggle('is-on',help); const be=$('#opt-empathy'); if(be)be.classList.toggle('is-on',sim||hearingLoss||oneButton||wheelchair); }

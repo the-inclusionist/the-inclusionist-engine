@@ -7,7 +7,7 @@ import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import {
   CONTRAST_LEVELS, CONTRAST_LABELS, ROLE_KEYS, ROLE_LABELS,
-  resolveVisualMode, VISUAL_MODES, visualModeAnnouncement, contrastLabel, clamp01, lqLabel, lqPercent, lqFromPercent,
+  resolveVisualMode, VISUAL_MODES, VISUAL_MODE_LIST, contrastLabel, clamp01, lqLabel, lqPercent, lqFromPercent,
   clampSelectedPlayer, rgbToHex, onOffLabel, renderVisualPanelHtml,
 } from '../app/js/ui/settings-visual.js';
 
@@ -147,10 +147,13 @@ describe('ui/settings-visual — dados fixos (ROLE_KEYS/ROLE_LABELS/CONTRAST_LEV
 });
 
 describe('ui/settings-visual — renderVisualPanelHtml (montagem pura do HTML)', () => {
-  it('[Interface] marca a opção de contraste atual como valor do <select>', () => {
+  it('[Interface] NÃO monta mais o modo visual — ele saiu daqui para uma lista de rádio própria', () => {
+    // O modo visual era um `<select>` dentro deste HTML. Virou `#visual-modes`, desenhado pelo mesmo
+    // renderizador de linhas que o painel de empatia usa, porque as correções de daltonismo precisavam
+    // continuar VISÍVEIS ao mudar de menu — dentro da caixa fechada elas sumiam.
     const html = renderVisualPanelHtml('hc-direto-45', baseSettings());
-    expect(html).toContain('id="opt-contrast"');
-    expect(html).toContain('value="hc-direto-45"');
+    expect(html).not.toContain('opt-contrast');
+    expect(html).not.toContain('<select');
   });
   it('[Interface] reflete ownerColors/cbSafe ligados em class+aria-pressed', () => {
     const html = renderVisualPanelHtml('normal', { ...baseSettings(), ownerColors: true, cbSafe: true });
@@ -175,24 +178,30 @@ describe('ui/settings-visual — renderVisualPanelHtml (montagem pura do HTML)',
   });
 });
 
-describe('ui/settings-visual — visualModeAnnouncement', () => {
-  // Nasceu de um defeito meu, visto no jogo: escolher "Correção deuteranopia" anunciava "Alto contraste:
-  // desligado", porque `contrastLabel` só conhece os 4 níveis e cai no rótulo de desligado para o resto.
-  // Dizer "desligado" a quem acabou de LIGAR a correção é pior que não dizer nada, e quem depende do anúncio
-  // é justamente quem não vê a tela mudar de cor.
-  it('[Right] nomeia a correção escolhida, em vez de falar de contraste', () => {
-    expect(visualModeAnnouncement('fix-deuter')).toBe('Correção deuteranopia ativada.');
-    expect(visualModeAnnouncement('fix-deuter')).not.toContain('Alto contraste');
-    // Sem gagueira: o nome do modo já traz "Correção", então a moldura pt-BR não repete a palavra.
-    expect(visualModeAnnouncement('fix-deuter').match(/Correção/g)).toHaveLength(1);
+describe('ui/settings-visual — VISUAL_MODE_LIST', () => {
+  // A lista que o painel DESENHA, em linhas de rádio. Ela existe porque a primeira tentativa de trazer as
+  // correções para cá usou um `<select>`: no menu de empatia elas eram linhas visíveis com descrição, e
+  // dentro da caixa fechada viraram invisíveis. Para um controle cuja razão de existir é ser ACHADO por quem
+  // enxerga mal, esconder atrás de um clique é quase o mesmo que não ter movido.
+  it('[Right] são os 7: normal, os 3 contrastes e as 3 correções, nessa ordem', () => {
+    expect(VISUAL_MODE_LIST.map((m) => m.key)).toEqual(
+      ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7', 'fix-protan', 'fix-deuter', 'fix-tritan']);
   });
 
-  it('[Right] os níveis de contraste seguem anunciando contraste', () => {
-    expect(visualModeAnnouncement('hc-direto-7')).toContain('Alto contraste');
-    expect(visualModeAnnouncement('normal')).toContain('Alto contraste');
+  it('[Interface] cada linha leva nome E descrição — é o que a torna achável, e o que o select tirava', () => {
+    for (const m of VISUAL_MODE_LIST) {
+      expect(m.nome.length).toBeGreaterThan(0);
+      expect(m.desc.length).toBeGreaterThan(0);
+    }
   });
 
-  it('[Zero/Error] chave desconhecida não quebra — cai no rótulo de desligado', () => {
-    expect(visualModeAnnouncement('lixo')).toContain('Alto contraste');
+  it('[Boundary] NENHUMA simulação entra — elas continuam sendo do menu de empatia', () => {
+    for (const m of VISUAL_MODE_LIST) expect(m.sim).toBeUndefined();
+  });
+
+  it('[Interface] a lista desenhada e as chaves aceitas são a MESMA coisa', () => {
+    // Se divergissem, o painel ofereceria um modo que `resolveVisualMode` trataria como de outro menu — e a
+    // marca de "alterado" apareceria no painel errado.
+    expect(VISUAL_MODE_LIST.map((m) => m.key)).toEqual([...VISUAL_MODES]);
   });
 });

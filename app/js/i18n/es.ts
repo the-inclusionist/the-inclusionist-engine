@@ -272,6 +272,5 @@ const es: Record<string, string> = {
   'a11y.changed': 'modificado',
   'sr.visual.reset': 'Accesibilidad visual restaurada a sus valores predeterminados: contraste, realce, colores y contornos. Los subtítulos y los demás menús no cambiaron.',
   'sr.motion.reset': 'Sensibilidad visual restaurada a sus valores predeterminados: animaciones y estética CRT. Las animaciones vuelven a lo que pide su sistema.',
-  'sr.visual.correction': 'Corrección de daltonismo: {v}.',
 };
 export default es;

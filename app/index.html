@@ -379,7 +379,10 @@
       <h2 id="visual-title">Acessibilidade visual</h2>
       <p class="opt-hint">Escolha a configuração de cores por jogador. O efeito é imediato.</p>
       <div id="visual-players" class="ctrl-players" role="group" aria-label="Escolha o jogador" hidden></div>
-      <div id="visual-list" class="ctrl-list" role="radiogroup" aria-labelledby="visual-title"></div>
+      <h3 class="panel-sub">Modo visual <span class="panel-sub__tag">um por vez</span></h3>
+      <p class="opt-hint">Alto contraste recolore o cenário para destacar o que importa. A correção de daltonismo realça as cores que a sua visão não distingue. Como os dois mudam a mesma tela, só um pode estar ligado.</p>
+      <div id="visual-modes" class="ctrl-list" role="radiogroup" aria-label="Modo visual"></div>
+      <div id="visual-list" class="ctrl-list" role="group" aria-labelledby="visual-title"></div>
       <div class="ctrl-list" role="group" aria-label="Contornos do alto contraste">
         <div class="ctrl-row"><span><strong>Contorno de 1º plano</strong> — em volta do personagem e dos itens (foco visível, WCAG 2.4.7).</span>
           <select id="opt-outline-fg" aria-label="Contorno de primeiro plano"><option value="0">Nenhum</option><option value="1">Fino</option><option value="2">Grosso</option></select></div>

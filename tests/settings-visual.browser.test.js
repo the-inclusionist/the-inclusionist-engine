@@ -9,7 +9,7 @@ import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
 import { players, setNumPlayersValue } from '../app/js/core/state.js';
 
 const PANEL_HTML =
-  '<div id="visual"><div id="visual-list"></div>' +
+  '<div id="visual"><div id="visual-modes"></div><div id="visual-list"></div>' +
   // Os dois selects de contorno vivem dentro de `.ctrl-row` no documento real. O fixture os tinha soltos, e
   // isso bastava enquanto ninguém procurava a linha deles — a marca do ADR-0029 procura, e um fixture menos
   // fiel que o documento não testaria justamente o que passou a existir.
@@ -29,6 +29,7 @@ function makeCtx(overrides = {}) {
   const calls = {
     setPlayerViz: [], setLq: [], setOwnerColors: [], setCbSafe: [],
     setOutlineFg: [], setOutlineBg: [], setRoleColor: [], resetRoleColors: 0, srSay: [], setSelectedPlayer: [],
+    renderVizGroup: [],
   };
   const ctx = {
     $: (sel) => document.querySelector(sel),
@@ -37,6 +38,21 @@ function makeCtx(overrides = {}) {
     getSelectedPlayer: () => selected,
     setSelectedPlayer: (i) => { selected = i; calls.setSelectedPlayer.push(i); },
     setPlayerViz: (i, mode) => calls.setPlayerViz.push([i, mode]),
+    // Dublê do renderizador de linhas compartilhado com o painel de empatia (render/viz-setters). Ele desenha
+    // as MESMAS linhas de rádio nos dois menus — é por isso que as correções de daltonismo mantêm a aparência
+    // que a criança já conhecia ao mudar de casa (#60).
+    renderVizGroup: (listSel, tabsSel, modes) => {
+      calls.renderVizGroup.push([listSel, tabsSel, modes]);
+      const el = document.querySelector(listSel);
+      if (!el) return;
+      const cur = players[selected] ? players[selected].viz : 'normal';
+      el.innerHTML = modes.map((m) =>
+        `<div class="ctrl-row"><span><strong>${m.nome}</strong> ${m.desc}</span>` +
+        `<button data-viz="${m.key}" type="button" aria-pressed="${m.key === cur}"></button></div>`).join('');
+      el.querySelectorAll('button[data-viz]').forEach((b) => b.addEventListener('click', () => {
+        calls.setPlayerViz.push([selected, b.dataset.viz]);
+      }));
+    },
     setLq: (t) => { state.lq = t; calls.setLq.push(t); },
     setOwnerColors: (on) => { state.ownerColors = on; calls.setOwnerColors.push(on); },
     setCbSafe: (on) => { state.cbSafe = on; calls.setCbSafe.push(on); },
@@ -70,13 +86,12 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     expect(document.querySelector('#opt-outline-bg').value).toBe('1');
   });
 
-  it('[Interface] render() monta o select de contraste, o slider L→Q, os toggles e os 4 seletores de cor', () => {
+  it('[Interface] render() monta o slider L→Q, os toggles e os 4 seletores de cor', () => {
     players.push({ viz: 'hc-direto-45' });
     const { ctx } = makeCtx();
     const panel = initSettingsVisual(ctx);
     panel.render();
     const list = document.querySelector('#visual-list');
-    expect(list.querySelector('#opt-contrast').value).toBe('hc-direto-45');
     expect(list.querySelector('#opt-lq')).toBeTruthy();
     expect(list.querySelector('#opt-ownercolors')).toBeTruthy();
     expect(list.querySelector('#opt-cbsafe')).toBeTruthy();
@@ -84,19 +99,27 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     expect(list.querySelector('#opt-role-reset')).toBeTruthy();
   });
 
-  it('[Boundary] modo de visão fora dos 4 níveis de contraste vira "normal" no select', () => {
-    players.push({ viz: 'sim-deuter' }); // simulação de daltonismo não é um nível de alto contraste
-    const { ctx } = makeCtx();
-    const panel = initSettingsVisual(ctx);
-    panel.render();
-    expect(document.querySelector('#opt-contrast').value).toBe('normal');
+  it('[Right] o modo visual é desenhado em LINHAS de rádio, com os 7 modos e suas descrições', () => {
+    // O que este caso protege é a ACHABILIDADE. As correções de daltonismo estavam no menu de empatia como
+    // linhas visíveis; a primeira tentativa de trazê-las para cá as pôs num `<select>`, e elas sumiram da
+    // vista. Para um controle feito para ser achado por quem enxerga mal, isso é quase não ter movido.
+    players.push({ viz: 'normal' });
+    const { ctx, calls } = makeCtx();
+    initSettingsVisual(ctx).render();
+    const [listSel, , modes] = calls.renderVizGroup.at(-1);
+    expect(listSel).toBe('#visual-modes');
+    expect(modes.map((m) => m.key)).toEqual(
+      ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7', 'fix-protan', 'fix-deuter', 'fix-tritan']);
+    expect(document.querySelectorAll('#visual-modes .ctrl-row')).toHaveLength(7);
+    expect(document.querySelector('#visual-modes').textContent).toContain('Correção deuteranopia');
   });
 
-  it('[Boundary] sem jogador no índice selecionado, assume "normal"', () => {
-    const { ctx } = makeCtx(); // players fica vazio
-    const panel = initSettingsVisual(ctx);
-    panel.render();
-    expect(document.querySelector('#opt-contrast').value).toBe('normal');
+  it('[Boundary] com uma SIMULAÇÃO ligada, nenhuma linha deste menu aparece escolhida', () => {
+    players.push({ viz: 'sim-deuter' }); // simulação é do menu de empatia
+    const { ctx } = makeCtx();
+    initSettingsVisual(ctx).render();
+    const marcadas = [...document.querySelectorAll('#visual-modes button[aria-pressed="true"]')];
+    expect(marcadas).toHaveLength(0);
   });
 
   it('[Boundary] jogador selecionado além da contagem atual é reclampado para 0 (jogador saiu)', () => {
@@ -108,16 +131,12 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     expect(calls.setSelectedPlayer).toContain(0);
   });
 
-  it('[Interface] trocar o contraste chama setPlayerViz(jogador, modo) e anuncia o rótulo curto', () => {
+  it('[Interface] clicar numa linha chama setPlayerViz(jogador, modo) — quem anuncia é o renderizador', () => {
     players.push({ viz: 'normal' });
     const { ctx, calls } = makeCtx();
-    const panel = initSettingsVisual(ctx);
-    panel.render();
-    const sel = document.querySelector('#opt-contrast');
-    sel.value = 'hc-direto-7';
-    sel.dispatchEvent(new Event('change'));
+    initSettingsVisual(ctx).render();
+    document.querySelector('#visual-modes button[data-viz="hc-direto-7"]').click();
     expect(calls.setPlayerViz).toEqual([[0, 'hc-direto-7']]);
-    expect(calls.srSay).toEqual(['Alto contraste: 7:1.']);
   });
 
   it('[Interface] mexer no slider L→Q chama setLq com t=0..1 e atualiza o rótulo ao vivo', () => {
@@ -260,28 +279,25 @@ describe('ui/settings-visual — restaurar padrões DESTE menu (ADR-0028) + marc
     }
   });
 
-  it('[Interface] o seletor oferece os 7 modos em dois grupos, e a correção é escolhível daqui', () => {
-    // A prova de que a mudança de casa chegou à TELA: antes desta issue, uma criança daltônica não tinha
-    // como achar a correção dela sem abrir o menu de empatia.
+  it('[Interface] a correção é ESCOLHÍVEL daqui, numa linha visível — a prova de que ela mudou de casa', () => {
+    // Antes da #60 uma criança daltônica não achava a correção dela sem abrir o menu de empatia. Depois da
+    // primeira tentativa, achava-a só abrindo um `<select>`. Este caso exige a linha.
     const { ctx, calls } = makeCtx();
     comViz('normal');
     initSettingsVisual(ctx).render();
-    const sel = document.querySelector('#opt-contrast');
-    expect(sel.querySelectorAll('optgroup')).toHaveLength(2);
-    expect([...sel.querySelectorAll('option')].map((o) => o.value)).toEqual(
-      ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7', 'fix-protan', 'fix-deuter', 'fix-tritan']);
-    sel.value = 'fix-deuter';
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    const linha = document.querySelector('#visual-modes button[data-viz="fix-deuter"]').closest('.ctrl-row');
+    expect(linha.textContent).toContain('Correção deuteranopia');
+    linha.querySelector('button').click();
     expect(calls.setPlayerViz).toEqual([[0, 'fix-deuter']]);
   });
 
-  it('[Interface] com a correção ligada, a linha do modo visual fica MARCADA', () => {
+  it('[Interface] com a correção ligada, a LISTA de modos fica marcada', () => {
     const { ctx, state } = makeCtx();
     state.outlineFg = 1;
     comViz('fix-tritan');
     initSettingsVisual(ctx).render();
-    const linha = document.querySelector('#opt-contrast').closest('.ctrl-row');
-    expect(linha.classList.contains('is-changed')).toBe(true);
+    expect(document.querySelector('#visual-modes').classList.contains('is-changed')).toBe(true);
+    expect(document.querySelector('[data-act="visual"]').classList.contains('is-changed')).toBe(true);
   });
 
   it('[Zero] com tudo no padrão, nenhum setter é chamado', () => {

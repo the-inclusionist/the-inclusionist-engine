@@ -302,8 +302,5 @@ const pt: Record<string, string> = {
   'a11y.changed': 'alterado',
   'sr.visual.reset': 'Acessibilidade visual restaurada aos padrões: contraste, realce, cores e contornos. As legendas e os outros menus não mudaram.',
   'sr.motion.reset': 'Sensibilidade visual restaurada aos padrões: animações e estética CRT. As animações voltam ao que o seu sistema pede.',
-  // O nome do modo já começa com "Correção" (catálogo em pt-BR), então o prefixo gaguejava: "Correção de
-  // daltonismo: Correção deuteranopia". Em en/es o prefixo fica, porque lá ele é a única moldura traduzida.
-  'sr.visual.correction': '{v} ativada.',
 };
 export default pt;
