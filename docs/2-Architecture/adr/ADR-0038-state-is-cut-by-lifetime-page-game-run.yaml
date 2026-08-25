@@ -20,10 +20,20 @@ context-and-problem-statement: |
   survives into the next unless somebody remembers to zero it. D13 exists because "somebody remembers" is not
   a mechanism.
 
-  BUT D13 IS TOO BROAD, and the file shows why. Two of its exports are `modoCego` and `phase`. Making the first
-  a per-game factory would be a defect, not a fix: a child who cannot see would have to re-enable blind mode
-  every time she opens another game. Making the second global is the defect that exists today. They are not the
-  same kind of state and no rule that treats them alike can be right.
+  ⚠️ THIS RECORD FIRST CLAIMED D13 WAS TOO BROAD, AND THAT CLAIM WAS WRONG. The argument was that applying D13
+  to `modoCego` would make a blind child re-enable blind mode at every game. That only happens if someone
+  creates the instance PER GAME — and D13 does not say that; it says THE COMPOSITION ROOT OWNS THE INSTANCE.
+  The shell calls `createSettings()` once per page and hands the same instance to every game. Factory-or-not
+  decides WHO OWNS the state; it does not decide HOW LONG the state lives. The two are independent, and the
+  first version of this record conflated them. The Dev caught it by asking whether all-factory was simply
+  better. It is: D13 stands as written, and the target state is that everything a consumer can observe is
+  created by a factory.
+
+  WHAT SURVIVES THE CORRECTION is the question this record actually answers, which is a different one: not
+  "factory or module", but HOW MANY INSTANCES, OWNED BY WHOM, LIVING HOW LONG. `modoCego` and `phase` still are
+  not the same kind of state — one is created once per page, the other once per round — and nothing in D13
+  says which is which. That is what the lifetime cut below decides, and it is orthogonal to D13 rather than in
+  tension with it.
 
   THE CRITERION IS NOT A MATTER OF TASTE, AND IT IS ALREADY IN THE TREE. ADR-0028 cut persistence into two
   scopes — shared `incl_*` keys versus game-scoped `kJogo()` keys — and `platform/storage.ts` says so in its
@@ -47,8 +57,9 @@ context-and-problem-statement: |
   record's criterion, written months earlier about one variable and never generalised.
 
 decision-drivers:
-  - "A blind child must not reconfigure accessibility when she changes game. Page-scoped state is not a
-     concession to legacy — it is the correct lifetime, and a rule that abolishes it makes the product worse."
+  - "A blind child must not reconfigure accessibility when she changes game. That is a statement about
+     LIFETIME — one instance per page — and it survives whether the state lives in a module or behind a
+     factory the composition root calls once."
   - "A shell that loads game after game on one page leaks every run-scoped global into the next game, and the
      symptom is a game that starts already paused, already ended, or holding another game's players."
   - "The classifier must be checkable, or it decays into argument. Persistence scope is observable in the code
@@ -58,24 +69,31 @@ decision-drivers:
 
 considered-options:
   - "T1 — apply D13 literally: every stateful engine module becomes a factory"
-  - "T2 — cut by LIFETIME: page stays module-level and persisted, run becomes a factory, game follows the game"
+  - "T2 — cut by LIFETIME: one instance per page, per cartridge or per round; all-factory is the end state,
+     reached in the order a named consumer asks for"
   - "T3 — keep module-level state and add a `resetAll()` the shell calls between games"
 
 pros-and-cons-of-the-options:
   factories-everywhere:
-    good: ["Satisfies the demos spec as literally written; one rule, no judgement calls."]
-    bad: ["Turns accessibility settings into per-game state, which is a defect: the child reconfigures at every
-           game. It would be the pillar-2 regression the whole engine exists to prevent.",
-          "Ten of the eleven PAGE bindings are read by settings panels that legitimately live once per page;
-           threading an instance through them buys nothing and costs every call site."]
+    good: ["Satisfies the demos spec as written; one rule, no judgement calls.",
+           "It makes every dependency VISIBLE, which is the same discipline this engine spent the ADR-0027
+            pipeline applying to imports and never applied to state. A module reading a live binding has a
+            dependency that appears in no signature.",
+           "It is the correct END STATE, and this record says so after the Dev challenged the first draft."]
+    bad: ["Doing it in ONE sweep converts modules that are about to change repository, and threads instances
+           through an untyped 1,549-line composition root where the compiler cannot help.",
+          "It is ~840 call sites in ~59 files, of which the ones that matter — the RUN half — are about 13
+           bindings. Staging by consumer demand gets the defect fixed first and the rest when it is asked for."]
   cut-by-lifetime:
     good: ["Each kind of state gets the lifetime it actually has, and the boundary is derived from a decision
             already taken (ADR-0028) rather than invented here.",
            "It is mechanically checkable, so it can be a gate.",
-           "It refines D13 instead of contradicting it: D13's real target is RUN state, which does become a
-            factory owned by the composition root."]
-    bad: ["It requires the demos spec to be amended, because D13 as written forbids what this record keeps.",
-          "Three homes instead of one; a new field has to be classified, and a wrong classification is a leak."]
+           "It answers what D13 leaves open — a factory says who OWNS the state and never how long it lives —
+            so the two compose instead of competing."]
+    bad: ["Three lifetimes instead of one; a new field has to be classified, and a wrong classification is a
+           silent leak, which is why the gate is part of the decision.",
+          "It is a STAGED conversion, so for a while the tree holds both shapes and a reader has to know which
+           module is already converted."]
   reset-between-games:
     good: ["Smallest change: nothing moves."]
     bad: ["It is 'somebody remembers', promoted to a function. A field added later and forgotten in `resetAll`
@@ -88,19 +106,43 @@ decision-outcome:
     justification: |
       THE THREE HOMES:
 
-        · PAGE — stays module-level and persisted, and that is deliberate rather than tolerated. These eleven
-          are the machine's accessibility profile: blind mode, contrast outlines, caption, letter case, cane
-          width, wheelchair, one-button, colour-blind safety, owner colours, visual mode. One page, one child,
-          one profile. They keep their live bindings, and the settings panels keep reading them exactly as now.
+        · PAGE — ONE INSTANCE PER PAGE. These eleven are the machine's accessibility profile: blind mode,
+          contrast outlines, caption, letter case, cane width, wheelchair, one-button, colour-blind safety,
+          owner colours, visual mode. One page, one child, one profile — the composition root creates it once
+          and every game receives the same one. They keep their live bindings FOR NOW, because no consumer has
+          asked otherwise and converting them today would thread instances through an untyped composition root
+          for no gain; the end state is `createSettings()`, called once.
         · RUN — becomes an object created by a factory that the composition root owns, and no game may reach
           another game's instance. This is the half D13 is actually about, and it is also where the scene stack
           of ADR-0030 lands: `phase` is the first field that stops being a global and starts being the stack.
         · GAME — `cenario` and `activity` travel with the cartridge to the demos repository (ADR-0036), joining
           `quizLevel`, which already left in item 19. Nothing about them belongs to an engine.
 
-      WHAT THIS DOES TO D13, said plainly because it is a disagreement with a sibling repository's spec: D13 is
-      right about its target and wrong about its scope. Its sentence should read "no module-level mutable RUN
-      state in the engine". The demos spec is owed that amendment; this record is the argument for it.
+      WHAT THIS DOES TO D13: nothing. The earlier draft of this record proposed amending it to "no module-level
+      mutable RUN state" and that proposal is WITHDRAWN — see the correction in the context above. D13 is right
+      as written, and the end state is all-factory: every piece of state a consumer can observe is created by a
+      factory and owned by the composition root. This record decides the ORTHOGONAL question of how many
+      instances each factory yields and how long each lives.
+
+      WHY NOT CONVERT EVERYTHING AT ONCE, measured rather than felt: 18 engine modules hold module-level mutable
+      state — 38 exported bindings plus 42 private ones — reached from roughly 840 call sites across ~59 files
+      (`core/state`: 28 importers, ~515 uses; `core/i18n`: 31 importers, ~323 uses). The number is not the
+      reason to stage it. These three are:
+
+        1. THE GAME IS LEAVING (ADR-0036). Converting `cenario`, `activity` and the City theme modules is work
+           that changes repository next week.
+        2. THE COMPOSITION ROOT IS UNTYPED. `main.js` is 1,549 lines of JS under `checkJs:false`, so threading
+           instances through it is precisely where a silent break would land, with the compiler blind. That has
+           already happened once, with `WORLD_PX_W()` called on a constant: it passed build and tests and
+           surfaced only in the browser.
+        3. THE GAIN IS NOT UNIFORM. `core/i18n`'s singleton is CORRECT for one page — one language at a time —
+           and converting it today buys reentrancy nobody uses. `core/state`'s RUN half is where a real defect
+           lives: on a shell that loads game after game, it leaks.
+
+      So the order is driven by the consumer, not by tidiness: RUN state first (the defect), GAME state leaves
+      with the cartridge (never converted here), then each remaining module when a named requirement asks —
+      `createI18n()` is next, because D10's per-game dictionaries genuinely need it. The 42 private caches are
+      per-page by nature and are not what D13 aims at.
 
       THE ORDER OF WORK, because the cut touches twelve reading modules: GAME leaves first (it is two bindings
       and it is already decided), then RUN moves behind the factory, then PAGE is left alone and gains the gate
@@ -111,8 +153,8 @@ decision-outcome:
       - "The engine becomes consumable by a shell that loads many games, which is the whole point of ADR-0036."
       - "The leak that would be found in a demo, in front of a class — a game opening already ended — becomes
          structurally impossible rather than a thing to remember."
-      - "Accessibility settings keep the lifetime a child needs, and the record says WHY, so the next reading of
-         D13 does not undo it."
+      - "Accessibility settings keep the lifetime a child needs — one instance per page — and the record says
+         WHY, so the next reading of the lifetime table does not collapse it into per-game."
     bad:
       - "Twelve modules read these bindings; the RUN half is a wide, mechanical change with a real chance of a
          missed call site."
