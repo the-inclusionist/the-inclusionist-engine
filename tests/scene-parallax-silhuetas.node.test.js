@@ -75,11 +75,17 @@ describe('SILHUETAS — o catálogo por tema', () => {
     expect(SILHUETAS.espaco).toBe(SILHUETAS.campo);
   });
 
-  it('[Boundary] a FLORESTA é mais densa que o campo nas duas faixas', () => {
-    // Densidade é o que distingue mata de campo aberto quando a cor é a única outra variável. Passo MENOR
-    // = mais elementos por tela.
+  it('[Boundary] a MATA DISTANTE da floresta é densa; a do campo é rala — é aí que a diferença mora', () => {
+    // Escrevi "a floresta é mais densa nas DUAS faixas" e ver na tela mostrou que isso é falso e indesejável:
+    // a faixa da FRENTE da floresta é de troncos individuais, ESPARSOS, e são eles que dão escala. A mata
+    // fechada é a de trás. Densidade nas duas faixas produziria uma parede verde sem profundidade nenhuma.
     expect(SILHUETAS.floresta.far.passo).toBeLessThan(SILHUETAS.campo.far.passo);
-    expect(SILHUETAS.floresta.near.passo).toBeLessThan(SILHUETAS.campo.near.passo);
+  });
+
+  it('[Interface] na floresta a frente é ESPARSA e ALTA — troncos, não parede', () => {
+    const f = SILHUETAS.floresta;
+    expect(f.near.passo).toBeGreaterThan(f.far.passo);   // menos elementos
+    expect(f.near.alt[0]).toBeGreaterThan(f.far.alt[1]); // e cada um bem maior que qualquer um do fundo
   });
 
   it('[Boundary] onde o ELEMENTO é o mesmo nas duas faixas, a da frente é maior', () => {

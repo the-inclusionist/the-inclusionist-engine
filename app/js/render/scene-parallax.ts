@@ -105,7 +105,12 @@ export const SILHUETAS: Readonly<Record<string, { far?: Silhueta; near?: Silhuet
   campo: CAMPO,      // Dia no Campo
   cemiterio: CAMPO,  // Amanhecer no Campo — mesmo campo, outra luz
   espaco: CAMPO,     // Noite no Campo — idem
-  floresta:  { far: { el: conifera, passo: 34, alt: [14, 22] }, near: { el: conifera, passo: 22, alt: [22, 34] } },
+  // AJUSTADO DEPOIS DE VER NA TELA. Os números antigos (far 14–22, near 22–34) faziam as DUAS faixas
+  // terminarem no mesmo y: com `baseY` 12 px mais baixo na da frente, as duas silhuetas encostavam no mesmo
+  // topo e liam como UMA. A conta confirmou o que a imagem mostrou — topo 72 nas duas.
+  // Agora a de trás é uma MATA FECHADA distante (baixa e densa) e a da frente são TRONCOS individuais
+  // (altos e esparsos). A profundidade vem do contraste entre parede e indivíduo, não de 12 px de deslocamento.
+  floresta:  { far: { el: conifera, passo: 18, alt: [8, 13] }, near: { el: conifera, passo: 46, alt: [30, 46] } },
 };
 
 /**
