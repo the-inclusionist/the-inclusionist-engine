@@ -24,7 +24,8 @@ import { COIN_TARGET } from '../core/constants.js';
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { rnd, randInt, shuffle } from '../core/rng.js';
-import { coins, numPlayers, quizLevel, activity as ACTIVITY } from '../core/state.js';
+import { numPlayers, activity as ACTIVITY } from '../core/state.js';
+import { coins, quizLevel } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 import { getActivity } from '../educational/activities-registry.js';
 import { SILABAS_WORDS, SILABA_POOL, type SyllableWord } from './activity-content.js';
 import { gcd, fmtFrac, fracGraphic, fracSpeak, speakChoice } from './fractions.js';

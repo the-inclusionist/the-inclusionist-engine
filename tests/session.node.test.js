@@ -23,7 +23,8 @@ import { TILE, EASY, COIN_TARGET } from '../app/js/core/constants.js';
 import * as COL from '../app/js/core/collision.js';
 import { initCoins } from '../app/js/game/coins.js';
 import { initCoinSpawning, getCoinSprites } from '../app/js/game/coin-spawning.js';
-import { coins, players, numPlayers, setCoins, setNumPlayersValue } from '../app/js/core/state.js';
+import { players, numPlayers, setNumPlayersValue } from '../app/js/core/state.js';
+import { coins, setCoins } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 
 /* ===================== 1. A DECISÃO PURA DA COLETA (sem ctx, sem DOM) ===================== */
 

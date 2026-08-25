@@ -8,7 +8,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initQuiz, generateBrailleCells, cKey } from '../app/js/game/quiz.js';
 import { reseed } from '../app/js/core/rng.js';
-import { players, setNumPlayersValue, setCoins, coins, setActivityValue, setQuizLevelValue } from '../app/js/core/state.js';
+import { players, setNumPlayersValue, setActivityValue } from '../app/js/core/state.js';
+import { setCoins, coins, setQuizLevelValue } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 
 const $ = (sel) => document.querySelector(sel);
 const QL = { 1: 'Descobrindo palavras', 2: 'Descobrindo sílabas', 3: 'Montando palavras', 4: 'Escrevendo palavras', 5: 'Escrevendo em Braille' };

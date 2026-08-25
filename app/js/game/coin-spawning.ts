@@ -8,7 +8,8 @@
 // portão + textura; mantemos essa fronteira. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { TILE, COIN_TARGET } from '../core/constants.js';
 import { shuffle } from '../core/rng.js';
-import { coins, setCoins, players, vizMode } from '../core/state.js';
+import { players, vizMode } from '../core/state.js';
+import { coins, setCoins } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 import { findCoinCandidates, positionEasyCoins, type Coin } from './coins.js';
 import { SOMASUB_SHAPES, WORD_INITIALS } from './activity-content.js';
 

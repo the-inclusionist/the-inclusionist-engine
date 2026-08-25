@@ -4,7 +4,7 @@
 // markup como string) está em pause-icons.node.test.js e NÃO é repetida aqui — aqui provamos só o que só o
 // navegador prova: a árvore construída, a delegação de clique, e a legenda que segue o foco/mouse.
 //
-// `players`/`numPlayers`/`quizLevel` são os módulos REAIS (core/state.ts) — os mesmos bindings vivos que o
+// `players`/`numPlayers` são os módulos REAIS (core/state.ts) — os mesmos bindings vivos que o
 // game.js usa; o resto do ctx é falso (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PAUSE_ICONS, initPauseIcons } from '../app/js/ui/pause-icons.js';
@@ -35,7 +35,9 @@ function makeCtx(over = {}) {
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
     pmButtons: PM_BTNS,
-    qlName: QL_NAME,
+    // O RÓTULO DINÂMICO chega pronto do jogo (item 19). Este fixture não tem botão de nível, então `null` é
+    // a resposta certa — e é a que exercita o caminho estático, que é o que os casos daqui medem.
+    dynLabel: () => null,
     getPauseActs: () => acts,
     setPauseActor: (i) => { state.pauseActor = i; },
     getPauseScreens: () => state.screens,

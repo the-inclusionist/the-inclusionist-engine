@@ -8,7 +8,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import * as COL from '../app/js/core/collision.js';
 import * as COINS from '../app/js/game/coins.js';
 import * as CS from '../app/js/game/coin-spawning.js';
-import { setCoins, coins, players } from '../app/js/core/state.js';
+import { players } from '../app/js/core/state.js';
+import { setCoins, coins } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 import { reseed } from '../app/js/core/rng.js';
 
 // (1,1)=ar com chão em (1,2); (3,1)=água com chão em (3,3) → 2 células candidatas (mesmo mundo do teste de coins).

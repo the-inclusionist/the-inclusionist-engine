@@ -26,7 +26,8 @@ import { ELEV_SPEED, elevAt } from './elevators.js';
 import { held } from '../input/state.js';
 import { nextLatchedDir, latchedDrive, type LatchDir } from '../input/latch.js';
 import { rnd } from '../core/rng.js';
-import { players, setCoins } from '../core/state.js';
+import { players } from '../core/state.js';
+import { setCoins } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 import { pickCoins } from './coins.js';
 
 /** Lado da ventosa-aranha (mesma nomenclatura de game/player.ts). */

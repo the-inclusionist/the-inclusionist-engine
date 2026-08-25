@@ -12,7 +12,8 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
+import { phase, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
+import { quizLevel, setQuizLevelValue, coins, setCoins } from './game/state.js'; // item 19: o estado DESTE jogo
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -763,7 +764,11 @@ let vpPause=[]; // `pauseActor` migrou para core/state.js (#50). gameHudEl/vpHud
    GETTER porque e um const ~1200 linhas abaixo — passa-lo direto explodiria na TDZ no boot. */
 const pauseIcons = initPauseIcons({
   srSay, srAlert,
-  pmButtons: PM_BTNS, qlName: QL_NAME,
+  pmButtons: PM_BTNS,
+  // O ROTULO PRONTO de um botao dinamico (item 19). A frase era montada dentro do `ui/pause-icons` — que e
+  // ENGINE — a partir do `quizLevel` e da tabela `QL_NAME`, e trazia "Nivel" em pt-BR CRU. Agora quem monta
+  // e o jogo, que sabe o que e um nivel, como ele se chama e em que idioma dize-lo.
+  dynLabel: (b) => (b.nivel ? (t('pause.nivel', { n: quizLevel, nome: QL_NAME[quizLevel] })) : null),
   getPauseActs: () => pauseActs,            // LAZY: pauseActs e const bem abaixo (TDZ)
   setPauseActor: setPauseActorValue,
   getPauseScreens: () => vpPause,           // buildGameHud REATRIBUI vpPause -> getter, nao a array

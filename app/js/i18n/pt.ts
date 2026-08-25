@@ -58,6 +58,9 @@ const pt: Record<string, string> = {
   // atravessa por `{nome}` JÁ RESOLVIDO pelo jogo, e a chave mora aqui.
   'hud.nome.moedas': 'moedas',
   'hud.nome.moeda': 'moeda',
+  // O rótulo do botão dinâmico do menu de pausa. `{nome}` é o nome do nível, que o JOGO resolve — currículo
+  // não se traduz (pilar 3); a MOLDURA, sim, e é ela que mora aqui.
+  'pause.nivel': '📚 Nível {n} · {nome}',
 
   // Chrome / navegação
   'skip.toGame': 'Pular para o jogo',

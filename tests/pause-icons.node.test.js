@@ -22,6 +22,10 @@ import {
 import { CONTRAST_LEVELS } from '../app/js/ui/settings-visual.js';
 import { players, numPlayers, setNumPlayersValue } from '../app/js/core/state.js';
 
+// SEM RÓTULO DINÂMICO: a resposta de um jogo cujo botão não tem rótulo próprio. Era `quizLevel` + `QL_NAME`,
+// e o módulo montava a frase; agora ele recebe a frase ou `null` (item 19).
+const SEM_DIN = () => null;
+
 // ---------------------------------------------------------------------------------------------
 // Fixtures — DOM falso (objetos simples) e um ctx falso que registra tudo o que foi chamado
 // ---------------------------------------------------------------------------------------------
@@ -389,7 +393,7 @@ describe('markup dos ícones e do menu', () => {
   });
 
   it('ZERO botões de menu: o cartão, a barra, a legenda e o rodapé continuam lá', () => {
-    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], quizLevel: 2, qlName: QL_NAME, t: (k) => k });
+    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], dynLabel: SEM_DIN, t: (k) => k });
     expect(h).toContain('class="pause-card" role="dialog" aria-modal="true"');
     expect(h).toContain('class="pause-icons" role="group"');
     expect(h).toContain('class="pause-icons-cap" aria-live="polite"');
@@ -398,7 +402,7 @@ describe('markup dos ícones e do menu', () => {
   });
 
   it('UM jogador: o título NÃO ganha sufixo; MUITOS: ganha "· Jogador N" (1-based)', () => {
-    const mk = (player, n) => screenPauseMarkup({ player, numPlayers: n, pmButtons: [], quizLevel: 2, qlName: QL_NAME, t: (k) => k });
+    const mk = (player, n) => screenPauseMarkup({ player, numPlayers: n, pmButtons: [], dynLabel: SEM_DIN, t: (k) => k });
     expect(mk(0, 1)).not.toContain('· Jogador');
     expect(mk(1, 2)).toContain('· Jogador 2');
     expect(mk(3, 4)).toContain('aria-label="Menu de pausa do jogador 4"');
@@ -406,23 +410,27 @@ describe('markup dos ícones e do menu', () => {
 
   it('botão de rótulo ESTÁTICO é traduzido e ganha data-i18n; o dinâmico não ganha (senão o applyDom o apaga)', () => {
     const t = (k) => 'T:' + k;
-    expect(pmBtnMarkup({ act: 'quit', lbl: 'x' }, 2, QL_NAME, t))
+    expect(pmBtnMarkup({ act: 'quit', lbl: 'x' }, SEM_DIN, t))
       .toBe('<button class="pm-btn" role="menuitem" type="button" data-act="quit" data-i18n="pause.quit">T:pause.quit</button>');
-    const letra = pmBtnMarkup({ act: 'letra', lbl: '🔠 ABC', letra: true }, 2, QL_NAME, t);
+    const letra = pmBtnMarkup({ act: 'letra', lbl: '🔠 ABC', letra: true }, SEM_DIN, t);
     expect(letra).toContain('pm-letra');
     expect(letra).not.toContain('data-i18n');
     expect(letra).toContain('>🔠 ABC<');
   });
 
   it('BORDA: o botão de NÍVEL (dormente hoje) monta o rótulo com o nível vigente', () => {
-    const h = pmBtnMarkup({ act: 'nivel', lbl: 'ignorado', nivel: true }, 5, QL_NAME, (k) => k);
+    // O RÓTULO chega PRONTO (item 19): montá-lo era da engine e passou a ser do jogo, que sabe o que é um
+    // nível, como ele se chama e em que idioma dizê-lo. O que este caso ainda mede — e é o que importa — é
+    // que o botão dinâmico usa o rótulo entregue e NÃO ganha `data-i18n` (senão o `applyDom` o apagaria).
+    const h = pmBtnMarkup({ act: 'nivel', lbl: 'ignorado', nivel: true }, () => 'RÓTULO DO JOGO', (k) => k);
     expect(h).toContain('pm-nivel');
-    expect(h).toContain('📚 Nível 5 · escritor cego');
+    expect(h).toContain('RÓTULO DO JOGO');
+    expect(h).not.toContain('ignorado'); // o `lbl` estático é ignorado quando há rótulo dinâmico
     expect(h).not.toContain('data-i18n');
   });
 
   it('o menu monta um .pm-btn por entrada de PM_BTNS, na ordem recebida', () => {
-    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: PM_BTNS, quizLevel: 2, qlName: QL_NAME, t: (k) => k });
+    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: PM_BTNS, dynLabel: SEM_DIN, t: (k) => k });
     const acts = [...h.matchAll(/data-act="([^"]+)"/g)].map((m) => m[1]);
     expect(acts).toEqual(['resume', 'letra', 'quit']);
   });

@@ -25,7 +25,7 @@
 //   · `rm`/`saveRM`     — the reduced-motion flags object, co-owned with ui/settings-motion (same reference).
 //   · `PM_BTNS`/`QL_NAME` — owned by ui/activities-menu; injected, never copied.
 
-import { numPlayers, players, quizLevel } from '../core/state.js';
+import { numPlayers, players } from '../core/state.js';
 import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { CONTRAST_LEVELS, CONTRAST_LABELS } from './settings-visual.js';
@@ -242,11 +242,26 @@ export function iconsMarkup(): string { return PAUSE_ICONS.map(iconBtnMarkup).jo
 
 /** One `.pm-btn`. Dynamic labels (`letra`/`nivel`) are rendered eagerly and carry NO `data-i18n`, so
  *  i18n.applyDom() cannot overwrite them. */
+/**
+ * ⚠️ O RÓTULO DINÂMICO ENTRA PRONTO (item 19), e a mudança conserta DUAS coisas de uma vez.
+ *
+ * A linha era `'📚 Nível ' + level + ' · ' + qlName[level]` — e ela tinha dois defeitos que só se enxergam
+ * juntos:
+ *
+ *   1. FRONTEIRA. `level` vinha de `core/state.quizLevel` e `qlName` de uma tabela do jogo. Um menu de pausa
+ *      da ENGINE montava o rótulo de uma atividade de alfabetização — conteúdo pedagógico, não mecânica.
+ *   2. IDIOMA. "Nível" é pt-BR CRU dentro de um módulo de engine. O gate do item 14 vigia o `main.js` e não
+ *      alcança `ui/`, então esta linha atravessou a i18n inteira sem ser vista. Num build em inglês, o menu
+ *      de pausa de uma criança dizia "📚 Nível 2 · …".
+ *
+ * Agora o jogo entrega a frase montada (`dynLabel`), e a engine só a coloca no botão. O jogo é quem sabe o
+ * que é um nível, quem sabe o nome dele e quem sabe em que idioma dizê-lo.
+ */
 export function pmBtnMarkup(
-  b: PauseMenuButton, level: number, qlName: Readonly<Record<number, string>>, tr: (key: string) => string,
+  b: PauseMenuButton, dynLabel: (b: PauseMenuButton) => string | null, tr: (key: string) => string,
 ): string {
   const dyn = b.letra || b.nivel;
-  const lbl = b.nivel ? ('📚 Nível ' + level + ' · ' + qlName[level]) : (dyn ? b.lbl : tr('pause.' + b.act));
+  const lbl = dynLabel(b) ?? (dyn ? b.lbl : tr('pause.' + b.act));
   return '<button class="pm-btn' + (b.letra ? ' pm-letra' : '') + (b.nivel ? ' pm-nivel' : '') +
     '" role="menuitem" type="button" data-act="' + b.act + '"' +
     (dyn ? '' : (' data-i18n="pause.' + b.act + '"')) + '>' + lbl + '</button>';
@@ -258,8 +273,8 @@ export interface ScreenPauseMarkupOpts {
   /** Live player count — the suffix only appears in multiplayer. */
   numPlayers: number;
   pmButtons: readonly PauseMenuButton[];
-  quizLevel: number;
-  qlName: Readonly<Record<number, string>>;
+  /** Rótulo pronto de um botão DINÂMICO, ou `null` se aquele botão não tem um. Quem monta a frase é o jogo. */
+  dynLabel: (b: PauseMenuButton) => string | null;
   t: (key: string) => string;
 }
 
@@ -268,7 +283,7 @@ export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
   return '<div class="pause-card" role="dialog" aria-modal="true" aria-label="Menu de pausa do jogador ' + (o.player + 1) + '">' +
     '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup() + '</div><p class="pause-icons-cap" aria-live="polite"></p>' +
     '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>' + (o.numPlayers > 1 ? ' · Jogador ' + (o.player + 1) : '') + '</h2><div class="pause-menu" role="menu">' +
-    o.pmButtons.map((b) => pmBtnMarkup(b, o.quizLevel, o.qlName, o.t)).join('') +
+    o.pmButtons.map((b) => pmBtnMarkup(b, o.dynLabel, o.t)).join('') +
     '</div><p class="pause-legend" aria-hidden="true"></p></div>';
 }
 
@@ -287,7 +302,14 @@ export interface PauseIconsCtx {
   /** PM_BTNS — the `.pm-btn` list. Owned by ui/activities-menu; injected, never copied. */
   pmButtons: readonly PauseMenuButton[];
   /** QL_NAME — literacy-level names, for the (dormant) `nivel` button. Same owner as pmButtons. */
-  qlName: Readonly<Record<number, string>>;
+  /**
+   * O RÓTULO de um botão dinâmico, pronto — ou `null` quando aquele botão não tem um (item 19).
+   *
+   * Era `quizLevel` (importado de `core/state`) mais `qlName` (tabela do jogo), e este módulo montava a
+   * frase. Um menu de pausa da ENGINE não sabe o que é nível de alfabetização, nem em que idioma dizê-lo.
+   * Função e não valor, porque o rótulo muda em execução — de nível E de idioma.
+   */
+  dynLabel: (b: PauseMenuButton) => string | null;
   /** The `.pm-btn` action table. LAZY: `pauseActs` is a `const` declared far below the init site in game.js. */
   getPauseActs: () => Record<string, (() => void) | undefined>;
   /** Records which player opened the menu. `pauseActor` itself stays in game.js — the gamepad, the keyboard
@@ -483,7 +505,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     sp.hidden = true;
     sp.dataset.player = String(i);
     sp.innerHTML = screenPauseMarkup({
-      player: i, numPlayers, pmButtons: ctx.pmButtons, quizLevel, qlName: ctx.qlName, t,
+      player: i, numPlayers, pmButtons: ctx.pmButtons, dynLabel: ctx.dynLabel, t,
     });
 
     sp.addEventListener('click', (e) => {

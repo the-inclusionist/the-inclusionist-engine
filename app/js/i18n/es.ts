@@ -53,6 +53,7 @@ const es: Record<string, string> = {
   'hud.contador': '{have} de {need} {nome}',
   'hud.nome.moedas': 'monedas',
   'hud.nome.moeda': 'moneda',
+  'pause.nivel': '📚 Nivel {n} · {nome}',
 
   'skip.toGame': 'Saltar al juego',
   'menu.ludico': 'Juego libre',

@@ -10,7 +10,12 @@ type Listener = (val: unknown) => void;
 const _subs = new Map<string, Set<Listener>>();
 export function on(evt: string, fn: Listener): () => void { if (!_subs.has(evt)) _subs.set(evt, new Set()); _subs.get(evt)!.add(fn); return () => off(evt, fn); }
 export function off(evt: string, fn: Listener): void { const s = _subs.get(evt); if (s) s.delete(fn); }
-function emit(evt: string, val: unknown): void { const s = _subs.get(evt); if (s) for (const fn of s) { try { fn(val); } catch (e) { /* noop */ } } }
+/**
+ * Avisa os assinantes de `evt`. EXPORTADO desde 2026-08-25 (item 19) porque `game/state` emite pelos mesmos
+ * canais: um segundo mapa de assinantes seria um segundo barramento, e quem assinasse `coins` no lugar errado
+ * simplesmente não seria avisado — sem erro, sem teste vermelho.
+ */
+export function emit(evt: string, val: unknown): void { const s = _subs.get(evt); if (s) for (const fn of s) { try { fn(val); } catch (e) { /* noop */ } } }
 
 // --- phase: 'title' | 'playing' | 'paused' (congela o jogo fora de 'playing') ---
 // Leitura: importe `phase` (binding vivo) — as checagens `phase==='playing'` no game.js não mudam.
@@ -19,15 +24,9 @@ export type Phase = 'title' | 'playing' | 'paused';
 export let phase: Phase = 'title';
 export function setPhaseValue(p: Phase): void { phase = p; emit('phase', p); }
 
-// --- quizLevel: 1..5 (nível do quiz de alfabetização; persistido em incl_quizlevel) ---
-export let quizLevel: number = (() => {
-  // Escrevia `'incl_quizlevel'` à mão, contornando o registro que se diz a documentação das chaves. Agora
-  // passa por `KEYS`, e a leitura HERDA do nome antigo — o nível de quem já jogava não se perde.
-  const bruto = store.getComLegado(store.KEYS.quizlevel, store.KEYS.quizlevelLegado, null);
-  const v = bruto == null ? 2 : parseFloat(bruto);
-  return isFinite(v) && v >= 1 && v <= 5 ? v : 2;
-})();
-export function setQuizLevelValue(n: number): void { quizLevel = Math.max(1, Math.min(5, n | 0)); store.set(store.KEYS.quizlevel, String(quizLevel)); emit('quizLevel', quizLevel); }
+/* (`quizLevel` SAIU daqui em 2026-08-25, item 19 — está em `game/state`. É o nível da atividade de
+ *  alfabetização: conteúdo pedagógico, e nem sequer mecânica de engine. A regra é a do ADR-0033, aplicada ao
+ *  estado: o estado COMPARTILHADO guarda o que a engine possui — acessibilidade, idioma, dispositivo.) */
 
 // --- numPlayers: 1..4 (nº de telas/jogadores; não persistido) ---
 export let numPlayers = 1;
@@ -98,10 +97,10 @@ export let vizMode = 'normal';
 export function initVizMode(mode: string): void { vizMode = mode; }
 export function setVizModeValue(mode: string): void { vizMode = mode; store.set('incl_viz', mode); emit('vizMode', mode); }
 
-// --- coins[]: moedas/coletáveis. Mutado IN-PLACE (push/forEach — usa a ref importada) mas também REATRIBUÍDO
-//     (pickCoins/filter no game.js) — reatribuição via setCoins() (binding importado não pode ser reatribuído). ---
-export let coins: unknown[] = [];
-export function setCoins(arr: unknown[]): void { coins = arr; emit('coins', arr); }
+/* (`coins` SAIU daqui em 2026-08-25, item 19 — está em `game/state`. Ele era `unknown[]` porque `core/` não
+ *  podia conhecer o tipo, e esse `unknown` era o SINTOMA: um estado que não consegue declarar o próprio tipo
+ *  está na camada errada. Do outro lado da fronteira ele é `unknown[]` ainda, mas por escolha de quem pode
+ *  decidir — e o `game/coins` que o consome sabe exatamente o que há dentro.) */
 
 // --- players[]: jogadores (1..4). NUNCA reatribuído (só mutado in-place: push/splice/length/players[i]) → não
 //     precisa de setter; o main.js muta a referência importada. O array inicial (makePlayer) é populado no boot

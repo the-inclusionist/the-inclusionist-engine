@@ -9,7 +9,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { initDraw } from '../app/js/render/draw.js';
 import { LOGICAL_W, LOGICAL_H } from '../app/js/core/constants.js';
 import { BOX, makePlayer } from '../app/js/game/player.js';
-import { players, setCoins, setNumPlayersValue } from '../app/js/core/state.js';
+import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { setCoins } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 import { addShake, stepFx, JUICE } from '../app/js/render/fx.js';
 
 const WPW = 2000, WPH = 1000; // mundo grande o bastante p/ o clamp não disparar no meio

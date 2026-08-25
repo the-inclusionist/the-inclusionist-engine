@@ -5,7 +5,8 @@
 import { describe, it, expect } from 'vitest';
 import * as COL from '../app/js/core/collision.js';
 import * as COINS from '../app/js/game/coins.js';
-import { setNumPlayersValue, setCoins } from '../app/js/core/state.js';
+import { setNumPlayersValue } from '../app/js/core/state.js';
+import { setCoins } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 import { reseed } from '../app/js/core/rng.js';
 
 // liga colisão (p/ solidAt) + coins no MESMO mundo falso. flags.easy/wheelchair alimentam positionEasyCoins.

@@ -86,7 +86,8 @@ import type { GamePlayerView } from './entity.js'; // ADR-0033: a fatia do JOGO 
 import { TILE, COIN_TARGET, EASY } from '../core/constants.js';
 import { BOX, SPAWN_X, SPAWN_Y, makePlayer } from './player.js';
 import { screenBaseSize } from '../core/screens.js';
-import { coins, players, numPlayers, setCoins, setNumPlayersValue } from '../core/state.js';
+import { players, numPlayers, setNumPlayersValue } from '../core/state.js';
+import { coins, setCoins } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 import { pickCoins, takeCoin } from './coins.js';
 import { puTaken, takePu, type Powerup } from './powerups.js';
 import {

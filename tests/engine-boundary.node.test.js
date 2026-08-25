@@ -207,7 +207,13 @@ const MOEDA_CONHECIDA = new Set([
   // PROPÓSITO é engine, o TIPO é do jogo" — e a saída não foi uma renomeação: o módulo VIROU DOIS. A
   // navegação sonora está em `platform/audio-sonar` e recebe o contrato (topologia, alvos, nome); aqui
   // ficaram a bengala e o nado cego, que leem tile e chão porque é isso que eles são.
-  'core/state.ts',          // `coins: unknown[]` — estado do jogo morando no estado compartilhado
+  // `core/state.ts` SAIU (2026-08-25, item 19). Eram `coins: unknown[]` e `quizLevel`, e o `unknown` era o
+  // SINTOMA e não a solução: um estado que não consegue declarar o próprio tipo está na camada errada. Os
+  // dois foram para `game/state`, com a mesma forma (binding vivo + setter que persiste e emite) e pelos
+  // mesmos canais — `emit` passou a ser exportado justamente para que o barramento continue sendo UM.
+  //
+  // `ui/pause-icons` saiu junto, e por injeção: ele importava `quizLevel` para desenhar o rótulo do nível.
+  // O nome do nível (`qlName`) já vinha do jogo; faltava o número vir pelo mesmo caminho.
   'platform/audio.ts',      // earcon de chave 'coin': conteúdo sonoro do jogo na tabela da engine
   // `ui/settings-motion.ts` SAIU (2026-08-25): a única menção era o rótulo 'Animação de itens (moedas)', que
   // foi para o dicionário no item 14. Ganho lateral da i18n — texto que sai do código sai também da fronteira.
@@ -223,7 +229,6 @@ const MOEDA_CONHECIDA = new Set([
   // colunas e o caso do Braille indo para `game/quiz`, de quem sempre foram. Sem precisar do significado, a
   // entrada também deixou de precisar do objeto: a pergunta virou `modalOpen[i]`, um booleano no snapshot
   // que o módulo já montava.
-  'ui/pause-icons.ts',      // `quizLevel` importado de core/state e exposto no ctx
   // `input/touch.ts` SAIU (2026-08-25, item 19) — na mesma rodada em que ENTRAU nesta lista, porque foi a
   // unificação do casador que o revelou. Era `PlayerView<'quiz'>` a serviço de UMA linha, que lia `numPlayers`,
   // `phase` e `players[].quiz` por importação de `core/state`. Virou `ctx.padAllowed()`: injeta-se o BOOLEANO,
@@ -234,7 +239,17 @@ const MOEDA_CONHECIDA = new Set([
   // foi para `game/props`. O que a mudança REALMENTE consertou está do outro lado: `render/textures`
   // importava `powerupCanvas` de lá e trazia `PUP_KINDS` cravado, e essa era a única aresta que a mudança de
   // pasta teria criado — some por INJEÇÃO (`ctx.powerups`), como `shapes` já fazia.
-  'platform/storage.ts',    // a chave `quizlevel` no registro (é a chave que o namespace isola)
+  /**
+   * `platform/storage.ts` FICA, e o motivo é o contrário de dívida — vale escrever para ninguém "limpar".
+   *
+   * A entrada é `quizlevel: kJogo('quizlevel')`, e `kJogo()` é exatamente o mecanismo da engine para chaves
+   * de ESCOPO DE JOGO (ADR-0028, dois escopos). `activity`, `cenario`, `tabsel` e `fracnot` moram no mesmo
+   * registro pelo mesmo motivo e ninguém as acusa — elas só não contêm nenhuma palavra do casador.
+   *
+   * Ou seja: esta linha é o casador notando uma PALAVRA, não a fronteira notando um vazamento. Tirá-la
+   * daqui deixando as outras quatro seria enganar o gate, que é o oposto do que ele existe para fazer.
+   */
+  'platform/storage.ts',
   // `render/viz-setters.ts` SAIU (2026-08-25, item 19). Era `spriteTexFor('coin', mode)` — o cache já não
   // tinha forma de moeda (chaveia por `(id, modo)`), e quem ainda nomeava uma era este módulo. O id virou
   // `ctx.itemTexId`, declarado pelo jogo. O vizinho de baixo mostra que essa sempre foi a forma certa: os
@@ -354,7 +369,10 @@ const FIXTURES_CONHECIDOS = {
   // uma linha viraram um que declara a política, mais um novo que prende que ela é lida A CADA chamada.
 
   // Nível de quiz atravessando menus e pausa.
-  'pause-icons.node.test.js': 3,
+  // `pause-icons.node.test.js` SAIU (2026-08-25, item 19): o fixture passava `quizLevel: 2` e a tabela
+  // `QL_NAME` para o módulo MONTAR a frase do botão de nível. Agora a frase chega pronta e o fixture passa
+  // `() => null` ou uma string qualquer — o que ele afirma deixou de ser o texto e passou a ser o que a
+  // engine de fato decide: usar o rótulo entregue e NÃO pôr `data-i18n` no botão dinâmico.
   'activities-menu.browser.test.js': 2,
   // `activities-menu.node.test.js` FICOU VISÍVEL em 2026-08-25 (ADR-0032), e a dívida não é nova: ela estava
   // aqui o tempo todo, escondida pelo próprio filtro. `testesDeEngine()` pula quem importa de `game/`, e este
@@ -439,22 +457,31 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
   });
 
   it('[Interface] a dívida dos fixtures cai nos MESMOS subsistemas que a dos módulos', () => {
-    // É o que faz esta seção valer a pena ao lado das outras duas: se os testes acusassem um conjunto
-    // DIFERENTE de subsistemas, uma das duas medidas estaria errada.
+    // Esta seção existia para conferir que as duas medidas concordam — e a concordância virou trivial: as
+    // duas listas encolheram até quase nada. O que ela guarda agora é o CAMINHO DE VOLTA.
     //
-    // CINCO subsistemas já saíram, e as saídas foram por cinco mecanismos diferentes — vale distinguir,
-    // porque só quem sabe QUAL deles se aplica consegue repetir:
-    //   · `hud`           — trocou a PERGUNTA (o contador recebe um `Objective`).
-    //   · `audio-nav`     — PARTIU EM DOIS, e a metade genérica viajou com o contrato.
-    //   · `high-contrast` — a API perdeu a FORMA do objeto do jogo (registro de sprites por id).
-    //   · `viewports`     — saiu de carona no anterior: a linha dele era um campo do ctx que sumiu.
-    //   · `keydown`/`gamepad` — a engine passou a entregar INTENÇÃO e o jogo a decidir (ADR-0033).
+    // SETE subsistemas saíram, por SEIS mecanismos diferentes, e a distinção é o que torna cada saída
+    // repetível em vez de anedótica:
+    //   · `hud`            — trocou a PERGUNTA (o contador recebe um `Objective`).
+    //   · `audio-nav`      — PARTIU EM DOIS; a metade genérica viajou com o contrato.
+    //   · `high-contrast`  — a API perdeu a FORMA do objeto do jogo (sprites por id).
+    //   · `viewports`      — saiu de carona no anterior: a linha dele era um campo que sumiu.
+    //   · `keydown`/`gamepad` — a engine entrega INTENÇÃO e o jogo decide (ADR-0033).
+    //   · `pause-icons`    — o RÓTULO passa pronto; montá-lo era da engine e trazia pt-BR cru junto.
     //
-    // O que sobra é `pause-icons`, e ele é de outra natureza: `quizLevel` é um AJUSTE do jogo morando no
-    // estado compartilhado, não um objeto que a engine manipula. Sai com `core/state`, não sozinho.
+    // SOBRAM SEIS, e elas não são todas da mesma natureza — escrevo a separação porque um número sozinho
+    // convida a "zerar a lista", que é como um gate passa a mentir:
+    //   · `viz-setters.browser` (3) — dívida de verdade: o irmão node saiu, este não.
+    //   · `activities-menu.*` (7)   — o menu do CURRÍCULO. Sai com a EdSP (ADR-0032), não antes.
+    //   · `audio-earcons` (4)       — o earcon de chave 'coin': conteúdo sonoro do jogo na tabela da engine.
+    //   · `i18n-dicts` (3)          — as chaves `sr.quiz.*`. É o ACHADO 2 do segundo consumidor (peso morto
+    //     no dicionário), e não acoplamento: um segundo jogo herda 253 chaves e usa um punhado.
+    //   · `storage-escopos` (2)     — a chave `quizlevel`, pelo mesmo motivo de `platform/storage`: `kJogo()`
+    //     É o mecanismo de escopo de jogo, e a palavra é que chama a atenção do casador.
+    // As duas últimas são o casador notando uma PALAVRA, não a fronteira notando um vazamento.
+    expect(Object.keys(FIXTURES_CONHECIDOS)).toHaveLength(6);
     const porSubsistema = new Set(Object.keys(FIXTURES_CONHECIDOS).map((f) => f.split('.')[0]));
-    expect(porSubsistema, 'pause-icons').toContain('pause-icons');
-    for (const limpo of ['hud', 'audio-nav', 'audio-sonar', 'high-contrast', 'viewports', 'keydown', 'gamepad']) {
+    for (const limpo of ['hud', 'audio-nav', 'audio-sonar', 'high-contrast', 'viewports', 'keydown', 'gamepad', 'pause-icons']) {
       expect(porSubsistema, `${limpo} voltou a precisar de moeda/quiz no fixture — o item 19 andou para trás`)
         .not.toContain(limpo);
     }

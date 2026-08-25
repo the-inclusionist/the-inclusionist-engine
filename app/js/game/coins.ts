@@ -8,7 +8,8 @@
 import { TILE } from '../core/constants.js';
 import { solidAt } from '../core/collision.js';
 import { shuffle } from '../core/rng.js';
-import { numPlayers, coins } from '../core/state.js';
+import { numPlayers } from '../core/state.js';
+import { coins } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 
 // mundo + flags de acessibilidade injetados no boot (mesma referência do game.js/colisão). Closures = estado vivo.
 let _world: number[][] = [], _W = 0, _H = 0;
