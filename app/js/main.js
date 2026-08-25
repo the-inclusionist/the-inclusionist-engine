@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
+import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, coins, setCoins, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
@@ -1026,7 +1026,7 @@ const viz = initVizSetters({
   getVpSpr: () => vpSpr, getVpDots: () => vpDots,
   getCoinSprites, getPowerups: () => powerups,
   getPlayers: () => players, getNumPlayers: () => numPlayers,
-  getSelVizPlayer: () => selVizPlayer, setSelVizPlayer: (i) => { selVizPlayer = i; },
+  getSelVizPlayer: () => selVizPlayer, setSelVizPlayer: setSelVizPlayerValue,
   getSharedViz: () => _lastSharedViz, setSharedViz: (m) => { _lastSharedViz = m; },
   invalidateSharedViz: () => { _lastSharedViz = null; },
   parallaxTexFor, treeTexFor, playerVizTex, pixiFilterFor,
@@ -1055,7 +1055,6 @@ const empathy = initSettingsEmpathy({ $, srSay, store, renderVizGroup, reflectMo
 // Simulações de empatia: o predicado mora em render/viz-modes (simulatesDisability), fonte única. A cópia
 // local respondia pelo `kind` e contava as 3 correções de daltonismo como simulação (#60); `VIZ_SIM`, derivada
 // dela, era declarada e nunca lida — a terceira cópia do mesmo erro, e morta.
-let selVizPlayer=0;
 // renderVizGroup migrou para render/viz-setters.ts (Onda A).
 function setOwnerColors(on){ const antes=ownerColors; setOwnerColorsValue(on); if(ownerColors===antes)return;
   rebuildCoins(); srSay(t(ownerColors?'sr.visual.ownerColorsOn':'sr.visual.ownerColorsOff')); }
@@ -1075,7 +1074,7 @@ function setOutlineFg(v){ const antes=hcOutlineFg; setOutlineFgValue(v); if(hcOu
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineFg',{v:t(OUTLINE_KEY[hcOutlineFg])})); }
 function setOutlineBg(v){ const antes=hcOutlineBg; setOutlineBgValue(v); if(hcOutlineBg===antes)return;
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineBg',{v:t(OUTLINE_KEY[hcOutlineBg])})); }
-const visual = initSettingsVisual({ $, srSay, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: (i) => { selVizPlayer = i; }, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
+const visual = initSettingsVisual({ $, srSay, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: setSelVizPlayerValue, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
   const sim=players.some(p=>simulatesDisability(p.viz));
   const bv=$('#opt-visual'); if(bv)bv.classList.toggle('is-on',help); const be=$('#opt-empathy'); if(be)be.classList.toggle('is-on',sim||hearingLoss||oneButton||wheelchair); }
@@ -1275,8 +1274,9 @@ window.__incl.layout=layout; window.__incl.get_librasOpen=()=>librasOpen;
    ENVELOPES ICADOS (`function`), e nao `const`: `setPhase` ja esta nos ctx de game/session, input/gamepad,
    game/attract e ui/activities-menu, montados em outros pontos do arquivo — so o icamento faz aquelas quatro
    fiacoes continuarem valendo sem serem tocadas. Mesmo padrao de hideTouchControls/restartGame/quitGame.
-   Tudo o que a tabela de pausa chama entra como CALLBACK, nao como valor: motor/motion/empathy/hud e
-   selVizPlayer sao `const`/`let` declarados ABAIXO, e so a resolucao na hora da chamada os tira da TDZ. */
+   Tudo o que a tabela de pausa chama entra como CALLBACK, nao como valor: motor/motion/empathy/hud sao
+   `const` declarados ABAIXO, e so a resolucao na hora da chamada os tira da TDZ. (selVizPlayer saiu desta
+   lista: migrou para core/state no #50, e um import nao tem TDZ para escapar.) */
 const shell = initShell({
   $, win: window, setMasterMuted, srSay, srAlert,
   getPauseScreens: () => vpPause,                  // `let` REATRIBUIDO por buildGameHud -> getter
@@ -1295,7 +1295,7 @@ const shell = initShell({
   setMotorPlayer: (i) => motor.setSelPlayer(i),
   setMotionPlayer: (i) => setSelectedMotionPlayer(i),
   openMotion: () => motion.open(), openEmpathy: () => empathy.open(),
-  setSelVizPlayer: (i) => { selVizPlayer = i; },
+  setSelVizPlayer: setSelVizPlayerValue,
 });
 function setPhase(p){ shell.setPhase(p); }
 function togglePause(){ shell.togglePause(); }

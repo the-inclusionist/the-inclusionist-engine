@@ -11,7 +11,7 @@
 // tela dentro do próprio setter, e por isso nenhum teste conseguia chamá-lo. A separação entre gravar e
 // reagir é o que torna este arquivo possível, então é ela que os casos protegem.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, setLetterCaseValue, setCaptionsOnValue, on, off, defaultReducedMotion } from '../app/js/core/state.js';
+import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, setLetterCaseValue, setCaptionsOnValue, on, off, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, setNumPlayersValue } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
 // `modoCego` é um binding VIVO: reimportar não é preciso, mas ler o valor antigo de uma cópia local seria o
@@ -172,5 +172,30 @@ describe('defaultReducedMotion — o padrão que o sistema decide', () => {
     // Se virasse `export const RM_DEFAULT = matchMedia(...)`, o valor seria lido uma vez no boot e nunca mais.
     // O sistema pode mudar a preferência com o jogo aberto, e um padrão que não acompanha deixa de ser padrão.
     expect(typeof defaultReducedMotion).toBe('function');
+  });
+});
+
+describe('selVizPlayer — qual jogador os painéis visuais editam (#50)', () => {
+  // Migrado do main.js porque TRÊS superfícies o consultam (painel visual, render/viz-setters e __incl), cada
+  // uma recebendo um par getter/setter fabricado à mão em volta do mesmo `let`. Estado que três módulos
+  // consultam não é do composition root — é a condição que o ADR-0027 põe para `createGame()` nascer.
+  it('[Zero] começa em 0 — o jogador 1 é quem edita antes de alguém escolher', () => {
+    expect(selVizPlayer).toBe(0);
+  });
+
+  it('[Right] o setter escreve, e o binding vivo acompanha quem importa', () => {
+    setSelVizPlayerValue(1);
+    expect(selVizPlayer).toBe(1);
+    setSelVizPlayerValue(0);
+    expect(selVizPlayer).toBe(0);
+  });
+
+  it('[Interface] NÃO persiste — isto é qual aba está aberta, não uma preferência (ADR-0028)', () => {
+    // A distinção passou a importar quando todo menu ganhou persistência: guardar isto faria a criança
+    // reabrir o jogo já editando o jogador 2 sem ter pedido.
+    setSelVizPlayerValue(1);
+    const chaves = Object.keys(globalThis.localStorage ?? {});
+    expect(chaves.some((k) => k.toLowerCase().includes('vizplayer'))).toBe(false);
+    setSelVizPlayerValue(0);
   });
 });

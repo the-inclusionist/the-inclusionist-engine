@@ -27,6 +27,18 @@ export function setQuizLevelValue(n: number): void { quizLevel = Math.max(1, Mat
 export let numPlayers = 1;
 export function setNumPlayersValue(n: number): void { numPlayers = n; emit('numPlayers', n); }
 
+// --- selVizPlayer: QUAL jogador os painéis de acessibilidade visual estão editando. ---
+//
+// Migrado do composition root (#50) pelo critério do ADR-0027: TRÊS superfícies o consultam — o painel visual,
+// o `render/viz-setters` e o `__incl` —, e cada uma recebia um par getter/setter fabricado à mão em volta de um
+// `let` do main.js. Estado que três módulos consultam não é do composition root, e enquanto for, `createGame()`
+// não consegue nascer sem levar o main.js junto.
+//
+// NÃO é persistido, e a distinção importa agora que todo menu persiste (ADR-0028): isto não é uma preferência,
+// é qual aba está aberta. Guardá-lo faria a criança reabrir o jogo já editando o jogador 2 sem ter pedido.
+export let selVizPlayer = 0;
+export function setSelVizPlayerValue(i: number): void { selVizPlayer = i; emit('selVizPlayer', i); }
+
 // --- cenario: tema visual ativo (cidade/campo/…; persistido em incl_cenario). A validação contra CENARIOS e
 //     o trabalho de textura ficam no setCenario() do game.js — aqui só o valor + persistência + evento. ---
 export let cenario: string | null = null;
