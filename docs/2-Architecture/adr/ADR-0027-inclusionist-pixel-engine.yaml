@@ -322,6 +322,15 @@ decision-outcome:
          product rather than a feature of one game, since it breaks at the second LANGUAGE before the second GAME.
       4. createGame() inside the same repository. THIS IS THE BOUNDARY TEST: if it needs a parameter called
          coinTarget, the boundary is wrong and step 5 must not start.
+         ✅ EXECUTED AND PASSED — 2026-08-25, `app/js/boot/create-game.ts` (commit 169b9bd). There is no
+         coinTarget, and the reason is not restraint: ADR-0030 moved the target into field 5 of the declared
+         contract (`objectiveOf`), so the HUD asks the game how many of how many and "coin" stops being an
+         engine word. `tests/boot-create-game.node.test.js` holds the verdict as a gate — the module's code
+         may contain neither `coinTarget` nor `coin` nor `moeda` — and the second consumer was rewritten on
+         top of the function, which is what makes the pass a result rather than a self-assessment.
+         The step also produced a finding of its own: `initI18n()` reached for the GLOBAL `document` beneath
+         whoever called it, so the engine could not be booted against an injected one. Fixed in the same
+         commit (`initI18n(root)`, global as default). Step 5 may start.
       STEPS 5 AND 6 SWAPPED — Dev, 2026-08-25. The consumer comes FIRST, and this record's own reasoning is why:
       it already says that without the second consumer "engine is just a folder with a different name". If the
       consumer is what makes the word true, it is also what REVEALS the boundary — it does not merely confirm
