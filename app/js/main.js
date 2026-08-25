@@ -342,7 +342,7 @@ const earcons = createAudioEarcons({ SFX, ensureAC, catNode, audioOut, noiseHit,
 // Todos os sons passam por um nó mestre; a cadeia é religada quando o modo liga/desliga.
 // Nó mestre (hearingLoss/audioOut/buildHearingChain/wireMaster) extraído p/ platform/audio.js (Fase 2).
 function setHearingLoss(on){ setHearingLossGraph(on); store.setBool('incl_hearingloss',on); // grafo em platform/audio.js; persistência via store
-  srSay('Simulação de perda auditiva '+(on?'ligada: sons fracos ficam abafados e os agudos são cortados; falas ficam difíceis de entender.':'desligada.')); }
+  srSay(t(on?'sr.empathy.hearingOn':'sr.empathy.hearingOff')); }
 // ===== F1: barramento de áudio por CATEGORIA (cada uma: liga/desliga + volume). Pendura no nó mestre. =====
 // AUDIO_CATS (categorias) + carga/persistência + default TTS-off extraídos p/ platform/audio-mixer.js (Fase 2).
 // audioCat + catNode + setCatGain (mixer por categoria) extraídos p/ platform/audio.js (Fase 2).
@@ -932,7 +932,7 @@ const quizApi = initQuiz({
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraídos p/ game/fractions.js (Estágio 4).
 const optModeBtn=$('#opt-mode'); // botão único: cicla os 3 modos
 if(optModeBtn)optModeBtn.addEventListener('click',()=>{
-  const m=MODES[(MODES.indexOf(MODE)+1)%MODES.length]; setMode(m); srSay('Modo '+MODE_LABELS[m].replace(/^\S+\s/,'')+'.');
+  const m=MODES[(MODES.indexOf(MODE)+1)%MODES.length]; setMode(m); srSay(t('sr.mode.set',{v:MODE_LABELS[m].replace(/^\S+\s/,'')})); /* MODE_LABELS ainda é pt-BR: ver a nota do item 14 no topo */
 });
 // Mapa padrão (Gamepad API "standard"): 0=pulo/sim · 1=especial/não · 2=correr/interagir (X/esquerda) · 3=troca ·
 // D-pad 12-15 + analógico esq. · RB/RT também correm · 9=START (pausa). Controles fora do padrão → wizard de mapeamento.
@@ -957,7 +957,7 @@ const gamepadApi = initGamepad({
 });
 // Desconectar NÃO abandona o jogo: o teclado é sempre fallback. Só solta a associação do pad.
 addEventListener('gamepaddisconnected',(e)=>{ try{ const owner=players.findIndex(p=>p.pad===e.gamepad.index);
-  if(owner>=0){ players[owner].pad=-1; srAlert('Controle do Jogador '+(owner+1)+' desconectado — o teclado continua funcionando. Aperte START para reassociar.'); }
+  if(owner>=0){ players[owner].pad=-1; srAlert(t('sr.pad.disconnected',{n:owner+1})); }
   delete padCur[e.gamepad.index]; }catch(err){} });
 
 /* ===== L1: wizard de mapeamento de gamepad (DirectInput e controles fora do padrão) =====
@@ -977,7 +977,7 @@ if(optTelasBtn)optTelasBtn.addEventListener('click',()=>{ activateScreens((numPl
 // L3: nível do quiz de alfabetização (1..5), persistido; rótulo vivo nos menus de pausa
 function setQuizLevel(n,announce){ setQuizLevelValue(n); // core/state.js: clampa 1..5, persiste e emite; a reflexão de UI fica aqui
   document.querySelectorAll('.pm-nivel').forEach(x=>{ x.textContent='📚 Nível '+quizLevel+' · '+QL_NAME[quizLevel]; });
-  if(announce) srSay('Nível '+quizLevel+': '+QL_NAME[quizLevel]+'.'); }
+  if(announce) srSay(t('sr.quiz.levelSet',{n:quizLevel,v:QL_NAME[quizLevel]})); } // QL_NAME ainda é pt-BR
 // A TABELA `LETRA` E O CICLO MORRERAM (ADR-0028). Eram duas posições — ABC/abc — num botão da pausa, e a
 // caixa da letra virou UMA escolha dentro do menu de Comunicação Aumentada e Alternativa, ao lado dos
 // conjuntos de pictogramas. Um ciclo de duas posições não comporta nove opções, e o motivo de o menu existir
@@ -1063,9 +1063,9 @@ function setCbSafe(on){ const antes=cbSafe; setCbSafeValue(on); if(cbSafe===ante
   const src=cbSafe?PCOLOR_CB:PCOLOR_DEF; PCOLOR.length=0; src.forEach(c=>PCOLOR.push(c)); // troca IN-PLACE (todos referenciam PCOLOR)
   rebuildCoins(); ensureSprites(); srSay(t(cbSafe?'sr.visual.cbSafeOn':'sr.visual.cbSafeOff')); }
 function setRoleColor(k,hex){ const rgb=hexRgb(hex); if(!rgb||!HC_ROLE[k])return; HC_ROLE[k]=rgb; saveHcRole();
-  _rebakeDirect(); rebuildExtras(); srSay('Cor de '+ROLE_LABELS[k]+' alterada.'); }
+  _rebakeDirect(); rebuildExtras(); srSay(t('sr.visual.roleColorSet',{v:ROLE_LABELS[k]})); } // ROLE_LABELS ainda é pt-BR
 function resetRoleColors(){ for(const k in HC_ROLE_DEF)HC_ROLE[k]=HC_ROLE_DEF[k].slice(); saveHcRole();
-  _rebakeDirect(); rebuildExtras(); visual.render(); srSay('Cores do color-blocking restauradas ao padrão.'); }
+  _rebakeDirect(); rebuildExtras(); visual.render(); srSay(t('sr.visual.roleColorsReset')); }
 // Dois contornos configuráveis (1º plano personagem/itens · 2º plano perímetro de plataforma/água/lava).
 // _rebakeDirect migrou para render/viz-setters.ts (Onda A) como viz.rebakeDirect.
 // A tabela ['nenhum','fino','grosso'] estava escrita DUAS vezes, uma em cada função, para o mesmo trio de
@@ -1114,7 +1114,10 @@ function setWheelchair(on){ const antes=wheelchair; setWheelchairValue(on); if(w
   srSay(t(on?'sr.motor.wheelchairOn':'sr.motor.wheelchairOff')); }
 // bolinha indicadora: duplo toque/clique → volta às cores normais (em cegueira é a única saída visível)
 (function vizIndicator(){ const el=$('#viz-indicator'); if(!el)return; let last=-9999;
-  el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); const t=e.timeStamp||0; if(t-last<450){ setPlayerViz(0,'normal'); last=-9999; srSay('Cores normais reativadas.'); } else last=t; }); })();
+  // `agora` e não `t`: o local chamava-se `t` e SOMBREAVA o tradutor — `t('sr.visual...')` virou "chamar um
+  // número". Quinta vez que este nome de uma letra morde neste arquivo; aqui doeria mais que nas outras,
+  // porque este duplo-toque é a ÚNICA saída visível de quem ligou a simulação de cegueira.
+  el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); const agora=e.timeStamp||0; if(agora-last<450){ setPlayerViz(0,'normal'); last=-9999; srSay(t('sr.visual.normalColors')); } else last=agora; }); })();
 // O pad de toque nasce AQUI, e nao 50 linhas abaixo, porque a linha seguinte pode precisar dele: aplicar o
 // modo de visao no boot passa por render/viz-setters, que esconde os controles de toque quando o modo e
 // cegueira. O envolucro `hideTouchControls` e declaracao icada, mas o corpo dele dereferencia `touchCtl`, e
@@ -1174,11 +1177,11 @@ function renderPauseLegend(){ const g=simNaoGlyphs();
 //  deslocamento 4,5mm. Faixa criança↔adulto estreita: crianças NÃO devem ir a alvos minúsculos.
 // Geometria fisica do pad (mm -> px), presets, direcional e o mapa de toque migraram para input/touch.ts
 // (Onda A). As dimensoes de tela entram INJETADAS: o modulo nunca le window.innerWidth.
-addEventListener('gamepadconnected', (e)=>{ try{ const d=touchCtl.applyPadDesign(padLayoutFromId(e.gamepad.id)); const sel=$('#pad-design'); if(sel)sel.value=d; srSay('Controle conectado: layout '+d+'.'); }catch(err){} }); // A2: layout pelo id do controle
-const padDesignSel=$('#pad-design'); if(padDesignSel){ padDesignSel.value=touchCtl.getPadDesign(); padDesignSel.addEventListener('change',()=>{ touchCtl.applyPadDesign(padDesignSel.value); srSay('Desenho dos botões: '+padDesignSel.value+'.'); }); } // A4: escolha manual
+addEventListener('gamepadconnected', (e)=>{ try{ const d=touchCtl.applyPadDesign(padLayoutFromId(e.gamepad.id)); const sel=$('#pad-design'); if(sel)sel.value=d; srSay(t('sr.pad.connected',{v:d})); }catch(err){} }); // A2: layout pelo id do controle
+const padDesignSel=$('#pad-design'); if(padDesignSel){ padDesignSel.value=touchCtl.getPadDesign(); padDesignSel.addEventListener('change',()=>{ touchCtl.applyPadDesign(padDesignSel.value); srSay(t('sr.pad.design',{v:padDesignSel.value})); }); } // A4: escolha manual
 // JOGAR COM OS OLHOS: eyeMode/eyeSet/onGaze/startEyeControl/stopEyeControl/loadWebGazer → ui/webcam.js (Estágio 4, Tier 1).
 const eyesBtn=$('#opt-eyes'); if(eyesBtn)eyesBtn.addEventListener('click',()=>{ setEyeMode(!eyeMode); toggleBtn(eyesBtn,eyeMode); eyesBtn.textContent=eyeMode?'❚❚ Ligado':'▶ Desligado';
-  if(eyeMode){ loadWebGazer(startEyeControl); srSay('Jogar com os olhos: carregando a webcam (permita o acesso).'); } else { stopEyeControl(); srSay('Jogar com os olhos desligado.'); } });
+  if(eyeMode){ loadWebGazer(startEyeControl); srSay(t('sr.eyes.loading')); } else { stopEyeControl(); srSay(t('sr.eyes.off')); } });
 const audioCloseBtn=$('#audio-close'); if(audioCloseBtn)audioCloseBtn.addEventListener('click',closeAudio);
 const audioPanel = initSettingsAudio({ $, srSay, store, audioCats: AUDIO_CATS, toggleBtn, getNumPlayers: () => numPlayers, getPlayers: () => players, getSoundOn: () => soundOn, setSoundOn, getVolume: () => volume, setVolume, getAudioCat: () => audioCat, setCatGain, tts, getModoCego: () => modoCego, setModoCego, getCaneBlockDiv: () => caneBlockDiv, setCaneBlockDiv: setCaneBlockDivValue }); // painel de audio: ui/settings-audio.ts
 // REFLETE O MODO CEGO PERSISTIDO no boot. `incl_modocego` sobrevive à sessão desde sempre, mas nada refletia o
@@ -1259,7 +1262,7 @@ window.__incl={app,get player(){return players[0];},players,get numPlayers(){ret
 { const v='v'+INCL_VERSION; document.title=`The Inclusionist · ${v} (PixiJS)`; // versão: fonte única = INCL_VERSION
   const e1=document.querySelector('h1 .ver'); if(e1)e1.textContent='· '+v;
   const e2=document.getElementById('title-ver'); if(e2)e2.textContent=v; }
-srSay('Jogo carregado. Colete 10 moedas. Suba escadas com W/S, nade segurando pulo na água.');
+srSay(t('sr.boot.loaded',{n:COIN_TARGET})); // o "10" era cravado; agora é o alvo de verdade
 
 /* dicas de início: somem ao pular ou após 8s */
 function hideTips(){} // dicas de início REMOVIDAS (José 2026-07-04); stub mantém os call-sites

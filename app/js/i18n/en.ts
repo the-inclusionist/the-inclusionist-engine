@@ -294,5 +294,18 @@ const en: Record<string, string> = {
   'sr.nav.close': 'close',
   'sr.nav.far': 'far',
   'sr.player.prefix': 'Player {n}: ',
+  'sr.empathy.hearingOn': 'Hearing-loss simulation on: quiet sounds are muffled and the highs are cut; speech becomes hard to follow.',
+  'sr.empathy.hearingOff': 'Hearing-loss simulation off.',
+  'sr.mode.set': 'Mode {v}.',
+  'sr.pad.disconnected': 'The controller for Player {n} disconnected — the keyboard still works. Press START to pair it again.',
+  'sr.quiz.levelSet': 'Level {n}: {v}.',
+  'sr.visual.roleColorSet': 'Colour of {v} changed.',
+  'sr.visual.roleColorsReset': 'Colour-blocking colours restored to their defaults.',
+  'sr.visual.normalColors': 'Normal colours restored.',
+  'sr.pad.connected': 'Controller connected: {v} layout.',
+  'sr.pad.design': 'Button design: {v}.',
+  'sr.eyes.loading': 'Play with your eyes: loading the webcam (please allow access).',
+  'sr.eyes.off': 'Play with your eyes off.',
+  'sr.boot.loaded': 'Game loaded. Collect {n} coins. Climb ladders with W/S, swim by holding jump in water.',
 };
 export default en;

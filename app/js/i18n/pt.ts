@@ -325,5 +325,18 @@ const pt: Record<string, string> = {
   'sr.nav.close': 'perto',
   'sr.nav.far': 'longe',
   'sr.player.prefix': 'Jogador {n}: ',
+  'sr.empathy.hearingOn': 'Simulação de perda auditiva ligada: sons fracos ficam abafados e os agudos são cortados; falas ficam difíceis de entender.',
+  'sr.empathy.hearingOff': 'Simulação de perda auditiva desligada.',
+  'sr.mode.set': 'Modo {v}.',
+  'sr.pad.disconnected': 'Controle do Jogador {n} desconectado — o teclado continua funcionando. Aperte START para reassociar.',
+  'sr.quiz.levelSet': 'Nível {n}: {v}.',
+  'sr.visual.roleColorSet': 'Cor de {v} alterada.',
+  'sr.visual.roleColorsReset': 'Cores do color-blocking restauradas ao padrão.',
+  'sr.visual.normalColors': 'Cores normais reativadas.',
+  'sr.pad.connected': 'Controle conectado: layout {v}.',
+  'sr.pad.design': 'Desenho dos botões: {v}.',
+  'sr.eyes.loading': 'Jogar com os olhos: carregando a webcam (permita o acesso).',
+  'sr.eyes.off': 'Jogar com os olhos desligado.',
+  'sr.boot.loaded': 'Jogo carregado. Colete {n} moedas. Suba escadas com W/S, nade segurando pulo na água.',
 };
 export default pt;
