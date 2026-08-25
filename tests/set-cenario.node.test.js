@@ -4,35 +4,25 @@
 // `setCenario` não desenha nada: ela decide QUEM é avisado e EM QUE ORDEM. É por isso que quase todos os casos
 // daqui são sobre SEQUÊNCIA e sobre TEMPO, e não sobre valor:
 //
-//  · `setCenarioValue` (grava + persiste) vem ANTES do trabalho de textura. Não é preferência: é o que ARMA a
-//    guarda de corrida — quem compara `getCenario() !== tema` está comparando com o valor que esta chamada
-//    acabou de gravar. Inverter as duas linhas desarma a guarda sem quebrar nada visível.
-//  · A GUARDA DE CORRIDA em si: os tiles chegam quando chegarem, e no splash (ou na demonstração automática,
-//    que troca de cenário sozinha) a pessoa pode já estar em outro tema. Um tileset atrasado do Campo não pode
-//    repintar o chão da Floresta. É um defeito que aparece uma vez a cada cem trocas e some quando alguém vai
-//    olhar — de mão, não se reproduz com confiança.
-//  · Os dois `reapplyVizAll` NÃO são duplicação: um é síncrono (o tema mudou) e o outro é do `.then` (a textura
-//    do mundo mudou). E no BOOT — `vizReady` ainda falso — o caminho é o terceiro: pintar `worldSprite` direto.
-//    Esse é exatamente o instante em que o `setCenario` da restauração do tema salvo roda.
-//  · `carregarTilesDoTema` NUNCA rejeita: tema sem arte é caminho normal (a Cidade não tem tileset próprio), e
-//    uma rejeição derrubaria a troca de cenário inteira dentro do `try/catch` mudo do boot.
+//  · `setCenarioValue` (grava + persiste) vem ANTES do trabalho de textura, e continua sendo o primeiro passo.
+//  · A GUARDA DE CORRIDA SUMIU DAQUI, e os testes dela sumiram junto (#17). Enquanto os tiles chegavam por
+//    `Promise`, trocar de cenário durante o download deixava um tileset atrasado do Campo repintar o chão da
+//    Floresta — defeito de um em cem, que somia quando alguém ia olhar. Os tiles agora são DESENHADOS
+//    (render/city-tiles), a troca é síncrona e não há "durante". Apagar aqueles casos não é perder cobertura:
+//    é parar de testar um comportamento que deixou de existir. Testar uma guarda que não guarda mais nada faria
+//    a suíte afirmar, para sempre, que ainda há uma corrida.
+//  · O `reapplyVizAll` que sobrou é UM só. Eram dois — o síncrono do tema e o do `.then` da textura — e com a
+//    textura vindo no mesmo instante os dois viraram o mesmo momento. No BOOT (`vizReady` falso) o caminho
+//    continua sendo o terceiro: pintar `worldSprite` direto.
 import { describe, it, expect } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
 import { CENARIOS } from '../app/js/render/cenario-data.js';
-import { createSetCenario, carregarTilesDoTema } from '../app/js/render/set-cenario.js';
+import { createSetCenario } from '../app/js/render/set-cenario.js';
 
 /* ===================== dublês ===================== */
 
-/** `Image` de mentira: registra-se numa lista e expõe onload/onerror para o teste disparar à mão. */
-function fabricaDeImagem(lista) {
-  return class FakeImg {
-    constructor() { this.onload = null; this.onerror = null; this._src = ''; lista.push(this); }
-    set src(v) { this._src = v; } get src() { return this._src; }
-  };
-}
-
 function ambiente(over = {}) {
-  const log = [], imgs = [];
+  const log = [], temasPedidos = [];
   const estado = { cenario: 'cidade', vizReady: over.vizReady ?? false, vidaReady: over.vidaReady ?? false, world: null };
   const worldSprite = over.semWorldSprite ? null : { texture: 'TEX-VELHA' };
   const ctx = {
@@ -42,7 +32,8 @@ function ambiente(over = {}) {
     // CHAVE i18n do cenário (render/cenario-data), então as asserções abaixo passam pelo dicionário — assim
     // continuam afirmando o nome que a criança lê, e não apenas que alguma string chegou.
     aplicarTemaParallax: (theme, T) => log.push(['parallax', theme, T.nome]),
-    Imagem: fabricaDeImagem(imgs),
+    // Os tiles do tema, síncronos. `semTiles` simula um tema sem arte própria — o caminho dos blocos v3.
+    getTiles: (tema) => { temasPedidos.push(tema); return over.semTiles ? null : 'tiles'; },
     worldCanvas: (tiles) => { log.push(['worldCanvas', tiles === null ? null : 'tiles']); return 'CANVAS'; },
     tex: (cv) => 'TEX(' + cv + ')',
     clearWorldTexCache: () => log.push(['clearWorldTexCache']),
@@ -53,57 +44,10 @@ function ambiente(over = {}) {
     isVidaReady: () => estado.vidaReady,
     applyCenarioVida: () => log.push(['applyCenarioVida']),
   };
-  return { ctx, log, imgs, estado, worldSprite, api: createSetCenario(ctx) };
+  return { ctx, log, temasPedidos, estado, worldSprite, api: createSetCenario(ctx) };
 }
 
-/** Dispara o onload das duas imagens de tile e devolve o controle depois das microtarefas. */
-const carregou = async (imgs, base = 0) => { imgs[base].onload(); imgs[base + 1].onload(); await Promise.resolve(); await Promise.resolve(); };
-const falhou = async (imgs, base = 0) => { imgs[base].onerror(); await Promise.resolve(); await Promise.resolve(); };
-
 /* ===================== carregarTilesDoTema ===================== */
-
-describe('carregarTilesDoTema', () => {
-  it('pede tile_fill e tile_surface do tema', () => {
-    const imgs = [];
-    void carregarTilesDoTema(fabricaDeImagem(imgs), 'campo');
-    expect(imgs.map((i) => i.src)).toEqual(['assets/cenarios/campo/tile_fill.png', 'assets/cenarios/campo/tile_surface.png']);
-  });
-
-  it('resolve com os DOIS só quando as duas chegam (uma só não basta)', async () => {
-    const imgs = [];
-    let pronto = null;
-    void carregarTilesDoTema(fabricaDeImagem(imgs), 'campo').then((v) => { pronto = v; });
-    imgs[0].onload(); await Promise.resolve(); await Promise.resolve();
-    expect(pronto).toBe(null); // metade não serve: o worldCanvas precisa do par
-    imgs[1].onload(); await Promise.resolve(); await Promise.resolve();
-    expect(pronto).toEqual({ fill: imgs[0], surface: imgs[1] });
-  });
-
-  it('uma falha → resolve com null, NA HORA (não espera a outra)', async () => {
-    const imgs = [];
-    let pronto = 'sem resposta';
-    void carregarTilesDoTema(fabricaDeImagem(imgs), 'espaco').then((v) => { pronto = v; });
-    imgs[1].onerror(); await Promise.resolve(); await Promise.resolve();
-    expect(pronto).toBe(null);
-  });
-
-  it('a que sobrou, ao chegar DEPOIS da falha, não desfaz o null (flag `fail`)', async () => {
-    const imgs = [];
-    let pronto = 'sem resposta';
-    void carregarTilesDoTema(fabricaDeImagem(imgs), 'espaco').then((v) => { pronto = v; });
-    imgs[0].onerror(); imgs[1].onload(); await Promise.resolve(); await Promise.resolve();
-    expect(pronto).toBe(null);
-  });
-
-  it('NUNCA rejeita — nem quando as duas falham', async () => {
-    const imgs = [];
-    const p = carregarTilesDoTema(fabricaDeImagem(imgs), 'floresta');
-    imgs[0].onerror(); imgs[1].onerror();
-    await expect(p).resolves.toBe(null);
-  });
-});
-
-/* ===================== setCenario: validação e ordem ===================== */
 
 describe('setCenario — validação', () => {
   it('tema conhecido passa inteiro', () => {
@@ -115,12 +59,12 @@ describe('setCenario — validação', () => {
   });
 
   it('tema DESCONHECIDO cai para a Cidade — e é a Cidade que é persistida e pintada', () => {
-    const { api, log, imgs } = ambiente();
+    const { api, log, temasPedidos } = ambiente();
     api.setCenario('praia');
     expect(log[0]).toEqual(['setCenarioValue', 'cidade']);
     expect(log[1]).toEqual(['parallax', 'cidade', CENARIOS.cidade.nome]);
     expect(pt[log[1][2]]).toBe('Cidade');
-    expect(imgs[0].src).toBe('assets/cenarios/cidade/tile_fill.png'); // e não .../praia/...
+    expect(temasPedidos).toEqual(['cidade']); // os tiles pedidos são os da Cidade, e não os de 'praia'
   });
 
   it('a chave antiga "noite" NÃO é tema (a migração é do game.js) e cai para a Cidade', () => {
@@ -131,7 +75,7 @@ describe('setCenario — validação', () => {
 });
 
 describe('setCenario — a ordem dos passos', () => {
-  it('persiste ANTES de mexer em textura (é o que arma a guarda de corrida)', () => {
+  it('persiste ANTES de mexer em textura', () => {
     const { api, log } = ambiente();
     api.setCenario('campo');
     const iValor = log.findIndex((l) => l[0] === 'setCenarioValue');
@@ -140,16 +84,22 @@ describe('setCenario — a ordem dos passos', () => {
     expect(iParallax).toBeGreaterThan(iValor);
   });
 
-  it('avisa a vida ambiente e o recolor SEM esperar os tiles (eles são síncronos)', () => {
+  it('a textura do mundo entra ANTES da vida ambiente — era depois, quando ela era prometida', () => {
+    // A ordem MUDOU com o #17, e é a mudança que este caso existe para prender. Com os tiles chegando por
+    // `Promise`, `applyCenarioVida` corria primeiro e a textura entrava numa microtarefa depois. Agora tudo
+    // acontece na mesma chamada, e a textura vem antes.
     const { api, log } = ambiente({ vidaReady: true, vizReady: true });
     api.setCenario('campo');
-    expect(log.map((l) => l[0])).toEqual(['setCenarioValue', 'parallax', 'applyCenarioVida', 'reapplyVizAll']);
+    expect(log.map((l) => l[0])).toEqual([
+      'setCenarioValue', 'parallax', 'worldCanvas', 'setWorldTextures', 'clearWorldTexCache',
+      'reapplyVizAll', 'applyCenarioVida', 'reapplyVizAll',
+    ]);
   });
 
   it('BOOT: vida e recolor ainda não prontos → nenhum dos dois é chamado (e nada estoura)', () => {
     const { api, log } = ambiente({ vidaReady: false, vizReady: false });
     expect(() => api.setCenario('campo')).not.toThrow();
-    expect(log.map((l) => l[0])).toEqual(['setCenarioValue', 'parallax']);
+    expect(log.map((l) => l[0])).toEqual(['setCenarioValue', 'parallax', 'worldCanvas', 'setWorldTextures', 'clearWorldTexCache']);
   });
 
   it('vida pronta e recolor não: só a vida é avisada', () => {
@@ -160,80 +110,60 @@ describe('setCenario — a ordem dos passos', () => {
   });
 });
 
-/* ===================== setCenario: a textura do mundo (assíncrona) ===================== */
+/* ===================== setCenario: a textura do mundo (SÍNCRONA desde o #17) ===================== */
 
 describe('setCenario — os tiles do tema', () => {
-  it('com tiles: refaz a canvas do mundo, grava a dupla canvas/textura e invalida o cache', async () => {
-    const { api, log, imgs, estado } = ambiente();
+  it('[Right] com tiles: refaz a canvas, grava a dupla canvas/textura e invalida o cache', () => {
+    const { api, log, estado } = ambiente();
     api.setCenario('campo');
-    await carregou(imgs);
     expect(log).toContainEqual(['worldCanvas', 'tiles']);
     expect(estado.world).toEqual(['CANVAS', 'TEX(CANVAS)']);
     expect(log.map((l) => l[0])).toContain('clearWorldTexCache');
   });
 
-  it('sem tiles (PNG ausente): worldCanvas recebe null e o mundo cai no desenho da v3', async () => {
-    const { api, log, imgs } = ambiente();
+  it('[Zero] tema SEM arte própria: worldCanvas recebe null e o mundo cai no desenho da v3', () => {
+    // Era o caminho do PNG ausente (404). Continua sendo um caminho NORMAL, não um erro: quatro dos cinco
+    // temas nunca tiveram tileset. O que mudou é que agora ele custa zero pedido de rede.
+    const { api, log } = ambiente({ semTiles: true });
     api.setCenario('campo');
-    await falhou(imgs);
     expect(log).toContainEqual(['worldCanvas', null]);
   });
 
-  it('grava a textura ANTES de invalidar o cache (o cache tem de ver o valor novo)', async () => {
-    const { api, log, imgs } = ambiente();
+  it('[Interface] grava a textura ANTES de invalidar o cache (o cache tem de ver o valor novo)', () => {
+    const { api, log } = ambiente();
     api.setCenario('campo');
-    await carregou(imgs);
-    expect(log.findIndex((l) => l[0] === 'setWorldTextures')).toBeLessThan(log.findIndex((l) => l[0] === 'clearWorldTexCache'));
+    expect(log.findIndex((l) => l[0] === 'setWorldTextures'))
+      .toBeLessThan(log.findIndex((l) => l[0] === 'clearWorldTexCache'));
   });
 
-  it('BOOT (vizReady falso): pinta o worldSprite DIRETO e não chama o recolor', async () => {
-    const { api, log, imgs, worldSprite } = ambiente({ vizReady: false });
+  it('[Boundary] BOOT (vizReady falso): pinta o worldSprite DIRETO e não chama o recolor', () => {
+    const { api, log, worldSprite } = ambiente({ vizReady: false });
     api.setCenario('campo');
-    await carregou(imgs);
     expect(worldSprite.texture).toBe('TEX(CANVAS)');
     expect(log.map((l) => l[0])).not.toContain('reapplyVizAll');
   });
 
-  it('pós-boot (vizReady): reaplica o recolor e NÃO carimba o sprite por fora', async () => {
-    const { api, log, imgs, worldSprite } = ambiente({ vizReady: true });
+  it('[Boundary] pós-boot (vizReady): reaplica o recolor e NÃO carimba o sprite por fora', () => {
+    const { api, log, worldSprite } = ambiente({ vizReady: true });
     api.setCenario('campo');
-    await carregou(imgs);
-    expect(log.filter((l) => l[0] === 'reapplyVizAll')).toHaveLength(2); // o síncrono + o dos tiles
+    expect(log.filter((l) => l[0] === 'reapplyVizAll')).toHaveLength(2); // o da textura + o do tema
     expect(worldSprite.texture).toBe('TEX-VELHA'); // quem pinta é o recolor
   });
 
-  it('BOOT extremo: worldSprite ainda não existe → nada estoura', async () => {
-    const { api, imgs } = ambiente({ vizReady: false, semWorldSprite: true });
-    api.setCenario('campo');
-    await expect(carregou(imgs)).resolves.toBeUndefined();
+  it('[Zero/Error] BOOT extremo: worldSprite ainda não existe → nada estoura', () => {
+    const { api } = ambiente({ vizReady: false, semWorldSprite: true });
+    expect(() => api.setCenario('campo')).not.toThrow();
   });
 
-  it('GUARDA DE CORRIDA: tiles atrasados do tema ANTERIOR não repintam o mundo', async () => {
-    const { api, log, imgs, estado } = ambiente({ vizReady: true });
-    api.setCenario('campo');          // pediu os tiles do Campo (imgs 0 e 1)
-    api.setCenario('floresta');       // a pessoa trocou: cenario = 'floresta' (imgs 2 e 3)
-    const marca = log.length;
-    await carregou(imgs, 0);          // e SÓ AGORA os do Campo chegam
-    expect(log.slice(marca)).toEqual([]); // descartados por inteiro
-    expect(estado.world).toBe(null);
-    await carregou(imgs, 2);          // os da Floresta chegam
-    expect(estado.world).toEqual(['CANVAS', 'TEX(CANVAS)']);
-  });
-
-  it('a guarda vale para o caminho de FALHA também', async () => {
-    const { api, log, imgs } = ambiente({ vizReady: true });
+  it('[Interface] a troca inteira acontece na CHAMADA — nada fica pendurado em microtarefa', async () => {
+    // É o que substitui os casos da guarda de corrida. Enquanto os tiles vinham por `Promise`, o trabalho de
+    // textura acontecia DEPOIS do retorno, e trocar de cenário no meio era possível. Este caso afirma o
+    // contrário: ao retornar, já acabou — e é por isso que não há mais o que guardar.
+    const { api, estado } = ambiente();
     api.setCenario('campo');
-    api.setCenario('floresta');
-    const marca = log.length;
-    await falhou(imgs, 0);
-    expect(log.slice(marca)).toEqual([]);
-  });
-
-  it('mesmo tema duas vezes: a segunda chegada não é descartada (o tema não mudou)', async () => {
-    const { api, imgs, estado } = ambiente({ vizReady: false });
-    api.setCenario('campo');
-    api.setCenario('campo');
-    await carregou(imgs, 2);
-    expect(estado.world).toEqual(['CANVAS', 'TEX(CANVAS)']);
+    expect(estado.world).toEqual(['CANVAS', 'TEX(CANVAS)']); // já gravado, sem `await` nenhum
+    const antes = JSON.stringify(estado.world);
+    await Promise.resolve(); await Promise.resolve();
+    expect(JSON.stringify(estado.world)).toBe(antes); // e nada mais chega depois
   });
 });

@@ -32,7 +32,8 @@ import { $, $$, toggleBtn } from './ui/dom.js';
 import { initSettingsAudio } from './ui/settings-audio.js';
 import { initSettingsControls, ACT_LABEL, keyName } from './ui/settings-controls.js';
 import { initSettingsVisual, ROLE_LABELS } from './ui/settings-visual.js';
-import { initSettingsCaa } from './ui/settings-caa.js'; // 7º menu: Comunicação Aumentada e Alternativa (ADR-0028)
+import { initSettingsCaa } from './ui/settings-caa.js';
+import { cityTiles } from './render/city-tiles.js'; // #16: os tiles da Cidade como dados, não como PNG // 7º menu: Comunicação Aumentada e Alternativa (ADR-0028)
 import { initSettingsEmpathy } from './ui/settings-empathy.js';
 import { initSettingsMotor } from './ui/settings-motor.js';
 import { initSettingsMotion, setSelectedPlayer as setSelectedMotionPlayer } from './ui/settings-motion.js';
@@ -423,7 +424,11 @@ let _vidaReady=false; // camadas de vida/trafego/tema ja existem (applyCenarioVi
 const { setCenario } = createSetCenario({
   setCenarioValue, getCenario: () => CENARIO,
   aplicarTemaParallax: parallaxApi.aplicarTemaParallax,
-  Imagem: Image, worldCanvas, tex, clearWorldTexCache,
+  // Os tiles da Cidade vêm DESENHADOS (render/city-tiles); os outros temas caem nos blocos v3 com `null`.
+  // Era `Imagem: Image` + download; virou uma função síncrona, e com ela foram embora a guarda de corrida e
+  // os 404 de boot dos quatro temas que nunca tiveram arte própria.
+  getTiles: (tema) => tema === 'cidade' ? cityTiles() : null,
+  worldCanvas, tex, clearWorldTexCache,
   setWorldTextures: (cv, t) => { worldCanvasNormal = cv; worldTexNormal = t; }, // `let` declarados ABAIXO (so escritos no .then)
   isVizReady: () => vizReady, reapplyVizAll: () => reapplyVizAll(),             // `reapplyVizAll` e const de viz-setters, la embaixo
   getWorldSprite: () => worldSprite,                                            // nasce depois; so lido no .then

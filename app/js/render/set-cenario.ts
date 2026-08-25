@@ -72,8 +72,6 @@ import { CENARIOS, normalizarCenario, type CenarioTema } from './cenario-data.js
 /* ===================== interfaces estruturais (DOM/PIXI sem importá-los) ===================== */
 
 /** `HTMLImageElement`, reduzido ao que o carregamento usa. */
-interface ImagemLike { onload: (() => void) | null; onerror: (() => void) | null; src: string }
-interface ImagemCtor { new (): ImagemLike }
 /** O tileset de um tema: interior + topo. Corresponde ao `Tileset` de render/world-tex. */
 export interface TilesDoTema { fill: unknown; surface: unknown }
 /** `worldSprite` — só a troca de textura. */
@@ -87,18 +85,6 @@ interface SpriteComTextura { texture: unknown }
  * arte é um caminho normal (a Cidade não tem tileset próprio), não um erro, e uma rejeição aqui derrubaria a
  * troca de cenário inteira. Nunca pendura: os dois lados de cada imagem estão cobertos.
  */
-export function carregarTilesDoTema(Imagem: ImagemCtor, theme: string): Promise<TilesDoTema | null> {
-  return new Promise((res) => {
-    const fill = new Imagem(), surf = new Imagem();
-    let n = 0, fail = false;
-    const done = (): void => { if (fail) return; if (++n === 2) res({ fill, surface: surf }); };
-    fill.onload = done; surf.onload = done;
-    fill.onerror = surf.onerror = (): void => { fail = true; res(null); };
-    fill.src = 'assets/cenarios/' + theme + '/tile_fill.png';
-    surf.src = 'assets/cenarios/' + theme + '/tile_surface.png';
-  });
-}
-
 export interface SetCenarioCtx {
   /* --- estado (core/state.js) --- */
   setCenarioValue: (theme: string) => void; // grava + persiste `incl_cenario` + dispara o evento
@@ -108,7 +94,12 @@ export interface SetCenarioCtx {
   aplicarTemaParallax: (theme: string, T: CenarioTema) => void;
 
   /* --- textura do MUNDO (render/world-tex + render/canvas + render/high-contrast) --- */
-  Imagem: ImagemCtor;                                            // `Image` do DOM
+  /**
+   * Os tiles do tema, SÍNCRONOS. Eram dois PNG baixados por `carregarTilesDoTema`; hoje a Cidade os desenha
+   * (render/city-tiles) e os outros temas devolvem `null`, que é o caminho dos blocos v3 — o mesmo `null` de
+   * antes, agora imediato em vez de prometido.
+   */
+  getTiles: (tema: string) => TilesDoTema | null;
   worldCanvas: (tiles: TilesDoTema | null) => unknown;           // builder da canvas do nível
   tex: (canvas: unknown) => unknown;                             // canvas → PIXI.Texture
   clearWorldTexCache: () => void;                                // invalida o recolor de alto contraste
@@ -134,16 +125,21 @@ export function createSetCenario(ctx: SetCenarioCtx): SetCenarioApi {
     const T = CENARIOS[tema]!;
     ctx.aplicarTemaParallax(tema, T); // as 3 camadas de fundo (render/parallax.ts)
 
-    // TILES do tema: assíncrono. v3: blocos Clarity SEM recolor (o `worldCanvas` cai no desenho da v3 com null).
-    void carregarTilesDoTema(ctx.Imagem, tema).then((tiles) => {
-      if (ctx.getCenario() !== tema) return; // trocaram de cenário enquanto isto baixava: descarta
-      const cv = ctx.worldCanvas(tiles), t = ctx.tex(cv);
-      ctx.setWorldTextures(cv, t);
-      ctx.clearWorldTexCache();
-      if (ctx.isVizReady()) { ctx.reapplyVizAll(); return; }
+    // TILES do tema: SÍNCRONOS. v3: blocos Clarity SEM recolor (o `worldCanvas` cai no desenho da v3 com null).
+    //
+    // A GUARDA DE CORRIDA MORREU JUNTO COM A CORRIDA. Havia um `if (getCenario() !== tema) return` aqui, e ele
+    // estava certo enquanto os tiles chegavam por `Promise`: trocar de cenário durante o download deixava a
+    // resposta antiga pintar por cima da nova. Sem download não há "durante", e guarda contra corrida que não
+    // existe mais é código que só pode confundir quem o ler depois.
+    const tiles = ctx.getTiles(tema);
+    const cv = ctx.worldCanvas(tiles), t = ctx.tex(cv);
+    ctx.setWorldTextures(cv, t);
+    ctx.clearWorldTexCache();
+    if (ctx.isVizReady()) ctx.reapplyVizAll();
+    else {
       const sprite = ctx.getWorldSprite(); // no boot o recolor ainda não existe: pinta o sprite direto
       if (sprite) sprite.texture = t;
-    });
+    }
 
     // (o Cenário saiu do menu de pausa — a escolha é do J1 no splash, antes de começar)
     if (ctx.isVidaReady()) ctx.applyCenarioVida(); // liga/desliga carros/deco da cidade e semeia o tema
