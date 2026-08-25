@@ -1,0 +1,149 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-25
+  decision-makers: [Dev]
+  consulted: [ADR-0027 (step 7 — what the catalogue lacks), ADR-0028 (two-scope persistence),
+              ADR-0033 (the engine's entity declares what the engine owns), pillar 1 (school hardware),
+              pillar 4 (LGPD/COPPA), the Workbox note in vite.config.ts]
+  informed: []
+
+title: Progression survives the restored machine — a password the child copies by hand, whose CODEC belongs to the engine and whose FIELDS belong to the game
+
+context-and-problem-statement: |
+  ADR-0027 closes its catalogue analysis with the one gap that runs through sixteen cartridge genres:
+  "PASSWORD AND SAVE BETWEEN SESSIONS, which the catalogue lacks entirely because it was written for 'one game
+  in one prompt'. That is the cartridge idiom, and the engine needs it."
+
+  Read as nostalgia, that is a weak reason to build anything in 2026. It is not nostalgia here. The Workbox
+  comment in `vite.config.ts` already records the deployment reality this project was built for: the game runs
+  "em laboratorio de escola com maquina restaurada" — a school lab whose machines are restored to a factory
+  image, typically nightly. Everything in `localStorage` dies with that image.
+
+  The concrete loss: a child who reached level 4 of the literacy activity — which a teacher spent weeks
+  raising — starts Monday at level 2, and nobody in the lab has any way to give the level back. There is no
+  error, no log, no symptom: the game simply opens at its default.
+
+  The engine half of the gap was already closed by item 22 and is worth stating so this record is not read as
+  doing more than it does: "world bigger than the screen" EXISTS (camera M2, clamp and deadzone, an 896x992
+  world on a 320x180 screen). What was missing is the other half — progression that outlives the machine.
+
+decision-drivers:
+  - "Pillar 1: the target hardware is a school lab machine that is wiped. A persistence mechanism that assumes
+     the machine remembers is not a persistence mechanism here."
+  - "Pillar 4: any account, login or cloud sync puts a child's identifier on a server. The strictest rule wins,
+     and the strictest rule for a seven-year-old is to collect nothing."
+  - "Pillar 8: offline-first. Whatever is chosen must work with the network unplugged, forever."
+  - "ADR-0033's rule applies unchanged: the engine may declare what the ENGINE owns, never what the GAME owns.
+     A password format with a `nivel` field baked into the engine is that violation, spelled differently."
+  - "The user is a child who copies from a screen to a pencilled notebook and back. Every character costs, and
+     every wrong character that is ACCEPTED costs far more than one that is rejected."
+
+considered-options:
+  - "P1 — keep localStorage only, and accept the loss"
+  - "P2 — an account with cloud sync"
+  - "P3 — export/import a save FILE"
+  - "P4 — a short PASSWORD the child writes down; engine codec, game-declared schema"
+
+pros-and-cons-of-the-options:
+  keep-localstorage:
+    good: ["Zero work. Correct for a home machine, which is a real case too."]
+    bad: ["Fails precisely on the target hardware of pillar 1 — the case the project exists for."]
+  account-and-cloud:
+    good: ["Survives everything, including a lost notebook."]
+    bad: ["Collects a child's identifier, which pillar 4 rules out at this age.",
+          "Requires a backend that does not exist and a network the lab may not have.",
+          "A password a child cannot remember is a password a teacher manages — the school gains work."]
+  save-file:
+    good: ["No new format to invent; the browser already downloads and reads files."]
+    bad: ["The managed Chromebook profile wipes the downloads folder with the rest of the image.",
+          "A child of seven does not manage files; a teacher with thirty children manages thirty files.",
+          "It is not READABLE — nobody can look at a save file and see 'she is at level 4'."]
+  password:
+    good: ["Survives the wipe, the different computer, the private window and the missing network at once.",
+           "It is READABLE: a teacher can write it in the class notebook, and it is four characters.",
+           "Collects nothing — the data never leaves the paper it was written on.",
+           "It is the cartridge idiom ADR-0027 names, and the letter-grid selector it requires is the same
+            selector the ADR already says the engine needs for word games."]
+    bad: ["A format on paper is a CONTRACT WITH THE PAST: it can never be changed silently.",
+          "A mistyped password that is ACCEPTED loads someone else's progress, with no symptom.",
+          "A lost notebook loses the progress, and no support can recover it."]
+
+decision-outcome:
+  chosen-option: "P4 — a password, split in two along the boundary of ADR-0033"
+
+  rationale: |
+    THE SPLIT IS THE DECISION. `core/password` knows how to pack small integers into legible symbols with
+    verification, and it knows no field names at all: it receives a SCHEMA — a list of `{nome, bits}` the game
+    declares — and returns a codec. `game/progress` declares that this game's schema is `atividade` (6 bits)
+    and `nivel` (3 bits), and maps them to and from live state. The engine owns the ENCODING; the game owns
+    the MEANING. A second consumer with no notion of "level" gets a password by declaring its own two fields.
+
+    THREE CHOICES INSIDE THE CODEC, each answering "what does a child do?":
+
+    1. THE ALPHABET IS CROCKFORD BASE32 — 32 symbols with no I, L, O or U. The first three go for visual
+       ambiguity (I/1, L/1, O/0 is the classic error of copying pencil handwriting); U goes so the generator
+       cannot spell an obscenity by accident on a classroom screen. Crockford's leniency is applied on READING
+       only: typing I, L or O yields 1, 1 and 0, while writing never produces them. 32 symbols is also exactly
+       a legible 8x4 letter grid at 320x180 — the selector ADR-0027 says the engine needs.
+
+    2. THE CHECKSUM IS EXACT FOR THE TWO ERRORS A CHILD MAKES, not probable. A 5-bit check digit would let one
+       wrong password in 32 through, and a wrong password that PASSES is worse than one that is rejected: it
+       loads another child's progress silently. Two symbols carry a POSITION-WEIGHTED sum modulo 1021, which
+       detects every single-symbol substitution and every transposition of two body symbols — by arithmetic,
+       not by probability, because the largest change either error can cause is smaller than the modulus. That
+       bound is also why `criarCodec` REFUSES a schema above 32 body symbols instead of quietly degrading.
+
+    3. THE ACTIVITY INDEX COMES FROM AN APPEND-ONLY LIST (`ORDEM_SENHA`), not from the catalogue order. The
+       catalogue order is MENU order, and inserting `alf6` between `alf5` and `mat1` is a natural interface
+       change — one that would invalidate every password ever written in a notebook, with no error anywhere:
+       the child would type the right password and land in the wrong activity.
+
+    WHAT THE PASSWORD DOES NOT CARRY, decided by the same question: scenario, screen count, high contrast,
+    voice. None is progression; all are preferences, all remount in seconds, and all live in the SHARED
+    settings of ADR-0028. The in-round "lights" (0..3 correct in a row) were written and then removed: they
+    count answers INSIDE an open question, and there is no open question at the moment a password is typed, so
+    applying them would light up progress the child never made. Showing them to the teacher was the only use
+    left, and it cost a fifth character. A field nobody applies does not pay for a letter.
+
+  consequences:
+    good:
+      - "The child who reached level 4 keeps level 4 across a wiped machine, a different computer, a private
+         window and an unplugged network — with nothing collected about her."
+      - "The engine gains the codec half of the last gap ADR-0027 names, in a form a second consumer can use
+         without inheriting this game's vocabulary."
+      - "The password is four characters: `0204`, `1M19`, `8R1R`."
+    bad:
+      - "The format is now a contract with paper. `tests/progress.node.test.js` pins five real passwords letter
+         by letter, and when the catalogue is reordered those pins will fail — the correction is to fix the
+         code, never to rewrite the pins."
+      - "A child can brute-force a valid password in roughly a thousand tries and skip to a level she has not
+         earned. It is cheap to guard later (more bits) and was judged not worth a fifth character today."
+      - "Nothing SHOWS the password yet: the letter-grid selector and the screen that displays it are not
+         built. Until they are, this is a codec with a game-side record and no interface — stated plainly
+         rather than implied."
+    neutral:
+      - "Developer-facing `throw` messages in `core/password` are in ENGLISH while its comments are pt-BR, and
+         that inconsistency is deliberate: the engine i18n gate rejected the module with pt-BR messages, and
+         its 'programmer messages' drawer would have required raising the global ceiling from 76 to 82 in the
+         same commit that created the debt. Loosening a gate to fit into it is the defect the gate exists to
+         prevent. The three older modules in that drawer stay as recorded debt."
+
+  confirmation: |
+    `tests/password.node.test.js` (26 cases) and `tests/progress.node.test.js` (14 cases), both in the node
+    project. Two of them are not sampled but EXHAUSTIVE, because a format nobody can double-check deserves it:
+    every single-symbol substitution in every position, and every transposition of two distinct body symbols,
+    must be rejected. A third sweeps all 32768 three-character strings of a small schema and asserts that
+    exactly the 32 legitimate ones pass.
+
+    Eight mutations were injected into the codec and seven turned the suite red. THE ONE THAT SURVIVED IS
+    RECORDED IN THE SOURCE rather than hidden: replacing the modulus 1021 with 1024 breaks no case, because
+    what carries the guarantee is the SIZE of the modulus and not its primality. 1021 is kept as the largest
+    prime below the two-symbol ceiling, which costs nothing and closes a hole for multi-symbol errors that a
+    power-of-two modulus leaves open.
+
+    Two mutations on the game side survived the first pass and are also recorded: one produced a new case (a
+    FORGED password from a hypothetical future version, carrying a level that does not exist yet, which is the
+    only way to exercise the clamp on READING); the other — reading the catalogue order instead of
+    `ORDEM_SENHA` — is unreachable today because the two lists are still in the same order, and is written
+    down in the test as the gap it is, with the note that the five pinned passwords are what will catch it on
+    the day the two orders diverge.
