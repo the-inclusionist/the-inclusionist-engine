@@ -6,7 +6,7 @@
 //
 // POR QUE CHAVES E NÃO TEXTO: a tabela é uma `const` de módulo, avaliada UMA vez no import. Se guardasse
 // `t('…')` já resolvido, o idioma congelaria no boot — `dict` em core/i18n é um `let` que `setLocale`
-// reatribui, e quem leu antes da troca nunca mais vê a troca. Guardando a chave, quem resolve é o sítio de
+// reatribui, e quem leu antes da troca nunca mais vê a troca. Guardando a chave, quem resolve é o ponto de
 // uso (`t(TOUCH_ACT_LABELS[a])` em input/touch), a cada chamada, com o idioma vigente naquele instante.
 // Este módulo continua ZERO deps de propósito: chave é dado, `t` é comportamento e mora no consumidor.
 export const PAD_DESIGNS: Record<string, Record<string, string[]>> = { // por botão: [rótulo, cor]

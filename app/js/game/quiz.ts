@@ -112,23 +112,39 @@ export function mkChoices(answer: number | string, lo: number, hi: number): stri
   return shuffle(set);
 }
 
+/**
+ * O enunciado falado de uma conta: "Quanto é {a} {operador} {b}?".
+ *
+ * A MATEMÁTICA NÃO É DISCIPLINA DE IDIOMA — `2 + 3` independe de língua, então a frase inteira traduz, os
+ * operadores por extenso inclusive. Isso a separa da alfabetização, onde a palavra a montar É a matéria e
+ * atravessa sem tradução. (Decisão do Dev, 2026-08-24; ver o CLAUDE.md.)
+ *
+ * Existe como função porque a mesma frase era montada em CINCO geradores, cada um com o seu ternário de
+ * 'mais'/'menos' — e dois deles com o ternário escrito de forma idêntica, o que é a divergência esperando
+ * acontecer que este projeto já viu quatro vezes.
+ */
+const OP_KEY: Readonly<Record<string, string>> = { '+': 'math.op.plus', '−': 'math.op.minus', '-': 'math.op.minus', '×': 'math.op.times', '÷': 'math.op.dividedBy' };
+function fala(a: number | string, op: string, b: number | string): string {
+  return t('sr.math.howMuchIs', { a, op: t(OP_KEY[op] ?? op), b });
+}
+
 /** mat1 — QUANTIDADE: bolinhas → número (grade FIXA 1..9, sem sorteio de alternativas). */
 const genQuantidade: MathGenerator = () => {
   const n = randInt(1, 9);
-  return { dots: n, answer: String(n), prob: 'Quantas bolinhas?', choices: ['1', '2', '3', '4', '5', '6', '7', '8', '9'], fala: 'Quantas bolinhas você vê?' };
+  return { dots: n, answer: String(n), prob: t('math.howManyDots'), choices: ['1', '2', '3', '4', '5', '6', '7', '8', '9'], fala: t('sr.math.howManyDots') };
 };
 
 /** mat2 — SOMA FÁCIL: parcelas 0..5. */
 const genSomaFacil: MathGenerator = () => {
   const a = randInt(0, 5), b = randInt(0, 5);
-  return { prob: `${a} + ${b} = ?`, answer: String(a + b), choices: mkChoices(a + b, 0, 10), fala: `Quanto é ${a} mais ${b}?` };
+  return { prob: `${a} + ${b} = ?`, answer: String(a + b), choices: mkChoices(a + b, 0, 10), fala: fala(a, '+', b) };
 };
 
 /** mat4 — SOMA E SUBTRAÇÃO 2: guarda um na cabeça e opera o outro nos dedos (até 20; nunca negativo). */
 const genSomaSub2: MathGenerator = () => {
   const op = rnd() < 0.5 ? '+' : '−'; let a: number, b: number, ans: number;
   if (op === '+') { a = randInt(0, 10); b = randInt(0, 10); ans = a + b; } else { a = randInt(0, 20); b = randInt(0, Math.min(10, a)); ans = a - b; }
-  return { prob: `${a} ${op} ${b} = ?`, answer: String(ans), choices: mkChoices(ans, 0, 20), fala: `Quanto é ${a} ${op === '+' ? 'mais' : 'menos'} ${b}?` };
+  return { prob: `${a} ${op} ${b} = ?`, answer: String(ans), choices: mkChoices(ans, 0, 20), fala: fala(a, op, b) };
 };
 
 /** Número LIGADO no menu da tabuada/divisão (entra em qualquer posição). Sem seleção → 2. */
@@ -138,7 +154,7 @@ function pickTabNumber(tabSel: readonly number[]): number { return tabSel.length
 const genTabuada: MathGenerator = ({ tabSel }) => {
   const on = pickTabNumber(tabSel);
   const other = randInt(0, 10); let a: number, b: number; if (rnd() < 0.5) { a = on; b = other; } else { a = other; b = on; }
-  return { prob: `${a} × ${b} = ?`, answer: String(a * b), choices: mkChoices(a * b, 0, 100), fala: `Quanto é ${a} vezes ${b}?` };
+  return { prob: `${a} × ${b} = ?`, answer: String(a * b), choices: mkChoices(a * b, 0, 100), fala: fala(a, '×', b) };
 };
 
 /** mat6 — DIVISÃO inteira: divisor E quociente de 0..10 (divisor ≥1, sem ÷0); o nº ligado entra em qualquer posição. */
@@ -149,7 +165,7 @@ const genDivisao: MathGenerator = ({ tabSel }) => {
   else if (rnd() < 0.5) { quo = on; divisor = Math.max(1, other); }            // ligado = quociente
   else { divisor = on; quo = other; }                                          // ligado = divisor
   const dividend = divisor * quo;
-  return { prob: `${dividend} ÷ ${divisor} = ?`, answer: String(quo), choices: mkChoices(quo, 0, 10), fala: `Quanto é ${dividend} dividido por ${divisor}?` };
+  return { prob: `${dividend} ÷ ${divisor} = ?`, answer: String(quo), choices: mkChoices(quo, 0, 10), fala: fala(dividend, '÷', divisor) };
 };
 
 /**
@@ -173,14 +189,14 @@ function genFracoes(dens: readonly number[], { fracNot }: MathDeps): MathChallen
   const choices: Choice[] = shuffle(vals).map((v) => ({ key: keyOf(v), disp: dispChoice(v) }));
   // ORDEM DO RNG preservada: `prob` (dois dispOp) é montado DEPOIS das alternativas, como no monólito.
   const prob = `<span class="frac-op">${dispOp(n1, d1)}</span> ${op} <span class="frac-op">${dispOp(n2, d2)}</span> = ?`;
-  return { not, prob, answer: ansKey, choices, fala: `Quanto é ${fracSpeak(n1 + '/' + d1)} ${op === '+' ? 'mais' : 'menos'} ${fracSpeak(n2 + '/' + d2)}?` };
+  return { not, prob, answer: ansKey, choices, fala: fala(fracSpeak(n1 + '/' + d1), op, fracSpeak(n2 + '/' + d2)) };
 }
 
 /** mat3 e o PADRÃO — SOMA E SUBTRAÇÃO 1: dá para fazer nos dedos (soma ≤10, minuendo ≤10). */
 const genSomaSub1: MathGenerator = () => {
   const op = rnd() < 0.5 ? '+' : '−'; let a: number, b: number, ans: number;
   if (op === '+') { a = randInt(0, 9); b = randInt(0, 10 - a); ans = a + b; } else { a = randInt(0, 10); b = randInt(0, a); ans = a - b; }
-  return { prob: `${a} ${op} ${b} = ?`, answer: String(ans), choices: mkChoices(ans, 0, 10), fala: `Quanto é ${a} ${op === '+' ? 'mais' : 'menos'} ${b}?` }; // sem o nome da forma
+  return { prob: `${a} ${op} ${b} = ?`, answer: String(ans), choices: mkChoices(ans, 0, 10), fala: fala(a, op, b) }; // sem o nome da forma
 };
 
 /** Tabela de geradores por id de atividade (substitui a cadeia if/else — MESMO despacho, MESMO RNG). */
@@ -279,7 +295,7 @@ export function cKey(c: Choice): string { return (c && typeof c === 'object') ? 
 export function cDisp(c: Choice): string { return (c && typeof c === 'object') ? c.disp : String(c); }
 
 /** Prefixo das falas do quiz em multiplayer ("Jogador 2: "); vazio no solo. */
-export function quizWho(pl: QuizPlayer): string { return numPlayers > 1 ? ('Jogador ' + (pl.i + 1) + ': ') : ''; }
+export function quizWho(pl: QuizPlayer): string { return numPlayers > 1 ? t('sr.quiz.who', { n: pl.i + 1 }) : ''; }
 
 /** Matemática: a conta no topo + matriz 3×3 de 9 respostas (números ou gráficos). */
 export function somasubHtml(q: MathQuiz): string {
@@ -453,7 +469,8 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     // hearSyl: Descobrindo sílabas (nível 2) fala a sílaba no hover/seleção; Montando (3) não
     pl.quiz = { kind: 'silabas', hearSyl: (quizLevel === 2), coinIndex, letter, word: item.w, emoji: item.e, correct, options, boxes: [null, null], sel: 0, tries: 0, revealed: false };
     pl.vx = 0; pl.vy = 0;
-    c.srSay(`${quizWho(pl)}Letra ${c.disp(item.w[0])}. Monte a palavra: ${item.w}.`); // letra da PRÓPRIA palavra (o não-repetir pode trocar a letra da moeda)
+    // A letra e a palavra ATRAVESSAM em pt-BR: são a matéria de uma disciplina de idioma. A moldura traduz.
+    c.srSay(quizWho(pl) + t('sr.quiz.buildWord', { letra: c.disp(item.w[0]), palavra: item.w })); // letra da PRÓPRIA palavra (o não-repetir pode trocar a letra da moeda)
     c.gameSay(item.w); // ao abrir, fala a palavra SEMPRE (independente do toggle TTS) — José
     renderQuiz(pl);
   }
@@ -463,7 +480,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     const item = pickWord(letter);
     pl.quiz = { kind: 'pre', coinIndex, word: item.w, emoji: item.e, choices: generatePreChoices(item), sel: 0, tries: 0, revealed: false };
     pl.vx = 0; pl.vy = 0;
-    c.srSay(`${quizWho(pl)}${item.w}. Qual é a escrita certa? O jogo soletra cada opção.`);
+    c.srSay(quizWho(pl) + t('sr.quiz.whichSpelling', { palavra: item.w }));
     c.gameSay(item.w); // fala o nome da imagem SEMPRE (independente do toggle TTS) — José
     renderQuiz(pl); quizSpeakSel(pl);
   }
@@ -473,7 +490,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     const item = pickWord(letter);
     pl.quiz = { kind: 'alf', braille: quizLevel === 5, coinIndex, word: item.w, emoji: item.e, options: generateAlfOptions(item.w), boxes: Array(item.w.length).fill(null), sel: 0, tries: 0, revealed: false };
     pl.vx = 0; pl.vy = 0;
-    c.srSay(`${quizWho(pl)}Escreva a palavra: ${item.w}. ${item.w.length} letras.`);
+    c.srSay(quizWho(pl) + t('sr.quiz.writeWord', { palavra: item.w, n: item.w.length }));
     renderQuiz(pl); quizSpeakSel(pl);
   }
 
@@ -486,7 +503,8 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
 
   function announceBraille(pl: QuizPlayer): void {
     const q = pl.quiz; if (!q || q.kind !== 'braille') return;
-    c.srAlert(`${quizWho(pl)}${q.word}. ` + q.cells.map((cell) => `${cell.l}: ${cell.text}.`).join(' ') + ' Pule para coletar.');
+    // As celas Braille (`cell.l`/`cell.text`) são conteúdo de disciplina de idioma e atravessam inteiras.
+    c.srAlert(quizWho(pl) + t('sr.quiz.brailleDictation', { palavra: q.word, celas: q.cells.map((cell) => `${cell.l}: ${cell.text}.`).join(' ') }));
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -589,10 +607,10 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     const word = (q as SilabasQuiz).word;
     if (pl.alfWins < 3) {
       if (c.actCat() === 'alf' && word) { // LETRAMENTO: som suave (o sfx de acerto já tocou) + REFALA a palavra + PAUSA → próxima palavra
-        q.won = true; c.gameSay(word); c.srSay(quizWho(pl) + 'Muito bem! ' + c.disp(word) + '. ' + pl.alfWins + ' de 3.');
+        q.won = true; c.gameSay(word); c.srSay(quizWho(pl) + t('sr.quiz.wellDone', { palavra: c.disp(word), n: pl.alfWins }));
         setTimeout(() => { if (pl.quiz === q) closeQuiz(pl); }, 1200); return; // a próxima abre ao encostar na moeda e é falada (openSilabas/openPre → gameSay)
       }
-      c.srSay(quizWho(pl) + 'Acertou! ' + pl.alfWins + ' de 3 para ganhar a moeda.'); closeQuiz(pl); return; // moeda FICA; encostado nela, a próxima pergunta abre sozinha
+      c.srSay(quizWho(pl) + t('sr.quiz.correctSoFar', { n: pl.alfWins })); closeQuiz(pl); return; // moeda FICA; encostado nela, a próxima pergunta abre sozinha
     }
     // 3ª VITÓRIA: acende a 3ª luz + comemoração SUAVE (som tipo enigma-resolvido do Zelda), depois pega a moeda
     q.celebrating = true;

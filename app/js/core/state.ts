@@ -63,7 +63,7 @@ export let players: Player[] = [];
 //     narração —, sem tela preta; a simulação de cegueira do Modo Empatia é outra coisa e liga esta por cima.
 //
 //     Migrado do main.js (ADR-0027 passo 4 / #50). Era a variável com MAIS encanamento de injeção do projeto:
-//     dezesseis sítios em seis módulos passavam `getModoCego`/`setModoCego` por ctx, e a colisão a lia por
+//     dezesseis pontos em seis módulos passavam `getModoCego`/`setModoCego` por ctx, e a colisão a lia por
 //     closure. Estado que seis módulos consultam não é do composition root; e enquanto for, `createGame()` não
 //     pode existir sem capturá-la, que é justamente o teste de fronteira que o ADR-0027 quer rodar.
 //

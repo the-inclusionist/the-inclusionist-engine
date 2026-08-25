@@ -245,5 +245,23 @@ const en: Record<string, string> = {
   'outline.thick': 'thick',
   'sr.captions.on': 'Captions on.',
   'sr.captions.off': 'Captions off.',
+
+  // Quiz — MATHS: the whole prompt translates, operators included (2+3 is language-independent).
+  'math.howManyDots': 'How many dots?',
+  'math.op.plus': 'plus',
+  'math.op.minus': 'minus',
+  'math.op.times': 'times',
+  'math.op.dividedBy': 'divided by',
+  'sr.math.howManyDots': 'How many dots do you see?',
+  'sr.math.howMuchIs': 'What is {a} {op} {b}?',
+  // Quiz — LITERACY: the FRAME translates; the word, the letter and the Braille cell travel through as
+  // parameters, in pt-BR, because they are the subject matter of a language discipline.
+  'sr.quiz.who': 'Player {n}: ',
+  'sr.quiz.buildWord': 'Letter {letra}. Build the word: {palavra}.',
+  'sr.quiz.whichSpelling': '{palavra}. Which spelling is right? The game spells out each option.',
+  'sr.quiz.writeWord': 'Write the word: {palavra}. {n} letters.',
+  'sr.quiz.brailleDictation': '{palavra}. {celas} Jump to collect.',
+  'sr.quiz.wellDone': 'Well done! {palavra}. {n} out of 3.',
+  'sr.quiz.correctSoFar': 'Correct! {n} out of 3 to win the coin.',
 };
 export default en;

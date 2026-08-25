@@ -99,18 +99,56 @@ describe('dicionários de locale — estrutura', () => {
 });
 
 describe('a fronteira currículo × moldura', () => {
-  // ADR-0010 pilar 3, e o CLAUDE.md: a UI se TRADUZ; o currículo de alfabetização NÃO — sílaba, grafema↔fonema e a
-  // psicogênese de Ferreiro são específicos da língua e pedem currículo próprio por idioma, não tradução. Na prática
-  // isso vira uma regra mecânica: a moldura mora na chave, o conteúdo atravessa por `{param}`.
-  it('[Right] nenhuma chave `sr.*` embute conteúdo de currículo', () => {
-    // Heurística deliberadamente grosseira: palavra/sílaba/letra soletrada dentro do dicionário seria conteúdo
-    // preso na moldura. Se um dia der falso positivo, o certo é renomear a chave, não relaxar o teste.
-    const SUSPEITO = /\b(sílaba|silaba|soletr|grafema|fonema|braille)\b/i;
-    for (const [nome, d] of Object.entries(DICTS)) {
-      const presos = chavesSr.filter((k) => k in d && SUSPEITO.test(d[k]));
-      expect(presos, `${nome}: conteúdo de currículo dentro da moldura`).toEqual([]);
+  // A REGRA (Dev, 2026-08-24 — ver o CLAUDE.md): o idioma do programa é o idioma da INTERFACE, e é ele que
+  // define a língua de origem das atividades. O ENUNCIADO SEMPRE TRADUZ — numa atividade de ciências como numa
+  // de idioma. A única exceção é o CONTEÚDO linguístico: a palavra, a letra, a sílaba, a soletração e a cela
+  // Braille seguem em pt-BR, porque são a matéria. Matemática NÃO é disciplina de idioma: `2 + 3` independe de
+  // língua, então "Quanto é 2 mais 3?" traduz inteiro, operadores por extenso inclusive.
+  //
+  // Mecanicamente: a moldura mora na chave, o conteúdo atravessa por `{param}`.
+
+  // ESTE CASO FOI REESCRITO, e o motivo importa mais que o código.
+  //
+  // A versão anterior farejava VOCABULÁRIO — /\b(sílaba|soletr|grafema|fonema|braille)\b/ — partindo da minha
+  // leitura de que a atividade de alfabetização INTEIRA ficaria em pt-BR. A régua do Dev é mais estreita, e
+  // com ela "O jogo soletra cada opção" virou enunciado legítimo: farejar a palavra "soletra" passou a acusar
+  // o inocente.
+  //
+  // E a versão anterior nem funcionava. O `\b` depois do radical `soletr` exige fronteira de palavra ali
+  // mesmo, então ele nunca casou com "soletra" nem com "soletração" — as duas formas que de fato existem. O
+  // radical era decorativo e o caso passava por não conseguir falhar, não por estar tudo em ordem.
+  //
+  // O que entra no lugar é a forma MECÂNICA da regra, que é verificável: quem anuncia conteúdo de currículo
+  // tem de recebê-lo por `{param}`. Uma chave que fala de palavra sem ter `{palavra}` embutiu o conteúdo — e
+  // então a tradução precisaria reproduzir a palavra, que é precisamente o que a regra proíbe.
+  it('[Right] toda chave que anuncia conteúdo de alfabetização o recebe por PARÂMETRO', () => {
+    const DE_CONTEUDO = ['sr.quiz.buildWord', 'sr.quiz.whichSpelling', 'sr.quiz.writeWord',
+      'sr.quiz.brailleDictation', 'sr.quiz.wellDone'];
+    for (const k of DE_CONTEUDO) {
+      expect(pt[k], `chave de conteúdo ausente do dicionário: ${k}`).toBeTypeOf('string');
+      for (const [nome, d] of Object.entries(DICTS)) {
+        if (!(k in d)) continue;
+        expect(paramsDe(d[k]), `${nome} · ${k} — a palavra tem de atravessar por {palavra}`).toContain('palavra');
+      }
     }
   });
+
+  // NÃO HÁ SEGUNDO CASO AQUI, e a ausência é o resultado de duas tentativas, não de esquecimento.
+  //
+  // Tentei aferir que nenhuma chave EMBUTE uma palavra do currículo. Primeiro com uma lista escrita à mão
+  // (BABA, BOLA, CASA…), depois pensando em derivá-la de `SILABAS_WORDS`, que é a fonte de verdade. As duas
+  // falham pela mesma razão de fundo: as palavras do currículo de alfabetização são palavras COMUNÍSSIMAS do
+  // português — gato, bola, casa, lua, uva, dado, fogo. A primeira tentativa já acusou `fnot.desc.dec`, que
+  // diz "uma casa decimal" e não tem nada a ver com currículo.
+  //
+  // Não dá para distinguir "a palavra CASA como matéria" de "casa" usada em prosa olhando só o dicionário.
+  // Restringir a caixa alta cobriria menos ainda: o conteúdo chega minúsculo de `SILABAS_WORDS`.
+  //
+  // Então a verificação mecânica da regra é só a de cima — o conteúdo entra por `{param}`. Um teste que não
+  // pode ficar correto não vale a pena guardar numa forma enfraquecida, que daria a impressão de cobrir o que
+  // não cobre. Fica escrito aqui o que sobrou por fazer, para ninguém tentar uma terceira vez sem saber das
+  // duas primeiras.
+
 
   it('[Interface] chave que fala de jogador ou de tela carrega o número por parâmetro', () => {
     // O que prova que a moldura foi separada do conteúdo: se o número estivesse na frase, haveria uma chave por

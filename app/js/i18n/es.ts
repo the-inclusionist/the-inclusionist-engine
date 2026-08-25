@@ -246,5 +246,23 @@ const es: Record<string, string> = {
   'outline.thick': 'grueso',
   'sr.captions.on': 'Subtítulos activados.',
   'sr.captions.off': 'Subtítulos desactivados.',
+
+  // Quiz — MATEMÁTICAS: el enunciado entero se traduce, operadores incluidos (2+3 no depende del idioma).
+  'math.howManyDots': '¿Cuántas bolitas?',
+  'math.op.plus': 'más',
+  'math.op.minus': 'menos',
+  'math.op.times': 'por',
+  'math.op.dividedBy': 'dividido por',
+  'sr.math.howManyDots': '¿Cuántas bolitas ves?',
+  'sr.math.howMuchIs': '¿Cuánto es {a} {op} {b}?',
+  // Quiz — ALFABETIZACIÓN: el MARCO se traduce; la palabra, la letra y la celda Braille pasan como
+  // parámetros, en pt-BR, porque son la materia de una disciplina de idioma.
+  'sr.quiz.who': 'Jugador {n}: ',
+  'sr.quiz.buildWord': 'Letra {letra}. Forma la palabra: {palavra}.',
+  'sr.quiz.whichSpelling': '{palavra}. ¿Cuál es la escritura correcta? El juego deletrea cada opción.',
+  'sr.quiz.writeWord': 'Escribe la palabra: {palavra}. {n} letras.',
+  'sr.quiz.brailleDictation': '{palavra}. {celas} Salta para recoger.',
+  'sr.quiz.wellDone': '¡Muy bien! {palavra}. {n} de 3.',
+  'sr.quiz.correctSoFar': '¡Acertaste! {n} de 3 para ganar la moneda.',
 };
 export default es;

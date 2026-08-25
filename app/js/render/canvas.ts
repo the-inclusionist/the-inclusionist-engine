@@ -13,7 +13,7 @@ export function pixDisc(c: CanvasRenderingContext2D, cx: number, cy: number, r: 
 
 /* ===================== o pintor de retângulos (px) ===================== */
 // POR QUE EXISTE: o par `makeCanvas(w,h)` + `getContext('2d')` seguido de `fillStyle=…; fillRect(…)` aparece em
-// ~24 sítios do projeto, e a arte procedural da Cidade no main.js chegou a definir TRÊS `mk`/`px` locais, com
+// ~24 pontos do projeto, e a arte procedural da Cidade no main.js chegou a definir TRÊS `mk`/`px` locais, com
 // assinaturas incompatíveis entre si (4 args sem cor + cor fixa por fora; 5 args com cor; canvas de tamanho
 // fixo embutido). Aqui a assinatura é UMA só: `px(x, y, w, h, cor)`.
 // POR QUE DEVOLVE O CANVAS (e não a textura): metade dos usos pós-processa o bitmap antes de virar textura

@@ -9,9 +9,16 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
   pt-BR.** Este arquivo (manual operacional da IA) segue em pt-BR de propósito.
 - **Idiomas do JOGO — piso de três:** **pt-BR** (base), **inglês** e **espanhol**. Não é meta, é mínimo; toda string de
   UI nasce localizável (`t()`/`data-i18n`), nunca fixa no código. Ver o pilar 3 do ADR-0010, `1-Discovery/plano-i18n.md`
-  e a **Fase 5** no quadro. **Cuidado com a fronteira:** UI se *traduz*; o currículo de **alfabetização** não — sílaba,
-  grafema↔fonema e a psicogênese de Ferreiro são específicos da língua, então esse conteúdo segue pt-BR e cada idioma
-  novo pede currículo próprio, não tradução.
+  e a **Fase 5** no quadro.
+- **A FRONTEIRA (decidida pelo Dev em 2026-08-24, e mais estreita do que parecia):** o idioma do programa é o idioma
+  da **interface**, e é ele que define a língua "oficial" do jogador — a língua de origem de todas as atividades.
+  **O ENUNCIADO SEMPRE TRADUZ.** Numa atividade de ciências, trocar o idioma traduz o enunciado; numa atividade de
+  **disciplina de idioma** vale o mesmo, com uma única exceção: **o CONTEÚDO linguístico não é traduzido**, porque ele
+  *é* a matéria. A palavra a montar, a letra, a sílaba, a soletração e a cela Braille seguem em pt-BR; o "Escreva a
+  palavra:" que os envolve traduz. Na prática vira uma regra mecânica: **a moldura mora na chave, o conteúdo atravessa
+  por `{param}`**.
+  ⚠️ **Matemática NÃO é disciplina de idioma.** `2 + 3` independe de língua, então "Quanto é 2 mais 3?" é enunciado e
+  traduz inteiro — inclusive os operadores por extenso ("mais"/"vezes"/"dividido por") e os números falados.
 
 ## 0. Regra de ouro (operacional — o que mais me guia)
 

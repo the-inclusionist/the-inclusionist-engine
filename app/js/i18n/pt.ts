@@ -276,5 +276,23 @@ const pt: Record<string, string> = {
   'outline.thick': 'grosso',
   'sr.captions.on': 'Legendas ligadas.',
   'sr.captions.off': 'Legendas desligadas.',
+
+  // Quiz — MATEMÁTICA: enunciado inteiro, operadores inclusive (2+3 independe de língua).
+  'math.howManyDots': 'Quantas bolinhas?',
+  'math.op.plus': 'mais',
+  'math.op.minus': 'menos',
+  'math.op.times': 'vezes',
+  'math.op.dividedBy': 'dividido por',
+  'sr.math.howManyDots': 'Quantas bolinhas você vê?',
+  'sr.math.howMuchIs': 'Quanto é {a} {op} {b}?',
+  // Quiz — ALFABETIZAÇÃO: a MOLDURA traduz; a palavra, a letra e a cela Braille atravessam por parâmetro,
+  // em pt-BR, porque são a matéria de uma disciplina de idioma e não se traduzem ao trocar o idioma do jogo.
+  'sr.quiz.who': 'Jogador {n}: ',
+  'sr.quiz.buildWord': 'Letra {letra}. Monte a palavra: {palavra}.',
+  'sr.quiz.whichSpelling': '{palavra}. Qual é a escrita certa? O jogo soletra cada opção.',
+  'sr.quiz.writeWord': 'Escreva a palavra: {palavra}. {n} letras.',
+  'sr.quiz.brailleDictation': '{palavra}. {celas} Pule para coletar.',
+  'sr.quiz.wellDone': 'Muito bem! {palavra}. {n} de 3.',
+  'sr.quiz.correctSoFar': 'Acertou! {n} de 3 para ganhar a moeda.',
 };
 export default pt;
