@@ -13,10 +13,11 @@ import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
 import { phase, numPlayers, cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue, vizMode, initVizMode, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
-import type { Player } from './core/entity.js';
+import type { Player } from './core/entity.js'; // a entidade da ENGINE
+import type { GamePlayer } from './game/entity.js'; // a deste JOGO — ver a nota de `jogadores` abaixo
 import type { ModalIntent } from './input/keydown.js'; // a intenção direcional do ADR-0033
 import type { RenderTextureLike, SpriteLike, GraphicsLike } from './render/screen-pipeline.js'; // o ctx de lá declara estes
-import type { HcRoleKey } from './render/hc-role-data.js'; // HC_ROLE é Record<HcRoleKey, …>: a chave não é `string` // o tipo da entidade, para os parâmetros que a recebem
+import type { HcRoleKey } from './render/hc-role-data.js'; // HC_ROLE é Record<HcRoleKey, …>: a chave não é `string`
 import { quizLevel, setQuizLevelValue, coins, setCoins } from './game/state.js'; // item 19: o estado DESTE jogo
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
@@ -760,6 +761,20 @@ function ensureSprites(){
 }
 let vpTex: RenderTextureLike[] = [], vpSpr: SpriteLike[] = [], vpFrames: GraphicsLike | null = null, vpDots: GraphicsLike[] = [];
 // HUD por jogador em DOM SOBREPOSTO (alta definição, não pixela): moedas (1ª coluna) + poder (2ª coluna), por viewport.
+/**
+ * OS JOGADORES DESTE JOGO, e o único lugar onde a vista se estreita.
+ *
+ * `core/state.players` é `Player[]` porque a engine não conhece `quiz` — foi exatamente isso que o ADR-0033
+ * decidiu ao tirar o campo de `core/entity`. Quem PÕE `GamePlayer` naquele array é este arquivo, que é a raiz
+ * de composição do jogo, então é aqui que ele volta a ser lido como tal. O `as` não afirma nada que este
+ * arquivo já não garanta.
+ *
+ * É função e não constante DE PROPÓSITO: `players` é `export let`, e uma constante congelaria a referência no
+ * instante do import. Hoje ninguém reatribui (conferido em toda a árvore) — mas "hoje ninguém" é a premissa
+ * que envelhece pior, e a função custa uma chamada.
+ */
+const jogadores = (): GamePlayer[] => players as GamePlayer[];
+
 let vpPause: HTMLElement[] = []; // `pauseActor` migrou para core/state.js (#50). gameHudEl/vpHudDom/vpQuitDom/vpScreens -> ui/hud.ts
 // Menu de pausa POR TELA (Etapa 2): um por jogador, dentro da .player-screen dele.
 // Barra de atalhos de a11y no topo da pausa (por tela). Sons (cego/TTS) só com saída própria; webcam/voz em construção.
@@ -935,7 +950,8 @@ function closeQuiz(pl: Player){ quizApi.closeQuiz(pl); }
 // colunas e o desvio de Braille moravam dentro do `input/keydown` e do `input/gamepad`, em duas COPIAS —
 // que e a pior forma de ter uma regra. Agora ela existe uma vez, aqui, do lado de quem e dono do desafio.
 function modalInput(pl: Player, intent: ModalIntent) {
-  if (pl.quiz && pl.quiz.kind === 'braille') {   // cego: cima DITA a cela, confirmar responde. Nada mais anda.
+  const plq = pl as GamePlayer;
+  if (plq.quiz && plq.quiz.kind === 'braille') {   // cego: cima DITA a cela, confirmar responde. Nada mais anda.
     if (intent === 'up') announceBraille(pl);
     else if (intent === 'confirm') quizConfirm(pl);
     return;
@@ -947,7 +963,7 @@ function modalInput(pl: Player, intent: ModalIntent) {
   else if (intent === 'confirm') quizConfirm(pl);
   else if (intent === 'erase') quizErase(pl);
 }
-const temModal = (i: number) => !!(players[i] && players[i].quiz);
+const temModal = (i: number) => !!(jogadores()[i] && jogadores()[i].quiz);
 function quizMove(pl: Player,d: Parameters<typeof quizApi.quizMove>[1]){ quizApi.quizMove(pl,d); }
 function quizConfirm(pl: Player){ quizApi.quizConfirm(pl); }
 function quizErase(pl: Player){ quizApi.quizErase(pl); }
@@ -1100,7 +1116,7 @@ function applyLetra(){
   // de texto no jogo, e o botão só ligava um deles — daí "letras maiúsculas" não alcançar os menus.
   document.documentElement.dataset.letras = letterCase;
   if(typeof rebuildCoins==='function' && MODE==='silabas') rebuildCoins();
-  players.forEach(p=>{ if(p.quiz)renderQuiz(p); }); // L3: re-renderiza o quiz de quem estiver num
+  jogadores().forEach(p=>{ if(p.quiz)renderQuiz(p); }); // L3: re-renderiza o quiz de quem estiver num
 }
 applyLetra(); // estado inicial: reflete a caixa persistida no atributo que o CSS lê
 function setLetterCaseAndApply(c: Parameters<typeof setLetterCaseValue>[0]){ setLetterCaseValue(c); applyLetra(); }
@@ -1244,7 +1260,7 @@ const touchCtl = initTouch({ $, srSay, store, root: document.documentElement, is
   // era uma linha dentro do `input/touch` lendo `numPlayers`, `phase` e `players[].quiz` por importacao — e a
   // ultima dizia que a camada de TOQUE sabia que existe atividade de alfabetizacao. Mesmo movimento do
   // achado 10: injeta-se o BOOLEANO, nao o estado.
-  padAllowed: () => numPlayers <= 1 && phase === 'playing' && !players.some((p) => p.quiz),
+  padAllowed: () => numPlayers <= 1 && phase === 'playing' && !jogadores().some((p) => p.quiz),
   viewport: () => ({ w: window.innerWidth, h: window.innerHeight }),
   frontOverlay, onPadDesignApplied: () => { if(typeof renderPauseLegend==='function') renderPauseLegend(); } });
 // (o proprio initTouch ja aplica o desenho salvo no fim da sua inicializacao)
@@ -1372,7 +1388,7 @@ window.__incl={app,get player(){return players[0];},players,get numPlayers(){ret
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE;},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
-  setMode,setQuizLevel,get quizLevel(){return quizLevel;},openSilabas,quizMove,quizConfirm,quizErase,get quiz(){return players[0].quiz;},INCL_VERSION,fmtFrac,fracGraphic,speakChoice,get fracNot(){return fracNot;},
+  setMode,setQuizLevel,get quizLevel(){return quizLevel;},openSilabas,quizMove,quizConfirm,quizErase,get quiz(){return jogadores()[0].quiz;},INCL_VERSION,fmtFrac,fracGraphic,speakChoice,get fracNot(){return fracNot;},
   setGameFont:typo.setFont,openTypo,get fontKey(){return typo.getFontKey();},FONT_GROUPS,get mmSeen2(){return minimapSeenCount();},
   startAttract:()=>attractCtl.startAttract(),stopAttract:()=>attractCtl.stopAttract(),get attract(){return attractCtl.isAttract();}, // attract → game/attract.ts
   loadTTS:tts.loadTTS,ttsSpeak:tts.ttsSpeak,narrate:tts.narrate,get ttsEngine(){return tts.getEngine();},get ttsLoading(){return tts.loading;},get ttsFailed(){return tts.failed;},setTtsEngineSel(v: Parameters<typeof tts.setEngineSel>[0]){tts.setEngineSel(v);},

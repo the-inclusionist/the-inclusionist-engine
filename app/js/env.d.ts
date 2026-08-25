@@ -14,3 +14,30 @@ declare module 'virtual:sprite-atlas' {
   /** `anim/idx` → retângulo do quadro dentro do atlas. */
   export const FRAMES: Record<string, { x: number; y: number; w: number; h: number }>;
 }
+
+/**
+ * OS GANCHOS DE TESTE PENDURADOS NA `window`, declarados porque o `main.ts` os cria e os estende.
+ *
+ * `__incl` é o objeto que o PROTOCOLO DE VERIFICAÇÃO deste projeto usa: conferir o boot é conferir que
+ * `typeof window.__incl === 'object'`, e daí ler `phase`, `players`, `canvas`. Ele não é detalhe de
+ * implementação — é contrato, e por isso está aqui e não num `as any` no ponto de uso.
+ *
+ * ⚠️ A DECLARAÇÃO É UM PISO, NÃO O CONTRATO INTEIRO, e isso é dito em vez de disfarçado: o objeto tem cerca
+ * de cinquenta membros montados num literal só, e os testes de navegador o leem em tempo de execução, sem
+ * tipo. O índice `[k: string]` é o que deixa esse literal ser atribuído; os três nomeados são os que o
+ * `main.ts` acrescenta DEPOIS da criação, e esses o compilador passa a cobrar. Declarar os cinquenta é
+ * trabalho que só paga quando o `__incl` virar a API de teste da engine — hoje ele é do jogo, que está de
+ * mudança (ADR-0036).
+ */
+interface InclTestHooks {
+  [k: string]: unknown;
+  layout?: () => void;
+  showTouch?: () => void;
+  get_librasOpen?: () => boolean;
+}
+
+interface Window {
+  /** O parser de mapa em glifo, exposto para o harness de navegador. */
+  __tiles?: unknown;
+  __incl?: InclTestHooks;
+}
