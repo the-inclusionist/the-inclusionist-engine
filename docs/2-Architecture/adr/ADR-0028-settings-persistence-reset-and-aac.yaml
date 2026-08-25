@@ -29,9 +29,10 @@ context-and-problem-statement: |
   The second half is a feature, not a correction. `letterCase` today is a two-position cycle on a pause button
   (ABC / abc). The Dev's decision retires that button and folds letter case into a new AUGMENTATIVE AND
   ALTERNATIVE COMMUNICATION menu, where the choice of how the game presents written language ranges from
-  uppercase-only through pictogram sets — ARASAAC, Sclera, Mulberry — for children who read symbols rather than
-  letters. Two of those sets cannot ship with the game for licensing reasons and must be fetched separately,
-  which collides with the offline pillar unless handled like the neural TTS voice already is.
+  uppercase-only through pictogram sets — ARASAAC, Sclera, Mulberry, Blissymbolics, Tawasol — for children who
+  read symbols rather than letters. Several of those cannot ship with the game for licensing reasons and must be
+  fetched separately, which collides with the offline pillar unless handled like the neural TTS voice already is.
+  Three more — PCS, SymbolStix, Widgit — are shown but not selectable, pending negotiation.
 
 decision-drivers:
 - "Pillar 2 (a11y): a settings surface a child can enter and not leave is worse than no settings surface."
@@ -97,6 +98,21 @@ decision-outcome:
       pictogram sets. The built-in letter modes are the OFFLINE FLOOR — always present, never downloaded — and
       any pictogram set that fails to load falls back to them without ceremony.
 
+      THE MENU, in three tiers, and the tiers matter more than the list:
+
+        BUILT IN — uppercase + lowercase; uppercase only. Ship with the game, work offline, always selectable.
+
+        FETCHED ON DEMAND — ARASAAC, Sclera, Mulberry Symbols, Blissymbolics, Tawasol. Selectable; downloaded
+        once and cached; fall back to letters if the network is not there. Tawasol is an Arabic-culture set and
+        is in the list for a reason worth stating: a pictogram is not neutral, it is drawn by and for a culture,
+        and a child recognises the objects, clothes and faces of their own world faster than someone else's.
+
+        PRESENT BUT UNAVAILABLE — PCS, SymbolStix, Widgit Symbols. Shown in the menu, not selectable, labelled
+        "aguardando negociação". They are the sets a Brazilian school is most likely to already own through
+        another product, so hiding them would answer the wrong question: the educator who looks for PCS and does
+        not find it concludes the game cannot do it. Listing them as pending says the truth, which is that the
+        obstacle is a licence and not a capability.
+
   consequences:
     positive:
     - "A child can explore any accessibility menu knowing there is a way back, which is what makes exploring it
@@ -114,7 +130,9 @@ decision-outcome:
        has to be reachable by someone who cannot read the label."
     - "Pictogram sets need a network once. On the target hardware that is the least dependable assumption in the
        whole project, so the letter fallback is not a courtesy — it is the design."
-    - "Three third-party asset sets mean three licence surfaces to keep verified as they change."
+    - "Five fetchable sets plus three pending ones mean eight licence surfaces to keep verified as they change."
+    - "Naming sets as 'awaiting negotiation' is a promise in public. It has to be revisited, or removed, rather
+       than left to age into a lie."
 
   confirmation: |
     PARTIAL, and the halves are very different in maturity.
@@ -127,8 +145,10 @@ decision-outcome:
 
     The AAC half is NOT specified yet and this record does not pretend otherwise. What the licences actually
     permit is stated here as the Dev stated it — ARASAAC and Sclera cannot be redistributed, Mulberry was not
-    named as a problem — and MUST be verified against the current licence text before a single byte is fetched,
-    because getting this wrong is a legal problem and not a bug. The rendering question (a pictogram is not a
+    named as a problem, and PCS, SymbolStix and Widgit are pending negotiation — and EVERY ONE of those MUST be
+    verified against the current licence text before a single byte is fetched, because getting this wrong is a
+    legal problem and not a bug. Blissymbolics and Tawasol arrived with the second pass and carry no licence
+    claim in this record at all; treat their status as unknown until someone reads the terms. The rendering question (a pictogram is not a
     glyph: it has a size, a caption, and a meaning that must survive a screen reader) is open, and so is where
     the cache lives, though platform/tts's OPFS/Cache-Storage handling is the obvious precedent.
 
