@@ -1,0 +1,117 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-25
+  decision-makers: [Dev]
+  consulted: [ADR-0004 (Discovery é software, pedagogia é educational/), ADR-0010 pillar 3,
+              ADR-0027 (the engine/game boundary), ADR-0030 (the axis is a declared contract),
+              the measurement in GitLab issue #68]
+  informed: []
+
+title: The curriculum is a layer of its own — it belongs to the platform, not to this game
+
+context-and-problem-statement: |
+  `game/activities-registry` held `alf1..alf5`, `mat1..mat6` and the fractions ladder. Read it and nothing in
+  it describes The Inclusionist: `alf1..alf5` are Ferreiro's psychogenesis hypotheses in order, `mat1..mat6`
+  is an arithmetic progression, and the fraction entries are denominators. It is what a CHILD needs to learn,
+  and it would be the same list in any game that set out to teach the same thing.
+
+  It was also the last engine-to-game import edge with a real chance of dying soon: `ui/activities-menu`
+  imported the catalogue from `game/`, and `tests/engine-boundary.node.test.js` had been counting that line
+  since the boundary became a gate.
+
+  The measurement came before the move. Four exported pure functions, 23 calls in tests, 10 internal uses —
+  injecting the catalogue into the menu would have been 27 points of churn that a change of FOLDER undoes for
+  free. That is not an argument about size; it is an argument about direction. Fixing the wrong thing costs
+  more than the fix.
+
+  So the question was never "how do we cut this edge". It was "whose catalogue is it".
+
+decision-drivers:
+  - "ADR-0004 already split the repo this way in DOCS: `docs/educational/` is the curriculum/pedagogy layer.
+     The code half of that layer simply never existed."
+  - "Pillar 3 (ADR-0010): literacy curriculum is NOT translated, it is REWRITTEN per language — Ferreiro's
+     psychogenesis is about writing PORTUGUESE. Where the catalogue lives decides what the dictionaries own."
+  - "35 games. A catalogue owned by one title gets re-typed 35 times; a catalogue owned by the platform does not."
+  - "ADR-0030 chose a declared contract: the engine is told, never guesses. Content is the clearest case of it."
+
+considered-options:
+  - "E1 — inject the catalogue into `ui/activities-menu`, leaving the registry inside `game/`"
+  - "E2 — move the registry into a curriculum layer of its own"
+
+pros-and-cons-of-the-options:
+  inject-it:
+    good: ["Kills the engine-to-game edge today, with a mechanism the codebase already uses everywhere."]
+    bad: ["Leaves the curriculum ARCHIVED IN THE WRONG PLACE — it keeps asserting the catalogue is this game's.",
+          "27 points of churn that a folder move undoes, so the work is thrown away twice: once when the
+           folder moves, once when EdSP takes the catalogue over.",
+          "Injection reads as 'the engine may not know the game'. The true statement is stronger: the engine
+           may not know the CONTENT, and content is not game-shaped."]
+  own-layer:
+    good: ["The edge dies by CHANGE OF ADDRESS — no call site churns, and the address is the one the docs
+            layer has had since ADR-0004.",
+           "Settles what is translatable in the same stroke: curriculum stays out of the dictionaries.",
+           "Gives the catalogue the shape of its DESTINATION (EdSP) rather than the shape of where it sat."]
+    bad: ["The edge does not vanish, it CHANGES KIND: `ui/ -> educational/` is a smaller edge and still an edge.",
+          "A layer whose declared owner does not exist yet is a layer with nobody to hand it to."]
+
+decision-outcome:
+  chosen-option: "E2 — a layer of its own, at `app/js/educational/`, mirroring `docs/educational/`"
+
+  rationale: |
+    The catalogue belongs to the EdSP PLATFORM, with each game pulling the activities that suit it. EdSP does
+    not exist yet, so the catalogue stays in this repo — but shaped like where it is going instead of like
+    where it was.
+
+    `educational/` and not `curriculum/`: ADR-0004 already fixed the word for this layer, and inventing a
+    second name for one concept is how a repo ends up with two vocabularies for the same thing.
+
+    WHAT THIS DOES NOT FIX, stated plainly because the cheap reading of it is wrong: the menu still imports
+    ONE named catalogue. `ui/activities-menu -> educational/activities-registry` is a real dependency, and
+    calling the boundary resolved because the folder changed would be the cheapest possible way for a gate to
+    lie. The real fix is EdSP handing the catalogue over — injection, at that point, against a platform
+    interface rather than against this file. Until then the edge is COUNTED, in a list of its own.
+
+  consequences:
+    good:
+      - "The engine-to-game import debt drops from two modules to one (`render/draw`, which is item 19's work)."
+      - "The curriculum acquires a testable guarantee it never had: it imports NOTHING — not `core/`, not
+         `game/`. A catalogue that imported the engine could not travel to EdSP without dragging this title."
+      - "The 34 pt-BR literals of the catalogue are settled as NON-translatable, by layer rather than by
+         case-by-case judgement at each call site."
+    bad:
+      - "A new edge kind to track (`engine -> educational/`), with its own debt list in the boundary gate."
+      - "A layer with a declared owner that does not exist yet drifts if nobody revisits it — the shape is a
+         bet on EdSP, and if EdSP never happens the bet has to be re-read, not silently kept."
+      - "One test fixture's debt BECAME VISIBLE rather than appearing: `activities-menu.node.test.js` was
+         skipped by the fixture sweep because it imported from `game/`, and the sweep skips game tests by
+         design. Five quiz-vocabulary lines were always there; the move exposed them."
+    neutral:
+      - "No behaviour changes. Same catalogue, same ids, same order, same functions — a different address."
+
+  confirmation: |
+    Three cases in `tests/engine-boundary.node.test.js`, all in the debt-list-that-only-shrinks form:
+
+    · NO engine module imports from `educational/` beyond the known list (today: `ui/activities-menu`).
+    · The known list still MATCHES REALITY — a line that got fixed is a line deleted from the list, never a
+      line left behind to bless an edge that no longer exists.
+    · The curriculum imports NOTHING from outside itself. This is the half the address alone does not buy,
+      and it is the one that decides whether the catalogue can actually travel to EdSP.
+
+    Both new cases were checked by injecting the fault: an import added to the registry turns the third case
+    red, and removing the menu from the list turns the first red.
+
+    NOT confirmed, and cannot be until EdSP exists: that this catalogue's SHAPE is the shape EdSP will want.
+    What is confirmed is only that it no longer has the shape of a game asset.
+
+more-information: |
+  Closes decision 5 of 7 of the axis session (GitLab issue #68), which ADR-0030 recorded as decided in
+  principle and blocked in fact. ADR-0030's statement that "`game/activities-registry` is NOT where it
+  belongs" is now executed rather than pending.
+
+  The translation consequence is the one most likely to be forgotten: Ferreiro's psychogenesis already
+  crosses as a parameter without translation (`QL_NAME`, commit 84e7260), and the activity `nome`/`sub`/`d`
+  now follow the same rule by layer. The frame around them — ". Jogo iniciado." — is what the dictionary
+  owns, which is pillar 3's own formulation: the frame lives in the key, the content crosses via `{param}`.
+
+  Relates to: ADR-0004 (the layer's name); ADR-0010 pillar 3 (rewrite, do not translate); ADR-0027 (the
+  boundary as a gate); ADR-0030 (declared contract — the engine is told, never guesses).

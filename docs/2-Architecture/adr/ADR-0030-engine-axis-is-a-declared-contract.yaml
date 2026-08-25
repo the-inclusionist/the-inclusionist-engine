@@ -137,11 +137,11 @@ more-information: |
   not hold, and ADR-0010 declares the destination is procedural art. The Dev's call stands; the reasoning is
   filed so a future reader does not re-derive it as new.
 
-  THE CURRICULUM (ADR-0004's pedagogy layer) is decided in principle and blocked in fact: the activities
-  catalogue belongs to the EdSP PLATFORM, with each game pulling the activities that suit it — and the EdSP
-  platform does not exist yet. Until it does, the catalogue needs a home in this repo that is shaped like its
-  destination rather than like its current folder. That is tracked separately; what this ADR fixes is that
-  `game/activities-registry` is NOT where it belongs.
+  THE CURRICULUM (ADR-0004's pedagogy layer): the activities catalogue belongs to the EdSP PLATFORM, with
+  each game pulling the activities that suit it — and the EdSP platform does not exist yet. This ADR fixed
+  only that `game/activities-registry` is NOT where it belongs. **ADR-0032 carried it out**: the catalogue
+  moved to `app/js/educational/`, shaped like its destination rather than like its old folder, and the
+  engine-to-game import debt fell from two modules to one.
 
   Relates to: ADR-0027 (the boundary, the seven fields, the console filter); ADR-0004 (Discovery is software,
   pedagogy is `educational/`); ADR-0024/0025 (multi-repo and versioned shared packages — the packaging that

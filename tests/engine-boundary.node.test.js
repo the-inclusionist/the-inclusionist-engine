@@ -66,7 +66,20 @@ const IMPORTS_CONHECIDOS = {
   // `render/textures.ts` SAIU DAQUI (2026-08-25): importava `SOMASUB_SHAPES` por causa de UMA linha do
   // `initTextures`, e agora recebe os ids das formas pelo ctx. A aresta era pequena e o efeito não: era
   // também a única razão de `render/viz-setters` arrastar `game/` por transitividade — duas de quatro.
-  'ui/activities-menu.ts': ['game/activities-registry.js'],
+  // `ui/activities-menu.ts` SAIU (2026-08-25, ADR-0032): o catálogo de atividades era CURRÍCULO arquivado
+  // em `game/`, e foi para `educational/`. A aresta morreu por MUDANÇA DE ENDEREÇO, não por conserto — e é
+  // por isso que ela reaparece logo abaixo, na sua lista própria. Contar isto como fronteira resolvida seria
+  // a forma mais barata de o gate mentir: o menu continua conhecendo UM catálogo.
+};
+
+/** Dívida de CURRÍCULO — a aresta que nasceu quando a de `game/` morreu (ADR-0032). Mesma regra: só encolhe.
+ *
+ *  Uma engine que importa currículo está menos errada do que uma que importa o jogo — o currículo é o mesmo
+ *  em qualquer jogo que ensine a mesma coisa, e o `educational/` viaja com a plataforma, não com este título.
+ *  Menos errada não é certa: o menu ainda sabe o nome de um catálogo. O conserto final é a EdSP entregá-lo por
+ *  injeção, e enquanto ela não existe esta lista é o lugar onde a dívida fica CONTÁVEL em vez de invisível. */
+const IMPORTS_CURRICULO = {
+  'ui/activities-menu.ts': ['educational/activities-registry.js'],
 };
 
 function importsDeJogo(m) {
@@ -94,10 +107,47 @@ describe('fronteira engine↔jogo — arestas de importação (ADR-0027 passo 4)
     }
   });
 
-  it('[Boundary] a dívida cabe em DOIS módulos — o número é o que diz quão perto a fronteira está', () => {
-    // Não é decoração: é a diferença entre "a fronteira está errada" e "a fronteira está a dois módulos de
-    // valer". O ADR-0027 pergunta se o passo 5 pode começar, e é este número que responde. Era três.
-    expect(Object.keys(IMPORTS_CONHECIDOS)).toHaveLength(2);
+  it('[Boundary] a dívida de game/ cabe em UM módulo — o número é o que diz quão perto a fronteira está', () => {
+    // Não é decoração: é a diferença entre "a fronteira está errada" e "a fronteira está a um módulo de
+    // valer". O ADR-0027 pergunta se o passo 5 pode começar, e é este número que responde. Era três, e dois.
+    expect(Object.keys(IMPORTS_CONHECIDOS)).toHaveLength(1);
+  });
+});
+
+describe('fronteira engine↔currículo — a aresta que a mudança de endereço criou (ADR-0032)', () => {
+  const importsDeCurriculo = (m) =>
+    [...fonte(m).matchAll(/from '\.\.\/(educational\/[\w.-]+)'/g)].map((x) => x[1]);
+
+  it('[Right] NENHUM módulo de engine importa de educational/ além da dívida conhecida', () => {
+    const novas = {};
+    for (const m of MODULOS) {
+      const extras = importsDeCurriculo(m).filter((i) => !(IMPORTS_CURRICULO[m] || []).includes(i));
+      if (extras.length) novas[m] = extras;
+    }
+    expect(novas, 'aresta NOVA de engine para educational/ — o currículo é da plataforma, não da engine').toEqual({});
+  });
+
+  it('[Interface] a dívida de currículo ainda EXISTE — linha consertada é linha apagada daqui', () => {
+    for (const [m, esperados] of Object.entries(IMPORTS_CURRICULO)) {
+      const atuais = importsDeCurriculo(m);
+      for (const e of esperados) {
+        expect(atuais, `${m}: '${e}' não existe mais — apague-o de IMPORTS_CURRICULO`).toContain(e);
+      }
+    }
+  });
+
+  it('[Boundary] o currículo NÃO importa da engine nem do jogo — é DADO, e dado não chama ninguém', () => {
+    // A metade do ADR-0032 que o endereço sozinho não garante. Um catálogo que importasse `core/` ou `game/`
+    // não caberia na EdSP sem levar este título junto — que é exatamente o defeito que a mudança consertou.
+    const dir = join(RAIZ, 'educational');
+    const arquivos = existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith('.ts')) : [];
+    expect(arquivos.length, 'a camada de currículo sumiu — se foi de propósito, apague este caso').toBeGreaterThan(0);
+    for (const f of arquivos) {
+      const alheias = linhasDeCodigo(fonte(`educational/${f}`))
+        .filter(([, ln]) => /from '\.\.\//.test(ln))
+        .map(([n, ln]) => `${f}:${n} ${ln.trim()}`);
+      expect(alheias, 'currículo importando de fora de si — ver ADR-0032').toEqual([]);
+    }
   });
 });
 
@@ -212,6 +262,14 @@ const FIXTURES_CONHECIDOS = {
   // Nível de quiz atravessando menus e pausa.
   'pause-icons.node.test.js': 3,
   'activities-menu.browser.test.js': 2,
+  // `activities-menu.node.test.js` FICOU VISÍVEL em 2026-08-25 (ADR-0032), e a dívida não é nova: ela estava
+  // aqui o tempo todo, escondida pelo próprio filtro. `testesDeEngine()` pula quem importa de `game/`, e este
+  // teste importava o catálogo de atividades de lá — então nunca foi varrido. O catálogo mudou para
+  // `educational/`, o teste virou "teste de engine puro" aos olhos da varredura, e as 5 linhas apareceram.
+  //
+  // A saída barata seria fazer `IMPORTA_JOGO` casar `educational/` também: o caso ficaria verde na hora e a
+  // cegueira voltaria com outro nome. Currículo não é jogo — a lista é o lugar certo para isto.
+  'activities-menu.node.test.js': 5,
   // Conteúdo do jogo em tabelas da engine.
   'audio-earcons.node.test.js': 4,     // earcon de chave 'coin'
   'i18n-dicts.node.test.js': 3,        // `sr.quiz.*`: 253 chaves das quais um 2º jogo usa um punhado (achado 2)

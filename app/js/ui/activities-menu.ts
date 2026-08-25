@@ -10,8 +10,13 @@
 //   core/state.ts        → `activity`/`setActivityValue` (live binding + persistence + event), `players`,
 //                          `numPlayers`. The VALIDATION of the id lives here, on purpose: core/state.ts stores
 //                          whatever it is given, so somebody outside has to know the catalog.
-//   game/activities-registry.ts → the catalog (getActivity/hasActivity/isValidActivityId/DEFAULT_ACTIVITY_ID).
-//                          Never re-declared here; this module only *reads* it.
+//   educational/activities-registry.ts → the catalog (getActivity/hasActivity/isValidActivityId/
+//                          DEFAULT_ACTIVITY_ID). Never re-declared here; this module only *reads* it.
+//                          É CURRÍCULO, não jogo (ADR-0032) — e é por isso que a aresta antiga `ui/ → game/`
+//                          morreu por mudança de ENDEREÇO. O que sobra é `ui/ → educational/`, que é uma
+//                          aresta menor e ainda assim uma aresta: o menu conhece UM catálogo. O conserto
+//                          verdadeiro é a EdSP entregar o catálogo por injeção — e até lá o gate conta
+//                          esta linha, em vez de deixá-la passar por ter mudado de pasta.
 //   platform/storage.ts  → every read/write goes through `store.KEYS` (`tabsel`, `fracnot`); no raw localStorage.
 // Injected instead of imported, and why:
 //   `$` / `getActiveElement` / `enterFullscreen` — the DOM handles, so the node project can drive the whole
@@ -26,7 +31,7 @@
 // updateTitleLegend (device legend — gamepad slice), the `#title-icons` a11y shortcut row (pause-icons slice;
 // it only shares the `#title-overlay` element, never a listener), and setMode()/applyLetra() (HUD toggles).
 import { activity as ACTIVITY, setActivityValue, numPlayers, players } from '../core/state.js';
-import { getActivity, hasActivity, isValidActivityId, DEFAULT_ACTIVITY_ID, type ActivityDef } from '../game/activities-registry.js';
+import { getActivity, hasActivity, isValidActivityId, DEFAULT_ACTIVITY_ID, type ActivityDef } from '../educational/activities-registry.js';
 import * as store from '../platform/storage.js';
 import { t } from '../core/i18n.js';
 import type { TitleMenuId } from './title.js';
@@ -260,8 +265,8 @@ export function nextTitleIndex(cur: number, len: number, k: NavKeys): number {
 }
 
 /** Footer description for a focused/hovered title button: notation text wins, else the activity's `d`.
- *  The notation half resolves its key here; the activity's `d` comes from game/activities-registry and is
- *  still pt-BR, for the same curriculum-boundary reason as the activity `nome`. */
+ *  The notation half resolves its key here; the activity's `d` comes from educational/activities-registry
+ *  and is still pt-BR, for the same curriculum-boundary reason as the activity `nome` (ADR-0032). */
 export function titleDescFor(actId: string | undefined, fnotKey: string | undefined): string {
   if (fnotKey) { const k = FNOT_DESC[fnotKey as FracNotKey]; return k ? t(k) : ''; }
   return (getActivity(actId ?? '') || ({} as Partial<ActivityDef>)).d || '';
@@ -422,8 +427,8 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
     (players as { alfWins?: number }[]).forEach((p) => { p.alfWins = 0; });
     if (pendingPlayers !== numPlayers) ctx.setNumPlayers(pendingPlayers); else ctx.restartGame();
     // O NOME da atividade atravessa como parâmetro, ainda em pt-BR: os nomes vivem em
-    // game/activities-registry e roçam a fronteira do currículo (Sílabas, Tabuada), que o Dev decide caso
-    // a caso na conversão do quiz. A moldura — ". Jogo iniciado." — é o que traduz aqui.
+    // educational/activities-registry e são CURRÍCULO — que o pilar 3 manda REESCREVER por idioma, não
+    // traduzir (ADR-0032). A moldura — ". Jogo iniciado." — é o que traduz aqui.
     ctx.setPhase('playing'); ctx.hideTips(); ctx.srSay(t('sr.menu.gameStarted', { atividade: (getActivity(id) as ActivityDef).nome }));
   }
 

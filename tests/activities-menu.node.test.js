@@ -17,7 +17,7 @@ import {
   abbrParts, abbrText, attachAbbr,
   initActivitiesMenu,
 } from '../app/js/ui/activities-menu.js';
-import { DEFAULT_ACTIVITY_ID, listActivityIds } from '../app/js/game/activities-registry.js';
+import { DEFAULT_ACTIVITY_ID, listActivityIds } from '../app/js/educational/activities-registry.js';
 import { activity as ACTIVITY, setActivityValue, players, setNumPlayersValue } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 

@@ -4,7 +4,7 @@
 // elementos falsos: aqui provamos o que o fake NÃO consegue provar — que o markup gerado por buildTitleMenus
 // vira botão clicável, que o rodapé de descrição escreve no `.tm-desc` do PRÓPRIO submenu (via closest), que
 // navTitle move o document.activeElement, e que o rótulo abreviado anima no hover. Injeção por closure (mesmo
-// padrão de ui/settings-motion): ctx com spies; `core/state.ts`, `game/activities-registry.ts` e
+// padrão de ui/settings-motion): ctx com spies; `core/state.ts`, `educational/activities-registry.ts` e
 // `platform/storage.ts` são os módulos REAIS, que initActivitiesMenu importa direto.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initActivitiesMenu, attachAbbr, TITLE_MENU_ORDER } from '../app/js/ui/activities-menu.js';

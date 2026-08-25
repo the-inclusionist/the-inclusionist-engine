@@ -160,8 +160,11 @@ describe('a premissa do item 19: o grafo permite ordenar folha primeiro', () => 
 });
 
 describe('a dívida do passo 5 é CONCENTRADA, e é isso que torna a divisão barata', () => {
-  /** Dívida CONHECIDA em 2026-08-25. Só encolhe — mesma regra de engine-boundary. */
-  const ARRASTAM_JOGO = ['render/draw', 'ui/activities-menu'];
+  /** Dívida CONHECIDA em 2026-08-25. Só encolhe — mesma regra de engine-boundary.
+   *  `ui/activities-menu` saiu com o ADR-0032: o catálogo que ele arrastava era CURRÍCULO em `game/`, e mudou
+   *  de camada. Vale registrar o que isso significa e o que NÃO significa — o módulo deixou de arrastar o
+   *  JOGO, e continua conhecendo um catálogo (`educational/`), que `engine-boundary` conta em lista própria. */
+  const ARRASTAM_JOGO = ['render/draw'];
 
   it('[Right] só estes módulos de engine arrastam game/, direta ou transitivamente', () => {
     const sujos = ENGINE.filter((m) => [...arrasta(m)].some((d) => d.startsWith('game/'))).sort();

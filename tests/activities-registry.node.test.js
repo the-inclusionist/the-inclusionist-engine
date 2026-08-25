@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Testes de game/activities-registry — catálogo de atividades + validação de id (project node). ZOMBIES + Right-BICEP.
+// Testes de educational/activities-registry — catálogo de atividades + validação de id (project node). ZOMBIES + Right-BICEP.
 // Puro (sem DOM/PIXI). Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, ACTIVITIES).
 import { describe, it, expect } from 'vitest';
 import {
   getActivity, hasActivity, isValidActivityId, listActivities, listActivityIds, DEFAULT_ACTIVITY_ID,
-} from '../app/js/game/activities-registry.js';
+} from '../app/js/educational/activities-registry.js';
 
 describe('DEFAULT_ACTIVITY_ID', () => {
   it('é "ludico" e existe no catálogo', () => {

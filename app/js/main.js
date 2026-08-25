@@ -16,7 +16,7 @@ import { phase, quizLevel, setQuizLevelValue, numPlayers, cenario as CENARIO, se
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
-import { isValidActivityId, DEFAULT_ACTIVITY_ID } from './game/activities-registry.js';
+import { isValidActivityId, DEFAULT_ACTIVITY_ID } from './educational/activities-registry.js';
 
 import { buildElevators, elevAt, getElevShafts, initElevators } from './game/elevators.js'; // Estágio 4 (Tier 2): geometria de elevador (cadeirante)
 import { fmtFrac, fracGraphic, speakChoice } from './game/fractions.js'; // Estágio 4 (Tier 2): matemática/render de frações

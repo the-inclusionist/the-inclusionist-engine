@@ -25,7 +25,7 @@ import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { rnd, randInt, shuffle } from '../core/rng.js';
 import { coins, numPlayers, quizLevel, activity as ACTIVITY } from '../core/state.js';
-import { getActivity } from './activities-registry.js';
+import { getActivity } from '../educational/activities-registry.js';
 import { SILABAS_WORDS, SILABA_POOL, type SyllableWord } from './activity-content.js';
 import { gcd, fmtFrac, fracGraphic, fracSpeak, speakChoice } from './fractions.js';
 import { BRAILLE, brailleText } from './braille.js';

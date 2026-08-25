@@ -1,9 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// game/activities-registry — the ACTIVITIES catalog (Estágio 4): every playable activity's id → metadata
-// (category, display name, sub-label, description, fraction denominators, "pick numbers" flag). Verbatim
-// data from game.js. This module owns only the CATALOG + id validation — it does NOT hold the current
-// selection (that stays `activity` + `setActivityValue` in core/state.ts, per ADR/plano-modularizacao-mapa).
-// Domain content (pt-BR, read by educators) — names/descriptions stay in pt-BR by project convention.
+// educational/activities-registry — the ACTIVITIES catalog: every playable activity's id → metadata
+// (category, display name, sub-label, description, fraction denominators, "pick numbers" flag). This module
+// owns only the CATALOG + id validation — it does NOT hold the current selection (that stays `activity` +
+// `setActivityValue` in core/state.ts, per ADR/plano-modularizacao-mapa).
+//
+// ============================ POR QUE ISTO NÃO MORA EM `game/` (ADR-0032) ============================
+// Isto é CURRÍCULO, não jogo. `alf1..alf5` são as hipóteses da psicogênese de Ferreiro; `mat1..mat6` e as
+// frações são progressão de matemática. Nada disso descreve "The Inclusionist" — descreve o que uma criança
+// precisa aprender, e vale igual em qualquer jogo que queira ensinar a mesma coisa. O ADR-0004 já separava
+// `docs/educational/` como camada de currículo/pedagogia; esta pasta é a metade em CÓDIGO da mesma camada.
+//
+// O destino declarado é a PLATAFORMA EdSP: o catálogo é dela, e cada jogo puxa as atividades que lhe cabem.
+// A EdSP não existe ainda, então o catálogo mora aqui — mas com a FORMA do destino (camada própria, DADOS,
+// nada de `game/` entrando) em vez da forma do lugar onde estava. Ver ADR-0032.
+//
+// NÃO SE TRADUZ. Pilar 3 (ADR-0010): currículo de alfabetização se REESCREVE por idioma, não se traduz — a
+// psicogênese de Ferreiro é sobre a escrita do PORTUGUÊS. Por isso `nome`/`sub`/`d` seguem em pt-BR e ficam
+// FORA dos dicionários; o que atravessa é a moldura (". Jogo iniciado."), com o nome entrando por `{param}`.
 
 /** One entry of the activities catalog. `cat` drives menu placement + MODE; `d` is the minigame footer text. */
 export interface ActivityDef {

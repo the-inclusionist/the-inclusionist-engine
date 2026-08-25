@@ -128,6 +128,10 @@ navegador) e deixo o Dev rodar o Vitest. Padrões: **ZOMBIES** (didático) + **R
   `docs/2-Architecture/` (C4·adr **YADR**·Feature-Flags·DFD·STRIDE·CI-CD·learning-interop·backend-cloud-roadmap·K8s),
   `docs/3-Sprint-Design/` (data-model·api·bdd·Test-Plan), `4-Sprints`·`5-Refactoring`·`6-DevOps-SRE`·`7-Async-Systems`,
   `docs/research/` e `docs/legacy/`. **Discovery = software; pedagogia = educational/** (ADR-0004).
+- **Currículo em CÓDIGO:** `app/js/educational/` — a metade em código da mesma camada (ADR-0032). É DADO: não
+  importa nada (nem `core/`, nem `game/`), e o texto pt-BR dele **não entra nos dicionários**, porque o pilar 3
+  manda *reescrever* currículo por idioma, não traduzir. O dono declarado é a plataforma **EdSP**, que ainda não
+  existe; até lá o catálogo mora aqui com a forma do destino. `tests/engine-boundary.node.test.js` é o gate.
 - **Constantes do motor** (TILE_TYPES, TUNE, tiles, dimensões): `app/js/core/constants.ts` (fonte única, tipada).
 - **Planos legados** (`docs/plano-*.md`, `PESQUISA-*`, etc.): **ainda
   na raiz de `docs/`**, sendo migrados **arquivo por arquivo, com revisão de conteúdo** (nada automático) para dentro
