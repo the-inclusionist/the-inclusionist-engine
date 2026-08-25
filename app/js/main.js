@@ -141,14 +141,14 @@ initCoins({ world: WORLD, W: WORLD_W, H: WORLD_H, anyEasy: ()=>anyEasy(), isWhee
 // Itens do mapa Clarity → viram ITENS/barreira (não tiles): 7=pulo-turbo, 8=voo, 11=chave; 10=portão.
 // Removemos o tile do grid (vira ar) e o item/barreira é desenhado/colidido à parte; some ao pegar/abrir.
 const MAP_ITEMS=[], MAP_GATE=[];
-for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const t=WORLD[y][x];
-  if(t===7){ MAP_ITEMS.push({tx:x,ty:y,kind:'superjump'}); WORLD[y][x]=1; }  // super-pulo (máximo)
-  else if(t===8){ MAP_ITEMS.push({tx:x,ty:y,kind:'fly'}); WORLD[y][x]=1; }    // voo
-  else if(t===11){ MAP_ITEMS.push({tx:x,ty:y,kind:'key'}); WORLD[y][x]=1; }   // chave
-  else if(t===12){ MAP_ITEMS.push({tx:x,ty:y,kind:'turbo'}); WORLD[y][x]=1; } // super-corrida
-  else if(t===13){ MAP_ITEMS.push({tx:x,ty:y,kind:'ultrajump'}); WORLD[y][x]=1; } // ultra-pulo
-  else if(t===14){ MAP_ITEMS.push({tx:x,ty:y,kind:'wallcling'}); WORLD[y][x]=1; } // ventosa
-  else if(t===10){ MAP_GATE.push({tx:x,ty:y}); WORLD[y][x]=1; } // portão
+for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const tile=WORLD[y][x]; // `tile` e não `t`: o `t` local esconde o tradutor (ver tests/translator-shadow)
+  if(tile===7){ MAP_ITEMS.push({tx:x,ty:y,kind:'superjump'}); WORLD[y][x]=1; }  // super-pulo (máximo)
+  else if(tile===8){ MAP_ITEMS.push({tx:x,ty:y,kind:'fly'}); WORLD[y][x]=1; }    // voo
+  else if(tile===11){ MAP_ITEMS.push({tx:x,ty:y,kind:'key'}); WORLD[y][x]=1; }   // chave
+  else if(tile===12){ MAP_ITEMS.push({tx:x,ty:y,kind:'turbo'}); WORLD[y][x]=1; } // super-corrida
+  else if(tile===13){ MAP_ITEMS.push({tx:x,ty:y,kind:'ultrajump'}); WORLD[y][x]=1; } // ultra-pulo
+  else if(tile===14){ MAP_ITEMS.push({tx:x,ty:y,kind:'wallcling'}); WORLD[y][x]=1; } // ventosa
+  else if(tile===10){ MAP_GATE.push({tx:x,ty:y}); WORLD[y][x]=1; } // portão
 }
 // regiões secretas = componentes conexos de tiles 0 (escuridão). Acendem ao entrar.
 // buildDarkRegions migrou para game/level-geometry.ts (Onda A) — agora e puro e recebe as dimensoes.
@@ -349,7 +349,7 @@ function setHearingLoss(on){ setHearingLossGraph(on); store.setBool('incl_hearin
 // ===== F2: efeitos de interação com o ambiente (passos por superfície, portas, escada) — ruído filtrado sintetizado =====
 // noiseBuffer + FOOT + noiseHit + _footCount (synth de ruído) extraídos p/ platform/audio.js (Fase 2). _noiseBuf era var morta.
 // material sob os pés (Cidade = concreto → 'piso') — usado pelo som do PASSO (main.js); não é pista espacial, fica aqui.
-function surfaceUnder(pl){ const t=tileAt(Math.floor(pl.x/TILE),Math.floor((pl.y+1)/TILE)); if(t!==2&&t!==6&&t!==5)return null; return CENARIO==='cidade'?'piso':'pedra'; }
+function surfaceUnder(pl){ const tile=tileAt(Math.floor(pl.x/TILE),Math.floor((pl.y+1)/TILE)); if(tile!==2&&tile!==6&&tile!==5)return null; return CENARIO==='cidade'?'piso':'pedra'; }
 const caneOn=(pl)=>{ const m=VIZ_BY_KEY[pl.viz]; return modoCego || !!(m&&(m.kind==='blind'||m.kind==='lowvision')); }; // predicado de visão (movimento/render) — fica no main.js
 // caneColor extraído p/ render/wheelchair-sprites.js (Estágio 4).
 // TTS (narração por voz: Piper neural lazy + fallback Web Speech) extraído p/ platform/tts.ts (Tier 2, #38). Criado ANTES do
