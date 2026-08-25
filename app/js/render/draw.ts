@@ -64,7 +64,7 @@ import { LOGICAL_W, LOGICAL_H, EASY } from '../core/constants.js';
 import type { PlayerView } from '../core/entity.js';
 import { rnd } from '../core/rng.js';
 import { JUICE, easeOut3, shakeAmp, drawFx } from './fx.js';
-import { enquadrar, tremer } from './camera.js';
+import { criarCamera, type CameraObj } from './camera.js';
 import { drawCane, drawRunCane, drawChair } from './wheelchair-sprites.js';
 import { VIZ_BY_KEY } from './viz-modes.js';
 import { puTaken, type Powerup } from '../game/powerups.js';
@@ -171,8 +171,9 @@ export interface DrawCtx {
 }
 
 export interface DrawApi {
-  /** Enquadra `pl`, aplica clamp+tremor+arredondamento e reposiciona o parallax. */
-  placeCam(pl: DrawPlayer): { camX: number; camY: number };
+  /** Enquadra `pl`, aplica clamp+tremor+arredondamento e reposiciona o parallax.
+   *  `i` é o índice do jogador, e existe porque CADA JOGADOR TEM A SUA CÂMERA (ver `camDe`). */
+  placeCam(pl: DrawPlayer, i?: number): { camX: number; camY: number };
   /** Desenha o quadro inteiro (era `draw()` no game.js). */
   drawFrame(): void;
   /** Escolhe o quadro de animação de `pl` e o aplica no sprite (era a cauda do `stepPlayer`). */
@@ -183,18 +184,40 @@ export function initDraw(ctx: DrawCtx): DrawApi {
 
   /* ===================== câmera ===================== */
 
-  // A CONTA saiu para `render/camera` (item 22, opção M1); aqui ficou o CARIMBO dela no render-graph. O que
-  // sobrou nesta função é exatamente o que não é conta: o sorteio do tremor, a escrita no container e o aviso
-  // ao parallax. Fórmulas idênticas às de antes — ver o cabeçalho do módulo novo.
-  function placeCam(pl: DrawPlayer): { camX: number; camY: number } {
-    const mundo = { w: ctx.WORLD_PX_W(), h: ctx.WORLD_PX_H() }, tela = { w: LOGICAL_W, h: LOGICAL_H };
+  // A CONTA saiu para `render/camera` (item 22: M1 extraiu as fórmulas, M2 as embrulhou num OBJETO). Aqui
+  // ficou o CARIMBO dela no render-graph: o sorteio do tremor, a escrita no container e o aviso ao parallax.
+  //
+  // ========================= UMA CÂMERA POR JOGADOR, E POR QUÊ AGORA =========================
+  // O caminho multi-tela chama `placeCam(PLS[i])` para CADA jogador dentro do MESMO quadro. Com uma câmera
+  // só, a posição do jogador i entraria como ponto de partida da do jogador i+1. Hoje isso não daria em
+  // nada — com zona-morta 0×0 a câmera é sem memória e `seguir` equivale a `enquadrar`, letra por letra
+  // (`tests/camera.node.test.js` prende essa igualdade). No dia em que a zona deixar de ser zero, daria: as
+  // câmeras dos jogadores se puxariam. É mais barato separar antes de o defeito existir do que depois, e
+  // separar agora não muda um pixel do que a criança vê.
+  //
+  // ⚠️ `pular()` AINDA NÃO TEM CHAMADOR. Ele é para nascer/renascer/trocar de fase, e enquanto a zona é zero
+  // não faz falta nenhuma — `seguir` já centra. Quando o Dev escolher uma zona, o nascimento sem `pular`
+  // aparece como um deslize da câmera até o jogador no primeiro quadro da fase. Fica anotado aqui, e não
+  // fingido de resolvido.
+  const cams = new Map<number, CameraObj>();
+  const camDe = (i: number): CameraObj => {
+    let c = cams.get(i);
+    if (!c) { c = criarCamera({ w: ctx.WORLD_PX_W(), h: ctx.WORLD_PX_H() }, { w: LOGICAL_W, h: LOGICAL_H }); cams.set(i, c); }
+    // O mundo muda de tamanho ao trocar de fase, e a câmera não é avisada por ninguém — reprender todo quadro
+    // custa duas contas e dispensa um evento que hoje não existe.
+    else c.redimensionar({ w: ctx.WORLD_PX_W(), h: ctx.WORLD_PX_H() }, { w: LOGICAL_W, h: LOGICAL_H });
+    return c;
+  };
+
+  function placeCam(pl: DrawPlayer, i = 0): { camX: number; camY: number } {
+    const c = camDe(i);
     // `pl.y` é o PÉ do jogador; o meio do corpo fica meia caixa acima. Esta conversão é a única coisa de
     // PLATAFORMA que havia no enquadramento, e agora ela mora aqui, onde o corpo existe — e não na câmera.
-    let cam = enquadrar(pl.x, pl.y - ctx.BOX.h / 2, mundo, tela);
+    c.seguir(pl.x, pl.y - ctx.BOX.h / 2);
     const k = shakeAmp(); // JUICE: tremor decai linearmente (render/fx)
     // Os dois sorteios ficam DENTRO do `if`, como no original: com `k === 0` ele não chamava `rnd()`, e
     // chamá-lo duas vezes por quadro deslocaria o fluxo do gerador COMPARTILHADO — mesma semente, outro jogo.
-    if (k > 0) cam = tremer(cam, mundo, tela, k, rnd() * 2 - 1, rnd() * 2 - 1);
+    const cam = k > 0 ? c.quadro(k, rnd() * 2 - 1, rnd() * 2 - 1) : c.base;
     ctx.camera.x = -Math.round(cam.camX); ctx.camera.y = -Math.round(cam.camY);
     ctx.updateParallax(cam.camX, cam.camY);
     return cam;
@@ -270,7 +293,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
         }
         // chave some p/ todos; demais são por jogador
         for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.visible = !puTaken(pu, i); }
-        placeCam(PLS[i]); ctx.renderer.render(ctx.camera, { renderTexture: ctx.getVpTex()[i] });
+        placeCam(PLS[i], i); ctx.renderer.render(ctx.camera, { renderTexture: ctx.getVpTex()[i] });
         if (anyOverlay) ctx.renderVpOverlay(i, viz);           // passada extra só se algum jogador está em baixa visão
       }
     }

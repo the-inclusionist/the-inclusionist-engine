@@ -67,3 +67,88 @@ export function tremer(cam: Camera, mundo: Tamanho, tela: Tamanho, amp: number, 
   if (!(amp > 0)) return cam;
   return prender({ camX: cam.camX + rx * amp, camY: cam.camY + ry * amp }, mundo, tela);
 }
+
+/* ===================== M2 · A CÂMERA COMO OBJETO ===================== */
+//
+// ========================= POR QUE UM OBJETO, SE AS FUNÇÕES JÁ BASTAVAM =========================
+// Bastavam para o que a câmera fazia até aqui: centrar no jogador, todo quadro, do zero. Uma função pura serve
+// bem a isso porque não há nada para lembrar — a posição de agora não depende da de antes.
+//
+// ZONA-MORTA quebra essa propriedade, e é a razão do objeto. "A câmera só se move quando o alvo sai de um
+// retângulo no meio da tela" é uma frase sobre ONDE A CÂMERA ESTAVA. Sem memória entre quadros ela não tem
+// como ser respondida, e enfiar essa memória em `render/draw` seria devolver ao desenho a decisão que o M1
+// tirou de lá.
+//
+// ========================= AGNÓSTICO DE GÊNERO, DE VERDADE =========================
+// Nada aqui sabe de tile, de corpo, de `facing` ou de física. O alvo é um PONTO e a zona é um retângulo em
+// pixels de tela. Um top-down segue o mesmo ponto; um jogo de lista não chama `seguir` nenhuma vez. Foi essa
+// a condição do M2 no ADR-0030, e é o que separa uma câmera de engine de uma câmera de plataformer.
+//
+// ========================= O TREMOR NÃO É GUARDADO, E ISSO É A METADE DO DESENHO =========================
+// `quadro()` devolve base + tremor e NÃO escreve na base. Se escrevesse, o deslocamento do quadro anterior
+// viraria o ponto de partida do próximo e a câmera derivaria sozinha enquanto durasse o tremor — um defeito
+// que não aparece num quadro isolado e some quando se vai procurar. A base só muda em `seguir` e `pular`.
+
+/** A zona-morta, em pixels de TELA. `{w:0,h:0}` = sem zona: a câmera cola no alvo, que é o de hoje. */
+export interface ZonaMorta { readonly w: number; readonly h: number }
+
+export interface CameraObj {
+  /** Onde a câmera está, sem tremor, pré-arredondamento. */
+  readonly base: Camera;
+  /** Segue o alvo respeitando a zona-morta e prende no mundo. Devolve a base nova. */
+  seguir(alvoX: number, alvoY: number): Camera;
+  /** Centra no alvo AGORA, ignorando a zona-morta: nascimento, renascimento, troca de fase. */
+  pular(alvoX: number, alvoY: number): Camera;
+  /** Base + tremor, preso no mundo. NÃO altera a base — ver o cabeçalho. */
+  quadro(amp: number, rx: number, ry: number): Camera;
+  /** Mundo e/ou tela mudaram (fase nova, viewport dividido). Reprende a base no que passou a valer. */
+  redimensionar(mundo?: Tamanho, tela?: Tamanho): Camera;
+}
+
+/**
+ * Cria uma câmera com alvo, zona-morta, prisão no mundo e tremor.
+ *
+ * ⚠️ ZONA ZERO É O COMPORTAMENTO DE HOJE, e não por coincidência: com `w = h = 0` a correção de `seguir` vira
+ * `alvo - tela/2`, que é `enquadrar` letra por letra. É o que permite trocar o `placeCam` por esta câmera sem
+ * mudar um pixel do que a criança vê, e escolher um valor de zona depois, como decisão separada.
+ */
+export function criarCamera(mundo: Tamanho, tela: Tamanho, zona: ZonaMorta = { w: 0, h: 0 }): CameraObj {
+  let m = mundo, t = tela;
+  let base: Camera = { camX: 0, camY: 0 };
+
+  /** Quanto a câmera precisa andar num eixo para o alvo voltar para dentro da zona. Zero se já está dentro. */
+  const correcao = (alvo: number, cam: number, telaLado: number, zonaLado: number): number => {
+    const meia = Math.max(0, zonaLado) / 2;
+    const d = alvo - (cam + telaLado / 2); // distância do alvo ao CENTRO da tela
+    if (Math.abs(d) <= meia) return 0;
+    return d - Math.sign(d) * meia; // anda o mínimo: o alvo pousa na BORDA da zona, não no centro
+  };
+
+  return {
+    get base() { return base; },
+
+    seguir(alvoX, alvoY) {
+      base = prender({
+        camX: base.camX + correcao(alvoX, base.camX, t.w, zona.w),
+        camY: base.camY + correcao(alvoY, base.camY, t.h, zona.h),
+      }, m, t);
+      return base;
+    },
+
+    pular(alvoX, alvoY) {
+      base = enquadrar(alvoX, alvoY, m, t);
+      return base;
+    },
+
+    quadro(amp, rx, ry) {
+      return tremer(base, m, t, amp, rx, ry);
+    },
+
+    redimensionar(novoMundo, novaTela) {
+      if (novoMundo) m = novoMundo;
+      if (novaTela) t = novaTela;
+      base = prender(base, m, t);
+      return base;
+    },
+  };
+}

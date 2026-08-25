@@ -9,7 +9,7 @@
 // extração é deliberadamente sem mudança nenhuma (é o prefixo comum de todas as opções de câmera na mesa).
 // O que eles afirmam é que ela está no LUGAR CERTO, e o lugar certo é uma conta.
 import { describe, it, expect } from 'vitest';
-import { prender, enquadrar, tremer } from '../app/js/render/camera.js';
+import { prender, enquadrar, tremer, criarCamera } from '../app/js/render/camera.js';
 
 const TELA = { w: 320, h: 180 };
 // O mapa de hoje, MEDIDO NO JOGO (`__incl.WORLD_W/H`) e não contado no arquivo: 56×62 tiles de 16px. A
@@ -109,5 +109,140 @@ describe('a extração é FIEL — as fórmulas do placeCam, na mesma ordem', ()
         }
       }
     }
+  });
+});
+
+/* ===================== M2 · O OBJETO ===================== */
+//
+// O que muda de assunto aqui: as funções acima são puras e a resposta delas não depende de nada que tenha
+// acontecido antes. A câmera-objeto tem MEMÓRIA, e memória é onde câmera erra — deriva por acumular tremor,
+// gruda por nunca sair da zona, teleporta por prender fora de hora. Cada caso abaixo persegue um desses.
+
+describe('criarCamera — zona zero é, letra por letra, o comportamento de hoje', () => {
+  it('[Right] com zona 0×0, `seguir` dá o MESMO que `enquadrar`', () => {
+    // É a garantia que autoriza trocar o `placeCam` por esta câmera sem mudar um pixel. Se este caso cair, a
+    // troca deixou de ser sem-mudança e vira decisão de jogo — que é do Dev, não minha.
+    const cam = criarCamera(MUNDO, TELA);
+    for (const [x, y] of [[400, 544], [0, 0], [10, 10], [890, 985], [160, 90]]) {
+      expect(cam.seguir(x, y)).toEqual(enquadrar(x, y, MUNDO, TELA));
+    }
+  });
+
+  it('[Right] com zona 0×0 a câmera não tem inércia: dois `seguir` seguidos dão o mesmo do segundo sozinho', () => {
+    const a = criarCamera(MUNDO, TELA);
+    a.seguir(100, 100);
+    const depoisDeDois = a.seguir(700, 800);
+    const b = criarCamera(MUNDO, TELA);
+    expect(depoisDeDois).toEqual(b.seguir(700, 800));
+  });
+});
+
+describe('criarCamera — a zona-morta', () => {
+  const ZONA = { w: 80, h: 40 };
+
+  it('[Right] alvo DENTRO da zona não move a câmera nem um pixel', () => {
+    const cam = criarCamera(MUNDO, TELA, ZONA);
+    const partida = cam.pular(400, 544);
+    // centro da tela = 400,544; a zona vai de ±40 em x e ±20 em y
+    for (const [dx, dy] of [[0, 0], [39, 19], [-39, -19], [40, 20], [-40, -20]]) {
+      expect(cam.seguir(400 + dx, 544 + dy), `${dx},${dy} deveria estar dentro`).toEqual(partida);
+    }
+  });
+
+  it('[Boundary] alvo UM PIXEL fora anda exatamente um pixel — o mínimo, não o centro', () => {
+    // O defeito clássico é recentrar assim que sai: a câmera dá um solavanco proporcional ao tamanho da zona,
+    // e quanto MAIOR a zona pior o solavanco. Andar o mínimo é o que faz a zona valer a pena.
+    const cam = criarCamera(MUNDO, TELA, ZONA);
+    const p = cam.pular(400, 544);
+    expect(cam.seguir(400 + 41, 544)).toEqual({ camX: p.camX + 1, camY: p.camY });
+  });
+
+  it('[Boundary] alvo bem fora pousa na BORDA da zona, não no meio da tela', () => {
+    const cam = criarCamera(MUNDO, TELA, ZONA);
+    cam.pular(400, 544);
+    const c = cam.seguir(600, 544);
+    // o alvo tem de ficar a meia-zona do centro, do lado de onde veio
+    expect(600 - (c.camX + TELA.w / 2)).toBe(ZONA.w / 2);
+  });
+
+  it('[Interface] a zona vale nos DOIS eixos e independentemente', () => {
+    const cam = criarCamera(MUNDO, TELA, ZONA);
+    const p = cam.pular(400, 544);
+    const c = cam.seguir(400, 544 + 100); // fora só em y
+    expect(c.camX).toBe(p.camX);
+    expect(c.camY).toBe(p.camY + (100 - ZONA.h / 2));
+  });
+
+  it('[Interface] zona MAIOR que a tela não faz a câmera andar para trás', () => {
+    // Meia-zona maior que meia-tela: o alvo estaria "dentro" mesmo fora da tela. A câmera para de seguir,
+    // que é degenerado mas coerente — o que ela não pode é corrigir na direção errada.
+    const cam = criarCamera(MUNDO, TELA, { w: 9999, h: 9999 });
+    const p = cam.pular(400, 544);
+    expect(cam.seguir(890, 985)).toEqual(p);
+  });
+
+  it('[Interface] zona negativa é tratada como zero, e não como zona invertida', () => {
+    const cam = criarCamera(MUNDO, TELA, { w: -80, h: -40 });
+    expect(cam.seguir(400, 544)).toEqual(enquadrar(400, 544, MUNDO, TELA));
+  });
+});
+
+describe('criarCamera — prisão no mundo e tremor', () => {
+  it('[Right] `seguir` prende: perto da borda o alvo sai do centro em vez de a câmera sair do mundo', () => {
+    const cam = criarCamera(MUNDO, TELA, { w: 80, h: 40 });
+    cam.pular(50, 50);
+    const c = cam.seguir(0, 0);
+    expect(c).toEqual({ camX: 0, camY: 0 });
+  });
+
+  it('[Zero] `quadro` com amplitude 0 devolve a base intacta', () => {
+    const cam = criarCamera(MUNDO, TELA);
+    const p = cam.pular(400, 544);
+    expect(cam.quadro(0, 1, 1)).toEqual(p);
+  });
+
+  it('[Right] o tremor NÃO ACUMULA: cem quadros tremendo deixam a base onde estava', () => {
+    // O defeito que este caso existe para pegar não aparece num quadro — aparece depois de um segundo de
+    // tremor, como uma câmera que "escorregou" e ninguém sabe por quê.
+    const cam = criarCamera(MUNDO, TELA);
+    const p = cam.pular(400, 544);
+    for (let i = 0; i < 100; i++) cam.quadro(8, 1, -1);
+    expect(cam.base).toEqual(p);
+  });
+
+  it('[Right] o tremor é PRESO: na beirada do mundo ele não mostra o vazio atrás do cenário', () => {
+    const cam = criarCamera(MUNDO, TELA);
+    cam.pular(0, 0); // canto superior esquerdo
+    const c = cam.quadro(16, -1, -1); // treme para fora
+    expect(c).toEqual({ camX: 0, camY: 0 });
+  });
+});
+
+describe('criarCamera — pular e redimensionar', () => {
+  it('[Right] `pular` ignora a zona-morta — é para nascer e renascer, não para seguir', () => {
+    const cam = criarCamera(MUNDO, TELA, { w: 200, h: 200 });
+    cam.pular(400, 544);
+    expect(cam.pular(700, 800)).toEqual(enquadrar(700, 800, MUNDO, TELA));
+  });
+
+  it('[Interface] `redimensionar` reprende a base no mundo novo', () => {
+    const cam = criarCamera(MUNDO, TELA);
+    cam.pular(890, 985); // encostada no canto inferior direito do mapa grande
+    const antes = cam.base;
+    const c = cam.redimensionar({ w: 400, h: 400 }, TELA);
+    expect(antes.camX).toBeGreaterThan(80);
+    expect(c).toEqual({ camX: 400 - TELA.w, camY: 400 - TELA.h });
+  });
+
+  it('[Interface] `redimensionar` só da TELA mantém o mundo — é o caso do viewport dividido', () => {
+    const cam = criarCamera(MUNDO, TELA);
+    cam.pular(400, 544);
+    const c = cam.redimensionar(undefined, { w: 320, h: 90 });
+    expect(c.camY).toBe(544 - 90); // a base não foi recentrada, só reprendida
+  });
+
+  it('[Boundary] mundo MENOR que a tela: a câmera encosta em 0 e não em negativo', () => {
+    const cam = criarCamera({ w: 100, h: 100 }, TELA);
+    expect(cam.pular(50, 50)).toEqual({ camX: 0, camY: 0 });
   });
 });
