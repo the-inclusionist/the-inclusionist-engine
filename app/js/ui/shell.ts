@@ -300,8 +300,6 @@ export interface ShellCtx {
   keyName: (code: string) => string;
 
   /* --- as ações do menu de pausa (cada uma é um callback: TDZ, ver o cabeçalho) --- */
-  /** Botão de LETRAS: avança o ciclo e aplica. O game.js repete essa mesma expressão no `#opt-letra`. */
-  nextLetra: () => void;
   /** `setQuizLevel(n, announce)` — o ciclo 1..5 do nível de alfabetização. */
   setQuizLevel: (n: number, announce: boolean) => void;
   /** `quizLevel` de core/state.ts — lido para calcular o próximo do ciclo. */
@@ -324,6 +322,8 @@ export interface ShellCtx {
   setMotionPlayer: (i: number) => void;
   /** ui/settings-motion.ts `motion.open`. */
   openMotion: () => void;
+  /** Abre o menu de Comunicação Aumentada e Alternativa (ui/settings-caa). */
+  openCaa: () => void;
   /** ui/settings-empathy.ts `empathy.open`. */
   openEmpathy: () => void;
   /** `let selVizPlayer` do game.js — escopa Visual e Empatia no jogador que abriu. */
@@ -475,7 +475,10 @@ export function initShell(ctx: ShellCtx): ShellApi {
   // jogador que agiu (pauseActor) — o diálogo abre na aba dele.
   const pauseActs: PauseActs = {
     resume: () => setPhase('playing'),
-    letra: () => ctx.nextLetra(),
+    // O botão ABC era um CICLO de duas posições; virou a porta do menu de CAA (ADR-0028), onde a caixa da
+    // letra é uma escolha entre outras. Ele não sumiu — quem usava o atalho continua a um clique da escolha,
+    // em vez de ter de descobrir onde ela foi parar. A ação `letra` sumiu junto com o ciclo: um nome por coisa.
+    caa: () => ctx.openCaa(),
     nivel: () => ctx.setQuizLevel(ctx.getQuizLevel() % 5 + 1, true), // L3: cicla 1..5
     tipo: () => ctx.openTypo(),
     // R-splash 2: só AUMENTA (nunca diminui); a tela nova ESPERA um botão do jogador entrar

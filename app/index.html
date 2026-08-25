@@ -78,11 +78,12 @@
           <h2 id="pause-h">Pausado</h2>
           <div id="pause-menu" class="pause-menu" role="menu" aria-label="Menu de pausa">
             <button id="pm-resume" class="pm-btn" role="menuitem" type="button" data-act="resume">▶ Continuar</button>
-            <button id="opt-letra" class="pm-btn" role="menuitem" type="button" aria-label="Trocar as letras (ABC, abc, Braille)">🔠 ABC</button>
+            <button id="opt-letra" class="pm-btn" role="menuitem" type="button" aria-label="Comunicação: letras e símbolos">🔠 Comunicação</button>
             <button class="pm-btn" role="menuitem" type="button" data-act="audio">🦻 Acessibilidade auditiva</button>
             <button class="pm-btn" role="menuitem" type="button" data-act="motora">♿ Acessibilidade motora</button>
             <button class="pm-btn" role="menuitem" type="button" data-act="anim">🎞 Sensibilidade visual</button>
             <button class="pm-btn" role="menuitem" type="button" data-act="visual">🎨 Acessibilidade visual</button>
+            <button class="pm-btn" role="menuitem" type="button" data-act="caa">🔠 Comunicação (letras e símbolos)</button>
             <button class="pm-btn" role="menuitem" type="button" data-act="empatia">🫂 Modo empatia</button>
             <button class="pm-btn" role="menuitem" type="button" data-act="print">📷 Print (ver a tela)</button>
             <button class="pm-btn" role="menuitem" type="button" data-act="quit">🚪 Sair do jogo</button>
@@ -369,6 +370,19 @@
       <div class="overlay__actions">
         <button id="empathy-reset" class="mode-btn" type="button" data-i18n="menu.restoreDefaults">Restaurar padrões deste menu</button>
         <button id="empathy-close" class="mode-btn is-on" type="button">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comunicação Aumentada e Alternativa: como o jogo ESCREVE (caixa de letra hoje; pictogramas a caminho) -->
+  <div id="caa" class="overlay" hidden>
+    <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="caa-title">
+      <h2 id="caa-title">Comunicação Aumentada e Alternativa <span class="panel-sub__tag">como o jogo escreve</span></h2>
+      <p class="opt-hint">Há crianças que leem símbolos e não letras. Para elas o pictograma não é enfeite nem muleta — é a escrita. Aqui se escolhe em que forma o jogo apresenta a língua.</p>
+      <div id="caa-list" class="ctrl-list" role="radiogroup" aria-labelledby="caa-title"></div>
+      <div class="overlay__actions">
+        <button id="caa-reset" class="mode-btn" type="button" data-i18n="menu.restoreDefaults">Restaurar padrões deste menu</button>
+        <button id="caa-close" class="mode-btn is-on" type="button">Fechar</button>
       </div>
     </div>
   </div>

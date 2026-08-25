@@ -136,7 +136,10 @@ export interface PauseBtnDef { readonly act: string; readonly lbl: string; reado
 /** The pause menu's items — MENU DATA, so it lives with the other menu tables. The pause slice (ui/pause-icons)
  *  receives it through its own ctx instead of re-declaring it; nobody owns two copies of a list of buttons. */
 export const PM_BTNS: readonly PauseBtnDef[] = [
-  { act: 'resume', lbl: '▶ Continuar' }, { act: 'letra', lbl: '🔠 ABC', letra: true }, { act: 'tipo', lbl: '🔤 Tipografia' },
+  // 'letra' virou 'caa' (ADR-0028): era um CICLO de duas posições cujo rótulo mudava junto (`letra: true`),
+  // e virou a porta de um menu. Sem ciclo não há rótulo dinâmico, então ele volta a ser traduzível como os
+  // irmãos — o `letra: true` existia só para o i18n não sobrescrever o ABC/abc que o ciclo escrevia.
+  { act: 'resume', lbl: '▶ Continuar' }, { act: 'caa', lbl: '🔠 Comunicação' }, { act: 'tipo', lbl: '🔤 Tipografia' },
   { act: 'addplayer', lbl: '👥 Adicionar jogador' }, { act: 'audio', lbl: '🦻 Acessibilidade auditiva' },
   { act: 'motora', lbl: '♿ Acessibilidade motora' }, { act: 'anim', lbl: '🎞 Sensibilidade visual' },
   { act: 'visual', lbl: '🎨 Acessibilidade visual' }, { act: 'empatia', lbl: '🫂 Modo empatia' },

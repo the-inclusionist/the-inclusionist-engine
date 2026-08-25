@@ -271,5 +271,16 @@ const en: Record<string, string> = {
   'a11y.changed': 'changed',
   'sr.visual.reset': 'Visual accessibility restored to its defaults: contrast, enhancement, colours and outlines. Captions and the other menus did not change.',
   'sr.motion.reset': 'Visual sensitivity restored to its defaults: animations and CRT look. Animations go back to what your system asks for.',
+  'caa.emPreparo': 'in preparation',
+  'caa.aguardandoNegociacao': 'awaiting negotiation',
+  'caa.secao.agora': 'Available now',
+  'caa.secao.agoraTag': 'works with no network',
+  'caa.secao.preparo': 'In preparation',
+  'caa.secao.preparoTag': 'licence settled; the work is ours',
+  'caa.secao.negociacao': 'Awaiting negotiation',
+  'caa.secao.negociacaoTag': 'the permission is not ours to give',
+  'sr.caa.escolha': 'Communication: {v}.',
+  'sr.caa.reset': 'Communication restored to its default: uppercase letters, where literacy usually starts.',
+  'pause.caa': '🔠 Communication',
 };
 export default en;

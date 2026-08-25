@@ -222,11 +222,21 @@ export function setWcSolidValue(s: ReadonlySet<string>): void { wcSolid = s; emi
 //     legendas e as encontra desligadas amanhã paga o preço todo dia, e quem mais precisa do menu é quem menos
 //     tem margem para perdê-lo.
 //
-//     `letterCase` ainda é 'lower' | 'upper' aqui, mas por pouco tempo: o ADR-0028 o move do botão ABC para um
-//     menu de Comunicação Aumentada e Alternativa, onde ele passa a conviver com conjuntos de pictogramas
-//     (ARASAAC, Sclera, Mulberry). As duas caixas de letra são o PISO OFFLINE desse menu. ---
-export type LetterCase = 'lower' | 'upper';
-export let letterCase: LetterCase = store.get(store.KEYS.letterCase, DEFAULTS.letterCase) === 'lower' ? 'lower' : 'upper';
+//     `letterCase` MUDOU DE CASA e de valores (ADR-0028, menu de CAA). Era 'lower' | 'upper', num ciclo de duas
+//     posições no botão ABC da pausa; virou 'mixed' | 'upper', uma escolha dentro do menu de Comunicação
+//     Aumentada e Alternativa, onde convive com os conjuntos de pictogramas.
+//
+//     'lower' FOI APOSENTADO e vira 'mixed' na leitura. O Dev pediu duas opções — "letras maiúsculas +
+//     minúsculas" e "letras maiúsculas somente" —, e a primeira é texto com a caixa NATURAL, não texto forçado
+//     em minúscula: forçar minúscula num nome próprio ensina errado. Quem tinha 'lower' salvo aterrissa em
+//     'mixed', que é o mais próximo do que ele escolheu — mas se "só minúsculas" tinha uso pedagógico, é uma
+//     entrada de volta na tabela e uma linha aqui.
+//
+//     A DERIVAÇÃO IMPORTA: `caaMode` NÃO existe ainda de propósito. Enquanto só as duas caixas de letra forem
+//     escolhíveis, uma segunda variável para a mesma pergunta seria o MODE × activity de novo (#54). Quando um
+//     conjunto de pictogramas puder ser escolhido, `caaMode` nasce e `letterCase` passa a derivar dele. ---
+export type LetterCase = 'mixed' | 'upper';
+export let letterCase: LetterCase = store.get(store.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
 export function setLetterCaseValue(c: LetterCase): void {
   if (letterCase === c) return;
   letterCase = c; store.set(store.KEYS.letterCase, c); emit('letterCase', c);

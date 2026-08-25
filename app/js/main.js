@@ -32,6 +32,7 @@ import { $, $$, toggleBtn } from './ui/dom.js';
 import { initSettingsAudio } from './ui/settings-audio.js';
 import { initSettingsControls, ACT_LABEL, keyName } from './ui/settings-controls.js';
 import { initSettingsVisual, ROLE_LABELS } from './ui/settings-visual.js';
+import { initSettingsCaa } from './ui/settings-caa.js'; // 7º menu: Comunicação Aumentada e Alternativa (ADR-0028)
 import { initSettingsEmpathy } from './ui/settings-empathy.js';
 import { initSettingsMotor } from './ui/settings-motor.js';
 import { initSettingsMotion, setSelectedPlayer as setSelectedMotionPlayer } from './ui/settings-motion.js';
@@ -197,8 +198,10 @@ let MODE='ludico'; // 'ludico' | 'somasub' (silabas vem na E7)
 // 'quizLevel' agora vem de core/state.js (Fase 2, mega-variável 2). Leitura = binding vivo; escrita via setQuizLevel().
 // LETTER_NAME/soletra/ferreiroDistractors extraídos p/ game/literacy-distractors.js (Estágio 4).
 // malform() REMOVIDO: era código morto (0 chamadas) — distrator de sílaba nunca ligado.
-// `letterCase` migrou para core/state.js (#50) — 'lower' | 'upper', escolha pedagógica.
-const disp=(s)=> letterCase==='upper'?String(s).toUpperCase():String(s).toLowerCase();
+// `letterCase` migrou para core/state.js (#50) — 'mixed' | 'upper', escolha pedagógica, hoje feita no menu de
+// CAA (ADR-0028). 'mixed' NÃO força minúscula: devolve o texto como ele é, que é o que "maiúsculas e
+// minúsculas" quer dizer. Forçar minúscula num nome próprio ensinaria a criança a escrevê-lo errado.
+const disp=(s)=> letterCase==='upper'?String(s).toUpperCase():String(s);
 // E8: Braille (modo pessoa cega). Padrão de pontos da cela por letra (Grau 1, PT).
 // BRAILLE/NUMW/brailleText extraídos p/ game/braille.js (Estágio 4).
 // `blindMode` REMOVIDO: era escrito só por applyLetra a partir de `LETRA[i].blind`, e as duas entradas da
@@ -972,31 +975,24 @@ const optTelasBtn=$('#opt-telas'); // botão único: cicla 1→2→3→4 telas
 // reiniciar a rodada — quem entra, entra no jogo em andamento. O anuncio agora e do proprio activateScreens.
 if(optTelasBtn)optTelasBtn.addEventListener('click',()=>{ activateScreens((numPlayers%4)+1); });
 // Botão único de LETRAS: ABC (padrão) → abc → Braille
-const LETRA=[ // L3: Braille saiu do ciclo — o ditado passivo agora segue o Modo cego (a11y) e o nível 5 é o "escritor cego"
-  {lbl:'🔠 ABC',     caso:'upper', say:'Letras maiúsculas.'},
-  {lbl:'🔡 abc',     caso:'lower', say:'Letras minúsculas.'},
-];
 // L3: nível do quiz de alfabetização (1..5), persistido; rótulo vivo nos menus de pausa
 function setQuizLevel(n,announce){ setQuizLevelValue(n); // core/state.js: clampa 1..5, persiste e emite; a reflexão de UI fica aqui
   document.querySelectorAll('.pm-nivel').forEach(x=>{ x.textContent='📚 Nível '+quizLevel+' · '+QL_NAME[quizLevel]; });
   if(announce) srSay('Nível '+quizLevel+': '+QL_NAME[quizLevel]+'.'); }
-// `letraIdx` DEIXOU DE EXISTIR: era um cursor de duas posições numa tabela cujas entradas diferem apenas
-// pela caixa da letra, ou seja, `letterCase` disfarçado de índice. Duas variáveis para uma pergunta, no mesmo
-// molde do MODE × activity (#54) — só que aqui a derivação é de uma linha e não custa nada fazer agora.
-const letraIdx=()=>Math.max(0,LETRA.findIndex(s=>s.caso===letterCase));
-// applyLetra REFLETE o estado (rótulo do botão, re-render do quiz, anúncio); nextLetra é quem o MUDA. Antes as
-// duas coisas estavam na mesma função, o que só funcionava porque o estado ERA o índice que ela lia — com
-// `letterCase` como fonte, escrever de volta o que se acabou de ler seria um laço fechado que nunca cicla.
-function applyLetra(announce){ const s=LETRA[letraIdx()];
-  const b=$('#opt-letra'); if(b){ const alt=letraIdx()>0; b.textContent=s.lbl; b.classList.toggle('is-on',alt); b.setAttribute('aria-pressed',String(alt)); }
-  document.querySelectorAll('.pm-letra').forEach(x=>{ x.textContent=s.lbl; }); // ABC nos menus de pausa por tela
+// A TABELA `LETRA` E O CICLO MORRERAM (ADR-0028). Eram duas posições — ABC/abc — num botão da pausa, e a
+// caixa da letra virou UMA escolha dentro do menu de Comunicação Aumentada e Alternativa, ao lado dos
+// conjuntos de pictogramas. Um ciclo de duas posições não comporta nove opções, e o motivo de o menu existir
+// é que para algumas crianças o pictograma É a escrita.
+//
+// `applyLetra` fica, sem a parte que era do ciclo: ela REFLETE a escolha no jogo (re-render do quiz, moedas
+// do modo sílabas, rótulo do atalho). Quem MUDA agora é o painel; quem ANUNCIA também é ele, com o nome do
+// conjunto escolhido — daí o `announce` sair daqui.
+function applyLetra(){
   if(typeof rebuildCoins==='function' && MODE==='silabas') rebuildCoins();
   players.forEach(p=>{ if(p.quiz)renderQuiz(p); }); // L3: re-renderiza o quiz de quem estiver num
-  if(announce) srSay(s.say);
 }
-const optLetraBtn=$('#opt-letra'); if(optLetraBtn)optLetraBtn.addEventListener('click',()=>{ nextLetra(); });
-function nextLetra(){ setLetterCaseValue(LETRA[(letraIdx()+1)%LETRA.length].caso); applyLetra(true); }
-applyLetra(false); // estado inicial = ABC (maiúsculas, padrão)
+function setLetterCaseAndApply(c){ setLetterCaseValue(c); applyLetra(); }
+const optLetraBtn=$('#opt-letra'); if(optLetraBtn)optLetraBtn.addEventListener('click',()=>{ caa.open(); });
 // E9: toggles de Som / Legendas / Fácil
 const soundBtn=$('#opt-sound'), capBtn=$('#opt-captions');
 // REFLETE O VALOR PERSISTIDO no boot. O markup do #opt-captions crava `is-on`/`aria-pressed="true"`, e isso
@@ -1050,6 +1046,8 @@ function setModoCego(on){ const antes=modoCego; setModoCegoValue(on); if(modoCeg
   if(typeof setupExtras==='function')setupExtras(); if(typeof reflectModoCego==='function')audioPanel.reflectModoCego();
   srSay(t(on?'sr.blind.on':'sr.blind.off')); }
 // setPlayerViz/applyVizGlobal migraram para render/viz-setters.ts (Onda A).
+const caa = initSettingsCaa({ $, srSay, frontOverlay, restoreFocus: (id)=>overlays.restoreFocus(id),
+  getLetterCase: () => letterCase, setLetterCase: setLetterCaseAndApply }); // 7º menu (ADR-0028): ui/settings-caa.ts
 const empathy = initSettingsEmpathy({ $, srSay, store, renderVizGroup, reflectMotorEmpathy, reflectVizButtons, frontOverlay, restoreFocus: (id)=>overlays.restoreFocus(id), setHearingLoss, setOneButton, setWheelchair, getOneButton: () => oneButton, getWheelchair: () => wheelchair, getPlayers: () => players, setPlayerViz }); // painel de empatia: ui/settings-empathy.ts (registra #opt-empathy, #opt-hearing, #opt-onebtn, #opt-wheelchair + restaura o grafo de audio)
 // updateVizIndicator/reapplyVizAll migraram para render/viz-setters.ts (Onda A).
 // Simulações de empatia: o predicado mora em render/viz-modes (simulatesDisability), fonte única. A cópia
@@ -1286,7 +1284,7 @@ const shell = initShell({
   getGamepads: () => (navigator.getGamepads ? navigator.getGamepads() : []),
   isTouchMode: () => document.body.classList.contains('touch-mode'),
   padLayoutFromId, padMapFor: (id) => gamepadApi.padMapFor(id), kbFor, keyName,
-  nextLetra, // MESMA função do #opt-letra — era a expressão duplicada nos dois lugares
+  openCaa: () => caa.open(),
   setQuizLevel, getQuizLevel: () => quizLevel,
   openTypo: () => openTypo(), openAudio: () => openAudio(), openMovement: () => openMovement(),
   openVisual: () => openVisual(), openHelp: () => openHelp(), quitGame: () => quitGame(),
@@ -1313,6 +1311,7 @@ overlays.register('animation',{ close:()=>motion.close(),  inEscapeChain:true })
 overlays.register('visual',   { close:()=>closeVisual(),   inEscapeChain:true });
 overlays.register('empathy',  { close:()=>empathy.close(), inEscapeChain:true });
 overlays.register('audio',    { close:()=>closeAudio(),    inEscapeChain:true });
+overlays.register('caa',      { close:()=>caa.close(),     inEscapeChain:true });
 overlays.register('typo',     { close:()=>closeTypo(),     inEscapeChain:true });
 // Estes dois ficavam FORA da cadeia — heranca do monolito, onde nunca tiveram flag `*Open`. Media no
 // navegador: com o jogo pausado o Escape nem chega aqui, porque menu-nav o consome na fase de CAPTURA e da

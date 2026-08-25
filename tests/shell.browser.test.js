@@ -66,7 +66,7 @@ function boot(over = {}) {
     padMapFor: () => null,
     kbFor: () => ({ up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], jump: ['Space'], especial: ['KeyL'], run: ['ShiftLeft'], swap: ['KeyQ'] }),
     keyName: (c) => 'K:' + c,
-    nextLetra: () => log.acts.push('letra'),
+    openCaa: () => log.acts.push('caa'),
     setQuizLevel: (n, a) => log.acts.push('nivel:' + n + ':' + a),
     getQuizLevel: () => 5,
     openTypo: () => log.acts.push('typo'),
@@ -341,7 +341,7 @@ describe('pauseActs — a tabela do menu de pausa', () => {
     for (const a of usados) expect(typeof shell.pauseActs[a], a).toBe('function');
     // e a tabela cobre exatamente os atos que o game.js declara (a lista viva, para o dia em que divergir)
     expect(Object.keys(shell.pauseActs).sort()).toEqual(
-      ['addplayer', 'ajuda', 'anim', 'audio', 'empatia', 'letra', 'motora', 'nivel', 'print', 'quit', 'resume', 'tipo', 'visual'],
+      ['addplayer', 'ajuda', 'anim', 'audio', 'caa', 'empatia', 'motora', 'nivel', 'print', 'quit', 'resume', 'tipo', 'visual'],
     );
   });
 });

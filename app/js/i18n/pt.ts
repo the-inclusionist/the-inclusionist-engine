@@ -302,5 +302,16 @@ const pt: Record<string, string> = {
   'a11y.changed': 'alterado',
   'sr.visual.reset': 'Acessibilidade visual restaurada aos padrões: contraste, realce, cores e contornos. As legendas e os outros menus não mudaram.',
   'sr.motion.reset': 'Sensibilidade visual restaurada aos padrões: animações e estética CRT. As animações voltam ao que o seu sistema pede.',
+  'caa.emPreparo': 'em preparação',
+  'caa.aguardandoNegociacao': 'aguardando negociação',
+  'caa.secao.agora': 'Disponível agora',
+  'caa.secao.agoraTag': 'funciona sem rede',
+  'caa.secao.preparo': 'Em preparação',
+  'caa.secao.preparoTag': 'licença resolvida; falta o trabalho',
+  'caa.secao.negociacao': 'Aguardando negociação',
+  'caa.secao.negociacaoTag': 'a permissão não é nossa',
+  'sr.caa.escolha': 'Comunicação: {v}.',
+  'sr.caa.reset': 'Comunicação restaurada ao padrão: letras maiúsculas, como a alfabetização costuma começar.',
+  'pause.caa': '🔠 Comunicação',
 };
 export default pt;
