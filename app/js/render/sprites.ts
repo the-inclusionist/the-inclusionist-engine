@@ -7,6 +7,10 @@
 // (atualizam após init). PIXI vem do npm (7.4.2), só usado em initCharacterSprites. Fonte: assets/sprites/menino/. (Fase 2.24)
 import * as PIXI from 'pixi.js';
 import { makeCanvas, tex } from './canvas.js'; // p/ o tapa-costuras (inpaint 1px) dos frames do PixelLab
+// O ATLAS (item 22, X2). Módulo VIRTUAL, gerado por `scripts/vite-plugin-atlas.mjs` no build: `FRAMES` é o
+// manifesto `anim/idx → {x,y,w,h}` e vem DENTRO do bundle, para o boot continuar síncrono. Um `.json` ao lado
+// do PNG seria a segunda requisição, e este item existe para matar requisição.
+import { ATLAS_URL, FRAMES } from 'virtual:sprite-atlas';
 
 // Manifesto PURO (animação → nº de quadros): fonte única da ESTRUTURA, testável sem carregar textura nenhuma.
 export const SPRITE_MANIFEST: Record<string, number> = {
@@ -32,7 +36,35 @@ export let TEX_CLING_WALL: PIXI.Texture[] = [], TEX_CLING_CEIL: PIXI.Texture[] =
 // monta os caminhos da demonstracao animada a partir dela; era um `const` privado e o game.js usava o
 // nome como se fosse global, o que derrubava o assistente com ReferenceError ao abrir.
 export const SPR = 'assets/sprites/menino/';
-const pngTex = (f: string): PIXI.Texture => { const t = PIXI.Texture.from(SPR + f); t.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST; return t; };
+
+/**
+ * A base do ATLAS — UMA textura, criada uma vez. Era `PIXI.Texture.from` por quadro, e o boot pedia 38
+ * arquivos (55 requisições, porque 16 iam duas vezes). Medido no empacotador: os 39 quadros de cor cabem num
+ * PNG de 256×207 e 25,4 KB, contra 56,4 KB soltos — o atlas ganha em requisição E em bytes.
+ *
+ * Preguiçosa de propósito: este módulo continua SEM I/O no import (a regra que os testes cobram), e a base só
+ * nasce quando `initCharacterSprites()` roda.
+ */
+let _base: PIXI.BaseTexture | null = null;
+function baseDoAtlas(): PIXI.BaseTexture {
+  if (!_base) { _base = PIXI.BaseTexture.from(ATLAS_URL); _base.scaleMode = PIXI.SCALE_MODES.NEAREST; }
+  return _base;
+}
+
+/**
+ * A textura de um quadro: um RECORTE do atlas.
+ *
+ * ⚠️ QUADRO AUSENTE devolve `PIXI.Texture.EMPTY` em vez de estourar. O manifesto é gerado do disco no build,
+ * então um nome errado aqui é erro de PROGRAMA — mas derrubar o boot inteiro do personagem por um quadro é
+ * pior que desenhar um quadro vazio: a criança perde o jogo em vez de perder uma pose. O aviso vai ao console
+ * para quem desenvolve, que é quem pode consertar.
+ */
+const pngTex = (f: string): PIXI.Texture => {
+  const nome = f.replace(/\.png$/, '');
+  const r = (FRAMES as Record<string, { x: number; y: number; w: number; h: number } | undefined>)[nome];
+  if (!r) { console.warn('render/sprites: quadro fora do atlas:', nome); return PIXI.Texture.EMPTY; }
+  return new PIXI.Texture(baseDoAtlas(), new PIXI.Rectangle(r.x, r.y, r.w, r.h));
+};
 const A = (anim: string, n: number): PIXI.Texture[] => Array.from({ length: n }, (_, i) => pngTex(anim + '/' + i + '.png')); // frames de cor
 
 // TAPA-COSTURAS (temporário, até refazer os sprites no Aseprite): os frames do PixelLab deslocam o tronco na
@@ -49,15 +81,23 @@ function inpaintSeams1px(id: ImageData): void {
     }
   }
 }
-/** Pinta `img` num canvas, tapa as costuras e SUBSTITUI o binding vivo `arr[idx]` (o game.js lê por quadro). */
-function aplicarInpaint(img: HTMLImageElement, arr: PIXI.Texture[], idx: number): void {
+/**
+ * Recorta o quadro `r` de `img`, tapa as costuras e SUBSTITUI o binding vivo `arr[idx]`.
+ *
+ * O RECORTE é o que mudou com o atlas (item 22): antes `img` era o PNG do quadro e o desenho ia em 0,0 com o
+ * tamanho da imagem inteira; agora `img` é o ATLAS e o quadro é um retângulo dentro dele. Desenhar o atlas
+ * inteiro aqui não estouraria — produziria um sprite com o personagem inteiro dentro, o que é exatamente o
+ * tipo de defeito que passa por build e por teste e só aparece na tela.
+ */
+function aplicarInpaint(img: CanvasImageSource, r: { x: number; y: number; w: number; h: number }, arr: PIXI.Texture[], idx: number): void {
   try {
-    const cv = makeCanvas(img.width, img.height), c = cv.getContext('2d'); if (!c) return;
-    c.imageSmoothingEnabled = false; c.drawImage(img, 0, 0);
-    const id = c.getImageData(0, 0, img.width, img.height);
+    const cv = makeCanvas(r.w, r.h), c = cv.getContext('2d'); if (!c) return;
+    c.imageSmoothingEnabled = false;
+    c.drawImage(img, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+    const id = c.getImageData(0, 0, r.w, r.h);
     inpaintSeams1px(id); c.putImageData(id, 0, 0);
     arr[idx] = tex(cv);
-  } catch (e) { /* falhou -> mantem o PNG cru */ }
+  } catch (e) { /* falhou -> mantem o recorte cru */ }
 }
 
 /**
@@ -82,17 +122,20 @@ function aplicarInpaint(img: HTMLImageElement, arr: PIXI.Texture[], idx: number)
  * tronco do personagem e nenhum teste diria nada.
  */
 function inpaintInto(file: string, arr: PIXI.Texture[], idx: number): void {
+  const nome = file.replace(/\.png$/, '');
+  const r = (FRAMES as Record<string, { x: number; y: number; w: number; h: number } | undefined>)[nome];
+  if (!r) return; // quadro fora do atlas: `pngTex` já avisou, e sem retângulo não há o que recortar
   const base = arr[idx]?.baseTexture as (PIXI.BaseTexture & { resource?: { source?: unknown } }) | undefined;
   const doPixi = (): boolean => {
     const src = base?.resource?.source;
     if (!(src instanceof HTMLImageElement) || !src.complete || !src.naturalWidth) return false;
-    aplicarInpaint(src, arr, idx);
+    aplicarInpaint(src, r, arr, idx);
     return true;
   };
   const buscarDeNovo = (): void => { // rede: só roda se a imagem do PIXI não estiver acessível
     const img = new Image();
-    img.onload = () => aplicarInpaint(img, arr, idx);
-    img.src = SPR + file;
+    img.onload = () => aplicarInpaint(img, r, arr, idx);
+    img.src = ATLAS_URL; // era o PNG do quadro; hoje é o atlas, e o recorte vem de `r`
   };
   if (doPixi()) return;
   if (base) base.once('loaded', () => { if (!doPixi()) buscarDeNovo(); });

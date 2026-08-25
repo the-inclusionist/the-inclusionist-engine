@@ -2,6 +2,12 @@ import { defineConfig } from 'vitest/config'; // (não de 'vite': é o vitest/co
 import { VitePWA } from 'vite-plugin-pwa';
 import { playwright } from '@vitest/browser-playwright'; // Vitest 4: provider virou factory de pacote próprio
 import { execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+// Plugin em .mjs puro (sem tipos): é ferramenta de BUILD, e tipá-la exigiria um segundo tsconfig para o
+// Node. O contrato dele é uma função que devolve o objeto de plugin, e o Vite valida isso na hora de usar.
+import atlasDeSprites from './scripts/vite-plugin-atlas.mjs';
+const RAIZ_SPRITES = join(dirname(fileURLToPath(import.meta.url)), 'app/public/assets/sprites/menino');
 
 // CARIMBO DE BUILD (versionamento — ver docs/plano-versionamento.md). git describe dá a versão: no commit de uma
 // tag de release (feita pelo release-it), sai limpa (v4.165.0 = "versão de marketing"); nos demais, tag+ahead+sha;
@@ -25,6 +31,10 @@ export default defineConfig({
   root: 'app',
   define: { __BUILD__: JSON.stringify(BUILD) }, // carimbo de build (versão/sha/data/env) — main.js lê __BUILD__.version
   plugins: [
+    // O ATLAS DE SPRITES (item 22, X2): 39 requisições viram UMA. Empacota em tempo de build com
+    // `scripts/atlas.mjs` — zero dependência nova — e entrega o manifesto pelo módulo virtual
+    // `virtual:sprite-atlas`, para o boot continuar SÍNCRONO (um .json ao lado seria a 2ª requisição).
+    atlasDeSprites({ raizSprites: RAIZ_SPRITES }),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto', // o plugin injeta o registro do SW no index.html (offline)
@@ -87,6 +97,10 @@ export default defineConfig({
       {
         // lógica pura (rápido, sem browser)
         root: import.meta.dirname,
+        // O PLUGIN DO ATLAS ENTRA AQUI TAMBÉM: os projects de teste NÃO herdam os plugins do topo, e
+        // `render/sprites` importa o módulo virtual. Sem isto, `tests/logic.node.test.js` falha ao RESOLVER —
+        // não ao afirmar —, que é a forma de quebra mais confusa possível numa suíte.
+        plugins: [atlasDeSprites({ raizSprites: RAIZ_SPRITES })],
         test: {
           name: 'node',
           environment: 'node',
@@ -96,6 +110,7 @@ export default defineConfig({
       {
         // render/DOM real via Chromium/Playwright (Vitest 3: browser.instances)
         root: import.meta.dirname,
+        plugins: [atlasDeSprites({ raizSprites: RAIZ_SPRITES })],
         test: {
           name: 'browser',
           include: ['tests/**/*.browser.test.js'],
