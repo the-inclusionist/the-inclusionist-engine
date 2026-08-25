@@ -61,13 +61,17 @@
 //     consumidor podendo oferecer só metade da lista. A divisão do passo 5 precisa cortar AQUI, e este é o
 //     tipo de corte que só um consumidor sem tiles revela.
 //
-//  9. O SONAR NÃO PODE SER USADO POR QUEM NÃO É PLATAFORMA, e o quiz não o ligou de propósito: ligá-lo exigiria
-//     MENTIR para a engine. O ctx de `platform/audio-nav` pede 19 coisas, e seis delas são de plataforma pura —
-//     `tileAt`, `solidAt`, `BOX`, `TILE`, `getCoins`, `getCenario`. Um quiz teria de inventar tiles falsos, uma
-//     caixa de colisão falsa e um cenário falso para pedir "aponte a alternativa mais próxima".
-//     E o módulo é DOIS módulos com um nome só: `caneProbe`/`caneTap`/`waterNav` são bengala e natação, isto é,
-//     plataforma; `sonar`/`panFor`/`needsAudioCues` são navegação sonora, que serve a qualquer jogo. Contornar
-//     com dublês teria produzido um "funciona" falso — o instrumento existe justamente para não fazer isso.
+//  9. ✅ CONSERTADO. O SONAR NÃO PODIA SER USADO POR QUEM NÃO É PLATAFORMA, e o quiz não o ligou: ligá-lo
+//     exigiria MENTIR para a engine. O ctx de `platform/audio-nav` pedia 19 coisas, e seis eram de plataforma
+//     pura — `tileAt`, `solidAt`, `BOX`, `TILE`, `getCoins`, `getCenario`. Um quiz teria de inventar tiles
+//     falsos, uma caixa de colisão falsa e um cenário falso para pedir "aponte a alternativa mais próxima".
+//     E o módulo era DOIS módulos com um nome só: `caneProbe`/`caneTap`/`waterNav` são bengala e natação,
+//     isto é, plataforma; `sonar`/`panFor`/`needsAudioCues` são navegação sonora, que serve a qualquer jogo.
+//     Contornar com dublês teria produzido um "funciona" falso — o instrumento existe para não fazer isso.
+//     AGORA são dois de verdade (item 19): `platform/audio-sonar` recebe TOPOLOGIA, ALVOS e NOME do contrato,
+//     e as seis coisas de plataforma não atravessaram — sumiram. Este quiz liga o sonar com a tecla S, e o
+//     que ele ouve é "Sonar: pergunta à direita, bem perto" — a MESMA função que na plataforma diz "moeda".
+//     A prova não é o som: é que ligá-lo não exigiu mentira nenhuma. Nenhum tile falso foi inventado aqui.
 //     ACHADO LATERAL, já consertado à parte (7e72da9): o anúncio do sonar não passava por `t()`. Sete cadeias
 //     em pt-BR cruas no único módulo cuja saída É a interface da criança cega.
 //
@@ -188,6 +192,16 @@ function responder(i: number): void {
 function aoTeclado(e: KeyboardEvent): void {
   const p = PERGUNTAS[atual];
   if (!p) return;
+  // SONAR (achado 9). A posição do jogador é `atual` — a PERGUNTA em que ele está —, e não `foco`, que é a
+  // alternativa sob o cursor: a topologia declarada é a lista de PERGUNTAS, e misturar os dois índices faria
+  // a distância medir uma coisa na régua de outra.
+  //
+  // ⚠️ E AQUI O SONAR É CORRETO E INÚTIL, o que também é um achado. Num quiz linear de três perguntas não há
+  // para onde apontar: o alvo é sempre a pergunta em que a criança já está, e a resposta é sempre "bem
+  // perto". Apontar a ALTERNATIVA certa seria colar. O sonar serve a quem tem ESPAÇO — plataforma, top-down,
+  // Sokoban, um mapa de fases —, e o que este consumidor prova não é que ele ajuda todo gênero: é que ligá-lo
+  // não exige mais mentir para a engine. As duas coisas costumam ser confundidas.
+  if (e.code === 'KeyS') { motor?.sonar.sonar({ i: 0, x: atual, y: 0, viz: 'cego' }); e.preventDefault(); return; }
   const total = p.alternativas.length;
   if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { foco = proximoFoco(foco, 1, total); render(); e.preventDefault(); }
   else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { foco = proximoFoco(foco, -1, total); render(); e.preventDefault(); }
@@ -212,10 +226,10 @@ export function declararQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
     tick: 'player',
     // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
     roleAt: (at) => (at.x === atual ? 'goal' : 'free'),
-    nameAt: (at) => {
-      const p = perguntas[at.x];
-      return p ? { text: p.enunciado, gender: 'f', plural: false } : null;
-    },
+    // O nome é curto DE PROPÓSITO: quem ouve o sonar quer saber PARA ONDE ir, não o enunciado inteiro. O
+    // enunciado a criança já recebe pela narração, ao entrar na pergunta. Confundir os dois faz o sonar ler
+    // um parágrafo a cada toque — e o sonar existe para ser tocado muitas vezes.
+    nameAt: (at) => (perguntas[at.x] ? { text: `pergunta ${at.x + 1}`, gender: 'f', plural: false } : null),
     // O foco é o do teclado: qual alternativa está sob o cursor. Sem corpo, sem `facing` — daí `heading:'none'`.
     focusOf: () => ({ id: 'p0', at: { x: atual, y: foco }, heading: 'none' }),
     // ESTE É O CAMPO QUE APOSENTA O `coinTarget`: o alvo é "acertos de perguntas", e a engine não sabe

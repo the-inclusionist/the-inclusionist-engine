@@ -397,6 +397,9 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     return true; // aberto = consome (mesmo sem ser Escape: o resto do menu não navega por baixo dele)
   }
 
+  /** Consome a tecla: ela era nossa, e ninguém mais deve vê-la. Uma função só para o par nunca se separar. */
+  const consumir = (e: NavKeyEvent): void => { e.preventDefault(); e.stopPropagation(); };
+
   function menuNavKey(e: NavKeyEvent): void {
     if (!ctx.isNavigable()) return;
     if (ctx.isCapturing()) return;   // remap em andamento: a tecla é dele
@@ -407,14 +410,24 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     const k = menuKeyIntent(e.code, owner >= 0 ? ctx.actionOf(e.code, pi) : null);
     if (!hasIntent(k)) return;
 
-    // ⚠️ DEFEITO 2: em CAPTURA + stopPropagation, o ouvinte de bolha do game.js nunca vê esta tecla.
-    e.preventDefault();
-    e.stopPropagation();
-
+    // A TECLA SÓ É CONSUMIDA SE HOUVER O QUE NAVEGAR. Antes, `preventDefault()` + `stopPropagation()` vinham
+    // AQUI, antes de se saber se havia diálogo ou menu aberto — e o `menuNavKey` matava o evento para depois
+    // descobrir que não tinha nada a fazer com ele. Na plataforma isso era invisível: `isNavigable()` é
+    // `phase === 'paused'`, e pausar ABRE o menu, então quase nunca havia um caso "navegável e nada aberto".
+    //
+    // No segundo consumidor não era invisível — era total. Um quiz cujos ajustes estão SEMPRE disponíveis
+    // responde `isNavigable(): true`, e com isso TODA tecla com intenção de menu morria aqui: as setas de
+    // escolher alternativa, e o `S` do sonar. Duas funcionalidades que existiam e não chegavam à criança.
+    //
+    // A REDE DE SEGURANÇA DO ESCAPE FICA INTACTA, e era o risco real desta mudança. O bloco (b) acima explica
+    // que `#help` e `#touchcfg` dependem do `stopPropagation()` para não deixarem a tecla cair no ouvinte de
+    // bolha, que despausaria o jogo com o diálogo aberto. Esses dois casos entram por `sharedDialogOpen()`
+    // — há diálogo, logo a tecla É consumida, exatamente como antes.
     const dlg = sharedDialogOpen();
-    if (dlg) { navDialog(dlg, k); return; }                 // diálogo de a11y aberto: navega ele (compartilhado)
+    if (dlg) { consumir(e); navDialog(dlg, k); return; }    // diálogo de a11y aberto: navega ele (compartilhado)
     const menu = ctx.getPauseMenu(pi);                      // senão: menu de pausa do PRÓPRIO jogador
-    if (menu && !menu.hidden) navPause(menu, pi, k);
+    if (menu && !menu.hidden) { consumir(e); navPause(menu, pi, k); }
+    // Sem diálogo e sem menu: a tecla NÃO é nossa. Segue o caminho dela até quem for o dono.
   }
 
   function attach(): void {

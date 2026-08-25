@@ -45,7 +45,10 @@ import { initI18n } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { createTts } from '../platform/tts.js';
-import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer } from '../platform/audio.js';
+import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer, tonePan, audioCtx } from '../platform/audio.js';
+import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
+import { VIZ_BY_KEY } from '../render/viz-modes.js';
+import { LOGICAL_W } from '../core/constants.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
@@ -89,6 +92,16 @@ export interface CreateGameOptions {
   readonly players?: { ctrl: Record<string, string[]> }[];
   /** Troca de fase, para quem tem fases. Ausente = não faz nada (o jogo sem fases não perde nada). */
   readonly setPhase?: (p: 'title' | 'playing' | 'paused') => void;
+  /**
+   * Os jogadores como a NAVEGAÇÃO SONORA os vê. Ausente, `createGame` DERIVA um do campo 4 do contrato: o
+   * foco diz onde o jogador está, que é tudo o que o sonar precisa saber sobre posição.
+   *
+   * Um jogo com vários jogadores, ou com dispositivo de áudio por jogador, fornece a sua lista. Um jogo de
+   * uma criança só não fornece nada — e ganha sonar assim mesmo, que é o ponto.
+   */
+  readonly sonarPlayers?: () => SonarPlayer[];
+  /** Modo cego ligado? Ausente = não. Vale para todos os jogadores, como no jogo de plataforma. */
+  readonly isBlindMode?: () => boolean;
 }
 
 export interface Engine {
@@ -97,6 +110,14 @@ export interface Engine {
   readonly overlays: SettingsPanelApi;
   readonly nav: MenuNavApi;
   readonly keyboard: KeyboardRuntime;
+  /**
+   * A NAVEGAÇÃO SONORA, pronta e ligada à declaração deste jogo (item 19).
+   *
+   * Ela vem de graça porque o sonar deixou de precisar de tiles: pergunta topologia (campo 1), alvos (campo
+   * 5) e nome (campo 3), e o jogo já declarou os três para existir. Era o achado 9 do segundo consumidor —
+   * "ligá-lo exigiria MENTIR para a engine" —, e a mentira era exigida pela FORMA da pergunta, não pelo som.
+   */
+  readonly sonar: AudioSonar;
   /** Quantos filtros de daltonismo foram montados. `0` = não havia host, e o menu visual perde metade. */
   readonly cvdFilters: number;
   /** O que FALTOU no documento do consumidor. Vazia = o hospedeiro cumpriu o contrato de marcação. */
@@ -155,6 +176,23 @@ export function createGame(o: CreateGameOptions): Engine {
   const cvdFilters = installCvdFilters(o.host.cvdHost ?? null);
   if (!cvdFilters) problems.push('sem host de filtros (<svg>): a correção de daltonismo não foi montada');
 
+  // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.
+  const sonar = createAudioSonar({
+    topology: () => o.declaration.topology,
+    targetsOf: (i) => o.declaration.targetsOf(i),
+    nameAt: (at) => o.declaration.nameAt(at),
+    tonePan, srSay, narrate: (texto) => tts.narrate(texto),
+    VIZ_BY_KEY, getModoCego: o.isBlindMode ?? (() => false), LOGICAL_W,
+    // O jogador DERIVADO do foco: campo 4 respondendo "onde a criança está". Um jogo que não fornece lista
+    // ainda tem sonar, e é isso que faz a pilha de acessibilidade não ser acessório.
+    getPlayers: o.sonarPlayers ?? (() => {
+      const f = o.declaration.focusOf(0);
+      return f ? [{ i: 0, x: f.at.x, y: f.at.y, viz: 'normal' }] : [];
+    }),
+    getNumPlayers: () => (o.players ?? [null]).length,
+    getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat,
+  });
+
   // 5. Teclado remapeável — o melhor recorte da base (achado 11): esquema de teclas, sem mundo.
   initKB();
   const players = o.players ?? [{ ctrl: {} as Record<string, string[]> }];
@@ -180,5 +218,5 @@ export function createGame(o: CreateGameOptions): Engine {
     win: { addEventListener: (tipo, fn, captura) => win.addEventListener(tipo, fn as EventListener, captura) },
   });
 
-  return { declaration: o.declaration, tts, overlays, nav, keyboard, cvdFilters, problems, declines };
+  return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, cvdFilters, problems, declines };
 }

@@ -347,6 +347,43 @@ describe('menuNavKey — o tradutor de teclado', () => {
     expect(e.stops).toBe(0);
   });
 
+  it('[Right] navegável, mas SEM diálogo e SEM menu aberto: a tecla NÃO é consumida', () => {
+    // A issue #72, virada teste. `menuNavKey` matava o evento (preventDefault + stopPropagation, em CAPTURA)
+    // ANTES de descobrir se havia o que navegar — e depois saía sem fazer nada. Na plataforma era invisível,
+    // porque pausar ABRE o menu; no segundo consumidor era total: um quiz cujos ajustes estão sempre
+    // disponíveis responde `isNavigable(): true`, e com isso perdia as setas de escolher alternativa e a
+    // tecla do sonar. Duas funcionalidades que existiam e não chegavam à criança.
+    setPhaseValue('title');
+    const { nav } = boot({ isNavigable: () => true, getPauseMenu: () => null });
+    const e = key('ArrowDown');
+    nav.menuNavKey(e);
+    expect(e.stops, 'sem nada aberto, a tecla é de outro dono').toBe(0);
+    expect(e.defaults).toBe(0);
+  });
+
+  it('[Right] com MENU DE PAUSA aberto, a tecla continua sendo consumida', () => {
+    // O par do caso acima, e o que impede o conserto de virar "o menu-nav parou de funcionar".
+    setPhaseValue('paused');
+    const { nav } = boot({ isNavigable: () => true });
+    showPauses();
+    const e = key('ArrowDown');
+    nav.menuNavKey(e);
+    expect(e.stops).toBe(1);
+    expect(e.defaults).toBe(1);
+  });
+
+  it('[Right] com DIÁLOGO aberto, a tecla continua sendo consumida — a rede do Escape fica de pé', () => {
+    // Este é o caso que o conserto NÃO podia quebrar. O bloco (b) do cabeçalho do módulo registra que `#help`
+    // e `#touchcfg` dependem do `stopPropagation()` para a tecla não cair no ouvinte de bolha, que
+    // despausaria o jogo com o diálogo aberto. Eles entram por `sharedDialogOpen()` — há diálogo, logo a
+    // tecla é consumida, exatamente como antes.
+    const { nav, openHelp } = boot({ isNavigable: () => true });
+    openHelp();
+    const e = key('Escape');
+    nav.menuNavKey(e);
+    expect(e.stops).toBe(1);
+  });
+
   it('com um remap em andamento, a tecla é do remap — o menu não a rouba', () => {
     const { nav } = boot({ isCapturing: () => true });
     showPauses();
