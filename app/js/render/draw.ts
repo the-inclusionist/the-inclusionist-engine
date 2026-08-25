@@ -65,6 +65,7 @@ import type { PlayerView } from '../core/entity.js';
 import { BOX } from '../game/player.js';
 import { rnd } from '../core/rng.js';
 import { JUICE, easeOut3, shakeAmp, drawFx } from './fx.js';
+import { enquadrar, tremer } from './camera.js';
 import { drawCane, drawRunCane, drawChair } from './wheelchair-sprites.js';
 import { VIZ_BY_KEY } from './viz-modes.js';
 import { puTaken, type Powerup } from '../game/powerups.js';
@@ -173,18 +174,21 @@ export function initDraw(ctx: DrawCtx): DrawApi {
 
   /* ===================== câmera ===================== */
 
+  // A CONTA saiu para `render/camera` (item 22, opção M1); aqui ficou o CARIMBO dela no render-graph. O que
+  // sobrou nesta função é exatamente o que não é conta: o sorteio do tremor, a escrita no container e o aviso
+  // ao parallax. Fórmulas idênticas às de antes — ver o cabeçalho do módulo novo.
   function placeCam(pl: DrawPlayer): { camX: number; camY: number } {
-    const wpw = ctx.WORLD_PX_W(), wph = ctx.WORLD_PX_H();
-    let camX = pl.x - LOGICAL_W / 2, camY = (pl.y - BOX.h / 2) - LOGICAL_H / 2;
-    camX = Math.max(0, Math.min(camX, wpw - LOGICAL_W)); camY = Math.max(0, Math.min(camY, wph - LOGICAL_H));
-    const k = shakeAmp();
-    if (k > 0) { // JUICE: tremor decai linearmente (render/fx); re-clampa p/ não mostrar o vazio
-      camX = Math.max(0, Math.min(camX + (rnd() * 2 - 1) * k, wpw - LOGICAL_W));
-      camY = Math.max(0, Math.min(camY + (rnd() * 2 - 1) * k, wph - LOGICAL_H));
-    }
-    ctx.camera.x = -Math.round(camX); ctx.camera.y = -Math.round(camY);
-    ctx.updateParallax(camX, camY);
-    return { camX, camY };
+    const mundo = { w: ctx.WORLD_PX_W(), h: ctx.WORLD_PX_H() }, tela = { w: LOGICAL_W, h: LOGICAL_H };
+    // `pl.y` é o PÉ do jogador; o meio do corpo fica meia caixa acima. Esta conversão é a única coisa de
+    // PLATAFORMA que havia no enquadramento, e agora ela mora aqui, onde o corpo existe — e não na câmera.
+    let cam = enquadrar(pl.x, pl.y - BOX.h / 2, mundo, tela);
+    const k = shakeAmp(); // JUICE: tremor decai linearmente (render/fx)
+    // Os dois sorteios ficam DENTRO do `if`, como no original: com `k === 0` ele não chamava `rnd()`, e
+    // chamá-lo duas vezes por quadro deslocaria o fluxo do gerador COMPARTILHADO — mesma semente, outro jogo.
+    if (k > 0) cam = tremer(cam, mundo, tela, k, rnd() * 2 - 1, rnd() * 2 - 1);
+    ctx.camera.x = -Math.round(cam.camX); ctx.camera.y = -Math.round(cam.camY);
+    ctx.updateParallax(cam.camX, cam.camY);
+    return cam;
   }
 
   /* ===================== animação do personagem ===================== */

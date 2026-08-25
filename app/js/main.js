@@ -417,7 +417,8 @@ const parallaxApi = createParallax({
 });
 const { layers: parallaxLayers, texNormal: parallaxTexNormal, updateParallax } = parallaxApi;
 /* Tema de cenario: valida, persiste, veste o fundo e refaz a textura do mundo -> render/set-cenario.ts (D2-b).
-   `loadTileImages` foi junto (virou carregarTilesDoTema). `_vidaReady` FICA aqui: e a flag de boot da cena da
+   `loadTileImages` foi junto, virou `carregarTilesDoTema` e MORREU no item 17 (os tiles da Cidade sao dados
+   agora, em render/city-tiles) — a troca de cenario e sincrona. `_vidaReady` FICA aqui: e a flag de boot da cena da
    cidade, escrita la embaixo. Tudo o que nasce depois deste ponto entra por getter/seta — o setCenario do boot
    roda dentro de um try/catch MUDO, e uma dependencia em TDZ aqui nao daria erro: daria "o tema salvo sumiu". */
 let _vidaReady=false; // camadas de vida/trafego/tema ja existem (applyCenarioVida pode rodar). CENARIO vem de core/state.js

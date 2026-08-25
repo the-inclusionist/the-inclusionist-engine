@@ -64,7 +64,9 @@
 //     mão, quando a cena da cidade fica pronta.
 //   · `clearWorldTexCache` vem de render/high-contrast, que é um módulo de verdade e já existe no import.
 //
-// SEM I/O NO IMPORT: `carregarTilesDoTema` só cria `Image` quando chamada; o corpo do módulo não pede nada.
+// SEM I/O NO IMPORT, e agora sem I/O NENHUM: `carregarTilesDoTema` (a carga assíncrona dos PNG de tile, com a
+// guarda de corrida que ela exigia) foi APAGADA no item 17 — os tiles da Cidade viraram dados em
+// `render/city-tiles`. O corpo do módulo não pede nada, e a troca de cenário virou síncrona.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D2-b).
 
 import { CENARIOS, normalizarCenario, type CenarioTema } from './cenario-data.js';
