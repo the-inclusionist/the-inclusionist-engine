@@ -24,9 +24,36 @@
 //     `contrast.*`. Um segundo jogo herda 253 chaves das quais usa um punhado. Não é aresta de importação —
 //     é peso morto no pacote, e vira problema no dia em que houver dez jogos.
 //
-//  (os demais achados entram conforme este consumidor for crescendo — TTS, alto contraste, sonar, menu-nav)
+//  3. TTS: LIGA SEM O JOGO, e melhor do que eu esperava. `platform/tts` pede oito coisas por injeção e as
+//     oito saem de `platform/audio` — `ensureAC`, `catNode`, `audioOut`, `soundOn`, `volume`, `audioCat`. O
+//     consumidor monta o ctx em seis linhas e não reimplementa grafo de áudio nenhum. A pilha sonora é
+//     genuinamente da engine.
+//     PORÉM: `initAudioMixer()` precisa ser chamado antes, senão `audioCat` é null e o `narrate` cala em
+//     silêncio — sem erro, sem aviso. Uma dependência de ORDEM que nada no tipo declara, e que o segundo
+//     consumidor descobriu do jeito mais caro: o áudio simplesmente não saía.
+//
+//  4. A NARRAÇÃO NASCE DESLIGADA (`defaultAudioCat` devolve `on: k !== 'tts'`), e isso é correto — mas revela
+//     que os PAINÉIS não são acessório: sem o menu auditivo, a criança não tem como ligar a voz. Um consumidor
+//     que quisesse só "a engine, sem os menus" entregaria um TTS que existe e nunca fala.
+//
+//  5. `ui/settings-typo` + `ui/settings-panel` SERVEM FORA DO GÊNERO, sem uma linha de mudança. As 18 fontes, o
+//     rodapé de explicação, a aplicação no documento, o anúncio e o "restaurar padrões" funcionaram no quiz
+//     como funcionam no jogo. É a evidência mais forte até agora de que a pilha de menus é da engine.
+//
+//  6. MAS O CONTRATO DE MARKUP É INVISÍVEL. O ctx do painel pede `$` e `store`; o que ele REALMENTE exige é que
+//     o documento do consumidor contenha `#typo`, `#typo-list`, `#typo-preview`, `#typo-close` e `#typo-reset`.
+//     Nada no tipo diz isso — descobre-se por tentativa, e o modo de falhar é o pior possível: o painel abre
+//     vazio, sem erro. Uma engine que exige ids fixos e não os declara está exigindo que cada consumidor
+//     redescubra a mesma lista.
+//
+//  (os demais achados entram conforme este consumidor for crescendo — alto contraste, sonar, menu-nav, Libras)
 import { initI18n, t, applyDom } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
+import { createTts } from '../platform/tts.js';
+import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer } from '../platform/audio.js';
+import { initSettingsTypo } from '../ui/settings-typo.js';
+import { initSettingsPanel } from '../ui/settings-panel.js';
+import * as store from '../platform/storage.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
 interface Pergunta {
@@ -44,6 +71,7 @@ const PERGUNTAS: readonly Pergunta[] = [
 let atual = 0;
 let foco = 0;
 let acertos = 0;
+let tts: ReturnType<typeof createTts> | null = null;
 
 const $ = <T extends Element = Element>(sel: string): T | null => document.querySelector<T>(sel);
 
@@ -75,6 +103,7 @@ function render(): void {
   const p = PERGUNTAS[atual];
   if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">Fim! ${acertos} de ${PERGUNTAS.length}.</h2>`; return; }
   app.innerHTML = perguntaHtml(p, foco);
+  tts?.narrate(p.enunciado); // a narração do enunciado é do consumidor: a engine só empresta a voz
   app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {
     b.addEventListener('click', () => responder(Number(b.dataset.alt)));
   });
@@ -106,6 +135,30 @@ function aoTeclado(e: KeyboardEvent): void {
 export function bootQuiz(): void {
   initI18n();
   applyDom(document);
+  // ORDEM OBRIGATÓRIA e não declarada por tipo nenhum: sem `initAudioMixer()`, `audioCat` é null e o
+  // `narrate` desiste calado. Ver o achado 3 no cabeçalho.
+  initAudioMixer();
+  tts = createTts({
+    srSay, srAlert, ensureAC, catNode, audioOut,
+    getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
+  });
+  // A CASCA DOS DIÁLOGOS e UM painel emprestados, para medir se a pilha de menus serve fora do gênero.
+  const overlays = initSettingsPanel({
+    $, $$: <T extends Element = Element>(sel: string): T[] => [...document.querySelectorAll<T>(sel)],
+    doc: document, computedZ: (el) => +getComputedStyle(el).zIndex || 0,
+  });
+  const typo = initSettingsTypo({ $, srSay, store, root: document.documentElement });
+  const abrir = $<HTMLElement>('#q-abrir-typo');
+  if (abrir) abrir.addEventListener('click', () => {
+    const ov = $<HTMLElement>('#typo');
+    if (!ov) return;
+    typo.render(); ov.hidden = false; overlays.frontOverlay(ov);
+    ov.querySelector<HTMLElement>('button[data-font]:not([disabled])')?.focus();
+  });
+  const fechar = $<HTMLElement>('#typo-close');
+  if (fechar) fechar.addEventListener('click', () => { const ov = $<HTMLElement>('#typo'); if (ov) ov.hidden = true; });
+  overlays.register('typo', { close: () => { const ov = $<HTMLElement>('#typo'); if (ov) ov.hidden = true; }, inEscapeChain: true });
+
   const região = $<HTMLElement>('#game-region');
   if (região) região.addEventListener('keydown', aoTeclado);
   render();

@@ -34,6 +34,22 @@
              quiz não desenha mundo, e é isso que o teste quer descobrir se a engine tolera. -->
         <section id="game-region" class="game-region" tabindex="-1" aria-label="Quiz">
           <div id="quiz-app" class="quiz-app"></div>
+
+          <!-- O MENU DE ACESSIBILIDADE, EMPRESTADO. A pergunta que este pedaço faz: os sete painéis do jogo de
+               plataforma servem a um jogo que não é ele? A tipografia é o caso mais favorável — ela não fala de
+               moeda, tile nem física —, então se ELA não couber aqui, nenhum dos outros cabe. -->
+          <button id="q-abrir-typo" class="pm-btn" type="button" data-act="tipo">🔤 Tipografia</button>
+          <div id="typo" class="overlay" hidden>
+            <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="typo-title">
+              <h2 id="typo-title">Tipografia</h2>
+              <div id="typo-preview" class="typo-preview">Juiz foge e bota fita de cetim na xícara</div>
+              <div id="typo-list" class="ctrl-list" role="group" aria-label="Fontes"></div>
+              <div class="overlay__actions">
+                <button id="typo-reset" class="mode-btn" type="button" data-i18n="menu.restoreDefaults">Restaurar padrões deste menu</button>
+                <button id="typo-close" class="mode-btn is-on" type="button">Fechar</button>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </div>
