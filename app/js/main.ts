@@ -470,7 +470,19 @@ const jingles = createAudioJingles({ tone, ensureAC, catNode, audioOut, getSound
 PIXI.settings.ROUND_PIXELS=true;
 const app=new PIXI.Application({width:LOGICAL_W,height:LOGICAL_H,backgroundColor:0x05070f,
   antialias:false,resolution:1,powerPreference:'low-power'});
-$('#pixi-mount').appendChild(app.view);
+const pixiMount = $('#pixi-mount');
+// Sem o ponto de montagem não existe jogo — então falha, e falha DIZENDO o quê. Hoje já quebrava nesta
+// linha, com "Cannot read properties of null (reading 'appendChild')", que não ajuda quem editou o HTML.
+// A MENSAGEM É O SELETOR, e a frase mora aqui. O gate do item 14 proíbe literal de prosa neste arquivo —
+// em qualquer idioma — e a última porta dele, a lista de exceções, tem teto DEZ e está cheia, de
+// propósito: "passar disso quer dizer que alguém está perdoando texto em vez de traduzi-lo". Subir o
+// teto para caber uma mensagem minha seria afrouxar o gate para caber nele.
+//
+// E o resultado é melhor do que a frase seria: o seletor é a INFORMAÇÃO (o que falta no HTML), a pilha
+// dá o lugar, e a explicação fica onde quem edita o código a encontra. Antes disto, a mesma falha vinha
+// como "Cannot read properties of null (reading 'appendChild')", que não diz nem o quê nem onde.
+if (!pixiMount) throw new Error('#pixi-mount');
+pixiMount.appendChild(app.view);
 app.view.setAttribute('aria-hidden','true');
 const camera=new PIXI.Container(); app.stage.addChild(camera);
 weatherLayer=new PIXI.Graphics(); app.stage.addChild(weatherLayer); // CLIMA (chuva/clarão) em tela-espaço, mantido no topo em draw
@@ -1065,7 +1077,7 @@ function activateScreens(n: number){ sessionApi.activateScreens(n); }
 function respawnPlayer(k: Parameters<typeof sessionApi.respawnPlayer>[0]){ sessionApi.respawnPlayer(k); }
 function joinPlayer(padIdx: Parameters<typeof sessionApi.joinPlayer>[0]){ return sessionApi.joinPlayer(padIdx); }
 function quitGame(){ sessionApi.quitGame(); }
-$('#btn-again').addEventListener('click',()=>{ restartGame(); $('#game-region').focus(); });
+$('#btn-again')?.addEventListener('click',()=>{ restartGame(); $('#game-region')?.focus(); });
 /* ===================== ATIVIDADES (menu inicial) -> ui/activities-menu.ts =====================
    O menu do titulo, a escolha de atividade e o inicio da partida moram no modulo. Fica aqui so a
    composicao: MODE entra como ATRIBUICAO NUA (setMode() tambem reinicia a rodada e move o foco, que
@@ -1419,8 +1431,11 @@ const animClose=$('#animation-close'); if(animClose)animClose.addEventListener('
 let fpsAccum=0,fpsFrames=0,fpsMin=Infinity,fpsWarm=0;
 function fpsTick(){ const fps=app.ticker.FPS; fpsWarm++; fpsAccum+=fps; fpsFrames++;
   if(fpsWarm>60&&fps<fpsMin)fpsMin=fps;
-  if(fpsFrames>=30){ $('#hud-fps').textContent=String(Math.round(fpsAccum/fpsFrames));
-    $('#hud-fpsmin').textContent=fpsMin===Infinity?'–':String(Math.round(fpsMin)); fpsAccum=0;fpsFrames=0; }
+  // O HUD de FPS vive na barra de depuração (`?debug=true`). Ele existe no HTML de hoje, mas isto roda a
+  // cada 30 quadros: um `?.` custa nada e tira o loop de dependeder de um elemento opcional.
+  if(fpsFrames>=30){ const f=$('#hud-fps'); if(f)f.textContent=String(Math.round(fpsAccum/fpsFrames));
+    const fm=$('#hud-fpsmin'); if(fm)fm.textContent=fpsMin===Infinity?'–':String(Math.round(fpsMin));
+    fpsAccum=0;fpsFrames=0; }
 }
 
 /* ===================== loop ===================== */
