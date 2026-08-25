@@ -1,0 +1,152 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-25
+  decision-makers: [Dev]
+  consulted: [ADR-0010 (the ten pillars), ADR-0027 (the console filter and the engine/game boundary),
+              ADR-0030 (the declared contract, the scene stack, the camera), ADR-0033 (intent, not meaning),
+              "SP-the-inclusionist-demos: docs/superpowers/specs/2026-08-25-inclusionist-demos-design.md (D1-D16)"]
+  informed: []
+
+title: The engine stays OURS — Phaser is read for its designs, never forked and never imported; the renderer is an adapter so the choice stays reversible
+
+context-and-problem-statement: |
+  The target changed, and it is larger than this game. The goal is no longer "35+ educational games": it is
+  EVERY game in the `SP-the-inclusionist-demos` catalogue — 383 subgenres, one playable game each — running on
+  our engine, with a minigame window inside each of them where a child must get three answers right to gain
+  something that makes her stronger in the game she chose. Those minigames are the school activities of
+  `SP-the-inclusionist-gamified-learning` turned into minigames, and they REPLACE the item-pickup activities
+  of the current literacy and mathematics modes.
+
+  At that size the engine question stops being a matter of taste, so it is asked plainly: fork Phaser and add
+  our accessibility work to it; write our own and take from Phaser only what pays; or ignore Phaser.
+
+  THE FRAMING THAT DECIDES IT, and it is not the usual "do not reinvent the wheel": OUR ENGINE IS NOT A
+  RENDERER. PixiJS already is one. What we call the engine is the accessibility shell, the seven declared
+  fields of ADR-0027, the scene stack, input-as-intent, and the curriculum layer. Phaser would replace PIXI,
+  not replace the engine. So the choice is about the COST of a renderer, never about a missing capability.
+
+  And the capabilities the new design actually needs — a minigame that interrupts ANY genre, the three-hit
+  reward loop, the teacher's password, the LAN classroom — come from none of the three options. They are ours
+  in all three, identically.
+
+decision-drivers:
+  - "THE MULTIPLIER: every capability the engine exposes is a capability the accessibility contract must answer
+     for, in every game. How does it sound to a child who cannot see? What does high contrast do to it? What
+     does the screen reader announce? A smaller engine is not merely cheaper to write — it is cheaper to keep
+     ACCESSIBLE, and accessible is the product (pillar 2)."
+  - "Pillar 1 (school hardware): every kilobyte of framework is paid on a Positivo over school wifi. The
+     project already splits the PixiJS chunk (467 KB in the 2026-08-25 build) precisely so it is not re-fetched."
+  - "GPL-3.0 (pillar 10) against Phaser's MIT is legal but ONE-WAY: a fork could never send anything upstream,
+     so the whole delta is carried alone, forever."
+  - "The demos spec already decided the shape in D2/D3 (lift the tracer's core, i18n and a11y shell as a
+     library) and in D14/D15 (a game sees `Scene`/`Handle`, never a PixiJS type). A framework introduced now
+     would contradict a decision already recorded, and would do it after the lifting was measured."
+  - "The expensive part of what exists is exactly the part a renderer swap would destroy: the canonical
+     Z-order and post-FX chain (ADR-0020), the high-contrast recolour, the CVD filters, the sprite atlas."
+
+considered-options:
+  - "A — fork Phaser and add our accessibility work inside it"
+  - "B — our own engine, taking from Phaser what genuinely pays, when it pays"
+  - "C — ignore Phaser entirely"
+
+pros-and-cons-of-the-options:
+  fork-phaser:
+    good: ["Inherits tilemaps, physics, tweens, particles, cameras and audio on day one.",
+           "A battle-tested renderer maintained by people who do nothing else."]
+    bad: ["A fork is justified when the framework's INTERNALS must change. Accessibility does not need that:
+           it lives in the DOM, beside the canvas, not inside it. The delta that justifies the fork would sit
+           outside the fork.",
+          "It buys the maintenance of a framework of roughly a hundred thousand lines and loses upstream.",
+          "MIT into GPL-3.0 is one-way; nothing goes back, and the cost never amortises.",
+          "It maximises the multiplier: the largest possible API surface to keep accessible across 383 games."]
+  our-engine-and-take-what-pays:
+    good: ["Keeps the surface small, which is the accessibility budget stated as an architecture.",
+           "Preserves the renderer work already paid for (Z-order, post-FX, high contrast, CVD, atlas).",
+           "Their tilemap-with-Tiled data model and their camera (follow/deadzone/bounds) can be READ as
+            reference at zero licence and zero bundle cost — and ADR-0030 independently arrived at the same
+            shapes, which is evidence the design is right rather than a reason to import the package.",
+           "A genuinely hard genre can pull a SMALL focused library into ITS OWN chunk (demos D7/D11), so one
+            genre never taxes the other 382."]
+    bad: ["We write, and keep writing, what a framework would have given: tilemap layers, tweens, particles,
+           and whatever the 383rd genre turns out to need.",
+          "'Take what pays' has no natural brake — without a rule it becomes a framework written badly, one
+           borrowed feature at a time."]
+  ignore-phaser:
+    good: ["Total independence; nothing to track."]
+    bad: ["Refusing to READ a solved problem is not independence, it is expense. The tilemap and camera models
+           are worth studying whether or not a line is ever imported."]
+
+decision-outcome:
+  chosen-option:
+    link: "B — the engine is ours; Phaser is read, not forked and not imported"
+    justification: |
+      Option A is rejected on the fork's own terms: it would buy an enormous maintenance obligation to obtain
+      something the fork does not contain, because the accessibility layer is DOM-side and renderer-agnostic.
+      Option C is rejected only in its literal reading — the designs are free to read, and refusing to read them
+      is a cost with no benefit.
+
+      B is chosen with THREE QUALIFICATIONS, and the third is what makes it safe:
+
+      1. ADOPT THE DESIGN, NOT THE DEPENDENCY. Phaser's tilemap/Tiled data model and camera are reference
+         material. No Phaser import enters either repository.
+
+      2. A SMALL, FOCUSED LIBRARY WHEN IT HURTS — NEVER A FRAMEWORK. If one genre out of 383 needs real
+         rigid-body physics, it enters THAT GAME'S chunk. The demos spec already makes this cheap: chunk per
+         game, runtime-cached on first play. A framework pulled in for one genre is the error this record names.
+
+      3. THE RENDERER IS AN ADAPTER, AND THAT IS THE INSURANCE. Demos D14/D15 already forbid a PixiJS type from
+         reaching anything a game can see; games draw through `Scene`/`Handle`. While that holds, replacing PIXI
+         later is a contained change instead of a rewrite — which is what makes B reversible and A unnecessary.
+         The same rule is extended here to the network port (`net/`): a game never imports a transport.
+
+      WHAT WAS NOT MEASURED, said so nobody quotes it as if it had been: Phaser's full build is of the ORDER of
+      twice PixiJS's. That is an order of magnitude, not a measurement. If bundle size ever becomes the deciding
+      axis of a future revision, it must be measured first.
+
+  consequences:
+    good:
+      - "The accessibility contract keeps a surface it can actually cover — the pillar-2 budget expressed as
+         an architecture rather than as an intention."
+      - "Everything already paid for on the render side stays paid for."
+      - "The decision is reversible while the adapter rule holds, so it can be revisited with evidence instead
+         of being re-argued from preference."
+    bad:
+      - "We own the gaps. Tilemap layers, tweens and particles are ours to write, and the 383rd genre will
+         want something nobody has listed yet."
+      - "'Take what pays' needs a brake, or it becomes a framework assembled by accident. The brake is the
+         per-game chunk: a borrowed piece that cannot live inside one game's chunk is a framework in disguise."
+    neutral:
+      - "Reading Phaser's source stays explicitly ALLOWED and encouraged. This record rejects the fork and the
+         dependency, not the knowledge."
+      - "Nothing here decides the network backend. Colyseus is under consideration for the LAN classroom, and
+         the question that governs it is not the framework but WHICH MACHINE runs a Node server in a school
+         lab. That belongs to its own record."
+
+  confirmation: |
+    Enforced by dependency gates rather than by intention, in both repositories:
+
+      · `games/**` may import only `engine/game-api.ts` and its own folder (demos D15, `npm run lint:deps`).
+      · No PixiJS type may appear in anything a game can see (demos D14).
+      · A new clause of the same gate: no `phaser` import anywhere, in either repository. A dependency added
+        by habit is caught by the gate rather than by review.
+      · A per-genre library must be reachable ONLY from that game's chunk; if it lands in the shared chunk,
+        the size gate is the symptom.
+
+more-information: |
+  The sibling repository's spec is the other half of this record: `SP-the-inclusionist-demos`,
+  `docs/superpowers/specs/2026-08-25-inclusionist-demos-design.md`. D2 and D3 decide what is lifted from this
+  repository and how it is shared; D14 and D15 are the adapter rule this record depends on for reversibility.
+  If those two are ever relaxed, the insurance in qualification 3 is gone and this decision must be re-read.
+
+  TWO THINGS THIS RECORD DELIBERATELY DOES NOT DECIDE:
+
+  · The NETWORK BACKEND. Colyseus (MIT, room-based, authoritative, with reconnection and matchmaking) is under
+    consideration for the LAN classroom, and the question that governs it is not the framework but WHICH
+    MACHINE runs a Node server in a school lab: a Chromebook cannot, a teacher's laptop is restored nightly,
+    and a browser cannot be a server because WebRTC still needs signalling. Whatever is chosen, the rule from
+    qualification 3 applies unchanged — a game never imports a transport.
+
+  · The SHELL. The design that motivated this record is a flow above the games: screen 1 chooses activities
+    (or takes the teacher's password, which is the only way to play networked), screen 2 chooses one of the
+    catalogue's games, and then the game runs. That shell is shared by both repositories and needs its own
+    record; it is named here only because it is the reason the engine question was asked at this size.
