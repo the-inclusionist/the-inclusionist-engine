@@ -71,3 +71,39 @@ export function simulatesDisability(key: string): boolean {
  * três junto. Dois públicos opostos na mesma lista — quem quer sentir como é ser daltônico e quem é.
  */
 export const VIZ_CORRECTIONS: readonly VizMode[] = VIZ_MODES.filter((m) => m.kind === 'filter' && !m.sim);
+
+/* ===================== AS DUAS PILHAS COM UM NOME SÓ (achado 8, item 19) ===================== */
+//
+// O segundo consumidor mediu, e a medição é o motivo desta seção existir:
+//
+//     "O ALTO CONTRASTE NÃO VIAJA, e a razão é estrutural, não um defeito. Os modos `hcnew` REPINTAM
+//      TEXTURAS de tile na PIXI; um quiz não tem tiles, e não há o que repintar. Ou seja: o que o menu chama
+//      de 'acessibilidade visual' são DUAS pilhas com um nome só — uma de DOM/CSS (filtros de daltonismo,
+//      tipografia, caixa alta) que serve a qualquer jogo; uma de CANVAS (renderização direta, contornos,
+//      cores de papel) que só existe onde há mundo. O painel as apresenta numa lista única de 7 modos… A
+//      divisão do passo 5 precisa cortar AQUI."
+//
+// Este é o corte, e ele é de DADO e não de arquivo — os arquivos já estavam separados (`render/cvd-matrices`
+// é DOM puro; `render/high-contrast` importa `core/collision.tileAt`). O que faltava era a tabela DIZER a
+// qual pilha cada modo pertence, para que ninguém mais reconstruísse a resposta de cabeça.
+//
+// E era reconstruída: o segundo consumidor escrevia
+//     `VIZ_MODES.filter((m) => m.kind === 'normal' || (m.kind === 'filter' && !simulatesDisability(m.key)))`
+// — uma expressão que mistura DUAS perguntas diferentes ("precisa de canvas?" e "isto simula deficiência?")
+// e que todo consumidor futuro teria de reinventar, com a chance de acertar uma e errar a outra.
+
+/** Este modo precisa de um CANVAS de mundo para existir? Só os `hcnew` precisam: eles repintam texturas. */
+export function needsCanvas(key: string): boolean {
+  return VIZ_BY_KEY[key]?.kind === 'hcnew';
+}
+
+/**
+ * Os modos que funcionam em QUALQUER jogo — os que se aplicam como filtro de CSS sobre um elemento.
+ *
+ * Derivada, nunca listada à mão: um modo novo entra na pilha certa por causa do `kind` que ele declara, e não
+ * porque alguém lembrou de acrescentá-lo aqui. É a mesma regra de `VIZ_CORRECTIONS`.
+ */
+export const VIZ_DOM_ONLY: readonly VizMode[] = VIZ_MODES.filter((m) => !needsCanvas(m.key));
+
+/** Os modos que EXIGEM mundo. Complemento exato de `VIZ_DOM_ONLY` — juntos, os 16, sem sobra nem repetição. */
+export const VIZ_CANVAS_ONLY: readonly VizMode[] = VIZ_MODES.filter((m) => needsCanvas(m.key));

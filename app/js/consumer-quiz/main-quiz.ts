@@ -118,7 +118,7 @@ import { createGame, type Engine } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
 import { initSettingsTypo } from '../ui/settings-typo.js';
 import * as store from '../platform/storage.js';
-import { VIZ_MODES, VIZ_FILTER, simulatesDisability } from '../render/viz-modes.js';
+import { VIZ_DOM_ONLY, VIZ_FILTER, simulatesDisability } from '../render/viz-modes.js';
 import { toggleLibras, vlibrasOpen, setOnLibrasChange } from '../ui/vlibras.js';
 import { padPxPerMm } from '../input/touch.js';
 
@@ -282,7 +282,13 @@ export function bootQuiz(): void {
   const seletor = $<HTMLSelectElement>('#q-viz');
   const alvoViz = $<HTMLElement>('#game-region');
   if (seletor && alvoViz && motor.cvdFilters > 0) {
-    const opcoes = VIZ_MODES.filter((m) => m.kind === 'normal' || (m.kind === 'filter' && !simulatesDisability(m.key)));
+    // PERGUNTA em vez de reconstruir. Este trecho era
+    //     `VIZ_MODES.filter((m) => m.kind === 'normal' || (m.kind === 'filter' && !simulatesDisability(m.key)))`
+    // — uma expressão que misturava DUAS perguntas: "precisa de canvas?" e "isto simula deficiência?". A
+    // primeira é da ENGINE e agora tem resposta declarada (`VIZ_DOM_ONLY`, achado 8); a segunda é DESTE
+    // consumidor, que escolheu não oferecer simulações. Separá-las é o conserto: cada consumidor futuro
+    // herda a primeira em vez de a redescobrir, e continua livre na segunda.
+    const opcoes = VIZ_DOM_ONLY.filter((m) => !simulatesDisability(m.key));
     seletor.innerHTML = opcoes.map((m) => `<option value="${m.key}">${t(m.nome)}</option>`).join('');
     seletor.addEventListener('change', () => {
       alvoViz.style.filter = VIZ_FILTER[seletor.value] || '';
