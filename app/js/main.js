@@ -1105,7 +1105,8 @@ const viz = initVizSetters({
   $, body: document.body, srSay,
   app, camera, worldSprite, parallaxLayers, decoSprites,
   getVpSpr: () => vpSpr, getVpDots: () => vpDots,
-  getCoinSprites, getPowerups: () => powerups,
+  getItemSprites: getCoinSprites, itemTexId: 'coin', // item 19: o NOME dos itens e do jogo, nao do render
+  getPowerups: () => powerups,
   getPlayers: () => players, getNumPlayers: () => numPlayers,
   getSelVizPlayer: () => selVizPlayer, setSelVizPlayer: setSelVizPlayerValue,
   getSharedViz: () => _lastSharedViz, setSharedViz: (m) => { _lastSharedViz = m; },

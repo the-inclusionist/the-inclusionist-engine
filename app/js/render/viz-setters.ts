@@ -113,7 +113,22 @@ export interface VizSettersCtx {
   decoSprites: Textured[];                          // árvores/decoração de fundo
   getVpSpr: () => Filtered[];                       // GETTER: configureRender REATRIBUI o array a cada troca de nº de telas
   getVpDots: () => DotGfx[];                        // GETTER: idem (bolinhas por viewport, acima de tudo)
-  getCoinSprites: () => (Textured | null | undefined)[]; // game/coin-spawning (array vive lá, pode ser recriado)
+  /**
+   * Os sprites dos ITENS declarados (o array vive no jogo e pode ser recriado — por isso getter).
+   *
+   * Era `getCoinSprites`, e o nome dizia o que eles são. Mesma fatia que `render/draw` recebe desde o corte
+   * das entidades declaradas: uma lista de sprites, sem o desenho saber o que cada um representa.
+   */
+  getItemSprites: () => (Textured | null | undefined)[];
+  /**
+   * Como o JOGO chama os itens dele no cache de recoloração de `render/high-contrast`.
+   *
+   * Era `spriteTexFor('coin', mode)` — a string cravada aqui dentro. O cache já não tinha forma de moeda
+   * (ele chaveia por `(id, modo)`); quem ainda nomeava uma era este módulo. Repare no vizinho de baixo: os
+   * power-ups sempre carregaram o próprio `kind`, e a engine só o repassa. Os itens não carregavam nada, e
+   * por isso o nome tinha de estar em algum lugar — agora está do lado de quem o escolheu.
+   */
+  itemTexId: string;
   getPowerups: () => Pu[];                          // `powerups` é `let` do game.js
 
   /* --- estado do jogo (fica no game.js até o D1) --- */
@@ -173,10 +188,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       ctx.worldSprite.texture = worldTexFor(mode);
       ctx.parallaxLayers.forEach((ts, j) => { ts.texture = ctx.parallaxTexFor(j, mode); });
       ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(mode); });
-      // ⚠️ O `'coin'` AQUI é dívida deste módulo, e não do alto contraste. O cache deixou de ter forma de
-      // moeda (`spriteTexFor(id, modo)`); quem ainda nomeia a moeda é `viz-setters`, que também recebe
-      // `getCoinSprites` por ctx. Está na lista de vocabulário de `engine-boundary`, e é o próximo corte.
-      for (const s of ctx.getCoinSprites()) { if (s) s.texture = spriteTexFor('coin', mode); }
+      for (const s of ctx.getItemSprites()) { if (s) s.texture = spriteTexFor(ctx.itemTexId, mode); }
       for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.texture = pupTexFor(pu.kind, mode); }
     }
     for (const pl of ctx.getPlayers()) { if (pl.sprite && pl._tx) pl.sprite.texture = ctx.playerVizTex(pl._tx, mode); } // player muda de quadro toda frame

@@ -78,7 +78,7 @@ function setup(over = {}) {
     app: env.app, camera: env.camera, worldSprite: env.worldSprite,
     parallaxLayers: env.parallaxLayers, decoSprites: env.decoSprites,
     getVpSpr: () => env.vpSpr, getVpDots: () => env.vpDots,
-    getCoinSprites: () => [], getPowerups: () => [],
+    getItemSprites: () => [], itemTexId: 'alvo', getPowerups: () => [],
     getPlayers: () => env.players, getNumPlayers: () => env.numPlayers,
     getSelVizPlayer: () => env.sel, setSelVizPlayer: (i) => { env.sel = i; },
     getSharedViz: () => env.sharedViz, setSharedViz: (m) => { env.sharedViz = m; },

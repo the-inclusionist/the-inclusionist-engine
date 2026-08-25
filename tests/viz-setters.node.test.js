@@ -31,7 +31,9 @@ const {
 initHighContrast({
   W: 1, H: 1, outlineFg: () => 0, outlineBg: () => 0,
   getWorldCanvasNormal: () => null, getWorldTexNormal: () => 'TEX_WORLD_NORMAL',
-  sprites: () => ({ coin: { canvas: null, tex: 'TEX_COIN_NORMAL' } }),
+  // O registro de sprites do alto contraste é chaveado por ID, e o id aqui é o mesmo que o ctx declara
+  // (`itemTexId: 'alvo'`) — é o par que faz a recoloração encontrar a textura. Nenhum dos dois diz "moeda".
+  sprites: () => ({ alvo: { canvas: null, tex: 'TEX_ITEM_NORMAL' } }),
 });
 
 /* ===================== fakes: DOM e PIXI por interface estrutural ===================== */
@@ -93,7 +95,7 @@ function setup(over = {}) {
     worldSprite: texd(),
     parallaxLayers: [texd(), texd(), texd()],
     decoSprites: [texd()],
-    coinSprites: over.coinSprites || [],
+    itemSprites: over.itemSprites || [],
     powerups: over.powerups || [],
     vpSpr: over.vpSpr || [],
     vpDots: over.vpDots || [],
@@ -114,7 +116,11 @@ function setup(over = {}) {
     decoSprites: env.decoSprites,
     getVpSpr: () => env.vpSpr,
     getVpDots: () => env.vpDots,
-    getCoinSprites: () => env.coinSprites,
+    // OS ITENS, e o NOME deles, entram pelo ctx (item 19). Era `getCoinSprites` + a string 'coin' cravada
+    // dentro do módulo. O fixture usa 'alvo' de propósito: se ele dissesse 'coin', o teste reafirmaria por
+    // hábito o que o corte acabou de tirar — e o gate de fixtures acusaria, com razão.
+    getItemSprites: () => env.itemSprites,
+    itemTexId: 'alvo',
     getPowerups: () => env.powerups,
     getPlayers: () => env.players,
     getNumPlayers: () => env.numPlayers,
@@ -370,16 +376,16 @@ describe('applyVpFilters — filtro PIXI por viewport', () => {
 describe('applySharedTextures — texturas estáticas do multiplayer (memo por modo)', () => {
   const cena = () => setup({
     players: [{ viz: 'normal', sprite: texd(), _tx: 'TX0' }, { viz: 'normal', sprite: texd(), _tx: 'TX1' }],
-    coinSprites: [texd(), null, texd()],
+    itemSprites: [texd(), null, texd()],
   });
 
-  it('[Right] primeira aplicação troca mundo, parallax, decoração e moedas', () => {
+  it('[Right] primeira aplicação troca mundo, parallax, decoração e itens', () => {
     const { env, api } = cena();
     api.applySharedTextures('sim-deuter');
     expect(env.worldSprite.texture).toBe('TEX_WORLD_NORMAL');
     expect(env.parallaxLayers.map((l) => l.texture)).toEqual(['PX:0:sim-deuter', 'PX:1:sim-deuter', 'PX:2:sim-deuter']);
     expect(env.decoSprites[0].texture).toBe('TREE:sim-deuter');
-    expect(env.coinSprites[0].texture).toBe('TEX_COIN_NORMAL');
+    expect(env.itemSprites[0].texture).toBe('TEX_ITEM_NORMAL');
     expect(env.log.frontDim).toEqual([false]);
     expect(env.sharedViz).toBe('sim-deuter');
   });
@@ -414,8 +420,8 @@ describe('applySharedTextures — texturas estáticas do multiplayer (memo por m
     expect(env.parallaxLayers[0].texture).toBe('PX:0:lv-haze');
     expect(env.log.sharedWrites).toEqual(['blind', 'lv-haze']);
   });
-  it('[Null] buraco no array de moedas é pulado', () => {
-    const { api } = setup({ coinSprites: [null, null] });
+  it('[Null] buraco no array de itens é pulado', () => {
+    const { api } = setup({ itemSprites: [null, null] });
     expect(() => api.applySharedTextures('normal')).not.toThrow();
   });
   it('[Zero] jogador sem sprite ou sem quadro (_tx) não é tocado', () => {
@@ -469,7 +475,7 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
     expect(env.camera.filters).toBeNull();
     expect(env.log.frontDim).toEqual([false]);
   });
-  it('[Right] refaz extras e moedas e repinta os painéis a cada aplicação', () => {
+  it('[Right] refaz extras e itens e repinta os painéis a cada aplicação', () => {
     const { env, api } = setup();
     api.applyVizGlobal('normal');
     expect(env.log.rebuildExtras).toBe(1);

@@ -232,8 +232,10 @@ const MOEDA_CONHECIDA = new Set([
   // pasta teria criado — some por INJEÇÃO (`ctx.powerups`), como `shapes` já fazia.
   'core/entity.ts',         // `quiz: PlayerQuiz | null` no jogador canônico
   'platform/storage.ts',    // a chave `quizlevel` no registro (é a chave que o namespace isola)
-  'render/viz-setters.ts',  // `spriteTexFor('coin', mode)` — o cache deixou de ter forma de moeda; o
-                            // chamador ainda nomeia uma. Ver o comentário no próprio módulo.
+  // `render/viz-setters.ts` SAIU (2026-08-25, item 19). Era `spriteTexFor('coin', mode)` — o cache já não
+  // tinha forma de moeda (chaveia por `(id, modo)`), e quem ainda nomeava uma era este módulo. O id virou
+  // `ctx.itemTexId`, declarado pelo jogo. O vizinho de baixo mostra que essa sempre foi a forma certa: os
+  // power-ups carregam o próprio `kind` desde sempre, e a engine só o repassa.
 ]);
 
 describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
@@ -334,7 +336,9 @@ const FIXTURES_CONHECIDOS = {
   // moeda continua existindo; ele deixou de estar na engine.
   // Estes três só ficaram visíveis quando o crivo passou a enxergar `await import()` — a dívida deles é a
   // mesma dos de cima (o ctx do alto contraste exige um canvas/textura de moeda), não é dívida nova.
-  'viz-setters.node.test.js': 1,
+  // `viz-setters.node.test.js` SAIU (2026-08-25, item 19): o fixture declarava `coinSprites` e a textura
+  // `TEX_COIN_NORMAL`. Agora declara ITENS com o id 'alvo' — de propósito, porque um fixture que dissesse
+  // 'coin' reafirmaria por hábito o que o corte acabou de tirar do módulo.
   'viz-setters.browser.test.js': 3,
   // (`city-tex.node.test.js` também estava invisível e saiu LIMPO — por isso não entra aqui. O caso
   //  "a lista não guarda teste que já se limpou" me obrigou a conferir em vez de supor.)
