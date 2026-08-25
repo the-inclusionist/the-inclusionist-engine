@@ -35,9 +35,9 @@
   <header class="topbar">
     <h1 class="title">The Inclusionist <span class="ver">· v4</span></h1>
     <div class="topbar__right" id="topbar-tools" hidden>
-      <button id="opt-mode" class="mode-btn" type="button" aria-label="Trocar o modo de jogo (Lúdico, Soma-Sub, Sílabas)">🪙 Lúdico</button>
-      <button id="opt-telas" class="mode-btn" type="button" aria-label="Trocar o número de telas (jogadores)">👤 1 tela</button>
-      <button id="btn-debug" class="mode-btn" type="button" aria-label="Esconder as ferramentas de debug">🐞 Debug</button>
+      <button id="opt-mode" class="mode-btn" type="button" aria-label="Trocar o modo de jogo (Lúdico, Soma-Sub, Sílabas)" data-i18n-aria="a11y.switchMode">🪙 Lúdico</button>
+      <button id="opt-telas" class="mode-btn" type="button" aria-label="Trocar o número de telas (jogadores)" data-i18n-aria="a11y.switchScreens">👤 1 tela</button>
+      <button id="btn-debug" class="mode-btn" type="button" aria-label="Esconder as ferramentas de debug" data-i18n-aria="a11y.hideDebug">🐞 Debug</button>
       <p class="hud__item hud__fps" aria-hidden="true">FPS: <strong id="hud-fps">–</strong>
         <span class="hud__fpsmin">(mín <strong id="hud-fpsmin">–</strong>)</span></p>
     </div>
@@ -70,15 +70,15 @@
       <!-- Simular baixa visão: névoa + manchas (scotomas) sobre o jogo -->
       <div id="viz-overlay" aria-hidden="true" hidden></div>
       <!-- Indicador/botão de simulação DENTRO da tela (cegueira=branca, baixa visão=verde). Toque/clique 2× volta ao normal. -->
-      <button id="viz-indicator" type="button" hidden aria-label="Modo de simulação ativo. Toque duas vezes para voltar às cores normais."></button>
+      <button id="viz-indicator" type="button" hidden aria-label="Modo de simulação ativo. Toque duas vezes para voltar às cores normais." data-i18n-aria="a11y.simActive"></button>
       <!-- (Dicas de início removidas — pedido do José 2026-07-04: o rodapé do splash mostra os controles) -->
       <!-- Pausa DENTRO do canvas (tela = canvas). Um jogador pausa → todos pausam. -->
       <div id="pause-overlay" class="pause-incanvas" hidden>
         <div class="pause-card" role="dialog" aria-modal="true" aria-labelledby="pause-h">
           <h2 id="pause-h">Pausado</h2>
-          <div id="pause-menu" class="pause-menu" role="menu" aria-label="Menu de pausa">
+          <div id="pause-menu" class="pause-menu" role="menu" aria-label="Menu de pausa" data-i18n-aria="a11y.pauseMenu">
             <button id="pm-resume" class="pm-btn" role="menuitem" type="button" data-act="resume">▶ Continuar</button>
-            <button id="opt-letra" class="pm-btn" role="menuitem" type="button" aria-label="Comunicação: letras e símbolos">🔠 Comunicação</button>
+            <button id="opt-letra" class="pm-btn" role="menuitem" type="button" aria-label="Comunicação: letras e símbolos" data-i18n-aria="a11y.communication">🔠 Comunicação</button>
             <button class="pm-btn" role="menuitem" type="button" data-act="audio">🦻 Acessibilidade auditiva</button>
             <button class="pm-btn" role="menuitem" type="button" data-act="motora">♿ Acessibilidade motora</button>
             <button class="pm-btn" role="menuitem" type="button" data-act="anim">🎞 Sensibilidade visual</button>
@@ -96,7 +96,7 @@
       <!-- Legenda de efeitos sonoros (C1): visual + aria-live -->
       <div id="caption" class="caption" role="status" aria-live="polite"></div>
       <!-- E13: controles de toque (mobile) — só aparecem em telas de toque; não cobrem o centro do jogo -->
-      <div id="touch-controls" class="touch" role="group" aria-label="Controles de toque" hidden>
+      <div id="touch-controls" class="touch" role="group" aria-label="Controles de toque" data-i18n-aria="a11y.touchControls" hidden>
         <div class="touch-pad">
           <div id="touch-cross" class="touch-cross" role="group" aria-label="Direcional em cruz: mover, subir e descer" hidden>
             <span class="dpad-arm dpad-up" aria-hidden="true">▲</span>
@@ -110,11 +110,11 @@
           </div>
         </div>
         <div class="touch-pad touch-actions">
-          <div class="pad-diamond" id="pad-diamond" aria-label="Botões de ação">
-            <button class="touch-btn pad-b pad-top" type="button" data-btn="3" data-act="swap" aria-label="Trocar poder (botão 3)"></button>
-            <button class="touch-btn pad-b pad-left" type="button" data-btn="2" data-act="run" aria-label="Interagir / correr (botão 2)"></button>
-            <button class="touch-btn pad-b pad-right" type="button" data-btn="1" data-act="especial" aria-label="Especial (botão 1)"></button>
-            <button class="touch-btn pad-b pad-bottom" type="button" data-btn="0" data-act="jump" aria-label="Pular (botão 0)"></button>
+          <div class="pad-diamond" id="pad-diamond" aria-label="Botões de ação" data-i18n-aria="a11y.actionButtons">
+            <button class="touch-btn pad-b pad-top" type="button" data-btn="3" data-act="swap" aria-label="Trocar poder (botão 3)" data-i18n-aria="a11y.btnSwap"></button>
+            <button class="touch-btn pad-b pad-left" type="button" data-btn="2" data-act="run" aria-label="Interagir / correr (botão 2)" data-i18n-aria="a11y.btnRun"></button>
+            <button class="touch-btn pad-b pad-right" type="button" data-btn="1" data-act="especial" aria-label="Especial (botão 1)" data-i18n-aria="a11y.btnSpecial"></button>
+            <button class="touch-btn pad-b pad-bottom" type="button" data-btn="0" data-act="jump" aria-label="Pular (botão 0)" data-i18n-aria="a11y.btnJump"></button>
           </div>
         </div>
         <button class="touch-start" id="touch-start" type="button" aria-label="Pausar ou iniciar (START)">START</button>
@@ -154,7 +154,7 @@
   <!-- Tela de título (visual da v3): a CENA (céu/nuvens/grama) é desenhada no canvas; aqui só o bloco+menus -->
   <div id="title-overlay" class="overlay">
     <div class="title-wrap" role="dialog" aria-modal="true" aria-labelledby="title-h">
-      <div class="pause-icons" id="title-icons" role="group" aria-label="Atalhos de acessibilidade"></div>
+      <div class="pause-icons" id="title-icons" role="group" aria-label="Atalhos de acessibilidade" data-i18n-aria="a11y.shortcuts"></div>
       <div class="title-block">
         <h2 id="title-h" class="game-title">The Inclusionist</h2>
         <div class="game-byline" data-i18n="title.byline">by Prof. José Rocha</div>
@@ -164,17 +164,17 @@
       <!-- role="group" (NÃO "menu"): botões navegados por Tab nativo, sem roving tabindex/setas entre itens (as
            setas no #np-btn mudam o nº de jogadores). role="menu" exigiria filhos "menuitem" + padrão de setas ARIA
            que não implementamos → violaria WCAG 1.3.1 (axe aria-required-children). O menu de PAUSA sim é role="menu". -->
-      <div class="title-menu" id="tm-main" role="group" aria-label="Escolha o jogo">
-        <button class="title-btn" id="np-btn" type="button" aria-live="polite" aria-label="Número de jogadores: 1. Clique à esquerda para menos, à direita para mais.">◀ Nº de jogadores: <span id="np-n">1</span> ▶</button>
+      <div class="title-menu" id="tm-main" role="group" aria-label="Escolha o jogo" data-i18n-aria="a11y.chooseGame">
+        <button class="title-btn" id="np-btn" type="button" aria-live="polite" aria-label="Número de jogadores: 1. Clique à esquerda para menos, à direita para mais.">◀ Nº de jogadores: 1 ▶</button>
         <button class="title-btn" data-tm="ludico" type="button" data-i18n="menu.ludico">Lúdico</button>
         <button class="title-btn" data-tm="alf" type="button" data-i18n="menu.alfabetizacao">Alfabetização</button>
         <button class="title-btn" data-tm="mat" type="button" data-i18n="menu.matematica">Matemática</button>
       </div>
-      <div class="title-menu" id="tm-alf" role="group" aria-label="Alfabetização" hidden></div>
-      <div class="title-menu" id="tm-mat" role="group" aria-label="Matemática" hidden></div>
-      <div class="title-menu" id="tm-tab" role="group" aria-label="Escolha os números" hidden></div>
-      <div class="title-menu" id="tm-fr" role="group" aria-label="Fração" hidden></div>
-      <div class="title-menu" id="tm-cen" role="group" aria-label="Escolha o cenário" hidden></div>
+      <div class="title-menu" id="tm-alf" role="group" aria-label="Alfabetização" data-i18n-aria="a11y.literacy" hidden></div>
+      <div class="title-menu" id="tm-mat" role="group" aria-label="Matemática" data-i18n-aria="a11y.math" hidden></div>
+      <div class="title-menu" id="tm-tab" role="group" aria-label="Escolha os números" data-i18n-aria="a11y.chooseNumbers" hidden></div>
+      <div class="title-menu" id="tm-fr" role="group" aria-label="Fração" data-i18n-aria="a11y.fraction" hidden></div>
+      <div class="title-menu" id="tm-cen" role="group" aria-label="Escolha o cenário" data-i18n-aria="a11y.chooseScenery" hidden></div>
       <div class="title-legend" id="title-legend" aria-live="polite"></div>
     </div>
   </div>
@@ -185,9 +185,9 @@
     <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="opt-title">
       <h2 id="opt-title">Mapeamento de controles</h2>
       <p class="opt-hint">Escolha o jogador, clique em “Alterar” e pressione a nova tecla. As escolhas ficam salvas no navegador. (P2–P4 valem nas telas múltiplas.)</p>
-      <div id="ctrl-players" class="ctrl-players" role="group" aria-label="Escolha o jogador"></div>
+      <div id="ctrl-players" class="ctrl-players" role="group" aria-label="Escolha o jogador" data-i18n-aria="a11y.choosePlayer"></div>
       <div id="ctrl-list" class="ctrl-list"></div>
-      <div class="ctrl-list" role="group" aria-label="Desenho dos botões">
+      <div class="ctrl-list" role="group" aria-label="Desenho dos botões" data-i18n-aria="a11y.padDesign">
         <div class="ctrl-row"><span><strong>🎮 Desenho dos botões</strong> — o navegador detecta o controle automaticamente; se ele aparecer como “genérico” (DirectInput no Windows), escolha aqui como os botões na tela devem ser rotulados.</span>
           <label class="sr-only" for="pad-design">Desenho dos botões do controle</label>
           <select id="pad-design" class="vol">
@@ -208,22 +208,22 @@
   <div id="movement" class="overlay" hidden>
     <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="movement-title">
       <h2 id="movement-title">Acessibilidade motora</h2>
-      <div id="movement-players" class="ctrl-players" role="group" aria-label="Escolha o jogador" hidden></div>
+      <div id="movement-players" class="ctrl-players" role="group" aria-label="Escolha o jogador" data-i18n-aria="a11y.choosePlayer" hidden></div>
       <div class="ctrl-list" role="group" aria-label="Movimento">
         <div class="ctrl-row"><span><strong>♿ Modo Fácil</strong> — para quem ainda não tem coordenação motora fina: gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais.</span>
           <button id="opt-facil" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>
         <div class="ctrl-row"><span><strong>Movimento por alternância</strong> — para quem não consegue manter pressionado (1 dedo): toque a direção para andar sem segurar; toque de novo para parar; <em>segure para ir mais rápido</em> (a corrida que desafia). O pulo não interrompe a caminhada.</span>
           <button id="opt-altmove" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>
       </div>
-      <div class="ctrl-list" role="group" aria-label="Botões de tela (toque)">
+      <div class="ctrl-list" role="group" aria-label="Botões de tela (toque)" data-i18n-aria="a11y.screenButtons">
         <div class="ctrl-row"><span><strong>📱 Botões de tela (toque)</strong> — tamanho e formato dos controles de toque, em milímetros reais.</span>
           <button id="opt-touchcfg" class="mode-btn" type="button" aria-haspopup="dialog">⚙ Configurar botões de tela touch</button></div>
       </div>
-      <div class="ctrl-list" role="group" aria-label="Jogar com os olhos">
+      <div class="ctrl-list" role="group" aria-label="Jogar com os olhos" data-i18n-aria="a11y.eyeGaze">
         <div class="ctrl-row"><span><strong>👁 Jogar com os olhos</strong> — controle pela webcam (para quem não usa as mãos): olhar à esquerda/direita anda; fixar o olhar no alto pula. Roda no aparelho (o vídeo não sai dele). Precisa de webcam + permissão; calibra olhando e clicando pela tela.</span>
           <button id="opt-eyes" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>
       </div>
-      <div class="ctrl-list" role="group" aria-label="Mapear controles (por jogador)"><div id="map-hub"></div></div>
+      <div class="ctrl-list" role="group" aria-label="Mapear controles (por jogador)" data-i18n-aria="a11y.mapControls"><div id="map-hub"></div></div>
       <div class="overlay__actions">
         <button id="movement-reset" class="mode-btn" type="button" data-i18n="menu.restoreDefaults">Restaurar padrões deste menu</button>
         <button id="movement-close" class="mode-btn is-on" type="button">Fechar</button>
@@ -236,7 +236,7 @@
     <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="touchcfg-title">
       <h2 id="touchcfg-title">Botões de tela touch</h2>
       <p class="opt-hint">Tamanhos em <em>milímetros reais</em> (referência: tela cheia de um iPhone 16), não pixels. São botões que se <em>segura</em> (andar, correr) com dois ou três dedos ao mesmo tempo — não é toque fino. Ajuste ao tamanho da mão.</p>
-      <div class="ctrl-list" role="group" aria-label="Botões de toque na tela">
+      <div class="ctrl-list" role="group" aria-label="Botões de toque na tela" data-i18n-aria="a11y.touchButtons">
         <div class="ctrl-row ctrl-col"><label for="pad-dir">Tipo de direcional (para andar)</label>
           <select id="pad-dir" class="vol">
             <option value="stick">Analógico (alavanca) — desliza p/ a direção</option>
@@ -261,7 +261,7 @@
       </div>
       <h3 class="panel-sub">Função de cada botão</h3>
       <p class="opt-hint">Escolha o que cada um dos nove botões da tela faz (direcional ↑↓←→, START e os quatro de ação 0–3).</p>
-      <div id="touchmap-list" class="ctrl-list" role="group" aria-label="Função de cada botão de toque"></div>
+      <div id="touchmap-list" class="ctrl-list" role="group" aria-label="Função de cada botão de toque" data-i18n-aria="a11y.touchRoles"></div>
       <div class="overlay__actions">
         <button id="touchcfg-close" class="mode-btn is-on" type="button">Fechar</button>
       </div>
@@ -272,12 +272,12 @@
   <div id="animation" class="overlay" hidden>
     <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="animation-title">
       <h2 id="animation-title">Sensibilidade visual</h2>
-      <div id="animation-players" class="ctrl-players" role="group" aria-label="Escolha o jogador" hidden></div>
-      <div class="ctrl-list" role="group" aria-label="Animações">
+      <div id="animation-players" class="ctrl-players" role="group" aria-label="Escolha o jogador" data-i18n-aria="a11y.choosePlayer" hidden></div>
+      <div class="ctrl-list" role="group" aria-label="Animações" data-i18n-aria="a11y.animations">
         <div class="ctrl-row"><span><strong>⏸ Parar todas as animações</strong> — congela cena e personagem de uma vez.</span>
-          <button id="motion-master" class="mode-btn" type="button" aria-pressed="false" aria-label="Parar todas as animações">⏸ Parar todas as animações</button></div>
+          <button id="motion-master" class="mode-btn" type="button" aria-pressed="false" aria-label="Parar todas as animações" data-i18n-aria="a11y.stopAll">⏸ Parar todas as animações</button></div>
       </div>
-      <div id="motion-list" class="ctrl-list" role="group" aria-label="Animações"></div>
+      <div id="motion-list" class="ctrl-list" role="group" aria-label="Animações" data-i18n-aria="a11y.animations"></div>
       <div class="overlay__actions">
         <button id="animation-reset" class="mode-btn" type="button" data-i18n="menu.restoreDefaults">Restaurar padrões deste menu</button>
         <button id="animation-close" class="mode-btn is-on" type="button">Fechar</button>
@@ -330,7 +330,7 @@
         <p class="opt-hint" id="tts-note">Motores neurais (Piper, Kokoro, Kitten) baixam no 1º uso e rodam offline; enquanto isso, usa a voz do navegador (Web Speech) ou o eSpeak embutido.</p>
       </div>
       <h3 class="panel-sub">Saída de áudio por jogador <span class="panel-sub__tag">1 dispositivo por jogador</span></h3>
-      <div class="ctrl-list" role="group" aria-label="Saída de áudio por jogador">
+      <div class="ctrl-list" role="group" aria-label="Saída de áudio por jogador" data-i18n-aria="a11y.audioOut">
         <p class="opt-hint">Cada jogador escolhe seu fone/caixa na caixa de seleção — bengala, sonar e guia vão só para o dispositivo dele (impossível jogar com batidas misturadas). Com 1 dispositivo, só 1 jogador por vez aproveita a acessibilidade auditiva; a empatia de perda auditiva desliga a acessibilidade auditiva.</p>
         <div id="audio-sinks"></div>
       </div>
@@ -340,7 +340,7 @@
         <div class="ctrl-row"><label for="audio-master-vol">Volume geral</label><input id="audio-master-vol" class="vol" type="range" min="0" max="100" step="5" value="60"></div>
       </div>
       <p class="opt-hint" style="margin-top:.6rem">Por categoria:</p>
-      <div id="audio-list" class="ctrl-list" role="group" aria-label="Categorias de áudio"></div>
+      <div id="audio-list" class="ctrl-list" role="group" aria-label="Categorias de áudio" data-i18n-aria="a11y.audioCategories"></div>
       <div class="overlay__actions">
         <button id="audio-reset" class="mode-btn" type="button" data-i18n="menu.restoreDefaults">Restaurar padrões deste menu</button>
         <button id="audio-close" class="mode-btn is-on" type="button">Fechar</button>
@@ -360,13 +360,13 @@
           <button id="opt-wheelchair" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>
       </div>
       <h3 class="panel-sub">Perda auditiva <span class="panel-sub__tag">todos</span></h3>
-      <div class="ctrl-list" role="group" aria-label="Audição">
+      <div class="ctrl-list" role="group" aria-label="Audição" data-i18n-aria="a11y.hearing">
         <div class="ctrl-row"><span><strong>Simular perda auditiva</strong> — sons fracos ficam abafados e os agudos são cortados (o contrário de um aparelho auditivo); falas ficam difíceis de entender.</span>
           <button id="opt-hearing" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>
       </div>
       <h3 class="panel-sub">Visão <span class="panel-sub__tag">por jogador</span></h3>
-      <div id="empathy-players" class="ctrl-players" role="group" aria-label="Escolha o jogador" hidden></div>
-      <div id="empathy-list" class="ctrl-list" role="radiogroup" aria-label="Simulação visual"></div>
+      <div id="empathy-players" class="ctrl-players" role="group" aria-label="Escolha o jogador" data-i18n-aria="a11y.choosePlayer" hidden></div>
+      <div id="empathy-list" class="ctrl-list" role="radiogroup" aria-label="Simulação visual" data-i18n-aria="a11y.visualSim"></div>
       <div class="overlay__actions">
         <button id="empathy-reset" class="mode-btn" type="button" data-i18n="menu.restoreDefaults">Restaurar padrões deste menu</button>
         <button id="empathy-close" class="mode-btn is-on" type="button">Fechar</button>
@@ -392,15 +392,15 @@
     <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="visual-title">
       <h2 id="visual-title">Acessibilidade visual</h2>
       <p class="opt-hint">Escolha a configuração de cores por jogador. O efeito é imediato.</p>
-      <div id="visual-players" class="ctrl-players" role="group" aria-label="Escolha o jogador" hidden></div>
+      <div id="visual-players" class="ctrl-players" role="group" aria-label="Escolha o jogador" data-i18n-aria="a11y.choosePlayer" hidden></div>
       <h3 class="panel-sub">Modo visual <span class="panel-sub__tag">um por vez</span></h3>
       <div id="visual-modes" class="ctrl-list" role="radiogroup" aria-label="Modo visual"></div>
       <div id="visual-list" class="ctrl-list" role="group" aria-labelledby="visual-title"></div>
-      <div class="ctrl-list" role="group" aria-label="Contornos do alto contraste">
+      <div class="ctrl-list" role="group" aria-label="Contornos do alto contraste" data-i18n-aria="a11y.outlines">
         <div class="ctrl-row"><span><strong>Contorno de 1º plano</strong> — em volta do personagem e dos itens (foco visível, WCAG 2.4.7).</span>
-          <select id="opt-outline-fg" aria-label="Contorno de primeiro plano"><option value="0">Nenhum</option><option value="1">Fino</option><option value="2">Grosso</option></select></div>
+          <select id="opt-outline-fg" aria-label="Contorno de primeiro plano" data-i18n-aria="a11y.outlineFg"><option value="0">Nenhum</option><option value="1">Fino</option><option value="2">Grosso</option></select></div>
         <div class="ctrl-row"><span><strong>Contorno de 2º plano</strong> — só no perímetro externo de plataforma, água e lava (limite do navegável, WCAG 1.4.11).</span>
-          <select id="opt-outline-bg" aria-label="Contorno de segundo plano"><option value="0">Nenhum</option><option value="1">Fino</option><option value="2">Grosso</option></select></div>
+          <select id="opt-outline-bg" aria-label="Contorno de segundo plano" data-i18n-aria="a11y.outlineBg"><option value="0">Nenhum</option><option value="1">Fino</option><option value="2">Grosso</option></select></div>
       </div>
       <div class="ctrl-list" role="group" aria-label="Legendas">
         <div class="ctrl-row"><span><strong>💬 Legendas</strong> — texto na tela para falas e efeitos sonoros.</span>

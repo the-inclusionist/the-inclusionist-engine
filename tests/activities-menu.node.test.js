@@ -580,7 +580,10 @@ describe('initActivitiesMenu — botão de nº de jogadores', () => {
     const api = initActivitiesMenu(ctx);
     dispatch(stage.npBtn, 'click', { target: stage.npBtn, clientX: 90 }); // direita → +1
     expect(api.getPendingPlayers()).toBe(2);
-    expect(stage.npN.textContent).toBe('2');
+    // O `<span id="np-n">` SUMIU: era ele que impedia o rótulo de ser traduzível (o `applyDom` escreve
+    // `textContent` e o destruiria). O botão inteiro passa a vir de `t('menu.playerCount', {n})`, então o
+    // número aparece no texto do BOTÃO — e a `aria-label` continua acompanhando, que é o que importa aqui.
+    expect(stage.npBtn.textContent).toContain('2');
     expect(stage.npBtn.getAttribute('aria-label')).toContain('2');
     dispatch(stage.npBtn, 'click', { target: stage.npBtn, clientX: 10 }); // esquerda → −1
     expect(api.getPendingPlayers()).toBe(1);

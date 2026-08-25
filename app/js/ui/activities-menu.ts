@@ -375,9 +375,28 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
   const tabSel: number[] = sanitizeTabSel(store.getJSONComLegado(store.KEYS.tabsel, store.KEYS.tabselLegado, null));
   const fracNot: FracNot = sanitizeFracNot(store.getJSONComLegado(store.KEYS.fracnot, store.KEYS.fracnotLegado, null));
 
+  /**
+   * Escreve o rótulo do #np-btn — o VISÍVEL e o do leitor de tela, juntos.
+   *
+   * Uma função só, e chamada também no INIT, porque era aí que o defeito morava: o texto vinha do
+   * index.html em português e a `aria-label` também, e ambos só se corrigiam no PRIMEIRO clique. Numa build
+   * em inglês o botão nascia dizendo "Nº de jogadores" e assim ficava para quem não o clicasse.
+   *
+   * O texto visível deixou de ter um `<span id="np-n">` filho: aquele span existia para o JavaScript trocar
+   * só o número, e era ele que impedia o `data-i18n` de funcionar aqui (o `applyDom` escreve `textContent` e
+   * o destruiria). Com o rótulo inteiro vindo de `t()`, o span não tem mais função.
+   */
+  function escreverNp(n: number): void {
+    const b = ctx.$<HTMLElement>('#np-btn');
+    if (!b) return;
+    b.textContent = t('menu.playerCount', { n });
+    b.setAttribute('aria-label', t('menu.playerCountAria', { n }));
+  }
+
   let pendingAct = 'ludico';
   let pendingPlayers = 1;
   let cenBack: TitleMenuId = 'tm-main';
+  escreverNp(pendingPlayers); // o botão nasce no idioma certo, não no do markup
   let tabFor = 'mat5'; // which "pick numbers" activity the tabuada submenu is currently serving
 
   function actCat(): ActivityCat { return activityCategory(ACTIVITY); }
@@ -481,8 +500,7 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
       // MESMO evento que game/session anuncia, e a frase divergia: esta omitia o mínimo de 640×360. Passa a
       // usar a chave já unificada, em vez de virar uma terceira redação da mesma recusa.
       if (n > 1 && !ctx.fitsN(n)) { ctx.srAlert(t('sr.screens.wontFitN', { n })); return; }
-      pendingPlayers = n; const nn = ctx.$('#np-n'); if (nn) nn.textContent = String(n);
-      b.setAttribute('aria-label', t('menu.playerCountAria', { n }));
+      pendingPlayers = n; escreverNp(n);
       ctx.srSay(t(n > 1 ? 'sr.menu.playersN' : 'sr.menu.player1', { n })); return;
     }
     if (b.dataset.tmFr) { go(() => { ctx.titleShow('tm-fr'); ctx.srSay(t('sr.menu.fractionsIntro')); }); return; }

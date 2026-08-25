@@ -24,7 +24,7 @@ function markup() {
     <button class="title-btn" data-tm="ludico" type="button">Lúdico</button>
     <button class="title-btn" data-tm="alf" type="button">Alfabetização</button>
     <button class="title-btn" data-tm="mat" type="button">Matemática</button>
-    <button class="title-btn" id="np-btn" type="button">◀ Jogadores: <span id="np-n">1</span> ▶</button>`;
+    <button class="title-btn" id="np-btn" type="button">◀ Jogadores: 1 ▶</button>`;
 }
 
 function makeCtx(over = {}) {
@@ -237,10 +237,10 @@ describe('nº de jogadores com geometria real', () => {
     const r = b.getBoundingClientRect();
     b.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: r.left + r.width * 0.9 }));
     expect(api.getPendingPlayers()).toBe(2);
-    expect($('#np-n').textContent).toBe('2');
+    expect(b.textContent).toContain('2'); // o rótulo inteiro vem de t(); o span #np-n não existe mais
     b.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: r.left + r.width * 0.1 }));
     expect(api.getPendingPlayers()).toBe(1);
-    expect($('#np-n').textContent).toBe('1');
+    expect(b.textContent).toContain('1');
   });
 
   it('a seta do teclado no botão também muda o número (e cancela o comportamento padrão)', () => {

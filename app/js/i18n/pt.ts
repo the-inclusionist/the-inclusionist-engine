@@ -442,5 +442,48 @@ const pt: Record<string, string> = {
   'viz.desc.lv-diabetic': 'Retinopatia diabética — manchas espalhadas.',
   'viz.blind': 'Simular cegueira total',
   'viz.desc.blind': 'Tela preta — jogue como uma pessoa cega (resposta tátil/sonora). (bolinha branca; toque 2× p/ sair)',
+  // ===================== ARIA-LABEL DO index.html =====================
+  // 41 rótulos de leitor de tela (36 distintos) estavam em português CRU no markup, e só UM dos 53 usava o
+  // `data-i18n-aria` que já existia. Numa build em inglês, uma criança cega ouvia a interface inteira em
+  // português — o pilar 2 falhando na superfície onde ele mais importa, e em silêncio.
+  'a11y.choosePlayer': 'Escolha o jogador',
+  'a11y.animations': 'Animações',
+  'a11y.literacy': 'Alfabetização',
+  'a11y.shortcuts': 'Atalhos de acessibilidade',
+  'a11y.hearing': 'Audição',
+  'a11y.actionButtons': 'Botões de ação',
+  'a11y.screenButtons': 'Botões de tela (toque)',
+  'a11y.touchButtons': 'Botões de toque na tela',
+  'a11y.audioCategories': 'Categorias de áudio',
+  'a11y.communication': 'Comunicação: letras e símbolos',
+  'a11y.outlineFg': 'Contorno de primeiro plano',
+  'a11y.outlineBg': 'Contorno de segundo plano',
+  'a11y.outlines': 'Contornos do alto contraste',
+  'a11y.touchControls': 'Controles de toque',
+  'a11y.padDesign': 'Desenho dos botões',
+  'a11y.chooseScenery': 'Escolha o cenário',
+  'a11y.chooseGame': 'Escolha o jogo',
+  'a11y.chooseNumbers': 'Escolha os números',
+  'a11y.hideDebug': 'Esconder as ferramentas de debug',
+  'a11y.btnSpecial': 'Especial (botão 1)',
+  'a11y.fraction': 'Fração',
+  'a11y.touchRoles': 'Função de cada botão de toque',
+  'a11y.btnRun': 'Interagir / correr (botão 2)',
+  'a11y.eyeGaze': 'Jogar com os olhos',
+  'a11y.mapControls': 'Mapear controles (por jogador)',
+  'a11y.math': 'Matemática',
+  'a11y.pauseMenu': 'Menu de pausa',
+  'a11y.simActive': 'Modo de simulação ativo. Toque duas vezes para voltar às cores normais.',
+  'a11y.stopAll': 'Parar todas as animações',
+  'a11y.btnJump': 'Pular (botão 0)',
+  'a11y.audioOut': 'Saída de áudio por jogador',
+  'a11y.visualSim': 'Simulação visual',
+  'a11y.switchMode': 'Trocar o modo de jogo (Lúdico, Soma-Sub, Sílabas)',
+  'a11y.switchScreens': 'Trocar o número de telas (jogadores)',
+  'a11y.btnSwap': 'Trocar poder (botão 3)',
+  // O rótulo VISÍVEL do #np-btn. Estava cru no index.html e não podia levar `data-i18n`: o texto embrulha um
+  // `<span id="np-n">` com o número, e o `applyDom` escreve `textContent`, o que destruiria o span. A saída é
+  // o JavaScript passar a ser dono do rótulo inteiro — o número já é dinâmico, então o texto sempre foi dele.
+  'menu.playerCount': '◀ Nº de jogadores: {n} ▶',
 };
 export default pt;
