@@ -858,7 +858,11 @@ const hud = initHud({
   onScreensBuilt: (panes) => { vpPause = panes;
     // No 1o build do init, LETRA/PAD_DESIGNS ainda estao em TDZ — o try/catch ignora e o fluxo de init
     // preenche logo depois. Preservado verbatim, inclusive o engolir de qualquer erro.
-    try{ applyLetra(false); }catch(e){}
+    // O `false` que estava aqui alimentava um parâmetro que `applyLetra` não tem — ele vinha sendo
+    // DESCARTADO em silêncio desde que a função perdeu a assinatura antiga, e um argumento ignorado sugere
+    // um comportamento que não existe. O `try/catch` continua verbatim: ele é a proteção real, contra o TDZ
+    // do primeiro build, e é isso que o comentário acima preserva.
+    try{ applyLetra(); }catch(e){}
     try{ renderPauseLegend(); }catch(e){} },
 });
 const buildGameHud  = () => hud.buildGameHud();
@@ -1580,7 +1584,11 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
 // hideTouchControls/showTouchControls migraram para input/touch.ts (Onda A).
 // DECLARACOES de funcao, nao const: o setPhase('title') do boot chama hideTouchControls antes desta linha,
 // e so o icamento faz isso funcionar — era assim no original. O corpo so toca touchCtl na hora da chamada.
-function hideTouchControls(reason: Parameters<typeof touchCtl.hideTouchControls>[0]){ touchCtl.hideTouchControls(reason); }
+// ⚠️ `reason?: string` escrito à mão, e NÃO `Parameters<typeof …>[0]`: aquele idioma perde a OPCIONALIDADE.
+// O delegado declara `hideTouchControls(reason?: string)`, mas `Parameters<>[0]` devolve `string | undefined`
+// como parâmetro OBRIGATÓRIO — e os três pontos que chamam sem argumento pararam de compilar. O idioma
+// continua certo para parâmetro obrigatório; para opcional, ele mente.
+function hideTouchControls(reason?: string){ touchCtl.hideTouchControls(reason); }
 function showTouchControls(){ touchCtl.showTouchControls(); }
 /* Amarras do toque -> input/touch-bindings.ts (D3-b). LAZY de proposito: `attractCtl` e `const` declarado
    ABAIXO desta linha (TDZ). `keys` e `const` mutado in place -> entra por VALOR; showTouchControls/hideTips/
