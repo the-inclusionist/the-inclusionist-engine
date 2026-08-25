@@ -114,8 +114,9 @@ decision-outcome:
     neutral:
       - "AMENDS ADR-0025, which stated `the-inclusionist` = game only. That sentence was correct when the game
          was the product; it is wrong now. ADR-0025's hub-repo topology for the labs is untouched."
-      - "The naming of the engine repository and of its package is the one thing this record leaves OPEN —
-         see `more-information`. Everything else here is decided."
+      - "The naming was decided the same day and is in `more-information`: the repository becomes
+         `inclusionist-engine` and the package `@pm-monte/inclusionist-engine`, which AMENDS ADR-0024's
+         `@jrocha-io` scope. Nothing in this record is left open."
 
   confirmation: |
     Four checks, and none of them is an opinion:
@@ -131,19 +132,27 @@ decision-outcome:
         on purpose.
 
 more-information: |
-  THE ONE OPEN QUESTION, deliberately not decided alone because it is identity rather than structure: what the
-  engine repository and its package are CALLED.
+  THE OPEN QUESTION WAS ANSWERED THE SAME DAY, by the Dev, and both halves are now decided:
 
-    · Keep `jrocha-dev/the-inclusionist` as the engine and let the name become historical, as happened to more
-      than one well-known project. Cheapest: no links break, no CI variables move, Cloudflare Pages keeps
-      pointing where it points.
-    · Rename to something that says engine (`edsp-engine`, `inclusionist-engine`). GitLab redirects the old
-      path, but every hardcoded reference — CI variables, the Pages project, the ADR index, this file — has to
-      be walked.
+    · RENAME NOW. The repository becomes `inclusionist-engine`. GitLab redirects the old path, but every
+      hardcoded reference has to be walked: CI variables, the Cloudflare Pages project, `package.json`, the
+      README, CLAUDE.md and the docs. Historical mentions inside ADR records are NOT rewritten — a record says
+      what was true when it was written, and rewriting it would erase the amendment it is being amended by.
+      Renaming now, while the only consumer is a repository that has not started, is cheap; after 383 games
+      exist it is a different animal.
+    · THE SCOPE IS `@pm-monte`, NOT `@jrocha-io`. This AMENDS ADR-0024. The package is
+      `@pm-monte/inclusionist-engine`, and the change says something real: the owner is the municipality that
+      will run this in its schools, not the developer who wrote it.
 
-  The package scope is `@jrocha-io/*` by ADR-0024 unless the Dev says otherwise, which would make the engine
-  `@jrocha-io/inclusionist-engine`. The recommendation is to rename the repository once, now, while the only
-  consumer is a repository that has not started — a rename after 383 games exist is a different animal.
+  ⚠️ A CONSTRAINT THAT WILL BITE AT THE FIRST PUBLISH, recorded now so it is not discovered then: GitLab's npm
+  registry requires a scoped package's scope to MATCH THE ROOT NAMESPACE of the project. `@pm-monte/...`
+  therefore needs a GitLab group named `pm-monte` holding the project — which is arguably the correct home if
+  the municipality is the owner, but it is a migration and not a config line. It blocks nothing today: the
+  `link locally, pin remotely` loop only needs the registry at release time. (The same latent conflict already
+  existed for `@jrocha-io` under `jrocha-dev`; nobody hit it because nothing has been published yet.)
+
+  What the names are, for the record: the repository is `inclusionist-engine`, the package is
+  `@pm-monte/inclusionist-engine`.
 
   WHAT THIS RECORD DOES NOT COVER: the room server (the teacher logs in, opens a room, picks activities, gets
   a password and watches performance) and the privacy shape that makes it legal for a seven-year-old — the
