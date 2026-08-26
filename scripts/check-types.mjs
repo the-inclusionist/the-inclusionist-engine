@@ -33,7 +33,7 @@ import { execSync } from 'node:child_process';
  * obrigatório sempre que a contagem real cair: um orçamento folgado deixa de medir qualquer coisa, e o gate
  * volta a ser decoração.
  */
-const ORCAMENTO = 84;
+const ORCAMENTO = 82;
 const RAIZ_EM_CONVERSAO = 'app/js/main.ts';
 
 let saida = '';

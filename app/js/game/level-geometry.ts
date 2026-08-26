@@ -47,9 +47,12 @@ export interface LevelGeometryCtx {
   rampLayer: PIXI.Graphics;
   ropeLayer: PIXI.Graphics;
   extraLayer: PIXI.Container;
-  wcSolid: () => Set<string>;
+  // `ReadonlySet`, porque este módulo LÊ — o cabeçalho do arquivo já diz isso em palavras ("gate/gateTiles/
+  // powerups/wcSolid stay OWNED by game.js"), e agora o tipo diz também. O `.add()` que existe aqui é no
+  // `Set` LOCAL que `buildWcGeom` cria e devolve, não neste.
+  wcSolid: () => ReadonlySet<string>;
   powerups: () => Powerup[];
-  gateTiles: () => Set<string>;
+  gateTiles: () => ReadonlySet<string>;
   gate: () => MapGateTile[] | null;
   gateOpen: () => boolean;
   pupTexFor: (kind: string, mode: string) => PIXI.Texture;
@@ -62,9 +65,9 @@ let isWheelchair: () => boolean = () => false;
 let rampLayer: PIXI.Graphics | null = null;
 let ropeLayer: PIXI.Graphics | null = null;
 let extraLayer: PIXI.Container | null = null;
-let getWcSolid: () => Set<string> = () => new Set();
+let getWcSolid: () => ReadonlySet<string> = () => new Set();
 let getPowerups: () => Powerup[] = () => [];
-let getGateTiles: () => Set<string> = () => new Set();
+let getGateTiles: () => ReadonlySet<string> = () => new Set();
 let getGate: () => MapGateTile[] | null = () => null;
 let getGateOpen: () => boolean = () => true;
 let pupTexFor: (kind: string, mode: string) => PIXI.Texture = () => PIXI.Texture.EMPTY;
