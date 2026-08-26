@@ -67,9 +67,20 @@ export function setCoins(arr: Coin[]): void { coins = arr; emit('coins', arr); }
 // mesmo resultado; unificá-las no mesmo commit em que o endereço muda tornaria impossível saber qual
 // metade quebrou, se quebrasse. Fica anotado como o próximo passo pequeno.
 
-/** O CENÁRIO ativo. `string` e não `string | null`: ninguém usa nulo como "ainda não escolhido", e o
- *  `render/cenario-data` já cai em 'cidade' para tema desconhecido. */
-export let cenario: string = 'cidade';
+/**
+ * O CENÁRIO ativo. `string` e não `string | null`: ninguém usa nulo como "ainda não escolhido", e o
+ * `render/cenario-data` já cai em 'cidade' para tema desconhecido.
+ *
+ * LÊ O ARMAZENAMENTO NO IMPORT, como o `activity` logo abaixo — a assimetria que veio junto na mudança de
+ * endereço foi desfeita em seguida, num passo próprio. Antes, o valor nascia em 'cidade' e quem o restaurava
+ * era o composition root; agora o root só APLICA o que já foi lido, que é trabalho dele.
+ *
+ * A MIGRAÇÃO `'noite' → 'espaco'` veio junto porque ela é parte de LER a chave, não de aplicá-la: um valor
+ * salvo por uma versão antiga precisa virar um valor válido antes de qualquer um o consultar.
+ */
+export let cenario: string = ((v: string) => (v === 'noite' ? 'espaco' : v))(
+  store.getComLegado(store.KEYS.cenario, store.KEYS.cenarioLegado, 'cidade'),
+);
 export function setCenarioValue(theme: string): void {
   cenario = theme; store.set(store.KEYS.cenario, theme); emit('cenario', theme);
 }

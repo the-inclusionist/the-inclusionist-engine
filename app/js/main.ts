@@ -612,7 +612,9 @@ const vp = initViewports({
   cvdDefsHost: $('#cvd-defs'),
 });
 const { parallaxTexFor, treeTexFor, playerVizTex, pixiFilterFor, renderVpOverlay } = vp;
-try{ setCenario((v=>v==='noite'?'espaco':v)(store.getComLegado(store.KEYS.cenario,store.KEYS.cenarioLegado,'cidade'))); }catch(e){ setCenario('cidade'); } // herda a chave de escopo antigo; 'noite' e a migracao mais velha ainda
+// APLICA o cenário que `game/state` já leu do armazenamento (e já migrou de 'noite' para 'espaco'). Ler é
+// de quem guarda o valor; aplicar — texturas, parallax, tema — é do composition root.
+try{ setCenario(CENARIO); }catch(e){ setCenario('cidade'); } // herda a chave de escopo antigo; 'noite' e a migracao mais velha ainda
 const coinCanvasNormal=coinCanvas();
 const coinTex=tex(coinCanvasNormal);
 // As texturas NORMAIS ja existem: ligue o alto contraste. worldCanvasNormal/worldTexNormal sao `let`
