@@ -196,8 +196,11 @@ export interface GamepadCtx {
   navTitle: (k: NavKeys) => void;
   sharedDialogOpen: () => HTMLElement | null;
   navDialog: (dlg: HTMLElement, k: NavKeys) => void;
-  getPauseMenu: (playerIndex: number) => { hidden: boolean } | null | undefined;
-  navPause: (menu: { hidden: boolean }, playerIndex: number, k: NavKeys) => void;
+  /** A tela de pausa do jogador. `HTMLElement` e não `{ hidden: boolean }`: o mínimo estrutural funciona
+   *  para LER, mas este módulo REPASSA o menu para `navPause`, que precisa do elemento inteiro — e em
+   *  posição de parâmetro a fatia mínima se inverte (ADR-0039). Mesma lição do `held` em audio-nav. */
+  getPauseMenu: (playerIndex: number) => HTMLElement | null | undefined;
+  navPause: (menu: HTMLElement, playerIndex: number, k: NavKeys) => void;
   /** Qual jogador abre o submenu de a11y em seguida (game.js's `pauseActor`). */
   setPauseActor: (playerIndex: number) => void;
   /**

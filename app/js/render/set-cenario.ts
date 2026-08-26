@@ -70,12 +70,19 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D2-b).
 
 import { CENARIOS, normalizarCenario, type CenarioTema } from './cenario-data.js';
+import type { Tileset } from './world-tex.js';
 
 /* ===================== interfaces estruturais (DOM/PIXI sem importá-los) ===================== */
 
 /** `HTMLImageElement`, reduzido ao que o carregamento usa. */
 /** O tileset de um tema: interior + topo. Corresponde ao `Tileset` de render/world-tex. */
-export interface TilesDoTema { fill: unknown; surface: unknown }
+/**
+ * Os dois tiles do tema. `Tileset` vem de `render/world-tex`, que é o dono — ele os desenha, e por isso
+ * sabe que são `CanvasImageSource`. A versão que estava aqui dizia `unknown` nos dois campos: uma
+ * descrição que apenas SE PARECE com a real, que é o que o ADR-0039 proíbe. O `unknown` não protegia
+ * nada — só empurrava a conversão para quem recebesse.
+ */
+export type TilesDoTema = Tileset;
 /** `worldSprite` — só a troca de textura. */
 interface SpriteComTextura { texture: unknown }
 

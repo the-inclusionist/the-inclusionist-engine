@@ -12,6 +12,7 @@ import { t } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
 import type { KBDefaults } from '../input/keyboard.js';
+import type { KeydownEventLike } from '../input/keydown.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
@@ -71,7 +72,10 @@ export interface SettingsControlsApi {
    * active — Escape/conflict/success all consume it) so game.js's own keydown handler can early-return exactly
    * like the old inline `if(captureAction){...}` block did. Returns false (no-op) when nothing is being captured.
    */
-  handleCaptureKeydown: (e: KeyboardEvent) => boolean;
+  /** `KeydownEventLike` de `input/keydown`, que é quem escuta o teclado e portanto é dono da forma do
+   *  evento nesta engine. Este manipulador lê só `e.code` e chama `preventDefault()` — um subconjunto —,
+   *  mas pedir o `KeyboardEvent` inteiro obrigava o despacho a entregar mais do que tem (ADR-0039). */
+  handleCaptureKeydown: (e: KeydownEventLike) => boolean;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -172,7 +176,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     capture = null;
   }
 
-  function handleCaptureKeydown(e: KeyboardEvent): boolean {
+  function handleCaptureKeydown(e: KeydownEventLike): boolean {
     if (!capture) return false;
     if (e.code === 'Escape') {
       capture = null;
