@@ -3,11 +3,26 @@
 // 8 ações: up,left,down,right,run(corre/interage),jump,swap(troca poder),especial. Esquemas por contagem de
 // jogadores (solo/p2/p3/p4). A INSTÂNCIA atual (KB) e o remap ficam no game.js — aqui só config/load/save/reset.
 import * as store from '../platform/storage.js';
+import type { KeyScheme } from '../core/entity.js';
 
 const CKEY = 'inclusionist.kbcontrols.v3';
 
-type KeyScheme = Record<string, string[]>; // ação → lista de codes (KeyA, ArrowLeft…)
-type KBDefaults = { solo: KeyScheme; p2: KeyScheme[]; p3: KeyScheme[]; p4: KeyScheme[] };
+// `KeyScheme` mora em `core/entity` desde 2026-08-26: a entidade declara `ctrl: KeyScheme | null`, então
+// ela é a dona. A mesma linha estava escrita em SEIS módulos. Reexportada para quem já a importava daqui.
+export type { KeyScheme } from '../core/entity.js';
+/**
+ * O CONJUNTO DE ESQUEMAS de teclado — solo mais os de 2, 3 e 4 jogadores.
+ *
+ * Exportado desde 2026-08-26, e o motivo é que ele já era copiado: `input/keyboard-runtime` e
+ * `ui/settings-controls` declaravam cada um o seu `KeyboardConfig`, e AMBOS diziam no comentário que
+ * era "a forma do KBDefaults de input/keyboard". Sabiam que eram cópia e copiavam mesmo assim.
+ *
+ * A de `settings-controls` era `Record<string, unknown>` — pensada como opaca, para o módulo não
+ * depender da forma. Mas em posição de PARÂMETRO isso se inverte: para aceitar `(next: KBDefaults)`,
+ * o tipo declarado tem de ser SUBTIPO, não supertipo. A opacidade se preserva por disciplina — não
+ * indexar o valor — e não por escrever um tipo mais largo (ADR-0039).
+ */
+export type KBDefaults = { solo: KeyScheme; p2: KeyScheme[]; p3: KeyScheme[]; p4: KeyScheme[] };
 
 // 4 esquemas base p/ 3–4 jogadores (modos 3 e 4 têm esquemas SEPARADOS, p3 e p4, editáveis por jogador)
 export const KB_SCHEMES4: KeyScheme[] = [

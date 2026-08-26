@@ -117,7 +117,9 @@ export interface KeyupEventLike { code: string }
 
 /** ação -> lista de códigos físicos. Cópia ESTRUTURAL do `KeyScheme` de input/keyboard-runtime.ts: a casa
  *  prefere a cópia a puxar um alias de tipo através de camadas (ver o cabeçalho de keyboard-runtime). */
-export type KeyScheme = Record<string, string[]>;
+// `KeyScheme` mora em `core/entity` desde 2026-08-26: a entidade declara `ctrl: KeyScheme | null`, então
+// ela é a dona. A mesma linha estava escrita em SEIS módulos. Reexportada para quem já a importava daqui.
+export type { KeyScheme } from '../core/entity.js';
 
 /** As seis bordas de entrada que o keydown levanta no jogador (consumidas e zeradas pela física). */
 // `EdgeFlag` vem de input/edges.ts (reexportado mais abaixo) — era declarado aqui e em touch-bindings.
@@ -278,6 +280,7 @@ export function titleNavOf(code: string, s: KeydownSnapshot, jump: boolean): Tit
 import { hasNavIntent as hasTitleIntent } from './edges.js';
 import type { EventTargetLike } from './touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
+import type { KeyScheme } from '../core/entity.js';
 export { hasNavIntent as hasTitleIntent } from './edges.js';
 
 /**

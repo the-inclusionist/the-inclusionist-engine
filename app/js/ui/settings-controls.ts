@@ -10,6 +10,8 @@
 // both are exported here instead of duplicated.
 import { t } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
+import type { KeyScheme } from '../core/entity.js';
+import type { KBDefaults } from '../input/keyboard.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
@@ -17,11 +19,15 @@ import type { DomQuery } from '../core/dom-query.js';
 export type { DomQuery } from '../core/dom-query.js';
 
 /** action -> list of physical key codes (KeyboardEvent.code), e.g. {jump:['KeyJ','Space']}. */
-export type KeyScheme = Record<string, string[]>;
+// `KeyScheme` mora em `core/entity` desde 2026-08-26: a entidade declara `ctrl: KeyScheme | null`, então
+// ela é a dona. A mesma linha estava escrita em SEIS módulos. Reexportada para quem já a importava daqui.
+export type { KeyScheme } from '../core/entity.js';
 
 /** Opaque keyboard config (input/keyboard.ts's KBDefaults shape: {solo,p2,p3,p4}) — never indexed directly here;
  *  all per-player reads go through the injected `kbFor`, so this module stays decoupled from its exact shape. */
-export type KeyboardConfig = Record<string, unknown>;
+/** O `KBDefaults` de `input/keyboard`, que é o dono. Este módulo continua NÃO INDEXANDO o valor — toda
+ *  leitura por jogador passa pelo `kbFor` injetado —, e é essa disciplina que o desacopla, não um tipo largo. */
+export type KeyboardConfig = KBDefaults;
 
 /** Minimal persistence shape this module needs (input/keyboard.ts's saveKB/resetKB — no direct localStorage). */
 export interface ControlsStore {

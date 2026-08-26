@@ -94,6 +94,7 @@ import type { PlayerView } from '../core/entity.js';
 import { phase, numPlayers, setPhaseValue, players, type Phase } from '../core/state.js';
 import { PAD_DESIGNS } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
 import type { DomQuery } from '../core/dom-query.js';
+import type { PadMap } from '../input/gamepad.js';
 
 /* ===================== interfaces mínimas ===================== */
 
@@ -240,9 +241,15 @@ export function legendHtml(l1: string, l2: string): string {
  * um botão sem entrada no mapa custom cai no índice default ('0'..'3'), e um índice que o design não conhece
  * vira o par `[índice, '#3a4a6a']` — o cinza de fallback.
  */
-export function padActionGlyphs(layout: string, custom: Record<string, { b?: number }> | null): ActionGlyphs {
+export function padActionGlyphs(layout: string, custom: PadMap | null): ActionGlyphs {
   const set = PAD_DESIGNS[layout] || PAD_DESIGNS.generic;
-  const bOf = (k: string, def: string): string => { const b = custom && custom[k]; return b && typeof b.b === 'number' ? String(b.b) : def; };
+  // O `typeof b === 'object'` não é cerimônia: o `PadMap` admite `boolean` além de `PadBinding` — é o
+  // sentinela `_skip: true` do assistente de mapeamento. As quatro chaves lidas aqui nunca são ele, então
+  // em execução nada muda; o que muda é que a leitura passa a PERGUNTAR em vez de supor.
+  const bOf = (k: string, def: string): string => {
+    const b = custom && custom[k];
+    return b && typeof b === 'object' && typeof b.b === 'number' ? String(b.b) : def;
+  };
   const gy = (k: string): readonly [string, string | null] => (set[k] as [string, string] | undefined) || [k, '#3a4a6a'];
   return { jump: gy(bOf('jump', '0')), especial: gy(bOf('especial', '1')), run: gy(bOf('run', '2')), swap: gy(bOf('swap', '3')) };
 }
@@ -302,7 +309,9 @@ export interface ShellCtx {
   /** input/touch.ts `padLayoutFromId` — id do controle → design de botões. */
   padLayoutFromId: (id: string) => string;
   /** input/gamepad.ts `padMapFor` — mapa do assistente para aquele modelo (só usado FORA do padrão). */
-  padMapFor: (id: string) => Record<string, { b?: number }> | null;
+  /** O mapa do controle. `PadMap` vem de `input/gamepad`, que é dono dele — a versão escrita aqui,
+   *  `Record<string, { b?: number }>`, era uma aproximação: perdia o `boolean` que o mapa admite. */
+  padMapFor: (id: string) => PadMap | null;
   /** input/keyboard-runtime.ts `kbFor(i)` — as teclas CONFIGURADAS do jogador `i` (remap respeitado). */
   kbFor: (i: number) => Record<string, string[]>;
   /** ui/settings-controls.ts `keyName` — `KeyboardEvent.code` → rótulo humano. */

@@ -9,19 +9,19 @@
 // for `coins`/`players`).
 
 import type { ControlledPlayer } from '../core/entity.js';
+import type { KeyScheme } from '../core/entity.js';
+import type { KBDefaults } from '../input/keyboard.js';
 
 /** action -> list of physical key codes (KeyboardEvent.code), e.g. {jump:['KeyJ','Space']}. Mirrors the shape
  *  ui/settings-controls.ts also defines locally (input/keyboard.ts's KeyScheme is not exported — each consumer
  *  keeps its own structural copy rather than reaching across layers for a type alias). */
-export type KeyScheme = Record<string, string[]>;
+// `KeyScheme` mora em `core/entity` desde 2026-08-26: a entidade declara `ctrl: KeyScheme | null`, então
+// ela é a dona. A mesma linha estava escrita em SEIS módulos. Reexportada para quem já a importava daqui.
+export type { KeyScheme } from '../core/entity.js';
 
 /** input/keyboard.ts's KBDefaults shape ({solo,p2,p3,p4}) — the live `KB` value in game.js. */
-export interface KeyboardConfig {
-  solo: KeyScheme;
-  p2: KeyScheme[];
-  p3: KeyScheme[];
-  p4: KeyScheme[];
-}
+/** O `KBDefaults` de `input/keyboard`, que é o dono. O nome local sobrevive porque os consumidores o usam. */
+export type KeyboardConfig = KBDefaults;
 
 /** Minimal player shape this module needs: only `ctrl` is read/written — derived from core/entity.
  *  `ControlledPlayer` rather than `Player` because this module runs after assignControls, so `ctrl` is no

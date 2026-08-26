@@ -4,9 +4,14 @@
 // root, so the sliders/checkboxes tune the same state the game reads. Extracted from game.js (modularization Tier 1).
 // Returns the panel element (or null when not in ?debug=true) — testable without booting the game.
 
+import type { JuiceFlags } from '../render/fx.js';
 type Tune = Record<string, number>;
 type Anim = Record<string, number>;
-type Juice = Record<string, boolean>;
+// `Juice` era `Record<string, boolean>` — uma descrição que APENAS se parece com a real. O dono é
+// `render/fx`, que exporta `JuiceFlags` com os campos nomeados. ADR-0039: quem não é dono, ou não
+// declara, ou declara um supertipo VERDADEIRO. Um `Record` genérico não é nem um nem outro — ele
+// aceita qualquer chave e perde exatamente o que o tipo do dono garante.
+type Juice = JuiceFlags;
 
 export interface DebugPanelCtx {
   TUNE: Tune;

@@ -8,6 +8,7 @@
 import * as store from '../platform/storage.js';
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
+import type { Phase } from '../core/state.js';
 
 /** O bot da demonstração de atração move um jogador de verdade; a fatia é a mesma que o `stepPlayer` lê. */
 type Player = PlayerView<'x' | 'y' | 'facing' | 'vx' | 'vy' | 'onGround' | 'jumpEdge'>;
@@ -23,7 +24,9 @@ export interface AttractCtx {
   setCenario: (c: string) => void;
   setActivity: (a: string) => void;
   restartGame: () => void;
-  setPhase: (p: string) => void;
+  /** `Phase` e não `string`: o `core/state` já declara a união de três valores, e aceitar `string` aqui
+   *  significa que um erro de digitação atravessa a fronteira sem ninguém notar (ADR-0039). */
+  setPhase: (p: Phase) => void;
   randInt: (a: number, b: number) => number;
   kbFor: (i: number) => Kb;
   srSay: (t: string) => void;

@@ -88,13 +88,16 @@
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import type { PlayerView } from '../core/entity.js';
 import type { DomQuery } from '../core/dom-query.js';
+import type { KeyScheme } from '../core/entity.js';
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
 // módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
 export type { DomQuery } from '../core/dom-query.js';
 
 /** ação -> lista de códigos físicos. Cópia ESTRUTURAL do `KeyScheme` de `input/keyboard-runtime.ts` — a casa
  *  prefere a cópia a puxar um alias de tipo através de camadas (mesmo precedente de `input/keydown.ts`). */
-export type KeyScheme = Record<string, string[]>;
+// `KeyScheme` mora em `core/entity` desde 2026-08-26: a entidade declara `ctrl: KeyScheme | null`, então
+// ela é a dona. A mesma linha estava escrita em SEIS módulos. Reexportada para quem já a importava daqui.
+export type { KeyScheme } from '../core/entity.js';
 
 /** As seis bordas de entrada que o toque levanta no jogador (consumidas e zeradas pela física). */
 export type EdgeFlag = 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge';
