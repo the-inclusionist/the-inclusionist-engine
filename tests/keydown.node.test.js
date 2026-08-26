@@ -21,7 +21,11 @@ import {
   titleNavOf, hasTitleIntent, modalOwnerIndex, modalIntentOf, edgesFor,
   EASY_SHORTCUTS, PAUSE_KEYS, SCREEN_DIGITS, EDGE_BY_ACTION,
 } from '../app/js/input/keydown.js';
-import { setPhaseValue } from '../app/js/core/state.js';
+// A CENA é do falso desde 2026-08-26. `phase` saiu de `core/state` (virou a pilha de `core/scenes`, ADR-0030
+// C3) e chega ao teclado como dois BOOLEANOS no ctx. Este `let` é o que aqueles dois booleanos leem, e
+// `setPhaseValue` continua existindo com o mesmo nome para os casos não mudarem de leitura.
+let faseFalsa = 'playing';
+const setPhaseValue = (p) => { faseFalsa = p; };
 
 /* ===================== fixtures (esquemas de fábrica de input/keyboard.ts) ===================== */
 
@@ -50,8 +54,13 @@ function snap(over = {}) {
   const schemes = over.schemes || players.map((p) => p.ctrl || {});
   const numPlayers = over.numPlayers ?? players.length;
   const active = schemes.slice(0, numPlayers);
+  // 2026-08-26: o snapshot deixou de carregar `phase: string` e passou a carregar dois BOOLEANOS — a engine
+  // não conhece mais o vocabulário de cenas deste jogo (ADR-0030 C3). Os casos seguem escrevendo
+  // `{ phase: 'title' }`, que é como se lê melhor; a tradução é feita aqui, em UM lugar.
+  const fase = over.phase || 'playing';
   const base = {
-    phase: 'playing',
+    telaDeTitulo: fase === 'title',
+    emJogo: fase === 'playing' || fase === 'paused',
     numPlayers,
     players,
     controls: over.controls || controlsFrom(active),
@@ -68,7 +77,7 @@ function snap(over = {}) {
     actionOf: (code, i) => actionForCode(schemes[i] || {}, code),
     whichPlayer: (code) => { for (let i = 0; i < active.length; i++) if (actionForCode(active[i], code)) return i; return -1; },
   };
-  const { players: _p, schemes: _s, modal: _m, ...rest } = over;
+  const { players: _p, schemes: _s, modal: _m, phase: _f, ...rest } = over;
   return { ...base, ...rest, players, numPlayers };
 }
 
@@ -465,6 +474,9 @@ function mkCtx(over = {}) {
   const ctx = {
     attractOnInput: over.attractOnInput || (() => false),
     handleCaptureKeydown: over.handleCaptureKeydown || (() => false),
+    // Os dois fatos da cena (ADR-0030 C3). O falso guarda a string, como os casos se leem.
+    isTelaDeTitulo: () => (over.phase || faseFalsa) === 'title',
+    isEmJogo: () => { const f = over.phase || faseFalsa; return f === 'playing' || f === 'paused'; },
     getNumPlayers: () => players.length,
     getPlayers: () => players,
     getControls: () => controlsFrom(schemes),
@@ -649,10 +661,17 @@ describe('initKeydown — o efeito de cada ramo', () => {
     expect(calls[0].length).toBe(3); // (tipo, fn) — sem o terceiro argumento de CAPTURA
   });
 
-  it('snapshot() lê a fase VIVA de core/state', () => {
+  // Este caso mudou de FONTE em 2026-08-26 e não de garantia. A fase saiu de `core/state` (virou a pilha de
+  // `core/scenes`) e chega por dois booleanos no ctx — mas a coisa que ele guarda é a mesma e continua sendo
+  // a que importa: o snapshot PERGUNTA a cada tecla, em vez de copiar a cena no init. Um `const emJogo =
+  // ctx.isEmJogo()` guardado no init faria este caso falhar, e o teclado do jogo pararia de responder à
+  // pausa sem que nada ficasse vermelho.
+  it('snapshot() PERGUNTA a cena a cada tecla, não a copia no init', () => {
     const { ctx } = mkCtx();
     const api = initKeydown(ctx);
     setPhaseValue('paused');
-    expect(api.snapshot().phase).toBe('paused');
+    expect(api.snapshot()).toMatchObject({ telaDeTitulo: false, emJogo: true });
+    setPhaseValue('title');
+    expect(api.snapshot()).toMatchObject({ telaDeTitulo: true, emJogo: false });
   });
 });

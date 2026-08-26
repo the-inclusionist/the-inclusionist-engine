@@ -9,7 +9,6 @@ import {
   rainLevelTarget, rampRainLevel, stepThunder, makeRainDrops, stepRainDrop,
   initWeather, updateWeather, drawWeather, getRainLevel, getWeatherT, setWeatherT,
 } from '../app/js/render/weather.js';
-import { setPhaseValue } from '../app/js/core/state.js';
 // `setCenarioValue` SAIU deste arquivo: desde a Fase B (ADR-0038) o `render/weather` não lê o cenário —
 // ele recebe a PERGUNTA `temChuva` por injeção, e o catálogo é de quem compõe. O teste ficou melhor por
 // isso: passou a controlar diretamente a condição que exercita, em vez de montá-la por estado global.
@@ -109,7 +108,9 @@ describe('makeRainDrops / stepRainDrop (posição das gotas no tempo + GAG da pa
 
 // ---- integração: initWeather + updateWeather + drawWeather (weatherLayer/stage falsos) ----
 function fakeGfx() {
-  const rec = { clears: 0, fills: [], lines: 0, moves: 0 };
+  // `pontos` grava as COORDENADAS de cada gota — é o que distingue "a chuva foi desenhada" de "a chuva
+  // ANDOU", e sem isso o caso do congelamento não teria o que comparar.
+  const rec = { clears: 0, fills: [], lines: 0, moves: 0, pontos: [] };
   const g = {
     parent: null,
     clear: () => { rec.clears++; return g; },
@@ -117,7 +118,7 @@ function fakeGfx() {
     drawRect: () => g,
     endFill: () => g,
     lineStyle: () => { rec.lines++; return g; },
-    moveTo: () => { rec.moves++; return g; },
+    moveTo: (x, y) => { rec.moves++; rec.pontos.push([Math.round(x), Math.round(y)]); return g; },
     lineTo: () => g,
   };
   g._rec = rec; return g;
@@ -130,6 +131,11 @@ function setup(over = {}) {
   weatherLayer.parent = over.attached === false ? null : stage; // simula app.stage.addChild(weatherLayer)
   const thunderCalls = [];
   initWeather({
+    // O mundo rodando entra por BOOLEANO desde 2026-08-26: era `phase === 'playing'`, importado de
+    // `core/state`, e a engine não conhece mais o vocabulário de cenas deste jogo (ADR-0030 C3).
+    // O padrão é FALSE porque era o que o `beforeEach` fazia antes (`setPhaseValue('title')`): estes casos
+    // medem o CLIMA, e gotas paradas tornam o desenho determinístico.
+    mundoRodando: () => over.mundoRodando ?? false,
     weatherLayer, stage,
     screen: { width: over.W ?? 100, height: over.H ?? 50 },
     getRm: () => over.rm || {},
@@ -140,7 +146,7 @@ function setup(over = {}) {
 }
 
 describe('initWeather + updateWeather + drawWeather (integração)', () => {
-  beforeEach(() => { setPhaseValue('title'); setWeatherT(0); });
+  beforeEach(() => { setWeatherT(0); });
 
   it('[Zero] cenário SEM chuva: nunca chove, drawWeather não desenha nada além do clear', () => {
     const { weatherLayer } = setup({ chuva: false });
@@ -192,5 +198,51 @@ describe('initWeather + updateWeather + drawWeather (integração)', () => {
     // avança até estabilizar em chuva forte (c em [5,10) do ciclo) e sustenta por tempo suficiente p/ o CD estourar
     for (let i = 0; i < 60 * 300; i++) updateWeather();
     expect(thunderCalls.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// O CONGELAMENTO — acrescentado em 2026-08-26, quando `mundoRodando` virou injeção.
+//
+// Ele não tinha caso NENHUM: o `beforeEach` punha a fase em 'title' e todos os casos rodavam com as gotas
+// paradas, então o ramo que as move nunca era exercido. A troca de fonte (de `phase === 'playing'` para um
+// booleano injetado) expôs isso, e a lacuna é de acessibilidade, não de cobertura: gotas que continuam
+// caindo por trás do menu de pausa são movimento que a criança pediu para parar (WCAG 2.2.2).
+//
+// MUTAÇÃO CONFERIDA: com `const mv = true` fixo em `render/weather`, o [Inverse] falha comparando duas
+// listas de coordenadas diferentes — as gotas andam com o mundo parado.
+describe('gotas param quando o mundo para', () => {
+  const chove = (over) => {
+    const r = setup({ chuva: true, ...over });
+    // O relógio do clima é estado de MÓDULO e sobrevive entre casos: sem zerá-lo aqui, 40s de simulação
+    // podem cair numa parte SECA do ciclo, e foi exatamente o que aconteceu na primeira escrita deste bloco
+    // — o caso do congelamento passava porque não chovia nada. É o que a guarda `a.length > 0` abaixo pega.
+    setWeatherT(0);
+    for (let i = 0; i < 60 * 40; i++) updateWeather(); // 40s: chuva instalada
+    return r;
+  };
+  /** As coordenadas de TODAS as gotas num quadro. Devolve a lista, não a string: quem chama precisa poder
+   *  afirmar que ela não está VAZIA — sem isso, "os dois quadros são iguais" é verdade também quando não
+   *  choveu nada, e o caso do congelamento passaria sem exercer o congelamento. */
+  const quadro = (gfx) => {
+    gfx._rec.pontos.length = 0;
+    drawWeather();
+    return gfx._rec.pontos.map((p) => p.join(',')).join(' ');
+  };
+
+  it('[Right] com o mundo RODANDO, o desenho da chuva muda de um quadro para o outro', () => {
+    const { weatherLayer } = chove({ mundoRodando: true });
+    const a = quadro(weatherLayer);
+    const b = quadro(weatherLayer);
+    expect(a.length, 'não choveu — o caso não tem o que medir').toBeGreaterThan(0);
+    expect(a).not.toBe(b);
+  });
+
+  it('[Inverse] com o mundo PARADO (pausa/título), o desenho é o MESMO — as gotas ficam no ar', () => {
+    const { weatherLayer } = chove({ mundoRodando: false });
+    const a = quadro(weatherLayer);
+    const b = quadro(weatherLayer);
+    expect(a.length, 'não choveu — o caso não tem o que medir').toBeGreaterThan(0);
+    expect(a).toBe(b);
   });
 });

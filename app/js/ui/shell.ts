@@ -91,10 +91,11 @@
 
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
-import { phase, setPhaseValue, type Phase } from '../core/state.js';
+
 import { PAD_DESIGNS } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
 import type { DomQuery } from '../core/dom-query.js';
 import type { PadMap } from '../input/gamepad.js';
+import type { FatosDaCena } from '../core/scenes.js';
 
 /* ===================== interfaces mínimas ===================== */
 
@@ -127,8 +128,8 @@ interface PadLike { index: number; id: string; mapping: string }
 // PROJEÇÃO PURA — a decisão de fase, sem DOM. Testável no project `node`.
 // ---------------------------------------------------------------------------------------------------------
 
-/** As três fases, na ordem em que o jogo as vive. Fonte única do tipo (core/state.ts declara o mesmo `Phase`). */
-export const PHASES: readonly Phase[] = ['title', 'playing', 'paused'];
+// (`PHASES` SAIU em 2026-08-26. A casca não sabe mais QUANTAS cenas existem nem como se chamam — ver
+//  `FatosDaCena`, logo abaixo. Quem enumera as cenas deste jogo é a raiz de composição.)
 
 /** Para onde o foco vai ao ENTRAR na fase. `null` = ninguém foca nada (não existe hoje; é o default seguro). */
 export type PhaseFocus = 'game-region' | 'pause-menu' | 'title-button';
@@ -138,6 +139,8 @@ export type PhaseFocus = 'game-region' | 'pause-menu' | 'title-button';
  * sempre foi: uma projeção da fase. Nenhum campo depende de histórico — o único que dependeria
  * (`#touch-controls`) mora em `touchControlsPlan`, separado de propósito.
  */
+export type { FatosDaCena } from '../core/scenes.js'; // reexportado: os consumidores da casca já o pediam daqui
+
 export interface PhaseView {
   /** `#title-overlay`.hidden — o splash só aparece no título. */
   titleOverlayHidden: boolean;
@@ -156,16 +159,19 @@ export interface PhaseView {
   focus: PhaseFocus;
 }
 
+// `FatosDaCena` mora em `core/scenes`, ao lado da pilha que os produz — é tipo de ENGINE, e precisa ser
+// alcançável também por `game/`, que não pode importar de `ui/`. Ver o cabeçalho de lá.
+
 /** Verbatim das nove perguntas que o `setPhase` do game.js fazia à fase, agora feitas de uma vez só. */
-export function phaseView(p: Phase): PhaseView {
+export function phaseView(f: FatosDaCena): PhaseView {
   return {
-    titleOverlayHidden: p !== 'title',
+    titleOverlayHidden: !f.telaDeTitulo,
     pauseOverlayHidden: true,
-    screenPauseHidden: p !== 'paused',
-    masterMuted: p !== 'playing',
-    hideTouchControls: p !== 'playing',
-    pausePressed: p === 'paused',
-    focus: p === 'playing' ? 'game-region' : p === 'paused' ? 'pause-menu' : 'title-button',
+    screenPauseHidden: !f.menuDePausa,
+    masterMuted: !f.mundoRodando,
+    hideTouchControls: !f.mundoRodando,
+    pausePressed: f.menuDePausa,
+    focus: f.mundoRodando ? 'game-region' : f.menuDePausa ? 'pause-menu' : 'title-button',
   };
 }
 
@@ -185,15 +191,15 @@ export interface TouchControlsState {
  * Já foi o contrário, e o efeito era que `wasOn` nunca era gravado (o plano via o pad como se já estivesse
  * desligado): pausar no celular sumia com o direcional virtual e retomar não o devolvia.
  */
-export function touchControlsPlan(p: Phase, st: TouchControlsState, screens: number): TouchControlsState {
-  if (p === 'paused') {
+export function touchControlsPlan(f: FatosDaCena, st: TouchControlsState, screens: number): TouchControlsState {
+  if (f.menuDePausa) {
     if (!st.hidden) return { hidden: true, wasOn: true }; // guarda que estava ligado e esconde
     return st;                                            // já escondido: nada muda (nem `wasOn`)
   }
-  if (p === 'playing') {
+  if (f.mundoRodando) {
     return { hidden: st.wasOn && screens <= 1 ? false : st.hidden, wasOn: false };
   }
-  return { hidden: true, wasOn: false }; // título: some e esquece
+  return { hidden: true, wasOn: false }; // título (ou qualquer cena que não seja jogo nem pausa): some e esquece
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -278,6 +284,12 @@ export function pickLegendPad(pads: readonly (PadLike | null)[], p1pad: number):
 // ---------------------------------------------------------------------------------------------------------
 
 export interface ShellCtx {
+  /** Os três fatos da cena do TOPO, perguntados a cada uso — a raiz é quem tem a pilha e quem nomeia as
+   *  cenas. Getter, e não valor: a casca projeta o estado ATUAL, não o do momento em que foi ligada. */
+  fatosDaCena: () => FatosDaCena;
+  /** VOLTAR AO JOGO. É o que o "Continuar" do menu de pausa faz, e o que a entrada de um jogador novo faz.
+   *  Era `setPhase('playing')` daqui mesmo — mas empilhar é da raiz, e "retomar" é o que a casca quer dizer. */
+  retomarJogo: () => void;
   /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
    *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
    *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
@@ -359,10 +371,9 @@ export interface ShellCtx {
 export type PauseActs = Record<string, () => void>;
 
 export interface ShellApi {
-  /** Troca de fase: grava o valor em core/state.ts e aplica a projeção `phaseView` ao documento. */
-  setPhase: (p: Phase) => void;
-  /** jogando ⇄ pausado. No título, não faz nada (verbatim: o `else if` do original não tem `else`). */
-  togglePause: () => void;
+  /** Projeta no documento a cena que está no topo da pilha AGORA. A raiz chama depois de empilhar/desempilhar.
+   *  (Era `setPhase(p)`: a casca gravava o valor E projetava. Empilhar é da raiz — ela é quem nomeia as cenas.) */
+  aplicarCena: () => void;
   /** Põe o 1º `.pm-btn` (Continuar) selecionado em CADA tela de pausa. */
   pauseSelect: () => void;
   /** Modo Print: esconde as pausas para ver a tela limpa; qualquer tecla/clique as traz de volta. */
@@ -426,7 +437,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
       if (e && e.preventDefault) { try { e.preventDefault(); } catch { /* noop */ } }
       ctx.win.removeEventListener('keydown', back, true);
       ctx.win.removeEventListener('pointerdown', back, true);
-      if (phase === 'paused') { ctx.getPauseScreens().forEach((sp) => { sp.hidden = false; }); pauseSelect(); }
+      if (ctx.fatosDaCena().menuDePausa) { ctx.getPauseScreens().forEach((sp) => { sp.hidden = false; }); pauseSelect(); }
     };
     // 80ms de atraso: o próprio evento que ACIONOU o Print não pode ser o que o desfaz.
     ctx.win.setTimeout(() => {
@@ -453,10 +464,10 @@ export function initShell(ctx: ShellCtx): ShellApi {
   }
 
   /** A metade IMPURA do plano de toque: recebe o estado lido ANTES do hide e grava o plano de volta. */
-  function applyTouchControls(p: Phase, before: TouchControlsState | null): void {
+  function applyTouchControls(f: FatosDaCena, before: TouchControlsState | null): void {
     const tc = ctx.$<HTMLElement>('#touch-controls');
     if (!tc || !before) return;
-    const after = touchControlsPlan(p, before, ctx.getNumPlayers());
+    const after = touchControlsPlan(f, before, ctx.getNumPlayers());
     // Só escreve o que MUDOU — é o que torna o applier equivalente linha a linha ao original (que, no ramo
     // 'paused' já-escondido, não toca em nada; e cujos `delete` nos outros ramos são no-op quando não havia flag).
     if (after.hidden !== before.hidden) tc.hidden = after.hidden;
@@ -471,9 +482,14 @@ export function initShell(ctx: ShellCtx): ShellApi {
     if (b) b.focus();
   }
 
-  function setPhase(p: Phase): void {
-    setPhaseValue(p);        // core/state.js: só o valor + evento; a reação de UI é toda daqui para baixo
-    const v = phaseView(p);
+  /**
+   * Projeta a cena do topo no documento. Chamada pela raiz DEPOIS de ela mexer na pilha — a casca não empilha
+   * nem desempilha, e é essa separação que faz o `Phase` sumir daqui: quem troca de cena sabe os nomes, quem
+   * projeta só precisa dos três fatos.
+   */
+  function aplicarCena(): void {
+    const f = ctx.fatosDaCena();
+    const v = phaseView(f);
     // LER ANTES DE ESCONDER. Era aqui o defeito: `hideTouchControls()` roda logo abaixo e já põe `tc.hidden`
     // em true, então o plano — que rodava depois — via o pad como se ele já estivesse desligado, nunca gravava
     // o `wasOn`, e o ramo que o traz de volta ao retomar era inalcançável. No celular: pausar sumia com o
@@ -483,23 +499,19 @@ export function initShell(ctx: ShellCtx): ShellApi {
     // GAG: na pausa, silencia TODO o som do jogo (loops de ambiente/chuva inclusive) — volta ao retomar.
     ctx.setMasterMuted(v.masterMuted);
     applyPhaseView(v);
-    applyTouchControls(p, antesDoHide); // o estado é o de ANTES do hide — ver o comentário acima
+    applyTouchControls(f, antesDoHide); // o estado é o de ANTES do hide — ver o comentário acima
     const pb = ctx.$<HTMLElement>('#btn-pause'); // ORDEM verbatim: o aria-pressed vem DEPOIS do bloco de toque
     if (pb) pb.setAttribute('aria-pressed', String(v.pausePressed));
     applyFocus(v.focus);
   }
 
-  function togglePause(): void {
-    if (phase === 'playing') setPhase('paused');
-    else if (phase === 'paused') setPhase('playing');
-  }
 
   /* ===================== a tabela do menu de pausa ===================== */
 
   // Ações do menu de pausa (compartilhadas pelos menus por tela). Ao abrir um submenu de a11y, escopa ao
   // jogador que agiu (pauseActor) — o diálogo abre na aba dele.
   const pauseActs: PauseActs = {
-    resume: () => setPhase('playing'),
+    resume: () => ctx.retomarJogo(),
     // O botão ABC era um CICLO de duas posições; virou a porta do menu de CAA (ADR-0028), onde a caixa da
     // letra é uma escolha entre outras. Ele não sumiu — quem usava o atalho continua a um clique da escolha,
     // em vez de ter de descobrir onde ela foi parar. A ação `letra` sumiu junto com o ciclo: um nome por coisa.
@@ -515,7 +527,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
       const p = ctx.getPlayers()[ctx.getNumPlayers() - 1] as ShellPlayer;
       p.waiting = true;
       ctx.showWaitingBadge(p.i);
-      setPhase('playing');
+      ctx.retomarJogo();
       ctx.srAlert(t('sr.player.pressToJoin', { n: p.i + 1 }));
     },
     audio: () => ctx.openAudio(),
@@ -528,5 +540,5 @@ export function initShell(ctx: ShellCtx): ShellApi {
     ajuda: () => ctx.openHelp(),
   };
 
-  return { setPhase, togglePause, pauseSelect, printMode, updateTitleLegend, pauseActs };
+  return { aplicarCena, pauseSelect, printMode, updateTitleLegend, pauseActs };
 }

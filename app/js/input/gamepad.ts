@@ -10,7 +10,6 @@
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
-import type { Phase } from '../core/state.js';
 import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
 import * as store from '../platform/storage.js';
 
@@ -180,9 +179,18 @@ export interface GamepadCtx {
   srAlert: (msg: string) => void;
   /** Traz um overlay para frente + preenche o texto de ajuda (game.js's frontOverlay, compartilhado por todo overlay). */
   frontOverlay: (el: HTMLElement | null) => void;
-  /** Fase atual e sua troca (game.js's setPhase: some o toque, muda o mudo do áudio, foca a região certa...). */
-  getPhase: () => Phase;
-  setPhase: (p: Phase) => void;
+  /* --- A CENA, em booleanos e verbos (ADR-0030 C3, 2026-08-26) ---
+     Era `getPhase(): Phase` + `setPhase(p: Phase)`. O módulo é ENGINE e passava a conhecer o vocabulário de
+     fases DESTE jogo; o `consumer-quiz` já mostrou, no `menu-nav`, o que isso custa — um quiz cujos ajustes
+     estão sempre disponíveis tinha de se declarar "pausado" para navegar os próprios menus. O que este
+     módulo de fato precisa são duas perguntas e dois verbos. */
+  /** O mundo está rodando? (START aqui PAUSA.) */
+  mundoRodando: () => boolean;
+  /** O menu de pausa está aberto? (START aqui RETOMA.) */
+  menuDePausa: () => boolean;
+  /** Pausar e retomar. Quem empilha a cena é a raiz; daqui sai só a intenção. */
+  pausar: () => void;
+  retomar: () => void;
   /** Modo demonstração (attract) — game.js's attractCtl. */
   isAttractActive: () => boolean;
   stopAttract: () => void;
@@ -338,7 +346,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       const gp = pads[gi];
       if (gp) { const c = actionsFor(gp); padCur[gi] = c; padPrevAct[gi] = c; padPrevStart[gi] = c._start; }
     } catch { /* espelha o try/catch silencioso do original */ }
-    if (padWizAutoResume) { padWizAutoResume = false; if (ctx.getPhase() === 'paused') ctx.setPhase('playing'); }
+    if (padWizAutoResume) { padWizAutoResume = false; if (ctx.menuDePausa()) ctx.retomar(); }
   }
 
   // ----- wizard: tick (roda a cada 30ms enquanto aberto) -----
@@ -414,8 +422,8 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       const gi = gp.index;
       // controle fora do padrão (DirectInput) SEM mapa salvo apertou algo -> pausa geral + wizard direto
       if (gp.mapping !== 'standard' && !padMapFor(gp.id) && gp.buttons.some((b) => b && b.pressed)) {
-        padWizAutoResume = ctx.getPhase() === 'playing';
-        if (ctx.getPhase() === 'playing') ctx.setPhase('paused');
+        padWizAutoResume = ctx.mundoRodando();
+        if (ctx.mundoRodando()) ctx.pausar();
         openPadWizFor(gp);
         return;
       }
@@ -435,10 +443,13 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         continue;
       }
 
-      const phase = ctx.getPhase();
+      // Os três ramos abaixo pediam a FASE; hoje pedem os fatos. O `telaDeTitulo` é derivado por exclusão
+      // de propósito: numa cena que este módulo não conheça (um mapa, uma tela de resultados), o controle
+      // deve navegar como no título — que é o comportamento seguro — em vez de não fazer nada.
+      const rodando = ctx.mundoRodando(), pausado = ctx.menuDePausa();
       const players = ctx.getPlayers();
 
-      if (phase === 'title') {
+      if (!rodando && !pausado) {
         const k: NavKeys = { yes: edge('jump') || startEdge, no: edge('especial'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
         const any = k.yes || k.no || k.up || k.down || k.left || k.right;
         const owner = players.findIndex((p) => p.pad === gi);
@@ -446,9 +457,9 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         if (any) ctx.navTitle(k); // menu inicial navegável pelo pad
         continue;
       }
-      if (phase === 'paused') {
+      if (pausado) {
         const owner = players.findIndex((p) => p.pad === gi); const pi = owner < 0 ? 0 : owner;
-        if (pauseEdge) { ctx.setPhase('playing'); continue; } // START retoma
+        if (pauseEdge) { ctx.retomar(); continue; } // START retoma
         const k: NavKeys = { yes: edge('jump'), no: edge('especial'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
         if (k.yes || k.no || k.up || k.down || k.left || k.right) {
           const dlg = ctx.sharedDialogOpen();
@@ -457,7 +468,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         }
         continue;
       }
-      if (phase === 'playing') {
+      if (rodando) {
         const owner = players.findIndex((p) => p.pad === gi);
         if (owner < 0) { // atribuição POR ORDEM DE AÇÃO: qualquer botão associa -> 1º controle a agir -> 1º jogador sem pad
           const anyEdge = edge('jump') || edge('run') || edge('swap') || edge('especial') || startEdge || edge('left') || edge('right') || edge('up') || edge('down');
@@ -474,7 +485,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
           if (startEdge) ctx.respawnPlayer(owner); // tela abandonada -> recomeça SÓ ela
         } else {
           const p = players[owner];
-          if (pauseEdge) { ctx.setPhase('paused'); ctx.setPauseActor(owner); continue; } // START pausa (todos pausam; cada tela navega a sua)
+          if (pauseEdge) { ctx.pausar(); ctx.setPauseActor(owner); continue; } // START pausa (todos pausam; cada tela navega a sua)
           if (ctx.hasModal(owner)) { // o pad navega o modal do PRÓPRIO jogador (o jogo dos outros segue)
             // A ORDEM é a do original: esquerda, direita, cima, baixo, confirmar, apagar. O que saiu foi o
             // SIGNIFICADO — o ±1/±3 da grade e o desvio de Braille, que agora são decisão do jogo.

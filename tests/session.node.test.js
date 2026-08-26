@@ -305,7 +305,10 @@ function novoCtx(over = {}) {
     assignControls: marca('assignControls'), ensureSprites: marca('ensureSprites'),
     configureRender: marca('configureRender'), reapplyVizAll: marca('reapplyVizAll'),
     layout: marca('layout'), hideTouchControls: marca('hideTouchControls'), updateGameHud: marca('updateGameHud'),
-    setPhase: (p) => LOG.chamadas.push('phase:' + p),
+    // 2026-08-26: dois VERBOS no lugar de `setPhase(p)` (ADR-0030 C3). O log segue com a mesma marca, para
+    // os casos continuarem afirmando `'phase:title'` — o que eles medem é a ORDEM, não a assinatura.
+    voltarAoTitulo: () => LOG.chamadas.push('phase:title'),
+    entrarNoJogo: () => LOG.chamadas.push('phase:playing'),
     // `titleShowMain()` sem argumento desde 2026-08-26: quais submenus do splash existem é vocabulário da
     // casca (`ui/title.TitleMenuId`), e `game/` não importa de `ui/`. O módulo só diz "voltei ao título".
     titleShowMain: () => LOG.chamadas.push('title:main'),

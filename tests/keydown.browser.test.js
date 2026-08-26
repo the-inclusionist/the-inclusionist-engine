@@ -14,7 +14,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initKeydown } from '../app/js/input/keydown.js';
 import { initMenuNav } from '../app/js/ui/menu-nav.js';
-import { setPhaseValue, phase } from '../app/js/core/state.js';
+// A CENA é DO TESTE desde 2026-08-26. `phase` saiu de `core/state` — virou a pilha de `core/scenes`, e os
+// três nomes moram na raiz de composição (ADR-0030 C3). Quem é engine recebe BOOLEANOS. Este `let` faz o
+// papel que o binding vivo fazia, e os casos seguem escritos como estavam.
+let faseFalsa = 'playing';
+const setPhaseValue = (p) => { faseFalsa = p; };
 
 const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], run: ['KeyU'], jump: ['KeyJ', 'Space'], swap: ['KeyI'], especial: ['KeyK'] };
 const CONTROLS = { ...SOLO, gameKeys: Object.values(SOLO).flat() };
@@ -36,7 +40,7 @@ function wire({ pauseMenu = null } = {}) {
     getPauseMenu: () => pauseMenu,
     setPhase: spy('menuNav:setPhase'),
     setPauseActor: spy('menuNav:setPauseActor'),
-    isNavigable: () => phase === 'paused', // a plataforma navega menu na pausa; ver o ctx de ui/menu-nav
+    isNavigable: () => faseFalsa === 'paused', // a plataforma navega menu na pausa; ver o ctx de ui/menu-nav
     isCapturing: () => false,
     closePadWiz: spy('menuNav:closePadWiz'),
     whichPlayer: (code) => (actionOf(code) ? 0 : -1),
@@ -46,6 +50,8 @@ function wire({ pauseMenu = null } = {}) {
   const keydown = initKeydown({
     attractOnInput: () => false,
     handleCaptureKeydown: () => false,
+    isTelaDeTitulo: () => faseFalsa === 'title',
+    isEmJogo: () => faseFalsa === 'playing' || faseFalsa === 'paused',
     getNumPlayers: () => 1,
     getPlayers: () => players,
     getControls: () => CONTROLS,

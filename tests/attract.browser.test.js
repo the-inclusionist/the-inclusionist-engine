@@ -16,11 +16,14 @@ function setup(over = {}) {
     keys,
     getPlayers: () => [player],
     getCenario: () => state.cenario,
-    getPhase: () => state.phase,
+    // 2026-08-26: um booleano e dois verbos no lugar de `getPhase`/`setPhase` (ADR-0030 C3). O falso segue
+    // guardando a string em `state.phase`, que é o que os casos afirmam.
+    mundoRodando: () => state.phase === 'playing',
     setCenario: (c) => { state.cenario = c; },
     setActivity: (a) => { state.activity = a; },
     restartGame: () => { state.restarts++; },
-    setPhase: (p) => { state.phase = p; },
+    entrarNoJogo: () => { state.phase = 'playing'; },
+    voltarAoTitulo: () => { state.phase = 'title'; },
     randInt: () => 0, // determinístico → 1º cenário (campo)
     kbFor: () => ({ right: ['ArrowRight'], left: ['ArrowLeft'] }),
     srSay: (t) => said.push(t),

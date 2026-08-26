@@ -55,8 +55,12 @@ function buildCtx(over = {}) {
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
     frontOverlay: (el) => fronted.push(el),
-    getPhase: () => phase,
-    setPhase: (p) => { calls.setPhase.push(p); phase = p; },
+    // 2026-08-26: o ctx deixou de pedir a FASE e passou a pedir dois booleanos e dois verbos (ADR-0030 C3).
+    // O falso segue guardando a string por dentro — é como os casos se leem —, e traduz aqui.
+    mundoRodando: () => phase === 'playing',
+    menuDePausa: () => phase === 'paused',
+    pausar: () => { calls.setPhase.push('paused'); phase = 'paused'; },
+    retomar: () => { calls.setPhase.push('playing'); phase = 'playing'; },
     isAttractActive: () => false,
     stopAttract: () => { calls.stopAttract++; },
     isTouchMode: () => false,

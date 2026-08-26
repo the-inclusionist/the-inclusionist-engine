@@ -360,7 +360,10 @@ export interface SessionCtx {
   updateGameHud(): void;                    // HUD por jogador
 
   /* --- fase e título --- */
-  setPhase(p: string): void;
+  /** VOLTAR AO TÍTULO e ENTRAR NO JOGO. Eram `setPhase('title')`/`setPhase('playing')` — dois verbos no
+   *  lugar de uma string, porque quem empilha a cena é a raiz e este módulo só declara a intenção. */
+  voltarAoTitulo(): void;
+  entrarNoJogo(): void;
   /**
    * Devolve o splash ao menu PRINCIPAL. Sem argumento DE PROPÓSITO.
    *
@@ -642,7 +645,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
 
   /** Volta ao menu inicial (mesmo caminho do "sair" solo e do "todo mundo saiu" em MP). */
   function backToTitle(msg: string): void {
-    restartGame(); ctx.setPhase('title'); ctx.titleShowMain(); ctx.srSay(msg);
+    restartGame(); ctx.voltarAoTitulo(); ctx.titleShowMain(); ctx.srSay(msg);
   }
 
   /** Sair: solo → MENU INICIAL; MP → a tela do jogador fica preta; TODOS saindo → menu inicial. */
@@ -656,7 +659,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
       backToTitle('Todos saíram. Escolham a próxima atividade.');
       return;
     }
-    ctx.setPhase('playing');
+    ctx.entrarNoJogo();
     ctx.srSay(t('sr.player.quit', { n: q + 1 }));
   }
 

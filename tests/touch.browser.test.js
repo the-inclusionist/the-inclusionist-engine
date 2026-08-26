@@ -5,7 +5,11 @@
 // `setMinimapCorner` (render/minimap.js) são os módulos REAIS — os mesmos que initTouch importa direto.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initTouch } from '../app/js/input/touch.js';
-import { setPhaseValue } from '../app/js/core/state.js';
+// A CENA é DO TESTE desde 2026-08-26. `phase` saiu de `core/state` — virou a pilha de `core/scenes`, e os
+// três nomes moram na raiz de composição (ADR-0030 C3). Quem é engine recebe BOOLEANOS. Este `let` faz o
+// papel que o binding vivo fazia, e os casos seguem escritos como estavam.
+let faseFalsa = 'playing';
+const setPhaseValue = (p) => { faseFalsa = p; };
 import { createRunState } from '../app/js/core/run-state.js';
 // A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
 // ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste

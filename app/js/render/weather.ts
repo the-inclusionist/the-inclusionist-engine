@@ -5,11 +5,11 @@
 // is soldered into the render-graph assembly there, same precedent as render/scene-sky.ts — and are INJECTED via
 // initWeather(); only the logic moves. `_rainLevel` is the bridge to platform/audio-ambient.ts (thunder/rain
 // track follow the visual): exposed here ONLY via getRainLevel(), never the raw mutable value, exactly like the
-// game.js `get rainLevel(){return _rainLevel;}` it replaces. `cenario`/`phase` are read as live bindings from
+// game.js `get rainLevel(){return _rainLevel;}` it replaces. `cenario` is read as a live binding from
 // core/state.ts (shared state home); `rnd` from core/rng.ts (shared pure RNG) — same pattern as render/fx.ts.
 
 import { rnd } from '../core/rng.js';
-import { phase } from '../core/state.js';
+
 import type { DesenhoComLinha } from './port.js';
 // `cenario` e `CENARIOS` SAÍRAM (Fase B, ADR-0038): o cenário virou estado do JOGO (`game/state`), e este
 // módulo é engine — o gate de fronteira proíbe a importação. Em vez do VALOR, entra a PERGUNTA: `temChuva`.
@@ -130,6 +130,10 @@ export interface WeatherCtx {
   thunder: (inten: number) => void;
   /** Chove no cenário atual? Uma PERGUNTA e não o id do cenário: quem tem o catálogo responde. */
   temChuva: () => boolean;
+  /** O mundo está rodando? Um BOOLEANO e não a fase — a engine não conhece o vocabulário de cenas deste
+   *  jogo (ADR-0030 C3). Era `phase === 'playing'`, importado de `core/state`. É o que congela as gotas na
+   *  pausa: elas param no ar em vez de continuarem caindo por trás do menu. */
+  mundoRodando: () => boolean;
 }
 
 let _weatherLayer: Gfx | null = null;
@@ -138,6 +142,7 @@ let _screen: { width: number; height: number } | null = null;
 let _getRm: (() => { decor?: boolean }) | null = null;
 let _thunder: ((inten: number) => void) | null = null;
 let _temChuva: (() => boolean) | null = null;
+let _mundoRodando: () => boolean = () => true;
 
 let _rainLevel = 0, _weatherT = 0, _flash = 0, _thunderCD = 240, _aglomeracao = 0;
 let _rainDrops: RainDrop[] | null = null;
@@ -149,6 +154,7 @@ export function initWeather(ctx: WeatherCtx): void {
   _getRm = ctx.getRm;
   _thunder = ctx.thunder;
   _temChuva = ctx.temChuva;
+  _mundoRodando = ctx.mundoRodando;
 }
 
 /** Per-frame clima update (game.js calls this only while `phase==='playing'`, same as before). */
@@ -175,7 +181,7 @@ export function drawWeather(): void {
   if (_rainLevel > 0) {
     g.beginFill(0x0a0e1a, _rainLevel * 0.34); g.drawRect(0, 0, W, H); g.endFill(); // céu mais escuro
     if (!_rainDrops) _rainDrops = makeRainDrops(110, W, H, rnd);
-    const mv = phase === 'playing'; // GAG: gotas congelam na pausa
+    const mv = _mundoRodando(); // GAG: gotas congelam na pausa
     g.lineStyle(1, 0xaebfe0, 0.5 * _rainLevel);
     for (const d of _rainDrops) { stepRainDrop(d, W, H, mv, rnd); g.moveTo(d.x, d.y); g.lineTo(d.x - 2, d.y + d.len); }
     g.lineStyle(0);

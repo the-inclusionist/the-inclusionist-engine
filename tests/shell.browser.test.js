@@ -4,12 +4,19 @@
 // Print. A projeção pura (`phaseView`, `touchControlsPlan`, os chips) está em shell.node.test.js e NÃO é
 // repetida aqui.
 //
-// `phase`/`numPlayers`/`players` são os módulos REAIS (core/state.ts) — os mesmos bindings vivos que o
+// `numPlayers`/`players` vinham de core/state.ts — os mesmos bindings vivos que o
 // game.js usa; o resto do ctx é falso (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // a legenda vem do dicionário desde o item 14
 import { initShell } from '../app/js/ui/shell.js';
-import { phase, setPhaseValue } from '../app/js/core/state.js';
+// A CENA é DO TESTE desde 2026-08-26. `phase` saiu de `core/state` — virou a pilha de `core/scenes`, e os
+// três nomes moram na raiz de composição (ADR-0030 C3). Quem é engine recebe BOOLEANOS. Este `let` faz o
+// papel que o binding vivo fazia, e os casos seguem escritos como estavam.
+let faseFalsa = 'playing';
+const setPhaseValue = (p) => { faseFalsa = p; };
+/** A casca corrente. `setPhase` abaixo faz o papel da RAIZ: troca a cena e manda a casca reprojetar. */
+let shellAtual = null;
+const setPhase = (p) => { faseFalsa = p; if (shellAtual) shellAtual.aplicarCena(); };
 import { createRunState } from '../app/js/core/run-state.js';
 // A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
 // ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
@@ -56,6 +63,11 @@ function boot(over = {}) {
   let pending = null; // o setTimeout de 80ms do modo Print, disparado à mão pelo teste
 
   const ctx = {
+    // A casca deixou de trocar de cena: ela PROJETA a cena que a raiz já trocou (ADR-0030 C3). O falso faz o
+    // papel da raiz — guarda a fase e responde os três fatos. As regras de TRANSIÇÃO (pausar empilha, o
+    // título não alterna) mudaram de casa junto, para `game/cenas`, e têm caso próprio lá.
+    fatosDaCena: () => ({ telaDeTitulo: faseFalsa === 'title', mundoRodando: faseFalsa === 'playing', menuDePausa: faseFalsa === 'paused' }),
+    retomarJogo: () => { setPhase('playing'); },
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     win: {
@@ -96,6 +108,7 @@ function boot(over = {}) {
     ...over,
   };
   const shell = initShell(ctx);
+  shellAtual = shell;
   return { shell, log, listeners, flush: () => { const f = pending; pending = null; if (f) f(); } };
 }
 
@@ -104,8 +117,8 @@ beforeEach(() => { document.body.innerHTML = ''; setPhaseValue('title'); setNumP
 describe('setPhase — a casca inteira, no documento', () => {
   it('"playing": splash some, pausas somem, som volta e o foco vai para a região do canvas', () => {
     const { shell, log } = boot();
-    shell.setPhase('playing');
-    expect(phase).toBe('playing');
+    setPhase('playing');
+    expect(faseFalsa).toBe('playing');
     expect($('#title-overlay').hidden).toBe(true);
     expect($$('.screen-pause').every((sp) => sp.hidden)).toBe(true);
     expect(log.muted.at(-1)).toBe(false);
@@ -116,8 +129,8 @@ describe('setPhase — a casca inteira, no documento', () => {
 
   it('"paused": TODAS as telas de pausa aparecem, o som cala, o toque some e os ícones se refletem', () => {
     const { shell, log } = boot();
-    shell.setPhase('playing');
-    shell.setPhase('paused');
+    setPhase('playing');
+    setPhase('paused');
     expect($$('.screen-pause').every((sp) => !sp.hidden)).toBe(true);
     expect(log.muted.at(-1)).toBe(true);
     expect(log.hidTouch).toBe(1);
@@ -127,7 +140,7 @@ describe('setPhase — a casca inteira, no documento', () => {
 
   it('"paused" selecciona Continuar em CADA tela — ninguém fica sem cursor', () => {
     const { shell } = boot();
-    shell.setPhase('paused');
+    setPhase('paused');
     for (const sp of $$('.screen-pause')) {
       const sel = sp.querySelectorAll('.pm-sel');
       expect(sel.length).toBe(1);
@@ -137,8 +150,8 @@ describe('setPhase — a casca inteira, no documento', () => {
 
   it('"title": o splash volta, a legenda é repintada e o foco vai para o 1º botão do menu', () => {
     const { shell } = boot();
-    shell.setPhase('playing');
-    shell.setPhase('title');
+    setPhase('playing');
+    setPhase('title');
     expect($('#title-overlay').hidden).toBe(false);
     expect($('#title-legend').innerHTML).not.toBe('');
     expect(document.activeElement.id).toBe('tm-first');
@@ -146,18 +159,12 @@ describe('setPhase — a casca inteira, no documento', () => {
 
   it('#pause-overlay (pausa GLOBAL aposentada) fica escondido em toda fase', () => {
     const { shell } = boot();
-    for (const p of ['playing', 'paused', 'title']) { shell.setPhase(p); expect($('#pause-overlay').hidden, p).toBe(true); }
+    for (const p of ['playing', 'paused', 'title']) { setPhase(p); expect($('#pause-overlay').hidden, p).toBe(true); }
   });
 
-  it('togglePause alterna jogando⇄pausado e NÃO faz nada no título', () => {
-    const { shell } = boot();
-    shell.togglePause();
-    expect(phase).toBe('title');
-    shell.setPhase('playing'); shell.togglePause();
-    expect(phase).toBe('paused');
-    shell.togglePause();
-    expect(phase).toBe('playing');
-  });
+  // (`togglePause` SAIU daqui em 2026-08-26. Alternar não é projetar: é uma decisão sobre a PILHA, e a pilha
+  //  é do jogo. A regra — e o "não faz nada no título" — mora agora em `game/cenas`, com caso próprio em
+  //  `tests/cenas.node.test.js`, onde ela é conferível sem documento nenhum.)
 });
 
 describe('setPhase e os controles de toque', () => {
@@ -167,25 +174,25 @@ describe('setPhase e os controles de toque', () => {
   // uma tela só, que é a condição em que o virtual existe.
   it('[Right] pausar com o direcional visível guarda a marca, e retomar o devolve', () => {
     const { shell } = boot();
-    shell.setPhase('playing');
+    setPhase('playing');
     const tc = $('#touch-controls');
     tc.hidden = false; // como se a pessoa estivesse jogando no toque
-    shell.setPhase('paused');
+    setPhase('paused');
     expect(tc.hidden).toBe(true);              // na pausa ele sai da frente
     expect(tc.dataset.wasOn).toBe('1');        // mas fica anotado que estava ligado
-    shell.setPhase('playing');
+    setPhase('playing');
     expect(tc.hidden).toBe(false);             // e volta ao retomar
     expect(tc.dataset.wasOn).toBe(undefined);  // a marca é consumida
   });
 
   it('[Inverse] quem NÃO estava com o direcional na tela não o ganha ao retomar', () => {
     const { shell } = boot();
-    shell.setPhase('playing');
+    setPhase('playing');
     const tc = $('#touch-controls');
     tc.hidden = true; // jogando no teclado
-    shell.setPhase('paused');
+    setPhase('paused');
     expect(tc.dataset.wasOn).toBe(undefined);
-    shell.setPhase('playing');
+    setPhase('playing');
     expect(tc.hidden).toBe(true);              // continua escondido: pausar não liga o toque de ninguém
   });
 
@@ -193,7 +200,7 @@ describe('setPhase e os controles de toque', () => {
     const { shell } = boot();
     const tc = $('#touch-controls');
     tc.dataset.wasOn = '1';
-    shell.setPhase('playing');
+    setPhase('playing');
     expect(tc.hidden).toBe(false);
     expect(tc.dataset.wasOn).toBe(undefined); // a marca é consumida
   });
@@ -203,7 +210,7 @@ describe('setPhase e os controles de toque', () => {
     setNumPlayersValue(2);
     const tc = $('#touch-controls');
     tc.dataset.wasOn = '1';
-    shell.setPhase('playing');
+    setPhase('playing');
     expect(tc.hidden).toBe(true);
     expect(tc.dataset.wasOn).toBe(undefined);
   });
@@ -254,7 +261,7 @@ describe('updateTitleLegend — a legenda por dispositivo', () => {
 describe('printMode — ver a tela sem menus', () => {
   it('esconde TODAS as pausas, anuncia como voltar, e só arma os ouvintes depois do adiamento', () => {
     const { shell, log, listeners, flush } = boot();
-    shell.setPhase('paused');
+    setPhase('paused');
     shell.printMode();
     expect($$('.screen-pause').every((sp) => sp.hidden)).toBe(true);
     expect(log.said.at(-1)).toContain('Modo Print');
@@ -267,7 +274,7 @@ describe('printMode — ver a tela sem menus', () => {
 
   it('qualquer tecla traz as pausas de volta, com Continuar selecionado, e desarma os dois ouvintes', () => {
     const { shell, listeners, flush } = boot();
-    shell.setPhase('paused');
+    setPhase('paused');
     shell.printMode();
     flush();
     listeners.keydown[0]({ preventDefault() {} });
@@ -278,10 +285,10 @@ describe('printMode — ver a tela sem menus', () => {
 
   it('se o jogo já saiu da pausa, o retorno NÃO reabre os menus (só desarma)', () => {
     const { shell, listeners, flush } = boot();
-    shell.setPhase('paused');
+    setPhase('paused');
     shell.printMode();
     flush();
-    shell.setPhase('playing');
+    setPhase('playing');
     listeners.pointerdown[0]({ preventDefault() {} });
     expect($$('.screen-pause').every((sp) => sp.hidden)).toBe(true);
   });
@@ -290,9 +297,9 @@ describe('printMode — ver a tela sem menus', () => {
 describe('pauseActs — a tabela do menu de pausa', () => {
   it('"Continuar" volta ao jogo', () => {
     const { shell } = boot();
-    shell.setPhase('paused');
+    setPhase('paused');
     shell.pauseActs.resume();
-    expect(phase).toBe('playing');
+    expect(faseFalsa).toBe('playing');
   });
 
   it('o nível do quiz cicla 1..5 e volta ao 1 (nunca sai da faixa)', () => {
@@ -309,12 +316,12 @@ describe('pauseActs — a tabela do menu de pausa', () => {
 
   it('"Mais um jogador" cria a tela, marca o novo como esperando e volta ao jogo', () => {
     const { shell, log } = boot();
-    shell.setPhase('paused');
+    setPhase('paused');
     shell.pauseActs.addplayer();
     expect(players.length).toBe(2);
     expect(players[1].waiting).toBe(true);
     expect(log.acts).toEqual(['badge:1']);
-    expect(phase).toBe('playing');
+    expect(faseFalsa).toBe('playing');
     expect(log.alerted.at(-1)).toContain('Jogador 2');
   });
 
@@ -347,7 +354,7 @@ describe('pauseActs — a tabela do menu de pausa', () => {
 
   it('todo `data-act` do menu tem ação, e nenhuma ação é órfã', () => {
     const { shell } = boot();
-    shell.setPhase('paused');
+    setPhase('paused');
     const usados = new Set($$('.screen-pause .pm-btn').map((b) => b.dataset.act));
     for (const a of usados) expect(typeof shell.pauseActs[a], a).toBe('function');
     // e a tabela cobre exatamente os atos que o game.js declara (a lista viva, para o dia em que divergir)

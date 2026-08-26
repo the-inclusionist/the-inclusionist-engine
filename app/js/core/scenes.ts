@@ -105,3 +105,28 @@ export function criarPilha(): SceneStack {
     input(intent) { return pilha[pilha.length - 1]?.input?.(intent) === true; },
   };
 }
+
+/**
+ * O QUE A CASCA PRECISA SABER DA CENA — três booleanos, e nenhum nome de fase.
+ *
+ * Era `Phase = 'title' | 'playing' | 'paused'`, importado de `core/state`. O ADR-0030 registra ALARGAR essa
+ * união como NÃO-OPÇÃO, e a razão é curta: um segundo jogo continuaria amarrado ao NOSSO vocabulário — um
+ * jogo com mapa de fases ou tela de resultados teria de pedir uma constante nova à engine para existir.
+ *
+ * E o repositório já aprendeu isto uma vez, por evidência e não por gosto: o `consumer-quiz` precisou se
+ * declarar "pausado" para navegar os próprios menus, porque o `menu-nav` importava a fase. A correção de lá
+ * foi trocar `getPhase()` por `isNavigable()`, um BOOLEANO — e está registrada em `core/constants` como o
+ * erro a não repetir. Isto aqui é a mesma correção, aplicada à casca inteira.
+ *
+ * Quem NOMEIA as cenas é a raiz de composição, que é este jogo. Ela monta a pilha (`core/scenes`) e traduz o
+ * topo nestes três fatos. Uma quarta cena que a casca não conheça responde `false` nos três, e a projeção
+ * abaixo continua fazendo sentido: sem splash, sem menu de pausa, som mudo, foco no título.
+ */
+export interface FatosDaCena {
+  /** O topo é a tela de título (o splash cobre o mundo). */
+  telaDeTitulo: boolean;
+  /** O topo é o JOGO — o mundo recebe tempo, o som toca, o controle de toque pode aparecer. */
+  mundoRodando: boolean;
+  /** O topo é o menu de pausa. O jogo continua na pilha por baixo, e continua desenhado. */
+  menuDePausa: boolean;
+}

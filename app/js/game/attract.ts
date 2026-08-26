@@ -8,7 +8,6 @@
 import * as store from '../platform/storage.js';
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
-import type { Phase } from '../core/state.js';
 
 /** O bot da demonstração de atração move um jogador de verdade; a fatia é a mesma que o `stepPlayer` lê. */
 type Player = PlayerView<'x' | 'y' | 'facing' | 'vx' | 'vy' | 'onGround' | 'jumpEdge'>;
@@ -20,13 +19,15 @@ export interface AttractCtx {
   keys: Set<string>;
   getPlayers: () => Player[];   // binding vivo (restartGame pode reatribuir)
   getCenario: () => string;     // binding vivo
-  getPhase: () => string;       // binding vivo
+  mundoRodando: () => boolean;  // era `getPhase() === 'playing'` (ADR-0030 C3: a engine pergunta booleano)
   setCenario: (c: string) => void;
   setActivity: (a: string) => void;
   restartGame: () => void;
-  /** `Phase` e não `string`: o `core/state` já declara a união de três valores, e aceitar `string` aqui
-   *  significa que um erro de digitação atravessa a fronteira sem ninguém notar (ADR-0039). */
-  setPhase: (p: Phase) => void;
+  /* Dois VERBOS no lugar de `setPhase(p: Phase)`. A demo faz exatamente duas coisas com a cena: entra no
+     jogo para se exibir, e volta ao título quando alguém encosta numa tecla. Nomeá-las assim tira daqui o
+     vocabulário de fases — e tira, junto, a chance de um erro de digitação atravessar a fronteira. */
+  entrarNoJogo: () => void;
+  voltarAoTitulo: () => void;
   randInt: (a: number, b: number) => number;
   kbFor: (i: number) => Kb;
   srSay: (t: string) => void;
@@ -68,7 +69,7 @@ export function createAttract(ctx: AttractCtx): AttractCtl {
     ctx.setCenario(cen); ctx.setActivity('ludico'); ctx.restartGame();
     attract = { t: 0, rec: attractRecFor(cen), bot: { dir: 1, jt: 60, wall: 0 }, cen };
     const ov = ctx.$('#title-overlay'); if (ov) ov.hidden = true;
-    ctx.setPhase('playing');
+    ctx.entrarNoJogo();
     const gr = ctx.$('#game-region');
     if (!ctx.$('#attract-banner')) {
       if (gr) gr.insertAdjacentHTML('beforeend', '<div id="attract-banner" class="game-subtitle" style="position:absolute;left:50%;bottom:44px;transform:translateX(-50%);z-index:70;background:rgba(13,13,26,.8);padding:.2em .9em;border-radius:6px">Modo Demonstração — Aperte qualquer botão para jogar</div>');
@@ -86,7 +87,7 @@ export function createAttract(ctx: AttractCtx): AttractCtl {
     const b = ctx.$('#attract-banner'); if (b) b.hidden = true;
     idleT = 0;
     const ov = ctx.$('#title-overlay'); if (ov) ov.hidden = false;
-    ctx.restartGame(); ctx.setPhase('title');
+    ctx.restartGame(); ctx.voltarAoTitulo();
   }
 
   function stepAttract(dt: number): void {
@@ -119,7 +120,7 @@ export function createAttract(ctx: AttractCtx): AttractCtl {
     },
     onInput: () => { idleT = 0; if (attract) { stopAttract(); return true; } return false; },
     recordTick: () => {
-      if (!(RECORDING && !attract && ctx.getPhase() === 'playing')) return;
+      if (!(RECORDING && !attract && ctx.mundoRodando())) return;
       recT++;
       if (recT % 10 !== 0) return;
       const p = ctx.getPlayers()[0];

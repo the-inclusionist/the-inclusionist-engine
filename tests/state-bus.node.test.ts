@@ -21,7 +21,8 @@ import '../app/js/game/state.js'; // o aumento de módulo com os eventos do JOGO
 type Estende<A, B> = A extends B ? true : false;
 
 // A ENGINE declara os seus eventos, e cada carga tem o tipo certo.
-const _phase: Estende<EventoDoJogo['phase'], 'title' | 'playing' | 'paused'> = true;
+// (`phase` SAIU do mapa em 2026-08-26, junto com o binding: ele virou a pilha de `core/scenes`, e os três
+//  nomes moram na raiz de composição — a engine não tem mais vocabulário de cenas. Ver ADR-0030 C3.)
 const _numPlayers: Estende<EventoDoJogo['numPlayers'], number> = true;
 const _modoCego: Estende<EventoDoJogo['modoCego'], boolean> = true;
 const _contorno: Estende<EventoDoJogo['hcOutlineFg'], 0 | 1 | 2> = true;
@@ -33,14 +34,14 @@ const _activity: Estende<EventoDoJogo['activity'], string> = true;
 const _quizLevel: Estende<EventoDoJogo['quizLevel'], number> = true;
 const _coins: Estende<EventoDoJogo['coins'], unknown[]> = true;
 
-void [_phase, _numPlayers, _modoCego, _contorno, _cenario, _activity, _quizLevel, _coins];
+void [_numPlayers, _modoCego, _contorno, _cenario, _activity, _quizLevel, _coins];
 
 describe('barramento tipado — o que só o compilador podia garantir', () => {
   it('o nome do evento é uma CHAVE do mapa, não uma string qualquer', () => {
     // Em execução isto é trivial; o valor está em não compilar com um nome inventado. O caso existe para que
     // o arquivo apareça na suíte e alguém o abra quando o `tsc` reclamar daqui.
-    const nomes: (keyof EventoDoJogo)[] = ['phase', 'numPlayers', 'vizMode', 'cenario', 'coins'];
-    expect(nomes).toHaveLength(5);
+    const nomes: (keyof EventoDoJogo)[] = ['numPlayers', 'vizMode', 'cenario', 'coins'];
+    expect(nomes).toHaveLength(4);
   });
 
   it('a carga chega com o TIPO declarado, não como `unknown` para o assinante converter', () => {

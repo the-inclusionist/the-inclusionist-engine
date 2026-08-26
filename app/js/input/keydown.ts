@@ -95,7 +95,6 @@
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed, type EdgeFlag } from './edges.js';
-import { phase } from '../core/state.js'; // binding vivo (fonte única de estado)
 
 /* ===================== interfaces mínimas ===================== */
 
@@ -153,7 +152,13 @@ export type { NavKeys as TitleNav } from './edges.js';
 
 /** TUDO o que a decisão precisa saber do mundo, num objeto só, montado ANTES de qualquer efeito. */
 export interface KeydownSnapshot {
-  phase: string;
+  /* A CENA, em dois booleanos (ADR-0030 C3, 2026-08-26). Era `phase: string`, importado de `core/state` —
+     e `string` era pior do que parece: `s.phase === 'titel'` não é erro em lugar nenhum, é só uma tecla que
+     nunca chega. Estas duas perguntas são as únicas que a decisão de teclado faz à cena. */
+  /** A tela de título está no topo? (Só o Jogador 1 escolhe o jogo; os outros ouvem um aviso.) */
+  telaDeTitulo: boolean;
+  /** Há jogo em curso — rodando OU pausado? (Alt+N e a tecla de pausa exigem isto, e quiz fechado.) */
+  emJogo: boolean;
   numPlayers: number;
   players: readonly KeydownPlayer[];
   /**
@@ -366,7 +371,7 @@ export function decideKeydown(ev: { code: string; altKey?: boolean; ctrlKey?: bo
   const jump = isJumpKey(code, s);
   const pauseKey = PAUSE_KEYS.has(code);
   if (s.winVisible) { const again = jump || pauseKey; return { kind: 'win', again, preventDefault: again }; }
-  if (s.phase === 'title') {
+  if (s.telaDeTitulo) {
     // multi-tela: só o Jogador 1 escolhe o jogo. A tecla de um dos outros é consumida com um aviso falado.
     if (s.numPlayers > 1 && s.whichPlayer(code) > 0) return { kind: 'title', wait: true, nav: null, preventDefault: true };
     const nav = titleNavOf(code, s, jump);
@@ -377,7 +382,7 @@ export function decideKeydown(ev: { code: string; altKey?: boolean; ctrlKey?: bo
   // 6..7 · número de telas e pausa. As DUAS exigem quiz FECHADO: com um desafio aberto na tela, Alt+3 não pode
   // reconfigurar o jogo por baixo dele, e Enter é a confirmação do quiz, não a pausa.
   const anyModal = s.modalOpen.some(Boolean);
-  const inGame = s.phase === 'playing' || s.phase === 'paused';
+  const inGame = s.emJogo;
   if (ev.altKey && !ev.ctrlKey && SCREEN_DIGITS.test(code) && inGame && !anyModal) {
     return { kind: 'screens', count: +code.slice(5), preventDefault: true };
   }
@@ -413,7 +418,10 @@ export interface KeydownCtx {
   /** ui/settings-controls.ts: remapeamento em curso — a próxima tecla VIRA o controle. */
   handleCaptureKeydown: (e: KeydownEventLike) => boolean;
 
-  /* --- estado (tudo getter: o game.js reatribui; `phase` vem por import) --- */
+  /* --- estado (tudo getter: o game.js reatribui) --- */
+  /** Os dois fatos da cena. Ver `KeydownSnapshot`: booleanos, nunca a fase. */
+  isTelaDeTitulo: () => boolean;
+  isEmJogo: () => boolean;
   getNumPlayers: () => number;
   getPlayers: () => readonly KeydownPlayer[];
   /** `kbRuntime.controlsState()` — memorizado do lado de lá; uma chamada por tecla, como no original. */
@@ -480,7 +488,7 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
 
   function snapshot(): KeydownSnapshot {
     return {
-      phase, numPlayers: ctx.getNumPlayers(), players: ctx.getPlayers(), controls: ctx.getControls(),
+      telaDeTitulo: ctx.isTelaDeTitulo(), emJogo: ctx.isEmJogo(), numPlayers: ctx.getNumPlayers(), players: ctx.getPlayers(), controls: ctx.getControls(),
       // A RESPOSTA, ao lado dos jogadores — e montada aqui, onde eles já estão na mão (ADR-0033).
       modalOpen: ctx.getPlayers().map((_, i) => ctx.hasModal(i)),
       heldKeys: ctx.heldKeys, oneButton: ctx.isOneButton(),

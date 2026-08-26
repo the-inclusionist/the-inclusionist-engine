@@ -16,7 +16,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initMenuNav } from '../app/js/ui/menu-nav.js';
 import { initSettingsPanel } from '../app/js/ui/settings-panel.js';
-import { setPhaseValue, phase } from '../app/js/core/state.js';
+// A CENA é DO TESTE desde 2026-08-26. `phase` saiu de `core/state` — virou a pilha de `core/scenes`, e os
+// três nomes moram na raiz de composição (ADR-0030 C3). Quem é engine recebe BOOLEANOS. Este `let` faz o
+// papel que o binding vivo fazia, e os casos seguem escritos como estavam.
+let faseFalsa = 'playing';
+const setPhaseValue = (p) => { faseFalsa = p; };
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -102,9 +106,9 @@ function boot(over = {}) {
     setPhase: (p) => { log.phase.push(p); setPhaseValue(p); },
     setPauseActor: (i) => log.actor.push(i),
     // A PLATAFORMA responde na língua dela: menu é coisa de pausa. Era `if (phase !== 'paused')` DENTRO do
-    // módulo; virou pergunta injetada, e por isso os casos abaixo — que já mexiam em `setPhaseValue` —
+    // módulo; virou pergunta injetada, e por isso os casos abaixo — que já mexiam na fase —
     // continuam medindo exatamente o mesmo comportamento. Um quiz responderia `true` e não mentiria (achado 10).
-    isNavigable: () => phase === 'paused',
+    isNavigable: () => faseFalsa === 'paused',
     isCapturing: () => false,
     closePadWiz: (save) => log.padWiz.push(save),
     whichPlayer: () => -1,        // só teclas genéricas nestes casos (o roteamento por jogador é de outro módulo)

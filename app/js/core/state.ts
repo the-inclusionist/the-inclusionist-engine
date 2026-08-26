@@ -28,7 +28,6 @@ import * as store from '../platform/storage.js'; // persistência (as mega-vars 
  */
 export interface EventoDoJogo {
   /* --- ENGINE: o que este módulo emite --- */
-  phase: Phase;
   numPlayers: number;
   vizMode: string;
   modoCego: boolean;
@@ -75,12 +74,20 @@ export function emit<K extends keyof EventoDoJogo>(evt: K, val: EventoDoJogo[K])
   if (s) for (const fn of s) { try { (fn as unknown as Ouvinte<K>)(val); } catch (e) { /* noop */ } }
 }
 
-// --- phase: 'title' | 'playing' | 'paused' (congela o jogo fora de 'playing') ---
-// Leitura: importe `phase` (binding vivo) — as checagens `phase==='playing'` no game.js não mudam.
-// Escrita: só via setPhaseValue() — aqui fica apenas o VALOR + evento; a reação de UI segue no setPhase() do game.js.
-export type Phase = 'title' | 'playing' | 'paused';
-export let phase: Phase = 'title';
-export function setPhaseValue(p: Phase): void { phase = p; emit('phase', p); }
+// ========================= `phase` SAIU DAQUI (ADR-0030 C3, passo 3 da Fase B) =========================
+// Ele não virou campo de fábrica como os outros doze de RODADA: virou uma PILHA. `core/scenes` já existia,
+// testado e sem consumidor; agora a raiz de composição o usa, e `title`/`playing`/`paused` são
+// `[titulo]`, `[jogo]` e `[jogo, pausa]`.
+//
+// A diferença que motivou a troca: `phase === 'paused'` APAGAVA a informação de que há um jogo por baixo. A
+// pilha a mantém, e é dela que sai "o mundo continua desenhado, mas não recebe tempo".
+//
+// E o ADR-0030 registra ALARGAR a união (`'mapa' | 'resultado' | …`) como NÃO-OPÇÃO: um segundo jogo
+// continuaria amarrado ao NOSSO vocabulário, e teria de pedir uma constante nova à engine para existir. Por
+// isso os três nomes não moram em módulo nenhum da engine — moram na raiz, que é este jogo. Quem é engine
+// recebe BOOLEANOS: `mundoRodando()`, `menuDePausa()`, `telaDeTitulo`. É a mesma correção que o
+// `consumer-quiz` obrigou a fazer no `menu-nav` (`getPhase()` → `isNavigable()`), registrada em
+// `core/constants` como o erro a não repetir.
 
 /* (`quizLevel` SAIU daqui em 2026-08-25, item 19 — está em `game/state`. É o nível da atividade de
  *  alfabetização: conteúdo pedagógico, e nem sequer mecânica de engine. A regra é a do ADR-0033, aplicada ao
@@ -96,9 +103,9 @@ export function setPhaseValue(p: Phase): void { phase = p; emit('phase', p); }
 // para quem entrasse pelo `window.__incl`, e qualquer outro caminho podia gravar 5 ou -1. Deixá-lo para trás
 // transformaria a fábrica num `let` com nome novo.
 //
-// E a fatia grande saiu em 2026-08-26: `players` e `numPlayers`, com quatorze importadores CADA. Falta só
-// o `phase`, que não vira campo de fábrica — ele é substituído pela pilha de cenas (`core/scenes`), no
-// passo 3 da Fase B.
+// E a fatia grande saiu em 2026-08-26: `players` e `numPlayers`, com quatorze importadores CADA. Com o
+// `phase` indo para a pilha de cenas no mesmo dia, a RODADA saiu INTEIRA daqui — este módulo é só de PÁGINA
+// agora, e `tests/lifetime-gate.node.test.ts` afirma isso a cada rodada de testes.
 
 
 // ========================= `cenario` E `activity` SAÍRAM DAQUI (ADR-0038, Fase B) =========================

@@ -35,8 +35,8 @@ import { createRunState } from '../app/js/core/run-state.js';
  * a dívida visível do corte, e cada linha aqui é uma coisa que ainda vai sair.
  */
 const SEM_PERSISTIR: Record<string, string> = {
-  // RODADA morando na engine — sai no passo 3 da Fase B, substituído pela pilha de `core/scenes`.
-  setPhaseValue: 'RODADA: vira a pilha de cenas (ADR-0030 C3, passo 3 da Fase B)',
+  // (`setPhaseValue` estava aqui e SAIU em 2026-08-26 — o `phase` virou a pilha de `core/scenes`, e com ele
+  //  foi embora a única RODADA que ainda morava na engine. A lista encolheu, que é o que ela deve fazer.)
   // `initVizMode` NÃO é setter: é a carga do boot, e ela não persiste DE PROPÓSITO — o padrão vem de
   // `prefers-contrast`, e gravá-lo travaria o rastreio da preferência do sistema (ver o comentário lá).
   initVizMode: 'boot: o padrão de mídia deve seguir o sistema a cada abertura',

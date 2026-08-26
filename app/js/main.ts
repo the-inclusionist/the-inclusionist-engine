@@ -12,9 +12,11 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { emit, phase, vizMode, initVizMode, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion } from './core/state.js'; // estado compartilhado
+import { emit, vizMode, initVizMode, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion } from './core/state.js'; // estado compartilhado
 import { cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue } from './game/state.js'; // GAME (ADR-0038, Fase B)
 import { createRunState } from './core/run-state.js'; // ADR-0038 Fase B: a RODADA como fábrica
+import { criarCenasDoJogo, type Fase } from './game/cenas.js'; // as três cenas DESTE jogo (ADR-0030 C3)
+import type { FatosDaCena } from './core/scenes.js';
 import type { Powerup } from './game/level-geometry.js'; // o tipo do power-up é do JOGO
 
 // ⚠️ A POSIÇÃO É O CONTRATO. A primeira versão declarou isto 380 linhas abaixo, e o boot morreu com
@@ -37,6 +39,22 @@ const players = rodada.players;
 // Os dois módulos que leem a contagem sem ter ctx: a escala das telas e a ancoragem da scanline. Ligados
 // AQUI, junto da criação da rodada, e não lá embaixo — um `initLayout` esquecido não dá erro nenhum, só
 // devolve 1 para sempre, e o multi-tela nasceria com a grade de um jogador.
+/* ===================== AS CENAS (ADR-0030 C3, passo 3 da Fase B) =====================
+   `phase: 'title'|'playing'|'paused'` SAIU de `core/state`. As três cenas e as regras de ir de uma para a
+   outra moram em `game/cenas` — do lado do JOGO, porque o vocabulário é dele —, e o que atravessa de volta
+   para a engine são três BOOLEANOS (`FatosDaCena`). É a mesma correção que o `consumer-quiz` obrigou a
+   fazer no `menu-nav` (`getPhase()` → `isNavigable()`), registrada em `core/constants` como o erro a não
+   repetir.
+
+   ⚠️ O QUE ESTE PASSO NÃO FAZ: as cenas ainda não têm CORPO. As três regras do `core/scenes` — update só no
+   topo, draw de baixo para cima, input só no topo — continuam sendo os `if (!mundoRodando) return`
+   espalhados. Encaminhar o quadro pela pilha muda o laço principal, e misturar isso com "quem pergunta o
+   quê" tornaria qualquer regressão inatribuível. Fica para a fatia seguinte. */
+// O `aoTrocar` é ARROW e não valor, e isso é o que o torna válido aqui: `shell` é um `const` declarado
+// ~1.500 linhas abaixo, e só a resolução na hora da chamada o tira da TDZ. A primeira troca de cena é o
+// `setPhase('title')` do boot, lá embaixo, depois de a casca existir. (Mesmo padrão do ctx da pausa.)
+const cenas = criarCenasDoJogo(() => shell.aplicarCena());
+const fatosDaCena = (): FatosDaCena => cenas.fatos();
 initLayout({ numJogadores: () => rodada.numPlayers });
 initCrt({ numJogadores: () => rodada.numPlayers });
 import type { Player, PlayerView } from './core/entity.js'; // a entidade da ENGINE, e a vista mínima dela
@@ -381,6 +399,10 @@ assignControls();
    Fica no lugar exato do ouvinte antigo, e nao mais abaixo: descer mudaria a ORDEM DE REGISTRO dos ouvintes
    de bolha da janela, e hoje este e o primeiro. */
 const keydownApi = initKeydown({
+  isTelaDeTitulo: () => fatosDaCena().telaDeTitulo,
+  // VERBATIM do `phase === 'playing' || phase === 'paused'`: `!telaDeTitulo` NÃO seria a mesma coisa — numa
+  // cena que ninguém previu (um mapa), Alt+N e a tecla de pausa devem ficar quietos, não agir.
+  isEmJogo: () => { const f = fatosDaCena(); return f.mundoRodando || f.menuDePausa; },
   attractOnInput: () => attractCtl.onInput(),
   handleCaptureKeydown: (e) => ctrlPanel.handleCaptureKeydown(e),
   getNumPlayers: () => rodada.numPlayers, getPlayers: () => players,
@@ -549,7 +571,7 @@ pixiMount.appendChild(view);
 view.setAttribute('aria-hidden','true');
 const camera=new PIXI.Container(); app.stage.addChild(camera);
 weatherLayer=new PIXI.Graphics(); app.stage.addChild(weatherLayer); // CLIMA (chuva/clarão) em tela-espaço, mantido no topo em draw
-weather.initWeather({ weatherLayer, stage: app.stage, screen: app.screen, getRm: () => rm, thunder: (i) => ambient.thunder(i),
+weather.initWeather({ mundoRodando: () => fatosDaCena().mundoRodando, weatherLayer, stage: app.stage, screen: app.screen, getRm: () => rm, thunder: (i) => ambient.thunder(i),
   temChuva: () => !!(CENARIO && CENARIOS[CENARIO]?.chuva) }); // a PERGUNTA, não o id: o catálogo é daqui
 /* Tela de título da v3 (render/title-scene.ts): céu em gradiente + nuvens andando dir→esq + grama pontilhada */
 const titleG=new PIXI.Graphics(); app.stage.addChildAt(titleG, app.stage.getChildIndex(weatherLayer));
@@ -1024,7 +1046,7 @@ function stepPlayer(pl: ControlledGamePlayer,dt: number){
    por getter: e a lista viva de core/state.ts, que cresce e encolhe. */
 const secretAreas = initSecretAreas({ regions: darkRegions, getPlayers: ()=>players, box: BOX, tile: TILE, srSay });
 function update(dt: number){
-  if(phase!=='playing')return; // E14: congelado no título e na pausa
+  if(!fatosDaCena().mundoRodando)return; // E14: congelado no título e na pausa
   if(tickHitstop(dt)) return; // JUICE: hit-stop congela o mundo por alguns ticks
   fxClock+=dt; // clock GERAL de animação (o stepFx não o incrementa mais — extraído p/ render/fx)
   stepFx(dt); // partículas + decaimento de tremor/squash (roda até no fim de jogo → confete da vitória anima)
@@ -1164,7 +1186,8 @@ const sessionApi = initSession({
   closeQuiz: (pl)=>closeQuiz(pl as GamePlayer),
   loadPlayerA11y, assignControls, ensureSprites, configureRender,
   reapplyVizAll: ()=>reapplyVizAll(), layout, hideTouchControls, updateGameHud,
-  setPhase, titleShowMain: () => titleUI.show('tm-main'), // qual submenu é decisão da casca, não do jogo
+  voltarAoTitulo: () => setPhase('title'), entrarNoJogo: () => setPhase('playing'),
+  titleShowMain: () => titleUI.show('tm-main'), // qual submenu é decisão da casca, não do jogo
 });
 function updateHud(){ sessionApi.updateHud(); }
 // Os invólucros que só REPASSAM tomam o tipo do delegado. O passe mecânico tinha posto `Player` neles pela
@@ -1229,7 +1252,8 @@ const quizApi = initQuiz({
 // assistente ao abrir (ver o commit de correcao).
 const gamepadApi = initGamepad({
   getGamepads: () => (navigator.getGamepads ? navigator.getGamepads() : []), $, srSay, srAlert, frontOverlay,
-  getPhase: () => phase, setPhase,
+  mundoRodando: () => fatosDaCena().mundoRodando, menuDePausa: () => fatosDaCena().menuDePausa,
+  pausar: () => setPhase('paused'), retomar: () => setPhase('playing'),
   isAttractActive: () => attractCtl.isAttract(), stopAttract: () => attractCtl.stopAttract(),
   isTouchMode: () => document.body.classList.contains('touch-mode'), hideTouchControls: () => hideTouchControls(),
   getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
@@ -1435,7 +1459,7 @@ const touchCtl = initTouch({ $, srSay, store, root: document.documentElement, is
   // era uma linha dentro do `input/touch` lendo `numPlayers`, `phase` e `players[].quiz` por importacao — e a
   // ultima dizia que a camada de TOQUE sabia que existe atividade de alfabetizacao. Mesmo movimento do
   // achado 10: injeta-se o BOOLEANO, nao o estado.
-  padAllowed: () => rodada.numPlayers <= 1 && phase === 'playing' && !jogadores().some((p) => p.quiz),
+  padAllowed: () => rodada.numPlayers <= 1 && fatosDaCena().mundoRodando && !jogadores().some((p) => p.quiz),
   viewport: () => ({ w: window.innerWidth, h: window.innerHeight }),
   frontOverlay, onPadDesignApplied: () => { if(typeof renderPauseLegend==='function') renderPauseLegend(); } });
 // (o proprio initTouch ja aplica o desenho salvo no fim da sua inicializacao)
@@ -1557,12 +1581,12 @@ function fpsTick(){ const fps=app.ticker.FPS; fpsWarm++; fpsAccum+=fps; fpsFrame
 
 /* ===================== loop ===================== */
 startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
-  titleG.visible=(phase==='title'); if(titleG.visible)titleScene.draw(); // cena do título da v3 cobre o mundo
+  titleG.visible=fatosDaCena().telaDeTitulo; if(titleG.visible)titleScene.draw(); // cena do título da v3 cobre o mundo
   attractCtl.titleIdleTick(titleG.visible); // attract após 60s parado no menu (José)
   setMinimapVisible(!titleG.visible&&rodada.numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
-  if(phase==='playing'){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
-window.__incl={app,get player(){return players[0];},players,get numPlayers(){return rodada.numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return rodada.ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
+  if(fatosDaCena().mundoRodando){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
+window.__incl={app,get player(){return players[0];},players,get numPlayers(){return rodada.numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return cenas.fase();},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return rodada.ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE();},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
@@ -1604,6 +1628,7 @@ window.__incl.layout=layout; window.__incl.get_librasOpen=()=>librasOpen;
    `const` declarados ABAIXO, e so a resolucao na hora da chamada os tira da TDZ. (selVizPlayer saiu desta
    lista: migrou para core/state no #50, e um import nao tem TDZ para escapar.) */
 const shell = initShell({
+  fatosDaCena, retomarJogo: () => setPhase('playing'),
   getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   $, win: window, setMasterMuted, srSay, srAlert,
   getPauseScreens: () => vpPause,                  // `let` REATRIBUIDO por buildGameHud -> getter
@@ -1624,8 +1649,13 @@ const shell = initShell({
   openMotion: () => motion.open(), openEmpathy: () => empathy.open(),
   setSelVizPlayer: (i) => rodada.setSelVizPlayer(i),
 });
-function setPhase(p: Parameters<typeof shell.setPhase>[0]){ shell.setPhase(p); }
-function togglePause(){ shell.togglePause(); }
+/* `setPhase`/`togglePause` são ENVELOPES ICADOS sobre `game/cenas`. Continuam como `function` e não `const`
+   pelo mesmo motivo de sempre: eles já estão nos ctx de game/session, input/gamepad, game/attract e
+   ui/activities-menu, montados acima desta linha — só o içamento faz aquelas fiações valerem sem serem
+   tocadas. A REGRA de cada transição (pausar empilha, sair da pausa desempilha, o título não alterna) mora
+   lá, onde tem teste; aqui fica só o encaminhamento. */
+function setPhase(p: Fase){ cenas.irPara(p); }
+function togglePause(){ cenas.alternarPausa(); }
 function pauseSelect(){ shell.pauseSelect(); }
 function printMode(){ shell.printMode(); }
 function updateTitleLegend(){ shell.updateTitleLegend(); }
@@ -1661,7 +1691,7 @@ const whichPlayer = (code: Parameters<typeof kbRuntime.whichPlayer>[0]) => kbRun
    por NOME; e closeTypo/closeHelp chamam menuFocus(sharedDialogOpen()) de mais acima ainda. */
 const menuNav = initMenuNav({
   $, getActiveElement: () => document.activeElement,
-  isNavigable: () => phase === 'paused', // aqui menu e' coisa de pausa; noutro jogo pode ser sempre (ver o ctx)
+  isNavigable: () => fatosDaCena().menuDePausa, // aqui menu e' coisa de pausa; noutro jogo pode ser sempre (ver o ctx)
   topVisibleOverlay: () => overlays.topVisibleOverlay(), closeById: (id) => overlays.closeById(id),
   getPauseMenu: (i) => vpPause[i],                 // `let vpPause` REATRIBUIDO por buildGameHud -> getter
   setPhase: (p) => setPhase(p),
@@ -1683,8 +1713,8 @@ menuNav.attach(); // addEventListener('keydown', menuNavKey, true) — MESMA fas
 // updateTitleLegend migrou para ui/shell.ts (C3) — e legenda da TELA de titulo, nao navegacao de menu; o
 // envelope icado fica la em cima, junto do resto da casca. padKind() foi APAGADO: input/touch.ts ja exporta
 // a mesma funcao desde a Onda A e a copia daqui nao tinha chamador nenhum (codigo morto duplicado).
-addEventListener('gamepadconnected',()=>{ if(phase==='title')updateTitleLegend(); });
-addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegend(); });
+addEventListener('gamepadconnected',()=>{ if(fatosDaCena().telaDeTitulo)updateTitleLegend(); });
+addEventListener('gamepaddisconnected',()=>{ if(fatosDaCena().telaDeTitulo)updateTitleLegend(); });
 // O despachante do menu do titulo (teclado do #np-btn, rodape de descricao e o click) migrou para
 // ui/activities-menu.ts, que liga os proprios ouvintes no #title-overlay. Sobrou aqui a barra de
 // icones de a11y do splash, que e do slice de pausa.
@@ -1746,8 +1776,10 @@ window.__incl.showTouch = () => touchBindings.revealForTests(); // p/ testes em 
 /* ===================== ATTRACT: cria o controlador (deps já definidas) → game/attract.ts ===================== */
 const attractCtl = createAttract({
   CENARIOS, keys,
-  getPlayers: () => players, getCenario: () => CENARIO, getPhase: () => phase, // bindings vivos (reatribuídos)
-  setCenario, setActivity, restartGame, setPhase, randInt, kbFor, srSay, srAlert, $,
+  getPlayers: () => players, getCenario: () => CENARIO, // bindings vivos (reatribuídos)
+  mundoRodando: () => fatosDaCena().mundoRodando,
+  entrarNoJogo: () => setPhase('playing'), voltarAoTitulo: () => setPhase('title'),
+  setCenario, setActivity, restartGame, randInt, kbFor, srSay, srAlert, $,
 });
 
 /* ===================== ?debug=true: painel de afinação ao vivo (extraído → ui/debug-panel.ts) ===================== */

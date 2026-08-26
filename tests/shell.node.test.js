@@ -7,9 +7,17 @@
 import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // a legenda vem do dicionário desde o item 14
 import {
-  PHASES, phaseView, touchControlsPlan, chip, legendRow1, legendRow2, legendHtml,
+  phaseView, touchControlsPlan, chip, legendRow1, legendRow2, legendHtml,
   padActionGlyphs, touchActionGlyphs, pickLegendPad,
 } from '../app/js/ui/shell.js';
+
+// A CASCA DEIXOU DE CONHECER AS FASES em 2026-08-26 (ADR-0030 C3). `phaseView`/`touchControlsPlan` recebem
+// três BOOLEANOS — `FatosDaCena` —, e os três nomes moram na raiz de composição, que é este jogo. Este
+// arquivo continua escrito em `'title'`/`'playing'`/`'paused'` porque é como os casos se leem melhor; a
+// tradução acontece aqui, num lugar só, e é justamente o que a raiz faz de verdade.
+const fase = (p) => ({ telaDeTitulo: p === 'title', mundoRodando: p === 'playing', menuDePausa: p === 'paused' });
+/** As três cenas que ESTE jogo vive. Era `PHASES`, exportado pela casca; a casca não sabe mais quantas são. */
+const PHASES = ['title', 'playing', 'paused'];
 
 describe('phaseView — a fase projetada em ordens para o documento', () => {
   it('as três fases, e só elas', () => {
@@ -17,41 +25,41 @@ describe('phaseView — a fase projetada em ordens para o documento', () => {
   });
 
   it('o splash aparece SÓ no título', () => {
-    expect(phaseView('title').titleOverlayHidden).toBe(false);
-    expect(phaseView('playing').titleOverlayHidden).toBe(true);
-    expect(phaseView('paused').titleOverlayHidden).toBe(true);
+    expect(phaseView(fase('title')).titleOverlayHidden).toBe(false);
+    expect(phaseView(fase('playing')).titleOverlayHidden).toBe(true);
+    expect(phaseView(fase('paused')).titleOverlayHidden).toBe(true);
   });
 
   it('os menus de pausa por tela aparecem SÓ na pausa', () => {
-    expect(phaseView('paused').screenPauseHidden).toBe(false);
-    expect(phaseView('title').screenPauseHidden).toBe(true);
-    expect(phaseView('playing').screenPauseHidden).toBe(true);
+    expect(phaseView(fase('paused')).screenPauseHidden).toBe(false);
+    expect(phaseView(fase('title')).screenPauseHidden).toBe(true);
+    expect(phaseView(fase('playing')).screenPauseHidden).toBe(true);
   });
 
   // GAG (pilar de a11y): som de jogo com o jogo parado é ruído para quem depende do áudio para se orientar.
   it('fora de "playing" TODO o som cala, e o controle virtual some', () => {
     for (const p of PHASES) {
-      expect(phaseView(p).masterMuted, p).toBe(p !== 'playing');
-      expect(phaseView(p).hideTouchControls, p).toBe(p !== 'playing');
+      expect(phaseView(fase(p)).masterMuted, p).toBe(p !== 'playing');
+      expect(phaseView(fase(p)).hideTouchControls, p).toBe(p !== 'playing');
     }
   });
 
   it('a pausa GLOBAL está aposentada: #pause-overlay fica escondido em TODA fase', () => {
-    for (const p of PHASES) expect(phaseView(p).pauseOverlayHidden, p).toBe(true);
+    for (const p of PHASES) expect(phaseView(fase(p)).pauseOverlayHidden, p).toBe(true);
   });
 
   it('#btn-pause diz ao leitor de tela se está pausado', () => {
-    expect(phaseView('paused').pausePressed).toBe(true);
-    expect(phaseView('playing').pausePressed).toBe(false);
-    expect(phaseView('title').pausePressed).toBe(false);
+    expect(phaseView(fase('paused')).pausePressed).toBe(true);
+    expect(phaseView(fase('playing')).pausePressed).toBe(false);
+    expect(phaseView(fase('title')).pausePressed).toBe(false);
   });
 
   // Requisito de a11y: entrar numa tela sem levar o foco junto deixa quem usa teclado/leitor sem âncora.
   it('cada fase leva o foco para um lugar, e nunca deixa ninguém sem destino', () => {
-    expect(phaseView('playing').focus).toBe('game-region');
-    expect(phaseView('paused').focus).toBe('pause-menu');
-    expect(phaseView('title').focus).toBe('title-button');
-    for (const p of PHASES) expect(phaseView(p).focus, p).toBeTruthy();
+    expect(phaseView(fase('playing')).focus).toBe('game-region');
+    expect(phaseView(fase('paused')).focus).toBe('pause-menu');
+    expect(phaseView(fase('title')).focus).toBe('title-button');
+    for (const p of PHASES) expect(phaseView(fase(p)).focus, p).toBeTruthy();
   });
 });
 
@@ -59,19 +67,19 @@ describe('touchControlsPlan — o único pedaço da troca de fase com memória',
   const st = (hidden, wasOn) => ({ hidden, wasOn });
 
   it('pausar com o controle virtual LIGADO guarda que estava ligado e o esconde', () => {
-    expect(touchControlsPlan('paused', st(false, false), 1)).toEqual({ hidden: true, wasOn: true });
+    expect(touchControlsPlan(fase('paused'), st(false, false), 1)).toEqual({ hidden: true, wasOn: true });
   });
 
   it('retomar com a marca guardada e UMA tela devolve o controle virtual', () => {
-    expect(touchControlsPlan('playing', st(true, true), 1)).toEqual({ hidden: false, wasOn: false });
+    expect(touchControlsPlan(fase('playing'), st(true, true), 1)).toEqual({ hidden: false, wasOn: false });
   });
 
   it('retomar em MULTITELA não devolve o controle (o virtual é só de tela única)', () => {
-    expect(touchControlsPlan('playing', st(true, true), 2)).toEqual({ hidden: true, wasOn: false });
+    expect(touchControlsPlan(fase('playing'), st(true, true), 2)).toEqual({ hidden: true, wasOn: false });
   });
 
   it('o título sempre esconde e esquece', () => {
-    expect(touchControlsPlan('title', st(false, true), 1)).toEqual({ hidden: true, wasOn: false });
+    expect(touchControlsPlan(fase('title'), st(false, true), 1)).toEqual({ hidden: true, wasOn: false });
   });
 
   // ⚠️ DEFEITO CONHECIDO, PINADO — não conserte. No setPhase real, `hideTouchControls()` roda ANTES deste
@@ -85,10 +93,10 @@ describe('touchControlsPlan — o único pedaço da troca de fase com memória',
     // 2) setPhase('paused') → hideTouchControls() esconde ANTES do plano
     s = { ...s, hidden: true };
     // 3) só então o plano roda
-    s = touchControlsPlan('paused', s, 1);
+    s = touchControlsPlan(fase('paused'), s, 1);
     expect(s).toEqual({ hidden: true, wasOn: false }); // a marca se perdeu aqui
     // 4) setPhase('playing') → sem marca, não há o que restaurar
-    s = touchControlsPlan('playing', s, 1);
+    s = touchControlsPlan(fase('playing'), s, 1);
     expect(s.hidden).toBe(true); // o direcional NÃO volta sozinho — é o defeito
   });
 });
