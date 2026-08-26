@@ -1268,7 +1268,16 @@ const _rebakeDirect = viz.rebakeDirect;
 // os extras do nível, refletir o painel, anunciar —, que são reação e pertencem ao composition root. A guarda
 // de igualdade também está no setter: se o valor não mudou, ele não avisa e nada disto roda.
 function setModoCego(on: boolean){ const antes=modoCego; setModoCegoValue(on); if(modoCego===antes)return;
-  if(typeof setupExtras==='function')setupExtras(); if(typeof reflectModoCego==='function')audioPanel.reflectModoCego();
+  // A guarda que estava aqui — `typeof reflectModoCego==='function'` — testava um nome LIVRE que não existe
+  // neste arquivo desde que a função saiu para `ui/settings-audio`. E `typeof` sobre identificador não
+  // declarado devolve 'undefined' em vez de lançar, então ela virou SEMPRE falsa e ninguém percebeu.
+  // É a gêmea exata do bug do `reflectTTS` já documentado no ctx de `pause-icons` acima, e o sintoma é o
+  // mesmo: ligar o modo cego pelo ícone da pausa ou pela simulação de cegueira deixava o `#opt-modocego`
+  // dizendo 'Desligado' com aria-pressed=false — o controle mentindo o estado para o leitor de tela.
+  // A do `setupExtras` sai junto: é declaração de função hoisted (linha 677), a guarda é sempre verdadeira.
+  // `audioPanel` é const bem abaixo (1418), e o corpo desta função só roda por interação — nenhum caminho
+  // de boot a chama: `loadPlayerA11y` escreve `p.viz` DIRETO, sem passar por `setPlayerViz`.
+  setupExtras(); audioPanel.reflectModoCego();
   srSay(t(on?'sr.blind.on':'sr.blind.off')); }
 // setPlayerViz/applyVizGlobal migraram para render/viz-setters.ts (Onda A).
 const caa = initSettingsCaa({ $, srSay, frontOverlay, fillExplain: (c)=>overlays.fillExplain(c), restoreFocus: (id)=>overlays.restoreFocus(id),
