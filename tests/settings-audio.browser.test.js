@@ -7,6 +7,7 @@
 // modularizacao-mapa.md (Estágio 4, ui/settings-audio) e tests/a11y-sr.browser.test.js (modelo de injeção).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initSettingsAudio, NAV_CATS, GEN_CATS } from '../app/js/ui/settings-audio.js';
+import { defaultAudioCat } from '../app/js/platform/audio-mixer.js';
 import { menuIndexOn, setMenuIndexOnValue } from '../app/js/core/state.js';
 
 const AUDIO_HTML = `
@@ -37,9 +38,17 @@ const AUDIO_CATS = [
   { k: 'sonar', lbl: 'Sonar' }, { k: 'guard', lbl: 'Guarda' }, { k: 'guide', lbl: 'Guia' },
 ];
 
+/**
+ * O estado de FÁBRICA das categorias — pedido a `defaultAudioCat`, não recopiado.
+ *
+ * Era `{ on: k !== 'tts', vol: 0.8 }` escrito aqui, uma segunda cópia da regra. Ela divergiu no dia em que o
+ * `guide` passou a nascer desligado (2026-08-26): a fixture continuou nascendo com ele LIGADO, e a marca de
+ * "saiu do padrão" do ADR-0029 apareceu num menu que ninguém tinha tocado. O caso reprovou e estava certo —
+ * era a cópia que estava errada, não o código.
+ */
 function freshAudioCat() {
   const cat = {};
-  [...GEN_CATS, ...NAV_CATS, 'tts'].forEach((k) => { cat[k] = { on: k !== 'tts', vol: 0.8 }; });
+  [...GEN_CATS, ...NAV_CATS, 'tts'].forEach((k) => { cat[k] = defaultAudioCat(k); });
   return cat;
 }
 

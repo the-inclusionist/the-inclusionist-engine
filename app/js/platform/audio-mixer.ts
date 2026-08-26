@@ -14,17 +14,42 @@ export const AUDIO_CATS: AudioCat[] = [
   {k:'guard',   lbl:'Guarda de beirada'}, {k:'guide', lbl:'Pista / guia auditivo'},
 ];
 
-// Estado inicial por categoria. O TTS geral nasce DESLIGADO: útil p/ cegos e alguns em alfabetização, mas voz
-// (robótica) irrita/sobrecarrega pessoas com TEA — quem precisa liga no menu. As demais nascem ligadas. (O TTS
-// do letramento é o gameSay(), independente disto e sempre ativo.) O que estiver salvo sobrepõe o default.
+// Estado inicial por categoria. O que estiver SALVO sobrepõe o default — e isso é deliberado: um valor salvo
+// significa que alguém MEXEU naquele controle, e a escolha da criança não é minha para desfazer. Quem já
+// tinha ligado o guia continua com ele ligado.
 /**
  * O estado de FÁBRICA de uma categoria. Existe com nome porque dois lugares precisam dele: a leitura do boot
  * (quando nada foi salvo) e o "restaurar padrões" do menu auditivo (ADR-0028). Escrever `k !== 'tts'` e `0.8`
  * nos dois seria a mesma cópia sem dono que este repositório já viu divergir — e aqui a divergência colocaria
  * a criança num terceiro estado, nem o dela nem o de fábrica.
  */
+/**
+ * As categorias que nascem DESLIGADAS, e o motivo de cada uma. Lista com razão escrita, e não um `k !== 'x'`
+ * pendurado numa expressão — a próxima que entrar precisa dizer por quê.
+ *
+ *  · `tts` — voz robótica irrita e sobrecarrega pessoas com TEA. Quem precisa liga no menu. (O TTS do
+ *    letramento é o `gameSay()`, independente disto e sempre ativo.)
+ *
+ *  · `guide` — o BEACON do guia auditivo, DESLIGADO desde 2026-08-26 por decisão do Dev, e é uma medida
+ *    PROVISÓRIA que não deve virar permanente sem alguém a rever.
+ *
+ *    O que ele faz hoje: um `triangle` de 0,12 s apontado para o alvo mais próximo, a cada 0,8 s, PARA
+ *    SEMPRE — sem depender de movimento, de tecla ou de nada ter mudado. No modo cego `needsAudioCues` é
+ *    sempre verdadeiro, então a criança que mais precisa de pistas é a que ouve o bipe a partida inteira.
+ *
+ *    O veredito do Dev: "um ping é a pior escolha possível, tenebroso para quem tem TEA". Não é a FREQUÊNCIA
+ *    que está errada — é o bipe. Reduzi-lo a "só andando" deixaria a mesma coisa doendo menos vezes.
+ *
+ *    O substituto que ele descreveu é maior que uma troca de som e por isso não entra junto: uma música que
+ *    fica mais intensa conforme se aproxima, e ANTES dela é preciso MAPEAR A ROTA — preencher o mapa com as
+ *    direções por onde há ar ou água, para que a pista siga um caminho navegável em vez de apontar em linha
+ *    reta para dentro de uma parede. Está registrado como issue; até ela existir, o silêncio é melhor que o
+ *    bipe, e a criança que quiser o bipe continua podendo ligá-lo no menu auditivo.
+ */
+const NASCEM_DESLIGADAS = new Set(['tts', 'guide']);
+
 export function defaultAudioCat(k: string): AudioCatState {
-  return { on: k !== 'tts', vol: 0.8 };
+  return { on: !NASCEM_DESLIGADAS.has(k), vol: 0.8 };
 }
 
 export function loadAudioCat(): Record<string, AudioCatState> {
