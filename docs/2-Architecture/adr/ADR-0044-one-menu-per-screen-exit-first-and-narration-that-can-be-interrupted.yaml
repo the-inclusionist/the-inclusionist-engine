@@ -150,17 +150,34 @@ decision-outcome:
          to 44 by choice, not to fix a violation."
 
   confirmation: |
-    Every clause above is written to be checkable, and the checks are the acceptance criteria:
+    Every clause above was written to be checkable, and every one of them now HAS its check. Recorded here
+    with the file that proves it, because a criterion without a named gate goes back to being an intention:
 
-      · ORDER: a test asserts the options list is exactly the seven items, `resume` first and `quit` last.
-      · RING: from the first item, one press UP lands on the last; from the last, one press DOWN lands on
-        the first. Written failing first, with the wrap removed, and confirmed red.
-      · SIZE: measured in the browser, every option button ≥ 44 px tall — the same shape of check the
-        contrast gate already uses (`tests/contraste-menu.node.test.js`).
-      · INDEXING: the announced string ENDS with "N de M", and turning indexing off removes it.
-      · INTERRUPTION: focus change while a string is being spoken cancels it. Asserted against the speech
-        port, not against a real voice.
-      · LEGEND: `.pause-legend` is no longer `aria-hidden`, and its text reads as words rather than glyphs.
+      · ORDER — `tests/pausa-sete-itens.node.test.js`. The root list is exactly the seven items, `resume`
+        first and `quit` last, and no act appears in both lists.
+      · RING — `tests/menu-nav.node.test.js` (`passoNaPausa`) and `tests/barra-rapida-no-hud.node.test.js`.
+        It could only close once the icon bar left the card: while the pause had two zones, XAG 106 FORBADE
+        the wrap. Measured in the built game: from `resume`, one press UP lands on `quit`.
+      · SIZE — `tests/pausa-44px.browser.test.js`, and it is a BROWSER gate on purpose. The other CSS gates
+        here read `style.css` and check declarations; that would prove the line exists, not that the button
+        is 44 px. The old height (35,6 px) was declared nowhere — it RESULTED from padding, font and leading.
+        The gate imports the real stylesheet, mounts production markup and measures; written failing first,
+        it reproduced the 35,6 px on its own.
+      · INDEXING — `tests/item-announcement.node.test.js`. The string ENDS with "N de M", turning indexing
+        off removes only the index, and an impossible position is not announced at all.
+      · INTERRUPTION — `tests/interruptible-speech.node.test.js`, against the speech port with fakes. It
+        also pins the race the generation token exists for: a slow synthesis finishing after a newer one.
+      · LEGEND — `tests/pause-legend.node.test.js`. `.pause-legend` is no longer `aria-hidden`; the CHIPS
+        are, and beside them lives one `.sr-only` sentence with the glyphs turned into words.
+      · THE MODE'S EXIT — `tests/modo-acessibilidade.node.test.js` plus eight browser cases. It is listed
+        here, and not only under the negative consequences, because "there are two exits and SAIR wins the
+        precedence" is the clause of this record most likely to be quietly simplified away.
+
+    ALSO WORTH RECORDING, because it was NOT in the plan and the browser found it: with the list at 44 px
+    the card began to scroll, the scrollbar ate width on one side, and the "centred" list sat 7,5 px off
+    centre. And with the sticky submenu heading on the title screen, wrapping from the last item to the
+    first left the first button 12 px COVERED — the browser considered it already visible and did not
+    scroll. Neither would have been caught by reading the CSS.
 
     ⚠️ WHAT NO TEST OF MINE CAN CONFIRM: whether the result is USABLE by a blind child. Issues #6 (manual
     screen-reader audit with NVDA/JAWS/VoiceOver), #7 (field test with five children) and #8 (target
