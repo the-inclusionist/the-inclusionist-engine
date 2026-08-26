@@ -110,6 +110,28 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
     expect(falta, 'botão sem margem de rolagem — o cabeçalho grudado encobre o foco: ' + falta.join(' | ')).toEqual([]);
   });
 
+  it('[Right] NADA dentro de um submenu da abertura se deita na horizontal', () => {
+    // O Dev viu o resultado da primeira volta e cobrou de novo: "menus que não estão na vertical, mas sim
+    // MISTOS". Eu tinha aberto duas exceções por conta própria — as cinco notações de fração e as duas
+    // fileiras de números da tabuada —, argumentando que são "grupos" e não itens de lista. A régua dele não
+    // tem essa distinção, e ela é a régua certa: para quem anda de seta, um grupo deitado é uma parte da
+    // lista onde "para baixo" anda para o LADO. A ordem que se vê tem de ser a ordem em que se anda, sem
+    // exceção — se houvesse uma, ela apareceria justamente no meio da lista, sem aviso.
+    const deitados = [];
+    for (const m of LIMPO.matchAll(BLOCO)) {
+      const sels = m[1].split(',').map((x) => x.trim()).filter((x) => SUBMENUS.some((s) => x.startsWith(s + ' ')));
+      if (!sels.length) continue;
+      const decl = Object.fromEntries(m[2].split(';').map((d) => {
+        const i = d.indexOf(':');
+        return i > 0 ? [d.slice(0, i).trim(), d.slice(i + 1).trim()] : ['', ''];
+      }));
+      const flexDeitado = decl['display'] === 'flex' && (decl['flex-direction'] || 'row').startsWith('row');
+      const gradeLarga = decl['grid-template-columns'] && decl['grid-template-columns'].trim().split(/\s+/).length > 1;
+      if (flexDeitado || gradeLarga) deitados.push(sels.join(',') + ' → ' + (decl['display'] || decl['grid-template-columns']));
+    }
+    expect(deitados, 'container horizontal dentro de um submenu da abertura: ' + deitados.join(' | ')).toEqual([]);
+  });
+
   it('[Interface] o casador de seletor distingue a LISTA dos seus botões', () => {
     // O caso que impede o gate de se enganar sozinho. `#tm-fr .frac-nots{justify-content:center}` não pode ser
     // lido como declaração sobre `#tm-fr`, senão propriedade de filho passaria a valer como propriedade da lista.
@@ -124,3 +146,5 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
 //   · tirando `overflow-y:auto` da regra dos cinco → "[Right] cada submenu ROLA" reprova com os cinco nomes.
 //   · devolvendo `#tm-main{width:13em}` → "[Right] o dobro da largura base" reprova em "13 >= 26".
 //   · tirando `scroll-margin-top` dos botões → "[Boundary] o item que ganha o foco" reprova com os cinco.
+//   · devolvendo `display:flex` (sem `flex-direction:column`) a `#tm-fr .frac-nots` → "[Right] NADA se deita
+//     na horizontal" reprova nomeando o seletor.

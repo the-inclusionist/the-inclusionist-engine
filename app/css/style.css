@@ -106,9 +106,9 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 #tm-alf .title-btn,#tm-mat .title-btn,#tm-tab .title-btn,#tm-fr .title-btn,#tm-cen .title-btn{scroll-margin-top:2.4em;scroll-margin-bottom:.5em}
 /* As notações de fração continuam LADO A LADO: são cinco alternadores de UM grupo, e não itens da lista —
    virar coluna aqui alongaria a rolagem sem ganhar ordem nenhuma. */
-#tm-fr .frac-nots{display:flex;gap:.25em;justify-content:center}
+#tm-fr .frac-nots{display:flex;flex-direction:column;gap:.25em}
 /* Toggle de notação: DESATIVADO = azul-escuro + borda BRANCA + texto branco; ATIVADO = amarelo + borda preta + texto preto */
-#tm-fr .frac-nots .title-btn{flex:1;min-width:0;padding:.25em .15em;font-size:1em;background:#16233f;color:#fff;border-color:#fff;box-shadow:none}
+#tm-fr .frac-nots .title-btn{width:100%;padding:.35em .5em;font-size:1em;background:#16233f;color:#fff;border-color:#fff;box-shadow:none}
 #tm-fr .frac-nots .title-btn.tab-on{background:var(--accent);color:var(--accent-ink);border-color:#0d0d1a}
 #tm-fr .frac-nots .fv{font-size:.8em}
 .tm-title{color:#fff;font-size:1em;margin:0 0 .1em;text-align:center;text-shadow:1px 1px 0 #0d0d1a} /* título do submenu */
@@ -121,8 +121,12 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 @keyframes titleAct{0%{transform:scale(.92);filter:brightness(1.6)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion: reduce){ #title-overlay .title-btn.act-fx{animation:none;filter:brightness(1.4)} }
 .title-btn.tab-on{box-shadow:inset 0 0 0 3px #14141f}
-.tab-row{display:flex;gap:.35em;justify-content:center}
-.tab-row .title-btn{min-width:2.2em;padding:.4em 0;flex:1}
+/* As fileiras da tabuada eram DUAS linhas de números lado a lado, e o Dev cobrou de novo depois de ver o
+   resultado: menu "misto" é menu onde "para baixo" às vezes anda para o lado. Viraram coluna, como todo o
+   resto da abertura. O seletor ganhou o `#tm-tab` na frente de propósito — é o que deixa o gate de layout
+   enxergar esta regra como sendo DE um submenu da abertura, em vez de uma classe solta que ninguém vigia. */
+#tm-tab .tab-row{display:flex;flex-direction:column;gap:.35em}
+#tm-tab .tab-row .title-btn{width:100%;padding:.4em .5em}
 /* RODAPÉ (mesmo estilo do menu de pausa): descrição no fundo do canvas, NÃO colada ao grupo de botões (José).
    Fundo fumê PRETO → contraste ≥7:1 entre o texto claro (#f6f5f0) e o fundo (≈#0a0a12). */
 .tm-desc:not(:empty){position:absolute;left:50%;transform:translateX(-50%);bottom:10px;max-width:88%;color:#f6f5f0;font-size:.8em;text-align:center;background:rgba(8,8,16,.92);padding:.35em .7em;border-radius:8px;line-height:1.25}
