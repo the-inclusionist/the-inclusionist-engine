@@ -1,0 +1,105 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-25
+  decision-makers: [Dev]
+  consulted: [ADR-0027 (the engine needs a letter grid selector, not a keyboard), ADR-0034 (progression
+              password, superseded by ADR-0037), ADR-0036 (demos consumes the engine),
+              "issue #77 (where the letter grid lives)", "SP-the-inclusionist-demos spec D14"]
+  informed: []
+
+title: The letter grid splits — mechanics in core/, screen in ui/ — because it is text entry without a keyboard, not a password widget
+
+context-and-problem-statement: |
+  The password codec exists (`core/password`), is verified, and is covered by forty cases, two of them
+  exhaustive. NOTHING SHOWS IT ON SCREEN. Until something does, the codec saves nobody.
+
+  What is missing is the LETTER GRID: eight by four, the thirty-two symbols of the alphabet, navigable by
+  direction plus confirm, legible at 320x180, with an accessible name per symbol. ADR-0027 already asks for it
+  for an unrelated reason — "the engine needs a LETTER GRID SELECTOR, not a keyboard" — and it serves the word
+  games of the demos catalogue as much as it serves any password. It is not a password component: it is TEXT
+  ENTRY WITHOUT A KEYBOARD, which is what a console does not have.
+
+  Two screens consume it. SHOW, in the pause menu: the current password, spoken by TTS, readable by the
+  teacher. TYPE, on the title screen: the grid itself, with the failure modes already distinguishable without
+  inventing anything — a wrong password returns null, and the code length says how many places are missing.
+
+  The question this record answers is WHERE THE GRID LIVES, and it is not a naming question: `core/` draws
+  nothing today. `core/scenes` was deliberately written without PIXI and without DOM so it could be tested
+  without a browser, and that property is the reason the node project exists.
+
+decision-drivers:
+  - "The engine must be able to hand a second consumer text entry without handing it the shell."
+  - "core/ is testable without a browser today, and that is a property worth more than one module convenience."
+  - "The demos spec forbids any PixiJS type from reaching a game (D14), so whatever the engine exports here
+     must be describable without the renderer."
+  - "Screen-reader announcement needs the symbol-to-position mapping, so the mapping is mechanics, not decoration."
+
+considered-options:
+  - "G1 — core/letter-grid, in the engine, drawing included"
+  - "G2 — ui/letter-grid, on the shell side, where menu-nav and focus already live"
+  - "G3 — core/letter-grid holds only the MECHANICS (cursor, wrap, chosen symbol); ui/ draws"
+
+pros-and-cons-of-the-options:
+  G1:
+    good: ["It is what ADR-0027 says the engine lacks, and a second consumer inherits it for free."]
+    bad: ["The engine gains a module that DRAWS. core/ draws nothing today, and core/scenes was written without
+           PIXI and without DOM precisely so it could run in the node project. G1 opens that door, and the
+           boundary gate then has to decide what else may pass through it."]
+  G2:
+    good: ["ui/ is already where menu-nav, focus and aria-label live; a grid is a menu with thirty-two items."]
+    bad: ["A second game wanting text entry imports from ui/, which is not an engine package — or duplicates it.
+           That is the duplication ADR-0036 exists to prevent."]
+  G3:
+    good: ["It is the split core/password just used: the engine knows the mechanics, the shell knows the screen.",
+           "The mechanics are node-testable without a browser, like the rest of core/.",
+           "The symbol-to-position mapping the screen reader must announce lives with the mechanics, where it
+            can be asserted rather than eyeballed."]
+    bad: ["Two files for something small, and the risk that the logic ends up anaemic — a row-and-column pair
+           that does not pay for its own file."]
+
+decision-outcome:
+  chosen-option:
+    link: "G3 — mechanics in core/letter-grid, drawing in ui/, with the honest reservation kept in force"
+    justification: |
+      The mechanics half is worth a file only if it actually has content: wrap at the edges, jump by row, key
+      repeat, and the symbol-to-position mapping the screen reader has to announce. That is the test of this
+      decision, and it is applied WHILE WRITING, not before: if the logic turns out to fit in fifteen lines,
+      G2 is the right answer and this record is amended to say so. That reservation is part of the decision
+      rather than a hedge around it — the alternative is discovering it after two files exist and keeping them
+      out of sunk cost.
+
+      WHY NOT G1: it spends the most expensive property core/ has — being testable without a browser — on a
+      screen. Once that door is open the next module through it needs no argument.
+
+      WHY NOT G2 outright: it is the right answer for today and the wrong one for the demos repository. A word
+      game there that needs text entry would have to import from ui/, and ui/ is not an engine package.
+
+  consequences:
+    good:
+      - "The password stops being a codec nobody can reach, which is the only reason it was written."
+      - "Text entry without a keyboard becomes an engine capability rather than a screen of this one game."
+      - "core/ keeps its no-browser testability, and the boundary gate does not have to grow an exception."
+    bad:
+      - "Two files for a small thing, and a real chance the split proves not to pay — which is why the
+         reservation above is binding rather than decorative."
+    neutral:
+      - "The luzes field left out of the password format stays out. Bringing it back costs the fifth character,
+         and a changed format invalidates every password already written in a notebook."
+
+  confirmation: |
+    Node tests for the mechanics, with no DOM and no PIXI in the file: wrap at all four edges, row jump, the
+    symbol-to-position mapping in both directions, and the chosen-symbol sequence for a full four-character
+    entry. Written failing first.
+
+    Then the browser protocol on the two screens, under the house rules — dist server, service worker
+    unregistered, caches cleared, ?x=N, the loaded script src compared against the hash in dist/index.html:
+    type a password with the direction keys alone, confirm the accessible name is announced per symbol, and
+    confirm a wrong password is distinguishable from an incomplete one.
+
+more-information: |
+  Issue #77 holds the two consuming screens and the brute-force arithmetic: four characters give roughly one
+  valid password per 1024 attempts. If that becomes a problem in a classroom the fix is more bits — but that is
+  a different format, and a changed format invalidates passwords already written down.
+
+  Related: ADR-0027 (which asked for the selector first), ADR-0037 (which established there is no save, so the
+  password carries progression and nothing about a child).
