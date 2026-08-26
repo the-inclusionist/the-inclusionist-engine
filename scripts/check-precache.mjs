@@ -64,5 +64,39 @@ if (congelados.length > 0) {
   process.exit(1);
 }
 
+/* ===================== SECOND QUESTION: does every real PAGE survive the SPA fallback? =====================
+ *
+ * `generateSW` registers a `NavigationRoute` that answers EVERY navigation with the precached shell
+ * (`index.html`). For a single-page game that is right — it is what makes a deep link open the game. But this
+ * build emits more than one page on purpose: the game, and the SECOND CONSUMER of ADR-0027 step 6, which
+ * exists to MEASURE the engine↔game boundary. An instrument that is built and then unreachable in production
+ * measures nothing.
+ *
+ * Today the extra page survives because the precache route matches its URL BEFORE the navigation catch-all.
+ * That is route ORDER, not a guarantee: let the page be missing from the manifest for an instant — an old
+ * service worker, a partial precache, an update in flight — and the navigation falls into the game's shell.
+ * Issue #73 recorded exactly that symptom on 2026-08-25.
+ *
+ * So the rule is stated positively and checked here: EVERY precached page other than the shell must be in
+ * `navigateFallbackDenylist`. Written as a rule and not as a list, so a third page gets the protection or
+ * this gate goes red. */
+const SHELL = 'index.html';
+const paginas = entradas.map((e) => e.url).filter((u) => u.endsWith('.html') && u !== SHELL);
+
+const denylist = (fonte.match(/denylist:\[([^\]]*)\]/) || [, ''])[1];
+// Compara o NOME CRU do arquivo dentro do texto do denylist. A regex do denylist escapa o ponto
+// (`quiz\.html`), então procurar `quiz` e `.html` separadamente é o que sobrevive a qualquer escape.
+const desprotegidas = paginas.filter((u) => { const base = u.replace(/\.html$/, ''); return !(denylist.includes(base) && denylist.includes('html')); });
+
+if (desprotegidas.length > 0) {
+  console.error(`precache gate: ${desprotegidas.length} page(s) precached but NOT excluded from the SPA fallback:`);
+  for (const u of desprotegidas) console.error(`  · ${u}`);
+  console.error('');
+  console.error('A navigation to these can be answered with index.html — the page is built and then invisible.');
+  console.error('Add it to `navigateFallbackDenylist` in vite.config.ts (see issue #73).');
+  process.exit(1);
+}
+
 const semHash = entradas.filter((e) => e.revisao !== null).length;
-console.log(`precache gate: ${entradas.length} entries — ${semHash} with a content revision, ${entradas.length - semHash} hash-named. None frozen.`);
+const nota = paginas.length ? ` ${paginas.length} extra page(s) excluded from the SPA fallback.` : '';
+console.log(`precache gate: ${entradas.length} entries — ${semHash} with a content revision, ${entradas.length - semHash} hash-named. None frozen.${nota}`);

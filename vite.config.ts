@@ -103,6 +103,21 @@ export default defineConfig({
         // Falso positivo possivel e assumido: um arquivo de `public/assets/` na raiz chamado `foo-abcdefgh.png`
         // seria lido como hasheado. `scripts/check-precache.mjs` e o gate que vigia o resultado, nao a regra.
         dontCacheBustURLsMatching: /^assets\/[^/]+-[A-Za-z0-9_-]{8,}\.[^.]+$/,
+        // A SEGUNDA PÁGINA NÃO É UMA ROTA DO JOGO — e sem esta linha ela some quando o SW está no caminho.
+        //
+        // O `generateSW` cria uma `NavigationRoute` que devolve o shell precacheado (`index.html`) para
+        // QUALQUER navegação. É o comportamento certo para uma aplicação de página única, e é o que faz um
+        // link profundo abrir o jogo. Mas o `vite.config` registra DUAS páginas de propósito: o jogo e o
+        // SEGUNDO CONSUMIDOR do ADR-0027 passo 6, que existe para MEDIR a fronteira engine↔jogo. Um
+        // instrumento construído no build e apagado em produção não mede nada.
+        //
+        // Hoje ele sobrevive porque a rota de precache casa `/quiz.html` ANTES da rota de navegação —
+        // conferido no navegador com o SW controlando. Isso é ORDEM DE ROTAS, não garantia: basta o
+        // `quiz.html` faltar no manifesto por um instante (SW velho, precache parcial, atualização a meio)
+        // para a navegação cair no shell do jogo. A issue #73 registrou exatamente esse sintoma em
+        // 2026-08-25 e ele não reproduz mais; nada na configuração mudou entre lá e cá, o que deixa "service
+        // worker velho" como explicação mais provável — e é justamente o caso que esta linha cobre.
+        navigateFallbackDenylist: [/^\/quiz\.html$/],
       },
       // PWA fica DESLIGADA no dev (default) — sem SW/cache atrapalhando o HMR; testar via `npm run build` + `preview`.
     }),
