@@ -160,12 +160,28 @@ import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de
 import type { DomQuery } from '../core/dom-query.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
-/** Anda um passo numa lista, sem dar a volta (o original nunca faz wrap em lista de itens). */
-export function clampIndex(len: number, idx: number, delta: number): number {
-  return Math.max(0, Math.min(len - 1, idx + delta));
+/**
+ * ANDA UM PASSO NUM ANEL — passar do último volta ao primeiro, e antes do primeiro está o último.
+ *
+ * Era `clampIndex`, que prendia nas pontas "porque o original nunca faz wrap em lista de itens". O ADR-0044
+ * derrubou isso, e o motivo é de uso, não de gosto: com UM MENU POR TELA, toda lista pode ser um anel, e o
+ * item mais indesejado (`quit`) fica a UMA tecla do mais urgente (`resume`) sem estar perto dele. Quem não
+ * enxerga não varre a lista à procura do fim — ela pergunta "e antes do primeiro?" e recebe uma resposta.
+ *
+ * A XAG 106 permite o anel exatamente para menu LINEAR, e o proíbe para grade 2-D de blocos: ali "voltar ao
+ * primeiro" não tem significado espacial. É por isso que `pauseGridMove`, que ainda é grade de duas zonas,
+ * NÃO usa isto — ele passa a usar quando a pausa virar lista única (item 5 do ADR-0044).
+ *
+ * ⚠️ NAVEGAR LISTA É ANEL; AJUSTAR VALOR É LIMITE. `selectStep` e `rangeStep` continuam presos nas pontas
+ * logo abaixo, e a diferença é real: passar do volume máximo para o mínimo com uma tecla é um susto, não uma
+ * conveniência — e num jogo com pistas de áudio para cegueira, um susto de volume é dano.
+ */
+export function passoNoAnel(len: number, idx: number, delta: number): number {
+  if (len <= 0) return 0;
+  return ((idx + delta) % len + len) % len; // o `+ len` extra: `%` de negativo em JS devolve negativo
 }
 
-/** `select` com esquerda/direita: um passo, SEM dar a volta. */
+/** `select` com esquerda/direita: um passo, SEM dar a volta — ajustar VALOR não é navegar lista (ver acima). */
 export function selectStep(selectedIndex: number, optionsLen: number, delta: number): number {
   return Math.max(0, Math.min(optionsLen - 1, selectedIndex + delta));
 }
@@ -346,11 +362,11 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       const d = k.right ? 1 : -1;
       if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, d); return; }
       if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); return; }
-      items[clampIndex(items.length, idx, d)].focus();
+      items[passoNoAnel(items.length, idx, d)].focus();
       return;
     }
 
-    if (k.up || k.down) { items[clampIndex(items.length, idx, k.down ? 1 : -1)].focus(); return; }
+    if (k.up || k.down) { items[passoNoAnel(items.length, idx, k.down ? 1 : -1)].focus(); return; }
 
     if (k.yes) {
       if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, 'wrap'); return; }

@@ -197,7 +197,14 @@ describe('menuItems — quem conta como item navegável', () => {
 describe('navDialog — andar dentro de um diálogo', () => {
   const K = (o) => ({ yes: false, no: false, up: false, down: false, left: false, right: false, ...o });
 
-  it('baixo/cima andam entre os itens e prendem nas pontas', () => {
+  // O ANEL, e este caso mudou de assunto com o ADR-0044. Ele afirmava "prendem nas pontas"; a regra virou a
+  // oposta, e o motivo é de uso: quem não enxerga não varre a lista à procura do fim — ela pergunta "e antes
+  // do primeiro?" e tem de receber uma resposta. É o que põe o item mais indesejado a UMA tecla do mais
+  // urgente sem os dois estarem perto um do outro.
+  //
+  // MUTAÇÃO CONFERIDA: com `passoNoAnel` de volta ao limite antigo, a última asserção falha em
+  // "expected 'a-first' to be 'a-close'".
+  it('baixo/cima andam entre os itens, e as pontas DÃO A VOLTA', () => {
     const { nav, openAudio } = boot();
     openAudio();
     const dlg = $('#audio');
@@ -206,8 +213,13 @@ describe('navDialog — andar dentro de um diálogo', () => {
     expect(document.activeElement.id).toBe('a-voz');
     nav.navDialog(dlg, K({ up: true }));
     expect(document.activeElement.id).toBe('a-first');
+    // A ponta de cima: antes do primeiro está o ÚLTIMO item navegável. O `a-off` (desabilitado) e o
+    // `a-invis` (escondido) não contam — `menuItems` já os filtra, e o anel anda sobre o que sobrou.
     nav.navDialog(dlg, K({ up: true }));
-    expect(document.activeElement.id).toBe('a-first'); // preso no primeiro
+    expect(document.activeElement.id, 'antes do primeiro vem o último').toBe('a-close');
+    // E a ponta de baixo fecha o anel de volta ao começo.
+    nav.navDialog(dlg, K({ down: true }));
+    expect(document.activeElement.id, 'depois do último vem o primeiro').toBe('a-first');
   });
 
   it('num select, esquerda/direita AJUSTAM o valor (e não andam de item) e disparam change', () => {
