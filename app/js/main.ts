@@ -71,7 +71,7 @@ import type { MotionSceneKey, MotionSceneFlags, MotionCharDef } from './ui/setti
 import type { HcRoleKey } from './render/hc-role-data.js'; // HC_ROLE é Record<HcRoleKey, …>: a chave não é `string`
 import { quizLevel, setQuizLevelValue, coins, setCoins } from './game/state.js'; // item 19: o estado DESTE jogo
 import { startLoop } from './core/loop.js'; // driver do loop
-import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
+import { initDebugPanel, type AmostraDoPersonagem } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
 import { isValidActivityId, DEFAULT_ACTIVITY_ID, modeForActivity, type GameMode }
   from './educational/activities-registry.js'; // ADR-0040: o MODE deriva daqui, e a derivação mora no currículo
@@ -1826,7 +1826,64 @@ const attractCtl = createAttract({
 });
 
 /* ===================== ?debug=true: painel de afinação ao vivo (extraído → ui/debug-panel.ts) ===================== */
-initDebugPanel({ TUNE, ANIM, JUICE, saveJuice });
+/* ===================== A SONDA DO PERSONAGEM (painel de debug) =====================
+   O Dev relatou várias cópias do personagem em posições diferentes, e eu não reproduzo no meu ambiente —
+   todas as minhas medições encontram UMA. A sonda existe para que a medição ande na tela dele.
+
+   O PixiJS fica AQUI, e o painel recebe DADOS. Mesma razão do `RenderizarEm` em render/port: pedir o verbo
+   cabe onde emprestar o objeto não cabe, e é isso que mantém `ui/debug-panel` testável sem navegador.
+
+   AS BASES CONHECIDAS SE ACUMULAM entre chamadas, e essa linha é o conserto de um erro MEU: eu procurava
+   cópias comparando com a base da textura ATUAL do jogador, e os quatro quadros de idle têm QUATRO bases
+   distintas (cada um vira uma tela própria no tapa-costuras). Uma cópia exibindo outro quadro escapava do
+   filtro — foi por isso que eu medi "uma" três vezes seguidas enquanto a tela dele mostrava dezenas. */
+const _basesDoPersonagem = new Set<unknown>();
+function _amostrarPersonagem(): AmostraDoPersonagem | null {
+  // `PlayerSpriteLike` é a fatia ESTREITA que o jogo declara do sprite (ADR-0039), e a sonda precisa de
+  // campos que ela não promete (`texture.frame`, `scale`). A conversão passa por `unknown` porque é isso que
+  // ela é: a raiz de composição sabe que ali mora um `PIXI.Sprite`, e é o único lugar que sabe.
+  const spr = (players[0] as unknown as { sprite?: PIXI.Sprite }).sprite;
+  if (!spr || !spr.texture) return null;
+  const t = spr.texture;
+  _basesDoPersonagem.add(t.baseTexture);
+  // Varre a CENA INTEIRA, e não só os irmãos da câmera: uma cópia pode estar aninhada em qualquer camada.
+  // Conta também quem exibe uma base grande demais para um quadro (o atlas tem 256×207): desenhar o atlas
+  // inteiro produz exatamente "o personagem repetido em poses diferentes", que é o que o print mostrou.
+  const posicoes: string[] = [];
+  let irmaos = 0;
+  const varrer = (no: PIXI.Container, prof: number): void => {
+    if (!no || prof > 8) return;
+    for (const c of no.children as PIXI.Container[]) {
+      const ct = (c as unknown as { texture?: PIXI.Texture }).texture;
+      const cb = ct && ct.baseTexture;
+      // A FAIXA DO ATLAS, e ela é estreita de propósito: 256×207. A primeira versão desta linha dizia
+      // "≥200×150" e a própria sonda a reprovou na primeira execução — acusou QUATRO irmãos numa tela sadia,
+      // que eram o mundo (896×992) e as três camadas de parallax (1280×180). Uma sonda que grita numa tela
+      // sadia é pior que sonda nenhuma: ensina a ignorá-la. O teto de 400 exclui os dois legítimos.
+      const atlasInteiro = !!cb && cb.width >= 200 && cb.width <= 400 && cb.height >= 150 && cb.height <= 400;
+      if (c !== spr && cb && (_basesDoPersonagem.has(cb) || atlasInteiro) && c.visible) {
+        irmaos++;
+        if (posicoes.length < 6) posicoes.push(Math.round(c.x) + ',' + Math.round(c.y));
+      }
+      varrer(c, prof + 1);
+    }
+  };
+  varrer(app.stage, 0);
+  return {
+    texturaId: [..._basesDoPersonagem].indexOf(t.baseTexture),
+    recorte: t.frame.x + ',' + t.frame.y + ' ' + t.frame.width + 'x' + t.frame.height,
+    base: t.baseTexture.width + 'x' + t.baseTexture.height,
+    posicao: Math.round(spr.x) + ',' + Math.round(spr.y),
+    escala: spr.scale.x.toFixed(2) + ',' + spr.scale.y.toFixed(2),
+    irmaosDesenhando: irmaos,
+    posIrmaos: posicoes.join(' '),
+  };
+}
+initDebugPanel({
+  TUNE, ANIM, JUICE, saveJuice,
+  amostrarPersonagem: _amostrarPersonagem,
+  aoQuadro: (fn) => { app.ticker.add(fn); return () => app.ticker.remove(fn); },
+});
 
 /* ===================== PWA ===================== */
 // PWA/SW agora gerados pelo vite-plugin-pwa (Estágio 1); registro injetado no build. Ver vite.config.ts.

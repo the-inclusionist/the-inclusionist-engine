@@ -13,11 +13,88 @@ type Anim = Record<string, number>;
 // aceita qualquer chave e perde exatamente o que o tipo do dono garante.
 type Juice = JuiceFlags;
 
+/**
+ * UMA FOTO DO PERSONAGEM num quadro — DADOS, e nenhum objeto do PixiJS.
+ *
+ * A raiz de composição, que é o único lugar onde o PixiJS já é conhecido, tira a foto e entrega strings. É a
+ * mesma escolha de `RenderizarEm` e `CriarSprite` em render/port: pedir o VERBO cabe onde emprestar o objeto
+ * não cabe — e aqui ela paga duas vezes, porque mantém `ui/debug-panel` testável no project `node`.
+ */
+export interface AmostraDoPersonagem {
+  /** Identidade da textura DENTRO desta gravação. Não é geometria: os quatro quadros de idle têm a mesma. */
+  texturaId: number;
+  /** O recorte, "x,y LxA". */
+  recorte: string;
+  /** A base da textura, "LxA". */
+  base: string;
+  /** A posição do sprite, "x,y". */
+  posicao: string;
+  /** A escala, "x,y" — o squash & stretch mexe nela. */
+  escala: string;
+  /** Quantos IRMÃOS da câmera estavam desenhando alguma textura do personagem neste quadro. */
+  irmaosDesenhando: number;
+  /** Onde eles estavam, para o caso de haver algum. */
+  posIrmaos: string;
+}
+
+/** O que a sonda responde. Três perguntas, porque são elas que separam as causas que sobraram. */
+export interface ResumoDaSonda {
+  quadros: number;
+  texturas: number;
+  maxIrmaos: number;
+  exemploIrmaos: string;
+  /** As texturas cujo recorte é grande demais para um quadro de personagem — sangramento de atlas. */
+  sangramento: string[];
+  escalas: string[];
+  veredito: string;
+}
+
+/** Um recorte maior que isto não é um quadro de personagem: é um pedaço do atlas. O maior real tem 31x35. */
+const MAIOR_QUADRO = 64;
+
+/**
+ * Reduz a gravação a três perguntas e um veredito.
+ *
+ * A ORDEM DO VEREDITO É A DECISÃO: irmão desenhando vence sangramento, porque é ele que produz cópias
+ * INTEIRAS em posições diferentes — que é exatamente o que foi relatado. E quando as três perguntas vêm
+ * limpas o veredito NÃO diz "está tudo bem": ele diz ONDE procurar em seguida. Ausência de prova nas três
+ * não é prova de ausência, e encerrar a busca aqui a encerraria no lugar errado.
+ */
+export function resumirSonda(amostras: readonly AmostraDoPersonagem[]): ResumoDaSonda {
+  if (!amostras.length) {
+    return { quadros: 0, texturas: 0, maxIrmaos: 0, exemploIrmaos: '', sangramento: [], escalas: [], veredito: 'não gravou nada — o personagem existia?' };
+  }
+  const texturas = new Set(amostras.map((a) => a.texturaId)).size;
+  const comIrmaos = amostras.filter((a) => a.irmaosDesenhando > 0);
+  const maxIrmaos = comIrmaos.reduce((m, a) => Math.max(m, a.irmaosDesenhando), 0);
+  const grande = (r: string): boolean => {
+    const m = /(\d+)x(\d+)$/.exec(r);
+    return !!m && (+m[1] > MAIOR_QUADRO || +m[2] > MAIOR_QUADRO);
+  };
+  const sangramento = [...new Set(amostras.filter((a) => grande(a.recorte)).map((a) => a.recorte + ' (base ' + a.base + ')'))];
+  const escalas = [...new Set(amostras.map((a) => a.escala))].sort();
+  const veredito = maxIrmaos > 0
+    ? 'ALGUÉM DESENHA DUAS VEZES: até ' + maxIrmaos + ' irmão(s) da câmera com a textura do personagem'
+    : sangramento.length
+      ? 'RECORTE GRANDE DEMAIS: o quadro está pegando pedaço do atlas'
+      : 'sprite limpo (uma textura por quadro, sem irmão, recorte de quadro) — procure em composição: filtro, pós-efeito ou câmera';
+  return { quadros: amostras.length, texturas, maxIrmaos, exemploIrmaos: comIrmaos.length ? comIrmaos[0].posIrmaos : '', sangramento, escalas, veredito };
+}
+
 export interface DebugPanelCtx {
   TUNE: Tune;
   ANIM: Anim;
   JUICE: Juice;
   saveJuice: () => void;
+  /**
+   * Uma foto do personagem AGORA, ou `null` se ainda não há personagem na cena.
+   *
+   * OPCIONAL: um hospedeiro sem personagem (o quiz) não a fornece, e a sonda simplesmente não aparece. O
+   * painel continua sem conhecer o PixiJS.
+   */
+  amostrarPersonagem?: () => AmostraDoPersonagem | null;
+  /** Chama `fn` a cada quadro e devolve como cancelar. É o relógio do render, injetado como verbo. */
+  aoQuadro?: (fn: () => void) => () => void;
   /** Override for tests; defaults to location.search. */
   search?: string;
 }
@@ -112,6 +189,57 @@ export function initDebugPanel(ctx: DebugPanelCtx): HTMLElement | null {
     row.appendChild(inp);
     p.appendChild(row);
     upd();
+  }
+
+  /* ===================== A SONDA DO PERSONAGEM =====================
+     Ela mora AQUI, e não num script para colar no console, porque foi o que o Dev pediu — e ele tem razão
+     pelo motivo de sempre: um instrumento que só existe enquanto alguém lembra de colar não é instrumento, é
+     lembrança. Aqui ele fica ao lado dos outros valores ao vivo, atrás do mesmo `?debug=true`.
+
+     Só aparece se o hospedeiro souber tirar a foto: um jogo sem personagem não ganha um botão que não faz
+     nada. */
+  if (ctx.amostrarPersonagem && ctx.aoQuadro) {
+    const amostrar = ctx.amostrarPersonagem, aoQuadro = ctx.aoQuadro;
+    const h = document.createElement('div');
+    h.textContent = 'Sonda do personagem';
+    h.style.cssText = 'margin:.7rem 0 .1rem;font-weight:700;color:#ffd23f;border-bottom:1px solid rgba(255,210,63,.4)';
+    p.appendChild(h);
+
+    const saida = document.createElement('pre');
+    saida.style.cssText = 'margin:.4rem 0 0;font:11px/1.35 ui-monospace,monospace;white-space:pre-wrap;color:#cfe';
+    saida.setAttribute('aria-live', 'polite');
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '🥷 Gravar 180 quadros';
+    btn.style.cssText = 'margin-top:.4rem;width:100%;min-height:32px;font:inherit;font-weight:700;cursor:pointer;border-radius:6px;border:1px solid #ffd23f;background:#1a2740;color:#fff';
+    btn.addEventListener('click', () => {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      const amostras: AmostraDoPersonagem[] = [];
+      let n = 0;
+      saida.textContent = 'gravando… PULE agora';
+      const parar = aoQuadro(() => {
+        const a = amostrar();
+        if (a) amostras.push(a);
+        if (++n < 180) return;
+        parar();
+        btn.disabled = false;
+        const r = resumirSonda(amostras);
+        saida.textContent = [
+          'quadros: ' + r.quadros + '  texturas: ' + r.texturas,
+          'irmãos desenhando: ' + r.maxIrmaos + (r.exemploIrmaos ? ' em ' + r.exemploIrmaos : ''),
+          'recorte grande: ' + (r.sangramento.length ? r.sangramento.join(' ') : 'nenhum'),
+          'escalas: ' + r.escalas.join(' '),
+          '',
+          '→ ' + r.veredito,
+        ].join(String.fromCharCode(10));
+        // O BRUTO fica alcançável para quem quiser ir além do resumo — sem poluir o painel com 180 linhas.
+        (window as unknown as { __sonda?: unknown }).__sonda = amostras;
+      });
+    });
+    p.appendChild(btn);
+    p.appendChild(saida);
   }
 
   document.body.appendChild(p);

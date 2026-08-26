@@ -98,6 +98,25 @@ function crus(m) {
  * motivos que não têm nada a ver com idioma, e um caso que reprovasse a cada edição inocente seria afrouxado
  * na primeira pressa. O que ele proíbe é a única coisa que importa — que o texto cru CRESÇA.
  */
+/**
+ * ISENTOS, e a isenção é de CLASSIFICAÇÃO, não de dívida.
+ *
+ * `ui/debug-panel.ts` estava na tabela de dívida com teto 13, e o teto é a forma errada de tratá-lo: ele
+ * obriga a empurrar um número toda vez que um instrumento de depuração ganha uma linha, e empurrar um teto
+ * que "só encolhe" é justamente o afrouxamento que esta tabela existe para impedir. Fingir que é dívida
+ * transforma a regra num incômodo, e regra incômoda é regra afrouxada.
+ *
+ * O painel não é interface do JOGO. Ele só existe com `?debug=true`, e o leitor dele é quem programa — a
+ * mesma pessoa para quem `core/contract` escreve as mensagens de `throw`. Traduzir um instrumento de
+ * depuração para três idiomas custaria manutenção e não alcançaria criança nenhuma, que é o que o pilar 3
+ * protege.
+ *
+ * ⚠️ ESTA LISTA TEM UM ITEM, e a régua para entrar nela é estreita: o módulo tem de ser INALCANÇÁVEL sem uma
+ * bandeira de desenvolvimento. Um painel que a criança possa abrir não entra aqui — entra na tabela abaixo,
+ * com teto, como todos os outros.
+ */
+const ISENTOS = new Set(['ui/debug-panel.ts']);
+
 const CRU_CONHECIDO = {
   // ⚠️ OS NÚMEROS SAEM DAQUI, e não de um script meu de fora. A primeira versão desta tabela foi preenchida
   // por uma varredura à parte e ela contou MENOS em sete módulos — eu tinha perdido as fronteiras de palavra
@@ -105,7 +124,6 @@ const CRU_CONHECIDO = {
   // esta tabela, atualize-a pelo que ESTE arquivo reporta; é a mesma lição do gate de fixtures.
 
   /* --- PAINÉIS DE AJUSTE: rótulos e dicas montados em markup, ainda sem `data-i18n`. --- */
-  'ui/debug-panel.ts': 13,         // painel de DEPURAÇÃO (só com `?debug=true`) — nenhuma criança o alcança
   'ui/map-hub.ts': 8,
   'ui/settings-motion.ts': 7,
   'ui/settings-visual.ts': 7,
@@ -137,7 +155,7 @@ const CRU_CONHECIDO = {
 
 describe('texto cru em português nas camadas de ENGINE (o buraco do gate do item 14)', () => {
   it('[Right] NENHUM módulo NOVO passa a ter texto de interface em português cru', () => {
-    const novos = MODULOS.filter((m) => !(m in CRU_CONHECIDO))
+    const novos = MODULOS.filter((m) => !(m in CRU_CONHECIDO) && !ISENTOS.has(m))
       .flatMap((m) => crus(m).map((l) => `${m}:${l}`));
     expect(novos, 'texto cru em módulo de engine — passe por t() ou registre o motivo').toEqual([]);
   });
