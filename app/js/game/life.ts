@@ -18,6 +18,7 @@ import { players, numPlayers } from '../core/state.js';
 import { cenario as CENARIO } from './state.js'; // GAME desde a Fase B (ADR-0038)
 import { LOGICAL_W, LOGICAL_H, TILE } from '../core/constants.js';
 import { tileAt, solidAt } from '../core/collision.js';
+import type { Camada, CriarSprite } from '../render/port.js';
 
 /** A fauna só precisa saber ONDE o jogador está (fugir/aproximar). */
 type LifePlayer = PlayerView<'x' | 'y'>;
@@ -68,11 +69,10 @@ export interface LifeSprite {
   texture: unknown;
   destroy(): void;
 }
-export interface LifeLayer {
-  addChild(s: LifeSprite): void;
-  removeChild(s: LifeSprite): void;
-  removeChildren(): void;
-}
+// `LifeLayer` = a `Camada` da porta do renderizador. Declarar `addChild(s: LifeSprite)` aqui pedia um
+// parâmetro ESTREITO demais: o `addChild` do PixiJS recebe `DisplayObject`, e o `LifeSprite` não é um
+// (faltam-lhe 118 campos). Quem descreve o parâmetro é quem tem de ser o mais LARGO — ADR-0039.
+export type LifeLayer = Camada & { removeChildren(): void };
 export interface LifeTexAtlas {
   pombo: TexPair;
   pomboFly: TexPair;
@@ -83,7 +83,7 @@ interface ReducedMotion { decor?: boolean }
 
 export interface LifeCtx {
   layer: LifeLayer;                              // lifeLayer (PIXI.Container) — camera.addChild'd in game.js
-  makeSprite: (texture: unknown) => LifeSprite;   // `(t) => new PIXI.Sprite(t)` in game.js
+  makeSprite: CriarSprite<LifeSprite>;            // `(t) => new PIXI.Sprite(t)` na raiz de composição
   lifeTex: LifeTexAtlas;                          // LIFE_TEX (baked canvases) — stays baked in game.js
   adultTex: TexPair[];                            // ADULT_TEX (6 silhouette shapes) — idem
   lifeSurfaceAt: (tx: number) => number;          // shared w/ render/scene-city's buildCityDeco → stays in game.js
@@ -97,7 +97,7 @@ export interface LifeCtx {
 }
 
 let layer: LifeLayer | null = null;
-let makeSprite: (texture: unknown) => LifeSprite = () => { throw new Error('game/life: initLife() not called'); };
+let makeSprite: CriarSprite<LifeSprite> = () => { throw new Error('game/life: initLife() not called'); };
 let lifeTex: LifeTexAtlas | null = null;
 let adultTex: TexPair[] = [];
 let lifeSurfaceAt: (tx: number) => number = () => -1;

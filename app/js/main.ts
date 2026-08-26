@@ -656,7 +656,7 @@ const coinContainer=new PIXI.Container(); camera.addChild(coinContainer);
 // coinSprites/rebuildCoins migraram para game/coin-spawning.ts (Onda A). rebuildCoins mantem o contrato
 // SEM argumentos: os nove chamadores (boot, novo round, quatro paineis de acessibilidade, Modo Facil,
 // silabas, restart) nao mudam — so a definicao saiu daqui.
-initCoinSpawning({ coinContainer, createSprite: (t) => new PIXI.Sprite(t), coinTexFor: (m) => spriteTexFor('coin', m),
+initCoinSpawning({ coinContainer, createSprite: (t) => new PIXI.Sprite(t as never), coinTexFor: (m) => spriteTexFor('coin', m),
   shapeTexFor: (id) => SHAPE_TEX[id], letterTexFor: letterTexture, pcolor: PCOLOR,
   getMode: () => MODE(), getOwnerColors: () => ownerColors, invalidateSharedViz: () => { _lastSharedViz=null; },
   powerShort: POWER_SHORT, $ });
@@ -761,7 +761,7 @@ let _streetCols: [number, number][] | null = null; // colunas ABERTAS da rua/fac
 function streetCols(){ if(_streetCols)return _streetCols; _streetCols=[];
   for(let tx=2;tx<WORLD_W-2;tx++){ const ty=lifeSurfaceLowAt(tx); if(ty>0&&ty*TILE>WORLD_PX_H*0.55)_streetCols.push([tx,ty]); }
   return _streetCols; }
-life.initLife({ layer: lifeLayer, makeSprite: (t) => new PIXI.Sprite(t), lifeTex: CITY_TEX.lifeTex, adultTex: CITY_TEX.adultTex,
+life.initLife({ layer: lifeLayer, makeSprite: (t) => new PIXI.Sprite(t as never), lifeTex: CITY_TEX.lifeTex, adultTex: CITY_TEX.adultTex,
   lifeSurfaceAt, lifeSurfaceLowAt, streetCols, decoSprites, rm, W: WORLD_W, pxW: WORLD_PX_W, pxH: WORLD_PX_H });
 /* ===================== L5: CARROS (camada da FRENTE) + SEMÁFORO funcional — procedural ===================== */
 // Carros cruzam a rua À FRENTE do player (carLayer re-erguido em ensureSprites); param no vermelho/amarelo

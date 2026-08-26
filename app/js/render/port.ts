@@ -90,3 +90,37 @@ export type CriarAzulejo<T> = (textura: unknown, largura: number, altura: number
 
 /** E o desenho vetorial vazio (`new PIXI.Graphics()`), pela mesma razão. */
 export type CriarDesenho<T> = () => T;
+
+/**
+ * O QUE SE TINGE — um sprite do ponto de vista de quem só ESCREVE a cor nele.
+ *
+ * `tint: unknown`, e o `unknown` aqui é a coisa certa, não preguiça. Dois módulos declaravam
+ * `tint: number` — e o `PIXI.Sprite` real NÃO CABE nisso: o `tint` dele é `ColorSource`, que aceita
+ * número, texto (`'red'`), array e mais. `number` é um SUBTIPO estrito disso, e um módulo que não é
+ * dono do campo declarando algo MAIS ESTREITO que a verdade é exatamente o que o ADR-0039 proíbe:
+ * estreitar é o que quebra a atribuição.
+ *
+ * O supertipo verdadeiro que dá para provar sem importar PixiJS é `unknown`. O preço é conhecido e
+ * pequeno: quem escreve aqui não é mais conferido pelo compilador — mas as duas únicas escritas da
+ * árvore são constantes hexadecimais literais, e o `ColorSource` aceitaria todas elas de qualquer jeito.
+ */
+export interface Tingivel {
+  tint: unknown;
+}
+
+/** O que se descarta. `DisplayObject.destroy(options?)` do PixiJS satisfaz — o opcional não atrapalha. */
+export interface Descartavel {
+  destroy(): void;
+}
+
+/**
+ * Camada que também ESVAZIA, devolvendo o que saiu para quem precisa destruir os filhos removidos.
+ *
+ * Separada de `Camada` porque só um consumidor esvazia, e porque o retorno é a parte delicada: quem
+ * declarava `removeChildren(): CoinSprite[]` pedia de volta algo mais ESPECÍFICO do que o PixiJS
+ * entrega (`DisplayObject[]`) — e retorno é covariante, então o pedido específico é o que não cabe.
+ * `Descartavel` é o que o chamador de fato usa.
+ */
+export interface CamadaEsvaziavel extends Camada {
+  removeChildren(): Descartavel[];
+}

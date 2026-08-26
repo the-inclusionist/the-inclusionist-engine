@@ -174,6 +174,30 @@ describe('setFrontDim (alto contraste: frente escurece como o fundo)', () => {
     setFrontDim(false);
     for (const ch of carLayer.children) { expect(ch.tint).toBe(0xffffff); expect(ch.alpha).toBe(1); }
   });
+
+  // 2026-08-26: o módulo passou a esmaecer O QUE ELE CRIOU (`_ambientes`) em vez de varrer
+  // `carLayer.children`. Os dois conjuntos coincidem hoje — e é justamente por coincidirem que o caso
+  // acima não distingue um do outro. Este distingue.
+  //
+  // A camada é da raiz de composição: ela solda o z-order do `carLayer` e pode pendurar qualquer coisa
+  // ali. "Escureça tudo o que estiver nesta camada" nunca foi a regra — a regra é que a SINALIZAÇÃO e os
+  // CARROS são ambiente e recuam junto com o fundo (WCAG 1.4.11: o que compete com plataforma e item
+  // precisa parar de competir no alto contraste). Um filho alheio não é ambiente deste módulo.
+  //
+  // MUTAÇÃO CONFERIDA: com `_ambientes.forEach` de volta em `ctx.carLayer.children.forEach`, este caso
+  // falha em `intruso.tint` — "expected 4870232 to be 16711680".
+  it('[Regra] NÃO escurece o que outro módulo pendurou na mesma camada', () => {
+    const { carLayer } = setup();
+    spawnCar();
+    const intruso = { tint: 0xff0000, alpha: 1 }; // p.ex. um efeito que a raiz decida pôr na frente
+    carLayer.addChild(intruso);
+    setFrontDim(true);
+    expect(intruso.tint).toBe(0xff0000);
+    expect(intruso.alpha).toBe(1);
+    const meus = carLayer.children.filter((c) => c !== intruso);
+    expect(meus.length).toBeGreaterThan(0);
+    for (const ch of meus) expect(ch.tint).toBe(0x4a5058);
+  });
 });
 
 describe('clearCars', () => {

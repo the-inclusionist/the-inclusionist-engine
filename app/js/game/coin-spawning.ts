@@ -13,6 +13,7 @@ import { coins, setCoins } from './state.js'; // item 19: `coins`/`quizLevel` sa
 import { findCoinCandidates, positionEasyCoins, type Coin } from './coins.js';
 import { SOMASUB_SHAPES, WORD_INITIALS } from './activity-content.js';
 import type { DomQuery } from '../core/dom-query.js';
+import type { Tingivel, CamadaEsvaziavel, CriarSprite } from '../render/port.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`) — injected, never imported, so the module stays node-testable. */
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
@@ -20,24 +21,29 @@ import type { DomQuery } from '../core/dom-query.js';
 export type { DomQuery } from '../core/dom-query.js';
 
 /** Superfície mínima de um sprite PIXI que rebuildCoins precisa (estrutural — mantém o módulo testável no node). */
-export interface CoinSprite {
+// O `tint` vem de `render/port` (`Tingivel`): `tint: number` era ESTREITAR um campo de outro dono — o
+// `PIXI.Sprite` declara `ColorSource`, mais largo, e por isso não cabia aqui (ADR-0039).
+//
+// E o `alpha` está aqui mesmo sem este módulo tocá-lo: estes sprites são ENTREGUES ao `render/draw` por
+// `getCoinSprites()`, e é lá que o item alheio esmaece. Uma fatia mínima do que se LÊ mentiria sobre o que
+// se ENTREGA — a inversão que o ADR-0039 registra: em posição de saída, a fatia mínima é a do RECEPTOR.
+export interface CoinSprite extends Tingivel {
   x: number; y: number;
   width?: number; height?: number;
-  tint: number;
+  alpha: number;
   visible: boolean;
   destroy(): void;
 }
-/** Superfície mínima do container PIXI onde os sprites de moeda vivem. */
-export interface CoinContainer {
-  removeChildren(): CoinSprite[];
-  addChild(s: CoinSprite): void;
-}
+/** O container PIXI onde os sprites de moeda vivem — a camada esvaziável da porta do renderizador.
+ *  Era declarado aqui, com `removeChildren(): CoinSprite[]`: pedir de volta algo MAIS ESPECÍFICO do que o
+ *  PixiJS entrega (`DisplayObject[]`) é o que não cabia — retorno é covariante. */
+export type CoinContainer = CamadaEsvaziavel;
 /** Handle opaco de textura — repassado direto do injetor para a fábrica de sprite, nunca inspecionado aqui. */
 export type CoinTexture = unknown;
 
 export interface CoinSpawningCtx {
   coinContainer: CoinContainer;                          // camada PIXI onde os sprites de moeda entram
-  createSprite: (tex: CoinTexture) => CoinSprite;         // fábrica de sprite (= `new PIXI.Sprite(tex)` no game.js)
+  createSprite: CriarSprite<CoinSprite>;                   // fábrica de sprite (= `new PIXI.Sprite(tex)` na raiz)
   coinTexFor: (mode: string) => CoinTexture;              // textura padrão da moeda (varia por modo acessível)
   shapeTexFor: (shapeId: string) => CoinTexture;          // textura de forma (Soma-Sub; = SHAPE_TEX[id] cacheado)
   letterTexFor: (letter: string) => CoinTexture;          // textura de letra (Sílabas; NÃO cacheada no game.js — ver "Bugs surfados")

@@ -10,7 +10,7 @@
 
 import { TILE } from '../core/constants.js';
 import { rnd, randInt } from '../core/rng.js';
-import type { Desenho, Camada } from '../render/port.js';
+import type { Desenho, Camada, Tingivel } from '../render/port.js';
 import type { CriarSprite, CriarDesenho } from '../render/port.js';
 import { cenario } from './state.js'; // GAME desde a Fase B (ADR-0038)
 
@@ -62,10 +62,18 @@ export function isOffscreen(x: number, worldPxW: number): boolean {
 
 // `Gfx` e `Layer` vêm de `render/port` (Fase D). `game/` pode importar de `render/`: a aresta proibida é
 // a contrária — engine importando de `game/` —, e este é um tipo, apagado na compilação.
-type Gfx = Desenho;
-interface Dimmable { tint: number; alpha: number; }
+// `Dimmable` = o que o alto-contraste esmaece. O `tint` vem de `render/port`: declarar `tint: number`
+// era estreitar um campo de outro dono (ADR-0039) — o `PIXI.Sprite` tem `ColorSource`, mais largo.
+interface Dimmable extends Tingivel { alpha: number; }
+// O desenho do semáforo e o das placas TAMBÉM esmaecem — são sinalização ambiente, como os carros. Daí o
+// `Gfx` daqui ser `Desenho & Dimmable`, e não só `Desenho`.
+type Gfx = Desenho & Dimmable;
 interface CarSprite extends Dimmable { x: number; y: number; anchor: { set(x: number, y: number): void }; scale: { x: number }; destroy(): void; }
-type Layer = Camada & { children: Dimmable[] };
+// `Layer` é só `Camada` desde 2026-08-26. Antes era `Camada & { children: Dimmable[] }`, e a leitura de
+// `children` era o defeito: o PixiJS tipa os filhos como `DisplayObject[]`, que NÃO tem `tint` — e,
+// pior, ler a lista do pai significava esmaecer o que quer que alguém pendurasse ali depois. Este
+// módulo agora esmaece o que ELE criou (`_ambientes`), que é o que a regra sempre quis dizer.
+type Layer = Camada;
 // O construtor virou FÁBRICA (Fase D): `new (tex: unknown)` não recebe o `PIXI.Sprite` real, cujo
 // construtor só aceita `Texture`. Por contravariância, prometer aceitar qualquer coisa é o que impede.
 // Ver `CriarSprite` no cabeçalho de `render/port`.
@@ -88,6 +96,10 @@ let ctx: TrafficCtx | null = null;
 let cars: Car[] = [];
 let _carT = 0;
 let _frontDim = false;
+/** O que o alto-contraste esmaece: TUDO que este módulo pendurou na camada da frente — o poste do
+ *  semáforo, o desenho das placas de PARE e cada carro vivo. Era `carLayer.children`, e a diferença
+ *  importa: a lista do pai inclui o que os outros penduraram, e esmaecer isso nunca foi a regra. */
+let _ambientes: Dimmable[] = [];
 let _streetY = 0;
 export const SEM = { x: 0, y: 0, state: 'green' as LightState, t: 0, pole: null as Gfx | null };
 
@@ -108,8 +120,9 @@ export function drawSemaforo(): void {
 export function initTraffic(injected: TrafficCtx): void {
   ctx = injected; _streetY = ctx.WORLD_PX_H;
   SEM.x = Math.round(ctx.WORLD_PX_W / 2); SEM.y = _streetY;
-  SEM.pole = ctx.criarDesenho(); ctx.carLayer.addChild(SEM.pole); drawSemaforo();
-  const g = ctx.criarDesenho(); ctx.carLayer.addChild(g); // STOP signs along the front street (2×)
+  _ambientes = [];
+  SEM.pole = ctx.criarDesenho(); ctx.carLayer.addChild(SEM.pole); _ambientes.push(SEM.pole); drawSemaforo();
+  const g = ctx.criarDesenho(); ctx.carLayer.addChild(g); _ambientes.push(g); // STOP signs along the front street (2×)
   for (let tx = 6; tx < ctx.WORLD_W - 6; tx += 14) {
     const X = tx * TILE; if (Math.abs(X - SEM.x) < 48) continue;
     g.beginFill(0x8a919f).drawRect(X, _streetY - 28, 2, 28).endFill();
@@ -125,7 +138,7 @@ export function spawnCar(): boolean {
   const s = ctx.criarSprite(ctx.CAR_TEX[randInt(0, ctx.CAR_TEX.length - 1)]); // texture is already 3× native
   s.anchor.set(0.5, 1); s.scale.x = dir; s.y = _streetY; s.x = x;
   if (_frontDim) { s.tint = 0x4a5058; s.alpha = 0.55; }
-  ctx.carLayer.addChild(s);
+  ctx.carLayer.addChild(s); _ambientes.push(s);
   cars.push({ s, x, dir, vx: dir * 1.4 });
   return true;
 }
@@ -136,13 +149,14 @@ export function setFrontDim(on: boolean): void {
   if (!ctx) return;
   _frontDim = !!on;
   const t = on ? 0x4a5058 : 0xffffff, a = on ? 0.55 : 1;
-  ctx.carLayer.children.forEach((ch) => { ch.tint = t; ch.alpha = a; });
+  _ambientes.forEach((ch) => { ch.tint = t; ch.alpha = a; });
 }
 
 /** Destroys + empties all cars (semáforo/signs stay — signage survives, only the moving traffic leaves). */
 export function clearCars(): void {
   if (!ctx || !cars.length) return;
   cars.forEach((c) => { ctx!.carLayer.removeChild(c.s); c.s.destroy(); });
+  _ambientes = _ambientes.filter((d) => !cars.some((c) => c.s === d)); // o carro morto sai da lista junto
   cars = [];
 }
 
