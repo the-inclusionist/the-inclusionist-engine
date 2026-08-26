@@ -23,6 +23,7 @@
 import { COIN_TARGET } from '../core/constants.js';
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
+import type { PlayerQuiz } from './entity.js'; // ADR-0039: o jogador carrega o SUPERTIPO, não a união
 import { rnd, randInt, shuffle } from '../core/rng.js';
 import { numPlayers, activity as ACTIVITY } from '../core/state.js';
 import { coins, quizLevel } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
@@ -83,7 +84,32 @@ export type Quiz = MathQuiz | SilabasQuiz | PreQuiz | AlfQuiz | BrailleQuiz;
  * à regra, é a regra: quem é DONO do tipo pode saber mais que os outros; quem não é, não pode.
  */
 export type QuizPlayer = PlayerView<'i' | 'x' | 'y' | 'vx' | 'vy' | 'collected' | 'viz' | 'alfWins'>
-  & { quiz: Quiz | null };
+  & { quiz: PlayerQuiz | null };
+
+/** Os cinco discriminantes, como DADO — a mesma lista que `tests/quiz-supertype.node.test.ts` afirma. */
+const QUIZ_KINDS: ReadonlySet<string> = new Set(['somasub', 'silabas', 'pre', 'alf', 'braille']);
+
+/**
+ * O ÚNICO ponto que volta do supertipo para a união — e ele CONFERE, em tempo de execução.
+ *
+ * ADR-0039: o jogador carrega `PlayerQuiz`, o supertipo, porque nenhuma camada fora daqui tem o direito de
+ * saber o que há dentro de um quiz. Este módulo é o dono e pode saber — mas o caminho de volta passa por um
+ * lugar só, com o discriminante conferido, em vez dos SETE `as` espalhados que existiam antes. Um `as` diz
+ * "eu sabia mais que o compilador"; isto pergunta.
+ */
+function quizDe(pl: QuizPlayer): Quiz | null {
+  const q = pl.quiz;
+  return q && QUIZ_KINDS.has(q.kind) ? (q as Quiz) : null;
+}
+
+/**
+ * O caminho de IDA, par do `quizDe`. Existe por um motivo do compilador que vale escrever: atribuir um
+ * literal direto a um campo do SUPERTIPO dispara a checagem de propriedade excedente — `hearSyl` "não
+ * existe em PlayerQuiz" —, e o literal deixaria de ser conferido contra a variante que ele diz ser. Passando
+ * por aqui, o literal é checado contra a UNIÃO (com discriminante, portanto contra a variante certa) e o
+ * campo continua carregando só o supertipo.
+ */
+function abrirQuiz(pl: QuizPlayer, q: Quiz): void { pl.quiz = q; }
 
 /** Selector DOM mínimo (mesma forma do `$` de ui/dom.ts) — injetado, nunca importado. */
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
@@ -466,7 +492,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     const item = pickWord(letter);
     const { correct, options } = generateSilabasOptions(item);
     // hearSyl: Descobrindo sílabas (nível 2) fala a sílaba no hover/seleção; Montando (3) não
-    pl.quiz = { kind: 'silabas', hearSyl: (quizLevel === 2), coinIndex, letter, word: item.w, emoji: item.e, correct, options, boxes: [null, null], sel: 0, tries: 0, revealed: false };
+    abrirQuiz(pl, { kind: 'silabas', hearSyl: (quizLevel === 2), coinIndex, letter, word: item.w, emoji: item.e, correct, options, boxes: [null, null], sel: 0, tries: 0, revealed: false });
     pl.vx = 0; pl.vy = 0;
     // A letra e a palavra ATRAVESSAM em pt-BR: são a matéria de uma disciplina de idioma. A moldura traduz.
     c.srSay(quizWho(pl) + t('sr.quiz.buildWord', { letra: c.disp(item.w[0]), palavra: item.w })); // letra da PRÓPRIA palavra (o não-repetir pode trocar a letra da moeda)
@@ -477,7 +503,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
   /** Nível 1 — pré-silábico: qual das 3 escritas é a certa? O jogo SOLETRA a opção sob o cursor. */
   function openPre(pl: QuizPlayer, coinIndex: number, letter: string): void {
     const item = pickWord(letter);
-    pl.quiz = { kind: 'pre', coinIndex, word: item.w, emoji: item.e, choices: generatePreChoices(item), sel: 0, tries: 0, revealed: false };
+    abrirQuiz(pl, { kind: 'pre', coinIndex, word: item.w, emoji: item.e, choices: generatePreChoices(item), sel: 0, tries: 0, revealed: false });
     pl.vx = 0; pl.vy = 0;
     c.srSay(quizWho(pl) + t('sr.quiz.whichSpelling', { palavra: item.w }));
     c.gameSay(item.w); // fala o nome da imagem SEMPRE (independente do toggle TTS) — José
@@ -487,7 +513,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
   /** Níveis 4/5 — escritor: montar a palavra LETRA a letra numa grade; 5 dita a cela Braille de cada letra. */
   function openAlf(pl: QuizPlayer, coinIndex: number, letter: string): void {
     const item = pickWord(letter);
-    pl.quiz = { kind: 'alf', braille: quizLevel === 5, coinIndex, word: item.w, emoji: item.e, options: generateAlfOptions(item.w), boxes: Array(item.w.length).fill(null), sel: 0, tries: 0, revealed: false };
+    abrirQuiz(pl, { kind: 'alf', braille: quizLevel === 5, coinIndex, word: item.w, emoji: item.e, options: generateAlfOptions(item.w), boxes: Array(item.w.length).fill(null), sel: 0, tries: 0, revealed: false });
     pl.vx = 0; pl.vy = 0;
     c.srSay(quizWho(pl) + t('sr.quiz.writeWord', { palavra: item.w, n: item.w.length }));
     renderQuiz(pl); quizSpeakSel(pl);
@@ -496,12 +522,12 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
   /** E8: ditado de Braille (modo pessoa cega) — dita os pontos da cela por letra. */
   function openBraille(pl: QuizPlayer, coinIndex: number, letter: string): void {
     const item = pickWord(letter);
-    pl.quiz = { kind: 'braille', coinIndex, letter, word: item.w, emoji: item.e, cells: generateBrailleCells(item.w), revealed: false };
+    abrirQuiz(pl, { kind: 'braille', coinIndex, letter, word: item.w, emoji: item.e, cells: generateBrailleCells(item.w), revealed: false });
     pl.vx = 0; pl.vy = 0; renderQuiz(pl); announceBraille(pl);
   }
 
   function announceBraille(pl: QuizPlayer): void {
-    const q = pl.quiz; if (!q || q.kind !== 'braille') return;
+    const q = quizDe(pl); if (!q || q.kind !== 'braille') return;
     // As celas Braille (`cell.l`/`cell.text`) são conteúdo de disciplina de idioma e atravessam inteiras.
     c.srAlert(quizWho(pl) + t('sr.quiz.brailleDictation', { palavra: q.word, celas: q.cells.map((cell) => `${cell.l}: ${cell.text}.`).join(' ') }));
   }
@@ -512,10 +538,10 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
 
   /** Fala o item sob o cursor CONFORME O NÍVEL (regra pedagógica: 2 fala a sílaba, 3 soletra, 5 dita pontos). */
   function quizSpeakSel(pl: QuizPlayer): void {
-    const q = pl.quiz as SilabasQuiz | PreQuiz | AlfQuiz | null; if (!q) return;
+    const q = quizDe(pl); if (!q || q.kind === 'braille' || q.kind === 'somasub') return; // as duas sem palavra a soletrar
     if (q.sel < 0) { c.srSay(c.disp(q.word)); c.gameSay(q.word); return; } // cursor na PALAVRA do topo → fala a palavra
     if (q.kind === 'pre') { c.srSay(soletra(q.choices[q.sel])); return; }
-    const opts = (q as SilabasQuiz | AlfQuiz).options;
+    const opts = q.options; // estreitado pelo `kind === 'pre'` acima — sem `as`
     const N = opts ? opts.length : 0;
     if (q.sel >= N) { c.srSay(t(q.sel === N ? 'sr.quiz.erase' : 'sr.quiz.ok')); return; }
     const it = opts[q.sel];
@@ -526,16 +552,16 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
   }
 
   function placeLetter(pl: QuizPlayer, ch: string): void {
-    const q = pl.quiz as AlfQuiz | null; if (!q) return; const idx = q.boxes.indexOf(null); if (idx < 0) return;
+    const q = quizDe(pl); if (!q || q.kind !== 'alf') return; const idx = q.boxes.indexOf(null); if (idx < 0) return;
     q.boxes[idx] = ch; c.sfx('place'); c.srSay(q.braille ? brailleText(ch) : (LETTER_NAME[ch] || ch)); renderQuiz(pl); // braille: só os PONTOS
   }
   function eraseLastLetter(pl: QuizPlayer): void {
-    const q = pl.quiz as AlfQuiz | null; if (!q) return;
+    const q = quizDe(pl); if (!q || q.kind !== 'alf') return;
     for (let i = q.boxes.length - 1; i >= 0; i--) { if (q.boxes[i] !== null) { q.boxes[i] = null; break; } }
     renderQuiz(pl);
   }
   function placeSilaba(pl: QuizPlayer, sy: string): void {
-    const q = pl.quiz as SilabasQuiz | null; if (!q) return;
+    const q = quizDe(pl); if (!q || q.kind !== 'silabas') return;
     const idx = q.boxes[0] === null ? 0 : (q.boxes[1] === null ? 1 : -1); if (idx < 0) return;
     q.boxes[idx] = sy; c.sfx('place');
     // Descobrindo: confirmação + refala a sílaba (sempre); Montando: SOLETRA as letras (só c/ TTS)
@@ -543,7 +569,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     renderQuiz(pl);
   }
   function eraseLastSilaba(pl: QuizPlayer): void {
-    const q = pl.quiz as SilabasQuiz | null; if (!q) return;
+    const q = quizDe(pl); if (!q || q.kind !== 'silabas') return;
     if (q.boxes[1] !== null) q.boxes[1] = null; else if (q.boxes[0] !== null) q.boxes[0] = null;
     renderQuiz(pl);
   }
@@ -562,7 +588,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
   }
 
   function renderQuiz(pl: QuizPlayer): void {
-    const q = pl.quiz, ov = quizEl(pl); if (!ov) return; if (!q) { ov.hidden = true; return; }
+    const q = quizDe(pl), ov = quizEl(pl); if (!ov) return; if (!q) { ov.hidden = true; return; }
     ov.innerHTML = quizHtml(q, c.disp, c.QL_NAME);
     const box = ov.querySelector('.quiz-box');
     if (box) box.insertAdjacentHTML('afterbegin', winsHtml(Math.min(3, pl.alfWins || 0))); // 3 luzes de progresso: acesa = amarela com brilho
@@ -579,13 +605,13 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
 
   /** ESPECIAL: apaga a última sílaba/letra (jogos que MONTAM a palavra; NÃO no Descobrindo palavras/pre). */
   function quizErase(pl: QuizPlayer): void {
-    const q = pl.quiz; if (!q) return;
+    const q = quizDe(pl); if (!q) return;
     if (q.kind === 'silabas') { eraseLastSilaba(pl); c.sfx('place'); }
     else if (q.kind === 'alf') { eraseLastLetter(pl); c.sfx('place'); }
   }
 
   function quizMove(pl: QuizPlayer, d: number): void {
-    const q = pl.quiz as MathQuiz | SilabasQuiz | PreQuiz | AlfQuiz | null; if (!q) return;
+    const q = quizDe(pl); if (!q || q.kind === 'braille') return; // idem: o Braille não tem seleção
     const { min, max } = selRange(q);
     q.sel = Math.max(min, Math.min(max, q.sel + d)); renderQuiz(pl);
     if (q.kind === 'silabas' || q.kind === 'alf' || q.kind === 'pre') quizSpeakSel(pl); // L3: leitura conforme o nível
@@ -622,7 +648,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
   }
 
   function quizConfirm(pl: QuizPlayer): void {
-    const q = pl.quiz; if (!q || q.celebrating || q.won) return; // durante a comemoração/pausa pós-acerto, ignora entrada
+    const q = quizDe(pl); if (!q || q.celebrating || q.won) return; // durante a comemoração/pausa pós-acerto, ignora entrada
     const anyQ = q as { sel?: number; word?: string };
     if (anyQ.sel === -1 && anyQ.word) { c.gameSay(anyQ.word); return; } // PALAVRA do topo selecionada → repete a fala (VLibras gesticula, na etapa do modo surdo)
     if (q.revealed) { // SEM PENALIDADE na alfabetização: a moeda fica no lugar (nova pergunta ao tocar); matemática re-sorteia a figura
