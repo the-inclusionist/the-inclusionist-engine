@@ -429,6 +429,7 @@ const en: Record<string, string> = {
   'pause.acessibilidade': '♿ Accessibility',
   'pause.options': '⚙ Options',
   'pause.pmback': '↩ Back',
+  'pause.cardAria': 'Player {n} pause menu',
   /* --- ACTIVITY CATALOG: everything except literacy. The five literacy activities stay raw pt-BR in
      `educational/activities-registry` — the word and the syllable ARE the subject matter (pillar 3). --- */
   'act.ludico.nome': 'Collect 10 coins',

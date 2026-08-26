@@ -28,6 +28,7 @@
 import { describe, it, expect } from 'vitest';
 import { screenPauseMarkup, PM_ITENS_VISIVEIS } from '../app/js/ui/pause-icons.js';
 import { PM_BTNS, PM_OPTIONS_BTNS } from '../app/js/ui/activities-menu.js';
+import { t } from '../app/js/core/i18n.js';
 
 const SEM_DIN = () => null;
 const markup = () => screenPauseMarkup({
@@ -76,6 +77,27 @@ describe('menu de pausa · sete itens na raiz, os ajustes num submenu', () => {
     // Sem isto o anel daria a volta atravessando para a lista invisível, e a criança ouviria itens de um menu
     // que não está na tela. É a única linha que impede as duas listas de virarem uma só para a navegação.
     expect(PM_ITENS_VISIVEIS).toContain(':not([hidden])');
+  });
+
+  it('[Right] o NOME ACESSÍVEL do diálogo passa pelo dicionário', () => {
+    // MEDIDO no jogo construído com `<html lang="en">`: o título visível dizia "Paused" e o nome acessível do
+    // diálogo dizia "Menu de pausa do jogador 1". Quem enxerga lia em inglês; quem escuta recebia o menu
+    // anunciado em português.
+    //
+    // É a MESMA assimetria do item 4 do ADR-0044, um nível acima: lá a legenda existia para quem vê e era
+    // escondida de quem escuta; aqui o rótulo é traduzido para quem vê e cru para quem escuta. O canal de
+    // acessibilidade recebendo tratamento pior que o visual é o padrão que este registro existe para quebrar.
+    //
+    // O `<h2>` NÃO é o nome do diálogo — o cartão usa `aria-label`, não `aria-labelledby`. Foi por isso que
+    // eu pude afirmar que escondê-lo no quadro apertado não custaria nada a quem escuta; esta linha é o que
+    // torna a afirmação verificável em vez de lembrada.
+    // A asserção "não contém a frase crua" NÃO cabe aqui e eu a escrevi assim primeiro: em pt-BR o valor do
+    // dicionário É a mesma frase, então ela se contradizia. O que prova a passagem pela chave é a IDENTIDADE
+    // com o que `t()` devolve, mais a existência da chave nos três idiomas (o `i18n-dicts` cobre o resto).
+    const h = markup();
+    expect(h).toContain('aria-label="' + t('pause.cardAria', { n: 1 }) + '"');
+    expect(t('pause.cardAria', { n: 3 }), 'o número do jogador tem de entrar por parâmetro').toContain('3');
+    expect(h, 'o `<h2>` não pode virar o nome do diálogo — ele é rótulo VISUAL').not.toContain('aria-labelledby');
   });
 
   it('[Zero] nenhum ato aparece nas DUAS listas', () => {

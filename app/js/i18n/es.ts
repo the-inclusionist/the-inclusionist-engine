@@ -428,6 +428,7 @@ const es: Record<string, string> = {
   'pause.acessibilidade': '♿ Accesibilidad',
   'pause.options': '⚙ Opciones',
   'pause.pmback': '↩ Volver',
+  'pause.cardAria': 'Menú de pausa del jugador {n}',
   /* --- CATÁLOGO DE ACTIVIDADES: todo menos alfabetización. Las cinco de alfabetización siguen en pt-BR
      crudo en `educational/activities-registry`: la palabra y la sílaba SON la materia (pilar 3). --- */
   'act.ludico.nome': 'Recoger 10 monedas',

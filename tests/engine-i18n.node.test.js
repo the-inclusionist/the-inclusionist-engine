@@ -130,7 +130,7 @@ const CRU_CONHECIDO = {
   'ui/settings-caa.ts': 5,
   'ui/caa-sets.ts': 3,             // descrições dos conjuntos de pictogramas (licença, origem cultural)
   'ui/hud.ts': 1,
-  'ui/pause-icons.ts': 1,
+
   'ui/settings-panel.ts': 1,
   'ui/settings-controls.ts': 1,
 

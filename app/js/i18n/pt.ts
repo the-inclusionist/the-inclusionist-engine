@@ -94,6 +94,7 @@ const pt: Record<string, string> = {
   'pause.acessibilidade': '♿ Acessibilidade',
   'pause.options': '⚙ Opções',
   'pause.pmback': '↩ Voltar',
+  'pause.cardAria': 'Menu de pausa do jogador {n}',
   /* --- CATÁLOGO DE ATIVIDADES: só o que NÃO é alfabetização. As cinco de alfabetização seguem cruas em
      pt-BR no `educational/activities-registry`, porque a palavra e a sílaba SÃO a matéria (pilar 3). --- */
   'act.ludico.nome': 'Coletar 10 moedas',

@@ -390,7 +390,12 @@ export interface ScreenPauseMarkupOpts {
 
 /** The full innerHTML of a `.screen-pause`. Pure — every input is a parameter. */
 export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
-  return '<div class="pause-card" role="dialog" aria-modal="true" aria-label="Menu de pausa do jogador ' + (o.player + 1) + '">' +
+  // O NOME ACESSÍVEL DO DIÁLOGO passa pelo dicionário. Era texto cru, e MEDIDO num jogo em inglês o efeito
+  // era este: o título visível dizia "Paused" e o nome do diálogo, "Menu de pausa do jogador 1". Quem enxerga
+  // lia em inglês; quem escuta recebia o menu anunciado em português — a mesma assimetria do item 4 do
+  // ADR-0044, um nível acima. E `aria-label`, não `aria-labelledby`: o `<h2>` é rótulo VISUAL, e é por isso
+  // que escondê-lo num quadro apertado não tira o nome do diálogo de quem escuta.
+  return '<div class="pause-card" role="dialog" aria-modal="true" aria-label="' + t('pause.cardAria', { n: o.player + 1 }) + '">' +
     '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>' + (o.numPlayers > 1 ? ' · Jogador ' + (o.player + 1) : '') + '</h2>' +
     pauseMenuHtml(o.pmButtons, 'raiz', o.dynLabel, o.t) +
     pauseMenuHtml(o.optionsButtons, 'opcoes', o.dynLabel, o.t) +
