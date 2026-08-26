@@ -31,7 +31,8 @@
 // updateTitleLegend (device legend — gamepad slice), the `#title-icons` a11y shortcut row (pause-icons slice;
 // it only shares the `#title-overlay` element, never a listener), and setMode()/applyLetra() (HUD toggles).
 import { activity as ACTIVITY, setActivityValue, numPlayers, players } from '../core/state.js';
-import { getActivity, hasActivity, isValidActivityId, DEFAULT_ACTIVITY_ID, type ActivityDef } from '../educational/activities-registry.js';
+import { getActivity, hasActivity, isValidActivityId, DEFAULT_ACTIVITY_ID, activityCategory,
+         type ActivityDef, type ActivityCat } from '../educational/activities-registry.js';
 import * as store from '../platform/storage.js';
 import { t } from '../core/i18n.js';
 import type { TitleMenuId } from './title.js';
@@ -41,10 +42,12 @@ import { TITLE_MENU_IDS_ORDERED as TITLE_MENU_ORDER } from './title.js';
 // Types
 // -------------------------------------------------------------------------------------------------------
 
-/** The three engine modes the activity category maps onto (game.js's `MODE`). */
-export type GameMode = 'ludico' | 'somasub' | 'silabas';
-/** Menu category of an activity — same union as ActivityDef['cat']. */
-export type ActivityCat = ActivityDef['cat'];
+// `GameMode`, `ActivityCat`, `activityCategory` e `modeForCategory` mudaram-se para
+// `educational/activities-registry` (ADR-0040). São funções puras sobre o catálogo, e o catálogo mora lá
+// desde o ADR-0032 — esta casca só as hospedava. Reexportadas aqui porque o menu é a superfície pública
+// delas para quem já as importava; a definição é uma só.
+export type { ActivityCat, GameMode } from '../educational/activities-registry.js';
+export { activityCategory, modeForCategory } from '../educational/activities-registry.js';
 /** The five fraction notations the "Fração" submenu toggles. */
 export type FracNotKey = 'v' | 'd' | 'dec' | 'pct' | 'mix';
 /** On/off state per notation, stored as 0/1 (game.js persisted numbers, not booleans — kept verbatim). */
@@ -76,9 +79,6 @@ export interface ActivitiesMenuCtx {
   cenarios: readonly CenarioOption[];
   /** Applies the chosen scenario (game.js: validates, persists via core/state, rebuilds the parallax textures). */
   setCenario: (theme: string) => void;
-  /** BARE assignment to game.js's `let MODE` — NOT setMode(), which also restarts the round and moves focus.
-   *  A binding imported from another module cannot be reassigned, so the write comes back as a setter. */
-  setModeValue: (mode: GameMode) => void;
   /** game.js's setQuizLevel(n, announce): persists via core/state and refreshes the `.pm-nivel` pause labels.
    *  Stays in game.js because the pause menu — not this menu — owns those labels. */
   setQuizLevel: (n: number, announce: boolean) => void;
@@ -188,15 +188,6 @@ export const TAB_SEL_DEFAULT: readonly number[] = [2, 3, 4, 5];
 // PURE logic — no document, no storage; this is what the node project exercises.
 // -------------------------------------------------------------------------------------------------------
 
-/** Category of `id`, falling back to 'ludico' for anything the catalog does not know. */
-export function activityCategory(id: string | null | undefined): ActivityCat {
-  return (getActivity(id ?? '') || ({} as Partial<ActivityDef>)).cat || 'ludico';
-}
-
-/** Engine MODE for a category — the only place the two vocabularies meet. */
-export function modeForCategory(cat: ActivityCat): GameMode {
-  return cat === 'alf' ? 'silabas' : cat === 'mat' ? 'somasub' : 'ludico';
-}
 
 /** Unknown/absent id → the default activity. game.js's `if(!hasActivity(id))id=DEFAULT_ACTIVITY_ID`. */
 export function normalizeActivityId(id: string): string {
@@ -411,7 +402,8 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
     setActivityValue(id); // core/state.ts: value + persistence (incl_activity) + event; validation stayed here
     const cat = (getActivity(id) as ActivityDef).cat;
     if (cat === 'alf') ctx.setQuizLevel(ALF_LEVEL[id], false); // reuses the 5 psychogenesis levels
-    ctx.setModeValue(modeForCategory(cat));
+    // O MODE NÃO É ESCRITO AQUI, e é este apagamento que fecha a issue #54: ele DERIVA de `activity`, que a
+    // linha acima acabou de gravar. Enquanto havia dois caminhos de escrita, um deles podia mentir.
   }
 
   // R-splash 2: after the challenge is chosen, PLAYER 1 picks the SCENARIO (the others get "aguarde").

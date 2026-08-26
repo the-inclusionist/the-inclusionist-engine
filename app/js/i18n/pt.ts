@@ -355,7 +355,6 @@ const pt: Record<string, string> = {
   'sr.player.prefix': 'Jogador {n}: ',
   'sr.empathy.hearingOn': 'Simulação de perda auditiva ligada: sons fracos ficam abafados e os agudos são cortados; falas ficam difíceis de entender.',
   'sr.empathy.hearingOff': 'Simulação de perda auditiva desligada.',
-  'sr.mode.set': 'Modo {v}.',
   'sr.pad.disconnected': 'Controle do Jogador {n} desconectado — o teclado continua funcionando. Aperte START para reassociar.',
   'sr.quiz.levelSet': 'Nível {n}: {v}.',
   'sr.visual.roleColorSet': 'Cor de {v} alterada.',
@@ -506,7 +505,6 @@ const pt: Record<string, string> = {
   'a11y.btnJump': 'Pular (botão 0)',
   'a11y.audioOut': 'Saída de áudio por jogador',
   'a11y.visualSim': 'Simulação visual',
-  'a11y.switchMode': 'Trocar o modo de jogo (Lúdico, Soma-Sub, Sílabas)',
   'a11y.switchScreens': 'Trocar o número de telas (jogadores)',
   'a11y.btnSwap': 'Trocar poder (botão 3)',
   // O rótulo VISÍVEL do #np-btn. Estava cru no index.html e não podia levar `data-i18n`: o texto embrulha um

@@ -16,7 +16,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   initSession, collectBox, coinItemBox, powerupBox, gateTileBox, overlaps, coinAction,
   fitsScreens, clampScreens, objectiveText, restartAnnounce, roundStartFields,
-  MODE_LABELS, MODES, SCREEN_LABELS,
+  SCREEN_LABELS,
 } from '../app/js/game/session.js';
 import { BOX, SPAWN_X, SPAWN_Y, makePlayer } from '../app/js/game/player.js';
 import { TILE, EASY, COIN_TARGET } from '../app/js/core/constants.js';
@@ -163,7 +163,10 @@ describe('game/session — objectiveText e restartAnnounce', () => {
     expect(objectiveText('silabas', 1)).toBe('Monte 10 palavras');
   });
   it('[Many] multi-tela vira CORRIDA e engole o modo (a mesma frase para os três)', () => {
-    for (const m of MODES) expect(objectiveText(m, 3)).toBe(`3 jogadores — corrida pelas ${COIN_TARGET} moedas`);
+    // A lista vive aqui e não em `game/session` desde o ADR-0040: em produção não há mais quem enumere
+    // os modos — o MODE deriva de `activity`. O que este caso afirma continua valendo: em multi-tela a
+    // frase do objetivo é a mesma para os três, ou seja, o modo é engolido pela corrida.
+    for (const m of ['ludico', 'somasub', 'silabas']) expect(objectiveText(m, 3)).toBe(`3 jogadores — corrida pelas ${COIN_TARGET} moedas`);
   });
   it('[Boundary] a fronteira do "multi" é n>1 — com n=1 ainda é o texto do modo', () => {
     expect(objectiveText('ludico', 1)).not.toContain('corrida');
@@ -178,10 +181,9 @@ describe('game/session — objectiveText e restartAnnounce', () => {
 });
 
 describe('game/session — os rótulos que saíram do game.js', () => {
-  it('há um rótulo de botão para cada modo do ciclo, e o ciclo tem os três modos', () => {
-    expect([...MODES]).toEqual(['ludico', 'somasub', 'silabas']);
-    for (const m of MODES) expect(typeof MODE_LABELS[m]).toBe('string');
-  });
+  // O caso de MODE_LABELS/MODES saiu com eles (ADR-0040). Ele afirmava que havia um rótulo por modo e que
+  // o ciclo tinha três — verdades sobre um botão de depuração que não existe mais. Manter o teste manteria
+  // vivas duas constantes sem chamador, o que é pior que perder a asserção: dá a aparência de cobertura.
   it('há um rótulo de tela para cada uma das 4 telas possíveis', () => {
     expect(SCREEN_LABELS).toHaveLength(4);
     for (let n = 1; n <= 4; n++) expect(SCREEN_LABELS[n - 1]).toContain(String(n));
@@ -255,7 +257,7 @@ let DOM, LOG, CTX, S;
 function novoCtx(over = {}) {
   DOM = {};
   for (const sel of ['#hud-coins', '#hud-objective', '#win-msg', '#win-overlay', '#btn-again',
-    '#game-region', '#opt-mode', '#opt-telas', '#stage-wrap', '#hud-power']) DOM[sel] = elFalso();
+    '#game-region', '#opt-telas', '#stage-wrap', '#hud-power']) DOM[sel] = elFalso();
   LOG = { say: [], alert: [], narrate: [], sfx: [], chamadas: [] };
   const marca = (nome) => () => { LOG.chamadas.push(nome); };
   const estado = {
@@ -267,7 +269,7 @@ function novoCtx(over = {}) {
     $: (sel) => (sel in DOM ? DOM[sel] : null),
     librasReserve: () => 0,
     isCoarsePointer: () => false,
-    getMode: () => estado.mode, setModeValue: (m) => { estado.mode = m; },
+    getMode: () => estado.mode, // DERIVADO de `activity` (ADR-0040): o ctx só lê
     setEnded: (v) => { estado.ended = v; },
     getPowerups: () => estado.powerups,
     getGate: () => estado.gate,
@@ -605,22 +607,16 @@ describe('game/session — restartGame', () => {
   });
 });
 
-/* ---------- setMode ---------- */
+/* ---------- setMode: REMOVIDO, e o motivo fica escrito ----------
 
-describe('game/session — setMode', () => {
-  it('[One] troca o modo, reflete no botão (texto E aria-label) e reinicia a rodada', () => {
-    S.setMode('somasub');
-    expect(CTX.estado.mode).toBe('somasub');
-    expect(DOM['#opt-mode'].textContent).toBe(MODE_LABELS.somasub);
-    expect(DOM['#opt-mode'].attrs['aria-label']).toContain('Soma-Sub');
-    expect(LOG.chamadas).toContain('setupExtras'); // veio pelo restartGame
-    expect(DOM['#game-region'].focused).toBe(1);
-  });
-  it('[Right] o objetivo do HUD já sai no modo NOVO (a ordem importa: MODE antes do restart)', () => {
-    S.setMode('silabas');
-    expect(DOM['#hud-objective'].textContent).toBe('Monte 10 palavras');
-  });
-});
+   Os dois casos que estavam aqui provavam que `S.setMode(m)` escrevia o modo, refletia no `#opt-mode` e
+   reiniciava a rodada. O `setMode` deixou de existir no ADR-0040: com o MODE derivado de `activity`,
+   escrever o modo sem escrever a atividade É a divergência que a issue #54 reproduziu no jogo publicado.
+
+   A cobertura não sumiu — mudou de lugar e ficou mais forte. `tests/activities-menu.node.test.js` afirma
+   agora a DERIVAÇÃO (`modeForActivity(activity)`) em vez da chamada, e o reinício da rodada continua
+   coberto pelos casos de `restartGame` logo acima. Afirmar a chamada era afirmar que um dos dois caminhos
+   de escrita foi tomado; afirmar a derivação é afirmar que só existe um. */
 
 /* ---------- nº de telas ---------- */
 

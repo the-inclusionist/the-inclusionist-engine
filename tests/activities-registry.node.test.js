@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getActivity, hasActivity, isValidActivityId, listActivities, listActivityIds, DEFAULT_ACTIVITY_ID,
+  activityCategory, modeForCategory, modeForActivity,
 } from '../app/js/educational/activities-registry.js';
 
 describe('DEFAULT_ACTIVITY_ID', () => {
@@ -85,5 +86,40 @@ describe('listActivityIds / listActivities', () => {
     const fromGet = getActivity('mat3');
     const fromList = listActivities().find(([id]) => id === 'mat3')[1];
     expect(fromGet).toBe(fromList);
+  });
+});
+
+/* ---------- a derivação do MODE (ADR-0040) ----------
+
+   Estes casos são a CONFIRMAÇÃO que o ADR-0040 exige, e o alvo deles não é a aritmética da tradução — é o
+   BURACO dela. `modeForCategory` decide por dois testes e um `else`, e o `else` cai em 'ludico'. Uma
+   categoria nova no catálogo (digamos 'ciencias') não quebra nada: vira 'ludico' em silêncio, as moedas
+   nascem sem forma nem letra, e ninguém descobre até uma criança abrir a atividade.
+
+   Por isso o primeiro caso enumera as categorias REALMENTE PRESENTES no catálogo e cobra mapeamento
+   EXPLÍCITO de cada uma. O fall-through não conta como resposta. */
+
+const MAPA_EXPLICITO = { ludico: 'ludico', alf: 'silabas', mat: 'somasub' };
+
+describe('MODE derivado de activity (ADR-0040)', () => {
+  it('toda categoria presente no catálogo tem mapeamento EXPLÍCITO — o `else` não conta como resposta', () => {
+    const categorias = [...new Set(listActivities().map(([, def]) => def.cat))].sort();
+    expect(categorias.length).toBeGreaterThan(0);
+    for (const cat of categorias) {
+      expect(Object.prototype.hasOwnProperty.call(MAPA_EXPLICITO, cat), `categoria '${cat}' sem mapeamento`).toBe(true);
+      expect(modeForCategory(cat), cat).toBe(MAPA_EXPLICITO[cat]);
+    }
+  });
+
+  it('toda atividade do catálogo deriva um modo, e ele concorda com a categoria dela', () => {
+    const ids = listActivityIds();
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) {
+      expect(modeForActivity(id), id).toBe(MAPA_EXPLICITO[activityCategory(id)]);
+    }
+  });
+
+  it('id fora do catálogo cai em lúdico — e é o único caso em que o fall-through é a resposta certa', () => {
+    for (const id of ['nao-existe', '', null, undefined]) expect(modeForActivity(id)).toBe('ludico');
   });
 });

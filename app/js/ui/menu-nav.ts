@@ -49,7 +49,7 @@
 //   · animation → `#opt-animation` — NÃO existe (o próprio game.js já anota isso na linha do `#animation-close`).
 //   · empathy   → `#opt-empathy`   — NÃO existe. No-op.
 //   · typo/help → `menuFocus(sharedDialogOpen())` — o caminho quebrado descrito acima.
-// Os ids que EXISTEM no index.html com prefixo `opt-` são: opt-title, opt-mode, opt-telas, opt-letra, opt-facil,
+// Os ids que EXISTEM no index.html com prefixo `opt-` são: opt-title, opt-telas, opt-letra, opt-facil,
 // opt-altmove, opt-touchcfg, opt-eyes, opt-modocego, opt-tts, opt-onebtn, opt-wheelchair, opt-hearing,
 // opt-captions. Nenhum `#opt-visual`/`#opt-sound`/`#opt-movement`/`#opt-controls`/`#opt-empathy`/`#opt-animation`
 // — são ganchos para uma barra de botões que ainda não existe. Ou seja: NÃO é "sete certos e dois errados". É

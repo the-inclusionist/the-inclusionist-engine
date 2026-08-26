@@ -8,7 +8,8 @@
 // `platform/storage.ts` são os módulos REAIS, que initActivitiesMenu importa direto.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initActivitiesMenu, attachAbbr, TITLE_MENU_ORDER } from '../app/js/ui/activities-menu.js';
-import { players, setNumPlayersValue, setActivityValue } from '../app/js/core/state.js';
+import { players, setNumPlayersValue, setActivityValue, activity as ACTIVITY } from '../app/js/core/state.js';
+import { modeForActivity } from '../app/js/educational/activities-registry.js';
 import * as store from '../app/js/platform/storage.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -37,7 +38,6 @@ function makeCtx(over = {}) {
     titleShow: (w) => { calls.shown.push(w); for (const id of TITLE_MENU_ORDER) $('#' + id).hidden = id !== w; },
     cenarios: [{ id: 'cidade', nome: 'Cidade' }, { id: 'floresta', nome: 'Floresta' }],
     setCenario: (c) => calls.cenario.push(c),
-    setModeValue: (m) => calls.mode.push(m),
     setQuizLevel: (n, a) => calls.quizLevel.push([n, a]),
     isMobile: () => false,
     fitsN: () => true,
@@ -101,7 +101,9 @@ describe('markup gerado vira menu de verdade', () => {
     clickAndSettle($('#tm-cen button[data-cen="floresta"]'));
     expect(calls.shown).toEqual(['tm-mat', 'tm-fr', 'tm-cen']);
     expect(calls.cenario).toEqual(['floresta']);
-    expect(calls.mode).toEqual(['somasub']);
+    // O menu não escreve mais o modo (ADR-0040) — ele grava a atividade e o modo DERIVA. O percurso
+    // inteiro terminou numa fração, que é matemática, logo o motor está em soma-sub.
+    expect(modeForActivity(ACTIVITY)).toBe('somasub');
     expect(calls.phase).toEqual(['playing']);
     expect(players[0].alfWins).toBe(0);
   });

@@ -17,7 +17,7 @@ import {
   abbrParts, abbrText, attachAbbr,
   initActivitiesMenu,
 } from '../app/js/ui/activities-menu.js';
-import { DEFAULT_ACTIVITY_ID, listActivityIds } from '../app/js/educational/activities-registry.js';
+import { DEFAULT_ACTIVITY_ID, listActivityIds, modeForActivity } from '../app/js/educational/activities-registry.js';
 import { activity as ACTIVITY, setActivityValue, players, setNumPlayersValue } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
@@ -119,7 +119,6 @@ function makeCtx(over = {}) {
     titleShow: (w) => calls.shown.push(w),
     cenarios: [{ id: 'cidade', nome: 'Cidade' }, { id: 'campo', nome: 'Dia no Campo' }],
     setCenario: (c) => calls.cenario.push(c),
-    setModeValue: (m) => calls.mode.push(m),
     setQuizLevel: (n, a) => calls.quizLevel.push([n, a]),
     isMobile: () => false,
     fitsN: () => true,
@@ -495,7 +494,9 @@ describe('initActivitiesMenu — escolher a atividade', () => {
     const api = initActivitiesMenu(ctx);
     api.setActivity('mat9000');
     expect(store.get(store.KEYS.activity)).toBe(DEFAULT_ACTIVITY_ID);
-    expect(calls.mode).toEqual(['ludico']);
+    // O modo NÃO é mais escrito por este menu (ADR-0040): ele DERIVA da atividade que a linha acima gravou.
+    // Afirmar a derivação é mais forte que afirmar a chamada — a chamada podia mentir, e mentia (issue #54).
+    expect(modeForActivity(store.get(store.KEYS.activity))).toBe('ludico');
     expect(calls.quizLevel).toEqual([]); // lúdico não mexe no nível de alfabetização
   });
 
@@ -504,7 +505,7 @@ describe('initActivitiesMenu — escolher a atividade', () => {
     const api = initActivitiesMenu(ctx);
     api.setActivity('alf3');
     expect(calls.quizLevel).toEqual([[3, false]]);
-    expect(calls.mode).toEqual(['silabas']);
+    expect(modeForActivity(store.get(store.KEYS.activity))).toBe('silabas');
     expect(api.actCat()).toBe('alf');
   });
 
@@ -512,7 +513,7 @@ describe('initActivitiesMenu — escolher a atividade', () => {
     const { ctx, calls } = makeCtx();
     const api = initActivitiesMenu(ctx);
     api.setActivity('mat5');
-    expect(calls.mode).toEqual(['somasub']);
+    expect(modeForActivity(store.get(store.KEYS.activity))).toBe('somasub');
     expect(calls.quizLevel).toEqual([]);
   });
 

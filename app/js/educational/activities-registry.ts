@@ -85,3 +85,35 @@ export function listActivityIds(): string[] {
 export function listActivities(): (readonly [string, ActivityDef])[] {
   return [...ACTIVITIES.entries()];
 }
+
+// =========================== A TRADUÇÃO CURRÍCULO → MOTOR (ADR-0040) ===========================
+// Estas duas vieram de `ui/activities-menu` quando o `MODE` deixou de ser estado e passou a ser derivado.
+// Elas são funções PURAS sobre este catálogo, e o catálogo mora aqui desde o ADR-0032 — a casca só as
+// hospedava. E `core/` não pode importar de `ui/`, então enquanto elas estavam lá a derivação não tinha
+// como existir na engine.
+
+/** A categoria de menu de uma atividade — 'ludico' para tudo que o catálogo não conhece. */
+export type ActivityCat = ActivityDef['cat'];
+
+/** O vocabulário do MOTOR: como a rodada se comporta. Três valores, e nenhum é um id de atividade. */
+export type GameMode = 'ludico' | 'somasub' | 'silabas';
+
+/** Categoria de `id`, caindo em 'ludico' para qualquer coisa fora do catálogo. */
+export function activityCategory(id: string | null | undefined): ActivityCat {
+  return (getActivity(id ?? '') || ({} as Partial<ActivityDef>)).cat || 'ludico';
+}
+
+/** O MODE do motor para uma categoria — o único ponto onde os dois vocabulários se encontram. */
+export function modeForCategory(cat: ActivityCat): GameMode {
+  return cat === 'alf' ? 'silabas' : cat === 'mat' ? 'somasub' : 'ludico';
+}
+
+/**
+ * O MODE de uma atividade. É a derivação inteira, num nome só — e é ela que torna impossível, por
+ * construção, o desacordo que a issue #54 reproduziu no jogo publicado: ciclar o `#opt-mode` deixava o MODE
+ * em 'silabas' com a atividade ainda em 'ludico', as moedas nasciam como letras e o despacho do quiz
+ * continuava consultando a categoria antiga.
+ */
+export function modeForActivity(id: string | null | undefined): GameMode {
+  return modeForCategory(activityCategory(id));
+}

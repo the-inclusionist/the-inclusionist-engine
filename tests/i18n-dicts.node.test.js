@@ -120,9 +120,6 @@ describe('dicionários de locale — estrutura', () => {
       // língua que anuncie a distância antes do lado precisa poder inverter, e só consegue se a ordem morar
       // no dicionário.
       'sr.nav.sonarFound',
-      // 'Modo {v}.' — "modo" é a mesma palavra em pt-BR e es, e o nome do modo chega pelo parâmetro. Mesmo
-      // caso do sr.visual.contrast logo acima.
-      'sr.mode.set',
     ]);
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const iguais = chavesSr.filter((k) => k in d && d[k] === pt[k] && !COINCIDEM_DE_PROPOSITO.has(k));

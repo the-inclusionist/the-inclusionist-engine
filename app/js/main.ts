@@ -23,7 +23,8 @@ import { quizLevel, setQuizLevelValue, coins, setCoins } from './game/state.js';
 import { startLoop } from './core/loop.js'; // driver do loop
 import { initDebugPanel } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
-import { isValidActivityId, DEFAULT_ACTIVITY_ID } from './educational/activities-registry.js';
+import { isValidActivityId, DEFAULT_ACTIVITY_ID, modeForActivity, type GameMode }
+  from './educational/activities-registry.js'; // ADR-0040: o MODE deriva daqui, e a derivação mora no currículo
 
 import { buildElevators, elevAt, getElevShafts, initElevators } from './game/elevators.js'; // Estágio 4 (Tier 2): geometria de elevador (cadeirante)
 import { fmtFrac, fracGraphic, speakChoice } from './game/fractions.js'; // Estágio 4 (Tier 2): matemática/render de frações
@@ -92,7 +93,7 @@ import { initPhysics, stepPlayer as stepPhysics } from './game/physics.js'; // B
 import { initQuiz } from './game/quiz.js'; // B3: o desafio educativo (geracao + markup + efeito)
 import { initSettingsPanel } from './ui/settings-panel.js'; // B4: o que as cascas dos paineis realmente compartilham
 import { initViewports } from './render/viewports.js'; // B2: fabrica de imagem dos modos de visao
-import { initSession, MODE_LABELS, MODES } from './game/session.js'; // C2: o ciclo de vida da RODADA
+import { initSession } from './game/session.js'; // C2: o ciclo de vida da RODADA (MODE_LABELS/MODES saíram com o #opt-mode)
 import { initDraw } from './render/draw.js'; // C1: camera + o quadro + a escolha de quadro do personagem
 import { initVizSetters } from './render/viz-setters.js'; // Onda A: aplicacao dos modos de visao acessivel
 import { roleOf } from './game/tile-roles.js'; // Passo 7: a tabela tile->papel e' do JOGO, nao do alto contraste
@@ -208,8 +209,13 @@ const hexRgb=(h: string): [number, number, number] | null =>{ const m=/^#?([0-9a
 /* ===================== moedas (spawn real) ===================== */
 // findCoinCandidates/pickCoins/takeCoin extraídos p/ game/coins.js (Estágio 4, posicionamento).
 // RNG semeado (rnd/randInt/shuffle/_seed) migrado p/ core/rng.js (Fase 2.26 / Tier 1)
-// modos de jogo
-let MODE='ludico'; // 'ludico' | 'somasub' (silabas vem na E7)
+// O MODO DE JOGO, DERIVADO — não armazenado (ADR-0040). Era um `let` com dois caminhos de escrita, e eles
+// divergiam: ciclar o `#opt-mode` deixava o MODE em 'silabas' com `activity` ainda em 'ludico', as moedas
+// nasciam como letras e o despacho do quiz continuava lendo a categoria da atividade antiga (issue #54,
+// reproduzido no jogo publicado). `MODE === modeForCategory(activityCategory(activity))` valia para TODA
+// atividade do catálogo, ou seja, o `let` não carregava informação nenhuma que o `activity` já não tivesse.
+// Agora é uma função: um caminho de leitura, nenhum de escrita, e a divergência é impossível por construção.
+const MODE = (): GameMode => modeForActivity(ACTIVITY);
 // SOMASUB_SHAPES/somaSubName/SILABAS_WORDS/SILABA_POOL/WORD_INITIALS extraídos p/ game/activity-content.js (Estágio 4).
 /* L3: quiz de alfabetização em 5 NÍVEIS (psicogênese da língua escrita — Ferreiro & Teberosky):
    1 pré-silábico — escolher a palavra BEM escrita entre 3 (2 malformadas); o jogo SOLETRA a opção sob o cursor.
@@ -232,7 +238,7 @@ const disp=(s: unknown)=> letterCase==='upper'?String(s).toUpperCase():String(s)
 // Lote C: cada jogador tem SEU conjunto de n itens em posições ALEATÓRIAS próprias e com a COR do dono
 // (owner). Todos os itens de todos os jogadores existem no mundo; cada um coleta só os `owner===seu i`.
 // pickCoins extraído p/ game/coins.js; aqui só o cálculo dos POOLS a partir do MODE (coins não conhece MODE/quiz).
-const coinPools=()=>({ shapes: MODE==='somasub'?SOMASUB_SHAPES.map(s=>s.id):[], letters: MODE==='silabas'?WORD_INITIALS:[] });
+const coinPools=()=>({ shapes: MODE()==='somasub'?SOMASUB_SHAPES.map(s=>s.id):[], letters: MODE()==='silabas'?WORD_INITIALS:[] });
 
 /* ===================== estado ===================== */
 // $ (querySelector) migrado p/ ui/dom.js (Fase 2.27 / Tier 1)
@@ -625,7 +631,7 @@ const coinContainer=new PIXI.Container(); camera.addChild(coinContainer);
 // silabas, restart) nao mudam — so a definicao saiu daqui.
 initCoinSpawning({ coinContainer, createSprite: (t) => new PIXI.Sprite(t), coinTexFor: (m) => spriteTexFor('coin', m),
   shapeTexFor: (id) => SHAPE_TEX[id], letterTexFor: letterTexture, pcolor: PCOLOR,
-  getMode: () => MODE, getOwnerColors: () => ownerColors, invalidateSharedViz: () => { _lastSharedViz=null; },
+  getMode: () => MODE(), getOwnerColors: () => ownerColors, invalidateSharedViz: () => { _lastSharedViz=null; },
   powerShort: POWER_SHORT, $ });
 rebuildCoins();
 // camada de escuridão das áreas secretas (acima de mundo/moedas, ABAIXO do player → player sempre visível)
@@ -1057,7 +1063,7 @@ function respawnFigure(i: number){
   const occ=new Set(); coins.forEach((c,j)=>{ if(j!==i)occ.add(c.x+','+c.y); });
   for(const cand of shuffle(findCoinCandidates())){ const x=cand.tx*TILE+3,y=cand.ty*TILE+3;
     if(!occ.has(x+','+y)){ coins[i].x=x;coins[i].y=y;coins[i].taken=false; // dono (owner) preservado
-      const s=getCoinSprites()[i]; s.x=(MODE==='somasub')?x-3:x; s.y=(MODE==='somasub')?y-3:y; s.visible=true; return; } }
+      const s=getCoinSprites()[i]; s.x=(MODE()==='somasub')?x-3:x; s.y=(MODE()==='somasub')?y-3:y; s.visible=true; return; } }
 }
 
 /* ===================== vitória ===================== */
@@ -1077,7 +1083,7 @@ function respawnFigure(i: number){
 const sessionApi = initSession({
   $, librasReserve: ()=>0, // o intérprete NÃO empurra mais a tela (ver ui/vlibras + ui/layout); fica p/ o overlay sob demanda
   isCoarsePointer: ()=>{ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } },
-  getMode: ()=>MODE, setModeValue: (m)=>{ MODE=m; },
+  getMode: ()=>MODE(), // sem `setModeValue`: o MODE deriva de `activity` e não tem caminho de escrita (ADR-0040)
   setEnded: setEndedValue,
   getPowerups: ()=>powerups, getGate: ()=>gate, isGateOpen: ()=>gateOpen, setGateOpen: setGateOpenValue,
   getPauseActor: ()=>pauseActor, ownerColors: ()=>ownerColors, captionsOn: ()=>captionsOn,
@@ -1110,7 +1116,6 @@ function updateHud(){ sessionApi.updateHud(); }
 // inconsistência era minha, e é ela que produzia metade dos conflitos `XPlayer` ↔ `Player`.
 function win(pl: Parameters<typeof sessionApi.win>[0]){ sessionApi.win(pl); }
 function restartGame(){ sessionApi.restartGame(); }
-function setMode(m: Parameters<typeof sessionApi.setMode>[0]){ sessionApi.setMode(m); }
 function setNumPlayers(n: number){ sessionApi.setNumPlayers(n); }
 function fitsN(n: number){ return sessionApi.fitsN(n); }
 function isMobile(){ return sessionApi.isMobile(); }
@@ -1130,7 +1135,6 @@ const activitiesMenu = initActivitiesMenu({
   titleShow: titleUI.show,
   cenarios: Object.keys(CENARIOS).map(c => ({ id: c, nome: CENARIOS[c].nome })),
   setCenario,
-  setModeValue: (m) => { MODE = m; },
   setQuizLevel, isMobile, fitsN, setNumPlayers, restartGame, setPhase, hideTips,
   enterFullscreen: () => { try{ const el=document.documentElement, rf=el.requestFullscreen||el.webkitRequestFullscreen; if(rf)rf.call(el); }catch(e){} },
 });
@@ -1152,10 +1156,10 @@ const quizApi = initQuiz({
 });
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraidos p/ game/fractions.js (Estagio 4).
 // fmtFrac/fracGraphic/fracSpeak/speakChoice + _pieUnit/_sqGrid/FRAC_GFX extraídos p/ game/fractions.js (Estágio 4).
-const optModeBtn=$('#opt-mode'); // botão único: cicla os 3 modos
-if(optModeBtn)optModeBtn.addEventListener('click',()=>{
-  const m=MODES[(MODES.indexOf(MODE)+1)%MODES.length]; setMode(m); srSay(t('sr.mode.set',{v:MODE_LABELS[m].replace(/^\S+\s/,'')})); /* MODE_LABELS ainda é pt-BR: ver a nota do item 14 no topo */
-});
+// O `#opt-mode` SAIU (ADR-0040). Ele ciclava o MODE sem tocar em `activity` — era o segundo caminho de
+// escrita, e o que a issue #54 reproduziu. Com o MODE derivado ele não teria o que ciclar. Era superfície
+// de depuração, dentro de `#topbar-tools hidden`, revelada só por `?debug=true`; quem troca de atividade é
+// o menu de atividades, que grava `activity` e reinicia a rodada — e o MODE segue sozinho.
 // Mapa padrão (Gamepad API "standard"): 0=pulo/sim · 1=especial/não · 2=correr/interagir (X/esquerda) · 3=troca ·
 // D-pad 12-15 + analógico esq. · RB/RT também correm · 9=START (pausa). Controles fora do padrão → wizard de mapeamento.
 // Direções pelas FONTES PADRÃO (stick 0/1, D-pad botões 12-15, POV hat em eixos altos ≥6): o controle tem
@@ -1214,7 +1218,7 @@ function applyLetra(){
   // O DOM (menus, HUD, legendas) via CSS; a canvas via `disp()`, que a PIXI usa ao desenhar. São dois caminhos
   // de texto no jogo, e o botão só ligava um deles — daí "letras maiúsculas" não alcançar os menus.
   document.documentElement.dataset.letras = letterCase;
-  if(typeof rebuildCoins==='function' && MODE==='silabas') rebuildCoins();
+  if(typeof rebuildCoins==='function' && MODE()==='silabas') rebuildCoins();
   jogadores().forEach(p=>{ if(p.quiz)renderQuiz(p); }); // L3: re-renderiza o quiz de quem estiver num
 }
 applyLetra(); // estado inicial: reflete a caixa persistida no atributo que o CSS lê
@@ -1496,10 +1500,10 @@ startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
   fpsTick();
   if(phase==='playing'){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
 window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return powerups;},get gateOpen(){return gateOpen;},get gate(){return gate;},get ended(){return ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(players[0]),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
-  get mmSeen(){return minimapSeenCount();},get MODE(){return MODE;},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
+  get mmSeen(){return minimapSeenCount();},get MODE(){return MODE();},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
-  setMode,setQuizLevel,get quizLevel(){return quizLevel;},openSilabas,quizMove,quizConfirm,quizErase,get quiz(){return jogadores()[0].quiz;},INCL_VERSION,fmtFrac,fracGraphic,speakChoice,get fracNot(){return fracNot;},
+  setQuizLevel,get quizLevel(){return quizLevel;},openSilabas,quizMove,quizConfirm,quizErase,get quiz(){return jogadores()[0].quiz;},INCL_VERSION,fmtFrac,fracGraphic,speakChoice,get fracNot(){return fracNot;},
   setGameFont:typo.setFont,openTypo,get fontKey(){return typo.getFontKey();},FONT_GROUPS,get mmSeen2(){return minimapSeenCount();},
   startAttract:()=>attractCtl.startAttract(),stopAttract:()=>attractCtl.stopAttract(),get attract(){return attractCtl.isAttract();}, // attract → game/attract.ts
   loadTTS:tts.loadTTS,ttsSpeak:tts.ttsSpeak,narrate:tts.narrate,get ttsEngine(){return tts.getEngine();},get ttsLoading(){return tts.loading;},get ttsFailed(){return tts.failed;},setTtsEngineSel(v: Parameters<typeof tts.setEngineSel>[0]){tts.setEngineSel(v);},

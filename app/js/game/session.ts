@@ -28,7 +28,7 @@
 //    injeção (`setupExtras()`) e por getter (`getPowerups`, `getGate`, `isGateOpen`).
 //  · `configureRender`, `ensureSprites`, `assignControls`, `layout`, `reapplyVizAll`, `hideTouchControls`:
 //    são as CONSEQUÊNCIAS de mudar o número de telas, não a decisão. Entram como callbacks.
-//  · A fiação dos botões (`#opt-mode`, `#opt-telas`, `#btn-again`, Alt+1..4, o item "Sair" do menu de pausa)
+//  · A fiação dos botões (`#opt-telas`, `#btn-again`, Alt+1..4, o item "Sair" do menu de pausa)
 //    fica no game.js. Este módulo é chamado, não escuta.
 //
 // A DUPLICAÇÃO QUE EU ESPERAVA CURAR — E O QUE ACHEI NO LUGAR
@@ -96,12 +96,11 @@ import {
 
 /* ===================== dados de rodada (eram `const` do game.js) ===================== */
 
-/** Rótulo de cada modo no botão `#opt-mode`. Exportado: o ouvinte do botão continua no game.js. */
-export const MODE_LABELS: Record<string, string> = {
-  ludico: '🪙 Lúdico', somasub: '🔷 Soma-Sub', silabas: '🔤 Sílabas',
-};
-/** A ordem do ciclo do botão `#opt-mode` (Lúdico → Soma-Sub → Sílabas → Lúdico). */
-export const MODES: readonly string[] = ['ludico', 'somasub', 'silabas'];
+// `MODE_LABELS` e `MODES` SAÍRAM (ADR-0040). Existiam só para o botão `#opt-mode`: os rótulos que ele
+// mostrava e a ordem em que ele ciclava. Com o botão removido — ele era o segundo caminho de escrita do
+// MODE, e o que a issue #54 reproduziu —, ficaram sem chamador nenhum em produção. Sair é o certo: eram
+// também prosa pt-BR fora do dicionário, do tipo que a nota do item 14 marca, mantida viva por um teste
+// que só afirmava que os rótulos eram strings.
 /** Rótulo do botão `#opt-telas`, indexado por `n-1`. Era literal DUPLICADO em setNumPlayers e joinPlayer. */
 export const SCREEN_LABELS: readonly string[] = ['👤 1 tela', '👥 2 telas', '👨‍👧 3 telas', '👨‍👩‍👧‍👦 4 telas'];
 
@@ -265,7 +264,7 @@ export interface SessionCtx {
   isCoarsePointer(): boolean;     // adaptador de matchMedia (pointer:coarse + hover:none) — é o que torna isMobile testável
 
   /* --- estado REATRIBUÍDO no game.js (obrigatoriamente getters) --- */
-  getMode(): string; setModeValue(m: string): void;      // `let MODE`
+  getMode(): string;                                    // DERIVADO de `activity` (ADR-0040): só leitura
   setEnded(v: boolean): void;                             // `let ended`
   getPowerups(): SessionPowerup[];                        // `let powerups` — setupExtras() REATRIBUI
   getGate(): readonly GateTile[] | null;                           // `let gate` — idem
@@ -331,7 +330,7 @@ export interface SessionApi {
   updateHud(): void;
   win(pl: SessionPlayer | null): void;
   restartGame(): void;
-  setMode(m: string): void;
+
   setNumPlayers(n: number): void;
   fitsN(n: number): boolean;
   isMobile(): boolean;
@@ -467,14 +466,12 @@ export function initSession(ctx: SessionCtx): SessionApi {
     ctx.srSay(restartAnnounce(ctx.getMode(), N()));
   }
 
-  /** Trocar de atividade É reiniciar a rodada — daí este morar aqui e não em ui/activities-menu. */
-  function setMode(m: string): void {
-    ctx.setModeValue(m); // modos liberados em qualquer nº de telas (L3: o quiz abre POR JOGADOR)
-    const b = ctx.$('#opt-mode');
-    if (b) { b.textContent = MODE_LABELS[m]; b.setAttribute('aria-label', 'Modo: ' + MODE_LABELS[m] + '. Toque para trocar.'); }
-    restartGame();
-    focusGame();
-  }
+  // `setMode` FOI EMBORA (ADR-0040). Ele existia para escrever o `let MODE` do game.js e depois reiniciar a
+  // rodada; com o MODE derivado de `activity`, escrever o modo sem escrever a atividade é exatamente a
+  // divergência que a issue #54 reproduziu. Quem troca de atividade é `ui/activities-menu.setActivity`, que
+  // grava `activity` e reinicia — e o MODE segue sozinho. O botão `#opt-mode` saiu junto: era superfície de
+  // depuração (dentro de `#topbar-tools hidden`, revelada só por `?debug=true`) e mostrava um estado que
+  // deixou de existir separadamente.
 
   function focusGame(): void { const g = ctx.$('#game-region'); if (g) g.focus(); }
 
@@ -614,7 +611,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
   }
 
   return {
-    collectFor, updateHud, win, restartGame, setMode,
+    collectFor, updateHud, win, restartGame,
     setNumPlayers, fitsN, isMobile, activateScreens,
     resetPlayerState, respawnPlayer, joinPlayer,
     releaseKey, quitGame,
