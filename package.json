@@ -1,6 +1,6 @@
 {
   "name": "@pm-monte/inclusionist-engine",
-  "version": "4.164.25",
+  "version": "6.36.1",
   "private": true,
   "type": "module",
   "description": "Accessibility-first (WCAG 2.2 + GAG) engine for educational 2D pixel-art games, built with PixiJS. Screen reader, sonar, high contrast by role, colour-vision filters, remappable input as intent, i18n and offline PWA — the parts every game inherits (ADR-0035, ADR-0036).",

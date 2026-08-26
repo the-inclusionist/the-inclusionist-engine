@@ -147,7 +147,7 @@ initCharacterSprites(); // cria as texturas do personagem no boot — o import d
 initAudioMixer();        // carrega o estado do mixer no boot — o import de audio.js é PURO (não lê localStorage). Fase 2.25
 // Versão vem do CARIMBO DE BUILD (git describe → tag de marketing na produção; SHA nos demais). Injetado pelo
 // Vite (__BUILD__, ver vite.config.ts). Tira o 'v' inicial da tag (o display já prefixa 'v'). Fallback defensivo.
-const INCL_VERSION = String((typeof __BUILD__ !== 'undefined' && __BUILD__.version) || '4.164.25').replace(/^v/, '');
+const INCL_VERSION = String((typeof __BUILD__ !== 'undefined' && __BUILD__.version) || '6.36.1').replace(/^v/, '');
 // Mundo autêntico (CLARITY_MAP+buildWorld portados do v3.1.100), spawn real de moedas,
 // física com escada/água/trampolim, animações (idle/walk/climb). Texto/UI no DOM (a11y).
 

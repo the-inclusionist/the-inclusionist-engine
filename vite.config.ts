@@ -14,7 +14,7 @@ import atlasDeSprites from './scripts/vite-plugin-atlas.mjs';
 // A VERSÃO VEM DO `package.json`, e não do `git describe`. Foi assim até 2026-08-26, e o defeito era este:
 // `git describe --tags` só devolve uma versão se houver TAG ALCANÇÁVEL, e não há nenhuma — nem local, nem no
 // remoto (`git ls-remote --tags origin` volta vazio). Sem tag, o `--always` cai no SHA curto, e o jogo
-// mostrava `vbbfa193` no título em vez de `v4.164.25`. O `package.json` diz a versão, está VERSIONADO, e
+// mostrava `vbbfa193` no título em vez da versão de verdade. O `package.json` diz a versão, está VERSIONADO, e
 // chega em qualquer clone: raso, sem tags, no CF Pages, em qualquer lugar. Não há como ele faltar.
 //
 // O `git describe` continua, e continua servindo para o que ele é bom: dizer se este build corresponde a uma
@@ -22,7 +22,7 @@ import atlasDeSprites from './scripts/vite-plugin-atlas.mjs';
 // `-dirty` quando há mudança não commitada — e esse aviso vale: um artefato marcado `-dirty` não corresponde
 // a commit nenhum, e não dá para pedir de volta.
 //
-// Sintaxe de metadados de build do semver (`4.164.25+bbfa193`), que é o lugar certo para isso.
+// Sintaxe de metadados de build do semver (`6.36.1+bbfa193`), que é o lugar certo para isso.
 //
 // Fallbacks: sem git, sobra o `CF_PAGES_COMMIT_SHA`; sem ele, 'dev'.
 const sh = (cmd: string): string => { try { return execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { return ''; } };
@@ -34,7 +34,7 @@ const versaoDoPacote = ((): string => {
 })();
 const descricaoGit = sh('git describe --tags --always --dirty'); // vX.Y.Z · vX.Y.Z-3-gabc1234 · abc1234-dirty
 const shaCurto = sh('git rev-parse --short HEAD') || cfSha || 'dev';
-/** `4.164.25` num build de release; `4.164.25+bbfa193` adiante dela; `+bbfa193-dirty` com árvore suja. */
+/** `6.36.1` num build de release; `6.36.1+bbfa193` adiante dela; `+bbfa193-dirty` com árvore suja. */
 const versaoDeExibicao = ((): string => {
   if (!versaoDoPacote) return descricaoGit || cfSha || 'dev';        // sem package.json legível: o que houver
   if (descricaoGit === 'v' + versaoDoPacote) return versaoDoPacote;   // exatamente na tag desta versão
