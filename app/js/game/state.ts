@@ -91,3 +91,27 @@ export let activity: string = store.getComLegado(store.KEYS.activity, store.KEYS
 export function setActivityValue(id: string): void {
   activity = id; store.set(store.KEYS.activity, id); emit('activity', id);
 }
+
+/* ===================== OS EVENTOS DESTE JOGO (Fase C) ===================== */
+//
+// O barramento é da engine e é TIPADO: `core/state.EventoDoJogo` mapeia nome → carga, e `emit`/`on` são
+// genéricos sobre ele. Nome inexistente não compila; carga errada não compila.
+//
+// Mas quatro eventos são DESTE JOGO, e a engine não pode nomear as cargas — `coins` é `Coin[]`, um tipo do
+// jogo, e o ADR-0033 proíbe a entidade da engine declarar o que o jogo possui. A saída não é afrouxar o
+// mapa: é AUMENTÁ-LO daqui. Quem é dono do evento declara o evento, que é a mesma regra do ADR-0039 aplicada
+// a um canal em vez de a um campo.
+//
+// O aumento é resolvido em tempo de compilação e não gera import de execução: nenhuma aresta nova.
+declare module '../core/state.js' {
+  interface EventoDoJogo {
+    /** O tema ativo. Muda quando a criança escolhe outro cenário no menu. */
+    cenario: string;
+    /** O id da atividade escolhida. */
+    activity: string;
+    /** O nível da alfabetização, 1..5 (as hipóteses da psicogênese). */
+    quizLevel: number;
+    /** As moedas da rodada, inteiras — quem assina redesenha a lista, não um item. */
+    coins: Coin[];
+  }
+}

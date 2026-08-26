@@ -6,16 +6,74 @@ import type { Player } from './entity.js';
 
 import * as store from '../platform/storage.js'; // persistência (as mega-vars com chave leem/gravam aqui)
 
-type Listener = (val: unknown) => void;
-const _subs = new Map<string, Set<Listener>>();
-export function on(evt: string, fn: Listener): () => void { if (!_subs.has(evt)) _subs.set(evt, new Set()); _subs.get(evt)!.add(fn); return () => off(evt, fn); }
-export function off(evt: string, fn: Listener): void { const s = _subs.get(evt); if (s) s.delete(fn); }
+/**
+ * ========================= O BARRAMENTO, TIPADO (Fase C do plano) =========================
+ *
+ * Era `emit(evt: string, val: unknown)`. Duas coisas erradas numa assinatura só:
+ *
+ *   · O NOME ERA `string`. Um `emit('viz', …)` em vez de `'vizMode'` não é erro em lugar nenhum — é
+ *     SILÊNCIO. O assinante certo nunca é chamado, nada fica vermelho, e a única pista é um painel que
+ *     parou de se atualizar. Hoje são dezessete pontos de emissão e cada nome aparece UMA vez; a chance de
+ *     digitar errado é exatamente a chance de escrever a próxima linha.
+ *   · A CARGA ERA `unknown`. Quem assinasse tinha de converter, e a conversão é onde a mentira entra.
+ *
+ * Agora `EventoDoJogo` é um mapa nome → carga, e `emit`/`on` são genéricos sobre ele. Nome inexistente não
+ * compila; carga errada não compila.
+ *
+ * ⚠️ POR QUE ISTO EXISTE ANTES DE TER ASSINANTE. Hoje o barramento tem ZERO `on()` em produção (só o teste
+ * assina). Um mecanismo sem uso normalmente é dívida — mas este precisa nascer tipado, não ser retipado
+ * depois: o ADR-0031 já exige que painéis e atividades se redesenhem quando a criança muda idioma ou fonte,
+ * e a casca do `demos` vai reagir a ajuste durante a partida. O primeiro assinante chega com o contrato
+ * pronto, em vez de chegar e ser seguido por uma migração.
+ */
+export interface EventoDoJogo {
+  /* --- ENGINE: o que este módulo emite --- */
+  phase: Phase;
+  numPlayers: number;
+  vizMode: string;
+  modoCego: boolean;
+  letterCase: LetterCase;
+  captionsOn: boolean;
+  cbSafe: boolean;
+  ownerColors: boolean;
+  hcOutlineFg: OutlineLevel;
+  hcOutlineBg: OutlineLevel;
+  caneBlockDiv: number;
+  wheelchair: boolean;
+  oneButton: boolean;
+
+  /* --- JOGO: `game/state` AUMENTA esta interface com `cenario`, `activity`, `quizLevel` e `coins`.
+     Ver a declaração de aumento no fim daquele arquivo. A engine não pode nomear a carga de `coins` — é um
+     tipo do jogo (ADR-0033/0039) —, e não precisa: quem é dono do evento declara o evento. --- */
+}
+
+type Ouvinte<K extends keyof EventoDoJogo> = (val: EventoDoJogo[K]) => void;
+const _subs = new Map<keyof EventoDoJogo, Set<(val: never) => void>>();
+
+/** Assina `evt`. Devolve a função que cancela — guardar o retorno é mais barato que lembrar do `off`. */
+export function on<K extends keyof EventoDoJogo>(evt: K, fn: Ouvinte<K>): () => void {
+  if (!_subs.has(evt)) _subs.set(evt, new Set());
+  _subs.get(evt)!.add(fn as (val: never) => void);
+  return () => off(evt, fn);
+}
+
+export function off<K extends keyof EventoDoJogo>(evt: K, fn: Ouvinte<K>): void {
+  const s = _subs.get(evt);
+  if (s) s.delete(fn as (val: never) => void);
+}
+
 /**
  * Avisa os assinantes de `evt`. EXPORTADO desde 2026-08-25 (item 19) porque `game/state` emite pelos mesmos
  * canais: um segundo mapa de assinantes seria um segundo barramento, e quem assinasse `coins` no lugar errado
  * simplesmente não seria avisado — sem erro, sem teste vermelho.
+ *
+ * O `try` em volta de cada assinante NÃO é preguiça: um ouvinte que estoura não pode impedir os outros de
+ * receber. Um painel quebrado derruba o painel; não derruba o jogo.
  */
-export function emit(evt: string, val: unknown): void { const s = _subs.get(evt); if (s) for (const fn of s) { try { fn(val); } catch (e) { /* noop */ } } }
+export function emit<K extends keyof EventoDoJogo>(evt: K, val: EventoDoJogo[K]): void {
+  const s = _subs.get(evt);
+  if (s) for (const fn of s) { try { (fn as unknown as Ouvinte<K>)(val); } catch (e) { /* noop */ } }
+}
 
 // --- phase: 'title' | 'playing' | 'paused' (congela o jogo fora de 'playing') ---
 // Leitura: importe `phase` (binding vivo) — as checagens `phase==='playing'` no game.js não mudam.
