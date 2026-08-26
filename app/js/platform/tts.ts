@@ -7,6 +7,7 @@
 
 import * as store from './storage.js';
 import { t, bcp47 } from '../core/i18n.js';
+import { criarFalaInterrompivel } from './interruptible-speech.js';
 
 interface TtsEngine { id: string; speak: (text: string) => void; }
 
@@ -83,16 +84,34 @@ export function createTts(ctx: TtsCtx): Tts {
       const session = await mod.TtsSession.create({ voiceId: fonte.voice,
         progress: (p: { loaded: number; total: number }) => { if (!p || !p.total) return; const pct = Math.round(p.loaded * 100 / p.total); if (pct >= _ttsPct + 25 && pct < 100) { _ttsPct = pct; ctx.srSay(t('sr.tts.progress', { pct })); } },
         logger: () => {} });
-      let playing: AudioBufferSourceNode | null = null, busy = false, next: string | null = null; // fila de 1: só a ÚLTIMA pendente vale
-      const speakNow = async (text: string): Promise<void> => { busy = true;
-        try { const wav = await session.predict(text); const ac = ctx.ensureAC();
-          if (ac) { const buf = await ac.decodeAudioData(await wav.arrayBuffer());
-            if (playing) { try { playing.stop(); } catch (e) { /* noop */ } }
-            const src = ac.createBufferSource(); src.buffer = buf; src.connect(ctx.catNode('tts') || ctx.audioOut() || ac.destination);
-            src.onended = () => { if (playing === src) playing = null; const nx = next; next = null; if (nx) speakNow(nx); else busy = false; };
-            src.start(); playing = src; return; } } catch (e) { /* fala neural falhou p/ este texto */ }
-        const nx = next; next = null; if (nx) speakNow(nx); else busy = false; };
-      ttsEngine = { id: 'piper', speak: (text: string) => { if (busy) next = text; else speakNow(text); } };
+      // A FILA DE UM SAIU (ADR-0044, item 2). Ela era `if (busy) next = text; else speakNow(text)`, e o
+      // efeito, varrendo cinco itens de menu, era ouvir o PRIMEIRO inteiro e depois o ÚLTIMO — os três do
+      // meio sumiam, porque cada pedido sobrescrevia o `next`. Lento e lacunar, e quem não enxerga navega
+      // POR ESCUTA: a escuta ficava vários itens atrás do foco.
+      //
+      // A política agora mora em `platform/interruptible-speech`, pura e testada com falsos. Aqui só se
+      // diz COMO sintetizar, tocar e parar — o quando é lá, com a guarda de geração que impede uma síntese
+      // lenta de atropelar a mais nova.
+      const fala = criarFalaInterrompivel<AudioBuffer, AudioBufferSourceNode>({
+        sintetizar: async (texto) => {
+          const wav = await session.predict(texto);
+          const ac = ctx.ensureAC();
+          if (!ac) throw new Error('sem AudioContext'); // o `catch` de lá trata: silêncio deste item, motor vivo
+          return ac.decodeAudioData(await wav.arrayBuffer());
+        },
+        tocar: (buf, aoTerminar) => {
+          const ac = ctx.ensureAC();
+          if (!ac) return null;
+          const src = ac.createBufferSource();
+          src.buffer = buf;
+          src.connect(ctx.catNode('tts') || ctx.audioOut() || ac.destination);
+          src.onended = aoTerminar;
+          src.start();
+          return src;
+        },
+        parar: (src) => { src.stop(); },
+      });
+      ttsEngine = { id: 'piper', speak: (text: string) => { fala.falar(text); } };
       ttsLoading = false;
       try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) { /* noop */ }
       narrate(t('sr.tts.ready', { s: ((performance.now() - t0) / 1000).toFixed(0) })); // já sai NA voz nova
