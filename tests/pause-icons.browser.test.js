@@ -451,8 +451,12 @@ describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)',
   it('[Right] com AS DUAS no modo, a direção de cada jogador anda só na barra dele', () => {
     // O caso que encena o defeito de índice, e ele precisa das DUAS no modo para morder. Com só uma dentro,
     // a guarda `naBarra.has(i)` já barraria a chamada da outra e o caso passaria sem nunca ter olhado para o
-    // índice da BUSCA da barra — verde pelo motivo errado. Conferido: com `getA11yBars()[0]` fixo no lugar de
-    // `[i]`, é este caso que reprova.
+    // índice da BUSCA da barra — verde pelo motivo errado.
+    //
+    // E o passo tem de sair da TELA 1, não da 0. A primeira versão deste caso pedia o passo para a tela 0 e
+    // PASSAVA com a mutação aplicada: com `getA11yBars()[0]` fixo no lugar de `[i]`, um passo pedido para a
+    // tela 0 cai na barra certa por acidente. Fica anotado porque uma mutação que não falha é pior que
+    // nenhuma — dá a sensação de rigor sem o rigor.
     const { api, bars } = duasTelas();
     api.entrarNaBarra(0);
     api.entrarNaBarra(1);
