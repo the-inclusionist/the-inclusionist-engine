@@ -132,6 +132,25 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
     expect(deitados, 'container horizontal dentro de um submenu da abertura: ' + deitados.join(' | ')).toEqual([]);
   });
 
+  it('[Right] a barra do HUD tem altura declarada e o HUD desce pelo MESMO token', () => {
+    // O defeito que isto impede foi visto na tela: a barra e o HUD ficavam os DOIS ancorados no topo, e o HUD
+    // era desenhado por cima dos ícones. Duas medidas que precisam concordar, escritas em dois lugares, são a
+    // divergência que este repositório já pagou dezesseis vezes com o `DomQuery` — aqui a concordância é
+    // estrutural: as duas leem o mesmo token, então não há como uma andar sem a outra.
+    const alturaBarra = prop('.screen-a11y', 'height');
+    const topoDoHud = prop('.screen-exp .vphud', 'top');
+    expect(alturaBarra, '.screen-a11y sem altura declarada — o HUD não tem por onde descer').toBeTruthy();
+    expect(topoDoHud, '.vphud não desceu: volta a ser desenhado por cima dos ícones').toBeTruthy();
+    expect(topoDoHud, 'o HUD desceu por uma medida PRÓPRIA — as duas vão divergir').toBe(alturaBarra);
+    expect(alturaBarra).toContain('--a11y-h');
+  });
+
+  it('[Right] a explicação da barra fica FORA do fluxo — só os botões ocupam espaço', () => {
+    // "É para aparecer somente os botões, nada de explicação" (Dev). Uma legenda no fluxo reserva altura na
+    // tela de jogo mesmo vazia, e a barra deixa de ser atalho para virar faixa.
+    expect(prop('.screen-a11y .pause-icons-cap', 'position')).toBe('absolute');
+  });
+
   it('[Interface] o casador de seletor distingue a LISTA dos seus botões', () => {
     // O caso que impede o gate de se enganar sozinho. `#tm-fr .frac-nots{justify-content:center}` não pode ser
     // lido como declaração sobre `#tm-fr`, senão propriedade de filho passaria a valer como propriedade da lista.

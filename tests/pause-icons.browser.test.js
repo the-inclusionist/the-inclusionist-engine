@@ -413,6 +413,34 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
   });
 });
 
+describe('a legenda da barra do HUD · aparece ao apontar e SOME ao sair', () => {
+  // O Dev viu a barra na tela de jogo e disse o que estava errado: "é para aparecer somente os botões, nada
+  // de explicação". A legenda ficava pendurada até alguém apontar outra coisa — uma faixa de texto parada em
+  // cima da partida. Numa barra que vive na TELA DE JOGO isso não é ajuda, é obstrução.
+
+  it('[Right] apontar mostra, tirar o mouse limpa', () => {
+    const { bar } = mount();
+    const b = bar.querySelector('.pi-btn[data-pi="contrast"]');
+    const cap = bar.querySelector('.pause-icons-cap');
+    b.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(cap.textContent).not.toBe('');
+    b.dispatchEvent(new MouseEvent('mouseleave'));
+    expect(cap.textContent, 'a explicação ficou parada em cima do jogo').toBe('');
+  });
+
+  it('[Boundary] com o cursor do modo pousado num ícone, a legenda NÃO some', () => {
+    // A exceção que impede o conserto de cegar o modo `accessibility`: ali a legenda é a ÚNICA coisa que diz
+    // onde o cursor está. Apagá-la porque o mouse passou por perto tiraria a orientação de quem não usa mouse.
+    const { api, bar } = mount();
+    api.entrarNaBarra(0);
+    const cap = bar.querySelector('.pause-icons-cap');
+    const antes = cap.textContent;
+    expect(antes).not.toBe('');
+    bar.querySelector('.pi-btn[data-pi="contrast"]').dispatchEvent(new MouseEvent('mouseleave'));
+    expect(cap.textContent, 'o mouse apagou a orientação de quem navega sem ele').toBe(antes);
+  });
+});
+
 describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)', () => {
   // A regra do Dev, e ela é anterior a este ADR: "Nunca unificar multi tela. Correções / melhorias são por
   // tela. Modos multi são por tela." O único que força solo é o modo cego, por causa do limite de canais de

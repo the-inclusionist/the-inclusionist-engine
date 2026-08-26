@@ -221,12 +221,19 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 
    `pointer-events:auto` porque a `.player-screen` inteira é `none` (o jogo recebe o toque); os dez ícones
    são a exceção, como o cartão de pausa já era. */
-.screen-a11y{position:absolute;left:0;right:0;top:4px;z-index:5;pointer-events:auto;font-family:var(--font);font-size:var(--ui-fs,16px)}
-.screen-a11y .pause-icons{flex-wrap:nowrap;white-space:nowrap;gap:.25rem;margin:0}
-/* A legenda da barra: mesmo lugar e mesmo desenho do rodapé da pausa, mas colada ABAIXO dos ícones. Aparece
-   só quando tem o que dizer — uma faixa escura permanente e vazia comeria a tela do jogo. */
-.screen-a11y .pause-icons-cap{margin:.2rem auto 0;max-width:92%;text-align:center;font-size:.8em;color:#f6f5f0}
-.screen-a11y .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px;padding:.2em .6em;width:fit-content}
+/* A ALTURA DA BARRA, num token: é ela que empurra o HUD para baixo. Sem isto os dois ficavam ancorados no
+   topo e se sobrepunham — o HUD lido por cima dos ícones, que foi o que o Dev viu e chamou de péssimo. */
+.player-screen{--a11y-h:calc(var(--tap) + .5rem)}
+.screen-a11y{position:absolute;left:0;right:0;top:0;height:var(--a11y-h);z-index:5;pointer-events:auto;font-family:var(--font);font-size:var(--ui-fs,16px)}
+.screen-a11y .pause-icons{flex-wrap:nowrap;white-space:nowrap;gap:.25rem;margin:0;height:100%}
+/* SÓ OS BOTÕES OCUPAM ESPAÇO. A explicação é ABSOLUTA e fica fora do fluxo — ela aparece por cima do jogo ao
+   passar o mouse (ou quando o cursor do modo `accessibility` pousa num ícone) e some sem deixar buraco. Uma
+   faixa de texto reservando altura na tela de jogo é o contrário do que uma barra de atalho serve. */
+.screen-a11y .pause-icons-cap{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--a11y-h) + .1rem);margin:0;max-width:92%;text-align:center;font-size:.8em;color:#f6f5f0;pointer-events:none}
+.screen-a11y .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px;padding:.2em .6em}
+/* O HUD desce para DEBAIXO da barra. É a mesma conta, e é por isso que ela mora num token: as duas medidas
+   não podem divergir sem que uma tape a outra. */
+.screen-exp .vphud{top:var(--a11y-h)}
 .pi-btn{width:var(--tap);height:var(--tap);min-width:var(--tap);min-height:var(--tap);border-radius:10px;border:2px solid var(--ink-soft);background:#1a2740;font-size:1.25em;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 /* Wizard de gamepad: demonstração com ANIMAÇÃO REAL (frames do jogo trocados via JS) + deslocamento CSS */
 #padwiz-demo{height:86px;display:flex;align-items:flex-end;justify-content:center;position:relative;margin:.15rem 0 .4rem;overflow:hidden}

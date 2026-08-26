@@ -805,10 +805,20 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
     // Legenda = o `aria-label` do botão, para que passar o mouse ou focar diga a MESMA verdade que um leitor
     // de tela anunciaria. Uma fonte só para quem vê e para quem escuta.
+    //
+    // E ELA SOME AO SAIR. Antes ficava: a última explicação apontada permanecia por cima do jogo até alguém
+    // apontar outra. Numa barra que agora vive na TELA DE JOGO isso é uma faixa de texto parada em cima da
+    // partida — o Dev viu e disse o que é: explicação só enquanto o mouse estiver no botão.
+    //
+    // A EXCEÇÃO É O CURSOR DO MODO `accessibility`: quando ele está pousado num ícone, a legenda é a única
+    // coisa que diz onde ele está, e apagá-la ao mexer o mouse cegaria o modo. Daí a pergunta pelo `.pi-sel`.
+    const limpar = (): void => { if (cap && !bar.querySelector('.pi-sel')) cap.textContent = ''; };
     bar.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => {
       const show = (): void => { if (cap) cap.textContent = legendaDoIcone(bar, b); };
       b.addEventListener('mouseenter', show);
       b.addEventListener('focus', show);
+      b.addEventListener('mouseleave', limpar);
+      b.addEventListener('blur', limpar);
     });
     return bar;
   }
