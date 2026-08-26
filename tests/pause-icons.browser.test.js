@@ -413,6 +413,89 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
   });
 });
 
+describe('MUITAS TELAS · a barra e o modo são POR JOGADOR (ADR-0044, item 7)', () => {
+  // A regra do Dev, e ela é anterior a este ADR: "Nunca unificar multi tela. Correções / melhorias são por
+  // tela. Modos multi são por tela." O único que força solo é o modo cego, por causa do limite de canais de
+  // áudio — este aqui não é ele.
+  //
+  // O item 7 mexeu em TUDO o que é por tela ao mesmo tempo: a barra saiu do cartão, virou irmã dele, passou a
+  // ser encontrada por índice (`getA11yBars()[i]`) e ganhou um modo indexado pelo mesmo número. Um erro de
+  // índice em qualquer um desses pontos só apareceria com dois jogadores — e apareceria como "o ajuste da
+  // minha irmã mudou a minha tela", que é a forma mais confusa possível de um defeito de acessibilidade.
+  //
+  // MEDIDO no jogo construído antes de existir este bloco (1600×900, dois jogadores): ligar a correção de
+  // daltonismo na tela 2 não tocou a tela 1, e entrar no modo pela pausa da tela 2 pôs o cursor só na barra
+  // dela. Estes casos prendem os dois.
+
+  function duasTelas() {
+    setPlayers([{ viz: 'normal' }, { viz: 'normal' }]);
+    const { ctx, state, said } = makeCtx();
+    const api = initPauseIcons(ctx);
+    const bars = [api.buildQuickBar(0), api.buildQuickBar(1)];
+    const sps = [api.buildScreenPause(0), api.buildScreenPause(1)];
+    document.body.append(bars[0], sps[0], bars[1], sps[1]);
+    state.screens = sps;
+    state.bars = bars;
+    return { api, bars, sps, state, said, ctx };
+  }
+
+  it('[Right] entrar no modo pela tela 1 NÃO põe cursor na tela 0', () => {
+    const { api, bars } = duasTelas();
+    api.entrarNaBarra(1);
+    expect(api.naBarraDe(1)).toBe(true);
+    expect(api.naBarraDe(0), 'o modo de uma tela não pode ligar o da outra').toBe(false);
+    expect(bars[1].querySelectorAll('.pi-sel')).toHaveLength(1);
+    expect(bars[0].querySelectorAll('.pi-sel'), 'a tela 0 ficou com cursor sem ninguém o ter pedido').toHaveLength(0);
+  });
+
+  it('[Right] com AS DUAS no modo, a direção de cada jogador anda só na barra dele', () => {
+    // O caso que encena o defeito de índice, e ele precisa das DUAS no modo para morder. Com só uma dentro,
+    // a guarda `naBarra.has(i)` já barraria a chamada da outra e o caso passaria sem nunca ter olhado para o
+    // índice da BUSCA da barra — verde pelo motivo errado. Conferido: com `getA11yBars()[0]` fixo no lugar de
+    // `[i]`, é este caso que reprova.
+    const { api, bars } = duasTelas();
+    api.entrarNaBarra(0);
+    api.entrarNaBarra(1);
+    const inicio = bars.map((b) => b.querySelector('.pi-sel').dataset.pi);
+    // O jogador 1 anda DUAS casas; o jogador 0, nenhuma. Se a busca da barra ignorasse o índice, os dois
+    // passos cairiam na mesma barra e as duas asserções abaixo trocariam de lado ao mesmo tempo.
+    api.navBar(1, { right: true });
+    api.navBar(1, { right: true });
+    expect(bars[1].querySelector('.pi-sel').dataset.pi, 'a barra de quem andou ficou parada').not.toBe(inicio[1]);
+    expect(bars[0].querySelector('.pi-sel').dataset.pi, 'a barra da OUTRA tela andou junto').toBe(inicio[0]);
+  });
+
+  it('[Zero] a direção de quem NÃO está no modo não mexe em barra nenhuma', () => {
+    const { api, bars } = duasTelas();
+    api.entrarNaBarra(1);
+    const antes = bars[1].querySelector('.pi-sel').dataset.pi;
+    api.navBar(0, { right: true }); // o jogador 0 não entrou
+    expect(bars[1].querySelector('.pi-sel').dataset.pi).toBe(antes);
+    expect(bars[0].querySelectorAll('.pi-sel')).toHaveLength(0);
+  });
+
+  it('[Right] sair numa tela deixa a outra como estava', () => {
+    const { api, bars } = duasTelas();
+    api.entrarNaBarra(0);
+    api.entrarNaBarra(1);
+    api.navBar(1, { no: true });
+    expect(api.naBarraDe(1)).toBe(false);
+    expect(api.naBarraDe(0), 'sair de uma tela derrubou o modo da outra').toBe(true);
+    expect(bars[0].querySelectorAll('.pi-sel'), 'a tela que continua no modo perdeu o cursor').toHaveLength(1);
+  });
+
+  it('[Interface] cada barra se declara da SUA tela, e reflete o estado do SEU jogador', () => {
+    // `data-player` não é enfeite: é por ele que uma auditoria (e um humano lendo o DOM) sabe qual barra é de
+    // quem. E o daltonismo é por jogador — é o ajuste que expõe uma troca de índice na hora.
+    const { api, bars } = duasTelas();
+    expect(bars.map((b) => b.dataset.player)).toEqual(['0', '1']);
+    bars[1].querySelector('.pi-btn[data-pi="cvd"]').click();
+    expect(bars[1].querySelector('.pi-btn[data-pi="cvd"]').classList.contains('pi-cvd-protan')).toBe(true);
+    expect(bars[0].querySelector('.pi-btn[data-pi="cvd"]').classList.contains('pi-cvd-protan')).toBe(false);
+    expect(bars[0].querySelector('.pause-icons-cap').textContent, 'a legenda da outra tela falou sem ser chamada').toBe('');
+  });
+});
+
 describe('reflectIconsIn — a barra do SPLASH (#title-icons) usa a mesma casca', () => {
   it('a mesma marcação de ícones reflete no escopo do jogador 1', () => {
     setPlayers([{ viz: 'fix-tritan', toggleMove: true }]);
