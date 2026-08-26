@@ -182,10 +182,12 @@ export interface Player {
   alfWins?: number;
   /** ui/settings-audio, ui/pause-icons: saída de áudio própria; `null`/ausente = compartilhada. */
   audioSink?: string | null;
-  /** ui/settings-audio, platform/audio-nav: AudioContext próprio da saída dedicada. */
-  _ac?: { close: () => void } | null;
-  /** platform/audio-nav: nó de ganho da saída dedicada. */
-  _acOut?: unknown;
+  // `_ac` e `_acOut` NÃO ficam aqui (ADR-0039, opção A1). São o AudioContext e o nó de ganho da saída
+  // dedicada, criados por `platform/audio-sonar`, que os declara em `PlayerAudioOut`. A entidade da engine
+  // declara o que a ENGINE possui (ADR-0033), e um AudioContext por jogador é da plataforma de áudio.
+  // Enquanto estavam aqui, a descrição mínima (`{ close(): void }` e `unknown`) discordava da real e o
+  // `unknown` escondia a discordância — inclusive um `null` que o `ui/settings-audio` escreve e que o dono
+  // não admitia.
   /** platform/audio-nav: temporizadores do sonar de parede e do guia. */
   wnT?: number;
   guideT?: number;

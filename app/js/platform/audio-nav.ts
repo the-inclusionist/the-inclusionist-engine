@@ -24,21 +24,24 @@
 // Extraído do game.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, áudio rodada 3).
 
 import type { PlayerView } from '../core/entity.js';
-import type { AudioSonar, PlayerCtxOut, SonarPlayer } from './audio-sonar.js';
+import type { AudioSonar, PlayerAudioOut, PlayerCtxOut, SonarPlayer } from './audio-sonar.js';
 
 export type { PlayerCtxOut };
 
 /**
  * O jogador visto pela BENGALA e pelo NADO. `facing` e `wnT` são desta metade; a outra não os usa.
  *
- * Mesma regra de game/quiz, do outro lado: este módulo é DONO dos tipos de áudio, então declara `_ac` como
- * `SinkAC` (o AudioContext com o `setSinkId` opcional) e `_acOut` como `GainNode`, enquanto core/entity os
- * declara no mínimo estrutural — `{ close(): void }` e `unknown` — porque `core/` não pode importar tipos de
- * Web Audio para descrever uma entidade de jogo. Quem é dono do tipo pode saber mais; quem não é, não pode.
+ * A saída dedicada (`_ac`/`_acOut`) entra por INTERSECÇÃO com o tipo do dono, `PlayerAudioOut` de
+ * `platform/audio-sonar` — não por uma redeclaração local.
+ *
+ * ⚠️ A JUSTIFICATIVA QUE ESTAVA AQUI ERA FALSA e vale corrigi-la em vez de apagá-la, senão o próximo leitor
+ * a re-deriva: dizia que `core/` "não pode importar tipos de Web Audio". Não há importação a fazer — o
+ * `tsconfig.json` tem `"lib": ["ES2022", "DOM", "DOM.Iterable"]`, então `AudioContext` e `GainNode` são
+ * globais ambientes em qualquer arquivo desta árvore. O motivo verdadeiro é de CAMADA: `_ac` e `_acOut` não
+ * são da entidade da engine, e por isso o `core/entity` deixou de mencioná-los (ADR-0039, opção A1).
  */
-type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
 type Player = PlayerView<'x' | 'y' | 'facing' | 'viz' | 'i' | 'audioSink' | 'wnT' | 'guideT'>
-  & { _ac?: SinkAC | null; _acOut?: GainNode };
+  & PlayerAudioOut;
 
 export interface AudioNavCtx {
   tileAt: (x: number, y: number) => number;

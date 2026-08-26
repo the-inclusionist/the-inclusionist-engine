@@ -20,6 +20,7 @@ import { DEFAULTS } from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
+import type { PlayerAudioOut } from '../platform/audio-sonar.js'; // ADR-0039: o dono declara `_ac`/`_acOut`
 
 export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
 
@@ -44,8 +45,13 @@ export interface TtsPanel {
   narrate: (text: string) => void;
 }
 
-/** Saída de áudio dedicada de um jogador: o id do dispositivo e o AudioContext/ganho que ele abriu. */
-export type SinkPlayer = PlayerView<'audioSink' | '_ac' | '_acOut'>;
+/**
+ * Saída de áudio dedicada de um jogador: o id do dispositivo e o AudioContext/ganho que ele abriu.
+ *
+ * O id é da entidade (é preferência do jogador, persistida); o par `_ac`/`_acOut` é do
+ * `platform/audio-sonar`, que os cria. Daí a intersecção em vez de três chaves numa vista só.
+ */
+export type SinkPlayer = PlayerView<'audioSink'> & PlayerAudioOut;
 
 export interface SettingsAudioCtx {
   /** DOM selector (querySelector), injected — never reaches `document` globally. */

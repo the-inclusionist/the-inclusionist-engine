@@ -32,21 +32,34 @@
 import { distance, type Spot, type Topology, type Speakable } from '../core/contract.js';
 import { t } from '../core/i18n.js';
 
-type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
+export type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
 
 /**
  * O jogador visto pela navegação sonora. É a fatia MÍNIMA, e ela encolheu com o corte: `facing` ficou com a
  * bengala (é ela que bate "à frente") e `wnT` com o nado. Sobrou identidade, posição, visão e o dispositivo.
  */
-export interface SonarPlayer {
+export interface SonarPlayer extends PlayerAudioOut {
   readonly i: number;
   readonly x: number;
   readonly y: number;
   readonly viz: string;
   readonly audioSink?: string | null;
   guideT?: number;
+}
+
+/**
+ * A SAÍDA DEDICADA de um jogador, e este módulo é o DONO dela: é aqui que os dois campos NASCEM
+ * (`new AC()` + `createGain()`, logo abaixo). Pelo ADR-0039 o dono declara onde o campo nasce, e o
+ * `core/entity` não os menciona — eles não são da entidade da engine, são rascunho que o áudio pendura
+ * no jogador.
+ *
+ * `_acOut` admite `null` porque `ui/settings-audio` escreve `null` nos dois ao trocar de dispositivo.
+ * Enquanto o `core/entity` dizia `unknown`, essa escrita passava sem que ninguém visse que o dono
+ * declarava `GainNode` sem nulo — as duas descrições discordavam e o `unknown` era o que as escondia.
+ */
+export interface PlayerAudioOut {
   _ac?: SinkAC | null;
-  _acOut?: GainNode;
+  _acOut?: GainNode | null;
 }
 
 export interface PlayerCtxOut { ac: AudioContext; out: GainNode; }
