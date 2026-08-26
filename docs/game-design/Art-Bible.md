@@ -25,22 +25,27 @@ overlays) for diversity and per-player distinction. Full spec + the animation li
 own counts wrong, which is the same error at a smaller size. The numbers below are read out of the PNG headers,
 not summarised from memory; the script is in the commit that added this paragraph.
 
-This file and `character-animation.md` both declared a **16×32 sprite**. Of the **77 PNGs** in `app/` — all of
+This file and `character-animation.md` both declared a **16×32 sprite**. Of the **39 PNGs** in `app/` — all of
 them sprite frames — **not one is 16×32.**
 
-It was 80 until 2026-08-25. The three city parallax backdrops left when ADR-0042 replaced them with a
+It was 80 until 2026-08-25, then 77, and 39 since 2026-08-26 — the 38 `_hc` silhouettes were deleted (see the
+bullet below). The three city parallax backdrops left when ADR-0042 replaced them with a
 generated skyline: measuring them showed they needed 11,382 uniform-colour rectangles to reproduce as data,
 so they were REDRAWN by rule instead. What decided it was not the byte count but high contrast — the city
 backdrop is the largest surface on screen, and while it was a PNG it was the one thing the mode could never
 repaint.
 
-The 77 sprite frames cover **13 animations** and come in **15 distinct sizes**: widths 24–34 px, heights 29–36 px,
-plus one 64×64 leftover. The most common size is 25×34 (the walk cycle); `parede` is 31×36, `teto` 25×36.
+The 39 sprite frames cover **13 animations** and come in **15 distinct sizes**: widths 24–34 px, heights 29–36 px,
+plus one 64×64 leftover. Deleting the 38 `_hc` changed NONE of those three numbers — measured, not assumed:
+every animation had colour frames, and every size the silhouettes used also occurs among the colour frames. The most common size is 25×34 (the walk cycle); `parede` is 31×36, `teto` 25×36.
 
 Two things the first count missed, and they are the ones that matter:
 
-- **Only 39 of the 77 are frames the game draws.** The other 38 are `_hc` high-contrast variants that nothing
-  loads — high contrast recolours the colour frame in real time. They ship anyway (issue #71).
+- **All 39 are frames the game draws** — since 2026-08-26. Until then there were 77, and 38 of them were `_hc`
+  high-contrast silhouettes that NOTHING loaded: high contrast recolours the colour frame in real time, and the
+  silhouettes were left over from an earlier approach. They shipped anyway — into `dist/` and into the PWA
+  precache, 8.9 KB of first-visit bandwidth for files no one opens, on the school machines that pillar 1 is
+  about. Deleted in the commit that closes issue #71.
 - **The size varies INSIDE an animation.** `nadar` is 34×29 and 34×32; `nadar-parado` is 26×35 and 28×35;
   `pulo` is 26×32 and 28×30. So there is not even a per-animation size to fall back on — which is a stronger
   statement than "no fixed sprite size", and it is the one that binds the atlas.

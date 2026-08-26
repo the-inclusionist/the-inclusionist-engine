@@ -39,7 +39,12 @@ const EMBARCADOS = arquivos(PUBLICO);
 
 describe('o que embarca — item 18, reformulado', () => {
   it('[Zero] o gate está olhando arquivos de verdade', () => {
-    expect(EMBARCADOS.length).toBeGreaterThan(50);
+    // O piso era 50, de quando `sprites/menino` tinha 77 PNGs. Caiu para 30 em 2026-08-26, quando as 38
+    // silhuetas `_hc` mortas saíram (issue #71) e o total passou a 42. O número é um piso de VACUIDADE — ele
+    // só existe para o dia em que a pasta mudar de lugar e os casos abaixo passarem sem medir nada —, e por
+    // isso fica folgado em vez de casar com a contagem exata: um piso que precisa ser editado a cada quadro
+    // de arte novo vira ruído e acaba sendo afrouxado sem ninguém pensar.
+    expect(EMBARCADOS.length).toBeGreaterThan(30);
   });
 
   it('[Right] NENHUM tile embarca — eles viraram dados em render/city-tiles', () => {
@@ -74,7 +79,8 @@ describe('o que embarca — item 18, reformulado', () => {
     // O plano de arte procedural (plano-arte-procedural.md, passo 6) prevê migrar personagens e tiles para o
     // sistema semântico. Tiles já foram; personagens não. Enquanto não forem, eles embarcam — e este caso
     // registra isso como estado conhecido, e não como esquecimento.
-    expect(EMBARCADOS.filter((f) => f.startsWith('sprites/')).length).toBeGreaterThan(50);
+    // Piso baixado de 50 para 30 junto com o de cima, e pelo mesmo motivo: são 41 desde que as `_hc` saíram.
+    expect(EMBARCADOS.filter((f) => f.startsWith('sprites/')).length).toBeGreaterThan(30);
   });
 
   it('[Right] a arte de AUTORIA está fora do pacote e dentro do repositório', () => {

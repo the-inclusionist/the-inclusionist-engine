@@ -71,10 +71,22 @@ describe('o Art-Bible conta a arte que existe', () => {
     expect(afirmado(/\*\*(\d+) distinct sizes\*\*/, 'quantos tamanhos distintos')).toBe(TAMANHOS.size);
   });
 
-  it('[Right] quantos quadros o jogo realmente desenha bate', () => {
-    // Distinção que a primeira emenda não fazia: 38 dos 77 são `_hc` que nada carrega (issue #71). Contar
-    // tudo como "quadro de personagem" superestima a arte viva em quase o dobro.
-    expect(afirmado(/Only (\d+) of the \d+ are frames the game draws/, 'quantos quadros são desenhados')).toBe(COR.length);
+  // Este caso mudou de assunto quando a issue #71 fechou, e ficou MAIS FORTE. Ele afirmava "só 39 dos 77 são
+  // desenhados" — uma contagem. Agora afirma que os dois números são o MESMO: nenhum PNG embarca sem que o
+  // jogo o desenhe.
+  //
+  // A diferença importa porque a versão antiga não pegaria a volta do defeito: um `_hc` novo faria o total ir
+  // a 40 enquanto `COR` ficava em 39, e a frase "só 39 dos 40" continuaria batendo com `COR.length`. O que
+  // pega é comparar os dois conjuntos, não conferir um número contra o documento.
+  //
+  // É o "caso irmão" que a própria #71 pediu ao ser aberta: todo PNG em `sprites/` tem de ser arte viva.
+  //
+  // MUTAÇÃO CONFERIDA: recriando um `andar/0_hc.png` (cópia do `0.png`), este caso falha em
+  // "arte que embarca e ninguém desenha: andar/0_hc.png".
+  it('[Right] NENHUM quadro embarca sem ser desenhado — a arte morta não volta em silêncio', () => {
+    const mortos = SPRITES.filter((p) => !COR.includes(p)).map((p) => p.split(/[\/]/).slice(-2).join('/'));
+    expect(mortos, 'arte que embarca e ninguém desenha: ' + mortos.join(', ')).toEqual([]);
+    expect(afirmado(/All (\d+) are frames the game draws/, 'quantos quadros são desenhados')).toBe(COR.length);
   });
 
   it('[Boundary] a FAIXA de larguras e alturas bate, ignorando a sobra 64×64', () => {

@@ -4,7 +4,7 @@
 **Decisões do José (2026-06-01):**
 - **Resolução mantida** (320×180, tiles 16px) — 48×48 cancelado (estudo TDAH pendente). **SEM TAMANHO FIXO de
   sprite** (emendado e REMEDIDO em 2026-08-25): este documento dizia 16×32 e nenhum dos 80 PNG entregues tem esse
-  tamanho. Os 77 quadros de sprite cobrem **13 animações** em **15 tamanhos distintos**, larguras 24–34 e alturas
+  tamanho. Os 39 quadros de sprite cobrem **13 animações** em **15 tamanhos distintos**, larguras 24–34 e alturas
   29–36, mais um 64×64 esquecido. E o tamanho **varia dentro da mesma animação** (`nadar` 34×29 e 34×32; `pulo`
   26×32 e 28×30) — não há nem tamanho por animação em que se apoiar. Ver a seção "Sprite size" do
   [`Art-Bible.md`](Art-Bible.md) para a medição e as consequências (o atlas não pode supor grade uniforme, nem

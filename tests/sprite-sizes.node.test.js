@@ -46,7 +46,10 @@ const QUADROS = PNGS.filter((p) => p.nome !== CANDIDATO);
 describe('tamanhos de sprite — a arte manda no texto', () => {
   it('[Zero] o teste está olhando arquivos de verdade', () => {
     // Sem isto, mudar a pasta de lugar deixaria todos os casos abaixo verdes por não medirem nada.
-    expect(PNGS.length).toBeGreaterThan(50);
+    // Piso baixado de 50 para 30 em 2026-08-26: as 38 silhuetas `_hc` mortas saíram (issue #71) e sobraram 39
+    // quadros de cor. É piso de VACUIDADE, não contagem — casar com o número exato faria cada quadro de arte
+    // novo quebrar o teste, e um teste que quebra à toa acaba sendo afrouxado sem ninguém pensar.
+    expect(PNGS.length).toBeGreaterThan(30);
   });
 
   it('[Right] NENHUM quadro é 16×32 — era o que três documentos afirmavam', () => {
