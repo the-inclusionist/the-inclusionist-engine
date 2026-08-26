@@ -82,7 +82,7 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C2).
 
 import { t } from '../core/i18n.js';
-import type { GamePlayerView } from './entity.js'; // ADR-0033: a fatia do JOGO — `quiz` mora aqui
+import type { GamePlayerView, GamePlayer } from './entity.js'; // ADR-0033: a fatia do JOGO — `quiz` mora aqui
 import { TILE, COIN_TARGET, EASY } from '../core/constants.js';
 import { BOX, SPAWN_X, SPAWN_Y, makePlayer } from './player.js';
 import { screenBaseSize } from '../core/screens.js';
@@ -228,6 +228,17 @@ export type SessionPlayer = GamePlayerView<
   'activePower' | 'owned' | 'clinging' | 'flying' | 'jumpEdge' | 'pad'
 > & { sprite?: { alpha: number; visible: boolean } | null };
 
+/**
+ * O VENCEDOR, do ponto de vista da vitória: onde soltar o confete (`x`/`y`/`sprite`) e qual é o número
+ * dele (`i`). São os quatro campos que `win()` lê, e mais nenhum.
+ *
+ * Existe separado de `SessionPlayer` porque `win` é chamado de FORA — `game/quiz` o repassa quando a
+ * criança fecha o desafio com as moedas completas, e o jogador que ele tem em mãos é um `QuizPlayer`,
+ * uma fatia diferente. Pedir `SessionPlayer` ali era exigir dez campos que a vitória não olha, e a
+ * exigência caía justamente sobre quem só estava REPASSANDO o objeto.
+ */
+export type Vencedor = GamePlayerView<'i' | 'x' | 'y'> & { sprite?: { alpha: number; visible: boolean } | null };
+
 /** Uma moeda/coletável (game/coins). `owner` é o dono (Lote C: cada um só coleta a própria cor). */
 export interface SessionCoin {
   x: number; y: number; owner: number; taken: boolean;
@@ -316,7 +327,17 @@ export interface SessionCtx {
   closeQuiz(pl: SessionPlayer): void;
 
   /* --- telas: as CONSEQUÊNCIAS de mudar o nº de jogadores --- */
-  loadPlayerA11y(p: SessionPlayer, i: number): void; // preferências salvas do jogador i (viz/motora/…)
+  /**
+   * Carrega no jogador `i` as preferências salvas dele (visão, saída de áudio, Modo Fácil, movimento
+   * reduzido). O parâmetro é o jogador INTEIRO, e não `SessionPlayer`, porque a sessão está ENTREGANDO
+   * aqui, não lendo: nenhum dos campos que a raiz escreve está na fatia da sessão, e declarar a fatia
+   * mínima em posição de parâmetro inverte por contravariância — quem entrega tem de prometer o que o
+   * receptor precisa. É a mesma inversão do `SpriteLike`/`CoinSprite` (ADR-0039).
+   *
+   * E a sessão TEM esse tipo: ela mesma importa `makePlayer`. Os dois `as unknown as SessionPlayer` que
+   * havia nas chamadas eram justamente o disfarce que escondia isto.
+   */
+  loadPlayerA11y(p: GamePlayer, i: number): void;
   assignControls(): void;                   // teclado migra entre os esquemas solo/N jogadores
   ensureSprites(): void;                    // cria/remove o sprite de cada jogador
   configureRender(): void;                  // tela única ↔ render-textures por viewport
@@ -345,7 +366,7 @@ export interface SessionApi {
   /** Coleta de UM jogador neste quadro: moeda/quiz, power-up/chave e portão. Chamada pelo `stepPlayer`. */
   collectFor(pl: SessionPlayer): void;
   updateHud(): void;
-  win(pl: SessionPlayer | null): void;
+  win(pl: Vencedor | null): void;
   restartGame(): void;
 
   setNumPlayers(n: number): void;
@@ -449,7 +470,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
       : ps.map((p, i) => `P${i + 1}:${p.collected}`).join('  ');
   }
 
-  function win(pl: SessionPlayer | null): void {
+  function win(pl: Vencedor | null): void {
     ctx.setEnded(true);
     if (ctx.captionsOn()) ctx.showCaption('🔊 Vitória! 🎆');
     ctx.playVictory();
@@ -511,7 +532,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
   /** Cresce ou encolhe o array de jogadores até `n`, preservando os que já existem (e o `pad` de cada um). */
   function resizePlayers(n: number): void {
     const ps = P();
-    if (n > ps.length) { for (let i = ps.length; i < n; i++) { const p = makePlayer(i) as unknown as SessionPlayer; ctx.loadPlayerA11y(p, i); ps.push(p); } }
+    if (n > ps.length) { for (let i = ps.length; i < n; i++) { const p = makePlayer(i); ctx.loadPlayerA11y(p, i); ps.push(p); } }
     else if (n < ps.length) { ps.length = n; }
     setNumPlayersValue(n);
   }
@@ -581,7 +602,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
     if (N() >= 4) { ctx.srAlert(t('sr.screens.maxPlayers')); return false; }
     if (!fitsN(N() + 1)) { ctx.srAlert(t('sr.screens.wontFitOneMore')); return false; }
     const ps = P();
-    const i = ps.length, p = makePlayer(i) as unknown as SessionPlayer;
+    const i = ps.length, p = makePlayer(i);
     ctx.loadPlayerA11y(p, i);
     if (padIdx != null) p.pad = padIdx;
     ps.push(p); setNumPlayersValue(ps.length);
