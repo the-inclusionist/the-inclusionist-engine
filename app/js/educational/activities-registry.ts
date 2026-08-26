@@ -14,16 +14,35 @@
 // A EdSP não existe ainda, então o catálogo mora aqui — mas com a FORMA do destino (camada própria, DADOS,
 // nada de `game/` entrando) em vez da forma do lugar onde estava. Ver ADR-0032.
 //
-// NÃO SE TRADUZ. Pilar 3 (ADR-0010): currículo de alfabetização se REESCREVE por idioma, não se traduz — a
-// psicogênese de Ferreiro é sobre a escrita do PORTUGUÊS. Por isso `nome`/`sub`/`d` seguem em pt-BR e ficam
-// FORA dos dicionários; o que atravessa é a moldura (". Jogo iniciado."), com o nome entrando por `{param}`.
+// ============================ O QUE TRADUZ, E O QUE NÃO (a fronteira, medida) ============================
+// A regra do pilar 3 é ESTREITA, e este arquivo a aplicava ao catálogo inteiro — a exceção comeu a regra, e
+// o efeito era um menu de matemática em português dentro de um jogo em inglês.
+//
+//   · ALFABETIZAÇÃO (`cat: 'alf'`) NÃO TRADUZ. A psicogênese de Ferreiro é sobre a escrita do PORTUGUÊS: a
+//     palavra, a sílaba, a soletração e a cela Braille são A MATÉRIA, não a moldura. `nome`/`sub`/`d` dessas
+//     cinco seguem em pt-BR, crus, fora dos dicionários.
+//   · TODO O RESTO TRADUZ. O CLAUDE.md é explícito: "Matemática NÃO é disciplina de idioma. `2 + 3`
+//     independe de língua". "Tabuada", "Divisão" e "Soma e subtração com meios" nomeiam operações que
+//     existem iguais em qualquer língua, e o lúdico ("Coletar 10 moedas") nem currículo é.
+//
+// MECANICAMENTE: quem traduz declara `nomeKey`/`dKey`; quem não traduz não declara. Este módulo continua sem
+// importar NADA — guarda a CHAVE, e quem resolve é o ponto de exibição (`nomeDaAtividade` em
+// ui/activities-menu), pelo mesmo motivo de `TOUCH_ACT_LABELS` e `PAD_GLYPH_SPOKEN`: uma `const` de módulo é
+// avaliada uma vez no import, e texto já resolvido congelaria o idioma no boot.
+//
+// O gate é `tests/atividades-matematica-traduzem.node.test.js`, e ele vigia os DOIS lados: atividade
+// traduzível sem chave reprova, e atividade de alfabetização COM chave reprova também.
 
 /** One entry of the activities catalog. `cat` drives menu placement + MODE; `d` is the minigame footer text. */
 export interface ActivityDef {
   /** Menu category: 'ludico' (free play), 'alf' (literacy), 'mat' (math, incl. fractions). */
   cat: 'ludico' | 'alf' | 'mat';
-  /** Display name (menu button + spoken by TTS). */
+  /** Display name (menu button + spoken by TTS). Em pt-BR CRU; só é o texto final quando não há `nomeKey`. */
   nome: string;
+  /** Chave i18n do nome. Presente em tudo que NÃO é alfabetização — ver a nota de fronteira no cabeçalho. */
+  nomeKey?: string;
+  /** Chave i18n da descrição de rodapé. Mesma regra do `nomeKey`. */
+  dKey?: string;
   /** Optional example sub-label shown under the name (literacy activities). */
   sub?: string;
   /** Optional footer description shown/spoken on menu focus. */
@@ -35,24 +54,24 @@ export interface ActivityDef {
 }
 
 const ACTIVITIES_DATA: readonly (readonly [string, ActivityDef])[] = [
-  ['ludico', { cat: 'ludico', nome: 'Coletar 10 moedas' }],
+  ['ludico', { cat: 'ludico', nome: 'Coletar 10 moedas', nomeKey: 'act.ludico.nome' }],
   ['alf1', { cat: 'alf', nome: 'Descobrindo palavras', sub: 'BABA • BOLA • BEBE', d: 'Elaborado para ajudar a superar as hipóteses pré-silábicas.' }],
   ['alf2', { cat: 'alf', nome: 'Descobrindo sílabas', sub: 'BA • BE • BI', d: 'Feito para ajudar a superar a hipótese silábica sem valor sonoro (uma letra errada por sílaba) e com valor sonoro (vogal ou consoante correta por sílaba), deixando claro que cada som é uma sílaba e cada sílaba tem sua forma correta de escrever.' }],
   ['alf3', { cat: 'alf', nome: 'Montando palavras', sub: 'BA+BA • BE+BE • BO+LA', d: 'Feito para superar a fase da hipótese silábico-alfabética, desafiando o aluno a encontrar as sílabas corretas para montar a palavra.' }],
   ['alf4', { cat: 'alf', nome: 'Escrevendo palavras', sub: 'B-A-B-A • B-O-L-A • B-E-B-E', d: 'Atividade com o objetivo de treinar ortografia.' }],
   ['alf5', { cat: 'alf', nome: 'Escrevendo em Braille', d: 'Escreva letra por letra; o jogo dita os pontos da cela Braille (12 letras).' }],
-  ['mat1', { cat: 'mat', nome: 'Quantidade', d: 'Conte as bolinhas e escolha o número certo (1 a 9).' }],
-  ['mat2', { cat: 'mat', nome: 'Soma fácil', d: 'Somas com parcelas de 0 a 5.' }],
-  ['mat3', { cat: 'mat', nome: 'Soma e Subtração 1', d: 'Contas que dá para fazer nos dedos (até 10).' }],
-  ['mat4', { cat: 'mat', nome: 'Soma e Subtração 2', d: 'Guarde um número na cabeça e opere o outro nos dedos (até 20).' }],
-  ['mat5', { cat: 'mat', nome: 'Tabuada', pick: true, d: 'Escolha os números e treine a multiplicação.' }],
-  ['mat6', { cat: 'mat', nome: 'Divisão', pick: true, d: 'Escolha os números e treine a divisão.' }],
-  ['fr2', { cat: 'mat', nome: 'Soma e subtração com meios', dens: [2], d: 'Some e subtraia meios.' }],
-  ['fr3', { cat: 'mat', nome: 'Soma e subtração com terços', dens: [3], d: 'Some e subtraia terços.' }],
-  ['fr42', { cat: 'mat', nome: 'Soma e subtração com quartos e meios', dens: [4, 2], d: 'Some e subtraia quartos e meios.' }],
-  ['fr5', { cat: 'mat', nome: 'Soma e subtração com quintos', dens: [5], d: 'Some e subtraia quintos.' }],
-  ['fr632', { cat: 'mat', nome: 'Soma e subtração com sextos, terços e meios', dens: [6, 3, 2], d: 'Some e subtraia sextos, terços e meios.' }],
-  ['fr2a6', { cat: 'mat', nome: 'Soma e subtração com frações de meio a sextos', dens: [2, 3, 4, 5, 6], d: 'Some e subtraia frações de meios a sextos.' }],
+  ['mat1', { cat: 'mat', nome: 'Quantidade', d: 'Conte as bolinhas e escolha o número certo (1 a 9).', nomeKey: 'act.mat1.nome', dKey: 'act.mat1.d' }],
+  ['mat2', { cat: 'mat', nome: 'Soma fácil', d: 'Somas com parcelas de 0 a 5.', nomeKey: 'act.mat2.nome', dKey: 'act.mat2.d' }],
+  ['mat3', { cat: 'mat', nome: 'Soma e Subtração 1', d: 'Contas que dá para fazer nos dedos (até 10).', nomeKey: 'act.mat3.nome', dKey: 'act.mat3.d' }],
+  ['mat4', { cat: 'mat', nome: 'Soma e Subtração 2', d: 'Guarde um número na cabeça e opere o outro nos dedos (até 20).', nomeKey: 'act.mat4.nome', dKey: 'act.mat4.d' }],
+  ['mat5', { cat: 'mat', nome: 'Tabuada', pick: true, d: 'Escolha os números e treine a multiplicação.', nomeKey: 'act.mat5.nome', dKey: 'act.mat5.d' }],
+  ['mat6', { cat: 'mat', nome: 'Divisão', pick: true, d: 'Escolha os números e treine a divisão.', nomeKey: 'act.mat6.nome', dKey: 'act.mat6.d' }],
+  ['fr2', { cat: 'mat', nome: 'Soma e subtração com meios', dens: [2], d: 'Some e subtraia meios.', nomeKey: 'act.fr2.nome', dKey: 'act.fr2.d' }],
+  ['fr3', { cat: 'mat', nome: 'Soma e subtração com terços', dens: [3], d: 'Some e subtraia terços.', nomeKey: 'act.fr3.nome', dKey: 'act.fr3.d' }],
+  ['fr42', { cat: 'mat', nome: 'Soma e subtração com quartos e meios', dens: [4, 2], d: 'Some e subtraia quartos e meios.', nomeKey: 'act.fr42.nome', dKey: 'act.fr42.d' }],
+  ['fr5', { cat: 'mat', nome: 'Soma e subtração com quintos', dens: [5], d: 'Some e subtraia quintos.', nomeKey: 'act.fr5.nome', dKey: 'act.fr5.d' }],
+  ['fr632', { cat: 'mat', nome: 'Soma e subtração com sextos, terços e meios', dens: [6, 3, 2], d: 'Some e subtraia sextos, terços e meios.', nomeKey: 'act.fr632.nome', dKey: 'act.fr632.d' }],
+  ['fr2a6', { cat: 'mat', nome: 'Soma e subtração com frações de meio a sextos', dens: [2, 3, 4, 5, 6], d: 'Some e subtraia frações de meios a sextos.', nomeKey: 'act.fr2a6.nome', dKey: 'act.fr2a6.d' }],
 ];
 
 /** Lookup by id — insertion order preserved (buildTitleMenus iterates it in this fixed order). */

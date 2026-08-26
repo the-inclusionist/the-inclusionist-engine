@@ -328,12 +328,33 @@ export function nextTitleIndex(cur: number, len: number, k: NavKeys): number {
   return cur < 0 ? 0 : passoNoAnel(len, cur, d);
 }
 
+/**
+ * O NOME de uma atividade, no idioma vigente.
+ *
+ * A chave, quando existe, vence o texto cru — e a ausência dela é significado, não esquecimento: as cinco
+ * atividades de alfabetização não declaram chave porque a palavra e a sílaba SÃO a matéria da atividade
+ * (pilar 3 do ADR-0010). Todo o resto declara, matemática inclusive: `2 + 3` independe de língua.
+ *
+ * Resolve AQUI, no ponto de exibição, e não no catálogo — `educational/activities-registry` é DADO e não
+ * importa nada; e uma `const` de módulo com `t()` já resolvido congelaria o idioma no boot.
+ */
+export function nomeDaAtividade(a: ActivityDef | null | undefined): string {
+  if (!a) return '';
+  return a.nomeKey ? t(a.nomeKey) : a.nome;
+}
+
+/** A descrição de rodapé de uma atividade, pela mesma regra do nome. */
+export function descricaoDaAtividade(a: ActivityDef | null | undefined): string {
+  if (!a) return '';
+  return a.dKey ? t(a.dKey) : (a.d || '');
+}
+
 /** Footer description for a focused/hovered title button: notation text wins, else the activity's `d`.
  *  The notation half resolves its key here; the activity's `d` comes from educational/activities-registry
  *  and is still pt-BR, for the same curriculum-boundary reason as the activity `nome` (ADR-0032). */
 export function titleDescFor(actId: string | undefined, fnotKey: string | undefined): string {
   if (fnotKey) { const k = FNOT_DESC[fnotKey as FracNotKey]; return k ? t(k) : ''; }
-  return (getActivity(actId ?? '') || ({} as Partial<ActivityDef>)).d || '';
+  return descricaoDaAtividade(getActivity(actId ?? ''));
 }
 
 // --- HTML builders (pure strings; the DOM layer only assigns them) ---------------------------------------
@@ -341,7 +362,7 @@ export function titleDescFor(actId: string | undefined, fnotKey: string | undefi
 /** One activity button, with the optional example sub-label (literacy). */
 export function activityBtnHtml(id: string): string {
   const a = getActivity(id) as ActivityDef;
-  return `<button class="title-btn" data-act-id="${id}" type="button">${a.nome}${a.sub ? `<span class="act-sub">${a.sub}</span>` : ''}</button>`;
+  return `<button class="title-btn" data-act-id="${id}" type="button">${nomeDaAtividade(a)}${a.sub ? `<span class="act-sub">${a.sub}</span>` : ''}</button>`;
 }
 /** The "Voltar" ghost button of a submenu. */
 export function backBtnHtml(to: TitleMenuId): string { return `<button class="title-btn ghost" data-tm-back="${to}" type="button">${t('menu.back')}</button>`; }
@@ -494,7 +515,7 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
     // O NOME da atividade atravessa como parâmetro, ainda em pt-BR: os nomes vivem em
     // educational/activities-registry e são CURRÍCULO — que o pilar 3 manda REESCREVER por idioma, não
     // traduzir (ADR-0032). A moldura — ". Jogo iniciado." — é o que traduz aqui.
-    ctx.setPhase('playing'); ctx.hideTips(); ctx.srSay(t('sr.menu.gameStarted', { atividade: (getActivity(id) as ActivityDef).nome }));
+    ctx.setPhase('playing'); ctx.hideTips(); ctx.srSay(t('sr.menu.gameStarted', { atividade: nomeDaAtividade(getActivity(id)) }));
   }
 
   function buildTitleMenus(): void {
@@ -614,8 +635,8 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
     if (b.dataset.actId) { const id = b.dataset.actId;
       if ((getActivity(id) as ActivityDef).pick) {
         go(() => { tabFor = id; buildTitleMenus();
-          const titulo = ctx.$('#tm-tab .tm-title'); if (titulo) titulo.textContent = (getActivity(id) as ActivityDef).nome; // Tabuada/Divisão heading
-          ctx.titleShow('tm-tab'); ctx.srSay(t('sr.menu.pickNumbers', { atividade: (getActivity(id) as ActivityDef).nome })); });
+          const titulo = ctx.$('#tm-tab .tm-title'); if (titulo) titulo.textContent = nomeDaAtividade(getActivity(id)); // Tabuada/Divisão heading
+          ctx.titleShow('tm-tab'); ctx.srSay(t('sr.menu.pickNumbers', { atividade: nomeDaAtividade(getActivity(id)) })); });
       } else go(() => startActivity(id));
     }
   });
