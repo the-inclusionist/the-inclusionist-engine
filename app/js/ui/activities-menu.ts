@@ -58,6 +58,7 @@ export type FracNot = Record<FracNotKey, number>;
 
 /** The 6 directional/confirm flags the title menu reacts to. Single definition in input/edges. */
 import type { NavKeys } from '../input/edges.js';
+import { passoNoAnel } from './menu-nav.js';
 import type { DomQuery } from '../core/dom-query.js';
 export type { NavKeys } from '../input/edges.js';
 
@@ -266,10 +267,15 @@ export function clampPendingPlayers(n: number): number {
 /**
  * Next focused index for arrow traversal. VERBATIM quirk: when nothing in the submenu has focus (`cur < 0`),
  * BOTH directions land on index 0 — pressing "up" from nowhere does not wrap to the last button.
+ *
+ * A CONTA DO ANEL saiu daqui e passou a ser `passoNoAnel` (ui/menu-nav), que é a mesma do menu de pausa. Eram
+ * duas escritas da mesma volta — `(cur + d + len) % len` aqui, a de lá — e o ADR-0044 §5 pede UMA resposta
+ * para "o que acontece no fim da lista" no jogo inteiro. Duas cópias respondem igual até o dia em que uma
+ * delas é corrigida sozinha.
  */
 export function nextTitleIndex(cur: number, len: number, k: NavKeys): number {
   const d = (k.down || k.right) ? 1 : -1;
-  return cur < 0 ? 0 : (cur + d + len) % len;
+  return cur < 0 ? 0 : passoNoAnel(len, cur, d);
 }
 
 /** Footer description for a focused/hovered title button: notation text wins, else the activity's `d`.

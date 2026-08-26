@@ -79,17 +79,34 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 .title-legend{position:absolute;left:0;right:0;bottom:8px}                 /* RODAPÉ, como a legenda da pausa */
 .title-menu{display:flex;flex-direction:column;gap:.35em;align-items:stretch;padding:2px;width:13em;margin:0 auto} /* largura fixa ENXUTA */
 .title-menu[hidden]{display:none}
-#tm-mat,#tm-fr{display:grid;grid-template-columns:1fr 1fr;gap:.35em;width:22em}   /* muitos itens → 2 colunas (nada fora do canvas) */
-#tm-mat .ghost,#tm-mat .tm-desc,#tm-mat .tm-title,#tm-fr .ghost,#tm-fr .tm-desc,#tm-fr .tm-title{grid-column:1/-1}
-/* Letramento: 2 colunas + botões LARGOS p/ o subtítulo caber em UMA linha (José) */
-#tm-alf{display:grid;grid-template-columns:1fr 1fr;gap:.4em;width:34em}
-#tm-alf .ghost,#tm-alf .tm-title,#tm-alf .tm-desc{grid-column:1/-1}
-/* Fração: 11 itens → compacto p/ CABER no quadro lógico 180px (k=2). Mais largo = rótulos longos em 2 linhas, não 3. */
-#tm-fr{width:31em;gap:.25em}
-#tm-fr .title-btn{min-height:1.85em;padding:.2em .5em;font-size:.82em;line-height:1.05}
-#tm-fr .tm-title{font-size:.95em;margin:0}
-/* Notações lado a lado (5 símbolos numa linha) → ocupam menos espaço */
-#tm-fr .frac-nots{grid-column:1/-1;display:flex;gap:.25em;justify-content:center}
+/* O menu principal com o DOBRO da largura base (13em → 26em): a 13em os rótulos quebravam em DUAS linhas, e
+   um botão de duas linhas muda de altura conforme o idioma — a mesma tela com uma geometria em pt-BR e outra
+   em espanhol. Quem se orienta por alinhamento perde a referência; quem escuta nem percebe que ela existia. */
+#tm-main{width:26em}
+/* ===================== SUBMENUS DA ABERTURA: LISTA VERTICAL COM ROLAGEM (ADR-0044) =====================
+   Eram GRADES de duas colunas, e a seta anda em ordem de DOM: “para baixo” pulava para a coluna da direita,
+   atravessando a tela. O anel do item 1 já estava certo no código (`nextTitleIndex` dá a volta) — era o
+   LAYOUT que mentia sobre ele. Em lista, a ordem que se VÊ é a ordem em que se ANDA.
+
+   Onze frações não cabem no quadro, então a lista ROLA — foi o que o Dev pediu, e o preço é barato:
+   `focus()` traz o item para dentro da janela sozinho, de modo que quem anda por teclado ou controle nunca
+   perde o foco fora da vista.
+
+   O painel é OPACO pelo mesmo motivo do véu da pausa: por trás da abertura corre o modo de atração, e
+   texto sobre quadro variável tem a razão de contraste que o quadro permitir — média de sorte, não garantia. */
+#tm-alf,#tm-mat,#tm-tab,#tm-fr,#tm-cen{width:26em;max-height:72%;overflow-y:auto;overflow-x:hidden;background:var(--bg-solid);border-radius:10px;padding:.5em .7em}
+/* O título do submenu fica GRUDADO no topo: numa lista que rola, um cabeçalho que sobe leva embora a única
+   pista de “onde estou” que quem lê por resto de visão tem. */
+#tm-alf .tm-title,#tm-mat .tm-title,#tm-tab .tm-title,#tm-fr .tm-title,#tm-cen .tm-title{position:sticky;top:-.5em;z-index:1;background:var(--bg-solid);padding:.35em 0 .25em;margin:0}
+/* …e por isso os itens precisam de MARGEM DE ROLAGEM: um cabeçalho grudado cobre o item que o navegador acaba
+   de "trazer para a vista", porque para ele o item já estava dentro do quadro. MEDIDO no navegador antes de
+   existir esta linha: dando a volta do último para o primeiro, o primeiro botão parava com o topo em 143px e
+   o cabeçalho terminava em 155 — 12px encobertos, e a criança via um item cortado no lugar do foco. O valor
+   cobre a altura do cabeçalho (34px ≈ 2,1em) com folga. */
+#tm-alf .title-btn,#tm-mat .title-btn,#tm-tab .title-btn,#tm-fr .title-btn,#tm-cen .title-btn{scroll-margin-top:2.4em;scroll-margin-bottom:.5em}
+/* As notações de fração continuam LADO A LADO: são cinco alternadores de UM grupo, e não itens da lista —
+   virar coluna aqui alongaria a rolagem sem ganhar ordem nenhuma. */
+#tm-fr .frac-nots{display:flex;gap:.25em;justify-content:center}
 /* Toggle de notação: DESATIVADO = azul-escuro + borda BRANCA + texto branco; ATIVADO = amarelo + borda preta + texto preto */
 #tm-fr .frac-nots .title-btn{flex:1;min-width:0;padding:.25em .15em;font-size:1em;background:#16233f;color:#fff;border-color:#fff;box-shadow:none}
 #tm-fr .frac-nots .title-btn.tab-on{background:var(--accent);color:var(--accent-ink);border-color:#0d0d1a}
