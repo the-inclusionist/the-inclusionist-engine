@@ -3,7 +3,7 @@
 // CRT é config MUTÁVEL (o menu ajusta as props) → fixamos CRT.scan/vig/round no teste e checamos as classes CSS.
 // Ver docs/plano-modularizacao-mapa.md (Estágio 4, Tier 1, render/crt).
 import { describe, it, expect } from 'vitest';
-import { CRT, crtScanVars, applyCrt } from '../app/js/render/crt.js';
+import { CRT, crtScanVars, applyCrt, initCrt } from '../app/js/render/crt.js';
 
 const region = () => { document.body.innerHTML = '<div id="game-region" style="height:360px"></div>'; return document.querySelector('#game-region'); };
 
@@ -38,5 +38,64 @@ describe('render/crt — crtScanVars (scanline ancorada em px reais)', () => {
     crtScanVars();
     expect(g.style.getPropertyValue('--scan-per')).toMatch(/px$/);
     expect(g.style.getPropertyValue('--scan-line')).toMatch(/px$/);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// A VINHETA CEDE PARA A ACESSIBILIDADE — ADR-0020: "modos de a11y suprimem o CRT decorativo (precedência
+// a11y > estética)". A regra estava DECIDIDA desde 2026-07-06 e nunca tinha sido implementada; a emenda de
+// 2026-08-26 mediu e confirmou: com a vinheta ligada, `crt-vig-1` sobrevivia em `hc-direto`, `fix-deuter`,
+// `lv-blur` e `blind`.
+//
+// Uma vinheta escurece as BORDAS. Em alto contraste — o modo que existe para AUMENTAR contraste — ela
+// trabalha contra o próprio motivo de a criança tê-lo ligado.
+//
+// MUTAÇÕES CONFERIDAS:
+//   · tirando o `&& !_a11yVisualAtiva()` de `render/crt.applyCrt`, o caso [Right] falha em
+//     "expected true to be false" — a vinheta sobrevive ao modo de acessibilidade.
+//   · trocando o `!` por nada (suprimir quando NÃO há a11y), o caso [Inverse] falha — a vinheta some de
+//     quem não pediu acessibilidade nenhuma.
+describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', () => {
+  const comA11y = (ativa) => initCrt({ numJogadores: () => 1, a11yVisualAtiva: () => ativa });
+
+  it('[Right] com modo de a11y ativo, a vinheta NÃO é aplicada', () => {
+    const g = region();
+    comA11y(true);
+    CRT.scan = 0; CRT.vig = 1; CRT.round = 1;
+    applyCrt();
+    expect(g.classList.contains('crt-vig-1')).toBe(false);
+  });
+
+  it('[Inverse] sem modo de a11y, a mesma vinheta é aplicada — a supressão é do modo, não do valor', () => {
+    const g = region();
+    comA11y(false);
+    CRT.scan = 0; CRT.vig = 1; CRT.round = 1;
+    applyCrt();
+    expect(g.classList.contains('crt-vig-1')).toBe(true);
+  });
+
+  it('[Interface] suprimir NÃO é desligar: a preferência da criança fica gravada e volta sozinha', () => {
+    // A distinção importa para quem administra a máquina da escola: se a supressão apagasse `CRT.vig`, sair
+    // do modo de acessibilidade devolveria a criança a uma estética que ela não escolheu de volta.
+    const g = region();
+    comA11y(true);
+    CRT.scan = 0; CRT.vig = 1; CRT.round = 1;
+    applyCrt();
+    expect(CRT.vig, 'a supressão não pode apagar a preferência').toBe(1);
+    comA11y(false);
+    applyCrt();
+    expect(g.classList.contains('crt-vig-1')).toBe(true);
+  });
+
+  it('[Boundary] a SCANLINE não cede — está fora da regra do ADR, e é escolha declarada', () => {
+    // O ADR-0020 nomeia `CRT_VIGNETTE` e "flashes decorativos". A scanline não está na lista, e é a única
+    // das três que vem LIGADA de fábrica. Suprimi-la mudaria a tela de todo mundo que usa qualquer modo de
+    // visão — decisão de produto, não dedução a partir de uma lista que não a menciona. Este caso trava o
+    // comportamento ATUAL para que a mudança, se vier, seja deliberada e apareça aqui.
+    const g = region();
+    comA11y(true);
+    CRT.scan = 1; CRT.vig = 0; CRT.round = 1;
+    applyCrt();
+    expect(g.classList.contains('crt-scan-1')).toBe(true);
   });
 });

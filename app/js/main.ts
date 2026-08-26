@@ -56,7 +56,13 @@ const players = rodada.players;
 const cenas = criarCenasDoJogo(() => shell.aplicarCena());
 const fatosDaCena = (): FatosDaCena => cenas.fatos();
 initLayout({ numJogadores: () => rodada.numPlayers });
-initCrt({ numJogadores: () => rodada.numPlayers });
+// `a11yVisualAtiva`: ALGUM jogador fora do modo `normal`. O CRT é decoração GLOBAL — uma só para a tela
+// inteira —, então não há como escurecer as bordas de meia tela; se decoração e acessibilidade de qualquer
+// criança se contradizem, quem cede é a decoração (ADR-0020, "precedência a11y > estética").
+initCrt({
+  numJogadores: () => rodada.numPlayers,
+  a11yVisualAtiva: () => players.some((p) => { const m = VIZ_BY_KEY[p.viz]; return !!m && m.kind !== 'normal'; }),
+});
 import type { Player, PlayerView } from './core/entity.js'; // a entidade da ENGINE, e a vista mínima dela
 import type { GamePlayer, ControlledGamePlayer } from './game/entity.js'; // as deste JOGO — ver `jogadores`/`controlados`
 import type { ModalIntent } from './input/keydown.js'; // a intenção direcional do ADR-0033

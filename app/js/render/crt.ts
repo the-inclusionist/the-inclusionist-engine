@@ -21,8 +21,24 @@ export const CRT_DEFAULT: Readonly<CrtCfg> = Object.freeze({ scan: 1, vig: 0, ro
 // mesma página carregue (D13 do `demos`, ADR-0038). O que entra aqui é o GETTER da rodada que a raiz
 // possui; o `let` que sobra guarda a função, não o número.
 let _numJogadores: () => number = () => 1;
-/** Liga a contagem de jogadores. Chamado uma vez pela raiz, antes do primeiro `applyCrt()`. */
-export function initCrt(deps: { numJogadores: () => number }): void { _numJogadores = deps.numJogadores; }
+/**
+ * ALGUM jogador está num modo de acessibilidade visual? (qualquer coisa que não seja `normal`.)
+ *
+ * O ADR-0020 decide: "modos de a11y SUPRIMEM o CRT/efeitos decorativos — precedência a11y > estética". Isso
+ * nunca tinha sido implementado, e a emenda de 2026-08-26 mediu: com a vinheta ligada, `crt-vig-1` sobrevivia
+ * em `hc-direto`, `fix-deuter`, `lv-blur` e `blind`. Uma vinheta escurecendo as bordas trabalha contra o modo
+ * que existe para AUMENTAR contraste.
+ *
+ * `ALGUM` e não "o jogador 1": o CRT é decoração GLOBAL, uma só para a tela inteira. Não há como escurecer as
+ * bordas de meia tela. Se a decoração e a acessibilidade de qualquer criança se contradizem, quem cede é a
+ * decoração — que é literalmente o que "precedência a11y > estética" quer dizer.
+ */
+let _a11yVisualAtiva: () => boolean = () => false;
+/** Liga a contagem de jogadores e a pergunta de a11y. Chamado uma vez pela raiz, antes do 1º `applyCrt()`. */
+export function initCrt(deps: { numJogadores: () => number; a11yVisualAtiva: () => boolean }): void {
+  _numJogadores = deps.numJogadores;
+  _a11yVisualAtiva = deps.a11yVisualAtiva;
+}
 
 export const CRT: CrtCfg = (() => {
   const d: CrtCfg = { ...CRT_DEFAULT };
@@ -53,7 +69,16 @@ export function applyCrt(): void {
   const g = $<HTMLElement>('#game-region'); if (!g) return;
   ['crt-scan-1', 'crt-vig-1', 'crt-round-0', 'crt-round-2'].forEach((c) => g.classList.remove(c));
   if (CRT.scan) { g.classList.add('crt-scan-' + CRT.scan); crtScanVars(); }
-  if (CRT.vig) g.classList.add('crt-vig-' + CRT.vig);
+  // A VINHETA CEDE PARA A ACESSIBILIDADE (ADR-0020: "modos de a11y suprimem o CRT decorativo").
+  //
+  // ⚠️ A SCANLINE NÃO CEDE, e isso é escolha declarada, não descuido. O registro nomeia `CRT_VIGNETTE` e
+  // "flashes decorativos"; a scanline não está na lista, e ela é a única das três que vem LIGADA de fábrica.
+  // Suprimi-la mudaria a aparência de todo mundo que usa qualquer modo de visão, e essa é decisão de produto
+  // — não a tomo por conta própria a partir de uma lista que não a menciona. Fica registrada como pergunta.
+  //
+  // O valor de `CRT.vig` NÃO é alterado: a preferência da criança continua gravada, e volta a valer sozinha
+  // quando ela sair do modo de acessibilidade. Suprimir não é desligar.
+  if (CRT.vig && !_a11yVisualAtiva()) g.classList.add('crt-vig-' + CRT.vig);
   if (CRT.round !== 1) g.classList.add('crt-round-' + CRT.round); // 1 = visual padrão (8px), sem classe
   store.setJSON(store.KEYS.crt, CRT);
 }
