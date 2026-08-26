@@ -262,7 +262,7 @@ function novoCtx(over = {}) {
   const marca = (nome) => () => { LOG.chamadas.push(nome); };
   const estado = {
     mode: 'ludico', collected: 0, ended: false, powerups: [], gate: null, gateOpen: true,
-    pauseActor: 0, ownerColors: true, captionsOn: true, playerRef: null,
+    pauseActor: 0, ownerColors: true, captionsOn: true,
   };
   CTX = {
     estado, // exposto para o teste inspecionar/mexer
@@ -279,7 +279,7 @@ function novoCtx(over = {}) {
     captionsOn: () => estado.captionsOn,
     PCOLOR: [0x111111, 0x222222, 0x333333, 0x444444],
     darkRegions: [{ announced: true, gfx: { alpha: 0, visible: false } }],
-    getPlayerRef: () => estado.playerRef, setPlayerRef: (p) => { estado.playerRef = p; },
+    getPlayerRef: () => players[0], // DERIVADO: o par `setPlayerRef` saiu com a referência que ele movia
     srSay: (m) => LOG.say.push(m), srAlert: (m) => LOG.alert.push(m), narrate: (m) => LOG.narrate.push(m),
     sfx: (n) => LOG.sfx.push(n), doorSound: (m) => LOG.sfx.push('door:' + m),
     playVictory: marca('playVictory'), showCaption: (t) => LOG.chamadas.push('caption:' + t),
@@ -315,7 +315,6 @@ function montar(n = 1, over = {}) {
   setNumPlayersValue(n);
   setCoins([]);
   const ctx = novoCtx(over);
-  ctx.estado.playerRef = players[0];
   initCoinSpawning({
     coinContainer: { removeChildren: () => [], addChild() { /* noop */ } },
     createSprite: () => ({ x: 0, y: 0, tint: 0, visible: true, destroy() { /* noop */ } }),
@@ -651,13 +650,22 @@ describe('game/session — setNumPlayers', () => {
     expect(LOG.chamadas).toContain('configureRender');
     expect(LOG.chamadas).toContain('hideTouchControls');
   });
-  it('[Many] encolher descarta os jogadores do fim e reaponta a referência de tela única', () => {
+  it('[Many] encolher descarta os do fim — e o jogador 1 é o MESMO OBJETO antes e depois', () => {
+    // A última asserção era `CTX.estado.playerRef).toBe(p0)`, e ela existia porque `setNumPlayers` chamava
+    // `ctx.setPlayerRef(ps[0])` para reapontar uma referência no game.js. Esse par foi removido: a
+    // referência apontava para `players[0]`, e `players[0]` NÃO MUDA DE IDENTIDADE — nem crescendo o array
+    // nem encolhendo. É esse fato que o caso passa a afirmar, e é ele que tornou o setter desnecessário.
+    //
+    // Mantido o caso com a asserção antiga, ele passaria VAZIO: `estado.playerRef` continuaria com o valor
+    // que a montagem lhe deu, porque ninguém mais o escreve.
     S.setNumPlayers(4);
     const p0 = players[0];
     S.setNumPlayers(1);
     expect(players).toHaveLength(1);
     expect(numPlayers).toBe(1);
-    expect(CTX.estado.playerRef).toBe(p0);
+    expect(players[0]).toBe(p0);
+    S.setNumPlayers(3);
+    expect(players[0], 'crescer também não troca o jogador 1').toBe(p0);
   });
   it('[Boundary] pede 9 telas → vira 4; pede 0 → vira 1', () => {
     S.setNumPlayers(9); expect(numPlayers).toBe(4);

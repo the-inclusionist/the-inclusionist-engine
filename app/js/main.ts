@@ -263,7 +263,38 @@ const POWER_SHORT = (k: string) => t('hud.power.' + (POWER_SHORT_KINDS.includes(
 // showPower migrou para game/coin-spawning.ts (Onda A) — o HUD do poder ativo nasce do mesmo modulo que
 // materializa os itens.
 // jumpVel + isBouncyGroundBelow/touchingWall/clingSides/firstClingSide/spiderReattach/wrapConvex → game/player.js (Estágio 4)
-players.push(makePlayer(0)); let player=players[0]; // 'players' vem de core/state.js (Fase 2, mega-var 8; nunca reatribuído, só mutado in-place); 'player'=players[0] fica local
+// ↓ ESTES DOIS AUXILIARES SUBIRAM PARA CÁ, e a posição é o contrato: o `let player` logo abaixo é o
+// primeiro consumidor deles. Enquanto ficavam mais embaixo, usá-los ali era TDZ — o `tsc` o disse com
+// todas as letras (TS2448), e a versão minificada não diria: `const` de topo vira `var`, e o erro que
+// seria um throw vira um `undefined` silencioso. Já aconteceu neste arquivo, com o `setPlayerViz`.
+/**
+ * OS JOGADORES DESTE JOGO, e o único lugar onde a vista se estreita.
+ *
+ * `core/state.players` é `Player[]` porque a engine não conhece `quiz` — foi exatamente isso que o ADR-0033
+ * decidiu ao tirar o campo de `core/entity`. Quem PÕE `GamePlayer` naquele array é este arquivo, que é a raiz
+ * de composição do jogo, então é aqui que ele volta a ser lido como tal. O `as` não afirma nada que este
+ * arquivo já não garanta.
+ *
+ * É função e não constante DE PROPÓSITO: `players` é `export let`, e uma constante congelaria a referência no
+ * instante do import. Hoje ninguém reatribui (conferido em toda a árvore) — mas "hoje ninguém" é a premissa
+ * que envelhece pior, e a função custa uma chamada.
+ */
+const jogadores = (): GamePlayer[] => players as GamePlayer[];
+
+/**
+ * OS JOGADORES DEPOIS DE `assignControls`, que é a mesma vista com uma invariante a mais.
+ *
+ * `Player.ctrl` é `KeyScheme | null` porque ANTES do boot ele é mesmo nulo. `input/keyboard-runtime` e
+ * `game/physics` declaram `ctrl` não-nulo porque só rodam depois — e o `core/entity` já dá nome a isso em
+ * `ControlledPlayer`, dizendo que usá-lo é afirmar "eu só rodo depois do boot".
+ *
+ * Quem pode afirmar isso é a raiz de composição, porque é ela que chama `assignControls`. Então a afirmação
+ * mora aqui, uma vez, em vez de cada módulo redeclarar `ctrl` como não-nulo e ninguém ler aquilo como
+ * afirmação — que é exatamente o que o comentário do `core/entity` diz ter acontecido antes.
+ */
+const controlados = (): ControlledGamePlayer[] => players as ControlledGamePlayer[];
+
+players.push(makePlayer(0));
 // 'numPlayers' agora vem de core/state.js (Fase 2, mega-variável 3). Escrita via setNumPlayers()/joinPlayer.
 setCoins(pickCoins(COIN_TARGET, coinPools())); // coins: mega-var 7 em core/state.js (reatribuição via setCoins)
 // Itens INDIVIDUAIS por jogador (multiplayer em telas separadas): cada moeda/letra/forma é coletada
@@ -292,32 +323,6 @@ initKB(); // o mapa de teclas vive em input/keyboard (#50); aqui só o disparo d
 // saveKB agora vem de input/keyboard.js (recebe o KB como argumento)
 // kbFor/actionOf/whichPlayer/assignControls/applyControls migraram para input/keyboard-runtime.ts (Onda A).
 // KB fica aqui (o painel de controles o edita e persiste); o modulo o le fresco a cada chamada.
-/**
- * OS JOGADORES DESTE JOGO, e o único lugar onde a vista se estreita.
- *
- * `core/state.players` é `Player[]` porque a engine não conhece `quiz` — foi exatamente isso que o ADR-0033
- * decidiu ao tirar o campo de `core/entity`. Quem PÕE `GamePlayer` naquele array é este arquivo, que é a raiz
- * de composição do jogo, então é aqui que ele volta a ser lido como tal. O `as` não afirma nada que este
- * arquivo já não garanta.
- *
- * É função e não constante DE PROPÓSITO: `players` é `export let`, e uma constante congelaria a referência no
- * instante do import. Hoje ninguém reatribui (conferido em toda a árvore) — mas "hoje ninguém" é a premissa
- * que envelhece pior, e a função custa uma chamada.
- */
-const jogadores = (): GamePlayer[] => players as GamePlayer[];
-
-/**
- * OS JOGADORES DEPOIS DE `assignControls`, que é a mesma vista com uma invariante a mais.
- *
- * `Player.ctrl` é `KeyScheme | null` porque ANTES do boot ele é mesmo nulo. `input/keyboard-runtime` e
- * `game/physics` declaram `ctrl` não-nulo porque só rodam depois — e o `core/entity` já dá nome a isso em
- * `ControlledPlayer`, dizendo que usá-lo é afirmar "eu só rodo depois do boot".
- *
- * Quem pode afirmar isso é a raiz de composição, porque é ela que chama `assignControls`. Então a afirmação
- * mora aqui, uma vez, em vez de cada módulo redeclarar `ctrl` como não-nulo e ninguém ler aquilo como
- * afirmação — que é exatamente o que o comentário do `core/entity` diz ter acontecido antes.
- */
-const controlados = (): ControlledGamePlayer[] => players as ControlledGamePlayer[];
 
 // ⚠️ AS DUAS VISTAS MORAM AQUI, ANTES DO PRIMEIRO CONSUMIDOR, e a posição é o contrato.
 // `controlados()` nasceu 500 linhas abaixo, ao lado de `jogadores()`, e o boot morreu com
@@ -966,7 +971,10 @@ initPhysics({
   puffDust, setSquash, addShake, addHitstop, POWER_MSG,
   coinPools: ()=>coinPools(), rebuildCoins, updateHud,
 });
-function stepPlayer(pl: Player,dt: number){
+// `GamePlayer` e não `Player`: as três chamadas abaixo — física, coleta e animação — leem `quiz`, e `quiz`
+// é do JOGO (ADR-0033). Declarar o tipo da engine aqui obrigava cada uma delas a um cast, e era o mesmo
+// defeito do `modalInput`: a assinatura contradizendo o que a função faz na primeira linha.
+function stepPlayer(pl: ControlledGamePlayer,dt: number){
   const _p=stepPhysics(pl,dt); if(!_p.ran)return; const dir=_p.dir; // fisica em game/physics.ts
   sessionApi.collectFor(pl); // moeda/quiz, power-up/chave e portao -> game/session.ts (C2)
   // E15/E16/E17/E19/E20: a escolha do quadro (decisao PURA em render/player-anim.ts) e a aplicacao dela no
@@ -992,7 +1000,9 @@ function update(dt: number){
   sceneCity.stepTileFx(); // tiles vivos da v3: água (ondas/corais/algas/peixes, FORE) + lava (tracinhos)
   if(ended)return;
   players.forEach((p,i)=>{ if(p.quit&&p.jumpEdge){ p.jumpEdge=false; respawnPlayer(i); } }); // L1: quem saiu re-entra pelo PULO do teclado (ou START do pad, no pollPads)
-  for(const pl of players) stepPlayer(pl,dt);
+  // `controlados()` e não `jogadores()`: a física e a animação leem `ctrl`, e esta é a vista que afirma o
+  // que já é verdade aqui — o laço só roda DEPOIS de `assignControls`, então `ctrl` não é mais nulo.
+  for(const pl of controlados()) stepPlayer(pl,dt);
   secretAreas.stepSecretAreas(dt); // E1: revela a area secreta enquanto houver jogador dentro, re-escurece ao sair e anuncia (game/secret-areas.ts, D3-c)
 }
 /* ===================== camera + quadro -> render/draw.ts (C1) =====================
@@ -1090,7 +1100,10 @@ const sessionApi = initSession({
   setEnded: setEndedValue,
   getPowerups: ()=>powerups, getGate: ()=>gate, isGateOpen: ()=>gateOpen, setGateOpen: setGateOpenValue,
   getPauseActor: ()=>pauseActor, ownerColors: ()=>ownerColors, captionsOn: ()=>captionsOn,
-  PCOLOR, darkRegions, getPlayerRef: ()=>player, setPlayerRef: (p)=>{ player=p; },
+  // `setPlayerRef` SAIU: o `let player` que ele reatribuía era sempre `players[0]`, e `players[0]` não
+  // muda de identidade — nem quando o array cresce nem quando encolhe (n ≥ 1 sempre). A dança de
+  // referência vinha do monólito e não movia nada. Agora é derivado, como o MODE (ADR-0040).
+  PCOLOR, darkRegions, getPlayerRef: ()=>jogadores()[0]!,
   srSay, srAlert, narrate: (t)=>tts.narrate(t),
   sfx: (n)=>earcons.sfx(n), doorSound: (m)=>earcons.doorSound(m), playVictory: ()=>jingles.playVictory(),
   showCaption,

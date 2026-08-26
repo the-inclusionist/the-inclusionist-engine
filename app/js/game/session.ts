@@ -276,8 +276,9 @@ export interface SessionCtx {
   /* --- referências ESTÁVEIS (mutadas in-place, nunca trocadas) --- */
   PCOLOR: number[];               // cores dos 4 jogadores (o game.js troca os ELEMENTOS, nunca o array)
   darkRegions: DarkRegion[];      // áreas secretas: reescurecem a cada rodada
-  getPlayerRef(): SessionPlayer;  // o `player` local do game.js (=players[0]) — REATRIBUÍDO por setNumPlayers
-  setPlayerRef(p: SessionPlayer): void;
+  /** O jogador 1. DERIVADO de `players[0]` no game.js, não guardado: o par `setPlayerRef` que existia aqui
+   *  reatribuía uma variável que já apontava para o mesmo objeto — `players[0]` não muda de identidade. */
+  getPlayerRef(): SessionPlayer;
 
   /* --- a11y e áudio --- */
   srSay(msg: string): void;                 // leitor de tela, "polite"
@@ -496,7 +497,6 @@ export function initSession(ctx: SessionCtx): SessionApi {
     const ps = P();
     if (n > ps.length) { for (let i = ps.length; i < n; i++) { const p = makePlayer(i) as unknown as SessionPlayer; ctx.loadPlayerA11y(p, i); ps.push(p); } }
     else if (n < ps.length) { ps.length = n; }
-    ctx.setPlayerRef(ps[0]);
     setNumPlayersValue(n);
   }
 
