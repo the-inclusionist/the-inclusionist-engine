@@ -31,7 +31,8 @@ function setup(over = {}) {
   const carLayer = fakeLayer();
   const CAR_TEX = [{}, {}, {}, {}];
   const ctx = {
-    carLayer, CAR_TEX, SpriteCtor: FakeSprite, GraphicsCtor: fakeGfx,
+    // Construtor virou FÁBRICA (Fase D): a porta pede o verbo, não a classe. Ver `render/port`.
+    carLayer, CAR_TEX, criarSprite: (t) => new FakeSprite(t), criarDesenho: () => new fakeGfx(),
     WORLD_PX_W: 100, WORLD_PX_H: 200, WORLD_W: 20,
     getRm: () => over.rm || {},
   };

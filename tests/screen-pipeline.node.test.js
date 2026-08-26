@@ -123,7 +123,9 @@ function mkHarness(numPlayers) {
   const camera = { kind: 'camera', parent: stage };
   let vpTex = [], vpSpr = [], vpFrames = null, vpDots = [];
   const api = initScreenPipeline({
-    RenderTexture, SpriteCtor, GraphicsCtor, NEAREST: 0,
+    // Construtores viraram FÁBRICAS (Fase D): a porta pede o verbo, não a classe. Ver `render/port`.
+    RenderTexture, NEAREST: 0,
+    criarSprite: (t) => new SpriteCtor(t), criarDesenho: () => new GraphicsCtor(),
     stage, renderer: { resize: (w, h) => log.resizes.push([w, h]) }, camera,
     getNumPlayers: () => numPlayers,
     getVpTex: () => vpTex, setVpTex: (a) => { vpTex = a; },

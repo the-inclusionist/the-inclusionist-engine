@@ -11,6 +11,7 @@
 import { TILE } from '../core/constants.js';
 import { rnd, randInt } from '../core/rng.js';
 import type { Desenho, Camada } from '../render/port.js';
+import type { CriarSprite, CriarDesenho } from '../render/port.js';
 import { cenario } from './state.js'; // GAME desde a Fase B (ADR-0038)
 
 export type LightState = 'green' | 'yellow' | 'red';
@@ -65,14 +66,16 @@ type Gfx = Desenho;
 interface Dimmable { tint: number; alpha: number; }
 interface CarSprite extends Dimmable { x: number; y: number; anchor: { set(x: number, y: number): void }; scale: { x: number }; destroy(): void; }
 type Layer = Camada & { children: Dimmable[] };
-interface SpriteCtor { new (tex: unknown): CarSprite; }
-interface GraphicsCtor { new (): Gfx; }
+// O construtor virou FÁBRICA (Fase D): `new (tex: unknown)` não recebe o `PIXI.Sprite` real, cujo
+// construtor só aceita `Texture`. Por contravariância, prometer aceitar qualquer coisa é o que impede.
+// Ver `CriarSprite` no cabeçalho de `render/port`.
+
 
 export interface TrafficCtx {
   carLayer: Layer;             // PIXI.Container — created + z-ordered in game.js, injected here
   CAR_TEX: unknown[];          // car sprite textures (already built in game.js)
-  SpriteCtor: SpriteCtor;      // = PIXI.Sprite
-  GraphicsCtor: GraphicsCtor;  // = PIXI.Graphics
+  criarSprite: CriarSprite<CarSprite>;   // era `SpriteCtor`
+  criarDesenho: CriarDesenho<Gfx>;       // era `GraphicsCtor`
   WORLD_PX_W: number;
   WORLD_PX_H: number;          // → STREET_Y (the front street sits at the bottom of the world; R-cidade 2026-07-03)
   WORLD_W: number;
@@ -105,8 +108,8 @@ export function drawSemaforo(): void {
 export function initTraffic(injected: TrafficCtx): void {
   ctx = injected; _streetY = ctx.WORLD_PX_H;
   SEM.x = Math.round(ctx.WORLD_PX_W / 2); SEM.y = _streetY;
-  SEM.pole = new ctx.GraphicsCtor(); ctx.carLayer.addChild(SEM.pole); drawSemaforo();
-  const g = new ctx.GraphicsCtor(); ctx.carLayer.addChild(g); // STOP signs along the front street (2×)
+  SEM.pole = ctx.criarDesenho(); ctx.carLayer.addChild(SEM.pole); drawSemaforo();
+  const g = ctx.criarDesenho(); ctx.carLayer.addChild(g); // STOP signs along the front street (2×)
   for (let tx = 6; tx < ctx.WORLD_W - 6; tx += 14) {
     const X = tx * TILE; if (Math.abs(X - SEM.x) < 48) continue;
     g.beginFill(0x8a919f).drawRect(X, _streetY - 28, 2, 28).endFill();
@@ -119,7 +122,7 @@ export function initTraffic(injected: TrafficCtx): void {
 export function spawnCar(): boolean {
   if (!ctx || cars.length >= 3) return false;
   const { dir, x } = planCarSpawn(rnd, ctx.WORLD_PX_W);
-  const s = new ctx.SpriteCtor(ctx.CAR_TEX[randInt(0, ctx.CAR_TEX.length - 1)]); // texture is already 3× native
+  const s = ctx.criarSprite(ctx.CAR_TEX[randInt(0, ctx.CAR_TEX.length - 1)]); // texture is already 3× native
   s.anchor.set(0.5, 1); s.scale.x = dir; s.y = _streetY; s.x = x;
   if (_frontDim) { s.tint = 0x4a5058; s.alpha = 0.55; }
   ctx.carLayer.addChild(s);

@@ -557,7 +557,7 @@ const titleUI = initTitle({ $ }); // navegacao dos submenus do titulo: ui/title.
    setCenario do boot ja precisa das 3 camadas de pe para vesti-las com o tema salvo.
    `vp` (viewports) e as camadas de decor de TELA nascem DEPOIS deste ponto -> entram embrulhados em seta. */
 const parallaxApi = createParallax({
-  camera, TilingSprite: PIXI.TilingSprite,
+  camera, criarAzulejo: (t, w, h) => new PIXI.TilingSprite(t as never, w, h), // a porta pede a fábrica
   placeholderTex: parallaxPlaceholder, skyTex: themeSkyTexture, hillsTex: themeHillsTexture, // render/scene-parallax
   citySkyTex: themeCitySkyTexture, skylineTex: themeSkylineTexture, // ADR-0042: a Cidade é gerada, não baixada
   // `Imagem`/`texturaDeImagem`/`escalaNearest` saíram: eram a carga dos três PNG da Cidade, e com ela a
@@ -772,7 +772,8 @@ const carLayer=new PIXI.Container(); camera.addChild(carLayer);
 // cars/_carT/STREET_Y/SEM/drawSemaforo/initTraffic/spawnCar/setFrontDim/stepTraffic migraram para
 // game/traffic.ts (Onda A). carLayer FICA (o z-order dele e soldado aqui); a textura saiu para
 // render/city-tex.ts (D3-a), junto com a dos bichos e a dos pedestres.
-traffic.initTraffic({ carLayer, CAR_TEX: CITY_TEX.carTex, SpriteCtor: PIXI.Sprite, GraphicsCtor: PIXI.Graphics,
+traffic.initTraffic({ carLayer, CAR_TEX: CITY_TEX.carTex,
+  criarSprite: (t) => new PIXI.Sprite(t as never), criarDesenho: () => new PIXI.Graphics(),
   WORLD_PX_W, WORLD_PX_H, WORLD_W, getRm: () => rm });
 /* ===================== L5: DECORAÇÃO POR ZONA (procedural, desenhada UMA vez) =====================
    Rua: calçada+meio-fio, postes com brilho ESTÁVEL, placas (PARE/faixa), letreiros nas fachadas.
@@ -811,7 +812,7 @@ const themeFxG=new PIXI.Graphics(); camera.addChild(themeFxG);          // fauna
 const themeFxBackG=new PIXI.Graphics(); camera.addChild(themeFxBackG);  // fauna ao FUNDO (vaga-lumes + metade das borboletas) — #69
 // Lógica do céu (stepSky/stepV3Decor + nuvens/pássaros/estrelas/névoa/grama/bichos) extraída p/ render/scene-sky.ts (#43).
 // As 6 camadas acima são criadas AQUI (z-order do render-graph, intocado) e INJETADAS; o módulo só as anima. getFxClock é lazy.
-const sceneSky = createSceneSky({ skyLayer, starsG, skyDecoG, nuvemG, fogG, grassG, themeFxG, themeFxBackG, CLOUD_TEX, BIRD_TEX, SpriteCtor: PIXI.Sprite,
+const sceneSky = createSceneSky({ skyLayer, starsG, skyDecoG, nuvemG, fogG, grassG, themeFxG, themeFxBackG, CLOUD_TEX, BIRD_TEX, criarSprite: (t) => new PIXI.Sprite(t as never),
   hexN, rnd, randInt, WORLD_PX_W, WORLD_PX_H, WORLD_W, WORLD_H, TILE, LOGICAL_W, LOGICAL_H, BOX,
   CENARIOS, THEME_FLORA, DIRECT_CFG, solidAt, tileAt,
   getCenario: () => CENARIO, getVizMode: () => vizMode, getPlayers: () => players, getFxClock: () => fxClock, getRm: () => rm,
@@ -962,7 +963,8 @@ const updateGameHud = () => hud.updateGameHud();
    (vpTex/vpSpr/vpFrames/vpDots) FICAM aqui, porque viewports/viz-setters/draw ja os leem por getter — dai o
    ctx trazer o par getter+setter de cada um, em vez de o modulo ser dono dos arrays. */
 const screenPipeline = initScreenPipeline({
-  RenderTexture: PIXI.RenderTexture, SpriteCtor: PIXI.Sprite, GraphicsCtor: PIXI.Graphics, NEAREST: PIXI.SCALE_MODES.NEAREST,
+  RenderTexture: PIXI.RenderTexture, NEAREST: PIXI.SCALE_MODES.NEAREST,
+  criarSprite: (t) => new PIXI.Sprite(t as never), criarDesenho: () => new PIXI.Graphics(),
   stage: app.stage, renderer: app.renderer, camera, // aqui é o `ResizableRenderer` (só `resize`), não a captura
   getNumPlayers: ()=>numPlayers,
   getVpTex: ()=>vpTex, setVpTex: (a)=>{ vpTex=a; },

@@ -16,7 +16,8 @@ function setup(over = {}) {
   const layers = { starsG: fakeGfx(), skyDecoG: fakeGfx(), nuvemG: fakeGfx(), fogG: fakeGfx(), grassG: fakeGfx(), themeFxG: fakeGfx(), themeFxBackG: fakeGfx() };
   class Sprite { constructor(tex) { this.texture = tex; this.x = 0; this.y = 0; this.alpha = 1; this.scale = { x: 1 }; this._v = 0; this._destroyed = false; } destroy() { this._destroyed = true; } }
   const ctx = {
-    skyLayer, ...layers, CLOUD_TEX: [{}, {}], BIRD_TEX: [{}, {}], SpriteCtor: Sprite,
+    // Construtor virou FÁBRICA (Fase D): a porta pede o verbo, não a classe. Ver `render/port`.
+    skyLayer, ...layers, CLOUD_TEX: [{}, {}], BIRD_TEX: [{}, {}], criarSprite: (t) => new Sprite(t),
     hexN: (s) => parseInt(String(s).slice(1), 16), rnd: () => 0.9, randInt: () => 0,
     WORLD_PX_W: 100, WORLD_PX_H: 100, WORLD_W: 10, WORLD_H: 10, TILE: 16, LOGICAL_W: 320, LOGICAL_H: 180, BOX: { h: 24 },
     CENARIOS: over.CENARIOS || { campo: { v3: true, decor: ['sparkles', 'nuvens'], cloud: ['#ffffff', '#dddddd'] }, cidade: { v3: false, decor: [] } },

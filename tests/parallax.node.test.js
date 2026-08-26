@@ -39,7 +39,8 @@ function ambiente(over = {}) {
     set src(v) { this._src = v; } get src() { return this._src; }
   }
   const ctx = {
-    camera, TilingSprite: FakeTiling,
+    // Construtor virou FÁBRICA (Fase D): a porta pede o verbo, não a classe. Ver `render/port`.
+    camera, criarAzulejo: (t, w, h) => new FakeTiling(t, w, h),
     placeholderTex: (i) => 'PLACEHOLDER:' + i,
     skyTex: (T) => 'SKY:' + T.sky[0],
     hillsTex: (T, near) => 'HILLS:' + T.hills[near ? 1 : 0] + ':' + (near ? 'near' : 'far'),

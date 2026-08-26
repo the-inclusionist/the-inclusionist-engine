@@ -70,6 +70,7 @@
 
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { screenGrid } from '../core/screens.js';
+import type { CriarSprite, CriarDesenho } from './port.js';
 
 /* ===================== a parte PURA: o plano da grade ===================== */
 
@@ -169,8 +170,10 @@ export interface ResizableRenderer { resize(w: number, h: number): void }
 export interface ScreenPipelineCtx {
   /* --- PIXI por interface estrutural --- */
   RenderTexture: RenderTextureFactory;                    // PIXI.RenderTexture
-  SpriteCtor: new (texture: unknown) => SpriteLike;        // PIXI.Sprite
-  GraphicsCtor: new () => GraphicsLike;                    // PIXI.Graphics
+  /** Fábricas, não construtores (Fase D): `new (texture: unknown)` não recebe o `PIXI.Sprite` real, cujo
+   *  construtor só aceita `Texture`. Ver `CriarSprite` no cabeçalho de `render/port`. */
+  criarSprite: CriarSprite<SpriteLike>;
+  criarDesenho: CriarDesenho<GraphicsLike>;
   NEAREST: number;                                         // PIXI.SCALE_MODES.NEAREST
 
   /* --- a cena --- */
@@ -228,13 +231,13 @@ export function initScreenPipeline(ctx: ScreenPipelineCtx): ScreenPipelineApi {
     for (const vp of plan.viewports) {
       const rt = ctx.RenderTexture.create({ width: LOGICAL_W, height: LOGICAL_H });
       rt.baseTexture.scaleMode = ctx.NEAREST; // pixel art: ampliar sem interpolar
-      const s = new ctx.SpriteCtor(rt); s.x = vp.x; s.y = vp.y;
+      const s = ctx.criarSprite(rt); s.x = vp.x; s.y = vp.y;
       ctx.stage.addChild(s); vpTex.push(rt); vpSpr.push(s);
     }
     ctx.setVpTex(vpTex); ctx.setVpSpr(vpSpr);
 
     // moldura: uma linha por tela, num único Graphics (separa e enquadra como a borda da tela única)
-    const vpFrames = new ctx.GraphicsCtor();
+    const vpFrames = ctx.criarDesenho();
     for (const vp of plan.viewports) {
       vpFrames.lineStyle(FRAME_WIDTH, FRAME_COLOR, FRAME_ALPHA);
       vpFrames.drawRect(vp.frame.x, vp.frame.y, vp.frame.w, vp.frame.h);
@@ -244,7 +247,7 @@ export function initScreenPipeline(ctx: ScreenPipelineCtx): ScreenPipelineApi {
     // bolinhas indicadoras do modo de visão: ACIMA de tudo e FORA da render-texture, portanto fora do filtro
     // do viewport — é por isso que elas continuam visíveis no modo cegueira (ver updateVpDots em viz-setters).
     ctx.setVpDots(plan.viewports.map((vp) => {
-      const g = new ctx.GraphicsCtor();
+      const g = ctx.criarDesenho();
       g.x = vp.dot.x; g.y = vp.dot.y; g.visible = false;
       ctx.stage.addChild(g);
       return g;

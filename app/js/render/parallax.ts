@@ -80,6 +80,7 @@
 
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import type { CenarioTema, TemaMorros, TemaPredios, FaixaDePredios } from './cenario-data.js';
+import type { CriarAzulejo } from './port.js';
 
 /* ===================== os fatores de profundidade (dado) ===================== */
 
@@ -147,7 +148,9 @@ export interface TilingSpriteLike {
    */
   zIndex: number;
 }
-interface TilingSpriteCtor { new (texture: unknown, width: number, height: number): TilingSpriteLike }
+// O construtor virou FÁBRICA (Fase D): `new (tex: unknown)` não recebe o `PIXI.Azulejo` real, cujo
+// construtor só aceita `Texture`. Por contravariância, prometer aceitar qualquer coisa é o que impede.
+// Ver `CriarAzulejo` no cabeçalho de `render/port`.
 /** `camera` — só a inserção em posição de z fixa. */
 interface ContainerLike { addChildAt(child: unknown, index: number): unknown }
 /** `starsG`/`skyDecoG`/`fogG`: contra-posicionados junto com o parallax. */
@@ -161,7 +164,7 @@ interface ImagemCtor { new (): ImagemLike }
 export interface ParallaxCtx {
   /* --- render-graph (criados no game.js; a ordem-z é soldada lá) --- */
   camera: ContainerLike;          // container do mundo — as 3 camadas entram nos índices 0,1,2
-  TilingSprite: TilingSpriteCtor; // PIXI.TilingSprite
+  criarAzulejo: CriarAzulejo<TilingSpriteLike>; // era `TilingSprite: TilingSpriteCtor`
 
   /* --- geradores de textura (render/scene-parallax): injetados, não importados, p/ rodar no project node --- */
   placeholderTex: (i: number) => unknown;                       // parallaxPlaceholder — fundo da Cidade sem PNG
@@ -196,7 +199,7 @@ export interface ParallaxApi {
 /** Cria as 3 camadas dentro do `camera` e devolve a API que as move e as veste. */
 export function createParallax(ctx: ParallaxCtx): ParallaxApi {
   const layers: TilingSpriteLike[] = PARALLAX.map((_p, i) => {
-    const ts = new ctx.TilingSprite(ctx.placeholderTex(i), LOGICAL_W, LOGICAL_H);
+    const ts = ctx.criarAzulejo(ctx.placeholderTex(i), LOGICAL_W, LOGICAL_H);
     ctx.camera.addChildAt(ts, i); // i=0 (sky) fica no fundo; depois far, near; tileset entra por cima
     return ts;
   });

@@ -6,6 +6,7 @@
 // verbatim da v3.1.100. Injeção por closure. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (#43).
 
 import type { Desenho, Camada } from './port.js';
+import type { CriarSprite } from './port.js';
 /**
  * Posição horizontal de uma nuvem à deriva, com wrap SUB-PIXEL e pelo CORPO INTEIRO. Corrige #21:
  * (a) NÃO arredonda → deriva suave mesmo a <1px/frame; (b) só reentra quando a nuvem inteira saiu.
@@ -98,7 +99,9 @@ const CUMULO_SOMBRA: readonly [number, number, number, number] = [1, 12, 24, 1];
 type Gfx = Desenho;
 interface Sprite { x: number; y: number; alpha: number; texture: unknown; scale: { x: number }; _v?: number; destroy(): void; }
 type Layer = Camada;
-interface SpriteCtor { new (tex: unknown): Sprite; }
+// O construtor virou FÁBRICA (Fase D): `new (tex: unknown)` não recebe o `PIXI.Sprite` real, cujo
+// construtor só aceita `Texture`. Por contravariância, prometer aceitar qualquer coisa é o que impede.
+// Ver `CriarSprite` no cabeçalho de `render/port`.
 interface Bird { s: Sprite; dir: number; f: number; t: number; }
 interface Flora { base: string; top: string; bDk: string; bLt: string; petals: string[]; center: string; }
 interface Theme { v3?: boolean; decor?: string[]; cloud?: [string, string]; nuvens?: number }
@@ -110,7 +113,7 @@ export interface SceneSkyCtx {
    *  esconde o sol) e ATRÁS das duas bandas de morro (por isso as árvores do fundo passam à frente dela).
    *  `skyDecoG`, onde moram os pássaros e as nuvens dos outros temas, está à frente dos morros e não serve. */
   nuvemG: Gfx;
-  CLOUD_TEX: unknown[]; BIRD_TEX: unknown[]; SpriteCtor: SpriteCtor; // texturas + PIXI.Sprite
+  CLOUD_TEX: unknown[]; BIRD_TEX: unknown[]; criarSprite: CriarSprite<Sprite>; // texturas + a fábrica
   hexN: (s: string) => number; rnd: () => number; randInt: (a: number, b: number) => number;
   WORLD_PX_W: number; WORLD_PX_H: number; WORLD_W: number; WORLD_H: number; TILE: number; LOGICAL_W: number; LOGICAL_H: number; BOX: { h: number };
   CENARIOS: Record<string, Theme>; THEME_FLORA: Record<string, Flora | undefined>; DIRECT_CFG: Record<string, unknown>;
@@ -130,7 +133,7 @@ export function createSceneSky(ctx: SceneSkyCtx): SceneSky {
 
   // seedClouds v3: 7 nuvens à deriva no céu do MUNDO (skyLayer)
   for (let i = 0; i < 7; i++) {
-    const s = new ctx.SpriteCtor(ctx.CLOUD_TEX[i % 2]); s.alpha = 0.5 + ((i * 37) % 30) / 100;
+    const s = ctx.criarSprite(ctx.CLOUD_TEX[i % 2]); s.alpha = 0.5 + ((i * 37) % 30) / 100;
     s.x = (i * 173) % ctx.WORLD_PX_W; s.y = 8 + ((i * 61) % Math.floor(ctx.WORLD_PX_H * 0.30)); s._v = 0.02 + ((i * 13) % 10) / 300;
     ctx.skyLayer.addChild(s); clouds.push(s);
   }
@@ -139,7 +142,7 @@ export function createSceneSky(ctx: SceneSkyCtx): SceneSky {
     if (ctx.getRm().decor) { if (birds.length) { birds.forEach((b) => { ctx.skyLayer.removeChild(b.s); b.s.destroy(); }); birds = []; } return; }
     for (const c of clouds) { c.x += (c._v || 0) * dt; if (c.x > ctx.WORLD_PX_W + 50) c.x = -50; }
     if (birds.length < 3 && ++_birdT >= 520) { _birdT = ctx.randInt(0, 300); const dir = ctx.rnd() < 0.5 ? 1 : -1;
-      const s = new ctx.SpriteCtor(ctx.BIRD_TEX[0]); s.scale.x = dir; s.x = dir > 0 ? -10 : ctx.WORLD_PX_W + 10; s.y = 12 + ctx.rnd() * ctx.WORLD_PX_H * 0.25; ctx.skyLayer.addChild(s);
+      const s = ctx.criarSprite(ctx.BIRD_TEX[0]); s.scale.x = dir; s.x = dir > 0 ? -10 : ctx.WORLD_PX_W + 10; s.y = 12 + ctx.rnd() * ctx.WORLD_PX_H * 0.25; ctx.skyLayer.addChild(s);
       birds.push({ s, dir, f: 0, t: 0 }); }
     for (let i = birds.length - 1; i >= 0; i--) { const b = birds[i]; b.s.x += b.dir * 0.7 * dt; b.t += dt; if (b.t >= 8) { b.t = 0; b.f = 1 - b.f; b.s.texture = ctx.BIRD_TEX[b.f]; }
       if (b.s.x < -16 || b.s.x > ctx.WORLD_PX_W + 16) { ctx.skyLayer.removeChild(b.s); b.s.destroy(); birds.splice(i, 1); } }

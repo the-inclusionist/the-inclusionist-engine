@@ -71,3 +71,22 @@ export interface ComTextura {
  * só vira fato quando o pedido tem a forma de um verbo, não a de um objeto emprestado.
  */
 export type RenderizarEm = (objeto: unknown, alvo: unknown, limpar?: boolean) => void;
+
+/**
+ * CRIAR UM SPRITE a partir de uma textura, e um AZULEJO a partir dela.
+ *
+ * Fábricas, não construtores — e pelo mesmo motivo do `RenderizarEm` acima. Três módulos pediam
+ * `interface SpriteCtor { new (tex: unknown): Sprite }`, e o `PIXI.Sprite` real não cabe: o construtor dele
+ * aceita `Texture | undefined`, e um parâmetro declarado `unknown` é MAIS LARGO — por contravariância, quem
+ * promete aceitar qualquer coisa é quem não pode receber um construtor que só aceita textura.
+ *
+ * Uma função apaga o problema: quem chama passa a textura que já tem, e quem compõe fecha a diferença uma
+ * vez. `T` é o que o módulo espera de volta — cada um sabe qual fatia do sprite ele vai tocar.
+ */
+export type CriarSprite<T> = (textura: unknown) => T;
+
+/** Idem para o azulejo do parallax, que também recebe largura e altura. */
+export type CriarAzulejo<T> = (textura: unknown, largura: number, altura: number) => T;
+
+/** E o desenho vetorial vazio (`new PIXI.Graphics()`), pela mesma razão. */
+export type CriarDesenho<T> = () => T;
