@@ -15,5 +15,19 @@ export const PAD_DESIGNS: Record<string, Record<string, string[]>> = { // por bo
   sony:{'0':['✕','#4f8fd0'],'1':['○','#d23b3b'],'2':['□','#d76fae'],'3':['△','#2fae7e']},
   nintendo:{'0':['B','#d9a400'],'1':['A','#d23b3b'],'2':['Y','#2fae4e'],'3':['X','#2f6fd2']},
 };
+/**
+ * Glifos de controle que NÃO SE LEEM — chave i18n do nome falado de cada um (ADR-0044, item 4).
+ *
+ * Um leitor de tela lê `✕` como "sinal de multiplicação", ou não lê nada, e `△` costuma sair mudo. É por isso
+ * que a legenda da pausa carregava `aria-hidden="true"`: escondiam-se o ruído E a informação juntos. Aqui está
+ * a metade que faltava para poder tirar o atributo — o glifo continua na tela para quem o reconhece, e a
+ * PALAVRA existe para quem o escuta.
+ *
+ * Só os quatro do PlayStation entram. `A`, `B`, `X`, `Y` e `0`–`3` já se leem, e traduzi-los para "letra A"
+ * seria acrescentar ruído em nome de acessibilidade — o defeito que este item conserta pelo avesso.
+ */
+export const PAD_GLYPH_SPOKEN: Record<string, string> = {
+  '✕': 'pad.glyph.cross', '○': 'pad.glyph.circle', '□': 'pad.glyph.square', '△': 'pad.glyph.triangle',
+};
 export const TOUCH_ACT_LABELS: Record<string, string> = { left:'touch.act.left', right:'touch.act.right', up:'touch.act.up', down:'touch.act.down', jump:'touch.act.jump', run:'touch.act.run', especial:'touch.act.especial', swap:'touch.act.swap', pause:'touch.act.pause' };
 export const TOUCH_DEFAULT: Record<string, string> = { up:'up',down:'down',left:'left',right:'right',start:'pause',b0:'jump',b1:'especial',b2:'run',b3:'swap' };

@@ -133,7 +133,7 @@ import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geomet
 import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad API + assistente de mapeamento
 import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
 import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js';
-import { initShell } from './ui/shell.js'; // C3: a casca — em que TELA o jogo esta (fase, pausa, legenda do titulo)
+import { initShell, pauseLegendHtml } from './ui/shell.js'; // C3: a casca — em que TELA o jogo esta (fase, pausa, legenda do titulo)
 import { initMenuNav } from './ui/menu-nav.js'; // C3: navegacao universal de menus (teclado/controle/olhos/fala) // Onda A: menu de pausa por tela + barra de icones de a11y
 import { initHud } from './ui/hud.js'; // Onda A: HUD por tela (moedas/poder/abandono/selo de espera)
 import { initScreenPipeline } from './render/screen-pipeline.js'; // D3-c: topologia do render por tela (grade, render-textures, molduras, bolinhas)
@@ -1519,9 +1519,12 @@ document.querySelectorAll<HTMLElement>('.mode-btn, .pm-btn').forEach(attachAbbr)
 // gancho, entao o armazenamento e a fonte correta e sempre esta pronta.
 function simNaoGlyphs(){ const d=store.get('incl_paddesign','generic'); const set=PAD_DESIGNS[d]||PAD_DESIGNS.generic; const inv=(d==='sony'||d==='nintendo');
   return { sim:set[inv?'1':'0'], nao:set[inv?'0':'1'] }; }
+// A MONTAGEM saiu daqui e virou `pauseLegendHtml` em ui/shell (ADR-0044, item 4). Não foi só mudança de casa:
+// a legenda carregava `aria-hidden="true"` e era invisível justamente para quem não vê o glifo. Agora os chips
+// ficam visíveis e MUDOS e uma frase `sr-only` diz a mesma coisa em palavras — e a montagem virou testável em
+// node, que é o que permite o gate `tests/pause-legend.node.test.js` existir.
 function renderPauseLegend(){ const g=simNaoGlyphs();
-  const chip=(s: readonly string[],word: string)=>`<span class="lg"><span class="lg-ico" style="background:${s[1]}">${s[0]}</span> ${word}</span>`;
-  const html=chip(g.sim,t('menu.yes'))+chip(g.nao,t('menu.no'));
+  const html=pauseLegendHtml(g.sim as [string,string], g.nao as [string,string]);
   document.querySelectorAll('.pause-legend').forEach(el=>{ el.innerHTML=html; }); } // todas as pausas por tela
 // START (pílula): função vem do touchMap (padrão pausar) — a fiação fica no touchSetup, junto do doTouch.
 // padLayoutFromId migrou para input/touch.ts (Onda A) — a deteccao do modelo pelo id do controle e

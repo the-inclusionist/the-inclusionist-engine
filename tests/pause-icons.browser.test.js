@@ -168,11 +168,15 @@ describe('buildScreenPause — a árvore construída', () => {
     expect(dois.querySelector('h2').textContent).toContain('· Jogador 2');
   });
 
-  it('o rodapé de legenda de sim/não existe e é escondido do leitor (é dica visual de botão físico)', () => {
+  it('o rodapé de legenda de sim/não existe e NÃO é mais escondido do leitor (ADR-0044, item 4)', () => {
+    // A versão anterior deste caso afirmava o contrário, e afirmava com um motivo escrito — "é dica visual de
+    // botão físico". O motivo estava errado pela metade: a dica é visual, mas a INFORMAÇÃO ("qual botão
+    // confirma") é de todo mundo, e a XAG 106 manda narrá-la. Quem fica mudo agora são os chips, porque `✕`
+    // lido em voz alta é "sinal de multiplicação"; a frase equivalente em palavras vive num `.sr-only`.
     const { sp } = mount();
     const lg = sp.querySelector('.pause-legend');
-    expect(lg.getAttribute('aria-hidden')).toBe('true');
-    expect(lg.textContent).toBe('');
+    expect(lg.getAttribute('aria-hidden')).toBe(null);
+    expect(lg.textContent).toBe(''); // nasce vazia: quem a preenche é o `renderPauseLegend` da raiz
   });
 });
 

@@ -92,7 +92,7 @@
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 
-import { PAD_DESIGNS } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
+import { PAD_DESIGNS, PAD_GLYPH_SPOKEN } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
 import type { DomQuery } from '../core/dom-query.js';
 import type { PadMap } from '../input/gamepad.js';
 import type { FatosDaCena } from '../core/scenes.js';
@@ -218,6 +218,39 @@ export function touchControlsPlan(f: FatosDaCena, st: TouchControlsState, screen
 /** Um "chip" da legenda: o glifo (com cor de fundo opcional) seguido da palavra que ele significa. */
 export function chip(txt: string, col: string | null, word?: string): string {
   return `<span class="lg"><span class="lg-ico"${col ? ` style="background:${col}"` : ''}>${txt}</span>${word ? ' ' + word : ''}</span>`;
+}
+
+/**
+ * O nome FALADO de um glifo de controle. Glifo que já se lê passa intocado.
+ *
+ * Ver `PAD_GLYPH_SPOKEN` em `input/devices`: a tabela guarda CHAVES e não texto, porque ela é uma `const` de
+ * módulo avaliada uma vez no import — texto já resolvido congelaria o idioma no boot. Quem resolve é aqui, a
+ * cada chamada, com o idioma vigente naquele instante.
+ */
+export function glifoFalado(g: string): string {
+  const k = PAD_GLYPH_SPOKEN[g];
+  return k ? t(k) : g;
+}
+
+/**
+ * A LEGENDA DA PAUSA — duas camadas no mesmo lugar (ADR-0044, item 4).
+ *
+ * Ela dizia qual botão confirma e qual volta, e carregava `aria-hidden="true"` — ou seja, era invisível
+ * justamente para quem não pode ver o glifo. A XAG 106 manda narrar exatamente isto ("A to Select").
+ *
+ * Mas só tirar o atributo devolveria o ruído que provavelmente o motivou: um leitor de tela lê `✕` como
+ * "sinal de multiplicação". Então os CHIPS ficam visíveis e mudos, e ao lado nasce UMA frase só para leitor
+ * de tela, com os glifos já traduzidos em palavra. Duas leituras da mesma informação, cada uma no sentido
+ * que a alcança.
+ *
+ * Recebe os pares `[glifo, cor]` que `simNaoGlyphs` escolhe a partir do desenho do controle — a inversão
+ * PlayStation/Nintendo (onde "sim" é o botão 1) já vem decidida de lá.
+ */
+export function pauseLegendHtml(sim: readonly [string, string], nao: readonly [string, string]): string {
+  const mudo = (g: readonly [string, string], palavra: string): string =>
+    `<span class="lg" aria-hidden="true"><span class="lg-ico" style="background:${g[1]}">${g[0]}</span> ${palavra}</span>`;
+  const falada = t('menu.legendSpoken', { sim: glifoFalado(sim[0]), nao: glifoFalado(nao[0]) });
+  return mudo(sim, t('menu.yes')) + mudo(nao, t('menu.no')) + `<span class="sr-only">${falada}</span>`;
 }
 
 /** Os quatro botões de ação, na ordem fixa da legenda: pular · especial · correr · trocar. */

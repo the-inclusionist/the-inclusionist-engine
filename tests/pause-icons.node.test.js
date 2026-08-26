@@ -407,7 +407,10 @@ describe('markup dos ícones e do menu', () => {
     expect(h).toContain('class="pause-icons" role="group"');
     expect(h).toContain('class="pause-icons-cap" aria-live="polite"');
     expect(h).toContain('<div class="pause-menu" role="menu"></div>');
-    expect(h).toContain('class="pause-legend" aria-hidden="true"');
+    // O `aria-hidden` SAIU daqui no item 4 do ADR-0044: a legenda diz qual botão confirma, e era invisível
+    // exatamente para quem não vê o glifo. Quem esconde agora são os CHIPS, e só eles — ver `pauseLegendHtml`.
+    expect(h).toContain('class="pause-legend"');
+    expect(h).not.toContain('class="pause-legend" aria-hidden');
   });
 
   it('UM jogador: o título NÃO ganha sufixo; MUITOS: ganha "· Jogador N" (1-based)', () => {

@@ -306,7 +306,7 @@ export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
     '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup() + '</div><p class="pause-icons-cap" aria-live="polite"></p>' +
     '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>' + (o.numPlayers > 1 ? ' · Jogador ' + (o.player + 1) : '') + '</h2><div class="pause-menu" role="menu">' +
     o.pmButtons.map((b) => pmBtnMarkup(b, o.dynLabel, o.t)).join('') +
-    '</div><p class="pause-legend" aria-hidden="true"></p></div>';
+    '</div><p class="pause-legend"></p></div>';
 }
 
 // ---------------------------------------------------------------------------------------------
