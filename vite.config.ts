@@ -4,20 +4,46 @@ import { playwright } from '@vitest/browser-playwright'; // Vitest 4: provider v
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 // Plugin em .mjs puro (sem tipos): é ferramenta de BUILD, e tipá-la exigiria um segundo tsconfig para o
 // Node. O contrato dele é uma função que devolve o objeto de plugin, e o Vite valida isso na hora de usar.
 import atlasDeSprites from './scripts/vite-plugin-atlas.mjs';
-const RAIZ_SPRITES = join(dirname(fileURLToPath(import.meta.url)), 'app/public/assets/sprites/menino');
 
-// CARIMBO DE BUILD (versionamento — ver docs/plano-versionamento.md). git describe dá a versão: no commit de uma
-// tag de release (feita pelo release-it), sai limpa (v4.165.0 = "versão de marketing"); nos demais, tag+ahead+sha;
-// com mudanças não commitadas, sufixo -dirty. Fallbacks: CF Pages faz clone RASO → se as tags não vierem (build
-// command deve fazer `git fetch --tags --force`), cai no CF_PAGES_COMMIT_SHA; sem git, 'dev'. Injetado via define.
+
+// ========================= CARIMBO DE BUILD (docs/plano-versionamento.md) =========================
+// A VERSÃO VEM DO `package.json`, e não do `git describe`. Foi assim até 2026-08-26, e o defeito era este:
+// `git describe --tags` só devolve uma versão se houver TAG ALCANÇÁVEL, e não há nenhuma — nem local, nem no
+// remoto (`git ls-remote --tags origin` volta vazio). Sem tag, o `--always` cai no SHA curto, e o jogo
+// mostrava `vbbfa193` no título em vez de `v4.164.25`. O `package.json` diz a versão, está VERSIONADO, e
+// chega em qualquer clone: raso, sem tags, no CF Pages, em qualquer lugar. Não há como ele faltar.
+//
+// O `git describe` continua, e continua servindo para o que ele é bom: dizer se este build corresponde a uma
+// versão publicada ou não. O sufixo `+<sha>` aparece quando o build está ADIANTE da tag da versão, e
+// `-dirty` quando há mudança não commitada — e esse aviso vale: um artefato marcado `-dirty` não corresponde
+// a commit nenhum, e não dá para pedir de volta.
+//
+// Sintaxe de metadados de build do semver (`4.164.25+bbfa193`), que é o lugar certo para isso.
+//
+// Fallbacks: sem git, sobra o `CF_PAGES_COMMIT_SHA`; sem ele, 'dev'.
 const sh = (cmd: string): string => { try { return execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { return ''; } };
 const cfSha = (process.env.CF_PAGES_COMMIT_SHA || '').slice(0, 7);
+const RAIZ_REPO = dirname(fileURLToPath(import.meta.url));
+const RAIZ_SPRITES = join(RAIZ_REPO, 'app/public/assets/sprites/menino');
+const versaoDoPacote = ((): string => {
+  try { return String(JSON.parse(readFileSync(join(RAIZ_REPO, 'package.json'), 'utf8')).version || ''); } catch { return ''; }
+})();
+const descricaoGit = sh('git describe --tags --always --dirty'); // vX.Y.Z · vX.Y.Z-3-gabc1234 · abc1234-dirty
+const shaCurto = sh('git rev-parse --short HEAD') || cfSha || 'dev';
+/** `4.164.25` num build de release; `4.164.25+bbfa193` adiante dela; `+bbfa193-dirty` com árvore suja. */
+const versaoDeExibicao = ((): string => {
+  if (!versaoDoPacote) return descricaoGit || cfSha || 'dev';        // sem package.json legível: o que houver
+  if (descricaoGit === 'v' + versaoDoPacote) return versaoDoPacote;   // exatamente na tag desta versão
+  const sujo = descricaoGit.endsWith('-dirty') ? '-dirty' : '';
+  return versaoDoPacote + '+' + shaCurto + sujo;
+})();
 const BUILD = {
-  version: sh('git describe --tags --always --dirty') || cfSha || 'dev',
-  sha: sh('git rev-parse --short HEAD') || cfSha || 'dev',
+  version: versaoDeExibicao,
+  sha: shaCurto,
   date: sh('git log -1 --format=%cd --date=short') || '', // data do COMMIT (estável entre rebuilds do mesmo commit)
   env: process.env.CF_PAGES ? 'prod' : 'local',
 };
