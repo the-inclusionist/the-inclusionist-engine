@@ -77,11 +77,79 @@ decision-outcome:
     negative:
     - "One-time large mechanical rewiring with visual-regression risk the sandbox can't verify → Dev eyeballs post-build."
 
+  amendment-2026-08-26: |
+    ⚠️ TRÊS AFIRMAÇÕES DESTE REGISTRO NÃO SE SUSTENTAM NA IMPLEMENTAÇÃO. Medidas no navegador em 2026-08-26,
+    com o build `main-C-6FZO5r.js`. Ficam aqui com o texto original intacto acima — um registro que se corrige
+    escondendo o que dizia antes não ensina nada.
+
+    ===== 1. "OS FILTROS COBREM TUDO (jogo + HUD + menus)" É FALSO, E É UM DEFEITO NO AR =====
+    É o driver de a11y deste ADR, e o motivo declarado de A11Y_CORRECTION vir depois do CRT. Medição, com a
+    correção de daltonismo `fix-deuter` ativa:
+
+      · a CANVAS carrega `filter: url(#cvd-fix-deuter)`  → cadeia de filtros: [CANVAS]
+      · o MENU (`.screen-pause`, DOM irmão dentro de `#game-region`) → cadeia de filtros: []
+
+    A criança daltônica recebe o JOGO corrigido e os MENUS crus. E o menu é onde estão as palavras — inclusive
+    as dos próprios ajustes de acessibilidade. Nenhuma classe de `body` compensa isso: `document.body.classList`
+    está VAZIA nesse estado, e a única regra de CSS que reage a modo (`body.blind-mode … {visibility:hidden}`)
+    esconde HUD, não filtra.
+
+    A CAUSA é de mecanismo, não de esquecimento: metade do quadro é canvas e metade é DOM, e **um filtro do
+    PIXI não alcança DOM**. Este registro assumiu "uma CADEIA de passes sobre o frame JÁ COMPOSTO" como se
+    existisse um frame composto único. Não existe.
+
+    O MECANISMO QUE FUNCIONA existe e é simples: `filter` de CSS no `#game-region`, que é o elemento que contém
+    a canvas E os menus. Hoje o filtro está na canvas. Mover o alvo é uma linha na raiz de composição (o verbo
+    `AplicarFiltroCss`, criado em 2026-08-26) — mas muda a aparência de TODO menu em TODOS os 16 modos de
+    visão, então é mudança que o Dev confere na tela, não que se empurra.
+
+    Consequência para a ORDEM: com o filtro no `#game-region`, o CRT passa a ser filtrado JUNTO, que é
+    exatamente o que `POST_FX_ORDER` manda (CRT_VIGNETTE é o passe mais interno, A11Y_CORRECTION vem depois).
+    Hoje a ordem real é a INVERSA — a scanline é um pseudo-elemento em `z-index:500`, pintado POR CIMA da
+    canvas já corrigida.
+
+    ===== 2. "MODOS DE A11Y SUPRIMEM O CRT DECORATIVO" NÃO ESTÁ IMPLEMENTADO =====
+    Medido com a vinheta ligada (`CRT.vig = 1`): a classe `crt-vig-1` sobrevive em `hc-direto`, `fix-deuter`,
+    `lv-blur` e `blind` — nos dezesseis modos, na verdade. A precedência "a11y > estética" que este registro
+    decide não existe em código.
+
+    O impacto REAL é condicional e vale dizer com honestidade: a vinheta vem DESLIGADA de fábrica
+    (`CRT_DEFAULT.vig = 0`), então só alcança quem a liga no menu Sensibilidade visual. Quem liga e usa alto
+    contraste recebe uma vinheta escurecendo as bordas — trabalhando contra o modo que existe para aumentar
+    contraste.
+
+    ===== 3. AS ESCALAS SÃO TRÊS, NÃO DUAS =====
+    Este registro diz "two scopes": MUNDO (por viewport, dentro da câmera) e OVERLAY (global, DOM). Falta a do
+    meio, e é por isso que o `app.stage` é o único lugar que ainda se posiciona por ORDEM DE INSERÇÃO.
+
+    Medido: em solo o `stage` tem 4 filhos (câmera, `weatherLayer`, `fogG`, `titleG`); com 3 telas tem 10 — os
+    mesmos quatro mais 3 sprites de 320×180 (as render-textures por jogador), a moldura de 640×360 e as
+    bolinhas indicadoras. Todos com `zIndex: 0` e `stage.sortableChildren === false`.
+
+    Os seis últimos são criados por `render/screen-pipeline` e RECRIADOS a cada troca de número de telas. E há
+    uma dependência de ordem que sustenta o multi-tela: `screen-pipeline` faz `stage.addChildAt(camera, 0)` —
+    a câmera precisa ficar embaixo dos sprites de saída, senão o mundo cru cobre as telas compostas.
+
+    A ESCALA QUE FALTA CHAMA-SE **COMPOSIÇÃO**: o mundo JÁ RENDERIZADO em textura, disposto na tela, uma vez
+    por jogador. Não é MUNDO (que é o conteúdo DENTRO de cada viewport) nem OVERLAY (que é DOM). Encaixá-la no
+    espaço numérico livre entre `WORLD_A11Y` (23000) e `HUD` (24000) seria erro de categoria: aqueles sprites
+    não são "mais uma camada do mundo", são outra escala.
+
+    Enquanto ela não tiver nome próprio no `Z`, o `stage` continua por ordem de inserção — e continuar assim é
+    mais honesto do que inventar um número que passaria a mentir com autoridade.
+
   confirmation: |
     Recorded retroactively on 2026-08-06, and PARTIAL — stated as such rather than ticked. `app/js/core/layers.ts`
     exists and holds the named registry (`Z`, `POST_FX_ORDER`), so the decision is implemented. It is not yet ADOPTED:
     `game.js` is the only importer, meaning the ~54 layer sites still place themselves the old way. Rewiring them is
     issue !52. The decision stands; its rollout is unfinished, and this record should not read as though it were done.
+
+    ATUALIZADO 2026-08-26, com medição (ver a emenda acima). A escala MUNDO ESTÁ adotada: o bloco "R1" do
+    `main.ts` liga `camera.sortableChildren` e posiciona ~27 camadas por `Z.*`; sobrou UM
+    `addChildAt(getChildIndex(...))` na árvore, o do `titleG`, e ele está no `stage` — a escala que este
+    registro não nomeou. A escala OVERLAY NÃO está adotada: são 17 `z-index` literais em `style.css`, de 4 a
+    500, sem relação com os slots de `Z`. E `POST_FX_ORDER` está declarado e nunca foi lido por código nenhum:
+    a única ocorrência fora do próprio `core/layers.ts` é este parágrafo.
 
 more-information: |
   Registry + filter-chain live in `app/js/core/layers.ts` (`Z`, `POST_FX_ORDER`). Relates to ADR-0011 (visual a11y),
