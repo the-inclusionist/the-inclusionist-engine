@@ -74,12 +74,21 @@ describe('alto contraste no DOM · o menu entrega o que o modo promete (issue #8
     expect(CSS).toContain('#dom-layer.hc');
   });
 
-  it('[Right] o véu do painel é OPACO em alto contraste — a razão para de depender do jogo por trás', () => {
-    // A causa raiz do pior caso: um véu translúcido tem a razão que o quadro atrás lhe permitir. Enquanto ele
-    // for translúcido, NENHUM número aqui é uma garantia — é uma média de sorte.
-    const regra = CSS.match(/#dom-layer\.hc \.screen-pause,\s*\n#dom-layer\.hc \.pause-incanvas\{background:([^;}]+)/);
-    expect(regra, 'a regra do véu em alto contraste sumiu').toBeTruthy();
-    expect(regra[1], 'o véu voltou a ser translúcido — a razão volta a depender do jogo').not.toMatch(/rgba|transparent/);
+  it('[Right] o véu do painel de pausa é OPACO na BASE — 7:1 desde o início, não só no modo', () => {
+    // Decisão do Dev, 2026-08-26, e o motivo é de uso: é NO MENU que a pessoa com deficiência ajusta os
+    // controles para si. Um contraste que só chega depois de ela achar o ajuste chega tarde. É a mesma razão
+    // por que o modo cego já nasce com TTS, earcons, sonar e guarda de beirada ligados.
+    //
+    // A causa raiz do pior caso era a TRANSLUCIDEZ: um véu translúcido tem a razão que o quadro atrás lhe
+    // permitir — 19,17:1 sobre um quadro preto, 8,07:1 sobre um branco. Enquanto for translúcido, nenhum
+    // número aqui é garantia; é média de sorte.
+    //
+    // O CUSTO ESTÁ DECLARADO: não se vê mais o jogo por trás da pausa.
+    for (const sel of ['pause-incanvas', 'screen-pause']) {
+      const regra = CSS.match(new RegExp('\.' + sel + '\{[^}]*background:([^;}]+)'));
+      expect(regra, 'a regra de fundo de .' + sel + ' sumiu').toBeTruthy();
+      expect(regra[1], '.' + sel + ' voltou a ser translúcido — a razão volta a depender do jogo').not.toMatch(/rgba|transparent/);
+    }
   });
 
   it('[Right] todo par de texto do menu bate 7:1 em alto contraste', () => {
@@ -98,6 +107,26 @@ describe('alto contraste no DOM · o menu entrega o que o modo promete (issue #8
       .filter(([, r]) => r < ALVO_AAA)
       .map(([nome, r]) => `${nome}: ${r.toFixed(2)}:1`);
     expect(falham, 'par abaixo de 7:1 num modo que promete 7:1: ' + falham.join(' | ')).toEqual([]);
+  });
+
+  it('[Right] a PALETA BASE também bate 7:1 — o modo não é pré-requisito para enxergar o menu', () => {
+    // O que o Dev corrigiu: o alto contraste é um AJUSTE, não a porta de entrada. Quem precisa dele tem de
+    // conseguir LER o menu para encontrá-lo. Se o menu só ficasse legível depois de ligado, a pessoa teria de
+    // atravessar o que não enxerga para chegar ao que a faria enxergar.
+    const veu = token('bg-solid'), btn = token('panel-btn'), sel = hex('#2a3a5e');
+    const ink = token('ink'), inkSoft = token('ink-soft');
+    const pares = [
+      ['ink sobre véu', ink, veu],
+      ['ink-soft sobre véu', inkSoft, veu],
+      ['ink sobre botão', ink, btn],
+      ['ink-soft sobre botão', inkSoft, btn],
+      ['ink sobre selecionado', ink, sel],
+    ];
+    const falham = pares
+      .map(([nome, fg, bg]) => [nome, razaoDeContraste(fg, bg)])
+      .filter(([, r]) => r < ALVO_AAA)
+      .map(([nome, r]) => nome + ': ' + r.toFixed(2) + ':1');
+    expect(falham, 'a paleta BASE do menu não bate 7:1: ' + falham.join(' | ')).toEqual([]);
   });
 
   it('[Interface] o cursor continua DISTINGUÍVEL do não-selecionado — contraste não pode custar a orientação', () => {

@@ -174,10 +174,10 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 .vphud-quit{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;color:#cdd6f2;font-family:var(--font);font-weight:800;font-size:var(--hud-fs,14px);text-align:center}
 .vphud-quit[hidden]{display:none}
 /* PAUSA dentro do canvas (tela = canvas) — sobreposta ao #game-region, não à página */
-.pause-incanvas{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(4,7,15,.72);font-family:var(--font)}
+.pause-incanvas{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:var(--bg-solid);font-family:var(--font)}
 .pause-incanvas[hidden]{display:none}
 /* Etapa 2: menu de pausa POR TELA (dentro de cada .player-screen). Cada jogador vê e navega o seu. */
-.screen-pause{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:rgba(4,7,15,.72);font-family:var(--font);font-size:var(--ui-fs,16px);pointer-events:auto} /* base = --ui-fs (16 no mínimo, escala com o canvas) */
+.screen-pause{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:var(--bg-solid);font-family:var(--font);font-size:var(--ui-fs,16px);pointer-events:auto} /* base = --ui-fs (16 no mínimo, escala com o canvas) */
 .screen-pause[hidden]{display:none}
 .screen-pause .pause-card{max-width:94%;max-height:98%;padding:.5rem .7rem}
 .screen-pause .pause-card h2{font-size:1.2em;margin:.05rem 0 .28rem}
@@ -281,8 +281,10 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 
    ⚠️ VALE PARA OS TRÊS NÍVEIS, e não só para o 7:1: nos outros dois o menu já passava, mas passava POR SORTE
    do que estivesse na tela. Determinismo é ganho em todos. */
-#dom-layer.hc .screen-pause,
-#dom-layer.hc .pause-incanvas{background:var(--bg-solid)}
+/* (A regra do véu SAIU daqui em 2026-08-26: ele passou a ser opaco NA BASE, por decisão do Dev — os menus
+   de título e de pausa têm de estar em 7:1 DESDE O INÍCIO, porque é justamente neles que a pessoa com
+   deficiência ajusta os controles para si. Um contraste que só chega depois de achar o ajuste chega tarde.
+   Sobra aqui o que é específico do modo: o cursor invertido.) */
 #dom-layer.hc .pm-btn{background:var(--panel-btn)}
 #dom-layer.hc .pm-btn:hover,
 #dom-layer.hc .pm-btn:focus,
