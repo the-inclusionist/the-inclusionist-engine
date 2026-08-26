@@ -69,8 +69,18 @@ export interface ComTextura {
  * Pedir a CAPACIDADE resolve: o módulo diz o que quer que aconteça, e a raiz de composição — que é o único
  * lugar onde o PixiJS já é conhecido — entrega a função. É o adaptador que o ADR-0035 prometeu, e a promessa
  * só vira fato quando o pedido tem a forma de um verbo, não a de um objeto emprestado.
+ *
+ * ⚠️ `limpar` É OBRIGATÓRIO, e era opcional. Desenhar numa textura de render sem dizer se ela deve ser limpa
+ * antes é a diferença entre um quadro e um BORRÃO: sem limpar, cada quadro se acumula sobre o anterior e o
+ * personagem aparece várias vezes, em várias posições. Havia dois chamadores — um passava `false` de
+ * propósito (a passada extra de baixa visão, que compõe POR CIMA) e o outro não passava nada, deixando a
+ * decisão para um padrão que ninguém escreveu.
+ *
+ * Um padrão implícito aqui é caro de duas formas: ele muda com a versão do renderizador, e o sintoma dele é
+ * visual — nenhum teste de lógica o vê. Tornar o parâmetro obrigatório faz o compilador cobrar a intenção de
+ * cada chamador, uma vez, e para sempre.
  */
-export type RenderizarEm = (objeto: unknown, alvo: unknown, limpar?: boolean) => void;
+export type RenderizarEm = (objeto: unknown, alvo: unknown, limpar: boolean) => void;
 
 /**
  * CRIAR UM SPRITE a partir de uma textura, e um AZULEJO a partir dela.

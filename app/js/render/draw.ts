@@ -353,7 +353,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
           s.alpha = (ctx.itemOwnedBy(j, i) ? 1 : 0.4) * (shimOn ? 0.8 + 0.2 * Math.sin(fxClock * 0.12 + j * 1.7) : 1);
         }
         for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.visible = ctx.powerupVisibleTo(pu, i); }
-        placeCam(PLS[i], i); ctx.renderizarEm(ctx.camera, ctx.getVpTex()[i]);
+        placeCam(PLS[i], i); ctx.renderizarEm(ctx.camera, ctx.getVpTex()[i], true); // LIMPA: cada quadro é um quadro, não um acúmulo
         if (anyOverlay) ctx.renderVpOverlay(i, viz);           // passada extra só se algum jogador está em baixa visão
       }
     }
