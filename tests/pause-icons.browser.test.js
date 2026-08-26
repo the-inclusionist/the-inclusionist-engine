@@ -22,6 +22,10 @@ const PM_BTNS = [
   { act: 'letra', lbl: '🔠 ABC', letra: true },
   { act: 'quit', lbl: '🚪 Sair do jogo' },
 ];
+const PM_OPTS = [
+  { act: 'pmback' },
+  { act: 'caa' },
+];
 const QL_NAME = { 1: 'pré-silábico', 2: 'silábico', 3: 'silábico-alfabético', 4: 'escritor', 5: 'escritor cego' };
 const RM_KEYS = ['parallax', 'decor', 'items', 'particles'];
 const RM_CHAR = [{ prop: 'rmWalk' }, { prop: 'rmBreath' }, { prop: 'rmFlavor' }];
@@ -43,6 +47,7 @@ function makeCtx(over = {}) {
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
     pmButtons: PM_BTNS,
+    optionsButtons: PM_OPTS,
     // O RÓTULO DINÂMICO chega pronto do jogo (item 19). Este fixture não tem botão de nível, então `null` é
     // a resposta certa — e é a que exercita o caminho estático, que é o que os casos daqui medem.
     dynLabel: () => null,

@@ -87,6 +87,10 @@ const PM_BTNS = [
   { act: 'letra', lbl: '🔠 ABC', letra: true },
   { act: 'quit', lbl: '🚪 Sair do jogo' },
 ];
+const PM_OPTS = [
+  { act: 'pmback' },
+  { act: 'caa' },
+];
 const QL_NAME = { 1: 'pré-silábico', 2: 'silábico', 3: 'silábico-alfabético', 4: 'escritor', 5: 'escritor cego' };
 
 function buildCtx(over = {}) {
@@ -104,6 +108,7 @@ function buildCtx(over = {}) {
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
     pmButtons: PM_BTNS,
+    optionsButtons: PM_OPTS,
     qlName: QL_NAME,
     getPauseActs: () => state.acts,
     setPauseActor: (i) => { state.pauseActor = i; },
@@ -402,11 +407,13 @@ describe('markup dos ícones e do menu', () => {
   });
 
   it('ZERO botões de menu: o cartão, a barra, a legenda e o rodapé continuam lá', () => {
-    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], dynLabel: SEM_DIN, t: (k) => k });
+    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
     expect(h).toContain('class="pause-card" role="dialog" aria-modal="true"');
     expect(h).toContain('class="pause-icons" role="group"');
     expect(h).toContain('class="pause-icons-cap" aria-live="polite"');
-    expect(h).toContain('<div class="pause-menu" role="menu"></div>');
+    // DUAS listas desde o item 5 do ADR-0044: a raiz visível e as opções escondidas.
+    expect(h).toContain('<div class="pause-menu" role="menu" data-sub="raiz"></div>');
+    expect(h).toContain('<div class="pause-menu" role="menu" data-sub="opcoes" hidden></div>');
     // O `aria-hidden` SAIU daqui no item 4 do ADR-0044: a legenda diz qual botão confirma, e era invisível
     // exatamente para quem não vê o glifo. Quem esconde agora são os CHIPS, e só eles — ver `pauseLegendHtml`.
     expect(h).toContain('class="pause-legend"');
@@ -414,7 +421,7 @@ describe('markup dos ícones e do menu', () => {
   });
 
   it('UM jogador: o título NÃO ganha sufixo; MUITOS: ganha "· Jogador N" (1-based)', () => {
-    const mk = (player, n) => screenPauseMarkup({ player, numPlayers: n, pmButtons: [], dynLabel: SEM_DIN, t: (k) => k });
+    const mk = (player, n) => screenPauseMarkup({ player, numPlayers: n, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
     expect(mk(0, 1)).not.toContain('· Jogador');
     expect(mk(1, 2)).toContain('· Jogador 2');
     expect(mk(3, 4)).toContain('aria-label="Menu de pausa do jogador 4"');
@@ -441,10 +448,12 @@ describe('markup dos ícones e do menu', () => {
     expect(h).not.toContain('data-i18n');
   });
 
-  it('o menu monta um .pm-btn por entrada de PM_BTNS, na ordem recebida', () => {
-    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: PM_BTNS, dynLabel: SEM_DIN, t: (k) => k });
+  it('o menu monta um .pm-btn por entrada de PM_BTNS, na ordem recebida — e o submenu depois dele', () => {
+    // A ordem das DUAS listas no markup importa para quem lê o documento em sequência: a raiz vem primeiro,
+    // e é ela que está visível. A ordem de NAVEGAÇÃO, essa, sai de `PM_ITENS_VISIVEIS` e nunca mistura as duas.
+    const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: PM_BTNS, optionsButtons: PM_OPTS, dynLabel: SEM_DIN, t: (k) => k });
     const acts = [...h.matchAll(/data-act="([^"]+)"/g)].map((m) => m[1]);
-    expect(acts).toEqual(['resume', 'letra', 'quit']);
+    expect(acts).toEqual(['resume', 'letra', 'quit', 'pmback', 'caa']);
   });
 });
 

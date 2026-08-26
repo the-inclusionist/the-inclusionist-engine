@@ -91,6 +91,9 @@ const pt: Record<string, string> = {
   // Menu de pausa (por tela — buildScreenPause). O botão de letra (ABC/abc/Braille) é dinâmico, fica fora.
   'pause.title': 'Pausado',
   'pause.resume': '▶ Continuar',
+  'pause.acessibilidade': '♿ Acessibilidade',
+  'pause.options': '⚙ Opções',
+  'pause.pmback': '↩ Voltar',
   'pause.tipo': '🔤 Tipografia',
   'pause.addplayer': '👥 Adicionar jogador',
   'pause.audio': '🦻 Acessibilidade auditiva',

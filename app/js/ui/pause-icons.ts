@@ -125,7 +125,8 @@ export type PausePlayer = PlayerView<'viz' | 'toggleMove' | 'audioSink' | 'rmWal
 /** One `.pm-btn` descriptor — the shape of game.js's PM_BTNS (owned by ui/activities-menu). */
 export interface PauseMenuButton {
   act: string;
-  lbl: string;
+  /** Só é lido quando o botão tem rótulo dinâmico; ver a nota em `PauseBtnDef` (ui/activities-menu). */
+  lbl?: string;
   /** Dynamic label (the ABC cycle) — rendered from `lbl`, not from i18n, and NOT given `data-i18n`. */
   letra?: boolean;
   /** Dynamic label (the literacy level) — rendered from quizLevel + qlName. Currently dormant: no PM_BTNS
@@ -283,10 +284,53 @@ export function pmBtnMarkup(
   b: PauseMenuButton, dynLabel: (b: PauseMenuButton) => string | null, tr: (key: string) => string,
 ): string {
   const dyn = b.letra || b.nivel;
-  const lbl = dynLabel(b) ?? (dyn ? b.lbl : tr('pause.' + b.act));
+  const lbl = dynLabel(b) ?? (dyn ? (b.lbl ?? '') : tr('pause.' + b.act));
   return '<button class="pm-btn' + (b.letra ? ' pm-letra' : '') + (b.nivel ? ' pm-nivel' : '') +
     '" role="menuitem" type="button" data-act="' + b.act + '"' +
     (dyn ? '' : (' data-i18n="pause.' + b.act + '"')) + '>' + lbl + '</button>';
+}
+
+/**
+ * Qual das duas listas o cartão de pausa está mostrando.
+ *
+ * DUAS listas no markup, UMA visível — e a escondida carrega `hidden`, que a tira da árvore de acessibilidade
+ * inteira. É o que faz "um menu por tela" (ADR-0044 §5) valer para quem escuta e não só para quem vê, e é o
+ * que permite o anel dar a volta DENTRO da lista visível sem nunca atravessar para a outra.
+ */
+export type PauseSub = 'raiz' | 'opcoes';
+
+/**
+ * Os itens navegáveis de um cartão de pausa — os da lista VISÍVEL, e só eles.
+ *
+ * Uma constante porque TRÊS módulos a consultam (a navegação em `ui/menu-nav`, a seleção inicial em
+ * `ui/shell` e a troca de submenu aqui). Enquanto fosse `.pm-btn` escrito três vezes, bastaria um deles
+ * esquecer o `:not([hidden])` para o anel atravessar para a lista invisível — e a criança ouviria itens de um
+ * menu que não está na tela.
+ */
+export const PM_ITENS_VISIVEIS = '.pause-menu:not([hidden]) .pm-btn';
+
+/** O innerHTML de UMA `.pause-menu`: a lista, e só ela. */
+export function pauseMenuHtml(
+  bs: readonly PauseMenuButton[], sub: PauseSub, dynLabel: (b: PauseMenuButton) => string | null,
+  tr: (key: string) => string,
+): string {
+  return '<div class="pause-menu" role="menu" data-sub="' + sub + '"' + (sub === 'raiz' ? '' : ' hidden') + '>' +
+    bs.map((b) => pmBtnMarkup(b, dynLabel, tr)).join('') + '</div>';
+}
+
+/**
+ * Troca a lista visível de UM cartão de pausa, e põe o cursor no PRIMEIRO item da lista que entrou.
+ *
+ * Livre (e não um método do `init`) de propósito: `ui/menu-nav` precisa dela para o "não" voltar da lista de
+ * opções à raiz, e não tem acesso às tabelas de botões. Como as duas listas já existem no markup, a troca é
+ * só DOM — nada a re-renderizar, nada a injetar.
+ */
+export function mostrarSubmenuDaPausa(sp: HTMLElement, sub: PauseSub): HTMLElement | null {
+  sp.querySelectorAll<HTMLElement>('.pause-menu').forEach((m) => { m.hidden = m.dataset.sub !== sub; });
+  const primeiro = sp.querySelector<HTMLElement>(PM_ITENS_VISIVEIS);
+  sp.querySelectorAll<HTMLElement>('.pm-sel,.pi-sel').forEach((b) => b.classList.remove('pm-sel', 'pi-sel'));
+  if (primeiro) primeiro.classList.add('pm-sel');
+  return primeiro;
 }
 
 export interface ScreenPauseMarkupOpts {
@@ -294,7 +338,10 @@ export interface ScreenPauseMarkupOpts {
   player: number;
   /** Live player count — the suffix only appears in multiplayer. */
   numPlayers: number;
+  /** A lista RAIZ: os sete itens do ADR-0044, `resume` primeiro e `quit` último. */
   pmButtons: readonly PauseMenuButton[];
+  /** O submenu de opções: os sete painéis de ajuste, com o "Voltar" na frente. */
+  optionsButtons: readonly PauseMenuButton[];
   /** Rótulo pronto de um botão DINÂMICO, ou `null` se aquele botão não tem um. Quem monta a frase é o jogo. */
   dynLabel: (b: PauseMenuButton) => string | null;
   t: (key: string) => string;
@@ -304,9 +351,10 @@ export interface ScreenPauseMarkupOpts {
 export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
   return '<div class="pause-card" role="dialog" aria-modal="true" aria-label="Menu de pausa do jogador ' + (o.player + 1) + '">' +
     '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup() + '</div><p class="pause-icons-cap" aria-live="polite"></p>' +
-    '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>' + (o.numPlayers > 1 ? ' · Jogador ' + (o.player + 1) : '') + '</h2><div class="pause-menu" role="menu">' +
-    o.pmButtons.map((b) => pmBtnMarkup(b, o.dynLabel, o.t)).join('') +
-    '</div><p class="pause-legend"></p></div>';
+    '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>' + (o.numPlayers > 1 ? ' · Jogador ' + (o.player + 1) : '') + '</h2>' +
+    pauseMenuHtml(o.pmButtons, 'raiz', o.dynLabel, o.t) +
+    pauseMenuHtml(o.optionsButtons, 'opcoes', o.dynLabel, o.t) +
+    '<p class="pause-legend"></p></div>';
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -328,6 +376,8 @@ export interface PauseIconsCtx {
   srAlert: (text: string) => void;
 
   // --- the per-screen pause menu ---
+  /** PM_OPTIONS_BTNS — o submenu de opções. Mesma dona, mesmo motivo: ninguém tem duas cópias de uma lista. */
+  optionsButtons: readonly PauseMenuButton[];
   /** PM_BTNS — the `.pm-btn` list. Owned by ui/activities-menu; injected, never copied. */
   pmButtons: readonly PauseMenuButton[];
   /** QL_NAME — literacy-level names, for the (dormant) `nivel` button. Same owner as pmButtons. */
@@ -534,13 +584,30 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   // --- the pause screen ----------------------------------------------------------------------
 
+  /**
+   * Troca a lista visível E ANUNCIA o primeiro item da lista que entrou.
+   *
+   * O anúncio não é enfeite: quem não enxerga acabou de mudar de menu e o cursor pulou para outro lugar. Sem
+   * a fala, a única pista de que a tela mudou seria o silêncio. O índice "N de M" vem junto (item 3), e é ele
+   * que diz de quantos itens é a lista nova.
+   */
+  function anunciarLista(sp: HTMLElement, sub: PauseSub): void {
+    const primeiro = mostrarSubmenuDaPausa(sp, sub);
+    if (!primeiro) return;
+    const itens = [...sp.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
+    ctx.srSay(anunciarItem(
+      { rotulo: primeiro.textContent || '', posicao: 1, total: itens.length }, menuIndexOn,
+    ));
+  }
+
   function buildScreenPause(i: number): HTMLElement {
     const sp = document.createElement('div');
     sp.className = 'screen-pause';
     sp.hidden = true;
     sp.dataset.player = String(i);
     sp.innerHTML = screenPauseMarkup({
-      player: i, numPlayers: ctx.getNumPlayers(), pmButtons: ctx.pmButtons, dynLabel: ctx.dynLabel, t,
+      player: i, numPlayers: ctx.getNumPlayers(), pmButtons: ctx.pmButtons, optionsButtons: ctx.optionsButtons,
+      dynLabel: ctx.dynLabel, t,
     });
 
     sp.addEventListener('click', (e) => {
@@ -549,6 +616,23 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       if (b) {
         ctx.setPauseActor(i);
         const act = b.dataset.act || '';
+        // NAVEGAÇÃO DENTRO DO CARTÃO fica aqui, e não na tabela de ações: `options` e `pmback` não fazem nada
+        // ao jogo — trocam qual lista está na tela. A tabela vive em `ui/shell`, que não conhece este `sp`.
+        if (act === 'options' || act === 'pmback') { anunciarLista(sp, act === 'options' ? 'opcoes' : 'raiz'); return; }
+        // `acessibilidade` leva o cursor à BARRA RÁPIDA. Enquanto ela mora dentro do cartão, "entrar no modo"
+        // é pôr o cursor nela — e a saída continua sendo a saída da pausa, que é a mesma de sempre. Quando o
+        // item 7 levar a barra para o HUD, esta linha o segue; o que o item SIGNIFICA não muda.
+        if (act === 'acessibilidade') {
+          const primeiro = sp.querySelector<HTMLElement>('.pi-btn');
+          if (primeiro) {
+            sp.querySelectorAll<HTMLElement>('.pm-sel,.pi-sel').forEach((x) => x.classList.remove('pm-sel', 'pi-sel'));
+            primeiro.classList.add('pi-sel');
+            const cap = sp.querySelector('.pause-icons-cap');
+            if (cap) cap.textContent = legendaDoIcone(sp, primeiro);
+            ctx.srSay(legendaDoIcone(sp, primeiro));
+          }
+          return;
+        }
         const acts = ctx.getPauseActs();
         const fn = acts[act];
         if (fn) fn();

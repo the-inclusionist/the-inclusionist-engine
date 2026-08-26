@@ -59,17 +59,25 @@ const MARKUP = `
           <button class="pi-btn" data-pi="libras" type="button" aria-label="Libras">C</button>
         </div>
         <p class="pause-icons-cap" aria-live="polite"></p>
-        <button class="pm-btn" data-act="resume" type="button">Continuar</button>
-        <button class="pm-btn" data-act="letra" type="button">ABC</button>
-        <button class="pm-btn" data-act="audio" type="button">Som</button>
-        <button class="pm-btn" data-act="ajuda" type="button">Ajuda</button>
-        <button class="pm-btn" data-act="quit" type="button">Sair</button>
+        <div class="pause-menu" role="menu" data-sub="raiz">
+          <button class="pm-btn" data-act="resume" type="button">Continuar</button>
+          <button class="pm-btn" data-act="letra" type="button">ABC</button>
+          <button class="pm-btn" data-act="audio" type="button">Som</button>
+          <button class="pm-btn" data-act="ajuda" type="button">Ajuda</button>
+          <button class="pm-btn" data-act="quit" type="button">Sair</button>
+        </div>
+        <div class="pause-menu" role="menu" data-sub="opcoes" hidden>
+          <button class="pm-btn" data-act="pmback" type="button">Voltar</button>
+          <button class="pm-btn" data-act="caa" type="button">Comunicação</button>
+        </div>
       </div></div>
       <div class="screen-pause" id="sp1"><div class="pause-card">
         <div class="pause-icons"><button class="pi-btn" data-pi="cego" type="button" aria-label="Modo cego">A</button></div>
         <p class="pause-icons-cap" aria-live="polite"></p>
-        <button class="pm-btn" data-act="resume" type="button">Continuar</button>
-        <button class="pm-btn" data-act="quit" type="button">Sair</button>
+        <div class="pause-menu" role="menu" data-sub="raiz">
+          <button class="pm-btn" data-act="resume" type="button">Continuar</button>
+          <button class="pm-btn" data-act="quit" type="button">Sair</button>
+        </div>
       </div></div>
     </div>
   </div>
@@ -290,6 +298,49 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     expect(menu.querySelector('.pi-btn:nth-of-type(2)').classList.contains('pi-sel')).toBe(true);
     // O `, N de M` entrou com o item 3 do ADR-0044: a legenda diz o rótulo E onde ele está na barra.
     expect(menu.querySelector('.pause-icons-cap').textContent).toBe('Narração, 2 de 3'); // aria-label + posição
+  });
+
+  it('[Right] a navegação NÃO enxerga a lista escondida (ADR-0044, item 5)', () => {
+    // O cartão passou a ter DUAS listas no markup, e só uma visível. Se a navegação varresse `.pm-btn` cru,
+    // o cursor entraria nos itens do submenu de opções — e a criança ouviria itens de um menu que não está na
+    // tela. É por isso que `PM_ITENS_VISIVEIS` existe como constante e não como seletor solto.
+    //
+    // NOTA sobre o anel: aqui ele ainda NÃO dá a volta, e é de propósito. Enquanto a barra de ícones estiver
+    // dentro do cartão, a pausa é uma grade de DUAS zonas, e a XAG 106 permite laço para menu LINEAR e o
+    // proíbe para grade. O anel entra no item 7, junto com a mudança da barra para o HUD, que é o que torna a
+    // pausa linear.
+    const { nav } = boot();
+    showPauses();
+    const menu = $('#sp0');
+    const visiveis = [...menu.querySelectorAll('.pause-menu:not([hidden]) .pm-btn')];
+    const escondidos = [...menu.querySelectorAll('.pause-menu[hidden] .pm-btn')];
+    expect(escondidos.length).toBeGreaterThan(0); // há mesmo lista escondida para atravessar
+    nav.pauseSetSel(menu, visiveis[visiveis.length - 1]);
+    nav.navPause(menu, 0, K({ down: true }));
+    nav.navPause(menu, 0, K({ right: true }));
+    expect(escondidos.some((b) => b.classList.contains('pm-sel')), 'o cursor entrou na lista escondida').toBe(false);
+    expect(visiveis[visiveis.length - 1].classList.contains('pm-sel')).toBe(true);
+  });
+
+  it('[Right] "não" dentro do submenu de opções volta à RAIZ, e não ao jogo', () => {
+    // A armadilha que o ADR-0044 desfaz, um nível abaixo: quem entra em Opções sem enxergar só sairia
+    // despausando — perderia a pausa inteira para desfazer um passo.
+    const { nav, log } = boot();
+    showPauses();
+    const menu = $('#sp0');
+    menu.querySelector('.pause-menu[data-sub="raiz"]').hidden = true;
+    menu.querySelector('.pause-menu[data-sub="opcoes"]').hidden = false;
+    nav.navPause(menu, 0, K({ no: true }));
+    expect(menu.querySelector('.pause-menu[data-sub="raiz"]').hidden, 'a raiz tinha de voltar').toBe(false);
+    expect(menu.querySelector('.pause-menu[data-sub="opcoes"]').hidden).toBe(true);
+    expect(log.phase, 'o jogo NÃO pode ter sido retomado').not.toContain('playing');
+  });
+
+  it('[Boundary] "não" na RAIZ continua saindo da pausa — o nível a mais não muda o de cima', () => {
+    const { nav, log } = boot();
+    showPauses();
+    nav.navPause($('#sp0'), 0, K({ no: true }));
+    expect(log.phase).toContain('playing');
   });
 
   it('a FRONTEIRA é atravessável nos dois sentidos e volta para onde saiu', () => {

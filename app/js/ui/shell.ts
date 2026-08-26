@@ -96,6 +96,9 @@ import { PAD_DESIGNS, PAD_GLYPH_SPOKEN } from '../input/devices.js'; // módulo-
 import type { DomQuery } from '../core/dom-query.js';
 import type { PadMap } from '../input/gamepad.js';
 import type { FatosDaCena } from '../core/scenes.js';
+// UMA constante, e não um seletor repetido: com o submenu de opções (ADR-0044, item 5) o cartão de pausa passou
+// a ter DUAS listas, e quem varrer `.pm-btn` cru enxerga também a que está escondida.
+import { PM_ITENS_VISIVEIS } from './pause-icons.js';
 
 /* ===================== interfaces mínimas ===================== */
 
@@ -467,7 +470,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
 
   function pauseSelect(): void {
     ctx.getPauseScreens().forEach((sp) => {
-      const items = [...sp.querySelectorAll<HTMLElement>('.pm-btn')];
+      const items = [...sp.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
       items.forEach((b) => b.classList.remove('pm-sel'));
       if (items[0]) items[0].classList.add('pm-sel'); // 1º item (Continuar) selecionado em cada tela
     });

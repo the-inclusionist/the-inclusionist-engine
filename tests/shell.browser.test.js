@@ -40,11 +40,18 @@ const MARKUP = `
     </div>
     <div id="pause-overlay" hidden></div>
     <div class="screen-pause" id="sp0" hidden><div class="pause-card">
-      <button class="pm-btn" data-act="resume" type="button">Continuar</button>
-      <button class="pm-btn" data-act="quit" type="button">Sair</button>
+      <div class="pause-menu" role="menu" data-sub="raiz">
+        <button class="pm-btn" data-act="resume" type="button">Continuar</button>
+        <button class="pm-btn" data-act="quit" type="button">Sair</button>
+      </div>
+      <div class="pause-menu" role="menu" data-sub="opcoes" hidden>
+        <button class="pm-btn" data-act="caa" type="button">Comunicação</button>
+      </div>
     </div></div>
     <div class="screen-pause" id="sp1" hidden><div class="pause-card">
-      <button class="pm-btn" data-act="resume" type="button">Continuar</button>
+      <div class="pause-menu" role="menu" data-sub="raiz">
+        <button class="pm-btn" data-act="resume" type="button">Continuar</button>
+      </div>
     </div></div>
   </div>
   <div id="touch-controls" hidden></div>

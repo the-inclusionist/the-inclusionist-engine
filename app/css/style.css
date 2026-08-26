@@ -247,6 +247,9 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 .pause-card{background:#0e1626;border:2px solid #ffd23f;border-radius:14px;padding:.8rem 1rem;max-width:88%;max-height:92%;overflow:auto;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.5)}
 .pause-card h2{margin:.1rem 0 .6rem;color:#ffd23f}
 .pause-menu{display:grid;grid-template-columns:1fr 1fr;gap:.45rem}
+/* A lista ESCONDIDA tem de sumir de verdade: `display:grid` de autor vence o `[hidden]{display:none}` do
+   navegador, e sem esta linha as duas listas do cartão de pausa apareceriam empilhadas (ADR-0044, item 5). */
+.pause-menu[hidden]{display:none}
 .pm-btn{background:#1a2740;color:#eaf2f8;border:1px solid #3a4a6a;border-radius:10px;padding:.5rem .6rem;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
 .pm-btn:hover,.pm-btn:focus,.pm-btn.pm-sel{background:#2a3a5e;border-color:#ffd23f;outline:2px solid #ffd23f;outline-offset:1px}
 /* Legenda sim/não: ícone do botão (conforme layout do controle) + a palavra. Sony/Nintendo invertem 0↔1. */

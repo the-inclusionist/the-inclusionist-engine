@@ -158,7 +158,7 @@ export function menuKeyIntent(code: string, act: string | null): NavKeys {
 import { hasNavIntent as hasIntent } from '../input/edges.js';
 import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
-import { legendaDoIcone } from './pause-icons.js';
+import { legendaDoIcone, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from './pause-icons.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
 /**
@@ -390,10 +390,17 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   }
 
   function navPause(menu: HTMLElement, playerIndex: number, k: NavKeys): void {
-    if (k.no) { ctx.setPhase('playing'); return; } // "não" na raiz → volta ao jogo (retoma todos)
+    if (k.no) {
+      // "não" DENTRO do submenu de opções volta à raiz, e não ao jogo (ADR-0044, item 5). A regra "voltar sai
+      // um nível" já valia para os diálogos de configuração (`dialogBack`); o que mudou é que o menu de pausa
+      // passou a TER um nível a mais. Sem esta linha, quem entra em Opções sem enxergar só sairia despausando.
+      const aberto = menu.querySelector<HTMLElement>('.pause-menu:not([hidden])');
+      if (aberto && aberto.dataset.sub === 'opcoes') { mostrarSubmenuDaPausa(menu, 'raiz'); return; }
+      ctx.setPhase('playing'); return; // "não" na raiz → volta ao jogo (retoma todos)
+    }
 
     const icons = [...menu.querySelectorAll<HTMLElement>('.pi-btn')];
-    const items = [...menu.querySelectorAll<HTMLElement>('.pm-btn')];
+    const items = [...menu.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
     const cur = menu.querySelector<HTMLElement>('.pi-sel') || menu.querySelector<HTMLElement>('.pm-sel') || items[0];
 
     // "sim": o jogador que agiu vira o `pauseActor` (o submenu de a11y abre na aba dele) e o item é clicado.

@@ -158,19 +158,65 @@ export const QL_NAME: Readonly<Record<number, string>> = {
 export const ALF_LEVEL: Readonly<Record<string, number>> = { alf1: 1, alf2: 2, alf3: 3, alf4: 4, alf5: 5 };
 
 /** One row of the per-screen pause menu. `letra` marks the label that ABC/abc rewrites live. */
-export interface PauseBtnDef { readonly act: string; readonly lbl: string; readonly letra?: boolean; readonly nivel?: boolean }
+export interface PauseBtnDef {
+  readonly act: string;
+  /**
+   * Rótulo CRU, e ele só é usado quando o botão tem rótulo dinâmico (`letra`/`nivel`).
+   *
+   * Virou opcional, e o motivo é o gate de i18n: `pmBtnMarkup` resolve todo botão comum por `t('pause.' +
+   * act)`, então o texto aqui nunca ia para tela nenhuma — era português cru dentro de um módulo de ENGINE,
+   * parado, esperando alguém confiar nele. Nenhuma entrada de hoje marca `letra` ou `nivel`, então nenhuma
+   * precisa dele; a chave `pause.*` é a fonte, e ela existe nos três idiomas.
+   */
+  readonly lbl?: string;
+  readonly letra?: boolean;
+  readonly nivel?: boolean;
+}
 
 /** The pause menu's items — MENU DATA, so it lives with the other menu tables. The pause slice (ui/pause-icons)
  *  receives it through its own ctx instead of re-declaring it; nobody owns two copies of a list of buttons. */
 export const PM_BTNS: readonly PauseBtnDef[] = [
-  // 'letra' virou 'caa' (ADR-0028): era um CICLO de duas posições cujo rótulo mudava junto (`letra: true`),
-  // e virou a porta de um menu. Sem ciclo não há rótulo dinâmico, então ele volta a ser traduzível como os
-  // irmãos — o `letra: true` existia só para o i18n não sobrescrever o ABC/abc que o ciclo escrevia.
-  { act: 'resume', lbl: '▶ Continuar' }, { act: 'caa', lbl: '🔠 Comunicação' }, { act: 'tipo', lbl: '🔤 Tipografia' },
-  { act: 'addplayer', lbl: '👥 Adicionar jogador' }, { act: 'audio', lbl: '🦻 Acessibilidade auditiva' },
-  { act: 'motora', lbl: '♿ Acessibilidade motora' }, { act: 'anim', lbl: '🎞 Sensibilidade visual' },
-  { act: 'visual', lbl: '🎨 Acessibilidade visual' }, { act: 'empatia', lbl: '🫂 Modo empatia' },
-  { act: 'ajuda', lbl: '❓ Ajuda' }, { act: 'print', lbl: '📷 Print (ver a tela)' }, { act: 'quit', lbl: '🚪 Sair do jogo' },
+  // ===================== A ORDEM É A DECISÃO (ADR-0044 §2) =====================
+  // Eram DOZE itens, e `resume` — a SAÍDA — era a 11ª parada do cartão, porque os dez ícones de a11y vinham
+  // antes na ordem de leitura. Quem pausa e não enxerga varria dez alternadores e um cabeçalho antes de achar
+  // "Continuar". Menu de onde não se sai é armadilha, e a armadilha custa mais caro para quem não a enxerga.
+  //
+  // `resume` PRIMEIRO porque é para isso que serve uma pausa. `quit` ÚLTIMO porque é o desfecho menos
+  // desejado dela — e, como a lista é ANEL (item 1), uma tecla para CIMA a partir de `resume` chega nele:
+  // longe na leitura, perto no dedo.
+  //
+  // Os sete painéis de ajuste desceram para `PM_OPTIONS_BTNS`.
+  { act: 'resume' },
+  // `acessibilidade` leva o direcional à BARRA RÁPIDA de acessibilidade em vez de ao jogador. Enquanto a
+  // barra mora dentro do cartão de pausa, é para lá que ele aponta; quando o item 7 a levar para o HUD, o
+  // item a segue. O que ele significa não muda: "dirigir a barra rápida".
+  { act: 'acessibilidade' },
+  { act: 'addplayer' },
+  { act: 'options' },
+  { act: 'ajuda' },
+  { act: 'print' },
+  { act: 'quit' },
+];
+
+/**
+ * O SUBMENU DE OPÇÕES — os sete painéis que saíram da lista raiz, na ordem que o Dev ditou.
+ *
+ * A saída vem PRIMEIRO aqui também, pela mesma razão que `resume` vem primeiro lá: a regra do ADR-0044 é
+ * sobre menus, não sobre um menu. Um submenu de onde não se sai é a mesma armadilha, um nível abaixo.
+ *
+ * 'letra' virou 'caa' (ADR-0028): era um CICLO de duas posições cujo rótulo mudava junto (`letra: true`), e
+ * virou a porta de um menu. Sem ciclo não há rótulo dinâmico, então ele volta a ser traduzível como os
+ * irmãos — o `letra: true` existia só para o i18n não sobrescrever o ABC/abc que o ciclo escrevia.
+ */
+export const PM_OPTIONS_BTNS: readonly PauseBtnDef[] = [
+  { act: 'pmback' },
+  { act: 'caa' },
+  { act: 'empatia' },
+  { act: 'audio' },
+  { act: 'motora' },
+  { act: 'tipo' },
+  { act: 'visual' },
+  { act: 'anim' },
 ];
 
 /** i18n KEY of the spoken/aria name of each fraction notation. Keys, not text: a module-level const is

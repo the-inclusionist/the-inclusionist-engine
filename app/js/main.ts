@@ -131,7 +131,7 @@ import { initTouchBindings } from './input/touch-bindings.js'; // D3-b: gesto de
 import { initKeydown } from './input/keydown.js'; // D2-a: o roteador de teclado (a cadeia de precedencia) // Onda A: esquema de teclas por jogador
 import { initTouch, padLayoutFromId } from './input/touch.js'; // Onda A: geometria fisica do pad + config de toque
 import { initGamepad } from './input/gamepad.js'; // Onda A: leitura da Gamepad API + assistente de mapeamento
-import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
+import { initActivitiesMenu, attachAbbr, QL_NAME, PM_BTNS, PM_OPTIONS_BTNS } from './ui/activities-menu.js'; // Onda A: menus do titulo + inicio de partida
 import { initPauseIcons, iconsMarkup } from './ui/pause-icons.js';
 import { initShell, pauseLegendHtml } from './ui/shell.js'; // C3: a casca — em que TELA o jogo esta (fase, pausa, legenda do titulo)
 import { initMenuNav } from './ui/menu-nav.js'; // C3: navegacao universal de menus (teclado/controle/olhos/fala) // Onda A: menu de pausa por tela + barra de icones de a11y
@@ -930,6 +930,7 @@ const pauseIcons = initPauseIcons({
   getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   srSay, srAlert,
   pmButtons: PM_BTNS,
+  optionsButtons: PM_OPTIONS_BTNS,
   // O ROTULO PRONTO de um botao dinamico (item 19). A frase era montada dentro do `ui/pause-icons` — que e
   // ENGINE — a partir do `quizLevel` e da tabela `QL_NAME`, e trazia "Nivel" em pt-BR CRU. Agora quem monta
   // e o jogo, que sabe o que e um nivel, como ele se chama e em que idioma dize-lo.
