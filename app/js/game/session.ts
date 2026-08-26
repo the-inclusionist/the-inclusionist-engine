@@ -271,7 +271,7 @@ export interface SessionCtx {
   /* --- estado REATRIBUÍDO no game.js (obrigatoriamente getters) --- */
   getMode(): string;                                    // DERIVADO de `activity` (ADR-0040): só leitura
   setEnded(v: boolean): void;                             // `let ended`
-  getPowerups(): SessionPowerup[];                        // `let powerups` — setupExtras() REATRIBUI
+  getPowerups(): readonly SessionPowerup[];               // só LIDO: quem reatribui a lista é o `setLevelExtras` da RODADA
   getGate(): readonly GateTile[] | null;                           // `let gate` — idem
   isGateOpen(): boolean; setGateOpen(v: boolean): void;   // `let gateOpen` — idem
   getPauseActor(): number;                                // `let pauseActor` — quem abriu o menu de pausa

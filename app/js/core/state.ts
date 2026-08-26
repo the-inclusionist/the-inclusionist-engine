@@ -237,30 +237,17 @@ export function setEndedValue(v: boolean): void {
  */
 export interface GateTile { readonly tx: number; readonly ty: number }
 
-export let gateTiles: ReadonlySet<string> = new Set(); // "tx,ty" dos tiles do portão
-export let gateOpen = true;                            // fechado ⇒ os tiles acima são sólidos
-export let gate: readonly GateTile[] | null = null;
-/** Os power-ups do nível. `unknown` de propósito: o `Powerup` real carrega um `PIXI.Sprite`, e `core/` não
- *  conhece PIXI — nem precisa, porque ninguém aqui olha para dentro deles. */
-export let powerups: readonly unknown[] = [];
-
-/** O que `game/level-geometry.setupExtras()` devolve — gravado em bloco, como nasce. */
-export function setLevelExtras(x: {
-  powerups: readonly unknown[]; gateTiles: ReadonlySet<string>; gate: readonly GateTile[] | null; gateOpen: boolean;
-}): void {
-  powerups = x.powerups; gateTiles = x.gateTiles; gate = x.gate; gateOpen = x.gateOpen;
-  emit('levelExtras', x);
-}
-
-/** O portão abriu (ou fechou) durante a partida — o único dos cinco que muda fora da montagem do nível. */
-export function setGateOpenValue(v: boolean): void {
-  if (gateOpen === v) return;
-  gateOpen = v; emit('gateOpen', v);
-}
-
-/** Sólidos que existem SÓ no modo cadeirante — pontes e plataformas que substituem degraus. */
-export let wcSolid: ReadonlySet<string> = new Set();
-export function setWcSolidValue(s: ReadonlySet<string>): void { wcSolid = s; emit('wcSolid', s); }
+// ========================= OS EXTRAS DE NÍVEL SAÍRAM DAQUI (ADR-0038, Fase B) =========================
+// `powerups`, `gateTiles`, `gate`, `gateOpen` e `wcSolid` eram estado de RODADA em `export let` — o que a
+// D13 do `demos` proíbe, e por um motivo concreto: numa casca que carrega jogo após jogo na mesma página, o
+// portão aberto no anterior continua aberto no seguinte.
+//
+// Viraram uma INSTÂNCIA de `createRunState()`, em `core/run-state`, que o composition root possui. A fatia
+// foi escolhida por ser conferível: `main.ts` era o único módulo que os importava daqui; todos os outros já
+// os recebiam por injeção. O resto da RODADA (`players`, `numPlayers`, `ended`, `decorSeed`, `pauseActor`,
+// `selVizPlayer`, `grassDensity`) segue nos próximos passos, um grupo por vez.
+//
+// O `GateTile` acima FICOU: ele é um TIPO, não estado, e `core/run-state` o importa daqui.
 
 // --- letterCase: as letras aparecem em CAIXA ALTA ou minúscula. É escolha pedagógica, não estética: a
 //     alfabetização brasileira costuma começar em caixa alta, e a criança que já passou dessa fase precisa da

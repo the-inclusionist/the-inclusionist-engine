@@ -134,7 +134,7 @@ export interface VizSettersCtx {
    * por isso o nome tinha de estar em algum lugar — agora está do lado de quem o escolheu.
    */
   itemTexId: string;
-  getPowerups: () => Pu[];                          // `powerups` é `let` do game.js
+  getPowerups: () => readonly Pu[];                          // `powerups` é `let` do game.js
 
   /* --- estado do jogo (fica no game.js até o D1) --- */
   getPlayers: () => Pl[];

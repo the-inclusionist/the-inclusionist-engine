@@ -129,7 +129,20 @@ export interface ItemSprite { visible: boolean; alpha: number }
  * existir para o `tsc`, e obriga QUALQUER jogo a ter um power-up com aquela forma. O desenho toca `sprite` e
  * mais nada — declarar só isso é a fatia mínima, a mesma regra de `core/entity`.
  */
-interface PowerupWithSprite { sprite?: { visible: boolean } | null }
+interface PowerupWithSprite {
+  sprite?: { visible: boolean } | null;
+  /**
+   * ⚠️ `kind` NÃO é lido aqui — e entrou mesmo assim, em 2026-08-26. O desenho ENTREGA o power-up ao
+   * `powerupVisibleTo` injetado, e é ele que lê o `kind` (a chave do portão é global; o resto é por
+   * jogador). Uma fatia mínima descreve o que o módulo CONSOME; em posição de parâmetro ela precisa
+   * descrever também o que ele ENTREGA, senão o callback real não cabe no ctx.
+   *
+   * É a quinta vez que esta forma aparece na árvore — `held` em audio-nav, `setSquash` na física, o
+   * menu de pausa no gamepad, o `navPause` — e a lição é a mesma: repassar é uma exigência, não uma
+   * leitura. A fatia continua mínima: dois campos, e nenhum tipo de `game/` importado.
+   */
+  kind: string;
+}
 
 /** O jogador, do ponto de vista do DESENHO (a animação usa `AnimPlayer`, do qual este é superconjunto). */
 /**
@@ -166,7 +179,7 @@ export interface DrawCtx {
   getVpTex(): unknown[];        // `let vpTex`: configureRender REATRIBUI a cada troca de nº de telas
   isWheelchair(): boolean;      // `let wheelchair`
   getFxClock(): number;         // `let fxClock`: relógio geral de animação (fase do cintilar dos itens)
-  getPowerups(): PowerupWithSprite[]; // `let powerups`
+  getPowerups(): readonly PowerupWithSprite[]; // `let powerups` — só LIDO: o módulo muta o `sprite` de cada um, nunca a lista
   /**
    * Os sprites dos ITENS declarados, na ordem em que o jogo os declara. Era `getCoinSprites()`, importado de
    * `game/coin-spawning` — o desenho sabia que os itens são moedas.

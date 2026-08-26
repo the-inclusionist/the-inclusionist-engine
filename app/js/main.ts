@@ -12,8 +12,24 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, numPlayers, vizMode, initVizMode, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue, gateTiles, gateOpen, gate, powerups, setLevelExtras, setGateOpenValue, wcSolid, setWcSolidValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
+import { phase, numPlayers, vizMode, initVizMode, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
 import { cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue } from './game/state.js'; // GAME (ADR-0038, Fase B)
+import { createRunState } from './core/run-state.js'; // ADR-0038 Fase B: a RODADA como fábrica
+import type { Powerup } from './game/level-geometry.js'; // o tipo do power-up é do JOGO
+
+// ⚠️ A POSIÇÃO É O CONTRATO. A primeira versão declarou isto 380 linhas abaixo, e o boot morreu com
+// `Cannot read properties of undefined (reading 'gateOpen')`: o `initCollision` da linha ~162 já lê a
+// instância. Sem minificar seria um erro de TDZ com nome; minificado, `const` de topo vira `var` e o erro
+// vira um `undefined` silencioso. Terceira vez que esta armadilha morde este arquivo — as outras foram o
+// `setPlayerViz` e os auxiliares `jogadores()`/`controlados()`.
+
+/**
+ * A RODADA (ADR-0038, Fase B). A raiz de composição POSSUI a instância; ninguém mais a alcança por
+ * import. O genérico é `Powerup` porque o tipo do power-up é do JOGO — a engine declara a forma da lista
+ * e quem cria diz de quê ela é. Era `readonly unknown[]` em `core/state`, e o `unknown` custava três
+ * erros de tipo aqui embaixo.
+ */
+const rodada = createRunState<Powerup>();
 import type { Player, PlayerView } from './core/entity.js'; // a entidade da ENGINE, e a vista mínima dela
 import type { GamePlayer, ControlledGamePlayer } from './game/entity.js'; // as deste JOGO — ver `jogadores`/`controlados`
 import type { ModalIntent } from './input/keydown.js'; // a intenção direcional do ADR-0033
@@ -157,7 +173,7 @@ initWorldTex({ world: WORLD, W: WORLD_W, H: WORLD_H }); // Estágio 4: liga o bu
 // wheelchair/modoCego/caneBlockDiv/wcSolid/gateTiles/gateOpen mudam neste módulo e a colisão sempre vê o atual.
 initCollision({ world: WORLD, W: WORLD_W, H: WORLD_H,
   isWheelchair: ()=>wheelchair, isModoCego: ()=>modoCego, caneDiv: ()=>caneBlockDiv,
-  wcSolid: ()=>wcSolid, gateTiles: ()=>gateTiles, gateOpen: ()=>gateOpen });
+  wcSolid: ()=>rodada.wcSolid, gateTiles: ()=>rodada.gateTiles, gateOpen: ()=>rodada.gateOpen });
 initCoins({ world: WORLD, W: WORLD_W, H: WORLD_H, anyEasy: ()=>anyEasy(), isWheelchair: ()=>wheelchair }); // Estágio 4: posicionamento de coletáveis (usa solidAt já ligado acima)
 // Itens do mapa Clarity → viram ITENS/barreira (não tiles): 7=pulo-turbo, 8=voo, 11=chave; 10=portão.
 // Removemos o tile do grid (vira ar) e o item/barreira é desenhado/colidido à parte; some ao pegar/abrir.
@@ -689,7 +705,8 @@ const rampLayer=new PIXI.Graphics();
 const ropeLayer=new PIXI.Graphics();
 initLevelGeometry({ W: WORLD_W, H: WORLD_H, isWheelchair: () => wheelchair,
   rampLayer, ropeLayer, extraLayer,
-  wcSolid: () => wcSolid, powerups: () => powerups, gateTiles: () => gateTiles, gate: () => gate, gateOpen: () => gateOpen,
+  wcSolid: () => rodada.wcSolid, powerups: () => rodada.powerups, gateTiles: () => rodada.gateTiles,
+  gate: () => rodada.gate, gateOpen: () => rodada.gateOpen,
   pupTexFor, isDirectMode: (mode) => !!DIRECT_CFG[mode], gateRoleColor: () => HC_ROLE.gate });
 // Envolucros finos: o modulo CALCULA e DESENHA; o estado compartilhado (powerups/gate/wcSolid) segue morando
 // aqui porque colisao e o laco do jogador tambem o leem e escrevem.
@@ -697,7 +714,7 @@ function rebuildExtras(){ lgRebuildExtras(); _lastSharedViz=null; }
 function setupExtras(){
   setDecorSeedValue((Math.random()*1e9)>>>0); // #69: nova semente por fase
   const _blind = modoCego || players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='blind';});
-  setLevelExtras(lgSetupExtras(MAP_ITEMS, MAP_GATE, { wheelchair, blind:_blind })); // era desestruturação em bloco; binding importado não se atribui
+  rodada.setLevelExtras(lgSetupExtras(MAP_ITEMS, MAP_GATE, { wheelchair, blind:_blind })); // era desestruturação em bloco; binding importado não se atribui
   rebuildExtras();
 }
 setupExtras();
@@ -708,7 +725,7 @@ const easyHitbox=new PIXI.Graphics(); camera.addChild(easyHitbox);
 camera.addChild(rampLayer);   // ordem pelo Z.SCENERY_INTERACT (bloco R1), não pela posição de inserção
 // buildRamps + WC_BRIDGES migraram para game/level-geometry.ts (Onda A).
 // WC_ELEVATORS (fossos só-cadeirante) movidos p/ game/elevators.js (Estágio 4).
-function buildWcGeom(){ setWcSolidValue(lgBuildWcGeom(wheelchair)); } // o módulo calcula; o estado mora em core/state
+function buildWcGeom(){ rodada.setWcSolid(lgBuildWcGeom(wheelchair)); } // o módulo calcula; a RODADA guarda
 buildWcGeom();
 buildRamps(); // desenha as rampas + coberturas (lava, pontes) se já iniciar em modo cadeirante
 // CORDAS FLUTUANTES na superfície da água (o cego atravessa por elas; visual para todos)
@@ -1020,7 +1037,7 @@ const drawApi = initDraw({
   camera, renderer: app.renderer,
   BOX, // a caixa do jogador ENTRA (como ja entrava em scene-city/scene-sky/audio-nav), nao e' importada la
   caneLayer, chairLayer, easyHitbox,
-  getVpTex: ()=>vpTex, isWheelchair: ()=>wheelchair, getFxClock: ()=>fxClock, getPowerups: ()=>powerups,
+  getVpTex: ()=>vpTex, isWheelchair: ()=>wheelchair, getFxClock: ()=>fxClock, getPowerups: ()=>rodada.powerups,
   // OS ITENS DECLARADOS (item 19). O `render/draw` importava `getCoinSprites` de `game/coin-spawning` e
   // `puTaken` de `game/powerups` — as duas ultimas arestas de importacao da engine para o jogo. E trazia
   // junto TRES regras que sao deste jogo: item coletado some, item de outro dono fica esmaecido, e a chave
@@ -1102,7 +1119,8 @@ const sessionApi = initSession({
   isCoarsePointer: ()=>{ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } },
   getMode: ()=>MODE(), // sem `setModeValue`: o MODE deriva de `activity` e não tem caminho de escrita (ADR-0040)
   setEnded: setEndedValue,
-  getPowerups: ()=>powerups, getGate: ()=>gate, isGateOpen: ()=>gateOpen, setGateOpen: setGateOpenValue,
+  getPowerups: ()=>rodada.powerups, getGate: ()=>rodada.gate, isGateOpen: ()=>rodada.gateOpen,
+  setGateOpen: (v) => rodada.setGateOpen(v),
   getPauseActor: ()=>pauseActor, ownerColors: ()=>ownerColors, captionsOn: ()=>captionsOn,
   // `setPlayerRef` SAIU: o `let player` que ele reatribuía era sempre `players[0]`, e `players[0]` não
   // muda de identidade — nem quando o array cresce nem quando encolhe (n ≥ 1 sempre). A dança de
@@ -1273,7 +1291,7 @@ const viz = initVizSetters({
   app, camera, worldSprite, parallaxLayers, decoSprites,
   getVpSpr: () => vpSpr, getVpDots: () => vpDots,
   getItemSprites: getCoinSprites, itemTexId: 'coin', // item 19: o NOME dos itens e do jogo, nao do render
-  getPowerups: () => powerups,
+  getPowerups: () => rodada.powerups,
   getPlayers: () => players, getNumPlayers: () => numPlayers,
   getSelVizPlayer: () => selVizPlayer, setSelVizPlayer: setSelVizPlayerValue,
   getSharedViz: () => _lastSharedViz, setSharedViz: (m) => { _lastSharedViz = m; },
@@ -1520,7 +1538,7 @@ startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
   setMinimapVisible(!titleG.visible&&numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
   if(phase==='playing'){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
-window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return powerups;},get gateOpen(){return gateOpen;},get gate(){return gate;},get ended(){return ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
+window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE();},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},

@@ -54,7 +54,7 @@ export interface LevelGeometryCtx {
   // O `powerups` fica mutável aqui e SEGUE vermelho — por outro motivo: o `core/state` o declara
   // `readonly unknown[]`, e `unknown` não é `Powerup`. Isso é a decisão da issue #79 (quem descreve o
   // tipo de um campo), não este conserto; trocar só o `readonly` maquiaria o erro sem responder nada.
-  powerups: () => Powerup[];
+  powerups: () => readonly Powerup[];
   gateTiles: () => ReadonlySet<string>;
   gate: () => readonly MapGateTile[] | null;
   gateOpen: () => boolean;
@@ -69,7 +69,7 @@ let rampLayer: PIXI.Graphics | null = null;
 let ropeLayer: PIXI.Graphics | null = null;
 let extraLayer: PIXI.Container | null = null;
 let getWcSolid: () => ReadonlySet<string> = () => new Set();
-let getPowerups: () => Powerup[] = () => [];
+let getPowerups: () => readonly Powerup[] = () => [];
 let getGateTiles: () => ReadonlySet<string> = () => new Set();
 let getGate: () => readonly MapGateTile[] | null = () => null;
 let getGateOpen: () => boolean = () => true;
