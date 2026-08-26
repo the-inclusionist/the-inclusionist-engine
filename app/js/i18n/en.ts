@@ -193,6 +193,8 @@ const en: Record<string, string> = {
   'sr.menu.index': '{n} of {m}',
   'sr.menu.indexOn': 'List position on.',
   'sr.menu.indexOff': 'List position off.',
+  'sr.a11y.barEnter': 'Accessibility bar. Use the directions to choose and confirm to switch. To go back to the game, press back or START.',
+  'sr.a11y.barExit': 'Back to the game.',
   'pad.glyph.cross': 'cross',
   'pad.glyph.circle': 'circle',
   'pad.glyph.square': 'square',

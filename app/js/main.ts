@@ -1271,6 +1271,9 @@ const gamepadApi = initGamepad({
   isTouchMode: () => document.body.classList.contains('touch-mode'), hideTouchControls: () => hideTouchControls(),
   getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   navTitle, sharedDialogOpen, navDialog, getPauseMenu: (i) => vpPause[i], navPause,
+  // O modo `accessibility` do ADR-0044 (item 7): o direcional dirige a barra rapida em vez do personagem.
+  naBarraDe: (i) => pauseIcons.naBarraDe(i),
+  navBar: (i, k, temStart) => pauseIcons.navBar(i, k, temStart),
   setPauseActor: (i) => rodada.setPauseActor(i),
   modalInput, hasModal: temModal,
   joinPlayer, respawnPlayer,
@@ -1722,6 +1725,10 @@ const whichPlayer = (code: Parameters<typeof kbRuntime.whichPlayer>[0]) => kbRun
 const menuNav = initMenuNav({
   $, getActiveElement: () => document.activeElement,
   isNavigable: () => fatosDaCena().menuDePausa, // aqui menu e' coisa de pausa; noutro jogo pode ser sempre (ver o ctx)
+  // O modo `accessibility` (ADR-0044, item 7) roda com o jogo ANDANDO, e por isso e' perguntado antes do
+  // guarda de "navegavel". Quem sabe quem esta nele e' `ui/pause-icons`, dono da barra.
+  naBarraDe: (i) => pauseIcons.naBarraDe(i),
+  navBar: (i, k) => pauseIcons.navBar(i, k),
   topVisibleOverlay: () => overlays.topVisibleOverlay(), closeById: (id) => overlays.closeById(id),
   getPauseMenu: (i) => vpPause[i],                 // `let vpPause` REATRIBUIDO por buildGameHud -> getter
   setPhase: (p) => setPhase(p),

@@ -58,7 +58,7 @@ export type FracNot = Record<FracNotKey, number>;
 
 /** The 6 directional/confirm flags the title menu reacts to. Single definition in input/edges. */
 import type { NavKeys } from '../input/edges.js';
-import { passoNoAnel } from './menu-nav.js';
+import { passoNoAnel } from '../core/anel.js';
 import { anunciarItem } from './item-announcement.js';
 // LIGAÇÃO VIVA (ESM), e não cópia: `menuIndexOn` muda quando a criança desliga o índice no menu, e o valor
 // aqui acompanha sem precisar de assinatura nem de um campo a mais no `ctx`.

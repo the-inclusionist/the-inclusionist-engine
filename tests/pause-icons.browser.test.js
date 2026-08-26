@@ -329,6 +329,90 @@ describe('buildScreenPause — a legenda segue o foco e o mouse', () => {
   });
 });
 
+describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () => {
+  // O ADR listou este modo entre as consequências NEGATIVAS da própria decisão: "um modo em que se entra e
+  // não se sabe sair é a própria armadilha de que este registro trata". Por isso os casos de SAÍDA são mais
+  // do que os de entrada, e por isso o primeiro deles é o anúncio — a frase que diz como sair, dita na hora
+  // de entrar, é a única coisa que separa o modo da armadilha para quem não vê a tela.
+
+  it('[Right] entrar ANUNCIA como sair, põe o cursor no 1º ícone e VOLTA ao jogo', () => {
+    const { api, bar, said, ctx } = mount();
+    let retomou = 0;
+    ctx.getPauseActs = () => ({ resume: () => { retomou++; } });
+    api.entrarNaBarra(0);
+    expect(api.naBarraDe(0)).toBe(true);
+    expect(retomou, 'o modo é para usar DURANTE a partida: entrar tem de despausar').toBe(1);
+    expect(said.some((f) => /volt|back/i.test(f)), 'o anúncio de entrada tem de dizer como sair: ' + said.join(' | ')).toBe(true);
+    expect(bar.querySelectorAll('.pi-sel')).toHaveLength(1);
+  });
+
+  it('[Right] VOLTAR sai do modo, limpa o cursor e anuncia a devolução', () => {
+    const { api, bar, said } = mount();
+    api.entrarNaBarra(0);
+    said.length = 0;
+    api.navBar(0, { no: true });
+    expect(api.naBarraDe(0)).toBe(false);
+    expect(bar.querySelectorAll('.pi-sel')).toHaveLength(0);
+    expect(bar.querySelector('.pause-icons-cap').textContent).toBe('');
+    expect(said.length, 'a devolução do controle também é informação').toBeGreaterThan(0);
+  });
+
+  it('[Right] START sai também — a segunda porta, e é ela que a pausa ensinou', () => {
+    const { api } = mount();
+    api.entrarNaBarra(0);
+    api.navBar(0, {}, true);
+    expect(api.naBarraDe(0)).toBe(false);
+  });
+
+  it('[Boundary] depois de sair, a direção NÃO mexe mais na barra', () => {
+    // O caso que prova que a saída SAI. Sem ele, `sairDaBarra` poderia limpar o cursor e deixar o modo ligado
+    // — e a criança teria "saído" para um jogo em que o personagem continua sem andar.
+    const { api, bar } = mount();
+    api.entrarNaBarra(0);
+    api.navBar(0, { no: true });
+    api.navBar(0, { right: true });
+    expect(bar.querySelectorAll('.pi-sel')).toHaveLength(0);
+  });
+
+  it('[Right] a direção anda na barra, em ANEL', () => {
+    const { api, bar } = mount();
+    api.entrarNaBarra(0);
+    const icones = [...bar.querySelectorAll('.pi-btn')];
+    api.navBar(0, { right: true });
+    expect(icones[1].classList.contains('pi-sel')).toBe(true);
+    api.navBar(0, { left: true });
+    api.navBar(0, { left: true });
+    expect(icones[icones.length - 1].classList.contains('pi-sel'), 'antes do primeiro está o último').toBe(true);
+  });
+
+  it('[Right] confirmar ATIVA o ícone sob o cursor, e a legenda conta o estado NOVO', () => {
+    const { api, bar, state } = mount();
+    api.entrarNaBarra(0);
+    // anda até o modo cego para ter um alternador com estado observável
+    const icones = [...bar.querySelectorAll('.pi-btn')];
+    const alvo = icones.findIndex((b) => b.dataset.pi === 'blind');
+    for (let i = 0; i < alvo; i++) api.navBar(0, { right: true });
+    api.navBar(0, { yes: true });
+    expect(state.modoCego).toBe(true);
+    expect(bar.querySelector('.pause-icons-cap').textContent).toContain('ligado');
+  });
+
+  it('[Zero] fora do modo, `navBar` não faz nada — nem cursor, nem clique', () => {
+    // O roteamento pergunta a cada quadro; uma chamada que agisse sem o modo ligado seria o direcional
+    // mexendo na barra durante o jogo normal.
+    const { api, bar } = mount();
+    api.navBar(0, { right: true });
+    expect(bar.querySelectorAll('.pi-sel')).toHaveLength(0);
+  });
+
+  it('[Interface] os ícones do HUD ficam FORA da ordem de tabulação', () => {
+    // Dez paradas entre a criança e o jogo seria o preço de deixá-los lá. O alcance por teclado não se perde:
+    // ele passa a ser este modo, que se abre pela pausa.
+    const { bar } = mount();
+    for (const b of bar.querySelectorAll('.pi-btn')) expect(b.tabIndex).toBe(-1);
+  });
+});
+
 describe('reflectIconsIn — a barra do SPLASH (#title-icons) usa a mesma casca', () => {
   it('a mesma marcação de ícones reflete no escopo do jogador 1', () => {
     setPlayers([{ viz: 'fix-tritan', toggleMove: true }]);

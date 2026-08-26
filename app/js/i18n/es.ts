@@ -194,6 +194,8 @@ const es: Record<string, string> = {
   'sr.menu.index': '{n} de {m}',
   'sr.menu.indexOn': 'Posición en la lista activada.',
   'sr.menu.indexOff': 'Posición en la lista desactivada.',
+  'sr.a11y.barEnter': 'Barra de accesibilidad. Usa las direcciones para elegir y confirmar para activar. Para volver al juego, pulsa volver o START.',
+  'sr.a11y.barExit': 'De vuelta al juego.',
   'pad.glyph.cross': 'equis',
   'pad.glyph.circle': 'círculo',
   'pad.glyph.square': 'cuadrado',

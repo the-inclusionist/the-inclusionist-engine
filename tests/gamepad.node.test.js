@@ -48,7 +48,8 @@ function buildCtx(over = {}) {
   let pads = [];
   let phase = 'playing';
   const players = over.players ?? [];
-  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], hideTouchControls: 0, stopAttract: 0 };
+  const naBarra = over.naBarra || new Set();
+  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], hideTouchControls: 0, stopAttract: 0, navBar: [] };
   return {
     $: (sel) => dom.get(sel) ?? null,
     getGamepads: () => pads,
@@ -68,6 +69,10 @@ function buildCtx(over = {}) {
     getPlayers: () => players,
     getNumPlayers: () => players.length || 1,
     navTitle: (k) => calls.navTitle.push(k),
+    // O MODO `accessibility` (ADR-0044, item 7): com o jogo andando, o direcional dirige a barra do HUD e não
+    // o personagem. Por padrão ninguém está nele — os casos que o exercitam alimentam `naBarra`.
+    naBarraDe: (i) => naBarra.has(i),
+    navBar: (i, k, temStart) => calls.navBar.push([i, k, temStart]),
     sharedDialogOpen: () => null,
     navDialog: (dlg, k) => calls.navDialog.push([dlg, k]),
     getPauseMenu: () => null,

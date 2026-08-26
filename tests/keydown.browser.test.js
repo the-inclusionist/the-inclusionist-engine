@@ -41,6 +41,10 @@ function wire({ pauseMenu = null } = {}) {
     setPhase: spy('menuNav:setPhase'),
     setPauseActor: spy('menuNav:setPauseActor'),
     isNavigable: () => faseFalsa === 'paused', // a plataforma navega menu na pausa; ver o ctx de ui/menu-nav
+    // O modo `accessibility` (ADR-0044, item 7) é perguntado antes do guarda de fase. Aqui ninguém está nele:
+    // o que este arquivo mede é a ORDEM entre a captura do menu-nav e o ouvinte de bolha do keydown.
+    naBarraDe: () => false,
+    navBar: () => {},
     isCapturing: () => false,
     closePadWiz: spy('menuNav:closePadWiz'),
     whichPlayer: (code) => (actionOf(code) ? 0 : -1),

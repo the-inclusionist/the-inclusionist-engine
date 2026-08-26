@@ -202,6 +202,10 @@ export interface GamepadCtx {
   getNumPlayers: () => number;
   /** Navegação de menus (game.js): título, diálogo compartilhado (o de cima), e a pausa por tela. */
   navTitle: (k: NavKeys) => void;
+  /** A tela `i` está no modo `accessibility`? (ADR-0044, item 7 — o direcional dirige a barra do HUD.) */
+  naBarraDe: (i: number) => boolean;
+  /** Um passo dentro da barra. `temStart` é a borda do botão de pausa, que é a SEGUNDA saída do modo. */
+  navBar: (i: number, k: NavKeys, temStart: boolean) => void;
   sharedDialogOpen: () => HTMLElement | null;
   navDialog: (dlg: HTMLElement, k: NavKeys) => void;
   /** A tela de pausa do jogador. `HTMLElement` e não `{ hidden: boolean }`: o mínimo estrutural funciona
@@ -470,6 +474,18 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       }
       if (rodando) {
         const owner = players.findIndex((p) => p.pad === gi);
+        // ===================== O MODO `accessibility` (ADR-0044, item 7) =====================
+        // Com o jogo ANDANDO, o direcional deste jogador dirige a BARRA RÁPIDA e não o personagem. Vem antes
+        // de tudo o que é de jogo, porque enquanto o modo está ligado nada mais deste controle é de jogo.
+        //
+        // As DUAS saídas chegam juntas: `especial` é o VOLTAR do projeto (X no PlayStation, B no Xbox, A no
+        // Nintendo) e `startEdge` é o botão que abre a pausa — de onde se entrou aqui. Quem se perde tenta
+        // voltar por onde veio, e quem já conhece o jogo tenta o voltar de sempre; as duas dão certo.
+        if (owner >= 0 && ctx.naBarraDe(owner)) {
+          const k: NavKeys = { yes: edge('jump'), no: edge('especial'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
+          if (startEdge || k.yes || k.no || k.up || k.down || k.left || k.right) ctx.navBar(owner, k, !!startEdge);
+          continue;
+        }
         if (owner < 0) { // atribuição POR ORDEM DE AÇÃO: qualquer botão associa -> 1º controle a agir -> 1º jogador sem pad
           const anyEdge = edge('jump') || edge('run') || edge('swap') || edge('especial') || startEdge || edge('left') || edge('right') || edge('up') || edge('down');
           if (anyEdge) {

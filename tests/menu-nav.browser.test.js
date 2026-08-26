@@ -90,7 +90,8 @@ const MARKUP = `
 function boot(over = {}) {
   document.body.innerHTML = MARKUP;
   setPhaseValue('paused');
-  const log = { phase: [], actor: [], padWiz: [] };
+  const log = { phase: [], actor: [], padWiz: [], bar: [] };
+  const naBarra = over.naBarra || new Set();
   const panel = initSettingsPanel({ $, $$, doc: document, computedZ: (el) => Number(getComputedStyle(el).zIndex) || 0 });
 
   // MESMA ordem de registro do game.js para os diálogos que importam aqui. #typo entra na cadeia de Escape;
@@ -119,6 +120,10 @@ function boot(over = {}) {
     // módulo; virou pergunta injetada, e por isso os casos abaixo — que já mexiam na fase —
     // continuam medindo exatamente o mesmo comportamento. Um quiz responderia `true` e não mentiria (achado 10).
     isNavigable: () => faseFalsa === 'paused',
+    // O MODO `accessibility` (ADR-0044, item 7) é perguntado ANTES do guarda de "navegável", porque ele roda
+    // com o jogo andando. Por padrão ninguém está nele; os casos que o exercitam mexem em `naBarra`.
+    naBarraDe: (i) => naBarra.has(i),
+    navBar: (i, k) => log.bar.push([i, k]),
     isCapturing: () => false,
     closePadWiz: (save) => log.padWiz.push(save),
     whichPlayer: () => -1,        // só teclas genéricas nestes casos (o roteamento por jogador é de outro módulo)
@@ -127,7 +132,7 @@ function boot(over = {}) {
     ...over,
   };
   const nav = initMenuNav(ctx);
-  return { nav, panel, log, open, openTypo, openAudio, openHelp };
+  return { nav, panel, log, naBarra, open, openTypo, openAudio, openHelp };
 }
 
 /** Um KeyboardEvent falso — `menuNavKey` é exportado à parte justamente para poder ser chamado direto. */

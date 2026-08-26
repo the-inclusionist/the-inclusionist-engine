@@ -159,29 +159,14 @@ import { hasNavIntent as hasIntent } from '../input/edges.js';
 import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
 import { mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from './pause-icons.js';
+import { passoNoAnel } from '../core/anel.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
-/**
- * ANDA UM PASSO NUM ANEL — passar do último volta ao primeiro, e antes do primeiro está o último.
- *
- * Era `clampIndex`, que prendia nas pontas "porque o original nunca faz wrap em lista de itens". O ADR-0044
- * derrubou isso, e o motivo é de uso, não de gosto: com UM MENU POR TELA, toda lista pode ser um anel, e o
- * item mais indesejado (`quit`) fica a UMA tecla do mais urgente (`resume`) sem estar perto dele. Quem não
- * enxerga não varre a lista à procura do fim — ela pergunta "e antes do primeiro?" e recebe uma resposta.
- *
- * A XAG 106 permite o anel exatamente para menu LINEAR, e o proíbe para grade 2-D de blocos: ali "voltar ao
- * primeiro" não tem significado espacial. Era por isso que o menu de PAUSA ficava de fora: enquanto a barra
- * de dez ícones morasse dentro do cartão, ele era grade de duas zonas. Com a barra no HUD (item 7), o cartão
- * virou lista e `passoNaPausa` passou a usar isto — o último menu do jogo a entrar no anel.
- *
- * ⚠️ NAVEGAR LISTA É ANEL; AJUSTAR VALOR É LIMITE. `selectStep` e `rangeStep` continuam presos nas pontas
- * logo abaixo, e a diferença é real: passar do volume máximo para o mínimo com uma tecla é um susto, não uma
- * conveniência — e num jogo com pistas de áudio para cegueira, um susto de volume é dano.
- */
-export function passoNoAnel(len: number, idx: number, delta: number): number {
-  if (len <= 0) return 0;
-  return ((idx + delta) % len + len) % len; // o `+ len` extra: `%` de negativo em JS devolve negativo
-}
+// A CONTA DO ANEL mudou de casa para `core/anel` no item 7 do ADR-0044: `ui/pause-icons` passou a precisar
+// dela, e como ESTE módulo já importa aquele, a volta fecharia um ciclo de importação — que em ESM não
+// estoura na hora, estoura no boot em TDZ. O nome público fica: é daqui que os menus e os testes já a
+// importavam, e mudar isso seria pedir uma edição em cada um deles para não ganhar nada.
+export { passoNoAnel } from '../core/anel.js';
 
 /** `select` com esquerda/direita: um passo, SEM dar a volta — ajustar VALOR não é navegar lista (ver acima). */
 export function selectStep(selectedIndex: number, optionsLen: number, delta: number): number {
@@ -261,6 +246,13 @@ export interface MenuNavCtx {
    * `phase === 'paused'` e um quiz responde `true` — cada um na sua língua, e nenhum dos dois mentindo.
    */
   isNavigable: () => boolean;
+  /**
+   * A tela `i` está no modo `accessibility` (ADR-0044, item 7)? Perguntado ANTES de `isNavigable`, porque
+   * esse modo roda com o jogo ANDANDO — é a única coisa deste módulo que age fora da pausa.
+   */
+  naBarraDe: (i: number) => boolean;
+  /** Um passo dentro da barra rápida da tela `i`. */
+  navBar: (i: number, k: NavKeys) => void;
   /** ui/settings-controls.ts: um remap em andamento consome a tecla — o menu não pode roubá-la. */
   isCapturing: () => boolean;
   /** input/gamepad.ts: o assistente de mapeamento fica POR CIMA de tudo; só Escape (cancela) o alcança. */
@@ -419,9 +411,26 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   const consumir = (e: NavKeyEvent): void => { e.preventDefault(); e.stopPropagation(); };
 
   function menuNavKey(e: NavKeyEvent): void {
-    if (!ctx.isNavigable()) return;
     if (ctx.isCapturing()) return;   // remap em andamento: a tecla é dele
     if (padWizKey(e)) return;
+
+    // ===================== O MODO `accessibility` VEM ANTES DO GUARDA DE "NAVEGÁVEL" =====================
+    // `isNavigable()` é `phase === 'paused'`, e este modo roda com o jogo ANDANDO — é para isso que ele
+    // existe: ajustar a acessibilidade DURANTE a partida, sem parar. Se ele ficasse depois do guarda, a
+    // direção cairia no personagem e o modo não faria nada, que é a versão silenciosa da armadilha.
+    //
+    // No TECLADO a saída é Escape (o `no` do projeto). O START do controle é a segunda saída e entra por
+    // `input/gamepad`; aqui ele não tem par próprio, porque Enter já é "confirmar" e roubá-lo tiraria da
+    // criança o único jeito de ATIVAR o ícone sob o cursor.
+    const donoTecla = ctx.whichPlayer(e.code);
+    const pTecla = donoTecla < 0 ? 0 : donoTecla;
+    if (ctx.naBarraDe(pTecla)) {
+      const kb = menuKeyIntent(e.code, donoTecla >= 0 ? ctx.actionOf(e.code, pTecla) : null);
+      if (hasIntent(kb)) { consumir(e); ctx.navBar(pTecla, kb); }
+      return; // na barra, tecla de menu é da barra — com ou sem intenção, não desce para o personagem
+    }
+
+    if (!ctx.isNavigable()) return;
 
     const owner = ctx.whichPlayer(e.code);
     const pi = owner < 0 ? 0 : owner;                       // tecla genérica → Jogador 1

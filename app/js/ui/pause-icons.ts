@@ -27,11 +27,13 @@
 
 
 import type { PlayerView } from '../core/entity.js';
+import type { NavKeys } from '../input/edges.js'; // a MESMA intenção que teclado, controle, olhar e fala montam
 import { t } from '../core/i18n.js';
 import { CONTRAST_LEVELS, CONTRAST_LABELS } from './settings-visual.js';
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
 import type { AudioCatState } from './settings-audio.js';
 import { anunciarItem } from './item-announcement.js';
+import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
 import { menuIndexOn } from '../core/state.js';
 
@@ -349,6 +351,29 @@ export function quickBarMarkup(): string {
     '</div><p class="pause-icons-cap" aria-live="polite"></p>';
 }
 
+/**
+ * O QUE UMA INTENÇÃO SIGNIFICA DENTRO DO MODO `accessibility` (ADR-0044, item 7).
+ *
+ * O registro listou este modo entre as consequências NEGATIVAS da decisão, e disse por quê: "um modo em que
+ * se entra e não se sabe sair é a própria armadilha de que este registro trata — então a saída dele (START ou
+ * VOLTAR) é parte da decisão, e não um detalhe de implementação".
+ *
+ * Daí a forma desta função: SAIR vem primeiro, e vem por DUAS portas. Não é redundância. VOLTAR é a saída de
+ * tudo no jogo, e é o que quem já o conhece tenta primeiro; START é o botão que ABRE a pausa, e a pausa é de
+ * onde se entrou aqui — quem se perde tenta voltar por onde veio. Ter só uma das duas seria apostar que a
+ * criança adivinhe qual delas foi escolhida.
+ *
+ * E a precedência é decisão também: um controle registra mais de uma borda no mesmo quadro (dedos apertam
+ * junto), e nesse quadro `sair` não pode ficar atrás de `ativar`.
+ */
+export type AcaoNaBarra = 'sair' | 'ativar' | 'andar' | 'nada';
+export function acaoNaBarra(k: NavKeys, temStart: boolean): AcaoNaBarra {
+  if (temStart || k.no) return 'sair';
+  if (k.yes) return 'ativar';
+  if (k.up || k.down || k.left || k.right) return 'andar';
+  return 'nada';
+}
+
 export interface ScreenPauseMarkupOpts {
   /** Screen/player index (0-based); the dialog label and the "· Jogador N" suffix are 1-based. */
   player: number;
@@ -461,8 +486,14 @@ export interface PauseIconsApi {
   buildScreenPause: (i: number) => HTMLElement;
   /** Monta a BARRA RÁPIDA (`.screen-a11y`) da tela `i`, já fiada. Chamada por ui/hud.ts, uma por tela. */
   buildQuickBar: (i: number) => HTMLElement;
-  /** Põe o cursor no primeiro ícone da barra da tela `i` — é o que o item `acessibilidade` da pausa faz. */
+  /** ENTRA no modo `accessibility` da tela `i` — é o que o item `acessibilidade` da pausa faz. */
   entrarNaBarra: (i: number) => void;
+  /** SAI do modo e devolve o direcional ao personagem. */
+  sairDaBarra: (i: number) => void;
+  /** A tela `i` está com o direcional na BARRA em vez de no personagem? Perguntado a cada quadro. */
+  naBarraDe: (i: number) => boolean;
+  /** Um passo dentro do modo. `temStart` é a borda do botão de pausa — a segunda saída (ADR-0044, item 7). */
+  navBar: (i: number, k: NavKeys, temStart?: boolean) => void;
   /** Runs the icon `k` for screen `i`. Does NOT reflect — callers reflect after, as game.js always did. */
   iconAct: (k: string, i: number) => void;
   /** The state-reflecting `aria-label` of icon `k` for screen `i`. */
@@ -631,22 +662,85 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     ));
   }
 
+  /* ===================== O MODO `accessibility` (ADR-0044, item 7) ===================== */
+
   /**
-   * Põe o cursor no primeiro ícone da barra rápida DAQUELA tela, e anuncia.
+   * Quem está com o direcional dirigindo a BARRA em vez do personagem.
    *
-   * É o que o item `acessibilidade` da pausa faz. A barra vive no HUD desde o item 7, então "entrar nela" é
-   * mover o cursor para fora do cartão — e é por isso que a saída do modo precisa ser dita em voz alta junto
-   * (ver `sr.a11y.barEnter`): um modo em que se entra sem saber como sair é a armadilha que este ADR desfaz.
+   * Vida de RODADA (ADR-0038): mora no closure desta instância, não é persistido, e some com a partida. Um
+   * modo de entrada que sobrevivesse ao reinício seria a armadilha voltando pela porta dos fundos — a criança
+   * abriria o jogo no dia seguinte e o personagem não andaria.
+   */
+  const naBarra = new Set<number>();
+
+  /** O cursor da barra da tela `i`, ou o primeiro ícone quando ainda não há cursor. */
+  function iconeSelecionado(bar: HTMLElement): HTMLElement | null {
+    return bar.querySelector<HTMLElement>('.pi-sel') || bar.querySelector<HTMLElement>('.pi-btn');
+  }
+
+  /** Põe o cursor num ícone, escreve a legenda e ANUNCIA — a legenda é o canal de quem não vê o ícone. */
+  function selecionarIcone(bar: HTMLElement, el: HTMLElement): void {
+    bar.querySelectorAll<HTMLElement>('.pi-sel').forEach((x) => x.classList.remove('pi-sel'));
+    el.classList.add('pi-sel');
+    const cap = bar.querySelector('.pause-icons-cap');
+    if (cap) cap.textContent = legendaDoIcone(bar, el);
+    ctx.srSay(legendaDoIcone(bar, el));
+  }
+
+  /**
+   * ENTRA no modo: o direcional passa a dirigir a barra da tela `i`, e o jogo VOLTA a rodar.
+   *
+   * O anúncio diz como SAIR, e diz na hora de entrar. É a linha que desarma a armadilha que o próprio
+   * ADR-0044 anotou como consequência negativa desta decisão: quem não enxerga aperta a direção, o personagem
+   * não anda, e sem esta frase não há nada na tela que explique — porque a tela não é o canal dessa criança.
    */
   function entrarNaBarra(i: number): void {
     const bar = ctx.getA11yBars()[i];
-    const primeiro = bar && bar.querySelector<HTMLElement>('.pi-btn');
+    const primeiro = bar && iconeSelecionado(bar);
     if (!bar || !primeiro) return;
-    bar.querySelectorAll<HTMLElement>('.pi-sel').forEach((x) => x.classList.remove('pi-sel'));
-    primeiro.classList.add('pi-sel');
-    const cap = bar.querySelector('.pause-icons-cap');
-    if (cap) cap.textContent = legendaDoIcone(bar, primeiro);
-    ctx.srSay(legendaDoIcone(bar, primeiro));
+    naBarra.add(i);
+    const acts = ctx.getPauseActs();
+    if (acts.resume) acts.resume(); // volta à tela normal: o modo é para usar DURANTE a partida
+    ctx.srSay(t('sr.a11y.barEnter'));
+    selecionarIcone(bar, primeiro);
+  }
+
+  /** SAI do modo e devolve o direcional ao personagem. Anuncia, porque a devolução também é informação. */
+  function sairDaBarra(i: number): void {
+    if (!naBarra.delete(i)) return;
+    const bar = ctx.getA11yBars()[i];
+    if (bar) {
+      bar.querySelectorAll<HTMLElement>('.pi-sel').forEach((x) => x.classList.remove('pi-sel'));
+      const cap = bar.querySelector('.pause-icons-cap');
+      if (cap) cap.textContent = '';
+    }
+    ctx.srSay(t('sr.a11y.barExit'));
+  }
+
+  /** A tela `i` está com o direcional na barra? É o que o roteamento de entrada pergunta a cada quadro. */
+  const naBarraDe = (i: number): boolean => naBarra.has(i);
+
+  /**
+   * UM PASSO dentro do modo. `temStart` é a borda do botão que abre a pausa — a segunda saída.
+   *
+   * A barra é uma fileira, então as QUATRO direções andam nela: para quem navega sem ver, "cima" numa lista
+   * de uma linha só não pode ser um beco. E anda em ANEL, como todo menu do jogo desde o item 1.
+   */
+  function navBar(i: number, k: NavKeys, temStart = false): void {
+    if (!naBarra.has(i)) return;
+    const bar = ctx.getA11yBars()[i];
+    if (!bar) return;
+    const acao = acaoNaBarra(k, temStart);
+    if (acao === 'sair') { sairDaBarra(i); return; }
+    const icones = [...bar.querySelectorAll<HTMLElement>('.pi-btn')];
+    if (!icones.length) return;
+    const cur = iconeSelecionado(bar);
+    const idx = cur ? icones.indexOf(cur) : 0;
+    if (acao === 'ativar') { ctx.setPauseActor(i); if (cur) cur.click(); return; }
+    if (acao === 'andar') {
+      const d = (k.down || k.right) ? 1 : -1;
+      selecionarIcone(bar, icones[passoNoAnel(icones.length, idx, d)]);
+    }
   }
 
   function buildScreenPause(i: number): HTMLElement {
@@ -693,6 +787,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     bar.className = 'screen-a11y';
     bar.dataset.player = String(i);
     bar.innerHTML = quickBarMarkup();
+    // FORA DA ORDEM DE TABULAÇÃO durante a partida (ADR-0044, item 7). Dez paradas entre a criança e o jogo
+    // seria o preço de deixá-los lá — e o alcance por teclado não se perde: ele passa a ser o modo
+    // `accessibility`, que se abre pela pausa. A barra do TÍTULO não é afetada: lá não se está jogando, e o
+    // `tabindex` é posto AQUI, no elemento, e não no markup que as duas compartilham.
+    bar.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => { b.tabIndex = -1; });
 
     const cap = bar.querySelector('.pause-icons-cap');
     bar.addEventListener('click', (e) => {
@@ -715,7 +814,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   }
 
   return {
-    buildScreenPause, buildQuickBar, entrarNaBarra,
+    buildScreenPause, buildQuickBar, entrarNaBarra, sairDaBarra, naBarraDe, navBar,
     iconAct, iconLabel, reflectIconBtn, reflectIconsIn, reflectPauseIcons,
     applyCalm, getCalmMode: () => calmMode, setCalmMode: (n) => { calmMode = n; }, iconState,
   };

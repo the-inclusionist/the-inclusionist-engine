@@ -264,6 +264,8 @@ const pt: Record<string, string> = {
   'sr.menu.index': '{n} de {m}',
   'sr.menu.indexOn': 'Posição na lista ligada.',
   'sr.menu.indexOff': 'Posição na lista desligada.',
+  'sr.a11y.barEnter': 'Barra de acessibilidade. Use as direções para escolher e confirmar para ligar. Para voltar ao jogo, aperte voltar ou START.',
+  'sr.a11y.barExit': 'De volta ao jogo.',
   'pad.glyph.cross': 'xis',
   'pad.glyph.circle': 'bola',
   'pad.glyph.square': 'quadrado',

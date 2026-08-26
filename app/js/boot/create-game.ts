@@ -52,6 +52,7 @@ import { VIZ_BY_KEY } from '../render/viz-modes.js';
 import { LOGICAL_W } from '../core/constants.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
+import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB } from '../input/keyboard.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
@@ -89,6 +90,14 @@ export interface CreateGameOptions {
    * Ausente = `true`, que é o caso do jogo sem fases — o mais simples, e o que não obriga a inventar uma.
    */
   readonly isNavigable?: () => boolean;
+  /**
+   * O MODO `accessibility` do ADR-0044 (item 7): o direcional dirige a barra rápida em vez do personagem.
+   *
+   * Opcionais porque um hospedeiro pode não ter barra nenhuma — sem eles a resposta é "ninguém está nela" e
+   * nada é chamado. O jogo de plataforma os fornece; um quiz sem HUD de a11y, não.
+   */
+  readonly naBarraDe?: (i: number) => boolean;
+  readonly navBar?: (i: number, k: NavKeys) => void;
   /** Jogadores para o teclado remapeável. `Pick<ControlledPlayer,'ctrl'>` — esquema de teclas e nada mais. */
   readonly players?: { ctrl: Record<string, string[]> }[];
   /** Troca de fase, para quem tem fases. Ausente = não faz nada (o jogo sem fases não perde nada). */
@@ -222,6 +231,10 @@ export function createGame(o: CreateGameOptions): Engine {
     setPhase: o.setPhase ?? (() => {}),
     setPauseActor: () => {},
     isNavigable: o.isNavigable ?? (() => true),
+    // Um hospedeiro que nao tenha barra de acessibilidade responde "nunca" e nunca chama nada — o modo e'
+    // opcional para o consumidor, obrigatorio para este jogo.
+    naBarraDe: o.naBarraDe ?? (() => false),
+    navBar: o.navBar ?? (() => {}),
     isCapturing: () => false,
     closePadWiz: () => {},
     whichPlayer: (code) => keyboard.whichPlayer(code),
