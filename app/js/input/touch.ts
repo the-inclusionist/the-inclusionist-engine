@@ -7,7 +7,6 @@
 // ./devices.js (not reimplemented). Reading the real Gamepad API (polling, mapping wizard) is input/gamepad's
 // territory, not this module's — see the header note on padKind() for the one deliberate exception.
 import { PAD_DESIGNS, TOUCH_ACT_LABELS, TOUCH_DEFAULT } from './devices.js';
-import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { KEYS } from '../platform/storage.js'; // só as CHAVES (constantes) — leitura/escrita passam por ctx.store (DI)
 import { setMinimapCorner } from '../render/minimap.js'; // já módulo próprio (Estágio 4, Tier 1) — importado direto

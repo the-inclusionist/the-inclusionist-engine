@@ -285,7 +285,6 @@ export function titleNavOf(code: string, s: KeydownSnapshot, jump: boolean): Tit
 import { hasNavIntent as hasTitleIntent } from './edges.js';
 import type { EventTargetLike } from './touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
-import type { KeyScheme } from '../core/entity.js';
 export { hasNavIntent as hasTitleIntent } from './edges.js';
 
 /**

@@ -1088,7 +1088,7 @@ const drawApi = initDraw({
   // junto TRES regras que sao deste jogo: item coletado some, item de outro dono fica esmaecido, e a chave
   // vale para todos enquanto os demais poderes sao por jogador. As tres moram aqui agora.
   getItemSprites: () => getCoinSprites(),
-  itemVisibleTo: (j, i) => !coins[j]?.taken,
+  itemVisibleTo: (j, _i) => !coins[j]?.taken, // `_i`: o item sumir é por ITEM, não por jogador
   itemOwnedBy: (j, i) => coins[j]?.owner === i,
   powerupVisibleTo: (pu, i) => !puTaken(pu, i),
   rm, WORLD_PX_W: ()=>WORLD_PX_W, WORLD_PX_H: ()=>WORLD_PX_H,
@@ -1225,8 +1225,10 @@ const activitiesMenu = initActivitiesMenu({
   setQuizLevel, isMobile, fitsN, setNumPlayers, restartGame, setPhase, hideTips,
   enterFullscreen: () => { try{ const el=document.documentElement, rf=el.requestFullscreen||el.webkitRequestFullscreen; if(rf)rf.call(el); }catch(e){} },
 });
-const { actCat, setActivity, startActivity, reallyStart,
-        navTitle, titleButtons, buildTitleMenus, tabSel, fracNot } = activitiesMenu;
+// Só o que a raiz de fato usa. `startActivity`, `reallyStart`, `titleButtons`, `buildTitleMenus` e
+// `menuItems` saíram em 2026-08-26: eram desestruturados e nunca lidos — resto da migração para
+// `ui/activities-menu`, que hoje os chama por dentro. `noUnusedLocals` os encontrou.
+const { actCat, setActivity, navTitle, tabSel, fracNot } = activitiesMenu;
 // B3: o desafio educativo. So entra aqui o que um import nao alcanca: as `let` do main.js, as instancias
 // criadas no boot (audio/HUD/menu) e os efeitos de outros slices (moeda, HUD, vitoria, toque). Os
 // callbacks sao arrows de proposito: touchCtl, respawnFigure, win e updateHud nascem mais abaixo.
@@ -1328,7 +1330,9 @@ const motor = initSettingsMotor({ $, srSay, store, players, getNumPlayers: () =>
 /* Modos de visualização: Normal + Alto contraste + simulações/correções. A FABRICA (parallaxTexFor,
    treeTexFor, playerVizTex, pixiFilterFor, o overlay de baixa visao e as matrizes CVD) migrou para
    render/viewports.ts (B2); a POLITICA ja estava em render/viz-setters.ts (Onda A). */
-const lvOverlaySpr=new PIXI.Sprite(PIXI.Texture.EMPTY), vpDot=new PIXI.Graphics();
+// (`vpDot` saiu em 2026-08-26: era um `PIXI.Graphics` construído no boot e nunca usado — as bolinhas de
+//  viewport são criadas por `render/screen-pipeline`. Objeto alocado que ninguém desenha.)
+const lvOverlaySpr=new PIXI.Sprite(PIXI.Texture.EMPTY);
 // _playerDirect/playerVizTex migraram para render/viewports.ts (B2).
 /* ===================== MODOS DE VISAO ACESSIVEL -> render/viz-setters.ts =====================
    Saiu a POLITICA (qual modo vale onde); a FABRICA (como um modo vira pixel) ja mora em
@@ -1359,8 +1363,9 @@ const viz = initVizSetters({
   reflectVizButtons: () => reflectVizButtons(),
   renderVisualPanel: () => visual.render(), renderEmpathyPanel: () => empathy.render(),
 });
+// `updateVizIndicator` saiu: desestruturado e nunca lido desde que migrou para `render/viz-setters`.
 const { applySharedTextures, updateVpDots, applyVpFilters, setPlayerViz,
-        applyVizGlobal, reapplyVizAll, updateVizIndicator, renderVizGroup } = viz;
+        applyVizGlobal, reapplyVizAll, renderVizGroup } = viz;
 const _rebakeDirect = viz.rebakeDirect;
 // renderVpOverlay migrou para render/viewports.ts (B2).
 // updateVpDots/applyVpFilters migraram para render/viz-setters.ts (Onda A).
@@ -1662,8 +1667,6 @@ const shell = initShell({
    lá, onde tem teste; aqui fica só o encaminhamento. */
 function setPhase(p: Fase){ cenas.irPara(p); }
 function togglePause(){ cenas.alternarPausa(); }
-function pauseSelect(){ shell.pauseSelect(); }
-function printMode(){ shell.printMode(); }
 function updateTitleLegend(){ shell.updateTitleLegend(); }
 // NAVEGAÇÃO UNIVERSAL de menus: qualquer menu aberto (pausa OU submenu) é navegável por up/down/left/right/
 // sim/não — as MESMAS ações valem para teclado, controle, olhos e fala. sim = confirma/alterna/entra;
@@ -1708,9 +1711,7 @@ const menuNav = initMenuNav({
   win: window,
 });
 function sharedDialogOpen(){ return menuNav.sharedDialogOpen(); }
-function menuItems(menu: Parameters<typeof menuNav.menuItems>[0]){ return menuNav.menuItems(menu); }
 function menuFocus(menu: Parameters<typeof menuNav.menuFocus>[0]){ menuNav.menuFocus(menu); }
-function dialogBack(menu: Parameters<typeof menuNav.dialogBack>[0]){ menuNav.dialogBack(menu); }
 function navDialog(menu: Parameters<typeof menuNav.navDialog>[0],k: Parameters<typeof menuNav.navDialog>[1]){ menuNav.navDialog(menu,k); }
 function navPause(menu: Parameters<typeof menuNav.navPause>[0],pi: number,k: Parameters<typeof menuNav.navPause>[2]){ menuNav.navPause(menu,pi,k); }
 menuNav.attach(); // addEventListener('keydown', menuNavKey, true) — MESMA fase de CAPTURA

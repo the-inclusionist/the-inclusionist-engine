@@ -163,7 +163,7 @@ function playerViz(list: readonly unknown[], i: number): string {
 export const VISUAL_MODE_LIST: readonly VizMode[] =
   VIZ_MODES.filter((m) => m.kind === 'normal' || m.kind === 'hcnew').concat(VIZ_CORRECTIONS);
 
-export function renderVisualPanelHtml(contrastValue: string, s: VisualSettings): string {
+export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings): string {
   const roleInputs = ROLE_KEYS.map(
     (k) =>
       `<input type="color" id="opt-role-${k}" value="${rgbToHex(s.roleColors[k])}" aria-label="Cor de ${ROLE_LABELS[k]}" style="inline-size:2.2em;block-size:1.8em;padding:0;border:1px solid #666;border-radius:4px;background:none">`,
@@ -307,7 +307,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
   // visual). Puxá-las para cá agora responderia essa pergunta por acidente, num commit sobre outra coisa.
   const resetBtn = ctx.$<HTMLButtonElement>('#visual-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
-    ctx.getPlayers().forEach((p, i) => {
+    ctx.getPlayers().forEach((_p, i) => {
       const viz = playerViz(ctx.getPlayers(), i);
       if (VISUAL_MODE_SET.has(viz) && viz !== 'normal') ctx.setPlayerViz(i, 'normal');
     });

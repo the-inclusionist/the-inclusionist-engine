@@ -88,13 +88,6 @@ type Textured = ComTextura;
 /** PIXI.Graphics da bolinha por viewport — só o que updateVpDots realmente usa. */
 type DotGfx = Visivel & DesenhoComCirculo;
 interface ClassListHost { classList: { toggle(token: string, force?: boolean): unknown; remove(...tokens: string[]): unknown } }
-interface Btn { dataset: { viz?: string; vp?: string }; addEventListener(type: string, fn: () => void): void }
-interface El {
-  hidden: boolean; className: string; innerHTML: string;
-  classList: { toggle(token: string, force?: boolean): unknown };
-  setAttribute(name: string, value: string): void;
-  querySelectorAll(sel: string): { forEach(cb: (b: Btn) => void): void };
-}
 interface Pl { viz: string; sprite?: Textured | null; _tx?: unknown }
 interface Pu { kind: string; sprite?: Textured | null }
 

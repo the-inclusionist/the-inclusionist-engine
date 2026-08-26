@@ -9,7 +9,7 @@
 // "aberto" lia um div vazio (ver o cabeçalho de ui/vlibras): o canvas vivia em `left: -136`, fora da tela,
 // com ou sem modo pessoa surda. O acoplamento vlibras↔layout desaparece junto.
 import { $ } from './dom.js';
-import { screenGrid, screenBaseSize } from '../core/screens.js';
+import { screenBaseSize } from '../core/screens.js';
 
 import { crtScanVars } from '../render/crt.js';
 
@@ -28,7 +28,8 @@ export function layout(): void {
   const availH = wrap.clientHeight || 180;
   // E11: a grade de telas define a base (1=320×180, 2=640×180, 3-4=640×360)
   const n = _numJogadores();
-  const { cols, rows } = screenGrid(n);
+  // (`screenGrid(n)` SAIU em 2026-08-26: `cols`/`rows` eram desestruturados e nunca lidos — a escala sai de
+  //  `screenBaseSize`, logo abaixo. Era uma chamada paga a cada `layout()` por nada. `noUnusedLocals` achou.)
   const { w: baseW, h: baseH } = screenBaseSize(n);
   // Piso k=2: CADA viewport tem no mínimo 640×360. Assim 2×2 = 1280×720 cabe num Chromebook do governo (1366×768).
   const MIN_K = 2;

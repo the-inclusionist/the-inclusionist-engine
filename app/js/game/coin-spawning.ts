@@ -10,7 +10,7 @@ import { TILE, COIN_TARGET } from '../core/constants.js';
 import { shuffle } from '../core/rng.js';
 import { vizMode } from '../core/state.js';
 import { coins, setCoins } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
-import { findCoinCandidates, positionEasyCoins, type Coin } from './coins.js';
+import { findCoinCandidates, positionEasyCoins } from './coins.js';
 import { SOMASUB_SHAPES, WORD_INITIALS } from './activity-content.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { Tingivel, ComTextura, CamadaEsvaziavel, CriarSprite } from '../render/port.js';

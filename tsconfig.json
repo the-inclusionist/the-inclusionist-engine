@@ -12,6 +12,14 @@
     "checkJs": false,
     "noEmit": true,
     "strict": true,
+    // DECLARAÇÃO MORTA REPROVA (2026-08-26, issue #51). O CodeQL apontava 44 alertas no `game.js`, e VINTE E UM
+    // deles eram `js/unused-local-variable`. O arquivo não existe mais, o scanner mudou (o GitLab usa Semgrep),
+    // e a estratégia registrada na issue era "resolver por extração e revisar o que sobrar no fecho".
+    // Sobraram 22 — imports de tipo órfãos das refatorações, envelopes içados cujos chamadores migraram, e um
+    // `PIXI.Graphics` construído no boot que ninguém desenhava. Um passe de limpeza os tira uma vez; a flag
+    // impede que voltem, que é a diferença entre arrumar e resolver.
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "skipLibCheck": true,
     "isolatedModules": true,
     "resolveJsonModule": true

@@ -155,11 +155,6 @@ export interface TilingSpriteLike {
 interface ContainerLike { addChildAt(child: unknown, index: number): unknown }
 /** `starsG`/`skyDecoG`/`fogG`: contra-posicionados junto com o parallax. */
 interface PosicionavelLike { position: { set(x: number, y: number): void } }
-/** `PIXI.Texture` recém-criada de uma imagem — só o modo de escala (pixel art = NEAREST). */
-interface TexturaMutavel { baseTexture: { scaleMode: number } }
-/** `HTMLImageElement`, reduzido ao que o carregamento usa. */
-interface ImagemLike { onload: (() => void) | null; onerror: (() => void) | null; src: string }
-interface ImagemCtor { new (): ImagemLike }
 
 export interface ParallaxCtx {
   /* --- render-graph (criados no game.js; a ordem-z é soldada lá) --- */

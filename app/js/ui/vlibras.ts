@@ -25,7 +25,6 @@
 // prever um motor próprio em zdog. Este arquivo para de empurrar a tela e passa a ter um toggle honesto; o
 // intérprete sob demanda é trabalho à parte.
 import { t } from '../core/i18n.js';
-import { srAlert } from '../core/a11y-sr.js';
 import * as store from '../platform/storage.js';
 
 /** Estado do modo pessoa surda. Escolha da PESSOA, persistida — não inferência sobre um widget de terceiro. */
