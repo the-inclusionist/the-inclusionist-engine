@@ -52,13 +52,15 @@ const MARKUP = `
     </div></div>
 
     <div class="player-screen">
+      <!-- A BARRA RÁPIDA é IRMÃ do cartão desde o item 7 do ADR-0044, não filha: ela vive no HUD. A fixture
+           a põe aqui do lado para que pauseSetSel continue achando a legenda pelo escopo da tela. -->
+      <div class="pause-icons">
+        <button class="pi-btn" data-pi="cego" type="button" aria-label="Modo cego">A</button>
+        <button class="pi-btn" data-pi="tts" type="button" aria-label="Narração">B</button>
+        <button class="pi-btn" data-pi="libras" type="button" aria-label="Libras">C</button>
+      </div>
+      <p class="pause-icons-cap" aria-live="polite"></p>
       <div class="screen-pause" id="sp0"><div class="pause-card">
-        <div class="pause-icons">
-          <button class="pi-btn" data-pi="cego" type="button" aria-label="Modo cego">A</button>
-          <button class="pi-btn" data-pi="tts" type="button" aria-label="Narração">B</button>
-          <button class="pi-btn" data-pi="libras" type="button" aria-label="Libras">C</button>
-        </div>
-        <p class="pause-icons-cap" aria-live="polite"></p>
         <div class="pause-menu" role="menu" data-sub="raiz">
           <button class="pm-btn" data-act="resume" type="button">Continuar</button>
           <button class="pm-btn" data-act="letra" type="button">ABC</button>
@@ -286,18 +288,22 @@ describe('navDialog — andar dentro de um diálogo', () => {
 describe('navPause — andar no menu de pausa (seleção por classe, não por foco)', () => {
   const K = (o) => ({ yes: false, no: false, up: false, down: false, left: false, right: false, ...o });
 
-  it('a seleção é EXCLUSIVA e a legenda narra o ícone sob o cursor', () => {
+  it('a seleção é EXCLUSIVA — e o cursor da pausa não alcança mais os ícones', () => {
+    // ESTE CASO MUDOU DE FORMA no item 7 do ADR-0044. Ele afirmava que o cursor atravessava a fronteira entre
+    // a barra de ícones e a lista, e que a legenda narrava o ícone sob ele. A fronteira não existe mais: a
+    // barra vive no HUD, com o cursor DELA. O que sobra aqui é a metade que continua sendo verdade e continua
+    // importando — nunca há dois itens selecionados ao mesmo tempo.
     const { nav } = boot();
     showPauses();
     const menu = $('#sp0');
-    nav.pauseSetSel(menu, menu.querySelectorAll('.pm-btn')[0]);
-    expect(menu.querySelectorAll('.pm-sel, .pi-sel').length).toBe(1);
-    expect(menu.querySelector('.pause-icons-cap').textContent).toBe(''); // item comum limpa a legenda
-    nav.pauseSetSel(menu, menu.querySelectorAll('.pi-btn')[1]);
-    expect(menu.querySelectorAll('.pm-sel, .pi-sel').length).toBe(1);
-    expect(menu.querySelector('.pi-btn:nth-of-type(2)').classList.contains('pi-sel')).toBe(true);
-    // O `, N de M` entrou com o item 3 do ADR-0044: a legenda diz o rótulo E onde ele está na barra.
-    expect(menu.querySelector('.pause-icons-cap').textContent).toBe('Narração, 2 de 3'); // aria-label + posição
+    const itens = [...menu.querySelectorAll('.pause-menu:not([hidden]) .pm-btn')];
+    nav.pauseSetSel(menu, itens[0]);
+    expect(menu.querySelectorAll('.pm-sel').length).toBe(1);
+    nav.pauseSetSel(menu, itens[2]);
+    expect(menu.querySelectorAll('.pm-sel').length).toBe(1);
+    expect(itens[2].classList.contains('pm-sel')).toBe(true);
+    // E o cursor da pausa não escreve mais na legenda dos ícones: seria um módulo mexendo na tela de outro.
+    expect(document.querySelector('.pause-icons-cap').textContent).toBe('');
   });
 
   it('[Right] a navegação NÃO enxerga a lista escondida (ADR-0044, item 5)', () => {
@@ -305,10 +311,9 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     // o cursor entraria nos itens do submenu de opções — e a criança ouviria itens de um menu que não está na
     // tela. É por isso que `PM_ITENS_VISIVEIS` existe como constante e não como seletor solto.
     //
-    // NOTA sobre o anel: aqui ele ainda NÃO dá a volta, e é de propósito. Enquanto a barra de ícones estiver
-    // dentro do cartão, a pausa é uma grade de DUAS zonas, e a XAG 106 permite laço para menu LINEAR e o
-    // proíbe para grade. O anel entra no item 7, junto com a mudança da barra para o HUD, que é o que torna a
-    // pausa linear.
+    // E AGORA O ANEL DÁ A VOLTA — item 7: com a barra no HUD a pausa virou lista, e a XAG 106 passa a
+    // RECOMENDAR o laço em vez de proibi-lo. A volta tem de cair no primeiro da lista VISÍVEL, nunca no
+    // primeiro do markup, que é um item do submenu escondido.
     const { nav } = boot();
     showPauses();
     const menu = $('#sp0');
@@ -317,9 +322,8 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     expect(escondidos.length).toBeGreaterThan(0); // há mesmo lista escondida para atravessar
     nav.pauseSetSel(menu, visiveis[visiveis.length - 1]);
     nav.navPause(menu, 0, K({ down: true }));
-    nav.navPause(menu, 0, K({ right: true }));
     expect(escondidos.some((b) => b.classList.contains('pm-sel')), 'o cursor entrou na lista escondida').toBe(false);
-    expect(visiveis[visiveis.length - 1].classList.contains('pm-sel')).toBe(true);
+    expect(visiveis[0].classList.contains('pm-sel'), 'a volta tem de cair no primeiro VISÍVEL').toBe(true);
   });
 
   it('[Right] "não" dentro do submenu de opções volta à RAIZ, e não ao jogo', () => {
@@ -343,16 +347,19 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     expect(log.phase).toContain('playing');
   });
 
-  it('a FRONTEIRA é atravessável nos dois sentidos e volta para onde saiu', () => {
+  it('[Right] a PROMESSA do ADR-0044, no DOM: `quit` a uma tecla de `resume`', () => {
+    // ESTE CASO SUBSTITUI o da FRONTEIRA ícones↔itens, que não existe mais. E a substituição é o desfecho:
+    // enquanto havia fronteira, "para cima" no primeiro item subia para a barra de ícones. Agora sobe para o
+    // ÚLTIMO item da lista — que é `quit` na produção. Longe na leitura, vizinho no dedo.
     const { nav } = boot();
     showPauses();
     const menu = $('#sp0');
-    const items = [...menu.querySelectorAll('.pm-btn')], icons = [...menu.querySelectorAll('.pi-btn')];
-    nav.pauseSetSel(menu, items[1]);                     // 1ª linha, 2ª coluna
+    const itens = [...menu.querySelectorAll('.pause-menu:not([hidden]) .pm-btn')];
+    nav.pauseSetSel(menu, itens[0]);
     nav.navPause(menu, 0, K({ up: true }));
-    expect(icons[1].classList.contains('pi-sel')).toBe(true); // subiu para o ícone de MESMO índice
+    expect(itens[itens.length - 1].classList.contains('pm-sel'), 'para cima no primeiro tem de cair no último').toBe(true);
     nav.navPause(menu, 0, K({ down: true }));
-    expect(items[0].classList.contains('pm-sel')).toBe(true); // desceu para o PRIMEIRO item (Continuar)
+    expect(itens[0].classList.contains('pm-sel'), 'e para baixo no último volta ao primeiro').toBe(true);
   });
 
   it('"sim" marca quem agiu como pauseActor e clica o item selecionado', () => {

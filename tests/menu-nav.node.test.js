@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   KEY_YES, KEY_NO, KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, PAUSE_COLS,
-  menuKeyIntent, hasIntent, passoNoAnel, selectStep, selectWrap, rangeStep, pauseGridMove,
+  menuKeyIntent, hasIntent, passoNoAnel, selectStep, selectWrap, rangeStep, passoNaPausa,
 } from '../app/js/ui/menu-nav.js';
 
 const NONE = { yes: false, no: false, up: false, down: false, left: false, right: false };
@@ -105,78 +105,54 @@ describe('passos de lista e de controle', () => {
   });
 });
 
-describe('pauseGridMove — a grade do menu de pausa e a fronteira ícones↔itens', () => {
-  const ICONS = 10, ITEMS = 8; // números da vida real: 10 `.pi-btn`, ~8 `.pm-btn`
+describe('passoNaPausa — a pausa virou LISTA, e a lista virou anel', () => {
+  // ESTE BLOCO SUBSTITUI o de `pauseGridMove`, e a substituição é o desfecho do ADR-0044.
+  //
+  // O que havia era uma GRADE de duas zonas — dez ícones de a11y em cima, oito itens em duas colunas embaixo —
+  // com quatro regras de fronteira próprias: "de cima, 'baixo' cai sempre no primeiro item"; "da primeira
+  // linha, 'cima' sobe para o ícone de MESMO índice"; "preso ao último ícone se a barra for mais curta"; "sem
+  // ícone nenhum, 'cima' vira passo de linha". Onze casos existiam para pinar isso, e cada regra era uma coisa
+  // a mais para a criança descobrir sem ver — e nenhuma delas era descobrível: só se aprendia esbarrando.
+  //
+  // A barra saiu para o HUD (item 7) e o cartão virou uma lista. A XAG 106 permite laço para menu LINEAR e o
+  // proíbe para grade 2-D; com uma lista só, o que era proibido virou o recomendado. As quatro regras somem e
+  // sobra UMA, que se enuncia numa frase: depois do último vem o primeiro, e antes do primeiro vem o último.
+  const N = 7; // os sete itens da pausa (ADR-0044 §2)
 
-  it('na barra de ícones, esquerda/direita andam preso nas pontas', () => {
-    expect(pauseGridMove({ zone: 'icons', index: 0 }, only('left'), ICONS, ITEMS)).toEqual({ zone: 'icons', index: 0 });
-    expect(pauseGridMove({ zone: 'icons', index: 9 }, only('right'), ICONS, ITEMS)).toEqual({ zone: 'icons', index: 9 });
-    expect(pauseGridMove({ zone: 'icons', index: 3 }, only('right'), ICONS, ITEMS)).toEqual({ zone: 'icons', index: 4 });
+  it('[Right] baixo e direita andam para a frente; cima e esquerda, para trás', () => {
+    expect(passoNaPausa(N, 0, only('down'))).toBe(1);
+    expect(passoNaPausa(N, 0, only('right'))).toBe(1);
+    expect(passoNaPausa(N, 3, only('up'))).toBe(2);
+    expect(passoNaPausa(N, 3, only('left'))).toBe(2);
   });
 
-  it('"cima" na barra de ícones NÃO sai da barra (não há nada acima)', () => {
-    expect(pauseGridMove({ zone: 'icons', index: 4 }, only('up'), ICONS, ITEMS)).toEqual({ zone: 'icons', index: 4 });
+  it('[Right] a PROMESSA do ADR-0044: `quit` a uma tecla de `resume`', () => {
+    // `resume` é o item 0 e `quit` é o 6. Uma tecla para CIMA no primeiro chega no último — longe na leitura,
+    // vizinho no dedo. É a frase que abriu o registro, e é este caso que a torna verdadeira ou falsa.
+    expect(passoNaPausa(N, 0, only('up')), 'para cima em `resume` tem de cair em `quit`').toBe(N - 1);
+    expect(passoNaPausa(N, N - 1, only('down')), 'para baixo em `quit` tem de voltar a `resume`').toBe(0);
   });
 
-  // FRONTEIRA, sentido descida. Regra: cai sempre no PRIMEIRO item (Continuar), nunca no alinhado por coluna.
-  it('"baixo" na barra cai no PRIMEIRO item, venha de qual ícone vier', () => {
-    for (const i of [0, 5, 9]) {
-      expect(pauseGridMove({ zone: 'icons', index: i }, only('down'), ICONS, ITEMS)).toEqual({ zone: 'items', index: 0 });
-    }
+  it('[Boundary] cursor perdido (índice negativo) entra como 0 — verbatim do `if(idx<0)idx=0`', () => {
+    // Preservado do comportamento antigo: um menu que acabou de abrir sem seleção não pode fazer o cursor
+    // aparecer no meio da lista. Ele entra pelo começo, ande-se para onde se andar.
+    expect(passoNaPausa(N, -1, only('down'))).toBe(1);
+    expect(passoNaPausa(N, -1, only('up'))).toBe(N - 1);
   });
 
-  // FRONTEIRA, sentido subida. Só a PRIMEIRA LINHA sobe para a barra; da segunda em diante é passo de linha.
-  it('"cima" da 1ª linha de itens sobe para a barra, no ícone de mesmo índice', () => {
-    expect(pauseGridMove({ zone: 'items', index: 0 }, only('up'), ICONS, ITEMS)).toEqual({ zone: 'icons', index: 0 });
-    expect(pauseGridMove({ zone: 'items', index: 1 }, only('up'), ICONS, ITEMS)).toEqual({ zone: 'icons', index: 1 });
+  it('[Zero] lista vazia não estoura e não inventa índice', () => {
+    expect(passoNaPausa(0, 0, only('down'))).toBe(0);
   });
 
-  it('"cima" da 2ª linha em diante sobe UMA LINHA (não vai para a barra)', () => {
-    expect(pauseGridMove({ zone: 'items', index: 2 }, only('up'), ICONS, ITEMS)).toEqual({ zone: 'items', index: 0 });
-    expect(pauseGridMove({ zone: 'items', index: 5 }, only('up'), ICONS, ITEMS)).toEqual({ zone: 'items', index: 3 });
-  });
-
-  it('barra com MENOS ícones que colunas: a subida prende no último ícone', () => {
-    expect(pauseGridMove({ zone: 'items', index: 1 }, only('up'), 1, ITEMS)).toEqual({ zone: 'icons', index: 0 });
-  });
-
-  it('sem ícone nenhum, "cima" da 1ª linha vira passo de linha e o cursor NÃO some', () => {
-    expect(pauseGridMove({ zone: 'items', index: 1 }, only('up'), 0, ITEMS)).toEqual({ zone: 'items', index: 0 });
-  });
-
-  it('nos itens, baixo/cima pulam de LINHA (2 colunas) e esquerda/direita pulam de item', () => {
-    expect(PAUSE_COLS).toBe(2);
-    expect(pauseGridMove({ zone: 'items', index: 0 }, only('down'), ICONS, ITEMS)).toEqual({ zone: 'items', index: 2 });
-    expect(pauseGridMove({ zone: 'items', index: 0 }, only('right'), ICONS, ITEMS)).toEqual({ zone: 'items', index: 1 });
-    expect(pauseGridMove({ zone: 'items', index: 3 }, only('left'), ICONS, ITEMS)).toEqual({ zone: 'items', index: 2 });
-  });
-
-  it('nos itens, as pontas prendem (a última linha não some pelo fim)', () => {
-    expect(pauseGridMove({ zone: 'items', index: 7 }, only('down'), ICONS, ITEMS)).toEqual({ zone: 'items', index: 7 });
-    expect(pauseGridMove({ zone: 'items', index: 6 }, only('down'), ICONS, ITEMS)).toEqual({ zone: 'items', index: 7 });
-    expect(pauseGridMove({ zone: 'items', index: 0 }, only('left'), ICONS, ITEMS)).toEqual({ zone: 'items', index: 0 });
-  });
-
-  it('índice negativo (cursor perdido) entra como 0 — verbatim do `if(idx<0)idx=0`', () => {
-    expect(pauseGridMove({ zone: 'items', index: -1 }, only('right'), ICONS, ITEMS)).toEqual({ zone: 'items', index: 1 });
-  });
-
-  it('TODO item da grade é alcançável a partir de Continuar só com cima/baixo/esquerda/direita', () => {
-    // Right-BICEP (Cross-check): a varredura prova o que os casos pontuais só sugerem — que a grade não tem
-    // buraco. Se ela tiver, alguém não consegue chegar num item do menu sem mouse.
-    const seen = new Set();
-    const fila = [JSON.stringify({ zone: 'items', index: 0 })];
-    while (fila.length) {
-      const cur = JSON.parse(fila.shift());
-      const key = JSON.stringify(cur);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      for (const g of ['up', 'down', 'left', 'right']) {
-        fila.push(JSON.stringify(pauseGridMove(cur, only(g), ICONS, ITEMS)));
-      }
-    }
-    for (let i = 0; i < ITEMS; i++) expect(seen.has(JSON.stringify({ zone: 'items', index: i })), 'item ' + i).toBe(true);
-    for (let i = 0; i < ICONS; i++) expect(seen.has(JSON.stringify({ zone: 'icons', index: i })), 'ícone ' + i).toBe(true);
+  it('[Many] TODO item é alcançável a partir de `resume` só com baixo — e a volta fecha', () => {
+    // O caso que o bloco antigo tinha em forma de busca em largura sobre uma grade. Numa lista ele cabe numa
+    // linha, e é essa a economia: a estrutura que precisa de busca em largura para se provar navegável é a
+    // estrutura que a criança precisa explorar às cegas para aprender.
+    const vistos = new Set();
+    let i = 0;
+    for (let passo = 0; passo < N; passo++) { vistos.add(i); i = passoNaPausa(N, i, only('down')); }
+    expect(vistos.size).toBe(N);
+    expect(i, 'depois de N passos o cursor tem de estar de volta no começo').toBe(0);
   });
 });
 

@@ -333,6 +333,22 @@ export function mostrarSubmenuDaPausa(sp: HTMLElement, sub: PauseSub): HTMLEleme
   return primeiro;
 }
 
+/**
+ * A BARRA RÁPIDA DE ACESSIBILIDADE — dez alternadores e a legenda que os explica (ADR-0044, item 7).
+ *
+ * Saiu do cartão de pausa e passou a viver no HUD. O motivo é de uso, não de arrumação: é DURANTE a partida
+ * que uma criança precisa mudar um ajuste que está a atrapalhando, e não depois de pausar. E o motivo
+ * secundário é estrutural — sem ela, o cartão deixa de ter duas zonas e vira uma LISTA, o que é o que
+ * finalmente autoriza o anel (a XAG 106 permite laço para menu linear e o proíbe para grade).
+ *
+ * A LEGENDA VIAJA JUNTO. Ela é a dica que substitui, para quem não vê, o `title` que só o mouse revela;
+ * deixá-la no cartão tornaria a barra do HUD muda.
+ */
+export function quickBarMarkup(): string {
+  return '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup() +
+    '</div><p class="pause-icons-cap" aria-live="polite"></p>';
+}
+
 export interface ScreenPauseMarkupOpts {
   /** Screen/player index (0-based); the dialog label and the "· Jogador N" suffix are 1-based. */
   player: number;
@@ -350,7 +366,6 @@ export interface ScreenPauseMarkupOpts {
 /** The full innerHTML of a `.screen-pause`. Pure — every input is a parameter. */
 export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
   return '<div class="pause-card" role="dialog" aria-modal="true" aria-label="Menu de pausa do jogador ' + (o.player + 1) + '">' +
-    '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup() + '</div><p class="pause-icons-cap" aria-live="polite"></p>' +
     '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>' + (o.numPlayers > 1 ? ' · Jogador ' + (o.player + 1) : '') + '</h2>' +
     pauseMenuHtml(o.pmButtons, 'raiz', o.dynLabel, o.t) +
     pauseMenuHtml(o.optionsButtons, 'opcoes', o.dynLabel, o.t) +
@@ -376,6 +391,14 @@ export interface PauseIconsCtx {
   srAlert: (text: string) => void;
 
   // --- the per-screen pause menu ---
+  /**
+   * As BARRAS RÁPIDAS por tela (`.screen-a11y`), na ordem dos jogadores.
+   *
+   * Existe pelo mesmo motivo de `getPauseScreens`: `buildGameHud` REATRIBUI a array a cada remontagem, então
+   * o que se injeta é o getter e não a array. E existe separada da pausa porque, desde o item 7, a barra não
+   * mora mais dentro dela — o daltonismo é POR JOGADOR, e refletir os ícones exige achar a barra daquela tela.
+   */
+  getA11yBars: () => readonly HTMLElement[];
   /** PM_OPTIONS_BTNS — o submenu de opções. Mesma dona, mesmo motivo: ninguém tem duas cópias de uma lista. */
   optionsButtons: readonly PauseMenuButton[];
   /** PM_BTNS — the `.pm-btn` list. Owned by ui/activities-menu; injected, never copied. */
@@ -436,6 +459,10 @@ export interface PauseIconsCtx {
 export interface PauseIconsApi {
   /** Builds one `.screen-pause` (hidden), wired for click + hover/focus caption. Caller appends it. */
   buildScreenPause: (i: number) => HTMLElement;
+  /** Monta a BARRA RÁPIDA (`.screen-a11y`) da tela `i`, já fiada. Chamada por ui/hud.ts, uma por tela. */
+  buildQuickBar: (i: number) => HTMLElement;
+  /** Põe o cursor no primeiro ícone da barra da tela `i` — é o que o item `acessibilidade` da pausa faz. */
+  entrarNaBarra: (i: number) => void;
   /** Runs the icon `k` for screen `i`. Does NOT reflect — callers reflect after, as game.js always did. */
   iconAct: (k: string, i: number) => void;
   /** The state-reflecting `aria-label` of icon `k` for screen `i`. */
@@ -578,8 +605,12 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     root.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => reflectIconBtn(b, i));
   }
 
+  /**
+   * Reflete os ícones de TODAS as telas. Varre as BARRAS e não mais os cartões de pausa: desde o item 7 do
+   * ADR-0044 os ícones vivem no HUD, e um cartão de pausa não contém `.pi-btn` nenhum.
+   */
   function reflectPauseIcons(): void {
-    ctx.getPauseScreens().forEach((sp, i) => reflectIconsIn(sp, i));
+    ctx.getA11yBars().forEach((bar, i) => reflectIconsIn(bar, i));
   }
 
   // --- the pause screen ----------------------------------------------------------------------
@@ -598,6 +629,24 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     ctx.srSay(anunciarItem(
       { rotulo: primeiro.textContent || '', posicao: 1, total: itens.length }, menuIndexOn,
     ));
+  }
+
+  /**
+   * Põe o cursor no primeiro ícone da barra rápida DAQUELA tela, e anuncia.
+   *
+   * É o que o item `acessibilidade` da pausa faz. A barra vive no HUD desde o item 7, então "entrar nela" é
+   * mover o cursor para fora do cartão — e é por isso que a saída do modo precisa ser dita em voz alta junto
+   * (ver `sr.a11y.barEnter`): um modo em que se entra sem saber como sair é a armadilha que este ADR desfaz.
+   */
+  function entrarNaBarra(i: number): void {
+    const bar = ctx.getA11yBars()[i];
+    const primeiro = bar && bar.querySelector<HTMLElement>('.pi-btn');
+    if (!bar || !primeiro) return;
+    bar.querySelectorAll<HTMLElement>('.pi-sel').forEach((x) => x.classList.remove('pi-sel'));
+    primeiro.classList.add('pi-sel');
+    const cap = bar.querySelector('.pause-icons-cap');
+    if (cap) cap.textContent = legendaDoIcone(bar, primeiro);
+    ctx.srSay(legendaDoIcone(bar, primeiro));
   }
 
   function buildScreenPause(i: number): HTMLElement {
@@ -622,45 +671,52 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         // `acessibilidade` leva o cursor à BARRA RÁPIDA. Enquanto ela mora dentro do cartão, "entrar no modo"
         // é pôr o cursor nela — e a saída continua sendo a saída da pausa, que é a mesma de sempre. Quando o
         // item 7 levar a barra para o HUD, esta linha o segue; o que o item SIGNIFICA não muda.
-        if (act === 'acessibilidade') {
-          const primeiro = sp.querySelector<HTMLElement>('.pi-btn');
-          if (primeiro) {
-            sp.querySelectorAll<HTMLElement>('.pm-sel,.pi-sel').forEach((x) => x.classList.remove('pm-sel', 'pi-sel'));
-            primeiro.classList.add('pi-sel');
-            const cap = sp.querySelector('.pause-icons-cap');
-            if (cap) cap.textContent = legendaDoIcone(sp, primeiro);
-            ctx.srSay(legendaDoIcone(sp, primeiro));
-          }
-          return;
-        }
+        if (act === 'acessibilidade') { entrarNaBarra(i); return; }
         const acts = ctx.getPauseActs();
         const fn = acts[act];
         if (fn) fn();
         return;
       }
-      const ib = target && target.closest<HTMLElement>('.pi-btn');
-      if (ib) {
-        ctx.setPauseActor(i);
-        iconAct(ib.dataset.pi || '', i);
-        reflectPauseIcons(); // must run BEFORE reading the label back — that is what makes the caption honest
-        const cp = sp.querySelector('.pause-icons-cap');
-        if (cp) cp.textContent = legendaDoIcone(sp, ib);
-      }
-    });
-
-    // Caption = the button's aria-label, so hovering/focusing an icon speaks the SAME state text a screen
-    // reader would announce. One source of truth for sighted and non-sighted players.
-    const cap = sp.querySelector('.pause-icons-cap');
-    sp.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => {
-      const show = (): void => { if (cap) cap.textContent = legendaDoIcone(sp, b); };
-      b.addEventListener('mouseenter', show);
-      b.addEventListener('focus', show);
     });
     return sp;
   }
 
+  /**
+   * A BARRA RÁPIDA de uma tela: os dez alternadores, a legenda, e a fiação dos dois.
+   *
+   * Ela é IRMÃ da `.screen-exp` e não filha, e isso é a decisão do #82 aplicada: a barra é CONTROLE, não
+   * experiência. O modo empatia degrada a experiência de propósito — simulação é criar dificuldade onde a
+   * facilidade não existe —, e degradar o que existe para DAR acesso seria o contrário do que ele serve.
+   */
+  function buildQuickBar(i: number): HTMLElement {
+    const bar = document.createElement('div');
+    bar.className = 'screen-a11y';
+    bar.dataset.player = String(i);
+    bar.innerHTML = quickBarMarkup();
+
+    const cap = bar.querySelector('.pause-icons-cap');
+    bar.addEventListener('click', (e) => {
+      const ib = (e.target as Element | null)?.closest<HTMLElement>('.pi-btn');
+      if (!ib) return;
+      ctx.setPauseActor(i);
+      iconAct(ib.dataset.pi || '', i);
+      reflectPauseIcons(); // must run BEFORE reading the label back — that is what makes the caption honest
+      if (cap) cap.textContent = legendaDoIcone(bar, ib);
+    });
+
+    // Legenda = o `aria-label` do botão, para que passar o mouse ou focar diga a MESMA verdade que um leitor
+    // de tela anunciaria. Uma fonte só para quem vê e para quem escuta.
+    bar.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => {
+      const show = (): void => { if (cap) cap.textContent = legendaDoIcone(bar, b); };
+      b.addEventListener('mouseenter', show);
+      b.addEventListener('focus', show);
+    });
+    return bar;
+  }
+
   return {
-    buildScreenPause, iconAct, iconLabel, reflectIconBtn, reflectIconsIn, reflectPauseIcons,
+    buildScreenPause, buildQuickBar, entrarNaBarra,
+    iconAct, iconLabel, reflectIconBtn, reflectIconsIn, reflectPauseIcons,
     applyCalm, getCalmMode: () => calmMode, setCalmMode: (n) => { calmMode = n; }, iconState,
   };
 }

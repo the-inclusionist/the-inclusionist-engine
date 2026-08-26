@@ -918,6 +918,7 @@ function ensureSprites(){
 }
 let vpTex: RenderTextureLike[] = [], vpSpr: SpriteLike[] = [], vpFrames: GraphicsLike | null = null, vpDots: GraphicsLike[] = [];
 // HUD por jogador em DOM SOBREPOSTO (alta definição, não pixela): moedas (1ª coluna) + poder (2ª coluna), por viewport.
+let vpBars: HTMLElement[] = [];  // as BARRAS RÁPIDAS por tela (ADR-0044, item 7) — REATRIBUÍDA por buildGameHud
 let vpPause: HTMLElement[] = []; // `pauseActor` migrou para core/state.js (#50). gameHudEl/vpHudDom/vpQuitDom/vpScreens -> ui/hud.ts
 // Menu de pausa POR TELA (Etapa 2): um por jogador, dentro da .player-screen dele.
 // Barra de atalhos de a11y no topo da pausa (por tela). Sons (cego/TTS) só com saída própria; webcam/voz em construção.
@@ -938,6 +939,7 @@ const pauseIcons = initPauseIcons({
   getPauseActs: () => pauseActs,            // LAZY: pauseActs e const bem abaixo (TDZ)
   setPauseActor: (i) => rodada.setPauseActor(i),
   getPauseScreens: () => vpPause,           // buildGameHud REATRIBUI vpPause -> getter, nao a array
+  getA11yBars: () => vpBars,                // idem: `let` reatribuido a cada remontagem do HUD
   getModoCego: () => modoCego, setModoCego,
   getAudioCat: () => audioCat, setCatGain,
   reflectTtsPanel: () => audioPanel.reflectTts(), // LAZY: audioPanel e const bem abaixo
@@ -985,6 +987,8 @@ const hud = initHud({
   hudIcon: '🪙',
   $, powerShort: POWER_SHORT,
   buildScreenPause: (i) => pauseIcons.buildScreenPause(i),
+  buildQuickBar: (i) => pauseIcons.buildQuickBar(i),
+  onBarsBuilt: (bars) => { vpBars = bars; },
   onScreensBuilt: (panes) => { vpPause = panes;
     // No 1o build do init, LETRA/PAD_DESIGNS ainda estao em TDZ — o try/catch ignora e o fluxo de init
     // preenche logo depois. Preservado verbatim, inclusive o engolir de qualquer erro.

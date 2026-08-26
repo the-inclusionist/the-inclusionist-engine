@@ -113,6 +113,10 @@ function buildCtx(over = {}) {
     getPauseActs: () => state.acts,
     setPauseActor: (i) => { state.pauseActor = i; },
     getPauseScreens: () => state.screens,
+    // As BARRAS RÁPIDAS (ADR-0044, item 7): desde que elas saíram do cartão, é aqui que os ícones vivem, e é
+    // por aqui que `reflectPauseIcons` os encontra. Os testes que exercitam o reflexo alimentam `state.bars`;
+    // os que só olham o markup do cartão deixam a lista vazia — e o reflexo então não faz nada, corretamente.
+    getA11yBars: () => state.bars || state.screens,
     getModoCego: () => state.modoCego,
     setModoCego: (on) => { state.modoCego = on; },
     getAudioCat: () => state.audioCat,
@@ -406,11 +410,14 @@ describe('markup dos ícones e do menu', () => {
     }
   });
 
-  it('ZERO botões de menu: o cartão, a barra, a legenda e o rodapé continuam lá', () => {
+  it('ZERO botões de menu: o cartão, o título, as duas listas e o rodapé continuam lá', () => {
     const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
     expect(h).toContain('class="pause-card" role="dialog" aria-modal="true"');
-    expect(h).toContain('class="pause-icons" role="group"');
-    expect(h).toContain('class="pause-icons-cap" aria-live="polite"');
+    // A BARRA e a LEGENDA saíram do cartão no item 7 do ADR-0044 — vivem no HUD, em `quickBarMarkup`. Este
+    // caso passa a AFIRMAR a ausência: se elas voltarem para cá, a pausa volta a ser grade de duas zonas e o
+    // anel do `passoNaPausa` volta a ser proibido pela XAG 106.
+    expect(h).not.toContain('pause-icons');
+    expect(h).not.toContain('pi-btn');
     // DUAS listas desde o item 5 do ADR-0044: a raiz visível e as opções escondidas.
     expect(h).toContain('<div class="pause-menu" role="menu" data-sub="raiz"></div>');
     expect(h).toContain('<div class="pause-menu" role="menu" data-sub="opcoes" hidden></div>');

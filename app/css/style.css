@@ -207,11 +207,26 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
    crianças, onde os dedos disputam espaço — o pior lugar possível para encolher um alvo de toque. O cartão
    tem `overflow:auto` e rola; o botão não diminui. */
 .screen-pause .pm-btn{padding:.3rem .7rem}
-.screen-pause .pause-icons{margin:.04rem 0 .16rem;gap:.3rem}
 .screen-pause .pause-legend{margin:.28rem 0 0}
 /* Atalhos de a11y = botões do menu em forma de ícone, DENTRO do card (sem barra/sombra própria).
    Navegáveis por teclado (cima a partir de Continuar) e por toque/clique. */
 .pause-icons{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;align-items:center;margin:.1rem 0 .35rem}
+/* ===================== A BARRA RÁPIDA NO HUD (ADR-0044, item 7) =====================
+   Ela saiu do cartão de pausa e passou a viver na tela do jogador, disponível DURANTE a partida — que é
+   quando uma criança precisa mudar um ajuste que está a atrapalhando, e não depois de pausar.
+
+   É IRMÃ da `.screen-exp` e não filha, e a razão é o #82: `filter` de CSS desce para os descendentes e um
+   filho não consegue cancelá-lo. Dentro da experiência, o modo empatia degradaria justamente o que existe
+   para DAR acesso — e simulação não é acessibilidade, é o contrário dela.
+
+   `pointer-events:auto` porque a `.player-screen` inteira é `none` (o jogo recebe o toque); os dez ícones
+   são a exceção, como o cartão de pausa já era. */
+.screen-a11y{position:absolute;left:0;right:0;top:4px;z-index:5;pointer-events:auto;font-family:var(--font);font-size:var(--ui-fs,16px)}
+.screen-a11y .pause-icons{flex-wrap:nowrap;white-space:nowrap;gap:.25rem;margin:0}
+/* A legenda da barra: mesmo lugar e mesmo desenho do rodapé da pausa, mas colada ABAIXO dos ícones. Aparece
+   só quando tem o que dizer — uma faixa escura permanente e vazia comeria a tela do jogo. */
+.screen-a11y .pause-icons-cap{margin:.2rem auto 0;max-width:92%;text-align:center;font-size:.8em;color:#f6f5f0}
+.screen-a11y .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px;padding:.2em .6em;width:fit-content}
 .pi-btn{width:var(--tap);height:var(--tap);min-width:var(--tap);min-height:var(--tap);border-radius:10px;border:2px solid var(--ink-soft);background:#1a2740;font-size:1.25em;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 /* Wizard de gamepad: demonstração com ANIMAÇÃO REAL (frames do jogo trocados via JS) + deslocamento CSS */
 #padwiz-demo{height:86px;display:flex;align-items:flex-end;justify-content:center;position:relative;margin:.15rem 0 .4rem;overflow:hidden}
@@ -260,8 +275,11 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
    Era `grid-template-columns:1fr 1fr`, e a grade contava a mesma mentira dos submenus da abertura: a seta
    anda em ordem de DOM, então "para baixo" pulava para a coluna da direita. Uma coluna, e o que se vê volta
    a ser a ordem em que se anda.
-   CENTRADA E MAIS LARGA: 26rem contra os 262 px medidos antes — o número está no gate, não na opinião. */
-.pause-menu{display:flex;flex-direction:column;gap:.45rem;width:min(26rem,100%);margin:0 auto}
+   CENTRADA E MAIS LARGA: 26rem contra os 262 px medidos antes — o número está no gate, não na opinião.
+   `width` e não `min(26rem,100%)`: com a barra de ícones fora do cartão (item 7), o cartão passou a se
+   encolher ao conteúdo, e um `100%` medido contra ele virava circular — a lista caiu para 182 px. Quem
+   declara a largura é a LISTA; o cartão a acompanha até o `max-width` dele. */
+.pause-menu{display:flex;flex-direction:column;gap:.45rem;width:26rem;max-width:100%;margin:0 auto}
 /* A lista ESCONDIDA tem de sumir de verdade: `display:grid` de autor vence o `[hidden]{display:none}` do
    navegador, e sem esta linha as duas listas do cartão de pausa apareceriam empilhadas (ADR-0044, item 5). */
 .pause-menu[hidden]{display:none}

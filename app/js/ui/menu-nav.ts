@@ -158,7 +158,7 @@ export function menuKeyIntent(code: string, act: string | null): NavKeys {
 import { hasNavIntent as hasIntent } from '../input/edges.js';
 import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
-import { legendaDoIcone, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from './pause-icons.js';
+import { mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from './pause-icons.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
 /**
@@ -170,8 +170,9 @@ export { hasNavIntent as hasIntent } from '../input/edges.js';
  * enxerga não varre a lista à procura do fim — ela pergunta "e antes do primeiro?" e recebe uma resposta.
  *
  * A XAG 106 permite o anel exatamente para menu LINEAR, e o proíbe para grade 2-D de blocos: ali "voltar ao
- * primeiro" não tem significado espacial. É por isso que `pauseGridMove`, que ainda é grade de duas zonas,
- * NÃO usa isto — ele passa a usar quando a pausa virar lista única (item 5 do ADR-0044).
+ * primeiro" não tem significado espacial. Era por isso que o menu de PAUSA ficava de fora: enquanto a barra
+ * de dez ícones morasse dentro do cartão, ele era grade de duas zonas. Com a barra no HUD (item 7), o cartão
+ * virou lista e `passoNaPausa` passou a usar isto — o último menu do jogo a entrar no anel.
  *
  * ⚠️ NAVEGAR LISTA É ANEL; AJUSTAR VALOR É LIMITE. `selectStep` e `rangeStep` continuam presos nas pontas
  * logo abaixo, e a diferença é real: passar do volume máximo para o mínimo com uma tecla é um susto, não uma
@@ -198,38 +199,26 @@ export function rangeStep(value: number, min: number, max: number, step: number,
   return Math.max(min, Math.min(max, value + delta * st));
 }
 
-/** Onde está o cursor do menu de pausa: na barra de ícones de a11y, ou na lista de itens. */
-export type PauseZone = 'icons' | 'items';
-export interface PauseCursor { zone: PauseZone; index: number }
-
-/** A lista de itens do menu de pausa é uma GRADE de 2 colunas — cima/baixo pulam de linha, não de item. */
-export const PAUSE_COLS = 2;
-
 /**
- * O movimento do cursor no menu de pausa, incluindo a FRONTEIRA entre a barra de ícones (horizontal, uma
- * linha) e a lista de itens (grade de `cols` colunas). Verbatim de `navPause`, e é aqui que mora a regra de
- * acessibilidade que mais se quebra sem ninguém ver:
- *   · da barra de ícones, "baixo" cai no PRIMEIRO item (Continuar) — nunca no item alinhado por coluna;
- *   · da barra de ícones, "cima" NÃO sai (fica onde está) — não há nada acima;
- *   · da PRIMEIRA LINHA de itens (`index < cols`), "cima" sobe para a barra, no ícone de MESMO índice, preso
- *     ao último ícone se a barra for mais curta; se não houver ícone nenhum, "cima" vira um passo de linha.
- * `yes`/`no` não chegam aqui (o chamador os trata antes). Índice negativo entra como 0, como no original.
+ * O PASSO DO CURSOR NO MENU DE PAUSA — um ANEL, agora que a pausa é uma lista (ADR-0044, itens 1 e 7).
+ *
+ * ISTO SUBSTITUI `pauseGridMove`, e a substituição é o desfecho do ADR-0044, não uma limpeza. O que havia
+ * era uma GRADE de duas zonas — a barra de dez ícones em cima, a lista de itens em duas colunas embaixo — e
+ * uma fronteira entre elas com quatro regras próprias ("de cima, 'baixo' cai sempre no primeiro item", "da
+ * primeira linha, 'cima' sobe para o ícone de mesmo índice", …). Cada regra dessas era uma coisa a mais para
+ * a criança descobrir sem ver, e nenhuma delas era descobrível: só se aprendia esbarrando.
+ *
+ * A XAG 106 permite laço para menu LINEAR e o PROÍBE para grade de duas dimensões — numa grade, dar a volta
+ * teleporta o cursor para o outro canto e a pessoa perde a noção de onde está. Era por isso que o anel do
+ * item 1 valia para todo menu do jogo MENOS este. Com a barra no HUD (item 7), o cartão passou a ter uma
+ * lista só, e o laço deixou de ser proibido para virar o recomendado.
+ *
+ * O que se ganha em troca das quatro regras: `quit` fica a UMA tecla para CIMA de `resume`. Último na
+ * leitura, vizinho no dedo.
  */
-export function pauseGridMove(cur: PauseCursor, k: NavKeys, iconsLen: number, itemsLen: number, cols = PAUSE_COLS): PauseCursor {
-  let idx = cur.index < 0 ? 0 : cur.index;
-  if (cur.zone === 'icons') {
-    if (k.left) idx = Math.max(0, idx - 1);
-    else if (k.right) idx = Math.min(iconsLen - 1, idx + 1);
-    else if (k.down) return { zone: 'items', index: 0 }; // desce da barra → menu (Continuar)
-    return { zone: 'icons', index: idx };                // "cima" na barra: fica
-  }
-  if (k.up) {
-    if (idx < cols && iconsLen) return { zone: 'icons', index: Math.min(idx, iconsLen - 1) }; // 1ª linha → barra
-    idx = Math.max(0, idx - cols);
-  } else if (k.down) idx = Math.min(itemsLen - 1, idx + cols);
-  else if (k.left) idx = Math.max(0, idx - 1);
-  else if (k.right) idx = Math.min(itemsLen - 1, idx + 1);
-  return { zone: 'items', index: idx };
+export function passoNaPausa(len: number, idx: number, k: NavKeys): number {
+  const d = (k.down || k.right) ? 1 : -1;
+  return passoNoAnel(len, idx < 0 ? 0 : idx, d);
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -378,15 +367,18 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
 
   /* ===================== menu de pausa (seleção por classe, não por foco) ===================== */
 
+  /**
+   * Move o cursor do menu de pausa. Só ITENS: desde o item 7 do ADR-0044 a barra de ícones vive no HUD, e o
+   * cursor dela é dela.
+   *
+   * O QUE SAIU DAQUI, e vale registrar: esta função também escrevia a legenda dos ícones, porque o cursor
+   * atravessava a fronteira entre as duas zonas. Sem a fronteira, escrever legenda de ícone a partir do menu
+   * de pausa seria um módulo mexendo na tela de outro.
+   */
   function pauseSetSel(menu: HTMLElement, el: HTMLElement | null | undefined): void {
-    if (!el) return; // índice fora da lista (barra vazia, menu vazio): não mexe em nada — verbatim
-    menu.querySelectorAll<HTMLElement>('.pm-sel,.pi-sel').forEach((b) => b.classList.remove('pm-sel', 'pi-sel'));
-    const isIcon = el.classList.contains('pi-btn');
-    el.classList.add(isIcon ? 'pi-sel' : 'pm-sel');
-    // A legenda `aria-live="polite"` narra o ícone sob o cursor — é ela que substitui, para quem não vê, o
-    // `title`/tooltip que só o mouse revela. Item comum limpa a legenda (o rótulo já está no próprio botão).
-    const cap = menu.querySelector<HTMLElement>('.pause-icons-cap');
-    if (cap) cap.textContent = isIcon ? legendaDoIcone(menu, el) : '';
+    if (!el) return; // índice fora da lista (menu vazio): não mexe em nada — verbatim
+    menu.querySelectorAll<HTMLElement>('.pm-sel').forEach((b) => b.classList.remove('pm-sel'));
+    el.classList.add('pm-sel');
   }
 
   function navPause(menu: HTMLElement, playerIndex: number, k: NavKeys): void {
@@ -399,21 +391,18 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       ctx.setPhase('playing'); return; // "não" na raiz → volta ao jogo (retoma todos)
     }
 
-    const icons = [...menu.querySelectorAll<HTMLElement>('.pi-btn')];
     const items = [...menu.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
-    const cur = menu.querySelector<HTMLElement>('.pi-sel') || menu.querySelector<HTMLElement>('.pm-sel') || items[0];
+    const cur = menu.querySelector<HTMLElement>('.pm-sel') || items[0];
 
     // "sim": o jogador que agiu vira o `pauseActor` (o submenu de a11y abre na aba dele) e o item é clicado.
     if (k.yes) { ctx.setPauseActor(playerIndex); if (cur) cur.click(); return; }
-    // Guarda NOVA (o original estouraria em `cur.classList` aqui): menu sem `.pm-btn` nenhum e sem ícone
-    // selecionado. Não é o defeito preservado — é um TypeError, e trocar um crash por um no-op não tira rede
-    // de conserto nenhum. Registrado por honestidade: é a única linha desta função que não é cópia literal.
+    // Guarda NOVA (o original estouraria em `cur.classList` aqui): menu sem `.pm-btn` nenhum. Não é o defeito
+    // preservado — é um TypeError, e trocar um crash por um no-op não tira rede de conserto nenhum.
     if (!cur) return;
 
-    const zone: PauseZone = cur.classList.contains('pi-btn') ? 'icons' : 'items';
-    const list = zone === 'icons' ? icons : items;
-    const next = pauseGridMove({ zone, index: list.indexOf(cur) }, k, icons.length, items.length);
-    pauseSetSel(menu, (next.zone === 'icons' ? icons : items)[next.index]);
+    // UMA LISTA, um anel. A barra de ícones saiu do cartão no item 7 do ADR-0044, e com ela saíram as quatro
+    // regras de fronteira que ninguém conseguia descobrir sem esbarrar.
+    pauseSetSel(menu, items[passoNaPausa(items.length, items.indexOf(cur), k)]);
   }
 
   /* ===================== teclado ===================== */

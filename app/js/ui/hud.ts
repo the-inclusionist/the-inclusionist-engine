@@ -165,11 +165,18 @@ export interface HudCtx {
    */
   buildScreenPause: (i: number) => HTMLElement;
   /**
+   * A BARRA RÁPIDA de acessibilidade da tela `i` (ui/pause-icons `buildQuickBar`). Anexada como IRMÃ da
+   * `.screen-exp`, e não dentro dela: a barra é CONTROLE, e o modo empatia não a alcança (issue #82).
+   */
+  buildQuickBar: (i: number) => HTMLElement;
+  /**
    * Chamado no FIM de buildGameHud() com os painéis de pausa recém-criados, em ordem de tela. É o gancho onde o
    * game.js reatribui `vpPause` (binding local dele) e roda o que o original rodava depois do laço
    * (applyLetra/renderPauseLegend). Opcional: sem ele o HUD monta igual, só não avisa ninguém.
    */
   onScreensBuilt?: (pausePanels: HTMLElement[]) => void;
+  /** As barras rápidas recém-montadas, na ordem das telas. A raiz guarda para o `getA11yBars`. */
+  onBarsBuilt?: (bars: HTMLElement[]) => void;
 }
 
 export interface HudApi {
@@ -199,6 +206,7 @@ export function initHud(ctx: HudCtx): HudApi {
     gameHudEl.innerHTML = '';
     vpHudDom = []; vpQuitDom = []; vpScreens = []; vpExpDom = [];
     const panes: HTMLElement[] = [];
+    const bars: HTMLElement[] = [];
     const n = ctx.getNumPlayers();
     for (let i = 0; i < screenCount(n); i++) {
       const r = screenRect(i, n);
@@ -229,6 +237,12 @@ export function initHud(ctx: HudCtx): HudApi {
       q.className = 'vphud-quit'; q.hidden = true; q.textContent = 'Jogo abandonado';
       exp.appendChild(q); vpQuitDom.push(q);
 
+      // A BARRA RÁPIDA entra entre a experiência e a pausa, e é IRMÃ das duas. Não vai DENTRO da
+      // `.screen-exp` porque `filter` de CSS desce para os descendentes e um filho não consegue cancelá-lo:
+      // ali dentro, o modo empatia degradaria justamente o que existe para dar acesso.
+      const bar = ctx.buildQuickBar(i);
+      scr.appendChild(bar); bars.push(bar);
+
       const sp = ctx.buildScreenPause(i);
       scr.appendChild(sp); panes.push(sp);
 
@@ -237,6 +251,7 @@ export function initHud(ctx: HudCtx): HudApi {
     // O original terminava com `vpPause` preenchido e dois efeitos DEFENSIVOS (applyLetra/renderPauseLegend em
     // try/catch, porque no 1º build do init LETRA/PAD_DESIGNS ainda estão em TDZ). Ambos são de OUTROS slices →
     // saem por este gancho, com o try/catch preservado no game.js. Ver "chamada defensiva" no relatório.
+    ctx.onBarsBuilt?.(bars);
     ctx.onScreensBuilt?.(panes);
   }
 

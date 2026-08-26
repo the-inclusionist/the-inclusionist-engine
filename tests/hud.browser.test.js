@@ -48,6 +48,9 @@ function makeCtx(over = {}) {
     }),
     hudIcon: '🎯',
     buildScreenPause: (i) => { built.push(i); return fakePause(i); },
+    // A BARRA RÁPIDA passou a ser montada aqui também (ADR-0044, item 7). Falsa como a pausa: o que este
+    // arquivo mede é a GRADE de telas, não o conteúdo do que se pendura nela.
+    buildQuickBar: (i) => { const b = document.createElement('div'); b.className = 'screen-a11y'; b.dataset.player = String(i); return b; },
     onScreensBuilt: (panes) => announced.push(panes),
     built, announced, // helpers de teste (não fazem parte de HudCtx)
     ...over,
