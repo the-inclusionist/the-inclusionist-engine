@@ -32,63 +32,19 @@ export function setPhaseValue(p: Phase): void { phase = p; emit('phase', p); }
 export let numPlayers = 1;
 export function setNumPlayersValue(n: number): void { numPlayers = n; emit('numPlayers', n); }
 
-// --- flora: densidade da grama e semente do decor. Parâmetros de GERAÇÃO do cenário (#69). ---
+// ========================= O RESTO DA RODADA SAIU DAQUI (ADR-0038, Fase B) =========================
+// `ended`, `decorSeed`, `grassDensity`, `selVizPlayer` e `pauseActor` foram para `core/run-state`, na
+// segunda fatia do passo 2. Nenhum deles persiste — que é o critério do corte —, e todos eram importados
+// APENAS pelo composition root, o que manteve a mudança em dois arquivos, como na primeira fatia.
 //
-// Migrados do composition root (#50), últimos da leva. Tinham a forma de sempre: um `let` do main.js com
-// acessórios feitos à mão — dois getters para o `render/scene-sky` e um par getter/setter no `__incl`.
+// O CLAMP do `grassDensity` foi junto, e ele é a razão de aquele setter existir: a fração vinha protegida só
+// para quem entrasse pelo `window.__incl`, e qualquer outro caminho podia gravar 5 ou -1. Deixá-lo para trás
+// transformaria a fábrica num `let` com nome novo.
 //
-// O CLAMP MORA NO SETTER, e é a razão de o setter existir. `grassDensity` é uma FRAÇÃO: 1 = todas as
-// superfícies com grama, 0.6 = 60% (a base das ESTAÇÕES que virão). Estava no `__incl`, ou seja, só quem
-// entrasse por ali era protegido — qualquer outro caminho podia escrever 5 ou -1 e o cenário nasceria errado
-// sem nada reclamar. Um valor com faixa válida que depende de quem escreve é um valor sem faixa válida.
-//
-// Nenhum dos dois PERSISTE: `decorSeed` é sorteado a cada fase de propósito (é o que faz duas partidas da
-// mesma fase não terem a mesma grama), e `grassDensity` é do cenário, não da pessoa.
-export let grassDensity = 1;
-export function setGrassDensityValue(v: number): void {
-  grassDensity = Math.max(0, Math.min(1, +v || 0));
-  emit('grassDensity', grassDensity);
-}
+// Falta a fatia grande — `players` e `numPlayers`, com 21 e 18 importadores — e, depois dela, a pilha de
+// cenas assumindo o `phase`.
 
-export let decorSeed = 0;
-export function setDecorSeedValue(s: number): void { decorSeed = s >>> 0; emit('decorSeed', decorSeed); }
 
-// --- pauseActor: QUEM abriu o menu de pausa. Define o ESCOPO de tudo o que se faz dentro dele. ---
-//
-// Migrado do composition root (#50) pelo mesmo critério do `selVizPlayer`: o próprio comentário que o cercava
-// já dizia "`let` com seis leitores", e havia QUATRO envoltórios `setPauseActor: (i) => { pauseActor = i; }`
-// espalhados pelo main.js, mais uma escrita direta. Cinco lugares reescrevendo a mesma variável à mão é a
-// definição de estado sem dono.
-//
-// Por que importa mais do que parece: no multiplayer em telas separadas, este índice é o que faz o menu de
-// pausa do jogador 2 editar as configurações DELE. Errar aqui não dá erro — dá a criança certa mexendo nos
-// ajustes da criança errada, em silêncio.
-//
-// NÃO é persistido: é quem apertou pausa agora, não uma preferência.
-export let pauseActor = 0;
-export function setPauseActorValue(i: number): void { pauseActor = i; emit('pauseActor', i); }
-
-// --- selVizPlayer: QUAL jogador os painéis de acessibilidade visual estão editando. ---
-//
-// Migrado do composition root (#50) pelo critério do ADR-0027: TRÊS superfícies o consultam — o painel visual,
-// o `render/viz-setters` e o `__incl` —, e cada uma recebia um par getter/setter fabricado à mão em volta de um
-// `let` do main.js. Estado que três módulos consultam não é do composition root, e enquanto for, `createGame()`
-// não consegue nascer sem levar o main.js junto.
-//
-// NÃO é persistido, e a distinção importa agora que todo menu persiste (ADR-0028): isto não é uma preferência,
-// é qual aba está aberta. Guardá-lo faria a criança reabrir o jogo já editando o jogador 2 sem ter pedido.
-export let selVizPlayer = 0;
-export function setSelVizPlayerValue(i: number): void { selVizPlayer = i; emit('selVizPlayer', i); }
-
-// --- cenario: tema visual ativo (cidade/campo/…; persistido em incl_cenario). A validação contra CENARIOS e
-//     o trabalho de textura ficam no setCenario() do game.js — aqui só o valor + persistência + evento. ---
-// `string` e não `string | null`, e o padrão mora AQUI, junto dos outros.
-//
-// Ele já era 'cidade': o `main.ts` lia `getComLegado(KEYS.cenario, …, 'cidade')` e chamava `setCenario`. Só
-// que essa chamada mora dentro de um `try/catch`, então o `null` era ALCANÇÁVEL — e seis módulos declaravam
-// `getCenario: () => string`, cada um confiando num boot que pode falhar. O tipo dizia a verdade e ninguém
-// a escutava.
-//
 // ========================= `cenario` E `activity` SAÍRAM DAQUI (ADR-0038, Fase B) =========================
 // Os dois eram estado de JOGO morando na engine — a mesma exceção que o `coins` e o `quizLevel` já haviam
 // deixado no item 19. O corte por LIFETIME do ADR-0038 os classifica como GAME: ambos são persistidos em
@@ -192,19 +148,6 @@ export function setModoCegoValue(on: boolean): void {
   modoCego = on; store.setBool('incl_modocego', on); emit('modoCego', on);
 }
 
-// --- ended: a rodada acabou (alguém juntou as 10 moedas). Lido no laço de atualização para não continuar
-//     simulando depois da vitória.
-//
-//     O irmão dele, o contador `collected`, NÃO veio junto — foi apagado. Era espelho de
-//     `players[0].collected`, mantido por três pontos de sincronia (physics, session e quiz), e lido em UM
-//     lugar só: o `window.__incl`. Três escritas para alimentar um getter de depuração, com a divergência
-//     silenciosa de brinde. Agora o `__incl` deriva do jogador. ---
-export let ended = false;
-export function setEndedValue(v: boolean): void {
-  const b = !!v;
-  if (ended === b) return;
-  ended = b; emit('ended', b);
-}
 
 // --- O ESTADO DO NÍVEL: portão, sólidos-só-cadeirante e power-ups.
 //

@@ -11,7 +11,8 @@
 // tela dentro do próprio setter, e por isso nenhum teste conseguia chamá-lo. A separação entre gravar e
 // reagir é o que torna este arquivo possível, então é ela que os casos protegem.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { modoCego, setModoCegoValue, setCaneBlockDivValue, setEndedValue, setLetterCaseValue, setCaptionsOnValue, on, off, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, setNumPlayersValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue } from '../app/js/core/state.js';
+import { modoCego, setModoCegoValue, setCaneBlockDivValue, setLetterCaseValue, setCaptionsOnValue,
+  on, off, defaultReducedMotion } from '../app/js/core/state.js';
 import * as store from '../app/js/platform/storage.js';
 
 // `modoCego` é um binding VIVO: reimportar não é preciso, mas ler o valor antigo de uma cópia local seria o
@@ -36,7 +37,7 @@ beforeEach(() => {
   setModoCegoValue(false); desinscrever = [];
 });
 afterEach(() => {
-  desinscrever.forEach((f) => f()); setModoCegoValue(false); setEndedValue(false); setLetterCaseValue('upper'); setCaptionsOnValue(true);
+  desinscrever.forEach((f) => f()); setModoCegoValue(false); setLetterCaseValue('upper'); setCaptionsOnValue(true);
   if (localAntigo === undefined) delete globalThis.localStorage; else globalThis.localStorage = localAntigo;
 });
 
@@ -119,21 +120,6 @@ describe('core/state — modoCego e o espaçamento da bengala', () => {
     expect(state.caneBlockDiv).toBe(1);
   });
 
-  it('[Right] `ended` grava e avisa — e não tinha teste nenhum antes desta migração', () => {
-    // `ended` é controle de fluxo de verdade: o laço de atualização faz `if (ended) return;` para parar de
-    // simular depois da vitória. Descobri que ninguém o cobria ao mutar o setter para não gravar e ver a
-    // suíte inteira passar. Um valor lido pelo laço principal do jogo e por nenhum teste é o pior dos dois
-    // mundos: importa e ninguém percebe se parar de funcionar.
-    const vistos = escuta('ended');
-    expect(state.ended).toBe(false);
-    setEndedValue(true);
-    expect(state.ended).toBe(true);
-    expect(vistos).toEqual([true]);
-    setEndedValue(true);            // repetido não avisa de novo
-    expect(vistos).toEqual([true]);
-    setEndedValue(false);
-    expect(state.ended).toBe(false);
-  });
 
   it('[Right] caixa da letra e legendas PERSISTEM — decisão do ADR-0028: todo menu persiste', () => {
     // A pergunta foi feita porque nenhum dos dois tinha chave nem leitura no boot, e inventar persistência
@@ -175,94 +161,13 @@ describe('defaultReducedMotion — o padrão que o sistema decide', () => {
   });
 });
 
-describe('selVizPlayer — qual jogador os painéis visuais editam (#50)', () => {
-  // Migrado do main.js porque TRÊS superfícies o consultam (painel visual, render/viz-setters e __incl), cada
-  // uma recebendo um par getter/setter fabricado à mão em volta do mesmo `let`. Estado que três módulos
-  // consultam não é do composition root — é a condição que o ADR-0027 põe para `createGame()` nascer.
-  it('[Zero] começa em 0 — o jogador 1 é quem edita antes de alguém escolher', () => {
-    expect(selVizPlayer).toBe(0);
-  });
-
-  it('[Right] o setter escreve, e o binding vivo acompanha quem importa', () => {
-    setSelVizPlayerValue(1);
-    expect(selVizPlayer).toBe(1);
-    setSelVizPlayerValue(0);
-    expect(selVizPlayer).toBe(0);
-  });
-
-  it('[Interface] NÃO persiste — isto é qual aba está aberta, não uma preferência (ADR-0028)', () => {
-    // A distinção passou a importar quando todo menu ganhou persistência: guardar isto faria a criança
-    // reabrir o jogo já editando o jogador 2 sem ter pedido.
-    setSelVizPlayerValue(1);
-    const chaves = Object.keys(globalThis.localStorage ?? {});
-    expect(chaves.some((k) => k.toLowerCase().includes('vizplayer'))).toBe(false);
-    setSelVizPlayerValue(0);
-  });
-});
-
-describe('pauseActor — quem abriu a pausa define o ESCOPO do menu (#50)', () => {
-  // O comentário que cercava esta `let` no main.js já dizia "seis leitores", e havia QUATRO envoltórios
-  // `setPauseActor: (i) => { pauseActor = i; }` espalhados pelo arquivo, mais uma escrita direta. Cinco
-  // lugares reescrevendo a mesma variável à mão é a definição de estado sem dono.
-  it('[Zero] começa em 0', () => {
-    expect(pauseActor).toBe(0);
-  });
-
-  it('[Right] o setter escreve, e o binding vivo acompanha quem importa', () => {
-    setPauseActorValue(2);
-    expect(pauseActor).toBe(2);
-    setPauseActorValue(0);
-    expect(pauseActor).toBe(0);
-  });
-
-  it('[Interface] NÃO persiste — é quem apertou pausa agora, não uma preferência', () => {
-    // No multiplayer em telas separadas este índice é o que faz o menu do jogador 2 editar os ajustes DELE.
-    // Guardá-lo entre sessões faria a pausa de amanhã começar apontando para uma criança que talvez nem esteja
-    // jogando — e o erro não dá erro: dá a criança certa mexendo nas configurações da errada, em silêncio.
-    setPauseActorValue(1);
-    const chaves = Object.keys(globalThis.localStorage ?? {});
-    expect(chaves.some((k) => k.toLowerCase().includes('pauseactor'))).toBe(false);
-    setPauseActorValue(0);
-  });
-});
-
-describe('flora — densidade da grama e semente do decor (#50, #69)', () => {
-  // O CLAMP é o motivo de o setter existir. Ele morava no `__incl`, ou seja, protegia só quem entrasse por
-  // ali; qualquer outro caminho podia escrever 5 ou -1 e o cenário nascia errado sem nada reclamar. Um valor
-  // com faixa válida que depende de quem escreve é um valor sem faixa válida.
-  it('[Right] aceita a faixa 0..1 inteira', () => {
-    for (const v of [0, 0.6, 1]) { setGrassDensityValue(v); expect(grassDensity).toBe(v); }
-  });
-
-  it('[Boundary] prende acima de 1 e abaixo de 0, em vez de gerar um cenário impossível', () => {
-    setGrassDensityValue(5);
-    expect(grassDensity).toBe(1);
-    setGrassDensityValue(-1);
-    expect(grassDensity).toBe(0);
-  });
-
-  it('[Zero/Error] lixo vira 0, não NaN — NaN atravessaria o clamp e envenenaria o desenho', () => {
-    setGrassDensityValue(Number('abc'));
-    expect(grassDensity).toBe(0);
-    setGrassDensityValue(1);
-  });
-
-  it('[Right] a semente é inteira sem sinal — é assim que o gerador a consome', () => {
-    setDecorSeedValue(1234567890);
-    expect(decorSeed).toBe(1234567890);
-    setDecorSeedValue(-1);
-    expect(decorSeed).toBe(4294967295); // >>> 0
-    setDecorSeedValue(0);
-  });
-
-  it('[Interface] nenhum dos dois PERSISTE', () => {
-    // A semente é sorteada a cada fase de propósito: é o que faz duas partidas da mesma fase não terem a mesma
-    // grama. Guardá-la apagaria essa variedade sem que ninguém notasse o porquê.
-    setGrassDensityValue(0.3);
-    setDecorSeedValue(42);
-    const chaves = Object.keys(globalThis.localStorage ?? {});
-    expect(chaves.some((k) => /grass|decor|seed/i.test(k))).toBe(false);
-    setGrassDensityValue(1);
-    setDecorSeedValue(0);
-  });
-});
+// ========================= CINCO CAMPOS SAÍRAM DAQUI, E A COBERTURA FOI JUNTO =========================
+// `ended`, `selVizPlayer`, `pauseActor`, `grassDensity` e `decorSeed` mudaram-se para `core/run-state` na
+// Fase B (ADR-0038): nenhum deles persiste, e não-persistido é o critério de RODADA.
+//
+// Os casos deles NÃO foram apagados — foram reescritos em `tests/run-state.node.test.js` contra a fábrica,
+// e ganharam um caso a mais que aqui era impossível: o do VAZAMENTO entre duas instâncias, que é a razão de
+// a fábrica existir. Apagar cobertura numa migração é como perder o troco; movê-la é o mínimo.
+//
+// O que sobrou aqui é o estado de PÁGINA — acessibilidade, idioma, dispositivo — mais o `numPlayers`, o
+// `players` e o `phase`, que são as próximas fatias.

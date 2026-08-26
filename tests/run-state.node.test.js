@@ -97,3 +97,86 @@ describe('createRunState — o portão durante a rodada', () => {
     expect(r.gate).toBe(x.gate);
   });
 });
+
+/* ---------- os cinco campos que chegaram de core/state (Fase B, fatia 2) ----------
+
+   A cobertura veio junto com o estado; nenhum caso foi apagado. E ganhou um que em `core/state` era
+   IMPOSSÍVEL escrever: o do vazamento entre duas rodadas, porque lá só existia uma. */
+
+describe('selVizPlayer — qual jogador os painéis visuais editam', () => {
+  it('[Zero] começa em 0 — o jogador 1 edita antes de alguém escolher', () => {
+    expect(createRunState().selVizPlayer).toBe(0);
+  });
+  it('[Right] o setter escreve', () => {
+    const r = createRunState();
+    r.setSelVizPlayer(1); expect(r.selVizPlayer).toBe(1);
+    r.setSelVizPlayer(0); expect(r.selVizPlayer).toBe(0);
+  });
+  it('[Leak] duas rodadas editam jogadores diferentes sem se atrapalhar', () => {
+    const a = createRunState(), b = createRunState();
+    a.setSelVizPlayer(3);
+    expect(b.selVizPlayer).toBe(0);
+  });
+});
+
+describe('pauseActor — quem abriu a pausa define o ESCOPO do menu', () => {
+  it('[Zero] começa em 0', () => { expect(createRunState().pauseActor).toBe(0); });
+  it('[Right] o setter escreve', () => {
+    const r = createRunState();
+    r.setPauseActor(2); expect(r.pauseActor).toBe(2);
+  });
+  it('[Leak] a pausa de uma rodada não define o escopo da outra', () => {
+    // Em telas separadas este índice é o que faz o menu do jogador 2 editar os ajustes DELE. Errar aqui não
+    // dá erro: dá a criança certa mexendo nas configurações da errada, em silêncio.
+    const a = createRunState(), b = createRunState();
+    a.setPauseActor(1);
+    expect(b.pauseActor).toBe(0);
+  });
+});
+
+describe('flora — densidade da grama e semente do decor', () => {
+  // O CLAMP é o motivo de o setter existir. Ele morava no `__incl`, ou seja, protegia só quem entrasse por
+  // ali; qualquer outro caminho podia escrever 5 ou -1 e o cenário nascia errado sem nada reclamar.
+  it('[Right] aceita a faixa 0..1 inteira', () => {
+    const r = createRunState();
+    for (const v of [0, 0.6, 1]) { r.setGrassDensity(v); expect(r.grassDensity).toBe(v); }
+  });
+  it('[Boundary] prende acima de 1 e abaixo de 0, em vez de gerar um cenário impossível', () => {
+    const r = createRunState();
+    r.setGrassDensity(5); expect(r.grassDensity).toBe(1);
+    r.setGrassDensity(-1); expect(r.grassDensity).toBe(0);
+  });
+  it('[Zero/Error] lixo vira 0, não NaN — NaN atravessaria o clamp e envenenaria o desenho', () => {
+    const r = createRunState();
+    r.setGrassDensity(Number('abc'));
+    expect(r.grassDensity).toBe(0);
+  });
+  it('[Right] a semente é inteira sem sinal — é assim que o gerador a consome', () => {
+    const r = createRunState();
+    r.setDecorSeed(1234567890); expect(r.decorSeed).toBe(1234567890);
+    r.setDecorSeed(-1); expect(r.decorSeed).toBe(4294967295); // >>> 0
+  });
+  it('[Leak] a semente de uma rodada não vira a grama da outra', () => {
+    // A semente é sorteada por fase DE PROPÓSITO: é o que faz duas partidas da mesma fase não terem a mesma
+    // grama. Compartilhá-la entre rodadas apagaria essa variedade sem ninguém notar o porquê.
+    const a = createRunState(), b = createRunState();
+    a.setDecorSeed(42);
+    expect(b.decorSeed).toBe(0);
+  });
+});
+
+describe('ended — a rodada acabou', () => {
+  it('[Zero] nasce falso, e o setter normaliza para booleano', () => {
+    const r = createRunState();
+    expect(r.ended).toBe(false);
+    r.setEnded(1); expect(r.ended).toBe(true);
+    r.setEnded(0); expect(r.ended).toBe(false);
+  });
+  it('[Leak] a vitória de uma rodada NÃO encerra a outra', () => {
+    // É o vazamento mais caro dos cinco: numa casca que troca de jogo, herdar `ended` faria o próximo jogo
+    // nascer travado — o laço de atualização faz `if (ended) return;` e nada se mexeria.
+    const a = createRunState(), b = createRunState();
+    a.setEnded(true);
+    expect(b.ended).toBe(false);
+  });
+});

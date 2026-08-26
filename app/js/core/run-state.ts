@@ -58,6 +58,25 @@ export interface ExtrasDoNivel<P> {
 export interface RunState<P> extends ExtrasDoNivel<P> {
   /** Sólidos que só existem no modo cadeirante — rampas e plataformas, como chaves `"x,y"`. */
   wcSolid: ReadonlySet<string>;
+
+  /** A rodada acabou (vitória). Trava a entrada e deixa o cenário simulando por trás do aviso. */
+  ended: boolean;
+  /** Semente da decoração do cenário. Sorteada a cada fase DE PROPÓSITO — é o que faz duas partidas da
+   *  mesma fase não terem a mesma grama. */
+  decorSeed: number;
+  /** Fração das superfícies com grama: 1 = todas, 0.6 = 60% (a base das estações que virão). */
+  grassDensity: number;
+  /** QUAL jogador os painéis de acessibilidade visual estão editando. Não é preferência — é qual aba está
+   *  aberta —, e por isso não se persiste: guardá-la faria a criança reabrir o jogo já editando o jogador 2. */
+  selVizPlayer: number;
+  /**
+   * QUEM abriu o menu de pausa, e portanto o ESCOPO de tudo o que se faz dentro dele.
+   *
+   * Importa mais do que parece: em telas separadas, este índice é o que faz o menu do jogador 2 editar as
+   * configurações DELE. Errar aqui não dá erro — dá a criança certa mexendo nos ajustes da criança errada,
+   * em silêncio.
+   */
+  pauseActor: number;
   /**
    * Grava os quatro extras JUNTOS, que é como eles nascem.
    *
@@ -70,6 +89,19 @@ export interface RunState<P> extends ExtrasDoNivel<P> {
   setGateOpen(v: boolean): void;
   /** Troca os sólidos de cadeirante (recalculados quando a geometria do nível muda). */
   setWcSolid(s: ReadonlySet<string>): void;
+
+  setEnded(v: boolean): void;
+  setDecorSeed(s: number): void;
+  /**
+   * ⚠️ O CLAMP MORA AQUI, e é a razão de este setter existir.
+   *
+   * `grassDensity` é uma FRAÇÃO, e antes de `core/state` a proteção vivia no `window.__incl` — ou seja, só
+   * quem entrasse por ali era protegido. Qualquer outro caminho podia escrever 5 ou -1 e o cenário nascia
+   * errado sem nada reclamar. Um valor com faixa válida que depende de quem escreve é um valor sem faixa.
+   */
+  setGrassDensity(v: number): void;
+  setSelVizPlayer(i: number): void;
+  setPauseActor(i: number): void;
 }
 
 /**
@@ -95,6 +127,17 @@ export function createRunState<P>(): RunState<P> {
     },
     setGateOpen(v: boolean): void { r.gateOpen = v; },
     setWcSolid(s: ReadonlySet<string>): void { r.wcSolid = s; },
+
+    ended: false,
+    decorSeed: 0,
+    grassDensity: 1,
+    selVizPlayer: 0,
+    pauseActor: 0,
+    setEnded(v: boolean): void { r.ended = !!v; },
+    setDecorSeed(s: number): void { r.decorSeed = s >>> 0; },
+    setGrassDensity(v: number): void { r.grassDensity = Math.max(0, Math.min(1, +v || 0)); },
+    setSelVizPlayer(i: number): void { r.selVizPlayer = i; },
+    setPauseActor(i: number): void { r.pauseActor = i; },
   };
   return r;
 }

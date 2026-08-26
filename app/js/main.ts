@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, numPlayers, vizMode, initVizMode, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion, selVizPlayer, setSelVizPlayerValue, pauseActor, setPauseActorValue, grassDensity, setGrassDensityValue, decorSeed, setDecorSeedValue, ended, setEndedValue } from './core/state.js'; // estado compartilhado
+import { phase, numPlayers, vizMode, initVizMode, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion } from './core/state.js'; // estado compartilhado
 import { cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue } from './game/state.js'; // GAME (ADR-0038, Fase B)
 import { createRunState } from './core/run-state.js'; // ADR-0038 Fase B: a RODADA como fábrica
 import type { Powerup } from './game/level-geometry.js'; // o tipo do power-up é do JOGO
@@ -712,7 +712,7 @@ initLevelGeometry({ W: WORLD_W, H: WORLD_H, isWheelchair: () => wheelchair,
 // aqui porque colisao e o laco do jogador tambem o leem e escrevem.
 function rebuildExtras(){ lgRebuildExtras(); _lastSharedViz=null; }
 function setupExtras(){
-  setDecorSeedValue((Math.random()*1e9)>>>0); // #69: nova semente por fase
+  rodada.setDecorSeed((Math.random()*1e9)>>>0); // #69: nova semente por fase
   const _blind = modoCego || players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='blind';});
   rodada.setLevelExtras(lgSetupExtras(MAP_ITEMS, MAP_GATE, { wheelchair, blind:_blind })); // era desestruturação em bloco; binding importado não se atribui
   rebuildExtras();
@@ -816,7 +816,7 @@ const sceneSky = createSceneSky({ skyLayer, starsG, skyDecoG, nuvemG, fogG, gras
   CENARIOS, THEME_FLORA, DIRECT_CFG, solidAt, tileAt,
   getCenario: () => CENARIO, getVizMode: () => vizMode, getPlayers: () => players, getFxClock: () => fxClock, getRm: () => rm,
   getAglomeracao: () => weather.getAglomeracao(), // o MESMO relógio da chuva: as nuvens fecham antes da 1ª gota
-  getGrassDensity: () => grassDensity, getDecorSeed: () => decorSeed });
+  getGrassDensity: () => rodada.grassDensity, getDecorSeed: () => rodada.decorSeed });
 // drawV3Cloud + drawV3Grass extraídos p/ render/scene-sky.ts (#43) — funções de desenho puras usadas por stepV3Decor.
 // stepV3Decor (decor viva da v3: estrelas/nuvens/pássaros/névoa/grama/minhocas/vagalumes/borboletas) extraído p/
 // render/scene-sky.ts (#43). Camadas injetadas. Uso no loop: sceneSky.stepV3Decor().
@@ -894,7 +894,7 @@ const pauseIcons = initPauseIcons({
   // e o jogo, que sabe o que e um nivel, como ele se chama e em que idioma dize-lo.
   dynLabel: (b) => (b.nivel ? (t('pause.nivel', { n: quizLevel, nome: QL_NAME[quizLevel] })) : null),
   getPauseActs: () => pauseActs,            // LAZY: pauseActs e const bem abaixo (TDZ)
-  setPauseActor: setPauseActorValue,
+  setPauseActor: (i) => rodada.setPauseActor(i),
   getPauseScreens: () => vpPause,           // buildGameHud REATRIBUI vpPause -> getter, nao a array
   getModoCego: () => modoCego, setModoCego,
   getAudioCat: () => audioCat, setCatGain,
@@ -1019,7 +1019,7 @@ function update(dt: number){
   sceneSky.stepSky(dt); // L5: nuvens + pássaros no céu
   sceneSky.stepV3Decor(); // L6: decoração viva da v3 (estrelas/nuvens/pássaros/névoa/grama/minhocas/vagalumes/borboletas)
   sceneCity.stepTileFx(); // tiles vivos da v3: água (ondas/corais/algas/peixes, FORE) + lava (tracinhos)
-  if(ended)return;
+  if(rodada.ended)return;
   players.forEach((p,i)=>{ if(p.quit&&p.jumpEdge){ p.jumpEdge=false; respawnPlayer(i); } }); // L1: quem saiu re-entra pelo PULO do teclado (ou START do pad, no pollPads)
   // `controlados()` e não `jogadores()`: a física e a animação leem `ctrl`, e esta é a vista que afirma o
   // que já é verdade aqui — o laço só roda DEPOIS de `assignControls`, então `ctrl` não é mais nulo.
@@ -1118,10 +1118,10 @@ const sessionApi = initSession({
   $, librasReserve: ()=>0, // o intérprete NÃO empurra mais a tela (ver ui/vlibras + ui/layout); fica p/ o overlay sob demanda
   isCoarsePointer: ()=>{ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } },
   getMode: ()=>MODE(), // sem `setModeValue`: o MODE deriva de `activity` e não tem caminho de escrita (ADR-0040)
-  setEnded: setEndedValue,
+  setEnded: (v) => rodada.setEnded(v),
   getPowerups: ()=>rodada.powerups, getGate: ()=>rodada.gate, isGateOpen: ()=>rodada.gateOpen,
   setGateOpen: (v) => rodada.setGateOpen(v),
-  getPauseActor: ()=>pauseActor, ownerColors: ()=>ownerColors, captionsOn: ()=>captionsOn,
+  getPauseActor: ()=>rodada.pauseActor, ownerColors: ()=>ownerColors, captionsOn: ()=>captionsOn,
   // `setPlayerRef` SAIU: o `let player` que ele reatribuía era sempre `players[0]`, e `players[0]` não
   // muda de identidade — nem quando o array cresce nem quando encolhe (n ≥ 1 sempre). A dança de
   // referência vinha do monólito e não movia nada. Agora é derivado, como o MODE (ADR-0040).
@@ -1214,7 +1214,7 @@ const gamepadApi = initGamepad({
   isTouchMode: () => document.body.classList.contains('touch-mode'), hideTouchControls: () => hideTouchControls(),
   getPlayers: () => players, getNumPlayers: () => numPlayers,
   navTitle, sharedDialogOpen, navDialog, getPauseMenu: (i) => vpPause[i], navPause,
-  setPauseActor: setPauseActorValue,
+  setPauseActor: (i) => rodada.setPauseActor(i),
   modalInput, hasModal: temModal,
   joinPlayer, respawnPlayer,
   clearWaitingBadge: (i) => hud.clearWaitingBadge(i),
@@ -1293,7 +1293,7 @@ const viz = initVizSetters({
   getItemSprites: getCoinSprites, itemTexId: 'coin', // item 19: o NOME dos itens e do jogo, nao do render
   getPowerups: () => rodada.powerups,
   getPlayers: () => players, getNumPlayers: () => numPlayers,
-  getSelVizPlayer: () => selVizPlayer, setSelVizPlayer: setSelVizPlayerValue,
+  getSelVizPlayer: () => rodada.selVizPlayer, setSelVizPlayer: (i) => rodada.setSelVizPlayer(i),
   getSharedViz: () => _lastSharedViz, setSharedViz: (m) => { _lastSharedViz = m; },
   invalidateSharedViz: () => { _lastSharedViz = null; },
   parallaxTexFor, treeTexFor, playerVizTex, pixiFilterFor,
@@ -1357,7 +1357,7 @@ function setOutlineFg(v: number){ const antes=hcOutlineFg; setOutlineFgValue(v);
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineFg',{v:t(OUTLINE_KEY[hcOutlineFg])})); }
 function setOutlineBg(v: number){ const antes=hcOutlineBg; setOutlineBgValue(v); if(hcOutlineBg===antes)return;
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineBg',{v:t(OUTLINE_KEY[hcOutlineBg])})); }
-const visual = initSettingsVisual({ $, srSay, renderVizGroup, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => selVizPlayer, setSelectedPlayer: setSelVizPlayerValue, setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
+const visual = initSettingsVisual({ $, srSay, renderVizGroup, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => rodada.selVizPlayer, setSelectedPlayer: (i) => rodada.setSelVizPlayer(i), setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
   const sim=players.some(p=>simulatesDisability(p.viz));
   const bv=$('#opt-visual'); if(bv)bv.classList.toggle('is-on',help); const be=$('#opt-empathy'); if(be)be.classList.toggle('is-on',sim||hearingLoss||oneButton||wheelchair); }
@@ -1480,11 +1480,11 @@ audioPanel.reflectModoCego();
 
 /* E10: remap de controles + persistência (B2) */
 const ctrlPanel = initSettingsControls({ $, srSay, srAlert, store: { saveKB, resetKB }, kb, setKB, kbFor, getNumPlayers: () => numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)
-function openOptions(){ const ov=$('#options'); if(!ov)return; ctrlPanel.render(pauseActor); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); } // E3: edita o controle do jogador que abriu
+function openOptions(){ const ov=$('#options'); if(!ov)return; ctrlPanel.render(rodada.pauseActor); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); } // E3: edita o controle do jogador que abriu
 function closeOptions(){ const ov=$('#options'); if(!ov)return; ov.hidden=true; ctrlPanel.cancelCapture(); if(!overlays.restoreFocus('options'))menuFocus(sharedDialogOpen()); }
 const ctrlBtn=$('#opt-controls'); if(ctrlBtn)ctrlBtn.addEventListener('click',openOptions);
 // AJUDA (do menu de pausa): controles DO jogador que abriu (pauseActor) + notas desta build.
-function openHelp(){ const ov=$('#help'); if(!ov)return; const c=$('#help-content'); const pa=pauseActor||0; const map=kbFor(pa);
+function openHelp(){ const ov=$('#help'); if(!ov)return; const c=$('#help-content'); const pa=rodada.pauseActor||0; const map=kbFor(pa);
   const rows=Object.keys(ACT_LABEL).map(a=>`<div class="ctrl-row"><span>${t(ACT_LABEL[a])}</span><span>${(map[a]||[]).map(keyName).map(k=>'<kbd>'+k+'</kbd>').join(' ')||'—'}</span></div>`).join('');
   // O cabecalho e' UMA FRASE por caso ('Seus controles' / 'Seus controles · Jogador N'), e nao um prefixo mais
   // um sufixo: uma lingua que ponha o numero do jogador ANTES do titulo so consegue se a frase inteira morar
@@ -1538,7 +1538,7 @@ startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
   setMinimapVisible(!titleG.visible&&numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
   if(phase==='playing'){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
-window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
+window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return rodada.ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE();},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
@@ -1550,7 +1550,7 @@ window.__incl={app,get player(){return players[0];},players,get numPlayers(){ret
   spawnCreature:life.spawnCreature,stepLife:life.stepLife,get creatures(){return life.getCreatures();},spawnCar:traffic.spawnCar,get cars(){return traffic.getCars();},SEM:traffic.SEM,get STREET_Y(){return traffic.getStreetY();},
   get elevShafts(){return getElevShafts();},elevAt,get BOX(){return BOX;},get wheelchair(){return wheelchair;},setWheelchair,buildElevators,buildRamps,solidAt,surfTop, // debug cadeirante
   get clouds(){return sceneSky.getClouds();},get birds(){return sceneSky.getBirds();},stepSky:(dt: number)=>sceneSky.stepSky(dt),CENARIOS,stepV3Decor:()=>sceneSky.stepV3Decor(),
-  get grassDensity(){return grassDensity;},setGrassDensity:setGrassDensityValue, // o clamp mora no setter de core/state, não aqui
+  get grassDensity(){return rodada.grassDensity;},setGrassDensity:(v: number)=>rodada.setGrassDensity(v), // o clamp mora no setter da RODADA
   get decorCounts(){ const n=(g: PIXI.Graphics)=>g.geometry&&g.geometry.graphicsData?g.geometry.graphicsData.length:0; return {stars:n(starsG),skyDeco:n(skyDecoG),fog:n(fogG),grass:n(grassG),front:n(themeFxG)}; }};
 { const v='v'+INCL_VERSION; document.title=`The Inclusionist · ${v} (PixiJS)`; // versão: fonte única = INCL_VERSION
   const e1=document.querySelector('h1 .ver'); if(e1)e1.textContent='· '+v;
@@ -1582,7 +1582,7 @@ window.__incl.layout=layout; window.__incl.get_librasOpen=()=>librasOpen;
 const shell = initShell({
   $, win: window, setMasterMuted, srSay, srAlert,
   getPauseScreens: () => vpPause,                  // `let` REATRIBUIDO por buildGameHud -> getter
-  getPauseActor: () => pauseActor,                 // `let` com seis leitores -> getter
+  getPauseActor: () => rodada.pauseActor,          // seis leitores -> um campo da RODADA
   hideTouchControls: () => hideTouchControls(),
   reflectPauseIcons: () => reflectPauseIcons(),
   getGamepads: () => (navigator.getGamepads ? navigator.getGamepads() : []),
@@ -1597,7 +1597,7 @@ const shell = initShell({
   setMotorPlayer: (i) => motor.setSelPlayer(i),
   setMotionPlayer: (i) => setSelectedMotionPlayer(i),
   openMotion: () => motion.open(), openEmpathy: () => empathy.open(),
-  setSelVizPlayer: setSelVizPlayerValue,
+  setSelVizPlayer: (i) => rodada.setSelVizPlayer(i),
 });
 function setPhase(p: Parameters<typeof shell.setPhase>[0]){ shell.setPhase(p); }
 function togglePause(){ shell.togglePause(); }
@@ -1640,7 +1640,7 @@ const menuNav = initMenuNav({
   topVisibleOverlay: () => overlays.topVisibleOverlay(), closeById: (id) => overlays.closeById(id),
   getPauseMenu: (i) => vpPause[i],                 // `let vpPause` REATRIBUIDO por buildGameHud -> getter
   setPhase: (p) => setPhase(p),
-  setPauseActor: setPauseActorValue,
+  setPauseActor: (i) => rodada.setPauseActor(i),
   isCapturing: () => ctrlPanel.isCapturing(),
   closePadWiz: (save) => gamepadApi.closePadWiz(save), // LAZY: quebra o ciclo menu-nav <-> input/gamepad
   whichPlayer, actionOf,
