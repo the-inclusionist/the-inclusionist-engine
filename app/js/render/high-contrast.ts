@@ -152,6 +152,12 @@ export function worldToTextureDirect(srcCanvas: HTMLCanvasElement, mode: string)
  *  FxGraphics de render/fx.ts) para não arrastar os tipos de união de Resource do PIXI aqui dentro. */
 interface DirectTexSource {
   orig: { width: number; height: number };
+  /**
+   * O RECORTE do quadro dentro da base. Passou a existir aqui com o atlas (item 22): antes toda textura de
+   * personagem era uma tela própria e base e recorte coincidiam. Opcional porque `directBgTexture` recebe
+   * texturas que de fato ocupam a base inteira (parallax, árvore) e não precisa dele.
+   */
+  frame?: { x: number; y: number; width: number; height: number };
   baseTexture: {
     valid: boolean;
     resource?: { source?: (HTMLCanvasElement | HTMLImageElement) | null } | null;
@@ -195,9 +201,29 @@ export function directSpriteTexture(srcTex: DirectTexSource, mode: string): unkn
   const paint = (): void => {
     const s = srcTex.baseTexture.resource && srcTex.baseTexture.resource.source;
     if (!s || !s.width) return;
-    // outlineCanvas só declara HTMLCanvasElement, mas directSpriteTexture só é chamada p/ texturas de player
-    // (sempre canvas-sourced, nunca PNG); cast preserva o runtime idêntico ao original (sem checagem de tipo).
-    const o = outlineCanvas(s as HTMLCanvasElement, th);
+    // ===================== O RECORTE VEM ANTES DO CONTORNO =====================
+    // Aqui morava o "kage bunshin". Esta função lia a BASE e ignorava o `frame`, e havia um comentário
+    // explicando por que isso era seguro: "só é chamada p/ texturas de player (sempre canvas-sourced)". A
+    // afirmação era verdadeira e VIROU FALSA — o item 22 empacotou os sprites num atlas de 256×207, e desde
+    // então só os quadros que passam pelo tapa-costuras (idle/andar/correr) viram tela própria. Pulo, escada,
+    // parede, teto, nado e voo são RECORTE dentro do atlas, e contornar a base deles desenhava o atlas
+    // inteiro: todos os quadros do personagem de uma vez, em grade.
+    //
+    // O tapa-costuras é assíncrono, e por isso o idle também aparecia: com alto contraste ligado cedo, o
+    // cache `_playerDirect` memoriza a versão baseada no atlas e a guarda para sempre.
+    const f = srcTex.frame;
+    const precisaRecortar = !!f && (f.x !== 0 || f.y !== 0 || f.width !== s.width || f.height !== s.height);
+    let fonte: HTMLCanvasElement | HTMLImageElement = s;
+    if (precisaRecortar && f) {
+      const rec = makeCanvas(Math.max(1, f.width), Math.max(1, f.height));
+      const rc = rec.getContext('2d')!;
+      rc.imageSmoothingEnabled = false; // pixel art: reamostrar aqui borraria o contorno que o modo promete
+      rc.drawImage(s, f.x, f.y, f.width, f.height, 0, 0, f.width, f.height);
+      fonte = rec;
+    }
+    // outlineCanvas só declara HTMLCanvasElement; o recorte já devolve canvas, e a base sem recorte é
+    // canvas-sourced pelos caminhos que restam. O cast preserva o runtime idêntico ao original.
+    const o = outlineCanvas(fonte as HTMLCanvasElement, th);
     cv.width = o.width; cv.height = o.height;
     const c = cv.getContext('2d')!;
     c.clearRect(0, 0, cv.width, cv.height); c.drawImage(o, 0, 0);
