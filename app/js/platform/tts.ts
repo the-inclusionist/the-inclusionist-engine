@@ -96,7 +96,7 @@ export function createTts(ctx: TtsCtx): Tts {
         sintetizar: async (texto) => {
           const wav = await session.predict(texto);
           const ac = ctx.ensureAC();
-          if (!ac) throw new Error('sem AudioContext'); // o `catch` de lá trata: silêncio deste item, motor vivo
+          if (!ac) throw new Error('AudioContext unavailable'); // o `catch` de lá trata: silêncio deste item, motor vivo
           return ac.decodeAudioData(await wav.arrayBuffer());
         },
         tocar: (buf, aoTerminar) => {
