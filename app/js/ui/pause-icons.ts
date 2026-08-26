@@ -323,7 +323,12 @@ export interface PauseIconsCtx {
   setModoCego: (on: boolean) => void;
 
   // --- TTS (platform/audio mixer; the panel refresh lives in ui/settings-audio) ---
-  getAudioCat: () => Record<string, AudioCatState>;
+  /**
+   * O mixer por categoria. NULO até `initAudioMixer()` — `platform/audio` o declara
+   * `Record<string, CatState> | null` porque o import dele é PURO (não lê localStorage), e quem inicializa
+   * é o boot do consumidor. Este ctx pedia não-nulo, o que era uma promessa que a fonte não faz.
+   */
+  getAudioCat: () => Record<string, AudioCatState> | null;
   /** Re-applies a category's gain node after `on`/`vol` changed. */
   setCatGain: (k: string) => void;
   /** Repaints the TTS row of the auditory panel. See BUG #1 in the report: in game.js this call is behind a
@@ -426,7 +431,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     tts: () => {
       const cat = ctx.getAudioCat();
-      cat.tts.on = !cat.tts.on; // verbatim: no guard here, unlike iconLabel's `audioCat.tts &&`
+      if (!cat || !cat.tts) return; // a guarda que `iconLabel` e `applyCalm` já tinham e esta ação não
+      cat.tts.on = !cat.tts.on;
       ctx.setCatGain('tts');
       if (ctx.reflectTtsPanelEnabled) ctx.reflectTtsPanel();
       ctx.srSay(t(cat.tts.on ? 'sr.audio.ttsOn' : 'sr.audio.ttsOff'));

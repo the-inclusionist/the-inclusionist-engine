@@ -472,6 +472,20 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(state.ttsPanelRefreshes).toBe(1);
   });
 
+  // `audioCat` nasce NULL em platform/audio e só vira objeto em `initAudioMixer()`, chamado no boot do
+  // main.ts. O invariante está escrito em TRÊS comentários (audio.ts:44, boot/create-game.ts:18,
+  // consumer-quiz/main-quiz.ts:31) e não é imposto em lugar nenhum — e das três leituras deste arquivo,
+  // duas se protegem com `cat && …` e esta era a única sem guarda. O `tsc` apontou para ela quando o
+  // main.ts virou TypeScript: o ctx pedia não-nulo e a fonte é nula.
+  // MUTAÇÃO: removida a guarda do conserto, este caso falha com
+  // `TypeError: Cannot read properties of null (reading 'tts')` — conferido antes de valer.
+  it('o ícone de TTS não quebra quando o mixer ainda não foi inicializado', () => {
+    const { ctx, state, said } = buildCtx({ getAudioCat: () => null });
+    expect(() => initPauseIcons(ctx).iconAct('tts', 0)).not.toThrow();
+    expect(state.catGains).toEqual([]);   // não mexe no ganho de um mixer que não existe
+    expect(said).toEqual([]);             // e não anuncia um estado que não leu
+  });
+
   it('Libras delega ao intérprete e anuncia o estado resultante', () => {
     const { ctx, state, said } = buildCtx();
     initPauseIcons(ctx).iconAct('libras', 0);
