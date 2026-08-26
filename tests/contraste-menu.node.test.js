@@ -121,6 +121,11 @@ describe('alto contraste no DOM · o menu entrega o que o modo promete (issue #8
       ['ink sobre botão', ink, btn],
       ['ink-soft sobre botão', inkSoft, btn],
       ['ink sobre selecionado', ink, sel],
+      // A BORDA do selecionado entra aqui junto com o texto, e a razão é do Dev: a WCAG 1.4.11 pede 3:1 para
+      // componente, e 3:1 é PISO, não teto. Tratar um mínimo como permissão para parar é o contrário do que
+      // este projeto faz — e o par mede 7,80:1, então a isenção que eu tinha escrito era desnecessária além
+      // de mal formulada. Se um dia ele cair abaixo de 7:1, quero saber.
+      ['borda accent sobre selecionado', token('accent'), sel],
     ];
     const falham = pares
       .map(([nome, fg, bg]) => [nome, razaoDeContraste(fg, bg)])
