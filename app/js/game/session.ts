@@ -327,7 +327,18 @@ export interface SessionCtx {
 
   /* --- fase e título --- */
   setPhase(p: string): void;
-  titleShow(menuId: string): void;          // ui/title: qual submenu do splash aparece
+  /**
+   * Devolve o splash ao menu PRINCIPAL. Sem argumento DE PROPÓSITO.
+   *
+   * A versão anterior era `titleShow(menuId: string)`, e o `string` era o sintoma: quais submenus existem
+   * ('tm-main', 'tm-alf', 'tm-cen'…) é vocabulário da CASCA, e `ui/title` já o declara como `TitleMenuId`.
+   * Adotá-lo aqui exigiria `game/` importar de `ui/`, coisa que esta árvore nunca faz. Manter `string`
+   * deixava a união escapar por uma fresta.
+   *
+   * A saída não é escolher entre os dois: é notar que este módulo não precisa saber. Ele só quer dizer
+   * "voltei ao título" — qual tela isso significa é decisão de quem tem as telas.
+   */
+  titleShowMain(): void;
 }
 
 export interface SessionApi {
@@ -597,7 +608,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
 
   /** Volta ao menu inicial (mesmo caminho do "sair" solo e do "todo mundo saiu" em MP). */
   function backToTitle(msg: string): void {
-    restartGame(); ctx.setPhase('title'); ctx.titleShow('tm-main'); ctx.srSay(msg);
+    restartGame(); ctx.setPhase('title'); ctx.titleShowMain(); ctx.srSay(msg);
   }
 
   /** Sair: solo → MENU INICIAL; MP → a tela do jogador fica preta; TODOS saindo → menu inicial. */

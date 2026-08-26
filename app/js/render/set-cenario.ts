@@ -109,10 +109,14 @@ export interface SetCenarioCtx {
    * antes, agora imediato em vez de prometido.
    */
   getTiles: (tema: string) => TilesDoTema | null;
-  worldCanvas: (tiles: TilesDoTema | null) => unknown;           // builder da canvas do nível
+  /** Builder da canvas do nível. `HTMLCanvasElement` e não `unknown`: é o que o `render/world-tex`
+   *  devolve, e o `unknown` só adiava a conversão até o `main.ts`, onde ela virava erro (ADR-0039). */
+  worldCanvas: (tiles: TilesDoTema | null) => HTMLCanvasElement;
   tex: (canvas: unknown) => unknown;                             // canvas → PIXI.Texture
   clearWorldTexCache: () => void;                                // invalida o recolor de alto contraste
-  setWorldTextures: (canvas: unknown, textura: unknown) => void; // escreve worldCanvasNormal/worldTexNormal (let)
+  /** Escreve `worldCanvasNormal`/`worldTexNormal` (os dois `let` do composition root), sempre em par. A
+   *  TEXTURA segue `unknown` de propósito — é objeto do PixiJS, e este módulo roda no project `node`. */
+  setWorldTextures: (canvas: HTMLCanvasElement, textura: unknown) => void;
 
   /* --- consequências (todas nascem DEPOIS deste ponto no boot → getter/callback) --- */
   isVizReady: () => boolean;                              // `vizReady`: só no fim do boot

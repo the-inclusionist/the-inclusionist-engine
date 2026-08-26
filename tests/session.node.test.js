@@ -296,7 +296,9 @@ function novoCtx(over = {}) {
     configureRender: marca('configureRender'), reapplyVizAll: marca('reapplyVizAll'),
     layout: marca('layout'), hideTouchControls: marca('hideTouchControls'), updateGameHud: marca('updateGameHud'),
     setPhase: (p) => LOG.chamadas.push('phase:' + p),
-    titleShow: (id) => LOG.chamadas.push('title:' + id),
+    // `titleShowMain()` sem argumento desde 2026-08-26: quais submenus do splash existem é vocabulário da
+    // casca (`ui/title.TitleMenuId`), e `game/` não importa de `ui/`. O módulo só diz "voltei ao título".
+    titleShowMain: () => LOG.chamadas.push('title:main'),
     ...over,
   };
   return CTX;
@@ -852,7 +854,7 @@ describe('game/session — quitGame', () => {
   it('[One] solo: volta ao menu inicial e reinicia a rodada', () => {
     S.quitGame();
     expect(LOG.chamadas).toContain('phase:title');
-    expect(LOG.chamadas).toContain('title:tm-main');
+    expect(LOG.chamadas).toContain('title:main');
     expect(LOG.chamadas).toContain('setupExtras');
     expect(LOG.say.join('|')).toContain('Jogo abandonado');
   });

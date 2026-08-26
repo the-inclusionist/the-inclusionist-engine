@@ -89,7 +89,10 @@ export interface PhysicsCtx {
   hideTips(): void;             // stub de dicas do game.js (mantido para não sumir o call-site)
   showPower(pl: PhysicsPlayer): void; // HUD do poder ativo
   nav: PhysicsNav;              // pistas espaciais (bengala/sonar/nado)
-  tonePan(f: number, d: number, cat: string, pan: number, g: number, type: string, ctx: unknown): void; // bipe da guarda de beirada
+  /** Bipe da guarda de beirada. `OscillatorType` e não `string`: é a união de cinco valores que o Web Audio
+   *  aceita, global de `lib.dom` (sem import). Com `string` aqui, o `tonePan` real — que pede a união — não
+   *  cabia no ctx, e o erro caía no `main.ts` falando de osciladores (ADR-0039). */
+  tonePan(f: number, d: number, cat: string, pan: number, g: number, type: OscillatorType, ctx: unknown): void;
   noiseHit(material: string): void;   // passo por superfície (madeira/parede/…)
   surfaceUnder(pl: PhysicsPlayer): string | null; // material sob os pés (depende do CENARIO)
   puffDust(x: number, y: number, n: number): void; // juice: poeira

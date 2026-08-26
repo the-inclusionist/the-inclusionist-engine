@@ -1124,7 +1124,7 @@ const sessionApi = initSession({
   closeQuiz: (pl)=>closeQuiz(pl as GamePlayer),
   loadPlayerA11y, assignControls, ensureSprites, configureRender,
   reapplyVizAll: ()=>reapplyVizAll(), layout, hideTouchControls, updateGameHud,
-  setPhase, titleShow: (id)=>titleUI.show(id),
+  setPhase, titleShowMain: () => titleUI.show('tm-main'), // qual submenu é decisão da casca, não do jogo
 });
 function updateHud(){ sessionApi.updateHud(); }
 // Os invólucros que só REPASSAM tomam o tipo do delegado. O passe mecânico tinha posto `Player` neles pela
