@@ -10,8 +10,21 @@ metadata:
 title: The letter grid splits — mechanics in core/, screen in ui/ — because it is text entry without a keyboard, not a password widget
 
 context-and-problem-statement: |
+  ⚠️ THIS RECORD FIRST SAID THE CONSUMER WAS A CHILD'S PROGRESSION PASSWORD, AND THAT WAS STALE. It inherited
+  the framing of issue #77, which predates ADR-0037 and still references `app/js/game/progress.ts` — a file
+  that has since been deleted. ADR-0037 retired the progress password entirely: there is no save, and the
+  Inclusionist stores nothing about a child. What ADR-0037 says survives is the module, for a different
+  reason, and it names the consumer: "The teacher's room code is the same engineering problem the progress
+  password was… It stays because the room screen will need it."
+
+  So the consumer of this grid is THE TEACHER'S ROOM CODE, not a child's progress. The DECISION below is
+  unaffected — where the grid lives does not depend on which code is typed into it — but two things in the
+  original framing are withdrawn: the "SHOW" screen in the pause menu (there is no child progress to show)
+  and the brute-force arithmetic about a child guessing her own password. The failure mode that matters now
+  is the one ADR-0037 states: a mistyped code that is ACCEPTED drops a child into another class's room.
+
   The password codec exists (`core/password`), is verified, and is covered by forty cases, two of them
-  exhaustive. NOTHING SHOWS IT ON SCREEN. Until something does, the codec saves nobody.
+  exhaustive. NOTHING SHOWS IT ON SCREEN. Until something does, the codec serves nobody.
 
   What is missing is the LETTER GRID: eight by four, the thirty-two symbols of the alphabet, navigable by
   direction plus confirm, legible at 320x180, with an accessible name per symbol. ADR-0027 already asks for it
@@ -19,9 +32,9 @@ context-and-problem-statement: |
   games of the demos catalogue as much as it serves any password. It is not a password component: it is TEXT
   ENTRY WITHOUT A KEYBOARD, which is what a console does not have.
 
-  Two screens consume it. SHOW, in the pause menu: the current password, spoken by TTS, readable by the
-  teacher. TYPE, on the title screen: the grid itself, with the failure modes already distinguishable without
-  inventing anything — a wrong password returns null, and the code length says how many places are missing.
+  ONE screen consumes it, and it does not exist yet: the room screen, where a teacher's code is TYPED. The
+  failure modes are already distinguishable without inventing anything — a wrong code returns null, and the
+  code length says how many places are missing, so "incomplete" and "wrong" are different answers.
 
   The question this record answers is WHERE THE GRID LIVES, and it is not a naming question: `core/` draws
   nothing today. `core/scenes` was deliberately written without PIXI and without DOM so it could be tested
@@ -61,12 +74,17 @@ decision-outcome:
   chosen-option:
     link: "G3 — mechanics in core/letter-grid, drawing in ui/, with the honest reservation kept in force"
     justification: |
-      The mechanics half is worth a file only if it actually has content: wrap at the edges, jump by row, key
-      repeat, and the symbol-to-position mapping the screen reader has to announce. That is the test of this
-      decision, and it is applied WHILE WRITING, not before: if the logic turns out to fit in fifteen lines,
-      G2 is the right answer and this record is amended to say so. That reservation is part of the decision
-      rather than a hedge around it — the alternative is discovering it after two files exist and keeping them
-      out of sunk cost.
+      The mechanics half is worth a file only if it actually has content: wrap at the edges, jump by row, and
+      the symbol-to-position mapping the screen reader has to announce. That is the test of this decision, and
+      it is applied WHILE WRITING, not before: if the logic turns out to fit in fifteen lines, G2 is the right
+      answer and this record is amended to say so. That reservation is part of the decision rather than a hedge
+      around it — the alternative is discovering it after two files exist and keeping them out of sunk cost.
+
+      RESERVATION RESOLVED (same day, on writing it): 58 executable lines in `criarGrade`, and the substance is
+      what was predicted — the wrap decision, the incomplete last row, and the symbol↔position mapping. The
+      split stands; no amendment on that point. KEY REPEAT was struck from the list above: it is input timing
+      and it belongs with `input/edges`, not here. Listing it was padding the case for a file that turned out
+      not to need padding.
 
       WHY NOT G1: it spends the most expensive property core/ has — being testable without a browser — on a
       screen. Once that door is open the next module through it needs no argument.
@@ -84,22 +102,31 @@ decision-outcome:
          reservation above is binding rather than decorative."
     neutral:
       - "The luzes field left out of the password format stays out. Bringing it back costs the fifth character,
-         and a changed format invalidates every password already written in a notebook."
+         and a changed format invalidates every code already written on a blackboard."
+      - "The MECHANICS half is buildable today and was built; the SCREEN half is not, because the room screen
+         it would live on does not exist. Building it now would repeat exactly what ADR-0037 called out — a
+         tested module waiting for a screen that does not exist — and this time knowingly."
 
   confirmation: |
     Node tests for the mechanics, with no DOM and no PIXI in the file: wrap at all four edges, row jump, the
     symbol-to-position mapping in both directions, and the chosen-symbol sequence for a full four-character
     entry. Written failing first.
 
-    Then the browser protocol on the two screens, under the house rules — dist server, service worker
-    unregistered, caches cleared, ?x=N, the loaded script src compared against the hash in dist/index.html:
-    type a password with the direction keys alone, confirm the accessible name is announced per symbol, and
-    confirm a wrong password is distinguishable from an incomplete one.
+    Then, WHEN THE ROOM SCREEN EXISTS, the browser protocol on it — dist server, service worker unregistered,
+    caches cleared, ?x=N, the loaded script src compared against the hash in dist/index.html: type a code with
+    the direction keys alone, confirm the accessible name is announced per symbol, and confirm a wrong code is
+    distinguishable from an incomplete one. That half is NOT satisfied today and is not claimed to be.
 
 more-information: |
-  Issue #77 holds the two consuming screens and the brute-force arithmetic: four characters give roughly one
-  valid password per 1024 attempts. If that becomes a problem in a classroom the fix is more bits — but that is
-  a different format, and a changed format invalidates passwords already written down.
+  Issue #77 holds the original framing, and it is STALE in the way described at the top of this record: it
+  predates ADR-0037, references a deleted file, and describes a child's progression. Its choice of G3 stands;
+  its motivation does not.
+
+  The brute-force arithmetic moves with the consumer rather than disappearing: four characters give roughly
+  one valid code per 1024 attempts. For a child guessing her own progress that was a curiosity; for a room
+  code it is the failure ADR-0037 names — landing in another class's room. If that matters in a school the
+  fix is more bits, which is a different format, and a changed format invalidates every code already written
+  on a blackboard.
 
   Related: ADR-0027 (which asked for the selector first), ADR-0037 (which established there is no save, so the
   password carries progression and nothing about a child).

@@ -6,10 +6,15 @@
 // keyboard"*. Um console não tem teclado, e o alvo desta engine é uma máquina de escola operada por
 // direcional — quando não por UM botão só. Digitar, aqui, é mover um cursor por uma grade e confirmar.
 //
-// O primeiro consumidor é a senha de progressão: o `core/password` existe, está testado com quarenta casos,
-// e NADA o mostra na tela — enquanto não houver por onde digitar, o codec não salva ninguém. O segundo
-// consumidor já está previsto e é o que impede este módulo de nascer como componente de senha: os jogos de
-// palavras do catálogo do `inclusionist-demos` precisam da mesma coisa.
+// O consumidor é o CÓDIGO DA SALA DA PROFESSORA. Não é a senha de progressão da criança: o ADR-0037 a
+// enterrou junto com a ideia de salvar jogo — não existe save, e o Inclusionist não guarda nada sobre uma
+// criança. O que o ADR-0037 diz que sobrevive é o `core/password`, e por outro motivo: *"the teacher's room
+// code is the same engineering problem… it stays because the room screen will need it"*. O modo de falha
+// mudou de forma junto: um código errado que seja ACEITO não carrega o progresso de outra criança — larga
+// esta criança na sala de outra turma, fazendo a atividade de outra professora.
+//
+// O segundo consumidor já está previsto e é o que impede este módulo de nascer como componente de senha: os
+// jogos de palavras do catálogo do `inclusionist-demos` precisam da mesma coisa.
 //
 // ========================= O CORTE (ADR-0041) =========================
 // MECÂNICA aqui, TELA no `ui/`. É a mesma divisão que o `core/password` acabou de usar, e ela existe para
