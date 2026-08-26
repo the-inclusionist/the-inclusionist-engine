@@ -123,6 +123,28 @@ decision-outcome:
       Option buttons go to 44 px tall (from 35,6). The list is CENTRED and WIDER. 44 is not the WCAG
       minimum — that is 24 — it is Apple's recommendation, and this project takes a floor as a floor.
 
+      THE NUMBER WAS CHALLENGED, and the challenge improved the record. The Dev asked whether 44 was
+      excessive: the screen is DRAWN for 320×180, the smallest size in real use is 640×360, so a button
+      would only need 22 in the base drawing to land on 44 on screen.
+
+      The reasoning is CORRECT for anything drawn INSIDE the canvas — and these buttons are not. MEASURED
+      on the built game: 320×180 is the canvas BUFFER, which the browser upscales 2×; `#game-region` and
+      `#dom-layer` are 640×360 CSS with `transform: none`. The pause card, the accessibility bar and the
+      touch controls are DOM, laid out in CSS pixels at the region's real size — a button declared 44px
+      measures 44 CSS px, not 88, and 22 would measure 22 (below the WCAG floor of 24).
+
+      AND THE DECIDING ARGUMENT IS NOT EITHER STANDARD — it is this project's own physical ruler, already
+      fixed in the touch panel: "11–12,5 mm = mão de criança (6–12 anos)… mínimo 11 mm: abaixo disso o
+      polegar erra mais e segurar cansa antes (base: alvo de polegar ~9,6 mm)". At 96 px/in, 44 CSS px is
+      11,6 mm — inside the child-hand band. 22 px would be 5,8 mm, under the thumb target the panel itself
+      cites. (The conversion assumes 96 px/in; on the school hardware only the device answers.)
+
+      ⚠️ OPEN COST, measured while answering the challenge: at exactly 640×360 the card holds 413 px of
+      content in 353 visible px — the seven 44 px items DO NOT FIT and the list scrolls. For a child
+      navigating by ear that is harmless (the ring wraps and every item announces itself); for a finger it
+      is one more scroll. Whether to keep the scroll, shrink the gaps, or hide the heading when it does not
+      fit is not decided here.
+
       ===== 7. THREE RULES THAT APPLY TO THE WHOLE GAME, NOT ONLY TO THE PAUSE =====
         · INDEXING: every navigable item announces its position and total, at the END of the string
           ("Alto contraste, ativado, 6 de 10"), with an option to turn indexing off.
