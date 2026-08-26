@@ -116,7 +116,10 @@ export default defineConfig({
         test: {
           name: 'node',
           environment: 'node',
-          include: ['tests/**/*.node.test.js'],
+          // `.ts` entra junto por causa dos testes de TIPO (ADR-0039): a metade de compilação deles é
+          // conferida pelo `tsc`, mas o ADR exige que eles rodem no comando que a pipeline já roda, e não
+          // num ritual separado — um teste que ninguém executa é decoração.
+          include: ['tests/**/*.node.test.{js,ts}'],
         },
       },
       {
