@@ -25,7 +25,7 @@ import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import type { PlayerQuiz } from './entity.js'; // ADR-0039: o jogador carrega o SUPERTIPO, não a união
 import { rnd, randInt, shuffle } from '../core/rng.js';
-import { numPlayers } from '../core/state.js';
+
 import { activity as ACTIVITY } from './state.js'; // GAME desde a Fase B (ADR-0038)
 import { coins, quizLevel } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 import { getActivity } from '../educational/activities-registry.js';
@@ -325,8 +325,15 @@ export function cKey(c: Choice): string { return (c && typeof c === 'object') ? 
 /** O que a alternativa EXIBE (número ou gráfico de fração). */
 export function cDisp(c: Choice): string { return (c && typeof c === 'object') ? c.disp : String(c); }
 
-/** Prefixo das falas do quiz em multiplayer ("Jogador 2: "); vazio no solo. */
-export function quizWho(pl: QuizPlayer): string { return numPlayers > 1 ? t('sr.quiz.who', { n: pl.i + 1 }) : ''; }
+/** Prefixo das falas do quiz em multiplayer ("Jogador 2: "); vazio no solo.
+ *
+ *  A contagem entra por PARÂMETRO desde 2026-08-26. Ela vinha de `numPlayers`, um `let` de `core/state`, e
+ *  esta função é exportada e usada pelo teste — o `let` de módulo obrigava o teste a saber em que estado o
+ *  `core/state` estava sendo carregado. Um parâmetro diz a mesma coisa e não depende de ordem de import.
+ *  Dentro do módulo há o atalho `who(pl)`, que pergunta a contagem à rodada. */
+export function quizWho(pl: QuizPlayer, numJogadores: number): string {
+  return numJogadores > 1 ? t('sr.quiz.who', { n: pl.i + 1 }) : '';
+}
 
 /** Matemática: a conta no topo + matriz 3×3 de 9 respostas (números ou gráficos). */
 export function somasubHtml(q: MathQuiz): string {
@@ -430,6 +437,9 @@ export interface QuizCtx {
   /** `disp` do game.js: aplica `letterCase` ('lower'/'upper'), que é uma `let` reatribuída por applyLetra. */
   disp: (s: string) => string;
 
+  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui, e não
+   *  mais de um `let` de módulo — dois jogos na mesma página teriam de compartilhá-lo. */
+  getNumPlayers: () => number;
   /** `modoCego` (empatia auditiva) — `let` do game.js. */
   isModoCego: () => boolean;
   /** `actCat()` da instância de ui/activities-menu: 'alf' muda a regra de penalidade e refala a palavra. */
@@ -479,6 +489,8 @@ export interface QuizApi {
 /** Liga o slice do quiz ao jogo. Sem I/O: só guarda o ctx e devolve a API. */
 export function initQuiz(ctx: QuizCtx): QuizApi {
   const c = ctx;
+  /** `quizWho` com a contagem da rodada já preenchida — é como as onze falas daqui o usam. */
+  const who = (pl: QuizPlayer): string => quizWho(pl, c.getNumPlayers());
 
   // ---------------------------------------------------------------------------------------------
   // Abertura dos desafios
@@ -491,7 +503,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     if (gen.dots !== undefined) q.dots = gen.dots;
     if (gen.not !== undefined) q.not = gen.not;
     pl.quiz = q; pl.vx = 0; pl.vy = 0;
-    c.srSay(quizWho(pl) + gen.fala);
+    c.srSay(who(pl) + gen.fala);
     renderQuiz(pl);
   }
 
@@ -512,7 +524,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     abrirQuiz(pl, { kind: 'silabas', hearSyl: (quizLevel === 2), coinIndex, letter, word: item.w, emoji: item.e, correct, options, boxes: [null, null], sel: 0, tries: 0, revealed: false });
     pl.vx = 0; pl.vy = 0;
     // A letra e a palavra ATRAVESSAM em pt-BR: são a matéria de uma disciplina de idioma. A moldura traduz.
-    c.srSay(quizWho(pl) + t('sr.quiz.buildWord', { letra: c.disp(item.w[0]), palavra: item.w })); // letra da PRÓPRIA palavra (o não-repetir pode trocar a letra da moeda)
+    c.srSay(who(pl) + t('sr.quiz.buildWord', { letra: c.disp(item.w[0]), palavra: item.w })); // letra da PRÓPRIA palavra (o não-repetir pode trocar a letra da moeda)
     c.gameSay(item.w); // ao abrir, fala a palavra SEMPRE (independente do toggle TTS) — José
     renderQuiz(pl);
   }
@@ -522,7 +534,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     const item = pickWord(letter);
     abrirQuiz(pl, { kind: 'pre', coinIndex, word: item.w, emoji: item.e, choices: generatePreChoices(item), sel: 0, tries: 0, revealed: false });
     pl.vx = 0; pl.vy = 0;
-    c.srSay(quizWho(pl) + t('sr.quiz.whichSpelling', { palavra: item.w }));
+    c.srSay(who(pl) + t('sr.quiz.whichSpelling', { palavra: item.w }));
     c.gameSay(item.w); // fala o nome da imagem SEMPRE (independente do toggle TTS) — José
     renderQuiz(pl); quizSpeakSel(pl);
   }
@@ -532,7 +544,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     const item = pickWord(letter);
     abrirQuiz(pl, { kind: 'alf', braille: quizLevel === 5, coinIndex, word: item.w, emoji: item.e, options: generateAlfOptions(item.w), boxes: Array(item.w.length).fill(null), sel: 0, tries: 0, revealed: false });
     pl.vx = 0; pl.vy = 0;
-    c.srSay(quizWho(pl) + t('sr.quiz.writeWord', { palavra: item.w, n: item.w.length }));
+    c.srSay(who(pl) + t('sr.quiz.writeWord', { palavra: item.w, n: item.w.length }));
     renderQuiz(pl); quizSpeakSel(pl);
   }
 
@@ -546,7 +558,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
   function announceBraille(pl: QuizPlayer): void {
     const q = quizDe(pl); if (!q || q.kind !== 'braille') return;
     // As celas Braille (`cell.l`/`cell.text`) são conteúdo de disciplina de idioma e atravessam inteiras.
-    c.srAlert(quizWho(pl) + t('sr.quiz.brailleDictation', { palavra: q.word, celas: q.cells.map((cell) => `${cell.l}: ${cell.text}.`).join(' ') }));
+    c.srAlert(who(pl) + t('sr.quiz.brailleDictation', { palavra: q.word, celas: q.cells.map((cell) => `${cell.l}: ${cell.text}.`).join(' ') }));
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -606,7 +618,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
 
   /** L3: overlay POR JOGADOR — solo usa o #quiz global; MP cria um .quiz dentro da tela do jogador. */
   function quizEl(pl: QuizPlayer): HTMLElement | null {
-    if (numPlayers <= 1) return c.$<HTMLElement>('#quiz');
+    if (c.getNumPlayers() <= 1) return c.$<HTMLElement>('#quiz');
     const scr = c.getScreen(pl.i); if (!scr) return c.$<HTMLElement>('#quiz');
     let q = scr.querySelector<HTMLElement>(':scope > .quiz');
     if (!q) { q = document.createElement('div'); q.className = 'quiz'; q.hidden = true; scr.appendChild(q); }
@@ -665,10 +677,10 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     const word = 'word' in q ? q.word : undefined;
     if (pl.alfWins < 3) {
       if (c.actCat() === 'alf' && word) { // LETRAMENTO: som suave (o sfx de acerto já tocou) + REFALA a palavra + PAUSA → próxima palavra
-        q.won = true; c.gameSay(word); c.srSay(quizWho(pl) + t('sr.quiz.wellDone', { palavra: c.disp(word), n: pl.alfWins }));
+        q.won = true; c.gameSay(word); c.srSay(who(pl) + t('sr.quiz.wellDone', { palavra: c.disp(word), n: pl.alfWins }));
         setTimeout(() => { if (pl.quiz === q) closeQuiz(pl); }, 1200); return; // a próxima abre ao encostar na moeda e é falada (openSilabas/openPre → gameSay)
       }
-      c.srSay(quizWho(pl) + t('sr.quiz.correctSoFar', { n: pl.alfWins })); closeQuiz(pl); return; // moeda FICA; encostado nela, a próxima pergunta abre sozinha
+      c.srSay(who(pl) + t('sr.quiz.correctSoFar', { n: pl.alfWins })); closeQuiz(pl); return; // moeda FICA; encostado nela, a próxima pergunta abre sozinha
     }
     // 3ª VITÓRIA: acende a 3ª luz + comemoração SUAVE (som tipo enigma-resolvido do Zelda), depois pega a moeda
     q.celebrating = true;
@@ -676,7 +688,7 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     if (dots) { dots.querySelectorAll('.qw-dot').forEach((d) => d.classList.add('on')); dots.classList.add('celebrate'); }
     c.playPuzzleSolved(); if (typeof c.burstSparkle === 'function') c.burstSparkle(pl.x, pl.y - 16, 0xffe08a, 10); // faíscas gentis
     if (c.actCat() === 'alf' && word) c.gameSay(word); // letramento: refala a palavra na 3ª vitória também
-    c.srSay(quizWho(pl) + 'Muito bem! Você ganhou a moeda!');
+    c.srSay(who(pl) + 'Muito bem! Você ganhou a moeda!');
     setTimeout(() => { pl.alfWins = 0; quizTake(pl, q); }, 900); // deixa a 3ª luz + animação aparecerem antes de fechar
   }
 
@@ -687,13 +699,13 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     if (q.revealed) { // SEM PENALIDADE na alfabetização: a moeda fica no lugar (nova pergunta ao tocar); matemática re-sorteia a figura
       if (c.actCat() === 'alf') { closeQuiz(pl); } else { c.respawnFigure(q.coinIndex); closeQuiz(pl); } return;
     }
-    if (q.kind === 'braille') { c.sfx('coin'); c.srSay(quizWho(pl) + 'Coletado!'); quizWin(pl, q); return; }
+    if (q.kind === 'braille') { c.sfx('coin'); c.srSay(who(pl) + 'Coletado!'); quizWin(pl, q); return; }
     if (q.kind === 'pre') { // nível 1: acertou a escrita?
       if (q.choices[q.sel] === q.word) {
-        c.sfx('correct'); c.srSay(`${quizWho(pl)}Acertou! ${c.disp(q.word)}: ${soletra(q.word)}.`); quizWin(pl, q);
+        c.sfx('correct'); c.srSay(`${who(pl)}Acertou! ${c.disp(q.word)}: ${soletra(q.word)}.`); quizWin(pl, q);
       } else {
         q.tries++;
-        if (q.tries >= 2) { q.revealed = true; c.srAlert(`${quizWho(pl)}A certa é ${c.disp(q.word)}: ${soletra(q.word)}. Pule para seguir.`); }
+        if (q.tries >= 2) { q.revealed = true; c.srAlert(`${who(pl)}A certa é ${c.disp(q.word)}: ${soletra(q.word)}. Pule para seguir.`); }
         else { c.sfx('wrong'); c.srSay(t('sr.quiz.tryAgain')); }
         renderQuiz(pl);
       }
@@ -703,10 +715,10 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
       const N = q.options.length;
       if (q.sel < N) { placeLetter(pl, q.options[q.sel]); return; }
       if (q.sel === N) { eraseLastLetter(pl); return; }
-      if (q.boxes.join('') === q.word) { c.sfx('correct'); c.srSay(quizWho(pl) + 'Acertou!'); quizWin(pl, q); }
+      if (q.boxes.join('') === q.word) { c.sfx('correct'); c.srSay(who(pl) + 'Acertou!'); quizWin(pl, q); }
       else {
         q.tries++;
-        if (q.tries >= 2) { q.revealed = true; q.boxes = q.word.split(''); c.srAlert(`${quizWho(pl)}A palavra é ${c.disp(q.word)}: ${soletra(q.word)}. Pule para seguir.`); }
+        if (q.tries >= 2) { q.revealed = true; q.boxes = q.word.split(''); c.srAlert(`${who(pl)}A palavra é ${c.disp(q.word)}: ${soletra(q.word)}. Pule para seguir.`); }
         else { q.boxes = q.boxes.map(() => null); c.sfx('wrong'); c.srSay(t('sr.quiz.tryAgain')); }
         renderQuiz(pl);
       }
@@ -716,24 +728,24 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
       const N = q.options.length;
       if (q.sel < N) { placeSilaba(pl, q.options[q.sel]); return; }
       if (q.sel === N) { eraseLastSilaba(pl); return; }
-      if (q.boxes[0] === q.correct[0] && q.boxes[1] === q.correct[1]) { c.sfx('correct'); c.srSay(quizWho(pl) + 'Acertou!'); quizWin(pl, q); }
+      if (q.boxes[0] === q.correct[0] && q.boxes[1] === q.correct[1]) { c.sfx('correct'); c.srSay(who(pl) + 'Acertou!'); quizWin(pl, q); }
       else {
         q.tries++;
-        if (q.tries >= 2) { q.revealed = true; q.boxes = q.correct.slice(); c.srAlert(`${quizWho(pl)}A palavra é ${c.disp(q.word)}. Pule para seguir.`); }
+        if (q.tries >= 2) { q.revealed = true; q.boxes = q.correct.slice(); c.srAlert(`${who(pl)}A palavra é ${c.disp(q.word)}. Pule para seguir.`); }
         else { q.boxes = [null, null]; c.sfx('wrong'); c.srSay(t('sr.quiz.tryAgain')); }
         renderQuiz(pl);
       }
       return;
     }
     // matemática também: 3 vitórias = 1 moeda (compara pela CHAVE, não pela exibição)
-    if (cKey(q.choices[q.sel]) === q.answer) { c.sfx('correct'); c.srSay(quizWho(pl) + 'Acertou!'); quizWin(pl, q); }
+    if (cKey(q.choices[q.sel]) === q.answer) { c.sfx('correct'); c.srSay(who(pl) + 'Acertou!'); quizWin(pl, q); }
     else {
       q.tries++;
       // As chaves do `else` importam: sem elas o `srSay(sr.quiz.tryAgain)` ficava FORA do ramo e era dito
       // tambem depois de revelar a resposta — a crianca ouvia "A resposta e X. Pule para seguir." e logo
       // "Tente de novo.", duas instrucoes que se contradizem. Os outros tres ramos deste arquivo sempre
       // tiveram as chaves; era so este.
-      if (q.tries >= 2) { q.revealed = true; c.srAlert(`${quizWho(pl)}A resposta é ${speakChoice(q.answer)}. Pule para seguir.`); }
+      if (q.tries >= 2) { q.revealed = true; c.srAlert(`${who(pl)}A resposta é ${speakChoice(q.answer)}. Pule para seguir.`); }
       else { c.sfx('wrong'); c.srSay(t('sr.quiz.tryAgain')); }
       renderQuiz(pl);
     }

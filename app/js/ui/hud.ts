@@ -26,7 +26,7 @@
 import { screenGrid } from '../core/screens.js';
 import type { PlayerView } from '../core/entity.js';
 import type { Objective } from '../core/contract.js';
-import { players, numPlayers } from '../core/state.js';
+
 import { t } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
 
@@ -135,6 +135,13 @@ export function hudRowView(p: HudPlayer, powerShort: (kind: string) => string, o
 // ---------------------------------------------------------------------------------------------
 
 export interface HudCtx {
+  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
+   *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
+   *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
+  getNumPlayers: () => number;
+  /** Os jogadores. Estado de RODADA, pelo mesmo motivo. `readonly unknown[]` porque cada consumidor
+   *  estreita para a SUA fatia — o tipo real é do jogo, não da engine (ADR-0033). */
+  getPlayers: () => readonly unknown[];
   /** Seletor DOM (forma do `$` de ui/dom.ts), injetado — o módulo nunca alcança `document` por global. */
   $: DomQuery;
   /**
@@ -190,8 +197,9 @@ export function initHud(ctx: HudCtx): HudApi {
     gameHudEl.innerHTML = '';
     vpHudDom = []; vpQuitDom = []; vpScreens = [];
     const panes: HTMLElement[] = [];
-    for (let i = 0; i < screenCount(numPlayers); i++) {
-      const r = screenRect(i, numPlayers);
+    const n = ctx.getNumPlayers();
+    for (let i = 0; i < screenCount(n); i++) {
+      const r = screenRect(i, n);
       const scr = document.createElement('div');
       scr.className = 'player-screen'; scr.dataset.player = String(i);
       scr.style.left = r.L; scr.style.top = r.T; scr.style.width = r.W; scr.style.height = r.H;
@@ -218,7 +226,7 @@ export function initHud(ctx: HudCtx): HudApi {
 
   function updateGameHud(): void {
     for (let i = 0; i < vpHudDom.length; i++) {
-      const p = players[i] as HudPlayer | undefined;
+      const p = ctx.getPlayers()[i] as HudPlayer | undefined;
       if (!p) continue;
       const d = vpHudDom[i];
       const v = hudRowView(p, ctx.powerShort, ctx.hudObjective(i));

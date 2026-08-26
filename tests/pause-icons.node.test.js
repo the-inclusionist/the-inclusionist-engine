@@ -20,7 +20,15 @@ import {
   initPauseIcons,
 } from '../app/js/ui/pause-icons.js';
 import { CONTRAST_LEVELS } from '../app/js/ui/settings-visual.js';
-import { players, numPlayers, setNumPlayersValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+const numPlayers = () => rodada.numPlayers; // era binding vivo; virou função (o teste chama `numPlayers()`)
+
 
 // SEM RÓTULO DINÂMICO: a resposta de um jogo cujo botão não tem rótulo próprio. Era `quizLevel` + `QL_NAME`,
 // e o módulo montava a frase; agora ele recebe a frase ou `null` (item 19).
@@ -92,6 +100,7 @@ function buildCtx(over = {}) {
     acts: {},
   };
   const ctx = {
+    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
     pmButtons: PM_BTNS,
@@ -761,14 +770,18 @@ describe('initPauseIcons — o que NÃO acontece no import', () => {
     expect(spy).not.toHaveBeenCalled(); // pauseActs é LAZY — nunca lido no init (TDZ no game.js)
   });
 
-  it('numPlayers vem de core/state (binding vivo), não de uma cópia do init', () => {
+  // Antes de 2026-08-26 este caso dizia "vem de core/state (binding vivo)". A fonte mudou — hoje é o getter
+  // da rodada injetado no ctx — mas a garantia é a MESMA e continua valendo: o módulo PERGUNTA a cada uso,
+  // em vez de copiar a contagem no init. Um `const n = ctx.getNumPlayers()` guardado no init faria a segunda
+  // metade deste caso falhar.
+  it('a contagem é PERGUNTADA a cada uso, não copiada no init', () => {
     setPlayers([{ audioSink: 'A' }, { audioSink: 'A' }]);
     const { ctx, alerted } = buildCtx();
     const api = initPauseIcons(ctx);
     api.iconAct('blind', 0);
     expect(alerted).toHaveLength(1); // compartilhado → recusa
     setPlayers([{ audioSink: 'A' }]);
-    expect(numPlayers).toBe(1);
+    expect(numPlayers()).toBe(1);
     api.iconAct('blind', 0);
     expect(alerted).toHaveLength(1); // sozinho → passa, sem novo alerta
   });

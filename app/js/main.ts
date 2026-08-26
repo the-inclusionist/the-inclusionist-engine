@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { phase, numPlayers, vizMode, initVizMode, players, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion } from './core/state.js'; // estado compartilhado
+import { emit, phase, vizMode, initVizMode, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion } from './core/state.js'; // estado compartilhado
 import { cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue } from './game/state.js'; // GAME (ADR-0038, Fase B)
 import { createRunState } from './core/run-state.js'; // ADR-0038 Fase B: a RODADA como fábrica
 import type { Powerup } from './game/level-geometry.js'; // o tipo do power-up é do JOGO
@@ -29,7 +29,16 @@ import type { Powerup } from './game/level-geometry.js'; // o tipo do power-up �
  * e quem cria diz de quê ela é. Era `readonly unknown[]` em `core/state`, e o `unknown` custava três
  * erros de tipo aqui embaixo.
  */
-const rodada = createRunState<Powerup>();
+const rodada = createRunState<Powerup>({ aoTrocarJogadores: (n) => emit('numPlayers', n) });
+// `players` é um APELIDO, não uma cópia: a lista da rodada nunca é reatribuída (só mutada no lugar), então
+// um `const` aponta para o mesmo array para sempre — e as 44 leituras deste arquivo seguem escritas igual.
+// Ver a nota do campo em `core/run-state`, que é onde essa garantia está declarada.
+const players = rodada.players;
+// Os dois módulos que leem a contagem sem ter ctx: a escala das telas e a ancoragem da scanline. Ligados
+// AQUI, junto da criação da rodada, e não lá embaixo — um `initLayout` esquecido não dá erro nenhum, só
+// devolve 1 para sempre, e o multi-tela nasceria com a grade de um jogador.
+initLayout({ numJogadores: () => rodada.numPlayers });
+initCrt({ numJogadores: () => rodada.numPlayers });
 import type { Player, PlayerView } from './core/entity.js'; // a entidade da ENGINE, e a vista mínima dela
 import type { GamePlayer, ControlledGamePlayer } from './game/entity.js'; // as deste JOGO — ver `jogadores`/`controlados`
 import type { ModalIntent } from './input/keydown.js'; // a intenção direcional do ADR-0033
@@ -135,10 +144,10 @@ import { initCollision, tileAt, solidAt, surfTop } from './core/collision.js'; /
 import { BOX, makePlayer } from './game/player.js'; // Estágio 4: entidade + geometria de colisão do jogador
 import { initCoins, findCoinCandidates, pickCoins } from './game/coins.js'; // Estágio 4: posicionamento dos coletáveis (pools vêm daqui)
 import { srSay, srAlert, setVlibrasSay } from './core/a11y-sr.js'; // Estágio 4 (Tier 1): anúncios p/ leitor de tela (+ Libras injetado)
-import { CRT, applyCrt } from './render/crt.js'; // Estágio 4 (Tier 1): estética CRT (scanlines/vinheta/cantos)
+import { CRT, applyCrt, initCrt } from './render/crt.js'; // Estágio 4 (Tier 1): estética CRT (scanlines/vinheta/cantos)
 import { initMinimap, markSeen, redrawMinimapIfDirty, drawMinimapPlayer, resetMinimap, setMinimapVisible, getMinimap, minimapSeenCount } from './render/minimap.js'; // Estágio 4 (Tier 1): minimapa + fog-of-war
 import { vlibrasSay, vlibrasOpen, toggleLibras, vlTick, librasOpen, setOnLibrasChange } from './ui/vlibras.js'; // Estágio 4 (Tier 1): intérprete VLibras (modo pessoa surda)
-import { layout } from './ui/layout.js'; // Estágio 4 (Tier 1): escala do jogo (múltiplo inteiro de 320×180 em px reais)
+import { layout, initLayout } from './ui/layout.js'; // Estágio 4 (Tier 1): escala do jogo (múltiplo inteiro de 320×180 em px reais)
 import { eyeMode, setEyeMode, startEyeControl, stopEyeControl, loadWebGazer } from './ui/webcam.js'; // Estágio 4 (Tier 1): jogar com os olhos (WebGazer)
 // Empatia MOTORA (global, muda a jogabilidade): `oneButton`/`wheelchair` migraram para core/state.js (#50) —
 // bindings vivos, escrita pelos setEfeito abaixo. isSolidType os usa, e continua vendo sempre o valor atual.
@@ -174,7 +183,7 @@ initWorldTex({ world: WORLD, W: WORLD_W, H: WORLD_H }); // Estágio 4: liga o bu
 initCollision({ world: WORLD, W: WORLD_W, H: WORLD_H,
   isWheelchair: ()=>wheelchair, isModoCego: ()=>modoCego, caneDiv: ()=>caneBlockDiv,
   wcSolid: ()=>rodada.wcSolid, gateTiles: ()=>rodada.gateTiles, gateOpen: ()=>rodada.gateOpen });
-initCoins({ world: WORLD, W: WORLD_W, H: WORLD_H, anyEasy: ()=>anyEasy(), isWheelchair: ()=>wheelchair }); // Estágio 4: posicionamento de coletáveis (usa solidAt já ligado acima)
+initCoins({ numJogadores: () => rodada.numPlayers, world: WORLD, W: WORLD_W, H: WORLD_H, anyEasy: ()=>anyEasy(), isWheelchair: ()=>wheelchair }); // Estágio 4: posicionamento de coletáveis (usa solidAt já ligado acima)
 // Itens do mapa Clarity → viram ITENS/barreira (não tiles): 7=pulo-turbo, 8=voo, 11=chave; 10=portão.
 // Removemos o tile do grid (vira ar) e o item/barreira é desenhado/colidido à parte; some ao pegar/abrir.
 const MAP_ITEMS: { tx: number; ty: number; kind: string }[] = [], MAP_GATE: { tx: number; ty: number }[] = [];
@@ -312,7 +321,7 @@ const jogadores = (): GamePlayer[] => players as GamePlayer[];
 const controlados = (): ControlledGamePlayer[] => players as ControlledGamePlayer[];
 
 players.push(makePlayer(0));
-// 'numPlayers' agora vem de core/state.js (Fase 2, mega-variável 3). Escrita via setNumPlayers()/joinPlayer.
+// 'numPlayers' (Fase 2, mega-variável 3). Escrita via setNumPlayers()/joinPlayer.
 setCoins(pickCoins(COIN_TARGET, coinPools())); // coins: mega-var 7 em core/state.js (reatribuição via setCoins)
 // Itens INDIVIDUAIS por jogador (multiplayer em telas separadas): cada moeda/letra/forma é coletada
 // independentemente por cada jogador. Só a CHAVE é compartilhada (ver powerups). taken = espelho do P1 (solo).
@@ -346,7 +355,7 @@ initKB(); // o mapa de teclas vive em input/keyboard (#50); aqui só o disparo d
 // "b_ is not a function": o `initKeyboardRuntime` desta linha chama `getPlayers()` durante a própria
 // inicialização, quando o `const` ainda não tinha sido avaliado. `jogadores()` não sofria disso por
 // acidente — todos os usos dele vêm depois. Quem mover isto daqui quebra o boot, e não o tsc.
-const kbRuntime = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => numPlayers, getPlayers: () => controlados() });
+const kbRuntime = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => rodada.numPlayers, getPlayers: () => controlados() });
 const kbFor = (i: number) => kbRuntime.kbFor(i);
 // controls/KJUMP..KRUN/GAME_KEYS nao moram mais aqui (D1): eram oito copias de kbRuntime.computeControlsState(),
 // e `applyControls` existia so para refaze-las. A memoria foi para dentro de input/keyboard-runtime, que e quem
@@ -374,7 +383,7 @@ assignControls();
 const keydownApi = initKeydown({
   attractOnInput: () => attractCtl.onInput(),
   handleCaptureKeydown: (e) => ctrlPanel.handleCaptureKeydown(e),
-  getNumPlayers: () => numPlayers, getPlayers: () => players,
+  getNumPlayers: () => rodada.numPlayers, getPlayers: () => players,
   getControls: () => kbRuntime.controlsState(),
   heldKeys: keys, isOneButton: () => oneButton,
   actionOf: (code, i) => kbRuntime.actionOf(code, i),
@@ -438,7 +447,7 @@ function loadPlayerA11y(p: Player,i: number){ const v=store.get(store.KEYS.vizP(
   if(i===0){ const ov=store.get(store.KEYS.viz); if(ov&&VIZ_BY_KEY[ov]&&store.get(store.KEYS.vizP(0))==null)p.viz=ov; // migra chaves antigas
     if(store.getBool(store.KEYS.toggleMoveLegacy)&&store.get(store.KEYS.toggleMoveP(0))==null)p.toggleMove=true; } }
 function setToggleMove(i: number,on: boolean){ const p=players[i]; if(!p)return; p.toggleMove=on; store.setBool(store.KEYS.toggleMoveP(i),on); if(!on)p.walkDir=0;
-  srSay(playerPrefix(i,numPlayers)+t(on?'sr.motor.toggleMoveOn':'sr.motor.toggleMoveOff')); }
+  srSay(playerPrefix(i,rodada.numPlayers)+t(on?'sr.motor.toggleMoveOn':'sr.motor.toggleMoveOff')); }
 function showCaption(txt: string){ const el=$('#caption'); if(!el||!txt)return; el.textContent=txt; el.classList.add('show'); if(capTimer!==null)clearTimeout(capTimer); capTimer=setTimeout(()=>{el.classList.remove('show'); el.textContent='';},1300); }
 // Earcons + ponte com legendas extraídos p/ platform/audio-earcons.ts (Tier 2, áudio rodada 2). captionsOn/showCaption
 // VIVEM aqui (UI alterna captionsOn; win() reusa showCaption) → entram por injeção. Chamado como earcons.sfx(...).
@@ -480,7 +489,7 @@ const sonarNav = createAudioSonar({
   nameAt: () => ({ text: t('hud.nome.moeda'), gender: 'f', plural: false }),
   tonePan, srSay, narrate: tts.narrate,
   VIZ_BY_KEY, getModoCego: () => modoCego, LOGICAL_W,
-  getPlayers: () => players, getNumPlayers: () => numPlayers,
+  getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat,
 });
 const nav = createAudioNav({ tileAt, solidAt, held, tonePan, noiseHit, BOX, TILE,
@@ -600,7 +609,7 @@ const { setCenario } = createSetCenario({
 // e ja nao tinha chamador aqui (o rotulo do painel vem de ui/settings-visual, que reexporta o do modulo).
 // A RECOMPOSICAO do filtro CSS fica: ela mistura o modo de visao ativo e invalida caches de textura,
 // coisas que nao sao do realce L->Q.
-initLqFilter({ onChange: () => { if(app&&view){ if(numPlayers<=1)applyVizGlobal(players[0].viz); else view.style.filter=lqFilter(); } } });
+initLqFilter({ onChange: () => { if(app&&view){ if(rodada.numPlayers<=1)applyVizGlobal(players[0].viz); else view.style.filter=lqFilter(); } } });
 // vizMode vem de core/state.js (Fase 2, mega-var 6). Init de boot SEM persistir (preserva o rastreio de prefers-contrast):
 initVizMode((()=>{ try{ const v=store.get('incl_viz',null); if(v&&VIZ_CYCLE.includes(v))return v; }catch(e){}
   // A guarda `window.matchMedia &&` saiu: o `tsc` acusa TS2774 porque ela testa uma função que SEMPRE existe
@@ -705,7 +714,7 @@ const extraLayer=new PIXI.Container(); camera.addChild(extraLayer); // power-ups
 // no grafo NAO e. So o construtor subiu.
 const rampLayer=new PIXI.Graphics();
 const ropeLayer=new PIXI.Graphics();
-initLevelGeometry({ W: WORLD_W, H: WORLD_H, isWheelchair: () => wheelchair,
+initLevelGeometry({ W: WORLD_W, H: WORLD_H, getPlayers: () => rodada.players, isWheelchair: () => wheelchair,
   rampLayer, ropeLayer, extraLayer,
   wcSolid: () => rodada.wcSolid, powerups: () => rodada.powerups, gateTiles: () => rodada.gateTiles,
   gate: () => rodada.gate, gateOpen: () => rodada.gateOpen,
@@ -763,7 +772,7 @@ let _streetCols: [number, number][] | null = null; // colunas ABERTAS da rua/fac
 function streetCols(){ if(_streetCols)return _streetCols; _streetCols=[];
   for(let tx=2;tx<WORLD_W-2;tx++){ const ty=lifeSurfaceLowAt(tx); if(ty>0&&ty*TILE>WORLD_PX_H*0.55)_streetCols.push([tx,ty]); }
   return _streetCols; }
-life.initLife({ layer: lifeLayer, makeSprite: (t) => new PIXI.Sprite(t as never), lifeTex: CITY_TEX.lifeTex, adultTex: CITY_TEX.adultTex,
+life.initLife({ getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers, layer: lifeLayer, makeSprite: (t) => new PIXI.Sprite(t as never), lifeTex: CITY_TEX.lifeTex, adultTex: CITY_TEX.adultTex,
   lifeSurfaceAt, lifeSurfaceLowAt, streetCols, decoSprites, rm, W: WORLD_W, pxW: WORLD_PX_W, pxH: WORLD_PX_H });
 /* ===================== L5: CARROS (camada da FRENTE) + SEMÁFORO funcional — procedural ===================== */
 // Carros cruzam a rua À FRENTE do player (carLayer re-erguido em ensureSprites); param no vermelho/amarelo
@@ -845,7 +854,7 @@ players[0].sprite=playerSprite;
 // (clock GERAL de animação — o cintilar das moedas + ctx o leem). initFx injeta fxG+rm logo após criar fxG.
 let fxClock=0;
 const fxG=new PIXI.Graphics(); camera.addChild(fxG); // acima dos players (re-erguida em ensureSprites)
-initFx({ fxG, rm }); // Estágio 4: liga o módulo fx à camada PIXI + reduce-motion
+initFx({ getPlayers: () => players, fxG, rm }); // Estágio 4: liga o módulo fx à camada PIXI + reduce-motion
 // ===== R1 (#69, ADR-0020): ORDEM-Z CANÔNICA do MUNDO — zIndex declarativo (core/layers.ts) sobrepõe os
 // addChildAt(getChildIndex) + os re-add-ao-topo (que ficam redundantes: o zIndex decide a ordem). Filhos ANINHADOS
 // (grassG/cityDecoG/lavaFxG no lifeLayer; waterFxG no decoLayer) mantêm a ordem interna do pai. Alvo: no-op visual.
@@ -875,9 +884,9 @@ applyCrt();
 /* E11: sprites por jogador + render multi-viewport (render-to-texture) */
 let allPSprites=[playerSprite];
 function ensureSprites(){
-  for(let i=allPSprites.length;i<numPlayers;i++){ const s=new PIXI.Sprite(TEX_IDLE[0]); s.anchor.set(0.5,1); s.zIndex=Z.PLAYER; camera.addChild(s); allPSprites.push(s); }
+  for(let i=allPSprites.length;i<rodada.numPlayers;i++){ const s=new PIXI.Sprite(TEX_IDLE[0]); s.anchor.set(0.5,1); s.zIndex=Z.PLAYER; camera.addChild(s); allPSprites.push(s); }
   // (re-add-ao-topo removido — fxG/carLayer/themeFxG/fogG governados pelo zIndex canônico (bloco R1); sortableChildren re-ordena; #69)
-  allPSprites.forEach((s,i)=>{ s.visible=i<numPlayers; s.tint=PCOLOR[i]||0xffffff; if(i<numPlayers)players[i].sprite=s; });
+  allPSprites.forEach((s,i)=>{ s.visible=i<rodada.numPlayers; s.tint=PCOLOR[i]||0xffffff; if(i<rodada.numPlayers)players[i].sprite=s; });
 }
 let vpTex: RenderTextureLike[] = [], vpSpr: SpriteLike[] = [], vpFrames: GraphicsLike | null = null, vpDots: GraphicsLike[] = [];
 // HUD por jogador em DOM SOBREPOSTO (alta definição, não pixela): moedas (1ª coluna) + poder (2ª coluna), por viewport.
@@ -890,6 +899,7 @@ let vpPause: HTMLElement[] = []; // `pauseActor` migrou para core/state.js (#50)
    e o ctx do gamepad ja o escreve); o modulo so escreve, por setPauseActor. `pauseActs` entra por
    GETTER porque e um const ~1200 linhas abaixo — passa-lo direto explodiria na TDZ no boot. */
 const pauseIcons = initPauseIcons({
+  getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   srSay, srAlert,
   pmButtons: PM_BTNS,
   // O ROTULO PRONTO de um botao dinamico (item 19). A frase era montada dentro do `ui/pause-icons` — que e
@@ -932,6 +942,7 @@ function reflectTitleIcons(){ pauseIcons.reflectIconsIn($('#title-icons'),0); } 
    que permitiu extrair os dois em paralelo sem se tocarem. Os paineis criados dentro do laco voltam
    pelo gancho, porque `vpPause` e binding daqui e modulo nao reatribui binding alheio. */
 const hud = initHud({
+  getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   // O OBJETIVO deste jogo, na forma do campo 5 do contrato (core/contract.Objective). O HUD nao sabe mais o
   // QUE se junta: quem declara e a raiz de composicao, ou seja, o jogo. O nome segue em pt-BR porque ele
   // atravessa como PARAMETRO (pilar 3), e o genero/plural existem para as frases que precisam concordar.
@@ -968,7 +979,7 @@ const screenPipeline = initScreenPipeline({
   RenderTexture: PIXI.RenderTexture, NEAREST: PIXI.SCALE_MODES.NEAREST,
   criarSprite: (t) => new PIXI.Sprite(t as never), criarDesenho: () => new PIXI.Graphics(),
   stage: app.stage, renderer: app.renderer, camera, // aqui é o `ResizableRenderer` (só `resize`), não a captura
-  getNumPlayers: ()=>numPlayers,
+  getNumPlayers: ()=>rodada.numPlayers,
   getVpTex: ()=>vpTex, setVpTex: (a)=>{ vpTex=a; },
   getVpSpr: ()=>vpSpr, setVpSpr: (a)=>{ vpSpr=a; },
   getVpFrames: ()=>vpFrames, setVpFrames: (g)=>{ vpFrames=g; },
@@ -990,6 +1001,7 @@ buildGameHud(); // HUD por jogador no init (single-screen; configureRender só r
    `dir` e a unica variavel local que atravessa a fronteira, e por isso stepPlayer devolve {ran, dir}:
    `ran:false` reproduz o return seco de quiz/quit/waiting, que abortava a funcao INTEIRA, animacao inclusive. */
 initPhysics({
+  getPlayers: () => rodada.players,
   isWheelchair: ()=>wheelchair, isModoCego: ()=>modoCego, caneOn, WORLD_PX_H: ()=>WORLD_PX_H,
   sfx: (n)=>earcons.sfx(n), srSay, srAlert, hideTips, showPower, nav,
   tonePan, noiseHit, surfaceUnder,
@@ -1038,6 +1050,7 @@ function update(dt: number){
    GETTER; camadas, camera e renderer entram por valor. `applySharedTextures` e `const` declarado ABAIXO
    (viz-setters), por isso entra embrulhado numa seta — passado direto, cairia em TDZ e derrubaria o boot. */
 const drawApi = initDraw({
+  getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   camera, renderizarEm: (o, alvo, limpar) => app.renderer.render(o as never, { renderTexture: alvo as never, clear: limpar }),
   BOX, // a caixa do jogador ENTRA (como ja entrava em scene-city/scene-sky/audio-nav), nao e' importada la
   caneLayer, chairLayer, easyHitbox,
@@ -1119,6 +1132,7 @@ function respawnFigure(i: number){
    estaveis entram por valor. `reapplyVizAll` e `const` declarado ABAIXO (viz-setters), por isso vem embrulhado
    numa seta — passado direto, cairia em TDZ e derrubaria o boot. */
 const sessionApi = initSession({
+  getPlayers: () => players, getNumPlayers: () => rodada.numPlayers, setNumPlayers: (n) => rodada.setNumPlayers(n),
   $, librasReserve: ()=>0, // o intérprete NÃO empurra mais a tela (ver ui/vlibras + ui/layout); fica p/ o overlay sob demanda
   isCoarsePointer: ()=>{ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } },
   getMode: ()=>MODE(), // sem `setModeValue`: o MODE deriva de `activity` e não tem caminho de escrita (ADR-0040)
@@ -1173,6 +1187,7 @@ $('#btn-again')?.addEventListener('click',()=>{ restartGame(); $('#game-region')
    textura de parallax e nao tem o que fazer dentro de um menu. */
 if(!isValidActivityId(ACTIVITY)) setActivityValue(DEFAULT_ACTIVITY_ID); // valida o valor inicial contra o catalogo
 const activitiesMenu = initActivitiesMenu({
+  getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   $, getActiveElement: () => document.activeElement, srSay, srAlert,
   titleShow: titleUI.show,
   cenarios: Object.keys(CENARIOS).map(c => ({ id: c, nome: CENARIOS[c].nome })),
@@ -1188,6 +1203,7 @@ const { actCat, setActivity, startActivity, reallyStart,
 // callbacks sao arrows de proposito: touchCtl, respawnFigure, win e updateHud nascem mais abaixo.
 const quizApi = initQuiz({
   $, getScreen: (i) => hud.getScreen(i),
+  getNumPlayers: () => rodada.numPlayers,
   disp, isModoCego: () => modoCego,
   actCat, tabSel, fracNot, QL_NAME,
   srSay, srAlert, gameSay, narrate: (t) => tts.narrate(t),
@@ -1216,7 +1232,7 @@ const gamepadApi = initGamepad({
   getPhase: () => phase, setPhase,
   isAttractActive: () => attractCtl.isAttract(), stopAttract: () => attractCtl.stopAttract(),
   isTouchMode: () => document.body.classList.contains('touch-mode'), hideTouchControls: () => hideTouchControls(),
-  getPlayers: () => players, getNumPlayers: () => numPlayers,
+  getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   navTitle, sharedDialogOpen, navDialog, getPauseMenu: (i) => vpPause[i], navPause,
   setPauseActor: (i) => rodada.setPauseActor(i),
   modalInput, hasModal: temModal,
@@ -1241,7 +1257,7 @@ const optTelasBtn=$('#opt-telas'); // botão único: cicla 1→2→3→4 telas
 // e so um deles checava se as telas cabem. Pelo botao dava para pedir 2 telas numa janela pequena e o canvas
 // saia pela borda, cortado. Vem junto a recusa no celular (1 tela, decisao registrada) e o crescer sem
 // reiniciar a rodada — quem entra, entra no jogo em andamento. O anuncio agora e do proprio activateScreens.
-if(optTelasBtn)optTelasBtn.addEventListener('click',()=>{ activateScreens((numPlayers%4)+1); });
+if(optTelasBtn)optTelasBtn.addEventListener('click',()=>{ activateScreens((rodada.numPlayers%4)+1); });
 // Botão único de LETRAS: ABC (padrão) → abc → Braille
 // L3: nível do quiz de alfabetização (1..5), persistido; rótulo vivo nos menus de pausa
 function setQuizLevel(n: number, announce: boolean){ setQuizLevelValue(n); // core/state.js: clampa 1..5, persiste e emite; a reflexão de UI fica aqui
@@ -1277,7 +1293,7 @@ const soundBtn=$('#opt-sound'), capBtn=$('#opt-captions');
 if(capBtn) toggleBtn(capBtn, captionsOn);
 if(soundBtn){ soundBtn.setAttribute('aria-haspopup','dialog'); soundBtn.addEventListener('click',openAudio); } // botão de áudio agora abre o mixer
 if(capBtn) capBtn.addEventListener('click',()=>{ setCaptionsOnValue(!captionsOn); toggleBtn(capBtn,captionsOn); srSay(t(captionsOn?'sr.captions.on':'sr.captions.off')); });
-const motor = initSettingsMotor({ $, srSay, store, players, getNumPlayers: () => numPlayers, setToggleMove, rebuildCoins }); // painel motor: ui/settings-motor.ts (registra #opt-facil, #opt-altmove e as abas)
+const motor = initSettingsMotor({ $, srSay, store, players, getNumPlayers: () => rodada.numPlayers, setToggleMove, rebuildCoins }); // painel motor: ui/settings-motor.ts (registra #opt-facil, #opt-altmove e as abas)
 
 /* Modos de visualização: Normal + Alto contraste + simulações/correções. A FABRICA (parallaxTexFor,
    treeTexFor, playerVizTex, pixiFilterFor, o overlay de baixa visao e as matrizes CVD) migrou para
@@ -1300,7 +1316,7 @@ const viz = initVizSetters({
   getVpSpr: () => vpSpr, getVpDots: () => vpDots,
   getItemSprites: getCoinSprites, itemTexId: 'coin', // item 19: o NOME dos itens e do jogo, nao do render
   getPowerups: () => rodada.powerups,
-  getPlayers: () => players, getNumPlayers: () => numPlayers,
+  getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   getSelVizPlayer: () => rodada.selVizPlayer, setSelVizPlayer: (i) => rodada.setSelVizPlayer(i),
   getSharedViz: () => _lastSharedViz, setSharedViz: (m) => { _lastSharedViz = m; },
   invalidateSharedViz: () => { _lastSharedViz = null; },
@@ -1365,7 +1381,7 @@ function setOutlineFg(v: number){ const antes=hcOutlineFg; setOutlineFgValue(v);
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineFg',{v:t(OUTLINE_KEY[hcOutlineFg])})); }
 function setOutlineBg(v: number){ const antes=hcOutlineBg; setOutlineBgValue(v); if(hcOutlineBg===antes)return;
   _rebakeDirect(); visual.render(); srSay(t('sr.visual.outlineBg',{v:t(OUTLINE_KEY[hcOutlineBg])})); }
-const visual = initSettingsVisual({ $, srSay, renderVizGroup, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => rodada.selVizPlayer, setSelectedPlayer: (i) => rodada.setSelVizPlayer(i), setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
+const visual = initSettingsVisual({ $, srSay, renderVizGroup, getPlayers: () => players, getNumPlayers: () => rodada.numPlayers, getVisualSettings: () => ({ lq: getLqT(), ownerColors, cbSafe, outlineFg: hcOutlineFg, outlineBg: hcOutlineBg, roleColors: HC_ROLE }), getSelectedPlayer: () => rodada.selVizPlayer, setSelectedPlayer: (i) => rodada.setSelVizPlayer(i), setPlayerViz, setLq, setOwnerColors, setCbSafe, setOutlineFg, setOutlineBg, setRoleColor, resetRoleColors }); // painel visual: ui/settings-visual.ts
 function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.viz];return m&&m.kind==='hcnew';});
   const sim=players.some(p=>simulatesDisability(p.viz));
   const bv=$('#opt-visual'); if(bv)bv.classList.toggle('is-on',help); const be=$('#opt-empathy'); if(be)be.classList.toggle('is-on',sim||hearingLoss||oneButton||wheelchair); }
@@ -1419,7 +1435,7 @@ const touchCtl = initTouch({ $, srSay, store, root: document.documentElement, is
   // era uma linha dentro do `input/touch` lendo `numPlayers`, `phase` e `players[].quiz` por importacao — e a
   // ultima dizia que a camada de TOQUE sabia que existe atividade de alfabetizacao. Mesmo movimento do
   // achado 10: injeta-se o BOOLEANO, nao o estado.
-  padAllowed: () => numPlayers <= 1 && phase === 'playing' && !jogadores().some((p) => p.quiz),
+  padAllowed: () => rodada.numPlayers <= 1 && phase === 'playing' && !jogadores().some((p) => p.quiz),
   viewport: () => ({ w: window.innerWidth, h: window.innerHeight }),
   frontOverlay, onPadDesignApplied: () => { if(typeof renderPauseLegend==='function') renderPauseLegend(); } });
 // (o proprio initTouch ja aplica o desenho salvo no fim da sua inicializacao)
@@ -1478,7 +1494,7 @@ const padDesignSel=$<HTMLSelectElement>('#pad-design'); if(padDesignSel){ padDes
 const eyesBtn=$('#opt-eyes'); if(eyesBtn)eyesBtn.addEventListener('click',()=>{ setEyeMode(!eyeMode); toggleBtn(eyesBtn,eyeMode); eyesBtn.textContent=toggleLabel(eyeMode);
   if(eyeMode){ loadWebGazer(startEyeControl); srSay(t('sr.eyes.loading')); } else { stopEyeControl(); srSay(t('sr.eyes.off')); } });
 const audioCloseBtn=$('#audio-close'); if(audioCloseBtn)audioCloseBtn.addEventListener('click',closeAudio);
-const audioPanel = initSettingsAudio({ $, srSay, store, audioCats: AUDIO_CATS, toggleBtn, getNumPlayers: () => numPlayers, getPlayers: () => players, getSoundOn: () => soundOn, setSoundOn, getVolume: () => volume, setVolume, getAudioCat: () => audioCat, setCatGain, tts, getModoCego: () => modoCego, setModoCego, getCaneBlockDiv: () => caneBlockDiv, setCaneBlockDiv: setCaneBlockDivValue }); // painel de audio: ui/settings-audio.ts
+const audioPanel = initSettingsAudio({ $, srSay, store, audioCats: AUDIO_CATS, toggleBtn, getNumPlayers: () => rodada.numPlayers, getPlayers: () => players, getSoundOn: () => soundOn, setSoundOn, getVolume: () => volume, setVolume, getAudioCat: () => audioCat, setCatGain, tts, getModoCego: () => modoCego, setModoCego, getCaneBlockDiv: () => caneBlockDiv, setCaneBlockDiv: setCaneBlockDivValue }); // painel de audio: ui/settings-audio.ts
 // REFLETE O MODO CEGO PERSISTIDO no boot. `incl_modocego` sobrevive à sessão desde sempre, mas nada refletia o
 // valor no botão ao abrir o jogo: com o modo LIGADO, o `#opt-modocego` dizia "Desligado" e reportava
 // `aria-pressed="false"`. Para quem usa leitor de tela isso é WCAG 4.1.2 (nome, papel, VALOR) quebrado no
@@ -1487,7 +1503,7 @@ const audioPanel = initSettingsAudio({ $, srSay, store, audioCats: AUDIO_CATS, t
 audioPanel.reflectModoCego();
 
 /* E10: remap de controles + persistência (B2) */
-const ctrlPanel = initSettingsControls({ $, srSay, srAlert, store: { saveKB, resetKB }, kb, setKB, kbFor, getNumPlayers: () => numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)
+const ctrlPanel = initSettingsControls({ $, srSay, srAlert, store: { saveKB, resetKB }, kb, setKB, kbFor, getNumPlayers: () => rodada.numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)
 function openOptions(){ const ov=$('#options'); if(!ov)return; ctrlPanel.render(rodada.pauseActor); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); } // E3: edita o controle do jogador que abriu
 function closeOptions(){ const ov=$('#options'); if(!ov)return; ov.hidden=true; ctrlPanel.cancelCapture(); if(!overlays.restoreFocus('options'))menuFocus(sharedDialogOpen()); }
 const ctrlBtn=$('#opt-controls'); if(ctrlBtn)ctrlBtn.addEventListener('click',openOptions);
@@ -1497,7 +1513,7 @@ function openHelp(){ const ov=$('#help'); if(!ov)return; const c=$('#help-conten
   // O cabecalho e' UMA FRASE por caso ('Seus controles' / 'Seus controles · Jogador N'), e nao um prefixo mais
   // um sufixo: uma lingua que ponha o numero do jogador ANTES do titulo so consegue se a frase inteira morar
   // no dicionario. Mesma decisao de `sr.audio.*` e dos anuncios motores.
-  const titulo=numPlayers>1?t('help.controlsPlayer',{n:pa+1}):t('help.controls');
+  const titulo=rodada.numPlayers>1?t('help.controlsPlayer',{n:pa+1}):t('help.controls');
   const nota=(txt: string)=>`<div class="ctrl-row"><span>${txt}</span></div>`;
   if(c)c.innerHTML=`<h3 class="panel-sub">${titulo} <span class="panel-sub__tag">${t('help.keyboard')}</span></h3><div class="ctrl-list">${rows}</div>`+
     `<h3 class="panel-sub">${t('help.buildNotes')}</h3><div class="ctrl-list">`+
@@ -1510,7 +1526,7 @@ const ctrlClose=$('#ctrl-close'); if(ctrlClose)ctrlClose.addEventListener('click
 /* Movimento reduzido (WCAG 2.3.3) + Pause/Stop/Hide (2.2.2) */
 // (RM_LABEL e RM_SOON eram CODIGO MORTO aqui: nenhum leitor neste arquivo. Os que o painel usa vivem em
 //  ui/settings-motion, e eram copia palavra por palavra destes. Apagados no item 14.)
-const motion = initSettingsMotion({ $, srSay, store, frontOverlay, restoreFocus: (id)=>overlays.restoreFocus(id), toggleBtn, rm, saveRM, rmKeys: RM_KEYS, rmChar: RM_CHAR }); // painel de movimento/CRT: ui/settings-motion.ts
+const motion = initSettingsMotion({ $, srSay, store, getPlayers: () => players, getNumPlayers: () => rodada.numPlayers, frontOverlay, restoreFocus: (id)=>overlays.restoreFocus(id), toggleBtn, rm, saveRM, rmKeys: RM_KEYS, rmChar: RM_CHAR }); // painel de movimento/CRT: ui/settings-motion.ts
 // MENU Movimento (GAG: alternância) — separado do menu Animação (WCAG: movimento reduzido)
 function openMovement(){ const ov=$('#movement'); if(!ov)return; motor.renderMovPlayers(); motor.reflectFacil(); motor.reflectAltMove(); renderMapHub(); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); }
 function closeMovement(){ const ov=$('#movement'); if(!ov)return; ov.hidden=true; if(!overlays.restoreFocus('movement'))menuFocus(sharedDialogOpen()); }
@@ -1522,7 +1538,7 @@ const touchCfgClose=$('#touchcfg-close'); if(touchCfgClose)touchCfgClose.addEven
    A tabela de linhas, o markup e as duas frases faladas sairam; `mapSoon` foi junto (nao tinha outro
    chamador). Fica o ENVOLUCRO, declaracao de funcao e portanto icada, porque openMovement — que aparece
    ACIMA deste ponto — o chama pelo nome. */
-const mapHub = initMapHub({ $, srAlert, getNumPlayers: ()=>numPlayers, openOptions, openPadWiz: ()=>gamepadApi.openPadWiz() });
+const mapHub = initMapHub({ $, srAlert, getNumPlayers: ()=>rodada.numPlayers, openOptions, openPadWiz: ()=>gamepadApi.openPadWiz() });
 function renderMapHub(){ mapHub.render(); }
 const movBtn=$('#opt-movement'); if(movBtn)movBtn.addEventListener('click',openMovement);
 const movClose=$('#movement-close'); if(movClose)movClose.addEventListener('click',closeMovement);
@@ -1543,10 +1559,10 @@ function fpsTick(){ const fps=app.ticker.FPS; fpsWarm++; fpsAccum+=fps; fpsFrame
 startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
   titleG.visible=(phase==='title'); if(titleG.visible)titleScene.draw(); // cena do título da v3 cobre o mundo
   attractCtl.titleIdleTick(titleG.visible); // attract após 60s parado no menu (José)
-  setMinimapVisible(!titleG.visible&&numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
+  setMinimapVisible(!titleG.visible&&rodada.numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
   if(phase==='playing'){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
-window.__incl={app,get player(){return players[0];},players,get numPlayers(){return numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return rodada.ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
+window.__incl={app,get player(){return players[0];},players,get numPlayers(){return rodada.numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return phase;},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return rodada.ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE();},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},
@@ -1588,6 +1604,7 @@ window.__incl.layout=layout; window.__incl.get_librasOpen=()=>librasOpen;
    `const` declarados ABAIXO, e so a resolucao na hora da chamada os tira da TDZ. (selVizPlayer saiu desta
    lista: migrou para core/state no #50, e um import nao tem TDZ para escapar.) */
 const shell = initShell({
+  getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   $, win: window, setMasterMuted, srSay, srAlert,
   getPauseScreens: () => vpPause,                  // `let` REATRIBUIDO por buildGameHud -> getter
   getPauseActor: () => rodada.pauseActor,          // seis leitores -> um campo da RODADA

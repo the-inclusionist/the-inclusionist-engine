@@ -8,7 +8,7 @@
 // portão + textura; mantemos essa fronteira. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { TILE, COIN_TARGET } from '../core/constants.js';
 import { shuffle } from '../core/rng.js';
-import { players, vizMode } from '../core/state.js';
+import { vizMode } from '../core/state.js';
 import { coins, setCoins } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 import { findCoinCandidates, positionEasyCoins, type Coin } from './coins.js';
 import { SOMASUB_SHAPES, WORD_INITIALS } from './activity-content.js';
@@ -112,10 +112,14 @@ export function respawnCoinsForOwner(owner: number): void {
   addCoinsForOwner(owner);
 }
 
-// Reflete o poder ativo do jogador 1 no HUD (multiplayer: telas 2-4 não têm esse elemento). Verbatim de showPower;
-// `players[0]` vem do leaf core/state.js; `$`/POWER_SHORT são injetados (o módulo nunca toca `document`).
-export function showPower(pl: { activePower: string; owned?: string[] }): void {
-  if (pl !== players[0]) return; // guard clause: só a tela 1 tem #hud-power
+// Reflete o poder ativo do jogador 1 no HUD (multiplayer: telas 2-4 não têm esse elemento).
+//
+// A guarda era `pl !== players[0]`, o que obrigava este módulo a conhecer a LISTA de jogadores para
+// responder uma pergunta sobre UM jogador. `pl.i` é o índice que `makePlayer(i)` grava e ninguém muda; ele
+// responde a mesma coisa sem importar estado nenhum, e diz o que quer dizer. (`$`/POWER_SHORT seguem
+// injetados — o módulo nunca toca `document`.)
+export function showPower(pl: { i: number; activePower: string; owned?: string[] }): void {
+  if (pl.i !== 0) return; // guard clause: só a tela 1 tem #hud-power
   const c = need();
   const el = c.$('#hud-power');
   if (!el) return;

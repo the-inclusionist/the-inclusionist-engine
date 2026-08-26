@@ -9,7 +9,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // a legenda vem do dicionário desde o item 14
 import { initShell } from '../app/js/ui/shell.js';
-import { phase, setPhaseValue, setNumPlayersValue, players } from '../app/js/core/state.js';
+import { phase, setPhaseValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -48,6 +56,7 @@ function boot(over = {}) {
   let pending = null; // o setTimeout de 80ms do modo Print, disparado à mão pelo teste
 
   const ctx = {
+    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     win: {
       addEventListener: (t, fn) => listeners[t].push(fn),

@@ -8,15 +8,20 @@
 import { TILE } from '../core/constants.js';
 import { solidAt } from '../core/collision.js';
 import { shuffle } from '../core/rng.js';
-import { numPlayers } from '../core/state.js';
+
 import { coins } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 
 // mundo + flags de acessibilidade injetados no boot (mesma referência do game.js/colisão). Closures = estado vivo.
 let _world: number[][] = [], _W = 0, _H = 0;
 let _anyEasy: () => boolean = () => false;      // algum jogador no modo Fácil? (efeito de MUNDO: moedas no chão)
 let _isWheelchair: () => boolean = () => false; // cadeirante também rebaixa as moedas (alcançáveis sentado)
-export function initCoins(ctx: { world: number[][]; W: number; H: number; anyEasy: () => boolean; isWheelchair: () => boolean }): void {
-  _world = ctx.world; _W = ctx.W; _H = ctx.H; _anyEasy = ctx.anyEasy; _isWheelchair = ctx.isWheelchair;
+// A CONTAGEM DE JOGADORES entra por injeção desde 2026-08-26. Era `numPlayers`, um `let` de `core/state`
+// importado como binding vivo — e um `let` de módulo é compartilhado por qualquer segundo jogo que a
+// mesma página carregue (D13 do `demos`, ADR-0038). O que entra aqui é o GETTER da rodada que a raiz
+// possui; o `let` que sobra guarda a função, não o número.
+let _numJogadores: () => number = () => 1;
+export function initCoins(ctx: { world: number[][]; W: number; H: number; anyEasy: () => boolean; isWheelchair: () => boolean; numJogadores: () => number }): void {
+  _world = ctx.world; _W = ctx.W; _H = ctx.H; _anyEasy = ctx.anyEasy; _isWheelchair = ctx.isWheelchair; _numJogadores = ctx.numJogadores;
 }
 
 // Células candidatas a receber um item: ar(1)/água(3) com chão sólido em até 10 tiles abaixo (alcançável),
@@ -57,7 +62,7 @@ export type Coin = {
 // capacidade que ela não usa, e era o que impedia o `readonly` do chamador de atravessar.
 export function pickCoins(n: number, pools: { shapes?: readonly string[]; letters?: readonly string[] } = {}): Coin[] {
   const shapes = pools.shapes ?? [], letters = pools.letters ?? [];
-  const out: Coin[] = [], np = Math.max(1, numPlayers);
+  const out: Coin[] = [], np = Math.max(1, _numJogadores());
   for (let owner = 0; owner < np; owner++) {
     const a = shuffle(findCoinCandidates());                 // sorteio de posições independente por jogador
     const sh = shapes.length ? shuffle(shapes.slice()) : [], lt = letters.length ? shuffle(letters.slice()) : [];

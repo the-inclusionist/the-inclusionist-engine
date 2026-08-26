@@ -86,9 +86,6 @@ export function setPhaseValue(p: Phase): void { phase = p; emit('phase', p); }
  *  alfabetização: conteúdo pedagógico, e nem sequer mecânica de engine. A regra é a do ADR-0033, aplicada ao
  *  estado: o estado COMPARTILHADO guarda o que a engine possui — acessibilidade, idioma, dispositivo.) */
 
-// --- numPlayers: 1..4 (nº de telas/jogadores; não persistido) ---
-export let numPlayers = 1;
-export function setNumPlayersValue(n: number): void { numPlayers = n; emit('numPlayers', n); }
 
 // ========================= O RESTO DA RODADA SAIU DAQUI (ADR-0038, Fase B) =========================
 // `ended`, `decorSeed`, `grassDensity`, `selVizPlayer` e `pauseActor` foram para `core/run-state`, na
@@ -99,8 +96,9 @@ export function setNumPlayersValue(n: number): void { numPlayers = n; emit('numP
 // para quem entrasse pelo `window.__incl`, e qualquer outro caminho podia gravar 5 ou -1. Deixá-lo para trás
 // transformaria a fábrica num `let` com nome novo.
 //
-// Falta a fatia grande — `players` e `numPlayers`, com 21 e 18 importadores — e, depois dela, a pilha de
-// cenas assumindo o `phase`.
+// E a fatia grande saiu em 2026-08-26: `players` e `numPlayers`, com quatorze importadores CADA. Falta só
+// o `phase`, que não vira campo de fábrica — ele é substituído pela pilha de cenas (`core/scenes`), no
+// passo 3 da Fase B.
 
 
 // ========================= `cenario` E `activity` SAÍRAM DAQUI (ADR-0038, Fase B) =========================
@@ -128,15 +126,21 @@ export function setVizModeValue(mode: string): void { vizMode = mode; store.set(
  *  está na camada errada. Do outro lado da fronteira ele é `unknown[]` ainda, mas por escolha de quem pode
  *  decidir — e o `game/coins` que o consome sabe exatamente o que há dentro.) */
 
-// --- players[]: jogadores (1..4). NUNCA reatribuído (só mutado in-place: push/splice/length/players[i]) → não
-//     precisa de setter; o main.js muta a referência importada. O array inicial (makePlayer) é populado no boot
-//     pelo main.js (makePlayer é função de lá). A variável irmã `player` (= players[0]) fica local no main.js.
+// ========================= `players` E `numPlayers` SAÍRAM DAQUI (ADR-0038, Fase B) =========================
+// Os dois são RODADA pelo critério mecânico do ADR-0038 — nenhum é persistido —, e moram em
+// `core/run-state`, na instância que a raiz de composição possui.
 //
-//     Era `unknown[]`, e essa era a origem das 23 visões estruturais: o tipo se perdia AQUI, na fronteira em
-//     que a entidade atravessa o programa, e cada consumidor reconstruía o seu palpite. Agora é `Player[]`, o
-//     que também aposenta os dois casts `as unknown as` que existiam só porque o TypeScript, com razão,
-//     recusava converter `unknown[]` direto — e um cast duplo não estreita nada, desliga o verificador. ---
-export let players: Player[] = [];
+// O `players` era o caso mais caro de todos os treze. Um `export let` é um binding vivo COMPARTILHADO: dois
+// jogos na mesma página (que é o que a casca do `demos` faz, ADR-0036) veriam a MESMA lista, e o segundo
+// começaria com os jogadores do primeiro ainda dentro. Não haveria erro em lugar nenhum — só uma criança a
+// mais na tela.
+//
+// A referência continua sendo mutada NO LUGAR (`push`/`length`/`players[i]`), e é por isso que a rodada não
+// tem setter para ela: trocar a lista inteira deixaria para trás as referências que os módulos já guardaram.
+// Quem entra e quem sai é `game/session`, e só ele recebe a lista mutável.
+//
+// (O tipo continua sendo `Player[]` — a visão da ENGINE. Cada jogo acrescenta campos e estreita por conta
+//  própria, que é o que o ADR-0033 desenhou.)
 
 /**
  * OS PADRÕES, com nome. Um valor por linha, e cada um usado em DOIS lugares: a leitura do boot (quando não há

@@ -8,7 +8,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initQuiz, generateBrailleCells, cKey } from '../app/js/game/quiz.js';
 import { reseed } from '../app/js/core/rng.js';
-import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+
 import { setActivityValue } from '../app/js/game/state.js'; // GAME desde a Fase B (ADR-0038)
 import { setCoins, coins, setQuizLevelValue } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 
@@ -22,6 +29,7 @@ function makePl(i = 0) { return { i, x: 10, y: 20, vx: 3, vy: -4, collected: 0, 
 function makeCtx(over = {}) {
   const log = { srSay: [], srAlert: [], gameSay: [], narrate: [], sfx: [], puzzle: 0, sparkle: [], hideTouch: 0, updateHud: 0, win: [], respawn: [], sync: [] };
   const ctx = {
+    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     getScreen: (i) => document.querySelector(`#screen-${i}`),
     disp: (s) => String(s).toLowerCase(),

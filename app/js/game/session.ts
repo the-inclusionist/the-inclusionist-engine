@@ -86,7 +86,7 @@ import type { GamePlayerView, GamePlayer } from './entity.js'; // ADR-0033: a fa
 import { TILE, COIN_TARGET, EASY } from '../core/constants.js';
 import { BOX, SPAWN_X, SPAWN_Y, makePlayer } from './player.js';
 import { screenBaseSize } from '../core/screens.js';
-import { players, numPlayers, setNumPlayersValue } from '../core/state.js';
+
 import { coins, setCoins } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 import { pickCoins, takeCoin } from './coins.js';
 import { puTaken, takePu, type Powerup } from './powerups.js';
@@ -274,6 +274,19 @@ export type { DomQuery } from '../core/dom-query.js';
 export interface DarkRegion { announced: boolean; gfx: { alpha: number; visible: boolean } }
 
 export interface SessionCtx {
+  /* --- A RODADA (ADR-0038): a lista de jogadores e a contagem vêm da instância que a raiz possui ---
+     Eram `players`/`numPlayers`/`setNumPlayersValue`, `let` de `core/state` importados como bindings vivos.
+     Um `let` de módulo é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do
+     `demos`), e a lista de jogadores é o exemplo mais caro disso: o jogo seguinte começaria com os
+     jogadores do anterior ainda dentro.
+
+     `getPlayers` devolve MUTÁVEL, e só para este módulo. Ele é o dono da entrada e da saída de jogador —
+     `ps.push(makePlayer(i))` e `ps.length = n` são daqui —, e é por isso que a rodada não tem setter para
+     a lista: trocá-la inteira deixaria para trás as referências que os outros módulos já guardaram. */
+  getPlayers(): unknown[];
+  getNumPlayers(): number;
+  setNumPlayers(n: number): void;
+
   /* --- DOM e mídia --- */
   $: DomQuery;
   librasReserve(): number;        // hoje sempre 0: o intérprete não empurra mais a tela (ver ui/vlibras)
@@ -385,8 +398,8 @@ export function initSession(ctx: SessionCtx): SessionApi {
   // é `Player[]`, a visão da ENGINE, e o campo `quiz` saiu de lá (ADR-0033). Este jogo sabe que os jogadores
   // dele carregam mais; a engine não pode saber. Antes o salto existia porque o tipo era frouxo — agora
   // existe porque a fronteira é firme.
-  const P = () => players as unknown as SessionPlayer[];
-  const N = () => numPlayers; // binding VIVO de core/state (setNumPlayersValue o atualiza)
+  const P = () => ctx.getPlayers() as unknown as SessionPlayer[];
+  const N = () => ctx.getNumPlayers();
   /** Prefixo "Jogador N: " nas falas — some quando só há uma tela. */
   const who = (pl: SessionPlayer): string => (N() > 1 ? `Jogador ${pl.i + 1}: ` : '');
   /** Fala + narração juntas (o par srSay/tts.narrate aparece três vezes no bloco de coleta). */
@@ -534,7 +547,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
     const ps = P();
     if (n > ps.length) { for (let i = ps.length; i < n; i++) { const p = makePlayer(i); ctx.loadPlayerA11y(p, i); ps.push(p); } }
     else if (n < ps.length) { ps.length = n; }
-    setNumPlayersValue(n);
+    ctx.setNumPlayers(n);
   }
 
   /** E11: nº de jogadores (1–4 telas lado a lado, simulação compartilhada). SEMPRE reinicia a rodada. */
@@ -605,7 +618,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
     const i = ps.length, p = makePlayer(i);
     ctx.loadPlayerA11y(p, i);
     if (padIdx != null) p.pad = padIdx;
-    ps.push(p); setNumPlayersValue(ps.length);
+    ps.push(p); ctx.setNumPlayers(ps.length);
     ctx.assignControls(); ctx.ensureSprites(); ctx.hideTouchControls(); // teclado migra p/ N jogadores; toque sai
     ctx.configureRender(); ctx.reapplyVizAll(); ctx.layout();
     resetPlayerState(p, i); addCoinsForOwner(i); // itens PRÓPRIOS dão spawn; os dos outros ficam intactos

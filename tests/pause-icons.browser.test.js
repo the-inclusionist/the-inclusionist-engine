@@ -8,7 +8,14 @@
 // game.js usa; o resto do ctx é falso (spies).
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PAUSE_ICONS, initPauseIcons } from '../app/js/ui/pause-icons.js';
-import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+
 
 const PM_BTNS = [
   { act: 'resume', lbl: '▶ Continuar' },
@@ -32,6 +39,7 @@ function makeCtx(over = {}) {
     // 'quit' de propósito AUSENTE: prova que um data-act sem entrada na tabela não quebra o clique.
   };
   const ctx = {
+    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
     pmButtons: PM_BTNS,

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // render/fx — Juice / micro-feedback (Estágio 4, Tier 2): particles (dust/sparkle), screen shake, hit-stop,
 // squash&stretch, + the JUICE toggles. Formulas are verbatim from game.js (behavior-preserving). The reduce-
-// motion flags (`rm`) and the PIXI graphics layer (`fxG`) are INJECTED via initFx; `rnd`/`players` are imported.
+// motion flags (`rm`), the PIXI graphics layer (`fxG`) and the round's player list are INJECTED via initFx.
 // `fxClock` is NOT here — it is a general animation clock (coin shimmer reads it) and stays in game.js.
 // Shake/hit-stop state is read by the camera/update/__incl via getters. See docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import { rnd } from '../core/rng.js';
-import { players } from '../core/state.js';
+
 import * as store from '../platform/storage.js';
 
 export interface Particle {
@@ -45,9 +45,15 @@ interface Squashable { rmWalk?: boolean; sq?: number; sqT?: number }
 
 let fxG: FxGraphics | null = null;
 let rm: ReducedMotion = {};
-export function initFx(deps: { fxG: FxGraphics; rm: ReducedMotion }): void {
+// A LISTA DE JOGADORES entra por injeção desde 2026-08-26. Era `numPlayers`, um `let` de `core/state`
+// importado como binding vivo — e um `let` de módulo é compartilhado por qualquer segundo jogo que a
+// mesma página carregue (D13 do `demos`, ADR-0038). O que entra aqui é o GETTER da rodada que a raiz
+// possui; o `let` que sobra guarda a função, não a lista.
+let getPlayers: () => readonly unknown[] = () => [];
+export function initFx(deps: { fxG: FxGraphics; rm: ReducedMotion; getPlayers: () => readonly unknown[] }): void {
   fxG = deps.fxG;
   rm = deps.rm;
+  getPlayers = deps.getPlayers;
 }
 
 export function spawnParticle(x: number, y: number, vx: number, vy: number, life: number, color: number, size: number, grav?: number): void {
@@ -82,7 +88,7 @@ export function setSquash(pl: Squashable, amt: number): void {
 /** Advance particles + decay shake/squash. (fxClock is stepped by game.js — see header.) */
 export function stepFx(dt: number): void {
   if (shakeT > 0) shakeT = Math.max(0, shakeT - dt);
-  for (const pl of players as Squashable[]) if (pl.sqT && pl.sqT > 0) pl.sqT = Math.max(0, pl.sqT - dt);
+  for (const pl of getPlayers() as readonly Squashable[]) if (pl.sqT && pl.sqT > 0) pl.sqT = Math.max(0, pl.sqT - dt);
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i]!;
     p.life -= dt;

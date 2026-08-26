@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/layout.ts — ESCALA do jogo (Estágio 4, Tier 1). Trava o #game-region num múltiplo inteiro de PIXELS REAIS
 // de 320×180 (por jogador) e reescala as vars de UI escopadas ao canvas. Deps: ui/dom ($), core/screens,
-// core/state (numPlayers), render/crt (crtScanVars). fpsTick/configureRender seguem no main.js (outro concern).
+// render/crt (crtScanVars). A contagem de jogadores entra por `initLayout`. fpsTick/configureRender seguem no main.js.
 //
 // JÁ NÃO RESERVA ESPAÇO PARA O INTÉRPRETE. Reservava 380px à direita quando o painel do VLibras "abria", e o
 // jogo deslocava para a esquerda — decisão revista pelo Dev: o intérprete deve aparecer NA FRENTE da tela
@@ -10,8 +10,16 @@
 // com ou sem modo pessoa surda. O acoplamento vlibras↔layout desaparece junto.
 import { $ } from './dom.js';
 import { screenGrid, screenBaseSize } from '../core/screens.js';
-import { numPlayers } from '../core/state.js';
+
 import { crtScanVars } from '../render/crt.js';
+
+// A CONTAGEM DE JOGADORES entra por injeção desde 2026-08-26. Era `numPlayers`, um `let` de `core/state`
+// importado como binding vivo — e um `let` de módulo é compartilhado por qualquer segundo jogo que a
+// mesma página carregue (D13 do `demos`, ADR-0038). O que entra aqui é o GETTER da rodada que a raiz
+// possui; o `let` que sobra guarda a função, não o número.
+let _numJogadores: () => number = () => 1;
+/** Liga a contagem de jogadores. Chamado uma vez pela raiz, antes do primeiro `layout()`. */
+export function initLayout(deps: { numJogadores: () => number }): void { _numJogadores = deps.numJogadores; }
 
 export function layout(): void {
   const wrap = $<HTMLElement>('#stage-wrap'); if (!wrap) return;
@@ -19,8 +27,9 @@ export function layout(): void {
   const availW = wrap.clientWidth || 320;
   const availH = wrap.clientHeight || 180;
   // E11: a grade de telas define a base (1=320×180, 2=640×180, 3-4=640×360)
-  const { cols, rows } = screenGrid(numPlayers);
-  const { w: baseW, h: baseH } = screenBaseSize(numPlayers);
+  const n = _numJogadores();
+  const { cols, rows } = screenGrid(n);
+  const { w: baseW, h: baseH } = screenBaseSize(n);
   // Piso k=2: CADA viewport tem no mínimo 640×360. Assim 2×2 = 1280×720 cabe num Chromebook do governo (1366×768).
   const MIN_K = 2;
   // ADR-001 (CORRIGIDO 2026-07-04): ESCALA travada em PIXELS REAIS INTEIROS. Cada pixel de arte = kDev pixels

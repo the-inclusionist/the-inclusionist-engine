@@ -9,7 +9,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { initDraw } from '../app/js/render/draw.js';
 import { LOGICAL_W, LOGICAL_H } from '../app/js/core/constants.js';
 import { BOX, makePlayer } from '../app/js/game/player.js';
-import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+
 import { setCoins } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 import { addShake, stepFx, JUICE } from '../app/js/render/fx.js';
 
@@ -45,6 +52,7 @@ function makeCtx(over = {}) {
     getVpTex: () => ['RT0', 'RT1', 'RT2', 'RT3'],
     isWheelchair: () => false,
     getFxClock: () => 0,
+    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     getPowerups: () => [],
     // OS ITENS DECLARADOS (item 19). O fixture responde o mínimo: nenhum item, e as duas perguntas de posse
     // com a resposta que não esconde nem esmaece nada. Os casos que se importam com item declaram o seu.

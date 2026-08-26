@@ -25,7 +25,7 @@
 //   · `rm`/`saveRM`     — the reduced-motion flags object, co-owned with ui/settings-motion (same reference).
 //   · `PM_BTNS`/`QL_NAME` — owned by ui/activities-menu; injected, never copied.
 
-import { numPlayers, players } from '../core/state.js';
+
 import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { CONTRAST_LEVELS, CONTRAST_LABELS } from './settings-visual.js';
@@ -292,6 +292,13 @@ export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
 // ---------------------------------------------------------------------------------------------
 
 export interface PauseIconsCtx {
+  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
+   *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
+   *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
+  getNumPlayers: () => number;
+  /** Os jogadores. Estado de RODADA, pelo mesmo motivo. `readonly unknown[]` porque cada consumidor
+   *  estreita para a SUA fatia — o tipo real é do jogo, não da engine (ADR-0033). */
+  getPlayers: () => readonly unknown[];
   // --- announcements (core/a11y-sr; injected because they reach `document` at call time) ---
   /** aria-live "polite" — every successful toggle announces its NEW state. */
   srSay: (text: string) => void;
@@ -385,9 +392,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   // — verbatim: game.js never wrote it to storage, even though applyCalm() persists `rm` as a side effect.
   let calmMode = 0;
 
-  const P = (): PausePlayer[] => players as PausePlayer[];
+  const P = (): readonly PausePlayer[] => ctx.getPlayers() as readonly PausePlayer[];
 
-  function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), numPlayers, i); }
+  function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
 
   function iconState(i: number): IconStateSnapshot {
     const p = P()[i] || {};
@@ -511,7 +518,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     sp.hidden = true;
     sp.dataset.player = String(i);
     sp.innerHTML = screenPauseMarkup({
-      player: i, numPlayers, pmButtons: ctx.pmButtons, dynLabel: ctx.dynLabel, t,
+      player: i, numPlayers: ctx.getNumPlayers(), pmButtons: ctx.pmButtons, dynLabel: ctx.dynLabel, t,
     });
 
     sp.addEventListener('click', (e) => {

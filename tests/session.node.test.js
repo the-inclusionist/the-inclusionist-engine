@@ -23,7 +23,15 @@ import { TILE, EASY, COIN_TARGET } from '../app/js/core/constants.js';
 import * as COL from '../app/js/core/collision.js';
 import { initCoins } from '../app/js/game/coins.js';
 import { initCoinSpawning, getCoinSprites } from '../app/js/game/coin-spawning.js';
-import { players, numPlayers, setNumPlayersValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+const numPlayers = () => rodada.numPlayers; // era binding vivo; virou função (o teste chama `numPlayers()`)
+
 import { coins, setCoins } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 
 /* ===================== 1. A DECISÃO PURA DA COLETA (sem ctx, sem DOM) ===================== */
@@ -265,6 +273,8 @@ function novoCtx(over = {}) {
     pauseActor: 0, ownerColors: true, captionsOn: true,
   };
   CTX = {
+    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
+    setNumPlayers: (n) => rodada.setNumPlayers(n),
     estado, // exposto para o teste inspecionar/mexer
     $: (sel) => (sel in DOM ? DOM[sel] : null),
     librasReserve: () => 0,
@@ -311,7 +321,7 @@ function montar(n = 1, over = {}) {
     world: g, W: 12, H: 8, isWheelchair: () => false, isModoCego: () => false, caneDiv: () => 1,
     wcSolid: () => new Set(), gateTiles: () => new Set(), gateOpen: () => true,
   });
-  initCoins({ world: g, W: 12, H: 8, anyEasy: () => false, isWheelchair: () => false });
+  initCoins({ world: g, W: 12, H: 8, anyEasy: () => false, isWheelchair: () => false, numJogadores: () => rodada.numPlayers });
   players.length = 0;
   for (let i = 0; i < n; i++) players.push(makePlayer(i));
   setNumPlayersValue(n);
@@ -646,7 +656,7 @@ describe('game/session — setNumPlayers', () => {
   it('[Many] crescer cria jogadores novos, reflete no botão e reinicia a rodada', () => {
     S.setNumPlayers(3);
     expect(players).toHaveLength(3);
-    expect(numPlayers).toBe(3);
+    expect(numPlayers()).toBe(3);
     expect(DOM['#opt-telas'].textContent).toBe(SCREEN_LABELS[2]);
     expect(DOM['#opt-telas'].attrs['aria-label']).toBe('Telas: 3. Toque para trocar.');
     expect(LOG.chamadas).toContain('configureRender');
@@ -664,14 +674,14 @@ describe('game/session — setNumPlayers', () => {
     const p0 = players[0];
     S.setNumPlayers(1);
     expect(players).toHaveLength(1);
-    expect(numPlayers).toBe(1);
+    expect(numPlayers()).toBe(1);
     expect(players[0]).toBe(p0);
     S.setNumPlayers(3);
     expect(players[0], 'crescer também não troca o jogador 1').toBe(p0);
   });
   it('[Boundary] pede 9 telas → vira 4; pede 0 → vira 1', () => {
-    S.setNumPlayers(9); expect(numPlayers).toBe(4);
-    S.setNumPlayers(0); expect(numPlayers).toBe(1);
+    S.setNumPlayers(9); expect(numPlayers()).toBe(4);
+    S.setNumPlayers(0); expect(numPlayers()).toBe(1);
   });
   it('[Zero] com 1 tela o controle por toque NÃO é escondido (ele é útil no solo)', () => {
     S.setNumPlayers(1);
@@ -782,7 +792,7 @@ describe('game/session — joinPlayer', () => {
     players[0].collected = 3;
     expect(S.joinPlayer(null)).toBe(true);
     expect(players).toHaveLength(2);
-    expect(numPlayers).toBe(2);
+    expect(numPlayers()).toBe(2);
     expect(players[0].collected).toBe(3);                  // ninguém recomeçou
     expect(coins.filter((c) => c.owner === 1)).toHaveLength(COIN_TARGET);
     expect(LOG.chamadas).toContain('configureRender');

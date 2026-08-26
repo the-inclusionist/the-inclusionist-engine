@@ -91,7 +91,7 @@
 
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
-import { phase, numPlayers, setPhaseValue, players, type Phase } from '../core/state.js';
+import { phase, setPhaseValue, type Phase } from '../core/state.js';
 import { PAD_DESIGNS } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
 import type { DomQuery } from '../core/dom-query.js';
 import type { PadMap } from '../input/gamepad.js';
@@ -278,6 +278,13 @@ export function pickLegendPad(pads: readonly (PadLike | null)[], p1pad: number):
 // ---------------------------------------------------------------------------------------------------------
 
 export interface ShellCtx {
+  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
+   *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
+   *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
+  getNumPlayers: () => number;
+  /** Os jogadores. Estado de RODADA, pelo mesmo motivo. `readonly unknown[]` porque cada consumidor
+   *  estreita para a SUA fatia — o tipo real é do jogo, não da engine (ADR-0033). */
+  getPlayers: () => readonly unknown[];
   /* --- DOM e plataforma --- */
   /** ui/dom.ts `$`. Injetado: o módulo nunca alcança `document`. */
   $: DomQuery;
@@ -386,7 +393,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
       l1 = legendRow1('✜', 'START');
       l2 = legendRow2(touchActionGlyphs());
     } else {
-      const p0 = players[0] as { pad?: number } | undefined;
+      const p0 = ctx.getPlayers()[0] as { pad?: number } | undefined;
       const p1pad = p0 && typeof p0.pad === 'number' && p0.pad >= 0 ? p0.pad : -1;
       const gp = pickLegendPad(ctx.getGamepads(), p1pad);
       if (gp) {                                    // joystick FÍSICO: design do modelo + mapa custom do wizard
@@ -400,7 +407,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
     }
     el.innerHTML = legendHtml(l1, l2);
     const w = ctx.$<HTMLElement>('#title-wait');
-    if (w) w.hidden = numPlayers <= 1;             // MP: aviso "Aguarde o Jogador 1"
+    if (w) w.hidden = ctx.getNumPlayers() <= 1;             // MP: aviso "Aguarde o Jogador 1"
   }
 
   /* ===================== seleção e Print ===================== */
@@ -449,7 +456,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
   function applyTouchControls(p: Phase, before: TouchControlsState | null): void {
     const tc = ctx.$<HTMLElement>('#touch-controls');
     if (!tc || !before) return;
-    const after = touchControlsPlan(p, before, numPlayers);
+    const after = touchControlsPlan(p, before, ctx.getNumPlayers());
     // Só escreve o que MUDOU — é o que torna o applier equivalente linha a linha ao original (que, no ramo
     // 'paused' já-escondido, não toca em nada; e cujos `delete` nos outros ramos são no-op quando não havia flag).
     if (after.hidden !== before.hidden) tc.hidden = after.hidden;
@@ -501,10 +508,11 @@ export function initShell(ctx: ShellCtx): ShellApi {
     tipo: () => ctx.openTypo(),
     // R-splash 2: só AUMENTA (nunca diminui); a tela nova ESPERA um botão do jogador entrar
     addplayer: () => {
-      if (numPlayers >= 4) { ctx.srAlert(t('sr.screens.maxPlayers')); return; }
-      if (!ctx.fitsN(numPlayers + 1)) { ctx.srAlert(t('sr.screens.wontFitOneMore')); return; }
+      const n = ctx.getNumPlayers();
+      if (n >= 4) { ctx.srAlert(t('sr.screens.maxPlayers')); return; }
+      if (!ctx.fitsN(n + 1)) { ctx.srAlert(t('sr.screens.wontFitOneMore')); return; }
       if (!ctx.joinPlayer(null)) return;
-      const p = players[numPlayers - 1] as ShellPlayer;
+      const p = ctx.getPlayers()[ctx.getNumPlayers() - 1] as ShellPlayer;
       p.waiting = true;
       ctx.showWaitingBadge(p.i);
       setPhase('playing');

@@ -8,7 +8,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import * as COL from '../app/js/core/collision.js';
 import * as COINS from '../app/js/game/coins.js';
 import * as CS from '../app/js/game/coin-spawning.js';
-import { players } from '../app/js/core/state.js';
 import { setCoins, coins } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 import { reseed } from '../app/js/core/rng.js';
 
@@ -188,31 +187,34 @@ describe('game/coin-spawning — respawnCoinsForOwner (recomeço de UM jogador)'
   });
 });
 
+// 2026-08-26: `showPower` deixou de perguntar "este é `players[0]`?" e passou a perguntar "este é o
+// jogador de índice 0?" (`pl.i !== 0`). A regra é a mesma — só a tela 1 tem `#hud-power` — mas a pergunta
+// agora é sobre UM jogador, e não sobre a lista inteira; o módulo parou de precisar do estado de rodada.
+// Os fixtures abaixo dizem o `i` de cada jogador, que é o que `makePlayer(i)` grava e ninguém muda.
 describe('game/coin-spawning — showPower (HUD do poder ativo, só a tela 1)', () => {
-  it('[Right] jogador 1 (players[0]) → escreve o rótulo curto no #hud-power', () => {
-    players.length = 0; const p1 = { activePower: 'superjump', owned: ['superjump'] }; players.push(p1);
+  it('[Right] jogador 1 (i === 0) → escreve o rótulo curto no #hud-power', () => {
+    const p1 = { i: 0, activePower: 'superjump', owned: ['superjump'] };
     CS.initCoinSpawning(baseCtx());
     CS.showPower(p1);
     expect(elByHudPower.textContent).toBe('🐇 Super-pulo');
   });
 
   it('[Boundary] poder desconhecido → cai no traço', () => {
-    players.length = 0; const p1 = { activePower: 'wallcling', owned: [] }; players.push(p1);
+    const p1 = { i: 0, activePower: 'wallcling', owned: [] };
     CS.initCoinSpawning(baseCtx());
     CS.showPower(p1);
     expect(elByHudPower.textContent).toBe('—');
   });
 
   it('[Right] mais de 1 poder possuído → sufixo com a contagem', () => {
-    players.length = 0; const p1 = { activePower: 'superjump', owned: ['superjump', 'fly'] }; players.push(p1);
+    const p1 = { i: 0, activePower: 'superjump', owned: ['superjump', 'fly'] };
     CS.initCoinSpawning(baseCtx());
     CS.showPower(p1);
     expect(elByHudPower.textContent).toBe('🐇 Super-pulo (2)');
   });
 
-  it('[Inverse] jogador 2+ (não é players[0]) → não toca o DOM (multiplayer não tem #hud-power por tela)', () => {
-    players.length = 0; const p1 = { activePower: 'off', owned: [] }; players.push(p1);
-    const p2 = { activePower: 'superjump', owned: ['superjump'] };
+  it('[Inverse] jogador 2+ (i !== 0) → não toca o DOM (multiplayer não tem #hud-power por tela)', () => {
+    const p2 = { i: 1, activePower: 'superjump', owned: ['superjump'] };
     CS.initCoinSpawning(baseCtx());
     elByHudPower.textContent = 'intacto';
     CS.showPower(p2);
@@ -220,7 +222,7 @@ describe('game/coin-spawning — showPower (HUD do poder ativo, só a tela 1)', 
   });
 
   it('[Boundary] #hud-power ausente no DOM → não lança (multiplayer/telas sem esse elemento)', () => {
-    players.length = 0; const p1 = { activePower: 'off', owned: [] }; players.push(p1);
+    const p1 = { i: 0, activePower: 'off', owned: [] };
     elByHudPower = null;
     CS.initCoinSpawning(baseCtx());
     expect(() => CS.showPower(p1)).not.toThrow();

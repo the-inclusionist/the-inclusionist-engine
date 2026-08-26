@@ -9,7 +9,7 @@
 
 import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
-import { numPlayers, players } from '../core/state.js';
+
 import { lqName as lqLabel } from '../render/lq-filter.js';
 
 // Os quatro papéis do color-blocking vêm de render/hc-role-data (folha, sem dependências) — a mesma fonte
@@ -58,6 +58,13 @@ export interface VisualSettings {
 }
 
 export interface SettingsVisualCtx {
+  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
+   *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
+   *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
+  getNumPlayers: () => number;
+  /** Os jogadores. Estado de RODADA, pelo mesmo motivo. `readonly unknown[]` porque cada consumidor
+   *  estreita para a SUA fatia — o tipo real é do jogo, não da engine (ADR-0033). */
+  getPlayers: () => readonly unknown[];
   $: <T extends Element = Element>(sel: string) => T | null;
   srSay: (text: string) => void;
   /** Fresh read of lq/ownerColors/cbSafe/outlineFg/outlineBg/roleColors (game.js live vars). */
@@ -210,10 +217,10 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     if (!el) return;
 
     const rawSelected = ctx.getSelectedPlayer();
-    const selected = clampSelectedPlayer(rawSelected, numPlayers);
+    const selected = clampSelectedPlayer(rawSelected, ctx.getNumPlayers());
     if (selected !== rawSelected) ctx.setSelectedPlayer(selected);
 
-    const contrastValue = resolveVisualMode(playerViz(players, selected));
+    const contrastValue = resolveVisualMode(playerViz(ctx.getPlayers(), selected));
     const settings = ctx.getVisualSettings();
     ctx.renderVizGroup('#visual-modes', '#visual-players', VISUAL_MODE_LIST);
     el.innerHTML = renderVisualPanelHtml(contrastValue, settings);
@@ -265,7 +272,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
    */
   function refreshMarks(): void {
     const s = ctx.getVisualSettings();
-    const contraste = resolveVisualMode(playerViz(players, ctx.getSelectedPlayer())) !== 'normal';
+    const contraste = resolveVisualMode(playerViz(ctx.getPlayers(), ctx.getSelectedPlayer())) !== 'normal';
     const lqOff = s.lq !== DEFAULTS.lq;
     const owner = s.ownerColors !== DEFAULTS.ownerColors;
     const cb = s.cbSafe !== DEFAULTS.cbSafe;
@@ -300,8 +307,8 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
   // visual). Puxá-las para cá agora responderia essa pergunta por acidente, num commit sobre outra coisa.
   const resetBtn = ctx.$<HTMLButtonElement>('#visual-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
-    players.forEach((p, i) => {
-      const viz = playerViz(players, i);
+    ctx.getPlayers().forEach((p, i) => {
+      const viz = playerViz(ctx.getPlayers(), i);
       if (VISUAL_MODE_SET.has(viz) && viz !== 'normal') ctx.setPlayerViz(i, 'normal');
     });
     const s = ctx.getVisualSettings();

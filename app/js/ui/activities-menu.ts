@@ -30,7 +30,7 @@
 // NOT here (deliberately): ui/title.ts's submenu show/hide, render/title-scene.ts's PIXI backdrop,
 // updateTitleLegend (device legend — gamepad slice), the `#title-icons` a11y shortcut row (pause-icons slice;
 // it only shares the `#title-overlay` element, never a listener), and setMode()/applyLetra() (HUD toggles).
-import { numPlayers, players } from '../core/state.js';
+
 // `activity`/`setActivityValue` NÃO são mais importados: eles vão para `game/state` (Fase B do plano), e
 // este módulo é ENGINE — o gate de fronteira proíbe engine importar de `game/`, e a lista dele esvaziou em
 // 2026-08-25. Chegam por injeção, como todo o resto do que é do jogo.
@@ -70,6 +70,13 @@ export interface CenarioOption { readonly id: string; readonly nome: string }
 export type { DomQuery } from '../core/dom-query.js';
 
 export interface ActivitiesMenuCtx {
+  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
+   *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
+   *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
+  getNumPlayers: () => number;
+  /** Os jogadores. Estado de RODADA, pelo mesmo motivo. `readonly unknown[]` porque cada consumidor
+   *  estreita para a SUA fatia — o tipo real é do jogo, não da engine (ADR-0033). */
+  getPlayers: () => readonly unknown[];
   /** DOM selector (ui/dom.ts `$`) — injected so the node project can hand over fake elements. */
   $: DomQuery;
   /** `document.activeElement`, injected: navTitle needs the focused button and node has no document. */
@@ -426,8 +433,8 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
   function reallyStart(): void {
     const id = pendingAct; setActivity(id);
     if (ctx.isMobile()) { if (pendingPlayers > 1) pendingPlayers = 1; ctx.enterFullscreen(); }
-    (players as { alfWins?: number }[]).forEach((p) => { p.alfWins = 0; });
-    if (pendingPlayers !== numPlayers) ctx.setNumPlayers(pendingPlayers); else ctx.restartGame();
+    (ctx.getPlayers() as readonly { alfWins?: number }[]).forEach((p) => { p.alfWins = 0; });
+    if (pendingPlayers !== ctx.getNumPlayers()) ctx.setNumPlayers(pendingPlayers); else ctx.restartGame();
     // O NOME da atividade atravessa como parâmetro, ainda em pt-BR: os nomes vivem em
     // educational/activities-registry e são CURRÍCULO — que o pilar 3 manda REESCREVER por idioma, não
     // traduzir (ADR-0032). A moldura — ". Jogo iniciado." — é o que traduz aqui.

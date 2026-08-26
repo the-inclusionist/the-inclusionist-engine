@@ -17,6 +17,7 @@ const noop = () => { /* stub */ };
 const NAV = { sonar: noop, caneTap: noop, waterNav: noop, needsAudioCues: () => false, panFor: () => 0, playerCtx: () => null };
 // ctx padrão: modo normal (sem cadeira, sem cegueira), mundo alto o bastante para o respawn não disparar.
 const CTX = (over = {}) => ({
+  getPlayers: () => [],
   isWheelchair: () => false, isModoCego: () => false, caneOn: () => false, WORLD_PX_H: () => 10000,
   sfx: noop, srSay: noop, srAlert: noop, hideTips: noop, showPower: noop, nav: NAV,
   tonePan: noop, noiseHit: noop, surfaceUnder: () => null,

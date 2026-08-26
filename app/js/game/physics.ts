@@ -26,7 +26,7 @@ import { ELEV_SPEED, elevAt } from './elevators.js';
 import { held } from '../input/state.js';
 import { nextLatchedDir, latchedDrive, type LatchDir } from '../input/latch.js';
 import { rnd } from '../core/rng.js';
-import { players } from '../core/state.js';
+
 import { setCoins } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 import { pickCoins } from './coins.js';
 
@@ -102,6 +102,8 @@ export interface PhysicsCtx {
   POWER_MSG: (kind: string) => string;             // frase do poder, JÁ traduzida (função: o idioma muda)
   coinPools(): { shapes: readonly string[]; letters: readonly string[] }; // pools por MODO (o sorteio da lava precisa)
   rebuildCoins(): void;         // re-materializa os sprites das moedas sorteadas
+  /** Os jogadores. Estado de RODADA (ADR-0038) — instância da raiz, não `let` de módulo. */
+  getPlayers(): readonly unknown[];
   updateHud(): void;            // HUD de contagem
 }
 
@@ -114,6 +116,7 @@ const DEFAULT_CTX: PhysicsCtx = {
   puffDust: NOOP, setSquash: NOOP, addShake: NOOP, addHitstop: NOOP,
   POWER_MSG: () => '',
   coinPools: () => ({ shapes: [], letters: [] }), rebuildCoins: NOOP, updateHud: NOOP,
+  getPlayers: () => [],
 };
 let C: PhysicsCtx = DEFAULT_CTX;
 
@@ -170,7 +173,7 @@ export function triggerLava(pl: PhysicsPlayer): void {
   // `core/state.players` é `Player[]`: a visão da ENGINE. Este jogo sabe que os seus jogadores carregam mais
   // (ADR-0033), e o salto por `unknown` é o preço honesto disso — a engine não pode declarar o campo, e o
   // jogo não pode fingir que ela declara. É o mesmo caso de `coins: unknown[]` no estado compartilhado.
-  (players as unknown as PhysicsPlayer[]).forEach((p) => { p.collected = 0; }); C.updateHud();
+  (C.getPlayers() as readonly PhysicsPlayer[]).forEach((p) => { p.collected = 0; }); C.updateHud();
   C.sfx('hurt'); pl.hurtTimer = 60; pl.vy = -10; pl.vx = (rnd() < 0.5 ? -1 : 1) * 5;
   C.addShake(3, 14); C.addHitstop(4); // JUICE: dano é o impacto mais forte do jogo
   C.srAlert(t('sr.physics.lava'));

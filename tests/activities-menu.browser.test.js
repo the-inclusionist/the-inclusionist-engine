@@ -8,7 +8,14 @@
 // `platform/storage.ts` são os módulos REAIS, que initActivitiesMenu importa direto.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initActivitiesMenu, attachAbbr, TITLE_MENU_ORDER } from '../app/js/ui/activities-menu.js';
-import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+
 import { activity as ACTIVITY, setActivityValue } from '../app/js/game/state.js'; // GAME desde a Fase B (ADR-0038)
 import { modeForActivity } from '../app/js/educational/activities-registry.js';
 import * as store from '../app/js/platform/storage.js';
@@ -32,6 +39,7 @@ function markup() {
 function makeCtx(over = {}) {
   const calls = { said: [], alerted: [], shown: [], mode: [], quizLevel: [], cenario: [], numPlayers: [], restart: 0, phase: [], hideTips: 0, fullscreen: 0 };
   const ctx = {
+    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     getActiveElement: () => document.activeElement,
     srSay: (t) => calls.said.push(t),

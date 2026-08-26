@@ -11,7 +11,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { initSettingsPanel, EXPLAIN_IDLE } from '../app/js/ui/settings-panel.js';
 import { initSettingsMotion, setSelectedPlayer } from '../app/js/ui/settings-motion.js';
 import { initSettingsEmpathy } from '../app/js/ui/settings-empathy.js';
-import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
@@ -61,6 +68,7 @@ function boot() {
   const panel = initSettingsPanel(panelCtx());
   const noop = () => {};
   const motion = initSettingsMotion({
+    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $, srSay: noop, store: { setBool: noop }, frontOverlay: panel.frontOverlay, restoreFocus: panel.restoreFocus,
     toggleBtn: (el, on) => { el.classList.toggle('is-on', on); el.setAttribute('aria-pressed', String(on)); },
     rm: { parallax: false, decor: false, items: false, particles: false }, saveRM: noop,

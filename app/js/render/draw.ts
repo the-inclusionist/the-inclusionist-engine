@@ -69,7 +69,7 @@ import { drawCane, drawRunCane, drawChair } from './wheelchair-sprites.js';
 import { VIZ_BY_KEY } from './viz-modes.js';
 // (`game/powerups` e `game/coin-spawning` SAÍRAM daqui no item 19 — ver o bloco "ITENS DECLARADOS" abaixo.)
 import { drawWeather } from './weather.js';
-import { players, numPlayers } from '../core/state.js';
+
 import { choosePlayerFrame, type AnimPlayer, type Frame, type PlayerTextures } from './player-anim.js';
 import type { RenderizarEm } from './port.js';
 
@@ -161,6 +161,13 @@ export type DrawPlayer = AnimPlayer & PlayerView<
 export interface ReducedMotion { items?: boolean }
 
 export interface DrawCtx {
+  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
+   *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
+   *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
+  getNumPlayers: () => number;
+  /** Os jogadores. Estado de RODADA, pelo mesmo motivo. `readonly unknown[]` porque cada consumidor
+   *  estreita para a SUA fatia — o tipo real é do jogo, não da engine (ADR-0033). */
+  getPlayers: () => readonly unknown[];
   /* --- render-graph criado no game.js (estável: entra por valor) --- */
   camera: CameraLike;           // container do mundo; `placeCam` o move, o multi-tela o renderiza N vezes
   renderizarEm: RenderizarEm;       // `app.renderer`
@@ -290,7 +297,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
   /* ===================== o quadro ===================== */
 
   function drawFrame(): void {
-    const PLS = players as DrawPlayer[];
+    const PLS = ctx.getPlayers() as readonly DrawPlayer[];
     for (const pl of PLS) {
       if (!pl.sprite) continue;
       pl.sprite.x = pl.x; pl.sprite.y = pl.y + 1;
@@ -323,7 +330,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
       ctx.easyHitbox.drawRect(pl.x - ctx.BOX.w / 2 - pad, pl.y - ctx.BOX.h - pad, ctx.BOX.w + 2 * pad, ctx.BOX.h + 2 * pad); ctx.easyHitbox.endFill();
     }
 
-    if (numPlayers <= 1) {
+    if (ctx.getNumPlayers() <= 1) {
       // O CINTILAR fica: é juice da engine (render/fx), e vale para moeda, estrela ou peça de tabuleiro.
       const itens = ctx.getItemSprites();
       for (let j = 0; j < itens.length; j++) { const s = itens[j]; if (s) s.alpha = shimOn ? 0.8 + 0.2 * Math.sin(fxClock * 0.12 + j * 1.7) : 1; }
@@ -335,7 +342,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
       const v0 = PLS[0].viz, allSame = PLS.every((p) => p.viz === v0);
       const anyOverlay = PLS.some((p) => { const m = VIZ_BY_KEY[p.viz]; return !!m && m.kind === 'lowvision'; });
       if (allSame) ctx.applySharedTextures(v0);
-      for (let i = 0; i < numPlayers; i++) {
+      for (let i = 0, n = ctx.getNumPlayers(); i < n; i++) {
         const viz = PLS[i].viz;
         if (!allSame) ctx.applySharedTextures(viz);            // só troca por viewport quando os modos diferem
         const itens2 = ctx.getItemSprites();

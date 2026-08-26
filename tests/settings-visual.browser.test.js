@@ -7,7 +7,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
 import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
-import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+
 
 const PANEL_HTML =
   '<div id="visual"><div id="visual-modes"></div><div id="visual-list"></div>' +
@@ -33,6 +40,7 @@ function makeCtx(overrides = {}) {
     renderVizGroup: [],
   };
   const ctx = {
+    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $: (sel) => document.querySelector(sel),
     srSay: (t) => calls.srSay.push(t),
     getVisualSettings: () => ({ ...state, roleColors: { ...state.roleColors } }),

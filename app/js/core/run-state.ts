@@ -30,6 +30,7 @@
 // O genérico responde às duas coisas ao mesmo tempo: a ENGINE declara a FORMA (uma lista de power-ups que
 // pertence à rodada) e o JOGO fornece o TIPO na hora de criar a instância. Ninguém precisa mentir.
 import type { GateTile } from './state.js';
+import type { Player } from './entity.js';
 
 /**
  * OS EXTRAS DO NÍVEL — o que o mapa monta a cada rodada e ninguém persiste.
@@ -58,6 +59,25 @@ export interface ExtrasDoNivel<P> {
 export interface RunState<P> extends ExtrasDoNivel<P> {
   /** Sólidos que só existem no modo cadeirante — rampas e plataformas, como chaves `"x,y"`. */
   wcSolid: ReadonlySet<string>;
+
+  /**
+   * OS JOGADORES (1..4). Sem setter, e isso é declaração, não esquecimento: o array NUNCA é reatribuído —
+   * ele é mutado no lugar (`push`, `splice`, `length`, `players[i]`), e quem faz isso é `game/session`, que
+   * é o dono da entrada e da saída de jogador. Um setter aqui daria a impressão de que trocar a lista
+   * inteira é uma operação prevista, e ela não é: as referências que os módulos guardam sobreviveriam à
+   * troca apontando para a lista velha.
+   *
+   * `Player[]` é a visão da ENGINE. Cada jogo acrescenta campos (o `GamePlayer` daqui tem `quiz`), e os
+   * consumidores que precisam deles estreitam por conta própria — a dívida de conversões que isso gera é
+   * anterior a este arquivo e não muda com a mudança de endereço.
+   */
+  players: Player[];
+
+  /**
+   * QUANTOS jogadores/telas (1..4). Não persistido — a partida seguinte começa com um de novo, que é o
+   * comportamento que uma sala de aula quer.
+   */
+  numPlayers: number;
 
   /** A rodada acabou (vitória). Trava a entrada e deixa o cenário simulando por trás do aviso. */
   ended: boolean;
@@ -102,6 +122,24 @@ export interface RunState<P> extends ExtrasDoNivel<P> {
   setGrassDensity(v: number): void;
   setSelVizPlayer(i: number): void;
   setPauseActor(i: number): void;
+  /** Troca o número de jogadores e AVISA (ver `OpcoesDaRodada.aoTrocarJogadores`). */
+  setNumPlayers(n: number): void;
+}
+
+/**
+ * O que a rodada precisa saber do mundo lá fora. Hoje é uma coisa só, e ela existe por um motivo concreto.
+ *
+ * `core/state.setNumPlayersValue` emitia `numPlayers` no barramento. Mover o campo para cá e simplesmente
+ * PARAR de emitir removeria em silêncio uma capacidade que a Fase C acabou de formalizar — e removê-la sem
+ * ninguém notar (o barramento ainda não tem assinante) é exatamente o tipo de perda que este repositório
+ * escreve ADR para não repetir.
+ *
+ * Então o aviso entra por INJEÇÃO, como o cabeçalho deste arquivo prometeu, e é OPCIONAL: uma rodada sem
+ * barramento funciona igual. Avisos são para painéis, e um painel ausente não é erro.
+ */
+export interface OpcoesDaRodada {
+  /** Chamado depois de `setNumPlayers`. Na raiz de composição é `(n) => emit('numPlayers', n)`. */
+  aoTrocarJogadores?: (n: number) => void;
 }
 
 /**
@@ -112,13 +150,15 @@ export interface RunState<P> extends ExtrasDoNivel<P> {
  * cerimônia, e mantê-la aqui obrigaria a fábrica a depender do barramento — justo o que a Fase C vai
  * refazer. Quando existir o primeiro assinante, ele entra por injeção, com o barramento já tipado.
  */
-export function createRunState<P>(): RunState<P> {
+export function createRunState<P>(opcoes: OpcoesDaRodada = {}): RunState<P> {
   const r: RunState<P> = {
     powerups: [],
     gateTiles: new Set<string>(),
     gate: null,
     gateOpen: true,
     wcSolid: new Set<string>(),
+    players: [],
+    numPlayers: 1,
     setLevelExtras(x: ExtrasDoNivel<P>): void {
       r.powerups = x.powerups;
       r.gateTiles = x.gateTiles;
@@ -138,6 +178,7 @@ export function createRunState<P>(): RunState<P> {
     setGrassDensity(v: number): void { r.grassDensity = Math.max(0, Math.min(1, +v || 0)); },
     setSelVizPlayer(i: number): void { r.selVizPlayer = i; },
     setPauseActor(i: number): void { r.pauseActor = i; },
+    setNumPlayers(n: number): void { r.numPlayers = n; opcoes.aoTrocarJogadores?.(n); },
   };
   return r;
 }

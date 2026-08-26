@@ -5,7 +5,14 @@
 import { describe, it, expect } from 'vitest';
 import * as COL from '../app/js/core/collision.js';
 import * as COINS from '../app/js/game/coins.js';
-import { setNumPlayersValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+
 import { setCoins } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 import { reseed } from '../app/js/core/rng.js';
 
@@ -13,7 +20,7 @@ import { reseed } from '../app/js/core/rng.js';
 const useWorld = (grid, flags = {}) => {
   const ctx = { world: grid, W: grid[0].length, H: grid.length };
   COL.initCollision({ ...ctx, isWheelchair: () => !!flags.wheelchair, isModoCego: () => false, caneDiv: () => 1, wcSolid: () => new Set(), gateTiles: () => new Set(), gateOpen: () => true });
-  COINS.initCoins({ ...ctx, anyEasy: () => !!flags.easy, isWheelchair: () => !!flags.wheelchair });
+  COINS.initCoins({ ...ctx, anyEasy: () => !!flags.easy, isWheelchair: () => !!flags.wheelchair, numJogadores: () => rodada.numPlayers });
 };
 
 // (1,1)=ar com chão em (1,2); (3,1)=água com chão em (3,3) (dy=2); (5,1)=ar FLUTUANTE (sem chão) → não candidato.

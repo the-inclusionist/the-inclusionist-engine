@@ -12,7 +12,7 @@
 // NÃO é referenciada aqui: renderMotion() nunca leu/escreveu JUICE (só o painel ?debug o faz) — ver nota no
 // retorno da extração antes de assumir que falta wiring.
 import { toggleLabel, toggleAria } from './dom.js';
-import { players, numPlayers } from '../core/state.js';
+
 import type { PlayerView } from '../core/entity.js';
 import { CRT, CRT_DEFAULT, applyCrt } from '../render/crt.js';
 import { defaultReducedMotion } from '../core/state.js';
@@ -33,6 +33,13 @@ export type MotionPlayer = PlayerView<'rmWalk' | 'rmBreath' | 'rmFlavor'>;
 export type MotionSceneFlags = Record<MotionSceneKey, boolean>;
 
 export interface SettingsMotionCtx {
+  /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
+   *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
+   *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
+  getNumPlayers: () => number;
+  /** Os jogadores. Estado de RODADA, pelo mesmo motivo. `readonly unknown[]` porque cada consumidor
+   *  estreita para a SUA fatia — o tipo real é do jogo, não da engine (ADR-0033). */
+  getPlayers: () => readonly unknown[];
   /** Seletor DOM (ui/dom.ts `$`). */
   $: <T extends Element = Element>(sel: string) => T | null;
   /** Anúncio "polite" para leitor de tela (core/a11y-sr.ts). */
@@ -182,7 +189,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     reflectMotionBtn();
     const m = ctx.$<HTMLElement>('#motion-master');
     if (!m) return;
-    const player = (players as MotionPlayer[])[selectedPlayer];
+    const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
     const allFrozen = allMotionFrozen(ctx.rmKeys, ctx.rm, ctx.rmChar, player);
     m.textContent = motionMasterLabel(allFrozen);
     ctx.toggleBtn(m, allFrozen);
@@ -191,7 +198,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   function render(): void {
     const el = ctx.$<HTMLElement>('#motion-list');
     if (!el) return;
-    selectedPlayer = clampSelectedPlayer(selectedPlayer, numPlayers);
+    selectedPlayer = clampSelectedPlayer(selectedPlayer, ctx.getNumPlayers());
 
     // E3: sem abas — cada jogador edita só o seu. BUG preservado VERBATIM do game.js (não corrigido, ver
     // retorno da extração): innerHTML='' roda ANTES do querySelectorAll, então o forEach abaixo nunca acha
@@ -206,13 +213,13 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       }));
     }
 
-    const player = (players as MotionPlayer[])[selectedPlayer];
+    const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
     const charRows = buildCharRowsHtml(ctx.rmChar, player);
     const sceneRows = buildSceneRowsHtml(ctx.rmKeys, ctx.rm, RM_LABEL, RM_SOON);
     const crtRows = crtToggleRowHtml(t(CRT_LBL.scan), 'scan', !!CRT.scan) + crtToggleRowHtml(t(CRT_LBL.vig), 'vig', !!CRT.vig) + crtRoundRowHtml(t(CRT_LBL.round), CRT.round);
 
     el.innerHTML =
-      `<h3 class="panel-sub">Personagem${numPlayers > 1 ? ' · Jogador ' + (selectedPlayer + 1) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` +
+      `<h3 class="panel-sub">Personagem${ctx.getNumPlayers() > 1 ? ' · Jogador ' + (selectedPlayer + 1) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` +
       `<h3 class="panel-sub">Cena <span class="panel-sub__tag">todos os jogadores</span></h3>${sceneRows}` +
       `<h3 class="panel-sub">Estética CRT <span class="panel-sub__tag">todos os jogadores</span></h3>${crtRows}`;
 
@@ -231,7 +238,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     }));
     el.querySelectorAll<HTMLButtonElement>('button[data-rmc]').forEach((b) => b.addEventListener('click', () => {
       const prop = b.dataset.rmc as MotionCharProp;
-      const p = (players as MotionPlayer[])[selectedPlayer];
+      const p = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
       p[prop] = !p[prop];
       ctx.store.setBool('incl_' + prop + '_p' + selectedPlayer, !!p[prop]);
       render();
@@ -260,7 +267,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   function refreshMarks(): void {
     const padraoRm = defaultReducedMotion();
     const el = ctx.$<HTMLElement>('#motion-list');
-    const player = (players as MotionPlayer[])[selectedPlayer];
+    const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
     const mudou: boolean[] = [];
     const marcar = (sel: string, changed: boolean): void => {
       mudou.push(changed);
@@ -288,7 +295,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const padraoRm = defaultReducedMotion();
     for (const k of ctx.rmKeys) ctx.rm[k] = padraoRm;
     ctx.saveRM();
-    (players as MotionPlayer[]).forEach((p, i) => {
+    (ctx.getPlayers() as readonly MotionPlayer[]).forEach((p, i) => {
       for (const c of ctx.rmChar) {
         p[c.prop] = padraoRm;
         ctx.store.setBool('incl_' + c.prop + '_p' + i, padraoRm);
@@ -321,7 +328,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
 
   const master = ctx.$<HTMLElement>('#motion-master');
   if (master) master.addEventListener('click', () => {
-    const player = (players as MotionPlayer[])[selectedPlayer];
+    const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
     const allFrozen = allMotionFrozen(ctx.rmKeys, ctx.rm, ctx.rmChar, player);
     const next = !allFrozen;
     for (const k of ctx.rmKeys) ctx.rm[k] = next;

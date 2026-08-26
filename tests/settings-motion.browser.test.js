@@ -7,7 +7,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   initSettingsMotion, getSelectedPlayer, setSelectedPlayer,
 } from '../app/js/ui/settings-motion.js';
-import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { createRunState } from '../app/js/core/run-state.js';
+// A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
+// ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
+// cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
+const rodada = createRunState();
+const players = rodada.players;
+const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
+
 import { CRT, applyCrt } from '../app/js/render/crt.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -39,6 +46,7 @@ function makeCtx(over = {}) {
   const calls = { srSay: [], setBool: [], frontOverlay: [], toggleBtn: [], saveRM: 0 };
   const rm = { parallax: false, decor: false, items: false, particles: false };
   const ctx = {
+    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     srSay: (t) => calls.srSay.push(t),
     store: { setBool: (k, v) => calls.setBool.push([k, v]) },

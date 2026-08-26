@@ -13,7 +13,7 @@ import type { PlayerView } from '../core/entity.js';
 import { tileAt, solidTile } from '../core/collision.js';
 import { TILE } from '../core/constants.js';
 import { getElevShafts, elevAt } from './elevators.js';
-import { vizMode, players } from '../core/state.js';
+import { vizMode } from '../core/state.js';
 import type { Powerup as PowerupBase } from './powerups.js';
 
 /* ===================== tipos ===================== */
@@ -50,6 +50,8 @@ export interface LevelGeometryCtx {
   // `ReadonlySet`, porque este módulo LÊ — o cabeçalho do arquivo já diz isso em palavras ("gate/gateTiles/
   // powerups/wcSolid stay OWNED by game.js"), e agora o tipo diz também. O `.add()` que existe aqui é no
   // `Set` LOCAL que `buildWcGeom` cria e devolve, não neste.
+  /** Os jogadores. Estado de RODADA (ADR-0038) — instância da raiz, não `let` de módulo. */
+  getPlayers: () => readonly unknown[];
   wcSolid: () => ReadonlySet<string>;
   // O `powerups` fica mutável aqui e SEGUE vermelho — por outro motivo: o `core/state` o declara
   // `readonly unknown[]`, e `unknown` não é `Powerup`. Isso é a decisão da issue #79 (quem descreve o
@@ -69,6 +71,7 @@ let rampLayer: PIXI.Graphics | null = null;
 let ropeLayer: PIXI.Graphics | null = null;
 let extraLayer: PIXI.Container | null = null;
 let getWcSolid: () => ReadonlySet<string> = () => new Set();
+let getPlayers: () => readonly unknown[] = () => [];
 let getPowerups: () => readonly Powerup[] = () => [];
 let getGateTiles: () => ReadonlySet<string> = () => new Set();
 let getGate: () => readonly MapGateTile[] | null = () => null;
@@ -82,7 +85,7 @@ let gateRoleColor: () => [number, number, number] = () => [0x8a, 0x5a, 0x2b];
 export function initLevelGeometry(ctx: LevelGeometryCtx): void {
   W = ctx.W; H = ctx.H; isWheelchair = ctx.isWheelchair;
   rampLayer = ctx.rampLayer; ropeLayer = ctx.ropeLayer; extraLayer = ctx.extraLayer;
-  getWcSolid = ctx.wcSolid; getPowerups = ctx.powerups;
+  getWcSolid = ctx.wcSolid; getPowerups = ctx.powerups; getPlayers = ctx.getPlayers;
   getGateTiles = ctx.gateTiles; getGate = ctx.gate; getGateOpen = ctx.gateOpen;
   pupTexFor = ctx.pupTexFor; isDirectMode = ctx.isDirectMode; gateRoleColor = ctx.gateRoleColor;
 }
@@ -197,7 +200,7 @@ export function buildRopes(): void {
 export function drawElevators(g: PIXI.Graphics): void {
   g.clear();
   if (!isWheelchair()) return;
-  const pls = players as RideablePlayer[]; // já não precisa do salto por `unknown`: players é Player[]
+  const pls = getPlayers() as readonly RideablePlayer[]; // a lista vem da rodada (ADR-0038), não de um `let` de módulo
   for (const s of getElevShafts()) { if (s.carY == null) s.carY = s.yBottom; for (const pl of pls) { if (elevAt(pl) === s) s.carY = pl.y; } }
   const GLASS = 0x9fd0e6, FRAME = 0x8aa0b8, WHITE = 0xeaf2f8, BLUE = 0x4a78b0, INNER = 0x24384d;
   for (const s of getElevShafts()) {

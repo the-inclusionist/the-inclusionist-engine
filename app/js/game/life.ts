@@ -7,14 +7,14 @@
 // imports PIXI nor touches the DOM. lifeSurfaceAt/lifeSurfaceLowAt/streetCols stay in game.js on purpose
 // (buildCityDeco in render/scene-city also calls lifeSurfaceAt) and arrive here injected too; same for
 // decoSprites (tree placements, used for the "dog near a tree" spawn bias) and darkRegions (indirectly, via
-// the injected surface functions). rnd/randInt/tileAt/solidAt/players/numPlayers/cenario/TILE/LOGICAL_* are
+// the injected surface functions). rnd/randInt/tileAt/solidAt/cenario/TILE/LOGICAL_* are
 // real leaves (core/*) → imported directly. Formulas are verbatim from game.js. See
 // docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, game/life).
 
 import { rnd, randInt } from '../core/rng.js';
 import { ehPerigo } from '../core/constants.js';
 import type { PlayerView } from '../core/entity.js';
-import { players, numPlayers } from '../core/state.js';
+
 import { cenario as CENARIO } from './state.js'; // GAME desde a Fase B (ADR-0038)
 import { LOGICAL_W, LOGICAL_H, TILE } from '../core/constants.js';
 import { tileAt, solidAt } from '../core/collision.js';
@@ -82,6 +82,11 @@ export interface LifeTexAtlas {
 interface ReducedMotion { decor?: boolean }
 
 export interface LifeCtx {
+  /** Os jogadores e quantos são. Estado de RODADA (ADR-0038): vêm da instância que a raiz possui — os
+   *  bichos só perguntam quem está perto, e essa pergunta não pode depender de um `let` de módulo que
+   *  dois jogos na mesma página compartilhariam. */
+  getPlayers: () => readonly unknown[];
+  getNumPlayers: () => number;
   layer: LifeLayer;                              // lifeLayer (PIXI.Container) — camera.addChild'd in game.js
   makeSprite: CriarSprite<LifeSprite>;            // `(t) => new PIXI.Sprite(t)` na raiz de composição
   lifeTex: LifeTexAtlas;                          // LIFE_TEX (baked canvases) — stays baked in game.js
@@ -96,6 +101,8 @@ export interface LifeCtx {
   pxH: number;                                    // WORLD_PX_H (px)
 }
 
+let getPlayers: () => readonly unknown[] = () => [];
+let getNumPlayers: () => number = () => 1;
 let layer: LifeLayer | null = null;
 let makeSprite: CriarSprite<LifeSprite> = () => { throw new Error('game/life: initLife() not called'); };
 let lifeTex: LifeTexAtlas | null = null;
@@ -109,6 +116,7 @@ let W = 0, pxW = 0, pxH = 0;
 
 /** Wire game.js's PIXI layer/textures + shared world queries into this module. Idempotent. */
 export function initLife(ctx: LifeCtx): void {
+  getPlayers = ctx.getPlayers; getNumPlayers = ctx.getNumPlayers;
   layer = ctx.layer; makeSprite = ctx.makeSprite; lifeTex = ctx.lifeTex; adultTex = ctx.adultTex;
   lifeSurfaceAt = ctx.lifeSurfaceAt; lifeSurfaceLowAt = ctx.lifeSurfaceLowAt; streetCols = ctx.streetCols;
   decoSprites = ctx.decoSprites; rm = ctx.rm; W = ctx.W; pxW = ctx.pxW; pxH = ctx.pxH;
@@ -125,7 +133,8 @@ export const getCreatures = (): Creature[] => creatures;
 export function spawnCreature(force?: boolean): boolean {
   void force;
   if (creatures.length >= 10) return false;
-  const pl = (players[randInt(0, Math.max(0, numPlayers - 1))] || players[0]) as LifePlayer;
+  const pls = getPlayers();
+  const pl = (pls[randInt(0, Math.max(0, getNumPlayers() - 1))] || pls[0]) as LifePlayer;
   const ptx = Math.floor(pl.x / TILE);
   const K = LIFE_KINDS[[0, 0, 0, 1, 2, 3][randInt(0, 5)]!]!;
   if (K.street && CENARIO !== 'cidade') return false; // dogs/adults are URBAN life; field/forest keep critters + butterflies
@@ -179,13 +188,13 @@ export function stepLife(dt: number): void {
       c.s.texture = c.tex2[c.f];
     }
     if (K.fly && c.state !== 'fly') { // cosmetic flee-flight
-      for (const p of players as LifePlayer[]) {
+      for (const p of getPlayers() as readonly LifePlayer[]) {
         if (Math.abs(p.x - c.x) < 34 && Math.abs(p.y - c.y) < 26) { c.state = 'fly'; c.vy = -1.2; c.dir = c.x < p.x ? -1 : 1; break; }
       }
     }
     c.s.x = Math.round(c.x); c.s.y = Math.round(c.y); c.s.scale.x = c.dir < 0 ? -1 : 1;
     let near = false;
-    for (const p of players as LifePlayer[]) { if (Math.abs(p.x - c.x) < LOGICAL_W * 1.6 && Math.abs(p.y - c.y) < LOGICAL_H * 1.6) { near = true; break; } }
+    for (const p of getPlayers() as readonly LifePlayer[]) { if (Math.abs(p.x - c.x) < LOGICAL_W * 1.6 && Math.abs(p.y - c.y) < LOGICAL_H * 1.6) { near = true; break; } }
     if (!near || c.y < -30 || c.x < 8 || c.x > pxW - 8) { c.s.destroy(); layer!.removeChild(c.s); creatures.splice(i, 1); }
   }
 }
