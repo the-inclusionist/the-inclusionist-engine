@@ -17,7 +17,7 @@ import type { Player, PlayerView } from './core/entity.js'; // a entidade da ENG
 import type { GamePlayer, ControlledGamePlayer } from './game/entity.js'; // as deste JOGO — ver `jogadores`/`controlados`
 import type { ModalIntent } from './input/keydown.js'; // a intenção direcional do ADR-0033
 import type { RenderTextureLike, SpriteLike, GraphicsLike } from './render/screen-pipeline.js'; // o ctx de lá declara estes
-import type { MotionSceneKey, MotionSceneFlags } from './ui/settings-motion.js'; // as quatro chaves de movimento reduzido
+import type { MotionSceneKey, MotionSceneFlags, MotionCharDef } from './ui/settings-motion.js'; // as quatro chaves de movimento reduzido
 import type { HcRoleKey } from './render/hc-role-data.js'; // HC_ROLE é Record<HcRoleKey, …>: a chave não é `string`
 import { quizLevel, setQuizLevelValue, coins, setCoins } from './game/state.js'; // item 19: o estado DESTE jogo
 import { startLoop } from './core/loop.js'; // driver do loop
@@ -382,8 +382,11 @@ const RM_KEYS: readonly MotionSceneKey[] = ['parallax', 'decor', 'items', 'parti
 // `lbl` guarda a CHAVE i18n, nao o texto: ui/settings-motion resolve com t() na hora de desenhar a linha.
 // Era texto em portugues repetido palavra por palavra na RM_LABEL daquele modulo — tres tabelas dos mesmos
 // rotulos (esta, a de la, e uma TERCEIRA morta aqui embaixo), e mudar um rotulo pedia tres edicoes.
-const RM_CHAR=[ {k:'walk',prop:'rmWalk',lbl:'rm.walk'},
-  {k:'breath',prop:'rmBreath',lbl:'rm.breath'}, {k:'flavor',prop:'rmFlavor',lbl:'rm.flavor'} ]; // animações do PERSONAGEM (por jogador)
+// O campo `k` SAIU: ninguém o lê. Os dois consumidores (`ui/settings-motion` e `ui/pause-icons`) usam só
+// `prop` e `lbl`, e o tipo que eles declaram — `MotionCharDef` — nem sequer o tem. Era mais um resto do
+// monólito, como o argumento descartado de `applyLetra`.
+const RM_CHAR: readonly MotionCharDef[] = [ {prop:'rmWalk',lbl:'rm.walk'},
+  {prop:'rmBreath',lbl:'rm.breath'}, {prop:'rmFlavor',lbl:'rm.flavor'} ]; // animações do PERSONAGEM (por jogador)
 // O padrão ganhou nome em core/state (defaultReducedMotion) porque o reset do painel precisa do MESMO valor.
 // O `as MotionSceneFlags` nos dois acumuladores abaixo: o laço preenche EXATAMENTE as quatro chaves de
 // `RM_KEYS`, que é o que o tipo exige — mas o objeto nasce vazio, e o compilador não acompanha um
