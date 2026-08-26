@@ -48,6 +48,31 @@ const erros = saida.split('\n').filter((l) => / error TS\d+: /.test(l));
 const fora = erros.filter((l) => !l.startsWith(RAIZ_EM_CONVERSAO));
 const dentro = erros.length - fora.length;
 
+/**
+ * NOME QUE NAO EXISTE — e este e o unico codigo de erro sem orcamento em lugar nenhum, nem dentro do
+ * `main.ts`. Aceito pelo Dev em 2026-08-25, e o motivo e uma medicao, nao uma preferencia:
+ *
+ * Os dois defeitos de acessibilidade consertados naquele dia sairam exatamente daqui. O `setModoCego`
+ * guardava a atualizacao do painel com `typeof reflectModoCego === 'function'`, testando um nome LIVRE que
+ * nao existe desde que a funcao mudou para `ui/settings-audio` — e `typeof` sobre identificador nao
+ * declarado devolve 'undefined' em vez de lancar, entao a guarda era SEMPRE falsa. O botao do modo cego
+ * passou a mentir o estado para o leitor de tela (WCAG 2.2 SC 4.1.2). O compilador viu isso no dia em que o
+ * `main.js` virou `main.ts`, e a fila do orcamento o segurou 82 numeros atras.
+ *
+ * A DISTINCAO QUE JUSTIFICA A EXCECAO: TS7006 (parametro sem tipo) e DIVIDA DE ANOTACAO — o codigo funciona
+ * e falta descreve-lo. TS2552/TS2304 e SEMPRE DEFEITO — o codigo cita algo que nao esta la. Orcamento serve
+ * para divida; defeito nao entra em fila.
+ */
+const CODIGOS_SEM_ORCAMENTO = /error TS(2552|2304):/;
+const nomesInexistentes = erros.filter((l) => CODIGOS_SEM_ORCAMENTO.test(l));
+
+if (nomesInexistentes.length > 0) {
+  console.error(`gate de tipos: ${nomesInexistentes.length} NOME(S) QUE NAO EXISTE(M) — sem orcamento, nem no ${RAIZ_EM_CONVERSAO}.`);
+  console.error('TS2552/TS2304 nao e divida de anotacao, e defeito: o codigo cita algo que nao esta la.');
+  for (const l of nomesInexistentes) console.error('  ' + l);
+  process.exit(1);
+}
+
 if (fora.length > 0) {
   console.error(`gate de tipos: ${fora.length} erro(s) FORA de ${RAIZ_EM_CONVERSAO} — aqui não há orçamento.\n`);
   for (const l of fora.slice(0, 20)) console.error('  ' + l);
