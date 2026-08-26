@@ -58,6 +58,7 @@ const ARGUMENTOS: Record<string, readonly [unknown, unknown]> = {
   setCbSafeValue: [true, false], setOwnerColorsValue: [false, true],
   setOutlineFgValue: [2, 0], setOutlineBgValue: [2, 0], setCaneBlockDivValue: [4, 2],
   setWheelchairValue: [true, false], setOneButtonValue: [true, false],
+  setMenuIndexOnValue: [false, true],
 };
 
 let localAntigo: unknown;

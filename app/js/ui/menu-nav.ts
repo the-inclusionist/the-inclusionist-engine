@@ -158,6 +158,7 @@ export function menuKeyIntent(code: string, act: string | null): NavKeys {
 import { hasNavIntent as hasIntent } from '../input/edges.js';
 import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
+import { legendaDoIcone } from './pause-icons.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
 /**
@@ -385,7 +386,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // A legenda `aria-live="polite"` narra o ícone sob o cursor — é ela que substitui, para quem não vê, o
     // `title`/tooltip que só o mouse revela. Item comum limpa a legenda (o rótulo já está no próprio botão).
     const cap = menu.querySelector<HTMLElement>('.pause-icons-cap');
-    if (cap) cap.textContent = isIcon ? (el.getAttribute('aria-label') || '') : '';
+    if (cap) cap.textContent = isIcon ? legendaDoIcone(menu, el) : '';
   }
 
   function navPause(menu: HTMLElement, playerIndex: number, k: NavKeys): void {

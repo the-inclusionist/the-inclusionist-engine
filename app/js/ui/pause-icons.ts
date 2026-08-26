@@ -31,6 +31,28 @@ import { t } from '../core/i18n.js';
 import { CONTRAST_LEVELS, CONTRAST_LABELS } from './settings-visual.js';
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
 import type { AudioCatState } from './settings-audio.js';
+import { anunciarItem } from './item-announcement.js';
+// LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
+import { menuIndexOn } from '../core/state.js';
+
+/**
+ * A LEGENDA de um ícone da barra de acessibilidade — uma função, e não três cópias da mesma expressão.
+ *
+ * Ela é escrita em TRÊS momentos que parecem diferentes e são o mesmo: o cursor direcional pousa no ícone
+ * (`ui/menu-nav`), o dedo o aciona, e o mouse ou o foco passa por cima. Enquanto eram três linhas soltas, o
+ * índice do ADR-0044 teria de ser acrescentado em três lugares — e a chance de um ficar para trás é a mesma
+ * que este repositório já pagou dezesseis vezes com o `DomQuery`.
+ *
+ * O `aria-label` já conta o ESTADO ("Alto contraste, ativado"): é ele que o `reflectIconBtn` reescreve a cada
+ * mudança, e é por isso que a legenda o lê de volta em vez de recompor o texto por conta própria.
+ */
+export function legendaDoIcone(barra: ParentNode, el: HTMLElement): string {
+  const icones = [...barra.querySelectorAll<HTMLElement>('.pi-btn')];
+  return anunciarItem(
+    { rotulo: el.getAttribute('aria-label') || '', posicao: icones.indexOf(el) + 1, total: icones.length },
+    menuIndexOn,
+  );
+}
 
 // ---------------------------------------------------------------------------------------------
 // Data
@@ -538,7 +560,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         iconAct(ib.dataset.pi || '', i);
         reflectPauseIcons(); // must run BEFORE reading the label back — that is what makes the caption honest
         const cp = sp.querySelector('.pause-icons-cap');
-        if (cp) cp.textContent = ib.getAttribute('aria-label') || '';
+        if (cp) cp.textContent = legendaDoIcone(sp, ib);
       }
     });
 
@@ -546,7 +568,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // reader would announce. One source of truth for sighted and non-sighted players.
     const cap = sp.querySelector('.pause-icons-cap');
     sp.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => {
-      const show = (): void => { if (cap) cap.textContent = b.getAttribute('aria-label') || ''; };
+      const show = (): void => { if (cap) cap.textContent = legendaDoIcone(sp, b); };
       b.addEventListener('mouseenter', show);
       b.addEventListener('focus', show);
     });

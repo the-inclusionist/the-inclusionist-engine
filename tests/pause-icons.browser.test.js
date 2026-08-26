@@ -200,6 +200,18 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
   });
 });
 
+/**
+ * O que a legenda de um ícone deve dizer AGORA: o `aria-label` (que já conta o estado) seguido da POSIÇÃO na
+ * barra — item 3 do ADR-0044, XAG 106, e o número vai no FIM.
+ *
+ * A posição é recontada AQUI, a partir do DOM, e não lida da implementação: se as duas contas divergirem, é
+ * porque uma delas está errada, e é justamente isso que o caso existe para descobrir.
+ */
+function legendaEsperada(bar, b) {
+  const icones = [...bar.querySelectorAll('.pi-btn')];
+  return b.getAttribute('aria-label') + ', ' + (icones.indexOf(b) + 1) + ' de ' + icones.length;
+}
+
 describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
   it('clicar num ícone age, REFLETE e escreve na legenda o estado NOVO (não o antigo)', () => {
     const { sp, state } = mount(0);
@@ -210,7 +222,8 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     expect(state.pauseActor).toBe(0);
     expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora): ligado');
     expect(b.getAttribute('aria-pressed')).toBe('true');
-    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo cego (navegação sonora): ligado');
+    expect(sp.querySelector('.pause-icons-cap').textContent).toBe(legendaEsperada(sp, b));
+    expect(sp.querySelector('.pause-icons-cap').textContent).toContain('Modo cego (navegação sonora): ligado');
   });
 
   it('clicar de novo desliga e a legenda acompanha (Right-BICEP: inverso)', () => {
@@ -218,7 +231,8 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     const b = sp.querySelector('.pi-btn[data-pi="blind"]');
     b.click(); b.click();
     expect(b.getAttribute('aria-pressed')).toBe('false');
-    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo cego (navegação sonora): desligado');
+    expect(sp.querySelector('.pause-icons-cap').textContent).toBe(legendaEsperada(sp, b));
+    expect(sp.querySelector('.pause-icons-cap').textContent).toContain('Modo cego (navegação sonora): desligado');
   });
 
   it('BORDA do TEA: 3 cliques passam por .pi-calm → .pi-on → base, com a legenda certa em cada passo', () => {
@@ -227,7 +241,8 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     b.click();
     expect(b.classList.contains('pi-calm')).toBe(true);
     expect(b.classList.contains('pi-on')).toBe(false);
-    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo TEA: calmo');
+    expect(sp.querySelector('.pause-icons-cap').textContent).toBe(legendaEsperada(sp, b));
+    expect(sp.querySelector('.pause-icons-cap').textContent).toContain('Modo TEA: calmo');
     b.click();
     expect(b.classList.contains('pi-calm')).toBe(false);
     expect(b.classList.contains('pi-on')).toBe(true);
@@ -266,14 +281,16 @@ describe('buildScreenPause — a legenda segue o foco e o mouse', () => {
     const { sp } = mount();
     const b = sp.querySelector('.pi-btn[data-pi="contrast"]');
     b.dispatchEvent(new FocusEvent('focus'));
-    expect(sp.querySelector('.pause-icons-cap').textContent).toBe(b.getAttribute('aria-label'));
+    expect(sp.querySelector('.pause-icons-cap').textContent).toBe(legendaEsperada(sp, b));
+    expect(sp.querySelector('.pause-icons-cap').textContent.startsWith(b.getAttribute('aria-label'))).toBe(true);
   });
 
   it('passar o mouse faz o mesmo', () => {
     const { sp } = mount();
     const b = sp.querySelector('.pi-btn[data-pi="libras"]');
     b.dispatchEvent(new MouseEvent('mouseenter'));
-    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo pessoa surda (Libras)');
+    expect(sp.querySelector('.pause-icons-cap').textContent).toBe(legendaEsperada(sp, b));
+    expect(sp.querySelector('.pause-icons-cap').textContent).toContain('Modo pessoa surda (Libras)');
   });
 
   it('depois de um reflexo, o foco mostra o estado ATUAL — não o rótulo cru do markup', () => {
@@ -282,7 +299,8 @@ describe('buildScreenPause — a legenda segue o foco e o mouse', () => {
     api.reflectPauseIcons();
     const b = sp.querySelector('.pi-btn[data-pi="blind"]');
     b.dispatchEvent(new FocusEvent('focus'));
-    expect(sp.querySelector('.pause-icons-cap').textContent).toBe('Modo cego (navegação sonora): ligado');
+    expect(sp.querySelector('.pause-icons-cap').textContent).toBe(legendaEsperada(sp, b));
+    expect(sp.querySelector('.pause-icons-cap').textContent).toContain('Modo cego (navegação sonora): ligado');
   });
 });
 

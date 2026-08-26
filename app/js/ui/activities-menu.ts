@@ -59,6 +59,10 @@ export type FracNot = Record<FracNotKey, number>;
 /** The 6 directional/confirm flags the title menu reacts to. Single definition in input/edges. */
 import type { NavKeys } from '../input/edges.js';
 import { passoNoAnel } from './menu-nav.js';
+import { anunciarItem } from './item-announcement.js';
+// LIGAÇÃO VIVA (ESM), e não cópia: `menuIndexOn` muda quando a criança desliga o índice no menu, e o valor
+// aqui acompanha sem precisar de assinatura nem de um campo a mais no `ctx`.
+import { menuIndexOn } from '../core/state.js';
 import type { DomQuery } from '../core/dom-query.js';
 export type { NavKeys } from '../input/edges.js';
 
@@ -475,12 +479,30 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
    */
   const isBackButton = (b: HTMLElement): boolean => b.dataset.tmBack != null || b.dataset.cenBack != null;
 
+  /**
+   * As duas partes de um botão do menu inicial, SEPARADAS.
+   *
+   * `textContent` cola o sub-rótulo no rótulo — o menu de alfabetização anunciava "Descobrindo palavrasBABA",
+   * porque a palavra de exemplo vive num `<span class="act-sub">` sem espaço em volta. Separar não é cosmética:
+   * o exemplo é o VALOR do item (a palavra que aquele minijogo treina), e o `anunciarItem` já sabe onde pôr um
+   * valor. Clona antes de arrancar o `<span>` para não mexer no botão que está na tela.
+   */
+  function partesDoBotao(b: HTMLElement): { rotulo: string; estado: string } {
+    const sub = b.querySelector<HTMLElement>('.act-sub');
+    if (!sub) return { rotulo: b.textContent || '', estado: '' };
+    const copia = b.cloneNode(true) as HTMLElement;
+    copia.querySelectorAll('.act-sub').forEach((e) => e.remove());
+    return { rotulo: copia.textContent || '', estado: sub.textContent || '' };
+  }
+
   function navTitle(k: NavKeys): void {
     const bs = titleButtons(); if (!bs.length) return;
     const i = bs.indexOf(ctx.getActiveElement() as HTMLElement);
     if (k.up || k.down || k.left || k.right) {
       const n = nextTitleIndex(i, bs.length, k);
-      bs[n].focus(); ctx.srSay(bs[n].textContent || '');
+      bs[n].focus();
+      // O índice "N de M" entra AQUI e não no `srSay`: é o menu que sabe quantos itens tem (ADR-0044, item 3).
+      ctx.srSay(anunciarItem({ ...partesDoBotao(bs[n]), posicao: n + 1, total: bs.length }, menuIndexOn));
     } else if (k.yes) { (i < 0 ? bs[0] : bs[i]).click(); }
     else if (k.no) { const back = bs.find(isBackButton); if (back) back.click(); }
   }

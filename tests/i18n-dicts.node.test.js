@@ -120,6 +120,10 @@ describe('dicionários de locale — estrutura', () => {
       // língua que anuncie a distância antes do lado precisa poder inverter, e só consegue se a ordem morar
       // no dicionário.
       'sr.nav.sonarFound',
+      // '{n} de {m}' — o índice de posição do ADR-0044. pt-BR e es escrevem "6 de 10" com as MESMAS três
+      // partes: número, a preposição `de`, número. Não sobra palavra para traduzir. O inglês DIFERE ('{n} of
+      // {m}') e é justamente por isso que a moldura mora no dicionário em vez de ser concatenada no código.
+      'sr.menu.index',
     ]);
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const iguais = chavesSr.filter((k) => k in d && d[k] === pt[k] && !COINCIDEM_DE_PROPOSITO.has(k));

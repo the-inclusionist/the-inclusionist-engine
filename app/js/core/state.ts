@@ -32,6 +32,7 @@ export interface EventoDoJogo {
   modoCego: boolean;
   letterCase: LetterCase;
   captionsOn: boolean;
+  menuIndexOn: boolean;
   cbSafe: boolean;
   ownerColors: boolean;
   hcOutlineFg: OutlineLevel;
@@ -183,6 +184,7 @@ export const DEFAULTS = Object.freeze({
   modoCego: false,
   caneBlockDiv: 1,
   captionsOn: true,
+  menuIndexOn: true, // o indice nasce LIGADO: quem nao sabe que ele existe e quem mais precisa dele
   // motora
   wheelchair: false,
   oneButton: false,
@@ -298,6 +300,20 @@ export function setCaptionsOnValue(on: boolean): void {
   const v = !!on;
   if (captionsOn === v) return;
   captionsOn = v; store.setBool(store.KEYS.captions, v); emit('captionsOn', v);
+}
+
+// --- menuIndexOn: o "6 de 10" no fim do anuncio de cada item de menu (ADR-0044, item 3).
+//
+//     NASCE LIGADO, e a razao e a mesma do modo cego nascer com TTS e sonar: quem precisa do indice para se
+//     orientar nao tem como saber que ele existe se ele vier desligado. Quem NAO precisa descobre o ajuste
+//     lendo o menu, que e justamente a coisa que essa pessoa consegue fazer.
+//
+//     PERSISTE em `incl_menuindex` (escopo da CRIANCA, ADR-0027): a preferencia segue com ela de jogo em jogo.
+export let menuIndexOn = store.getBool(store.KEYS.menuIndex, DEFAULTS.menuIndexOn);
+export function setMenuIndexOnValue(on: boolean): void {
+  const v = !!on;
+  if (menuIndexOn === v) return;
+  menuIndexOn = v; store.setBool(store.KEYS.menuIndex, v); emit('menuIndexOn', v);
 }
 
 // --- cbSafe: PALETA SEGURA PARA DALTONISMO (Okabe-Ito). Não é um filtro sobre a imagem — é a escolha das

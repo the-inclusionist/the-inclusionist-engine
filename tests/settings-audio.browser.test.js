@@ -7,6 +7,7 @@
 // modularizacao-mapa.md (Estágio 4, ui/settings-audio) e tests/a11y-sr.browser.test.js (modelo de injeção).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initSettingsAudio, NAV_CATS, GEN_CATS } from '../app/js/ui/settings-audio.js';
+import { menuIndexOn, setMenuIndexOnValue } from '../app/js/core/state.js';
 
 const AUDIO_HTML = `
   <div id="audio">
@@ -15,6 +16,7 @@ const AUDIO_HTML = `
     <input id="navsound-master" type="range" min="0" max="100" step="5">
     <div id="navsound-list"></div>
     <button id="opt-tts" type="button" aria-pressed="false">▶ Desligado</button>
+    <button id="opt-menuindex" type="button" aria-pressed="true">▶ Desligado</button>
     <select id="tts-engine"></select>
     <select id="tts-voice"></select>
     <button id="opt-tts-test" type="button">Testar</button>
@@ -269,6 +271,26 @@ describe('ui/settings-audio — TTS', () => {
     expect(catGainCalls).toContain('tts');
     expect(said.at(-1)).toBe('Narração ligada.');
     expect(tts.narrated).toEqual(['Narração por voz ligada.']);
+  });
+
+  it('[Interface] o botão do ÍNDICE alterna o ajuste, reflete no botão e anuncia (ADR-0044, item 3)', () => {
+    // O índice "6 de 10" nasce LIGADO — quem precisa dele para se orientar não tem como descobrir que ele
+    // existe se vier desligado. Este caso prova o caminho de DESLIGAR, que é o que a XAG 106 exige que exista.
+    const inicial = menuIndexOn;
+    try {
+      const { ctx, said } = fullCtx();
+      initSettingsAudio(ctx);
+      const btn = document.querySelector('#opt-menuindex');
+      btn.click();
+      expect(menuIndexOn).toBe(!inicial);
+      expect(btn.getAttribute('aria-pressed')).toBe(String(!inicial));
+      expect(said.at(-1)).toBe(inicial ? 'Posição na lista desligada.' : 'Posição na lista ligada.');
+      btn.click(); // inverso: volta ao que era, e o anúncio acompanha
+      expect(menuIndexOn).toBe(inicial);
+      expect(said.at(-1)).toBe(inicial ? 'Posição na lista ligada.' : 'Posição na lista desligada.');
+    } finally {
+      setMenuIndexOnValue(inicial); // `core/state` é módulo: o valor sobrevive ao caso e vazaria para os outros
+    }
   });
 
   it('[Interface] o slider de volume da narração liga o TTS e chama setCatGain("tts")', () => {

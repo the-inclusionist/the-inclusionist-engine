@@ -288,7 +288,8 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     nav.pauseSetSel(menu, menu.querySelectorAll('.pi-btn')[1]);
     expect(menu.querySelectorAll('.pm-sel, .pi-sel').length).toBe(1);
     expect(menu.querySelector('.pi-btn:nth-of-type(2)').classList.contains('pi-sel')).toBe(true);
-    expect(menu.querySelector('.pause-icons-cap').textContent).toBe('Narração'); // aria-label do ícone
+    // O `, N de M` entrou com o item 3 do ADR-0044: a legenda diz o rótulo E onde ele está na barra.
+    expect(menu.querySelector('.pause-icons-cap').textContent).toBe('Narração, 2 de 3'); // aria-label + posição
   });
 
   it('a FRONTEIRA é atravessável nos dois sentidos e volta para onde saiu', () => {

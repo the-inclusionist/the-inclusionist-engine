@@ -17,6 +17,9 @@
 import { toggleLabel } from './dom.js';
 import { t, bcp47 } from '../core/i18n.js';
 import { DEFAULTS } from '../core/state.js';
+// O módulo INTEIRO, e não os nomes soltos: `menuIndexOn` é ligação viva e `setMenuIndexOnValue` a muda — ler
+// pelo namespace deixa isso à vista em cada uso, em vez de parecer uma constante importada.
+import * as state from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
@@ -273,6 +276,18 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (e) e.value = ctx.tts.getEngineSel();
   }
 
+  /**
+   * O alternador do ÍNDICE "6 de 10" (ADR-0044, item 3).
+   *
+   * Ele mora ao lado da narração por voz e não num painel de visual, porque é a NARRAÇÃO que ele muda: quem
+   * desliga o índice está encurtando o que ouve a cada passo, e é aqui que essa pessoa vem quando o que ouve
+   * incomoda.
+   */
+  function reflectMenuIndex(): void {
+    const b = ctx.$<HTMLButtonElement>('#opt-menuindex');
+    if (b) { ctx.toggleBtn(b, state.menuIndexOn); b.textContent = toggleLabel(state.menuIndexOn); }
+  }
+
   function populateTtsEngines(): void {
     const sel = ctx.$<HTMLSelectElement>('#tts-engine');
     if (!sel || sel.dataset.filled) return;
@@ -461,6 +476,15 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     ctx.srSay(t(state.tts.on ? 'sr.audio.ttsOn' : 'sr.audio.ttsOff'));
     if (state.tts.on) ctx.tts.narrate(t('sr.audio.ttsOnSpoken'));
   });
+  const idxBtn = ctx.$<HTMLButtonElement>('#opt-menuindex');
+  if (idxBtn) idxBtn.addEventListener('click', () => {
+    state.setMenuIndexOnValue(!state.menuIndexOn);
+    reflectMenuIndex();
+    // O anúncio da troca NÃO leva índice: ele não é item de lista nenhuma, e um "1 de 1" aqui seria ruído
+    // justamente no momento em que a criança está julgando se o ruído incomoda.
+    ctx.srSay(t(state.menuIndexOn ? 'sr.menu.indexOn' : 'sr.menu.indexOff'));
+  });
+
   const ttsEngSel = ctx.$<HTMLSelectElement>('#tts-engine');
   if (ttsEngSel) ttsEngSel.addEventListener('change', () => {
     ctx.tts.setEngineSel(ttsEngSel.value);
@@ -521,7 +545,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
       state[c.k]!.on = d.on; state[c.k]!.vol = d.vol;
       ctx.setCatGain(c.k);
     }
-    renderAudio(); reflectModoCego(); reflectTts();
+    renderAudio(); reflectModoCego(); reflectTts(); reflectMenuIndex();
     ctx.srSay(t('sr.audio.reset'));
   });
 

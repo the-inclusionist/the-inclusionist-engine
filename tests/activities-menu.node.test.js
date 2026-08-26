@@ -801,7 +801,11 @@ describe('initActivitiesMenu — travessia por setas', () => {
     expect(bs).not.toContain(oculto);
   });
 
-  it('a seta move o foco e ANUNCIA o rótulo do botão focado', () => {
+  it('a seta move o foco e ANUNCIA o rótulo do botão focado, com a POSIÇÃO no fim', () => {
+    // O índice entrou com o item 3 do ADR-0044 (XAG 106): "position and total help non-sighted players remain
+    // oriented and confident that they have found all of the controls". Ele vai no FIM porque quem varre
+    // depressa interrompe assim que reconhece o rótulo — e, com a narração interrompível do item 2, um índice
+    // na frente seria a única parte que sempre daria tempo de ouvir.
     const { ctx, calls, stage } = makeCtx();
     const api = initActivitiesMenu(ctx);
     const a = new FakeEl('button', { text: 'Um' }); const b = new FakeEl('button', { text: 'Dois' });
@@ -809,7 +813,7 @@ describe('initActivitiesMenu — travessia por setas', () => {
     api.navTitle({ down: true });
     expect(ACTIVE.textContent).toBe(stage.npBtn.textContent); // 1º botão do submenu (o #np-btn)
     api.navTitle({ down: true });
-    expect(calls.said[calls.said.length - 1]).toBe('Um');
+    expect(calls.said[calls.said.length - 1]).toBe('Um, 2 de 3');
   });
 
   it('confirmar sem foco em nada aciona o PRIMEIRO botão', () => {
