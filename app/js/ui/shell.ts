@@ -93,11 +93,14 @@ import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { phase, numPlayers, setPhaseValue, players, type Phase } from '../core/state.js';
 import { PAD_DESIGNS } from '../input/devices.js'; // módulo-folha de DADOS (zero deps) — importado, não injetado
+import type { DomQuery } from '../core/dom-query.js';
 
 /* ===================== interfaces mínimas ===================== */
 
 /** ui/dom.ts `$` — injetado para o teste node poder passar um DOM falso. */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** O que `pauseActs.addplayer` lê de um jogador. `players` é `unknown[]` em core/state.ts. */
 /** A casca só precisa saber QUEM é o jogador e se ele está esperando a próxima rodada. */

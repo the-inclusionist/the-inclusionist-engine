@@ -21,8 +21,11 @@ import { markChanged, markMenuChanged } from './changed-mark.js';
 import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
 import type { PlayerAudioOut } from '../platform/audio-sonar.js'; // ADR-0039: o dono declara `_ac`/`_acOut`
+import type { DomQuery } from '../core/dom-query.js';
 
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal platform/storage.ts shape this module needs (get/set only — no direct localStorage access). */
 export interface AudioStore {

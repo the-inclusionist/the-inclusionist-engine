@@ -93,6 +93,7 @@ import { puTaken, takePu, type Powerup } from './powerups.js';
 import {
   rebuildCoins, addCoinsForOwner, respawnCoinsForOwner, showPower, getCoinSprites,
 } from './coin-spawning.js';
+import type { DomQuery } from '../core/dom-query.js';
 
 /* ===================== dados de rodada (eram `const` do game.js) ===================== */
 
@@ -252,7 +253,11 @@ export interface SessionEl {
   focus(): void;
 }
 /** O seletor do game.js (ui/dom.ts `$`), injetado — o módulo nunca toca `document`. */
-export type DomQuery = (sel: string) => SessionEl | null;
+// `DomQuery` vem de `core/dom-query` (2026-08-26). A versão local era NÃO-GENÉRICA e devolvia o
+// `SessionEl` estrutural — e uma função genérica atribuída a uma assinatura não-genérica é
+// instanciada pela RESTRIÇÃO, não pelo padrão: o `$` virava `Element`, que não tem `hidden`.
+// O `SessionEl` continua abaixo: ele é a fatia que este módulo LÊ, e `HTMLElement` a satisfaz.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** Uma região secreta (darkRegions do game.js): a sessão só reescurece a máscara e re-arma o anúncio. */
 export interface DarkRegion { announced: boolean; gfx: { alpha: number; visible: boolean } }

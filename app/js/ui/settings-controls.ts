@@ -9,9 +9,12 @@
 // shared/unrelated infra and stay in game.js. `openHelp()` (pause-menu help screen) reuses ACT_LABEL/keyName —
 // both are exported here instead of duplicated.
 import { t } from '../core/i18n.js';
+import type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** action -> list of physical key codes (KeyboardEvent.code), e.g. {jump:['KeyJ','Space']}. */
 export type KeyScheme = Record<string, string[]>;

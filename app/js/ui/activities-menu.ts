@@ -55,13 +55,16 @@ export type FracNot = Record<FracNotKey, number>;
 
 /** The 6 directional/confirm flags the title menu reacts to. Single definition in input/edges. */
 import type { NavKeys } from '../input/edges.js';
+import type { DomQuery } from '../core/dom-query.js';
 export type { NavKeys } from '../input/edges.js';
 
 /** One scenario as the "Cenário" submenu needs it — id + display name only (CENARIOS' texture data stays put). */
 export interface CenarioOption { readonly id: string; readonly nome: string }
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 export interface ActivitiesMenuCtx {
   /** DOM selector (ui/dom.ts `$`) — injected so the node project can hand over fake elements. */

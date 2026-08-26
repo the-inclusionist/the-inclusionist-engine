@@ -9,8 +9,11 @@
 // (updateTitleLegend), arrow-key focus traversal (navTitle/titleButtons) and the click/keydown wiring — belongs to
 // other Estágio-4 slices and stays in game.js for now.
 
+import type { DomQuery } from '../core/dom-query.js';
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 export type TitleMenuId = 'tm-main' | 'tm-alf' | 'tm-mat' | 'tm-tab' | 'tm-fr' | 'tm-cen';
 

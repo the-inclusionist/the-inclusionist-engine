@@ -13,7 +13,9 @@ import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, type FontItem } from './fon
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal platform/storage.ts shape this module needs (get/set only — no direct localStorage access). */
 export interface TypoStore {
@@ -56,6 +58,7 @@ export function isSelectableFont(k: string): boolean {
 // catalogo; re-exportada aqui para quem ja consome este modulo. Uma implementacao, nao duas.
 export { resolveFontKey, persistFontKey } from './fonts.js';
 import { resolveFontKey, persistFontKey } from './fonts.js';
+import type { DomQuery } from '../core/dom-query.js';
 
 export interface FontCssTarget {
   /** Value written to root.dataset.fonte. */

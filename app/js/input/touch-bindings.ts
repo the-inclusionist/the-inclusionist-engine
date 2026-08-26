@@ -87,7 +87,10 @@
 /** `ui/dom.ts` `$` — injetado; o módulo nunca alcança `document`. */
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import type { PlayerView } from '../core/entity.js';
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+import type { DomQuery } from '../core/dom-query.js';
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** ação -> lista de códigos físicos. Cópia ESTRUTURAL do `KeyScheme` de `input/keyboard-runtime.ts` — a casa
  *  prefere a cópia a puxar um alias de tipo através de camadas (mesmo precedente de `input/keydown.ts`). */

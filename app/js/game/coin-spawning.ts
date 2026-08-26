@@ -12,9 +12,12 @@ import { players, vizMode } from '../core/state.js';
 import { coins, setCoins } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 import { findCoinCandidates, positionEasyCoins, type Coin } from './coins.js';
 import { SOMASUB_SHAPES, WORD_INITIALS } from './activity-content.js';
+import type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`) — injected, never imported, so the module stays node-testable. */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** Superfície mínima de um sprite PIXI que rebuildCoins precisa (estrutural — mantém o módulo testável no node). */
 export interface CoinSprite {

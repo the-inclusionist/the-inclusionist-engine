@@ -29,7 +29,9 @@ export interface PadLike {
 /** Adapter for `navigator.getGamepads()` — the DI point that lets tests feed a fake pad without a browser. */
 export type GetGamepads = () => readonly (PadLike | null | undefined)[] | null | undefined;
 
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 // ---------------------------------------------------------------------------------------------
 // Action mapping (button/axis -> game action)
@@ -156,6 +158,7 @@ export interface WizState {
 
 import type { NavKeys } from './edges.js';
 import type { ModalIntent } from './keydown.js';
+import type { DomQuery } from '../core/dom-query.js';
 export type { NavKeys } from './edges.js'; // reexportado sob o nome que os consumidores já usam
 
 /** Forma mínima de jogador que este módulo lê/escreve — DERIVADA de core/entity, não redigitada.

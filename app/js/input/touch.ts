@@ -11,9 +11,12 @@ import type { PlayerView } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { KEYS } from '../platform/storage.js'; // só as CHAVES (constantes) — leitura/escrita passam por ctx.store (DI)
 import { setMinimapCorner } from '../render/minimap.js'; // já módulo próprio (Estágio 4, Tier 1) — importado direto
+import type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal platform/storage.ts shape this module needs. */
 export interface TouchStore {

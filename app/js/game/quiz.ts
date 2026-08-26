@@ -35,6 +35,7 @@ import { LETTER_NAME, soletra, ferreiroDistractors } from './literacy-distractor
 import { takeCoin } from './coins.js';
 import { getCoinSprites } from './coin-spawning.js';
 import { VIZ_BY_KEY } from '../render/viz-modes.js'; // dado puro, zero deps (só p/ detectar o modo 'blind' do jogador)
+import type { DomQuery } from '../core/dom-query.js';
 
 // =================================================================================================
 // Tipos
@@ -112,7 +113,9 @@ function quizDe(pl: QuizPlayer): Quiz | null {
 function abrirQuiz(pl: QuizPlayer, q: Quiz): void { pl.quiz = q; }
 
 /** Selector DOM mínimo (mesma forma do `$` de ui/dom.ts) — injetado, nunca importado. */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 // =================================================================================================
 // 1. GERAÇÃO — matemática (PURA: só depende do RNG semeado e dos dados injetados)

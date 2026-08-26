@@ -28,9 +28,12 @@ import type { PlayerView } from '../core/entity.js';
 import type { Objective } from '../core/contract.js';
 import { players, numPlayers } from '../core/state.js';
 import { t } from '../core/i18n.js';
+import type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** Só os campos do jogador que o HUD lê. Estrutural de propósito: o `players[]` real é `unknown[]` no core/state. */
 /** O que o HUD lê do JOGADOR: o poder ativo e se ele desistiu. O progresso vem do `Objective`, não daqui —

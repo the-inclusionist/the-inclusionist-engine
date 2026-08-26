@@ -108,7 +108,9 @@
 /* ===================== interfaces mínimas ===================== */
 
 /** ui/dom.ts `$` — injetado; o módulo nunca alcança `document`. */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** A intenção, não a tecla. Definição única em input/edges; aqui só reexportada. */
 import type { NavKeys } from '../input/edges.js';
@@ -155,6 +157,7 @@ export function menuKeyIntent(code: string, act: string | null): NavKeys {
 /** Alguma intenção foi expressa? Definição única em input/edges; aqui só o nome que este módulo sempre teve. */
 import { hasNavIntent as hasIntent } from '../input/edges.js';
 import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
+import type { DomQuery } from '../core/dom-query.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
 /** Anda um passo numa lista, sem dar a volta (o original nunca faz wrap em lista de itens). */

@@ -100,7 +100,9 @@ import { phase } from '../core/state.js'; // binding vivo (fonte única de estad
 /* ===================== interfaces mínimas ===================== */
 
 /** ui/dom.ts `$` — injetado; o módulo nunca alcança `document`. */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** O que este módulo lê e faz com um `KeyboardEvent` de `keydown`. */
 export interface KeydownEventLike {
@@ -275,6 +277,7 @@ export function titleNavOf(code: string, s: KeydownSnapshot, jump: boolean): Tit
 /** Alguma intenção foi expressa? Definição única em input/edges; aqui só o nome que este módulo sempre teve. */
 import { hasNavIntent as hasTitleIntent } from './edges.js';
 import type { EventTargetLike } from './touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
+import type { DomQuery } from '../core/dom-query.js';
 export { hasNavIntent as hasTitleIntent } from './edges.js';
 
 /**

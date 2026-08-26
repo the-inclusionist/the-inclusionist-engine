@@ -26,6 +26,7 @@ import { pupTexFor, resetPupTexCache } from './textures.js';
 import { lqFilter } from './lq-filter.js';
 import { setVizModeValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
+import type { DomQuery } from '../core/dom-query.js';
 
 /* ===================== PURO (sem PIXI, sem DOM) — o que rende teste de verdade ===================== */
 
@@ -101,7 +102,11 @@ interface Pu { kind: string; sprite?: Textured | null }
 
 export interface VizSettersCtx {
   /* --- DOM (ui/dom + a11y) --- */
-  $: (sel: string) => El | null;                    // seletor do jogo (#viz-overlay, #viz-indicator, listas do painel)
+  /** O seletor do jogo (#viz-overlay, #viz-indicator, listas do painel). `DomQuery` de `core/dom-query`
+   *  desde 2026-08-26: a versão local era NÃO-GENÉRICA, e uma função genérica atribuída a uma
+   *  assinatura não-genérica é instanciada pela RESTRIÇÃO. O `El` estrutural continua abaixo — ele é a
+   *  fatia que este módulo LÊ, e `HTMLElement` a satisfaz. */
+  $: DomQuery;
   body: ClassListHost;                              // document.body — classes `lowvision-mode`/`blind-mode` gateiam o CSS
   srSay: (s: string) => void;                       // leitor de tela (região aria-live)
 
@@ -282,14 +287,14 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       tabs.innerHTML = '';
       // NOTA (verbatim do original): o innerHTML acima já esvaziou `tabs`, então este querySelectorAll não
       // acha nada e o listener nunca é ligado. Preservado como estava — ver relatório da extração.
-      tabs.querySelectorAll('button[data-vp]').forEach((b) => b.addEventListener('click', () => {
+      tabs.querySelectorAll<HTMLElement>('button[data-vp]').forEach((b) => b.addEventListener('click', () => {
         ctx.setSelVizPlayer(+(b.dataset.vp as string)); ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
       }));
     }
     const players = ctx.getPlayers(), sel = ctx.getSelVizPlayer();
     const cur = players[sel] ? players[sel].viz : 'normal';
     el.innerHTML = vizGroupHtml(modes, cur);
-    el.querySelectorAll('button[data-viz]').forEach((btn) => btn.addEventListener('click', () => {
+    el.querySelectorAll<HTMLElement>('button[data-viz]').forEach((btn) => btn.addEventListener('click', () => {
       const key = btn.dataset.viz as string;
       setPlayerViz(ctx.getSelVizPlayer(), key);
       ctx.srSay(vizGroupSay(ctx.getNumPlayers(), ctx.getSelVizPlayer(), t(VIZ_MODES.find((m) => m.key === key)!.nome)));

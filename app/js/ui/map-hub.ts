@@ -57,8 +57,11 @@
 //    verbatim e é seguro hoje porque `openMovement` re-renderiza a cada abertura; se um dia o painel puder
 //    ficar aberto enquanto o nº de telas muda, esta é a linha a mexer.
 
+import type { DomQuery } from '../core/dom-query.js';
 /** Assinatura mínima do seletor de DOM (a mesma de `ui/dom.ts`). */
-export type DomQuery = <T extends Element = Element>(sel: string) => T | null;
+// `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
+// módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
+export type { DomQuery } from '../core/dom-query.js';
 
 /** Qual painel a linha abre. `null` = ainda não existe subsistema para abrir. */
 export type MapHubAction = 'options' | 'padwiz' | null;
