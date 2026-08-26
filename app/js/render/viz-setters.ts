@@ -27,7 +27,8 @@ import { lqFilter } from './lq-filter.js';
 import { setVizModeValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
 import type { DomQuery } from '../core/dom-query.js';
-import type { ComFiltro, ComTextura, Visivel, DesenhoComCirculo, AplicarFiltroCss, AlcanceDoFiltro } from './port.js';
+import type { ComFiltro, ComTextura, Visivel, DesenhoComCirculo, AplicarFiltroCss, AlcanceDoFiltro,
+  AplicarAltoContrasteNoDom } from './port.js';
 
 /* ===================== PURO (sem PIXI, sem DOM) — o que rende teste de verdade ===================== */
 
@@ -112,6 +113,8 @@ export interface VizSettersCtx {
 
   /* --- objetos PIXI criados no game.js (z-order soldado lá) --- */
   aplicarFiltroCss: AplicarFiltroCss;               // era `app: AppLike|null` + `app.view.style.filter`; ver a porta
+  /** Alto contraste no DOM — o filtro não o alcança porque ele não É filtro. Issue #83. */
+  aplicarAltoContrasteNoDom: AplicarAltoContrasteNoDom;
   camera: Filtered;                                 // solo: alto contraste = filtro GPU na câmera
   worldSprite: Textured;                            // mundo recolorido por modo
   parallaxLayers: Textured[];                       // camadas de fundo (const; elementos só têm .texture trocada)
@@ -233,7 +236,8 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     // custa uma comparação e não pode divergir. (O inicializador daquele `let` usava OUTRA fórmula,
     // `vizMode!=='normal'`, e discordava do setter — sem efeito, porque applyVizGlobal roda no boot antes de
     // o gancho existir, mas é o sintoma clássico de cópia de estado.)
-    ctx.aplicarFiltroCss(cssFilterFor(mode, lqFilter()), alcanceDoModo(mode)); // sim. daltonismo/baixa-visão/cegueira + realce L/Q compostos
+    ctx.aplicarFiltroCss(cssFilterFor(mode, lqFilter()), alcanceDoModo(mode));
+    ctx.aplicarAltoContrasteNoDom(m.kind === 'hcnew'); // não é filtro: ver `AplicarAltoContrasteNoDom` // sim. daltonismo/baixa-visão/cegueira + realce L/Q compostos
     ctx.camera.filters = (m.kind === 'hcnew') ? ctx.pixiFilterFor(mode) : null; // solo: alto contraste experimental = filtro GPU na câmera
     ctx.setFrontDim(!!DIRECT_CFG[mode]); // HC: frente (carros/placas/semáforo) escurece como fundo
     ctx.worldSprite.texture = worldTexFor(mode);            // alto contraste direto = Renderização Direta · resto=normal

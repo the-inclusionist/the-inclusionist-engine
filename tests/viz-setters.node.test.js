@@ -101,7 +101,7 @@ function setup(over = {}) {
     vpDots: over.vpDots || [],
     log: {
       frontDim: [], modoCego: [], hideTouch: [], say: [], selWrites: [],
-      rebuildExtras: 0, rebuildCoins: 0, reflect: 0, visual: 0, empathy: 0, filtrosCss: [],
+      rebuildExtras: 0, rebuildCoins: 0, reflect: 0, visual: 0, empathy: 0, filtrosCss: [], hcNoDom: [],
       clearPlayerDirect: 0, invalidate: 0, sharedWrites: [],
     },
   };
@@ -112,6 +112,8 @@ function setup(over = {}) {
     // O módulo pede o VERBO, não o `app`: o `view.style` do PixiJS é `ICanvasStyle`, que nem tem
     // `filter`. Quem sabe que em produção o `view` é uma canvas do DOM é a raiz de composição — e é
     // lá que mora a guarda de "e se não houver canvas montada". Este falso imita a raiz.
+    // Alto contraste no DOM (issue #83): não é filtro, é classe — o falso só registra o liga/desliga.
+    aplicarAltoContrasteNoDom: (ligado) => { env.log.hcNoDom.push(ligado); },
     aplicarFiltroCss: (css) => { env.log.filtrosCss.push(css); if (env.app && env.app.view) env.app.view.style.filter = css; },
     camera: env.camera,
     worldSprite: env.worldSprite,
@@ -708,4 +710,26 @@ describe('até onde o filtro alcança (issue #82)', () => {
     // a escolha ser deliberada se alguém a inverter.
     expect(alcanceDoModo('inventado')).toBe('mundo-e-menus');
   });
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// ALTO CONTRASTE NO DOM (issue #83). Ele NÃO é filtro: é Renderização Direta, e repinta as texturas da canvas.
+// O DOM não tem textura, então o conserto da #82 — propagar o filtro — não o alcançava. O que atravessa é uma
+// CLASSE, e o desenho (véu opaco, cursor invertido) mora no `style.css`, com as razões medidas em
+// `tests/contraste-menu.node.test.js`.
+//
+// MUTAÇÃO CONFERIDA: trocando `m.kind === 'hcnew'` por `false` em `applyVizGlobal`, o [Right] falha em
+// "expected [] to deeply equal [ true ]".
+// ⚠️ Os casos que LIGAM o alto contraste vivem em `viz-setters.browser.test.js`, e não aqui: o caminho
+// `hcnew` chama `worldTexFor`, que precisa de uma canvas de verdade para repintar. É a mesma razão pela qual
+// o desvio de Renderização Direta já era testado lá. Aqui fica o lado que não toca canvas.
+describe('alto contraste alcança o DOM por CLASSE, não por filtro (issue #83)', () => {
+  it('[Inverse] modo que não é alto contraste DESLIGA a classe — inclusive os de empatia', () => {
+    for (const m of ['normal', 'fix-deuter', 'sim-deuter', 'lv-blur', 'blind']) {
+      const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
+      api.applyVizGlobal(m);
+      expect(env.log.hcNoDom.at(-1), m).toBe(false);
+    }
+  });
+
 });

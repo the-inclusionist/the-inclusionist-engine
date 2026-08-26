@@ -3,6 +3,9 @@
   --bg:#0b1020; --panel:#1b2440; --ink:#f5f8ff; --ink-soft:#cdd6f2;
   --accent:#ffd23f; --accent-ink:#1a1400; --focus:#ffd23f; --good:#34e29b;
   --changed:#fff; /* ADR-0029: moldura de quem saiu do padrão */
+  /* Alto contraste no DOM (issue #83): o véu do painel sem transparência, e o fundo de botão. Ficam aqui,
+     junto dos outros tokens, para o teste de contraste poder lê-los do CSS em vez de os copiar. */
+  --bg-solid:#04070f; --panel-btn:#1a2740;
   --maxw:1000px; --tap:44px;
   --ui-fs:16px; /* fonte-base da UI (<p>): 16px = MÍNIMO a 640×360; o JS (layout) aumenta conforme o canvas cresce */
   /* ===== Tipografia oficial EdSP ===== */
@@ -252,6 +255,38 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    ficam no `#game-region`. O CRT é efeito de tela e passa por cima de tudo — o que a scanline já fazia por
    decisão do Dev, e a vinheta agora acompanha. */
 #dom-layer{position:absolute;inset:0;z-index:1;pointer-events:none}
+
+/* ===== ALTO CONTRASTE NO DOM (issue #83) =====
+   O alto contraste NÃO é filtro: ele é Renderização Direta, e repinta as TEXTURAS da canvas. No DOM não há
+   textura para repintar — há que escrever o equivalente, e é isto.
+
+   MEDIDO, não estimado (WCAG 1.4.3, razão sobre sRGB linearizado). O que falhava, e só no nível 7:1:
+
+     · o VÉU do painel de pausa é `rgba(4,7,15,.72)` — translúcido. A razão do texto sobre ele DEPENDE do
+       jogo por trás: 19,17:1 sobre um quadro preto e 8,07:1 sobre um branco. Com `--ink-soft`, `--accent` e
+       `--good` a conta cai a 5,92 / 5,94 / 5,11:1 — AA, não AAA. Nos níveis 3:1 e 4,5:1 nada falhava.
+     · o botão SELECIONADO é `#2a3a5e`, e `--good` sobre ele dá 6,70:1.
+
+   Duas mudanças, e nenhuma inventa cor:
+
+   1. O VÉU FICA OPACO. É o que "alto contraste" quer dizer: sai o meio-tom, e com ele a dependência do que
+      está atrás. Sozinha, esta já leva tudo a AAA menos um caso.
+   2. O CURSOR INVERTE — fundo `--accent`, texto `--accent-ink`, 12,71:1. Escurecer o selecionado o
+      aproximaria do não-selecionado (`#1a2740`) e a criança PERDERIA O CURSOR; inverter resolve as duas
+      coisas de uma vez, e é o padrão de alto contraste de qualquer sistema operacional.
+
+   Resultado: o pior par do menu vai de 5,11:1 para 10,29:1 (`--ink-soft` sobre botão). Margem de +47% sobre
+   o 7:1. `tests/contraste-menu.node.test.js` afirma isso a cada rodada, com as razões calculadas do próprio
+   CSS — não copiadas para dentro do teste.
+
+   ⚠️ VALE PARA OS TRÊS NÍVEIS, e não só para o 7:1: nos outros dois o menu já passava, mas passava POR SORTE
+   do que estivesse na tela. Determinismo é ganho em todos. */
+#dom-layer.hc .screen-pause,
+#dom-layer.hc .pause-incanvas{background:var(--bg-solid)}
+#dom-layer.hc .pm-btn{background:var(--panel-btn)}
+#dom-layer.hc .pm-btn:hover,
+#dom-layer.hc .pm-btn:focus,
+#dom-layer.hc .pm-btn.pm-sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent-ink)}
 #dom-layer #viz-indicator,#dom-layer .overlay,#dom-layer .quiz,#dom-layer .pause-incanvas{pointer-events:auto}
 
 .game-region{position:relative;background:#05070f;box-shadow:0 0 0 3px var(--ink-soft);border-radius:8px;overflow:hidden;flex:none}

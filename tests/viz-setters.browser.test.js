@@ -63,6 +63,7 @@ function setup(over = {}) {
   stage();
   const players = over.players || [{ viz: 'normal', sprite: null, _tx: null }];
   const env = {
+    hcNoDom: [],
     players, numPlayers: over.numPlayers === undefined ? players.length : over.numPlayers,
     sharedViz: null, sel: over.sel === undefined ? 0 : over.sel,
     app: { view: { style: { filter: '' } } },
@@ -78,6 +79,9 @@ function setup(over = {}) {
     body: document.body,
     srSay: (s) => env.log.say.push(s),
     aplicarFiltroCss: (css) => { if (env.app && env.app.view) env.app.view.style.filter = css; }, // a raiz é quem sabe da canvas
+    // Alto contraste no DOM (issue #83): não é filtro, é CLASSE. Este falso imita a raiz, que faz
+    // `#dom-layer.classList.toggle('hc', ligado)`.
+    aplicarAltoContrasteNoDom: (ligado) => { env.hcNoDom.push(ligado); },
     camera: env.camera, worldSprite: env.worldSprite,
     parallaxLayers: env.parallaxLayers, decoSprites: env.decoSprites,
     getVpSpr: () => env.vpSpr, getVpDots: () => env.vpDots,
@@ -202,5 +206,37 @@ describe('renderVizGroup — fiação no DOM real', () => {
     expect(tabs.hidden).toBe(true);
     expect(tabs.querySelectorAll('button[data-vp]')).toHaveLength(0); // innerHTML='' apagou → nada para ligar
     expect(env.sel).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// ALTO CONTRASTE NO DOM (issue #83). Ele NÃO é filtro: é Renderização Direta, e repinta as TEXTURAS da canvas.
+// O DOM não tem textura, então o conserto da #82 — propagar o filtro — não o alcançava. O que atravessa é uma
+// CLASSE, e o desenho (véu opaco, cursor invertido) mora no `style.css`, com as razões medidas em
+// `tests/contraste-menu.node.test.js`.
+//
+// Estes casos vivem AQUI e não no teste de node porque o caminho `hcnew` chama `worldTexFor`, que precisa de
+// uma canvas de verdade para repintar — a mesma razão pela qual o desvio de Renderização Direta já era testado
+// neste arquivo.
+//
+// MUTAÇÃO CONFERIDA: trocando `m.kind === 'hcnew'` por `false` em `applyVizGlobal`, o [Right] falha em
+// "expected false to be true".
+describe('alto contraste alcança o DOM por CLASSE, não por filtro (issue #83)', () => {
+  it('[Right] os três níveis ligam a classe, e NÃO produzem filtro', () => {
+    for (const m of ['hc-direto', 'hc-direto-45', 'hc-direto-7']) {
+      const { env, api } = setup();
+      api.applyVizGlobal(m);
+      expect(env.hcNoDom.at(-1), m + ': a classe').toBe(true);
+      expect(env.app.view.style.filter, m + ': não deve haver filtro').toBe('');
+    }
+  });
+
+  it('[Interface] correção de daltonismo faz o CONTRÁRIO — filtro sim, classe não', () => {
+    // O caso que guarda a distinção que a issue #83 existe para nomear. Se um dia alguém tentar unificar as
+    // duas metades num mecanismo só, é aqui que aparece.
+    const { env, api } = setup();
+    api.applyVizGlobal('fix-deuter');
+    expect(env.hcNoDom.at(-1)).toBe(false);
+    expect(env.app.view.style.filter).toContain('cvd-fix-deuter');
   });
 });

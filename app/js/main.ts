@@ -1354,6 +1354,7 @@ const viz = initVizSetters({
     const dom = $<HTMLElement>('#dom-layer');
     if (dom) dom.style.filter = alcance === 'mundo-e-menus' ? css : '';
   },
+  aplicarAltoContrasteNoDom: (ligado) => { const d = $<HTMLElement>('#dom-layer'); if (d) d.classList.toggle('hc', ligado); },
   camera, worldSprite, parallaxLayers, decoSprites,
   getVpSpr: () => vpSpr, getVpDots: () => vpDots,
   getItemSprites: getCoinSprites, itemTexId: 'coin', // item 19: o NOME dos itens e do jogo, nao do render

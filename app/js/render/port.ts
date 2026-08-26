@@ -166,3 +166,12 @@ export type AplicarFiltroCss = (css: string, alcance: AlcanceDoFiltro) => void;
  * modos de empatia, e `simulatesDisability(chave)` é a pergunta pronta. Nada de taxonomia nova.
  */
 export type AlcanceDoFiltro = 'mundo' | 'mundo-e-menus';
+
+/**
+ * LIGAR/DESLIGAR O ALTO CONTRASTE NO DOM — a metade que o filtro não alcança.
+ *
+ * O alto contraste não é filtro de CSS: é Renderização Direta, e repinta as TEXTURAS da canvas. O DOM não
+ * tem textura, então não há o que propagar — há que escrever o equivalente, e ele mora no `style.css` sob
+ * `#dom-layer.hc`. Aqui só se diz SE está ligado; o desenho é do CSS, com as razões medidas (issue #83).
+ */
+export type AplicarAltoContrasteNoDom = (ligado: boolean) => void;
