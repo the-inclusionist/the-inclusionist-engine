@@ -1728,7 +1728,11 @@ addEventListener('gamepaddisconnected',()=>{ if(fatosDaCena().telaDeTitulo)updat
 (function titleIconsSetup(){ const ov=$('#title-overlay'); if(!ov)return;
   // Icones de a11y da pausa TAMBEM no topo do splash (mesmas acoes, escopo do Jogador 1)
   const ti=$('#title-icons'); if(ti){ ti.innerHTML=iconsMarkup(); // fonte unica do markup (antes copiado aqui e no modulo)
-    ti.addEventListener('click',(e)=>{ const ib=(e.target as Element | null)?.closest<HTMLElement>('.pi-btn'); if(!ib)return; // genérico: é o `dataset` dele que se lê setPauseActorValue(0); pauseIcons.iconAct(ib.dataset.pi,0);
+    // ⚠️ O `<HTMLElement>` no `closest` é para o `dataset` da linha de baixo ser tipado. O comentário que
+    // explicava isso ficou NO MEIO da linha em 2026-08-25 (d889254) e comeu o resto dela — as duas chamadas
+    // abaixo passaram 36 commits comentadas, e nada acusou. Comentário de fim de linha fica em linha própria.
+    ti.addEventListener('click',(e)=>{ const ib=(e.target as Element | null)?.closest<HTMLElement>('.pi-btn'); if(!ib)return;
+      rodada.setPauseActor(0); pauseIcons.iconAct(ib.dataset.pi||'',0);
       reflectTitleIcons(); if(typeof reflectPauseIcons==='function')reflectPauseIcons(); srSay(ib.getAttribute('aria-label')||''); });
     reflectTitleIcons(); }
 })();
