@@ -196,7 +196,10 @@ for(let y=0;y<WORLD_H;y++)for(let x=0;x<WORLD_W;x++){ const tile=WORLD[y][x]; //
 // armazenamento numa passada só — aqui eram um `let` provisório seguido de duas reatribuições.
 // HC_ROLE_DEF/HC_ROLE/saveHcRole (color-blocking por papel, customizavel e persistido) migraram para
 // render/high-contrast.ts (Onda A). rgbHex foi junto e nao voltou: tinha ZERO chamadores aqui.
-const hexRgb=(h: string)=>{ const m=/^#?([0-9a-f]{6})$/i.exec(h); if(!m)return null; const n=parseInt(m[1],16); return [n>>16&255,n>>8&255,n&255]; };
+// A tupla é declarada, não inferida: a função devolve SEMPRE três casas, e o destino (`HC_ROLE`, uma
+// `Record<HcRoleKey, [number, number, number]>`) exige exatamente três. Inferido como `number[]`, o valor
+// certo não entrava no lugar certo.
+const hexRgb=(h: string): [number, number, number] | null =>{ const m=/^#?([0-9a-f]{6})$/i.exec(h); if(!m)return null; const n=parseInt(m[1],16); return [n>>16&255,n>>8&255,n&255]; };
 // _roleOf/worldToTextureDirect/directBgTexture/directSpriteCanvas/directSpriteTexture migraram para
 // render/high-contrast.ts (Onda A).
 // Alto contraste (re-adicionado): recolore cada tile pela PALETA do grupo (gradient-map por matiz, mantém claro-escuro).
@@ -1390,7 +1393,7 @@ function closeAudio(){ const ov=$('#audio'); if(!ov)return; ov.hidden=true; if(!
 // recomprime ao sair. Genérico: varre a barra (.mode-btn) E o menu de pausa (.pm-btn) casando A12e/S11e.
 // ABBR_MID/attachAbbr migraram para ui/activities-menu.ts (Onda A). A VARREDURA abaixo fica onde
 // esta: ela e sensivel a quando os .pm-btn existem.
-document.querySelectorAll('.mode-btn, .pm-btn').forEach(attachAbbr);
+document.querySelectorAll<HTMLElement>('.mode-btn, .pm-btn').forEach(attachAbbr); // `attachAbbr` lê `.title`/`.dataset`
 // Saída de áudio POR JOGADOR (setSinkId): detecta fones/caixas e atribui 1 por jogador
 // DESIGN DOS BOTÕES na tela por controle (Gamepad API: 0=baixo/pulo·sim, 1=direita/especial·não, 2=esquerda/interação, 3=cima/troca-poder)
 // PAD_DESIGNS extraído p/ input/devices.js (Fase 2).
@@ -1620,7 +1623,7 @@ addEventListener('gamepaddisconnected',()=>{ if(phase==='title')updateTitleLegen
 (function titleIconsSetup(){ const ov=$('#title-overlay'); if(!ov)return;
   // Icones de a11y da pausa TAMBEM no topo do splash (mesmas acoes, escopo do Jogador 1)
   const ti=$('#title-icons'); if(ti){ ti.innerHTML=iconsMarkup(); // fonte unica do markup (antes copiado aqui e no modulo)
-    ti.addEventListener('click',(e)=>{ const ib=(e.target as Element | null)?.closest('.pi-btn'); if(!ib)return; setPauseActorValue(0); pauseIcons.iconAct(ib.dataset.pi,0);
+    ti.addEventListener('click',(e)=>{ const ib=(e.target as Element | null)?.closest<HTMLElement>('.pi-btn'); if(!ib)return; // genérico: é o `dataset` dele que se lê setPauseActorValue(0); pauseIcons.iconAct(ib.dataset.pi,0);
       reflectTitleIcons(); if(typeof reflectPauseIcons==='function')reflectPauseIcons(); srSay(ib.getAttribute('aria-label')||''); });
     reflectTitleIcons(); }
 })();

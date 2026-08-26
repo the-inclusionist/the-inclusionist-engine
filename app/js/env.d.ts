@@ -41,3 +41,16 @@ interface Window {
   __tiles?: unknown;
   __incl?: InclTestHooks;
 }
+
+/**
+ * TELA CHEIA COM PREFIXO DE FORNECEDOR, e ela é declarada em vez de convertida porque é uma API DE VERDADE:
+ * o Safari — inclusive o do iPad, que é a máquina de várias escolas — só oferece `webkitRequestFullscreen`.
+ * O `main.ts` já faz a detecção certa (`el.requestFullscreen || el.webkitRequestFullscreen`); o que faltava
+ * era o `lib.dom` conhecer o segundo nome.
+ *
+ * Opcional porque em Chrome e Firefox ele não existe — e é justamente por ser opcional que a detecção do
+ * `main.ts` continua sendo obrigatória. Um cast ali teria calado o compilador e apagado essa obrigação.
+ */
+interface HTMLElement {
+  webkitRequestFullscreen?: () => void;
+}
