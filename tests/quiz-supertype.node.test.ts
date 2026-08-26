@@ -17,7 +17,7 @@
 //     em quem CONSTRÓI o objeto, com o tipo ainda declarando o nome antigo como opcional.
 import { describe, it, expect } from 'vitest';
 import type { PlayerQuiz } from '../app/js/game/entity.js';
-import type { MathQuiz, SilabasQuiz, PreQuiz, AlfQuiz, BrailleQuiz, Quiz } from '../app/js/game/quiz.js';
+import type { MathQuiz, SilabasQuiz, PreQuiz, AlfQuiz, BrailleQuiz, Quiz, QuizComCursor } from '../app/js/game/quiz.js';
 
 /**
  * `true` só quando A é atribuível a B. Escrito assim, e não com um `satisfies`, porque a falha precisa cair
@@ -40,8 +40,16 @@ const _braille: Estende<BrailleQuiz, PlayerQuiz> = true;
 /** E a união inteira, que é o que os consumidores realmente atravessam. */
 const _uniao: Estende<Quiz, PlayerQuiz> = true;
 
+/**
+ * E o NEGATIVO, que é a metade que quase nunca se escreve: o ditado Braille não tem cursor, e a assinatura
+ * de `selRange` passou a dizer isso. Enquanto havia um `as MathQuiz | PreQuiz` lá dentro, o `BrailleQuiz`
+ * caía no ramo falso e `q.choices.length` teria sido `undefined.length`. Se alguém devolver o Braille ao
+ * tipo, esta linha cai antes do primeiro `undefined`.
+ */
+const _brailleSemCursor: Estende<BrailleQuiz, QuizComCursor> = false;
+
 // Os seis acima existem para o `tsc`; o `void` é para o `noUnusedLocals` do dia em que ele for ligado.
-void [_math, _silabas, _pre, _alf, _braille, _uniao];
+void [_math, _silabas, _pre, _alf, _braille, _uniao, _brailleSemCursor];
 
 /**
  * Um exemplar de cada variante, construído com os campos MÍNIMOS. Não é uma fixture do jogo — é o menor

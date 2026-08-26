@@ -389,9 +389,22 @@ export function winsHtml(n: number): string {
   return '<div class="quiz-wins" aria-label="' + n + ' de 3 acertos para a moeda">' + [0, 1, 2].map((i) => '<span class="qw-dot' + (i < n ? ' on' : '') + '"></span>').join('') + '</div>';
 }
 
+/**
+ * As quatro variantes que TÊM cursor. O ditado Braille não tem: ele é passivo, o jogo dita as celas e a
+ * criança só pula a moeda — não há o que selecionar.
+ *
+ * Existe porque o `as` que estava dentro do `selRange` escondia isto: ele afirmava `MathQuiz | PreQuiz` no
+ * ramo falso, onde o `BrailleQuiz` também cai, e ler `q.choices` de um ditado é `undefined.length`. Nenhum
+ * chamador de hoje chega lá — há um só, e ele já exclui o Braille —, mas a função é EXPORTADA, e uma
+ * assinatura que aceita o que a função não sabe tratar é um convite com data marcada.
+ */
+export type QuizComCursor = Exclude<Quiz, BrailleQuiz>;
+
 /** Cursor mínimo/máximo do desafio (regra de navegação; -1 = a PALAVRA do topo, selecionável p/ repetir a fala). */
-export function selRange(q: Quiz): { min: number; max: number } {
-  const max = (q.kind === 'silabas' || q.kind === 'alf') ? (q as SilabasQuiz | AlfQuiz).options.length + 1 : (q as MathQuiz | PreQuiz).choices.length - 1;
+export function selRange(q: QuizComCursor): { min: number; max: number } {
+  // Sem `as`: `q` é a união e o `kind` estreita os dois ramos sozinho. Os dois casts que estavam aqui
+  // afirmavam exatamente o que o teste do `kind` ao lado já provava.
+  const max = (q.kind === 'silabas' || q.kind === 'alf') ? q.options.length + 1 : q.choices.length - 1;
   const min = (q.kind === 'pre' || q.kind === 'silabas') ? -1 : 0;
   return { min, max };
 }
@@ -602,7 +615,12 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     const box = ov.querySelector('.quiz-box');
     if (box) box.insertAdjacentHTML('afterbegin', winsHtml(Math.min(3, pl.alfWins || 0))); // 3 luzes de progresso: acesa = amarela com brilho
     // .quiz-word (palavra do topo, data-i=-1) → repete a fala
-    ov.querySelectorAll<HTMLElement>('.quiz-choice,.quiz-word').forEach((b) => b.addEventListener('click', () => { if (pl.quiz) { (pl.quiz as MathQuiz).sel = +(b.dataset.i as string); quizConfirm(pl); } }));
+    // O último ponto que lia `pl.quiz` cru. Escrevia `.sel` afirmando `MathQuiz`, e o `BrailleQuiz` não tem
+    // `sel` — o ditado é passivo e não tem cursor. Agora pergunta em vez de afirmar, pelo mesmo `quizDe`.
+    ov.querySelectorAll<HTMLElement>('.quiz-choice,.quiz-word').forEach((b) => b.addEventListener('click', () => {
+      const alvo = quizDe(pl); if (!alvo || alvo.kind === 'braille') return;
+      alvo.sel = +(b.dataset.i as string); quizConfirm(pl);
+    }));
     ov.hidden = false; c.hideTouchControls(); // quiz aberto = menu na tela → sem controle virtual
   }
 
@@ -638,7 +656,9 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
   /** 3 VITÓRIAS = 1 MOEDA em TODOS os minigames, sem exceção (regra do José 2026-07-04). */
   function quizWin(pl: QuizPlayer, q: Quiz): void {
     pl.alfWins = (pl.alfWins || 0) + 1;
-    const word = (q as SilabasQuiz).word;
+    // `in` em vez de `as`: quatro variantes têm `word` e o `MathQuiz` não. O cast afirmava `SilabasQuiz`
+    // para todas as cinco; o guarda pergunta, e o `undefined` que resulta é o que o `if` abaixo já esperava.
+    const word = 'word' in q ? q.word : undefined;
     if (pl.alfWins < 3) {
       if (c.actCat() === 'alf' && word) { // LETRAMENTO: som suave (o sfx de acerto já tocou) + REFALA a palavra + PAUSA → próxima palavra
         q.won = true; c.gameSay(word); c.srSay(quizWho(pl) + t('sr.quiz.wellDone', { palavra: c.disp(word), n: pl.alfWins }));
