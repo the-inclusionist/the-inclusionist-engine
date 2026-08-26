@@ -5,8 +5,8 @@
 // Um `emit('viz', …)` em vez de `'vizMode'` não é erro em lugar nenhum — o assinante certo simplesmente
 // nunca é chamado, nada fica vermelho, e a única pista é um painel que parou de se atualizar.
 //
-// Este arquivo trava as duas garantias onde elas valem: no `tsc`, que o gate `check:types` roda com ZERO
-// tolerância fora do `main.ts`. A metade de execução mora em `tests/state.node.test.js`.
+// Este arquivo trava as duas garantias onde elas valem: no `tsc`, que o gate `typecheck` roda com ZERO
+// tolerância, em qualquer arquivo. A metade de execução mora em `tests/state.node.test.js`.
 //
 // MUTAÇÕES CONFERIDAS antes de este arquivo valer:
 //   · `emit('viz', mode)` no lugar de `'vizMode'`  →  "Argument of type '"viz"' is not assignable to

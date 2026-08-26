@@ -72,9 +72,9 @@ convivência de idosos e pessoas assistidas socialmente). **MVP atual:** *The In
 - Repo `SP-the-inclusionist-tracer/` (git). O jogo publicável vive em **`app/`**; o código em **`app/js/**`** (ES
   Modules `.ts`). Deploy = **`dist/`** no **Cloudflare Pages** (git-connected, builda no push da `main`).
 - **TypeScript + Vite** (build) + **Vitest** (node + browser/Playwright) + **vite-plugin-pwa** (SW por content-hash).
-  ⚠️ **Use `npm run check:types`, não `npx tsc --noEmit` cru.** O `main.ts` está no meio da conversão e carrega
-  uma dívida conhecida com **orçamento que só desce** (`scripts/check-types.mjs`); o `tsc` cru falha por ela e,
-  no CI, abortava o job antes do vitest, do build e do `check:precache`. O gate exige **zero fora do `main.ts`**.
+  ⚠️ **`npm run typecheck` tem de sair LIMPO — zero erros, em qualquer arquivo.** Foram 273 no `main.ts` no dia
+  da conversão, tolerados por um gate com orçamento que só descia (`scripts/check-types.mjs`); chegaram a zero
+  em 2026-08-26 e o gate saiu. Não há mais dívida conhecida para tolerar: um erro novo é um erro seu.
   **Node 24** (`.node-version`). Detalhes: `docs/plano-typescript-vite.md`, `docs/plano-testes.md`.
 - **Versão:** `release-it` (você dispara) + carimbo `git describe` injetado pelo Vite (`__BUILD__`).
   Ver `docs/plano-versionamento.md`.

@@ -11,7 +11,7 @@
 // quer dizer provado, não comentado.
 //
 // DUAS METADES, e as duas são necessárias:
-//   · a de COMPILAÇÃO (`Estende<...>`) falha no `tsc`, e portanto no gate `check:types`, que exige zero
+//   · a de COMPILAÇÃO (`Estende<...>`) falha no `tsc`, e portanto no gate `typecheck`, que exige zero
 //     erros fora do `main.ts`. É ela que pega uma variante que deixou de satisfazer o supertipo.
 //   · a de EXECUÇÃO (o `it` abaixo) falha no `vitest`, e pega o que o compilador não vê: um campo renomeado
 //     em quem CONSTRÓI o objeto, com o tipo ainda declarando o nome antigo como opcional.
@@ -30,7 +30,7 @@ type Estende<A, B> = A extends B ? true : false;
 // `revealed?: boolean` no `QuizCommon`, o `tsc` acusa SETE erros — as seis asserções abaixo e a atribuição
 // do terceiro `it` —, todos com `Type 'true' is not assignable to type 'false'`. Herdando todas de
 // `QuizCommon`, as cinco variantes caem juntas; a graça de uma linha por variante é o caso em que só UMA
-// muda. E, por caírem FORA do `main.ts`, elas derrubam o `check:types`, que ali não tem orçamento nenhum.
+// muda. E elas derrubam o `typecheck`, que desde 2026-08-26 não tem orçamento nenhum em lugar nenhum.
 const _math: Estende<MathQuiz, PlayerQuiz> = true;
 const _silabas: Estende<SilabasQuiz, PlayerQuiz> = true;
 const _pre: Estende<PreQuiz, PlayerQuiz> = true;
