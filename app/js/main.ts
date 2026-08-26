@@ -361,7 +361,7 @@ const keydownApi = initKeydown({
   closePadWiz: (save) => gamepadApi.closePadWiz(save),
   hideTouchControls: (r) => hideTouchControls(r), srSay: (m) => srSay(m),
   navTitle: (k) => navTitle(k), activateScreens: (n) => activateScreens(n), togglePause: () => togglePause(),
-  modalInput: (pl, intent) => modalInput(pl, intent), hasModal: (i) => temModal(i),
+  modalInput: (i, intent) => modalInput(i, intent), hasModal: (i) => temModal(i),
   clearWaitingBadge: (i) => hud.clearWaitingBadge(i),
   win: window,
 });
@@ -1042,9 +1042,10 @@ function closeQuiz(pl: Parameters<typeof quizApi.closeQuiz>[0]){ quizApi.closeQu
 // A INTENCAO chega da engine; QUEM DECIDE o que ela significa e este jogo (ADR-0033). A grade de tres
 // colunas e o desvio de Braille moravam dentro do `input/keydown` e do `input/gamepad`, em duas COPIAS —
 // que e a pior forma de ter uma regra. Agora ela existe uma vez, aqui, do lado de quem e dono do desafio.
-function modalInput(pl: Player, intent: ModalIntent) {
-  const plq = pl as GamePlayer;
-  if (plq.quiz && plq.quiz.kind === 'braille') {   // cego: cima DITA a cela, confirmar responde. Nada mais anda.
+function modalInput(i: number, intent: ModalIntent) {
+  const pl = jogadores()[i];
+  if (!pl) return; // a guarda que vivia no input/keydown: quem resolve o índice é quem o valida
+  if (pl.quiz && pl.quiz.kind === 'braille') {   // cego: cima DITA a cela, confirmar responde. Nada mais anda.
     if (intent === 'up') announceBraille(pl);
     else if (intent === 'confirm') quizConfirm(pl);
     return;

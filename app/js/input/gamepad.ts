@@ -204,7 +204,9 @@ export interface GamepadCtx {
    * porque a decisão de qual chamar morava aqui, com a grade de três colunas e o desvio de Braille. O pad e
    * o teclado tinham CÓPIAS dessa mesma decisão, o que é a pior forma de tê-la: duas para divergir.
    */
-  modalInput: (p: GamepadPlayer, intent: ModalIntent) => void;
+  /** O ÍNDICE do jogador, não o jogador (ADR-0033/0039): a engine entrega intenção e não precisa saber o
+   *  que é um jogador com desafio aberto. Quem resolve o índice é o dono do desafio. */
+  modalInput: (playerIndex: number, intent: ModalIntent) => void;
   /** Este jogador tem um modal aberto? Uma pergunta, e não o objeto do jogo. */
   hasModal: (playerIndex: number) => boolean;
   /** Entra num jogo em andamento com uma tela nova (game.js's joinPlayer). */
@@ -474,7 +476,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
               edge('left') ? 'left' : edge('right') ? 'right'
               : edge('up') ? 'up' : edge('down') ? 'down'
               : edge('jump') ? 'confirm' : edge('especial') ? 'erase' : null;
-            if (intent) ctx.modalInput(p, intent);
+            if (intent) ctx.modalInput(owner, intent);
             continue;
           }
           // A tabela e a guarda do Fácil vêm de input/edges.ts, as MESMAS que keydown e touch usam. Antes eram

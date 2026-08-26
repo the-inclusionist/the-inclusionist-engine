@@ -588,18 +588,22 @@ describe('initKeydown — o efeito de cada ramo', () => {
     expect(b.calls).toEqual([['togglePause']]);
   });
 
-  it('modal: a INTENÇÃO chega com o OBJETO do jogador dono', () => {
+  it('modal: a INTENÇÃO chega com o ÍNDICE do jogador dono', () => {
     // Eram QUATRO funções no ctx (`quizMove`/`quizConfirm`/`quizErase`/`announceBraille`) e este caso as
     // afirmava uma a uma, com os deltas da grade. Virou uma, e o que resta a afirmar é o que a engine de
     // fato decide: QUEM é o dono e QUAL direção foi pedida (ADR-0033).
+    //
+    // E passou a ser o ÍNDICE e não o objeto: este módulo buscava o jogador só para repassá-lo, e o jogador
+    // que ele sabe descrever não tem `quiz` — que é justamente o que o outro lado lê. Passar o índice tira
+    // da engine a necessidade de saber o que é um jogador com desafio aberto.
     const players = [mkPlayer(0, P2A), mkPlayer(1, P2B, { modalAberto: true })];
     const { ctx, calls } = mkCtx({ players });
     const api = initKeydown(ctx);
     fire(api, 'ArrowLeft'); fire(api, 'Numpad5'); fire(api, 'Numpad6');
     expect(calls).toEqual([
-      ['modalInput', players[1], 'left'],
-      ['modalInput', players[1], 'confirm'],
-      ['modalInput', players[1], 'erase'],
+      ['modalInput', 1, 'left'],
+      ['modalInput', 1, 'confirm'],
+      ['modalInput', 1, 'erase'],
     ]);
   });
 
@@ -609,7 +613,7 @@ describe('initKeydown — o efeito de cada ramo', () => {
     const players = [mkPlayer(0, SOLO, { modalAberto: true })];
     const { ctx, calls } = mkCtx({ players });
     fire(initKeydown(ctx), 'KeyW');
-    expect(calls).toEqual([['modalInput', players[0], 'up']]);
+    expect(calls).toEqual([['modalInput', 0, 'up']]);
   });
 
   it('jogo: a tecla entra em `keys`, a borda sobe e os botões de toque somem com motivo "teclado"', () => {

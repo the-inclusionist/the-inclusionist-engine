@@ -438,7 +438,7 @@ describe('initGamepad — pollPads', () => {
     ctx.setPhaseValue('playing');
     ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [12] })]); // D-pad cima
     api.pollPads();
-    expect(ctx.calls.modalInput).toEqual([[p, 'up']]);
+    expect(ctx.calls.modalInput).toEqual([[0, 'up']]); // o ÍNDICE do dono, não o objeto (ADR-0033/0039)
     expect(p.jumpEdge).toBe(false);
   });
   it('[Right] jogador ausente (owner<0) que aperta algo em "playing" e não há tela esperando: chama joinPlayer', () => {

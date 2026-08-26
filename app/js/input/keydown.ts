@@ -442,7 +442,8 @@ export interface KeydownCtx {
    * Viraram uma. Um jogo com grade de quatro colunas, ou com lista vertical, responde diferente sem que este
    * módulo saiba que existe grade.
    */
-  modalInput: (pl: KeydownPlayer, intent: ModalIntent) => void;
+  /** O ÍNDICE do jogador, não o jogador (ADR-0033/0039). Ver a mesma nota em input/gamepad. */
+  modalInput: (playerIndex: number, intent: ModalIntent) => void;
   /** O jogador da POSIÇÃO `i` tem um modal aberto? Uma pergunta, e não o objeto: ver `modalOpen` no snapshot. */
   hasModal: (playerIndex: number) => boolean;
   /** ui/hud.ts: some com o selo "tela em espera" quando o jogador daquela tela entra. */
@@ -495,9 +496,10 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
       case 'screens': ctx.activateScreens(d.count); return;
       case 'pause': ctx.togglePause(); return;
       case 'modal': {
-        const pl = ctx.getPlayers()[d.playerIndex];
-        if (!pl || !d.intent) return;
-        ctx.modalInput(pl, d.intent);
+        // A BUSCA DO JOGADOR SAIU DAQUI: este módulo a fazia só para repassar o objeto, e o objeto que ele
+        // sabia descrever não tinha `quiz` — que é justamente o que o outro lado precisa ler. Passa o índice.
+        if (!d.intent) return;
+        ctx.modalInput(d.playerIndex, d.intent);
         return;
       }
       case 'play': {
