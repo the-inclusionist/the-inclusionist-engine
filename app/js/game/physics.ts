@@ -92,7 +92,7 @@ export interface PhysicsCtx {
   addShake(amp: number, t: number): void;          // juice: tremor de tela
   addHitstop(t: number): void;                     // juice: congela o mundo alguns ticks (dano)
   POWER_MSG: (kind: string) => string;             // frase do poder, JÁ traduzida (função: o idioma muda)
-  coinPools(): { shapes: string[]; letters: string[] }; // pools por MODO (o sorteio da lava precisa)
+  coinPools(): { shapes: readonly string[]; letters: readonly string[] }; // pools por MODO (o sorteio da lava precisa)
   rebuildCoins(): void;         // re-materializa os sprites das moedas sorteadas
   updateHud(): void;            // HUD de contagem
 }

@@ -51,9 +51,12 @@ export interface LevelGeometryCtx {
   // powerups/wcSolid stay OWNED by game.js"), e agora o tipo diz também. O `.add()` que existe aqui é no
   // `Set` LOCAL que `buildWcGeom` cria e devolve, não neste.
   wcSolid: () => ReadonlySet<string>;
+  // O `powerups` fica mutável aqui e SEGUE vermelho — por outro motivo: o `core/state` o declara
+  // `readonly unknown[]`, e `unknown` não é `Powerup`. Isso é a decisão da issue #79 (quem descreve o
+  // tipo de um campo), não este conserto; trocar só o `readonly` maquiaria o erro sem responder nada.
   powerups: () => Powerup[];
   gateTiles: () => ReadonlySet<string>;
-  gate: () => MapGateTile[] | null;
+  gate: () => readonly MapGateTile[] | null;
   gateOpen: () => boolean;
   pupTexFor: (kind: string, mode: string) => PIXI.Texture;
   isDirectMode: (mode: string) => boolean;
@@ -68,7 +71,7 @@ let extraLayer: PIXI.Container | null = null;
 let getWcSolid: () => ReadonlySet<string> = () => new Set();
 let getPowerups: () => Powerup[] = () => [];
 let getGateTiles: () => ReadonlySet<string> = () => new Set();
-let getGate: () => MapGateTile[] | null = () => null;
+let getGate: () => readonly MapGateTile[] | null = () => null;
 let getGateOpen: () => boolean = () => true;
 let pupTexFor: (kind: string, mode: string) => PIXI.Texture = () => PIXI.Texture.EMPTY;
 let isDirectMode: (mode: string) => boolean = () => false;

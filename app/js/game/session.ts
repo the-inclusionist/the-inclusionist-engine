@@ -268,7 +268,7 @@ export interface SessionCtx {
   getMode(): string; setModeValue(m: string): void;      // `let MODE`
   setEnded(v: boolean): void;                             // `let ended`
   getPowerups(): SessionPowerup[];                        // `let powerups` — setupExtras() REATRIBUI
-  getGate(): GateTile[] | null;                           // `let gate` — idem
+  getGate(): readonly GateTile[] | null;                           // `let gate` — idem
   isGateOpen(): boolean; setGateOpen(v: boolean): void;   // `let gateOpen` — idem
   getPauseActor(): number;                                // `let pauseActor` — quem abriu o menu de pausa
   ownerColors(): boolean;                                 // `let ownerColors` — brilho na cor do dono?
@@ -300,7 +300,7 @@ export interface SessionCtx {
   rnd(): number;                            // core/rng — semeado; o confete consome a MESMA sequência do monólito
 
   /* --- itens e cena --- */
-  coinPools(): { shapes: string[]; letters: string[] }; // pools por MODO (o sorteio da rodada nova precisa)
+  coinPools(): { shapes: readonly string[]; letters: readonly string[] }; // pools por MODO (o sorteio da rodada nova precisa)
   setupExtras(): void;                      // re-sorteia power-ups + chave e FECHA o portão (reatribui os 4 `let`)
   rebuildExtras(): void;                    // re-desenha o portão aberto
   resetMinimap(): void;                     // fog-of-war da fase volta ao escuro
