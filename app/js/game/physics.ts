@@ -59,7 +59,12 @@ export type PhysicsPlayer = Pick<ControlledGamePlayer,
   'stepT' | 'guardT' | '_swapDown' | '_swapT' | '_swapSonar' |
   'easy' | 'toggleMove' | 'runCane' | 'collected' |
   'quiz' | 'quit' | 'waiting' | 'elevTarget' | '_fallV' | 'caneDist' |
-  'ctrl' | 'pad' | 'viz'
+  'ctrl' | 'pad' | 'viz' |
+  // `sq`/`sqT` NÃO são lidos aqui — são ESCRITOS por `render/fx.setSquash`, que este módulo chama com o
+  // próprio jogador. Fora da vista, o `Squashable` de lá (cujos campos são todos opcionais) recusava o
+  // `PhysicsPlayer` pela regra de tipo fraco do TS: nenhuma propriedade em comum. A vista tem de incluir
+  // o que a física ENTREGA, não só o que ela lê.
+  'sq' | 'sqT'
 >;
 
 /** Pistas espaciais de a11y (platform/audio-nav) que a física dispara. */

@@ -23,7 +23,7 @@
 // deixou de IMPLEMENTAR a metade genérica — ele a repassa, e quem quiser só ela importa o outro arquivo.
 // Extraído do game.js. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Tier 2, áudio rodada 3).
 
-import type { PlayerView } from '../core/entity.js';
+import type { PlayerView, ControlledPlayer } from '../core/entity.js';
 import type { AudioSonar, PlayerAudioOut, PlayerCtxOut, SonarPlayer } from './audio-sonar.js';
 
 export type { PlayerCtxOut };
@@ -40,8 +40,14 @@ export type { PlayerCtxOut };
  * globais ambientes em qualquer arquivo desta árvore. O motivo verdadeiro é de CAMADA: `_ac` e `_acOut` não
  * são da entidade da engine, e por isso o `core/entity` deixou de mencioná-los (ADR-0039, opção A1).
  */
-type Player = PlayerView<'x' | 'y' | 'facing' | 'viz' | 'i' | 'audioSink' | 'wnT' | 'guideT'>
-  & PlayerAudioOut;
+// `ctrl` e `pad` entram porque este módulo passa o próprio jogador para o `held` injetado, e `held`
+// (`input/state`) lê os dois. Sem eles a vista era mais estreita do que o que o módulo ENTREGA, e a
+// injeção no `main.ts` ficava vermelha falando de `HeldPlayer` — que não é nome que apareça aqui.
+type Player = PlayerView<'x' | 'y' | 'facing' | 'viz' | 'i' | 'audioSink' | 'wnT' | 'guideT' | 'pad'>
+  & PlayerAudioOut
+  // `ctrl` NÃO-NULO, e não `KeyScheme | null`: a bengala e o nado só rodam DEPOIS do `assignControls`,
+  // e é isso que o `held` exige. A vista com o nulo dentro dizia menos do que este módulo sabe.
+  & Pick<ControlledPlayer, 'ctrl'>;
 
 export interface AudioNavCtx {
   tileAt: (x: number, y: number) => number;
