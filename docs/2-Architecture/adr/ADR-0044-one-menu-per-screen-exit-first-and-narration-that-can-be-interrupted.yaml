@@ -1,0 +1,177 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-26
+  decision-makers: [Dev]
+  consulted:
+    - "Xbox Accessibility Guideline 106 (screen narration) — https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/106"
+    - "Game Accessibility Guidelines — screenreader support incl. menus & installers — https://gameaccessibilityguidelines.com/ensure-screenreader-support-including-menus-installers/"
+    - "NN/g — Screen Readers on Touchscreen Devices — https://www.nngroup.com/articles/touchscreen-screen-readers/"
+    - "NN/g — Challenges for Screen-Reader Users on Mobile — https://www.nngroup.com/articles/screen-reader-users-on-mobile/"
+    - "WCAG 2.2 §2.5.8 Target Size (Minimum) — https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html"
+    - "arXiv:2301.08031 — My Zelda Cane: strategies used by blind players"
+    - "ADR-0011 (visual a11y), ADR-0020 (z-order + post-fx), ADR-0028 (menus), ADR-0029 (changed-from-default mark)"
+  informed: []
+
+title: ONE menu per screen, the exit first, and narration that can be interrupted — the quick accessibility bar leaves the pause card and becomes HUD
+
+context-and-problem-statement: |
+  The Dev looked at the pause card and said it did not seem right for a blind child. He was reading a
+  structure, not a bug report, and measuring it turned the intuition into numbers.
+
+  MEASURED on the built game (`main-875a43c`), pause card open:
+
+    · 22 interactive elements in ONE card, in two blocks with two different interaction models —
+      a strip of TEN emoji-only toggles (`role="group"`) and TWELVE word items (`role="menu"`),
+      with an `<h2>` between them.
+    · Touch targets were NOT the problem, which is the part that surprised: the icons are 44×44 CSS px
+      (WCAG 2.5.8 asks 24×24; Apple's HIG recommends 44) and the menu items are 262 × 35,6 px.
+    · The problem is ORDER and VOLUME. `resume` — the way OUT — is the FIRST item of the options
+      list and the ELEVENTH stop of the card, because the ten icons precede it in reading order.
+
+  A child who pauses and cannot see must sweep ten accessibility toggles and a heading before
+  reaching "Continuar". Screen readers present in strict sequential order, and the listener has to
+  hold everything in short-term memory while searching (NN/g). Visual grouping does not survive that
+  linearisation: what a sighted child reads as "a bar and a list" is, to a screen reader, twenty-two
+  things in a row.
+
+  Three more gaps came out of the same reading, all of them things XAG 106 requires and this game
+  does not do:
+
+    · NO INDEXING anywhere. XAG is explicit that position and total "help non-sighted players remain
+      oriented and confident that they have found all of the controls", and that the number belongs at
+      the END of the string ("Gamma, slider, 38%, 6 of 9"), with an option to turn it off.
+    · NARRATION IS NOT INTERRUPTIBLE. XAG requires that moving focus stops the running string
+      IMMEDIATELY and starts the new one. Without it, navigation waits on sentences.
+    · THE INTERACTION HINT IS HIDDEN FROM THE PEOPLE IT IS FOR. `.pause-legend` — the line that says
+      which button does what — carries `aria-hidden="true"`. It is exactly what XAG says to narrate
+      ("A to Select"), and it is explicitly removed from the accessibility tree. Probably because it
+      shows controller glyphs that read badly — but then the information has to exist in another form,
+      not disappear.
+
+decision-drivers:
+  - "The exit must be the first thing found, not the eleventh. A menu you cannot leave is a trap, and the
+     trap costs most for the child who cannot see it."
+  - "One reading order per screen. A card with two interaction models and no heading between them makes the
+     listener discover mid-sweep that the rules changed."
+  - "A11y-first (ADR-0010): when structure and convenience disagree, structure for the child wins."
+  - "Whatever is decided must be MEASURABLE, or it is decoration — this project already gates contrast,
+     precache, types and boundaries the same way."
+
+considered-options:
+  - "M1 — keep one card and reorder it: `resume` first, then the icons"
+  - "M2 — keep one card, add a heading before the icon bar and index everything"
+  - "M3 — SPLIT: pause holds ONE options list; the quick accessibility bar becomes HUD"
+
+pros-and-cons-of-the-options:
+  M1:
+    good: ["One line of markup. Fixes the worst symptom immediately."]
+    bad: ["Leaves 22 stops in one card and two interaction models with no boundary between them.",
+          "The icons stay in the way of every other option."]
+  M2:
+    good: ["Honest structure; the listener is told where the rules change."]
+    bad: ["Still 22 stops. A heading makes the card comprehensible, not short."]
+  M3:
+    good: ["ONE menu per screen — so every menu in the game can be a single doubly-linked ring, and
+            'what happens at the end of the list' has one answer everywhere.",
+           "The quick bar reaches the HUD, where it is available DURING play instead of only after pausing.",
+           "The options list drops from 12 items to 7, and `resume` becomes 1 of 7 in any counting."]
+    bad: ["Two surfaces to build instead of one, and the HUD bar needs its own tip/hover affordance.",
+          "Keyboard reach for the quick bar has to be defined, because a HUD strip is not in the tab order
+           during play."]
+
+decision-outcome:
+  chosen-option:
+    link: "M3 — split the two menus, and make ONE menu per screen the rule"
+    justification: |
+      ===== 1. TWO MENUS, AND THEY GET NAMES =====
+      The Dev named them, and the names are the decision: what used to be one card is the QUICK
+      ACCESSIBILITY MENU (the ten toggles) and the OPTIONS LIST (the words).
+
+      ===== 2. THE PAUSE HOLDS ONLY THE OPTIONS LIST, WITH SEVEN ITEMS =====
+      In this order, and the order is part of the decision:
+
+        1. resume (voltar)          ← FIRST. The exit is what a pause is for.
+        2. accessibility            ← returns to the normal screen, but the directional input drives the
+                                      QUICK ACCESSIBILITY MENU instead of the player. START or BACK
+                                      (X on PlayStation / B on Xbox / A on Nintendo) gives control back.
+        3. add player
+        4. options                  ← opens the options submenu, below
+        5. help
+        6. print                    ← not only "go back and look at the frozen screen": it lets the player
+                                      PAN THE WHOLE MAP with the directional. It does NOT lift fog — not on
+                                      the minimap, not on canvas fog. Revealing the map is progress, and a
+                                      pause must not hand out progress.
+        7. quit (sair)              ← LAST. It is the least wanted outcome of pausing, and one press UP
+                                      from `resume` reaches it, because the list is a ring (see 5).
+
+      ===== 3. THE OPTIONS SUBMENU =====
+      Comunicação · Empathy Mode · Hearing Accessibility · Motor Accessibility · Tipography ·
+      Visual Accessibility · Visual Sensitivity.
+
+      ===== 4. THE QUICK ACCESSIBILITY MENU MOVES TO THE HUD =====
+      It lives on the HUD with a tip on hover or on keyboard selection. Keyboard reach is ONLY through
+      the pause (item 2 above) — a HUD strip that joined the tab order during play would put ten stops
+      between the child and the game.
+
+      ===== 5. ONE MENU PER SCREEN, SO EVERY MENU IS A RING =====
+      Because there is never more than one menu on a screen, every menu can be a DOUBLY-LINKED list:
+      past the last item you are at the first, and before the first you are at the last. XAG 106 permits
+      this precisely for linear menus (and forbids it for 2-D tile grids, which this decision no longer
+      has). It is what makes `quit` reachable in ONE press from `resume` without being anywhere near it.
+
+      ===== 6. SIZE AND SHAPE =====
+      Option buttons go to 44 px tall (from 35,6). The list is CENTRED and WIDER. 44 is not the WCAG
+      minimum — that is 24 — it is Apple's recommendation, and this project takes a floor as a floor.
+
+      ===== 7. THREE RULES THAT APPLY TO THE WHOLE GAME, NOT ONLY TO THE PAUSE =====
+        · INDEXING: every navigable item announces its position and total, at the END of the string
+          ("Alto contraste, ativado, 6 de 10"), with an option to turn indexing off.
+        · INTERRUPTIBLE NARRATION: moving focus stops the running string immediately and starts the new
+          one. Everywhere — pause, title, options, activities.
+        · INTERACTION HINT AUDIBLE: the legend stops being `aria-hidden`. It has to be written so it
+          reads well, which is a rewrite and not an attribute removal.
+
+  consequences:
+    positive:
+      - "`resume` goes from the 11th stop of the card to 1 of 7 in any counting."
+      - "The quick accessibility bar becomes reachable DURING play, which is when a child needs to change
+         a setting that is hurting her right now."
+      - "'What happens at the end of a menu' gets ONE answer for the whole game."
+      - "Indexing and interruption make navigation measurable: both are assertable in a test."
+    negative:
+      - "The `accessibility` item introduces a second INPUT MODE (directional drives the HUD bar, not the
+         player). A mode the player can enter and not know how to leave is the very trap this record is
+         about — so its exit (START or BACK) is part of the decision, not an implementation detail."
+      - "`print` panning the map is new behaviour with a hard constraint attached (no fog lifted). Getting
+         that wrong hands out progress from a pause screen."
+      - "The HUD gains ten elements. They must not join the tab order during play."
+    neutral:
+      - "Touch targets were already compliant (44×44 icons, 35,6 px items) — this record raises the items
+         to 44 by choice, not to fix a violation."
+
+  confirmation: |
+    Every clause above is written to be checkable, and the checks are the acceptance criteria:
+
+      · ORDER: a test asserts the options list is exactly the seven items, `resume` first and `quit` last.
+      · RING: from the first item, one press UP lands on the last; from the last, one press DOWN lands on
+        the first. Written failing first, with the wrap removed, and confirmed red.
+      · SIZE: measured in the browser, every option button ≥ 44 px tall — the same shape of check the
+        contrast gate already uses (`tests/contraste-menu.node.test.js`).
+      · INDEXING: the announced string ENDS with "N de M", and turning indexing off removes it.
+      · INTERRUPTION: focus change while a string is being spoken cancels it. Asserted against the speech
+        port, not against a real voice.
+      · LEGEND: `.pause-legend` is no longer `aria-hidden`, and its text reads as words rather than glyphs.
+
+    ⚠️ WHAT NO TEST OF MINE CAN CONFIRM: whether the result is USABLE by a blind child. Issues #6 (manual
+    screen-reader audit with NVDA/JAWS/VoiceOver), #7 (field test with five children) and #8 (target
+    hardware) are where this record is actually validated. Everything above is necessary and none of it is
+    sufficient.
+
+more-information: |
+  The measurement that started this is in the session of 2026-08-26 and reproduced in the tests named
+  above. Related: ADR-0011 (visual accessibility), ADR-0028 (menus restore their own defaults), ADR-0029
+  (the changed-from-default mark, which is how a player undoes a mode without seeing it), ADR-0020
+  (amended the same day — the post-fx chain and the three scales).
+
+  Deliberately NOT decided here: whether the quick accessibility bar is also reachable by touch during
+  play, and where on the HUD it sits. Both are layout questions for the screen it lands on.
