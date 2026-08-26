@@ -52,7 +52,10 @@ export type Coin = {
 };
 // Sorteia n itens POR JOGADOR (posições independentes por dono). pools.shapes/letters vêm do game.js (derivados
 // do MODE): 'somasub' passa as formas; 'silabas' passa as iniciais; 'ludico' passa vazio → shape/letter = ''.
-export function pickCoins(n: number, pools: { shapes?: string[]; letters?: string[] } = {}): Coin[] {
+// `readonly` nos dois arrays: esta função nunca muta a entrada — o `shuffle(shapes.slice())` abaixo COPIA
+// antes de embaralhar, e é exatamente essa cópia que a garantia expressa. Pedir array mutável era pedir
+// capacidade que ela não usa, e era o que impedia o `readonly` do chamador de atravessar.
+export function pickCoins(n: number, pools: { shapes?: readonly string[]; letters?: readonly string[] } = {}): Coin[] {
   const shapes = pools.shapes ?? [], letters = pools.letters ?? [];
   const out: Coin[] = [], np = Math.max(1, numPlayers);
   for (let owner = 0; owner < np; owner++) {
