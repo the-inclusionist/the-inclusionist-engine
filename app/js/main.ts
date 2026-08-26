@@ -581,7 +581,9 @@ const { setCenario } = createSetCenario({
   // os 404 de boot dos quatro temas que nunca tiveram arte própria.
   getTiles: (tema) => tema === 'cidade' ? cityTiles() : null,
   worldCanvas, tex, clearWorldTexCache,
-  setWorldTextures: (cv, t) => { worldCanvasNormal = cv; worldTexNormal = t; }, // `let` declarados ABAIXO (so escritos no .then)
+  // O `t` chega `unknown` — a `set-cenario` trata textura como handle opaco, e deve mesmo. A raiz e o
+  // unico lugar que sabe o nome dele, e e aqui que ele o recupera.
+  setWorldTextures: (cv, t) => { worldCanvasNormal = cv; worldTexNormal = t as PIXI.Texture; }, // `let` declarados ABAIXO (so escritos no .then)
   isVizReady: () => vizReady, reapplyVizAll: () => reapplyVizAll(),             // `reapplyVizAll` e const de viz-setters, la embaixo
   getWorldSprite: () => worldSprite,                                            // nasce depois; so lido no .then
   isVidaReady: () => _vidaReady, applyCenarioVida: () => sceneCity.applyCenarioVida(),
@@ -1290,7 +1292,11 @@ const lvOverlaySpr=new PIXI.Sprite(PIXI.Texture.EMPTY), vpDot=new PIXI.Graphics(
    declaracao icada virou const. Tudo no ctx e arrow preguicosa: nada e avaliado no init. */
 const viz = initVizSetters({
   $, body: document.body, srSay,
-  app, camera, worldSprite, parallaxLayers, decoSprites,
+  // `aplicarFiltroCss` no lugar de `app`: o `view.style` do PixiJS e `ICanvasStyle`, que nem TEM `filter`
+  // (ele existe para a OffscreenCanvas, onde nao ha CSS). Em producao o `view` e uma canvas do DOM de
+  // verdade — e saber disso e trabalho da raiz, nao do `viz-setters`.
+  aplicarFiltroCss: (css) => { const v = app.view as unknown as HTMLCanvasElement | null; if (v && v.style) v.style.filter = css; },
+  camera, worldSprite, parallaxLayers, decoSprites,
   getVpSpr: () => vpSpr, getVpDots: () => vpDots,
   getItemSprites: getCoinSprites, itemTexId: 'coin', // item 19: o NOME dos itens e do jogo, nao do render
   getPowerups: () => rodada.powerups,

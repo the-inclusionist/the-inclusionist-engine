@@ -70,7 +70,7 @@
 
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { screenGrid } from '../core/screens.js';
-import type { CriarSprite, CriarDesenho } from './port.js';
+import type { CriarSprite, CriarDesenho, ComFiltro, DesenhoComCirculo } from './port.js';
 
 /* ===================== a parte PURA: o plano da grade ===================== */
 
@@ -149,13 +149,15 @@ export interface RenderTextureLike { baseTexture: BaseTextureLike; destroy(destr
 export interface RenderTextureFactory { create(opts: { width: number; height: number }): RenderTextureLike }
 /** O mínimo de um objeto de cena posicionável e descartável. */
 export interface DisplayLike { x: number; y: number; visible: boolean; destroy(): void }
-/** `PIXI.Sprite` — aqui ele só nasce de uma render-texture e é posicionado. */
-export type SpriteLike = DisplayLike;
-/** `PIXI.Graphics` — a moldura desenha; as bolinhas só são posicionadas (quem as pinta é viz-setters). */
-export interface GraphicsLike extends DisplayLike {
-  lineStyle(width: number, color: number, alpha: number): void;
-  drawRect(x: number, y: number, w: number, h: number): void;
-}
+/** `PIXI.Sprite` — aqui ele só nasce de uma render-texture e é posicionado.
+ *  O `filters` NÃO é tocado aqui: quem põe filtro de GPU por tela é `render/viz-setters`, e é para lá que
+ *  estes sprites vão (`getVpSpr`). A INVERSÃO DA FATIA MÍNIMA de novo — em posição de entrega, a fatia que
+ *  vale é a de quem RECEBE, não a de quem lê. Ver o cabeçalho de `render/port`. */
+export type SpriteLike = DisplayLike & ComFiltro;
+/** `PIXI.Graphics` — a moldura desenha; as bolinhas só são posicionadas (quem as pinta é viz-setters).
+ *  E é por serem pintadas LÁ que a declaração inclui o desenho inteiro: as bolinhas saem daqui por
+ *  `getVpDots` e o `viz-setters` chama `clear`/`beginFill`/`drawCircle` nelas. */
+export interface GraphicsLike extends DisplayLike, DesenhoComCirculo {}
 /** `PIXI.Container` no papel de pai de cena. */
 export interface ContainerLike {
   addChild(child: unknown): unknown;

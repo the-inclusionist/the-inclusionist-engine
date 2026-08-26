@@ -112,7 +112,10 @@ export interface SetCenarioCtx {
   /** Builder da canvas do nível. `HTMLCanvasElement` e não `unknown`: é o que o `render/world-tex`
    *  devolve, e o `unknown` só adiava a conversão até o `main.ts`, onde ela virava erro (ADR-0039). */
   worldCanvas: (tiles: TilesDoTema | null) => HTMLCanvasElement;
-  tex: (canvas: unknown) => unknown;                             // canvas → PIXI.Texture
+  // `HTMLCanvasElement` e não `unknown`: o único argumento que passa por aqui é o retorno de
+  // `worldCanvas()`, logo acima. Declarar o parâmetro mais LARGO do que se usa era o que impedia a
+  // raiz de entregar o `tex` real dela — por contravariância, quem promete aceitar tudo não cabe.
+  tex: (canvas: HTMLCanvasElement) => unknown;                   // canvas → PIXI.Texture
   clearWorldTexCache: () => void;                                // invalida o recolor de alto contraste
   /** Escreve `worldCanvasNormal`/`worldTexNormal` (os dois `let` do composition root), sempre em par. A
    *  TEXTURA segue `unknown` de propósito — é objeto do PixiJS, e este módulo roda no project `node`. */

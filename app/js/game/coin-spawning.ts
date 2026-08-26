@@ -13,7 +13,7 @@ import { coins, setCoins } from './state.js'; // item 19: `coins`/`quizLevel` sa
 import { findCoinCandidates, positionEasyCoins, type Coin } from './coins.js';
 import { SOMASUB_SHAPES, WORD_INITIALS } from './activity-content.js';
 import type { DomQuery } from '../core/dom-query.js';
-import type { Tingivel, CamadaEsvaziavel, CriarSprite } from '../render/port.js';
+import type { Tingivel, ComTextura, CamadaEsvaziavel, CriarSprite } from '../render/port.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`) — injected, never imported, so the module stays node-testable. */
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
@@ -27,7 +27,9 @@ export type { DomQuery } from '../core/dom-query.js';
 // E o `alpha` está aqui mesmo sem este módulo tocá-lo: estes sprites são ENTREGUES ao `render/draw` por
 // `getCoinSprites()`, e é lá que o item alheio esmaece. Uma fatia mínima do que se LÊ mentiria sobre o que
 // se ENTREGA — a inversão que o ADR-0039 registra: em posição de saída, a fatia mínima é a do RECEPTOR.
-export interface CoinSprite extends Tingivel {
+// E a `texture` está aqui pela mesma entrega: `render/viz-setters` TROCA a textura do item quando o modo
+// acessível muda (`itemTexId: 'coin'`). Quem entrega declara o que o receptor toca.
+export interface CoinSprite extends Tingivel, ComTextura {
   x: number; y: number;
   width?: number; height?: number;
   alpha: number;

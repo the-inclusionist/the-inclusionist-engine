@@ -124,3 +124,27 @@ export interface Descartavel {
 export interface CamadaEsvaziavel extends Camada {
   removeChildren(): Descartavel[];
 }
+
+/** O que tem filtro de GPU — a câmera e cada sprite de saída do multi-tela. */
+export interface ComFiltro {
+  filters: unknown;
+}
+
+/** Desenho que também traça CÍRCULO — a bolinha indicadora de cada viewport. */
+export interface DesenhoComCirculo extends DesenhoComLinha {
+  drawCircle(x: number, y: number, r: number): this;
+}
+
+/**
+ * APLICAR UM FILTRO CSS NO SOLO — o filtro global da tela, que compõe daltonismo, baixa visão,
+ * cegueira e o realce de luminância/quantização.
+ *
+ * Era `app: AppLike | null` com `AppLike { view?: { style: { filter: string } } }` — o módulo alcançava
+ * TRÊS níveis para dentro de um objeto que não é dele, e o `PIXI.Application` real não cabia: o `style`
+ * do `ICanvas` do PixiJS é `ICanvasStyle`, que sequer TEM `filter` (ele existe para a `OffscreenCanvas`,
+ * onde não há CSS). Em produção o `view` é um `HTMLCanvasElement` de verdade e o campo existe — mas isso
+ * é uma coisa que só a raiz de composição sabe, e é lá que a conversão pertence.
+ *
+ * Mesma lição do `RenderizarEm` e do `CriarSprite`: pedir o VERBO cabe onde emprestar o objeto não cabe.
+ */
+export type AplicarFiltroCss = (css: string) => void;

@@ -27,6 +27,7 @@ import { lqFilter } from './lq-filter.js';
 import { setVizModeValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
 import type { DomQuery } from '../core/dom-query.js';
+import type { ComFiltro, ComTextura, Visivel, DesenhoComCirculo, AplicarFiltroCss } from './port.js';
 
 /* ===================== PURO (sem PIXI, sem DOM) — o que rende teste de verdade ===================== */
 
@@ -79,16 +80,13 @@ export function vizGroupSay(numPlayers: number, sel: number, nome: string): stri
 
 /* ===================== cascas: PIXI/DOM injetados ===================== */
 
-interface Styled { style: { filter: string } }
-interface AppLike { view?: Styled | null }
-interface Filtered { filters: unknown }
-interface Textured { texture: unknown }
+// `Filtered`, `Textured` e `DotGfx` vêm de `render/port` desde 2026-08-26. Eram três descrições locais
+// do mesmo PixiJS, e a do `DotGfx` divergia das outras cópias de `Graphics` da árvore no retorno de cada
+// método (`unknown` aqui, `this` lá) — foi assim que as cinco cópias de `Gfx` divergiram antes.
+type Filtered = ComFiltro;
+type Textured = ComTextura;
 /** PIXI.Graphics da bolinha por viewport — só o que updateVpDots realmente usa. */
-interface DotGfx {
-  visible: boolean;
-  clear(): unknown; lineStyle(w: number, color: number, alpha: number): unknown;
-  beginFill(color: number): unknown; drawCircle(x: number, y: number, r: number): unknown; endFill(): unknown;
-}
+type DotGfx = Visivel & DesenhoComCirculo;
 interface ClassListHost { classList: { toggle(token: string, force?: boolean): unknown; remove(...tokens: string[]): unknown } }
 interface Btn { dataset: { viz?: string; vp?: string }; addEventListener(type: string, fn: () => void): void }
 interface El {
@@ -111,7 +109,7 @@ export interface VizSettersCtx {
   srSay: (s: string) => void;                       // leitor de tela (região aria-live)
 
   /* --- objetos PIXI criados no game.js (z-order soldado lá) --- */
-  app: AppLike | null;                              // só `app.view.style.filter` (filtro CSS global do solo)
+  aplicarFiltroCss: AplicarFiltroCss;               // era `app: AppLike|null` + `app.view.style.filter`; ver a porta
   camera: Filtered;                                 // solo: alto contraste = filtro GPU na câmera
   worldSprite: Textured;                            // mundo recolorido por modo
   parallaxLayers: Textured[];                       // camadas de fundo (const; elementos só têm .texture trocada)
@@ -233,7 +231,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     // custa uma comparação e não pode divergir. (O inicializador daquele `let` usava OUTRA fórmula,
     // `vizMode!=='normal'`, e discordava do setter — sem efeito, porque applyVizGlobal roda no boot antes de
     // o gancho existir, mas é o sintoma clássico de cópia de estado.)
-    if (ctx.app && ctx.app.view) ctx.app.view.style.filter = cssFilterFor(mode, lqFilter()); // sim. daltonismo/baixa-visão/cegueira + realce L/Q compostos
+    ctx.aplicarFiltroCss(cssFilterFor(mode, lqFilter())); // sim. daltonismo/baixa-visão/cegueira + realce L/Q compostos
     ctx.camera.filters = (m.kind === 'hcnew') ? ctx.pixiFilterFor(mode) : null; // solo: alto contraste experimental = filtro GPU na câmera
     ctx.setFrontDim(!!DIRECT_CFG[mode]); // HC: frente (carros/placas/semáforo) escurece como fundo
     ctx.worldSprite.texture = worldTexFor(mode);            // alto contraste direto = Renderização Direta · resto=normal
@@ -264,7 +262,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     ctx.invalidateSharedViz();
     if (ctx.getNumPlayers() <= 1) { applyVizGlobal(ctx.getPlayers()[0].viz); }
     else {
-      if (ctx.app && ctx.app.view) ctx.app.view.style.filter = lqFilter();
+      ctx.aplicarFiltroCss(lqFilter());
       ctx.camera.filters = null;
       ctx.body.classList.remove('lowvision-mode', 'blind-mode');
       const ov = ctx.$('#viz-overlay'); if (ov) ov.hidden = true;

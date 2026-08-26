@@ -101,7 +101,7 @@ function setup(over = {}) {
     vpDots: over.vpDots || [],
     log: {
       frontDim: [], modoCego: [], hideTouch: [], say: [], selWrites: [],
-      rebuildExtras: 0, rebuildCoins: 0, reflect: 0, visual: 0, empathy: 0,
+      rebuildExtras: 0, rebuildCoins: 0, reflect: 0, visual: 0, empathy: 0, filtrosCss: [],
       clearPlayerDirect: 0, invalidate: 0, sharedWrites: [],
     },
   };
@@ -109,7 +109,10 @@ function setup(over = {}) {
     $: (sel) => env.els[sel] || null,
     body: { classes: new Set(), classList: null },
     srSay: (s) => env.log.say.push(s),
-    app: env.app,
+    // O módulo pede o VERBO, não o `app`: o `view.style` do PixiJS é `ICanvasStyle`, que nem tem
+    // `filter`. Quem sabe que em produção o `view` é uma canvas do DOM é a raiz de composição — e é
+    // lá que mora a guarda de "e se não houver canvas montada". Este falso imita a raiz.
+    aplicarFiltroCss: (css) => { env.log.filtrosCss.push(css); if (env.app && env.app.view) env.app.view.style.filter = css; },
     camera: env.camera,
     worldSprite: env.worldSprite,
     parallaxLayers: env.parallaxLayers,
@@ -484,10 +487,19 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
     expect(env.log.visual).toBe(1);
     expect(env.log.empathy).toBe(1);
   });
-  it('[Null] sem canvas montada (app.view nulo) não lança — o resto do modo ainda aplica', () => {
+  // 2026-08-26: este caso mudou de assunto junto com a injeção. Antes o módulo perguntava
+  // `if (ctx.app && ctx.app.view)` — ele DECIDIA se havia canvas, e a pergunta não era dele. Agora ele
+  // chama o verbo sempre, e quem guarda é a raiz. O que sobra para provar aqui é justamente isso: sem
+  // canvas montada, o filtro continua a ser PEDIDO (a raiz é que o descarta) e o resto do modo aplica.
+  //
+  // MUTAÇÃO CONFERIDA: pondo `if (env.app && env.app.view)` de volta em volta da chamada dentro do
+  // módulo, `filtrosCss` fica vazio e o caso falha em "expected [] to have a length of 1".
+  it('[Null] sem canvas montada, o módulo AINDA pede o filtro — a guarda é da raiz', () => {
     const { env, api } = setup({ app: { view: null } });
     expect(() => api.applyVizGlobal('blind')).not.toThrow();
     expect(env.bodyClasses.has('blind-mode')).toBe(true);
+    expect(env.log.filtrosCss).toHaveLength(1);
+    expect(env.log.filtrosCss[0]).toBe('brightness(0)');
   });
 });
 

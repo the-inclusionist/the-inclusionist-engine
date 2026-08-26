@@ -77,7 +77,8 @@ function setup(over = {}) {
     $: (sel) => document.querySelector(sel),
     body: document.body,
     srSay: (s) => env.log.say.push(s),
-    app: env.app, camera: env.camera, worldSprite: env.worldSprite,
+    aplicarFiltroCss: (css) => { if (env.app && env.app.view) env.app.view.style.filter = css; }, // a raiz é quem sabe da canvas
+    camera: env.camera, worldSprite: env.worldSprite,
     parallaxLayers: env.parallaxLayers, decoSprites: env.decoSprites,
     getVpSpr: () => env.vpSpr, getVpDots: () => env.vpDots,
     getItemSprites: () => [], itemTexId: 'alvo', getPowerups: () => [],
