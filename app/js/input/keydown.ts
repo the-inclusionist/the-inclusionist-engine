@@ -274,6 +274,7 @@ export function titleNavOf(code: string, s: KeydownSnapshot, jump: boolean): Tit
 
 /** Alguma intenção foi expressa? Definição única em input/edges; aqui só o nome que este módulo sempre teve. */
 import { hasNavIntent as hasTitleIntent } from './edges.js';
+import type { EventTargetLike } from './touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 export { hasNavIntent as hasTitleIntent } from './edges.js';
 
 /**
@@ -450,7 +451,9 @@ export interface KeydownCtx {
   clearWaitingBadge: (playerIndex: number) => void;
 
   /** `window` — só para `attach()` instalar os dois ouvintes de BOLHA, exatamente como o game.js fazia. */
-  win: { addEventListener(type: string, fn: (e: never) => void): void };
+  /** A escuta de teclado. Ver `EventTargetLike` em input/touch-bindings: genérica sobre `WindowEventMap`,
+   *  porque a versão com `fn: (e: never)` obrigava um cast aqui e um adaptador em cada consumidor. */
+  win: EventTargetLike;
 }
 
 export interface KeydownApi {
@@ -528,8 +531,8 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
   function onKeyup(e: KeyupEventLike): void { ctx.heldKeys.delete(e.code); }
 
   function attach(): void {
-    ctx.win.addEventListener('keydown', onKeydown as (e: never) => void);
-    ctx.win.addEventListener('keyup', onKeyup as (e: never) => void);
+    ctx.win.addEventListener('keydown', onKeydown);
+    ctx.win.addEventListener('keyup', onKeyup);
   }
 
   return { snapshot, onKeydown, onKeyup, attach };

@@ -264,8 +264,29 @@ export function stickKnobOffset(px: number, py: number, rect: RectLike, travelPx
 
 /** Só o que `attach()` precisa da janela. `(e: never)` é o mesmo truque de `input/keydown.ts`: o handler é
  *  convertido no ponto de registro, e o alvo real (window) satisfaz isto de sobra. */
+/**
+ * A porta de ESCUTA de eventos, e ela é genérica sobre o mapa de eventos porque é isso que o `window` é.
+ *
+ * ⚠️ ELA DIZIA `fn: (e: never) => void`, E ESTAVA ERRADA — de um jeito que já tinha cobrado duas vezes. Um
+ * parâmetro `never` parece dizer "o ouvinte não olha o evento", mas por contravariância ele exige que o
+ * ALVO aceite qualquer coisa, e o `window` real declara `ev: any`, que não é atribuível a `never`. O
+ * resultado era o pior dos dois lados: um `as (e: never) => void` em CADA registro dentro da engine, e um
+ * adaptador de uma linha em CADA consumidor. O `boot/create-game` escrevia esse adaptador (Achado 12) e o
+ * `consumer-quiz/main-quiz` registrou por escrito que "a engine pede uma forma de `window` que o `window`
+ * não tem".
+ *
+ * Genérica sobre `WindowEventMap`, o `window` a satisfaz DIRETO e cada ouvinte recebe o evento certo:
+ * `'keydown'` casa com `KeyboardEvent`, `'pointerdown'` com `PointerEvent`. Sem cast e sem adaptador.
+ *
+ * `WindowEventMap` é global de `lib.dom`, ligado no `tsconfig` — não há import a fazer, e portanto não há
+ * aresta nova de dependência.
+ */
 export interface EventTargetLike {
-  addEventListener(type: string, fn: (e: never) => void, opts?: boolean | { capture?: boolean; passive?: boolean }): void;
+  addEventListener<K extends keyof WindowEventMap>(
+    type: K,
+    fn: (e: WindowEventMap[K]) => void,
+    opts?: boolean | { capture?: boolean; passive?: boolean },
+  ): void;
 }
 
 /** Quanto tempo o START segura a ação, quando ela é momentânea (não é `pause`). */
@@ -446,8 +467,8 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
     if (wantsForcedTouch(ctx.getSearch())) ctx.showTouchControls();
     const onPointerDown = (): void => { if (ctx.attractOnInput()) return; ctx.showTouchControls(); }; // toque revela (e encerra a demo)
     const onTouchStart = (): void => { ctx.showTouchControls(); };
-    ctx.win.addEventListener('pointerdown', onPointerDown as (e: never) => void, true);
-    ctx.win.addEventListener('touchstart', onTouchStart as (e: never) => void, { capture: true, passive: true });
+    ctx.win.addEventListener('pointerdown', onPointerDown, true);
+    ctx.win.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
 
     wireButtons(tc);
 

@@ -154,6 +154,7 @@ export function menuKeyIntent(code: string, act: string | null): NavKeys {
 
 /** Alguma intenção foi expressa? Definição única em input/edges; aqui só o nome que este módulo sempre teve. */
 import { hasNavIntent as hasIntent } from '../input/edges.js';
+import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
 /** Anda um passo numa lista, sem dar a volta (o original nunca faz wrap em lista de itens). */
@@ -260,7 +261,8 @@ export interface MenuNavCtx {
   /** input/keyboard-runtime.ts: que ação esta tecla é PARA aquele jogador (respeitando o remap)? */
   actionOf: (code: string, playerIndex: number) => string | null;
   /** `window` — só para `attach()` instalar o ouvinte em CAPTURA, exatamente como o game.js fazia. */
-  win: { addEventListener(type: string, fn: (e: never) => void, capture: boolean): void };
+  /** A escuta de teclado dos menus. Ver `EventTargetLike` em input/touch-bindings. */
+  win: EventTargetLike;
 }
 
 export interface MenuNavApi {
@@ -431,7 +433,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
   }
 
   function attach(): void {
-    ctx.win.addEventListener('keydown', menuNavKey as (e: never) => void, true);
+    ctx.win.addEventListener('keydown', menuNavKey, true);
   }
 
   return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, attach };

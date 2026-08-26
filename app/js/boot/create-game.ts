@@ -226,9 +226,10 @@ export function createGame(o: CreateGameOptions): Engine {
     closePadWiz: () => {},
     whichPlayer: (code) => keyboard.whichPlayer(code),
     actionOf: (code, i) => keyboard.actionOf(code, i),
-    // Achado 12: o ctx tipa `win` com `fn: (e: never) => void`, e o `window` real não casa. O adaptador de
-    // uma linha que todo consumidor escrevia mora aqui agora.
-    win: { addEventListener: (tipo, fn, captura) => win.addEventListener(tipo, fn as EventListener, captura) },
+    // Achado 12, RESOLVIDO NA ENGINE: o ctx tipava `win` com `fn: (e: never) => void`, o `window` real não
+    // casava, e cada consumidor escrevia o mesmo adaptador de uma linha. A porta agora é genérica sobre
+    // `WindowEventMap` (ver `EventTargetLike` em input/touch-bindings), então o `window` entra direto.
+    win,
   });
 
   return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, cenas: criarPilha(), cvdFilters, problems, declines };

@@ -93,9 +93,15 @@
 //     entidade de mundo, e recebe `whichPlayer`/`actionOf` prontos. É o contraste exato do sonar (achado 9):
 //     mesmo subsistema de entrada, um pede o mundo inteiro, o outro pede o que realmente usa.
 //
-// 12. DETALHE QUE CUSTA UMA LINHA E VALE REGISTRAR: `menu-nav` tipa `win` com `fn: (e: never) => void`, e o
-//     `window` real não casa com isso. Todo consumidor vai escrever o mesmo adaptador de uma linha — a engine
-//     pede uma forma de `window` que o `window` não tem.
+// 12. DETALHE QUE CUSTAVA UMA LINHA — E A ENGINE FOI CONSERTADA. O achado original: `menu-nav` tipava `win`
+//     com `fn: (e: never) => void`, o `window` real não casava, e todo consumidor escreveria o mesmo
+//     adaptador de uma linha. Este registro é o que o motivou: o segundo consumidor sentiu a mesma dor que o
+//     primeiro, que é o sinal de que o problema era da engine e não do consumidor.
+//
+//     A porta agora é genérica sobre `WindowEventMap` (`EventTargetLike`, em input/touch-bindings), o
+//     `window` entra direto, e os `as (e: never) => void` que a engine escrevia em cada registro sumiram
+//     junto. Ficou registrado em vez de apagado porque a lição é a que vale: dor repetida em consumidor é
+//     defeito de quem oferece.
 //
 // 13. O MODO PESSOA SURDA VIAJA, e isto valida o conserto de b0239e9 por um ângulo que eu não podia testar
 //     ontem: a página do quiz NÃO CARREGA o widget do VLibras, e mesmo assim o modo liga, desliga, persiste e
