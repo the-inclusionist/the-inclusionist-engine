@@ -63,7 +63,7 @@ export function lvOverlayClassFor(m: VizMode): string {
 }
 
 /** HTML do grupo de rádios de modos visuais (uma linha por modo; o atual marcado). Verbatim do game.js. */
-export function vizGroupHtml(modes: VizMode[], cur: string): string {
+export function vizGroupHtml(modes: readonly VizMode[], cur: string): string {
   return modes.map((m) => {
     const sel = m.key === cur;
     return `<div class="ctrl-row"><span><strong>${t(m.nome)}</strong><br><span class="opt-hint" style="margin:0">${t(m.desc)}</span></span>`
@@ -176,7 +176,7 @@ export interface VizSettersApi {
   /** Invalida os caches de textura direta (mundo/moeda/power-up/jogador) e re-renderiza. */
   rebakeDirect(): void;
   /** Grupo de rádios de modos visuais nos painéis (visual/empatia). */
-  renderVizGroup(listSel: string, tabsSel: string, modes: VizMode[]): void;
+  renderVizGroup(listSel: string, tabsSel: string, modes: readonly VizMode[]): void;
 }
 
 export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
@@ -273,7 +273,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     if (ctx.getNumPlayers() <= 1) applyVizGlobal(ctx.getPlayers()[0].viz); else applyVpFilters();
   }
 
-  function renderVizGroup(listSel: string, tabsSel: string, modes: VizMode[]): void {
+  function renderVizGroup(listSel: string, tabsSel: string, modes: readonly VizMode[]): void {
     const el = ctx.$(listSel); if (!el) return;
     if (ctx.getSelVizPlayer() >= ctx.getNumPlayers()) ctx.setSelVizPlayer(0);
     const tabs = ctx.$(tabsSel);

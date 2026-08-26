@@ -176,7 +176,7 @@ export interface GamepadCtx {
   srSay: (msg: string) => void;
   srAlert: (msg: string) => void;
   /** Traz um overlay para frente + preenche o texto de ajuda (game.js's frontOverlay, compartilhado por todo overlay). */
-  frontOverlay: (el: Element | null) => void;
+  frontOverlay: (el: HTMLElement | null) => void;
   /** Fase atual e sua troca (game.js's setPhase: some o toque, muda o mudo do áudio, foca a região certa...). */
   getPhase: () => Phase;
   setPhase: (p: Phase) => void;
@@ -191,8 +191,8 @@ export interface GamepadCtx {
   getNumPlayers: () => number;
   /** Navegação de menus (game.js): título, diálogo compartilhado (o de cima), e a pausa por tela. */
   navTitle: (k: NavKeys) => void;
-  sharedDialogOpen: () => Element | null;
-  navDialog: (dlg: Element, k: NavKeys) => void;
+  sharedDialogOpen: () => HTMLElement | null;
+  navDialog: (dlg: HTMLElement, k: NavKeys) => void;
   getPauseMenu: (playerIndex: number) => { hidden: boolean } | null | undefined;
   navPause: (menu: { hidden: boolean }, playerIndex: number, k: NavKeys) => void;
   /** Qual jogador abre o submenu de a11y em seguida (game.js's `pauseActor`). */

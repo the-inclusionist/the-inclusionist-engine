@@ -43,7 +43,7 @@ export interface TouchCtx {
   /** Screen dimensions, injected (never reads `window.innerWidth/innerHeight` directly). */
   viewport: () => { w: number; h: number };
   /** Shared overlay z-index/focus helper (game.js's frontOverlay), used by every panel — injected. */
-  frontOverlay: (el: Element | null) => void;
+  frontOverlay: (el: HTMLElement | null) => void;
   /** Optional hook fired after applyPadDesign() changes padDesign — game.js's renderPauseLegend() (Sim/Não
    *  glyphs in the pause menu) is NOT part of this module's boundary but must still refresh; see report. */
   onPadDesignApplied?: () => void;
