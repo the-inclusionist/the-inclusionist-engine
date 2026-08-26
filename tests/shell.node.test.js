@@ -48,7 +48,7 @@ describe('phaseView — a fase projetada em ordens para o documento', () => {
     for (const p of PHASES) expect(phaseView(fase(p)).pauseOverlayHidden, p).toBe(true);
   });
 
-  it('#btn-pause diz ao leitor de tela se está pausado', () => {
+  it('o botão de pausa diz ao leitor de tela se está pausado', () => {
     expect(phaseView(fase('paused')).pausePressed).toBe(true);
     expect(phaseView(fase('playing')).pausePressed).toBe(false);
     expect(phaseView(fase('title')).pausePressed).toBe(false);

@@ -48,7 +48,10 @@ const MARKUP = `
     </div></div>
   </div>
   <div id="touch-controls" hidden></div>
-  <button id="btn-pause" type="button" aria-pressed="false">Pausa</button>
+  <!-- O botão de pausa que EXISTE. O fixture declarava um id (btn-pause) que a produção nunca teve, e por
+       isso o caso passava provando que o código escreve num botão que só o teste tem. Quem pausa por toque
+       — e num tablet é o ÚNICO caminho, porque não há teclado — é o touch-start. -->
+  <button id="touch-start" type="button" aria-label="Pausar ou iniciar (START)">START</button>
 `;
 
 function boot(over = {}) {
@@ -123,7 +126,7 @@ describe('setPhase — a casca inteira, no documento', () => {
     expect($$('.screen-pause').every((sp) => sp.hidden)).toBe(true);
     expect(log.muted.at(-1)).toBe(false);
     expect(log.hidTouch).toBe(0);
-    expect($('#btn-pause').getAttribute('aria-pressed')).toBe('false');
+    expect($('#touch-start').getAttribute('aria-pressed')).toBe('false');
     expect(document.activeElement.id).toBe('game-region');
   });
 
@@ -135,7 +138,24 @@ describe('setPhase — a casca inteira, no documento', () => {
     expect(log.muted.at(-1)).toBe(true);
     expect(log.hidTouch).toBe(1);
     expect(log.reflect).toBe(1);
-    expect($('#btn-pause').getAttribute('aria-pressed')).toBe('true');
+    expect($('#touch-start').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  // O caso que a linha morta escondia. O reflexo caía em `#btn-pause`, id que a produção nunca teve, e o
+  // fixture antigo inventava o elemento — então o teste provava que o código escreve num botão que só ele
+  // tem. Agora cai no botão de verdade, que num tablet é o ÚNICO caminho de pausa (não há teclado).
+  //
+  // E no TÍTULO o atributo SAI, em vez de virar `false`: ali o botão significa "iniciar", e `aria-pressed`
+  // num botão que não alterna nada faz o leitor de tela anunciar um estado que não existe.
+  //
+  // MUTAÇÃO CONFERIDA: trocando o `removeAttribute` por `setAttribute(..., 'false')` em `ui/shell`, este caso
+  // falha em "expected 'false' to be null".
+  it('no TÍTULO o botão não tem aria-pressed — lá ele é "iniciar", não alterna nada', () => {
+    boot();
+    setPhase('playing');
+    expect($('#touch-start').getAttribute('aria-pressed')).toBe('false');
+    setPhase('title');
+    expect($('#touch-start').getAttribute('aria-pressed')).toBe(null);
   });
 
   it('"paused" selecciona Continuar em CADA tela — ninguém fica sem cursor', () => {

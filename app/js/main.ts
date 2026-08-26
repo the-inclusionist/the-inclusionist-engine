@@ -1749,8 +1749,10 @@ addEventListener('gamepaddisconnected',()=>{ if(fatosDaCena().telaDeTitulo)updat
     reflectTitleIcons(); }
 })();
 (function shellSetup(){
-  const wire=(id: string, fn: EventListener)=>{ const b=$('#'+id); if(b)b.addEventListener('click',fn); };
-  wire('btn-pause', togglePause); // (o botão saiu da barra; a fiação fica guardada p/ compat)
+  // (O ajudante `wire` e a chamada `wire('btn-pause', …)` SAÍRAM em 2026-08-26. O id nunca existiu no
+  //  documento — o botão saiu da barra e a fiação ficou "guardada p/ compat", ligando um ouvinte a nada. O
+  //  `noUnusedLocals`, ligado hoje, mostrou que o ajudante existia SÓ para essa chamada. Quem pausa por
+  //  toque é o `#touch-start`, e é nele que o `aria-pressed` passa a cair — ver `ui/shell`.)
   // Barra de topo (título da PÁGINA + ferramentas): só com ?debug=true. O jogo já mostra o título no splash,
   // então a barra fica oculta por padrão (CSS body:not(.dbg) .topbar) e libera a vertical p/ o canvas.
   if(/[?&]debug=true/.test(location.search))document.body.classList.add('dbg');

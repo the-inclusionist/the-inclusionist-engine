@@ -153,7 +153,16 @@ export interface PhaseView {
   masterMuted: boolean;
   /** `hideTouchControls()` — menu ativo (título/pausa) = sem controle virtual. */
   hideTouchControls: boolean;
-  /** `#btn-pause`[aria-pressed] — o botão de pausa reflete a fase para o leitor de tela. */
+  /**
+   * `aria-pressed` do botão de pausa — ele diz ao leitor de tela SE está pausado.
+   *
+   * O alvo era `#btn-pause`, e esse id NUNCA existiu no documento: o botão saiu da barra e a fiação ficou
+   * "guardada p/ compat". A linha que escrevia o atributo era morta, e o teste do navegador não pegava porque
+   * o FIXTURE inventava o elemento — um caso que provava que o código escreve num botão que só o teste tem.
+   *
+   * O alvo agora é `#touch-start`, que é o botão que existe, o que o Dev clica e o ÚNICO caminho de pausa num
+   * tablet (não há teclado no Positivo da issue #8).
+   */
   pausePressed: boolean;
   /** Quem recebe o foco ao entrar nesta fase. */
   focus: PhaseFocus;
@@ -500,8 +509,16 @@ export function initShell(ctx: ShellCtx): ShellApi {
     ctx.setMasterMuted(v.masterMuted);
     applyPhaseView(v);
     applyTouchControls(f, antesDoHide); // o estado é o de ANTES do hide — ver o comentário acima
-    const pb = ctx.$<HTMLElement>('#btn-pause'); // ORDEM verbatim: o aria-pressed vem DEPOIS do bloco de toque
-    if (pb) pb.setAttribute('aria-pressed', String(v.pausePressed));
+    // ORDEM verbatim: o aria-pressed vem DEPOIS do bloco de toque.
+    //
+    // No TÍTULO o atributo SAI, em vez de virar `false`. Ali o botão significa "iniciar", e `aria-pressed`
+    // num botão que não alterna nada faz o leitor de tela anunciar um estado que não existe — pior que não
+    // anunciar nada. `titleOverlayHidden` é verdadeiro fora do título.
+    const pb = ctx.$<HTMLElement>('#touch-start');
+    if (pb) {
+      if (v.titleOverlayHidden) pb.setAttribute('aria-pressed', String(v.pausePressed));
+      else pb.removeAttribute('aria-pressed');
+    }
     applyFocus(v.focus);
   }
 

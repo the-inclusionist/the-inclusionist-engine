@@ -190,12 +190,14 @@ export function initHud(ctx: HudCtx): HudApi {
   let vpHudDom: HTMLElement[] = [];
   let vpQuitDom: HTMLElement[] = [];
   let vpScreens: HTMLElement[] = [];
+  /** A sub-camada de EXPERIÊNCIA de cada tela — o que a empatia atrapalha. Ver `buildGameHud`. */
+  let vpExpDom: HTMLElement[] = [];
 
   function buildGameHud(): void {
     if (!gameHudEl) gameHudEl = ctx.$<HTMLElement>('#game-hud');
     if (!gameHudEl) return;
     gameHudEl.innerHTML = '';
-    vpHudDom = []; vpQuitDom = []; vpScreens = [];
+    vpHudDom = []; vpQuitDom = []; vpScreens = []; vpExpDom = [];
     const panes: HTMLElement[] = [];
     const n = ctx.getNumPlayers();
     for (let i = 0; i < screenCount(n); i++) {
@@ -204,14 +206,28 @@ export function initHud(ctx: HudCtx): HudApi {
       scr.className = 'player-screen'; scr.dataset.player = String(i);
       scr.style.left = r.L; scr.style.top = r.T; scr.style.width = r.W; scr.style.height = r.H;
 
+      // A TELA TEM DUAS SUB-CAMADAS, e a divisão é de PAPEL (issue #82, decisão do Dev):
+      //
+      //   · EXPERIÊNCIA (`.screen-exp`) — HUD, selo de abandono e a atividade pedagógica do multi-tela. O
+      //     modo de EMPATIA precisa atrapalhar aqui: é o prejuízo que a pessoa tem de sentir.
+      //   · CONTROLE (o painel de pausa, irmão) — nunca é atingido por empatia. Simulação não é
+      //     acessibilidade: é criar dificuldade onde a facilidade não existe. O que existe para DAR ACESSO
+      //     — pausa, legenda, controle de toque — não pode ser degradado por ela.
+      //
+      // Elas são IRMÃS e não pai/filho porque `filter` de CSS desce para os descendentes e um filho não
+      // consegue cancelá-lo: com a pausa dentro da experiência, não haveria como isentá-la.
+      const exp = document.createElement('div');
+      exp.className = 'screen-exp';
+      scr.appendChild(exp); vpExpDom.push(exp);
+
       const d = document.createElement('div');
       d.className = 'vphud';
       d.innerHTML = vphudHtml(ctx.hudObjective(i), ctx.hudIcon);
-      scr.appendChild(d); vpHudDom.push(d);
+      exp.appendChild(d); vpHudDom.push(d);
 
       const q = document.createElement('div');
       q.className = 'vphud-quit'; q.hidden = true; q.textContent = 'Jogo abandonado';
-      scr.appendChild(q); vpQuitDom.push(q);
+      exp.appendChild(q); vpQuitDom.push(q);
 
       const sp = ctx.buildScreenPause(i);
       scr.appendChild(sp); panes.push(sp);
