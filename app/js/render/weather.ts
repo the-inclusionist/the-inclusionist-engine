@@ -10,6 +10,7 @@
 
 import { rnd } from '../core/rng.js';
 import { phase } from '../core/state.js';
+import type { DesenhoComLinha } from './port.js';
 // `cenario` e `CENARIOS` SAÍRAM (Fase B, ADR-0038): o cenário virou estado do JOGO (`game/state`), e este
 // módulo é engine — o gate de fronteira proíbe a importação. Em vez do VALOR, entra a PERGUNTA: `temChuva`.
 // Ficou melhor do que era: o módulo perguntava "qual tema, e o dado dele diz chuva?"; agora pergunta "chove
@@ -108,16 +109,9 @@ export function stepRainDrop(d: RainDrop, W: number, H: number, moving: boolean,
 // PIXI drawing (weatherLayer injected — kept structural so the module still runs in node tests)
 // ---------------------------------------------------------------------------------------------
 
-interface Gfx {
-  parent: unknown;
-  clear(): Gfx;
-  beginFill(color: number, alpha?: number): Gfx;
-  drawRect(x: number, y: number, w: number, h: number): Gfx;
-  endFill(): Gfx;
-  lineStyle(width: number, color?: number, alpha?: number): Gfx;
-  moveTo(x: number, y: number): Gfx;
-  lineTo(x: number, y: number): Gfx;
-}
+// `Gfx` vem de `render/port`. A chuva traça linha, então é o `DesenhoComLinha`; o `parent` é lido para
+// saber se a camada está no `stage` informado antes de reposicioná-la.
+type Gfx = DesenhoComLinha & { parent: unknown };
 interface StageLike {
   children: { length: number };
   setChildIndex(child: unknown, index: number): void;

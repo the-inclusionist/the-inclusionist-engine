@@ -7,8 +7,10 @@
 // only this module's own layers and calls an injected hook so the coordinator can wire game/life and
 // game/traffic's own scenario reactions (see the module boundary note in the extraction report).
 
-interface Gfx { visible: boolean; clear(): void; beginFill(color: number, alpha?: number): Gfx; drawRect(x: number, y: number, w: number, h: number): Gfx; endFill(): Gfx; }
-interface VisibleLayer { visible: boolean; }
+// `Gfx` vem de `render/port` (uma declaração, era cinco). Aqui ele também é escondido, daí o `Visivel`.
+import type { Desenho, Visivel } from './port.js';
+type Gfx = Desenho & Visivel;
+type VisibleLayer = Visivel;
 interface DarkRegion { set: Set<string>; }
 interface Pl { x: number; y: number; quit?: boolean; }
 

@@ -8,13 +8,11 @@
 
 import { LOGICAL_H } from '../core/constants.js';
 import { cloudWrapX } from './scene-sky.js';
+import type { Desenho } from './port.js';
 
-interface Gfx {
-  clear(): void;
-  beginFill(color: number, alpha?: number): Gfx;
-  drawRect(x: number, y: number, w: number, h: number): Gfx;
-  endFill(): Gfx;
-}
+// `Gfx` vem de `render/port` desde 2026-08-26: estava escrito cinco vezes na árvore, com quatro
+// definições diferentes. Ver o cabeçalho de lá.
+type Gfx = Desenho;
 
 export interface TitleSceneCtx {
   /** The PIXI.Graphics layer this scene draws into (created + z-ordered in game.js). */

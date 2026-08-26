@@ -5,6 +5,7 @@
 // render-graph (parallax/worldSprite/lifeLayer/carLayer) — e são INJETADAS aqui; movemos só a LÓGICA. Fórmulas copiadas
 // verbatim da v3.1.100. Injeção por closure. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (#43).
 
+import type { Desenho, Camada } from './port.js';
 /**
  * Posição horizontal de uma nuvem à deriva, com wrap SUB-PIXEL e pelo CORPO INTEIRO. Corrige #21:
  * (a) NÃO arredonda → deriva suave mesmo a <1px/frame; (b) só reentra quando a nuvem inteira saiu.
@@ -94,9 +95,9 @@ const CUMULO: readonly (readonly [number, number, number, number])[] = [
 /** A sombra sob a base — uma linha só. Na Floresta ela é alaranjada: a luz baixa bate por baixo. */
 const CUMULO_SOMBRA: readonly [number, number, number, number] = [1, 12, 24, 1];
 
-interface Gfx { clear(): void; beginFill(color: number, alpha?: number): Gfx; drawRect(x: number, y: number, w: number, h: number): Gfx; endFill(): Gfx; }
+type Gfx = Desenho;
 interface Sprite { x: number; y: number; alpha: number; texture: unknown; scale: { x: number }; _v?: number; destroy(): void; }
-interface Layer { addChild(c: unknown): unknown; removeChild(c: unknown): unknown; }
+type Layer = Camada;
 interface SpriteCtor { new (tex: unknown): Sprite; }
 interface Bird { s: Sprite; dir: number; f: number; t: number; }
 interface Flora { base: string; top: string; bDk: string; bLt: string; petals: string[]; center: string; }

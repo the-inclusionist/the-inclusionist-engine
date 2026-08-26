@@ -71,6 +71,7 @@ import { VIZ_BY_KEY } from './viz-modes.js';
 import { drawWeather } from './weather.js';
 import { players, numPlayers } from '../core/state.js';
 import { choosePlayerFrame, type AnimPlayer, type Frame, type PlayerTextures } from './player-anim.js';
+import type { RenderizarEm } from './port.js';
 
 /* ===================== interfaces estruturais (PIXI sem importar PIXI) ===================== */
 
@@ -97,7 +98,9 @@ export interface PlayerSprite {
 export interface CameraLike { x: number; y: number }
 
 /** `app.renderer` — só a passada em render-texture do caminho multi-tela. */
-export interface RendererLike { render(displayObject: unknown, options: { renderTexture: unknown; clear?: boolean }): void }
+// `RendererLike` SAIU (Fase D). A porta pede a CAPACIDADE `RenderizarEm`, não o objeto renderizador:
+// o `render` do PixiJS pede `IRenderableObject`, e um parâmetro declarado `unknown` não cabe ali por
+// contravariância. Ver o cabeçalho de `render/port`.
 
 // O `CoinSprite` de game/coin-spawning declara o que AQUELE módulo toca (x/y/tint/visible) e não inclui
 // `alpha` — quem escreve alpha na moeda é só o desenho (o cintilar e o esmaecer do item alheio). Widening
@@ -160,7 +163,7 @@ export interface ReducedMotion { items?: boolean }
 export interface DrawCtx {
   /* --- render-graph criado no game.js (estável: entra por valor) --- */
   camera: CameraLike;           // container do mundo; `placeCam` o move, o multi-tela o renderiza N vezes
-  renderer: RendererLike;       // `app.renderer`
+  renderizarEm: RenderizarEm;       // `app.renderer`
   caneLayer: GraphicsLike;      // bengala (modo cego)
   chairLayer: GraphicsLike;     // cadeira de rodas (empatia motora)
   /**
@@ -343,7 +346,7 @@ export function initDraw(ctx: DrawCtx): DrawApi {
           s.alpha = (ctx.itemOwnedBy(j, i) ? 1 : 0.4) * (shimOn ? 0.8 + 0.2 * Math.sin(fxClock * 0.12 + j * 1.7) : 1);
         }
         for (const pu of ctx.getPowerups()) { if (pu.sprite) pu.sprite.visible = ctx.powerupVisibleTo(pu, i); }
-        placeCam(PLS[i], i); ctx.renderer.render(ctx.camera, { renderTexture: ctx.getVpTex()[i] });
+        placeCam(PLS[i], i); ctx.renderizarEm(ctx.camera, ctx.getVpTex()[i]);
         if (anyOverlay) ctx.renderVpOverlay(i, viz);           // passada extra só se algum jogador está em baixa visão
       }
     }

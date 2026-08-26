@@ -35,7 +35,8 @@ function makeCtx(over = {}) {
   const log = { parallax: [], render: [], overlay: [], shared: [], minimap: [], hud: 0, elev: 0 };
   const ctx = {
     camera: { x: 0, y: 0 },
-    renderer: { render: (disp, opt) => log.render.push(opt.renderTexture) },
+    // `renderer` virou a CAPACIDADE `renderizarEm` (Fase D): o módulo pede o verbo, não o objeto do PixiJS.
+    renderizarEm: (_obj, alvo) => log.render.push(alvo),
     // A caixa do jogador ENTRA pelo ctx (como já entrava em scene-city/scene-sky/audio-nav). Os valores são
     // os reais de `game/player` — os casos da câmera abaixo conferem `y - BOX.h/2`, então inventar aqui faria
     // o teste medir o fixture em vez do módulo.
@@ -313,7 +314,7 @@ describe('render/draw — tela única × multi-tela', () => {
       // "chave é global, o resto é por jogador" dentro do desenho. O fixture declara a regra que o caso
       // precisa — pego pelo P1, não pelo P2 — e o que se mede é que o DESENHO pergunta uma vez por jogador.
       powerupVisibleTo: (_pu, i) => i !== 0,
-      renderer: { render: () => vistos.push(pu.sprite.visible) },
+      renderizarEm: () => vistos.push(pu.sprite.visible),
     });
     api.drawFrame();
     expect(vistos).toEqual([false, true]); // some para quem pegou, aparece para quem não pegou

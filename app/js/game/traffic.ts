@@ -10,6 +10,7 @@
 
 import { TILE } from '../core/constants.js';
 import { rnd, randInt } from '../core/rng.js';
+import type { Desenho, Camada } from '../render/port.js';
 import { cenario } from './state.js'; // GAME desde a Fase B (ADR-0038)
 
 export type LightState = 'green' | 'yellow' | 'red';
@@ -58,10 +59,12 @@ export function isOffscreen(x: number, worldPxW: number): boolean {
 
 /* ===================== PIXI-touching (injected via initTraffic(ctx)) ===================== */
 
-interface Gfx { clear(): void; beginFill(color: number, alpha?: number): Gfx; drawRect(x: number, y: number, w: number, h: number): Gfx; endFill(): Gfx; }
+// `Gfx` e `Layer` vêm de `render/port` (Fase D). `game/` pode importar de `render/`: a aresta proibida é
+// a contrária — engine importando de `game/` —, e este é um tipo, apagado na compilação.
+type Gfx = Desenho;
 interface Dimmable { tint: number; alpha: number; }
 interface CarSprite extends Dimmable { x: number; y: number; anchor: { set(x: number, y: number): void }; scale: { x: number }; destroy(): void; }
-interface Layer { addChild(c: unknown): unknown; removeChild(c: unknown): unknown; children: Dimmable[]; }
+type Layer = Camada & { children: Dimmable[] };
 interface SpriteCtor { new (tex: unknown): CarSprite; }
 interface GraphicsCtor { new (): Gfx; }
 

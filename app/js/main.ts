@@ -624,7 +624,7 @@ var fogG=new PIXI.Graphics();     camera.addChild(fogG);                        
 const vp = initViewports({
   ColorMatrixFilter: PIXI.ColorMatrixFilter, BlurFilter: PIXI.BlurFilter,
   parallaxTexNormal, getTreeTexNormal: () => treeTexNormal,
-  getLvOverlaySpr: () => lvOverlaySpr, renderer: app.renderer, getVpTex: () => vpTex,
+  getLvOverlaySpr: () => lvOverlaySpr, renderizarEm: (o, alvo, limpar) => app.renderer.render(o as never, { renderTexture: alvo as never, clear: limpar }), getVpTex: () => vpTex,
   cvdDefsHost: $('#cvd-defs'),
 });
 const { parallaxTexFor, treeTexFor, playerVizTex, pixiFilterFor, renderVpOverlay } = vp;
@@ -963,7 +963,7 @@ const updateGameHud = () => hud.updateGameHud();
    ctx trazer o par getter+setter de cada um, em vez de o modulo ser dono dos arrays. */
 const screenPipeline = initScreenPipeline({
   RenderTexture: PIXI.RenderTexture, SpriteCtor: PIXI.Sprite, GraphicsCtor: PIXI.Graphics, NEAREST: PIXI.SCALE_MODES.NEAREST,
-  stage: app.stage, renderer: app.renderer, camera,
+  stage: app.stage, renderer: app.renderer, camera, // aqui é o `ResizableRenderer` (só `resize`), não a captura
   getNumPlayers: ()=>numPlayers,
   getVpTex: ()=>vpTex, setVpTex: (a)=>{ vpTex=a; },
   getVpSpr: ()=>vpSpr, setVpSpr: (a)=>{ vpSpr=a; },
@@ -1034,7 +1034,7 @@ function update(dt: number){
    GETTER; camadas, camera e renderer entram por valor. `applySharedTextures` e `const` declarado ABAIXO
    (viz-setters), por isso entra embrulhado numa seta — passado direto, cairia em TDZ e derrubaria o boot. */
 const drawApi = initDraw({
-  camera, renderer: app.renderer,
+  camera, renderizarEm: (o, alvo, limpar) => app.renderer.render(o as never, { renderTexture: alvo as never, clear: limpar }),
   BOX, // a caixa do jogador ENTRA (como ja entrava em scene-city/scene-sky/audio-nav), nao e' importada la
   caneLayer, chairLayer, easyHitbox,
   getVpTex: ()=>vpTex, isWheelchair: ()=>wheelchair, getFxClock: ()=>fxClock, getPowerups: ()=>rodada.powerups,

@@ -43,7 +43,8 @@ function mkCtx(over = {}) {
     parallaxTexNormal: [fakeTex(flatCanvas(8, 8, '#3060c0')), fakeTex(flatCanvas(8, 8, '#20a040')), fakeTex(flatCanvas(8, 8, '#c04020'))],
     getTreeTexNormal: () => treeTexNormal,
     getLvOverlaySpr: () => spr,
-    renderer: { render: (obj, opts) => rendered.push([obj, opts]) },
+    // `renderer` virou a CAPACIDADE `renderizarEm` (Fase D): o módulo pede o verbo, não o objeto do PixiJS.
+    renderizarEm: (obj, alvo, limpar) => rendered.push([obj, { renderTexture: alvo, clear: limpar }]),
     getVpTex: () => ['RT0', 'RT1'],
     cvdDefsHost: null,
     ...over,

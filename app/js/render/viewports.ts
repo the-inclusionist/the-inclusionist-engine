@@ -43,6 +43,7 @@ import { makeCanvas, tex } from './canvas.js';
 import { DIRECT_CFG, directBgTexture, directSpriteTexture } from './high-contrast.js';
 import { VIZ_BY_KEY } from './viz-modes.js';
 import { CVD_MATRIX, installCvdFilters, type CvdKey } from './cvd-matrices.js';
+import type { RenderizarEm } from './port.js';
 
 /* ===================== interfaces estruturais (PIXI sem importar PIXI) ===================== */
 
@@ -58,7 +59,9 @@ interface BlurCtor { new (strength: number): unknown }
 /** O sprite reaproveitado para carimbar o overlay de baixa visão — só a textura é trocada. */
 interface TexturedSprite { texture: unknown }
 /** `app.renderer` — só a passada extra em render-texture (`clear:false` = por cima da cena já desenhada). */
-interface RendererLike { render(displayObject: unknown, options: { renderTexture: unknown; clear?: boolean }): void }
+// `RendererLike` SAIU (Fase D). A porta pede a CAPACIDADE `RenderizarEm`, não o objeto renderizador:
+// o `render` do PixiJS pede `IRenderableObject`, e um parâmetro declarado `unknown` não cabe ali por
+// contravariância. Ver o cabeçalho de `render/port`.
 
 export interface ViewportsCtx {
   /* --- construtores de filtro do PIXI (podem faltar: o original testa `&&CM` / `&&BL` antes de usar) --- */
@@ -71,7 +74,7 @@ export interface ViewportsCtx {
 
   /* --- objetos PIXI criados no game.js (z-order e ciclo de vida soldados lá) --- */
   getLvOverlaySpr: () => TexturedSprite; // GETTER idem; sprite de carimbo, nunca entra em container
-  renderer: RendererLike;                // `app.renderer` (app é `const`, criado no início do boot)
+  renderizarEm: RenderizarEm;                // `app.renderer` (app é `const`, criado no início do boot)
   getVpTex: () => unknown[];             // GETTER: `let vpTex` é REATRIBUÍDO por configureRender a cada troca de nº de telas
 
   /* --- DOM: o host dos <filter> gerados (cura da duplicação das matrizes) --- */
@@ -187,7 +190,7 @@ export function initViewports(ctx: ViewportsCtx): ViewportsApi {
     const m = VIZ_BY_KEY[mode];
     if (!m || m.kind !== 'lowvision') return;
     const t = lvOverlayTex(m.lv as string);
-    if (t) { const spr = ctx.getLvOverlaySpr(); spr.texture = t; ctx.renderer.render(spr, { renderTexture: ctx.getVpTex()[i], clear: false }); }
+    if (t) { const spr = ctx.getLvOverlaySpr(); spr.texture = t; ctx.renderizarEm(spr, ctx.getVpTex()[i], false); }
   }
 
   return {
