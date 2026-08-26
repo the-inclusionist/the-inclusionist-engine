@@ -87,11 +87,13 @@ describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', (
     expect(g.classList.contains('crt-vig-1')).toBe(true);
   });
 
-  it('[Boundary] a SCANLINE não cede — está fora da regra do ADR, e é escolha declarada', () => {
-    // O ADR-0020 nomeia `CRT_VIGNETTE` e "flashes decorativos". A scanline não está na lista, e é a única
-    // das três que vem LIGADA de fábrica. Suprimi-la mudaria a tela de todo mundo que usa qualquer modo de
-    // visão — decisão de produto, não dedução a partir de uma lista que não a menciona. Este caso trava o
-    // comportamento ATUAL para que a mudança, se vier, seja deliberada e apareça aqui.
+  it('[Boundary] a SCANLINE não cede — DECISÃO do Dev, 2026-08-26', () => {
+    // O ADR-0020 nomeia `CRT_VIGNETTE` e "flashes decorativos"; a scanline não está na lista, e é a única
+    // das três que vem LIGADA de fábrica. Levei a pergunta ao Dev em vez de deduzir a partir de uma lista
+    // que não a menciona, e a resposta foi: **"Scanline não deverá ceder a acessibilidade por enquanto."**
+    //
+    // O "por enquanto" é parte da decisão e fica escrito: ela é reversível, e este caso é o lugar onde a
+    // reversão aparece. Enquanto valer, a scanline sobrevive a TODOS os dezesseis modos de visão.
     const g = region();
     comA11y(true);
     CRT.scan = 1; CRT.vig = 0; CRT.round = 1;

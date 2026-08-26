@@ -1345,7 +1345,15 @@ const viz = initVizSetters({
   // `aplicarFiltroCss` no lugar de `app`: o `view.style` do PixiJS e `ICanvasStyle`, que nem TEM `filter`
   // (ele existe para a OffscreenCanvas, onde nao ha CSS). Em producao o `view` e uma canvas do DOM de
   // verdade — e saber disso e trabalho da raiz, nao do `viz-setters`.
-  aplicarFiltroCss: (css) => { const v = app.view as unknown as HTMLCanvasElement | null; if (v && v.style) v.style.filter = css; },
+  // DUAS SUPERFÍCIES, e é a raiz que sabe quais são: a canvas (o mundo) e o `#dom-layer` (os menus).
+  // MELHORIA cai nas duas; EMPATIA só no mundo — e o menu, que é o instrumento de sair da simulação, fica
+  // legível. Ver `AlcanceDoFiltro` em `render/port` e a issue #82.
+  aplicarFiltroCss: (css, alcance) => {
+    const v = app.view as unknown as HTMLCanvasElement | null;
+    if (v && v.style) v.style.filter = css;
+    const dom = $<HTMLElement>('#dom-layer');
+    if (dom) dom.style.filter = alcance === 'mundo-e-menus' ? css : '';
+  },
   camera, worldSprite, parallaxLayers, decoSprites,
   getVpSpr: () => vpSpr, getVpDots: () => vpDots,
   getItemSprites: getCoinSprites, itemTexId: 'coin', // item 19: o NOME dos itens e do jogo, nao do render
@@ -1429,7 +1437,11 @@ function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.v
   // já tinha esquecido DOIS — o menu de CAA, que por isso abria do tamanho da janela em vez do tamanho do
   // jogo, e o #win-overlay, que nunca esteve na lista. Uma lista que precisa ser lembrada esquece em silêncio:
   // não há erro, só uma tela no lugar errado, e ninguém liga uma coisa à outra.
-  document.querySelectorAll('.overlay').forEach(el=>{ if(!gr.contains(el))gr.appendChild(el); });
+  // O alvo é a CAMADA DOM, não o `#game-region`: é ela que recebe o filtro de acessibilidade (issue #82), e
+  // um modal que ficasse fora dela seria o único pedaço de menu sem correção de daltonismo. A regra segue
+  // ESTRUTURAL — `.overlay`, não uma lista de ids —, que é o que impediu os dois esquecimentos de antes.
+  const camada=document.getElementById('dom-layer')||gr;
+  document.querySelectorAll('.overlay').forEach(el=>{ if(!camada.contains(el))camada.appendChild(el); });
   // Botões puramente on/off viram TOGGLE (switch) — o texto "Ligado/Desligado" fica oculto (font-size:0).
   ['opt-facil','opt-altmove','opt-hearing','opt-onebtn','opt-wheelchair','opt-modocego','opt-tts','opt-eyes','audio-master','opt-captions','motion-master'].forEach(id=>{ const b=document.getElementById(id); if(b)b.classList.add('switch'); });
 })();

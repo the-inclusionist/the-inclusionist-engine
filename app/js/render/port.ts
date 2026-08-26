@@ -147,4 +147,22 @@ export interface DesenhoComCirculo extends DesenhoComLinha {
  *
  * Mesma lição do `RenderizarEm` e do `CriarSprite`: pedir o VERBO cabe onde emprestar o objeto não cabe.
  */
-export type AplicarFiltroCss = (css: string) => void;
+export type AplicarFiltroCss = (css: string, alcance: AlcanceDoFiltro) => void;
+
+/**
+ * ONDE o filtro de acessibilidade cai — e a distinção é de PRODUTO, decidida pelo Dev em 2026-08-26.
+ *
+ * O quadro é metade canvas e metade DOM, e filtro de PIXI não alcança DOM. Até aqui o filtro caía SÓ na
+ * canvas, e os menus ficavam crus: a criança daltônica recebia o jogo corrigido e as palavras não (issue
+ * #82). Mas a correção não é o único modo, e nem todos devem alcançar o menu:
+ *
+ *   · MELHORIA (`normal`, `hc-direto*`, `fix-*`) — existe para a criança ENXERGAR MELHOR. Tem de alcançar
+ *     tudo que ela lê, menus inclusive. É o caso que estava quebrado.
+ *   · EMPATIA (`sim-*`, `lv-*`, `blind`) — existe para um adulto SENTIR como é. Fica no mundo. O menu é o
+ *     instrumento de SAIR da simulação, e uma cegueira que apagasse o menu de pausa trancaria a criança
+ *     dentro dela.
+ *
+ * O catálogo já sabia disto antes de a regra ser escrita: `VIZ_MODES` traz `sim: true` exatamente nos nove
+ * modos de empatia, e `simulatesDisability(chave)` é a pergunta pronta. Nada de taxonomia nova.
+ */
+export type AlcanceDoFiltro = 'mundo' | 'mundo-e-menus';

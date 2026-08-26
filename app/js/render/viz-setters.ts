@@ -19,7 +19,7 @@
 // módulo rodar no project `node` sem importar PIXI. Mesmo precedente de render/scene-sky e game/traffic.
 // SEM I/O no import: initVizSetters(ctx) só fecha closures, não chama nada.
 
-import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, type VizMode } from './viz-modes.js';
+import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, simulatesDisability, type VizMode } from './viz-modes.js';
 import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
@@ -27,9 +27,18 @@ import { lqFilter } from './lq-filter.js';
 import { setVizModeValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
 import type { DomQuery } from '../core/dom-query.js';
-import type { ComFiltro, ComTextura, Visivel, DesenhoComCirculo, AplicarFiltroCss } from './port.js';
+import type { ComFiltro, ComTextura, Visivel, DesenhoComCirculo, AplicarFiltroCss, AlcanceDoFiltro } from './port.js';
 
 /* ===================== PURO (sem PIXI, sem DOM) — o que rende teste de verdade ===================== */
+
+/**
+ * Até onde o filtro deste modo vai. MELHORIA alcança os menus; EMPATIA fica no mundo (ver `AlcanceDoFiltro`).
+ * Derivado de `sim`, do catálogo — a mesma flag que já distingue os dois, e não uma segunda lista para
+ * alguém esquecer de atualizar.
+ */
+export function alcanceDoModo(mode: string): AlcanceDoFiltro {
+  return simulatesDisability(mode) ? 'mundo' : 'mundo-e-menus';
+}
 
 /** Modo por chave, com o fallback do original: chave desconhecida (ou nula) CAI em `normal`. */
 export function resolveViz(key: string | null | undefined): VizMode {
@@ -224,7 +233,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     // custa uma comparação e não pode divergir. (O inicializador daquele `let` usava OUTRA fórmula,
     // `vizMode!=='normal'`, e discordava do setter — sem efeito, porque applyVizGlobal roda no boot antes de
     // o gancho existir, mas é o sintoma clássico de cópia de estado.)
-    ctx.aplicarFiltroCss(cssFilterFor(mode, lqFilter())); // sim. daltonismo/baixa-visão/cegueira + realce L/Q compostos
+    ctx.aplicarFiltroCss(cssFilterFor(mode, lqFilter()), alcanceDoModo(mode)); // sim. daltonismo/baixa-visão/cegueira + realce L/Q compostos
     ctx.camera.filters = (m.kind === 'hcnew') ? ctx.pixiFilterFor(mode) : null; // solo: alto contraste experimental = filtro GPU na câmera
     ctx.setFrontDim(!!DIRECT_CFG[mode]); // HC: frente (carros/placas/semáforo) escurece como fundo
     ctx.worldSprite.texture = worldTexFor(mode);            // alto contraste direto = Renderização Direta · resto=normal
@@ -255,7 +264,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     ctx.invalidateSharedViz();
     if (ctx.getNumPlayers() <= 1) { applyVizGlobal(ctx.getPlayers()[0].viz); }
     else {
-      ctx.aplicarFiltroCss(lqFilter());
+      ctx.aplicarFiltroCss(lqFilter(), 'mundo-e-menus'); // realce L/Q é melhoria: alcança o menu
       ctx.camera.filters = null;
       ctx.body.classList.remove('lowvision-mode', 'blind-mode');
       const ov = ctx.$('#viz-overlay'); if (ov) ov.hidden = true;

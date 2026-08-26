@@ -64,6 +64,11 @@
       aria-describedby="game-instructions"
       data-i18n-aria="a11y.gameRegion">
       <div id="pixi-mount" class="pixi-mount"></div>
+      <!-- A CAMADA DOM (2026-08-26, issue #82). Tudo o que NÃO é a canvas mora aqui dentro, e a razão é uma
+           só: a correção de daltonismo precisa alcançar os MENUS, e filtro de PIXI não alcança DOM. Com a
+           canvas de fora, o filtro de CSS pode cair neste invólucro sem ser aplicado duas vezes no mundo.
+           Ver `aplicarFiltroCss` em `render/port` e o ADR-0020 (emendado). -->
+      <div id="dom-layer">
       <!-- HUD por jogador (DOM sobreposto, alta definição): moedas + poder, por viewport -->
       <div id="game-hud" aria-hidden="true"></div>
       <!-- Simular baixa visão: névoa + manchas (scotomas) sobre o jogo -->
@@ -118,6 +123,7 @@
         </div>
         <button class="touch-start" id="touch-start" type="button" aria-label="Pausar ou iniciar (START)">START</button>
       </div>
+      </div><!-- /#dom-layer -->
     </section>
       <div id="libras-slot" class="libras-slot" aria-hidden="true"></div>
      </div>

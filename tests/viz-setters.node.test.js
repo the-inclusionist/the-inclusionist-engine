@@ -23,7 +23,7 @@ const { VIZ_MODES, VIZ_BY_KEY } = await import('../app/js/render/viz-modes.js');
 const { initHighContrast } = await import('../app/js/render/high-contrast.js');
 const {
   initVizSetters, resolveViz, isDirectMode, cssFilterFor, vizDotFor, vizIndicatorFor,
-  lvOverlayClassFor, vizGroupHtml, vizGroupSay,
+  lvOverlayClassFor, vizGroupHtml, vizGroupSay, alcanceDoModo,
 } = await import('../app/js/render/viz-setters.js');
 
 // worldTexFor/spriteTexFor exigem o ctx do high-contrast. Nos modos NÃO-diretos elas devolvem a textura normal
@@ -662,5 +662,50 @@ describe('renderVizGroup — grupo de rádios nos painéis', () => {
     btn.click();
     expect(env.players.map((p) => p.viz)).toEqual(['normal', 'blind']);
     expect(env.log.say).toEqual(['Jogador 2: Simular cegueira total.']);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------
+// ATÉ ONDE O FILTRO ALCANÇA — decisão do Dev, 2026-08-26, issue #82.
+//
+// O quadro é metade canvas e metade DOM, e filtro de PIXI não alcança DOM. Até esta data o filtro caía SÓ na
+// canvas: a criança daltônica recebia o JOGO corrigido e os MENUS crus — e o menu é onde estão as palavras,
+// inclusive as dos próprios ajustes de acessibilidade.
+//
+// A regra que conserta isso NÃO é "filtrar tudo", e a diferença é de acessibilidade:
+//
+//   · MELHORIA (normal, hc-direto*, fix-*) existe para a criança ENXERGAR MELHOR → alcança os menus.
+//   · EMPATIA (sim-*, lv-*, blind) existe para um adulto SENTIR como é → fica no mundo. O menu é o
+//     instrumento de SAIR da simulação; uma cegueira que apagasse o menu de pausa trancaria a criança
+//     dentro dela.
+//
+// E o catálogo já sabia disto antes de a regra ser escrita: `sim: true` marca exatamente os nove modos de
+// empatia. Derivar dali, e não de uma segunda lista, é o que impede as duas de divergirem.
+//
+// MUTAÇÃO CONFERIDA: invertendo o `?` de `alcanceDoModo`, o [Right] falha em "normal" —
+// "expected 'mundo' to be 'mundo-e-menus'".
+describe('até onde o filtro alcança (issue #82)', () => {
+  const MELHORIAS = ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7', 'fix-protan', 'fix-deuter', 'fix-tritan'];
+  const EMPATIA = ['sim-deuter', 'sim-protan', 'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind'];
+
+  it('[Right] MELHORIA alcança os menus', () => {
+    for (const m of MELHORIAS) expect(alcanceDoModo(m), m).toBe('mundo-e-menus');
+  });
+
+  it('[Inverse] EMPATIA fica no mundo — o menu segue legível para sair dela', () => {
+    for (const m of EMPATIA) expect(alcanceDoModo(m), m).toBe('mundo');
+  });
+
+  it('[Interface] as duas listas juntas são o catálogo INTEIRO — nenhum modo fica sem regra', () => {
+    // O caso que impede a regra de envelhecer: um modo novo entra em VIZ_MODES e cai numa das duas, ou este
+    // caso reprova. Sem ele, o modo novo herdaria um alcance por acidente.
+    expect([...MELHORIAS, ...EMPATIA].sort()).toEqual(VIZ_MODES.map((m) => m.key).sort());
+  });
+
+  it('[Boundary] modo desconhecido cai em MELHORIA — e isso está declarado, não por acaso', () => {
+    // `simulatesDisability` devolve `false` para chave inexistente, então o desconhecido alcança o menu. É o
+    // lado seguro: um modo que ninguém declarou não deve poder DEIXAR o menu sem correção. Travado aqui para
+    // a escolha ser deliberada se alguém a inverter.
+    expect(alcanceDoModo('inventado')).toBe('mundo-e-menus');
   });
 });

@@ -40,6 +40,7 @@ const SLOTS_OVERLAY = Object.entries(Z).filter(([, v]) => v >= Z.HUD);
  * Ela não é desculpa: cada linha é uma decisão que falta, e três delas mudam a tela.
  */
 const NAO_ADOTADOS = {
+  1: 'SEM SLOT, e de propósito: `#dom-layer` (issue #82) não é uma CAMADA — é o invólucro que separa o DOM da canvas para o filtro de acessibilidade poder cair nele. O `1` só o põe acima da canvas e abaixo dos dois pseudo-elementos do CRT; os slots de `Z` valem para os filhos DENTRO dele.',
   4: 'INVERSÃO PENDENTE: `#game-hud`. Ele cria CONTEXTO DE EMPILHAMENTO, e o `.screen-pause` (6) vive dentro dele — adotar HUD(24000) exige decidir se o menu de pausa sai do contexto do HUD.',
   5: 'SEM SLOT: `crt-vig-1::before`. O CRT é PÓS-PROCESSO pelo ADR-0020, não camada; inventar número repete o erro de categoria.',
   6: 'Depende do 4: `.screen-pause` e `.pause-incanvas` competem dentro do contexto do `#game-hud`.',

@@ -240,6 +240,20 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* tela = prioridade: ocupa todo o espaço; o excedente (até 5px×k por lado) é cortado sem rolagem */
 .stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:0;overflow:hidden}
 .stage{position:relative;display:flex;align-items:center}
+/* ===== A CAMADA DOM (issue #82) =====
+   Tudo o que não é a canvas. Existe para o filtro de acessibilidade poder cair numa superfície que contém os
+   MENUS e não contém o mundo — filtro de PIXI não alcança DOM, e filtrar o `#game-region` inteiro aplicaria
+   duas vezes na canvas.
+
+   `pointer-events:none` porque o invólucro cobre a região inteira e não pode engolir clique; os quatro filhos
+   que precisam de clique e não o declaravam (herdavam do `#game-region`) ganham `auto` logo abaixo.
+
+   `z-index:1`: acima da canvas, ABAIXO dos dois pseudo-elementos do CRT (vinheta em 5, scanline em 500), que
+   ficam no `#game-region`. O CRT é efeito de tela e passa por cima de tudo — o que a scanline já fazia por
+   decisão do Dev, e a vinheta agora acompanha. */
+#dom-layer{position:absolute;inset:0;z-index:1;pointer-events:none}
+#dom-layer #viz-indicator,#dom-layer .overlay,#dom-layer .quiz,#dom-layer .pause-incanvas{pointer-events:auto}
+
 .game-region{position:relative;background:#05070f;box-shadow:0 0 0 3px var(--ink-soft);border-radius:8px;overflow:hidden;flex:none}
 .libras-slot{flex:none;width:0;height:0;background:#0b1020;border-radius:8px;overflow:hidden}
 .game-region:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
