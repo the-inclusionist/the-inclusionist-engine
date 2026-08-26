@@ -536,9 +536,18 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
   // Fala do item sob o cursor + montagem da palavra
   // ---------------------------------------------------------------------------------------------
 
-  /** Fala o item sob o cursor CONFORME O NÍVEL (regra pedagógica: 2 fala a sílaba, 3 soletra, 5 dita pontos). */
+  /**
+   * Fala o item sob o cursor CONFORME O NÍVEL (regra pedagógica: 2 fala a sílaba, 3 soletra, 5 dita pontos).
+   *
+   * A guarda das duas variantes SEM palavra é DEFENSIVA, não uma mudança de comportamento: os três chamadores
+   * já as excluíam antes de chegar aqui — `openPre` e `openAlf` abrem justamente as que têm palavra, e o
+   * `quizMove` só chama isto sob `kind === 'silabas' | 'alf' | 'pre'`. Vale escrever porque o `as
+   * SilabasQuiz | PreQuiz | AlfQuiz` que existia aqui excluía o `somasub` do TIPO e não da EXECUÇÃO: se um
+   * quarto chamador aparecesse, o `q.word` de um `MathQuiz` seria `undefined` e o leitor de tela diria
+   * `disp(undefined)`. Agora ele não diz nada, e o compilador cobra o `kind` de quem chamar.
+   */
   function quizSpeakSel(pl: QuizPlayer): void {
-    const q = quizDe(pl); if (!q || q.kind === 'braille' || q.kind === 'somasub') return; // as duas sem palavra a soletrar
+    const q = quizDe(pl); if (!q || q.kind === 'braille' || q.kind === 'somasub') return; // ver acima: defensiva
     if (q.sel < 0) { c.srSay(c.disp(q.word)); c.gameSay(q.word); return; } // cursor na PALAVRA do topo → fala a palavra
     if (q.kind === 'pre') { c.srSay(soletra(q.choices[q.sel])); return; }
     const opts = q.options; // estreitado pelo `kind === 'pre'` acima — sem `as`
