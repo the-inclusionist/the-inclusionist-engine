@@ -18,7 +18,8 @@ import {
   initActivitiesMenu,
 } from '../app/js/ui/activities-menu.js';
 import { DEFAULT_ACTIVITY_ID, listActivityIds, modeForActivity } from '../app/js/educational/activities-registry.js';
-import { activity as ACTIVITY, setActivityValue, players, setNumPlayersValue } from '../app/js/core/state.js';
+import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { activity as ACTIVITY, setActivityValue } from '../app/js/game/state.js'; // GAME desde a Fase B (ADR-0038)
 import * as store from '../app/js/platform/storage.js';
 
 // ---------------------------------------------------------------------------------------------
@@ -119,6 +120,10 @@ function makeCtx(over = {}) {
     titleShow: (w) => calls.shown.push(w),
     cenarios: [{ id: 'cidade', nome: 'Cidade' }, { id: 'campo', nome: 'Dia no Campo' }],
     setCenario: (c) => calls.cenario.push(c),
+    // `activity` chega por INJEÇÃO desde 2026-08-26: ele é estado do JOGO (`game/state`), e este módulo é
+    // engine — o gate de fronteira proíbe engine importar de `game/`. O fake usa o `core/state` ainda
+    // porque é lá que o binding mora HOJE; quando ele mudar de casa, muda só esta linha.
+    getActivityId: () => ACTIVITY, setActivityId: setActivityValue,
     setQuizLevel: (n, a) => calls.quizLevel.push([n, a]),
     isMobile: () => false,
     fitsN: () => true,

@@ -7,7 +7,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as COL from '../app/js/core/collision.js';
 import { reseed } from '../app/js/core/rng.js';
-import { players, setNumPlayersValue, setCenarioValue } from '../app/js/core/state.js';
+import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { setCenarioValue } from '../app/js/game/state.js'; // GAME desde a Fase B (ADR-0038)
 import { TILE } from '../app/js/core/constants.js';
 import { initLife, spawnCreature, stepLife, getCreatures } from '../app/js/game/life.js';
 

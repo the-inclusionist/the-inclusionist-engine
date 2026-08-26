@@ -30,7 +30,10 @@
 // NOT here (deliberately): ui/title.ts's submenu show/hide, render/title-scene.ts's PIXI backdrop,
 // updateTitleLegend (device legend — gamepad slice), the `#title-icons` a11y shortcut row (pause-icons slice;
 // it only shares the `#title-overlay` element, never a listener), and setMode()/applyLetra() (HUD toggles).
-import { activity as ACTIVITY, setActivityValue, numPlayers, players } from '../core/state.js';
+import { numPlayers, players } from '../core/state.js';
+// `activity`/`setActivityValue` NÃO são mais importados: eles vão para `game/state` (Fase B do plano), e
+// este módulo é ENGINE — o gate de fronteira proíbe engine importar de `game/`, e a lista dele esvaziou em
+// 2026-08-25. Chegam por injeção, como todo o resto do que é do jogo.
 import { getActivity, hasActivity, isValidActivityId, DEFAULT_ACTIVITY_ID, activityCategory,
          type ActivityDef, type ActivityCat } from '../educational/activities-registry.js';
 import * as store from '../platform/storage.js';
@@ -82,6 +85,10 @@ export interface ActivitiesMenuCtx {
   cenarios: readonly CenarioOption[];
   /** Applies the chosen scenario (game.js: validates, persists via core/state, rebuilds the parallax textures). */
   setCenario: (theme: string) => void;
+  /** A ATIVIDADE ESCOLHIDA, por injeção. É estado do JOGO (`game/state`), e este módulo é engine — o gate
+   *  de fronteira proíbe a importação, então a raiz de composição entrega. */
+  getActivityId: () => string;
+  setActivityId: (id: string) => void;
   /** game.js's setQuizLevel(n, announce): persists via core/state and refreshes the `.pm-nivel` pause labels.
    *  Stays in game.js because the pause menu — not this menu — owns those labels. */
   setQuizLevel: (n: number, announce: boolean) => void;
@@ -368,7 +375,7 @@ interface BusyOverlay extends HTMLElement { _busy?: boolean }
 export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
   // ACTIVITY arrives from core/state.ts already read from storage; the CATALOG check is ours (state.ts has no
   // opinion about which ids exist), so a value left over from an activity that no longer ships falls back here.
-  if (!isValidActivityId(ACTIVITY ?? '')) setActivityValue(DEFAULT_ACTIVITY_ID);
+  if (!isValidActivityId(ctx.getActivityId() ?? '')) ctx.setActivityId(DEFAULT_ACTIVITY_ID);
 
   // Escopo DO JOGO agora (ver os dois escopos em platform/storage); a leitura herda do nome antigo.
   const tabSel: number[] = sanitizeTabSel(store.getJSONComLegado(store.KEYS.tabsel, store.KEYS.tabselLegado, null));
@@ -398,11 +405,11 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
   escreverNp(pendingPlayers); // o botão nasce no idioma certo, não no do markup
   let tabFor = 'mat5'; // which "pick numbers" activity the tabuada submenu is currently serving
 
-  function actCat(): ActivityCat { return activityCategory(ACTIVITY); }
+  function actCat(): ActivityCat { return activityCategory(ctx.getActivityId()); }
 
   function setActivity(id: string): void {
     id = normalizeActivityId(id);
-    setActivityValue(id); // core/state.ts: value + persistence (incl_activity) + event; validation stayed here
+    ctx.setActivityId(id); // game/state: valor + persistência + evento. A validação continua sendo daqui.
     const cat = (getActivity(id) as ActivityDef).cat;
     if (cat === 'alf') ctx.setQuizLevel(ALF_LEVEL[id], false); // reuses the 5 psychogenesis levels
     // O MODE NÃO É ESCRITO AQUI, e é este apagamento que fecha a issue #54: ele DERIVA de `activity`, que a

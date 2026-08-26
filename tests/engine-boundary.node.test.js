@@ -311,6 +311,12 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
 //    de temas (`render/cenario-data` e quem o consome) é engine de verdade, e pôr `cenario` na regra produziria
 //    uma lista de "dívida" que ninguém pode pagar porque não há nada de errado com ela. Um gate que aponta
 //    para o lugar certo pela razão errada é pior que gate nenhum: ele treina a pessoa a ignorá-lo.
+//
+//    ISSO CONTINUA VALENDO DEPOIS DA FASE B (2026-08-26), e a distinção ficou mais nítida: o VALOR escolhido
+//    (`cenario`) mudou-se para `game/state`, porque é persistido em chave `kJogo()` e viaja com o cartucho;
+//    o CATÁLOGO (`render/cenario-data.CENARIOS`) ficou onde estava, porque descrever céus e morros é trabalho
+//    de motor. Duas coisas com o mesmo nome e camadas diferentes — e é por isso que a regra fala de moeda e
+//    quiz, que não têm essa ambiguidade.
 // ---------------------------------------------------------------------------------------------------------
 
 const T_DIR = join(process.cwd(), 'tests');

@@ -89,19 +89,18 @@ export function setSelVizPlayerValue(i: number): void { selVizPlayer = i; emit('
 // `getCenario: () => string`, cada um confiando num boot que pode falhar. O tipo dizia a verdade e ninguém
 // a escutava.
 //
-// Ninguém usa `null` como sinal de "ainda não escolhido" (conferido em toda a árvore, inclusive no alias
-// `CENARIO` do composition root), e o `render/cenario-data` já cai em 'cidade' para tema desconhecido —
-// então o efeito observável é o mesmo, com uma diferença: agora é o tipo que garante, não a sorte.
-export let cenario: string = 'cidade';
-export function setCenarioValue(theme: string): void { cenario = theme; store.set(store.KEYS.cenario, theme); emit('cenario', theme); }
-
-// --- activity: id da atividade selecionada (persistido em incl_activity). A validação contra ACTIVITIES
-//     (objeto do game.js) fica no setActivity() do game.js — aqui só o valor cru + persistência + evento. ---
-// `string`, não `string | null`: a leitura tem padrão `'ludico'`, e desde as sobrecargas de `platform/storage`
-// o tipo diz isso. Era a mesma mentira do `cenario` — um anulável que nunca é nulo, obrigando cada
-// consumidor a tratar um caso impossível.
-export let activity: string = store.getComLegado(store.KEYS.activity, store.KEYS.activityLegado, 'ludico');
-export function setActivityValue(id: string): void { activity = id; store.set(store.KEYS.activity, id); emit('activity', id); }
+// ========================= `cenario` E `activity` SAÍRAM DAQUI (ADR-0038, Fase B) =========================
+// Os dois eram estado de JOGO morando na engine — a mesma exceção que o `coins` e o `quizLevel` já haviam
+// deixado no item 19. O corte por LIFETIME do ADR-0038 os classifica como GAME: ambos são persistidos em
+// chave `kJogo()`, que é o critério mecânico, e ambos viajam com o cartucho quando o jogo mudar de
+// repositório (ADR-0036).
+//
+// Moram agora em `game/state`, com a MESMA forma — binding vivo + setter que persiste e emite. O que mudou
+// foi só o endereço, e é isso que torna a mudança conferível.
+//
+// Um consumidor precisou de mais que um import novo: `ui/activities-menu` é ENGINE, e o gate de fronteira
+// proíbe engine importar de `game/` (a lista dele esvaziou em 2026-08-25). Ele passou a receber
+// `getActivityId`/`setActivityId` por injeção, que é o que a raiz de composição existe para fazer.
 
 // --- vizMode: modo visual/cor ativo (persistido em incl_viz). A validação (VIZ_CYCLE) e o default por
 //     prefers-contrast ficam no game.js. initVizMode NÃO persiste (o default de mídia deve seguir o SO a cada

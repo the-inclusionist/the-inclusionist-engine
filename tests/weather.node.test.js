@@ -9,7 +9,10 @@ import {
   rainLevelTarget, rampRainLevel, stepThunder, makeRainDrops, stepRainDrop,
   initWeather, updateWeather, drawWeather, getRainLevel, getWeatherT, setWeatherT,
 } from '../app/js/render/weather.js';
-import { setCenarioValue, setPhaseValue } from '../app/js/core/state.js';
+import { setPhaseValue } from '../app/js/core/state.js';
+// `setCenarioValue` SAIU deste arquivo: desde a Fase B (ADR-0038) o `render/weather` não lê o cenário —
+// ele recebe a PERGUNTA `temChuva` por injeção, e o catálogo é de quem compõe. O teste ficou melhor por
+// isso: passou a controlar diretamente a condição que exercita, em vez de montá-la por estado global.
 import { CENARIOS } from '../app/js/render/cenario-data.js';
 
 describe('rainLevelTarget (curva L5: bom 30s → loop de 60s garoa/chuva/garoa/bom)', () => {
@@ -131,16 +134,16 @@ function setup(over = {}) {
     screen: { width: over.W ?? 100, height: over.H ?? 50 },
     getRm: () => over.rm || {},
     thunder: (inten) => thunderCalls.push(inten),
+    temChuva: () => over.chuva ?? false,
   });
   return { weatherLayer, stage, thunderCalls };
 }
 
 describe('initWeather + updateWeather + drawWeather (integração)', () => {
-  beforeEach(() => { setPhaseValue('title'); setCenarioValue('campo'); setWeatherT(0); });
+  beforeEach(() => { setPhaseValue('title'); setWeatherT(0); });
 
-  it('[Zero] fora da Cidade: nunca chove, drawWeather não desenha nada além do clear', () => {
-    setCenarioValue('campo');
-    const { weatherLayer } = setup();
+  it('[Zero] cenário SEM chuva: nunca chove, drawWeather não desenha nada além do clear', () => {
+    const { weatherLayer } = setup({ chuva: false });
     for (let i = 0; i < 60 * 40; i++) updateWeather(); // 40s simulados
     expect(getRainLevel()).toBe(0);
     drawWeather();
@@ -148,9 +151,8 @@ describe('initWeather + updateWeather + drawWeather (integração)', () => {
     expect(weatherLayer._rec.fills.length).toBe(0); // sem chuva nem clarão
   });
 
-  it('[Interface] Cidade após 30s: chove (rain overlay desenhado)', () => {
-    setCenarioValue('cidade');
-    const { weatherLayer } = setup();
+  it('[Interface] cenário COM chuva, após 30s: chove (rain overlay desenhado)', () => {
+    const { weatherLayer } = setup({ chuva: true });
     for (let i = 0; i < 60 * 32; i++) updateWeather(); // 32s → dentro da janela de garoa/chuva
     expect(getRainLevel()).toBeGreaterThan(0);
     drawWeather();
@@ -158,8 +160,7 @@ describe('initWeather + updateWeather + drawWeather (integração)', () => {
   });
 
   it('[Ponte] getRainLevel() é a ÚNICA forma de ler o nível — segue o mesmo cálculo de audio-ambient (getRainLevel)', () => {
-    setCenarioValue('cidade');
-    setup();
+    setup({ chuva: true });
     for (let i = 0; i < 60 * 32; i++) updateWeather();
     expect(getRainLevel()).toBe(getRainLevel()); // getter estável, não o valor cru mutável
     expect(typeof getRainLevel()).toBe('number');
@@ -187,8 +188,7 @@ describe('initWeather + updateWeather + drawWeather (integração)', () => {
   });
 
   it('[Trovão] chuva forte sustentada eventualmente chama thunder() (cadência aleatória real)', () => {
-    setCenarioValue('cidade');
-    const { thunderCalls } = setup();
+    const { thunderCalls } = setup({ chuva: true });
     // avança até estabilizar em chuva forte (c em [5,10) do ciclo) e sustenta por tempo suficiente p/ o CD estourar
     for (let i = 0; i < 60 * 300; i++) updateWeather();
     expect(thunderCalls.length).toBeGreaterThan(0);

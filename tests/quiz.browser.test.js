@@ -8,7 +8,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { initQuiz, generateBrailleCells, cKey } from '../app/js/game/quiz.js';
 import { reseed } from '../app/js/core/rng.js';
-import { players, setNumPlayersValue, setActivityValue } from '../app/js/core/state.js';
+import { players, setNumPlayersValue } from '../app/js/core/state.js';
+import { setActivityValue } from '../app/js/game/state.js'; // GAME desde a Fase B (ADR-0038)
 import { setCoins, coins, setQuizLevelValue } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
 
 const $ = (sel) => document.querySelector(sel);

@@ -14,7 +14,8 @@
 import { rnd, randInt } from '../core/rng.js';
 import { ehPerigo } from '../core/constants.js';
 import type { PlayerView } from '../core/entity.js';
-import { players, numPlayers, cenario as CENARIO } from '../core/state.js';
+import { players, numPlayers } from '../core/state.js';
+import { cenario as CENARIO } from './state.js'; // GAME desde a Fase B (ADR-0038)
 import { LOGICAL_W, LOGICAL_H, TILE } from '../core/constants.js';
 import { tileAt, solidAt } from '../core/collision.js';
 

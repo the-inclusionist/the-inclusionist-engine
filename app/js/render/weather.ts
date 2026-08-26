@@ -9,8 +9,11 @@
 // core/state.ts (shared state home); `rnd` from core/rng.ts (shared pure RNG) — same pattern as render/fx.ts.
 
 import { rnd } from '../core/rng.js';
-import { cenario, phase } from '../core/state.js';
-import { CENARIOS } from './cenario-data.js';
+import { phase } from '../core/state.js';
+// `cenario` e `CENARIOS` SAÍRAM (Fase B, ADR-0038): o cenário virou estado do JOGO (`game/state`), e este
+// módulo é engine — o gate de fronteira proíbe a importação. Em vez do VALOR, entra a PERGUNTA: `temChuva`.
+// Ficou melhor do que era: o módulo perguntava "qual tema, e o dado dele diz chuva?"; agora pergunta "chove
+// aqui?", que é a única coisa que ele precisa saber.
 
 // ---------------------------------------------------------------------------------------------
 // Pure logic (no PIXI/DOM) — rain intensity curve, thunder cadence, drop positions over time.
@@ -131,6 +134,8 @@ export interface WeatherCtx {
   getRm: () => { decor?: boolean };
   /** Called when thunder should rumble (platform/audio-ambient's `ambient.thunder`). */
   thunder: (inten: number) => void;
+  /** Chove no cenário atual? Uma PERGUNTA e não o id do cenário: quem tem o catálogo responde. */
+  temChuva: () => boolean;
 }
 
 let _weatherLayer: Gfx | null = null;
@@ -138,6 +143,7 @@ let _stage: StageLike | null = null;
 let _screen: { width: number; height: number } | null = null;
 let _getRm: (() => { decor?: boolean }) | null = null;
 let _thunder: ((inten: number) => void) | null = null;
+let _temChuva: (() => boolean) | null = null;
 
 let _rainLevel = 0, _weatherT = 0, _flash = 0, _thunderCD = 240, _aglomeracao = 0;
 let _rainDrops: RainDrop[] | null = null;
@@ -148,6 +154,7 @@ export function initWeather(ctx: WeatherCtx): void {
   _screen = ctx.screen;
   _getRm = ctx.getRm;
   _thunder = ctx.thunder;
+  _temChuva = ctx.temChuva;
 }
 
 /** Per-frame clima update (game.js calls this only while `phase==='playing'`, same as before). */
@@ -155,7 +162,7 @@ export function updateWeather(): void {
   _weatherT++;
   const sec = _weatherT / 60;
   const rm = _getRm ? _getRm() : {};
-  const temChuva = !!(cenario && CENARIOS[cenario]?.chuva);
+  const temChuva = _temChuva ? _temChuva() : false;
   const target = rainLevelTarget(sec, temChuva, !!rm.decor);
   _rainLevel = rampRainLevel(_rainLevel, target, 1 / 30); // rampa ~1s
   _aglomeracao = aglomeracaoAlvo(sec, temChuva, !!rm.decor); // já é rampa: nada a suavizar aqui

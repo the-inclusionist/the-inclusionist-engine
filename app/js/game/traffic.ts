@@ -10,7 +10,7 @@
 
 import { TILE } from '../core/constants.js';
 import { rnd, randInt } from '../core/rng.js';
-import { cenario } from '../core/state.js';
+import { cenario } from './state.js'; // GAME desde a Fase B (ADR-0038)
 
 export type LightState = 'green' | 'yellow' | 'red';
 

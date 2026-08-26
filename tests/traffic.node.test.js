@@ -4,7 +4,7 @@
 // do monólito (game.js drawSemaforo/initTraffic/spawnCar/setFrontDim/stepTraffic). Ver docs/plano-modularizacao-mapa.md.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { reseed } from '../app/js/core/rng.js';
-import { setCenarioValue } from '../app/js/core/state.js';
+import { setCenarioValue } from '../app/js/game/state.js'; // GAME desde a Fase B (ADR-0038)
 import {
   lightStateAt, planCarSpawn, nextSpawnThreshold, isBeforeStopLine, shouldBrake, advanceCar, isOffscreen,
   initTraffic, drawSemaforo, spawnCar, setFrontDim, stepTraffic, clearCars, getCars, getStreetY, SEM,

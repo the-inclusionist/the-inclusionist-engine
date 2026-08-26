@@ -25,7 +25,8 @@ import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import type { PlayerQuiz } from './entity.js'; // ADR-0039: o jogador carrega o SUPERTIPO, não a união
 import { rnd, randInt, shuffle } from '../core/rng.js';
-import { numPlayers, activity as ACTIVITY } from '../core/state.js';
+import { numPlayers } from '../core/state.js';
+import { activity as ACTIVITY } from './state.js'; // GAME desde a Fase B (ADR-0038)
 import { coins, quizLevel } from './state.js'; // item 19: `coins`/`quizLevel` sao estado do JOGO
 import { getActivity } from '../educational/activities-registry.js';
 import { SILABAS_WORDS, SILABA_POOL, type SyllableWord } from './activity-content.js';

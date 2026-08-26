@@ -55,3 +55,28 @@ export function setQuizLevelValue(n: number): void {
 // coisas ao mesmo tempo são o motivo de o setter existir: quem só muta veria a troca de array como um sumiço.
 export let coins: Coin[] = [];
 export function setCoins(arr: Coin[]): void { coins = arr; emit('coins', arr); }
+
+/* ===================== cenario e activity (ADR-0038, Fase B) ===================== */
+//
+// Chegaram de `core/state` em 2026-08-26. São GAME pelo critério do ADR-0038 — persistidos em chave
+// `kJogo()` —, e a forma veio inteira: binding vivo + setter que grava, persiste e emite.
+//
+// ⚠️ A ASSIMETRIA DE INICIALIZAÇÃO VEIO JUNTO, e é deliberado não consertá-la aqui. O `activity` lê o
+// armazenamento no import; o `cenario` nasce em 'cidade' e quem o restaura é o composition root
+// (`main.ts`, na linha do `setCenario(store.getComLegado(...))`). As duas formas funcionam e produzem o
+// mesmo resultado; unificá-las no mesmo commit em que o endereço muda tornaria impossível saber qual
+// metade quebrou, se quebrasse. Fica anotado como o próximo passo pequeno.
+
+/** O CENÁRIO ativo. `string` e não `string | null`: ninguém usa nulo como "ainda não escolhido", e o
+ *  `render/cenario-data` já cai em 'cidade' para tema desconhecido. */
+export let cenario: string = 'cidade';
+export function setCenarioValue(theme: string): void {
+  cenario = theme; store.set(store.KEYS.cenario, theme); emit('cenario', theme);
+}
+
+/** O ID DA ATIVIDADE escolhida. A validação contra o catálogo fica em `ui/activities-menu`; aqui é só o
+ *  valor cru, a persistência e o evento. */
+export let activity: string = store.getComLegado(store.KEYS.activity, store.KEYS.activityLegado, 'ludico');
+export function setActivityValue(id: string): void {
+  activity = id; store.set(store.KEYS.activity, id); emit('activity', id);
+}
