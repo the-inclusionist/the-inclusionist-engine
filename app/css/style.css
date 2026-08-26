@@ -14,6 +14,41 @@
   --ls:0.12em;   /* letter-spacing */
   --ws:0.16em;   /* word-spacing */
   --lh:1.5;      /* line-height */
+
+  /* ===== ORDEM-Z CANÔNICA — a faixa de OVERLAY do `core/layers.ts` (ADR-0020) =====
+     Estes valores são a MESMA fonte que o mundo usa em PIXI, trazida para o CSS. Eles existem antes do
+     primeiro consumidor DE PROPÓSITO, e o motivo é o mesmo que a Fase C deu ao barramento tipado: o contrato
+     precisa nascer certo em vez de ser retipado depois. `tests/z-order-css.node.test.js` compara este bloco,
+     valor a valor, com o `Z` do TypeScript — divergir fica vermelho.
+
+     ⚠️ NENHUM SELETOR AINDA OS USA, e isso NÃO é esquecimento. Adotá-los inverte três ordens que hoje valem,
+     e inverter ordem é decisão de produto:
+
+       · `.caption` (8) está ABAIXO de `#touch-controls` (14). Canonicamente CAPTIONS(26000) fica ACIMA de
+         TOUCH_CONTROLS(25000). A inversão CONSERTA um defeito — legenda é recurso de surdez, e controle de
+         toque cobrindo legenda é a coisa errada —, mas muda a tela.
+       · `.quiz` (12) está ABAIXO de `#touch-controls` (14); canonicamente DIALOGUE(27000) fica acima.
+       · `.skip-link` (100) está ACIMA dos modais (60). O comentário do `Z` põe o skip-link em CAPTIONS
+         (26000), o que o deixaria ABAIXO de MENU(30000) — e um "pular para o conteúdo" embaixo de um modal
+         não é alcançável. Aqui o comentário do `Z` é que está errado, não o CSS.
+
+     E DUAS COISAS NÃO TÊM SLOT: os dois pseudo-elementos do CRT (`crt-vig-1::before` em 5 e
+     `crt-scan-1::after` em 500). Pelo ADR-0020 o CRT é PÓS-PROCESSO, não camada — inventar um número para
+     ele repetiria o erro de categoria que a emenda de 2026-08-26 já registrou no `app.stage`.
+
+     ⚠️ E `z-index` de CSS NÃO É PLANO. `#game-hud` tem `z-index:4` e CRIA CONTEXTO DE EMPILHAMENTO, então o
+     `.screen-pause` (6) compete só lá dentro — o menu de pausa vive efetivamente em "4" na raiz. Uma lista
+     plana de valores globais não expressa isso. Adotar exige decidir, por elemento, em que contexto ele vive. */
+  --z-hud:24000;
+  --z-touch-controls:25000;
+  --z-captions:26000;
+  --z-dialogue:27000;
+  --z-game-msg:28000;
+  --z-modal-scrim:29000;
+  --z-menu:30000;
+  --z-menu-max:39999;
+  --z-transition:40000;
+  --z-debug:90000;
 }
 /* Emoji: usa o Noto Color Emoji do sistema (Chromebook/Android/Linux) e, se ausente, o woff2 embutido
    (offline). Se o arquivo não estiver presente, o navegador cai no emoji do SO — sem quebrar. */
