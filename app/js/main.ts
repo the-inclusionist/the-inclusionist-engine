@@ -12,7 +12,7 @@ import * as PIXI from 'pixi.js'; // PixiJS 7.4.2 via npm (Vite empacota; aposent
 import i18n, { t } from './core/i18n.js'; // internacionalização
 import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
-import { emit, vizMode, initVizMode, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, defaultReducedMotion } from './core/state.js'; // estado compartilhado
+import { emit, vizMode, initVizMode, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, menuIndexOn, defaultReducedMotion } from './core/state.js'; // estado compartilhado
 import { cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue } from './game/state.js'; // GAME (ADR-0038, Fase B)
 import { createRunState } from './core/run-state.js'; // ADR-0038 Fase B: a RODADA como fábrica
 import { criarCenasDoJogo, type Fase } from './game/cenas.js'; // as três cenas DESTE jogo (ADR-0030 C3)
@@ -1727,6 +1727,8 @@ const menuNav = initMenuNav({
   isNavigable: () => fatosDaCena().menuDePausa, // aqui menu e' coisa de pausa; noutro jogo pode ser sempre (ver o ctx)
   // O modo `accessibility` (ADR-0044, item 7) roda com o jogo ANDANDO, e por isso e' perguntado antes do
   // guarda de "navegavel". Quem sabe quem esta nele e' `ui/pause-icons`, dono da barra.
+  srSay,
+  comIndice: () => menuIndexOn,
   naBarraDe: (i) => pauseIcons.naBarraDe(i),
   navBar: (i, k) => pauseIcons.navBar(i, k),
   topVisibleOverlay: () => overlays.topVisibleOverlay(), closeById: (id) => overlays.closeById(id),

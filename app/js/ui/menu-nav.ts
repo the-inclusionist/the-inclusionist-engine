@@ -159,6 +159,7 @@ import { hasNavIntent as hasIntent } from '../input/edges.js';
 import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
 import { mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from './pause-icons.js';
+import { anunciarItem } from './item-announcement.js';
 import { passoNoAnel } from '../core/anel.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
@@ -246,6 +247,24 @@ export interface MenuNavCtx {
    * `phase === 'paused'` e um quiz responde `true` — cada um na sua língua, e nenhum dos dois mentindo.
    */
   isNavigable: () => boolean;
+  /**
+   * `core/a11y-sr.srSay` — a região `aria-live` "polite". INJETADO porque ela alcança o `document` na hora da
+   * chamada, e este módulo não pode alcançar documento nenhum por conta própria.
+   *
+   * O menu de PAUSA precisa dela e os diálogos não: eles selecionam por FOCO, e o leitor de tela anuncia o
+   * foco sozinho. A pausa seleciona por CLASSE (`.pm-sel`), porque é desenhada dentro da tela do jogador —
+   * e classe nenhuma dispara anúncio. Sem esta injeção o menu é mudo para quem o navega por escuta.
+   */
+  srSay: (texto: string) => void;
+  /**
+   * O índice "N de M" está ligado? (ADR-0044, item 3, e a XAG 106 exige que ele possa ser desligado.)
+   *
+   * PERGUNTADO ao ctx e não lido de `core/state`, e o motivo é o mesmo do `isNavigable`: enquanto este módulo
+   * importava `core/state`, um segundo jogo não tinha como trazer o próprio modelo — o quiz teve de se
+   * declarar "pausado" para navegar os menus dele. `tests/menu-nav.node.test.js` reprova se a aresta voltar,
+   * e ela quase voltou por aqui: eu tinha escrito o `import` antes de o gate me lembrar.
+   */
+  comIndice: () => boolean;
   /**
    * A tela `i` está no modo `accessibility` (ADR-0044, item 7)? Perguntado ANTES de `isNavigable`, porque
    * esse modo roda com o jogo ANDANDO — é a única coisa deste módulo que age fora da pausa.
@@ -394,7 +413,14 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
 
     // UMA LISTA, um anel. A barra de ícones saiu do cartão no item 7 do ADR-0044, e com ela saíram as quatro
     // regras de fronteira que ninguém conseguia descobrir sem esbarrar.
-    pauseSetSel(menu, items[passoNaPausa(items.length, items.indexOf(cur), k)]);
+    const n = passoNaPausa(items.length, items.indexOf(cur), k);
+    pauseSetSel(menu, items[n]);
+    // E O ITEM NOVO É FALADO. Este menu não usa foco do navegador — seleciona por classe, porque é desenhado
+    // dentro da tela do jogador —, então nada dispara anúncio sozinho: nem foco, nem `aria-activedescendant`,
+    // nem região viva. MEDIDO no jogo construído: a seta andava e o `#sr-status` ficava vazio. O item 3 do
+    // ADR-0044 pede posição e total "em todo lugar", e este era o lugar onde ele não tinha chegado — o menu
+    // que o item 5 reconstruiu.
+    ctx.srSay(anunciarItem({ rotulo: items[n].textContent || '', posicao: n + 1, total: items.length }, ctx.comIndice()));
   }
 
   /* ===================== teclado ===================== */

@@ -96,6 +96,8 @@ export interface CreateGameOptions {
    * Opcionais porque um hospedeiro pode não ter barra nenhuma — sem eles a resposta é "ninguém está nela" e
    * nada é chamado. O jogo de plataforma os fornece; um quiz sem HUD de a11y, não.
    */
+  /** O índice "N de M" está ligado? Ausente = sim. Ver `comIndice` em ui/menu-nav. */
+  readonly comIndice?: () => boolean;
   readonly naBarraDe?: (i: number) => boolean;
   readonly navBar?: (i: number, k: NavKeys) => void;
   /** Jogadores para o teclado remapeável. `Pick<ControlledPlayer,'ctrl'>` — esquema de teclas e nada mais. */
@@ -230,6 +232,10 @@ export function createGame(o: CreateGameOptions): Engine {
     getPauseMenu: declines.semMenuDePausa ? () => null : (i) => $<HTMLElement>(`#vp-pause-${i}`),
     setPhase: o.setPhase ?? (() => {}),
     setPauseActor: () => {},
+    srSay,
+    // Sem opinião declarada, o índice fica LIGADO: quem precisa dele para se orientar não tem como saber
+    // que ele existe se vier desligado (a mesma razão de o modo cego nascer com TTS e sonar).
+    comIndice: o.comIndice ?? (() => true),
     isNavigable: o.isNavigable ?? (() => true),
     // Um hospedeiro que nao tenha barra de acessibilidade responde "nunca" e nunca chama nada — o modo e'
     // opcional para o consumidor, obrigatorio para este jogo.

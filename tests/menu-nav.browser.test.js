@@ -90,7 +90,7 @@ const MARKUP = `
 function boot(over = {}) {
   document.body.innerHTML = MARKUP;
   setPhaseValue('paused');
-  const log = { phase: [], actor: [], padWiz: [], bar: [] };
+  const log = { phase: [], actor: [], padWiz: [], bar: [], said: [] };
   const naBarra = over.naBarra || new Set();
   const panel = initSettingsPanel({ $, $$, doc: document, computedZ: (el) => Number(getComputedStyle(el).zIndex) || 0 });
 
@@ -122,6 +122,8 @@ function boot(over = {}) {
     isNavigable: () => faseFalsa === 'paused',
     // O MODO `accessibility` (ADR-0044, item 7) é perguntado ANTES do guarda de "navegável", porque ele roda
     // com o jogo andando. Por padrão ninguém está nele; os casos que o exercitam mexem em `naBarra`.
+    srSay: (texto) => log.said.push(texto),
+    comIndice: () => true, // o índice do item 3 nasce ligado; ver `comIndice` no ctx de ui/menu-nav
     naBarraDe: (i) => naBarra.has(i),
     navBar: (i, k) => log.bar.push([i, k]),
     isCapturing: () => false,
@@ -350,6 +352,41 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     showPauses();
     nav.navPause($('#sp0'), 0, K({ no: true }));
     expect(log.phase).toContain('playing');
+  });
+
+  it('[Right] andar na lista de pausa FALA o item — senão o menu é mudo para quem o navega por escuta', () => {
+    // MEDIDO no jogo construído antes de este caso existir (`?x=84`): a seta movia o cursor de `resume` para
+    // `acessibilidade` e o `#sr-status` continuava VAZIO. Não havia foco (a pausa seleciona por CLASSE, não
+    // por foco do navegador), não havia `aria-activedescendant` e não havia região viva dentro do cartão —
+    // ou seja, nada em lugar nenhum contava para a criança que o cursor tinha andado.
+    //
+    // O item 3 do ADR-0044 diz "todo item navegável anuncia posição e total... em todo lugar — pausa, título,
+    // opções, atividades". Ele tinha chegado ao título e à barra de ícones e NÃO à lista de pausa, que é
+    // justamente o menu que o item 5 reconstruiu. A promessa mais visível do registro estava muda no lugar
+    // mais importante dele.
+    const { nav, log } = boot();
+    showPauses();
+    const menu = $('#sp0');
+    const itens = [...menu.querySelectorAll('.pause-menu:not([hidden]) .pm-btn')];
+    nav.pauseSetSel(menu, itens[0]);
+    log.said.length = 0;
+    nav.navPause(menu, 0, K({ down: true }));
+    expect(itens[1].classList.contains('pm-sel')).toBe(true);
+    expect(log.said.at(-1), 'o item novo tem de ser falado').toContain(itens[1].textContent.trim());
+    expect(log.said.at(-1), 'e com a posição no fim, como todo item de menu deste jogo').toContain('2 de ' + itens.length);
+  });
+
+  it('[Zero] confirmar e voltar NÃO falam item nenhum', () => {
+    // Só o ANDAR anuncia. Confirmar já tem a consequência dele (o painel que abre, o jogo que volta), e
+    // voltar já tem a dele; repetir o rótulo nesses dois seria falar por cima do que interessa.
+    const { nav, log } = boot();
+    showPauses();
+    const menu = $('#sp0');
+    nav.pauseSetSel(menu, [...menu.querySelectorAll('.pause-menu:not([hidden]) .pm-btn')][0]);
+    log.said.length = 0;
+    nav.navPause(menu, 0, K({ yes: true }));
+    nav.navPause(menu, 0, K({ no: true }));
+    expect(log.said).toEqual([]);
   });
 
   it('[Right] a PROMESSA do ADR-0044, no DOM: `quit` a uma tecla de `resume`', () => {
