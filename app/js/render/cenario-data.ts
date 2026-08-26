@@ -106,16 +106,32 @@ export interface Flora {
 export interface FaixaDePredios {
   /** y a partir do qual a faixa é SÓLIDA: abaixo desta linha é tudo prédio, sem buraco. */
   base: number;
-  /** Os topos possíveis, `[mais alto, mais baixo]` — em y, então o primeiro número é o MENOR. */
+  /**
+   * Os DOIS TONS DE PROFUNDIDADE, `[fundo, frente]`, desenhados nessa ordem.
+   *
+   * Cada camada de parallax tem duas fileiras no original, não uma — é o que dá o ar de cidade. A primeira
+   * versão deste gerador tinha só uma, e por isso a Cidade saiu chapada.
+   */
+  corpo: readonly [string, string];
+  /** Topos possíveis da fileira da FRENTE, `[mais alto, mais baixo]` — em y, o primeiro é o MENOR. */
   topo: readonly [number, number];
+  /** Idem para a fileira do FUNDO, que é mais alta e mais simples. */
+  topoFundo: readonly [number, number];
   /** As larguras possíveis de um prédio, em px. */
   largura: readonly [number, number];
-  /** Os dois tons do corpo, alternados prédio a prédio: é o que dá relevo sem desenhar sombra nenhuma. */
-  corpo: readonly [string, string];
-  /** Janela acesa e apagada. AUSENTE = distante demais para a janela resolver, que é o caso da camada 0. */
-  janela?: readonly [string, string];
-  /** Passo da grade de janelas, em px. Ignorado sem `janela`. */
-  passo?: number;
+  /**
+   * As cores da LUZ — janela ACESA, e só ela.
+   *
+   * ⚠️ NÃO EXISTE COR DE JANELA APAGADA, e essa foi a lição mais cara desta arte: a apagada é a parede. A
+   * primeira versão declarava um par "acesa/apagada" com dois tons quase idênticos, pintava TODA célula, e
+   * o resultado foi um quadriculado cinza. Pior: os dois tons que ela chamava de janela eram, na verdade, o
+   * segundo tom de MASSA — os prédios de trás.
+   *
+   * As luzes são QUENTES (R > B). Ausente = distante demais para acender.
+   */
+  luz?: readonly string[];
+  /** Fração média de janelas acesas. Varia por prédio em torno dela — uns quase escuros, outros cheios. */
+  aceso?: number;
 }
 
 /** O que todo tema tem, independentemente de como o fundo dele nasce. */
@@ -184,22 +200,28 @@ export const CENARIOS: Record<string, CenarioTema> = {
   // em que o Dev pediu chuva na Floresta — e o pior de uma condição dessas é que ela não avisa: quem lê
   // `render/weather` não tem como saber que existe uma lista de temas, porque não existe lista, existe um `if`.
   // Aqui a capacidade é DADO, e um tema novo declara a sua ao nascer.
-  // A CIDADE (ADR-0042). Os números saíram de decodificar `c4/c3/c2.png` e medir, não de escolher:
-  //   · c4 — opaca; céu #5d6f8e virando #374866 por volta de y=112; prédios distantes #495b7a/#4a5c7c
-  //     entre y=71 e y=127, em 318 das 400 colunas, SEM tom de janela distinto (a essa distância a janela
-  //     não resolve — e é por isso que a faixa 0 não declara `janela`).
-  //   · c3 — sólida a partir de y=126; topos de 52 a 127; corpo #465164 (72%) e #445062 (23%); janelas
-  //     #6b7e98 (3,3%) e #6e809b (0,8%).
-  //   · c2 — sólida a partir de y=112; topos de 80 a 116; corpo #2b3e49 (52%) e #2f404b (14%); janelas
-  //     #637980 (14,1%) e #5e777f (8,5%) — a camada próxima tem MUITO mais janela, que é o que a distância
-  //     faz com o detalhe.
+  // A CIDADE (ADR-0042), medida nos três PNG que ela substitui — e MEDIDA DE NOVO depois que a primeira
+  // versão saiu chapada na tela. O que a segunda medição corrigiu:
+  //
+  //   · as cores que eu tinha listado como "janela acesa/apagada" eram o SEGUNDO TOM DE MASSA (os prédios
+  //     de trás). Separando por temperatura, a luz é o que tem R > B — e ela é rara: 5,4% da área na
+  //     camada próxima, 0,28% na média, 0,04% na distante;
+  //   · cada camada tem DUAS fileiras de profundidade, não uma;
+  //   · as janelas são 2 px de largura por 3 a 5 de altura (263 na camada próxima), não pontos 2x2.
   cidade: {
     nome: 'cen.cidade', fundo: 'predios', chuva: true,
     sky: ['#5d6f8e', '#5d6f8e', '#5d6f8e', '#374866'],
     predios: [
-      { base: 112, topo: [71, 113], largura: [14, 34], corpo: ['#495b7a', '#4a5c7c'] },
-      { base: 126, topo: [52, 127], largura: [16, 40], corpo: ['#465164', '#445062'], janela: ['#6b7e98', '#6e809b'], passo: 6 },
-      { base: 112, topo: [80, 116], largura: [20, 46], corpo: ['#2b3e49', '#2f404b'], janela: ['#637980', '#5e777f'], passo: 5 },
+      // Camada 0 — a bruma. Duas profundidades quase iguais ao céu, e quase nenhuma luz.
+      { base: 144, topo: [96, 128], topoFundo: [71, 108], largura: [16, 40],
+        corpo: ['#4a5c7c', '#374866'], luz: ['#a5ac93', '#adb599'], aceso: 0.006 },
+      // Camada 1 — o meio. Os de trás são visivelmente mais claros (#6b7e98).
+      { base: 139, topo: [64, 122], topoFundo: [44, 100], largura: [14, 38],
+        corpo: ['#6b7e98', '#465164'], luz: ['#c2c0be', '#baada6', '#bfbdb9'], aceso: 0.022 },
+      // Camada 2 — a de perto, e a que carrega a cidade acesa. `base` 158 é a linha em que o original fica
+      // 100% sólido; acima dela a fileira da frente cobre ~70% das colunas e o resto é vão e fileira de trás.
+      { base: 158, topo: [88, 134], topoFundo: [66, 108], largura: [18, 44],
+        corpo: ['#637980', '#2b3e49'], luz: ['#c8c3b7', '#bdac8e', '#ccc4b5', '#d0ccc9'], aceso: 0.85 },
     ],
   },
   campo:     { nome: 'cen.campo',          fundo: 'morros', sky: ['#86c5e8', '#cfeecb'], cloud: ['#ffffff', '#d4e6f5'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens', 'passaros', 'borboletas'] },

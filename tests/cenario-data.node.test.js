@@ -47,20 +47,44 @@ describe('CENARIOS — o catálogo', () => {
     expect(CENARIOS.cidade.sky.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('CONTRATO das faixas de prédio: base dentro da tela, topos crescentes, larguras válidas, cores em #rrggbb', () => {
+  it('CONTRATO das faixas de prédio: base na tela, topos crescentes, DUAS profundidades, cores em #rrggbb', () => {
     for (const [i, f] of CENARIOS.cidade.predios.entries()) {
       expect(f.base, `faixa ${i} base`).toBeGreaterThan(0);
       expect(f.base).toBeLessThan(180);
       // `topo` é em y, então o PRIMEIRO número é o mais ALTO na tela e portanto o MENOR.
-      expect(f.topo[0], `faixa ${i} topo`).toBeLessThan(f.topo[1]);
-      expect(f.topo[0]).toBeGreaterThanOrEqual(0);
+      for (const t of [f.topo, f.topoFundo]) {
+        expect(t[0], `faixa ${i} topo`).toBeLessThan(t[1]);
+        expect(t[0]).toBeGreaterThanOrEqual(0);
+      }
+      // A fileira do FUNDO é mais alta que a da frente — é o que dá a profundidade dentro da camada.
+      expect(f.topoFundo[0], `faixa ${i}`).toBeLessThan(f.topo[0]);
+      expect(f.corpo, `faixa ${i}: sem os dois tons a camada vira uma fileira só`).toHaveLength(2);
       expect(f.largura[0]).toBeGreaterThan(0);
       expect(f.largura[0]).toBeLessThanOrEqual(f.largura[1]);
-      for (const c of [...f.corpo, ...(f.janela || [])]) expect(c, `faixa ${i}`).toMatch(HEX);
-      // A camada 0 é a distante: a essa distância a janela não resolve, e o PNG medido confirmou.
-      if (i === 0) expect(f.janela).toBeUndefined();
-      else expect(f.janela).toHaveLength(2);
+      for (const c of [...f.corpo, ...(f.luz || [])]) expect(c, `faixa ${i}`).toMatch(HEX);
     }
+  });
+
+  it('a LUZ é quente (R > B) e cresce com a proximidade — foi assim que o original se mediu', () => {
+    // A leitura errada desta propriedade é o que produziu a primeira arte, cinza: eu tinha tomado dois tons
+    // de MASSA por "janela acesa/apagada". Separando por temperatura, luz é o que tem R maior que B.
+    const rgb = (c) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+    const acesos = [];
+    for (const [i, f] of CENARIOS.cidade.predios.entries()) {
+      expect(f.luz, `faixa ${i} sem luz`).toBeTruthy();
+      for (const c of f.luz) {
+        const [r, , b] = rgb(c);
+        expect(r, `faixa ${i}: ${c} não é quente`).toBeGreaterThan(b);
+      }
+      // e a massa é FRIA, senão os dois se confundem — que foi exatamente o erro
+      for (const c of f.corpo) {
+        const [r, , b] = rgb(c);
+        expect(b, `faixa ${i}: massa ${c} não é fria`).toBeGreaterThanOrEqual(r);
+      }
+      acesos.push(f.aceso);
+    }
+    expect(acesos[2]).toBeGreaterThan(acesos[1]);
+    expect(acesos[1]).toBeGreaterThan(acesos[0]);
   });
 
   it('CONTRATO: todo tema de fundo GERADO traz cloud/hills como PARES de #rrggbb e decor não vazio', () => {
@@ -165,7 +189,7 @@ describe('hexN', () => {
     // nenhum, porque não tinha cor: era um PNG.
     for (const id of PREDIOS) { const T = CENARIOS[id];
       todas.push(...T.sky);
-      for (const f of T.predios) todas.push(...f.corpo, ...(f.janela || [])); }
+      for (const f of T.predios) todas.push(...f.corpo, ...(f.luz || [])); }
     expect(todas.length).toBeGreaterThan(40);
     for (const c of todas) { const n = hexN(c); expect(Number.isNaN(n)).toBe(false); expect(n).toBeGreaterThanOrEqual(0); expect(n).toBeLessThanOrEqual(0xffffff); }
   });
