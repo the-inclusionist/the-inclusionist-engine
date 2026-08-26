@@ -55,13 +55,19 @@ describe('o que embarca — item 18, reformulado', () => {
     expect(ts, 'tileset embarcado sem ninguém para lê-lo').toEqual([]);
   });
 
-  it('[Interface] os fundos de cenário EMBARCAM — é decisão do Dev, não descuido', () => {
-    // Este caso existe para o gate não ser "apertado" um dia por engano. A arte raster de fundo é escolha
-    // declarada (2026-08-25), e a Floresta vai ganhar as dela. Se estas linhas sumirem, alguém decidiu por
-    // conta própria algo que não era dele.
-    const fundos = EMBARCADOS.filter((f) => /cenarios\/[a-z]+\/c[234]\.png$/.test(f));
-    expect(fundos.length).toBeGreaterThanOrEqual(3);
-    expect(fundos.every((f) => f.startsWith('cenarios/'))).toBe(true);
+  it('[Interface] os fundos de cenário NÃO embarcam mais — e a troca foi decisão registrada', () => {
+    // ESTE CASO EXISTIA PARA IMPEDIR EXATAMENTE ISTO: ele dizia "os fundos de cenário EMBARCAM — é decisão
+    // do Dev, não descuido", e existia para o gate não ser apertado por engano por alguém que achasse
+    // raster feio. Ele fez o trabalho dele: falhou no commit que removeu os arquivos, e obrigou a mudança a
+    // ser deliberada.
+    //
+    // A decisão está no ADR-0042 (opção P1), e o motivo não é peso de pacote: é que o fundo da Cidade é a
+    // maior superfície da tela e, enquanto era PNG, era a única que o alto contraste jamais repintava.
+    //
+    // A inversão da asserção é o ponto: agora o gate protege o outro lado. Se um fundo raster voltar sem
+    // um registro que o autorize, é aqui que ele aparece.
+    const fundos = EMBARCADOS.filter((f) => /cenarios\//.test(f));
+    expect(fundos, 'fundo de cenário voltou a embarcar — ver ADR-0042 antes de mexer nesta linha').toEqual([]);
   });
 
   it('[Interface] os sprites de personagem EMBARCAM — são raster por enquanto', () => {

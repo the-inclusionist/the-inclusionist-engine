@@ -79,7 +79,7 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (D2-b).
 
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
-import type { CenarioTema } from './cenario-data.js';
+import type { CenarioTema, TemaMorros, TemaPredios, FaixaDePredios } from './cenario-data.js';
 
 /* ===================== os fatores de profundidade (dado) ===================== */
 
@@ -167,12 +167,12 @@ export interface ParallaxCtx {
   placeholderTex: (i: number) => unknown;                       // parallaxPlaceholder — fundo da Cidade sem PNG
   skyTex: (T: CenarioTema) => unknown;                          // themeSkyTexture — gradiente do céu do tema
   /** themeHillsTexture — banda de morros. O `tema` escolhe a SILHUETA plantada em cima (árvores, cerca). */
-  hillsTex: (T: CenarioTema, near: boolean, tema: string) => unknown;
+  hillsTex: (T: TemaMorros, near: boolean, tema: string) => unknown;
 
-  /* --- carga do PNG da Cidade --- */
-  Imagem: ImagemCtor;                                  // `Image` do DOM
-  texturaDeImagem: (img: unknown) => TexturaMutavel;   // PIXI.Texture.from
-  escalaNearest: number;                               // PIXI.SCALE_MODES.NEAREST
+  /** themeCitySkyTexture — céu + prédios distantes da Cidade, a única camada opaca dela. */
+  citySkyTex: (T: TemaPredios) => unknown;
+  /** themeSkylineTexture — uma faixa de prédios sobre transparência. */
+  skylineTex: (faixa: FaixaDePredios, semente: number) => unknown;
 
   /* --- estado vivo --- */
   rm: { parallax?: boolean };        // `const` mutado in place (movimento reduzido) → VALOR
@@ -222,25 +222,19 @@ export function createParallax(ctx: ParallaxCtx): ParallaxApi {
     if (ctx.getVizMode() === 'normal') layers[i]!.texture = t; // nos modos acessíveis quem pinta é viz-setters
   }
 
+  /**
+   * TODA TROCA DE TEMA É SÍNCRONA AGORA (ADR-0042), e isso é mais que uma simplificação.
+   *
+   * Enquanto a Cidade vinha de PNG, este caminho era assíncrono e carregava a corrida junto: três `Image`
+   * baixando, e cada `onload` tendo de perguntar `getCenario() !== theme` antes de pintar, porque a criança
+   * podia ter trocado de cenário no meio. Isso sumiu com os arquivos — não há mais o que baixar, e portanto
+   * não há mais corrida que possa perder.
+   */
   function aplicarTemaParallax(theme: string, T: CenarioTema): void {
-    if (T.fundo === 'gerado') { // céu-gradiente + 2 bandas de morros (fórmulas da v3); síncrono, sem corrida
-      const texs = [ctx.skyTex(T), ctx.hillsTex(T, false, theme), ctx.hillsTex(T, true, theme)];
-      layers.forEach((_ts, i) => vestir(i, texs[i]));
-      return;
-    }
-    layers.forEach((_ts, i) => { // Cidade: PNG com fallback p/ placeholder
-      const n = ARQUIVO_POR_CAMADA[i]!, img = new ctx.Imagem();
-      img.onload = () => {
-        if (ctx.getCenario() !== theme) return; // trocaram de cenário enquanto isto baixava: descarta
-        const t = ctx.texturaDeImagem(img); t.baseTexture.scaleMode = ctx.escalaNearest;
-        vestir(i, t);
-      };
-      img.onerror = () => {
-        if (ctx.getCenario() !== theme) return;
-        vestir(i, ctx.placeholderTex(i));
-      };
-      img.src = 'assets/cenarios/' + theme + '/c' + n + '.png';
-    });
+    const texs = T.fundo === 'predios'
+      ? [ctx.citySkyTex(T), ctx.skylineTex(T.predios[1], 977), ctx.skylineTex(T.predios[2], 131)]
+      : [ctx.skyTex(T), ctx.hillsTex(T, false, theme), ctx.hillsTex(T, true, theme)];
+    layers.forEach((_ts, i) => vestir(i, texs[i]));
   }
 
   return { layers, texNormal, updateParallax, aplicarTemaParallax };

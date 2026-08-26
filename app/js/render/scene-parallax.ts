@@ -6,6 +6,7 @@
 
 import { makeCanvas, tex } from './canvas.js';
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
+import type { CenarioTema, TemaMorros, TemaPredios, FaixaDePredios } from './cenario-data.js';
 
 /** Um sol baixo com leque de raios, assado na textura do céu. Ver `pintarSol`. */
 export interface Sol {
@@ -14,14 +15,12 @@ export interface Sol {
   y: number;     // centro do disco, em fração da ALTURA (0.5 = a linha do horizonte)
 }
 
-/** A scenery theme's parallax colors. */
-export interface ParallaxTheme {
-  /** Paradas do gradiente vertical do céu, do topo (índice 0) ao rodapé. DUAS ou MAIS — ver `themeSkyTexture`. */
-  sky: readonly string[];
-  hills: readonly [string, string];
-  /** Sol + raios. Ausente = céu de puro gradiente, que é o que os outros temas são. */
-  sol?: Sol;
-}
+// `ParallaxTheme` SAIU (ADR-0039). Era uma redescrição de `CenarioTema` — a terceira vítima do mesmo padrão
+// no repositório —, e ela NARROWED em vez de generalizar: declarava `sky` e `hills` obrigatórios enquanto o
+// dono os tinha opcionais, então o tema real não entrava na função que existia para desenhá-lo, e o erro
+// caía no `main.ts` falando de duas funções em vez da causa. O dono agora é uma união discriminada e este
+// módulo a importa: quem desenha morro pede `TemaMorros`, quem desenha prédio pede `FaixaDePredios`, e o
+// compilador cobra o `fundo` no ponto de chamada.
 
 /** Hill silhouette height at column `x` (v3 drawHillBand: double sine). `near` = the front (taller) band. */
 export function hillHeight(x: number, near: boolean): number {
@@ -61,7 +60,7 @@ function rgba0(hex: string): string {
 }
 
 /** Largura da textura do céu. 64 basta para um gradiente (ele é constante em x); um SOL precisa da tela toda. */
-export function larguraDoCeu(T: ParallaxTheme): number { return T.sol ? LOGICAL_W : 64; }
+export function larguraDoCeu(T: CenarioTema): number { return T.sol ? LOGICAL_W : 64; }
 
 /**
  * Onde cada cor do céu cai, em PIXELS de altura. Separado do desenho porque é a parte que se pode AFERIR: o
@@ -113,7 +112,7 @@ export function pintarSol(c: CanvasRenderingContext2D, w: number, h: number, sol
 }
 
 /** Theme sky: vertical gradient over `T.sky` (evenly spaced stops), plus the theme's sun when it has one. */
-export function themeSkyTexture(T: ParallaxTheme): unknown {
+export function themeSkyTexture(T: CenarioTema): unknown {
   const w = larguraDoCeu(T), h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
   const g = c.createLinearGradient(0, 0, 0, h);
   for (const p of paradasDoCeu(T.sky, h)) g.addColorStop(p.y / h, p.cor);
@@ -202,7 +201,74 @@ export const SILHUETAS: Readonly<Record<string, { far?: Silhueta; near?: Silhuet
  * Theme hills band (v3 drawHillBand): double sine, transparent above the silhouette. `near` = the front band.
  * `tema` escolhe a silhueta plantada em cima da faixa; sem tema conhecido, sai a faixa lisa de antes.
  */
-export function themeHillsTexture(T: ParallaxTheme, near: boolean, tema = ''): unknown {
+/* ===================== os prédios (a Cidade) ===================== */
+//
+// O SKYLINE, POR REGRA — e a regra é a metade dos três PNG que valia a pena salvar (ADR-0042).
+//
+// Os prédios ENCOSTAM uns nos outros, sem vão. Não é economia: é o que a medição mostrou. Abaixo da linha
+// `base` os três originais cobrem 100% das colunas, e o recorte irregular é só o dos TOPOS. Um vão entre
+// prédios abriria buraco de céu onde o original tinha parede.
+//
+// Determinístico por `hash01`, e é isso que permite testar a imagem sem olhar para ela: a mesma semente
+// devolve o mesmo skyline, sempre. Um `Math.random()` aqui tornaria o teste uma foto do acaso.
+
+/** Pinta uma faixa de prédios no contexto dado. Compartilhada pelas duas texturas de prédio da Cidade. */
+/** Exportada para o teste: o contexto entra por parâmetro, como em `pintarSol`, e um contexto falso que
+ *  grava os `fillRect` deixa afirmar as propriedades da faixa sem navegador nenhum. */
+export function desenharPredios(c: CanvasRenderingContext2D, w: number, h: number, faixa: FaixaDePredios, semente: number): void {
+  const [topoAlto, topoBaixo] = faixa.topo;
+  const [largMin, largMax] = faixa.largura;
+  let x = 0;
+  for (let n = 0; x < w; n++) {
+    const larg = Math.round(largMin + hash01(x + semente * 13) * (largMax - largMin));
+    // O último prédio vai até a borda: um resto de 3 px viraria uma ripa fina na emenda do azulejo.
+    const largura = x + larg > w - largMin ? w - x : larg;
+    const topo = Math.round(topoAlto + hash01(x * 7 + semente) * (topoBaixo - topoAlto));
+
+    c.fillStyle = faixa.corpo[n % 2]!;
+    c.fillRect(x, topo, largura, h - topo);
+    // ABAIXO DA `base` NÃO PODE FALTAR NADA: um prédio mais baixo que ela ganha o pé preenchido no mesmo
+    // tom, senão aparece céu onde o original tinha parede.
+    if (topo > faixa.base) c.fillRect(x, faixa.base, largura, h - faixa.base);
+
+    if (faixa.janela) {
+      const passo = faixa.passo ?? 5;
+      const [acesa, apagada] = faixa.janela;
+      for (let jy = Math.min(topo, faixa.base) + 2; jy < h - 2; jy += passo) {
+        for (let jx = x + 2; jx < x + largura - 2; jx += passo) {
+          c.fillStyle = hash01(jx * 31 + jy * 17 + semente) < 0.45 ? acesa! : apagada!;
+          c.fillRect(jx, jy, 2, 2);
+        }
+      }
+    }
+    x += largura;
+  }
+}
+
+/**
+ * Camada 0 da Cidade: o céu inteiro E os prédios distantes assados nele.
+ *
+ * É a única camada OPACA das três, e é assim no original — o `c4.png` não tinha transparência nenhuma. Os
+ * prédios daqui não declaram `janela`: a essa distância ela não resolve, e o PNG medido confirma (dois tons
+ * de corpo, nenhum tom de janela distinto).
+ */
+export function themeCitySkyTexture(T: TemaPredios): unknown {
+  const w = 1280, h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
+  const g = c.createLinearGradient(0, 0, 0, h);
+  for (const p of paradasDoCeu(T.sky, h)) g.addColorStop(p.y / h, p.cor);
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+  desenharPredios(c, w, h, T.predios[0], 311);
+  return tex(cv);
+}
+
+/** Camadas 1 e 2 da Cidade: prédios sobre TRANSPARÊNCIA, para o céu da camada 0 aparecer atrás. */
+export function themeSkylineTexture(faixa: FaixaDePredios, semente: number): unknown {
+  const w = 1280, h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
+  desenharPredios(c, w, h, faixa, semente);
+  return tex(cv);
+}
+
+export function themeHillsTexture(T: TemaMorros, near: boolean, tema = ''): unknown {
   const w = 1280, h = LOGICAL_H, cv = makeCanvas(w, h), c = cv.getContext('2d')!;
   const horizon = Math.round(h * 0.5), baseY = horizon + (near ? 16 : 4);
   const linha = (x: number): number => Math.round(baseY - hillHeight(x, near));

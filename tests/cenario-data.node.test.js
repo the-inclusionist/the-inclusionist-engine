@@ -20,7 +20,8 @@ import { describe, it, expect } from 'vitest';
 import { CENARIOS, THEME_FLORA, CENARIO_PADRAO, hexN, normalizarCenario } from '../app/js/render/cenario-data.js';
 
 const IDS = ['cidade', 'campo', 'cemiterio', 'espaco', 'floresta'];
-const GERADOS = IDS.filter((k) => CENARIOS[k].fundo === 'gerado');
+const MORROS = IDS.filter((k) => CENARIOS[k].fundo === 'morros');
+const PREDIOS = IDS.filter((k) => CENARIOS[k].fundo === 'predios');
 const HEX = /^#[0-9a-f]{6}$/;
 // O vocabulário que render/scene-sky.stepV3Decor sabe interpretar (um `d.includes(...)` por item).
 const DECOR_CONHECIDO = ['nuvens', 'passaros', 'borboletas', 'sparkles', 'minhocas', 'nevoa', 'vagalumes'];
@@ -36,18 +37,34 @@ describe('CENARIOS — o catálogo', () => {
     for (const id of IDS) expect(CENARIOS[id].nome.length).toBeGreaterThan(0);
   });
 
-  it('a Cidade é hoje o único tema de fundo PNG, e não traz cor nenhuma', () => {
-    // "hoje" é deliberado: o Dev pediu fundo raster para a Floresta, e quando a arte chegar ela entra aqui
-    // sem perder flora nem céu vivo — que é exatamente o que a separação do antigo `v3` passou a permitir.
-    expect(CENARIOS.cidade.fundo).toBe('png');
-    expect(CENARIOS.cidade.sky).toBeUndefined();
-    expect(CENARIOS.cidade.hills).toBeUndefined();
-    expect(CENARIOS.cidade.cloud).toBeUndefined();
-    expect(GERADOS).toHaveLength(4);
+  it('a Cidade é o único tema de PRÉDIOS, e traz uma faixa por camada de parallax', () => {
+    // Era o único de fundo PNG até o ADR-0042. Agora é gerada como as outras — a diferença é que o relevo
+    // dela é skyline e não morro —, e por isso ela ganhou `sky` e perdeu a exceção.
+    expect(PREDIOS).toEqual(['cidade']);
+    expect(MORROS).toHaveLength(4);
+    expect(CENARIOS.cidade.predios).toHaveLength(3); // uma por camada de parallax
+    expect(CENARIOS.cidade.hills).toBeUndefined();   // prédio não é morro
+    expect(CENARIOS.cidade.sky.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('CONTRATO das faixas de prédio: base dentro da tela, topos crescentes, larguras válidas, cores em #rrggbb', () => {
+    for (const [i, f] of CENARIOS.cidade.predios.entries()) {
+      expect(f.base, `faixa ${i} base`).toBeGreaterThan(0);
+      expect(f.base).toBeLessThan(180);
+      // `topo` é em y, então o PRIMEIRO número é o mais ALTO na tela e portanto o MENOR.
+      expect(f.topo[0], `faixa ${i} topo`).toBeLessThan(f.topo[1]);
+      expect(f.topo[0]).toBeGreaterThanOrEqual(0);
+      expect(f.largura[0]).toBeGreaterThan(0);
+      expect(f.largura[0]).toBeLessThanOrEqual(f.largura[1]);
+      for (const c of [...f.corpo, ...(f.janela || [])]) expect(c, `faixa ${i}`).toMatch(HEX);
+      // A camada 0 é a distante: a essa distância a janela não resolve, e o PNG medido confirmou.
+      if (i === 0) expect(f.janela).toBeUndefined();
+      else expect(f.janela).toHaveLength(2);
+    }
   });
 
   it('CONTRATO: todo tema de fundo GERADO traz cloud/hills como PARES de #rrggbb e decor não vazio', () => {
-    for (const id of GERADOS) {
+    for (const id of MORROS) {
       const T = CENARIOS[id];
       for (const campo of ['cloud', 'hills']) {
         expect(T[campo], id + '.' + campo).toBeDefined();
@@ -63,7 +80,7 @@ describe('CENARIOS — o catálogo', () => {
     // Este caso exigia exatamente DUAS e reprovou o pôr do sol da Floresta, com razão: o contrato tinha
     // mudado. Um par continua sendo válido (é o que os outros três temas são), mas "par" deixou de ser a
     // regra — o que a regra sempre quis dizer é "cores de verdade, e mais de uma".
-    for (const id of GERADOS) {
+    for (const id of MORROS) {
       const ceu = CENARIOS[id].sky;
       expect(ceu, id + '.sky').toBeDefined();
       expect(ceu.length, id + '.sky').toBeGreaterThanOrEqual(2);
@@ -91,18 +108,18 @@ describe('CENARIOS — o catálogo', () => {
     expect(CENARIOS.floresta.sol.cor).toMatch(HEX);
     expect(CENARIOS.floresta.sol.y).toBeGreaterThan(0.40);
     expect(CENARIOS.floresta.sol.y).toBeLessThanOrEqual(0.50);
-    expect(GERADOS.filter((id) => CENARIOS[id].sol)).toEqual(['floresta']);
+    expect(MORROS.filter((id) => CENARIOS[id].sol)).toEqual(['floresta']);
   });
 
   it('CONTRATO: todo nome de decor é do vocabulário que scene-sky sabe interpretar', () => {
-    for (const id of GERADOS) for (const d of CENARIOS[id].decor) expect(DECOR_CONHECIDO, id + ' → ' + d).toContain(d);
+    for (const id of MORROS) for (const d of CENARIOS[id].decor) expect(DECOR_CONHECIDO, id + ' → ' + d).toContain(d);
   });
 
   // `stepV3Decor` desenha nuvem com `if (d.includes('nuvens') && T.cloud)`: pedir nuvem sem paleta não estoura,
   // só não desenha. É este o par que importa — o inverso ("todo tema TEM de usar nuvens") seria uma amarra
   // gratuita contra um tema futuro de céu limpo.
   it('CONTRATO: quem pede "nuvens" no decor tem a paleta cloud (senão a nuvem some sem erro)', () => {
-    for (const id of GERADOS) if (CENARIOS[id].decor.includes('nuvens')) expect(CENARIOS[id].cloud, id).toBeDefined();
+    for (const id of MORROS) if (CENARIOS[id].decor.includes('nuvens')) expect(CENARIOS[id].cloud, id).toBeDefined();
   });
 });
 
@@ -121,7 +138,7 @@ describe('THEME_FLORA — a tabela irmã', () => {
   });
 
   it('toda flora traz as cinco cores e ao menos uma pétala, todas em #rrggbb', () => {
-    for (const id of GERADOS) {
+    for (const id of MORROS) {
       const fl = THEME_FLORA[id];
       for (const campo of ['base', 'top', 'bLt', 'bDk', 'center']) expect(fl[campo], id + '.' + campo).toMatch(HEX);
       expect(fl.petals.length, id + '.petals').toBeGreaterThan(0);
@@ -130,7 +147,7 @@ describe('THEME_FLORA — a tabela irmã', () => {
   });
 
   it('o tufo CLARO e o ESCURO são cores diferentes (senão a grama vira um bloco chapado)', () => {
-    for (const id of GERADOS) expect(THEME_FLORA[id].bLt, id).not.toBe(THEME_FLORA[id].bDk);
+    for (const id of MORROS) expect(THEME_FLORA[id].bLt, id).not.toBe(THEME_FLORA[id].bDk);
   });
 });
 
@@ -142,8 +159,13 @@ describe('hexN', () => {
   });
   it('Boundary: toda cor das duas tabelas cabe em 24 bits', () => {
     const todas = [];
-    for (const id of GERADOS) { const T = CENARIOS[id], fl = THEME_FLORA[id];
+    for (const id of MORROS) { const T = CENARIOS[id], fl = THEME_FLORA[id];
       todas.push(...T.sky, ...T.cloud, ...T.hills, fl.base, fl.top, fl.bLt, fl.bDk, fl.center, ...fl.petals); }
+    // A Cidade entra pelas cores DELA — o céu e os seis tons de prédio. Antes ela não entrava neste caso
+    // nenhum, porque não tinha cor: era um PNG.
+    for (const id of PREDIOS) { const T = CENARIOS[id];
+      todas.push(...T.sky);
+      for (const f of T.predios) todas.push(...f.corpo, ...(f.janela || [])); }
     expect(todas.length).toBeGreaterThan(40);
     for (const c of todas) { const n = hexN(c); expect(Number.isNaN(n)).toBe(false); expect(n).toBeGreaterThanOrEqual(0); expect(n).toBeLessThanOrEqual(0xffffff); }
   });

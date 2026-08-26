@@ -40,18 +40,22 @@ const rel = (p) => relative(APP, p).split(sep).join('/');
 const PERMITIDO = 'public/assets/sprites/';
 
 /**
- * Dívida CONHECIDA em 2026-08-25 — os três fundos de parallax da Cidade. SÓ ENCOLHE.
+ * A LISTA ESTÁ VAZIA, e este é o dia em que o item 18 deixou de ser promessa.
  *
- * Medidos antes de virarem linha aqui: uma cobertura gulosa 2D por retângulos de cor uniforme precisa de
- * 2.065, 2.899 e 6.418 retângulos (11.382 no total), contra os "44 e 62" que a pipeline supunha — aqueles
- * números são dos TILES, que já são dados em `render/city-tiles` a 100% de fidelidade. Reproduzi-los como
- * dados não está disponível a custo razoável; gerá-los é arte nova. Ver a issue #74.
+ * Ela guardava os três fundos de parallax da Cidade, medidos antes de virarem linha aqui: uma cobertura
+ * gulosa 2D por retângulos de cor uniforme precisa de 2.065, 2.899 e 6.418 (11.382 no total), contra os
+ * "44 e 62" que a pipeline supunha — aqueles números eram dos TILES, que já eram dados em
+ * `render/city-tiles` a 100% de fidelidade. Reproduzi-los como dados nunca esteve disponível a custo
+ * razoável, e por isso o ADR-0042 escolheu a outra saída: REDESENHÁ-LOS por regra.
+ *
+ * O que decidiu não foi arquitetura, foi acessibilidade. O fundo da Cidade é a maior superfície da tela, e
+ * enquanto era PNG era a única coisa que o alto contraste jamais repintava — uma criança com baixa visão
+ * recebia o jogo inteiro repintado e um fundo intacto atrás, que é pior que não ter o modo.
+ *
+ * ⚠️ ELA SÓ ENCOLHE, e agora só pode crescer com uma decisão registrada. Uma linha nova aqui é uma exceção
+ * PERMANENTE ao pilar 1, e um pilar com exceção permanente é uma frase, não uma regra.
  */
-const PNG_CONHECIDOS = [
-  'public/assets/cenarios/cidade/c2.png',
-  'public/assets/cenarios/cidade/c3.png',
-  'public/assets/cenarios/cidade/c4.png',
-];
+const PNG_CONHECIDOS = [];
 
 const FORA = pngs(APP).map(rel).filter((p) => !p.startsWith(PERMITIDO)).sort();
 
@@ -70,15 +74,18 @@ describe('item 18 — "arte = dados" deixa de ser promessa', () => {
     }
   });
 
-  it('[Boundary] a dívida cabe em TRÊS arquivos — o número é o que diz quanto falta para o pilar valer', () => {
-    // Não é decoração: é a diferença entre "o pilar não vale" e "o pilar está a três arquivos de valer".
-    expect(FORA).toHaveLength(3);
+  it('[Boundary] a dívida é ZERO — o pilar 1 vale, e este número é a diferença entre valer e quase valer', () => {
+    // O caso dizia "a dívida cabe em TRÊS arquivos", e o número era a distância que faltava. Ele chegou.
+    // Continua sendo um contador e não uma decoração: o dia em que voltar a subir, sobe aqui primeiro.
+    expect(FORA).toHaveLength(0);
   });
 
-  it('[Right] os três são do MESMO cenário — a exceção é uma, não um hábito', () => {
-    // Se um segundo tema começasse a trazer fundos em PNG, o caso acima ainda passaria por um tempo (o
-    // contador subiria e alguém o ajustaria). Este diz o que realmente importa: a exceção não se espalha.
-    const temas = new Set(FORA.map((p) => p.split('/').slice(-2)[0]));
-    expect([...temas]).toEqual(['cidade']);
+  it('[Right] o único lugar com PNG é a arte de PERSONAGEM, e ela é a exceção declarada', () => {
+    // Antes este caso dizia "os três são do mesmo cenário — a exceção é uma, não um hábito". Zerada a
+    // dívida, o que resta afirmar é o outro lado da mesma frase: que TODO PNG que existe está no lugar
+    // onde o pilar admite que ele esteja, e nenhum fora.
+    const dentro = pngs(APP).map(rel).filter((p) => p.startsWith(PERMITIDO));
+    expect(dentro.length, 'a arte de personagem sumiu — isto não é um gate de PNG a menos').toBeGreaterThan(0);
+    expect(FORA).toEqual([]);
   });
 });

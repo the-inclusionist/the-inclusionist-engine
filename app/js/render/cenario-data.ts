@@ -90,18 +90,43 @@ export interface Flora {
  *   · `decor`     — que decoração viva o céu recebe. Lido por render/scene-sky, pela PRESENÇA, não por rótulo.
  * A flora segue a mesma regra: quem tem entrada em THEME_FLORA tem flora, e ponto.
  */
-export interface CenarioTema {
+/**
+ * UMA FAIXA DE PRÉDIOS de uma camada de parallax — o skyline da Cidade, como DADO (ADR-0042).
+ *
+ * TODO NÚMERO AQUI FOI MEDIDO nos três PNG que esta faixa substitui, não escolhido. O ADR-0042 registra por
+ * que eles não podiam ser reproduzidos: os fundos precisam de 11.382 retângulos de cor uniforme (2.065 +
+ * 2.899 + 6.418, cobertura gulosa 2D), duas a três ordens de grandeza acima do que a pipeline estimava,
+ * porque 400×180 com 171 cores é arte desenhada à mão e não geometria.
+ *
+ * O que se salva medindo, então, não é o pixel — é a REGRA: onde a faixa fica sólida, quanto os topos
+ * variam, quais são os dois tons do corpo e os dois da janela. Isso a torna RECOLORÍVEL, que é o que o
+ * pilar 1 existe para comprar: o alto contraste repinta um dado e não repinta um PNG. E a Cidade é a maior
+ * superfície da tela — sob PNG, era a única coisa que o modo de alto contraste jamais alcançava.
+ */
+export interface FaixaDePredios {
+  /** y a partir do qual a faixa é SÓLIDA: abaixo desta linha é tudo prédio, sem buraco. */
+  base: number;
+  /** Os topos possíveis, `[mais alto, mais baixo]` — em y, então o primeiro número é o MENOR. */
+  topo: readonly [number, number];
+  /** As larguras possíveis de um prédio, em px. */
+  largura: readonly [number, number];
+  /** Os dois tons do corpo, alternados prédio a prédio: é o que dá relevo sem desenhar sombra nenhuma. */
+  corpo: readonly [string, string];
+  /** Janela acesa e apagada. AUSENTE = distante demais para a janela resolver, que é o caso da camada 0. */
+  janela?: readonly [string, string];
+  /** Passo da grade de janelas, em px. Ignorado sem `janela`. */
+  passo?: number;
+}
+
+/** O que todo tema tem, independentemente de como o fundo dele nasce. */
+interface TemaBase {
   /** CHAVE i18n do nome exibido. Chave e não texto: tabela de módulo resolvida no import congelaria o idioma
    *  no boot (ver a nota em input/devices). Quem exibe resolve com `t()`. */
   nome: string;
-  /** De onde vêm as 3 camadas de fundo: `'gerado'` das cores abaixo, ou `'png'` de `cenarios/<tema>/c4|3|2.png`. */
-  fundo: 'gerado' | 'png';
   /** Paradas do gradiente vertical do céu, do TOPO ao rodapé, distribuídas por igual. DUAS ou MAIS: com N
-   *  paradas, a de índice i cai em y = 180·i/(N-1) — é assim que se escolhe a ALTURA de uma cor. Só
-   *  `fundo:'gerado'`. Ver `render/scene-parallax.themeSkyTexture`. */
-  sky?: readonly string[];
-  cloud?: [string, string]; // nuvem de tela: corpo + sombra — só `fundo:'gerado'`
-  hills?: [string, string]; // as duas bandas de morro: [fundo, frente] — só `fundo:'gerado'`
+   *  paradas, a de índice i cai em y = 180·i/(N-1) — é assim que se escolhe a ALTURA de uma cor. */
+  sky: readonly string[];
+  cloud?: [string, string]; // nuvem de tela: corpo + sombra
   /** Sol baixo com leque de raios, assado na textura do céu. Ausente = céu de puro gradiente. */
   sol?: { cor: string; x: number; y: number };
   /** Este tema tem CHUVA (ciclo do clima em render/weather). Ausente = sempre seco. */
@@ -111,6 +136,31 @@ export interface CenarioTema {
   nuvens?: number;
   decor?: string[];         // decoração viva ligada neste tema (render/scene-sky.stepV3Decor)
 }
+
+/** Fundo de MORROS: céu em gradiente + duas bandas de morro. Os quatro temas da v3. */
+export interface TemaMorros extends TemaBase {
+  fundo: 'morros';
+  /** As duas bandas de morro: `[fundo, frente]`. */
+  hills: readonly [string, string];
+}
+
+/** Fundo de PRÉDIOS: céu em gradiente + três faixas de skyline. A Cidade, e só ela por enquanto. */
+export interface TemaPredios extends TemaBase {
+  fundo: 'predios';
+  /** Uma faixa por camada de parallax, do mais distante ao mais próximo. */
+  predios: readonly [FaixaDePredios, FaixaDePredios, FaixaDePredios];
+}
+
+/**
+ * O tema, e ele é uma UNIÃO DISCRIMINADA de propósito.
+ *
+ * Antes eram `fundo: 'gerado' | 'png'` com `sky?` e `hills?` opcionais, e o invariante de verdade — *quem é
+ * gerado TEM céu e morros* — não morava em lugar nenhum: era uma frase num comentário e um `if` em
+ * `render/parallax`. Quem lesse o tipo via quatro campos que podiam faltar; quem lesse o código via que
+ * nunca faltavam. Agora o compilador cobra, e `render/scene-parallax` deixou de precisar redescrever isto
+ * como `ParallaxTheme` — o que era o defeito do ADR-0039 outra vez, numa terceira vítima.
+ */
+export type CenarioTema = TemaMorros | TemaPredios;
 
 /** O tema para o qual todo valor desconhecido cai. */
 export const CENARIO_PADRAO = 'cidade';
@@ -134,10 +184,27 @@ export const CENARIOS: Record<string, CenarioTema> = {
   // em que o Dev pediu chuva na Floresta — e o pior de uma condição dessas é que ela não avisa: quem lê
   // `render/weather` não tem como saber que existe uma lista de temas, porque não existe lista, existe um `if`.
   // Aqui a capacidade é DADO, e um tema novo declara a sua ao nascer.
-  cidade:    { nome: 'cen.cidade', fundo: 'png', chuva: true },
-  campo:     { nome: 'cen.campo',          fundo: 'gerado', sky: ['#86c5e8', '#cfeecb'], cloud: ['#ffffff', '#d4e6f5'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens', 'passaros', 'borboletas'] },
-  cemiterio: { nome: 'cen.cemiterio',      fundo: 'gerado', sky: ['#2b2540', '#5a4f6b'], cloud: ['#d9c4dd', '#a98fb6'], hills: ['#4a5f55', '#33473d'], decor: ['nuvens', 'passaros', 'sparkles', 'minhocas', 'nevoa'] },
-  espaco:    { nome: 'cen.espaco',         fundo: 'gerado', sky: ['#05030f', '#161033'], cloud: ['#3a3550', '#262238'], hills: ['#1e3030', '#142024'], decor: ['nuvens', 'sparkles', 'vagalumes'] },
+  // A CIDADE (ADR-0042). Os números saíram de decodificar `c4/c3/c2.png` e medir, não de escolher:
+  //   · c4 — opaca; céu #5d6f8e virando #374866 por volta de y=112; prédios distantes #495b7a/#4a5c7c
+  //     entre y=71 e y=127, em 318 das 400 colunas, SEM tom de janela distinto (a essa distância a janela
+  //     não resolve — e é por isso que a faixa 0 não declara `janela`).
+  //   · c3 — sólida a partir de y=126; topos de 52 a 127; corpo #465164 (72%) e #445062 (23%); janelas
+  //     #6b7e98 (3,3%) e #6e809b (0,8%).
+  //   · c2 — sólida a partir de y=112; topos de 80 a 116; corpo #2b3e49 (52%) e #2f404b (14%); janelas
+  //     #637980 (14,1%) e #5e777f (8,5%) — a camada próxima tem MUITO mais janela, que é o que a distância
+  //     faz com o detalhe.
+  cidade: {
+    nome: 'cen.cidade', fundo: 'predios', chuva: true,
+    sky: ['#5d6f8e', '#5d6f8e', '#5d6f8e', '#374866'],
+    predios: [
+      { base: 112, topo: [71, 113], largura: [14, 34], corpo: ['#495b7a', '#4a5c7c'] },
+      { base: 126, topo: [52, 127], largura: [16, 40], corpo: ['#465164', '#445062'], janela: ['#6b7e98', '#6e809b'], passo: 6 },
+      { base: 112, topo: [80, 116], largura: [20, 46], corpo: ['#2b3e49', '#2f404b'], janela: ['#637980', '#5e777f'], passo: 5 },
+    ],
+  },
+  campo:     { nome: 'cen.campo',          fundo: 'morros', sky: ['#86c5e8', '#cfeecb'], cloud: ['#ffffff', '#d4e6f5'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens', 'passaros', 'borboletas'] },
+  cemiterio: { nome: 'cen.cemiterio',      fundo: 'morros', sky: ['#2b2540', '#5a4f6b'], cloud: ['#d9c4dd', '#a98fb6'], hills: ['#4a5f55', '#33473d'], decor: ['nuvens', 'passaros', 'sparkles', 'minhocas', 'nevoa'] },
+  espaco:    { nome: 'cen.espaco',         fundo: 'morros', sky: ['#05030f', '#161033'], cloud: ['#3a3550', '#262238'], hills: ['#1e3030', '#142024'], decor: ['nuvens', 'sparkles', 'vagalumes'] },
   // A FLORESTA É UM PÔR DO SOL, e antes era um céu VERDE (`#3f6b50`→`#8fbf73`) com nuvens verdes por cima.
   // Verde no céu não é só feio: com os morros em `#2f5e35`, a silhueta das coníferas ficava a um passo da cor
   // do fundo e sumia — plantei árvores que ninguém via, e só depois de ver na tela é que a causa apareceu.
@@ -146,7 +213,7 @@ export const CENARIOS: Record<string, CenarioTema> = {
   // y=60 e o VERMELHO em y=90, que é a linha do horizonte. O laranja entre eles não é declarado — ele nasce da
   // interpolação, como o violeta nasce entre o índigo do topo e o rosa. As três últimas paradas ficam ATRÁS
   // dos morros; existem para o degradê não terminar num corte seco na beira da tela.
-  floresta:  { nome: 'cen.floresta', fundo: 'gerado',
+  floresta:  { nome: 'cen.floresta', fundo: 'morros',
                sky: ['#231a52', '#a34a6e', '#ffd166', '#e0392c', '#8e2320', '#5a1a1c', '#3a1418'],
                sol: { cor: '#ffe9a8', x: 0.30, y: 0.46 },
                cloud: ['#ffffff', '#e9a06a'], // corpo branco, sombra alaranjada: é a luz baixa batendo por baixo

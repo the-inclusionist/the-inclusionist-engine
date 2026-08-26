@@ -25,8 +25,14 @@ overlays) for diversity and per-player distinction. Full spec + the animation li
 own counts wrong, which is the same error at a smaller size. The numbers below are read out of the PNG headers,
 not summarised from memory; the script is in the commit that added this paragraph.
 
-This file and `character-animation.md` both declared a **16×32 sprite**. Of the **80 PNGs** in `app/` — 77 sprite
-frames plus three city backgrounds — **not one is 16×32.**
+This file and `character-animation.md` both declared a **16×32 sprite**. Of the **77 PNGs** in `app/` — all of
+them sprite frames — **not one is 16×32.**
+
+It was 80 until 2026-08-25. The three city parallax backdrops left when ADR-0042 replaced them with a
+generated skyline: measuring them showed they needed 11,382 uniform-colour rectangles to reproduce as data,
+so they were REDRAWN by rule instead. What decided it was not the byte count but high contrast — the city
+backdrop is the largest surface on screen, and while it was a PNG it was the one thing the mode could never
+repaint.
 
 The 77 sprite frames cover **13 animations** and come in **15 distinct sizes**: widths 24–34 px, heights 29–36 px,
 plus one 64×64 leftover. The most common size is 25×34 (the walk cycle); `parede` is 31×36, `teto` 25×36.

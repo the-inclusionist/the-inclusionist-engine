@@ -43,9 +43,8 @@ function ambiente(over = {}) {
     placeholderTex: (i) => 'PLACEHOLDER:' + i,
     skyTex: (T) => 'SKY:' + T.sky[0],
     hillsTex: (T, near) => 'HILLS:' + T.hills[near ? 1 : 0] + ':' + (near ? 'near' : 'far'),
-    Imagem: FakeImg,
-    texturaDeImagem: (img) => ({ nome: 'TEX(' + img.src + ')', baseTexture: { scaleMode: -1 } }),
-    escalaNearest: 0,
+    citySkyTex: (T) => 'CITYSKY:' + T.sky[0],
+    skylineTex: (faixa, semente) => 'SKYLINE:' + faixa.corpo[0] + ':' + semente,
     rm: estado.rm,
     getCenario: () => estado.cenario,
     getVizMode: () => estado.viz,
@@ -57,7 +56,17 @@ function ambiente(over = {}) {
 }
 
 const TEMA_V3 = { nome: 'Campo', fundo: 'gerado', sky: ['#86c5e8', '#cfeecb'], cloud: ['#fff', '#eee'], hills: ['#9fd47e', '#6fb84e'], decor: ['nuvens'] };
-const TEMA_CIDADE = { nome: 'Cidade', fundo: 'png' };
+// A Cidade como o `render/parallax` a vê: gerada, com uma faixa de prédios por camada. Os números não
+// precisam ser os medidos — o `cenario-data.node.test.js` é quem guarda os de verdade; aqui só a FORMA
+// importa, e usar valores diferentes dos reais é de propósito, para nenhum caso passar por coincidência.
+const TEMA_CIDADE = {
+  nome: 'Cidade', fundo: 'predios', sky: ['#5d6f8e', '#374866'],
+  predios: [
+    { base: 110, topo: [70, 112], largura: [14, 34], corpo: ['#aaa111', '#aaa222'] },
+    { base: 126, topo: [52, 127], largura: [16, 40], corpo: ['#bbb111', '#bbb222'], janela: ['#fff', '#eee'] },
+    { base: 112, topo: [80, 116], largura: [20, 46], corpo: ['#ccc111', '#ccc222'], janela: ['#fff', '#eee'] },
+  ],
+};
 
 /* ===================== PARALLAX (dado) ===================== */
 
@@ -258,56 +267,38 @@ describe('aplicarTemaParallax — tema v3 (síncrono)', () => {
   });
 });
 
-describe('aplicarTemaParallax — Cidade (PNG assíncrono)', () => {
-  it('pede c4/c3/c2 do tema, uma imagem por camada', () => {
-    const { api, log } = ambiente();
+describe('aplicarTemaParallax — Cidade (GERADA, síncrona)', () => {
+  // Este bloco tinha SEIS casos de PNG: pedir c4/c3/c2, esperar o `onload`, gravar em NEAREST, cair no
+  // placeholder no `onerror`, e DUAS guardas de corrida — a de sucesso e a de erro, porque a criança podia
+  // trocar de cenário enquanto os arquivos baixavam.
+  //
+  // Os seis foram embora com os arquivos (ADR-0042), e a corrida foi junto: não há mais o que baixar, então
+  // não há mais como perder. O que sobra de asserção é mais forte por ser menos: as três camadas nascem
+  // prontas, na mesma volta.
+  it('as três camadas ficam prontas na MESMA chamada — não há espera nem corrida', () => {
+    const { api } = ambiente();
     api.aplicarTemaParallax('cidade', TEMA_CIDADE);
-    expect(log.imgs.map((i) => i.src)).toEqual([
-      'assets/cenarios/cidade/c4.png', 'assets/cenarios/cidade/c3.png', 'assets/cenarios/cidade/c2.png',
+    expect(api.layers.map((t) => t.texture)).toEqual([
+      'CITYSKY:' + TEMA_CIDADE.sky[0],
+      'SKYLINE:' + TEMA_CIDADE.predios[1].corpo[0] + ':977',
+      'SKYLINE:' + TEMA_CIDADE.predios[2].corpo[0] + ':131',
     ]);
   });
 
-  it('nada muda antes de a imagem chegar', () => {
+  it('a camada 0 é a do CÉU e leva os prédios distantes junto; as outras duas são só prédio', () => {
     const { api } = ambiente();
     api.aplicarTemaParallax('cidade', TEMA_CIDADE);
-    expect(api.texNormal).toEqual(['PLACEHOLDER:0', 'PLACEHOLDER:1', 'PLACEHOLDER:2']);
+    expect(api.layers[0].texture.startsWith('CITYSKY:')).toBe(true);
+    expect(api.layers[1].texture.startsWith('SKYLINE:')).toBe(true);
+    expect(api.layers[2].texture.startsWith('SKYLINE:')).toBe(true);
+    expect(api.texNormal).toEqual(api.layers.map((t) => t.texture)); // e o espelho acompanha
   });
 
-  it('ao carregar: textura em NEAREST (pixel art), gravada e pintada', () => {
-    const { api, log, ctx } = ambiente();
+  it('cada camada recebe uma SEMENTE diferente — duas faixas iguais seriam o mesmo skyline duas vezes', () => {
+    const { api } = ambiente();
     api.aplicarTemaParallax('cidade', TEMA_CIDADE);
-    log.imgs[0].onload();
-    expect(api.texNormal[0].nome).toBe('TEX(assets/cenarios/cidade/c4.png)');
-    expect(api.texNormal[0].baseTexture.scaleMode).toBe(ctx.escalaNearest);
-    expect(api.layers[0].texture).toBe(api.texNormal[0]);
-  });
-
-  it('ao FALHAR: cai no placeholder daquela camada (o jogo nunca fica sem fundo)', () => {
-    const { api, log } = ambiente();
-    api.aplicarTemaParallax('cidade', TEMA_CIDADE);
-    log.imgs[1].onerror();
-    expect(api.texNormal[1]).toBe('PLACEHOLDER:1');
-    expect(api.layers[1].texture).toBe('PLACEHOLDER:1');
-  });
-
-  it('GUARDA DE CORRIDA: PNG que chega DEPOIS de trocar de cenário é descartado', () => {
-    const { api, log, estado } = ambiente();
-    api.aplicarTemaParallax('cidade', TEMA_CIDADE);
-    api.aplicarTemaParallax('campo', TEMA_V3); // a pessoa trocou; o v3 é síncrono e já pintou
-    estado.cenario = 'campo';
-    const antes = [...api.texNormal];
-    log.imgs[0].onload();  // o PNG atrasado da Cidade chega agora
-    log.imgs[2].onerror(); // e outro falha
-    expect(api.texNormal).toEqual(antes); // o céu do Campo continua de pé
-    expect(api.layers[0].texture).toBe('SKY:#86c5e8');
-  });
-
-  it('a guarda vale para o caminho de ERRO também (não só para o de sucesso)', () => {
-    const { api, log, estado } = ambiente();
-    api.aplicarTemaParallax('cidade', TEMA_CIDADE);
-    estado.cenario = 'floresta';
-    const antes = [...api.texNormal];
-    log.imgs[0].onerror();
-    expect(api.texNormal).toEqual(antes);
+    const sementes = api.layers.slice(1).map((t) => t.texture.split(':').pop());
+    expect(new Set(sementes).size).toBe(sementes.length);
   });
 });
+

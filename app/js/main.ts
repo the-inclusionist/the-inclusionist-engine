@@ -31,7 +31,7 @@ import { fmtFrac, fracGraphic, speakChoice } from './game/fractions.js'; // Est�
 import { brailleText } from './game/braille.js'; // Estágio 4 (Tier 2): cela braille + fala (atividade cego)
 import { SOMASUB_SHAPES, WORD_INITIALS } from './game/activity-content.js'; // Estágio 4 (Tier 2): dados das atividades (formas + sílabas)
 import { JUICE, saveJuice, puffDust, burstSparkle, addShake, addHitstop, setSquash, stepFx, initFx, tickHitstop, getParticles, getHitstopT, getShakeT } from './render/fx.js'; // Estágio 4 (Tier 2): juice (partículas/shake/hitstop/squash)
-import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
+import { parallaxPlaceholder, themeSkyTexture, themeHillsTexture, themeCitySkyTexture, themeSkylineTexture } from './render/scene-parallax.js'; // Estágio 4 (Tier 2): geradores de textura do parallax
 import { worldCanvas, initWorldTex } from './render/world-tex.js'; // Estágio 4 (Tier 2): builder da textura NORMAL do mundo
 import { kb, initKB, setKB, saveKB, resetKB } from './input/keyboard.js'; // Fase 2: config de teclado (subsistema input)
 import { AUDIO_CATS } from './platform/audio-mixer.js'; // Fase 2: categorias do mixer (dados); audioCat/catNode/setCatGain vêm de audio.js
@@ -536,7 +536,9 @@ const titleUI = initTitle({ $ }); // navegacao dos submenus do titulo: ui/title.
 const parallaxApi = createParallax({
   camera, TilingSprite: PIXI.TilingSprite,
   placeholderTex: parallaxPlaceholder, skyTex: themeSkyTexture, hillsTex: themeHillsTexture, // render/scene-parallax
-  Imagem: Image, texturaDeImagem: (img) => PIXI.Texture.from(img), escalaNearest: PIXI.SCALE_MODES.NEAREST,
+  citySkyTex: themeCitySkyTexture, skylineTex: themeSkylineTexture, // ADR-0042: a Cidade é gerada, não baixada
+  // `Imagem`/`texturaDeImagem`/`escalaNearest` saíram: eram a carga dos três PNG da Cidade, e com ela a
+  // corrida que cada `onload` tinha de conferir (`getCenario() !== theme`). Não há mais o que baixar.
   rm, getCenario: () => CENARIO, getVizMode: () => vizMode,
   clearParallaxTexCache: () => vp.clearParallaxTexCache(), // `vp` e const declarado ABAIXO: seta resolve na chamada
   getDecorDeTela: () => [starsG, nuvemG, skyDecoG, fogG],  // `var` icados: undefined no boot, e o modulo guarda
