@@ -34,6 +34,28 @@ more-information: |
     their own reading; it carries no efficacy claim because the studies do not support one."
   - "**Default spacing:** line ≥ 1.5×, letter ≥ 0.12em, word ≥ 0.16em, paragraph ≥ 2× (WCAG 1.4.12); Dyslexia toggle
     = letter 0.18em + word 0.63em (British Dyslexia Association guide)."
+  - "⚠️ **EMENDA 2026-08-27 — THOSE NUMBERS ARE FLOORS, AND A MENU THAT DOES NOT FIT SCROLLS.** Added because the
+    spacing clause above said what the values ARE and never said what happens when they collide with a screen too
+    small to hold them. That silence is where they get traded away.
+
+    THE RULE, and it applies to every menu in every game on this engine, not to the pause card that raised it:
+
+      **When a menu does not fit the screen, the answer is a SCROLLBAR.** Never tighter spacing, and — barring a
+      reason written down at the point of use — never a hidden heading.
+
+    The Dev's reason, and it is the reason and not an example: \"diminuir os gaps pode atrapalhar pessoas com
+    dislexia\". The spacing above is not decoration that yields under pressure; it is the accommodation itself.
+    Compressing it to make a list fit takes the accommodation away from exactly the child it was measured for, and
+    it does so INVISIBLY — nothing on screen says the spacing was reduced, so nobody reports it and nobody can
+    switch it back on. A scrollbar, by contrast, announces itself and costs one gesture.
+
+    THE TITLE IS THE SECOND HALF, and cheaper to lose than spacing but still not free: \"sumir com o título
+    geralmente não vale a pena\". A heading is what tells a screen-reader listener that the rules changed mid-sweep
+    — the exact failure ADR-0044 measured in the old pause card. It may go only where something else carries that
+    boundary, and the reason belongs beside the code that hides it.
+
+    ⚠️ THIS OUTRANKS FITTING. If a screen cannot hold a menu at these floors, the menu scrolls — the floors do not
+    move. A design that needs the numbers lowered is a design to change, not a spacing budget to spend."
   - "⚠️ **EMENDA 2026-08-27 — THE ROSTER IS MANDATORY FOR EVERY GAME, AND IT SPLITS IN TWO BY WHERE A FONT MAY
     APPEAR.** This is the structural half of the amendment, and it is new: until now the catalogue was one list and
     every font in it could be chosen for the whole interface. The Dev cut it by ROLE.

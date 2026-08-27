@@ -132,10 +132,22 @@ more-information: |
     · RUNTIME CACHE keeps the same end state — the voice lives on the machine and works offline forever after — but
       pays for it on first use, per voice, and only for the locale actually in use.
 
-  The second is what ADR-0021/0022 already chose ("fetch once → 100% local"), and it is also what the Dev's own
-  budget rule asks for: "A busca é por ter o menor tamanho possível, e 25MB para um jogo é algo incrível." Those two
-  statements of his are in tension and only he can settle it. Until then the DECISION recorded here is the roster
-  and the ownership; the delivery mechanism is marked OPEN rather than guessed.
+  ✅ **DECIDED 2026-08-27: RUNTIME CACHE, ON FIRST USE.** The Dev, once the sum was in front of him: "Ok, cachear
+  conforme primeiro uso, assim somente alunos que precisam baixam."
+
+  And that last clause is the argument, not a side effect. Neural speech is not a feature every child uses — it is
+  an accommodation. Precaching it would make every machine in the school pay 200 MB so that the machines which need
+  it are ready, which inverts who carries the cost: a classroom of thirty downloads the voices thirty times for the
+  two children who speak through them. Fetching on first use puts the download where the need is, once per machine,
+  and offline holds from then on — which is the promise ADR-0021 made in the first place ("fetch once → 100% local").
+
+  It also keeps the Dev's own budget rule intact: "A busca é por ter o menor tamanho possível, e 25MB para um jogo é
+  algo incrível." First load stays at the 29 MB the game already costs.
+
+  ⚠️ WHAT THIS OWES, and it is a real cost of the choice rather than a caveat: the FIRST time a child needs the
+  voice, she waits for 61 MB on a school network. The mitigation already exists in this record — eSpeak and Web
+  Speech talk WHILE the neural model downloads — but it has to actually be wired, and the wait has to be announced,
+  because a blind child cannot see a progress bar.
 
   ⚠️ AND THE VOICE NAMES ARE NOT DECIDED — only the locales. Which `en_US-*` and `es_MX-*` model to ship is a
   LISTENING test, and this project has a history of that judgement being made by ear and being right (jeff left the
