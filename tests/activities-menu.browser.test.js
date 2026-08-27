@@ -185,8 +185,28 @@ describe('seleção persistida sobrevive à reconstrução do menu', () => {
     store.setJSON(store.KEYS.fracnot, { v: 0, d: 0, dec: 1, pct: 0, mix: 0 });
     const { ctx } = makeCtx();
     initActivitiesMenu(ctx);
-    expect($('#tm-fr button[data-fnot="dec"]').classList.contains('tab-on')).toBe(true);
-    expect($('#tm-fr button[data-fnot="v"]').classList.contains('tab-on')).toBe(false);
+    // O estado deixou de ser SÓ cor de fundo (`.tab-on`) e passou a ter marca visível e `aria-checked` —
+    // cor sozinha reprova a WCAG 1.4.1 e deixava o menu mudo para quem tem baixa visão ou daltonismo.
+    expect($('#tm-fr button[data-fnot="dec"]').getAttribute('aria-checked')).toBe('true');
+    expect($('#tm-fr button[data-fnot="v"]').getAttribute('aria-checked')).toBe('false');
+    expect($('#tm-fr button[data-fnot="dec"] .fnot-marca').textContent).toBe('☑');
+    expect($('#tm-fr button[data-fnot="v"] .fnot-marca').textContent).toBe('☐');
+  });
+
+  it('[Right] CLICAR na notação atualiza a marca e o `aria-checked`, não só o estado guardado', () => {
+    // O buraco que este caso fecha era meu: eu gateei o MARKUP INICIAL (`fracNotsHtml`) e não a ALTERNÂNCIA.
+    // O handler continuou escrevendo `tab-on`/`aria-pressed` — os atributos de antes —, então o estado mudava
+    // por dentro e a tela não dizia nada. MEDIDO no navegador: clicar não mexia em marca nenhuma.
+    store.setJSON(store.KEYS.fracnot, { v: 1, d: 1, dec: 1, pct: 0, mix: 0 });
+    const { ctx } = makeCtx();
+    initActivitiesMenu(ctx);
+    const pct = $('#tm-fr button[data-fnot="pct"]');
+    clickAndSettle(pct);
+    expect(pct.getAttribute('aria-checked'), 'o aria-checked não acompanhou o clique').toBe('true');
+    expect(pct.querySelector('.fnot-marca').textContent, 'a marca visível não acompanhou o clique').toBe('☑');
+    clickAndSettle(pct);
+    expect(pct.getAttribute('aria-checked')).toBe('false');
+    expect(pct.querySelector('.fnot-marca').textContent).toBe('☐');
   });
 });
 

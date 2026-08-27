@@ -357,7 +357,9 @@ describe('markup dos submenus', () => {
     // 'fnot.v' para o leitor de tela. Quem pegou foi o navegador. Agora atravessa o dicionário, que é uma
     // fonte independente do módulo sob teste.
     for (const k of FNOT_KEYS) expect(html).toContain(`aria-label="${pt[FNOT_LBL[k]]}"`);
-    expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
+    // `aria-checked` e não `aria-pressed` desde que as notações viraram AJUSTE com moldura em vez de botão de
+    // menu (pedido do Dev): a pergunta aqui é "está marcada?", não "confirmar?". Ver notacoes-de-fracao.
+    expect(html.match(/aria-checked="true"/g)).toHaveLength(1);
   });
 
   it('o seletor de tabuada traz as 11 casas (0..10) e o botão Jogar', () => {

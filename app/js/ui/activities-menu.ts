@@ -380,10 +380,27 @@ export function matMenuHtml(): string {
   return tmTitleHtml(t('menu.mat')) + MAT_MENU_IDS.map(activityBtnHtml).join('')
     + `<button class="title-btn" data-tm-fr="1" type="button">${t('menu.frac')}</button>` + backBtnHtml('tm-main') + TM_DESC_HTML;
 }
+/**
+ * AS CINCO NOTAÇÕES — ajustes, e não itens de menu (pedido do Dev).
+ *
+ * Elas eram `.title-btn`, a MESMA classe dos itens que ABREM uma atividade, empilhadas logo acima deles: para
+ * quem enxerga, cinco coisas com cara de "entrar" que na verdade LIGAM e DESLIGAM. Para quem navega por
+ * escuta é pior — o cursor atravessa dez itens em que os cinco primeiros respondem "ligado/desligado" e os
+ * cinco últimos começam uma partida, sem nada entre eles dizendo que a regra mudou. É a mesma doença que o
+ * item 5 do ADR-0044 curou no cartão de pausa: dois modelos de interação numa tela, sem fronteira.
+ *
+ * Três coisas mudam: MOLDURA com nome (`fieldset`/`legend`, a fronteira que o leitor anuncia ao entrar),
+ * MARCA visível na frente (`☑`/`☐`, para o estado não depender de cor — WCAG 1.4.1) e PAPEL de caixa de
+ * seleção (`role="checkbox"` + `aria-checked`), porque a pergunta aqui é "está marcada?" e não "confirmar?".
+ *
+ * ⚠️ CONTINUAM SENDO `<button>`, e é deliberado: `titleButtons()` varre `button` para montar o anel de
+ * navegação. Um `<input type="checkbox">` seria mais correto no papel e tiraria as cinco do alcance do
+ * direcional — quem mais precisa delas é justamente quem só tem ele.
+ */
 export function fracNotsHtml(f: FracNot): string {
-  return `<div class="frac-nots" role="group" aria-label="${t('menu.notationGroupAria')}">`
-    + FNOT_KEYS.map((k) => `<button class="title-btn tab-num${f[k] ? ' tab-on' : ''}" data-fnot="${k}" type="button" aria-pressed="${!!f[k]}" aria-label="${t(FNOT_LBL[k])}">${FNOT_SYM[k]}</button>`).join('')
-    + `</div>`;
+  return `<fieldset class="frac-nots"><legend>${t('menu.notationGroupAria')}</legend>`
+    + FNOT_KEYS.map((k) => `<button class="fnot-opt" data-fnot="${k}" type="button" role="checkbox" aria-checked="${!!f[k]}" aria-label="${t(FNOT_LBL[k])}"><span class="fnot-marca" aria-hidden="true">${f[k] ? '☑' : '☐'}</span><span class="fnot-sym">${FNOT_SYM[k]}</span></button>`).join('')
+    + `</fieldset>`;
 }
 export function frMenuHtml(f: FracNot): string {
   return tmTitleHtml(t('menu.fracTitle')) + fracNotsHtml(f)
@@ -622,7 +639,12 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
     if (b.dataset.fnot) { const k = b.dataset.fnot as FracNotKey; // NOTATION toggle (immediate; at least 1 ALWAYS on)
       if (!canToggleFracNot(fracNot, k)) { ctx.srAlert(t('sr.menu.keepOneNotation')); return; }
       fracNot[k] = fracNot[k] ? 0 : 1; store.setJSON(store.KEYS.fracnot, fracNot);
-      b.classList.toggle('tab-on', !!fracNot[k]); b.setAttribute('aria-pressed', String(!!fracNot[k])); // state by highlight, NO ✔
+      // O ESTADO EM DUAS FORMAS, e nenhuma delas é cor: `aria-checked` para quem escuta e a MARCA ☑/☐ para
+      // quem vê. Era `tab-on` + `aria-pressed` — realce de fundo e papel de botão de comando —, e o realce
+      // sozinho reprova a WCAG 1.4.1: quem tem baixa visão ou daltonismo ficava sem resposta para "quais
+      // estão ligadas?".
+      b.setAttribute('aria-checked', String(!!fracNot[k]));
+      const marca = b.querySelector('.fnot-marca'); if (marca) marca.textContent = fracNot[k] ? '☑' : '☐';
       ctx.srSay(t(fracNot[k] ? 'sr.menu.notationOn' : 'sr.menu.notationOff', { notacao: t(FNOT_LBL[k]) })); return;
     }
     if (b.dataset.cen) { const c = b.dataset.cen; go(() => { ctx.setCenario(c); reallyStart(); }); return; }

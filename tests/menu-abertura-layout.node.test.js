@@ -117,9 +117,20 @@ describe('menu de abertura · largura de uma linha e submenus em lista vertical'
     // tem essa distinção, e ela é a régua certa: para quem anda de seta, um grupo deitado é uma parte da
     // lista onde "para baixo" anda para o LADO. A ordem que se vê tem de ser a ordem em que se anda, sem
     // exceção — se houvesse uma, ela apareceria justamente no meio da lista, sem aviso.
+    // ⚠️ UM BOTÃO NÃO É UM CONTAINER DE ITENS. A regra deste caso é sobre containers que deitam vários itens
+    // NAVEGÁVEIS lado a lado — é isso que faz "para baixo" andar para o lado. O arranjo INTERNO de um botão
+    // (a marca ☑ ao lado do símbolo, dentro da mesma caixa clicável) é uma coisa só para quem navega, e
+    // deitá-lo não move cursor nenhum.
+    //
+    // A distinção entrou depois de o gate acusar `#tm-fr .fnot-opt` — o botão de notação, cuja marca e
+    // símbolo ficam lado a lado. Não é afrouxamento: é o caso dizendo o que ele sempre quis dizer. Se um dia
+    // um destes nomes deixar de ser um botão, ele volta a ser vigiado.
+    const BOTOES = ['.title-btn', '.fnot-opt', '.pi-btn', '.pm-btn'];
+    const ehBotao = (sel) => BOTOES.some((b) => sel.endsWith(b));
     const deitados = [];
     for (const m of LIMPO.matchAll(BLOCO)) {
-      const sels = m[1].split(',').map((x) => x.trim()).filter((x) => SUBMENUS.some((s) => x.startsWith(s + ' ')));
+      const sels = m[1].split(',').map((x) => x.trim())
+        .filter((x) => SUBMENUS.some((s) => x.startsWith(s + ' ')) && !ehBotao(x));
       if (!sels.length) continue;
       const decl = Object.fromEntries(m[2].split(';').map((d) => {
         const i = d.indexOf(':');

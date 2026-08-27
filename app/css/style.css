@@ -107,10 +107,18 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 /* As notações de fração continuam LADO A LADO: são cinco alternadores de UM grupo, e não itens da lista —
    virar coluna aqui alongaria a rolagem sem ganhar ordem nenhuma. */
 #tm-fr .frac-nots{display:flex;flex-direction:column;gap:.25em}
-/* Toggle de notação: DESATIVADO = azul-escuro + borda BRANCA + texto branco; ATIVADO = amarelo + borda preta + texto preto */
-#tm-fr .frac-nots .title-btn{width:100%;padding:.35em .5em;font-size:1em;background:#16233f;color:#fff;border-color:#fff;box-shadow:none}
-#tm-fr .frac-nots .title-btn.tab-on{background:var(--accent);color:var(--accent-ink);border-color:#0d0d1a}
-#tm-fr .frac-nots .fv{font-size:.8em}
+/* AS CINCO NOTAÇÕES SÃO AJUSTE, NÃO ITEM DE MENU (pedido do Dev). Elas usavam `.title-btn` — a mesma classe
+   dos botões que ABREM uma atividade — e ficavam empilhadas logo acima deles: cinco coisas com cara de
+   "entrar" que na verdade ligam e desligam. A moldura (`fieldset`/`legend`) é a fronteira, e a marca ☑/☐ é o
+   estado sem depender de cor (a cor sozinha reprova a WCAG 1.4.1). */
+#tm-fr .frac-nots{border:2px solid var(--ink-soft);border-radius:10px;padding:.3em .5em .5em;margin:0 0 .45em}
+#tm-fr .frac-nots legend{padding:0 .4em;font-size:.8em;font-weight:700;color:var(--ink-soft)}
+#tm-fr .fnot-opt{display:flex;align-items:center;gap:.5em;width:100%;min-height:44px;padding:.2em .4em;background:transparent;color:#fff;border:0;border-radius:8px;font:inherit;cursor:pointer;text-align:left}
+#tm-fr .fnot-opt:hover,#tm-fr .fnot-opt:focus-visible{background:#16233f}
+#tm-fr .fnot-marca{font-size:1.15em;line-height:1;min-width:1.1em}
+#tm-fr .fnot-opt[aria-checked="true"] .fnot-marca{color:var(--accent)}
+#tm-fr .fnot-sym{font-size:1em}
+#tm-fr .fnot-opt .fv{font-size:.8em}
 .tm-title{color:#fff;font-size:1em;margin:0 0 .1em;text-align:center;text-shadow:1px 1px 0 #0d0d1a} /* título do submenu */
 .title-btn{background:var(--accent);color:var(--accent-ink);border:3px solid #0d0d1a;font-family:inherit;font-weight:bold;font-size:.95em;padding:.4em .6em;border-radius:6px;cursor:pointer;min-width:0;width:100%;min-height:2.3em} /* contorno PRETO grosso (3px) = mesma cor do texto (José) */
 .title-btn.ghost{background:#e8862b;color:#0d0d1a;border:2px solid #0d0d1a} /* Voltar = preenchimento LARANJA */
