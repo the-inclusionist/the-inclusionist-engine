@@ -23,7 +23,16 @@ more-information: |
   - "**Canonical fonts:** Atkinson Hyperlegible (default), Andika (early literacy), Lexend (optional dyslexia/
     dyscalculia/ADHD), Atkinson Hyperlegible Mono (math), Braille CC0. [game-design/typography.md canonical]"
   - "**OpenDyslexic out of the canon** (weak/negative evidence) — available only by explicit user choice, no efficacy
-    claim."
+    claim.
+    ⚠️ **EMENDADO 2026-08-27 — IT IS OUT ENTIRELY, NOT OUT OF THE CANON.** This clause records an intermediate
+    position that the Dev then reversed, and the code already follows the reversal (zero references to OpenDyslexic
+    or Dyslexie anywhere in `app/`). He first asked to keep it with a caveat — \"apesar do estudo com evidência
+    fraca/negativa, resolvemos manter a pedidos de pessoas que gostam desta fonte\" — and then withdrew that in the
+    next turn: \"**Remove isso.** Acabei de falar quais são as canônicas e esta eu havia retirado. Como disse, outras
+    fontes do estudo serão usadas somente quando for necessário.\"
+    So the roster is the canonical five above, and a font from the study enters ONLY when a need appears — not as a
+    standing option offered to everyone. The reason to amend rather than leave it: shipping OpenDyslexic 'by user
+    choice' would put a font with negative evidence in front of a dyslexic child as if it were a remedy."
   - "**Default spacing:** line ≥ 1.5×, letter ≥ 0.12em, word ≥ 0.16em, paragraph ≥ 2× (WCAG 1.4.12); Dyslexia toggle
     = letter 0.18em + word 0.63em (British Dyslexia Association guide)."
   - "**Own Typography menu** in pause (pt-BR pangram preview; 3 groups sans/serif/manuscript; one active font,

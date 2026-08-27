@@ -43,7 +43,7 @@ One file per deliberate architectural decision, in **YADR** format — the YAML 
 | [ADR-0009](ADR-0009-game-documentation-subset.yaml) | Game-dev doc subset (LM-GM + light per-game; defer networking; reject MMO/economy/live-ops) | accepted |
 | [ADR-0010](ADR-0010-non-negotiable-pillars.yaml) | The 10 non-negotiable pillars (constitution) — was PILARES-INEGOCIAVEIS | accepted |
 | [ADR-0011](ADR-0011-visual-accessibility.yaml) | Visual accessibility (high-contrast, colour-blind, low-vision, TEA) | accepted ⚠️ EMENDADO 2026-08-27: o **menu** nasce em 7:1. O motivo que escolheu 3:1 ("7:1 deixa tudo amarelo/preto/branco") é sobre o MUNDO, onde há pixel art para achatar — não sobre um menu de texto. E é no menu que a criança vai consertar o contraste que não consegue ler: deixá-lo no nível de que ela tenta escapar é armadilha. Os três níveis do jogo ficam como estão |
-| [ADR-0012](ADR-0012-typography.yaml) | Typography (font roster, spacing) | accepted |
+| [ADR-0012](ADR-0012-typography.yaml) | Typography (font roster, spacing) | accepted ⚠️ EMENDADO 2026-08-27: OpenDyslexic está FORA por inteiro, não "fora do cânone com escolha do usuário" — o registro guardava uma posição intermediária que o Dev reverteu na mensagem seguinte ("Remove isso"), e o código já seguia a reversão |
 | [ADR-0013](ADR-0013-motor-input-accessibility.yaml) | Motor & input accessibility (touch, gamepad, keyboard, easy mode, wheelchair) | accepted |
 | [ADR-0014](ADR-0014-auditory-accessibility.yaml) | Auditory accessibility (mixer, blind mode, TTS) | accepted |
 | [ADR-0015](ADR-0015-pedagogy-and-game-modes.yaml) | Pedagogy & game modes (quiz levels, per-player, reduce-motion) | accepted |
