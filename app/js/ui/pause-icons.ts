@@ -84,7 +84,7 @@ export const PAUSE_ICONS: readonly PauseIcon[] = [
   { k: 'tts', e: '🗨️', n: 'icon.tts' },
   { k: 'libras', e: '🤟', n: 'icon.libras' },
   { k: 'tea', e: '🧩', n: 'icon.tea' },
-  { k: 'altmove', e: '🦾', n: 'icon.altmove' },
+  { k: 'altmove', e: '☝️', n: 'icon.altmove' }, // ☝️ e não 🦾: o gesto é UM DEDO tocando, que é o que a alternância pede (pedido do Dev)
   { k: 'contrast', e: '🌗', n: 'icon.contrast' },
   { k: 'cvd', e: '🚥', n: 'icon.cvd' },
   { k: 'face', e: '🧑', n: 'icon.face', soon: true },

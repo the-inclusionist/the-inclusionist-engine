@@ -386,6 +386,15 @@ describe('computeIconVisual — o visual e o aria-pressed andam juntos', () => {
 // PURO — markup
 // =============================================================================================
 describe('markup dos ícones e do menu', () => {
+
+  it('[Right] o ícone da alternância é ☝️ — o gesto de UM DEDO, não o braço mecânico', () => {
+    // Pedido do Dev. 🦾 é prótese; a alternância de movimento não é sobre prótese, é sobre TOCAR com um dedo
+    // em vez de manter pressionado — que é o que a linha do painel motor descreve com todas as letras: "para
+    // quem não consegue manter pressionado (1 dedo)". O ícone passa a mostrar o gesto que o ajuste pede.
+    const alt = PAUSE_ICONS.find((i) => i.k === 'altmove');
+    expect(alt, 'o ícone da alternância sumiu da barra').toBeTruthy();
+    expect(alt.e).toBe('☝️');
+  });
   it('a barra tem um botão por ícone declarado', () => {
     expect(iconsMarkup().match(/class="pi-btn/g)).toHaveLength(PAUSE_ICONS.length);
   });
