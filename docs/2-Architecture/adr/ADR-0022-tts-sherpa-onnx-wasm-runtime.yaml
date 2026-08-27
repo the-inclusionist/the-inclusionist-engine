@@ -82,6 +82,32 @@ decision-outcome:
     offline on the 2nd load. Then tts.ts routes phoneme/letter/syllable → eSpeak, words/sentences → sherpa.
 
 more-information: |
+  ===== EMENDA 2026-08-27 — O ROSTER MUDOU, E O `int8` SAIU COM MOTIVO MEDIDO =====
+  This record names "miro-high/faber/jeff" in five places, including its index row. The Dev changed both the roster
+  and the quantisation after listening to all of them, and the change never reached here. What is FACT goes in now;
+  what still needs a number is marked as such rather than written as if settled.
+
+  **JEFF IS OUT.** His word, after the listening round: "Remova jeff." His notes on why: jeff and faber sounded like
+  the same model — "Parece ser o mesmo modelo. Mesmo ritmo, mesmo sotaque" — so it was a duplicate, not a choice.
+  MEASURED TODAY: the game ships exactly one voice, `pt_BR-faber-medium` (`app/js/platform/tts.ts`); jeff survives
+  only as lab files under `docs/research/sherpa-wasm/`. The code had already followed him; only the record had not.
+  ⚠️ `docs/CREDITS.md` still credits jeff. Left alone on purpose — a wrong attribution removal is worse than a stale
+  one, and the lab files are still there. It is a separate pass, not a side effect of this amendment.
+
+  **ONE SOURCE.** "Usaremos somente modelos de fangjun (csukuangfj)" — https://huggingface.co/csukuangfj/models.
+  vits-piper only, never ncnn.
+
+  **`int8` IS OUT, and the reason is the valuable part** — he asked for it in writing ("Documente isso e remova
+  int8") and it was never written down. In the WASM backend, int8 runs ~3× SLOWER than fp32, measured in his own log
+  (int8 RTF 5.6 against fp32 2.5); and int8 on ORT-web produces incorrect or silent output, a known problem of the
+  WASM backend with the quantised ops (MatMulInteger / DynamicQuantizeLinear). Quantising does not shrink the wait
+  here — it lengthens it. Without this paragraph the next person tries int8 believing it is an optimisation.
+
+  **TARGET ROSTER, DECLARED AS TARGET AND NOT AS FACT:** all vits-piper medium and high from that source for en_US,
+  en_GB, pt_BR, pt_PT, es_AR, es_ES, es_MX. It is written as an aim because NOBODY HAS ADDED UP THE MEGABYTES —
+  seven locales × two sizes is a download budget, and pillar 1 is a school machine on a school network. The sum is
+  owed before this line becomes a decision.
+
   Supersedes the LIB half of ADR-0021 (npm @mintplex-labs). The 'no R2, weights from HF' half is **REVERSED**: models now
   live on **Cloudflare R2** (HF lacks raw-file bandwidth); the 'fetch once → 100% local → disclose to schools' principle
   is retained. Dev decisions locked this round: **Approach B** (universal loader); **R2** hosting; **lazy-fetch** default
