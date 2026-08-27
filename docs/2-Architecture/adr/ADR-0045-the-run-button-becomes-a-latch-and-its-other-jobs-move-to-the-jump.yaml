@@ -1,0 +1,175 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-26
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0013 (motor & input accessibility — touch, gamepad, keyboard, easy mode)"
+    - "ADR-0029 (anything that departs from its default is marked, in three channels)"
+    - "ADR-0033 (input arrives as directional INTENT; the game interprets it)"
+    - "ADR-0044 (one menu per screen — and the trap it spent seven items undoing)"
+    - "Xbox Accessibility Guideline 101 (remappable inputs) — https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/101"
+    - "Game Accessibility Guidelines — allow controls to be toggled rather than held — https://gameaccessibilityguidelines.com/allow-controls-to-be-toggled-rather-than-held/"
+  informed: []
+
+title: The RUN button becomes a LATCH, and every other job it carried moves to the JUMP in context — except the one that must NOT move, because it is the blind child's cane
+
+context-and-problem-statement: |
+  The MOVEMENT toggle (`toggleMove`) already answers, in the game's own words, "para quem não consegue manter
+  pressionado (1 dedo): toque a direção para andar sem segurar". It answers HALF of it. The RUN button went on
+  demanding exactly what that setting exists to remove — keeping a button held down. A child who plays with one
+  finger walked without holding and could not run.
+
+  So the Dev asked for the symmetric thing: the run button becomes a toggle. Press to run, press again to stop.
+  And automatic in the on-screen controller emulator, where holding a second button is worst.
+
+  THE ASK IS ONE LINE. THE COST IS NOT, and that is why this record exists: the run button is not a button with
+  one job. Measured in the code before touching anything, its EDGE (`pl.runEdge`) was the trigger for
+  `updateCling` — sticking to and releasing from a wall with the spider power. If the edge starts meaning
+  "toggle the run", cling loses its door.
+
+  And one more job, found later and the hard way (see the confirmation): standing still, HOLDING run is the CANE
+  PROBE in blind mode — one echo per tile, the way a child who cannot see sweeps what is around her without
+  walking. With the toggle on she never holds anything. She taps.
+
+decision-drivers:
+  - "The setting must not cost the player who never asked for it. An accessibility option that changes the game
+     for everyone is an option the teacher switches off in the first lesson."
+  - "A function that moves must move to a button that is IDLE in that context — otherwise the fix takes something
+     else away, and the child discovers it by losing."
+  - "Nothing may become unreachable. A mode you can enter and not leave is the trap ADR-0044 spent seven items
+     undoing; here it would be a child stuck to a wall with no button left that releases."
+  - "Whatever the spoken instruction says must be the button that actually works. For a child who cannot see,
+     that sentence is not a hint — it is the only channel."
+
+considered-options:
+  - "M1 — keep cling on the run button and separate the two meanings by duration (tap toggles, hold clings)"
+  - "M2 — give cling a button of its own"
+  - "M3 — cling migrates to the JUMP, but only in the context where the jump has nothing useful left to do"
+
+pros-and-cons-of-the-options:
+  M1:
+    good: ["Nothing moves. One button, one place, no other input touched."]
+    bad: ["It reintroduces the hold that this whole setting exists to remove, at the exact moment the player is in
+           the air against a wall.",
+          "Telling a tap from a hold is a timing requirement, and timing requirements are what ADR-0013 lists among
+           the barriers, not among the fixes."]
+  M2:
+    good: ["Each meaning gets its own key; nothing is contextual and nothing is ambiguous."]
+    bad: ["The on-screen emulator has no free button, and it is precisely the surface where this setting is automatic.",
+          "It adds a control to every keyboard and gamepad map for a power most sessions never see."]
+  M3:
+    good: ["No new button, no timing, no hold.",
+           "The context is chosen so that the jump is IDLE: in the air, already touching a wall, with the spider
+            power, the air jump is spent — pressing jump there did nothing useful.",
+           "Outside that context the jump keeps being a jump, so the player who never enabled the toggle loses
+            nothing at all."]
+    bad: ["The jump becomes contextual, which is one more rule to hold in your head — and to SAY out loud, since the
+           spoken instruction names a button.",
+          "The context has to include RELEASING, or sticking becomes a trap."]
+
+decision-outcome:
+  chosen-option:
+    link: "M3 — the run button is a latch; cling migrates to the jump inside the one context where the jump is idle"
+    justification: |
+      ===== 1. RUN BECOMES STATE =====
+      With `toggleRun`, the edge of the button flips `pl.runLatch`, and the latch — not the key being held — is what
+      says whether the character runs. `game/run-toggle.ts` holds the decision; `game/physics.ts` wires it.
+
+      The two rules that already switched running OFF keep winning, and that is preservation and not politeness:
+      `easy` (Easy Mode does not run, by pedagogical decision) and `toggleMove` (with it, holding means "go faster",
+      not running). A latch that slipped past them through the back door would hand the Easy Mode child a speed that
+      the mode exists in order not to have.
+
+      ===== 2. TWO QUESTIONS, NOT ONE — AND THIS IS THE PART THAT NEARLY WENT WRONG =====
+      "Is the run button engaged?" and "is the character running?" are DIFFERENT QUESTIONS, and the code answers
+      them with two functions on purpose:
+
+        · `botaoDeCorrerEngatado(pl, segurando)` — the latch if the toggle is on, the held key if it is not.
+        · `correndoAgora(pl, segurando)` — the above, MINUS `easy` and `toggleMove`.
+
+      The cane probe asks the FIRST one. Reusing `correndoAgora` there was the obvious repair, and it would have
+      silenced the cane for every child in Easy Mode or movement-toggle — children who can probe today. `easy` and
+      `toggleMove` switch off RUNNING; they must not switch off TOUCH.
+
+      ===== 3. THE JUMP CLINGS ONLY INSIDE ITS CONTEXT, AND RELEASING IS PART OF IT =====
+      `pularVaiGrudar` answers true only with `toggleRun` on, and then: already clinging → true (releasing must
+      always fit), otherwise in the air AND touching a wall. Without the release branch the child sticks and has no
+      way down, because the button that used to release now means something else.
+
+      Without `toggleRun` it answers FALSE, always. Cling stays on the run button for everyone else.
+
+      ===== 4. THE SPOKEN SENTENCE NAMES THE BUTTON, SO THE NAME BECOMES A PARAMETER =====
+      `sr.power.wallcling` and `sr.physics.spiderOn` are the two things a blind child HEARS about this power, and
+      both said "press RUN". `botaoDeGrude(pl)` returns the i18n KEY of the right button (`act.jump` / `act.run`) and
+      the sentences carry `{botao}` in all three languages — this project's own rule that "a moldura mora na chave, o
+      conteúdo atravessa por `{param}`".
+
+      ===== 5. THE DEFAULT, AND THE MARK =====
+      Off by default, except in the on-screen controller emulator, where it is automatic. Being a setting that can
+      depart from its default, it carries the ADR-0029 mark on the option and on the menu that holds it, and it lives
+      in Motor Accessibility next to the movement toggle, under the same ☝️ the Dev chose for both.
+
+      ===== 6. WHAT IS DECIDED HERE AND NOT BUILT =====
+      The Dev's ask also described picking up, carrying and throwing an object with the same button. That mechanism
+      does not exist in the game — there is no pickable object anywhere. The BUTTON ROUTING is decided and
+      implemented as a pure function (`game/carry.ts`), deliberately UNWIRED, because his answer to "where do the
+      objects come from" was "Objetos eu ainda não adicionei aos cenários, farei isso no futuro".
+
+      ⚠️ AND IT CARRIES A COST, written down so that nobody meets it on screen: with the toggle on and an object
+      within reach, JUMP PICKS UP INSTEAD OF JUMPING. It is the direct consequence of the contract the Dev dictated,
+      and it is his choice — but whoever touches it next needs to know it was chosen, not forgotten.
+
+  consequences:
+    positive:
+      - "The child who cannot hold a button can now run, which was half of what the movement toggle promised and did
+         not deliver."
+      - "Nothing was added to any input map: no new key, no new on-screen button, no timing requirement."
+      - "The spoken instruction became parameterised, so the next time a trigger moves the sentence moves with it
+         instead of being left behind."
+    negative:
+      - "The jump is contextual for whoever enables this. Three conditions decide whether it jumps or clings, and a
+         sighted player discovers that by experimenting — which is exactly what a blind player cannot do, and is why
+         item 4 above is part of the decision and not a refinement."
+      - "`game/carry.ts` is code with no caller. It is tested and reachable from nothing, which is a real (small)
+         cost, accepted so that the routing is decided before the objects arrive and force it."
+      - "One more cross-cutting setting: `toggleRun` is now read in three different places in `physics.ts` (step
+         cadence, cane probe, cling) and each of them asks a DIFFERENT one of the two questions in item 2."
+    neutral:
+      - "Being automatic in the emulator is a default, not a lock: the player switches it off there like anywhere else."
+
+  confirmation: |
+    Every clause has a gate, and one of them exists because a gate that looked green was measuring the wrong thing.
+
+      · THE LATCH AND WHAT IT DOES NOT BREAK — `tests/alternancia-do-correr.node.test.js`. Holding stops counting with
+        the toggle on; `easy` and `toggleMove` keep winning; the probe follows the LATCH and NOT the running, with the
+        Easy Mode case written from the wrong side on purpose, so that reusing `correndoAgora` there fails.
+      · THE CLING AND ITS RELEASE — same file. Out of context the jump jumps; already clinging it always releases;
+        WITHOUT the toggle the jump never clings, which is the "costs nothing to whoever did not ask" clause made
+        assertable.
+      · THE SPOKEN SENTENCE — `tests/instrucao-do-botao-falada.node.test.js`. Both strings carry `{botao}` in pt/en/es,
+        and neither names a button by hand — the second half is what stops the half-repair in which one occurrence is
+        parameterised and the other stays written out, making the sentence say both buttons.
+      · THE ROUTING OF THE UNBUILT MECHANISM — `tests/carregar-e-arremessar.node.test.js`.
+      · THE DEFAULT AND THE MARK — the ADR-0029 gates, which already cover any option that can depart from default.
+
+    ⚠️ THE LESSON THIS RECORD OWES ITS SHAPE TO — A DECISION GATE IS NOT A USE GATE. The probe regression was found by
+    following the spoken sentences, not by a test. When the probe's call site was then mutated, the gate did NOT go
+    red: it covered the DECISION (`botaoDeCorrerEngatado` returns the right answer) and not the WIRING (that
+    `physics.ts` asks it). An audit of all five decision modules followed, and THREE had exactly the same hole —
+    `correndoAgora`, `pularVaiGrudar` and `botaoDeGrude` were each proved right and never proved CALLED. All three are
+    closed. It is recorded in `docs/3-Sprint-Design/plano-testes.md`, because it is the second time it happened.
+
+    ⚠️ WHAT NO TEST OF MINE CAN CONFIRM: whether a child who plays with one finger can actually cling to a wall with a
+    contextual jump. Issues #7 (field test with five children) and #8 (target hardware) are where this record is
+    validated. Everything above is necessary and none of it is sufficient.
+
+more-information: |
+  Files: `app/js/game/run-toggle.ts` (the three decisions), `app/js/game/carry.ts` (the routing of the mechanism that
+  does not exist yet), `app/js/game/physics.ts` (the three use sites), and the ☝️ entry in Motor Accessibility.
+
+  Related: ADR-0013 (motor & input accessibility, where the movement toggle came from), ADR-0029 (the mark that lets
+  a child undo what she changed), ADR-0033 (input as intent), ADR-0044 (one menu per screen — and the same refusal to
+  leave a player somewhere with no exit).
+
+  Deliberately NOT decided here: where pickable objects come from, what they are for, what they look like in the hand,
+  and the physics of the throw. All four are the Dev's, and all four wait for the objects to exist.
