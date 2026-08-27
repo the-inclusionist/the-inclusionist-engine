@@ -42,7 +42,15 @@ more-information: |
     — CLAHE/VCEA/linear-quadratic posterize pixel art, don't separate roles, cost too much on target hardware; direct
     rendering is the industry practice (PlayStation 1st-party, Saints Row 2022). [PESQUISA-ALTO-CONTRASTE]"
   - "**3 contrast levels: 3:1 (default) / 4.5:1 / 7:1** — 3:1 chosen (\"7:1 turns everything yellow/black/white,
-    unpleasant\"); anchored on WCAG 1.4.11 (3:1 non-text) and 1.4.6 (7:1 AAA text). [commit e1e1f56]"
+    unpleasant\"); anchored on WCAG 1.4.11 (3:1 non-text) and 1.4.6 (7:1 AAA text). [commit e1e1f56]
+    ⚠️ **EMENDADO 2026-08-27 — O MENU NÃO SEGUE ESSE PADRÃO.** The Dev: \"menus inicial e de pause deveriam ser
+    7:1 desde o início, para facilitar a vida das pessoas com deficiência, que precisam ajustar rapidamente os
+    controles para si.\" The reasoning that picked 3:1 is about the WORLD, where 7:1 flattens pixel art into
+    yellow/black/white — and it does not transfer to a text menu, which has no art to flatten. And the menu is
+    where a child goes to fix the contrast she cannot read with: leaving it at the level she is trying to escape
+    is a trap. So **menus are born at 7:1**, the three levels stay as they are FOR THE GAME, and 3:1 is a floor
+    and not a ceiling. Shipped in `a88db4a` and `001e95d` (the cursor border was the half that had been missed).
+    The scope is deliberate: this clause does NOT raise the world's default."
   - "**Two configurable outlines** (None/Thin/Thick): foreground = character/items (WCAG 2.4.7); background = only
     the outer perimeter of platform/water/lava (delimit navigable vs non-navigable, not every block). [commit
     87aed33]"

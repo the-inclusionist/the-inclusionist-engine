@@ -36,6 +36,15 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 - **Decisão confirmada ganha lar durável NO MESMO TURNO** — não deixar como prosa no chat. Se for arquitetural →
   um **ADR (YADR)** em `docs/2-Architecture/adr/` + entrada no índice; senão → o doc canônico certo; e **reflita no
   mapa** (`ARCHITECTURE.md`) quando muda onde algo vive. Concordar/discordar sem registrar = decisão perdida.
+- **REGISTRAR É EXECUÇÃO, NÃO CONSULTA** (2026-08-27, depois de o Dev medir o estrago). Quando a decisão dele
+  **revoga** um ADR aceito, a emenda sai no MESMO turno, escrita, e ele desfaz se discordar — não se pergunta
+  "quer que eu emende?". O motivo é mecânico e não de zelo: um ADR que segue afirmando a posição antiga **volta a
+  argumentar contra ele** na conversa seguinte, comigo ou com quem ler. Medido: sete escolhas dele entraram no
+  código e não no registro, e o ADR-0011 chegou a guardar a justificativa contrária com as aspas dele.
+  **Mesma regra para issue resolvida: eu fecho.** ("Se eu já tomei a decisão e já está resolvido, você fecha
+  sim!") A linha que separa: **pergunto antes de GASTAR** (cota, dinheiro, ação irreversível, disparo de LLM);
+  **não pergunto para REGISTRAR** o que ele já decidiu. E quando ele propõe direção, a resposta abre pelo que dá
+  para fazer — objeção continua valendo, mas depois do caminho, não no lugar dele.
 - **Doc alterada VIRA teste, tarefa (issue) ou ADR** — com pouquíssimas exceções, documentação que não se transforma
   em algo acionável (um teste que a verifica, uma issue de trabalho, ou um ADR que a decide) **não serve**. Ao mexer
   num doc, pergunte "isto vira o quê?" e crie.

@@ -152,6 +152,27 @@ decision-outcome:
     a única ocorrência fora do próprio `core/layers.ts` é este parágrafo.
 
 more-information: |
+  ===== EMENDA 2026-08-27 — O QUE É POR TELA, E A ÚNICA EXCEÇÃO =====
+  Este registro dizia apenas o FATO de implementação: "Multiplayer runs on separate viewports via per-screen
+  render-textures". O Dev transformou isso em REGRA, e a regra é mais forte que o fato — ela proíbe uma
+  otimização futura que parece óbvia:
+
+    "Nunca unificar multi tela. Correções / melhorias são por tela. Modos multi são por tela. O único ponto que
+     exige modo solo é o modo cego: ele limita a quantidade de telas para a quantidade de áudio, e os efeitos
+     ligados a áudio (redução de fx etc.) têm prioridade e funcionam para todos ao mesmo tempo."
+
+  Em termos deste registro: **todo ajuste de visão é por VIEWPORT**, nunca um filtro único sobre o `app.stage`.
+  Numa mesa de dois jogadores em que só uma criança precisa de alto contraste, um filtro global corrigiria a tela
+  da outra também — regressão silenciosa, e do tipo que ninguém reporta porque a tela "melhorou".
+
+  A EXCEÇÃO É O SOM, e ela é de outra natureza: áudio não tem viewport. O modo cego é GLOBAL, vale para a mesa
+  inteira, e por isso LIMITA o número de telas — não porque a renderização não escale, mas porque duas narrações
+  simultâneas não são audíveis. Mesma lógica para os efeitos ligados a áudio.
+
+  Isto é emenda e não registro novo porque é a mesma decisão de escopo que o parágrafo original já tratava pela
+  metade. O que a torna necessária: o fato era descritivo e a regra é proibitiva — só a segunda impede alguém de
+  "otimizar" mais tarde.
+
   Registry + filter-chain live in `app/js/core/layers.ts` (`Z`, `POST_FX_ORDER`). Relates to ADR-0011 (visual a11y),
   ADR-0010 (pillars: a11y-first), and the CB-safe UI work. Y-sorting within an actor band is NOT adopted (side-view
   platformer → fixed order is standard); revisit only for a future top-down mode. The rewiring of the 54 sites is

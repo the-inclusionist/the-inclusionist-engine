@@ -142,8 +142,13 @@ decision-outcome:
       ⚠️ OPEN COST, measured while answering the challenge: at exactly 640×360 the card holds 413 px of
       content in 353 visible px — the seven 44 px items DO NOT FIT and the list scrolls. For a child
       navigating by ear that is harmless (the ring wraps and every item announces itself); for a finger it
-      is one more scroll. Whether to keep the scroll, shrink the gaps, or hide the heading when it does not
-      fit is not decided here.
+      is one more scroll.
+
+      ✅ DECIDED 2026-08-27 BY THE DEV, and this paragraph used to say "not decided here": THE SCROLL STAYS.
+      His words: "Eu nunca pedi para remover a rolagem da lista de pausa." Neither the gaps nor the heading are
+      touched. The clause is amended rather than left open because an open question in an accepted record is an
+      invitation to close it — and it was taken up once already, by me, inventing a decision that was never asked
+      for.
 
       ===== 7. THREE RULES THAT APPLY TO THE WHOLE GAME, NOT ONLY TO THE PAUSE =====
         · INDEXING: every navigable item announces its position and total, at the END of the string
