@@ -43,6 +43,29 @@ Nenhum módulo "fecha" sem cobrir **Right + B + I + C + E** (P quando fizer sent
 **Convenção de escrita:** cada teste leva um rótulo no nome — `[Zero]`, `[One]`, `[Many]`, `[Boundary]`,
 `[Interface]`, `[Inverse]`, `[Cross-check]`, `[Error]`, `[Right]` — para a suíte ser autoexplicativa.
 
+### Gate de DECISÃO não é gate de USO
+
+Regra aprendida caro, e duas vezes em poucas fatias (2026-08-26): extrair a decisão para um módulo puro e
+testá-la ali **não prova que ela está ligada**. Os dois casos:
+
+| o que foi gateado | o que passou batido | como apareceu |
+|---|---|---|
+| `fracNotsHtml` (o markup inicial das notações de fração) | o *handler* do clique, que continuou escrevendo os atributos antigos | no navegador: clicar não mexia em marca nenhuma |
+| `botaoDeCorrerEngatado` (a decisão da sondagem da bengala) | a chamada em `stepSounds` | só ao tentar a mutação: devolver `held(pl,'run')` deixava tudo verde |
+
+Nos dois, o teste da decisão continuava verde com a fiação desfeita — ou seja, ele media a função e não o
+comportamento. Um gate assim dá a sensação de cobertura sem a cobertura, e o custo cai em quem depende do
+comportamento: no primeiro caso, quem não enxerga a cor do realce; no segundo, a criança cega perdendo a
+sondagem da bengala.
+
+**A prática que fecha isto** é a que a mutação já pedia, aplicada em dois níveis:
+
+1. Teste a DECISÃO onde ela é pura (rápido, exaustivo, barato).
+2. Teste o USO onde ele acontece — a função exportada que o produto chama de verdade (`stepSounds`,
+   `screenPauseMarkup`, o *handler* do clique). Basta UM caso, e ele é o que a mutação da fiação derruba.
+3. **Mute a fiação, não só a decisão.** Se trocar a chamada por como era antes deixa a suíte verde, o gate
+   de uso não existe — e é aí que se descobre, não na tela da criança.
+
 ## 3. Arquitetura — Vitest com dois "projects"
 Regra de design que isso impõe (e que é boa): **maximizar lógica pura** (testável em node, rápida) e **minimizar
 a superfície só-de-navegador** (render). Ao extrair, evitar que módulos de lógica importem PIXI/`document`.

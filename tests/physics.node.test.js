@@ -203,6 +203,38 @@ describe('game/physics — stepPlayer: velocidade horizontal por modo', () => {
     PHY.stepPlayer(pl, 1);
     expect(pl.vx).toBeCloseTo(TUNE.hWalk * EASY.speed, 10);
   });
+  it('[Right/uso] com a alternância, o PULO gruda na parede — e sem ela, não', () => {
+    // O OUTRO gate de uso que faltava. `pularVaiGrudar` é gateada pura, e isso não prova que `updateCling` a
+    // chama — `updateCling` nem é exportada, então o único caminho até ela é `stepPlayer`. Precisa de parede
+    // DE VERDADE: `firstClingSide` sonda o mundo, e estado forçado à mão não o satisfaz (foi o que me impediu
+    // de medir isto no navegador).
+    const g = chao(); for (let y = 0; y < 5; y++) g[y][3] = 2; // coluna sólida: a parede
+    useWorld(g);
+    PHY.initPhysics(CTX());
+    // encostado na parede pela ESQUERDA, no ar, com o poder — o contexto exato da migração
+    const encostado = (over) => novo({ x: 3 * TILE - BOX.w / 2, y: 4 * TILE, onGround: false, airTime: 9, activePower: 'wallcling', ...over });
+
+    const comAjuste = encostado({ toggleRun: true, jumpEdge: true });
+    PHY.stepPlayer(comAjuste, 1);
+    expect(comAjuste.clinging, 'com a alternância, o pulo tinha de grudar').toBe(true);
+
+    const semAjuste = encostado({ toggleRun: false, jumpEdge: true });
+    PHY.stepPlayer(semAjuste, 1);
+    expect(semAjuste.clinging, 'sem a alternância, o pulo é PULO — quem não pediu o ajuste não perde nada').toBe(false);
+  });
+
+  it('[Right/uso] a TRAVA da corrida chega à velocidade — sem tecla segurada', () => {
+    // GATE DE USO, e não de decisão: `correndoAgora` já é gateada pura em alternancia-do-correr, mas isso não
+    // prova que `stepPlayer` a chama. Este caso mede o efeito — a velocidade — e é ele que a mutação da
+    // fiação derruba. Ver "Gate de DECISÃO não é gate de USO" em docs/3-Sprint-Design/plano-testes.md.
+    const pl = noChao({ toggleRun: true, runLatch: true }); keys.add('KeyD'); // SEM 'KeyU': ninguém segura nada
+    PHY.stepPlayer(pl, 1);
+    expect(pl.vx, 'a trava ligada tem de correr').toBe(TUNE.hRun);
+    pl.runLatch = false;
+    PHY.stepPlayer(pl, 1);
+    expect(pl.vx, 'e a trava desligada tem de andar').toBe(TUNE.hWalk);
+  });
+
   it('[Exception/cego] sem a bengala de corrida o cego NÃO corre; com ela, corre', () => {
     PHY.initPhysics(CTX({ caneOn: () => true }));
     const sem = noChao(); keys.add('KeyD'); keys.add('KeyU');
