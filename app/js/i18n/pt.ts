@@ -288,7 +288,7 @@ const pt: Record<string, string> = {
 
   // Física (lava, ventosa-aranha), navegação sonora e o modo de demonstração.
   'sr.physics.lava': 'Cuidado! Tocou na lava. As moedas voltaram para posições aleatórias.',
-  'sr.physics.spiderOn': 'Modo aranha! Engatinha em paredes e teto; contorna quinas. Correr solta.',
+  'sr.physics.spiderOn': 'Modo aranha! Engatinha em paredes e teto; contorna quinas. {botao} solta.',
   'sr.physics.spiderOff': 'Soltou da superfície.',
   'sr.nav.noTargetNear': 'Nada por perto.',
   'sr.attract.demo': 'Demonstração.',
@@ -414,7 +414,7 @@ const pt: Record<string, string> = {
   'sr.power.ultrajump': 'Ultra-pulo! Pulos de distância gigante.',
   'sr.power.turbo': 'Super-corrida! Correndo você fica bem mais rápido.',
   'sr.power.fly': 'Voo! No ar, aperte Pular para começar a voar; Pular de novo encerra.',
-  'sr.power.wallcling': 'Escalada (aranha)! No ar, aperte Correr perto de uma parede/teto para grudar; engatinha e contorna quinas; Correr de novo solta.',
+  'sr.power.wallcling': 'Escalada (aranha)! No ar, aperte {botao} perto de uma parede/teto para grudar; engatinha e contorna quinas; {botao} de novo solta.',
   'sr.power.none': 'Sem poder ativo.',
   'sr.power.generic': 'Poder ativado!',
   'hud.power.off': '—',

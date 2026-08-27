@@ -306,7 +306,10 @@ const coinPools=()=>({ shapes: MODE()==='somasub'?SOMASUB_SHAPES.map(s=>s.id):[]
 const POWER_KINDS = ['superjump', 'ultrajump', 'turbo', 'fly', 'wallcling'];
 const POWER_SHORT_KINDS = [...POWER_KINDS, 'runcane'];
 /** Frase falada do poder. `off` tem frase propria; o que nao for poder conhecido cai no generico. */
-const POWER_MSG = (k: string) => t(k === 'off' ? 'sr.power.none' : POWER_KINDS.includes(k) ? 'sr.power.' + k : 'sr.power.generic');
+// `botao` e' a CHAVE do nome do botao que a frase do poder deve citar. So a escalada cita botao, e ela cita
+// um DIFERENTE conforme a alternancia do correr (ver game/run-toggle): a instrucao falada e' o unico canal de
+// quem nao enxerga, e mandar apertar o botao errado e' a armadilha que o ADR-0044 desfaz.
+const POWER_MSG = (k: string, botao?: string) => t(k === 'off' ? 'sr.power.none' : POWER_KINDS.includes(k) ? 'sr.power.' + k : 'sr.power.generic', botao ? { botao: t(botao) } : undefined);
 // Ícones canônicos dos power-ups (decisão do José 2026-07-02): 👟 corrida/bengala · 🕷️ escalada · 🎈 voo (jetpack) · 🐇 super pulo · 🦘 ultra pulo
 /** Rótulo curto do HUD. Desconhecido cai em `off` ('—'), que era o `|| '—'` de cada consumidor. */
 const POWER_SHORT = (k: string) => t('hud.power.' + (POWER_SHORT_KINDS.includes(k) ? k : 'off'));

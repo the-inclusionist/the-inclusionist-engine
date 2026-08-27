@@ -216,7 +216,7 @@ const en: Record<string, string> = {
 
   // Physics (lava, spider cling), audio navigation and the attract-mode demo.
   'sr.physics.lava': 'Careful! You touched the lava. The coins moved back to random places.',
-  'sr.physics.spiderOn': 'Spider mode! Crawl on walls and ceilings; go around corners. Run lets go.',
+  'sr.physics.spiderOn': 'Spider mode! You crawl on walls and ceilings and round corners. {botao} lets go.',
   'sr.physics.spiderOff': 'Let go of the surface.',
   'sr.nav.noTargetNear': 'Nothing nearby.',
   'sr.attract.demo': 'Demo.',
@@ -335,7 +335,7 @@ const en: Record<string, string> = {
   'sr.power.ultrajump': 'Ultra jump! Enormous leaps across the gap.',
   'sr.power.turbo': 'Super run! Running makes you much faster.',
   'sr.power.fly': 'Flight! In the air, press Jump to start flying; press Jump again to stop.',
-  'sr.power.wallcling': 'Spider climb! In the air, press Run near a wall or ceiling to stick; you crawl along and around corners; press Run again to let go.',
+  'sr.power.wallcling': 'Spider climb! In the air, press {botao} near a wall or ceiling to stick; you crawl and round corners; {botao} again lets go.',
   'sr.power.none': 'No power active.',
   'sr.power.generic': 'Power activated!',
   'hud.power.off': '—',

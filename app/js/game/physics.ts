@@ -21,7 +21,7 @@ import { ehTrampolim } from '../core/constants.js';
 import { t } from '../core/i18n.js';
 import type { ControlledGamePlayer } from './entity.js'; // ADR-0033: a fatia do JOGO — `quiz` mora aqui
 import { tileAt, solidAt, surfTop, isWcRampRiser, rampSurfaceY, caneBlockPx } from '../core/collision.js';
-import { correndoAgora, pularVaiGrudar } from './run-toggle.js';
+import { correndoAgora, pularVaiGrudar, botaoDeGrude } from './run-toggle.js';
 import { BOX, SPAWN_X, SPAWN_Y, jumpVel, isBouncyGroundBelow, clingSides, firstClingSide, spiderReattach } from './player.js';
 import { ELEV_SPEED, elevAt } from './elevators.js';
 import { held } from '../input/state.js';
@@ -101,7 +101,7 @@ export interface PhysicsCtx {
   setSquash(pl: PhysicsPlayer, k: number): void;   // juice: esticar/achatar
   addShake(amp: number, t: number): void;          // juice: tremor de tela
   addHitstop(t: number): void;                     // juice: congela o mundo alguns ticks (dano)
-  POWER_MSG: (kind: string) => string;             // frase do poder, JÁ traduzida (função: o idioma muda)
+  POWER_MSG: (kind: string, botao?: string) => string; // frase do poder, JÁ traduzida (função: o idioma muda). `botao` = chave do nome do botão que a frase cita
   coinPools(): { shapes: readonly string[]; letters: readonly string[] }; // pools por MODO (o sorteio da lava precisa)
   rebuildCoins(): void;         // re-materializa os sprites das moedas sorteadas
   /** Os jogadores. Estado de RODADA (ADR-0038) — instância da raiz, não `let` de módulo. */
@@ -218,7 +218,7 @@ function updateCling(pl: PhysicsPlayer): void {
   const grude = { noAr: !pl.onGround, encostado: !!firstClingSide(pl), temAranha: pl.activePower === 'wallcling', jaGrudado: !!pl.clinging };
   const gatilho = pl.runEdge || (!!pl.jumpEdge && pularVaiGrudar(pl, grude));
   if (pl.activePower === 'wallcling' && !pl.clinging && gatilho && !pl.onGround && !pl.onLadder && !pl.inWater && firstClingSide(pl)) {
-    pl.clinging = true; pl.clingN = firstClingSide(pl); pl.vy = 0; pl.vx = 0; pl.jumpBuffer = 0; pl.jumpEdge = false; C.sfx('power'); C.srSay(t('sr.physics.spiderOn'));
+    pl.clinging = true; pl.clingN = firstClingSide(pl); pl.vy = 0; pl.vx = 0; pl.jumpBuffer = 0; pl.jumpEdge = false; C.sfx('power'); C.srSay(t('sr.physics.spiderOn', { botao: t(botaoDeGrude(pl)) }));
   } else if (pl.clinging && gatilho) { pl.clinging = false; pl.jumpEdge = false; C.sfx('power'); C.srSay(t('sr.physics.spiderOff')); } // E18b: CANCELA só com Correr (não com Pular); a caixa não larga a superfície antes disso
   if (!pl.clinging) pl.clingN = null;
 }
@@ -227,7 +227,7 @@ function updateCling(pl: PhysicsPlayer): void {
 function updatePowerSwap(pl: PhysicsPlayer, dt: number): void {
   const doSwap = (): void => {
     if (!pl.owned.length) return; const seq = ['off', ...pl.owned]; const idx = seq.indexOf(pl.activePower); pl.activePower = seq[(idx + 1) % seq.length]!;
-    pl.clinging = false; pl.flying = false; C.sfx('power'); C.showPower(pl); C.srSay(C.POWER_MSG(pl.activePower));
+    pl.clinging = false; pl.flying = false; C.sfx('power'); C.showPower(pl); C.srSay(C.POWER_MSG(pl.activePower, botaoDeGrude(pl)));
   };
   const swapNow = held(pl, 'swap');
   if (swapNow) {

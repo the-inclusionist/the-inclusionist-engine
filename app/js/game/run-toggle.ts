@@ -68,6 +68,21 @@ export function correndoAgora(pl: JogadorDaCorrida, segurando: boolean): boolean
  * impede o modo de virar armadilha: sem ele a criança gruda e não tem como descer, porque o botão que soltava
  * agora significa outra coisa — exatamente o tipo de beco que o ADR-0044 passou sete itens desfazendo.
  */
+/**
+ * A CHAVE i18n do botão que a instrução falada deve nomear.
+ *
+ * Existe porque eu migrei o gatilho e deixei as frases para trás. As duas que a criança OUVE sobre o poder de
+ * aranha — `sr.power.wallcling` e `sr.physics.spiderOn` — mandavam apertar CORRER, e com a alternância
+ * ligada o Correr virou a trava da corrida. Quem enxerga descobre experimentando; quem não enxerga tem
+ * NESSA FRASE o único canal, e ele apontava para o lugar errado.
+ *
+ * Devolve a chave e não o texto: quem resolve é o ponto de exibição, com o idioma vigente. Mesma razão de
+ * `TOUCH_ACT_LABELS` e `PAD_GLYPH_SPOKEN`.
+ */
+export function botaoDeGrude(pl: JogadorDaCorrida): 'act.jump' | 'act.run' {
+  return pl.toggleRun ? 'act.jump' : 'act.run';
+}
+
 export function pularVaiGrudar(pl: JogadorDaCorrida, ctx: ContextoDeGrude): boolean {
   if (!pl.toggleRun || !ctx.temAranha) return false;
   if (ctx.jaGrudado) return true;                       // soltar tem de caber sempre

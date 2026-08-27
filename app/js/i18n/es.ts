@@ -217,7 +217,7 @@ const es: Record<string, string> = {
 
   // Física (lava, ventosa araña), navegación sonora y el modo demostración.
   'sr.physics.lava': '¡Cuidado! Tocaste la lava. Las monedas volvieron a posiciones aleatorias.',
-  'sr.physics.spiderOn': '¡Modo araña! Trepa por paredes y techos; rodea las esquinas. Correr suelta.',
+  'sr.physics.spiderOn': '¡Modo araña! Trepas por paredes y techos y doblas esquinas. {botao} suelta.',
   'sr.physics.spiderOff': 'Soltaste la superficie.',
   'sr.nav.noTargetNear': 'No hay nada cerca.',
   'sr.attract.demo': 'Demostración.',
@@ -336,7 +336,7 @@ const es: Record<string, string> = {
   'sr.power.ultrajump': '¡Ultra salto! Saltos de distancia gigante.',
   'sr.power.turbo': '¡Súper carrera! Al correr te vuelves mucho más rápido.',
   'sr.power.fly': '¡Vuelo! En el aire, pulsa Saltar para empezar a volar; Saltar de nuevo lo termina.',
-  'sr.power.wallcling': '¡Escalada (araña)! En el aire, pulsa Correr cerca de una pared o techo para pegarte; gateas y rodeas las esquinas; Correr de nuevo te suelta.',
+  'sr.power.wallcling': '¡Escalada (araña)! En el aire, pulsa {botao} cerca de una pared o techo para pegarte; trepas y doblas esquinas; {botao} otra vez suelta.',
   'sr.power.none': 'Sin poder activo.',
   'sr.power.generic': '¡Poder activado!',
   'hud.power.off': '—',
