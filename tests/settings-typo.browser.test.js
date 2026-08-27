@@ -220,3 +220,58 @@ describe('ui/settings-typo — marca o que saiu do padrão (ADR-0029)', () => {
     expect($('#typo-list button[data-font="lexend"]').getAttribute('aria-label')).toContain('alterado');
   });
 });
+
+// ============================================================================================
+// A EXPLICAÇÃO APARECIA DUAS VEZES — achado do Dev, 2026-08-27.
+//
+// "a explicação está duplicada no menu fonte, aparece no rodapé, o que é certo, mas também está aparecendo
+//  embaixo do nome da fonte."
+//
+// O MECANISMO, e ele está escrito no CLAUDE.md como AVISO desde 2026-08-25: `fillExplain` tira o `.opt-hint`
+// de dentro da linha e o move para o rodapé, reescrevendo o `<span>` para conter só o rótulo curto. Ele roda
+// uma vez, quando o overlay é frontalizado.
+//
+// `render()` reconstrói o `#typo-list` inteiro — e é chamado DE NOVO a cada clique numa fonte. As linhas novas
+// voltam com o `.opt-hint` dentro, e ninguém o move outra vez. Rodapé com a descrição (da primeira passada) E
+// descrição sob o nome da fonte (do redesenho). Exatamente o que ele viu.
+//
+// "Painel que re-renderiza precisa chamar `fillExplain` a cada render, senão a prosa volta para dentro das
+//  linhas no primeiro clique." — CLAUDE.md §4, escrito ANTES deste defeito existir. O aviso estava certo e o
+// painel de tipografia era o que faltava obedecê-lo.
+//
+// MUTAÇÃO CONFERIDA: tirar a chamada do fim do `render()` faz este caso reprovar.
+describe('ui/settings-typo · a explicação FICA no rodapé, inclusive depois de escolher uma fonte', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="typo"><div class="overlay__card"><div id="typo-list"></div>' +
+      '<span id="typo-preview"></span><button id="typo-reset" type="button">Restaurar</button></div></div>';
+  });
+
+  /** Um `fillExplain` mínimo com o comportamento que importa: tira o `.opt-hint` de dentro da linha. */
+  const moverParaORodape = (card) => {
+    card?.querySelectorAll('.ctrl-row').forEach((row) => {
+      const span = row.querySelector(':scope > span');
+      const strong = span?.querySelector('strong');
+      if (span && strong) span.innerHTML = strong.outerHTML;
+    });
+  };
+
+  it('[Right] depois de trocar de fonte, nenhuma linha volta a carregar a prosa dentro dela', () => {
+    const chamadas = [];
+    const ctx = fullCtx({ fillExplain: (card) => { chamadas.push(card); moverParaORodape(card); } });
+    const api = initSettingsTypo(ctx);
+    api.render();
+    expect($('#typo-list').querySelectorAll('.opt-hint').length, 'a primeira passada limpa as linhas').toBe(0);
+
+    const alvo = $('#typo-list').querySelector('button[data-font]:not([disabled])');
+    alvo.click();
+
+    expect($('#typo-list').querySelectorAll('.opt-hint').length,
+      'depois do clique a prosa NÃO pode ter voltado para dentro das linhas').toBe(0);
+    expect(chamadas.length, '`render()` tem de pedir a mudança para o rodapé toda vez').toBeGreaterThan(1);
+  });
+
+  it('[Zero] sem `fillExplain` injetado, o painel continua desenhando — a dependência é opcional', () => {
+    const api = initSettingsTypo(fullCtx());
+    expect(() => api.render()).not.toThrow();
+  });
+});

@@ -139,19 +139,9 @@ decision-outcome:
       11,6 mm — inside the child-hand band. 22 px would be 5,8 mm, under the thumb target the panel itself
       cites. (The conversion assumes 96 px/in; on the school hardware only the device answers.)
 
-      ⚠️ THE LIST SCROLLS AT 640×360, and that is a measurement and not a problem: the card holds 413 px of
-      content in 353 visible px. For a child navigating by ear it costs nothing (the ring wraps and every item
-      announces itself); for a finger it is one scroll.
-
-      THE CLAUSE THAT USED TO SIT HERE — a paragraph asking whether to keep the scroll, shrink the gaps or hide
-      the heading — was REMOVED on 2026-08-27 at the Dev's instruction. It never described a decision he had asked
-      for: I invented the question, he answered "eu nunca pedi para remover a rolagem da lista de pausa", and an
-      open question standing in an accepted record is an invitation for someone to close it.
-
-      AND THE QUESTION HAD A GENERAL ANSWER ALL ALONG, which is why it did not belong here as a local puzzle: a menu
-      that does not fit SCROLLS — never tighter spacing, because the spacing IS the accommodation and compressing it
-      takes it from the dyslexic child invisibly. That rule lives in ADR-0012, beside the spacing floors it protects,
-      and it governs every menu in every game. The pause card scrolling is simply that rule applying.
+      THE LIST SCROLLS AT 640×360: the card holds 413 px of content in 353 visible px. It scrolls because that is
+      what a menu does when it does not fit — the rule, and the reason spacing never gives way instead, is in
+      ADR-0012.
 
       ===== 7. THE SCREEN HAS THREE ZONES, AND FUNCTION — NOT PROXIMITY — DECIDES WHICH =====
       Added 2026-08-27, in the Dev's words, and it belongs in THIS record because it is the general rule that

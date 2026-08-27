@@ -75,10 +75,16 @@ decision-outcome:
       With `toggleRun`, the edge of the button flips `pl.runLatch`, and the latch — not the key being held — is what
       says whether the character runs. `game/run-toggle.ts` holds the decision; `game/physics.ts` wires it.
 
-      The two rules that already switched running OFF keep winning, and that is preservation and not politeness:
-      `easy` (Easy Mode does not run, by pedagogical decision) and `toggleMove` (with it, holding means "go faster",
-      not running). A latch that slipped past them through the back door would hand the Easy Mode child a speed that
-      the mode exists in order not to have.
+      WHO USES THE LATCH is asked once, in `usaTravaDeCorrer`: `toggleRun` (explicit, automatic on the touch
+      emulator) OR `toggleMove` (toggle-keys). Face, eyes and voice join there when they exist (issue #11).
+
+      ⚠️ `toggleMove` MOVED SIDES ON 2026-08-27. It used to switch running OFF — the mode was read as having
+      replaced running with "hold a direction to go faster". The Dev overruled it, and corrected the premise:
+      toggle-keys serves children who cannot HOLD, including children with fewer fingers, not children who should
+      move slowly. See ADR-0033.
+
+      `easy` is now the ONLY rule that switches running off, and it still wins over the latch — there the slowness
+      is the pedagogical decision itself, and a latch that slipped past it through the back door would undo the mode.
 
       ===== 2. TWO QUESTIONS, NOT ONE — AND THIS IS THE PART THAT NEARLY WENT WRONG =====
       "Is the run button engaged?" and "is the character running?" are DIFFERENT QUESTIONS, and the code answers

@@ -151,11 +151,20 @@ more-information: |
   and the touch emulator are real. FACE, EYES and VOICE are issue #11 and are not implemented — the rule is written
   for them in advance ON PURPOSE, so that whoever builds them does not have to rediscover it.
 
-  ⚠️ AND ONE CONFLICT IS OPEN, named here rather than resolved by me. Today `game/run-toggle.correndoAgora` returns
-  FALSE whenever `toggleMove` is on: with toggle-keys, holding a direction already means "go faster", and running
-  was switched off entirely. The rule above says that in toggle-keys mode the run button becomes a latch — which
-  implies running IS available there. The two cannot both be true. Which one gives is a game-design call (does a
-  child using toggle-keys get a run speed at all?), and it is the Dev's, not mine.
+  ✅ THE CONFLICT THIS AMENDMENT OPENED WAS CLOSED THE SAME DAY, and the answer went to the rule rather than to
+  the code. `correndoAgora` used to return FALSE whenever `toggleMove` was on — toggle-keys was treated as having
+  REPLACED running with "hold a direction to go faster". The Dev overruled that: "Aperta o botão de corrida uma
+  vez, liga a corrida, aperta outra vez volta a andar."
+
+  AND HE CORRECTED THE PREMISE UNDERNEATH IT, which is the part worth keeping: "Teclas de alternância não é só
+  para quem tem rigidez nas mãos e perde agilidade e destreza, mas para quem tem um ou mais dedos a menos e não
+  consegue manter apertado três botões ao mesmo tempo." The mode was being read as "this child moves slowly", and
+  it is not — it is "this child cannot HOLD". Taking running away from her is not simplifying her controls; it is
+  handing her a slower game than everyone else's and calling that accessibility.
+
+  So `toggleMove` joins `toggleRun` in `usaTravaDeCorrer`, and it is one function precisely so that face, eyes and
+  voice (issue #11) enter in ONE place when they exist. `easy` remains the only thing that switches running off,
+  because there the slowness IS the pedagogical decision.
 
   THE COST THE RULE CARRIES WITH IT, and this is the part the instance taught: a held button usually has a SECOND
   job on its edge. Turning the hold into a latch takes that job away, so the rule is incomplete without its

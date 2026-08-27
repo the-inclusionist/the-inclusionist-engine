@@ -24,7 +24,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { correndoAgora, pularVaiGrudar, botaoDeCorrerEngatado } from '../app/js/game/run-toggle.js';
+import { correndoAgora, pularVaiGrudar, botaoDeCorrerEngatado, usaTravaDeCorrer, botaoDeGrude } from '../app/js/game/run-toggle.js';
 
 /** Um jogador mínimo para a decisão. */
 const pl = (o = {}) => ({ toggleRun: false, runLatch: false, runEdge: false, easy: false, toggleMove: false, ...o });
@@ -48,10 +48,36 @@ describe('alternância do correr · a trava, e o que ela desloca', () => {
     expect(correndoAgora(pl({ toggleRun: true, runLatch: true, easy: true }), false)).toBe(false);
   });
 
-  it('[Boundary] a alternância de MOVIMENTO continua desligando a corrida', () => {
-    // Regra que já existia: com `toggleMove`, segurar é "ir mais rápido" e não corrida. As duas alternâncias
-    // convivem, e a de movimento é quem manda sobre correr.
-    expect(correndoAgora(pl({ toggleMove: true, toggleRun: true, runLatch: true }), false)).toBe(false);
+  it('[Right] TECLAS DE ALTERNÂNCIA passam a correr pela trava — reversão do Dev, 2026-08-27', () => {
+    // ⚠️ ESTE CASO AFIRMAVA O CONTRÁRIO. Até 27/08, `toggleMove` desligava a corrida inteira: segurar a direção
+    // já era "ir mais rápido", e a corrida foi considerada substituída por isso.
+    //
+    // Ele decidiu o oposto, e a frase corrige a premissa: "Aperta o botão de corrida uma vez, liga a corrida,
+    // aperta outra vez volta a andar." E o motivo é quem usa o modo: "Teclas de alternância não é só para quem
+    // tem rigidez nas mãos e perde agilidade e destreza, mas para quem tem um ou mais dedos a menos e não
+    // consegue manter apertado três botões ao mesmo tempo."
+    //
+    // Quem não tem dedos para segurar três botões não tem dedos para segurar o Correr. Tirar a corrida dessa
+    // criança não é simplificar o controle dela — é dar-lhe um jogo mais lento e chamar isso de acessibilidade.
+    expect(usaTravaDeCorrer(pl({ toggleMove: true })), 'teclas de alternância usam a TRAVA').toBe(true);
+    expect(correndoAgora(pl({ toggleMove: true, runLatch: true }), false)).toBe(true);
+    expect(correndoAgora(pl({ toggleMove: true, runLatch: false }), true), 'e segurar não conta').toBe(false);
+  });
+
+  it('[Right] a trava vale para todo modo de entrada que não seja teclado/gamepad no padrão', () => {
+    // A regra do ADR-0033 é invertida de propósito: SEGURAR é a exceção. Hoje são dois campos; rosto, olhos e
+    // voz (issue #11) entram nesta mesma função quando existirem, num lugar só.
+    expect(usaTravaDeCorrer(pl()), 'modo padrão: segura').toBe(false);
+    expect(usaTravaDeCorrer(pl({ toggleRun: true }))).toBe(true);
+    expect(usaTravaDeCorrer(pl({ toggleMove: true }))).toBe(true);
+  });
+
+  it('[Boundary] e o grude migra JUNTO nas teclas de alternância — a borda do Correr foi ocupada lá também', () => {
+    // Se a borda do Correr virou a trava, ela não pode continuar grudando. Sem esta linha, a criança em teclas
+    // de alternância ficaria sem porta para grudar na parede — o beco que o ADR-0045 existe para não abrir.
+    const ctx = { noAr: true, encostado: true, temAranha: true, jaGrudado: false };
+    expect(pularVaiGrudar(pl({ toggleMove: true }), ctx)).toBe(true);
+    expect(botaoDeGrude(pl({ toggleMove: true })), 'e a frase falada nomeia o PULO').toBe('act.jump');
   });
 
   it('[Right] a SONDAGEM da bengala segue a trava — senão o modo cego perde o tato', () => {
@@ -66,13 +92,13 @@ describe('alternância do correr · a trava, e o que ela desloca', () => {
     expect(botaoDeCorrerEngatado(pl({ toggleRun: true, runLatch: false }), true)).toBe(false);
   });
 
-  it('[Boundary] o Modo Fácil NÃO tira a sondagem — ele tira a corrida', () => {
+  it('[Boundary] o Modo Fácil NÃO tira a sondagem — ele tira a corrida, e agora é o ÚNICO que tira', () => {
     // A distinção que o caso acima protege, escrita pelo avesso: usar `correndoAgora` para a sondagem teria
-    // sido o conserto óbvio, e teria calado a bengala de toda criança em Modo Fácil ou alternância de
-    // movimento — que continuam podendo sondar hoje.
+    // sido o conserto óbvio, e teria calado a bengala de toda criança em Modo Fácil.
     expect(botaoDeCorrerEngatado(pl({ easy: true }), true)).toBe(true);
-    expect(botaoDeCorrerEngatado(pl({ toggleMove: true }), true)).toBe(true);
     expect(correndoAgora(pl({ easy: true }), true), 'mas correr, esse continua desligado').toBe(false);
+    expect(correndoAgora(pl({ easy: true, toggleMove: true, runLatch: true }), false),
+      'e o Modo Fácil vence a trava, senão a decisão pedagógica teria porta dos fundos').toBe(false);
   });
 
   it('[Right] com a trava, o PULO gruda quando o contexto pede', () => {

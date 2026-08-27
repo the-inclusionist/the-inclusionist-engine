@@ -1516,7 +1516,7 @@ vizReady=true; applyVizGlobal(players[0].viz); // estado inicial (solo)
    na xícara". Todas as fontes hospedadas são SIL OFL 1.1 (política do fonts.css); as canônicas EdSP
    mantêm o mecanismo antigo (Lexend preserva o espaçamento BDA via data-fonte="dislexia"). */
 // Tipografia: catalogo em ui/fonts.js, painel em ui/settings-typo.js. Antes: FONT_GROUPS/loadFontKey extraídos p/ ui/fonts.js (Fase 2, tipografia).
-const typo = initSettingsTypo({ $, srSay, store, root: document.documentElement }); // painel de tipografia: ui/settings-typo.ts (aplica a fonte persistida no init)
+const typo = initSettingsTypo({ $, srSay, store, root: document.documentElement, fillExplain: (c) => overlays.fillExplain(c) }); // painel de tipografia: ui/settings-typo.ts (aplica a fonte persistida no init)
 function openTypo(){ const ov=$('#typo'); if(!ov)return; typo.render(); ov.hidden=false; frontOverlay(ov);   const f=ov.querySelector<HTMLElement>('button[data-font]:not([disabled])')||ov.querySelector('button'); if(f)f.focus(); }
 function closeTypo(){ const ov=$('#typo'); if(!ov)return; ov.hidden=true; if(!overlays.restoreFocus('typo'))menuFocus(sharedDialogOpen()); }
 { const b=$('#typo-close'); if(b)b.addEventListener('click',closeTypo); }

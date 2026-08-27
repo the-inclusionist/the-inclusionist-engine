@@ -32,6 +32,19 @@ export interface SettingsTypoCtx {
   store: TypoStore;
   /** Element the chosen font is applied to (dataset.fonte + --font-custom): document.documentElement in prod. */
   root: HTMLElement;
+  /**
+   * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA `render()`, e
+   * não só ao abrir — que é o defeito que este parâmetro existe para fechar.
+   *
+   * `fillExplain` roda uma vez quando o overlay é frontalizado e reescreve cada `<span>` para conter só o
+   * rótulo curto. Mas `render()` reconstrói o `#typo-list` inteiro a cada clique numa fonte, e as linhas novas
+   * voltam com o `.opt-hint` dentro. Sem esta chamada a descrição aparece DUAS vezes — no rodapé, vinda da
+   * primeira passada, e sob o nome da fonte, vinda do redesenho. O CLAUDE.md §4 avisa exatamente isso.
+   *
+   * OPCIONAL de propósito: um consumidor que monte este painel sem a casca (o segundo consumidor, um teste)
+   * continua desenhando. O que ele não pode é desenhar prosa duplicada, e sem casca não há rodapé para duplicar.
+   */
+  fillExplain?: (card: HTMLElement | null) => void;
 }
 
 export interface SettingsTypoApi {
@@ -166,6 +179,8 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     const pv = ctx.$<HTMLElement>('#typo-preview');
     if (pv && cur) pv.style.fontFamily = `'${cur.fam}'`;
     refreshMarks();
+    // A ÚLTIMA COISA DO RENDER, e tem de ser: as linhas acabaram de ser recriadas com a prosa dentro delas.
+    ctx.fillExplain?.(ctx.$<HTMLElement>('#typo .overlay__card'));
   }
 
   /**

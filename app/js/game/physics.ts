@@ -21,7 +21,7 @@ import { ehTrampolim } from '../core/constants.js';
 import { t } from '../core/i18n.js';
 import type { ControlledGamePlayer } from './entity.js'; // ADR-0033: a fatia do JOGO — `quiz` mora aqui
 import { tileAt, solidAt, surfTop, isWcRampRiser, rampSurfaceY, caneBlockPx } from '../core/collision.js';
-import { correndoAgora, pularVaiGrudar, botaoDeGrude, botaoDeCorrerEngatado } from './run-toggle.js';
+import { correndoAgora, pularVaiGrudar, botaoDeGrude, usaTravaDeCorrer, botaoDeCorrerEngatado } from './run-toggle.js';
 import { BOX, SPAWN_X, SPAWN_Y, jumpVel, isBouncyGroundBelow, clingSides, firstClingSide, spiderReattach } from './player.js';
 import { ELEV_SPEED, elevAt } from './elevators.js';
 import { held } from '../input/state.js';
@@ -203,7 +203,7 @@ function horizontalMove(pl: PhysicsPlayer, run: boolean, turbo: boolean): number
  * significa. Com a alternância, ela é da trava; sem, ela continua sendo do grude, exatamente como antes.
  */
 function updateRunLatch(pl: PhysicsPlayer): void {
-  if (!pl.toggleRun || !pl.runEdge) return;
+  if (!usaTravaDeCorrer(pl) || !pl.runEdge) return;
   pl.runLatch = !pl.runLatch;
   C.sfx('power');
   C.srSay(t(pl.runLatch ? 'sr.physics.runLatchOn' : 'sr.physics.runLatchOff'));

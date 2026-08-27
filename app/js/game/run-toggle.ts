@@ -47,6 +47,26 @@ export interface ContextoDeGrude {
 }
 
 /**
+ * ESTE JOGADOR USA A TRAVA no botão de correr, em vez de segurar?
+ *
+ * A regra é do ADR-0033, na formulação corrigida pelo Dev em 2026-08-27, e ela é INVERTIDA de propósito:
+ * SEGURAR é a exceção, válida só no modo padrão com teclado ou gamepad. Todo outro modo de entrada recebe a
+ * trava automaticamente — teclas de alternância, rosto, olhos, voz, tela de toque.
+ *
+ * Hoje isso são dois campos, e os dois estão aqui em vez de espalhados: `toggleRun` (a alternância explícita,
+ * automática no emulador de toque) e `toggleMove` (teclas de alternância). Rosto, olhos e voz são a issue #11
+ * e entram AQUI quando existirem — uma linha, num lugar só, que é o motivo de esta função existir em vez de
+ * `pl.toggleRun` aparecer em cinco pontos.
+ *
+ * ⚠️ POR QUE `toggleMove` ENTROU, e a razão é dele: "Teclas de alternância não é só para quem tem rigidez nas
+ * mãos e perde agilidade e destreza, mas para quem tem um ou mais dedos a menos e não consegue manter apertado
+ * três botões ao mesmo tempo." Quem não tem dedos para segurar três botões não tem dedos para segurar o Correr.
+ */
+export function usaTravaDeCorrer(pl: JogadorDaCorrida): boolean {
+  return !!pl.toggleRun || !!pl.toggleMove;
+}
+
+/**
  * O BOTÃO DE CORRER ESTÁ ENGATADO? — e esta pergunta NÃO é "está correndo".
  *
  * A diferença nasceu de uma regressão minha. Parado, SEGURAR o Correr é a sondagem da bengala no modo cego:
@@ -60,18 +80,26 @@ export interface ContextoDeGrude {
  * Então são duas perguntas: esta (o botão está engatado?) e a de baixo (isso resulta em correr?).
  */
 export function botaoDeCorrerEngatado(pl: JogadorDaCorrida, segurando: boolean): boolean {
-  return pl.toggleRun ? !!pl.runLatch : segurando;
+  return usaTravaDeCorrer(pl) ? !!pl.runLatch : segurando;
 }
 
 /**
- * Está correndo NESTE quadro? É o botão engatado MAIS as duas regras que já desligavam a corrida.
+ * Está correndo NESTE quadro? É o botão engatado, menos o Modo Fácil.
  *
- * `easy` e `toggleMove` continuam vencendo, e isso é preservação e não zelo: as duas regras já existiam em
- * `stepPlayer` e desligar a corrida é o ponto delas. Uma trava que as furasse pela porta dos fundos daria à
- * criança do Modo Fácil uma velocidade que o modo existe para não ter.
+ * ⚠️ `toggleMove` SAIU DESTA LISTA EM 2026-08-27, e a mudança é do Dev. Até então, teclas de alternância
+ * desligava a corrida inteira — segurar a direção já significava "ir mais rápido", e a corrida era considerada
+ * substituída por isso. Ele decidiu o contrário, e com uma frase que corrige a premissa: "Aperta o botão de
+ * corrida uma vez, liga a corrida, aperta outra vez volta a andar."
+ *
+ * O motivo é quem usa o modo. Teclas de alternância não é só para quem tem rigidez e perde destreza — é também
+ * para quem tem um ou mais dedos a menos. Tirar a corrida dessa criança não é simplificar o controle dela; é
+ * dar-lhe um jogo mais lento que o das outras, e chamar isso de acessibilidade.
+ *
+ * `easy` continua vencendo, e agora é o ÚNICO que vence: ele desliga a corrida por decisão pedagógica, e o
+ * ponto do modo é não ter essa velocidade. Uma trava que o furasse pela porta dos fundos desfaria o modo.
  */
 export function correndoAgora(pl: JogadorDaCorrida, segurando: boolean): boolean {
-  if (pl.easy || pl.toggleMove) return false;
+  if (pl.easy) return false;
   return botaoDeCorrerEngatado(pl, segurando);
 }
 
@@ -94,11 +122,11 @@ export function correndoAgora(pl: JogadorDaCorrida, segurando: boolean): boolean
  * `TOUCH_ACT_LABELS` e `PAD_GLYPH_SPOKEN`.
  */
 export function botaoDeGrude(pl: JogadorDaCorrida): 'act.jump' | 'act.run' {
-  return pl.toggleRun ? 'act.jump' : 'act.run';
+  return usaTravaDeCorrer(pl) ? 'act.jump' : 'act.run';
 }
 
 export function pularVaiGrudar(pl: JogadorDaCorrida, ctx: ContextoDeGrude): boolean {
-  if (!pl.toggleRun || !ctx.temAranha) return false;
+  if (!usaTravaDeCorrer(pl) || !ctx.temAranha) return false;
   if (ctx.jaGrudado) return true;                       // soltar tem de caber sempre
   return ctx.noAr && ctx.encostado;
 }
