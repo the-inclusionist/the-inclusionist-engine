@@ -22,19 +22,81 @@ more-information: |
   Decisions (was REGISTRO §2):
   - "**Canonical fonts:** Atkinson Hyperlegible (default), Andika (early literacy), Lexend (optional dyslexia/
     dyscalculia/ADHD), Atkinson Hyperlegible Mono (math), Braille CC0. [game-design/typography.md canonical]"
-  - "**OpenDyslexic out of the canon** (weak/negative evidence) — available only by explicit user choice, no efficacy
-    claim.
-    ⚠️ **EMENDADO 2026-08-27 — IT IS OUT ENTIRELY, NOT OUT OF THE CANON.** This clause records an intermediate
-    position that the Dev then reversed, and the code already follows the reversal (zero references to OpenDyslexic
-    or Dyslexie anywhere in `app/`). He first asked to keep it with a caveat — \"apesar do estudo com evidência
-    fraca/negativa, resolvemos manter a pedidos de pessoas que gostam desta fonte\" — and then withdrew that in the
-    next turn: \"**Remove isso.** Acabei de falar quais são as canônicas e esta eu havia retirado. Como disse, outras
-    fontes do estudo serão usadas somente quando for necessário.\"
-    So the roster is the canonical five above, and a font from the study enters ONLY when a need appears — not as a
-    standing option offered to everyone. The reason to amend rather than leave it: shipping OpenDyslexic 'by user
-    choice' would put a font with negative evidence in front of a dyslexic child as if it were a remedy."
+  - "**OpenDyslexic** — the position on this font moved three times; only the last one is in force, and the earlier
+    two are kept because the reasoning is what makes the third defensible. (1) Keep it with a caveat: \"apesar do
+    estudo com evidência fraca/negativa, resolvemos manter a pedidos de pessoas que gostam desta fonte\".
+    (2) Remove it entirely: \"**Remove isso.** Acabei de falar quais são as canônicas e esta eu havia retirado.\"
+    (3) ⚠️ **IN FORCE 2026-08-27 — it is back, and it is in the ACCESSIBILITY group of the roster below**, listed by
+    the Dev alongside Atkinson, Lexend, iA Writer Quattro and Andika.
+    WHAT DOES NOT CHANGE IS THE HONESTY CLAUSE, and it is the whole reason this clause is long: the evidence for
+    OpenDyslexic is weak-to-negative, and it is offered as a CHOICE, never as a remedy. No screen, no label and no
+    description may claim it helps dyslexia. It sits in the list because people who prefer it are not wrong about
+    their own reading; it carries no efficacy claim because the studies do not support one."
   - "**Default spacing:** line ≥ 1.5×, letter ≥ 0.12em, word ≥ 0.16em, paragraph ≥ 2× (WCAG 1.4.12); Dyslexia toggle
     = letter 0.18em + word 0.63em (British Dyslexia Association guide)."
+  - "⚠️ **EMENDA 2026-08-27 — THE ROSTER IS MANDATORY FOR EVERY GAME, AND IT SPLITS IN TWO BY WHERE A FONT MAY
+    APPEAR.** This is the structural half of the amendment, and it is new: until now the catalogue was one list and
+    every font in it could be chosen for the whole interface. The Dev cut it by ROLE.
+
+    **TIER 1 — CALLIGRAPHIC. Inside ACTIVITIES only, never in the system.** His words: \"usadas somente dentro das
+    atividades, nunca no sistema (hud, menus), por isso não aparecem nos menus para escolhas, mas sim em botões
+    dentro das atividades escolares.\" They are TEACHING MATERIAL — a child learns to read cursive by meeting
+    cursive — and they are the opposite of legible-by-default, so they may not carry a HUD, a menu or a warning.
+    Each one carries a MINIMUM SIZE, because a script face below it stops being hard and becomes impossible:
+
+      · Blackletter — **UnifrakturMaguntia**, from 20 px. Chosen over UnifrakturCook for a stroke closer to the
+        German gothic of printed books.
+      · Copperplate / Roundhand / English Script — **Pinyon Script**, from 24 px (the highest floor: the hairlines
+        are the thinnest in the roster).
+      · Ronde — **Ronde Script** if the machine has it; else **OPTIFrench-Script**; else **Merveille**. From 20 px.
+        ⚠️ THE LAST TWO CANNOT BE BUNDLED — free for personal use only — so they are OFFERED AS A DOWNLOAD and the
+        Ronde option is DISABLED when none of the three is present. This is the same shape ADR-0028 gave the
+        pictogram sets whose licence forbids distribution, and it is a licence constraint, not a preference.
+      · Foundational — **Fondamento**, from 20 px. The nib-written sibling of the ball-and-stick hand, from
+        Johnston's Foundational Hand.
+      · Ball-and-stick — **Comic Neue**.
+      · **Playwrite** — the REGIONAL Playwrite is active by default, and the set is bounded by LANGUAGE:
+        \"somente fontes de países que falam inglês, espanhol e português\" (Dev, 2026-08-27). The criterion is the
+        rule; the enumeration is data that must be read from the live Google Fonts catalogue at build time, never
+        from memory. Confirmed present today: BR · PT · MX · AR · ES · ES Deco · US Trad · US Modern · GB J · GB S.
+        ⚠️ AND THE RULE REACHES FURTHER THAN THE THREE MARKET LOCALES — English is official in Nigeria, Tanzania,
+        South Africa, India and Ireland, and Playwrite has regional faces for several of them. That is a feature of
+        the criterion, not an accident of it: the hand a child is taught is national, not linguistic, and a
+        Nigerian classroom writing English does not write the American hand.
+
+    **TIER 2 — GENERAL. Anywhere, and these are the ones the font menu offers:**
+
+      · Accessibility: Atkinson Hyperlegible · Lexend · iA Writer Quattro · Andika · OpenDyslexic
+      · Sans-serif: Source Sans 3 · Inter · Open Sans · Lato
+      · Serif: Literata · Source Serif 4 · Newsreader
+
+    **REMOVED, each with the Dev's reason:** Kindergarten Pro and Learning Curve (Playwrite covers them),
+    UnifrakturCook (Maguntia is enough), Great Vibes (Pinyon is enough).
+
+    **THE MENU IS A CHOICE, NOT A TOGGLE:** the selected font is shown with a yellow background, like a pressed
+    button. One font is active; the others are alternatives, not switches."
+
+  - "⚠️ **FEASIBILITY, MEASURED 2026-08-27 rather than assumed**, because the amendment above is only worth what it
+    can actually ship. The fonts are bundled as woff2 under `app/public/vendor/fonts/`, declared in `app/index.html`
+    — **17 families, 928 KB total**, so a family costs on the order of 20–90 KB and Andika, the largest, costs 200.
+
+      · ALREADY BUNDLED and staying: atkinson · lexend · quattro · andika · sourcesans · inter · opensans · lato ·
+        literata · sourceserif · newsreader · comicneue · pinyon · ufmag.
+      · BUNDLED AND LEAVING: greatvibes (44 KB) · ufcook (20 KB). The catalogue also drops learningcurve and
+        kindergarten, which were entries marked `.off` with no files behind them.
+      · MISSING AND NEEDED: **OpenDyslexic** · **Fondamento** · **Playwrite**.
+
+    PLAYWRITE WAS THE LINE THAT NEEDED A NUMBER, AND THE DEV BOUNDED IT THE SAME DAY. Playwrite is not one family:
+    it is a family PER REGION, on the order of fifty across all languages (Playwrite NL, NO, TZ, DE, FR, …). His
+    rule cuts it to the languages this project ships: \"somente fontes de países que falam inglês, espanhol e
+    português\". At the roster's measured cost (20–90 KB per family) that lands in the low hundreds of KB rather
+    than 1,5–2 MB, which the 29 MB budget absorbs.
+
+    ⚠️ THE ENUMERATION IS STILL OWED, and it is data rather than judgement: which region codes Google Fonts actually
+    publishes under those three languages has to be read from the catalogue when this is built. Ten are confirmed
+    (BR, PT, MX, AR, ES, ES Deco, US Trad, US Modern, GB J, GB S); the anglophone set beyond the US and Britain is
+    the part to look up, not to guess."
+
   - "**Own Typography menu** in pause (pt-BR pangram preview; 3 groups sans/serif/manuscript; one active font,
     radio). [commit 450e96f]"
   - "**Only SIL OFL 1.1 fonts embedded** (16 families, ~530KB, SW-cached). Learning Curve / Kindergarten Pro appear

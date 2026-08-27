@@ -103,10 +103,43 @@ more-information: |
   WASM backend with the quantised ops (MatMulInteger / DynamicQuantizeLinear). Quantising does not shrink the wait
   here — it lengthens it. Without this paragraph the next person tries int8 believing it is an optimisation.
 
-  **TARGET ROSTER, DECLARED AS TARGET AND NOT AS FACT:** all vits-piper medium and high from that source for en_US,
-  en_GB, pt_BR, pt_PT, es_AR, es_ES, es_MX. It is written as an aim because NOBODY HAS ADDED UP THE MEGABYTES —
-  seven locales × two sizes is a download budget, and pillar 1 is a school machine on a school network. The sum is
-  owed before this line becomes a decision.
+  **THE ROSTER IS THREE, AND THEY BELONG TO THE ENGINE.** The seven-locale target was cut by the Dev the moment the
+  sum was put in front of him. His words: "deixe somente três modelos para offline: en_US, pt_BR e es_MX (latino-
+  americano neutro) e empacote-os no PWA. Eles fazem parte da engine, e não do jogo em si, uma vez que se abre a
+  engine, isso deve permanecer dentro dela."
+
+  Two decisions in one sentence, and the second is the structural one:
+
+    · WHICH: en_US, pt_BR, es_MX. Three locales, not seven, and es_MX chosen as NEUTRAL LATIN AMERICAN rather than
+      es_ES — the audience is Brazilian public schools and their neighbours, not Spain.
+    · WHOSE: they are ENGINE assets. Every game opened on this engine finds them already there; a cartridge does not
+      ship its own voice and does not have to know one exists. This is the same cut ADR-0038 made for state and
+      ADR-0032 for curriculum — it says who OWNS the thing, which is what decides where it travels.
+
+  ⚠️ MEASURED, AND THE NUMBER IS THE OPEN PART. One Piper medium voice, on disk, in this repository today:
+
+    · `model.onnx` — 61 MB (measured on `vits-piper-pt_BR-faber-medium`)
+    · `espeak-ng-data` — 18 MB, SHARED across every voice
+    · tokens + config — under 6 KB
+
+  So three voices ≈ **183 MB of models + 18 MB shared ≈ 200 MB**. For comparison, the whole built game today is
+  **29 MB**, and the precache gate holds **100 entries / 28,5 MB**.
+
+  PRECACHE AND RUNTIME-CACHE ARE NOT THE SAME PROMISE, and the difference is what needs the Dev's word:
+
+    · PRECACHE (`globPatterns`, which is what "empacotar no PWA" does literally) downloads everything BEFORE the app
+      is usable offline. It would take first load from 29 MB to ~230 MB on a school network.
+    · RUNTIME CACHE keeps the same end state — the voice lives on the machine and works offline forever after — but
+      pays for it on first use, per voice, and only for the locale actually in use.
+
+  The second is what ADR-0021/0022 already chose ("fetch once → 100% local"), and it is also what the Dev's own
+  budget rule asks for: "A busca é por ter o menor tamanho possível, e 25MB para um jogo é algo incrível." Those two
+  statements of his are in tension and only he can settle it. Until then the DECISION recorded here is the roster
+  and the ownership; the delivery mechanism is marked OPEN rather than guessed.
+
+  ⚠️ AND THE VOICE NAMES ARE NOT DECIDED — only the locales. Which `en_US-*` and `es_MX-*` model to ship is a
+  LISTENING test, and this project has a history of that judgement being made by ear and being right (jeff left the
+  roster because the Dev heard it as the same model as faber). Nobody should pick them from a filename.
 
   Supersedes the LIB half of ADR-0021 (npm @mintplex-labs). The 'no R2, weights from HF' half is **REVERSED**: models now
   live on **Cloudflare R2** (HF lacks raw-file bandwidth); the 'fetch once → 100% local → disclose to schools' principle
