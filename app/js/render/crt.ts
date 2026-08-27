@@ -1,20 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // render/crt.ts — estética CRT (menu Sensibilidade visual): scanlines/vinheta/cantos, só CSS (classes em
-// #game-region). Extraído do game.js (Estágio 4, Tier 1). CRT = config {scan,vig,round} (0=off,1,2; scan/vig são
-// on/off) carregada do localStorage com migração do formato antigo booleano. crtScanVars ancora a scanline em
+// #game-region). Extraído do game.js (Estágio 4, Tier 1). CRT = config {scan,vig,round,manterScan,manterVig}
+// (0=off,1,2; só `round` tem 3 níveis) carregada do localStorage com migração do formato antigo booleano.
+// As duas `manter*` são a saída por efeito da regra de ceder à a11y — a decisão mora em `render/crt-cede`. crtScanVars ancora a scanline em
 // PIXELS REAIS (recomputa da altura real do #game-region + dpr → 1 linha por pixel de arte, espaçamento regular).
 // Auto-contido: depende de ui/dom ($). A contagem de jogadores entra por `initCrt` (ver abaixo).
 import { $ } from '../ui/dom.js';
 
 import { screenGrid } from '../core/screens.js';
 import * as store from '../platform/storage.js';
+import { efeitoDecorativoVisivel } from './crt-cede.js';
 
-type CrtCfg = { scan: number; vig: number; round: number };
+/**
+ * `scan`/`vig`/`round` são os efeitos. `manterScan`/`manterVig` (0/1) são a SAÍDA que o Dev pediu em
+ * 2026-08-27: "deixe uma opção de não ceder para cada um no menu conforto visual". Uma por efeito, e não uma
+ * geral — porque as duas incomodam de formas diferentes (a scanline risca, a vinheta escurece as bordas) e
+ * quem tolera uma pode não tolerar a outra.
+ *
+ * Elas moram AQUI, no mesmo objeto e na mesma chave persistida, porque são preferência do MESMO efeito. Um
+ * segundo objeto de configuração significaria dois "restaurar padrões" e duas chances de divergirem.
+ */
+type CrtCfg = { scan: number; vig: number; round: number; manterScan: number; manterVig: number };
 // scanline LIGADA por padrão (decisão do José 2026-07-03). Migra incl_crt (booleano) → incl_crt2 (níveis 0..2).
 /** O CRT de fábrica. Ganhou nome porque o "restaurar padrões" do menu (ADR-0028) precisa do MESMO valor que
  *  a carga do boot usa quando nada foi salvo — duas cópias seriam duas chances de o reset devolver um CRT que
  *  o jogo nunca mostrou. Congelado: um padrão que alguém consiga escrever em tempo de execução não é padrão. */
-export const CRT_DEFAULT: Readonly<CrtCfg> = Object.freeze({ scan: 1, vig: 0, round: 1 });
+export const CRT_DEFAULT: Readonly<CrtCfg> = Object.freeze({ scan: 1, vig: 0, round: 1, manterScan: 0, manterVig: 0 });
 
 // A CONTAGEM DE JOGADORES entra por injeção desde 2026-08-26. Era `numPlayers`, um `let` de `core/state`
 // importado como binding vivo — e um `let` de módulo é compartilhado por qualquer segundo jogo que a
@@ -52,6 +63,7 @@ export const CRT: CrtCfg = (() => {
     }
   } catch (e) { /* noop: file:// / modo privado */ }
   d.scan = d.scan ? 1 : 0; d.vig = d.vig ? 1 : 0; // scanlines/vinheta são ON/OFF (só cantos têm 3 níveis)
+  d.manterScan = d.manterScan ? 1 : 0; d.manterVig = d.manterVig ? 1 : 0; // as duas saídas também são ON/OFF
   return d;
 })();
 
@@ -68,17 +80,20 @@ export function crtScanVars(): void {
 export function applyCrt(): void {
   const g = $<HTMLElement>('#game-region'); if (!g) return;
   ['crt-scan-1', 'crt-vig-1', 'crt-round-0', 'crt-round-2'].forEach((c) => g.classList.remove(c));
-  if (CRT.scan) { g.classList.add('crt-scan-' + CRT.scan); crtScanVars(); }
-  // A VINHETA CEDE PARA A ACESSIBILIDADE (ADR-0020: "modos de a11y suprimem o CRT decorativo").
+  // OS DOIS EFEITOS CEDEM À ACESSIBILIDADE (ADR-0020 + ADR-0047), cada um com a SUA saída.
   //
-  // ⚠️ A SCANLINE NÃO CEDE, e isso é escolha declarada, não descuido. O registro nomeia `CRT_VIGNETTE` e
-  // "flashes decorativos"; a scanline não está na lista, e ela é a única das três que vem LIGADA de fábrica.
-  // Suprimi-la mudaria a aparência de todo mundo que usa qualquer modo de visão, e essa é decisão de produto
-  // — não a tomo por conta própria a partir de uma lista que não a menciona. Fica registrada como pergunta.
+  // A vinheta já cedia desde 2026-08-26; a scanline ficou de fora por decisão declarada do Dev, e ele reverteu
+  // em 2026-08-27 acrescentando a metade que faltava: "ceda o scanline e o CRT à acessibilidade, mas deixe uma
+  // opção de não ceder para cada um no menu conforto visual". O padrão respeita o pilar; a exceção é da
+  // criança, no menu dela — que é o pilar funcionando, e não uma brecha nele.
   //
-  // O valor de `CRT.vig` NÃO é alterado: a preferência da criança continua gravada, e volta a valer sozinha
-  // quando ela sair do modo de acessibilidade. Suprimir não é desligar.
-  if (CRT.vig && !_a11yVisualAtiva()) g.classList.add('crt-vig-' + CRT.vig);
+  // O valor gravado NÃO é alterado em nenhum dos dois casos: a preferência continua lá e volta a valer sozinha
+  // ao sair do modo de acessibilidade. Suprimir não é desligar.
+  const a11y = _a11yVisualAtiva();
+  if (efeitoDecorativoVisivel({ nivel: CRT.scan, manterEmA11y: !!CRT.manterScan }, a11y)) {
+    g.classList.add('crt-scan-' + CRT.scan); crtScanVars();
+  }
+  if (efeitoDecorativoVisivel({ nivel: CRT.vig, manterEmA11y: !!CRT.manterVig }, a11y)) g.classList.add('crt-vig-' + CRT.vig);
   if (CRT.round !== 1) g.classList.add('crt-round-' + CRT.round); // 1 = visual padrão (8px), sem classe
   store.setJSON(store.KEYS.crt, CRT);
 }

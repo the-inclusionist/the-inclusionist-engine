@@ -1,0 +1,150 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-27
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0010 (pillar 2: a11y-first — when aesthetics and accessibility disagree, accessibility wins)"
+    - "ADR-0011 (visual accessibility: the fix-* correction family)"
+    - "ADR-0020 (z-order + post-fx chain; the 2026-08-26 amendment that measured the defect)"
+    - "ADR-0028 (every settings menu persists and restores ITS OWN defaults)"
+    - "ADR-0029 (the changed-from-default mark)"
+    - "ADR-0046 (a simulation is not an accessibility feature — the neighbouring rule about what may be degraded)"
+  informed: []
+
+title: The decorative CRT YIELDS to accessibility — and the exception belongs to the child, in her own menu, one switch per effect
+
+context-and-problem-statement: |
+  ADR-0020 has said since 2026-07-06 that "modos de a11y SUPRIMEM o CRT/efeitos decorativos — precedência
+  a11y > estética". The 2026-08-26 amendment measured that this had NEVER been implemented: with the vignette on,
+  `crt-vig-1` survived in `hc-direto`, `fix-deuter`, `lv-blur` and `blind` — a vignette darkening the edges of the
+  very mode that exists to raise contrast.
+
+  The vignette was made to yield that day. THE SCANLINE WAS NOT, and it was left as a written question rather than
+  a silent omission, because the Dev had ruled: "Scanline não deverá ceder a acessibilidade por enquanto." He had
+  also said, earlier and warmly, "CRT deve ser mantido, o visual é lindo."
+
+  That left the project in the worst of the three possible states: a NON-NEGOTIABLE PILLAR with an exception that
+  existed in practice and nowhere in writing. The pillar loses force and nobody can say why.
+
+  On 2026-08-27 he closed it, and the closure is better than either of the two obvious answers:
+
+    "ceda o scanline e o CRT à acessibilidade, mas deixe uma opção de não ceder para cada um no menu conforto
+     visual."
+
+decision-drivers:
+  - "An exception to a pillar must be written down or the pillar stops meaning anything — this is the same failure
+     the project catalogued twelve times over on 2026-08-27, under the heading that a record which keeps the old
+     position argues against its own author."
+  - "The default must be the pillar. Anything else makes accessibility opt-in, which is the shape this project
+     refuses everywhere else."
+  - "But a child who wants the effect is not wrong. Low vision is not one condition, and 'the scanline helps me
+     see the raster' is a report nobody here is in a position to overrule."
+  - "The exception has to be discoverable and undoable by the child herself, without reading anything."
+
+considered-options:
+  - "E1 — the scanline yields too, no exception (what the pillar says, read literally)"
+  - "E2 — the scanline never yields (the Dev's earlier ruling, left in place and written as an exception)"
+  - "E3 — both yield by default, with ONE switch that turns the whole suppression off"
+  - "E4 — both yield by default, with ONE SWITCH PER EFFECT in Visual Sensitivity"
+
+pros-and-cons-of-the-options:
+  E1:
+    good: ["Nothing to explain. The pillar reads the same in the record and in the code.",
+           "One fewer setting in a game that already has many."]
+    bad: ["Takes the effect away from a child who wants it, in the name of helping her.",
+          "The Dev's aesthetic judgement — the CRT is a large part of what this game looks like — gets no answer."]
+  E2:
+    good: ["Preserves the look everywhere; no new setting."]
+    bad: ["A written exception to a non-negotiable pillar, granted by the program rather than by the person.",
+          "The measured harm stays: a vignette darkening the edges of a high-contrast screen, scanlines striping the
+           screen of a child who already sees badly."]
+  E3:
+    good: ["One switch is simpler to find and to explain than two."]
+    bad: ["The two effects harm differently — the scanline STRIPES, the vignette DARKENS THE EDGES. A single switch
+           forces a child who tolerates one to accept the other.",
+          "It reads as 'turn off accessibility', which is not what it does."]
+  E4:
+    good: ["Default is the pillar; the exception is the child's, per effect, in the menu that already owns these
+            effects.",
+           "It composes with what already exists: ADR-0028 gives it a reset, ADR-0029 marks it when it departs from
+            default, and it persists like every other visual setting."]
+    bad: ["Two more rows in a panel that is already long.",
+          "The option describes a rule, not a thing — 'keep the scanlines in accessibility mode' is a harder label to
+           write than 'scanlines'."]
+
+decision-outcome:
+  chosen-option:
+    link: "E4 — both yield by default; one escape switch per effect, in Visual Sensitivity"
+    justification: |
+      ===== 1. THE PILLAR IS THE DEFAULT, AND THAT IS THE POINT =====
+      Out of the box, turning on ANY visual accessibility mode suppresses BOTH decorative effects. ADR-0020 finally
+      describes what the code does, for the first time since 2026-07-06.
+
+      ===== 2. THE EXCEPTION BELONGS TO THE CHILD, NOT TO THE PROGRAM =====
+      This is what makes E4 different in kind from E2 rather than in degree. An exception the CODE takes weakens the
+      pillar for everybody and is invisible. An exception the PERSON switches on, in her own settings menu, IS the
+      pillar working: accessibility won by default, and someone who wanted something else said so.
+
+      ⚠️ AND IT IS NOT A LOOPHOLE FOR THE DEV. He cannot ship the game with these switches pre-set — they are per
+      installation, they default to off, and the ADR-0029 mark makes it visible when they are not. If the CRT has to
+      be on for a demonstration, it is on because someone turned it on there.
+
+      ===== 3. TWO SWITCHES, BECAUSE THEY ARE TWO DIFFERENT HARMS =====
+      The scanline STRIPES the picture; the vignette DARKENS THE EDGES. Photophobia, low vision and TEA sensitivity
+      do not react to them the same way. One switch would make a child accept the harm she cannot tolerate in order
+      to keep the effect she can.
+
+      ===== 4. "SUPPRESS" IS NOT "TURN OFF" — AND THAT IS A CLAUSE, NOT AN IMPLEMENTATION DETAIL =====
+      The stored level is never modified. Leaving accessibility mode brings the effect back on its own, with no
+      reconfiguration. A child who switches high contrast on and off during a lesson must not lose her CRT settings
+      as a side effect, and a setting that silently rewrites itself is the thing ADR-0029 exists to make visible.
+
+      ===== 5. "KEEP" MUST NOT MEAN "TURN ON" =====
+      The trap in the name, and the reason this is a module and not an inline `if`: `manterEmA11y` speaks about the
+      SUPPRESSION, never about the effect. A child who switched the scanline OFF must not see it come back when she
+      switches high contrast ON. The decision reads the level first, and that ordering is gated.
+
+  consequences:
+    positive:
+      - "ADR-0020's oldest promise becomes true in the code, and the open question its 2026-08-26 amendment left is
+         closed rather than inherited."
+      - "The pillar keeps its force: the only exception is one a person makes, per install, visibly marked."
+      - "The measured harm goes away by default — no vignette darkening a high-contrast screen, no stripes over a
+         low-vision one."
+    negative:
+      - "Two more rows in Visual Sensitivity, and their labels describe a rule rather than a thing, which is harder
+         to word well in three languages."
+      - "The default changes what the game LOOKS LIKE for every existing player who uses a vision mode. That is the
+         intended effect and it is still a visible change nobody asked for individually."
+      - "A fifth and sixth field in the persisted CRT object, which the migration path from the old boolean format
+         has to keep tolerating."
+    neutral:
+      - "Rounded corners (`round`) are NOT covered: they neither stripe nor darken, and no measurement showed them
+         working against a correction. If one appears, this record is amended rather than guessed at now."
+
+  confirmation: |
+    · THE DECISION — `tests/crt-cede-a11y.node.test.js`, against `render/crt-cede.efeitoDecorativoVisivel`. Written
+      failing first; the eight combinations are asserted as a table, and three mutations were confirmed red: ignoring
+      the a11y flag (2 cases fail), forgetting the level so that "keep" turns an effect ON (3 fail), and swapping the
+      `||` of the escape (4 fail).
+    · THE USE — `render/crt.applyCrt` asks the function for BOTH effects. This is the "a decision gate is not a use
+      gate" lesson from ADR-0045 applied on the way in rather than after the fact.
+    · THE RESET — the two switches are in the Visual Sensitivity restore-defaults path (ADR-0028), so "restore" gives
+      back a screen the game actually ships.
+    · THE MARK — `refreshMarks` marks both against `CRT_DEFAULT` (ADR-0029), which is how a child undoes a switch she
+      does not remember setting.
+
+    ⚠️ WHAT IS NOT CONFIRMED: whether a child with low vision actually prefers the scanline on. The switch exists
+    precisely because nobody here knows, and issue #7 (field test) is where the answer comes from.
+
+more-information: |
+  Files: `app/js/render/crt-cede.ts` (the decision, node-testable, no DOM), `app/js/render/crt.ts` (`CrtCfg` gains
+  `manterScan`/`manterVig`, both defaulting to 0; `applyCrt` uses the decision for both effects),
+  `app/js/ui/settings-motion.ts` (the two rows, the reset and the marks), and the three dictionaries.
+
+  Supersedes, INSIDE ADR-0020, the clause of its 2026-08-26 amendment that left the scanline as an open question,
+  and the earlier ruling "scanline não deverá ceder a acessibilidade por enquanto" — whose "por enquanto" this record
+  is the end of.
+
+  Deliberately NOT decided here: whether the same yield-with-escape shape applies to AUDIO decoration (earcons,
+  ambience) under the auditory accessibility modes. It is the obvious next question and it has no measurement yet.

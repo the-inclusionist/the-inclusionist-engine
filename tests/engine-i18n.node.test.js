@@ -125,7 +125,8 @@ const CRU_CONHECIDO = {
 
   /* --- PAINÉIS DE AJUSTE: rótulos e dicas montados em markup, ainda sem `data-i18n`. --- */
   'ui/map-hub.ts': 8,
-  'ui/settings-motion.ts': 7,
+  'ui/settings-motion.ts': 6,   // 7 → 6 em 2026-08-27: a etiqueta "todos os jogadores" das seções, que estava
+                               // escrita à mão três vezes, virou uma chamada a `t('rm.sec.all')`
   'ui/settings-visual.ts': 7,
   'ui/settings-caa.ts': 5,
   'ui/caa-sets.ts': 3,             // descrições dos conjuntos de pictogramas (licença, origem cultural)

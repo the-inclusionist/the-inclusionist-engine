@@ -108,6 +108,12 @@ decision-outcome:
     Hoje a ordem real é a INVERSA — a scanline é um pseudo-elemento em `z-index:500`, pintado POR CIMA da
     canvas já corrigida.
 
+    ✅ RESOLVIDO EM 2026-08-27 PELO ADR-0047, e esta é a metade que faltava desde 2026-07-06: a scanline E a
+    vinheta passam a CEDER a qualquer modo de acessibilidade visual, por padrão. A pergunta que esta emenda
+    deixou em aberto ("a scanline cede como a vinheta passou a ceder, ou não?") está fechada, e fechada com uma
+    resposta melhor que sim ou não — cede, e a criança tem uma chave por efeito no menu Sensibilidade visual para
+    dizer o contrário. O `POST_FX_ORDER` deste registro finalmente descreve o que o código faz.
+
     ===== 2. "MODOS DE A11Y SUPRIMEM O CRT DECORATIVO" NÃO ESTÁ IMPLEMENTADO =====
     Medido com a vinheta ligada (`CRT.vig = 1`): a classe `crt-vig-1` sobrevive em `hc-direto`, `fix-deuter`,
     `lv-blur` e `blind` — nos dezesseis modos, na verdade. A precedência "a11y > estética" que este registro

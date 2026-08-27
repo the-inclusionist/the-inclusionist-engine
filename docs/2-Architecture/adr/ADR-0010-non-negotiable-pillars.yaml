@@ -52,6 +52,11 @@ more-information: |
   The 10 pillars:
     1. Runs on weak BR public-school hardware (Positivo tablet, Chromebook) — PWA-first, 60fps on scaled 320x180.
     2. Accessibility — WCAG 2.2 + GAG (+ GB/T 37668, EN 301 549); AAA aspirational-honest; text always in the DOM; Libras in a separate engine.
+       ⚠️ THE ONE DECLARED EXCEPTION TO "a11y beats aesthetics", added 2026-08-27 (ADR-0047): the decorative CRT
+       (scanline, vignette) yields to every visual accessibility mode BY DEFAULT, and a child may switch that
+       suppression off per effect in her own Visual Sensitivity menu. The exception belongs to the PERSON, never to
+       the program — a code-taken exception weakens the pillar for everybody and is invisible; one someone turns on,
+       marked by ADR-0029, is the pillar working. No other exception exists; adding one means amending this line.
     3. i18n — real (nordic portfolio): pt base -> en/es -> nordic; zero hardcoded strings.
     4. Compliance — LGPD/COPPA/China/Nordic; **local law of the deployment region wins**, the rest are goals.
     5. Pixel grid 320x180 (16:9); Libras panel 420x180 (21:9), >= 1/4 width x 1/2 height (ABNT NBR 15290).
