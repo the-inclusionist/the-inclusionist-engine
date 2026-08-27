@@ -1,0 +1,194 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-27
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0010 (pillar 2: a11y-first — when aesthetics and accessibility disagree, accessibility wins)"
+    - "ADR-0011 (visual accessibility: the fix-* correction family)"
+    - "ADR-0020 (z-order + post-fx chain; the 2026-08-26 amendment that measured the defect)"
+    - "ADR-0028 (every settings menu persists and restores ITS OWN defaults)"
+    - "ADR-0029 (the changed-from-default mark)"
+    - "ADR-0046 (a simulation is not an accessibility feature — the neighbouring rule about what may be degraded)"
+  informed: []
+
+title: The decorative CRT YIELDS to accessibility with NO exception — and "yield" means switched off, not re-tinted, because adapting fixes the colour conflict and leaves the luminance one
+
+context-and-problem-statement: |
+  ADR-0020 has said since 2026-07-06 that "modos de a11y SUPRIMEM o CRT/efeitos decorativos — precedência
+  a11y > estética". The 2026-08-26 amendment measured that this had NEVER been implemented: with the vignette on,
+  `crt-vig-1` survived in `hc-direto`, `fix-deuter`, `lv-blur` and `blind` — a vignette darkening the edges of the
+  very mode that exists to raise contrast.
+
+  The vignette was made to yield that day. THE SCANLINE WAS NOT, and it was left as a written question rather than
+  a silent omission, because the Dev had ruled: "Scanline não deverá ceder a acessibilidade por enquanto." He had
+  also said, earlier and warmly, "CRT deve ser mantido, o visual é lindo."
+
+  That left the project in the worst of the three possible states: a NON-NEGOTIABLE PILLAR with an exception that
+  existed in practice and nowhere in writing. The pillar loses force and nobody can say why.
+
+  On 2026-08-27 he closed it, in TWO STEPS, and both belong here because the second only became possible after
+  seeing the first one run:
+
+    (1) "ceda o scanline e o CRT à acessibilidade, mas deixe uma opção de não ceder para cada um no menu conforto
+         visual."
+    (2) "Cedi e vou além: pedi para deixar opções de não ceder no menu conforto visual, mas pode removê-las. Ceder
+         fez muito bem ao jogo nos modos de acessibilidade."
+
+  So the answer is the plain one — both yield, no exception — but it was NOT reached by reading the pillar and
+  obeying it. It was reached by building the exception, looking at the screen, and finding the exception
+  unnecessary. That is worth recording, because the same fear will come back for the next decorative effect.
+
+decision-drivers:
+  - "An exception to a pillar must be written down or the pillar stops meaning anything — this is the same failure
+     the project catalogued twelve times over on 2026-08-27, under the heading that a record which keeps the old
+     position argues against its own author."
+  - "The default must be the pillar. Anything else makes accessibility opt-in, which is the shape this project
+     refuses everywhere else."
+  - "But a child who wants the effect is not wrong. Low vision is not one condition, and 'the scanline helps me
+     see the raster' is a report nobody here is in a position to overrule."
+  - "An exception must earn its place on screen. In a menu a blind child sweeps item by item, an unused row costs
+     her time on every pass — so 'it might help someone' is not enough to keep a setting."
+
+considered-options:
+  - "E1 — the scanline yields too, no exception (what the pillar says, read literally)"
+  - "E2 — the scanline never yields (the Dev's earlier ruling, left in place and written as an exception)"
+  - "E3 — both yield by default, with ONE switch that turns the whole suppression off"
+  - "E4 — both yield by default, with ONE SWITCH PER EFFECT in Visual Sensitivity"
+  - "E5 — the CRT ADAPTS instead of switching off: composite it INSIDE the filter target so the accessibility
+     correction applies to it too"
+
+pros-and-cons-of-the-options:
+  E1:
+    good: ["Nothing to explain. The pillar reads the same in the record and in the code.",
+           "One fewer setting in a game that already has many."]
+    bad: ["Takes the effect away from a child who wants it, in the name of helping her.",
+          "The Dev's aesthetic judgement — the CRT is a large part of what this game looks like — gets no answer."]
+  E2:
+    good: ["Preserves the look everywhere; no new setting."]
+    bad: ["A written exception to a non-negotiable pillar, granted by the program rather than by the person.",
+          "The measured harm stays: a vignette darkening the edges of a high-contrast screen, scanlines striping the
+           screen of a child who already sees badly."]
+  E3:
+    good: ["One switch is simpler to find and to explain than two."]
+    bad: ["The two effects harm differently — the scanline STRIPES, the vignette DARKENS THE EDGES. A single switch
+           forces a child who tolerates one to accept the other.",
+          "It reads as 'turn off accessibility', which is not what it does."]
+  E4:
+    good: ["Default is the pillar; the exception is the child's, per effect, in the menu that already owns these
+            effects.",
+           "It composes with what already exists: ADR-0028 gives it a reset, ADR-0029 marks it when it departs from
+            default, and it persists like every other visual setting."]
+    bad: ["Two more rows in a panel that is already long, and a row is not free: a child navigating by ear sweeps
+           past it on the way to something she needs (ADR-0044).",
+          "BUILT AND THEN WITHDRAWN by the Dev once he saw the plain yield running — see the outcome. The switches
+           were answering a fear, and the fear did not survive contact with the screen."]
+  E5:
+    good: ["Answers the Dev's own reading of the word: 'Eu entendo ceder como se adaptar, e não desligar.'",
+           "It is what POST_FX_ORDER always specified and never did — CRT_VIGNETTE innermost, A11Y_CORRECTION after
+            it. Today the scanline is a pseudo-element at z-index 500 painted OVER the corrected canvas, so the
+            correction never touches it. Composite the CRT inside the filtered element and the correction reaches it.",
+           "Keeps the game looking like itself in the colour-correction family."]
+    bad: ["IT FIXES HALF THE CONFLICT, and leaves the half that matters more. Re-tinting solves HUE: a colour-blind
+           matrix would recolour the scanline along with the world. It does not solve LUMINANCE — a correctly
+           recoloured vignette is still a vignette darkening the edges of a screen whose whole purpose is more
+           contrast, and a correctly recoloured scanline still costs about half the vertical resolution of a glyph.",
+          "It would therefore have to be combined with E1 for high contrast and low vision anyway: two mechanisms
+           where one suffices."]
+
+decision-outcome:
+  chosen-option:
+    link: "E1 — both yield to every visual accessibility mode, with no exception and no escape switch"
+    justification: |
+      ===== 1. NO EXCEPTION — AND THE ROUTE TO THAT ANSWER IS THE VALUABLE PART =====
+      Turning on ANY visual accessibility mode suppresses BOTH decorative effects. Full stop. ADR-0020 finally
+      describes what the code does, for the first time since 2026-07-06, and pillar 2 has no exception again.
+
+      E4 WAS BUILT FIRST, at the Dev's own request ("deixe uma opção de não ceder para cada um no menu conforto
+      visual"), and he withdrew it in the next turn after seeing it run: "Cedi e vou além: pedi para deixar opções de
+      não ceder no menu conforto visual, mas pode removê-las. Ceder fez muito bem ao jogo nos modos de acessibilidade."
+
+      THAT SEQUENCE IS THE RECORD, not something to tidy away. The switches were built to answer a fear — that
+      yielding would ruin the look — and the fear did not survive contact with the screen. An unused setting is not
+      free: it is one more row a child navigating by ear sweeps past, and a second definition of what the CRT does
+      for whoever reads the code next.
+
+      ===== 2. WHAT "YIELD" MEANS, BECAUSE THE DEV ASKED AND THE ANSWER IS NOT OBVIOUS =====
+      His question: "o que significa ceder CRT na prática? Por que não deveria manter CRT durante todo o jogo,
+      independente de estar no modo visual ou não? Eu entendo ceder como se adaptar, e não desligar."
+
+      IN PRACTICE TODAY: the CSS class is not added while a visual accessibility mode is on — the effect is not
+      drawn. The stored value is untouched (§3), so leaving the mode brings it straight back.
+
+      ADAPTING IS A REAL OPTION, not a misunderstanding: it is E5, and it is what this project already wrote down.
+      POST_FX_ORDER says CRT_VIGNETTE is the innermost pass and A11Y_CORRECTION comes after it. Composite the CRT
+      inside the filtered element and the correction reaches it — the scanline would be recoloured along with the
+      world instead of floating above it.
+
+      IT IS NOT ENOUGH, AND THE REASON IS LUMINANCE, NOT HUE:
+
+        · the VIGNETTE darkens the edges — of a screen whose entire purpose, in high contrast, is more contrast;
+        · the SCANLINE lays a repeating dark stripe over an image a low-vision child is already straining to
+          resolve, costing roughly half the vertical resolution of every glyph.
+
+      Re-tinting corrects the COLOUR of a vignette and leaves it a vignette. So E5 would fix the fix-* family and
+      still need E1 for high contrast and low vision. Adapting is the better word for what decoration SHOULD do;
+      switching off is what THESE TWO have to do, because what they subtract is light and detail, not colour.
+
+      ⚠️ AND THIS IS ABOUT THESE TWO EFFECTS, NOT ABOUT DECORATION IN GENERAL. Rounded corners already stay on. A
+      future decorative effect that costs neither luminance nor detail should ADAPT rather than yield, and E5 is the
+      mechanism waiting for it.
+
+      ===== 3. "SUPPRESS" IS NOT "TURN OFF" — AND THAT IS A CLAUSE, NOT AN IMPLEMENTATION DETAIL =====
+      The stored level is never modified. Leaving accessibility mode brings the effect back on its own, with no
+      reconfiguration. A child who switches high contrast on and off during a lesson must not lose her CRT settings
+      as a side effect, and a setting that silently rewrites itself is the thing ADR-0029 exists to make visible.
+
+
+  consequences:
+    positive:
+      - "ADR-0020's oldest promise becomes true in the code, and the open question its 2026-08-26 amendment left is
+         closed rather than inherited."
+      - "The pillar keeps its force: the only exception is one a person makes, per install, visibly marked."
+      - "The measured harm goes away by default — no vignette darkening a high-contrast screen, no stripes over a
+         low-vision one."
+    negative:
+      - "This changes what the game LOOKS LIKE for every player who uses a vision mode. That is the intended effect
+         and it is still a visible change nobody asked for individually."
+      - "A player who WANTS the CRT while using a correction has no way to get it. That is a real loss and it is
+         accepted: the pillar costs something or it is not a pillar."
+    neutral:
+      - "Rounded corners (`round`) are NOT covered: they neither stripe nor darken, and no measurement showed them
+         working against a correction. If one appears, this record is amended rather than guessed at now."
+
+  confirmation: |
+    · BOTH YIELD — `tests/crt.browser.test.js`, on the real stylesheet and real markup. The scanline case is the one
+      worth reading: it USED to assert the opposite, and carries the reversal in its own comment, including the "por
+      enquanto" that had been written there on purpose waiting for this day.
+    · NEITHER COMES BACK — the same file asserts that with both effects on and a mode active, NEITHER class is
+      applied. That case exists to stop the escape switch from creeping back in.
+    · SUPPRESS ≠ DISABLE — asserted in the same test: the stored values survive, and leaving the mode restores both
+      without reconfiguration.
+
+    ⚠️ WHAT WAS DELETED, AND WHY IT IS NOT A WEAKENED GATE: the escape switch had its own node gate
+    (`crt-cede-a11y.node.test.js`, eight combinations, three confirmed mutations) and a leaf module to hold the
+    decision. Both went with the feature. What they proved — that "keep" must not turn an effect ON — is a rule about
+    a switch that no longer exists. With the escape gone the decision is `nivel && !a11y`, and a leaf module plus a
+    node suite for that is the ceremony this project calls anti-pattern B. The browser gate carries the whole
+    contract now.
+
+    ⚠️ WHAT IS NOT CONFIRMED: whether a child with low vision actually prefers the scanline on. The switch exists
+    precisely because nobody here knows, and issue #7 (field test) is where the answer comes from.
+
+more-information: |
+  Files: `app/js/render/crt.ts` (`applyCrt` — two lines, one per effect). The escape-switch version added
+  `manterScan`/`manterVig` to `CrtCfg`, two rows to `ui/settings-motion.ts`, a leaf module and a node suite; all of
+  it was removed when the Dev withdrew the feature, and the persisted CRT object is back to `{scan, vig, round}`.
+  ⚠️ An installation that ran the intermediate build has the two extra keys in `incl_crt2`; the loader ignores
+  unknown keys, so they are inert, and the next write drops them.
+
+  Supersedes, INSIDE ADR-0020, the clause of its 2026-08-26 amendment that left the scanline as an open question,
+  and the earlier ruling "scanline não deverá ceder a acessibilidade por enquanto" — whose "por enquanto" this record
+  is the end of.
+
+  Deliberately NOT decided here: whether the same yield-with-escape shape applies to AUDIO decoration (earcons,
+  ambience) under the auditory accessibility modes. It is the obvious next question and it has no measurement yet.

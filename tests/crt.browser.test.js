@@ -93,40 +93,29 @@ describe('render/crt — a decoração cede para a acessibilidade (ADR-0020)', (
     // O ADR-0020 nomeava `CRT_VIGNETTE` e "flashes decorativos"; a scanline não estava na lista, e é a única
     // das três que vem LIGADA de fábrica. Levei a pergunta ao Dev em vez de deduzir, e a resposta foi
     // "Scanline não deverá ceder a acessibilidade **por enquanto**". O "por enquanto" ficou escrito aqui de
-    // propósito — este caso era o lugar onde a reversão apareceria.
-    //
-    // Ela apareceu: "ceda o scanline e o CRT à acessibilidade, mas deixe uma opção de não ceder para cada um
-    // no menu conforto visual" (ADR-0047). O caso não foi apagado; foi virado, e o histórico fica.
+    // propósito — este caso era o lugar onde a reversão apareceria. Ela apareceu (ADR-0047).
     const g = region();
     comA11y(true);
-    CRT.scan = 1; CRT.vig = 0; CRT.round = 1; CRT.manterScan = 0;
+    CRT.scan = 1; CRT.vig = 0; CRT.round = 1;
     applyCrt();
     expect(g.classList.contains('crt-scan-1')).toBe(false);
   });
 
-  it('[Right] a SAÍDA da criança devolve cada efeito, um por vez', () => {
-    // Duas chaves e não uma: a scanline risca, a vinheta escurece as bordas. Quem tolera uma pode não
-    // tolerar a outra, e uma chave só forçaria aceitar as duas para ficar com uma.
+  it('[Right] os DOIS cedem juntos, e nenhuma chave os traz de volta', () => {
+    // Houve uma versão com uma chave de escape por efeito, a pedido do Dev. Ele a removeu depois de ver o
+    // resultado na tela ("Ceder fez muito bem ao jogo nos modos de acessibilidade"), e a ausência dela é
+    // decisão: o pilar 2 volta a não ter exceção nenhuma. Este caso é o que impede a chave de voltar sozinha.
     const g = region();
     comA11y(true);
-    CRT.scan = 1; CRT.vig = 1; CRT.round = 1; CRT.manterScan = 1; CRT.manterVig = 0;
-    applyCrt();
-    expect(g.classList.contains('crt-scan-1'), 'a saída da scanline foi pedida').toBe(true);
-    expect(g.classList.contains('crt-vig-1'), 'a da vinheta não').toBe(false);
-    CRT.manterScan = 0; CRT.manterVig = 1;
-    applyCrt();
-    expect(g.classList.contains('crt-scan-1')).toBe(false);
-    expect(g.classList.contains('crt-vig-1')).toBe(true);
-  });
-
-  it('[Zero] a saída NÃO LIGA um efeito desligado', () => {
-    // A armadilha do nome: "não ceder" fala da supressão, não do efeito. Quem desligou a scanline não pode
-    // vê-la voltar ao entrar em alto contraste — seria o oposto do que a opção promete.
-    const g = region();
-    comA11y(true);
-    CRT.scan = 0; CRT.vig = 0; CRT.round = 1; CRT.manterScan = 1; CRT.manterVig = 1;
+    CRT.scan = 1; CRT.vig = 1; CRT.round = 1;
     applyCrt();
     expect(g.classList.contains('crt-scan-1')).toBe(false);
     expect(g.classList.contains('crt-vig-1')).toBe(false);
+    expect(CRT.scan, 'e as preferências continuam gravadas').toBe(1);
+    expect(CRT.vig).toBe(1);
+    comA11y(false);
+    applyCrt();
+    expect(g.classList.contains('crt-scan-1'), 'voltam sozinhas ao sair do modo').toBe(true);
+    expect(g.classList.contains('crt-vig-1')).toBe(true);
   });
 });

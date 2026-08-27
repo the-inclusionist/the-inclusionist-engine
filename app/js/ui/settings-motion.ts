@@ -90,12 +90,7 @@ export const RM_SOON: ReadonlySet<MotionSceneKey> = new Set([]);
 const secao = (titulo: string): string =>
   `<h3 class="panel-sub">${titulo} <span class="panel-sub__tag">${t('rm.sec.all')}</span></h3>`;
 
-const CRT_LBL: Record<'scan' | 'vig' | 'round' | 'manterScan' | 'manterVig', string> = {
-  scan: 'rm.crt.scan', vig: 'rm.crt.vig', round: 'rm.crt.round',
-  // A SAÍDA por efeito (ADR-0047). Rótulo em primeira pessoa do EFEITO e não da regra: a criança não sabe o
-  // que é "ceder à acessibilidade", ela sabe se quer as riscas na tela quando liga o alto contraste.
-  manterScan: 'rm.crt.keepScan', manterVig: 'rm.crt.keepVig',
-}; // CHAVES i18n (ver RM_LABEL)
+const CRT_LBL: Record<'scan' | 'vig' | 'round', string> = { scan: 'rm.crt.scan', vig: 'rm.crt.vig', round: 'rm.crt.round' }; // CHAVES i18n (ver RM_LABEL)
 const CRT_ROUND_LEVELS: readonly string[] = ['desligado', 'pequeno', 'grande'];
 
 // ---------------------------------------------------------------------------------------------------------
@@ -231,18 +226,14 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const charRows = buildCharRowsHtml(ctx.rmChar, player);
     const sceneRows = buildSceneRowsHtml(ctx.rmKeys, ctx.rm, RM_LABEL, RM_SOON);
     const crtRows = crtToggleRowHtml(t(CRT_LBL.scan), 'scan', !!CRT.scan) + crtToggleRowHtml(t(CRT_LBL.vig), 'vig', !!CRT.vig) + crtRoundRowHtml(t(CRT_LBL.round), CRT.round);
-    // As duas saídas vêm DEPOIS dos efeitos e antes dos cantos? Não: vêm no fim, juntas, porque são a mesma
-    // pergunta feita duas vezes. Separá-las por um seletor de cantos no meio faria a segunda parecer outra coisa.
-    const crtCedeRows = crtToggleRowHtml(t(CRT_LBL.manterScan), 'manterScan', !!CRT.manterScan) + crtToggleRowHtml(t(CRT_LBL.manterVig), 'manterVig', !!CRT.manterVig);
 
     el.innerHTML =
       `<h3 class="panel-sub">Personagem${ctx.getNumPlayers() > 1 ? ' · Jogador ' + (selectedPlayer + 1) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` +
       `${secao('Cena')}${sceneRows}` +
-      `${secao('Estética CRT')}${crtRows}` +
-      `${secao(t('rm.crt.keepHead'))}${crtCedeRows}`;
+      `${secao('Estética CRT')}${crtRows}`;
 
     el.querySelectorAll<HTMLButtonElement>('button[data-crt-tgl]').forEach((b) => b.addEventListener('click', () => {
-      const k = b.dataset.crtTgl as 'scan' | 'vig' | 'manterScan' | 'manterVig';
+      const k = b.dataset.crtTgl as 'scan' | 'vig';
       CRT[k] = CRT[k] ? 0 : 1;
       applyCrt();
       render();
@@ -296,8 +287,6 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     marcar('[data-crt-tgl="scan"]', !!CRT.scan !== !!CRT_DEFAULT.scan);
     marcar('[data-crt-tgl="vig"]', !!CRT.vig !== !!CRT_DEFAULT.vig);
     marcar('[data-crt="round"]', CRT.round !== CRT_DEFAULT.round);
-    marcar('[data-crt-tgl="manterScan"]', !!CRT.manterScan !== !!CRT_DEFAULT.manterScan);
-    marcar('[data-crt-tgl="manterVig"]', !!CRT.manterVig !== !!CRT_DEFAULT.manterVig);
     markMenuChanged(ctx.$<HTMLElement>('[data-act="anim"]'), mudou);
   }
 
@@ -322,9 +311,6 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       }
     });
     CRT.scan = CRT_DEFAULT.scan; CRT.vig = CRT_DEFAULT.vig; CRT.round = CRT_DEFAULT.round;
-    // As duas saídas entram no reset pelo mesmo motivo dos efeitos (ADR-0028: cada menu restaura os PRÓPRIOS
-    // padrões). Deixá-las de fora faria o "restaurar" devolver uma tela que o jogo nunca mostrou de fábrica.
-    CRT.manterScan = CRT_DEFAULT.manterScan; CRT.manterVig = CRT_DEFAULT.manterVig;
     applyCrt();
     render();
     ctx.srSay(t('sr.motion.reset'));

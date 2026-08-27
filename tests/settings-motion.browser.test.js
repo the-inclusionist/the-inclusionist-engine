@@ -237,9 +237,7 @@ describe('ui/settings-motion — restaurar padrões DESTE menu (ADR-0028) + marc
 
     expect(rm).toEqual({ parallax: false, decor: false, items: false, particles: false });
     expect(players[0].rmWalk).toBe(false);
-    // As duas saídas de a11y (ADR-0047) entram no reset como os efeitos: um "restaurar padrões" que as
-    // deixasse de fora devolveria uma tela que o jogo nunca mostrou de fábrica (ADR-0028).
-    expect({ ...CRT }).toEqual({ scan: 1, vig: 0, round: 1, manterScan: 0, manterVig: 0 });
+    expect({ ...CRT }).toEqual({ scan: 1, vig: 0, round: 1 });
     expect(calls.saveRM).toBeGreaterThan(0);
     expect(calls.srSay.at(-1)).toContain('sistema');
   });

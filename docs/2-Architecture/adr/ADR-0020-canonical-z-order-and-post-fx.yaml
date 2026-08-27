@@ -171,13 +171,23 @@ more-information: |
   Numa mesa de dois jogadores em que só uma criança precisa de alto contraste, um filtro global corrigiria a tela
   da outra também — regressão silenciosa, e do tipo que ninguém reporta porque a tela "melhorou".
 
-  A EXCEÇÃO É O SOM, e ela é de outra natureza: áudio não tem viewport. O modo cego é GLOBAL, vale para a mesa
-  inteira, e por isso LIMITA o número de telas — não porque a renderização não escale, mas porque duas narrações
-  simultâneas não são audíveis. Mesma lógica para os efeitos ligados a áudio.
+  O SOM NÃO É EXCEÇÃO À REGRA — ele é outra realidade, e o Dev fez questão da distinção: "é pra deixar claro a
+  exceção do modo cego (acessibilidade), que NÃO É UMA EXCEÇÃO, mas sim uma realidade que não permite trabalhar de
+  outro modo."
 
-  Isto é emenda e não registro novo porque é a mesma decisão de escopo que o parágrafo original já tratava pela
-  metade. O que a torna necessária: o fato era descritivo e a regra é proibitiva — só a segunda impede alguém de
-  "otimizar" mais tarde.
+  A diferença não é retórica. Uma exceção é uma escolha que alguém poderia ter feito de outro jeito e decidiu não
+  fazer — e uma exceção convida a ser revisitada ("e se a gente...?"). Aqui não há o outro jeito: **áudio não tem
+  viewport.** Não existe recortar o som numa região da tela, como se recorta a imagem. Duas narrações simultâneas
+  na mesma mesa não são duas narrações, são ruído.
+
+  Daí decorre, e decorre por FÍSICA e não por política: o modo cego é GLOBAL, vale para a mesa inteira, e por isso
+  LIMITA o número de telas — não porque a renderização não escale, mas porque a audição não se divide. Mesma lógica
+  para tudo que estiver preso ao áudio (redução de efeitos, sonar, earcons): tem prioridade e vale para todos ao
+  mesmo tempo.
+
+  Isto é emenda e não registro novo porque é a mesma decisão de escopo que o parágrafo original tratava pela metade.
+  O que a torna necessária: o fato era descritivo e a regra é proibitiva — só a segunda impede alguém de "otimizar"
+  mais tarde.
 
   Registry + filter-chain live in `app/js/core/layers.ts` (`Z`, `POST_FX_ORDER`). Relates to ADR-0011 (visual a11y),
   ADR-0010 (pillars: a11y-first), and the CB-safe UI work. Y-sorting within an actor band is NOT adopted (side-view

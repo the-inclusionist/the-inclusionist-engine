@@ -139,18 +139,36 @@ decision-outcome:
       11,6 mm — inside the child-hand band. 22 px would be 5,8 mm, under the thumb target the panel itself
       cites. (The conversion assumes 96 px/in; on the school hardware only the device answers.)
 
-      ⚠️ OPEN COST, measured while answering the challenge: at exactly 640×360 the card holds 413 px of
-      content in 353 visible px — the seven 44 px items DO NOT FIT and the list scrolls. For a child
-      navigating by ear that is harmless (the ring wraps and every item announces itself); for a finger it
-      is one more scroll.
+      ⚠️ THE LIST SCROLLS AT 640×360, and that is a measurement and not a problem: the card holds 413 px of
+      content in 353 visible px. For a child navigating by ear it costs nothing (the ring wraps and every item
+      announces itself); for a finger it is one scroll.
 
-      ✅ DECIDED 2026-08-27 BY THE DEV, and this paragraph used to say "not decided here": THE SCROLL STAYS.
-      His words: "Eu nunca pedi para remover a rolagem da lista de pausa." Neither the gaps nor the heading are
-      touched. The clause is amended rather than left open because an open question in an accepted record is an
-      invitation to close it — and it was taken up once already, by me, inventing a decision that was never asked
-      for.
+      THE CLAUSE THAT USED TO SIT HERE — a paragraph asking whether to keep the scroll, shrink the gaps or hide
+      the heading — was REMOVED on 2026-08-27 at the Dev's instruction. It never described a decision he had asked
+      for: I invented the question, he answered "eu nunca pedi para remover a rolagem da lista de pausa", and an
+      open question standing in an accepted record is an invitation for someone to close it. The scroll is simply
+      how the card behaves.
 
-      ===== 7. THREE RULES THAT APPLY TO THE WHOLE GAME, NOT ONLY TO THE PAUSE =====
+      ===== 7. THE SCREEN HAS THREE ZONES, AND FUNCTION — NOT PROXIMITY — DECIDES WHICH =====
+      Added 2026-08-27, in the Dev's words, and it belongs in THIS record because it is the general rule that
+      item 4 above (the quick bar leaving the pause card for the HUD) is one instance of:
+
+        "O menu de acessibilidade é uma coisa, e deve ficar no CABEÇALHO; o menu de opções com botões amarelos é
+         outra e deve ocupar o ESPAÇO DE TRABALHO na tela; e a legenda é outra coisa, e deve ficar no RODAPÉ."
+
+      It is Gestalt read correctly: proximity groups things, so putting unlike things near each other MAKES A
+      CLAIM — that they belong together. Three functions, three places, and the placement carries the meaning:
+
+        · HEADER — the accessibility controls. Reachable during play, above everything, never inside the work.
+        · WORK AREA — the options list, the activity, whatever the child is actually doing right now.
+        · FOOTER — the caption and the explanation line, which comment on the work without being part of it.
+
+      ⚠️ AND IT IS A RULE ABOUT WHAT NOT TO MOVE. It exists because of a complaint that arrived twice: "eu peço
+      para mudar um ponto e você muda vários outros desnecessariamente". With the zones written, "it was nearby"
+      stops being a reason to relocate anything — an element moves when its FUNCTION changes, never because there
+      was room next to something else.
+
+      ===== 8. THREE RULES THAT APPLY TO THE WHOLE GAME, NOT ONLY TO THE PAUSE =====
         · INDEXING: every navigable item announces its position and total, at the END of the string
           ("Alto contraste, ativado, 6 de 10"), with an option to turn indexing off.
         · INTERRUPTIBLE NARRATION: moving focus stops the running string immediately and starts the new
