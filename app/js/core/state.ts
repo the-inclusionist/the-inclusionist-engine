@@ -190,6 +190,10 @@ export const DEFAULTS = Object.freeze({
   oneButton: false,
   easy: false,        // por jogador (Modo Fácil)
   toggleMove: false,  // por jogador (movimento por alternância)
+  // A alternância do botão de CORRER nasce desligada de FÁBRICA — e liga sozinha no controle de tela, que é
+  // contexto e não escolha. A distinção importa para a marca do ADR-0029: ver `refreshMarks` em
+  // ui/settings-motor, que marca a ESCOLHA guardada e não o estado.
+  toggleRun: false,   // por jogador (alternância do botão de correr)
   // visual
   cbSafe: false,
   ownerColors: true,

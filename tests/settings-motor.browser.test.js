@@ -14,21 +14,23 @@ function fullCtx(over = {}) {
   const storeMap = new Map();
   const toggleMoveCalls = [];
   const toggleRunCalls = [];
+  const escolhido = new Set(); // chaves que a criança de fato mexeu (o que o `store.get` devolveria não-nulo)
   let rebuildCoinsCalls = 0;
   const players = over.players ?? [{ easy: false, toggleMove: false }];
   return {
     $,
     srSay: (msg) => said.push(msg),
-    store: { setBool: (k, on) => storeMap.set(k, on ? '1' : '0') },
+    store: { setBool: (k, on) => storeMap.set(k, on ? '1' : '0'), get: (k) => (escolhido.has(k) ? '1' : null) },
     players,
     getNumPlayers: () => (over.numPlayers ?? players.length),
     setToggleMove: (i, on) => { toggleMoveCalls.push([i, on]); players[i].toggleMove = on; },
-    setToggleRun: (i, on) => { toggleRunCalls.push([i, on]); players[i].toggleRun = on; },
+    setToggleRun: (i, on) => { toggleRunCalls.push([i, on]); players[i].toggleRun = on; escolhido.add('incl_togglerun_p' + i); },
     rebuildCoins: () => { rebuildCoinsCalls++; },
     said,
     storeMap,
     toggleMoveCalls,
     toggleRunCalls,
+    escolhido,
     get rebuildCoinsCalls() { return rebuildCoinsCalls; },
     ...over,
   };
@@ -88,6 +90,27 @@ describe('ui/settings-motor', () => {
     $('#opt-facil').click();
     expect(ctx.players[0].easy).toBe(false);
     expect(ctx.said.at(-1)).toBe('Modo Fácil desligado.');
+  });
+
+  it('[Right] a marca do ADR-0029 acompanha a alternância do correr quando ela foi ESCOLHIDA', () => {
+    // A marca existe para a criança achar o que ela mudou e poder desfazer. O ajuste novo nascia sem padrão
+    // declarado e sem marca — falha minha ao entregá-lo.
+    const ctx = fullCtx({ players: [{ easy: false, toggleMove: false, toggleRun: true }] });
+    ctx.escolhido.add('incl_togglerun_p0'); // a criança mexeu neste controle
+    initSettingsMotor(ctx);
+    expect($('#opt-togglerun').closest('.ctrl-row').classList.contains('is-changed')).toBe(true);
+    expect($('[data-act="motora"]').classList.contains('is-changed'), 'a marca do MENU também acende').toBe(true);
+  });
+
+  it('[Boundary] ligada SOZINHA no toque, ela NÃO é marcada — a criança não mexeu em nada', () => {
+    // A sutileza que só existe neste ajuste: ele liga sozinho no controle de tela. Marcar ali acenderia a
+    // marca para 100% de quem joga em tablet, sem ninguém ter tocado — e uma marca sempre acesa não significa
+    // nada. Pior: o comentário do reset deste menu já diz que "uma marca errada manda a criança desfazer o
+    // que ela nunca mexeu". O que marca é a ESCOLHA guardada, não o estado.
+    const ctx = fullCtx({ players: [{ easy: false, toggleMove: false, toggleRun: true }] });
+    initSettingsMotor(ctx); // sem valor guardado: foi o toque que ligou
+    expect($('#opt-togglerun').closest('.ctrl-row').classList.contains('is-changed')).toBe(false);
+    expect($('[data-act="motora"]').classList.contains('is-changed')).toBe(false);
   });
 
   it('[Right] clicar em #opt-togglerun delega no setToggleRun INJETADO e reflete', () => {

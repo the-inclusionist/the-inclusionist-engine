@@ -24,6 +24,8 @@ export type { DomQuery } from '../core/dom-query.js';
 /** Minimal platform/storage.ts shape this module needs. */
 export interface MotorStore {
   setBool(key: string, on: boolean): void;
+  /** Lê a chave crua. Só a marca do ADR-0029 usa, e para uma pergunta precisa: a criança ESCOLHEU isto? */
+  get(key: string): string | null;
 }
 
 /** Minimal per-player shape this module reads/writes (core/state.ts's `players` entries carry much more). */
@@ -76,6 +78,11 @@ export interface SettingsMotorApi {
 /** localStorage key for a player's Modo Fácil flag (== platform/storage.ts's `easy_p{i}` pattern). */
 export function easyKey(i: number): string {
   return 'incl_easy_p' + i;
+}
+
+/** localStorage key da alternância do botão de CORRER (== `toggleRunP` de platform/storage). */
+export function toggleRunKey(i: number): string {
+  return 'incl_togglerun_p' + i;
 }
 
 /** Clamps the selected player back to 0 once it falls outside 0..numPlayers-1 (e.g. player count dropped). */
@@ -148,9 +155,18 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
   function refreshMarks(): void {
     const easy = ctx.players.some((p) => !!p.easy) !== DEFAULTS.easy;
     const alt = ctx.players.some((p) => !!p.toggleMove) !== DEFAULTS.toggleMove;
+    // A ALTERNÂNCIA DO CORRER PERGUNTA DIFERENTE, e a diferença é o que ela tem de próprio: ela LIGA SOZINHA
+    // no controle de tela. Marcar pelo ESTADO acenderia a marca para 100% de quem joga em tablet, sem ninguém
+    // ter tocado em nada — e uma marca sempre acesa não significa nada. Pior: o comentário do reset deste
+    // menu já diz que "uma marca errada manda a criança desfazer o que ela nunca mexeu".
+    //
+    // Então o que marca é a ESCOLHA GUARDADA. Valor salvo significa que alguém mexeu naquele controle; o
+    // ligar automático não salva nada, e por isso não marca.
+    const runEscolhido = ctx.players.some((p, i) => ctx.store.get(toggleRunKey(i)) != null && !!p.toggleRun !== DEFAULTS.toggleRun);
     markChanged(facilBtn?.closest<HTMLElement>('.ctrl-row') ?? null, easy);
     markChanged(altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null, alt);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="motora"]'), [easy, alt]);
+    markChanged(toggleRunBtn?.closest<HTMLElement>('.ctrl-row') ?? null, runEscolhido);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="motora"]'), [easy, alt, runEscolhido]);
   }
 
   function reflectFacil(): void {
