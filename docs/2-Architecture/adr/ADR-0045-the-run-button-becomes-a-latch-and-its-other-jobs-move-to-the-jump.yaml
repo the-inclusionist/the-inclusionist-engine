@@ -166,10 +166,15 @@ decision-outcome:
 more-information: |
   ⚠️ CORRECTION 2026-08-27 — THIS RECORD IS AN INSTANCE, NOT THE RULE. As written it presents the latch as an answer
   to the movement toggle, born from the Dev's request of 2026-08-26. That is where the WORK started; it is not where
-  the DECISION started. He had already stated the general rule while defining the console profile: "Botão que se
-  segura vira toggle no celular e no controle 'de 3 botões'" — an ENGINE promise covering every held button in every
-  game, on those two surfaces. The rule now lives in ADR-0033; what follows here is its first worked instance, and
-  the one that measured what the rule costs (the displaced edge function, and the spoken sentence that names it).
+  the DECISION started. He had already stated the general rule while defining the console profile, and
+  corrected its shape the same day: HOLDING a button is allowed only in the default mode on keyboard or gamepad, and
+  every other input mode — toggle-keys, face, eyes, voice, touch — receives the latch automatically. The rule lives
+  in ADR-0033; what follows here is its first worked instance, and the one that measured what the rule costs (the
+  displaced edge function, and the spoken sentence that names it).
+
+  CONSEQUENCE FOR THIS RECORD, unresolved and flagged in ADR-0033: `correndoAgora` switches running OFF under
+  `toggleMove`, while the corrected rule puts a run LATCH in that very mode. Whichever way the Dev settles it, §1
+  of this record moves with it.
 
   Files: `app/js/game/run-toggle.ts` (the three decisions), `app/js/game/carry.ts` (the routing of the mechanism that
   does not exist yet), `app/js/game/physics.ts` (the three use sites), and the ☝️ entry in Motor Accessibility.

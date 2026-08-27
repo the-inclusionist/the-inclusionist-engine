@@ -126,17 +126,36 @@ decision-outcome:
     stays a claim until a second game asks.
 
 more-information: |
-  ===== EMENDA 2026-08-27 — A HELD BUTTON IS A TOGGLE ON TOUCH AND ON THE 3-BUTTON PAD =====
+  ===== EMENDA 2026-08-27 — HOLDING A BUTTON IS ONLY FOR THE DEFAULT MODE ON KEYBOARD OR GAMEPAD =====
   Recorded here because it is a promise the ENGINE makes to every game, not a platformer detail — and it had been
   written down only in its platformer instance (ADR-0045, the run button), which is narrower than what was decided.
 
-  The Dev, while defining the console profile: **"Botão que se segura vira toggle no celular e no controle 'de 3
-  botões'."**
+  FIRST STATED as "botão que se segura vira toggle no celular e no controle 'de 3 botões'". CORRECTED by the Dev on
+  the same day, and the correction matters because the first version leaned on something that does not exist:
 
-  The rule, stated as a contract: on the on-screen touch emulator and on the 3-button profile, ANY input whose
-  meaning is "hold to sustain" is offered as a LATCH — press to engage, press again to release. It is not a
-  platformer affordance; it is what makes the 3-button profile reachable at all for a child who cannot hold, and
-  the canonical genres of those machines are built on held buttons (Super Mario's run, Mega Man's charge).
+    "O controle de 3 botões virou algo MÍTICO, pois não aparece nas configurações. A verdade é que manter o botão
+     pressionado deve funcionar SOMENTE no modo normal / padrão usando teclado ou gamepad. Nos modos de teclas de
+     alternância, jogar com o rosto, com os olhos, falando, e tela de toque, o botão de correr vira toggle."
+
+  So the rule is not "these two surfaces get a latch". It is the other way round, and that inversion is the point:
+
+    · HOLDING IS THE EXCEPTION, allowed in exactly one place — the default mode, driven by keyboard or gamepad.
+    · EVERY OTHER INPUT MODE GETS THE LATCH, automatically, without the child finding a setting:
+      toggle-keys · face · eyes · voice · touch screen.
+
+  Stating it this way means a NEW input mode inherits the latch by default instead of being forgotten. The old
+  phrasing would have needed an edit for each one — which is exactly how the 3-button pad became mythical: it was
+  named in a decision and never built.
+
+  ⚠️ WHAT EXISTS TODAY, measured, so nobody reads this as a description of the code: `toggleMove` (toggle-keys)
+  and the touch emulator are real. FACE, EYES and VOICE are issue #11 and are not implemented — the rule is written
+  for them in advance ON PURPOSE, so that whoever builds them does not have to rediscover it.
+
+  ⚠️ AND ONE CONFLICT IS OPEN, named here rather than resolved by me. Today `game/run-toggle.correndoAgora` returns
+  FALSE whenever `toggleMove` is on: with toggle-keys, holding a direction already means "go faster", and running
+  was switched off entirely. The rule above says that in toggle-keys mode the run button becomes a latch — which
+  implies running IS available there. The two cannot both be true. Which one gives is a game-design call (does a
+  child using toggle-keys get a run speed at all?), and it is the Dev's, not mine.
 
   THE COST THE RULE CARRIES WITH IT, and this is the part the instance taught: a held button usually has a SECOND
   job on its edge. Turning the hold into a latch takes that job away, so the rule is incomplete without its
