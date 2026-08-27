@@ -131,21 +131,35 @@ decision-outcome:
       set is, not by how many pictograms it has, not by how easy it would be. That is the whole discipline here:
       the moment a set moves tier for a reason other than its terms, the record has stopped being true.
 
-        BUNDLED — uppercase + lowercase; uppercase only; MULBERRY SYMBOLS, BLISSYMBOLICS and TAWASOL, all three
-        CC BY-SA and therefore ours to redistribute. Ship inside the game, work with no network ever, always
-        selectable. This is the offline floor and it is no longer made of letters: a child who reads symbols and
-        has no network gets symbols. Tawasol is an Arabic-culture set and belongs here for a reason worth
-        stating — a pictogram is not neutral, it is drawn by and for a culture, and a child recognises the
-        objects, clothes and faces of their own world faster than someone else's.
+      ⚠️ CUT DOWN 2026-08-27 BY THE DEV, and the criterion changed. This record cut the tiers by LICENCE alone and
+      said so proudly. The licence still decides what is POSSIBLE; what changed is that reach now decides what is
+      WORTH BUILDING. Three sets left the roster for "baixa adesão, pouco público" — and that is a legitimate
+      reason to spend effort elsewhere, provided it is written down as the reason it is, rather than dressed up as
+      a licence problem it is not.
 
-        FETCHED ON DEMAND — ARASAAC, which must be downloaded rather than redistributed. Selectable; fetched
-        once and cached; falls back to a BUNDLED set, not to letters, when the network is not there. This is the
-        same shape platform/tts already runs for the Piper neural voice — precedent in this repository, not
-        invention.
+        BUNDLED — **MULBERRY SYMBOLS**, and it is now alone: CC BY-SA, ours to redistribute, and the DEFAULT and
+        FALLBACK of the whole system. Ships inside the game, works with no network ever. This is the offline
+        floor, and it is not made of letters: a child who reads symbols and has no network gets symbols.
 
-        PRESENT BUT UNAVAILABLE — SCLERA, PCS, SymbolStix, Widgit Symbols. Shown in the menu, not selectable,
-        labelled "aguardando negociação". Sclera needs permission negotiated before any use; the other three are
-        to be negotiated later. They stay visible because hiding them would answer the wrong question: the
+        FETCHED BY THE PLAYER — **ARASAAC**, which must be downloaded rather than redistributed (CC BY-NC-SA is
+        incompatible with AGPLv3). It is the standard across Latin America, Portugal, Spain and southern Europe,
+        so this is not a niche path: the Dev's instruction is to "dar todo suporte possível" — the game must read
+        and use whatever the player downloaded, and getting that import right matters more than the roster size.
+        Falls back to Mulberry, never to letters.
+
+        WANTED, AND HONEST ABOUT IT — **PCS** (Tobii Dynavox), **SymbolStix** (Everway/n2y) and **Widgit Symbols**
+        (Widgit Software). Each would have to be bought under a commercial agreement with its owner. Recorded as
+        INTENT and not as plan: it may happen one day, and only if there is a public that needs it. Listing them
+        says the truth — the obstacle is a licence, not a capability — without promising a date.
+
+        DROPPED — **SCLERA**, **TAWASOL** and **BLISSYMBOLICS**, for reach and not for terms. Two of them were in
+        the BUNDLED tier of this very record and Blissymbolics is named in the requerimento (IV.6) as one of the
+        two reference sets, so **the protocolled document has to change with this**.
+        ⚠️ AND THE TAWASOL ARGUMENT IS BEING TRADED AWAY, WHICH IS WORTH SAYING RATHER THAN QUIETLY DELETING: this
+        record argued that a pictogram is drawn by and for a culture, and that a child recognises the objects and
+        faces of their own world faster. That argument was right and it still is. What overrode it is scope — an
+        Arabic-culture set serving no Arabic-speaking public in this network is effort taken from ARASAAC import,
+        which serves the public that exists. If that public appears, this is the paragraph to reopen. They stay visible because hiding them would answer the wrong question: the
         educator who looks for PCS and does not find it concludes the game cannot do it. Listing them as pending
         says the truth, which is that the obstacle is a licence and not a capability. And the reason to pursue
         them at all is not completeness — it is that some children are fluent in ONE of these systems and no

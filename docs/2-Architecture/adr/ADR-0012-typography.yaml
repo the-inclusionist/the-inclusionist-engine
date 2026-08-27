@@ -26,8 +26,12 @@ more-information: |
     two are kept because the reasoning is what makes the third defensible. (1) Keep it with a caveat: \"apesar do
     estudo com evidência fraca/negativa, resolvemos manter a pedidos de pessoas que gostam desta fonte\".
     (2) Remove it entirely: \"**Remove isso.** Acabei de falar quais são as canônicas e esta eu havia retirado.\"
-    (3) ⚠️ **IN FORCE 2026-08-27 — it is back, and it is in the ACCESSIBILITY group of the roster below**, listed by
-    the Dev alongside Atkinson, Lexend, iA Writer Quattro and Andika.
+    (3) ⚠️ **IN FORCE 2026-08-27 — it is back, as a DECLARED EXCEPTION.** The Dev's framing, which is the one that
+    reconciles this record with the requerimento (§58, where the same meta-analysis is why the dyslexia-marketed
+    faces were not adopted): the exception was opened "visto que há muitas pessoas com dificuldades ou deficiências
+    que as preferem para diversos tipos de uso no dia-a-dia (leitura, escrita, legenda, desenvolvimento de
+    software etc.)". Not adopted on evidence; offered on preference, which is a different claim and a defensible
+    one. It is fetched ON DEMAND, not bundled — see the delivery tiers below.
     WHAT DOES NOT CHANGE IS THE HONESTY CLAUSE, and it is the whole reason this clause is long: the evidence for
     OpenDyslexic is weak-to-negative, and it is offered as a CHOICE, never as a remedy. No screen, no label and no
     description may claim it helps dyslexia. It sits in the list because people who prefer it are not wrong about
@@ -66,17 +70,33 @@ more-information: |
     cursive — and they are the opposite of legible-by-default, so they may not carry a HUD, a menu or a warning.
     Each one carries a MINIMUM SIZE, because a script face below it stops being hard and becomes impossible:
 
-      · Blackletter — **UnifrakturMaguntia**, from 20 px. Chosen over UnifrakturCook for a stroke closer to the
-        German gothic of printed books.
+      · Blackletter — **UnifrakturMaguntia**, from 20 px, for a stroke close to the German gothic of printed
+        books; **UnifrakturCook**; and **Manufacturing Consent**.
+        ⚠️ CORRECTED 2026-08-27: an earlier version of this clause dropped UnifrakturCook ("Maguntia basta"). It
+        stays — the requerimento (IV.5) adopts both by name, and dropping it here would have made the protocolled
+        document false. Manufacturing Consent is new and comes from the Dev.
+        ⚠️ AND ITS LICENCE IS UNVERIFIED. The requerimento asserts that every family in IV.5 is SIL OFL 1.1;
+        Manufacturing Consent is not in that list, so nobody has checked it. It is not bundled until someone has.
       · Copperplate / Roundhand / English Script — **Pinyon Script**, from 24 px (the highest floor: the hairlines
-        are the thinnest in the roster).
-      · Ronde — **Ronde Script** if the machine has it; else **OPTIFrench-Script**; else **Merveille**. From 20 px.
-        ⚠️ THE LAST TWO CANNOT BE BUNDLED — free for personal use only — so they are OFFERED AS A DOWNLOAD and the
-        Ronde option is DISABLED when none of the three is present. This is the same shape ADR-0028 gave the
-        pictogram sets whose licence forbids distribution, and it is a licence constraint, not a preference.
+        are the thinnest in the roster); plus **Monsieur La Doulaise** (English roundhand) and **Herr Von
+        Muellerhoff** (close to Pinyon). Both were missing here and are adopted by the requerimento (IV.5); the
+        Dev kept them for a reason worth recording — they are built on historical study of the hands themselves,
+        which is what makes them teaching material rather than decoration.
+      · Ronde — **there is no adequate OFL font for the French ronde**, and that fact drives the whole design of
+        this entry. From 20 px. The software:
+          (i) **never ships** Ronde Script, OPTIFrench-Script or Merveille;
+          (ii) **detects** whether the user's machine already has one of the three;
+          (iii) if none is present, **asks the user to obtain any of them AND OFFERS NO LINK** — the project does
+               not route anyone to a download of a font it has no right to distribute, and a link is a form of
+               distribution the licences do not grant;
+          (iv) keeps the Ronde option **DISABLED** while no font is present.
+        ⚠️ THIS IS THE ONE ENTRY THAT MAKES THE REQUERIMENTO INACCURATE AS WRITTEN. IV.5 tells the Prefeitura that
+        every calligraphic family is "todas sob SIL Open Font License 1.1, o que permite redistribuí-las junto ao
+        software". The ronde chain is the exception, and the document has to gain this paragraph.
       · Foundational — **Fondamento**, from 20 px. The nib-written sibling of the ball-and-stick hand, from
         Johnston's Foundational Hand.
-      · Ball-and-stick — **Comic Neue**.
+      · Ball-and-stick — **Comic Neue**, and **Fondamento** above. Neither is in the requerimento's IV.5 list;
+        both are additions of this project, and the document gains them in the same pass.
       · **Playwrite** — the REGIONAL Playwrite is active by default, and the set is bounded by LANGUAGE:
         \"somente fontes de países que falam inglês, espanhol e português\" (Dev, 2026-08-27). The criterion is the
         rule; the enumeration is data that must be read from the live Google Fonts catalogue at build time, never
@@ -86,14 +106,28 @@ more-information: |
         the criterion, not an accident of it: the hand a child is taught is national, not linguistic, and a
         Nigerian classroom writing English does not write the American hand.
 
-    **TIER 2 — GENERAL. Anywhere, and these are the ones the font menu offers:**
+    **TIER 2 — GENERAL. Anywhere, and these are the ones the font menu offers.**
 
-      · Accessibility: Atkinson Hyperlegible · Lexend · iA Writer Quattro · Andika · OpenDyslexic
-      · Sans-serif: Source Sans 3 · Inter · Open Sans · Lato
-      · Serif: Literata · Source Serif 4 · Newsreader
+    ⚠️ AND THE ROSTER IS NOW CUT A SECOND TIME, BY DELIVERY (Dev, 2026-08-27). Being in the catalogue and travelling
+    inside the PWA are different things: what ships is a download every school pays for on first load, so the
+    bundled set is deliberately small and everything else is fetched when chosen.
 
-    **REMOVED, each with the Dev's reason:** Kindergarten Pro and Learning Curve (Playwrite covers them),
-    UnifrakturCook (Maguntia is enough), Great Vibes (Pinyon is enough).
+      · **BUNDLED WITH THE PWA — the canonical set:** Atkinson Hyperlegible (default for a reading player) ·
+        Andika (default for a player still learning to read) · Lexend (optional) · iA Writer Quattro (optional).
+        Plus **Noto Color Emoji**, which is a font and is not a choice — the interface uses emoji as labels.
+        ⚠️ THE DEV SAID "FIVE" AND NAMED FOUR. The fifth is almost certainly **Atkinson Hyperlegible Mono**, which
+        this record already lists as canonical for maths and which is already bundled (`atkinson-mono`). Written
+        as the reading, not as a decision — it needs one word from him.
+      · **ON DEMAND:** Source Sans 3 · Inter · Open Sans · Lato · Literata · Source Serif 4 · Newsreader ·
+        **OpenDyslexic**. This list may grow or shrink as the game evolves; nothing in it is load-bearing.
+      · **PLAYWRITE:** the one for the player's REGION downloads automatically with the PWA; every other Playwrite
+        is fetched on demand. All of them are official and permanently part of the game — "not bundled" is about
+        bytes on first load, never about being dropped from the roster.
+      · **OTHER HANDWRITING FACES ON DEMAND:** Comic Neue · UnifrakturCook · Pinyon Script · and the rest of
+        TIER 1.
+
+    **REMOVED:** Kindergarten Pro and Learning Curve (Playwrite covers them, and it was built for exactly this);
+    Great Vibes ("não faz sentido neste material").
 
     **THE MENU IS A CHOICE, NOT A TOGGLE:** the selected font is shown with a yellow background, like a pressed
     button. One font is active; the others are alternatives, not switches."
