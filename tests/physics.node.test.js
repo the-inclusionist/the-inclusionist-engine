@@ -12,6 +12,7 @@ import { TILE, TUNE, EASY } from '../app/js/core/constants.js';
 import { keys } from '../app/js/input/state.js';
 import { KB_DEFAULTS } from '../app/js/input/keyboard.js';
 import * as PHY from '../app/js/game/physics.js';
+import pt from '../app/js/i18n/pt.js'; // a frase falada é conferida contra o DICIONÁRIO, não contra uma cópia
 
 const noop = () => { /* stub */ };
 const NAV = { sonar: noop, caneTap: noop, waterNav: noop, needsAudioCues: () => false, panFor: () => 0, playerCtx: () => null };
@@ -221,6 +222,29 @@ describe('game/physics — stepPlayer: velocidade horizontal por modo', () => {
     const semAjuste = encostado({ toggleRun: false, jumpEdge: true });
     PHY.stepPlayer(semAjuste, 1);
     expect(semAjuste.clinging, 'sem a alternância, o pulo é PULO — quem não pediu o ajuste não perde nada').toBe(false);
+  });
+
+  it('[Right/uso] a frase FALADA ao grudar nomeia o botão que de fato funciona', () => {
+    // O gate de uso que faltava, e é o mais importante da série: `botaoDeGrude` é gateada pura contra os três
+    // dicionários, mas isso não prova que a FRASE recebe o parâmetro. Eu disse no commit `d8c4954` que não
+    // consegui verificá-lo — no navegador grudar exige parede de verdade. Com o mundo falso, consigo.
+    //
+    // O que está em jogo: essa frase é o ÚNICO canal de quem não enxerga. Mandar apertar o botão errado é a
+    // armadilha que o ADR-0044 passou sete itens desfazendo.
+    const g = chao(); for (let y = 0; y < 5; y++) g[y][3] = 2;
+    useWorld(g);
+    const ditas = [];
+    PHY.initPhysics(CTX({ srSay: (t) => ditas.push(t) }));
+    const encostado = (over) => novo({ x: 3 * TILE - BOX.w / 2, y: 4 * TILE, onGround: false, airTime: 9, activePower: 'wallcling', ...over });
+
+    PHY.stepPlayer(encostado({ toggleRun: true, jumpEdge: true }), 1);
+    const comAjuste = ditas.filter((f) => /aranha|spider/i.test(f)).at(-1) || '';
+    expect(comAjuste, 'com a alternância, a frase tem de mandar apertar PULAR').toContain(pt['act.jump']);
+
+    ditas.length = 0;
+    PHY.stepPlayer(encostado({ toggleRun: false, runEdge: true }), 1);
+    const semAjuste = ditas.filter((f) => /aranha|spider/i.test(f)).at(-1) || '';
+    expect(semAjuste, 'sem ela, a frase continua mandando apertar CORRER').toContain(pt['act.run']);
   });
 
   it('[Right/uso] a TRAVA da corrida chega à velocidade — sem tecla segurada', () => {
