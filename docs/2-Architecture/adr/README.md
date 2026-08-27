@@ -32,7 +32,7 @@ One file per deliberate architectural decision, in **YADR** format — the YAML 
 
 | ADR | Decision | Status |
 |---|---|---|
-| [ADR-0001](ADR-0001-integer-real-pixel-canvas-scale.yaml) | Lock canvas scale to integer real pixels | accepted |
+| [ADR-0001](ADR-0001-integer-real-pixel-canvas-scale.yaml) | Lock canvas scale to integer real pixels | accepted ⚠️ EMENDADO 2026-08-27: a régua do Dev tinha mais três cláusulas que só viviam em bronca repetida — mínimo de 640×360 em uso (`MIN_K=2`), subida em múltiplos INTEIROS, e a tolerância de perder ≤5 px lógicos por lado (é o `-10` do denominador). As três MEDIDAS no código antes de escrever. E reconcilia o argumento dos 44 px: `--tap` é `22*k`, então a base carrega 22 e em k=2 dá 44 |
 | [ADR-0002](ADR-0002-dom-activities-ui-light-dom-web-components.yaml) | DOM activities UI: light-DOM Web Components + Atomic Design; no Shadow DOM | accepted |
 | [ADR-0003](ADR-0003-tiered-sdd-documentation-subset.yaml) | Tier-2 lean subset of the SDD doc schema (adopt/defer/reject matrix) | accepted |
 | [ADR-0004](ADR-0004-educational-documentation-subset.yaml) | Educational-software doc subset (learning artifacts + e-learning interop) | accepted |
