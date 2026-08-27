@@ -117,9 +117,24 @@ more-information: |
         And **Noto Color Emoji** — which is the FIFTH, confirmed by the Dev; it had been written on a separate
         line and I had guessed Atkinson Hyperlegible Mono instead. It is a font and it is not a choice: the
         interface uses emoji as labels, so it is bundled for the same reason the other four are.
-        ⚠️ ATKINSON HYPERLEGIBLE MONO IS THEREFORE NOT IN THE BUNDLED SET, even though this record lists it among
-        the canonical faces for maths and the file is already in the repository (`atkinson-mono`, 20 KB). Left as
-        it stands rather than quietly promoted: if maths needs it offline, it is a sixth, and that is his call.
+        And **Atkinson Hyperlegible Mono** is the SIXTH, added when the question was put to him: it is the
+        canonical face for MATHS in this record, the file is already in the repository (20 KB), and maths is not
+        an optional part of the product.
+      · **FETCHED BY CURRICULUM EVENT — and this tier is new.** **Noto Sans Math** and **Noto Sans Mono** download
+        automatically on the FIRST exact-sciences activity of the Brazilian eighth year. The Dev's reason is that
+        this is where the notation stops being arithmetic: scientific notation, advanced radicals, algebra,
+        polynomials and plane geometry — none of which Atkinson Mono was drawn to set.
+
+        ⚠️ THE TIER MATTERS MORE THAN THE TWO FONTS. Until now a font arrived because it was BUNDLED or because
+        somebody CHOSE it. This is a third door: the CURRICULUM asks for it. It works only because ADR-0032 made
+        the curriculum data that the game reads — the activity declares what it needs and the fetch follows, with
+        no font list hard-coded next to a year number. Any future notation (chemistry, music, IPA) uses the same
+        door instead of growing the bundle.
+
+        ⚠️ AND THE BNCC CODES ARE NOT CONFIRMED. The Dev named the eighth-year content from memory and it is
+        plausible; which skill codes actually carry it has to be read from the Base when the curriculum layer is
+        populated (issue #2), because the TRIGGER is a skill code and not a year label. Recorded as his rationale,
+        not as a verified mapping.
       · **ON DEMAND:** Source Sans 3 · Inter · Open Sans · Lato · Literata · Source Serif 4 · Newsreader ·
         **OpenDyslexic**. This list may grow or shrink as the game evolves; nothing in it is load-bearing.
       · **PLAYWRITE:** the one for the player's REGION downloads automatically with the PWA; every other Playwrite
