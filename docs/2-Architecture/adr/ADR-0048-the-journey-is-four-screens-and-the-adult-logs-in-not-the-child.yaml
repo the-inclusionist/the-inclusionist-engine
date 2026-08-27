@@ -1,0 +1,233 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-27
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0005 (access & discovery — no login, teacher activity code) — refined here, see the amendment note"
+    - "ADR-0008 (multiplayer scaling: 4/screen → classroom LAN → internet after study)"
+    - "ADR-0015 (pedagogy & game modes)"
+    - "ADR-0017 (compliance & data governance — local-law-wins, RN-01..04)"
+    - "ADR-0032 (the curriculum is a layer of its own)"
+    - "ADR-0036 (this repository becomes the engine; the shell and catalogue live in `inclusionist-demos`)"
+    - "ADR-0037 (there is NO save and no child data — fulfilled here, not contradicted)"
+    - "Vygotsky, zone of proximal development — the stated goal of the difficulty rule"
+    - "`SP-the-inclusionist-demos/docs/design-system/Inclusionista-Jornada.dc.html` — the prototype this corrects"
+  informed: []
+
+title: The journey is FOUR screens, the ADULT logs in and never the child, and difficulty follows the child instead of the lesson plan
+
+context-and-problem-statement: |
+  Until now the shape of a session was scattered: ADR-0005 decided access (no login, a teacher activity code),
+  ADR-0037 decided identity (an avatar from Bússola Escolar's roster, nothing stored here), ADR-0036 decided that
+  the shell and the catalogue live in `inclusionist-demos`. Nobody had written down what a child actually DOES
+  from opening the page to earning something — and the pedagogical half, which is the point of the product, had
+  no record at all.
+
+  A PROTOTYPE EXISTS and the Dev pointed at it: `Inclusionista-Jornada.dc.html`. His words: "está com a ideia
+  próxima da correta, mas contém alguns erros." Read against this project's own decisions, the errors are
+  specific and they are corrected by this record:
+
+    · IT HAS THREE STEPS, NOT FOUR ("Passo 1 · 2 Escolher o minigame · 3 Jogar"). The AVATAR screen is missing
+      entirely, and it is the screen where the child's identity happens.
+    · IT SAYS "canvas 360×180". The canvas is 320×180 — pillar 5 of ADR-0010, and 360×180 was REJECTED by name
+      in the demos spec (D5) for not being 16:9 and not scaling by integers.
+    · IT SAYS "Alunos entram por código ou QR — sem cadastro, sem e-mail." True for the un-logged path and false
+      as a general statement: there is now a login, and §2 below is about whose it is.
+    · IT SAYS "As erradas custam pontos." The scoring below does the opposite — a wrong answer inside the
+      tolerance costs nothing at all.
+    · IT SAYS the games are "jogáveis só com teclado". Keyboard, gamepad, touch, and later face, eyes and voice
+      (ADR-0033, issue #11).
+
+decision-drivers:
+  - "A child must never be asked to authenticate. Whatever identity exists has to be reachable by a six-year-old who
+     cannot read, on a shared machine, in the time a lesson allows."
+  - "The teacher must be able to say what the session is FOR — a curriculum and one to three skills — because the
+     product is a pedagogical instrument and not a break from the lesson."
+  - "The Inclusionist must keep storing nothing about a child (ADR-0037). Anything remembered is remembered by
+     Bússola Escolar, under the adult's credentials, and the family must be able to keep it off the internet
+     entirely."
+  - "Difficulty must follow the CHILD, not the lesson plan. Too hard does not teach and makes her quit; too easy
+     does not teach and bores her. Both failures look like 'the activity was set correctly'."
+  - "Nothing about the pedagogy may punish the use of an accessibility feature — the moment a setting costs points,
+     it stops being available."
+
+considered-options:
+  - "J1 — progress lives NOWHERE: every session is anonymous and ends with the machine (the pre-existing position)"
+  - "J2 — progress lives in the Inclusionist, on the machine or in a service of ours"
+  - "J3 — progress lives in BÚSSOLA ESCOLAR, end-to-end encrypted, with a LAN-only option that keeps it off the
+     internet, and the Inclusionist keeps storing nothing"
+
+pros-and-cons-of-the-options:
+  J1:
+    good: ["Nothing to protect, nothing to leak, nothing to answer for. It is what ADR-0037 chose and it is still
+            what the un-logged path does.",
+           "Works with no network, no account and no adult present."]
+    bad: ["A child's progress dies with the session, so nothing can adapt across days and no report reaches the
+           teacher, the family or the therapist — which is most of what the product is for."]
+  J2:
+    good: ["Full control of the data model; no dependency on another system's roadmap."]
+    bad: ["It makes this project a controller of children's personal data, which ADR-0017 and the requerimento
+           deliberately avoided: the accountable party has to be the school or the municipality, not a person or a
+           game.",
+          "It duplicates a roster that already exists and is already governed."]
+  J3:
+    good: ["The identity, the roster and the reports stay where they are already accountable, and the Inclusionist
+            remains a program that stores nothing about a child.",
+           "The LAN option lets a school keep every byte inside its own network — encryption in transit is not the
+            same promise as never leaving the building, and for a school the second is the one that convinces.",
+           "It composes with what exists: ADR-0037 already named Bússola Escolar as the roster's owner."]
+    bad: ["A hard dependency on another system for the entire logged path.",
+          "Three access paths to build and to explain, and the difference between them is exactly the part a hurried
+           adult will not read."]
+
+decision-outcome:
+  chosen-option:
+    link: "J3 — Bússola Escolar owns identity and progress; the Inclusionist owns none of it"
+    justification: |
+      ===== 1. FOUR SCREENS =====
+        1. WHAT THIS SESSION IS FOR — access, curriculum, skills.
+        2. WHO IS PLAYING — the avatar. ⚠️ ONLY EXISTS WHEN AN ADULT IS LOGGED IN. Without login there is no
+           roster to pick from, so screen 2 does not appear and the journey goes straight to 3.
+        3. WHICH GAME — the catalogue. The player picks whatever they want.
+        4. THE GAME.
+
+      ===== 2. THE ADULT LOGS IN. THE CHILD NEVER DOES. =====
+      This is the clause that reconciles this record with ADR-0005, which said "no login", and it is a REFINEMENT
+      and not a reversal: no CHILD ever authenticates. Screen 1 offers three ways in:
+
+        (a) CHOOSE AN ACTIVITY AND PLAY — nothing is saved, nothing leaves the network. The promise that student
+            data does not leave the school holds trivially, because no data exists.
+        (b) LOG IN — progress is recorded in Bússola Escolar, end-to-end encrypted.
+        (c) LOG IN AND POINT AT A LOCAL IP — Bússola Escolar on the school's own LAN, so nothing travels the
+            internet at all, encrypted or not.
+
+      ⚠️ (c) IS NOT (b) WITH EXTRA STEPS, and the difference is the reason it exists: end-to-end encryption is a
+      promise about who can READ the data; a local address is a promise about where the data GOES. A school that
+      accepts the first may still refuse the second, and it is entitled to.
+
+      WHO LOGS IN, AND WHERE:
+        · TEACHER — logs in on every computer and tablet on the network. The machines are shared; the account is not.
+        · FAMILY — a parent logs in on every machine at home, and MAY SHARE THE ACCOUNT with the other parent, and
+          with aunts, uncles and godparents. This is deliberate: a child's home is not one adult.
+        · HEALTH PROFESSIONAL and TEACHER, seen from the family — reports may be SHARED, and the shared results are
+          shown SIDE BY SIDE AND NEVER SUMMED. Family accounts pool into one history; a therapist's sessions and a
+          teacher's sessions stay separate lines in the report, in both directions.
+
+      ⚠️ THE NON-SUMMING IS THE WHOLE POINT and must not be "simplified" into one number later. A child performs
+      differently with a therapist, with a teacher and at home, and averaging those three erases the very
+      difference a professional reads. One number would be easier to draw and would destroy the instrument.
+
+      ===== 3. THE CURRICULUM IS CHOSEN, NOT ASSUMED =====
+      Logged in or not, screen 1 picks WHICH CURRICULUM governs the session — BNCC (Brazil), Aprendizagens
+      Essenciais (Portugal), Currículo do Ensino Primário (Angola), LOMLOE (Spain), Plan de Estudio 2022 (Mexico),
+      NAP (Argentina), CCSS (United States), National Curriculum (United Kingdom), and so on — and then ONE TO
+      THREE SKILLS from it for the next session of THIRTY MINUTES.
+
+      This is what ADR-0032 reserved when it made the curriculum a layer of its own instead of a folder of the
+      game: the catalogue is the platform's, and each game pulls what suits it. A second curriculum is DATA here,
+      not a code change, and that is the test this record puts on that decision.
+
+      ===== 4. THE ITEM OPENS A MINIGAME, AND THREE WINS BUY A POWER =====
+      Every game carries an item that, when collected, opens a MINIGAME — a gamified school activity. Win three
+      and the player earns a POWER scaled to the activity's level: a fifth-year activity pays more than a
+      fourth-year one. The minigame ends only after THREE CORRECT ANSWERS, and the reward is set by the level of
+      the LAST one — so a child who climbs mid-minigame is paid at the level she reached, not the one she started.
+
+      ===== 5. TWENTY PER CENT OF ERROR COSTS NOTHING =====
+      The rule, in his examples:
+        · FIVE-CHOICE QUESTION — one wrong answer, then a second attempt, both free. Wrong again and the answer is
+          TOLD: she selects it and moves on.
+        · WORD/SENTENCE BUILDER of 9–12 items — two or three wrong moves free. On the third or fourth the answer is
+          told, she rebuilds what she made, and moves on.
+
+      ⚠️ BEING TOLD IS NOT LOSING. There is no failure state in the loop: the activity always resolves and always
+      advances. What varies is how much the child did herself, which is what the report should reflect — never
+      whether she was allowed to continue.
+
+      ===== 6. THE DIFFICULTY FOLLOWS THE CHILD =====
+        · THREE WRONG IN A ROW, on DIFFERENT questions — the level DROPS. Not to punish: three consecutive misses
+          across different questions is the statistical signature of guessing, and guessing means the activity is
+          above her. The next activities move to a PREREQUISITE skill, not to the configured one.
+        · EIGHT OF THE LAST TEN CORRECT — the level RISES, by Pareto, EVEN ABOVE what the teacher asked for.
+        · Both persist into every following minigame. The target is the zone of proximal development: hard enough
+          to teach, not so hard she quits.
+
+      ⚠️ THE RULE OVERRIDES THE TEACHER'S SETTING IN BOTH DIRECTIONS, and that is deliberate. An activity that is
+      too hard does not teach and makes her give up; one that is too easy does not teach and bores her. Respecting
+      the lesson plan while a child guesses at random is not obedience, it is wasting her half hour.
+
+      ⚠️ AND IT IS AN ADMITTED PLACEHOLDER. In his words: "Métodos mais refinados de ajustar a dificuldade serão
+      criados conforme o jogo é desenvolvido, mas na falta de métodos melhores, o '4 seguidos volta 8/10 avança' é
+      o default." Written down as the default so that a better one has something to beat, and so nobody mistakes
+      it for a measured model.
+
+      ===== 7. SCORING: A ROUND, NO GAME OVER, NO RANKING =====
+      A gamified activity runs for a ROUND whose length the teacher sets. There is no game over. At the end the
+      screen shows the PRIZE and the SUM OF EVERY CHILD'S POINTS — collective, because "não existe ranking, todo
+      mundo é importante".
+
+      POINTS ARE THE TYPICAL AGE for the question: a fifth-year question is worth 10 points, because ten is the
+      usual age for it. Older content is worth more because it is worth more, without anyone tuning a table.
+
+      THE STREAK MULTIPLIES, Guitar Hero style: 5 in a row ×2, 10 in a row ×3, 15 in a row ×4.
+
+      ===== 8. ACCESSIBILITY NEVER TOUCHES THE SCORE =====
+      No accessibility option raises or lowers points. No disability SIMULATION raises or lowers them either.
+
+      ⚠️ THE SECOND HALF IS EASY TO MISS AND IS THE SAME PRINCIPLE. A bonus for playing under a simulation would
+      turn Empathy Mode into a way to farm points, and would price a child's real condition as a handicap someone
+      else gets rewarded for enduring. Neither direction. The score measures the school work.
+
+  consequences:
+    positive:
+      - "The pedagogical loop — which is the product — finally has a record, and every clause in it is checkable."
+      - "ADR-0037 is FULFILLED rather than contradicted: the Inclusionist still stores nothing about a child, and
+         this record names exactly where the remembering happens instead."
+      - "The curriculum being data, chosen per session, is the first real test of ADR-0032's layer."
+      - "The un-logged path (a) keeps working with no network, no account and no adult — nothing regresses for the
+         school that cannot or will not log in."
+    negative:
+      - "A hard dependency on Bússola Escolar for everything the logged path promises, including screen 2. If that
+         system is not ready, the avatar screen has nothing to show."
+      - "Account sharing among relatives is a deliberate weakening of authentication, chosen because a child's home
+         is not one adult. It has to be designed knowing that, not discovered later."
+      - "The difficulty rule can move a child off the skill the teacher configured, in the middle of a lesson. A
+         teacher who does not expect that will read it as a bug."
+      - "Three access paths, and the difference between (b) and (c) is exactly what a hurried adult skips."
+    neutral:
+      - "The prototype `Inclusionista-Jornada.dc.html` is now out of date in the five places listed above. It is a
+         design study, not a spec, and this record outranks it."
+
+  confirmation: |
+    NOTHING HERE IS BUILT YET, and saying so is the point of writing it down before building: this record is a
+    contract to hold the implementation to, not a description of the code.
+
+    What each clause will be measured by, so the criteria are fixed before anyone is invested in an implementation:
+
+      · FOUR SCREENS, and screen 2 absent without login — a navigation test over the shell in `inclusionist-demos`.
+      · NO CHILD AUTHENTICATES — a gate that fails if any screen reachable by a child asks for a credential.
+      · THE 20% TOLERANCE, the three-in-a-row drop and the eight-of-ten rise — pure functions over an answer
+         history, node-testable without a screen, in the curriculum layer (ADR-0032) rather than in a game.
+      · SCORE UNAFFECTED BY ACCESSIBILITY — the strongest one, and it must be asserted in BOTH directions: the same
+         answer history scores identically with every accessibility setting on and with every one off, and
+         identically under a simulation.
+      · REPORTS NEVER SUM ACROSS ROLES — a test over the report model with a therapist's and a teacher's sessions
+         for the same child.
+
+    ⚠️ WHAT NO TEST OF MINE WILL EVER CONFIRM: whether "4 in a row down, 8 of 10 up" actually lands a child in her
+    zone of proximal development. That is issue #7 (field test) and, in the end, a question for the teachers who
+    use it. The rule is written as a default precisely because it has not been measured.
+
+more-information: |
+  ⚠️ THIS RECORD REFINES ADR-0005 AND MUST BE READ WITH IT. ADR-0005 says "no login". That remains true of the
+  CHILD, which is what it was protecting, and is no longer true of the ADULT. The activity code it introduced is
+  not superseded either — it is path (a), the one that needs no account.
+
+  ⚠️ AND IT FULFILS ADR-0037 rather than overturning it. That record says "the Inclusionist stores NOTHING about a
+  child. Not a name, not a nickname, not a hash of a name. The roster is Bússola Escolar's, the identity is an
+  avatar chosen from that roster." Screen 2 IS that sentence built. What is new is that progress now travels to
+  Bússola Escolar under an adult's credentials — the Inclusionist still keeps none of it.
+
+  Deliberately NOT decided here: the wire protocol and the shape of the end-to-end encryption; how a report is laid
+  out; how a curriculum document becomes skill data; the exact statistical test behind "three in a row" beyond its
+  stated placeholder status; and what the powers earned from minigames actually do in each genre.

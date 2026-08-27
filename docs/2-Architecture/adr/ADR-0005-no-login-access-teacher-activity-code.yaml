@@ -7,6 +7,9 @@ metadata:
   informed: []
 
 title: Access & discovery — no login, teacher-generated activity code, icon-based non-text navigation
+# ⚠️ REFINADO 2026-08-27 pelo ADR-0048: "no login" continua valendo para a CRIANÇA, que é o que este
+#    registro protegia, e deixou de valer para o ADULTO. Existem três caminhos de entrada, e o código de
+#    atividade daqui é o primeiro deles — o que não precisa de conta nenhuma. Nada aqui foi superado.
 
 context-and-problem-statement: |
   The product has no accounts and stores no child PII (privacy pillars). How does a child — often a pre-reader, on a

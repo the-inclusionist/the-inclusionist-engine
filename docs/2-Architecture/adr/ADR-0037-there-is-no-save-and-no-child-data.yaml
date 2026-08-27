@@ -93,6 +93,12 @@ decision-outcome:
       discover in three months. It stays because the room screen will need it and because deleting it would
       mean rewriting a proof that is already green — not because anything uses it today.
 
+      ✅ CONFIRMADO E CONSTRUÍDO 2026-08-27 (ADR-0048): a segunda tela da jornada É esta frase virada tela — o
+      adulto entra, e a criança escolhe o próprio avatar na lista da turma como quem escolhe personagem de jogo de
+      luta. O que mudou desde este registro é que a PROGRESSÃO passou a existir e a ser guardada — pelo Bússola
+      Escolar, sob as credenciais do adulto, com ponta a ponta, e com uma opção de apontar para um IP na rede local
+      para que nada trafegue pela internet. O Inclusionista continua sem guardar nada. Esta cláusula não afrouxou.
+
       THE PRIVACY POSITION, stated so it is not softened later: the Inclusionist stores NOTHING about a child.
       Not a name, not a nickname, not a hash of a name. The roster is Bússola Escolar's, the identity is an
       avatar chosen from that roster, and the room is a machine on the school's own LAN. An earlier draft of
