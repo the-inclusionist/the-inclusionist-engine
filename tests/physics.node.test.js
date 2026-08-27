@@ -527,6 +527,28 @@ describe('game/physics — stepSounds (escada, parede, chao, agua)', () => {
     expect(sons).toEqual([]);
     expect(nav).toEqual(['waterNav']);
   });
+  it('[Right] PARADO com a TRAVA da corrida ligada: a bengala sonda sem segurar tecla', () => {
+    // REGRESSAO MINHA, e o gate anterior nao a pegava: eu tinha gateado a DECISAO pura e nao a FIACAO, entao
+    // devolver `held(pl,'run')` aqui continuava verde. Este caso alcanca `stepSounds` de verdade.
+    //
+    // Parado, segurar o Correr e a sondagem da bengala no modo cego — e assim que a crianca varre o que esta
+    // em volta sem andar. Com a alternancia do correr ela nunca segura: ela toca. Sem esta linha, a sondagem
+    // sumiria justamente para quem depende dela.
+    const nav = [];
+    PHY.initPhysics(CTX({ caneOn: () => true, nav: { ...NAV, caneTap: () => nav.push('sondou') } }));
+    const pl = novo({ toggleRun: true, runLatch: true, airTime: 0, stepT: 99 });
+    PHY.stepSounds(pl, 30, 0, false); // dt grande: passa dos 25 quadros de cadencia numa chamada
+    expect(nav, 'a trava ligada tem de sondar mesmo sem tecla segurada').toEqual(['sondou']);
+  });
+
+  it('[Zero] PARADO com a alternancia ligada e a trava DESLIGADA: silencio', () => {
+    // O outro lado: a trava desligada nao sonda, senao a bengala bateria a partida inteira.
+    const nav = [];
+    PHY.initPhysics(CTX({ caneOn: () => true, nav: { ...NAV, caneTap: () => nav.push('sondou') } }));
+    PHY.stepSounds(novo({ toggleRun: true, runLatch: false, airTime: 0, stepT: 99 }), 30, 0, false);
+    expect(nav).toEqual([]);
+  });
+
   it('[Zero] parado fora da agua e fora de tudo: rearma o proximo passo (stepT=99)', () => {
     bateu();
     const pl = novo({ inWater: true, stepT: 5 }); // o ramo do rearme so e alcancado dentro da agua, verbatim

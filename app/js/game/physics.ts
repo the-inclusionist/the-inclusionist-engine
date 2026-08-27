@@ -21,7 +21,7 @@ import { ehTrampolim } from '../core/constants.js';
 import { t } from '../core/i18n.js';
 import type { ControlledGamePlayer } from './entity.js'; // ADR-0033: a fatia do JOGO — `quiz` mora aqui
 import { tileAt, solidAt, surfTop, isWcRampRiser, rampSurfaceY, caneBlockPx } from '../core/collision.js';
-import { correndoAgora, pularVaiGrudar, botaoDeGrude } from './run-toggle.js';
+import { correndoAgora, pularVaiGrudar, botaoDeGrude, botaoDeCorrerEngatado } from './run-toggle.js';
 import { BOX, SPAWN_X, SPAWN_Y, jumpVel, isBouncyGroundBelow, clingSides, firstClingSide, spiderReattach } from './player.js';
 import { ELEV_SPEED, elevAt } from './elevators.js';
 import { held } from '../input/state.js';
@@ -348,10 +348,10 @@ export function stepSounds(pl: PhysicsPlayer, dt: number, dir: number, run: bool
     if (C.caneOn(pl)) {
       if (pl.airTime <= 5) { // modo cego: chão ESTÁVEL (coyote) evita o flicker do onGround
         if (dir !== 0) { pl.caneDist = (pl.caneDist || 0) + Math.abs(pl.vx * dt); if (pl.caneDist >= caneBlockPx()) { pl.caneDist = 0; C.nav.caneTap(pl); } } // ANDANDO: batida por DISTÂNCIA
-        else { pl.caneDist = 0; if (held(pl, 'run')) { pl.stepT += dt; if (pl.stepT >= 25) { pl.stepT = 0; C.nav.caneTap(pl); } } else pl.stepT = 99; } // PARADO: sem batida; segurar corrida = sondagem
+        else { pl.caneDist = 0; if (botaoDeCorrerEngatado(pl, held(pl, 'run'))) { pl.stepT += dt; if (pl.stepT >= 25) { pl.stepT = 0; C.nav.caneTap(pl); } } else pl.stepT = 99; } // PARADO: sem batida; correr ENGATADO = sondagem (com a alternância, a trava; sem ela, segurar)
       }
     } else if (pl.onGround && dir !== 0) {
-      const cad = (held(pl, 'run') && !pl.easy && !pl.toggleMove) ? 11 : 17; pl.stepT += dt;
+      const cad = correndoAgora(pl, held(pl, 'run')) ? 11 : 17; pl.stepT += dt; // a cadência do passo segue a corrida, trava inclusive
       if (pl.stepT >= cad) { pl.stepT = 0; const m = C.surfaceUnder(pl); if (m) C.noiseHit(m); if (run) C.puffDust(pl.x - pl.facing * 5, pl.y, 2); }
     }
   }

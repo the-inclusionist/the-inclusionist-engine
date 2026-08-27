@@ -47,18 +47,32 @@ export interface ContextoDeGrude {
 }
 
 /**
- * Está correndo NESTE quadro?
+ * O BOTÃO DE CORRER ESTÁ ENGATADO? — e esta pergunta NÃO é "está correndo".
  *
- * A inversão é o ponto: quem usa a alternância não consegue manter pressionado, então "está segurando?" não
- * pode ser a pergunta — o que vale é a trava. Sem a alternância, nada muda: continua sendo segurar.
+ * A diferença nasceu de uma regressão minha. Parado, SEGURAR o Correr é a sondagem da bengala no modo cego:
+ * é assim que a criança varre o que está em volta sem andar. Com a alternância ligada ela nunca segura — ela
+ * toca —, e a sondagem sumiria justamente para quem depende dela.
  *
- * `easy` e `toggleMove` continuam vencendo os dois caminhos, e isso é preservação e não zelo: as duas regras
- * já existiam em `stepPlayer` e desligar a corrida é o ponto delas. Uma trava que as furasse pela porta dos
- * fundos daria à criança do Modo Fácil uma velocidade que o modo existe para não ter.
+ * E não dava para reusar `correndoAgora`: `easy` e `toggleMove` desligam a CORRIDA, e não podem desligar o
+ * TATO. Usá-la aqui teria sido o conserto óbvio e teria calado a bengala de toda criança em Modo Fácil ou
+ * alternância de movimento — que hoje podem sondar.
+ *
+ * Então são duas perguntas: esta (o botão está engatado?) e a de baixo (isso resulta em correr?).
+ */
+export function botaoDeCorrerEngatado(pl: JogadorDaCorrida, segurando: boolean): boolean {
+  return pl.toggleRun ? !!pl.runLatch : segurando;
+}
+
+/**
+ * Está correndo NESTE quadro? É o botão engatado MAIS as duas regras que já desligavam a corrida.
+ *
+ * `easy` e `toggleMove` continuam vencendo, e isso é preservação e não zelo: as duas regras já existiam em
+ * `stepPlayer` e desligar a corrida é o ponto delas. Uma trava que as furasse pela porta dos fundos daria à
+ * criança do Modo Fácil uma velocidade que o modo existe para não ter.
  */
 export function correndoAgora(pl: JogadorDaCorrida, segurando: boolean): boolean {
   if (pl.easy || pl.toggleMove) return false;
-  return pl.toggleRun ? !!pl.runLatch : segurando;
+  return botaoDeCorrerEngatado(pl, segurando);
 }
 
 /**
