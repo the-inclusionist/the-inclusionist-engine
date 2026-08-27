@@ -60,6 +60,7 @@ export type FracNot = Record<FracNotKey, number>;
 import type { NavKeys } from '../input/edges.js';
 import { passoNoAnel } from '../core/anel.js';
 import { anunciarItem } from './item-announcement.js';
+import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 // LIGAÇÃO VIVA (ESM), e não cópia: `menuIndexOn` muda quando a criança desliga o índice no menu, e o valor
 // aqui acompanha sem precisar de assinatura nem de um campo a mais no `ctx`.
 import { menuIndexOn } from '../core/state.js';
@@ -555,6 +556,11 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
    * valor. Clona antes de arrancar o `<span>` para não mexer no botão que está na tela.
    */
   function partesDoBotao(b: HTMLElement): { rotulo: string; estado: string } {
+    // RÓTULO DECLARADO VENCE, e é o que o leitor de tela já vai anunciar. MEDIDO no botão de número de
+    // jogadores: o jogo narrava "◀ Number of players: 1 ▶" enquanto o leitor dizia "Number of players: 1.
+    // Click on the left for fewer…" — duas frases para o mesmo item, e a do jogo lendo os glifos das setas.
+    const declarado = rotuloAcessivel(b);
+    if (b.getAttribute('aria-label')) return { rotulo: declarado, estado: '' };
     const sub = b.querySelector<HTMLElement>('.act-sub');
     if (!sub) return { rotulo: b.textContent || '', estado: '' };
     const copia = b.cloneNode(true) as HTMLElement;

@@ -816,6 +816,21 @@ describe('initActivitiesMenu — travessia por setas', () => {
     expect(calls.said[calls.said.length - 1]).toBe('Um, 2 de 3');
   });
 
+  it('[Right] botão com `aria-label` é narrado PELO RÓTULO DECLARADO, não pelo texto visível', () => {
+    // MEDIDO no jogo construído antes deste caso existir: pousando no botão de número de jogadores, o jogo
+    // narrava "◀ Number of players: 1 ▶, 1 of 4" e o leitor de tela dizia "Number of players: 1. Click on the
+    // left for fewer, on the right for more." — duas frases para o mesmo item, no mesmo instante, e a do jogo
+    // lendo os glifos das setas. É o mesmo ruído que o item 4 do ADR-0044 tirou da legenda da pausa.
+    const { ctx, calls, stage } = makeCtx();
+    const api = initActivitiesMenu(ctx);
+    const a = new FakeEl('button', { text: '◀ Nº de jogadores: 1 ▶' });
+    a.setAttribute('aria-label', 'Número de jogadores: 1'); // o FakeEl guarda atributo por setAttribute, não pelo construtor
+    stage.menus['tm-main'].append(a);
+    api.navTitle({ down: true });
+    api.navTitle({ down: true });
+    expect(calls.said[calls.said.length - 1], 'o jogo narrou os glifos em vez do rótulo declarado').toBe('Número de jogadores: 1, 2 de 2');
+  });
+
   it('confirmar sem foco em nada aciona o PRIMEIRO botão', () => {
     const { ctx, stage } = makeCtx();
     const api = initActivitiesMenu(ctx);

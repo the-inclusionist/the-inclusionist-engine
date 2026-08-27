@@ -160,6 +160,7 @@ import type { EventTargetLike } from '../input/touch-bindings.js'; // a porta de
 import type { DomQuery } from '../core/dom-query.js';
 import { mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from './pause-icons.js';
 import { anunciarItem } from './item-announcement.js';
+import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
@@ -420,7 +421,9 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // nem região viva. MEDIDO no jogo construído: a seta andava e o `#sr-status` ficava vazio. O item 3 do
     // ADR-0044 pede posição e total "em todo lugar", e este era o lugar onde ele não tinha chegado — o menu
     // que o item 5 reconstruiu.
-    ctx.srSay(anunciarItem({ rotulo: items[n].textContent || '', posicao: n + 1, total: items.length }, ctx.comIndice()));
+    // `rotuloAcessivel` e não `textContent`: um item com `aria-label` seria narrado de um jeito pelo jogo e de
+    // outro pelo leitor de tela, e quem ouve os dois não teria como saber qual é a verdadeira.
+    ctx.srSay(anunciarItem({ rotulo: rotuloAcessivel(items[n]), posicao: n + 1, total: items.length }, ctx.comIndice()));
   }
 
   /* ===================== teclado ===================== */

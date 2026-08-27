@@ -33,6 +33,7 @@ import { CONTRAST_LEVELS, CONTRAST_LABELS } from './settings-visual.js';
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
 import type { AudioCatState } from './settings-audio.js';
 import { anunciarItem } from './item-announcement.js';
+import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
 import { menuIndexOn } from '../core/state.js';
@@ -50,8 +51,11 @@ import { menuIndexOn } from '../core/state.js';
  */
 export function legendaDoIcone(barra: ParentNode, el: HTMLElement): string {
   const icones = [...barra.querySelectorAll<HTMLElement>('.pi-btn')];
+  // A regra "rótulo declarado vence" nasceu AQUI e valia só para os dez ícones. Virou `core/rotulo-acessivel`
+  // e agora vale para o menu inicial e para a lista de pausa também — uma resposta para "como se chama este
+  // controle", e não três.
   return anunciarItem(
-    { rotulo: el.getAttribute('aria-label') || '', posicao: icones.indexOf(el) + 1, total: icones.length },
+    { rotulo: rotuloAcessivel(el), posicao: icones.indexOf(el) + 1, total: icones.length },
     menuIndexOn,
   );
 }
