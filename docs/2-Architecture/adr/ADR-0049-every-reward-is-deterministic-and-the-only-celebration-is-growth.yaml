@@ -1,0 +1,208 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-27
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0006 (ethical engagement: no dark patterns, no session-prolonging mechanics)"
+    - "ADR-0010 (pillar 2 a11y-first; pillar 6 child-privacy)"
+    - "ADR-0048 (the journey; §7 scoring and §5 the bands)"
+    - "requerimento §49.a and §49.g — the named forbidden mechanics, with their legal basis"
+    - "Zald et al. / striatal dopamine to variable- vs fixed-ratio reward — https://www.sciencedirect.com/science/article/pii/S0306460323000217"
+    - "Marx, Hacker, Yu, Cortese & Sonuga-Barke (2021), meta-analysis of delay aversion in ADHD — https://journals.sagepub.com/doi/abs/10.1177/1087054718772138"
+    - "Reward feedback in serious games for children with attention deficits, JMIR Serious Games 2025 — https://games.jmir.org/2025/1/e67338/"
+    - "Overjustification effect — https://en.wikipedia.org/wiki/Overjustification_effect"
+    - "Do Immediate External Rewards Really Enhance Intrinsic Motivation? — https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9150741/"
+  informed: []
+
+title: Every reward is DETERMINISTIC, points are a work record that buys nothing, and the only celebration is the child's own growth
+
+context-and-problem-statement: |
+  The requerimento commits the Município to something specific and verifiable, and §49.g names the mechanics rather
+  than gesturing at them — "nomear as mecânicas transforma um princípio em especificação técnica verificável, e
+  permite que qualquer pessoa audite o código para conferir". Six are disabled by default and FORBIDDEN in child
+  accounts: infinite scroll, autoplay, pull-to-refresh, **reward cycles**, consecutive-access streaks, and
+  **competitive gamification between students**.
+
+  Read against ADR-0048 as it stood, two of those six were a problem:
+
+    · the core loop was item → minigame → three wins → power, which is a reward cycle;
+    · scoring carried a Guitar-Hero streak multiplier (×2 at five in a row, ×3 at ten, ×4 at fifteen).
+
+  The Dev removed the multiplier in one sentence — "prática predatória sim para manter a criança jogando e se
+  estressar se sair do streak. Jogo educativo definitivamente não pode ter isso" — and redesigned the rest.
+
+decision-drivers:
+  - "A named mechanic can be audited; a general clause cannot. This record exists so someone outside the project can
+     check the code against it."
+  - "A reward that varies is the mechanism of dependency, not a matter of degree. Removing variability is the whole
+     intervention."
+  - "Whatever is celebrated is what the child learns to want. If the biggest moment in the game is a prize, the
+     prize is the subject."
+  - "Nothing may punish slowness. A score that pays more for harder questions ranks the class by ability and calls
+     it work."
+
+considered-options:
+  - "R1 — keep a conventional game economy (variable rewards, streaks, unlockables), which is what engages best"
+  - "R2 — remove variability only, keeping accumulation and prizes"
+  - "R3 — three kinds of reward, all deterministic: points as a work record that buys nothing, powers as structural
+     keys, and celebration reserved for demonstrated growth"
+
+pros-and-cons-of-the-options:
+  R1:
+    good: ["It is what the evidence says works best for engagement, including in serious games — see the
+            confirmation section, where this is measured and not assumed."]
+    bad: ["It is exactly what §49.g forbids and what the Lei 15.211/2025 art. 17 §4 II targets.",
+          "It teaches, before any content, that the screen is irresistible — the requerimento's own argument."]
+  R2:
+    good: ["Cheap: one property of the reward changes and the rest of the design stands."]
+    bad: ["Accumulation toward a prize is still a reason to keep playing that has nothing to do with learning.",
+          "It leaves the celebration on the prize, which is the part that decides what the child values."]
+  R3:
+    good: ["Each of the three has a different job, so none of them has to carry engagement.",
+           "The only thing celebrated is something the child actually did, which is the one reward that cannot be
+            farmed.",
+           "It is auditable clause by clause."]
+    bad: ["It gives up a measured engagement advantage — stated in the confirmation, not hidden.",
+          "It asks the pedagogy to carry motivation that the game economy usually carries. If the activities are
+           dull, nothing here rescues them."]
+
+decision-outcome:
+  chosen-option:
+    link: "R3 — three deterministic rewards, and the celebration belongs to growth"
+    justification: |
+      ===== 1. POINTS — A WORK RECORD =====
+      ONE POINT PER CORRECT QUESTION, regardless of the question's difficulty. Nothing is bought with them and
+      nothing is unlocked by them. No animation when the counter rises. They reset at the end of the day; the day's
+      total is what is kept, and the adult (and the student from 13) can see it.
+
+      ⚠️ THE FLAT POINT IS THE ACCESSIBILITY DECISION HIDDEN IN THE SCORING. An earlier version paid by difficulty.
+      The Dev corrected it so "os alunos com mais dificuldade consigam tirar tantos pontos quanto os alunos com
+      menos dificuldade". A difficulty-weighted score is a class ranking wearing the costume of a work log.
+
+      ===== 2. POWERS — KEYS, NOT PRIZES =====
+      Super-powers stop being something the minigames award and become part of the LEVEL: they lie in the world,
+      in the right place, and they open what was unreachable. Flight reaches a ledge in the platformer; super
+      strength pushes rocks in the top-down; green breaks green robots in the shooter, green blocks in the breaker.
+
+      They are deterministic, they are found and not rolled, and they are earned by GAME skill — never by academic
+      performance. **And accessibility features may make them easier with no penalty whatsoever**, which is the
+      clause that keeps a motor or executive difficulty from blocking the school content behind it.
+
+      ===== 3. CELEBRATION — ONLY FOR GROWTH, AND NOTHING MAY OUTSHINE IT =====
+      Two moments, both quiet, both about the child's own curve:
+
+        · **MASTERY.** When she leaves the zone upward, a simple animation of her growth graph:
+          "Parabéns! Você dominou o conceito ⟨nome⟩!"
+        · **SELF-SURPASSING.** When the day's points beat the last two days, a simple bar chart of the last five:
+          "Parabéns! Você se superou e trabalhou mais que nos últimos dias!"
+
+      THE RULE THAT ORDERS THEM: "Nenhuma recompensa pode ser superior à percepção de crescimento pessoal." That is
+      a design constraint with teeth — it decides which animation is the biggest thing on screen.
+
+      ===== 4. FORBIDDEN, NAMED =====
+      No extravagant reward: no flashing lights, no intense festive sounds, no mystery chests, no casino
+      animations. No variable rewards, no loot boxes, no random chests. **Every reward is subtle and
+      deterministic.** And, from §49.g, also forbidden in child accounts: infinite scroll, autoplay,
+      pull-to-refresh, consecutive-access streaks, and competitive gamification between students — the last of
+      which ADR-0048 already satisfies, since there is no ranking and the end screen is collective.
+
+      ===== 5. THE TEN-SEGMENT BAR =====
+      Centred at the bottom of the screen, it is the child's window onto §5 of ADR-0048 and the only always-visible
+      feedback:
+
+        · BLUE  — right on the first attempt (no support)
+        · GREEN — right on a later attempt (with mediation)
+        · RED   — failed
+        · It scrolls: the oldest leaves as the newest enters, endlessly.
+        · **ALL ORANGE** — four reds in a row, or five scattered: the level drops.
+        · **ALL PURPLE** — eight blues: the level rises, and the count resets.
+
+      ⚠️ ONE SEGMENT IS ONE QUESTION, NOT ONE ATTEMPT — and this needs the Dev's word because his sentence
+      ("vermelho a cada erro") reads the other way. Per QUESTION, every number in ADR-0048 §5 lines up: eight blues
+      is 8/10 first-try, four reds in a row is the 2,56% event, five scattered reds is inside the 0–6/10 band. Per
+      ATTEMPT, a single hard question could paint three reds and demote a child who was merely thinking. The
+      per-question reading is implemented; the ambiguity is flagged rather than silently resolved.
+
+      Those thresholds are the five-alternative case. Other question types keep the SAME two cuts, restated in
+      their own arithmetic: below the guessing floor the level drops, above 80% first-try it rises.
+
+      ===== 6. AFTER THE THIRD ERROR: AN EXPLANATION, NOT THE ANSWER =====
+      Corrects ADR-0048's first version, which said the answer is told. It is not, not yet:
+
+        · Three attempts. After the third error the child receives an EXPLANATION so she can get there — worth no
+          points, because the segment is already red.
+        · Three more attempts on that explanation, also worth nothing.
+        · Only if those three also fail does the answer appear for her to COPY — and the level drops immediately,
+          without waiting for four failed questions (the bar goes orange at once).
+
+      ⚠️ WHY THE ANSWER IS GIVEN AT ALL, and this is the line that separates it from the practice §49.e condemns
+      ("uma ferramenta que entrega a resposta produz a aparência de aprendizagem e a ausência dela"): six failed
+      attempts with an explanation in the middle is not a child thinking, it is a child clicking at random. The
+      answer arrives when there is **no learning left to protect** — after the attempt, never in place of it. The
+      requerimento's §49.e gains the same distinction, because as written it does not carry it.
+
+  consequences:
+    positive:
+      - "Every one of the six named mechanics is answered by a clause someone can check against the code."
+      - "The flat point makes the score usable by a child who works slowly, which is most of the intended audience."
+      - "Powers moving into the level means accessibility can ease them without touching anything academic."
+    negative:
+      - "A measured engagement cost — see the confirmation. This design deliberately gives up the schedule that
+         performs best, and it will not be free."
+      - "Motivation now rests on the activities themselves. If they are boring, nothing in the reward system hides
+         it, which is a feature at design time and a risk at delivery time."
+      - "Two celebration animations and a ten-segment bar are new UI on a 320×180 screen that is already full."
+    neutral:
+      - "Points resetting daily means there is no long-term accumulation to display, which removes a whole class of
+         screens nobody now has to design."
+
+  confirmation: |
+    ⚠️ THE LITERATURE CHECK THE DEV ASKED FOR, AND IT DOES NOT CONFIRM EVERYTHING. Reporting only the supporting half
+    would be the same failure this project keeps correcting elsewhere.
+
+    WHAT THE EVIDENCE SUPPORTS:
+      · REMOVING VARIABILITY IS THE RIGHT LEVER. Striatal dopamine release is observed for reward delivered on a
+        VARIABLE-ratio schedule and NOT detected for the equivalent sum on a FIXED-ratio schedule; behaviour
+        reinforced on variable schedules resists extinction even when it has become harmful. The "casino effect" is
+        variability, so a deterministic reward is not a milder version of the same thing — it is a different thing.
+      · THE ADHD DELAY ARGUMENT HOLDS. Delay aversion in ADHD is established by meta-analysis (Marx et al., 2021):
+        children with ADHD choose small immediate over large delayed rewards more often than controls. The Dev's
+        "o progresso escolar para o TDAH não pode demorar muito para aparecer" is supported, and it is the argument
+        for the ten-segment bar being always visible.
+      · IMMEDIACY AND VISIBILITY MATTER for children with ADHD, which is what a per-question segment delivers and a
+        weekly report does not.
+      · POINTS THAT BUY NOTHING ARE THE SAFER FORM. The overjustification literature finds that expected external
+        incentives can crowd out pre-existing intrinsic interest. A counter that purchases nothing is closer to
+        feedback than to payment.
+
+    WHAT THE EVIDENCE DOES NOT SUPPORT, AND IT IS THE COST OF THIS DECISION:
+      · **VARIABLE-RATIO PERFORMS BETTER IN SERIOUS GAMES.** A comparison of reward schedules in serious games
+        reports the variable-ratio schedule outperforming the fixed-ratio one on the outcome measures. So this
+        record is not choosing the better-performing design; it is choosing the safer one, and paying for it. That
+        trade is the decision. Anyone who later measures worse engagement here has found the expected result, not
+        a defect.
+      · "DOPAMINA SAUDÁVEL DE CONCLUSÃO DE TAREFA" IS NOT A CLAIM TO MAKE. The defensible statements are about
+        PREDICTABILITY and DELAY, which the studies address; the neurochemistry of a "healthy" release is not
+        something this evidence establishes, and the requerimento should not assert it.
+      · THE OVERJUSTIFICATION STORY IS NOT ONE-DIRECTIONAL EITHER: immediate rewards delivered right after task
+        completion have been found to RAISE intrinsic motivation compared with delayed ones. So "extrinsic is bad"
+        is too flat. What survives is narrower and still supports the design: unpredictable and delayed is the bad
+        combination; immediate and predictable is not.
+
+    WHAT WILL BE GATED once built: the flat point (same history, same score, at every difficulty); the score
+    unaffected by any accessibility setting or simulation, in both directions; the bar's per-question colouring;
+    and the absence of any random element in a reward, asserted over the reward code rather than promised here.
+
+    ⚠️ AND WHAT NO TEST OF MINE CAN CONFIRM: whether a child keeps playing without the schedule that the evidence
+    says engages best. Issue #7 is where that is answered, and it is the question this record is most likely to be
+    wrong about.
+
+more-information: |
+  The requerimento gains three things from this record: the §49.g clarification that a DETERMINISTIC skill reward is
+  not the "ciclo de recompensa" the norm targets (or, failing that, this design has to change); the §49.e
+  distinction between delivering the answer INSTEAD OF the reasoning and revealing it AFTER the attempt; and the
+  removal of any "healthy dopamine" phrasing in favour of predictability and delay.
+
+  Deliberately NOT decided here: what the powers do in each genre beyond the examples; how the growth graph is
+  drawn; and whether points ever unlock the story the Dev described in one sentence and withdrew in another
+  (ADR-0048 §7 records the conflict).

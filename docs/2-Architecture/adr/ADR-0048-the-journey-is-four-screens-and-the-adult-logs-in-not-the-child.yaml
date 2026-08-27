@@ -113,6 +113,20 @@ decision-outcome:
           shown SIDE BY SIDE AND NEVER SUMMED. Family accounts pool into one history; a therapist's sessions and a
           teacher's sessions stay separate lines in the report, in both directions.
 
+      ⚠️ AND THE SHARING CARRIES FOUR CONDITIONS AND A DEFERRAL, from Anexo VIII of the requerimento, which this
+      record described as a plain feature and which is the most legally loaded thing in the system. Records
+      produced by health professionals are SENSITIVE personal data (art. 11, LGPD) and are covered by professional
+      secrecy **that the guardians' consent alone does not lift**. By design, therefore:
+
+        1. consent that is SPECIFIC, HIGHLIGHTED and REVOCABLE PER PURPOSE — not one blanket agreement;
+        2. SEGREGATED access profiles, each category seeing only what pertains to it;
+        3. a LOG OF EVERY CONSULTATION;
+        4. before implementation: manifestation of the data protection officer AND consultation with the relevant
+           professional councils.
+
+      ⚠️ **AND IT IS NOT PART OF THE FIRST IMPLEMENTATION STAGE.** The requerimento defers it deliberately; this
+      record now defers it too, instead of describing as easy what the protocolled document describes as hard.
+
       ⚠️ THE NON-SUMMING IS THE WHOLE POINT and must not be "simplified" into one number later. A child performs
       differently with a therapist, with a teacher and at home, and averaging those three erases the very
       difference a professional reads. One number would be easier to draw and would destroy the instrument.
@@ -133,43 +147,101 @@ decision-outcome:
       fourth-year one. The minigame ends only after THREE CORRECT ANSWERS, and the reward is set by the level of
       the LAST one — so a child who climbs mid-minigame is paid at the level she reached, not the one she started.
 
-      ===== 5. TWENTY PER CENT OF ERROR COSTS NOTHING =====
-      The rule, in his examples:
-        · FIVE-CHOICE QUESTION — one wrong answer, then a second attempt, both free. Wrong again and the answer is
-          TOLD: she selects it and moves on.
-        · WORD/SENTENCE BUILDER of 9–12 items — two or three wrong moves free. On the third or fourth the answer is
-          told, she rebuilds what she made, and moves on.
+      ===== 5. THE THREE BANDS, AND THEY ARE ARITHMETIC RATHER THAN TASTE =====
+      REPLACES the first version of this clause, which set "20% of error costs nothing" and claimed the zone of
+      proximal development as its target. The requerimento (Anexo XIII §73.c) is right and that version was wrong:
+      measuring only unaided performance yields DIFFICULTY, not the zone. The Dev supplied the bands, and they are
+      derived rather than chosen. For a five-alternative question with up to three attempts:
 
-      ⚠️ BEING TOLD IS NOT LOSING. There is no failure state in the loop: the activity always resolves and always
-      advances. What varies is how much the child did herself, which is what the report should reflect — never
-      whether she was allowed to continue.
+        · **8 or more of the last 10 right ON THE FIRST TRY → PROFICIENT.** Level up, even above what the adult
+          configured. At this rate the child is barely erring and is not using the help.
+        · **7 or more of the last 10 resolved, using the second and third attempts → THE ZONE.** She cannot do it
+          alone and she can do it with mediation, which is the definition, not an approximation of it.
+        · **6 or fewer of the last 10, OR four failed questions in a row → FRUSTRATION.** Level down immediately.
 
-      ===== 6. THE DIFFICULTY FOLLOWS THE CHILD =====
-        · THREE WRONG IN A ROW, on DIFFERENT questions — the level DROPS. Not to punish: three consecutive misses
-          across different questions is the statistical signature of guessing, and guessing means the activity is
-          above her. The next activities move to a PREREQUISITE skill, not to the configured one.
-        · EIGHT OF THE LAST TEN CORRECT — the level RISES, by Pareto, EVEN ABOVE what the teacher asked for.
-        · Both persist into every following minigame. The target is the zone of proximal development: hard enough
-          to teach, not so hard she quits.
+      ⚠️ WHERE THE NUMBERS COME FROM, written out because the next person will otherwise re-derive them wrong:
 
-      ⚠️ THE RULE OVERRIDES THE TEACHER'S SETTING IN BOTH DIRECTIONS, and that is deliberate. An activity that is
-      too hard does not teach and makes her give up; one that is too easy does not teach and bores her. Respecting
-      the lesson plan while a child guesses at random is not obedience, it is wasting her half hour.
+        · A child GUESSING with three attempts on five alternatives resolves the question with probability
+          1 − (4/5 · 3/4 · 2/3) = **0,60**. So 60% is the noise floor, and it is why the proficiency bar sits at
+          8/10 FIRST-TRY rather than at 8/10 resolved — resolved-8/10 is nearly what pure guessing produces.
+        · Failing FOUR QUESTIONS IN A ROW therefore has probability 0,40⁴ = **0,0256**, under the conventional 5%
+          cut. Four consecutive failures is evidence of guessing, not a bad streak.
+        · ⚠️ AND THE UNIT IS THE **QUESTION**, NOT THE ATTEMPT. Four *attempts* wrong happens inside one ordinary
+          question; four *questions* failed in a row is the 2,56% event. Confusing the two would make the game
+          demote a child for one hard question.
 
-      ⚠️ AND IT IS AN ADMITTED PLACEHOLDER. In his words: "Métodos mais refinados de ajustar a dificuldade serão
-      criados conforme o jogo é desenvolvido, mas na falta de métodos melhores, o '4 seguidos volta 8/10 avança' é
-      o default." Written down as the default so that a better one has something to beat, and so nobody mistakes
-      it for a measured model.
+      ===== 6. THE TWO MEASURES, RECORDED SEPARATELY — THIS IS WHAT MAKES §5 THE ZONE AND NOT DIFFICULTY =====
+      The answer to "como?", and it costs almost nothing because the game already produces both signals and merely
+      threw one away:
 
-      ===== 7. SCORING: A ROUND, NO GAME OVER, NO RANKING =====
-      A gamified activity runs for a ROUND whose length the teacher sets. There is no game over. At the end the
-      screen shows the PRIZE and the SUM OF EVERY CHILD'S POINTS — collective, because "não existe ranking, todo
-      mundo é importante".
+        · RIGHT ON THE FIRST ATTEMPT  → performance WITHOUT support.
+        · RIGHT ON A LATER ATTEMPT    → performance WITH mediation (the retry IS the graduated support).
+        · FAILED                       → beyond the zone.
 
-      POINTS ARE THE TYPICAL AGE for the question: a fifth-year question is worth 10 points, because ten is the
-      usual age for it. Older content is worth more because it is worth more, without anyone tuning a table.
+      Three outcomes per question, stored per skill. That is the whole mechanism: not a new subsystem, a third
+      value where there used to be a boolean. Without it the history accumulated over months cannot calibrate
+      anything, and the Campo Magnético (below) has nothing to learn from.
 
-      THE STREAK MULTIPLIES, Guitar Hero style: 5 in a row ×2, 10 in a row ×3, 15 in a row ×4.
+      ⚠️ WHAT THE CAMPO MAGNÉTICO IS, in one paragraph, because this record now depends on it: it is the adaptive
+      layer described in Anexo XIII of the requerimento, still in conception and NOT part of any request made to
+      the Município. It would calibrate item difficulty and student proficiency on one scale (Item Response
+      Theory, the family used in ENEM and SAEB), track per-skill mastery (Bayesian Knowledge Tracing), estimate
+      the zone from the two measures above, and DISCOVER the prerequisite graph that the BNCC does not
+      declare — with the network proposing edges and TEACHERS validating them, because dependency observed in data
+      is not the same as a prerequisite. Until it exists, §5 is the placeholder, and it says so.
+
+      ===== 6b. WHICH SKILL COMES NEXT, WHICH IS THE ADULT'S CHOICE AND THE CHILD'S HISTORY TOGETHER =====
+      The teacher, parent or professional picks the curriculum skill. What the game does with it depends on what
+      the child has already shown:
+
+        · ALREADY PROFICIENT in it → the activities move ON: to a skill that USES it as a prerequisite, or to a
+          SIBLING skill that is also required by a more complex one, same year or above.
+        · NOT PROFICIENT → the activities STAY in that skill, to check whether proficiency has since arrived.
+
+      ⚠️ AND THE ASYMMETRY IS THE POINT: **proficiency persists; the frustration band does not.** What a child
+      demonstrated she can do is kept; the day she was guessing is not held against her tomorrow. A system that
+      remembered frustration would keep punishing a bad afternoon for weeks.
+
+      ===== 6c. WHERE IT IS REMEMBERED =====
+      In the CHILD'S OWN profile from 13 years old — the age at which Brazilian practice admits an e-mail account —
+      and in the RESPONSIBLE ADULT'S profile below that. The purpose is plain: so she does not restart at the same
+      level every session. It rides on the same ownership as everything else (§2): Bússola Escolar holds it, the
+      Inclusionist holds nothing.
+
+      ===== 7. SCORING IS A WORK RECORD, AND NOTHING ELSE =====
+      REPLACES the first version, which had points scaled by difficulty and a Guitar-Hero streak multiplier
+      (×2 at 5, ×3 at 10, ×4 at 15). **Both are removed**, at the Dev's instruction, and the multiplier is removed
+      as what it is: "prática predatória sim para manter a criança jogando e se estressar se sair do streak."
+
+        · **ONE POINT PER CORRECT QUESTION. Full stop — difficulty does not scale it.** The reason is the one that
+          matters: so that the child who struggles can end the day with as many points as the child who does not.
+          A score weighted by difficulty would rank the class by ability while pretending to count work.
+        · Points are a RECORD OF WORK. Nothing is bought with them, nothing is unlocked by them.
+        · **No animation when the counter rises.**
+        · They **reset at the end of the day**; what is kept is the day's total.
+        · Visible to the adult and, from 13, to the student.
+
+      ⚠️ TWO OF HIS SENTENCES CONFLICT AND ONLY ONE CAN BE BUILT. Item 2 of his list said points "abrem textos
+      novos, uma história que a criança acompanha"; item 5 said points earn "absolutamente nada com isso". This
+      record implements item 5 — the later and more emphatic one, reinforced by item 7 ("funcionam como registro de
+      trabalho"). The story-unlock is NOT built. If it should be, it is a reward tied to accumulation, and it needs
+      to be reconciled with §8 of ADR-0049 rather than added quietly.
+
+      NO GAME OVER, NO END, NO RANKING. Every minigame is an arcade for collecting points, and the collective
+      total is what the screen shows at the end. "Não existe ranking, todo mundo é importante."
+
+      ===== 7b. THE ONLY CLOCK IS SCREEN TIME, AND IT IS NOT A GAME TIMER =====
+      This settles the tension with the requerimento's promise of "ausência de temporizadores" (IV.7.1, IV.7.3) and
+      with WCAG 2.2.3 Sem Tempo (AAA), and it settles it in the game's favour because of what the clock measures:
+
+        · There is NO timer on an activity, no countdown to a game ending, and no warning that time in THIS game is
+          running out. A child may take as long as she likes on any question.
+        · The only clock is the SCREEN-TIME allowance her responsible adult set (ADR-0050), and it belongs to the
+          session and not to the task. When it runs out she has not lost anything and nothing was cut short.
+        · She may change games at any moment and keep doing activities somewhere she likes better.
+
+      That is what makes the guideline hold rather than being argued around: nothing in the game is timed. The
+      requerimento's own wording gains the same distinction — a TIME-OF-USE limit is not an ACTIVITY timer.
 
       ===== 8. ACCESSIBILITY NEVER TOUCHES THE SCORE =====
       No accessibility option raises or lowers points. No disability SIMULATION raises or lowers them either.
@@ -177,6 +249,17 @@ decision-outcome:
       ⚠️ THE SECOND HALF IS EASY TO MISS AND IS THE SAME PRINCIPLE. A bonus for playing under a simulation would
       turn Empathy Mode into a way to farm points, and would price a child's real condition as a handicap someone
       else gets rewarded for enduring. Neither direction. The score measures the school work.
+
+      ===== 9. THE ADAPTIVE RULE READS PERFORMANCE, NEVER ENGAGEMENT =====
+      One line, and it exists to close a door rather than to open one. §49.m of the requerimento forbids
+      algorithmic recommendation directed at minors that induces dependency, and §49.d promises no
+      engagement-oriented recommendation. §5 IS algorithmic recommendation directed at a minor — aimed at
+      LEARNING.
+
+      What makes the difference real instead of rhetorical is the SIGNAL: the rule reads correctness and nothing
+      else. Never session length, never how often she comes back, never how long she stayed. Written here so that
+      nobody "improves" the adaptation later by feeding it a retention metric, which is precisely how a learning
+      system becomes an engagement system without anyone deciding to do it.
 
   consequences:
     positive:
