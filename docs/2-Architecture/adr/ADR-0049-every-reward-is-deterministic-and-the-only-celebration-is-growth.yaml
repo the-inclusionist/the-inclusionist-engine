@@ -7,7 +7,10 @@ metadata:
     - "ADR-0010 (pillar 2 a11y-first; pillar 6 child-privacy)"
     - "ADR-0048 (the journey; §7 scoring and §5 the bands)"
     - "requerimento §49.a and §49.g — the named forbidden mechanics, with their legal basis"
-    - "Zald et al. / striatal dopamine to variable- vs fixed-ratio reward — https://www.sciencedirect.com/science/article/pii/S0306460323000217"
+    - "CLARK, L.; ZACK, M. Engineered highs: reward variability and frequency as potential prerequisites of
+       behavioural addiction. Addictive Behaviors, v. 140, 107626, 2023. DOI 10.1016/j.addbeh.2023.107626 —
+       https://pubmed.ncbi.nlm.nih.gov/36701907/  ⚠️ é REVISÃO, e é ela que reporta o achado de neuroimagem;
+       o estudo primário não foi lido por mim, e a afirmação no requerimento é atribuída à revisão"
     - "Marx, Hacker, Yu, Cortese & Sonuga-Barke (2021), meta-analysis of delay aversion in ADHD — https://journals.sagepub.com/doi/abs/10.1177/1087054718772138"
     - "Reward feedback in serious games for children with attention deficits, JMIR Serious Games 2025 — https://games.jmir.org/2025/1/e67338/"
     - "Overjustification effect — https://en.wikipedia.org/wiki/Overjustification_effect"
@@ -112,16 +115,18 @@ decision-outcome:
 
         · BLUE  — right on the first attempt (no support)
         · GREEN — right on a later attempt (with mediation)
-        · RED   — failed
+        · RED   — failed: the third attempt was also wrong. The first two wrong attempts paint nothing.
         · It scrolls: the oldest leaves as the newest enters, endlessly.
         · **ALL ORANGE** — four reds in a row, or five scattered: the level drops.
         · **ALL PURPLE** — eight blues: the level rises, and the count resets.
 
-      ⚠️ ONE SEGMENT IS ONE QUESTION, NOT ONE ATTEMPT — and this needs the Dev's word because his sentence
-      ("vermelho a cada erro") reads the other way. Per QUESTION, every number in ADR-0048 §5 lines up: eight blues
-      is 8/10 first-try, four reds in a row is the 2,56% event, five scattered reds is inside the 0–6/10 band. Per
-      ATTEMPT, a single hard question could paint three reds and demote a child who was merely thinking. The
-      per-question reading is implemented; the ambiguity is flagged rather than silently resolved.
+      ✅ ONE SEGMENT IS ONE QUESTION, AND "ERRO" HAS A DEFINITION. Settled by the Dev, and his wording is the
+      clarification: **two wrong attempts are not an "erro"** — they are the tolerance. A segment turns RED only
+      after the THIRD wrong attempt, which is the point at which the question counts as failed.
+      That is what makes every number in ADR-0048 §5 line up: eight blues is 8/10 first-try; four reds in a row is
+      the 2,56% event (four failed QUESTIONS, each after three attempts); five scattered reds sits inside the
+      0–6/10 band. Had a segment been painted per attempt, one hard question would have shown three reds and
+      demoted a child who was merely thinking.
 
       Those thresholds are the five-alternative case. Other question types keep the SAME two cuts, restated in
       their own arithmetic: below the guessing floor the level drops, above 80% first-try it rises.

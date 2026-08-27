@@ -114,10 +114,12 @@ more-information: |
 
       · **BUNDLED WITH THE PWA — the canonical set:** Atkinson Hyperlegible (default for a reading player) ·
         Andika (default for a player still learning to read) · Lexend (optional) · iA Writer Quattro (optional).
-        Plus **Noto Color Emoji**, which is a font and is not a choice — the interface uses emoji as labels.
-        ⚠️ THE DEV SAID "FIVE" AND NAMED FOUR. The fifth is almost certainly **Atkinson Hyperlegible Mono**, which
-        this record already lists as canonical for maths and which is already bundled (`atkinson-mono`). Written
-        as the reading, not as a decision — it needs one word from him.
+        And **Noto Color Emoji** — which is the FIFTH, confirmed by the Dev; it had been written on a separate
+        line and I had guessed Atkinson Hyperlegible Mono instead. It is a font and it is not a choice: the
+        interface uses emoji as labels, so it is bundled for the same reason the other four are.
+        ⚠️ ATKINSON HYPERLEGIBLE MONO IS THEREFORE NOT IN THE BUNDLED SET, even though this record lists it among
+        the canonical faces for maths and the file is already in the repository (`atkinson-mono`, 20 KB). Left as
+        it stands rather than quietly promoted: if maths needs it offline, it is a sixth, and that is his call.
       · **ON DEMAND:** Source Sans 3 · Inter · Open Sans · Lato · Literata · Source Serif 4 · Newsreader ·
         **OpenDyslexic**. This list may grow or shrink as the game evolves; nothing in it is load-bearing.
       · **PLAYWRITE:** the one for the player's REGION downloads automatically with the PWA; every other Playwrite

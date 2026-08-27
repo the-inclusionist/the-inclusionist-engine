@@ -90,10 +90,9 @@ decision-outcome:
       numeric score on the RIGHT with the super-power below it. At the bottom, centred, the ten-segment bar
       (ADR-0049 §5).
 
-      ⚠️ ONE CONTRADICTION IN THE DEV'S OWN LAYOUT, flagged rather than guessed: he places the super-power "à
-      esquerda" in one sentence and "abaixo da pontuação numérica" in the next. This record implements the second —
-      it is the later sentence and it leaves the left side to identity, which is the grouping the rest of the HUD
-      follows. One word from him settles it.
+      ✅ THE SUPER-POWER IS ON THE RIGHT, BELOW THE SCORE. His two sentences had it "à esquerda" and then "abaixo
+      da pontuação numérica"; he settled it on the second, which is also the grouping the rest of the HUD follows —
+      identity on the left, session state in the centre, the player's own numbers on the right.
 
       ⚠️ AND THE CLOCK IS NOT A GAME TIMER. It measures the session, never the activity. Nothing counts down on a
       question, and running out ends nothing the child was in the middle of learning (ADR-0048 §7b).
