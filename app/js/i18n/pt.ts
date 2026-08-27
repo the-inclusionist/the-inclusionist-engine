@@ -459,6 +459,10 @@ const pt: Record<string, string> = {
   'sr.motor.easyOff': 'Modo Fácil desligado.',
   'sr.motor.toggleMoveOn': 'Movimento por alternância ligado: toque a direção para andar sem segurar; toque de novo para parar; segure para ir mais rápido. O pulo não interrompe a caminhada.',
   'sr.motor.toggleMoveOff': 'Movimento por alternância desligado.',
+  'sr.motor.toggleRunOn': 'Alternância do correr ligada.',
+  'sr.motor.toggleRunOff': 'Alternância do correr desligada.',
+  'sr.physics.runLatchOn': 'Correndo.',
+  'sr.physics.runLatchOff': 'Andando.',
   // ===================== AJUDA (menu de pausa) + rótulo de nível =====================
   // `pause.level` é MOLDURA: `{v}` é o nome do nível da psicogênese de Ferreiro e atravessa SEM TRADUÇÃO —
   // currículo de alfabetização não se traduz, reescreve-se por idioma (pilar 3 do ADR-0010). Ver `QL_NAME`.

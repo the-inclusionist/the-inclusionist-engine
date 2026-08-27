@@ -466,6 +466,7 @@ function saveRM(){ store.setJSON(store.KEYS.reducedMotion,rm); }
 function loadPlayerA11y(p: Player,i: number){ const v=store.get(store.KEYS.vizP(i)); if(v&&VIZ_BY_KEY[v])p.viz=v;
   p.audioSink=store.get(store.KEYS.sinkP(i))||null; // saída de áudio própria do jogador (setSinkId)
   p.easy=store.getBool(store.KEYS.easyP(i)); p.toggleMove=store.getBool(store.KEYS.toggleMoveP(i));
+  p.toggleRun=store.getBool(store.KEYS.toggleRunP(i));
   // CONSERTO: os três alvos de PERSONAGEM nasciam SEMPRE `false`, embora o comentário do bloco acima diga
   // "5 alvos; padrão herda prefers-reduced-motion". Só os 4 de CENA herdavam. Quem pediu menos movimento no
   // sistema ganhava o parallax congelado e o personagem andando — metade do pedido, e a metade que se move
@@ -474,6 +475,11 @@ function loadPlayerA11y(p: Player,i: number){ const v=store.get(store.KEYS.vizP(
   p.rmWalk=store.getBool(store.KEYS.rmWalkP(i),rmDef); p.rmBreath=store.getBool(store.KEYS.rmBreathP(i),rmDef); p.rmFlavor=store.getBool(store.KEYS.rmFlavorP(i),rmDef);
   if(i===0){ const ov=store.get(store.KEYS.viz); if(ov&&VIZ_BY_KEY[ov]&&store.get(store.KEYS.vizP(0))==null)p.viz=ov; // migra chaves antigas
     if(store.getBool(store.KEYS.toggleMoveLegacy)&&store.get(store.KEYS.toggleMoveP(0))==null)p.toggleMove=true; } }
+// AUTOMÁTICA NO TOQUE (pedido do Dev): no controle de tela ninguém "segura" um botão virtual com conforto —
+// o dedo que segura é o mesmo que precisa alcançar os outros. Ligar sozinha ali é o padrão certo, e continua
+// desligável: o valor SALVO vence, então quem desligou de propósito não a vê voltar.
+function setToggleRun(i: number,on: boolean){ const p=players[i]; if(!p)return; p.toggleRun=on; store.setBool(store.KEYS.toggleRunP(i),on); if(!on)p.runLatch=false;
+  srSay(playerPrefix(i,rodada.numPlayers)+t(on?'sr.motor.toggleRunOn':'sr.motor.toggleRunOff')); }
 function setToggleMove(i: number,on: boolean){ const p=players[i]; if(!p)return; p.toggleMove=on; store.setBool(store.KEYS.toggleMoveP(i),on); if(!on)p.walkDir=0;
   srSay(playerPrefix(i,rodada.numPlayers)+t(on?'sr.motor.toggleMoveOn':'sr.motor.toggleMoveOff')); }
 function showCaption(txt: string){ const el=$('#caption'); if(!el||!txt)return; el.textContent=txt; el.classList.add('show'); if(capTimer!==null)clearTimeout(capTimer); capTimer=setTimeout(()=>{el.classList.remove('show'); el.textContent='';},1300); }
@@ -1333,7 +1339,7 @@ const soundBtn=$('#opt-sound'), capBtn=$('#opt-captions');
 if(capBtn) toggleBtn(capBtn, captionsOn);
 if(soundBtn){ soundBtn.setAttribute('aria-haspopup','dialog'); soundBtn.addEventListener('click',openAudio); } // botão de áudio agora abre o mixer
 if(capBtn) capBtn.addEventListener('click',()=>{ setCaptionsOnValue(!captionsOn); toggleBtn(capBtn,captionsOn); srSay(t(captionsOn?'sr.captions.on':'sr.captions.off')); });
-const motor = initSettingsMotor({ $, srSay, store, players, getNumPlayers: () => rodada.numPlayers, setToggleMove, rebuildCoins }); // painel motor: ui/settings-motor.ts (registra #opt-facil, #opt-altmove e as abas)
+const motor = initSettingsMotor({ $, srSay, store, players, getNumPlayers: () => rodada.numPlayers, setToggleMove, setToggleRun, rebuildCoins }); // painel motor: ui/settings-motor.ts (registra #opt-facil, #opt-altmove e as abas)
 
 /* Modos de visualização: Normal + Alto contraste + simulações/correções. A FABRICA (parallaxTexFor,
    treeTexFor, playerVizTex, pixiFilterFor, o overlay de baixa visao e as matrizes CVD) migrou para
@@ -1452,7 +1458,7 @@ function reflectVizButtons(){ const help=players.some(p=>{const m=VIZ_BY_KEY[p.v
   const camada=document.getElementById('dom-layer')||gr;
   document.querySelectorAll('.overlay').forEach(el=>{ if(!camada.contains(el))camada.appendChild(el); });
   // Botões puramente on/off viram TOGGLE (switch) — o texto "Ligado/Desligado" fica oculto (font-size:0).
-  ['opt-facil','opt-altmove','opt-hearing','opt-onebtn','opt-wheelchair','opt-modocego','opt-tts','opt-eyes','audio-master','opt-captions','motion-master'].forEach(id=>{ const b=document.getElementById(id); if(b)b.classList.add('switch'); });
+  ['opt-facil','opt-altmove','opt-togglerun','opt-hearing','opt-onebtn','opt-wheelchair','opt-modocego','opt-tts','opt-eyes','audio-master','opt-captions','motion-master'].forEach(id=>{ const b=document.getElementById(id); if(b)b.classList.add('switch'); });
 })();
 function openVisual(){ const ov=$('#visual'); if(!ov)return; visual.render(); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector<HTMLElement>('button[data-viz]')||ov.querySelector('button'); if(f)f.focus(); }
 // Foco de volta para QUEM ABRIU (WCAG 2.4.3), pelo registro de ui/settings-panel. Antes cada um focava um
@@ -1493,7 +1499,11 @@ const touchCtl = initTouch({ $, srSay, store, root: document.documentElement, is
   // achado 10: injeta-se o BOOLEANO, nao o estado.
   padAllowed: () => rodada.numPlayers <= 1 && fatosDaCena().mundoRodando && !jogadores().some((p) => p.quiz),
   viewport: () => ({ w: window.innerWidth, h: window.innerHeight }),
-  frontOverlay, onPadDesignApplied: () => { if(typeof renderPauseLegend==='function') renderPauseLegend(); } });
+  frontOverlay, onPadDesignApplied: () => { if(typeof renderPauseLegend==='function') renderPauseLegend(); },
+  // AUTOMÁTICA NO TOQUE: liga a alternância do correr só para quem NUNCA escolheu (sem valor salvo). Quem
+  // desligou de propósito não a vê voltar — o valor salvo vence, e desfazer a escolha da criança seria a
+  // mesma coisa que o mixer de áudio já recusa a fazer.
+  onTouchControlsShown: () => { players.forEach((p,i)=>{ if(store.get(store.KEYS.toggleRunP(i))==null && !p.toggleRun){ p.toggleRun=true; motor.reflectToggleRun(); } }); } });
 // (o proprio initTouch ja aplica o desenho salvo no fim da sua inicializacao)
 loadPlayerA11y(players[0],0); // carrega viz/easy/alternância persistidos do jogador 1 (migra chaves antigas)
 vizReady=true; applyVizGlobal(players[0].viz); // estado inicial (solo)

@@ -28,7 +28,7 @@ export interface MotorStore {
 
 /** Minimal per-player shape this module reads/writes (core/state.ts's `players` entries carry much more). */
 /** As duas escolhas motoras por jogador: modo Fácil e teclas de alternância. */
-export type MotorPlayer = PlayerView<'easy' | 'toggleMove'>;
+export type MotorPlayer = PlayerView<'easy' | 'toggleMove' | 'toggleRun'>;
 
 export interface SettingsMotorCtx {
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
@@ -43,6 +43,11 @@ export interface SettingsMotorCtx {
   getNumPlayers: () => number;
   /** SHARED setter (also used by the pause-menu quick icon `altmove`) — stays in game.js, injected. */
   setToggleMove: (i: number, on: boolean) => void;
+  /**
+   * A ALTERNÂNCIA DO BOTÃO DE CORRER. Injetada como a irmã acima e pelo mesmo motivo: quem persiste e anuncia
+   * é a raiz de composição, que é quem conhece `players` e o armazenamento.
+   */
+  setToggleRun: (i: number, on: boolean) => void;
   /** Coin layout depends on any player's Modo Fácil (moedas no chão) — owned by the coin subsystem, injected. */
   rebuildCoins: () => void;
 }
@@ -54,6 +59,8 @@ export interface SettingsMotorApi {
   reflectFacil: () => void;
   /** Reflects the selected player's alternância onto #opt-altmove (+ the #opt-movement bar light). */
   reflectAltMove: () => void;
+  /** Idem para a alternância do botão de CORRER (#opt-togglerun). */
+  reflectToggleRun: () => void;
   /** Sets Modo Fácil for player `i`; mirrors the old setEasy(i,on). */
   setEasy: (i: number, on: boolean) => void;
   /** Selects which player this panel edits (mirrors `selMovPlayer = pauseActor` before opening the panel). */
@@ -120,6 +127,7 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
 
   const facilBtn = ctx.$<HTMLElement>('#opt-facil');
   const altMoveBtn = ctx.$<HTMLElement>('#opt-altmove');
+  const toggleRunBtn = ctx.$<HTMLElement>('#opt-togglerun');
 
   // barra acende se QUALQUER jogador usa Fácil/alternância
   function reflectMovementBtn(): void {
@@ -152,6 +160,17 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
       facilBtn.classList.toggle('is-on', on);
       facilBtn.setAttribute('aria-pressed', String(on));
       facilBtn.textContent = onOffLabel(on);
+    }
+    reflectMovementBtn();
+  }
+
+  function reflectToggleRun(): void {
+    const p = ctx.players[selMovPlayer];
+    const on = !!(p && p.toggleRun);
+    if (toggleRunBtn) {
+      toggleRunBtn.classList.toggle('is-on', on);
+      toggleRunBtn.setAttribute('aria-pressed', String(on));
+      toggleRunBtn.textContent = onOffLabel(on);
     }
     reflectMovementBtn();
   }
@@ -203,6 +222,12 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
       reflectAltMove();
     });
   }
+  if (toggleRunBtn) {
+    toggleRunBtn.addEventListener('click', () => {
+      ctx.setToggleRun(selMovPlayer, !ctx.players[selMovPlayer].toggleRun);
+      reflectToggleRun();
+    });
+  }
 
   // ---- restaurar os padrões DESTE menu (ADR-0028) ----
   //
@@ -226,19 +251,23 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
     ctx.players.forEach((p, i) => {
       if (p.easy) setEasy(i, false);
       if (p.toggleMove) ctx.setToggleMove(i, false);
+      if (p.toggleRun) ctx.setToggleRun(i, false);
     });
     reflectFacil();
     reflectAltMove();
+    reflectToggleRun();
     ctx.srSay(t('sr.motor.reset'));
   });
 
   reflectFacil();
   reflectAltMove();
+  reflectToggleRun();
 
   return {
     renderMovPlayers,
     reflectFacil,
     reflectAltMove,
+    reflectToggleRun,
     setEasy,
     setSelPlayer: (i: number) => { selMovPlayer = i; },
     getSelPlayer: () => selMovPlayer,

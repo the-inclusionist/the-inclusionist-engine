@@ -232,6 +232,10 @@ describe('game/session — roundStartFields × makePlayer: as duas listas que pr
       '_swapDown', '_swapSonar', '_swapT', '_tx', 'airTime', 'anim', 'climbFrame', 'ctrl', 'easy',
       'facing', 'flavorT', 'guardT', 'i', 'idleNow', 'inWater', 'jumpEdge', 'leftEdge', 'onGround', 'pad',
       'rightEdge', 'rmBreath', 'rmFlavor', 'rmWalk', 'runEdge', 'sprite', 'stepT', 'toggleMove',
+      // `toggleRun` entra nesta lista e `runLatch` NÃO: o ajuste é escolha da criança e sobrevive ao
+      // reinício (irmão de `toggleMove`); a trava é estado de RODADA e zera, senão a partida começaria
+      // correndo por causa de um botão apertado na anterior.
+      'toggleRun',
       'viz', 'walkAnim', 'walkDir',
     ]);
   });

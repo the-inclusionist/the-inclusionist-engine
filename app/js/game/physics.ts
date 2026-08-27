@@ -21,6 +21,7 @@ import { ehTrampolim } from '../core/constants.js';
 import { t } from '../core/i18n.js';
 import type { ControlledGamePlayer } from './entity.js'; // ADR-0033: a fatia do JOGO — `quiz` mora aqui
 import { tileAt, solidAt, surfTop, isWcRampRiser, rampSurfaceY, caneBlockPx } from '../core/collision.js';
+import { correndoAgora, pularVaiGrudar } from './run-toggle.js';
 import { BOX, SPAWN_X, SPAWN_Y, jumpVel, isBouncyGroundBelow, clingSides, firstClingSide, spiderReattach } from './player.js';
 import { ELEV_SPEED, elevAt } from './elevators.js';
 import { held } from '../input/state.js';
@@ -53,6 +54,7 @@ export type PhysicsPlayer = Pick<ControlledGamePlayer,
   'onGround' | 'onLadder' | 'inWater' |
   'facing' | 'jumpBuffer' | 'waterStroke' | 'hurtTimer' |
   'jumpEdge' | 'runEdge' | 'swapEdge' | 'specialEdge' | 'leftEdge' | 'rightEdge' | 'walkDir' |
+  'toggleRun' | 'runLatch' |
   'activePower' | 'owned' |
   'jumpChain' | 'groundIdle' | 'airTime' |
   'clinging' | 'clingN' | 'flying' |
@@ -194,12 +196,30 @@ function horizontalMove(pl: PhysicsPlayer, run: boolean, turbo: boolean): number
   return dir;
 }
 
+/**
+ * A TRAVA DA CORRIDA: com a alternância ligada, a borda do Correr liga e desliga o estado.
+ *
+ * Fica antes de `updateCling` de propósito — é a mesma borda, e quem a consome primeiro decide o que ela
+ * significa. Com a alternância, ela é da trava; sem, ela continua sendo do grude, exatamente como antes.
+ */
+function updateRunLatch(pl: PhysicsPlayer): void {
+  if (!pl.toggleRun || !pl.runEdge) return;
+  pl.runLatch = !pl.runLatch;
+  C.sfx('power');
+  C.srSay(t(pl.runLatch ? 'sr.physics.runLatchOn' : 'sr.physics.runLatchOff'));
+}
+
 /** E18: ventosa (homem-aranha) — gruda na parede ao apertar Correr no ar; solta com Correr de novo. */
 function updateCling(pl: PhysicsPlayer): void {
   if (pl.clinging && (pl.onLadder || pl.inWater || pl.activePower !== 'wallcling' || pl.onGround || clingSides(pl).D)) pl.clinging = false; // E18d: pés numa superfície estável (sólido logo abaixo) ENCERRAM; pendurado no teto (pés p/ cima) ou na parede alta continua
-  if (pl.activePower === 'wallcling' && !pl.clinging && pl.runEdge && !pl.onGround && !pl.onLadder && !pl.inWater && firstClingSide(pl)) {
-    pl.clinging = true; pl.clingN = firstClingSide(pl); pl.vy = 0; pl.vx = 0; pl.jumpBuffer = 0; C.sfx('power'); C.srSay(t('sr.physics.spiderOn'));
-  } else if (pl.clinging && pl.runEdge) { pl.clinging = false; C.sfx('power'); C.srSay(t('sr.physics.spiderOff')); } // E18b: CANCELA só com Correr (não com Pular); a caixa não larga a superfície antes disso
+  // O GATILHO DO GRUDE muda de botão quando a alternância do correr está ligada: a borda do Correr virou a
+  // trava da corrida, então grudar passa para o PULO EM CONTEXTO — no ar, encostado, com o poder. Quem NÃO
+  // liga o ajuste não perde nada: `pularVaiGrudar` devolve `false` e o gatilho continua sendo o Correr.
+  const grude = { noAr: !pl.onGround, encostado: !!firstClingSide(pl), temAranha: pl.activePower === 'wallcling', jaGrudado: !!pl.clinging };
+  const gatilho = pl.runEdge || (!!pl.jumpEdge && pularVaiGrudar(pl, grude));
+  if (pl.activePower === 'wallcling' && !pl.clinging && gatilho && !pl.onGround && !pl.onLadder && !pl.inWater && firstClingSide(pl)) {
+    pl.clinging = true; pl.clingN = firstClingSide(pl); pl.vy = 0; pl.vx = 0; pl.jumpBuffer = 0; pl.jumpEdge = false; C.sfx('power'); C.srSay(t('sr.physics.spiderOn'));
+  } else if (pl.clinging && gatilho) { pl.clinging = false; pl.jumpEdge = false; C.sfx('power'); C.srSay(t('sr.physics.spiderOff')); } // E18b: CANCELA só com Correr (não com Pular); a caixa não larga a superfície antes disso
   if (!pl.clinging) pl.clingN = null;
 }
 
@@ -356,13 +376,17 @@ export interface StepResult { ran: boolean; dir: number }
  */
 export function stepPlayer(pl: PhysicsPlayer, dt: number): StepResult {
   if (pl.quiz || pl.quit || pl.waiting) return { ran: false, dir: 0 }; // em desafio; abandonou; ou ESPERANDO apertar um botão para entrar
-  const run = held(pl, 'run') && !pl.easy && !pl.toggleMove && (!C.caneOn(pl) || !!pl.runCane), turbo = pl.activePower === 'turbo'; // cego só corre com a bengala de corrida
+  // A TRAVA entra aqui: com `toggleRun`, correr é ESTADO e a tecla segurada não conta (ver game/run-toggle).
+  // A guarda da bengala fica de fora da decisão pura porque ela pergunta ao JOGO (`caneOn`), e o módulo puro
+  // não conhece jogo nenhum.
+  const run = correndoAgora(pl, held(pl, 'run')) && (!C.caneOn(pl) || !!pl.runCane), turbo = pl.activePower === 'turbo'; // cego só corre com a bengala de corrida
   const dir = horizontalMove(pl, run, turbo);
   if (dir !== 0) pl.facing = dir; pl.leftEdge = false; pl.rightEdge = false;
   const feat = sampleFeatures(pl); pl.inWater = feat.water; pl.onLadder = feat.ladder;
   if (pl.hurtTimer > 0) pl.hurtTimer -= dt;
   if (feat.lava && !pl.easy && !C.isWheelchair() && !C.isModoCego()) triggerLava(pl); // Fácil, cadeirante e CEGO: imunidade (lava vira chão)
   if (pl.jumpEdge) pl.jumpBuffer = 7; else if (pl.jumpBuffer > 0) pl.jumpBuffer--;
+  updateRunLatch(pl); // ANTES do grude: com a alternância, a borda do Correr é da trava
   updateCling(pl);
   updatePowerSwap(pl, dt);
   if (pl.specialEdge) { /* TODO: ação especial por poder/contexto (stub — apenas registra o gatilho) */ }

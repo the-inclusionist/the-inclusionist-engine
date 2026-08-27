@@ -115,6 +115,7 @@ export const KEYS = {
   sinkP: (i: number): string => 'incl_sink_p' + i,
   easyP: (i: number): string => 'incl_easy_p' + i,
   toggleMoveP: (i: number): string => 'incl_togglemove_p' + i,
+  toggleRunP: (i: number): string => 'incl_togglerun_p' + i, // alternância do botão de CORRER (irmã da de movimento)
   rmWalkP: (i: number): string => 'incl_rmWalk_p' + i,
   rmBreathP: (i: number): string => 'incl_rmBreath_p' + i,
   rmFlavorP: (i: number): string => 'incl_rmFlavor_p' + i,

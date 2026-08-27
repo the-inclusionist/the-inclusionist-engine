@@ -13,6 +13,7 @@ function fullCtx(over = {}) {
   const said = [];
   const storeMap = new Map();
   const toggleMoveCalls = [];
+  const toggleRunCalls = [];
   let rebuildCoinsCalls = 0;
   const players = over.players ?? [{ easy: false, toggleMove: false }];
   return {
@@ -22,10 +23,12 @@ function fullCtx(over = {}) {
     players,
     getNumPlayers: () => (over.numPlayers ?? players.length),
     setToggleMove: (i, on) => { toggleMoveCalls.push([i, on]); players[i].toggleMove = on; },
+    setToggleRun: (i, on) => { toggleRunCalls.push([i, on]); players[i].toggleRun = on; },
     rebuildCoins: () => { rebuildCoinsCalls++; },
     said,
     storeMap,
     toggleMoveCalls,
+    toggleRunCalls,
     get rebuildCoinsCalls() { return rebuildCoinsCalls; },
     ...over,
   };
@@ -37,6 +40,7 @@ function mountDom() {
     '<div id="movement-players"></div>' +
     '<div class="ctrl-row"><span>Modo Fácil</span><button id="opt-facil" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>' +
     '<div class="ctrl-row"><span>Alternância</span><button id="opt-altmove" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>' +
+    '<div class="ctrl-row"><span>Alternância do correr</span><button id="opt-togglerun" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>' +
     '<button id="movement-reset" class="mode-btn" type="button">Restaurar</button>' +
     '<button data-act="motora" class="pm-btn" type="button">Acessibilidade motora</button>' +
     '<button id="opt-eyes" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button>';
@@ -84,6 +88,22 @@ describe('ui/settings-motor', () => {
     $('#opt-facil').click();
     expect(ctx.players[0].easy).toBe(false);
     expect(ctx.said.at(-1)).toBe('Modo Fácil desligado.');
+  });
+
+  it('[Right] clicar em #opt-togglerun delega no setToggleRun INJETADO e reflete', () => {
+    // A alternância do CORRER é irmã da de movimento e segue a mesma forma: quem persiste e anuncia é a raiz
+    // (ela conhece `players` e o armazenamento); o painel só delega e reflete. O ajuste existe porque a
+    // alternância de movimento resolvia METADE — quem toca com um dedo andava sem segurar e continuava sem
+    // conseguir CORRER, que ainda exigia manter pressionado.
+    const ctx = fullCtx();
+    const api = initSettingsMotor(ctx);
+    $('#opt-togglerun').click();
+    expect(ctx.toggleRunCalls).toEqual([[0, true]]);
+    expect($('#opt-togglerun').getAttribute('aria-pressed')).toBe('true');
+    expect($('#opt-togglerun').classList.contains('is-on')).toBe(true);
+    $('#opt-togglerun').click();
+    expect(ctx.toggleRunCalls.at(-1)).toEqual([0, false]);
+    expect(api.reflectToggleRun, 'o painel tem de expor o reflexo — a raiz o chama ao ligar no toque').toBeTypeOf('function');
   });
 
   it('[Right] clicar em #opt-altmove delega no setToggleMove INJETADO (compartilhado) e reflete', () => {

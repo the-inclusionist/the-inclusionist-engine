@@ -50,6 +50,15 @@ export interface TouchCtx {
    *  glyphs in the pause menu) is NOT part of this module's boundary but must still refresh; see report. */
   onPadDesignApplied?: () => void;
   /**
+   * O controle de tela ENTROU em cena. Existe para que a raiz possa ligar sozinha o que só faz sentido no
+   * toque — hoje, a alternância do botão de correr: num botão virtual ninguém "segura" com conforto, porque
+   * o dedo que segura é o mesmo que precisa alcançar os outros.
+   *
+   * Gancho e não regra aqui dentro: este módulo desenha controles e não conhece ajuste de acessibilidade
+   * nenhum. Quem sabe o que ligar é quem possui os jogadores.
+   */
+  onTouchControlsShown?: () => void;
+  /**
    * PODE mostrar o pad virtual AGORA? Injetado, e é o corte do item 19 neste módulo.
    *
    * Era uma linha que lia TRÊS coisas por importação de `core/state`:
@@ -250,6 +259,7 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     if (tc) tc.hidden = false;
     ctx.$<HTMLElement>('body')?.classList.add('touch-mode');
     setMinimapCorner(true);
+    ctx.onTouchControlsShown?.();
   }
 
   function applyDirStyle(): void {

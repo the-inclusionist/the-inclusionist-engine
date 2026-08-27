@@ -201,6 +201,10 @@ export function roundStartFields(i: number): Record<string, unknown> {
     activePower: 'off', owned: [], hasKey: false,
     swapEdge: false, specialEdge: false,
     jumpChain: 0, groundIdle: 0, clinging: false, clingN: null, flying: false,
+    // A TRAVA DA CORRIDA zera, o AJUSTE não. `runLatch` é estado de RODADA — começar a partida correndo
+    // porque a trava sobreviveu ao reinício seria a criança sendo levada por um botão que ela não apertou.
+    // `toggleRun` fica de fora daqui de propósito: é escolha dela, irmã de `toggleMove`.
+    runLatch: false,
     idleTime: 0, flavor: -1,
     // O elevador do cadeirante guarda para ONDE está viajando, e isto sobrevivia à rodada: quem reiniciasse
     // no meio de uma subida entrava no poço seguinte já sendo puxado para o destino da rodada anterior, sem

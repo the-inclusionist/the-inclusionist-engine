@@ -374,6 +374,10 @@ const es: Record<string, string> = {
   'sr.motor.easyOff': 'Modo Fácil desactivado.',
   'sr.motor.toggleMoveOn': 'Movimiento por alternancia activado: toca la dirección para andar sin mantener; toca de nuevo para parar; mantén para ir más rápido. El salto no interrumpe la marcha.',
   'sr.motor.toggleMoveOff': 'Movimiento por alternancia desactivado.',
+  'sr.motor.toggleRunOn': 'Alternancia de correr activada.',
+  'sr.motor.toggleRunOff': 'Alternancia de correr desactivada.',
+  'sr.physics.runLatchOn': 'Corriendo.',
+  'sr.physics.runLatchOff': 'Caminando.',
   // ===================== AYUDA (menú de pausa) + etiqueta de nivel =====================
   'pause.level': '📚 Nivel {n} · {v}',
   'help.controls': 'Tus controles',

@@ -136,6 +136,15 @@ export interface Player {
   viz: string;
   easy: boolean;
   toggleMove: boolean;
+  /**
+   * A ALTERNÂNCIA DO BOTÃO DE CORRER (pedido do Dev): correr vira ESTADO em vez de "segurar".
+   *
+   * Irmã de `toggleMove` e pelo mesmo motivo — quem não consegue manter pressionado andava sem segurar e
+   * continuava sem conseguir CORRER. Automática no controle de toque. Ver `game/run-toggle`.
+   */
+  toggleRun: boolean;
+  /** A trava da corrida: com `toggleRun`, é ela que diz se está correndo agora. Vida de RODADA. */
+  runLatch: boolean;
   rmWalk: boolean;
   rmBreath: boolean;
   rmFlavor: boolean;

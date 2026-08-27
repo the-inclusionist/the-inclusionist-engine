@@ -373,6 +373,10 @@ const en: Record<string, string> = {
   'sr.motor.easyOff': 'Easy Mode off.',
   'sr.motor.toggleMoveOn': 'Tap-to-move on: tap a direction to walk without holding; tap again to stop; hold to go faster. Jumping does not interrupt the walk.',
   'sr.motor.toggleMoveOff': 'Tap-to-move off.',
+  'sr.motor.toggleRunOn': 'Run toggle on.',
+  'sr.motor.toggleRunOff': 'Run toggle off.',
+  'sr.physics.runLatchOn': 'Running.',
+  'sr.physics.runLatchOff': 'Walking.',
   // ===================== HELP (pause menu) + level label =====================
   'pause.level': '📚 Level {n} · {v}',
   'help.controls': 'Your controls',
