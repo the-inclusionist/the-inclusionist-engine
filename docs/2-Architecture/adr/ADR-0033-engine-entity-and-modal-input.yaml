@@ -126,6 +126,27 @@ decision-outcome:
     stays a claim until a second game asks.
 
 more-information: |
+  ===== EMENDA 2026-08-27 — A HELD BUTTON IS A TOGGLE ON TOUCH AND ON THE 3-BUTTON PAD =====
+  Recorded here because it is a promise the ENGINE makes to every game, not a platformer detail — and it had been
+  written down only in its platformer instance (ADR-0045, the run button), which is narrower than what was decided.
+
+  The Dev, while defining the console profile: **"Botão que se segura vira toggle no celular e no controle 'de 3
+  botões'."**
+
+  The rule, stated as a contract: on the on-screen touch emulator and on the 3-button profile, ANY input whose
+  meaning is "hold to sustain" is offered as a LATCH — press to engage, press again to release. It is not a
+  platformer affordance; it is what makes the 3-button profile reachable at all for a child who cannot hold, and
+  the canonical genres of those machines are built on held buttons (Super Mario's run, Mega Man's charge).
+
+  THE COST THE RULE CARRIES WITH IT, and this is the part the instance taught: a held button usually has a SECOND
+  job on its edge. Turning the hold into a latch takes that job away, so the rule is incomplete without its
+  companion clause — **the displaced function moves to a button that is IDLE in that context, and the spoken
+  instruction must name the button that actually works.** ADR-0045 is the worked instance: cling migrated from RUN
+  to JUMP-in-context, and `sr.power.wallcling` / `sr.physics.spiderOn` gained `{botao}`.
+
+  NOT generalised beyond this: the rule says a latch is OFFERED on those two surfaces, not that every held button
+  everywhere becomes one. A game whose whole mechanic is analogue pressure is the case that would amend this.
+
   Closes the last block of item 19 (GitLab issue #75), whose full measurement — 11 modules, 30 lines, and the
   five reads that three questions replace — lives in the issue rather than being copied here.
 

@@ -114,6 +114,12 @@ convivência de idosos e pessoas assistidas socialmente). **MVP atual:** *The In
   `data-explain-idle` no `.overlay__card` — **nunca** um `<p>` de prosa no topo. Menu é menu de videogame/TV,
   não arquivo `.conf`. **Painel que re-renderiza precisa chamar `fillExplain` a cada render**, senão a prosa
   volta para dentro das linhas no primeiro clique.
+- **AS TRÊS ZONAS DA TELA (decisão do Dev, por Gestalt):** *"O menu de acessibilidade é uma coisa, e deve ficar no
+  **cabeçalho**; o menu de opções com botões amarelos é outra e deve ocupar o **espaço de trabalho** na tela; e a
+  legenda é outra coisa, e deve ficar no **rodapé**."* Função separa, proximidade não agrupa. É a regra que responde
+  à reclamação que já veio duas vezes — *"eu peço para mudar um ponto e você muda vários outros desnecessariamente"*:
+  com as zonas escritas, "está perto" deixa de ser critério para mover coisa. O ADR-0044 já executou a primeira
+  (a barra rápida foi para o HUD).
 
 ## 5. Testes
 
