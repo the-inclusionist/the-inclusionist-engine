@@ -187,6 +187,26 @@ decision-outcome:
         it reproduced the 35,6 px on its own.
       · INDEXING — `tests/item-announcement.node.test.js`. The string ENDS with "N de M", turning indexing
         off removes only the index, and an impossible position is not announced at all.
+
+        ⚠️ "EVERYWHERE" HAS A BOUNDARY, and it is a decision, not an omission. The clause above says pause,
+        title, options and activities. Pause and title got the index because they select by CLASS and by
+        game-driven focus: nothing announces them on its own, so the game must. The SETTINGS DIALOGS are the
+        opposite — `navDialog` moves BROWSER focus and the screen reader already announces the control.
+
+        Adding `srSay` there would recreate the very divergence this record fixed elsewhere: the reader
+        saying the control and the game saying a second version of it, on top. `tests/menu-nav.browser.test.js`
+        pins that `navDialog` stays silent, so nobody "completes" the clause by making it talk.
+
+        And the index cannot arrive by ARIA either without a bigger change: `aria-posinset`/`aria-setsize`
+        are only valid on roles like `listitem`, `menuitem`, `option`, `radio`, `row`, `tab`. MEASURED on
+        the built game: the audio panel's 13 controls are `button`/`select`/`input` inside `role="group"`,
+        so the attributes would be invalid ARIA there. This project already refused that same trade for the
+        title menu, in writing: `role="menu"` would require `menuitem` children plus the arrow pattern,
+        which it does not implement — and claiming the role without the pattern violates WCAG 1.3.1.
+
+        Indexing the settings dialogs therefore means changing their roles and implementing the full ARIA
+        pattern. That is real work and it is NOT done; what is done is making sure nobody does half of it by
+        accident.
       · INTERRUPTION — `tests/interruptible-speech.node.test.js`, against the speech port with fakes. It
         also pins the race the generation token exists for: a slow synthesis finishing after a newer one.
       · LEGEND — `tests/pause-legend.node.test.js`. `.pause-legend` is no longer `aria-hidden`; the CHIPS

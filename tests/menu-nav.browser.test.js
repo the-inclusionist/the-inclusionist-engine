@@ -354,6 +354,32 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     expect(log.phase).toContain('playing');
   });
 
+  it('[Boundary] o DIÁLOGO de ajuste NÃO fala o item — quem o anuncia é o foco', () => {
+    // A FRONTEIRA do item 3 do ADR-0044, e ela é decisão e não esquecimento.
+    //
+    // O item diz que todo item navegável anuncia posição e total "em todo lugar — pausa, título, opções,
+    // atividades". A lista de PAUSA precisou de `srSay` porque ela seleciona por CLASSE: nada dispara anúncio
+    // sozinho. Os diálogos de ajuste são o contrário — `navDialog` move o FOCO do navegador, e o leitor de
+    // tela já anuncia o controle focado.
+    //
+    // Acrescentar `srSay` aqui criaria exatamente a divergência que o commit anterior consertou: o leitor
+    // dizendo o controle e o jogo dizendo outra versão dele, por cima.
+    //
+    // E O ÍNDICE NÃO CABE POR ARIA: `aria-posinset`/`aria-setsize` só valem em papéis como `listitem`,
+    // `menuitem`, `option`, `radio`, `row`, `tab`. MEDIDO no jogo: os 13 controles do painel de áudio são
+    // `button`/`select`/`input` dentro de `role="group"` — pôr os atributos ali seria ARIA inválida. Este
+    // projeto já recusou essa troca no menu do título, com o motivo escrito: "role='menu' exigiria filhos
+    // 'menuitem' + padrão de setas ARIA que não implementamos → violaria WCAG 1.3.1".
+    //
+    // Indexar os diálogos exige mudar os papéis e implementar o padrão ARIA inteiro. É trabalho de verdade e
+    // não cabe aqui; o que cabe é que ninguém o faça pela metade sem perceber.
+    const { nav, log, openTypo } = boot(); // `openTypo` vem do boot, não do escopo do arquivo
+    openTypo();
+    log.said.length = 0;
+    nav.navDialog($('#typo'), K({ down: true }));
+    expect(log.said, 'o diálogo passou a falar por cima do leitor de tela').toEqual([]);
+  });
+
   it('[Right] andar na lista de pausa FALA o item — senão o menu é mudo para quem o navega por escuta', () => {
     // MEDIDO no jogo construído antes de este caso existir (`?x=84`): a seta movia o cursor de `resume` para
     // `acessibilidade` e o `#sr-status` continuava VAZIO. Não havia foco (a pausa seleciona por CLASSE, não
