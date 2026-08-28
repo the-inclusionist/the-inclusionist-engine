@@ -115,7 +115,35 @@ decision-outcome:
       depart from its default, it carries the ADR-0029 mark on the option and on the menu that holds it, and it lives
       in Motor Accessibility next to the movement toggle, under the same ☝️ the Dev chose for both.
 
-      ===== 6. WHAT IS DECIDED HERE AND NOT BUILT =====
+      ===== 6. THE CARRY BUTTON — AND THE ROUTING THAT WAS REVOKED =====
+      ⚠️ AMENDED 2026-08-28, AND THIS CLAUSE NOW SAYS THE OPPOSITE OF WHAT IT SAID. What follows below is the
+      contract as first dictated, kept because the reasoning still explains the shape of `game/carry`. But the Dev
+      revoked its central move the day after it was built — "desfaço o que pedi" — and the record has to say so
+      where a reader meets it, not in a footnote.
+
+      HIS CORRECTION, VERBATIM: "Botão de interação continua sendo botão de interação e servindo para conversar,
+      pegar e jogar mesmo nos outros modos. O que muda é que a parte de correr (que precisa que ele seja mantido
+      apertado) vira toggle em modo de teclas de alternância, controle touch, controle pelo rosto, controle por
+      olhos e controle por fala."
+
+      SO THE JUMP NEVER PICKS ANYTHING UP. There is ONE trigger for carrying, in every input mode: the interaction
+      button — which is the same physical button as run. The toggle changes only the RUNNING half of it, the half
+      that requires holding, which is exactly the half that has to become a state for a child who cannot hold.
+      Running is a STATE and interacting is an EVENT; they share the button without competing.
+
+      Three things fell with it, and each was load-bearing for the old routing only:
+        · the "not on the ground" clause, which separated the first tap (jump) from the second (throw) on a button
+          that did both — on a button that only interacts there are no two taps to separate;
+        · the edge CONSUMPTION, which existed so that picking up would not also jump;
+        · the player parameter of `acaoDeCarga`, which existed only to ask `pl.toggleRun` and choose the edge. One
+          parameter fewer is one fewer path by which an accessibility setting could change the game of someone who
+          never asked for it.
+
+      ⚠️ AND THE COST THIS RECORD USED TO WARN ABOUT IS GONE WITH IT: there is no longer any context in which JUMP
+      PICKS UP INSTEAD OF JUMPING. The warning was right to be written; the design it warned about did not survive
+      contact with the Dev's own second look.
+
+      ===== 6-old. WHAT WAS DECIDED HERE AND NOT BUILT (superseded above) =====
       The Dev's ask also described picking up, carrying and throwing an object with the same button. That mechanism
       does not exist in the game — there is no pickable object anywhere. The BUTTON ROUTING is decided and
       implemented as a pure function (`game/carry.ts`), deliberately UNWIRED, because his answer to "where do the
