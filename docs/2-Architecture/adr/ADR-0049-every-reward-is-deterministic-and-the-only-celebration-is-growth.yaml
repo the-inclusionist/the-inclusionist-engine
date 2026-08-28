@@ -203,6 +203,31 @@ decision-outcome:
       answer arrives when there is **no learning left to protect** — after the attempt, never in place of it. The
       requerimento's §49.e gains the same distinction, because as written it does not carry it.
 
+      ===== 6b. THE NO-LITTERING SIGN BARS THE CHILD, NOT THE LITTER =====
+      Decided 2026-08-28, and it reverses what the first implementation did. The sign used to make whoever crossed
+      its line DROP the litter, and it bounced anything thrown past it. The Dev corrected it:
+
+        "Se estiver segurando lixo o jogador não pode seguir adiante após a placa. Se deixar cair o lixo, ele está
+        desobedecendo a placa, se lançar o lixo, também. Uma vez que segura o lixo ele só poderá soltar na lixeira
+        e não poderá seguir após a placa."
+
+      ⚠️ AND THE MISTAKE IS WORTH RECORDING BECAUSE IT IS SEDUCTIVE: barring the OBJECT let the disobedience happen
+      and then repaired the consequence. Barring the CHILD leaves it nowhere to start. It also reads better — she
+      sees the sign, feels that she does not pass, and the link between the two is immediate.
+
+      The reason the sign never PUNISHES is unchanged, and it is the finest point in this whole design: "a criança
+      não pode escolher ter um comportamento ruim, visto que a perda de pontos ainda é vista como recompensa para
+      crianças que estão procurando fazer uma má ação". A number that goes down is as good a reaction as one that
+      goes up, when reaction is what is being sought.
+
+      Consequences that are now design constraints, not implementation details:
+        · Picking up litter LOCKS the hand: no dropping, no throwing (`game/carry.PODE`), only the right bin.
+        · The sign lives in the last dry column — `agua - 1`, the Dev's column 28 — on the TOP platform, which is
+          the way the child arrives after the trampoline. A sign in the basement would warn about a stretch she
+          never walks.
+        · Its art is large enough to be READ as a prohibition: the pictogram of a person dropping litter inside a
+          cut circle. At 11×16 it was a small red square with a slash, which a child reads as "some object".
+
       ===== 7. THE PLATFORMER'S TEN COINS CLOSE A LAP, AND A LAP COSTS NOTHING =====
       Decided 2026-08-28. The platformer keeps its ten coins as the ROUND objective, and the Dev fixed what happens
       at the tenth: "são as 10 moedas que ao serem pegas faz aparecer a mensagem de parabenização e reseta o jogo

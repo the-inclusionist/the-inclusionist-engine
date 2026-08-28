@@ -144,6 +144,26 @@ decision-outcome:
       on its own, because she is still within reach. Dropping would stop meaning anything. Whoever decides to pick
       something up is her.
 
+      ⚠️ COMPLETED THE SAME DAY — WHAT IS ALLOWED DEPENDS ON WHAT IS IN THE HAND, and that turned the routing into
+      a TABLE (`game/carry.PODE`). The Dev listed four classes of carryable thing and the rule for each:
+
+        · LITTER — neither dropped nor thrown. "Uma vez que segura o lixo ele só poderá soltar na lixeira e não
+          poderá seguir após a placa. Ou seja, pegar o lixo trava ele de soltá-lo ou arremessá-lo." Dropping and
+          throwing ARE the disobedience the sign exists against; refusing both is what stops it from starting.
+        · SEED — throwable, and it does something: "se ele arremessar sementes, vem pássaros comer e nascem flores
+          e mato no lugar onde ela cai".
+        · BALL — throwable and harmless: "não acontece nada de errado, ela quica e ricocheteia dependendo do lugar".
+        · LOST PROPERTY (watch, keyring, puppy, phone, wallet) — may be PUT DOWN, to be returned to its owner, but
+          never thrown: it belongs to someone, and a puppy is not a projectile.
+
+      ⚠️ AND THE THROWABLE LIST IS CLOSED BY DECISION, not by lack of imagination: "nenhum outro objeto além de
+      sementes e bolas (futebol, tênis, neve em fase de gelo, o que não é o caso) são arremessáveis". Whoever adds a
+      throwable class later is changing HIS decision, and this is where it is written down.
+
+      A table rather than an `if` on litter, for two reasons that are not style: the next class arrives without
+      touching any rule, and the question "what can be done with this?" gets ONE home. Spread out, it would become a
+      `tipo === 'lixo'` at every point that drops, throws or draws.
+
       ⚠️ AND THE COST ABOVE IS NOW GENERAL, not a toggle-only case: WHEN THE CARRY ACTS, IT CONSUMES THE BUTTON
       EDGE. Without that, picking the litter up would also jump, and she would lose the object in mid-air every
       single time she picked it up. The wiring also has to read the edge BEFORE the physics step, because
