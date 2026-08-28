@@ -138,13 +138,17 @@ decision-outcome:
           co-occurrence instead of dissolving it. Uniformising against a fixed external grid works; uniformising
           against each id's own first event does not.
 
-          THE GRID IS RELATIVE TO THE INSTALLATION'S SCHOOL YEAR, never to Brazil's. The knowledge tree covers
-          50+ curricula and a Portuguese school starts in September; anchored on a Brazilian calendar, everyone
-          outside it lands in the "wrong" weeks and the country becomes the thing that stands out.
+          ⚠️ ONLY BRAZIL SENDS, FOR NOW: no telemetry is collected from other countries until there is legal
+          guidance for each and an entity established there. That is what lets the canonical grid simply BE the
+          Brazilian school year — the hemisphere problem (a Portuguese school starts in September, and on a
+          Brazilian grid its country would become the thing that stands out) does not arise while nobody else
+          reports.
 
-          ⚠️ AND WHAT EXCEEDS THE LAST WEEK IS CAPPED, NOT DELETED AND NOT FOLDED BACK. Folding December onto
-          November doubles November's density and turns "studied only in December" (catch-up, recovery, a holiday
-          programme) into an anomaly, and an anomaly identifies. Records past the last week stay IN the last week.
+          ⚠️ AND WHAT EXCEEDS THE LAST WEEK IS DISCARDED, NEVER FOLDED BACK. Discarding rests on law rather than
+          on privacy: the Brazilian school year IS 200 days, so activity outside it is outside the school context
+          that legitimises collecting it at all. Folding December onto November was rejected for the privacy
+          reason — it doubles November's density and turns "studied only in December" into an anomaly, and an
+          anomaly identifies.
 
           Elapsed time WITHIN a session keeps full precision — that is what the learning curve uses, and with the
           ceiling of about one hour of screen a week there is rarely a second session in the same week for the
@@ -155,23 +159,55 @@ decision-outcome:
           100% of their time; thirty on the country's commonest activity are invisible at any proportion. So a
           fixed "share at most X% of activities" does not protect: it cannot tell the two apart.
 
-          THE MEASURE IS SUPPRESSION BY k-ANONYMITY AT QUERY TIME: the datalake stores everything, and NO RESULT
-          RESOLVING TO FEWER THAN k DISTINCT ids IS RETURNED. A small cell is generalised (parent entity instead
-          of entity, term instead of week) or withheld. **k >= 10**, and the number is borrowed rather than
-          invented: it is the cut education statistics already use for small cells — INEP suppresses, and US
-          states suppress below 10 under FERPA. Adopting the threshold of those who already publish school data
-          is more defensible in an audit than a threshold of ours.
+          ⚠️ AND THE DEFENCE IS AT THE SOURCE, NOT AT THE QUERY — the Dev's correction to this record's first
+          answer, and it matters: "como saber se e atividade rara sem enviar a atividade pra gente?" Suppression
+          at query time is DISCLOSURE CONTROL, not minimisation. The rare activity would still arrive, still be
+          held, and we would merely decline to publish it — and LGPD asks what the controller HOLDS.
 
-          It adapts by itself: a whole class on the commonest activity passes, because thousands share it; a whole
-          class on a rare one never leaves the query layer. Nobody has to calibrate a percentage.
+          SO THE FILTER RUNS ON THE DEVICE, AGAINST A PUBLIC LIST: the COLLECTIVE lesson may only draw from an
+          external, published curation of essential skills — in Brazil, the Instituto Reuna's Mapa de Foco over
+          the BNCC. Three things follow, and the first dissolves the circularity:
+            · the list is EXTERNAL and PUBLIC, so no data of ours is needed to build it;
+            · by construction it is what most schools already work on, so the anonymity set is large before
+              anyone measures anything;
+            · and it stands on its own pedagogically — "the collective lesson works the essential" is a good
+              teaching rule with no privacy argument attached.
 
-          ⚠️ SO HOW MUCH OF THE CLASS DOES THE SAME ACTIVITY IS A PEDAGOGICAL DECISION, NOT A PRIVACY ONE, and
-          that is deliberate. "Today everybody does this" is a legitimate classroom tool — to introduce a concept,
-          to discuss it together, to let a child see she is not alone in the difficulty. Buying anonymity with it
-          would be paying dearly while holding cheaper currency. The per-child suggestion the compass makes (the
-          adult accepts skill by skill, from data only the adult and the school hold) is worth doing for the ZPD
-          reason of ADR-0048; that it also dilutes co-occurrence is a bonus, never the justification — a
-          pedagogical feature defended only by a privacy argument dies the day a teacher finds it inconvenient.
+          ⚠️ AND OUR OWN COUNTS MAY NARROW THAT LIST, NEVER WIDEN IT. Widening from what we measured would
+          require having held the rare thing first, which is the circularity returning through the side door.
+
+          k-ANONYMITY STAYS AS THE BACKSTOP, and it ERASES rather than merely hiding: a cell still resolving to
+          fewer than k distinct ids after a grace period is generalised to its parent and the leaf row is deleted,
+          periodically. Hiding on read leaves the datum held. **k >= 10**, borrowed rather than invented — it is
+          the cut education statistics already use for small cells (INEP suppresses; US states suppress below 10
+          under FERPA), and adopting the threshold of those who already publish school data is more defensible in
+          an audit than one of ours. ⚠️ THE GRACE PERIOD IS NOT OPTIONAL: erasing on arrival would erase
+          everything, because every cell has exactly one id at the moment it lands and only reaches k as other
+          schools report.
+
+          ⚠️ GENERALISE BEFORE DELETING, and here the entity/grouping ladder pays a second time. The
+          REINFORCEMENT mode legitimately produces rare cells, and erasing them outright would throw away exactly
+          where the signal is worth most — the child with a rare need is the one the inference layer exists for.
+          Promoting the record to its CURRICULUM ITEM (the parent that groups many entities) keeps it
+          contributing at a coarser resolution while the co-occurrence dilutes into the item's many children.
+          Then the leaf row goes. Signal kept, identifiability dropped; erasing alone would do only the second.
+
+          ⚠️ AND THE SHAPE IS TWO LESSON MODES, EACH SAFE BY A DIFFERENT MECHANISM:
+
+            · COLLECTIVE — the teacher picks 1 to 3 activities and the whole class works the same skill. Safe
+              because the choice is restricted to the PUBLIC LIST, so what the class shares is by construction
+              what thousands of other classes also share. It exists for the teaching reason: group discussion,
+              and a child seeing she is not alone in the difficulty.
+            · REINFORCEMENT — the system proposes activities PER STUDENT and the teacher picks 1 to 3 from the
+              proposals, up to the day of the lesson; if the recommendation changes before then she picks again,
+              and she may go AGAINST the recommendation and choose other skills. Safe because there is no
+              co-occurrence to begin with: every child is doing something else.
+
+          ⚠️ SO THE RARE SKILL IS NEVER LOST, and an earlier reading of this record got that wrong: "discard the
+          uncommon" applies ONLY to the collective lesson, where an uncommon activity should not appear anyway.
+          The rare skill lives in the reinforcement mode, where collecting it costs nothing. Having both modes is
+          what makes it possible to work rare needs safely — the Dev's reason for wanting both: "sem reforco nao
+          ha skills raras".
 
         · ⚠️ AND THE TRANSPORT LEAKS WHAT THE PAYLOAD NO LONGER DOES: thirty uploads from a school's public IP
           inside the same fifty-minute window ARE a classroom, whatever the timestamps inside them say. The
