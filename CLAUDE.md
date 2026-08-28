@@ -22,7 +22,7 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 
 ## 0. Regra de ouro (operacional — o que mais me guia)
 
-- **Eu faço os commits** (atômicos, **em inglês**, na `main`, com trailer `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`).
+- **Eu faço os commits** (atômicos, **em inglês**, na `main`, com trailer `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`).
   **O Dev roda** o push/deploy **e TODO comando Node** (`npm run build` / `npx vitest run` / `npx tsc --noEmit`) —
   eu **não tenho Node** no sandbox.
 - **Loop de trabalho:** eu extraio/edito → o Dev valida (build + vitest + tsc) → **eu confiro o boot no preview**
@@ -62,7 +62,10 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 brasileira** (infantil · fundamental · médio) e, por proximidade, **EJA** e **profissionalizante/capacitação**
 (letramento digital para cidadania e mercado de trabalho), além de **passatempos de convivência** (centros de
 convivência de idosos e pessoas assistidas socialmente). **MVP atual:** *The Inclusionist* — plataforma 2D pixel-art
-**acessível** (PixiJS), o **1º** de 35+ jogos. Reimplementação clean-room do engine Clarity.
+**acessível** (PixiJS). Reimplementação clean-room do engine Clarity. ⚠️ **O plano dos "35+ jogos" morreu em
+2026-08-28**, por decisão do Dev: o MVP são os **300+ jogos** do `minigames-catalog-v2.html`, no repositório
+`the-inclusionist-demos` — catálogo de demonstração, no plural. Aceito o MVP, os jogos são feitos com pixel
+artistas contratados. Topologia: ADR-0055.
 
 - **🔴 PILARES INEGOCIÁVEIS** (constituição — leia ANTES de agir): `docs/2-Architecture/adr/ADR-0010-non-negotiable-pillars.yaml`. 10 pilares:
   hardware de escola pública BR (Positivo/Chromebook) · a11y (WCAG 2.2 + GAG; Libras em motor zdog à parte) · i18n ·
@@ -149,8 +152,10 @@ navegador) e deixo o Dev rodar o Vitest. Padrões: **ZOMBIES** (didático) + **R
   `docs/research/` e `docs/legacy/`. **Discovery = software; pedagogia = educational/** (ADR-0004).
 - **Currículo em CÓDIGO:** `app/js/educational/` — a metade em código da mesma camada (ADR-0032). É DADO: não
   importa nada (nem `core/`, nem `game/`), e o texto pt-BR dele **não entra nos dicionários**, porque o pilar 3
-  manda *reescrever* currículo por idioma, não traduzir. O dono declarado é a plataforma **EdSP**, que ainda não
-  existe; até lá o catálogo mora aqui com a forma do destino. `tests/engine-boundary.node.test.js` é o gate.
+  manda *reescrever* currículo por idioma, não traduzir. ⚠️ **Ganhou dono em 2026-08-28**: vai para
+  `the-inclusionist-knowledge-tree` (ADR-0055), que é o grafo de skills entre currículos de vários países — o
+  primeiro endereço real que esta camada tem, depois de anos pertencendo a uma plataforma que não existia. Até a
+  mudança acontecer, o catálogo mora aqui com a forma do destino. `tests/engine-boundary.node.test.js` é o gate.
 - **Constantes do motor** (TILE_TYPES, TUNE, tiles, dimensões): `app/js/core/constants.ts` (fonte única, tipada).
 - **Planos legados** (`docs/plano-*.md`, `PESQUISA-*`, etc.): **ainda
   na raiz de `docs/`**, sendo migrados **arquivo por arquivo, com revisão de conteúdo** (nada automático) para dentro
