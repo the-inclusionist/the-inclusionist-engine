@@ -31,7 +31,12 @@ function mundo(linhas) {
 }
 
 /** Uma cena montada, com tudo de mentira e os registros do que ela anunciou e pontuou. */
-function cena(linhas = ['........~...', '############'], extra = {}) {
+// O mapa padrão dos casos é ESTREITO mas completo, e cada pedaço dele existe por um motivo: as quatro
+// lixeiras ocupam as colunas 0 a 3 (e o lixo não nasce nelas), o trampolim fica na 16, a placa cai na 17 e a
+// água começa na 20 — sobram onze colunas de chão seco para o lixo, que é folga suficiente para os casos.
+// São TRÊS linhas e não duas porque um lugar de lixo precisa de piso embaixo E de ar em cima: num mapa de
+// duas linhas não existe lugar nenhum, e essa é a mesma regra que as moedas seguem.
+function cena(linhas = ['........................', '....................~~~~', '################^###~~~~'], extra = {}) {
   const filhos = [];
   const pontos = [];
   const falas = [];
@@ -48,7 +53,7 @@ function cena(linhas = ['........~...', '############'], extra = {}) {
     mundo: mundo(linhas),
     quantosItens: 4,
     escolherLugares: (total, n) => Array.from({ length: Math.min(n, total) }, (_, i) => i),
-    lixeiraW: 12, lixeiraH: 15,
+    lixeiraW: 12, lixeiraH: 15, placaH: 16, alturaDoLixo: () => 9,
     alcance: 12,
     aoPontuar: (j, m) => pontos.push([j, m]),
     anunciar: (chave, j, sobre) => falas.push([chave, j, sobre]),
@@ -62,7 +67,7 @@ function cena(linhas = ['........~...', '############'], extra = {}) {
 function levarAteALixeira(c, cor, j = 0) {
   const idx = LIXEIRAS.indexOf(cor);
   const x = idx * (12 + 2) + 6;          // centro da caixa daquela lixeira (ver posicoesDasLixeiras)
-  const y = 2 * TILE - 15 + 2;           // as lixeiras encostam no fundo do mundo, que aqui tem 2 linhas
+  const y = 2 * TILE;                    // a linha do pé: o piso deste mapinha é a linha 2
   c.api.atualizar([{ i: j, x, y }]);
   return { x, y };
 }
@@ -78,7 +83,7 @@ describe('reciclagem · a cena', () => {
   });
 
   it('[Zero] cenário SEM água não ganha placa, e a cena monta assim mesmo', () => {
-    const c = cena(['............', '############']);
+    const c = cena(['........................', '........................', '########################']);
     c.api.montar();
     expect(c.api.placaX()).toBe(null);
     expect(c.filhos.some((s) => s.tex === 'tex:placa')).toBe(false);
@@ -93,6 +98,17 @@ describe('reciclagem · a cena', () => {
     const primeiro = c.filhos.length;
     c.api.montar();
     expect(c.filhos.length).toBe(primeiro);
+  });
+
+  it('[Right] o item APOIA na linha do pé, subindo a própria altura — não meio tile', () => {
+    // A latinha tem 9px e o tile tem 16: descontar o tile a deixava boiando sete pixels no ar. Quem varre o
+    // chão com a bengala não acha o que boia, e quem enxerga vê um objeto flutuando sem motivo.
+    const c = cena(undefined, { alturaDoLixo: () => 9 });
+    c.api.montar();
+    const it = c.api.itens()[0];
+    const sprite = c.filhos.find((s) => s.tex === 'tex:' + it.material);
+    expect(it.y, 'o estado guarda a linha do pé, como a do jogador').toBe(2 * TILE);
+    expect(sprite.y, 'e o sprite sobe os 9px da própria arte').toBe(2 * TILE - 9);
   });
 
   it('[Right] o item que a criança pega passa a SEGUIR o dono, acima dele', () => {

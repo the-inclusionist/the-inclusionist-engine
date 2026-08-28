@@ -302,6 +302,7 @@ function novoCtx(over = {}) {
     POWER_MSG: (k) => ({ superjump: 'Super-pulo!', fly: 'Voo!' })[k] || 'Poder ativado!',
     coinPools: () => ({ shapes: [], letters: [] }),
     setupExtras: marca('setupExtras'), rebuildExtras: marca('rebuildExtras'), resetMinimap: marca('resetMinimap'),
+    aoReiniciarRodada: marca('aoReiniciarRodada'),
     openQuiz: (pl, i, s) => LOG.chamadas.push('openQuiz:' + pl.i + ':' + i + ':' + s),
     openSilabas: (pl, i, l) => LOG.chamadas.push('openSilabas:' + pl.i + ':' + i + ':' + l),
     closeQuiz: (pl) => LOG.chamadas.push('closeQuiz:' + pl.i),
@@ -617,6 +618,17 @@ describe('game/session — restartGame', () => {
     expect(DOM['#win-overlay'].hidden).toBe(true);
     expect(DOM['#hud-objective'].textContent).toBe('Monte 10 palavras');
     expect(LOG.say).toContain(restartAnnounce('silabas', 1));
+  });
+  it('[Right] a volta recomeça INTEIRA: o que nasce por rodada é remontado (ADR-0049 §7)', () => {
+    // Separado de `setupExtras` de propósito: aquele roda também ao ligar o Modo Fácil ou trocar o modo de
+    // visão, e remontar o lixo ali tiraria da mão da criança o item que ela carregava — por ter mexido num
+    // ajuste de acessibilidade.
+    S.restartGame();
+    expect(LOG.chamadas).toContain('aoReiniciarRodada');
+  });
+  it('[Zero] e sem esse gancho a rodada reinicia igual — um jogo sem nada por volta não passa nada', () => {
+    montar(1, { aoReiniciarRodada: undefined });
+    expect(() => S.restartGame()).not.toThrow();
   });
   it('[Right] setupExtras roda ANTES do reset dos jogadores (o portão fecha antes de alguém andar)', () => {
     const i = LOG.chamadas.indexOf.bind(LOG.chamadas);

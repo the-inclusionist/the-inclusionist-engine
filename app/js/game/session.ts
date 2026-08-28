@@ -335,6 +335,15 @@ export interface SessionCtx {
   /* --- itens e cena --- */
   coinPools(): { shapes: readonly string[]; letters: readonly string[] }; // pools por MODO (o sorteio da rodada nova precisa)
   setupExtras(): void;                      // re-sorteia power-ups + chave e FECHA o portão (reatribui os 4 `let`)
+  /**
+   * A RODADA RECOMEÇOU — para o que nasce por volta e não é power-up nem moeda (hoje, a reciclagem).
+   *
+   * Existe separado de `setupExtras` porque os chamadores são outros: `setupExtras` roda também quando a
+   * criança liga o Modo Fácil ou troca o modo de visão, e remontar o lixo ali tiraria da mão dela o item que
+   * ela estava carregando — por ter mexido num ajuste de acessibilidade. Opcional: um jogo sem nada por volta
+   * não passa nada.
+   */
+  aoReiniciarRodada?: () => void;
   rebuildExtras(): void;                    // re-desenha o portão aberto
   resetMinimap(): void;                     // fog-of-war da fase volta ao escuro
 
@@ -521,6 +530,7 @@ export function initSession(ctx: SessionCtx): SessionApi {
     const obj = ctx.$('#hud-objective'); if (obj) obj.textContent = objectiveText(ctx.getMode(), N());
     const ov = ctx.$('#win-overlay'); if (ov) ov.hidden = true;
     // (dicas de início removidas — o rodapé do splash mostra os controles)
+    ctx.aoReiniciarRodada?.();                           // ADR-0049 §7: a volta recomeça inteira (o lixo volta ao chão)
     ctx.srSay(restartAnnounce(ctx.getMode(), N()));
   }
 

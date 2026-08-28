@@ -59,6 +59,12 @@ export interface RecyclingSceneCtx {
   escolherLugares: (total: number, n: number) => number[];
   /** Tamanho da lixeira desenhada (de `render/recycling-tex`), para posicionar e para testar a colisão. */
   lixeiraW: number; lixeiraH: number;
+  /** A altura DESENHADA de cada objeto de lixo. O estado guarda a linha do PÉ (como o jogador), e é aqui que
+   *  ela vira posição de sprite — sem isto a latinha de 9px boiava sete pixels no ar, porque o tile tem 16. */
+  alturaDoLixo: (m: Material) => number;
+  /** Altura da placa desenhada. Separada da lixeira porque são desenhos diferentes — desenhar a placa com a
+   *  altura da lixeira a enterra ou a faz flutuar, e o defeito só aparece na tela de alguém. */
+  placaH: number;
   /** A que distância a criança pega o item do chão. */
   alcance: number;
   /** UM PONTO DE COMPORTAMENTO saiu. Quem conta é de fora — ver o cabeçalho. */
@@ -83,6 +89,8 @@ export interface RecyclingApi {
   itens(): readonly ItemDeLixo[];
   /** Onde a placa ficou, ou `null` num cenário sem água. */
   placaX(): number | null;
+  /** Onde as quatro lixeiras ficaram. Para o protocolo de conferência no navegador e para quem for narrar. */
+  lixeiras(): readonly PostoDeLixeira[];
 }
 
 /** Quanto o item carregado flutua ACIMA do jogador. Acima e não junto: colado no corpo ele some atrás do
@@ -119,14 +127,14 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
     placa = p === null ? null : p.x;
     if (p !== null) {
       const s = ctx.criarSprite(ctx.texturaDaPlaca);
-      s.x = p.x; s.y = p.y - ctx.lixeiraH; s.visible = true;   // o poste apoia NO chão, então sobe uma altura
+      s.x = p.x; s.y = p.y - ctx.placaH; s.visible = true;   // o poste apoia NO chão, então ela sobe a PRÓPRIA altura
       ctx.camada.addChild(s);
     }
 
-    itens = montarItens(candidatosDeLixo(ctx.mundo), ctx.quantosItens, ctx.escolherLugares);
+    itens = montarItens(candidatosDeLixo(ctx.mundo, ctx.lixeiraW), ctx.quantosItens, ctx.escolherLugares);
     spritesDeLixo = itens.map((it) => {
       const s = ctx.criarSprite(ctx.texturaDoLixo(it.material));
-      s.x = it.x; s.y = it.y; s.visible = true;
+      s.x = it.x; s.y = it.y - ctx.alturaDoLixo(it.material); s.visible = true;
       ctx.camada.addChild(s);
       return s;
     });
@@ -166,11 +174,14 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
       if (!s) return;
       if (it.descartado) { s.visible = false; return; }
       const dono = it.dono === null ? null : jogadores.find((j) => j.i === it.dono);
+      const alto = ctx.alturaDoLixo(it.material);
       s.visible = true;
       s.x = dono ? dono.x : it.x;
-      s.y = dono ? dono.y - ALTURA_NA_MAO : it.y;
+      // Sempre subindo a altura do próprio objeto: no chão ele APOIA na linha do pé; na mão, flutua acima da
+      // cabeça de quem o carrega. Os dois `y` de entrada são linhas de pé — a do item e a do jogador.
+      s.y = (dono ? dono.y - ALTURA_NA_MAO : it.y) - alto;
     });
   }
 
-  return { montar, atualizar, itens: () => itens, placaX: () => placa };
+  return { montar, atualizar, itens: () => itens, placaX: () => placa, lixeiras: () => lixeiras };
 }

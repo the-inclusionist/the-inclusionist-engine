@@ -162,6 +162,9 @@ const INCL_VERSION = String((typeof __BUILD__ !== 'undefined' && __BUILD__.versi
 /* ===================== constantes ===================== */
 // Constantes puras extraídas para core/constants.js (modularização Fase B).
 import { LOGICAL_W, LOGICAL_H, TILE, COIN_TARGET, TUNE, ANIM } from './core/constants.js';
+import { TILE_TYPES } from './core/constants.js'; // a tabela do que cada tile É — a reciclagem pergunta "isto é água?"
+import { createRecycling } from './game/recycling-scene.js'; // a reciclagem: lixo, lixeiras e a placa (ADR-0049 §1)
+import { createRecyclingTextures, LIXO_ART, LIXEIRA_W, LIXEIRA_H, PLACA_H } from './render/recycling-tex.js';
 import { Z } from './core/layers.js'; // #69/ADR-0020: ordem-z canônica (nomeada) do render
 import { rnd, randInt, shuffle } from './core/rng.js'; // Fase 2.26: RNG semeado (Tier 1)
 import { initCollision, tileAt, solidAt, surfTop } from './core/collision.js'; // Estágio 4: colisão de grade (determinística; ctx por closures)
@@ -709,6 +712,40 @@ initCoinSpawning({ coinContainer, createSprite: (t) => new PIXI.Sprite(t as neve
   getMode: () => MODE(), getOwnerColors: () => ownerColors, invalidateSharedViz: () => { _lastSharedViz=null; },
   powerShort: POWER_SHORT, $ });
 rebuildCoins();
+
+/* ===================== A RECICLAGEM (ADR-0049 §1) =====================
+   Quatro objetos espalhados pelo trecho seco, quatro lixeiras no canto inferior esquerdo e a placa de
+   PROIBIDO JOGAR LIXO antes da água. Acertar a cor vale UM PONTO DE COMPORTAMENTO — que registra que a
+   criança fez uma boa ação e NÃO move nada: não pinta a barra de dez segmentos, não muda nível escolar, não
+   alimenta a adaptação. É por isso que a lata pode valer ponto sem virar atalho para subir de série.
+
+   ⚠️ O CONTADOR MORA AQUI, na raiz, e não no estado de RODADA — porque pelo ADR-0049 §7 a volta das dez
+   moedas reinicia o mundo SEM prejuízo de pontos. Um ponto guardado na rodada zeraria junto com ela, que é
+   exatamente o que aquela cláusula proíbe. Onde ele mora DE VERDADE (a pessoa, com o dia inteiro) ainda não
+   existe — ADR-0049 §5b, e a issue que o liga ao HUD. */
+const recTex = createRecyclingTextures();
+const recContainer = new PIXI.Container(); camera.addChild(recContainer);
+/** Pontos de COMPORTAMENTO por jogador. Sobrevive ao reinício da volta, de propósito (ADR-0049 §7). */
+const pontosDeComportamento: number[] = [];
+const reciclagem = createRecycling({
+  camada: recContainer, criarSprite: (t) => new PIXI.Sprite(t as never),
+  texturaDoLixo: (m) => recTex.lixo[m], texturaDaLixeira: (c) => recTex.lixeira[c], texturaDaPlaca: recTex.placa,
+  // A consulta de mundo que a reciclagem faz, respondida pela tabela de tiles e não por número cru: um
+  // segundo jogo com outra numeração poria a placa no lugar errado sem nenhum erro de tipo (ver constants).
+  mundo: { tileEm: (c, l) => tileAt(c, l), colunas: WORLD_W, linhas: WORLD_H,
+    solido: (ti) => !!TILE_TYPES[ti]?.solid, agua: (ti) => !!TILE_TYPES[ti]?.water, trampolim: (ti) => !!TILE_TYPES[ti]?.tramp },
+  quantosItens: 4, escolherLugares: (total, n) => shuffle(Array.from({ length: total }, (_, i) => i)).slice(0, n),
+  lixeiraW: LIXEIRA_W, lixeiraH: LIXEIRA_H, placaH: PLACA_H, alturaDoLixo: (m) => LIXO_ART[m].h, alcance: TILE,
+  aoPontuar: (j) => { pontosDeComportamento[j] = (pontosDeComportamento[j] ?? 0) + 1; },
+  // A CHAVE e os IDENTIFICADORES entram; a tradução acontece aqui. É o que mantém `game/recycling-scene` sem
+  // língua nenhuma — o piso do projeto são três idiomas (pilar 3 do ADR-0010).
+  anunciar: (chave, j, sobre) => {
+    const msg = t(chave, { o: t('lixo.obj.' + sobre.material), cor: sobre.cor ? t('lixo.cor.' + sobre.cor) : '' });
+    srSay(playerPrefix(j, rodada.numPlayers) + msg);
+    if (captionsOn) showCaption(msg);
+  },
+});
+reciclagem.montar();
 // camada de escuridão das áreas secretas (acima de mundo/moedas, ABAIXO do player → player sempre visível)
 const darkLayer=new PIXI.Container(); camera.addChild(darkLayer);
 const darkRegions=buildDarkRegions(WORLD_W, WORLD_H).map(tiles=>{
@@ -1082,6 +1119,7 @@ function update(dt: number){
   // `controlados()` e não `jogadores()`: a física e a animação leem `ctrl`, e esta é a vista que afirma o
   // que já é verdade aqui — o laço só roda DEPOIS de `assignControls`, então `ctrl` não é mais nulo.
   for(const pl of controlados()) stepPlayer(pl,dt);
+  reciclagem.atualizar(controlados()); // a reciclagem: pegar do chão, cruzar a placa, depositar na lixeira
   secretAreas.stepSecretAreas(dt); // E1: revela a area secreta enquanto houver jogador dentro, re-escurece ao sair e anuncia (game/secret-areas.ts, D3-c)
 }
 /* ===================== camera + quadro -> render/draw.ts (C1) =====================
@@ -1192,6 +1230,7 @@ const sessionApi = initSession({
   burstSparkle, addShake, addHitstop, rnd,
   POWER_MSG,
   coinPools: ()=>coinPools(), setupExtras, rebuildExtras, resetMinimap,
+  aoReiniciarRodada: ()=>reciclagem.montar(), // ADR-0049 §7: a volta recomeça e o lixo volta ao chão
   // A PONTE ENTRE DUAS VISTAS QUE NÃO SE FALAM. `game/session` declara o que ELE lê do jogador
   // (`SessionPlayer`) e `game/quiz` declara o que ELE lê (`QuizPlayer`). O objeto que atravessa é o mesmo
   // `GamePlayer`, e as duas são DESCRIÇÕES PARCIAIS dele — o `session` aqui só REPASSA um jogador que não
@@ -1634,7 +1673,7 @@ startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
   setMinimapVisible(!titleG.visible&&rodada.numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
   if(fatosDaCena().mundoRodando){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
-window.__incl={app,get player(){return players[0];},players,get numPlayers(){return rodada.numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return cenas.fase();},get padPrev(){return padPrevAct;},get coins(){return coins;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return rodada.ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
+window.__incl={app,get player(){return players[0];},players,get numPlayers(){return rodada.numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return cenas.fase();},get padPrev(){return padPrevAct;},get coins(){return coins;},get lixo(){return reciclagem.itens();},get placaX(){return reciclagem.placaX();},get lixeiras(){return reciclagem.lixeiras();},get pontosDeComportamento(){return pontosDeComportamento;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return rodada.ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE();},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},

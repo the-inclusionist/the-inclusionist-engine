@@ -68,31 +68,71 @@ export function posicaoDaPlaca(m: MundoDeLixo): Ponto | null {
   // Depois do trampolim e antes da água; sem trampolim, encostada na água.
   const alvo = tramp === null ? agua - 1 : Math.min(agua - 1, tramp + 1);
   const col = Math.max(0, alvo);
-  const topo = topoDaColuna(m, col);
-  return topo === null ? null : { x: col * TILE, y: topo };
+  // O PISO, e não o primeiro sólido descendo do teto: a placa protege a água, e a água está no andar de
+  // baixo. Ancorada pelo topo, ela ia parar numa laje alta, longe do que existe para proteger.
+  const piso = pisoDaColuna(m, col);
+  return piso === null ? null : { x: col * TILE, y: piso };
 }
 
-/** O y (em pixels) do topo do primeiro sólido da coluna, ou `null` se a coluna não tem chão. */
-function topoDaColuna(m: MundoDeLixo, col: number): number | null {
-  for (let l = 0; l < m.linhas; l++) if (m.solido(m.tileEm(col, l))) return l * TILE;
+// ⚠️ `topoDaColuna` (o primeiro sólido descendo do teto) FOI EMBORA, e vale dizer por quê: as três coisas
+// que este módulo posiciona — lixo, lixeira e placa — apoiam em CHÃO EM QUE SE ANDA, e num nível de
+// plataforma o primeiro sólido do teto quase nunca é esse chão. Ele punha as lixeiras dentro do muro da
+// borda, a placa numa laje alta longe da água, e o lixo no andar mais alto de cada coluna. Um nome que
+// parecia certo e respondia outra pergunta.
+
+/**
+ * O y do PISO EM QUE SE ANDA naquela coluna: o sólido mais baixo que tem ar por cima. `null` numa coluna que
+ * é parede inteira, ou que não tem chão nenhum.
+ *
+ * ⚠️ NÃO É `topoDaColuna`, e a diferença derrubou a primeira versão das lixeiras. No mapa real a coluna 0 é
+ * MURO do teto ao chão: o primeiro sólido dela está na linha 0, então ancorar pelo topo punha as quatro
+ * lixeiras acima da borda de cima da tela. O que a criança pisa é o piso, e é ele que sustenta mobiliário.
+ */
+function pisoDaColuna(m: MundoDeLixo, col: number): number | null {
+  for (let l = m.linhas - 1; l >= 0; l--) {
+    if (!m.solido(m.tileEm(col, l))) continue;
+    // Exige AR POR CIMA de verdade: uma coluna que é parede inteira devolve `null` e o grupo anda para a
+    // direita. Aceitar a linha 0 como piso faria o topo do muro da borda valer como chão, e as quatro
+    // lixeiras subiriam para fora da tela — que foi exatamente o que o mapa real fez com a primeira versão.
+    if (l > 0 && !m.solido(m.tileEm(col, l - 1))) return l * TILE;
+  }
   return null;
 }
 
 /**
- * As posições candidatas para o lixo: em cima do chão, no trecho seco, uma por coluna.
+ * As posições candidatas para o lixo: TODA superfície em que se ANDA, no trecho antes da placa.
  *
- * "Na altura do chão" é literal — o item repousa sobre a superfície, ao contrário da moeda, que flutua. Uma
- * criança que não enxerga varre o chão com a bengala; item flutuando some dessa varredura.
+ * ⚠️ MESMA REGRA DAS MOEDAS (`game/coins.findCoinCandidates`), e ela é a segunda versão desta função. A
+ * primeira usava "o primeiro sólido descendo do teto", uma coluna = um lugar — e no mapa real isso põe o item
+ * na laje MAIS ALTA de cada coluna, que é onde a criança não está. Um nível de plataforma tem vários andares;
+ * o chão de uma coluna não é um só.
+ *
+ * O `y` devolvido é a LINHA DO PÉ (o topo do sólido), igual ao `y` do jogador. Quem desenha subtrai a altura
+ * do próprio objeto — foi assim que o item deixou de flutuar meio tile acima do chão, que era o que acontecia
+ * quando a conta usava o TILE inteiro em vez da altura da latinha.
  */
-export function candidatosDeLixo(m: MundoDeLixo): Ponto[] {
+export function candidatosDeLixo(m: MundoDeLixo, larguraDaLixeira = 0): Ponto[] {
   const agua = colunaDaAgua(m);
-  const limite = agua === null ? m.colunas : agua;
+  // ⚠️ O LIMITE É A PLACA, e não a água, quando existe placa. Medido no mapa real: a placa cai na coluna 23
+  // e a água só na 29, então cinco colunas de lixo nasciam DEPOIS da placa — e um item pego ali nunca
+  // chegaria às lixeiras, porque `efeitoAoPassar` faz quem está além da linha soltar a carga a cada quadro.
+  const placa = posicaoDaPlaca(m);
+  const limiteDaPlaca = placa === null ? Infinity : Math.floor(placa.x / TILE);
+  const limite = Math.min(agua === null ? m.colunas : agua, limiteDaPlaca);
+  // ⚠️ E NADA NASCE EM CIMA DAS LIXEIRAS. Elas ficam no chão do mesmo canto por onde a criança passa, então um
+  // item ali seria pego e depositado NO MESMO QUADRO — ponto sem escolher cor nenhuma, e sem ela ver que
+  // pegou alguma coisa. O canto das lixeiras é destino, não berço.
+  const ls = larguraDaLixeira <= 0 ? [] : posicoesDasLixeiras(m, larguraDaLixeira, 0);
+  const primeira = ls.length === 0 ? 0
+    : Math.ceil((ls[ls.length - 1]!.x + larguraDaLixeira) / TILE) + 1;
   const fora: Ponto[] = [];
-  for (let c = 0; c < limite; c++) {
-    const topo = topoDaColuna(m, c);
-    if (topo === null) continue;
-    if (topo <= 0) continue;                    // chão colado no teto não recebe item
-    fora.push({ x: c * TILE, y: topo - TILE }); // repousando SOBRE a superfície
+  for (let c = primeira; c < limite; c++) {
+    for (let l = 1; l < m.linhas - 1; l++) {
+      const aqui = m.tileEm(c, l), abaixo = m.tileEm(c, l + 1), acima = m.tileEm(c, l - 1);
+      if (m.solido(aqui) || !m.solido(abaixo) || m.trampolim(abaixo)) continue;  // precisa de piso, e não em cima do pula-pula
+      if (m.solido(acima)) continue;                                             // e de espaço por cima, senão fica entalado
+      fora.push({ x: c * TILE, y: (l + 1) * TILE });                             // a LINHA DO PÉ, como a do jogador
+    }
   }
   return fora;
 }
@@ -108,6 +148,15 @@ export const N_LIXEIRAS = 4;
  * de um conjunto.
  */
 export function posicoesDasLixeiras(m: MundoDeLixo, largura: number, altura: number): Ponto[] {
-  const y = m.linhas * TILE - altura;
-  return Array.from({ length: N_LIXEIRAS }, (_, i) => ({ x: i * (largura + 2), y }));
+  // Começam na primeira coluna EM QUE SE ANDA, e não na coluna 0: no mapa real a 0 é a parede da borda, e
+  // uma lixeira dentro dela é meia lixeira desenhada dentro de pedra.
+  let col = 0;
+  let piso: number | null = null;
+  for (; col < m.colunas; col++) { piso = pisoDaColuna(m, col); if (piso !== null) break; }
+  const y = (piso ?? m.linhas * TILE) - altura;
+  const x0 = col >= m.colunas ? 0 : col * TILE;
+  // Todas na MESMA altura, de propósito: são um conjunto, e quatro alturas diferentes seriam lidas como
+  // quatro coisas diferentes em vez de quatro cores da mesma coisa.
+  return Array.from({ length: N_LIXEIRAS }, (_, i) => ({ x: x0 + i * (largura + 2), y }));
 }
+
