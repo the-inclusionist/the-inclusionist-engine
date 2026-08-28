@@ -222,6 +222,12 @@ decision-outcome:
 
       Consequences that are now design constraints, not implementation details:
         · Picking up litter LOCKS the hand: no dropping, no throwing (`game/carry.PODE`), only the right bin.
+        · THE BARRIER IS A SEGMENT, NOT A LINE — from the floor the sign stands on up to the first solid tile
+          above it. The Dev, after the first version barred the whole column: "a barreira deve valer só do piso da
+          placa até o próximo tile sólido acima da placa." A line running the height of the map stops the child on
+          floors where the sign is not even visible; she meets an invisible wall and can only read it as a broken
+          game. Confined to the sign's own gap, barrier and warning occupy the same place: where she does not pass,
+          she sees why.
         · Its art is large enough to be READ as a prohibition: the pictogram of a person dropping litter inside a
           cut circle. At 11×16 it was a small red square with a slash, which a child reads as "some object".
 
