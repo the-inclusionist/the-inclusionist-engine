@@ -73,12 +73,54 @@ export function descartar(material: Material, lixeira: string): Descarte {
 /**
  * Este x pode receber um item?
  *
- * Só ANTES da água. A regra é do Dev e tem motivo de jogo: item que cai na água some ou fica inalcançável, e a
- * criança perderia um ponto por geometria em vez de por escolha — que é o tipo de injustiça que uma criança lê
- * como "o jogo é contra mim".
+ * Só ANTES da água — os itens se espalham pelo trecho seco e não passam da placa.
  *
  * `aguaX` nulo = cenário sem água, e então o mapa inteiro serve.
  */
 export function podeNascerEm(x: number, aguaX: number | null): boolean {
   return aguaX === null || x < aguaX;
+}
+
+/* ===================== A PLACA, E POR QUE ELA É BARREIRA E NÃO PENALIDADE =====================
+ *
+ * No alto da plataforma depois do pula-pula, antes da água, há uma placa de PROIBIDO JOGAR LIXO. Ela faz duas
+ * coisas, e nenhuma delas é punir:
+ *
+ *   · quem passa por ali carregando lixo SOLTA o lixo, sozinho;
+ *   · lixo arremessado para a frente bate numa barreira invisível na linha da placa e VOLTA.
+ *
+ * ⚠️ E O MOTIVO É O MAIS FINO DESTE MÓDULO, nas palavras do Dev: "a criança não pode escolher ter um
+ * comportamento ruim, visto que a perda de pontos ainda é vista como RECOMPENSA para crianças que estão
+ * procurando fazer uma má ação por um motivo como estar irritada com o professor ou com o jogo."
+ *
+ * Isso desmonta a solução óbvia. O reflexo de quem desenha jogo é: jogou lixo na água, perde ponto. Mas para a
+ * criança que quer transgredir, a penalidade É o efeito procurado — ela confirma que a transgressão funcionou, e
+ * o jogo passa a oferecer exatamente o que ela veio buscar. Um número que desce é feedback tão bom quanto um que
+ * sobe quando o que se quer é reação.
+ *
+ * A barreira não julga e não reage: ela simplesmente não deixa acontecer. Sem punição, sem sermão, sem tela de
+ * aviso — porque cada um desses seria uma resposta, e resposta é o prêmio. */
+
+/** O que a placa faz com o lixo que chega até ela. */
+export type EfeitoDaPlaca = 'solta' | 'volta' | 'nada';
+
+/**
+ * O personagem cruzou a linha da placa carregando lixo? Então ele o SOLTA ali.
+ *
+ * `placaX` nulo = cenário sem placa (sem água), e nada acontece.
+ */
+export function efeitoAoPassar(x: number, placaX: number | null, carregando: boolean): EfeitoDaPlaca {
+  if (!carregando || placaX === null) return 'nada';
+  return x >= placaX ? 'solta' : 'nada';
+}
+
+/**
+ * O lixo arremessado atravessa a placa? NUNCA — ele bate na barreira invisível e volta.
+ *
+ * A barreira é UMA LINHA e não uma caixa: o que decide é o x de destino, não a trajetória, porque um arremesso
+ * em arco pode passar por cima de uma barreira baixa e cair na água do outro lado. Barreira que se pula não é
+ * barreira; é uma dificuldade a mais para a criança que já resolveu transgredir.
+ */
+export function arremessoAtravessa(destinoX: number, placaX: number | null): boolean {
+  return placaX === null || destinoX < placaX;
 }

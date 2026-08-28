@@ -17,7 +17,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { LIXEIRA_DE, MATERIAIS, LIXEIRAS, descartar, podeNascerEm } from '../app/js/game/recycling.js';
+import { LIXEIRA_DE, MATERIAIS, LIXEIRAS, descartar, podeNascerEm, efeitoAoPassar, arremessoAtravessa } from '../app/js/game/recycling.js';
 
 describe('reciclagem · o material, a cor e o ponto', () => {
   it('[Right] cada material tem a lixeira do padrão brasileiro', () => {
@@ -62,8 +62,6 @@ describe('reciclagem · o material, a cor e o ponto', () => {
   });
 
   it('[Right] os itens nascem ANTES da água, nunca depois', () => {
-    // Regra do Dev, e ela tem motivo de jogo: item que cai na água some ou fica inalcançável, e a criança perde
-    // um ponto por geometria em vez de por escolha.
     expect(podeNascerEm(100, 500)).toBe(true);
     expect(podeNascerEm(499, 500)).toBe(true);
     expect(podeNascerEm(500, 500), 'na borda da água já não nasce').toBe(false);
@@ -79,6 +77,47 @@ describe('reciclagem · o material, a cor e o ponto', () => {
     const r = descartar('metal', 'roxa');
     expect(r.acertou).toBe(false);
     expect(r.pontos).toBe(0);
+  });
+});
+
+// ========================= A PLACA =========================
+// Aqui mora a decisão mais fina do módulo, e ela desmonta o reflexo de quem desenha jogo. O óbvio seria: jogou
+// lixo na água, perde ponto. O Dev recusou, e o motivo é sobre a criança e não sobre a regra:
+//
+//   "a criança não pode escolher ter um comportamento ruim, visto que a PERDA DE PONTOS ainda é vista como
+//    RECOMPENSA para crianças que estão procurando fazer uma má ação por um motivo como estar irritada com o
+//    professor ou com o jogo."
+//
+// Para quem quer transgredir, a penalidade É o efeito procurado: ela confirma que a transgressão funcionou. Um
+// número que desce é feedback tão bom quanto um que sobe, quando o que se quer é REAÇÃO. A barreira não julga e
+// não reage — ela não deixa acontecer, e é por isso que não há punição, nem sermão, nem tela de aviso: cada um
+// deles seria uma resposta, e resposta é o prêmio.
+describe('a placa de proibido jogar lixo · barreira, não penalidade', () => {
+  it('[Right] quem passa pela placa carregando lixo SOLTA o lixo ali', () => {
+    expect(efeitoAoPassar(500, 500, true)).toBe('solta');
+    expect(efeitoAoPassar(600, 500, true)).toBe('solta');
+  });
+
+  it('[Zero] antes da placa, ou de mãos vazias, nada acontece', () => {
+    expect(efeitoAoPassar(499, 500, true)).toBe('nada');
+    expect(efeitoAoPassar(600, 500, false)).toBe('nada');
+  });
+
+  it('[Right] lixo arremessado NUNCA atravessa a placa', () => {
+    expect(arremessoAtravessa(499, 500), 'aquém da placa passa').toBe(true);
+    expect(arremessoAtravessa(500, 500), 'na linha já não passa').toBe(false);
+    expect(arremessoAtravessa(700, 500), 'além dela, nunca').toBe(false);
+  });
+
+  it('[Boundary] a barreira é uma LINHA, decidida pelo destino — arco não a contorna', () => {
+    // Barreira que se pula não é barreira: é uma dificuldade a mais para quem já resolveu transgredir. O que
+    // decide é o x de destino, nunca a altura da trajetória.
+    expect(arremessoAtravessa(9999, 500)).toBe(false);
+  });
+
+  it('[Zero] cenário sem placa: solta nada e o arremesso vai', () => {
+    expect(efeitoAoPassar(999, null, true)).toBe('nada');
+    expect(arremessoAtravessa(999, null)).toBe(true);
   });
 });
 
