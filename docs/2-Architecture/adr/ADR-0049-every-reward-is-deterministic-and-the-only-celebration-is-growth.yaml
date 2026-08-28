@@ -222,11 +222,23 @@ decision-outcome:
 
       Consequences that are now design constraints, not implementation details:
         · Picking up litter LOCKS the hand: no dropping, no throwing (`game/carry.PODE`), only the right bin.
-        · The sign lives in the last dry column — `agua - 1`, the Dev's column 28 — on the TOP platform, which is
-          the way the child arrives after the trampoline. A sign in the basement would warn about a stretch she
-          never walks.
         · Its art is large enough to be READ as a prohibition: the pictogram of a person dropping litter inside a
           cut circle. At 11×16 it was a small red square with a slash, which a child reads as "some object".
+
+      ⚠️ AND WHERE THE SIGN STANDS IS LEVEL DATA, NOT A DERIVATION — settled after getting it wrong twice, in the
+      same day, in the same way. The first rule put it "just after the trampoline" and landed in the basement; the
+      second put it at `agua - 1` and landed on the top platform, decided by water rows that are twenty rows below
+      it. Both were right by coincidence of map, and both were caught by the Dev looking at the screen, never by a
+      test.
+
+      The position he gave is a reading of the level's shape: "eu posicionei duas plataformas abaixo da lava. Pedi
+      pra colocar a 15 blocos de altura do chão, 27ª coluna contando da esquerda para a direita." Where the path
+      narrows and the drop begins is a design judgement, and no formula over tiles reaches it.
+
+      ⚠️ SO A LEVEL WITH NO DECLARED SIGN HAS NO SIGN. Inventing a position is precisely what produced two wrong
+      signs in silence — nothing broke, nothing went red, and the thing appeared in the wrong place on someone's
+      screen. Degrading to "no sign, and therefore no barrier" is loud and visible; degrading to "a sign somewhere"
+      is the failure mode ADR-0047 already refused elsewhere.
 
       ===== 7. THE PLATFORMER'S TEN COINS CLOSE A LAP, AND A LAP COSTS NOTHING =====
       Decided 2026-08-28. The platformer keeps its ten coins as the ROUND objective, and the Dev fixed what happens
