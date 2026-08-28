@@ -52,6 +52,8 @@ export interface SpriteDeLixo extends Visivel {
  */
 export interface JogadorNaReciclagem {
   i: number; x: number; y: number;
+  /** Para que lado ele olha: -1 esquerda, +1 direita. O objeto carregado fica levemente à FRENTE. */
+  olhandoPara: -1 | 1;
   /** O que este quadro pediu: `game/carry.AcaoDeCarga`. */
   acao: AcaoDeCarga;
   /** Para onde arremessar: -1 esquerda, +1 direita. */
@@ -81,6 +83,11 @@ export interface RecyclingSceneCtx {
   /** A altura DESENHADA de cada objeto de lixo. O estado guarda a linha do PÉ (como o jogador), e é aqui que
    *  ela vira posição de sprite — sem isto a latinha de 9px boiava sete pixels no ar, porque o tile tem 16. */
   alturaDoLixo: (m: Material) => number;
+  /** A largura DESENHADA de cada objeto. Serve para centralizar o objeto carregado no corpo de quem carrega:
+   *  o `x` do jogador é o CENTRO dele e o do sprite é a BORDA ESQUERDA. */
+  larguraDoLixo: (m: Material) => number;
+  /** A altura do jogador, do pé ao alto da cabeça (o `BOX.h` do jogo). Decide onde fica a barriga. */
+  alturaDoJogador: number;
   /** Altura da placa desenhada. Separada da lixeira porque são desenhos diferentes — desenhar a placa com a
    *  altura da lixeira a enterra ou a faz flutuar, e o defeito só aparece na tela de alguém. */
   placaH: number;
@@ -130,10 +137,26 @@ export interface RecyclingApi {
   lixeiras(): readonly PostoDeLixeira[];
 }
 
-/** Quanto o item carregado flutua ACIMA do jogador. Acima e não junto: colado no corpo ele some atrás do
- *  sprite do personagem, e a criança perde de vista o que está carregando — que é a informação de que ela
- *  precisa para escolher a lixeira. */
-const ALTURA_NA_MAO = 14;
+/* ===================== ONDE O OBJETO CARREGADO APARECE =====================
+ *
+ * "O objeto que está sendo carregado deve aparecer abaixo da cabeça e levemente à frente, tampando a barriga
+ * sem tampar os braços."
+ *
+ * ⚠️ SEGUNDA VERSÃO. A primeira o punha FLUTUANDO ACIMA da cabeça, e o raciocínio estava certo pela metade:
+ * eu queria que a criança não perdesse de vista o que carrega. Só que um objeto boiando sobre a cabeça não é
+ * alguém carregando alguma coisa — é um ícone de estado. Na barriga, o desenho DIZ o que está acontecendo, e
+ * continua visível, que era o que eu queria desde o começo.
+ *
+ * As três medidas, sobre um jogador de 30px de altura cujo `y` é o PÉ:
+ *   · o topo do objeto encosta logo ABAIXO da cabeça — 22px acima do pé, e a cabeça ocupa uns 8;
+ *   · ele fica CENTRADO no tronco, o que deixa os braços de fora nos dois lados (o corpo tem 10 de largura e
+ *     os objetos, de 6 a 10);
+ *   · e desloca 2px para o lado em que a pessoa OLHA, que é o "levemente à frente". */
+
+/** Quanto o topo do objeto carregado fica abaixo do alto da cabeça, em fração da altura do jogador. */
+const ABAIXO_DA_CABECA = 8 / 30;
+/** O quanto o objeto avança para o lado em que a pessoa olha. */
+const A_FRENTE = 2;
 
 export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
   let itens: ItemDeLixo[] = [];
@@ -217,10 +240,15 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
       const dono = it.dono === null ? null : jogadores.find((j) => j.i === it.dono);
       const alto = ctx.alturaDoLixo(it.material);
       s.visible = true;
-      s.x = dono ? dono.x : it.x;
-      // Sempre subindo a altura do próprio objeto: no chão ele APOIA na linha do pé; na mão, flutua acima da
-      // cabeça de quem o carrega. Os dois `y` de entrada são linhas de pé — a do item e a do jogador.
-      s.y = (dono ? dono.y - ALTURA_NA_MAO : it.y) - alto;
+      if (dono) {
+        // Na BARRIGA: centrado no tronco, o topo logo abaixo da cabeça, e 2px para o lado em que ele olha.
+        s.x = dono.x - ctx.larguraDoLixo(it.material) / 2 + dono.olhandoPara * A_FRENTE;
+        s.y = dono.y - ctx.alturaDoJogador * (1 - ABAIXO_DA_CABECA);
+      } else {
+        // No CHÃO: apoiado na linha do pé, subindo a altura do próprio objeto.
+        s.x = it.x;
+        s.y = it.y - alto;
+      }
     });
   }
 

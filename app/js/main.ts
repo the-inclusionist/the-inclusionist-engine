@@ -753,7 +753,8 @@ const reciclagem = createRecycling({
     solido: (ti) => !!TILE_TYPES[ti]?.solid, agua: (ti) => !!TILE_TYPES[ti]?.water, trampolim: (ti) => !!TILE_TYPES[ti]?.tramp },
   placaEm: PLACA_DO_CLARITY,
   quantosItens: 1, escolherLugares: (total, n) => shuffle(Array.from({ length: total }, (_, i) => i)).slice(0, n),
-  lixeiraW: LIXEIRA_W, lixeiraH: LIXEIRA_H, placaH: PLACA_H, alturaDoLixo: (m) => LIXO_ART[m].h,
+  lixeiraW: LIXEIRA_W, lixeiraH: LIXEIRA_H, placaH: PLACA_H,
+  alturaDoLixo: (m) => LIXO_ART[m].h, larguraDoLixo: (m) => LIXO_ART[m].w, alturaDoJogador: BOX.h,
   // UM TILE E MEIO, e não um: a 16px — a criança em pé no tile do lado — o botão não fazia nada e não
   // avisava nada. Ver `alcance` em `game/recycling-scene`.
   alcance: TILE * 1.5,
@@ -1157,13 +1158,16 @@ function update(dt: number){
     const direcao = held(pl, 'left') ? -1 : held(pl, 'right') ? 1 : 0;
     const carregando = reciclagem.itens().some((it) => it.dono === pl.i && !it.descartado);
     const objetoPerto = reciclagem.temItemPerto(pl.i, pl.x, pl.y);   // UM alcance só — ver a API da cena
-    const acao = acaoDeCarga(pl, { objetoPerto, carregando, noChao: pl.onGround,
-      bordaDePulo: pl.jumpEdge, bordaDeCorrer: pl.runEdge, direcao,
+    const acao = acaoDeCarga({ objetoPerto, carregando, bordaDeInteracao: pl.runEdge, direcao,
       // Hoje a única coisa carregável do jogo é lixo. Semente, bola e objeto perdido já estão decididos
       // (`game/carry.PODE`) e ainda não existem no mundo — quando existirem, é este campo que muda.
       tipoDaCarga: carregando ? 'lixo' : null });
-    if (acao !== 'nada') { if (pl.toggleRun) pl.jumpEdge = false; else pl.runEdge = false; }
-    return { i: pl.i, x: pl.x, y: pl.y, acao, direcao };
+    // ⚠️ A BORDA NÃO É MAIS CONSUMIDA. Ela era, enquanto a carga podia morar no botão de PULO — sem consumir,
+    // pegar o objeto também pulava. Agora a carga mora sempre no botão de interação, e ali as duas funções
+    // não disputam: correr é ESTADO e interagir é EVENTO. Quem tem a alternância ligada continua alternando a
+    // corrida no mesmo aperto em que pega a lata, e é isso que o Dev pediu — "botão de interação continua
+    // sendo botão de interação [...] o que muda é que a parte de correr vira toggle".
+    return { i: pl.i, x: pl.x, y: pl.y, olhandoPara: pl.facing < 0 ? -1 as const : 1 as const, acao, direcao };
   }));
   for(const pl of controlados()) stepPlayer(pl,dt);
   // A PLACA BARRA A CRIANÇA, e é aqui — DEPOIS da física — porque é a posição final do quadro que interessa:

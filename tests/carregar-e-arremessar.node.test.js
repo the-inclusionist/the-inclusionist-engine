@@ -1,28 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // PEGAR, CARREGAR E ARREMESSAR — a máquina de estados, antes do objeto existir.
 //
-// ========================= POR QUE ESTA PARTE PRIMEIRO =========================
-// O Dev aprovou construir o mecanismo inteiro (objeto pegável, sprite na mão, física do arremesso). Duas
-// perguntas dele ainda estão abertas e MUDAM o desenho: de onde vêm os objetos (postos no mapa? surgem de
-// algo?) e para que servem (abrir caminho? atingir algo?). Inventar isso seria escrever regra de jogo que é
-// dele, não minha.
+// ========================= O QUE ESTE ARQUIVO GUARDA =========================
+// O roteamento de botão nasceu antes de existir objeto carregável no jogo — código sem chamador, testado e
+// alcançável a partir de nada, aceito para que a decisão estivesse pronta quando o primeiro objeto chegasse.
+// Chegou (a reciclagem), e a aposta pagou: não foi preciso inventar regra contra prazo.
 //
-// O que NÃO depende das respostas é QUAL BOTÃO FAZ O QUÊ, e em que contexto. Essa é a parte que a alternância
-// do correr desloca, é lógica pura e é onde os becos se escondem — então é por ela que se começa.
+// O que continua morando aqui é lógica PURA: entra o contexto de um quadro, sai uma intenção. Sem tela, sem
+// mundo, sem física — e é por isso que as reviravoltas de contrato do Dev cabem em casos legíveis.
 //
 // ========================= O CONTRATO, NAS PALAVRAS DELE =========================
-// "Caso tenha um objeto que possa segurar e apertou o botão de pulo com o toggle habilitado, o botão de pulo
-// fará com que o personagem segure/carregue o objeto e jogue apertando o botão de pulo duas vezes (pois o
-// contexto para jogar o objeto fora com esta opção ligada é não estar pisando no solo)."
+// "Botão de interação continua sendo botão de interação e servindo para conversar, pegar e jogar mesmo nos
+// outros modos. O que muda é que a parte de correr (que precisa que ele seja mantido apertado) vira toggle
+// em modo de teclas de alternância, controle touch, controle pelo rosto, controle por olhos e controle por
+// fala."
 //
-// Daí a ordem: carregando NO AR → arremessa; carregando NO CHÃO → pula (é o primeiro dos "dois toques");
-// sem carregar e com objeto perto → pega; nada disso → pula.
+// ⚠️ REVOGA O CONTRATO DE 27/08, e os casos que provavam o anterior saíram com ele. Naquele, com a
+// alternância ligada, o gatilho da carga mudava para o botão de PULO — e o preço era que perto de um objeto
+// o pulo pegava em vez de pular. O Dev desfez: "desfaço o que pedi".
 //
-// ⚠️ E ISSO CUSTA UMA COISA, dita aqui porque ninguém deve descobrir na tela: perto de um objeto, o pulo
-// PEGA em vez de pular. É a consequência direta do contrato, e é dele — mas quem for mexer precisa saber que
-// foi escolhido, e não esquecido.
-//
-// SEM a alternância, o gatilho é o CORRER, que é quem tem a borda livre fora do contexto de grudar.
+// Sobrou um gatilho só, em todo modo de entrada: o botão de interação. E o "não pisar no solo" saiu junto —
+// ele separava os dois toques de um botão que pulava E jogava; num botão que só interage não há dois toques
+// para separar.
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
@@ -30,7 +29,7 @@ import { acaoDeCarga, PODE } from '../app/js/game/carry.js';
 
 // `direcao: 1` é o PADRÃO daqui porque os casos antigos são todos de arremesso, e arremessar exige direção
 // desde 2026-08-28. Deixá-la fora faria os casos passarem por `undefined !== 0`, que é passar por acidente.
-const ctx = (o = {}) => ({ objetoPerto: false, carregando: false, noChao: true, bordaDePulo: false, bordaDeCorrer: false, direcao: 1, tipoDaCarga: 'bola', ...o });
+const ctx = (o = {}) => ({ objetoPerto: false, carregando: false, bordaDeInteracao: false, direcao: 1, tipoDaCarga: 'bola', ...o });
 
 describe('carga · qual botão faz o quê, e em que contexto', () => {
   /* ===================== o que está na mão decide o que é permitido ===================== */
@@ -39,16 +38,16 @@ describe('carga · qual botão faz o quê, e em que contexto', () => {
     // "Uma vez que segura o lixo ele só poderá soltar na lixeira e não poderá seguir após a placa. Ou seja,
     // pegar o lixo trava ele de soltá-lo ou arremessá-lo." Soltar e lançar SÃO a desobediência; barrá-los é
     // o que faz a desobediência não ter por onde começar.
-    const comLixo = { carregando: true, bordaDeCorrer: true, tipoDaCarga: 'lixo' };
-    expect(acaoDeCarga({}, ctx({ ...comLixo, direcao: 0 })), 'sem direção').toBe('nada');
-    expect(acaoDeCarga({}, ctx({ ...comLixo, direcao: 1 })), 'com direção').toBe('nada');
-    expect(acaoDeCarga({}, ctx({ ...comLixo, direcao: -1 }))).toBe('nada');
+    const comLixo = { carregando: true, bordaDeInteracao: true, tipoDaCarga: 'lixo' };
+    expect(acaoDeCarga(ctx({ ...comLixo, direcao: 0 })), 'sem direção').toBe('nada');
+    expect(acaoDeCarga(ctx({ ...comLixo, direcao: 1 })), 'com direção').toBe('nada');
+    expect(acaoDeCarga(ctx({ ...comLixo, direcao: -1 }))).toBe('nada');
   });
 
   it('[Right] semente e bola arremessam; objeto PERDIDO só se deixa no chão', () => {
     // A lista de arremessáveis é fechada por decisão: "nenhum outro objeto além de sementes e bolas [...] são
     // arremessáveis". E um filhote de cachorro não é projétil.
-    const seg = (tipo, direcao) => acaoDeCarga({}, ctx({ carregando: true, bordaDeCorrer: true, tipoDaCarga: tipo, direcao }));
+    const seg = (tipo, direcao) => acaoDeCarga(ctx({ carregando: true, bordaDeInteracao: true, tipoDaCarga: tipo, direcao }));
     expect(seg('semente', 1)).toBe('arremessar');
     expect(seg('bola', -1)).toBe('arremessar');
     expect(seg('perdido', 1), 'é de alguém — não se joga').toBe('nada');
@@ -66,80 +65,60 @@ describe('carga · qual botão faz o quê, e em que contexto', () => {
   it('[Right] carregando + botão + DIREÇÃO = arremessa; sem direção = SOLTA', () => {
     // "Arremesso = apertar a direção da esquerda ou direita e apertar o botão de interação / corrida quando
     // se está segurando algo." Sem direção o objeto não voa: fica onde a criança está.
-    const carregando = { carregando: true, bordaDeCorrer: true };
-    expect(acaoDeCarga({}, ctx({ ...carregando, direcao: 1 }))).toBe('arremessar');
-    expect(acaoDeCarga({}, ctx({ ...carregando, direcao: -1 }))).toBe('arremessar');
-    expect(acaoDeCarga({}, ctx({ ...carregando, direcao: 0 }))).toBe('soltar');
+    const carregando = { carregando: true, bordaDeInteracao: true };
+    expect(acaoDeCarga(ctx({ ...carregando, direcao: 1 }))).toBe('arremessar');
+    expect(acaoDeCarga(ctx({ ...carregando, direcao: -1 }))).toBe('arremessar');
+    expect(acaoDeCarga(ctx({ ...carregando, direcao: 0 }))).toBe('soltar');
   });
 
   it('[Right] SOLTAR existe para ela poder resolver outra coisa e voltar depois', () => {
     // "Ela deve poder pegar lixo e soltar para administrar seus assuntos e também poderá voltar e pegar o que
     // ficou para trás com o poder de vôo." Sem soltar, carregar seria uma armadilha: escolher um item
     // trancaria a criança nele até achar a lixeira certa.
-    expect(acaoDeCarga({ toggleRun: true }, ctx({ carregando: true, noChao: false, bordaDePulo: true, direcao: 0 })))
-      .toBe('soltar');
+    expect(acaoDeCarga(ctx({ carregando: true, bordaDeInteracao: true, direcao: 0 }))).toBe('soltar');
   });
 
   it('[Zero] sem borda nenhuma, nada acontece', () => {
-    expect(acaoDeCarga({ toggleRun: true }, ctx({ objetoPerto: true }))).toBe('nada');
+    expect(acaoDeCarga(ctx({ objetoPerto: true }))).toBe('nada');
   });
 
-  /* ===================== COM a alternância: tudo no PULO ===================== */
+  /* ===================== um gatilho só, em todo modo ===================== */
 
-  it('[Right] objeto perto e mãos livres: o pulo PEGA', () => {
-    expect(acaoDeCarga({ toggleRun: true }, ctx({ objetoPerto: true, bordaDePulo: true }))).toBe('pegar');
-  });
-
-  it('[Right] carregando NO AR: o pulo ARREMESSA — o segundo dos dois toques', () => {
-    expect(acaoDeCarga({ toggleRun: true }, ctx({ carregando: true, noChao: false, bordaDePulo: true }))).toBe('arremessar');
-  });
-
-  it('[Right] carregando NO CHÃO: o pulo PULA — é o primeiro dos dois toques', () => {
-    // Se arremessasse aqui, "dois toques" seria um toque, e a criança perderia o objeto ao tentar pular com
-    // ele. O contexto declarado é "não estar pisando no solo", e é ele que separa os dois.
-    expect(acaoDeCarga({ toggleRun: true }, ctx({ carregando: true, noChao: true, bordaDePulo: true }))).toBe('nada');
+  it('[Right] objeto perto e mãos livres: o botão de interação PEGA', () => {
+    expect(acaoDeCarga(ctx({ objetoPerto: true, bordaDeInteracao: true }))).toBe('pegar');
   });
 
   it('[Boundary] carregando vence objeto perto — não se pega o segundo com as mãos ocupadas', () => {
-    expect(acaoDeCarga({ toggleRun: true }, ctx({ carregando: true, objetoPerto: true, noChao: false, bordaDePulo: true }))).toBe('arremessar');
+    expect(acaoDeCarga(ctx({ carregando: true, objetoPerto: true, bordaDeInteracao: true }))).toBe('arremessar');
   });
 
-  it('[Right] com a alternância, a borda do CORRER não pega nem arremessa', () => {
-    // Ela virou a trava da corrida. Se ainda pegasse, um toque faria duas coisas — e a criança que usa a
-    // alternância é justamente quem não consegue desfazer um toque acidental depressa.
-    expect(acaoDeCarga({ toggleRun: true }, ctx({ objetoPerto: true, bordaDeCorrer: true }))).toBe('nada');
+  it('[Right] ARREMESSA TAMBÉM NO CHÃO — não há mais "dois toques" para separar', () => {
+    // O "não pisar no solo" existia para separar o primeiro toque (pular) do segundo (jogar) num botão que
+    // fazia as duas coisas. Num botão que só interage, exigir estar no ar seria dificuldade inventada.
+    expect(acaoDeCarga(ctx({ carregando: true, bordaDeInteracao: true, direcao: 1 }))).toBe('arremessar');
   });
 
-  /* ===================== SEM a alternância: tudo no CORRER ===================== */
-
-  it('[Right] sem a alternância, o CORRER pega e arremessa', () => {
-    expect(acaoDeCarga({ toggleRun: false }, ctx({ objetoPerto: true, bordaDeCorrer: true }))).toBe('pegar');
-    expect(acaoDeCarga({ toggleRun: false }, ctx({ carregando: true, noChao: false, bordaDeCorrer: true }))).toBe('arremessar');
-  });
-
-  it('[Right] sem a alternância, o CORRER arremessa TAMBÉM no chão', () => {
-    // A regra do "não pisar no solo" existe para separar os dois toques do PULO. No Correr não há dois
-    // toques para separar — exigir estar no ar ali seria uma dificuldade inventada.
-    expect(acaoDeCarga({ toggleRun: false }, ctx({ carregando: true, noChao: true, bordaDeCorrer: true }))).toBe('arremessar');
-  });
-
-  it('[Zero] sem a alternância, o PULO não pega nada — ele continua sendo só pulo', () => {
-    // O caminho de quem nunca pediu o ajuste não muda em nada. É a mesma regra do grude.
-    expect(acaoDeCarga({ toggleRun: false }, ctx({ objetoPerto: true, bordaDePulo: true }))).toBe('nada');
-    expect(acaoDeCarga({ toggleRun: false }, ctx({ carregando: true, noChao: false, bordaDePulo: true }))).toBe('nada');
+  it('[Zero] O PULO NÃO PEGA NADA — ele voltou a ser só pulo, em todo modo', () => {
+    // O contrato de 27/08 movia o gatilho para o pulo quando a alternância do correr estava ligada, e o preço
+    // era que perto de um objeto o pulo PEGAVA em vez de pular. O Dev desfez em 28/08.
+    //
+    // O caso passa a borda de pulo de propósito, como quem ainda acreditasse no contrato antigo: a decisão é
+    // que ela seja IGNORADA. Afirmar sobre o produto, e não sobre a forma do meu objeto de teste.
+    expect(acaoDeCarga(ctx({ objetoPerto: true, bordaDePulo: true, bordaDeInteracao: false }))).toBe('nada');
+    expect(acaoDeCarga(ctx({ carregando: true, bordaDePulo: true, bordaDeInteracao: false }))).toBe('nada');
   });
 
   it('[Zero] sem objeto perto e de mãos livres, não há o que pegar', () => {
-    expect(acaoDeCarga({ toggleRun: true }, ctx({ bordaDePulo: true }))).toBe('nada');
-    expect(acaoDeCarga({ toggleRun: false }, ctx({ bordaDeCorrer: true }))).toBe('nada');
+    expect(acaoDeCarga(ctx({ bordaDeInteracao: true }))).toBe('nada');
   });
+
 });
 
 // ========================= MUTAÇÕES CONFERIDAS =========================
-//   · deixando o pulo arremessar NO CHÃO (tirando o `noChao`) → "[Right] carregando NO CHÃO" reprova, e o
-//     efeito real é a criança perder o objeto toda vez que tentar pular com ele.
 //   · pondo `objetoPerto` antes de `carregando` → "[Boundary] carregando vence" reprova. ⚠️ A primeira
 //     versão desta mutação preservava a guarda `&& !ctx.carregando` e por isso PASSOU — era equivalente ao
 //     código, não uma mutação. Fica anotado: mutação que não falha dá a sensação de rigor sem o rigor.
-//   · fazendo o pulo pegar SEM `toggleRun` → "[Zero] sem a alternância, o PULO não pega nada" reprova, e o
-//     efeito é roubar o pulo de quem nunca pediu o ajuste.
+//   · fazendo a borda do PULO voltar a valer como gatilho → "[Zero] O PULO NÃO PEGA NADA" reprova, e o efeito
+//     real é o contrato revogado de volta: perto de um objeto, o pulo pega em vez de pular.
+//   · exigindo `!ctx.noChao` para arremessar (a regra dos "dois toques", que saiu) → "[Right] ARREMESSA
+//     TAMBÉM NO CHÃO" reprova, e o efeito real é a criança só conseguir jogar no ar.

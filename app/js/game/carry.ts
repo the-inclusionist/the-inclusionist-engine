@@ -12,13 +12,24 @@
 // Não há sprite, não há física, não há mundo aqui. Entra o contexto de um quadro, sai uma intenção.
 //
 // ========================= O CONTRATO, NAS PALAVRAS DO DEV =========================
-// "Caso tenha um objeto que possa segurar e apertou o botão de pulo com o toggle habilitado, o botão de pulo
-// fará com que o personagem segure/carregue o objeto e jogue apertando o botão de pulo duas vezes (pois o
-// contexto para jogar o objeto fora com esta opção ligada é não estar pisando no solo)."
+// "Botão de interação continua sendo botão de interação e servindo para conversar, pegar e jogar mesmo nos
+// outros modos. O que muda é que a parte de correr (que precisa que ele seja mantido apertado) vira toggle
+// em modo de teclas de alternância, controle touch, controle pelo rosto, controle por olhos e controle por
+// fala."
 //
-// ⚠️ E ISSO CUSTA UMA COISA, dita aqui para ninguém descobrir na tela: com a alternância ligada e um objeto
-// por perto, o pulo PEGA em vez de pular. É consequência direta do contrato e é escolha do Dev — mas quem
-// for mexer precisa saber que foi escolhida, e não esquecida.
+// ⚠️ ISSO REVOGA, EM 2026-08-28, O CONTRATO ANTERIOR DELE, e vale registrar o que caiu. Até aqui, com a
+// alternância do correr ligada, o gatilho da carga MUDAVA para o botão de pulo — e o preço, escrito desde o
+// primeiro dia justamente para ninguém descobrir na tela, era que perto de um objeto o pulo PEGAVA em vez de
+// pular. O Dev desfez: "desfaço o que pedi".
+//
+// O que sobrou é mais simples e não tem preço nenhum: o BOTÃO DE INTERAÇÃO é sempre o botão de interação, em
+// todo modo de entrada. A alternância mexe só na parte de CORRER — a que exige manter apertado —, que é
+// exatamente a que precisa virar estado para quem não consegue manter apertado. As duas coisas moram no mesmo
+// botão sem disputar: correr é ESTADO, interagir é EVENTO.
+//
+// ⚠️ E POR ISSO `acaoDeCarga` NÃO RECEBE MAIS O JOGADOR. Ela recebia para perguntar `pl.toggleRun` e escolher
+// a borda; sem essa escolha, o que decide a ação é só o contexto do quadro. Um parâmetro a menos é um
+// caminho a menos por onde um ajuste de acessibilidade poderia mudar o jogo de quem não pediu por ele.
 //
 // ========================= A DIREÇÃO SEPARA ARREMESSAR DE SOLTAR (2026-08-28) =========================
 // "Arremesso = apertar a direção da esquerda ou direita e apertar o botão de interação / corrida quando se
@@ -32,12 +43,6 @@
 //
 // ORDEM COM O GRUDE: `pularVaiGrudar` (game/run-toggle) decide primeiro. Grudar na parede exige estar no ar,
 // encostado e com o poder de aranha; se esse contexto vale, a borda de pulo é dele. Só o que sobra chega aqui.
-
-/** A fatia do jogador que a decisão lê. */
-export interface JogadorDeCarga {
-  /** A alternância do botão de correr está ligada? É ela que move o gatilho do Correr para o Pulo. */
-  toggleRun?: boolean;
-}
 
 /* ===================== O QUE SE PODE FAZER COM CADA COISA (2026-08-28) =====================
  *
@@ -78,9 +83,8 @@ export interface ContextoDeCarga {
   objetoPerto: boolean;
   /** As mãos já estão ocupadas? */
   carregando: boolean;
-  noChao: boolean;
-  bordaDePulo: boolean;
-  bordaDeCorrer: boolean;
+  /** A borda do BOTÃO DE INTERAÇÃO (o mesmo do correr) neste quadro. Único gatilho da carga, em todo modo. */
+  bordaDeInteracao: boolean;
   /** A direção SEGURADA no instante do botão: -1 esquerda, +1 direita, 0 nenhuma. É ela que separa
    *  ARREMESSAR de SOLTAR (ver `acaoDeCarga`). */
   direcao: -1 | 0 | 1;
@@ -91,28 +95,19 @@ export interface ContextoDeCarga {
 export type AcaoDeCarga = 'pegar' | 'arremessar' | 'soltar' | 'nada';
 
 /**
- * O que este quadro faz com a carga.
+ * O que este quadro faz com a carga. Um gatilho só — o botão de interação —, em todo modo de entrada.
  *
- * COM a alternância, tudo mora no PULO, e a ordem é a decisão:
- *   1. carregando NO AR   → arremessa (o segundo dos "dois toques")
- *   2. carregando NO CHÃO → nada: o pulo é pulo, e é o PRIMEIRO dos dois toques. Arremessar aqui faria a
- *      criança perder o objeto toda vez que tentasse pular com ele.
- *   3. objeto perto       → pega
+ *   1. mãos livres + objeto ao alcance → pega
+ *   2. carregando + direção segurada   → arremessa, se a classe permitir
+ *   3. carregando, sem direção         → solta, se a classe permitir
  *
- * SEM a alternância, tudo mora no CORRER — que é quem tem a borda livre fora do contexto de grudar. E ali
- * arremessar NÃO exige estar no ar: a regra do "não pisar no solo" existe para separar os dois toques do
- * pulo, e no Correr não há dois toques para separar. Exigi-lo seria dificuldade inventada.
- *
- * QUEM NÃO LIGA O AJUSTE NÃO PERDE NADA: sem `toggleRun`, a borda de pulo não pega nem arremessa. Mesma
- * regra do grude, e pelo mesmo motivo — um ajuste de acessibilidade que muda o jogo de quem não pediu por
- * ele é um ajuste que a professora desliga na primeira aula.
+ * ⚠️ O "NÃO PISAR NO SOLO" SAIU JUNTO com o roteamento pelo pulo. Ele existia para separar o primeiro toque
+ * (pular) do segundo (jogar) num botão que fazia as duas coisas; num botão que só interage não há dois
+ * toques para separar, e exigi-lo seria dificuldade inventada.
  */
-export function acaoDeCarga(pl: JogadorDeCarga, ctx: ContextoDeCarga): AcaoDeCarga {
-  const borda = pl.toggleRun ? ctx.bordaDePulo : ctx.bordaDeCorrer;
-  if (!borda) return 'nada';
+export function acaoDeCarga(ctx: ContextoDeCarga): AcaoDeCarga {
+  if (!ctx.bordaDeInteracao) return 'nada';
   if (ctx.carregando) {
-    // O "não pisar no solo" é do PULO, e só dele: é o que separa o primeiro toque (pular) do segundo (jogar).
-    if (pl.toggleRun && ctx.noChao) return 'nada';
     // O que está na mão decide o que é permitido. Com lixo, os dois são 'não' — e o botão simplesmente não
     // responde, que é o silêncio certo: nada é tirado dela, ela só não tem essa saída.
     const pode = ctx.tipoDaCarga ? PODE[ctx.tipoDaCarga] : { soltar: true, arremessar: true };

@@ -53,7 +53,8 @@ function cena(linhas = ['........................', '....................~~~~', 
     mundo: mundo(linhas), placaEm: { col: 17, linha: 1 },
     quantosItens: 4,
     escolherLugares: (total, n) => Array.from({ length: Math.min(n, total) }, (_, i) => i),
-    lixeiraW: 12, lixeiraH: 15, placaH: 16, alturaDoLixo: () => 9,
+    lixeiraW: 12, lixeiraH: 15, placaH: 16, alturaDoLixo: () => 9, larguraDoLixo: () => 6,
+    alturaDoJogador: 30,
     alcance: 12,
     aoPontuar: (j, m) => pontos.push([j, m]),
     anunciar: (chave, j, sobre) => falas.push([chave, j, sobre]),
@@ -63,7 +64,7 @@ function cena(linhas = ['........................', '....................~~~~', 
 }
 
 /** Um jogador num quadro. `acao` é o que `game/carry` já decidiu — a cena não roteia botão. */
-const quem = (i, x, y, acao = 'nada', direcao = 0) => ({ i, x, y, acao, direcao });
+const quem = (i, x, y, acao = 'nada', direcao = 0, olhandoPara = 1) => ({ i, x, y, acao, direcao, olhandoPara });
 
 /** Leva o jogador `j` ao CENTRO da lixeira `cor` — o centro, e não a borda, porque as quatro ficam a 2px
  *  uma da outra e uma borda pertence às duas (ver `lixeiraSob`). */
@@ -117,16 +118,32 @@ describe('reciclagem · a cena', () => {
     expect(sprite.y, 'e o sprite sobe os 9px da própria arte').toBe(2 * TILE - 9);
   });
 
-  it('[Right] o item que a criança pega passa a SEGUIR o dono, acima dele', () => {
-    const c = cena();
+  it('[Right] o item carregado fica NA BARRIGA: abaixo da cabeça e levemente à frente', () => {
+    // "Deve aparecer abaixo da cabeça e levemente à frente, tampando a barriga sem tampar os braços." A
+    // primeira versão o punha flutuando ACIMA da cabeça — visível, sim, mas lido como ícone de estado e não
+    // como alguém carregando alguma coisa.
+    const c = cena(undefined, { alturaDoLixo: () => 9, larguraDoLixo: () => 6, alturaDoJogador: 30 });
     c.api.montar();
     const it = c.api.itens()[0];
     c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
     expect(c.falas[0][0]).toBe('sr.lixo.pegou');
-    c.api.atualizar([quem(0, 100, 50)]);   // aquém da placa, senão ele SOLTA o lixo ali (caso próprio)
+    c.api.atualizar([quem(0, 100, 50, 'nada', 0, 1)]);
     const sprite = c.filhos.find((s) => s.tex === 'tex:' + it.material);
-    expect(sprite.x, 'segue o dono').toBe(100);
-    expect(sprite.y, 'e flutua ACIMA dele, senão some atrás do personagem').toBeLessThan(50);
+    expect(sprite.y, 'topo 22px acima do pé — logo abaixo da cabeça de 8').toBe(50 - 22);
+    expect(sprite.y + 9, 'e o objeto inteiro cabe acima do pé').toBeLessThan(50);
+    expect(sprite.x, 'centrado no tronco (6 de largura), 2px à frente').toBe(100 - 3 + 2);
+  });
+
+  it('[Right] "à frente" segue PARA ONDE ELE OLHA, dos dois lados', () => {
+    const c = cena(undefined, { larguraDoLixo: () => 6 });
+    c.api.montar();
+    const it = c.api.itens()[0];
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
+    c.api.atualizar([quem(0, 100, 50, 'nada', 0, 1)]);
+    const sprite = c.filhos.find((s) => s.tex === 'tex:' + it.material);
+    const paraDireita = sprite.x;
+    c.api.atualizar([quem(0, 100, 50, 'nada', 0, -1)]);
+    expect(sprite.x, 'olhando para a esquerda, o objeto vai para a esquerda').toBeLessThan(paraDireita);
   });
 
   it('[Right] lixeira CERTA: o ponto sai UMA vez e o sprite some', () => {
@@ -255,8 +272,11 @@ describe('reciclagem · a cena', () => {
     expect(c.api.itens()[0].dono).toBe(0);
     expect(c.api.itens()[1].dono).toBe(1);
     c.api.atualizar([quem(0, 60, 60), quem(1, 90, 70)]);  // os dois aquém da placa
-    const sa = c.filhos.find((s) => s.tex === 'tex:' + a.material && s.x === 60);
-    const sb = c.filhos.find((s) => s.tex === 'tex:' + b.material && s.x === 90);
+    // O objeto carregado fica na barriga do dono: centrado no tronco e 2px à frente. O que este caso prova é
+    // que cada um segue o SEU dono — a conta exata é do caso da barriga.
+    const perto = (s, x) => Math.abs(s.x - x) <= 4;
+    const sa = c.filhos.find((s) => s.tex === 'tex:' + a.material && perto(s, 60));
+    const sb = c.filhos.find((s) => s.tex === 'tex:' + b.material && perto(s, 90));
     expect(sa, 'o item do jogador 0 está com ele').toBeTruthy();
     expect(sb, 'e o do jogador 1, com ele').toBeTruthy();
   });
