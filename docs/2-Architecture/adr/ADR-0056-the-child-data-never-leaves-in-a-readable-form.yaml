@@ -241,10 +241,28 @@ decision-outcome:
           canonical grid does not touch this channel, because the channel is not in the content — it is in when
           the packets arrive and where from.
 
-          SO TELEMETRY IS NEVER SENT LIVE DURING THE LESSON. It accumulates in the store-and-forward queue that
-          pillar 9 already requires, leaves in a BATCH, and the batch goes out after a RANDOM DELAY. The source IP
-          is still the school's; what stops being attached to it is a clock. The Dev reached the same place from
-          the other side, proposing that collective lessons only report after Friday.
+          THE DEV'S ANSWER CLOSES THE CHANNEL INSTEAD OF BLURRING IT: ⚠️ ONLY THE INSTITUTION EVER SENDS
+          TELEMETRY. Parents and individual professionals never do.
+
+          The path: during the lesson there is only encrypted sync BETWEEN THE COMPUTERS, and everything the child
+          does queues in the teacher's account. When that account syncs with the school, the queue empties INTO
+          the school's machine and is backed up encrypted to our cloud so it cannot be lost. At the scheduled
+          moment — after 00:00 on the following Saturday, in practice the Monday when the machines are switched
+          on — the school fires the queue to our servers.
+
+          ⚠️ SO WE SEE ONE UPLOAD PER SCHOOL PER WEEK, NOT THIRTY DEVICES IN A FIFTY-MINUTE WINDOW. There is
+          nothing left to correlate: the classroom co-occurrence in the transport is not blurred, it does not
+          exist. The source IP is still the school's, but a weekly bundle carries no lesson inside it.
+
+          ⚠️ AND THE RELAY BUYS A SECOND THING, worth its own line because the design would keep it even if
+          co-occurrence were not an issue: GOING THROUGH THE SCHOOL'S SERVER MEANS WE NEVER COLLECT IP ADDRESSES,
+          BROWSER DATA OR ARRIVAL TIMES FROM A CHILD'S DEVICE. What reaches us comes from one institutional
+          server, so the whole client-side fingerprinting surface — the one every analytics stack collects by
+          default and then has to justify — simply never exists here.
+
+          ⚠️ AND THE CONSEQUENCE IS THAT THE INFERENCE LAYER IS FED EXCLUSIVELY BY INSTITUTIONS. A child who only
+          plays at home contributes nothing to the datalake — which is also the cleaner legal posture, since the
+          school is the controller that holds the contract.
 
         · ⚠️ AND IF THE EXAM AND HOMEWORK STREAM IS EVER ADDED, IT SENDS JUDGEMENT AND NEVER TEXT. The Dev
           described analysing exam questions, homework and coursework with a strong local model and sending them
