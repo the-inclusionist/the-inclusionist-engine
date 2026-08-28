@@ -13,7 +13,8 @@
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
 import {
-  montarItens, cargaDe, pegarPerto, passarPelaPlaca, arremessar, depositar, faltamDescartar,
+  montarItens, cargaDe, pegarPerto, passarPelaPlaca, arremessar, depositar, faltamDescartar, lixeiraSob,
+  entrouNaLixeira,
 } from '../app/js/game/recycling-world.js';
 import { MATERIAIS, LIXEIRA_DE } from '../app/js/game/recycling.js';
 
@@ -172,6 +173,40 @@ describe('reciclagem · o mundo', () => {
       });
       expect(certas, `${m}`).toEqual([LIXEIRA_DE[m]]);
     }
+  });
+
+  /* ===================== a lixeira sob o jogador ===================== */
+
+  it('[Right] `lixeiraSob` acha a lixeira em que o jogador encostou, e devolve -1 fora de todas', () => {
+    const ls = [{ x: 0, y: 100, cor: 'azul' }, { x: 14, y: 100, cor: 'vermelha' }];
+    expect(lixeiraSob(2, 105, ls, 12, 15)).toBe(0);
+    expect(lixeiraSob(20, 105, ls, 12, 15)).toBe(1);
+    expect(lixeiraSob(60, 105, ls, 12, 15)).toBe(-1);
+    expect(lixeiraSob(2, 40, ls, 12, 15), 'lá em cima, longe do chão').toBe(-1);
+  });
+
+  it('[Boundary] a folga deixa encostar AO LADO, sem precisar pisar em cima', () => {
+    const ls = [{ x: 20, y: 100, cor: 'verde' }];
+    expect(lixeiraSob(17, 105, ls, 12, 15), 'três pixels à esquerda, com a folga padrão').toBe(0);
+    expect(lixeiraSob(15, 105, ls, 12, 15), 'cinco pixels: fora').toBe(-1);
+  });
+
+  it('[Boundary] ENTRE DUAS LIXEIRAS, vale a MAIS PRÓXIMA — nunca a primeira da lista', () => {
+    // As quatro ficam a 2px uma da outra, então com folga as caixas se sobrepõem. Uma varredura que parasse
+    // na primeira escolheria sempre a da esquerda, e a criança parada entre duas depositaria na errada sem
+    // entender por quê — aprendendo que a cor não importa, que é o oposto do conteúdo.
+    const ls = [{ x: 0, y: 100, cor: 'azul' }, { x: 14, y: 100, cor: 'vermelha' }];
+    expect(lixeiraSob(15, 105, ls, 12, 15), 'centros em 6 e 20: 15 está mais perto de 20').toBe(1);
+    expect(lixeiraSob(11, 105, ls, 12, 15), 'e 11 está mais perto de 6').toBe(0);
+  });
+
+  it('[Zero] O DESCARTE DISPARA NA ENTRADA, nunca enquanto se está dentro', () => {
+    // Sem esta guarda, uma criança parada na lixeira errada ouviria "não é essa" sessenta vezes por segundo —
+    // e quem usa leitor de tela ouviria a fala reiniciando sem parar, o que na prática tranca o jogo.
+    expect(entrouNaLixeira(-1, 2), 'chegou').toBe(true);
+    expect(entrouNaLixeira(2, 2), 'continua parada na mesma').toBe(false);
+    expect(entrouNaLixeira(2, 3), 'passou para a lixeira do lado').toBe(true);
+    expect(entrouNaLixeira(2, -1), 'saiu de todas').toBe(false);
   });
 
   /* ===================== o que falta ===================== */

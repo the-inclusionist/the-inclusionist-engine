@@ -127,6 +127,45 @@ export function depositar(itens: ItemDeLixo[], jogador: number, lixeira: Lixeira
   return { pontos: r.pontos, fala: 'sr.lixo.acertou' };
 }
 
+/** Uma lixeira POSTA no mundo: onde ela está e de que cor é. */
+export interface PostoDeLixeira { x: number; y: number; cor: Lixeira }
+
+/**
+ * O ÍNDICE da lixeira sob o jogador, ou `-1` se ele não está em cima de nenhuma.
+ *
+ * O ponto de referência é o PÉ do jogador (`x`, `y` são os dele), e a caixa da lixeira ganha uma folga: a
+ * criança encosta na lixeira andando ao lado dela, não pisando no seu topo.
+ *
+ * ⚠️ E DESEMPATA PELA MAIS PRÓXIMA, o que não é detalhe: as quatro ficam a 2px uma da outra
+ * (`posicoesDasLixeiras`), então com folga as caixas se sobrepõem e QUALQUER varredura que pare na primeira
+ * escolheria sempre a da esquerda. Uma criança parada entre a amarela e a verde depositaria na amarela sem
+ * entender por quê — e aprenderia que a cor não importa, que é o oposto do conteúdo. Um teste meu caiu
+ * exatamente nisso antes de o produto rodar.
+ */
+export function lixeiraSob(
+  x: number, y: number, lixeiras: readonly PostoDeLixeira[], largura: number, altura: number, folga = 4,
+): number {
+  let melhor = -1, menor = Infinity;
+  lixeiras.forEach((l, i) => {
+    if (y < l.y - folga || y > l.y + altura + folga) return;
+    const d = Math.abs(x - (l.x + largura / 2));
+    if (d > largura / 2 + folga || d >= menor) return;
+    menor = d; melhor = i;
+  });
+  return melhor;
+}
+
+/**
+ * O descarte dispara na ENTRADA da lixeira, nunca enquanto se está dentro dela.
+ *
+ * ⚠️ É A GUARDA QUE IMPEDE O ERRO EM RAJADA. Sem ela, uma criança parada em cima da lixeira errada ouviria
+ * "não é essa" sessenta vezes por segundo — e quem depende do leitor de tela ouviria a fala se reiniciar sem
+ * parar, o que na prática tranca o jogo. `antes` é a lixeira do quadro passado; `-1` é "nenhuma".
+ */
+export function entrouNaLixeira(antes: number, agora: number): boolean {
+  return agora >= 0 && agora !== antes;
+}
+
 /** Quantos itens ainda estão no mundo por descartar — para quem quiser mostrar progresso sem inventar um placar. */
 export function faltamDescartar(itens: readonly ItemDeLixo[]): number {
   return itens.filter((i) => !i.descartado).length;

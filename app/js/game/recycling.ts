@@ -31,13 +31,11 @@ export type Material = typeof MATERIAIS[number];
 export const LIXEIRAS = ['azul', 'vermelha', 'amarela', 'verde'] as const;
 export type Lixeira = typeof LIXEIRAS[number];
 
-/** O objeto de cada material, para quem for desenhar: latinha, garrafa PET, pote e caixa. */
-export const OBJETO_DE: Readonly<Record<Material, string>> = Object.freeze({
-  papel: 'caixa de papelão',
-  plastico: 'garrafa PET',
-  metal: 'latinha de alumínio',
-  vidro: 'pote de vidro',
-});
+// ⚠️ O NOME DE CADA OBJETO SAIU DAQUI e virou dicionário (`lixo.obj.*` em `i18n/`), junto com o nome de cada
+// cor (`lixo.cor.*`). Ele existia como um `OBJETO_DE` de texto pt-BR cravado neste arquivo, sem consumidor —
+// e um nome que vai para a tela em pt-BR dentro de código de jogo é o pilar 3 quebrado em silêncio: o piso
+// são TRÊS idiomas, e o que a criança ouve tem de nascer localizável. Quem anuncia (a raiz de composição)
+// traduz `material` e `cor` na hora; este módulo continua sem saber que existe língua.
 
 /** Qual lixeira recebe cada material. */
 export const LIXEIRA_DE: Readonly<Record<Material, Lixeira>> = Object.freeze({
