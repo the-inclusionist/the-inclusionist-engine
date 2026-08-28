@@ -202,20 +202,22 @@ decision-outcome:
           reason: every cell has exactly one id at the moment it lands, and only reaches ten as other schools
           report the following week.
 
-          ⚠️ GENERALISE TO THE ITEM — spelled out, because the phrase means nothing on its own. The lake holds
-          rows of (id, week, ENTITY), where an entity is a Bloom verb plus an object: "apply: division with
-          remainder". A CURRICULUM ITEM is the grouping — a BNCC skill, say EF04MA05, gathering a dozen entities.
-          A CELL is a combination one might publish: (entity = "apply: division with remainder", week 12). If only
-          four ids in the whole country share that cell, anything said about it is nearly something said about
-          four identifiable children.
+          ⚠️ WHEN A PUBLISHED CELL IS TOO SMALL, GENERALISE THE TIME — NEVER THE CONTENT. A rare cell is a pair
+          (entity, week), and there are two axes to loosen. An earlier version of this clause loosened the ENTITY,
+          replacing it with its parent curriculum item, and the Dev refused it for the right reason: the resulting
+          row says almost nothing. "(id, week 12, EF04MA05)" records that a child worked in an area that week
+          without saying what was done or whether she GAINED OR LOST — and gaining or losing is the whole point of
+          a trajectory.
 
-          GENERALISING replaces the entity with its parent in the published row: the cell becomes (EF04MA05,
-          week 12), which perhaps three thousand ids share. It still says the child worked that area that week —
-          which is what the inference needs — and stops pointing at the rare entity.
+          What the inference needs is the full row: (id, EF04MA05, "apply: division with remainder", +1, ...).
+          What it does NOT need is week-level precision on the calendar. So the axis to coarsen is TIME: the
+          published cell becomes (entity, TERM) instead of (entity, week 12), and the entity, the outcome and the
+          ordering all survive intact while the cell gains everyone who worked that entity across the term.
 
-          ⚠️ AND THE FINE DETAIL IS NOT LOST: it stays on the device and in the school, which hold the decrypted
-          base for the teacher's own report. The generalisation is of what the SERVER publishes. It is not
-          discarding information; it is deciding where the information lives.
+          ⚠️ AND THE DETAILED ROW IS NEVER LOST ANYWAY, because the k rule now applies only to what LEAVES: the
+          lake keeps (id, entity, outcome, week) in full. Generalisation touches a published aggregate, not the
+          record. It is not discarding information; it is deciding what a published figure is allowed to resolve
+          to.
 
           ⚠️ AND THE SHAPE IS TWO LESSON MODES, EACH SAFE BY A DIFFERENT MECHANISM:
 
@@ -287,6 +289,28 @@ decision-outcome:
       treatment to be in the child's best interest); a RIPD; a data-protection officer; a retention period; and
       the data-subject rights of art. 18. Which basis sustains art. 14 is a lawyer's answer, not mine — this
       record's job is to state the question precisely enough to be answered in one sitting.
+
+      ⚠️ AND WHY LGPD APPLIES AT ALL, since we cannot tell one child's rows from another's — the Dev's question,
+      and it deserves the specific answer rather than a hedge:
+
+        · THE TEST IS NOT "CAN THE CONTROLLER IDENTIFY". Art. 5º I says "identified OR IDENTIFIABLE", and art. 5º
+          XI releases only what cannot be identified "considering reasonable and available technical means". The
+          path back exists INSIDE OUR OWN PRODUCT — the school maps id to child, and the erasure flow above
+          deliberately uses that path. Arguing the means are unavailable, when we designed and operate the system
+          that holds the mapping, is a weak argument to build a project on.
+        · ART. 12 §1 CLOSES THE SPECIFIC DOOR: data used to form the BEHAVIOURAL PROFILE of a natural person is
+          personal data when that person is identified. The lake exists to build a profile the school then applies
+          to a named child; the identification happens on the other side of the boundary, but the decision lands
+          on someone identified.
+        · AND THE ARRANGEMENT ITSELF IS IN SCOPE: the school is CONTROLLER and we are OPERATOR. Both are covered.
+          Even a perfectly anonymous copy on our side would leave us processing on the controller's behalf, with
+          art. 39 (follow the controller's instructions), art. 42 (liability), security and breach notification.
+
+      ⚠️ AND THE PRACTICAL CONSEQUENCE IS LIGHTER THAN IT SOUNDS: the heavy half — legal basis, RIPD, consent
+      where required, subject rights — falls on the SCHOOL as controller, which is where the law already puts it
+      and where it already sits today for the class register. Our operator obligations are the smaller half. The
+      design does not lose its reason either: it exists so that A BREACH OF OUR SERVERS IS HARMLESS, and that is
+      worth more than an exemption, because an exemption protects no child.
 
       ⚠️ AND ONE OF THOSE RIGHTS LANDS DIRECTLY ON THE ARCHITECTURE — THE RIGHT TO ERASURE (art. 18 VI). We
       cannot honour it server-side, because the server does not know which id is which child, and that ignorance
@@ -427,7 +451,18 @@ decision-outcome:
     not follow anybody home.
 
 more-information: |
-  NOTHING IS LEFT OPEN IN THIS RECORD. BOTH REMAINING QUESTIONS WERE CLOSED WITH A "NO" ON 2026-08-28, under the driver above — and they are recorded
+  THE ONE ARCHITECTURE THAT WOULD CHANGE THE ANSWER, recorded because the Dev asked why LGPD applies and this is
+  the only honest way out: NEVER RECEIVE A ROW PER id. The school already has a machine, already runs DuckDB,
+  already runs the local model — it could send STATISTICS OR MODEL UPDATES instead of records, which is federated
+  learning. Then we hold no personal data because we hold no person's data.
+
+  ⚠️ REFUSED FOR NOW, and the cost is why: with few schools and sparse data, federated aggregation converges
+  badly; and debugging a model over data you can never look at is brutal — when a result comes out strange there
+  is no row to open. It is the opposite of "collect the maximum", which is the driver this record adopted. It is
+  written down so the day the base is large enough for federation to work, and the legal cost outweighs the
+  debugging cost, the option is already understood rather than re-argued.
+
+  NOTHING ELSE IS LEFT OPEN IN THIS RECORD. BOTH REMAINING QUESTIONS WERE CLOSED WITH A "NO" ON 2026-08-28, under the driver above — and they are recorded
   because a measure refused without a written reason comes back:
 
     · A CONSTANT PER-id WEEK OFFSET ON TOP OF THE GRID — REFUSED. The Dev found the flaw: it breaks at the
