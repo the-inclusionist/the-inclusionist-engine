@@ -127,40 +127,38 @@ function pisoDaColuna(m: MundoDeLixo, col: number): number | null {
 }
 
 /**
- * As posições candidatas para o lixo: TODA superfície em que se ANDA, no trecho antes da placa.
+ * Filtra as posições em que o lixo PODE nascer, entre as que o jogo já sabe serem lugar de nascer coisa.
  *
- * ⚠️ MESMA REGRA DAS MOEDAS (`game/coins.findCoinCandidates`), e ela é a segunda versão desta função. A
- * primeira usava "o primeiro sólido descendo do teto", uma coluna = um lugar — e no mapa real isso põe o item
- * na laje MAIS ALTA de cada coluna, que é onde a criança não está. Um nível de plataforma tem vários andares;
- * o chão de uma coluna não é um só.
+ * ⚠️ SEGUNDA VERSÃO, E A PRIMEIRA VARRIA O MAPA SOZINHA — refazendo, pior, uma pergunta que `game/coins` já
+ * responde há muito tempo. O Dev viu o resultado na tela: "acabei de ver a caixa nascendo na região secreta,
+ * onde não nascem nem moedas."
  *
- * O `y` devolvido é a LINHA DO PÉ (o topo do sólido), igual ao `y` do jogador. Quem desenha subtrai a altura
- * do próprio objeto — foi assim que o item deixou de flutuar meio tile acima do chão, que era o que acontecia
- * quando a conta usava o TILE inteiro em vez da altura da latinha.
+ * A varredura das moedas não pergunta "o tile é sólido?": ela exige o PAR ESPECÍFICO ar-iluminado(1) ou
+ * água(3), e o comentário de lá diz por quê — "não sólido" incluiria a ESCADA e o AR SECRETO, e a região
+ * secreta deixaria de ser recompensa para virar rota obrigatória. Vale igual para o lixo, e eu reescrevi a
+ * pergunta em vez de reusar a resposta. Agora os candidatos ENTRAM por parâmetro, vindos de
+ * `findCoinCandidates`, e este módulo só aplica o que é da reciclagem.
+ *
+ * "Feito moedas, mas na altura do chão" — as palavras dele desde o primeiro dia, e agora literais no código:
+ * a parte "feito moedas" é de quem produz a lista; "na altura do chão" também, filtrando quem tem sólido
+ * logo abaixo. Aqui ficam as duas regras que são só da reciclagem: nada depois da placa, nada nas lixeiras.
  */
-export function candidatosDeLixo(m: MundoDeLixo, larguraDaLixeira = 0, placa: Ponto | null = null): Ponto[] {
+export function candidatosDeLixo(
+  m: MundoDeLixo, candidatos: readonly Ponto[], larguraDaLixeira = 0, placa: Ponto | null = null,
+): Ponto[] {
+  // ⚠️ O LIMITE É A PLACA quando existe placa, e a água quando não existe. Medido no mapa real: um item pego
+  // depois da placa nunca chegaria às lixeiras, porque a criança não passa dela carregando lixo.
   const agua = colunaDaAgua(m);
-  // ⚠️ O LIMITE É A PLACA, e não a água, quando existe placa. Medido no mapa real: a placa cai na coluna 23
-  // e a água só na 29, então cinco colunas de lixo nasciam DEPOIS da placa — e um item pego ali nunca
-  // chegaria às lixeiras, porque `efeitoAoPassar` faz quem está além da linha soltar a carga a cada quadro.
-  const limiteDaPlaca = placa === null ? Infinity : Math.floor(placa.x / TILE);
-  const limite = Math.min(agua === null ? m.colunas : agua, limiteDaPlaca);
+  const limite = Math.min(
+    agua === null ? Infinity : agua * TILE,
+    placa === null ? Infinity : placa.x,
+  );
   // ⚠️ E NADA NASCE EM CIMA DAS LIXEIRAS. Elas ficam no chão do mesmo canto por onde a criança passa, então um
   // item ali seria pego e depositado NO MESMO QUADRO — ponto sem escolher cor nenhuma, e sem ela ver que
   // pegou alguma coisa. O canto das lixeiras é destino, não berço.
   const ls = larguraDaLixeira <= 0 ? [] : posicoesDasLixeiras(m, larguraDaLixeira, 0);
-  const primeira = ls.length === 0 ? 0
-    : Math.ceil((ls[ls.length - 1]!.x + larguraDaLixeira) / TILE) + 1;
-  const fora: Ponto[] = [];
-  for (let c = primeira; c < limite; c++) {
-    for (let l = 1; l < m.linhas - 1; l++) {
-      const aqui = m.tileEm(c, l), abaixo = m.tileEm(c, l + 1), acima = m.tileEm(c, l - 1);
-      if (m.solido(aqui) || !m.solido(abaixo) || m.trampolim(abaixo)) continue;  // precisa de piso, e não em cima do pula-pula
-      if (m.solido(acima)) continue;                                             // e de espaço por cima, senão fica entalado
-      fora.push({ x: c * TILE, y: (l + 1) * TILE });                             // a LINHA DO PÉ, como a do jogador
-    }
-  }
-  return fora;
+  const depoisDasLixeiras = ls.length === 0 ? 0 : ls[ls.length - 1]!.x + larguraDaLixeira + TILE;
+  return candidatos.filter((p) => p.x < limite && p.x >= depoisDasLixeiras);
 }
 
 /** Quantas lixeiras existem — quatro, e o módulo não inventa uma quinta. */

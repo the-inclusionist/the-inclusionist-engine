@@ -30,6 +30,21 @@ function mundo(linhas) {
   };
 }
 
+/** Os lugares de nascer, no mesmo espírito de `game/coins.findCoinCandidates`: ar com chão logo abaixo e ar
+ *  por cima. Devolve a LINHA DO PÉ, que é o contrato de `candidatos`. */
+function candidatosDoMapa(linhas) {
+  const solido = (ch) => ch === '#' || ch === '^';
+  const fora = [];
+  for (let l = 1; l < linhas.length - 1; l++) {
+    for (let c = 0; c < linhas[l].length; c++) {
+      const aqui = linhas[l][c] ?? '.', abaixo = linhas[l + 1]?.[c] ?? '.', acima = linhas[l - 1]?.[c] ?? '.';
+      if (solido(aqui) || !solido(abaixo) || abaixo === '^' || solido(acima)) continue;
+      fora.push({ x: c * TILE, y: (l + 1) * TILE });
+    }
+  }
+  return fora;
+}
+
 /** Uma cena montada, com tudo de mentira e os registros do que ela anunciou e pontuou. */
 // O mapa padrão dos casos é ESTREITO mas completo, e cada pedaço dele existe por um motivo: as quatro
 // lixeiras ocupam as colunas 0 a 3 (e o lixo não nasce nelas), o trampolim fica na 16, a placa cai na 17 e a
@@ -51,6 +66,9 @@ function cena(linhas = ['........................', '....................~~~~', 
     texturaDaLixeira: (c) => 'tex:' + c,
     texturaDaPlaca: 'tex:placa',
     mundo: mundo(linhas), placaEm: { col: 17, linha: 1 },
+    // Os lugares vêm de FORA, como no produto (lá são os candidatos das moedas, filtrados por "tem chão logo
+    // abaixo"). Aqui a mesma pergunta sobre o mapinha de texto: ar com sólido embaixo e ar em cima.
+    candidatos: () => candidatosDoMapa(linhas),
     quantosItens: 4,
     escolherLugares: (total, n) => Array.from({ length: Math.min(n, total) }, (_, i) => i),
     lixeiraW: 12, lixeiraH: 15, placaH: 16, alturaDoLixo: () => 9, larguraDoLixo: () => 6,
@@ -95,6 +113,17 @@ describe('reciclagem · a cena', () => {
     expect(c.api.placaX()).toBe(null);
     expect(c.filhos.some((s) => s.tex === 'tex:placa')).toBe(false);
     expect(c.api.itens().length, 'e o lixo continua nascendo').toBeGreaterThan(0);
+  });
+
+  it('[Right] COM UM ITEM POR VOLTA, o material RODA entre as voltas', () => {
+    // O Dev: "por que só a caixa? não vejo os outros três objetos criados." O rodízio existia desde o
+    // primeiro dia para que um mapa nunca nascesse sem vidro — e a quantidade 1 o desligou em silêncio:
+    // `ordem` começava em 0 toda volta, então o material era sempre o primeiro da lista. Cem voltas, cem
+    // caixas de papelão, nenhuma lata. A ordem passa a atravessar as voltas.
+    const c = cena(undefined, { quantosItens: 1 });
+    const vistos = [];
+    for (let volta = 0; volta < 4; volta++) { c.api.montar(); vistos.push(c.api.itens()[0].material); }
+    expect(new Set(vistos).size, 'quatro voltas, quatro materiais diferentes').toBe(4);
   });
 
   it('[Right] remontar não acumula sprite nenhum — a volta recomeça limpa', () => {

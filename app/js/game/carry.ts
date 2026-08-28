@@ -41,8 +41,9 @@
 // solta o lixo para resolver outra coisa, dá um passo, e o item volta para a mão sozinho, porque ela ainda
 // está ao alcance dele. Soltar deixaria de significar qualquer coisa. Quem decide pegar é ela.
 //
-// ORDEM COM O GRUDE: `pularVaiGrudar` (game/run-toggle) decide primeiro. Grudar na parede exige estar no ar,
-// encostado e com o poder de aranha; se esse contexto vale, a borda de pulo é dele. Só o que sobra chega aqui.
+// ORDEM COM O GRUDE: os dois moram no botão de interação e não se atropelam porque os contextos são
+// disjuntos — grudar exige estar NO AR e encostado numa parede, e pegar exige um objeto ao alcance no chão.
+// Se um dia colidirem, é aqui que a ordem tem de ser escrita.
 
 /* ===================== O QUE SE PODE FAZER COM CADA COISA (2026-08-28) =====================
  *

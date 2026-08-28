@@ -23,6 +23,7 @@
 // o módulo inteiro exercitável no project `node`, com sprites de mentira.
 
 import type { CamadaEsvaziavel, CriarSprite, Visivel } from '../render/port.js';
+import type { Ponto } from './recycling-spawn.js';
 import type { Material, Lixeira } from './recycling.js';
 import { LIXEIRAS } from './recycling.js';
 import {
@@ -71,6 +72,15 @@ export interface RecyclingSceneCtx {
   texturaDaPlaca: unknown;
   /** A consulta de tiles do mapa atual. */
   mundo: MundoDeLixo;
+  /**
+   * OS LUGARES EM QUE O JOGO JÁ SABE QUE NASCE COISA, na linha do pé — "feito moedas, mas na altura do chão".
+   *
+   * ⚠️ ENTRA POR PARÂMETRO, e isso é a decisão. A primeira versão varria o mapa aqui e reescrevia, pior, a
+   * pergunta que `game/coins.findCoinCandidates` já responde: ela exige o par ar-iluminado/água, e não
+   * "não sólido", justamente para não pôr coisa na escada nem na REGIÃO SECRETA. A minha punha — e o Dev viu
+   * a caixa nascer lá dentro. Reusar a resposta em vez de reescrever a pergunta é o conserto.
+   */
+  candidatos: () => readonly Ponto[];
   /** ONDE A PLACA DESTA FASE FICA, em tiles — design de fase, não dedução. `null` = fase sem placa, e aí o
    *  lixo dela não é barrado em lugar nenhum. Ver `game/recycling-spawn.posicaoDaPlaca`. */
   placaEm: PlacaDeclarada | null;
@@ -166,6 +176,8 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
   let vao: BarreiraDaPlaca | null = null;
   /** A lixeira em que cada jogador estava no quadro passado. Sem isto o descarte dispara em rajada. */
   let ultimaLixeira: number[] = [];
+  /** Quantos itens já nasceram nesta partida — é ele que faz o rodízio de material atravessar as voltas. */
+  let voltas = 0;
 
   function limpar(): void {
     for (const d of ctx.camada.removeChildren()) d.destroy();
@@ -193,7 +205,11 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
       ctx.camada.addChild(s);
     }
 
-    itens = montarItens(candidatosDeLixo(ctx.mundo, ctx.lixeiraW, p), ctx.quantosItens, ctx.escolherLugares);
+    // O rodízio dos materiais atravessa as VOLTAS: com um item por volta, começar sempre do primeiro faria a
+    // criança ver caixa de papelão a partida inteira e nunca uma lata.
+    itens = montarItens(candidatosDeLixo(ctx.mundo, ctx.candidatos(), ctx.lixeiraW, p),
+      ctx.quantosItens, ctx.escolherLugares, voltas);
+    voltas += ctx.quantosItens;
     spritesDeLixo = itens.map((it) => {
       const s = ctx.criarSprite(ctx.texturaDoLixo(it.material));
       s.x = it.x; s.y = it.y - ctx.alturaDoLixo(it.material); s.visible = true;

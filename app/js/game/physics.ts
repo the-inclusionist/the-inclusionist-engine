@@ -21,7 +21,7 @@ import { ehTrampolim } from '../core/constants.js';
 import { t } from '../core/i18n.js';
 import type { ControlledGamePlayer } from './entity.js'; // ADR-0033: a fatia do JOGO — `quiz` mora aqui
 import { tileAt, solidAt, surfTop, isWcRampRiser, rampSurfaceY, caneBlockPx } from '../core/collision.js';
-import { correndoAgora, pularVaiGrudar, botaoDeGrude, usaTravaDeCorrer, botaoDeCorrerEngatado } from './run-toggle.js';
+import { correndoAgora, usaTravaDeCorrer, botaoDeCorrerEngatado } from './run-toggle.js';
 import { BOX, SPAWN_X, SPAWN_Y, jumpVel, isBouncyGroundBelow, clingSides, firstClingSide, spiderReattach } from './player.js';
 import { ELEV_SPEED, elevAt } from './elevators.js';
 import { held } from '../input/state.js';
@@ -212,14 +212,19 @@ function updateRunLatch(pl: PhysicsPlayer): void {
 /** E18: ventosa (homem-aranha) — gruda na parede ao apertar Correr no ar; solta com Correr de novo. */
 function updateCling(pl: PhysicsPlayer): void {
   if (pl.clinging && (pl.onLadder || pl.inWater || pl.activePower !== 'wallcling' || pl.onGround || clingSides(pl).D)) pl.clinging = false; // E18d: pés numa superfície estável (sólido logo abaixo) ENCERRAM; pendurado no teto (pés p/ cima) ou na parede alta continua
-  // O GATILHO DO GRUDE muda de botão quando a alternância do correr está ligada: a borda do Correr virou a
-  // trava da corrida, então grudar passa para o PULO EM CONTEXTO — no ar, encostado, com o poder. Quem NÃO
-  // liga o ajuste não perde nada: `pularVaiGrudar` devolve `false` e o gatilho continua sendo o Correr.
-  const grude = { noAr: !pl.onGround, encostado: !!firstClingSide(pl), temAranha: pl.activePower === 'wallcling', jaGrudado: !!pl.clinging };
-  const gatilho = pl.runEdge || (!!pl.jumpEdge && pularVaiGrudar(pl, grude));
+  // ⚠️ O GATILHO DO GRUDE É O BOTÃO DE INTERAÇÃO, E SÓ ELE. Houve uma versão em que, com a alternância do
+  // correr ligada, grudar passava para o PULO EM CONTEXTO — porque a borda do Correr tinha virado a trava da
+  // corrida e supunha-se que não sobrava borda. O Dev revogou isso em 2026-08-28, e depois viu na tela o que
+  // tinha sobrado: "climb está funcionando não somente apertando o botão de contexto na parede, mas também o
+  // botão de pulo. O correto é só o primeiro caso."
+  //
+  // E a razão de fundo é a mesma que rege a carga: o botão de interação age POR CONTEXTO. Encostado numa
+  // parede com a ventosa, o contexto é grudar; perto de uma lata, é pegar; sem contexto nenhum, ele alterna a
+  // corrida. O pulo pula, sempre.
+  const gatilho = pl.runEdge;
   if (pl.activePower === 'wallcling' && !pl.clinging && gatilho && !pl.onGround && !pl.onLadder && !pl.inWater && firstClingSide(pl)) {
-    pl.clinging = true; pl.clingN = firstClingSide(pl); pl.vy = 0; pl.vx = 0; pl.jumpBuffer = 0; pl.jumpEdge = false; C.sfx('power'); C.srSay(t('sr.physics.spiderOn', { botao: t(botaoDeGrude(pl)) }));
-  } else if (pl.clinging && gatilho) { pl.clinging = false; pl.jumpEdge = false; C.sfx('power'); C.srSay(t('sr.physics.spiderOff')); } // E18b: CANCELA só com Correr (não com Pular); a caixa não larga a superfície antes disso
+    pl.clinging = true; pl.clingN = firstClingSide(pl); pl.vy = 0; pl.vx = 0; pl.jumpBuffer = 0; C.sfx('power'); C.srSay(t('sr.physics.spiderOn', { botao: t('act.run') }));
+  } else if (pl.clinging && gatilho) { pl.clinging = false; C.sfx('power'); C.srSay(t('sr.physics.spiderOff')); } // E18b: CANCELA com o mesmo botão que grudou; a caixa não larga a superfície antes disso
   if (!pl.clinging) pl.clingN = null;
 }
 
@@ -227,7 +232,7 @@ function updateCling(pl: PhysicsPlayer): void {
 function updatePowerSwap(pl: PhysicsPlayer, dt: number): void {
   const doSwap = (): void => {
     if (!pl.owned.length) return; const seq = ['off', ...pl.owned]; const idx = seq.indexOf(pl.activePower); pl.activePower = seq[(idx + 1) % seq.length]!;
-    pl.clinging = false; pl.flying = false; C.sfx('power'); C.showPower(pl); C.srSay(C.POWER_MSG(pl.activePower, botaoDeGrude(pl)));
+    pl.clinging = false; pl.flying = false; C.sfx('power'); C.showPower(pl); C.srSay(C.POWER_MSG(pl.activePower, 'act.run')); // o botão do grude é sempre o de interação
   };
   const swapNow = held(pl, 'swap');
   if (swapNow) {

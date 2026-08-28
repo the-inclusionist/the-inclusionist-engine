@@ -204,47 +204,45 @@ describe('game/physics — stepPlayer: velocidade horizontal por modo', () => {
     PHY.stepPlayer(pl, 1);
     expect(pl.vx).toBeCloseTo(TUNE.hWalk * EASY.speed, 10);
   });
-  it('[Right/uso] com a alternância, o PULO gruda na parede — e sem ela, não', () => {
-    // O OUTRO gate de uso que faltava. `pularVaiGrudar` é gateada pura, e isso não prova que `updateCling` a
-    // chama — `updateCling` nem é exportada, então o único caminho até ela é `stepPlayer`. Precisa de parede
-    // DE VERDADE: `firstClingSide` sonda o mundo, e estado forçado à mão não o satisfaz (foi o que me impediu
-    // de medir isto no navegador).
+  it('[Right/uso] O PULO NÃO GRUDA — o grude é do botão de interação, e só dele', () => {
+    // Havia aqui o gate de uso do contrato de 27/08: com a alternância ligada, o PULO grudava na parede. O
+    // Dev revogou o contrato e depois viu o resquício na tela — "climb está funcionando não somente
+    // apertando o botão de contexto na parede, mas também o botão de pulo. O correto é só o primeiro caso."
+    //
+    // O caso ficou, com o sinal trocado, porque é ele que impede o resquício de voltar. Precisa de parede DE
+    // VERDADE: `firstClingSide` sonda o mundo, e estado forçado à mão não o satisfaz.
     const g = chao(); for (let y = 0; y < 5; y++) g[y][3] = 2; // coluna sólida: a parede
     useWorld(g);
     PHY.initPhysics(CTX());
-    // encostado na parede pela ESQUERDA, no ar, com o poder — o contexto exato da migração
     const encostado = (over) => novo({ x: 3 * TILE - BOX.w / 2, y: 4 * TILE, onGround: false, airTime: 9, activePower: 'wallcling', ...over });
 
-    const comAjuste = encostado({ toggleRun: true, jumpEdge: true });
-    PHY.stepPlayer(comAjuste, 1);
-    expect(comAjuste.clinging, 'com a alternância, o pulo tinha de grudar').toBe(true);
+    for (const ajuste of [{ toggleRun: true }, { toggleRun: false }, { toggleMove: true }]) {
+      const pl = encostado({ ...ajuste, jumpEdge: true });
+      PHY.stepPlayer(pl, 1);
+      expect(pl.clinging, `o pulo nunca gruda (${JSON.stringify(ajuste)})`).toBe(false);
+    }
 
-    const semAjuste = encostado({ toggleRun: false, jumpEdge: true });
-    PHY.stepPlayer(semAjuste, 1);
-    expect(semAjuste.clinging, 'sem a alternância, o pulo é PULO — quem não pediu o ajuste não perde nada').toBe(false);
+    const comInteracao = encostado({ runEdge: true });
+    PHY.stepPlayer(comInteracao, 1);
+    expect(comInteracao.clinging, 'e o botão de interação gruda, em qualquer modo').toBe(true);
   });
 
   it('[Right/uso] a frase FALADA ao grudar nomeia o botão que de fato funciona', () => {
-    // O gate de uso que faltava, e é o mais importante da série: `botaoDeGrude` é gateada pura contra os três
-    // dicionários, mas isso não prova que a FRASE recebe o parâmetro. Eu disse no commit `d8c4954` que não
-    // consegui verificá-lo — no navegador grudar exige parede de verdade. Com o mundo falso, consigo.
-    //
-    // O que está em jogo: essa frase é o ÚNICO canal de quem não enxerga. Mandar apertar o botão errado é a
-    // armadilha que o ADR-0044 passou sete itens desfazendo.
+    // Essa frase é o ÚNICO canal de quem não enxerga. Mandar apertar o botão errado é a armadilha que o
+    // ADR-0044 passou sete itens desfazendo — e agora só há um botão a nomear.
     const g = chao(); for (let y = 0; y < 5; y++) g[y][3] = 2;
     useWorld(g);
     const ditas = [];
     PHY.initPhysics(CTX({ srSay: (t) => ditas.push(t) }));
     const encostado = (over) => novo({ x: 3 * TILE - BOX.w / 2, y: 4 * TILE, onGround: false, airTime: 9, activePower: 'wallcling', ...over });
 
-    PHY.stepPlayer(encostado({ toggleRun: true, jumpEdge: true }), 1);
-    const comAjuste = ditas.filter((f) => /aranha|spider/i.test(f)).at(-1) || '';
-    expect(comAjuste, 'com a alternância, a frase tem de mandar apertar PULAR').toContain(pt['act.jump']);
-
-    ditas.length = 0;
-    PHY.stepPlayer(encostado({ toggleRun: false, runEdge: true }), 1);
-    const semAjuste = ditas.filter((f) => /aranha|spider/i.test(f)).at(-1) || '';
-    expect(semAjuste, 'sem ela, a frase continua mandando apertar CORRER').toContain(pt['act.run']);
+    for (const ajuste of [{ toggleRun: true }, { toggleRun: false }]) {
+      ditas.length = 0;
+      PHY.stepPlayer(encostado({ ...ajuste, runEdge: true }), 1);
+      const frase = ditas.filter((f) => /aranha|spider/i.test(f)).at(-1) || '';
+      expect(frase, 'a frase manda apertar o botão de interação').toContain(pt['act.run']);
+      expect(frase, 'e NUNCA o pulo').not.toContain(pt['act.jump']);
+    }
   });
 
   it('[Right/uso] a TRAVA da corrida chega à velocidade — sem tecla segurada', () => {

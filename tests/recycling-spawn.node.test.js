@@ -13,6 +13,21 @@ import {
 
 const TILE = 16;
 
+/** Os lugares de nascer, no espírito de `game/coins.findCoinCandidates`: ar com chão logo abaixo e ar em
+ *  cima. É o que o produto passa para `candidatosDeLixo`, que só aplica o que é da RECICLAGEM. */
+function candidatosDoMapa(linhas) {
+  const solido = (ch) => ch === '#' || ch === '^';
+  const fora = [];
+  for (let l = 1; l < linhas.length - 1; l++) {
+    for (let c = 0; c < (linhas[l] ?? '').length; c++) {
+      const aqui = linhas[l][c] ?? '.', abaixo = linhas[l + 1]?.[c] ?? '.', acima = linhas[l - 1]?.[c] ?? '.';
+      if (solido(aqui) || !solido(abaixo) || abaixo === '^' || solido(acima)) continue;
+      fora.push({ x: c * TILE, y: (l + 1) * TILE });
+    }
+  }
+  return fora;
+}
+
 /** Constrói o mundo a partir de linhas de texto. A linha 0 é o TOPO. */
 function mundo(linhas) {
   const grid = linhas.map((l) => [...l]);
@@ -80,8 +95,9 @@ describe('reciclagem · a geografia', () => {
   });
 
   it('[Zero] água na coluna 0: não há trecho seco, e não há placa', () => {
-    const m = mundo(['~~~~', '####']);
-    expect(candidatosDeLixo(m), 'sem trecho seco, nada nasce').toEqual([]);
+    const linhas = ['~~~~', '~~~~', '####'];
+    expect(candidatosDeLixo(mundo(linhas), candidatosDoMapa(linhas), 0, { x: 0, y: 0 }),
+      'sem trecho seco, nada nasce').toEqual([]);
   });
 
   it('[Right] NADA NASCE DEPOIS DA PLACA — o limite é ela, não a água', () => {
@@ -89,16 +105,18 @@ describe('reciclagem · a geografia', () => {
     // um item pego ali NUNCA chegaria às lixeiras — quem está além da linha solta a carga a cada quadro.
     //   col: 0123456789
     //         ^ em 2 → placa em 3; água em 8
-    const m = mundo(['..........', '..^.....~.', '##########']);
+    const linhas = ['..........', '..^.....~.', '##########'];
+    const m = mundo(linhas);
     const placa = posicaoDaPlaca(m, { col: 7, linha: 1 });
-    const c = candidatosDeLixo(m, 0, placa);
+    const c = candidatosDeLixo(m, candidatosDoMapa(linhas), 0, placa);
     expect(c.every((p) => p.x < 7 * TILE), 'nada a partir da placa').toBe(true);
     expect(c).toHaveLength(6);   // colunas 0,1,3,4,5,6 — na 2 está o trampolim, e não se põe lixo nele
   });
 
   it('[Right] o lixo nasce SOBRE a superfície, e só no trecho seco', () => {
-    const m = mundo(['.....', '....~', '#####']);
-    const c = candidatosDeLixo(m);
+    const linhas = ['.....', '....~', '#####'];
+    const m = mundo(linhas);
+    const c = candidatosDeLixo(m, candidatosDoMapa(linhas));
     // Quatro colunas secas: sem placa declarada, quem limita é a água.
     expect(c).toHaveLength(4);
     expect(c[0]).toEqual({ x: 0, y: 2 * TILE });     // a LINHA DO PÉ: o topo do chão, igual à do jogador
@@ -109,23 +127,51 @@ describe('reciclagem · a geografia', () => {
     // A moeda flutua; o item não. Item flutuando some da varredura de chão de quem não enxerga — e "um tile
     // acima", que era a conta anterior, deixava a latinha de 9px boiando sete pixels no ar, porque o tile
     // tem 16. O `y` daqui é o mesmo `y` do jogador (o pé), e a altura de cada objeto é de quem o pinta.
-    const m = mundo(['..', '..', '##']);
-    const [p] = candidatosDeLixo(m);
+    const linhas = ['..', '..', '##'];
+    const [p] = candidatosDeLixo(mundo(linhas), candidatosDoMapa(linhas));
     expect(p.y, 'o topo do chão').toBe(2 * TILE);
   });
 
   it('[Zero] coluna sem chão nenhum não recebe item, e nem o vão de um tile entalado', () => {
-    const m = mundo(['..', '..', '..']);     // nada sólido em lugar nenhum
-    expect(candidatosDeLixo(m)).toEqual([]);
-    const entalado = mundo(['##', '..', '##']);  // um vão de UM tile, com teto colado
-    expect(candidatosDeLixo(entalado), 'lugar sem espaço por cima não serve').toEqual([]);
+    const vazio = ['..', '..', '..'];            // nada sólido em lugar nenhum
+    expect(candidatosDeLixo(mundo(vazio), candidatosDoMapa(vazio))).toEqual([]);
+    const entalado = ['##', '..', '##'];         // um vão de UM tile, com teto colado
+    expect(candidatosDeLixo(mundo(entalado), candidatosDoMapa(entalado)),
+      'lugar sem espaço por cima não serve').toEqual([]);
+  });
+
+  it('[Zero] NADA NASCE EM CIMA DAS LIXEIRAS — o canto delas é destino, não berço', () => {
+    // Um item ali seria pego e depositado no MESMO quadro: ponto de graça, sem escolher cor nenhuma, e sem a
+    // criança sequer ver que pegou alguma coisa.
+    //
+    // ⚠️ ESTE CASO SUMIU NUMA REESCRITA E SÓ A MUTAÇÃO O DENUNCIOU: tirar o filtro das lixeiras deixava a
+    // suíte inteira verde. Fica anotado porque é a segunda vez que uma regra sobrevive sem quem a afirme.
+    const linhas = ['..................', '..................', '##################'];
+    const m = mundo(linhas);
+    const todos = candidatosDoMapa(linhas);
+    const semLixeiras = candidatosDeLixo(m, todos);
+    const comLixeiras = candidatosDeLixo(m, todos, 12);
+    expect(comLixeiras.length).toBeLessThan(semLixeiras.length);
+    expect(comLixeiras[0].x, 'começa depois das quatro lixeiras (0..54) e de uma folga').toBeGreaterThan(54);
+  });
+
+  it('[Zero] NÃO NASCE NA REGIÃO SECRETA, porque quem lista os lugares é a regra das MOEDAS', () => {
+    // O Dev viu na tela: "acabei de ver a caixa nascendo na região secreta, onde não nascem nem moedas."
+    // A varredura antiga era desta função e perguntava só "é sólido?"; a das moedas exige o par
+    // ar-iluminado/água justamente porque a área secreta é RECOMPENSA, e coisa nascendo lá a transforma em
+    // rota obrigatória. O conserto foi parar de reescrever a pergunta e passar a receber a resposta.
+    const linhas = ['....', '....', '####'];
+    const m = mundo(linhas);
+    // Um lugar que a regra das moedas NÃO devolveria simplesmente não chega aqui — e o que chega, passa.
+    expect(candidatosDeLixo(m, [])).toEqual([]);
+    expect(candidatosDeLixo(m, [{ x: 3 * TILE, y: 2 * TILE }])).toEqual([{ x: 3 * TILE, y: 2 * TILE }]);
   });
 
   it('[Right] MAIS DE UM ANDAR por coluna, como as moedas — um nível de plataforma tem vários chãos', () => {
     // A primeira versão dava um lugar por coluna: o primeiro sólido descendo do teto. No mapa real isso põe
     // o item na laje MAIS ALTA, que é onde a criança não está.
-    const m = mundo(['....', '....', '####', '....', '....', '####']);
-    const c = candidatosDeLixo(m).filter((p) => p.x === 0);
+    const linhas = ['....', '....', '####', '....', '....', '####'];
+    const c = candidatosDeLixo(mundo(linhas), candidatosDoMapa(linhas)).filter((p) => p.x === 0);
     expect(c.map((p) => p.y), 'os dois chãos da coluna 0').toEqual([2 * TILE, 5 * TILE]);
   });
 

@@ -22,20 +22,19 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { botaoDeGrude } from '../app/js/game/run-toggle.js';
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';
 
 describe('instrução falada · o botão dito é o botão que funciona', () => {
-  it('[Right] sem a alternância, a instrução manda apertar CORRER', () => {
-    expect(botaoDeGrude({ toggleRun: false })).toBe('act.run');
-  });
-
-  it('[Right] COM a alternância, ela manda apertar PULAR', () => {
-    // O gatilho migrou; a frase migra junto. Sem isto, a criança que mais depende da instrução recebe a
-    // instrução errada — e não tem como descobrir sozinha que ela é errada.
-    expect(botaoDeGrude({ toggleRun: true })).toBe('act.jump');
+  it('[Right] a instrução do grude manda apertar o BOTÃO DE INTERAÇÃO, e só ele', () => {
+    // Havia dois casos aqui, um por botão, porque o contrato de 27/08 movia o grude para o pulo com a
+    // alternância ligada. O Dev revogou, e `botaoDeGrude` foi embora: não há mais escolha a fazer. O que
+    // continua importando é que a frase CARREGUE o parâmetro — sem ele, ela volta a nomear um botão à mão.
+    for (const [idioma, dic] of [['pt', pt], ['en', en], ['es', es]]) {
+      expect(dic['sr.physics.spiderOn'], `${idioma}: a moldura tem de trazer {botao}`).toContain('{botao}');
+      expect(dic['sr.power.wallcling'], `${idioma}: idem`).toContain('{botao}');
+    }
   });
 
   it('[Right] as duas frases do poder de aranha carregam `{botao}` nos TRÊS idiomas', () => {
@@ -61,7 +60,7 @@ describe('instrução falada · o botão dito é o botão que funciona', () => {
 });
 
 // ========================= MUTAÇÕES CONFERIDAS =========================
-//   · `botaoDeGrude` devolvendo sempre 'act.run' → "[Right] COM a alternância" reprova, e o efeito real é a
+//   · tirando o `{botao}` de uma das duas frases → o caso acima reprova, e o efeito real é a
 //     criança cega apertando o botão que liga a corrida enquanto tenta grudar na parede.
 //   · devolvendo "Correr" escrito à mão numa das ocorrências de `{botao}` → "[Zero] nenhuma das duas
 //     menciona o botão por nome" reprova.

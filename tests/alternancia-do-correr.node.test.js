@@ -24,7 +24,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { correndoAgora, pularVaiGrudar, botaoDeCorrerEngatado, usaTravaDeCorrer, botaoDeGrude } from '../app/js/game/run-toggle.js';
+import { correndoAgora, botaoDeCorrerEngatado, usaTravaDeCorrer } from '../app/js/game/run-toggle.js';
 
 /** Um jogador mínimo para a decisão. */
 const pl = (o = {}) => ({ toggleRun: false, runLatch: false, runEdge: false, easy: false, toggleMove: false, ...o });
@@ -72,14 +72,6 @@ describe('alternância do correr · a trava, e o que ela desloca', () => {
     expect(usaTravaDeCorrer(pl({ toggleMove: true }))).toBe(true);
   });
 
-  it('[Boundary] e o grude migra JUNTO nas teclas de alternância — a borda do Correr foi ocupada lá também', () => {
-    // Se a borda do Correr virou a trava, ela não pode continuar grudando. Sem esta linha, a criança em teclas
-    // de alternância ficaria sem porta para grudar na parede — o beco que o ADR-0045 existe para não abrir.
-    const ctx = { noAr: true, encostado: true, temAranha: true, jaGrudado: false };
-    expect(pularVaiGrudar(pl({ toggleMove: true }), ctx)).toBe(true);
-    expect(botaoDeGrude(pl({ toggleMove: true })), 'e a frase falada nomeia o PULO').toBe('act.jump');
-  });
-
   it('[Right] a SONDAGEM da bengala segue a trava — senão o modo cego perde o tato', () => {
     // REGRESSÃO MINHA, achada seguindo o fio das frases faladas. Parado, SEGURAR o Correr é a sondagem da
     // bengala no modo cego: é assim que a criança varre o que está em volta sem andar. Com a alternância
@@ -101,36 +93,18 @@ describe('alternância do correr · a trava, e o que ela desloca', () => {
       'e o Modo Fácil vence a trava, senão a decisão pedagógica teria porta dos fundos').toBe(false);
   });
 
-  it('[Right] com a trava, o PULO gruda quando o contexto pede', () => {
-    const ctx = { noAr: true, encostado: true, temAranha: true, jaGrudado: false };
-    expect(pularVaiGrudar(pl({ toggleRun: true }), ctx)).toBe(true);
-  });
 
-  it('[Right] e SOLTA quando já está grudado', () => {
-    // Sem isto o modo vira armadilha: a criança gruda e não tem como descer sem soltar o botão de correr,
-    // que agora significa outra coisa.
-    const ctx = { noAr: true, encostado: false, temAranha: true, jaGrudado: true };
-    expect(pularVaiGrudar(pl({ toggleRun: true }), ctx)).toBe(true);
-  });
-
-  it('[Boundary] fora do contexto, o pulo é PULO — a função nova não come a antiga', () => {
-    const base = { noAr: true, encostado: true, temAranha: true, jaGrudado: false };
-    expect(pularVaiGrudar(pl({ toggleRun: true }), { ...base, noAr: false }), 'no chão o pulo tem de pular').toBe(false);
-    expect(pularVaiGrudar(pl({ toggleRun: true }), { ...base, encostado: false }), 'longe da parede o pulo tem de pular').toBe(false);
-    expect(pularVaiGrudar(pl({ toggleRun: true }), { ...base, temAranha: false }), 'sem o poder o pulo tem de pular').toBe(false);
-  });
-
-  it('[Zero] SEM a alternância, o pulo NUNCA gruda — grudar continua sendo do Correr', () => {
-    // O caminho de quem não liga o ajuste não pode mudar em nada. Quem joga com controle físico continua
-    // grudando com o Correr, exatamente como antes.
-    const ctx = { noAr: true, encostado: true, temAranha: true, jaGrudado: false };
-    expect(pularVaiGrudar(pl({ toggleRun: false }), ctx)).toBe(false);
-  });
+  /* ===================== O GRUDE NO PULO SAIU DAQUI (2026-08-28) =====================
+     Havia cinco casos provando que, com a alternância ligada, o PULO grudava na parede — o contrato de
+     27/08, em que a borda do Correr tinha virado a trava da corrida e supunha-se não sobrar borda. O Dev
+     revogou o contrato e depois viu o resquício na tela: "climb está funcionando não somente apertando o
+     botão de contexto na parede, mas também o botão de pulo. O correto é só o primeiro caso."
+     `pularVaiGrudar` e `botaoDeGrude` foram embora com eles. O que vale agora é a regra geral: o botão de
+     interação age por CONTEXTO, e o pulo pula sempre. */
 });
 
 // ========================= MUTAÇÕES CONFERIDAS =========================
 //   · fazendo `correndoAgora` ignorar `easy` → "[Right] o Modo Fácil continua vencendo" reprova.
-//   · fazendo `pularVaiGrudar` devolver `true` sem checar `toggleRun` → "[Zero] SEM a alternância" reprova, e
 //     o efeito real seria roubar o pulo de quem nunca pediu o ajuste.
 //   · usando `correndoAgora` no lugar de `botaoDeCorrerEngatado` para a sondagem → "[Boundary] o Modo Fácil
 //     NÃO tira a sondagem" reprova, e o efeito real é a bengala calada para quem usa Modo Fácil.

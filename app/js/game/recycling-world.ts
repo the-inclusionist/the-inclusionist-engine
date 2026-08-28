@@ -45,13 +45,21 @@ const NADA: AcaoDeLixo = { pontos: 0, fala: null };
  *
  * `escolher` recebe o total e devolve os índices usados — é por onde o chamador injeta o embaralhamento, para
  * este módulo continuar determinístico e testável.
+ *
+ * ⚠️ E `ordemInicial` É O QUE FAZ O RODÍZIO FUNCIONAR COM UM ITEM SÓ POR VOLTA, que é como o Dev quis o jogo.
+ * Sem ele, `ordem` começa em 0 toda volta e o material é SEMPRE o primeiro da lista — a criança joga cem
+ * voltas e só vê caixa de papelão, nunca uma lata. O rodízio existia para impedir exatamente isso, e a
+ * quantidade 1 o desligava sem que nada ficasse vermelho: quem avança a ordem a cada volta é o chamador.
  */
-export function montarItens(candidatos: readonly Ponto[], quantos: number, escolher: (total: number, n: number) => number[]): ItemDeLixo[] {
+export function montarItens(
+  candidatos: readonly Ponto[], quantos: number, escolher: (total: number, n: number) => number[],
+  ordemInicial = 0,
+): ItemDeLixo[] {
   const n = Math.max(0, Math.min(quantos, candidatos.length));
   return escolher(candidatos.length, n).map((idx, ordem) => ({
     x: candidatos[idx]!.x,
     y: candidatos[idx]!.y,
-    material: MATERIAIS[ordem % MATERIAIS.length]!,
+    material: MATERIAIS[(ordemInicial + ordem) % MATERIAIS.length]!,
     descartado: false,
     dono: null,
   }));

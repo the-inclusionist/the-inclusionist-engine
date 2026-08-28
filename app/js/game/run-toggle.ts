@@ -110,23 +110,21 @@ export function correndoAgora(pl: JogadorDaCorrida, segurando: boolean): boolean
  * impede o modo de virar armadilha: sem ele a criança gruda e não tem como descer, porque o botão que soltava
  * agora significa outra coisa — exatamente o tipo de beco que o ADR-0044 passou sete itens desfazendo.
  */
-/**
- * A CHAVE i18n do botão que a instrução falada deve nomear.
- *
- * Existe porque eu migrei o gatilho e deixei as frases para trás. As duas que a criança OUVE sobre o poder de
- * aranha — `sr.power.wallcling` e `sr.physics.spiderOn` — mandavam apertar CORRER, e com a alternância
- * ligada o Correr virou a trava da corrida. Quem enxerga descobre experimentando; quem não enxerga tem
- * NESSA FRASE o único canal, e ele apontava para o lugar errado.
- *
- * Devolve a chave e não o texto: quem resolve é o ponto de exibição, com o idioma vigente. Mesma razão de
- * `TOUCH_ACT_LABELS` e `PAD_GLYPH_SPOKEN`.
- */
-export function botaoDeGrude(pl: JogadorDaCorrida): 'act.jump' | 'act.run' {
-  return usaTravaDeCorrer(pl) ? 'act.jump' : 'act.run';
-}
 
-export function pularVaiGrudar(pl: JogadorDaCorrida, ctx: ContextoDeGrude): boolean {
-  if (!usaTravaDeCorrer(pl) || !ctx.temAranha) return false;
-  if (ctx.jaGrudado) return true;                       // soltar tem de caber sempre
-  return ctx.noAr && ctx.encostado;
-}
+/* ===================== `pularVaiGrudar` E `botaoDeGrude` FORAM EMBORA (2026-08-28) =====================
+ *
+ * As duas nasceram do contrato de 27/08: com a alternância ligada, a borda do Correr virava a trava da
+ * corrida, então GRUDAR na parede passava para o pulo em contexto, e a frase falada tinha de nomear o botão
+ * certo em cada caso. O Dev revogou o contrato inteiro — "botão de interação continua sendo botão de
+ * interação [...] o que muda é que a parte de correr vira toggle" —, e depois viu na tela o resquício:
+ * "climb está funcionando não somente apertando o botão de contexto na parede, mas também o botão de pulo.
+ * O correto é só o primeiro caso."
+ *
+ * Sem a bifurcação não há o que decidir: grudar é sempre o botão de interação, e a frase falada nomeia
+ * sempre `act.run`. Duas funções provadas, gateadas e corretas que deixaram de ter pergunta — o que se
+ * apaga aqui é a pergunta, não a resposta.
+ *
+ * ⚠️ E O QUE FICA NO LUGAR É A REGRA GERAL: o botão de interação age POR CONTEXTO. Encostado numa parede com
+ * a ventosa, o contexto é grudar; perto de um objeto, é pegar; sem contexto nenhum, ele alterna a corrida.
+ * O pulo pula, sempre. `usaTravaDeCorrer` e `correndoAgora` continuam — a alternância da CORRIDA é o que o
+ * ajuste sempre foi, e é só isso que ele é. */

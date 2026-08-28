@@ -752,6 +752,14 @@ const reciclagem = createRecycling({
   mundo: { tileEm: (c, l) => tileAt(c, l), colunas: WORLD_W, linhas: WORLD_H,
     solido: (ti) => !!TILE_TYPES[ti]?.solid, agua: (ti) => !!TILE_TYPES[ti]?.water, trampolim: (ti) => !!TILE_TYPES[ti]?.tramp },
   placaEm: PLACA_DO_CLARITY,
+  // ⚠️ OS LUGARES SÃO OS DAS MOEDAS, filtrados por "tem chão logo abaixo". `findCoinCandidates` já sabe o que
+  // a reciclagem tinha reescrito pior: nasce em ar ILUMINADO ou água, nunca na escada e nunca na REGIÃO
+  // SECRETA — que deixaria de ser recompensa para virar rota obrigatória —, e nunca na zona de spawn. A
+  // minha varredura perguntava só "é sólido?", e o Dev viu a caixa nascer dentro da área secreta.
+  // "Feito moedas, mas na altura do chão" era literal, e agora está literal no código.
+  candidatos: () => findCoinCandidates()
+    .filter((c) => solidAt(c.tx, c.ty + 1))
+    .map((c) => ({ x: c.tx * TILE, y: (c.ty + 1) * TILE })),
   quantosItens: 1, escolherLugares: (total, n) => shuffle(Array.from({ length: total }, (_, i) => i)).slice(0, n),
   lixeiraW: LIXEIRA_W, lixeiraH: LIXEIRA_H, placaH: PLACA_H,
   alturaDoLixo: (m) => LIXO_ART[m].h, larguraDoLixo: (m) => LIXO_ART[m].w, alturaDoJogador: BOX.h,
@@ -1162,11 +1170,12 @@ function update(dt: number){
       // Hoje a única coisa carregável do jogo é lixo. Semente, bola e objeto perdido já estão decididos
       // (`game/carry.PODE`) e ainda não existem no mundo — quando existirem, é este campo que muda.
       tipoDaCarga: carregando ? 'lixo' : null });
-    // ⚠️ A BORDA NÃO É MAIS CONSUMIDA. Ela era, enquanto a carga podia morar no botão de PULO — sem consumir,
-    // pegar o objeto também pulava. Agora a carga mora sempre no botão de interação, e ali as duas funções
-    // não disputam: correr é ESTADO e interagir é EVENTO. Quem tem a alternância ligada continua alternando a
-    // corrida no mesmo aperto em que pega a lata, e é isso que o Dev pediu — "botão de interação continua
-    // sendo botão de interação [...] o que muda é que a parte de correr vira toggle".
+    // ⚠️ E A BORDA É CONSUMIDA QUANDO A AÇÃO ACONTECE, porque o botão age POR CONTEXTO. O Dev: "se não há
+    // nada para pegar, ele alterna a corrida. Por isso é botão de interação: sua ação, a forma com que
+    // interage, funciona pelo contexto." Então há uma coisa só por aperto — pegou a lata, não alternou a
+    // corrida; não havia nada para pegar, alternou. Sem consumir, um aperto faria as duas, e a criança que
+    // usa a alternância é justamente quem tem mais dificuldade de desfazer um toque acidental.
+    if (acao !== 'nada') pl.runEdge = false;
     return { i: pl.i, x: pl.x, y: pl.y, olhandoPara: pl.facing < 0 ? -1 as const : 1 as const, acao, direcao };
   }));
   for(const pl of controlados()) stepPlayer(pl,dt);
