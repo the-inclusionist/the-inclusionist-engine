@@ -186,21 +186,36 @@ decision-outcome:
           ⚠️ AND OUR OWN COUNTS MAY NARROW THAT LIST, NEVER WIDEN IT. Widening from what we measured would
           require having held the rare thing first, which is the circularity returning through the side door.
 
-          k-ANONYMITY STAYS AS THE BACKSTOP, and it ERASES rather than merely hiding: a cell still resolving to
-          fewer than k distinct ids after a grace period is generalised to its parent and the leaf row is deleted,
-          periodically. Hiding on read leaves the datum held. **k >= 10**, borrowed rather than invented — it is
-          the cut education statistics already use for small cells (INEP suppresses; US states suppress below 10
-          under FERPA), and adopting the threshold of those who already publish school data is more defensible in
-          an audit than one of ours. ⚠️ THE GRACE PERIOD IS NOT OPTIONAL: erasing on arrival would erase
-          everything, because every cell has exactly one id at the moment it lands and only reaches k as other
-          schools report.
+          k-ANONYMITY APPLIES TO WHAT LEAVES, NOT TO WHAT IS HELD. An earlier version of this clause ERASED small
+          cells, and that erasure existed to sustain an anonymity claim the record no longer makes — while costing
+          exactly the rare cases the inference layer is for. With a legal basis, a RIPD and a retention period,
+          holding them is lawful; publishing them is what needs the cut.
 
-          ⚠️ GENERALISE BEFORE DELETING, and here the entity/grouping ladder pays a second time. The
-          REINFORCEMENT mode legitimately produces rare cells, and erasing them outright would throw away exactly
-          where the signal is worth most — the child with a rare need is the one the inference layer exists for.
-          Promoting the record to its CURRICULUM ITEM (the parent that groups many entities) keeps it
-          contributing at a coarser resolution while the co-occurrence dilutes into the item's many children.
-          Then the leaf row goes. Signal kept, identifiability dropped; erasing alone would do only the second.
+          So: **k >= 10 on every OUTPUT** — a published report, a shared aggregate, an export. Nothing resolving
+          to fewer than 10 distinct ids leaves. The threshold is borrowed rather than invented: it is the cut
+          education statistics already use for small cells (INEP suppresses; US states suppress below 10 under
+          FERPA), and adopting the threshold of those who already publish school data is more defensible in an
+          audit than one of ours.
+
+          ⚠️ AND THE COUNT IS NATIONAL, NEVER PER SCHOOL. A school with five students is not the problem; a
+          COMBINATION that only five children in the country share is. The grace period matters for the same
+          reason: every cell has exactly one id at the moment it lands, and only reaches ten as other schools
+          report the following week.
+
+          ⚠️ GENERALISE TO THE ITEM — spelled out, because the phrase means nothing on its own. The lake holds
+          rows of (id, week, ENTITY), where an entity is a Bloom verb plus an object: "apply: division with
+          remainder". A CURRICULUM ITEM is the grouping — a BNCC skill, say EF04MA05, gathering a dozen entities.
+          A CELL is a combination one might publish: (entity = "apply: division with remainder", week 12). If only
+          four ids in the whole country share that cell, anything said about it is nearly something said about
+          four identifiable children.
+
+          GENERALISING replaces the entity with its parent in the published row: the cell becomes (EF04MA05,
+          week 12), which perhaps three thousand ids share. It still says the child worked that area that week —
+          which is what the inference needs — and stops pointing at the rare entity.
+
+          ⚠️ AND THE FINE DETAIL IS NOT LOST: it stays on the device and in the school, which hold the decrypted
+          base for the teacher's own report. The generalisation is of what the SERVER publishes. It is not
+          discarding information; it is deciding where the information lives.
 
           ⚠️ AND THE SHAPE IS TWO LESSON MODES, EACH SAFE BY A DIFFERENT MECHANISM:
 
@@ -237,15 +252,48 @@ decision-outcome:
           council", "when I moved from Monte Aprazível", "my sister in year five". Three of those in a town of
           twenty thousand are a name.
 
-          SO THE LOCAL MODEL RETURNS A STRUCTURED JUDGEMENT, not sanitised prose: which entity was exercised,
-          whether it was right, what kind of error. A closed vocabulary, which is what the inference layer needs
-          anyway and which the entity/item ladder already defines. It is also cheaper — classifying against a
-          rubric costs a school GPU far less than generating text.
+          ⚠️ AND THE DEV HAS MEASURED WHAT I ONLY ARGUED: a ~9B Qwen running under Ollama does find the
+          contextual identifiers, including the hard ones — nicknames like "Dona Mocinha", "Seu Neguinho", "Mano
+          Dois", "Perninhas". So detection is better than the NER-only argument above assumed. That correction
+          stands, and so does one asymmetry that is not about model quality:
 
-      ⚠️ AND THIS DATA IS PSEUDONYMISED, NOT ANONYMOUS. LGPD art. 13 §4º says so plainly, and art. 5º XI releases
-      only what is irreversible by reasonable available means. Calling it anonymous is the sentence that costs
-      later, precisely because the requerimento promises auditability. The design is strong; the claim must be the
-      accurate one.
+          SANITISING IS A RECALL PROBLEM WITH NO GROUND TRUTH. What the model caught is verifiable; what it MISSED
+          is not. One miss in a thousand essays is a re-identification, and it is silent — nobody finds out.
+          Structure has no recall problem because there is nothing to sanitise: a closed vocabulary cannot leak
+          what is not in it.
+
+          SO THE LOCAL MODEL RETURNS A RICH STRUCTURED JUDGEMENT — not a five-code rubric, which would throw away
+          the pedagogical signal that usually lives exactly where a rubric has no code: entity, correctness, error
+          type, misconception identified, strategy used, evidence REFERENCED BY POSITION rather than quoted. Where
+          free text is genuinely irreplaceable (assessing writing quality, say), the sanitised path exists with the
+          model the Dev measured — as an EXCEPTION with its own justification, never the default, because there
+          the residual risk is one no test can zero.
+
+          ⚠️ AND A CLAIM MADE HERE EARLIER IS WITHDRAWN: that structure would lighten the GPU requirement. The
+          model must read the whole text either way; only the generated output shrinks. Modestly cheaper, not
+          decisively.
+
+      ⚠️ AND THIS DATA IS PSEUDONYMISED, NOT ANONYMOUS — AND THAT IS NOW THE PREMISE, NOT A CAVEAT. Settled by
+      the Dev on 2026-08-28, and it is the maturest decision in this record: "o que devemos fazer: aceitar que não
+      conseguimos anonimização (pelo menos não ainda) e verificar o melhor que é possível fazer de dentro da lei."
+
+      This is not a downgrade. It is the refusal to claim a property the data does not have — LGPD art. 13 §4º
+      says pseudonymised data remains personal, and art. 5º XI releases only what is irreversible by reasonable
+      available means. Every measure in this record stands; what changes is that they are described as REDUCING
+      risk rather than as producing anonymity.
+
+      ⚠️ AND ACCEPTING IT BRINGS MACHINERY THAT MUST BE BUILT, not merely written: a LEGAL BASIS (for a municipal
+      school, art. 7º III — the execution of public policy — is the strong candidate, and art. 14 requires the
+      treatment to be in the child's best interest); a RIPD; a data-protection officer; a retention period; and
+      the data-subject rights of art. 18. Which basis sustains art. 14 is a lawyer's answer, not mine — this
+      record's job is to state the question precisely enough to be answered in one sitting.
+
+      ⚠️ AND ONE OF THOSE RIGHTS LANDS DIRECTLY ON THE ARCHITECTURE — THE RIGHT TO ERASURE (art. 18 VI). We
+      cannot honour it server-side, because the server does not know which id is which child, and that ignorance
+      is the property this whole record protects. THE DEVICE KNOWS: the request reaches the school, the school's
+      application resolves child → id, and it sends an ERASURE ORDER CARRYING THE id. The server deletes without
+      ever learning who it was, and the id doubles as the erasure token. Written here because a subject request
+      we cannot fulfil is a fine, not an inconvenience.
 
       ===== 3b. THE SERVER DOES NOT LINK ONE id TO ANOTHER =====
       A student who changes teacher gets a new id, so the server holds EPISODES and not lifetimes. It was proposed
@@ -399,7 +447,9 @@ more-information: |
       poor — a year-long trajectory over a narrow feature space identifies far less than a short one over a rich
       space.
 
-      ⚠️ THE TRIGGER, because the property is true today and false later: IF THE EXAM AND HOMEWORK STREAM IS
-      ADDED, the trajectory becomes high-dimensional and rotation returns to the table. High-dimensional
-      behavioural data grows sparse, and sparse means identifying. What decides is the richness of the vector,
-      never the calendar.
+      ⚠️ AND THE TRIGGER FIRST WRITTEN HERE — "if the exam stream is added, rotation returns to the table" — WAS
+      REMOVED BY THE DEV: "não volta, precisamos disso." The multi-year trajectory is needed even when the vector
+      gets rich, and rotation would destroy it. The consequence is not hidden: a richer vector over several years
+      identifies more, and the answer is no longer a technical measure but the legal one above — accept that this
+      is personal data, hold it under a lawful basis with a RIPD and a retention period, and do the best that can
+      be done inside the law. Refusing the measure and naming what it would have covered is the honest pair.
