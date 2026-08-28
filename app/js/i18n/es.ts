@@ -15,6 +15,7 @@ const es: Record<string, string> = {
   // El reciclaje (ADR-0049 §1). Los cuatro colores son contenido curricular (CONAMA 275/2001, la norma
   // brasileña), así que el aviso DICE el color y no solo "bien/mal".
   'sr.lixo.pegou': 'Recogiste: {o}.',
+  'sr.lixo.soltou': 'Soltaste: {o}.',
   'sr.lixo.acertou': '¡Bien! {o} va en el contenedor {cor}. Un punto.',
   'sr.lixo.errou': 'Ese no es el contenedor del {o}. Prueba otro color.',
   'sr.lixo.solta': 'Aquí no se tira basura. Se te cayó junto al cartel.',

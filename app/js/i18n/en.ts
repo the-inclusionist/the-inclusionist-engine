@@ -14,6 +14,7 @@ const en: Record<string, string> = {
   // Recycling (ADR-0049 §1). The four colours are curricular content (CONAMA 275/2001 — the Brazilian street
   // standard), so the announcement NAMES the colour instead of just saying right or wrong.
   'sr.lixo.pegou': 'You picked up: {o}.',
+  'sr.lixo.soltou': 'You put down: {o}.',
   'sr.lixo.acertou': 'Right! {o} goes in the {cor} bin. One point.',
   'sr.lixo.errou': 'That is not the bin for {o}. Try another colour.',
   'sr.lixo.solta': 'No littering here. You dropped it by the sign.',

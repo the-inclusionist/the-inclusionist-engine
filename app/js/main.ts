@@ -163,6 +163,7 @@ const INCL_VERSION = String((typeof __BUILD__ !== 'undefined' && __BUILD__.versi
 // Constantes puras extraídas para core/constants.js (modularização Fase B).
 import { LOGICAL_W, LOGICAL_H, TILE, COIN_TARGET, TUNE, ANIM } from './core/constants.js';
 import { TILE_TYPES } from './core/constants.js'; // a tabela do que cada tile É — a reciclagem pergunta "isto é água?"
+import { acaoDeCarga } from './game/carry.js'; // qual botão pega, solta e arremessa (ADR-0045)
 import { createRecycling } from './game/recycling-scene.js'; // a reciclagem: lixo, lixeiras e a placa (ADR-0049 §1)
 import { createRecyclingTextures, LIXO_ART, LIXEIRA_W, LIXEIRA_H, PLACA_H } from './render/recycling-tex.js';
 import { Z } from './core/layers.js'; // #69/ADR-0020: ordem-z canônica (nomeada) do render
@@ -734,8 +735,9 @@ const reciclagem = createRecycling({
   // segundo jogo com outra numeração poria a placa no lugar errado sem nenhum erro de tipo (ver constants).
   mundo: { tileEm: (c, l) => tileAt(c, l), colunas: WORLD_W, linhas: WORLD_H,
     solido: (ti) => !!TILE_TYPES[ti]?.solid, agua: (ti) => !!TILE_TYPES[ti]?.water, trampolim: (ti) => !!TILE_TYPES[ti]?.tramp },
-  quantosItens: 4, escolherLugares: (total, n) => shuffle(Array.from({ length: total }, (_, i) => i)).slice(0, n),
-  lixeiraW: LIXEIRA_W, lixeiraH: LIXEIRA_H, placaH: PLACA_H, alturaDoLixo: (m) => LIXO_ART[m].h, alcance: TILE,
+  quantosItens: 1, escolherLugares: (total, n) => shuffle(Array.from({ length: total }, (_, i) => i)).slice(0, n),
+  lixeiraW: LIXEIRA_W, lixeiraH: LIXEIRA_H, placaH: PLACA_H, alturaDoLixo: (m) => LIXO_ART[m].h,
+  alcance: TILE, distanciaDoArremesso: TILE * 4,
   aoPontuar: (j) => { pontosDeComportamento[j] = (pontosDeComportamento[j] ?? 0) + 1; },
   // A CHAVE e os IDENTIFICADORES entram; a tradução acontece aqui. É o que mantém `game/recycling-scene` sem
   // língua nenhuma — o piso do projeto são três idiomas (pilar 3 do ADR-0010).
@@ -945,6 +947,10 @@ abandonG.zIndex = Z.TILES + 400; // 8400 — conteúdo secreto, sobre os tiles
 worldSprite.zIndex = Z.TILES;
 rampLayer.zIndex = Z.SCENERY_INTERACT; ropeLayer.zIndex = Z.SCENERY_INTERACT + 10; elevLayer.zIndex = Z.SCENERY_INTERACT + 20;
 lifeLayer.zIndex = Z.FAUNA_BACK; extraLayer.zIndex = Z.ITEMS - 500; coinContainer.zIndex = Z.ITEMS;
+// A reciclagem entra logo ATRÁS das moedas: lixeira e placa são mobiliário e o lixo é coletável, e os três
+// ficam à frente dos tiles e atrás do jogador. Sem esta linha o contêiner nasce com zIndex 0 — e some
+// atrás do parallax, que foi o que aconteceu na primeira vez que o Dev abriu a cidade para olhar.
+recContainer.zIndex = Z.ITEMS - 200;
 playerSprite.zIndex = Z.PLAYER; caneLayer.zIndex = Z.PLAYER + 10; chairLayer.zIndex = Z.PLAYER + 20;
 fxG.zIndex = Z.VFX_FRONT; carLayer.zIndex = Z.VEHICLES; themeFxG.zIndex = Z.FAUNA_FRONT; themeFxBackG.zIndex = Z.FLORA_BACK + 500; fogG.zIndex = Z.WEATHER - 500;
 darkLayer.zIndex = Z.TILES + 500; easyHitbox.zIndex = Z.WORLD_A11Y; // darkLayer = escuridão da área SECRETA (meio, atrás dos atores), NÃO DARK_WORLD (#69)
@@ -1118,8 +1124,27 @@ function update(dt: number){
   players.forEach((p,i)=>{ if(p.quit&&p.jumpEdge){ p.jumpEdge=false; respawnPlayer(i); } }); // L1: quem saiu re-entra pelo PULO do teclado (ou START do pad, no pollPads)
   // `controlados()` e não `jogadores()`: a física e a animação leem `ctrl`, e esta é a vista que afirma o
   // que já é verdade aqui — o laço só roda DEPOIS de `assignControls`, então `ctrl` não é mais nulo.
+  // A RECICLAGEM, e ela roda ANTES do `stepPlayer` de propósito: `physics` zera `jumpEdge`/`runEdge` no fim
+  // de cada passo (physics.ts:393), então quem olhar depois nunca vê borda nenhuma. Foi assim que o primeiro
+  // teste no navegador apareceu: o botão não pegava, e não havia nada de errado com o botão.
+  //
+  // ⚠️ E QUANDO A AÇÃO ACONTECE, A BORDA É CONSUMIDA. É a consequência que o ADR-0045 já escreveu com todas as
+  // letras — "com a alternância ligada e um objeto por perto, o pulo PEGA em vez de pular" —, e ela vale nos
+  // dois caminhos: o botão que carrega não faz a sua outra função naquele quadro. Sem consumir, pegar o lixo
+  // também pularia, e a criança perderia o objeto no ar toda vez.
+  // A lista sai INTEIRA numa chamada só: o sprite de um item carregado procura o dono DENTRO da lista que
+  // recebeu, e um jogador por vez faria o item do jogador 2 perder o dono e voltar para a posição do chão.
+  reciclagem.atualizar(controlados().map((pl) => {
+    const direcao = held(pl, 'left') ? -1 : held(pl, 'right') ? 1 : 0;
+    const carregando = reciclagem.itens().some((it) => it.dono === pl.i && !it.descartado);
+    const objetoPerto = reciclagem.itens().some((it) => it.dono === null && !it.descartado
+      && Math.hypot(it.x - pl.x, it.y - pl.y) <= TILE);
+    const acao = acaoDeCarga(pl, { objetoPerto, carregando, noChao: pl.onGround,
+      bordaDePulo: pl.jumpEdge, bordaDeCorrer: pl.runEdge, direcao });
+    if (acao !== 'nada') { if (pl.toggleRun) pl.jumpEdge = false; else pl.runEdge = false; }
+    return { i: pl.i, x: pl.x, y: pl.y, acao, direcao };
+  }));
   for(const pl of controlados()) stepPlayer(pl,dt);
-  reciclagem.atualizar(controlados()); // a reciclagem: pegar do chão, cruzar a placa, depositar na lixeira
   secretAreas.stepSecretAreas(dt); // E1: revela a area secreta enquanto houver jogador dentro, re-escurece ao sair e anuncia (game/secret-areas.ts, D3-c)
 }
 /* ===================== camera + quadro -> render/draw.ts (C1) =====================

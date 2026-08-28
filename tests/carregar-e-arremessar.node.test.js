@@ -28,9 +28,30 @@
 import { describe, it, expect } from 'vitest';
 import { acaoDeCarga } from '../app/js/game/carry.js';
 
-const ctx = (o = {}) => ({ objetoPerto: false, carregando: false, noChao: true, bordaDePulo: false, bordaDeCorrer: false, ...o });
+// `direcao: 1` é o PADRÃO daqui porque os casos antigos são todos de arremesso, e arremessar exige direção
+// desde 2026-08-28. Deixá-la fora faria os casos passarem por `undefined !== 0`, que é passar por acidente.
+const ctx = (o = {}) => ({ objetoPerto: false, carregando: false, noChao: true, bordaDePulo: false, bordaDeCorrer: false, direcao: 1, ...o });
 
 describe('carga · qual botão faz o quê, e em que contexto', () => {
+  /* ===================== a direção separa arremessar de soltar ===================== */
+
+  it('[Right] carregando + botão + DIREÇÃO = arremessa; sem direção = SOLTA', () => {
+    // "Arremesso = apertar a direção da esquerda ou direita e apertar o botão de interação / corrida quando
+    // se está segurando algo." Sem direção o objeto não voa: fica onde a criança está.
+    const carregando = { carregando: true, bordaDeCorrer: true };
+    expect(acaoDeCarga({}, ctx({ ...carregando, direcao: 1 }))).toBe('arremessar');
+    expect(acaoDeCarga({}, ctx({ ...carregando, direcao: -1 }))).toBe('arremessar');
+    expect(acaoDeCarga({}, ctx({ ...carregando, direcao: 0 }))).toBe('soltar');
+  });
+
+  it('[Right] SOLTAR existe para ela poder resolver outra coisa e voltar depois', () => {
+    // "Ela deve poder pegar lixo e soltar para administrar seus assuntos e também poderá voltar e pegar o que
+    // ficou para trás com o poder de vôo." Sem soltar, carregar seria uma armadilha: escolher um item
+    // trancaria a criança nele até achar a lixeira certa.
+    expect(acaoDeCarga({ toggleRun: true }, ctx({ carregando: true, noChao: false, bordaDePulo: true, direcao: 0 })))
+      .toBe('soltar');
+  });
+
   it('[Zero] sem borda nenhuma, nada acontece', () => {
     expect(acaoDeCarga({ toggleRun: true }, ctx({ objetoPerto: true }))).toBe('nada');
   });

@@ -54,7 +54,7 @@ function cena(linhas = ['........................', '....................~~~~', 
     quantosItens: 4,
     escolherLugares: (total, n) => Array.from({ length: Math.min(n, total) }, (_, i) => i),
     lixeiraW: 12, lixeiraH: 15, placaH: 16, alturaDoLixo: () => 9,
-    alcance: 12,
+    alcance: 12, distanciaDoArremesso: 3 * TILE,
     aoPontuar: (j, m) => pontos.push([j, m]),
     anunciar: (chave, j, sobre) => falas.push([chave, j, sobre]),
     ...extra,
@@ -62,13 +62,16 @@ function cena(linhas = ['........................', '....................~~~~', 
   return { api, filhos, pontos, falas };
 }
 
+/** Um jogador num quadro. `acao` é o que `game/carry` já decidiu — a cena não roteia botão. */
+const quem = (i, x, y, acao = 'nada', direcao = 0) => ({ i, x, y, acao, direcao });
+
 /** Leva o jogador `j` ao CENTRO da lixeira `cor` — o centro, e não a borda, porque as quatro ficam a 2px
  *  uma da outra e uma borda pertence às duas (ver `lixeiraSob`). */
 function levarAteALixeira(c, cor, j = 0) {
   const idx = LIXEIRAS.indexOf(cor);
   const x = idx * (12 + 2) + 6;          // centro da caixa daquela lixeira (ver posicoesDasLixeiras)
   const y = 2 * TILE;                    // a linha do pé: o piso deste mapinha é a linha 2
-  c.api.atualizar([{ i: j, x, y }]);
+  c.api.atualizar([quem(j, x, y)]);
   return { x, y };
 }
 
@@ -115,9 +118,9 @@ describe('reciclagem · a cena', () => {
     const c = cena();
     c.api.montar();
     const it = c.api.itens()[0];
-    c.api.atualizar([{ i: 0, x: it.x, y: it.y }]);
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
     expect(c.falas[0][0]).toBe('sr.lixo.pegou');
-    c.api.atualizar([{ i: 0, x: 100, y: 50 }]);   // aquém da placa, senão ele SOLTA o lixo ali (caso próprio)
+    c.api.atualizar([quem(0, 100, 50)]);   // aquém da placa, senão ele SOLTA o lixo ali (caso próprio)
     const sprite = c.filhos.find((s) => s.tex === 'tex:' + it.material);
     expect(sprite.x, 'segue o dono').toBe(100);
     expect(sprite.y, 'e flutua ACIMA dele, senão some atrás do personagem').toBeLessThan(50);
@@ -127,7 +130,7 @@ describe('reciclagem · a cena', () => {
     const c = cena();
     c.api.montar();
     const it = c.api.itens()[0];
-    c.api.atualizar([{ i: 0, x: it.x, y: it.y }]);            // pega
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);            // pega
     levarAteALixeira(c, LIXEIRA_DE[it.material]);             // deposita
     expect(c.pontos).toEqual([[0, it.material]]);
     const sprite = c.filhos.find((s) => s.tex === 'tex:' + it.material);
@@ -140,7 +143,7 @@ describe('reciclagem · a cena', () => {
     const c = cena();
     c.api.montar();
     const it = c.api.itens()[0];
-    c.api.atualizar([{ i: 0, x: it.x, y: it.y }]);
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
     const cor = LIXEIRA_DE[it.material];
     levarAteALixeira(c, cor);
     levarAteALixeira(c, cor);
@@ -154,7 +157,7 @@ describe('reciclagem · a cena', () => {
     const c = cena();
     c.api.montar();
     const it = c.api.itens()[0];
-    c.api.atualizar([{ i: 0, x: it.x, y: it.y }]);
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
     const errada = LIXEIRAS.find((cor) => cor !== LIXEIRA_DE[it.material]);
     levarAteALixeira(c, errada);
     levarAteALixeira(c, errada);
@@ -166,7 +169,7 @@ describe('reciclagem · a cena', () => {
     const c = cena();
     c.api.montar();
     const it = c.api.itens()[0];
-    c.api.atualizar([{ i: 0, x: it.x, y: it.y }]);
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
     const errada = LIXEIRAS.find((cor) => cor !== LIXEIRA_DE[it.material]);
     levarAteALixeira(c, errada);
     expect(c.api.itens()[0].dono, 'ainda na mão').toBe(0);
@@ -180,18 +183,57 @@ describe('reciclagem · a cena', () => {
     const c = cena();
     c.api.montar();
     const it = c.api.itens()[0];
-    c.api.atualizar([{ i: 0, x: it.x, y: it.y }]);
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
     expect(c.falas[0]).toEqual(['sr.lixo.pegou', 0, { material: it.material }]);
     levarAteALixeira(c, LIXEIRA_DE[it.material]);
     expect(c.falas.at(-1)).toEqual(['sr.lixo.acertou', 0, { material: it.material, cor: LIXEIRA_DE[it.material] }]);
+  });
+
+  it('[Zero] ENCOSTAR NÃO PEGA — pegar é escolha, e é de botão', () => {
+    // A primeira versão pegava por proximidade. Com o SOLTAR existindo, isso vira armadilha: a criança larga
+    // o lixo para resolver outra coisa, dá um passo, e o item volta para a mão sozinho.
+    const c = cena();
+    c.api.montar();
+    const it = c.api.itens()[0];
+    c.api.atualizar([quem(0, it.x, it.y)]);            // em cima do item, sem pedir nada
+    expect(c.api.itens()[0].dono).toBe(null);
+    expect(c.falas).toEqual([]);
+  });
+
+  it('[Right] SOLTAR deixa o item no pé dela, e ela pode seguir sem ele', () => {
+    // "Ela deve poder pegar lixo e soltar para administrar seus assuntos e também poderá voltar e pegar o que
+    // ficou para trás com o poder de vôo."
+    const c = cena();
+    c.api.montar();
+    const it = c.api.itens()[0];
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
+    c.api.atualizar([quem(0, 150, 32, 'soltar')]);
+    expect(c.api.itens()[0]).toMatchObject({ dono: null, x: 150, y: 32 });
+    expect(c.falas.at(-1)[0]).toBe('sr.lixo.soltou');
+    c.api.atualizar([quem(0, 150, 32)]);
+    expect(c.api.itens()[0].dono, 'e continua no chão no quadro seguinte').toBe(null);
+  });
+
+  it('[Right] ARREMESSAR joga na direção segurada, e a placa continua barrando', () => {
+    const c = cena();
+    c.api.montar();
+    const it = c.api.itens()[0];
+    const partiuDe = it.x;   // por VALOR: `it` é o objeto vivo, e comparar com ele depois compara consigo mesmo
+    c.api.atualizar([quem(0, partiuDe, it.y, 'pegar')]);
+    c.api.atualizar([quem(0, partiuDe, 32, 'arremessar', -1)]);
+    expect(c.api.itens()[0].x, 'para a esquerda de onde ela estava').toBeLessThan(partiuDe);
+    c.api.atualizar([quem(0, c.api.itens()[0].x, 32, 'pegar')]);
+    c.api.atualizar([quem(0, c.api.placaX() - 8, 32, 'arremessar', 1)]);
+    expect(c.api.itens()[0].x, 'a barreira não deixa passar da placa').toBeLessThan(c.api.placaX());
+    expect(c.pontos, 'arremessar não paga nem cobra').toEqual([]);
   });
 
   it('[Boundary] cruzar a placa carregando SOLTA o lixo, e não pontua nada', () => {
     const c = cena();
     c.api.montar();
     const it = c.api.itens()[0];
-    c.api.atualizar([{ i: 0, x: it.x, y: it.y }]);
-    c.api.atualizar([{ i: 0, x: c.api.placaX() + 40, y: it.y }]);
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
+    c.api.atualizar([quem(0, c.api.placaX() + 40, it.y)]);
     expect(c.falas.map(([k]) => k)).toContain('sr.lixo.solta');
     expect(c.api.itens()[0].dono, 'caiu da mão na placa').toBe(null);
     expect(c.pontos, 'a placa NUNCA pune e NUNCA paga').toEqual([]);
@@ -209,10 +251,10 @@ describe('reciclagem · a cena', () => {
     const c = cena();
     c.api.montar();
     const [a, b] = c.api.itens();
-    c.api.atualizar([{ i: 0, x: a.x, y: a.y }, { i: 1, x: b.x, y: b.y }]);
+    c.api.atualizar([quem(0, a.x, a.y, 'pegar'), quem(1, b.x, b.y, 'pegar')]);
     expect(c.api.itens()[0].dono).toBe(0);
     expect(c.api.itens()[1].dono).toBe(1);
-    c.api.atualizar([{ i: 0, x: 60, y: 60 }, { i: 1, x: 90, y: 70 }]);  // os dois aquém da placa
+    c.api.atualizar([quem(0, 60, 60), quem(1, 90, 70)]);  // os dois aquém da placa
     const sa = c.filhos.find((s) => s.tex === 'tex:' + a.material && s.x === 60);
     const sb = c.filhos.find((s) => s.tex === 'tex:' + b.material && s.x === 90);
     expect(sa, 'o item do jogador 0 está com ele').toBeTruthy();
@@ -227,6 +269,8 @@ describe('reciclagem · a cena', () => {
 //     real é uma camada de lixo fantasma por volta jogada.
 //   · fazendo o sprite carregado ficar em `dono.y` em vez de `dono.y - ALTURA_NA_MAO` → "[Right] o item que a
 //     criança pega passa a SEGUIR o dono" reprova, e o efeito real é o item sumir atrás do personagem.
+//   · fazendo a cena pegar por PROXIMIDADE de novo (ignorando `j.acao`) → "[Zero] ENCOSTAR NÃO PEGA" reprova,
+//     e o efeito real é o item voltando sozinho para a mão de quem acabou de soltá-lo.
 //   · deixando de esconder o sprite do item descartado → "[Right] lixeira CERTA" reprova, e o efeito real é a
 //     lata continuar desenhada depois de entrar na lixeira.
 //   · tirando a `cor` do anúncio de acerto → "[Interface] o anúncio carrega IDENTIFICADOR" reprova, e o efeito

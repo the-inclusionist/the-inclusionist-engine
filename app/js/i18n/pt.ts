@@ -14,6 +14,7 @@ const pt: Record<string, string> = {
   // A RECICLAGEM (ADR-0049 §1: a boa ação vale um PONTO, e ponto não move barra nenhuma). As quatro cores
   // são conteúdo curricular — Resolução CONAMA 275/2001 —, então a fala DIZ a cor, e não só "certo/errado".
   'sr.lixo.pegou': 'Você pegou: {o}.',
+  'sr.lixo.soltou': 'Você soltou: {o}.',
   'sr.lixo.acertou': 'Certo! {o} vai na lixeira {cor}. Um ponto.',
   'sr.lixo.errou': 'Essa não é a lixeira do {o}. Tente outra cor.',
   'sr.lixo.solta': 'Aqui não se joga lixo. Você deixou cair na placa.',

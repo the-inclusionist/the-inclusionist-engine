@@ -20,6 +20,16 @@
 // por perto, o pulo PEGA em vez de pular. É consequência direta do contrato e é escolha do Dev — mas quem
 // for mexer precisa saber que foi escolhida, e não esquecida.
 //
+// ========================= A DIREÇÃO SEPARA ARREMESSAR DE SOLTAR (2026-08-28) =========================
+// "Arremesso = apertar a direção da esquerda ou direita e apertar o botão de interação / corrida quando se
+// está segurando algo." E, no mesmo turno, o motivo de SOLTAR existir: "ela deve poder pegar lixo e soltar
+// para administrar seus assuntos e também poderá voltar e pegar o que ficou para trás com o poder de vôo."
+//
+// ⚠️ E ISSO TORNOU O PEGAR OBRIGATORIAMENTE DE BOTÃO, o que não era óbvio. A primeira ligação da reciclagem
+// pegava por PROXIMIDADE — encostou, pegou. Com o soltar existindo, proximidade vira armadilha: a criança
+// solta o lixo para resolver outra coisa, dá um passo, e o item volta para a mão sozinho, porque ela ainda
+// está ao alcance dele. Soltar deixaria de significar qualquer coisa. Quem decide pegar é ela.
+//
 // ORDEM COM O GRUDE: `pularVaiGrudar` (game/run-toggle) decide primeiro. Grudar na parede exige estar no ar,
 // encostado e com o poder de aranha; se esse contexto vale, a borda de pulo é dele. Só o que sobra chega aqui.
 
@@ -38,9 +48,12 @@ export interface ContextoDeCarga {
   noChao: boolean;
   bordaDePulo: boolean;
   bordaDeCorrer: boolean;
+  /** A direção SEGURADA no instante do botão: -1 esquerda, +1 direita, 0 nenhuma. É ela que separa
+   *  ARREMESSAR de SOLTAR (ver `acaoDeCarga`). */
+  direcao: -1 | 0 | 1;
 }
 
-export type AcaoDeCarga = 'pegar' | 'arremessar' | 'nada';
+export type AcaoDeCarga = 'pegar' | 'arremessar' | 'soltar' | 'nada';
 
 /**
  * O que este quadro faz com a carga.
@@ -65,7 +78,7 @@ export function acaoDeCarga(pl: JogadorDeCarga, ctx: ContextoDeCarga): AcaoDeCar
   if (ctx.carregando) {
     // O "não pisar no solo" é do PULO, e só dele: é o que separa o primeiro toque (pular) do segundo (jogar).
     if (pl.toggleRun && ctx.noChao) return 'nada';
-    return 'arremessar';
+    return ctx.direcao === 0 ? 'soltar' : 'arremessar';
   }
   return ctx.objetoPerto ? 'pegar' : 'nada';
 }

@@ -29,9 +29,10 @@ import {
   candidatosDeLixo, posicaoDaPlaca, posicoesDasLixeiras, type MundoDeLixo,
 } from './recycling-spawn.js';
 import {
-  montarItens, cargaDe, pegarPerto, passarPelaPlaca, depositar, lixeiraSob, entrouNaLixeira,
+  montarItens, cargaDe, pegarPerto, passarPelaPlaca, arremessar, depositar, lixeiraSob, entrouNaLixeira,
   type ItemDeLixo, type PostoDeLixeira,
 } from './recycling-world.js';
+import type { AcaoDeCarga } from './carry.js';
 
 /** A fatia de sprite que esta cena escreve. Mínima de propósito — ver ADR-0039. */
 export interface SpriteDeLixo extends Visivel {
@@ -39,8 +40,21 @@ export interface SpriteDeLixo extends Visivel {
   destroy(): void;
 }
 
-/** O jogador, do ponto de vista da reciclagem: onde ele está e quem ele é. */
-export interface JogadorNaReciclagem { i: number; x: number; y: number }
+/**
+ * O jogador, do ponto de vista da reciclagem: onde ele está, quem ele é, o que ele MANDOU fazer e para onde.
+ *
+ * ⚠️ A AÇÃO VEM DE FORA, e isso é decisão e não repasse de responsabilidade. Quem decide qual botão faz o quê
+ * é `game/carry.acaoDeCarga`, que já existia com o contrato do Dev inteiro (ADR-0045) e valia para qualquer
+ * objeto carregável — não só lixo. Duplicar o roteamento aqui faria a lata obedecer a um botão e a próxima
+ * coisa carregável a outro.
+ */
+export interface JogadorNaReciclagem {
+  i: number; x: number; y: number;
+  /** O que este quadro pediu: `game/carry.AcaoDeCarga`. */
+  acao: AcaoDeCarga;
+  /** Para onde arremessar: -1 esquerda, +1 direita. */
+  direcao: -1 | 0 | 1;
+}
 
 export interface RecyclingSceneCtx {
   /** A camada onde lixo, lixeiras e placa entram. */
@@ -67,6 +81,8 @@ export interface RecyclingSceneCtx {
   placaH: number;
   /** A que distância a criança pega o item do chão. */
   alcance: number;
+  /** A que distância o arremesso leva o item. */
+  distanciaDoArremesso: number;
   /** UM PONTO DE COMPORTAMENTO saiu. Quem conta é de fora — ver o cabeçalho. */
   aoPontuar: (jogador: number, material: Material) => void;
   /**
@@ -145,12 +161,25 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
     for (const j of jogadores) {
       const carga = cargaDe(itens, j.i);
 
+      // ⚠️ PEGAR É DE BOTÃO, NÃO DE PROXIMIDADE, e a primeira versão errou nisso. Encostar e pegar parece
+      // gentil até existir o SOLTAR: a criança solta o lixo para resolver outra coisa, dá um passo, e o item
+      // volta para a mão sozinho porque ela ainda está ao alcance. Soltar deixaria de significar qualquer
+      // coisa. Ver `game/carry`, que é quem decide qual botão faz o quê.
       if (!carga) {
-        // Mãos livres: pega o que estiver ao alcance. `pegarPerto` já recusa item de outro e já descartado.
-        const pego = pegarPerto(itens, j.i, j.x, j.y, ctx.alcance);
-        if (pego) ctx.anunciar('sr.lixo.pegou', j.i, { material: pego.material });
+        if (j.acao === 'pegar') {
+          const pego = pegarPerto(itens, j.i, j.x, j.y, ctx.alcance);
+          if (pego) ctx.anunciar('sr.lixo.pegou', j.i, { material: pego.material });
+        }
       } else {
-        // Carregando: a placa é a única coisa que tira o item da mão sem ser a lixeira.
+        if (j.acao === 'soltar') {
+          carga.dono = null; carga.x = j.x; carga.y = j.y;
+          ctx.anunciar('sr.lixo.soltou', j.i, { material: carga.material });
+        } else if (j.acao === 'arremessar' && j.direcao !== 0) {
+          const r = arremessar(itens, j.i, j.x + j.direcao * ctx.distanciaDoArremesso, j.y, placa);
+          if (r.acao.fala) ctx.anunciar(r.acao.fala, j.i, { material: carga.material });
+        }
+        // A placa é a única coisa que tira o item da mão sem ela mandar. Conferida DEPOIS da ação do quadro,
+        // porque quem acabou de soltar não está mais carregando nada para a placa derrubar.
         const naPlaca = passarPelaPlaca(itens, j.i, j.x, j.y, placa);
         if (naPlaca.fala) ctx.anunciar(naPlaca.fala, j.i, { material: carga.material });
       }
