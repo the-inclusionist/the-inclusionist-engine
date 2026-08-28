@@ -74,8 +74,20 @@ decision-outcome:
           person's credential. Reports with PII are computed HERE.
         · OUR CLOUD — the individual's base as CIPHERTEXT only, and separately the telemetry stream, which carries
           no PII (§3). We can read neither.
-        · THE INSTITUTION (school, clinic) — its own base, on its own side, which it can read, because it is the
-          CONTROLLER of that data and legally obliged to hold it.
+        · THE INSTITUTION (school, clinic) — its own base, ON ITS OWN NETWORK, which it can read, because it is
+          the CONTROLLER of that data and legally obliged to hold it. Confirmed 2026-08-28: the institutional
+          account lives in the school's account on the school's network, we hold only an ENCRYPTED BACKUP, the
+          account opens on ONE COMPUTER AT A TIME by default, and it arrives through an INSTALLER, not a browser.
+
+          ⚠️ SO THE E2E CLAIM SURVIVES INTACT FOR OUR INFRASTRUCTURE: we never hold readable institutional data.
+          This was the last hole in the design, and this is what closes it.
+
+          ⚠️ AND THE PWA/INSTALLER SPLIT IS A CONSEQUENCE WORTH NAMING, because it turns a constraint into a
+          criterion: the TEACHER gets a PWA because she cannot install anything — a school Chromebook locked down
+          by the municipality's IT is pillar 1, and an installer there is the difference between working and not
+          existing. The INSTITUTION gets an installer because it needs one and can have one: disk encryption and
+          peer-to-peer do not fit inside a browser, and the machine belongs to the school. The hardware
+          restriction stopped being an obstacle and became the line.
 
       ⚠️ TEXT ONLY, AND THIS IS A GATE AND NOT A GUIDELINE: no photos, no video. A scan enters as OCR TEXT and the
       image is discarded. A photograph of a report card carries a signature, a letterhead and handwriting — it
@@ -145,9 +157,19 @@ decision-outcome:
       share with a certified account on the network directly, peer to peer, for a period set at share time (weeks,
       months, to the end of the school or fiscal year), under contract and terms of acceptance.
 
-      ⚠️ "NOT END-TO-END" IS NOT "IN THE CLEAR". The institution can read it — that is the design — but the
-      TRANSPORT is encrypted. P2P on a school LAN without TLS means any machine on that LAN reads student data;
-      WebRTC data channels carry DTLS by default, and if another transport is used it has to earn the same.
+      ⚠️ "NOT END-TO-END" IS NOT "IN THE CLEAR", and the Dev corrected his own wording here: the transport IS
+      encrypted on the intranet. P2P on a school LAN without TLS means any machine on that LAN reads student data;
+      WebRTC data channels carry DTLS by default, and another transport has to earn the same.
+
+      ⚠️ AND IT SYNCHRONISES, IT DOES NOT SHOW. The institution receives a COPY by sync; it does not read the
+      professional's machine live. That is a better model and not merely a clarification: a live view would need a
+      live session and a permission check held open, while a sync is a transfer with a MOMENT — auditable, loggable
+      on the institution's side, and it makes the period govern exactly the thing that can be revoked, which is
+      when the next sync happens.
+
+      ⚠️ WHO HOLDS THE KEY TO THE SCHOOL'S BACKUP is the §5 problem again, one size up: the whole school record
+      rather than one professional's base, and harder, because a head teacher changes every few years and custody
+      has to survive the handover. Same printed-sheet answer, plus a transfer procedure attached to the post.
 
       ⚠️ AND THE PERIOD GOVERNS THE FLOW, NOT THE RETENTION. The school is the controller and is legally required
       to keep school records; its copy does not evaporate when the year ends. What the period stops is the arrival
@@ -236,12 +258,6 @@ decision-outcome:
 
 more-information: |
   DELIBERATELY NOT DECIDED HERE, both because the answer changes what is built and not how it is described:
-
-    · WHERE THE INSTITUTION'S BASE PHYSICALLY LIVES. This record reads the Dev's "se houver uma conta com
-      certificado NA REDE" as meaning the school's own network, and §1 depends on that reading: if the school's
-      base were hosted by us, we WOULD hold readable institutional data, and §4's boundary sentence changes. If it
-      is on the school's side, that school needs a machine — the "mini server" idea returning, for the institution
-      rather than the individual, where it is justified.
 
     · WHETHER THE PSEUDONYM ROTATES. The Dev proposed re-drawing the time offset at random intervals. Re-drawing
       the OFFSET ALONE corrupts what it exists to protect: the gap between a March event and an April one becomes
