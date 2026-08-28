@@ -73,10 +73,10 @@ more-information: |
       · Blackletter — **UnifrakturMaguntia**, from 20 px, for a stroke close to the German gothic of printed
         books; **UnifrakturCook**; and **Manufacturing Consent**.
         ⚠️ CORRECTED 2026-08-27: an earlier version of this clause dropped UnifrakturCook ("Maguntia basta"). It
-        stays — the requerimento (IV.5) adopts both by name, and dropping it here would have made the protocolled
+        stays — the requerimento (IV.5) adopts both by name, and dropping it here would have made the filed
         document false. Manufacturing Consent is new and comes from the Dev.
-        ⚠️ AND ITS LICENCE IS UNVERIFIED. The requerimento asserts that every family in IV.5 is SIL OFL 1.1;
-        Manufacturing Consent is not in that list, so nobody has checked it. It is not bundled until someone has.
+        ✅ ITS LICENCE IS **SIL OFL 1.1**, confirmed by the Dev against the Google Fonts specimen. It joins the
+        others with no caveat, and the requerimento's blanket statement about IV.5 stands.
       · Copperplate / Roundhand / English Script — **Pinyon Script**, from 24 px (the highest floor: the hairlines
         are the thinnest in the roster); plus **Monsieur La Doulaise** (English roundhand) and **Herr Von
         Muellerhoff** (close to Pinyon). Both were missing here and are adopted by the requerimento (IV.5); the

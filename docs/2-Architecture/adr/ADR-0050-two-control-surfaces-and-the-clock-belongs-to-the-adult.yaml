@@ -64,7 +64,16 @@ decision-outcome:
       accessibility settings and disability simulations. That is the whole of the child's surface, and ADR-0044
       governs it.
 
-      ===== 2. THE ADULT'S PANEL IS SOMEWHERE ELSE, AND IT IS PER CHILD =====
+      ===== 2. THE ADULT'S PANEL IS IN BÚSSOLA ESCOLAR, AND IT IS PER CHILD =====
+      ⚠️ AND THIS WAS NEVER AN OPEN QUESTION. An earlier version of this record left "where does it live" as a
+      dependency to be resolved, and it was already answered by the journey the Dev had described: screen 1 is where
+      the adult LOGS IN, and the login is Bússola Escolar's (ADR-0048 §2). The panel reads reports and picks skills —
+      and reports per skill for teachers, management and families are literally what Bússola Escolar IS. Asking
+      again turned an answered thing into a consultation, which is the failure this project keeps correcting.
+
+      SO THE SPLIT IS NOT ABOUT WHERE THE PANEL IS, IT IS ABOUT WHO ENFORCES: the panel lives in Bússola Escolar and
+      is where the adult sets everything below; the ENGINE enforces the time parameters locally, because a clock
+      that needs the network to stop a session does not work in the school this project is built for.
       Used by the teacher, the parent or the health professional. Four things:
 
         · **REPORTS**, and the choice of the up-to-three skills the child works on today — with an **AUTO** setting,
