@@ -17,7 +17,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { LIXEIRA_DE, MATERIAIS, LIXEIRAS, descartar, podeNascerEm, efeitoAoPassar, arremessoAtravessa } from '../app/js/game/recycling.js';
+import { LIXEIRA_DE, MATERIAIS, LIXEIRAS, descartar, podeNascerEm, podePassarDaPlaca, travarNaPlaca } from '../app/js/game/recycling.js';
 
 describe('reciclagem · o material, a cor e o ponto', () => {
   it('[Right] cada material tem a lixeira do padrão brasileiro', () => {
@@ -93,32 +93,29 @@ describe('reciclagem · o material, a cor e o ponto', () => {
 // não reage — ela não deixa acontecer, e é por isso que não há punição, nem sermão, nem tela de aviso: cada um
 // deles seria uma resposta, e resposta é o prêmio.
 describe('a placa de proibido jogar lixo · barreira, não penalidade', () => {
-  it('[Right] quem passa pela placa carregando lixo SOLTA o lixo ali', () => {
-    expect(efeitoAoPassar(500, 500, true)).toBe('solta');
-    expect(efeitoAoPassar(600, 500, true)).toBe('solta');
+  it('[Right] CARREGANDO LIXO, A CRIANÇA NÃO PASSA DA PLACA', () => {
+    // A barreira é sobre ELA, e não sobre o objeto. A primeira versão barrava o lixo: quem cruzava soltava o
+    // item ali. Só que soltar o lixo JÁ É desobedecer — barrar o objeto deixava a desobediência acontecer e
+    // depois consertava a consequência; barrar a criança faz a desobediência não ter por onde começar.
+    expect(podePassarDaPlaca(499, 500, true), 'aquém da linha, segue').toBe(true);
+    expect(podePassarDaPlaca(500, 500, true), 'na linha já não passa').toBe(false);
+    expect(podePassarDaPlaca(700, 500, true)).toBe(false);
   });
 
-  it('[Zero] antes da placa, ou de mãos vazias, nada acontece', () => {
-    expect(efeitoAoPassar(499, 500, true)).toBe('nada');
-    expect(efeitoAoPassar(600, 500, false)).toBe('nada');
+  it('[Zero] de mãos livres ela passa à vontade, e sem placa também', () => {
+    expect(podePassarDaPlaca(700, 500, false), 'a placa só barra quem carrega lixo').toBe(true);
+    expect(podePassarDaPlaca(9999, null, true), 'cenário sem água não tem placa').toBe(true);
   });
 
-  it('[Right] lixo arremessado NUNCA atravessa a placa', () => {
-    expect(arremessoAtravessa(499, 500), 'aquém da placa passa').toBe(true);
-    expect(arremessoAtravessa(500, 500), 'na linha já não passa').toBe(false);
-    expect(arremessoAtravessa(700, 500), 'além dela, nunca').toBe(false);
+  it('[Right] `travarNaPlaca` devolve ONDE ela para, não só que parou', () => {
+    // Número e não booleano: barrar é grudar a criança na linha, e um booleano faria cada chamador inventar
+    // o seu próprio "então onde ela fica?".
+    expect(travarNaPlaca(700, 500, true)).toBe(500);
+    expect(travarNaPlaca(400, 500, true), 'quem pode passar não é movido').toBe(400);
+    expect(travarNaPlaca(700, 500, false)).toBe(700);
+    expect(travarNaPlaca(700, null, true)).toBe(700);
   });
 
-  it('[Boundary] a barreira é uma LINHA, decidida pelo destino — arco não a contorna', () => {
-    // Barreira que se pula não é barreira: é uma dificuldade a mais para quem já resolveu transgredir. O que
-    // decide é o x de destino, nunca a altura da trajetória.
-    expect(arremessoAtravessa(9999, 500)).toBe(false);
-  });
-
-  it('[Zero] cenário sem placa: solta nada e o arremesso vai', () => {
-    expect(efeitoAoPassar(999, null, true)).toBe('nada');
-    expect(arremessoAtravessa(999, null)).toBe(true);
-  });
 });
 
 // ========================= MUTAÇÕES CONFERIDAS =========================

@@ -40,12 +40,23 @@ describe('reciclagem · a geografia', () => {
     expect(posicaoDaPlaca(m)).toBe(null);
   });
 
-  it('[Right] a placa fica DEPOIS do pula-pula e ANTES da água', () => {
+  it('[Right] a placa fica na ÚLTIMA COLUNA SECA, que é a que dá para a água', () => {
     //  col:  0123456
-    //         ^ em 2, água em 5  →  placa em 3
-    const m = mundo(['..^..~.', '#######']);
+    //         ^ em 2, água em 5  →  placa em 4 (agua - 1), à direita do pula-pula de graça
+    const m = mundo(['.......', '..^..~.', '#######']);
     expect(colunaDoTrampolim(m, 5)).toBe(2);
-    expect(posicaoDaPlaca(m)).toEqual({ x: 3 * TILE, y: 1 * TILE });
+    expect(posicaoDaPlaca(m)).toEqual({ x: 4 * TILE, y: 2 * TILE });
+  });
+
+  it('[Right] E NA PLATAFORMA DO ALTO, não no chão de baixo', () => {
+    // "Deveria estar realmente à direita do trampolim, mas na plataforma do alto, não ao lado do trampolim."
+    // É por cima que a criança chega ali depois do pula-pula; uma placa no porão avisaria sobre um trecho por
+    // onde ela não vai passar.
+    //  col:   0123
+    //  linha 1: laje em 2 e 3 · linha 4: chão de baixo · água na coluna 3
+    const m = mundo(['....', '..##', '...~', '....', '####']);
+    expect(posicaoDaPlaca(m).x, 'coluna 2 = agua - 1').toBe(2 * TILE);
+    expect(posicaoDaPlaca(m).y, 'a laje de cima (linha 1), e não o chão da linha 4').toBe(1 * TILE);
   });
 
   it('[Boundary] trampolim colado na água: a placa não invade a água', () => {
@@ -71,10 +82,10 @@ describe('reciclagem · a geografia', () => {
     //   col: 0123456789
     //         ^ em 2 → placa em 3; água em 8
     const m = mundo(['..........', '..^.....~.', '##########']);
-    expect(posicaoDaPlaca(m).x).toBe(3 * TILE);
+    expect(posicaoDaPlaca(m).x, 'coluna 7 = agua - 1').toBe(7 * TILE);
     const c = candidatosDeLixo(m);
-    expect(c.every((p) => p.x < 3 * TILE), 'nada a partir da placa').toBe(true);
-    expect(c).toHaveLength(2);   // as colunas 0 e 1; na 2 está o próprio trampolim, e não se põe lixo nele
+    expect(c.every((p) => p.x < 7 * TILE), 'nada a partir da placa').toBe(true);
+    expect(c).toHaveLength(6);   // colunas 0,1,3,4,5,6 — na 2 está o trampolim, e não se põe lixo nele
   });
 
   it('[Right] o lixo nasce SOBRE a superfície, e só no trecho seco', () => {

@@ -81,44 +81,42 @@ export function podeNascerEm(x: number, aguaX: number | null): boolean {
 
 /* ===================== A PLACA, E POR QUE ELA É BARREIRA E NÃO PENALIDADE =====================
  *
- * No alto da plataforma depois do pula-pula, antes da água, há uma placa de PROIBIDO JOGAR LIXO. Ela faz duas
- * coisas, e nenhuma delas é punir:
+ * No alto da plataforma antes da água há uma placa de PROIBIDO JOGAR LIXO. O que ela faz, na formulação
+ * corrigida pelo Dev em 2026-08-28, é UMA coisa só, e é sobre a criança e não sobre o objeto:
  *
- *   · quem passa por ali carregando lixo SOLTA o lixo, sozinho;
- *   · lixo arremessado para a frente bate numa barreira invisível na linha da placa e VOLTA.
+ *   "Se estiver segurando lixo o jogador não pode seguir adiante após a placa. Se deixar cair o lixo, ele
+ *   está desobedecendo a placa, se lançar o lixo, também. Uma vez que segura o lixo ele só poderá soltar na
+ *   lixeira e não poderá seguir após a placa. Ou seja, pegar o lixo trava ele de soltá-lo ou arremessá-lo."
  *
- * ⚠️ E O MOTIVO É O MAIS FINO DESTE MÓDULO, nas palavras do Dev: "a criança não pode escolher ter um
+ * ⚠️ E O MOTIVO CONTINUA SENDO O MESMO, que é o mais fino deste módulo: "a criança não pode ESCOLHER ter um
  * comportamento ruim, visto que a perda de pontos ainda é vista como RECOMPENSA para crianças que estão
  * procurando fazer uma má ação por um motivo como estar irritada com o professor ou com o jogo."
  *
- * Isso desmonta a solução óbvia. O reflexo de quem desenha jogo é: jogou lixo na água, perde ponto. Mas para a
- * criança que quer transgredir, a penalidade É o efeito procurado — ela confirma que a transgressão funcionou, e
- * o jogo passa a oferecer exatamente o que ela veio buscar. Um número que desce é feedback tão bom quanto um que
- * sobe quando o que se quer é reação.
+ * Isso desmonta a solução óbvia. O reflexo de quem desenha jogo é: jogou lixo na água, perde ponto. Mas para
+ * a criança que quer transgredir, a penalidade É o efeito procurado — ela confirma que a transgressão
+ * funcionou. Um número que desce é feedback tão bom quanto um que sobe quando o que se quer é reação.
  *
- * A barreira não julga e não reage: ela simplesmente não deixa acontecer. Sem punição, sem sermão, sem tela de
- * aviso — porque cada um desses seria uma resposta, e resposta é o prêmio. */
-
-/** O que a placa faz com o lixo que chega até ela. */
-export type EfeitoDaPlaca = 'solta' | 'volta' | 'nada';
-
-/**
- * O personagem cruzou a linha da placa carregando lixo? Então ele o SOLTA ali.
+ * ⚠️ A PRIMEIRA VERSÃO ERROU O ALVO DA BARREIRA, e vale registrar porque o erro é sedutor: ela barrava o
+ * LIXO — quem cruzava a linha soltava o item ali, e o arremesso batia numa parede invisível. Só que soltar
+ * o lixo JÁ É desobedecer. Barrar o objeto deixava a desobediência acontecer e depois consertava a
+ * consequência; barrar a CRIANÇA faz a desobediência não ter por onde começar. E de quebra o mecanismo fica
+ * legível: ela vê a placa, sente que não passa, e a relação entre as duas coisas é imediata.
  *
- * `placaX` nulo = cenário sem placa (sem água), e nada acontece.
- */
-export function efeitoAoPassar(x: number, placaX: number | null, carregando: boolean): EfeitoDaPlaca {
-  if (!carregando || placaX === null) return 'nada';
-  return x >= placaX ? 'solta' : 'nada';
+ * Por isso PEGAR LIXO TRAVA: com lixo na mão não há soltar e não há arremessar (ver `game/carry`), e a
+ * única saída é a lixeira. */
+
+/** A criança pode seguir para `x` carregando o que carrega? Só o LIXO é barrado, e só depois da placa. */
+export function podePassarDaPlaca(x: number, placaX: number | null, carregandoLixo: boolean): boolean {
+  if (!carregandoLixo || placaX === null) return true;
+  return x < placaX;
 }
 
 /**
- * O lixo arremessado atravessa a placa? NUNCA — ele bate na barreira invisível e volta.
+ * O x em que a criança PARA, se a placa a barrar. Devolve o próprio x quando ela pode passar.
  *
- * A barreira é UMA LINHA e não uma caixa: o que decide é o x de destino, não a trajetória, porque um arremesso
- * em arco pode passar por cima de uma barreira baixa e cair na água do outro lado. Barreira que se pula não é
- * barreira; é uma dificuldade a mais para a criança que já resolveu transgredir.
+ * Função e não booleano porque quem chama precisa do NÚMERO: barrar é grudar a criança na linha, e um
+ * booleano faria cada chamador inventar o seu próprio "então onde ela fica?".
  */
-export function arremessoAtravessa(destinoX: number, placaX: number | null): boolean {
-  return placaX === null || destinoX < placaX;
+export function travarNaPlaca(x: number, placaX: number | null, carregandoLixo: boolean): number {
+  return podePassarDaPlaca(x, placaX, carregandoLixo) ? x : placaX!;
 }

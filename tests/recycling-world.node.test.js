@@ -13,8 +13,7 @@
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
 import {
-  montarItens, cargaDe, pegarPerto, passarPelaPlaca, arremessar, depositar, faltamDescartar, lixeiraSob,
-  entrouNaLixeira,
+  montarItens, cargaDe, pegarPerto, depositar, faltamDescartar, lixeiraSob, entrouNaLixeira,
 } from '../app/js/game/recycling-world.js';
 import { MATERIAIS, LIXEIRA_DE } from '../app/js/game/recycling.js';
 
@@ -84,59 +83,11 @@ describe('reciclagem · o mundo', () => {
     expect(pegarPerto(itens, 0, 0, 100, 50)).toBe(null);
   });
 
-  /* ===================== a placa ===================== */
-
-  it('[Right] passar da placa carregando lixo SOLTA o lixo NA placa', () => {
-    const itens = [solto(0, 'metal')];
-    pegarPerto(itens, 0, 0, 100, 20);
-    const acao = passarPelaPlaca(itens, 0, 80, 60, 70);
-    expect(acao.fala).toBe('sr.lixo.solta');
-    expect(acao.pontos, 'a placa NÃO pune — ver game/recycling').toBe(0);
-    expect(itens[0], 'volta ao chão, na placa').toMatchObject({ dono: null, x: 70 });
-  });
-
-  it('[Zero] passar da placa de mãos vazias não faz nada, e sem placa também não', () => {
-    const itens = [solto(0, 'metal')];
-    expect(passarPelaPlaca(itens, 0, 80, 60, 70)).toEqual({ pontos: 0, fala: null });
-    pegarPerto(itens, 0, 0, 100, 20);
-    expect(passarPelaPlaca(itens, 0, 80, 60, null), 'cenário sem água não tem placa').toEqual({ pontos: 0, fala: null });
-    expect(cargaDe(itens, 0), 'e a carga continua na mão').toBeTruthy();
-  });
-
-  it('[Boundary] antes da placa a criança carrega à vontade', () => {
-    const itens = [solto(0, 'metal')];
-    pegarPerto(itens, 0, 0, 100, 20);
-    expect(passarPelaPlaca(itens, 0, 69, 60, 70).fala).toBe(null);
-    expect(cargaDe(itens, 0)).toBeTruthy();
-  });
-
-  /* ===================== arremesso ===================== */
-
-  it('[Right] arremesso aquém da placa cai onde foi jogado', () => {
-    const itens = [solto(0, 'vidro')];
-    pegarPerto(itens, 0, 0, 100, 20);
-    const { caiuEm, acao } = arremessar(itens, 0, 50, 90, 70);
-    expect(caiuEm).toBe(50);
-    expect(acao.fala, 'nada a anunciar: passou').toBe(null);
-    expect(itens[0]).toMatchObject({ dono: null, x: 50, y: 90 });
-  });
-
-  it('[Boundary] A BARREIRA DEVOLVE o que passaria da placa — nunca cai na água', () => {
-    // É o coração da decisão: nada de perder pontos e nada de cair na água. Para quem quer transgredir, a
-    // penalidade É o efeito procurado; a barreira simplesmente não deixa acontecer.
-    const itens = [solto(0, 'vidro')];
-    pegarPerto(itens, 0, 0, 100, 20);
-    const { caiuEm, acao } = arremessar(itens, 0, 900, 90, 70);
-    expect(caiuEm).toBeLessThan(70);
-    expect(acao.fala).toBe('sr.lixo.barreira');
-    expect(acao.pontos, 'a barreira também não pune').toBe(0);
-  });
-
-  it('[Zero] arremessar de mãos vazias não cria item nenhum', () => {
-    const itens = [solto(0, 'vidro')];
-    expect(arremessar(itens, 0, 900, 90, 70)).toEqual({ caiuEm: null, acao: { pontos: 0, fala: null } });
-    expect(itens[0].dono, 'ninguém encostou nele').toBe(null);
-  });
+  /* ===================== a placa e o arremesso saíram daqui ======================
+     `passarPelaPlaca` e `arremessar` foram embora em 2026-08-28, e os casos deles com elas. A regra que as
+     duas implementavam estava invertida: soltar e lançar o lixo SÃO a desobediência à placa, não o conserto
+     dela. Quem barra agora é `game/recycling.travarNaPlaca` (barra a CRIANÇA) e `game/carry.PODE` (com lixo
+     na mão não há soltar nem arremessar). Os casos moraram em `tests/reciclagem.node.test.js`. */
 
   /* ===================== descarte ===================== */
 
@@ -228,7 +179,5 @@ describe('reciclagem · o mundo', () => {
 //     o efeito real é refazer o percurso como preço de errar uma cor.
 //   · trocando o rodízio de `montarItens` por um material fixo → "[Right] os quatro materiais em RODÍZIO"
 //     reprova, e o efeito real é um mapa nascer sem vidro nenhum.
-//   · deixando o arremesso passar da placa (ignorando `arremessoAtravessa`) → "[Boundary] A BARREIRA DEVOLVE"
-//     reprova, e o efeito real é lixo na água, que é a única coisa que a placa existe para impedir.
 //   · fazendo `depositar` pontuar 1 em qualquer lixeira → "[Interface] cada material tem UMA lixeira certa"
 //     reprova, e o efeito real é a criança aprender que qualquer cor serve, e levar isso para a rua.

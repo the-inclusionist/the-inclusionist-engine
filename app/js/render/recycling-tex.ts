@@ -112,22 +112,60 @@ export const paintLixeira = (cor: Lixeira): PixelPainter => (px) => {
   px(4, 10, 4, 1, '#f2f5f7');           // símbolo: traço de baixo
 };
 
-/* ===================== a placa de proibido jogar lixo ===================== */
+/* ===================== a placa de proibido jogar lixo =====================
+ *
+ * ⚠️ SEGUNDA VERSÃO, e a primeira era pequena demais para dizer o que dizia. Tinha 11×16 e resolvia o disco
+ * de proibição com quatro retângulos — na tela virava um quadradinho vermelho com um risco branco, que a
+ * criança lê como "algum objeto", não como "aqui não". O Dev mandou a referência da placa de verdade (o
+ * pictograma da pessoa jogando lixo dentro do círculo cortado) e pediu: "a placa deveria ser grande, com o
+ * símbolo identificável da pessoa jogando coisas e o sinal de proibido."
+ *
+ * Agora são 20×28: prancha de 20×20 e poste de 8. O círculo vem de TABELA DE LINHAS, como a roda do carro —
+ * é o mesmo problema, e pela mesma razão: numa arte de retângulos, o que o olho já sabe que é redondo
+ * denuncia o desenho inteiro se sair quadrado.
+ *
+ * ⚠️ E A LEITURA É EM TRÊS CAMADAS, na ordem em que a criança precisa delas: a prancha clara separa a placa
+ * do fundo; o pictograma PRETO sobre claro é o contraste mais alto que existe e sobrevive aos dezesseis
+ * modos de visão; a barra vermelha vem por último, por cima de tudo, porque é ela que transforma "uma pessoa
+ * jogando lixo" em "não jogue lixo". Trocar essa ordem inverte o sentido do desenho. */
 
-export const PLACA_W = 11, PLACA_H = 16;
+export const PLACA_W = 20, PLACA_H = 28;
+
+/** Disco Ø18: `[recuo, largura]` por linha. Mesma técnica da roda do carro. */
+const DISCO: readonly (readonly [number, number])[] = [
+  [6, 6], [4, 10], [3, 12], [2, 14], [1, 16], [1, 16], [0, 18], [0, 18], [0, 18],
+  [0, 18], [0, 18], [0, 18], [1, 16], [1, 16], [2, 14], [3, 12], [4, 10], [6, 6],
+];
+/** Miolo Ø14, no mesmo formato — abre o vazio claro dentro do aro vermelho. */
+const MIOLO: readonly (readonly [number, number])[] = [
+  [5, 4], [3, 8], [2, 10], [1, 12], [1, 12], [0, 14], [0, 14],
+  [0, 14], [0, 14], [1, 12], [1, 12], [2, 10], [3, 8], [5, 4],
+];
+
+const VERMELHO = '#d42a1e', CLARO = '#f2f5f7', PRETO = '#1a1d24', POSTE = '#6f7883';
 
 /**
- * A placa 11×16 — poste, disco branco com aro vermelho e a barra diagonal da proibição.
+ * A placa 20×28: disco vermelho vazado, a pessoa jogando lixo em preto, a barra da proibição e o poste.
  *
- * Ela é o rosto de uma regra que o jogo NÃO pune (ver `game/recycling`): a barreira invisível simplesmente não
- * deixa o lixo passar. A placa existe para que a criança saiba POR QUE não passou — sem ela, a barreira seria
- * um bug aos olhos de quem joga.
+ * Ela é o rosto de uma regra que o jogo NÃO pune (ver `game/recycling`): quem carrega lixo simplesmente não
+ * passa daqui. A placa existe para que a criança saiba POR QUE não passou — sem ela, a barreira seria um bug
+ * aos olhos de quem joga.
  */
 export const paintPlaca: PixelPainter = (px) => {
-  px(5, 8, 1, 8, '#6f7883');            // poste
-  px(1, 0, 9, 8, '#c8372d');            // disco: aro vermelho
-  px(2, 1, 7, 6, '#f2f5f7');            // disco: miolo branco
-  px(2, 3, 7, 2, '#c8372d');            // barra da proibição
+  px(1, 0, 18, 20, CLARO);                                  // prancha
+  px(0, 0, 20, 1, PRETO); px(0, 19, 20, 1, PRETO);          // moldura: topo e base
+  px(0, 1, 1, 18, PRETO); px(19, 1, 1, 18, PRETO);          // moldura: laterais
+  DISCO.forEach(([dx, w], i) => px(1 + dx, 1 + i, w, 1, VERMELHO));
+  MIOLO.forEach(([dx, w], i) => px(3 + dx, 3 + i, w, 1, CLARO));
+  // O pictograma, dentro do miolo (x 3..16, y 3..16): cabeça, tronco, braço estendido e as pernas.
+  px(7, 5, 3, 3, PRETO);                                    // cabeça
+  px(7, 8, 3, 5, PRETO);                                    // tronco
+  px(10, 9, 3, 1, PRETO);                                   // braço que joga
+  px(7, 13, 1, 3, PRETO); px(9, 13, 1, 3, PRETO);           // pernas
+  px(13, 11, 1, 1, PRETO); px(14, 13, 1, 1, PRETO); px(12, 14, 1, 1, PRETO); // o lixo caindo
+  // A barra da proibição POR ÚLTIMO: é ela que faz o desenho dizer "não".
+  for (let k = 0; k < 12; k++) px(4 + k, 4 + k, 3, 2, VERMELHO);
+  px(9, 20, 2, 7, POSTE); px(7, 27, 6, 1, POSTE);           // poste e pé
 };
 
 /* ===================== assadura ===================== */

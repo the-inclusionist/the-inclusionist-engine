@@ -145,6 +145,28 @@ describe('render/recycling-tex · a arte existe, tem tamanho e não esquece a co
     }
   });
 
+  it('[Right] A PLACA É GRANDE e carrega o pictograma, não só um risco', () => {
+    // A primeira versão tinha 11×16 e resolvia o disco com quatro retângulos: na tela virava um quadradinho
+    // vermelho com um risco branco, que a criança lê como "algum objeto" e não como "aqui não".
+    expect(PLACA_W, 'larga o bastante para caber uma pessoa desenhada').toBeGreaterThanOrEqual(18);
+    expect(PLACA_H, 'e alta o bastante para prancha mais poste').toBeGreaterThanOrEqual(26);
+    const rs = desenhar(paintPlaca);
+    const pretos = rs.filter((r) => r[4] === '#1a1d24');
+    expect(pretos.length, 'moldura + pessoa + lixo caindo').toBeGreaterThanOrEqual(10);
+    const disco = rs.filter((r) => r[4] === '#d42a1e');
+    expect(new Set(disco.map((r) => r[2])).size, 'o disco é redondo: larguras que variam por linha')
+      .toBeGreaterThan(3);
+  });
+
+  it('[Right] A BARRA DA PROIBIÇÃO VEM POR ÚLTIMO, por cima do pictograma', () => {
+    // A ordem é o sentido do desenho: pessoa jogando lixo + barra = "não jogue lixo". Barra primeiro, a
+    // pessoa a cobre e a placa passa a dizer o contrário do que deve.
+    const rs = desenhar(paintPlaca);
+    const ultimaPessoa = rs.map((r) => r[4]).lastIndexOf('#1a1d24');
+    const ultimoVermelho = rs.map((r) => r[4]).lastIndexOf('#d42a1e');
+    expect(ultimoVermelho).toBeGreaterThan(ultimaPessoa);
+  });
+
   it('[Interface] `createRecyclingTextures` assa tudo e nada no import', () => {
     const t = createRecyclingTextures();
     expect([...Object.keys(t.lixo)].sort()).toEqual([...MATERIAIS].sort());
@@ -162,3 +184,6 @@ describe('render/recycling-tex · a arte existe, tem tamanho e não esquece a co
 //   · alargando a caixa de papelão para 14px → "[Right] cada objeto cabe na faixa útil" reprova.
 //   · deslocando um retângulo da placa para fora do canvas → "[Boundary] a lixeira e a placa também ficam
 //     dentro" reprova, e o efeito real é arte cortada na tela.
+//   · pintando a barra da proibição ANTES do pictograma → "[Right] A BARRA DA PROIBIÇÃO VEM POR ÚLTIMO"
+//     reprova, e o efeito real é a placa dizer o contrário do que deve: uma pessoa jogando lixo, sem o não.
+//   · encolhendo a placa de volta para 11×16 → "[Right] A PLACA É GRANDE" reprova.

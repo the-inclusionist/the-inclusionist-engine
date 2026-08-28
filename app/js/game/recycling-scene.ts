@@ -29,7 +29,7 @@ import {
   candidatosDeLixo, posicaoDaPlaca, posicoesDasLixeiras, type MundoDeLixo,
 } from './recycling-spawn.js';
 import {
-  montarItens, cargaDe, pegarPerto, passarPelaPlaca, arremessar, depositar, lixeiraSob, entrouNaLixeira,
+  montarItens, cargaDe, pegarPerto, depositar, lixeiraSob, entrouNaLixeira,
   type ItemDeLixo, type PostoDeLixeira,
 } from './recycling-world.js';
 import type { AcaoDeCarga } from './carry.js';
@@ -81,8 +81,6 @@ export interface RecyclingSceneCtx {
   placaH: number;
   /** A que distância a criança pega o item do chão. */
   alcance: number;
-  /** A que distância o arremesso leva o item. */
-  distanciaDoArremesso: number;
   /** UM PONTO DE COMPORTAMENTO saiu. Quem conta é de fora — ver o cabeçalho. */
   aoPontuar: (jogador: number, material: Material) => void;
   /**
@@ -161,27 +159,16 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
     for (const j of jogadores) {
       const carga = cargaDe(itens, j.i);
 
-      // ⚠️ PEGAR É DE BOTÃO, NÃO DE PROXIMIDADE, e a primeira versão errou nisso. Encostar e pegar parece
-      // gentil até existir o SOLTAR: a criança solta o lixo para resolver outra coisa, dá um passo, e o item
-      // volta para a mão sozinho porque ela ainda está ao alcance. Soltar deixaria de significar qualquer
-      // coisa. Ver `game/carry`, que é quem decide qual botão faz o quê.
-      if (!carga) {
-        if (j.acao === 'pegar') {
-          const pego = pegarPerto(itens, j.i, j.x, j.y, ctx.alcance);
-          if (pego) ctx.anunciar('sr.lixo.pegou', j.i, { material: pego.material });
-        }
-      } else {
-        if (j.acao === 'soltar') {
-          carga.dono = null; carga.x = j.x; carga.y = j.y;
-          ctx.anunciar('sr.lixo.soltou', j.i, { material: carga.material });
-        } else if (j.acao === 'arremessar' && j.direcao !== 0) {
-          const r = arremessar(itens, j.i, j.x + j.direcao * ctx.distanciaDoArremesso, j.y, placa);
-          if (r.acao.fala) ctx.anunciar(r.acao.fala, j.i, { material: carga.material });
-        }
-        // A placa é a única coisa que tira o item da mão sem ela mandar. Conferida DEPOIS da ação do quadro,
-        // porque quem acabou de soltar não está mais carregando nada para a placa derrubar.
-        const naPlaca = passarPelaPlaca(itens, j.i, j.x, j.y, placa);
-        if (naPlaca.fala) ctx.anunciar(naPlaca.fala, j.i, { material: carga.material });
+      // ⚠️ PEGAR É DE BOTÃO, NÃO DE PROXIMIDADE. Encostar e pegar parece gentil, mas com lixo a mão fica
+      // TRAVADA até a lixeira (`game/carry.PODE`) — e uma trava em que se cai sem querer, só por passar por
+      // cima de uma latinha, é armadilha. Quem decide pegar é a criança.
+      //
+      // ⚠️ E NÃO HÁ 'soltar' NEM 'arremessar' AQUI, o que é a decisão e não um esquecimento: soltar e lançar
+      // o lixo SÃO a desobediência à placa. `acaoDeCarga` nunca devolve nenhuma das duas com lixo na mão, e
+      // este módulo não tem um segundo caminho para elas. A única saída do lixo é a lixeira.
+      if (!carga && j.acao === 'pegar') {
+        const pego = pegarPerto(itens, j.i, j.x, j.y, ctx.alcance);
+        if (pego) ctx.anunciar('sr.lixo.pegou', j.i, { material: pego.material });
       }
 
       // O descarte dispara na ENTRADA da lixeira. Sem esta guarda, quem parasse em cima da lixeira errada

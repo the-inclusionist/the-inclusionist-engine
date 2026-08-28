@@ -55,23 +55,40 @@ export function colunaDoTrampolim(m: MundoDeLixo, ateColuna: number): number | n
 }
 
 /**
- * Onde a placa fica: no alto da plataforma DEPOIS do pula-pula e ANTES da água.
+ * Onde a placa fica: NA ÚLTIMA COLUNA SECA — a imediatamente anterior à água —, na plataforma DO ALTO.
  *
- * ⚠️ SE NÃO HOUVER TRAMPOLIM, a placa vai para a coluna imediatamente anterior à água — e isso é degradação
- * deliberada e não descuido: o que a placa tem de garantir é que ninguém joga lixo NA ÁGUA. O pula-pula é a
- * referência que o Dev deu porque é onde ela cabe neste mapa; a água é o que ela protege em qualquer mapa.
+ * ⚠️ SEGUNDA VERSÃO, e a primeira estava no lugar errado por seguir a REFERÊNCIA em vez do ALVO. Ela punha a
+ * placa "logo depois do pula-pula", que no mapa real deu a coluna 23 e o andar de baixo. O Dev corrigiu
+ * olhando a tela: "deveria estar realmente à direita do trampolim, mas na plataforma do alto, não ao lado do
+ * trampolim. Placa deveria ficar na coluna 28: fica alto, mas no lugar correto."
+ *
+ * A coluna 28 daquele mapa é exatamente `agua - 1`. Então a regra não precisa do trampolim: a placa mora na
+ * última coluna seca, e "à direita do trampolim" sai de graça, porque o pula-pula está antes dela. O que a
+ * placa protege é a água — é a água que a posiciona.
+ *
+ * ⚠️ E A ALTURA É A PLATAFORMA MAIS ALTA daquela coluna, não o chão de baixo: é por ali que a criança chega,
+ * depois do pula-pula. Uma placa no porão avisaria sobre um trecho por onde ela não vai passar.
  */
 export function posicaoDaPlaca(m: MundoDeLixo): Ponto | null {
   const agua = colunaDaAgua(m);
   if (agua === null || agua === 0) return null;
-  const tramp = colunaDoTrampolim(m, agua);
-  // Depois do trampolim e antes da água; sem trampolim, encostada na água.
-  const alvo = tramp === null ? agua - 1 : Math.min(agua - 1, tramp + 1);
-  const col = Math.max(0, alvo);
-  // O PISO, e não o primeiro sólido descendo do teto: a placa protege a água, e a água está no andar de
-  // baixo. Ancorada pelo topo, ela ia parar numa laje alta, longe do que existe para proteger.
-  const piso = pisoDaColuna(m, col);
-  return piso === null ? null : { x: col * TILE, y: piso };
+  const col = agua - 1;
+  const alto = pisoAltoDaColuna(m, col);
+  return alto === null ? null : { x: col * TILE, y: alto };
+}
+
+/**
+ * O y do piso mais ALTO em que se anda naquela coluna — o primeiro sólido, descendo, que tenha ar por cima.
+ *
+ * É o par de `pisoDaColuna`, que devolve o mais baixo. Os dois existem porque são duas perguntas diferentes e
+ * as duas aparecem no mesmo mapa: mobiliário de canto quer o chão de baixo; a placa do desfiladeiro quer a
+ * plataforma de cima.
+ */
+function pisoAltoDaColuna(m: MundoDeLixo, col: number): number | null {
+  for (let l = 1; l < m.linhas; l++) {
+    if (m.solido(m.tileEm(col, l)) && !m.solido(m.tileEm(col, l - 1))) return l * TILE;
+  }
+  return null;
 }
 
 // ⚠️ `topoDaColuna` (o primeiro sólido descendo do teto) FOI EMBORA, e vale dizer por quê: as três coisas

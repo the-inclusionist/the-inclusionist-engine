@@ -26,13 +26,41 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { acaoDeCarga } from '../app/js/game/carry.js';
+import { acaoDeCarga, PODE } from '../app/js/game/carry.js';
 
 // `direcao: 1` é o PADRÃO daqui porque os casos antigos são todos de arremesso, e arremessar exige direção
 // desde 2026-08-28. Deixá-la fora faria os casos passarem por `undefined !== 0`, que é passar por acidente.
-const ctx = (o = {}) => ({ objetoPerto: false, carregando: false, noChao: true, bordaDePulo: false, bordaDeCorrer: false, direcao: 1, ...o });
+const ctx = (o = {}) => ({ objetoPerto: false, carregando: false, noChao: true, bordaDePulo: false, bordaDeCorrer: false, direcao: 1, tipoDaCarga: 'bola', ...o });
 
 describe('carga · qual botão faz o quê, e em que contexto', () => {
+  /* ===================== o que está na mão decide o que é permitido ===================== */
+
+  it('[Right] COM LIXO NA MÃO o botão não solta e não arremessa — a única saída é a lixeira', () => {
+    // "Uma vez que segura o lixo ele só poderá soltar na lixeira e não poderá seguir após a placa. Ou seja,
+    // pegar o lixo trava ele de soltá-lo ou arremessá-lo." Soltar e lançar SÃO a desobediência; barrá-los é
+    // o que faz a desobediência não ter por onde começar.
+    const comLixo = { carregando: true, bordaDeCorrer: true, tipoDaCarga: 'lixo' };
+    expect(acaoDeCarga({}, ctx({ ...comLixo, direcao: 0 })), 'sem direção').toBe('nada');
+    expect(acaoDeCarga({}, ctx({ ...comLixo, direcao: 1 })), 'com direção').toBe('nada');
+    expect(acaoDeCarga({}, ctx({ ...comLixo, direcao: -1 }))).toBe('nada');
+  });
+
+  it('[Right] semente e bola arremessam; objeto PERDIDO só se deixa no chão', () => {
+    // A lista de arremessáveis é fechada por decisão: "nenhum outro objeto além de sementes e bolas [...] são
+    // arremessáveis". E um filhote de cachorro não é projétil.
+    const seg = (tipo, direcao) => acaoDeCarga({}, ctx({ carregando: true, bordaDeCorrer: true, tipoDaCarga: tipo, direcao }));
+    expect(seg('semente', 1)).toBe('arremessar');
+    expect(seg('bola', -1)).toBe('arremessar');
+    expect(seg('perdido', 1), 'é de alguém — não se joga').toBe('nada');
+    expect(seg('perdido', 0), 'mas pode ficar no chão até o dono aparecer').toBe('soltar');
+  });
+
+  it('[Interface] a tabela cobre as quatro classes, e só o lixo é totalmente travado', () => {
+    expect(Object.keys(PODE).sort()).toEqual(['bola', 'lixo', 'perdido', 'semente']);
+    const travados = Object.entries(PODE).filter(([, p]) => !p.soltar && !p.arremessar).map(([k]) => k);
+    expect(travados).toEqual(['lixo']);
+  });
+
   /* ===================== a direção separa arremessar de soltar ===================== */
 
   it('[Right] carregando + botão + DIREÇÃO = arremessa; sem direção = SOLTA', () => {

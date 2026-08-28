@@ -164,6 +164,7 @@ const INCL_VERSION = String((typeof __BUILD__ !== 'undefined' && __BUILD__.versi
 import { LOGICAL_W, LOGICAL_H, TILE, COIN_TARGET, TUNE, ANIM } from './core/constants.js';
 import { TILE_TYPES } from './core/constants.js'; // a tabela do que cada tile É — a reciclagem pergunta "isto é água?"
 import { acaoDeCarga } from './game/carry.js'; // qual botão pega, solta e arremessa (ADR-0045)
+import { travarNaPlaca } from './game/recycling.js'; // com lixo na mão, a criança não passa da placa
 import { createRecycling } from './game/recycling-scene.js'; // a reciclagem: lixo, lixeiras e a placa (ADR-0049 §1)
 import { createRecyclingTextures, LIXO_ART, LIXEIRA_W, LIXEIRA_H, PLACA_H } from './render/recycling-tex.js';
 import { Z } from './core/layers.js'; // #69/ADR-0020: ordem-z canônica (nomeada) do render
@@ -737,7 +738,7 @@ const reciclagem = createRecycling({
     solido: (ti) => !!TILE_TYPES[ti]?.solid, agua: (ti) => !!TILE_TYPES[ti]?.water, trampolim: (ti) => !!TILE_TYPES[ti]?.tramp },
   quantosItens: 1, escolherLugares: (total, n) => shuffle(Array.from({ length: total }, (_, i) => i)).slice(0, n),
   lixeiraW: LIXEIRA_W, lixeiraH: LIXEIRA_H, placaH: PLACA_H, alturaDoLixo: (m) => LIXO_ART[m].h,
-  alcance: TILE, distanciaDoArremesso: TILE * 4,
+  alcance: TILE,
   aoPontuar: (j) => { pontosDeComportamento[j] = (pontosDeComportamento[j] ?? 0) + 1; },
   // A CHAVE e os IDENTIFICADORES entram; a tradução acontece aqui. É o que mantém `game/recycling-scene` sem
   // língua nenhuma — o piso do projeto são três idiomas (pilar 3 do ADR-0010).
@@ -1140,11 +1141,23 @@ function update(dt: number){
     const objetoPerto = reciclagem.itens().some((it) => it.dono === null && !it.descartado
       && Math.hypot(it.x - pl.x, it.y - pl.y) <= TILE);
     const acao = acaoDeCarga(pl, { objetoPerto, carregando, noChao: pl.onGround,
-      bordaDePulo: pl.jumpEdge, bordaDeCorrer: pl.runEdge, direcao });
+      bordaDePulo: pl.jumpEdge, bordaDeCorrer: pl.runEdge, direcao,
+      // Hoje a única coisa carregável do jogo é lixo. Semente, bola e objeto perdido já estão decididos
+      // (`game/carry.PODE`) e ainda não existem no mundo — quando existirem, é este campo que muda.
+      tipoDaCarga: carregando ? 'lixo' : null });
     if (acao !== 'nada') { if (pl.toggleRun) pl.jumpEdge = false; else pl.runEdge = false; }
     return { i: pl.i, x: pl.x, y: pl.y, acao, direcao };
   }));
   for(const pl of controlados()) stepPlayer(pl,dt);
+  // A PLACA BARRA A CRIANÇA, e é aqui — DEPOIS da física — porque é a posição final do quadro que interessa:
+  // barrar antes deixaria o passo seguinte atravessar. Com lixo na mão ela para na linha; de mãos livres, ou
+  // com o lixo já na lixeira, passa como sempre. Ver `game/recycling`, que explica por que a barreira é sobre
+  // ELA e não sobre o objeto.
+  for (const pl of controlados()) {
+    const carregandoLixo = reciclagem.itens().some((it) => it.dono === pl.i && !it.descartado);
+    const travado = travarNaPlaca(pl.x, carregandoLixo ? reciclagem.placaX() : null, carregandoLixo);
+    if (travado !== pl.x) { pl.x = travado; if (pl.vx > 0) pl.vx = 0; }
+  }
   secretAreas.stepSecretAreas(dt); // E1: revela a area secreta enquanto houver jogador dentro, re-escurece ao sair e anuncia (game/secret-areas.ts, D3-c)
 }
 /* ===================== camera + quadro -> render/draw.ts (C1) =====================

@@ -10,10 +10,10 @@
 // lista de itens (ADR-0038: isto é estado de RODADA, morre com a partida), e cada função recebe e devolve.
 
 // A REGRA (quem acerta, e o que a placa faz) vem de `game/recycling`; a GEOGRAFIA (onde as coisas nascem), de
-// `game/recycling-spawn`. Uma primeira versão puxava `efeitoAoPassar`/`arremessoAtravessa` do módulo de
-// geografia — o teste reprovou na hora com "is not a function", que é exatamente o defeito que um import
-// errado produz em tempo de execução e que nenhum tipo pega em `.js` de teste.
-import { descartar, MATERIAIS, arremessoAtravessa, efeitoAoPassar, type Material, type Lixeira } from './recycling.js';
+// `game/recycling-spawn`. Uma primeira versão puxava a placa do módulo de geografia — o teste reprovou na
+// hora com "is not a function", que é o defeito que um import errado produz em tempo de execução e que
+// nenhum tipo pega em `.js` de teste.
+import { descartar, MATERIAIS, type Material, type Lixeira } from './recycling.js';
 import type { Ponto } from './recycling-spawn.js';
 
 /** Um item de lixo no mundo. `dono` é o índice do jogador que o carrega, ou `null` se está no chão. */
@@ -81,34 +81,16 @@ export function pegarPerto(itens: ItemDeLixo[], jogador: number, x: number, y: n
   return melhor;
 }
 
-/**
- * O jogador cruzou a placa carregando lixo? Então ele solta ali, e o item volta ao chão NA PLACA.
+/* ===================== SOLTAR E ARREMESSAR SAÍRAM DAQUI, E ISSO É A DECISÃO =====================
  *
- * Ver `game/recycling` para o porquê de a placa não punir: para quem quer transgredir, a penalidade é o efeito
- * procurado, e um número que desce é feedback tão bom quanto um que sobe.
- */
-export function passarPelaPlaca(itens: ItemDeLixo[], jogador: number, x: number, y: number, placaX: number | null): AcaoDeLixo {
-  const carga = cargaDe(itens, jogador);
-  if (efeitoAoPassar(x, placaX, !!carga) !== 'solta' || !carga) return NADA;
-  carga.dono = null;
-  carga.x = placaX!;
-  carga.y = y;
-  return { pontos: 0, fala: 'sr.lixo.solta' };
-}
-
-/**
- * Arremessa a carga para `destinoX`. A barreira da placa devolve o que passaria dela.
+ * Havia `passarPelaPlaca` (cruzou a linha carregando → o item cai ali) e `arremessar` (a barreira devolve o
+ * que passaria da placa). As duas foram embora em 2026-08-28 porque a regra que elas implementavam estava
+ * invertida: soltar e lançar o lixo SÃO a desobediência, não o conserto dela. O Dev: "se deixar cair o lixo,
+ * ele está desobedecendo a placa, se lançar o lixo, também."
  *
- * Devolve o x em que o item efetivamente cai — quem desenha usa isso, e o teste prova que nunca passa da placa.
- */
-export function arremessar(itens: ItemDeLixo[], jogador: number, destinoX: number, y: number, placaX: number | null): { caiuEm: number | null; acao: AcaoDeLixo } {
-  const carga = cargaDe(itens, jogador);
-  if (!carga) return { caiuEm: null, acao: NADA };
-  const passa = arremessoAtravessa(destinoX, placaX);
-  const x = passa ? destinoX : Math.max(0, placaX! - 1);
-  carga.dono = null; carga.x = x; carga.y = y;
-  return { caiuEm: x, acao: { pontos: 0, fala: passa ? null : 'sr.lixo.barreira' } };
-}
+ * Agora quem carrega lixo simplesmente não solta e não lança (`game/carry.PODE`), e quem carrega lixo não
+ * passa da placa (`game/recycling.travarNaPlaca`). Não há o que este módulo faça com um lixo em trânsito,
+ * porque lixo em trânsito só vai para um lugar: a lixeira. */
 
 /**
  * Deposita a carga numa lixeira.

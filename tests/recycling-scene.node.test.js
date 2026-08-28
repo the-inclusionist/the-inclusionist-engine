@@ -189,6 +189,20 @@ describe('reciclagem · a cena', () => {
     expect(c.falas.at(-1)).toEqual(['sr.lixo.acertou', 0, { material: it.material, cor: LIXEIRA_DE[it.material] }]);
   });
 
+  it('[Zero] COM LIXO NA MÃO, soltar e arremessar não fazem NADA aqui', () => {
+    // `acaoDeCarga` já recusa as duas com lixo (`game/carry.PODE`), e este caso afirma que a cena não tem um
+    // segundo caminho para elas: soltar e lançar o lixo SÃO a desobediência à placa. A única saída é a
+    // lixeira. Sem este caso, um "conserto" futuro reabriria a porta pela cena sem ninguém notar.
+    const c = cena();
+    c.api.montar();
+    const it = c.api.itens()[0];
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
+    c.api.atualizar([quem(0, 150, 32, 'soltar')]);
+    c.api.atualizar([quem(0, 150, 32, 'arremessar', 1)]);
+    expect(c.api.itens()[0].dono, 'continua na mão dela').toBe(0);
+    expect(c.falas.map(([k]) => k), 'e nada foi anunciado além do pegar').toEqual(['sr.lixo.pegou']);
+  });
+
   it('[Zero] ENCOSTAR NÃO PEGA — pegar é escolha, e é de botão', () => {
     // A primeira versão pegava por proximidade. Com o SOLTAR existindo, isso vira armadilha: a criança larga
     // o lixo para resolver outra coisa, dá um passo, e o item volta para a mão sozinho.
@@ -198,45 +212,6 @@ describe('reciclagem · a cena', () => {
     c.api.atualizar([quem(0, it.x, it.y)]);            // em cima do item, sem pedir nada
     expect(c.api.itens()[0].dono).toBe(null);
     expect(c.falas).toEqual([]);
-  });
-
-  it('[Right] SOLTAR deixa o item no pé dela, e ela pode seguir sem ele', () => {
-    // "Ela deve poder pegar lixo e soltar para administrar seus assuntos e também poderá voltar e pegar o que
-    // ficou para trás com o poder de vôo."
-    const c = cena();
-    c.api.montar();
-    const it = c.api.itens()[0];
-    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
-    c.api.atualizar([quem(0, 150, 32, 'soltar')]);
-    expect(c.api.itens()[0]).toMatchObject({ dono: null, x: 150, y: 32 });
-    expect(c.falas.at(-1)[0]).toBe('sr.lixo.soltou');
-    c.api.atualizar([quem(0, 150, 32)]);
-    expect(c.api.itens()[0].dono, 'e continua no chão no quadro seguinte').toBe(null);
-  });
-
-  it('[Right] ARREMESSAR joga na direção segurada, e a placa continua barrando', () => {
-    const c = cena();
-    c.api.montar();
-    const it = c.api.itens()[0];
-    const partiuDe = it.x;   // por VALOR: `it` é o objeto vivo, e comparar com ele depois compara consigo mesmo
-    c.api.atualizar([quem(0, partiuDe, it.y, 'pegar')]);
-    c.api.atualizar([quem(0, partiuDe, 32, 'arremessar', -1)]);
-    expect(c.api.itens()[0].x, 'para a esquerda de onde ela estava').toBeLessThan(partiuDe);
-    c.api.atualizar([quem(0, c.api.itens()[0].x, 32, 'pegar')]);
-    c.api.atualizar([quem(0, c.api.placaX() - 8, 32, 'arremessar', 1)]);
-    expect(c.api.itens()[0].x, 'a barreira não deixa passar da placa').toBeLessThan(c.api.placaX());
-    expect(c.pontos, 'arremessar não paga nem cobra').toEqual([]);
-  });
-
-  it('[Boundary] cruzar a placa carregando SOLTA o lixo, e não pontua nada', () => {
-    const c = cena();
-    c.api.montar();
-    const it = c.api.itens()[0];
-    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
-    c.api.atualizar([quem(0, c.api.placaX() + 40, it.y)]);
-    expect(c.falas.map(([k]) => k)).toContain('sr.lixo.solta');
-    expect(c.api.itens()[0].dono, 'caiu da mão na placa').toBe(null);
-    expect(c.pontos, 'a placa NUNCA pune e NUNCA paga').toEqual([]);
   });
 
   it('[Zero] jogador de mãos vazias passando pela lixeira não faz nada', () => {
