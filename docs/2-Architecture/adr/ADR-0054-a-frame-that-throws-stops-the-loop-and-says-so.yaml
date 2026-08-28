@@ -1,0 +1,116 @@
+metadata:
+  status: "accepted"
+  date: 2026-08-28
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0035 (the engine is ours; the renderer sits behind an adapter)"
+    - "ADR-0044 (narration is the blind child's only channel)"
+    - "ADR-0047 (the CRT precedent: fail loud, never fail quiet)"
+    - "inclusionist-demos design spec, D16 and finding F5"
+  informed: []
+
+title: A frame that throws STOPS the loop and SAYS SO — because a frozen canvas is silent, and silence is what a blind child cannot read
+
+context-and-problem-statement: |
+  `core/loop.ts` registered the frame function on the ticker and never looked at it again. If that function threw,
+  it threw again on the next frame, and the next, forever: a frozen canvas, a console filling up, and nothing on
+  screen saying what happened.
+
+  The demos spec asks for this at D16, from its own audit finding F5, and its reason is scale: "across 383 games,
+  one bad game has to be distinguishable from a broken engine".
+
+  THE REASON HERE IS DIFFERENT AND MORE URGENT. A frozen canvas is a VISUAL symptom. In blind mode there is no
+  canvas being read, so a frozen game and a thinking game produce exactly the same experience — silence. The child
+  who has the least information about what went wrong is the one this game was built for.
+
+decision-drivers:
+  - "The failure must reach the channel the player actually uses. For a blind child that is speech, not pixels."
+  - "Catching and continuing is worse than the defect: it converts a hard crash into a game that runs forever
+     computing nonsense, and nobody finds out."
+  - "The loop is a leaf and must stay node-testable — the boundary cannot require a browser to prove."
+
+considered-options:
+  - "B1 — leave it: the exception surfaces in the console and a developer sees it"
+  - "B2 — catch and continue, so the game keeps running"
+  - "B3 — catch ONCE, stop the loop, and announce"
+
+pros-and-cons-of-the-options:
+  B1:
+    good: ["No code, and a developer with the console open does see it."]
+    bad: ["Nobody in a classroom has a console open.",
+          "The same exception repeats every frame at 60 Hz, which is its own denial of service on weak hardware."]
+  B2:
+    good: ["The screen keeps updating, so it looks less broken."]
+    bad: ["It IS more broken: state after a thrown frame is undefined, and the game goes on drawing conclusions
+           from it. A wrong game that runs is harder to diagnose than one that stops.",
+          "It hides the very event that should be reported."]
+  B3:
+    good: ["Stopping is honest: the game says it cannot continue instead of pretending.",
+           "The announcement reaches the blind player, which is the whole reason this is not merely a developer
+            convenience.",
+           "One catch, one message — no 60-per-second repetition of either."]
+    bad: ["The player loses the session at the first throw, with no recovery path.",
+          "It needs the composition root to wire an announcement, so a consumer that forgets gets a silent stop."]
+
+decision-outcome:
+  chosen-option:
+    link: "B3 — catch once, stop, announce"
+    justification: |
+      ===== 1. THE THREE THINGS IT DOES, IN ORDER =====
+        1. **STOPS.** A `parado` flag inside the closure, checked first. It is the flag and not the ticker
+           removal that guarantees stopping — see §2.
+        2. **DEREGISTERS** from the ticker when the ticker supports it. A callback running sixty times a second
+           to do nothing still costs on the hardware in pillar 1, and it leaves the ticker lying about how many
+           things the game has.
+        3. **ANNOUNCES**, once, with the error. The composition root wires this to `srAlert` and to a visible
+           message.
+
+      ===== 2. WHY THE FLAG AND NOT ONLY `remove` =====
+      The ticker type this module accepts requires only `add` and `deltaTime` — `remove` is optional, because the
+      point of the type is that anything tick-shaped can drive the loop. A ticker without `remove` cannot
+      deregister, and relying on removal alone would leave exactly those consumers calling a broken frame forever.
+      The flag makes stopping unconditional; the removal is the optimisation on top.
+
+      ===== 3. THE ANNOUNCEMENT MAY NOT RESURRECT THE PROBLEM =====
+      `aoFalhar` is itself wrapped. If the warning breaks — no screen reader, no DOM, a consumer that passed
+      something odd — an exception there would travel back into the ticker and be invisible again, which is the
+      precise defect this record closes. The loop has already stopped by then; the announcement is the part that
+      may fail without costing anything.
+
+      ===== 4. IT IS OPTIONAL, AND STOPPING IS NOT =====
+      A consumer that mounts the loop without a shell — a test, the quiz consumer — still stops. The announcement
+      is what a shell adds. That ordering matters: a project that made announcing mandatory would tempt someone to
+      pass a no-op just to satisfy the signature.
+
+  consequences:
+    positive:
+      - "A blind player is told the game stopped, which is the only reason this outranks 'log it and move on'."
+      - "One bad frame no longer costs 60 exceptions a second on a school machine."
+      - "The whole boundary is proved in node, with fakes — no browser needed to know it works."
+    negative:
+      - "The session ends at the first throw. There is no resume, and for a child mid-activity that is a real loss
+         — accepted because continuing from undefined state is a worse loss that nobody sees."
+      - "A consumer that forgets `aoFalhar` gets a silent stop, which is better than a silent freeze and still not
+         good."
+    neutral:
+      - "The signature gains an optional fourth parameter; every existing call site keeps working unchanged."
+
+  confirmation: |
+    `tests/loop-boundary.node.test.js`, written failing first — six of its seven cases were red before the change.
+    It pins: the loop stops calling the frame; it announces exactly once with the error; it deregisters when the
+    ticker allows; **it stops even on a ticker with no `remove`**; it stops with no `aoFalhar` at all; and a
+    throwing `aoFalhar` does not escape into the ticker.
+
+    Three mutations confirmed red: dropping the flag and relying on `remove` alone (the no-`remove` case fails);
+    catching and continuing (the stop case fails); announcing every frame instead of once (the announcement case
+    fails, and the real effect is a screen reader repeating one sentence sixty times a second).
+
+    ⚠️ WHAT IS NOT YET DONE: the composition root does not wire `aoFalhar` yet, so today the loop stops silently.
+    Wiring it to `srAlert` plus a visible message is the other half, and until it exists this record is only half
+    true.
+
+more-information: |
+  File: `app/js/core/loop.ts`. Comes from D16 of the `inclusionist-demos` design spec and its audit finding F5, and
+  is the first of that spec's decisions adopted here on its own merits rather than as part of the engine split.
+
+  Deliberately NOT decided here: whether a stopped session can be resumed, and what the visible message says.

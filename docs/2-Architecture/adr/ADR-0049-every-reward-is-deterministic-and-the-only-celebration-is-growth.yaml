@@ -73,14 +73,33 @@ decision-outcome:
   chosen-option:
     link: "R3 — three deterministic rewards, and the celebration belongs to growth"
     justification: |
-      ===== 1. POINTS — A WORK RECORD =====
-      ONE POINT PER CORRECT QUESTION, regardless of the question's difficulty. Nothing is bought with them and
-      nothing is unlocked by them. No animation when the counter rises. They reset at the end of the day; the day's
-      total is what is kept, and the adult (and the student from 13) can see it.
+      ===== 1. POINTS — A RECORD OF BEHAVIOUR, AND THEY MOVE NOTHING =====
+      ⚠️ CORRECTED 2026-08-28, because the first version of this clause said "one point per correct QUESTION" and
+      that is narrower than the decision. The Dev: "é um número que registra comportamento: aumenta quando o
+      jogador faz atividade, aumenta quando faz uma boa ação (cuidar do ambiente), encontrar itens perdidos de
+      pessoas e devolvê-los (social), apagar incêndio etc."
+
+      SO A POINT HAS TWO SOURCES, worth the same:
+        · an ACADEMIC question answered correctly;
+        · a GOOD DEED in the world — sorting a recyclable into the right bin, returning something someone lost,
+          putting out a fire.
+
+      ONE POINT EACH, regardless of difficulty and regardless of which source. Nothing is bought with them and
+      nothing is unlocked by them. No animation when the counter rises. They reset at the end of the day; the
+      day's total is kept, and the adult (and the student from 13) can see it.
+
+      ⚠️ AND THE DECISIVE PROPERTY IS THAT **POINTS CHANGE NOTHING**. They do not paint the bar, they do not move
+      a level, they do not feed the adaptation. They are a number that says the person worked — which is why a
+      good deed can carry one without any of the consequences an academic answer carries.
 
       ⚠️ THE FLAT POINT IS THE ACCESSIBILITY DECISION HIDDEN IN THE SCORING. An earlier version paid by difficulty.
       The Dev corrected it so "os alunos com mais dificuldade consigam tirar tantos pontos quanto os alunos com
       menos dificuldade". A difficulty-weighted score is a class ranking wearing the costume of a work log.
+
+      ⚠️ AND WHY GOOD DEEDS PAY AT ALL, since nothing else in this record rewards anything the child was not asked
+      to do: because what a game counts is what it teaches a child to value. A counter that rises for putting a can
+      in the right bin says that caring for the place is work, in the same currency as answering a question. It
+      costs nothing to the pedagogy precisely BECAUSE points move nothing — the reward is the record itself.
 
       ===== 2. POWERS — KEYS, NOT PRIZES =====
       Super-powers stop being something the minigames award and become part of the LEVEL: they lie in the world,
@@ -109,9 +128,14 @@ decision-outcome:
       pull-to-refresh, consecutive-access streaks, and competitive gamification between students — the last of
       which ADR-0048 already satisfies, since there is no ranking and the end screen is collective.
 
-      ===== 5. THE TEN-SEGMENT BAR =====
+      ===== 5. THE TEN-SEGMENT BAR — ACADEMIC ONLY =====
       Centred at the bottom of the screen, it is the child's window onto §5 of ADR-0048 and the only always-visible
-      feedback:
+      feedback.
+
+      ⚠️ ONLY AN ACADEMIC QUESTION PAINTS A SEGMENT. A good deed gives a point and paints nothing, because the bar
+      is not a record of work — it is the reading of where the child stands in a skill, and a can in the right bin
+      says nothing about that skill. Confusing the two would let a child who is good at the platforming raise her
+      academic level without answering anything, which is the failure this clause exists to prevent.
 
         · BLUE  — right on the first attempt (no support)
         · GREEN — right on a later attempt (with mediation)
