@@ -13,7 +13,7 @@
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
 import { createRecycling } from '../app/js/game/recycling-scene.js';
-import { LIXEIRA_DE, LIXEIRAS } from '../app/js/game/recycling.js';
+import { LIXEIRA_DE, LIXEIRAS, MATERIAIS } from '../app/js/game/recycling.js';
 
 const TILE = 16;
 
@@ -115,11 +115,18 @@ describe('reciclagem · a cena', () => {
     expect(c.api.itens().length, 'e o lixo continua nascendo').toBeGreaterThan(0);
   });
 
-  it('[Right] COM UM ITEM POR VOLTA, o material RODA entre as voltas', () => {
-    // O Dev: "por que só a caixa? não vejo os outros três objetos criados." O rodízio existia desde o
-    // primeiro dia para que um mapa nunca nascesse sem vidro — e a quantidade 1 o desligou em silêncio:
-    // `ordem` começava em 0 toda volta, então o material era sempre o primeiro da lista. Cem voltas, cem
-    // caixas de papelão, nenhuma lata. A ordem passa a atravessar as voltas.
+  it('[Right] UMA UNIDADE DE CADA por volta — é o que "um por volta" queria dizer', () => {
+    // Eu tinha lido "um só por volta está de bom tamanho" como UM ITEM, e nasceu sempre a caixa de papelão.
+    // Ele corrigiu: "eu quis dizer uma unidade de cada". Toda volta traz os quatro materiais, que é o que faz
+    // a criança encontrar vidro sem depender de sorte.
+    const c = cena(undefined, { quantosItens: 4 });
+    c.api.montar();
+    expect([...c.api.itens()].map((i) => i.material).sort()).toEqual([...MATERIAIS].sort());
+  });
+
+  it('[Boundary] e com uma quantidade que NÃO é múltipla de quatro, o rodízio atravessa as voltas', () => {
+    // A garantia "todos os materiais aparecem" não pode depender de a quantidade ser múltipla de quatro. Com
+    // um item por volta, começar sempre do primeiro daria cem voltas de caixa de papelão e nenhuma lata.
     const c = cena(undefined, { quantosItens: 1 });
     const vistos = [];
     for (let volta = 0; volta < 4; volta++) { c.api.montar(); vistos.push(c.api.itens()[0].material); }

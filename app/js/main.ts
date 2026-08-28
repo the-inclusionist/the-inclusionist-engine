@@ -164,7 +164,7 @@ const INCL_VERSION = String((typeof __BUILD__ !== 'undefined' && __BUILD__.versi
 import { LOGICAL_W, LOGICAL_H, TILE, COIN_TARGET, TUNE, ANIM } from './core/constants.js';
 import { TILE_TYPES } from './core/constants.js'; // a tabela do que cada tile É — a reciclagem pergunta "isto é água?"
 import { acaoDeCarga } from './game/carry.js'; // qual botão pega, solta e arremessa (ADR-0045)
-import { travarNaPlaca } from './game/recycling.js'; // com lixo na mão, a criança não passa da placa
+import { MATERIAIS, travarNaPlaca } from './game/recycling.js'; // os quatro materiais, e a trava da placa
 import { createRecycling } from './game/recycling-scene.js'; // a reciclagem: lixo, lixeiras e a placa (ADR-0049 §1)
 import { createRecyclingTextures, LIXO_ART, LIXEIRA_W, LIXEIRA_H, PLACA_H } from './render/recycling-tex.js';
 import { Z } from './core/layers.js'; // #69/ADR-0020: ordem-z canônica (nomeada) do render
@@ -760,7 +760,9 @@ const reciclagem = createRecycling({
   candidatos: () => findCoinCandidates()
     .filter((c) => solidAt(c.tx, c.ty + 1))
     .map((c) => ({ x: c.tx * TILE, y: (c.ty + 1) * TILE })),
-  quantosItens: 1, escolherLugares: (total, n) => shuffle(Array.from({ length: total }, (_, i) => i)).slice(0, n),
+  // UMA UNIDADE DE CADA por volta — as palavras do Dev, e por isso `MATERIAIS.length` e não o número 4: se um
+  // quinto material entrar um dia, "uma de cada" continua verdade sem ninguém lembrar de mexer aqui.
+  quantosItens: MATERIAIS.length, escolherLugares: (total, n) => shuffle(Array.from({ length: total }, (_, i) => i)).slice(0, n),
   lixeiraW: LIXEIRA_W, lixeiraH: LIXEIRA_H, placaH: PLACA_H,
   alturaDoLixo: (m) => LIXO_ART[m].h, larguraDoLixo: (m) => LIXO_ART[m].w, alturaDoJogador: BOX.h,
   // UM TILE E MEIO, e não um: a 16px — a criança em pé no tile do lado — o botão não fazia nada e não
