@@ -122,15 +122,56 @@ decision-outcome:
         · IT IS BORN WHEN A TEACHER ADDS A STUDENT, and students are NEVER MERGED. Merging two ids requires knowing
           they are the same person, and knowing that is holding the identity. Refusing the merge is refusing to
           hold the link.
-        · ⚠️ TIME IS STORED SO THAT CO-OCCURRENCE DIES: elapsed time WITHIN a session at full precision (that is
-          what the learning curve uses), the absolute date COARSENED TO THE DAY, and a CONSTANT DRAWN OFFSET per
-          id (0 to 6 days) applied to all of that id's dates. Within an id the intervals stay exact — "practised
-          again three days later" remains true. Across ids the alignment is destroyed.
+        · ⚠️ TIME IS STORED SO THAT CO-OCCURRENCE DIES, and the attack is the reason rather than taste: thirty ids
+          active in the same fifty-minute window, on the same weekdays, on the same school calendar ARE a
+          classroom — the grouping reappears by co-occurrence with no school field anywhere.
 
-          The reason is the attack, not taste: thirty ids active in the same fifty-minute window, on the same
-          weekdays, on the same school calendar ARE a classroom — the grouping reappears by co-occurrence with no
-          school field anywhere. Normalising every id to "the first access of the week" does the OPPOSITE of what
-          is needed: it anchors all thirty to the same event and sharpens the co-occurrence.
+          THE CLOCK AXIS IS UNIFORMISED AWAY (the Dev's design, and stronger than the jitter first proposed here):
+          every record lands on a CANONICAL SCHOOL GRID — day 1 is always Monday, day 2 always Wednesday, weeks
+          numbered from the start of the school year, about 29 lab sessions across the 200 Brazilian school days.
+          A class meeting Tuesday/Thursday and one meeting Monday/Friday both record as day 1 / day 2, so the
+          cadence — which identified more than the hour did — stops existing. An axis with no variance groups
+          nobody.
+
+          ⚠️ AND NORMALISING TO "THE FIRST ACCESS OF THE WEEK" WOULD HAVE DONE THE OPPOSITE, which is why the
+          rejected variant is written down: it anchors all thirty ids to the SAME event and sharpens the
+          co-occurrence instead of dissolving it. Uniformising against a fixed external grid works; uniformising
+          against each id's own first event does not.
+
+          THE GRID IS RELATIVE TO THE INSTALLATION'S SCHOOL YEAR, never to Brazil's. The knowledge tree covers
+          50+ curricula and a Portuguese school starts in September; anchored on a Brazilian calendar, everyone
+          outside it lands in the "wrong" weeks and the country becomes the thing that stands out.
+
+          ⚠️ AND WHAT EXCEEDS THE LAST WEEK IS CAPPED, NOT DELETED AND NOT FOLDED BACK. Folding December onto
+          November doubles November's density and turns "studied only in December" (catch-up, recovery, a holiday
+          programme) into an anomaly, and an anomaly identifies. Records past the last week stay IN the last week.
+
+          Elapsed time WITHIN a session keeps full precision — that is what the learning curve uses, and with the
+          ceiling of about one hour of screen a week there is rarely a second session in the same week for the
+          grid to blur.
+
+        · ⚠️ AND THE RESIDUAL ATTACK MOVES FROM THE CLOCK TO THE CONTENT, where the parameter is RARITY and not
+          proportion. Thirty children on a RARE activity in the same window are a class whether that is 10% or
+          100% of their time; thirty on the country's commonest activity are invisible at any proportion. So a
+          fixed "share at most X% of activities" does not protect: it cannot tell the two apart.
+
+          THE MEASURE IS SUPPRESSION BY k-ANONYMITY AT QUERY TIME: the datalake stores everything, and NO RESULT
+          RESOLVING TO FEWER THAN k DISTINCT ids IS RETURNED. A small cell is generalised (parent entity instead
+          of entity, term instead of week) or withheld. **k >= 10**, and the number is borrowed rather than
+          invented: it is the cut education statistics already use for small cells — INEP suppresses, and US
+          states suppress below 10 under FERPA. Adopting the threshold of those who already publish school data
+          is more defensible in an audit than a threshold of ours.
+
+          It adapts by itself: a whole class on the commonest activity passes, because thousands share it; a whole
+          class on a rare one never leaves the query layer. Nobody has to calibrate a percentage.
+
+          ⚠️ SO HOW MUCH OF THE CLASS DOES THE SAME ACTIVITY IS A PEDAGOGICAL DECISION, NOT A PRIVACY ONE, and
+          that is deliberate. "Today everybody does this" is a legitimate classroom tool — to introduce a concept,
+          to discuss it together, to let a child see she is not alone in the difficulty. Buying anonymity with it
+          would be paying dearly while holding cheaper currency. The per-child suggestion the compass makes (the
+          adult accepts skill by skill, from data only the adult and the school hold) is worth doing for the ZPD
+          reason of ADR-0048; that it also dilutes co-occurrence is a bonus, never the justification — a
+          pedagogical feature defended only by a privacy argument dies the day a teacher finds it inconvenient.
 
       ⚠️ AND THIS DATA IS PSEUDONYMISED, NOT ANONYMOUS. LGPD art. 13 §4º says so plainly, and art. 5º XI releases
       only what is irreversible by reasonable available means. Calling it anonymous is the sentence that costs
@@ -258,6 +299,12 @@ decision-outcome:
 
 more-information: |
   DELIBERATELY NOT DECIDED HERE, both because the answer changes what is built and not how it is described:
+
+    · WHETHER A CONSTANT PER-id WEEK OFFSET IS ADDED ON TOP OF THE CANONICAL GRID. It would blur the residual
+      content co-occurrence before the k threshold has to suppress anything, and because the offset is CONSTANT
+      per id it preserves every interval within that id exactly — weeks 10, 11, 13 shifted by +5 are 15, 16, 18,
+      still one and two weeks apart. It costs the cohort reading ("how does everyone do in week 12 of the year"),
+      which the inference layer does not appear to need. Proposed and not yet decided.
 
     · WHETHER THE PSEUDONYM ROTATES. The Dev proposed re-drawing the time offset at random intervals. Re-drawing
       the OFFSET ALONE corrupts what it exists to protect: the gap between a March event and an April one becomes
