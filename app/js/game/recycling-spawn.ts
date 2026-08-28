@@ -54,63 +54,52 @@ export function colunaDoTrampolim(m: MundoDeLixo, ateColuna: number): number | n
   return achou;
 }
 
-/**
- * Onde a placa fica: NA ÚLTIMA COLUNA SECA — a imediatamente anterior à água —, na plataforma DO ALTO.
- *
- * ⚠️ SEGUNDA VERSÃO, e a primeira estava no lugar errado por seguir a REFERÊNCIA em vez do ALVO. Ela punha a
- * placa "logo depois do pula-pula", que no mapa real deu a coluna 23 e o andar de baixo. O Dev corrigiu
- * olhando a tela: "deveria estar realmente à direita do trampolim, mas na plataforma do alto, não ao lado do
- * trampolim. Placa deveria ficar na coluna 28: fica alto, mas no lugar correto."
- *
- * A coluna 28 daquele mapa é exatamente `agua - 1`. Então a regra não precisa do trampolim: a placa mora na
- * última coluna seca, e "à direita do trampolim" sai de graça, porque o pula-pula está antes dela. O que a
- * placa protege é a água — é a água que a posiciona.
- *
- * ⚠️ E A ALTURA É A PLATAFORMA MAIS ALTA daquela coluna, não o chão de baixo: é por ali que a criança chega,
- * depois do pula-pula. Uma placa no porão avisaria sobre um trecho por onde ela não vai passar.
- */
-export function posicaoDaPlaca(m: MundoDeLixo): Ponto | null {
-  const agua = colunaDaAgua(m);
-  if (agua === null || agua === 0) return null;
-  const col = agua - 1;
-  const alto = pisoAltoDaColuna(m, col);
-  return alto === null ? null : { x: col * TILE, y: alto };
-}
+/** Onde a placa da fase fica, em TILES: a coluna, e a linha que o corpo dela ocupa. */
+export interface PlacaDeclarada { col: number; linha: number }
 
 /**
- * O y do piso mais ALTO em que se anda naquela coluna — o primeiro sólido, descendo, que tenha ar por cima.
+ * Onde a placa fica — DECLARADO PELA FASE, nunca deduzido do mapa.
  *
- * É o par de `pisoDaColuna`, que devolve o mais baixo. Os dois existem porque são duas perguntas diferentes e
- * as duas aparecem no mesmo mapa: mobiliário de canto quer o chão de baixo; a placa do desfiladeiro quer a
- * plataforma de cima.
+ * ⚠️ TERCEIRA VERSÃO, e as duas primeiras erraram o lugar porque tentaram DERIVAR o que é design de fase.
+ * A primeira punha a placa "logo depois do pula-pula" e deu a coluna 23, no porão. A segunda punha em
+ * `agua - 1` e deu a coluna 28, na plataforma do alto — e a água que decidia isso estava nas linhas 54 a 60,
+ * ou seja, um dado do porão escolhendo o lugar de uma placa que mora lá em cima. Deu certo por coincidência
+ * de mapa, e o Dev viu na tela que estava errado nas duas vezes.
+ *
+ * A posição certa é a que ele indicou: "eu posicionei duas plataformas abaixo da lava. Pedi pra colocar a 15
+ * blocos de altura do chão, 27ª coluna contando da esquerda para a direita." Isso é uma escolha de onde o
+ * caminho se estreita e o precipício começa — uma leitura do desenho da fase, e nenhuma fórmula sobre tiles
+ * chega nela.
+ *
+ * ⚠️ E SEM DECLARAÇÃO NÃO HÁ PLACA, de propósito. Inventar uma posição foi exatamente o que produziu duas
+ * placas erradas em silêncio: nada quebrou, nenhum teste ficou vermelho, e a coisa apareceu no lugar errado
+ * na tela de alguém. Uma fase sem placa declarada simplesmente não tem placa — e aí o lixo dela não é barrado
+ * em lugar nenhum, que é honesto e visível.
+ *
+ * O `y` devolvido é a LINHA DO PÉ (a base do corpo da placa), no mesmo sistema do jogador e do lixo.
  */
-function pisoAltoDaColuna(m: MundoDeLixo, col: number): number | null {
-  for (let l = 1; l < m.linhas; l++) {
-    if (m.solido(m.tileEm(col, l)) && !m.solido(m.tileEm(col, l - 1))) return l * TILE;
-  }
-  return null;
+export function posicaoDaPlaca(m: MundoDeLixo, declarada: PlacaDeclarada | null): Ponto | null {
+  if (!declarada) return null;
+  if (declarada.col < 0 || declarada.col >= m.colunas) return null;
+  if (declarada.linha < 0 || declarada.linha >= m.linhas) return null;
+  return { x: declarada.col * TILE, y: (declarada.linha + 1) * TILE };
 }
-
-// ⚠️ `topoDaColuna` (o primeiro sólido descendo do teto) FOI EMBORA, e vale dizer por quê: as três coisas
-// que este módulo posiciona — lixo, lixeira e placa — apoiam em CHÃO EM QUE SE ANDA, e num nível de
-// plataforma o primeiro sólido do teto quase nunca é esse chão. Ele punha as lixeiras dentro do muro da
-// borda, a placa numa laje alta longe da água, e o lixo no andar mais alto de cada coluna. Um nome que
-// parecia certo e respondia outra pergunta.
 
 /**
  * O y do PISO EM QUE SE ANDA naquela coluna: o sólido mais baixo que tem ar por cima. `null` numa coluna que
  * é parede inteira, ou que não tem chão nenhum.
  *
- * ⚠️ NÃO É `topoDaColuna`, e a diferença derrubou a primeira versão das lixeiras. No mapa real a coluna 0 é
- * MURO do teto ao chão: o primeiro sólido dela está na linha 0, então ancorar pelo topo punha as quatro
- * lixeiras acima da borda de cima da tela. O que a criança pisa é o piso, e é ele que sustenta mobiliário.
+ * ⚠️ NÃO É "o primeiro sólido descendo do teto", e a diferença derrubou a primeira versão das lixeiras. No
+ * mapa real a coluna 0 é MURO do teto ao chão: o primeiro sólido dela está na linha 0, então ancorar pelo
+ * topo punha as quatro lixeiras acima da borda de cima da tela. O que a criança pisa é o piso, e é ele que
+ * sustenta mobiliário.
  */
 function pisoDaColuna(m: MundoDeLixo, col: number): number | null {
   for (let l = m.linhas - 1; l >= 0; l--) {
     if (!m.solido(m.tileEm(col, l))) continue;
     // Exige AR POR CIMA de verdade: uma coluna que é parede inteira devolve `null` e o grupo anda para a
     // direita. Aceitar a linha 0 como piso faria o topo do muro da borda valer como chão, e as quatro
-    // lixeiras subiriam para fora da tela — que foi exatamente o que o mapa real fez com a primeira versão.
+    // lixeiras subiriam para fora da tela — que foi o que o mapa real fez com a primeira versão.
     if (l > 0 && !m.solido(m.tileEm(col, l - 1))) return l * TILE;
   }
   return null;
@@ -128,12 +117,11 @@ function pisoDaColuna(m: MundoDeLixo, col: number): number | null {
  * do próprio objeto — foi assim que o item deixou de flutuar meio tile acima do chão, que era o que acontecia
  * quando a conta usava o TILE inteiro em vez da altura da latinha.
  */
-export function candidatosDeLixo(m: MundoDeLixo, larguraDaLixeira = 0): Ponto[] {
+export function candidatosDeLixo(m: MundoDeLixo, larguraDaLixeira = 0, placa: Ponto | null = null): Ponto[] {
   const agua = colunaDaAgua(m);
   // ⚠️ O LIMITE É A PLACA, e não a água, quando existe placa. Medido no mapa real: a placa cai na coluna 23
   // e a água só na 29, então cinco colunas de lixo nasciam DEPOIS da placa — e um item pego ali nunca
   // chegaria às lixeiras, porque `efeitoAoPassar` faz quem está além da linha soltar a carga a cada quadro.
-  const placa = posicaoDaPlaca(m);
   const limiteDaPlaca = placa === null ? Infinity : Math.floor(placa.x / TILE);
   const limite = Math.min(agua === null ? m.colunas : agua, limiteDaPlaca);
   // ⚠️ E NADA NASCE EM CIMA DAS LIXEIRAS. Elas ficam no chão do mesmo canto por onde a criança passa, então um

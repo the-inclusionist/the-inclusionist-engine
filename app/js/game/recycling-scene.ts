@@ -26,7 +26,7 @@ import type { CamadaEsvaziavel, CriarSprite, Visivel } from '../render/port.js';
 import type { Material, Lixeira } from './recycling.js';
 import { LIXEIRAS } from './recycling.js';
 import {
-  candidatosDeLixo, posicaoDaPlaca, posicoesDasLixeiras, type MundoDeLixo,
+  candidatosDeLixo, posicaoDaPlaca, posicoesDasLixeiras, type MundoDeLixo, type PlacaDeclarada,
 } from './recycling-spawn.js';
 import {
   montarItens, cargaDe, pegarPerto, depositar, lixeiraSob, entrouNaLixeira,
@@ -67,6 +67,9 @@ export interface RecyclingSceneCtx {
   texturaDaPlaca: unknown;
   /** A consulta de tiles do mapa atual. */
   mundo: MundoDeLixo;
+  /** ONDE A PLACA DESTA FASE FICA, em tiles — design de fase, não dedução. `null` = fase sem placa, e aí o
+   *  lixo dela não é barrado em lugar nenhum. Ver `game/recycling-spawn.posicaoDaPlaca`. */
+  placaEm: PlacaDeclarada | null;
   /** Quantos itens de lixo nascem por volta. */
   quantosItens: number;
   /** Escolhe QUAIS lugares candidatos recebem item — é por onde a raiz injeta o embaralhamento. */
@@ -137,7 +140,7 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
       ctx.camada.addChild(s);
     }
 
-    const p = posicaoDaPlaca(ctx.mundo);
+    const p = posicaoDaPlaca(ctx.mundo, ctx.placaEm);
     placa = p === null ? null : p.x;
     if (p !== null) {
       const s = ctx.criarSprite(ctx.texturaDaPlaca);
@@ -145,7 +148,7 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
       ctx.camada.addChild(s);
     }
 
-    itens = montarItens(candidatosDeLixo(ctx.mundo, ctx.lixeiraW), ctx.quantosItens, ctx.escolherLugares);
+    itens = montarItens(candidatosDeLixo(ctx.mundo, ctx.lixeiraW, p), ctx.quantosItens, ctx.escolherLugares);
     spritesDeLixo = itens.map((it) => {
       const s = ctx.criarSprite(ctx.texturaDoLixo(it.material));
       s.x = it.x; s.y = it.y - ctx.alturaDoLixo(it.material); s.visible = true;

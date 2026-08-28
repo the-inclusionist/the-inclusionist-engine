@@ -725,6 +725,21 @@ rebuildCoins();
    moedas reinicia o mundo SEM prejuízo de pontos. Um ponto guardado na rodada zeraria junto com ela, que é
    exatamente o que aquela cláusula proíbe. Onde ele mora DE VERDADE (a pessoa, com o dia inteiro) ainda não
    existe — ADR-0049 §5b, e a issue que o liga ao HUD. */
+/**
+ * ONDE A PLACA DO `clarity` FICA. Dado de FASE, escrito à mão, porque é design de fase e não conta sobre
+ * tiles — duas tentativas de derivá-la (do pula-pula, depois da água) puseram a placa no lugar errado, e
+ * das duas vezes quem viu foi o Dev, na tela.
+ *
+ * A posição é a que ele indicou: "eu posicionei duas plataformas abaixo da lava. Pedi pra colocar a 15
+ * blocos de altura do chão, 27ª coluna contando da esquerda para a direita." Em índices 0-based: coluna 26,
+ * corpo da placa na linha 46, apoiada na plataforma da linha 47 — que é, de fato, a segunda abaixo da lava
+ * das linhas 36 (colunas 25 a 27), e fica 15 linhas acima do chão da linha 61.
+ *
+ * ⚠️ QUANDO O MAPA MUDAR, ESTES DOIS NÚMEROS MUDAM JUNTO. É o preço de a placa não ter glifo próprio no
+ * formato de nível — e é um preço menor do que o de uma fórmula que acerta o lugar por coincidência.
+ */
+const PLACA_DO_CLARITY = { col: 26, linha: 46 };
+
 const recTex = createRecyclingTextures();
 const recContainer = new PIXI.Container(); camera.addChild(recContainer);
 /** Pontos de COMPORTAMENTO por jogador. Sobrevive ao reinício da volta, de propósito (ADR-0049 §7). */
@@ -736,6 +751,7 @@ const reciclagem = createRecycling({
   // segundo jogo com outra numeração poria a placa no lugar errado sem nenhum erro de tipo (ver constants).
   mundo: { tileEm: (c, l) => tileAt(c, l), colunas: WORLD_W, linhas: WORLD_H,
     solido: (ti) => !!TILE_TYPES[ti]?.solid, agua: (ti) => !!TILE_TYPES[ti]?.water, trampolim: (ti) => !!TILE_TYPES[ti]?.tramp },
+  placaEm: PLACA_DO_CLARITY,
   quantosItens: 1, escolherLugares: (total, n) => shuffle(Array.from({ length: total }, (_, i) => i)).slice(0, n),
   lixeiraW: LIXEIRA_W, lixeiraH: LIXEIRA_H, placaH: PLACA_H, alturaDoLixo: (m) => LIXO_ART[m].h,
   alcance: TILE,

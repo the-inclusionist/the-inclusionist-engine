@@ -50,7 +50,7 @@ function cena(linhas = ['........................', '....................~~~~', 
     texturaDoLixo: (m) => 'tex:' + m,
     texturaDaLixeira: (c) => 'tex:' + c,
     texturaDaPlaca: 'tex:placa',
-    mundo: mundo(linhas),
+    mundo: mundo(linhas), placaEm: { col: 17, linha: 1 },
     quantosItens: 4,
     escolherLugares: (total, n) => Array.from({ length: Math.min(n, total) }, (_, i) => i),
     lixeiraW: 12, lixeiraH: 15, placaH: 16, alturaDoLixo: () => 9,
@@ -85,8 +85,11 @@ describe('reciclagem · a cena', () => {
     expect(c.api.placaX()).not.toBe(null);
   });
 
-  it('[Zero] cenário SEM água não ganha placa, e a cena monta assim mesmo', () => {
-    const c = cena(['........................', '........................', '########################']);
+  it('[Zero] FASE SEM PLACA DECLARADA monta assim mesmo, e o lixo continua nascendo', () => {
+    // Uma fase pode não ter placa — e aí o lixo dela não é barrado em lugar nenhum, que é honesto e visível.
+    // Inventar uma posição foi exatamente o que produziu duas placas erradas em silêncio.
+    const c = cena(['........................', '........................', '########################'],
+      { placaEm: null });
     c.api.montar();
     expect(c.api.placaX()).toBe(null);
     expect(c.filhos.some((s) => s.tex === 'tex:placa')).toBe(false);

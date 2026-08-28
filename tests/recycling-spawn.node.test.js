@@ -37,43 +37,31 @@ describe('reciclagem · a geografia', () => {
   it('[Zero] cenário sem água: não há coluna de água nem placa', () => {
     const m = mundo(['........', '########']);
     expect(colunaDaAgua(m)).toBe(null);
-    expect(posicaoDaPlaca(m)).toBe(null);
   });
 
-  it('[Right] a placa fica na ÚLTIMA COLUNA SECA, que é a que dá para a água', () => {
-    //  col:  0123456
-    //         ^ em 2, água em 5  →  placa em 4 (agua - 1), à direita do pula-pula de graça
-    const m = mundo(['.......', '..^..~.', '#######']);
-    expect(colunaDoTrampolim(m, 5)).toBe(2);
-    expect(posicaoDaPlaca(m)).toEqual({ x: 4 * TILE, y: 2 * TILE });
+  it('[Right] A PLACA VEM DECLARADA PELA FASE, e o `y` é a linha do pé', () => {
+    // Duas versões anteriores DEDUZIAM a posição (do pula-pula, depois da água) e erraram nas duas, em
+    // silêncio: nada quebrou, nenhum teste ficou vermelho, e a placa apareceu no lugar errado na tela. Onde
+    // o caminho se estreita é leitura do desenho da fase, e nenhuma fórmula sobre tiles chega nisso.
+    const m = mundo(['....', '....', '####']);
+    expect(posicaoDaPlaca(m, { col: 2, linha: 1 })).toEqual({ x: 2 * TILE, y: 2 * TILE });
   });
 
-  it('[Right] E NA PLATAFORMA DO ALTO, não no chão de baixo', () => {
-    // "Deveria estar realmente à direita do trampolim, mas na plataforma do alto, não ao lado do trampolim."
-    // É por cima que a criança chega ali depois do pula-pula; uma placa no porão avisaria sobre um trecho por
-    // onde ela não vai passar.
-    //  col:   0123
-    //  linha 1: laje em 2 e 3 · linha 4: chão de baixo · água na coluna 3
-    const m = mundo(['....', '..##', '...~', '....', '####']);
-    expect(posicaoDaPlaca(m).x, 'coluna 2 = agua - 1').toBe(2 * TILE);
-    expect(posicaoDaPlaca(m).y, 'a laje de cima (linha 1), e não o chão da linha 4').toBe(1 * TILE);
+  it('[Zero] SEM DECLARAÇÃO NÃO HÁ PLACA — inventar posição foi o defeito', () => {
+    const m = mundo(['....~', '#####']);
+    expect(posicaoDaPlaca(m, null), 'e a fase simplesmente não tem placa').toBe(null);
   });
 
-  it('[Boundary] trampolim colado na água: a placa não invade a água', () => {
-    const m = mundo(['.......', '...^~..', '#######']);
-    expect(posicaoDaPlaca(m).x, 'fica na coluna antes da água, não depois').toBe(3 * TILE);
-  });
-
-  it('[Boundary] sem trampolim, a placa encosta na água — degradação deliberada', () => {
-    // O pula-pula é a referência que o Dev deu porque é onde ela cabe NESTE mapa. O que a placa protege em
-    // qualquer mapa é a água, então é a água que decide quando não há trampolim.
-    const m = mundo(['.....~.', '#######']);
-    expect(posicaoDaPlaca(m).x).toBe(4 * TILE);
+  it('[Boundary] declaração fora do mapa não vira placa fantasma', () => {
+    const m = mundo(['....', '####']);
+    expect(posicaoDaPlaca(m, { col: 99, linha: 0 })).toBe(null);
+    expect(posicaoDaPlaca(m, { col: 1, linha: 99 })).toBe(null);
+    expect(posicaoDaPlaca(m, { col: -1, linha: 0 })).toBe(null);
   });
 
   it('[Zero] água na coluna 0: não há trecho seco, e não há placa', () => {
     const m = mundo(['~~~~', '####']);
-    expect(posicaoDaPlaca(m)).toBe(null);
+    expect(candidatosDeLixo(m), 'sem trecho seco, nada nasce').toEqual([]);
   });
 
   it('[Right] NADA NASCE DEPOIS DA PLACA — o limite é ela, não a água', () => {
@@ -82,8 +70,8 @@ describe('reciclagem · a geografia', () => {
     //   col: 0123456789
     //         ^ em 2 → placa em 3; água em 8
     const m = mundo(['..........', '..^.....~.', '##########']);
-    expect(posicaoDaPlaca(m).x, 'coluna 7 = agua - 1').toBe(7 * TILE);
-    const c = candidatosDeLixo(m);
+    const placa = posicaoDaPlaca(m, { col: 7, linha: 1 });
+    const c = candidatosDeLixo(m, 0, placa);
     expect(c.every((p) => p.x < 7 * TILE), 'nada a partir da placa').toBe(true);
     expect(c).toHaveLength(6);   // colunas 0,1,3,4,5,6 — na 2 está o trampolim, e não se põe lixo nele
   });
@@ -91,10 +79,10 @@ describe('reciclagem · a geografia', () => {
   it('[Right] o lixo nasce SOBRE a superfície, e só no trecho seco', () => {
     const m = mundo(['.....', '....~', '#####']);
     const c = candidatosDeLixo(m);
-    // Três, e não quatro: sem trampolim a placa encosta na água (coluna 3), e é ELA que limita.
-    expect(c).toHaveLength(3);
+    // Quatro colunas secas: sem placa declarada, quem limita é a água.
+    expect(c).toHaveLength(4);
     expect(c[0]).toEqual({ x: 0, y: 2 * TILE });     // a LINHA DO PÉ: o topo do chão, igual à do jogador
-    expect(c.every((p) => p.x < 3 * TILE), 'nada a partir da placa, quanto mais da água').toBe(true);
+    expect(c.every((p) => p.x < 4 * TILE), 'nada a partir da água').toBe(true);
   });
 
   it('[Boundary] devolve a LINHA DO PÉ, e é quem desenha que sobe a altura do objeto', () => {
