@@ -125,6 +125,31 @@ decision-outcome:
       within reach, JUMP PICKS UP INSTEAD OF JUMPING. It is the direct consequence of the contract the Dev dictated,
       and it is his choice — but whoever touches it next needs to know it was chosen, not forgotten.
 
+      ⚠️ AMENDED 2026-08-28 — THE MECHANISM HAS OBJECTS NOW, AND THE CONTRACT GREW A THIRD ACTION. The recycling
+      (ADR-0049 §1) is the first carryable thing in the game, so `game/carry` stopped being code with no caller. Two
+      sentences from the Dev completed the routing:
+
+        · "Arremesso = apertar a direção da esquerda ou direita e apertar o botão de interação / corrida quando se
+          está segurando algo."
+        · "Ela deve poder pegar lixo e soltar para administrar seus assuntos e também poderá voltar e pegar o que
+          ficou para trás com o poder de vôo."
+
+      So THE HELD DIRECTION IS WHAT SEPARATES THROWING FROM PUTTING DOWN: button with a direction throws, button
+      without one drops at her feet. Everything else in §6 stands — the toggle still moves the trigger from RUN to
+      JUMP, and the "not on the ground" clause still separates the two taps of the jump.
+
+      ⚠️ AND DROPPING FORCED PICKING UP TO BE A BUTTON, which was not obvious and which the first wiring got wrong.
+      It picked up by PROXIMITY — touch it and it is in your hands. That reads as generous until dropping exists:
+      the child puts the litter down to deal with something else, takes one step, and the item returns to her hands
+      on its own, because she is still within reach. Dropping would stop meaning anything. Whoever decides to pick
+      something up is her.
+
+      ⚠️ AND THE COST ABOVE IS NOW GENERAL, not a toggle-only case: WHEN THE CARRY ACTS, IT CONSUMES THE BUTTON
+      EDGE. Without that, picking the litter up would also jump, and she would lose the object in mid-air every
+      single time she picked it up. The wiring also has to read the edge BEFORE the physics step, because
+      `game/physics` clears `jumpEdge`/`runEdge` at the end of every step — the first browser test showed a button
+      that did nothing, with nothing wrong with the button.
+
   consequences:
     positive:
       - "The child who cannot hold a button can now run, which was half of what the movement toggle promised and did
@@ -136,8 +161,10 @@ decision-outcome:
       - "The jump is contextual for whoever enables this. Three conditions decide whether it jumps or clings, and a
          sighted player discovers that by experimenting — which is exactly what a blind player cannot do, and is why
          item 4 above is part of the decision and not a refinement."
-      - "`game/carry.ts` is code with no caller. It is tested and reachable from nothing, which is a real (small)
-         cost, accepted so that the routing is decided before the objects arrive and force it."
+      - "`game/carry.ts` was code with no caller — tested and reachable from nothing, accepted so that the routing
+         would be decided before the objects arrived and forced it. It HAS a caller since 2026-08-28 (the
+         recycling), and the bet paid: the routing was already decided when the first carryable object appeared,
+         and it did not have to be invented against a deadline."
       - "One more cross-cutting setting: `toggleRun` is now read in three different places in `physics.ts` (step
          cadence, cane probe, cling) and each of them asks a DIFFERENT one of the two questions in item 2."
     neutral:
