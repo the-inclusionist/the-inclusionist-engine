@@ -26,8 +26,10 @@ import type { CamadaEsvaziavel, CriarSprite, Visivel } from '../render/port.js';
 import type { Material, Lixeira } from './recycling.js';
 import { LIXEIRAS } from './recycling.js';
 import {
-  candidatosDeLixo, posicaoDaPlaca, posicoesDasLixeiras, type MundoDeLixo, type PlacaDeclarada,
+  candidatosDeLixo, faixaDaPlaca, posicaoDaPlaca, posicoesDasLixeiras,
+  type MundoDeLixo, type PlacaDeclarada,
 } from './recycling-spawn.js';
+import type { BarreiraDaPlaca } from './recycling.js';
 import {
   montarItens, cargaDe, pegarPerto, depositar, lixeiraSob, entrouNaLixeira,
   type ItemDeLixo, type PostoDeLixeira,
@@ -82,7 +84,14 @@ export interface RecyclingSceneCtx {
   /** Altura da placa desenhada. Separada da lixeira porque são desenhos diferentes — desenhar a placa com a
    *  altura da lixeira a enterra ou a faz flutuar, e o defeito só aparece na tela de alguém. */
   placaH: number;
-  /** A que distância a criança pega o item do chão. */
+  /**
+   * A que distância a criança pega o item do chão.
+   *
+   * ⚠️ UM TILE NÃO BASTA, e foi assim que nasceu. Medido no navegador: parada exatamente a 16px do item — que
+   * é ela em PÉ NO TILE DO LADO, a distância mais natural do mundo — o botão não fazia nada, e sem nenhum
+   * aviso. Do lado de quem joga isso é "o botão não funciona", que foi como o Dev relatou. O `x` do jogador é
+   * o centro dele e o `x` do item é a borda do tile, então "encostado" já são uns 16 a 23 pixels.
+   */
   alcance: number;
   /** UM PONTO DE COMPORTAMENTO saiu. Quem conta é de fora — ver o cabeçalho. */
   aoPontuar: (jogador: number, material: Material) => void;
@@ -104,8 +113,19 @@ export interface RecyclingApi {
   atualizar(jogadores: readonly JogadorNaReciclagem[]): void;
   /** Os itens, para quem precisar ler (testes, depuração, futuro sonar). */
   itens(): readonly ItemDeLixo[];
-  /** Onde a placa ficou, ou `null` num cenário sem água. */
+  /**
+   * Há item ao alcance deste jogador?
+   *
+   * ⚠️ EXISTE PARA NÃO HAVER DOIS ALCANCES. A raiz de composição precisa desta resposta para montar o
+   * contexto de `game/carry`, e a versão anterior a recalculava lá com a sua própria conta. Os dois números
+   * eram o MESMO tile e mesmo assim divergiam em silêncio no dia em que um mudasse: `acaoDeCarga` diria
+   * "pegar" e `pegarPerto` não acharia nada — botão que não faz nada, sem erro em lugar nenhum.
+   */
+  temItemPerto(jogador: number, x: number, y: number): boolean;
+  /** Onde a placa ficou, ou `null` numa fase que não declarou nenhuma. */
   placaX(): number | null;
+  /** O VÃO em que a barreira da placa vale — do piso dela até o sólido acima. `null` sem placa. */
+  barreira(): BarreiraDaPlaca | null;
   /** Onde as quatro lixeiras ficaram. Para o protocolo de conferência no navegador e para quem for narrar. */
   lixeiras(): readonly PostoDeLixeira[];
 }
@@ -120,6 +140,7 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
   let spritesDeLixo: SpriteDeLixo[] = [];
   let lixeiras: PostoDeLixeira[] = [];
   let placa: number | null = null;
+  let vao: BarreiraDaPlaca | null = null;
   /** A lixeira em que cada jogador estava no quadro passado. Sem isto o descarte dispara em rajada. */
   let ultimaLixeira: number[] = [];
 
@@ -142,6 +163,7 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
 
     const p = posicaoDaPlaca(ctx.mundo, ctx.placaEm);
     placa = p === null ? null : p.x;
+    vao = faixaDaPlaca(ctx.mundo, p);
     if (p !== null) {
       const s = ctx.criarSprite(ctx.texturaDaPlaca);
       s.x = p.x; s.y = p.y - ctx.placaH; s.visible = true;   // o poste apoia NO chão, então ela sobe a PRÓPRIA altura
@@ -202,5 +224,10 @@ export function createRecycling(ctx: RecyclingSceneCtx): RecyclingApi {
     });
   }
 
-  return { montar, atualizar, itens: () => itens, placaX: () => placa, lixeiras: () => lixeiras };
+  const temItemPerto = (jogador: number, x: number, y: number): boolean =>
+    !cargaDe(itens, jogador) && itens.some((it) => it.dono === null && !it.descartado
+      && Math.hypot(it.x - x, it.y - y) <= ctx.alcance);
+
+  return { montar, atualizar, itens: () => itens, temItemPerto,
+    placaX: () => placa, barreira: () => vao, lixeiras: () => lixeiras };
 }

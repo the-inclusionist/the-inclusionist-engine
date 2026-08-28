@@ -54,7 +54,7 @@ function cena(linhas = ['........................', '....................~~~~', 
     quantosItens: 4,
     escolherLugares: (total, n) => Array.from({ length: Math.min(n, total) }, (_, i) => i),
     lixeiraW: 12, lixeiraH: 15, placaH: 16, alturaDoLixo: () => 9,
-    alcance: 12, distanciaDoArremesso: 3 * TILE,
+    alcance: 12,
     aoPontuar: (j, m) => pontos.push([j, m]),
     anunciar: (chave, j, sobre) => falas.push([chave, j, sobre]),
     ...extra,
@@ -204,6 +204,28 @@ describe('reciclagem · a cena', () => {
     c.api.atualizar([quem(0, 150, 32, 'arremessar', 1)]);
     expect(c.api.itens()[0].dono, 'continua na mão dela').toBe(0);
     expect(c.falas.map(([k]) => k), 'e nada foi anunciado além do pegar').toEqual(['sr.lixo.pegou']);
+  });
+
+  it('[Right] O ALCANCE COBRE O TILE DO LADO — foi aí que o botão parecia quebrado', () => {
+    // Medido no navegador com a tecla de verdade: a 16px do item, que é a criança EM PÉ NO TILE DO LADO, o
+    // botão não fazia nada e não avisava nada. Do lado de quem joga, "o botão não funciona".
+    const c = cena(undefined, { alcance: 24 });
+    c.api.montar();
+    const it = c.api.itens()[0];
+    expect(c.api.temItemPerto(0, it.x - 16, it.y), 'um tile de distância').toBe(true);
+    c.api.atualizar([quem(0, it.x - 16, it.y, 'pegar')]);
+    expect(c.api.itens()[0].dono).toBe(0);
+  });
+
+  it('[Interface] `temItemPerto` é O alcance — a raiz não tem uma conta própria', () => {
+    // Duas contas para a mesma pergunta divergem em silêncio no dia em que uma mudar: `acaoDeCarga` diria
+    // "pegar" e `pegarPerto` não acharia nada. Botão que não faz nada, sem erro em lugar nenhum.
+    const c = cena(undefined, { alcance: 24 });
+    c.api.montar();
+    const it = c.api.itens()[0];
+    expect(c.api.temItemPerto(0, it.x + 100, it.y), 'longe').toBe(false);
+    c.api.atualizar([quem(0, it.x, it.y, 'pegar')]);
+    expect(c.api.temItemPerto(0, it.x, it.y), 'de mãos cheias não há o que pegar').toBe(false);
   });
 
   it('[Zero] ENCOSTAR NÃO PEGA — pegar é escolha, e é de botão', () => {

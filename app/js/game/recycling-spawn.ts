@@ -17,6 +17,7 @@
 // meio do nada e o lixo dentro de uma parede, que é pior do que não ter.
 
 import { TILE } from '../core/constants.js';
+import type { BarreiraDaPlaca } from './recycling.js';
 
 /** A consulta mínima de mundo que este módulo faz. `tileEm` devolve o número do tile na coluna/linha. */
 export interface MundoDeLixo {
@@ -83,6 +84,26 @@ export function posicaoDaPlaca(m: MundoDeLixo, declarada: PlacaDeclarada | null)
   if (declarada.col < 0 || declarada.col >= m.colunas) return null;
   if (declarada.linha < 0 || declarada.linha >= m.linhas) return null;
   return { x: declarada.col * TILE, y: (declarada.linha + 1) * TILE };
+}
+
+/**
+ * O VÃO em que a barreira da placa vale: do piso em que ela está plantada até o primeiro sólido acima dela.
+ *
+ * ⚠️ SEM ESTE RECORTE a barreira era uma linha do teto ao chão, e barrava a criança em andares onde a placa
+ * nem aparece — parede invisível, que a criança lê como defeito do jogo. Aqui a barreira e o aviso passam a
+ * ocupar o mesmo vão: onde ela não passa, ela vê o porquê.
+ *
+ * Sem sólido nenhum acima, o vão vai até o topo do mapa — céu aberto também é vão.
+ */
+export function faixaDaPlaca(m: MundoDeLixo, placa: Ponto | null): BarreiraDaPlaca | null {
+  if (placa === null) return null;
+  const col = Math.floor(placa.x / TILE);
+  const linhaDoCorpo = placa.y / TILE - 1;      // a placa apoia NO piso; o corpo dela fica na linha de cima
+  let topo = 0;
+  for (let l = linhaDoCorpo; l >= 0; l--) {
+    if (m.solido(m.tileEm(col, l))) { topo = (l + 1) * TILE; break; }
+  }
+  return { x: placa.x, topo, piso: placa.y };
 }
 
 /**

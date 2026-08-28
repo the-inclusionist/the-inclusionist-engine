@@ -754,7 +754,9 @@ const reciclagem = createRecycling({
   placaEm: PLACA_DO_CLARITY,
   quantosItens: 1, escolherLugares: (total, n) => shuffle(Array.from({ length: total }, (_, i) => i)).slice(0, n),
   lixeiraW: LIXEIRA_W, lixeiraH: LIXEIRA_H, placaH: PLACA_H, alturaDoLixo: (m) => LIXO_ART[m].h,
-  alcance: TILE,
+  // UM TILE E MEIO, e não um: a 16px — a criança em pé no tile do lado — o botão não fazia nada e não
+  // avisava nada. Ver `alcance` em `game/recycling-scene`.
+  alcance: TILE * 1.5,
   aoPontuar: (j) => { pontosDeComportamento[j] = (pontosDeComportamento[j] ?? 0) + 1; },
   // A CHAVE e os IDENTIFICADORES entram; a tradução acontece aqui. É o que mantém `game/recycling-scene` sem
   // língua nenhuma — o piso do projeto são três idiomas (pilar 3 do ADR-0010).
@@ -1154,8 +1156,7 @@ function update(dt: number){
   reciclagem.atualizar(controlados().map((pl) => {
     const direcao = held(pl, 'left') ? -1 : held(pl, 'right') ? 1 : 0;
     const carregando = reciclagem.itens().some((it) => it.dono === pl.i && !it.descartado);
-    const objetoPerto = reciclagem.itens().some((it) => it.dono === null && !it.descartado
-      && Math.hypot(it.x - pl.x, it.y - pl.y) <= TILE);
+    const objetoPerto = reciclagem.temItemPerto(pl.i, pl.x, pl.y);   // UM alcance só — ver a API da cena
     const acao = acaoDeCarga(pl, { objetoPerto, carregando, noChao: pl.onGround,
       bordaDePulo: pl.jumpEdge, bordaDeCorrer: pl.runEdge, direcao,
       // Hoje a única coisa carregável do jogo é lixo. Semente, bola e objeto perdido já estão decididos
@@ -1171,7 +1172,7 @@ function update(dt: number){
   // ELA e não sobre o objeto.
   for (const pl of controlados()) {
     const carregandoLixo = reciclagem.itens().some((it) => it.dono === pl.i && !it.descartado);
-    const travado = travarNaPlaca(pl.x, carregandoLixo ? reciclagem.placaX() : null, carregandoLixo);
+    const travado = travarNaPlaca(pl.x, pl.y, reciclagem.barreira(), carregandoLixo);
     if (travado !== pl.x) { pl.x = travado; if (pl.vx > 0) pl.vx = 0; }
   }
   secretAreas.stepSecretAreas(dt); // E1: revela a area secreta enquanto houver jogador dentro, re-escurece ao sair e anuncia (game/secret-areas.ts, D3-c)
@@ -1727,7 +1728,7 @@ startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
   setMinimapVisible(!titleG.visible&&rodada.numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
   if(fatosDaCena().mundoRodando){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
-window.__incl={app,get player(){return players[0];},players,get numPlayers(){return rodada.numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return cenas.fase();},get padPrev(){return padPrevAct;},get coins(){return coins;},get lixo(){return reciclagem.itens();},get placaX(){return reciclagem.placaX();},get lixeiras(){return reciclagem.lixeiras();},get pontosDeComportamento(){return pontosDeComportamento;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return rodada.ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
+window.__incl={app,get player(){return players[0];},players,get numPlayers(){return rodada.numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return cenas.fase();},get padPrev(){return padPrevAct;},get coins(){return coins;},get lixo(){return reciclagem.itens();},get placaX(){return reciclagem.placaX();},get barreiraDaPlaca(){return reciclagem.barreira();},get lixeiras(){return reciclagem.lixeiras();},get pontosDeComportamento(){return pontosDeComportamento;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return rodada.ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE();},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},
   setOwnerColors,setCbSafe,setRoleColor,resetRoleColors,PCOLOR,HC_ROLE,get ownerColors(){return ownerColors;},get cbSafe(){return cbSafe;},

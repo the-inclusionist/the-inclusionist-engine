@@ -105,10 +105,33 @@ export function podeNascerEm(x: number, aguaX: number | null): boolean {
  * Por isso PEGAR LIXO TRAVA: com lixo na mão não há soltar e não há arremessar (ver `game/carry`), e a
  * única saída é a lixeira. */
 
-/** A criança pode seguir para `x` carregando o que carrega? Só o LIXO é barrado, e só depois da placa. */
-export function podePassarDaPlaca(x: number, placaX: number | null, carregandoLixo: boolean): boolean {
-  if (!carregandoLixo || placaX === null) return true;
-  return x < placaX;
+/**
+ * A BARREIRA DA PLACA — e ela é um SEGMENTO, não uma linha infinita.
+ *
+ * ⚠️ DECIDIDO PELO DEV EM 2026-08-28, depois de a primeira versão barrar a coluna inteira: "a barreira deve
+ * valer só do piso da placa até o próximo tile sólido acima da placa."
+ *
+ * O motivo é o mesmo que faz a placa existir. Uma linha que atravessa o mapa de cima a baixo barra a criança
+ * em andares onde a placa nem é visível — ela bate numa parede invisível, e o jogo vira um defeito aos olhos
+ * dela. Barrando só o vão em que a placa está PLANTADA, a barreira e o aviso passam a ocupar o mesmo lugar:
+ * onde ela não passa, ela vê o porquê.
+ */
+export interface BarreiraDaPlaca {
+  /** A linha vertical que não se atravessa. */
+  x: number;
+  /** O y do teto do vão (o fundo do primeiro sólido acima da placa). Acima dele a barreira não existe. */
+  topo: number;
+  /** O y do piso em que a placa está plantada. Abaixo dele a barreira não existe. */
+  piso: number;
+}
+
+/** A criança pode seguir para (`x`, `y`) carregando o que carrega? Só o LIXO é barrado, e só dentro do vão. */
+export function podePassarDaPlaca(
+  x: number, y: number, b: BarreiraDaPlaca | null, carregandoLixo: boolean,
+): boolean {
+  if (!carregandoLixo || b === null) return true;
+  if (y <= b.topo || y > b.piso) return true;   // fora do vão da placa: passa, e nem sabe que havia barreira
+  return x < b.x;
 }
 
 /**
@@ -117,6 +140,8 @@ export function podePassarDaPlaca(x: number, placaX: number | null, carregandoLi
  * Função e não booleano porque quem chama precisa do NÚMERO: barrar é grudar a criança na linha, e um
  * booleano faria cada chamador inventar o seu próprio "então onde ela fica?".
  */
-export function travarNaPlaca(x: number, placaX: number | null, carregandoLixo: boolean): number {
-  return podePassarDaPlaca(x, placaX, carregandoLixo) ? x : placaX!;
+export function travarNaPlaca(
+  x: number, y: number, b: BarreiraDaPlaca | null, carregandoLixo: boolean,
+): number {
+  return podePassarDaPlaca(x, y, b, carregandoLixo) ? x : b!.x;
 }

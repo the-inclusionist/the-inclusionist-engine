@@ -7,7 +7,8 @@
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
 import {
-  colunaDaAgua, colunaDoTrampolim, posicaoDaPlaca, candidatosDeLixo, posicoesDasLixeiras, N_LIXEIRAS,
+  colunaDaAgua, colunaDoTrampolim, posicaoDaPlaca, faixaDaPlaca, candidatosDeLixo, posicoesDasLixeiras,
+  N_LIXEIRAS,
 } from '../app/js/game/recycling-spawn.js';
 
 const TILE = 16;
@@ -45,6 +46,25 @@ describe('reciclagem · a geografia', () => {
     // o caminho se estreita é leitura do desenho da fase, e nenhuma fórmula sobre tiles chega nisso.
     const m = mundo(['....', '....', '####']);
     expect(posicaoDaPlaca(m, { col: 2, linha: 1 })).toEqual({ x: 2 * TILE, y: 2 * TILE });
+  });
+
+  it('[Right] O VÃO DA BARREIRA vai do piso da placa até o sólido acima dela', () => {
+    // "A barreira deve valer só do piso da placa até o próximo tile sólido acima da placa."
+    //  linha 0: teto · linhas 1,2: vão · linha 3: piso onde a placa se planta
+    const m = mundo(['####', '....', '....', '####']);
+    const placa = posicaoDaPlaca(m, { col: 2, linha: 2 });
+    expect(placa.y, 'o pé da placa é o topo do piso da linha 3').toBe(3 * TILE);
+    expect(faixaDaPlaca(m, placa)).toEqual({ x: 2 * TILE, topo: 1 * TILE, piso: 3 * TILE });
+  });
+
+  it('[Boundary] céu aberto acima da placa: o vão vai até o topo do mapa', () => {
+    const m = mundo(['....', '....', '....', '####']);
+    const placa = posicaoDaPlaca(m, { col: 2, linha: 2 });
+    expect(faixaDaPlaca(m, placa).topo, 'sem sólido acima, nada corta o vão').toBe(0);
+  });
+
+  it('[Zero] sem placa não há vão nenhum', () => {
+    expect(faixaDaPlaca(mundo(['....', '####']), null)).toBe(null);
   });
 
   it('[Zero] SEM DECLARAÇÃO NÃO HÁ PLACA — inventar posição foi o defeito', () => {

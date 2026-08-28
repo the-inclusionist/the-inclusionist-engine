@@ -97,23 +97,37 @@ describe('a placa de proibido jogar lixo · barreira, não penalidade', () => {
     // A barreira é sobre ELA, e não sobre o objeto. A primeira versão barrava o lixo: quem cruzava soltava o
     // item ali. Só que soltar o lixo JÁ É desobedecer — barrar o objeto deixava a desobediência acontecer e
     // depois consertava a consequência; barrar a criança faz a desobediência não ter por onde começar.
-    expect(podePassarDaPlaca(499, 500, true), 'aquém da linha, segue').toBe(true);
-    expect(podePassarDaPlaca(500, 500, true), 'na linha já não passa').toBe(false);
-    expect(podePassarDaPlaca(700, 500, true)).toBe(false);
+    const vao = { x: 500, topo: 400, piso: 500 };
+    expect(podePassarDaPlaca(499, 500, vao, true), 'aquém da linha, segue').toBe(true);
+    expect(podePassarDaPlaca(500, 500, vao, true), 'na linha já não passa').toBe(false);
+    expect(podePassarDaPlaca(700, 450, vao, true), 'no meio do vão, tampouco').toBe(false);
+  });
+
+  it('[Right] A BARREIRA É UM SEGMENTO, e fora do vão da placa ela não existe', () => {
+    // "A barreira deve valer só do piso da placa até o próximo tile sólido acima da placa." Uma linha do teto
+    // ao chão barraria a criança em andares onde a placa nem aparece — parede invisível, que ela lê como
+    // defeito do jogo. Assim a barreira e o aviso ocupam o mesmo vão: onde ela não passa, ela vê o porquê.
+    const vao = { x: 500, topo: 400, piso: 500 };
+    expect(podePassarDaPlaca(700, 400, vao, true), 'na altura do teto do vão, já passa').toBe(true);
+    expect(podePassarDaPlaca(700, 380, vao, true), 'acima do vão — outro andar').toBe(true);
+    expect(podePassarDaPlaca(700, 501, vao, true), 'abaixo do piso da placa').toBe(true);
+    expect(podePassarDaPlaca(700, 500, vao, true), 'exatamente no piso: é o andar da placa').toBe(false);
   });
 
   it('[Zero] de mãos livres ela passa à vontade, e sem placa também', () => {
-    expect(podePassarDaPlaca(700, 500, false), 'a placa só barra quem carrega lixo').toBe(true);
-    expect(podePassarDaPlaca(9999, null, true), 'cenário sem água não tem placa').toBe(true);
+    const vao = { x: 500, topo: 400, piso: 500 };
+    expect(podePassarDaPlaca(700, 450, vao, false), 'a placa só barra quem carrega lixo').toBe(true);
+    expect(podePassarDaPlaca(9999, 450, null, true), 'fase sem placa declarada não barra nada').toBe(true);
   });
 
   it('[Right] `travarNaPlaca` devolve ONDE ela para, não só que parou', () => {
     // Número e não booleano: barrar é grudar a criança na linha, e um booleano faria cada chamador inventar
     // o seu próprio "então onde ela fica?".
-    expect(travarNaPlaca(700, 500, true)).toBe(500);
-    expect(travarNaPlaca(400, 500, true), 'quem pode passar não é movido').toBe(400);
-    expect(travarNaPlaca(700, 500, false)).toBe(700);
-    expect(travarNaPlaca(700, null, true)).toBe(700);
+    const vao = { x: 500, topo: 400, piso: 500 };
+    expect(travarNaPlaca(700, 450, vao, true)).toBe(500);
+    expect(travarNaPlaca(400, 450, vao, true), 'quem pode passar não é movido').toBe(400);
+    expect(travarNaPlaca(700, 450, vao, false)).toBe(700);
+    expect(travarNaPlaca(700, 300, vao, true), 'noutro andar, segue direto').toBe(700);
   });
 
 });
