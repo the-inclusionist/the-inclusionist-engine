@@ -128,9 +128,42 @@ decision-outcome:
       pull-to-refresh, consecutive-access streaks, and competitive gamification between students — the last of
       which ADR-0048 already satisfies, since there is no ranking and the end screen is collective.
 
-      ===== 5. THE TEN-SEGMENT BAR — ACADEMIC ONLY =====
-      Centred at the bottom of the screen, it is the child's window onto §5 of ADR-0048 and the only always-visible
+      ===== 5. THE TEN-SEGMENT BAR — ACADEMIC ONLY, ONE PER SKILL, AND PERMANENT =====
+      Centred at the BOTTOM of the screen, it is the child's window onto §5 of ADR-0048 and the only always-visible
       feedback.
+
+      ⚠️ COMPLETED 2026-08-28 with the three properties the first version left out, and each one changes what has to
+      be built. The Dev: "Ela é permanente, não muda de atividade para atividade, e podem haver uma barra no centro,
+      duas ou três, sempre uma barra por skill que o professor/pai/profissional da saúde decidiu aplicar. […] Repare
+      que é uma barra por skill porque cada uma controla o progresso em uma árvore de skill diferente."
+
+        · **ONE BAR PER SKILL, one to three of them**, side by side and centred at the bottom. The count is not a
+          layout preference: it is however many skills the adult enabled in screen 1 (ADR-0048 §3, §6b). Two bars
+          means two skill trees are being worked at once, and each advances on its own.
+        · **PERMANENT.** It does not change from activity to activity and it does not reset when one ends. The
+          activity is the vehicle; the bar is the reading of the child in a SKILL TREE, and a tree outlives any
+          single activity — this is what makes the bar the child's progress and not the round's scoreboard.
+        · **THE BAR THE SEGMENT LANDS ON IS THE ONE OF THE SKILL THE QUESTION EXERCISED.** A question belongs to a
+          tree; its segment paints that tree's bar and no other. Without this clause, two enabled skills would share
+          one history and the ZPD bands of §5 would be measuring an average of two different children.
+
+      ⚠️ AND THE UPPER BOUND OF THREE IS THE ACCESSIBILITY CLAUSE, not an arbitrary cap: three ten-segment bars are
+      thirty always-lit elements at the bottom of a 320×180 screen. A fourth stops being a reading and becomes
+      visual noise for exactly the child this project is for. If a fourth skill is ever wanted at once, the decision
+      to revisit is this one.
+
+      ===== 5b. WHERE EACH NUMBER LIVES ON THE SCREEN =====
+      Settled 2026-08-28, and it is spatial rather than aesthetic — a child who cannot hold two places in her head
+      needs each number to be always in the SAME place:
+
+        · **TOP LEFT, UNDER THE PLAYER'S NAME: the point count** (§1 — the work record, both sources, buys nothing).
+          Under the name because it belongs to the PERSON, not to the round.
+        · **BOTTOM CENTRE: the segmented bars** (§5 — one per skill), because they belong to the LEARNING.
+        · The platformer's own objective counter (the ten coins, §7) stays where the HUD counter already is; it is
+          the round's counter, and it is the one number that resets.
+
+      In multiplayer this repeats INSIDE each `.player-screen` (ADR-0027's grid), because each child has her own
+      name, her own points and her own skills.
 
       ⚠️ ONLY AN ACADEMIC QUESTION PAINTS A SEGMENT. A good deed gives a point and paints nothing, because the bar
       is not a record of work — it is the reading of where the child stands in a skill, and a can in the right bin
@@ -170,6 +203,28 @@ decision-outcome:
       answer arrives when there is **no learning left to protect** — after the attempt, never in place of it. The
       requerimento's §49.e gains the same distinction, because as written it does not carry it.
 
+      ===== 7. THE PLATFORMER'S TEN COINS CLOSE A LAP, AND A LAP COSTS NOTHING =====
+      Decided 2026-08-28. The platformer keeps its ten coins as the ROUND objective, and the Dev fixed what happens
+      at the tenth: "são as 10 moedas que ao serem pegas faz aparecer a mensagem de parabenização e reseta o jogo
+      colocando o jogador novamente na posição inicial e colocando os itens novamente no jogo, sem prejuízo de
+      pontos ou de barras segmentadas."
+
+        · Tenth coin → a congratulation message → the player returns to the START POSITION and the items are placed
+          in the world again. The lap begins anew.
+        · **THE POINTS DO NOT RESET AND THE BARS DO NOT MOVE.** Neither in one direction nor the other: finishing a
+          lap does not paint a segment (it is not an academic answer, §5) and does not clear the day's points (§1).
+
+      ⚠️ THIS IS WHY THE LAP IS NOT A "GAME OVER", and the distinction is the whole point of the clause: what ends
+      is the ROUND, which is state that dies with the lap (ADR-0038's RUN cut). What persists — points, bars, the
+      skill history — is the child, and the child does not restart. A design where the lap cost something would make
+      the platforming a gate in front of the school content, which §2's "accessibility may ease the powers with no
+      penalty" already refuses in the other direction.
+
+      ⚠️ AND IT REPLACES THE END-OF-GAME OVERLAY WITH A BUTTON that the code has today (`win()` in `game/session`
+      sets `ended` and waits for `#btn-again`). Waiting for a click is a small executive-function toll charged at
+      the exact moment of success, and it is charged to the child least able to pay it. The message announces; the
+      lap restarts on its own.
+
   consequences:
     positive:
       - "Every one of the six named mechanics is answered by a clause someone can check against the code."
@@ -180,7 +235,11 @@ decision-outcome:
          performs best, and it will not be free."
       - "Motivation now rests on the activities themselves. If they are boring, nothing in the reward system hides
          it, which is a feature at design time and a risk at delivery time."
-      - "Two celebration animations and a ten-segment bar are new UI on a 320×180 screen that is already full."
+      - "Two celebration animations and UP TO THREE ten-segment bars are new UI on a 320×180 screen that is already
+         full — and in four-player split-screen that is four times over, which is the layout case §5 has to survive."
+      - "A permanent bar needs somewhere to persist that is not the round (ADR-0038), and today nothing in the
+         engine outlives a round except PAGE settings. The bar's home is undecided and this record does not decide
+         it; what it decides is that the round is the wrong place."
     neutral:
       - "Points resetting daily means there is no long-term accumulation to display, which removes a whole class of
          screens nobody now has to design."
