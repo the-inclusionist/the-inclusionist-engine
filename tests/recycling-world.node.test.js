@@ -1,0 +1,199 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// O ESTADO DO LIXO NO MUNDO — quem está no chão, quem está na mão, e o que a lixeira faz.
+//
+// A terceira peça da reciclagem, e a única com estado. As outras duas são funções sobre números; esta MUTA uma
+// lista, e é por isso que os casos aqui são quase todos sobre o que acontece DEPOIS: pegou e a mão ficou cheia,
+// errou a cor e o item continuou na mão, passou da placa e o item voltou ao chão.
+//
+// ⚠️ E DOIS CASOS AQUI NÃO SÃO SOBRE MECÂNICA, SÃO SOBRE PEDAGOGIA, e por isso ficam explicados no próprio teste:
+// o rodízio dos materiais (um mapa nunca nasce sem vidro) e o item que VOLTA PARA A MÃO quando a cor está errada
+// (errar a cor não pode custar refazer o percurso). Os dois são decisões do Dev que uma "simplificação" futura
+// desfaria sem perceber, porque nenhuma das duas parece regra de jogo olhando só para o código.
+//
+// MUTAÇÕES CONFERIDAS (no fim do arquivo).
+import { describe, it, expect } from 'vitest';
+import {
+  montarItens, cargaDe, pegarPerto, passarPelaPlaca, arremessar, depositar, faltamDescartar,
+} from '../app/js/game/recycling-world.js';
+import { MATERIAIS, LIXEIRA_DE } from '../app/js/game/recycling.js';
+
+/** Escolhedor determinístico: os `n` primeiros, na ordem. É por onde o produto injeta o embaralhamento. */
+const emOrdem = (total, n) => Array.from({ length: Math.min(n, total) }, (_, i) => i);
+/** Pontos alinhados numa fileira, 10px de distância entre eles. */
+const fileira = (n) => Array.from({ length: n }, (_, i) => ({ x: i * 10, y: 100 }));
+/** Um item solto no chão, para os casos que não precisam do `montarItens`. */
+const solto = (x, material) => ({ x, y: 100, material, descartado: false, dono: null });
+
+describe('reciclagem · o mundo', () => {
+  /* ===================== nascimento ===================== */
+
+  it('[Right] os quatro materiais aparecem em RODÍZIO, nunca sorteados', () => {
+    // Com sorteio, um mapa pode nascer sem vidro nenhum — e a criança que precisa treinar vidro joga a fase
+    // inteira sem encontrar um. O rodízio garante os quatro sempre que houver quatro lugares.
+    const itens = montarItens(fileira(8), 8, emOrdem);
+    expect(itens.map((i) => i.material)).toEqual([...MATERIAIS, ...MATERIAIS]);
+  });
+
+  it('[Boundary] pedindo mais itens do que há lugar, nasce um por lugar e nada além', () => {
+    const itens = montarItens(fileira(3), 99, emOrdem);
+    expect(itens).toHaveLength(3);
+    expect(new Set(itens.map((i) => i.x)).size, 'nenhum item em cima de outro').toBe(3);
+  });
+
+  it('[Zero] sem lugar ou sem pedido, não nasce nada — e não estoura', () => {
+    expect(montarItens([], 4, emOrdem)).toEqual([]);
+    expect(montarItens(fileira(4), 0, emOrdem)).toEqual([]);
+    expect(montarItens(fileira(4), -3, emOrdem)).toEqual([]);
+  });
+
+  it('[Right] o item nasce no chão, de ninguém e por descartar', () => {
+    const [it] = montarItens(fileira(1), 1, emOrdem);
+    expect(it).toMatchObject({ x: 0, y: 100, dono: null, descartado: false });
+  });
+
+  /* ===================== pegar ===================== */
+
+  it('[Right] pega o item mais PRÓXIMO dentro do alcance, e ele passa a ter dono', () => {
+    const itens = [solto(0, 'metal'), solto(30, 'vidro'), solto(8, 'papel')];
+    const pego = pegarPerto(itens, 0, 10, 100, 20);
+    expect(pego.material, 'o de x=8 está a 2px; o de x=0 está a 10').toBe('papel');
+    expect(pego.dono).toBe(0);
+    expect(cargaDe(itens, 0)).toBe(pego);
+  });
+
+  it('[Boundary] fora do alcance não pega, e no limite exato pega', () => {
+    const itens = [solto(20, 'metal')];
+    expect(pegarPerto(itens, 0, 0, 100, 19.9), 'a 20px de distância, alcance 19,9').toBe(null);
+    expect(pegarPerto(itens, 0, 0, 100, 20), 'alcance exatamente 20').toBeTruthy();
+  });
+
+  it('[Zero] MÃOS OCUPADAS NÃO PEGAM O SEGUNDO', () => {
+    // Sem esta guarda a criança acumularia lixo invisível e o descarte deixaria de ser uma escolha POR ITEM,
+    // que é justamente onde o conteúdo está: qual cor recebe ESTA lata.
+    const itens = [solto(0, 'metal'), solto(2, 'vidro')];
+    pegarPerto(itens, 0, 0, 100, 20);
+    expect(pegarPerto(itens, 0, 0, 100, 20)).toBe(null);
+    expect(itens.filter((i) => i.dono === 0)).toHaveLength(1);
+  });
+
+  it('[Zero] item de outro jogador e item já descartado ficam invisíveis para quem pega', () => {
+    const itens = [solto(0, 'metal'), solto(2, 'vidro')];
+    itens[0].dono = 1;
+    itens[1].descartado = true;
+    expect(pegarPerto(itens, 0, 0, 100, 50)).toBe(null);
+  });
+
+  /* ===================== a placa ===================== */
+
+  it('[Right] passar da placa carregando lixo SOLTA o lixo NA placa', () => {
+    const itens = [solto(0, 'metal')];
+    pegarPerto(itens, 0, 0, 100, 20);
+    const acao = passarPelaPlaca(itens, 0, 80, 60, 70);
+    expect(acao.fala).toBe('sr.lixo.solta');
+    expect(acao.pontos, 'a placa NÃO pune — ver game/recycling').toBe(0);
+    expect(itens[0], 'volta ao chão, na placa').toMatchObject({ dono: null, x: 70 });
+  });
+
+  it('[Zero] passar da placa de mãos vazias não faz nada, e sem placa também não', () => {
+    const itens = [solto(0, 'metal')];
+    expect(passarPelaPlaca(itens, 0, 80, 60, 70)).toEqual({ pontos: 0, fala: null });
+    pegarPerto(itens, 0, 0, 100, 20);
+    expect(passarPelaPlaca(itens, 0, 80, 60, null), 'cenário sem água não tem placa').toEqual({ pontos: 0, fala: null });
+    expect(cargaDe(itens, 0), 'e a carga continua na mão').toBeTruthy();
+  });
+
+  it('[Boundary] antes da placa a criança carrega à vontade', () => {
+    const itens = [solto(0, 'metal')];
+    pegarPerto(itens, 0, 0, 100, 20);
+    expect(passarPelaPlaca(itens, 0, 69, 60, 70).fala).toBe(null);
+    expect(cargaDe(itens, 0)).toBeTruthy();
+  });
+
+  /* ===================== arremesso ===================== */
+
+  it('[Right] arremesso aquém da placa cai onde foi jogado', () => {
+    const itens = [solto(0, 'vidro')];
+    pegarPerto(itens, 0, 0, 100, 20);
+    const { caiuEm, acao } = arremessar(itens, 0, 50, 90, 70);
+    expect(caiuEm).toBe(50);
+    expect(acao.fala, 'nada a anunciar: passou').toBe(null);
+    expect(itens[0]).toMatchObject({ dono: null, x: 50, y: 90 });
+  });
+
+  it('[Boundary] A BARREIRA DEVOLVE o que passaria da placa — nunca cai na água', () => {
+    // É o coração da decisão: nada de perder pontos e nada de cair na água. Para quem quer transgredir, a
+    // penalidade É o efeito procurado; a barreira simplesmente não deixa acontecer.
+    const itens = [solto(0, 'vidro')];
+    pegarPerto(itens, 0, 0, 100, 20);
+    const { caiuEm, acao } = arremessar(itens, 0, 900, 90, 70);
+    expect(caiuEm).toBeLessThan(70);
+    expect(acao.fala).toBe('sr.lixo.barreira');
+    expect(acao.pontos, 'a barreira também não pune').toBe(0);
+  });
+
+  it('[Zero] arremessar de mãos vazias não cria item nenhum', () => {
+    const itens = [solto(0, 'vidro')];
+    expect(arremessar(itens, 0, 900, 90, 70)).toEqual({ caiuEm: null, acao: { pontos: 0, fala: null } });
+    expect(itens[0].dono, 'ninguém encostou nele').toBe(null);
+  });
+
+  /* ===================== descarte ===================== */
+
+  it('[Right] lixeira CERTA: um ponto de comportamento e o item sai do mundo', () => {
+    const itens = [solto(0, 'metal')];
+    pegarPerto(itens, 0, 0, 100, 20);
+    const acao = depositar(itens, 0, LIXEIRA_DE.metal);
+    expect(acao).toEqual({ pontos: 1, fala: 'sr.lixo.acertou' });
+    expect(itens[0].descartado).toBe(true);
+    expect(cargaDe(itens, 0), 'mãos livres de novo').toBe(null);
+  });
+
+  it('[Right] LIXEIRA ERRADA: o item VOLTA PARA A MÃO, não para o chão', () => {
+    // Devolver ao chão faria a criança refazer o percurso inteiro por ter errado uma COR — punição disfarçada
+    // de física, e cobrada justamente de quem ainda está aprendendo a diferença entre as cores.
+    const itens = [solto(0, 'metal')];
+    pegarPerto(itens, 0, 0, 100, 20);
+    const acao = depositar(itens, 0, LIXEIRA_DE.vidro);
+    expect(acao).toEqual({ pontos: 0, fala: 'sr.lixo.errou' });
+    expect(cargaDe(itens, 0), 'continua na mão para tentar de novo').toBeTruthy();
+    expect(itens[0].descartado).toBe(false);
+  });
+
+  it('[Zero] depositar de mãos vazias não pontua', () => {
+    expect(depositar([], 0, 'azul')).toEqual({ pontos: 0, fala: null });
+  });
+
+  it('[Interface] cada material tem UMA lixeira certa e três erradas', () => {
+    for (const m of MATERIAIS) {
+      const certas = ['azul', 'vermelha', 'amarela', 'verde'].filter((cor) => {
+        const itens = [solto(0, m)];
+        pegarPerto(itens, 0, 0, 100, 20);
+        return depositar(itens, 0, cor).pontos === 1;
+      });
+      expect(certas, `${m}`).toEqual([LIXEIRA_DE[m]]);
+    }
+  });
+
+  /* ===================== o que falta ===================== */
+
+  it('[Right] `faltamDescartar` conta só o que ainda está no mundo', () => {
+    const itens = montarItens(fileira(4), 4, emOrdem);
+    expect(faltamDescartar(itens)).toBe(4);
+    pegarPerto(itens, 0, 0, 100, 5);
+    expect(faltamDescartar(itens), 'na mão ainda é do mundo').toBe(4);
+    depositar(itens, 0, LIXEIRA_DE[itens[0].material]);
+    expect(faltamDescartar(itens)).toBe(3);
+  });
+});
+
+// ========================= MUTAÇÕES CONFERIDAS =========================
+//   · tirando a guarda de mãos ocupadas de `pegarPerto` → "[Zero] MÃOS OCUPADAS" reprova, e o efeito real é a
+//     criança carregando uma pilha invisível de lixo, com o descarte deixando de ser escolha por item.
+//   · fazendo `depositar` soltar o item no chão quando a cor está errada → "[Right] LIXEIRA ERRADA" reprova, e
+//     o efeito real é refazer o percurso como preço de errar uma cor.
+//   · trocando o rodízio de `montarItens` por um material fixo → "[Right] os quatro materiais em RODÍZIO"
+//     reprova, e o efeito real é um mapa nascer sem vidro nenhum.
+//   · deixando o arremesso passar da placa (ignorando `arremessoAtravessa`) → "[Boundary] A BARREIRA DEVOLVE"
+//     reprova, e o efeito real é lixo na água, que é a única coisa que a placa existe para impedir.
+//   · fazendo `depositar` pontuar 1 em qualquer lixeira → "[Interface] cada material tem UMA lixeira certa"
+//     reprova, e o efeito real é a criança aprender que qualquer cor serve, e levar isso para a rua.
