@@ -128,7 +128,7 @@ decision-outcome:
 
           THE CLOCK AXIS IS UNIFORMISED AWAY (the Dev's design, and stronger than the jitter first proposed here):
           every record lands on a CANONICAL SCHOOL GRID — day 1 is always Monday, day 2 always Wednesday, weeks
-          numbered from the start of the school year, about 29 lab sessions across the 200 Brazilian school days.
+          numbered from the start of the school year — the 200 Brazilian school days over 40 weeks of weekdays.
           A class meeting Tuesday/Thursday and one meeting Monday/Friday both record as day 1 / day 2, so the
           cadence — which identified more than the hour did — stops existing. An axis with no variance groups
           nobody.
@@ -172,6 +172,16 @@ decision-outcome:
           adult accepts skill by skill, from data only the adult and the school hold) is worth doing for the ZPD
           reason of ADR-0048; that it also dilutes co-occurrence is a bonus, never the justification — a
           pedagogical feature defended only by a privacy argument dies the day a teacher finds it inconvenient.
+
+        · ⚠️ AND THE TRANSPORT LEAKS WHAT THE PAYLOAD NO LONGER DOES: thirty uploads from a school's public IP
+          inside the same fifty-minute window ARE a classroom, whatever the timestamps inside them say. The
+          canonical grid does not touch this channel, because the channel is not in the content — it is in when
+          the packets arrive and where from.
+
+          SO TELEMETRY IS NEVER SENT LIVE DURING THE LESSON. It accumulates in the store-and-forward queue that
+          pillar 9 already requires, leaves in a BATCH, and the batch goes out after a RANDOM DELAY. The source IP
+          is still the school's; what stops being attached to it is a clock. The Dev reached the same place from
+          the other side, proposing that collective lessons only report after Friday.
 
       ⚠️ AND THIS DATA IS PSEUDONYMISED, NOT ANONYMOUS. LGPD art. 13 §4º says so plainly, and art. 5º XI releases
       only what is irreversible by reasonable available means. Calling it anonymous is the sentence that costs
