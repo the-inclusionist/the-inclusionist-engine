@@ -33,6 +33,16 @@ context-and-problem-statement: |
   server that mediates the share learns the relationship even when it cannot read a byte of the content.
 
 decision-drivers:
+  - "⚠️ THE PURPOSE IS TO COLLECT, AND PRIVACY IS THE CONSTRAINT — not the other way round. The Dev, correcting a
+     drift in this record: 'o nosso objetivo é coletar dados! O máximo que conseguirmos mantendo anonimato, pois se
+     o objetivo fosse anonimato, não coletaríamos dado nenhum.' A design that collects nothing is perfectly private
+     and perfectly useless. So every measure here is judged by BOTH sides: what it protects AND what it costs the
+     inference layer — and the floor of the anonymity comes from the law and from the requerimento's own promises,
+     never from taste. This driver is why two proposed measures are REFUSED below."
+  - "The datalake is deliberately poor: no socioeconomic data, no sex, no age, no kinship — 'um mundo de dados que
+     seriam de grande ajuda para fazer previsão de desempenho', given up on purpose. What is left is assistive
+     technology in use and performance inside the games. A narrow feature space is itself a privacy property, and
+     it changes the arithmetic of every measure that would narrow it further."
   - "Metadata is personal data. A design that protects payloads and mediates relationships has protected the wrong
      half."
   - "A claim the document makes must be checkable in the code (requerimento §49). So the record must state the
@@ -219,6 +229,19 @@ decision-outcome:
           is still the school's; what stops being attached to it is a clock. The Dev reached the same place from
           the other side, proposing that collective lessons only report after Friday.
 
+        · ⚠️ AND IF THE EXAM AND HOMEWORK STREAM IS EVER ADDED, IT SENDS JUDGEMENT AND NEVER TEXT. The Dev
+          described analysing exam questions, homework and coursework with a strong local model and sending them
+          sanitised by the school (Presidio plus a ~9B model, where there is a GPU). Sanitising by named-entity
+          recognition gives the FEELING of a solved problem without solving it: Presidio finds names, CPF, phone
+          numbers and addresses, and a child's writing identifies through CONTEXT — "my father works at the
+          council", "when I moved from Monte Aprazível", "my sister in year five". Three of those in a town of
+          twenty thousand are a name.
+
+          SO THE LOCAL MODEL RETURNS A STRUCTURED JUDGEMENT, not sanitised prose: which entity was exercised,
+          whether it was right, what kind of error. A closed vocabulary, which is what the inference layer needs
+          anyway and which the entity/item ladder already defines. It is also cheaper — classifying against a
+          rubric costs a school GPU far less than generating text.
+
       ⚠️ AND THIS DATA IS PSEUDONYMISED, NOT ANONYMOUS. LGPD art. 13 §4º says so plainly, and art. 5º XI releases
       only what is irreversible by reasonable available means. Calling it anonymous is the sentence that costs
       later, precisely because the requerimento promises auditability. The design is strong; the claim must be the
@@ -253,6 +276,18 @@ decision-outcome:
       live session and a permission check held open, while a sync is a transfer with a MOMENT — auditable, loggable
       on the institution's side, and it makes the period govern exactly the thing that can be revoked, which is
       when the next sync happens.
+
+      ⚠️ TWO KEYS, NOT ONE, AND THE SYNC RE-ENCRYPTS. Each professional holds the key to HER OWN working base;
+      the institution holds the key to the INSTITUTIONAL base; and the sync between them re-encrypts. Installing
+      the school's key on every teacher's machine — the first proposal — would make one stolen laptop the whole
+      network, and it would have to be installed there anyway, because a teacher reads her own data daily. The
+      blast radius this design aims for is the students of ONE professional.
+
+      ⚠️ AND THREE THINGS THAT MUST NEVER TOUCH: ACCOUNT LOGIN (who you are to the service: passkey, password,
+      SSO — recoverable by ordinary means, and losing it costs access, not data); the DATABASE KEY (what decrypts:
+      the printed sheet, and losing it costs the data); and ACCOUNT RECOVERY, which must never restore the
+      database key. If it did, whoever can reset an account can read the children — and the promise would die in
+      a support queue rather than in the cryptography.
 
       ⚠️ WHO HOLDS THE KEY TO THE SCHOOL'S BACKUP is the §5 problem again, one size up: the whole school record
       rather than one professional's base, and harder, because a head teacher changes every few years and custody
@@ -346,15 +381,27 @@ decision-outcome:
 more-information: |
   DELIBERATELY NOT DECIDED HERE, both because the answer changes what is built and not how it is described:
 
-    · WHETHER A CONSTANT PER-id WEEK OFFSET IS ADDED ON TOP OF THE CANONICAL GRID. It would blur the residual
-      content co-occurrence before the k threshold has to suppress anything, and because the offset is CONSTANT
-      per id it preserves every interval within that id exactly — weeks 10, 11, 13 shifted by +5 are 15, 16, 18,
-      still one and two weeks apart. It costs the cohort reading ("how does everyone do in week 12 of the year"),
-      which the inference layer does not appear to need. Proposed and not yet decided.
+  BOTH REMAINING QUESTIONS WERE CLOSED WITH A "NO" ON 2026-08-28, under the driver above — and they are recorded
+  because a measure refused without a written reason comes back:
 
-    · WHETHER THE PSEUDONYM ROTATES. The Dev proposed re-drawing the time offset at random intervals. Re-drawing
-      the OFFSET ALONE corrupts what it exists to protect: the gap between a March event and an April one becomes
-      wrong by the difference of the two offsets, and the learning curve goes with it. Re-drawing the offset AND
-      the id together is coherent and stronger — periodic pseudonym rotation — but it shortens the episodes the
-      server holds even further. It is a fork, not an improvement, and which branch is right depends on how short
-      an episode the inference layer can still learn from.
+    · A CONSTANT PER-id WEEK OFFSET ON TOP OF THE GRID — REFUSED. The Dev found the flaw: it breaks at the
+      boundary of a bounded grid. A child with offset +5 has her week 36 land on week 41, which does not exist.
+      Wrapping puts December's work in February; extending the grid to 45 creates weeks populated ONLY by children
+      with large offsets, which reveals the offset; clamping destroys the very interval the offset existed to
+      preserve. And the deeper cost is semantic: THE WEEK OF THE YEAR MEANS SOMETHING. Week 1 is diagnosis and
+      revision, week 40 is consolidation — shifting a child by five weeks reassigns her work to a different PHASE
+      of the school year, and "she struggled at the start and recovered by the end" is exactly the reading the
+      datalake exists for. It was proposed to blur a residual that three other layers already remove (the public
+      list in the collective mode, the absence of co-occurrence in the reinforcement mode, and one weekly upload
+      per school). It buys little and costs the phase of the year.
+
+    · ANNUAL PSEUDONYM ROTATION — REFUSED, WITH A TRIGGER. It would cost the most valuable thing a learning
+      datalake can hold: the trajectory ACROSS years. "Did this child recover the gap over two years" is literally
+      the question the Mapa de Foco exists to answer. And it buys little in THIS dataset, which is deliberately
+      poor — a year-long trajectory over a narrow feature space identifies far less than a short one over a rich
+      space.
+
+      ⚠️ THE TRIGGER, because the property is true today and false later: IF THE EXAM AND HOMEWORK STREAM IS
+      ADDED, the trajectory becomes high-dimensional and rotation returns to the table. High-dimensional
+      behavioural data grows sparse, and sparse means identifying. What decides is the richness of the vector,
+      never the calendar.
