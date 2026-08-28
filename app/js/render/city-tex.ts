@@ -123,17 +123,43 @@ export const CAR_PALETTES: readonly (readonly [string, string, string])[] = [
   ['#c8a12e', '#7d641a', '#a8862a'], // amarelo
 ];
 
+/* ===================== A RODA É REDONDA, E ISSO PRECISOU SER DITO =====================
+ * A primeira versão do carro (portada verbatim do monólito) fazia o pneu com UM retângulo de 14×11. Numa
+ * arte de retângulos carimbados, a roda é o único elemento que o olho sabe de cor que é redondo — e é o
+ * primeiro que denuncia o desenho inteiro. O Dev, olhando a rua: "melhore os carros, estão muito feios com
+ * as rodas quadradas."
+ *
+ * O jeito de ter círculo aqui é o de sempre em pixel art: uma TABELA de linhas, cada uma com o recuo e a
+ * largura daquela altura. Não é aproximação de matemática em tempo de execução — é o desenho, escrito. */
+
+/** Pneu Ø14: `[recuo, largura]` por linha, de cima para baixo. */
+const PNEU: readonly (readonly [number, number])[] = [
+  [5, 4], [3, 8], [2, 10], [1, 12], [1, 12], [0, 14], [0, 14],
+  [0, 14], [0, 14], [1, 12], [1, 12], [2, 10], [3, 8], [5, 4],
+];
+/** Aro Ø8, no mesmo formato — desenhado dentro do pneu. */
+const ARO: readonly (readonly [number, number])[] = [
+  [2, 4], [1, 6], [0, 8], [0, 8], [0, 8], [0, 8], [1, 6], [2, 4],
+];
+
 /** Um carro 78×36 na paleta dada. Vidros, brilhos, farol e lanterna são fixos (não seguem a lataria). */
 export const paintCar = (body: string, dark: string, top: string): PixelPainter => (px) => {
   px(3, 14, 72, 13, body); px(3, 25, 72, 2, dark);              // corpo + saia escura
   px(1, 16, 2, 8, dark); px(75, 16, 2, 8, dark);                // para-choques
-  px(15, 4, 40, 11, top); px(17, 6, 36, 9, body);               // cabine (teto escuro + faixa)
+  // Cabine com o teto AFUNILADO: eram 40px de bloco reto, e teto reto num carro de perfil lê como caixa.
+  px(17, 4, 36, 2, top); px(15, 6, 40, 9, top); px(17, 6, 36, 9, body);
   px(19, 7, 14, 7, '#bcd6ee'); px(37, 7, 14, 7, '#bcd6ee');     // vidros
   px(20, 8, 4, 2, '#eef6ff'); px(38, 8, 4, 2, '#eef6ff');       // brilho dos vidros
   px(34, 7, 3, 7, top); px(53, 10, 4, 4, dark);                 // coluna B + retrovisor
   px(3, 14, 72, 1, 'rgba(255,255,255,.28)');                    // realce superior da lataria
+  px(35, 15, 1, 10, dark);                                      // frisa entre as duas portas
   px(0, 17, 3, 5, '#ffd9a0'); px(75, 17, 3, 5, '#ff6a5a');      // farol / lanterna
-  const wheel = (wx: number): void => { px(wx - 2, 22, 18, 6, dark); px(wx, 24, 14, 11, '#10131a'); px(wx + 3, 27, 8, 5, '#2b3140'); px(wx + 5, 29, 4, 2, '#8a93a8'); }; // caixa de roda + pneu + calota
+  const wheel = (wx: number): void => {
+    px(wx + 1, 20, 12, 2, dark); px(wx - 1, 21, 16, 1, dark);                       // caixa de roda, em arco
+    PNEU.forEach(([dx, w], i) => px(wx + dx, 22 + i, w, 1, '#10131a'));             // pneu
+    ARO.forEach(([dx, w], i) => px(wx + 3 + dx, 25 + i, w, 1, '#2b3140'));          // aro
+    px(wx + 6, 28, 2, 2, '#8a93a8');                                                // cubo
+  };
   wheel(11); wheel(53);
 };
 

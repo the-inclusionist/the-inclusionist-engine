@@ -190,17 +190,30 @@ describe('arte dos adultos', () => {
 
 /* ===================== 4. a arte dos carros ===================== */
 
+// O pneu e o aro são TABELAS de linha (ver `render/city-tex`), então o esperado também é gerado por tabela:
+// escrever as 22 linhas à mão aqui só criaria uma segunda cópia para divergir da primeira.
+const PNEU = [[5, 4], [3, 8], [2, 10], [1, 12], [1, 12], [0, 14], [0, 14],
+  [0, 14], [0, 14], [1, 12], [1, 12], [2, 10], [3, 8], [5, 4]];
+const ARO = [[2, 4], [1, 6], [0, 8], [0, 8], [0, 8], [0, 8], [1, 6], [2, 4]];
+const rodaExpect = (wx, dark) => [
+  (wx + 1) + ',20,12,2,' + dark, (wx - 1) + ',21,16,1,' + dark,
+  ...PNEU.map(([dx, w], i) => (wx + dx) + ',' + (22 + i) + ',' + w + ',1,#10131a'),
+  ...ARO.map(([dx, w], i) => (wx + 3 + dx) + ',' + (25 + i) + ',' + w + ',1,#2b3140'),
+  (wx + 6) + ',28,2,2,#8a93a8',
+];
+
 const carExpect = (body, dark, top) => [
   '3,14,72,13,' + body, '3,25,72,2,' + dark,              // corpo + saia escura
   '1,16,2,8,' + dark, '75,16,2,8,' + dark,                // para-choques
-  '15,4,40,11,' + top, '17,6,36,9,' + body,               // cabine (teto escuro + faixa)
+  '17,4,36,2,' + top, '15,6,40,9,' + top, '17,6,36,9,' + body,  // cabine (teto afunilado + faixa)
   '19,7,14,7,#bcd6ee', '37,7,14,7,#bcd6ee',               // vidros
   '20,8,4,2,#eef6ff', '38,8,4,2,#eef6ff',                 // brilho dos vidros
   '34,7,3,7,' + top, '53,10,4,4,' + dark,                 // coluna B + retrovisor
   '3,14,72,1,rgba(255,255,255,.28)',                      // realce superior da lataria
+  '35,15,1,10,' + dark,                                   // frisa entre as portas
   '0,17,3,5,#ffd9a0', '75,17,3,5,#ff6a5a',                // farol / lanterna
-  '9,22,18,6,' + dark, '11,24,14,11,#10131a', '14,27,8,5,#2b3140', '16,29,4,2,#8a93a8',   // roda dianteira (wheel(11))
-  '51,22,18,6,' + dark, '53,24,14,11,#10131a', '56,27,8,5,#2b3140', '58,29,4,2,#8a93a8',  // roda traseira (wheel(53))
+  ...rodaExpect(11, dark),                                // roda dianteira
+  ...rodaExpect(53, dark),                                // roda traseira
 ];
 
 describe('arte dos carros', () => {
@@ -221,6 +234,17 @@ describe('arte dos carros', () => {
     for (const f of fixos) expect(f).toEqual(fixos[0]);
     expect(fixos[0]).toContain('19,7,14,7,#bcd6ee');
   });
+  it('A RODA É REDONDA: as linhas do pneu têm larguras diferentes, não uma só', () => {
+    // Numa arte de retângulos carimbados, a roda é o único elemento que o olho já sabe de cor que é redondo,
+    // e é o primeiro que denuncia o desenho inteiro. A versão portada do monólito fazia o pneu com UM
+    // retângulo de 14×11 — e foi exatamente isso que o Dev viu na rua.
+    const pneu = record(paintCar('#a', '#b', '#c')).filter((r) => r.endsWith('#10131a'));
+    const larguras = new Set(pneu.map((r) => Number(r.split(',')[2])));
+    expect(pneu.length, 'uma linha por altura do pneu, nos dois lados').toBe(PNEU.length * 2);
+    expect(larguras.size, 'largura que varia com a altura é o que faz um círculo').toBeGreaterThan(3);
+    expect(Math.max(...larguras), 'e a linha mais larga é o diâmetro').toBe(14);
+  });
+
   it('nenhum retângulo escapa do 78×36 (BOUNDARY)', () => {
     for (const r of record(paintCar('#a', '#b', '#c'))) {
       const [x, y, w, h] = r.split(',').map(Number);
