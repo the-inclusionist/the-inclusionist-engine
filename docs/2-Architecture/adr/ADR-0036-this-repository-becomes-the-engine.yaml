@@ -78,6 +78,16 @@ decision-outcome:
           screen 2, and the room client for the teacher's password. The curriculum layer (`educational/`)
           follows the shell — ADR-0032's destination is unchanged, only its address.
 
+          ⚠️ AMENDED 2026-08-28 BY ADR-0055 — THE SHELL GOES TO `the-inclusionist-site`, NOT TO `demos`. The
+          argument is this record's own, taken one step further: the shell is not part of any game, and it is not
+          part of the CATALOGUE either. `demos` holds content; the site is the product the child meets, and it
+          carries the compass's session (ADR-0048 §2) rather than a login of its own. The curriculum layer still
+          follows the shell, and its address is now `the-inclusionist-knowledge-tree` — the first owner it has
+          ever had, after ADR-0032 left it belonging to a platform that did not exist.
+
+          The FREEZE RULE below is unchanged and now matters more: the destination moved while the move itself
+          had not started, so nothing has diverged yet.
+
       THE GREY ZONE, named so it is decided once instead of argued five times: `render/cenario-data.ts`,
       `render/city-tiles.ts`, `render/scene-parallax.ts` and `render/set-cenario.ts` are THIS GAME'S visual
       themes wearing engine filenames. They pass the boundary gate because they import nothing from `game/`,

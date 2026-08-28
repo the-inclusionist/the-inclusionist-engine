@@ -1,0 +1,216 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-08-28
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0024 (multi-repo + versioned packages) — the submodule graph was already weighed and REJECTED there"
+    - "ADR-0025 (inclusionist-lab is a hub repo)"
+    - "ADR-0026 + ADR-0036 (host is GitLab; package scope is @pm-monte — the municipality owns it, not the developer)"
+    - "ADR-0036 (this repository becomes the engine) — §THE SHELL is amended here"
+    - "ADR-0032 (the curriculum layer is data, and its owner is a platform that does not exist yet)"
+    - "ADR-0010 pillars 1 (school hardware), 4 (LGPD/COPPA, strictest wins), 6 (child privacy), 7 (multiplayer on
+       separate screens), 8 (offline PWA), 9 (LAN + store-and-forward telemetry)"
+    - "ADR-0043 (a known debt gets a budget that only goes down) — the shape used here for the tree's size"
+  informed: []
+
+title: Six repositories, TWO mechanisms — package for libraries, API for boundaries, and zero submodules
+
+context-and-problem-statement: |
+  The project had grown to seven repositories without a written topology: `inclusionist-engine` (this one),
+  `inclusionist-demos`, `gamified-learning`, `inclusionist-commons`, `inclusionist-lab`, `sp-the-inclusionist`
+  (the June game, dormant) and two model experiments. Nothing said which depended on which, or how.
+
+  The Dev proposed a split by RESPONSIBILITY into six repositories — school-compass, the-inclusionist-site,
+  the-inclusionist-demos, the-inclusionist-gamified-learning, the-inclusionist-knowledge-tree and
+  the-inclusionist-engine — "ligados entre si como submódulos".
+
+  ⚠️ THE SPLIT WAS RIGHT AND THE COUPLING WAS ALREADY DECIDED THE OTHER WAY. ADR-0024, in July, weighed exactly
+  three options — workspace monorepo, multi-repo with a SUBMODULE GRAPH of shared libs, and multi-repo with
+  versioned packages — and the Dev locked the third. Its recorded reason against submodules is the same one that
+  would bite here: "pinned-SHA update dance; nested commons submodule = continuous friction — the OPPOSITE of the
+  easy-shared-libs goal". And it did not stay on paper: `inclusionist-commons` exists, with ~2.600 files, publishing
+  to the GitLab package registry.
+
+  ADR-0024 kept submodules for ONE job — pinning a whole APP at a known commit for a reproducible superproject.
+  That was the only candidate left here (the site pinning game collections), and the Dev closed it the other way:
+  the site reaches the games over API. So the third mechanism has no work left to do.
+
+decision-drivers:
+  - "A decision already taken, and taken by the Dev, is not re-opened by restating the proposal — it is either
+     honoured or amended on purpose. ADR-0024 is honoured."
+  - "Fewer mechanisms is fewer things to get wrong. Two mechanisms cover six edges; a third would cover zero."
+  - "Pillar 8 (offline PWA) on pillar 1 hardware is a byte budget, and every coupling choice spends it."
+  - "The strictest privacy rule wins (pillar 4), and the topology must not create a place where child data has to
+     sit in the clear."
+
+considered-options:
+  - "T1 — the Dev's proposal as written: six repositories, all linked as submodules"
+  - "T2 — six repositories, package for libraries and API for boundaries, zero submodules"
+  - "T3 — a workspace monorepo holding everything"
+
+pros-and-cons-of-the-options:
+  T1:
+    good: ["Literal source isolation, and the parent's history records the exact commit of every child."]
+    bad: ["Re-opens a decision ADR-0024 closed, without new evidence.",
+          "Six pinned SHAs to advance by hand; the update dance repeated per repository.",
+          "It is the wrong tool for the two edges that matter most: a 100k-node data artifact and a network
+           boundary between two products."]
+  T2:
+    good: ["Honours ADR-0024 and reuses the registry that already exists.",
+           "Each edge gets the mechanism its NATURE asks for: library, data, or boundary.",
+           "Nothing to pin, so nothing to forget to advance."]
+    bad: ["Publishing a package is a step that a path dependency does not have.",
+          "The API edges need a running server to develop against, or fixtures."]
+  T3:
+    good: ["Lowest friction day to day; one clone, one install."]
+    bad: ["The compass is a different product with a different owner and a different legal surface; putting it in
+           the same repository as the game denies that.",
+          "Already rejected in July for the reuse goal."]
+
+decision-outcome:
+  chosen-option:
+    link: "T2 — six repositories, two mechanisms, zero submodules"
+    justification: |
+      ===== 1. THE SIX, AND WHAT EACH ONE IS =====
+        · `school-compass` — the learning-management system, and the ONLY place with backends. It has two: a
+          DATALAKE (DuckDB + FastAPI) for sanitized information, and the GAME backend (Colyseus). Its screens:
+          logon → schools and classrooms (teacher) / clinics (health professional) / home (parent or guardian) →
+          player list and group reports → the individual player's report.
+        · `the-inclusionist-site` — the SHELL: choice of 1 to 3 skills, player (avatar) selection, game selection,
+          then the game. ⚠️ It has NO LOGIN OF ITS OWN; it carries the compass's session (ADR-0048 §2).
+        · `the-inclusionist-demos` — the demonstration CATALOGUE, plural, and the MVP: the 300+ games of
+          `minigames-catalog-v2.html`. The old "35+ games" plan has no home and will not be built.
+        · `the-inclusionist-gamified-learning` — the activities (which behave as minigames inside the games, and
+          are called ACTIVITIES), plus the question generator that already lives there.
+        · `the-inclusionist-knowledge-tree` — the graph of skills across curricula of many countries.
+        · `the-inclusionist-engine` — this repository.
+
+      ⚠️ AND `school-compass` BREAKING THE `the-inclusionist-*` PREFIX IS DELIBERATE, not sloppy: it is the LMS,
+      and the games are ONE of its clients. Same reason the package scope is `@pm-monte` and not the developer's.
+
+      ===== 2. THE MECHANISM OF EVERY EDGE =====
+        · commons → engine ................................ PACKAGE (semver, `@pm-monte/*`)
+        · engine → demos, gamified-learning ............... PACKAGE
+        · knowledge-tree → site, compass, gamified-learning  VERSIONED DATA ARTIFACT (see §3)
+        · site → compass (login, player list) ............. API
+        · site → demos (game list, game) .................. API
+        · site → gamified-learning (activity) ............. API
+        · lab → commons ................................... NEITHER: it is a promotion path, not a dependency.
+          Code graduates from the lab into commons; nothing builds against the lab.
+
+      ⚠️ ZERO SUBMODULES, and that is a RESULT and not a preference: every edge above is a library or a network
+      boundary, and the one edge that could have been a pinned app (the site holding game collections) is an API
+      by the Dev's own choice. A mechanism with no work is a mechanism that only creates work.
+
+      ===== 3. THE KNOWLEDGE TREE IS A VERSIONED ARTIFACT WITH A BUDGET, NOT A MEASUREMENT =====
+      It is ONE JSON object of relational graphs (an indexed dictionary), around 100.000 nodes (BNCC plus 50+
+      national curricula), handled by LokiJS in the browser to configure the games and by DuckDB to produce the
+      reports.
+
+      ⚠️ ITS SIZE CANNOT BE MEASURED YET, because the artifact does not exist — so this record fixes a BUDGET
+      instead, in the shape ADR-0043 already uses for known debt: a number written down before the thing exists,
+      so that the first real measurement has something to fail against. 100.000 nodes of verb+object with edges is
+      on the order of 15 to 40 MB raw, 3 to 8 MB compressed, against a game that precaches 29 MB today.
+
+      THE BUDGET: the tree is fetched ONCE, cached by the ENGINE's service worker, and shared by every game — the
+      same treatment the TTS voices already get. It ships SLICED BY CURRICULUM, and a slice must not exceed
+      **8 MB compressed**. The whole tree is never shipped to a device.
+
+      ⚠️ AND THE MODEL BENEATH IT IS WHAT MAKES THE SLICING SAFE, so it is recorded here and not left in chat: the
+      NODE is an ENTITY — a Bloom verb (remember, understand, apply, analyse, evaluate, create) plus an object. A
+      curriculum item (a BNCC skill, say) is a GROUPING of entities, never an entity itself. Games bind to
+      ENTITIES. Therefore items may be renamed, merged or deleted without touching a single entity, an old report
+      still resolves because it points at entities, and two countries' items overlap PARTIALLY instead of
+      translating exactly — which is also why a game covers 70% of an item without that being a defect. Coverage
+      is graded 1, 2 and 3 by the share of an item's entities a game reaches.
+
+      ===== 4. WHAT "OFFLINE" MEANS, AND IT DECIDES THAT DEMOS IS NOT A PACKAGE =====
+      After loading once, a game plays with no internet. The games are cached in CASCADE: once the first is
+      loaded, the rest are queued and downloaded silently until the whole suite is cached. So `demos` is an API
+      plus a cache — never a package — and the engine PWA is where the shared weight lives (the TTS voices, the
+      tree), downloaded once and used by every game afterwards.
+
+      The Dev's ceiling: "vamos tentar manter os jogos abaixo de 30 MB (isso não pode ser obrigação)". It is a
+      target, not a gate, and it is written here as a target so that nobody later enforces it as a gate or
+      forgets it as a wish.
+
+      ===== 5. THE GAME RUNS WITHOUT THE BACKEND, AND THAT IS THE CLAUSE PILLAR 8 NEEDS =====
+      With no connection the game runs, WITHOUT multiplayer, and everything the student does goes into the xAPI
+      queue to be synchronised when the network returns. The exception is the teacher's choice: a small LOCAL
+      SERVER, installed as a PWA, whose only job is to keep multiplayer alive and to sync with the compass once
+      the connection is back.
+
+      ⚠️ SO THE site→compass EDGE IS DEGRADABLE, and the API choice is safe. Had the game needed Colyseus to
+      start, pillar 8 would have been lost as a side effect of a topology decision — which is exactly the kind of
+      thing that must be decided out loud.
+
+      ===== 6. THE THREE REPOSITORIES THE PROPOSAL DID NOT MENTION =====
+        · `inclusionist-commons` — stays, as the library beneath the engine (ADR-0024).
+        · `inclusionist-lab` — stays, as a separate project (ADR-0025); it may develop items that later graduate
+          into commons.
+        · `sp-the-inclusionist` — becomes LEGACY, archived. Dormant since June, and the game it holds is the one
+          this repository already replaced.
+
+      Naming them is part of the decision: a repository that nobody declares dead is a repository someone reads
+      as current a year from now.
+
+      ===== 7. THE AMENDMENT TO ADR-0036 =====
+      ADR-0036 sent THE SHELL — `ui/activities-menu.ts` as screen 1, the catalogue as screen 2, the room client —
+      to the `demos` repository, together with the game. It goes to `the-inclusionist-site` instead.
+
+      The reason is the one ADR-0036 itself argued: the shell is not part of any game. It is the same argument
+      taken one step further — the shell is not part of the CATALOGUE either. `demos` holds content; the site is
+      the product the child meets. The curriculum layer (`educational/`) follows the shell, as ADR-0032 said, and
+      its address is now the knowledge tree — which is the first owner that layer has ever had. Until today
+      CLAUDE.md described it as belonging to "a plataforma EdSP, que ainda não existe".
+
+  consequences:
+    positive:
+      - "Every edge has a mechanism, and the mechanism follows the nature of the edge instead of a habit."
+      - "The curriculum layer stops being orphaned code: the knowledge tree is its declared owner."
+      - "The entity/grouping split makes the tree's identity stable under curriculum churn, which is what a report
+         written in 2026 needs in order to still resolve in 2031."
+      - "Dropping the local-server OPTION (see more-information) removes a whole deployment mode, and with it a
+         second security surface that a school IT department would have had to configure correctly."
+    negative:
+      - "Six repositories is six CI pipelines, six licence headers, six READMEs and six release paths, for one
+         developer."
+      - "The API edges cannot be developed against nothing: the site needs either a running compass or fixtures,
+         and fixtures that drift are worse than no fixtures."
+      - "The tree's budget is a guess until the artifact exists. If a curriculum slice cannot fit in 8 MB
+         compressed, the decision to ship it to the device has to be revisited — not the budget quietly raised."
+    neutral:
+      - "The two model experiments (`sp-the-inclusionist-google`, `-qwen`) are not addressed here; they are
+         research spikes, not products."
+
+  confirmation: |
+    WHAT CAN BE GATED, and each of these is a check somebody can run rather than a promise:
+      · NO SUBMODULES: `.gitmodules` does not exist in any of the six.
+      · THE ENGINE DOES NOT DEPEND ON A GAME: the boundary gate that already exists here
+        (`tests/engine-boundary.node.test.js`) keeps doing its job, and it is the model for the equivalent gate in
+        each new repository.
+      · THE SITE HAS NO LOGIN: no credential field, no token minting, no password storage anywhere in the site's
+        source. It carries the compass's session or it has no session.
+      · THE TREE'S BUDGET: the built slice, compressed, measured in CI against the 8 MB ceiling — the ADR-0043
+        shape, a number that only goes down.
+      · THE GAME RUNS OFFLINE: the existing browser protocol (dist server, service worker unregistered, caches
+        cleared) run with the network disabled, after one warm load.
+
+    ⚠️ WHAT NO GATE OF MINE CAN CONFIRM: whether six repositories is a topology one person can actually carry.
+    That is answered by the Dev's own week, not by CI.
+
+more-information: |
+  ⚠️ DECIDED IN THE SAME CONVERSATION AND DELIBERATELY *NOT* SETTLED HERE — THE PRIVACY MODEL. The Dev replaced
+  the earlier "choose your server (ours or local)" design with end-to-end encryption: no student datum leaves the
+  computer in a form anyone can recognise, and sharing happens through a key generated by the program and passed
+  by QR CODE, with a record of who shared and when. Keys never travel the internet.
+
+  That design is stronger than what it replaces and it belongs in its own record, because it decides things this
+  one does not: where DuckDB runs, what the xAPI actor identifier is, what happens when a device is lost, and how
+  a time-limited share is actually revoked. The revocation question in particular is not a detail — a decryption
+  key that has been handed over cannot be handed back, so a deadline enforced by key handover alone is an honour
+  system. It is being worked out now and will be its own ADR.
+
+  This record depends on that one in exactly one place: §1 says the compass is the only repository with backends,
+  and the privacy model decides what those backends are allowed to hold.
