@@ -1,0 +1,361 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-08-28
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0024 (multi-repo + versioned packages) — the submodule graph was already weighed and REJECTED there"
+    - "ADR-0025 (inclusionist-lab is a hub repo)"
+    - "ADR-0026 + ADR-0036 (host is GitLab; package scope is @pm-monte — the municipality owns it, not the developer)"
+    - "ADR-0036 (this repository becomes the engine) — §THE SHELL is amended here"
+    - "ADR-0032 (the curriculum layer is data, and its owner is a platform that does not exist yet)"
+    - "ADR-0010 pillars 1 (school hardware), 4 (LGPD/COPPA, strictest wins), 6 (child privacy), 7 (multiplayer on
+       separate screens), 8 (offline PWA), 9 (LAN + store-and-forward telemetry)"
+    - "ADR-0043 (a known debt gets a budget that only goes down) — the shape used here for the tree's size"
+    - "requerimento v7, item 39 alíneas `e`, `p` e `r` — os CINCO sistemas nomeados no pedido de publicação, o ato
+       que identifica repositório/versão/hash de CADA um, e os cadernos distribuídos por Secretaria"
+    - "requerimento v7, Anexo X §6 — `se o registro será comum a toda a rede ou por entidade`, pergunta em aberto
+       que a decisão de multi-inquilino deste registro responde"
+    - "requerimento v7, Quadro 1 — hospedagem absorvida pelo orçamento corrente de TI, no servidor municipal"
+    - "requerimento v7, §49.e — dados em território nacional e sob controle do Município"
+  informed: []
+
+title: FIVE systems, NINE repositories — the boundary follows the Secretaria that answers for the data, and every installation is multi-tenant from day one
+
+context-and-problem-statement: |
+  The version of this record accepted earlier today described SIX repositories for what it treated as one
+  product. That was wrong on the day it was written, and the error was not in the mechanism — it was in the
+  census.
+
+  ⚠️ THE PROJECT IS FIVE SYSTEMS, NOT ONE. The requerimento, item 39 alínea `e`, asks the Município to
+  authorise publication of "os sistemas Inclusionista, Bússola Escolar, Código Cultura, Apoio Ativo e Code
+  Comigo". Alínea `r` distributes a separate caderno to a separate Secretaria for each. Anexo XIV states it
+  outright: "os cinco sistemas não são da mesma natureza: três são educacionais, um é de gestão
+  socioassistencial e um é de formação profissional. Tratá-los como um bloco único obscurece exatamente o que
+  interessa a cada secretaria."
+
+  The previous topology gave repositories to ONE of the five. Código Cultura, Apoio Ativo and Code Comigo had
+  no address at all, and the record said "the compass is the ONLY place with backends" while Apoio Ativo's own
+  caderno describes internet synchronisation between CRAS and CREAS, role-based access and reports — which is a
+  backend by any reading.
+
+  ⚠️ AND THE ERROR HAD A LEGAL EDGE, not just a tidiness one. Apoio Ativo answers to the Secretaria de
+  Assistência Social under the LOAS (Lei nº 8.742/1993) and the Tipificação Nacional (Resolução CNAS nº
+  109/2009); the Bússola answers to Educação under the educational statutes. The requerimento says it in the
+  imperative — "registre-se, para afastar equívoco: não se trata de sistema educacional nem de atividade
+  pedagógica". A topology that folds Apoio Ativo into the compass produces the wrong legal basis for one of
+  the two, and produces it in code, where it is hardest to see.
+
+  Three further things changed after that version was written and are decided here rather than left in chat:
+  WHERE the systems run (the Município's own servers), WHETHER one installation serves more than one network
+  (yes, from the start), and WHAT the previous record called "the privacy model", which it deferred.
+
+decision-drivers:
+  - "A repository boundary that does not follow the answering authority will be crossed by the first query
+     somebody writes in a hurry. The boundary has to be where the responsibility is."
+  - "A decision already taken by the Dev is not re-opened by restating a proposal. ADR-0024 rejected the
+     submodule graph, and that holds; only the CENSUS is corrected here, not the mechanism."
+  - "Converting a single-tenant system to multi-tenant later costs more than being born multi-tenant, and the
+     conversion is exactly the kind that leaks across tenants while it is half done."
+  - "Pillar 8 (offline PWA) on pillar 1 hardware is a byte budget, and every coupling choice spends it."
+  - "The strictest privacy rule wins (pillar 4), and no topology may create a place where one Secretaria's data
+     sits inside another's system."
+
+considered-options:
+  - "T1 — the six repositories of the previous version, with the other three systems as modules of the compass"
+  - "T2 — nine repositories: one publishable unit per system, five of them for the Inclusionista"
+  - "T3 — a repository per SECRETARIA (one for Educação, one for Assistência Social), systems as modules inside"
+  - "T4 — a workspace monorepo holding everything"
+
+pros-and-cons-of-the-options:
+  T1:
+    good: ["Fewest repositories, fewest pipelines, and the compass backend is written once."]
+    bad: ["Puts Apoio Ativo — socioassistencial, LOAS, Assistência Social — inside a system whose caderno says
+           it is educational, which is the exact equivocation the requerimento writes a paragraph to prevent.",
+          "Makes the ato of publication unwritable as pedido `p` asks it: one repository address and one hash
+           cannot identify five systems separately.",
+          "One database boundary for two controllers is a boundary that exists only in review comments."]
+  T2:
+    good: ["Every system the requerimento names has an address, a hash and a version of its own — pedido `p`
+            becomes fillable.",
+           "The repository boundary and the controller boundary are the same line, so crossing one is visible.",
+           "Each Secretaria can adopt, refuse or postpone its own system without touching the others."]
+    bad: ["Nine pipelines, nine licence headers, nine READMEs and nine release paths, for one developer.",
+          "Four of the nine do not exist yet, and a named-but-empty repository reads as progress when it is not.",
+          "The Inclusionista is five repositories publishing as ONE system — an exception that has to be written
+           down or it will be mistaken for four extra systems."]
+  T3:
+    good: ["Matches the administrative chart exactly; two Secretarias, two units to hand over."]
+    bad: ["A Secretaria is not a release unit. Publishing Código Cultura would force publishing Apoio Ativo's
+           state at the same commit, and their adoption decisions are independent.",
+          "The AGPL obligation attaches per program; a per-Secretaria repository blurs which program a
+           downstream modifier must reciprocate."]
+  T4:
+    good: ["Lowest friction day to day; one clone, one install."]
+    bad: ["Already rejected in July for the reuse goal (ADR-0024).",
+          "Denies in the file system the very distinction the requerimento spends a paragraph establishing."]
+
+decision-outcome:
+  chosen-option:
+    link: "T2 — nine repositories, one publishable unit per system, package for libraries and API for boundaries"
+    justification: |
+      ===== 1. THE NINE, GROUPED BY THE SYSTEM THAT ANSWERS FOR THEM =====
+
+      **INCLUSIONISTA** — five repositories, ONE system. Secretaria de Educação.
+        · `the-inclusionist-engine` — this repository.
+        · `the-inclusionist-site` — the SHELL: choice of 1 to 3 skills, player (avatar) selection, game
+          selection, then the game. ⚠️ It has NO LOGIN OF ITS OWN; it carries the compass's session (ADR-0048 §2).
+        · `the-inclusionist-demos` — the demonstration CATALOGUE, plural, and the MVP: the 300+ games of
+          `minigames-catalog-v2.html`. The old "35+ games" plan has no home and will not be built.
+        · `the-inclusionist-gamified-learning` — the activities (which behave as minigames inside the games, and
+          are called ACTIVITIES), plus the question generator that already lives there.
+        · `the-inclusionist-knowledge-tree` — the graph of skills across curricula of many countries.
+
+      **BÚSSOLA ESCOLAR** — Secretaria de Educação.
+        · `school-compass` — the learning-management system. Screens: logon → schools and classrooms (teacher) /
+          clinics (health professional) / home (parent or guardian) → player list and group reports → the
+          individual player's report.
+
+      **CÓDIGO CULTURA** — Secretaria de Assistência Social as lead, with Educação and Saúde.
+        · `codigo-cultura` — professional and social training with certification, for elderly people, adults,
+          EJA students and workers. Its own backend: enrolment, attendance, certificate issue.
+
+      **APOIO ATIVO** — Secretaria de Assistência Social. ⚠️ NOT an educational system.
+        · `apoio-ativo` — management of the distribution of socioassistencial resources and benefits: who
+          received what, when, through which unit or entity, synchronised over the internet. Its own backend.
+
+      **CODE COMIGO** — Secretaria de Educação, with Assistência Social and partner entities.
+        · `code-comigo` — the programming-teaching platform in which the student rebuilds the Município's own
+          systems. Its own backend: the exercise platform.
+
+      ⚠️ AND THE INCLUSIONISTA BEING FIVE REPOSITORIES IS AN EXCEPTION THAT HAS TO BE WRITTEN, because pedido
+      `p` asks the authorising ato to name, for EACH system, the repository address, the version and the
+      cryptographic hash of the published state. For four systems that is one line each. For the Inclusionista
+      it is five lines under one heading, and the ato has to say so, or the ato will describe four fifths of a
+      system as the whole of it.
+
+      ⚠️ AND `school-compass`, `codigo-cultura`, `apoio-ativo` AND `code-comigo` NOT CARRYING THE
+      `the-inclusionist-*` PREFIX IS DELIBERATE. They are not the Inclusionista. The prefix marks a system, not
+      a project, and a Secretaria that receives a caderno about Apoio Ativo must not find the game's name on the
+      repository it is being asked to adopt. Same reason the package scope is `@pm-monte` and not the
+      developer's.
+
+      ===== 2. THE MECHANISM OF EVERY EDGE — STILL TWO, AND STILL ZERO SUBMODULES =====
+        · commons → engine ................................ PACKAGE (semver, `@pm-monte/*`)
+        · engine → demos, gamified-learning ............... PACKAGE
+        · knowledge-tree → site, compass, gamified-learning  VERSIONED DATA ARTIFACT (see §4)
+        · site → compass (login, player list) ............. API
+        · site → demos (game list, game) .................. API
+        · site → gamified-learning (activity) ............. API
+        · code-comigo → engine, demos ..................... API — the student rebuilds the systems, so
+          `code-comigo` READS them as a subject of study; it does not build against them.
+        · codigo-cultura, apoio-ativo → nothing ........... NO EDGE AT ALL, and that is the decision (see §3)
+        · lab → commons ................................... NEITHER: it is a promotion path, not a dependency.
+          Code graduates from the lab into commons; nothing builds against the lab.
+
+      ⚠️ ZERO SUBMODULES, and that is a RESULT and not a preference: every edge above is a library, a data
+      artifact or a network boundary. ADR-0024 kept submodules for ONE job — pinning a whole APP at a known
+      commit — and the only candidate for it (the site holding game collections) is an API by the Dev's own
+      choice. A mechanism with no work is a mechanism that only creates work.
+
+      ===== 3. EVERY SYSTEM THAT NEEDS A BACKEND HAS ITS OWN, AND NO TWO SHARE A DATABASE =====
+      The previous version said the compass was the only place with backends. That is now false in fact and
+      would be wrong in principle even if it were true.
+
+      FOUR BACKENDS, ONE PER SYSTEM THAT NEEDS ONE: `school-compass` (which has two — the DATALAKE, DuckDB +
+      FastAPI, and the GAME backend, Colyseus), `codigo-cultura`, `apoio-ativo`, `code-comigo`.
+
+      ⚠️ NO SHARED DATABASE BETWEEN SYSTEMS, EVER. Integration between systems is an API call or it does not
+      happen. The reason is not performance and not modularity: **two systems on one database are two
+      controllers on one table**, and the LGPD does not have a shape for that. Educação answers for the
+      Bússola; Assistência Social answers for the Apoio Ativo. A join that crosses them is a data transfer
+      between controllers that nobody authorised and nobody logged.
+
+      ⚠️ AND THE DATALAKE RECEIVES, IT DOES NOT REACH. It ingests what a system SENDS it, sanitised, on the
+      sending system's terms. It holds no credential to any system's database. A read-only replica would be
+      the same violation with better manners.
+
+      ===== 4. THE KNOWLEDGE TREE IS A VERSIONED ARTIFACT WITH A BUDGET, NOT A MEASUREMENT =====
+      It is ONE JSON object of relational graphs (an indexed dictionary), around 100.000 nodes (BNCC plus 50+
+      national curricula), handled by LokiJS in the browser to configure the games and by DuckDB to produce the
+      reports.
+
+      ⚠️ ITS SIZE CANNOT BE MEASURED YET, because the artifact does not exist — so this record fixes a BUDGET
+      instead, in the shape ADR-0043 already uses for known debt: a number written down before the thing exists,
+      so that the first real measurement has something to fail against. 100.000 nodes of verb+object with edges
+      is on the order of 15 to 40 MB raw, 3 to 8 MB compressed, against a game that precaches 29 MB today.
+
+      THE BUDGET: the tree is fetched ONCE, cached by the ENGINE's service worker, and shared by every game —
+      the same treatment the TTS voices already get. It ships SLICED BY CURRICULUM, and a slice must not exceed
+      **8 MB compressed**. The whole tree is never shipped to a device.
+
+      ⚠️ AND THE MODEL BENEATH IT IS WHAT MAKES THE SLICING SAFE, so it is recorded here and not left in chat:
+      the NODE is an ENTITY — a Bloom verb (remember, understand, apply, analyse, evaluate, create) plus an
+      object. A curriculum item (a BNCC skill, say) is a GROUPING of entities, never an entity itself. Games
+      bind to ENTITIES. Therefore items may be renamed, merged or deleted without touching a single entity, an
+      old report still resolves because it points at entities, and two countries' items overlap PARTIALLY
+      instead of translating exactly — which is also why a game covers 70% of an item without that being a
+      defect. Coverage is graded 1, 2 and 3 by the share of an item's entities a game reaches.
+
+      ===== 5. WHERE IT RUNS: THE MUNICÍPIO'S OWN SERVERS =====
+      The systems run on municipal infrastructure, in national territory, under the Município's own control.
+      This is not an aspiration recorded here for the first time: §49.e of the requerimento already commits to
+      it ("os dados tratados pelos sistemas permanecem em infraestrutura situada em território nacional, sob
+      titularidade e controle do Município"), and Quadro 1 already budgets it ("hospedagem e conectividade:
+      absorvidas pelo orçamento corrente de tecnologia da informação, desde que haja capacidade ociosa no
+      servidor municipal").
+
+      ⚠️ AND NO OTHER HOSTING HYPOTHESIS IS RECORDED, in this file or in any other. A hosting arrangement that
+      is not the Município's own is not part of this project's objectives, and writing one down as a
+      possibility would make it read, to anyone who finds the file later, as a plan.
+
+      ⚠️ THE CONSEQUENCE FOR THE ARCHITECTURE IS THE OPPOSITE OF WHAT "OUR SERVER" USUALLY MEANS: a municipal
+      server with idle capacity is a small server, it will be administered by a department with other work, and
+      it will occasionally be down. So the offline path of §7 is not a courtesy — it is the normal operating
+      mode, and the connected path is the optimisation.
+
+      ===== 6. MULTI-TENANT FROM DAY ONE, AND IT IS AN ARCHITECTURE DECISION, NOT A SETTING =====
+      Every system is built multi-tenant from the start, because other networks will want to use them —
+      Apoio Ativo's own caderno says it is "o sistema com melhor perspectiva de ser adotado por outras redes" —
+      and converting later costs more than being born this way.
+
+      ⚠️ AND IT ANSWERS A QUESTION THE REQUERIMENTO LEFT OPEN. Anexo X §6 lists among the decisions to be taken:
+      "se o registro será comum a toda a rede ou por entidade". Multi-tenancy is the answer that does not
+      require choosing: the record is per tenant, and a tenant may be the network or an entity within it.
+
+      **THE RULE: A DATABASE OR A SCHEMA PER TENANT. NEVER A TENANT COLUMN IN A COMMON TABLE.** The reason is
+      the failure mode, not the taste: a forgotten `WHERE tenant_id = ?` returns another tenant's rows, and it
+      returns them silently, with a 200. A query that forgets the schema returns an error. The first is a
+      breach; the second is a bug report.
+
+      ⚠️ AND DIFFERENT TENANTS ARE DIFFERENT CONTROLLERS IN THE SAME INSTALLATION, each answering for its own.
+      That is what makes the isolation a legal requirement rather than good practice.
+
+      ⚠️ AND MULTI-TENANT IN THE CODE IS NOT THE SAME AS THIS MUNICÍPIO HOSTING OTHER NETWORKS, and conflating
+      the two would import an obligation nobody agreed to. The code supporting many tenants costs nothing and
+      is decided here. Monte Aprazível holding another network's data would make it that network's OPERATOR,
+      with a contract under art. 39 of the LGPD, storage cost, incident duty and a support expectation — none
+      of which is in the requerimento and none of which is decided here. The default is that each network runs
+      its own installation, which is what the AGPL already enables.
+
+      ===== 7. THE GAME RUNS WITHOUT THE BACKEND, AND OFFLINE IS THE NORMAL CASE =====
+      After loading once, a game plays with no internet. The games are cached in CASCADE: once the first is
+      loaded, the rest are queued and downloaded silently until the whole suite is cached. So `demos` is an API
+      plus a cache — never a package — and the engine PWA is where the shared weight lives (the TTS voices, the
+      tree), downloaded once and used by every game afterwards.
+
+      With no connection the game runs, WITHOUT multiplayer, and everything the student does goes into the xAPI
+      queue to be synchronised when the network returns. The exception is the teacher's choice: a small LOCAL
+      SERVER, installed as a PWA, whose only job is to keep multiplayer alive and to sync with the compass once
+      the connection is back.
+
+      ⚠️ SO THE site→compass EDGE IS DEGRADABLE, and the API choice is safe. Had the game needed Colyseus to
+      start, pillar 8 would have been lost as a side effect of a topology decision — which is exactly the kind
+      of thing that must be decided out loud.
+
+      The Dev's ceiling: "vamos tentar manter os jogos abaixo de 30 MB (isso não pode ser obrigação)". It is a
+      target, not a gate, and it is written here as a target so that nobody later enforces it as a gate or
+      forgets it as a wish.
+
+      ===== 8. THE REPOSITORIES THE CENSUS DID NOT NAME =====
+        · `inclusionist-commons` — stays, as the library beneath the engine (ADR-0024).
+        · `inclusionist-lab` — stays, as a separate project (ADR-0025); it may develop items that later graduate
+          into commons.
+        · `sp-the-inclusionist` — becomes LEGACY, archived. Dormant since June, and the game it holds is the one
+          this repository already replaced.
+
+      Naming them is part of the decision: a repository that nobody declares dead is a repository someone reads
+      as current a year from now.
+
+      ===== 9. THE AMENDMENT TO ADR-0036 =====
+      ADR-0036 sent THE SHELL — `ui/activities-menu.ts` as screen 1, the catalogue as screen 2, the room client —
+      to the `demos` repository, together with the game. It goes to `the-inclusionist-site` instead.
+
+      The reason is the one ADR-0036 itself argued: the shell is not part of any game. It is the same argument
+      taken one step further — the shell is not part of the CATALOGUE either. `demos` holds content; the site is
+      the product the child meets. The curriculum layer (`educational/`) follows the shell, as ADR-0032 said,
+      and its address is now the knowledge tree — which is the first owner that layer has ever had.
+
+      ===== 10. FOUR OF THE NINE DO NOT EXIST, AND THE ORDER IS PART OF THE DECISION =====
+      `codigo-cultura`, `apoio-ativo`, `code-comigo` and `the-inclusionist-site` have no repository today.
+      Creating them empty, now, would put four names in the topology with nothing behind them.
+
+      THE RULE: **a repository is created when its first commit exists**, and until then it appears in this
+      record as a declared address and nowhere else. What the requerimento entregas today is what exists today;
+      pedido `a` asks for a termo listing artifacts with their sizes and hashes, and a hash of nothing is the
+      one entry that would make that termo false.
+
+  consequences:
+    positive:
+      - "Each of the five systems the requerimento names becomes separately publishable, separately adoptable
+         and separately refusable — which is what alíneas `p`, `r` and `s` presuppose and the previous topology
+         made impossible."
+      - "The repository boundary and the controller boundary are the same line, so a cross-system query has to
+         cross a network to happen, and crossing a network leaves a trace."
+      - "Multi-tenancy answers an open question of the requerimento (Anexo X §6) instead of adding one."
+      - "The curriculum layer stops being orphaned code: the knowledge tree is its declared owner."
+      - "Naming the offline path as the NORMAL case rather than the degraded one puts the effort where the
+         school actually is."
+    negative:
+      - "Nine repositories is nine CI pipelines, nine licence headers, nine READMEs and nine release paths, for
+         one developer — and four of them are for systems whose code is not in the Dev's daily rotation."
+      - "Four backends is four deployment units on one small municipal server, and 'no shared database' means
+         four databases to back up, restore and rotate credentials for."
+      - "Schema-per-tenant makes migrations N times the work, and a migration that half-applies leaves tenants
+         on different schema versions — a failure mode a tenant column does not have."
+      - "The API edges cannot be developed against nothing: the site needs either a running compass or fixtures,
+         and fixtures that drift are worse than no fixtures."
+      - "The tree's budget is a guess until the artifact exists. If a curriculum slice cannot fit in 8 MB
+         compressed, the decision to ship it to the device has to be revisited — not the budget quietly raised."
+    neutral:
+      - "The two model experiments (`sp-the-inclusionist-google`, `-qwen`) are not addressed here; they are
+         research spikes, not products."
+      - "The Portuguese names of `codigo-cultura`, `apoio-ativo` and `code-comigo` follow the requerimento's own
+         naming, so that the ato of publication and the repository can be matched by reading."
+
+  confirmation: |
+    WHAT CAN BE GATED, and each of these is a check somebody can run rather than a promise:
+      · NO SUBMODULES: `.gitmodules` does not exist in any of the nine.
+      · THE ENGINE DOES NOT DEPEND ON A GAME: the boundary gate that already exists here
+        (`tests/engine-boundary.node.test.js`) keeps doing its job, and it is the model for the equivalent gate
+        in each new repository.
+      · THE SITE HAS NO LOGIN: no credential field, no token minting, no password storage anywhere in the
+        site's source. It carries the compass's session or it has no session.
+      · NO SHARED DATABASE: each backend's configuration names exactly one database, and no backend holds a
+        credential for another system's. Checkable by reading four config files.
+      · TENANT ISOLATION: a test that runs two tenants against the same installation and asserts that a query
+        written WITHOUT a tenant filter returns an error rather than the other tenant's rows. This is the one
+        test that must exist before the second tenant does.
+      · THE TREE'S BUDGET: the built slice, compressed, measured in CI against the 8 MB ceiling — the ADR-0043
+        shape, a number that only goes down.
+      · THE GAME RUNS OFFLINE: the existing browser protocol (dist server, service worker unregistered, caches
+        cleared) run with the network disabled, after one warm load.
+
+    ⚠️ WHAT NO GATE OF MINE CAN CONFIRM: whether nine repositories and four backends is a topology one person
+    can actually carry. That is answered by the Dev's own week, not by CI. The previous version of this record
+    asked the same question about six, and the honest note is that the number went up, not down.
+
+more-information: |
+  WHAT THIS RECORD REPLACES. The version accepted earlier on 2026-08-28, titled "Six repositories, TWO
+  mechanisms — package for libraries, API for boundaries, and zero submodules". The mechanism it chose is kept
+  intact and unamended; what changed is the census (five systems, not one), the backend clause ("the compass is
+  the only place with backends" is withdrawn), and three subjects it did not cover: hosting, multi-tenancy and
+  the order of creation.
+
+  ⚠️ WHAT IS STILL NOT DECIDED HERE — THE PRIVACY MODEL. ADR-0056 was written for an arrangement of TWO parties
+  (the school as controller, a supplier as operator) and built end-to-end encryption to protect the datum from
+  the operator itself. That arrangement became ONE party on 2026-08-28: the Município is controller and the
+  developer is a public servant. The question ADR-0056 answers stopped existing in the form it was asked, so
+  it needs a SUCCESSOR rather than an amendment — an amendment over a replaced premise produces a document
+  that contradicts itself quietly. This record depends on that one in exactly one place: §3 says each system
+  has its own backend, and the privacy model decides what those backends are allowed to hold.
+
+  ⚠️ AND SEVEN RECORDS IN THIS REPOSITORY DECIDE THINGS THAT ARE NOT THE ENGINE'S, including this one. The
+  inventory and the migration order are in issue #101. This record's own address is `inclusionist-lab`, the hub
+  repository (ADR-0025), because it is the only one of the nine that is about all nine. It stays here until the
+  destination exists, because an accepted record that disappears without a successor reads as a decision that
+  was never taken.
+
+  ⚠️ A CITATION DEFECT FOUND WHILE WRITING THIS, recorded so it is not rediscovered: ADR-0053 cites the annual
+  public report as "requerimento §49.j". In the filed v7 it is **§51.j** — item 49 ends at alínea `i`, and the
+  annual report is among the "compromissos adicionais" of item 51. The commitment exists; the address is wrong.
