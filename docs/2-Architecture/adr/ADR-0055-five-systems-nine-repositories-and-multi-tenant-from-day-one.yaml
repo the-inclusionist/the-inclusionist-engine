@@ -357,5 +357,5 @@ more-information: |
   was never taken.
 
   ⚠️ A CITATION DEFECT FOUND WHILE WRITING THIS, recorded so it is not rediscovered: ADR-0053 cites the annual
-  public report as "requerimento §49.j". In the filed v7 it is **§51.j** — item 49 ends at alínea `i`, and the
+  public report as "requerimento §49.j". In v7 it is **§51.j** — item 49 ends at alínea `i`, and the
   annual report is among the "compromissos adicionais" of item 51. The commitment exists; the address is wrong.
