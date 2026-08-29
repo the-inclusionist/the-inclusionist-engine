@@ -149,7 +149,10 @@ decision-outcome:
         · site → gamified-learning (activity) ............. API
         · code-comigo → engine, demos ..................... API — the student rebuilds the systems, so
           `code-comigo` READS them as a subject of study; it does not build against them.
-        · codigo-cultura, apoio-ativo → nothing ........... NO EDGE AT ALL, and that is the decision (see §3)
+        · school-compass → apoio-ativo .................... API — the ONE edge that crosses Secretarias, and it
+          exists because the law puts a duty there: a registered indication of violence reaches the Conselho
+          Tutelar and the CREAS. See §3b.
+        · codigo-cultura → nothing ........................ NO EDGE AT ALL, and that is the decision (see §3)
         · lab → commons ................................... NEITHER: it is a promotion path, not a dependency.
           Code graduates from the lab into commons; nothing builds against the lab.
 
@@ -174,6 +177,36 @@ decision-outcome:
       ⚠️ AND THE DATALAKE RECEIVES, IT DOES NOT REACH. It ingests what a system SENDS it, sanitised, on the
       sending system's terms. It holds no credential to any system's database. A read-only replica would be
       the same violation with better manners.
+
+      ===== 3b. THE ONE EDGE THAT CROSSES SECRETARIAS, AND WHY IT IS ALLOWED TO =====
+      §3 says integration between systems is an API call or it does not happen. There is exactly ONE such call
+      today, and it goes `school-compass` → `apoio-ativo`: a professional registers an indication of violence,
+      the school's DIRECTOR is notified, and — if the director configured it in advance — the Conselho Tutelar
+      and the CREAS are notified at the same moment.
+
+      ⚠️ THE DIRECTOR IS NOT A UI CHOICE HERE; THE LAW NAMES THEM. Art. 56 of Lei nº 8.069/1990: "os dirigentes
+      de estabelecimentos de ensino fundamental comunicarão ao Conselho Tutelar os casos de: I — maus-tratos
+      envolvendo seus alunos". Art. 13 of the same statute makes the communication obligatory; art. 13 of Lei nº
+      13.431/2017 makes it a duty of anyone with knowledge; and art. 245 makes the OMISSION an administrative
+      infraction. So the software is not the subject of the duty and never becomes it — it instruments the
+      director's compliance.
+
+      ⚠️ AND THIS IS THE LINE THAT CANNOT MOVE: **no model originates a communication.** ADR-0049 and requerimento
+      §49.f *Terceiro* forbid automated decision over "percurso, agrupamento, avaliação ou ENCAMINHAMENTO" — and
+      encaminhamento is the exact word. What the system does by itself is ROUTE what a person registered, in the
+      configuration the director chose. Inferring risk and communicating on its own is out, permanently.
+
+      THREE CONSEQUENCES FOR THE ARCHITECTURE, none of which the other edges have:
+        · **It is IRREVERSIBLE in effect.** A communication delivered cannot be recalled. So retraction,
+          correction and completion are NEW records linked to the first, never a deletion — and there is no code
+          path that removes one.
+        · **It needs a RECEIPT, not just a 200.** Number, date, time, recipient, who originated the record and
+          what was communicated. Legally the receipt is what matters, not the transport, which is why whether the
+          Conselho Tutelar reads it inside `apoio-ativo` or receives a formal document is a deployment choice and
+          not an architecture one.
+        · **It crosses CONTROLLERS, and the recipient is not even a Secretaria** — the Conselho Tutelar is a
+          permanent autonomous organ (art. 131). Basis: art. 7º II and art. 11 II *a* of the LGPD (legal
+          obligation), with art. 11 II *e* and art. 26.
 
       ===== 4. THE KNOWLEDGE TREE IS A VERSIONED ARTIFACT WITH A BUDGET, NOT A MEASUREMENT =====
       It is ONE JSON object of relational graphs (an indexed dictionary), around 100.000 nodes (BNCC plus 50+
@@ -323,6 +356,10 @@ decision-outcome:
         site's source. It carries the compass's session or it has no session.
       · NO SHARED DATABASE: each backend's configuration names exactly one database, and no backend holds a
         credential for another system's. Checkable by reading four config files.
+      · NO MODEL ORIGINATES A COMMUNICATION (§3b): the code path that emits to the Conselho Tutelar is reachable
+        only from a human-created record, and a test asserts that no inference output can reach it.
+      · A COMMUNICATION IS NEVER DELETED (§3b): no endpoint, no query and no admin screen removes one; the
+        retraction path creates a linked record. Checkable by grepping for DELETE against that table.
       · TENANT ISOLATION: a test that runs two tenants against the same installation and asserts that a query
         written WITHOUT a tenant filter returns an error rather than the other tenant's rows. This is the one
         test that must exist before the second tenant does.
