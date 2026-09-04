@@ -2,6 +2,19 @@
 metadata:
   shape: bundle          # consolidacao do REGISTRO-DE-DECISOES; ver README
   status: "accepted"
+  errata:
+    - date: 2026-08-27
+      what: "the spacing clause said what the values ARE and never said what happens when they collide with a
+             screen too small to hold them — and silence is where numbers get traded away. The floors, and the
+             rule that a menu which does not fit SCROLLS, were part of the decision and the sentence failed to
+             carry them. ERRATUM under ADR-0057 §1."
+    - date: 2026-08-27
+      what: "an earlier version of the roster clause dropped UnifrakturCook on `Maguntia basta`, which turned a
+             preference into a removal the decision had not made. Restored in the same pass."
+    - date: 2026-08-27
+      what: "the catalogue was ONE list where the decision had TWO — calligraphic faces belong inside the
+             activities and never in the HUD or menus, and the font menu offers only the general ones. The
+             record carried the roster without the split it already had."
   date: 2026-06-02
   decision-makers: [Dev, AI]
   consulted: []

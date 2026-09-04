@@ -46,6 +46,9 @@ One file per deliberate architectural decision, in **YADR** format — the YAML 
     é a decisão inteira", que é a única coisa que o estado sabia prometer. **O conserto de cláusula já
     acrescentada é EXTRAÇÃO, e extrair é ERRATA no hospedeiro**: o hospedeiro nunca decidiu aquilo, a cláusula
     estava mal arquivada, e desarquivar restaura o que ele de fato decidiu.
+  - ⚠️ **E `bundle` NÃO CRESCE TAMBÉM**, que não é óbvio e por isso está escrito: bundle é coleção, então lê-se
+    como recipiente que pode continuar coletando. Não é — é consolidação de decisões **já tomadas** no momento
+    em que foi escrito. A forma descreve O QUE ELE CONSOLIDOU, não licença para seguir consolidando.
   - **The superseded record keeps its FULL TEXT** and gains its status and pointer. Emptying it would throw away
     the thing that makes history worth having; the reader only needs to see in the first three lines that it no
     longer governs. **This applies to `bundle` records too.**

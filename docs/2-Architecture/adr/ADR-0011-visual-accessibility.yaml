@@ -2,6 +2,16 @@
 metadata:
   shape: bundle          # consolidacao do REGISTRO-DE-DECISOES; ver README
   status: "accepted"
+  errata:
+    - date: 2026-08-24
+      what: "the colour-blindness CORRECTIONS (`fix-protan`, `fix-deuter`, `fix-tritan`) were listed in the
+             Empathy panel, whose subtitle is `sentir como é ter uma deficiência`, beside the buttons that
+             SIMULATE colour blindness — so the child who NEEDED the correction had to look for it in the menu
+             about pretending. ⚠️ The record classifies itself: `It was not a choice`. `render/viz-modes` gave
+             `sim-deuter` and `fix-deuter` the same `kind:filter`, and the panel sliced the catalogue by `kind`;
+             the catalogue now carries a `sim` field that answers what `kind` never could. A consequence of a
+             gap in the data model is not a decision, so this is an ERRATUM under ADR-0057 §1 and not a change
+             of mind. Applied 2026-08-24 (issue #60); DECLARED here 2026-09-04."
   date: 2026-07-02
   decision-makers: [Dev, AI]
   consulted: []

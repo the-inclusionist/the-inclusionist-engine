@@ -16,6 +16,11 @@ metadata:
              record is superseded WHOLE, however many clauses survive. Found on the second application,
              in ADR-0060."
     - date: 2026-09-04
+      what: "§1b said an accepted record does not GROW and said nothing about the `bundle` shape, which is by
+             definition a COLLECTION of decisions. The two readings differ: a bundle could be read as a live
+             container that legitimately accumulates. It is not. Added below. Found on the fourth application,
+             in ADR-0011 and ADR-0012."
+    - date: 2026-09-04
       what: "§1 named two operations and left a third case with no answer: a NEW clause added to an accepted
              record about something that record never decided. It is not an erratum (the record was not wrong)
              and not a supersession (nothing was replaced). §1b now decides it, and decides that there is no
@@ -156,6 +161,18 @@ decision-outcome:
       The tell that a clause is misfiled rather than merely late: it is not about the host's subject. ADR-0049
       is "every reward is deterministic", and it grew a clause about a no-littering sign barring a child from
       walking past. Nothing about that is a reward.
+
+      ⚠️ AND A `bundle` DOES NOT GROW EITHER, WHICH IS NOT OBVIOUS AND SO IS WRITTEN. A bundle is a collection,
+      so it reads like a container that may keep collecting. It is not: the README defines it as a consolidation
+      of decisions **already taken** at the moment it was written. The shape describes WHAT IT CONSOLIDATED, not
+      a licence to keep consolidating. A decision taken after a bundle was accepted is a new record, exactly as
+      for any other shape, and a change to one decision inside a bundle supersedes the bundle in that part.
+
+      What a bundle DOES accept, like every record, is an erratum — and ADR-0011 is the cleanest example in the
+      directory, because it classifies itself in four words. Its colour-blindness corrections sat in the Empathy
+      menu, and the record says why: **"It was not a choice."** `render/viz-modes` gave the simulation and the
+      correction the same `kind`, and the panel sliced by `kind`. A consequence of a gap in a data model is not
+      a decision, so correcting it restores the record rather than replacing it.
 
       ===== 2. THE MIXED CASE, DECIDED IN ADVANCE =====
       A record that is partly defective and partly replaced is SUPERSEDED, whole. ADR-0055 is the worked
