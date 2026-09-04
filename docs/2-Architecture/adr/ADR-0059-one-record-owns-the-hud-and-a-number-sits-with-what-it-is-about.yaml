@@ -180,5 +180,6 @@ more-information: |
   accepted record on 2026-08-28 and none was declared. This record settles only the part it needed; the rest
   is a separate step, and until it lands ADR-0049 is in the `validate-adr.py` amendment-debt list.
 
-  THE REVERTED EDIT: commit `4792112` amended ADR-0050 §3 in place. It is undone; the same content, decided
+  THE REVERTED EDIT: the commit tagged `adr-0050-reverted-amendment` amended ADR-0050 §3 in place — tagged
+  rather than named by hash, per ADR-0057 §1c. It is undone; the same content, decided
   properly, is §1 and §2 above.

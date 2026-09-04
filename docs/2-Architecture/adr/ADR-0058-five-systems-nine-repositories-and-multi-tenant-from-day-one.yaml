@@ -30,9 +30,11 @@ context-and-problem-statement: |
   ⚠️ THIS RECORD WAS EXTRACTED ON 2026-09-04 FROM AN EDIT THAT SHOULD NEVER HAVE BEEN ONE. The decision below
   was taken on 2026-08-28 and written by REWRITING ADR-0055 in place — file, title and all — under the house
   rule then in force. ADR-0057 retired that rule: a record that said what was decided and was then replaced is
-  SUPERSEDED, never overwritten. ADR-0055 is restored to its original text at `231182e^`, marked `superseded`,
-  and this record carries the decision. The date above is when the DECISION was taken, not when the file was
-  created, because a record dated by its rescue would misplace it in the history it exists to keep.
+  SUPERSEDED, never overwritten. ADR-0055 is restored to its original text — preserved at the annotated tag
+  `adr-0055-original-text`, cited by tag and not by hash because a hash does not survive a history rewrite
+  (ADR-0057 §1c) — marked `superseded`, and this record carries the decision. The date above is when the
+  DECISION was taken, not when the file was created, because a record dated by its rescue would misplace it in
+  the history it exists to keep.
 
   ⚠️ THE PROJECT IS FIVE SYSTEMS, NOT ONE. The requerimento, item 39 alínea `e`, asks the Município to
   authorise publication of "os sistemas Inclusionista, Bússola Escolar, Código Cultura, Apoio Ativo e Code

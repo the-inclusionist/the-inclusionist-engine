@@ -302,8 +302,13 @@ more-information: |
   its motivating quote from the Dev is kept, because the objection it records is right and is honoured here.
 
   ⚠️ NOTHING WAS LOST WHILE THE RULE WAS WRONG, and it is worth writing so the retrofit is not treated as
-  archaeology: git holds every overwritten byte. The pre-rewrite ADR-0055 is readable at `231182e^`, and every
-  superseding record owed from 2026-08-28 can be reconstructed from its diff.
+  archaeology: git holds every overwritten byte. The pre-rewrite ADR-0055 is readable at the annotated tag
+  `adr-0055-original-text`, and every superseding record owed from 2026-08-28 can be reconstructed from its diff.
+
+  ⚠️ AND IT IS CITED BY TAG RATHER THAN BY SHA, which is §1c applied to this record's own evidence: a commit
+  hash is precisely a thing that MOVES — any history rewrite renames every one of them — so a hash is the wrong
+  handle for the one citation whose job is to prove nothing was lost. A tag survives the rewrite carrying its
+  name. The rule caught its own author.
 
   THE RETROFIT, in order, each as its own change: ADR-0058 superseding ADR-0055; the HUD-number record
   superseding ADR-0050 §3 and carrying ADR-0049 §5b; the revocation in ADR-0045 §6; the four amended sections

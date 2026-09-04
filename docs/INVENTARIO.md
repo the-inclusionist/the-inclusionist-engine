@@ -23,6 +23,23 @@ Nenhuma delas é detetável a olho. Quem mexer numa das três **edita este fiche
 ou ele apodrece — e um inventário podre é pior do que ausente, porque quem o abre decide pelo texto
 errado.
 
+> [!warning] A condição 2 disparou em 2026-09-04
+> Quatro caminhos citados abaixo **saíram do repositório**, por serem matéria administrativa
+> municipal e não da engine — decisão do Dev, pelo mesmo critério da issue #101:
+>
+> | citado aqui | onde está agora |
+> |---|---|
+> | `docs/research/requerimento-secao-tratamento-de-dados.md` (linha 189) | `~/Claude/the-inclusionist-requirement/` |
+> | `docs/research/requerimento-v7-alteracoes.md` (linha 193) | idem |
+> | `docs/research/requerimento-v8-alteracoes.md` (linhas 285 e 328) | idem |
+> | `scripts/gen_v8.py` | idem |
+>
+> ⚠️ **E as linhas não foram reescritas de propósito.** A evidência que cada uma cita foi lida
+> naqueles ficheiros, naquela data, e trocar o caminho por outro faria a citação apontar para fora
+> deste repositório — que é a única coisa que o veredito daqui pode examinar. O que muda não é o
+> veredito: é que a evidência dele deixou de ser verificável **aqui**, e isso tem de estar escrito
+> em vez de descoberto.
+
 Levantado em 2026-09-03.
 
 
