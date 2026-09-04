@@ -1,6 +1,19 @@
 ---
 metadata:
-  status: "accepted"   # corrects the first version of this ADR (v4.147.2), which was wrong — see more-information
+  status: "accepted"
+  errata:
+    - date: 2026-07-04
+      what: "corrects the first version of this ADR (v4.147.2), which was wrong — see more-information. This
+             note lived in a YAML comment on the status line, where no parser reads it and no index shows it."
+    - date: 2026-08-27
+      what: "the record kept only the HARD half of the Dev's ruler — that the factor is an integer in PHYSICAL
+             pixels — and left out three clauses the decision already had: a minimum of 640x360 in use
+             (`MIN_K = 2`), rises in INTEGER multiples, and the tolerance of losing up to five logical pixels
+             per side. He had to repeat them in anger (`eu expliquei a oito prompts atrás`), which is the
+             signature of a rule not written where people look. ERRATUM under ADR-0057 §1: the sentence failed
+             to carry properties the decision already had, and all three were MEASURED in `ui/layout.ts` before
+             being written, so none is intention presented as fact. Applied in the body 2026-08-27; DECLARED
+             here 2026-09-04."
   date: 2026-07-04
   decision-makers: [Dev, AI]
   consulted: []

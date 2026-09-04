@@ -60,21 +60,14 @@ AMEND_MARKER = re.compile(r"(AMENDED|CORRECTED|COMPLETED 20|Settled 20|EMENDA|Em
 # que chegou, e a proxima entrada tem de ser uma decisao e nao um esquecimento.
 STATUS_DEBT = set()
 AMEND_DEBT = {
-    "ADR-0001-integer-real-pixel-canvas-scale.yaml",
-    "ADR-0008-multiplayer-scaling.yaml",
     "ADR-0010-non-negotiable-pillars.yaml",
     "ADR-0011-visual-accessibility.yaml",
     "ADR-0012-typography.yaml",
     "ADR-0020-canonical-z-order-and-post-fx.yaml",
     "ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml",
-    "ADR-0024-multi-repo-versioned-shared-packages.yaml",
     "ADR-0027-inclusionist-pixel-engine.yaml",
     "ADR-0033-engine-entity-and-modal-input.yaml",
     "ADR-0036-this-repository-becomes-the-engine.yaml",
-    "ADR-0045-the-run-button-becomes-a-latch-and-its-other-jobs-move-to-the-jump.yaml",
-    "ADR-0050-two-control-surfaces-and-the-clock-belongs-to-the-adult.yaml",
-    # not a debt: this record NAMES the markers in order to forbid them.
-    "ADR-0057-a-record-changes-by-supersession-and-errata-is-the-only-edit-in-place.yaml",
 }
 
 

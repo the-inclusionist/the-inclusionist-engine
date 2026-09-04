@@ -1,6 +1,16 @@
 ---
 metadata:
   status: "accepted"
+  errata:
+    - date: 2026-08-27
+      what: "the record carried the NUMBER of simultaneous players and not the DEVICE restriction. The
+             requerimento, Anexo VII §1, already declared four-children simultaneous use as `recurso restrito ao
+             computador, NÃO disponível em telefone celular ou tablet`, and the Dev confirmed it. ERRATUM: the
+             restriction was part of the decision before this record was written, and its absence has a concrete
+             cost — whoever finds multiplayer not working on a tablet treats it as a defect and `fixes` it. Four
+             viewports on a tablet would give each child a quarter of a small screen, which is the opposite of
+             what the separate-screens pillar exists to guarantee. Applied in the body 2026-08-27; DECLARED here
+             2026-09-04."
   date: 2026-07-05
   decision-makers: [Dev]
   consulted: []
