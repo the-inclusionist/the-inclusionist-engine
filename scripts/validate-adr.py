@@ -60,11 +60,7 @@ AMEND_MARKER = re.compile(r"(AMENDED|CORRECTED|COMPLETED 20|Settled 20|EMENDA|Em
 # que chegou, e a proxima entrada tem de ser uma decisao e nao um esquecimento.
 STATUS_DEBT = set()
 AMEND_DEBT = {
-    "ADR-0020-canonical-z-order-and-post-fx.yaml",
     "ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml",
-    "ADR-0027-inclusionist-pixel-engine.yaml",
-    "ADR-0033-engine-entity-and-modal-input.yaml",
-    "ADR-0036-this-repository-becomes-the-engine.yaml",
 }
 
 
@@ -148,8 +144,15 @@ def check(path):
     if status == "superseded" and not metadata.get("superseded-by"):
         problems.append("status is `superseded` with no `superseded-by` — a dead end for the reader (ADR-0057)")
 
-    if AMEND_MARKER.search(open(path, encoding="utf-8").read()) and name not in AMEND_DEBT:
-        declared = {"errata", "superseded-in-part", "superseded-by"} & set(metadata)
+    # `proposed` is still being written: the immutability rule binds ACCEPTED records (ADR-0057), so a
+    # proposal that shows its working is doing the right thing.
+    if (status != "proposed"
+            and AMEND_MARKER.search(open(path, encoding="utf-8").read())
+            and name not in AMEND_DEBT):
+        # `supersedes` and `supersedes-in-part` count: a body that says `AMENDED here` is announcing what THIS
+        # record does to ANOTHER, and the metadata that declares it is the outgoing pointer, not an erratum.
+        declared = {"errata", "superseded-in-part", "superseded-by",
+                    "supersedes", "supersedes-in-part"} & set(metadata)
         if not declared:
             problems.append(
                 "the body announces an amendment (AMENDED/CORRECTED/COMPLETED/Settled) and the metadata "

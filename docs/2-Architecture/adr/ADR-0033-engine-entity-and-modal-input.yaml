@@ -1,5 +1,13 @@
 metadata:
   status: "accepted"
+  errata:
+    - date: 2026-08-26
+      what: "the mechanism was corrected BEFORE it was built, after the Dev asked why Q4 does not read the
+             field. The first draft proposed `ctx.hasModal(i)` and `ctx.anyModalOpen()`, which fixes the type
+             and is too much machinery for this module — `keydown` already builds a snapshot before any effect,
+             so two more ctx functions are more parts and not fewer. The answer went into the SNAPSHOT instead
+             of the object. ERRATUM: the record was describing a design that changed while it was being
+             written, so it never stated what was decided."
   date: 2026-08-25
   decision-makers: [Dev]
   consulted: [ADR-0027 (the boundary and its step 4), ADR-0030 (the declared contract),

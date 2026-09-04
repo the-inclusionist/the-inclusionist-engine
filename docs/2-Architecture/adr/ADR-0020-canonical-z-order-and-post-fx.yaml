@@ -1,6 +1,16 @@
 ---
 metadata:
   status: "accepted"
+  errata:
+    - date: 2026-08-24
+      what: "the record said A11Y_CORRECTION is ALWAYS last, full stop, and it is not — FLASH_LIMIT runs after
+             it. The record held a contradiction rather than a wrong decision, and resolving it needed a
+             distinction it never made: CORRECTION versus SAFETY. A11Y_CORRECTION decides how the image LOOKS,
+             so it must see the final composite, menus included — that is why it outranks the CRT. FLASH_LIMIT
+             decides whether the image can HARM, and WCAG 2.3.1 bounds luminance change over time, so the only
+             frame whose luminance matters is the one the eye actually receives. A limiter placed before the
+             correction clamps an image that no longer exists. ERRATUM under ADR-0057 §1: the safety ordering
+             was always required by the standard the record cites; the sentence just did not carry it."
   date: 2026-07-06
   decision-makers: [Dev, AI]
   consulted: []
