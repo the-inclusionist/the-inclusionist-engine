@@ -174,6 +174,27 @@ decision-outcome:
       correction the same `kind`, and the panel sliced by `kind`. A consequence of a gap in a data model is not
       a decision, so correcting it restores the record rather than replacing it.
 
+      ===== 1c. A RENAME IS NOT AN ERRATUM — A RECORD NAMES THINGS AS THEY WERE =====
+      Nine accepted records name `game.js` or `main.js`. Neither file exists: the monolith was dissolved and the
+      composition root is `main.ts`. It looks like nine citations to repair, and repairing them would be the
+      error.
+
+      A record is a statement about what was decided ON A DATE. "Dissolve the `game.js` monolith" is true
+      forever as that statement, and a reader who finds no `game.js` learns that the work was DONE — which is
+      information, not a defect. Rewriting the name would make the record describe a file that never had the
+      problem it describes.
+
+      ⚠️ AND THE COST OF THE OTHER ANSWER IS THE POINT: chasing a rename through nine accepted records is nine
+      in-place edits to keep prose in step with a refactor, which is exactly the churn this record exists to
+      prevent, and it would trade historical accuracy for a cosmetic freshness nobody asked for. The rule that
+      the ADR-0037 erratum states for a document version states itself here for a path: **a citation must pin
+      what does not move.** Where a path is genuinely the subject — and in a technical record it often is — the
+      record pins the date instead, which it already does.
+
+      THE ONE CASE THAT IS A DEFECT: a record whose RULE is stated in terms of a file that no longer plays that
+      role. Not the name being old, but the rule having lost its subject. That is a supersession, and it is
+      recognised by asking whether the SENTENCE still governs anything, never by whether the path resolves.
+
       ===== 2. THE MIXED CASE, DECIDED IN ADVANCE =====
       A record that is partly defective and partly replaced is SUPERSEDED, whole. ADR-0055 is the worked
       example: its MECHANISM half (package for libraries, API for boundaries, zero submodules) was true and

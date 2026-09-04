@@ -49,6 +49,13 @@ One file per deliberate architectural decision, in **YADR** format — the YAML 
   - ⚠️ **E `bundle` NÃO CRESCE TAMBÉM**, que não é óbvio e por isso está escrito: bundle é coleção, então lê-se
     como recipiente que pode continuar coletando. Não é — é consolidação de decisões **já tomadas** no momento
     em que foi escrito. A forma descreve O QUE ELE CONSOLIDOU, não licença para seguir consolidando.
+  - ⚠️ **RENOMEAR FICHEIRO NÃO É ERRATA.** Nove registros aceitos nomeiam `game.js` e `main.js`, e nenhum dos
+    dois existe. Um registro é afirmação sobre o que foi decidido NUMA DATA: "dissolver o monólito `game.js`" é
+    verdade para sempre como essa afirmação, e quem não encontra o ficheiro aprende que o trabalho foi FEITO.
+    Perseguir um rename por nove registros aceitos é nove edições no lugar para manter prosa em dia com um
+    refactor — a churn que esta regra existe para impedir. **Citação tem de fixar o que não se move**; onde o
+    caminho é mesmo o assunto, o que se fixa é a DATA. O defeito de verdade é outro: registro cuja REGRA perdeu
+    o sujeito, e isso se reconhece perguntando se a FRASE ainda governa, nunca se o caminho resolve.
   - **The superseded record keeps its FULL TEXT** and gains its status and pointer. Emptying it would throw away
     the thing that makes history worth having; the reader only needs to see in the first three lines that it no
     longer governs. **This applies to `bundle` records too.**
