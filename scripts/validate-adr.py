@@ -182,7 +182,13 @@ def pointer_problems(files):
         name = number(path)
         if not name:
             continue
-        doc = yaml.safe_load(open(path, encoding="utf-8")) or {}
+        try:
+            doc = yaml.safe_load(open(path, encoding="utf-8")) or {}
+        except yaml.YAMLError:
+            # `check` reports this file as unparseable with the line and column. Crashing here
+            # instead would replace 68 verdicts with one traceback, which is the classic way a
+            # gate stops gating: it looks broken rather than red, and somebody skips it.
+            continue
         meta[name] = (path, doc.get("metadata") or {})
 
     def note(path, text):
