@@ -212,6 +212,13 @@ def pointer_problems(files):
             elif isinstance(entry, dict) and not entry.get("what"):
                 note(path, f"`superseded-in-part: {by}` does not say WHAT part — the reader cannot tell which "
                            "clauses still govern (ADR-0057)")
+        # A reference to a record that does not exist is worse than none: it reads as answered.
+        # Found by accident in ADR-0010, which sent the reader to ADR-0052 for the Libras levels
+        # decided in ADR-0051 — one digit, and the reader arrives at `professionals author activities`.
+        for cited in sorted(set(re.findall(r"ADR-\d{4}", open(path, encoding="utf-8").read()))):
+            if cited not in meta and cited != name:
+                note(path, f"cites {cited}, which does not exist")
+
         for replaced in m.get("supersedes-in-part") or []:
             if replaced not in meta:
                 note(path, f"`supersedes-in-part` names {replaced}, which does not exist")
