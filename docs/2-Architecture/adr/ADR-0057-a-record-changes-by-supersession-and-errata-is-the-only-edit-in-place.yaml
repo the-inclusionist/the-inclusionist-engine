@@ -1,0 +1,225 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-04
+  decision-makers: [Dev]
+  consulted:
+    - "NYGARD, Michael. Documenting Architecture Decisions, 2011 — the practice this record restores:
+       one record one decision; immutable once accepted; superseded records stay, marked"
+    - "adr/README.md — the house convention, whose EXCEPTION of 2026-08-27 is what this record replaces"
+    - "CLAUDE.md §0 — `REGISTRAR É EXECUÇÃO, NÃO CONSULTA`, whose speed requirement is kept and whose
+       MECHANISM (`a emenda sai no MESMO turno`) is what produced the defect"
+    - "ADR-0003 (tiered SDD subset) — `a dropped artifact must be explicitly dropped, not missing`, the same
+       shape applied here to a decision that is replaced"
+    - "ADR-0043 (a known debt gets a budget that only goes down) — the precedent for a rule enforced by a gate
+       instead of by memory"
+    - "the external diagnostic of 2026-09-02 (108 problems), which read `status: accepted` on ADR-0056 and
+       believed it — the measured cost of this defect"
+  informed: []
+
+title: A record changes by SUPERSESSION, and an ERRATUM is the only edit in place — the test is whether the record was ever true
+
+context-and-problem-statement: |
+  On 2026-08-28 five accepted records were changed in place: ADR-0055 was rewritten whole (title and filename
+  included), ADR-0050 §3 had a decision reversed, ADR-0045 §6 recorded a revocation the Dev had made, and
+  ADR-0049 gained four amended sections. None of them produced a superseding record and none of them changed a
+  `status`.
+
+  ⚠️ AND THAT WAS NOT FREELANCING — IT FOLLOWED A WRITTEN HOUSE RULE, which is why fixing the records without
+  fixing the rule would only buy time. `adr/README.md` states Nygard's immutability and then grants an
+  exception, dated 2026-08-27 and quoted from the Dev ("Não existe isso. Sou humano, eu erro e preciso corrigir
+  meus erros."):
+
+    Superseding is for a decision that was right and has been replaced. AMENDING is for a record that no longer
+    says what was decided — BECAUSE THE DECISION-MAKER CHANGED HIS MIND, or because the record was written down
+    wrong.
+
+  ⚠️ THE FOUR CAPITALISED WORDS ARE THE DEFECT. "Because the decision-maker changed his mind" is the definition
+  of what supersession exists for. The two categories therefore overlap completely on the commonest case, and a
+  reader picks whichever side they prefer. ADR-0055 went through that hole.
+
+  AND THE DAMAGE IS MEASURED, not feared. The external diagnostic of 2026-09-02 judged 108 documentation
+  problems against this repository and marked ADR-0056 as `coberto` — covered — because it read
+  `status: "accepted"` and believed it. That record's premise (two parties: school as controller, supplier as
+  operator) had died on 2026-08-28. `accepted` appears fifty times in this directory and carries no signal;
+  three other records hide their supersession inside a four-hundred-character prose string in the `status`
+  field itself, which the README promises is machine-readable and which the validator never inspects.
+
+  ⚠️ SO THE FAILURE IS NOT THAT `status` HAPPENED TO LIE. In-place amendment leaves no state for "edited after
+  acceptance", so the field is FORCED to say `accepted` about a record that no longer holds. It lies by
+  construction, and no amount of care prevents it.
+
+decision-drivers:
+  - "The reason to keep history is not sentiment: a reader in March needs to know what was decided AND what was
+     decided before it, because the rejected alternative is what stops the same proposal returning."
+  - "A rule whose two branches overlap is not a rule — it is a preference with a procedure attached."
+  - "The Dev's objection of 2026-08-27 is correct and must survive this record: a document that keeps stating a
+     position its author abandoned argues against him in every later conversation. Speed of correction is not
+     negotiable; only the mechanism is."
+  - "A convention that only a careful reader can follow will be broken by a tired one. It has to be gated."
+  - "Nothing is lost by choosing wrongly here in only one direction: git holds every overwritten byte, so a
+     missing superseding record can be reconstructed, while a decision quietly deleted from the record cannot
+     be noticed at all."
+
+considered-options:
+  - "E1 — Nygard in the strict form: never edit an accepted record for any reason, including a typo"
+  - "E2 — keep the current exception as written (amend when the decision-maker changed his mind OR the record
+     was written down wrong)"
+  - "E3 — split by TRUTH: an erratum is amended in place, a replaced decision is superseded, and the test is
+     whether the record was ever true"
+  - "E4 — amend everything in place, drop supersession entirely, and rely on git for history"
+
+pros-and-cons-of-the-options:
+  E1:
+    good: ["One rule, no judgement call, impossible to misapply.",
+           "Maximum fidelity of the historical record."]
+    bad: ["A superseding record to fix `§49.j` → `§51.j` is ceremony that buries the real supersessions among
+           clerical ones — after ten of those, nobody reads the chain.",
+          "It answers the Dev's objection with 'then leave the error standing', which is the option he named as
+           the worst of the three."]
+  E2:
+    good: ["Already written, already in force, costs nothing to keep."]
+    bad: ["Its two branches overlap on the commonest case, which is how ADR-0055 was rewritten whole.",
+          "It gives `status` no state for what it authorises, so the field lies by construction.",
+          "It was measured failing: an external diagnostic read `accepted` on a record with a dead premise."]
+  E3:
+    good: ["The line is testable without anyone's memory: would the original author, with the same facts, have
+            written the same sentence? If yes, the record was true and a change is a supersession.",
+           "It keeps the Dev's objection intact — a record written down wrong is corrected at once, in place.",
+           "It leaves `status` with a state for everything that can happen to a record, so the field can be
+            gated."]
+    bad: ["It requires a judgement in the mixed case, where a record is partly wrong and partly replaced.",
+          "It is more machinery than E2 for a directory of fifty-seven files."]
+  E4:
+    good: ["Least writing per change."]
+    bad: ["It moves the decision history into commit messages, which are not indexed, not linked from the
+           record, and not read by anyone consulting an ADR.",
+          "It is what was happening in practice, and the diagnostic found the result."]
+
+decision-outcome:
+  chosen-option:
+    link: "E3 — split by TRUTH: erratum amends in place, a replaced decision is superseded"
+    justification: |
+      ===== 1. THE LINE, AND THE TEST THAT DECIDES IT =====
+      Two operations, and the question that separates them is NOT who changed or how big the change is. It is
+      whether the record was ever TRUE.
+
+        · **ERRATUM — amended in place, dated.** The record NEVER said what was decided. A wrong clause
+          citation, a transposed number, a sentence that failed to carry a property the decision already had.
+          There is no history to preserve here, because the historical record was itself defective: correcting
+          it RESTORES history rather than overwriting it.
+        · **SUPERSESSION — a new record, both pointers set.** The record said what was decided, correctly, and
+          then the decision changed. There IS history, and it is the part worth keeping.
+
+      ⚠️ THE TEST, and it needs nobody's memory of intent: **would the original author, given the same facts he
+      had that day, have written the same sentence?**
+        · YES, and it is wrong today → the world moved → SUPERSEDE.
+        · NO → the record was defective when written → ERRATUM.
+
+      "The decision-maker changed his mind" is a YES to that test, and therefore always a supersession. That
+      phrase is struck from the convention.
+
+      ===== 2. THE MIXED CASE, DECIDED IN ADVANCE =====
+      A record that is partly defective and partly replaced is SUPERSEDED, whole. ADR-0055 is the worked
+      example: its MECHANISM half (package for libraries, API for boundaries, zero submodules) was true and
+      stands; its CENSUS half (six repositories for one system) was false. Rewriting the file in place
+      destroyed the provenance of the true half along with the false one.
+
+      The rule: **when in doubt, supersede.** The cost of a superfluous superseding record is one file nobody
+      needs to read twice. The cost of a superfluous erratum is a decision that silently never existed.
+
+      ===== 3. `metadata.status` BECOMES AN ENUM, AND THE PROSE MOVES OUT =====
+      The README promises records are "machine-readable (filter/index by `metadata.status`)". Today three
+      records hold four-hundred-character paragraphs in that field. From here:
+
+        status: proposed | accepted | deprecated | superseded
+
+      and nothing else. The narrative moves to fields of its own, all optional:
+
+        superseded-by: ADR-NNNN            # required when status is `superseded`
+        supersedes:    [ADR-NNNN, ...]     # required on the record that supersedes
+        superseded-in-part:                # for a record replaced only in one clause
+          - by: ADR-NNNN
+            what: "§3 — where the score sits on the HUD"
+        errata:
+          - date: 2026-09-04
+            what: "cited the annual report as §49.j; in the filed draft it is §51.j"
+
+      ⚠️ AND `superseded-in-part` EXISTS BECAUSE THE ALTERNATIVE IS WORSE. Without it, replacing one clause of
+      a long record forces either a whole superseding record (and the other clauses lose their address) or an
+      in-place edit (the defect this record removes). ADR-0050 is the case: only §3 moved.
+
+      ===== 4. THE ORIGINAL TEXT STAYS VISIBLE =====
+      A superseded record is not trimmed, summarised or emptied. It keeps its full text and gains its status
+      and its pointer. The reason is the one Nygard gives and the one this house already learned the hard way:
+      ADR-0011 once held the CONTRARY justification in the Dev's own quotes, and a record that keeps arguing
+      the old position is exactly what makes the history worth having — provided the reader can see, in the
+      first three lines, that it no longer governs.
+
+      ===== 5. THE SPEED REQUIREMENT SURVIVES, THE MECHANISM DOES NOT =====
+      CLAUDE.md §0 says "quando a decisão dele REVOGA um ADR aceito, a emenda sai no MESMO turno, escrita".
+      The half that is right is **no mesmo turno** — a decision that waits is a decision that gets argued
+      against tomorrow by the record it replaced. The half that is wrong is **emenda**. A superseding record is
+      written in the same turn just as easily; it costs a file, not a day.
+
+      ===== 6. WHAT THE GATE CHECKS =====
+      `scripts/validate-adr.py` already runs in CI and already catches the failure with no symptom. It gains
+      four checks, and each one has a failure it prevents:
+
+        · `status` outside the enum → FAIL. (Prevents the prose-in-status field.)
+        · `status: superseded` without `superseded-by` → FAIL. (Prevents the dead end.)
+        · `superseded-by: ADR-N` where N does not list this record in `supersedes` → FAIL.
+          (Prevents the one-way pointer, which is the one a reader arrives at from the wrong side.)
+        · a record whose `date` is older than its newest `errata.date` and whose body contains an undeclared
+          amendment marker (`AMENDED`, `CORRECTED`, `Settled 20`, `COMPLETED 20`) → FAIL.
+          (Prevents the in-place edit that leaves no trace in the metadata — which is precisely what happened
+          on 2026-08-28, fifteen times.)
+
+  consequences:
+    positive:
+      - "`status` becomes usable by machine, which is what the README always claimed and never delivered — a
+         later diagnostic, or a human, can filter for what still governs."
+      - "The commonest change (a mind changed) now has exactly one legal mechanism, so there is nothing to
+         choose and nothing to rationalise."
+      - "The Dev's 2026-08-27 objection is preserved rather than reversed: a record that says the wrong thing
+         is still corrected immediately."
+      - "`superseded-in-part` makes it cheap to replace one clause, which is what removes the temptation that
+         produced most of the in-place edits."
+    negative:
+      - "More files. Fifty-seven records become sixty-something within a week, and a reader following a chain
+         opens two or three documents where before he opened one."
+      - "The retrofit is real work: five records were edited in place on 2026-08-28 and three more carry prose
+         in `status`, and each needs a judgement of erratum versus supersession."
+      - "The bidirectional-pointer check makes every supersession a TWO-file edit, and a half-applied one now
+         fails the pipeline — which is the intent, but it is friction that did not exist yesterday."
+      - "The mixed case still needs a person. `When in doubt, supersede` bounds the damage; it does not remove
+         the judgement."
+    neutral:
+      - "Nothing already written is invalidated by this record alone. The retrofit is listed separately and
+         proceeds record by record."
+
+  confirmation: |
+    WHAT CAN BE GATED, and all four run in the existing `docs` CI job:
+      · The enum, the required `superseded-by`, the bidirectional pointer and the undeclared-amendment marker,
+        all in `scripts/validate-adr.py`.
+      · Each check is born FAILING, with the mutation confirmed: setting a `status` to a prose string must go
+        red; removing one side of a supersession pair must go red.
+
+    ⚠️ WHAT NO GATE CAN CONFIRM: whether a given change was an erratum or a supersession. The test in §1 is
+    answerable by a person and not by a parser, because it asks what the author would have written. The gate
+    catches the change that left no trace at all — which is the failure that actually occurred — and not the
+    change that was classified wrongly in good faith.
+
+more-information: |
+  WHAT THIS RECORD REPLACES: the paragraph in `adr/README.md` beginning "But a record that states the WRONG
+  DECISION gets AMENDED, in place, dated", dated 2026-08-27. That paragraph is rewritten to the line of §1;
+  its motivating quote from the Dev is kept, because the objection it records is right and is honoured here.
+
+  ⚠️ NOTHING WAS LOST WHILE THE RULE WAS WRONG, and it is worth writing so the retrofit is not treated as
+  archaeology: git holds every overwritten byte. The pre-rewrite ADR-0055 is readable at `231182e^`, and every
+  superseding record owed from 2026-08-28 can be reconstructed from its diff.
+
+  THE RETROFIT, in order, each as its own change: ADR-0058 superseding ADR-0055; the HUD-number record
+  superseding ADR-0050 §3 and carrying ADR-0049 §5b; the revocation in ADR-0045 §6; the four amended sections
+  of ADR-0049 classified one by one; the `§49.j` → `§51.j` erratum in ADR-0053; ADR-0056's dead premise; and
+  the three prose `status` strings in ADR-0024, ADR-0025 and ADR-0034 broken into the new fields.

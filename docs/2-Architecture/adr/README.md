@@ -21,17 +21,37 @@ One file per deliberate architectural decision, in **YADR** format — the YAML 
   list item into a mapping, which parses cleanly and holds the wrong data. This is the "lint against a schema later"
   promised above; it runs in CI on every push.
 - **Naming:** `ADR-NNNN-short-slug.yaml`, 4-digit zero-padded, monotonic.
-- **Immutable:** to change a decision, write a **new** ADR and set the old one's `metadata.status` to
-  `"superseded by ADR-NNNN"`. Never edit an accepted decision — refactors **supersede**, they don't pile up.
-- **But a record that states the WRONG DECISION gets AMENDED, in place, dated** (Dev, 2026-08-27: *"Não existe
-  isso. Sou humano, eu erro e preciso corrigir meus erros."*). The two are different things and conflating them is
-  what let twelve records drift out of date at once. **Superseding** is for a decision that was right and has been
-  replaced. **Amending** is for a record that no longer says what was decided — because the decision-maker changed
-  his mind, or because the record was written down wrong. Leaving it stale is the worst option of the three: a
-  record that keeps the old position **argues against its own author** in every later conversation.
-  The form: keep the original text visible, add the amendment below it with the date and the reason, and put the
-  same note in this table's Status column. **This applies to `bundle` records too** — the shape says nothing about
-  whether a record may be corrected.
+- **A record changes by SUPERSESSION; an ERRATUM is the only edit in place — ADR-0057.** Two operations, and
+  what separates them is not who changed or how big the change is, but **whether the record was ever TRUE**.
+  - **ERRATUM** — amended in place, dated, and declared in `metadata.errata`. The record NEVER said what was
+    decided: a wrong clause citation, a transposed number, a property the decision already had and the sentence
+    failed to carry. There is no history to preserve, because the historical record was itself defective —
+    correcting it RESTORES history instead of overwriting it.
+  - **SUPERSESSION** — a **new** record, with `superseded-by` on the old one and `supersedes` on the new one.
+    The record said what was decided, correctly, and then the decision changed. Here there IS history, and it is
+    the part worth keeping.
+  - **The test, and it needs nobody's memory of intent:** *would the original author, given the same facts he had
+    that day, have written the same sentence?* **YES** and it is wrong today → the world moved → SUPERSEDE.
+    **NO** → the record was defective when written → ERRATUM. "The decision-maker changed his mind" is a YES,
+    and therefore always a supersession.
+  - **Mixed case, decided in advance:** a record partly defective and partly replaced is **superseded, whole**.
+    When in doubt, supersede — a superfluous superseding record is one file nobody reads twice; a superfluous
+    erratum is a decision that silently never existed.
+  - **The superseded record keeps its FULL TEXT** and gains its status and pointer. Emptying it would throw away
+    the thing that makes history worth having; the reader only needs to see in the first three lines that it no
+    longer governs. **This applies to `bundle` records too.**
+  - ⚠️ **What this replaces, and why the objection behind it survives.** Until 2026-08-27 the rule above read
+    "a record that states the WRONG DECISION gets AMENDED, in place", written from the Dev's own words —
+    *"Não existe isso. Sou humano, eu erro e preciso corrigir meus erros."* That objection is **right** and is
+    honoured: a record that says the wrong thing is still corrected at once. What was wrong was one phrase —
+    amending "because the decision-maker changed his mind", which is the definition of what supersession is for.
+    The two branches overlapped on the commonest case, and ADR-0055 was rewritten whole through that hole.
+    Leaving a record stale remains the worst of the three options: it **argues against its own author** in every
+    later conversation.
+- **`metadata.status` is an ENUM and holds nothing else:** `proposed` · `accepted` · `deprecated` · `superseded`.
+  The narrative lives in fields of its own — `superseded-by`, `supersedes`, `superseded-in-part` (for a record
+  replaced in one clause only) and `errata`. Three records still hold prose in `status`; breaking them out is
+  part of the retrofit listed in ADR-0057.
 - **Big design docs that *are* a decision** (e.g. the modularization plan, `../../5-Refactoring/plano-modularizacao.md`, built on
   arXiv:2409.15152) act as ADRs too — link them from the table rather than duplicating.
 - **Upgrade path:** if LGPD/compliance needs an audited, CI-validated decision log, adopt **Structured MADR**
@@ -97,6 +117,7 @@ One file per deliberate architectural decision, in **YADR** format — the YAML 
 | [ADR-0054](ADR-0054-a-frame-that-throws-stops-the-loop-and-says-so.yaml) | Quadro que lança PARA o laço e ANUNCIA. A spec do `demos` pede isto por escala (um jogo ruim entre 383 tem de ser distinguível de uma engine quebrada); a razão daqui é outra e mais urgente — **tela congelada é sintoma VISUAL**, e no modo cego travado e pensando produzem a mesma coisa: silêncio. Pega uma vez, para, desregistra do ticker, anuncia. ⚠️ Pegar-e-seguir seria PIOR que o defeito: vira jogo rodando para sempre sobre estado indefinido. A trava é uma flag e não o `remove`, porque ticker sem `remove` também tem de parar; e o anúncio é embrulhado, senão o aviso quebrado volta a ser invisível dentro do ticker | accepted |
 | [ADR-0055](ADR-0055-five-systems-nine-repositories-and-multi-tenant-from-day-one.yaml) | **CINCO sistemas, NOVE repositórios** — a fronteira segue a Secretaria que responde pelo dado, não o código que se repete. A versão anterior deste registro dava repositório a UM dos cinco sistemas que o requerimento nomeia (item 39 `e`) e dizia que o compass era o único lugar com backend — falso: o caderno do Apoio Ativo descreve sincronização, controle por papel e relatório. ⚠️ E o erro tinha aresta jurídica: o Apoio Ativo responde à Assistência Social sob a LOAS, e o requerimento escreve um parágrafo para afastar o equívoco. Mecanismo inalterado (pacote para biblioteca, API para fronteira, zero submódulo, ADR-0024). Novo: **um backend por sistema e NENHUM banco compartilhado** (dois sistemas num banco são dois controladores numa tabela); **servidores da própria prefeitura** (§49.e e Quadro 1 do requerimento); e **multi-inquilino desde o início**, com **schema por inquilino, nunca coluna de inquilino** — consulta que esquece o filtro devolve linha alheia com 200; consulta que esquece o schema devolve erro. Multi-inquilino no código ≠ hospedar outra rede, que faria do Município OPERADOR dela. A árvore de conhecimento segue ARTEFATO VERSIONADO com orçamento de 8 MB por fatia, nó = ENTIDADE (verbo de Bloom + objeto). ⚠️ Emenda o ADR-0036: a CASCA vai para o `site` | accepted |
 | [ADR-0056](ADR-0056-the-child-data-never-leaves-in-a-readable-form.yaml) | **Nenhum dado de criança sai do aparelho em forma reconhecível.** Ponta a ponta para a base individual; a instituição é CONTROLADORA com RBAC, não destinatária de compartilhamento. ⚠️ O vazamento que o Dev achou sozinho: **o fato do compartilhamento É o dado** — servidor que medeia aprende a relação mesmo sem ler um byte. Por isso o compartilhamento é INSTANTÂNEO DO PASSADO, entregue fora da nossa rede (QR leva a chave, o arquivo vai P2P/USB/e-mail dela): instantâneo não se revoga, mas também não CRESCE — o requisito foi removido em vez de satisfeito, e com ele sumiram rotação de chave e sincronização semanal. Telemetria sem PII: `id` SORTEADO (hash de CPF se enumera num fim de semana), nunca mesclado, tempo relativo exato + data grossa + **deslocamento constante por id** — porque trinta ids na mesma janela de 50 min SÃO uma turma, e ancorar todos no primeiro acesso da semana piora. ⚠️ É pseudonimizado, NÃO anônimo (LGPD art. 13 §4º), e o documento tem de dizer a frase certa. Recuperação: duas folhas, verificação por evento, coordenação guarda VERIFICADOR e não o código, e **o jogo nunca trava**. Login nunca decifra | accepted |
+| [ADR-0057](ADR-0057-a-record-changes-by-supersession-and-errata-is-the-only-edit-in-place.yaml) | **Um registro muda por SUPERSESSÃO; errata é a única edição no lugar** — e o que separa as duas não é quem mudou nem o tamanho da mudança, é **se o registro alguma vez foi verdadeiro**. O teste dispensa memória de intenção: *o autor original, com os mesmos fatos daquele dia, teria escrito a mesma frase?* SIM e hoje está errado → o mundo mudou → supersede; NÃO → o registro nasceu defeituoso → errata. ⚠️ Substitui a exceção de 27/08, cuja frase "porque o decisor mudou de ideia" era a **definição do que a supersessão existe para fazer** — os dois ramos se sobrepunham no caso mais comum, e o ADR-0055 foi reescrito inteiro por esse buraco. A objeção do Dev que gerou a exceção continua honrada: registro que diz coisa errada é corrigido na hora. Caso misto → supersede inteiro. **`status` vira enum** (`proposed`·`accepted`·`deprecated`·`superseded`) e a prosa sai para `superseded-by`, `supersedes`, `superseded-in-part` e `errata`; o `validate-adr.py` ganha quatro checagens, entre elas o **ponteiro bidirecional** e a **emenda no corpo sem rastro nos metadados** — que é o que aconteceu quinze vezes em 28/08 | accepted |
 
 > ADRs 0011–0019 replaced the informal `REGISTRO-DE-DECISOES.md` log (a decision is an ADR). The exhaustive per-row
 > detail of the old log is in git history; these ADRs carry the decisions + rationale.

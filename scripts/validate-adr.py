@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import glob
 import os
+import re
 import sys
 
 try:
@@ -41,6 +42,43 @@ BUNDLE_KEYS = [
 ]
 # Lists that hold prose. A mapping here means a `: ` ate the sentence.
 PROSE_LISTS = ["decision-drivers", "considered-options"]
+
+# ADR-0057: `metadata.status` is an ENUM and holds nothing else. The narrative moved to
+# `superseded-by`, `supersedes`, `superseded-in-part` and `errata`.
+STATUSES = ("proposed", "accepted", "deprecated", "superseded")
+
+# A body that announces its own amendment while the metadata says nothing is the failure that
+# actually happened: fifteen records were edited in place on 2026-08-28 and every `status` still
+# read `accepted`, so an external diagnostic read one of them as current and it was not.
+AMEND_MARKER = re.compile(r"(AMENDED|CORRECTED|COMPLETED 20|Settled 20|EMENDA|Emenda de)")
+
+# ADR-0043 shape: a known debt gets a budget that ONLY GOES DOWN. These are the records that
+# predate ADR-0057 and still carry the old form. Entries are REMOVED as the retrofit lands; a
+# name that no longer needs to be here is itself a failure, so the list cannot rot upward.
+STATUS_DEBT = {
+    "ADR-0021-tts-npm-lib-and-r2-model.yaml",
+    "ADR-0024-multi-repo-versioned-shared-packages.yaml",
+    "ADR-0025-inclusionist-lab-hub-repo.yaml",
+    "ADR-0034-progression-survives-the-restored-machine.yaml",
+}
+AMEND_DEBT = {
+    "ADR-0001-integer-real-pixel-canvas-scale.yaml",
+    "ADR-0008-multiplayer-scaling.yaml",
+    "ADR-0010-non-negotiable-pillars.yaml",
+    "ADR-0011-visual-accessibility.yaml",
+    "ADR-0012-typography.yaml",
+    "ADR-0020-canonical-z-order-and-post-fx.yaml",
+    "ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml",
+    "ADR-0024-multi-repo-versioned-shared-packages.yaml",
+    "ADR-0027-inclusionist-pixel-engine.yaml",
+    "ADR-0033-engine-entity-and-modal-input.yaml",
+    "ADR-0036-this-repository-becomes-the-engine.yaml",
+    "ADR-0045-the-run-button-becomes-a-latch-and-its-other-jobs-move-to-the-jump.yaml",
+    "ADR-0049-every-reward-is-deterministic-and-the-only-celebration-is-growth.yaml",
+    "ADR-0050-two-control-surfaces-and-the-clock-belongs-to-the-adult.yaml",
+    # not a debt: this record NAMES the markers in order to forbid them.
+    "ADR-0057-a-record-changes-by-supersession-and-errata-is-the-only-edit-in-place.yaml",
+}
 
 
 def every_list_item(node, path=""):
@@ -111,6 +149,26 @@ def check(path):
         if isinstance(item, dict) and not all(k in ("pros", "cons") for k in item):
             culprit = next(iter(item), "?")
             problems.append(f"{where} became a MAPPING instead of text ({culprit[:40]!r}). Quote the item.")
+
+    # --- ADR-0057: how a record is allowed to change -------------------------
+    name = os.path.basename(path)
+    status = metadata.get("status")
+    if status not in STATUSES and name not in STATUS_DEBT:
+        problems.append(
+            f"metadata.status is {str(status)[:60]!r}; it must be one of {'/'.join(STATUSES)}. "
+            "The narrative goes in `superseded-by`, `supersedes`, `superseded-in-part` or `errata` (ADR-0057)."
+        )
+    if status == "superseded" and not metadata.get("superseded-by"):
+        problems.append("status is `superseded` with no `superseded-by` — a dead end for the reader (ADR-0057)")
+
+    if AMEND_MARKER.search(open(path, encoding="utf-8").read()) and name not in AMEND_DEBT:
+        declared = {"errata", "superseded-in-part", "superseded-by"} & set(metadata)
+        if not declared:
+            problems.append(
+                "the body announces an amendment (AMENDED/CORRECTED/COMPLETED/Settled) and the metadata "
+                "declares none. Either it is an ERRATUM (add `errata`) or the decision changed and needs a "
+                "superseding record (ADR-0057)"
+            )
     return problems
 
 

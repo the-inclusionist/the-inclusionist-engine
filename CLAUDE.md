@@ -37,8 +37,14 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
   um **ADR (YADR)** em `docs/2-Architecture/adr/` + entrada no índice; senão → o doc canônico certo; e **reflita no
   mapa** (`ARCHITECTURE.md`) quando muda onde algo vive. Concordar/discordar sem registrar = decisão perdida.
 - **REGISTRAR É EXECUÇÃO, NÃO CONSULTA** (2026-08-27, depois de o Dev medir o estrago). Quando a decisão dele
-  **revoga** um ADR aceito, a emenda sai no MESMO turno, escrita, e ele desfaz se discordar — não se pergunta
-  "quer que eu emende?". O motivo é mecânico e não de zelo: um ADR que segue afirmando a posição antiga **volta a
+  **revoga** um ADR aceito, o registro sai no MESMO turno, escrito, e ele desfaz se discordar — não se pergunta
+  "quer que eu registre?".
+  ⚠️ **E o MECANISMO mudou em 2026-09-04 (ADR-0057): revogação vira REGISTRO NOVO que supersede, nunca emenda
+  no lugar.** A velocidade estava certa e fica; a emenda é que estava errada. A frase antiga dizia "a emenda sai
+  no mesmo turno" e foi ela que institucionalizou o defeito — cinco registros aceitos foram editados no lugar em
+  28/08, e um diagnóstico externo leu `status: accepted` num deles cuja premissa já tinha morrido. Emenda no
+  lugar só para **errata**: quando o registro NUNCA disse o que foi decidido (citação errada, número trocado).
+  O teste: *o autor original, com os mesmos fatos daquele dia, teria escrito a mesma frase?* Sim → supersede. O motivo é mecânico e não de zelo: um ADR que segue afirmando a posição antiga **volta a
   argumentar contra ele** na conversa seguinte, comigo ou com quem ler. Medido: sete escolhas dele entraram no
   código e não no registro, e o ADR-0011 chegou a guardar a justificativa contrária com as aspas dele.
   **Mesma regra para issue resolvida: eu fecho.** ("Se eu já tomei a decisão e já está resolvido, você fecha
