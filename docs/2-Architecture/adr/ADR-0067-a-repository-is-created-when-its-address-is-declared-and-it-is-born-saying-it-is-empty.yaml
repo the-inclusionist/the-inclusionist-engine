@@ -1,0 +1,189 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-04
+  supersedes-in-part: [ADR-0058]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0058 §10 — SUPERSEDED IN PART by this record. Its rule (`a repository is created when its first
+       commit exists`) is replaced; its worry — that a named empty repository reads as progress — is kept and
+       answered by §3 below"
+    - "ADR-0066 (hosting moves to a GitHub organisation) — the container that makes creation cheap, and the
+       record that killed one of the arguments this record could have used (see §1)"
+    - "ADR-0057 (a record changes by supersession) — the mechanism, and §1c (a citation must pin what does
+       not move)"
+    - "ADR-0064 + docs/LICENSES.md — what a repository must carry from its first commit"
+    - "requerimento, pedido `a` — o termo lista artefatos com tamanho e hash, e é a razão do §4"
+    - "requerimento, pedido `p` — o ato identifica repositório, versão e hash de CADA sistema"
+  informed: []
+
+title: A repository is created when its address is declared — and it is born carrying a README that says it is empty
+
+context-and-problem-statement: |
+  ADR-0058 named nine repositories and created five of them. Its §10 held the other four back under a rule:
+  **a repository is created when its first commit exists**, because "creating them empty, now, would put four
+  names in the topology with nothing behind them".
+
+  ⚠️ THAT RULE HAS NOW COST SOMETHING MEASURABLE, and the cost is the reason this record exists rather than a
+  preference about tidiness. The migration of the 44 backlog items stalled on it. An issue is filed AGAINST a
+  repository; six of the nine addresses did not exist; so every item belonging to `apoio-ativo`,
+  `code-comigo`, `codigo-cultura`, `the-inclusionist-site`, `the-inclusionist-knowledge-tree` and
+  `school-compass` had nowhere to go, and stayed in the engine's tracker describing work that is not the
+  engine's. The rule was written to prevent a false appearance of progress and it produced a real
+  misfiling instead.
+
+  ⚠️ AND THE THING THAT MADE CREATION CHEAP IS ADR-0066. Inside an organisation, creating a repository is
+  setting members, teams, branch protection and a workflow ONCE, on something empty, before any product code
+  can land in a place that was never configured. The Dev has also decided one repository per game
+  (ADR-0068) — three hundred and more, made by script from a template. A template proven on eleven
+  hand-made repositories is a different object from a template first exercised at scale.
+
+decision-drivers:
+  - "A backlog item has to be filed somewhere. An address that does not exist forces the work into the wrong
+     tracker, and wrong is worse than absent because it reads as belonging there."
+  - "Configuration is cheapest on an empty repository and most expensive on a populated one that has already
+     been pushed to wrongly."
+  - "⚠️ The objection ADR-0058 §10 raised is REAL and survives this record: a named repository with nothing
+     in it does read as progress. It must be answered, not waved away."
+  - "The termo of pedido `a` and the ato of pedido `p` must never list a scaffold as a system. That is a
+     property of what gets LISTED, and it does not require the repository to be absent."
+
+considered-options:
+  - "R1 — keep ADR-0058 §10: no repository until its first product commit"
+  - "R2 — a repository is created when a record declares its address, and it is born with a README that
+     states it is empty, what it will be, and which record declares it"
+  - "R3 — create everything now, including the three hundred game repositories"
+  - "R4 — one repository with a folder per system, split later when each is built"
+
+pros-and-cons-of-the-options:
+  R1:
+    good: ["Nothing exists that has nothing behind it; the topology and the file system agree.",
+           "It is the rule in force, so no record has to change."]
+    bad: ["⚠️ MEASURED: it blocked the backlog migration for six of the nine systems, and the items sat in the
+           engine's tracker as if they were engine work.",
+          "It puts configuration last — branch protection and CI get set on a repository that already has
+           commits in it, which is the moment they are hardest to get right.",
+          "It cannot be held for the three hundred game repositories anyway: those are made from a template by
+           script, and a template is proven before it is used, not after."]
+  R2:
+    good: ["Every address in ADR-0058 becomes a place work can be filed against, which is what unblocks the
+            migration.",
+           "The permissions, the licence and the CI caller are set once, on an empty repository, before the
+            first product commit can land anywhere unprotected.",
+           "The README turns emptiness into a statement: it says what the repository is FOR, that it is NOT
+            built, and which record declares it. Emptiness that announces itself is not a claim of progress."]
+    bad: ["Eleven repositories to keep tidy, each with a README that must be corrected the day it stops being
+           true — and a README that lies about being empty is worse than no README.",
+          "A repository that stays empty for a year is still a maintenance surface: dependabot noise, licence
+           updates, workflow deprecations.",
+          "It multiplies the number of places a reader has to look before concluding that something does not
+           exist yet."]
+  R3:
+    good: ["One script run, one convention, and the whole topology is in place at once."]
+    bad: ["⚠️ Three hundred scaffolds from a template nobody has exercised end to end is three hundred copies
+           of whatever the template gets wrong.",
+          "It is the exact shape of the appearance ADR-0058 §10 warned about, at the scale where it would be
+           impossible to correct by hand."]
+  R4:
+    good: ["No new repositories, and the code can be moved out later."]
+    bad: ["Already rejected in ADR-0058 (T4) and for a reason that is stronger, not weaker, now: it denies in
+           the file system the separation between Secretarias that the requerimento spends a paragraph
+           establishing.",
+          "'Split it later' is the migration this record exists to unblock, deferred once more."]
+
+decision-outcome:
+  chosen-option:
+    link: "R2 — the address in the record IS the moment of creation, and the repository is born saying it is empty"
+    justification: |
+      ===== 1. THE RULE, AND THE ARGUMENT IT DOES NOT REST ON =====
+      **A repository is created when a record declares its address.** ADR-0058 declared nine; ADR-0068 declares
+      the shape of the rest. Declaration is the trigger, because the declaration is the decision — the commit
+      is only its first consequence.
+
+      ⚠️ AND IT IS NOT BECAUSE THE NAME COULD BE TAKEN. That argument was available before ADR-0066 and is
+      dead after it: inside an organisation, `the-inclusionist/apoio-ativo` cannot be claimed by a stranger,
+      because the organisation holds the namespace. Writing this down because the argument is tempting, sounds
+      urgent, and would be false — and a record that leans on a dead reason invites a future reader to revoke
+      it for the right reason and lose the real ones with it.
+
+      ===== 2. WHAT A REPOSITORY IS BORN WITH =====
+      Four files, and none of them is product code:
+        · `README.md` — §3.
+        · `LICENSE` — AGPL-3.0-or-later (ADR-0064), because the licence posture of a repository is decided
+          before its first line, never negotiated after somebody has already cloned it.
+        · `docs/LICENSES.md` or a link to the engine's — art is NOT AGPL, and a repository that carries only
+          the code licence teaches the wrong thing by omission.
+        · the CI caller — the org's reusable workflow, invoked, not copied (ADR-0068 §4).
+
+      Plus the settings that only exist on the host: `main` protected, and the team permissions the
+      organisation already carries.
+
+      ===== 3. THE README IS THE ANSWER TO §10, AND IT IS THE WHOLE ANSWER =====
+      ADR-0058 §10 was right that a named empty repository reads as progress. The fix is not absence; it is
+      **saying so in the one place a visitor lands**. Every scaffold README states, in this order:
+
+        1. what this system IS, in one paragraph a Secretaria could read;
+        2. ⚠️ **that it has NOT been built** — in those words, at the top, not in a footnote;
+        3. which record declares it (ADR-0058 §1, or ADR-0068 for a game);
+        4. what has to exist before the first product commit lands.
+
+      ⚠️ AND THE README IS A DEBT WITH A DUE DATE: the day the first product commit lands, the sentence in (2)
+      becomes FALSE, and a false README is worse than the empty repository §10 feared. Removing it is part of
+      that commit, not a follow-up.
+
+      ===== 4. WHAT GETS LISTED IN THE TERMO — AND A SCAFFOLD DOES NOT =====
+      §10's other worry was the requerimento: pedido `a` asks for a termo of artifacts with sizes and hashes,
+      and "a hash of nothing is the one entry that would make that termo false".
+
+      ⚠️ THAT WORRY IS KEPT WHOLE AND MOVED TO WHERE IT BELONGS. The termo and the ato of pedido `p` list
+      SYSTEMS, and a repository holding a README, a LICENSE and a workflow caller is not a system. A scaffold
+      has a hash — it has a commit — and it is still not an artifact of delivery. The rule: **a repository
+      enters the termo when it holds the system it names**, and the emptiness of the others is a fact about
+      the project, not an entry in a document.
+
+      ===== 5. WHAT THIS DOES NOT LICENSE =====
+      Creation follows a DECLARATION IN A RECORD. It does not follow an idea in a conversation, a name in a
+      backlog item, or a folder somebody made. If a repository has no record naming it, this rule has not
+      fired and the repository is not created.
+
+  consequences:
+    positive:
+      - "The backlog migration unblocks: every one of the 44 items has an address to be filed against, and the
+         engine's tracker stops holding other systems' work."
+      - "Branch protection, licence and CI are configured once, on empty repositories, before any product
+         commit can land in an unconfigured place."
+      - "The template that will make three hundred game repositories is exercised on eleven that a human
+         reads first."
+      - "A visitor who finds an empty repository is TOLD it is empty, which is more than ADR-0058 §10's
+         absence would have told them — an address that 404s says nothing at all about whether it is planned."
+    negative:
+      - "⚠️ SEVEN scaffold READMEs — the seven addresses of ADR-0058 that hold no code — each of which must
+         be corrected at exactly the commit that falsifies it. A scaffold README that survives its own
+         falsification is the failure mode this record creates, and nothing checks for it yet."
+      - "Empty repositories are still maintenance surface: workflow deprecations, licence updates and bot
+         noise arrive whether or not any code does."
+      - "A reader now has more places to look before concluding something does not exist."
+    neutral:
+      - "ADR-0058 §10's reasoning survives in full; only its conclusion is replaced. The worry moved to §4,
+         and the answer to it moved to §3."
+
+  confirmation: |
+    · Every repository the organisation holds has a README whose first section says what it is, and — while
+      it holds no product code — says it is not built and names the record that declares it.
+    · Every repository has `LICENSE` (AGPL-3.0-or-later) and a CI caller from its first commit.
+    · No backlog item filed against the engine describes work belonging to another system.
+    · No termo or ato lists a repository that holds only scaffolding.
+
+    ⚠️ WHAT NO CHECK CONFIRMS TODAY: that a scaffold README is removed on the commit that falsifies it. It is
+    checkable — a workflow could fail when a repository has product code and still says it has none — and it
+    is NOT built. Written here as the debt it is, rather than as a promise.
+
+more-information: |
+  SUPERSEDES ADR-0058 §10 IN PART. The rest of ADR-0058 governs unchanged: the five systems, the nine
+  addresses, the two mechanisms, the four backends and the multi-tenancy are untouched. ADR-0068 replaces one
+  other clause of the same record (§1's role for `demos`), and the two are independent — neither depends on
+  the other holding.
+
+  ⚠️ AND THIS RECORD DOES NOT SAY WHICH REPOSITORIES TO CREATE FIRST. The Dev's order — the eleven of
+  infrastructure by hand, the games by script afterwards — is a plan, not a decision, and it is recorded in
+  ADR-0068 §6 where the script is, not here.

@@ -2,6 +2,17 @@
 metadata:
   status: "accepted"
   supersedes: [ADR-0055]
+  superseded-in-part:
+    - by: ADR-0067
+      what: "§10 — a rule about WHEN a repository is created (`when its first commit exists`). The four
+             addresses it held back are created as scaffolds instead, each carrying a README that says it
+             is not built. §10's worry — that a named empty repository reads as progress — is kept, and
+             its concern about the termo of pedido `a` moves to ADR-0067 §4."
+    - by: ADR-0068
+      what: "§1 — ONLY the clause that makes `the-inclusionist-demos` the repository HOLDING the 300+
+             games. Each game becomes its own repository and the catalogue selects and publishes them.
+             The rest of §1 — the five systems, the nine addresses, the naming rule, the Inclusionista
+             exception — governs unchanged, as does the whole of §2."
   date: 2026-08-28
   decision-makers: [Dev]
   consulted:

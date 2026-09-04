@@ -1,0 +1,207 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-04
+  supersedes-in-part: [ADR-0058]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0058 §1 — SUPERSEDED IN PART by this record: `the-inclusionist-demos` stops being the repository
+       that HOLDS the 300+ games. The rest of §1, and the whole of §2's mechanism table, stand"
+    - "ADR-0024 (multi-repo + versioned packages; the submodule graph weighed and REJECTED) — the mechanism
+       here is still a package, and that is not an accident"
+    - "ADR-0066 (a GitHub organisation) — the container without which three hundred repositories would be
+       three hundred administrations"
+    - "ADR-0067 (a repository is created when its address is declared) — why the games are NOT created yet"
+    - "ADR-0064 + docs/LICENSES.md — the code is AGPL, the art is NOT, and each game carries both"
+    - "ADR-0010 pillar 1 (school hardware) and pillar 8 (offline PWA) — the byte budget that decides §2"
+    - "ADR-0043 (a known debt gets a budget that only goes down) — the shape of the precache budget invoked
+       in the confirmation"
+    - "requerimento, pedido `p` — o ato identifica repositório, versão e hash de CADA sistema, e o
+       Inclusionista já era a exceção de cinco linhas"
+  informed: []
+
+title: One repository per GAME — and the catalogue stops holding games in order to start choosing them
+
+context-and-problem-statement: |
+  ADR-0058 §1 gave `the-inclusionist-demos` a job in one sentence: "the demonstration CATALOGUE, plural, and
+  the MVP: the 300+ games of `minigames-catalog-v2.html`". One repository, three hundred games and more.
+
+  The Dev has decided otherwise: **one repository per game, even if that means three hundred and more**. This
+  record exists because that decision contradicts a clause of an accepted record, and under ADR-0057 a
+  contradiction is settled by a new record or it is not settled at all.
+
+  ⚠️ AND THE SUBSTANCE IS NOT REPOSITORY COUNT. It is that a game is the unit that gets ADOPTED, REFUSED,
+  LICENSED and BLAMED. `docs/LICENSES.md`, written today, says the code is AGPL and the art is not, and that
+  third-party content keeps the licence its author chose. Three hundred games in one repository force ONE
+  licence posture and ONE history over three hundred pieces of art with different origins — pictograms under
+  CC BY-SA, voices with per-voice terms, fonts that may not be packaged at all. A school that objects to one
+  game objects to a folder inside something it cannot decline separately.
+
+  ⚠️ AND THE DELIVERY WAS NEVER GOING TO BE THREE HUNDRED GAMES ANYWAY. Pillar 1 is school hardware and
+  pillar 8 is an offline PWA: the precache budget forbids shipping the whole catalogue to a device, and
+  always did. The single repository was therefore never the delivery unit either — it just looked like one.
+
+decision-drivers:
+  - "The unit of adoption, refusal, licensing and blame is a GAME. A boundary that does not follow it will be
+     crossed the first time a school objects to one."
+  - "The art regime is per piece (ADR-0064, LICENSES.md), and a repository is the smallest thing a licence
+     file can describe honestly."
+  - "The byte budget already forbids delivering the whole catalogue, so the delivery unit is a SELECTION and
+     the record should say so instead of leaving it implied."
+  - "Three hundred of anything is only administrable if it is generated from one reviewed template — never
+     if it is three hundred hand-made things."
+  - "⚠️ Three hundred repositories cost real things: search, cross-cutting change, CI drift. The cost has to
+     be named, not discovered."
+
+considered-options:
+  - "G1 — ADR-0058 §1 as written: one `demos` repository holding the 300+ games"
+  - "G2 — one repository per game; `the-inclusionist-demos` becomes the catalogue that SELECTS and publishes"
+  - "G3 — group the games into ~20 repositories by curriculum area or skill"
+  - "G4 — one repository per game, each deploying itself; no catalogue at all"
+
+pros-and-cons-of-the-options:
+  G1:
+    good: ["One clone, one install, one pipeline; a change across all games is one commit.",
+           "It is the decision in force, and the MVP is defined against it."]
+    bad: ["⚠️ One licence posture over three hundred pieces of art with different origins, which LICENSES.md
+           says outright is false.",
+          "A school or Secretaria cannot adopt or refuse a single game; the unit of the decision does not
+           exist in the file system.",
+          "The history of every game is entangled: a rewrite for one — and one was needed in this very
+           repository today — rewrites all of them.",
+          "Issues, blame and releases are per repository, so three hundred games share one tracker and one
+           version number for unrelated things."]
+  G2:
+    good: ["The repository boundary equals the adoption boundary, the licence boundary and the blame boundary.",
+           "A game's art licence, credits and third-party terms are stated where that art lives.",
+           "The catalogue gets an honest job — choosing what a release ships — instead of a false one.",
+           "Generated from one template by one script, which is a single reviewable artifact."]
+    bad: ["⚠️ Three hundred repositories is three hundred places for CI to drift, and a workflow deprecation
+           arrives in all of them at once.",
+          "A breaking change in the engine's contract now needs three hundred bumps, coordinated.",
+          "Discovery gets worse: `grep` across the catalogue stops being a local operation.",
+          "The catalogue's manifest becomes the most important file in delivery, and it has no gate today."]
+  G3:
+    good: ["Twenty repositories is administrable by hand and still separates most of what matters.",
+           "Fewer version bumps on an engine change."]
+    bad: ["It draws the boundary at a grouping nobody adopts, refuses or licenses: a Secretaria declines a
+           GAME, not a curriculum area.",
+          "The grouping key is unstable — a game belongs to several skills, and the tree (ADR-0058) says so."]
+  G4:
+    good: ["Maximum independence; a game ships when it is ready."]
+    bad: ["⚠️ The child meets ONE product. Three hundred deployments is three hundred URLs, three hundred
+           service workers and three hundred accessibility settings that do not follow her between games,
+           which contradicts the whole of the accessibility architecture.",
+          "It would make pedido `p` unwritable in the other direction: three hundred addresses and hashes for
+           what the ato is asked to treat as one system."]
+
+decision-outcome:
+  chosen-option:
+    link: "G2 — one repository per game; the catalogue selects, assembles and publishes"
+    justification: |
+      ===== 1. THE SOURCE SPLITS; THE DELIVERY DOES NOT =====
+      Each game is its own repository — `the-inclusionist-game-<slug>` — holding its own code, its own art,
+      its own `CREDITS.md` and its own licence statement. The child, the school and the ato still meet ONE
+      product: the catalogue publishes, and the Inclusionista remains one system with five repositories plus
+      its games (ADR-0058 §1's exception, now larger and unchanged in kind).
+
+      ⚠️ AND THIS IS THE CLAUSE THAT MAKES THE SPLIT AFFORDABLE: what splits is the SOURCE, and the source is
+      exactly the thing whose licence, history and blame need to be separable. Nothing about how a game
+      reaches a device changes here.
+
+      ===== 2. WHAT THE CATALOGUE'S JOB BECOMES =====
+      `the-inclusionist-demos` stops being where games live and becomes where a RELEASE is decided. It holds
+      a manifest: game slug, version, and the reason it is in this release. A build installs what the
+      manifest names and nothing else.
+
+      ⚠️ AND THAT IS NOT A CONSOLATION PRIZE — IT IS THE JOB THE BYTE BUDGET ALREADY REQUIRED. Pillar 1
+      hardware and pillar 8's offline PWA mean a school build carries a SELECTION of games, precached within
+      budget. ADR-0058 §1 called the repository the MVP; the MVP is a selection published from it, and the
+      difference only became visible when the games stopped living inside.
+
+      ===== 3. THE MECHANISM IS STILL A PACKAGE, AND STILL NO SUBMODULES =====
+      A game depends on `@pm-monte/the-inclusionist-engine` as a versioned package and publishes itself as
+      `@pm-monte/game-<slug>`. The catalogue depends on the games its manifest names. ADR-0058 §2's table
+      gains rows and no new mechanism:
+
+        · engine → game ................... PACKAGE (semver)
+        · game → catalogue ................ PACKAGE, selected by the manifest
+
+      ⚠️ ZERO SUBMODULES, AGAIN AND FOR THE SAME REASON. A manifest of git tags fetched at build time is a
+      submodule with a different spelling, and ADR-0024 weighed and rejected that graph. The one thing it
+      would buy — pinning — semver already buys.
+
+      ⚠️ AND THE REGISTRY QUESTION IS OPEN AND IT IS ADR-0066's, NOT THIS ONE'S. `@pm-monte` does not match
+      the organisation that will host it. Three hundred packages make that question louder; they do not
+      answer it, and this record does not pretend to.
+
+      ===== 4. CI IS A CALLER FILE, NOT A PIPELINE =====
+      Every game's workflow is a few lines that INVOKE a reusable workflow owned by the organisation. Nothing
+      is copied. The reason is the failure this record would otherwise create: three hundred copies of a
+      pipeline drift, and the ones that drift silently are the ones that stop gating — a gate that stops
+      running is worse than one that never existed (ADR-0066 §4).
+
+      ===== 5. THE DECISIONS DO NOT SPLIT WITH THE REPOSITORIES =====
+      ⚠️ A game repository has NO `adr/` folder and never will. The records stay in the engine, where the
+      validator, the eight gate checks and the supersession graph already are. Three hundred places to decide
+      architecture is three hundred places for a decision to contradict this one quietly, and the whole point
+      of ADR-0057 is that a contradiction has to be visible.
+
+      Same for the pillars, the licences and the accessibility contract: a game INHERITS them and states
+      only what is its own — its art, its credits, its third-party terms.
+
+      ===== 6. ELEVEN BY HAND, THREE HUNDRED BY SCRIPT — AND NOT YET =====
+      The eleven infrastructure repositories are created by hand and read by a human (ADR-0067). The games
+      come from a template, by script, and the thing that gets reviewed is THE SCRIPT AND THE TEMPLATE — not
+      three hundred outputs, which nobody will read.
+
+      ⚠️ AND THE GATE ON THAT SCRIPT: it does not run until ONE game has gone end to end from the template —
+      created, built against the engine package, published, selected by the manifest, delivered inside the
+      precache budget, and gated by the reusable workflow. A template exercised once is a template; a
+      template exercised never is three hundred copies of a guess.
+
+  consequences:
+    positive:
+      - "A school, a Secretaria or the Município can adopt or refuse ONE game, because the game is a thing
+         that exists on its own."
+      - "The art licence, the credits and the third-party terms of a game live with that game, which is the
+         only place they can be stated truthfully (LICENSES.md §2, §3)."
+      - "A history rewrite, a takedown or a licence change touches one game instead of the catalogue."
+      - "The release becomes explicit: a manifest names what ships, so 'what is in this build' stops being
+         answerable only by reading a folder."
+    negative:
+      - "⚠️ A BREAKING CHANGE IN THE ENGINE IS NOW A COORDINATED RELEASE ACROSS THREE HUNDRED REPOSITORIES.
+         Under G1 it was one commit. This is the real price, it is paid on every contract change, and the
+         only thing that keeps it survivable is that the contract is declared (ADR-0030) and versioned."
+      - "Three hundred repositories is a search problem: what used to be `grep` in one clone becomes a query
+         across an organisation."
+      - "The manifest is now the single point of failure of delivery and nothing validates it yet — an
+         unpinned or missing entry would fail at build time at best, and ship the wrong version at worst."
+      - "Three hundred repositories × dependency bots, licence updates and workflow deprecations is
+         maintenance that arrives whether or not anyone is working on the games."
+    neutral:
+      - "The 300+ games of `minigames-catalog-v2.html` are unchanged as CONTENT; only where their source
+         lives changes."
+      - "ADR-0058 §1's other four Inclusionista repositories, and the four non-Inclusionista systems, are
+         untouched by this record."
+
+  confirmation: |
+    · No game repository contains `.gitmodules`, and none contains an `adr/` folder.
+    · Every game repository's workflow file INVOKES the organisation's reusable workflow; a grep for a
+      duplicated job body across game repositories returns nothing.
+    · The catalogue's manifest pins an exact version for every entry, and the build FAILS on an unpinned or
+      unknown one — which is a check that does not exist yet and is owed before the script runs.
+    · A school build stays inside the precache budget (`npm run check:precache`), which is what proves the
+      catalogue is selecting rather than accumulating.
+    · One game has gone template → build → publish → manifest → delivered, before the script creates a
+      second.
+
+more-information: |
+  SUPERSEDES ADR-0058 §1 IN PART — only the clause that made `the-inclusionist-demos` the repository holding
+  the games. Everything else in ADR-0058 governs unchanged: five systems, the Secretaria boundary, the two
+  mechanisms, four backends, no shared database, multi-tenancy. ADR-0067 replaces a different clause of the
+  same record (§10), and the two are independent.
+
+  ⚠️ AND WHAT THIS RECORD DELIBERATELY DOES NOT DECIDE: the slug convention, the manifest's file format, and
+  where `@pm-monte` resolves. The first two are the template's business and belong in the template's own
+  review; the third is ADR-0066's open question and is not made smaller by being restated here.
