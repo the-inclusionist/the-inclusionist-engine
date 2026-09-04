@@ -1,5 +1,10 @@
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0059
+      what: "§3, the HUD LAYOUT paragraph — where the name, the pie, the score, the power and the bars sit.
+              The CLOCK itself (the pie, the countdown, the unit change at five minutes, the red slice for a
+              scheduled break) is decided HERE and is not touched."
   date: 2026-08-27
   decision-makers: [Dev]
   consulted:
@@ -96,20 +101,12 @@ decision-outcome:
 
       HUD LAYOUT, top of screen, beneath the quick accessibility bar (ADR-0044 item 7): the player's FIRST NAME on
       the left with the avatar to its left; the pie in the CENTRE with the digital timer directly below it; the
-      super-power on the RIGHT. At the bottom, centred, the ten-segment BARS — one per enabled skill, one to three
-      of them (ADR-0049 §5).
+      numeric score on the RIGHT with the super-power below it. At the bottom, centred, the ten-segment bar
+      (ADR-0049 §5).
 
-      ⚠️ AMENDED 2026-08-28: **THE POINT COUNT MOVED TO THE LEFT, UNDER THE NAME**, and this record had it on the
-      right. ADR-0049 §5b settled the position later the same week, from the Dev's own words — "a contagem de
-      pontos embaixo do nome do jogador no topo à esquerda" — and the reason is not layout taste: the count belongs
-      to the PERSON, not to the round, so it sits with the identity block. Two accepted records disagreed on where
-      a number goes, and a HUD built from this one would have put it in the wrong place. **ADR-0049 §5b is the
-      authority on every number's position; this record keeps only the CLOCK.**
-
-      ✅ THE SUPER-POWER STAYS ON THE RIGHT. His two sentences had it "à esquerda" and then "abaixo da pontuação
-      numérica"; he settled it on the second. With the score gone to the left the power is now the whole right
-      column, which does not disturb the grouping the HUD follows — identity and the person's numbers on the left,
-      session state in the centre, what the round granted on the right.
+      ✅ THE SUPER-POWER IS ON THE RIGHT, BELOW THE SCORE. His two sentences had it "à esquerda" and then "abaixo
+      da pontuação numérica"; he settled it on the second, which is also the grouping the rest of the HUD follows —
+      identity on the left, session state in the centre, the player's own numbers on the right.
 
       ⚠️ AND THE CLOCK IS NOT A GAME TIMER. It measures the session, never the activity. Nothing counts down on a
       question, and running out ends nothing the child was in the middle of learning (ADR-0048 §7b).

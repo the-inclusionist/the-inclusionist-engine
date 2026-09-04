@@ -2,6 +2,12 @@
 metadata:
   status: "accepted"
   date: 2026-09-04
+  errata:
+    - date: 2026-09-04
+      what: "§3 listed `superseded-in-part` on the replaced record and named no MIRROR field on the replacing
+             one. A pair with only one declared side cannot be gated, and partial supersession is the easier
+             half to leave undone — nothing about the old record's status changes, so the gap is invisible.
+             `supersedes-in-part` is added. Found on the first application, in ADR-0059."
   decision-makers: [Dev]
   consulted:
     - "NYGARD, Michael. Documenting Architecture Decisions, 2011 — the practice this record restores:
@@ -140,7 +146,8 @@ decision-outcome:
         supersedes:    [ADR-NNNN, ...]     # required on the record that supersedes
         superseded-in-part:                # for a record replaced only in one clause
           - by: ADR-NNNN
-            what: "§3 — where the score sits on the HUD"
+            what: "§3 — where the score sits on the HUD"   # required: which clauses still govern
+        supersedes-in-part: [ADR-NNNN, ...]  # the MIRROR, required on the replacing record
         errata:
           - date: 2026-09-04
             what: "cited the annual report as §49.j; in the filed draft it is §51.j"
@@ -170,6 +177,9 @@ decision-outcome:
         · `status: superseded` without `superseded-by` → FAIL. (Prevents the dead end.)
         · `superseded-by: ADR-N` where N does not list this record in `supersedes` → FAIL.
           (Prevents the one-way pointer, which is the one a reader arrives at from the wrong side.)
+        · the same in both directions for `superseded-in-part` / `supersedes-in-part`, and a partial pointer
+          with no `what` → FAIL. (A partial supersession that does not say WHICH clause moved leaves every
+          clause of the old record in doubt, which is worse than the conflict it was meant to settle.)
         · a record whose `date` is older than its newest `errata.date` and whose body contains an undeclared
           amendment marker (`AMENDED`, `CORRECTED`, `Settled 20`, `COMPLETED 20`) → FAIL.
           (Prevents the in-place edit that leaves no trace in the metadata — which is precisely what happened

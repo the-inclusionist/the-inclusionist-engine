@@ -1,0 +1,184 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-04
+  supersedes-in-part: [ADR-0049, ADR-0050]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0049 §5b (where each number lives) — superseded in part by this record; its SEMANTICS stay there"
+    - "ADR-0050 §3 (the clock is on the HUD) — its LAYOUT paragraph is superseded in part by this record; the
+       clock itself stays there"
+    - "ADR-0057 (a record changes by supersession) — the mechanism this record uses, and the reason it exists
+       as a record instead of as a third edit in place"
+    - "ADR-0044 item 7 (the quick accessibility bar sits on the HUD) — the band this layout hangs beneath"
+    - "ADR-0046 (experience × control) — `#game-hud` is EXPERIENCE, so a simulation degrades it on purpose"
+    - "ADR-0027 (the multiplayer grid of `.player-screen`) — why the layout repeats per screen"
+    - "the Dev, 2026-08-28: `a contagem de pontos embaixo do nome do jogador no topo à esquerda`"
+  informed: []
+
+title: ONE record owns the HUD's layout, and a number sits with what it is ABOUT — identity, session, learning
+
+context-and-problem-statement: |
+  Two accepted records legislated the same surface and disagreed about it.
+
+    · ADR-0050 §3 (2026-08-27): "the numeric score on the RIGHT with the super-power below it".
+    · ADR-0049 §5b (added 2026-08-28): "TOP LEFT, UNDER THE PLAYER'S NAME: the point count".
+
+  Both said `accepted`. Nothing said which one governed. A HUD built from either was defensible and one of the
+  two was going to be wrong, and issue #94 — the implementation issue — had faithfully copied the older one.
+
+  ⚠️ AND THE FIRST ATTEMPT TO FIX IT WAS THE WRONG MECHANISM, which is why this record exists. On 2026-09-04
+  the conflict was resolved by EDITING ADR-0050 §3 in place, under the house rule then in force. ADR-0057
+  retired that rule the same day: a record that said what was decided and was then replaced is SUPERSEDED, not
+  overwritten. The edit is reverted, ADR-0050 §3 is restored to its own words, and the two predecessors are
+  marked `superseded-in-part` pointing here.
+
+  ⚠️ AND THE DEEPER PROBLEM IS NOT THE SCORE'S ADDRESS — IT IS THAT TWO RECORDS OWNED ONE SURFACE. Fixing only
+  the disagreement would leave the mechanism that produced it: ADR-0049 is about REWARDS and ADR-0050 is about
+  CONTROL SURFACES, and both had reason to say something about the HUD. The third record to touch it would have
+  disagreed with one of them again.
+
+decision-drivers:
+  - "A surface with two owners has no owner. The disagreement is a symptom; the shared ownership is the defect."
+  - "A child who cannot hold two places in her head needs each number ALWAYS in the same place — so the layout
+     is an accessibility decision, not a visual-design one, and it belongs where accessibility decisions go."
+  - "The layout must survive being read by someone who has only one of the records in hand."
+  - "The rule that generates the addresses matters more than the addresses: the next number to be added must
+     have an address before anyone argues about it."
+
+considered-options:
+  - "H1 — ADR-0050 §3 keeps ownership; the score stays on the right and ADR-0049 §5b is struck"
+  - "H2 — ADR-0049 §5b keeps ownership; the score moves left and ADR-0050 §3's layout paragraph is struck"
+  - "H3 — a NEW record owns HUD placement entirely; both predecessors are superseded in the part that legislates
+     it, and each keeps the half that is properly its own"
+  - "H4 — leave the layout split across both records and add a written precedence rule (`the later record wins`)"
+
+pros-and-cons-of-the-options:
+  H1:
+    good: ["No file changes; the implementation issue #94 already describes it.",
+           "The `identity left / session centre / own numbers right` grouping is internally consistent."]
+    bad: ["It contradicts the Dev's own words of 2026-08-28, quoted in §5b, which is the later and more specific
+           statement.",
+          "It leaves ADR-0049 §5b saying something false while marked `accepted`."]
+  H2:
+    good: ["It follows the Dev's quoted instruction and the later decision.",
+           "Cheapest of the three that are correct: one pointer, no new file."]
+    bad: ["It leaves the HUD legislated inside a record about REWARDS, where nobody looking for layout will find
+           it — the coin counter and the clock are not rewards.",
+          "It does not touch the mechanism, so the next record with a reason to mention the HUD collides again."]
+  H3:
+    good: ["The surface gets ONE owner, so the next addition has an address instead of an argument.",
+           "Each predecessor keeps what is properly its own: the clock stays in ADR-0050, the bar's meaning stays
+            in ADR-0049.",
+           "It states the RULE that produces the addresses, so a number nobody has thought of yet is already
+            placed."]
+    bad: ["A third file for a decision two files already carried, and a reader now opens three to reconstruct the
+           history.",
+          "`superseded-in-part` on two records is more bookkeeping than a single strike-through would have been."]
+  H4:
+    good: ["No new file and no supersession bookkeeping."]
+    bad: ["`the later record wins` requires the reader to know the dates of both — which is exactly the work the
+           conflict already proved nobody does.",
+          "It institutionalises the shared ownership that caused this."]
+
+decision-outcome:
+  chosen-option:
+    link: "H3 — one record owns HUD placement; both predecessors superseded in the part that legislated it"
+    justification: |
+      ===== 1. THE RULE, WHICH OUTLIVES THE ADDRESSES =====
+      A number sits with WHAT IT IS ABOUT. Three bands, and every number belongs to exactly one:
+
+        · **IDENTITY — top left.** What is true of the PERSON, and survives the round.
+        · **SESSION — top centre.** What is true of this SITTING, and dies with it.
+        · **ROUND — top right.** What this round granted, and resets with the round.
+        · **LEARNING — bottom centre.** Where the child stands in a SKILL, which outlives every activity.
+
+      ⚠️ AND THE RULE IS WHY THE SCORE MOVED, not the Dev's preference. The point count is a record of the
+      PERSON's work — both sources, academic answers and good deeds (ADR-0049 §1) — and it does not reset with
+      the round. Under the rule it can only sit in the identity band, which is where his own words put it:
+      "a contagem de pontos embaixo do nome do jogador no topo à esquerda". ADR-0050 §3 had grouped it as one of
+      "the player's own numbers on the right", which was a defensible grouping and the wrong one: it put a
+      persistent number in the band that resets.
+
+      ===== 2. THE ADDRESSES =====
+      Top of screen, beneath the quick accessibility bar (ADR-0044 item 7):
+
+        · **LEFT — identity:** the avatar, the player's FIRST NAME to its right, and the POINT COUNT directly
+          under the name.
+        · **CENTRE — session:** the clock pie, with the digital countdown directly below it. The pie and its
+          behaviour are ADR-0050 §3 and are not decided here.
+        · **RIGHT — round:** the SUPER-POWER, and the platformer's ten-coin objective counter. Both die with
+          the lap (ADR-0049 §7).
+
+      Bottom of screen, centred: the **ten-segment BARS — one per enabled skill, one to three of them**
+      (ADR-0049 §5). They are bottom rather than top because they are the only element that belongs to a SKILL
+      TREE rather than to the session, and the bottom edge is the one place nothing else competes for.
+
+      ⚠️ AND IN MULTIPLAYER THE WHOLE THING REPEATS INSIDE EACH `.player-screen` (ADR-0027's grid), because
+      each child has her own name, her own points and her own skills. It is not one HUD with four names.
+
+      ===== 3. WHAT THIS RECORD DOES **NOT** DECIDE =====
+      Written out because a record that owns a surface will be read as owning everything on it:
+
+        · The CLOCK — the pie, the countdown, the unit change at five minutes, the red slice for a scheduled
+          break, and the rule that it measures the session and never the activity. That is ADR-0050 §3, intact.
+        · What a bar SEGMENT MEANS — the colours, that only an academic question paints one, that an "erro" is
+          the third wrong attempt, and that eight blues raise the level. That is ADR-0049 §5, intact.
+        · Whether the number exists at all. This record places numbers; it does not create or remove any.
+
+      ===== 4. WHY A THIRD FILE INSTEAD OF A THIRD EDIT =====
+      Because the two edits already made are what produced the problem. ADR-0049 §5b was ADDED to an accepted
+      record on 2026-08-28; ADR-0050 §3 was REWRITTEN on 2026-09-04. Both left `status: accepted` and neither
+      left a trace in metadata, so a reader — and, measurably, an automated diagnostic — had no way to tell that
+      either record had moved. ADR-0057 §1 decides that a replaced decision is superseded; this is the first
+      application of `superseded-in-part`, which exists precisely so that replacing ONE clause does not cost the
+      other clauses their address.
+
+  consequences:
+    positive:
+      - "The HUD has one owner, so the next element to be placed is a pointer away from a rule instead of an
+         argument between two records."
+      - "The rule (`a number sits with what it is about`) places elements nobody has proposed yet, which is what
+         makes it worth more than the list of addresses."
+      - "Both predecessors keep the half that is properly theirs, so no argument had to be re-made."
+      - "Issue #94, which faithfully implements ADR-0050 §3, now has one record to follow instead of two that
+         disagree."
+    negative:
+      - "Three records now describe one screen, and a reader reconstructing the history opens all three."
+      - "`superseded-in-part` on two records is bookkeeping that a single authoritative edit would not have
+         needed — the price of the mechanism, paid on purpose."
+      - "The bands are named after what a number is ABOUT, which requires a judgement for any number whose
+         subject is ambiguous. The first such case will test whether the rule is real."
+      - "Nothing here is implemented. The HUD in the code today matches neither predecessor completely."
+    neutral:
+      - "ADR-0049 §5b keeps its full text under its own pointer, so the reasoning that produced the score's
+         address stays where it was written."
+
+  confirmation: |
+    THE GATE, in the shape of `pausa-44px.browser.test.js` — it mounts the production markup and MEASURES,
+    rather than reading a stylesheet:
+      · The point count's box is inside the same band as the name, and its top edge is below the name's bottom
+        edge. (Fails if the score returns to the right.)
+      · The clock pie's centre is within the middle third of `#game-hud`'s width.
+      · The bars are at the BOTTOM of `#game-region`, horizontally centred, and there are between one and three
+        of them.
+      · In a two-player layout, each `.player-screen` contains exactly one of each. (Fails on one shared HUD.)
+
+    Born failing, with the mutation confirmed: moving the score into the right-hand band must go red.
+
+    ⚠️ WHAT NO GATE CONFIRMS: whether a child finds the numbers faster this way. The rule is an argument from
+    what each number is about, not a measurement of where eyes go, and this project has never put the HUD in
+    front of a child. Issue #7 (field test with five children) is where that would be answered.
+
+more-information: |
+  WHAT THIS RECORD SUPERSEDES, and only in part:
+    · **ADR-0050 §3** — the HUD LAYOUT paragraph. Everything else in §3, which is the clock, stays there.
+    · **ADR-0049 §5b** — the addresses of the point count, the bars and the coin counter. The semantics of the
+      bar, which is most of §5b, stay there.
+
+  ⚠️ AND ADR-0049 STILL OWES A CLASSIFICATION. Four of its sections (§5, §5b, §6b, §7) were amended into an
+  accepted record on 2026-08-28 and none was declared. This record settles only the part it needed; the rest
+  is a separate step, and until it lands ADR-0049 is in the `validate-adr.py` amendment-debt list.
+
+  THE REVERTED EDIT: commit `4792112` amended ADR-0050 §3 in place. It is undone; the same content, decided
+  properly, is §1 and §2 above.

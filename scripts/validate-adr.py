@@ -208,6 +208,25 @@ def pointer_problems(files):
                 note(path, f"`supersedes` names {replaced}, which does not exist")
             elif meta[replaced][1].get("superseded-by") != name:
                 note(path, f"`supersedes: {replaced}`, but {replaced} does not point back with `superseded-by: {name}`")
+
+        # Partial supersession is a pair too, and it is the EASIER one to leave half-done:
+        # nothing about the old record's status changes, so a missing mirror is invisible.
+        for entry in m.get("superseded-in-part") or []:
+            by = entry.get("by") if isinstance(entry, dict) else entry
+            if by not in meta:
+                note(path, f"`superseded-in-part` names {by}, which does not exist")
+            elif name not in (meta[by][1].get("supersedes-in-part") or []):
+                note(path, f"`superseded-in-part: {by}`, but {by} does not list {name} in `supersedes-in-part`")
+            elif isinstance(entry, dict) and not entry.get("what"):
+                note(path, f"`superseded-in-part: {by}` does not say WHAT part — the reader cannot tell which "
+                           "clauses still govern (ADR-0057)")
+        for replaced in m.get("supersedes-in-part") or []:
+            if replaced not in meta:
+                note(path, f"`supersedes-in-part` names {replaced}, which does not exist")
+            else:
+                back = meta[replaced][1].get("superseded-in-part") or []
+                if not any((e.get("by") if isinstance(e, dict) else e) == name for e in back):
+                    note(path, f"`supersedes-in-part: {replaced}`, but {replaced} does not point back")
     return problems
 
 

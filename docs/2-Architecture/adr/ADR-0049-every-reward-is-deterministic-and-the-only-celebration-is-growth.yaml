@@ -1,5 +1,10 @@
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0059
+      what: "§5b, the ADDRESSES only — where the point count, the bars and the coin counter sit on screen.
+              Everything §5b says about what a segment MEANS (the colours, that only an academic question
+              paints one, that an erro is the third wrong attempt) is decided HERE and is not touched."
   date: 2026-08-27
   decision-makers: [Dev]
   consulted:
