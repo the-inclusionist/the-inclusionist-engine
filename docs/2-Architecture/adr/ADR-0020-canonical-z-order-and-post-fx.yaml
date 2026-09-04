@@ -1,6 +1,20 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0046
+      what: "§1's FILTER TARGET. This record decided the CSS filter goes on `#game-region`, `o elemento que
+              contém a canvas E os menus`, and it was right for the case it examined — a COLOUR-BLIND child was
+              getting the game corrected and the menus raw, and the menus are where the words are, including the
+              words of the accessibility settings themselves. ⚠️ But it states the target flatly, with no
+              distinction by MODE, and ADR-0046 supplies the one that was missing: the reach depends on what the
+              mode IS. `alcanceDoModo(m) = simulatesDisability(m) ? mundo : mundo-e-menus`. A SIMULATION must
+              degrade the experience and never the control, so `.screen-a11y` is a SIBLING of `.screen-exp` and
+              not a descendant — CSS `filter` descends to every descendant and a child cannot cancel it.
+              ⚠️ THE HARM IS CONCRETE: implementing this record literally puts blind-mode `brightness(0)` on the
+              element that contains the accessibility bar, and the child is locked inside the simulation with no
+              way to switch it off. The CORRECTION half of §1 stands unchanged and is why ADR-0046 kept
+              `mundo-e-menus` as the default."
   errata:
     - date: 2026-08-24
       what: "the record said A11Y_CORRECTION is ALWAYS last, full stop, and it is not — FLASH_LIMIT runs after
