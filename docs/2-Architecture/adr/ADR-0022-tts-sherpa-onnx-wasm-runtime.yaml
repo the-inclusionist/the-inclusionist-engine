@@ -1,6 +1,7 @@
 ---
 metadata:
   status: "accepted"
+  supersedes: [ADR-0021]
   date: 2026-07-06
   decision-makers: [Dev, AI]
   consulted: []

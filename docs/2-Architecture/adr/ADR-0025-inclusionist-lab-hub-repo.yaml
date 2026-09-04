@@ -1,6 +1,17 @@
 ---
 metadata:
-  status: "accepted (host addresses superseded by ADR-0026 — the three repos live on gitlab.com/jrocha-dev; the hub topology itself stands) — repo NAMING amended by ADR-0036: `the-inclusionist` is no longer 'game only', it becomes the ENGINE and the game moves to the demos repository; the hub topology for the labs is untouched)"
+  status: "accepted"
+  supersedes-in-part: [ADR-0024]
+  superseded-in-part:
+    - by: ADR-0026
+      what: "the HOST ADDRESSES — the three repos live on gitlab.com/jrocha-dev. The hub topology stands."
+    - by: ADR-0036
+      what: "the REPO NAMING — `the-inclusionist` is no longer game-only; it becomes the ENGINE and the game
+              moves to the demos repository. The hub topology for the labs is untouched."
+  errata:
+    - date: 2026-09-04
+      what: "two partial supersessions were held inside the `status` string, which also carried an unbalanced
+             parenthesis. Broken out under ADR-0057."
   date: 2026-07-07
   decision-makers: [Dev, AI]
   consulted: []

@@ -1,5 +1,6 @@
 metadata:
   status: "accepted"
+  supersedes-in-part: [ADR-0024, ADR-0025]
   date: 2026-08-25
   decision-makers: [Dev]
   consulted: [ADR-0024 (multi-repo, versioned packages, scope @jrocha-io), ADR-0025 (the hub repo — AMENDED here),

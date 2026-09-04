@@ -1,6 +1,14 @@
 ---
 metadata:
-  status: "superseded by ADR-0022"  # @mintplex-labs discontinued/unstable + locked to 2 pt-BR voices → sherpa-onnx-wasm. The 'no R2, weights from HF, disclose' stance carries forward into 0022.
+  status: "superseded"
+  superseded-by: ADR-0022
+  errata:
+    - date: 2026-09-04
+      what: "the status read `superseded by ADR-0022` — prose where ADR-0057 requires an enum — and the REASON
+             lived in a YAML comment beside it, which no parser reads and no index shows. Both moved: the
+             pointer to `superseded-by`, the reason to more-information. @mintplex-labs was discontinued and
+             unstable and locked to two pt-BR voices, so the runtime became sherpa-onnx-wasm; the `no R2,
+             weights from Hugging Face, disclose` stance carries forward into ADR-0022 unchanged."
   date: 2026-07-06
   decision-makers: [Dev, AI]
   consulted: []

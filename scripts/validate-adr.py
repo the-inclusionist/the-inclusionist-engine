@@ -55,12 +55,10 @@ AMEND_MARKER = re.compile(r"(AMENDED|CORRECTED|COMPLETED 20|Settled 20|EMENDA|Em
 # ADR-0043 shape: a known debt gets a budget that ONLY GOES DOWN. These are the records that
 # predate ADR-0057 and still carry the old form. Entries are REMOVED as the retrofit lands; a
 # name that no longer needs to be here is itself a failure, so the list cannot rot upward.
-STATUS_DEBT = {
-    "ADR-0021-tts-npm-lib-and-r2-model.yaml",
-    "ADR-0024-multi-repo-versioned-shared-packages.yaml",
-    "ADR-0025-inclusionist-lab-hub-repo.yaml",
-    "ADR-0034-progression-survives-the-restored-machine.yaml",
-}
+# ZERADA em 2026-09-04. Os quatro registros que guardavam prosa no `status` foram quebrados nos
+# campos do ADR-0057. A lista fica, vazia: um orçamento que chegou a zero e some deixa de provar
+# que chegou, e a proxima entrada tem de ser uma decisao e nao um esquecimento.
+STATUS_DEBT = set()
 AMEND_DEBT = {
     "ADR-0001-integer-real-pixel-canvas-scale.yaml",
     "ADR-0008-multiplayer-scaling.yaml",

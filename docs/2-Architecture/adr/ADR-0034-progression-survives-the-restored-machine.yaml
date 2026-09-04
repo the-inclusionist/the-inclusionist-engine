@@ -1,5 +1,12 @@
 metadata:
-  status: "SUPERSEDED by ADR-0037 — the Dev retired the save the same day this was written: the games are fifteen-minute minigames, so there is no progress to restore, and the roster lives in Bussola Escolar. `game/progress` was deleted; the `core/password` codec survives for the teacher room code. Kept, not removed: the analysis of why a password beats an account and a save file on a wiped school machine is what the room code will be judged against"
+  status: "superseded"
+  superseded-by: ADR-0037
+  errata:
+    - date: 2026-09-04
+      what: "the status field held the whole story of the supersession — four hundred characters where ADR-0057
+             requires an enum. The pointer moved to `superseded-by`, the reason to more-information. It was the
+             clearest instance of the defect that produced ADR-0057: a field the README promised was
+             machine-readable, holding prose no parser could use."
   date: 2026-08-25
   decision-makers: [Dev]
   consulted: [ADR-0027 (step 7 — what the catalogue lacks), ADR-0028 (two-scope persistence),

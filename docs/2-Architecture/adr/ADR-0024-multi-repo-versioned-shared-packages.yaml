@@ -1,6 +1,22 @@
 ---
 metadata:
-  status: "accepted (repo topology amended by ADR-0025 — hub repo instead of per-lab repo+submodule+domain; HOST AND REGISTRY superseded by ADR-0026 — read every GitHub address below as GitLab, and GitHub Packages as the GitLab project registry, scope @jrocha-io AMENDED by ADR-0036 to @pm-monte — the municipality that runs this in its schools is the owner, not the developer, and GitLab requires the scope to match the project's root namespace; versioned packages / no-CDN / scoped COOP-COEP stand)"
+  status: "accepted"
+  superseded-in-part:
+    - by: ADR-0025
+      what: "the REPO TOPOLOGY — a hub repo instead of one repo plus submodule plus domain per lab."
+    - by: ADR-0026
+      what: "the HOST AND REGISTRY — read every GitHub address below as GitLab, and GitHub Packages as the
+              GitLab project registry."
+    - by: ADR-0036
+      what: "the PACKAGE SCOPE — `@jrocha-io` becomes `@pm-monte`. The municipality that runs this in its
+              schools is the owner, not the developer, and GitLab requires the scope to match the project root
+              namespace."
+  errata:
+    - date: 2026-09-04
+      what: "THREE separate partial supersessions were held inside the `status` string, so none was
+             machine-readable and the field said `accepted` with four hundred characters after it. Broken out
+             under ADR-0057. What still governs here and was replaced by nobody: versioned packages, no CDN,
+             and scoped COOP/COEP."
   date: 2026-07-07
   decision-makers: [Dev, AI]
   consulted: []
