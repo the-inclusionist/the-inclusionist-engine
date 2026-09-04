@@ -40,6 +40,12 @@ One file per deliberate architectural decision, in **YADR** format — the YAML 
   - ⚠️ **E se o que foi substituído está afirmado no TÍTULO, o registro é superseded INTEIRO**, por mais
     cláusulas que sobrevivam. Título não é cláusula: é a IDENTIDADE do registro, e o índice não mostra outra
     coisa. Ponteiro dentro do ficheiro não alcança quem encontra o registro só nesta tabela.
+  - **UM REGISTRO ACEITO NÃO CRESCE.** Decisão tomada DEPOIS de um registro ser aceito é registro NOVO, mesmo
+    sobre o mesmo assunto — *"um registo, uma decisão. Não um tema. Se o título precisa de «e», são dois ADRs."*
+    Não há terceira operação. Se cláusula pode ser acrescentada no lugar, `accepted` deixa de significar "esta
+    é a decisão inteira", que é a única coisa que o estado sabia prometer. **O conserto de cláusula já
+    acrescentada é EXTRAÇÃO, e extrair é ERRATA no hospedeiro**: o hospedeiro nunca decidiu aquilo, a cláusula
+    estava mal arquivada, e desarquivar restaura o que ele de fato decidiu.
   - **The superseded record keeps its FULL TEXT** and gains its status and pointer. Emptying it would throw away
     the thing that makes history worth having; the reader only needs to see in the first three lines that it no
     longer governs. **This applies to `bundle` records too.**

@@ -1,5 +1,12 @@
 metadata:
   status: "accepted"
+  errata:
+    - date: 2026-08-28
+      what: "§1 said `one point per correct QUESTION`, which is NARROWER than what was decided: a point has two
+             sources of equal worth — an academic answer AND a good deed in the world (sorting a recyclable,
+             returning something lost, putting out a fire). The clause never said what the decision was, so
+             correcting it restores the record. Applied in the body on 2026-08-28; DECLARED here on 2026-09-04,
+             under ADR-0057."
   superseded-in-part:
     - by: ADR-0059
       what: "§5b, the ADDRESSES only — where the point count, the bars and the coin counter sit on screen.

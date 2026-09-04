@@ -15,6 +15,12 @@ metadata:
              the reader who does not open it. Added: when what was replaced is asserted in the title, the
              record is superseded WHOLE, however many clauses survive. Found on the second application,
              in ADR-0060."
+    - date: 2026-09-04
+      what: "§1 named two operations and left a third case with no answer: a NEW clause added to an accepted
+             record about something that record never decided. It is not an erratum (the record was not wrong)
+             and not a supersession (nothing was replaced). §1b now decides it, and decides that there is no
+             third operation. Found on the third application, in ADR-0049, which had grown two clauses about
+             the platformer's world — a subject that record is not about."
   decision-makers: [Dev]
   consulted:
     - "NYGARD, Michael. Documenting Architecture Decisions, 2011 — the practice this record restores:
@@ -131,6 +137,25 @@ decision-outcome:
 
       "The decision-maker changed his mind" is a YES to that test, and therefore always a supersession. That
       phrase is struck from the convention.
+
+      ===== 1b. AN ACCEPTED RECORD DOES NOT GROW =====
+      A decision taken AFTER a record was accepted is a NEW RECORD, even when it is about the same subject.
+      There is no third operation, and the reason is the Dev's own first practice: **"um registo, uma decisão.
+      Não um tema. Se o título precisa de «e», são dois ADRs."** A record that accumulates clauses becomes a
+      theme, and a theme cannot be superseded — you can only supersede a decision.
+
+      ⚠️ AND THE PRACTICAL COST OF ALLOWING GROWTH IS THAT `accepted` STOPS MEANING "THIS IS THE WHOLE
+      DECISION". If clauses may be added in place, a reader holding an accepted record cannot tell whether it
+      is complete, and completeness is the only thing the status was ever able to promise.
+
+      ⚠️ THE REPAIR FOR A CLAUSE ALREADY ADDED IS **EXTRACTION**, AND EXTRACTION IS AN ERRATUM ON THE HOST.
+      The clause moves to a record of its own; removing it from the host does not overwrite history, because
+      the host never decided that thing — the clause was MISFILED. Correcting a misfile restores the host to
+      what it actually decided, which is exactly the erratum test of §1.
+
+      The tell that a clause is misfiled rather than merely late: it is not about the host's subject. ADR-0049
+      is "every reward is deterministic", and it grew a clause about a no-littering sign barring a child from
+      walking past. Nothing about that is a reward.
 
       ===== 2. THE MIXED CASE, DECIDED IN ADVANCE =====
       A record that is partly defective and partly replaced is SUPERSEDED, whole. ADR-0055 is the worked
