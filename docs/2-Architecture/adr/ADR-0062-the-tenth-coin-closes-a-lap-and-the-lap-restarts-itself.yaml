@@ -1,0 +1,137 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-08-28
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0038 (state is cut by lifetime — PAGE / GAME / RUN) — the lap is exactly the RUN cut, and that is
+       what makes this record small"
+    - "ADR-0049 §1 (points reset at the end of the DAY) and §5 (only an academic question paints a segment) —
+       this record does not decide that a lap costs nothing; it FOLLOWS from those two"
+    - "ADR-0057 §1b (an accepted record does not grow) — why this is a record instead of a clause of ADR-0049"
+    - "ADR-0048 §7b (running out of time ends nothing the child was in the middle of learning) — the same
+       refusal, applied to the clock instead of to the objective"
+    - "the Dev, 2026-08-28: `são as 10 moedas que ao serem pegas faz aparecer a mensagem de parabenização e
+       reseta o jogo colocando o jogador novamente na posição inicial e colocando os itens novamente no jogo,
+       sem prejuízo de pontos ou de barras segmentadas`"
+  informed: []
+
+title: The tenth coin closes a LAP — the level restarts itself, and nothing the child built goes with it
+
+context-and-problem-statement: |
+  The platformer has ten coins as its round objective, and the code had an ending: `win()` in `game/session`
+  sets `ended` and waits for a click on `#btn-again`.
+
+  The Dev decided what the tenth coin should do instead: a congratulation message, the player back at the START
+  POSITION, the items placed in the world again, and — the part that decides everything else — "sem prejuízo de
+  pontos ou de barras segmentadas".
+
+  ⚠️ THIS RECORD EXISTS BECAUSE THE DECISION WAS FILED IN THE WRONG PLACE. It was written on 2026-08-28 as §7
+  of ADR-0049, a record about REWARDS. What the tenth coin does is a decision about the ROUND'S LIFECYCLE, and
+  the heading it was given announced the misfile in its own words — "THE PLATFORMER'S TEN COINS CLOSE A LAP,
+  **AND** A LAP COSTS NOTHING". By the Dev's own first practice, a title that needs an "and" is two records.
+
+  ⚠️ AND THE HALF THAT LOOKED LIKE REWARD DOES NOT DECIDE ANYTHING. "A lap costs nothing" is not a decision
+  taken here: it FOLLOWS from ADR-0049 §1 (points reset at the end of the DAY, not the lap) and §5 (only an
+  academic question paints a segment, and a lap is not an answer). Nothing was left behind in ADR-0049 because
+  nothing there was being decided by this clause — it was deriving.
+
+decision-drivers:
+  - "The moment of success is the worst possible moment to charge a child anything, and it is charged to the
+     child least able to pay it."
+  - "The platforming must never become a gate in front of the school content — a principle this project already
+     enforces in the other direction, where accessibility may ease the powers with no penalty."
+  - "What dies with a round and what belongs to the child are already separated by ADR-0038; a lap that took
+     something from the child would cross that line."
+
+considered-options:
+  - "L1 — the current code: an end-of-game overlay with an `#btn-again` the child clicks"
+  - "L2 — the lap restarts itself, and points and bars are untouched"
+  - "L3 — the lap restarts itself and resets the day's points, making the run a score attack"
+
+pros-and-cons-of-the-options:
+  L1:
+    good: ["Already built. The child controls when the next lap begins.",
+           "An explicit pause after success is a chance to read the congratulation."]
+    bad: ["⚠️ WAITING FOR A CLICK IS A SMALL EXECUTIVE-FUNCTION TOLL CHARGED AT THE EXACT MOMENT OF SUCCESS, and
+           it is charged to the child least able to pay it. A child who cannot initiate the click sits on a
+           screen that has stopped rewarding her for having won.",
+          "It reads as GAME OVER, which is the reading this design most needs to avoid."]
+  L2:
+    good: ["The message announces and the game continues; nothing has to be initiated.",
+           "What ends is the ROUND — ADR-0038's RUN cut — and what persists is the child."]
+    bad: ["A child who wanted to stop has no stopping point offered to her; the pause menu becomes the only exit.",
+          "The congratulation has to be legible while the world is already rebuilding behind it."]
+  L3:
+    good: ["Gives the lap stakes, which is what makes a platformer a platformer."]
+    bad: ["It makes the platforming a gate in front of the school content, which is exactly what ADR-0049 §2
+           refuses in the other direction.",
+          "It punishes, and this design does not punish — the same argument that keeps the no-littering sign
+           from taking points (ADR-0061)."]
+
+decision-outcome:
+  chosen-option:
+    link: "L2 — the lap restarts itself, and nothing the child built goes with it"
+    justification: |
+      ===== 1. WHAT THE TENTH COIN DOES =====
+        · A congratulation message.
+        · The player returns to the START POSITION.
+        · The items are placed in the world again.
+        · The lap begins anew, on its own.
+
+      ===== 2. WHAT IT DOES NOT TOUCH, IN EITHER DIRECTION =====
+      The points do not reset and the bars do not move. Not down and not up: finishing a lap does not paint a
+      segment, because a lap is not an academic answer (ADR-0049 §5), and it does not clear the day's points,
+      because those reset at the end of the DAY (ADR-0049 §1).
+
+      ⚠️ THIS IS WHY THE LAP IS NOT A "GAME OVER", and the distinction is the whole point. What ends is the
+      ROUND — state that dies with the lap, which is precisely ADR-0038's RUN cut. What persists is the child:
+      her points, her bars, her skill history. **The child does not restart.**
+
+      ===== 3. THE OVERLAY AND ITS BUTTON GO =====
+      `win()` in `game/session` sets `ended` and waits for `#btn-again`. Waiting for a click is a small
+      executive-function toll charged at the exact moment of success. The message announces; the lap restarts on
+      its own.
+
+      ⚠️ AND THE CHILD WHO WANTS TO STOP STOPS THE SAME WAY SHE ALWAYS DOES — through the pause menu, whose exit
+      is item 1 of 7 by ADR-0044. Removing a button that only appears on success does not remove a way out; it
+      removes a way out that only existed after winning, which is the one moment a child does not need one.
+
+  consequences:
+    positive:
+      - "Nothing is charged at the moment of success, which is the property this record exists for."
+      - "The RUN cut of ADR-0038 gains a visible instance: a reader can now point at one thing and say `this is
+         what dies with a round`."
+      - "A child who plays the platformer well cannot get ahead academically by doing so, and a child who plays
+         it badly cannot fall behind — the two halves of the same refusal."
+    negative:
+      - "The congratulation must be legible while the world rebuilds behind it, which is a timing problem that
+         did not exist while a button held the screen still."
+      - "There is no natural stopping point any more. A child playing alone can loop indefinitely, and the only
+         limits left are the adult's clock (ADR-0050) and her own decision."
+      - "`win()` and `#btn-again` are removed from a code path that is currently tested; the tests go with them."
+    neutral:
+      - "The ten-coin objective itself is unchanged. This record decides only what happens AT the tenth."
+
+  confirmation: |
+    · A node test over the lap transition: at the tenth coin the player's position is the start position, the
+      item list is full again, and BOTH the point total and every bar are byte-identical to what they were
+      before the coin. The last clause is the one worth writing — it is the whole decision, stated as an
+      equality.
+    · Born failing, with the mutation confirmed: clearing the day's points on a lap must go red.
+    · `#btn-again` does not appear in the built output.
+
+    ⚠️ WHAT NO TEST CONFIRMS: whether a child reads the congratulation before the world rebuilds under it. That
+    is a timing judgement on a screen, and it needs a person watching — issue #7.
+
+more-information: |
+  EXTRACTED FROM ADR-0049 §7 ON 2026-09-04, under ADR-0057 §1b, and its removal from that record is an ERRATUM
+  there rather than a change to it: ADR-0049 never decided the lap's lifecycle, so taking the clause out
+  restores what it did decide.
+
+  ⚠️ NOTHING WAS LEFT BEHIND, and the reason is worth keeping because it is what made the extraction clean: the
+  half of §7 that LOOKED like a reward decision — "a lap costs nothing" — decides nothing. It follows from
+  ADR-0049 §1 and §5, which stay exactly where they are. A clause that derives is not a clause that decides,
+  and only the second kind has to be split.
+
+  THE DATE ABOVE IS 2026-08-28, when the decision was taken, not the day of the extraction.

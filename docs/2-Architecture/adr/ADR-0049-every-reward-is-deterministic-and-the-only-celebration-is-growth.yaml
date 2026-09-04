@@ -1,6 +1,11 @@
 metadata:
   status: "accepted"
   errata:
+    - date: 2026-09-04
+      what: "§6b (a placa de proibido) e §7 (a décima moeda) foram EXTRAÍDAS para os ADR-0061 e ADR-0062. Nenhuma
+             das duas é sobre recompensa; foram escritas aqui em 2026-08-28 porque este registro estava aberto.
+             Tirá-las não sobrescreve história: o hospedeiro nunca as decidiu, estavam mal arquivadas, e
+             desarquivar restaura o que ele de fato decidiu (ADR-0057 §1b)."
     - date: 2026-08-28
       what: "§1 said `one point per correct QUESTION`, which is NARROWER than what was decided: a point has two
              sources of equal worth — an academic answer AND a good deed in the world (sorting a recyclable,
@@ -215,70 +220,21 @@ decision-outcome:
       answer arrives when there is **no learning left to protect** — after the attempt, never in place of it. The
       requerimento's §49.e gains the same distinction, because as written it does not carry it.
 
-      ===== 6b. THE NO-LITTERING SIGN BARS THE CHILD, NOT THE LITTER =====
-      Decided 2026-08-28, and it reverses what the first implementation did. The sign used to make whoever crossed
-      its line DROP the litter, and it bounced anything thrown past it. The Dev corrected it:
+      ===== 6b e 7 — EXTRAÍDAS (2026-09-04) =====
+      Duas cláusulas decididas em 2026-08-28 foram escritas aqui porque este registro estava aberto naquele dia,
+      e nenhuma das duas é sobre RECOMPENSA. Saíram para registros próprios, na forma do ADR-0057 §1b — um
+      registro aceito não cresce, e cláusula sobre coisa que o hospedeiro nunca decidiu estava MAL ARQUIVADA.
 
-        "Se estiver segurando lixo o jogador não pode seguir adiante após a placa. Se deixar cair o lixo, ele está
-        desobedecendo a placa, se lançar o lixo, também. Uma vez que segura o lixo ele só poderá soltar na lixeira
-        e não poderá seguir após a placa."
+        · **§6b, a placa de PROIBIDO JOGAR LIXO** → **ADR-0061**. Uma placa que impede uma criança de andar
+          adiante não é recompensa. O que fica aqui, e é do §1, é a razão de a placa nunca PUNIR: "a criança não
+          pode escolher ter um comportamento ruim, visto que a perda de pontos ainda é vista como recompensa
+          para crianças que estão procurando fazer uma má ação".
 
-      ⚠️ AND THE MISTAKE IS WORTH RECORDING BECAUSE IT IS SEDUCTIVE: barring the OBJECT let the disobedience happen
-      and then repaired the consequence. Barring the CHILD leaves it nowhere to start. It also reads better — she
-      sees the sign, feels that she does not pass, and the link between the two is immediate.
-
-      The reason the sign never PUNISHES is unchanged, and it is the finest point in this whole design: "a criança
-      não pode escolher ter um comportamento ruim, visto que a perda de pontos ainda é vista como recompensa para
-      crianças que estão procurando fazer uma má ação". A number that goes down is as good a reaction as one that
-      goes up, when reaction is what is being sought.
-
-      Consequences that are now design constraints, not implementation details:
-        · Picking up litter LOCKS the hand: no dropping, no throwing (`game/carry.PODE`), only the right bin.
-        · THE BARRIER IS A SEGMENT, NOT A LINE — from the floor the sign stands on up to the first solid tile
-          above it. The Dev, after the first version barred the whole column: "a barreira deve valer só do piso da
-          placa até o próximo tile sólido acima da placa." A line running the height of the map stops the child on
-          floors where the sign is not even visible; she meets an invisible wall and can only read it as a broken
-          game. Confined to the sign's own gap, barrier and warning occupy the same place: where she does not pass,
-          she sees why.
-        · Its art is large enough to be READ as a prohibition: the pictogram of a person dropping litter inside a
-          cut circle. At 11×16 it was a small red square with a slash, which a child reads as "some object".
-
-      ⚠️ AND WHERE THE SIGN STANDS IS LEVEL DATA, NOT A DERIVATION — settled after getting it wrong twice, in the
-      same day, in the same way. The first rule put it "just after the trampoline" and landed in the basement; the
-      second put it at `agua - 1` and landed on the top platform, decided by water rows that are twenty rows below
-      it. Both were right by coincidence of map, and both were caught by the Dev looking at the screen, never by a
-      test.
-
-      The position he gave is a reading of the level's shape: "eu posicionei duas plataformas abaixo da lava. Pedi
-      pra colocar a 15 blocos de altura do chão, 27ª coluna contando da esquerda para a direita." Where the path
-      narrows and the drop begins is a design judgement, and no formula over tiles reaches it.
-
-      ⚠️ SO A LEVEL WITH NO DECLARED SIGN HAS NO SIGN. Inventing a position is precisely what produced two wrong
-      signs in silence — nothing broke, nothing went red, and the thing appeared in the wrong place on someone's
-      screen. Degrading to "no sign, and therefore no barrier" is loud and visible; degrading to "a sign somewhere"
-      is the failure mode ADR-0047 already refused elsewhere.
-
-      ===== 7. THE PLATFORMER'S TEN COINS CLOSE A LAP, AND A LAP COSTS NOTHING =====
-      Decided 2026-08-28. The platformer keeps its ten coins as the ROUND objective, and the Dev fixed what happens
-      at the tenth: "são as 10 moedas que ao serem pegas faz aparecer a mensagem de parabenização e reseta o jogo
-      colocando o jogador novamente na posição inicial e colocando os itens novamente no jogo, sem prejuízo de
-      pontos ou de barras segmentadas."
-
-        · Tenth coin → a congratulation message → the player returns to the START POSITION and the items are placed
-          in the world again. The lap begins anew.
-        · **THE POINTS DO NOT RESET AND THE BARS DO NOT MOVE.** Neither in one direction nor the other: finishing a
-          lap does not paint a segment (it is not an academic answer, §5) and does not clear the day's points (§1).
-
-      ⚠️ THIS IS WHY THE LAP IS NOT A "GAME OVER", and the distinction is the whole point of the clause: what ends
-      is the ROUND, which is state that dies with the lap (ADR-0038's RUN cut). What persists — points, bars, the
-      skill history — is the child, and the child does not restart. A design where the lap cost something would make
-      the platforming a gate in front of the school content, which §2's "accessibility may ease the powers with no
-      penalty" already refuses in the other direction.
-
-      ⚠️ AND IT REPLACES THE END-OF-GAME OVERLAY WITH A BUTTON that the code has today (`win()` in `game/session`
-      sets `ended` and waits for `#btn-again`). Waiting for a click is a small executive-function toll charged at
-      the exact moment of success, and it is charged to the child least able to pay it. The message announces; the
-      lap restarts on its own.
+        · **§7, o que a décima moeda faz** → **ADR-0062**. É o ciclo de vida da RODADA, e o próprio cabeçalho
+          anunciava a mistura com um "and": "CLOSE A LAP, AND A LAP COSTS NOTHING". ⚠️ E a metade que PARECIA
+          recompensa não decidia nada: "a volta não custa nada" DECORRE do §1 (os pontos zeram no fim do DIA,
+          não da volta) e do §5 (só questão acadêmica pinta segmento). Cláusula que deriva não é cláusula que
+          decide, e por isso nada precisou ficar para trás.
 
   consequences:
     positive:
