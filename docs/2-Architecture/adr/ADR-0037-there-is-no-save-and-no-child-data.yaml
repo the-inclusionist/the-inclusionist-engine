@@ -1,10 +1,15 @@
 metadata:
   status: "accepted"
   date: 2026-08-25
+  errata:
+    - date: 2026-09-04
+      what: "cited the governing document by FILE NAME AND VERSION. An ADR cites a CLAUSE, never a version:
+             the document is a living draft, so a version-pinned citation is wrong from the next release
+             onward and would need an erratum on each one. The clause references are unchanged."
   decision-makers: [Dev]
   consulted: [ADR-0010 (pillars 1, 4, 8 and 9), ADR-0027 (the cartridge idiom), ADR-0034 (SUPERSEDED here),
               ADR-0035 (the engine stays ours), ADR-0036 (this repository becomes the engine),
-              "requerimento_monte_aprazivel_5.docx, items 4.1, 5, 7, 8 and 15"]
+              "the requerimento filed with the Município de Monte Aprazível — items 4.1, 5, 7, 8 and 15"]
   informed: []
 
 title: There is NO save — and the Inclusionist stores no child's data at all; the only password is the teacher's room, the room is a machine on the school LAN, and the backend is Bússola Escolar
@@ -143,8 +148,11 @@ decision-outcome:
         substitution and every transposition rejected, because the failure mode is a child in the wrong class.
 
 more-information: |
-  The requerimento (`requerimento_monte_aprazivel_5.docx`, filed with the Município de Monte Aprazível) is the
-  external document this record depends on. Its item 15 recognises that the patrimonial rights over software
+  The requerimento filed with the Município de Monte Aprazível is the external document this record depends on.
+  ⚠️ IT IS CITED BY CLAUSE AND NEVER BY FILE VERSION, and the reason is mechanical rather than tidy: the
+  requerimento is a living draft, so a citation that names a version is wrong from the next release onward —
+  and under ADR-0057 each release would then owe this record an erratum. Clause numbers survive revisions;
+  file names do not. Its item 15 recognises that the patrimonial rights over software
   produced in the course of the author's duties belong to the Município — which is also why ADR-0036 scoped the
   package `@pm-monte` rather than to the developer.
 
