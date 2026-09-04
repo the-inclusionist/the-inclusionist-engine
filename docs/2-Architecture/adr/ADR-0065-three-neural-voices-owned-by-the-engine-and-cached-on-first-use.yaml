@@ -1,0 +1,193 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-08-27
+  supersedes: [ADR-0022]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0022 — SUPERSEDED by this record. Its comparison of the WASM runtimes is the work this record rests on
+       and does not repeat; the runtime choice is carried forward unchanged"
+    - "ADR-0021 — superseded by ADR-0022 before it; the `no R2, weights from Hugging Face, disclose` stance
+       survives both supersessions untouched"
+    - "ADR-0038 (state is cut by lifetime) and ADR-0032 (the curriculum is a layer of its own) — the same cut
+       applied here to an ASSET: who owns it decides where it travels"
+    - "ADR-0010 pillar 1 (school hardware) and pillar 8 (offline PWA) — the two the 200 MB collides with"
+    - "ADR-0057 §1b and §2 — why this is a whole supersession and not three edits in place"
+    - "the Dev, 2026-08-27: `deixe somente três modelos para offline: en_US, pt_BR e es_MX [...] Eles fazem parte
+       da engine, e não do jogo em si`"
+    - "the Dev, 2026-08-27: `Ok, cachear conforme primeiro uso, assim somente alunos que precisam baixam.`"
+    - "the Dev, 2026-08-27: `Documente isso e remova int8`"
+  informed: []
+
+title: THREE neural voices, owned by the ENGINE, arriving on FIRST USE — because precaching them would make every machine pay for the few that need them
+
+context-and-problem-statement: |
+  ADR-0022 chose sherpa-onnx-wasm as the neural TTS runtime, and that choice stands. What did not stand is
+  almost everything around it: on 2026-08-27 the Dev changed the roster, the quantisation, the ownership and the
+  delivery — four things, in one afternoon, once the arithmetic was in front of him — and the changes went into
+  the accepted record as an in-place amendment.
+
+  ⚠️ AND THE ARITHMETIC IS THE WHOLE RECORD, so it goes first. Measured in this repository:
+
+    · `model.onnx` — 61 MB per Piper medium voice (measured on `vits-piper-pt_BR-faber-medium`)
+    · `espeak-ng-data` — 18 MB, SHARED across every voice
+    · tokens + config — under 6 KB
+
+  Three voices ≈ **183 MB of models + 18 MB shared ≈ 200 MB**. The whole built game today is **29 MB**, and the
+  precache gate holds **100 entries / 28,5 MB**. Packaging the voices into the PWA literally — which is what
+  `globPatterns` does — would take first load from 29 MB to about 230 MB, on a school network, on pillar-1
+  hardware.
+
+  ⚠️ THAT IS THE NUMBER THAT CHANGED THREE DECISIONS AT ONCE, and it is why they belong in one record rather
+  than three: the seven-locale target, the delivery model and the ownership were all answers to the same sum.
+
+decision-drivers:
+  - "Neural speech is not a feature every child uses — it is an ACCOMMODATION. Making every machine pay for it
+     is the same shape of error as putting an accessibility correction in the empathy menu."
+  - "Pillar 8 promises the game works offline. It does not promise that everything possible is present before
+     the first run, and conflating the two is what turns a promise into 200 MB."
+  - "Who OWNS an asset decides where it travels. A voice that belongs to the game travels with every cartridge;
+     one that belongs to the engine is found already there."
+  - "A measured reason beats a plausible one: `int8 is smaller` is plausible and, on this backend, false."
+
+considered-options:
+  - "V1 — precache all three voices into the PWA, as `empacote-os no PWA` says literally"
+  - "V2 — runtime cache on FIRST USE, per voice, only for the locale actually in use"
+  - "V3 — no offline neural voice at all; fall back to the browser's Web Speech everywhere"
+
+pros-and-cons-of-the-options:
+  V1:
+    good: ["One promise, no second state: after install, everything works, forever, with no wait ever.",
+           "It is what the words `empacote-os no PWA` describe."]
+    bad: ["⚠️ FIRST LOAD GOES FROM 29 MB TO ~230 MB on a school network — a room of thirty machines each
+           downloading 200 MB so that the two which speak get their voice.",
+          "It blows the precache gate by a factor of eight, and that gate exists because a 97-entry
+           `revision: null` failure already happened once.",
+          "It pays for locales nobody in the room uses."]
+  V2:
+    good: ["The END STATE IS THE SAME — the voice lives on the machine and works offline forever after.",
+           "Only the machines that need it pay, and only for the locale in use.",
+           "It reuses the shape the project already has for downloaded-and-cached assets."]
+    bad: ["There is a WAIT on first use, on a school network, and it is long. A child who needs the voice is the
+           one who meets it.",
+          "It introduces a second state — `voice not yet here` — that every caller has to handle, and the
+           handling is where it will be got wrong.",
+          "Offline-first is now conditional on a first ONLINE use, which pillar 8 does not say."]
+  V3:
+    good: ["Nothing to download, nothing to cache, no second state."]
+    bad: ["Web Speech quality and availability vary by machine and by browser, and on a locked-down school
+           Chromebook it may not exist at all — which is the case neural offline speech was chosen for."]
+
+decision-outcome:
+  chosen-option:
+    link: "V2 — three locales, engine-owned, cached on first use"
+    justification: |
+      ===== 1. THE RUNTIME IS UNCHANGED =====
+      sherpa-onnx-wasm, as ADR-0022 chose it. The comparison that produced that choice is in ADR-0022 and is not
+      repeated here; nothing about it was reopened.
+
+      ===== 2. THREE LOCALES, NOT SEVEN =====
+      `en_US`, `pt_BR`, `es_MX` — and `es_MX` as NEUTRAL LATIN AMERICAN rather than `es_ES`, because the audience
+      is Brazilian public schools and their neighbours, not Spain. The seven-locale target was cut the moment the
+      sum above was put in front of the Dev.
+
+      ===== 3. THEY BELONG TO THE ENGINE, AND THAT IS THE STRUCTURAL HALF =====
+      "Eles fazem parte da engine, e não do jogo em si, uma vez que se abre a engine, isso deve permanecer dentro
+      dela." Every game opened on this engine finds the voices already there; a cartridge does not ship one and
+      does not have to know one exists.
+
+      ⚠️ IT IS THE SAME CUT ADR-0038 MADE FOR STATE AND ADR-0032 FOR CURRICULUM — it says who OWNS the thing,
+      which is what decides where it travels. Had the voices belonged to the game, three hundred games would
+      each have had to answer the question this record answers once.
+
+      ===== 4. DELIVERY IS RUNTIME CACHE ON FIRST USE =====
+      "Ok, cachear conforme primeiro uso, assim somente alunos que precisam baixam."
+
+      ⚠️ AND THAT LAST CLAUSE IS THE ARGUMENT, NOT A SIDE EFFECT. Neural speech is an ACCOMMODATION, not a
+      feature everyone uses. Precaching would make every machine in the school pay 200 MB so that the machines
+      which need it are ready — which is the same shape of error as putting a colour-blindness correction in the
+      menu about pretending (ADR-0011): the cost lands on everyone and the benefit on few, and the few are the
+      ones the project exists for.
+
+      PRECACHE AND RUNTIME CACHE ARE NOT THE SAME PROMISE, and the difference is the decision:
+        · PRECACHE downloads everything BEFORE the app is usable offline.
+        · RUNTIME CACHE reaches the SAME end state — on the machine, offline forever after — and pays for it on
+          first use, per voice, for the locale in use.
+
+      ⚠️ AND THE WAIT MUST BE ANNOUNCED BY VOICE, which is the clause that makes this survivable for the child it
+      is for. A blind child does not see a progress bar, and 61 MB on a school network is long enough to read as
+      a frozen game. eSpeak or Web Speech speaks WHILE the model downloads; without that, the mitigation is
+      useless to exactly the person who depends on it. (Issue #91 carries the work.)
+
+      ===== 5. ONE SOURCE, AND `int8` IS OUT WITH A MEASURED REASON =====
+      Models come from csukuangfj only — https://huggingface.co/csukuangfj/models — `vits-piper` only, never
+      `ncnn`.
+
+      ⚠️ `int8` IS OUT, AND THE REASON IS THE VALUABLE PART, because the opposite is the intuitive guess. In the
+      WASM backend int8 runs about **3× SLOWER** than fp32 — RTF 5,6 against 2,5, measured in the Dev's own log —
+      and it produces incorrect or silent output, a known problem of the WASM backend with the quantised ops
+      (`MatMulInteger` / `DynamicQuantizeLinear`). **Quantising does not shrink the wait here; it lengthens it.**
+      Without this paragraph written down, the next person tries int8 believing it is an optimisation.
+
+      ===== 6. THE ROSTER IS DATA, AND THIS RECORD DOES NOT PIN IT =====
+      ADR-0022 named "miro-high/faber/jeff" in five places including its index row, and then one of them was
+      dropped after a listening round — "Parece ser o mesmo modelo. Mesmo ritmo, mesmo sotaque" — so it was a
+      duplicate, not a choice.
+
+      ⚠️ WHICH VOICE FILE IS DATA, NOT A DECISION. Swapping a voice is cheap and reversible; naming it in five
+      places inside an architectural record is what made a cheap change look like an amendment to an accepted
+      decision. This record decides the LOCALES, the SOURCE and the QUANTISATION, and names no file. The current
+      shipped voice is `pt_BR-faber-medium`, and where it is named is `app/js/platform/tts.ts`.
+
+  consequences:
+    positive:
+      - "First load stays at 29 MB, and the precache gate keeps its meaning."
+      - "Only the machines that need speech pay for it, and only for their locale."
+      - "The voices being engine-owned means the 300+ games of the catalogue inherit them without deciding
+         anything."
+      - "`int8` has a written, measured reason, so the next attempt at it starts from a number instead of an
+         intuition."
+    negative:
+      - "⚠️ THERE IS A LONG WAIT ON FIRST USE, on a school network, and the child who needs the voice is the one
+         who meets it. The spoken announcement mitigates it; it does not remove it."
+      - "A second state exists — `voice not yet here` — and every caller has to handle it. That is where this
+         will be got wrong."
+      - "Offline-first becomes conditional on one online use, which pillar 8 does not say and this record does
+         not pretend it says."
+      - "Nothing here is implemented: the table of voices, the fetch-and-persist, the eSpeak bridge and the
+         spoken wait are all still owed (issue #91)."
+    neutral:
+      - "The `no R2, weights from Hugging Face, disclose` stance from ADR-0021 survives its second supersession
+         untouched."
+
+  confirmation: |
+    · The built output contains NO `.onnx` — precache stays at its budget, which the existing
+      `scripts/check-precache.mjs` already measures.
+    · The voice table lists exactly three locales and one source host.
+    · No `int8` model path appears anywhere in the source.
+    · A cartridge under `demos/` imports nothing from the voice layer — the engine-ownership claim, checkable by
+      the boundary gate that already exists.
+
+    ⚠️ WHAT NO GATE CONFIRMS: whether a blind child, hearing eSpeak while the neural model downloads, understands
+    that the game is working rather than broken. That is the clause the whole delivery model rests on, and only
+    a person watching a child can answer it. Issue #7.
+
+more-information: |
+  WHAT THIS RECORD SUPERSEDES: ADR-0022, `Adopt sherpa-onnx-wasm as the neural TTS runtime`. It keeps its full
+  text, and its comparison of the WASM runtimes is the reasoning carried forward here without repetition.
+
+  ⚠️ WHY WHOLE, since the runtime survives untouched — and it is the case ADR-0057 §2 and §1b were both written
+  for:
+    · Partly DEFECTIVE: `int8 is out` was asked for in writing (`Documente isso e remova int8`) and never
+      written; so was the single-source rule. The record never said what was decided.
+    · Partly REPLACED: seven locales became three when the sum was shown.
+    · And partly GROWN: `runtime cache on first use` is a DELIVERY decision the record never contained, added
+      in place on 2026-08-27. §1b says an accepted record does not grow.
+    A record that is defective, replaced and grown at once is not a record with three pointers — it is a
+    different record wearing the old one's name.
+
+  THE DATE ABOVE IS 2026-08-27, when the four decisions were taken, not 2026-09-04 when they were extracted.
+
+  ⚠️ A KNOWN DEBT LEFT ALONE ON PURPOSE: `docs/CREDITS.md` still credits the voice that was dropped. Removing an
+  attribution wrongly is worse than leaving a stale one, and the lab files under `docs/research/sherpa-wasm/` are
+  still there. It is a pass of its own, not a side effect of this record.

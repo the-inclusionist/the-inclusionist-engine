@@ -59,9 +59,11 @@ AMEND_MARKER = re.compile(r"(AMENDED|CORRECTED|COMPLETED 20|Settled 20|EMENDA|Em
 # campos do ADR-0057. A lista fica, vazia: um orçamento que chegou a zero e some deixa de provar
 # que chegou, e a proxima entrada tem de ser uma decisao e nao um esquecimento.
 STATUS_DEBT = set()
-AMEND_DEBT = {
-    "ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml",
-}
+# ZERADA em 2026-09-04, uma semana depois de ser criada com catorze nomes. Cada entrada saiu por
+# classificacao — errata, supersessao, ou conserto do proprio gate — e nenhuma por ser tolerada.
+# A lista fica, vazia, pela mesma razao da STATUS_DEBT: orcamento que chega a zero e some deixa de
+# provar que chegou.
+AMEND_DEBT = set()
 
 
 def every_list_item(node, path=""):
