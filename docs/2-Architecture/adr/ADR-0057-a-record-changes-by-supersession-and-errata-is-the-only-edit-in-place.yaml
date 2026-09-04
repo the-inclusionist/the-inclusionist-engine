@@ -8,6 +8,13 @@ metadata:
              one. A pair with only one declared side cannot be gated, and partial supersession is the easier
              half to leave undone — nothing about the old record's status changes, so the gap is invisible.
              `supersedes-in-part` is added. Found on the first application, in ADR-0059."
+    - date: 2026-09-04
+      what: "§2 decided the mixed case and created `superseded-in-part` for a record replaced in ONE clause,
+             and said nothing about the clause being named in the TITLE. A title is not a clause — it is the
+             record's identity, and the index shows nothing else, so a pointer inside the file never reaches
+             the reader who does not open it. Added: when what was replaced is asserted in the title, the
+             record is superseded WHOLE, however many clauses survive. Found on the second application,
+             in ADR-0060."
   decision-makers: [Dev]
   consulted:
     - "NYGARD, Michael. Documenting Architecture Decisions, 2011 — the practice this record restores:
@@ -133,6 +140,12 @@ decision-outcome:
 
       The rule: **when in doubt, supersede.** The cost of a superfluous superseding record is one file nobody
       needs to read twice. The cost of a superfluous erratum is a decision that silently never existed.
+
+      ⚠️ AND IF WHAT WAS REPLACED IS ASSERTED IN THE **TITLE**, THE RECORD IS SUPERSEDED WHOLE — however many
+      clauses survive. A title is not a clause: it is the record's IDENTITY, and the index shows nothing else.
+      Three pointers inside a file do not reach the reader who meets the record only in the table. ADR-0045 is
+      the case: its title said "every other job it carried moves to the JUMP", and that is precisely the half
+      the Dev revoked.
 
       ===== 3. `metadata.status` BECOMES AN ENUM, AND THE PROSE MOVES OUT =====
       The README promises records are "machine-readable (filter/index by `metadata.status`)". Today three

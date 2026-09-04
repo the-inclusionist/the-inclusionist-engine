@@ -1,0 +1,206 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-08-28
+  supersedes: [ADR-0045]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0045 — SUPERSEDED by this record; its measurements and its argument about the cane stand and are
+       not repeated here"
+    - "ADR-0013 (motor & input accessibility — touch, gamepad, keyboard, easy mode)"
+    - "ADR-0029 (anything that departs from its default is marked, in three channels)"
+    - "ADR-0033 (input arrives as directional INTENT; the game interprets it) — `toggleMove` changed sides there"
+    - "ADR-0057 (a record changes by supersession) — the mechanism, and the reason this is a whole supersession
+       rather than three partial pointers"
+    - "Game Accessibility Guidelines — allow controls to be toggled rather than held —
+       https://gameaccessibilityguidelines.com/allow-controls-to-be-toggled-rather-than-held/"
+    - "the Dev, 2026-08-28: `Botão de interação continua sendo botão de interação e servindo para conversar,
+       pegar e jogar mesmo nos outros modos. O que muda é que a parte de correr [...] vira toggle`"
+    - "the Dev, 2026-08-28: `climb está funcionando não somente apertando o botão de contexto na parede, mas
+       também o botão de pulo. O correto é só o primeiro caso.`"
+  informed: []
+
+title: The INTERACTION button keeps every job it had, in every input mode — and only RUNNING becomes a latch, because only running requires holding
+
+context-and-problem-statement: |
+  ADR-0045 answered a real question correctly and then had its answer revoked twice in two days.
+
+  THE QUESTION, which has not changed: the movement toggle already lets a child walk without holding a
+  direction — "para quem não consegue manter pressionado (1 dedo)". The RUN button went on demanding exactly
+  what that setting exists to remove. A child who plays with one finger walked without holding and could not run.
+
+  ADR-0045's answer was that the run button's EDGE becomes the run latch, and everything else that edge used to
+  trigger — clinging to a wall with the spider power, and later picking things up — moves to the JUMP in
+  context. It is in that record's title: "every other job it carried moves to the JUMP".
+
+  ⚠️ THE DEV REVOKED IT, IN TWO STEPS, AND THE SECOND ONE HE SAW ON SCREEN.
+
+    · Carrying, 2026-08-28: "Botão de interação continua sendo botão de interação e servindo para conversar,
+      pegar e jogar mesmo nos outros modos. O que muda é que a parte de correr [...] vira toggle." — "desfaço
+      o que pedi".
+    · Clinging, the same day, after watching it: "climb está funcionando não somente apertando o botão de
+      contexto na parede, mas também o botão de pulo. O correto é só o primeiro caso."
+
+  ⚠️ AND THE CODE FOLLOWED HIM WHILE THE RECORD DID NOT. `pularVaiGrudar` and `botaoDeGrude` were deleted from
+  `game/run-toggle.ts` on 2026-08-28 — the file says so, in a block that quotes both revocations. ADR-0045 §3
+  and §4 still describe those two functions as the decision in force. A reader arriving at the record a week
+  later would have implemented something the code had already removed, and nothing in `status: accepted` would
+  have warned them. That is the failure CLAUDE.md names in one line: choices went into the code and not into
+  the record.
+
+decision-drivers:
+  - "A button that means different things in different accessibility modes is a button whose meaning a child has
+     to re-learn when an adult changes a setting she did not ask for."
+  - "The revoked half is named in ADR-0045's TITLE. A partial pointer cannot repair a title, and the index shows
+     nothing but titles."
+  - "Two of the three revoked clauses were never declared, so the record has been wrong in public for a week —
+     the cost of leaving it is measured, not hypothetical."
+  - "What survives from ADR-0045 is worth carrying forward deliberately rather than by inheritance, because one
+     of its clauses (the two questions, §2) is the one that nearly broke the cane."
+
+considered-options:
+  - "R1 — three `superseded-in-part` pointers on ADR-0045 (§3, §4, §6), leaving the record and its title in place"
+  - "R2 — supersede ADR-0045 whole with this record"
+  - "R3 — amend §3 and §4 in place, as §6 already was, and change the title"
+
+pros-and-cons-of-the-options:
+  R1:
+    good: ["Cheapest. §1, §2 and §5 keep their address and nothing is restated.",
+           "It is the mechanism ADR-0057 created for exactly this shape — a record replaced clause by clause."]
+    bad: ["⚠️ IT CANNOT REPAIR THE TITLE, and the title asserts the revoked half. A reader who meets the record
+           in the index meets only the title, and three pointers inside the file do not reach them.",
+          "Three of six sections replaced is not `in part` in any useful sense — it is a different record wearing
+           the old one's name."]
+  R2:
+    good: ["The title stops lying, which is the only fix that reaches a reader of the index.",
+           "ADR-0045 keeps its full text, so its measurements and its cane argument stay readable where they were
+            made and this record does not have to re-argue them.",
+           "One record now answers `what does each button do`, instead of a record plus three exceptions."]
+    bad: ["§1, §2 and §5 are restated, and a restatement can drift from the original it was copied from.",
+          "A sixty-record directory gains another file for a decision that already had one."]
+  R3:
+    good: ["No new file; the history stays in one place."]
+    bad: ["It is the mechanism ADR-0057 retired the day before, and this is the record that most demonstrates
+           why: §6 was already amended in place, and the amendment sat on top of a `§6-old` that carried its own
+           amendment inside it. A fourth layer would make the file unreadable in the order it was written.",
+          "Editing a title in place destroys the only handle the history has."]
+
+decision-outcome:
+  chosen-option:
+    link: "R2 — supersede ADR-0045 whole; the title is the reason it cannot be partial"
+    justification: |
+      ===== 1. ONE BUTTON, ONE MEANING, IN EVERY MODE =====
+      The INTERACTION button — the same physical button as run — keeps every job it ever had: talking, clinging,
+      picking up, putting down, throwing. In EVERY input mode. No accessibility setting moves any of them
+      anywhere.
+
+      ⚠️ AND IT ACTS BY CONTEXT, which is what makes one button enough: against a wall with the suction power the
+      context is CLING; near an object it is PICK UP; holding something, with a direction held, it is THROW;
+      holding something with no direction, PUT DOWN; with no context at all, it toggles the run.
+
+      THE JUMP NEVER CLINGS AND NEVER PICKS ANYTHING UP. It jumps.
+
+      ===== 2. ONLY RUNNING BECOMES A LATCH, AND ONLY BECAUSE ONLY RUNNING NEEDS HOLDING =====
+      Running is a STATE; interacting is an EVENT. That is the whole reason they can share a button without
+      competing, and it is why the toggle touches one and not the other.
+
+      With the latch on, the button's edge flips `pl.runLatch`, and the latch — not the key being held — says
+      whether the character runs. WHO USES THE LATCH is asked once, in `usaTravaDeCorrer`: `toggleRun`
+      (explicit, and automatic on the on-screen controller emulator) OR `toggleMove` (toggle-keys). Face, eyes
+      and voice join there when they exist (issue #11).
+
+      `easy` remains the ONLY rule that switches running off, and it still wins over the latch: there the
+      slowness IS the pedagogical decision, and a latch slipping past it through the back door would undo the
+      mode.
+
+      ⚠️ AND `toggleMove` STAYS ON THE SIDE ADR-0033 PUT IT: toggle-keys serves children who cannot HOLD,
+      including children with fewer fingers — not children who should move slowly. It used to switch running
+      off; the Dev overruled that on 2026-08-27 and the correction stands.
+
+      ===== 3. TWO QUESTIONS, NOT ONE — THE CLAUSE THAT NEARLY BROKE THE CANE =====
+      Carried forward from ADR-0045 §2 because it is the most expensive thing that record learned, and a
+      restatement is cheaper than rediscovering it.
+
+      "Is the run button engaged?" and "is the character running?" are DIFFERENT QUESTIONS, answered by two
+      functions on purpose:
+
+        · `botaoDeCorrerEngatado(pl, segurando)` — the latch if the toggle is on, the held key if it is not.
+        · `correndoAgora(pl, segurando)` — the above, MINUS `easy` and `toggleMove`.
+
+      THE CANE PROBE ASKS THE FIRST ONE. Reusing `correndoAgora` there is the obvious repair and it would
+      silence the cane for every child in Easy Mode or movement-toggle — children who can probe today. `easy`
+      and `toggleMove` switch off RUNNING; they must never switch off TOUCH.
+
+      ===== 4. THE SPOKEN SENTENCE NAMES ONE BUTTON, BECAUSE THERE IS ONLY ONE =====
+      `sr.power.wallcling` and `sr.physics.spiderOn` are what a blind child HEARS about the suction power, and
+      they name `act.run` — always. ADR-0045 §4 made the button name a PARAMETER (`botaoDeGrude`) because the
+      old contract had cling changing buttons per mode; with the contract gone there is nothing to choose.
+
+      ⚠️ THE `{botao}` PARAMETER STAYS IN THE THREE DICTIONARIES even though it now always resolves to the same
+      key. Removing it would be a translation change in three languages to save one indirection, and the house
+      rule it obeys ("a moldura mora na chave, o conteúdo atravessa por `{param}`") is what makes the sentence
+      survive a future remap.
+
+      ===== 5. THE DEFAULT, AND THE MARK =====
+      Off by default, except in the on-screen controller emulator, where it is automatic. Being a setting that
+      can depart from its default it carries the ADR-0029 mark, on the option and on the menu that holds it, and
+      it lives in Motor Accessibility beside the movement toggle under the same ☝️ the Dev chose for both.
+
+      ===== 6. WHAT THE REVOCATION DELETED, AND WHY EACH ONE ONLY EXISTED FOR THE OLD ROUTING =====
+      Recorded so nobody reintroduces one of them thinking it was lost by accident:
+
+        · `pularVaiGrudar` and `botaoDeGrude` — deleted from `game/run-toggle.ts`. What was erased is the
+          QUESTION, not an answer: with cling always on one button there is nothing to branch on.
+        · the "not on the ground" clause, which separated the first tap (jump) from the second (throw) on a
+          button that did both. A button that only interacts has no two taps to separate.
+        · the edge CONSUMPTION, which existed so picking up would not also jump.
+        · the player parameter of `acaoDeCarga`, which existed only to ask `pl.toggleRun` and choose the edge.
+          ⚠️ One parameter fewer is one fewer path by which an accessibility setting could change the game of
+          someone who never asked for it — which is the general form of what went wrong here.
+
+  consequences:
+    positive:
+      - "A child's buttons mean the same thing whatever an adult switched on, which is the property ADR-0045's
+         design quietly traded away."
+      - "ADR-0045 §3 and §4 stop describing two functions that were deleted a week ago."
+      - "The title of the governing record is true, so the index no longer misinforms a reader who never opens
+         the file."
+      - "One fewer parameter on `acaoDeCarga`, and one fewer branch in the cling path."
+    negative:
+      - "§2's two-function rule and §5's default are RESTATED rather than referenced, and a restatement can drift
+         from the original. The original stays readable in ADR-0045 for exactly that reason."
+      - "Sixty records for a project of one developer, and this screen's history is now spread over two of them."
+      - "Nothing here changes the code: the code already obeys this record and has since 2026-08-28. What changes
+         is that the record now says what the code does."
+    neutral:
+      - "The `{botao}` parameter survives with one possible value — deliberate, and argued in §4."
+
+  confirmation: |
+    ALREADY GREEN, and that is the point — this record documents what the code does rather than asking for work:
+      · `tests/alternancia-do-correr.node.test.js` already asserts the general rule and records that
+        `pularVaiGrudar`/`botaoDeGrude` are gone.
+      · `tests/instrucao-do-botao-falada.node.test.js` already asserts the spoken sentence names one button.
+      · `game/carry.acaoDeCarga` takes no player parameter, which is mechanically checkable.
+
+    THE ONE GATE STILL OWED: nothing asserts that the JUMP never clings and never picks up. The negative is the
+    property that was revoked twice, so it is the one worth holding down. It must be born failing, with the
+    mutation confirmed: restoring a cling branch on the jump has to go red.
+
+    ⚠️ WHAT NO GATE CONFIRMS: whether one context-sensitive button is easier for a child than two dedicated
+    ones. The Dev decided it by watching the screen; nobody has watched a child do it. Issue #7.
+
+more-information: |
+  WHAT THIS RECORD SUPERSEDES: ADR-0045, "The RUN button becomes a LATCH, and every other job it carried moves
+  to the JUMP in context". It keeps its full text, per ADR-0057 §4 — its measurement of what `pl.runEdge` used
+  to trigger, and its argument about the cane, are the reasoning this record rests on and does not repeat.
+
+  ⚠️ AND THE TITLE IS WHY THIS IS A WHOLE SUPERSESSION AND NOT THREE PARTIAL POINTERS. ADR-0057 §2 decides the
+  mixed case (partly defective, partly replaced) and creates `superseded-in-part` for a record replaced in one
+  clause. It does not say what to do when the replaced clause is named in the TITLE. It should:
+
+    A TITLE IS NOT A CLAUSE — IT IS THE RECORD'S IDENTITY, AND THE INDEX SHOWS NOTHING ELSE. When what was
+    replaced is asserted in the title, the record is superseded WHOLE, however many clauses survive. A pointer
+    inside a file cannot reach a reader who never opens it.
+
+  That rule is added to ADR-0057 as an erratum — it never said it, and it should have. Found here, on the second
+  application, the same way the missing `supersedes-in-part` mirror was found on the first.

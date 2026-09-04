@@ -1,5 +1,6 @@
 metadata:
-  status: "accepted"
+  status: "superseded"
+  superseded-by: ADR-0060
   date: 2026-08-26
   decision-makers: [Dev]
   consulted:
