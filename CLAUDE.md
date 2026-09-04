@@ -23,11 +23,14 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 ## 0. Regra de ouro (operacional — o que mais me guia)
 
 - **Eu faço os commits** (atômicos, **em inglês**, na `main`, com trailer `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`).
-  **O Dev roda** o push/deploy **e TODO comando Node** (`npm run build` / `npx vitest run` / `npx tsc --noEmit`) —
-  eu **não tenho Node** no sandbox.
-- **Loop de trabalho:** eu extraio/edito → o Dev valida (build + vitest + tsc) → **eu confiro o boot no preview**
-  (canvas ≥ 1 + `window.__incl`; nunca só screenshot do título).
-- **Preview: usar o server `dist`** (`npm run preview` sobre `dist/`, **após o Dev rodar `npm run build`**) — o
+  **O Dev roda** o push/deploy e tudo que **GASTA** (cota, dinheiro, ação irreversível).
+  ⚠️ **EU RODO NODE** — medido em 2026-09-04: `node v24.14.0`, `npm 11.9.0`. A linha anterior dizia que o Dev
+  rodava TODO comando Node porque eu não tinha nenhum, e isso deixou de ser verdade: eu rodo `npm run build`,
+  `npx vitest run` e `npx tsc --noEmit` e **provo o gate vermelho antes de valer**, em vez de deixar a prova
+  para ele. Instrução obsoleta não é inofensiva: esta transferia para o Dev trabalho que é meu.
+- **Loop de trabalho:** eu extraio/edito → **eu valido** (build + vitest + tsc) → **eu confiro o boot no preview**
+  (canvas ≥ 1 + `window.__incl`; nunca só screenshot do título). O Dev revê o resultado, não o executa.
+- **Preview: usar o server `dist`** (`npm run preview` sobre `dist/`, **depois do `npm run build`**) — o
   server **`inclusionist`/dev (`npm run dev`, Vite) NÃO roda no sandbox** (o pré-bundle de deps do Vite não fica
   pronto → grafo de módulos morto → tela quebrada). O `launch.json` é **local, não-versionado** — nunca sobrescrever
   sem ler antes.
@@ -69,9 +72,13 @@ brasileira** (infantil · fundamental · médio) e, por proximidade, **EJA** e *
 (letramento digital para cidadania e mercado de trabalho), além de **passatempos de convivência** (centros de
 convivência de idosos e pessoas assistidas socialmente). **MVP atual:** *The Inclusionist* — plataforma 2D pixel-art
 **acessível** (PixiJS). Reimplementação clean-room do engine Clarity. ⚠️ **O plano dos "35+ jogos" morreu em
-2026-08-28**, por decisão do Dev: o MVP são os **300+ jogos** do `minigames-catalog-v2.html`, no repositório
-`the-inclusionist-demos` — catálogo de demonstração, no plural. Aceito o MVP, os jogos são feitos com pixel
-artistas contratados. Topologia: **ADR-0058** (que supersede o ADR-0055).
+2026-08-28**, por decisão do Dev: o MVP são os **300+ jogos** do `minigames-catalog-v2.html`. Aceito o MVP, os jogos são
+feitos com pixel artistas contratados. Topologia: **ADR-0058** (que supersede o ADR-0055).
+⚠️ **Cada jogo é um REPOSITÓRIO seu (ADR-0068)**, e o `the-inclusionist-demos` deixou de guardá-los: ele passou
+a guardar o **manifesto** que diz quais jogos e quais versões entram numa entrega — porque o orçamento de
+precache nunca deixaria o catálogo inteiro chegar ao aparelho de escola. Repositório se cria quando um
+registro declara o endereço, com README que diz que está vazio (**ADR-0067**), e tudo vive numa organização
+do GitHub, privada até o ato (**ADR-0066**).
 
 - **🔴 PILARES INEGOCIÁVEIS** (constituição — leia ANTES de agir): `docs/2-Architecture/adr/ADR-0010-non-negotiable-pillars.yaml`. 10 pilares:
   hardware de escola pública BR (Positivo/Chromebook) · a11y (WCAG 2.2 + GAG; Libras em motor zdog à parte) · i18n ·
@@ -134,8 +141,9 @@ artistas contratados. Topologia: **ADR-0058** (que supersede o ADR-0055).
 ## 5. Testes
 
 Vitest com dois *projects*: **node** (lógica pura, sem PIXI/DOM) e **browser**/Playwright (render/DOM). Cada
-módulo extraído nasce com teste. **Eu não rodo Node** → pré-valido as expectativas no **preview** (harness de
-navegador) e deixo o Dev rodar o Vitest. Padrões: **ZOMBIES** (didático) + **Right-BICEP** (rigor). `docs/plano-testes.md`.
+módulo extraído nasce com teste. **Eu rodo o Vitest** (medido em 04/09) e cada gate
+nasce **vermelho com a mutação confirmada** antes de valer — verde que nunca pôde ficar vermelho não prova
+nada, e já aconteceu aqui: uma regex morreu em silêncio e a checagem seguiu verde. Padrões: **ZOMBIES** (didático) + **Right-BICEP** (rigor). `docs/plano-testes.md`.
 - **Hardware-alvo (Positivo/Chromebook):** montar baterias de teste para rodar **quando os aparelhos existirem**,
   conforme o produto evolui — não bloqueia o desenvolvimento agora (não temos os aparelhos ainda).
 
