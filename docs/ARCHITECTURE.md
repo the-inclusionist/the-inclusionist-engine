@@ -100,7 +100,7 @@ docs/
 > repositórios para **CINCO sistemas**, **dois mecanismos**
 > (pacote para biblioteca, API para fronteira) e **zero submódulos**. A CASCA muda de destino: vai para
 > `the-inclusionist-site` e não para o `demos`, e o `educational/` a segue até `the-inclusionist-knowledge-tree`.
-> O que os backends do compass podem guardar é o **ADR-0056** (privacidade), e ele é quem manda ali. Os **estudos** (`research/tts-*.md`) permanecem
+> O que os backends do compass podem guardar é o **ADR-0063** (que supersede o ADR-0056), e ele é quem manda ali. Os **estudos** (`research/tts-*.md`) permanecem
 > aqui; o **código** dos labs vive em `inclusionist-lab`. Plano: `5-Refactoring/plano-tts-lab-modularizacao.md`.
 
 > **Dead docs are NOT kept in the tree (YAGNI).** `git history` is the archive — retired docs (the E1–E13 roadmap,

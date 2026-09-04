@@ -395,8 +395,8 @@ more-information: |
   (the school as controller, a supplier as operator) and built end-to-end encryption to protect the datum from
   the operator itself. That arrangement became ONE party on 2026-08-28: the Município is controller and the
   developer is a public servant. The question ADR-0056 answers stopped existing in the form it was asked, so
-  it needs a SUCCESSOR rather than an amendment — an amendment over a replaced premise produces a document
-  that contradicts itself quietly. This record depends on that one in exactly one place: §3 says each system
+  it needed a SUCCESSOR rather than an amendment, and it has one: **ADR-0063**, which moves the defence from
+  cryptography to accountability because the operator turned out to be the controller. This record depends on that one in exactly one place: §3 says each system
   has its own backend, and the privacy model decides what those backends are allowed to hold.
 
   ⚠️ AND SEVEN RECORDS IN THIS REPOSITORY DECIDE THINGS THAT ARE NOT THE ENGINE'S, including this one. The
