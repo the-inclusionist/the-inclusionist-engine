@@ -9,7 +9,12 @@ alto contraste, simulação/correção de daltonismo, baixa visão, modo cego (n
 narração TTS, modo cadeirante, um-botão, controles remapeáveis (teclado/gamepad/toque em mm reais),
 Libras (VLibras) e tipografia para dislexia. Roda 100% offline como PWA.
 
-Licença: **GPL-3.0-or-later**. Mecânicas de plataforma portadas do
+**Licenças — e são duas, não uma.** O **código** é **AGPL-3.0-or-later** (ADR-0064: sob GPL, um servidor
+de sala hospedado não deveria a fonte a ninguém; a seção 13 da AGPL fecha isso). A **ARTE NÃO é AGPL** —
+programa é o que a Lei 9.609 define, arte segue a Lei 9.610 e pertence a quem a fez. O que governa o quê
+está em [`docs/LICENSES.md`](docs/LICENSES.md); as atribuições, em [`docs/CREDITS.md`](docs/CREDITS.md).
+
+Mecânicas de plataforma portadas do
 [Clarity, de Adam Brooks (dissimulate)](https://github.com/dissimulate/Clarity) (MIT).
 
 ## Estrutura do repositório

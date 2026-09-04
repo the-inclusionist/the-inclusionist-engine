@@ -26,7 +26,7 @@ SP-the-inclusionist-tracer/
 └── CLAUDE.md                 # AI operating rules (entry index for the agent)
 ```
 
-> **Community-health files** (`CONTRIBUTING.md`, `CREDITS.md`, `SECURITY.md`) live in **`docs/`**, not the root:
+> **Community-health files** (`CONTRIBUTING.md`, `CREDITS.md`, `SECURITY.md`, `LICENSES.md`) live in **`docs/`**, not the root:
 > GitLab auto-detects them there (root · `docs/` · `.gitlab/` are all valid), which keeps the root lean.
 
 ## 2. Documentation layout (`docs/`)
