@@ -96,7 +96,8 @@ docs/
 > do repo `inclusionist-commons` publicado no **registry npm do GitLab** (ADR-0026). Deploy próprio no Cloudflare
 > (domínio `labs.`).
 > **`inclusionist-engine` fica só com a ENGINE** — o jogo saiu para `inclusionist-demos` (ADR-0036, que emenda o ADR-0025; a frase anterior, "fica só com o jogo", valia enquanto o jogo era o produto).
-> ⚠️ **A TOPOLOGIA INTEIRA foi decidida em 2026-08-28 — ADR-0055**: seis repositórios, **dois mecanismos**
+> ⚠️ **A TOPOLOGIA INTEIRA foi decidida em 2026-08-28 — ADR-0058** (que supersede o ADR-0055): **NOVE**
+> repositórios para **CINCO sistemas**, **dois mecanismos**
 > (pacote para biblioteca, API para fronteira) e **zero submódulos**. A CASCA muda de destino: vai para
 > `the-inclusionist-site` e não para o `demos`, e o `educational/` a segue até `the-inclusionist-knowledge-tree`.
 > O que os backends do compass podem guardar é o **ADR-0056** (privacidade), e ele é quem manda ali. Os **estudos** (`research/tts-*.md`) permanecem

@@ -6,7 +6,8 @@ metadata:
   consulted:
     - "ADR-0010 pillars 1 (school hardware), 4 (LGPD/COPPA/China/Nordics — strictest wins), 6 (child privacy),
        8 (offline PWA), 9 (LAN + store-and-forward telemetry)"
-    - "ADR-0055 (six repositories) — §1 says the compass is the only repository with backends; THIS record decides
+    - "ADR-0055 (six repositories), SUPERSEDED by ADR-0058 — its §1 said the compass is the only repository with
+       backends, a clause ADR-0058 withdraws (there are four); THIS record decides
        what those backends are allowed to hold"
     - "ADR-0037 (there is no save and no child data) — the engine's side of the same promise"
     - "ADR-0049 §7 (never charge an executive-function toll at the moment of success) — the argument that killed

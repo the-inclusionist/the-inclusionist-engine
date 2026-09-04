@@ -78,7 +78,7 @@ decision-outcome:
           screen 2, and the room client for the teacher's password. The curriculum layer (`educational/`)
           follows the shell — ADR-0032's destination is unchanged, only its address.
 
-          ⚠️ AMENDED 2026-08-28 BY ADR-0055 — THE SHELL GOES TO `the-inclusionist-site`, NOT TO `demos`. The
+          ⚠️ AMENDED 2026-08-28 BY ADR-0058 (which supersedes ADR-0055) — THE SHELL GOES TO `the-inclusionist-site`, NOT TO `demos`. The
           argument is this record's own, taken one step further: the shell is not part of any game, and it is not
           part of the CATALOGUE either. `demos` holds content; the site is the product the child meets, and it
           carries the compass's session (ADR-0048 §2) rather than a login of its own. The curriculum layer still

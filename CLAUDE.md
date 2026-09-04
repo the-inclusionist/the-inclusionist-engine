@@ -71,7 +71,7 @@ convivência de idosos e pessoas assistidas socialmente). **MVP atual:** *The In
 **acessível** (PixiJS). Reimplementação clean-room do engine Clarity. ⚠️ **O plano dos "35+ jogos" morreu em
 2026-08-28**, por decisão do Dev: o MVP são os **300+ jogos** do `minigames-catalog-v2.html`, no repositório
 `the-inclusionist-demos` — catálogo de demonstração, no plural. Aceito o MVP, os jogos são feitos com pixel
-artistas contratados. Topologia: ADR-0055.
+artistas contratados. Topologia: **ADR-0058** (que supersede o ADR-0055).
 
 - **🔴 PILARES INEGOCIÁVEIS** (constituição — leia ANTES de agir): `docs/2-Architecture/adr/ADR-0010-non-negotiable-pillars.yaml`. 10 pilares:
   hardware de escola pública BR (Positivo/Chromebook) · a11y (WCAG 2.2 + GAG; Libras em motor zdog à parte) · i18n ·
@@ -159,7 +159,7 @@ navegador) e deixo o Dev rodar o Vitest. Padrões: **ZOMBIES** (didático) + **R
 - **Currículo em CÓDIGO:** `app/js/educational/` — a metade em código da mesma camada (ADR-0032). É DADO: não
   importa nada (nem `core/`, nem `game/`), e o texto pt-BR dele **não entra nos dicionários**, porque o pilar 3
   manda *reescrever* currículo por idioma, não traduzir. ⚠️ **Ganhou dono em 2026-08-28**: vai para
-  `the-inclusionist-knowledge-tree` (ADR-0055), que é o grafo de skills entre currículos de vários países — o
+  `the-inclusionist-knowledge-tree` (ADR-0058), que é o grafo de skills entre currículos de vários países — o
   primeiro endereço real que esta camada tem, depois de anos pertencendo a uma plataforma que não existia. Até a
   mudança acontecer, o catálogo mora aqui com a forma do destino. `tests/engine-boundary.node.test.js` é o gate.
 - **Constantes do motor** (TILE_TYPES, TUNE, tiles, dimensões): `app/js/core/constants.ts` (fonte única, tipada).

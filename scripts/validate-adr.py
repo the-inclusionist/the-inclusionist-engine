@@ -172,15 +172,55 @@ def check(path):
     return problems
 
 
+def number(path):
+    """`ADR-0058` from `.../ADR-0058-five-systems-....yaml`, or None if unparseable."""
+    stem = os.path.basename(path)
+    return stem[:8] if stem[:4] == "ADR-" and stem[4:8].isdigit() else None
+
+
+def pointer_problems(files):
+    """Cross-file: a supersession is a PAIR, and half of one is worse than none.
+
+    A reader arrives from whichever side they happen to hold. `superseded-by` alone leaves the
+    successor silent about what it replaced; `supersedes` alone leaves the old record still
+    claiming to govern. Both directions are checked (ADR-0057).
+    """
+    meta, problems = {}, {}
+    for path in files:
+        name = number(path)
+        if not name:
+            continue
+        doc = yaml.safe_load(open(path, encoding="utf-8")) or {}
+        meta[name] = (path, doc.get("metadata") or {})
+
+    def note(path, text):
+        problems.setdefault(path, []).append(text)
+
+    for name, (path, m) in meta.items():
+        target = m.get("superseded-by")
+        if target:
+            if target not in meta:
+                note(path, f"`superseded-by: {target}` names a record that does not exist")
+            elif name not in (meta[target][1].get("supersedes") or []):
+                note(path, f"`superseded-by: {target}`, but {target} does not list {name} in `supersedes`")
+        for replaced in m.get("supersedes") or []:
+            if replaced not in meta:
+                note(path, f"`supersedes` names {replaced}, which does not exist")
+            elif meta[replaced][1].get("superseded-by") != name:
+                note(path, f"`supersedes: {replaced}`, but {replaced} does not point back with `superseded-by: {name}`")
+    return problems
+
+
 def main():
     folder = sys.argv[1] if len(sys.argv) > 1 else "docs/2-Architecture/adr"
     files = sorted(glob.glob(os.path.join(folder, "ADR-*.yaml")))
     if not files:
         sys.exit(f"no ADR-*.yaml found in {folder}")
 
+    crossed = pointer_problems(files)
     failed = 0
     for path in files:
-        problems = check(path)
+        problems = check(path) + crossed.get(path, [])
         if problems:
             failed += 1
             print(f"FAIL {os.path.basename(path)}")

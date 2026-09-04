@@ -1,6 +1,7 @@
 ---
 metadata:
   status: "accepted"
+  supersedes: [ADR-0055]
   date: 2026-08-28
   decision-makers: [Dev]
   consulted:
@@ -23,9 +24,15 @@ metadata:
 title: FIVE systems, NINE repositories — the boundary follows the Secretaria that answers for the data, and every installation is multi-tenant from day one
 
 context-and-problem-statement: |
-  The version of this record accepted earlier today described SIX repositories for what it treated as one
-  product. That was wrong on the day it was written, and the error was not in the mechanism — it was in the
-  census.
+  ADR-0055 described SIX repositories for what it treated as one product. That was wrong on the day it was
+  written, and the error was not in the mechanism — it was in the census.
+
+  ⚠️ THIS RECORD WAS EXTRACTED ON 2026-09-04 FROM AN EDIT THAT SHOULD NEVER HAVE BEEN ONE. The decision below
+  was taken on 2026-08-28 and written by REWRITING ADR-0055 in place — file, title and all — under the house
+  rule then in force. ADR-0057 retired that rule: a record that said what was decided and was then replaced is
+  SUPERSEDED, never overwritten. ADR-0055 is restored to its original text at `231182e^`, marked `superseded`,
+  and this record carries the decision. The date above is when the DECISION was taken, not when the file was
+  created, because a record dated by its rescue would misplace it in the history it exists to keep.
 
   ⚠️ THE PROJECT IS FIVE SYSTEMS, NOT ONE. The requerimento, item 39 alínea `e`, asks the Município to
   authorise publication of "os sistemas Inclusionista, Bússola Escolar, Código Cultura, Apoio Ativo e Code
@@ -46,7 +53,7 @@ context-and-problem-statement: |
   pedagógica". A topology that folds Apoio Ativo into the compass produces the wrong legal basis for one of
   the two, and produces it in code, where it is hardest to see.
 
-  Three further things changed after that version was written and are decided here rather than left in chat:
+  Three further things changed after ADR-0055 was written and are decided here rather than left in chat:
   WHERE the systems run (the Município's own servers), WHETHER one installation serves more than one network
   (yes, from the start), and WHAT the previous record called "the privacy model", which it deferred.
 
@@ -62,14 +69,15 @@ decision-drivers:
      sits inside another's system."
 
 considered-options:
-  - "T1 — the six repositories of the previous version, with the other three systems as modules of the compass"
+  - "T1 — the six repositories of ADR-0055, with the other three systems as modules of the compass"
   - "T2 — nine repositories: one publishable unit per system, five of them for the Inclusionista"
   - "T3 — a repository per SECRETARIA (one for Educação, one for Assistência Social), systems as modules inside"
   - "T4 — a workspace monorepo holding everything"
 
 pros-and-cons-of-the-options:
   T1:
-    good: ["Fewest repositories, fewest pipelines, and the compass backend is written once."]
+    good: ["Fewest repositories, fewest pipelines, and the compass backend is written once.",
+           "It is the decision already in force, so nothing has to move."]
     bad: ["Puts Apoio Ativo — socioassistencial, LOAS, Assistência Social — inside a system whose caderno says
            it is educational, which is the exact equivocation the requerimento writes a paragraph to prevent.",
           "Makes the ato of publication unwritable as pedido `p` asks it: one repository address and one hash
@@ -373,11 +381,15 @@ decision-outcome:
     asked the same question about six, and the honest note is that the number went up, not down.
 
 more-information: |
-  WHAT THIS RECORD REPLACES. The version accepted earlier on 2026-08-28, titled "Six repositories, TWO
-  mechanisms — package for libraries, API for boundaries, and zero submodules". The mechanism it chose is kept
-  intact and unamended; what changed is the census (five systems, not one), the backend clause ("the compass is
-  the only place with backends" is withdrawn), and three subjects it did not cover: hosting, multi-tenancy and
-  the order of creation.
+  WHAT THIS RECORD REPLACES. ADR-0055, "Six repositories, TWO mechanisms — package for libraries, API for
+  boundaries, and zero submodules", accepted 2026-08-28 and superseded by this one. The mechanism it chose is
+  kept intact and unamended; what changed is the census (five systems, not one), the backend clause ("the
+  compass is the only place with backends" is withdrawn), and three subjects it did not cover: hosting,
+  multi-tenancy and the order of creation.
+
+  ⚠️ AND ADR-0055 KEEPS ITS FULL TEXT, per ADR-0057 §4. Its argument against the submodule graph, and the
+  ADR-0024 history it recovered, are the reason the mechanism half of this record needs no defending: a reader
+  who wants to know why there are no submodules reads it there, once, in the record that made the case.
 
   ⚠️ WHAT IS STILL NOT DECIDED HERE — THE PRIVACY MODEL. ADR-0056 was written for an arrangement of TWO parties
   (the school as controller, a supplier as operator) and built end-to-end encryption to protect the datum from
@@ -396,3 +408,5 @@ more-information: |
   ⚠️ A CITATION DEFECT FOUND WHILE WRITING THIS, recorded so it is not rediscovered: ADR-0053 cites the annual
   public report as "requerimento §49.j". In v7 it is **§51.j** — item 49 ends at alínea `i`, and the
   annual report is among the "compromissos adicionais" of item 51. The commitment exists; the address is wrong.
+  Under ADR-0057 that is an ERRATUM and not a supersession: the record never said the right address, so
+  correcting it in place restores the history instead of overwriting it.
