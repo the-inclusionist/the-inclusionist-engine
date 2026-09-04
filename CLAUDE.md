@@ -75,7 +75,8 @@ artistas contratados. Topologia: **ADR-0058** (que supersede o ADR-0055).
 
 - **🔴 PILARES INEGOCIÁVEIS** (constituição — leia ANTES de agir): `docs/2-Architecture/adr/ADR-0010-non-negotiable-pillars.yaml`. 10 pilares:
   hardware de escola pública BR (Positivo/Chromebook) · a11y (WCAG 2.2 + GAG; Libras em motor zdog à parte) · i18n ·
-  conformidade LGPD/COPPA/China/Nórdicos (regra mais rígida vence) · pixel 320×180 (Libras 420×180) · telemetria
+  conformidade LGPD/COPPA/China/Nórdicos (**a lei local da região de implantação vence**; a "regra mais rígida
+  vence" foi aposentada pelo ADR-0010 por ser autocontraditória — ela faria a norma chinesa valer no Brasil) · pixel 320×180 (Libras 420×180) · telemetria
   1EdTech+xAPI com privacidade infantil rígida · multiplayer em telas separadas (sem split-screen) · offline (PWA) ·
   LAN + telemetria store-and-forward · **AGPL-3.0** (código; era GPL-3.0 até 2026-08-25 — ver o pilar 10 do
   ADR-0010) + **arte não-FOSS** + gratuito + fomento.

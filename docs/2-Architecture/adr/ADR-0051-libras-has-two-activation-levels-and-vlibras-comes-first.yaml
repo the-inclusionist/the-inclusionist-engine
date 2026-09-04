@@ -1,5 +1,6 @@
 metadata:
   status: "accepted"
+  supersedes-in-part: [ADR-0010]
   date: 2026-08-27
   decision-makers: [Dev]
   consulted:

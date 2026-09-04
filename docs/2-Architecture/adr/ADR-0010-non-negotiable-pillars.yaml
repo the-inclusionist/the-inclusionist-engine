@@ -1,6 +1,29 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0064
+      what: "PILLAR 10, the CODE LICENCE clause only — GPL-3.0 becomes AGPL-3.0-or-later, because under GPL a
+              hosted classroom server owes its source to nobody. The non-FOSS ART, the `free of charge` half and
+              the grant-funding half of pillar 10 are untouched and stay here."
+    - by: ADR-0051
+      what: "PILLAR 2, the Libras clause. It read `Libras em motor zdog à parte` — build our own — and the Dev
+              reversed it: the VLibras suite (UFPB, Software Público Brasileiro, LGPL-3.0) comes first, with a
+              fallback, and a better engine enters later only IF something better appears. The reason is the
+              requerimento's (IV.4) and is about public money before it is technical: `construir do zero aquilo
+              que já existe sob licença livre é desperdício de recurso público`. Everything else in pillar 2
+              stands."
+  errata:
+    - date: 2026-08-27
+      what: "PILLAR 6 read `1EdTech+xAPI`, and the amendment made explicit what that already contained: xAPI AND
+             Caliper, not one or the other. 1EdTech is the body that owns Caliper, LTI and OneRoster, so the
+             pillar was ambiguous rather than wrong — and the two answer different problems. Without xAPI there
+             is no way to hold an interaction offline and sync when the network returns, which is pillar 9
+             working; Caliper is what the municipal network already consumes. ERRATUM under ADR-0057 §1."
+    - date: 2026-09-04
+      what: "the Libras amendment pointed the reader to `ADR-0052 para os DOIS níveis de ativação`. ADR-0052 is
+             `professionals author activities`; the Libras record is ADR-0051. A cross-reference that sends the
+             reader to the wrong record is worse than none, because it looks answered."
   date: 2026-06-01
   decision-makers: [Dev]
   consulted: []
@@ -81,7 +104,7 @@ more-information: |
   "Libras em motor zdog à parte", isto é, construir o nosso. O Dev reverteu: usa-se a **Suíte VLibras** (UFPB,
   Software Público Brasileiro, LGPL-3.0) com fallback, e um motor melhor entra no futuro SE aparecer algo melhor.
   A razão é a do requerimento (IV.4) e é de dinheiro público antes de ser técnica: "construir do zero aquilo que
-  já existe sob licença livre é desperdício de recurso público". Ver ADR-0052 para os DOIS níveis de ativação.
+  já existe sob licença livre é desperdício de recurso público". Ver ADR-0051 para os DOIS níveis de ativação.
 
   ⚠️ EMENDA 2026-08-27 — TELEMETRIA: xAPI **E** CALIPER, não um ou outro. O pilar dizia "1EdTech+xAPI" e o
   requerimento (XI) cita LTI, OneRoster e Caliper sem mencionar xAPI. Os dois entram, e o motivo é operacional:

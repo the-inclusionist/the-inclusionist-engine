@@ -1,0 +1,156 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-08-25
+  supersedes-in-part: [ADR-0010]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0010 pillar 10 — SUPERSEDED IN PART by this record. The non-FOSS art, the `free of charge` half and
+       the grant-funding half are untouched"
+    - "GNU AGPL-3.0, section 13 — the network clause: `if you modify the Program, your modified version must
+       prominently offer all users interacting with it remotely [...] an opportunity to receive the Corresponding
+       Source`"
+    - "GNU GPL-3.0, section 0 — `propagate` and `convey`: running a service is not conveying, so a hosted
+       modification is distributed to nobody"
+    - "Lei nº 9.609/1998 art. 4º — the patrimonial rights over software produced in the course of the author's
+       duties belong to the employer; the Município is the owner"
+    - "Lei nº 9.610/1998 — the art follows a different statute and belongs to whoever made it"
+    - "requerimento, item 39 alínea `e` — the publication request names AGPLv3 and argues the network clause as
+       the reason a supplier cannot convert the public asset into a closed product"
+    - "ADR-0058 §7 (the game runs without the backend) and §3 (the compass has the only game backend) — the
+       hosted server this record is about"
+  informed: []
+
+title: The code licence is AGPL-3.0-or-later, because under GPL a hosted classroom server would owe its source to nobody
+
+context-and-problem-statement: |
+  Pillar 10 of ADR-0010 fixed the code licence at GPL-3.0. On 2026-08-25 the Dev moved it to
+  AGPL-3.0-or-later, and the change went into the pillar as an in-place amendment with no record of its own.
+
+  ⚠️ THE REASON IS A HOLE THAT ONLY OPENED WHEN THE ARCHITECTURE GREW A SERVER. GPL-3.0 obliges whoever CONVEYS
+  the program to pass on the source. Running a service is not conveying — the GPL's own section 0 separates
+  `propagate` from `convey` — so a supplier who took this code, modified it, and ran the classroom room as a
+  hosted service would owe its source to NOBODY. AGPL section 13 closes exactly that: a user interacting with a
+  modified version over a network must be offered the corresponding source.
+
+  When pillar 10 was written there was no hosted anything. ADR-0058 §3 gives the compass a game backend and
+  ADR-0063 gives it a datalake; the moment those exist, the GPL's service gap stops being theoretical and
+  becomes the likeliest way this project is captured.
+
+  ⚠️ AND IT IS THE ARGUMENT THE REQUERIMENTO ALREADY MAKES TO THE MUNICÍPIO, in the request that matters most —
+  item 39 alínea `e`: the network clause "impede que um prestador converta o bem público em produto fechado e o
+  revenda ao próprio Município que o financiou". A licence that does not close the gap would make that sentence
+  false in the document the Município is being asked to sign.
+
+decision-drivers:
+  - "The asset is public and paid for with public money. The failure to prevent is a supplier hosting a modified
+     version and selling it back to the Município that financed it."
+  - "The change costs nothing to REVERSE in one direction and everything in the other: adding the network clause
+     later requires every contributor's agreement; removing it requires only the owner's."
+  - "Whatever is chosen has to be what the requerimento names, because that document is what authorises the
+     publication and a mismatch would have to be corrected in a filed process."
+  - "The art is not software and does not follow the software statute. Any licence decision here must stop at
+     the boundary Lei nº 9.610 draws."
+
+considered-options:
+  - "L1 — GPL-3.0, as pillar 10 originally fixed it"
+  - "L2 — AGPL-3.0-or-later"
+  - "L3 — EUPL 1.2, the licence written for public administrations"
+  - "L4 — a permissive licence (MIT/Apache-2.0)"
+
+pros-and-cons-of-the-options:
+  L1:
+    good: ["Already written into the pillar; the widest familiarity of the copyleft family.",
+           "No friction with adopters who have a policy against the network clause."]
+    bad: ["⚠️ IT LEAVES THE SERVICE GAP OPEN, which is the specific way this asset gets captured: host a
+           modification, owe nothing.",
+          "It contradicts the requerimento, which names AGPLv3 and argues the network clause by name."]
+  L2:
+    good: ["Section 13 closes the gap, and closing it is the whole reason the licence question was reopened.",
+           "It is what the requerimento already asks the Município to authorise, so the document and the
+            repository agree.",
+           "`-or-later` leaves the door open to a future version without a new decision from every contributor."]
+    bad: ["The network clause frightens adopters — some organisations forbid AGPL outright, and a municipal
+           network that wanted to host a modified copy would have to publish its modifications.",
+          "That is a real cost to the reuse this project wants: the requerimento's own case rests on other
+           networks adopting the code."]
+  L3:
+    good: ["Written for public administrations, valid in every EU language, and compatible downstream with AGPLv3
+            by its own Appendix.",
+           "It would sit well with the comparative argument the requerimento already makes (Anexo I, item 45)."]
+    bad: ["Its compatibility clause runs DOWNSTREAM — a derivative including EUPL components may be distributed
+           under AGPLv3, and not the reverse. Choosing it here would not close the same gap more strongly.",
+          "It is unfamiliar in Brazil, and the requerimento would have to argue an unfamiliar licence to a
+           municipal Procuradoria that has a Brazilian precedent for AGPLv3 to point at."]
+  L4:
+    good: ["Maximum adoption; nobody is frightened away."]
+    bad: ["It permits exactly the outcome the Município is being protected from, and gives up the reciprocity
+           that makes publishing a public asset a gain rather than a donation."]
+
+decision-outcome:
+  chosen-option:
+    link: "L2 — AGPL-3.0-or-later"
+    justification: |
+      ===== 1. THE CODE IS AGPL-3.0-OR-LATER =====
+      Every program in this project. The `-or-later` is deliberate: a future version of the licence should not
+      require re-consulting an owner who by then may be a different administration.
+
+      ===== 2. WHAT THE NETWORK CLAUSE ACTUALLY BUYS =====
+      Not "more copyleft" in the abstract. One specific outcome: a supplier cannot take the published code,
+      improve it, host it as a service for schools, and keep the improvement. Under GPL that is legal and
+      costless; under AGPL section 13 the users of that service must be offered the source.
+
+      ⚠️ AND IT IS THE CLAUSE THAT MAKES PUBLICATION A GAIN RATHER THAN A DONATION, which is the argument the
+      requerimento puts to the Município. Without it, the strongest reason to publish weakens to goodwill.
+
+      ===== 3. WHERE THE LICENCE STOPS =====
+      At the software. The ART IS NOT AGPL: a computer program is what Lei nº 9.609 defines, the art follows Lei
+      nº 9.610 and belongs to whoever made it. Extending AGPL to the art voluntarily would give away more than
+      the law asks AND would dispose of someone else's right.
+
+      The other halves of pillar 10 — free of charge, and grant funding — are untouched by this record.
+
+      ===== 4. WHY THIS IS A RECORD AND NOT AN AMENDMENT =====
+      Because the decision CHANGED. When pillar 10 was written the answer was GPL and it was right for what was
+      known then: there was no hosted service. The service arrived with the architecture, and with it a hole the
+      earlier licence did not cover. Under ADR-0057 §1 that is the world moving, not a record written wrong —
+      so it supersedes, and ADR-0010 keeps what it decided at the time.
+
+  consequences:
+    positive:
+      - "The gap that would let a supplier host a modified copy and owe nothing is closed, and closed by the
+         clause the requerimento already names to the Município."
+      - "The repository and the filed document agree, which they did not while the pillar said GPL."
+      - "`-or-later` removes a future decision that would otherwise need the owner's act."
+    negative:
+      - "⚠️ THE NETWORK CLAUSE COSTS ADOPTION, and this project's own case depends on adoption: some
+         organisations forbid AGPL by policy, and a network that hosts a modified copy must publish its
+         modifications. That is a real price paid for the protection, not a free win."
+      - "It binds any future contributor, and a contributor who objects has no path but to not contribute."
+      - "AGPL is less familiar to municipal legal advisers than GPL, and the requerimento carries the burden of
+         explaining it."
+    neutral:
+      - "Nothing changes for the art, which was never under the software licence."
+
+  confirmation: |
+    · `LICENSE` at the repository root is AGPL-3.0-or-later, and `package.json`'s `license` field matches it.
+      Two places, one string, mechanically comparable.
+    · The art directories carry their own licence statement and do NOT inherit the AGPL — checkable by the
+      presence of that statement, and it is the clause most likely to be lost in a later cleanup.
+    · The requerimento's item 39 alínea `e` names AGPLv3, so the document and the repository can be compared by
+      reading two lines.
+
+    ⚠️ WHAT NO GATE CONFIRMS: whether the network clause is honoured by whoever hosts a modification. That is
+    enforced by the licence and by whoever notices, not by anything in this repository.
+
+more-information: |
+  SUPERSEDES ADR-0010 IN PART: pillar 10's licence clause only. The pillar keeps its full text and its other
+  halves — the non-FOSS art, `free of charge`, and the funding — which this record does not touch.
+
+  THE DATE ABOVE IS 2026-08-25, when the Dev made the change, and not 2026-09-04, when it was extracted from the
+  in-place amendment it had been written as. Dating it by the extraction would place it after decisions that
+  already depend on it, including ADR-0058 and the requerimento's publication request.
+
+  ⚠️ AND THE HONEST NOTE ON L3: the EUPL was not weighed at the time. It is recorded here as an option because
+  the requerimento's Anexo I already discusses it, and a reader who finds that discussion should be able to see
+  why it was not chosen rather than assume it was never seen.

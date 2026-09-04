@@ -60,7 +60,6 @@ AMEND_MARKER = re.compile(r"(AMENDED|CORRECTED|COMPLETED 20|Settled 20|EMENDA|Em
 # que chegou, e a proxima entrada tem de ser uma decisao e nao um esquecimento.
 STATUS_DEBT = set()
 AMEND_DEBT = {
-    "ADR-0010-non-negotiable-pillars.yaml",
     "ADR-0020-canonical-z-order-and-post-fx.yaml",
     "ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml",
     "ADR-0027-inclusionist-pixel-engine.yaml",
