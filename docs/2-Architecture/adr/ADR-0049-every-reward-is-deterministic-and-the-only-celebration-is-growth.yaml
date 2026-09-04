@@ -1,6 +1,14 @@
 metadata:
   status: "accepted"
   errata:
+    - date: 2026-08-28
+      what: "§5 dizia `a barra de dez segmentos`, no SINGULAR, e chamava-a `the child's window onto §5 of
+             ADR-0048` — mas o ADR-0048 §3, escrito no MESMO DIA, já decidia `ONE TO THREE SKILLS`. Uma barra
+             não pode ser a janela para três árvores de skill: mediria a média de duas crianças diferentes.
+             O registro nasceu incoerente com uma decisão do mesmo dia, e a frase de 28/08 do Dev (`podem haver
+             uma barra no centro, duas ou três, sempre uma barra por skill`) não mudou nada — disse o que já
+             estava decidido. ERRATA e não supersessão, pelo ADR-0057 §1: uma frase que não carregou uma
+             propriedade que a decisão já tinha. Aplicada no corpo em 2026-08-28; DECLARADA aqui em 2026-09-04."
     - date: 2026-09-04
       what: "§6b (a placa de proibido) e §7 (a décima moeda) foram EXTRAÍDAS para os ADR-0061 e ADR-0062. Nenhuma
              das duas é sobre recompensa; foram escritas aqui em 2026-08-28 porque este registro estava aberto.

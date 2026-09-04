@@ -74,7 +74,6 @@ AMEND_DEBT = {
     "ADR-0033-engine-entity-and-modal-input.yaml",
     "ADR-0036-this-repository-becomes-the-engine.yaml",
     "ADR-0045-the-run-button-becomes-a-latch-and-its-other-jobs-move-to-the-jump.yaml",
-    "ADR-0049-every-reward-is-deterministic-and-the-only-celebration-is-growth.yaml",
     "ADR-0050-two-control-surfaces-and-the-clock-belongs-to-the-adult.yaml",
     # not a debt: this record NAMES the markers in order to forbid them.
     "ADR-0057-a-record-changes-by-supersession-and-errata-is-the-only-edit-in-place.yaml",

@@ -1,18 +1,25 @@
 metadata:
   status: "accepted"
+  errata:
+    - date: 2026-09-04
+      what: "cited the annual public report as `requerimento §49.j` in eight places. Item 49 ends at alínea `i`;
+             the annual report and the compliance audit are alínea `j` of item 51, `compromissos adicionais,
+             adotados por referência internacional`. The commitment is real and unchanged — only the address was
+             wrong, and it was wrong from the first line this record was written. ERRATUM under ADR-0057 §1: the
+             record never carried the right address, so correcting it restores the history."
   date: 2026-08-27
   decision-makers: [Dev]
   consulted:
     - "ADR-0043 (a known debt gets a budget that only goes down — the precedent for a gate that enforces a promise)"
-    - "requerimento §49.j — annual public report and annual compliance audit"
-    - "Decreto do Conselho de Estado nº 766/2023 (China), arts. 20 and 37 — the comparative source §49.j cites"
+    - "requerimento §51.j — annual public report and annual compliance audit"
+    - "Decreto do Conselho de Estado nº 766/2023 (China), arts. 20 and 37 — the comparative source §51.j cites"
     - "requerimento §49 as a whole — the eleven child-protection principles"
   informed: []
 
 title: The annual compliance report is a CI GATE that fails when the year's report is missing — a promise with no enforcement is a promise that decays
 
 context-and-problem-statement: |
-  §49.j of the requerimento commits the project to publishing, every year, in its own repository, a report on the
+  §51.j of the requerimento commits the project to publishing, every year, in its own repository, a report on the
   observance of the eleven child-protection principles, "acompanhado de verificação técnica dos parâmetros
   efetivamente implementados no código".
 
@@ -41,7 +48,7 @@ considered-options:
 pros-and-cons-of-the-options:
   N1:
     good: ["Costs nothing today."]
-    bad: ["It is precisely what §49.j itself describes as degrading silently. The clause argues against this option
+    bad: ["It is precisely what §51.j itself describes as degrading silently. The clause argues against this option
            in its own text."]
   N2:
     good: ["Cheap, and it does prompt somebody."]
@@ -72,7 +79,7 @@ decision-outcome:
       guarantees is that the year cannot pass without someone being made to write one.
 
       ===== 2. WHAT THE REPORT CONTAINS, AND WHY IT IS MECHANICAL =====
-      §49.j asks for "verificação técnica dos parâmetros efetivamente implementados no código", so the report is
+      §51.j asks for "verificação técnica dos parâmetros efetivamente implementados no código", so the report is
       not prose about intentions. For each of the eleven principles: the parameter as implemented, where it lives,
       and the gate that holds it. Most of those gates already exist and are named in other records — the forbidden
       mechanics (ADR-0049), the screen-time clock and the night window (ADR-0050), the score untouched by
@@ -82,7 +89,7 @@ decision-outcome:
       principle has no gate, the report is where that becomes visible, which is the second thing it is for.
 
       ===== 3. THE HONEST EXIT =====
-      If at some point the report is not going to be produced, the decision is to REMOVE §49.j from the document,
+      If at some point the report is not going to be produced, the decision is to REMOVE §51.j from the document,
       not to let it stand unmet. A commitment filed with a Prefeitura and quietly abandoned is worse than one never
       made, because the filing is what someone else relied on.
 
@@ -106,7 +113,7 @@ decision-outcome:
     ⚠️ NOT YET BUILT. This record is the decision; the script is its issue.
 
 more-information: |
-  Comes from §49.j of the requerimento, whose comparative basis is arts. 20 and 37 of Decreto nº 766/2023 (China),
+  Comes from §51.j of the requerimento, whose comparative basis is arts. 20 and 37 of Decreto nº 766/2023 (China),
   which impose an annual social-responsibility report and an annual compliance audit on platforms with large numbers
   of minor users.
 
