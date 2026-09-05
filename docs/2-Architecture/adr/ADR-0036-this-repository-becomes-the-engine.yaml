@@ -1,5 +1,14 @@
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0071
+      what: "the SCOPE clause only — `THE SCOPE IS @pm-monte, NOT @jrocha-io`, and the package name
+             `@pm-monte/inclusionist-engine` that came with it. It becomes `@the-inclusionist/engine`,
+             because GitHub Packages requires the scope to BE the organisation and ADR-0066 §2 puts an
+             ownership claim inside a repository rather than in a name. ⚠️ The constraint that decided
+             it is the one THIS record predicted, in its own more-information. Everything else here
+             governs unchanged: the engine/game split, the shell moving with the game, the frozen
+             paths and the four checks."
   supersedes-in-part: [ADR-0024, ADR-0025]
   date: 2026-08-25
   decision-makers: [Dev]

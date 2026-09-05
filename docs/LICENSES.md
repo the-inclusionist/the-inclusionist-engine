@@ -22,9 +22,14 @@ a sala de aula como serviço **não deveria a fonte a ninguém**. A seção 13 d
 o argumento que o requerimento faz ao Município na alínea `e`. Ver **ADR-0064**.
 
 ⚠️ **Titularidade patrimonial: o MUNICÍPIO, não o desenvolvedor.** Software produzido no exercício das
-funções pertence ao empregador (Lei nº 9.609/1998, art. 4º). É por isso que o escopo do pacote é
-`@pm-monte` e não o do autor (**ADR-0036**), e é por isso que a publicação sob AGPL é objeto de **pedido** no
-requerimento — ato do Poder Executivo — e não decisão de quem escreveu o código.
+funções pertence ao empregador (Lei nº 9.609/1998, art. 4º), e é por isso que a publicação sob AGPL é
+objeto de **pedido** no requerimento — ato do Poder Executivo — e não decisão de quem escreveu o código.
+
+⚠️ **E é AQUI que essa titularidade fica dita, não no nome do pacote.** O escopo era `@pm-monte` para
+carregar esse fato (ADR-0036); passou a ser **`@the-inclusionist`** (**ADR-0071**), porque nome é lido por
+quem não vai abrir o repositório, e um escopo com o nome da Prefeitura publicado por servidor **antes do
+ato** é reivindicação pública de nome alheio. A regra é a mesma do **ADR-0066 §2**: a posse se declara
+DENTRO — neste ficheiro, na `LICENSE` e nos registros —, onde lê quem pretende usar.
 
 ## 2 · A arte NÃO é AGPL, e isso é decisão, não omissão
 

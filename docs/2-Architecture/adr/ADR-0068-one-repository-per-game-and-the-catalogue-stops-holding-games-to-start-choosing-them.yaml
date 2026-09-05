@@ -3,6 +3,12 @@ metadata:
   status: "accepted"
   date: 2026-09-04
   supersedes-in-part: [ADR-0058]
+  superseded-in-part:
+    - by: ADR-0071
+      what: "§3, and ONLY the two package names in it: `@pm-monte/the-inclusionist-engine` and
+             `@pm-monte/game-<slug>` become `@the-inclusionist/engine` and
+             `@the-inclusionist/game-<slug>`. The MECHANISM §3 decided — package, semver, zero
+             submodules, selection by manifest — is untouched, and so is every other clause."
   decision-makers: [Dev]
   consulted:
     - "ADR-0058 §1 — SUPERSEDED IN PART by this record: `the-inclusionist-demos` stops being the repository

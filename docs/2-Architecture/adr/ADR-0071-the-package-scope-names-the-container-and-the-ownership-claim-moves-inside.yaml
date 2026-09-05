@@ -1,0 +1,155 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-05
+  supersedes-in-part: [ADR-0036, ADR-0068]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0036 — SUPERSEDED IN PART: it decided `THE SCOPE IS @pm-monte, NOT @jrocha-io`, and its own
+       `more-information` predicted the constraint that now decides against it"
+    - "ADR-0068 §3 — SUPERSEDED IN PART: it prescribed `@pm-monte/game-<slug>` for three hundred packages"
+    - "ADR-0066 §2 — the rule this record obeys: ownership is declared INSIDE, not in a name"
+    - "ADR-0066 §4 — the registry question, which stays open and is NOT answered here"
+    - "ADR-0024 — the erratum recording `@jrocha-io` becoming `@pm-monte` stays as it is: it records what
+       happened, and a record of a past change is not a claim about the present"
+    - "Lei nº 9.609/1998 art. 4º — the patrimonial owner is the Município, which is the fact `@pm-monte`
+       was trying to carry"
+  informed: []
+
+title: The package scope names the CONTAINER, not the owner — `@the-inclusionist`, and the ownership claim moves where it is read
+
+context-and-problem-statement: |
+  ADR-0036 chose `@pm-monte` for a reason worth respecting: *"the owner is the municipality that will run
+  this in its schools, not the developer who wrote it"*.
+
+  ⚠️ AND IT PREDICTED ITS OWN PROBLEM, in its own `more-information`: *"A CONSTRAINT THAT WILL BITE AT THE
+  FIRST PUBLISH… `@pm-monte/...` therefore needs a GitLab group named `pm-monte` holding the project"*. It
+  was right, and the constraint is not GitLab's alone — GitHub Packages requires a scope to be the name of
+  the account or organisation, and does not accept dots. Under ADR-0066 the container is
+  `the-inclusionist`, so publishing `@pm-monte/...` from it simply fails.
+
+  ⚠️ AND THE FORCED CHOICE EXPOSES A DISAGREEMENT BETWEEN TWO ACCEPTED RECORDS, which is the real subject
+  here. ADR-0066 §2 decided that ownership is stated INSIDE — in the LICENSE, in `docs/LICENSES.md`, in the
+  records — and NOT in a name, *"because a name is read by strangers who will not open the repository"*. A
+  package scope is a name, published to a registry, and it is read by more strangers than the organisation's
+  name is. `@pm-monte` was the same claim ADR-0066 §2 refused, one layer down and more public.
+
+  The platform did not break a good rule. It made two records stop disagreeing quietly.
+
+decision-drivers:
+  - "One rule about names, not two. ADR-0066 §2 already decided where an ownership claim belongs."
+  - "⚠️ A scope named for the Prefeitura, published to a public registry by a servidor BEFORE the ato, is a
+     public claim on an institution's name. That is the risk ADR-0066 §2 exists to avoid."
+  - "It is cheap now and expensive later — ADR-0036 says so itself: renaming *while the only consumer is a
+     repository that has not started* is cheap, and *after 383 games exist it is a different animal*."
+  - "Measured 2026-09-05: nothing is published. `package.json` is `private: true`, there is no
+     `publishConfig`, no `.npmrc`, and no `@pm-monte` dependency anywhere. The scope is a string in one file."
+
+considered-options:
+  - "S1 — keep `@pm-monte` and name the container `pm-monte` (or add a second organisation just for packages)"
+  - "S2 — `@the-inclusionist/*`, and the ownership claim moves to where it is read"
+  - "S3 — publish nothing until the ato: workspaces or path dependencies, and decide the scope later"
+  - "S4 — publish to npmjs.com under an npm organisation named `pm-monte`"
+
+pros-and-cons-of-the-options:
+  S1:
+    good: ["Keeps ADR-0036 whole and keeps the ownership visible in the most public string there is."]
+    bad: ["⚠️ It creates the account that reads as official for a real institution, under personal control,
+           before the authorising act — the exact thing ADR-0066 §2 refused, arrived by another door.",
+          "A second organisation is a second container to administer, for one string."]
+  S2:
+    good: ["One rule for names across the organisation, the repositories and the packages.",
+           "The scope matches the container, so the first publish is a configuration line rather than a
+            migration — which is what ADR-0036 warned would otherwise be needed.",
+           "Nothing is foreclosed: `@the-inclusionist` works on GitHub Packages and on npmjs alike."]
+    bad: ["⚠️ THE OWNERSHIP SIGNAL LEAVES THE MOST VISIBLE PLACE. A stranger reading
+           `@the-inclusionist/engine` learns nothing about the Município. That is a real loss and it is the
+           price of the rule.",
+          "Every record that WROTE `@pm-monte` now reads as historical, and two of them had to be superseded
+           in part to say so."]
+  S3:
+    good: ["Decides nothing that could be wrong, and the first real package edge does not exist yet."]
+    bad: ["The string is already in `package.json` and already wrong for the host that will serve it —
+           deferring keeps a known-broken value in place.",
+          "It postpones a rename that only gets more expensive, which is ADR-0036's own argument."]
+  S4:
+    good: ["npmjs takes any available scope, so `@pm-monte` would work there."]
+    bad: ["⚠️ Same impersonation, on a bigger registry: an npm organisation named for the Prefeitura, created
+           by a servidor before the ato.",
+          "It splits the host, which ADR-0026's surviving argument says not to do."]
+
+decision-outcome:
+  chosen-option:
+    link: "S2 — the scope is `@the-inclusionist`, and the ownership claim moves inside"
+    justification: |
+      ===== 1. THE SCOPE NAMES WHERE THE PACKAGES LIVE =====
+      `@the-inclusionist`. It is the container, and the container is the only thing a scope has ever been
+      able to name truthfully — on GitHub Packages it is not even a choice, since the scope must be the
+      organisation.
+
+      The engine becomes `@the-inclusionist/engine`. ⚠️ Not `@the-inclusionist/inclusionist-engine`: the word
+      would appear twice, and this is the one moment it costs nothing to fix. The games follow ADR-0068's
+      pattern with the scope substituted: `@the-inclusionist/game-<slug>`.
+
+      ===== 2. WHERE THE OWNERSHIP CLAIM GOES INSTEAD =====
+      It does not disappear; it moves to where somebody who intends to USE the code will read it:
+        · `LICENSE` — AGPL-3.0-or-later (ADR-0064);
+        · `docs/LICENSES.md` — the sentence that says the patrimonial owner is the Município under
+          Lei nº 9.609/1998 art. 4º, and that publication is a PEDIDO and not the developer's decision;
+        · the records themselves.
+
+      ⚠️ AND NOTHING IS ADDED TO THE PACKAGE METADATA TODAY, because nothing is published today. A package
+      that is not published claims nothing, in either direction. When the first one is published, it carries
+      the same sentence — that is the moment the claim needs a home in the artifact, and not before.
+
+      ===== 3. WHAT THIS COSTS, SAID PLAINLY =====
+      ADR-0036 wanted the scope to TEACH the ownership to whoever read a dependency line. That teaching is
+      gone. A stranger reading `@the-inclusionist/engine` learns where the code lives and nothing about who
+      owns it.
+
+      That is the same cost ADR-0066 §2 accepted for the organisation's name, and it is accepted here for
+      the same reason: a claim in a name is read by people who will never check it, which makes it worth
+      little when true and dangerous when premature.
+
+      ===== 4. WHAT THIS DOES NOT DECIDE =====
+      ⚠️ WHERE THE REGISTRY IS. ADR-0066 §4 left that open and it stays open. The scope had to settle first
+      because it is what a registry constrains, not the other way round — and `@the-inclusionist` is
+      publishable on GitHub Packages and on npmjs alike, so no host is foreclosed by this record.
+
+  consequences:
+    positive:
+      - "The first publish becomes a configuration line instead of the migration ADR-0036 predicted."
+      - "No public claim on the Prefeitura's name is made by a servidor before the ato, in the org name or
+         in a package name."
+      - "There is now ONE rule about names in this project, and it is written in ADR-0066 §2."
+    negative:
+      - "⚠️ The ownership fact loses its most visible carrier, and readers who never open a repository will
+         not learn it. Deliberate, and it is a loss."
+      - "If the Município later takes ownership and wants its own scope, that is another rename — and it is
+         more expensive then than it would be now, because packages will exist."
+      - "Several accepted records still read `@pm-monte`. Two are superseded in part here; the rest are
+         citations of ADR-0036, whose pointer now says where the decision went."
+    neutral:
+      - "ADR-0024's erratum, which recorded `@jrocha-io` becoming `@pm-monte`, is untouched: it records a
+         change that did happen."
+
+  confirmation: |
+    · `package.json` reads `@the-inclusionist/engine`, and the lockfile agrees with it.
+    · `grep -rn "pm-monte" --exclude-dir=adr` returns nothing outside the records and this file's own
+      quotations — the records keep their historical text, by ADR-0057 §4.
+    · When the first package is published, the scope matches the organisation and the publish needs no
+      migration. ⚠️ Until something is actually published, that clause is UNTESTED, and saying so is part of
+      the record: this is a decision whose confirmation is still in the future.
+
+more-information: |
+  SUPERSEDES IN PART two records, and nothing else:
+    · **ADR-0036** — only the scope clause (`THE SCOPE IS @pm-monte`) and the package name that came with
+      it. Everything else in ADR-0036 governs: the engine/game split, the move of the shell, the frozen
+      paths, the four checks.
+    · **ADR-0068 §3** — only the two package names it wrote. The mechanism it decided (package, semver, zero
+      submodules, manifest selection) is untouched, and the substitution is mechanical.
+
+  ⚠️ AND THE RECORDS THAT MERELY CITE `@pm-monte` ARE NOT DEFECTS. ADR-0037, ADR-0055, ADR-0058 and ADR-0066
+  read the scope from ADR-0036 rather than deciding it; a citation of a record that has been superseded in
+  part reaches the pointer on that record, which is where it belongs (ADR-0057). Editing them would be the
+  in-place amendment this house stopped doing.
