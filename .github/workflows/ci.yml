@@ -131,6 +131,37 @@ jobs:
           AXE_URL=http://localhost:4173/ npm run test:a11y
 
   # ============================================================================================
+  # ADR-0078: the DCO is the contribution instrument, and an instrument nothing checks is missing
+  # exactly where it matters. Pull requests only - the maintainer's own pushes to `main` are already
+  # attributed by git, and gating them would be ceremony rather than provenance.
+  # ============================================================================================
+  dco:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # ⚠️ The message TEACHES rather than scolds. A rejected first contribution is often the last one,
+      # and the fix is one flag most people have never needed.
+      - name: every commit is signed off
+        run: |
+          faltando=$(git log --format='%H %s' --grep='^Signed-off-by:' --invert-grep \
+            "origin/${{ github.base_ref }}..HEAD")
+          if [ -n "$faltando" ]; then
+            echo "::error::These commits have no 'Signed-off-by' trailer:"
+            echo "$faltando"
+            echo ""
+            echo "The DCO (https://developercertificate.org/) is how you state that you wrote the patch,"
+            echo "or have the right to submit it under this project's licence. It transfers nothing."
+            echo ""
+            echo "  fix the next commits:  git commit -s"
+            echo "  fix this branch:       git rebase --signoff origin/${{ github.base_ref }}"
+            exit 1
+          fi
+          echo "all commits signed off"
+
+  # ============================================================================================
   # Secret detection. Replaces GitLab's template, which never ran once.
   # ============================================================================================
   secrets:

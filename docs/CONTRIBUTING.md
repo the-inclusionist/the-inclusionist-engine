@@ -24,6 +24,49 @@
   for any task, to find what to read/change. Any structure/name/convention change is reflected there the same commit.
   The AI agent's operating rules are in [`CLAUDE.md`](CLAUDE.md).
 
+## Contribution terms — read this before your first patch
+
+Two of them, and the second one exists because you would otherwise assume the wrong thing.
+
+### 1 · Code: sign off every commit (DCO)
+
+Every commit carries a trailer:
+
+```
+Signed-off-by: Your Name <you@example.com>
+```
+
+which `git commit -s` adds for you (`git rebase --signoff` fixes a branch you already wrote). It is the
+[Developer Certificate of Origin](https://developercertificate.org/): you are stating that you wrote the
+patch, or that you have the right to submit it under this project's licence. **CI fails a pull request
+whose commits lack it.**
+
+⚠️ **It transfers nothing, and that is deliberate.** The patrimonial owner of this software is the
+Município (Lei nº 9.609/1998, art. 4º), and publication is still a *pedido* in an administrative process —
+so there is no party a contributor agreement could assign rights to. A CLA assigning to the developer would
+have a public servant receive rights over his employer's work. See **ADR-0078**.
+
+### 2 · Art: it is NOT free, and you should know that before you draw
+
+The **code** is AGPL-3.0-or-later. The **art is not**, and this is a decision rather than an oversight
+(`docs/LICENSES.md` §2): the characters must not be free to use anywhere — not in an adult product, for
+instance — and **no free licence can carry a restriction on the field of use**. There is no such thing as
+art that is simultaneously free and restricted.
+
+So, if you contribute art:
+
+- **you keep authorship** (Lei nº 9.610/1998). You are granting this project the right to use, modify and
+  distribute your work under the project's art regime, not giving the work away;
+- **it will not be redistributable as free culture**, and people who receive the game will not be free to
+  reuse it;
+- ⚠️ **one restriction travels with part of the existing art**: pieces generated with PixelLab may not be
+  used to train a model (`docs/LICENSES.md` §4). The project cannot grant downstream more than it received.
+
+⚠️ **We are saying this at the door on purpose.** Somebody who volunteers art to a public-good project
+reasonably expects it to end up free. Here it does not, and finding that out afterwards would be our fault.
+
+---
+
 ## Documentation model (why our docs look the way they do)
 
 Tier **T2** (educational platform, LGPD/child-data). We adopt a **lean subset** of a fullstack SDD schema — each
