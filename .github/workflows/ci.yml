@@ -1,0 +1,173 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# THE ENGINE'S OWN GATES, ON GITHUB — the port ADR-0066 §4 called work rather than a copy.
+#
+# ========================= WHY THIS FILE EXISTS =========================
+# ADR-0066 moved hosting to a GitHub organisation and said in as many words that CI is a PORT, not a copy,
+# and that "a gate that silently stops running is worse than one that never existed". Between the move and
+# this file, that is exactly what the engine had: `.gitlab-ci.yml` still holds the gates, and GitLab has not
+# seen a commit since 2026-08-30 — so every commit pushed here arrived with no typecheck, no test suite and
+# no ADR validator. `game-ci.yml` next to this file gates the GAMES and says outright that the engine does
+# not use it.
+#
+# ========================= WHAT CHANGED IN THE PORT, AND WHY =========================
+# Four of the five GitLab jobs cross over unchanged in substance: `test`, `adr`, `a11y`, and the build.
+# The two SCANNERS could not, and the reason is a price rather than a technicality:
+#
+#   ⚠️ GitHub's native code scanning (CodeQL) and secret scanning are FREE ONLY ON PUBLIC REPOSITORIES.
+#   On a private one they require GitHub Advanced Security, which is paid. ADR-0066 §3 keeps every
+#   repository private until the Município authorises publication, so the native pair is unavailable for
+#   exactly as long as it matters most — a repository being prepared for publication.
+#
+# So the equivalents are open-source and run as ordinary steps: gitleaks in place of secret scanning, and
+# semgrep in place of CodeQL. Both are pinned to an exact version, because a scanner that silently changes
+# its rules is a gate whose verdict nobody can reproduce.
+#
+# ⚠️ AND THEY ARE NOT `continue-on-error`. On GitLab both scanners carried `allow_failure: true` and both
+# had been RED since they were added — they died on `npm: not found`, inherited from a `default:` block,
+# and the grey ✗ was read by nobody for weeks. The whole point of porting them is that they now fail the
+# pipeline.
+#
+# ========================= CONVENTION =========================
+# Action majors match `game-ci.yml` (`@v4`) on purpose: two workflows in one repository that pin different
+# majors of the same action are a divergence somebody has to reconcile later. Bumping them is one change,
+# for both files, not a side effect of adding this one.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A second push to the same branch makes the first run's verdict irrelevant. Cancelling it is not a
+  # weakening of the gate: the newer commit is the one that has to be green.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================================
+  # The engine's `test` job from `.gitlab-ci.yml`, in the same order and for the same reasons.
+  # ============================================================================================
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      # `npm ci`, not `npm install`: the lockfile is part of what is under test. It also runs `prepare`,
+      # which builds `dist-pkg/` — without it the package `exports` point at nothing.
+      - run: npm ci
+
+      # Supply chain FIRST, and production dependencies only: those are the ones that reach a child's
+      # browser. A dev-only advisory is a different conversation and must not block this one.
+      - name: audit (production dependencies only)
+        run: npm audit --omit=dev --audit-level=high
+
+      # Zero errors, no budget. The 273-error debt of the TypeScript conversion reached zero on
+      # 2026-08-26 and the budget gate was deleted; a new error is a new error.
+      - name: typecheck
+        run: npm run typecheck
+
+      - name: install chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: test (node + browser)
+        run: npm test
+
+      - name: build
+        run: npm run build
+
+      # ⚠️ The precache manifest must not FREEZE a file. `revision: null` on a URL with no build hash means
+      # an installed service worker serves those bytes forever — 97 of 141 entries were frozen on
+      # 2026-08-25, on devices nobody could reach.
+      - name: precache budget
+        run: npm run check:precache
+
+  # ============================================================================================
+  # The promise the index makes about the records, kept by a machine.
+  # ============================================================================================
+  adr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet pyyaml
+      # Eight checks, including the bidirectional supersession pointers. It caught a missing back-pointer
+      # the day it was written and has caught one in almost every session since.
+      - name: validate the ADR records
+        run: python scripts/validate-adr.py docs/2-Architecture/adr
+
+  # ============================================================================================
+  # Pillar 2, measured against the app RUNNING rather than against the source.
+  # ============================================================================================
+  a11y:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      # The preview server serves `dist/`, which is what a school would receive. Any WCAG A/AA violation in
+      # our own markup fails the run; the VLibras widget is excluded by the script, not by this file.
+      - name: axe against the built app
+        run: |
+          npm run preview -- --port 4173 &
+          for i in $(seq 1 30); do curl -sf http://localhost:4173/ >/dev/null && break; sleep 1; done
+          AXE_URL=http://localhost:4173/ npm run test:a11y
+
+  # ============================================================================================
+  # Secret detection. Replaces GitLab's template, which never ran once.
+  # ============================================================================================
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      # ⚠️ `fetch-depth: 0` — the whole history. A secret that was committed and then deleted is still in
+      # the history, and the history is what becomes public. A shallow clone would gate the tip and miss
+      # every commit that matters.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The binary, pinned, rather than the marketplace action: `gitleaks-action` requires a paid licence
+      # key for repositories owned by an ORGANISATION, and this repository is owned by one. The tool
+      # itself is MIT.
+      - name: gitleaks (pinned)
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          curl -sSfL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf gitleaks.tar.gz gitleaks
+          # `--redact` so a finding does not leak the secret into a public build log, which would turn
+          # the gate into the disclosure. Exit code 1 on any finding: this is a gate, not a report.
+          ./gitleaks detect --source . --no-banner --redact --exit-code 1
+
+  # ============================================================================================
+  # Static analysis. Replaces CodeQL, which is paid on a private repository.
+  # ============================================================================================
+  sast:
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:1.176.0
+    steps:
+      - uses: actions/checkout@v4
+      # Registry rulesets by name, pinned image: `--config auto` would pull whatever the registry decides
+      # today, which makes a red run impossible to reproduce tomorrow. `--metrics=off` because a project
+      # that argues about child telemetry does not send its own source metrics to a vendor by default.
+      - name: semgrep
+        run: semgrep scan --config=p/typescript --config=p/javascript --error --metrics=off
