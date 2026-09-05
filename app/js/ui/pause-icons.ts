@@ -101,8 +101,16 @@ export const CALM_NAMES: readonly string[] = ['calm.off', 'calm.quiet', 'calm.si
 export const CALM_AUDIO_CATS: readonly string[] = ['ambient', 'music', 'earcons', 'other', 'interact'];
 /** Colour-vision-deficiency cycle, in `player.viz` values. */
 export const CVD_SEQ: readonly string[] = ['normal', 'fix-protan', 'fix-deuter', 'fix-tritan'];
-/** i18n keys of the CVD announcement names, indexed the same as CVD_SEQ. */
-export const CVD_NAMES: readonly string[] = ['cvd.off', 'cvd.protan', 'cvd.deuter', 'cvd.tritan'];
+/** i18n keys of the CVD announcement names, indexed the same as CVD_SEQ.
+ *
+ * ⚠️ POSITION 0 IS `cvd.tricro` AND NOT `cvd.off`, AND THE TWO KEYS ARE NOT INTERCHANGEABLE.
+ * This list names the four CHOICES of the cycle, so position 0 is a way of seeing — trichromatic
+ * vision, the one that needs no correction — and it is said as one. `cvd.off` below is a FALLBACK
+ * for `s.viz` values that are not corrections at all, and 13 of the 16 viz modes are exactly that:
+ * the three simulations, the three contrast levels, the five low-vision modes and blind mode.
+ * Announcing "trichromatic vision" there would have the software assert what the child sees, while
+ * she is simulating not seeing it. The choice is named; the fallback is switched off. */
+export const CVD_NAMES: readonly string[] = ['cvd.tricro', 'cvd.protan', 'cvd.deuter', 'cvd.tritan'];
 /** `player.viz` → i18n key of the label used by iconLabel (anything else falls back to the 'off' key). */
 export const CVD_LABELS: Readonly<Record<string, string>> = {
   'fix-protan': 'cvd.protan', 'fix-deuter': 'cvd.deuter', 'fix-tritan': 'cvd.tritan',

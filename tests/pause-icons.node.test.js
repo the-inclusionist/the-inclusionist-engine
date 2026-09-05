@@ -304,15 +304,18 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     expect(computeIconLabel('contrast', snap({ viz: 'fix-protan' }))).toBe('Alto contraste: desligado');
   });
 
-  it('daltonismo nomeia a VISÃO — e a quarta escolha é `visão tricromática`, não `desligado`', () => {
+  it('a quarta ESCOLHA nomeia a visão; o FALLBACK continua `desligado` — e não são a mesma chave', () => {
     expect(computeIconLabel('cvd', snap({ viz: 'fix-protan' }))).toBe('Correção de daltonismo: protanopia');
     expect(computeIconLabel('cvd', snap({ viz: 'fix-deuter' }))).toBe('Correção de daltonismo: deuteranopia');
     expect(computeIconLabel('cvd', snap({ viz: 'fix-tritan' }))).toBe('Correção de daltonismo: tritanopia');
-    // ⚠️ A QUARTA ESCOLHA NOMEIA UMA VISÃO, e não o interruptor (decisão do Dev, 2026-09-05). As outras três
-    // dizem qual visão está sendo corrigida; dizer `desligado` na quarta trocava de assunto no meio da lista
-    // e descrevia o SOFTWARE em vez da pessoa. Compare com o contraste logo acima, que continua `desligado`
-    // com razão: alto contraste é um RECURSO que se liga, daltonismo é uma VISÃO que se nomeia.
-    expect(computeIconLabel('cvd', snap({ viz: 'hc-direto' }))).toBe('Correção de daltonismo: visão tricromática');
+    // ⚠️ AQUI É O FALLBACK, E ELE CONTINUA `desligado` DE PROPÓSITO. `hc-direto` é alto contraste: não há
+    // correção de daltonismo ligada, e é só isso que o rótulo pode afirmar. Dizer `visão tricromática` seria
+    // o software afirmando o que a criança ENXERGA — e o fallback cobre 13 dos 16 modos, incluindo as três
+    // SIMULAÇÕES de daltonismo, a baixa visão e o modo cego. A quarta ESCOLHA do ciclo nomeia a visão
+    // (`cvd.tricro`, no teste do invariante acima); o fallback nomeia o interruptor. São chaves diferentes.
+    expect(computeIconLabel('cvd', snap({ viz: 'hc-direto' }))).toBe('Correção de daltonismo: desligado');
+    // e a simulação é o caso que torna a distinção obrigatória, não uma sutileza:
+    expect(computeIconLabel('cvd', snap({ viz: 'sim-deuter' }))).toBe('Correção de daltonismo: desligado');
   });
 
   it('ícone EM CONSTRUÇÃO diz que está em construção — e nunca diz on/off', () => {
