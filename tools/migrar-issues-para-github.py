@@ -85,10 +85,23 @@ def comentarios(iid: int) -> list[dict]:
     return [n for n in notas if not n.get("system")]
 
 
-def proximo_numero_no_github() -> int:
-    """O maior número já usado + 1 — contando PR, que divide o contador com issue."""
-    existentes = gh_json("repos/%s/issues?state=all&per_page=1&sort=created&direction=desc" % GITHUB)
-    return (existentes[0]["number"] + 1) if existentes else 1
+def numeros_no_github() -> list[int]:
+    """TODOS os números já usados no repositório — issue e PR dividem o contador.
+
+    ⚠️ NÃO se pergunta `per_page=1&sort=created&direction=desc` a cada criação, e a razão é
+    medida: em 2026-09-05 a migração parou no iid 3 dizendo que o próximo número seria #2,
+    com #1 e #2 já criadas. A lista do GitHub é EVENTUALMENTE CONSISTENTE — 1,5 s depois da
+    escrita ela ainda devolvia #1 como a mais recente. Quem sabe o número na hora é a
+    resposta do POST, e é ela que o laço passa a usar. Esta varredura roda UMA vez, na
+    partida, para saber de onde retomar.
+    """
+    numeros: list[int] = []
+    for pagina in range(1, 30):
+        lote = gh_json("repos/%s/issues?state=all&per_page=%d&page=%d" % (GITHUB, PAGINA, pagina))
+        if not lote:
+            break
+        numeros += [i["number"] for i in lote]
+    return sorted(numeros)
 
 
 def rodape(issue: dict) -> str:
@@ -104,7 +117,8 @@ def rodape(issue: dict) -> str:
     )
 
 
-def preflight(issues: list[dict], ensaio: bool) -> None:
+def preflight(issues: list[dict], ensaio: bool) -> int:
+    """Confere o que dá para conferir e devolve o último número já criado (0 se nenhum)."""
     iids = [i["iid"] for i in issues]
     faltando = [n for n in range(1, max(iids) + 1) if n not in set(iids)]
     print("GitLab: %d issues, iid %d..%d, buracos: %s"
@@ -116,14 +130,28 @@ def preflight(issues: list[dict], ensaio: bool) -> None:
     repo = gh_json("repos/%s" % GITHUB)
     if not repo.get("has_issues"):
         sys.exit("ABORTADO: as issues estão desativadas em %s." % GITHUB)
-    ja = gh_json("repos/%s/issues?state=all&per_page=1" % GITHUB)
-    if ja:
-        sys.exit("ABORTADO: %s já tem issue ou PR (#%d). Este script só funciona em repositório "
-                 "de contador zerado." % (GITHUB, ja[0]["number"]))
-    print("GitHub: %s está com o contador zerado. Vai criar #%d..#%d."
-          % (GITHUB, min(iids), max(iids)))
+    ja = numeros_no_github()
+    if not ja:
+        print("GitHub: %s está com o contador zerado. Vai criar #%d..#%d."
+              % (GITHUB, min(iids), max(iids)))
+        feito = 0
+    else:
+        # Retomada só é segura se o que existe for exatamente o PREFIXO 1..k. Qualquer buraco
+        # ou qualquer número acima do fim da migração significa que o contador já andou por
+        # outro motivo, e aí a numeração não fecha mais — melhor parar do que "consertar".
+        feito = max(ja)
+        if ja != list(range(1, feito + 1)):
+            sys.exit("ABORTADO: os números existentes em %s não são o prefixo 1..%d (são %s). "
+                     "O contador já andou por outro caminho e a numeração não vai fechar."
+                     % (GITHUB, feito, ja[:12]))
+        if feito >= max(iids):
+            print("Nada a fazer: #1..#%d já existem." % feito)
+            return feito
+        print("RETOMANDO: #1..#%d já existem em %s. Vai criar #%d..#%d."
+              % (feito, GITHUB, feito + 1, max(iids)))
     if ensaio:
         print("\n*** ENSAIO — nada será escrito. Rode com --go para valer. ***")
+    return feito
 
 
 def garante_labels(issues: list[dict], ensaio: bool) -> None:
@@ -149,25 +177,31 @@ def main() -> int:
     ensaio = not args.go
 
     issues = issues_do_gitlab()
-    preflight(issues, ensaio)
+    feito = preflight(issues, ensaio)
     garante_labels(issues, ensaio)
+    esperado = feito + 1
 
     fechar: list[int] = []
     for issue in issues:
         iid = issue["iid"]
+        if iid <= feito:                      # já migrada numa execução anterior
+            if issue.get("state") == "closed":
+                fechar.append(iid)
+            continue
 
-        # ---- o gate de integridade: o número que o GitHub vai dar TEM de ser o iid ----
-        if not ensaio:
-            proximo = proximo_numero_no_github()
-            if proximo != iid:
-                sys.exit("PARADO em iid %d: o próximo número do GitHub seria #%d. A numeração já "
-                         "divergiu (alguém abriu uma PR ou uma issue). Nada mais será criado."
-                         % (iid, proximo))
+        # ---- gate de integridade, em duas metades ----
+        # ANTES: o contador local tem de estar exatamente no iid. Ele começa na varredura da
+        # partida e depois avança pelo número que o POST devolveu — que é o único dado que não
+        # sofre atraso de replicação.
+        if esperado != iid:
+            sys.exit("PARADO em iid %d: o próximo número seria #%d. A numeração divergiu — "
+                     "alguém abriu uma PR ou uma issue. Nada mais será criado." % (iid, esperado))
 
         titulo = issue.get("title") or "(sem título)"
         corpo = (issue.get("description") or "") + rodape(issue)
         print("#%-4d %-9s %s" % (iid, issue.get("state"), titulo[:70]))
         if ensaio:
+            esperado = iid + 1          # no ensaio ninguem cria, entao o contador anda aqui
             if issue.get("state") == "closed":
                 fechar.append(iid)
             continue
@@ -177,7 +211,12 @@ def main() -> int:
         for l in issue.get("labels") or []:
             cmd += ["-f", "labels[]=%s" % l]
         criada = json.loads(roda(cmd))
-        assert criada["number"] == iid, "criou #%d para o iid %d" % (criada["number"], iid)
+        # DEPOIS: a outra metade do gate, e a que de facto manda — a resposta do POST diz o
+        # número real. Se ele não for o iid, para aqui, antes de a issue seguinte herdar o erro.
+        if criada["number"] != iid:
+            sys.exit("PARADO: o GitHub criou #%d para o iid %d. Nada mais será criado."
+                     % (criada["number"], iid))
+        esperado = criada["number"] + 1
         time.sleep(PAUSA)
 
         if not args.sem_comentarios:
