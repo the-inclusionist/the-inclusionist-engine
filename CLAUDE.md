@@ -72,8 +72,10 @@ brasileira** (infantil · fundamental · médio) e, por proximidade, **EJA** e *
 (letramento digital para cidadania e mercado de trabalho), além de **passatempos de convivência** (centros de
 convivência de idosos e pessoas assistidas socialmente). **MVP atual:** *The Inclusionist* — plataforma 2D pixel-art
 **acessível** (PixiJS). Reimplementação clean-room do engine Clarity. ⚠️ **O plano dos "35+ jogos" morreu em
-2026-08-28**, por decisão do Dev: o MVP são os **300+ jogos** do `minigames-catalog-v2.html`. Aceito o MVP, os jogos são
-feitos com pixel artistas contratados. Topologia: **ADR-0058** (que supersede o ADR-0055).
+2026-08-28**, por decisão do Dev: o MVP são os **300+ jogos** do `minigames-catalog-v2.html`. ⚠️ **Não há contratação:
+o trabalho só existe por VOLUNTARIADO (ADR-0070)** — a linha anterior dizia "pixel artistas contratados" e
+descrevia um orçamento que não existe. Consequência que muda o dia a dia: **descoberta é insumo de produção**,
+e os 300 jogos **não têm cronograma**. Topologia: **ADR-0058** (que supersede o ADR-0055).
 ⚠️ **Cada jogo é um REPOSITÓRIO seu (ADR-0068)**, e o `the-inclusionist-demos` deixou de guardá-los: ele passou
 a guardar o **manifesto** que diz quais jogos e quais versões entram numa entrega — porque o orçamento de
 precache nunca deixaria o catálogo inteiro chegar ao aparelho de escola. Repositório se cria quando um
