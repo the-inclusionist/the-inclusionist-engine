@@ -8,6 +8,9 @@ incl.js
 # Dependências / build
 node_modules/
 dist/
+# saída do build de PACOTE (`npm run build:pkg`, tsconfig.pkg.json) — é o que o `exports` aponta e o que o
+# `npm publish` embarca. Gerado, nunca versionado, pela mesma razão que o `dist/`.
+dist-pkg/
 .vite/
 *.tsbuildinfo
 

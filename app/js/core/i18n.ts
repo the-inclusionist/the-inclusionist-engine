@@ -67,8 +67,34 @@ function resolver(key: string): string {
   return key in base ? base[key] : key;
 }
 
-// carregadores preguiçosos por locale (chaves: '../i18n/en.ts', '../i18n/es.ts', '../i18n/pt.ts'); pt já é estático.
-const loaders = import.meta.glob<{ default: LocaleDict }>('../i18n/*.ts');
+/* ===================== OS CARREGADORES, E POR QUE DEIXARAM DE SER UM GLOB =====================
+ *
+ * Isto era `import.meta.glob<{default: LocaleDict}>('../i18n/*.ts')`, e a razão escrita no topo do arquivo
+ * continua verdadeira para este repositório: o Vite gera um chunk por locale e o service worker o cacheia.
+ *
+ * ⚠️ O QUE MUDOU FOI O DESTINO DO ARQUIVO, NÃO O ARGUMENTO. Medido em 2026-09-05 no primeiro build de
+ * pacote (`tsc -p tsconfig.pkg.json`): a linha SOBREVIVE ao emit, intacta, em `dist-pkg/core/i18n.js` —
+ * e ali ela é falsa em dois níveis ao mesmo tempo.
+ *   · O `tsc` não é o Vite: ele copia `import.meta.glob(...)` como chamada comum. Num consumidor que não
+ *     transforme o módulo, `import.meta.glob` é `undefined` e a chamada estoura no carregamento.
+ *   · E mesmo transformado, o padrão diz `*.ts` — ao lado do arquivo EMITIDO só existem `.js`. O glob casaria
+ *     zero arquivos, `ensure()` cairia no `return base`, e todo idioma que não fosse pt viraria português
+ *     SEM ERRO NENHUM. É o modo de falhar que este projeto já pagou uma vez, quando uma regex morreu em
+ *     silêncio com a checagem verde.
+ *
+ * ENUMERADO, ENTÃO — e o preço é MENOR do que eu escrevi antes de medir. O glob varria três arquivos que a
+ * constante `AVAILABLE` logo acima JÁ ENUMERA, então não havia descoberta nenhuma a preservar.
+ *
+ * ⚠️ E O CODE-SPLITTING NÃO SE PERDE, o que eu tinha suposto que se perderia. O que o Vite divide é o
+ * `import()` DINÂMICO, e ele continua aqui — a primeira versão deste comentário dizia que o custo eram
+ * "~63 KB de parse a mais", e o build de 2026-09-05 mostrou o contrário na saída: `dist/assets/en-*.js`
+ * (24,8 KB) e `dist/assets/es-*.js` (26,7 KB) seguem como chunks próprios, exatamente como com o glob. Quem
+ * fica em pt nunca os avalia. O custo real é UM: três linhas a manter à mão no dia em que entrar um quarto
+ * idioma — e `AVAILABLE` já era essa lista, então é o mesmo dia e o mesmo arquivo. */
+const loaders: Record<string, () => Promise<{ default: LocaleDict }>> = {
+  en: () => import('../i18n/en.js'),
+  es: () => import('../i18n/es.js'),
+};
 
 let locale = 'pt';
 let dict: LocaleDict = base;
@@ -105,7 +131,7 @@ export function applyDom(root: ParentNode = document): void {
 
 async function ensure(code: string): Promise<LocaleDict> {
   if (DICTS[code]) return DICTS[code];
-  const load = loaders[`../i18n/${code}.ts`];
+  const load = loaders[code];
   if (!load) return base; // idioma sem arquivo → cai no pt
   const mod = await load();
   DICTS[code] = mod.default;
