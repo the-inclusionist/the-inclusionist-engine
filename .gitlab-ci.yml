@@ -4,7 +4,14 @@
 
 stages: [test, quality, deploy]
 
-default:
+# ⚠️ ISTO ERA UM BLOCO `default:`, E MATAVA OS DOIS SCANNERS EM SILÊNCIO. `default:` alcança TODO job do
+# pipeline — inclusive os que vêm dos templates de SAST e Secret Detection, que rodam em IMAGEM DE
+# ANALISADOR, sem Node. Os dois morriam em `/bin/sh: npm: not found`, exit 127, na primeira linha, desde
+# que foram incluídos; o `allow_failure: true` transformava isso num ✗ cinzento que ninguém lê. Resultado
+# medido em 2026-09-05: os dois gates NUNCA rodaram uma vez, e o repositório vai virar público um dia.
+# Agora o preparo de Node é OPT-IN — quem precisa, estende `.node`. Job novo sem Node falha alto, que é o
+# comportamento certo: melhor um job que quebra do que um gate que passa sem ter olhado nada.
+.node:
   image: node:24.14.0            # pinned to .node-version — same Node as local dev and the CF build
   cache:                          # keyed by the lockfile: a dependency change invalidates it, nothing else does
     key:
@@ -28,6 +35,7 @@ include:
 
 test:
   stage: test
+  extends: .node
   script:
     # supply chain first — production deps are the ones that reach the browser
     - npm audit --omit=dev --audit-level=high
@@ -58,6 +66,7 @@ adr:
 
 a11y:
   stage: quality
+  extends: .node
   # The a11y gate (#10): axe-core against the app RUNNING, not the source. Any WCAG A/AA violation in
   # our app fails the pipeline (the VLibras widget is excluded). Pillar, not a nice-to-have.
   script:
@@ -74,6 +83,7 @@ a11y:
 # Requires CI/CD variables CLOUDFLARE_API_TOKEN (masked, protected) and CLOUDFLARE_ACCOUNT_ID.
 pages_deploy:
   stage: deploy
+  extends: .node
   needs: [test]
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CLOUDFLARE_API_TOKEN && $CF_PAGES_PROJECT
