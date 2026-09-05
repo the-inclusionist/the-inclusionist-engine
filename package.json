@@ -35,6 +35,13 @@
     "./package.json": "./package.json"
   },
   "types": "./dist-pkg/boot/create-game.d.ts",
+  "comment:build-scripts": [
+    "`dist-pkg/` é GERADO e NÃO versionado (como `dist/`), e o `exports` aponta para dentro dele — então num",
+    "clone limpo o pacote existe e não resolve nada. Daí DOIS ganchos, que cobrem entradas diferentes:",
+    "`prepare` roda no `npm install` da própria pasta e no `npm ci` da CI; `prepack` roda antes de empacotar.",
+    "⚠️ E o consumidor que mais depende disto hoje não é o registro: `the-inclusionist/hartwig-zdog-chess`",
+    "consome esta engine por `file:../SP-the-inclusionist-tracer`, ou seja, lê ESTA pasta ao vivo."
+  ],
   "sideEffects": ["*.css"],
   "license": "AGPL-3.0-or-later",
   "comment:ownership": [
@@ -72,6 +79,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:pkg": "tsc -p tsconfig.pkg.json",
+    "prepare": "npm run build:pkg",
     "prepack": "npm run build:pkg",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

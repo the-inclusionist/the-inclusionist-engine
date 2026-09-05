@@ -3,8 +3,23 @@ metadata:
   status: "accepted"
   date: 2026-09-05
   supersedes-in-part: [ADR-0068]
+  errata:
+    - date: 2026-09-05
+      what: "THE RECORD CALLED THE 2048 `the first game repository` AND SAID ITS ADDRESS WAS `one instance`,
+             AND BOTH WERE FALSE WHEN WRITTEN. `the-inclusionist/hartwig-zdog-chess` already existed in the
+             organisation, holding `@the-inclusionist/game-chess`, AGPL-3.0-or-later, consuming this engine.
+             The facts were available and were not gathered — so this is an ERRATUM under ADR-0057 §1 and not
+             a supersession: the DECISION (the declared address governs; §1's pattern is suspended) is
+             unchanged, and it is the REASONING that was defective. Three sentences were corrected in place:
+             §2's repo/package divergence is PRECEDENT and not a new choice; §3's `one instance is not a
+             rule` becomes TWO instances of one shape; and §4's objection shrinks, because this project has
+             two renderers ON PURPOSE and naming one distinguishes them. What did NOT change: nothing
+             declares a general rule, so the suspension and its trigger stand."
   decision-makers: [Dev]
   consulted:
+    - "`the-inclusionist/hartwig-zdog-chess` — THE EVIDENCE THIS RECORD WAS MISSING. A second game repository
+       that already exists, is named in the same shape, and already consumes the engine (by `file:`, not by
+       registry). Read on 2026-09-05, after the record was first written"
     - "ADR-0068 §1 — SUPERSEDED IN PART: it prescribed `the-inclusionist-game-<slug>` for every game
        repository, and the first game does not carry that name. Every other clause of §1 stands"
     - "ADR-0067 §5 — the rule this record obeys: creation follows a DECLARATION IN A RECORD, not a name in a
@@ -17,7 +32,11 @@ metadata:
     - "ADR-0068 §6 — the template that would otherwise reproduce a superseded pattern 299 times"
   informed: []
 
-title: The first game repository is named by declaration — `the-inclusionist/pixi-2048` — and ADR-0068's naming pattern is SUSPENDED, not replaced
+title: The 2048's repository is named by declaration — `the-inclusionist/pixi-2048` — and ADR-0068's naming pattern is SUSPENDED, not replaced
+# ⚠️ O TÍTULO DIZIA `The FIRST game repository`, e era falso: o `hartwig-zdog-chess` já existia. Corrigido na
+# errata de 05/09. O NOME DO FICHEIRO fica como está, de propósito — renomear ficheiro não é errata (regra do
+# índice em `README.md`), e o link da tabela é o que não pode quebrar. Quem chegar pelo nome do ficheiro lê a
+# correção na primeira dúzia de linhas, que é o que a regra do ADR-0057 pede.
 
 context-and-problem-statement: |
   ADR-0068 §1 gave every game repository a shape: `the-inclusionist-game-<slug>`. It was written before any
@@ -45,8 +64,14 @@ context-and-problem-statement: |
   repository inside it does not have to say the container's name again.
 
   ⚠️ AND THE PROJECT IS ALREADY INCONSISTENT ABOUT THIS, WHICH IS THE PART A RULE WOULD HAVE TO SETTLE. The
-  first repository in the organisation is `the-inclusionist-engine`, and it DOES repeat the container. So there
-  is no rule here yet — there are two shapes and one instance of each.
+  first repository in the organisation is `the-inclusionist-engine`, and it DOES repeat the container.
+
+  ⚠️ CORRIGIDO NA ERRATA DE 05/09 — E A CORREÇÃO MUDA O QUE ESTE REGISTRO PODE AFIRMAR. A frase original
+  seguia "há duas formas e uma instância de cada". Havia outra, e ela não foi procurada:
+  **`the-inclusionist/hartwig-zdog-chess`** — um xadrez que já existe, já é AGPL-3.0-or-later, já publica
+  `@the-inclusionist/game-chess` e já consome esta engine. O `pixi-2048` não inaugura forma nenhuma: ele é a
+  SEGUNDA instância de `<renderizador>-<jogo>`, e a primeira foi criada sem que ninguém precisasse de um
+  registro para saber como chamá-la.
 
 decision-drivers:
 - "ADR-0067 §5 makes a declared address the moment of creation; this address is declared."
@@ -96,6 +121,11 @@ decision-outcome:
       the repository is created at it, born with the four files of ADR-0067 §2 and a README that says in those
       words that it holds no product yet.
 
+      ⚠️ ERRATA DE 05/09: o título e o corpo diziam "o PRIMEIRO repositório de jogo", e não é. O
+      `hartwig-zdog-chess` já existe e já tem produto dentro. Este é o primeiro criado SOB UM REGISTRO —
+      distinção que continua valendo alguma coisa (é o ADR-0067 §5 funcionando pela primeira vez), e que é
+      bem menor do que a frase original prometia.
+
       The internal name of the game is **"2048 · Potência de 2"**, and it is a different thing from the address:
       one is what a machine resolves, the other is what a child and a teacher read. ⚠️ And the internal name is
       a STRING IN THE DICTIONARY, not a constant — pillar 3 has no exception for titles.
@@ -109,10 +139,24 @@ decision-outcome:
       about. `game-2048` tells such a reader what the thing is; `pixi-2048` tells him which renderer it used,
       which is not what he was asking.
 
+      ⚠️ ERRATA DE 05/09: isto foi escrito como se fosse uma escolha a justificar, e **já era o padrão em
+      exercício**. `hartwig-zdog-chess` publica `@the-inclusionist/game-chess` — mesma divergência, mesma
+      direção, sem registro nenhum. O que este parágrafo faz, então, não é decidir: é dizer em voz alta a
+      razão de uma prática que já existia calada.
+
       ===== 3. §1's PATTERN IS SUSPENDED, NOT REPLACED — AND THE DIFFERENCE IS THE POINT =====
-      `the-inclusionist-game-<slug>` no longer governs. NOTHING replaces it, because nothing was decided: one
-      declared address is one instance, and a general rule derived from a single instance is a guess wearing a
-      record's clothes.
+      `the-inclusionist-game-<slug>` no longer governs. NOTHING replaces it, because nothing was DECLARED —
+      and that is a different reason from the one this section originally gave.
+
+      ⚠️ ERRATA DE 05/09. A frase era: *"one declared address is one instance, and a general rule derived from
+      a single instance is a guess wearing a record's clothes"*. **Não é uma instância; são duas** —
+      `hartwig-zdog-chess` e `pixi-2048`, e as duas nomeiam o renderizador. Isso é PADRÃO OBSERVADO, não
+      coincidência, e derrubar o argumento que eu tinha usado é o motivo de a errata existir.
+
+      A suspensão fica de pé, por um motivo mais estreito e mais honesto: **duas instâncias mostram uma
+      prática; elas não decidem uma regra.** Ninguém escreveu que jogo se chama `<renderizador>-<jogo>`, e o
+      que o template do §6 vai executar trezentas vezes é uma regra escrita, não uma prática deduzida por
+      quem escrever o script. A diferença entre as duas é exatamente o que o ADR-0057 existe para proteger.
 
       ⚠️ SO THE OPEN QUESTION GETS A TRIGGER, in the shape ADR-0066 §4 used for the registry: **the naming rule
       for game repositories is decided when the template of ADR-0068 §6 is written, and the template is not
@@ -122,7 +166,8 @@ decision-outcome:
       The evidence the future record will weigh, gathered here so it is not re-derived: the organisation holds
       the namespace (ADR-0066 §2, ADR-0067 §1), the container should not be named twice (ADR-0071 §1), and the
       organisation currently contains BOTH shapes — `the-inclusionist-engine`, which repeats it, and
-      `pixi-2048`, which does not.
+      `hartwig-zdog-chess` + `pixi-2048`, which do not and which both name the renderer instead
+      (⚠️ o segundo par entrou pela errata de 05/09; a versão original listava só o 2048).
 
       ===== 4. THE COST OF THIS PARTICULAR NAME, WRITTEN DOWN RATHER THAN ARGUED AWAY =====
       ⚠️ `pixi-` NAMES THE RENDERER, AND THE RENDERER IS THE ONE THING THIS ARCHITECTURE SPENT A RECORD MAKING
@@ -131,10 +176,21 @@ decision-outcome:
       bet, in the one place the project cannot refactor: if the renderer is ever swapped, the code changes and
       the address does not, and from that day the address says something false to everybody who reads it.
 
-      This is recorded, not resisted. The Dev declared the address, ADR-0067 §5 makes a declaration the
-      decision, and a repository name that ages badly is a smaller failure than a repository that does not
-      exist. ⚠️ But it is cheapest to change TODAY, before the repository exists — which is the same clock
-      ADR-0071 read when it renamed the scope while the only consumer was a repository that had not started.
+      ⚠️ ERRATA DE 05/09 — A OBJEÇÃO ENCOLHE, E ENCOLHE POR UM FATO. Ela foi escrita como se `pixi-` nomeasse
+      um detalhe de implementação intercambiável. Não nomeia: **este projeto tem DOIS renderizadores de
+      propósito** — o pilar 2 do ADR-0010 manda Libras num motor à parte, e o `hartwig-zdog-chess` compõe
+      Zdog com PixiJS a 640×360, o dobro da base da engine, por um argumento medido sobre diagonais em baixa
+      resolução. Num projeto assim, dizer `pixi-` ou `zdog-` no endereço RESPONDE uma pergunta real: em qual
+      dos motores este jogo foi construído.
+
+      O que sobra da objeção é menor e continua verdadeiro: o dia em que um jogo MIGRAR de um motor para o
+      outro, o endereço fica dizendo o motor antigo. É um risco real e é bem menos provável do que "o Pixi
+      será substituído", que era o risco que a frase original imaginava.
+
+      Isto é registrado, não resistido. O Dev declarou o endereço, o ADR-0067 §5 faz da declaração a decisão,
+      e nome que envelhece mal é falha menor que repositório que não existe. ⚠️ E segue sendo mais barato
+      mudar HOJE, antes de o repositório existir — o mesmo relógio que o ADR-0071 leu ao renomear o escopo
+      enquanto o único consumidor era um repositório que não tinha começado.
 
   consequences:
     positive:
@@ -145,12 +201,14 @@ decision-outcome:
     - "The organisation's two naming shapes are named as an open inconsistency instead of being averaged into a
        rule nobody decided."
     negative:
-    - "⚠️ The address carries the renderer's name, and ADR-0035 exists precisely so the renderer can change. The
-       day it changes, the address starts lying and nothing will make it stop."
+    - "⚠️ The address carries a renderer's name, so a game that ever MIGRATES between this project's two
+       renderers keeps an address naming the old one. (Errata 05/09: this line first said the risk was
+       ADR-0035's renderer swap; the narrower migration risk is the one that survives, because the project
+       runs two renderers on purpose.)"
     - "Repository name and package name diverge, so `pixi-2048` and `@the-inclusionist/game-2048` have to be
-       held in the head as the same thing."
-    - "There is no naming rule at all until the template record is written; a repository created in that window
-       is created without one."
+       held in the head as the same thing - as `hartwig-zdog-chess` and `@the-inclusionist/game-chess` already are."
+    - "There is no WRITTEN naming rule until the template record; a repository created in that window is created
+       from a practice somebody has to notice rather than from a sentence somebody can read."
     neutral:
     - "The internal title `2048 · Potencia de 2` binds nothing technical - it is a dictionary key like any
        other string, and pillar 3 governs it."
