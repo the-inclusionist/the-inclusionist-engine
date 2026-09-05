@@ -2,6 +2,24 @@
 metadata:
   status: "accepted"
   date: 2026-09-04
+  errata:
+    - date: 2026-09-05
+      what: "a decision-driver read `the clean history has to become the only history, and it cannot
+             while a protected branch refuses it`, and H1 repeated it as a `bad`. A protected branch is
+             a SETTING — two clicks in the project settings — and that was as true on 2026-09-04 as it
+             is today. It was written as a wall of the platform and never was one. ⚠️ The decision is
+             not weakened: what carries it is the container for three hundred repositories and, since
+             ADR-0070, discovery as an input to production. Removing a false reason is not removing a
+             decision, and leaving it in would let a future reader revoke the record for the one
+             argument that was wrong."
+    - date: 2026-09-05
+      what: "a negative consequence read `⚠️ THE ISSUE NUMBERS DIE`. It was never true, and it was
+             checkable on the day. MEASURED 2026-09-05: 101 issues, iid 1 to 101, NO gaps, and ZERO
+             merge requests. GitHub numbers issues and pull requests from ONE counter that starts at 1
+             in a fresh repository, so creating them in ascending order — before any pull request —
+             reproduces #1 to #101 exactly. The numbers die only if a pull request is opened first,
+             which makes this an ORDERING constraint on the migration and not a loss. What is lost is
+             real but different: original author, creation dates, comments, labels and the board."
   supersedes: [ADR-0026]
   decision-makers: [Dev]
   consulted:
