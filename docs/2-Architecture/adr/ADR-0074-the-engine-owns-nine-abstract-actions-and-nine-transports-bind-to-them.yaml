@@ -3,6 +3,13 @@ metadata:
   status: "accepted"
   date: 2026-09-05
   superseded-in-part:
+    - by: ADR-0079
+      what: "§3, and ONLY the reachability question it asked — `can every action the GAME uses be reached by
+             THIS transport?`, with a shortfall refusing the game. A transport DECLARES SLOTS and the player
+             assigns actions to them; one control method never removes another, so a method that demands
+             skill (a mouse) is an option and not an exclusion. The guarantee moves from per-transport to
+             per-SET: at least one AVAILABLE transport carries this game's action set. The nine transports,
+             the two families and the built/backlog/no-foundation labels are untouched."
     - by: ADR-0077
       what: "§1, and ONLY the fourth verb: `action1-mod` becomes `action4`, and the modifier reasoning
              attached to it is withdrawn — it was meaning in a vocabulary written to have none, and it
