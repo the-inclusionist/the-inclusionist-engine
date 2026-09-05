@@ -1,0 +1,161 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-04
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0066 §2 — the reasoning this record reuses from the other side: a name is read by strangers, so it
+       must not claim what has not been granted. `jrocha.dev.br` reads as a person, which is exactly right"
+    - "ADR-0066 §3 — private until the ato. This record decides an ADDRESS, not a publication"
+    - "ADR-0010 pillar 8 (offline PWA) and pillar 1 (school hardware) — why the origin is not cosmetic"
+    - "ADR-0058 — the systems run on the Município's own servers; this record does not touch that"
+    - "requerimento, §49.e — dados em território nacional e sob controle do Município"
+    - "requerimento, Quadro 1 — hospedagem absorvida pelo orçamento corrente de TI, no servidor municipal"
+    - "requerimento, pedido `e` — a publicação é ato do Poder Executivo, pedida e ainda não concedida"
+  informed: []
+
+title: The interim public address is a subdomain of the Dev's own domain — and the thing it costs is the ORIGIN
+
+context-and-problem-statement: |
+  The project needs an address to be SEEN at, before the Município has one to give. `.gov.br` is federal;
+  states and municipalities receive a subdomain under `<uf>.gov.br`, so `…monteaprazivel.sp.gov.br` is not
+  the Prefeitura's to grant alone — it goes through whoever administers `sp.gov.br`. That is why it is slow,
+  and the slowness is structural rather than bureaucratic bad luck.
+
+  ⚠️ AND THE OBVIOUS SHORTCUT WAS REJECTED FOR A MEASURED REASON. A project domain in the Dev's CPF —
+  `oinclusionista.pro.br` — looked right and is not: `.pro.br` is a domain of a NATURAL PERSON, and
+  registro.br does not allow domains of the pessoa física / profissional liberal categories to be
+  transferred to a pessoa jurídica. It is a one-way street. The generic categories (`.com.br`, `.org.br`)
+  do transfer, CPF to CNPJ, by ordinary procedure — so the shortcut existed, but not the one first proposed.
+
+  The Dev chose a third thing, and it is better than either: **a subdomain of a domain he already has**.
+
+decision-drivers:
+  - "The address must not read as the Município's. ADR-0066 §2 decided that for the organisation name; an
+     address is read by even more strangers than a repository is."
+  - "No new registration, no new cost, and — because the WHOIS of the parent domain already exists — no new
+     exposure of personal data. `.br` publishes the holder's name and part of the CPF, and permits no privacy
+     proxy, so an ADDITIONAL registration would have been an ADDITIONAL exposure."
+  - "⚠️ Whatever is chosen becomes the ORIGIN, and in a PWA the origin is the application's identity. This is
+     the cost nobody had priced."
+  - "The requerimento promises national territory, municipal control and municipal hosting. An interim
+     address for DEMONSTRATION does not touch that promise; a deployment would."
+
+considered-options:
+  - "D1 — `oinclusionista.pages.dev`, the free Cloudflare subdomain, no registration at all"
+  - "D2 — `oinclusionista.jrocha.dev.br`, a subdomain of the Dev's own domain"
+  - "D3 — `oinclusionista.pro.br`, a new domain in the Dev's CPF"
+  - "D4 — `oinclusionista.com.br`, a new GENERIC domain in the Dev's CPF, transferred to the Município later"
+  - "D5 — wait for `…monteaprazivel.sp.gov.br` and demonstrate nothing until it exists"
+
+pros-and-cons-of-the-options:
+  D1:
+    good: ["Zero cost, zero registration, and it is already how the build is published.",
+           "Nobody could mistake it for an institutional address."]
+    bad: ["Cloudflare's own documentation treats `*.pages.dev` as a free-plan site for personal or hobby use,
+           not business-critical, and recommends a real domain for production.",
+          "The `*.pages.dev` subdomain CANNOT be renamed — changing it means deleting the project and making
+           another.",
+          "It reads as a scratch address, and a school is being asked to take the thing seriously."]
+  D2:
+    good: ["⚠️ THE ADDRESS SAYS WHOSE IT IS. `jrocha.dev.br` reads as a person, so no stranger reads it as the
+            Prefeitura — the ADR-0066 §2 problem solves itself here instead of being managed.",
+           "No registration, no cost, and NO new WHOIS record, because the parent domain already exists.",
+           "It can point at Cloudflare Pages as a custom domain, which lifts D1's `hobby subdomain` caveat
+            without changing anything else in the pipeline."]
+    bad: ["⚠️ It can never become the Município's — a subdomain of a private person's domain is not
+           transferable in any sense, only abandonable.",
+          "Four labels is longer than `oinclusionista.com.br` would have been.",
+          "It ties the demonstration's lifetime to a domain the Dev keeps paying for personally."]
+  D3:
+    good: ["Short, memorable, and `.pro.br` is literally the category for professionals in education."]
+    bad: ["⚠️ MEASURED AND DECISIVE: it does not transfer to a pessoa jurídica. On the day of the ato the
+           Município cannot receive the address; somebody has to CHANGE the address, and a changed address
+           breaks everything already written on it.",
+          "A new `.br` registration publishes the Dev's name and part of his CPF in a WHOIS that no proxy may
+           hide, attached to a service used by children."]
+  D4:
+    good: ["Short AND transferable: generic categories accept both CPF and CNPJ, and CPF → CNPJ is an
+            ordinary registro.br procedure. It is the only option that survives the ato without an origin change."]
+    bad: ["Costs money now for a transfer that depends on an ato that may not come.",
+          "⚠️ It reads as institutional. `oinclusionista.com.br` held by a servidor before the authorising act
+           is closer to the ADR-0066 §2 problem than to its solution."]
+  D5:
+    good: ["No interim address means no origin change later, and no question about whose the address is."]
+    bad: ["It makes demonstration impossible, and demonstration is how the requerimento gets read by people
+           who decide.",
+          "The wait is not the Município's to end — it goes through the administrator of `sp.gov.br`."]
+
+decision-outcome:
+  chosen-option:
+    link: "D2 — `oinclusionista.jrocha.dev.br`, interim, for DEMONSTRATION"
+    justification: |
+      ===== 1. THE ADDRESS DECLARES WHOSE IT IS, AND THAT IS THE WHOLE VIRTUE =====
+      ADR-0066 §2 refused an organisation named after the Prefeitura because a name is read by strangers who
+      will not open the repository. The same argument, run forwards instead of backwards, chooses this
+      address: `jrocha.dev.br` is legible as a person's domain, so it makes no institutional claim at all —
+      not by being neutral, but by being visibly someone's.
+
+      ===== 2. ⚠️ THE ORIGIN IS THE COST, AND IT IS NOT A REDIRECT =====
+      In a PWA the ORIGIN is the application's identity. The service worker's scope, the installed app on a
+      school tablet, `localStorage`, IndexedDB, and any permission the child granted (microphone, audio) are
+      all partitioned by origin.
+
+      So when the Município's domain arrives, **it is not a redirect: it is a different application**. Every
+      installation on every device becomes a new app, the cache does not follow, and whatever was stored on
+      the device does not follow.
+
+      ⚠️ AND THAT IS A PRODUCT CONSTRAINT FALLING OUT OF AN ADDRESS DECISION, which is the reason this record
+      exists at all: **while the address is interim, nothing the child produces may live only on the device**.
+      Either it survives elsewhere, or it is accepted as lost at the move — and that has to be said before,
+      not discovered after.
+
+      ===== 3. THE LINE THIS RECORD DOES NOT CROSS =====
+      This address is for DEMONSTRATION: synthetic data, no real child.
+
+      Deploying the real service in schools, with real children's data, is a different act and this record
+      does not authorise it. The requerimento promises data in national territory under the Município's
+      control (§49.e) and hosting on the municipal server (Quadro 1), and ADR-0058 puts the systems on the
+      Município's own servers. An interim address on a private person's domain satisfies none of that, and
+      the document is not yet protocolado — contradicting it now would be contradicting it inside the very
+      process where it is being read.
+
+      ===== 4. THE SUCCESSOR, AND WHY IT IS NOT DECIDED HERE =====
+      The intended successor is `…monteaprazivel.sp.gov.br`. If that proves too slow or too long, the option
+      that survives the ato without a second origin change is a GENERIC domain (`oinclusionista.com.br`)
+      registered now and transferred CPF → CNPJ later. ⚠️ That is a decision with a COST attached (money now,
+      an institutional-looking address held by a servidor before the ato) and it is NOT taken here; it is
+      named so that the next reader does not have to rediscover that `.pro.br` cannot do it.
+
+  consequences:
+    positive:
+      - "The project can be shown to the people who decide, before the ato, at an address that costs nothing
+         and claims nothing."
+      - "No new registration means no new WHOIS entry, so no additional personal data of the Dev is published
+         alongside a children's service."
+      - "A custom domain on Cloudflare Pages removes the `hobby subdomain` caveat without touching the build."
+    negative:
+      - "⚠️ ONE ORIGIN CHANGE IS NOW GUARANTEED, and it costs every installed PWA, every cache and every
+         device-local store. The cost is not avoidable from here; it is only payable earlier or later."
+      - "The demonstration's lifetime depends on a domain the Dev renews personally."
+      - "The address can never be handed over, only abandoned."
+    neutral:
+      - "Where the DEPLOYED systems run is untouched: ADR-0058 and the requerimento still put them on the
+         Município's servers."
+
+  confirmation: |
+    · The build answers at `oinclusionista.jrocha.dev.br`, and the manifest's `start_url` and `scope` name
+      that origin and no other.
+    · No real child's data is processed there — checkable because no backend is connected to it.
+    · ⚠️ WHAT IS NOT CONFIRMABLE TODAY, and is therefore written as debt: there is no migration plan for the
+      origin change. It has to exist BEFORE the new address does, not after — the day the Município's domain
+      arrives, nobody will want to stop and write one.
+
+more-information: |
+  This record supersedes nothing. It decides an address that no record had decided, and the two records
+  nearest to it stay whole: ADR-0066 §3 (private until the ato) and ADR-0058 (systems on the Município's
+  servers) are both about PUBLICATION and DEPLOYMENT, and this is about neither.
+
+  ⚠️ AND `.pro.br` IS RECORDED AS REJECTED WITH ITS REASON, not merely unchosen. It was the first proposal,
+  it is the category literally meant for professionals in education, and it fails on one fact that is easy
+  to miss and impossible to work around later: a natural person's domain does not become a legal person's.
