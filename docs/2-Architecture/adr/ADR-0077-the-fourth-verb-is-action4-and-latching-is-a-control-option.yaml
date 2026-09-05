@@ -1,0 +1,141 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-05
+  supersedes-in-part: [ADR-0074]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0074 §1 — SUPERSEDED IN PART: it named the fourth verb `action1-mod` and justified it as a
+       modifier. The nine positions, the transport registry and everything else in it govern unchanged"
+    - "ADR-0060 — running requires holding, and only running becomes a latch. NOT revoked: it keeps governing
+       the platformer, and this record only moves WHERE the latch is decided"
+    - "ADR-0013 — `Toggle-move: hold = 2/3 speed, tap = continuous 1/3 (single-switch OK)`. Latching as a
+       SETTING already exists here, for one action; this record generalises it"
+    - "ADR-0010 pillar 2 — one-button and remappable controls: a child who cannot hold a button must reach
+       every action, not only the one somebody remembered"
+  informed: []
+
+title: The fourth verb is `action4`, and LATCHING is a control option — not a name in the vocabulary
+
+context-and-problem-statement: |
+  ADR-0074 gave the engine nine positions and called the fourth verb **`action1-mod`**, a modifier ON action
+  1, and justified it as ADR-0060 restated in the vocabulary.
+
+  ⚠️ THAT NAME WAS STILL MEANING WEARING AN ABSTRACT COSTUME. The whole point of ADR-0074 is that the engine
+  owns POSITIONS and the game owns WORDS — and `action1-mod` says something about what the fourth verb is FOR
+  (it modifies the first) and how it behaves (held). It is the platformer's `run`, generalised badly. A quiz
+  has no modifier of its confirm button.
+
+  The Dev, who supplied the phrase, has withdrawn it: *"modificador foi uma expressão ruim minha, ele deve
+  ser action 4 e pronto, com action 1 podendo ser toggle ou não, dependendo das opções de controle."*
+
+  That second half is the substance. Whether a button is HELD or LATCHED is not a property of the action; it
+  is a property of how a person operates it.
+
+decision-drivers:
+  - "The engine's vocabulary must contain no meaning at all. A name that explains what a verb is for is the
+     defect ADR-0074 exists to remove, and it kept one."
+  - "⚠️ Latching is an ACCESSIBILITY setting. A child who cannot hold a button needs latching on whichever
+     action her game requires — not only on the one action a record happened to name."
+  - "The project already treats latching as a setting for ONE action (ADR-0013's toggle-move). Generalising
+     an existing setting is cheaper and more honest than encoding it in a verb's name."
+
+considered-options:
+  - "M1 — keep `action1-mod` as ADR-0074 wrote it"
+  - "M2 — `action4`, and latching becomes a per-action CONTROL OPTION"
+  - "M3 — `action4`, and latching stays hard-coded per game"
+  - "M4 — drop the fourth verb entirely and let games use action1..3"
+
+pros-and-cons-of-the-options:
+  M1:
+    good: ["It carries ADR-0060's reasoning in the name, so nobody has to look it up."]
+    bad: ["⚠️ It is meaning in a vocabulary that exists to have none, and it describes a genre that is one of
+           three hundred.",
+          "It fixes the hold/latch behaviour in the NAME, which puts an accessibility decision where no
+           setting can reach it."]
+  M2:
+    good: ["Four verbs, four positions, no story attached to any of them.",
+           "⚠️ Latching becomes reachable for EVERY action, which is a bigger accessibility win than the
+            modifier ever was — it generalises toggle-move from one action to all of them.",
+           "It matches how the project already thinks: ADR-0013 made toggle-move a setting, not a verb."]
+    bad: ["A per-action hold/latch setting is more state to persist, to explain in a menu and to migrate.",
+          "Without the name carrying the reason, ADR-0060's argument has to be found in ADR-0060."]
+  M3:
+    good: ["Simplest: no new setting, no new state."]
+    bad: ["⚠️ It puts the accommodation in each of three hundred games, which means it exists in the ones
+           somebody remembered and nowhere else."]
+  M4:
+    good: ["Three verbs is less to bind on every transport."]
+    bad: ["The platformer already uses four, and removing a position to avoid naming it well is the wrong
+           trade."]
+
+decision-outcome:
+  chosen-option:
+    link: "M2 — `action4`, and hold-versus-latch is a control option per action"
+    justification: |
+      ===== 1. THE NINE, FINAL =====
+        `up` · `down` · `left` · `right`
+        `action1` · `action2` · `action3` · `action4`
+        `start`
+
+      Four verbs, four positions, and no story attached to any of them. The platformer preset supplies the
+      words — jump, run, swap, especial — and a quiz supplies its own. ⚠️ Nothing in the engine's vocabulary
+      may say what a verb is FOR, which is the rule ADR-0074 set and this record finally obeys.
+
+      ===== 2. LATCHING IS A CONTROL OPTION, PER ACTION =====
+      Any action may be operated **held** or **latched** (press to start, press to stop), and which one is a
+      SETTING — per action, per player, alongside the remapping that already exists.
+
+      ⚠️ THIS IS A BIGGER ACCOMMODATION THAN THE MODIFIER WAS, and that is the argument for it. ADR-0013
+      already made latching a setting for movement (`toggle-move`), for the child who cannot hold a direction.
+      The same child cannot hold `action1` either, and until now nothing offered her that. Generalising the
+      setting reaches every action of every one of the three hundred games; naming one verb `-mod` reached
+      exactly one verb of one genre.
+
+      ===== 3. WHAT THIS DOES NOT REVOKE =====
+      ⚠️ ADR-0060 STANDS, ENTIRELY. In the platformer, running still requires holding, and the interaction
+      button still keeps every job it had. What moves is only WHERE that is decided: it was in the engine's
+      vocabulary, and it belongs in the platformer preset plus the control options. A record about what a
+      button does in one game is not a record about what the engine calls its buttons.
+
+      ⚠️ AND THE DEFAULT IS NOT NEUTRAL: an action's default is what its GAME declares — the platformer's
+      `run` defaults to held, because that is ADR-0060 — and the latch is what a person turns on. A default
+      that started latched would change the game for everyone in order to serve some.
+
+  consequences:
+    positive:
+      - "The engine's vocabulary is finally free of meaning: nine positions, no explanations."
+      - "⚠️ Every action becomes reachable by a child who cannot hold a button, in every game, instead of
+         only the one action a record happened to name."
+      - "`toggle-move` stops being a special case and becomes one instance of a general setting."
+    negative:
+      - "⚠️ More state to persist and migrate: a hold/latch flag per action per player, next to the keymap
+         that already has a migration owed (ADR-0074 §5)."
+      - "The menu has to expose it without turning into a table — the footer-explanation rule has to carry
+         it, and a per-action grid is exactly the kind of control that rule exists to prevent."
+      - "ADR-0060's reasoning is no longer carried in a name, so a reader has to follow the pointer."
+    neutral:
+      - "The count is unchanged: nine actions before, nine after. Only the fourth verb's name and the place
+         where latching is decided move."
+
+  confirmation: |
+    · The engine's action type lists `action1`..`action4` and nothing named for a behaviour or a genre.
+    · A per-action hold/latch setting exists, persists, and is reachable for EVERY action — not a list of
+      the ones somebody enabled.
+    · With the latch off, the platformer's `run` behaves exactly as ADR-0060 says. A test asserts it.
+    · With the latch on, a single press starts and a single press stops, and the game logic cannot tell the
+      difference — the transport layer is what latches, not the game.
+
+    ⚠️ NONE OF THIS PASSES TODAY: the vocabulary is still `jump/run/swap/especial` and the only latch is
+    `toggle-move`. This is the contract the work in issue #103 is measured against.
+
+more-information: |
+  SUPERSEDES ADR-0074 IN PART — only §1's fourth verb, `action1-mod`, and the modifier reasoning attached to
+  it. Everything else in ADR-0074 governs: the nine positions, the game supplying the words, the rule that no
+  abstract name reaches a person, the nine transports in two families, `start` existing on two transports of
+  nine, the pointer not existing, and §4's refusal to collapse the keyboard schemes.
+
+  ⚠️ AND THE PATTERN IS WORTH NAMING, because this is the second record in two days undone by a name I chose:
+  `vision filter` grouped by mechanism, `action1-mod` grouped by purpose. Both times the vocabulary carried
+  something that belonged in a setting or in a preset. The test to apply before naming anything in the
+  engine: **can a game of another genre use this word without lying?**
