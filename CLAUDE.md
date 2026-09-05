@@ -1,4 +1,4 @@
-# CLAUDE.md — EdSP / "The Inclusionist"
+# CLAUDE.md — The Inclusionist
 
 Contexto de projeto carregado automaticamente pelo Claude Code. **Enxuto de propósito**: aqui ficam as regras
 de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/js/**`) e em `docs/**`.
@@ -67,11 +67,17 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 
 ## 1. Visão
 
-**EdSP** = engine de **jogos educativos** + uma **coleção** de jogos para **gamificar toda a educação básica
-brasileira** (infantil · fundamental · médio) e, por proximidade, **EJA** e **profissionalizante/capacitação**
-(letramento digital para cidadania e mercado de trabalho), além de **passatempos de convivência** (centros de
-convivência de idosos e pessoas assistidas socialmente). **MVP atual:** *The Inclusionist* — plataforma 2D pixel-art
-**acessível** (PixiJS). Reimplementação clean-room do engine Clarity. ⚠️ **O plano dos "35+ jogos" morreu em
+⚠️ **CORRIGIDO 2026-09-05 — "EdSP" NÃO EXISTE.** Esta seção abria com "EdSP = engine + uma coleção", como se
+houvesse duas coisas e a segunda fosse o guarda-chuva da primeira. Não há. Por decisão do Dev: **existe *The
+Inclusionist*, e só.** O nome antigo sobrevive em ADRs e em comentários de código porque era o nome usado à
+data — um ADR é registro histórico e não se reescreve —, mas **não nomeia nada** e não entra em texto novo.
+Onde o código disser "a EdSP entrega o catálogo", leia "a plataforma": é *The Inclusionist* a cumprir o papel.
+
+***The Inclusionist*** = engine de **jogos educativos** + uma **coleção** de jogos para **gamificar toda a
+educação básica brasileira** (infantil · fundamental · médio) e, por proximidade, **EJA** e
+**profissionalizante/capacitação** (letramento digital para cidadania e mercado de trabalho), além de
+**passatempos de convivência** (centros de convivência de idosos e pessoas assistidas socialmente).
+Plataforma 2D pixel-art **acessível** (PixiJS). Reimplementação clean-room do engine Clarity. ⚠️ **O plano dos "35+ jogos" morreu em
 2026-08-28**, por decisão do Dev: o MVP são os **300+ jogos** do `minigames-catalog-v2.html`. ⚠️ **Não há contratação:
 o trabalho só existe por VOLUNTARIADO (ADR-0070)** — a linha anterior dizia "pixel artistas contratados" e
 descrevia um orçamento que não existe. Consequência que muda o dia a dia: **descoberta é insumo de produção**,
