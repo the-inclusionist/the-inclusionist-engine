@@ -500,7 +500,7 @@ const pt: Record<string, string> = {
   // Eram uma tabela `const` de texto em `render/viz-modes` — congelada no idioma do boot, e é o menu que uma
   // criança de baixa visão ou daltônica lê para configurar o PRÓPRIO jogo. A tabela guarda a CHAVE; quem
   // exibe (render/viz-setters, consumer-quiz) resolve com `t()`, e o módulo continua folha.
-  'viz.normal': 'Visão tricromática',
+  'viz.normal': 'Modo padrão',
   'viz.desc.normal': 'Arte original do jogo.',
   'viz.hc-direto': 'Alto contraste: Renderização Direta (3:1)',
   'viz.desc.hc-direto': 'Fundo recua + contornos + cor por papel; plataforma×fundo ~3:1 (AA gráficos), tons agradáveis.',

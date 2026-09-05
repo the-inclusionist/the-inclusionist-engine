@@ -408,7 +408,7 @@ const es: Record<string, string> = {
   'menu.yes': 'Sí',
   'menu.no': 'No',
   // ===================== LOS 16 MODOS DE VISIÓN =====================
-  'viz.normal': 'Visión tricromática',
+  'viz.normal': 'Modo estándar',
   'viz.desc.normal': 'El arte original del juego.',
   'viz.hc-direto': 'Alto contraste: Renderizado Directo (3:1)',
   'viz.desc.hc-direto': 'El fondo retrocede + contornos + color por papel; plataforma vs fondo ~3:1 (AA gráficos), tonos agradables.',

@@ -407,7 +407,7 @@ const en: Record<string, string> = {
   'menu.yes': 'Yes',
   'menu.no': 'No',
   // ===================== THE 16 VISION MODES =====================
-  'viz.normal': 'Trichromatic vision',
+  'viz.normal': 'Standard mode',
   'viz.desc.normal': 'The game’s original art.',
   'viz.hc-direto': 'High contrast: Direct Rendering (3:1)',
   'viz.desc.hc-direto': 'Background recedes + outlines + colour by role; platform vs background ~3:1 (AA graphics), easy on the eye.',

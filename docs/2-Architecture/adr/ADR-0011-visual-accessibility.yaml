@@ -2,6 +2,17 @@
 metadata:
   shape: bundle          # consolidacao do REGISTRO-DE-DECISOES; ver README
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0075
+      what: "ONLY the exclusivity clause — `p.viz` holds ONE value, so contrast and correction are
+             MUTUALLY EXCLUSIVE, and they live in a single grouped control precisely so the exclusivity
+             is honest. The Dev refused the limitation itself: a person with a colour-vision deficiency
+             may also need a contrast level, and both have to be on at once. ⚠️ This record was NOT wrong
+             when written — it saw the exclusivity, refused to hide it, and chose the control that made it
+             visible instead of two controls that would have destroyed each other in silence. Its own
+             argument is what makes the split safe: with two FIELDS there is nothing to overwrite.
+             Everything else here governs: Direct Rendering over photographic filters, the three contrast
+             levels with 3:1 as the default, and the CB-safe palette applying only to non-scenery."
   errata:
     - date: 2026-08-24
       what: "the colour-blindness CORRECTIONS (`fix-protan`, `fix-deuter`, `fix-tritan`) were listed in the
