@@ -1,0 +1,176 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-05
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0066 §4 — the question this record answers. It left the registry OPEN on purpose, and named the
+       reason it could wait: the scope constrains the registry, not the other way round"
+    - "ADR-0071 §4 — which chose the scope and says in as many words that `@the-inclusionist` publishes on
+       GitHub Packages and on npmjs alike, so no host was foreclosed by it"
+    - "ADR-0070 — the labour is VOLUNTEER, and it is the record that turns an authentication step into a
+       product cost instead of a preference"
+    - "ADR-0024 — the multi-repo + versioned-package mechanism, and the git-URL graph it weighed and rejected"
+    - "ADR-0068 §6 — the end-to-end exercise that forces the question now: a game depends on the engine as a
+       PACKAGE, and a package with nowhere to live is not a dependency"
+    - "GitHub Packages npm registry documentation (primary source, read 2026-09-05): `You need an access token
+       to publish, install, and delete private, internal, and public packages`"
+  informed: []
+
+title: The registry is PUBLIC npmjs, because a volunteer without a token cannot install from GitHub Packages
+
+context-and-problem-statement: |
+  ADR-0066 §4 left one question open and said why it could wait. ADR-0071 then chose the scope
+  (`@the-inclusionist`) and closed its own record by noting that the scope forecloses no host. Both were right
+  to defer. Neither can defer any longer: ADR-0068 §6 says the three-hundred-repository script does not run
+  until ONE game has gone end to end — created, **built against the engine PACKAGE**, published, selected by
+  the manifest — and the Dev has now chosen that game (the 2048) and declared its address. The package needs
+  somewhere to be.
+
+  ⚠️ AND THE FACT THAT DECIDES IT IS NOT A PREFERENCE, IT IS A MEASURED SENTENCE. GitHub's own npm-registry
+  documentation: *"You need an access token to publish, install, and delete private, internal, and **public**
+  packages"*. Public is in that list. On GitHub Packages, `npm install` of a package anybody may read still
+  needs a personal access token, an `.npmrc`, and a `401` survived first.
+
+  ⚠️ AND THAT SENTENCE COLLIDES WITH ADR-0070, WHICH IS WHY IT DECIDES RATHER THAN INFORMS. ADR-0070 recorded
+  that there is no hiring and the only labour is volunteer, and drew the consequence that **discovery is the
+  production line** — how many people find the project is an input, not vanity. A volunteer who finds the
+  project, clones a game and types `npm install` is exactly the person that record is about. Under GitHub
+  Packages his first command fails, and it fails as a `401` that says nothing about tokens. Under npmjs it
+  succeeds and he never learns a registry was involved.
+
+  The same sentence binds every CI that is not ours: a fork's pipeline, a school building its own copy, a
+  Secretaria auditing what it is about to install. ADR-0068 §4 already refused three hundred copies of a
+  pipeline; three hundred repositories that cannot be built without an organisation secret is the same failure
+  wearing different clothes — the gate that stops running is the one nobody notices stopped.
+
+decision-drivers:
+- "A volunteer's first command is `npm install`, and it has to work. ADR-0070 makes that a product requirement."
+- "Anything outside the organisation must be able to build - a fork, a school, a Secretaria reading the source."
+- "The scope is already decided and publishes on either host (ADR-0071 §4), so the choice costs nothing in naming."
+- "Nothing is published yet, so this is the cheapest moment this decision will ever have."
+- "Whatever is chosen has to survive the ato - the Municipio may later want the artifacts somewhere it controls."
+
+considered-options:
+- "R1 - npmjs, PUBLIC, scope `@the-inclusionist`, `publishConfig.access: public`"
+- "R2 - GitHub Packages, same scope, inside the organisation that already holds the code"
+- "R3 - no registry at all: each game depends on the engine by git URL or by tarball"
+
+pros-and-cons-of-the-options:
+  R1:
+    pros:
+    - "Anonymous install. No token, no `.npmrc`, no `401` between a volunteer and a working clone."
+    - "`npm view` and the registry page make the AGPL text and the file list readable by somebody deciding
+       whether to adopt - which is the audience ADR-0070 says is the input."
+    - "Cloudflare Pages, a fork's CI and a school's own build all work with no secret configured."
+    cons:
+    - "A SECOND namespace to administer, outside the organisation: its own account, owners and 2FA."
+    - "⚠️ And the sharper half of that: on GitHub the organisation HOLDS the namespace, so no stranger can take
+       `the-inclusionist/anything` - ADR-0067 §1 leans on exactly this. npmjs gives nothing for free, and the
+       scope belongs to whoever registers it first."
+  R2:
+    pros:
+    - "One place, one set of permissions, one 2FA policy, one owner list - the same ones the code already has."
+    - "Nothing new to register, and therefore nothing new that can be taken."
+    cons:
+    - "⚠️ MEASURED, NOT SUPPOSED: a token is required to install even a PUBLIC package. Every volunteer, every
+       fork and every external CI needs a personal access token before the first build."
+    - "The failure is a `401` on `npm install`, which reads as `the project is broken` and not as `you need a
+       token` - and it lands on the person ADR-0070 says the project depends on."
+  R3:
+    pros:
+    - "Nothing to administer, and nothing anybody can take."
+    cons:
+    - "ADR-0024 already weighed the git graph and REJECTED it; ADR-0068 §3 repeated the refusal for the same
+       reason. Choosing it here would revoke two records to avoid registering an account."
+    - "Loses semver, which is the one thing ADR-0068 §3 says the package mechanism is buying."
+
+decision-outcome:
+  chosen-option:
+    link: "R1 - npmjs, public, scope `@the-inclusionist`"
+    justification: |
+      ===== 1. THE REGISTRY IS PUBLIC npmjs =====
+      `@the-inclusionist/engine` and `@the-inclusionist/game-<slug>` publish to npmjs with
+      `publishConfig.access: public`. ADR-0066 §4 is closed.
+
+      The argument is one measured sentence and one accepted record set next to each other: GitHub Packages
+      requires a token to install a public package, and ADR-0070 says the only labour there will ever be is
+      the labour of people who found the project and tried it. A registry that asks a stranger for credentials
+      before showing him the code is not neutral about that — it is a filter, and it filters in the direction
+      this project cannot afford.
+
+      ===== 2. WHAT THIS COSTS, SAID PLAINLY AND ACTED ON THE SAME DAY =====
+      ⚠️ THE NAMESPACE IS NOT HELD FOR US. On GitHub the organisation owns `the-inclusionist/*`, and ADR-0067 §1
+      was explicit that this kills the `somebody could take the name` argument — it even wrote the argument
+      down in order to refuse to lean on it. On npmjs that argument comes back to life, and there it is true:
+      `@the-inclusionist` belongs to whoever registers it.
+
+      So the mitigation is part of this decision and not a follow-up: **the npmjs organisation is registered at
+      the same time as, or before, the first publish** — never after. A scope taken by a stranger is not a
+      rename; it is a scope this project can no longer use.
+
+      ⚠️ AND THE SECOND ADMINISTRATION IS REAL. Owners, 2FA and a publish token now exist in a place the GitHub
+      organisation does not reach. That is the whole of what R2 offered, and it is given up knowingly.
+
+      ===== 3. WHAT THIS DOES NOT DECIDE, AND WHAT IT DOES NOT CLAIM =====
+      A registry is a container, and ADR-0066 §2 already ruled on what a container name means: nothing about
+      ownership. Publishing to npmjs claims no more about the Municipio than the organisation name does, and
+      the ownership sentence stays where ADR-0071 §2 put it — `LICENSE`, `docs/LICENSES.md`, the records.
+
+      ⚠️ AND PUBLISHING A PACKAGE IS NOT PUBLISHING THE PRODUCT. ADR-0066 §3 stands untouched: the product is
+      published by the Municipio, by the ato, and wanting volunteers is not a reason to move that date. What
+      goes to the registry is the engine and the games as SOURCE under AGPL, which is the thing a volunteer
+      needs in order to be one.
+
+      ===== 4. A PUBLISH IS NOT A FLAG, AND HERE IS WHAT IT ACTUALLY NEEDS =====
+      Measured in the engine on 2026-09-05, so the work is named now rather than discovered at the publish:
+
+        · `"private": true` — blocks the publish outright;
+        · the `exports` targets are `.ts` files, and the field's own comment already owed *"a build step and a
+          `types` condition at the moment this package is first published, not before"*. That moment is this one;
+        · `pixi.js` is a `devDependency` and has to become a `peerDependency`, or every consumer bundles a
+          second copy of the renderer and the two disagree about who owns the canvas;
+        · the borrowed panels need `app/css/style.css` and the 18 faces in `app/public/vendor/fonts/*.woff2`,
+          and NO export names either — a consumer that installs the package today gets dialogs with no styling
+          and a typography menu offering fonts that 404. This is the quiz's achado 6 one layer down: an
+          undeclared requirement whose failure mode is silence;
+        · `.release-it.json` says `npm.publish: false` in as many words, and it was right to until now.
+
+      ⚠️ THE PUBLISH ITSELF IS THE DEV'S TO RUN. It spends and it does not come back: npmjs allows unpublishing
+      only inside 72 hours, after which a broken first version is permanent and can only be replaced by a
+      higher one.
+
+  consequences:
+    positive:
+    - "A volunteer clones a game and `npm install` works, with no token, no `.npmrc` and no `401`."
+    - "A fork, a school and a Secretaria can build and read the source without an organisation secret."
+    - "ADR-0066 §4 stops being an open question that every packaging decision has to route around."
+    - "The AGPL text and the file list become readable by somebody deciding whether to adopt, without cloning."
+    negative:
+    - "⚠️ A namespace nobody holds for us. Until `@the-inclusionist` is registered on npmjs this decision is one
+       stranger away from being unexecutable, and nothing watches for that."
+    - "A second administration - account, owners, 2FA, publish token - outside the GitHub organisation."
+    - "The first publish is irreversible after 72 hours, so the packaging work in §4 has to be right before it
+       runs and not after."
+    neutral:
+    - "The choice stays reversible in principle - the scope publishes on either host - but stops being cheap the
+       moment consumers exist, which is the same shape of cost ADR-0071 recorded for the scope itself."
+    - "Mirroring the artifacts somewhere the Municipio controls after the ato is left open, deliberately: it is
+       a hosting question and it is not this one."
+  confirmation: |
+    · `npm view @the-inclusionist/engine` answers from a shell with NO `.npmrc` and NO token.
+    · A fresh clone of the game repository runs `npm ci && npm run build` with no secret configured.
+    · `package.json` carries no `private`, carries `publishConfig.access: public`, and `pixi.js` sits in
+      `peerDependencies`.
+    · The npmjs organisation `the-inclusionist` exists, and the Dev is an owner of it, BEFORE the first publish.
+    ⚠️ Every line above is UNTESTED until something is actually published, and saying so belongs in the record
+    rather than beside it: this is a decision whose confirmation lives in the future.
+
+more-information: |
+  The quoted sentence is from GitHub's `Working with the npm registry` documentation, read 2026-09-05. It is
+  quoted rather than paraphrased because the whole argument rests on one word inside it — `public` — and a
+  paraphrase is exactly where that word would have gone missing.
+
+  What stays open, and is named here so it is not mistaken for answered: whether the published artifacts are
+  ALSO mirrored somewhere the Municipio controls once the ato happens. That is the same family of question as
+  ADR-0069's origin migration and, like it, needs a plan before it needs a decision.
