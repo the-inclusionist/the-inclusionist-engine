@@ -14,15 +14,68 @@ const base: LocaleDict = pt;                // dicionário-base (fallback), tipa
 const DICTS: Record<string, LocaleDict> = { pt: base }; // dicionários já carregados (pt embutido)
 const STORE_KEY = store.KEYS.lang;
 
+/* ===================== O DICIONÁRIO DE QUEM CONSOME A ENGINE =====================
+ *
+ * O achado 2 do `consumer-quiz` dizia que os dicionários são do jogo de plataforma e que um segundo jogo
+ * herda 253 chaves para usar um punhado — "peso morto no pacote". Estava certo para um consumidor que mora
+ * DENTRO deste repositório, porque as chaves dele cabem em `../i18n/pt.ts`.
+ *
+ * ⚠️ DE FORA, O MESMO ACHADO DEIXA DE SER PESO E VIRA PAREDE. Os locales entram pelo `import.meta.glob` logo
+ * abaixo, e esse glob é resolvido NO BUILD DESTA ENGINE, contra ESTA pasta. Um jogo que instala
+ * `@the-inclusionist/engine` não tem como pôr arquivo lá dentro, e `DICTS` é privado. Sem esta camada ele
+ * fica sem NENHUM caminho para as próprias chaves — e o pilar 3 não abre exceção para consumidor.
+ *
+ * CAMADA SEPARADA, e não `DICTS[code] = {...DICTS[code], ...extra}`: `DICTS.pt` É o objeto importado de
+ * `../i18n/pt.ts`. Mesclar ali mutaria o dicionário da própria engine, e dois jogos na mesma página herdariam
+ * as strings um do outro. `tests/i18n-consumer-dict.node.test.js` prende exatamente isso.
+ */
+const EXTRA: Record<string, LocaleDict> = {};
+
+/**
+ * Registra as chaves DESTE jogo para um idioma. Chamável antes de o idioma existir — quem registra `en` antes
+ * de qualquer `setLocale('en')` é atendido quando a troca acontecer.
+ *
+ * ⚠️ NÃO REAPLICA O DOM, de propósito. `applyDom` precisa de uma RAIZ, e alcançar o `document` global por
+ * baixo de quem chama é o achado 15, que já custou uma correção. Um consumidor que registre depois de o
+ * markup estático ter sido traduzido chama `applyDom(raiz)` ele mesmo — e o caso normal é registrar no boot,
+ * antes de existir texto na tela.
+ */
+export function registerDict(code: string, entries: LocaleDict): void {
+  EXTRA[code] = { ...EXTRA[code], ...entries };
+}
+
+/**
+ * A cadeia de resolução, em cinco degraus. Ela ESPELHA a que já existia (`locale → pt → a própria chave`),
+ * com o consumidor colado a cada degrau em vez de empilhado por cima:
+ *
+ *   1. consumidor no idioma corrente · 2. engine no idioma corrente ·
+ *   3. consumidor em pt · 4. engine em pt · 5. a própria chave
+ *
+ * O degrau 3 é o que faz um jogo que só escreveu pt seguir LEGÍVEL quando a criança troca para inglês: ela lê
+ * português, exatamente como já lê hoje quando falta chave na engine. Degradar é melhor que calar, e é a
+ * mesma escolha que o `.catch` mudo do `initI18n` já faz para o chunk que não carrega.
+ *
+ * O degrau 2 vir ANTES do 3 é a única ordem defensável: idioma certo da engine vale mais que idioma errado do
+ * consumidor. A inversão daria "Potência de 2" numa interface em espanhol que tinha a tradução na mão.
+ */
+function resolver(key: string): string {
+  const doJogo = EXTRA[locale];
+  if (doJogo && key in doJogo) return doJogo[key];
+  if (key in dict) return dict[key];
+  const doJogoEmPt = EXTRA.pt;
+  if (doJogoEmPt && key in doJogoEmPt) return doJogoEmPt[key];
+  return key in base ? base[key] : key;
+}
+
 // carregadores preguiçosos por locale (chaves: '../i18n/en.ts', '../i18n/es.ts', '../i18n/pt.ts'); pt já é estático.
 const loaders = import.meta.glob<{ default: LocaleDict }>('../i18n/*.ts');
 
 let locale = 'pt';
 let dict: LocaleDict = base;
 
-// Traduz uma chave; fallback em cadeia: locale → pt → a própria chave. Interpola {param}.
+// Traduz uma chave; a cadeia de fallback está em `resolver()` logo acima. Interpola {param}.
 export function t(key: string, params?: Record<string, string | number>): string {
-  let s = key in dict ? dict[key] : (key in base ? base[key] : key);
+  let s = resolver(key);
   if (params) for (const k in params) s = s.replaceAll('{' + k + '}', String(params[k]));
   return s;
 }
@@ -119,6 +172,6 @@ export function initI18n(root: ParentNode = document): string {
  */
 export function idiomaPronto(): Promise<void> { return pendente; }
 
-const i18n = { t, getLocale, availableLocales, applyDom, setLocale, initI18n, idiomaPronto };
+const i18n = { t, getLocale, availableLocales, applyDom, setLocale, initI18n, idiomaPronto, registerDict };
 export default i18n;
 if (typeof window !== 'undefined') (window as Window & { __i18n?: unknown }).__i18n = i18n; // exposto p/ teste/preview
