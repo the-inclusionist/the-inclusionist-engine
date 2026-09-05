@@ -1,7 +1,6 @@
 {
   "name": "@the-inclusionist/engine",
   "version": "6.36.1",
-  "private": true,
   "type": "module",
   "description": "Accessibility-first (WCAG 2.2 + GAG) engine for educational 2D pixel-art games, built with PixiJS. Screen reader, sonar, high contrast by role, colour-vision filters, remappable input as intent, i18n and offline PWA — the parts every game inherits (ADR-0035, ADR-0036).",
   "comment:exports": [
@@ -10,29 +9,73 @@
     "the single `game-api` module that will replace them does not exist yet — it is Task 12 of the demos",
     "Phase 1. What is ALREADY closed is the important half: `app/js/game/**` is unreachable from outside,",
     "so a consumer cannot accidentally depend on The Inclusionist while depending on the engine.",
-    "The targets are .ts on purpose: the consumer is a Vite app and compiles them. A build step and a",
-    "`types` condition are owed at the moment this package is first published, not before."
+    "THE DEBT THIS FIELD DECLARED IS PAID (2026-09-05, ADR-0072 §4). It used to point at raw `.ts` and said",
+    "`a build step and a types condition are owed at the moment this package is first published`. That is",
+    "this moment: the targets are now the `tsc` output in `dist-pkg/` (see tsconfig.pkg.json), each with a",
+    "`types` condition beside it.",
+    "SUBPATHS CARRY THE `.js` EXTENSION on purpose — `core/i18n.js`, not `core/i18n`. It is the ESM-correct",
+    "form and it is the one every module in this repository already writes internally, so a consumer's",
+    "import line looks exactly like ours. Extensionless is NOT offered: supporting both needs two patterns",
+    "per layer, and two spellings of one import is how two halves of a codebase drift.",
+    "`./style.css` and `./assets/*` exist because the borrowed panels REQUIRE them and nothing said so — a",
+    "consumer that installed this package got dialogs with no styling and a typography menu offering 18",
+    "fonts that 404. Copy `assets/vendor/` into your own `public/` at build time: `fonts.css` addresses the",
+    "faces by RELATIVE url, so the folder travels whole or not at all."
   ],
   "exports": {
-    ".": "./app/js/boot/create-game.ts",
-    "./core/*": "./app/js/core/*",
-    "./input/*": "./app/js/input/*",
-    "./render/*": "./app/js/render/*",
-    "./platform/*": "./app/js/platform/*",
-    "./ui/*": "./app/js/ui/*",
-    "./educational/*": "./app/js/educational/*",
+    ".": { "types": "./dist-pkg/boot/create-game.d.ts", "default": "./dist-pkg/boot/create-game.js" },
+    "./core/*.js": { "types": "./dist-pkg/core/*.d.ts", "default": "./dist-pkg/core/*.js" },
+    "./input/*.js": { "types": "./dist-pkg/input/*.d.ts", "default": "./dist-pkg/input/*.js" },
+    "./render/*.js": { "types": "./dist-pkg/render/*.d.ts", "default": "./dist-pkg/render/*.js" },
+    "./platform/*.js": { "types": "./dist-pkg/platform/*.d.ts", "default": "./dist-pkg/platform/*.js" },
+    "./ui/*.js": { "types": "./dist-pkg/ui/*.d.ts", "default": "./dist-pkg/ui/*.js" },
+    "./educational/*.js": { "types": "./dist-pkg/educational/*.d.ts", "default": "./dist-pkg/educational/*.js" },
+    "./style.css": "./app/css/style.css",
+    "./assets/*": "./app/public/*",
     "./package.json": "./package.json"
   },
+  "types": "./dist-pkg/boot/create-game.d.ts",
+  "sideEffects": ["*.css"],
   "license": "AGPL-3.0-or-later",
+  "comment:ownership": [
+    "ADR-0071 §2 said the ownership claim does NOT live in the package NAME, and that nothing would enter",
+    "the metadata until something was published. Publication is now being prepared, so the sentence takes",
+    "the home that record chose for it: `LICENSE` and `docs/LICENSES.md` ship inside the tarball (see",
+    "`files`). Patrimonial owner: the Municipio, under Lei no 9.609/1998 art. 4. Publication is a PEDIDO,",
+    "not the developer's decision."
+  ],
+  "repository": { "type": "git", "url": "git+https://github.com/the-inclusionist/the-inclusionist-engine.git" },
+  "publishConfig": { "access": "public" },
+  "files": [
+    "dist-pkg",
+    "app/css/style.css",
+    "app/public/vendor",
+    "LICENSE",
+    "README.md",
+    "docs/LICENSES.md",
+    "docs/CREDITS.md"
+  ],
+  "comment:peerDependencies": [
+    "PixiJS is a PEER, not a dependency. Measured on the emitted package (2026-09-05): exactly TWO shipped",
+    "modules import it — `render/canvas` and `render/minimap` — plus their two `.d.ts`. A consumer that",
+    "bundled a second copy would have two renderers disagreeing about who owns the canvas, and ADR-0035's",
+    "`render/port` exists so the rest of the engine never names PixiJS at all. It stays in devDependencies",
+    "too, because this repository is also an APP that has to build itself."
+  ],
+  "peerDependencies": {
+    "pixi.js": "7.4.2"
+  },
   "engines": {
     "node": ">=24"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:pkg": "tsc -p tsconfig.pkg.json",
+    "prepack": "npm run build:pkg",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "validate": "npm run typecheck && vitest run && vite build",
+    "validate": "npm run typecheck && vitest run && npm run build:pkg && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:node": "vitest run --project node",
