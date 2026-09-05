@@ -242,7 +242,7 @@ const pt: Record<string, string> = {
   'calm.off': 'desligado',
   'calm.quiet': 'calmo',
   'calm.silent': 'silencioso',
-  'cvd.off': 'desligado',
+  'cvd.off': 'visão tricromática',
   'cvd.protan': 'protanopia',
   'cvd.deuter': 'deuteranopia',
   'cvd.tritan': 'tritanopia',

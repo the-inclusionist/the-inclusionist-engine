@@ -221,7 +221,7 @@ describe('ciclos dos ícones', () => {
     // CVD_NAMES guarda CHAVES i18n desde a Fase 5; a assercao atravessa o dicionario para continuar
     // afirmando o que a pessoa ouve, e nao apenas que ha alguma chave la.
     expect(pt[CVD_NAMES[nextCvd('normal').idx]]).toBe('protanopia');
-    expect(pt[CVD_NAMES[nextCvd('fix-tritan').idx]]).toBe('desligado');
+    expect(pt[CVD_NAMES[nextCvd('fix-tritan').idx]]).toBe('visão tricromática');
   });
 });
 
@@ -304,11 +304,15 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     expect(computeIconLabel('contrast', snap({ viz: 'fix-protan' }))).toBe('Alto contraste: desligado');
   });
 
-  it('daltonismo nomeia a deficiência corrigida, e "off" fora da lista', () => {
+  it('daltonismo nomeia a VISÃO — e a quarta escolha é `visão tricromática`, não `desligado`', () => {
     expect(computeIconLabel('cvd', snap({ viz: 'fix-protan' }))).toBe('Correção de daltonismo: protanopia');
     expect(computeIconLabel('cvd', snap({ viz: 'fix-deuter' }))).toBe('Correção de daltonismo: deuteranopia');
     expect(computeIconLabel('cvd', snap({ viz: 'fix-tritan' }))).toBe('Correção de daltonismo: tritanopia');
-    expect(computeIconLabel('cvd', snap({ viz: 'hc-direto' }))).toBe('Correção de daltonismo: desligado');
+    // ⚠️ A QUARTA ESCOLHA NOMEIA UMA VISÃO, e não o interruptor (decisão do Dev, 2026-09-05). As outras três
+    // dizem qual visão está sendo corrigida; dizer `desligado` na quarta trocava de assunto no meio da lista
+    // e descrevia o SOFTWARE em vez da pessoa. Compare com o contraste logo acima, que continua `desligado`
+    // com razão: alto contraste é um RECURSO que se liga, daltonismo é uma VISÃO que se nomeia.
+    expect(computeIconLabel('cvd', snap({ viz: 'hc-direto' }))).toBe('Correção de daltonismo: visão tricromática');
   });
 
   it('ícone EM CONSTRUÇÃO diz que está em construção — e nunca diz on/off', () => {

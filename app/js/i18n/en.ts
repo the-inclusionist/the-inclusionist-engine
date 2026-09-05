@@ -170,7 +170,7 @@ const en: Record<string, string> = {
   'calm.off': 'off',
   'calm.quiet': 'calm',
   'calm.silent': 'silent',
-  'cvd.off': 'off',
+  'cvd.off': 'trichromatic vision',
   'cvd.protan': 'protanopia',
   'cvd.deuter': 'deuteranopia',
   'cvd.tritan': 'tritanopia',

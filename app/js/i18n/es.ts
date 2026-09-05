@@ -171,7 +171,7 @@ const es: Record<string, string> = {
   'calm.off': 'desactivado',
   'calm.quiet': 'calmado',
   'calm.silent': 'silencioso',
-  'cvd.off': 'desactivado',
+  'cvd.off': 'visión tricromática',
   'cvd.protan': 'protanopía',
   'cvd.deuter': 'deuteranopía',
   'cvd.tritan': 'tritanopía',
