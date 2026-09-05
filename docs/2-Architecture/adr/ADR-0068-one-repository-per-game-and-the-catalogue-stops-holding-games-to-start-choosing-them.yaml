@@ -9,6 +9,13 @@ metadata:
              `@pm-monte/game-<slug>` become `@the-inclusionist/engine` and
              `@the-inclusionist/game-<slug>`. The MECHANISM §3 decided — package, semver, zero
              submodules, selection by manifest — is untouched, and so is every other clause."
+    - by: ADR-0073
+      what: "§1, and ONLY the repository NAME in it: `the-inclusionist-game-<slug>` stops governing. The
+             Dev declared the first game's address as `the-inclusionist/pixi-2048`, and ADR-0073 SUSPENDS
+             the pattern rather than replacing it — one instance is not a rule — with the trigger that the
+             naming rule is decided when §6's template is written, and not before. Everything else in §1
+             stands: one repository per game, holding its own code, art, `CREDITS.md` and licence statement,
+             with the catalogue still publishing one product."
   decision-makers: [Dev]
   consulted:
     - "ADR-0058 §1 — SUPERSEDED IN PART by this record: `the-inclusionist-demos` stops being the repository

@@ -1,0 +1,175 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-05
+  supersedes-in-part: [ADR-0068]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0068 §1 — SUPERSEDED IN PART: it prescribed `the-inclusionist-game-<slug>` for every game
+       repository, and the first game does not carry that name. Every other clause of §1 stands"
+    - "ADR-0067 §5 — the rule this record obeys: creation follows a DECLARATION IN A RECORD, not a name in a
+       backlog item or a folder somebody made. This IS that declaration"
+    - "ADR-0071 §1 — the argument that makes the shorter name defensible: `@the-inclusionist/engine` and not
+       `@the-inclusionist/inclusionist-engine`, because the word would appear twice"
+    - "ADR-0066 §2 — a container name claims nothing, so a repository name is free to be short"
+    - "ADR-0035 — the renderer choice was made REVERSIBLE on purpose (`render/port`), and it is the record this
+       name argues against; the cost is written into the consequences rather than argued away"
+    - "ADR-0068 §6 — the template that would otherwise reproduce a superseded pattern 299 times"
+  informed: []
+
+title: The first game repository is named by declaration — `the-inclusionist/pixi-2048` — and ADR-0068's naming pattern is SUSPENDED, not replaced
+
+context-and-problem-statement: |
+  ADR-0068 §1 gave every game repository a shape: `the-inclusionist-game-<slug>`. It was written before any
+  game existed and before ADR-0066 put the repositories inside an organisation, and it has never been executed.
+
+  The Dev has now declared the address of the first one, and it is not that shape:
+  **`https://github.com/the-inclusionist/pixi-2048`**.
+
+  Under ADR-0067 §5 the declaration is the moment of creation, so this is not a preference to be reconciled
+  later — it is the address, and the repository comes into existence at it. What has to be decided is what
+  happens to the SENTENCE in §1 that it contradicts, because an accepted record that keeps prescribing a
+  pattern the first instance already broke does not sit quietly: ADR-0057 measured the failure mode, which is
+  that the stale record argues against its own author in every later conversation.
+
+  ⚠️ AND THERE IS A MECHANISM ATTACHED, WHICH IS WHY THIS CANNOT WAIT FOR THE SECOND GAME. ADR-0068 §6 says the
+  three-hundred-repository script runs once ONE game has gone end to end, and that script reads the pattern.
+  Left alone, §1 does not merely look wrong — it produces 299 addresses in a shape the project has already
+  stopped using, in one run, from a template whose whole justification was that a human reviews it instead of
+  the outputs.
+
+  ⚠️ AND THE SHORTER NAME HAS AN ARGUMENT, WHICH IS NOT THE DEV'S TASTE AND IS WORTH STATING. ADR-0071 §1 chose
+  `@the-inclusionist/engine` over `@the-inclusionist/inclusionist-engine` for one reason: *"the word would
+  appear twice, and this is the one moment it costs nothing to fix"*. `the-inclusionist/the-inclusionist-game-2048`
+  is that same repetition, one layer up. The organisation already names the container (ADR-0066 §2), and a
+  repository inside it does not have to say the container's name again.
+
+  ⚠️ AND THE PROJECT IS ALREADY INCONSISTENT ABOUT THIS, WHICH IS THE PART A RULE WOULD HAVE TO SETTLE. The
+  first repository in the organisation is `the-inclusionist-engine`, and it DOES repeat the container. So there
+  is no rule here yet — there are two shapes and one instance of each.
+
+decision-drivers:
+- "ADR-0067 §5 makes a declared address the moment of creation; this address is declared."
+- "A superseded pattern that stays accepted gets executed by a script, not merely read wrong (ADR-0068 §6)."
+- "ADR-0071 §1's reasoning applies unchanged one layer up: the container should not be named twice."
+- "Two shapes exist in the organisation today, and nothing decides which is the rule."
+- "A record must not invent a rule that was not decided - one game is one instance, not a pattern."
+
+considered-options:
+- "N1 - record the declared address, and SUSPEND §1's pattern until the template forces the general rule"
+- "N2 - record the declared address AND replace §1 with a new general pattern derived from it"
+- "N3 - treat `pixi-2048` as an exception and keep §1 governing the other 299"
+
+pros-and-cons-of-the-options:
+  N1:
+    pros:
+    - "Records exactly what was decided and nothing more, which is what an accepted record is supposed to mean."
+    - "Puts a GATE where the damage would be - the template - instead of a preference where it would be prose."
+    - "Names the two-shapes inconsistency instead of resolving it by guessing, in the same posture ADR-0066 §4
+       used for the registry: open, with a trigger."
+    cons:
+    - "Leaves the project with no naming rule for a stretch, and somebody could create a repository in the gap."
+  N2:
+    pros:
+    - "One rule, written once, and the template can be written immediately after."
+    cons:
+    - "⚠️ There is no evidence for a general rule. `pixi-2048` is one name; deriving `<engine>-<slug>` or
+       `<slug>` from it is inventing the shape of the question, which is the exact error the engine's own
+       `menu-nav` taught this project not to repeat (`getPhase()` against `isNavigable()`)."
+    - "`the-inclusionist-engine` would immediately violate whichever rule is written, so the rule is born with
+       an exception."
+  N3:
+    pros:
+    - "Smallest possible change; §1 keeps governing."
+    cons:
+    - "An exception with no reason written down is how a pattern rots: the second game asks which of the two
+       shapes it is, and there is no answer."
+    - "It would leave the FIRST instance of a three-hundred-item pattern outside the pattern, which reverses
+       what §6's `exercised once` clause exists to buy."
+
+decision-outcome:
+  chosen-option:
+    link: "N1 - the declared address governs, and §1's pattern is suspended with a trigger"
+    justification: |
+      ===== 1. THE ADDRESS =====
+      **`https://github.com/the-inclusionist/pixi-2048`**, declared by the Dev on 2026-09-05. Under ADR-0067 §5
+      the repository is created at it, born with the four files of ADR-0067 §2 and a README that says in those
+      words that it holds no product yet.
+
+      The internal name of the game is **"2048 · Potência de 2"**, and it is a different thing from the address:
+      one is what a machine resolves, the other is what a child and a teacher read. ⚠️ And the internal name is
+      a STRING IN THE DICTIONARY, not a constant — pillar 3 has no exception for titles.
+
+      ===== 2. THE PACKAGE NAME DOES NOT FOLLOW THE REPOSITORY, AND THAT IS DELIBERATE =====
+      The package stays `@the-inclusionist/game-2048`, the shape ADR-0068 §3 prescribed with ADR-0071's scope
+      substituted. §3 was not revoked and is not revoked here.
+
+      The divergence is worth one sentence of reason, because divergence normally is a defect: a package name is
+      read by strangers in a dependency line, and that is the one place ADR-0071 spent a whole record thinking
+      about. `game-2048` tells such a reader what the thing is; `pixi-2048` tells him which renderer it used,
+      which is not what he was asking.
+
+      ===== 3. §1's PATTERN IS SUSPENDED, NOT REPLACED — AND THE DIFFERENCE IS THE POINT =====
+      `the-inclusionist-game-<slug>` no longer governs. NOTHING replaces it, because nothing was decided: one
+      declared address is one instance, and a general rule derived from a single instance is a guess wearing a
+      record's clothes.
+
+      ⚠️ SO THE OPEN QUESTION GETS A TRIGGER, in the shape ADR-0066 §4 used for the registry: **the naming rule
+      for game repositories is decided when the template of ADR-0068 §6 is written, and the template is not
+      written before it.** That is not a deferral into the fog — the template is a named artifact with a named
+      precondition, and it is the only thing that can turn a naming preference into 299 facts.
+
+      The evidence the future record will weigh, gathered here so it is not re-derived: the organisation holds
+      the namespace (ADR-0066 §2, ADR-0067 §1), the container should not be named twice (ADR-0071 §1), and the
+      organisation currently contains BOTH shapes — `the-inclusionist-engine`, which repeats it, and
+      `pixi-2048`, which does not.
+
+      ===== 4. THE COST OF THIS PARTICULAR NAME, WRITTEN DOWN RATHER THAN ARGUED AWAY =====
+      ⚠️ `pixi-` NAMES THE RENDERER, AND THE RENDERER IS THE ONE THING THIS ARCHITECTURE SPENT A RECORD MAKING
+      REPLACEABLE. ADR-0035 bet the reversibility of the renderer choice on an adapter, and `render/port` exists
+      so that no module outside it imports PixiJS by name. An address that carries `pixi` takes the opposite
+      bet, in the one place the project cannot refactor: if the renderer is ever swapped, the code changes and
+      the address does not, and from that day the address says something false to everybody who reads it.
+
+      This is recorded, not resisted. The Dev declared the address, ADR-0067 §5 makes a declaration the
+      decision, and a repository name that ages badly is a smaller failure than a repository that does not
+      exist. ⚠️ But it is cheapest to change TODAY, before the repository exists — which is the same clock
+      ADR-0071 read when it renamed the scope while the only consumer was a repository that had not started.
+
+  consequences:
+    positive:
+    - "The first game has an address, so ADR-0067 §5 has fired and the repository can be created."
+    - "ADR-0068 §1 stops prescribing a shape that the first instance already contradicts."
+    - "The template of §6 gains a written precondition, so the naming question cannot be answered by whoever
+       happens to write the script."
+    - "The organisation's two naming shapes are named as an open inconsistency instead of being averaged into a
+       rule nobody decided."
+    negative:
+    - "⚠️ The address carries the renderer's name, and ADR-0035 exists precisely so the renderer can change. The
+       day it changes, the address starts lying and nothing will make it stop."
+    - "Repository name and package name diverge, so `pixi-2048` and `@the-inclusionist/game-2048` have to be
+       held in the head as the same thing."
+    - "There is no naming rule at all until the template record is written; a repository created in that window
+       is created without one."
+    neutral:
+    - "The internal title `2048 · Potencia de 2` binds nothing technical - it is a dictionary key like any
+       other string, and pillar 3 governs it."
+  confirmation: |
+    · The repository exists at `https://github.com/the-inclusionist/pixi-2048`, holding exactly the four files
+      of ADR-0067 §2, with `main` protected.
+    · `grep -rn "the-inclusionist-game-2048"` finds nothing outside this record's own quotation of the
+      superseded pattern.
+    · The game's `package.json` reads `@the-inclusionist/game-2048`.
+    · ⚠️ The gate this record installs: **no template script exists** until a record decides the naming rule.
+      If a `create-game-repo` script appears before that record, this decision was not kept.
+
+more-information: |
+  ADR-0068 §5 stays whole and is worth repeating here because this record could be misread as an exception to
+  it: a game repository has NO `adr/` folder. This record lives in the engine, like every other, and the game
+  states only what is its own — its art, its credits, its third-party terms.
+
+  What this record does NOT decide, listed so none of it is read as settled: the naming rule for the remaining
+  games (trigger above), whether `the-inclusionist-engine` is eventually renamed, and anything at all about the
+  game's content. The last one is deliberate — the 2048's product choices obey pillars that are already
+  accepted (ADR-0006, ADR-0037, ADR-0049 and pillar 2 of ADR-0010), and obeying an accepted pillar is not a new
+  decision. The first of those choices that DEPARTS from a pillar will need its own record, and none does yet.
