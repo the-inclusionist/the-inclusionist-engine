@@ -75,11 +75,58 @@ Nem tudo aqui é nosso, e o que não é **não muda de licença por estar neste 
 
 ---
 
+## 4 · Inventário da arte — por enquanto, só a do PixelLab
+
+O ADR-0066 §3 põe este inventário entre as condições para qualquer repositório virar público, e o §2 desta
+página dizia que ele ainda não existia. Existe agora, **com o alcance que o Dev deu: apenas a arte gerada
+no PixelLab.**
+
+### O que foi gerado, e onde está registrado
+
+**100 gerações**, de 2026-06-01 em diante, com data, ferramenta, custo estimado e **o prompt de cada uma**:
+[`research/auditoria-creditos-pixellab.csv`](research/auditoria-creditos-pixellab.csv). O prompt está lá de
+propósito — é o que permite a alguém de fora refazer a pergunta *"de onde veio esta imagem?"* sem depender da
+memória de ninguém.
+
+### O regime, e a restrição que viaja junto
+
+Conforme a pesquisa de licenças (`research/LICENCAS-GERACAO-IMAGEM.md`), o PixelLab.ai é o gerador com os
+termos mais limpos do levantamento: **a titularidade da imagem é de quem gerou**, o uso comercial é
+permitido — *"usar, modificar e distribuir … para qualquer fim"* —, e **não há exigência de atribuição**.
+
+⚠️ **E há UMA restrição, que não é nossa e por isso não podemos dispensá-la: as imagens não podem ser usadas
+para TREINAR MODELO.** Isso importa aqui por dois motivos concretos:
+
+1. A arte deste projeto **não é FOSS** (§2), então a licença de arte própria é nossa para escrever — e ela
+   tem de **carregar esta restrição adiante**, ou concederíamos a terceiros mais do que recebemos.
+2. O alvo declarado é **arte procedural semântica** (`plano-arte-procedural.md`): imagem semântica + paletas.
+   Se algum dia essa geração passar por um modelo treinado nos próprios assets, esta linha é a que diz que
+   não pode.
+
+### O que este inventário NÃO cobre, e por quê
+
+⚠️ **A arte PRÓPRIA — a desenhada por nós — não entra aqui ainda**, por decisão do Dev: ela entra
+**depois de o Município documentar a sua autorização**, e não antes.
+
+⚠️ **E fica registrada uma ambiguidade em vez de ser resolvida por adivinhação.** A frase do Dev fala em
+*"autorização para licença AGPL-3.0"*, e o §2 desta página decide que **a arte NÃO é AGPL** — por razão
+jurídica (Lei 9.610) e por razão de produto (os personagens não podem ser de uso livre). As duas leituras
+possíveis levam a lugares diferentes:
+
+- a autorização em causa é a **publicação do código** (pedido `e`), e a arte própria apenas espera esse ato
+  para ser inventariada — o §2 fica de pé; **ou**
+- a arte própria passaria de facto a AGPL, e então o §2 e o requisito de uso restrito mudam.
+
+Não se escolhe aqui. Quem decide é o Dev, e a fonte para a parte jurídica é a Procuradoria, que o
+requerimento aciona no pedido `c`.
+
+---
+
 ## O que este ficheiro NÃO faz
 
 - **Não é parecer jurídico.** É a declaração de escopo que um leitor precisa para não assumir que a AGPL da
   raiz alcança tudo. Onde há dúvida de propriedade intelectual, a fonte é a Procuradoria — que o requerimento
   aciona no pedido `c`.
 - **Não substitui o `CREDITS.md`**, que é onde mora a atribuição. Fato duplicado apodrece.
-- **Não lista a arte peça a peça.** A auditoria do que foi gerado e com que prompts está em
-  `research/auditoria-creditos-pixellab.csv`; esta página diz o regime, não o inventário.
+- **Não lista a arte própria peça a peça** — e agora isso é ALCANCE e não omissão: o §4 inventaria a
+  arte do PixelLab e diz, na mesma seção, por que a arte própria ainda não entrou.
