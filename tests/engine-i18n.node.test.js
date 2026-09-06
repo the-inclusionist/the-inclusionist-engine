@@ -149,7 +149,12 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'boot/create-game.ts': 3,        // a mensagem do `throw` e as lacunas do hospedeiro
+  'boot/create-game.ts': 4,        // a mensagem do `throw` e as lacunas do hospedeiro
+                                   // 3 → 4 em 2026-09-06: o ADR-0087 acrescentou «mundo declarado não
+                                   // encontrado», que é a lacuna do hospedeiro para o campo novo. Sobe pela
+                                   // mesma razão das outras deste bloco: são mensagens que quem INTEGRA a
+                                   // engine lê, e não texto que chega a uma criança — o crivo é por FORMA e
+                                   // não distingue os dois.
   'render/sprites.ts': 1,          // `console.warn` de quadro fora do atlas — o dev lê, a criança não
   'core/contract.ts': 1,           // ⚠️ VOLTOU À LISTA, e a volta é honesta em vez de silenciosa: ela saiu
                                    // daqui em 2026-09-06 quando as dezesseis mensagens de `conformanceProblems`

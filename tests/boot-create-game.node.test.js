@@ -71,7 +71,7 @@ describe('o veredito: a fronteira passa ou não passa', () => {
 /* ===================== a metade que EXECUTA ===================== */
 
 /** Um documento de mentira: só o suficiente para `createGame` fazer o que faz sem navegador. */
-function domFalso({ comMarcacao = true } = {}) {
+function domFalso({ comMarcacao = true, ausentes = [] } = {}) {
   const feito = [];
   const el = (id) => ({
     id, hidden: true, style: {}, dataset: {},
@@ -84,7 +84,9 @@ function domFalso({ comMarcacao = true } = {}) {
     activeElement: null,
     createElement: (tag) => { feito.push(tag); return el(tag); },
     contains: () => false,
-    querySelector: (sel) => (comMarcacao ? el(sel) : null),
+    // ⚠️ `ausentes` existe porque um duplo que responde SIM a qualquer seletor não testa a pergunta —
+    // testa apenas que ela foi feita. Foi o que deixou o caso do mundo inexistente passar verde.
+    querySelector: (sel) => (ausentes.includes(sel) ? null : (comMarcacao ? el(sel) : null)),
     querySelectorAll: () => [],
   };
   const win = {
@@ -161,6 +163,30 @@ describe('createGame em execução', () => {
     expect(motor.problems[0]).toMatch(/filtros/);
   });
 
+
+  it('⚠️ o MUNDO declarado que NAO existe no documento vira `problems` (ADR-0087)', async () => {
+    // A falha que a conformidade nao alcanca: `conformanceProblems` confere a FORMA — que ha um seletor e
+    // que ele nao esta vazio — e nao tem como conferir se ele CASA alguma coisa, porque `core/contract` e
+    // puro e nao ve DOM.
+    //
+    // Um erro de digitacao passa na conformidade e produz exatamente o defeito que o ADR-0087 existe para
+    // eliminar: a simulacao de empatia aplicada a NADA, e um adulto informado de que sentiu algo que nao
+    // sentiu. E lacuna do HOSPEDEIRO, entao entra em `problems` — o jogo abre e quem o integrou le.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso({ ausentes: ['#gaem-region'] });
+    const torto = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#gaem-region' }) };
+    const motor = createGame({ declaration: torto, host: { doc, win } });
+    expect(motor.problems.join(' ')).toMatch(/mundo declarado nao encontrado|mundo declarado não encontrado/);
+    expect(motor.tts, 'o jogo abre mesmo assim').toBeTruthy();
+  });
+
+  it('`none` NAO exige elemento nenhum — atividade sem espaco', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const paint = { ...declaracaoValida(), world: () => ({ kind: 'none' }) };
+    const motor = createGame({ declaration: paint, host: { doc, win } });
+    expect(motor.problems.join(' ')).not.toMatch(/mundo declarado/);
+  });
   it('[Interface] declinar fica NO REGISTRO — um consumidor pode ser auditado pelo que recusou', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();

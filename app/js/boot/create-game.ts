@@ -178,6 +178,19 @@ export function createGame(o: CreateGameOptions): Engine {
     if (!$(sel)) problems.push(`marcação ausente: ${sel}`);
   }
 
+  // ⚠️ O MUNDO DECLARADO TEM DE EXISTIR NO DOCUMENTO, e esta é a falha que o ADR-0087 deixaria aberta se
+  // parasse na conformidade. `conformanceProblems` confere a FORMA — que há um seletor e que ele não está
+  // vazio — e não tem como conferir se ele CASA alguma coisa, porque `core/contract` é puro e não vê DOM.
+  //
+  // Um seletor com erro de digitação (`#gaem-region`) passa na conformidade e produz exatamente o defeito
+  // que o registro existe para eliminar: a simulação de empatia aplicada a NADA, e um adulto informado de
+  // que sentiu algo que não sentiu. É um problema do HOSPEDEIRO e não do programa, então entra em
+  // `problems` como as marcações — o jogo abre, e quem o integrou lê que o mundo dele não está lá.
+  const mundo = o.declaration.world();
+  if (mundo.kind === 'element' && !$(mundo.selector)) {
+    problems.push(`mundo declarado não encontrado: ${mundo.selector}`);
+  }
+
   // 1. IDIOMA ANTES DE TUDO. A interface não pode ser construída antes de a língua ser conhecida — foi o que
   //    o item 14 consertou movendo `initI18n()` para o topo do boot. O documento entra: ver o achado 15.
   initI18n(doc);
