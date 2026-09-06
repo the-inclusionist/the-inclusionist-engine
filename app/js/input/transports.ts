@@ -22,7 +22,50 @@
 // UMA FRASE ANTES DE COMEÇAR, e não meia tela jogável: a criança que descobre no meio que não consegue
 // alcançar uma ação conclui que o jogo está partido, e ela não tem como saber que não está.
 
-import type { Action } from '../core/actions.js';
+import { ACTIONS, type Action } from '../core/actions.js';
+
+/**
+ * QUANTOS LUGARES CADA TRANSPORTE REAL TEM, e de onde cada número vem. Estavam medidos e viviam só no teste;
+ * um número que só existe num teste não chega a criança nenhuma.
+ *
+ *   · `gamepad: 17` — a Gamepad API «standard» declara dezassete botões. Não é escolha nossa.
+ *   · `toque: 9` — `TOUCH_DEFAULT` (input/devices) nomeia nove slots, e são nove desde sempre.
+ *   · `teclado: ACTIONS.length` — ⚠️ e este é o que precisou de decisão.
+ *
+ * ⚠️ O NÚMERO DO TECLADO NÃO É O NÚMERO DE TECLAS, e também não é o número de ligações do esquema atual. Não
+ * é o de teclas porque cem teclas não são cem lugares que uma criança encontra e lembra; não é o do esquema
+ * porque o esquema cresce, e o limite passaria a ser a configuração e não o aparelho.
+ *
+ * É `ACTIONS.length` porque o que limita um teclado, na prática deste produto, é O VOCABULÁRIO QUE A ENGINE
+ * SABE NOMEAR: um transporte que cobre todas as posições que existem não tem como ser o curto. Derivado e não
+ * escrito à mão de propósito — quando o vocabulário crescer (foi de nove para catorze em 2026-09-06), este
+ * número cresce com ele e nunca passa a mentir.
+ */
+export const LUGARES = Object.freeze({ gamepad: 17, toque: 9, teclado: ACTIONS.length });
+
+/** Como se descobre que cada transporte está aqui AGORA. Injetado: nenhuma destas perguntas é pura. */
+export interface Disponibilidade {
+  gamepad: () => boolean;
+  toque: () => boolean;
+  teclado: () => boolean;
+}
+
+/**
+ * Os três transportes que esta engine sabe oferecer hoje.
+ *
+ * ⚠️ A DETECÇÃO DO TECLADO É IMPRECISA E ISSO É ACEITÁVEL — mas só porque a tela que consome isto INFORMA em
+ * vez de RECUSAR. Não há API que diga «há um teclado físico ligado»; o que o projeto já usa para a mesma
+ * pergunta é `pointer:coarse && hover:none` (o `isCoarsePointer` do `game/session`), e um tablet COM teclado
+ * responde «toque» a isso. Se a tela barrasse, esse tablet levaria uma recusa falsa num jogo que ele joga.
+ * Como ela apenas diz o que falta e deixa continuar, o erro custa uma frase a mais e nunca uma porta fechada.
+ */
+export function transportesPadrao(d: Disponibilidade): Transport[] {
+  return [
+    { id: 'gamepad', slots: LUGARES.gamepad, available: d.gamepad },
+    { id: 'teclado', slots: LUGARES.teclado, available: d.teclado },
+    { id: 'toque', slots: LUGARES.toque, available: d.toque },
+  ];
+}
 
 /** Um transporte, como ele se declara. Zero significado: quantos lugares, e se está aqui agora. */
 export interface Transport {
