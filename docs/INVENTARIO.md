@@ -347,4 +347,34 @@ O emparelhador por nome não os reconheceu. Ficam registados porque foram a úni
 
 ---
 
+## Anotação de 2026-09-06 — a migração mexeu em coisas que este ficheiro cita
+
+Escrita porque a regra deste ficheiro (§ acima) manda: *"quem mexer numa das três edita este ficheiro na
+mesma alteração"*. Duas coisas mudaram debaixo das citações abaixo.
+
+**1. `.gitlab-ci.yml` NÃO EXISTE MAIS.** O projeto no GitLab foi arquivado (ADR-0066 §5) e o ficheiro foi
+removido; o pipeline vive em `.github/workflows/ci.yml`. Toda citação `\.gitlab-ci\.yml:NN` nas linhas
+**63, 68, 71, 123 e 129** resolve agora **só no histórico do git** (`git show <sha>:.gitlab-ci.yml`). O
+que cada uma apontava continua existindo, noutro endereço:
+
+| citava | por causa de | onde está agora |
+|---|---|---|
+| `:40-43` | `npm run check:precache` e as 97 de 141 entradas congeladas | job `gate`, passo *precache budget* |
+| `:74`, `:87` | `CLOUDFLARE_API_TOKEN` e o `wrangler pages deploy` | ⚠️ **não foi portado** — o deploy do CF continua pela conexão git, que precisa ser reapontada |
+| `:75-87`, `:78-87` | o `pages_deploy` restrito à `main` e a duas variáveis | idem |
+
+**2. A contradição da linha 124 está RESOLVIDA.** Ela registrava que `docs/SECURITY.md:35-36` — *"Automated
+scanning is already in place: **CodeQL** … **Dependabot**"* — era refutada pelo `Security-Pipeline.md`.
+⚠️ **E o inventário estava certo: nenhum dos dois estava em vigor.** O CodeQL saiu na mudança de agosto e
+não pode voltar (é pago em repositório privado, e o ADR-0066 §3 mantém tudo privado até o ato); o
+Dependabot foi descartado na mesma mudança. Os dois documentos foram corrigidos em 2026-09-06 e passaram a
+dizer o que de facto roda: **gitleaks** no histórico inteiro, **semgrep**, e `npm audit --omit=dev`.
+
+⚠️ **E ficou uma descoberta que o inventário não podia ter feito, porque ela não está em texto nenhum:** os
+dois scanners que o `Security-Pipeline.md` marcava com ✅ **nunca rodaram uma vez**. Morriam em
+`/bin/sh: npm: not found`, exit 127, atrás de `allow_failure: true`. A contradição que este ficheiro
+apontou era entre dois documentos; a real era entre o documento e o mundo.
+
+---
+
 Levantado a partir de um catálogo de 108 problemas de engenharia de software, aplicado a este repositório. Este ficheiro é auto-suficiente: nada aqui precisa do catálogo para ser lido ou executado.
