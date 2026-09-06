@@ -1,5 +1,14 @@
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0090
+      what: "the `confirmation` clause ONLY — the paragraph that ends `until it exists this record is only
+             half true`. It said, correctly on the day, that no composition root wired `aoFalhar`, so the loop
+             stopped in SILENCE. Both roots wire it from 2026-09-06 (`ui/loop-crash`), and the record is whole.
+             ⚠️ NOTHING ELSE HERE CHANGES, and the distinction matters: the DECISION was always right and was
+             always implemented — `startLoop` caught once, stopped, and called `aoFalhar`. What was missing was
+             a caller, which is exactly the pattern ADR-0090 names: a wire the engine builds and never
+             connects, so nothing is missing at a glance."
   date: 2026-08-28
   decision-makers: [Dev]
   consulted:
