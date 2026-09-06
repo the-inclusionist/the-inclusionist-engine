@@ -40,9 +40,9 @@ describe('keyName', () => {
 });
 
 describe('keyUsedByOther', () => {
-  const p0 = { left: ['KeyA'], right: ['KeyD'], jump: ['KeyJ', 'Space'] };
-  const p1 = { left: ['ArrowLeft'], right: ['ArrowRight'], jump: ['Numpad5'] };
-  const p2 = { left: ['KeyF'], right: ['KeyH'], jump: ['KeyJ'] }; // KeyJ colide com p0.jump
+  const p0 = { left: ['KeyA'], right: ['KeyD'], action2: ['KeyJ', 'Space'] };
+  const p1 = { left: ['ArrowLeft'], right: ['ArrowRight'], action2: ['Numpad5'] };
+  const p2 = { left: ['KeyF'], right: ['KeyH'], action2: ['KeyJ'] }; // KeyJ colide com p0.jump
 
   it('[Zero] sem nenhum esquema (schemes vazio) -> -1', () => {
     expect(keyUsedByOther('KeyA', p0, [])).toBe(-1);
@@ -57,16 +57,16 @@ describe('keyUsedByOther', () => {
     expect(keyUsedByOther('KeyA', p0, [p0, p1, p2])).toBe(-1); // KeyA é só do p0, e p0===mapRef é pulado
   });
   it('[Interface] exclusão é por REFERÊNCIA, não por igualdade estrutural — um objeto igual mas distinto ainda conta', () => {
-    const p0clone = { left: ['KeyA'], right: ['KeyD'], jump: ['KeyJ', 'Space'] }; // mesmo conteúdo, outra referência
+    const p0clone = { left: ['KeyA'], right: ['KeyD'], action2: ['KeyJ', 'Space'] }; // mesmo conteúdo, outra referência
     expect(keyUsedByOther('KeyA', p0, [p0clone, p1, p2])).toBe(0); // agora p0clone (índice 0) não é o mapRef
   });
   it('[Right] retorna o primeiro dono na ORDEM dos jogadores quando há duplicidade (dado inconsistente)', () => {
-    const dupA = { jump: ['KeyQ'] };
-    const dupB = { jump: ['KeyQ'] };
+    const dupA = { action2: ['KeyQ'] };
+    const dupB = { action2: ['KeyQ'] };
     expect(keyUsedByOther('KeyQ', p0, [dupA, dupB])).toBe(0);
   });
   it('[Error] esquema com ação sem teclas (array vazio) não quebra a varredura', () => {
-    const empty = { jump: [] };
+    const empty = { action2: [] };
     expect(() => keyUsedByOther('KeyJ', p0, [empty])).not.toThrow();
     expect(keyUsedByOther('KeyJ', p0, [empty])).toBe(-1);
   });
@@ -81,7 +81,7 @@ describe('ACT_LABEL', () => {
   it('[Interface] cobre as 8 ações do jogo, cada uma com uma CHAVE i18n que existe no dicionário', () => {
     // A tabela guarda chave, não texto (ver a nota no módulo). Aferir só `toBeTruthy()` deixaria passar uma
     // chave inventada, que renderiza a própria chave na tela — por isso a segunda asserção.
-    const acts = ['left', 'right', 'up', 'down', 'run', 'jump', 'swap', 'especial'];
+    const acts = ['left', 'right', 'up', 'down', 'action1', 'action2', 'action4', 'action3'];
     expect(Object.keys(ACT_LABEL)).toEqual(acts);
     for (const a of acts) expect(pt[ACT_LABEL[a]], `chave fora do dicionário: ${ACT_LABEL[a]}`).toBeTypeOf('string');
   });

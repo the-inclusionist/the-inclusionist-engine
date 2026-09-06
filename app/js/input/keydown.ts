@@ -141,7 +141,7 @@ export type KeydownPlayer = PlayerView<
 /** Subconjunto do `ControlsState` de input/keyboard-runtime.ts que a decisão consulta (`controls` não entra:
  *  o original nunca o usa aqui, só os seis aliases e a lista achatada). */
 export interface ControlsSnapshot {
-  jump: string[]; left: string[]; right: string[]; up: string[]; down: string[]; run: string[];
+  action2: string[]; left: string[]; right: string[]; up: string[]; down: string[]; action1: string[];
   gameKeys: string[];
 }
 
@@ -248,7 +248,7 @@ export type { EdgeFlag } from './edges.js';
 /** A tecla vale como PULO para alguém? O alias do J1 OU a ação `jump` de qualquer jogador (é o que faz
  *  "qualquer um pode apertar Jogar de novo" e "qualquer um confirma no título" serem verdade). */
 export function isJumpKey(code: string, s: KeydownSnapshot): boolean {
-  return s.controls.jump.includes(code) || s.players.some((_p, i) => s.actionOf(code, i) === 'jump');
+  return s.controls.action2.includes(code) || s.players.some((_p, i) => s.actionOf(code, i) === 'action2');
 }
 
 /** A tecla é de JOGO? Verbatim do `isGameKeyCode` do game.js — o alias achatado OU o esquema de algum
@@ -270,10 +270,10 @@ export function isEasyShortcut(code: string, s: KeydownSnapshot): boolean {
  * e a seta deixa de andar no menu, enquanto cima continua funcionando pelas duas. Está anotado como caso de
  * teste em tests/keydown.node.test.js, e é candidato a conserto, não a "limpeza" silenciosa.
  */
-export function titleNavOf(code: string, s: KeydownSnapshot, jump: boolean): TitleNav {
+export function titleNavOf(code: string, s: KeydownSnapshot, action2: boolean): TitleNav {
   return {
-    yes: jump || code === 'Enter',
-    no: code === 'Escape' || s.players.some((_p, i) => s.actionOf(code, i) === 'especial'),
+    yes: action2 || code === 'Enter',
+    no: code === 'Escape' || s.players.some((_p, i) => s.actionOf(code, i) === 'action3'),
     up: s.controls.up.includes(code) || code === 'ArrowUp',
     down: s.controls.down.includes(code) || code === 'ArrowDown',
     left: s.controls.left.includes(code),
@@ -315,10 +315,10 @@ export function modalIntentOf(code: string, s: KeydownSnapshot, owner: number, g
   const R = act ? act === 'right' : K.right.includes(code);
   const U = act ? act === 'up' : K.up.includes(code);
   const D = act ? act === 'down' : K.down.includes(code);
-  const J = act ? act === 'jump' : K.jump.includes(code);
+  const J = act ? act === 'action2' : K.action2.includes(code);
   // ESPECIAL = apagar a última sílaba/letra. A leitura genérica sai de `pl.ctrl`, NÃO de `K` — assimetria do
   // original preservada (não existe alias `KESPECIAL` em ControlsState; o original alcançava `qpl.ctrl`).
-  const E = act ? act === 'especial' : ((pl.ctrl?.especial || []).includes(code));
+  const E = act ? act === 'action3' : ((pl.ctrl?.action3 || []).includes(code));
 
   // A ORDEM é a do original e importa: com um esquema em que a mesma tecla é `left` e `jump`, ganha `left`.
   if (L) return 'left';
@@ -367,13 +367,13 @@ export function decideKeydown(ev: { code: string; altKey?: boolean; ctrlKey?: bo
 
   // 4..5 · fim de fase / título. O pulo de QUALQUER jogador aciona o botão principal, sem depender do foco do
   // mouse (clicar na tela tirava o foco do botão e o teclado parava de funcionar — report do José).
-  const jump = isJumpKey(code, s);
+  const action2 = isJumpKey(code, s);
   const pauseKey = PAUSE_KEYS.has(code);
-  if (s.winVisible) { const again = jump || pauseKey; return { kind: 'win', again, preventDefault: again }; }
+  if (s.winVisible) { const again = action2 || pauseKey; return { kind: 'win', again, preventDefault: again }; }
   if (s.telaDeTitulo) {
     // multi-tela: só o Jogador 1 escolhe o jogo. A tecla de um dos outros é consumida com um aviso falado.
     if (s.numPlayers > 1 && s.whichPlayer(code) > 0) return { kind: 'title', wait: true, nav: null, preventDefault: true };
-    const nav = titleNavOf(code, s, jump);
+    const nav = titleNavOf(code, s, action2);
     const has = hasTitleIntent(nav);
     return { kind: 'title', wait: false, nav: has ? nav : null, preventDefault: has };
   }

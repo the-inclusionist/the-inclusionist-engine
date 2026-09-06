@@ -258,10 +258,10 @@ export function pauseLegendHtml(sim: readonly [string, string], nao: readonly [s
 
 /** Os quatro botões de ação, na ordem fixa da legenda: pular · especial · correr · trocar. */
 export interface ActionGlyphs {
-  jump: readonly [string, string | null];
-  especial: readonly [string, string | null];
-  run: readonly [string, string | null];
-  swap: readonly [string, string | null];
+  action2: readonly [string, string | null];
+  action3: readonly [string, string | null];
+  action1: readonly [string, string | null];
+  action4: readonly [string, string | null];
 }
 
 /**
@@ -277,8 +277,8 @@ export function legendRow1(dirTxt: string, pauseTxt: string): string {
 
 /** Linha 2 da legenda: os quatro botões de ação. */
 export function legendRow2(g: ActionGlyphs): string {
-  return chip(g.jump[0], g.jump[1], t('legend.jump')) + chip(g.especial[0], g.especial[1], t('legend.especial'))
-    + chip(g.run[0], g.run[1], t('legend.run')) + chip(g.swap[0], g.swap[1], t('legend.swap'));
+  return chip(g.action2[0], g.action2[1], t('legend.jump')) + chip(g.action3[0], g.action3[1], t('legend.especial'))
+    + chip(g.action1[0], g.action1[1], t('legend.run')) + chip(g.action4[0], g.action4[1], t('legend.swap'));
 }
 
 /** O innerHTML final de `#title-legend`: duas `.lg-row`. */
@@ -302,7 +302,7 @@ export function padActionGlyphs(layout: string, custom: PadMap | null): ActionGl
     return b && typeof b === 'object' && typeof b.b === 'number' ? String(b.b) : def;
   };
   const gy = (k: string): readonly [string, string | null] => (set[k] as [string, string] | undefined) || [k, '#3a4a6a'];
-  return { jump: gy(bOf('jump', '0')), especial: gy(bOf('especial', '1')), run: gy(bOf('run', '2')), swap: gy(bOf('swap', '3')) };
+  return { action2: gy(bOf('action2', '0')), action3: gy(bOf('action3', '1')), action1: gy(bOf('action1', '2')), action4: gy(bOf('action4', '3')) };
 }
 
 /** Glifos do joystick VIRTUAL (toque): sempre o design 'generic' (0/1/2/3), sem mapa custom. */
@@ -437,7 +437,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
     const m = ctx.kbFor(0);
     const K = (a: string): string => ctx.keyName((m[a] || [])[0] || '?');
     const l1 = legendRow1(`${K('up')} ${K('left')} ${K('down')} ${K('right')}`, 'Enter');
-    const l2 = legendRow2({ jump: [K('jump'), null], especial: [K('especial'), null], run: [K('run'), null], swap: [K('swap'), null] });
+    const l2 = legendRow2({ action2: [K('action2'), null], action3: [K('action3'), null], action1: [K('action1'), null], action4: [K('action4'), null] });
     return [l1, l2];
   }
 

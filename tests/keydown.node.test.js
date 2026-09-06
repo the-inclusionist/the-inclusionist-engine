@@ -29,9 +29,9 @@ const setPhaseValue = (p) => { faseFalsa = p; };
 
 /* ===================== fixtures (esquemas de fábrica de input/keyboard.ts) ===================== */
 
-const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], run: ['KeyU'], jump: ['KeyJ', 'Space'], swap: ['KeyI'], especial: ['KeyK'] };
-const P2A = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], run: ['KeyU'], jump: ['KeyJ'], swap: ['KeyI'], especial: ['KeyK'] };
-const P2B = { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], run: ['Numpad8'], jump: ['Numpad5'], swap: ['Numpad9'], especial: ['Numpad6'] };
+const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], action1: ['KeyU'], action2: ['KeyJ', 'Space'], action4: ['KeyI'], action3: ['KeyK'] };
+const P2A = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action4: ['KeyI'], action3: ['KeyK'] };
+const P2B = { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], action1: ['Numpad8'], action2: ['Numpad5'], action4: ['Numpad9'], action3: ['Numpad6'] };
 
 // O JOGADOR NÃO CARREGA MAIS O DESAFIO (ADR-0033): `quiz` saiu de `core/entity`, e com ele saiu daqui. Quem
 // diz se há modal aberto é o SNAPSHOT, por posição — `modal: [true, false]` nos casos abaixo. É a mudança que
@@ -42,10 +42,10 @@ const mkPlayer = (i, ctrl, extra = {}) => ({ i, ctrl, waiting: false, easy: fals
  *  `gameKeys` = união de TODOS os esquemas ativos. (Repetir a conta aqui seria trapaça; a forma é copiada,
  *  mas os dados vêm dos esquemas de fábrica, iguais aos do jogo.) */
 function controlsFrom(schemes) {
-  const { jump, left, right, up, down, run } = SOLO;
+  const { action2, left, right, up, down, action1 } = SOLO;
   const set = new Set();
   schemes.forEach((s) => { for (const a in s) for (const c of s[a]) set.add(c); });
-  return { jump, left, right, up, down, run, gameKeys: [...set] };
+  return { action2, left, right, up, down, action1, gameKeys: [...set] };
 }
 
 /** Um mundo. Tudo tem padrão de "jogando, solo, nada aberto"; cada caso muda só o que interessa. */
@@ -220,8 +220,8 @@ describe('tela de título', () => {
 
   // ASSIMETRIA REAL, preservada verbatim do monólito — pinada como está HOJE, não como deveria ser.
   it('[Boundary] cima/baixo aceitam as setas ALÉM do remap; esquerda/direita NÃO (assimetria preservada)', () => {
-    const remap = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], run: ['KeyU'], jump: ['KeyJ'], swap: ['KeyI'], especial: ['KeyK'] };
-    const s = snap({ phase: 'title', players: [mkPlayer(0, remap)], controls: { ...controlsFrom([remap]), up: remap.up, down: remap.down, left: remap.left, right: remap.right, jump: remap.jump, run: remap.run } });
+    const remap = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action4: ['KeyI'], action3: ['KeyK'] };
+    const s = snap({ phase: 'title', players: [mkPlayer(0, remap)], controls: { ...controlsFrom([remap]), up: remap.up, down: remap.down, left: remap.left, right: remap.right, action2: remap.action2, action1: remap.action1 } });
     expect(decideKeydown(ev('ArrowUp'), s).nav.up).toBe(true);      // seta ainda sobe
     expect(decideKeydown(ev('ArrowLeft'), s).nav).toBeNull();       // seta NÃO anda para o lado
   });
@@ -320,7 +320,7 @@ describe('modal: a tecla age no modal do DONO dela', () => {
     // conflito não existe.
     const s2 = snap({
       players: [mkPlayer(0, SOLO)], modal: [true],
-      controls: { ...controlsFrom([SOLO]), left: ['Numpad0'], jump: ['Numpad0'], right: [], up: [], down: [], run: [], gameKeys: ['Numpad0'] },
+      controls: { ...controlsFrom([SOLO]), left: ['Numpad0'], action2: ['Numpad0'], right: [], up: [], down: [], action1: [], gameKeys: ['Numpad0'] },
     });
     // `Numpad0` não pertence a esquema nenhum → genérica → as seis leituras vêm de `controls`
     expect(modalIntentOf('Numpad0', s2, 0, true)).toBe('left');
@@ -457,7 +457,7 @@ describe('predicados puros', () => {
     expect(edgesFor('KeyA', torto)).toEqual([{ playerIndex: 0, edge: 'leftEdge' }]);
   });
   it('a tabela de bordas cobre as seis ações, nesta ordem', () => {
-    expect(EDGE_BY_ACTION.map(([a]) => a)).toEqual(['jump', 'run', 'left', 'right', 'swap', 'especial']);
+    expect(EDGE_BY_ACTION.map(([a]) => a)).toEqual(['action2', 'action1', 'left', 'right', 'action4', 'action3']);
   });
 });
 

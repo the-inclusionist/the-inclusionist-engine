@@ -92,7 +92,7 @@ export interface SettingsControlsApi {
  */
 export const ACT_LABEL: Record<string, string> = {
   left: 'act.left', right: 'act.right', up: 'act.up', down: 'act.down',
-  run: 'act.run', jump: 'act.jump', swap: 'act.swap', especial: 'act.especial',
+  action1: 'act.run', action2: 'act.jump', action4: 'act.swap', action3: 'act.especial',
 };
 
 /** Physical key code -> short readable label. Only 'Space' has a word to translate; the rest are glyphs and

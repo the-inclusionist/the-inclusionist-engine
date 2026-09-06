@@ -109,7 +109,7 @@ describe('legenda do título — os chips de dispositivo', () => {
 
   it('as duas linhas saem na ordem fixa: direcional+pausa, depois pular/especial/correr/trocar', () => {
     const l1 = legendRow1('✜', 'START');
-    const l2 = legendRow2({ jump: ['A', null], especial: ['B', null], run: ['C', null], swap: ['D', null] });
+    const l2 = legendRow2({ action2: ['A', null], action3: ['B', null], action1: ['C', null], action4: ['D', null] });
     // Contra `t()` e não contra o português: fixar as palavras aqui devolveria ao teste o texto que saiu do
     // código. A ORDEM é o que este caso guarda, e ela não depende de idioma nenhum.
     expect(l1.indexOf(t('legend.move'))).toBeLessThan(l1.indexOf(t('legend.pause')));
@@ -122,28 +122,28 @@ describe('legenda do título — os chips de dispositivo', () => {
 
   it('gamepad no padrão: rótulos e cores do MODELO detectado', () => {
     const g = padActionGlyphs('microsoft', null);
-    expect(g.jump).toEqual(['A', '#2fae4e']);
-    expect(g.especial).toEqual(['B', '#d23b3b']);
-    expect(g.run).toEqual(['X', '#2f6fd2']);
-    expect(g.swap).toEqual(['Y', '#d9a400']);
+    expect(g.action2).toEqual(['A', '#2fae4e']);
+    expect(g.action3).toEqual(['B', '#d23b3b']);
+    expect(g.action1).toEqual(['X', '#2f6fd2']);
+    expect(g.action4).toEqual(['Y', '#d9a400']);
   });
 
   it('gamepad FORA do padrão: o mapa do assistente redireciona cada ação para o botão que a pessoa apertou', () => {
-    const g = padActionGlyphs('generic', { jump: { b: 2 }, especial: { b: 3 } });
-    expect(g.jump[0]).toBe('2');     // "pular" agora mostra o botão 2
-    expect(g.especial[0]).toBe('3');
-    expect(g.run[0]).toBe('2');      // sem entrada custom: cai no índice default
-    expect(g.swap[0]).toBe('3');
+    const g = padActionGlyphs('generic', { action2: { b: 2 }, action3: { b: 3 } });
+    expect(g.action2[0]).toBe('2');     // "pular" agora mostra o botão 2
+    expect(g.action3[0]).toBe('3');
+    expect(g.action1[0]).toBe('2');      // sem entrada custom: cai no índice default
+    expect(g.action4[0]).toBe('3');
   });
 
   it('mapa custom com índice fora do design cai no cinza de fallback, sem quebrar a legenda', () => {
-    const g = padActionGlyphs('microsoft', { jump: { b: 9 } });
-    expect(g.jump).toEqual(['9', '#3a4a6a']);
+    const g = padActionGlyphs('microsoft', { action2: { b: 9 } });
+    expect(g.action2).toEqual(['9', '#3a4a6a']);
   });
 
   it('design desconhecido cai em "generic"; o toque usa sempre o generic', () => {
     expect(padActionGlyphs('inventado', null)).toEqual(padActionGlyphs('generic', null));
-    expect(touchActionGlyphs().jump).toEqual(['0', '#3a4a6a']);
+    expect(touchActionGlyphs().action2).toEqual(['0', '#3a4a6a']);
   });
 
   it('a legenda descreve o pad do JOGADOR 1 quando ele tem um; senão, o primeiro conectado', () => {

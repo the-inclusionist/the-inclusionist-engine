@@ -161,7 +161,7 @@ export function resolveY(pl: PhysicsPlayer): void {
     const tt = row * TILE, type = tileAt(col, row);
     if (pl.vy > 0) {
       pl.y = tt - 0.01;
-      if (ehTrampolim(type) && !C.isWheelchair()) { pl.vy = pl.easy ? -EASY.tramp : -(held(pl, 'jump') ? TUNE.trampMax : TUNE.trampBase); } // Fácil: quique suave. Cadeirante: sem quique (é elevador)
+      if (ehTrampolim(type) && !C.isWheelchair()) { pl.vy = pl.easy ? -EASY.tramp : -(held(pl, 'action2') ? TUNE.trampMax : TUNE.trampBase); } // Fácil: quique suave. Cadeirante: sem quique (é elevador)
       else { pl.vy = 0; pl.onGround = true; }
     } else if (pl.vy < 0) { pl.y = tt + TILE + BOX.h + 0.01; pl.vy = 0; }
     return;
@@ -234,10 +234,10 @@ function updatePowerSwap(pl: PhysicsPlayer, dt: number): void {
     if (!pl.owned.length) return; const seq = ['off', ...pl.owned]; const idx = seq.indexOf(pl.activePower); pl.activePower = seq[(idx + 1) % seq.length]!;
     pl.clinging = false; pl.flying = false; C.sfx('power'); C.showPower(pl); C.srSay(C.POWER_MSG(pl.activePower, 'act.run')); // o botão do grude é sempre o de interação
   };
-  const swapNow = held(pl, 'swap');
+  const swapNow = held(pl, 'action4');
   if (swapNow) {
     pl._swapT += dt;
-    if (!pl._swapSonar && (pl._swapT > 18 || held(pl, 'especial'))) { pl._swapSonar = true; C.nav.sonar(pl); } // segurar ~0,3s OU acorde swap+especial
+    if (!pl._swapSonar && (pl._swapT > 18 || held(pl, 'action3'))) { pl._swapSonar = true; C.nav.sonar(pl); } // segurar ~0,3s OU acorde swap+especial
   } else { if (pl._swapDown && !pl._swapSonar) doSwap(); pl._swapT = 0; pl._swapSonar = false; } // soltou após tap curto → troca
   pl._swapDown = swapNow;
 }
@@ -284,9 +284,9 @@ function moveBallistic(pl: PhysicsPlayer, dt: number, run: boolean): boolean {
   let fired = false;
   const g = (pl.inWater ? 0.10 : TUNE.gravity) * (pl.easy ? EASY.grav : 1); // Fácil: gravidade ×2/3
   if (!(pl.onGround && pl.vy >= 0)) pl.vy += g * dt;
-  if (pl.easy && held(pl, 'jump') && pl.vy > EASY.slowFall && !pl.inWater) pl.vy = EASY.slowFall; // Fácil: segurar pulo = flutua descendo
+  if (pl.easy && held(pl, 'action2') && pl.vy > EASY.slowFall && !pl.inWater) pl.vy = EASY.slowFall; // Fácil: segurar pulo = flutua descendo
   if (pl.inWater) {
-    if (held(pl, 'jump')) { if (pl.waterStroke <= 0) { pl.vy -= run ? TUNE.waterJumpRun : TUNE.waterJump; pl.waterStroke = TUNE.waterStrokeFrames; } }
+    if (held(pl, 'action2')) { if (pl.waterStroke <= 0) { pl.vy -= run ? TUNE.waterJumpRun : TUNE.waterJump; pl.waterStroke = TUNE.waterStrokeFrames; } }
     else pl.waterStroke = 0;
     if (pl.waterStroke > 0) pl.waterStroke -= dt;
     pl.vy = Math.min(pl.vy, TUNE.waterMaxFall);
@@ -353,10 +353,10 @@ export function stepSounds(pl: PhysicsPlayer, dt: number, dir: number, run: bool
     if (C.caneOn(pl)) {
       if (pl.airTime <= 5) { // modo cego: chão ESTÁVEL (coyote) evita o flicker do onGround
         if (dir !== 0) { pl.caneDist = (pl.caneDist || 0) + Math.abs(pl.vx * dt); if (pl.caneDist >= caneBlockPx()) { pl.caneDist = 0; C.nav.caneTap(pl); } } // ANDANDO: batida por DISTÂNCIA
-        else { pl.caneDist = 0; if (botaoDeCorrerEngatado(pl, held(pl, 'run'))) { pl.stepT += dt; if (pl.stepT >= 25) { pl.stepT = 0; C.nav.caneTap(pl); } } else pl.stepT = 99; } // PARADO: sem batida; correr ENGATADO = sondagem (com a alternância, a trava; sem ela, segurar)
+        else { pl.caneDist = 0; if (botaoDeCorrerEngatado(pl, held(pl, 'action1'))) { pl.stepT += dt; if (pl.stepT >= 25) { pl.stepT = 0; C.nav.caneTap(pl); } } else pl.stepT = 99; } // PARADO: sem batida; correr ENGATADO = sondagem (com a alternância, a trava; sem ela, segurar)
       }
     } else if (pl.onGround && dir !== 0) {
-      const cad = correndoAgora(pl, held(pl, 'run')) ? 11 : 17; pl.stepT += dt; // a cadência do passo segue a corrida, trava inclusive
+      const cad = correndoAgora(pl, held(pl, 'action1')) ? 11 : 17; pl.stepT += dt; // a cadência do passo segue a corrida, trava inclusive
       if (pl.stepT >= cad) { pl.stepT = 0; const m = C.surfaceUnder(pl); if (m) C.noiseHit(m); if (run) C.puffDust(pl.x - pl.facing * 5, pl.y, 2); }
     }
   }
@@ -384,7 +384,7 @@ export function stepPlayer(pl: PhysicsPlayer, dt: number): StepResult {
   // A TRAVA entra aqui: com `toggleRun`, correr é ESTADO e a tecla segurada não conta (ver game/run-toggle).
   // A guarda da bengala fica de fora da decisão pura porque ela pergunta ao JOGO (`caneOn`), e o módulo puro
   // não conhece jogo nenhum.
-  const run = correndoAgora(pl, held(pl, 'run')) && (!C.caneOn(pl) || !!pl.runCane), turbo = pl.activePower === 'turbo'; // cego só corre com a bengala de corrida
+  const run = correndoAgora(pl, held(pl, 'action1')) && (!C.caneOn(pl) || !!pl.runCane), turbo = pl.activePower === 'turbo'; // cego só corre com a bengala de corrida
   const dir = horizontalMove(pl, run, turbo);
   if (dir !== 0) pl.facing = dir; pl.leftEdge = false; pl.rightEdge = false;
   const feat = sampleFeatures(pl); pl.inWater = feat.water; pl.onLadder = feat.ladder;

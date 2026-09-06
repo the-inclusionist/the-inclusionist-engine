@@ -6,23 +6,23 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { actionForCode, ownerOfCode, initKeyboardRuntime } from '../app/js/input/keyboard-runtime.js';
 
 // Esquemas de teste (formato de input/keyboard.ts: ação -> lista de codes)
-const solo = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], run: ['KeyU'], jump: ['KeyJ', 'Space'], swap: ['KeyI'], especial: ['KeyK'] };
-const p2a = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], run: ['KeyU'], jump: ['KeyJ'], swap: ['KeyI'], especial: ['KeyK'] };
-const p2b = { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], run: ['Numpad8'], jump: ['Numpad5'], swap: ['Numpad9'], especial: ['Numpad6'] };
+const solo = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], action1: ['KeyU'], action2: ['KeyJ', 'Space'], action4: ['KeyI'], action3: ['KeyK'] };
+const p2a = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action4: ['KeyI'], action3: ['KeyK'] };
+const p2b = { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], action1: ['Numpad8'], action2: ['Numpad5'], action4: ['Numpad9'], action3: ['Numpad6'] };
 const p4 = [
-  { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], run: ['KeyZ'], jump: ['KeyX'], swap: ['KeyC'], especial: ['KeyV'] },
-  { left: ['KeyJ'], right: ['KeyL'], up: ['KeyI'], down: ['KeyK'], run: ['KeyM'], jump: ['Comma'], swap: ['Period'], especial: ['Semicolon', 'Slash'] },
-  { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], run: ['Home'], jump: ['End'], swap: ['PageUp'], especial: ['PageDown'] },
-  { left: ['Numpad4'], right: ['Numpad6'], up: ['Numpad8'], down: ['Numpad5'], run: ['Numpad2'], jump: ['Numpad0'], swap: ['Numpad3'], especial: ['NumpadDecimal'] },
+  { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyZ'], action2: ['KeyX'], action4: ['KeyC'], action3: ['KeyV'] },
+  { left: ['KeyJ'], right: ['KeyL'], up: ['KeyI'], down: ['KeyK'], action1: ['KeyM'], action2: ['Comma'], action4: ['Period'], action3: ['Semicolon', 'Slash'] },
+  { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], action1: ['Home'], action2: ['End'], action4: ['PageUp'], action3: ['PageDown'] },
+  { left: ['Numpad4'], right: ['Numpad6'], up: ['Numpad8'], down: ['Numpad5'], action1: ['Numpad2'], action2: ['Numpad0'], action4: ['Numpad3'], action3: ['NumpadDecimal'] },
 ];
 
 describe('actionForCode', () => {
   it('[Right] tecla mapeada retorna a ação dona dela', () => {
-    expect(actionForCode(solo, 'KeyJ')).toBe('jump');
+    expect(actionForCode(solo, 'KeyJ')).toBe('action2');
     expect(actionForCode(solo, 'KeyA')).toBe('left');
   });
   it('[Right] uma ação pode ter várias teclas (qualquer uma delas resolve a ação)', () => {
-    expect(actionForCode(solo, 'Space')).toBe('jump');
+    expect(actionForCode(solo, 'Space')).toBe('action2');
     expect(actionForCode(solo, 'ArrowLeft')).toBe('left');
   });
   it('[Boundary] tecla de ninguém (fora do esquema) -> null', () => {
@@ -32,12 +32,12 @@ describe('actionForCode', () => {
     expect(actionForCode({}, 'KeyJ')).toBeNull();
   });
   it('[Error] ação com lista de teclas vazia não quebra a varredura', () => {
-    expect(() => actionForCode({ jump: [] }, 'KeyJ')).not.toThrow();
-    expect(actionForCode({ jump: [] }, 'KeyJ')).toBeNull();
+    expect(() => actionForCode({ action2: [] }, 'KeyJ')).not.toThrow();
+    expect(actionForCode({ action2: [] }, 'KeyJ')).toBeNull();
   });
   it('[Boundary] tecla compartilhada por duas ações no MESMO esquema (dado inconsistente): primeira ação na ordem de inserção vence', () => {
-    const dup = { swap: ['KeyC'], especial: ['KeyC'] };
-    expect(actionForCode(dup, 'KeyC')).toBe('swap');
+    const dup = { action4: ['KeyC'], action3: ['KeyC'] };
+    expect(actionForCode(dup, 'KeyC')).toBe('action4');
   });
 });
 
@@ -59,8 +59,8 @@ describe('ownerOfCode', () => {
     expect(ownerOfCode(p4, 'KeyQ')).toBe(-1);
   });
   it('[Interface] retorna o PRIMEIRO dono na ordem dos jogadores quando dois esquemas colidem (dado inconsistente/remap malfeito)', () => {
-    const a = { jump: ['KeyQ'] };
-    const b = { jump: ['KeyQ'] };
+    const a = { action2: ['KeyQ'] };
+    const b = { action2: ['KeyQ'] };
     expect(ownerOfCode([a, b], 'KeyQ')).toBe(0);
   });
 });
@@ -95,9 +95,9 @@ describe('initKeyboardRuntime — actionOf / whichPlayer', () => {
 
   it('[Right] actionOf resolve a ação PELO ESQUEMA do jogador pedido, não pelo de outro', () => {
     const rt = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => 2, getPlayers: () => [] });
-    expect(rt.actionOf('KeyJ', 0)).toBe('jump'); // dono: P1 (p2a)
+    expect(rt.actionOf('KeyJ', 0)).toBe('action2'); // dono: P1 (p2a)
     expect(rt.actionOf('KeyJ', 1)).toBeNull(); // P2 (p2b) não tem KeyJ
-    expect(rt.actionOf('Numpad5', 1)).toBe('jump'); // dono: P2 (p2b)
+    expect(rt.actionOf('Numpad5', 1)).toBe('action2'); // dono: P2 (p2b)
   });
   it('[Boundary] tecla de ninguém -> actionOf null e whichPlayer -1', () => {
     const rt = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => 2, getPlayers: () => [] });
@@ -114,10 +114,10 @@ describe('initKeyboardRuntime — actionOf / whichPlayer', () => {
     expect(rt.whichPlayer('NumpadDecimal')).toBe(3); // especial do P4
   });
   it('[Interface] remapeada: mudar o code na MESMA ação move o dono junto (kbFor lê o kb atual, sem cache)', () => {
-    const mutableP2a = { ...p2a, jump: ['KeyR'] }; // remap: pulo do P1 agora é R
+    const mutableP2a = { ...p2a, action2: ['KeyR'] }; // remap: pulo do P1 agora é R
     const kb2 = { solo, p2: [mutableP2a, p2b], p3: [], p4: [] };
     const rt = initKeyboardRuntime({ getKB: () => kb2, getNumPlayers: () => 2, getPlayers: () => [] });
-    expect(rt.actionOf('KeyR', 0)).toBe('jump');
+    expect(rt.actionOf('KeyR', 0)).toBe('action2');
     expect(rt.actionOf('KeyJ', 0)).toBeNull(); // tecla antiga não resolve mais
   });
 });
@@ -146,9 +146,9 @@ describe('initKeyboardRuntime — computeControlsState', () => {
     const rt = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => 2, getPlayers: () => [{ ctrl: p2a }, { ctrl: p2b }] });
     const s = rt.computeControlsState();
     expect(s.controls).toBe(solo);
-    expect(s.jump).toBe(solo.jump);
+    expect(s.action2).toBe(solo.action2);
     expect(s.left).toBe(solo.left);
-    expect(s.run).toBe(solo.run); // KRUN: computado mas nunca lido pelo jogo (achado — ver relato)
+    expect(s.action1).toBe(solo.action1); // KRUN: computado mas nunca lido pelo jogo (achado — ver relato)
   });
   it('[Right] gameKeys reúne as teclas de TODOS os jogadores ativos (todas as ações, não só direção/pulo)', () => {
     const rt = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => 2, getPlayers: () => [{ ctrl: p2a }, { ctrl: p2b }] });
@@ -158,8 +158,8 @@ describe('initKeyboardRuntime — computeControlsState', () => {
   it('[Zero] sem jogadores ativos, cai no fallback de 5 ações (jump/left/right/up/down do kb.solo — SEM run)', () => {
     const rt = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => 0, getPlayers: () => [] });
     const s = rt.computeControlsState();
-    expect(new Set(s.gameKeys)).toEqual(new Set([...solo.jump, ...solo.left, ...solo.right, ...solo.up, ...solo.down]));
-    expect(s.gameKeys).not.toContain('KeyU'); // solo.run — o fallback original também não inclui KRUN
+    expect(new Set(s.gameKeys)).toEqual(new Set([...solo.action2, ...solo.left, ...solo.right, ...solo.up, ...solo.down]));
+    expect(s.gameKeys).not.toContain('KeyU'); // solo.action1 — o fallback original também não inclui KRUN
   });
   it('[Many] 4 jogadores: gameKeys cobre as 8 ações × 4 jogadores sem duplicar (Set)', () => {
     const rt = initKeyboardRuntime({ getKB: () => kb, getNumPlayers: () => 4, getPlayers: () => p4.map((c) => ({ ctrl: c })) });
@@ -193,11 +193,11 @@ describe('controlsState / refreshControls — memoria e invalidacao', () => {
   it('[Right] mudar o KB NAO muda o estado memorizado ate refreshControls() — era o papel do applyControls()', () => {
     const ref = { kb: { solo } };
     const r = rt(ref, [{ ctrl: solo }]);
-    expect(r.controlsState().jump).toEqual(['KeyJ', 'Space']);
-    ref.kb = { solo: { ...solo, jump: ['KeyP'] } };  // o painel de controles remapeou...
-    expect(r.controlsState().jump).toEqual(['KeyJ', 'Space']); // ...e ainda nao aplicou
+    expect(r.controlsState().action2).toEqual(['KeyJ', 'Space']);
+    ref.kb = { solo: { ...solo, action2: ['KeyP'] } };  // o painel de controles remapeou...
+    expect(r.controlsState().action2).toEqual(['KeyJ', 'Space']); // ...e ainda nao aplicou
     r.refreshControls();
-    expect(r.controlsState().jump).toEqual(['KeyP']);
+    expect(r.controlsState().action2).toEqual(['KeyP']);
   });
 
   it('[Right] refreshControls devolve o mesmo objeto que a leitura seguinte entrega', () => {

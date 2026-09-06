@@ -12,8 +12,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initTouchBindings, START_TAP_MS } from '../app/js/input/touch-bindings.js';
 
-const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], run: ['KeyU'], jump: ['KeyJ', 'Space'], swap: ['KeyI'], especial: ['KeyK'] };
-const TOUCH_MAP = { up: 'up', down: 'down', left: 'left', right: 'right', start: 'pause', b0: 'jump', b1: 'especial', b2: 'run', b3: 'swap' };
+const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], action1: ['KeyU'], action2: ['KeyJ', 'Space'], action4: ['KeyI'], action3: ['KeyK'] };
+const TOUCH_MAP = { up: 'up', down: 'down', left: 'left', right: 'right', start: 'pause', b0: 'action2', b1: 'action3', b2: 'action1', b3: 'action4' };
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -142,7 +142,7 @@ describe('.touch-btn — a função vem do touchMap, não do data-act', () => {
   it('[Right] o slot é lido do touchMap A CADA evento: remapear vale no toque seguinte', () => {
     const map = { ...TOUCH_MAP };
     wire({ getTouchMap: () => map });
-    map.b0 = 'run';                       // o painel remapeou o botão 0 para "correr"
+    map.b0 = 'action1';                       // o painel remapeou o botão 0 para "correr"
     fire(b0(), 'pointerdown');
     expect(heldKeys.has('KeyU')).toBe(true);
     expect(heldKeys.has('KeyJ')).toBe(false);
@@ -193,7 +193,7 @@ describe('#touch-start', () => {
   });
 
   it('[Right] com ação momentânea, aperta no clique e agenda o soltar', () => {
-    wire({ getStartAction: () => 'especial' });
+    wire({ getStartAction: () => 'action3' });
     $('#touch-start').click();
     expect(heldKeys.has('KeyK')).toBe(true);
     expect(calls.defer[0][1]).toBe(START_TAP_MS);
@@ -301,7 +301,7 @@ describe('#touch-cross — hit-test com retângulo real e captura de ponteiro', 
   });
 
   it('[Right] a cruz é REMAPEÁVEL como qualquer botão — a direção física passa pelo touchMap', () => {
-    wire({ getTouchMap: () => ({ ...TOUCH_MAP, left: 'jump' }) });
+    wire({ getTouchMap: () => ({ ...TOUCH_MAP, left: 'action2' }) });
     fire(cross(), 'pointerdown', { x: 10, y: 100 });
     expect(heldKeys.has('KeyJ')).toBe(true);
     expect(heldKeys.has('KeyA')).toBe(false);

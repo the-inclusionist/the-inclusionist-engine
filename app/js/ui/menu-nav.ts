@@ -145,8 +145,8 @@ export const KEY_RIGHT: ReadonlySet<string> = new Set(['ArrowRight', 'KeyD']);
  */
 export function menuKeyIntent(code: string, act: string | null): NavKeys {
   return {
-    yes: KEY_YES.has(code) || act === 'jump',
-    no: KEY_NO.has(code) || act === 'especial',
+    yes: KEY_YES.has(code) || act === 'action2',
+    no: KEY_NO.has(code) || act === 'action3',
     up: KEY_UP.has(code) || act === 'up',
     down: KEY_DOWN.has(code) || act === 'down',
     left: KEY_LEFT.has(code) || act === 'left',

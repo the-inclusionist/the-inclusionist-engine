@@ -29,5 +29,5 @@ export const PAD_DESIGNS: Record<string, Record<string, string[]>> = { // por bo
 export const PAD_GLYPH_SPOKEN: Record<string, string> = {
   '✕': 'pad.glyph.cross', '○': 'pad.glyph.circle', '□': 'pad.glyph.square', '△': 'pad.glyph.triangle',
 };
-export const TOUCH_ACT_LABELS: Record<string, string> = { left:'touch.act.left', right:'touch.act.right', up:'touch.act.up', down:'touch.act.down', jump:'touch.act.jump', run:'touch.act.run', especial:'touch.act.especial', swap:'touch.act.swap', pause:'touch.act.pause' };
-export const TOUCH_DEFAULT: Record<string, string> = { up:'up',down:'down',left:'left',right:'right',start:'pause',b0:'jump',b1:'especial',b2:'run',b3:'swap' };
+export const TOUCH_ACT_LABELS: Record<string, string> = { left:'touch.act.left', right:'touch.act.right', up:'touch.act.up', down:'touch.act.down', action2:'touch.act.jump', action1:'touch.act.run', action3:'touch.act.especial', action4:'touch.act.swap', pause:'touch.act.pause' };
+export const TOUCH_DEFAULT: Record<string, string> = { up:'up',down:'down',left:'left',right:'right',start:'pause',b0:'action2',b1:'action3',b2:'action1',b3:'action4' };

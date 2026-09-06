@@ -217,7 +217,7 @@ export function decideTouch(act: string | undefined | null, on: boolean, s: Touc
   return {
     kind: 'press', code, addKey: fresh,
     edges: fresh ? touchEdgesFor(act as string, code, s.players) : [],
-    hideTips: act === 'jump',
+    hideTips: act === 'action2',
   };
 }
 

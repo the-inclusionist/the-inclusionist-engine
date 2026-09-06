@@ -42,12 +42,12 @@ const WORLD_PX_H = LEVEL.H * 16;
 // nascer no press, exatamente como o handler de keydown do game.js (linhas 300-309) as cria. -----------------
 function press(pl, code) {
   if (!keys.has(code)) {
-    if (pl.ctrl.jump.includes(code)) pl.jumpEdge = true;
-    if (pl.ctrl.run.includes(code) && !pl.easy) pl.runEdge = true; // Fácil: sem correr
+    if (pl.ctrl.action2.includes(code)) pl.jumpEdge = true;
+    if (pl.ctrl.action1.includes(code) && !pl.easy) pl.runEdge = true; // Fácil: sem correr
     if (pl.ctrl.left.includes(code)) pl.leftEdge = true;
     if (pl.ctrl.right.includes(code)) pl.rightEdge = true;
-    if (pl.ctrl.swap && pl.ctrl.swap.includes(code)) pl.swapEdge = true;
-    if (pl.ctrl.especial && pl.ctrl.especial.includes(code)) pl.specialEdge = true;
+    if (pl.ctrl.action4 && pl.ctrl.action4.includes(code)) pl.swapEdge = true;
+    if (pl.ctrl.action3 && pl.ctrl.action3.includes(code)) pl.specialEdge = true;
   }
   keys.add(code);
 }

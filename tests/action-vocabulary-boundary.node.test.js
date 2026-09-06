@@ -57,37 +57,32 @@ function ocorrencias(modulo) {
  * Medido em 2026-09-06, antes de a migração da issue #103 começar.
  */
 const DIVIDA = {
-  /* --- OS TRANSPORTES. É aqui que o acoplamento dói: eles não sabem ler um controle, sabem ler um
-   *     controle DESTE jogo. Um segundo jogo que não pule reescreve-os ou herda um vocabulário alheio. --- */
-  'input/gamepad.ts': 41,
-  'input/keyboard.ts': 28,
-  'input/edges.ts': 9,
-  'input/devices.ts': 8,
-  'input/keydown.ts': 7,
-  'input/touch.ts': 4,
-  'input/keyboard-runtime.ts': 2,
-  'input/touch-bindings.ts': 1,
+  /* --- ⚠️ OS TRANSPORTES SAÍRAM DAQUI EM 2026-09-06, e a lista de onde saíram fica escrita porque o número
+   *     É o resultado: `input/gamepad` 41 · `input/keyboard` 28 · `ui/shell` 20 · `input/edges` 9 ·
+   *     `input/devices` 8 · `input/keydown` 7 · `input/touch` 4 · `ui/settings-controls` 4 ·
+   *     `input/keyboard-runtime` 2 · `ui/menu-nav` 2 · `input/touch-bindings` 1 = CENTO E VINTE E SEIS
+   *     pontos, todos migrados para `action1`..`action4`.
+   *
+   *     Nenhuma linha morta fica: o teste [Zero] abaixo reprova quem tiver teto e dívida zero, e foi ele
+   *     que exigiu esta limpeza no mesmo minuto em que a migração acabou. --- */
 
-  /* --- ⚠️ A QUARENTENA, e ela é de natureza diferente de todas as outras linhas desta tabela. --- */
+  /* --- ⚠️ A QUARENTENA, de natureza diferente de tudo o mais nesta tabela. --- */
   'input/vocabulary-migration.ts': 4,
   // Este módulo TEM de dizer `jump`: traduzir o nome antigo é a função dele. Quando a tabela nasceu dentro
   // de `input/keyboard.ts`, este gate reprovou — e estava certo. A saída NÃO foi levantar o teto do
   // keyboard, que é o afrouxamento que este ficheiro existe para impedir; foi quarentenar o acoplamento
   // inteiro num módulo cujo nome diz que ele é histórico, com teto próprio e data de morte.
   // ⚠️ ELE SE APAGA quando não restar dado salvo no formato antigo — o que não se sabe do lado do código,
-  // porque o dado está no navegador de cada criança. Enquanto houver, apagá-lo apaga o remapeamento
-  // de quem o fez.
+  // porque o dado está no navegador de cada criança. Enquanto houver, apagá-lo apaga o remapeamento de
+  // quem o fez.
 
-  /* --- A INTERFACE, que mostra os rótulos. Estes saem quando o preset existir: o rótulo passa a vir do
-   *     jogo em vez de estar escrito na engine. --- */
-  'ui/shell.ts': 20,
-  'ui/settings-controls.ts': 4,
-  'ui/menu-nav.ts': 2,
-
-  /* --- OS DOIS DE FORA DA ENTRADA, e cada um por um motivo diferente. --- */
-  'render/player-anim.ts': 4,   // nomes de ANIMAÇÃO ('run', 'jump'), não de ação — a separar quando o
-                                // render receber o vocabulário do jogo; hoje coincidem por acidente
-  'core/constants.ts': 2,       // constantes de afinação da plataforma, que saem com o cartucho (#111)
+  /* --- O QUE SOBRA, e nenhum dos dois é acoplamento de ENTRADA. --- */
+  'core/constants.ts': 2,       // afinação da plataforma (`TUNE.jumpVel`), que sai com o cartucho (#111)
+  'render/player-anim.ts': 1,   // ⚠️ `tex.run` é NOME DE ANIMAÇÃO — o conjunto de quadros da corrida — e
+                                // NÃO o nome de uma ação. O renomeador da migração trocou-o por engano e
+                                // o teste rebentou com `Cannot read properties of undefined`. Fica como
+                                // lembrete de que um crivo por FORMA não distingue os dois sentidos que a
+                                // mesma palavra tem neste repositório.
 };
 
 describe('a engine não fala as palavras do jogo (o corte do Dev, 2026-09-06)', () => {

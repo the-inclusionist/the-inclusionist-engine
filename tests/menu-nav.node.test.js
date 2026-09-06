@@ -29,9 +29,9 @@ describe('menuKeyIntent — tecla física → intenção', () => {
 
   // Este caso PINA o DEFEITO 2 (conhecido, não consertado): Escape é a intenção "voltar", a MESMA que a ação
   // "especial" do gamepad. Não existe, hoje, uma intenção "fechar diálogo" separada de "voltar ao jogo".
-  it('Escape é "não" — e é a MESMA intenção que a ação "especial" (defeito 2, pinado)', () => {
+  it('Escape é "não" — e é a MESMA intenção que a ação "action3" (defeito 2, pinado)', () => {
     expect(menuKeyIntent('Escape', null).no).toBe(true);
-    expect(menuKeyIntent('KeyL', 'especial').no).toBe(true);
+    expect(menuKeyIntent('KeyL', 'action3').no).toBe(true);
     // e Escape NÃO é nenhuma outra intenção — se virasse, o menu andaria ao tentar voltar
     const k = menuKeyIntent('Escape', null);
     expect([k.yes, k.up, k.down, k.left, k.right]).toEqual([false, false, false, false, false]);

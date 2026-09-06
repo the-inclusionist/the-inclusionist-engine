@@ -21,12 +21,12 @@
 export type EdgeFlag = 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge';
 /** As seis ações que levantam borda. Nomeado (e não `string`) para o compilador casar com o `ActionKey` de
  *  input/gamepad, que é quem lê a tabela passando a ação adiante. */
-export type EdgeAction = 'jump' | 'run' | 'left' | 'right' | 'swap' | 'especial';
+export type EdgeAction = 'action2' | 'action1' | 'left' | 'right' | 'action4' | 'action3';
 
 /** Ação → borda, na ORDEM em que os três caminhos as levantam. */
 export const EDGE_BY_ACTION: ReadonlyArray<readonly [EdgeAction, EdgeFlag]> = Object.freeze([
-  ['jump', 'jumpEdge'], ['run', 'runEdge'], ['left', 'leftEdge'],
-  ['right', 'rightEdge'], ['swap', 'swapEdge'], ['especial', 'specialEdge'],
+  ['action2', 'jumpEdge'], ['action1', 'runEdge'], ['left', 'leftEdge'],
+  ['right', 'rightEdge'], ['action4', 'swapEdge'], ['action3', 'specialEdge'],
 ] as ReadonlyArray<readonly [EdgeAction, EdgeFlag]>);
 
 /**
@@ -37,7 +37,7 @@ export const EDGE_BY_ACTION: ReadonlyArray<readonly [EdgeAction, EdgeFlag]> = Ob
  * Se um dia houver uma segunda regra, ela entra AQUI e passa a valer nos três de uma vez.
  */
 export function edgeAllowed(action: EdgeAction, easy: boolean | undefined): boolean {
-  return !(action === 'run' && !!easy);
+  return !(action === 'action1' && !!easy);
 }
 
 // ---------------------------------------------------------------------------------------------

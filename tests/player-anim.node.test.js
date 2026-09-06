@@ -15,6 +15,9 @@ import { ANIM } from '../app/js/core/constants.js';
 // As gracinhas repetem seq/hold dos FLAVORS reais — o ciclo depende desses números.
 const N = (p, n) => Array.from({ length: n }, (_, i) => p + i);
 const TEX = {
+  // A chave `run` aqui e NOME DE ANIMACAO — o conjunto de quadros da corrida, que `render/player-anim` le
+  // como `tex.run`. NAO e o nome de uma acao, e por isso NAO migrou para `action1` com as outras. O
+  // renomeador da migracao trocou-a por engano e o teste rebentou com `Cannot read properties of undefined`.
   idle: N('i', 4), walk: N('w', 8), run: N('r', 4),
   jumpUp: 'JUMP_UP', jumpDown: 'JUMP_DOWN',
   climb: N('c', 2), fly: 'FLY',
@@ -83,7 +86,7 @@ describe('render/player-anim — cada ramo da cadeia, isolado', () => {
   });
   it('água: segurar PULO também conta como braçada (mesmo com dir=0)', () => {
     const pl = novo({ inWater: true, walkAnim: ANIM.swimHold - 1 });
-    expect(choosePlayerFrame(pl, env({ held: holding('jump') }))).toBe('s1');
+    expect(choosePlayerFrame(pl, env({ held: holding('action2') }))).toBe('s1');
   });
   it('voo → quadro único FLY', () => {
     expect(choosePlayerFrame(novo({ flying: true }), env())).toBe('FLY');
@@ -94,7 +97,7 @@ describe('render/player-anim — cada ramo da cadeia, isolado', () => {
   });
   it('correr (E19): outro conjunto de quadros E outra cadência', () => {
     const pl = novo({ walkAnim: ANIM.runHold * 3 - 1 }); // →24 → floor(24/8)%4 = 3 (com walkHold daria 4%8=4)
-    expect(choosePlayerFrame(pl, env({ dir: 1, held: holding('run') }))).toBe('r3');
+    expect(choosePlayerFrame(pl, env({ dir: 1, held: holding('action1') }))).toBe('r3');
   });
 });
 
@@ -284,13 +287,13 @@ describe('render/player-anim — pl.walking / pl.running (o que a bengala consom
     }
   });
   it('running exige walking + tecla Correr + a BENGALA DE CORRIDA (runCane)', () => {
-    const sem = novo({ runCane: false }); choosePlayerFrame(sem, env({ dir: 1, held: holding('run') }));
+    const sem = novo({ runCane: false }); choosePlayerFrame(sem, env({ dir: 1, held: holding('action1') }));
     expect(sem.running).toBe(false);
-    const com = novo({ runCane: true }); choosePlayerFrame(com, env({ dir: 1, held: holding('run') }));
+    const com = novo({ runCane: true }); choosePlayerFrame(com, env({ dir: 1, held: holding('action1') }));
     expect(com.running).toBe(true);
   });
   it('parado com Correr segurado não é running (walking é o pré-requisito)', () => {
-    const pl = novo({ runCane: true }); choosePlayerFrame(pl, env({ dir: 0, held: holding('run') }));
+    const pl = novo({ runCane: true }); choosePlayerFrame(pl, env({ dir: 0, held: holding('action1') }));
     expect(pl.running).toBe(false);
   });
 });

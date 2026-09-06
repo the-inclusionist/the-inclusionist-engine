@@ -123,14 +123,14 @@ describe('normalizeTouchMap', () => {
     expect(normalizeTouchMap(null)).toEqual(TOUCH_DEFAULT);
   });
   it('[Right] sobrepõe só as chaves presentes no salvo, mantém as demais do padrão', () => {
-    const merged = normalizeTouchMap({ b0: 'run' });
-    expect(merged.b0).toBe('run');
+    const merged = normalizeTouchMap({ b0: 'action1' });
+    expect(merged.b0).toBe('action1');
     expect(merged.up).toBe(TOUCH_DEFAULT.up); // não mexido
   });
   it('[Inverse] não é a MESMA referência de TOUCH_DEFAULT (não muta o módulo-folha)', () => {
-    const merged = normalizeTouchMap({ b0: 'run' });
+    const merged = normalizeTouchMap({ b0: 'action1' });
     expect(merged).not.toBe(TOUCH_DEFAULT);
-    expect(TOUCH_DEFAULT.b0).toBe('jump'); // devices.ts intocado
+    expect(TOUCH_DEFAULT.b0).toBe('action2'); // devices.ts intocado
   });
   it('[Error] entrada não-objeto (string/number/array/undefined) cai no padrão puro', () => {
     expect(normalizeTouchMap(undefined)).toEqual(TOUCH_DEFAULT);

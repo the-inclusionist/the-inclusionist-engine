@@ -41,12 +41,12 @@ export interface KeyboardRuntimeCtx {
  *  KJUMP/KLEFT/KRIGHT/KUP/KDOWN/KRUN) + the flattened `GAME_KEYS` list. */
 export interface ControlsState {
   controls: KeyScheme;
-  jump: string[];
+  action2: string[];
   left: string[];
   right: string[];
   up: string[];
   down: string[];
-  run: string[];
+  action1: string[];
   gameKeys: string[];
 }
 
@@ -135,14 +135,14 @@ export function initKeyboardRuntime(ctx: KeyboardRuntimeCtx): KeyboardRuntime {
   function computeControlsState(): ControlsState {
     const kb = ctx.getKB();
     const controls = kb.solo; // alias do P1 — SEMPRE kb.solo, mesmo com numPlayers>1 (comportamento original; ver relato)
-    const { jump, left, right, up, down, run } = controls;
+    const { action2, left, right, up, down, action1 } = controls;
     const gameKeySet = new Set<string>();
     ctx.getPlayers().forEach((_, i) => {
       const scheme = kbFor(i);
       for (const action in scheme) for (const code of scheme[action]) gameKeySet.add(code);
     });
-    const gameKeys = gameKeySet.size ? [...gameKeySet] : [...jump, ...left, ...right, ...up, ...down];
-    return { controls, jump, left, right, up, down, run, gameKeys };
+    const gameKeys = gameKeySet.size ? [...gameKeySet] : [...action2, ...left, ...right, ...up, ...down];
+    return { controls, action2, left, right, up, down, action1, gameKeys };
   }
 
   let cache: ControlsState | null = null; // memória do estado derivado; só refreshControls a invalida

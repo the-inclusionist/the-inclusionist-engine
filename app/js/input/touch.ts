@@ -136,7 +136,7 @@ export const TOUCH_SLOTS: ReadonlyArray<{ k: string; lbl: string }> = [
   { k: 'b2', lbl: 'touch.slot.b2' }, { k: 'b3', lbl: 'touch.slot.b3' },
 ];
 /** As 9 ações mapeáveis a uma posição de toque (opções do <select> de cada slot). */
-export const TOUCH_ACTS: readonly string[] = ['left', 'right', 'up', 'down', 'jump', 'run', 'especial', 'swap', 'pause'];
+export const TOUCH_ACTS: readonly string[] = ['left', 'right', 'up', 'down', 'action2', 'action1', 'action3', 'action4', 'pause'];
 
 /** Funde o mapa persistido (JSON solto do localStorage) sobre TOUCH_DEFAULT. Mantido IDÊNTICO ao original:
  *  NÃO valida chaves/valores contra TOUCH_SLOTS/TOUCH_ACTS — um JSON malformado com chaves/valores estranhos

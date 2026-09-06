@@ -168,26 +168,26 @@ describe('padActions', () => {
   it('[Right] sem custom (null): usa o mapa padrão da Gamepad API standard (0=pulo,1=especial,3=troca,9=start)', () => {
     const gp = makePad({ pressed: [0, 9] });
     const a = padActions(gp, null);
-    expect(a.jump).toBe(true); expect(a.especial).toBe(false); expect(a._pause).toBe(true); expect(a._start).toBe(true);
+    expect(a.action2).toBe(true); expect(a.action3).toBe(false); expect(a._pause).toBe(true); expect(a._start).toBe(true);
   });
   it('[Right] run também dispara por 2, 5 ou 7 (X-esquerda / RB / RT)', () => {
-    expect(padActions(makePad({ pressed: [5] }), null).run).toBe(true);
-    expect(padActions(makePad({ pressed: [7] }), null).run).toBe(true);
+    expect(padActions(makePad({ pressed: [5] }), null).action1).toBe(true);
+    expect(padActions(makePad({ pressed: [7] }), null).action1).toBe(true);
   });
   it('[Right] custom presente e sem _skip: usa os bindings do usuário para as AÇÕES', () => {
     const gp = makePad({ pressed: [8] });
-    const custom = { jump: { b: 8 } };
-    expect(padActions(gp, custom).jump).toBe(true);
-    expect(padActions(gp, null).jump).toBe(false); // botão 8 não é pulo no mapa padrão
+    const custom = { action2: { b: 8 } };
+    expect(padActions(gp, custom).action2).toBe(true);
+    expect(padActions(gp, null).action2).toBe(false); // botão 8 não é pulo no mapa padrão
   });
   it('[Interface] custom com _skip:true é tratado como "sem custom" (cai no mapa padrão)', () => {
     const gp = makePad({ pressed: [0] });
-    const custom = { _skip: true, jump: { b: 5 } }; // se fosse respeitado, pulo dependeria do botão 5
-    expect(padActions(gp, custom).jump).toBe(true); // pulo padrão (botão 0), não o custom ignorado
+    const custom = { _skip: true, action2: { b: 5 } }; // se fosse respeitado, pulo dependeria do botão 5
+    expect(padActions(gp, custom).action2).toBe(true); // pulo padrão (botão 0), não o custom ignorado
   });
   it('[Boundary] direções custom caem de volta em stdDirs quando o binding do usuário não está ativo', () => {
     const gp = makePad({ axes: [-0.9, 0, 0, 0, 0, 0, 1.3, 1.3] }); // stick esquerda (D-pad físico não mapeado no custom)
-    const custom = { jump: { b: 0 } }; // custom não define 'left' -> stdDirs cobre
+    const custom = { action2: { b: 0 } }; // custom não define 'left' -> stdDirs cobre
     expect(padActions(gp, custom).left).toBe(true);
   });
   it('[Zero] nenhum botão/eixo ativo -> todas as ações false', () => {
@@ -199,7 +199,7 @@ describe('padActions', () => {
 describe('PADWIZ_STEPS', () => {
   it('[Interface] 9 passos: as 8 ações do jogo + START, cada um com [ação, rótulo pt-BR]', () => {
     expect(PADWIZ_STEPS).toHaveLength(9);
-    expect(PADWIZ_STEPS.map((s) => s[0])).toEqual(['up', 'down', 'left', 'right', 'jump', 'run', 'swap', 'especial', 'start']);
+    expect(PADWIZ_STEPS.map((s) => s[0])).toEqual(['up', 'down', 'left', 'right', 'action2', 'action1', 'action4', 'action3', 'start']);
     for (const [, label] of PADWIZ_STEPS) expect(label).toBeTruthy();
   });
 });

@@ -20,7 +20,7 @@ import { initMenuNav } from '../app/js/ui/menu-nav.js';
 let faseFalsa = 'playing';
 const setPhaseValue = (p) => { faseFalsa = p; };
 
-const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], run: ['KeyU'], jump: ['KeyJ', 'Space'], swap: ['KeyI'], especial: ['KeyK'] };
+const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], action1: ['KeyU'], action2: ['KeyJ', 'Space'], action4: ['KeyI'], action3: ['KeyK'] };
 const CONTROLS = { ...SOLO, gameKeys: Object.values(SOLO).flat() };
 const actionOf = (code) => { for (const a in SOLO) if (SOLO[a].includes(code)) return a; return null; };
 

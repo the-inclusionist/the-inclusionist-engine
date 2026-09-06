@@ -51,11 +51,11 @@ function bindingAt(map: PadMap, key: string): PadBinding | undefined {
   return typeof v === 'object' && v !== null ? v : undefined;
 }
 
-export type ActionKey = 'left' | 'right' | 'up' | 'down' | 'jump' | 'run' | 'swap' | 'especial';
+export type ActionKey = 'left' | 'right' | 'up' | 'down' | 'action2' | 'action1' | 'action4' | 'action3';
 export interface Dirs { left: boolean; right: boolean; up: boolean; down: boolean; }
 export interface PadActions extends Dirs {
   [key: string]: boolean; // torna PadActions atribuível a PadState (input/state.ts's Record<string,boolean>)
-  jump: boolean; run: boolean; swap: boolean; especial: boolean;
+  action2: boolean; action1: boolean; action4: boolean; action3: boolean;
   _start: boolean; // pulo OU start (fecha diálogos/telas de vitória)
   _pause: boolean; // só start (pausa/retoma)
 }
@@ -101,14 +101,14 @@ export function padActions(gp: PadLike, custom: PadMap | null): PadActions {
     const sd = stdDirs(gp);
     return {
       left: A('left') || sd.left, right: A('right') || sd.right, up: A('up') || sd.up, down: A('down') || sd.down,
-      jump: A('jump'), run: A('run'), swap: A('swap'), especial: A('especial'), _start: A('jump') || A('start'), _pause: A('start'),
+      action2: A('action2'), action1: A('action1'), action4: A('action4'), action3: A('action3'), _start: A('action2') || A('start'), _pause: A('start'),
     };
   }
   const b = (i: number): boolean => !!(gp.buttons[i] && gp.buttons[i]!.pressed);
   const sd = stdDirs(gp);
   return {
     left: sd.left, right: sd.right, up: sd.up, down: sd.down,
-    jump: b(0), run: b(2) || b(5) || b(7), swap: b(3), especial: b(1), _start: b(0) || b(9), _pause: b(9),
+    action2: b(0), action1: b(2) || b(5) || b(7), action4: b(3), action3: b(1), _start: b(0) || b(9), _pause: b(9),
   };
 }
 
@@ -118,8 +118,8 @@ export function padActions(gp: PadLike, custom: PadMap | null): PadActions {
 
 /** [ação, rótulo pt-BR] na ordem em que o wizard pergunta — 9 passos (8 ações + START/pausa). */
 export const PADWIZ_STEPS: readonly [string, string][] = [
-  ['up', 'CIMA'], ['down', 'BAIXO'], ['left', 'ESQUERDA'], ['right', 'DIREITA'], ['jump', 'PULAR'],
-  ['run', 'CORRER / INTERAGIR'], ['swap', 'TROCAR PODER'], ['especial', 'ESPECIAL'], ['start', 'START (pausa)'],
+  ['up', 'CIMA'], ['down', 'BAIXO'], ['left', 'ESQUERDA'], ['right', 'DIREITA'], ['action2', 'PULAR'],
+  ['action1', 'CORRER / INTERAGIR'], ['action4', 'TROCAR PODER'], ['action3', 'ESPECIAL'], ['start', 'START (pausa)'],
 ];
 
 export interface WizAnimDef { seq?: string[]; hold?: number; cls: string; fx?: string; noimg?: number; flip?: number; }
@@ -129,10 +129,10 @@ export const PADWIZ_ANIM: Record<string, WizAnimDef> = {
   down: { seq: ['escada/1', 'escada/0'], hold: 9, cls: 'pw-down' },
   left: { seq: ['andar/0', 'andar/1', 'andar/2', 'andar/3', 'andar/4', 'andar/5', 'andar/6', 'andar/7'], hold: 4, cls: 'pw-left', flip: 1 },
   right: { seq: ['andar/0', 'andar/1', 'andar/2', 'andar/3', 'andar/4', 'andar/5', 'andar/6', 'andar/7'], hold: 4, cls: 'pw-right' },
-  jump: { seq: ['pulo/0', 'pulo/0', 'pulo/1', 'pulo/1'], hold: 7, cls: 'pw-jump' },
-  run: { seq: ['correr/0', 'correr/1', 'correr/2', 'correr/3'], hold: 3, cls: 'pw-run' },
-  swap: { fx: '👟 🕷️ 🎈 🐇 🦘', cls: 'pw-swap', noimg: 1 },
-  especial: { seq: ['idle/0', 'idle/1', 'idle/2', 'idle/3'], hold: 8, fx: '✨', cls: 'pw-especial' },
+  action2: { seq: ['pulo/0', 'pulo/0', 'pulo/1', 'pulo/1'], hold: 7, cls: 'pw-jump' },
+  action1: { seq: ['correr/0', 'correr/1', 'correr/2', 'correr/3'], hold: 3, cls: 'pw-run' },
+  action4: { fx: '👟 🕷️ 🎈 🐇 🦘', cls: 'pw-swap', noimg: 1 },
+  action3: { seq: ['idle/0', 'idle/1', 'idle/2', 'idle/3'], hold: 8, fx: '✨', cls: 'pw-especial' },
   start: { fx: 'PAUSA', cls: 'pw-start', noimg: 1 },
 };
 
@@ -433,7 +433,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       }
       const cur = actionsFor(gp);
       const prev = padPrevAct[gi] || {};
-      if (ctx.isTouchMode() && (cur.left || cur.right || cur.up || cur.down || cur.jump || cur.run || cur.swap || cur.especial || cur._start)) {
+      if (ctx.isTouchMode() && (cur.left || cur.right || cur.up || cur.down || cur.action2 || cur.action1 || cur.action4 || cur.action3 || cur._start)) {
         ctx.hideTouchControls(); // botão físico usado -> some o gamepad virtual (mesma regra do teclado)
       }
       const startEdge = cur._start && !padPrevStart[gi]; padPrevStart[gi] = cur._start;
@@ -454,7 +454,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       const players = ctx.getPlayers();
 
       if (!rodando && !pausado) {
-        const k: NavKeys = { yes: edge('jump') || startEdge, no: edge('especial'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
+        const k: NavKeys = { yes: edge('action2') || startEdge, no: edge('action3'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
         const any = k.yes || k.no || k.up || k.down || k.left || k.right;
         const owner = players.findIndex((p) => p.pad === gi);
         if (ctx.getNumPlayers() > 1 && owner > 0) { if (any) ctx.srSay(t('sr.title.waitP1')); continue; } // só o J1 escolhe
@@ -464,7 +464,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       if (pausado) {
         const owner = players.findIndex((p) => p.pad === gi); const pi = owner < 0 ? 0 : owner;
         if (pauseEdge) { ctx.retomar(); continue; } // START retoma
-        const k: NavKeys = { yes: edge('jump'), no: edge('especial'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
+        const k: NavKeys = { yes: edge('action2'), no: edge('action3'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
         if (k.yes || k.no || k.up || k.down || k.left || k.right) {
           const dlg = ctx.sharedDialogOpen();
           if (dlg) ctx.navDialog(dlg, k);
@@ -482,12 +482,12 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         // Nintendo) e `startEdge` é o botão que abre a pausa — de onde se entrou aqui. Quem se perde tenta
         // voltar por onde veio, e quem já conhece o jogo tenta o voltar de sempre; as duas dão certo.
         if (owner >= 0 && ctx.naBarraDe(owner)) {
-          const k: NavKeys = { yes: edge('jump'), no: edge('especial'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
+          const k: NavKeys = { yes: edge('action2'), no: edge('action3'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
           if (startEdge || k.yes || k.no || k.up || k.down || k.left || k.right) ctx.navBar(owner, k, !!startEdge);
           continue;
         }
         if (owner < 0) { // atribuição POR ORDEM DE AÇÃO: qualquer botão associa -> 1º controle a agir -> 1º jogador sem pad
-          const anyEdge = edge('jump') || edge('run') || edge('swap') || edge('especial') || startEdge || edge('left') || edge('right') || edge('up') || edge('down');
+          const anyEdge = edge('action2') || edge('action1') || edge('action4') || edge('action3') || startEdge || edge('left') || edge('right') || edge('up') || edge('down');
           if (anyEdge) {
             const waitI = players.findIndex((p) => p && p.waiting);
             const free = waitI >= 0 ? waitI : players.findIndex((p) => p && p.pad < 0 && !p.quit);
@@ -508,7 +508,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
             const intent: ModalIntent | null =
               edge('left') ? 'left' : edge('right') ? 'right'
               : edge('up') ? 'up' : edge('down') ? 'down'
-              : edge('jump') ? 'confirm' : edge('especial') ? 'erase' : null;
+              : edge('action2') ? 'confirm' : edge('action3') ? 'erase' : null;
             if (intent) ctx.modalInput(owner, intent);
             continue;
           }

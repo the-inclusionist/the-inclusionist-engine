@@ -24,8 +24,8 @@ import { edgesFor } from '../app/js/input/keydown.js';
 
 /* ===================== fixtures (esquemas de fábrica de input/keyboard.ts) ===================== */
 
-const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], run: ['KeyU'], jump: ['KeyJ', 'Space'], swap: ['KeyI'], especial: ['KeyK'] };
-const P2B = { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], run: ['Numpad8'], jump: ['Numpad5'], swap: ['Numpad9'], especial: ['Numpad6'] };
+const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], action1: ['KeyU'], action2: ['KeyJ', 'Space'], action4: ['KeyI'], action3: ['KeyK'] };
+const P2B = { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], action1: ['Numpad8'], action2: ['Numpad5'], action4: ['Numpad9'], action3: ['Numpad6'] };
 
 const mkPlayer = (ctrl, extra = {}) => ({ ctrl, easy: false, jumpEdge: false, runEdge: false, leftEdge: false, rightEdge: false, swapEdge: false, specialEdge: false, ...extra });
 
@@ -36,16 +36,16 @@ const snap = (over = {}) => ({ controls: SOLO, players: [mkPlayer(SOLO)], heldKe
 
 describe('codeForAction — a ação vira a 1ª tecla do Jogador 1', () => {
   it('[Right] cada ação devolve o PRIMEIRO código do esquema, não a lista', () => {
-    expect(codeForAction('jump', SOLO)).toBe('KeyJ');   // e não 'Space', que é o 2º alias
+    expect(codeForAction('action2', SOLO)).toBe('KeyJ');   // e não 'Space', que é o 2º alias
     expect(codeForAction('left', SOLO)).toBe('KeyA');
-    expect(codeForAction('run', SOLO)).toBe('KeyU');
+    expect(codeForAction('action1', SOLO)).toBe('KeyU');
   });
   it('[Right] remapear o teclado remapeia o toque junto (é a MESMA tabela, não uma cópia)', () => {
-    expect(codeForAction('jump', { ...SOLO, jump: ['KeyZ', 'KeyJ'] })).toBe('KeyZ');
+    expect(codeForAction('action2', { ...SOLO, action2: ['KeyZ', 'KeyJ'] })).toBe('KeyZ');
   });
   it('[Zero/Boundary] ação inexistente, lista vazia, ação vazia e ação indefinida caem todas em null', () => {
     expect(codeForAction('voar', SOLO)).toBeNull();
-    expect(codeForAction('jump', { ...SOLO, jump: [] })).toBeNull();
+    expect(codeForAction('action2', { ...SOLO, action2: [] })).toBeNull();
     expect(codeForAction('', SOLO)).toBeNull();
     expect(codeForAction(undefined, SOLO)).toBeNull(); // slot do touchMap vazio chega assim
   });
@@ -55,14 +55,14 @@ describe('codeForAction — a ação vira a 1ª tecla do Jogador 1', () => {
 
 describe('touchEdgesFor — a borda sobe em quem tem AQUELE código no PRÓPRIO esquema', () => {
   it('[Right] solo: a ação levanta exatamente uma borda, no jogador 0', () => {
-    expect(touchEdgesFor('jump', 'KeyJ', [mkPlayer(SOLO)])).toEqual([{ playerIndex: 0, edge: 'jumpEdge' }]);
-    expect(touchEdgesFor('swap', 'KeyI', [mkPlayer(SOLO)])).toEqual([{ playerIndex: 0, edge: 'swapEdge' }]);
-    expect(touchEdgesFor('especial', 'KeyK', [mkPlayer(SOLO)])).toEqual([{ playerIndex: 0, edge: 'specialEdge' }]);
+    expect(touchEdgesFor('action2', 'KeyJ', [mkPlayer(SOLO)])).toEqual([{ playerIndex: 0, edge: 'jumpEdge' }]);
+    expect(touchEdgesFor('action4', 'KeyI', [mkPlayer(SOLO)])).toEqual([{ playerIndex: 0, edge: 'swapEdge' }]);
+    expect(touchEdgesFor('action3', 'KeyK', [mkPlayer(SOLO)])).toEqual([{ playerIndex: 0, edge: 'specialEdge' }]);
   });
 
   it('[CrossCheck] jogador cujo esquema NÃO contém o código não recebe borda nenhuma', () => {
     // multi-tela: o toque é sempre do J1, e o J2 tem outro esquema. 'KeyJ' não é dele.
-    const out = touchEdgesFor('jump', 'KeyJ', [mkPlayer(SOLO), mkPlayer(P2B)]);
+    const out = touchEdgesFor('action2', 'KeyJ', [mkPlayer(SOLO), mkPlayer(P2B)]);
     expect(out).toEqual([{ playerIndex: 0, edge: 'jumpEdge' }]);
   });
 
@@ -72,24 +72,24 @@ describe('touchEdgesFor — a borda sobe em quem tem AQUELE código no PRÓPRIO 
   });
 
   it('[Zero] jogador sem esquema (tela ainda não ativada) é pulado, sem estourar', () => {
-    expect(touchEdgesFor('jump', 'KeyJ', [{ ctrl: null }, mkPlayer(SOLO)])).toEqual([{ playerIndex: 1, edge: 'jumpEdge' }]);
-    expect(touchEdgesFor('jump', 'KeyJ', [])).toEqual([]);
+    expect(touchEdgesFor('action2', 'KeyJ', [{ ctrl: null }, mkPlayer(SOLO)])).toEqual([{ playerIndex: 1, edge: 'jumpEdge' }]);
+    expect(touchEdgesFor('action2', 'KeyJ', [])).toEqual([]);
   });
 
   it('[CrossCheck] a AÇÃO manda, não o código: `run` com o código do pulo não levanta jumpEdge', () => {
     // o par (ação, código) chega sempre coerente do codeForAction; se alguém os desemparelhar, nada sobe.
-    expect(touchEdgesFor('run', 'KeyJ', [mkPlayer(SOLO)])).toEqual([]);
+    expect(touchEdgesFor('action1', 'KeyJ', [mkPlayer(SOLO)])).toEqual([]);
   });
 
   it('[Zero] ação fora da tabela das seis bordas não levanta nada (up/down andam por `keys`, sem borda)', () => {
     expect(touchEdgesFor('up', 'KeyW', [mkPlayer(SOLO)])).toEqual([]);
     expect(touchEdgesFor('down', 'KeyS', [mkPlayer(SOLO)])).toEqual([]);
-    expect(TOUCH_EDGE_BY_ACTION.map(([a]) => a)).toEqual(['jump', 'run', 'left', 'right', 'swap', 'especial']);
+    expect(TOUCH_EDGE_BY_ACTION.map(([a]) => a)).toEqual(['action2', 'action1', 'left', 'right', 'action4', 'action3']);
   });
 
   it('[Zero] esquema sem a ação vira no-op (o original estouraria em TypeError — desvio declarado)', () => {
-    const semPulo = { ...SOLO }; delete semPulo.jump;
-    expect(touchEdgesFor('jump', 'KeyJ', [mkPlayer(semPulo)])).toEqual([]);
+    const semPulo = { ...SOLO }; delete semPulo.action2;
+    expect(touchEdgesFor('action2', 'KeyJ', [mkPlayer(semPulo)])).toEqual([]);
   });
 });
 
@@ -110,7 +110,7 @@ describe('modo Fácil e `run`: os três caminhos de entrada têm de CONCORDAR', 
   const easy = [mkPlayer(SOLO, { easy: true })];
 
   it('[toque] com `easy`, o botão da tela NÃO levanta runEdge', () => {
-    expect(touchEdgesFor('run', 'KeyU', easy)).toEqual([]);
+    expect(touchEdgesFor('action1', 'KeyU', easy)).toEqual([]);
   });
 
   it('[teclado] com `easy`, o keydown NÃO levanta runEdge — a guarda "Fácil: sem correr"', () => {
@@ -120,19 +120,19 @@ describe('modo Fácil e `run`: os três caminhos de entrada têm de CONCORDAR', 
 
   it('[Invariant] com `easy`, toque e teclado dão a MESMA resposta para `run`', () => {
     const s = { players: [{ i: 0, ctrl: SOLO, easy: true }], numPlayers: 1 };
-    expect(touchEdgesFor('run', 'KeyU', easy)).toEqual(edgesFor('KeyU', s));
+    expect(touchEdgesFor('action1', 'KeyU', easy)).toEqual(edgesFor('KeyU', s));
   });
 
   it('[Inverse] SEM `easy`, os dois levantam runEdge — prova que a guarda é o `easy`, não o esquema', () => {
     const normal = [mkPlayer(SOLO, { easy: false })];
     const s = { players: [{ i: 0, ctrl: SOLO, easy: false }], numPlayers: 1 };
-    expect(touchEdgesFor('run', 'KeyU', normal)).toEqual([{ playerIndex: 0, edge: 'runEdge' }]);
+    expect(touchEdgesFor('action1', 'KeyU', normal)).toEqual([{ playerIndex: 0, edge: 'runEdge' }]);
     expect(edgesFor('KeyU', s)).toEqual([{ playerIndex: 0, edge: 'runEdge' }]);
   });
 
   it('[Invariant] fora do `run`, as duas tabelas concordam mesmo com `easy` ligado', () => {
     const s = { players: [{ i: 0, ctrl: SOLO, easy: true }], numPlayers: 1 };
-    expect(touchEdgesFor('jump', 'KeyJ', easy)).toEqual([{ playerIndex: 0, edge: 'jumpEdge' }]);
+    expect(touchEdgesFor('action2', 'KeyJ', easy)).toEqual([{ playerIndex: 0, edge: 'jumpEdge' }]);
     expect(edgesFor('KeyJ', s)).toEqual([{ playerIndex: 0, edge: 'jumpEdge' }]);
   });
 });
@@ -141,12 +141,12 @@ describe('modo Fácil e `run`: os três caminhos de entrada têm de CONCORDAR', 
 
 describe('decideTouch — apertar, soltar e o caso especial `pause`', () => {
   it('[Right] apertar uma ação mapeada: injeta a tecla e traz as bordas', () => {
-    const d = decideTouch('jump', true, snap());
+    const d = decideTouch('action2', true, snap());
     expect(d).toEqual({ kind: 'press', code: 'KeyJ', addKey: true, edges: [{ playerIndex: 0, edge: 'jumpEdge' }], hideTips: true });
   });
 
   it('[Right] soltar devolve só o código a apagar — NÃO abaixa borda (quem zera bordas é a física)', () => {
-    expect(decideTouch('jump', false, snap())).toEqual({ kind: 'release', code: 'KeyJ' });
+    expect(decideTouch('action2', false, snap())).toEqual({ kind: 'release', code: 'KeyJ' });
   });
 
   it('[Right] `pause` é o único que não vira tecla: apertar pausa, SOLTAR não faz nada', () => {
@@ -155,18 +155,18 @@ describe('decideTouch — apertar, soltar e o caso especial `pause`', () => {
   });
 
   it('[Boundary] tecla JÁ segurada: sem re-injeção e sem borda — é BORDA, não estado', () => {
-    const d = decideTouch('jump', true, snap({ heldKeys: new Set(['KeyJ']) }));
+    const d = decideTouch('action2', true, snap({ heldKeys: new Set(['KeyJ']) }));
     expect(d.kind).toBe('press');
     expect(d.addKey).toBe(false);
     expect(d.edges).toEqual([]);
   });
 
   it('[Right] ...mas `hideTips` roda mesmo com a tecla já segurada (verbatim do original)', () => {
-    expect(decideTouch('jump', true, snap({ heldKeys: new Set(['KeyJ']) })).hideTips).toBe(true);
+    expect(decideTouch('action2', true, snap({ heldKeys: new Set(['KeyJ']) })).hideTips).toBe(true);
   });
 
   it('[CrossCheck] `hideTips` é só do pulo — nenhuma outra ação o dispara', () => {
-    for (const a of ['run', 'left', 'right', 'swap', 'especial', 'up', 'down']) {
+    for (const a of ['action1', 'left', 'right', 'action4', 'action3', 'up', 'down']) {
       expect(decideTouch(a, true, snap()).hideTips).toBe(false);
     }
   });
@@ -174,7 +174,7 @@ describe('decideTouch — apertar, soltar e o caso especial `pause`', () => {
   it('[Zero] slot vazio ou ação sem tecla no esquema: noop nos dois sentidos', () => {
     expect(decideTouch(undefined, true, snap())).toEqual({ kind: 'noop' });
     expect(decideTouch(undefined, false, snap())).toEqual({ kind: 'noop' });
-    expect(decideTouch('jump', false, snap({ controls: { ...SOLO, jump: [] } }))).toEqual({ kind: 'noop' });
+    expect(decideTouch('action2', false, snap({ controls: { ...SOLO, action2: [] } }))).toEqual({ kind: 'noop' });
   });
 
   it('[Right] `up`/`down` viram tecla sem borda: sobem escada por `keys`, não por flag', () => {
@@ -313,7 +313,7 @@ function makeCtx(over = {}) {
     showTouchControls: () => { calls.show++; },
     hideTips: () => { calls.hideTips++; },
     togglePause: () => { calls.pause++; },
-    getTouchMap: () => ({ up: 'up', down: 'down', left: 'left', right: 'right', start: 'pause', b0: 'jump', b1: 'especial', b2: 'run', b3: 'swap' }),
+    getTouchMap: () => ({ up: 'up', down: 'down', left: 'left', right: 'right', start: 'pause', b0: 'action2', b1: 'action3', b2: 'action1', b3: 'action4' }),
     getStartAction: () => ('startAction' in over ? over.startAction : 'pause'),
     getStickTravelPx: () => 42,
     getStickDeadPx: () => 12,
@@ -325,7 +325,7 @@ function makeCtx(over = {}) {
 describe('doTouch — a decisão carimbada no mundo', () => {
   it('[Right] apertar injeta o código em `keys` E levanta a borda no jogador', () => {
     const { api, players, heldKeys } = makeCtx();
-    api.doTouch('jump', true);
+    api.doTouch('action2', true);
     expect(heldKeys.has('KeyJ')).toBe(true);
     expect(players[0].jumpEdge).toBe(true);
   });
@@ -340,23 +340,23 @@ describe('doTouch — a decisão carimbada no mundo', () => {
 
   it('[Right] soltar NÃO abaixa a borda — ela é consumida e zerada pela física, não pelo dedo', () => {
     const { api, players } = makeCtx();
-    api.doTouch('jump', true);
-    api.doTouch('jump', false);
+    api.doTouch('action2', true);
+    api.doTouch('action2', false);
     expect(players[0].jumpEdge).toBe(true);
   });
 
   it('[CrossCheck] a borda sobe SÓ em quem tem o código: o J2 de outro esquema fica intacto', () => {
     const { api, players } = makeCtx({ players: [mkPlayer(SOLO), mkPlayer(P2B)] });
-    api.doTouch('jump', true);
+    api.doTouch('action2', true);
     expect(players[0].jumpEdge).toBe(true);
     expect(players[1].jumpEdge).toBe(false); // 'KeyJ' não está no esquema dele
   });
 
   it('[Boundary] apertar com a tecla já segurada não re-levanta a borda', () => {
     const { api, players, heldKeys } = makeCtx({ heldKeys: new Set(['KeyJ']) });
-    api.doTouch('jump', true);
+    api.doTouch('action2', true);
     players[0].jumpEdge = false;      // finge que a física consumiu a borda
-    api.doTouch('jump', true);        // o mesmo botão de novo, sem soltar
+    api.doTouch('action2', true);        // o mesmo botão de novo, sem soltar
     expect(players[0].jumpEdge).toBe(false);
     expect(heldKeys.has('KeyJ')).toBe(true);
   });
@@ -379,9 +379,9 @@ describe('doTouch — a decisão carimbada no mundo', () => {
 
   it('[Right] só o pulo chama hideTips', () => {
     const { api, calls } = makeCtx();
-    api.doTouch('run', true);
+    api.doTouch('action1', true);
     expect(calls.hideTips).toBe(0);
-    api.doTouch('jump', true);
+    api.doTouch('action2', true);
     expect(calls.hideTips).toBe(1);
   });
 });
@@ -395,7 +395,7 @@ describe('pressStart — o botão START', () => {
   });
 
   it('[Right] com ação momentânea, aperta AGORA e agenda o soltar em START_TAP_MS', () => {
-    const { api, calls, heldKeys } = makeCtx({ startAction: 'jump' });
+    const { api, calls, heldKeys } = makeCtx({ startAction: 'action2' });
     api.pressStart();
     expect(heldKeys.has('KeyJ')).toBe(true);
     expect(calls.defer).toHaveLength(1);

@@ -135,7 +135,7 @@ export function choosePlayerFrame(pl: AnimPlayer, env: PlayerAnimEnv): Frame {
   // o ciclo (só apareciam 2 dos 8 quadros). Assim os 8 quadros tocam contínuos.
   const moving = (dir !== 0) && grounded && !pl.clinging;
   pl.walking = moving && !pl.inWater && !pl.onLadder && !pl.flying; // p/ a bengala: só aparece andando
-  pl.running = pl.walking && held(pl, 'run') && !!pl.runCane;       // correndo: só com a bengala de corrida
+  pl.running = pl.walking && held(pl, 'action1') && !!pl.runCane;       // correndo: só com a bengala de corrida
   pl.anim += dt;                                   // idle (clock contínuo)
   pl.walkAnim += dt;                               // clock do passo NUNCA reseta → ciclo de 8 sem reinício
 
@@ -154,7 +154,7 @@ export function choosePlayerFrame(pl: AnimPlayer, env: PlayerAnimEnv): Frame {
     if (wheelchair) { tx = II[0]; }                       // ELEVADOR cadeirante: pose PARADA (idle), não de escada
     else { const climbing = (pl.vy !== 0) && !pl.rmWalk; tx = climbing ? CB[Math.floor(pl.walkAnim / ANIM.climbHold) % CB.length] : CB[0]; }
   } else if (pl.inWater) {
-    const stroking = ((dir !== 0) || held(pl, 'jump')) && !wcFreeze; // movendo = braçada; parado/congelado = pernas paradas
+    const stroking = ((dir !== 0) || held(pl, 'action2')) && !wcFreeze; // movendo = braçada; parado/congelado = pernas paradas
     const SW = stroking ? tex.swim : tex.swimIdle;
     tx = wcFreeze ? SW[0] : SW[Math.floor(pl.walkAnim / ANIM.swimHold) % SW.length];
   } else if (pl.flying) {
@@ -165,7 +165,7 @@ export function choosePlayerFrame(pl: AnimPlayer, env: PlayerAnimEnv): Frame {
   } else if (moving) {
     if (wcFreeze) { tx = II[0]; }                         // cadeirante/movimento reduzido: anda sem ciclo de passos
     else {
-      const running = held(pl, 'run');                    // E19: correr ≠ andar — passada/cadência distintas
+      const running = held(pl, 'action1');                    // E19: correr ≠ andar — passada/cadência distintas
       const M = running ? tex.run : tex.walk;
       const hold = running ? ANIM.runHold : ANIM.walkHold;
       tx = M[Math.floor(pl.walkAnim / hold) % M.length];
