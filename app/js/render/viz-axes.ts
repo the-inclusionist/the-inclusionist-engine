@@ -66,6 +66,50 @@ export function simulacaoIndisponivel(v: VisualState): MotivoIndisponivel | null
   return null;
 }
 
+/* ===================== A COMPOSIÇÃO ===================== */
+//
+// ⚠️ ELA JÁ ERA MECANICAMENTE POSSÍVEL, e é isso que torna o defeito mais caro do que parecia: o TEMA de
+// alto contraste vai pela RENDERIZAÇÃO DIRETA (`DIRECT_CFG`/PIXI) e a CORREÇÃO vai por FILTRO CSS
+// (`url(#cvd-fix-*)`). São dois mecanismos que não colidem. O que impedia os dois de coexistir não era a
+// máquina — era o campo único que só cabia um valor.
+
+/** A chave de modo DIRETO que este tema usa, ou `null` para o tema padrão. */
+export function temaDireto(v: VisualState): string | null {
+  return v.tema === 'hc3' ? 'hc-direto'
+    : v.tema === 'hc45' ? 'hc-direto-45'
+      : v.tema === 'hc7' ? 'hc-direto-7'
+        : null;
+}
+
+/**
+ * A chave de FILTRO CSS que este estado usa, ou `null`.
+ *
+ * ⚠️ SIMULAÇÃO VENCE CORREÇÃO AQUI, e não é uma regra de precedência escondida: as duas não podem coexistir
+ * porque `simulacaoIndisponivel` já as separa — uma simulação só corre com a correção no padrão. Este `??`
+ * é o que acontece quando alguém constrói um estado à mão que a interface não deixaria montar, e escolher a
+ * simulação é o menos errado dos dois: ela é a intenção mais recente e mais visível.
+ */
+export function filtroChave(v: VisualState): string | null {
+  if (v.simulacao) return v.simulacao;
+  return v.correcao === 'tricro' ? null : 'fix-' + (v.correcao === 'deuter' ? 'deuter' : v.correcao);
+}
+
+/**
+ * As DUAS coisas que a raiz precisa aplicar, num objeto só.
+ *
+ * ⚠️ Devolver os dois JUNTOS é o ponto da issue #104: enquanto eram um campo, aplicar um apagava o outro.
+ * Aqui um estado com tema `hc7` e correção `deuter` devolve os dois preenchidos, e é o que o gate afirma.
+ */
+export interface Aplicacao {
+  /** A chave do modo direto (alto contraste), ou `null`. */
+  readonly direto: string | null;
+  /** A chave do filtro CSS (correção ou simulação), ou `null`. */
+  readonly filtro: string | null;
+}
+export function aplicacao(v: VisualState): Aplicacao {
+  return { direto: temaDireto(v), filtro: filtroChave(v) };
+}
+
 /* ===================== A MIGRAÇÃO ===================== */
 //
 // ⚠️ ELA NÃO É OPCIONAL E VEM ANTES DA PRIMEIRA LEITURA DA FORMA NOVA. O ajuste salvo guarda o valor único

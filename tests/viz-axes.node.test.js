@@ -7,9 +7,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   PADRAO, TEMAS, CORRECOES, SIMULACOES, CHAVES_ANTIGAS,
-  nosPadroes, simulacaoIndisponivel, migrarVisual,
+  nosPadroes, simulacaoIndisponivel, migrarVisual, aplicacao,
 } from '../app/js/render/viz-axes.js';
-import { VIZ_MODES } from '../app/js/render/viz-modes.js';
+import { VIZ_MODES, VIZ_FILTER } from '../app/js/render/viz-modes.js';
+import { isDirectMode } from '../app/js/render/viz-setters.js';
 
 describe('os dois eixos COMPÕEM — é a razão inteira da issue', () => {
   it('⚠️ contraste 7:1 E correção de deuteranopia ao mesmo tempo', () => {
@@ -136,5 +137,44 @@ describe('⚠️ nenhum nome agrupa correção e simulação', () => {
     for (const nome of [...TEMAS, ...CORRECOES]) {
       expect(String(nome)).not.toMatch(/defici|normal|sem-/i);
     }
+  });
+});
+
+describe('⚠️ a COMPOSIÇÃO: os dois aplicados ao mesmo tempo', () => {
+  it('7:1 E correção de deuteranopia produzem OS DOIS', () => {
+    // A asserção que é a issue #104 inteira. Enquanto `p.viz` era um campo, aplicar um apagava o outro.
+    const a = aplicacao({ tema: 'hc7', correcao: 'deuter', simulacao: null });
+    expect(a.direto).toBe('hc-direto-7');
+    expect(a.filtro).toBe('fix-deuter');
+  });
+
+  it('⚠️ e as chaves que saem existem NAS TABELAS REAIS — senão a composição é de mentira', () => {
+    // Sem isto, `aplicacao` poderia devolver duas strings bonitas que não casam com filtro nenhum, e o
+    // teste acima passaria enquanto a tela não mudava. Comparo com as tabelas que a engine de facto lê.
+    for (const tema of TEMAS) {
+      for (const correcao of CORRECOES) {
+        const a = aplicacao({ tema, correcao, simulacao: null });
+        if (a.direto) expect(isDirectMode(a.direto), `modo direto inexistente: ${a.direto}`).toBe(true);
+        if (a.filtro) expect(VIZ_FILTER[a.filtro], `filtro inexistente: ${a.filtro}`).toBeTypeOf('string');
+      }
+    }
+  });
+
+  it('as nove simulações também casam com a tabela de filtros', () => {
+    for (const s of SIMULACOES) {
+      if (!s) continue;
+      const a = aplicacao({ tema: 'padrao', correcao: 'tricro', simulacao: s });
+      expect(VIZ_FILTER[a.filtro], `filtro inexistente para ${s}`).toBeTypeOf('string');
+      expect(a.direto, 'uma simulação corre no tema padrão').toBeNull();
+    }
+  });
+
+  it('o padrão dos dois eixos não aplica nada', () => {
+    expect(aplicacao(PADRAO)).toEqual({ direto: null, filtro: null });
+  });
+
+  it('tema sozinho não inventa filtro, e correção sozinha não inventa tema', () => {
+    expect(aplicacao({ tema: 'hc45', correcao: 'tricro', simulacao: null })).toEqual({ direto: 'hc-direto-45', filtro: null });
+    expect(aplicacao({ tema: 'padrao', correcao: 'protan', simulacao: null })).toEqual({ direto: null, filtro: 'fix-protan' });
   });
 });
