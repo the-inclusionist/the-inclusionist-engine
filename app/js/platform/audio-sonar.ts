@@ -29,7 +29,7 @@
 //
 // ========================= SEM I/O NO IMPORT =========================
 // Nada aqui toca `window` fora de `playerCtx`, que é chamada e não importada. Roda no project `node`.
-import { distance, type Spot, type Topology, type Speakable } from '../core/contract.js';
+import { distance, bearing, type Bearing, type Spot, type Topology, type Speakable } from '../core/contract.js';
 import { t } from '../core/i18n.js';
 
 export type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
@@ -137,6 +137,30 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * coisas que ele sabia sobre o jogo (que alvos são moedas, que moedas têm dono, que distância é euclidiana
    * em pixels) viraram uma pergunta ao contrato e uma chamada a `distance`.
    */
+  /**
+   * O RUMO EM PALAVRAS, na língua de quem joga e no referencial que o JOGO declarou.
+   *
+   * ⚠️ O QUE ISTO SUBSTITUI ERA UM DEFEITO DE ACESSIBILIDADE, não um detalhe de estilo. O sonar calculava o
+   * lado à mão, de `x` cru, com zona morta de ±4:
+   *
+   *     alvo.at.x < pl.x - 4 ? 'left' : alvo.at.x > pl.x + 4 ? 'right' : 'ahead'
+   *
+   * Três palavras onde o contrato tem oito — e MISTURANDO REFERENCIAIS: *esquerda/direita* é relativo à TELA,
+   * *à frente* é relativo ao CORPO, e quem ouve não tem como saber de que origem cada uma fala. Pior: tudo o
+   * que estivesse acima ou abaixo da criança virava «à frente», que é justamente a informação que mais falta
+   * a quem não vê a tela — apagada por uma zona morta.
+   *
+   * ⚠️ E O REFERENCIAL É DO JOGO. Num tabuleiro diz-se «a nordeste»; numa plataforma 2D vista de lado, norte
+   * não quer dizer nada, e o que se diz é «às 2 horas».
+   */
+  function emPalavras(r: Bearing): string {
+    if (r.kind === 'none') return t('sr.nav.here');
+    // Uma chave com `{h}` e não doze — mas a forma do singular é sua, porque «às 1 horas» não é português
+    // (nem «a las 1» é espanhol). Em inglês as duas coincidem, e coincidir não é motivo para não a ter.
+    if (r.kind === 'clock') return r.hour === 1 ? t('sr.nav.clockOne') : t('sr.nav.clock', { h: r.hour });
+    return t('sr.nav.dir.' + r.heading);
+  }
+
   function alvoMaisProximo(pl: SonarPlayer): { at: Spot; d: number } | null {
     const topo = ctx.topology();
     const aqui: Spot = { x: pl.x, y: pl.y };
@@ -173,10 +197,9 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     // O NOME vem do jogo (campo 3). Antes era `t('sr.nav.coin')` — a engine dizia "moeda" porque só conhecia
     // moedas. O fallback existe para o jogo que declara alvo sem nome: melhor "alvo" do que uma chave crua.
     const nome = ctx.nameAt(alvo.at);
-    const lado = alvo.at.x < pl.x - 4 ? 'sr.nav.left' : alvo.at.x > pl.x + 4 ? 'sr.nav.right' : 'sr.nav.ahead';
     const corpo = t('sr.nav.sonarFound', {
       alvo: nome ? nome.text : t('sr.nav.target'),
-      lado: t(lado),
+      lado: emPalavras(bearing(ctx.topology(), { x: pl.x, y: pl.y }, alvo.at)),
       dist: t(chaveDeDistancia(alvo.d)),
     });
     const msg = (ctx.getNumPlayers() > 1 ? t('sr.player.prefix', { n: pl.i + 1 }) : '') + corpo;

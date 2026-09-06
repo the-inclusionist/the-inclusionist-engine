@@ -405,9 +405,18 @@ const pt: Record<string, string> = {
   // generica do que uma chave crua na boca do leitor de tela.
   'sr.nav.coin': 'moeda',
   'sr.nav.target': 'alvo',
-  'sr.nav.left': 'à esquerda',
-  'sr.nav.right': 'à direita',
-  'sr.nav.ahead': 'à frente',
+  // O RUMO, nos dois referenciais que uma topologia pode declarar (ADR-0089). Substituem `left`/`right`/
+  // `ahead`, que eram três palavras onde o contrato tem oito — e misturavam referencial de TELA (esquerda,
+  // direita) com referencial de CORPO (à frente), sem que quem ouvisse tivesse como saber qual era qual.
+  'sr.nav.dir.n': 'ao norte', 'sr.nav.dir.ne': 'a nordeste', 'sr.nav.dir.e': 'a leste',
+  'sr.nav.dir.se': 'a sudeste', 'sr.nav.dir.s': 'ao sul', 'sr.nav.dir.sw': 'a sudoeste',
+  'sr.nav.dir.w': 'a oeste', 'sr.nav.dir.nw': 'a noroeste',
+  // O eixo vertical do ESPAÇO. Palavras próprias porque `up`/`down` já são AÇÕES de controle.
+  'sr.nav.dir.zenith': 'acima', 'sr.nav.dir.nadir': 'abaixo',
+  // O relógio, para a vista lateral. Duas chaves e não doze: a hora é parâmetro. A forma do singular existe
+  // porque «às 1 horas» não é português.
+  'sr.nav.clock': 'às {h} horas', 'sr.nav.clockOne': 'à 1 hora',
+  'sr.nav.here': 'aqui mesmo',
   'sr.nav.veryClose': 'bem perto',
   'sr.nav.close': 'perto',
   'sr.nav.far': 'longe',

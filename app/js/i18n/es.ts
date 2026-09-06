@@ -330,9 +330,15 @@ const es: Record<string, string> = {
   'sr.nav.sonarFound': 'Sonar: {alvo} {lado}, {dist}.',
   'sr.nav.coin': 'moneda',
   'sr.nav.target': 'objetivo',
-  'sr.nav.left': 'a la izquierda',
-  'sr.nav.right': 'a la derecha',
-  'sr.nav.ahead': 'al frente',
+  // EL RUMBO, en los dos marcos que una topología puede declarar (ADR-0089). Sustituyen a `left`/`right`/
+  // `ahead`, que eran tres palabras donde el contrato tiene ocho - y mezclaban el marco de PANTALLA
+  // (izquierda, derecha) con el del CUERPO (al frente).
+  'sr.nav.dir.n': 'al norte', 'sr.nav.dir.ne': 'al noreste', 'sr.nav.dir.e': 'al este',
+  'sr.nav.dir.se': 'al sureste', 'sr.nav.dir.s': 'al sur', 'sr.nav.dir.sw': 'al suroeste',
+  'sr.nav.dir.w': 'al oeste', 'sr.nav.dir.nw': 'al noroeste',
+  'sr.nav.dir.zenith': 'arriba', 'sr.nav.dir.nadir': 'abajo',
+  'sr.nav.clock': 'a las {h}', 'sr.nav.clockOne': 'a la 1',
+  'sr.nav.here': 'aquí mismo',
   'sr.nav.veryClose': 'muy cerca',
   'sr.nav.close': 'cerca',
   'sr.nav.far': 'lejos',

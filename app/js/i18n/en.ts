@@ -329,9 +329,15 @@ const en: Record<string, string> = {
   'sr.nav.sonarFound': 'Sonar: {alvo} {lado}, {dist}.',
   'sr.nav.coin': 'coin',
   'sr.nav.target': 'target',
-  'sr.nav.left': 'to the left',
-  'sr.nav.right': 'to the right',
-  'sr.nav.ahead': 'ahead',
+  // THE BEARING, in the two frames a topology can declare (ADR-0089). They replace `left`/`right`/`ahead`,
+  // which were three words where the contract has eight - and mixed a SCREEN frame (left, right) with a BODY
+  // frame (ahead), with no way for the listener to tell which was which.
+  'sr.nav.dir.n': 'to the north', 'sr.nav.dir.ne': 'to the north-east', 'sr.nav.dir.e': 'to the east',
+  'sr.nav.dir.se': 'to the south-east', 'sr.nav.dir.s': 'to the south', 'sr.nav.dir.sw': 'to the south-west',
+  'sr.nav.dir.w': 'to the west', 'sr.nav.dir.nw': 'to the north-west',
+  'sr.nav.dir.zenith': 'above', 'sr.nav.dir.nadir': 'below',
+  'sr.nav.clock': "at {h} o'clock", 'sr.nav.clockOne': "at 1 o'clock",
+  'sr.nav.here': 'right here',
   'sr.nav.veryClose': 'very close',
   'sr.nav.close': 'close',
   'sr.nav.far': 'far',

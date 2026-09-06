@@ -71,7 +71,9 @@ describe('platform/audio-sonar · o alvo vem do CONTRATO, não de um array de mo
     const { som, said, narrated } = setup({ alvos: [{ x: 300, y: 32 }, { x: 48, y: 32 }] });
     som.sonar(pl());
     expect(som.sonarCount).toBe(1);
-    expect(said[0]).toContain('à direita');
+    // «as 3 horas» e não «à direita»: o fixture declara `frame: 'clock'`, que é o referencial de uma
+    // plataforma 2D vista de lado. A palavra vem do JOGO, e não de uma conta sobre `x` cru (ADR-0089).
+    expect(said[0]).toContain('às 3 horas');
     expect(narrated.length).toBe(1);
   });
 
@@ -79,8 +81,8 @@ describe('platform/audio-sonar · o alvo vem do CONTRATO, não de um array de mo
     const { som, said } = setup({ targetsOf: (i) => (i === 0 ? [{ x: 300, y: 32 }] : [{ x: 8, y: 32 }]) });
     som.sonar(pl({ i: 0 }));
     som.sonar(pl({ i: 1 }));
-    expect(said[0]).toContain('à direita'); // 300 está à direita de 32
-    expect(said[1]).toContain('à esquerda'); // 8 está à esquerda
+    expect(said[0]).toContain('às 3 horas'); // 300 está à direita de 32 → 3 horas
+    expect(said[1]).toContain('às 9 horas'); // 8 está à esquerda → 9 horas
   });
 
   it('[Zero] lista de alvos VAZIA é resposta legítima: avisa e não quebra', () => {
@@ -180,4 +182,53 @@ describe('platform/audio-sonar · updateGuide, o beacon em laço', () => {
     expect(som.guideCount).toBe(0);
     expect(tone.length).toBe(0);
   });
+});
+
+// -----------------------------------------------------------------------------------------------------------
+describe('a NARRAÇÃO diz o RUMO, e o rumo vem do referencial que o jogo declarou (ADR-0089)', () => {
+  // O que isto substitui: `alvo.at.x < pl.x - 4 ? 'left' : alvo.at.x > pl.x + 4 ? 'right' : 'ahead'`.
+  // Três palavras onde o contrato tem oito, e misturando referencial de TELA (esquerda, direita) com
+  // referencial de CORPO (à frente) — quem ouve não tem como saber de qual origem cada uma fala.
+  const acima = { x: 32, y: 0 }, abaixo = { x: 32, y: 64 };
+
+  it('[Right] ⚠️ ACIMA e ABAIXO deixam de virar «à frente» — é o defeito, em uma linha', () => {
+    // Com a zona morta de ±4, TUDO o que estivesse na mesma coluna virava «à frente», estivesse acima ou
+    // abaixo. Era justamente a informação que mais falta a quem não vê a tela, apagada por uma conta sobre
+    // `x` que não olhava para `y` nenhum.
+    expect(sonarDe([acima])).toContain('às 12 horas');
+    expect(sonarDe([abaixo])).toContain('às 6 horas');
+  });
+
+  it('[Interface] o MESMO alvo dá palavras diferentes conforme o referencial declarado', () => {
+    // O par que prova que o campo `frame` é lido, e não que dois fixtures por acaso diferem noutra coisa.
+    expect(sonarDe([acima])).toContain('às 12 horas');            // CONTINUO declara `frame: 'clock'`
+    expect(sonarDe([acima], GRADE)).toContain('ao norte');        // GRADE declara `frame: 'compass'`
+  });
+
+  it('[Many] num jogo de bússola, as quatro direções saem com o nome próprio', () => {
+    expect(sonarDe([{ x: 32, y: 0 }], GRADE)).toContain('ao norte');
+    expect(sonarDe([{ x: 32, y: 64 }], GRADE)).toContain('ao sul');
+    expect(sonarDe([{ x: 64, y: 32 }], GRADE)).toContain('a leste');
+    expect(sonarDe([{ x: 0, y: 32 }], GRADE)).toContain('a oeste');
+  });
+
+  it('[Zero] alvo no MESMO lugar não ganha direção inventada', () => {
+    expect(sonarDe([{ x: 32, y: 32 }])).toContain('aqui mesmo');
+  });
+
+  it('[Boundary] ⚠️ a hora 1 tem forma PRÓPRIA — «às 1 horas» não é português', () => {
+    // Uma chave com `{h}` cobre onze das doze horas, e é por isso que a décima segunda passa despercebida:
+    // o caso só existe se alguém escolher um alvo a ~30° do topo. Sem ele, a mutação que apaga o singular
+    // fica verde — e o leitor de tela passa a ler uma frase agramatical a cada sonar da hora 1.
+    const frase = sonarDe([{ x: 37, y: 23 }]); // ~30° no sentido horário a partir do topo
+    expect(frase).toContain('à 1 hora');
+    expect(frase).not.toContain('às 1 horas');
+  });
+
+  /** Dispara o sonar uma vez e devolve a frase dita. */
+  function sonarDe(alvos, topology) {
+    const { som, said } = setup(topology ? { alvos, topology } : { alvos });
+    som.sonar(pl());
+    return said[0];
+  }
 });
