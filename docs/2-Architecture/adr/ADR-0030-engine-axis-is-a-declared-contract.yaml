@@ -17,6 +17,16 @@ metadata:
              a getter that type-checks by coincidence rather than by contract, leaving a caching consumer
              silently stale. The SEVEN FIELDS THEMSELVES STAND, and so does everything else here: what
              changes is how one of them is handed over, not what it is or how many there are."
+    - by: ADR-0089
+      what: "the CONTENT of `Topology`, and one sentence about the metric. This record shipped `grid` as ONE
+             thing with ONE metric — Chebyshev, with the reason written beside it (`numa grade, a diagonal
+             custa um passo`). MEASURED in `game-15puzzle`: nothing moves diagonally in a sliding puzzle, so
+             the sonar under-reported by up to 2x, and under-reporting distance to a child who cannot see the
+             screen is not imprecision — it is saying `close` about something far, to somebody with nothing
+             else to go on. `move` (L1/L-inf/L2) and `frame` (compass/clock) are now DECLARED, and
+             `cols`/`rows`/`width`/`height` became `size`, a vector whose length is the dimension. ⚠️ THE
+             THREE FORMS THEMSELVES STAND — grid, continuous, hotspots still cover the ADR-0027 catalogue, and
+             `hotspots` is untouched. What changes is that a grid now says HOW ONE WALKS ON IT."
     - by: ADR-0087
       what: "the COUNT of declared fields: SEVEN becomes EIGHT. `world()` joins them, and unlike the
              ADR-0084 change this one does add a field rather than reshape an existing one. ⚠️ THE REASON IS
