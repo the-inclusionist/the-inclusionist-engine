@@ -1630,6 +1630,7 @@ function setWheelchair(on: boolean){ const antes=wheelchair; setWheelchairValue(
 // branca, sem mensagem, e so voltava limpando o armazenamento. Mesma doenca que o simNaoGlyphs ja teve neste
 // arquivo; ali a cura foi ler do armazenamento, aqui e existir antes de quem chama.
 const touchCtl = initTouch({ $, srSay, store, root: document.documentElement, isMobile,
+  acoesDoJogo,
   // O pad virtual so aparece com UM jogador, JOGANDO, e sem desafio aberto. A politica e do JOGO (item 19):
   // era uma linha dentro do `input/touch` lendo `numPlayers`, `phase` e `players[].quiz` por importacao — e a
   // ultima dizia que a camada de TOQUE sabia que existe atividade de alfabetizacao. Mesmo movimento do

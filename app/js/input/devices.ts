@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // input/devices.ts — rótulos/mapeamentos de gamepad e toque (dados). Módulo-folha, ZERO deps.
 // PAD_DESIGNS: como rotular os 4 botões de ação por modelo de controle (o navegador detecta genérico no
-// Windows). TOUCH_ACT_LABELS: CHAVES i18n das ações de toque. TOUCH_DEFAULT: mapa padrão dos 9 slots de toque.
+// Windows). TOUCH_DEFAULT: mapa padrão dos 9 slots de toque.
 // A leitura de pads (pollPads) e o layout de toque ficam no game.js. (Fase 2, subsistema input)
 //
 // POR QUE CHAVES E NÃO TEXTO: a tabela é uma `const` de módulo, avaliada UMA vez no import. Se guardasse
 // `t('…')` já resolvido, o idioma congelaria no boot — `dict` em core/i18n é um `let` que `setLocale`
 // reatribui, e quem leu antes da troca nunca mais vê a troca. Guardando a chave, quem resolve é o ponto de
-// uso (`t(TOUCH_ACT_LABELS[a])` em input/touch), a cada chamada, com o idioma vigente naquele instante.
 // Este módulo continua ZERO deps de propósito: chave é dado, `t` é comportamento e mora no consumidor.
 export const PAD_DESIGNS: Record<string, Record<string, string[]>> = { // por botão: [rótulo, cor]
   generic:{'0':['0','#3a4a6a'],'1':['1','#3a4a6a'],'2':['2','#3a4a6a'],'3':['3','#3a4a6a']},
@@ -29,5 +28,4 @@ export const PAD_DESIGNS: Record<string, Record<string, string[]>> = { // por bo
 export const PAD_GLYPH_SPOKEN: Record<string, string> = {
   '✕': 'pad.glyph.cross', '○': 'pad.glyph.circle', '□': 'pad.glyph.square', '△': 'pad.glyph.triangle',
 };
-export const TOUCH_ACT_LABELS: Record<string, string> = { left:'touch.act.left', right:'touch.act.right', up:'touch.act.up', down:'touch.act.down', action2:'touch.act.jump', action1:'touch.act.run', action3:'touch.act.especial', action4:'touch.act.swap', start:'touch.act.pause' };
 export const TOUCH_DEFAULT: Record<string, string> = { up:'up',down:'down',left:'left',right:'right',start:'start',b0:'action2',b1:'action3',b2:'action1',b3:'action4' };

@@ -9,7 +9,8 @@ import {
   padPxPerMm, padHandTag, computePadPhysicalPx, padLayoutFromId, normalizeTouchMap, padKind,
   IPHONE16_LONG_MM, IPHONE16_LONG_PX, IPHONE16_PXMM, TOUCH_SLOTS, TOUCH_ACTS,
 } from '../app/js/input/touch.js';
-import { TOUCH_DEFAULT, TOUCH_ACT_LABELS } from '../app/js/input/devices.js';
+import { TOUCH_DEFAULT } from '../app/js/input/devices.js';
+import { platformerPreset } from '../app/js/game/platformer-preset.js';
 import pt from '../app/js/i18n/pt.js';
 
 describe('padPxPerMm', () => {
@@ -157,13 +158,18 @@ describe('TOUCH_SLOTS / TOUCH_ACTS (dados de apresentação do painel)', () => {
   // ESTE TESTE ANTES NÃO PODIA FALHAR: dizia verificar a cobertura "no devices.ts real" e só aferia
   // `TOUCH_ACTS.length === 9` — passaria com TOUCH_ACT_LABELS vazio. Agora percorre as duas tabelas e o
   // dicionário: uma ação sem chave, ou uma chave sem entrada em pt, deixa um <option> em branco no painel.
-  it('[Right] toda ação mapeável tem chave i18n em TOUCH_ACT_LABELS, e a chave existe no dicionário', () => {
-    expect(TOUCH_ACTS.length).toBe(9);
+  it('⚠️ o PRESET do jogo nomeia tudo o que o transporte de toque consegue carregar', () => {
+    // O teste anterior perguntava a `TOUCH_ACT_LABELS`, uma tabela da ENGINE, se toda ação tinha chave
+    // i18n. A tabela morreu com o corte de 2026-09-06: quem tem as palavras é o jogo.
+    //
+    // O invariante muda de lado e continua a valer para o jogo próprio da engine — se a plataforma
+    // deixasse de nomear uma posição que o toque carrega, o menu daquele slot perderia a opção. Para OUTRO
+    // jogo isso seria decisão legítima; para este é regressão, e é isso que se afirma.
+    const preset = platformerPreset();
     for (const a of TOUCH_ACTS) {
-      expect(TOUCH_ACT_LABELS[a], `ação sem chave i18n: ${a}`).toBeTypeOf('string');
-      expect(pt[TOUCH_ACT_LABELS[a]], `chave fora do dicionário: ${TOUCH_ACT_LABELS[a]}`).toBeTypeOf('string');
+      expect(preset[a], `a plataforma não nomeia "${a}", que o toque carrega`).toBeTruthy();
+      expect(preset[a].label, `rótulo vazio para "${a}"`).toBeTruthy();
     }
-    for (const s of TOUCH_SLOTS) expect(pt[s.lbl], `slot sem tradução: ${s.lbl}`).toBeTypeOf('string');
   });
   it('[Invariant] toda ação em TOUCH_DEFAULT é uma das TOUCH_ACTS válidas', () => {
     for (const v of Object.values(TOUCH_DEFAULT)) expect(TOUCH_ACTS).toContain(v);

@@ -6,7 +6,7 @@
 // padDpadMm/padDir) live behind initTouch(ctx). PAD_DESIGNS/TOUCH_ACT_LABELS/TOUCH_DEFAULT come from
 // ./devices.js (not reimplemented). Reading the real Gamepad API (polling, mapping wizard) is input/gamepad's
 // territory, not this module's — see the header note on padKind() for the one deliberate exception.
-import { PAD_DESIGNS, TOUCH_ACT_LABELS, TOUCH_DEFAULT } from './devices.js';
+import { PAD_DESIGNS, TOUCH_DEFAULT } from './devices.js';
 import { migrarMapaDeToque } from './vocabulary-migration.js';
 import { t } from '../core/i18n.js';
 import { KEYS } from '../platform/storage.js'; // só as CHAVES (constantes) — leitura/escrita passam por ctx.store (DI)
@@ -36,6 +36,17 @@ export interface TouchCtx {
   $: DomQuery;
   /** Screen-reader "polite" announcement (core/a11y-sr's srSay), injected. */
   srSay: (msg: string) => void;
+  /**
+   * AS POSIÇÕES QUE ESTE JOGO USA, cada uma com a palavra dele, no idioma vigente.
+   *
+   * ⚠️ Substitui `TOUCH_ACTS` + `TOUCH_ACT_LABELS`. O menu de cada slot oferecia NOVE opções fixas — quer
+   * dizer, a engine decidia que todo jogo tem pular, correr, trocar e especial, e uma criança num quiz
+   * poderia atribuir «Trocar poder» a um botão da tela, que depois não faria nada.
+   *
+   * A ordem também vem daqui: é a ordem canônica de `core/actions`, a mesma que a tela de remapeamento usa,
+   * para a criança não ter de reaprender a lista ao trocar de painel.
+   */
+  acoesDoJogo: () => readonly { readonly acao: string; readonly rotulo: string }[];
   /** Persistence (platform/storage.ts), injected. */
   store: TouchStore;
   /** Element the --pad-* CSS custom properties are written to: document.documentElement in production
@@ -136,7 +147,14 @@ export const TOUCH_SLOTS: ReadonlyArray<{ k: string; lbl: string }> = [
   { k: 'b0', lbl: 'touch.slot.b0' }, { k: 'b1', lbl: 'touch.slot.b1' },
   { k: 'b2', lbl: 'touch.slot.b2' }, { k: 'b3', lbl: 'touch.slot.b3' },
 ];
-/** As 9 ações mapeáveis a uma posição de toque (opções do <select> de cada slot). */
+/**
+ * As ações que o TRANSPORTE de toque consegue carregar.
+ *
+ * ⚠️ DEIXOU DE SER A LISTA DO `<select>`: as opções vêm agora de `ctx.acoesDoJogo()`, porque quem decide
+ * quais ações existem é o jogo. Esta lista continua a valer como o que ESTE transporte alcança — e é contra
+ * ela que o gate de `input/touch-bindings` confere se o despacho reconhece tudo o que se pode oferecer.
+ * As duas coisas eram a mesma por acidente enquanto só havia um jogo.
+ */
 export const TOUCH_ACTS: readonly string[] = ['left', 'right', 'up', 'down', 'action2', 'action1', 'action3', 'action4', 'start'];
 
 /** Funde o mapa persistido (JSON solto do localStorage) sobre TOUCH_DEFAULT. Mantido IDÊNTICO ao original:
@@ -221,7 +239,7 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     if (!el) return;
     el.innerHTML = TOUCH_SLOTS.map((s) =>
       `<div class="ctrl-row"><label for="tm-${s.k}">${t(s.lbl)}</label><select id="tm-${s.k}" class="vol" data-slot="${s.k}">` +
-      TOUCH_ACTS.map((a) => `<option value="${a}"${touchMap[s.k] === a ? ' selected' : ''}>${t(TOUCH_ACT_LABELS[a]!)}</option>`).join('') +
+      ctx.acoesDoJogo().map(({ acao, rotulo }) => `<option value="${acao}"${touchMap[s.k] === acao ? ' selected' : ''}>${rotulo}</option>`).join('') +
       `</select></div>`
     ).join('');
     el.querySelectorAll<HTMLSelectElement>('select[data-slot]').forEach((sel) => {
@@ -230,7 +248,10 @@ export function initTouch(ctx: TouchCtx): TouchApi {
         touchMap[slot] = sel.value;
         ctx.store.setJSON(KEYS.touchmap, touchMap);
         const label = sel.previousElementSibling ? sel.previousElementSibling.textContent : null;
-        ctx.srSay(t('sr.touch.slotSet', { slot: label || t('touch.slot.fallback'), acao: t(TOUCH_ACT_LABELS[sel.value]!) }));
+        // ⚠️ A palavra falada é a MESMA que a lida: sai da mesma lista que acabou de montar o `<option>`.
+        // Antes vinham de tabelas diferentes e nada obrigava as duas a concordar.
+        const escolhida = ctx.acoesDoJogo().find((x) => x.acao === sel.value);
+        ctx.srSay(t('sr.touch.slotSet', { slot: label || t('touch.slot.fallback'), acao: escolhida ? escolhida.rotulo : sel.value }));
       });
     });
   }

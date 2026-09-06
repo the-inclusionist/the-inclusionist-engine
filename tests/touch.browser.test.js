@@ -68,6 +68,15 @@ function makeCtx(over = {}) {
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     srSay: (t) => calls.srSay.push(t),
+    // As posicoes que ESTE 'jogo' usa. O menu de cada slot oferecia nove opcoes fixas da engine; agora
+    // oferece as do jogo, e num teste o jogo e o fixture.
+    acoesDoJogo: () => [
+      { acao: 'left', rotulo: 'Andar a esquerda' }, { acao: 'right', rotulo: 'Andar a direita' },
+      { acao: 'up', rotulo: 'Subir' }, { acao: 'down', rotulo: 'Descer' },
+      { acao: 'action2', rotulo: 'Pular' }, { acao: 'action1', rotulo: 'Correr' },
+      { acao: 'action3', rotulo: 'Especial' }, { acao: 'action4', rotulo: 'Trocar poder' },
+      { acao: 'start', rotulo: 'Pausar (START)' },
+    ],
     store,
     root: document.documentElement,
     isMobile: () => false,
