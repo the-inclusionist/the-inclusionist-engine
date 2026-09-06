@@ -6,6 +6,7 @@
 // Cobre em especial (pedido da tarefa): botão repetido (release-gate), Escape no meio (_skip sentinel), muitos
 // ticks ociosos sem avançar passo ("timeout" — não existe timeout real no original; isso prova que não há
 // avanço espúrio), e controle desconectado durante o wizard (tick vira no-op sem lançar).
+import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   stdDirs, bindActive, padActions, PADWIZ_ORDER, initGamepad,
@@ -177,9 +178,28 @@ describe('padActions', () => {
     const a = padActions(gp, null);
     expect(a.action2).toBe(true); expect(a.action3).toBe(false); expect(a._pause).toBe(true); expect(a._start).toBe(true);
   });
-  it('[Right] run também dispara por 2, 5 ou 7 (X-esquerda / RB / RT)', () => {
-    expect(padActions(makePad({ pressed: [5] }), null).action1).toBe(true);
-    expect(padActions(makePad({ pressed: [7] }), null).action1).toBe(true);
+  it('⚠️ R1 e R2 DEIXARAM de correr: agora são os ombros/gatilhos da direita (ADR-0086)', () => {
+    // Isto AFIRMAVA o contrário até 2026-09-06, e a mudança é real e sentida: `action1` era
+    // `b(2) || b(5) || b(7)`, ou seja X, R1 e R2 todos a correr. Com os quatro ombros a existirem como
+    // posições próprias, `run` perde dois dos seus três botões — é o asterisco que o ADR-0086 pôs no
+    // seu próprio «zero movimento»: nenhum VERBO muda de botão, mas este perde alternativas.
+    expect(padActions(makePad({ pressed: [5] }), null).action1).toBe(false);
+    expect(padActions(makePad({ pressed: [5] }), null).rightShoulder).toBe(true);
+    expect(padActions(makePad({ pressed: [7] }), null).rightTrigger).toBe(true);
+    expect(padActions(makePad({ pressed: [2] }), null).action1, 'X continua a correr').toBe(true);
+  });
+
+  it('⚠️ o mapa LIDO é o mapa DECLARADO — a asserção que a divergência exigia', () => {
+    // O defeito que este caso fecha durou vários dias sem ninguém notar: `padActions` trazia os índices
+    // como literais e `input/default-bindings` declarava outros, e nada comparava os dois. É a mesma
+    // forma do defeito que o gate do toque apanhou — duas tabelas que concordam entre si não provam nada
+    // sobre um terceiro que as lê. Aqui não há terceiro: a leitura SAI da tabela.
+    for (const [acao, indice] of Object.entries(GAMEPAD_STANDARD)) {
+      if (typeof indice !== 'number') continue;
+      if (['up', 'down', 'left', 'right'].includes(acao)) continue; // vêm do stick/D-pad, não de `at()`
+      const a = padActions(makePad({ pressed: [indice] }), null);
+      expect(a[acao], `botão ${indice} devia levantar "${acao}"`).toBe(true);
+    }
   });
   it('[Right] custom presente e sem _skip: usa os bindings do usuário para as AÇÕES', () => {
     const gp = makePad({ pressed: [8] });
@@ -429,7 +449,7 @@ describe('initGamepad — pollPads', () => {
     const ctx = buildCtx({ players: [p] });
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
-    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [5] })]);
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [2] })]);
     api.pollPads();
     expect(p.runEdge).toBe(true);
   });

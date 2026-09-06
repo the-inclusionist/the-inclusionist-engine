@@ -11,6 +11,8 @@ import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import { migrarMapaDeControle } from './vocabulary-migration.js';
+import { GAMEPAD_STANDARD } from './default-bindings.js';
+import type { Action } from '../core/actions.js';
 import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
 import * as store from '../platform/storage.js';
 
@@ -107,9 +109,28 @@ export function padActions(gp: PadLike, custom: PadMap | null): PadActions {
   }
   const b = (i: number): boolean => !!(gp.buttons[i] && gp.buttons[i]!.pressed);
   const sd = stdDirs(gp);
+  // ⚠️ OS ÍNDICES SAEM DA TABELA DECLARADA, e não de literais aqui. Enquanto eram literais, esta linha e
+  // `input/default-bindings` DISCORDAVAM e nada notava — a mesma forma de defeito que o gate do toque
+  // apanhou: duas tabelas que concordam entre si não provam nada sobre um terceiro que as lê.
+  //
+  // ⚠️ E A DISCORDÂNCIA ERA REAL: aqui estava `action1: b(2) || b(5) || b(7)`, ou seja X, R1 e R2 todos a
+  // correr, enquanto a tabela declara R1 como `rightShoulder` e R2 como `rightTrigger`. O ADR-0086 registrou
+  // esta mudança como o asterisco do seu «zero movimento»: nenhum VERBO muda de botão, mas `run` perde dois
+  // dos seus três. Quem usava R1 para correr sente — e é o preço de os quatro ombros existirem.
+  const B = GAMEPAD_STANDARD;
+  const at = (a: Action): boolean => { const i = B[a]; return typeof i === 'number' ? b(i) : false; };
   return {
     left: sd.left, right: sd.right, up: sd.up, down: sd.down,
-    action2: b(0), action1: b(2) || b(5) || b(7), action4: b(3), action3: b(1), _start: b(0) || b(9), _pause: b(9),
+    action1: at('action1'), action2: at('action2'), action3: at('action3'), action4: at('action4'),
+    leftShoulder: at('leftShoulder'), leftTrigger: at('leftTrigger'),
+    rightShoulder: at('rightShoulder'), rightTrigger: at('rightTrigger'),
+    // ⚠️ `start` COMO POSIÇÃO, e não só como os derivados abaixo. Faltava, e o gate da tabela foi quem
+    // o encontrou: quem quisesse saber «o START está apertado?» tinha de ler `_start`, que começa por
+    // underscore e quer dizer outra coisa (fecha diálogo, e aceita a ação 2 também).
+    start: at('start'), select: at('select'),
+    // `_start` e `_pause` são DERIVADOS e não posições: «fecha diálogo» aceita a ação 2 ou o START, «pausa»
+    // só o START. Ficam escritos aqui porque descrevem o que a raiz faz com duas posições, não uma terceira.
+    _start: at('action2') || at('start'), _pause: at('start'),
   };
 }
 
