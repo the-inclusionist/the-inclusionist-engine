@@ -1,0 +1,198 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0068 §5 — a game repository has NO `adr/`: the records stay in the engine and a game inherits
+       them. That is why seven findings made while building a game become one record HERE"
+    - "ADR-0030 — the engine is cut along a DECLARED CONTRACT with genre packages as presets. Five of the
+       seven findings are things that should have been in the contract and were in the engine instead"
+    - "ADR-0027 — the engine/game boundary, and `createGame` as the test of it"
+    - "ADR-0033 — the entity declares what the ENGINE owns; input arrives as intent"
+    - "ADR-0079 — a transport declares its slots. Same shape as this record, one layer down: what varies is
+       DECLARED, not assumed"
+    - "issue #82 — why an empathy simulation deliberately does NOT reach the menus"
+    - "ADR-0054 — a frame that throws stops the loop and ANNOUNCES; `core/loop.ts` has `aoFalhar` for it"
+  informed: []
+
+title: The engine holds nothing per-game — and a second game found the same assumption in five places
+
+context-and-problem-statement: |
+  Building the 15-puzzle against the engine produced seven findings. They are not seven problems.
+
+  ⚠️ FIVE OF THEM ARE ONE ASSUMPTION WEARING FIVE COSTUMES: that there is exactly one game, and that it is
+  the platformer. Each time, something that belongs to A GAME is held by the ENGINE, for the whole process,
+  where a second game cannot reach it. The other two are ordinary defects, and one of them is severe.
+
+  EVERY ITEM BELOW WAS MEASURED IN THE CODE, not taken from the report.
+
+  ===== THE FIVE THAT ARE THE SAME THING =====
+
+  **1. The random number generator is a module-level singleton.** `core/rng.ts` holds `let _seed = 20260601`
+  and TWELVE modules import from it — including `render/draw`, `render/fx`, `render/weather` and
+  `game/physics`. So anything that DRAWS advances the same stream a shuffle reads. "Deterministic shuffle" is
+  reproducible only on a page where nothing else is rendering, which is no page.
+
+  **2. Storage keys are scoped to a game id that is a constant.** `platform/storage.ts` has
+  `JOGO_ID = 'inclusionist'` and `kJogo(n)` returns `incl.inclusionist.<n>`. Its own comment calls that "o
+  escopo DO JOGO". Two games in one profile collide on every per-game key.
+
+  **3. `topology` is a VALUE.** `core/contract.ts:165` declares `readonly topology: Topology`, and
+  `boot/create-game.ts:205` wraps it as `topology: () => o.declaration.topology` — a function that returns a
+  constant. A board that changes size has no way to say so.
+
+  **4. The grid metric is fixed to king moves.** `contract.ts:238` returns Chebyshev for `kind: 'grid'`, with
+  the reason written next to it: *"numa grade, a diagonal custa um passo, e é assim que quem joga conta"*.
+  True where diagonals are legal. In a sliding puzzle nothing moves diagonally, so the sonar UNDER-REPORTS
+  distance by up to 2× — a tile two right and two down is 2 by Chebyshev and 4 in moves.
+
+  **5. "The world" means "the canvas".** `alcanceDoModo()` gives a simulation the scope `mundo`, and
+  `main.ts:1477` implements `mundo` as the PixiJS canvas while CLEARING the filter on `#dom-layer`. ⚠️ The
+  reason is good and stays (issue #82): the menu is the instrument for leaving a simulation and must remain
+  readable. What is wrong is the assumption underneath — in a game whose content is DOM, blind mode blackens
+  a canvas nobody is looking at and leaves the puzzle perfectly legible.
+
+  ===== THE TWO THAT ARE DEFECTS =====
+
+  **6. ⚠️ THE GENERATOR IS NOT THE GENERATOR IT SAYS IT IS, AND THE NUMBERS ARE NOT CLOSE.** `rnd()` computes
+  `_seed * 1103515245`, whose maximum is 2.37e18 — it exceeds 2^53 by **263×**, so the double silently drops
+  the low bits, which are exactly the bits `& 0x7fffffff` keeps. Measured:
+
+      observed period ......... 12,354
+      period of the LCG the comment describes (BigInt) ..... still running at 3,000,000
+      first divergence from that LCG ....................... step 1
+
+  A period of twelve thousand, in a generator written for reproducibility. The header claims the sequence is
+  "IDÊNTICA à do monólito", and that is true — the monolith carried the same defect.
+
+  **7. `createGame` leaves three wires hanging.** It builds `nav` (line 229) and returns it (254) and never
+  calls `nav.attach()`; `core/loop.ts` offers `aoFalhar` and nothing wires it; and there is no focus trap
+  anywhere in the engine. For a game booted through `createGame`: dialogs answer only the mouse, Tab reaches
+  the board underneath an open overlay, and a frame that throws freezes the screen in silence — which
+  ADR-0054 exists to prevent, and which is invisible to a child who cannot see.
+
+decision-drivers:
+  - "⚠️ The five are one assumption, so five separate fixes would leave the assumption. What has to be
+     decided is the RULE, or the sixth costume appears in the next game."
+  - "ADR-0030 already says the engine is a declared contract with presets. Anything the engine holds that
+     varies per game is a clause missing from that contract."
+  - "The second consumer is the measuring instrument this project already trusts: `consumer-quiz` produced
+     findings 3, 6, 12 and 15 the same way, and they became `createGame`."
+  - "A defect measured is cheaper than a defect argued. The RNG numbers are not an opinion."
+
+considered-options:
+  - "E1 — fix the seven as seven bugs"
+  - "E2 — the RULE: the engine holds no per-game state and makes no per-game assumption; what varies per
+     game is DECLARED by the game or owned by the game's instance"
+  - "E3 — give each game its own engine instance (a class), so module state stops being shared"
+  - "E4 — record them as known debt and carry on"
+
+pros-and-cons-of-the-options:
+  E1:
+    good: ["Each fix is small and independently testable.", "No new concept to teach."]
+    bad: ["⚠️ It leaves the assumption in place, and the assumption is what produced five of the seven. The
+           next game finds the sixth.",
+          "Seven fixes with no rule connecting them look arbitrary to whoever maintains them."]
+  E2:
+    good: ["It names the pattern once, so the next module is written correctly instead of corrected later.",
+           "It is the same shape ADR-0079 chose for transports and ADR-0030 for genres: what varies is
+            declared.",
+           "It makes a test possible that no per-bug fix would give: nothing per-game at module scope."]
+    bad: ["⚠️ It reaches modules nobody planned to touch — `rng`, `storage`, `contract`, `viz-setters` — and
+           the RNG change alters every seeded sequence, so the platformer's coin placement moves.",
+          "`declare it` costs the game author something each time; a contract with too many clauses stops
+           being read."]
+  E3:
+    good: ["One mechanism instead of a rule: instantiate and nothing is shared."]
+    bad: ["It is a rewrite of the module system this project deliberately chose (leaf modules, zero deps).",
+          "It would solve sharing and NOT solve the assumptions — a class with `topology` as a value has the
+           same defect."]
+  E4:
+    good: ["Nothing breaks today; the 15-puzzle already has its workarounds."]
+    bad: ["⚠️ The workarounds ARE the cost: a game applying the filter to `#game-region` by hand is the
+           engine's job done in a game, which is how three hundred games diverge.",
+          "The RNG defect does not wait: it is wrong now, in the platformer, for anything seeded."]
+
+decision-outcome:
+  chosen-option:
+    link: "E2 — the engine holds no per-game state and makes no per-game assumption"
+    justification: |
+      ===== 1. THE RULE =====
+      **Anything that varies from one game to another is DECLARED by the game or owned by the game's
+      instance. The engine holds neither.**
+
+      A module-level `let` that a game would want to differ on is the defect, not the convenience. The test to
+      apply to any engine module, and it is one question: **would a second game want a different value here?**
+      If yes, it is not the engine's to hold.
+
+      ===== 2. WHAT THE RULE DECIDES, ONE BY ONE =====
+        · **RNG** — a generator is created and owned by whoever needs a reproducible stream. The engine may
+          offer a default instance for convenience, and a game that wants determinism gets its own. ⚠️ Not
+          only for tidiness: today a shuffle shares a stream with the weather.
+        · **Storage** — the per-game prefix comes from the DECLARATION, not from a constant. `JOGO_ID` stops
+          existing as a literal in the engine.
+        · **Topology** — a FUNCTION, evaluated when asked, so a board can resize.
+        · **Grid metric** — the `grid` topology declares whether diagonals are legal. `grid` was never one
+          thing, and the sonar was measuring the wrong distance for half of them.
+        · **The world element** — the game declares which element is its world. The empathy scope rule of
+          issue #82 is untouched: simulation reaches the world and not the menus. What changes is that the
+          engine stops deciding, for every game, that the world is the canvas.
+
+      ===== 3. WHAT THE RULE DOES NOT COVER, AND IS OWED ANYWAY =====
+      ⚠️ Findings 6 and 7 are not the assumption; they are defects, and the RNG one is severe. A generator
+      with a period of 12,354 is not a reproducibility mechanism, it is a loop. They are fixed because they
+      are wrong, not because of this rule.
+
+      ⚠️ AND THE RNG FIX HAS A CONSEQUENCE THAT MUST NOT BE DISCOVERED IN PRODUCTION: correcting the
+      arithmetic changes every sequence the current generator produces. Coin placement in the platformer will
+      differ from today for the same seed. That is acceptable — the current sequence has no value worth
+      preserving — but it must be one migration with the ownership change, and not two surprises.
+
+      ===== 4. WHY THIS IS ONE RECORD AND NOT SEVEN =====
+      ADR-0068 §5 says a game has no `adr/` — decisions live here, and a game inherits them. Seven findings
+      made in a game therefore arrive as one record, and the record is worth more than the fixes: the fixes
+      remove five instances, the rule removes the class.
+
+  consequences:
+    positive:
+      - "The next game finds fewer of these, and the ones it finds are new rather than the sixth costume."
+      - "A test becomes possible that no individual fix would have given: no engine module holds mutable
+         per-game state."
+      - "The sonar starts measuring the distance a player actually travels, in every grid rather than in
+         king-move grids."
+      - "The 15-puzzle can drop its workaround, which is the measure of whether this worked."
+    negative:
+      - "⚠️ EVERY SEEDED SEQUENCE CHANGES. The platformer's coin placement for a given seed will not match
+         today's. Nothing depends on it that we know of, and `we know of` is the honest qualifier."
+      - "It touches `rng`, `storage`, `contract`, `viz-setters`, `create-game` — leaf modules that many
+         things import, so the blast radius is wide even though each change is small."
+      - "Every clause added to the contract is something a game author has to fill in, and a contract nobody
+         finishes reading is a contract that gets copied wrong."
+    neutral:
+      - "The empathy scope decision of issue #82 is unchanged: a simulation reaches the world, never the
+         menus. Only who decides what `the world` is changes."
+
+  confirmation: |
+    · No engine module holds mutable state that a second game would want to differ on. Checkable as a lint:
+      a module-level `let` in `core/` or `platform/` is a finding unless it is declared as engine-global.
+    · Two games in the same profile do not share a storage key. A test boots two declarations and asserts
+      the key sets are disjoint.
+    · A game whose board resizes reports the new size through `topology()` without re-declaring.
+    · `distance()` on an orthogonal grid returns MOVES: (2,2) is 4, not 2.
+    · A game whose content is DOM gets the empathy filter on its own world element; the menus stay readable.
+    · `createGame` attaches the keyboard navigation, installs a focus trap, and wires `aoFalhar`. A test
+      asserts a thrown frame produces an announcement.
+    · The generator's period is the period of the LCG it claims to be, verified against a BigInt reference
+      rather than against itself.
+
+    ⚠️ NONE OF THIS PASSES TODAY. Every clause above is the definition of done for work that has not started.
+
+more-information: |
+  This record supersedes nothing. It names a rule that was implied by ADR-0030 and never written, and the
+  cost of not writing it is measured: five instances in one game.
+
+  ⚠️ AND THE METHOD IS WORTH AS MUCH AS THE RULE. Both times this engine learned what it got wrong, it was a
+  SECOND CONSUMER that measured it — `consumer-quiz` produced the findings that became `createGame`, and the
+  15-puzzle produced these. Neither was found by reading the engine. A boundary is tested by something on the
+  other side of it, which is an argument for building the next game before polishing this one.
