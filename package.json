@@ -78,7 +78,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:pkg": "tsc -p tsconfig.pkg.json",
+    "build:pkg": "tsc -p tsconfig.pkg.json && node scripts/stamp-license.mjs dist-pkg",
     "prepare": "npm run build:pkg",
     "prepack": "npm run build:pkg",
     "preview": "vite preview",
