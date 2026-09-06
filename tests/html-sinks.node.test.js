@@ -89,6 +89,7 @@ const SEGUROS = [
   ['ui/shell.ts', 'el.innerHTML = legendHtml(l1, l2)', 'so i18n, e o dicionario tem gate proprio'],
   ['ui/settings-controls.ts', 'el.innerHTML = ctx.acoesDoJogo().map(', '⚠️ CONSERTADO 2026-09-06: a palavra do jogo saiu do markup e entra por `textContent`'],
   ['input/touch.ts', 'el.innerHTML = TOUCH_SLOTS.map((s) =>', '⚠️ CONSERTADO 2026-09-06: idem — o `<option>` nasce vazio e recebe o rótulo por texto'],
+  ['game/quiz.ts', 'ov.innerHTML = quizHtml(q, c.disp, c.QL_NAME)', '⚠️ CONSERTADO 2026-09-06: os cinco construtores escapam o conteúdo de atividade (`escAtividade`), com gate hostil em `quiz-escape`'],
 ];
 
 /**
@@ -101,7 +102,6 @@ const SEGUROS = [
  */
 const A_REVER = [
   ['ui/activities-menu.ts', "const cen = ctx.$<HTMLElement>('#tm-cen')", '⚠️ `c.id` do jogo entra num atributo `data-cen` (o `nome` já passa por i18n)'],
-  ['game/quiz.ts', 'ov.innerHTML = quizHtml(q, c.disp, c.QL_NAME)', '⚠️ o sink que a #106 nomeia: conteúdo de atividade'],
   ['consumer-quiz/main-quiz.ts', 'app.innerHTML = perguntaHtml(p, foco)', '⚠️ conteúdo de pergunta'],
   ['main.ts', 'if(c)c.innerHTML=`<h3 class="panel-sub">', '`titulo` por confirmar'],
   ['ui/activities-menu.ts', "const alf = ctx.$<HTMLElement>('#tm-alf')", 'catálogo de alfabetização por confirmar'],
@@ -140,10 +140,10 @@ describe('censo dos sinks de markup — o gate diz «ninguém acrescentou um sem
   it('[Boundary] ⚠️ o TETO só encolhe — `A_REVER` não pode crescer', () => {
     // O mesmo desenho do `engine-boundary`: teto e não igualdade, porque o que importa proibir é o
     // acoplamento CRESCER. Um sink por rever a mais é dívida nova disfarçada de dívida antiga.
-    // ⚠️ O TETO DESCEU DE 15 PARA 13 em 2026-09-06, quando dois deles deixaram de ser dívida e passaram a ser
-    // conserto. Baixar o número faz parte de consertar: um teto que fica onde estava deixa a dívida caber de
-    // volta sem ninguém reparar.
-    expect(A_REVER.length, 'a dívida de sinks por classificar cresceu').toBeLessThanOrEqual(13);
+    // ⚠️ O TETO DESCEU DE 15 → 13 → 12 em 2026-09-06, à medida que cada um deixou de ser dívida e passou a
+    // ser conserto. Baixar o número faz parte de consertar: um teto que fica onde estava deixa a dívida caber
+    // de volta sem ninguém reparar.
+    expect(A_REVER.length, 'a dívida de sinks por classificar cresceu').toBeLessThanOrEqual(12);
   });
 
   it('[Interface] toda entrada tem um PORQUÊ — sem isso a lista é uma tabela de supressões', () => {

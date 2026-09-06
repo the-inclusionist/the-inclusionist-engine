@@ -336,21 +336,47 @@ export function quizWho(pl: QuizPlayer, numJogadores: number): string {
 }
 
 /** Matemática: a conta no topo + matriz 3×3 de 9 respostas (números ou gráficos). */
+/**
+ * ESCAPA CONTEUDO DE ATIVIDADE PARA MARCACAO (issue #106).
+ *
+ * A palavra, as silabas, as letras, o emoji e a conta sao TEXTO — nunca marcacao. Hoje vem do catalogo em
+ * codigo (`game/activity-content`), e por isso nao ha caminho de injecao. ⚠️ DEIXA DE SER ASSIM COM UMA
+ * FUNCIONALIDADE JA DECIDIDA: o ADR-0052 diz que o profissional AUTORA atividades, e que uma atividade
+ * autorada e DADO. No dia em que texto autorado chegar aqui, cada uma destas interpolacoes renderiza o que
+ * alguem digitou.
+ *
+ * ⚠️ E ELE ENTRA TAMBEM EM ATRIBUTO — `aria-label="Ouvir a palavra ${q.word} de novo"` —, que e o pior
+ * contexto: uma aspa fecha o atributo e o que vem a seguir vira atributo.
+ *
+ * ⚠️ POR QUE ESCAPAR AQUI, quando os outros tres sinks desta issue foram consertados construindo NOS. E a
+ * forma que difere: la o dado do jogo chegava a um ponto por um caminho; aqui sao ~15 valores pequenos
+ * dentro de cinco construtores densos que desembocam num unico `innerHTML`. Converte-los em arvores de nos
+ * reescreveria ~200 linhas e os testes delas por um defeito que ainda nao e vivo — a churn que a propria
+ * issue #106 diz nao ser devida. O que faltava ao escape era o RASTO quando alguem esquece, e ele existe:
+ * `tests/quiz-escape.node.test.js` passa conteudo hostil pelos cinco tipos.
+ */
+export function escAtividade(s: string): string {
+  return String(s)
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+}
+
 export function somasubHtml(q: MathQuiz): string {
-  const choices = q.choices.map((c, i) => `<button class="quiz-choice${i === q.sel ? ' sel' : ''}${q.revealed && cKey(c) === q.answer ? ' reveal' : ''}" data-i="${i}" type="button">${cDisp(c)}</button>`).join('');
+  const choices = q.choices.map((c, i) => `<button class="quiz-choice${i === q.sel ? ' sel' : ''}${q.revealed && cKey(c) === q.answer ? ' reveal' : ''}" data-i="${i}" type="button">${escAtividade(cDisp(c))}</button>`).join('');
   const dots = q.dots ? `<div class="quiz-dots" aria-label="${q.dots} bolinhas">${'●'.repeat(q.dots)}</div>` : '';
   const hint = q.revealed ? 'Resposta certa em destaque. Pule (L) para seguir.' : (q.tries > 0 ? 'Quase! Tente de novo.' : 'Escolha e pule (L) para confirmar.');
-  return `<div class="quiz-box quiz-box--math" role="dialog" aria-modal="true" aria-label="Desafio de matemática"><div class="quiz-prob">${q.prob || ''}</div>${dots}<div class="quiz-grid">${choices}</div><div class="quiz-hint">${hint}</div></div>`;
+  return `<div class="quiz-box quiz-box--math" role="dialog" aria-modal="true" aria-label="Desafio de matemática"><div class="quiz-prob">${escAtividade(q.prob || '')}</div>${dots}<div class="quiz-grid">${choices}</div><div class="quiz-hint">${hint}</div></div>`;
 }
 
 /** Níveis 2/3: caixas de 2 sílabas + grade de sílabas + Apagar/OK. */
 export function silabaHtml(q: SilabasQuiz, disp: (s: string) => string): string {
+  const d = (s: string): string => escAtividade(disp(s));
   const N = q.options.length;
-  const boxes = `<div class="silaba-boxes">` + q.boxes.map((b) => `<span class="silaba-box${b !== null ? ' filled' : ''}">${b !== null ? disp(b) : ''}</span>`).join('') + `</div>`;
-  const opts = q.options.map((sy, i) => `<button class="quiz-choice${i === q.sel ? ' sel' : ''}" data-i="${i}" type="button">${disp(sy)}</button>`).join('');
+  const boxes = `<div class="silaba-boxes">` + q.boxes.map((b) => `<span class="silaba-box${b !== null ? ' filled' : ''}">${b !== null ? d(b) : ''}</span>`).join('') + `</div>`;
+  const opts = q.options.map((sy, i) => `<button class="quiz-choice${i === q.sel ? ' sel' : ''}" data-i="${i}" type="button">${d(sy)}</button>`).join('');
   const acts = `<button class="quiz-choice${q.sel === N ? ' sel' : ''}" data-i="${N}" type="button">Apagar</button><button class="quiz-choice${q.sel === N + 1 ? ' sel' : ''}" data-i="${N + 1}" type="button">OK</button>`;
-  const hint = q.revealed ? `A palavra é "${disp(q.word)}". Pule (L) para seguir.` : 'Monte a palavra. Pule (L) coloca/confirma.';
-  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Monte a palavra"><button class="quiz-word${q.sel === -1 ? ' sel' : ''}" data-i="-1" type="button" aria-label="Ouvir a palavra ${q.word} de novo">${q.emoji}</button><div class="quiz-letter">letra: ${disp(q.letter)}</div>${boxes}<div class="quiz-grid">${opts}</div><div class="silaba-actions">${acts}</div><div class="quiz-hint">${hint}</div></div>`;
+  const hint = q.revealed ? `A palavra é "${d(q.word)}". Pule (L) para seguir.` : 'Monte a palavra. Pule (L) coloca/confirma.';
+  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Monte a palavra"><button class="quiz-word${q.sel === -1 ? ' sel' : ''}" data-i="-1" type="button" aria-label="Ouvir a palavra ${escAtividade(q.word)} de novo">${escAtividade(q.emoji)}</button><div class="quiz-letter">letra: ${d(q.letter)}</div>${boxes}<div class="quiz-grid">${opts}</div><div class="silaba-actions">${acts}</div><div class="quiz-hint">${hint}</div></div>`;
 }
 
 /**
@@ -362,28 +388,31 @@ export function levelTag(n: number, qlName: Readonly<Record<number, string>>): s
 
 /** Nível 1: 3 escritas (na prática 4 opções), só UMA certa. */
 export function preHtml(q: PreQuiz, disp: (s: string) => string, qlName: Readonly<Record<number, string>>): string {
-  const opts = q.choices.map((w, i) => `<button class="quiz-choice${i === q.sel ? ' sel' : ''}${q.revealed && w === q.word ? ' reveal' : ''}" data-i="${i}" type="button">${disp(w)}</button>`).join('');
-  const hint = q.revealed ? `A certa é "${disp(q.word)}". Pule (L) para seguir.` : (q.tries > 0 ? 'Quase! Tente de novo.' : 'Qual é a escrita certa? Pule (L) confirma.');
-  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Escolha a palavra certa"><button class="quiz-word${q.sel === -1 ? ' sel' : ''}" data-i="-1" type="button" aria-label="Ouvir a palavra ${q.word} de novo">${q.emoji}</button><div class="quiz-letter">${levelTag(1, qlName)}</div><div class="quiz-grid">${opts}</div><div class="quiz-hint">${hint}</div></div>`;
+  const d = (s: string): string => escAtividade(disp(s));
+  const opts = q.choices.map((w, i) => `<button class="quiz-choice${i === q.sel ? ' sel' : ''}${q.revealed && w === q.word ? ' reveal' : ''}" data-i="${i}" type="button">${d(w)}</button>`).join('');
+  const hint = q.revealed ? `A certa é "${d(q.word)}". Pule (L) para seguir.` : (q.tries > 0 ? 'Quase! Tente de novo.' : 'Qual é a escrita certa? Pule (L) confirma.');
+  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Escolha a palavra certa"><button class="quiz-word${q.sel === -1 ? ' sel' : ''}" data-i="-1" type="button" aria-label="Ouvir a palavra ${escAtividade(q.word)} de novo">${escAtividade(q.emoji)}</button><div class="quiz-letter">${levelTag(1, qlName)}</div><div class="quiz-grid">${opts}</div><div class="quiz-hint">${hint}</div></div>`;
 }
 
 /** Níveis 4/5: caixas do tamanho da palavra + grade de letras. */
 export function alfHtml(q: AlfQuiz, disp: (s: string) => string, qlName: Readonly<Record<number, string>>): string {
+  const d = (s: string): string => escAtividade(disp(s));
   const N = q.options.length;
-  const boxes = `<div class="silaba-boxes">` + q.boxes.map((b) => `<span class="silaba-box${b !== null ? ' filled' : ''}">${b !== null ? disp(b) : ''}</span>`).join('') + `</div>`;
-  const opts = q.options.map((ch, i) => `<button class="quiz-choice${i === q.sel ? ' sel' : ''}" data-i="${i}" type="button">${disp(ch)}</button>`).join('');
+  const boxes = `<div class="silaba-boxes">` + q.boxes.map((b) => `<span class="silaba-box${b !== null ? ' filled' : ''}">${b !== null ? d(b) : ''}</span>`).join('') + `</div>`;
+  const opts = q.options.map((ch, i) => `<button class="quiz-choice${i === q.sel ? ' sel' : ''}" data-i="${i}" type="button">${d(ch)}</button>`).join('');
   const acts = `<button class="quiz-choice${q.sel === N ? ' sel' : ''}" data-i="${N}" type="button">Apagar</button><button class="quiz-choice${q.sel === N + 1 ? ' sel' : ''}" data-i="${N + 1}" type="button">OK</button>`;
-  const hint = q.revealed ? `A palavra é "${disp(q.word)}". Pule (L) para seguir.` : (q.braille ? 'Ouça a cela Braille de cada letra. Pule (L) coloca/confirma.' : 'Monte a palavra letra a letra. Pule (L) coloca/confirma.');
-  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Escreva a palavra"><div class="quiz-emoji" aria-label="${q.word}">${q.emoji}</div><div class="quiz-letter">${q.braille ? levelTag(5, qlName) : levelTag(4, qlName)}</div>${boxes}<div class="quiz-grid">${opts}</div><div class="silaba-actions">${acts}</div><div class="quiz-hint">${hint}</div></div>`;
+  const hint = q.revealed ? `A palavra é "${d(q.word)}". Pule (L) para seguir.` : (q.braille ? 'Ouça a cela Braille de cada letra. Pule (L) coloca/confirma.' : 'Monte a palavra letra a letra. Pule (L) coloca/confirma.');
+  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Escreva a palavra"><div class="quiz-emoji" aria-label="${escAtividade(q.word)}">${escAtividade(q.emoji)}</div><div class="quiz-letter">${q.braille ? levelTag(5, qlName) : levelTag(4, qlName)}</div>${boxes}<div class="quiz-grid">${opts}</div><div class="silaba-actions">${acts}</div><div class="quiz-hint">${hint}</div></div>`;
 }
 
 /** Modo cego: as celas Braille da palavra (pontos 1,4,2,5,3,6 na ordem visual de 2 colunas). */
 export function brailleHtml(q: BrailleQuiz, disp: (s: string) => string): string {
+  const d = (s: string): string => escAtividade(disp(s));
   const cells = q.cells.map((c) => {
     const dots = [1, 4, 2, 5, 3, 6].map((n) => `<span class="bdot${c.dots.includes(n) ? ' on' : ''}"></span>`).join('');
-    return `<div class="bcell"><div class="bcell-grid">${dots}</div><div class="bcell-l">${disp(c.l)}</div></div>`;
+    return `<div class="bcell"><div class="bcell-grid">${dots}</div><div class="bcell-l">${d(c.l)}</div></div>`;
   }).join('');
-  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Braille da palavra ${q.word}"><div class="quiz-emoji" aria-hidden="true">${q.emoji}</div><div class="quiz-letter">palavra: ${disp(q.word)}</div><div class="bcells">${cells}</div><div class="quiz-hint">Ouça os pontos. Pule (L) para coletar. (Cima repete)</div></div>`;
+  return `<div class="quiz-box" role="dialog" aria-modal="true" aria-label="Braille da palavra ${escAtividade(q.word)}"><div class="quiz-emoji" aria-hidden="true">${escAtividade(q.emoji)}</div><div class="quiz-letter">palavra: ${d(q.word)}</div><div class="bcells">${cells}</div><div class="quiz-hint">Ouça os pontos. Pule (L) para coletar. (Cima repete)</div></div>`;
 }
 
 /** Markup do desafio, qualquer que seja o tipo (o despacho verbatim do `renderQuiz`). */
