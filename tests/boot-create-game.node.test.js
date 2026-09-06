@@ -71,7 +71,7 @@ describe('o veredito: a fronteira passa ou não passa', () => {
 /* ===================== a metade que EXECUTA ===================== */
 
 /** Um documento de mentira: só o suficiente para `createGame` fazer o que faz sem navegador. */
-function domFalso({ comMarcacao = true, ausentes = [] } = {}) {
+function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } = {}) {
   const feito = [];
   const el = (id) => ({
     id, hidden: true, style: {}, dataset: {},
@@ -86,8 +86,14 @@ function domFalso({ comMarcacao = true, ausentes = [] } = {}) {
     contains: () => false,
     // ⚠️ `ausentes` existe porque um duplo que responde SIM a qualquer seletor não testa a pergunta —
     // testa apenas que ela foi feita. Foi o que deixou o caso do mundo inexistente passar verde.
-    querySelector: (sel) => (ausentes.includes(sel) ? null : (comMarcacao ? el(sel) : null)),
-    querySelectorAll: () => [],
+    // ⚠️ `mapa` deixa um caso NOMEAR o elemento que um seletor devolve. Sem ele o duplo respondia
+    // sempre um objeto novo, e nenhum teste conseguia observar o que foi escrito NAQUELE elemento.
+    querySelector: (sel) => (mapa[sel] !== undefined ? mapa[sel]
+      : (ausentes.includes(sel) ? null : (comMarcacao ? el(sel) : null))),
+    // ⚠️ POR SELETOR, e nao uma lista so: devolver a mesma coisa a todo seletor fazia os overlays de
+    // mentira chegarem tambem a `[data-i18n]`, e o `applyDom` chamava `getAttribute` num objeto que
+    // nao o tem. Um duplo que nao distingue a pergunta acaba a responder a errada.
+    querySelectorAll: (sel) => (listas[sel] ?? []),
   };
   const win = {
     addEventListener: () => {},
@@ -186,6 +192,50 @@ describe('createGame em execução', () => {
     const paint = { ...declaracaoValida(), world: () => ({ kind: 'none' }) };
     const motor = createGame({ declaration: paint, host: { doc, win } });
     expect(motor.problems.join(' ')).not.toMatch(/mundo declarado/);
+  });
+
+  it('⚠️ o filtro de visao cai no MUNDO DECLARADO, e nao numa canvas assumida (ADR-0087)', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const mundo = { style: {}, contains: () => false };
+    const { doc, win } = domFalso({ mapa: { '#meu-mundo': mundo } });
+    const d = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#meu-mundo' }) };
+    const motor = createGame({ declaration: d, host: { doc, win } });
+    motor.aplicarFiltroDeVisao('brightness(0)', 'mundo');
+    expect(mundo.style.filter).toBe('brightness(0)');
+  });
+
+  it('⚠️ um overlay DENTRO do mundo perde o filtro — e um de fora nao e tocado', async () => {
+    // A generalizacao que substitui a regra escrita a mao do `main.ts`: ele limpava `#dom-layer` porque ele
+    // esta DENTRO de `#game-region` e o filtro CSS herda. Aqui o codigo PERGUNTA ao DOM em vez de assumir a
+    // forma, e por isso serve tanto a marcacao da engine quanto a de um jogo que nao aninha nada.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const dentro = { style: { filter: 'brightness(0)' } };
+    const fora = { style: { filter: 'brightness(0)' } };
+    const mundo = { style: {}, contains: (el) => el === dentro };
+    const { doc, win } = domFalso({ mapa: { '#meu-mundo': mundo }, listas: { '#game-region .overlay': [dentro, fora] } });
+    const d = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#meu-mundo' }) };
+    createGame({ declaration: d, host: { doc, win } }).aplicarFiltroDeVisao('brightness(0)', 'mundo');
+    expect(dentro.style.filter, 'o menu dentro do mundo tem de sair da simulacao').toBe('');
+    expect(fora.style.filter, 'um overlay fora do mundo nao e assunto desta funcao').toBe('brightness(0)');
+  });
+
+  it('com alcance `mundo-e-menus` o overlay de dentro MANTEM o filtro', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const dentro = { style: { filter: 'contrast(2)' } };
+    const mundo = { style: {}, contains: () => true };
+    const { doc, win } = domFalso({ mapa: { '#meu-mundo': mundo }, listas: { '#game-region .overlay': [dentro] } });
+    const d = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#meu-mundo' }) };
+    createGame({ declaration: d, host: { doc, win } }).aplicarFiltroDeVisao('contrast(2)', 'mundo-e-menus');
+    expect(dentro.style.filter, 'melhoria alcanca os menus; so a EMPATIA os poupa').toBe('contrast(2)');
+  });
+
+  it('⚠️ `none` NAO pinta nada — atividade sem espaco nao tem mundo para simular', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const qualquer = { style: {}, contains: () => false };
+    const { doc, win } = domFalso({ mapa: { '#meu-mundo': qualquer } });
+    const d = { ...declaracaoValida(), world: () => ({ kind: 'none' }) };
+    createGame({ declaration: d, host: { doc, win } }).aplicarFiltroDeVisao('brightness(0)', 'mundo');
+    expect(qualquer.style.filter, 'pintar um filtro sobre atividade sem espaco e a mentira ao contrario').toBeUndefined();
   });
   it('[Interface] declinar fica NO REGISTRO — um consumidor pode ser auditado pelo que recusou', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');

@@ -49,6 +49,8 @@ import { createTts } from '../platform/tts.js';
 import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer, tonePan, audioCtx } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 import { VIZ_BY_KEY } from '../render/viz-modes.js';
+import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
+import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
@@ -122,6 +124,16 @@ export interface Engine {
   readonly overlays: SettingsPanelApi;
   readonly nav: MenuNavApi;
   readonly keyboard: KeyboardRuntime;
+  /**
+   * APLICA O FILTRO DE VISÃO NO MUNDO QUE ESTE JOGO DECLAROU (ADR-0087).
+   *
+   * ⚠️ Existe porque, sem ela, cada consumidor escrevia a sua — e o `game-15puzzle` escreveu, com o
+   * raciocínio certo e sozinho. O que ela acrescenta é a regra dos MENUS, que um consumidor não tem como
+   * saber: eles vivem por cima da simulação e são o instrumento de sair dela, então se herdaram o filtro por
+   * estarem DENTRO do mundo, ele é desfeito neles. Uma cegueira que apagasse o menu de pausa trancaria a
+   * criança dentro da simulação (#82).
+   */
+  readonly aplicarFiltroDeVisao: (css: string, alcance: AlcanceDoFiltro) => void;
   /**
    * A NAVEGAÇÃO SONORA, pronta e ligada à declaração deste jogo (item 19).
    *
@@ -202,6 +214,33 @@ export function createGame(o: CreateGameOptions): Engine {
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
   });
 
+  /**
+   * O FILTRO DE VISÃO, aplicado ao MUNDO QUE O JOGO DECLAROU (ADR-0087).
+   *
+   * ⚠️ E A REGRA DOS MENUS É UMA GENERALIZAÇÃO, não uma segunda regra. O jogo próprio da engine limpava o
+   * filtro em `#dom-layer` porque ele está DENTRO de `#game-region` e um filtro CSS herda — sem isso, uma
+   * simulação de cegueira apagaria o menu de pausa e trancaria a criança dentro dela (#82). O 15-puzzle não
+   * tem nada dentro, e a mesma linha não faz nada. Um só código serve às duas formas porque ele pergunta ao
+   * DOM em vez de assumir a forma: limpa o filtro nos overlays que ESTEJAM dentro do mundo.
+   *
+   * ⚠️ `{kind:'none'}` NÃO APLICA NADA. Uma atividade sem espaço não tem mundo para simular, e pintar um
+   * filtro sobre ela seria a mentira que o ADR-0087 existe para impedir, só que ao contrário.
+   */
+  function aplicarFiltroDeVisao(css: string, alcance: AlcanceDoFiltro): void {
+    const mundo = o.declaration.world();
+    if (mundo.kind !== 'element') return;
+    const el = $<HTMLElement>(mundo.selector);
+    if (!el) return; // já reportado em `problems`; não se inventa superfície
+    el.style.filter = css;
+    if (alcance === 'mundo') {
+      // Os menus vivem POR CIMA da simulação e são o instrumento de sair dela: se herdaram o filtro por
+      // estarem dentro do mundo, desfaz-se neles.
+      for (const ov of $$<HTMLElement>(OVERLAY_SCOPE_SELECTOR)) {
+        if (el.contains(ov)) ov.style.filter = '';
+      }
+    }
+  }
+
   // 3. A pilha de diálogos. O ctx é o mesmo em qualquer jogo — é boilerplate, e boilerplate repetido é onde
   //    consumidores divergem sem querer.
   const overlays = initSettingsPanel({
@@ -264,5 +303,5 @@ export function createGame(o: CreateGameOptions): Engine {
     win,
   });
 
-  return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, cenas: criarPilha(), cvdFilters, problems, declines };
+  return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines };
 }
