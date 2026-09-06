@@ -68,6 +68,16 @@ const DIVIDA = {
   'input/keyboard-runtime.ts': 2,
   'input/touch-bindings.ts': 1,
 
+  /* --- ⚠️ A QUARENTENA, e ela é de natureza diferente de todas as outras linhas desta tabela. --- */
+  'input/vocabulary-migration.ts': 4,
+  // Este módulo TEM de dizer `jump`: traduzir o nome antigo é a função dele. Quando a tabela nasceu dentro
+  // de `input/keyboard.ts`, este gate reprovou — e estava certo. A saída NÃO foi levantar o teto do
+  // keyboard, que é o afrouxamento que este ficheiro existe para impedir; foi quarentenar o acoplamento
+  // inteiro num módulo cujo nome diz que ele é histórico, com teto próprio e data de morte.
+  // ⚠️ ELE SE APAGA quando não restar dado salvo no formato antigo — o que não se sabe do lado do código,
+  // porque o dado está no navegador de cada criança. Enquanto houver, apagá-lo apaga o remapeamento
+  // de quem o fez.
+
   /* --- A INTERFACE, que mostra os rótulos. Estes saem quando o preset existir: o rótulo passa a vir do
    *     jogo em vez de estar escrito na engine. --- */
   'ui/shell.ts': 20,
@@ -103,12 +113,20 @@ describe('a engine não fala as palavras do jogo (o corte do Dev, 2026-09-06)', 
     expect(limpos, 'módulo com teto e sem dívida — apague a linha').toEqual([]);
   });
 
-  it('⚠️ o total é reportado, para a migração da #103 ter um número que desce', () => {
-    const total = Object.keys(DIVIDA).reduce((s, m) => s + ocorrencias(m), 0);
-    // Não é asserção de valor exato — seria um teto duplicado. É o piso: enquanto houver dívida, ela é
-    // visível, e quando chegar a zero este teste falha e o ficheiro inteiro sai.
-    expect(total).toBeGreaterThan(0);
-    expect(total).toBeLessThanOrEqual(132);
+  it('⚠️ o total A PAGAR desce, e a quarentena não conta nele', () => {
+    // ⚠️ ESTA ASSERÇÃO JÁ ESTEVE ERRADA, e o erro vale mais escrito do que corrigido em silêncio: ela somava
+    // `input/vocabulary-migration.ts` ao total, então criar o módulo de migração fez o número SUBIR de 132
+    // para 136 e o gate reprovou uma mudança que estava certa.
+    //
+    // A quarentena não é dívida que a migração paga — ela É a migração. Dívida é o que os transportes têm de
+    // deixar de dizer; o tradutor tem de dizer, e desaparece por outro caminho (quando não houver mais dado
+    // antigo), não por alguém o consertar.
+    const APAGA_SE_SOZINHO = ['input/vocabulary-migration.ts'];
+    const aPagar = Object.keys(DIVIDA)
+      .filter((m) => !APAGA_SE_SOZINHO.includes(m))
+      .reduce((s, m) => s + ocorrencias(m), 0);
+    expect(aPagar).toBeGreaterThan(0);
+    expect(aPagar).toBeLessThanOrEqual(132);
   });
 
   it('os dois módulos NOVOS do vocabulário estão limpos, e é isso que prova que o corte é possível', () => {

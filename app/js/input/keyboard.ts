@@ -42,7 +42,14 @@ export const KB_DEFAULTS: KBDefaults = {
 };
 
 // dado salvo (parcial): sobrepõe os defaults; p34 é o formato ANTIGO (migra p/ p3+p4).
-type SavedKB = { solo?: KeyScheme; p2?: KeyScheme[]; p3?: KeyScheme[]; p4?: KeyScheme[]; p34?: (KeyScheme | null)[] };
+// A FORMA vem de `vocabulary-migration`, que é quem a traduz — declarar aqui outra vez seria a
+// cópia que o `core/entity` passou o mês a eliminar.
+import type { SavedKB } from './vocabulary-migration.js';
+
+// ⚠️ A MIGRAÇÃO DE VOCABULÁRIO MORA NOUTRO FICHEIRO, e a separação é deliberada:
+// `input/vocabulary-migration.ts` é o ÚNICO sítio da engine autorizado a dizer `jump`, porque traduzir o
+// nome antigo é a função dele. Deixá-la aqui punha o acoplamento num módulo que não é histórico, e o gate
+// `action-vocabulary-boundary` reprovou — corretamente. Ver o cabeçalho de lá para saber quando se apaga.
 
 // carrega os esquemas salvos SOBRE os defaults (com migração do dado antigo p34 → p3+p4)
 export function loadKB(): KBDefaults {
