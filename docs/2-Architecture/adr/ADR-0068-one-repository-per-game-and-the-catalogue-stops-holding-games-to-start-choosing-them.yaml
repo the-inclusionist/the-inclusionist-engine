@@ -16,6 +16,11 @@ metadata:
              naming rule is decided when §6's template is written, and not before. Everything else in §1
              stands: one repository per game, holding its own code, art, `CREDITS.md` and licence statement,
              with the catalogue still publishing one product."
+    - by: ADR-0081
+      what: "§1 again, and the same clause: the address of the 2048 became `the-inclusionist/game-2048` when
+             ADR-0081 superseded ADR-0073 WHOLE. The suspension of `the-inclusionist-game-<slug>` and its
+             trigger — the rule is decided when §6's template is written — carry over unchanged; only the
+             declared address differs. Everything else in §1 stands."
   decision-makers: [Dev]
   consulted:
     - "ADR-0058 §1 — SUPERSEDED IN PART by this record: `the-inclusionist-demos` stops being the repository

@@ -1,0 +1,164 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  supersedes: [ADR-0073]
+  supersedes-in-part: [ADR-0068]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0073 — SUPERSEDED WHOLE by this record, and whole because of where the old address sat: in the
+       TITLE. The index's own rule says a record whose title asserts what was replaced is superseded
+       entirely, however many clauses survive — a title is the record's IDENTITY, and the index shows
+       nothing else"
+    - "ADR-0068 §1 — SUPERSEDED IN PART, again and for the same clause: `the-inclusionist-game-<slug>` still
+       does not govern, and the pattern stays SUSPENDED with the trigger ADR-0073 installed"
+    - "ADR-0068 §3 — the package name `@the-inclusionist/game-<slug>`, which is now what the repository
+       mirrors instead of diverging from"
+    - "ADR-0071 §1 — the reason the container prefix is dropped: inside the organisation, the word would
+       appear twice"
+    - "ADR-0035 — the record this address stops contradicting"
+    - "ADR-0067 §5 — a repository is created when a record declares its address; this is that declaration,
+       and it replaces the one in ADR-0073"
+  informed: []
+
+title: The 2048's address is `the-inclusionist/game-2048`, and the repository name stops diverging from the package
+
+context-and-problem-statement: |
+  ADR-0073 recorded the address the Dev declared on 2026-09-05, `the-inclusionist/pixi-2048`, and wrote down
+  what it cost. On 2026-09-06 he changed it to **`the-inclusionist/game-2048`**.
+
+  ⚠️ THIS IS A SUPERSESSION AND NOT AN ERRATUM, and the distinction is the one ADR-0057 spent a record on.
+  The test is *would the original author, given the same facts he had that day, have written the same
+  sentence?* — and the answer is YES: ADR-0073 said correctly what was decided on the 5th. The decision
+  changed. That is the definition of what supersession is for, and ADR-0057 names "the decision-maker changed
+  his mind" as always a supersession, never an amendment.
+
+  ⚠️ AND IT IS SUPERSEDED WHOLE, not in part, because the old address was in the TITLE. The index's rule is
+  explicit and it is about identity rather than volume: *"se o que foi substituído está afirmado no TÍTULO, o
+  registro é superseded INTEIRO, por mais cláusulas que sobrevivam… Ponteiro dentro do ficheiro não alcança
+  quem encontra o registro só nesta tabela."* Most of ADR-0073's reasoning survives and is carried forward
+  here rather than left behind a pointer.
+
+  ========================= AND THE TIMING IS THE PART WORTH NOTICING =========================
+  ADR-0073 §4 ended with a prediction: *"segue sendo mais barato mudar HOJE, antes de o repositório existir"*.
+  The repository still does not exist — the Dev has not created it — so this rename costs a `git remote
+  set-url`, two strings in `package.json` and one line of README. The record predicted the cheap window and
+  the change happened inside it.
+
+decision-drivers:
+- "The Dev declared the address; ADR-0067 §5 makes a declaration the decision."
+- "A repository name that matches the package name removes a thing the reader has to hold in their head."
+- "ADR-0073 §4 recorded a real cost of `pixi-`; this address does not pay it."
+- "The old address sits in ADR-0073's title, so the index would show a superseded name to anyone scanning it."
+- "Nothing exists yet, so this is the cheapest this change will ever be."
+
+considered-options:
+- "A1 - `the-inclusionist/game-2048`: the address mirrors the package"
+- "A2 - keep `pixi-2048` and record the change as a preference not worth a record"
+- "A3 - `the-inclusionist-game-2048`, the full ADR-0068 §1 pattern"
+
+pros-and-cons-of-the-options:
+  A1:
+    pros:
+    - "Repository and package say the same thing: `game-2048` and `@the-inclusionist/game-2048`."
+    - "The renderer's name leaves the address, so ADR-0035's reversibility stops being contradicted by a
+       string nobody can refactor."
+    - "`game-` tells a stranger what the thing IS, which is the audience ADR-0071 spent a record thinking about."
+    cons:
+    - "⚠️ The organisation now holds THREE naming shapes instead of two, so the general rule is FURTHER from
+       obvious rather than closer. See `more-information`."
+  A2:
+    pros:
+    - "No churn at all."
+    cons:
+    - "It is not a preference, it is the ADDRESS — the thing ADR-0067 §5 says brings a repository into being."
+    - "An unrecorded change to a declared address means the index keeps showing a name nobody will create."
+  A3:
+    pros:
+    - "Follows ADR-0068 §1 exactly, so nothing needs suspending."
+    cons:
+    - "⚠️ Says the container twice: `the-inclusionist/the-inclusionist-game-2048`. It is the repetition
+       ADR-0071 §1 refused one layer down, for a reason that does not weaken by moving up a level."
+
+decision-outcome:
+  chosen-option:
+    link: "A1 - `the-inclusionist/game-2048`"
+    justification: |
+      ===== 1. THE ADDRESS =====
+      **`https://github.com/the-inclusionist/game-2048`**, declared by the Dev on 2026-09-06. Under
+      ADR-0067 §5 the repository is created at it, born with the four files of ADR-0067 §2.
+
+      The internal title stays **"2048 · Potência de 2"**, and it stays a dictionary key rather than a
+      constant — pillar 3 has no exception for titles.
+
+      ===== 2. THE DIVERGENCE ADR-0073 JUSTIFIED IS GONE, AND THAT IS THE POINT =====
+      ADR-0073 §2 spent a paragraph explaining why the repository name and the package name pointed in
+      different directions, and closed by noting the divergence was already the practice — the chess game is
+      `hartwig-zdog-chess` holding `@the-inclusionist/game-chess`.
+
+      Here they agree: `game-2048` and `@the-inclusionist/game-2048`. ADR-0068 §3 is untouched and is now
+      MIRRORED rather than merely obeyed, so nothing has to be held in the head as "the same thing under two
+      names".
+
+      ===== 3. THE COST ADR-0073 §4 RECORDED IS PAID, NOT ARGUED AWAY =====
+      That section wrote down the objection instead of resisting the decision: `pixi-` names the RENDERER,
+      and ADR-0035 spent a record making the renderer replaceable — `render/port` exists precisely so no
+      module names PixiJS. An address carrying `pixi` took the opposite bet in the one place a refactor
+      cannot reach, and the day a game migrated between this project's two renderers the address would have
+      started saying something false.
+
+      ⚠️ THE ERRATUM ON ADR-0073 SHRANK THAT OBJECTION AND DID NOT DISSOLVE IT. It was right that this project
+      runs two renderers ON PURPOSE — pillar 2 puts Libras in a separate engine, the chess composes Zdog with
+      PixiJS at 640×360 — so `pixi-`/`zdog-` answered a real question. What survived was the migration risk,
+      and this address simply does not carry it.
+
+      ===== 4. §1's PATTERN STAYS SUSPENDED, AND THE TRIGGER IS UNCHANGED =====
+      `the-inclusionist-game-<slug>` still does not govern. Nothing replaces it here either, and the rule is
+      still decided **when the template of ADR-0068 §6 is written, and not before**.
+
+      ⚠️ AND THIS RECORD MAKES THAT QUESTION HARDER, WHICH IS WORTH SAYING OUT LOUD. The organisation now
+      holds THREE shapes, not two: `the-inclusionist-engine` repeats the container, `hartwig-zdog-chess`
+      names the renderer, and `game-2048` mirrors the package. A rule written today would put at least one
+      existing repository out of pattern, and choosing WHICH is a decision, not a tidy-up.
+
+  consequences:
+    positive:
+    - "Repository and package name say the same thing, so `game-2048` and `@the-inclusionist/game-2048` stop
+       being two names for one thing."
+    - "The address no longer carries a renderer that ADR-0035 exists to keep replaceable."
+    - "`game-` tells a stranger what the thing is, which is what ADR-0071 says a read name should do."
+    - "It happened inside the window ADR-0073 §4 predicted: nothing is published, the repository does not
+       exist, and the change costs three strings."
+    negative:
+    - "⚠️ THREE naming shapes in the organisation instead of two, so the general rule is further from
+       obvious. The suspension now hides a harder question than it did yesterday."
+    - "ADR-0073 is superseded one day after being accepted, and its erratum with it — the index will show a
+       record that governed for a single day."
+    neutral:
+    - "Nothing in the game's code changes: the `p2-` selector prefix is for *Potência de 2*, not for PixiJS,
+       and the package name was already `@the-inclusionist/game-2048`."
+  confirmation: |
+    · The repository exists at `https://github.com/the-inclusionist/game-2048`, holding exactly the four
+      files of ADR-0067 §2, with `main` protected.
+    · `git remote -v` in the game's working copy points at that address.
+    · `grep -rn "pixi-2048"` finds nothing outside the superseded record and this one's quotations of it.
+    · The game's `package.json` reads `@the-inclusionist/game-2048` in `name` AND in `repository.url`.
+    · ⚠️ The gate ADR-0073 installed is inherited unchanged: **no template script exists** until a record
+      decides the naming rule. If a `create-game-repo` script appears before that record, this decision was
+      not kept either.
+
+more-information: |
+  What this record does NOT decide, listed so none of it is read as settled:
+
+  ⚠️ **THE GENERAL RULE, AND IT IS NOW TEMPTING IN A WAY IT WAS NOT YESTERDAY.** With `game-2048` mirroring
+  its package, one obvious rule is available — *a game repository is named `game-<slug>`, exactly like its
+  package minus the scope*. It is coherent, it needs no explanation, and it follows ADR-0071 §1's reasoning.
+
+  It is not adopted here for one reason: **`hartwig-zdog-chess` would be out of pattern**, and that repository
+  has product in it. Deciding the rule means deciding what happens to the chess — rename it, exempt it, or
+  let the two shapes coexist — and that is the Dev's call about a repository this record has no business
+  touching. Recording the temptation so that whoever writes the template meets it as a QUESTION rather than
+  discovering it as an obvious answer.
+
+  ADR-0068 §5 stays whole: a game repository has no `adr/` folder. This record lives in the engine, like
+  every other, and the game states only what is its own.
