@@ -33,6 +33,14 @@ function buildCtx(over = {}) {
   };
   return {
     $,
+    // As posicoes que ESTE 'jogo' usa. Num teste, o jogo e o fixture — e e por isso que a lista
+    // vive aqui e nao numa tabela da engine: era a engine a decidir que todo jogo tem quatro verbos.
+    acoesDoJogo: () => [
+      { acao: 'left', rotulo: 'Esquerda' }, { acao: 'right', rotulo: 'Direita' },
+      { acao: 'up', rotulo: 'Subir' }, { acao: 'down', rotulo: 'Descer' },
+      { acao: 'action1', rotulo: 'Correr' }, { acao: 'action2', rotulo: 'Pular' },
+      { acao: 'action4', rotulo: 'Trocar' }, { acao: 'action3', rotulo: 'Especial' },
+    ],
     srSay: (msg) => said.push(msg),
     srAlert: (msg) => alerted.push(msg),
     store,

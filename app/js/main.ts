@@ -98,8 +98,23 @@ import { initSettingsMotion, setSelectedPlayer as setSelectedMotionPlayer } from
 import { initSettingsTypo } from './ui/settings-typo.js';
 import { initTitle } from './ui/title.js';
 import { createTitleScene } from './render/title-scene.js'; // Fase 2.27: atalho de querySelector (Tier 1)
-import { labellerFrom, type Action } from './core/actions.js';
+import { labellerFrom, presetActions, type Action } from './core/actions.js';
 import { platformerPreset } from './game/platformer-preset.js';
+
+/**
+ * As posições que ESTE jogo usa, com a palavra dele, no idioma de agora.
+ *
+ * ⚠️ Vive na raiz de composição e não no preset porque derivar a lista é trabalho de COMPOSIÇÃO: o preset
+ * declara o vocabulário, e quem o transforma no que uma tela precisa é quem monta a tela. Pô-lo no preset
+ * obrigaria os trezentos jogos a repetir a mesma derivação.
+ */
+function acoesDoJogo(): readonly { readonly acao: string; readonly rotulo: string }[] {
+  const preset = platformerPreset();
+  const rotulo = labellerFrom(preset);
+  return presetActions(preset)
+    .map((a) => ({ acao: a as string, rotulo: rotulo(a) || '' }))
+    .filter((x) => x.rotulo !== '');
+}
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_CYCLE, simulatesDisability } from './render/viz-modes.js'; // Fase 2: modos visuais de a11y (dados)
 import { PAD_DESIGNS } from './input/devices.js'; // Fase 2: rótulos de gamepad/toque (dados)
 import { keys, padCur, padPrevAct, held } from './input/state.js'; // Fase 2.22: estado de input + held
@@ -1690,7 +1705,8 @@ const audioPanel = initSettingsAudio({ $, srSay, store, audioCats: AUDIO_CATS, t
 audioPanel.reflectModoCego();
 
 /* E10: remap de controles + persistência (B2) */
-const ctrlPanel = initSettingsControls({ $, srSay, srAlert, store: { saveKB, resetKB }, kb, setKB, kbFor, getNumPlayers: () => rodada.numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)
+const ctrlPanel = initSettingsControls({
+  acoesDoJogo, $, srSay, srAlert, store: { saveKB, resetKB }, kb, setKB, kbFor, getNumPlayers: () => rodada.numPlayers, applyControls, assignControls }); // painel de controles: ui/settings-controls.ts (registra #ctrl-reset e os botoes de remap)
 function openOptions(){ const ov=$('#options'); if(!ov)return; ctrlPanel.render(rodada.pauseActor); ov.hidden=false; frontOverlay(ov); const f=ov.querySelector('button'); if(f)f.focus(); } // E3: edita o controle do jogador que abriu
 function closeOptions(){ const ov=$('#options'); if(!ov)return; ov.hidden=true; ctrlPanel.cancelCapture(); if(!overlays.restoreFocus('options'))menuFocus(sharedDialogOpen()); }
 const ctrlBtn=$('#opt-controls'); if(ctrlBtn)ctrlBtn.addEventListener('click',openOptions);

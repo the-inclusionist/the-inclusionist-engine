@@ -39,6 +39,15 @@ export interface ControlsStore {
 export interface SettingsControlsCtx {
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
   $: DomQuery;
+  /**
+   * AS POSIÇÕES QUE ESTE JOGO USA, cada uma com a palavra dele, no idioma vigente.
+   *
+   * ⚠️ É a fronteira do corte de 2026-09-06. A tela de remapeamento mostrava as OITO linhas de uma tabela
+   * deste ficheiro — quer dizer, a engine decidia que todo jogo tem exatamente pular, correr, trocar e
+   * especial. Um quiz mostraria quatro linhas para ações que não existem nele, e uma criança tentaria
+   * remapear um botão que não faz nada.
+   */
+  acoesDoJogo: () => readonly { readonly acao: string; readonly rotulo: string }[];
   /** Screen-reader "polite" announcement (core/a11y-sr's srSay), injected. */
   srSay: (msg: string) => void;
   /** Screen-reader "assertive" announcement (core/a11y-sr's srAlert) — used for the capture prompt/conflict. */
@@ -94,6 +103,16 @@ export const ACT_LABEL: Record<string, string> = {
   left: 'act.left', right: 'act.right', up: 'act.up', down: 'act.down',
   action1: 'act.run', action2: 'act.jump', action4: 'act.swap', action3: 'act.especial',
 };
+
+/**
+ * ⚠️ A TABELA ACIMA E DÍVIDA DECLARADA, e o cabeçalho dela ficou desatualizado no dia em que o corte
+ * aconteceu: ela ainda diz quais são as palavras DESTE jogo — `act.run`, `act.jump` — dentro de um módulo de
+ * engine. Continua exportada porque `openHelp()` (a tela de ajuda do menu de pausa) ainda a lê, e mover as
+ * duas coisas no mesmo commit misturaria dois assuntos.
+ *
+ * O que MUDOU é quem manda: a lista de linhas e as palavras vêm agora de `ctx.acoesDoJogo()`, e esta tabela é
+ * só o que sobra para o consumidor que ainda não migrou. Quando `openHelp` perguntar ao jogo, ela sai.
+ */
 
 /** Physical key code -> short readable label. Only 'Space' has a word to translate; the rest are glyphs and
  *  bare letters, identical in every language (that is why this is a chain of replaces and not a table). */
@@ -152,8 +171,8 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     }
 
     const map = ctx.kbFor(player);
-    el.innerHTML = Object.keys(ACT_LABEL).map((a) =>
-      `<div class="ctrl-row"><span>${t(ACT_LABEL[a]!)}: ${(map[a] || []).map(keyName).map((k) => `<kbd>${k}</kbd>`).join(' ')}</span>` +
+    el.innerHTML = ctx.acoesDoJogo().map(({ acao: a, rotulo }) =>
+      `<div class="ctrl-row"><span>${rotulo}: ${(map[a] || []).map(keyName).map((k) => `<kbd>${k}</kbd>`).join(' ')}</span>` +
       `<button class="mode-btn" data-act="${a}" type="button" aria-label="${t('ctrl.changeKeyAria', { acao: t(ACT_LABEL[a]!), n: player + 1 })}">${t('ctrl.change')}</button></div>`
     ).join('');
 
