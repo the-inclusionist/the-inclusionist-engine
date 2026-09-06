@@ -105,20 +105,20 @@ para TREINAR MODELO.** Isso importa aqui por dois motivos concretos:
 
 ### O que este inventário NÃO cobre, e por quê
 
-⚠️ **A arte PRÓPRIA — a desenhada por nós — não entra aqui ainda**, por decisão do Dev: ela entra
-**depois de o Município documentar a sua autorização**, e não antes.
+**ARTE PRÓPRIA NÃO EXISTE.** Não é que esteja fora do inventário — não há nenhuma para inventariar, e é por
+isso que esta seção cobre só o PixelLab.
 
-⚠️ **E fica registrada uma ambiguidade em vez de ser resolvida por adivinhação.** A frase do Dev fala em
-*"autorização para licença AGPL-3.0"*, e o §2 desta página decide que **a arte NÃO é AGPL** — por razão
-jurídica (Lei 9.610) e por razão de produto (os personagens não podem ser de uso livre). As duas leituras
-possíveis levam a lugares diferentes:
+O Dev passa a produzi-la **depois de o Município aceitar o arranjo inteiro**: o código sob **AGPL-3.0** e a
+arte sob **licença CC adequada**. Enquanto essa aceitação não estiver documentada, não há arte própria e
+não há o que licenciar.
 
-- a autorização em causa é a **publicação do código** (pedido `e`), e a arte própria apenas espera esse ato
-  para ser inventariada — o §2 fica de pé; **ou**
-- a arte própria passaria de facto a AGPL, e então o §2 e o requisito de uso restrito mudam.
+⚠️ **E arte não vai para AGPL — vai para CC.** A AGPL é licença de PROGRAMA (Lei 9.609); arte é obra da Lei
+9.610 e o instrumento usual dela é o Creative Commons. Está escrito aqui porque a versão anterior deste
+parágrafo levantava, como se fosse dúvida em aberto, a hipótese de a arte própria virar AGPL. Não era
+dúvida: era erro, sobre uma coisa que ainda não existe.
 
-Não se escolhe aqui. Quem decide é o Dev, e a fonte para a parte jurídica é a Procuradoria, que o
-requerimento aciona no pedido `c`.
+**Qual CC** é escolha para quando houver arte a licenciar, e não antes. O §2 desta página fica de pé como
+está: ele descreve o regime da arte que EXISTE hoje.
 
 ---
 
