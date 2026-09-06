@@ -401,6 +401,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // que ele perde é dizer que parou.
   const aoFalhar = criarAvisoDeQueda({
     procurar: (sel) => $<HTMLElement>(sel),
+    criar: (tag) => doc.createElement(tag),
     narrar: (texto) => tts.narrate(texto),
   });
 

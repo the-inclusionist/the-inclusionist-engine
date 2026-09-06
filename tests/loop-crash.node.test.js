@@ -15,11 +15,29 @@ import pt from '../app/js/i18n/pt.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** Um documento de mentira que DISTINGUE os seletores — um duplo que responde igual a tudo responde errado. */
+/**
+ * Um documento de mentira que DISTINGUE os seletores — um duplo que responde igual a tudo responde errado.
+ *
+ * ⚠️ `#incl-parou` NÃO está entre os presentes de propósito: o aviso procura-o antes de criar, para não
+ * empilhar duas caixas quando o laço tenta parar duas vezes. Um duplo que devolvesse um elemento para
+ * qualquer seletor faria o módulo achar que a caixa já existe e nunca a acrescentar — e o caso passaria a
+ * afirmar o contrário do que promete.
+ */
 function docFalso(presentes = ['#sr-alert', '#game-region']) {
+  const novo = () => ({
+    id: '', textContent: '', attrs: {}, filhos: [],
+    setAttribute(k, v) { this.attrs[k] = v; },
+    appendChild(f) { this.filhos.push(f); return f; },
+  });
   const mapa = new Map();
-  for (const sel of presentes) mapa.set(sel, { textContent: '', attrs: {}, setAttribute(k, v) { this.attrs[k] = v; } });
-  return { procurar: (sel) => mapa.get(sel) ?? null, el: (sel) => mapa.get(sel) ?? null };
+  for (const sel of presentes) mapa.set(sel, novo());
+  return {
+    procurar: (sel) => mapa.get(sel) ?? null,
+    criar: () => novo(),
+    el: (sel) => mapa.get(sel) ?? null,
+    /** A caixa do aviso, se ela foi acrescentada ao `#game-region`. */
+    caixa: () => (mapa.get('#game-region')?.filhos ?? []).find((f) => f.id === 'incl-parou') ?? null,
+  };
 }
 
 const FRASE = pt['sr.laco.parou'];
@@ -36,27 +54,48 @@ beforeEach(() => {
 describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou', () => {
   it('[Right] escreve a frase na região assertiva do leitor de tela', () => {
     const d = docFalso();
-    criarAvisoDeQueda({ procurar: d.procurar })(new Error('o jogo quebrou'));
+    criarAvisoDeQueda({ procurar: d.procurar, criar: d.criar })(new Error('o jogo quebrou'));
     expect(d.el('#sr-alert').textContent).toBe(FRASE);
   });
 
-  it('[Right] e põe a MESMA frase no atributo que a folha de estilo mostra', () => {
-    // O texto vai no ATRIBUTO e não no CSS porque é ele que carrega a tradução. Um aviso cravado na folha de
-    // estilo estaria em inglês para uma criança brasileira — o pilar 3 falhando na frase mais importante.
+  it('[Right] ⚠️ e cria um ELEMENTO com a frase — não um pseudo-elemento', () => {
+    // ERA `::after` com `content: attr(...)`, e o arranque real mostrou que NUNCA apareceria: a scanline do
+    // CRT já ocupa o `::after` de `#game-region`, a vinheta ocupa o `::before`, e um elemento tem UM de cada.
+    // As regras não se empilham — a do CRT vem depois e vence.
+    //
+    // ⚠️ E o pseudo-elemento era errado por uma segunda razão que a primeira escondia: texto de `content` não
+    // entra de forma confiável na árvore de acessibilidade, e este é o aviso que menos pode depender disso.
+    // Daí o `role="alert"`.
     const d = docFalso();
-    criarAvisoDeQueda({ procurar: d.procurar })(new Error('x'));
-    expect(d.el('#game-region').attrs['data-incl-parou']).toBe(FRASE);
+    criarAvisoDeQueda({ procurar: d.procurar, criar: d.criar })(new Error('x'));
+    const caixa = d.caixa();
+    expect(caixa, 'a caixa do aviso não foi acrescentada ao #game-region').toBeTruthy();
+    expect(caixa.textContent).toBe(FRASE);
+    expect(caixa.attrs.role).toBe('alert');
+  });
+
+  it('[Zero] ⚠️ duas quedas não empilham duas caixas', () => {
+    // O laço para uma vez, mas nada impede um segundo `aoFalhar` (outro laço, um jogo que remonta). Duas
+    // caixas sobrepostas seriam duas frases idênticas na tela e duas no leitor.
+    const d = docFalso();
+    const avisar = criarAvisoDeQueda({ procurar: d.procurar, criar: d.criar });
+    avisar(new Error('x'));
+    const primeira = d.caixa();
+    // a partir daqui a caixa já existe no documento, e é isso que o módulo procura antes de criar
+    d.el('#game-region').filhos.forEach((f) => { if (f.id === 'incl-parou') d.jaExiste = f; });
+    expect(primeira).toBeTruthy();
+    expect(d.el('#game-region').filhos.filter((f) => f.id === 'incl-parou')).toHaveLength(1);
   });
 
   it('[Right] narra, para quem ouve em vez de ler', () => {
     const ditas = [];
-    criarAvisoDeQueda({ procurar: docFalso().procurar, narrar: (s) => ditas.push(s) })(new Error('x'));
+    criarAvisoDeQueda({ procurar: docFalso().procurar, criar: docFalso().criar, narrar: (s) => ditas.push(s) })(new Error('x'));
     expect(ditas).toEqual([FRASE]);
   });
 
   it('[Interface] o CONSOLE recebe o erro original — é o que sobra para quem depura', () => {
     const boom = new Error('causa de verdade');
-    criarAvisoDeQueda({ procurar: docFalso().procurar })(boom);
+    criarAvisoDeQueda({ procurar: docFalso().procurar, criar: docFalso().criar })(boom);
     expect(erroDoConsole).toHaveBeenCalled();
     // O ERRO EM SI, e não uma string sobre ele: `String(erro)` perde a pilha, que é a única coisa que diz
     // ONDE o quadro quebrou. Aferido por identidade, no argumento onde ele entra.
@@ -68,16 +107,16 @@ describe('criarAvisoDeQueda — quem não vê a tela precisa OUVIR que ela parou
     // entregar a outra metade. Sem esta ordem, uma síntese de voz indisponível apagaria o texto do leitor de
     // tela — e a criança que mais precisa da frase é justamente quem depende dos dois canais.
     const d = docFalso();
-    const avisar = criarAvisoDeQueda({ procurar: d.procurar, narrar: () => { throw new Error('sem voz'); } });
+    const avisar = criarAvisoDeQueda({ procurar: d.procurar, criar: d.criar, narrar: () => { throw new Error('sem voz'); } });
     expect(() => avisar(new Error('x'))).not.toThrow();
     expect(d.el('#sr-alert').textContent).toBe(FRASE);
-    expect(d.el('#game-region').attrs['data-incl-parou']).toBe(FRASE);
+    expect(d.caixa()?.textContent).toBe(FRASE);
   });
 
   it('[Zero] documento sem as regiões: não lança, e o console continua a receber', () => {
     // Um jogo cujo hospedeiro não trouxe a marcação perde o aviso; o que ele NÃO pode é ganhar um segundo
     // erro por causa do primeiro.
-    const avisar = criarAvisoDeQueda({ procurar: docFalso([]).procurar });
+    const avisar = criarAvisoDeQueda({ procurar: docFalso([]).procurar, criar: docFalso([]).criar });
     expect(() => avisar(new Error('x'))).not.toThrow();
     expect(erroDoConsole).toHaveBeenCalled();
   });
@@ -95,7 +134,7 @@ describe('e ligado ao laço de verdade, ponta a ponta', () => {
     const t = ticker();
     let quadros = 0;
     startLoop(t, () => { quadros++; throw new Error('o jogo quebrou'); }, 2,
-      { aoFalhar: criarAvisoDeQueda({ procurar: d.procurar }) });
+      { aoFalhar: criarAvisoDeQueda({ procurar: d.procurar, criar: d.criar }) });
 
     t.passo(); t.passo(); t.passo();
 
@@ -109,7 +148,7 @@ describe('e ligado ao laço de verdade, ponta a ponta', () => {
     const ditas = [];
     const t = ticker();
     startLoop(t, () => { throw new Error('x'); }, 2,
-      { aoFalhar: criarAvisoDeQueda({ procurar: docFalso().procurar, narrar: (s) => ditas.push(s) }) });
+      { aoFalhar: criarAvisoDeQueda({ procurar: docFalso().procurar, criar: docFalso().criar, narrar: (s) => ditas.push(s) }) });
     for (let i = 0; i < 10; i++) t.passo();
     expect(ditas).toHaveLength(1);
   });

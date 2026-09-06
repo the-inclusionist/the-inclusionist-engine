@@ -25,9 +25,14 @@
 //     deveria depender de uma busca global.
 import { t } from '../core/i18n.js';
 
+/** O id da caixa do aviso. Estável porque a folha de estilo e o teste a procuram. */
+export const AVISO_DE_QUEDA_ID = 'incl-parou';
+
 export interface AvisoDeQuedaCtx {
   /** `querySelector` do documento deste jogo. Injetado: a engine recebe o dela, `main.ts` passa o `$` global. */
   procurar: (sel: string) => HTMLElement | null;
+  /** `document.createElement` — a caixa do aviso é um elemento de verdade, não um pseudo-elemento. */
+  criar: (tag: string) => HTMLElement;
   /** A narração falada, quando o jogo tiver uma. Ausente = o aviso escrito basta. */
   narrar?: (texto: string) => void;
 }
@@ -55,10 +60,26 @@ export function criarAvisoDeQueda(ctx: AvisoDeQuedaCtx): (erro: unknown) => void
 
     try { ctx.narrar?.(msg); } catch { /* noop: a narração falhou; o aviso escrito já saiu */ }
 
-    // O VISÍVEL. O texto entra no ATRIBUTO e a folha de estilo o mostra com `content: attr(...)` — é o que
-    // mantém a frase LOCALIZADA. Um aviso cravado no CSS estaria em inglês para uma criança brasileira, que
-    // é o defeito que o pilar 3 existe para impedir.
+    // O VISÍVEL, e é um ELEMENTO DE VERDADE — não um pseudo-elemento.
+    //
+    // ⚠️ ERA `::after` COM `content: attr(data-incl-parou)`, E NUNCA TERIA APARECIDO. Medido no arranque real
+    // em 2026-09-06: `.game-region.crt-scan-1::after` é o efeito de scanline do CRT, ligado por padrão, e um
+    // elemento tem UM `::after` só — as duas regras não se empilham, a do CRT vem depois e vence. O
+    // `::before` está igualmente tomado, pela vinheta. O aviso disputava um lugar já ocupado.
+    //
+    // ⚠️ E O PSEUDO-ELEMENTO ERA ERRADO POR UMA SEGUNDA RAZÃO, que a primeira escondia: texto de `content`
+    // não entra de forma confiável na árvore de acessibilidade. O aviso de que o jogo morreu é exatamente o
+    // que não pode depender disso.
+    //
+    // O raciocínio que continua de pé é o da TRADUÇÃO: a frase vem de `t()` e entra por `textContent`, então
+    // ela chega traduzida e escapada. O que muda é o recipiente.
     const regiao = ctx.procurar('#game-region');
-    if (regiao) regiao.setAttribute('data-incl-parou', msg);
+    if (!regiao) return;
+    const anterior = ctx.procurar('#' + AVISO_DE_QUEDA_ID);
+    const caixa = anterior ?? ctx.criar('div');
+    caixa.id = AVISO_DE_QUEDA_ID;
+    caixa.setAttribute('role', 'alert');
+    caixa.textContent = msg;
+    if (!anterior) regiao.appendChild(caixa);
   };
 }

@@ -51,6 +51,7 @@
   --z-menu:30000;
   --z-menu-max:39999;
   --z-transition:40000;
+  --z-loop-crash:45000;
   --z-debug:90000;
 }
 /* Emoji: usa o Noto Color Emoji do sistema (Chromebook/Android/Linux) e, se ausente, o woff2 embutido
@@ -379,9 +380,13 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    ⚠️ E AS CORES SÃO CRUAS, DE PROPÓSITO: nada de `var(--…)`. Este aviso aparece justamente quando alguma
    coisa quebrou, e a máquina de temas é candidata plausível. Branco sobre vinho dá 9,5:1, acima do 7:1 do
    1.4.6, e não depende de nada ter sobrevivido. */
-.game-region[data-incl-parou]::after{
-  content:attr(data-incl-parou);
-  position:absolute;inset:auto 0 0 0;z-index:60;
+/* ⚠️ ERA UM `::after` COM `content: attr(...)`, E NUNCA APARECERIA. Medido no arranque real: o
+   `.game-region.crt-scan-1::after` logo abaixo é a scanline do CRT, ligada por padrão — e um elemento tem UM
+   `::after` só. As duas regras não se empilham; a do CRT vem depois e vence. O `::before` está tomado pela
+   vinheta. Agora é um ELEMENTO, que não disputa lugar com ninguém — e cujo texto entra na árvore de
+   acessibilidade, coisa que `content` não garante. `z-index` acima do 500 da scanline, de propósito. */
+#incl-parou{
+  position:absolute;inset:auto 0 0 0;z-index:var(--z-loop-crash);
   padding:14px 18px;
   background:#7f1d1d;color:#fff;border-top:3px solid #fff;
   font:700 15px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;

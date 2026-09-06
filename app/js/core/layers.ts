@@ -51,6 +51,12 @@ export const Z = {
   MENU: 30000,               // menus — RANGE reservado 30000–39999 (níveis aninhados: +1000 por nível)
   MENU_MAX: 39999,
   TRANSITION: 40000,         // fade/wipe de troca de fase (cobre tudo)
+  /**
+   * O LAÇO MORREU (ADR-0054). Acima do `TRANSITION` de propósito: quando o quadro lança, o que estiver na
+   * tela — menu aberto, fade a meio, mensagem de fase — está congelado e deixou de importar. O aviso tem de
+   * ser visto por cima de tudo isso, e só o painel de desenvolvimento fica acima dele.
+   */
+  LOOP_CRASH: 45000,
   DEBUG: 90000,              // painel ?debug / FPS / hitboxes (dev; topo absoluto)
 } as const;
 

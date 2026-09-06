@@ -247,16 +247,25 @@ describe('createGame em execução', () => {
     // ⚠️ ENTREGUE E NAO INSTALADO, e o caso afere essa forma de proposito: quem chama `startLoop` e o JOGO,
     // dono do ticker. A engine nao pode instalar o que nao possui — o que ela pode e nao obrigar cada jogo a
     // escrever a propria mensagem, que divergiria em silencio entre jogos.
+    // ⚠️ `#incl-parou` entra em `ausentes`: o aviso procura a caixa ANTES de criar, para nao empilhar duas.
+    // Um duplo que devolvesse elemento para qualquer seletor faria o modulo achar que ela ja existe e nunca a
+    // acrescentar — e este caso passaria a afirmar o contrario do que promete. E a quarta vez que o duplo
+    // deste ficheiro tem de aprender a DISTINGUIR a pergunta.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const alerta = { textContent: '' };
-    const regiao = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, style: {}, contains: () => false };
-    const { doc, win } = domFalso({ mapa: { '#sr-alert': alerta, '#game-region': regiao } });
+    const regiao = { filhos: [], appendChild(f) { this.filhos.push(f); }, style: {}, contains: () => false };
+    const { doc, win } = domFalso({
+      mapa: { '#sr-alert': alerta, '#game-region': regiao },
+      ausentes: ['#incl-parou'],
+    });
     const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
 
     expect(typeof motor.aoFalhar, 'a engine deixou de entregar o aviso').toBe('function');
     motor.aoFalhar(new Error('o quadro quebrou'));
     expect(alerta.textContent, 'quem nao ve a tela nao foi avisado').toBeTruthy();
-    expect(regiao.attrs['data-incl-parou'], 'quem ve a tela nao foi avisado').toBe(alerta.textContent);
+    const caixa = regiao.filhos.find((f) => f.id === 'incl-parou');
+    expect(caixa, 'quem ve a tela nao foi avisado').toBeTruthy();
+    expect(caixa.textContent).toBe(alerta.textContent);
   });
 
   it('⚠️ o filtro de visao cai no MUNDO DECLARADO, e nao numa canvas assumida (ADR-0087)', async () => {
