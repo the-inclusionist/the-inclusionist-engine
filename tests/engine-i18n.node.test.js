@@ -151,6 +151,12 @@ const CRU_CONHECIDO = {
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
   'boot/create-game.ts': 3,        // a mensagem do `throw` e as lacunas do hospedeiro
   'render/sprites.ts': 1,          // `console.warn` de quadro fora do atlas — o dev lê, a criança não
+  'core/contract.ts': 1,           // ⚠️ VOLTOU À LISTA, e a volta é honesta em vez de silenciosa: ela saiu
+                                   // daqui em 2026-09-06 quando as dezesseis mensagens de `conformanceProblems`
+                                   // passaram a inglês e o módulo zerou. O ADR-0087 acrescentou o campo
+                                   // `world`, e com ele uma frase — «declare the element that IS the game» —
+                                   // que o crivo por FORMA conta como prosa, esteja em que língua estiver.
+                                   // Não é um módulo velho a piorar: é um campo novo com a sua mensagem.
   'core/actions.ts': 2,            // 1 → 2 em 2026-09-06: `presetProblems` acrescentou «the child would see
                                    // an unlabelled control». Subiu porque a função é NOVA, não porque um
                                    // módulo velho piorou — e o teto sobe pela mesma razão que desce: ele

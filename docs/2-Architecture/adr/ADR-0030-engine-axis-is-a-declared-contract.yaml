@@ -17,6 +17,16 @@ metadata:
              a getter that type-checks by coincidence rather than by contract, leaving a caching consumer
              silently stale. The SEVEN FIELDS THEMSELVES STAND, and so does everything else here: what
              changes is how one of them is handed over, not what it is or how many there are."
+    - by: ADR-0087
+      what: "the COUNT of declared fields: SEVEN becomes EIGHT. `world()` joins them, and unlike the
+             ADR-0084 change this one does add a field rather than reshape an existing one. ⚠️ THE REASON IS
+             A DEFECT THIS RECORD COULD NOT HAVE FORESEEN, because it only appears with a second game: the
+             engine implemented «the world» as the PixiJS canvas, so in a game whose visible content is DOM
+             a blindness simulation blacked out a canvas nobody was looking at and left the content legible
+             — the simulation inverted, telling an adult they had felt something they had not. MEASURED and
+             refuting the obvious fix: `#dom-layer` sits INSIDE `#game-region` in this engine's markup and
+             is absent from the 15-puzzle's, so no single default serves both. Everything else here
+             governs, the other seven fields included."
   date: 2026-08-25
   decision-makers: [Dev]
   consulted: [ADR-0027 (the boundary and the seven declared fields), the 14 findings of consumer-quiz,

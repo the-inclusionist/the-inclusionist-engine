@@ -28,6 +28,7 @@ import { conformanceProblems, speakableProblems, distance } from '../app/js/core
 const plataforma = () => ({
   topology: () => ({ kind: 'continuous', width: 896, height: 992, unit: 16 }),
   tick: 'clock',
+  world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'structure',
   nameAt: () => ({ text: 'parede', gender: 'f', plural: false }),
   focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'e' }),
@@ -40,6 +41,7 @@ const lista = () => ({
   ...plataforma(),
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   tick: 'player',
+  world: () => ({ kind: 'element', selector: '#game-region' }),
 });
 
 // -----------------------------------------------------------------------------------------------------------
@@ -146,11 +148,12 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
     expect(conformanceProblems({ ...plataforma(), roleAt: null })).toHaveLength(1);
   });
 
-  it('[Many] uma declaração vazia acusa os SETE campos de uma vez', () => {
-    // topology + tick + as CINCO funções. É o número que diz a quem escreve um preset quanto falta, de uma vez
-    // só — e é a diferença entre "faltam sete coisas" e sete rodadas de conserto às cegas.
-    // Era SEIS até `targetsOf` completar o campo 5 (a metade "alvo", que o sonar cobrou).
-    expect(conformanceProblems({})).toHaveLength(7);
+  it('[Many] uma declaração vazia acusa os OITO campos de uma vez', () => {
+    // topology + world + tick + as CINCO funções. É o número que diz a quem escreve um preset quanto falta,
+    // de uma vez só — e é a diferença entre "faltam oito coisas" e oito rodadas de conserto às cegas.
+    // Era SEIS até `targetsOf` completar o campo 5 (a metade "alvo", que o sonar cobrou), e SETE até
+    // `world` (o ADR-0087) parar de deixar a engine adivinhar que o mundo é a canvas.
+    expect(conformanceProblems({})).toHaveLength(8);
   });
 
   it('[Cross-check] conformidade é FORMA, não verdade — um `roleAt` que mente passa, e tem de passar', () => {

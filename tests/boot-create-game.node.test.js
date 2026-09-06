@@ -98,6 +98,7 @@ function domFalso({ comMarcacao = true } = {}) {
 const declaracaoValida = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   tick: 'player',
+  world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'goal',
   nameAt: () => ({ text: 'primeira pergunta', gender: 'f', plural: false }),
   focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'none' }),

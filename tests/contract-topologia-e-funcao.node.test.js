@@ -16,6 +16,7 @@ const GRADE = { kind: 'grid', cols: 8, rows: 8 };
 const valida = (over = {}) => ({
   topology: () => GRADE,
   tick: 'player',
+  world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'free',
   nameAt: () => ({ text: 'peça', gender: 'f', plural: false }),
   focusOf: () => null,
@@ -83,5 +84,70 @@ describe('a topologia é REAVALIADA, que é a razão inteira da mudança', () =>
     expect(conformanceProblems(d)).toEqual([]);
     cols = 0; // um bug do jogo: o tabuleiro colapsou
     expect(conformanceProblems(d)).toHaveLength(1);
+  });
+});
+
+describe('o MUNDO declarado (ADR-0087)', () => {
+  const valida = (over = {}) => ({
+    topology: () => ({ kind: 'grid', cols: 4, rows: 4 }),
+    world: () => ({ kind: 'element', selector: '#game-region' }),
+    tick: 'player',
+    roleAt: () => 'free',
+    nameAt: () => ({ text: 'peca', gender: 'f', plural: false }),
+    focusOf: () => null,
+    objectiveOf: () => ({ name: { text: 'pecas', gender: 'f', plural: true }, have: 0, need: 1 }),
+    targetsOf: () => [],
+    ...over,
+  });
+
+  it('um jogo que declara o seu elemento passa', () => {
+    expect(conformanceProblems(valida())).toEqual([]);
+  });
+
+  it('⚠️ AUSENTE é REPROVADO — e a mensagem ensina as duas saídas', () => {
+    // A proposta original era campo opcional com padrão. O Dev recusou, e a razão e o blindfold chess:
+    // xadrez as cegas existe, logo um jogo de DOM puro nao e um jogo onde empatia nao faz sentido. Um
+    // padrao deixaria o ESQUECIMENTO passar como se fosse escolha.
+    const p = conformanceProblems(valida({ world: undefined }));
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatch(/world: missing/);
+    expect(p[0]).toMatch(/none/); // diz que existe a saida declarada
+  });
+
+  it('⚠️ `none` PASSA, e e a escolha escrita — atividade sem espaco', () => {
+    // O caso que o Dev nomeou: "atividades como paint nao sao exatamente jogos, mas podem ser feitas
+    // com a engine e sonar nao vai funcionar muito bem".
+    expect(conformanceProblems(valida({ world: () => ({ kind: 'none' }) }))).toEqual([]);
+  });
+
+  it('seletor vazio e reprovado — declarar nada nao e declarar', () => {
+    const p = conformanceProblems(valida({ world: () => ({ kind: 'element', selector: '   ' }) }));
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatch(/non-empty selector/);
+  });
+
+  it('kind desconhecido e reprovado', () => {
+    expect(conformanceProblems(valida({ world: () => ({ kind: 'canvas' }) }))).toHaveLength(1);
+  });
+
+  it('valor em vez de funcao e reprovado, com mensagem propria', () => {
+    const p = conformanceProblems(valida({ world: { kind: 'none' } }));
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatch(/FUNCTION/);
+  });
+
+  it('funcao que nao devolve nada e reprovada', () => {
+    expect(conformanceProblems(valida({ world: () => undefined }))).toHaveLength(1);
+  });
+
+  it('⚠️ o mundo e REAVALIADO, como a topologia', () => {
+    // Uma atividade pode trocar de superficie em tempo de execucao — um editor que abre uma tela de
+    // pintura por cima do tabuleiro. Ler uma vez congelaria o alcance da simulacao no que era antes.
+    let alvo = '#game-region';
+    const d = valida({ world: () => ({ kind: 'element', selector: alvo }) });
+    expect(d.world().selector).toBe('#game-region');
+    alvo = '#paint-surface';
+    expect(d.world().selector).toBe('#paint-surface');
+    expect(conformanceProblems(d)).toEqual([]);
   });
 });

@@ -232,6 +232,11 @@ export function declararQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
   const ordem = perguntas.map((_, i) => `q${i + 1}`);
   return {
     topology: () => ({ kind: 'hotspots', order: ordem }),
+    // ⚠️ O MUNDO DESTE JOGO É DOM, e é exatamente o caso que o campo existe para consertar. A engine
+    // implementava «mundo» como a canvas do PixiJS; aqui não há canvas nenhuma a olhar, e uma
+    // simulação de cegueira apagaria o que ninguém vê deixando as alternativas legíveis — a
+    // simulação ao contrário. Ver o bloco 8 de `core/contract`.
+    world: () => ({ kind: 'element', selector: '#game-region' }),
     tick: 'player',
     // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
     roleAt: (at) => (at.x === atual ? 'goal' : 'free'),

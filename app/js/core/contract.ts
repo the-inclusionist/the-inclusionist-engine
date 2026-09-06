@@ -152,6 +152,45 @@ export type Announcement =
   | { readonly kind: 'state'; readonly name: Speakable }
   | { readonly kind: 'event'; readonly name: Speakable; readonly urgent: boolean };
 
+/* ===================== 8 · O MUNDO ===================== */
+//
+// QUAL ELEMENTO É O MUNDO DESTE JOGO. Campo novo em 2026-09-06, e o defeito que ele conserta é o mais grave
+// que a pilha de acessibilidade já teve.
+//
+// ========================= O DEFEITO, MEDIDO =========================
+// `render/viz-setters.alcanceDoModo` dá às nove simulações de empatia o alcance `mundo`, e a raiz implementa
+// `mundo` como a canvas do PixiJS, limpando o filtro no `#dom-layer`. O RACIOCÍNIO ESTÁ CERTO e está escrito:
+// o menu é o instrumento de SAIR da simulação, e uma cegueira que apagasse o menu de pausa trancaria a
+// criança dentro dela (issue #82).
+//
+// ⚠️ NUM JOGO CUJO CONTEÚDO VISÍVEL É DOM, ISSO SE INVERTE. `blind` (`brightness(0)`) apaga uma canvas que
+// ninguém está a olhar e deixa os números perfeitamente legíveis: a simulação sai ao contrário, e um adulto é
+// informado de que sentiu algo que não sentiu. Num produto cuja razão de existir é não fazer afirmação falsa
+// sobre acessibilidade, é a pior classe de defeito possível.
+//
+// ⚠️ E A SOLUÇÃO ÓBVIA ESTÁ ERRADA, o que foi medido antes de escolher: «a engine passa a filtrar
+// `#game-region`» conserta o `game-15puzzle` e QUEBRA o jogo próprio da engine, porque no `app/index.html` o
+// `#dom-layer` está DENTRO do `#game-region` e o filtro CSS herda — a pausa apagaria junto. A mesma linha,
+// resultados opostos, porque a forma do DOM não é garantida pelo contrato. Por isso é DECLARAÇÃO.
+
+/**
+ * O que a criança vê como sendo o jogo.
+ *
+ * ⚠️ `none` NÃO É UM PADRÃO, É UMA ESCOLHA ESCRITA. Existe para atividade sem espaço — uma tela de pintura
+ * livre, autoria, um formulário —, onde não há «mundo» para simular nem alvo para sonar. O Dev nomeou o caso:
+ * *"atividades como paint não são exatamente jogos, mas podem ser feitas com a engine e sonar não vai
+ * funcionar muito bem"*.
+ *
+ * ⚠️ E O QUE ELE NÃO PODE SER É O QUE ACONTECE QUANDO ALGUÉM ESQUECE. Um jogo de DOM puro não é «um jogo onde
+ * empatia não faz sentido»: o xadrez às cegas é a prova empírica de que faz. `none` é para quem DECLARA que
+ * não tem espaço, e a ausência do campo é reprovada — hoje as duas coisas produzem o mesmo silêncio.
+ */
+export type WorldScope =
+  /** O seletor do elemento que é o mundo. A engine aplica ali o que é do mundo, e só ali. */
+  | { readonly kind: 'element'; readonly selector: string }
+  /** Sem espaço. Empatia e sonar NÃO são oferecidos — e a tela de seleção diz isso antes de a criança começar. */
+  | { readonly kind: 'none' };
+
 /* ===================== A DECLARAÇÃO ===================== */
 
 /**
@@ -174,6 +213,15 @@ export interface GameDeclaration {
    * em silêncio. Remendo que aparece duas vezes é o contrato a pedir para mudar. ADR-0084.
    */
   topology(): Topology;
+  /**
+   * QUAL ELEMENTO É O MUNDO. Ver o bloco 8 acima para o defeito que este campo conserta.
+   *
+   * ⚠️ OBRIGATÓRIO, e a obrigatoriedade é a decisão. A proposta original era um campo opcional com padrão;
+   * o Dev recusou, e a razão é o BLINDFOLD CHESS: xadrez às cegas existe, logo um jogo de DOM puro não é um
+   * jogo onde empatia não faz sentido — é um jogo onde ela exige mais de quem o programa. Um padrão deixaria
+   * o esquecimento passar como se fosse escolha.
+   */
+  world(): WorldScope;
   readonly tick: TickOwner;
   /** O papel do que está em `at`. É o campo 2, e é o que substitui `roleOf`. */
   roleAt(at: Spot): Role;
@@ -230,6 +278,21 @@ export function conformanceProblems(d: Partial<GameDeclaration> | null | undefin
     if (!t.order?.length) p.push('topology.hotspots: order is empty - there is nowhere to navigate');
     else if (new Set(t.order).size !== t.order.length) p.push('topology.hotspots: order has a repeated id');
   } else p.push('topology: unknown kind');
+
+  // ⚠️ TRÊS FALHAS DISTINTAS, e a terceira é a que este campo existe para tornar impossível: um jogo cujo
+  // mundo NÃO foi declarado. Antes deste campo, esquecer e escolher «não tenho espaço» produziam o mesmo
+  // silêncio — e o silêncio era resolvido pela engine a adivinhar que o mundo é a canvas.
+  if (d.world === undefined || d.world === null) {
+    p.push('world: missing - declare the element that IS the game, or {kind:"none"} if it has no space');
+  } else if (typeof d.world !== 'function') {
+    p.push('world: must be a FUNCTION');
+  } else {
+    const w = d.world();
+    if (!w) p.push('world: the function returned nothing');
+    else if (w.kind === 'element') {
+      if (!w.selector || !w.selector.trim()) p.push('world: kind "element" needs a non-empty selector');
+    } else if (w.kind !== 'none') p.push('world: unknown kind');
+  }
 
   if (d.tick !== 'player' && d.tick !== 'clock') p.push('tick: must be "player" or "clock"');
 
