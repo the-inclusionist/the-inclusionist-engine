@@ -4,6 +4,19 @@ metadata:
   date: 2026-09-06
   supersedes: [ADR-0073]
   supersedes-in-part: [ADR-0068]
+  errata:
+    - date: 2026-09-06
+      what: "THE CHESS REPOSITORY WAS CALLED `hartwig-zdog-chess` IN THREE PLACES HERE, AND IT IS
+             `the-inclusionist/game-chess` — it had already been renamed when this record was written. The
+             fact was available and was not re-read: it came from a `git remote -v` run the day before and
+             never checked again, which is the SAME defect that produced ADR-0073's erratum. ERRATUM under
+             ADR-0057 §1, not supersession: the DECISION — the address is `the-inclusionist/game-2048` — is
+             untouched, and it is the reasoning that was defective. ⚠️ AND THE DEFECT WAS LOAD-BEARING: §4
+             claimed the organisation held THREE naming shapes and `more-information` refused the general
+             rule BECAUSE the chess would fall outside it. With the chess already standardised, both claims
+             were false and the reason for leaving the rule open did not exist. Corrected in place, and the
+             rule itself is decided by ADR-0082 rather than here — a record that is accepted does not grow."
+
   decision-makers: [Dev]
   consulted:
     - "ADR-0073 — SUPERSEDED WHOLE by this record, and whole because of where the old address sat: in the
@@ -93,8 +106,11 @@ decision-outcome:
 
       ===== 2. THE DIVERGENCE ADR-0073 JUSTIFIED IS GONE, AND THAT IS THE POINT =====
       ADR-0073 §2 spent a paragraph explaining why the repository name and the package name pointed in
-      different directions, and closed by noting the divergence was already the practice — the chess game is
-      `hartwig-zdog-chess` holding `@the-inclusionist/game-chess`.
+      different directions, and closed by noting the divergence was already the practice.
+
+      ⚠️ ERRATUM OF 06/09: that sentence named the chess as the surviving example — `hartwig-zdog-chess`
+      holding `@the-inclusionist/game-chess`. It was already false when written: the repository is
+      `the-inclusionist/game-chess`. There is no divergence left anywhere in the organisation to point at.
 
       Here they agree: `game-2048` and `@the-inclusionist/game-2048`. ADR-0068 §3 is untouched and is now
       MIRRORED rather than merely obeyed, so nothing has to be held in the head as "the same thing under two
@@ -112,14 +128,20 @@ decision-outcome:
       PixiJS at 640×360 — so `pixi-`/`zdog-` answered a real question. What survived was the migration risk,
       and this address simply does not carry it.
 
-      ===== 4. §1's PATTERN STAYS SUSPENDED, AND THE TRIGGER IS UNCHANGED =====
-      `the-inclusionist-game-<slug>` still does not govern. Nothing replaces it here either, and the rule is
-      still decided **when the template of ADR-0068 §6 is written, and not before**.
+      ===== 4. §1's PATTERN STAYS SUSPENDED HERE, AND ADR-0082 IS WHAT ENDS THE SUSPENSION =====
+      `the-inclusionist-game-<slug>` does not govern. This record does not replace it — **ADR-0082 does**,
+      and it is a separate record because an accepted one does not grow.
 
-      ⚠️ AND THIS RECORD MAKES THAT QUESTION HARDER, WHICH IS WORTH SAYING OUT LOUD. The organisation now
-      holds THREE shapes, not two: `the-inclusionist-engine` repeats the container, `hartwig-zdog-chess`
-      names the renderer, and `game-2048` mirrors the package. A rule written today would put at least one
-      existing repository out of pattern, and choosing WHICH is a decision, not a tidy-up.
+      ⚠️ ERRATUM OF 06/09, AND IT REMOVED THE WHOLE ARGUMENT THAT WAS HERE. This section claimed the
+      organisation held THREE naming shapes — the engine repeating the container, the chess naming the
+      renderer, the 2048 mirroring the package — and concluded that a rule written today would put an
+      existing repository out of pattern.
+
+      Both halves were false. The chess was already `game-chess`, so the "renderer" shape had no instance;
+      and `the-inclusionist-engine` is not a GAME repository, so a rule about game repositories never
+      reached it. What actually existed on 06/09 was TWO game repositories, both named `game-<slug>`, both
+      mirroring their packages — a practice waiting to be written down, not a conflict waiting to be
+      resolved. The difficulty was manufactured by a stale fact.
 
   consequences:
     positive:
@@ -150,15 +172,17 @@ decision-outcome:
 more-information: |
   What this record does NOT decide, listed so none of it is read as settled:
 
-  ⚠️ **THE GENERAL RULE, AND IT IS NOW TEMPTING IN A WAY IT WAS NOT YESTERDAY.** With `game-2048` mirroring
-  its package, one obvious rule is available — *a game repository is named `game-<slug>`, exactly like its
-  package minus the scope*. It is coherent, it needs no explanation, and it follows ADR-0071 §1's reasoning.
+  ⚠️ **THE GENERAL RULE WAS LEFT OPEN HERE FOR A REASON THAT DID NOT EXIST — ERRATUM OF 06/09.** This section
+  said the rule `game-<slug>` could not be adopted because *"`hartwig-zdog-chess` would be out of pattern,
+  and that repository has product in it"*, and framed it as the Dev's call about a repository this record had
+  no business touching.
 
-  It is not adopted here for one reason: **`hartwig-zdog-chess` would be out of pattern**, and that repository
-  has product in it. Deciding the rule means deciding what happens to the chess — rename it, exempt it, or
-  let the two shapes coexist — and that is the Dev's call about a repository this record has no business
-  touching. Recording the temptation so that whoever writes the template meets it as a QUESTION rather than
-  discovering it as an obvious answer.
+  The chess was already `game-chess`. The obstacle was invented out of a fact I had read once and never
+  re-read — and the framing was worse than the fact: I made ANOTHER repository's state carry the weight of a
+  decision here, which is a premise this record neither owns nor maintains.
+
+  **The rule is decided in ADR-0082**, and it records what the Dev had already executed in both game
+  repositories rather than proposing anything.
 
   ADR-0068 §5 stays whole: a game repository has no `adr/` folder. This record lives in the engine, like
   every other, and the game states only what is its own.
