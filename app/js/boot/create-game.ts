@@ -42,6 +42,7 @@
 // O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
 import { initI18n } from '../core/i18n.js';
+import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
@@ -160,6 +161,19 @@ export interface Engine {
   readonly problems: readonly string[];
   /** O que este jogo declarou não ter. Devolvido para poder ser auditado — declinar fica no registro. */
   readonly declines: Declinios;
+  /**
+   * O ANÚNCIO DE QUE O LAÇO PAROU, pronto para entrar em `startLoop(ticker, quadro, maxDt, { aoFalhar })`.
+   *
+   * ⚠️ O ADR-0054 diz por escrito que fica *"só metade verdadeiro"* enquanto isto não existir, e a metade que
+   * faltava é a que importa: **criança cega não vê tela congelada.** Sem anúncio, o modo cego não distingue
+   * «travou» de «está pensando», e o silêncio é a mesma coisa nos dois casos.
+   *
+   * ⚠️ VEM DA ENGINE E NÃO DE CADA JOGO porque a mensagem é a mesma em todos e o canal (leitor de tela +
+   * narração + o que se VÊ) é infraestrutura. Mas quem chama `startLoop` é o JOGO — ele é o dono do ticker —,
+   * então isto é entregue e não instalado: um jogo que monte o laço sem passar isto continua a PARAR, porque
+   * parar não é opcional; o que ele perde é dizer que parou.
+   */
+  readonly aoFalhar: (erro: unknown) => void;
 }
 
 /** Os ids que os painéis emprestados exigem do documento. Achado 6: sem eles o painel abre VAZIO, sem erro. */
@@ -303,5 +317,13 @@ export function createGame(o: CreateGameOptions): Engine {
     win,
   });
 
-  return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines };
+  // O ANÚNCIO DE QUE O LAÇO PAROU (ADR-0054). Entregue e não instalado: quem chama `startLoop` é o JOGO, que
+  // é o dono do ticker. Um jogo que monte o laço sem passar isto continua a PARAR — parar não é opcional; o
+  // que ele perde é dizer que parou.
+  const aoFalhar = criarAvisoDeQueda({
+    procurar: (sel) => $<HTMLElement>(sel),
+    narrar: (texto) => tts.narrate(texto),
+  });
+
+  return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines, aoFalhar };
 }

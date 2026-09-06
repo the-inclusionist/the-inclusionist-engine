@@ -308,6 +308,9 @@ const pt: Record<string, string> = {
   'sr.physics.spiderOn': 'Modo aranha! Engatinha em paredes e teto; contorna quinas. {botao} solta.',
   'sr.physics.spiderOff': 'Soltou da superfície.',
   'sr.nav.noTargetNear': 'Nada por perto.',
+  // O laço parou porque um quadro lançou (ADR-0054). Criança cega não vê tela congelada: sem esta frase,
+  // «travou» e «está pensando» são o mesmo silêncio.
+  'sr.laco.parou': 'O jogo parou por causa de um erro. Recarregue a página para jogar de novo.',
   'sr.attract.demo': 'Demonstração.',
   'sr.attract.recorded': 'Demo de 30 segundos gravada para {cenario}.',
 

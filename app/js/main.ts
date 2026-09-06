@@ -72,6 +72,7 @@ import type { MotionSceneKey, MotionSceneFlags, MotionCharDef } from './ui/setti
 import type { HcRoleKey } from './render/hc-role-data.js'; // HC_ROLE é Record<HcRoleKey, …>: a chave não é `string`
 import { quizLevel, setQuizLevelValue, coins, setCoins } from './game/state.js'; // item 19: o estado DESTE jogo
 import { startLoop } from './core/loop.js'; // driver do loop
+import { criarAvisoDeQueda } from './ui/loop-crash.js'; // ADR-0054: o laco que para tem de DIZER que parou
 import { initDebugPanel, type AmostraDoPersonagem } from './ui/debug-panel.js'; // painel ?debug (Tier 1)
 import { createAttract } from './game/attract.js'; // modo demonstração (Tier 1)
 import { isValidActivityId, DEFAULT_ACTIVITY_ID, modeForActivity, type GameMode }
@@ -1773,7 +1774,13 @@ startLoop(app.ticker, (dt)=>{ gamepadApi.pollPads(); update(dt); draw();
   attractCtl.titleIdleTick(titleG.visible); // attract após 60s parado no menu (José)
   setMinimapVisible(!titleG.visible&&rodada.numPlayers<=1); document.body.classList.toggle('at-title',titleG.visible); // HUD/minimapa não vazam no menu
   fpsTick();
-  if(fatosDaCena().mundoRodando){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }); // F4: clima + ambiente + guia auditivo (só durante o jogo)
+  if(fatosDaCena().mundoRodando){ weather.updateWeather(); ambient.updateAmbient(); nav.updateGuide(); } }, // F4: clima + ambiente + guia auditivo (só durante o jogo)
+  // ⚠️ O 2 E O `aoFalhar` FALTAVAM AQUI: a chamada tinha DOIS argumentos (ADR-0054, issue #109). O laço já
+  // parava quando um quadro lançava — isso o `core/loop` sempre fez —, mas parava EM SILÊNCIO. Tela congelada
+  // é sintoma VISUAL: no modo cego, um jogo parado e um jogo pensando produzem a mesma coisa, e a criança
+  // fica a esperar por um jogo que já morreu. O `2` é o `maxDt` que já era o padrão, e vai escrito porque um
+  // argumento posicional omitido no meio é exatamente como o `aoFalhar` ficou de fora sem ninguém reparar.
+  2, { aoFalhar: criarAvisoDeQueda({ procurar: (sel) => $<HTMLElement>(sel), narrar: (texto) => tts.narrate(texto) }) });
 window.__incl={app,get player(){return players[0];},players,get numPlayers(){return rodada.numPlayers;},setNumPlayers,activateScreens,fitsN,isMobile,pollPads:()=>gamepadApi.pollPads(),update,openPadWiz:()=>gamepadApi.openPadWiz(),padWizTick:()=>gamepadApi.padWizTick(),padMapFor:(id: Parameters<typeof gamepadApi.padMapFor>[0])=>gamepadApi.padMapFor(id),get padWiz(){return gamepadApi.getPadWiz();},get phase(){return cenas.fase();},get padPrev(){return padPrevAct;},get coins(){return coins;},get lixo(){return reciclagem.itens();},get placaX(){return reciclagem.placaX();},get barreiraDaPlaca(){return reciclagem.barreira();},get lixeiras(){return reciclagem.lixeiras();},get pontosDeComportamento(){return pontosDeComportamento;},get collected(){return players[0].collected;},get powerups(){return rodada.powerups;},get gateOpen(){return rodada.gateOpen;},get gate(){return rodada.gate;},get ended(){return rodada.ended;},restartGame,get hcMode(){return (VIZ_BY_KEY[vizMode]||{}).kind==='hcnew';} /* derivado de vizMode (D1); era `let` espelho */,setHC(v: boolean){setPlayerViz(0,v?'hc-direto':'normal');},get vizMode(){return players[0].viz;},applyViz(v: Parameters<typeof setPlayerViz>[1]){setPlayerViz(0,v);},setPlayerViz,VIZ_MODES,get footCount(){return _footCount;},get sonarCount(){return nav.sonarCount;},get guideCount(){return nav.guideCount;},get narrateCount(){return tts.narrateCount;},sonar:()=>nav.sonar(controlados()[0]!),setHearingLoss,darkRegions,decoLayer,get minimap(){return getMinimap();},parallaxLayers,PARALLAX,setCenario,get cenario(){return CENARIO;},
   get mmSeen(){return minimapSeenCount();},get MODE(){return MODE();},get letterCase(){return letterCase;},brailleText,tileAt,WORLD_W,WORLD_H,TUNE,
   JUICE,addShake,addHitstop,burstSparkle,puffDust,draw,get particles(){return getParticles();},get hitstopT(){return getHitstopT();},get shakeT(){return getShakeT();},CRT,applyCrt,setLq,get lqT(){return getLqT();},

@@ -366,6 +366,21 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .game-region{position:relative;background:#05070f;box-shadow:0 0 0 3px var(--ink-soft);border-radius:8px;overflow:hidden;flex:none}
 .libras-slot{flex:none;width:0;height:0;background:#0b1020;border-radius:8px;overflow:hidden}
 .game-region:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
+/* ===== O LAÇO PAROU (ADR-0054, issue #109) =====
+   O TEXTO VEM DO ATRIBUTO, e é esse o ponto: `ui/loop-crash` escreve a frase JÁ TRADUZIDA em
+   `data-incl-parou`, e o CSS só a mostra. Um aviso cravado aqui estaria em inglês para uma criança
+   brasileira — o defeito que o pilar 3 existe para impedir.
+   ⚠️ E AS CORES SÃO CRUAS, DE PROPÓSITO: nada de `var(--…)`. Este aviso aparece justamente quando alguma
+   coisa quebrou, e a máquina de temas é candidata plausível. Branco sobre vinho dá 9,5:1, acima do 7:1 do
+   1.4.6, e não depende de nada ter sobrevivido. */
+.game-region[data-incl-parou]::after{
+  content:attr(data-incl-parou);
+  position:absolute;inset:auto 0 0 0;z-index:60;
+  padding:14px 18px;
+  background:#7f1d1d;color:#fff;border-top:3px solid #fff;
+  font:700 15px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;
+  text-align:center;text-wrap:balance
+}
 .pixi-mount,.pixi-mount canvas{display:block;width:100%;height:100%}
 /* pixel-art nítida ao escalar */
 .pixi-mount canvas{image-rendering:pixelated;image-rendering:crisp-edges}

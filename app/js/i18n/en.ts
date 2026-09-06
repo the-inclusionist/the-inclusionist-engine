@@ -236,6 +236,9 @@ const en: Record<string, string> = {
   'sr.physics.spiderOn': 'Spider mode! You crawl on walls and ceilings and round corners. {botao} lets go.',
   'sr.physics.spiderOff': 'Let go of the surface.',
   'sr.nav.noTargetNear': 'Nothing nearby.',
+  // The loop stopped because a frame threw (ADR-0054). A blind child does not see a frozen screen:
+  // without this sentence, "crashed" and "thinking" are the same silence.
+  'sr.laco.parou': 'The game stopped because of an error. Reload the page to play again.',
   'sr.attract.demo': 'Demo.',
   'sr.attract.recorded': '30-second demo recorded for {cenario}.',
 

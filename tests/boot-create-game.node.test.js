@@ -194,6 +194,26 @@ describe('createGame em execução', () => {
     expect(motor.problems.join(' ')).not.toMatch(/mundo declarado/);
   });
 
+  it('⚠️ a engine ENTREGA o aviso de que o laco parou (ADR-0054, issue #109)', async () => {
+    // O `createGame` montava tres fios e nao ligava nenhum, e este era o pior: `core/loop` ja parava quando um
+    // quadro lancava, e parava EM SILENCIO. Tela congelada e sintoma VISUAL — no modo cego, um jogo parado e
+    // um jogo pensando produzem a mesma coisa.
+    //
+    // ⚠️ ENTREGUE E NAO INSTALADO, e o caso afere essa forma de proposito: quem chama `startLoop` e o JOGO,
+    // dono do ticker. A engine nao pode instalar o que nao possui — o que ela pode e nao obrigar cada jogo a
+    // escrever a propria mensagem, que divergiria em silencio entre jogos.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const alerta = { textContent: '' };
+    const regiao = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, style: {}, contains: () => false };
+    const { doc, win } = domFalso({ mapa: { '#sr-alert': alerta, '#game-region': regiao } });
+    const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
+
+    expect(typeof motor.aoFalhar, 'a engine deixou de entregar o aviso').toBe('function');
+    motor.aoFalhar(new Error('o quadro quebrou'));
+    expect(alerta.textContent, 'quem nao ve a tela nao foi avisado').toBeTruthy();
+    expect(regiao.attrs['data-incl-parou'], 'quem ve a tela nao foi avisado').toBe(alerta.textContent);
+  });
+
   it('⚠️ o filtro de visao cai no MUNDO DECLARADO, e nao numa canvas assumida (ADR-0087)', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const mundo = { style: {}, contains: () => false };

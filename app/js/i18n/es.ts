@@ -237,6 +237,8 @@ const es: Record<string, string> = {
   'sr.physics.spiderOn': '¡Modo araña! Trepas por paredes y techos y doblas esquinas. {botao} suelta.',
   'sr.physics.spiderOff': 'Soltaste la superficie.',
   'sr.nav.noTargetNear': 'No hay nada cerca.',
+  // El bucle se detuvo porque un fotograma lanzó (ADR-0054). Una niña ciega no ve una pantalla congelada.
+  'sr.laco.parou': 'El juego se detuvo por un error. Recarga la página para volver a jugar.',
   'sr.attract.demo': 'Demostración.',
   'sr.attract.recorded': 'Demo de 30 segundos grabada para {cenario}.',
 
