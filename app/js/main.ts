@@ -98,6 +98,8 @@ import { initSettingsMotion, setSelectedPlayer as setSelectedMotionPlayer } from
 import { initSettingsTypo } from './ui/settings-typo.js';
 import { initTitle } from './ui/title.js';
 import { createTitleScene } from './render/title-scene.js'; // Fase 2.27: atalho de querySelector (Tier 1)
+import { labellerFrom, type Action } from './core/actions.js';
+import { platformerPreset } from './game/platformer-preset.js';
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_CYCLE, simulatesDisability } from './render/viz-modes.js'; // Fase 2: modos visuais de a11y (dados)
 import { PAD_DESIGNS } from './input/devices.js'; // Fase 2: rótulos de gamepad/toque (dados)
 import { keys, padCur, padPrevAct, held } from './input/state.js'; // Fase 2.22: estado de input + held
@@ -1383,6 +1385,10 @@ const quizApi = initQuiz({
 // assistente ao abrir (ver o commit de correcao).
 const gamepadApi = initGamepad({
   getGamepads: () => (navigator.getGamepads ? navigator.getGamepads() : []), $, srSay, srAlert, frontOverlay,
+  // ⚠️ A PALAVRA VEM DO JOGO, e o preset resolve-se A CADA CHAMADA para acompanhar o idioma vigente.
+  // Era uma constante em português dentro de `input/gamepad.ts` — o defeito do ADR-0074 na forma mais
+  // visível que ele tinha. Ver `game/platformer-preset.ts`.
+  rotuloDaAcao: (acao) => labellerFrom(platformerPreset())(acao as Action),
   mundoRodando: () => fatosDaCena().mundoRodando, menuDePausa: () => fatosDaCena().menuDePausa,
   pausar: () => setPhase('paused'), retomar: () => setPhase('playing'),
   isAttractActive: () => attractCtl.isAttract(), stopAttract: () => attractCtl.stopAttract(),

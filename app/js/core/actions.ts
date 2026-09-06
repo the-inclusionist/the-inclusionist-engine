@@ -102,6 +102,31 @@ export function presetActions(p: ActionPreset): Action[] {
 }
 
 /**
+ * A pergunta que a engine faz ao jogo quando precisa MOSTRAR uma ação: «como é que isto se chama?».
+ *
+ * É a fronteira do corte em forma de função. A engine sabe que existe uma posição; só o jogo sabe a palavra,
+ * e é esta função que atravessa.
+ */
+export type ActionLabeller = (a: Action) => string;
+
+/**
+ * Constrói o tradutor a partir de um preset.
+ *
+ * ⚠️ E O QUE ELE FAZ COM UMA AÇÃO SEM NOME É A DECISÃO INTEIRA. Devolver `action7` seria pôr um nome abstrato
+ * à frente de uma criança, que o ADR-0074 chama de defeito em tantas palavras. Devolver vazio calaria o leitor
+ * de tela, que é o defeito silencioso que `speakableProblems` já persegue noutro sítio.
+ *
+ * Devolve `null`, e quem chama decide: o assistente de controle NÃO PERGUNTA por uma ação que o jogo não
+ * nomeia — se o jogo não a usa, não há o que mapear. Uma ausência vira menos um passo, nunca um passo mudo.
+ */
+export function labellerFrom(p: ActionPreset): (a: Action) => string | null {
+  return (a) => {
+    const w = p[a];
+    return w && w.label.trim() ? w.label : null;
+  };
+}
+
+/**
  * Um preset é bem-formado? Devolve os problemas — VAZIA quer dizer conforme.
  *
  * ⚠️ O QUE ELE APANHA É O RÓTULO VAZIO, e é o mesmo defeito silencioso de `speakableProblems` em

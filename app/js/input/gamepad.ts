@@ -114,13 +114,27 @@ export function padActions(gp: PadLike, custom: PadMap | null): PadActions {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Wizard data (steps + demo animation, verbatim from game.js's PADWIZ_STEPS/PADWIZ_ANIM)
+// Wizard data (a ORDEM dos passos + a animação de demonstração; as PALAVRAS vêm do jogo)
 // ---------------------------------------------------------------------------------------------
 
-/** [ação, rótulo pt-BR] na ordem em que o wizard pergunta — 9 passos (8 ações + START/pausa). */
-export const PADWIZ_STEPS: readonly [string, string][] = [
-  ['up', 'CIMA'], ['down', 'BAIXO'], ['left', 'ESQUERDA'], ['right', 'DIREITA'], ['action2', 'PULAR'],
-  ['action1', 'CORRER / INTERAGIR'], ['action4', 'TROCAR PODER'], ['action3', 'ESPECIAL'], ['start', 'START (pausa)'],
+/**
+ * A ORDEM em que o assistente pergunta. SÓ a ordem.
+ *
+ * ⚠️ ELA CARREGAVA AS PALAVRAS, EM PORTUGUÊS CRU, DENTRO DA ENGINE: `['action2', 'PULAR']`,
+ * `['action1', 'CORRER / INTERAGIR']`. Era o defeito do ADR-0074 na sua forma mais visível — não só
+ * vocabulário de plataforma dentro do motor, mas vocabulário de plataforma NUM IDIOMA SÓ, à frente de uma
+ * criança, num ficheiro que o pilar 3 obriga a ser localizável.
+ *
+ * A palavra vem agora de `ctx.rotuloDaAcao`, que o jogo fornece pelo seu preset. Aqui fica o que é mesmo da
+ * engine: a sequência em que se pergunta — direções primeiro, ação depois, sistema no fim —, que é uma
+ * decisão de ergonomia do assistente e não do jogo.
+ *
+ * ⚠️ E UMA AÇÃO QUE O JOGO NÃO NOMEIA NÃO É PERGUNTADA. `wizPrompt` salta-a, porque um jogo que não usa a
+ * posição não tem o que mapear nela — e perguntar produziria um passo mudo, ou pior, um passo a dizer
+ * `action7` em voz alta.
+ */
+export const PADWIZ_ORDER: readonly string[] = [
+  'up', 'down', 'left', 'right', 'action2', 'action1', 'action4', 'action3', 'start',
 ];
 
 export interface WizAnimDef { seq?: string[]; hold?: number; cls: string; fx?: string; noimg?: number; flip?: number; }
@@ -143,7 +157,7 @@ interface WizAxTrack { i: number; v: number; last: number; changes: number; tick
 export interface WizState {
   gi: number; // índice do gamepad sendo mapeado (-1 = ainda não identificado)
   id: string;
-  step: number; // índice em PADWIZ_STEPS (-1 = ainda esperando baseWait terminar)
+  step: number; // índice em PADWIZ_ORDER (-1 = ainda esperando baseWait terminar)
   base: WizBase | null; // snapshot de repouso (tudo solto) capturado após baseWait
   map: PadMap;
   release: boolean; // esperando o botão do passo anterior ser SOLTO antes de perguntar o próximo
@@ -175,6 +189,14 @@ export interface GamepadCtx {
   getGamepads: GetGamepads;
   /** Seletor DOM (querySelector), injetado — nunca alcança `document` global. */
   $: DomQuery;
+  /**
+   * COMO SE CHAMA esta posição, na palavra do JOGO e no idioma vigente. `null` = o jogo não a usa.
+   *
+   * ⚠️ É a fronteira do corte de 2026-09-06 em forma de campo: a engine sabe que existe uma posição,
+   * só o jogo sabe a palavra. Antes desta linha o assistente dizia «PULAR» a partir de uma constante
+   * deste ficheiro — em português, sem passar por `t()`, dentro do motor.
+   */
+  rotuloDaAcao: (acao: string) => string | null;
   /** Anúncios de leitor de tela (core/a11y-sr), injetados. */
   srSay: (msg: string) => void;
   srAlert: (msg: string) => void;
@@ -307,18 +329,22 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   }
   function wizPrompt(): void {
     if (!padWiz) return;
-    const s = PADWIZ_STEPS[padWiz.step];
-    wizSay((padWiz.step + 1) + ' de ' + PADWIZ_STEPS.length + ' — aperte: ' + s[1]);
-    wizDemo(s[0]); // demonstração animada do que a ação FAZ
+    const acao = PADWIZ_ORDER[padWiz.step];
+    const rotulo = ctx.rotuloDaAcao(acao);
+    // ⚠️ SEM RÓTULO, SEM PASSO. O jogo não nomeia esta posição, logo não a usa: perguntar por ela
+    // produziria um passo mudo ou, pior, o assistente a dizer «action7» a uma criança.
+    if (!rotulo) { padWiz.step++; if (padWiz.step >= PADWIZ_ORDER.length) closePadWiz(true); else wizPrompt(); return; }
+    wizSay((padWiz.step + 1) + ' de ' + PADWIZ_ORDER.length + ' — aperte: ' + rotulo);
+    wizDemo(acao); // demonstração animada do que a ação FAZ
     const pr = ctx.$<HTMLElement>('#padwiz-progress');
     if (pr) pr.textContent = 'Mapeados: ' + (Object.keys(padWiz.map).join(' · ') || '—');
   }
   function wizBind(bd: PadBinding): void {
     if (!padWiz) return;
-    padWiz.map[PADWIZ_STEPS[padWiz.step][0]] = bd;
+    padWiz.map[PADWIZ_ORDER[padWiz.step]] = bd;
     padWiz.step++;
     padWiz.release = true; // exige soltar antes do próximo passo (mesmo botão segurado não dobra pro passo seguinte)
-    if (padWiz.step >= PADWIZ_STEPS.length) closePadWiz(true);
+    if (padWiz.step >= PADWIZ_ORDER.length) closePadWiz(true);
   }
 
   // ----- wizard: abrir/fechar -----

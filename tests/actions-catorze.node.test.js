@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ACTIONS, DIRECTIONS, VERBS, SYSTEM, isAction, actionSetProblems,
-  presetActions, presetProblems,
+  presetActions, presetProblems, labellerFrom,
 } from '../app/js/core/actions.js';
 
 describe('as quatorze posições (ADR-0085, que supersede o ADR-0074 §1)', () => {
@@ -138,5 +138,30 @@ describe('o preset: onde as PALAVRAS do jogo moram (o corte do Dev, 2026-09-06)'
     expect(p).toHaveLength(1);
     expect(p[0]).toMatch(/jump/);
     expect(p[0]).toMatch(/is not an action/);
+  });
+});
+
+describe('labellerFrom: a pergunta que a engine faz ao jogo', () => {
+  const PRESET = { up: { label: 'Cima' }, action2: { label: 'Pular' }, action7: { label: '   ' } };
+
+  it('devolve a palavra do jogo', () => {
+    expect(labellerFrom(PRESET)('action2')).toBe('Pular');
+  });
+
+  it('⚠️ devolve `null` para uma posição que o jogo NÃO nomeia — nunca `action7`', () => {
+    // Devolver o nome abstrato poria `action5` à frente de uma criança, que o ADR-0074 chama de defeito
+    // em tantas palavras. Quem chama decide o que fazer com a ausência; o assistente de controle SALTA.
+    expect(labellerFrom(PRESET)('leftShoulder')).toBeNull();
+    expect(labellerFrom(PRESET)('select')).toBeNull();
+  });
+
+  it('⚠️ rótulo só de espaço conta como AUSENTE, não como nome', () => {
+    // Devolvê-lo calaria o leitor de tela — o defeito silencioso que `speakableProblems` persegue no
+    // contrato, aqui outra vez.
+    expect(labellerFrom(PRESET)('action7')).toBeNull();
+  });
+
+  it('preset vazio não nomeia nada, e não estoura', () => {
+    expect(labellerFrom({})('action1')).toBeNull();
   });
 });

@@ -8,7 +8,7 @@
 // avanço espúrio), e controle desconectado durante o wizard (tick vira no-op sem lançar).
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  stdDirs, bindActive, padActions, PADWIZ_STEPS, initGamepad,
+  stdDirs, bindActive, padActions, PADWIZ_ORDER, initGamepad,
 } from '../app/js/input/gamepad.js';
 import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
 
@@ -53,6 +53,13 @@ function buildCtx(over = {}) {
   return {
     $: (sel) => dom.get(sel) ?? null,
     getGamepads: () => pads,
+    // ⚠️ O RÓTULO VEM DO 'JOGO', e num teste o jogo é o fixture. Antes o assistente lia as palavras
+    // de uma constante em português dentro de `input/gamepad.ts`; agora pergunta, e este objeto é a
+    // resposta. `leftShoulder` fica de fora de propósito: prova que uma posição não nomeada é SALTADA.
+    rotuloDaAcao: (a) => ({
+      up: 'CIMA', down: 'BAIXO', left: 'ESQUERDA', right: 'DIREITA',
+      action1: 'CORRER', action2: 'PULAR', action3: 'ESPECIAL', action4: 'TROCAR', start: 'START',
+    })[a] || null,
     srSay: (m) => said.push(m),
     srAlert: (m) => alerted.push(m),
     frontOverlay: (el) => fronted.push(el),
@@ -197,10 +204,17 @@ describe('padActions', () => {
 });
 
 describe('PADWIZ_STEPS', () => {
-  it('[Interface] 9 passos: as 8 ações do jogo + START, cada um com [ação, rótulo pt-BR]', () => {
-    expect(PADWIZ_STEPS).toHaveLength(9);
-    expect(PADWIZ_STEPS.map((s) => s[0])).toEqual(['up', 'down', 'left', 'right', 'action2', 'action1', 'action4', 'action3', 'start']);
-    for (const [, label] of PADWIZ_STEPS) expect(label).toBeTruthy();
+  it('[Interface] 9 posições, e SÓ as posições — as palavras saíram daqui', () => {
+    expect(PADWIZ_ORDER).toHaveLength(9);
+    expect([...PADWIZ_ORDER]).toEqual(['up', 'down', 'left', 'right', 'action2', 'action1', 'action4', 'action3', 'start']);
+  });
+
+  it('⚠️ nenhum RÓTULO sobrou na tabela — era português cru dentro da engine', () => {
+    // A tabela dizia `['action2', 'PULAR']` e `['action1', 'CORRER / INTERAGIR']`: vocabulário de plataforma
+    // dentro do motor E num idioma só, à frente de uma criança, num ficheiro que o pilar 3 obriga a ser
+    // localizável. Agora cada entrada é uma posição e nada mais.
+    for (const passo of PADWIZ_ORDER) expect(typeof passo).toBe('string');
+    expect(PADWIZ_ORDER.some((p) => /[a-z]{2,}\s/.test(p))).toBe(false); // nenhuma frase
   });
 });
 
@@ -231,11 +245,11 @@ describe('initGamepad — wizard: fluxo completo', () => {
     expect(api.getPadWiz().step).toBe(0);
 
     // percorre os 9 passos apertando um botão distinto por passo (0..8), soltando entre cada um
-    for (let i = 0; i < PADWIZ_STEPS.length; i++) {
+    for (let i = 0; i < PADWIZ_ORDER.length; i++) {
       ctx.setPads([makePad({ id: 'DirectInput X', index: 0, pressed: [i] })]);
       api.padWizTick(); // captura o botão i para o passo atual
-      if (i < PADWIZ_STEPS.length - 1) {
-        expect(api.getPadWiz().map[PADWIZ_STEPS[i][0]]).toEqual({ b: i });
+      if (i < PADWIZ_ORDER.length - 1) {
+        expect(api.getPadWiz().map[PADWIZ_ORDER[i]]).toEqual({ b: i });
         ctx.setPads([makePad({ id: 'DirectInput X', index: 0, pressed: [] })]);
         api.padWizTick(); // solta -> libera o próximo prompt
       }
@@ -259,7 +273,7 @@ describe('initGamepad — wizard: botão repetido (release-gate)', () => {
 
     ctx.setPads([makePad({ id: 'pad-rep', index: 0, pressed: [7] })]);
     api.padWizTick(); // liga o passo 0 ao botão 7
-    expect(api.getPadWiz().map[PADWIZ_STEPS[0][0]]).toEqual({ b: 7 });
+    expect(api.getPadWiz().map[PADWIZ_ORDER[0]]).toEqual({ b: 7 });
     expect(api.getPadWiz().step).toBe(1);
     expect(api.getPadWiz().release).toBe(true);
 
@@ -267,7 +281,7 @@ describe('initGamepad — wizard: botão repetido (release-gate)', () => {
     for (let i = 0; i < 10; i++) api.padWizTick();
     expect(api.getPadWiz().step).toBe(1);
     expect(api.getPadWiz().release).toBe(true);
-    expect(api.getPadWiz().map[PADWIZ_STEPS[1][0]]).toBeUndefined();
+    expect(api.getPadWiz().map[PADWIZ_ORDER[1]]).toBeUndefined();
 
     // solta -> libera o prompt do passo 1; pressiona o MESMO botão 7 de novo -> É aceito para o novo passo
     // (o original não deduplica bindings entre ações — documentado, não é bug desta extração)
@@ -276,7 +290,7 @@ describe('initGamepad — wizard: botão repetido (release-gate)', () => {
     expect(api.getPadWiz().release).toBe(false);
     ctx.setPads([makePad({ id: 'pad-rep', index: 0, pressed: [7] })]);
     api.padWizTick();
-    expect(api.getPadWiz().map[PADWIZ_STEPS[1][0]]).toEqual({ b: 7 });
+    expect(api.getPadWiz().map[PADWIZ_ORDER[1]]).toEqual({ b: 7 });
   });
 });
 
@@ -329,7 +343,7 @@ describe('initGamepad — wizard: controle desconectado durante o mapeamento', (
     // reconecta -> volta a responder normalmente
     ctx.setPads([undefined, makePad({ id: 'pad-dc', index: 1, pressed: [3] })]);
     api.padWizTick();
-    expect(api.getPadWiz().map[PADWIZ_STEPS[0][0]]).toEqual({ b: 3 });
+    expect(api.getPadWiz().map[PADWIZ_ORDER[0]]).toEqual({ b: 3 });
   });
   it('[Boundary] getGamepads() devolvendo null/undefined inteiro não lança em nenhuma fase', () => {
     const ctx = buildCtx({ getGamepads: () => null }); const api = initGamepad(ctx);
@@ -349,7 +363,7 @@ describe('initGamepad — wizard: classificação de eixo (analógico vs D-pad/h
     ctx.setPads([makePad({ id: 'pad-ax', index: 0, axes: [0, 0, 0.5, 0, 0, 0, 1.3, 1.3] })]); api.padWizTick(); // inicia o rastreio
     const seq = [0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]; // 8 ticks de PROCESSAMENTO, variando a cada um (>2 mudanças)
     for (const v of seq) { ctx.setPads([makePad({ id: 'pad-ax', index: 0, axes: [0, 0, v, 0, 0, 0, 1.3, 1.3] })]); api.padWizTick(); }
-    expect(api.getPadWiz().map[PADWIZ_STEPS[0][0]]).toEqual({ ax: 2, s: 1 });
+    expect(api.getPadWiz().map[PADWIZ_ORDER[0]]).toEqual({ ax: 2, s: 1 });
   });
   it('[Right] eixo que salta e FICA CONSTANTE por 8 ticks -> binding de hat {av,v}', () => {
     const ctx = buildCtx(); const api = initGamepad(ctx);
@@ -358,7 +372,7 @@ describe('initGamepad — wizard: classificação de eixo (analógico vs D-pad/h
     api.padWizTick(); // passo 0
     // mesmo detalhe: 1 tick para DETECTAR (inicia o rastreio) + 8 ticks de processamento (ticks>=8)
     for (let i = 0; i < 9; i++) { ctx.setPads([makePad({ id: 'pad-hat', index: 0, axes: [0, 0, 0.7143, 0, 0, 0, 1.3, 1.3] })]); api.padWizTick(); }
-    expect(api.getPadWiz().map[PADWIZ_STEPS[0][0]]).toEqual({ av: 2, v: 0.7143 });
+    expect(api.getPadWiz().map[PADWIZ_ORDER[0]]).toEqual({ av: 2, v: 0.7143 });
   });
 });
 
