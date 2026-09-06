@@ -165,6 +165,7 @@ import { initMapHub } from './ui/map-hub.js'; // D3-c: painel "Mapear controles"
 import { initPhysics, stepPlayer as stepPhysics } from './game/physics.js'; // B1: fisica do jogador (ancorada nas trajetorias-ouro)
 import { initQuiz } from './game/quiz.js'; // B3: o desafio educativo (geracao + markup + efeito)
 import { initSettingsPanel } from './ui/settings-panel.js'; // B4: o que as cascas dos paineis realmente compartilham
+import { initFocusTrap, focaveisNoDom } from './ui/focus-trap.js'; // #109: Tab nao sai de um dialogo aberto
 import { initViewports } from './render/viewports.js'; // B2: fabrica de imagem dos modos de visao
 import { initSession } from './game/session.js'; // C2: o ciclo de vida da RODADA (MODE_LABELS/MODES saíram com o #opt-mode)
 import { initDraw } from './render/draw.js'; // C1: camera + o quadro + a escolha de quadro do personagem
@@ -394,6 +395,17 @@ setCoins(pickCoins(COIN_TARGET, coinPools())); // coins: mega-var 7 em core/stat
    initGamepad, avaliado eager. */
 const overlays = initSettingsPanel({ $, $$, doc: document, computedZ: (el)=>+getComputedStyle(el).zIndex||0 });
 const { frontOverlay } = overlays;
+// ⚠️ A ARMADILHA DE FOCO (issue #109). Nao existia em lado nenhum da engine, e `index.html` promete o
+// contrario: todo `.overlay__card` diz `aria-modal="true"`, que anuncia a tecnologia assistiva que o resto da
+// pagina esta inerte. O Tab discordava — saia do dialogo e entrava no tabuleiro por baixo, e quem usa leitor
+// de tela ficava num jogo cujo estado nao percebe, sem volta que perceba. Vai aqui e nao so no `createGame`
+// porque esta raiz NAO passa por ele.
+initFocusTrap({
+  overlayDeCima: overlays.topVisibleOverlay,
+  focoAtual: () => document.activeElement,
+  focaveisDe: focaveisNoDom,
+  win: window,
+}).attach();
 // As seis flags `*Open` que moravam aqui morreram: quem sabe se um painel esta aberto e o proprio DOM, e o
 // registro de ui/settings-panel le de la (D1). `jumpEdge` estava nesta mesma linha e tambem morreu: era
 // global sem leitor nenhum — a borda de pulo que o jogo usa e `p.jumpEdge`, campo do jogador, outra coisa.

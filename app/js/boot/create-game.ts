@@ -43,6 +43,7 @@
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
 import { initI18n } from '../core/i18n.js';
 import { criarAvisoDeQueda } from '../ui/loop-crash.js';
+import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
@@ -329,6 +330,17 @@ export function createGame(o: CreateGameOptions): Engine {
   // Instalar aqui é seguro antes de o jogo acabar de arrancar: sem diálogo aberto e sem menu de pausa,
   // `menuNavKey` não consome tecla nenhuma e a deixa seguir para quem for o dono.
   nav.attach();
+
+  // ⚠️ E A ARMADILHA DE FOCO, que não existia em lado nenhum — os outros dois fios eram montados e deixados
+  // desligados; este nunca tinha sido escrito. Com um overlay aberto, o Tab entrava no tabuleiro por baixo,
+  // enquanto todo `.overlay__card` do documento diz `aria-modal="true"`. Uma promessa que o teclado desmente
+  // é pior do que promessa nenhuma: quem usa leitor de tela sai para um jogo cujo estado não percebe.
+  initFocusTrap({
+    overlayDeCima: overlays.topVisibleOverlay,
+    focoAtual: () => doc.activeElement,
+    focaveisDe: focaveisNoDom,
+    win,
+  }).attach();
 
   // O ANÚNCIO DE QUE O LAÇO PAROU (ADR-0054). Entregue e não instalado: quem chama `startLoop` é o JOGO, que
   // é o dono do ticker. Um jogo que monte o laço sem passar isto continua a PARAR — parar não é opcional; o

@@ -212,6 +212,33 @@ describe('createGame em execução', () => {
     expect(nav.length, 'a navegacao de menu voltou a ficar desligada').toBeGreaterThan(0);
   });
 
+  it('⚠️ a ARMADILHA DE FOCO fica instalada, e prende de verdade (issue #109)', async () => {
+    // ⚠️ ESTE CASO NASCEU DE UMA MUTACAO QUE SOBREVIVEU. A primeira versao aferia "ha ouvinte de keydown em
+    // captura", e a navegacao de menu ja instalava um — tirar a armadilha inteira do `createGame` deixava a
+    // contagem intacta e o teste verde. Contar ouvintes responde "alguem se registou", nao "a armadilha
+    // existe". Entao este caso DISPARA um Tab pelos ouvintes instalados e afere o que aconteceu ao foco.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+
+    const focados = [];
+    const botao = (n) => ({ n, hidden: false, getClientRects: () => [{}], focus() { focados.push(n); } });
+    const dentro = [botao('primeiro'), botao('ultimo')];
+    const overlay = {
+      hidden: false, style: { zIndex: '61' },
+      querySelectorAll: () => dentro,
+    };
+    const { doc, win, ouvintes } = domFalso({ listas: { '#game-region .overlay': [overlay] } });
+    doc.activeElement = { n: 'o tabuleiro por baixo' }; // o foco esta FORA do dialogo: o caso realista
+
+    createGame({ declaration: declaracaoValida(), host: { doc, win } });
+
+    let impedido = false;
+    const tab = { key: 'Tab', shiftKey: false, preventDefault: () => { impedido = true; } };
+    for (const o of ouvintes) if (o.tipo === 'keydown' && o.captura === true) o.fn(tab);
+
+    expect(focados, 'o Tab saiu do dialogo para o jogo por baixo').toEqual(['primeiro']);
+    expect(impedido, 'sem preventDefault o navegador move o foco logo a seguir').toBe(true);
+  });
+
   it('⚠️ a engine ENTREGA o aviso de que o laco parou (ADR-0054, issue #109)', async () => {
     // O `createGame` montava tres fios e nao ligava nenhum, e este era o pior: `core/loop` ja parava quando um
     // quadro lancava, e parava EM SILENCIO. Tela congelada e sintoma VISUAL — no modo cego, um jogo parado e
