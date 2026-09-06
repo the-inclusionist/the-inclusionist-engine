@@ -239,6 +239,16 @@ const en: Record<string, string> = {
   // The loop stopped because a frame threw (ADR-0054). A blind child does not see a frozen screen:
   // without this sentence, "crashed" and "thinking" are the same silence.
   'sr.laco.parou': 'The game stopped because of an error. Reload the page to play again.',
+  // ===== THE REACH NOTICE (issue #112, ADR-0079 section 3) =====
+  'reach.titulo': 'This game uses {pedidas} actions.',
+  'reach.curto': 'The {transporte} has {lugares} places - not enough for all of them.',
+  'reach.ligue': 'Connect {saida} and you can use them all.',
+  'reach.semSaida': 'No control on this device reaches all of them. You can still play, but some actions will have nowhere to go.',
+  'reach.continuar': 'Play anyway',
+  'reach.ou': ' or ',
+  'reach.nome.gamepad': 'gamepad',
+  'reach.nome.teclado': 'keyboard',
+  'reach.nome.toque': 'on-screen control',
   'sr.attract.demo': 'Demo.',
   'sr.attract.recorded': '30-second demo recorded for {cenario}.',
 

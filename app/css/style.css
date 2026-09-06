@@ -366,6 +366,12 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .game-region{position:relative;background:#05070f;box-shadow:0 0 0 3px var(--ink-soft);border-radius:8px;overflow:hidden;flex:none}
 .libras-slot{flex:none;width:0;height:0;background:#0b1020;border-radius:8px;overflow:hidden}
 .game-region:focus-visible{outline:4px solid var(--focus);outline-offset:3px}
+/* ===== O AVISO DE ALCANCE (issue #112) =====
+   Reaproveita `.overlay` e `.overlay__card` inteiros — o cartão nasce com a mesma casca dos outros diálogos,
+   e é isso que o faz parecer parte do jogo em vez de um erro do navegador. Só o destaque do título é próprio. */
+#reach-notice .reach-notice__titulo{font-weight:700;margin:0 0 .5rem}
+#reach-notice p{margin:0 0 .5rem}
+#reach-notice button{margin-top:.75rem}
 /* ===== O LAÇO PAROU (ADR-0054, issue #109) =====
    O TEXTO VEM DO ATRIBUTO, e é esse o ponto: `ui/loop-crash` escreve a frase JÁ TRADUZIDA em
    `data-incl-parou`, e o CSS só a mostra. Um aviso cravado aqui estaria em inglês para uma criança

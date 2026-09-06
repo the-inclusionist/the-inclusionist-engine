@@ -157,6 +157,18 @@ describe('A LISTA REAL de transportes — os números saem do aparelho, não de 
     expect(reachable(tablet, NOVE)).toBe(true);
   });
 
+  it('[Zero] ⚠️ um transporte CURTO e DESLIGADO não entra na frase — ela falaria de um aparelho ausente', () => {
+    // `curtos` existe para dizer «o que você TEM não chega». Um acionador de dois toques que não está ligado
+    // não é o que ela tem, e nomeá-lo faria a frase apontar para um objeto que não está na sala — o oposto
+    // de acionável. É a linha que separa «o toque tem 9 lugares» de uma lista de tudo o que existe no mundo.
+    const acionador = { id: 'acionador', slots: 2, available: () => false };
+    const lista = [...transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre }), acionador];
+    const a = alcance(lista, ACTIONS);
+    expect(a.curtos.map((c) => c.id), 'a frase citou um aparelho desligado').toEqual(['toque']);
+    // E ele também não entra em «serviria se ligado», porque não serviria: dois lugares para catorze ações.
+    expect(a.serviriamSeLigados).not.toContain('acionador');
+  });
+
   it('[Interface] a disponibilidade é PERGUNTADA a cada vez — um controle liga-se no meio da partida', () => {
     let ligado = false;
     const lista = transportesPadrao({ gamepad: () => ligado, teclado: nunca, toque: sempre });

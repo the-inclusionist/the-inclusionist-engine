@@ -44,6 +44,10 @@
 import { initI18n } from '../core/i18n.js';
 import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
+import { mostrarAvisoDeAlcance } from '../ui/reach-notice.js';
+import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
+import { presetActions, type ActionPreset } from '../core/actions.js';
+import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
@@ -118,6 +122,22 @@ export interface CreateGameOptions {
   readonly sonarPlayers?: () => SonarPlayer[];
   /** Modo cego ligado? Ausente = não. Vale para todos os jogadores, como no jogo de plataforma. */
   readonly isBlindMode?: () => boolean;
+  /**
+   * AS PALAVRAS DESTE JOGO (`core/actions`). Sem elas a engine não sabe QUANTAS ações pedir a um transporte,
+   * e a garantia do ADR-0079 §3 não tem como ser medida — foi a lacuna que a issue #112 encontrou: a
+   * aritmética existia, testada, e o `createGame` tinha ZERO ocorrências de qualquer coisa sobre ações.
+   *
+   * Opcional porque um jogo pode não declarar preset ainda; sem ele o aviso de alcance simplesmente não
+   * aparece, que é o comportamento de hoje e não uma regressão.
+   */
+  readonly preset?: ActionPreset;
+  /**
+   * Como se descobre que cada transporte está aqui. Ausente = a engine pergunta ao aparelho.
+   *
+   * Injetável porque «há um controle ligado?» e «isto é uma tela de toque?» são perguntas ao navegador, e um
+   * teste que não as possa responder não consegue exercitar a tela que depende delas.
+   */
+  readonly disponibilidade?: Disponibilidade;
 }
 
 export interface Engine {
@@ -175,6 +195,14 @@ export interface Engine {
    * parar não é opcional; o que ele perde é dizer que parou.
    */
   readonly aoFalhar: (erro: unknown) => void;
+  /**
+   * O ALCANCE MEDIDO NO ARRANQUE — a garantia do ADR-0079 §3 como dado, para quem quiser lê-la.
+   *
+   * A engine já mostrou o aviso se havia o que dizer; isto fica devolvido porque um jogo pode querer decidir
+   * mais (esconder uma fase que exige doze ações, por exemplo), e porque `ok: false` é o tipo de facto que
+   * tem de poder ser auditado em vez de ficar só numa tela que já fechou.
+   */
+  readonly alcance: Alcance;
 }
 
 /** Os ids que os painéis emprestados exigem do documento. Achado 6: sem eles o painel abre VAZIO, sem erro. */
@@ -342,6 +370,32 @@ export function createGame(o: CreateGameOptions): Engine {
     win,
   }).attach();
 
+  /**
+   * O ALCANCE: entre os transportes DISPONÍVEIS a esta criança, algum carrega as ações deste jogo?
+   *
+   * ⚠️ A detecção segue o que o projeto JÁ usa para a mesma pergunta (`isCoarsePointer` em `game/session`):
+   * `pointer:coarse && hover:none` é toque, e o contrário é teclado. Ela erra num tablet COM teclado — e o
+   * erro só é tolerável porque a tela INFORMA em vez de recusar. Ver o cabeçalho de `ui/reach-notice`.
+   */
+  const disponibilidade: Disponibilidade = o.disponibilidade ?? {
+    gamepad: () => { try { return [...(win.navigator?.getGamepads?.() ?? [])].some(Boolean); } catch { return false; } },
+    toque: () => { try { return win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches; } catch { return false; } },
+    teclado: () => { try { return !(win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches); } catch { return true; } },
+  };
+  const acoesDoJogo = o.preset ? presetActions(o.preset) : [];
+  const alcanceAqui = alcance(transportesPadrao(disponibilidade), acoesDoJogo);
+
+  // ⚠️ SÓ APARECE QUANDO HÁ O QUE DIZER. Um aviso que aparece sempre deixa de ser lido, e um jogo cujas ações
+  // cabem no toque não tem nada a avisar — que é o caso comum e tem de continuar silencioso.
+  if (acoesDoJogo.length) {
+    mostrarAvisoDeAlcance({
+      procurar: (sel) => $<HTMLElement>(sel),
+      criar: (tag) => doc.createElement(tag),
+      t,
+      srAlert,
+    }, alcanceAqui);
+  }
+
   // O ANÚNCIO DE QUE O LAÇO PAROU (ADR-0054). Entregue e não instalado: quem chama `startLoop` é o JOGO, que
   // é o dono do ticker. Um jogo que monte o laço sem passar isto continua a PARAR — parar não é opcional; o
   // que ele perde é dizer que parou.
@@ -350,5 +404,5 @@ export function createGame(o: CreateGameOptions): Engine {
     narrar: (texto) => tts.narrate(texto),
   });
 
-  return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines, aoFalhar };
+  return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines, aoFalhar, alcance: alcanceAqui };
 }

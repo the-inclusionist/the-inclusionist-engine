@@ -311,6 +311,20 @@ const pt: Record<string, string> = {
   // O laço parou porque um quadro lançou (ADR-0054). Criança cega não vê tela congelada: sem esta frase,
   // «travou» e «está pensando» são o mesmo silêncio.
   'sr.laco.parou': 'O jogo parou por causa de um erro. Recarregue a página para jogar de novo.',
+  // ===== O AVISO DE ALCANCE (issue #112, ADR-0079 §3) =====
+  // O controle de tela tem nove lugares e o vocabulário passou a catorze. Num tablet de escola pública o
+  // toque não é o caminho alternativo, é o único — e a criança que descobre no meio que não alcança uma ação
+  // conclui que o jogo está partido. Estas frases existem para ela saber ANTES, e o que fazer.
+  'reach.titulo': 'Este jogo usa {pedidas} ações.',
+  'reach.curto': 'O {transporte} tem {lugares} lugares — não chegam para todas.',
+  'reach.ligue': 'Ligue {saida} e você joga com todas.',
+  // Quando NADA resolveria: mandar ligar um controle seria mandar procurar o que não conserta.
+  'reach.semSaida': 'Nenhum controle deste aparelho alcança todas. Dá para jogar assim mesmo, mas algumas ações vão ficar sem lugar.',
+  'reach.continuar': 'Jogar assim mesmo',
+  'reach.ou': ' ou ',
+  'reach.nome.gamepad': 'controle',
+  'reach.nome.teclado': 'teclado',
+  'reach.nome.toque': 'controle de tela',
   'sr.attract.demo': 'Demonstração.',
   'sr.attract.recorded': 'Demo de 30 segundos gravada para {cenario}.',
 

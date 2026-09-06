@@ -239,6 +239,16 @@ const es: Record<string, string> = {
   'sr.nav.noTargetNear': 'No hay nada cerca.',
   // El bucle se detuvo porque un fotograma lanzó (ADR-0054). Una niña ciega no ve una pantalla congelada.
   'sr.laco.parou': 'El juego se detuvo por un error. Recarga la página para volver a jugar.',
+  // ===== EL AVISO DE ALCANCE (issue #112, ADR-0079 seccion 3) =====
+  'reach.titulo': 'Este juego usa {pedidas} acciones.',
+  'reach.curto': 'El {transporte} tiene {lugares} lugares: no alcanzan para todas.',
+  'reach.ligue': 'Conecta {saida} y podrás usarlas todas.',
+  'reach.semSaida': 'Ningún control de este aparato alcanza todas. Puedes jugar igual, pero algunas acciones quedarán sin lugar.',
+  'reach.continuar': 'Jugar así',
+  'reach.ou': ' o ',
+  'reach.nome.gamepad': 'mando',
+  'reach.nome.teclado': 'teclado',
+  'reach.nome.toque': 'control en pantalla',
   'sr.attract.demo': 'Demostración.',
   'sr.attract.recorded': 'Demo de 30 segundos grabada para {cenario}.',
 
