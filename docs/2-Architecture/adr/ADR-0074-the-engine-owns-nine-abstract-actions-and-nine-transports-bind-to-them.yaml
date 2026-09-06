@@ -18,6 +18,14 @@ metadata:
              one genre. Everything else here governs: the nine positions, the game supplying the words, no
              abstract name reaching a person, the nine transports, `start` on two transports of nine, the
              pointer not existing, and §4 refusing to collapse the keyboard schemes."
+    - by: ADR-0085
+      what: "§1, and ONLY the SIZE of the set: nine becomes FOURTEEN. `action5`..`action8` and `select` join
+             it, on the Dev's statement of 2026-09-06 that more elaborate games need them. THIS RECORD
+             ANTICIPATED IT AND SAID SO IN ITS OWN CONS — `nine actions is a CEILING that a genre may want
+             to exceed, and the record has to say what happens`. ADR-0085 is what happens. Everything else
+             in §1 governs, and is in fact what decided the NAMES: positions and not meanings, the game
+             supplying the words, and no abstract name reaching a person — which is why the request's own
+             vocabulary (`L1`, `L2`, `R1`, `R2`) became a gamepad BINDING and not an action name."
   decision-makers: [Dev]
   consulted:
     - "ADR-0033 — `input arrives as INTENT, never as meaning`. This record is that sentence taken to the

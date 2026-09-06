@@ -151,6 +151,12 @@ const CRU_CONHECIDO = {
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
   'boot/create-game.ts': 3,        // a mensagem do `throw` e as lacunas do hospedeiro
   'render/sprites.ts': 1,          // `console.warn` de quadro fora do atlas — o dev lê, a criança não
+  'core/actions.ts': 1,            // ⚠️ ESTÁ EM INGLÊS, e entrou aqui na mesma: «a game with no action cannot
+                                   // be played», de `actionSetProblems`. O crivo é por FORMA — prosa com
+                                   // fronteiras de palavra —, e prosa em inglês tem a mesma forma que prosa em
+                                   // português. Registrar é mais barato que ensinar o crivo a distinguir
+                                   // idioma, e mais honesto: a linha 151 já diz que exceção sem contagem é
+                                   // porta aberta. Quem lê esta frase é quem escreve um preset (ADR-0085).
 };
 
 describe('texto cru em português nas camadas de ENGINE (o buraco do gate do item 14)', () => {
