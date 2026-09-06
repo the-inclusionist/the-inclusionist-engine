@@ -14,7 +14,7 @@ truth (Vitest node + browser); this plan is the human checklist around them, plu
 
 ## Per release
 
-- [ ] Full Vitest suite green in CI (`.gitlab-ci.yml`).
+- [ ] Full Vitest suite green in CI (`.github/workflows/ci.yml`).
 - [ ] `vite build` clean; PWA updates (content-hash SW) verified in the preview.
 - [ ] Accessibility spot-check: keyboard-only, screen-reader captions (`aria-live`), reduced-motion, high-contrast.
 

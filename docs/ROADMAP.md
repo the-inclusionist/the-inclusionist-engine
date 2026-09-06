@@ -1,8 +1,9 @@
 # Roadmap
 
-> **The executable roadmap is the issue board of
-> [gitlab.com/jrocha-dev/inclusionist-engine](https://gitlab.com/jrocha-dev/inclusionist-engine/-/boards).**
-> The phases are tracked there as the **Fase 0–6** issues. This document holds only the **stable strategy** — the
+> **The executable roadmap is the issue tracker of
+> [the-inclusionist/the-inclusionist-engine](https://github.com/the-inclusionist/the-inclusionist-engine/issues).**
+> The phases are tracked there as the **Fase 0–6** issues.
+> ⚠️ **Migrado em 2026-09-06 e os NÚMEROS sobreviveram**: as 101 issues foram recriadas em ordem crescente num repositório de contador zerado, então `#1`–`#101` apontam para as mesmas coisas. Todo `#N` escrito antes dessa data continua válido. The GitLab board it used to name is archived. This document holds only the **stable strategy** — the
 > principles and the *why* of the ordering — not the per-phase task lists (those live in the issues).
 
 ## Principles (hold in every phase)

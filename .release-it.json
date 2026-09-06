@@ -16,7 +16,7 @@
     "requireUpstream": false,
     "push": false
   },
-  "gitlab": { "release": false },
+  "github": { "release": false },
   "npm": { "publish": true },
   "plugins": {
     "@release-it/conventional-changelog": {

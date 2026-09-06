@@ -1,6 +1,6 @@
 # QA in CI/CD (SDD phase f)
 
-The automated quality gates that run in the pipeline (`.gitlab-ci.yml`). Split by "now" vs "with backend".
+The automated quality gates that run in the pipeline (`.github/workflows/ci.yml`). Split by "now" vs "with backend".
 
 ## a11y — axe-core  ✅ adopt now (!4)
 

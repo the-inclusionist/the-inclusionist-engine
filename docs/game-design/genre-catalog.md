@@ -54,4 +54,4 @@ focused slice, denso = vertical slice recommended).
 3. Reward *gently* on winning the activity (no dopamine spikes — ADR-0006).
 4. Record the mechanic↔learning link in **`LM-GM-Map.md`**; the objective in `../educational/Learning-Objectives.md`.
 
-Each genre adopted for a game becomes a GitLab issue (per-game one-sheet + its learning objective).
+Each genre adopted for a game becomes a GitHub issue (per-game one-sheet + its learning objective).

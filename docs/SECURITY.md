@@ -36,5 +36,12 @@ Pages deploy built from it) is supported. There are no back-ported security fixe
 
 - The **VLibras** widget is a third-party gov.br embed (interim); issues in *that* widget should go to its
   upstream project, though we welcome a heads-up so we can mitigate on our side.
-- Automated scanning is already in place: **CodeQL** (code scanning), **Dependabot** (dependency alerts +
-  security updates), and **`npm audit`** in CI. This policy covers what those cannot catch.
+- Automated scanning in place, stated exactly: **gitleaks** over the whole git history, **semgrep** for
+  static analysis, and **`npm audit --omit=dev --audit-level=high`**, all as blocking jobs in
+  `.github/workflows/ci.yml`. This policy covers what those cannot catch.
+- ⚠️ **Corrected 2026-09-06 — this section used to name CodeQL and Dependabot as already in place, and
+  neither was.** CodeQL left when the project moved hosts in August and cannot simply return: GitHub's code
+  scanning and secret scanning are free only on **public** repositories, and on a private one they require
+  GitHub Advanced Security, which is paid. Dependabot was ruled out in the same move for being GitHub-only;
+  it is available again and **has not been switched on**. A security policy that lists protections it does
+  not have is worse than one that lists none, because a reporter calibrates against it.

@@ -4,7 +4,7 @@
 > ✅ **CONCLUÍDO (2026-08-02).** As Rodadas 0–6 estão feitas: `inclusionist-commons` tem os 4 pacotes
 > `@jrocha-io/*` (tts/audio/logging/model-fetch, 52 testes) com os 4 adapters (Web Speech, eSpeak-NG, sherpa,
 > Kokoro-WebGPU); `inclusionist-lab` tem as 3 seções por DI e o monólito foi aposentado. **Pendências só do Dev:**
-> publicar os pacotes no GitLab Package Registry (precisa do token), colocar os ~18MB de assets sherpa em
+> publicar os pacotes no npmjs público (ADR-0072; o plano original dizia GitLab Package Registry), colocar os ~18MB de assets sherpa em
 > `public/sherpa-wasm/` (receita em `inclusionist-lab/docs/sherpa-wasm-build.md`), e o deploy Cloudflare.
 > A verificação de **áudio neural real** (sherpa/Kokoro) roda na máquina do Dev (assets + download de modelos).
 

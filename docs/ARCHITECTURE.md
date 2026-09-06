@@ -40,10 +40,10 @@ Organized by **SDD lifecycle phase** (numbered), mirroring the schema we adopt (
 ```
 docs/
 ├── ARCHITECTURE.md            # THIS FILE — the map (start here)
-├── ROADMAP.md                 # strategy + why-this-order; phases live on the GitLab issue board (Fase 0–6)
-├── CONTRIBUTING.md            # how we work + our documentation model      (GitLab health file)
+├── ROADMAP.md                 # strategy + why-this-order; phases live in GitHub Issues (Fase 0–6)
+├── CONTRIBUTING.md            # how we work + our documentation model      (community-health file)
 ├── CREDITS.md                 # acknowledgements / attributions
-├── SECURITY.md                # vulnerability reporting policy             (GitLab health file)
+├── SECURITY.md                # vulnerability reporting policy             (community-health file)
 ├── 1-Discovery/               # SOFTWARE / engine requirements & design (NOT pedagogy — that's educational/)
 │   ├── User-Stories.md        #   engine/game features — negotiable layer
 │   ├── NFR.md                 #   non-functional reqs + the 10 pillars      ← ADR-0010
@@ -94,8 +94,8 @@ docs/
 
 > **Labs saem de `research/` e viram produto (ADR-0023/0024/0025).** Os experimentos de inclusão vivem num repo
 > **hub** próprio, **`inclusionist-lab`** (app **multi-página** Vite/TS; uma **subpágina por lab** — `/tts/` pronto,
-> Libras/visão planejados), consumindo **pacotes versionados** `@jrocha-io/*` (`tts`/`audio`/`logging`/`model-fetch`)
-> do repo `inclusionist-commons` publicado no **registry npm do GitLab** (ADR-0026). Deploy próprio no Cloudflare
+> Libras/visão planejados), consumindo **pacotes versionados** `@the-inclusionist/*` (`tts`/`audio`/`logging`/`model-fetch`)
+> do repo `inclusionist-commons`, a publicar no **npmjs público** (ADR-0072; o ADR-0026 dizia GitLab). Deploy próprio no Cloudflare
 > (domínio `labs.`).
 > **`inclusionist-engine` fica só com a ENGINE** — o jogo saiu para `inclusionist-demos` (ADR-0036, que emenda o ADR-0025; a frase anterior, "fica só com o jogo", valia enquanto o jogo era o produto).
 > ⚠️ **A TOPOLOGIA INTEIRA foi decidida em 2026-08-28 — ADR-0058** (que supersede o ADR-0055): **NOVE**
@@ -114,7 +114,7 @@ docs/
 > (e.g. DBML at the corpus DB, OpenAPI/Pact at the backend, K8s at stage 4). The stub **is** the decision — it exists
 > so the choice isn't improvised later; it is not empty ceremony.
 >
-> **Not in `docs/`:** the **executable backlog** lives in **GitLab Issues + the issue board**
+> **Not in `docs/`:** the **executable backlog** lives in **GitHub Issues**
 > (`jrocha-dev/inclusionist-engine`), not in a Markdown file. The **roadmap** is the board's *Fase 0–6* issues;
 > `ROADMAP.md` keeps only the strategy/why-this-order. See `CONTRIBUTING.md`.
 

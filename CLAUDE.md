@@ -121,7 +121,7 @@ do GitHub, privada até o ato (**ADR-0066**).
 - **Agora:** **Estágio 4 — modularização** do `game.js` em ES Modules `.ts`, cada um extraído **com teste**
   (ZOMBIES + Right-BICEP). Alvo/ordem: `docs/plano-modularizacao-mapa.md`. **Fundamentos** que guiam a quebra
   (coesão↑, acoplamento↓, DI, DAO, adapters — base arXiv:2409.15152): `docs/plano-modularizacao.md` (= o ADR).
-- **Roadmap por dependência** (fases como issues **Fase 0–6** no quadro do GitLab; a estratégia/
+- **Roadmap por dependência** (fases como issues **Fase 0–6** no GitHub; a estratégia/
   ordem em `docs/ROADMAP.md`):
   0 publicar ✅ · 1 nível-glifo + editor de mapa · **2 espinha da engine = a modularização atual** · 3 arte
   procedural semântica · 4 editor de arte + importadores · 5 i18n en/es · 6 features (**Alfabetização 6–9**, webcam/
@@ -170,7 +170,7 @@ nada, e já aconteceu aqui: uma regex morreu em silêncio e a checagem seguiu ve
 
 - **Mapa da documentação:** `docs/ARCHITECTURE.md` (estrutura de arquivos) + `docs/CONTRIBUTING.md` (como
   trabalhamos + modelo de documentação). **Comece por aí.** (Health files — CONTRIBUTING/CREDITS/SECURITY/**LICENSES** —
-  vivem em `docs/`, não na raiz; o GitLab os reconhece lá. A automação é o `.gitlab-ci.yml` na raiz.)
+  vivem em `docs/`, não na raiz; o GitHub também os reconhece lá. A automação é o `.github/workflows/`.)
 - **Documentação canônica por fase SDD:** `docs/1-Discovery/` (**software/engine**: User-Stories·NFR·Design·Event-Storming),
   `docs/educational/` (**camada currículo/pedagogia, pt-BR**: Learning-Objectives·Curriculum-Map·Pedagogical-Model + planos educacionais),
   `docs/2-Architecture/` (C4·adr **YADR**·Feature-Flags·DFD·STRIDE·CI-CD·learning-interop·backend-cloud-roadmap·K8s),
