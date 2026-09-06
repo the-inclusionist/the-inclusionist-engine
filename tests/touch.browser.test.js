@@ -128,6 +128,29 @@ describe('initTouch — renderTouchMap / config de toque', () => {
     expect(JSON.parse(store.get('incl_touchmap')).b0).toBe('action1');
     expect(calls.srSay.some((s) => s.includes('Correr'))).toBe(true);
   });
+
+  it('[Right] ⚠️ a PALAVRA DO JOGO entra por texto, nunca por markup (issue #106)', () => {
+    // Terceiro sink da mesma classe — os três consomem o MESMO `acoesDoJogo()`, que devolve as palavras do
+    // preset. Um jogo vive hoje noutro repositório (ADR-0083) e esta árvore não revê o texto dele.
+    //
+    // ⚠️ E O `value="${acao}"` FICA, o que parece incoerente e não é: `acao` é o nome ABSTRATO, enumerado pela
+    // engine em `core/actions`. É a separação do ADR-0086 — o que é do jogo é a palavra, não a posição — e é
+    // ela que torna um dos dois seguro e o outro não.
+    // ⚠️ O PAYLOAD FECHA A `<option>` E SAI. Ver o caso irmão em `settings-controls.browser`: um `onerror` é
+    // assíncrono e não dispara a tempo, e aferir o DOM final não distingue nada, porque o `textContent`
+    // posterior escreve por cima do que o `innerHTML` já analisou. O que discrimina é o elemento que aterra
+    // FORA do alvo do `textContent` e por isso sobrevive.
+    const { ctx } = makeCtx();
+    const FUGA = '</option><option id="fugiu-do-jogo"></option>';
+    ctx.acoesDoJogo = () => [{ acao: 'action1', rotulo: FUGA }];
+    initTouch(ctx).renderTouchMap();
+
+    const lista = document.querySelector('#touchmap-list');
+    expect(lista.querySelector('#fugiu-do-jogo'), 'a palavra do jogo foi ANALISADA como marcação').toBe(null);
+    const op = lista.querySelector('select[data-slot] option');
+    expect(op.textContent).toBe(FUGA);
+    expect(op.value).toBe('action1'); // o nome abstrato continua no atributo
+  });
 });
 
 describe('initTouch — openTouchCfg / closeTouchCfg', () => {

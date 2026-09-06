@@ -239,9 +239,20 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     if (!el) return;
     el.innerHTML = TOUCH_SLOTS.map((s) =>
       `<div class="ctrl-row"><label for="tm-${s.k}">${t(s.lbl)}</label><select id="tm-${s.k}" class="vol" data-slot="${s.k}">` +
-      ctx.acoesDoJogo().map(({ acao, rotulo }) => `<option value="${acao}"${touchMap[s.k] === acao ? ' selected' : ''}>${rotulo}</option>`).join('') +
+      // ⚠️ A OPÇÃO NASCE VAZIA e o `rotulo` entra logo abaixo por `textContent` (issue #106). Ele é a PALAVRA
+      // do jogo — `acoesDoJogo()` sai do preset —, e um jogo vive noutro repositório (ADR-0083), então este
+      // texto não é revisto por esta árvore. `value="${acao}"` fica: `acao` é o nome ABSTRATO, e a engine
+      // enumera-o em `core/actions`; é dela e não do jogo.
+      ctx.acoesDoJogo().map(({ acao }) => `<option value="${acao}"${touchMap[s.k] === acao ? ' selected' : ''}></option>`).join('') +
       `</select></div>`
     ).join('');
+    // As palavras do jogo, por `textContent` — que escapa por construção. A ordem casa porque é a mesma lista.
+    for (const sel of el.querySelectorAll<HTMLSelectElement>('select[data-slot]')) {
+      const palavras = ctx.acoesDoJogo();
+      for (let i = 0; i < sel.options.length && i < palavras.length; i++) {
+        sel.options[i]!.textContent = palavras[i]!.rotulo;
+      }
+    }
     el.querySelectorAll<HTMLSelectElement>('select[data-slot]').forEach((sel) => {
       sel.addEventListener('change', () => {
         const slot = sel.dataset.slot || '';

@@ -171,10 +171,21 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     }
 
     const map = ctx.kbFor(player);
-    el.innerHTML = ctx.acoesDoJogo().map(({ acao: a, rotulo }) =>
-      `<div class="ctrl-row"><span>${rotulo}: ${(map[a] || []).map(keyName).map((k) => `<kbd>${k}</kbd>`).join(' ')}</span>` +
+    // ⚠️ O `rotulo` SAIU DO MARKUP (issue #106) e entra logo abaixo por `textContent`. Ele é a PALAVRA do
+    // jogo — vem do preset —, e um jogo vive noutro repositório (ADR-0083): esta árvore não revê esse texto.
+    // `data-act="${a}"` fica, e a diferença é a razão: `a` é o nome ABSTRATO da ação, que a engine enumera em
+    // `core/actions`. É separação que o ADR-0086 fez, e é ela que torna um dos dois seguro e o outro não.
+    el.innerHTML = ctx.acoesDoJogo().map(({ acao: a }) =>
+      `<div class="ctrl-row"><span><b class="ctrl-nome"></b>: ${(map[a] || []).map(keyName).map((k) => `<kbd>${k}</kbd>`).join(' ')}</span>` +
       `<button class="mode-btn" data-act="${a}" type="button" aria-label="${t('ctrl.changeKeyAria', { acao: t(ACT_LABEL[a]!), n: player + 1 })}">${t('ctrl.change')}</button></div>`
     ).join('');
+
+    // As palavras do jogo, por `textContent` — que escapa por construção. A ordem casa porque é a mesma lista.
+    {
+      const nomes = el.querySelectorAll<HTMLElement>('.ctrl-nome');
+      const palavras = ctx.acoesDoJogo();
+      for (let i = 0; i < nomes.length && i < palavras.length; i++) nomes[i]!.textContent = palavras[i]!.rotulo;
+    }
 
     el.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((b) => {
       b.addEventListener('click', () => {

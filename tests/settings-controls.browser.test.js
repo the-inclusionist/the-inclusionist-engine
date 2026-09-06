@@ -77,6 +77,32 @@ describe('ui/settings-controls', () => {
     expect($('#ctrl-list').innerHTML).toContain('<kbd>A</kbd>'); // KeyA do jogador 0 -> "A"
   });
 
+  it('[Right] ⚠️ a PALAVRA DO JOGO entra por texto, nunca por markup (issue #106)', () => {
+    // `acoesDoJogo()` devolve os rótulos do PRESET — as palavras deste jogo —, e um jogo vive hoje noutro
+    // repositório e consome a engine como pacote (ADR-0083). Esta árvore não revê esse texto.
+    //
+    // ⚠️ E A ASSIMETRIA COM `data-act` É A PROVA DE QUE A SEPARAÇÃO DO ADR-0086 SERVE PARA ALGUMA COISA: o
+    // nome ABSTRATO (`action2`) é da engine, enumerado em `core/actions`, e continua a ir no atributo sem
+    // risco; a PALAVRA (`Pular`) é do jogo, e é ela que tem de sair do markup.
+    // ⚠️ O PAYLOAD ESCAPA DO CONTÊINER, e a escolha custou duas mutações sobreviventes até acertar.
+    //
+    // Um `<img onerror>` não serve aqui: o `onerror` é ASSÍNCRONO e o caso acaba antes de ele disparar. E
+    // aferir o DOM final também não serve — repor a interpolação e deixar o `textContent` por cima produz o
+    // MESMO DOM, embora o `innerHTML` já tenha analisado a marcação pelo caminho.
+    //
+    // O que discrimina é o que um atacante de facto faz: FECHAR as tags e sair. O elemento injetado aterra
+    // FORA do `.ctrl-nome`, então nenhum `textContent` posterior o apaga — e ele fica visível ao caso.
+    const ctx = buildCtx();
+    const FUGA = '</b></span></div><i id="fugiu-do-jogo"></i>';
+    ctx.acoesDoJogo = () => [{ acao: 'action2', rotulo: FUGA }];
+    initSettingsControls(ctx).render(0);
+
+    const lista = $('#ctrl-list');
+    expect(lista.querySelector('#fugiu-do-jogo'), 'a palavra do jogo foi ANALISADA como marcação').toBe(null);
+    expect(lista.querySelector('.ctrl-nome').textContent).toBe(FUGA);
+    expect(lista.querySelector('button[data-act]').dataset.act).toBe('action2'); // o nome abstrato fica
+  });
+
   it('[Interface] render(0) x render(1) mostram os esquemas de cada jogador (não compartilham)', () => {
     const ctx = buildCtx();
     const api = initSettingsControls(ctx);
