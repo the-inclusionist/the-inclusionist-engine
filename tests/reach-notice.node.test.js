@@ -9,8 +9,12 @@
 import { describe, it, expect } from 'vitest';
 import { linhasDoAviso } from '../app/js/ui/reach-notice.js';
 import { alcance, transportesPadrao } from '../app/js/input/transports.js';
+import { presetActions } from '../app/js/core/actions.js';
+import { platformerPreset } from '../app/js/game/platformer-preset.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import pt from '../app/js/i18n/pt.js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /** Um tradutor de teste que devolve a CHAVE e os parâmetros — assim os casos falam de estrutura, não de prosa. */
 const cru = (k, p) => (p ? `${k}(${Object.entries(p).map(([a, b]) => `${a}=${b}`).join(',')})` : k);
@@ -70,5 +74,27 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
     expect(() => linhasDoAviso(alcance(TABLET, ACTIONS), real)).not.toThrow();
     expect(() => linhasDoAviso(alcance(transportesPadrao({ gamepad: sempre, teclado: sempre, toque: sempre }),
       [...ACTIONS, ...ACTIONS, ...ACTIONS]), real)).not.toThrow();
+  });
+});
+
+// -----------------------------------------------------------------------------------------------------------
+describe('as DUAS raizes mostram o aviso — e a do jogo de plataforma nao passa por `createGame`', () => {
+  // Ler o fonte pelo mesmo motivo do `loop-crash`: `main.ts` arranca PixiJS, audio e o documento inteiro, e
+  // nao entra num teste. Mas e ele quem monta a engine a mao, e a alternativa a ler o fonte era nao aferir
+  // nada — que foi o estado em que `input/transports` ficou sem consumidor nenhum.
+  const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'main.ts'), 'utf8');
+
+  it('[Right] a raiz do plataforma chama o aviso com as acoes do PROPRIO preset', () => {
+    expect(FONTE).toContain('mostrarAvisoDeAlcance');
+    expect(FONTE).toContain('presetActions(platformerPreset())');
+  });
+
+  it('[Interface] ⚠️ o preset da plataforma tem NOVE acoes, e o toque tem nove lugares', () => {
+    // Nao e coincidencia e vale estar preso: o jogo foi desenhado para caber no controle de tela, e por isso
+    // o aviso hoje nao dispara nele. No dia em que declarar a DECIMA acao, o tablet deixa de alcancar — e
+    // este caso reprova primeiro, que e o unico aviso que chega antes da crianca.
+    const acoes = presetActions(platformerPreset());
+    expect(acoes).toHaveLength(9);
+    expect(alcance(transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre }), acoes).ok).toBe(true);
   });
 });

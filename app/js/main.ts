@@ -166,6 +166,8 @@ import { initPhysics, stepPlayer as stepPhysics } from './game/physics.js'; // B
 import { initQuiz } from './game/quiz.js'; // B3: o desafio educativo (geracao + markup + efeito)
 import { initSettingsPanel } from './ui/settings-panel.js'; // B4: o que as cascas dos paineis realmente compartilham
 import { initFocusTrap, focaveisNoDom } from './ui/focus-trap.js'; // #109: Tab nao sai de um dialogo aberto
+import { mostrarAvisoDeAlcance } from './ui/reach-notice.js'; // #112: diz ANTES quando o controle nao alcanca
+import { alcance, transportesPadrao } from './input/transports.js';
 import { initViewports } from './render/viewports.js'; // B2: fabrica de imagem dos modos de visao
 import { initSession } from './game/session.js'; // C2: o ciclo de vida da RODADA (MODE_LABELS/MODES saíram com o #opt-mode)
 import { initDraw } from './render/draw.js'; // C1: camera + o quadro + a escolha de quadro do personagem
@@ -406,6 +408,25 @@ initFocusTrap({
   focaveisDe: focaveisNoDom,
   win: window,
 }).attach();
+
+function ehToque(){ try{ return matchMedia('(pointer:coarse)').matches && matchMedia('(hover:none)').matches; }catch(e){ return 'ontouchstart' in window; } }
+// O AVISO DE ALCANCE (issue #112). Ligado aqui pelo mesmo motivo dos outros dois fios: esta raiz NAO passa
+// por `createGame`.
+// ⚠️ HOJE ELE NAO DISPARA, e isso e uma MEDIDA e nao um acaso: este preset declara NOVE acoes e o controle de
+// tela tem exatamente nove lugares. O jogo de plataforma foi desenhado para caber no toque. O fio existe para
+// o dia em que ele declarar a decima — a partir dai o tablet deixa de alcancar, e a crianca precisa de saber
+// disso ANTES e nao no meio.
+mostrarAvisoDeAlcance(
+  { procurar: (sel) => $<HTMLElement>(sel), criar: (tag) => document.createElement(tag), t, srAlert },
+  alcance(transportesPadrao({
+    gamepad: () => { try { return [...(navigator.getGamepads?.() ?? [])].some(Boolean); } catch (e) { return false; } },
+    // ⚠️ A MESMA pergunta que o `isCoarsePointer` do ctx de `game/session` faz (linha ~1324), escrita aqui e
+    // nao reutilizada: aquele e definido MAIS ABAIXO neste ficheiro, e chama-lo daqui cairia em TDZ e
+    // derrubaria o boot. A duplicacao e de UMA expressao e esta anotada dos dois lados.
+    toque: ehToque,
+    teclado: () => !ehToque(),
+  }), presetActions(platformerPreset())),
+);
 // As seis flags `*Open` que moravam aqui morreram: quem sabe se um painel esta aberto e o proprio DOM, e o
 // registro de ui/settings-panel le de la (D1). `jumpEdge` estava nesta mesma linha e tambem morreu: era
 // global sem leitor nenhum — a borda de pulo que o jogo usa e `p.jumpEdge`, campo do jogador, outra coisa.
