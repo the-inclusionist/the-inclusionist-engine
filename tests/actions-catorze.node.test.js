@@ -19,10 +19,10 @@ describe('as quatorze posições (ADR-0085, que supersede o ADR-0074 §1)', () =
   });
 
   it('os oito verbos incluem os quatro novos', () => {
-    expect(VERBS).toContain('action5');
-    expect(VERBS).toContain('action6');
-    expect(VERBS).toContain('action7');
-    expect(VERBS).toContain('action8');
+    expect(VERBS).toContain('leftShoulder');
+    expect(VERBS).toContain('leftTrigger');
+    expect(VERBS).toContain('rightShoulder');
+    expect(VERBS).toContain('rightTrigger');
   });
 
   it('`select` existe e é de SISTEMA, ao lado de `start`', () => {
@@ -30,16 +30,22 @@ describe('as quatorze posições (ADR-0085, que supersede o ADR-0074 §1)', () =
   });
 });
 
-describe('⚠️ nenhum nome de gamepad entrou no vocabulário abstrato', () => {
-  it('L1, L2, R1, R2 e SELECT não são ações', () => {
-    // O pedido veio nesses nomes; adotá-los repetiria o defeito que o ADR-0074 corrigiu, uma camada
-    // adiante — `jump` era significado de plataforma, `L1` seria significado de gamepad. Eles são o
-    // BINDING PADRÃO de um transporte, e não o nome da posição.
-    for (const fisico of ['L1', 'L2', 'R1', 'R2', 'SELECT', 'l1', 'r2']) {
-      expect(isAction(fisico)).toBe(false);
+describe('os nomes são anatômicos, não de marca (ADR-0086)', () => {
+  it('⚠️ `L1`, `R2` e `SELECT` continuam FORA — a fronteira mudou de sítio, não desapareceu', () => {
+    // O ADR-0086 aceitou nomear os quatro por ombro e gatilho, e recusou nomeá-los pelas etiquetas de UM
+    // fabricante. `L1` é Sony e Xbox; a Nintendo escreve `L`/`ZL`, e um controle genérico escreve o que
+    // quiser. Ombro e gatilho descrevem a MÃO, que é a mesma em todos.
+    for (const marca of ['L1', 'L2', 'R1', 'R2', 'SELECT', 'l1', 'r2', 'ZL', 'LB', 'RT']) {
+      expect(isAction(marca)).toBe(false);
     }
     // `select` minúsculo É ação: é função de sistema, como `start`.
     expect(isAction('select')).toBe(true);
+  });
+
+  it('os quatro nomeiam a mão: dois lados, dois dedos', () => {
+    for (const a of ['leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger']) {
+      expect(isAction(a)).toBe(true);
+    }
   });
 
   it('nenhum verbo de plataforma sobreviveu na lista abstrata', () => {

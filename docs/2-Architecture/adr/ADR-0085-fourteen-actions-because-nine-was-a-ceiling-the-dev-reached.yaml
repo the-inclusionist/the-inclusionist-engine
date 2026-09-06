@@ -3,6 +3,18 @@ metadata:
   status: "accepted"
   date: 2026-09-06
   supersedes-in-part: [ADR-0074]
+  superseded-in-part:
+    - by: ADR-0086
+      what: "§2, and ONLY the NAMES of the four new verbs: `action5`..`action8` become `leftShoulder`,
+             `leftTrigger`, `rightShoulder`, `rightTrigger`. ⚠️ THE ARGUMENT THIS RECORD MAKES AGAINST THAT
+             IS NOT WITHDRAWN, AND THAT IS WHY IT IS SUPERSEDED RATHER THAN EDITED: hardware vocabulary in an
+             abstract set is a real cost, and on a speech recogniser or an eye tracker `leftTrigger` names
+             nothing that exists. The Dev read it and weighed it against a cost this record listed among its
+             own cons and then paid anyway — `action7` cannot be read aloud at the point where somebody
+             writes code, and a project built by volunteers cannot afford a cipher. ADR-0086 answers the
+             objection rather than ignoring it: the names are ANATOMICAL before they are gamepad, two fingers
+             per hand. Everything else here governs — fourteen actions, `select` as a system function, the
+             ceiling question answered, and the b(5)/b(7) collision handed to #103."
   decision-makers: [Dev]
   consulted:
     - "ADR-0074 §1 — SUPERSEDED IN PART, in the size of the set only. Its own cons wrote the trigger: `nine

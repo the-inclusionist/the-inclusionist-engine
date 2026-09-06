@@ -49,13 +49,13 @@ export const KEYBOARD_SOLO: Readonly<Record<Action, Binding<readonly string[]>>>
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],
   action1: ['KeyU'],
-  action2: ['KeyJ'],
+  action2: ['KeyJ', 'Space'],
   action3: ['KeyK'],
   action4: ['KeyI'],
-  action5: ['Digit7'],  // L1
-  action6: ['KeyY'],    // L2
-  action7: ['Digit8'],  // R1
-  action8: ['KeyO'],    // R2 — ver a nota da simetria acima
+  leftShoulder: ['Digit7'],  // L1
+  leftTrigger: ['KeyY'],    // L2
+  rightShoulder: ['Digit8'],  // R1
+  rightTrigger: ['KeyO'],    // R2 — ver a nota da simetria acima
   // ⚠️ E ESTAS DUAS FECHAM UMA DÍVIDA QUE O ADR-0074 §1 REGISTROU: `start` existia em dois transportes de
   // nove e faltava no teclado. Deixa de faltar. A simetria é de MÃO: `F` fica ao lado do polegar da mão que
   // se move (o bloco WASD), `H` ao lado da mão que age (o bloco UIJK).
@@ -80,12 +80,12 @@ export const GAMEPAD_STANDARD: Readonly<Record<Action, Binding<number>>> = {
   action2: 0,   // A
   action3: 1,   // B
   action4: 3,   // Y
-  action5: 4,   // L1
-  action6: 6,   // L2 — ⚠️ gatilho ANALÓGICO: a API expõe-no como botão com `.value`, e em alguns
+  leftShoulder: 4,   // L1
+  leftTrigger: 6,   // L2 — ⚠️ gatilho ANALÓGICO: a API expõe-no como botão com `.value`, e em alguns
                 //     controles também como eixo. `bindActive` já trata os dois; `padActions` só lê
                 //     `pressed`, o que funciona mas descarta o curso do gatilho.
-  action7: 5,   // R1
-  action8: 7,   // R2 — mesma ressalva analógica
+  rightShoulder: 5,   // R1
+  rightTrigger: 7,   // R2 — mesma ressalva analógica
   start: 9,     // Start / Menu
   select: 8,    // Select / Back / View
 };

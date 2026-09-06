@@ -30,13 +30,13 @@ describe('⚠️ nada é atribuído duas vezes', () => {
   });
 
   it('e o detector APANHA o duplo — com o caso real que chegou na especificação', () => {
-    // `I` em `action4` e em `action8` (R2), que foi literalmente o que veio escrito.
-    const comErro = { ...KEYBOARD_SOLO, action8: ['KeyI'] };
+    // `I` em `action4` e em `rightTrigger` (R2), que foi literalmente o que veio escrito.
+    const comErro = { ...KEYBOARD_SOLO, rightTrigger: ['KeyI'] };
     const p = bindingProblems(comErro);
     expect(p).toHaveLength(1);
     expect(p[0]).toMatch(/KeyI/);
     expect(p[0]).toMatch(/action4/);
-    expect(p[0]).toMatch(/action8/);
+    expect(p[0]).toMatch(/rightTrigger/);
   });
 
   it('apanha o duplo dentro de uma lista de várias teclas, não só entre ações', () => {
@@ -45,16 +45,16 @@ describe('⚠️ nada é atribuído duas vezes', () => {
   });
 
   it('lista vazia é reprovada — quem não alcança escreve `null`', () => {
-    const comErro = { ...KEYBOARD_SOLO, action5: [] };
+    const comErro = { ...KEYBOARD_SOLO, leftShoulder: [] };
     expect(bindingProblems(comErro)[0]).toMatch(/empty list/);
   });
 
   it('campo faltando é reprovado, e a mensagem ensina o `null`', () => {
     const semCampo = { ...KEYBOARD_SOLO };
-    delete semCampo.action6;
+    delete semCampo.leftTrigger;
     const p = bindingProblems(semCampo);
     expect(p).toHaveLength(1);
-    expect(p[0]).toMatch(/action6/);
+    expect(p[0]).toMatch(/leftTrigger/);
     expect(p[0]).toMatch(/null/);
   });
 });
@@ -62,17 +62,20 @@ describe('⚠️ nada é atribuído duas vezes', () => {
 describe('o padrão especificado pelo Dev, tecla a tecla', () => {
   it('o quadrado UIJK do teclado', () => {
     expect(KEYBOARD_SOLO.action1).toEqual(['KeyU']);
-    expect(KEYBOARD_SOLO.action2).toEqual(['KeyJ']);
+    // ⚠️ `Space` volta ao pulo. Ela era um segundo atalho para `jump` e ficou de fora da primeira versão
+    // desta tabela porque ninguém sabia onde o pulo morava; o Dev disse (ADR-0086) que mora em `action2`,
+    // então a barra segue o verbo certo em vez de seguir uma posição escolhida por mim.
+    expect(KEYBOARD_SOLO.action2).toEqual(['KeyJ', 'Space']);
     expect(KEYBOARD_SOLO.action3).toEqual(['KeyK']);
     expect(KEYBOARD_SOLO.action4).toEqual(['KeyI']);
   });
 
   it('os ombros e gatilhos, na simetria do QWERTY', () => {
     // 7 sobre U, 8 sobre I; Y à esquerda de U, O à direita de I.
-    expect(KEYBOARD_SOLO.action5).toEqual(['Digit7']); // L1
-    expect(KEYBOARD_SOLO.action6).toEqual(['KeyY']);   // L2
-    expect(KEYBOARD_SOLO.action7).toEqual(['Digit8']); // R1
-    expect(KEYBOARD_SOLO.action8).toEqual(['KeyO']);   // R2
+    expect(KEYBOARD_SOLO.leftShoulder).toEqual(['Digit7']); // L1
+    expect(KEYBOARD_SOLO.leftTrigger).toEqual(['KeyY']);   // L2
+    expect(KEYBOARD_SOLO.rightShoulder).toEqual(['Digit8']); // R1
+    expect(KEYBOARD_SOLO.rightTrigger).toEqual(['KeyO']);   // R2
   });
 
   it('o losango do Xbox, no mapa padrão da Gamepad API', () => {
@@ -80,10 +83,10 @@ describe('o padrão especificado pelo Dev, tecla a tecla', () => {
     expect(GAMEPAD_STANDARD.action2).toBe(0); // A
     expect(GAMEPAD_STANDARD.action3).toBe(1); // B
     expect(GAMEPAD_STANDARD.action4).toBe(3); // Y
-    expect(GAMEPAD_STANDARD.action5).toBe(4); // L1
-    expect(GAMEPAD_STANDARD.action6).toBe(6); // L2
-    expect(GAMEPAD_STANDARD.action7).toBe(5); // R1
-    expect(GAMEPAD_STANDARD.action8).toBe(7); // R2
+    expect(GAMEPAD_STANDARD.leftShoulder).toBe(4); // L1
+    expect(GAMEPAD_STANDARD.leftTrigger).toBe(6); // L2
+    expect(GAMEPAD_STANDARD.rightShoulder).toBe(5); // R1
+    expect(GAMEPAD_STANDARD.rightTrigger).toBe(7); // R2
   });
 
   it('⚠️ a rotação de 45° entre teclado e Xbox é consistente nos quatro', () => {
@@ -119,6 +122,6 @@ describe('o que um transporte NÃO alcança é dito, não escondido', () => {
 
   it('`unreachable` continua a apanhar uma ausência de verdade', () => {
     // Sem esta, o teste acima passaria com um `unreachable` que devolvesse sempre vazio.
-    expect(unreachable({ ...KEYBOARD_SOLO, action6: null })).toEqual(['action6']);
+    expect(unreachable({ ...KEYBOARD_SOLO, leftTrigger: null })).toEqual(['leftTrigger']);
   });
 });

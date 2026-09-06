@@ -15,18 +15,26 @@
 // pode querer exceder, e o registro tem de dizer o que acontece». O Dev excedeu-o em 2026-09-06, pedindo mais
 // cinco para jogos mais elaborados. O ADR-0085 é o que acontece.
 //
-// ⚠️ E OS NOMES SÃO `action5`..`action8`, NÃO `L1`/`R2`. O pedido veio nos nomes físicos do gamepad, e adotá-los
-// repetiria o defeito que o ADR-0074 existe para corrigir: `jump` era significado de PLATAFORMA dentro da
-// engine; `L1` seria significado de GAMEPAD. Num esquema de teclado L1 é uma tecla qualquer; no toque é um
-// slot; num reconhecedor de fala é uma palavra. L1/L2/R1/R2 são o BINDING PADRÃO de um transporte, e vivem em
-// `input/gamepad`. `select` é a exceção e é exceção pelo mesmo critério que já valia para `start`: é FUNÇÃO,
-// não posição — o botão que abre o que é do sistema e não do mundo do jogo.
+// ⚠️ E OS QUATRO NOVOS CHAMAM-SE `leftShoulder`, `leftTrigger`, `rightShoulder`, `rightTrigger` — NÃO
+// `action5`..`action8`. Eu argumentei pelos números e o Dev decidiu contra, em 2026-09-06, com uma razão que
+// o ADR-0086 registra: `action7` é ilegível no ponto onde alguém programa, e um vocabulário que ninguém
+// consegue ler em voz alta não é abstração, é cifra. O ADR-0085 dizia o contrário; foi supersedido, não
+// emendado.
+//
+// ⚠️ E A OBJEÇÃO CONTINUA ESCRITA, porque ela não some por a decisão ter sido outra: ombro e gatilho são
+// FORMA DE GAMEPAD. Num teclado, `leftTrigger` é a tecla Y; num toque, um slot; num reconhecedor de fala, uma
+// palavra. O ADR-0086 responde que a forma é ANATÔMICA antes de ser de gamepad — dois dedos por mão, um por
+// cima do outro — e que isso atravessa transportes melhor do que um número atravessa. Quem discordar leia os
+// dois registros, que é para isso que eles existem.
+//
+// `start` e `select` mantêm nome pelo critério que já valia para `start`: são FUNÇÃO, não posição — o que é
+// do sistema e não do mundo do jogo.
 
 /** As quatorze posições que a engine conhece. Nenhuma delas é uma palavra que uma criança leia. */
 export const ACTIONS = [
   'up', 'down', 'left', 'right',
   'action1', 'action2', 'action3', 'action4',
-  'action5', 'action6', 'action7', 'action8',
+  'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger',
   'start', 'select',
 ] as const;
 
@@ -36,15 +44,19 @@ export type Action = (typeof ACTIONS)[number];
 export const DIRECTIONS = ['up', 'down', 'left', 'right'] as const satisfies readonly Action[];
 
 /**
- * Os oito verbos. `action1`..`action4` são o núcleo que o ADR-0074 fixou; `action5`..`action8` são os quatro
- * do ADR-0085, cujo binding padrão em gamepad são os ombros e gatilhos.
+ * Os oito verbos, em DUAS metades que se nomeiam por critérios diferentes, e isso é decisão e não descuido:
+ *
+ * · `action1`..`action4` — o losango. NUMERADOS, porque quatro posições em cruz não têm nomes que
+ *   atravessem gêneros: o que uma plataforma chama de pulo, um quiz chama de confirmar.
+ * · `leftShoulder`, `leftTrigger`, `rightShoulder`, `rightTrigger` — NOMEADOS pela anatomia da mão: dois
+ *   dedos por mão, um por cima do outro. ADR-0086.
  *
  * ⚠️ NÃO HÁ HIERARQUIA ENTRE ELES no contrato. A ordem é a de apresentação — no assistente do gamepad, na
- * tela de remapeamento — e não uma escala de importância: um jogo pode usar `action7` e nenhuma das outras.
+ * tela de remapeamento — e não uma escala de importância: um jogo pode usar `rightShoulder` e nenhuma outra.
  */
 export const VERBS = [
   'action1', 'action2', 'action3', 'action4',
-  'action5', 'action6', 'action7', 'action8',
+  'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger',
 ] as const satisfies readonly Action[];
 
 /**

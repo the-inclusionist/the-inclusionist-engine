@@ -26,6 +26,16 @@ metadata:
              in §1 governs, and is in fact what decided the NAMES: positions and not meanings, the game
              supplying the words, and no abstract name reaching a person — which is why the request's own
              vocabulary (`L1`, `L2`, `R1`, `R2`) became a gamepad BINDING and not an action name."
+    - by: ADR-0086
+      what: "§1, and ONLY the PLATFORMER PRESET — the sentence `what today is jump is action1; run is
+             action1-mod; swap is action2; especial is action3`. The Dev corrected three of the four on
+             2026-09-06: run is `action1`, jump is `action2`, especial is `action3` (unchanged), swap is
+             `action4`. ⚠️ AND THE CORRECTION IS THE CONSERVATIVE READING, WHICH IS THE OPPOSITE OF HOW IT
+             LOOKS: measured against `input/keyboard.ts:36-37` and `input/gamepad.ts:111`, the corrected
+             preset moves ZERO of four verbs off the key and button a child uses today, and the mapping
+             written here would have moved THREE. Everything else in §1 governs — positions not meanings,
+             the game supplying the words, no abstract name reaching a person. ADR-0085's clause about the
+             SIZE of the set is separate and also still in force."
   decision-makers: [Dev]
   consulted:
     - "ADR-0033 — `input arrives as INTENT, never as meaning`. This record is that sentence taken to the

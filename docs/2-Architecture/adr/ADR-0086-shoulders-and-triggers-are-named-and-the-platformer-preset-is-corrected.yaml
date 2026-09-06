@@ -1,0 +1,156 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  supersedes-in-part: [ADR-0074, ADR-0085]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0085 §1 — SUPERSEDED IN PART: it named the four new verbs `action5`..`action8` and argued at length
+       that gamepad vocabulary in the abstract set repeats ADR-0074's defect. The Dev heard the argument and
+       decided against it the same day. The record is superseded rather than edited, because the reasoning it
+       carries was real and the next reader should be able to weigh both"
+    - "ADR-0074 §1 — SUPERSEDED IN PART, in the PLATFORMER PRESET only: it said `jump` is `action1`, `swap` is
+       `action2` and `run` is the fourth verb. The Dev corrected all three"
+    - "ADR-0077 — the fourth verb became `action4`; that stands, and what changes is which word sits on it"
+    - "ADR-0013 — the keyboard schemes this preset has to keep working"
+    - "issue #103 — the migration that will execute the preset"
+  informed: []
+
+title: The four new verbs are named for the HAND — shoulders and triggers — and the platformer preset is corrected to what the keyboard already does
+
+context-and-problem-statement: |
+  Two corrections in one record, and they are one subject: what the fourteen positions are CALLED and which
+  word the platformer puts on each.
+
+  ⚠️ FIRST, THE NAMES, AND THIS RECORD SUPERSEDES ONE WRITTEN HOURS EARLIER. ADR-0085 named the four new verbs
+  `action5`..`action8` and argued that adopting the gamepad's vocabulary would repeat the defect ADR-0074 was
+  written to fix. The Dev read that argument and answered with a different one: *"eu prefiro left shoulder /
+  L1, left trigger / L2, right shoulder / R1 e right trigger / R2 do que action 5, action 6, action 7 e action
+  8, para programar."*
+
+  The reason is the cost ADR-0085 itself listed among its own disadvantages and then paid anyway: `action7` is
+  unreadable at the point where somebody writes code. A vocabulary nobody can say out loud is not an
+  abstraction; it is a cipher, and a project built by volunteers (ADR-0070) cannot afford one.
+
+  ⚠️ SECOND, THE PRESET, AND HERE THE OLD RECORD WAS SIMPLY WRONG ABOUT ITS OWN GAME. ADR-0074 §1 wrote *"what
+  today is `jump` is `action1`; `run` is `action1-mod`; `swap` is `action2`; `especial` is `action3`"*. The Dev
+  corrected it: **run is `action1`, jump is `action2`, especial is `action3`, swap is `action4`.**
+
+decision-drivers:
+- "⚠️ MEASURED, and it decides the second half by itself: the corrected preset moves ZERO keys and ZERO
+   buttons from what a child uses today. ADR-0074's mapping would have moved THREE of four."
+- "`action7` cannot be read aloud; `rightShoulder` can. The reader of engine source is a volunteer."
+- "The names must survive transports that have no shoulders, which is the objection ADR-0085 raised and this
+   record has to answer rather than ignore."
+
+considered-options:
+- "P1 - `leftShoulder` · `leftTrigger` · `rightShoulder` · `rightTrigger`, and the platformer preset corrected"
+- "P2 - keep `action5`..`action8` as ADR-0085 wrote them"
+- "P3 - `L1` · `L2` · `R1` · `R2` verbatim, as the request first arrived"
+
+pros-and-cons-of-the-options:
+  P1:
+    good:
+    - "Readable at the point of use, which is the whole of the Dev's reason."
+    - "⚠️ The names are ANATOMICAL before they are gamepad: two fingers per hand, one above the other. That
+       survives a transport with no shoulders better than a number does - a touch layout can put two stacked
+       buttons under each thumb and the name still describes where the finger goes."
+    - "The preset correction costs nothing to execute, because it describes what the code already does."
+    bad:
+    - "⚠️ It is still hardware-shaped, and ADR-0085's objection does not evaporate: on a speech recogniser
+       `leftTrigger` is a word with no left and no trigger. The answer is that `up` has the same problem in a
+       quiz and nobody minds, but the answer is a mitigation and not a refutation."
+    - "The eight verbs are now named by TWO different criteria - four numbered, four anatomical - which is an
+       asymmetry a reader will notice and has to be told about."
+  P2:
+    good:
+    - "One vocabulary, one criterion, no asymmetry."
+    bad:
+    - "The Dev, who writes the code, says it does not read. That is the measurement that matters for a name."
+  P3:
+    good:
+    - "Exactly the request, and a gamepad user recognises the label on the device."
+    bad:
+    - "⚠️ `L1` is Sony and Xbox; Nintendo writes `L`/`ZL`; a generic pad writes what it likes. Naming the
+       engine's vocabulary after one manufacturer's silkscreen is narrower than naming it after the hand."
+
+decision-outcome:
+  chosen-option:
+    link: "P1 - named for the hand, and the preset corrected"
+    justification: |
+      ===== 1. THE EIGHT VERBS, NAMED BY TWO CRITERIA ON PURPOSE =====
+
+        `action1` · `action2` · `action3` · `action4`
+            the diamond. NUMBERED, because four positions in a cross have no name that crosses genres:
+            what a platformer calls jump, a quiz calls confirm.
+
+        `leftShoulder` · `leftTrigger` · `rightShoulder` · `rightTrigger`
+            NAMED, for the anatomy of the hand: two fingers per hand, one above the other.
+
+      ⚠️ THE ASYMMETRY IS THE POINT AND NOT AN OVERSIGHT. The diamond has no anatomical name - a thumb reaches
+      all four - so numbering is the only honest option there. The shoulders do: index and middle finger, left
+      and right. Where a name exists that describes the HAND, it is better than a number; where none exists, a
+      number is better than a borrowed metaphor.
+
+      ===== 2. THE PLATFORMER PRESET, CORRECTED =====
+
+        `action1` -> run        keyboard U     pad X (b2)
+        `action2` -> jump       keyboard J/Space   pad A (b0)
+        `action3` -> especial   keyboard K     pad B (b1)
+        `action4` -> swap       keyboard I     pad Y (b3)
+
+      ⚠️ AND THE MEASUREMENT THAT MAKES THIS NOT A MATTER OF TASTE. Compared against what
+      `input/keyboard.ts:36-37` and `input/gamepad.ts:111` actually do today:
+
+        · the CORRECTED preset moves **0** of 4 verbs off their key and off their button;
+        · ADR-0074's preset would have moved **3** of 4.
+
+      The record that looked like the conservative one was the disruptive one. A child who has played this
+      game keeps every key and every button.
+
+      ===== 3. `Space` RETURNS TO THE JUMP =====
+      The first version of the binding table left `Space` out, because the solo scheme had it as a second
+      shortcut for `jump` and nobody had yet said which position jump occupied - binding it unasked would have
+      been deciding that. Now it is said: `action2` is `['KeyJ', 'Space']`.
+
+      ===== 4. WHAT WAS SEARCHED FOR AND NOT FOUND =====
+      The Dev asked for the wrong nomenclature to be hunted down in the code after the record changed.
+      Measured: **the code never carried it.** `core/actions.ts` and `input/default-bindings.ts` name positions
+      and never say which verb sits on one; `input/gamepad.ts`, `input/edges.ts` and `input/keydown.ts` still
+      speak the eight platformer words and know nothing of the abstract set. The wrong mapping existed in
+      exactly one place - ADR-0074 §1, lines 122-123 - which is a historical record and is superseded here
+      rather than rewritten (ADR-0057 §4).
+
+  consequences:
+    positive:
+    - "The engine's action vocabulary can be read aloud, which is what the person writing a game does with it."
+    - "⚠️ The platformer preset is now a DESCRIPTION of the running code rather than a plan for it, so #103
+       can execute it without asking a child to relearn anything."
+    - "`Space` follows the verb rather than a position chosen by whoever wrote the table."
+    negative:
+    - "⚠️ Two naming criteria in one list, which a reader meets without warning unless the module says so - it
+       does, and that comment is now load-bearing."
+    - "The hardware-shape objection from ADR-0085 stands unrefuted, only outweighed. On a speech recogniser or
+       an eye tracker, `leftTrigger` names nothing that exists."
+    - "A record accepted the same morning is superseded the same afternoon, which is churn in the index even
+       when each step was right."
+    neutral:
+    - "Nothing in the running game changes: no transport reads `core/actions.ts` yet (#103)."
+  confirmation: |
+    · `tests/actions-catorze.node.test.js` asserts the four names exist and that `L1`, `L2`, `R1`, `R2`,
+      `SELECT`, `ZL`, `LB` and `RT` are NOT actions - the boundary moved, it did not disappear.
+    · `tests/default-bindings.node.test.js` asserts `action2` is `['KeyJ', 'Space']` and that nothing is bound
+      twice; `Space` passing the duplicate check is what proves it collides with nothing.
+    · The preset's zero-movement claim is reproducible: compare `input/keyboard.ts:36-37` and
+      `input/gamepad.ts:111` against §2's table, verb by verb.
+
+    ⚠️ WHAT NO GATE CONFIRMS: the preset itself. It lives in this record and in no code, because the module
+    that would hold it does not exist until #103 wires the transports. The zero-movement measurement was made
+    by hand and is written above so it can be re-made rather than trusted.
+
+more-information: |
+  ⚠️ ONE THING THIS RECORD DOES NOT TOUCH, and it is the conflict ADR-0085 handed to #103: `input/gamepad.ts`
+  reads `run: b(2) || b(5) || b(7)`. Under §2, `run` is `action1` and `action1` is b(2) alone - so b(5) and
+  b(7) stop being run and become `rightShoulder` and `rightTrigger`. That is still a real change for a player
+  who used R1 to run, and it is the one place where §2's "zero movement" claim has an asterisk: zero verbs
+  move, but `run` loses two of its three buttons.
