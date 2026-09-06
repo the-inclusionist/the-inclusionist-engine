@@ -37,8 +37,9 @@ export function setJSON(key: string, obj: unknown): void { try { set(key, JSON.s
 //
 // Uma criança cega configura o modo cego, a bengala, a voz, a velocidade da narração. Uma criança daltônica
 // escolhe a correção. Uma criança disléxica escolhe a fonte. Se cada jogo do catálogo tivesse o próprio
-// espaço de nomes, ela teria de REFAZER tudo isso em cada um dos 35 jogos — e quem mais depende dos ajustes
-// é justamente quem tem menos margem para refazê-los.
+// espaço de nomes, ela teria de REFAZER tudo isso em cada jogo do catálogo — e quem mais depende dos ajustes
+// é justamente quem tem menos margem para refazê-los. (O número que estava aqui era 35, do plano que morreu
+// em 2026-08-28; o catálogo do MVP são 300+ jogos, o que só torna o argumento mais forte.)
 //
 // Então são DOIS escopos, e a linha entre eles não é técnica, é de quem a coisa pertence:
 //
@@ -52,11 +53,20 @@ export function setJSON(key: string, obj: unknown): void { try { set(key, JSON.s
 // boot, porque `core/state` lê no IMPORT — uma migração agendada chegaria tarde. E a chave velha fica onde
 // está: é dado da criança, não meu para apagar, e a sua permanência é o que torna um retorno possível.
 
-/** Id deste jogo dentro do catálogo. O prefixo do escopo DO JOGO sai daqui. */
-export const JOGO_ID = 'inclusionist';
-
-/** Nome completo de uma chave do escopo DO JOGO. */
-export function kJogo(nome: string): string { return 'incl.' + JOGO_ID + '.' + nome; }
+/**
+ * Nome completo de uma chave do escopo DO JOGO.
+ *
+ * ⚠️ O ID ENTRA COMO ARGUMENTO, e ele já foi uma constante aqui (`JOGO_ID = 'inclusionist'`). Pelo teste do
+ * ADR-0080 — *um segundo jogo quereria um valor diferente aqui?* — a resposta é sim e é imediata: dois jogos
+ * no mesmo perfil de navegador colidiam em `activity`, `quizlevel`, `cenario`, `tabsel`, `fracnot` e em toda
+ * gravação `attract_*`. Um sobrescrevia o progresso do outro sem erro nenhum.
+ *
+ * ⚠️ E O ID NÃO VEM DA DECLARAÇÃO, que era o desenho óbvio. Ele não pode: `game/state` lê o armazenamento no
+ * IMPORT, e o import corre antes de qualquer `createGame()`. Um id vindo da declaração chegaria depois de as
+ * três chaves já terem sido resolvidas — contra vazio, e em silêncio. Quem sabe o próprio id é o JOGO, que o
+ * passa como constante sua; o ADR-0080 proíbe a ENGINE de o saber, não o jogo.
+ */
+export function kJogo(jogo: string, nome: string): string { return 'incl.' + jogo + '.' + nome; }
 
 /**
  * Lê a chave NOVA; se ela ainda não existe, herda o valor da LEGADA. Só de leitura: quem grava, grava na nova.
@@ -88,11 +98,16 @@ export const KEYS = {
   hearingloss: 'incl_hearingloss',
   // atividade / quiz / cenário — ESCOPO DO JOGO (ver os dois escopos acima). `*Legado` é o nome antigo, de
   // onde a leitura herda uma vez; a escrita vai só para o novo.
-  activity: kJogo('activity'), activityLegado: 'incl_activity',
-  quizlevel: kJogo('quizlevel'), quizlevelLegado: 'incl_quizlevel',
-  cenario: kJogo('cenario'), cenarioLegado: 'incl_cenario',
-  tabsel: kJogo('tabsel'), tabselLegado: 'incl_tabsel',
-  fracnot: kJogo('fracnot'), fracnotLegado: 'incl_fracnot',
+  //
+  // ⚠️ SÃO FUNÇÕES DO ID DO JOGO, e as da criança são strings. A diferença de FORMA é o que impede o engano:
+  // não há como prefixar por engano uma preferência da criança, porque ela não tem onde receber o id — e não
+  // há como esquecer de escopar uma chave da partida, porque sem o argumento não compila. A regra que antes
+  // vivia só num comentário passou a viver no tipo.
+  activity: (jogo: string): string => kJogo(jogo, 'activity'), activityLegado: 'incl_activity',
+  quizlevel: (jogo: string): string => kJogo(jogo, 'quizlevel'), quizlevelLegado: 'incl_quizlevel',
+  cenario: (jogo: string): string => kJogo(jogo, 'cenario'), cenarioLegado: 'incl_cenario',
+  tabsel: (jogo: string): string => kJogo(jogo, 'tabsel'), tabselLegado: 'incl_tabsel',
+  fracnot: (jogo: string): string => kJogo(jogo, 'fracnot'), fracnotLegado: 'incl_fracnot',
   // visual / contraste / cor
   viz: 'incl_viz', lq: 'incl_lq', cbsafe: 'incl_cbsafe', ownercolors: 'incl_ownercolors',
   outfg: 'incl_outfg', outbg: 'incl_outbg', hcrole: 'incl_hcrole', juice: 'incl_juice', crt: 'incl_crt2',
@@ -121,6 +136,6 @@ export const KEYS = {
   rmFlavorP: (i: number): string => 'incl_rmFlavor_p' + i,
   // demo/attract: uma gravação por cenário (fn em vez de string — chave parametrizada). ESCOPO DO JOGO: a
   // gravação é de uma fase DESTE jogo e não faz sentido nenhum em outro.
-  attract: (cen: string): string => kJogo('attract_' + cen),
+  attract: (jogo: string, cen: string): string => kJogo(jogo, 'attract_' + cen),
   attractLegado: (cen: string): string => 'incl_attract_' + cen,
 };

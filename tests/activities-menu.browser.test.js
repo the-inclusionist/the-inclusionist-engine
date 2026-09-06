@@ -17,6 +17,7 @@ const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
 import { activity as ACTIVITY, setActivityValue } from '../app/js/game/state.js'; // GAME desde a Fase B (ADR-0038)
+import { JOGO } from '../app/js/game/save-id.js'; // ADR-0080: o id que a engine deixou de guardar
 import { modeForActivity } from '../app/js/educational/activities-registry.js';
 import * as store from '../app/js/platform/storage.js';
 
@@ -39,7 +40,8 @@ function markup() {
 function makeCtx(over = {}) {
   const calls = { said: [], alerted: [], shown: [], mode: [], quizLevel: [], cenario: [], numPlayers: [], restart: 0, phase: [], hideTips: 0, fullscreen: 0 };
   const ctx = {
-    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
+    gameId: JOGO, // ADR-0080: quem sabe o id do jogo e o jogo
+  getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     $,
     getActiveElement: () => document.activeElement,
     srSay: (t) => calls.said.push(t),
@@ -69,7 +71,7 @@ function clickAndSettle(el) { el.click(); vi.advanceTimersByTime(230); }
 
 beforeEach(() => {
   markup();
-  store.remove(store.KEYS.tabsel); store.remove(store.KEYS.fracnot);
+  store.remove(store.KEYS.tabsel(JOGO)); store.remove(store.KEYS.fracnot(JOGO));
   setActivityValue('ludico');
   players.length = 0; players.push({ alfWins: 3 });
   setNumPlayersValue(1);
@@ -178,11 +180,11 @@ describe('seleção persistida sobrevive à reconstrução do menu', () => {
     expect($('#tm-tab button[data-tab-n="3"]').getAttribute('aria-pressed')).toBe('false');
     clickAndSettle($('#tm-mat button[data-act-id="mat6"]')); // rebuild do submenu
     expect($('#tm-tab button[data-tab-n="3"]').getAttribute('aria-pressed')).toBe('false');
-    expect(store.getJSON(store.KEYS.tabsel)).not.toContain(3);
+    expect(store.getJSON(store.KEYS.tabsel(JOGO))).not.toContain(3);
   });
 
   it('a notação ligada aparece realçada no markup reconstruído', () => {
-    store.setJSON(store.KEYS.fracnot, { v: 0, d: 0, dec: 1, pct: 0, mix: 0 });
+    store.setJSON(store.KEYS.fracnot(JOGO), { v: 0, d: 0, dec: 1, pct: 0, mix: 0 });
     const { ctx } = makeCtx();
     initActivitiesMenu(ctx);
     // O estado deixou de ser SÓ cor de fundo (`.tab-on`) e passou a ter marca visível e `aria-checked` —
@@ -197,7 +199,7 @@ describe('seleção persistida sobrevive à reconstrução do menu', () => {
     // O buraco que este caso fecha era meu: eu gateei o MARKUP INICIAL (`fracNotsHtml`) e não a ALTERNÂNCIA.
     // O handler continuou escrevendo `tab-on`/`aria-pressed` — os atributos de antes —, então o estado mudava
     // por dentro e a tela não dizia nada. MEDIDO no navegador: clicar não mexia em marca nenhuma.
-    store.setJSON(store.KEYS.fracnot, { v: 1, d: 1, dec: 1, pct: 0, mix: 0 });
+    store.setJSON(store.KEYS.fracnot(JOGO), { v: 1, d: 1, dec: 1, pct: 0, mix: 0 });
     const { ctx } = makeCtx();
     initActivitiesMenu(ctx);
     const pct = $('#tm-fr button[data-fnot="pct"]');

@@ -76,6 +76,14 @@ export interface CenarioOption { readonly id: string; readonly nome: string }
 export type { DomQuery } from '../core/dom-query.js';
 
 export interface ActivitiesMenuCtx {
+  /**
+   * O ID DO JOGO, para escopar as duas chaves que pertencem a ESTA partida (`tabsel`, `fracnot`).
+   *
+   * ⚠️ Entra pelo ctx e não por constante porque a engine não pode tê-lo (ADR-0080): este menu serve
+   * qualquer jogo do catálogo, e duas partidas diferentes que escolhessem a mesma tabuada no mesmo perfil de
+   * navegador escreviam uma por cima da outra. Quem sabe o id é o jogo, e ele o passa aqui.
+   */
+  gameId: string;
   /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
    *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
    *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
@@ -480,8 +488,8 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
   if (!isValidActivityId(ctx.getActivityId() ?? '')) ctx.setActivityId(DEFAULT_ACTIVITY_ID);
 
   // Escopo DO JOGO agora (ver os dois escopos em platform/storage); a leitura herda do nome antigo.
-  const tabSel: number[] = sanitizeTabSel(store.getJSONComLegado(store.KEYS.tabsel, store.KEYS.tabselLegado, null));
-  const fracNot: FracNot = sanitizeFracNot(store.getJSONComLegado(store.KEYS.fracnot, store.KEYS.fracnotLegado, null));
+  const tabSel: number[] = sanitizeTabSel(store.getJSONComLegado(store.KEYS.tabsel(ctx.gameId), store.KEYS.tabselLegado, null));
+  const fracNot: FracNot = sanitizeFracNot(store.getJSONComLegado(store.KEYS.fracnot(ctx.gameId), store.KEYS.fracnotLegado, null));
 
   /**
    * Escreve o rótulo do #np-btn — o VISÍVEL e o do leitor de tela, juntos.
@@ -638,7 +646,7 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
     if (b.dataset.tmFr) { go(() => { ctx.titleShow('tm-fr'); ctx.srSay(t('sr.menu.fractionsIntro')); }); return; }
     if (b.dataset.fnot) { const k = b.dataset.fnot as FracNotKey; // NOTATION toggle (immediate; at least 1 ALWAYS on)
       if (!canToggleFracNot(fracNot, k)) { ctx.srAlert(t('sr.menu.keepOneNotation')); return; }
-      fracNot[k] = fracNot[k] ? 0 : 1; store.setJSON(store.KEYS.fracnot, fracNot);
+      fracNot[k] = fracNot[k] ? 0 : 1; store.setJSON(store.KEYS.fracnot(ctx.gameId), fracNot);
       // O ESTADO EM DUAS FORMAS, e nenhuma delas é cor: `aria-checked` para quem escuta e a MARCA ☑/☐ para
       // quem vê. Era `tab-on` + `aria-pressed` — realce de fundo e papel de botão de comando —, e o realce
       // sozinho reprova a WCAG 1.4.1: quem tem baixa visão ou daltonismo ficava sem resposta para "quais
@@ -656,7 +664,7 @@ export function initActivitiesMenu(ctx: ActivitiesMenuCtx): ActivitiesMenuApi {
     if (b.id === 'tab-play') { if (!tabSel.length) { ctx.srAlert(t('sr.menu.pickOneNumber')); return; } go(() => startActivity(tabFor)); return; }
     if (b.dataset.tabN != null) { const n = +b.dataset.tabN, i = tabSel.indexOf(n); // toggle: no screen change → immediate
       if (i >= 0) tabSel.splice(i, 1); else tabSel.push(n);
-      store.setJSON(store.KEYS.tabsel, tabSel);
+      store.setJSON(store.KEYS.tabsel(ctx.gameId), tabSel);
       b.classList.toggle('tab-on', i < 0); b.setAttribute('aria-pressed', String(i < 0));
       ctx.srSay(t(i < 0 ? 'sr.menu.numberOn' : 'sr.menu.numberOff', { n })); return;
     }

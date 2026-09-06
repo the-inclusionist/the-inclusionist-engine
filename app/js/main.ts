@@ -14,6 +14,7 @@ import * as tiles from './core/tiles.js'; // legend + parser do mapa em glifo
 import * as store from './platform/storage.js'; // camada de persistência
 import { emit, vizMode, initVizMode, modoCego, setModoCegoValue, caneBlockDiv, setCaneBlockDivValue, wheelchair, setWheelchairValue, oneButton, setOneButtonValue, cbSafe, setCbSafeValue, ownerColors, setOwnerColorsValue, hcOutlineFg, setOutlineFgValue, hcOutlineBg, setOutlineBgValue, letterCase, setLetterCaseValue, captionsOn, setCaptionsOnValue, menuIndexOn, defaultReducedMotion } from './core/state.js'; // estado compartilhado
 import { cenario as CENARIO, setCenarioValue, activity as ACTIVITY, setActivityValue } from './game/state.js'; // GAME (ADR-0038, Fase B)
+import { JOGO } from './game/save-id.js'; // ADR-0080: o id deste jogo, que a engine deixou de guardar
 import { createRunState } from './core/run-state.js'; // ADR-0038 Fase B: a RODADA como fábrica
 import { criarCenasDoJogo, type Fase } from './game/cenas.js'; // as três cenas DESTE jogo (ADR-0030 C3)
 import type { FatosDaCena } from './core/scenes.js';
@@ -1360,6 +1361,7 @@ $('#btn-again')?.addEventListener('click',()=>{ restartGame(); $('#game-region')
    textura de parallax e nao tem o que fazer dentro de um menu. */
 if(!isValidActivityId(ACTIVITY)) setActivityValue(DEFAULT_ACTIVITY_ID); // valida o valor inicial contra o catalogo
 const activitiesMenu = initActivitiesMenu({
+  gameId: JOGO, // ADR-0080: quem sabe o id do jogo e o jogo; a engine so o recebe
   getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   $, getActiveElement: () => document.activeElement, srSay, srAlert,
   titleShow: titleUI.show,

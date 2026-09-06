@@ -25,6 +25,7 @@
 // `activity`, `cenario`, `tabsel` e `fracnot` moram lá pelo mesmo motivo; só `quizlevel` chama a atenção do
 // gate de vocabulário, e chama porque o casador contém a palavra "quiz" — não porque a fronteira vazou ali.
 import * as store from '../platform/storage.js';
+import { JOGO } from './save-id.js';
 import { emit } from '../core/state.js';
 // O TIPO DA MOEDA, e por que ele só pôde chegar aqui agora. Enquanto `coins` morava em `core/state`, ele era
 // obrigatoriamente `unknown[]` — a engine não pode conhecer uma moeda, e o comentário de lá dizia isso. O item
@@ -38,14 +39,14 @@ import type { Coin } from './coins.js';
 // Escrevia `'incl_quizlevel'` à mão, contornando o registro que se diz a documentação das chaves. Lê pelo
 // registro, com herança da chave antiga (`getComLegado`), e escreve só na nova.
 export let quizLevel: number = (() => {
-  const bruto = store.getComLegado(store.KEYS.quizlevel, store.KEYS.quizlevelLegado, null);
+  const bruto = store.getComLegado(store.KEYS.quizlevel(JOGO), store.KEYS.quizlevelLegado, null);
   const v = bruto == null ? 2 : parseFloat(bruto);       // o padrão é 2, e é VERBATIM: mudar de camada não é
   return isFinite(v) && v >= 1 && v <= 5 ? v : 2;        // hora de mudar o nível em que a criança começa
 })();
 
 export function setQuizLevelValue(n: number): void {
   quizLevel = Math.max(1, Math.min(5, n | 0));
-  store.set(store.KEYS.quizlevel, String(quizLevel));
+  store.set(store.KEYS.quizlevel(JOGO), String(quizLevel));
   emit('quizLevel', quizLevel);
 }
 
@@ -79,17 +80,17 @@ export function setCoins(arr: Coin[]): void { coins = arr; emit('coins', arr); }
  * salvo por uma versão antiga precisa virar um valor válido antes de qualquer um o consultar.
  */
 export let cenario: string = ((v: string) => (v === 'noite' ? 'espaco' : v))(
-  store.getComLegado(store.KEYS.cenario, store.KEYS.cenarioLegado, 'cidade'),
+  store.getComLegado(store.KEYS.cenario(JOGO), store.KEYS.cenarioLegado, 'cidade'),
 );
 export function setCenarioValue(theme: string): void {
-  cenario = theme; store.set(store.KEYS.cenario, theme); emit('cenario', theme);
+  cenario = theme; store.set(store.KEYS.cenario(JOGO), theme); emit('cenario', theme);
 }
 
 /** O ID DA ATIVIDADE escolhida. A validação contra o catálogo fica em `ui/activities-menu`; aqui é só o
  *  valor cru, a persistência e o evento. */
-export let activity: string = store.getComLegado(store.KEYS.activity, store.KEYS.activityLegado, 'ludico');
+export let activity: string = store.getComLegado(store.KEYS.activity(JOGO), store.KEYS.activityLegado, 'ludico');
 export function setActivityValue(id: string): void {
-  activity = id; store.set(store.KEYS.activity, id); emit('activity', id);
+  activity = id; store.set(store.KEYS.activity(JOGO), id); emit('activity', id);
 }
 
 /* ===================== OS EVENTOS DESTE JOGO (Fase C) ===================== */

@@ -27,6 +27,7 @@ const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
 import { activity as ACTIVITY, setActivityValue } from '../app/js/game/state.js'; // GAME desde a Fase B (ADR-0038)
+import { JOGO } from '../app/js/game/save-id.js'; // ADR-0080: o id que a engine deixou de guardar
 import * as store from '../app/js/platform/storage.js';
 
 // ---------------------------------------------------------------------------------------------
@@ -121,7 +122,8 @@ function makeCtx(over = {}) {
   };
   const ctx = {
     $: stage.$,
-    getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
+    gameId: JOGO, // ADR-0080: quem sabe o id do jogo e o jogo
+  getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
     getActiveElement: () => ACTIVE,
     srSay: (t) => calls.said.push(t),
     srAlert: (t) => calls.alerted.push(t),
@@ -453,14 +455,14 @@ describe('initActivitiesMenu — boot', () => {
   it('não faz I/O antes de ser chamado: só o init toca no armazenamento', () => {
     // O módulo já foi importado no topo do arquivo; se houvesse leitura no import, incl_tabsel
     // teria sido lido antes deste ponto — a prova é que gravar AGORA muda o que o init enxerga.
-    store.setJSON(store.KEYS.tabsel, [8]);
+    store.setJSON(store.KEYS.tabsel(JOGO), [8]);
     const { ctx } = makeCtx();
     const api = initActivitiesMenu(ctx);
     expect(api.tabSel).toEqual([8]);
   });
 
   it('tabuada corrompida no armazenamento não derruba o boot e não vira lixo utilizável', () => {
-    localStorage.setItem(store.KEYS.tabsel, '{isto não é JSON');
+    localStorage.setItem(store.KEYS.tabsel(JOGO), '{isto não é JSON');
     const { ctx } = makeCtx();
     let api;
     expect(() => { api = initActivitiesMenu(ctx); }).not.toThrow();
@@ -474,7 +476,7 @@ describe('initActivitiesMenu — boot', () => {
     const { ctx } = makeCtx();
     initActivitiesMenu(ctx);
     expect(ACTIVITY).toBe(DEFAULT_ACTIVITY_ID);
-    expect(store.get(store.KEYS.activity)).toBe(DEFAULT_ACTIVITY_ID);
+    expect(store.get(store.KEYS.activity(JOGO))).toBe(DEFAULT_ACTIVITY_ID);
   });
 
   it('atividade válida sobrevive ao boot (a guarda não é um reset disfarçado)', () => {
@@ -508,10 +510,10 @@ describe('initActivitiesMenu — escolher a atividade', () => {
     const { ctx, calls } = makeCtx();
     const api = initActivitiesMenu(ctx);
     api.setActivity('mat9000');
-    expect(store.get(store.KEYS.activity)).toBe(DEFAULT_ACTIVITY_ID);
+    expect(store.get(store.KEYS.activity(JOGO))).toBe(DEFAULT_ACTIVITY_ID);
     // O modo NÃO é mais escrito por este menu (ADR-0040): ele DERIVA da atividade que a linha acima gravou.
     // Afirmar a derivação é mais forte que afirmar a chamada — a chamada podia mentir, e mentia (issue #54).
-    expect(modeForActivity(store.get(store.KEYS.activity))).toBe('ludico');
+    expect(modeForActivity(store.get(store.KEYS.activity(JOGO)))).toBe('ludico');
     expect(calls.quizLevel).toEqual([]); // lúdico não mexe no nível de alfabetização
   });
 
@@ -520,7 +522,7 @@ describe('initActivitiesMenu — escolher a atividade', () => {
     const api = initActivitiesMenu(ctx);
     api.setActivity('alf3');
     expect(calls.quizLevel).toEqual([[3, false]]);
-    expect(modeForActivity(store.get(store.KEYS.activity))).toBe('silabas');
+    expect(modeForActivity(store.get(store.KEYS.activity(JOGO)))).toBe('silabas');
     expect(api.actCat()).toBe('alf');
   });
 
@@ -528,7 +530,7 @@ describe('initActivitiesMenu — escolher a atividade', () => {
     const { ctx, calls } = makeCtx();
     const api = initActivitiesMenu(ctx);
     api.setActivity('mat5');
-    expect(modeForActivity(store.get(store.KEYS.activity))).toBe('somasub');
+    expect(modeForActivity(store.get(store.KEYS.activity(JOGO)))).toBe('somasub');
     expect(calls.quizLevel).toEqual([]);
   });
 
@@ -544,11 +546,11 @@ describe('initActivitiesMenu — escolher a atividade', () => {
   });
 
   it('startActivity NÃO comita a atividade — só reallyStart comita (o cenário ainda pode ser cancelado)', () => {
-    store.set(store.KEYS.activity, 'ludico');
+    store.set(store.KEYS.activity(JOGO), 'ludico');
     const { ctx, calls } = makeCtx();
     const api = initActivitiesMenu(ctx);
     api.startActivity('alf4');
-    expect(store.get(store.KEYS.activity)).toBe('ludico');
+    expect(store.get(store.KEYS.activity(JOGO))).toBe('ludico');
     expect(calls.phase).toEqual([]);
   });
 });
@@ -697,10 +699,10 @@ describe('initActivitiesMenu — despacho de cliques do menu', () => {
     const b7 = submenuBtn(stage, 'tm-tab', { tabN: '7' });
     b7.click();
     expect(api.tabSel).toContain(7);
-    expect(store.getJSON(store.KEYS.tabsel)).toContain(7);
+    expect(store.getJSON(store.KEYS.tabsel(JOGO))).toContain(7);
     b7.click();
     expect(api.tabSel).not.toContain(7);
-    expect(store.getJSON(store.KEYS.tabsel)).not.toContain(7);
+    expect(store.getJSON(store.KEYS.tabsel(JOGO))).not.toContain(7);
   });
 
   it('o botão do número reflete o estado na classe E no aria-pressed', () => {
@@ -716,7 +718,7 @@ describe('initActivitiesMenu — despacho de cliques do menu', () => {
   });
 
   it('"Jogar" sem nenhum número escolhido recusa com alerta e não abre o cenário', () => {
-    store.setJSON(store.KEYS.tabsel, ['x']); // sobra vazia depois do filtro
+    store.setJSON(store.KEYS.tabsel(JOGO), ['x']); // sobra vazia depois do filtro
     const { ctx, calls, stage } = makeCtx();
     const api = initActivitiesMenu(ctx);
     expect(api.tabSel).toEqual([]);
@@ -729,7 +731,7 @@ describe('initActivitiesMenu — despacho de cliques do menu', () => {
   });
 
   it('a última notação de fração ligada não pode ser desligada', () => {
-    store.setJSON(store.KEYS.fracnot, { v: 1, d: 0, dec: 0, pct: 0, mix: 0 });
+    store.setJSON(store.KEYS.fracnot(JOGO), { v: 1, d: 0, dec: 0, pct: 0, mix: 0 });
     const { ctx, calls, stage } = makeCtx();
     const api = initActivitiesMenu(ctx);
     const bv = submenuBtn(stage, 'tm-fr', { fnot: 'v' });
@@ -747,7 +749,7 @@ describe('initActivitiesMenu — despacho de cliques do menu', () => {
     expect(api.fracNot.pct).toBe(1);
     bv.click();
     expect(api.fracNot.v).toBe(0);
-    expect(store.getJSON(store.KEYS.fracnot)).toEqual({ v: 0, d: 0, dec: 0, pct: 1, mix: 0 });
+    expect(store.getJSON(store.KEYS.fracnot(JOGO))).toEqual({ v: 0, d: 0, dec: 0, pct: 1, mix: 0 });
   });
 
   it('atividade que escolhe números abre o seletor com o título dela; as outras vão direto ao cenário', () => {

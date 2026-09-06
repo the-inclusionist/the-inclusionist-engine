@@ -6,6 +6,7 @@
 // Extraído do game.js (modularização Tier 1). Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 
 import * as store from '../platform/storage.js';
+import { JOGO } from './save-id.js';
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 
@@ -59,7 +60,7 @@ export function createAttract(ctx: AttractCtx): AttractCtl {
   let recT = 0;
 
   const attractRecFor = (cen: string): number[][] | null => {
-    const a = store.getJSONComLegado<number[][]>(store.KEYS.attract(cen), store.KEYS.attractLegado(cen), null);
+    const a = store.getJSONComLegado<number[][]>(store.KEYS.attract(JOGO, cen), store.KEYS.attractLegado(cen), null);
     return Array.isArray(a) && a.length > 10 ? a : null;
   };
 
@@ -127,7 +128,7 @@ export function createAttract(ctx: AttractCtx): AttractCtl {
       (recArr = recArr ?? []).push([Math.round(p.x), Math.round(p.y), p.facing]);
       if (recArr.length >= 180) {
         const cen = ctx.getCenario();
-        store.setJSON(store.KEYS.attract(cen), recArr);
+        store.setJSON(store.KEYS.attract(JOGO, cen), recArr);
         // Ferramenta de AUTORIA (só com `?record=1`), não caminho de jogador — mas passa por srAlert e chega a um
         // leitor de tela de verdade, então é moldura como qualquer outra. O NOME do cenário entra por parâmetro:
         // ele vive na tabela CENARIOS de render/cenario-data e viaja com ela quando ela for convertida.
