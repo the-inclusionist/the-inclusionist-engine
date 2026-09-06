@@ -15,6 +15,7 @@
 // O amarrado de ouvintes (captura de ponteiro, preventDefault, classes das setas) está em
 // touch-bindings.browser.test.js e NÃO é repetido aqui.
 import { describe, it, expect } from 'vitest';
+import { TOUCH_ACTS } from '../app/js/input/touch.js';
 import {
   codeForAction, touchEdgesFor, decideTouch, initTouchBindings,
   crossDirsAt, stickDirsAt, stickKnobOffset, wantsForcedTouch,
@@ -150,8 +151,8 @@ describe('decideTouch — apertar, soltar e o caso especial `pause`', () => {
   });
 
   it('[Right] `pause` é o único que não vira tecla: apertar pausa, SOLTAR não faz nada', () => {
-    expect(decideTouch('pause', true, snap())).toEqual({ kind: 'pause' });
-    expect(decideTouch('pause', false, snap())).toEqual({ kind: 'noop' }); // soltar o START não despausa
+    expect(decideTouch('start', true, snap())).toEqual({ kind: 'pause' });
+    expect(decideTouch('start', false, snap())).toEqual({ kind: 'noop' }); // soltar o START não despausa
   });
 
   it('[Boundary] tecla JÁ segurada: sem re-injeção e sem borda — é BORDA, não estado', () => {
@@ -313,8 +314,8 @@ function makeCtx(over = {}) {
     showTouchControls: () => { calls.show++; },
     hideTips: () => { calls.hideTips++; },
     togglePause: () => { calls.pause++; },
-    getTouchMap: () => ({ up: 'up', down: 'down', left: 'left', right: 'right', start: 'pause', b0: 'action2', b1: 'action3', b2: 'action1', b3: 'action4' }),
-    getStartAction: () => ('startAction' in over ? over.startAction : 'pause'),
+    getTouchMap: () => ({ up: 'up', down: 'down', left: 'left', right: 'right', start: 'start', b0: 'action2', b1: 'action3', b2: 'action1', b3: 'action4' }),
+    getStartAction: () => ('startAction' in over ? over.startAction : 'start'),
     getStickTravelPx: () => 42,
     getStickDeadPx: () => 12,
     defer: (fn, ms) => { calls.defer.push([fn, ms]); },
@@ -363,8 +364,8 @@ describe('doTouch — a decisão carimbada no mundo', () => {
 
   it('[Right] `pause` chama togglePause no apertar e ignora o soltar; não mexe em `keys`', () => {
     const { api, calls, heldKeys } = makeCtx();
-    api.doTouch('pause', true);
-    api.doTouch('pause', false);
+    api.doTouch('start', true);
+    api.doTouch('start', false);
     expect(calls.pause).toBe(1);
     expect(heldKeys.size).toBe(0);
   });
@@ -411,5 +412,25 @@ describe('pressStart — o botão START', () => {
     api.pressStart();
     expect(calls.pause).toBe(0);
     expect(heldKeys.size).toBe(0);
+  });
+});
+
+describe('⚠️ TODA ação que o toque oferece é reconhecida pelo DESPACHO', () => {
+  // ESTE GATE NASCEU DE UM BURACO REAL, e do meu primeiro conserto errado dele. Durante a unificação
+  // `pause` -> `start`, `TOUCH_DEFAULT` e `TOUCH_ACTS` mudaram juntos e `decideTouch` ficou a procurar
+  // `'pause'`. A suíte inteira passou verde, e passou porque o `[Invariant]` que já existia compara as
+  // DUAS TABELAS uma com a outra — elas concordavam. Quem discordava era o terceiro lado.
+  //
+  // A primeira versão deste gate que escrevi repetia esse invariante e teria passado igual. O que ele
+  // pergunta agora é ao lado que estava errado: o despacho reconhece o que o menu oferece?
+  //
+  // No mundo, o defeito era o botão START do controle de tela deixar de pausar — sem erro, sem aviso, e
+  // num tablet de escola pública esse é o único botão de pausa que existe.
+  const SOLO = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action3: ['KeyK'], action4: ['KeyI'] };
+  const mundo = () => ({ controls: SOLO, heldKeys: new Set(), players: [{ ctrl: SOLO, easy: false }] });
+
+  it.each(TOUCH_ACTS)('«%s» produz uma decisão, nunca no-op ao apertar', (acao) => {
+    const d = decideTouch(acao, true, mundo());
+    expect(d.kind, `o menu do slot oferece "${acao}" e o despacho não o reconhece`).not.toBe('noop');
   });
 });

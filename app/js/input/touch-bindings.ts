@@ -207,7 +207,7 @@ export function touchEdgesFor(act: string, code: string, players: readonly Touch
  * `pause` primeiro, porque é o único que não passa pelo teclado sintético. Depois a tecla; sem tecla, nada.
  */
 export function decideTouch(act: string | undefined | null, on: boolean, s: TouchBindSnapshot): TouchDecision {
-  if (act === 'pause') return on ? { kind: 'pause' } : { kind: 'noop' }; // SOLTAR o START não despausa
+  if (act === 'start') return on ? { kind: 'pause' } : { kind: 'noop' }; // SOLTAR o START não despausa
   const code = codeForAction(act, s.controls);
   if (!code) return { kind: 'noop' };
   if (!on) return { kind: 'release', code };
@@ -378,7 +378,7 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
 
   function pressStart(): void {
     const a = ctx.getStartAction();
-    if (a === 'pause') { ctx.togglePause(); return; }
+    if (a === 'start') { ctx.togglePause(); return; }
     doTouch(a, true);
     later(() => doTouch(a, false), START_TAP_MS); // ação momentânea: aperta e solta sozinho
   }

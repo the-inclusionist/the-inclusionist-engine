@@ -35,6 +35,12 @@ export const VOCABULARIO_ANTIGO: Readonly<Record<string, string>> = Object.freez
   jump: 'action2',
   especial: 'action3',
   swap: 'action4',
+  // ⚠️ E UMA QUINTA ENTRADA QUE NÃO É UM VERBO DE PLATAFORMA. A camada de toque chamava `pause` a posição
+  // que todo o resto chama `start` — duas palavras para a mesma coisa, e a do toque era a única que não
+  // existia no conjunto abstrato. Um mapa de toque gravado antes disto tem `start: 'pause'` no slot do
+  // START, e sem esta linha esse botão deixaria de pausar: `decide()` passa a procurar `'start'` e
+  // receberia `'pause'`, que já não é nada — sem erro, sem aviso, e o único botão de pausa de um tablet.
+  pause: 'start',
 });
 
 /**

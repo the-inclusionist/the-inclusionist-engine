@@ -18,6 +18,9 @@ describe('a tradução segue o ADR-0086, e não o ADR-0074', () => {
   it('⚠️ `run` é `action1` e `jump` é `action2` — a tabela do 0074 movia a tecla da criança', () => {
     expect(VOCABULARIO_ANTIGO).toEqual({
       run: 'action1', jump: 'action2', especial: 'action3', swap: 'action4',
+      // ⚠️ A quinta não é verbo de plataforma: a camada de toque chamava `pause` a posição que todo o
+      // resto chama `start`. Era a única palavra de ação que não existia no conjunto abstrato.
+      pause: 'start',
     });
   });
 
@@ -111,9 +114,14 @@ describe('⚠️ o SEGUNDO dado salvo: o mapa de toque, onde a ação está no V
     expect(novo.b3).toBe('action4');
   });
 
-  it('direções e `pause` atravessam intactos — nunca foram verbos do jogo', () => {
-    const novo = migrarMapaDeToque({ up: 'up', start: 'pause', left: 'left' });
-    expect(novo).toEqual({ up: 'up', start: 'pause', left: 'left' });
+  it('as direções atravessam intactas', () => {
+    expect(migrarMapaDeToque({ up: 'up', left: 'left' })).toEqual({ up: 'up', left: 'left' });
+  });
+
+  it('⚠️ o slot do START deixa de dizer `pause` e passa a dizer `start`', () => {
+    // Sem esta tradução o único botão de pausa de um tablet pararia de pausar: `decide()` procura
+    // `'start'` e receberia `'pause'`, que já não é ação nenhuma. Sem erro e sem aviso.
+    expect(migrarMapaDeToque({ start: 'pause' })).toEqual({ start: 'start' });
   });
 
   it('é idempotente, como o do teclado', () => {

@@ -13,7 +13,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { initTouchBindings, START_TAP_MS } from '../app/js/input/touch-bindings.js';
 
 const SOLO = { left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'], up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], action1: ['KeyU'], action2: ['KeyJ', 'Space'], action4: ['KeyI'], action3: ['KeyK'] };
-const TOUCH_MAP = { up: 'up', down: 'down', left: 'left', right: 'right', start: 'pause', b0: 'action2', b1: 'action3', b2: 'action1', b3: 'action4' };
+const TOUCH_MAP = { up: 'up', down: 'down', left: 'left', right: 'right', start: 'start', b0: 'action2', b1: 'action3', b2: 'action1', b3: 'action4' };
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -56,7 +56,7 @@ function wire(over = {}) {
     hideTips: () => { calls.hideTips++; },
     togglePause: () => { calls.pause++; },
     getTouchMap: () => TOUCH_MAP,
-    getStartAction: () => 'pause',
+    getStartAction: () => 'start',
     getStickTravelPx: () => 42,
     getStickDeadPx: () => 12,
     defer: (fn, ms) => { calls.defer.push([fn, ms]); },
@@ -252,7 +252,7 @@ describe('#touch-cross — hit-test com retângulo real e captura de ponteiro', 
     // seria absorvido pela guarda de tecla-já-segurada e o teste passaria com a trava do gate removida
     // (medido: a versão anterior deste caso sobrevivia à mutação). Com a esquerda remapeada para `pause`,
     // cada despacho vira um togglePause visível, e a contagem denuncia o re-disparo.
-    wire({ getTouchMap: () => ({ ...TOUCH_MAP, left: 'pause' }) });
+    wire({ getTouchMap: () => ({ ...TOUCH_MAP, left: 'start' }) });
     fire(cross(), 'pointerdown', { x: 10, y: 100 });
     expect(calls.pause).toBe(1);
     fire(cross(), 'pointermove', { x: 20, y: 100 });   // mesmo quadrante
