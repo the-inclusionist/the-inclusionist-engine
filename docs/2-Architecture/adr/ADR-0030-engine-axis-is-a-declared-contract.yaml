@@ -1,5 +1,14 @@
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0083
+      what: "the `confirmation` clause only — the one naming `app/js/consumer-quiz` as the instrument
+             that `already exists and must keep working`. MEASURED 2026-09-06: it imports by RELATIVE
+             PATH (`../core/i18n.js`), never by package name, so it proves the MODULE cut and nothing
+             about the package surface — and the package surface is what broke when the engine was
+             first packaged. The module cut is still gated at every commit, by a FIXTURE that is not a
+             game; the package surface is gated by a contract test each game runs. The seven declared
+             fields, the genre presets and the batch order all stand."
   date: 2026-08-25
   decision-makers: [Dev]
   consulted: [ADR-0027 (the boundary and the seven declared fields), the 14 findings of consumer-quiz,

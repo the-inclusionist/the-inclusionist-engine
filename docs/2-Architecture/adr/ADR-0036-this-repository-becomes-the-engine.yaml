@@ -1,6 +1,13 @@
 metadata:
   status: "accepted"
   superseded-in-part:
+    - by: ADR-0083
+      what: "ONE line of the inventory: the one classifying `consumer-quiz/` + `quiz.html` as ENGINE,
+             `which are the engine's own proof`. A game is born in its OWN repository and consumes the
+             engine as a PACKAGE; what stays here is a fixture that is not playable and never moves
+             out. ⚠️ THE ORDER THAT `game/` LEAVES FOR THE DEMOS REPOSITORY IS UNTOUCHED, and this
+             record makes it overdue rather than optional: it was given on 2026-08-25 and twelve days
+             later `app/js/game/` still holds 29 files."
     - by: ADR-0071
       what: "the SCOPE clause only — `THE SCOPE IS @pm-monte, NOT @jrocha-io`, and the package name
              `@pm-monte/inclusionist-engine` that came with it. It becomes `@the-inclusionist/engine`,
