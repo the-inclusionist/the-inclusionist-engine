@@ -26,7 +26,7 @@ import { conformanceProblems, speakableProblems, distance } from '../app/js/core
 
 /** Uma declaração conforme, de plataforma. As funções devolvem constantes: aqui só a FORMA está sob teste. */
 const plataforma = () => ({
-  topology: { kind: 'continuous', width: 896, height: 992, unit: 16 },
+  topology: () => ({ kind: 'continuous', width: 896, height: 992, unit: 16 }),
   tick: 'clock',
   roleAt: () => 'structure',
   nameAt: () => ({ text: 'parede', gender: 'f', plural: false }),
@@ -38,15 +38,15 @@ const plataforma = () => ({
 /** A mesma coisa num gênero que não tem espaço nenhum — só ordem. */
 const lista = () => ({
   ...plataforma(),
-  topology: { kind: 'hotspots', order: ['q1', 'q2', 'q3'] },
+  topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   tick: 'player',
 });
 
 // -----------------------------------------------------------------------------------------------------------
 describe('speakableProblems — o nome falável (campo 3)', () => {
   it('[Zero] nome ausente é UM problema, e não uma exceção', () => {
-    expect(speakableProblems(null)).toEqual(['nome ausente']);
-    expect(speakableProblems(undefined)).toEqual(['nome ausente']);
+    expect(speakableProblems(null)).toEqual(['name missing']);
+    expect(speakableProblems(undefined)).toEqual(['name missing']);
   });
 
   it('[Right] nome bem-formado não tem problema nenhum', () => {
@@ -57,9 +57,9 @@ describe('speakableProblems — o nome falável (campo 3)', () => {
   it('[Boundary] texto SÓ DE ESPAÇO é vazio — é o defeito que cala o leitor de tela sem falhar em nada', () => {
     // O caso que mais importa do arquivo inteiro: '' e '   ' produzem o MESMO silêncio, e só o primeiro
     // pareceria defeito a quem lesse o objeto. `trim()` é o que junta os dois.
-    expect(speakableProblems({ text: '   ', gender: 'm', plural: false })[0]).toMatch(/vazio/);
-    expect(speakableProblems({ text: '', gender: 'm', plural: false })[0]).toMatch(/vazio/);
-    expect(speakableProblems({ text: '\t\n', gender: 'm', plural: false })[0]).toMatch(/vazio/);
+    expect(speakableProblems({ text: '   ', gender: 'm', plural: false })[0]).toMatch(/empty/);
+    expect(speakableProblems({ text: '', gender: 'm', plural: false })[0]).toMatch(/empty/);
+    expect(speakableProblems({ text: '\t\n', gender: 'm', plural: false })[0]).toMatch(/empty/);
   });
 
   it('[Interface] gênero fora de m/f/n é problema — sem ele a moldura em pt-BR concorda errado', () => {
@@ -82,8 +82,8 @@ describe('speakableProblems — o nome falável (campo 3)', () => {
 // -----------------------------------------------------------------------------------------------------------
 describe('conformanceProblems — os sete campos, em FORMA', () => {
   it('[Zero] declaração ausente', () => {
-    expect(conformanceProblems(null)).toEqual(['declaração ausente']);
-    expect(conformanceProblems(undefined)).toEqual(['declaração ausente']);
+    expect(conformanceProblems(null)).toEqual(['declaration missing']);
+    expect(conformanceProblems(undefined)).toEqual(['declaration missing']);
   });
 
   it('[Right] as duas declarações conformes passam — e são de gêneros diferentes', () => {
@@ -92,7 +92,7 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
   });
 
   it('[Boundary] grade com medida zero ou negativa é reprovada', () => {
-    const grade = (cols, rows) => conformanceProblems({ ...plataforma(), topology: { kind: 'grid', cols, rows } });
+    const grade = (cols, rows) => conformanceProblems({ ...plataforma(), topology: () => ({ kind: 'grid', cols, rows }) });
     expect(grade(8, 8)).toEqual([]);
     expect(grade(0, 8)).toHaveLength(1);
     expect(grade(8, 0)).toHaveLength(1);
@@ -103,25 +103,25 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
   it('[Boundary] contínuo SEM `unit` é reprovado — unit é a métrica da narração, não decoração', () => {
     // Sem `unit`, "a dois passos" não tem como ser dito: sobra pixel, que não é unidade de ninguém que joga.
     const semUnit = { kind: 'continuous', width: 100, height: 100 };
-    expect(conformanceProblems({ ...plataforma(), topology: semUnit })).toHaveLength(1);
-    expect(conformanceProblems({ ...plataforma(), topology: { ...semUnit, unit: 0 } })).toHaveLength(1);
-    expect(conformanceProblems({ ...plataforma(), topology: { ...semUnit, unit: 16 } })).toEqual([]);
+    expect(conformanceProblems({ ...plataforma(), topology: () => semUnit })).toHaveLength(1);
+    expect(conformanceProblems({ ...plataforma(), topology: () => ({ ...semUnit, unit: 0 }) })).toHaveLength(1);
+    expect(conformanceProblems({ ...plataforma(), topology: () => ({ ...semUnit, unit: 16 }) })).toEqual([]);
   });
 
   it('[Boundary] lista de hotspots vazia é reprovada — não há para onde navegar', () => {
-    const hot = (order) => conformanceProblems({ ...plataforma(), topology: { kind: 'hotspots', order } });
+    const hot = (order) => conformanceProblems({ ...plataforma(), topology: () => ({ kind: 'hotspots', order }) });
     expect(hot([])).toHaveLength(1);
     expect(hot(['q1'])).toEqual([]); // um único item é uma lista legítima
   });
 
   it('[Interface] hotspot repetido é reprovado — a distância é diferença de ÍNDICE, e id repetido a quebra', () => {
-    const p = conformanceProblems({ ...plataforma(), topology: { kind: 'hotspots', order: ['q1', 'q2', 'q1'] } });
+    const p = conformanceProblems({ ...plataforma(), topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q1'] }) });
     expect(p).toHaveLength(1);
-    expect(p[0]).toMatch(/repetido/);
+    expect(p[0]).toMatch(/repeated/);
   });
 
   it('[Interface] kind desconhecido é reprovado — um gênero novo declara topologia, não inventa uma', () => {
-    expect(conformanceProblems({ ...plataforma(), topology: { kind: 'isometrico' } })).toHaveLength(1);
+    expect(conformanceProblems({ ...plataforma(), topology: () => ({ kind: 'isometrico' }) })).toHaveLength(1);
   });
 
   it('[Interface] tick só aceita player ou clock', () => {
@@ -229,7 +229,7 @@ describe('ENSAIO: o mesmo código de acessibilidade sobre duas topologias (ADR-0
   /** Um mapa de grade de mentira: só a coluna 5 é objetivo. */
   const gradeDecl = {
     ...plataforma(),
-    topology: { kind: 'grid', cols: 8, rows: 8 },
+    topology: () => ({ kind: 'grid', cols: 8, rows: 8 }),
     roleAt: (at) => (at.x === 5 ? 'goal' : 'structure'),
     nameAt: (at) => ({ text: `alvo ${at.x},${at.y}`, gender: 'm', plural: false }),
   };

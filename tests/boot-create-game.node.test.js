@@ -96,7 +96,7 @@ function domFalso({ comMarcacao = true } = {}) {
 
 /** Uma declaração de quiz conforme — sem espaço, só ordem. É o gênero que não pode fingir ser plataforma. */
 const declaracaoValida = () => ({
-  topology: { kind: 'hotspots', order: ['q1', 'q2', 'q3'] },
+  topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   tick: 'player',
   roleAt: () => 'goal',
   nameAt: () => ({ text: 'primeira pergunta', gender: 'f', plural: false }),

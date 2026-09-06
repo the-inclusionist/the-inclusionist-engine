@@ -155,14 +155,25 @@ export type Announcement =
 /* ===================== A DECLARAÇÃO ===================== */
 
 /**
- * O que um jogo entrega à engine. Os dois campos constantes são dados; os quatro restantes são funções porque
- * a resposta muda com a posição, o jogador e o instante.
+ * O que um jogo entrega à engine. `tick` é dado; TODO O RESTO é função, porque a resposta muda com a posição,
+ * o jogador e o instante.
  *
  * ⚠️ NÃO IMPORTE ISTO INTEIRO num módulo consumidor. Use `Pick<GameDeclaration, 'roleAt'>` e afins — a regra é
  * a de `core/entity`, e é o que mantém os fixtures de teste pequenos.
  */
 export interface GameDeclaration {
-  readonly topology: Topology;
+  /**
+   * A forma do espaço AGORA.
+   *
+   * ⚠️ ERA UM VALOR ATÉ 2026-09-06, e a assimetria já tinha sido remendada em dois lugares antes de alguém a
+   * nomear: a porta do sonar sempre pediu `topology: () => Topology` (`platform/audio-sonar.ts`), e
+   * `boot/create-game` fazia a ponte com `() => o.declaration.topology` — uma função que devolve uma
+   * constante. O `game-15puzzle` (3×3/4×4/5×5) precisou de um getter para caber no tipo, e um getter que
+   * satisfaz uma interface é COINCIDÊNCIA DO TypeScript, não contrato: nada avisava o próximo autor de que
+   * era o esperado, e `conformanceProblems` lia uma vez só — quem memorizasse a topologia ficava defasado
+   * em silêncio. Remendo que aparece duas vezes é o contrato a pedir para mudar. ADR-0084.
+   */
+  topology(): Topology;
   readonly tick: TickOwner;
   /** O papel do que está em `at`. É o campo 2, e é o que substitui `roleOf`. */
   roleAt(at: Spot): Role;
@@ -199,36 +210,42 @@ export interface GameDeclaration {
  */
 export function conformanceProblems(d: Partial<GameDeclaration> | null | undefined): string[] {
   const p: string[] = [];
-  if (!d) return ['declaração ausente'];
+  if (!d) return ['declaration missing'];
 
-  const t = d.topology;
-  if (!t) p.push('topology: ausente');
+  // ⚠️ DUAS FALHAS DIFERENTES, E ELAS PRECISAM DE DUAS MENSAGENS. `topology` ausente é um campo que ninguém
+  // escreveu; `topology` que não é função é o campo escrito à moda antiga — um VALOR, que passava no
+  // TypeScript de quem não recompilou e morreria em produção com "topology is not a function". Dizer só
+  // "ausente" mandaria o autor procurar um campo que está lá, à vista.
+  const t = typeof d.topology === 'function' ? d.topology() : undefined;
+  if (d.topology === undefined || d.topology === null) p.push('topology: missing');
+  else if (typeof d.topology !== 'function') p.push('topology: must be a FUNCTION (it was a value until ADR-0084)');
+  else if (!t) p.push('topology: the function returned nothing');
   else if (t.kind === 'grid') {
-    if (!(t.cols > 0) || !(t.rows > 0)) p.push('topology.grid: cols e rows precisam ser positivos');
+    if (!(t.cols > 0) || !(t.rows > 0)) p.push('topology.grid: cols and rows must be positive');
   } else if (t.kind === 'continuous') {
-    if (!(t.width > 0) || !(t.height > 0)) p.push('topology.continuous: width e height precisam ser positivos');
+    if (!(t.width > 0) || !(t.height > 0)) p.push('topology.continuous: width and height must be positive');
     // `unit` é o que dá MÉTRICA a um espaço contínuo: sem ela, "a dois passos" não tem como ser dito.
-    if (!(t.unit > 0)) p.push('topology.continuous: unit precisa ser positiva (é a métrica da narração)');
+    if (!(t.unit > 0)) p.push('topology.continuous: unit must be positive (it is the metric the narration counts in)');
   } else if (t.kind === 'hotspots') {
-    if (!t.order?.length) p.push('topology.hotspots: order vazia — não há para onde navegar');
-    else if (new Set(t.order).size !== t.order.length) p.push('topology.hotspots: order tem id repetido');
-  } else p.push('topology: kind desconhecido');
+    if (!t.order?.length) p.push('topology.hotspots: order is empty - there is nowhere to navigate');
+    else if (new Set(t.order).size !== t.order.length) p.push('topology.hotspots: order has a repeated id');
+  } else p.push('topology: unknown kind');
 
-  if (d.tick !== 'player' && d.tick !== 'clock') p.push('tick: precisa ser "player" ou "clock"');
+  if (d.tick !== 'player' && d.tick !== 'clock') p.push('tick: must be "player" or "clock"');
 
   for (const f of ['roleAt', 'nameAt', 'focusOf', 'objectiveOf', 'targetsOf'] as const) {
-    if (typeof d[f] !== 'function') p.push(`${f}: ausente`);
+    if (typeof d[f] !== 'function') p.push(`${f}: missing`);
   }
   return p;
 }
 
 /** Um nome falável bem-formado? Texto vazio é o defeito silencioso: o leitor de tela simplesmente cala. */
 export function speakableProblems(s: Speakable | null | undefined): string[] {
-  if (!s) return ['nome ausente'];
+  if (!s) return ['name missing'];
   const p: string[] = [];
-  if (!s.text.trim()) p.push('text: vazio — o leitor de tela ficaria em silêncio');
-  if (s.gender !== 'm' && s.gender !== 'f' && s.gender !== 'n') p.push('gender: precisa ser m, f ou n');
-  if (typeof s.plural !== 'boolean') p.push('plural: precisa ser booleano');
+  if (!s.text.trim()) p.push('text: empty - the screen reader would fall silent');
+  if (s.gender !== 'm' && s.gender !== 'f' && s.gender !== 'n') p.push('gender: must be m, f or n');
+  if (typeof s.plural !== 'boolean') p.push('plural: must be a boolean');
   return p;
 }
 

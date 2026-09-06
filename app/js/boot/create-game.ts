@@ -202,7 +202,7 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.
   const sonar = createAudioSonar({
-    topology: () => o.declaration.topology,
+    topology: () => o.declaration.topology(),
     targetsOf: (i) => o.declaration.targetsOf(i),
     nameAt: (at) => o.declaration.nameAt(at),
     tonePan, srSay, narrate: (texto) => tts.narrate(texto),

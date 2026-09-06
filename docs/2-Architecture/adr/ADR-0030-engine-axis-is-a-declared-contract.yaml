@@ -9,6 +9,14 @@ metadata:
              first packaged. The module cut is still gated at every commit, by a FIXTURE that is not a
              game; the package surface is gated by a contract test each game runs. The seven declared
              fields, the genre presets and the batch order all stand."
+    - by: ADR-0084
+      what: "the SHAPE of one declared field, and one sentence about the others. This record calls
+             `topology` one of the two CONSTANT fields of the declaration; it is a FUNCTION from
+             2026-09-06, and `tick` is now the only constant. MEASURED: `game-15puzzle` has three board
+             sizes chosen while the game runs, and had to write `get topology()` to fit the value shape —
+             a getter that type-checks by coincidence rather than by contract, leaving a caching consumer
+             silently stale. The SEVEN FIELDS THEMSELVES STAND, and so does everything else here: what
+             changes is how one of them is handed over, not what it is or how many there are."
   date: 2026-08-25
   decision-makers: [Dev]
   consulted: [ADR-0027 (the boundary and the seven declared fields), the 14 findings of consumer-quiz,

@@ -231,7 +231,7 @@ function aoTeclado(e: KeyboardEvent): void {
 export function declararQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
   const ordem = perguntas.map((_, i) => `q${i + 1}`);
   return {
-    topology: { kind: 'hotspots', order: ordem },
+    topology: () => ({ kind: 'hotspots', order: ordem }),
     tick: 'player',
     // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
     roleAt: (at) => (at.x === atual ? 'goal' : 'free'),

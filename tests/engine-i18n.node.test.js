@@ -149,7 +149,6 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'core/contract.ts': 6,           // `conformanceProblems`: os defeitos de uma declaração malformada
   'boot/create-game.ts': 3,        // a mensagem do `throw` e as lacunas do hospedeiro
   'render/sprites.ts': 1,          // `console.warn` de quadro fora do atlas — o dev lê, a criança não
 };
