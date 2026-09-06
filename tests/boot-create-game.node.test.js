@@ -95,11 +95,15 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
     // nao o tem. Um duplo que nao distingue a pergunta acaba a responder a errada.
     querySelectorAll: (sel) => (listas[sel] ?? []),
   };
+  // ⚠️ O `win` REGISTRA agora, e nao e zelo: um duplo que engole `addEventListener` nao consegue responder
+  // "isto ficou LIGADO?", que e exatamente a pergunta da issue #109. Enquanto ele era um no-op, `createGame`
+  // podia montar a navegacao de menu e nao a ligar sem que nada ficasse vermelho — e foi o que aconteceu.
+  const ouvintes = [];
   const win = {
-    addEventListener: () => {},
+    addEventListener: (tipo, fn, captura) => { ouvintes.push({ tipo, fn, captura }); },
     getComputedStyle: () => ({ zIndex: '0' }),
   };
-  return { doc, win };
+  return { doc, win, ouvintes };
 }
 
 /** Uma declaração de quiz conforme — sem espaço, só ordem. É o gênero que não pode fingir ser plataforma. */
@@ -192,6 +196,20 @@ describe('createGame em execução', () => {
     const paint = { ...declaracaoValida(), world: () => ({ kind: 'none' }) };
     const motor = createGame({ declaration: paint, host: { doc, win } });
     expect(motor.problems.join(' ')).not.toMatch(/mundo declarado/);
+  });
+
+  it('⚠️ a navegacao de menu fica LIGADA, e nao so montada (issue #109)', async () => {
+    // `MenuNavApi.attach()` existia e `createGame` nunca a chamava. Num jogo que arranque pela engine, os
+    // dialogos de acessibilidade e o menu de pausa respondiam so ao RATO — o pilar 2 a falhar por inteiro.
+    // O `consumer-quiz` tinha de a chamar a mao logo depois do `createGame`, o que e o sintoma.
+    //
+    // A FASE DE CAPTURA faz parte da assercao: o menu tem de ver a tecla ANTES de quem quer que esteja
+    // por baixo, senao o jogo consome a seta e o dialogo aberto nao navega.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win, ouvintes } = domFalso();
+    createGame({ declaration: declaracaoValida(), host: { doc, win } });
+    const nav = ouvintes.filter((o) => o.tipo === 'keydown' && o.captura === true);
+    expect(nav.length, 'a navegacao de menu voltou a ficar desligada').toBeGreaterThan(0);
   });
 
   it('⚠️ a engine ENTREGA o aviso de que o laco parou (ADR-0054, issue #109)', async () => {

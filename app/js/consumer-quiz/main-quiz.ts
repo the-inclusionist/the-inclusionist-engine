@@ -310,7 +310,10 @@ export function bootQuiz(): void {
     });
   }
 
-  motor.nav.attach();
+  // ⚠️ O `motor.nav.attach()` SAIU DAQUI (issue #109). Era um remendo do consumidor: a engine montava a
+  // navegação de menu e não a ligava, então este quiz tinha de a ligar à mão logo depois do `createGame` — e
+  // um jogo que não soubesse disso ganhava diálogos que só respondem ao rato. `createGame` liga agora, e o
+  // segundo consumidor deixa de carregar a correção do primeiro.
 
   // A PILHA DE CENAS (item 22, C3). Este quiz tem UMA cena, e ela não é inventada para o teste: `render()` já
   // era o `draw` e `aoTeclado` já era o `input` — o que faltava era o lugar onde os dois se declaram juntos.

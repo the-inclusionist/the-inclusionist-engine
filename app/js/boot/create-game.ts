@@ -317,6 +317,19 @@ export function createGame(o: CreateGameOptions): Engine {
     win,
   });
 
+  // ⚠️ E AGORA LIGA. A `nav` era montada aqui e ficava desligada — `MenuNavApi.attach()` existia, `menu-nav.ts`
+  // descrevia-a como estando ali "para o game.js instalar exatamente como antes", e `createGame` nunca a
+  // chamava. O efeito num jogo que arranque pela engine: os diálogos de acessibilidade e o menu de pausa
+  // respondem só ao RATO, o que é o pilar 2 a falhar por inteiro — e o `consumer-quiz` teve de a chamar à mão
+  // depois do `createGame`, que é o sintoma da fronteira estar no lugar errado.
+  //
+  // Um fio que a engine MONTA e não liga é pior do que um que ela não monta: a ausência seria visível — o
+  // objeto tem uma `nav`, e ela parece pronta.
+  //
+  // Instalar aqui é seguro antes de o jogo acabar de arrancar: sem diálogo aberto e sem menu de pausa,
+  // `menuNavKey` não consome tecla nenhuma e a deixa seguir para quem for o dono.
+  nav.attach();
+
   // O ANÚNCIO DE QUE O LAÇO PAROU (ADR-0054). Entregue e não instalado: quem chama `startLoop` é o JOGO, que
   // é o dono do ticker. Um jogo que monte o laço sem passar isto continua a PARAR — parar não é opcional; o
   // que ele perde é dizer que parou.
