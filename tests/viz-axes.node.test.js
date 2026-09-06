@@ -8,6 +8,7 @@ import { describe, it, expect } from 'vitest';
 import {
   PADRAO, TEMAS, CORRECOES, SIMULACOES, CHAVES_ANTIGAS,
   nosPadroes, simulacaoIndisponivel, migrarVisual, aplicacao,
+  ehSimulacao, ehCego, ehBaixaVisao, temAltoContraste, proximoTema, proximaCorrecao, chaveDeTextura,
 } from '../app/js/render/viz-axes.js';
 import { VIZ_MODES, VIZ_FILTER } from '../app/js/render/viz-modes.js';
 import { isDirectMode } from '../app/js/render/viz-setters.js';
@@ -176,5 +177,85 @@ describe('⚠️ a COMPOSIÇÃO: os dois aplicados ao mesmo tempo', () => {
   it('tema sozinho não inventa filtro, e correção sozinha não inventa tema', () => {
     expect(aplicacao({ tema: 'hc45', correcao: 'tricro', simulacao: null })).toEqual({ direto: 'hc-direto-45', filtro: null });
     expect(aplicacao({ tema: 'padrao', correcao: 'protan', simulacao: null })).toEqual({ direto: null, filtro: 'fix-protan' });
+  });
+});
+
+describe('as perguntas que os leitores fazem, cada uma com nome', () => {
+  const v = (o) => ({ ...PADRAO, ...o });
+
+  it('ehSimulacao / ehCego / ehBaixaVisao', () => {
+    expect(ehSimulacao(PADRAO)).toBe(false);
+    expect(ehSimulacao(v({ simulacao: 'lv-haze' }))).toBe(true);
+    expect(ehCego(v({ simulacao: 'blind' }))).toBe(true);
+    expect(ehCego(v({ simulacao: 'lv-blur' }))).toBe(false);
+    expect(ehBaixaVisao(v({ simulacao: 'lv-tunnel' }))).toBe(true);
+    expect(ehBaixaVisao(v({ simulacao: 'blind' }))).toBe(false);
+  });
+
+  it('⚠️ ehBaixaVisao cobre as CINCO, e nao so as que este teste nomeia', () => {
+    const cinco = SIMULACOES.filter((s) => s && s.startsWith('lv-'));
+    expect(cinco).toHaveLength(5);
+    for (const s of cinco) expect(ehBaixaVisao(v({ simulacao: s })), s).toBe(true);
+  });
+
+  it('temAltoContraste responde pelo TEMA e ignora a correcao', () => {
+    expect(temAltoContraste(PADRAO)).toBe(false);
+    expect(temAltoContraste(v({ correcao: 'deuter' }))).toBe(false);
+    expect(temAltoContraste(v({ tema: 'hc3' }))).toBe(true);
+  });
+});
+
+describe('os ciclos andam CADA UM no seu eixo', () => {
+  it('⚠️ proximoTema nao toca na correcao', () => {
+    // Era isto que a string tornava impossivel: ciclar o contraste apagava a correcao.
+    const antes = { tema: 'padrao', correcao: 'deuter', simulacao: null };
+    const depois = proximoTema(antes);
+    expect(depois.tema).toBe('hc3');
+    expect(depois.correcao).toBe('deuter');
+  });
+
+  it('⚠️ proximaCorrecao nao toca no tema', () => {
+    const antes = { tema: 'hc7', correcao: 'tricro', simulacao: null };
+    const depois = proximaCorrecao(antes);
+    expect(depois.correcao).toBe('protan');
+    expect(depois.tema).toBe('hc7');
+  });
+
+  it('os dois ciclos DAO A VOLTA e voltam ao padrao', () => {
+    let t = PADRAO;
+    for (let i = 0; i < TEMAS.length; i++) t = proximoTema(t);
+    expect(t.tema).toBe(PADRAO.tema);
+    let c = PADRAO;
+    for (let i = 0; i < CORRECOES.length; i++) c = proximaCorrecao(c);
+    expect(c.correcao).toBe(PADRAO.correcao);
+  });
+
+  it('⚠️ um valor desconhecido comeca no PADRAO nos DOIS ciclos', () => {
+    // O original tinha uma assimetria sem dono: `nextCvd` mandava desconhecido para o indice 1
+    // (`fix-protan`) e `nextContrast` para o 0. Um valor desconhecido e exatamente o caso em que nao se
+    // sabe o que a crianca queria, e o padrao e a unica resposta que nao escolhe por ela.
+    expect(proximoTema({ tema: 'inexistente', correcao: 'tricro', simulacao: null }).tema).toBe('padrao');
+    expect(proximaCorrecao({ tema: 'padrao', correcao: 'inexistente', simulacao: null }).correcao).toBe('tricro');
+  });
+});
+
+describe('chaveDeTextura', () => {
+  it('a SIMULACAO vence o tema, porque e a ordem do que a crianca ve', () => {
+    expect(chaveDeTextura({ tema: 'hc7', correcao: 'tricro', simulacao: 'blind' })).toBe('blind');
+  });
+
+  it('sem simulacao, o TEMA; sem nenhum dos dois, `normal`', () => {
+    expect(chaveDeTextura({ tema: 'hc45', correcao: 'tricro', simulacao: null })).toBe('hc-direto-45');
+    expect(chaveDeTextura(PADRAO)).toBe('normal');
+  });
+
+  it('⚠️ a chave devolvida EXISTE na lista real de modos', () => {
+    const chaves = VIZ_MODES.map((m) => m.key);
+    for (const s of SIMULACOES) {
+      expect(chaves, `textura inexistente`).toContain(chaveDeTextura({ ...PADRAO, simulacao: s }));
+    }
+    for (const tema of TEMAS) {
+      expect(chaves, `textura inexistente`).toContain(chaveDeTextura({ ...PADRAO, tema }));
+    }
   });
 });

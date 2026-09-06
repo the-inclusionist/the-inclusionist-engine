@@ -110,6 +110,67 @@ export function aplicacao(v: VisualState): Aplicacao {
   return { direto: temaDireto(v), filtro: filtroChave(v) };
 }
 
+/* ===================== O QUE OS LEITORES DE FACTO PERGUNTAM ===================== */
+//
+// ⚠️ ESTAS FUNÇÕES SAÍRAM DE UMA MEDIDA, e não de um desenho a priori. Os 31 leitores de `p.viz` foram
+// classificados pelo que PERGUNTAM, e a lista curta abaixo é o resultado — quatro perguntam o «kind», duas
+// se é simulação, uma a textura, e o resto é escrita. Um leitor que precise de algo fora daqui é sinal de
+// que a pergunta dele merecia um nome.
+//
+// ⚠️ E A MEDIDA TROUXE UM ACHADO: `ui/pause-icons` já tem `nextContrast` e `nextCvd`, cada uma a ciclar
+// DENTRO do seu eixo. A interface já pensava em dois eixos há muito tempo; era o ARMAZENAMENTO que os
+// colapsava num campo. As funções de ciclo abaixo são as mesmas duas, agora com onde guardar o resultado.
+
+/** Há uma simulação a correr? É a pergunta que `simulatesDisability` fazia à string. */
+export function ehSimulacao(v: VisualState): boolean {
+  return v.simulacao !== null;
+}
+
+/** É a simulação de CEGUEIRA? O quiz e o sonar perguntam isto para se comportarem sem tela. */
+export function ehCego(v: VisualState): boolean {
+  return v.simulacao === 'blind';
+}
+
+/** É uma das cinco simulações de BAIXA VISÃO? Elas pedem o overlay como textura, e não só um filtro. */
+export function ehBaixaVisao(v: VisualState): boolean {
+  return v.simulacao !== null && v.simulacao.startsWith('lv-');
+}
+
+/** O tema está fora do padrão? Era o `/^hc-direto/.test(s.viz)` espalhado pela interface. */
+export function temAltoContraste(v: VisualState): boolean {
+  return v.tema !== 'padrao';
+}
+
+/** Próximo TEMA no ciclo do ícone da barra rápida. Anda só no seu eixo, e não toca na correção. */
+export function proximoTema(v: VisualState): VisualState {
+  const i = TEMAS.indexOf(v.tema);
+  return { ...v, tema: TEMAS[(i < 0 ? 0 : i + 1) % TEMAS.length]! };
+}
+
+/**
+ * Próxima CORREÇÃO no ciclo do ícone. Anda só no seu eixo, e não toca no tema.
+ *
+ * ⚠️ A ASSIMETRIA DO ORIGINAL FICA REGISTRADA E NÃO É COPIADA: `nextCvd` mapeava um valor desconhecido para
+ * o ÍNDICE 1 (`fix-protan`) enquanto `nextContrast` mapeava para 0. Era um comentário no ficheiro a explicar
+ * uma diferença que ninguém tinha decidido. Aqui as duas começam no padrão, porque um valor desconhecido é
+ * exatamente o caso em que não se sabe o que a criança queria — e o padrão é a única resposta que não
+ * escolhe por ela.
+ */
+export function proximaCorrecao(v: VisualState): VisualState {
+  const i = CORRECOES.indexOf(v.correcao);
+  return { ...v, correcao: CORRECOES[(i < 0 ? 0 : i + 1) % CORRECOES.length]! };
+}
+
+/**
+ * A chave que o sprite do jogador usa para escolher textura.
+ *
+ * ⚠️ É a SIMULAÇÃO quando há uma, e o TEMA quando não há — nesta ordem porque é a ordem do que a criança vê:
+ * uma cegueira simulada apaga a tela inteira, e nesse instante o tema não muda nada do que ela percebe.
+ */
+export function chaveDeTextura(v: VisualState): string {
+  return v.simulacao ?? temaDireto(v) ?? 'normal';
+}
+
 /* ===================== A MIGRAÇÃO ===================== */
 //
 // ⚠️ ELA NÃO É OPCIONAL E VEM ANTES DA PRIMEIRA LEITURA DA FORMA NOVA. O ajuste salvo guarda o valor único
