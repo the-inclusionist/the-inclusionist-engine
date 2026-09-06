@@ -40,8 +40,45 @@ const EXTRA: Record<string, LocaleDict> = {};
  * markup estático ter sido traduzido chama `applyDom(raiz)` ele mesmo — e o caso normal é registrar no boot,
  * antes de existir texto na tela.
  */
-export function registerDict(code: string, entries: LocaleDict): void {
-  EXTRA[code] = { ...EXTRA[code], ...entries };
+export function registerDict(code: string, entries: LocaleDict): string[] {
+  const recusadas: string[] = [];
+  const aceites: LocaleDict = {};
+  for (const chave in entries) {
+    if (temMarcacao(entries[chave])) recusadas.push(chave);
+    else aceites[chave] = entries[chave]!;
+  }
+  if (recusadas.length) {
+    // Alto, e não em silêncio: quem escreveu a string tem de saber que ela não entrou. Descartar calado
+    // faria a chave crua aparecer na tela sem nada explicando, e isso lê-se como defeito da engine.
+    try {
+      console.error('[inclusionist] i18n: chaves recusadas por conterem marcação — ' + recusadas.join(', '));
+    } catch { /* noop */ }
+  }
+  EXTRA[code] = { ...EXTRA[code], ...aceites };
+  return recusadas;
+}
+
+/**
+ * A string traz marcação?
+ *
+ * ⚠️ POR QUE ISTO EXISTE AQUI, E NÃO NOS ~15 SINKS QUE CONSOMEM i18n. O gate
+ * `tests/i18n-sem-markup.node.test.js` varre os dicionários DESTA árvore e prova que nenhuma entrada tem
+ * tag. Ele não alcança — e não tem como alcançar — o `EXTRA`: são strings que um JOGO regista em tempo de
+ * execução, de outro repositório (ADR-0083), e um teste desta árvore não as vê.
+ *
+ * ⚠️ E ELAS GANHAM DO DICIONÁRIO DA ENGINE. `resolver` consulta `EXTRA` primeiro, então um jogo pode sobrepor
+ * QUALQUER chave — inclusive as que a engine cola em markup. Sem este cheque, «i18n» tinha deixado de
+ * significar «texto que alguém desta árvore reviu», e nada registava a mudança.
+ *
+ * A verificação vai na FRONTEIRA e não nos sinks porque a fronteira é UMA: toda string de um jogo passa por
+ * aqui. Quinze sinks seriam quinze lugares para esquecer, e o esquecimento não deixa rasto.
+ *
+ * O crivo é deliberadamente grosseiro — `<` seguido de letra ou de barra, e `&` de entidade. Ele recusa
+ * `a < b` escrito com espaço? Não: `< ` não casa. Recusa «5<10»? Não, o dígito não casa. O que ele recusa é
+ * o que se parece com uma tag, e uma frase de interface que precise disso precisa de outra frase.
+ */
+function temMarcacao(valor: string | undefined): boolean {
+  return typeof valor === 'string' && (/<[a-zA-Z/!?]/.test(valor) || /&[a-zA-Z#][a-zA-Z0-9]*;/.test(valor));
 }
 
 /**

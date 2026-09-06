@@ -124,3 +124,66 @@ describe('core/i18n aceita o dicionário de um CONSUMIDOR (achado 2, de fora do 
     expect(i18n.t('jogo.2048.soEmEn')).toBe('jogo.2048.soEmEn');
   });
 });
+
+// -----------------------------------------------------------------------------------------------------------
+describe('A FRONTEIRA DAS STRINGS DE UM JOGO — marcacao nao entra (issue #106)', () => {
+  // ⚠️ POR QUE ESTE GATE EXISTE, e ele fecha um buraco que so apareceu quando a engine virou PACOTE.
+  //
+  // `tests/i18n-sem-markup.node.test.js` varre os dicionarios DESTA arvore e prova que nenhuma entrada tem
+  // tag. Ele nao alcanca o `EXTRA` — as strings que um JOGO regista em tempo de execucao, de outro
+  // repositorio (ADR-0083). Um teste desta arvore nao as ve, e nao tem como ver.
+  //
+  // ⚠️ E ELAS GANHAM DO DICIONARIO DA ENGINE: `resolver` consulta o `EXTRA` PRIMEIRO. Um jogo podia sobrepor
+  // QUALQUER chave — inclusive as ~15 que a engine cola em markup —, e «i18n» tinha deixado de significar
+  // «texto que alguem desta arvore reviu» sem que nada registasse a mudanca.
+  //
+  // A verificacao vai na FRONTEIRA porque a fronteira e UMA. Quinze sinks seriam quinze lugares para
+  // esquecer, e o esquecimento nao deixa rasto.
+  let erro;
+  beforeEach(() => { erro = vi.spyOn(console, 'error').mockImplementation(() => {}); erro.mockClear(); });
+
+  it('[Right] ⚠️ uma chave com tag e RECUSADA, e a engine continua a responder a sua', async () => {
+    const i18n = await carregarI18n();
+    const recusadas = i18n.registerDict('pt', { 'menu.alf': '<img src=x onerror=alert(1)>' });
+    expect(recusadas).toEqual(['menu.alf']);
+    // A chave da engine sobrevive: o jogo nao a sobrepos, e a interface nao fica com um buraco.
+    expect(i18n.t('menu.alf')).not.toContain('<img');
+  });
+
+  it('[Right] e a recusa e ALTA — descartar em silencio lê-se como defeito da engine', async () => {
+    // ⚠️ ESTE CASO REGISTA A SUA PROPRIA CHAVE. A primeira versao afirmava o espiao logo a seguir ao caso
+    // anterior, e passou a depender da ORDEM: com o `mockClear` do `beforeEach`, ele afirmava sobre um
+    // espiao vazio. Um caso que so passa depois de outro nao afere nada — afere o vizinho.
+    const i18n = await carregarI18n();
+    i18n.registerDict('pt', { 'jogo.gritou': '<span>tag</span>' });
+    expect(erro).toHaveBeenCalled();
+    expect(String(erro.mock.calls[0])).toContain('jogo.gritou');
+  });
+
+  it('[Right] as chaves BOAS do mesmo registo entram — a recusa e por entrada, nao por lote', async () => {
+    // Recusar o lote inteiro por causa de uma chave puniria o jogo por um erro de digitacao numa outra.
+    const i18n = await carregarI18n();
+    const recusadas = i18n.registerDict('pt', {
+      'jogo.ok': 'palavra boa', 'jogo.mau': '<b>tag</b>', 'jogo.ok2': 'outra boa',
+    });
+    expect(recusadas).toEqual(['jogo.mau']);
+    expect(i18n.t('jogo.ok')).toBe('palavra boa');
+    expect(i18n.t('jogo.ok2')).toBe('outra boa');
+    expect(i18n.t('jogo.mau')).toBe('jogo.mau'); // recusada: volta a propria chave
+  });
+
+  it('[Boundary] o crivo recusa a ENTIDADE tambem — `&lt;script&gt;` volta a ser tag ao ser colado', async () => {
+    const i18n = await carregarI18n();
+    expect(i18n.registerDict('pt', { 'jogo.ent': '&lt;script&gt;alert(1)&lt;/script&gt;' })).toEqual(['jogo.ent']);
+  });
+
+  it('[Zero] ⚠️ e NAO recusa texto legitimo — um crivo que recusa demais e desligado no primeiro dia', async () => {
+    // `a < b` tem `<` e nao e tag: o que casa e `<` seguido de LETRA ou de barra. Um crivo que reprovasse
+    // matematica basica seria removido por quem escreve o jogo, e ai nao protege nada.
+    const i18n = await carregarI18n();
+    const bons = { 'jogo.m1': 'a < b', 'jogo.m2': '5<10', 'jogo.m3': 'ganhou 3 de 4', 'jogo.m4': 'R$ 5 & 10' };
+    expect(i18n.registerDict('pt', bons)).toEqual([]);
+    expect(i18n.t('jogo.m1')).toBe('a < b');
+    expect(i18n.t('jogo.m2')).toBe('5<10');
+  });
+});
