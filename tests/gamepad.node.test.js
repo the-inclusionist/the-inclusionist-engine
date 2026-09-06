@@ -7,6 +7,7 @@
 // ticks ociosos sem avançar passo ("timeout" — não existe timeout real no original; isso prova que não há
 // avanço espúrio), e controle desconectado durante o wizard (tick vira no-op sem lançar).
 import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
+import { ACTIONS } from '../app/js/core/actions.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   stdDirs, bindActive, padActions, PADWIZ_ORDER, initGamepad,
@@ -224,9 +225,23 @@ describe('padActions', () => {
 });
 
 describe('PADWIZ_STEPS', () => {
-  it('[Interface] 9 posições, e SÓ as posições — as palavras saíram daqui', () => {
-    expect(PADWIZ_ORDER).toHaveLength(9);
-    expect([...PADWIZ_ORDER]).toEqual(['up', 'down', 'left', 'right', 'action2', 'action1', 'action4', 'action3', 'start']);
+  it('⚠️ o assistente alcança TODAS as quatorze posições — nem uma a menos', () => {
+    // ISTO FALTAVA, e a falta era um buraco de acessibilidade. A lista tinha nove entradas e omitia os
+    // quatro ombros e o `select`; um jogo que declarasse `leftShoulder` não tinha por onde a criança o
+    // mapear. E o assistente existe PARA controles que não são «standard» — genéricos, adaptados, de uma
+    // mão —, ou seja, cinco posições eram inalcançáveis exatamente para quem mais precisa dele.
+    //
+    // A asserção é de COBERTURA e não de tamanho: comparar com `ACTIONS` faz uma posição nova nascer
+    // coberta ou fazer este caso reprovar, que é a única forma de a lista não voltar a ficar para trás.
+    expect([...PADWIZ_ORDER].sort()).toEqual([...ACTIONS].sort());
+  });
+
+  it('a ordem é de ERGONOMIA: direções, losango, ombros, sistema', () => {
+    // A ordem é o que sobra de decisão da engine aqui — as palavras são do jogo. Direções primeiro porque
+    // a criança as encontra sem pensar; sistema por último porque `start` e `select` costumam ser os
+    // botões mais pequenos e escondidos.
+    expect(PADWIZ_ORDER.slice(0, 4)).toEqual(['up', 'down', 'left', 'right']);
+    expect(PADWIZ_ORDER.slice(-2)).toEqual(['start', 'select']);
   });
 
   it('⚠️ nenhum RÓTULO sobrou na tabela — era português cru dentro da engine', () => {
@@ -246,7 +261,7 @@ describe('initGamepad — wizard: fluxo completo', () => {
   let ctx; let api;
   beforeEach(() => { ctx = buildCtx(); api = initGamepad(ctx); });
 
-  it('[Right] identifica o controle no 1º botão pressionado, espera soltar, e faz os 9 passos até fechar sozinho', () => {
+  it('[Right] identifica o controle no 1º botão pressionado, espera soltar, e faz os passos NOMEADOS até fechar sozinho', () => {
     api.openPadWiz();
     expect(api.getPadWiz()).not.toBeNull();
     // ainda sem controle identificado: qualquer pad com botão pressionado é adotado (array indexado por
@@ -264,12 +279,17 @@ describe('initGamepad — wizard: fluxo completo', () => {
     expect(api.getPadWiz().baseWait).toBe(false);
     expect(api.getPadWiz().step).toBe(0);
 
-    // percorre os 9 passos apertando um botão distinto por passo (0..8), soltando entre cada um
-    for (let i = 0; i < PADWIZ_ORDER.length; i++) {
+    // ⚠️ PERCORRE AS POSIÇÕES QUE O JOGO NOMEIA, e não a lista inteira. O preset falso deste ficheiro
+    // nomeia nove das quatorze, e o assistente SALTA as cinco que este jogo não usa — perguntar por elas
+    // produziria um passo mudo. Até 2026-09-06 a lista tinha exatamente nove entradas e as duas coisas
+    // coincidiam por acidente; agora não coincidem, e é a primeira que importa.
+    const NOMEADAS = PADWIZ_ORDER.filter((a) => ctx.rotuloDaAcao(a) !== null);
+    expect(NOMEADAS).toHaveLength(9);
+    for (let i = 0; i < NOMEADAS.length; i++) {
       ctx.setPads([makePad({ id: 'DirectInput X', index: 0, pressed: [i] })]);
       api.padWizTick(); // captura o botão i para o passo atual
-      if (i < PADWIZ_ORDER.length - 1) {
-        expect(api.getPadWiz().map[PADWIZ_ORDER[i]]).toEqual({ b: i });
+      if (i < NOMEADAS.length - 1) {
+        expect(api.getPadWiz().map[NOMEADAS[i]]).toEqual({ b: i });
         ctx.setPads([makePad({ id: 'DirectInput X', index: 0, pressed: [] })]);
         api.padWizTick(); // solta -> libera o próximo prompt
       }

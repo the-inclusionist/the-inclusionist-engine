@@ -155,7 +155,19 @@ export function padActions(gp: PadLike, custom: PadMap | null): PadActions {
  * `action7` em voz alta.
  */
 export const PADWIZ_ORDER: readonly string[] = [
-  'up', 'down', 'left', 'right', 'action2', 'action1', 'action4', 'action3', 'start',
+  // Direções primeiro: são o que a criança encontra sem pensar, e acertar as quatro dá confiança para as
+  // outras dez.
+  'up', 'down', 'left', 'right',
+  // O losango, na ordem em que o dedo o percorre neste projeto (ADR-0086 §2).
+  'action2', 'action1', 'action4', 'action3',
+  // ⚠️ OS QUATRO OMBROS FALTAVAM AQUI ATÉ 2026-09-06, e a falta era um buraco de acessibilidade e não uma
+  // omissão cosmética: o assistente existe PARA controles que não são «standard» — genéricos, adaptados,
+  // de uma mão —, e um jogo que declarasse `leftShoulder` não tinha por onde a criança o mapear. Cinco das
+  // quatorze posições eram inalcançáveis exatamente para quem mais precisa do assistente.
+  'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger',
+  // Sistema por último: `start` e `select` costumam ser os botões mais pequenos e mais escondidos, e pedi-los
+  // no fim deixa a criança já habituada ao ritmo do assistente quando chega neles.
+  'start', 'select',
 ];
 
 export interface WizAnimDef { seq?: string[]; hold?: number; cls: string; fx?: string; noimg?: number; flip?: number; }
@@ -348,13 +360,26 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     const img = ctx.$<HTMLImageElement>('#padwiz-demo-img');
     if (img) img.src = ctx.spriteBase + a.seq[Math.floor(a.t / a.hold) % a.seq.length] + '.png';
   }
+  /**
+   * Anda até o próximo passo que ESTE jogo usa, ou fecha se não houver mais.
+   *
+   * ⚠️ UMA FUNÇÃO SÓ, e antes eram duas com regras diferentes: `wizBind` incrementava e fechava no fim,
+   * `wizPrompt` saltava as não nomeadas. Depois do último passo nomeado o assistente ficava aberto a
+   * apontar para uma posição que o jogo não usa, e só fechava no tique seguinte — uma criança veria o
+   * assistente pendurado, sem pergunta nenhuma na tela.
+   */
+  function wizAvancar(): void {
+    if (!padWiz) return;
+    while (padWiz.step < PADWIZ_ORDER.length && !ctx.rotuloDaAcao(PADWIZ_ORDER[padWiz.step]!)) padWiz.step++;
+    if (padWiz.step >= PADWIZ_ORDER.length) closePadWiz(true);
+  }
+
   function wizPrompt(): void {
     if (!padWiz) return;
-    const acao = PADWIZ_ORDER[padWiz.step];
-    const rotulo = ctx.rotuloDaAcao(acao);
-    // ⚠️ SEM RÓTULO, SEM PASSO. O jogo não nomeia esta posição, logo não a usa: perguntar por ela
-    // produziria um passo mudo ou, pior, o assistente a dizer «action7» a uma criança.
-    if (!rotulo) { padWiz.step++; if (padWiz.step >= PADWIZ_ORDER.length) closePadWiz(true); else wizPrompt(); return; }
+    wizAvancar();
+    if (!padWiz) return; // fechou ao avançar
+    const acao = PADWIZ_ORDER[padWiz.step]!;
+    const rotulo = ctx.rotuloDaAcao(acao)!;
     wizSay((padWiz.step + 1) + ' de ' + PADWIZ_ORDER.length + ' — aperte: ' + rotulo);
     wizDemo(acao); // demonstração animada do que a ação FAZ
     const pr = ctx.$<HTMLElement>('#padwiz-progress');
@@ -362,10 +387,10 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   }
   function wizBind(bd: PadBinding): void {
     if (!padWiz) return;
-    padWiz.map[PADWIZ_ORDER[padWiz.step]] = bd;
+    padWiz.map[PADWIZ_ORDER[padWiz.step]!] = bd;
     padWiz.step++;
     padWiz.release = true; // exige soltar antes do próximo passo (mesmo botão segurado não dobra pro passo seguinte)
-    if (padWiz.step >= PADWIZ_ORDER.length) closePadWiz(true);
+    wizAvancar(); // salta o que este jogo não usa, e fecha se o resto da lista for tudo isso
   }
 
   // ----- wizard: abrir/fechar -----
