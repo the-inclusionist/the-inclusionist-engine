@@ -13,8 +13,10 @@
 import { describe, it, expect } from 'vitest';
 import { createAudioSonar } from '../app/js/platform/audio-sonar.js';
 
-const CONTINUO = { kind: 'continuous', width: 896, height: 992, unit: 16 };
-const GRADE = { kind: 'grid', cols: 20, rows: 20 };
+const CONTINUO = { kind: 'continuous', size: [896, 992], unit: 16, move: 'free', frame: 'clock' };
+// `move: 'diagonal'` explicito: e a regra que este fixture SEMPRE assumiu, e ela deixou de ser a unica
+// (ADR-0089). Sem o campo, o caso da diagonal estaria a afirmar um padrao em vez de uma declaracao.
+const GRADE = { kind: 'grid', size: [20, 20], move: 'diagonal', frame: 'compass' };
 const LISTA = { kind: 'hotspots', order: ['q1', 'q2', 'q3', 'q4'] };
 
 function setup(over = {}) {

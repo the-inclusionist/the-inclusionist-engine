@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { conformanceProblems, distance } from '../app/js/core/contract.js';
 
-const GRADE = { kind: 'grid', cols: 8, rows: 8 };
+const GRADE = { kind: 'grid', size: [8, 8], move: 'diagonal', frame: 'compass' };
 
 /** Uma declaração conforme, mínima. */
 const valida = (over = {}) => ({
@@ -56,22 +56,22 @@ describe('a topologia é REAVALIADA, que é a razão inteira da mudança', () =>
   it('um tabuleiro que muda de tamanho é lido pelo tamanho de agora', () => {
     // O caso medido: o game-15puzzle é 3×3, 4×4 ou 5×5, escolhido em tempo de jogo.
     let lado = 3;
-    const d = valida({ topology: () => ({ kind: 'grid', cols: lado, rows: lado }) });
+    const d = valida({ topology: () => ({ kind: 'grid', size: [lado, lado], move: 'diagonal', frame: 'compass' }) });
 
-    expect(d.topology().cols).toBe(3);
+    expect(d.topology().size[0]).toBe(3);
     expect(conformanceProblems(d)).toEqual([]);
 
     lado = 5;
     // ⚠️ A IGUALDADE ABAIXO É A DECISÃO. Com `topology` como valor, este 5 seria um 3 — o objeto foi
     // lido uma vez, na construção, e nada tornava a perguntar.
-    expect(d.topology().cols).toBe(5);
+    expect(d.topology().size[0]).toBe(5);
     expect(conformanceProblems(d)).toEqual([]);
   });
 
   it('e a medida do sonar acompanha o tabuleiro novo', () => {
     let lado = 3;
-    const topology = () => ({ kind: 'grid', cols: lado, rows: lado });
-    const canto = () => ({ x: topology().cols - 1, y: topology().rows - 1 });
+    const topology = () => ({ kind: 'grid', size: [lado, lado], move: 'diagonal', frame: 'compass' });
+    const canto = () => ({ x: topology().size[0] - 1, y: topology().size[1] - 1 });
 
     expect(distance(topology(), { x: 0, y: 0 }, canto())).toBe(2);
     lado = 5;
@@ -80,7 +80,7 @@ describe('a topologia é REAVALIADA, que é a razão inteira da mudança', () =>
 
   it('uma declaração cujo tamanho fica inválido passa a ser reprovada NA HORA', () => {
     let cols = 4;
-    const d = valida({ topology: () => ({ kind: 'grid', cols, rows: 4 }) });
+    const d = valida({ topology: () => ({ kind: 'grid', size: [cols, 4], move: 'diagonal', frame: 'compass' }) });
     expect(conformanceProblems(d)).toEqual([]);
     cols = 0; // um bug do jogo: o tabuleiro colapsou
     expect(conformanceProblems(d)).toHaveLength(1);
@@ -89,7 +89,7 @@ describe('a topologia é REAVALIADA, que é a razão inteira da mudança', () =>
 
 describe('o MUNDO declarado (ADR-0087)', () => {
   const valida = (over = {}) => ({
-    topology: () => ({ kind: 'grid', cols: 4, rows: 4 }),
+    topology: () => ({ kind: 'grid', size: [4, 4], move: 'diagonal', frame: 'compass' }),
     world: () => ({ kind: 'element', selector: '#game-region' }),
     tick: 'player',
     roleAt: () => 'free',

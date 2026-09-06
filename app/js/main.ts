@@ -548,7 +548,9 @@ const tts = createTts({ srSay, srAlert, ensureAC, catNode, audioOut, getSoundOn:
 //     dentro do sonar; agora e o JOGO que filtra, e o sonar so compara distancias.
 //   · `nameAt(at)`   — como se chama o que esta ali. Era `t('sr.nav.coin')` cravado.
 const sonarNav = createAudioSonar({
-  topology: () => ({ kind: 'continuous', width: WORLD_PX_W, height: WORLD_PX_H, unit: TILE }),
+  // `move: 'free'` porque num espaco continuo a distancia e a reta; `frame: 'clock'` porque isto e uma
+  // PLATAFORMA 2D vista de lado, e norte/sul nao querem dizer nada para quem esta a olhar de lado (ADR-0089).
+  topology: () => ({ kind: 'continuous', size: [WORLD_PX_W, WORLD_PX_H], unit: TILE, move: 'free', frame: 'clock' }),
   targetsOf: (i) => coins.filter((cn) => !cn.taken && cn.owner === i).map((cn) => ({ x: cn.x, y: cn.y })),
   nameAt: () => ({ text: t('hud.nome.moeda'), gender: 'f', plural: false }),
   tonePan, srSay, narrate: tts.narrate,

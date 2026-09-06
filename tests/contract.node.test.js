@@ -26,7 +26,7 @@ import { conformanceProblems, speakableProblems, distance } from '../app/js/core
 
 /** Uma declaração conforme, de plataforma. As funções devolvem constantes: aqui só a FORMA está sob teste. */
 const plataforma = () => ({
-  topology: () => ({ kind: 'continuous', width: 896, height: 992, unit: 16 }),
+  topology: () => ({ kind: 'continuous', size: [896, 992], unit: 16, move: 'free', frame: 'clock' }),
   tick: 'clock',
   world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'structure',
@@ -94,17 +94,55 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
   });
 
   it('[Boundary] grade com medida zero ou negativa é reprovada', () => {
-    const grade = (cols, rows) => conformanceProblems({ ...plataforma(), topology: () => ({ kind: 'grid', cols, rows }) });
+    const grade = (...size) => conformanceProblems({
+      ...plataforma(), topology: () => ({ kind: 'grid', size, move: 'diagonal', frame: 'compass' }),
+    });
     expect(grade(8, 8)).toEqual([]);
     expect(grade(0, 8)).toHaveLength(1);
     expect(grade(8, 0)).toHaveLength(1);
     expect(grade(-1, 8)).toHaveLength(1);
     expect(grade(1, 1)).toEqual([]); // uma célula é uma grade legítima
+    expect(grade(8, 8, 4)).toEqual([]); // três dimensões é uma grade legítima também
+  });
+
+  it('[Boundary] ⚠️ a DIMENSÃO é `size.length`, e só 2 ou 3 são representáveis', () => {
+    // Não é medida ruim, é espaço que `Spot` (x, y, z?) não sabe representar — e sem esta recusa o quarto eixo
+    // seria simplesmente IGNORADO por `distance`, que é o defeito que não deixa rasto.
+    const dim = (size) => conformanceProblems({
+      ...plataforma(), topology: () => ({ kind: 'grid', size, move: 'diagonal', frame: 'compass' }),
+    });
+    expect(dim([8])).toHaveLength(1);           // uma dimensão não é um espaço navegável
+    expect(dim([8, 8, 8, 8])).toHaveLength(1);  // quatro é mais do que `Spot` carrega
+    expect(dim([])).toHaveLength(1);
+    expect(dim([8, 8])).toEqual([]);
+    expect(dim([8, 8, 8])).toEqual([]);
+  });
+
+  it('[Boundary] ⚠️ `move` AUSENTE é reprovado — é a métrica, e adivinhá-la sub-relata até 2×', () => {
+    // O achado §3 do ADR-0080: a grade contava sempre em passos de rei, e num quebra-cabeça deslizante nada
+    // anda na diagonal. Deixar o campo opcional com padrão faria ESQUECER passar por ESCOLHER, e o preço do
+    // esquecimento é o sonar mandar uma criança cega para o lado errado com confiança.
+    const mv = (move) => conformanceProblems({
+      ...plataforma(), topology: () => ({ kind: 'grid', size: [8, 8], move, frame: 'compass' }),
+    });
+    expect(mv(undefined)).toHaveLength(1);
+    expect(mv('chebyshev')).toHaveLength(1); // o nome da métrica não é o nome da regra
+    for (const bom of ['orthogonal', 'diagonal', 'free']) expect(mv(bom), bom).toEqual([]);
+  });
+
+  it('[Boundary] ⚠️ `frame` AUSENTE é reprovado — em que palavras a direção é dita é do JOGO', () => {
+    const fr = (frame) => conformanceProblems({
+      ...plataforma(), topology: () => ({ kind: 'grid', size: [8, 8], move: 'diagonal', frame }),
+    });
+    expect(fr(undefined)).toHaveLength(1);
+    expect(fr('cardinal')).toHaveLength(1);
+    expect(fr('compass')).toEqual([]);
+    expect(fr('clock')).toEqual([]);
   });
 
   it('[Boundary] contínuo SEM `unit` é reprovado — unit é a métrica da narração, não decoração', () => {
     // Sem `unit`, "a dois passos" não tem como ser dito: sobra pixel, que não é unidade de ninguém que joga.
-    const semUnit = { kind: 'continuous', width: 100, height: 100 };
+    const semUnit = { kind: 'continuous', size: [100, 100], move: 'free', frame: 'clock' };
     expect(conformanceProblems({ ...plataforma(), topology: () => semUnit })).toHaveLength(1);
     expect(conformanceProblems({ ...plataforma(), topology: () => ({ ...semUnit, unit: 0 }) })).toHaveLength(1);
     expect(conformanceProblems({ ...plataforma(), topology: () => ({ ...semUnit, unit: 16 }) })).toEqual([]);
@@ -166,17 +204,43 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
 
 // -----------------------------------------------------------------------------------------------------------
 describe('distance — a métrica, que é o que faz "mais perto" existir', () => {
-  const GRADE = { kind: 'grid', cols: 8, rows: 8 };
-  const CONT = { kind: 'continuous', width: 100, height: 100, unit: 16 };
+  const GRADE = { kind: 'grid', size: [8, 8], move: 'diagonal', frame: 'compass' };
+  const DESLIZANTE = { kind: 'grid', size: [4, 4], move: 'orthogonal', frame: 'compass' };
+  const CONT = { kind: 'continuous', size: [100, 100], unit: 16, move: 'free', frame: 'clock' };
   const LISTA = { kind: 'hotspots', order: ['q1', 'q2', 'q3', 'q4'] };
-  const P = (x, y = 0) => ({ x, y });
+  const P = (x, y = 0, z) => (z === undefined ? { x, y } : { x, y, z });
 
-  it('[Right] grade conta PASSOS DE REI: a diagonal custa 1, não 2 e não √2', () => {
-    // É uma decisão, não um detalhe. Chebyshev é como quem joga numa grade conta a distância — e trocá-la por
-    // Manhattan faria o sonar apontar para o alvo errado sempre que houvesse empate na diagonal.
+  it('[Right] grade de DIAGONAL conta passos de rei: a diagonal custa 1, não 2 e não √2', () => {
+    // Continua a ser verdade — onde a diagonal é legal. O que mudou é que deixou de ser a única verdade.
     expect(distance(GRADE, P(0, 0), P(1, 1))).toBe(1);
     expect(distance(GRADE, P(0, 0), P(3, 1))).toBe(3);
     expect(distance(GRADE, P(2, 5), P(2, 5))).toBe(0);
+  });
+
+  it('[Right] ⚠️ grade ORTOGONAL conta MOVIMENTOS: duas à direita e duas abaixo são QUATRO, não 2', () => {
+    // É o achado §3 do ADR-0080, medido no `game-15puzzle`: nada anda na diagonal num quebra-cabeça
+    // deslizante, e Chebyshev sub-relatava a distância até 2×. Sub-relatar distância a quem não vê a tela não
+    // é imprecisão — é dizer "está perto" de uma coisa que está longe, e a criança confia.
+    expect(distance(DESLIZANTE, P(0, 0), P(2, 2))).toBe(4);
+    expect(distance(DESLIZANTE, P(0, 0), P(1, 1))).toBe(2);
+    expect(distance(DESLIZANTE, P(0, 0), P(3, 0))).toBe(3); // no eixo, as duas regras concordam
+  });
+
+  it('[Right] a MESMA grade com regras diferentes dá respostas diferentes — é o campo que decide', () => {
+    // O par que prova que a regra é lida, e não que os dois fixtures por acaso diferem noutra coisa.
+    const size = [8, 8], frame = 'compass';
+    const a = P(0, 0), b = P(3, 3);
+    expect(distance({ kind: 'grid', size, frame, move: 'diagonal' }, a, b)).toBe(3);
+    expect(distance({ kind: 'grid', size, frame, move: 'orthogonal' }, a, b)).toBe(6);
+    expect(distance({ kind: 'grid', size, frame, move: 'free' }, a, b)).toBeCloseTo(Math.hypot(3, 3), 10);
+  });
+
+  it('[Boundary] três dimensões: o terceiro eixo entra na conta, e só quando declarado', () => {
+    const cubo = { kind: 'grid', size: [4, 4, 4], move: 'orthogonal', frame: 'compass' };
+    expect(distance(cubo, P(0, 0, 0), P(1, 1, 1))).toBe(3);
+    // ⚠️ O MESMO PONTO numa topologia de DUAS dimensões: o `z` é ignorado, porque a dimensão é `size.length`
+    // e não o que o ponto por acaso carrega. Sem isto, um `z` esquecido num fixture mudaria distâncias 2D.
+    expect(distance(DESLIZANTE, P(0, 0, 0), P(1, 1, 99))).toBe(2);
   });
 
   it('[Right] contínuo devolve PASSOS, não pixels — é `unit` que faz a tradução', () => {
@@ -226,13 +290,17 @@ describe('ENSAIO: o mesmo código de acessibilidade sobre duas topologias (ADR-0
   const alvoMaisProximo = (decl, de, candidatos) =>
     candidatos
       .filter((c) => decl.roleAt(c) === 'goal')
-      .map((c) => ({ at: c, d: distance(decl.topology, de, c), nome: decl.nameAt(c) }))
+      // ⚠️ `decl.topology()` COM OS PARÊNTESES, e eles faltavam. Passar a função onde vai a topologia dava
+      // `t.kind === undefined` e o `distance` antigo caía no ramo contínuo, dividindo por `t.unit` ausente:
+      // NaN em toda distância, e um `sort` por NaN que devolvia o primeiro item — o teste passava por acaso.
+      // A forma nova estoura em vez de mentir, que é a única razão de isto ter aparecido.
+      .map((c) => ({ at: c, d: distance(decl.topology(), de, c), nome: decl.nameAt(c) }))
       .sort((x, y) => x.d - y.d)[0] ?? null;
 
   /** Um mapa de grade de mentira: só a coluna 5 é objetivo. */
   const gradeDecl = {
     ...plataforma(),
-    topology: () => ({ kind: 'grid', cols: 8, rows: 8 }),
+    topology: () => ({ kind: 'grid', size: [8, 8], move: 'diagonal', frame: 'compass' }),
     roleAt: (at) => (at.x === 5 ? 'goal' : 'structure'),
     nameAt: (at) => ({ text: `alvo ${at.x},${at.y}`, gender: 'm', plural: false }),
   };

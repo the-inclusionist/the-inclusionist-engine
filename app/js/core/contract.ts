@@ -56,16 +56,66 @@ export interface Speakable {
 // As três formas cobrem o catálogo do ADR-0027: GRADE (Sokoban, tabuleiro, cela Braille), CONTÍNUO (plataforma,
 // top-down, corrida) e LISTA ORDENADA (quiz, menu, escolha múltipla) — onde não há espaço nenhum, só ordem.
 
+/**
+ * COMO SE CONTA UM PASSO — e é isto que decide a métrica, que não é a mesma em todo tabuleiro.
+ *
+ * ⚠️ A grade tinha UMA métrica fixa (Chebyshev), com a razão escrita ao lado: *"numa grade, a diagonal custa um
+ * passo, e é assim que quem joga conta"*. Verdade onde a diagonal é legal. **Falsa num quebra-cabeça
+ * deslizante**, onde nada anda na diagonal: uma peça duas à direita e duas abaixo está a 2 por Chebyshev e a
+ * QUATRO movimentos de distância. O sonar sub-relatava até 2× — e sub-relatar distância a quem não vê a tela
+ * não é imprecisão, é mandar a criança para o lado errado com confiança.
+ *
+ * `grid` nunca foi UMA coisa. Quem declara a grade declara também como se anda nela.
+ */
+export type MoveRule =
+  | 'orthogonal'  // L¹ (Manhattan) — quebra-cabeça deslizante, Sokoban, torre. A diagonal não existe.
+  | 'diagonal'    // L∞ (Chebyshev) — rei do xadrez, top-down de 8 direções. A diagonal custa um passo.
+  | 'free';       // L² (euclidiana) — espaço contínuo, onde não há passo discreto nenhum.
+
+/**
+ * EM QUE PALAVRAS SE DIZ UMA DIREÇÃO. Não é preferência de quem ouve: é propriedade do ESPAÇO do jogo.
+ *
+ *   `compass`  norte · sul · leste · oeste (+ zênite e nadir) — tabuleiro, top-down, mapa, 3D
+ *   `clock`    «às 2 horas», «às 10 horas» — PLATAFORMA 2D, vista lateral
+ *
+ * ⚠️ Num jogo de plataforma, norte e sul não querem dizer nada: a criança não está a olhar um mapa, está a
+ * olhar de lado. O relógio é o referencial que essa vista já usa, e dá 12 posições onde a rosa dá 8.
+ *
+ * ⚠️ E O RELÓGIO PRESSUPÕE LER RELÓGIO ANALÓGICO, num público que inclui alfabetização. Não é motivo para o
+ * recusar — é motivo para o rótulo FALADO ser testado com criança (issue #7) antes de se declarar bom.
+ */
+export type Frame = 'compass' | 'clock';
+
 export type Topology =
-  /** Grade discreta. A distância é em CÉLULAS, e vizinhança é adjacência. */
-  | { readonly kind: 'grid'; readonly cols: number; readonly rows: number }
-  /** Espaço contínuo. A distância é em UNIDADES do mundo; `unit` diz quanto vale um "passo" para quem narra. */
-  | { readonly kind: 'continuous'; readonly width: number; readonly height: number; readonly unit: number }
-  /** Sem espaço: uma lista ORDENADA de alvos. A distância é a diferença de índice. */
+  /**
+   * Grade discreta. A distância é em CÉLULAS, e a métrica sai de `move`.
+   * `size` é `[colunas, linhas]` ou `[colunas, linhas, camadas]`.
+   */
+  | { readonly kind: 'grid'; readonly size: readonly number[]; readonly move: MoveRule; readonly frame: Frame }
+  /**
+   * Espaço contínuo. A distância é em UNIDADES do mundo; `unit` diz quanto vale um "passo" para quem narra.
+   * `size` é `[largura, altura]` ou `[largura, altura, profundidade]`.
+   */
+  | { readonly kind: 'continuous'; readonly size: readonly number[]; readonly unit: number; readonly move: MoveRule; readonly frame: Frame }
+  /** Sem espaço: uma lista ORDENADA de alvos. A distância é a diferença de índice, e não há direção. */
   | { readonly kind: 'hotspots'; readonly order: readonly string[] };
 
-/** Uma posição, na métrica da topologia declarada. Em `hotspots`, `x` é o índice e `y` é ignorado. */
-export interface Spot { readonly x: number; readonly y: number }
+/**
+ * Uma posição, na métrica da topologia declarada. Em `hotspots`, `x` é o índice e `y` é ignorado.
+ *
+ * ⚠️ ASSIMETRIA DELIBERADA COM `size`, e vale dizer por quê. A EXTENSÃO é um vetor porque a dimensão varia e
+ * `size.length` é o único lugar onde ela mora — sem isso, "tem profundidade?" viraria `depth !== undefined`
+ * espalhado por cada consumidor. O PONTO tem eixos com nome porque é lido em código a toda hora: `alvo.at.x`
+ * diz o que é, `alvo.at[0]` obriga a lembrar. Dimensão é 2 ou 3 e a conformidade recusa o resto, o que fecha
+ * a assimetria: não há `size` que `Spot` não consiga representar.
+ */
+export interface Spot { readonly x: number; readonly y: number; readonly z?: number }
+
+/** A dimensão que a topologia declara. `hotspots` não tem espaço, logo não tem dimensão. */
+export function dimension(t: Topology): number { return t.kind === 'hotspots' ? 0 : t.size.length; }
+
+/** O eixo `i` de um ponto, para quem percorre dimensões em vez de as nomear. */
+function eixo(s: Spot, i: number): number { return i === 0 ? s.x : i === 1 ? s.y : (s.z ?? 0); }
 
 /* ===================== 2 · PAPEL SEMÂNTICO ===================== */
 //
@@ -95,7 +145,27 @@ export type Role =
 // `heading` é oito direções mais `none` porque é o que cobre grade e contínuo sem inventar ângulo: um top-down
 // anda em diagonal, uma plataforma só em 'e'/'w', e um quiz não aponta para lugar nenhum.
 
-export type Heading = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | 'none';
+/**
+ * ⚠️ `zenith` E `nadir` ENTRARAM PORQUE `up`/`down` JÁ QUEREM DIZER DUAS COISAS. `ACTIONS` (core/actions) tem
+ * `up` e `down` como AÇÕES DE CONTROLE — o que a criança carrega —, e o eixo vertical do ESPAÇO é outra coisa
+ * inteiramente. Enquanto o mundo era plano a ambiguidade não custava nada; num espaço de três dimensões
+ * custaria o pior tipo de defeito, o que se lê certo e faz outra coisa. Palavras próprias, antes de o 3D chegar.
+ */
+export type Heading = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | 'zenith' | 'nadir' | 'none';
+
+/**
+ * PARA ONDE FICA UM PONTO VISTO DE OUTRO, já no referencial que a topologia declara.
+ *
+ * ⚠️ NÃO É O `heading` DO FOCO, e a diferença é o defeito que isto conserta. `Focus.heading` é para onde a
+ * criança está VIRADA; isto é para onde está o ALVO. O sonar precisa do segundo e calculava-o à mão a partir
+ * de `x` cru, com zona morta de ±4, dizendo `left`/`right`/`ahead` — três palavras onde o contrato tem oito, e
+ * MISTURANDO REFERENCIAIS: *esquerda/direita* é relativo à tela, *à frente* é relativo ao corpo. Uma criança
+ * cega que ouve as duas na mesma frase não tem como saber de qual origem cada uma fala.
+ */
+export type Bearing =
+  | { readonly kind: 'compass'; readonly heading: Heading }
+  | { readonly kind: 'clock'; readonly hour: number }  // 1..12, como no mostrador
+  | { readonly kind: 'none' };                          // mesmo lugar, ou lista sem espaço
 
 export interface Focus {
   /** Quem está com o foco. Um id do jogo — a engine não o interpreta, só o carrega. */
@@ -268,12 +338,29 @@ export function conformanceProblems(d: Partial<GameDeclaration> | null | undefin
   if (d.topology === undefined || d.topology === null) p.push('topology: missing');
   else if (typeof d.topology !== 'function') p.push('topology: must be a FUNCTION (it was a value until ADR-0084)');
   else if (!t) p.push('topology: the function returned nothing');
-  else if (t.kind === 'grid') {
-    if (!(t.cols > 0) || !(t.rows > 0)) p.push('topology.grid: cols and rows must be positive');
-  } else if (t.kind === 'continuous') {
-    if (!(t.width > 0) || !(t.height > 0)) p.push('topology.continuous: width and height must be positive');
+  else if (t.kind === 'grid' || t.kind === 'continuous') {
+    // ⚠️ A DIMENSÃO É `size.length`, e é por isso que ela é conferida ANTES de tudo: um `size` vazio ou de
+    // quatro entradas não é uma medida ruim, é um espaço que `Spot` não sabe representar — e o erro apareceria
+    // longe daqui, como um eixo simplesmente ignorado.
+    if (!Array.isArray(t.size) || t.size.length < 2 || t.size.length > 3) {
+      p.push('topology.size: must be [w, h] or [w, h, d] - dimension is 2 or 3, and it is size.length');
+    } else if (!t.size.every((n) => n > 0)) {
+      p.push('topology.size: every extent must be positive');
+    }
+    // `move` é o que decide a métrica. Ausente, a distância seria adivinhada — e adivinhar Chebyshev num
+    // quebra-cabeça deslizante sub-relata até 2×, que foi o achado §3 do ADR-0080.
+    if (t.move !== 'orthogonal' && t.move !== 'diagonal' && t.move !== 'free') {
+      p.push('topology.move: must be "orthogonal" (L1), "diagonal" (L8/Chebyshev) or "free" (L2) - it is the metric the sonar counts in');
+    }
+    // `frame` é em que PALAVRAS a direção é dita. Sem ele a engine escolheria pela criança, e num jogo de
+    // plataforma escolheria mal: norte e sul não querem dizer nada numa vista lateral.
+    if (t.frame !== 'compass' && t.frame !== 'clock') {
+      p.push('topology.frame: must be "compass" (board, top-down, map, 3D) or "clock" (2D side view)');
+    }
     // `unit` é o que dá MÉTRICA a um espaço contínuo: sem ela, "a dois passos" não tem como ser dito.
-    if (!(t.unit > 0)) p.push('topology.continuous: unit must be positive (it is the metric the narration counts in)');
+    if (t.kind === 'continuous' && !(t.unit > 0)) {
+      p.push('topology.continuous: unit must be positive (it is the metric the narration counts in)');
+    }
   } else if (t.kind === 'hotspots') {
     if (!t.order?.length) p.push('topology.hotspots: order is empty - there is nowhere to navigate');
     else if (new Set(t.order).size !== t.order.length) p.push('topology.hotspots: order has a repeated id');
@@ -312,12 +399,58 @@ export function speakableProblems(s: Speakable | null | undefined): string[] {
   return p;
 }
 
-/** Distância entre dois pontos NA MÉTRICA declarada. É o que o sonar precisa e hoje calcula em pixels. */
+/**
+ * Distância entre dois pontos NA MÉTRICA declarada — a que o jogo declarou em `move`, e em quantas dimensões
+ * ele declarou em `size`. É o que o sonar precisa e antes calculava em pixels.
+ *
+ * ⚠️ A GRADE ERA SEMPRE CHEBYSHEV, e isso custava até 2× de erro num quebra-cabeça deslizante. As três regras
+ * não são gosto: são o que "um passo" significa em cada jogo, e o sonar fala em passos.
+ */
 export function distance(t: Topology, a: Spot, b: Spot): number {
-  // Grade: passos de rei (Chebyshev) — numa grade, a diagonal custa um passo, e é assim que quem joga conta.
-  if (t.kind === 'grid') return Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
-  // Lista: a distância é quantos itens separam um do outro.
+  // Lista: a distância é quantos itens separam um do outro. Não há eixo, logo não há regra de movimento.
   if (t.kind === 'hotspots') return Math.abs(a.x - b.x);
-  // Contínuo: euclidiana, dividida pela unidade — o resultado é "quantos passos", não "quantos pixels".
-  return Math.hypot(a.x - b.x, a.y - b.y) / t.unit;
+
+  const d: number[] = [];
+  for (let i = 0; i < t.size.length; i++) d.push(Math.abs(eixo(a, i) - eixo(b, i)));
+
+  const bruta = t.move === 'orthogonal' ? d.reduce((s, v) => s + v, 0)  // L¹: cada eixo custa por si
+    : t.move === 'diagonal' ? Math.max(...d)                            // L∞: a diagonal custa um passo
+      : Math.hypot(...d);                                               // L²: a reta entre os dois
+  // Contínuo: dividida pela unidade — o resultado é "quantos passos", não "quantos pixels".
+  return t.kind === 'continuous' ? bruta / t.unit : bruta;
+}
+
+/**
+ * PARA ONDE FICA `to` VISTO DE `from`, já nas palavras que a topologia declarou.
+ *
+ * ⚠️ DOIS EIXOS COM CONVENÇÕES DIFERENTES, e o silêncio sobre isto seria o defeito. `y` CRESCE PARA BAIXO —
+ * é a coordenada da tela, herdada da canvas e de todo o código que já existe, não uma escolha desta função.
+ * `z` CRESCE PARA CIMA, e essa é escolha: nada a força, e num espaço de três dimensões «zênite» só pode
+ * querer dizer o lado para onde a criança olharia levantando a cabeça. Um jogo 3D tem de saber os dois.
+ */
+export function bearing(t: Topology, from: Spot, to: Spot): Bearing {
+  if (t.kind === 'hotspots') return { kind: 'none' };
+
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dz = t.size.length > 2 ? (to.z ?? 0) - (from.z ?? 0) : 0;
+  const plano = Math.hypot(dx, dy);
+
+  // O eixo vertical do ESPAÇO ganha quando domina o plano — e ganha em palavras próprias, porque `up`/`down`
+  // já são AÇÕES em `core/actions`. Ver o comentário de `Heading`.
+  if (Math.abs(dz) > plano) return { kind: 'compass', heading: dz > 0 ? 'zenith' : 'nadir' };
+  if (plano === 0) return { kind: 'none' }; // mesmo lugar: não há direção que dizer, e inventar uma seria mentir
+
+  // `-dy` porque o norte é para CIMA e `y` cresce para baixo. Sem esta troca a rosa sai invertida, e o teste
+  // que a apanharia é o único que precisa de existir aqui.
+  const ang = Math.atan2(-dy, dx); // 0 = leste, cresce no sentido anti-horário
+
+  if (t.frame === 'clock') {
+    // 12 horas é para CIMA e os ponteiros andam no sentido horário — daí `90 - graus`, e não `graus`.
+    const horario = ((90 - (ang * 180) / Math.PI) % 360 + 360) % 360;
+    const h = Math.round(horario / 30) % 12;
+    return { kind: 'clock', hour: h === 0 ? 12 : h };
+  }
+  const ROSA: readonly Heading[] = ['e', 'ne', 'n', 'nw', 'w', 'sw', 's', 'se'];
+  return { kind: 'compass', heading: ROSA[(Math.round(ang / (Math.PI / 4)) % 8 + 8) % 8] };
 }
