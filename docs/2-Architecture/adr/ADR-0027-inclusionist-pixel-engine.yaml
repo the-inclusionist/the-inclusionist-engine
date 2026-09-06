@@ -1,6 +1,17 @@
 ---
 metadata:
   status: "proposed"
+  superseded-in-part:
+    - by: ADR-0088
+      what: "the OWNER of the round scope in passo 7's two namespaces, and nothing else. This record put
+             `JOGO_ID = 'inclusionist'` and `kJogo(nome)` inside `platform/storage.ts`; the id is now the
+             GAME's constant and `kJogo(jogo, nome)` is pure. ⚠️ THE TWO SCOPES THEMSELVES STAND, and stand
+             for the reason written here: what belongs to the CHILD stays shared across the catalogue, because
+             making a blind child reconfigure her cane and her narration in every game would be the
+             accessibility defect the namespacing was supposed to avoid. What was wrong is that the engine
+             named the game half — so two games in one browser profile wrote the same keys and one erased the
+             other's progress in silence. MEASURED before choosing: the id CANNOT come from the declaration,
+             because `game/state` reads storage at import and `main.ts` never calls `createGame` at all."
   date: 2026-08-23
   decision-makers: [Dev]
   consulted: [five parallel research passes over code, catalogue, console hardware, a11y standards]
