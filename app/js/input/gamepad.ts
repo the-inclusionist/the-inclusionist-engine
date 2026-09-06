@@ -10,6 +10,7 @@
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
+import { migrarMapaDeControle } from './vocabulary-migration.js';
 import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
 import * as store from '../platform/storage.js';
 
@@ -261,7 +262,15 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   let padWizAnim: { seq: string[]; hold: number; t: number } | null = null;
 
   function padMapFor(id: string): PadMap | null {
-    if (!_padMaps.has(id)) _padMaps.set(id, store.getJSON<PadMap>('incl_padmap_' + id, null));
+    // ⚠️ O MAPA SALVO PASSA PELO TRADUTOR NA LEITURA. Ele é indexado por AÇÃO — `{ jump: { b: 0 } }` — e um
+    // mapa gravado antes do ADR-0086 tem as chaves antigas, que `bindingAt` já não procura: o controle
+    // custom simplesmente pararia de responder, e o jogo cairia no mapa padrão sem dizer nada.
+    // É o mais caro dos três formatos a perder: um mapa destes existe porque alguém passou por um assistente
+    // de nove passos, botão a botão, quase sempre porque o controle NÃO é «standard» — e controles genéricos
+    // ou adaptados raramente são. Ver `input/vocabulary-migration.ts`.
+    if (!_padMaps.has(id)) {
+      _padMaps.set(id, migrarMapaDeControle(store.getJSON<PadMap>('incl_padmap_' + id, null)));
+    }
     return _padMaps.get(id) ?? null;
   }
   function actionsFor(gp: PadLike): PadActions { return padActions(gp, padMapFor(gp.id)); }

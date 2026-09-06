@@ -6,7 +6,7 @@
 // antigas que deixe de casar não dá erro: as teclas simplesmente param de responder, e a criança conclui que
 // o jogo quebrou. Perder isso é perder uma adaptação, não uma preferência.
 import { describe, it, expect } from 'vitest';
-import { migrarEsquema, migrarSalvo, migrarMapaDeToque, VOCABULARIO_ANTIGO } from '../app/js/input/vocabulary-migration.js';
+import { migrarEsquema, migrarSalvo, migrarMapaDeToque, migrarMapaDeControle, VOCABULARIO_ANTIGO } from '../app/js/input/vocabulary-migration.js';
 
 /** Um esquema tal como está salvo hoje, no vocabulário de plataforma. */
 const ANTIGO = {
@@ -131,5 +131,41 @@ describe('⚠️ o SEGUNDO dado salvo: o mapa de toque, onde a ação está no V
     // o toque não é o caminho alternativo: é o único.
     const antigo = { up: 'up', down: 'down', left: 'left', right: 'right', start: 'pause', b0: 'jump', b1: 'especial', b2: 'run', b3: 'swap' };
     expect(Object.keys(migrarMapaDeToque(antigo)).sort()).toEqual(Object.keys(antigo).sort());
+  });
+});
+
+describe('⚠️ o TERCEIRO dado salvo: o mapa do assistente de controle', () => {
+  it('traduz as chaves de ação e preserva o binding físico', () => {
+    const antigo = { up: { b: 12 }, jump: { b: 0 }, run: { b: 2 }, swap: { b: 3 }, especial: { b: 1 }, start: { b: 9 } };
+    const novo = migrarMapaDeControle(antigo);
+    expect(novo.action2).toEqual({ b: 0 });
+    expect(novo.action1).toEqual({ b: 2 });
+    expect(novo.action4).toEqual({ b: 3 });
+    expect(novo.action3).toEqual({ b: 1 });
+    expect(novo.up).toEqual({ b: 12 });
+    expect(novo.start).toEqual({ b: 9 });
+  });
+
+  it('`_skip` atravessa — é sentinela, não ação', () => {
+    expect(migrarMapaDeControle({ _skip: true }).\u005Fskip).toBe(true);
+  });
+
+  it('bindings analógicos e de hat atravessam sem perder campo', () => {
+    const novo = migrarMapaDeControle({ jump: { ax: 2, s: -1 }, run: { av: 6, v: -0.71 } });
+    expect(novo.action2).toEqual({ ax: 2, s: -1 });
+    expect(novo.action1).toEqual({ av: 6, v: -0.71 });
+  });
+
+  it('é idempotente e não estoura em nulo', () => {
+    const uma = migrarMapaDeControle({ jump: { b: 0 } });
+    expect(migrarMapaDeControle(uma)).toEqual(uma);
+    expect(migrarMapaDeControle(null)).toBeNull();
+  });
+
+  it('⚠️ NENHUM binding se perde — a contagem de entradas é a mesma', () => {
+    // Este é o mais caro dos três a perder: o mapa existe porque alguém passou por um assistente de
+    // nove passos, botão a botão, quase sempre porque o controle NÃO é "standard".
+    const antigo = { up: { b: 12 }, down: { b: 13 }, left: { b: 14 }, right: { b: 15 }, jump: { b: 0 }, run: { b: 2 }, swap: { b: 3 }, especial: { b: 1 }, start: { b: 9 } };
+    expect(Object.keys(migrarMapaDeControle(antigo))).toHaveLength(Object.keys(antigo).length);
   });
 });

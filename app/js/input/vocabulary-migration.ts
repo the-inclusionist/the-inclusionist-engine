@@ -58,6 +58,28 @@ export function migrarMapaDeToque(mapa: Record<string, string> | null | undefine
   return saida;
 }
 
+/**
+ * ⚠️ O TERCEIRO DADO SALVO, encontrado por varredura e não por acidente. Depois de o segundo aparecer num
+ * teste de navegador, a pergunta certa deixou de ser «este está migrado?» e passou a ser «QUANTOS formatos
+ * persistidos existem?». São três, e este é o do assistente de controle: `incl_padmap_<id>` guarda
+ * AÇÃO → BINDING FÍSICO, `{ jump: { b: 0 }, run: { b: 2 } }`, um por modelo de controle.
+ *
+ * ⚠️ E ELE É O MAIS CARO DE PERDER DOS TRÊS. Um mapa desses existe porque a criança (ou quem a acompanha)
+ * passou por um assistente de nove passos apertando botão a botão, provavelmente porque o controle dela não
+ * é «standard» — controles genéricos e adaptados raramente são. Perdê-lo manda essa pessoa de volta ao
+ * assistente inteiro.
+ *
+ * `_skip` e qualquer chave desconhecida atravessam, pela mesma razão das outras duas migrações.
+ */
+export function migrarMapaDeControle<T>(mapa: Record<string, T> | null | undefined): Record<string, T> | null {
+  if (!mapa) return null;
+  const saida: Record<string, T> = {};
+  for (const [chave, valor] of Object.entries(mapa)) {
+    saida[VOCABULARIO_ANTIGO[chave] ?? chave] = valor;
+  }
+  return saida;
+}
+
 /** O objeto salvo, tal como `input/keyboard` o persiste. `p34` é o formato mais antigo de todos. */
 export interface SavedKB {
   solo?: KeyScheme;
