@@ -32,10 +32,15 @@ export function platformerPreset(): ActionPreset {
     down: { label: t('act.down') },
     left: { label: t('act.left') },
     right: { label: t('act.right') },
-    action1: { label: t('act.run') },
-    action2: { label: t('act.jump') },
-    action3: { label: t('act.especial') },
-    action4: { label: t('act.swap') },
+
+    // ⚠️ AS QUATRO AÇÕES TÊM DUAS PALAVRAS, e não é redundância: `act.*` é a da lista de remapeamento
+    // («Correr / interagir») e `legend.*` é a da legenda do título («correr»), que fica debaixo de um glifo
+    // numa fileira de quatro e não tem largura para a longa. A distinção já existia no dicionário; o que
+    // mudou é que ela atravessa a fronteira COM as palavras, em vez de a engine ter de a conhecer.
+    action1: { label: t('act.run'), short: t('legend.run') },
+    action2: { label: t('act.jump'), short: t('legend.jump') },
+    action3: { label: t('act.especial'), short: t('legend.especial') },
+    action4: { label: t('act.swap'), short: t('legend.swap') },
     // `touch.act.pause` («Pausar (START)») e não uma chave nova: ela já existe nos três idiomas e já é a
     // palavra que a criança lê no painel de toque para este mesmo botão. Inventar `act.start` criaria uma
     // segunda palavra para a mesma coisa, e as duas divergiriam na primeira revisão de texto.

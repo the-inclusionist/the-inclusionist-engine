@@ -83,6 +83,19 @@ export const SYSTEM = ['start', 'select'] as const satisfies readonly Action[];
 export interface ActionWord {
   /** «Pular», «Confirmar», «Colocar peça». NUNCA `action2` — nome abstrato que chega a uma pessoa é defeito. */
   readonly label: string;
+  /**
+   * A versão CURTA, para onde não cabe a longa. Cai em `label` quando ausente.
+   *
+   * ⚠️ NÃO É PREFERÊNCIA DE ESTILO: É LARGURA MEDIDA. A legenda do título põe a palavra debaixo de um glifo,
+   * numa fileira de quatro, e `ui/shell` já trazia a nota de que ali não cabe o «Correr / interagir» que a
+   * lista de remapeamento usa — por isso o dicionário tinha DUAS famílias de chaves para as mesmas quatro
+   * ações, `act.*` e `legend.*`. A distinção é do jogo, não da engine, então atravessa com as palavras.
+   *
+   * ⚠️ E O RECUO PARA `label` DEGRADA VISUALMENTE, não funcionalmente: um jogo que não declare `short` vê a
+   * palavra longa espremida, e não uma legenda vazia. Escolhido assim porque uma legenda muda é pior do que
+   * uma legenda apertada — a primeira some para quem usa leitor de tela, a segunda não.
+   */
+  readonly short?: string;
   /** Opcional, para a tela de remapeamento: o que este botão faz, numa frase. */
   readonly hint?: string;
 }
@@ -123,6 +136,21 @@ export function labellerFrom(p: ActionPreset): (a: Action) => string | null {
   return (a) => {
     const w = p[a];
     return w && w.label.trim() ? w.label : null;
+  };
+}
+
+/**
+ * O mesmo, na versão CURTA — para a legenda do título, onde a palavra vive debaixo de um glifo.
+ *
+ * ⚠️ RECUA PARA `label`, e o recuo é a decisão: uma legenda apertada é pior que uma bonita e melhor que uma
+ * vazia. Vazia sumiria também para quem usa leitor de tela, que é o custo que não se aceita aqui.
+ */
+export function shortLabellerFrom(p: ActionPreset): (a: Action) => string | null {
+  return (a) => {
+    const w = p[a];
+    if (!w) return null;
+    const curto = w.short && w.short.trim() ? w.short : w.label;
+    return curto && curto.trim() ? curto : null;
   };
 }
 

@@ -98,7 +98,7 @@ import { initSettingsMotion, setSelectedPlayer as setSelectedMotionPlayer } from
 import { initSettingsTypo } from './ui/settings-typo.js';
 import { initTitle } from './ui/title.js';
 import { createTitleScene } from './render/title-scene.js'; // Fase 2.27: atalho de querySelector (Tier 1)
-import { labellerFrom, presetActions, type Action } from './core/actions.js';
+import { labellerFrom, shortLabellerFrom, presetActions, type Action } from './core/actions.js';
 import { platformerPreset } from './game/platformer-preset.js';
 
 /**
@@ -108,6 +108,10 @@ import { platformerPreset } from './game/platformer-preset.js';
  * declara o vocabulário, e quem o transforma no que uma tela precisa é quem monta a tela. Pô-lo no preset
  * obrigaria os trezentos jogos a repetir a mesma derivação.
  */
+function rotuloCurto(acao: string): string | null {
+  return shortLabellerFrom(platformerPreset())(acao as Action);
+}
+
 function acoesDoJogo(): readonly { readonly acao: string; readonly rotulo: string }[] {
   const preset = platformerPreset();
   const rotulo = labellerFrom(preset);
@@ -1807,6 +1811,7 @@ window.__incl.layout=layout; window.__incl.get_librasOpen=()=>librasOpen;
    `const` declarados ABAIXO, e so a resolucao na hora da chamada os tira da TDZ. (selVizPlayer saiu desta
    lista: migrou para core/state no #50, e um import nao tem TDZ para escapar.) */
 const shell = initShell({
+  rotuloCurto,
   fatosDaCena, retomarJogo: () => setPhase('playing'),
   getPlayers: () => players, getNumPlayers: () => rodada.numPlayers,
   $, win: window, setMasterMuted, srSay, srAlert,

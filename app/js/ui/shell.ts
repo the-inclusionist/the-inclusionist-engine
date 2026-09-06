@@ -275,10 +275,20 @@ export function legendRow1(dirTxt: string, pauseTxt: string): string {
   return chip(dirTxt, null, t('legend.move')) + chip(pauseTxt, null, t('legend.pause'));
 }
 
-/** Linha 2 da legenda: os quatro botões de ação. */
-export function legendRow2(g: ActionGlyphs): string {
-  return chip(g.action2[0], g.action2[1], t('legend.jump')) + chip(g.action3[0], g.action3[1], t('legend.especial'))
-    + chip(g.action1[0], g.action1[1], t('legend.run')) + chip(g.action4[0], g.action4[1], t('legend.swap'));
+/**
+ * Linha 2 da legenda: os botões de ação, na ordem dos glifos.
+ *
+ * ⚠️ AS PALAVRAS DEIXARAM DE ESTAR AQUI. Esta função dizia `t('legend.jump')`, `t('legend.run')` — o
+ * vocabulário da plataforma dentro de um módulo de engine, e a engine a afirmar que todo jogo tem pular,
+ * especial, correr e trocar, nessa ordem. Agora `rotulo` é perguntado ao jogo (a versão CURTA, ver
+ * `ActionWord.short`), e uma posição que o jogo não nomeia não vira ficha nenhuma.
+ */
+export function legendRow2(g: ActionGlyphs, rotulo: (acao: string) => string | null): string {
+  const ORDEM: readonly (keyof ActionGlyphs)[] = ['action2', 'action3', 'action1', 'action4'];
+  return ORDEM.map((a) => {
+    const palavra = rotulo(a);
+    return palavra ? chip(g[a][0], g[a][1], palavra) : '';
+  }).join('');
 }
 
 /** O innerHTML final de `#title-legend`: duas `.lg-row`. */
@@ -380,6 +390,14 @@ export interface ShellCtx {
   kbFor: (i: number) => Record<string, string[]>;
   /** ui/settings-controls.ts `keyName` — `KeyboardEvent.code` → rótulo humano. */
   keyName: (code: string) => string;
+  /**
+   * A palavra CURTA desta posição, na língua do jogo. `null` = o jogo não a usa.
+   *
+   * ⚠️ Curta e não a longa: a legenda põe a palavra debaixo de um glifo, numa fileira de quatro, e não tem
+   * largura para o «Correr / interagir» que a lista de remapeamento usa. A distinção já estava no dicionário
+   * (`legend.*` contra `act.*`) e agora atravessa a fronteira COM as palavras — ver `ActionWord.short`.
+   */
+  rotuloCurto: (acao: string) => string | null;
 
   /* --- as ações do menu de pausa (cada uma é um callback: TDZ, ver o cabeçalho) --- */
   /** `setQuizLevel(n, announce)` — o ciclo 1..5 do nível de alfabetização. */
@@ -437,7 +455,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
     const m = ctx.kbFor(0);
     const K = (a: string): string => ctx.keyName((m[a] || [])[0] || '?');
     const l1 = legendRow1(`${K('up')} ${K('left')} ${K('down')} ${K('right')}`, 'Enter');
-    const l2 = legendRow2({ action2: [K('action2'), null], action3: [K('action3'), null], action1: [K('action1'), null], action4: [K('action4'), null] });
+    const l2 = legendRow2({ action2: [K('action2'), null], action3: [K('action3'), null], action1: [K('action1'), null], action4: [K('action4'), null] }, ctx.rotuloCurto);
     return [l1, l2];
   }
 
@@ -447,7 +465,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
     let l1: string, l2: string;
     if (ctx.isTouchMode()) {                       // joystick VIRTUAL: 0/1/2/3 + START
       l1 = legendRow1('✜', 'START');
-      l2 = legendRow2(touchActionGlyphs());
+      l2 = legendRow2(touchActionGlyphs(), ctx.rotuloCurto);
     } else {
       const p0 = ctx.getPlayers()[0] as { pad?: number } | undefined;
       const p1pad = p0 && typeof p0.pad === 'number' && p0.pad >= 0 ? p0.pad : -1;
@@ -456,7 +474,7 @@ export function initShell(ctx: ShellCtx): ShellApi {
         const layout = gp.mapping === 'standard' ? ctx.padLayoutFromId(gp.id) : 'generic';
         const custom = gp.mapping !== 'standard' ? ctx.padMapFor(gp.id) : null;
         l1 = legendRow1('✜', 'START');
-        l2 = legendRow2(padActionGlyphs(layout, custom));
+        l2 = legendRow2(padActionGlyphs(layout, custom), ctx.rotuloCurto);
       } else {
         [l1, l2] = keyboardLegend();               // TECLADO: teclas configuradas (remap respeitado)
       }

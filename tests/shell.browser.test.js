@@ -98,6 +98,8 @@ function boot(over = {}) {
     padMapFor: () => null,
     kbFor: () => ({ up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], action2: ['Space'], action3: ['KeyL'], action1: ['ShiftLeft'], action4: ['KeyQ'] }),
     keyName: (c) => 'K:' + c,
+    // A palavra CURTA vem do 'jogo' — num teste, o fixture. Uma posicao nao nomeada nao vira ficha.
+    rotuloCurto: (a) => ({ action1: 'correr', action2: 'pular', action3: 'especial', action4: 'trocar' })[a] || null,
     openCaa: () => log.acts.push('caa'),
     setQuizLevel: (n, a) => log.acts.push('nivel:' + n + ':' + a),
     getQuizLevel: () => 5,

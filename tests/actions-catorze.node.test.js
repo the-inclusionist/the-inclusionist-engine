@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ACTIONS, DIRECTIONS, VERBS, SYSTEM, isAction, actionSetProblems,
-  presetActions, presetProblems, labellerFrom,
+  presetActions, presetProblems, labellerFrom, shortLabellerFrom,
 } from '../app/js/core/actions.js';
 
 describe('as quatorze posições (ADR-0085, que supersede o ADR-0074 §1)', () => {
@@ -163,5 +163,24 @@ describe('labellerFrom: a pergunta que a engine faz ao jogo', () => {
 
   it('preset vazio não nomeia nada, e não estoura', () => {
     expect(labellerFrom({})('action1')).toBeNull();
+  });
+});
+
+describe('shortLabellerFrom: a palavra CURTA da legenda', () => {
+  it('usa `short` quando existe', () => {
+    expect(shortLabellerFrom({ action1: { label: 'Correr / interagir', short: 'correr' } })('action1')).toBe('correr');
+  });
+
+  it('⚠️ RECUA para `label` quando `short` falta — apertada é melhor que vazia', () => {
+    // Vazia sumiria também para quem usa leitor de tela; apertada só fica feia. É a razão do recuo.
+    expect(shortLabellerFrom({ action1: { label: 'Correr / interagir' } })('action1')).toBe('Correr / interagir');
+  });
+
+  it('`short` só de espaço também recua para `label`', () => {
+    expect(shortLabellerFrom({ action2: { label: 'Pular', short: '  ' } })('action2')).toBe('Pular');
+  });
+
+  it('posição não nomeada continua `null` — não vira ficha na legenda', () => {
+    expect(shortLabellerFrom({ action1: { label: 'Correr' } })('action4')).toBeNull();
   });
 });

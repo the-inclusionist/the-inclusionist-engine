@@ -109,7 +109,7 @@ describe('legenda do título — os chips de dispositivo', () => {
 
   it('as duas linhas saem na ordem fixa: direcional+pausa, depois pular/especial/correr/trocar', () => {
     const l1 = legendRow1('✜', 'START');
-    const l2 = legendRow2({ action2: ['A', null], action3: ['B', null], action1: ['C', null], action4: ['D', null] });
+    const l2 = legendRow2({ action2: ['A', null], action3: ['B', null], action1: ['C', null], action4: ['D', null] }, (a) => ({ action1: 'correr', action2: 'pular', action3: 'especial', action4: 'trocar' })[a] || null);
     // Contra `t()` e não contra o português: fixar as palavras aqui devolveria ao teste o texto que saiu do
     // código. A ORDEM é o que este caso guarda, e ela não depende de idioma nenhum.
     expect(l1.indexOf(t('legend.move'))).toBeLessThan(l1.indexOf(t('legend.pause')));
