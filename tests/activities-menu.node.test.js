@@ -377,6 +377,15 @@ describe('markup dos submenus', () => {
     expect(html).toContain('data-cen-back="1"');
   });
 
+  it('⚠️ o ID DO CENÁRIO vem do JOGO e não escapa do atributo (issue #106)', () => {
+    // `ctx.cenarios` é entregue pelo jogo, e um jogo vive noutro repositório (ADR-0083). Um id com uma aspa
+    // fecharia o `data-cen="…"` e o que viesse a seguir viraria ATRIBUTO — um `onmouseover` sem precisar de
+    // uma única tag, que é o pior contexto dos dois.
+    const html = cenMenuHtml([{ id: '" onmouseover="alert(1)', nome: 'menu.cen' }]);
+    expect(html, 'o id fechou o atributo').not.toMatch(/data-cen="[^"]*"\s+onmouseover/);
+    expect(html).toContain('&quot;'); // escapado, e não apagado
+  });
+
   it('os submenus de alfabetização e fração voltam para o pai certo', () => {
     expect(alfMenuHtml()).toContain('data-tm-back="tm-main"');
     expect(frMenuHtml({ v: 1, d: 0, dec: 0, pct: 0, mix: 0 })).toContain('data-tm-back="tm-mat"');

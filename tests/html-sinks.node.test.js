@@ -91,6 +91,16 @@ const SEGUROS = [
   ['input/touch.ts', 'el.innerHTML = TOUCH_SLOTS.map((s) =>', '⚠️ CONSERTADO 2026-09-06: idem — o `<option>` nasce vazio e recebe o rótulo por texto'],
   ['game/quiz.ts', 'ov.innerHTML = quizHtml(q, c.disp, c.QL_NAME)', '⚠️ CONSERTADO 2026-09-06: os cinco construtores escapam o conteúdo de atividade (`escAtividade`), com gate hostil em `quiz-escape`'],
   ['consumer-quiz/main-quiz.ts', 'app.innerHTML = perguntaHtml(p, foco)', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escaparHtml`, com gate hostil em `consumer-quiz`'],
+  ['ui/activities-menu.ts', "const cen = ctx.$<HTMLElement>('#tm-cen')", '⚠️ CONSERTADO 2026-09-06: `c.id` (do jogo) vai por `escaparHtml` no atributo `data-cen`; o `nome` é chave de i18n'],
+  ['ui/activities-menu.ts', "const alf = ctx.$<HTMLElement>('#tm-alf')", 'ids do catálogo (`educational/activities-registry`, código) + i18n'],
+  ['ui/activities-menu.ts', "const mat = ctx.$<HTMLElement>('#tm-mat')", 'ids do catálogo (código) + i18n'],
+  ['ui/activities-menu.ts', "const fr = ctx.$<HTMLElement>('#tm-fr')", 'ids do catálogo (código) + as cinco notações enumeradas'],
+  ['ui/activities-menu.ts', "const tab = ctx.$<HTMLElement>('#tm-tab')", 'só NÚMEROS de tabuada (`TAB_ROWS`) + i18n'],
+  ['main.ts', 'if(c)c.innerHTML=`<h3 class="panel-sub">', '`titulo` é i18n; as linhas são i18n + nomes de tecla da tabela `keyName`'],
+  ['ui/settings-audio.ts', "el.innerHTML = '<p class=\"opt-hint\">' +", 'uma única chave de i18n, escolhida por um booleano'],
+  ['ui/settings-controls.ts', 'tabs.innerHTML = `<span class="opt-hint"', 'literal + um NÚMERO (o defeito aqui é português cravado, de i18n, não de marcação)'],
+  ['ui/settings-motion.ts', 'el.innerHTML =', 'literais + o índice do jogador + linhas montadas de tabelas da engine'],
+  ['ui/settings-typo.ts', 'el.innerHTML = typoListHTML(fontKey)', 'as 18 fontes são tabela da engine; os grupos e rótulos saem dela'],
 ];
 
 /**
@@ -102,17 +112,7 @@ const SEGUROS = [
  * de atividade, hoje catálogo no código e AUTORADO assim que o ADR-0052 chegar.
  */
 const A_REVER = [
-  ['ui/activities-menu.ts', "const cen = ctx.$<HTMLElement>('#tm-cen')", '⚠️ `c.id` do jogo entra num atributo `data-cen` (o `nome` já passa por i18n)'],
-  ['main.ts', 'if(c)c.innerHTML=`<h3 class="panel-sub">', '`titulo` por confirmar'],
-  ['ui/activities-menu.ts', "const alf = ctx.$<HTMLElement>('#tm-alf')", 'catálogo de alfabetização por confirmar'],
-  ['ui/activities-menu.ts', "const mat = ctx.$<HTMLElement>('#tm-mat')", 'catálogo de matemática por confirmar'],
-  ['ui/activities-menu.ts', "const fr = ctx.$<HTMLElement>('#tm-fr')", 'notação de fração por confirmar'],
-  ['ui/activities-menu.ts', "const tab = ctx.$<HTMLElement>('#tm-tab')", 'tabuadas por confirmar'],
-  ['ui/settings-audio.ts', 'el.innerHTML = catsListHTML(', 'nomes de categoria de áudio por confirmar'],
-  ['ui/settings-audio.ts', "el.innerHTML = '<p class=\"opt-hint\">' +", 'dica do painel de audio, por confirmar'],
-  ['ui/settings-controls.ts', 'tabs.innerHTML = `<span class="opt-hint"', 'literal com português cravado — defeito de i18n à parte'],
-  ['ui/settings-motion.ts', 'el.innerHTML =', 'construtor do painel de movimento, por confirmar'],
-  ['ui/settings-typo.ts', 'el.innerHTML = typoListHTML(fontKey)', 'nomes de família de fonte por confirmar'],
+  ['ui/settings-audio.ts', 'el.innerHTML = catsListHTML(', '⚠️ `c.lbl` entra em DOIS `aria-label` e vem de `ctx.audioCats`, que é INJETADO. Hoje é tabela da engine e não há caminho; o que fica por decidir é se um consumidor pode declarar categorias próprias — se puder, é a mesma classe do HUD'],
 ];
 
 const chave = (onde, trecho) => `${onde} :: ${trecho}`;
@@ -140,10 +140,10 @@ describe('censo dos sinks de markup — o gate diz «ninguém acrescentou um sem
   it('[Boundary] ⚠️ o TETO só encolhe — `A_REVER` não pode crescer', () => {
     // O mesmo desenho do `engine-boundary`: teto e não igualdade, porque o que importa proibir é o
     // acoplamento CRESCER. Um sink por rever a mais é dívida nova disfarçada de dívida antiga.
-    // ⚠️ O TETO DESCEU DE 15 → 13 → 12 em 2026-09-06, à medida que cada um deixou de ser dívida e passou a
-    // ser conserto. Baixar o número faz parte de consertar: um teto que fica onde estava deixa a dívida caber
-    // de volta sem ninguém reparar.
-    expect(A_REVER.length, 'a dívida de sinks por classificar cresceu').toBeLessThanOrEqual(11);
+    // ⚠️ O TETO DESCEU DE 15 → 13 → 12 → 11 → 1 em 2026-09-06, à medida que cada sink deixou de ser dívida e
+    // passou a ser conserto ou classificação. Baixar o número faz parte do trabalho: um teto que fica onde
+    // estava deixa a dívida caber de volta sem ninguém reparar.
+    expect(A_REVER.length, 'a dívida de sinks por classificar cresceu').toBeLessThanOrEqual(1);
   });
 
   it('[Interface] toda entrada tem um PORQUÊ — sem isso a lista é uma tabela de supressões', () => {

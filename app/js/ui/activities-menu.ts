@@ -34,6 +34,7 @@
 // `activity`/`setActivityValue` NÃO são mais importados: eles vão para `game/state` (Fase B do plano), e
 // este módulo é ENGINE — o gate de fronteira proíbe engine importar de `game/`, e a lista dele esvaziou em
 // 2026-08-25. Chegam por injeção, como todo o resto do que é do jogo.
+import { escaparHtml } from '../core/escape-html.js'; // #106: o id do cenario vem do JOGO
 import { getActivity, hasActivity, isValidActivityId, DEFAULT_ACTIVITY_ID, activityCategory,
          type ActivityDef, type ActivityCat } from '../educational/activities-registry.js';
 import * as store from '../platform/storage.js';
@@ -424,7 +425,12 @@ export function tabMenuHtml(sel: readonly number[]): string {
 }
 export function cenMenuHtml(cenarios: readonly CenarioOption[]): string {
   // `c.nome` é a CHAVE do cenário (render/cenario-data); resolve aqui, no ponto de exibição.
-  return tmTitleHtml(t('menu.cen')) + cenarios.map((c) => `<button class="title-btn" data-cen="${c.id}" type="button">${t(c.nome)}</button>`).join('')
+  //
+  // ⚠️ E O `c.id` VAI ESCAPADO (issue #106). A lista de cenários é entregue pelo JOGO, e um jogo vive noutro
+  // repositório (ADR-0083) — um id com uma aspa fecharia o `data-cen="…"` e o que viesse a seguir viraria
+  // atributo. Escapar e não construir nós porque aqui é UM valor dentro de um construtor de string, e o par
+  // que o guarda existe: `activities-menu` tem caso com id hostil.
+  return tmTitleHtml(t('menu.cen')) + cenarios.map((c) => `<button class="title-btn" data-cen="${escaparHtml(c.id)}" type="button">${t(c.nome)}</button>`).join('')
     + `<button class="title-btn ghost" data-cen-back="1" type="button">${t('menu.back')}</button>`;
 }
 
