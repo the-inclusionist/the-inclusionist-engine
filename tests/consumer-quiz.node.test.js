@@ -72,4 +72,20 @@ describe('perguntaHtml — a marcação', () => {
   it('[Zero] sem alternativas, ainda monta o enunciado sem quebrar', () => {
     expect(perguntaHtml({ enunciado: 'Vazio?', alternativas: [], certa: 0 }, 0)).toContain('Vazio?');
   });
+
+  it('[Right] ⚠️ o CONTEÚDO DA PERGUNTA não vira marcação (issue #106)', () => {
+    // Enunciado e alternativas são conteúdo de atividade — texto, nunca marcação. Hoje vêm de um catálogo em
+    // código; o ADR-0052 torna-os AUTORADOS, e a issue #106 exige que isto esteja consertado ANTES disso:
+    // «assim que um profissional puder digitar numa atividade, deixa de ser censo e vira incidente».
+    const FUGA = '"><i id="fugiu"></i><b>x';
+    const html = perguntaHtml({ enunciado: FUGA, alternativas: [FUGA], certa: 0 }, 0);
+    expect(html, 'o conteúdo fechou um atributo e injetou um elemento').not.toContain('<i id=');
+    expect(html).toContain('&lt;'); // escapado, e não apagado
+  });
+
+  it('[Zero] e texto normal atravessa INTACTO — um escape que estraga a pergunta não serve a ninguém', () => {
+    const html = perguntaHtml({ enunciado: 'Quanto é 2 + 3?', alternativas: ['5', 'não sei'], certa: 0 }, 0);
+    expect(html).toContain('Quanto é 2 + 3?');
+    expect(html).toContain('não sei');
+  });
 });

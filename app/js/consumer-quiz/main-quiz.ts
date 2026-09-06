@@ -118,6 +118,7 @@
 //          ("próxima" e "confirmar"), não um direcional de plataforma.
 //     Não liguei o `initTouch`: reproduzir doze ids para um conjunto de controles que o quiz não quer seria o
 //     mesmo tipo de mentira do sonar. Usei a metade pura, que é exatamente o que a divisão deveria separar.
+import { escaparHtml } from '../core/escape-html.js'; // #106: enunciado e alternativas sao TEXTO
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createGame, type Engine } from '../boot/create-game.js';
@@ -152,9 +153,9 @@ const $ = <T extends Element = Element>(sel: string): T | null => document.query
 export function perguntaHtml(p: Pergunta, selecionada: number): string {
   const alts = p.alternativas.map((a, i) =>
     `<button class="mode-btn quiz-alt${i === selecionada ? ' is-on' : ''}" data-alt="${i}" type="button"` +
-    ` role="radio" aria-checked="${i === selecionada}">${a}</button>`).join('');
+    ` role="radio" aria-checked="${i === selecionada}">${escaparHtml(a)}</button>`).join('');
   return (
-    `<h2 class="quiz-pergunta">${p.enunciado}</h2>` +
+    `<h2 class="quiz-pergunta">${escaparHtml(p.enunciado)}</h2>` +
     `<div class="quiz-alts" role="radiogroup" aria-label="Alternativas">${alts}</div>`
   );
 }

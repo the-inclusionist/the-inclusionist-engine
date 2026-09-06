@@ -342,24 +342,16 @@ export function quizWho(pl: QuizPlayer, numJogadores: number): string {
  * A palavra, as silabas, as letras, o emoji e a conta sao TEXTO — nunca marcacao. Hoje vem do catalogo em
  * codigo (`game/activity-content`), e por isso nao ha caminho de injecao. ⚠️ DEIXA DE SER ASSIM COM UMA
  * FUNCIONALIDADE JA DECIDIDA: o ADR-0052 diz que o profissional AUTORA atividades, e que uma atividade
- * autorada e DADO. No dia em que texto autorado chegar aqui, cada uma destas interpolacoes renderiza o que
- * alguem digitou.
+ * autorada e DADO. No dia em que texto autorado chegar aqui, cada interpolacao renderiza o que alguem
+ * digitou — e ele entra tambem em ATRIBUTO (`aria-label="Ouvir a palavra ${q.word} de novo"`), onde uma
+ * aspa fecha o atributo e o que vem a seguir vira atributo.
  *
- * ⚠️ E ELE ENTRA TAMBEM EM ATRIBUTO — `aria-label="Ouvir a palavra ${q.word} de novo"` —, que e o pior
- * contexto: uma aspa fecha o atributo e o que vem a seguir vira atributo.
- *
- * ⚠️ POR QUE ESCAPAR AQUI, quando os outros tres sinks desta issue foram consertados construindo NOS. E a
- * forma que difere: la o dado do jogo chegava a um ponto por um caminho; aqui sao ~15 valores pequenos
- * dentro de cinco construtores densos que desembocam num unico `innerHTML`. Converte-los em arvores de nos
- * reescreveria ~200 linhas e os testes delas por um defeito que ainda nao e vivo — a churn que a propria
- * issue #106 diz nao ser devida. O que faltava ao escape era o RASTO quando alguem esquece, e ele existe:
- * `tests/quiz-escape.node.test.js` passa conteudo hostil pelos cinco tipos.
+ * ⚠️ A IMPLEMENTACAO MUDOU-SE PARA `core/escape-html` no mesmo dia, e a razao esta la: `game/` e o CARTUCHO,
+ * que a issue #111 leva para outro repositorio. Um utilitario de seguranca do lado errado da fronteira e um
+ * utilitario que o proximo consumidor reescreve.
  */
-export function escAtividade(s: string): string {
-  return String(s)
-    .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
-}
+import { escaparHtml } from '../core/escape-html.js';
+export const escAtividade = escaparHtml;
 
 export function somasubHtml(q: MathQuiz): string {
   const choices = q.choices.map((c, i) => `<button class="quiz-choice${i === q.sel ? ' sel' : ''}${q.revealed && cKey(c) === q.answer ? ' reveal' : ''}" data-i="${i}" type="button">${escAtividade(cDisp(c))}</button>`).join('');
