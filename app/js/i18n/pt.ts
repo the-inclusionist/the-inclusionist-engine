@@ -370,6 +370,7 @@ const pt: Record<string, string> = {
   // Quiz — ALFABETIZAÇÃO: a MOLDURA traduz; a palavra, a letra e a cela Braille atravessam por parâmetro,
   // em pt-BR, porque são a matéria de uma disciplina de idioma e não se traduzem ao trocar o idioma do jogo.
   'sr.quiz.who': 'Jogador {n}: ',
+  'sr.quiz.wins': '{n} de 3 acertos para a moeda',
   'sr.quiz.buildWord': 'Letra {letra}. Monte a palavra: {palavra}.',
   'sr.quiz.whichSpelling': '{palavra}. Qual é a escrita certa? O jogo soletra cada opção.',
   'sr.quiz.writeWord': 'Escreva a palavra: {palavra}. {n} letras.',

@@ -298,6 +298,7 @@ const es: Record<string, string> = {
   // Quiz — ALFABETIZACIÓN: el MARCO se traduce; la palabra, la letra y la celda Braille pasan como
   // parámetros, en pt-BR, porque son la materia de una disciplina de idioma.
   'sr.quiz.who': 'Jugador {n}: ',
+  'sr.quiz.wins': '{n} de 3 aciertos para la moneda',
   'sr.quiz.buildWord': 'Letra {letra}. Forma la palabra: {palavra}.',
   'sr.quiz.whichSpelling': '{palavra}. ¿Cuál es la escritura correcta? El juego deletrea cada opción.',
   'sr.quiz.writeWord': 'Escribe la palabra: {palavra}. {n} letras.',

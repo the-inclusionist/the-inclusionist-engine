@@ -14,7 +14,7 @@ import {
   mkChoices, generateMath, mathGeneratorFor,
   pickWord, resetRecentWords, recentWords,
   generateSilabasOptions, generatePreChoices, generateAlfOptions, generateBrailleCells,
-  literacyKindFor, cKey, cDisp, quizWho, selRange, winsHtml, levelTag,
+  literacyKindFor, cKey, cDisp, quizWho, selRange, winsDots, levelTag,
   somasubHtml, silabaHtml, preHtml, alfHtml, brailleHtml, quizHtml,
 } from '../app/js/game/quiz.js';
 
@@ -468,10 +468,13 @@ describe('game/quiz — apresentação (markup puro)', () => {
   });
 
   it('as 3 luzes contam as vitórias rumo à moeda', () => {
-    expect(winsHtml(0).match(/qw-dot on/g)).toBeNull();
-    expect(winsHtml(2).match(/qw-dot on/g)).toHaveLength(2);
-    expect(winsHtml(3).match(/qw-dot on/g)).toHaveLength(3);
-    expect(winsHtml(2)).toContain('aria-label="2 de 3 acertos para a moeda"');
+    // ⚠️ AFIRMA QUAIS LUZES ACENDEM, e não quantas vezes um trecho aparece numa string. Era
+    // `match(/qw-dot on/g)` sobre marcação: contava ocorrências e não dizia NADA sobre a ordem — três
+    // acesas e três apagadas embaralhadas passariam igual. O rótulo saiu daqui de propósito: ele agora
+    // traduz (`sr.quiz.wins`), e um teste que prendesse o texto em português prenderia o defeito.
+    expect(winsDots(0)).toEqual([false, false, false]);
+    expect(winsDots(2)).toEqual([true, true, false]);
+    expect(winsDots(3)).toEqual([true, true, true]);
   });
 });
 

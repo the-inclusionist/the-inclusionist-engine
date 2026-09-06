@@ -395,9 +395,26 @@ export function quizHtml(q: Quiz, disp: (s: string) => string, qlName: Readonly<
           : somasubHtml(q);
 }
 
-/** As 3 luzes de progresso (canto sup. dir.): acesa = uma vitória rumo à moeda. */
-export function winsHtml(n: number): string {
-  return '<div class="quiz-wins" aria-label="' + n + ' de 3 acertos para a moeda">' + [0, 1, 2].map((i) => '<span class="qw-dot' + (i < n ? ' on' : '') + '"></span>').join('') + '</div>';
+/**
+ * As 3 luzes de progresso (canto sup. dir.): acesa = uma vitória rumo à moeda.
+ *
+ * ⚠️ DEVOLVE DADO E NÃO MARCAÇÃO, e a troca tem duas razões independentes.
+ *
+ * A primeira é um GATE: era `winsHtml`, uma string colada com `insertAdjacentHTML`, e o semgrep barrou o
+ * ponto na primeira corrida do CI portado. Aqui o achado NÃO era explorável — a única entrada é um número
+ * já limitado por `Math.min(3, …)` —, mas o padrão é o mesmo que fica perigoso na linha seguinte, onde o
+ * `innerHTML` recebe conteúdo de atividade AUTORADA (ADR-0052). Tirar a análise de HTML de onde ela não
+ * fazia falta é mais barato do que discutir cada ocorrência.
+ *
+ * A segunda é o PILAR 3: o `aria-label` daquela string era pt-BR fixo — o único deste arquivo, que já
+ * traduz tudo por `t()`. Um rótulo LIDO POR LEITOR DE TELA fixo em português é exatamente o que o pilar
+ * existe para impedir, e ele só era invisível porque morava dentro de uma concatenação.
+ *
+ * Devolver `boolean[]` deixa o teste de nó mais forte do que era: ele afirmava `match(/qw-dot on/g)` numa
+ * string; agora afirma quais luzes acendem.
+ */
+export function winsDots(n: number): readonly boolean[] {
+  return [0, 1, 2].map((i) => i < n);
 }
 
 /**
@@ -629,7 +646,18 @@ export function initQuiz(ctx: QuizCtx): QuizApi {
     const q = quizDe(pl), ov = quizEl(pl); if (!ov) return; if (!q) { ov.hidden = true; return; }
     ov.innerHTML = quizHtml(q, c.disp, c.QL_NAME);
     const box = ov.querySelector('.quiz-box');
-    if (box) box.insertAdjacentHTML('afterbegin', winsHtml(Math.min(3, pl.alfWins || 0))); // 3 luzes de progresso: acesa = amarela com brilho
+    // 3 luzes de progresso: acesa = amarela com brilho. Montadas como NÓS — ver `winsDots`.
+    if (box) {
+      const wins = document.createElement('div');
+      wins.className = 'quiz-wins';
+      wins.setAttribute('aria-label', t('sr.quiz.wins', { n: Math.min(3, pl.alfWins || 0) }));
+      for (const acesa of winsDots(Math.min(3, pl.alfWins || 0))) {
+        const luz = document.createElement('span');
+        luz.className = acesa ? 'qw-dot on' : 'qw-dot';
+        wins.appendChild(luz);
+      }
+      box.prepend(wins);
+    }
     // .quiz-word (palavra do topo, data-i=-1) → repete a fala
     // O último ponto que lia `pl.quiz` cru. Escrevia `.sel` afirmando `MathQuiz`, e o `BrailleQuiz` não tem
     // `sel` — o ditado é passivo e não tem cursor. Agora pergunta em vez de afirmar, pelo mesmo `quizDe`.

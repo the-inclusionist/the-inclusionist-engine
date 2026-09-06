@@ -297,6 +297,7 @@ const en: Record<string, string> = {
   // Quiz — LITERACY: the FRAME translates; the word, the letter and the Braille cell travel through as
   // parameters, in pt-BR, because they are the subject matter of a language discipline.
   'sr.quiz.who': 'Player {n}: ',
+  'sr.quiz.wins': '{n} of 3 correct towards the coin',
   'sr.quiz.buildWord': 'Letter {letra}. Build the word: {palavra}.',
   'sr.quiz.whichSpelling': '{palavra}. Which spelling is right? The game spells out each option.',
   'sr.quiz.writeWord': 'Write the word: {palavra}. {n} letters.',
