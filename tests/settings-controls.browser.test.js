@@ -12,8 +12,8 @@ const $ = (sel) => document.querySelector(sel);
 function makeKB() {
   return {
     p2: [
-      { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], run: ['KeyU'], jump: ['KeyJ'], swap: ['KeyI'], especial: ['KeyK'] },
-      { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], run: ['Numpad8'], jump: ['Numpad5'], swap: ['Numpad9'], especial: ['Numpad6'] },
+      { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action4: ['KeyI'], action3: ['KeyK'] },
+      { left: ['ArrowLeft'], right: ['ArrowRight'], up: ['ArrowUp'], down: ['ArrowDown'], action1: ['Numpad8'], action2: ['Numpad5'], action4: ['Numpad9'], action3: ['Numpad6'] },
     ],
   };
 }
@@ -80,7 +80,7 @@ describe('ui/settings-controls', () => {
     const ctx = buildCtx();
     const api = initSettingsControls(ctx);
     api.render(0);
-    const btn = $('#ctrl-list').querySelector('button[data-act="jump"]');
+    const btn = $('#ctrl-list').querySelector('button[data-act="action2"]');
     btn.click();
     expect(api.isCapturing()).toBe(true);
     expect(btn.textContent).toBe('Pressione…');
@@ -91,40 +91,40 @@ describe('ui/settings-controls', () => {
     const ctx = buildCtx();
     const api = initSettingsControls(ctx);
     api.render(0);
-    $('#ctrl-list').querySelector('button[data-act="jump"]').click();
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
     const e = { code: 'Escape', preventDefault: () => {} };
     const consumed = api.handleCaptureKeydown(e);
     expect(consumed).toBe(true);
     expect(api.isCapturing()).toBe(false);
-    expect($('#ctrl-list').querySelector('button[data-act="jump"]').textContent).toBe('Alterar');
+    expect($('#ctrl-list').querySelector('button[data-act="action2"]').textContent).toBe('Alterar');
   });
 
   it('[Right] handleCaptureKeydown com tecla livre associa, persiste e propaga', () => {
     const ctx = buildCtx();
     const api = initSettingsControls(ctx);
     api.render(0);
-    $('#ctrl-list').querySelector('button[data-act="jump"]').click();
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
     const e = { code: 'KeyP', preventDefault: () => {} };
     const consumed = api.handleCaptureKeydown(e);
     expect(consumed).toBe(true);
     expect(api.isCapturing()).toBe(false);
-    expect(ctx.kbFor(0).jump).toEqual(['KeyP']);
+    expect(ctx.kbFor(0).action2).toEqual(['KeyP']);
     expect(ctx.store.saved).toHaveLength(1);
     expect(ctx.applyCalls.applyControls).toBe(1);
     expect(ctx.applyCalls.assignControls).toBe(1);
-    expect($('#ctrl-list').querySelector('button[data-act="jump"]').innerHTML).toBe('Alterar');
+    expect($('#ctrl-list').querySelector('button[data-act="action2"]').innerHTML).toBe('Alterar');
   });
 
   it('[Boundary] handleCaptureKeydown com tecla já usada por OUTRO jogador alerta e mantém a captura', () => {
     const ctx = buildCtx();
     const api = initSettingsControls(ctx);
     api.render(0); // editando o jogador 0
-    $('#ctrl-list').querySelector('button[data-act="jump"]').click();
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
     const e = { code: 'ArrowLeft', preventDefault: () => {} }; // é do jogador 1 (índice 1)
     const consumed = api.handleCaptureKeydown(e);
     expect(consumed).toBe(true);
     expect(api.isCapturing()).toBe(true); // segue capturando
-    expect(ctx.kbFor(0).jump).toEqual(['KeyJ']); // não mudou
+    expect(ctx.kbFor(0).action2).toEqual(['KeyJ']); // não mudou
     expect(ctx.alerted.at(-1)).toBe('Essa tecla já é do Jogador 2. Escolha outra, ou Esc para cancelar.');
     expect(ctx.store.saved).toHaveLength(0);
   });
@@ -142,7 +142,7 @@ describe('ui/settings-controls', () => {
     const ctx = buildCtx();
     const api = initSettingsControls(ctx);
     api.render(0);
-    $('#ctrl-list').querySelector('button[data-act="jump"]').click();
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
     expect(api.isCapturing()).toBe(true);
     api.cancelCapture();
     expect(api.isCapturing()).toBe(false);
@@ -155,7 +155,7 @@ describe('ui/settings-controls', () => {
     ctx.kbFor(0).jump = ['KeyZ'];
     api.render(0);
     $('#ctrl-reset').click();
-    expect(ctx.kbFor(0).jump).toEqual(['KeyJ']); // setKB trocou o KB inteiro pelo default
+    expect(ctx.kbFor(0).action2).toEqual(['KeyJ']); // setKB trocou o KB inteiro pelo default
     expect(ctx.applyCalls.applyControls).toBe(1);
     expect(ctx.applyCalls.assignControls).toBe(1);
     expect(ctx.said).toEqual(['Controles restaurados ao padrão.']);

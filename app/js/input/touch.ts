@@ -7,6 +7,7 @@
 // ./devices.js (not reimplemented). Reading the real Gamepad API (polling, mapping wizard) is input/gamepad's
 // territory, not this module's — see the header note on padKind() for the one deliberate exception.
 import { PAD_DESIGNS, TOUCH_ACT_LABELS, TOUCH_DEFAULT } from './devices.js';
+import { migrarMapaDeToque } from './vocabulary-migration.js';
 import { t } from '../core/i18n.js';
 import { KEYS } from '../platform/storage.js'; // só as CHAVES (constantes) — leitura/escrita passam por ctx.store (DI)
 import { setMinimapCorner } from '../render/minimap.js'; // já módulo próprio (Estágio 4, Tier 1) — importado direto
@@ -142,7 +143,12 @@ export const TOUCH_ACTS: readonly string[] = ['left', 'right', 'up', 'down', 'ac
  *  NÃO valida chaves/valores contra TOUCH_SLOTS/TOUCH_ACTS — um JSON malformado com chaves/valores estranhos
  *  passa como está (só falha se não for um objeto). Ver a nota "bug surfaced" no retorno da extração. */
 export function normalizeTouchMap(stored: unknown): Record<string, string> {
-  return Object.assign({}, TOUCH_DEFAULT, stored && typeof stored === 'object' ? (stored as Record<string, string>) : {});
+  // ⚠️ O GUARDADO PASSA PELO TRADUTOR ANTES DA FUSÃO, e a ordem é o que importa: `Object.assign` deixa o
+  // guardado VENCER o padrão, então um `b0: 'jump'` de antes do ADR-0086 sobrescreveria o `b0: 'action2'`
+  // correto e o botão da tela deixaria de fazer nada — sem erro nenhum. Aqui o nome da ação está no VALOR,
+  // não na chave, e por isso precisa de um tradutor próprio. Ver `input/vocabulary-migration.ts`.
+  const migrado = migrarMapaDeToque(stored && typeof stored === 'object' ? (stored as Record<string, string>) : null);
+  return Object.assign({}, TOUCH_DEFAULT, migrado || {});
 }
 
 export type PadKind = 'kb' | 'x' | 'd';

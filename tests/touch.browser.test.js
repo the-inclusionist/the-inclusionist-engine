@@ -113,10 +113,10 @@ describe('initTouch — renderTouchMap / config de toque', () => {
     const selects = document.querySelectorAll('#touchmap-list select[data-slot]');
     expect(selects.length).toBe(9);
     const b0 = document.querySelector('#tm-b0');
-    b0.value = 'run';
+    b0.value = 'action1';
     b0.dispatchEvent(new Event('change'));
-    expect(api.getTouchMap().b0).toBe('run');
-    expect(JSON.parse(store.get('incl_touchmap')).b0).toBe('run');
+    expect(api.getTouchMap().b0).toBe('action1');
+    expect(JSON.parse(store.get('incl_touchmap')).b0).toBe('action1');
     expect(calls.srSay.some((s) => s.includes('Correr'))).toBe(true);
   });
 });

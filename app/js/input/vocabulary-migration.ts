@@ -37,6 +37,27 @@ export const VOCABULARIO_ANTIGO: Readonly<Record<string, string>> = Object.freez
   swap: 'action4',
 });
 
+/**
+ * ⚠️ O SEGUNDO DADO SALVO, e ele quase passou. O mapa de toque (`incl_touchmap`) guarda SLOT → AÇÃO, ou seja
+ * o nome da ação está no VALOR e não na chave: `{ b0: 'jump', b1: 'especial' }`. O tradutor de esquemas de
+ * teclado, que traduz CHAVES, passaria por cima dele sem tocar em nada.
+ *
+ * ⚠️ E O DANO SERIA PIOR DO QUE NO TECLADO. `normalizeTouchMap` funde o guardado SOBRE o padrão, então um
+ * `b0: 'jump'` gravado sobrescreveria o `b0: 'action2'` correto — e o botão da tela deixaria de fazer
+ * qualquer coisa. Num tablet de escola pública o toque não é o caminho alternativo: é o único.
+ *
+ * Foi um teste de NAVEGADOR que o encontrou (`tests/touch.browser.test.js`), depois de a suíte `node` já
+ * estar verde — o que é o argumento para os dois projetos existirem.
+ */
+export function migrarMapaDeToque(mapa: Record<string, string> | null | undefined): Record<string, string> | null {
+  if (!mapa) return null;
+  const saida: Record<string, string> = {};
+  for (const [slot, acao] of Object.entries(mapa)) {
+    saida[slot] = VOCABULARIO_ANTIGO[acao] ?? acao;
+  }
+  return saida;
+}
+
 /** O objeto salvo, tal como `input/keyboard` o persiste. `p34` é o formato mais antigo de todos. */
 export interface SavedKB {
   solo?: KeyScheme;

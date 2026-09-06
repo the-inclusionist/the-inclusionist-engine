@@ -6,7 +6,7 @@
 // antigas que deixe de casar não dá erro: as teclas simplesmente param de responder, e a criança conclui que
 // o jogo quebrou. Perder isso é perder uma adaptação, não uma preferência.
 import { describe, it, expect } from 'vitest';
-import { migrarEsquema, migrarSalvo, VOCABULARIO_ANTIGO } from '../app/js/input/vocabulary-migration.js';
+import { migrarEsquema, migrarSalvo, migrarMapaDeToque, VOCABULARIO_ANTIGO } from '../app/js/input/vocabulary-migration.js';
 
 /** Um esquema tal como está salvo hoje, no vocabulário de plataforma. */
 const ANTIGO = {
@@ -98,5 +98,38 @@ describe('o objeto salvo inteiro, com os quatro formatos que existem', () => {
     expect(novo.p2).toBeUndefined();
     expect(novo.p3).toBeUndefined();
     expect(novo.p4).toBeUndefined();
+  });
+});
+
+describe('⚠️ o SEGUNDO dado salvo: o mapa de toque, onde a ação está no VALOR', () => {
+  it('traduz o valor de cada slot', () => {
+    const antigo = { up: 'up', down: 'down', left: 'left', right: 'right', start: 'pause', b0: 'jump', b1: 'especial', b2: 'run', b3: 'swap' };
+    const novo = migrarMapaDeToque(antigo);
+    expect(novo.b0).toBe('action2');
+    expect(novo.b1).toBe('action3');
+    expect(novo.b2).toBe('action1');
+    expect(novo.b3).toBe('action4');
+  });
+
+  it('direções e `pause` atravessam intactos — nunca foram verbos do jogo', () => {
+    const novo = migrarMapaDeToque({ up: 'up', start: 'pause', left: 'left' });
+    expect(novo).toEqual({ up: 'up', start: 'pause', left: 'left' });
+  });
+
+  it('é idempotente, como o do teclado', () => {
+    const uma = migrarMapaDeToque({ b0: 'jump' });
+    expect(migrarMapaDeToque(uma)).toEqual(uma);
+  });
+
+  it('nulo não estoura', () => {
+    expect(migrarMapaDeToque(null)).toBeNull();
+    expect(migrarMapaDeToque(undefined)).toBeNull();
+  });
+
+  it('⚠️ NENHUM slot se perde — o conjunto de chaves é o mesmo', () => {
+    // O dano aqui seria um botão da tela que deixa de fazer nada, e num tablet de escola pública
+    // o toque não é o caminho alternativo: é o único.
+    const antigo = { up: 'up', down: 'down', left: 'left', right: 'right', start: 'pause', b0: 'jump', b1: 'especial', b2: 'run', b3: 'swap' };
+    expect(Object.keys(migrarMapaDeToque(antigo)).sort()).toEqual(Object.keys(antigo).sort());
   });
 });
