@@ -21,6 +21,14 @@ metadata:
              ADR-0081 superseded ADR-0073 WHOLE. The suspension of `the-inclusionist-game-<slug>` and its
              trigger — the rule is decided when §6's template is written — carry over unchanged; only the
              declared address differs. Everything else in §1 stands."
+    - by: ADR-0082
+      what: "§1, and the repository NAME clause is now REPLACED rather than suspended:
+             `the-inclusionist-game-<slug>` becomes `game-<slug>`, mirroring the package minus the scope.
+             The Dev standardised both game repositories — `game-chess` and `game-2048` — so the rule
+             describes what exists rather than proposing anything. ⚠️ This ENDS the suspension ADR-0073
+             installed and ADR-0081 kept, and therefore OPENS the gate they held on §6's template. Every
+             other clause of §1 stands, and §6's own condition — the template does not RUN until one game
+             has gone end to end — is untouched."
   decision-makers: [Dev]
   consulted:
     - "ADR-0058 §1 — SUPERSEDED IN PART by this record: `the-inclusionist-demos` stops being the repository
