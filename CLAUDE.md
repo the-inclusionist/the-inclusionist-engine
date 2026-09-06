@@ -57,9 +57,12 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 - **Doc alterada VIRA teste, tarefa (issue) ou ADR** — com pouquíssimas exceções, documentação que não se transforma
   em algo acionável (um teste que a verifica, uma issue de trabalho, ou um ADR que a decide) **não serve**. Ao mexer
   num doc, pergunte "isto vira o quê?" e crie.
-- **O TO-DO / BACKLOG do projeto vive nas Issues + quadro do GitLab** (`jrocha-dev/inclusionist-engine`),
+- **O TO-DO / BACKLOG do projeto vive nas Issues do GitHub** (`the-inclusionist/the-inclusionist-engine`),
   **NÃO em docs**. Trabalho novo → uma **issue** (labels: área + tipo + prioridade P0/P1/P2); o commit fecha com
-  `Closes #N`. `ROADMAP.md` guarda só a estratégia/ordem. (Posso mexer no quadro por `glab`.)
+  `Closes #N`. `ROADMAP.md` guarda só a estratégia/ordem. (Mexo no quadro por `gh`.)
+  ⚠️ **Migrado em 2026-09-06, e os NÚMEROS sobreviveram**: as 101 issues foram recriadas em ordem crescente
+  num repositório de contador zerado, então `#1`–`#101` continuam apontando para a mesma coisa. Todo `#N`
+  escrito antes desta data segue válido. O GitLab está arquivado.
 - **`ARCHITECTURE.md` é O MAPA** — o 1º doc a consultar em QUALQUER prompt (meu e das LLMs que eu coordeno) para achar
   o que ler/alterar. **Toda** mudança de estrutura/nome/convenção de doc **reflete nele no mesmo turno**.
 - **Ensinar-e-deixar-ele-rodar:** para mudanças de estado (git push, npm, sistema), oriento e preparo os arquivos;

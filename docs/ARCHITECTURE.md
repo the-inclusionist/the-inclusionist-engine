@@ -21,13 +21,15 @@ SP-the-inclusionist-tracer/
 ├── dist/                     # build output (git-ignored) → deployed to Cloudflare Pages
 ├── docs/                     # documentation — see §2
 ├── tests/                    # Vitest: *.node.test.js (logic) + *.browser.test.js (render/DOM)
-├── .gitlab-ci.yml            # the pipeline: test · a11y (axe) · SAST + secret detection · optional CF deploy
+├── .github/workflows/        # ci.yml — the engine's gates · game-ci.yml — the workflow the GAMES call
 ├── vite.config.ts  tsconfig.json  package.json  .release-it.json  .node-version
 └── CLAUDE.md                 # AI operating rules (entry index for the agent)
 ```
 
-> **Community-health files** (`CONTRIBUTING.md`, `CREDITS.md`, `SECURITY.md`, `LICENSES.md`) live in **`docs/`**, not the root:
-> GitLab auto-detects them there (root · `docs/` · `.gitlab/` are all valid), which keeps the root lean.
+> **Community-health files** (`CONTRIBUTING.md`, `CREDITS.md`, `SECURITY.md`, `LICENSES.md`) live in **`docs/`**, not the root,
+> which keeps the root lean. ⚠️ **The reason changed with the host and the practice did not:** GitLab
+> auto-detected them in `docs/`; GitHub looks in the root, `docs/` and `.github/`, so `docs/` is still one of
+> the places it finds them. `LICENSES.md` is ours rather than a platform convention, and lives there too.
 
 ## 2. Documentation layout (`docs/`)
 

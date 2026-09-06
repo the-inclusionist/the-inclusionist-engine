@@ -22,11 +22,12 @@
 # validator and the eight gate checks all stay in the engine, and a game inherits them. This is the same
 # sentence applied to CI.
 #
-# ⚠️ THE ENGINE ITSELF DOES NOT USE THIS FILE. Its own gates run on GitLab (`.gitlab-ci.yml`), where the
-# project has lived since ADR-0026 and where the SAST and secret-detection templates are. ADR-0066 moved
-# HOSTING to a GitHub organisation and did not move CI, and this file does not move it either — it exists
-# because the games are on GitHub and need a gate today. Saying so here because a reader who finds Actions
-# in this repository will otherwise conclude the migration happened.
+# ⚠️ THE ENGINE ITSELF DOES NOT USE THIS FILE, and the reason changed on 2026-09-06. It used to be that the
+# engine's gates ran on GitLab; they now run beside this file, in `ci.yml`, and `.gitlab-ci.yml` was deleted
+# once the GitLab project was archived. The engine still does not CALL this workflow, because it is not a
+# game: `game-ci.yml` installs Chromium and offers an axe gate against a game served on a port, and the
+# engine's own pipeline has six jobs this one has no business carrying — the ADR validator and the DCO check
+# among them. Two workflows, two shapes, and neither is a copy of the other.
 #
 # ========================= WHAT IT GATES, AND WHY EACH ONE =========================
 # The four that the engine's own `test` job runs, minus what only an app has:

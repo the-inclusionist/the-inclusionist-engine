@@ -1,6 +1,6 @@
 # The Inclusionist
 
-[![pipeline](https://gitlab.com/jrocha-dev/inclusionist-engine/badges/main/pipeline.svg)](https://gitlab.com/jrocha-dev/inclusionist-engine/-/pipelines)
+[![ci](https://github.com/the-inclusionist/the-inclusionist-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/the-inclusionist/the-inclusionist-engine/actions/workflows/ci.yml)
 
 Jogo educativo de plataforma **acessível-primeiro**, em PixiJS, feito para escolas públicas
 brasileiras. Alfabetização (base psicogenética de Ferreiro & Teberosky) e matemática dentro de
@@ -48,10 +48,31 @@ npm test           # testes Vitest (node + browser via Playwright); npm run test
 
 ## CI/CD
 
-- **CI** — GitLab CI (`.gitlab-ci.yml`): a cada push na `main` / merge request roda `npm audit`, typecheck,
-  os testes Vitest (node + browser), o build check, o gate de a11y (axe) e os scanners SAST + secret
-  detection. Sinal 🟢/🔴 no commit/MR; não deploya.
-- **CD** — Cloudflare Pages (plano gratuito), conectado a este repo. A cada push na `main`:
+- **CI** — **GitHub Actions** (`.github/workflows/ci.yml`), a cada push na `main` e a cada pull request.
+  Seis serviços, nenhum decorativo:
+
+  | job | o que barra |
+  |---|---|
+  | `gate` | `npm audit --omit=dev`, typecheck, Vitest (node + browser), build, orçamento de precache |
+  | `adr` | o validador dos registros — oito checagens, entre elas o ponteiro bidirecional de supersessão |
+  | `a11y` | axe contra o app **servido**, não contra a fonte |
+  | `dco` | `Signed-off-by` em toda PR (ADR-0078); pushes do mantenedor ficam de fora |
+  | `secrets` | **gitleaks** sobre o histórico INTEIRO (`fetch-depth: 0`), com `--redact` |
+  | `sast` | **semgrep**, versão fixada |
+
+  ⚠️ **Os dois scanners são de código aberto e não os nativos do GitHub, e a razão é preço:** *code
+  scanning* (CodeQL) e *secret scanning* são gratuitos **só em repositório público**; em privado exigem
+  GitHub Advanced Security, que é pago — e o ADR-0066 §3 mantém tudo privado até o ato. Ficam fixados por
+  versão exata, porque scanner que muda de regra sozinho é portão cujo veredito ninguém reproduz.
+
+  ⚠️ **O `.gitlab-ci.yml` foi REMOVIDO, não desativado.** O projeto no GitLab está arquivado (ADR-0066 §5),
+  então aquele ficheiro não podia mais rodar — e descrevia como vigentes dois scanners que carregavam
+  `allow_failure: true` e estavam vermelhos havia semanas. O histórico o guarda; o cabeçalho do `ci.yml`
+  documenta o porte linha a linha.
+
+- **CD** — Cloudflare Pages (plano gratuito). ⚠️ **A conexão git dele apontava para o GitLab, que agora está
+  arquivado** — o deploy tem de ser reapontado para este repositório antes do próximo push valer publicação.
+  Não dá para conferir isto de fora do painel da Cloudflare. A cada push na `main`:
 
   | Configuração | Valor |
   |---|---|

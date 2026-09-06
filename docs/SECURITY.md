@@ -6,11 +6,15 @@ student data — LGPD/COPPA) and classic **application security** (XSS, injectio
 
 ## Reporting a vulnerability
 
-**Please do not open a public issue for security problems.** Report it as a
-**[confidential issue](https://gitlab.com/jrocha-dev/inclusionist-engine/-/issues/new)** — tick
-**“This issue is confidential…”** before submitting, which restricts it to project members until a fix ships.
-If you cannot reach the tracker, email the maintainer instead; a report that arrives is worth more than a
-report filed in the right place.
+**Please do not open a public issue for security problems.** Use GitHub's private channel:
+**[Report a vulnerability](https://github.com/the-inclusionist/the-inclusionist-engine/security/advisories/new)**
+— a draft security advisory, visible only to the maintainers until a fix ships.
+If you cannot reach it, email the maintainer instead; a report that arrives is worth more than a report
+filed in the right place.
+
+> ⚠️ **This address changed on 2026-09-06.** It used to be a *confidential issue* on GitLab, and that project
+> is now archived — a report filed there would have reached nobody. If you have an older copy of this file,
+> the GitLab link in it is dead.
 
 Include, when possible: affected version/commit, reproduction steps, impact, and any suggested remediation.
 Reports about **exposure of children's data** are welcome even if you are unsure they qualify.
