@@ -151,7 +151,11 @@ const CRU_CONHECIDO = {
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
   'boot/create-game.ts': 3,        // a mensagem do `throw` e as lacunas do hospedeiro
   'render/sprites.ts': 1,          // `console.warn` de quadro fora do atlas — o dev lê, a criança não
-  'core/actions.ts': 1,            // ⚠️ ESTÁ EM INGLÊS, e entrou aqui na mesma: «a game with no action cannot
+  'core/actions.ts': 2,            // 1 → 2 em 2026-09-06: `presetProblems` acrescentou «the child would see
+                                   // an unlabelled control». Subiu porque a função é NOVA, não porque um
+                                   // módulo velho piorou — e o teto sobe pela mesma razão que desce: ele
+                                   // conta o que existe.
+                                   // ⚠️ ESTÁ EM INGLÊS, e entrou aqui na mesma: «a game with no action cannot
                                    // be played», de `actionSetProblems`. O crivo é por FORMA — prosa com
                                    // fronteiras de palavra —, e prosa em inglês tem a mesma forma que prosa em
                                    // português. Registrar é mais barato que ensinar o crivo a distinguir

@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // O gate do ADR-0085: as quatorze ações, e as duas coisas que a lista NÃO pode virar.
 import { describe, it, expect } from 'vitest';
-import { ACTIONS, DIRECTIONS, VERBS, SYSTEM, isAction, actionSetProblems } from '../app/js/core/actions.js';
+import {
+  ACTIONS, DIRECTIONS, VERBS, SYSTEM, isAction, actionSetProblems,
+  presetActions, presetProblems,
+} from '../app/js/core/actions.js';
 
 describe('as quatorze posições (ADR-0085, que supersede o ADR-0074 §1)', () => {
   it('são quatorze, sem repetição', () => {
@@ -82,5 +85,58 @@ describe('o conjunto de ações de um jogo', () => {
 
   it('repetição é reprovada', () => {
     expect(actionSetProblems(['up', 'up'])[0]).toMatch(/repeated/);
+  });
+});
+
+describe('o preset: onde as PALAVRAS do jogo moram (o corte do Dev, 2026-09-06)', () => {
+  // O preset da plataforma, tal como o ADR-0086 o corrigiu.
+  const PLATAFORMA = {
+    up: { label: 'Cima' }, down: { label: 'Baixo' },
+    left: { label: 'Esquerda' }, right: { label: 'Direita' },
+    action1: { label: 'Correr', hint: 'Segure para correr e para grudar na parede.' },
+    action2: { label: 'Pular' },
+    action3: { label: 'Especial' },
+    action4: { label: 'Trocar poder' },
+    start: { label: 'Pausar' },
+  };
+
+  it('um jogo nomeia SÓ as posições que usa', () => {
+    expect(presetProblems(PLATAFORMA)).toEqual([]);
+    // A plataforma não usa ombros nem gatilhos, e não precisa de inventar nome para eles.
+    expect(presetActions(PLATAFORMA)).not.toContain('leftShoulder');
+    expect(presetActions(PLATAFORMA)).not.toContain('select');
+  });
+
+  it('as posições saem na ordem canônica, não na ordem em que foram escritas', () => {
+    // A tela de remapeamento lê esta ordem; se ela seguisse a ordem do objeto, dois jogos com as mesmas
+    // ações mostrariam listas diferentes e a criança perderia a referência ao trocar de jogo.
+    const foraDeOrdem = { action3: { label: 'C' }, up: { label: 'A' }, action1: { label: 'B' } };
+    expect(presetActions(foraDeOrdem)).toEqual(['up', 'action1', 'action3']);
+  });
+
+  it('um quiz nomeia três posições e está conforme', () => {
+    expect(presetProblems({ up: { label: 'Anterior' }, down: { label: 'Seguinte' }, action1: { label: 'Confirmar' } })).toEqual([]);
+  });
+
+  it('⚠️ rótulo vazio é REPROVADO — é o botão sem nome no leitor de tela', () => {
+    const p = presetProblems({ ...PLATAFORMA, action2: { label: '   ' } });
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatch(/action2/);
+    expect(p[0]).toMatch(/empty label/);
+  });
+
+  it('preset que não nomeia nada é reprovado', () => {
+    expect(presetProblems({})[0]).toMatch(/names no action/);
+  });
+
+  it('ausente é reprovado, com outra mensagem', () => {
+    expect(presetProblems(null)[0]).toMatch(/missing/);
+  });
+
+  it('⚠️ uma chave que não é ação é reprovada e NOMEADA — é o `jump` a tentar voltar', () => {
+    const p = presetProblems({ ...PLATAFORMA, jump: { label: 'Pular' } });
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatch(/jump/);
+    expect(p[0]).toMatch(/is not an action/);
   });
 });

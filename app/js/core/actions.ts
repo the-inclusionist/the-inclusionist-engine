@@ -68,6 +68,63 @@ export const VERBS = [
  */
 export const SYSTEM = ['start', 'select'] as const satisfies readonly Action[];
 
+/* ===================== O PRESET: ONDE AS PALAVRAS DO JOGO MORAM ===================== */
+//
+// ⚠️ ESTE É O OUTRO LADO DO CORTE, e sem ele a lista acima não separa nada. A engine conhece POSIÇÕES; o
+// jogo conhece PALAVRAS; e alguém tem de dizer qual palavra está em qual posição. Esse alguém é o jogo, e o
+// que ele entrega é isto.
+//
+// ⚠️ E O DEFEITO QUE ISTO EXISTE PARA CONSERTAR ESTÁ MEDIDO: em 2026-09-06 a camada de entrada da engine
+// dizia `jump`, `run`, `swap` e `especial` em 132 pontos, dentro de 13 ficheiros — `input/gamepad` sozinho
+// tem 41. Quer dizer que os transportes não sabem ler um controle: sabem ler um controle DESTE jogo. Um
+// segundo jogo que não pule reescreve os transportes ou herda um vocabulário que não é o dele.
+
+/** O que a criança lê e ouve para uma posição: o nome, e a frase que o explica quando ela pergunta. */
+export interface ActionWord {
+  /** «Pular», «Confirmar», «Colocar peça». NUNCA `action2` — nome abstrato que chega a uma pessoa é defeito. */
+  readonly label: string;
+  /** Opcional, para a tela de remapeamento: o que este botão faz, numa frase. */
+  readonly hint?: string;
+}
+
+/**
+ * O vocabulário de UM jogo: para cada posição que ele usa, a palavra dele.
+ *
+ * ⚠️ PARCIAL DE PROPÓSITO. Um jogo declara SÓ as posições que usa. Exigir as quatorze obrigaria um quiz a
+ * inventar nome para um gatilho que ele não tem, e um nome inventado acaba numa tela de remapeamento à
+ * frente de uma criança.
+ */
+export type ActionPreset = Partial<Readonly<Record<Action, ActionWord>>>;
+
+/** As posições que este preset nomeia, na ordem canônica de `ACTIONS`. */
+export function presetActions(p: ActionPreset): Action[] {
+  return ACTIONS.filter((a) => p[a] !== undefined);
+}
+
+/**
+ * Um preset é bem-formado? Devolve os problemas — VAZIA quer dizer conforme.
+ *
+ * ⚠️ O QUE ELE APANHA É O RÓTULO VAZIO, e é o mesmo defeito silencioso de `speakableProblems` em
+ * `core/contract`: um `label` em branco não quebra nada, não avisa ninguém, e deixa a tela de remapeamento
+ * com uma linha muda — que para quem usa leitor de tela é um botão que existe e não tem nome.
+ */
+export function presetProblems(p: ActionPreset | null | undefined): string[] {
+  if (!p) return ['preset: missing'];
+  const problemas: string[] = [];
+  const nomeadas = presetActions(p);
+  if (nomeadas.length === 0) problemas.push('preset: names no action - the child would see an unlabelled control');
+  for (const chave of Object.keys(p)) {
+    if (!isAction(chave)) problemas.push(`preset: ${chave} is not an action`);
+  }
+  for (const a of nomeadas) {
+    const w = p[a];
+    if (!w || !w.label || !w.label.trim()) {
+      problemas.push(`preset: ${a} has an empty label - the remap screen would show a nameless button`);
+    }
+  }
+  return problemas;
+}
+
 /** É uma ação conhecida? Guarda de fronteira para dado que veio de fora (mapa salvo, remapeamento). */
 export function isAction(x: unknown): x is Action {
   return typeof x === 'string' && (ACTIONS as readonly string[]).includes(x);
