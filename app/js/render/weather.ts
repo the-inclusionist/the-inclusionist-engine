@@ -6,9 +6,12 @@
 // initWeather(); only the logic moves. `_rainLevel` is the bridge to platform/audio-ambient.ts (thunder/rain
 // track follow the visual): exposed here ONLY via getRainLevel(), never the raw mutable value, exactly like the
 // game.js `get rainLevel(){return _rainLevel;}` it replaces. `cenario` is read as a live binding from
-// core/state.ts (shared state home); `rnd` from core/rng.ts (shared pure RNG) — same pattern as render/fx.ts.
+// core/state.ts (shared state home); `rnd` from core/rng.ts's DECORATION stream — same pattern as render/fx.ts.
 
-import { rnd } from '../core/rng.js';
+// A corrente da DECORACAO, nao a do jogo: uma particula sorteada aqui nao pode mover o sorteio
+// das moedas. Ver o cabecalho de core/rng.ts (issue #107).
+import { rngDecoracao } from '../core/rng.js';
+const rnd = rngDecoracao.rnd;
 
 import type { DesenhoComLinha } from './port.js';
 // `cenario` e `CENARIOS` SAÍRAM (Fase B, ADR-0038): o cenário virou estado do JOGO (`game/state`), e este

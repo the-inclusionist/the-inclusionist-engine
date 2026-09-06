@@ -62,7 +62,10 @@
 
 import { LOGICAL_W, LOGICAL_H, EASY } from '../core/constants.js';
 import type { PlayerView } from '../core/entity.js';
-import { rnd } from '../core/rng.js';
+// A corrente da DECORACAO, nao a do jogo: uma particula sorteada aqui nao pode mover o sorteio
+// das moedas. Ver o cabecalho de core/rng.ts (issue #107).
+import { rngDecoracao } from '../core/rng.js';
+const rnd = rngDecoracao.rnd;
 import { JUICE, easeOut3, shakeAmp, drawFx } from './fx.js';
 import { criarCamera, type CameraObj } from './camera.js';
 import { drawCane, drawRunCane, drawChair } from './wheelchair-sprites.js';

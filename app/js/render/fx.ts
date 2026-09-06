@@ -5,7 +5,10 @@
 // `fxClock` is NOT here — it is a general animation clock (coin shimmer reads it) and stays in game.js.
 // Shake/hit-stop state is read by the camera/update/__incl via getters. See docs/5-Refactoring/plano-modularizacao-mapa.md.
 
-import { rnd } from '../core/rng.js';
+// A corrente da DECORACAO, nao a do jogo: uma particula sorteada aqui nao pode mover o sorteio
+// das moedas. Ver o cabecalho de core/rng.ts (issue #107).
+import { rngDecoracao } from '../core/rng.js';
+const rnd = rngDecoracao.rnd;
 
 import * as store from '../platform/storage.js';
 
