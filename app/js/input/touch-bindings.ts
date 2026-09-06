@@ -86,6 +86,7 @@
 
 /** `ui/dom.ts` `$` — injetado; o módulo nunca alcança `document`. */
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
+import { doCentro, type RectLike } from './pointer-space.js';
 import type { PlayerView } from '../core/entity.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
@@ -123,8 +124,8 @@ export interface TouchBindSnapshot {
   heldKeys: ReadonlySet<string>;
 }
 
-/** Retângulo do elemento (o que `getBoundingClientRect()` entrega, reduzido ao que a conta usa). */
-export interface RectLike { left: number; top: number; width: number; height: number }
+/** Reexportado: a definicao passou a viver em `input/pointer-space`, com a conta que a usa (issue #105). */
+export type { RectLike } from './pointer-space.js';
 
 /** As quatro direções físicas do direcional, ligadas ou não. */
 export interface DirSet { left: boolean; right: boolean; up: boolean; down: boolean }
@@ -237,8 +238,7 @@ export const CROSS_DEAD_FRACTION = 0.18;
  * vertical ficaria proporcionalmente maior ou menor que o horizontal. Anotado, não consertado.
  */
 export function crossDirsAt(px: number, py: number, rect: RectLike): DirSet {
-  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-  const dx = px - cx, dy = py - cy;
+  const { dx, dy } = doCentro(px, py, rect);
   const dead = rect.width * CROSS_DEAD_FRACTION;
   return { left: dx < -dead, right: dx > dead, up: dy < -dead, down: dy > dead };
 }
@@ -248,8 +248,7 @@ export function crossDirsAt(px: number, py: number, rect: RectLike): DirSet {
  * configuráveis — A12e motora), não de uma fração do elemento.
  */
 export function stickDirsAt(px: number, py: number, rect: RectLike, deadPx: number): DirSet {
-  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-  const dx = px - cx, dy = py - cy;
+  const { dx, dy } = doCentro(px, py, rect);
   return { left: dx < -deadPx, right: dx > deadPx, up: dy < -deadPx, down: dy > deadPx };
 }
 
@@ -259,8 +258,7 @@ export function stickDirsAt(px: number, py: number, rect: RectLike, deadPx: numb
  * O `|| 1` do original evita divisão por zero quando o dedo cai no centro exato.
  */
 export function stickKnobOffset(px: number, py: number, rect: RectLike, travelPx: number): { x: number; y: number } {
-  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-  const dx = px - cx, dy = py - cy;
+  const { dx, dy } = doCentro(px, py, rect);
   const m = Math.hypot(dx, dy) || 1;
   const f = m > travelPx ? travelPx / m : 1;
   return { x: dx * f, y: dy * f };

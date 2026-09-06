@@ -6,6 +6,7 @@
 import { t } from '../core/i18n.js';
 import { $ } from './dom.js';
 import { srAlert } from '../core/a11y-sr.js';
+import { emFracao } from '../input/pointer-space.js'; // #105: um lugar so converte um ponto de tela
 
 // API mínima do WebGazer (lib externa, não tipada) — encadeável.
 type WG = { setRegression(m: string): WG; setGazeListener(fn: (d: unknown) => void): WG; begin(): WG; end(): void; showVideoPreview(b: boolean): WG; showPredictionPoints(b: boolean): WG };
@@ -23,11 +24,19 @@ function eyeSet(k: EyeKey, on: boolean, code: string): void {
   window.dispatchEvent(ev); document.dispatchEvent(ev);
 }
 // Recebe o ponto do olhar (px de tela), normaliza dentro do #game-region e vira direção. Exportado p/ teste.
+//
+// ⚠️ AQUI MORA METADE DA ISSUE #105, e vale estar escrito onde acontece: este handler recebe uma POSIÇÃO
+// CONTÍNUA e deita-a fora em três limiares, emitindo teclas sintéticas. É a mesma coisa que os direcionais de
+// toque fazem — e é por isso que a issue conclui que o ponteiro não é fundação nova, é a fundação que o olhar
+// já precisava e nunca teve. Enquanto o ponto morre aqui, uma atividade de desenho não tem como usar o olhar.
+//
+// A conta em si passou a vir de `input/pointer-space`: um lugar só converte um ponto de tela, que é o
+// primeiro item da `definition of done` da #105. O que este ficheiro FAZ com o ponto continua igual.
 export function onGaze(data: unknown): void {
   const d = data as { x: number; y: number } | null;
   if (!d || !eyeMode) return; const gr = $<HTMLElement>('#game-region'); if (!gr) return;
   const r = gr.getBoundingClientRect(); if (!r.width) return;
-  const fx = (d.x - r.left) / r.width, fy = (d.y - r.top) / r.height;
+  const { fx, fy } = emFracao(d.x, d.y, r);
   eyeSet('left', fx < 0.4, 'KeyA'); eyeSet('right', fx > 0.6, 'KeyD'); eyeSet('up', fy < 0.28, 'Space'); // esq/dir = andar; alto = pular
 }
 export function startEyeControl(): void {
