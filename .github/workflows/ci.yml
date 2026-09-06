@@ -181,7 +181,11 @@ jobs:
         env:
           GITLEAKS_VERSION: 8.30.1
         run: |
-          curl -sSfL -o gitleaks.tar.gz \
+          # ⚠️ `--retry`: o download falhou com `curl: (35) Connection reset by peer` num commit só de
+          # documentação, e gate que fica vermelho por rede é gate que ensina a ignorar vermelho — o defeito
+          # exato que este ficheiro foi escrito para não ter. `--retry-all-errors` porque um reset não é
+          # código HTTP e sem ele o `--retry` não pega.
+          curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o gitleaks.tar.gz \
             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           tar -xzf gitleaks.tar.gz gitleaks
           # `--redact` so a finding does not leak the secret into a public build log, which would turn
