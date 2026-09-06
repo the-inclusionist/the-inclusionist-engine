@@ -1,0 +1,122 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  supersedes-in-part: [ADR-0079]
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0079 §3 — the guarantee this implements: among the transports AVAILABLE to this child, at least one
+       carries this game's action set. SUPERSEDED IN PART: what the engine does when none does"
+    - "ADR-0085 — the fourteen positions, which is what made the nine-slot touch control too small"
+    - "ADR-0010 pillar 1 (public-school hardware) and pillar 2 (accessibility)"
+    - "issue #112 — the screen, and the measurement that `input/transports` had no consumer at all"
+  informed: []
+
+title: The reach notice INFORMS and does not refuse — because the engine cannot know whether a keyboard is attached
+
+context-and-problem-statement: |
+  `input/transports.ts` held the arithmetic of ADR-0079 §3, gated — and was imported by NOBODY. None of the
+  transports was ever instantiated, so a guarantee about "the available transports" was true of a list that
+  did not exist. The numbers lived in the test file, and a number that only exists in a test reaches no child.
+
+  ⚠️ THE COMBINATION IS REAL, NOT HYPOTHETICAL. The on-screen control has NINE slots and has since always; the
+  action vocabulary became FOURTEEN on 2026-09-06 (ADR-0085). And on a public-school tablet touch is not the
+  alternative path — it is the only one. Without a sentence beforehand, a child finds out mid-game that she
+  cannot reach an action and concludes the game is broken, with no way to know that it is not.
+
+  ⚠️ AND THE ENGINE CANNOT ANSWER THE QUESTION IT NEEDS TO ASK. There is no browser API for "is a physical
+  keyboard attached". What this project already uses for the same question is `pointer:coarse && hover:none`
+  (`isCoarsePointer` in `game/session`) — and a tablet WITH a keyboard answers "touch" to that.
+
+decision-drivers:
+- "⚠️ Measured: the platformer preset declares exactly NINE actions and touch has exactly NINE slots. The game
+   was designed to fit touch, so the notice does not fire today — the wire exists for the tenth action."
+- "A false refusal is worse than a false warning: one closes a door on a game the device can play, the other
+   costs a sentence."
+- "ADR-0079's own framing already refuses universality per transport in favour of a guarantee over the SET."
+
+considered-options:
+- "R1 - the notice INFORMS, names what is short and what would help, and lets the child continue"
+- "R2 - the notice REFUSES: a game whose actions no available transport carries does not start"
+- "R3 - no notice; the game starts and the unreachable actions simply do nothing"
+
+pros-and-cons-of-the-options:
+  R1:
+    good:
+    - "Survives the imprecise detection: a tablet with a keyboard gets one extra sentence, not a closed door."
+    - "⚠️ The information is ACTIONABLE, which is the whole point. `places are missing` helps nobody; `touch
+       has 9 and this game asks for 14 — a gamepad or a keyboard would carry it` says what to do."
+    bad:
+    - "A child can start a game she cannot fully play. Mitigated by saying so first, in her language, and by
+       the screen reader."
+  R2:
+    good:
+    - "Nobody starts something they cannot finish."
+    bad:
+    - "⚠️ REFUTED BY THE DETECTION LIMIT, and this is the argument that decided it: the engine would refuse a
+       game on a device that plays it perfectly, and the child has no way to argue back. In a product whose
+       reason to exist is not making false claims about accessibility, refusing wrongly is the worse failure."
+  R3:
+    bad:
+    - "It is the state the issue describes: the child concludes the game is broken. Silence is the defect."
+
+decision-outcome:
+  chosen-option:
+    link: "R1 - informs, names, and lets her continue"
+    justification: |
+      ===== 1. THE LIST BECAME REAL =====
+      `LUGARES` = gamepad 17 (the Gamepad API "standard"), touch 9 (`TOUCH_DEFAULT`, checked against that table
+      by a gate so the two cannot drift), keyboard `ACTIONS.length`.
+
+      ⚠️ THE KEYBOARD NUMBER NEEDED A DECISION. Not the key count — a hundred keys are not a hundred places a
+      child finds and remembers. Not the current scheme's bindings — the scheme grows, and the limit would
+      become the configuration rather than the device. It is the VOCABULARY THE ENGINE CAN NAME: a transport
+      covering every position that exists cannot be the short one. Derived, so it grows with the vocabulary
+      and never starts lying.
+
+      ===== 2. THE LAST SENTENCE HAS TWO FORMS =====
+      Something would serve if connected → say so. NOTHING would → saying "connect a gamepad" sends her
+      looking for what does not fix it; there the fault is the GAME's, and the honest sentence is different.
+
+      ===== 3. AND IT ANNOUNCES, NOT ONLY DISPLAYS =====
+      The whole text goes through an assertive screen-reader announcement, and focus lands on the CARD rather
+      than the exit button — otherwise a screen reader reads "Play anyway" first and the reason is left for
+      whoever goes looking. A child has to hear WHY before she finds the way out.
+
+  consequences:
+    positive:
+    - "`input/transports` has a consumer. The guarantee is measured on a real list at every boot."
+    - "`Engine.alcance` is returned, so `ok: false` is auditable rather than living only in a card that closed."
+    negative:
+    - "⚠️ `createGame` needed a new option (`preset`) to know which actions a game uses — it had ZERO knowledge
+       of that, measured. Games that declare no preset get no notice, which is today's behaviour, not a
+       regression."
+    neutral:
+    - "The notice does not fire for the platformer today, and that is measured rather than assumed: nine
+       actions, nine slots. A gate pins both numbers so the tenth action turns the suite red first."
+  confirmation: |
+    `tests/transports.node.test.js` (the real list), `tests/reach-notice.node.test.js` (the sentences, in
+    three dictionaries) and `tests/reach-notice.browser.test.js` (the card, in a real Chromium).
+
+    Born failing under nine confirmed mutations: touch given extra slots so the warning never fires, the
+    keyboard no longer wide, availability memoised instead of asked, the card shown when reach is fine, the
+    short transport unnamed, telling her to connect something when nothing would help, the announcement
+    dropped, the exit button removed, and focus landing on the button so the reason is read last.
+
+    ⚠️ ONE SURVIVED FIRST, and the gap it exposed is about the WORDING rather than the code: nothing covered a
+    transport that is short AND disconnected. With availability memoised, a two-slot switch that is not even
+    in the room would be named in the sentence — the exact opposite of actionable.
+
+    ⚠️ WHAT NO GATE CONFIRMS: how the card LOOKS on a school Chromebook, and whether the wording lands with a
+    child who is still learning to read. The first is a preview measurement; the second is issue #7's field
+    test. The issue says a screen wants to be SEEN before being called done, and that half is honestly open.
+
+more-information: |
+  This supersedes ADR-0079 §3 in one respect only: that record says that when nothing fits, `a engine diz
+  antes de a criança começar`, which reads as a gate. It says — and lets her through. The reason is not
+  softness: it is that the engine cannot reliably detect a keyboard, so a gate would refuse games on devices
+  that play them.
+
+  ⚠️ AND ONE THING IS LEFT UNDECIDED: whether a game should be able to REQUIRE reach — a game where playing
+  without the full action set is genuinely pointless rather than merely reduced. That is a declaration the
+  game would make, in the family of `Declinios`, and no game has asked for it yet.

@@ -1,6 +1,17 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0091
+      what: "ONE clause of §3 — what the engine does when nothing fits. This record says the engine `diz antes
+             de a criança começar`, which reads as a gate: a game that cannot be reached does not start. It
+             SAYS, and lets her through. ⚠️ THE REASON IS NOT SOFTNESS, IT IS A DETECTION LIMIT: there is no
+             browser API for `is a physical keyboard attached`, and the check this project already uses
+             (`pointer:coarse && hover:none`) answers `touch` for a tablet that HAS one. A gate would refuse
+             games on devices that play them perfectly, and the child has no way to argue back. ⚠️ THE
+             GUARANTEE ITSELF STANDS UNCHANGED — among the transports available, at least one carries the
+             set; the promise is the LIST, not the universality of each item — and so does the requirement
+             that she be told BEFORE rather than mid-game."
   date: 2026-09-05
   supersedes-in-part: [ADR-0074]
   decision-makers: [Dev]
