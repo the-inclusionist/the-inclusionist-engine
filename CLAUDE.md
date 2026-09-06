@@ -158,15 +158,7 @@ nada, e já aconteceu aqui: uma regex morreu em silêncio e a checagem seguiu ve
 - **Hardware-alvo (Positivo/Chromebook):** montar baterias de teste para rodar **quando os aparelhos existirem**,
   conforme o produto evolui — não bloqueia o desenvolvimento agora (não temos os aparelhos ainda).
 
-## 6. Ambiente (Windows/Avast) — pegadinhas recorrentes
-
-- **Avast reassina o TLS** → Node rejeita (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`; o `npm install` parece **travar**).
-  Fix: **`NODE_OPTIONS=--use-system-ca`** (+ `UV_NATIVE_TLS=1` para uv). **Cursor precisa de restart REAL** (não só
-  fechar a janela) para pegar env var nova.
-- **Nunca** o OAuth interativo do `npx wrangler` (Avast bloqueia + crasha no Windows) → usar `CLOUDFLARE_API_TOKEN`
-  ou o dashboard.
-
-## 7. Onde achar (não duplico aqui — fato duplicado apodrece)
+## 6. Onde achar (não duplico aqui — fato duplicado apodrece)
 
 - **Mapa da documentação:** `docs/ARCHITECTURE.md` (estrutura de arquivos) + `docs/CONTRIBUTING.md` (como
   trabalhamos + modelo de documentação). **Comece por aí.** (Health files — CONTRIBUTING/CREDITS/SECURITY/**LICENSES** —

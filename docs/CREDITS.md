@@ -58,7 +58,7 @@ A narração por voz roda **inteiramente no navegador/offline** graças ao traba
   **O que o jogo de fato embarca hoje é uma voz:** `pt_BR-faber-medium`. As demais permanecem no repositório como
   material de laboratório (`docs/research/sherpa-wasm/`) e continuam creditadas por isso — crédito acompanha o que
   está no repositório, e não apenas o que é distribuído no pacote. O roster de entrega decidido é `en_US`, `pt_BR` e
-  `es_MX` (ADR-0022).
+  `es_MX` (ADR-0065, que supersede o ADR-0022).
 
 > Os pesos das vozes são **baixados uma vez** (de um host público) e rodam **100% localmente** depois — nenhum áudio de
-> criança sai do dispositivo. Ver `docs/2-Architecture/adr/ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml`.
+> criança sai do dispositivo. Ver `docs/2-Architecture/adr/ADR-0065-three-neural-voices-owned-by-the-engine-and-cached-on-first-use.yaml`.

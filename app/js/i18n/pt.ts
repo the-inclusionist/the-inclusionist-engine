@@ -418,7 +418,7 @@ const pt: Record<string, string> = {
   'sr.quiz.levelSet': 'Nível {n}: {v}.',
   'sr.visual.roleColorSet': 'Cor de {v} alterada.',
   'sr.visual.roleColorsReset': 'Cores do color-blocking restauradas ao padrão.',
-  'sr.visual.normalColors': 'Cores normais reativadas.',
+  'sr.visual.defaultColors': 'Cores padrão restauradas.',
   'sr.pad.connected': 'Controle conectado: layout {v}.',
   'sr.pad.design': 'Desenho dos botões: {v}.',
   'sr.eyes.loading': 'Jogar com os olhos: carregando a webcam (permita o acesso).',

@@ -1592,12 +1592,12 @@ function setWheelchair(on: boolean){ const antes=wheelchair; setWheelchairValue(
   players.forEach(p=>{ if(on && p.activePower!=='fly' && p.activePower!=='turbo') p.activePower='off'; if(on) p.owned=p.owned.filter(k=>k==='fly'||k==='turbo'); showPower(p); });
   setupExtras(); rebuildCoins(); buildWcGeom(); buildRamps(); buildElevators(); reflectMotorEmpathy(); // só voo/super-corrida; moedas no chão; escada/trampolim viram elevador; rampas+pontes; lava vira chão
   srSay(t(on?'sr.motor.wheelchairOn':'sr.motor.wheelchairOff')); }
-// bolinha indicadora: duplo toque/clique → volta às cores normais (em cegueira é a única saída visível)
+// bolinha indicadora: duplo toque/clique → volta às cores padrão (em cegueira é a única saída visível)
 (function vizIndicator(){ const el=$('#viz-indicator'); if(!el)return; let last=-9999;
   // `agora` e não `t`: o local chamava-se `t` e SOMBREAVA o tradutor — `t('sr.visual...')` virou "chamar um
   // número". Quinta vez que este nome de uma letra morde neste arquivo; aqui doeria mais que nas outras,
   // porque este duplo-toque é a ÚNICA saída visível de quem ligou a simulação de cegueira.
-  el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); const agora=e.timeStamp||0; if(agora-last<450){ setPlayerViz(0,'normal'); last=-9999; srSay(t('sr.visual.normalColors')); } else last=agora; }); })();
+  el.addEventListener('pointerdown',(e)=>{ e.preventDefault(); const agora=e.timeStamp||0; if(agora-last<450){ setPlayerViz(0,'normal'); last=-9999; srSay(t('sr.visual.defaultColors')); } else last=agora; }); })();
 // O pad de toque nasce AQUI, e nao 50 linhas abaixo, porque a linha seguinte pode precisar dele: aplicar o
 // modo de visao no boot passa por render/viz-setters, que esconde os controles de toque quando o modo e
 // cegueira. O envolucro `hideTouchControls` e declaracao icada, mas o corpo dele dereferencia `touchCtl`, e

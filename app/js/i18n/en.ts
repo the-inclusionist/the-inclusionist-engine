@@ -342,7 +342,7 @@ const en: Record<string, string> = {
   'sr.quiz.levelSet': 'Level {n}: {v}.',
   'sr.visual.roleColorSet': 'Colour of {v} changed.',
   'sr.visual.roleColorsReset': 'Colour-blocking colours restored to their defaults.',
-  'sr.visual.normalColors': 'Normal colours restored.',
+  'sr.visual.defaultColors': 'Default colours restored.',
   'sr.pad.connected': 'Controller connected: {v} layout.',
   'sr.pad.design': 'Button design: {v}.',
   'sr.eyes.loading': 'Play with your eyes: loading the webcam (please allow access).',
