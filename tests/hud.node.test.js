@@ -6,7 +6,7 @@
 // ZOMBIES + Right-BICEP. Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import {
-  screenGrid, screenRect, screenCount, vphudHtml, waitBadgeHtml, hudRowView, contadorLabel,
+  screenGrid, screenRect, screenCount, vphudHtml, waitBadgeHtml, hudRowView, contadorLabel, aplicarRotuloDoContador,
 } from '../app/js/ui/hud.js';
 
 // O `COIN_TARGET` SAIU DAQUI, e a ausência é o assunto do item 19. O fixture não conhece mais a constante do
@@ -158,11 +158,43 @@ describe('ui/hud · vphudHtml', () => {
     expect(vphudHtml(OBJ(0, 10), '🧩')).not.toContain(ICONE);
   });
 
-  it('[Right] o contador tem NOME ACESSÍVEL, que é o que ele não tinha', () => {
-    // Não é renomeação: antes o contador era "3 / 10" e mais nada, e quem não vê a tela não tinha o que ouvir.
+  it('[Right] o contador tem NOME ACESSÍVEL — e ele deixou de vir por MARKUP (issue #106)', () => {
+    // A exigência não mudou: antes o contador era "3 / 10" e mais nada, e quem não vê a tela não tinha o que
+    // ouvir. O que mudou é a PORTA. O nome vem de `Objective.name`, que é declarado pelo JOGO — e um jogo vive
+    // hoje noutro repositório (ADR-0083), então o seu texto não é revisto por esta árvore.
+    //
+    // ⚠️ E ELE ENTRAVA NUM ATRIBUTO, que é o pior contexto: dentro de um elemento uma aspa é inofensiva;
+    // dentro de `aria-label="…"` ela FECHA o atributo e o resto vira atributo — um `onmouseover` sem precisar
+    // de uma única tag. `setAttribute` escapa por construção.
+    const posto = [];
+    const alvo = { setAttribute: (k, v) => posto.push([k, v]) };
+    const raiz = { querySelector: (sel) => (sel === '.vphud-obj' ? alvo : null) };
+
+    aplicarRotuloDoContador(raiz, OBJ(3, 10, 'palavras'));
+    expect(posto).toHaveLength(1);
+    expect(posto[0][0]).toBe('aria-label');
+    expect(posto[0][1]).toContain('palavras');
+  });
+
+  it('[Zero] ⚠️ e o markup NÃO carrega mais o nome do jogo — nem escapado', () => {
+    // A metade negativa, e é ela que impede a volta: enquanto o nome estiver fora da string, não há escape
+    // para esquecer. Um caso que só afirmasse `setAttribute` deixaria passar uma versão que fizesse as duas.
     const html = vphudHtml(OBJ(3, 10, 'palavras'), ICONE);
-    expect(html).toContain('aria-label="');
-    expect(html).toContain('palavras');
+    expect(html).not.toContain('palavras');
+    expect(html).not.toContain('aria-label');
+  });
+
+  it('[Error] ⚠️ um jogo que devolve um NÃO-NÚMERO em `have` não escreve markup', () => {
+    // `Objective.have` é `number` no tipo, e o tipo não atravessa a fronteira do pacote: um jogo em JavaScript
+    // puro devolve o que quiser. «É um número» estar escrito no tipo é justamente o que faz esquecer.
+    const html = vphudHtml({ ...OBJ(0, 10), have: '<img src=x onerror=alert(1)>' }, ICONE);
+    expect(html).not.toContain('<img');
+    expect(html).toContain('<b class="vphud-n">0</b>'); // falso, mas inofensivo
+  });
+
+  it('[Zero] sem o elemento do contador, aplicar o rótulo não lança', () => {
+    expect(() => aplicarRotuloDoContador(null, OBJ(1, 2))).not.toThrow();
+    expect(() => aplicarRotuloDoContador({ querySelector: () => null }, OBJ(1, 2))).not.toThrow();
   });
 
   it('[Interface] a classe do contador é a do OBJETIVO, não a do que este jogo junta', () => {

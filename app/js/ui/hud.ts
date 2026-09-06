@@ -86,9 +86,40 @@ export const contadorLabel = (o: Objective): string =>
  * era mudo para quem não vê a tela.
  */
 export function vphudHtml(objetivo: Objective, icone: string): string {
-  return '<span class="vphud-obj" aria-label="' + contadorLabel(objetivo) + '"><b class="vphud-ico">' + icone
-    + '</b> <b class="vphud-n">' + objetivo.have + '</b> / ' + objetivo.need
+  return '<span class="vphud-obj"><b class="vphud-ico">' + icone
+    + '</b> <b class="vphud-n">' + numero(objetivo.have) + '</b> / ' + numero(objetivo.need)
     + '</span><span class="vphud-power"><b class="vphud-ico">✨</b> <span class="vphud-pw">—</span></span>';
+}
+
+/**
+ * PÕE O NOME DECLARADO PELO JOGO NO RÓTULO DO LEITOR DE TELA — por atributo, nunca por markup (issue #106).
+ *
+ * ⚠️ ESTE É UM VETOR QUE A AUDITORIA DE 2026-08-26 NÃO TINHA COMO CONHECER, e vale dizer por quê: ela varreu
+ * por FONTE DE DADO e concluiu, com razão para a época, que nada de fora chegava a markup. Depois disso o
+ * contrato passou a existir (ADR-0030) e os jogos passaram a viver em REPOSITÓRIOS SEPARADOS, consumindo a
+ * engine como pacote (ADR-0083). O `name.text` do objetivo é texto de um jogo que esta árvore não revê.
+ *
+ * ⚠️ E ELE ENTRAVA NUM ATRIBUTO, que é o pior contexto dos dois: dentro de um elemento uma aspa é inofensiva,
+ * dentro de `aria-label="…"` ela FECHA o atributo e o que vem a seguir vira atributo — um `onmouseover` sem
+ * precisar de uma única tag.
+ *
+ * `setAttribute` escapa por construção, e é por isso que a resposta é «construir nós» e não «escapar à mão»:
+ * um escape esquecido não deixa rasto; um `setAttribute` esquecido tira o rótulo, e há caso a prendê-lo.
+ */
+export function aplicarRotuloDoContador(vphud: Element | null, objetivo: Objective): void {
+  vphud?.querySelector('.vphud-obj')?.setAttribute('aria-label', contadorLabel(objetivo));
+}
+
+/**
+ * Um número do jogo, coagido.
+ *
+ * ⚠️ `Objective.have` É `number` NO TIPO E O TIPO NÃO ATRAVESSA A FRONTEIRA DO PACOTE: um jogo em JavaScript
+ * puro, ou compilado de outra árvore, devolve o que quiser. Colar isso num template literal é a mesma
+ * categoria de defeito que o nome — só que mais fácil de esquecer, porque «é um número» está escrito no tipo.
+ * Um não-número vira `0`, que é falso mas inofensivo; deixar passar seria falso E perigoso.
+ */
+function numero(v: number): number {
+  return Number.isFinite(v) ? v : 0;
 }
 
 /** Markup do selo "aperte um botão para entrar" (tela criada em jogo, ainda sem dono). `i` é o índice 0-based. */
@@ -231,6 +262,7 @@ export function initHud(ctx: HudCtx): HudApi {
       const d = document.createElement('div');
       d.className = 'vphud';
       d.innerHTML = vphudHtml(ctx.hudObjective(i), ctx.hudIcon);
+      aplicarRotuloDoContador(d, ctx.hudObjective(i)); // #106: o nome vem do JOGO — atributo, nunca markup
       exp.appendChild(d); vpHudDom.push(d);
 
       const q = document.createElement('div');
