@@ -319,6 +319,8 @@ const es: Record<string, string> = {
   'sr.quiz.wellDone': '¡Muy bien! {palavra}. {n} de 3.',
   'sr.quiz.correctSoFar': '¡Acertaste! {n} de 3 para ganar la moneda.',
   'menu.restoreDefaults': 'Restaurar los valores predeterminados de este menú',
+  'menu.close': 'Cerrar',
+  'menu.typo': 'Tipografía',
   'sr.audio.reset': 'Accesibilidad auditiva restaurada a sus valores predeterminados. Los demás menús no cambiaron.',
   'sr.empathy.reset': 'Modo empatía restaurado a sus valores predeterminados: simulaciones desactivadas. Las correcciones de daltonismo y los demás menús no cambiaron.',
   'sr.motor.reset': 'Modo Fácil y movimiento por alternancia restaurados a sus valores predeterminados. El control con los ojos y el mapeo de teclas siguen igual.',

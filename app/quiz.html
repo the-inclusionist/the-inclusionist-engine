@@ -73,17 +73,13 @@
                possível: o estado é NOSSO e o intérprete é um tradutor opcional. Se o modo só ligasse com a
                biblioteca de terceiro presente, ele não seria da engine — seria da página que a carrega. -->
           <button id="q-libras" class="mode-btn" type="button" aria-pressed="false">🤟 Modo pessoa surda</button>
-          <div id="typo" class="overlay" hidden>
-            <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="typo-title">
-              <h2 id="typo-title">Tipografia</h2>
-              <div id="typo-preview" class="typo-preview">Juiz foge e bota fita de cetim na xícara</div>
-              <div id="typo-list" class="ctrl-list" role="group" aria-label="Fontes"></div>
-              <div class="overlay__actions">
-                <button id="typo-reset" class="mode-btn" type="button" data-i18n="menu.restoreDefaults">Restaurar padrões deste menu</button>
-                <button id="typo-close" class="mode-btn is-on" type="button">Fechar</button>
-              </div>
-            </div>
-          </div>
+          <!-- ⚠️ O PAINEL DE TIPOGRAFIA SAIU DAQUI EM 07/09, e a ausência é o conserto. Este bloco declarava
+               à mão o véu, o cartão, o título, a lista e os dois botões — cinco ids que o `ui/settings-typo`
+               EXIGIA e que nada no tipo dele dizia. Era o achado 6 da etapa C: «o painel abre vazio, sem
+               erro», e cada consumidor teria de redescobrir a mesma lista por tentativa.
+
+               Agora quem o monta é a `ui/panel-shell.montarCasca`, chamada pelo `main-quiz.ts`: a engine
+               constrói a casca e DEVOLVE os ids. O contrato passou a ler-se no tipo. -->
         </section>
       </div>
     </div>

@@ -40,11 +40,18 @@
 //     rodapé de explicação, a aplicação no documento, o anúncio e o "restaurar padrões" funcionaram no quiz
 //     como funcionam no jogo. É a evidência mais forte até agora de que a pilha de menus é da engine.
 //
-//  6. MAS O CONTRATO DE MARKUP É INVISÍVEL. O ctx do painel pede `$` e `store`; o que ele REALMENTE exige é que
-//     o documento do consumidor contenha `#typo`, `#typo-list`, `#typo-preview`, `#typo-close` e `#typo-reset`.
-//     Nada no tipo diz isso — descobre-se por tentativa, e o modo de falhar é o pior possível: o painel abre
-//     vazio, sem erro. Uma engine que exige ids fixos e não os declara está exigindo que cada consumidor
-//     redescubra a mesma lista.
+//  6. ✅ CONSERTADO. O CONTRATO DE MARKUP ERA INVISÍVEL. O ctx do painel pedia `$` e `store`; o que ele
+//     REALMENTE exigia é que o documento do consumidor contivesse `#typo`, `#typo-list`, `#typo-preview`,
+//     `#typo-close` e `#typo-reset`. Nada no tipo dizia isso — descobria-se por tentativa, e o modo de falhar
+//     era o pior possível: o painel abre vazio, sem erro. Uma engine que exige ids fixos e não os declara
+//     está exigindo que cada consumidor redescubra a mesma lista.
+//     AGORA a engine CONSTRÓI a casca: `ui/panel-shell.montarCasca` monta o véu, o cartão, o título, a lista
+//     e os dois botões, e DEVOLVE os cinco ids. O bloco que estava escrito à mão no `quiz.html` saiu, e este
+//     ficheiro passou a montá-lo — o contrato lê-se no tipo em vez de se descobrir por tentativa.
+//     ⚠️ O `#typo-preview` fica DESTE lado, e a distinção é a que importa: a amostra «Juiz foge e bota fita
+//     de cetim na xícara» só o painel de TIPOGRAFIA tem. Uma casca que soubesse dela saberia de um painel em
+//     particular, que é o oposto do que ela é. É o mesmo desenho do achado 7 — a engine entrega o markup
+//     genérico, o consumidor acrescenta o que é dele.
 //
 //  7. A CORREÇÃO DE DALTONISMO VIAJA. `installCvdFilters(host)` monta os seis filtros SVG em tempo de execução
 //     dentro de um host que o consumidor fornece, e `VIZ_FILTER` diz qual `url(#...)` aplicar — em QUALQUER
@@ -124,6 +131,7 @@ import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createGame, type Engine } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
 import { initSettingsTypo } from '../ui/settings-typo.js';
+import { montarCasca } from '../ui/panel-shell.js';
 import * as store from '../platform/storage.js';
 import { VIZ_DOM_ONLY, VIZ_FILTER, simulatesDisability } from '../render/viz-modes.js';
 import { toggleLibras, vlibrasOpen, setOnLibrasChange } from '../ui/vlibras.js';
@@ -281,6 +289,29 @@ export function bootQuiz(): void {
   if (motor.problems.length) console.warn('[quiz] lacunas do hospedeiro:', motor.problems);
 
   // PAINEL DE TIPOGRAFIA — emprestado da engine, ligado por este jogo. Ver o achado 5.
+  //
+  // ⚠️ A CASCA VEM DA ENGINE DESDE 07/09, e é o achado 6 consertado: o markup do painel estava escrito à mão
+  // no `quiz.html`, e o que o `settings-typo` exigia — cinco ids — não estava dito em lado nenhum. Agora a
+  // `montarCasca` monta-os E DEVOLVE-OS, então este consumidor lê o contrato do tipo em vez de o descobrir
+  // por tentativa. O `quiz.html` deixou de ter o bloco.
+  //
+  // O `#typo-preview` fica AQUI e não na casca, e a distinção é a que importa: ele é o «Juiz foge e bota
+  // fita de cetim na xícara» — a amostra que só o painel de TIPOGRAFIA tem. Uma casca que soubesse dele
+  // saberia de um painel em particular, que é o oposto do que ela é.
+  const casca = montarCasca({ procurar: (s) => document.querySelector<HTMLElement>(s), criar: (t) => document.createElement(t) }, {
+    id: 'typo',
+    titulo: t('menu.typo'),
+    rotuloDaLista: t('font.grupo.rotulo'),
+    rotuloReset: t('menu.restoreDefaults'),
+    rotuloFechar: t('menu.close'),
+  });
+  const amostra = document.createElement('div');
+  amostra.id = 'typo-preview';
+  amostra.className = 'typo-preview';
+  amostra.textContent = 'Juiz foge e bota fita de cetim na xícara';
+  casca.card.insertBefore(amostra, casca.lista);
+  ($<HTMLElement>('#game-region') ?? document.body).appendChild(casca.overlay);
+
   const typo = initSettingsTypo({ $, srSay, store, root: document.documentElement });
   const abrir = $<HTMLElement>('#q-abrir-typo');
   if (abrir) abrir.addEventListener('click', () => {

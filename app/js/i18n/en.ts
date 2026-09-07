@@ -319,6 +319,8 @@ const en: Record<string, string> = {
   'sr.quiz.wellDone': 'Well done! {palavra}. {n} out of 3.',
   'sr.quiz.correctSoFar': 'Correct! {n} out of 3 to win the coin.',
   'menu.restoreDefaults': 'Restore this menu to its defaults',
+  'menu.close': 'Close',
+  'menu.typo': 'Typography',
   'sr.audio.reset': 'Hearing accessibility restored to its defaults. The other menus did not change.',
   'sr.empathy.reset': 'Empathy mode restored to its defaults: simulations off. Colour-blindness corrections and the other menus did not change.',
   'sr.motor.reset': 'Easy Mode and latched movement restored to their defaults. Eye control and the key mapping are unchanged.',
