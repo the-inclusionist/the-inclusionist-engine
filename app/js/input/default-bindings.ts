@@ -6,10 +6,20 @@
 // físicos — L1, R2, X, A — são BINDING e vivem no transporte, não no vocabulário. Este é o ficheiro onde eles
 // vivem. Um transporte novo (fala, olhar, toque) traz a sua tabela e não toca em `core/actions`.
 //
-// ⚠️ NADA AQUI ESTÁ LIGADO AINDA. `input/gamepad` e `input/keyboard` continuam a falar os oito nomes de
-// plataforma (`jump`, `run`, `swap`, `especial`); a migração é a issue #103. Esta tabela é o destino dela,
-// escrita agora porque o Dev especificou o padrão — e uma especificação que fica no chat é uma decisão
-// perdida.
+// ⚠️ METADE DISTO ESTÁ LIGADA, e a linha que dizia o contrário morreu com a issue #103 (fechada em 06/09).
+// Ela dizia «NADA AQUI ESTÁ LIGADO AINDA … a migração é a issue #103», e era verdade no dia em que foi
+// escrita. Hoje:
+//
+//   · `GAMEPAD_STANDARD` — LIGADO. `input/gamepad.ts:129` lê os índices desta tabela em vez de literais, e a
+//     ligação apanhou uma discordância real: `action1` corria em X, R1 e R2 enquanto a tabela declarava R1 e
+//     R2 como ombro e gatilho.
+//   · `KEYBOARD_SOLO` / `KEYBOARD_DUO` — NÃO LIGADOS. O jogo continua a usar o `KB_DEFAULTS` de
+//     `input/keyboard.ts`, que declara OITO das quatorze posições. Unir as duas é a issue #118, e o que
+//     impede a união hoje não é trabalho: é decidir se `KeyScheme` deixa de ser um `Record` aberto, e onde
+//     moram as seis posições que faltam num teclado dividido por quatro.
+//
+// ⚠️ ENQUANTO AS DUAS EXISTIREM, ELAS NÃO PODEM DIVERGIR EM SILÊNCIO, e `tests/teclado-duas-tabelas` é quem
+// o garante. Nasceu vermelho: a `Space` do jogador 1 em dupla estava numa e não na outra.
 //
 // ========================= A SIMETRIA DO TECLADO, QUE NÃO É DECORAÇÃO =========================
 // O padrão que o Dev especificou apoia-se num bloco do QWERTY:
@@ -33,11 +43,18 @@ import { ACTIONS, type Action } from '../core/actions.js';
 /** `null` = este transporte NÃO alcança esta ação por padrão. Ausência declarada, nunca esquecimento. */
 export type Binding<T> = T | null;
 
-// ⚠️ UMA TECLA QUE EXISTE HOJE E NÃO TEM LUGAR NESTA TABELA: `Space`. O esquema solo de `input/keyboard.ts`
-// tem `jump:['KeyJ','Space']` — a barra é um segundo atalho para o pulo desde sempre. A especificação do
-// padrão não a menciona, e pô-la em `action2` por conta própria seria decidir que o pulo mora ali: se o
-// preset da plataforma puser o pulo noutra posição, a barra segue o verbo errado, que é pior do que ela não
-// existir. Fica de fora, dita aqui, e é decisão do Dev — não de quem escreve a tabela.
+// ⚠️ A `Space` ESTÁ EM `action2`, E ISTO É A HISTÓRIA DE COMO LÁ FOI PARAR — porque este bloco dizia o
+// contrário e sobreviveu à decisão que o revogou.
+//
+// Ela ficou de fora da primeira versão desta tabela, e a razão estava certa: a barra é o segundo atalho do
+// pulo desde sempre, a especificação do padrão não a mencionava, e pô-la em `action2` por conta própria
+// seria decidir que o pulo mora ali. Se o preset da plataforma puser o pulo noutra posição, a barra segue o
+// verbo errado — pior do que ela não existir.
+//
+// O Dev decidiu (ADR-0086 §2) que o pulo mora em `action2`, e a barra voltou. O texto acima continuou a
+// dizer «fica de fora» durante todo esse tempo, ao lado de duas linhas que a declaram. Corrigido em
+// 2026-09-07, na mesma passagem da issue #118 — que trata exactamente desta classe de erro: um comentário
+// que descreve um estado que já passou.
 
 /**
  * Teclado, esquema SOLO. Códigos de `KeyboardEvent.code` — físicos, não a letra impressa, que muda com o

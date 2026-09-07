@@ -38,7 +38,15 @@ export const KB_DEFAULTS: KBDefaults = {
   // 1 jogador: WASD + setas; pulo J/Espaço; UJIK como na mão pequena do DOS. Sem Alt/AltGr/Ctrl/Shift.
   solo:{ left:['KeyA','ArrowLeft'], right:['KeyD','ArrowRight'], up:['KeyW','ArrowUp'], down:['KeyS','ArrowDown'],
          action1:['KeyU'], action2:['KeyJ','Space'], action4:['KeyI'], action3:['KeyK'] },
-  p2:[ { left:['KeyA'],right:['KeyD'],up:['KeyW'],down:['KeyS'], action1:['KeyU'],action2:['KeyJ'],action4:['KeyI'],action3:['KeyK'] },
+  // ⚠️ O JOGADOR 1 EM DUPLA É O SOLO MENOS AS SETAS, E NADA MAIS (ADR-0096). A `Space` estava a faltar aqui
+  // — a única das oito posições em que esta tabela e a registada de `input/default-bindings` divergiam —, e
+  // a barra não é uma seta. Reposta em 2026-09-07 (issue #118), com o gate em `teclado-duas-tabelas`.
+  //
+  // ⚠️ E A FALTA TINHA UM CUSTO CONCRETO, que é o que a torna um defeito e não uma assimetria: `ui/webcam.ts`
+  // sintetiza `Space` para «olhar para cima = pular», e é assim que salta quem joga com os olhos. Sem a barra
+  // aqui, `whichPlayer('Space')` respondia -1 assim que entrava um segundo jogador — o andar (`KeyA`/`KeyD`)
+  // continuava a ser do jogador 1 e o PULO deixava de ter dono. Nada errava em voz alta.
+  p2:[ { left:['KeyA'],right:['KeyD'],up:['KeyW'],down:['KeyS'], action1:['KeyU'],action2:['KeyJ','Space'],action4:['KeyI'],action3:['KeyK'] },
        { left:['ArrowLeft'],right:['ArrowRight'],up:['ArrowUp'],down:['ArrowDown'], action1:['Numpad8'],action2:['Numpad5'],action4:['Numpad9'],action3:['Numpad6'] } ],
   p3: JSON.parse(JSON.stringify(KB_SCHEMES4.slice(0, 3))), // modo 3 jogadores (independente do 4)
   p4: JSON.parse(JSON.stringify(KB_SCHEMES4)),             // modo 4 jogadores
