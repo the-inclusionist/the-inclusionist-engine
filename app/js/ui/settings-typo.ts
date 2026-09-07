@@ -9,7 +9,7 @@
 
 // (`toggleLabel` saiu daqui em 2026-09-07: ele devolve «Ligado»/«Desligado», e este menu é uma ESCOLHA.)
 import { t } from '../core/i18n.js';
-import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, type FontItem } from './fonts.js';
+import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, papelDaFonte, type FontItem } from './fonts.js';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
@@ -61,10 +61,18 @@ export interface SettingsTypoApi {
 // ---------------------------------------------------------------------------------------------
 
 
-/** A key is selectable when it exists in the catalog and is not marked `.off` (licence pending, etc.). */
+/**
+ * A key is selectable when it exists in the catalog, is not marked `.off` (licence pending, etc.) — and is
+ * `geral`.
+ *
+ * ⚠️ O TERCEIRO TERMO ENTROU EM 2026-09-07 (issue #87), e sem ele o resto da mudança seria decoração: o menu
+ * deixaria de OFERECER as caligráficas e elas continuariam SELECIONÁVEIS por qualquer outro caminho — o
+ * `resolveFontKey` de uma chave guardada, um `data-font` num markup de consumidor. «Não está na lista» e «não
+ * pode ser escolhida» têm de ser a mesma afirmação, ou a lista é só uma sugestão.
+ */
 export function isSelectableFont(k: string): boolean {
   const it = FONT_BY_KEY[k];
-  return !!it && !it.off;
+  return !!it && !it.off && papelDaFonte(it) === 'geral';
 }
 
 // A semantica da chave (validacao + migracao da chave antiga) mora em ui/fonts.ts, que e o dono do
@@ -107,19 +115,35 @@ export interface TypoGroupView {
   rows: TypoRow[];
 }
 
+/**
+ * UMA linha da lista, a partir de uma face do catálogo. Extraída em 2026-09-07 (issue #87) porque o gate do
+ * mecanismo `.off` precisava de a exercitar com uma face de MENTIRA: as duas únicas entradas desligadas
+ * saíram do roster, e um caso que dependa da composição do catálogo reprova sempre que o roster muda.
+ *
+ * O mecanismo fica, e é preciso: o item 4 da #87 usa-o para a **Ronde**, que só pode ser oferecida se uma de
+ * três faces estiver instalada, porque duas delas são gratuitas apenas para uso pessoal e não podem ser
+ * empacotadas.
+ */
+export function linhaDaFonte(it: FontItem, fontKey: string): TypoRow {
+  const disabled = !!it.off;
+  // `d` e `off` também guardam CHAVE. O travessão que junta os dois é pontuação, não frase — as duas
+  // metades são independentes e cada uma traduz por si.
+  const desc = it.d ? t(it.d) : '', motivo = it.off ? t(it.off) : '';
+  const note = desc ? desc + (disabled ? ' — ' + motivo : '') : disabled ? motivo : '';
+  return { key: it.k, fam: it.fam, selected: fontKey === it.k, disabled, note };
+}
+
 /** Pure view-model for the typography list: which row is selected/disabled and its note, per catalog group. */
 export function typoGroups(fontKey: string): TypoGroupView[] {
+  // ⚠️ SÓ AS GERAIS ENTRAM NA LISTA (emenda do ADR-0012, issue #87). As caligráficas existem para a criança
+  // APRENDER a ler letra cursiva — isso é matéria, e vive DENTRO das atividades, em botões próprios. Oferecê-
+  // las aqui é dar-lhe a matéria como obstáculo em todo lugar onde ela só quer navegar o menu.
+  //
+  // Um grupo que fique sem nenhuma face geral desaparece da lista, em vez de aparecer como título vazio.
   return FONT_GROUPS.map((g) => ({
     g: t(g.g),  // `g` guarda CHAVE i18n desde o item 14 (ver ui/fonts)
-    rows: g.items.map((it): TypoRow => {
-      const disabled = !!it.off;
-      // `d` e `off` também guardam CHAVE. O travessão que junta os dois é pontuação, não frase — as duas
-      // metades são independentes e cada uma traduz por si.
-      const desc = it.d ? t(it.d) : '', motivo = it.off ? t(it.off) : '';
-      const note = desc ? desc + (disabled ? ' — ' + motivo : '') : disabled ? motivo : '';
-      return { key: it.k, fam: it.fam, selected: fontKey === it.k, disabled, note };
-    }),
-  }));
+    rows: g.items.filter((it) => papelDaFonte(it) === 'geral').map((it) => linhaDaFonte(it, fontKey)),
+  })).filter((grupo) => grupo.rows.length > 0);
 }
 
 /**

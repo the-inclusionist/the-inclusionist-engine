@@ -29,8 +29,12 @@ const ITENS = FONT_GROUPS.flatMap((g) => g.items.map((it) => ({ fam: it.fam, ofe
 
 describe('uma fonte oferecida no menu carrega de verdade (ADR-0012)', () => {
   it('[Interface] o catálogo e a folha existem e têm tamanho de gente', () => {
-    expect(ITENS.length).toBeGreaterThanOrEqual(15);
-    expect(DECLARADAS.size).toBeGreaterThanOrEqual(15);
+    // ⚠️ O piso desceu de 15 para 12 em 2026-09-07: o roster perdeu quatro faces (issue #87, item 3 — duas
+    // por peso, duas que eram entradas `.off` sem ficheiro). Como o piso do `constantes-do-cartucho`, este
+    // número não mede qualidade — mede que o import resolveu e a folha foi lida. Um catálogo vazio ou uma
+    // folha ilegível dão ZERO, e é isso que ele apanha; quem guarda de verdade são os casos abaixo.
+    expect(ITENS.length).toBeGreaterThanOrEqual(12);
+    expect(DECLARADAS.size).toBeGreaterThanOrEqual(12);
   });
 
   it('⚠️ [Zero] NENHUMA fonte oferecível fica sem `@font-face`', () => {
@@ -38,11 +42,18 @@ describe('uma fonte oferecida no menu carrega de verdade (ADR-0012)', () => {
     expect(fantasmas, 'a criança escolhe e o navegador desenha outra coisa, sem erro nenhum').toEqual([]);
   });
 
-  it('[Boundary] uma fonte `.off` PODE não ter face — é por isso que ela está `.off`', () => {
-    // `Learning Curve` e `Kindergarten Pro` estão desabilitadas no catálogo e ausentes da folha. Exigir-lhes
-    // um `@font-face` seria pedir o ficheiro de uma fonte que o menu não deixa escolher.
-    const desligadas = ITENS.filter((i) => !i.oferecivel);
-    expect(desligadas.length).toBeGreaterThan(0);
+  it('⚠️ [Boundary] o crivo só EXIGE face de quem é oferecível — e isso vale sem haver nenhuma desligada', () => {
+    // ⚠️ ESTE CASO PERDEU O SUJEITO em 2026-09-07. Ele afirmava que uma fonte `.off` pode não ter face, e
+    // apoiava-se em `Learning Curve` e `Kindergarten Pro` existirem no catálogo — as duas saíram do roster
+    // (issue #87, item 3) por serem exactamente isso: entradas desabilitadas SEM ficheiro por trás.
+    //
+    // A regra continua a valer e o mecanismo continua a ser preciso (a Ronde do item 4 vai usá-lo), então o
+    // caso passou a medir a REGRA em vez de contar instâncias: uma face desligada não entra no crivo das
+    // fantasmas. Um caso que precisa de o catálogo ter um exemplar do seu tema reprova quando o roster muda,
+    // que é o oposto de guardar o roster.
+    const fantasma = { fam: 'Fonte Sem Ficheiro', oferecivel: false };
+    const acusadas = [...ITENS, fantasma].filter((i) => i.oferecivel && !DECLARADAS.has(i.fam)).map((i) => i.fam);
+    expect(acusadas, 'uma face DESLIGADA foi cobrada por não ter `@font-face`').toEqual([]);
   });
 
   it('[Interface] a folha PODE declarar mais do que o menu oferece', () => {

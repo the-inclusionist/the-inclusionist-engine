@@ -6,9 +6,9 @@
 import { describe, it, expect } from 'vitest';
 import { t } from '../app/js/core/i18n.js'; // o catálogo de fontes guarda CHAVE desde o item 14
 import {
-  isSelectableFont, resolveFontKey, persistFontKey, fontCssTarget, typoGroups, typoListHTML,
+  isSelectableFont, resolveFontKey, persistFontKey, fontCssTarget, typoGroups, typoListHTML, linhaDaFonte,
 } from '../app/js/ui/settings-typo.js';
-import { FONT_BY_KEY } from '../app/js/ui/fonts.js';
+import { FONT_BY_KEY, FONT_GROUPS, papelDaFonte } from '../app/js/ui/fonts.js';
 
 // Fake de platform/storage.ts: um Map em memória, mesma forma (get/set) do módulo real.
 function fakeStore(seed = {}) {
@@ -25,9 +25,18 @@ describe('isSelectableFont', () => {
     expect(isSelectableFont('atkinson')).toBe(true);
     expect(isSelectableFont('lexend')).toBe(true);
   });
-  it('[Boundary] falso para fonte marcada .off (licença pendente)', () => {
-    expect(isSelectableFont('kindergarten')).toBe(false); // "licença em negociação"
-    expect(isSelectableFont('learningcurve')).toBe(false); // "licença a confirmar"
+  it('⚠️ [Boundary] falso para caligráfica e para chave que saiu do roster', () => {
+    // ⚠️ ESTE CASO PASSOU A PASSAR PELO MOTIVO ERRADO em 2026-09-07 e por isso foi reescrito. Ele afirmava
+    // `isSelectableFont('kindergarten') === false` por a face estar `.off`; a `kindergarten` saiu do roster
+    // (issue #87, item 3), então a resposta continuou `false` — mas pelo caminho da CHAVE DESCONHECIDA, que
+    // já é o caso seguinte. Um teste que sobrevive à remoção do seu próprio sujeito deixou de o medir.
+    //
+    // O que ele mede agora é a regra que passou a existir: uma CALIGRÁFICA não é selecionável, porque o
+    // menu não a oferece e a emenda do ADR-0012 diz que ela não pode ser a face da interface.
+    expect(isSelectableFont('pinyon'), 'uma caligráfica virou selecionável').toBe(false);
+    expect(isSelectableFont('ufmag'), 'uma caligráfica virou selecionável').toBe(false);
+    // E o contrapeso: a Comic Neue está no mesmo GRUPO e é de papel geral — continua selecionável.
+    expect(isSelectableFont('comicneue')).toBe(true);
   });
   it('[Zero/Error] falso para chave inexistente', () => {
     expect(isSelectableFont('')).toBe(false);
@@ -40,9 +49,14 @@ describe('resolveFontKey — boot: persistida válida > migração legado > defa
     const store = fakeStore({ incl_font_k: 'lexend' });
     expect(resolveFontKey(store)).toBe('lexend');
   });
-  it('[Boundary] ignora a chave nova quando aponta p/ fonte .off, cai no default', () => {
-    const store = fakeStore({ incl_font_k: 'kindergarten' });
-    expect(resolveFontKey(store)).toBe('atkinson');
+  it('⚠️ [Boundary] uma CALIGRÁFICA guardada volta ao padrão — senão a criança fica presa nela', () => {
+    // Antes da emenda do ADR-0012 o menu oferecia as sete caligráficas, então há crianças com `pinyon`
+    // guardado. O valor salvo é escolha delas e não é nossa para desfazer sem motivo — mas o motivo existe:
+    // uma caligráfica não pode ser a face da INTERFACE, e o menu deixou de a oferecer. Deixá-la valer daria
+    // uma interface inteira em letra cursiva a quem já não tem como sair dela pelo menu.
+    expect(resolveFontKey(fakeStore({ incl_font_k: 'pinyon' }))).toBe('atkinson');
+    // E uma chave que saiu do roster cai no mesmo lugar, em vez de ficar sem face nenhuma.
+    expect(resolveFontKey(fakeStore({ incl_font_k: 'greatvibes' }))).toBe('atkinson');
   });
   it('[Boundary] ignora a chave nova quando desconhecida, cai no default', () => {
     const store = fakeStore({ incl_font_k: 'fonte-fantasma' });
@@ -94,6 +108,44 @@ describe('fontCssTarget', () => {
   });
 });
 
+// ===================================================================================================
+// O PAPEL DA FACE, E O TAMANHO MÍNIMO DE UMA CALIGRÁFICA (ADR-0012 emendado, issue #87)
+// ===================================================================================================
+describe('as caligráficas: papel declarado e tamanho mínimo', () => {
+  const TODAS = FONT_GROUPS.flatMap((g) => g.items);
+  const CALIGRAFICAS = TODAS.filter((it) => papelDaFonte(it) === 'caligrafica');
+
+  it('[Zero] há caligráficas no catálogo — senão os casos abaixo não medem nada', () => {
+    expect(CALIGRAFICAS.length).toBeGreaterThan(0);
+    expect(CALIGRAFICAS.map((it) => it.k).sort()).toEqual(['pinyon', 'ufmag']);
+  });
+
+  it('⚠️ [Right] toda caligráfica declara `minPx`, com os números do Dev', () => {
+    // ⚠️ Abaixo do mínimo a face deixa de ser DIFÍCIL e passa a ser ILEGÍVEL, e as duas coisas são
+    // diferentes: a dificuldade é o exercício — a criança está a aprender a ler cursiva —, a ilegibilidade é
+    // a criança a desistir. É por isso que o item 2 da #87 diz «tem de ser gate, não recomendação».
+    for (const it of CALIGRAFICAS) {
+      expect(it.minPx, `${it.k} é caligráfica e não declara tamanho mínimo`).toBeTypeOf('number');
+      expect(it.minPx, `${it.k}: mínimo abaixo de 20px`).toBeGreaterThanOrEqual(20);
+    }
+    expect(FONT_BY_KEY.pinyon.minPx, 'a Pinyon é a mais fina das quatro e pede 24').toBe(24);
+    expect(FONT_BY_KEY.ufmag.minPx).toBe(20);
+  });
+
+  it('⚠️ [Interface] nenhuma GERAL declara `minPx` — o mínimo é a marca de quem é caligráfica', () => {
+    // Se uma face geral ganhasse mínimo, o número deixaria de dizer «esta é difícil de ler em pequeno» e
+    // passaria a ser um campo opcional qualquer. O papel e o mínimo andam juntos ou nenhum dos dois informa.
+    const erradas = TODAS.filter((it) => papelDaFonte(it) === 'geral' && it.minPx !== undefined).map((it) => it.k);
+    expect(erradas, 'face geral com tamanho mínimo: ' + erradas.join(', ')).toEqual([]);
+  });
+
+  it('[Boundary] a Comic Neue está no grupo `hand` e é GERAL — o corte é por papel, não por grupo', () => {
+    const hand = FONT_GROUPS.find((g) => g.g === 'font.group.hand');
+    expect(hand.items.map((it) => it.k)).toContain('comicneue');
+    expect(papelDaFonte(FONT_BY_KEY.comicneue)).toBe('geral');
+  });
+});
+
 describe('typoGroups — view-model das linhas', () => {
   it('[Right] marca como selected apenas a linha da chave ativa', () => {
     const groups = typoGroups('lexend');
@@ -102,10 +154,22 @@ describe('typoGroups — view-model das linhas', () => {
     expect(selected).toHaveLength(1);
     expect(selected[0].key).toBe('lexend');
   });
-  it('[Boundary] fonte .off vem com disabled=true e a nota inclui o motivo', () => {
-    const row = typoGroups('atkinson').flatMap((g) => g.rows).find((r) => r.key === 'kindergarten');
-    expect(row.disabled).toBe(true);
-    expect(row.note).toContain('licença em negociação');
+  it('⚠️ [Boundary] o MECANISMO `.off` continua vivo, mesmo sem nenhuma face a usá-lo hoje', () => {
+    // Este caso apontava para a `kindergarten`, que saiu do roster em 2026-09-07 (issue #87, item 3) — era
+    // uma entrada `.off` SEM FICHEIRO, isto é, o menu oferecia-a desabilitada e não havia nada por trás.
+    //
+    // ⚠️ O mecanismo NÃO saiu com ela, e não deve: o item 4 da mesma issue precisa dele para a **Ronde**, que
+    // só pode ser oferecida se uma de três faces estiver instalada (`document.fonts.check()`), porque as
+    // outras duas são gratuitas apenas para uso pessoal e não podem ser empacotadas.
+    //
+    // Por isso o caso passou a medir a FUNÇÃO com uma face de mentira, em vez de depender de o catálogo
+    // continuar a ter uma desligada. Um teste que depende da composição do roster reprova sempre que o
+    // roster muda — que foi exactamente o que aconteceu aqui.
+    const falsa = { k: 'x', fam: 'Fonte de Mentira', fb: 'sans', d: 'font.desc.pinyon', off: 'font.off.pending' };
+    const linha = linhaDaFonte(falsa, 'atkinson');
+    expect(linha.disabled).toBe(true);
+    expect(linha.note, 'a nota de uma face desligada tem de dizer o MOTIVO').not.toBe('');
+    expect(linha.note).toContain('—'); // descrição — motivo, as duas metades
   });
   it('[Right] fonte sem descrição e sem .off tem note vazia', () => {
     const row = typoGroups('atkinson').flatMap((g) => g.rows).find((r) => r.key === 'inter');
@@ -140,7 +204,10 @@ describe('typoGroups — view-model das linhas', () => {
 // carrega por escrito: `aria-checked` para quem escuta, uma marca para quem vê. O fundo amarelo do
 // `.mode-btn.is-on` continua, porque é o que a emenda pede; o que ele não pode ser é o ÚNICO sinal.
 describe('typoListHTML — uma escolha exclusiva, não oito interruptores', () => {
-  const botaoDe = (html, chave) => html.match(new RegExp(`<button[^>]*data-font="${chave}"[^>]*>`))[0];
+  // ⚠️ `?.[0] ?? null` e não `[0]`: desde a issue #87 há faces que o menu NÃO oferece (as caligráficas), e
+// «não está lá» passou a ser uma resposta legítima a perguntar. Com o `[0]` cru, o caso que afirma a ausência
+// rebentava com `TypeError` em vez de falhar com a sua própria mensagem.
+const botaoDe = (html, chave) => html.match(new RegExp(`<button[^>]*data-font="${chave}"[^>]*>`))?.[0] ?? null;
 
   it('⚠️ [Right] a fonte ativa é `aria-checked=true`, e NENHUM botão é um interruptor', () => {
     const html = typoListHTML('andika');
@@ -175,8 +242,18 @@ describe('typoListHTML — uma escolha exclusiva, não oito interruptores', () =
     expect(conteudo.trim(), 'o botão da fonte activa não mostra marca nenhuma').not.toBe('');
   });
 
-  it('[Boundary] fonte .off gera botão disabled', () => {
-    expect(botaoDe(typoListHTML('atkinson'), 'kindergarten')).toContain('disabled');
+  it('⚠️ [Boundary] nenhuma CALIGRÁFICA aparece no menu — a emenda do ADR-0012, aferida', () => {
+    // As caligráficas existem para a criança APRENDER a ler letra cursiva, e isso é matéria: vive dentro das
+    // atividades, em botões próprios. Oferecê-las aqui dá-lhe a matéria como obstáculo em todo lugar onde
+    // ela só quer navegar o menu — e uma criança que escolhesse `ufmag` ficava com a interface inteira em
+    // gótico, incluindo o menu de onde teria de sair.
+    const html = typoListHTML('atkinson');
+    for (const k of ['pinyon', 'ufmag']) {
+      expect(botaoDe(html, k), `a caligráfica ${k} voltou ao menu`).toBe(null);
+    }
+    // E o contrapeso: `comicneue` está no MESMO grupo por aparência e é de propósito geral — tirá-la seria
+    // remover uma opção legitimamente acessível pelo formato do grupo em vez de pelo papel.
+    expect(botaoDe(html, 'comicneue'), 'a Comic Neue saiu do menu por estar no grupo `hand`').not.toBe(null);
   });
 
   it('[Error] chave desconhecida não derruba a geração (nenhuma linha fica selected)', () => {

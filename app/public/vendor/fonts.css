@@ -80,9 +80,7 @@
 @font-face{font-family:'Newsreader';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/newsreader-400.woff2') format('woff2');}
 @font-face{font-family:'Newsreader';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/newsreader-700.woff2') format('woff2');}
 /* Manuscritas (caligráficas inglesas · blackletter alemãs · alfabetização) */
-@font-face{font-family:'Great Vibes';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/greatvibes-400.woff2') format('woff2');}
 @font-face{font-family:'Pinyon Script';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/pinyon-400.woff2') format('woff2');}
-@font-face{font-family:'UnifrakturCook';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/ufcook-700.woff2') format('woff2');}
 @font-face{font-family:'UnifrakturMaguntia';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/ufmag-400.woff2') format('woff2');}
 @font-face{font-family:'Comic Neue';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/comicneue-400.woff2') format('woff2');}
 @font-face{font-family:'Comic Neue';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/comicneue-700.woff2') format('woff2');}

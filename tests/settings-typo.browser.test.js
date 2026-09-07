@@ -91,8 +91,17 @@ describe('ui/settings-typo', () => {
   it('[Boundary] botão de fonte .off nasce disabled (não clicável)', () => {
     const ctx = fullCtx();
     initSettingsTypo(ctx).render();
-    const btn = $('#typo-list').querySelector('button[data-font="kindergarten"]');
-    expect(btn.disabled).toBe(true);
+    // ⚠️ ESTE CASO PERDEU O SUJEITO em 2026-09-07: apontava para a `kindergarten`, uma entrada `.off` sem
+    // ficheiro que saiu do roster (issue #87, item 3). O que ele mede agora é a outra metade da mesma regra,
+    // que passou a existir: nenhuma CALIGRÁFICA é desenhada no menu — não desabilitada, AUSENTE.
+    //
+    // A diferença importa para quem navega por leitor de tela: um botão desabilitado ainda é anunciado e
+    // ainda ocupa uma parada na travessia. Uma face que a criança não pode usar como interface não deve
+    // custar-lhe uma parada.
+    for (const k of ['pinyon', 'ufmag']) {
+      expect($('#typo-list').querySelector(`button[data-font="${k}"]`), `${k} apareceu no menu`).toBe(null);
+    }
+    expect($('#typo-list').querySelector('button[data-font="comicneue"]'), 'a Comic Neue sumiu do menu').not.toBe(null);
   });
 
   it('[Error] setFont com chave desconhecida é no-op e não lança', () => {
