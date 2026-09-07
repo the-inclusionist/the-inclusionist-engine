@@ -94,12 +94,15 @@ turns each into a `9.0.0`:
   consumer.** It stays for now because a `file:` consumer reaches the whole tree, and that is the Dev's call.
 - **`platform/audio-sonar.SonarCtx.LOGICAL_W`** (#121) — no longer read; the pan width comes from the
   topology. Already optional and `@deprecated`, so removing the field is the only step left.
-- **`ui/settings-controls.ACT_LABEL`** — measured on 2026-09-07 to have **no consumer at all**, in this tree
-  or in `game-platformer`. It is the platformer's eight words living inside the engine, and it was the direct
-  cause of #125: the remap screen built its `aria-label` from it and announced *"Alterar tecla de undefined"*
-  in a game that is not the platformer. It is marked `@deprecated` rather than removed, because removing a
-  published export is a break and the major is still uncut. Removing it makes the defect impossible by
-  construction instead of by comment.
+- **`ui/settings-controls.ACT_LABEL`** — the platformer's eight words living inside the engine, and the
+  direct cause of #125: the remap screen built its `aria-label` from it and announced *"Alterar tecla de
+  undefined"* in a game that is not the platformer. That use is gone.
+  ⚠️ **Correction to what this file said on 2026-09-07.** It claimed the export had *no consumer at all*.
+  That was wrong: the claim came from a search whose pattern excluded `main.ts` (it sits directly in
+  `app/js/` and the glob required a subdirectory). `game-platformer/app/js/main.ts` imports it and uses it in
+  the pause menu's HELP screen. So **removing it is a migration, not a cleanup**: the cartridge has
+  `acoesDoJogo()` already and the help screen must move to it first. Listed here so the order is not
+  discovered the hard way, and no longer marked `@deprecated`.
 
 This is a decision for the Dev, not a task: cutting the major sooner ships the accessibility fixes that are
 already done; cutting it later lets two breaking changes ride one release instead of three.

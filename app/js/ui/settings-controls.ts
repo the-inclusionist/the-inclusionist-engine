@@ -110,22 +110,27 @@ export interface SettingsControlsApi {
 // ---------------------------------------------------------------------------------------------
 
 /**
- * @deprecated ⚠️ SEM UM ÚNICO CONSUMIDOR, e é a causa da #125. Medido em 2026-09-07: `ACT_LABEL` não é lido
- * em ponto nenhum do `app/js` nem do `game-platformer` — só em prosa. O último leitor era o `aria-label` da
- * tela de remapeamento, e era exatamente ele que dizia «Alterar tecla de undefined» num jogo que não é o de
- * plataforma. O `openHelp()` que o cabeçalho antigo citava saiu com o cartucho (#111).
+ * As oito posições do jogo de plataforma, ligadas às chaves de i18n das palavras DELE.
  *
- * ⚠️ NÃO A REMOVI, e digo porquê em vez de a apagar em silêncio: remover é quebra de superfície publicada, e
- * o major ainda não foi cortado — a decisão de o cortar está aberta na #104. Fica listada como candidata em
- * `docs/6-DevOps-SRE/Breaking-Changes.md`, que é onde essa decisão se toma. Depreciar é reversível; remover
- * publicado não é.
+ * ⚠️ ELA TEM CONSUMIDOR, e eu já disse aqui que não tinha. A afirmação anterior — «sem um único consumidor,
+ * nem aqui nem no `game-platformer`» — vinha de uma varredura com um padrão que **excluía o `main.ts`** do
+ * cartucho, por ele estar directamente em `app/js/` e o glob exigir um subdirectório. Medido de novo com
+ * `git grep`: `game-platformer/app/js/main.ts` importa-a e usa-a na TELA DE AJUDA do menu de pausa (a linha
+ * que lista posição ↔ tecla). O `openHelp()` que o cabeçalho original citava não morreu — mudou de
+ * repositório com o cartucho (#111) e continua a ler daqui.
  *
- * Quem precisar da palavra de uma posição pede-a ao JOGO, por `ctx.acoesDoJogo()`. A engine sabe que a
- * posição existe; só o jogo sabe como ela se chama (ADR-0086).
+ * ⚠️ E ELA CONTINUA A SER A CAUSA DA #125, o que é diferente de estar morta. O defeito era o `aria-label` da
+ * tela de remapeamento ser montado a partir dela: oito posições contra as catorze do vocabulário, e as
+ * palavras de UM jogo dentro do motor. Esse uso saiu. O que resta é um consumidor para quem a tabela está
+ * certa — porque ele É o jogo de plataforma.
  *
- * (Histórico: guardava CHAVES e não texto porque uma `const` de módulo é avaliada uma vez no import, e o
- * `dict` do `core/i18n` é um `let` que o `setLocale` reatribui — texto capturado aqui congelaria o idioma no
- * boot. A razão continua correta; o que morreu foi o consumidor.)
+ * ⚠️ REMOVÊ-LA NÃO É LIMPEZA, É MIGRAÇÃO. O cartucho já tem `acoesDoJogo()` (`main.ts:122`), derivado do
+ * preset dele; a tela de ajuda passar a usá-lo é edição de lá, e só depois disso é que isto pode sair daqui.
+ * Enquanto não sair, quem escrever código NOVO na engine pede a palavra ao jogo por `ctx.acoesDoJogo()` — a
+ * engine sabe que a posição existe, só o jogo sabe como ela se chama (ADR-0086).
+ *
+ * Guarda CHAVES e não texto porque uma `const` de módulo é avaliada uma vez no import, e o `dict` do
+ * `core/i18n` é um `let` que o `setLocale` reatribui — texto capturado aqui congelaria o idioma no boot.
  */
 export const ACT_LABEL: Record<string, string> = {
   left: 'act.left', right: 'act.right', up: 'act.up', down: 'act.down',
