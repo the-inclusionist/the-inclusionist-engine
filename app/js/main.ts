@@ -571,7 +571,12 @@ const caneOn=(pl: PlayerView<'viz'>)=>{ const m=VIZ_BY_KEY[pl.viz]; return modoC
 // caneColor extraído p/ render/wheelchair-sprites.js (Estágio 4).
 // TTS (narração por voz: Piper neural lazy + fallback Web Speech) extraído p/ platform/tts.ts (Tier 2, #38). Criado ANTES do
 // audio-nav porque o nav injeta narrate. As funções de painel (populateTTS*/reflectTTS) ficam no main.js (→ #54) e usam get/set.
-const tts = createTts({ srSay, srAlert, ensureAC, catNode, audioOut, getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat });
+// ⚠️ É AQUI QUE O FORNECEDOR DA VOZ NEURAL É NOMEADO, e em mais lado nenhum da árvore (ADR-0094): `main.ts`
+// é a raiz de composição do JOGO e fica FORA do pacote publicado, então o nome — e os 135,4 MB de
+// `onnxruntime-web` que ele arrasta — não viajam para consumidor nenhum. O `import()` continua lazy: o Vite
+// deste repositório faz o code-split, e o chunk só é buscado se a criança escolher o motor neural.
+const tts = createTts({ srSay, srAlert, ensureAC, catNode, audioOut, getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
+  carregarVozNeural: () => import('@mintplex-labs/piper-tts-web') });
 // Pistas espaciais a11y (bengala · sonar · guarda de beirada · guia · nado, por dispositivo) extraídas p/ platform/audio-nav.ts
 // (Tier 2, áudio r3). playerCtx/panFor/needsAudioCues expostos na API porque a guarda de beirada + o gate de movimento os
 // chamam de fora do cluster. Estado do guia (_guideCount) e SURF_MAT vivem agora no módulo. Uso: nav.<fn>.

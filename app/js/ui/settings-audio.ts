@@ -49,6 +49,12 @@ export interface TtsPanel {
   setVoiceObj: (v: SpeechSynthesisVoice | null) => void;
   loadTTS: () => void;
   narrate: (text: string) => void;
+  /**
+   * ESTA MONTAGEM TEM MOTOR NEURAL? (ADR-0094) OPCIONAL, e a ausência vale `true`: um falso de teste
+   * escrito antes deste campo não tem opinião sobre motores neurais, e fazê-lo esconder o Piper mudaria o
+   * que esse teste afirma sem que ninguém tenha escrito a mudança.
+   */
+  neuralDisponivel?: boolean;
 }
 
 /**
@@ -162,6 +168,21 @@ export const TTS_ENGINE_OPTIONS: readonly (readonly [string, string])[] = [
   ['kitten', 'tts.engine.kitten'],
   ['espeak', 'tts.engine.espeak'],
 ];
+
+/**
+ * Os motores que ESTA MONTAGEM pode de facto oferecer (ADR-0094).
+ *
+ * ⚠️ Desde que o motor neural passou a chegar por PORTA (`ctx.carregarVozNeural`), «o Piper existe» deixou
+ * de ser verdade sobre a engine e passou a ser verdade sobre o JOGO. Oferecer uma opção que não pode
+ * funcionar é pior que uma opção a menos: quem a escolhe fica à espera de um download que nunca começa, e
+ * quem navega por escuta não tem como ver que não começou.
+ *
+ * Só o `piper` é filtrado. `kokoro`/`kitten`/`espeak` também não funcionam hoje — «ainda não entraram» —,
+ * mas isso é anterior a este registro e escondê-los aqui mudaria comportamento que ninguém pediu para mudar.
+ */
+export function opcoesDeMotor(neuralDisponivel: boolean): readonly (readonly [string, string])[] {
+  return neuralDisponivel ? TTS_ENGINE_OPTIONS : TTS_ENGINE_OPTIONS.filter(([v]) => v !== 'piper');
+}
 
 export interface VoiceLike { name: string; lang: string; }
 
@@ -292,7 +313,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     const sel = ctx.$<HTMLSelectElement>('#tts-engine');
     if (!sel || sel.dataset.filled) return;
     sel.dataset.filled = '1';
-    TTS_ENGINE_OPTIONS.forEach(([v, l]) => {
+    opcoesDeMotor(ctx.tts.neuralDisponivel !== false).forEach(([v, l]) => {
       const o = document.createElement('option'); o.value = v; o.textContent = t(l); sel.appendChild(o);
     });
     sel.value = ctx.tts.getEngineSel();

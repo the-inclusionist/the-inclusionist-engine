@@ -72,6 +72,23 @@ const NAO_E_INTERFACE = new Set([
 ]);
 
 /**
+ * ESPECIFICADOR DE IMPORT — `import('x')`, `import … from 'x'`, `export … from 'x'`.
+ *
+ * ⚠️ REGRA DE FORMA, e não uma entrada em `NAO_E_INTERFACE`, pela razão que o `semMarcacao` abaixo já dá:
+ * a lista perdoa UM literal, a forma decide a CLASSE. Um especificador de import não pode ser texto de
+ * interface por construção — ele é resolvido pelo empacotador, nunca lido por ninguém.
+ *
+ * Nasceu com `carregarVozNeural: () => import('@mintplex-labs/piper-tts-web')` (ADR-0094), que é o único
+ * ponto da árvore a nomear o fornecedor da voz neural — e é aqui de propósito, porque `main.ts` fica fora
+ * do pacote publicado e o nome não viaja para consumidor nenhum. Os outros imports do ficheiro já passavam
+ * por acaso, casando o regex de caminho curto; este escapava só por causa do `@` do escopo.
+ */
+function ehEspecificadorDeImport(linha, indiceDoLiteral) {
+  const antes = linha.slice(0, indiceDoLiteral);
+  return /(?:\bfrom|\bimport)\s*\(?\s*$/.test(antes);
+}
+
+/**
  * MOLDURA DE MARKUP: tira as interpolações e as tags; se não sobrar palavra, é estrutura e não texto.
  *
  * Isto é REGRA DE FORMA, e a diferença importa: eu tinha começado listando cada template em
@@ -93,6 +110,7 @@ function candidatos() {
     for (const m of ln.matchAll(STR)) {
       const s = m[2];
       if (s.length < 2) continue;
+      if (ehEspecificadorDeImport(ln, m.index)) continue;
       if (TECNICO.some((re) => re.test(s)) || NAO_E_INTERFACE.has(s)) continue;
       if (s.includes('<') && !/[A-Za-zÀ-ü]{2}/.test(semMarcacao(s))) continue; // moldura de markup, sem texto
       out.push(`${n}: "${s.slice(0, 70)}"`);
@@ -121,6 +139,23 @@ describe('item 14 — main.js não guarda texto de interface', () => {
     // Os comentários do main.js são em pt-BR por decisão (CLAUDE.md: a conversa com o Dev é em pt-BR). Um
     // gate que os lesse acusaria centenas de falsos positivos e seria desligado na mesma semana.
     expect(linhasDeCodigo('// Movimento por alternância ligado\nconst a = 1;')).toEqual([[2, 'const a = 1;']]);
+  });
+
+  it('[Boundary] a regra do especificador perdoa o ALVO do import, e nada mais na linha', () => {
+    // ⚠️ O caso que a torna estreita: uma linha PODE ter a palavra `import` e um texto de interface, e o
+    // perdão só vale para o literal que vem imediatamente a seguir a `import`/`from`. Sem esta prova, a
+    // regra de forma seria um perdão por linha disfarçado de regra — que é o afrouxamento que o cabeçalho
+    // deste ficheiro proíbe.
+    const alvo = "  carregarVozNeural: () => import('@mintplex-labs/piper-tts-web') });";
+    const iAlvo = alvo.indexOf("'@mintplex");
+    expect(ehEspecificadorDeImport(alvo, iAlvo), 'o alvo do import tem de ser perdoado').toBe(true);
+
+    const misto = "import('x').then(() => srSay('Voz neural pronta'));";
+    expect(ehEspecificadorDeImport(misto, misto.indexOf("'x'"))).toBe(true);
+    expect(ehEspecificadorDeImport(misto, misto.indexOf("'Voz")), 'texto na MESMA linha continua acusado').toBe(false);
+
+    const naoImporta = "const rotulo = 'Importar mapa';"; // a palavra `Importar` não é a palavra-chave
+    expect(ehEspecificadorDeImport(naoImporta, naoImporta.indexOf("'Importar"))).toBe(false);
   });
 
   it('[Interface] a lista de exceções não cresce sem controle', () => {

@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Testes de platform/tts (project NODE: window.speechSynthesis + SpeechSynthesisUtterance stubados; NÃO exercito o
-// caminho Piper, que faz import() de CDN). Contratos: narrate é gated por soundOn + audioCat.tts.on + texto não-vazio;
-// o fallback Web Speech fala NO IDIOMA DO JOGO; loadTTS avisa em motor que não fala o idioma. Ver
-// docs/5-Refactoring/plano-modularizacao-mapa.md (#38).
+// Testes de platform/tts (project NODE: window.speechSynthesis + SpeechSynthesisUtterance stubados). Contratos:
+// narrate é gated por soundOn + audioCat.tts.on + texto não-vazio; o fallback Web Speech fala NO IDIOMA DO JOGO;
+// loadTTS avisa em motor que não fala o idioma. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (#38).
+//
+// ⚠️ O CABEÇALHO DIZIA «NÃO exercito o caminho Piper, que faz import() de CDN», E DEIXOU DE SER VERDADE com o
+// ADR-0094: o motor neural chega por PORTA (`ctx.carregarVozNeural`), então o caminho inteiro se exercita com um
+// falso, sem rede e sem fornecedor instalado. É o ganho de teste da inversão, e não um efeito colateral dela — o
+// caminho que carrega a voz era o único do módulo que ninguém conseguia percorrer.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
 import { createTts } from '../app/js/platform/tts.js';
@@ -24,8 +28,21 @@ function setup(over = {}) {
     getVolume: () => over.volume === undefined ? 0.6 : over.volume,
     getAudioCat: () => over.audioCat === undefined ? { tts: { on: true } } : over.audioCat,
   };
+  if (over.carregarVozNeural) ctx.carregarVozNeural = over.carregarVozNeural;
   return { tts: createTts(ctx), said, alerted };
 }
+
+/** Um fornecedor de voz neural que não existe: as DUAS chamadas que a engine faz, e nada mais. */
+function fornecedorFalso(registro) {
+  return () => Promise.resolve({
+    TtsSession: {
+      create: (o) => { registro.voiceId = o.voiceId; return Promise.resolve({ predict: () => Promise.reject(new Error('sem áudio no node')) }); },
+    },
+  });
+}
+
+/** Deixa correr as microtasks do `then` encadeado do `loadTTS` sem prender o teste a um número de ticks. */
+async function assentar() { for (let i = 0; i < 12; i++) await Promise.resolve(); }
 
 describe('platform/tts', () => {
   it('[Gate] narrate não fala com soundOn=false', () => {
@@ -92,5 +109,63 @@ describe('platform/tts', () => {
     tts.loadTTS();
     expect(alerted).toContain(pt['sr.tts.engineNoLanguage']);
     expect(tts.loading).toBe(false);
+  });
+});
+
+// ===================================================================================================
+// A PORTA DA VOZ NEURAL (ADR-0094)
+// ===================================================================================================
+// A engine não nomeia o fornecedor: quem o nomeia é o jogo, por `ctx.carregarVozNeural`. O motivo é medido —
+// o fornecedor traz `onnxruntime-web` como peer NÃO-opcional (135,4 MB), e declará-lo em `devDependencies`
+// publicou uma engine que não compilava (ADR-0093). Estes casos prendem as duas metades: sem porta a criança
+// é AVISADA e a narração continua pela voz do navegador; com porta o caminho neural corre inteiro.
+describe('platform/tts — a porta da voz neural', () => {
+  it('[Zero] sem porta: avisa, marca falha e NÃO diz que o problema é o idioma', () => {
+    const { tts, alerted } = setup();
+    tts.setEngineSel('piper');
+    tts.loadTTS();
+    expect(alerted).toContain(pt['sr.tts.neuralNotBundled']);
+    // ⚠️ A DISTINÇÃO É O PONTO, e não um detalhe de redação: «não há voz para este idioma» mandaria a criança
+    // trocar de idioma à procura do que não está lá em idioma nenhum.
+    expect(alerted).not.toContain(pt['sr.tts.noNeuralForLanguage']);
+    expect(tts.loading).toBe(false);
+    expect(tts.failed).toBe(true);
+    expect(tts.neuralDisponivel).toBe(false);
+  });
+
+  it('[Right] sem porta a narração NÃO emudece — cai na voz do navegador', () => {
+    // O que a issue #112 chama de recusa falsa, aqui: faltar o motor neural não pode calar o produto.
+    const { tts } = setup();
+    tts.setEngineSel('piper');
+    tts.narrate('bom dia');
+    expect(spoke.length).toBe(1);
+    expect(spoke[0].text).toBe('bom dia');
+    expect(spoke[0].lang).toBe('pt-BR');
+  });
+
+  it('[Happy] com porta o caminho neural corre inteiro e o motor fica de pé', async () => {
+    const registro = {};
+    const { tts } = setup({ carregarVozNeural: fornecedorFalso(registro) });
+    expect(tts.neuralDisponivel).toBe(true);
+    tts.setEngineSel('piper');
+    tts.loadTTS();
+    expect(tts.loading, 'o carregamento começa de imediato').toBe(true);
+    await assentar();
+    expect(registro.voiceId, 'a voz pedida vem de TTS_SOURCES, não do ponto de uso').toBe('pt_BR-faber-medium');
+    expect(tts.getEngine()?.id).toBe('piper');
+    expect(tts.loading).toBe(false);
+    expect(tts.failed).toBe(false);
+  });
+
+  it('[Boundary] porta que rejeita não derruba o jogo: falha marcada e voz do navegador segue', async () => {
+    const { tts, alerted } = setup({ carregarVozNeural: () => Promise.reject(new Error('offline')) });
+    tts.setEngineSel('piper');
+    tts.loadTTS();
+    await assentar();
+    expect(alerted).toContain(pt['sr.tts.loadFailed']);
+    expect(tts.failed).toBe(true);
+    expect(tts.loading).toBe(false);
+    tts.narrate('segue');
+    expect(spoke.length).toBe(1);
   });
 });

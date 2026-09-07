@@ -51,7 +51,7 @@ import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
-import { createTts } from '../platform/tts.js';
+import { createTts, type CarregarVozNeural } from '../platform/tts.js';
 import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer, tonePan, audioCtx } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 import { VIZ_BY_KEY } from '../render/viz-modes.js';
@@ -131,6 +131,21 @@ export interface CreateGameOptions {
    * aparece, que é o comportamento de hoje e não uma regressão.
    */
   readonly preset?: ActionPreset;
+  /**
+   * COMO SE CARREGA A VOZ NEURAL — uma linha do lado do jogo (ADR-0094):
+   *
+   *     carregarVozNeural: () => import('@mintplex-labs/piper-tts-web')
+   *
+   * ⚠️ AUSENTE POR OMISSÃO, E ISSO É A DECISÃO E NÃO UM DESCUIDO. A engine não pode nomear o fornecedor:
+   * ele traz `onnxruntime-web` como peer NÃO-opcional, que o npm instala sozinho — **135,4 MB** no
+   * `node_modules` de todo consumidor, incluindo um jogo que nunca fale por voz neural. E declará-lo em
+   * `devDependencies`, que era o estado até 06/09, publicou uma engine que NÃO COMPILAVA para ninguém
+   * (ADR-0093). A porta é a única forma que resolve as duas coisas ao mesmo tempo.
+   *
+   * Sem ela a narração cai na voz do navegador (Web Speech), que fala o idioma certo e não pesa nada — e o
+   * painel de áudio deixa de OFERECER o motor neural, em vez de o oferecer e nunca o carregar.
+   */
+  readonly carregarVozNeural?: CarregarVozNeural;
   /**
    * Como se descobre que cada transporte está aqui. Ausente = a engine pergunta ao aparelho.
    *
@@ -255,6 +270,7 @@ export function createGame(o: CreateGameOptions): Engine {
   const tts = createTts({
     srSay, srAlert, ensureAC, catNode, audioOut,
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
+    carregarVozNeural: o.carregarVozNeural,
   });
 
   /**

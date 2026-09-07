@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/tts — narração por voz. Motor NEURAL Piper pt-BR carregado LAZY (import de CDN + cache OPFS → a 2ª sessão fala
-// offline), com FALLBACK imediato p/ a voz nativa do navegador (Web Speech) enquanto o neural não chega. narrate() é o
+// platform/tts — narração por voz. Motor NEURAL pt-BR carregado LAZY pela PORTA que o jogo fornece (ADR-0094; modelo
+// em cache OPFS → a 2ª sessão fala offline), com FALLBACK imediato p/ a voz nativa do navegador (Web Speech) — que é
+// também o que se ouve quando não há porta nenhuma, e é por isso que a ausência dela não cala nada. narrate() é o
 // ponto de entrada, gated pelo toggle 'Narração (TTS)' do mixer (audioCat.tts.on) — independe das legendas. As funções de
 // PAINEL (populateTTSEngines/Voices/reflectTTS) ficam no game.js (→ ui/settings-audio, #38→#54) e usam get/setEngineSel +
 // get/setVoiceObj daqui. Injeção por closure. Ver docs/plano-tts-fase-f5.md + docs/5-Refactoring/plano-modularizacao-mapa.md.
@@ -11,6 +12,26 @@ import { criarFalaInterrompivel } from './interruptible-speech.js';
 
 interface TtsEngine { id: string; speak: (text: string) => void; }
 
+/**
+ * O QUE A ENGINE PRECISA DE UM MOTOR NEURAL — e nada mais. Duas chamadas, escritas aqui em vez de importadas
+ * do fornecedor, porque importar o TIPO obrigaria o pacote a estar instalado para o `tsc` do consumidor
+ * correr: seria o mesmo defeito do ADR-0093 mudado de campo, do `dependencies` para o espaço de tipos.
+ */
+export interface SessaoNeural {
+  predict: (texto: string) => Promise<{ arrayBuffer: () => Promise<ArrayBuffer> }>;
+}
+export interface ModuloNeural {
+  TtsSession: {
+    create: (o: {
+      voiceId: string;
+      progress?: (p: { loaded: number; total: number }) => void;
+      logger?: (...a: unknown[]) => void;
+    }) => Promise<SessaoNeural>;
+  };
+}
+/** A PORTA (ADR-0094). Uma linha do lado do jogo: `() => import('@mintplex-labs/piper-tts-web')`. */
+export type CarregarVozNeural = () => Promise<ModuloNeural>;
+
 export interface TtsCtx {
   srSay: (t: string) => void;
   srAlert: (t: string) => void;
@@ -20,6 +41,17 @@ export interface TtsCtx {
   getSoundOn: () => boolean;
   getVolume: () => number;
   getAudioCat: () => Record<string, { on: boolean }> | null; // narrate checa audioCat.tts.on
+  /**
+   * COMO SE CARREGA O MOTOR NEURAL — fornecido pelo JOGO, ausente por omissão (ADR-0094).
+   *
+   * ⚠️ A engine NÃO NOMEIA O FORNECEDOR, e o motivo é medido: o `@mintplex-labs/piper-tts-web` traz
+   * `onnxruntime-web` como peer NÃO-opcional, que o npm instala sozinho — **135,4 MB** no `node_modules` de
+   * todo consumidor, incluindo um que nunca fale por voz neural. Nomeá-lo aqui obrigaria os 135 MB, e
+   * declará-lo em `devDependencies` (como estava até 06/09) publica um pacote que não compila.
+   *
+   * Ausente = a narração cai na voz do navegador (Web Speech), que fala o idioma certo e não pesa nada.
+   */
+  carregarVozNeural?: CarregarVozNeural;
 }
 
 export interface Tts {
@@ -35,12 +67,21 @@ export interface Tts {
   readonly loading: boolean;
   readonly failed: boolean;
   readonly narrateCount: number;
+  /**
+   * ESTA MONTAGEM TEM MOTOR NEURAL? (ADR-0094) O painel de áudio pergunta antes de o oferecer: uma opção
+   * que não pode funcionar é pior que uma opção a menos — quem a escolhe fica à espera de um download que
+   * nunca começa, e quem navega por escuta não tem como ver que não começou.
+   */
+  readonly neuralDisponivel: boolean;
 }
 
-// ⚠️ MIGRAÇÃO PENDENTE (ADR-0022): esta implementação com @mintplex-labs/piper-tts-web será SUBSTITUÍDA por
-// sherpa-onnx-wasm (loader universal, modelos VITS/Piper + Kokoro-multi-lang carregados de qq URL R2 em runtime via
+// ⚠️ MIGRAÇÃO PENDENTE (ADR-0022): a implementação neural de hoje é o @mintplex-labs/piper-tts-web e será SUBSTITUÍDA
+// por sherpa-onnx-wasm (loader universal, modelos VITS/Piper + Kokoro-multi-lang carregados de qq URL R2 em runtime via
 // FS.writeFile; lazy-fetch; eSpeak/Web Speech de fallback). @mintplex-labs foi descontinuado e só carrega 2 vozes pt-BR.
-// Enquanto a migração não vem: a lib vem do npm (code-split pelo Vite no 1º uso), modelo do HF em cache OPFS. (#69→#38)
+// ⚠️ E DESDE O ADR-0094 ESTE MÓDULO NÃO NOMEIA FORNECEDOR NENHUM — quem o nomeia é o JOGO, por `ctx.carregarVozNeural`.
+// O nome estava aqui num `import()` e o pacote em `devDependencies`, o que publicou uma engine que não compilava
+// (ADR-0093); pô-lo em `dependencies` consertava o build e obrigava todo consumidor a 135,4 MB de `onnxruntime-web`,
+// que o fornecedor traz como peer não-opcional. A porta é o que faz a troca do ADR-0022 não ser um segundo abalo.
 /**
  * Voz NEURAL por idioma, indexada pela etiqueta BCP-47 de core/i18n. Só o pt-BR tem uma hoje, e essa ausência
  * é agora CONSULTÁVEL em vez de presumida: `loadTTS` pergunta à tabela se existe voz para o idioma corrente,
@@ -75,12 +116,17 @@ export function createTts(ctx: TtsCtx): Tts {
       if (ttsEngineSel !== 'webspeech') ctx.srAlert(t('sr.tts.engineNoLanguage'));
       return;
     }
+    // ESTA MONTAGEM NÃO TRAZ MOTOR NEURAL (ADR-0094). Vem ANTES da pergunta do idioma de propósito: sem
+    // porta, não há voz neural em idioma nenhum, e dizer «não há voz para o teu idioma» faria a criança
+    // pensar que trocar de idioma resolveria. `ttsFailed` para não repetir a pergunta a cada fala.
+    const carregar = ctx.carregarVozNeural;
+    if (!carregar) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
     // O Piper só tem voz para os idiomas em TTS_SOURCES. Sem voz para o idioma corrente, NÃO se baixa a de
     // outro idioma: avisa e segue na voz do navegador, que fala a língua certa.
     const fonte = TTS_SOURCES[bcp47()];
     if (!fonte) { ctx.srAlert(t('sr.tts.noNeuralForLanguage')); return; }
     ttsLoading = true; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
-    import('@mintplex-labs/piper-tts-web').then(async (mod) => { // npm → Vite code-split num chunk LOCAL (sem CDN, sem warning). Ver ADR-0021
+    carregar().then(async (mod) => { // o jogo é que sabe de onde; o Vite dele faz o code-split. Ver ADR-0021 e ADR-0094
       const session = await mod.TtsSession.create({ voiceId: fonte.voice,
         progress: (p: { loaded: number; total: number }) => { if (!p || !p.total) return; const pct = Math.round(p.loaded * 100 / p.total); if (pct >= _ttsPct + 25 && pct < 100) { _ttsPct = pct; ctx.srSay(t('sr.tts.progress', { pct })); } },
         logger: () => {} });
@@ -135,5 +181,6 @@ export function createTts(ctx: TtsCtx): Tts {
     getEngineSel: () => ttsEngineSel, setEngineSel: (v) => { ttsEngineSel = v; },
     getEngine: () => ttsEngine, getVoiceObj: () => _ttsVoiceObj, setVoiceObj: (v) => { _ttsVoiceObj = v; },
     get loading() { return ttsLoading; }, get failed() { return ttsFailed; }, get narrateCount() { return _narrateCount; },
+    get neuralDisponivel() { return !!ctx.carregarVozNeural; },
   };
 }

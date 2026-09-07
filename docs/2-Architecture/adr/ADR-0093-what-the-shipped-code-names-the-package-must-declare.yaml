@@ -2,6 +2,14 @@
 metadata:
   status: "accepted"
   date: 2026-09-06
+  superseded-in-part:
+    - by: ADR-0094
+      what: "A ESCOLHA DO CAMPO, e só ela: `dependencies` para o `@mintplex-labs/piper-tts-web`, com o
+             parágrafo da opção D2 que rejeitou a porta. A rejeição apoiava-se num preço medido de `0,5 MB
+             e ZERO dependências transitivas`, e esse número está ERRADO — ver a errata no
+             `more-information`. Com 135,4 MB no lugar de 0,5 MB, o argumento inverte-se, e o motor neural
+             passa a chegar por porta. ⚠️ O GATE DAS DUAS DIREÇÕES, que é a outra metade e a mais durável
+             deste registro, NÃO é superseded: ele fica, e é o que torna a decisão do ADR-0094 aferível."
   decision-makers: [Dev]
   consulted:
     - "O relato de um CONSUMIDOR REAL, verbatim: `Rolldown failed to resolve import
@@ -152,6 +160,17 @@ decision-outcome:
     Suítes: 190 ficheiros / 3337 testes verdes nos dois projects; `tsc --noEmit` limpo.
 
 more-information: |
+  ⚠️ ERRATA (2026-09-06, no mesmo dia) — UM NÚMERO TROCADO, e é o número que sustentava a escolha do campo.
+  Este registro afirma, na opção D1 e no `comment:dependencies` que dele saiu, que o preço do fornecedor era
+  «0,5 MB e ZERO dependências transitivas». **É FALSO.** Foi lido o campo `dependencies` do fornecedor, que
+  está vazio, e NÃO o `peerDependencies` — o mesmo campo que causou o defeito que este registro conserta. O
+  `@mintplex-labs/piper-tts-web` declara `onnxruntime-web` como peer NÃO-opcional, que o npm instala
+  sozinho: **135,4 MB** num consumidor limpo, não 0,5 MB.
+  Entra como ERRATA e não como revogação porque é da definição de errata do ADR-0057 — número trocado —, e a
+  DECISÃO que o número sustentava é que foi revogada, pelo ADR-0094. Fica escrito aqui para este registro
+  não voltar a argumentar com um número falso na próxima conversa, que é a patologia que o ADR-0057 existe
+  para impedir.
+
   ⚠️ ESTE DEFEITO É O ÚNICO DA SÉRIE QUE VEIO DE FORA. Os outros três de hoje (o id de armazenamento não
   podia vir da declaração, o `main.ts` não podia entrar no escopo do `engine-boundary`, as camadas legíveis
   eram seis e não quatro) foram medidas internas a contrariar uma proposta interna. Este ninguém aqui podia
