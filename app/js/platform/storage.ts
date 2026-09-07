@@ -116,6 +116,12 @@ export const KEYS = {
   ttsEngine: 'incl_tts_engine', ttsVoice: 'incl_tts_voice', lang: 'incl_lang', // audiocat_{k}
   // comunicação / legendas (ADR-0028: todo menu persiste)
   letterCase: 'incl_lettercase', captions: 'incl_captions',
+  // ⚠️ O NÍVEL TEA (calmo / silencioso) PASSOU A PERSISTIR EM 2026-09-07, e antes não persistia: era um
+  // `let calmMode = 0` em `ui/pause-icons`, com o comentário «deliberately NOT persisted — verbatim: game.js
+  // never wrote it to storage». O «verbatim» é a chave — foi PRESERVADO na extração do monólito, não
+  // decidido. O custo era da criança que mais precisa dele: quem usa o modo silencioso voltava a pô-lo a
+  // cada sessão, e é para quem o barulho inesperado custa mais. O ADR-0028 diz que todo menu persiste.
+  tea: 'incl_tea',
   menuIndex: 'incl_menuindex', // "6 de 10" no fim do anuncio de item (ADR-0044, item 3)
   // tipografia / controles / toque
   fontKey: 'incl_font_k', padDesign: 'incl_paddesign', padDir: 'incl_paddir', touchmap: 'incl_touchmap',

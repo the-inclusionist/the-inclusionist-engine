@@ -542,3 +542,55 @@ describe('reflectIconsIn — a barra do SPLASH (#title-icons) usa a mesma casca'
     expect(ti.querySelector('.pi-btn[data-pi="face"]').getAttribute('aria-pressed')).toBe('false');
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// ⚠️ O NÍVEL TEA PERSISTE (issue #61) — e é aqui que se prova, porque precisa de `localStorage` real
+// ---------------------------------------------------------------------------------------------
+//
+// Até 2026-09-07 não persistia: era um `let calmMode = 0` com o comentário «deliberately NOT persisted —
+// verbatim: game.js never wrote it to storage». O «verbatim» é o que o desqualificava como decisão — foi
+// preservado na extração do monólito, não escolhido —, e o ADR-0028 diz que todo menu persiste.
+//
+// O custo era da criança que mais precisa dele: quem usa o modo SILENCIOSO voltava a pô-lo a cada sessão, e
+// é para quem o barulho inesperado custa mais. Um ajuste que se esquece não é um ajuste, é uma tarefa diária.
+describe('o nível TEA sobrevive ao fecho da aba (#61, ADR-0028)', () => {
+  const CHAVE = 'incl_tea';
+
+  it('⚠️ [Right] o ciclo do ícone GRAVA, e o arranque seguinte LÊ', () => {
+    localStorage.removeItem(CHAVE);
+    setPlayers([{ viz: '', toggleMove: false }]);
+
+    // sessão 1: a criança põe em «calmo» e depois em «silencioso»
+    const primeira = initPauseIcons(makeCtx().ctx);
+    expect(primeira.getCalmMode(), 'não começou no padrão').toBe(0);
+    primeira.iconAct('tea', 0);
+    primeira.iconAct('tea', 0);
+    expect(primeira.getCalmMode()).toBe(2);
+    expect(localStorage.getItem(CHAVE), 'o nível não foi gravado').toBe('2');
+
+    // sessão 2: outra instância, como um recarregamento da página
+    const segunda = initPauseIcons(makeCtx().ctx);
+    expect(segunda.getCalmMode(), 'o nível não sobreviveu ao recarregamento').toBe(2);
+  });
+
+  it('[Interface] o `setCalmMode` também grava — é a outra porta para o mesmo valor', () => {
+    // Se só o ciclo do ícone gravasse, um nível posto por aqui viveria a sessão e morreria no fecho da aba,
+    // que é a metade pior do defeito: o ajuste parece ter pegado e some depois.
+    localStorage.removeItem(CHAVE);
+    setPlayers([{ viz: '', toggleMove: false }]);
+    const api = initPauseIcons(makeCtx().ctx);
+    api.setCalmMode(1);
+    expect(localStorage.getItem(CHAVE)).toBe('1');
+    expect(initPauseIcons(makeCtx().ctx).getCalmMode()).toBe(1);
+  });
+
+  it('⚠️ [Error] um nível inválido guardado no navegador não chega ao anúncio', () => {
+    // O anúncio ao leitor de tela é `t(CALM_NAMES[calmMode])`. Um `3` guardado — dado corrompido, uma versão
+    // futura, um dedo no devtools — daria `undefined` e a criança cega carregaria no botão e não ouviria
+    // nada. Volta ao padrão, que é audível.
+    localStorage.setItem(CHAVE, '3');
+    setPlayers([{ viz: '', toggleMove: false }]);
+    expect(initPauseIcons(makeCtx().ctx).getCalmMode()).toBe(0);
+    localStorage.removeItem(CHAVE);
+  });
+});

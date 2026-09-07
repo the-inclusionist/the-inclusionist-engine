@@ -202,6 +202,19 @@ export const DEFAULTS = Object.freeze({
   hcOutlineBg: 1,
   // comunicação (hoje só a caixa da letra; o menu de CAA do ADR-0028 amplia isto)
   letterCase: 'upper',
+  // ⚠️ AS DUAS ÚLTIMAS ENTRARAM EM 2026-09-07 (issue #61), e não por simetria: elas faltavam, e a falta
+  // tinha consequência. A marca do ADR-0029 lê `DEFAULTS` e mais nada — regra que continua certa —, e por
+  // isso um valor sem padrão nomeado aqui é um valor que a marca NÃO PODE marcar. Cinco dos sete ícones da
+  // barra rápida caíam nisso.
+  //
+  //   · `calmMode` — o nível TEA (0 normal · 1 calmo · 2 silencioso). Além de não ter padrão, ele não
+  //     PERSISTIA: ver a nota de `KEYS.tea` em platform/storage.
+  //   · `viz` — o modo de visão. `core/entity` declara `viz: string` sem dizer qual é o padrão, e o snapshot
+  //     da barra fazia `p.viz || ''`. Funcionava por acidente: a cadeia vazia não casa `hc-direto` nem
+  //     `fix-*`, então os dois ícones ficavam apagados. `'normal'` é o modo que `render/viz-modes` declara
+  //     com `kind:'normal'` — o que não faz nada —, e passa a ser dito em vez de deduzido.
+  calmMode: 0,
+  viz: 'normal',
 } as const);
 
 // --- modoCego: MODO CEGO (A12e auditiva). Só as ajudas de áudio — bengala, sonar, guarda de beirada,

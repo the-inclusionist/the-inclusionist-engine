@@ -36,7 +36,13 @@ import { anunciarItem } from './item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
-import { menuIndexOn } from '../core/state.js';
+import { menuIndexOn, DEFAULTS } from '../core/state.js';
+// ⚠️ IMPORT DIRETO DE `platform/storage`, e não uma peça a mais no `ctx`, e a escolha é sobre quem pode
+// esquecer: `initPauseIcons` é chamado pela raiz de composição de CADA jogo, e um `store` injetado é um
+// campo que um consumidor pode omitir — e omiti-lo faria o nível TEA voltar a não persistir, em silêncio,
+// exactamente no jogo que se esqueceu. É a mesma forma que `ui/fonts` usa, e `ui/` depender de `platform/`
+// não inverte camada nenhuma.
+import * as store from '../platform/storage.js';
 
 /**
  * A LEGENDA de um ícone da barra de acessibilidade — uma função, e não três cópias da mesma expressão.
@@ -97,6 +103,19 @@ export function pauseIcon(k: string): PauseIcon | undefined { return ICON_BY_KEY
 
 /** TEA cycle: 0 = normal · 1 = calmo (reduces) · 2 = silencioso (switches off). Never touches TTS/blind mode. */
 export const CALM_NAMES: readonly string[] = ['calm.off', 'calm.quiet', 'calm.silent'];
+
+/**
+ * O nível TEA guardado, saneado. Fora de 0..2 devolve o padrão — dado do navegador é dado de fora, e um
+ * nível inventado escolheria `CALM_NAMES[3]`, que é `undefined`, e o anúncio ao leitor de tela sairia vazio.
+ */
+export function saneiaNivelTea(bruto: number): number {
+  return Number.isInteger(bruto) && bruto >= 0 && bruto < CALM_NAMES.length ? bruto : DEFAULTS.calmMode;
+}
+
+/** Lê o nível TEA do armazenamento. Chamado no `init`, nunca no import. */
+function lerNivelTea(): number {
+  return saneiaNivelTea(store.getNum(store.KEYS.tea, DEFAULTS.calmMode));
+}
 /** The audio categories `applyCalm` governs. TTS/sonar/guarda/guia stay untouched — a calm player still needs them. */
 export const CALM_AUDIO_CATS: readonly string[] = ['ambient', 'music', 'earcons', 'other', 'interact'];
 /** Colour-vision-deficiency cycle, in `player.viz` values. */
@@ -535,9 +554,19 @@ export interface PauseIconsApi {
 // ---------------------------------------------------------------------------------------------
 
 export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
-  // TEA level. It lives HERE (game.js's `let calmMode` had no other reader) and is deliberately NOT persisted
-  // — verbatim: game.js never wrote it to storage, even though applyCalm() persists `rm` as a side effect.
-  let calmMode = 0;
+  // ⚠️ O NÍVEL TEA PASSOU A PERSISTIR EM 2026-09-07 (issue #61). Este comentário dizia «deliberately NOT
+  // persisted — verbatim: game.js never wrote it to storage», e o **verbatim** é o que o desqualificava como
+  // decisão: foi PRESERVADO na extração do monólito, não escolhido. O ADR-0028 diz que todo menu persiste, e
+  // este é um controlo de menu que vive na barra rápida.
+  //
+  // O custo de não persistir era da criança que mais precisa dele: quem usa o modo SILENCIOSO voltava a
+  // pô-lo a cada sessão — e é para quem o barulho inesperado custa mais. Um ajuste que se esquece não é um
+  // ajuste, é uma tarefa diária.
+  //
+  // ⚠️ LÊ NO INIT, NUNCA NO IMPORT: a regra vale para todo o projeto e aqui tem custo concreto — um teste que
+  // importasse este módulo passaria a depender do `localStorage` do ambiente, e um nível herdado de outro
+  // caso é uma falha que aparece longe da causa.
+  let calmMode = lerNivelTea();
 
   const P = (): readonly PausePlayer[] => ctx.getPlayers() as readonly PausePlayer[];
 
@@ -552,7 +581,12 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       librasOn: ctx.isLibrasOn(),
       calmMode,
       toggleMove: !!p.toggleMove,
-      viz: p.viz || '',
+      // ⚠️ `DEFAULTS.viz` E NÃO `''` (issue #61). A cadeia vazia funcionava por ACIDENTE: não casa
+      // `hc-direto` nem `fix-*`, então os dois ícones ficavam apagados pelo motivo certo por engano. O padrão
+      // passou a ter nome em `core/state`, e `render/viz-modes` já declarava esse modo com `kind:'normal'` —
+      // o que não faz nada. Dizer o padrão em vez de o deduzir é o que torna a marca do ADR-0029 possível
+      // aqui, porque ela lê `DEFAULTS` e mais nada.
+      viz: p.viz || DEFAULTS.viz,
       privateOutput: hasPrivateOutput(i),
     };
   }
@@ -597,6 +631,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     tea: () => {
       calmMode = nextCalmMode(calmMode);
+      store.set(store.KEYS.tea, calmMode); // ADR-0028: todo menu persiste. Ver a nota no `let` acima.
       applyCalm();
       ctx.srSay(t('sr.icon.tea', { v: t(CALM_NAMES[calmMode]!) }));
     },
@@ -843,6 +878,12 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   return {
     buildScreenPause, buildQuickBar, entrarNaBarra, sairDaBarra, naBarraDe, navBar,
     iconAct, iconLabel, reflectIconBtn, reflectIconsIn, reflectPauseIcons,
-    applyCalm, getCalmMode: () => calmMode, setCalmMode: (n) => { calmMode = n; }, iconState,
+    // ⚠️ O `setCalmMode` PERSISTE TAMBÉM, e sanea. Ele é a outra porta para o mesmo valor — se só o ciclo do
+    // ícone gravasse, um nível posto por aqui sobreviveria à sessão e não ao fecho da aba, que é a metade
+    // pior do defeito: o ajuste parece ter pegado e some depois.
+    applyCalm,
+    getCalmMode: () => calmMode,
+    setCalmMode: (n) => { calmMode = saneiaNivelTea(n); store.set(store.KEYS.tea, calmMode); },
+    iconState,
   };
 }
