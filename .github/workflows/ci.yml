@@ -92,6 +92,15 @@ jobs:
       - name: precache budget
         run: npm run check:precache
 
+      # ⚠️ The ONE obligation that undoes itself. §51.j of the requerimento commits the project to an annual
+      # public report on the eleven child-protection principles, and says why it needs a machine:
+      # "compromisso sem prestação de contas periódica degrada silenciosamente". ADR-0053 turned that into
+      # this gate. It is DORMANT until a first year is declared (see docs/compliance/README.md) and prints a
+      # notice saying so on every run — a dormant gate is a notice, not a pass. Needs no build, so it sits
+      # here rather than in a job of its own.
+      - name: annual compliance report
+        run: npm run check:annual-report
+
   # ============================================================================================
   # The promise the index makes about the records, kept by a machine.
   # ============================================================================================
