@@ -31,9 +31,53 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const RAIZ = join(process.cwd(), 'app', 'js');
-const CAMADAS = ['core', 'input', 'render', 'platform', 'ui', 'audio', 'boot'];
+const RAIZ_REPO = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
+const RAIZ = join(RAIZ_REPO, 'app', 'js');
 const CR = String.fromCharCode(13);
+
+/**
+ * ⚠️ A LISTA DE CAMADAS ERA COPIADA À MÃO, E JÁ TINHA DIVERGIDO NOS DOIS SENTIDOS. Ela dizia
+ * `['core','input','render','platform','ui','audio','boot']`, e medido em 2026-09-07:
+ *
+ *   · **`audio` não existe** — nunca houve `app/js/audio/`; os módulos de áudio vivem em `platform/`. O
+ *     `if (!existsSync)` engolia-o em silêncio, e quem lesse a lista acreditava numa camada fantasma.
+ *   · **`educational` e `i18n` são PUBLICADAS e não eram varridas** — sem uma linha a dizer porquê.
+ *
+ * O `tests/engine-package.node.test.js` já avisava contra exatamente isto, sobre si mesmo: «copiar seria a
+ * divergência clássica: alguém acrescenta uma camada ao pacote, o gate segue vigiando as antigas, e o módulo
+ * novo viaja sem ninguém olhar». Este ficheiro fazia a cópia contra a qual aquele avisa.
+ *
+ * Agora a lista SAI DO `tsconfig.pkg.json` — quem decide o que é engine publicada é quem a publica.
+ *
+ * ⚠️ E A CAMADA NOVA ENTRA POR OMISSÃO, que é melhor do que obrigar a classificá-la. `CAMADAS` é o publicado
+ * MENOS o isento, então quem acrescentar uma camada ao pacote não precisa de se lembrar deste ficheiro: ela
+ * nasce vigiada, e se trouxer prosa o caso da dívida reprova nomeando o módulo. Medido com uma camada
+ * `inventada` de uma linha — sem prosa passa (vigiada, não suspeita), com prosa reprova.
+ *
+ * Ficar de FORA é que exige acto deliberado: entrar em `CAMADAS_ISENTAS`, com motivo escrito.
+ */
+function camadasPublicadas() {
+  const bruto = readFileSync(join(RAIZ_REPO, 'tsconfig.pkg.json'), 'utf8').split(CR).join('');
+  const cfg = JSON.parse(bruto);
+  return (cfg.include ?? [])
+    .map((p) => p.split('\\').join('/'))
+    .filter((p) => p.startsWith('app/js/'))
+    .map((p) => p.slice('app/js/'.length))
+    .filter((c) => c && !c.includes('/'))
+    .sort();
+}
+
+/**
+ * As camadas publicadas que este crivo NÃO varre, cada uma com o motivo. Isenção sem motivo é afrouxamento
+ * disfarçado; isenção sem lista é um buraco que ninguém vê.
+ */
+const CAMADAS_ISENTAS = new Map([
+  ['i18n', 'são os DICIONÁRIOS: medir texto neles seria proibir o produto de ter palavras'],
+  ['educational', 'ADR-0032 + pilar 3: currículo é REESCRITO por idioma, não traduzido — o pt-BR daqui não '
+    + 'entra nos dicionários de propósito, e são 26 literais que estão certos onde estão'],
+]);
+
+const CAMADAS = camadasPublicadas().filter((c) => !CAMADAS_ISENTAS.has(c));
 
 const MODULOS = CAMADAS.flatMap((c) => {
   const dir = join(RAIZ, c);
@@ -234,3 +278,68 @@ describe('texto cru em português nas camadas de ENGINE (o buraco do gate do ite
     expect(comoEra('select[data-slot]')).toBe(false);
   });
 });
+
+// ==========================================================================================================
+// ⚠️ TODA CAMADA PUBLICADA E VARRIDA OU ISENTA COM MOTIVO — NENHUMA FICA DE FORA EM SILENCIO
+//
+// Achado em 2026-09-07, ao auditar uma medicao minha que tinha saido errada por um padrao de busca que
+// escondia um ficheiro. A lista de camadas deste ficheiro era COPIADA a mao e ja tinha divergido nos dois
+// sentidos: nomeava `audio`, que nunca existiu, e nao nomeava `educational` nem `i18n`, que sao publicadas.
+//
+// O `engine-package.node.test.js` avisa contra exatamente isto sobre si mesmo. Este ficheiro fazia a copia
+// contra a qual aquele avisa — e o `if (!existsSync)` engolia o erro sem uma palavra.
+// ==========================================================================================================
+describe('nenhuma camada publicada fica fora do crivo em silencio', () => {
+  const PUBLICADAS = camadasPublicadas();
+
+  it('[Interface] a leitura do config acha camadas — senao tudo abaixo seria vazio', () => {
+    expect(PUBLICADAS.length, 'o `include` do tsconfig.pkg.json nao deu camada nenhuma').toBeGreaterThan(4);
+    expect(PUBLICADAS).toContain('core');
+  });
+
+  it('⚠️ [Right] camada publicada entra por OMISSAO — esquecer nao a deixa de fora', () => {
+    // ⚠️ ESCREVI ISTO PRIMEIRO COMO «toda camada esta varrida OU isenta», e essa metade NAO PODIA FALHAR:
+    // `CAMADAS` e o publicado MENOS o isento, entao orfa e impossivel por construcao. Uma assercao que nao
+    // pode reprovar e ruido com aparencia de rigor, e a mutacao que a tentava reprovar passou verde.
+    //
+    // O que fica e a propriedade de verdade, e ela e melhor do que a que eu queria: uma camada nova nasce
+    // VIGIADA. Quem a acrescentar ao pacote nao precisa de se lembrar deste ficheiro — e se ela trouxer
+    // prosa, o caso da divida reprova nomeando o modulo. Medido com uma camada `inventada` de uma linha.
+    expect(CAMADAS).toEqual(PUBLICADAS.filter((c) => !CAMADAS_ISENTAS.has(c)));
+    expect(CAMADAS.length, 'a lista varrida esvaziou-se').toBeGreaterThan(3);
+  });
+
+  it('⚠️ [Zero] nenhuma ISENCAO e orfa, e cada uma carrega o motivo', () => {
+    // Esta reprova mesmo: uma isencao para uma camada que ja nao e publicada faz a lista mentir sobre o
+    // tamanho do buraco, que e a regra dos outros livros-razao desta arvore.
+    for (const [camada, motivo] of CAMADAS_ISENTAS) {
+      expect(PUBLICADAS, `${camada} esta isenta e ja nao e publicada — a isencao ficou orfa`).toContain(camada);
+      expect(motivo.length, `motivo curto demais para ser motivo: ${camada}`).toBeGreaterThan(40);
+    }
+  });
+
+  it('⚠️ [Zero] e nenhuma camada VARRIDA e fantasma — era o caso do `audio`', () => {
+    const fantasmas = CAMADAS.filter((c) => !existsSync(join(RAIZ, c)));
+    expect(fantasmas, 'camada na lista que nao existe no disco: o crivo diz que a vigia e nao vigia nada').toEqual([]);
+  });
+
+  it('⚠️ [Cross-check] a isencao do `educational` CARREGA PESO — varre-lo acharia prosa', () => {
+    // Uma isencao que nao muda nada e decoracao, e decoracao e o que sobrevive a uma limpeza distraida.
+    // Este caso prova que a decisao do ADR-0032 e a unica coisa que separa aquela camada da tabela de divida.
+    const dir = join(RAIZ, 'educational');
+    const achados = readdirSync(dir).filter((f) => f.endsWith('.ts')).flatMap((f) => crus('educational/' + f));
+    expect(achados.length, 'o `educational` deixou de ter prosa pt-BR; a isencao dele virou decoracao').toBeGreaterThan(10);
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS =========================
+//   · pondo `"app/js/audio"` de volta no `include` do `tsconfig.pkg.json` → "[Zero] nenhuma camada VARRIDA e
+//     fantasma" reprova. Era o estado real deste ficheiro ate hoje, e o `if (!existsSync)` engolia-o.
+//   · isentando uma camada que nao e publicada → "[Zero] nenhuma ISENCAO e orfa" reprova.
+//   · acrescentando uma camada `inventada` ao pacote COM uma frase pt-BR dentro → "[Right] NENHUM modulo NOVO
+//     passa a ter texto cru" reprova nomeando `inventada/x.ts`. E a prova de que a inclusao por omissao
+//     funciona: quem acrescenta uma camada nao precisa de se lembrar deste ficheiro.
+//   · ⚠️ a MESMA camada `inventada` SEM prosa dentro → nenhum caso reprova, e esta certo: uma camada nova e
+//     vigiada, nao suspeita. Foi esta mutacao que mostrou que a minha primeira redacao do caso acima era
+//     vazia — eu tinha escrito «toda camada esta varrida OU isenta», que nao pode falhar porque `CAMADAS` e
+//     definida como o publicado menos o isento.
