@@ -7,7 +7,7 @@
 // handling) is the SHARED helper used by every settings panel and stays in game.js. The font catalog itself
 // (FONT_GROUPS/FONT_BY_KEY) stays in ./fonts.js (Phase 2 extraction) — imported here, never duplicated.
 
-import { toggleLabel } from './dom.js';
+// (`toggleLabel` saiu daqui em 2026-09-07: ele devolve «Ligado»/«Desligado», e este menu é uma ESCOLHA.)
 import { t } from '../core/i18n.js';
 import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, type FontItem } from './fonts.js';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
@@ -122,24 +122,48 @@ export function typoGroups(fontKey: string): TypoGroupView[] {
   }));
 }
 
+/**
+ * ⚠️ A MARCA DE SELEÇÃO, e ela existe porque COR NÃO É ESTADO.
+ *
+ * O `.mode-btn.is-on` pinta o botão com `var(--accent)` — o fundo amarelo que a emenda do ADR-0012 pede
+ * por extenso. Mas quem não distingue a cor não vê estado nenhum, e é a mesma razão pela qual
+ * `ui/activities-menu.ts:656` já emite ☑/☐ ao lado do `aria-checked`: «o estado em DUAS formas, e nenhuma
+ * delas é cor».
+ */
+const MARCA_ESCOLHIDA = '●';
+const MARCA_ALTERNATIVA = '○';
+
 function rowHTML(row: TypoRow): string {
   const noteHTML = row.note
     ? `<br><span class="opt-hint" style="margin:0;font-family:var(--font)">${row.note}</span>`
     : '';
   const ariaLabel = row.fam + (row.note ? ' — ' + row.note : '');
-  const stateLabel = toggleLabel(row.selected);
   return (
     `<div class="ctrl-row"><span style="font-family:'${row.fam}'"><strong>${row.fam}</strong>${noteHTML}</span>` +
-    `<button class="mode-btn switch${row.selected ? ' is-on' : ''}" data-font="${row.key}" type="button"` +
-    `${row.disabled ? ' disabled' : ''} aria-pressed="${row.selected}" aria-label="${ariaLabel}">${stateLabel}</button></div>`
+    `<button class="mode-btn${row.selected ? ' is-on' : ''}" data-font="${row.key}" type="button" role="radio"` +
+    `${row.disabled ? ' disabled' : ''} aria-checked="${row.selected}" aria-label="${ariaLabel}">` +
+    `${row.selected ? MARCA_ESCOLHIDA : MARCA_ALTERNATIVA}</button></div>`
   );
 }
 
-/** Full innerHTML for #typo-list, given the currently selected key. Pure string building — no DOM. */
+/**
+ * Full innerHTML for #typo-list, given the currently selected key. Pure string building — no DOM.
+ *
+ * ⚠️ É UM GRUPO DE RÁDIO SÓ, ATRAVESSANDO AS TRÊS SECÇÕES, e isso é a decisão e não um detalhe de
+ * marcação: a exclusividade é do MENU inteiro — uma fonte activa no total —, não de cada família. Três
+ * grupos diriam a quem escuta que dá para ter uma sans E uma serif ao mesmo tempo.
+ *
+ * ⚠️ E ISTO DEIXOU DE SER UM INTERRUPTOR EM 2026-09-07. Era `class="mode-btn switch"` + `aria-pressed` +
+ * `toggleLabel()`, ou seja dezassete interruptores independentes anunciando «Ligado»/«Desligado» para
+ * escolher UMA fonte. A emenda do ADR-0012 diz o contrário em tantas palavras: «THE MENU IS A CHOICE, NOT
+ * A TOGGLE […] One font is active; the others are alternatives, not switches.» O `switch` do
+ * `style.css:427` desenha uma chave de 52×28 px com bolinha — era o desenho de um estado que não existe.
+ */
 export function typoListHTML(fontKey: string): string {
-  return typoGroups(fontKey)
+  const grupos = typoGroups(fontKey)
     .map((group) => `<h3 class="panel-sub">${group.g}</h3>` + group.rows.map(rowHTML).join(''))
     .join('');
+  return `<div role="radiogroup" aria-label="${t('font.grupo.rotulo')}">${grupos}</div>`;
 }
 
 // ---------------------------------------------------------------------------------------------

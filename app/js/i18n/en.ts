@@ -556,6 +556,7 @@ const en: Record<string, string> = {
   'legend.run': 'run',
   'legend.swap': 'switch',
   // ===================== FONT CATALOGUE =====================
+  'font.grupo.rotulo': 'Letter family',
   'font.group.sans': 'Sans serif',
   'font.group.serif': 'Serif',
   'font.group.hand': 'Handwritten',

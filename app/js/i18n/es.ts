@@ -554,6 +554,7 @@ const es: Record<string, string> = {
   'legend.run': 'correr',
   'legend.swap': 'cambiar',
   // ===================== CATÁLOGO DE FUENTES =====================
+  'font.grupo.rotulo': 'Familia de letra',
   'font.group.sans': 'Sin serifa',
   'font.group.serif': 'Con serifa',
   'font.group.hand': 'Manuscrita',

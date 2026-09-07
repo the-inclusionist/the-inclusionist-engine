@@ -122,19 +122,63 @@ describe('typoGroups — view-model das linhas', () => {
   });
 });
 
-describe('typoListHTML', () => {
-  it('[Interface] marca o botão da fonte ativa como is-on/aria-pressed=true', () => {
+// ===================================================================================================
+// O MENU É UMA ESCOLHA, NÃO UM INTERRUPTOR (ADR-0012, emenda de 27/08)
+// ===================================================================================================
+// ⚠️ O CASO QUE ESTAVA AQUI CONGELAVA O DEFEITO. Ele afirmava `aria-pressed="true"` e `is-on`, ou seja
+// descrevia o que o código FAZIA em vez do que o registro DECIDE — e a emenda do ADR-0012 é literal:
+//
+//     «THE MENU IS A CHOICE, NOT A TOGGLE: the selected font is shown with a yellow background, like a
+//      pressed button. One font is active; the others are alternatives, not switches.»
+//
+// O que estava no código era o oposto: `class="mode-btn switch"` (que o `style.css:427` desenha como um
+// interruptor de 52×28 px com bolinha), `aria-pressed`, e o rótulo `toggleLabel(selected)` — que devolve
+// «Ligado»/«Desligado». Oito interruptores para escolher UMA fonte, anunciados como oito estados
+// independentes a quem escuta.
+//
+// ⚠️ E O ESTADO VAI EM DUAS FORMAS, NENHUMA DELAS COR — é a regra que `ui/activities-menu.ts:656` já
+// carrega por escrito: `aria-checked` para quem escuta, uma marca para quem vê. O fundo amarelo do
+// `.mode-btn.is-on` continua, porque é o que a emenda pede; o que ele não pode ser é o ÚNICO sinal.
+describe('typoListHTML — uma escolha exclusiva, não oito interruptores', () => {
+  const botaoDe = (html, chave) => html.match(new RegExp(`<button[^>]*data-font="${chave}"[^>]*>`))[0];
+
+  it('⚠️ [Right] a fonte ativa é `aria-checked=true`, e NENHUM botão é um interruptor', () => {
     const html = typoListHTML('andika');
-    expect(html).toContain('data-font="andika"');
-    const btnMatch = html.match(/<button[^>]*data-font="andika"[^>]*>/);
-    expect(btnMatch[0]).toContain('is-on');
-    expect(btnMatch[0]).toContain('aria-pressed="true"');
+    const btn = botaoDe(html, 'andika');
+    expect(btn).toContain('aria-checked="true"');
+    expect(btn, 'aria-pressed é vocabulário de INTERRUPTOR').not.toContain('aria-pressed');
+    expect(html, 'a classe `switch` desenha um interruptor (style.css:427)').not.toContain('switch');
   });
+
+  it('⚠️ [Right] as outras são `aria-checked=false` — alternativas, não desligadas', () => {
+    const html = typoListHTML('andika');
+    expect(botaoDe(html, 'atkinson')).toContain('aria-checked="false"');
+  });
+
+  it('[Interface] a lista é UM grupo de rádio — uma fonte activa no total, não uma por secção', () => {
+    // Sem o grupo, um leitor de tela anuncia rádios soltos e não diz «1 de 17». E o grupo é ÚNICO
+    // atravessando as três secções, porque a exclusividade é do menu inteiro e não de cada família.
+    const html = typoListHTML('andika');
+    expect((html.match(/role="radiogroup"/g) || []).length).toBe(1);
+    expect((html.match(/role="radio"/g) || []).length).toBeGreaterThan(5);
+  });
+
+  it('[Interface] o fundo amarelo FICA — a emenda pede-o por extenso', () => {
+    expect(botaoDe(typoListHTML('andika'), 'andika')).toContain('is-on');
+  });
+
+  it('⚠️ [Interface] e o estado também é VISÍVEL sem cor — a marca de seleção', () => {
+    // `.mode-btn.is-on` pinta com `var(--accent)`. Cor sozinha falha para quem não a distingue, e é a
+    // razão de `activities-menu` já emitir ☑/☐ ao lado do `aria-checked`.
+    const html = typoListHTML('andika');
+    const conteudo = html.match(/data-font="andika"[^>]*>([^<]*)</)[1];
+    expect(conteudo.trim(), 'o botão da fonte activa não mostra marca nenhuma').not.toBe('');
+  });
+
   it('[Boundary] fonte .off gera botão disabled', () => {
-    const html = typoListHTML('atkinson');
-    const btnMatch = html.match(/<button[^>]*data-font="kindergarten"[^>]*>/);
-    expect(btnMatch[0]).toContain('disabled');
+    expect(botaoDe(typoListHTML('atkinson'), 'kindergarten')).toContain('disabled');
   });
+
   it('[Error] chave desconhecida não derruba a geração (nenhuma linha fica selected)', () => {
     expect(() => typoListHTML('nao-existe')).not.toThrow();
     expect(typoListHTML('nao-existe')).not.toContain('is-on');

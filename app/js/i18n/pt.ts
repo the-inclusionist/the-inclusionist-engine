@@ -620,6 +620,7 @@ const pt: Record<string, string> = {
   // Os NOMES das fontes (Atkinson Hyperlegible, Lexend, …) NÃO entram aqui: são nomes próprios e ficam no
   // catálogo, como os nomes dos motores de voz. O que traduz é o nome do GRUPO e a descrição — que é o texto
   // que explica à criança (ou a quem a acompanha) POR QUE aquela fonte existe na lista.
+  'font.grupo.rotulo': 'Família de letra',
   'font.group.sans': 'Sem serifa',
   'font.group.serif': 'Serifada',
   'font.group.hand': 'Manuscrita',

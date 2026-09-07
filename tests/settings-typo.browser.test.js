@@ -56,7 +56,7 @@ describe('ui/settings-typo', () => {
     expect(list.children.length).toBeGreaterThan(0);
     const active = list.querySelector('button[data-font="atkinson"]');
     expect(active.classList.contains('is-on')).toBe(true);
-    expect(active.getAttribute('aria-pressed')).toBe('true');
+    expect(active.getAttribute('aria-checked')).toBe('true');
   });
 
   it('[Right] clicar num botão de fonte troca a seleção, aplica o CSS, persiste e anuncia', () => {
@@ -145,7 +145,7 @@ describe('ui/settings-typo — restaurar padrões DESTE menu (ADR-0028)', () => 
     expect(api.getFontKey()).toBe('atkinson');
     expect(document.documentElement.dataset.fonte).toBe('padrao');
     expect(ctx.store.map.get('incl_font_k')).toBe('atkinson');
-    expect($('#typo-list').querySelector('button[data-font="atkinson"]').getAttribute('aria-pressed')).toBe('true');
+    expect($('#typo-list').querySelector('button[data-font="atkinson"]').getAttribute('aria-checked')).toBe('true');
   });
 
   it('[Interface] limpa o --font-custom que uma fonte de catálogo tinha deixado no root', () => {
