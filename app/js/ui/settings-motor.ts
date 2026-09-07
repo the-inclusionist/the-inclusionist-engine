@@ -52,6 +52,19 @@ export interface SettingsMotorCtx {
   setToggleRun: (i: number, on: boolean) => void;
   /** Coin layout depends on any player's Modo Fácil (moedas no chão) — owned by the coin subsystem, injected. */
   rebuildCoins: () => void;
+  /**
+   * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA render.
+   *
+   * ⚠️ NÃO É OPCIONAL POR ELEGÂNCIA: `fillExplain` roda uma vez quando o overlay é frontalizado e move o
+   * `.opt-hint` de dentro de cada linha para o rodapé. Este painel RECONSTRÓI as linhas, e as linhas novas
+   * voltam com a prosa lá dentro — então a explicação aparece duas vezes, no rodapé e sob o rótulo, a
+   * partir do primeiro clique. O `CLAUDE.md` §4 regista exatamente isto, e a issue #109 já o consertou
+   * uma vez noutros painéis.
+   *
+   * Opcional na assinatura porque um consumidor pode montar o painel sem a casca (um teste, o segundo
+   * consumidor): sem casca não há rodapé para duplicar.
+   */
+  fillExplain?: (card: HTMLElement | null) => void;
 }
 
 export interface SettingsMotorApi {
@@ -227,6 +240,8 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
         reflectAltMove();
       });
     });
+    // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109).
+    ctx.fillExplain?.(ctx.$<HTMLElement>('#movement .overlay__card'));
   }
 
   if (facilBtn) {

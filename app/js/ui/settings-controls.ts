@@ -67,6 +67,19 @@ export interface SettingsControlsCtx {
   applyControls: () => void;
   /** Shared: propagates `kb` -> each player's `p.ctrl` (game.js's assignControls). Called after remap/reset. */
   assignControls: () => void;
+  /**
+   * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA render.
+   *
+   * ⚠️ NÃO É OPCIONAL POR ELEGÂNCIA: `fillExplain` roda uma vez quando o overlay é frontalizado e move o
+   * `.opt-hint` de dentro de cada linha para o rodapé. Este painel RECONSTRÓI as linhas, e as linhas novas
+   * voltam com a prosa lá dentro — então a explicação aparece duas vezes, no rodapé e sob o rótulo, a
+   * partir do primeiro clique. O `CLAUDE.md` §4 regista exatamente isto, e a issue #109 já o consertou
+   * uma vez noutros painéis.
+   *
+   * Opcional na assinatura porque um consumidor pode montar o painel sem a casca (um teste, o segundo
+   * consumidor): sem casca não há rodapé para duplicar.
+   */
+  fillExplain?: (card: HTMLElement | null) => void;
 }
 
 export interface SettingsControlsApi {
@@ -196,6 +209,8 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
         ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: t(ACT_LABEL[act]!), n: player + 1 }));
       });
     });
+    // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109).
+    ctx.fillExplain?.(ctx.$<HTMLElement>('#options .overlay__card'));
   }
 
   function isCapturing(): boolean {
