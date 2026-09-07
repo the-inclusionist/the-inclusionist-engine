@@ -448,12 +448,14 @@
   ],
   "platform/audio-sonar.ts": [
     "AudioSonar",
+    "PAN_PACES",
     "PlayerAudioOut",
     "PlayerCtxOut",
     "SinkAC",
     "SonarCtx",
     "SonarPlayer",
-    "createAudioSonar"
+    "createAudioSonar",
+    "passoDoMundo"
   ],
   "platform/audio.ts": [
     "_footCount",

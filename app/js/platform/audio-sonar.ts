@@ -24,8 +24,18 @@
 //   · `t('sr.nav.coin')` (o nome do alvo)  →  `nameAt(spot)`, campo 3. É o que faz o anúncio dizer "moeda",
 //     "pergunta" ou "caixa" sem a engine conhecer nenhum dos três.
 //
-// Sobrou UMA constante de mundo: `LOGICAL_W`, usada só pelo pan. Ela é da TELA e não do gênero — todo jogo
-// deste console tem 320 px de largura lógica —, e por isso entra por ctx em vez de virar campo de contrato.
+// ⚠️ E SOBRAVA UMA, QUE ERA A ÚLTIMA E A PIOR: o pan media a largura do estéreo em `LOGICAL_W * 0.55` — a
+// largura da TELA. Escrevi aqui que ela era «da tela e não do gênero, e por isso entra por ctx». A frase
+// estava certa sobre a origem e errada sobre a consequência: o `wx` que ela divide vem da TOPOLOGIA, e
+// dividir uma medida de mundo pela largura de um ecrã só funciona quando as duas usam a mesma régua.
+//
+// Medido ao construir o `game-soccer` (#121): num campo de 90 METROS, um colega dez metros à direita dá
+// `10 / 176 = 0,057` — mono, na prática. O sonar ficaria **certo e inaudível**, que é a mesma classe de
+// defeito que o quiz registou como «certo e inútil». Para a plataforma era verdade por acaso (o mundo dela é
+// medido em pixels) e para `grid`/`hotspots` era vácuo, e é por isso que nunca se viu.
+//
+// A largura do estéreo passa a vir da métrica declarada: `PAN_PACES * passo`, onde o passo é o `unit` do
+// contínuo, uma célula na grade, e nada na lista — que não tem espaço.
 //
 // ========================= SEM I/O NO IMPORT =========================
 // Nada aqui toca `window` fora de `playerCtx`, que é chamada e não importada. Roda no project `node`.
@@ -33,6 +43,30 @@ import { distance, bearing, type Bearing, type Spot, type Topology, type Speakab
 import { t } from '../core/i18n.js';
 
 export type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
+
+/**
+ * Quantos PASSOS da métrica declarada saturam o estéreo. Além disto, "à direita" é só à direita.
+ *
+ * ⚠️ ONZE NÃO É NÚMERO NOVO — é o que a plataforma sempre teve, relido na régua certa. O denominador antigo
+ * era `LOGICAL_W * 0.55 = 320 × 0,55 = 176` pixels, e a plataforma declara `unit: TILE` = 16: são **exatamente
+ * 11 tiles**. Reescrever em passos preserva o que essa criança já ouve, letra por letra, e passa a dizer o
+ * mesmo em qualquer gênero — 11 casas num tabuleiro, 11 metros num campo.
+ *
+ * E encaixa na régua que o resto do módulo já usa: `chaveDeDistancia` corta "muito perto" em 4 passos e
+ * "perto" em 9. O estéreo satura logo depois de a coisa passar a ser "longe", que é onde a direção deixa de
+ * precisar de mais precisão.
+ */
+export const PAN_PACES = 11;
+
+/**
+ * Quanto vale UM passo, em unidades do mundo. Zero = este espaço não tem lado.
+ *
+ * Contínuo: o `unit` declarado. Grade: uma célula, por definição. Lista: nada — `hotspots` é uma ordem, não
+ * uma geometria, e inventar-lhe uma largura de estéreo seria apontar para um lado que não existe.
+ */
+export function passoDoMundo(topo: Topology): number {
+  return topo.kind === 'continuous' ? topo.unit : topo.kind === 'grid' ? 1 : 0;
+}
 
 /**
  * O jogador visto pela navegação sonora. É a fatia MÍNIMA, e ela encolheu com o corte: `facing` ficou com a
@@ -83,7 +117,15 @@ export interface SonarCtx {
   VIZ_BY_KEY: Record<string, VizDef>;
   getModoCego: () => boolean;
   /** Largura LÓGICA da tela. É do console, não do gênero — por isso ctx, e não campo de contrato. */
-  LOGICAL_W: number;
+  /**
+   * @deprecated ⚠️ SEM LEITOR DESDE 2026-09-07 (#121). Era o denominador do pan, e era o defeito: media a
+   * largura do estéreo em pixels de ecrã e dividia por ela uma distância de MUNDO. Agora a largura vem da
+   * topologia (`PAN_PACES * passoDoMundo`).
+   *
+   * Ficou OPCIONAL em vez de removido — tornar um campo obrigatório em opcional é compatível para trás, e
+   * quem já o injecta continua a compilar. Removê-lo de vez é candidato ao próximo major.
+   */
+  LOGICAL_W?: number;
   getPlayers: () => SonarPlayer[];
   getNumPlayers: () => number;
   getAudioCtx: () => AudioContext | null;
@@ -120,7 +162,11 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   }
 
   function panFor(wx: number, pl: SonarPlayer): number {
-    return Math.max(-1, Math.min(1, (wx - pl.x) / (ctx.LOGICAL_W * 0.55)));
+    const passo = passoDoMundo(ctx.topology());
+    // `hotspots` não tem espaço, logo não tem lado. O `bearing` já responde `none` pelo mesmo motivo, e
+    // centrar é a única resposta honesta — um pan calculado sobre índices de lista aponta para nada.
+    if (!(passo > 0)) return 0;
+    return Math.max(-1, Math.min(1, (wx - pl.x) / (PAN_PACES * passo)));
   }
 
   /** Visão comprometida? Guarda e guia só existem quando a resposta é sim (ou no modo cego). */

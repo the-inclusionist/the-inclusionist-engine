@@ -11,7 +11,7 @@
 // abaixo rodam o MESMO sonar sobre três topologias — contínua, grade e lista — porque essa é a única forma de
 // afirmar que ele viaja: se um gênero precisasse de um caso especial, o corte estaria no lugar errado.
 import { describe, it, expect } from 'vitest';
-import { createAudioSonar } from '../app/js/platform/audio-sonar.js';
+import { createAudioSonar, passoDoMundo, PAN_PACES } from '../app/js/platform/audio-sonar.js';
 
 const CONTINUO = { kind: 'continuous', size: [896, 992], unit: 16, move: 'free', frame: 'clock' };
 // `move: 'diagonal'` explicito: e a regra que este fixture SEMPRE assumiu, e ela deixou de ser a unica
@@ -232,3 +232,83 @@ describe('a NARRAÇÃO diz o RUMO, e o rumo vem do referencial que o jogo declar
     return said[0];
   }
 });
+
+// ==========================================================================================================
+// ⚠️ A LARGURA DO ESTEREO E MEDIDA NA REGUA DO MUNDO, NAO NA DA TELA (#121)
+//
+// O pan dividia por `LOGICAL_W * 0.55` = 320 x 0,55 = **176 pixels de ECRA**, e o que ele divide (`wx - pl.x`)
+// vem da TOPOLOGIA. As duas reguas so coincidem quando o mundo tambem e medido em pixels.
+//
+// Medido ao construir o `game-soccer`: num campo de 90 METROS, um colega dez metros a direita da
+// `10 / 176 = 0,057` — mono, na pratica. O sonar ficaria **certo e inaudivel**, a mesma classe de defeito que
+// o quiz registou como «certo e inutil». Para a plataforma era verdade por acaso, e para `grid`/`hotspots`
+// era vacuo — e e por isso que ninguem viu.
+//
+// ⚠️ ONZE NAO E NUMERO NOVO: 176 px / `unit: TILE` = 16 sao exatamente 11 tiles. O primeiro caso abaixo
+// afirma que a crianca da plataforma continua a ouvir EXATAMENTE o que ouvia.
+//
+// MUTACOES CONFERIDAS (no fim do bloco).
+// ==========================================================================================================
+describe('platform/audio-sonar — o pan na regua declarada (#121)', () => {
+  const CAMPO = { kind: 'continuous', size: [90, 60], unit: 1, move: 'free', frame: 'compass' };
+
+  it('⚠️ [Right] a plataforma ouve EXATAMENTE o que ouvia — 11 passos de 16 sao os 176 px de antes', () => {
+    const { som } = setup(); // CONTINUO, unit: 16
+    expect(som.panFor(0 + 176, pl({ x: 0 })), 'a saturacao mudou de sitio').toBe(1);
+    expect(som.panFor(0 + 88, pl({ x: 0 })), 'meia largura deixou de ser meio pan').toBeCloseTo(0.5, 6);
+    expect(som.panFor(0 - 176, pl({ x: 0 }))).toBe(-1);
+  });
+
+  it('⚠️ [Right] no campo de metros dez metros a direita JA SE OUVEM', () => {
+    // O numero da issue: com o denominador de ecra dava 0,057. Com 11 passos de 1 metro da 0,909.
+    const { som } = setup({ topology: CAMPO });
+    const pan = som.panFor(10, pl({ x: 0, y: 0 }));
+    expect(pan).toBeCloseTo(10 / 11, 6);
+    expect(pan, 'continua praticamente mono').toBeGreaterThan(0.5);
+  });
+
+  it('⚠️ [Cross-check] e a formula ANTIGA dava mesmo 0,057 — o defeito, em aritmetica', () => {
+    // Sem isto, o caso de cima podia estar verde por o numero da issue estar errado, e eu nao saberia.
+    expect(10 / (320 * 0.55)).toBeCloseTo(0.057, 3);
+  });
+
+  it('[Right] na grade um passo e uma celula', () => {
+    const { som } = setup({ topology: GRADE });
+    expect(som.panFor(11, pl({ x: 0, y: 0 }))).toBe(1);
+    expect(som.panFor(5.5, pl({ x: 0, y: 0 }))).toBeCloseTo(0.5, 6);
+  });
+
+  it('⚠️ [Zero] `hotspots` nao tem lado — o pan e ZERO, e nao um numero calculado sobre indices', () => {
+    // Uma lista e uma ORDEM, nao uma geometria. O `bearing` do contrato ja responde `none` pelo mesmo motivo;
+    // apontar para a direita numa lista de perguntas e apontar para nada.
+    const { som } = setup({ topology: LISTA });
+    expect(som.panFor(3, pl({ x: 0, y: 0 }))).toBe(0);
+    expect(som.panFor(-3, pl({ x: 0, y: 0 }))).toBe(0);
+  });
+
+  it('[Boundary] o pan continua preso entre -1 e 1 em qualquer topologia', () => {
+    for (const topology of [CONTINUO, GRADE, CAMPO]) {
+      const { som } = setup({ topology });
+      expect(som.panFor(1e9, pl({ x: 0, y: 0 }))).toBe(1);
+      expect(som.panFor(-1e9, pl({ x: 0, y: 0 }))).toBe(-1);
+    }
+  });
+
+  it('⚠️ [Interface] `passoDoMundo` responde pelas tres topologias, e a lista responde ZERO', () => {
+    expect(passoDoMundo(CONTINUO)).toBe(16);
+    expect(passoDoMundo(CAMPO)).toBe(1);
+    expect(passoDoMundo(GRADE)).toBe(1);
+    expect(passoDoMundo(LISTA)).toBe(0);
+    expect(PAN_PACES, '11 e a releitura de 176/16; mudar isto muda o que a crianca ja ouve').toBe(11);
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS =========================
+//   · repondo `(ctx.LOGICAL_W * 0.55)` como denominador → reprovam DOIS: "[Right] no campo de metros" com
+//     **0,0568** — o numero exato que a auditoria mediu — e "[Right] na grade um passo e uma celula". E a
+//     #121 reproduzida, e o `[Cross-check]` ao lado confirma que o numero da issue estava certo.
+//   · trocando `PAN_PACES` de 11 para 12 → reprovam QUATRO, incluindo "[Right] a plataforma ouve EXATAMENTE
+//     o que ouvia". E o que impede o conserto de mexer, de passagem, no que ja funcionava para uma crianca.
+//   · fazendo `passoDoMundo` devolver 1 para `hotspots` → reprovam DOIS: "[Zero] `hotspots` nao tem lado" e o
+//     "[Interface]". Um pan calculado sobre indices de lista aponta para um lado que nao existe.
+//   · tirando o `Math.max(-1, Math.min(1, ...))` → "[Boundary] o pan continua preso" reprova nas tres.
