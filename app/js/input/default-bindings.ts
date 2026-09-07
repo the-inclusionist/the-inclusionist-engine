@@ -66,6 +66,73 @@ export const KEYBOARD_SOLO: Readonly<Record<Action, Binding<readonly string[]>>>
 };
 
 /**
+ * Teclado, esquema de DOIS JOGADORES — as quatorze posições para cada um (ADR-0096).
+ *
+ * ⚠️ O JOGADOR 1 AQUI NÃO É O `KEYBOARD_SOLO`, e a diferença é UMA e obrigatória: as SETAS saem dele. No solo
+ * elas são um segundo caminho para o direcional; em dupla são o direcional DO OUTRO. Deixá-las nos dois faria
+ * os dois bonecos andarem juntos — um defeito que não dá erro em lado nenhum e que só se vê jogando a dois.
+ * `conflitosEntreTabelas` existe por causa desta linha.
+ *
+ * ⚠️ E A GEOMETRIA DO JOGADOR 2 É A MESMA DO JOGADOR 1, TRANSPOSTA PARA O TECLADO NUMÉRICO — o que faz a
+ * memória muscular atravessar de um lado da mesa para o outro:
+ *
+ *        7  8            /  *          ombros na linha DE CIMA
+ *     Y  U  I  O      7  8  9  +       gatilhos nas PONTAS da linha das ações
+ *        J  K            5  6
+ *
+ *   action1 U ↔ Numpad8 (cima-esquerda)   action4 I ↔ Numpad9 (cima-direita)
+ *   action2 J ↔ Numpad5 (baixo-esquerda)  action3 K ↔ Numpad6 (baixo-direita)
+ *
+ * O bloco `U I / J K` e o bloco `8 9 / 5 6` têm a MESMA forma, então a rotação de 45° que o cabeçalho deste
+ * ficheiro descreve para o Xbox vale igual para o jogador 2. Não é coincidência de teclado: é o que torna o
+ * padrão ensinável uma vez só.
+ *
+ * ⚠️ `Digit7`/`Digit8` (jogador 1) e `Numpad7` (jogador 2) SÃO TECLAS DIFERENTES, e é por isso que a
+ * especificação do Dev diz «alphanumeric» e «numeric» em tantas palavras. `KeyboardEvent.code` distingue-as
+ * sempre; `key` não — com Num Lock desligado o numérico chega como `ArrowUp`/`Home`, e um esquema lido por
+ * `key` juntaria o direcional do jogador 2 com as ações dele. Mais uma razão de este ficheiro só falar
+ * `code`.
+ */
+export const KEYBOARD_DUO: readonly Readonly<Record<Action, Binding<readonly string[]>>>[] = Object.freeze([
+  {
+    // JOGADOR 1 — a mão esquerda anda (WASD), a direita age (UIJK). Sem as setas: são do jogador 2.
+    up: ['KeyW'],
+    down: ['KeyS'],
+    left: ['KeyA'],
+    right: ['KeyD'],
+    action1: ['KeyU'],
+    action2: ['KeyJ', 'Space'],
+    action3: ['KeyK'],
+    action4: ['KeyI'],
+    leftShoulder: ['Digit7'],
+    leftTrigger: ['KeyY'],
+    rightShoulder: ['Digit8'],
+    rightTrigger: ['KeyO'],
+    start: ['KeyH', 'Enter'],
+    select: ['KeyF'],
+  },
+  {
+    // JOGADOR 2 — as setas andam, o teclado numérico age. `Enter` fica com o jogador 1; o `NumpadEnter` não
+    // entra aqui de propósito, porque `ui/menu-nav` já o usa como CONFIRMAR em qualquer menu (KEY_YES) e
+    // `input/keydown` registra, verbatim, que ele NÃO pausa. Dar-lhe um terceiro trabalho seria sobrepor.
+    up: ['ArrowUp'],
+    down: ['ArrowDown'],
+    left: ['ArrowLeft'],
+    right: ['ArrowRight'],
+    action1: ['Numpad8'],
+    action2: ['Numpad5'],
+    action3: ['Numpad6'],
+    action4: ['Numpad9'],
+    leftShoulder: ['NumpadDivide'],     // a tecla `/` do bloco numérico
+    leftTrigger: ['Numpad7'],
+    rightShoulder: ['NumpadMultiply'],  // a tecla `*`
+    rightTrigger: ['NumpadAdd'],        // a tecla `+`
+    start: ['Numpad1'],
+    select: ['Numpad0'],
+  },
+]);
+
+/**
  * Gamepad, mapa PADRÃO da Gamepad API (`mapping: "standard"`), que é o que um controle de Xbox reporta.
  * O número é o índice em `gamepad.buttons`.
  */
@@ -114,6 +181,37 @@ export function bindingProblems<T>(tabela: Readonly<Record<Action, Binding<T | r
       else dono.set(chave, acao);
     }
   }
+  return p;
+}
+
+/**
+ * As teclas que DUAS OU MAIS tabelas reclamam para si. VAZIA quer dizer que os jogadores não se atropelam.
+ *
+ * ⚠️ ISTO É UM PROBLEMA DIFERENTE DO `bindingProblems`, E FOI POR ISSO QUE PRECISOU DE FUNÇÃO PRÓPRIA: aquele
+ * olha UMA tabela e apanha a mesma tecla em duas ações; este olha DUAS tabelas e apanha a mesma tecla em dois
+ * JOGADORES. Cada esquema do `KEYBOARD_DUO` passa no primeiro sozinho — e as setas, se ficassem nos dois,
+ * fariam os dois bonecos andarem juntos sem que nada reprovasse.
+ *
+ * A mensagem nomeia os dois donos, porque «tecla repetida» manda procurar o que a função já sabe.
+ */
+export function conflitosEntreTabelas<T>(
+  tabelas: readonly Readonly<Record<Action, Binding<T | readonly T[]>>>[],
+): string[] {
+  const p: string[] = [];
+  const dono = new Map<string, string>();
+  tabelas.forEach((tabela, i) => {
+    for (const acao of ACTIONS) {
+      const v = tabela[acao];
+      if (v === null || v === undefined) continue;
+      for (const item of (Array.isArray(v) ? v : [v]) as readonly T[]) {
+        const chave = String(item);
+        const aqui = `p${i + 1}.${acao}`;
+        const anterior = dono.get(chave);
+        if (anterior) p.push(`cross: ${chave} is claimed by both ${anterior} and ${aqui}`);
+        else dono.set(chave, aqui);
+      }
+    }
+  });
   return p;
 }
 

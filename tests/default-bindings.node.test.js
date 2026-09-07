@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { ACTIONS } from '../app/js/core/actions.js';
 import {
-  KEYBOARD_SOLO, GAMEPAD_STANDARD, bindingProblems, unreachable,
+  KEYBOARD_SOLO, KEYBOARD_DUO, GAMEPAD_STANDARD, bindingProblems, conflitosEntreTabelas, unreachable,
 } from '../app/js/input/default-bindings.js';
 
 describe('as tabelas cobrem as quatorze ações, sem buraco', () => {
@@ -18,6 +18,76 @@ describe('as tabelas cobrem as quatorze ações, sem buraco', () => {
       expect(Object.keys(tabela).sort()).toEqual([...ACTIONS].sort());
     },
   );
+});
+
+// ===================================================================================================
+// O ESQUEMA DE DOIS JOGADORES (ADR-0096)
+// ===================================================================================================
+// ⚠️ O RISCO QUE ESTE BLOCO EXISTE PARA APANHAR É DE OUTRA FAMÍLIA que o do duplo-numa-tabela. Cada esquema
+// do `KEYBOARD_DUO` passa em `bindingProblems` SOZINHO; o defeito só existe entre os dois. As setas são o
+// caso concreto: no `KEYBOARD_SOLO` elas são um segundo caminho para o direcional do jogador 1, e em dupla
+// são o direcional do jogador 2. Se ficassem nos dois, os dois bonecos andariam juntos — sem erro, sem aviso,
+// e visível só jogando a dois.
+describe('o esquema de DOIS jogadores (ADR-0096)', () => {
+  const [P1, P2] = KEYBOARD_DUO;
+
+  it('[Interface] são DOIS esquemas, e cada um declara as quatorze', () => {
+    expect(KEYBOARD_DUO).toHaveLength(2);
+    for (const tabela of KEYBOARD_DUO) expect(Object.keys(tabela).sort()).toEqual([...ACTIONS].sort());
+  });
+
+  it('[Zero] nenhum dos dois alcança MENOS que as quatorze — dupla não é modo reduzido', () => {
+    for (const tabela of KEYBOARD_DUO) expect(unreachable(tabela)).toEqual([]);
+  });
+
+  it('[Right] cada esquema é são por si', () => {
+    expect(bindingProblems(P1)).toEqual([]);
+    expect(bindingProblems(P2)).toEqual([]);
+  });
+
+  it('⚠️ [Right] e os DOIS não se atropelam — nenhuma tecla tem dois donos', () => {
+    expect(conflitosEntreTabelas(KEYBOARD_DUO)).toEqual([]);
+  });
+
+  it('⚠️ [Boundary] as SETAS saem do jogador 1 — é a única diferença obrigatória para o solo', () => {
+    // O caso que dá nome ao problema. `KEYBOARD_SOLO` tem `ArrowUp` no `up`; em dupla, não pode ter.
+    expect(KEYBOARD_SOLO.up).toContain('ArrowUp');
+    expect(P1.up, 'a seta ficou com o jogador 1 e vai mover os dois bonecos').not.toContain('ArrowUp');
+    expect(P2.up).toEqual(['ArrowUp']);
+    // E o resto do jogador 1 é o solo: a dupla não reinventa o esquema, só lhe tira as setas.
+    for (const a of ['action1', 'action2', 'action3', 'action4', 'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger', 'start', 'select']) {
+      expect(P1[a], `${a} divergiu do esquema solo sem motivo`).toEqual(KEYBOARD_SOLO[a]);
+    }
+  });
+
+  it('⚠️ [Interface] o crivo cruzado PEGA a seta repetida — senão ele não prova nada', () => {
+    const p1ComSeta = { ...P1, up: ['KeyW', 'ArrowUp'] };
+    const achados = conflitosEntreTabelas([p1ComSeta, P2]);
+    expect(achados).toHaveLength(1);
+    expect(achados[0]).toContain('ArrowUp');
+    expect(achados[0]).toContain('p1.up');
+    expect(achados[0]).toContain('p2.up');
+  });
+
+  it('[Interface] alfanumérico e numérico são teclas DIFERENTES, e é disso que o esquema depende', () => {
+    // O Dev escreveu «7 (alphanumeric)» e «7 (numeric)» por extenso, e o esquema só fecha porque `code` os
+    // separa: `Digit7` é do jogador 1 (L1) e `Numpad7` é do jogador 2 (L2). Lido por `key` seriam a MESMA
+    // coisa — e com Num Lock desligado o bloco numérico chega ainda por outro nome.
+    expect(P1.leftShoulder).toEqual(['Digit7']);
+    expect(P2.leftTrigger).toEqual(['Numpad7']);
+    expect(conflitosEntreTabelas(KEYBOARD_DUO)).toEqual([]);
+    const todas = KEYBOARD_DUO.flatMap((t) => ACTIONS.flatMap((a) => t[a] ?? []));
+    expect(todas.every((c) => /^(Key|Digit|Numpad|Arrow)|^(Space|Enter)$/.test(c)),
+      'binding que não é um `KeyboardEvent.code` reconhecível: ' + todas.join(' ')).toBe(true);
+  });
+
+  it('⚠️ [Interface] a geometria do jogador 2 espelha a do jogador 1 — é o que torna o padrão ensinável', () => {
+    // `U I / J K` e `8 9 / 5 6` têm a MESMA forma no teclado, então a memória muscular atravessa a mesa:
+    //   action1 cima-esquerda · action4 cima-direita · action2 baixo-esquerda · action3 baixo-direita
+    const forma = (t, digito) => [t.action1[0], t.action4[0], t.action2[0], t.action3[0]].map((c) => c.replace(digito, ''));
+    expect(forma(P1, /^Key/)).toEqual(['U', 'I', 'J', 'K']);
+    expect(forma(P2, /^Numpad/)).toEqual(['8', '9', '5', '6']);
+  });
 });
 
 describe('⚠️ nada é atribuído duas vezes', () => {
