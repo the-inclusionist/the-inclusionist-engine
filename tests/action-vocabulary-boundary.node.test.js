@@ -26,7 +26,21 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const RAIZ = join(process.cwd(), 'app', 'js');
-const CAMADAS_ENGINE = ['core', 'input', 'render', 'platform', 'ui', 'audio', 'boot'];
+// ⚠️ `audio` ESTAVA AQUI E NUNCA EXISTIU (medido em 2026-09-07): os módulos de áudio vivem em `platform/`, e
+// o `existsSync` de baixo devolvia lista vazia sem uma palavra. Era a terceira cópia da mesma lista à mão na
+// suíte, e as três tinham derivado — a lista sai do `tsconfig.pkg.json`, que é quem decide o que é publicado.
+// `educational` e `i18n` ficam de fora porque são DADO: uma não importa nada (gate próprio no
+// `engine-boundary`) e a outra são os dicionários.
+const CAMADAS_ENGINE = (() => {
+  const cfg = JSON.parse(readFileSync(join(process.cwd(), 'tsconfig.pkg.json'), 'utf8')
+    .split(String.fromCharCode(13)).join(''));
+  return (cfg.include ?? [])
+    .map((p) => p.split('\\').join('/'))
+    .filter((p) => p.startsWith('app/js/'))
+    .map((p) => p.slice('app/js/'.length))
+    .filter((c) => c && !c.includes('/') && c !== 'educational' && c !== 'i18n')
+    .sort();
+})();
 
 const CR = String.fromCharCode(13);
 const COMENTARIO_LINHA = new RegExp('//[^\\n' + CR + ']*', 'g');

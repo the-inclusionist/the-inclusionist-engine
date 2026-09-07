@@ -35,7 +35,21 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const RAIZ = join(process.cwd(), 'app', 'js');
-const CAMADAS_ENGINE = ['core', 'input', 'render', 'platform', 'ui', 'audio', 'i18n'];
+// ⚠️ `audio` ESTAVA AQUI E NUNCA EXISTIU (medido em 2026-09-07) — os módulos de áudio vivem em `platform/` —
+// e `boot`, que É publicada, faltava. Terceira cópia à mão da mesma lista na suíte, terceira a ter derivado.
+// Sai agora do `tsconfig.pkg.json`. ⚠️ E aqui o `i18n` FICA: este ficheiro conta lotes de módulos publicados,
+// e os dicionários são módulos publicados como os outros — a exclusão que os outros gates fazem é sobre
+// MEDIR TEXTO neles, que é outra pergunta.
+const CAMADAS_ENGINE = (() => {
+  const cfg = JSON.parse(readFileSync(join(process.cwd(), 'tsconfig.pkg.json'), 'utf8')
+    .split(String.fromCharCode(13)).join(''));
+  return (cfg.include ?? [])
+    .map((p) => p.split('\\').join('/'))
+    .filter((p) => p.startsWith('app/js/'))
+    .map((p) => p.slice('app/js/'.length))
+    .filter((c) => c && !c.includes('/'))
+    .sort();
+})();
 const CR = String.fromCharCode(13);
 
 function modulosDe(camada) {
