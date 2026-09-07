@@ -294,3 +294,113 @@ describe('ui/hud · showWaitingBadge / clearWaitingBadge', () => {
     expect(document.querySelectorAll('#game-hud .vp-wait').length).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// A SEPARAÇÃO ESTRUTURAL ENTRE EXPERIÊNCIA E CONTROLE (ADR-0046, issue #85)
+// ---------------------------------------------------------------------------------------------
+//
+// ⚠️ O QUE ESTA SECÇÃO IMPEDE, e o efeito de errar não é cosmético: no modo cego a simulação aplica
+// `brightness(0)` à `.screen-exp`, e `filter` de CSS DESCE para os descendentes sem que um filho consiga
+// cancelá-lo. Um controlo que caia lá dentro é pintado de preto — e a pessoa fica TRANCADA na simulação,
+// sem o botão que a desligaria.
+//
+// Até 2026-09-07 isto era garantido por dois comentários de código e um registo. O próprio ADR-0046 anota a
+// dívida em vez de a esconder («the gate is owed»), e a issue #85 é essa dívida.
+//
+// ⚠️ MEDIÇÃO DE 07/09: das quatro cláusulas da issue, esta secção paga UMA — e as outras três não
+// desapareceram por acaso:
+//
+//   · a cláusula 4 (`alcanceDoModo`: simulação → 'mundo', correção → 'mundo-e-menus') JÁ TEM gate, em
+//     `viz-setters.node.test.js:687-711`, com mutação conferida. Escrevê-la aqui seria uma segunda opinião
+//     sobre a mesma coisa, e duas fontes que se copiam divergem.
+//   · as cláusulas 2 e 3 (`#touch-start`, `#caption`, `#touch-controls`) nomeiam marcação que vivia no
+//     `app/index.html` e saiu com o cartucho (issue #111). A engine PROCURA esses elementos; não os cria.
+//     Enquanto o dono deles for o consumidor, o gate deles é do consumidor — aqui não haveria o que montar.
+//     (A bolinha do `vizDotFor` nunca foi DOM: é um `Graphics` do PixiJS, e o filtro que a alcança é o do
+//     mundo, não o da `.screen-exp`.)
+//
+// O que sobra é a cláusula 1, que é a estrutural — e é a que nenhum outro ficheiro afere.
+//
+// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+
+describe('ui/hud · o que dá ACESSO fica fora da subárvore que a empatia degrada (ADR-0046, #85)', () => {
+  /** As três peças de uma tela, pelo papel que o ADR-0046 lhes dá. */
+  function pecasDaTela(i) {
+    const scr = document.querySelectorAll('#game-hud .player-screen')[i];
+    return {
+      scr,
+      exp: scr.querySelector('.screen-exp'),
+      barra: scr.querySelector('.screen-a11y'),   // CONTROLE: a barra rápida de acessibilidade
+      pausa: scr.querySelector('.screen-pause'),  // CONTROLE: o painel de pausa
+      hud: scr.querySelector('.vphud'),           // EXPERIÊNCIA
+      abandono: scr.querySelector('.vphud-quit'), // EXPERIÊNCIA
+    };
+  }
+
+  it('[Right] barra rápida e painel de pausa NÃO são descendentes da .screen-exp', () => {
+    mount();
+    initHud(makeCtx()).buildGameHud();
+    const { scr, exp, barra, pausa } = pecasDaTela(0);
+    expect(exp, 'a sub-camada de experiência sumiu — não há o que isentar').not.toBe(null);
+    expect(barra, 'a barra rápida não foi montada').not.toBe(null);
+    expect(pausa, 'o painel de pausa não foi montado').not.toBe(null);
+
+    // ⚠️ `contains` e não `parentElement`, de propósito: o que desce é o `filter`, e ele desce a QUALQUER
+    // profundidade. Aferir só o pai deixaria passar a barra pendurada dois níveis abaixo da `.screen-exp`,
+    // que sofreria o filtro exactamente igual.
+    expect(exp.contains(barra), 'a barra rápida caiu DENTRO da .screen-exp: no modo cego ela fica preta').toBe(false);
+    expect(exp.contains(pausa), 'o painel de pausa caiu DENTRO da .screen-exp: a pessoa fica trancada').toBe(false);
+    expect(scr.contains(barra) && scr.contains(pausa), 'os controlos saíram da própria tela').toBe(true);
+  });
+
+  it('[Interface] e o que é EXPERIÊNCIA continua DENTRO — senão a simulação deixaria de simular', () => {
+    // O contrapeso do caso acima, e ele é necessário: mover TUDO para fora da `.screen-exp` faria o
+    // primeiro caso passar e esvaziaria o modo empatia, que existe para que a pessoa SINTA o prejuízo.
+    // Um gate só do lado do controlo aprovaria a supressão do outro lado.
+    mount();
+    initHud(makeCtx()).buildGameHud();
+    const { exp, hud, abandono } = pecasDaTela(0);
+    expect(exp.contains(hud), 'o HUD saiu da experiência — a empatia deixou de o alcançar').toBe(true);
+    expect(exp.contains(abandono), 'o selo de abandono saiu da experiência').toBe(true);
+  });
+
+  it('[Boundary] a .player-screen NÃO é ela própria a .screen-exp — senão não haveria fora nenhum', () => {
+    // O buraco que o `contains` sozinho não fecha. Se a tela inteira ganhasse a classe filtrada, a barra e a
+    // pausa continuariam a NÃO ser descendentes do `<div>` interno — e seriam filtradas na mesma, porque o
+    // filtro passaria a estar acima delas. A separação depende de a subárvore ser PRÓPRIA.
+    mount();
+    initHud(makeCtx()).buildGameHud();
+    const { scr, exp } = pecasDaTela(0);
+    expect(scr.classList.contains('screen-exp'), 'a tela inteira virou experiência: já não há fora').toBe(false);
+    expect(exp).not.toBe(scr);
+    expect(scr.contains(exp), 'a experiência deixou de ser uma subárvore da tela').toBe(true);
+  });
+
+  it('[Many] vale em TODAS as telas do multi-tela, e não só na primeira', () => {
+    // O laço do `buildGameHud` monta uma tela por jogador com o mesmo código, mas um gate que medisse só a
+    // tela 0 não distinguiria "está certo" de "está certo uma vez". Quatro jogadores = quatro telas.
+    mount();
+    setPlayers([mk(), mk(), mk(), mk()]);
+    initHud(makeCtx()).buildGameHud();
+    const telas = document.querySelectorAll('#game-hud .player-screen');
+    expect(telas.length).toBe(4);
+    for (let i = 0; i < telas.length; i++) {
+      const { exp, barra, pausa } = pecasDaTela(i);
+      expect(exp.contains(barra), `tela ${i}: a barra rápida caiu dentro da .screen-exp`).toBe(false);
+      expect(exp.contains(pausa), `tela ${i}: o painel de pausa caiu dentro da .screen-exp`).toBe(false);
+    }
+  });
+});
+
+// ========================= MUTAÇÕES CONFERIDAS (secção do ADR-0046) =========================
+//   · em `ui/hud.ts`, trocando `scr.appendChild(bar)` por `exp.appendChild(bar)` → "[Right]" e "[Many]"
+//     reprovam, e é exactamente o defeito da issue #85.
+//   · trocando `scr.appendChild(sp)` por `exp.appendChild(sp)` (o painel de pausa) → "[Right]" e "[Many]"
+//     reprovam na segunda asserção — e com elas cai também o "[Interface] onScreensBuilt recebe os painéis
+//     em ordem e JÁ ancorados na tela certa", que já existia. Registado porque diz uma coisa útil: a pausa
+//     tinha meia guarda desde sempre (alguém verificava a ÂNCORA), e a barra rápida não tinha nenhuma.
+//   · trocando `exp.appendChild(d)` por `scr.appendChild(d)` (o HUD) → "[Interface]" reprova. É a mutação
+//     que prova que o gate não aprova esvaziar a experiência para satisfazer o primeiro caso.
+//   · pondo `scr.className = 'player-screen screen-exp'` → "[Boundary]" reprova. ⚠️ E "[Right]" continua
+//     VERDE, porque a barra deixa de ser descendente do `<div>` interno enquanto passa a estar sob o filtro:
+//     é o caso que mostra por que a descendência sozinha não basta.
