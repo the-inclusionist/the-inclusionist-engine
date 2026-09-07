@@ -13,6 +13,45 @@ import { screenBaseSize } from '../core/screens.js';
 
 import { crtScanVars } from '../render/crt.js';
 
+/**
+ * A RÉGUA DO ALVO DE TOQUE, INDEXADA PELA ALTURA DO VIEWPORT (ADR-0095, decisão do Dev).
+ *
+ * ⚠️ O ALVO DEIXOU DE SER UM NÚMERO E PASSOU A SER UMA FUNÇÃO DA TELA, e o motivo é um custo que o gate de
+ * `pausa-44px` já tinha MEDIDO e deixado por resolver: a 640×360 o cartão de pausa não cabe e a lista ROLA.
+ * Remedido em 06/09, porque o cartão mudou desde então: 391 px de conteúdo para 349 visíveis, ou seja 42 px
+ * de excesso (o comentário antigo dizia 413/353). Um alvo de 44 px que exige rolagem para ser alcançado
+ * pode custar mais dedo do que um de 24 px que está à vista.
+ *
+ * Os três degraus são os do Dev, e os dois extremos são as duas normas — não números de gosto:
+ *
+ *     altura ≥ 720   44 px   WCAG 2.2 · 2.5.5 Target Size (Enhanced) — AAA
+ *     altura ≥ 540   34 px   o degrau do meio
+ *     altura <  540  24 px   WCAG 2.2 · 2.5.8 Target Size (Minimum)  — AA
+ *
+ * ⚠️ ISTO É «MARCAR HONESTAMENTE ONDE SÓ DÁ AA», que é regra escrita do projeto — e não uma renúncia
+ * silenciosa. O que se perde em 360 está registrado com número no ADR-0095: a 96 px/pol, 24 CSS px são
+ * 6,4 mm, abaixo do alvo de polegar de 9,6 mm que o painel de toque deste jogo cita. É por isso que o
+ * ESPAÇAMENTO entre alvos passa a ser o que protege o dedo onde o tamanho não pode — a mesma saída que a
+ * própria 2.5.8 dá na sua exceção de spacing.
+ */
+export const REGUA_DE_ALVO: readonly { readonly altura: number; readonly alvo: number }[] = Object.freeze([
+  { altura: 720, alvo: 44 },
+  { altura: 540, alvo: 34 },
+  { altura: 0, alvo: 24 },
+]);
+
+/**
+ * O menor alvo de toque aceitável num viewport desta altura, em CSS px.
+ *
+ * ⚠️ NUNCA DEVOLVE MENOS DE 24: abaixo disso não é «AA num aparelho pequeno», é furar o piso da WCAG. Uma
+ * tela mais baixa que 360 não compra o direito de encolher mais — compra o direito de mostrar menos itens.
+ */
+export function alvoMinimoDeToque(alturaCss: number): number {
+  const h = Number.isFinite(alturaCss) ? alturaCss : 0;
+  for (const degrau of REGUA_DE_ALVO) if (h >= degrau.altura) return degrau.alvo;
+  return 24;
+}
+
 // A CONTAGEM DE JOGADORES entra por injeção desde 2026-08-26. Era `numPlayers`, um `let` de `core/state`
 // importado como binding vivo — e um `let` de módulo é compartilhado por qualquer segundo jogo que a
 // mesma página carregue (D13 do `demos`, ADR-0038). O que entra aqui é o GETTER da rodada que a raiz

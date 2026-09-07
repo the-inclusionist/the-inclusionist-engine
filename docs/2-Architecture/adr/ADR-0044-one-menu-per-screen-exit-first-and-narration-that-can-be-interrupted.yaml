@@ -1,6 +1,14 @@
 metadata:
   status: "accepted"
   date: 2026-08-26
+  superseded-in-part:
+    - by: ADR-0095
+      what: "O §6 SÓ NO PONTO DO NÚMERO ÚNICO: `44 px` deixa de ser a régua inteira e passa a ser o degrau de
+             cima dela. O alvo é agora função da ALTURA DO VIEWPORT — 24 px (WCAG 2.5.8, AA) abaixo de 540,
+             34 px a partir de 540, 44 px (WCAG 2.5.5, AAA) a partir de 720. ⚠️ Tudo o mais do §6 FICA: a
+             lista de uma coluna, a centragem, a largura maior, e a defesa do 44 pela faixa da mão de criança
+             — que continua a valer, e é exatamente o que se paga em 360. A revisão nasceu de um custo que o
+             GATE deste registro tinha medido e deixado por decidir: a 640×360 os sete itens não cabem."
   decision-makers: [Dev]
   consulted:
     - "Xbox Accessibility Guideline 106 (screen narration) — https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines/106"

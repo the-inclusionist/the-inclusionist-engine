@@ -1,0 +1,145 @@
+---
+metadata:
+  status: "accepted"
+  date: 2026-09-06
+  supersedes-in-part: [ADR-0044]
+  decision-makers: [Dev]
+  consulted:
+    - "A decisão do Dev, verbatim: `o tamanho mínimo deve ser AA no modo 360px de altura, 34px em 540px AAA a
+       partir de 720px de altura`"
+    - "ADR-0044 §6 — SUPERSEDIDO EM PARTE: fixou 44 px como número ÚNICO para o cartão de pausa. O número
+       fica, e passa a ser o degrau de cima em vez da régua inteira"
+    - "`tests/pausa-44px.browser.test.js` — o gate que MEDIU o custo e escreveu, por extenso, que a escolha
+       entre rolar, encolher espaçamentos ou esconder o cabeçalho era do Dev. Esta é a resposta"
+    - "WCAG 2.2 · 2.5.8 Target Size (Minimum), nível AA, 24×24 CSS px — o degrau de baixo"
+    - "WCAG 2.2 · 2.5.5 Target Size (Enhanced), nível AAA, 44×44 CSS px — o degrau de cima"
+    - "ADR-0010 pilar 1 (hardware de escola pública BR) e pilar 2 (a11y-first); e a regra escrita do projeto
+       de MARCAR HONESTAMENTE onde só dá AA, em vez de vender AAA em bloco"
+  informed: []
+
+title: O alvo de toque é função da ALTURA DO VIEWPORT — três degraus, com as duas normas nos extremos
+
+context-and-problem-statement: |
+  O ADR-0044 §6 levou os itens do cartão de pausa de 35,6 px para 44 px, e o gate que o afere mede o layout
+  de verdade em vez de ler o CSS. Esse gate acertou o número e, na mesma passagem, ESCREVEU UM CUSTO QUE NÃO
+  SOUBE RESOLVER, deixando a escolha declarada como do Dev:
+
+      «a 640×360 o cartão tem 413px de conteúdo para 353 visíveis — os sete itens de 44px NÃO CABEM e a
+       lista rola. […] A escolha entre rolar, encolher espaçamentos ou esconder o cabeçalho é do Dev.»
+
+  ⚠️ REMEDIDO HOJE, porque o cartão mudou desde aquele dia: são **391 px de conteúdo para 349 visíveis, 42 px
+  de excesso**, com sete itens de 44 px. O custo é menor do que estava escrito, e continua a existir.
+
+  ⚠️ E O DEV RESPONDEU COM UMA QUARTA SAÍDA, QUE NÃO ESTAVA NA LISTA DE TRÊS: nenhuma das opções que eu
+  ofereci mexia no ALVO, porque eu tratava 44 como constante. Ele tratou-o como função da tela.
+
+decision-drivers:
+- "⚠️ Um alvo grande que exige ROLAGEM para ser alcançado pode custar mais dedo do que um alvo menor que está
+   à vista. A régua antiga otimizava o tamanho do alvo e ignorava o custo de o alcançar."
+- "⚠️ Os dois extremos não são números de gosto: são as duas normas. 24 é a 2.5.8 (AA) e 44 é a 2.5.5 (AAA),
+   e uma régua que anda entre elas é dizível em linguagem de conformidade em vez de preferência."
+- "O projeto já manda MARCAR HONESTAMENTE onde só dá AA e nunca vender AAA em bloco. Uma tela de 360 px de
+   altura é o lugar onde essa regra tem de ser exercida, não citada."
+- "⚠️ MEDIDO que a decisão resolve o encaixe COM MARGEM: em 360 o excesso é de 42 px e descer os sete itens
+   de 44 para 24 libertaria 140. A régua dá muito mais folga do que o problema pede — o que significa que ela
+   é um PISO com espaço, e não um corte apertado ao milímetro."
+
+considered-options:
+- "T1 - 44 px fixo, e o cartão rola (o estado do ADR-0044 §6)"
+- "T2 - 44 px fixo, e esconder itens ou o cabeçalho no quadro pequeno"
+- "T3 - a RÉGUA: o alvo é função da altura do viewport, três degraus"
+
+pros-and-cons-of-the-options:
+  T1:
+    good:
+    - "O alvo nunca sai da faixa da mão de criança (11–12,5 mm), que é a régua física do painel de toque."
+    bad:
+    - "⚠️ Paga o preço no lugar errado: quem usa o dedo é exatamente quem tem de rolar para chegar ao item, e
+       a rolagem não aparece em nenhuma medida de tamanho de alvo."
+  T2:
+    bad:
+    - "Esconder item de menu para caber é a armadilha que o próprio ADR-0044 §2 existe para desfazer — ele
+       reordenou o cartão porque `Continuar` era a 11ª parada. Menos itens visíveis é a mesma doença."
+  T3:
+    good:
+    - "O alvo cabe em cada tela, e continua ancorado numa norma em cada degrau."
+    - "⚠️ Torna o compromisso DIZÍVEL: `AA em 360, AAA a partir de 720` é uma frase de conformidade que se
+       pode auditar, publicar e contestar. `44 px sempre, e às vezes rola` não é."
+    bad:
+    - "⚠️ EM 360 PERDE-SE MILÍMETRO DE DEDO, e o número está escrito: a 96 px/pol, 24 CSS px são 6,4 mm —
+       ABAIXO do alvo de polegar de 9,6 mm que o painel de toque deste jogo cita. Não é um custo teórico."
+    - "Um piso que muda com a tela é mais difícil de ter na cabeça do que um número só."
+
+decision-outcome:
+  chosen-option:
+    link: "T3 - a régua de três degraus, decidida pelo Dev em 2026-09-06"
+    justification: |
+      ===== A RÉGUA =====
+          altura ≥ 720   44 px   WCAG 2.2 · 2.5.5 (Enhanced) — AAA
+          altura ≥ 540   34 px   o degrau do meio
+          altura <  540  24 px   WCAG 2.2 · 2.5.8 (Minimum)  — AA
+
+      ⚠️ ELA É UM PISO, NÃO UM VALOR. Nada obriga o cartão a usar 24 px em 360 — o que ela dá é a LICENÇA de
+      descer até lá quando o encaixe pedir. Como o encaixe pede 42 px e a licença oferece 140, há folga para
+      pagar o mínimo necessário em vez do máximo permitido.
+
+      ⚠️ E ELA NUNCA DESCE ABAIXO DE 24. Uma tela mais baixa que 360 não compra o direito de encolher mais;
+      compra o direito de mostrar MENOS ITENS. Abaixo de 24 não é «AA num aparelho pequeno», é furar o piso.
+
+      ===== ONDE ELA MORA =====
+      `alvoMinimoDeToque(alturaCss)` em `ui/layout`, que é o dono da escala — e não uma constante repetida no
+      CSS e no teste. O gate IMPORTA a função em vez de copiar os degraus, porque copiar seria a divergência
+      clássica: alguém muda o degrau no código e o gate continua verde sobre o degrau antigo.
+
+      ===== O QUE COMPENSA O QUE SE PERDE =====
+      Onde o TAMANHO não pode proteger o dedo, o ESPAÇAMENTO passa a ser o que protege — que é a saída que a
+      própria 2.5.8 dá na sua exceção de spacing (um alvo menor cumpre o critério se couber um círculo de
+      24 px sem sobreposição). Isto é DIREÇÃO, não medida: nada no código o afere hoje, e é a primeira coisa
+      que a implementação tem de trazer com número.
+
+      ===== O QUE ESTE REGISTRO NÃO DECIDE =====
+      ⚠️ SE OS DEGRAUS SÃO DEGRAUS OU UMA RAMPA. Os três pontos do Dev caem exatamente numa reta —
+      `24 + (altura − 360)/18` dá 24, 34 e 44 em 360, 540 e 720 —, o que pode ser intenção ou coincidência
+      bonita. Ficou DEGRAU, que é o que ele escreveu («em 540px», «a partir de 720px»); interpolar seria
+      decidir por ele uma coisa que ele não disse. Se a rampa for a intenção, é uma linha de mudança.
+
+  consequences:
+    positive:
+    - "O cartão de pausa ganha licença para caber no menor quadro em uso sem esconder item nem rolar."
+    - "A promessa de conformidade passa a ser uma frase auditável por faixa de tela."
+    negative:
+    - "⚠️ Em 360 o alvo pode ficar em 6,4 mm, abaixo do alvo de polegar de 9,6 mm do painel de toque. O gate
+       guarda esse número num caso próprio, para que quem quiser estender os 24 px para telas maiores veja o
+       que estaria a gastar."
+    - "⚠️ E O CÓDIGO AINDA NÃO SEGUE A RÉGUA: `.pm-btn` tem `min-height:44px` LITERAL e nem sequer lê o
+       `--tap` que o `layout()` já escreve. A régua existe, é aferida, e a implementação é trabalho à parte."
+    neutral:
+    - "O `--tap` do `layout()` continua a ser `22 × k` e a subir com a escala do canvas. Ele nunca fica
+       abaixo da régua (o piso `MIN_K = 2` dá 44), então os dois convivem — a régua é o chão, o `--tap` é o
+       que o canvas escolhe acima dele."
+  confirmation: |
+    A régua é aferida em `tests/pausa-44px.browser.test.js`, contra o LAYOUT DE VERDADE e não contra o CSS
+    declarado — o gate monta o cartão de pausa com a marcação de produção nos três degraus (360, 540, 720) e
+    mede com `getBoundingClientRect`.
+
+    TRÊS MUTAÇÕES CONFERIDAS, aplicadas por script a ficheiro e restauradas de cópia:
+      · `.pm-btn` de `min-height:44px` para `20px` → reprova em QUATRO casos, incluindo o dos três degraus,
+        que é a prova de que o gate novo mede layout e não constante.
+      · o degrau do meio de 540 para 500 → reprova em `[Boundary] os degraus abrem NO número`.
+      · o degrau de cima de 44 para 24 → reprova em TRÊS, incluindo o que guarda os milímetros.
+
+    O excesso de 42 px a 640×360 entra como TETO QUE SÓ ENCOLHE, e não como valor esperado: ele impede que
+    piore enquanto a implementação não chega, e fica vermelho se alguém acrescentar um oitavo item ao cartão
+    sem olhar para o quadro pequeno.
+
+more-information: |
+  ⚠️ ESTE REGISTRO NASCE DE UMA PERGUNTA QUE UM GATE DEIXOU POR ESCRITO, e isso é o mecanismo a funcionar: o
+  gate do ADR-0044 não escondeu o custo que encontrou nem o resolveu sozinho — nomeou-o, atribuiu a escolha a
+  quem ela pertencia, e ficou verde sobre o que sabia provar. A decisão chegou dois dias depois, e a pergunta
+  ainda estava lá, com o número ao lado.
+
+  ⚠️ E O NÚMERO TINHA ENVELHECIDO: o gate dizia 413/353 e a medida de hoje é 391/349. Um custo escrito em
+  prosa apodrece; foi por isso que ele entrou desta vez como TETO AFERIDO em vez de comentário.
+
+  A implementação — fazer o `.pm-btn` ler a régua em vez do literal, e trazer o espaçamento com número — é
+  trabalho à parte, com issue própria. O registro dá a licença; ele não gasta a licença.

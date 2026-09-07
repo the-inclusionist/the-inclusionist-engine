@@ -41,6 +41,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import '../app/css/style.css';
 import { screenPauseMarkup } from '../app/js/ui/pause-icons.js';
 import { PM_BTNS, PM_OPTIONS_BTNS } from '../app/js/ui/activities-menu.js';
+import { alvoMinimoDeToque } from '../app/js/ui/layout.js';
 
 /** O alvo do ADR-0044 §6, em CSS px. */
 const ALVO_PX = 44;
@@ -169,6 +170,94 @@ describe('menu de pausa · 44 px, centrado e mais largo (ADR-0044, item 6)', () 
       .map(([a, h]) => `${a}: ${h.toFixed(1)}px`);
     expect(baixos, 'item do submenu abaixo de 44 px: ' + baixos.join(' | ')).toEqual([]);
     expect(itensVisiveis(sp).length).toBe(PM_OPTIONS_BTNS.length);
+  });
+});
+
+// ===================================================================================================
+// A RÉGUA POR ALTURA DE VIEWPORT (ADR-0095) — o alvo deixou de ser UM número
+// ===================================================================================================
+// ⚠️ ESTE BLOCO É A RESPOSTA À PERGUNTA QUE O CABEÇALHO DESTE FICHEIRO DEIXOU EM ABERTO. Ele mediu que a
+// 640×360 o cartão não cabe e a lista rola, e escreveu que «a escolha entre rolar, encolher espaçamentos ou
+// esconder o cabeçalho é do Dev». O Dev escolheu uma QUARTA saída, que não estava na lista: o alvo passa a
+// ser função da ALTURA DO VIEWPORT, com os dois extremos ancorados nas duas normas.
+//
+//     altura ≥ 720   44 px   WCAG 2.2 · 2.5.5 (Enhanced) — AAA
+//     altura ≥ 540   34 px   o degrau do meio
+//     altura <  540  24 px   WCAG 2.2 · 2.5.8 (Minimum)  — AA
+//
+// ⚠️ E A RÉGUA É UM PISO, NÃO UM VALOR. Nada obriga o cartão a usar 24 px em 360; o que ela dá é a LICENÇA
+// de descer até lá. Medido: em 360 o excesso é de 42 px e descer os sete itens a 24 libertaria 140 — a
+// decisão resolve o encaixe com margem larga, e é essa margem que o `[Boundary]` do excesso vigia.
+describe('o alvo de toque segue a régua da altura de viewport (ADR-0095)', () => {
+  /** A altura MEDIDA do menor item visível, no quadro pedido. */
+  function menorItem(largura, altura) {
+    const sp = montar(largura, altura);
+    return Math.min(...itensVisiveis(sp).map((b) => b.getBoundingClientRect().height));
+  }
+
+  it('[Interface] a régua é do CÓDIGO, não deste teste — e os degraus são os três do Dev', () => {
+    // ⚠️ A régua vive em `ui/layout` e é importada aqui. Copiá-la para dentro do gate seria a divergência
+    // clássica: alguém muda o degrau no código, o gate segue aferindo o degrau antigo e continua verde.
+    expect(alvoMinimoDeToque(720)).toBe(44);
+    expect(alvoMinimoDeToque(540)).toBe(34);
+    expect(alvoMinimoDeToque(360)).toBe(24);
+  });
+
+  it('[Right] em cada um dos três degraus o item medido respeita o PISO daquele degrau', () => {
+    for (const h of [360, 540, 720]) {
+      const piso = alvoMinimoDeToque(h);
+      const medido = menorItem(640, h);
+      expect(medido, `a ${h}px de altura o item mede ${medido.toFixed(1)}px, abaixo do piso de ${piso}px`)
+        .toBeGreaterThanOrEqual(piso - 0.5);
+      palco.remove(); palco = null;
+    }
+  });
+
+  it('[Boundary] o EXCESSO do cartão a 640×360 só encolhe — teto 42 px', () => {
+    // ⚠️ O NÚMERO É O CUSTO QUE AINDA NÃO FOI PAGO, e ele fica escrito para não se perder: a 640×360 o
+    // cartão tem 391 px de conteúdo para 349 visíveis, então rola 42. A régua do ADR-0095 DÁ a licença de
+    // resolver isto e o CSS ainda não a usou — `.pm-btn` tem `min-height:44px` literal e nem sequer lê o
+    // `--tap`. Enquanto não usar, o teto impede que piore, e é ele que fica vermelho se alguém acrescentar
+    // um oitavo item ao cartão sem olhar para o quadro pequeno.
+    const sp = montar(MENOR_QUADRO.w, MENOR_QUADRO.h);
+    const card = sp.querySelector('.pause-card');
+    const excesso = card.scrollHeight - card.clientHeight;
+    expect(excesso, `o cartão passou a transbordar mais que os 42px medidos em 06/09: ${excesso}px`)
+      .toBeLessThanOrEqual(42);
+  });
+
+  it('[Zero] a régua NUNCA desce abaixo de 24 — tela menor mostra menos itens, não alvos menores', () => {
+    // Uma tela mais baixa que 360 não compra o direito de encolher mais: abaixo de 24 não é «AA num
+    // aparelho pequeno», é furar o piso da 2.5.8.
+    expect(alvoMinimoDeToque(0)).toBe(24);
+    expect(alvoMinimoDeToque(180)).toBe(24);
+    expect(alvoMinimoDeToque(-1)).toBe(24);
+    expect(alvoMinimoDeToque(NaN)).toBe(24);
+  });
+
+  it('[Boundary] os degraus abrem NO número, e nunca descem quando a tela cresce', () => {
+    expect(alvoMinimoDeToque(539)).toBe(24);
+    expect(alvoMinimoDeToque(540)).toBe(34); // o degrau abre EM 540, não depois
+    expect(alvoMinimoDeToque(719)).toBe(34);
+    expect(alvoMinimoDeToque(720)).toBe(44);
+    expect(alvoMinimoDeToque(4000), 'acima de 720 o piso é teto: 44 continua a valer').toBe(44);
+    let anterior = 0;
+    for (let h = 0; h <= 1200; h += 7) {
+      const v = alvoMinimoDeToque(h);
+      expect(v, `a régua DESCEU de ${anterior} para ${v} em ${h}px`).toBeGreaterThanOrEqual(anterior);
+      anterior = v;
+    }
+  });
+
+  it('[Interface] o que se PERDE em 360 fica com número, porque AA honesto não é AA silencioso', () => {
+    // ⚠️ Este caso é o contrapeso do `[Interface] 44 CSS px é a MEDIDA FÍSICA` lá em cima, e os dois têm de
+    // conviver: a 96 px/pol, 24 CSS px são 6,4 mm — ABAIXO do alvo de polegar de 9,6 mm que o painel de
+    // toque deste jogo cita. A régua não faz esse custo desaparecer; ela decide pagá-lo em 360 para que o
+    // alvo esteja À VISTA em vez de atrás de uma rolagem. Quem propuser estender os 24 px para cima da
+    // régua encontra aqui o que estaria a gastar.
+    expect(+(24 * MM_POR_PX).toFixed(1)).toBeLessThan(9.6);
+    expect(+(44 * MM_POR_PX).toFixed(1)).toBeGreaterThanOrEqual(11);
+    expect(alvoMinimoDeToque(720), 'a tela grande continua a dever a faixa da mão de criança').toBe(ALVO_PX);
   });
 });
 
