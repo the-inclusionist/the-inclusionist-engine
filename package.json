@@ -1,6 +1,6 @@
 {
   "name": "@the-inclusionist/engine",
-  "version": "6.36.1",
+  "version": "7.0.0",
   "type": "module",
   "description": "Accessibility-first (WCAG 2.2 + GAG) engine for educational 2D pixel-art games, built with PixiJS. Screen reader, sonar, high contrast by role, colour-vision filters, remappable input as intent, i18n and offline PWA — the parts every game inherits (ADR-0035, ADR-0036).",
   "comment:exports": [
@@ -23,13 +23,34 @@
     "faces by RELATIVE url, so the folder travels whole or not at all."
   ],
   "exports": {
-    ".": { "types": "./dist-pkg/boot/create-game.d.ts", "default": "./dist-pkg/boot/create-game.js" },
-    "./core/*.js": { "types": "./dist-pkg/core/*.d.ts", "default": "./dist-pkg/core/*.js" },
-    "./input/*.js": { "types": "./dist-pkg/input/*.d.ts", "default": "./dist-pkg/input/*.js" },
-    "./render/*.js": { "types": "./dist-pkg/render/*.d.ts", "default": "./dist-pkg/render/*.js" },
-    "./platform/*.js": { "types": "./dist-pkg/platform/*.d.ts", "default": "./dist-pkg/platform/*.js" },
-    "./ui/*.js": { "types": "./dist-pkg/ui/*.d.ts", "default": "./dist-pkg/ui/*.js" },
-    "./educational/*.js": { "types": "./dist-pkg/educational/*.d.ts", "default": "./dist-pkg/educational/*.js" },
+    ".": {
+      "types": "./dist-pkg/boot/create-game.d.ts",
+      "default": "./dist-pkg/boot/create-game.js"
+    },
+    "./core/*.js": {
+      "types": "./dist-pkg/core/*.d.ts",
+      "default": "./dist-pkg/core/*.js"
+    },
+    "./input/*.js": {
+      "types": "./dist-pkg/input/*.d.ts",
+      "default": "./dist-pkg/input/*.js"
+    },
+    "./render/*.js": {
+      "types": "./dist-pkg/render/*.d.ts",
+      "default": "./dist-pkg/render/*.js"
+    },
+    "./platform/*.js": {
+      "types": "./dist-pkg/platform/*.d.ts",
+      "default": "./dist-pkg/platform/*.js"
+    },
+    "./ui/*.js": {
+      "types": "./dist-pkg/ui/*.d.ts",
+      "default": "./dist-pkg/ui/*.js"
+    },
+    "./educational/*.js": {
+      "types": "./dist-pkg/educational/*.d.ts",
+      "default": "./dist-pkg/educational/*.js"
+    },
     "./style.css": "./app/css/style.css",
     "./assets/*": "./app/public/*",
     "./package.json": "./package.json"
@@ -42,7 +63,9 @@
     "⚠️ E o consumidor que mais depende disto hoje não é o registro: `the-inclusionist/hartwig-zdog-chess`",
     "consome esta engine por `file:../SP-the-inclusionist-tracer`, ou seja, lê ESTA pasta ao vivo."
   ],
-  "sideEffects": ["*.css"],
+  "sideEffects": [
+    "*.css"
+  ],
   "license": "AGPL-3.0-or-later",
   "comment:ownership": [
     "ADR-0071 §2 said the ownership claim does NOT live in the package NAME, and that nothing would enter",
@@ -51,8 +74,13 @@
     "`files`). Patrimonial owner: the Municipio, under Lei no 9.609/1998 art. 4. Publication is a PEDIDO,",
     "not the developer's decision."
   ],
-  "repository": { "type": "git", "url": "git+https://github.com/the-inclusionist/the-inclusionist-engine.git" },
-  "publishConfig": { "access": "public" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/the-inclusionist/the-inclusionist-engine.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist-pkg",
     "app/css/style.css",
