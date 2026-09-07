@@ -427,6 +427,7 @@
   "platform/audio-earcons.ts": [
     "AudioEarcons",
     "AudioEarconsCtx",
+    "SfxDef",
     "createAudioEarcons"
   ],
   "platform/audio-jingles.ts": [
@@ -1169,6 +1170,7 @@
     "KeyboardConfig",
     "SettingsControlsApi",
     "SettingsControlsCtx",
+    "acaoQueJaTem",
     "initSettingsControls",
     "keyName",
     "keyUsedByOther"

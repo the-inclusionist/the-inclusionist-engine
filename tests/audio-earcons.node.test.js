@@ -85,3 +85,108 @@ describe('platform/audio-earcons', () => {
     expect(hits).toEqual([]);
   });
 });
+
+// ==========================================================================================================
+// ⚠️ UM EARCON TEM DE PODER IR PARA ALGUM LADO (#124)
+//
+// Medido ao construir o `game-soccer`: marcar e sofrer golo tem de ser distinguivel **so de ouvido** — uma
+// crianca cega ouve a sala reagir e precisa de saber para que lado ANTES de a narracao chegar. O desenho
+// obvio e uma figura que SOBE para o golo dela e DESCE para o do outro, e a tabela nao o sabia dizer: o
+// `SfxDef` tinha uma frequencia so, e o oscilador ficava parado nela.
+//
+// ⚠️ E A CAPACIDADE JA ESTAVA NO MESMO FICHEIRO, sem ser alcancavel da tabela: o `doorSound` faz exatamente
+// isto com `frequency.exponentialRampToValueAtTime`. O conserto nao e sintese nova — e abrir a porta.
+//
+// Estes casos precisam de um AudioContext falso mais fino do que o de cima: aquele nao regista NADA do que
+// se faz a `frequency`, entao uma rampa passaria por ele sem deixar rasto. Este anota as chamadas.
+//
+// MUTACOES CONFERIDAS (no fim do bloco).
+// ==========================================================================================================
+describe('platform/audio-earcons — a figura do earcon (#124)', () => {
+  function acQueAnota() {
+    const freq = { fixados: [], rampas: [] };
+    const chain = { connect: () => chain };
+    const mkOsc = () => ({
+      type: '',
+      frequency: {
+        value: 0,
+        setValueAtTime: (v, quando) => freq.fixados.push([v, quando]),
+        exponentialRampToValueAtTime: (v, quando) => freq.rampas.push([v, quando]),
+      },
+      connect: () => chain, start: () => {}, stop: () => {},
+    });
+    const mkGain = () => ({ gain: { value: 0, setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} }, connect: () => chain });
+    return { freq, ac: { currentTime: 0, destination: {}, createOscillator: mkOsc, createGain: mkGain } };
+  }
+
+  function toca(def) {
+    const { freq, ac } = acQueAnota();
+    const earcons = createAudioEarcons({
+      SFX: { alvo: def },
+      ensureAC: () => ac, catNode: () => null, audioOut: () => ({ connect: () => ({}) }),
+      noiseHit: () => {}, getSoundOn: () => true, getVolume: () => 0.6,
+      getCaptionsOn: () => false, showCaption: () => {},
+    });
+    earcons.sfx('alvo');
+    return freq;
+  }
+
+  it('⚠️ [Right] com `f2` o earcon SOBE — parte de `f` e chega a `f2` no fim da duracao', () => {
+    const freq = toca({ t: 'triangle', f: 300, d: 0.4, f2: 900 });
+    expect(freq.fixados, 'nao fixou o ponto de partida; a curva comeca onde calhar').toEqual([[300, 0]]);
+    expect(freq.rampas, 'nao rampou ate f2 no fim da duracao').toEqual([[900, 0.4]]);
+  });
+
+  it('[Right] e DESCE, que e a outra metade do par — a mesma tabela diz as duas', () => {
+    const freq = toca({ t: 'triangle', f: 900, d: 0.4, f2: 300 });
+    expect(freq.fixados).toEqual([[900, 0]]);
+    expect(freq.rampas).toEqual([[300, 0.4]]);
+  });
+
+  it('[Zero] sem `f2` nada se mexe — a nota parada continua a ser o que sempre foi', () => {
+    const freq = toca({ t: 'square', f: 520, d: 0.12 });
+    expect(freq.fixados).toEqual([]);
+    expect(freq.rampas).toEqual([]);
+  });
+
+  it('⚠️ [Boundary] `f2: 0` NAO rampa — a rampa exponencial lanca com alvo zero', () => {
+    // Sem esta guarda, uma tabela com zero mataria o earcon INTEIRO pelo `catch` do `sfx()`, em silencio:
+    // sem som e sem erro. E o pior modo de falhar que este ficheiro pode ter.
+    const freq = toca({ t: 'sine', f: 440, d: 0.2, f2: 0 });
+    expect(freq.rampas, 'pediu rampa para zero').toEqual([]);
+  });
+
+  it('[Boundary] `f2` igual a `f` nao rampa — nao ha figura nenhuma a desenhar', () => {
+    const freq = toca({ t: 'sine', f: 440, d: 0.2, f2: 440 });
+    expect(freq.rampas).toEqual([]);
+  });
+
+  it('⚠️ [Interface] o earcon com figura continua a legendar ANTES de olhar para o som', () => {
+    // A ordem que a auditoria mandou registar como o que a engine ACERTOU. Um `f2` novo nao pode ter mexido
+    // nela: quem le legenda recebe a informacao com as colunas mudas.
+    const caps = [];
+    const { ac } = acQueAnota();
+    const earcons = createAudioEarcons({
+      SFX: { alvo: { t: 'triangle', f: 300, d: 0.4, f2: 900, cap: 'sfx.teste' } },
+      ensureAC: () => ac, catNode: () => null, audioOut: () => ({ connect: () => ({}) }),
+      noiseHit: () => {}, getSoundOn: () => false, getVolume: () => 0,
+      getCaptionsOn: () => true, showCaption: (x) => caps.push(x),
+    });
+    earcons.sfx('alvo');
+    expect(caps, 'com o som desligado a legenda deixou de sair').toEqual(['sfx.teste']);
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS =========================
+//   · tirando o bloco `if (typeof c.f2 === 'number' && ...)` → "[Right] com `f2` o earcon SOBE" e "[Right] e
+//     DESCE" reprovam com as duas listas vazias. E a #124 reproduzida: a tabela pede uma figura e o
+//     oscilador fica parado.
+//   · trocando `c.f2 > 0` por `c.f2 >= 0` → "[Boundary] `f2: 0` NAO rampa" reprova, e no navegador de
+//     verdade seria o earcon inteiro a morrer em silencio pelo `catch`.
+//   · tirando o `setValueAtTime` e deixando so a rampa → reprovam as duas de subir/descer. O ponto de
+//     partida da curva nao pode ficar por conta da implementacao.
+//     ⚠️ E esta mutacao ABORTOU a primeira vez, com contagem ZERO: o ficheiro e CRLF e o `\n` do script nao
+//     casou. Sem a contagem de ocorrencias ela teria "sobrevivido" sem nunca ter sido aplicada, e eu tinha
+//     registado uma linha nao aferida como aferida. E o unico motivo de a contagem existir.
+//   · trocando `t + c.d` por `t + 0.3` (o numero cravado do `doorSound`) → as duas de subir/descer reprovam
+//     no instante. A figura tem de caber na duracao que a tabela declara, e nao numa constante emprestada.
