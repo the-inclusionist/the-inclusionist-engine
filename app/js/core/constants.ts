@@ -10,7 +10,11 @@ export const TUNE = {
   trampBase: 5, trampMax: 8, gravity: 0.15, hWalk: 2, hRun: 3, climbSpeed: 1.5,
   maxFall: 7, waterMaxFall: 3, hTurbo: 4.5, ultraJumpVel: 10, // E12: power-ups (valores do José)
 };
-export const JUMP_BASE = TUNE.jumpVel * Math.sqrt(8 / 5); // ~4.43 (altura confortável)
+// ⚠️ `JUMP_BASE` SAIU EM 2026-09-07 (issue #63, etapa B, decisão do Dev). Não tinha um único consumidor:
+// nem na engine, nem no `game-platformer`, nem nos testes — fora UM, que verificava que
+// `JUMP_BASE === jumpVel * sqrt(8/5)`, ou seja **reafirmava a própria definição**. Um teste que não pode
+// falhar por motivo que importe, a manter viva uma constante que ninguém usa. A própria issue #63 já o
+// nomeava no seu «achado solto».
 
 // E15: cadência de animação (ticks por quadro) — regulável ao vivo no painel ?debug=true. Como TUNE, é objeto
 // mutável (o debug ajusta propriedades) mas NUNCA reatribuído → import const funciona. andar 6; correr 8 (~8fps,
@@ -80,8 +84,10 @@ export const ehEscada = (t: number): boolean => prop(t, 'ladder');
 export const ehTrampolim = (t: number): boolean => prop(t, 'tramp');
 /** Portão: barra até a chave abrir. */
 export const ehPortao = (t: number): boolean => prop(t, 'gate');
-/** A chave que abre o portão. */
-export const ehChave = (t: number): boolean => prop(t, 'key');
+// ⚠️ `ehChave` SAIU EM 2026-09-07, pelo mesmo motivo e no mesmo passo que a `JUMP_BASE`: zero consumidores
+// em lado nenhum — engine, testes e cartucho. Os outros predicados de tile ficam por enquanto porque o
+// `game-platformer` os importa; estes dois não eram fronteira mal cortada, eram peso morto.
+
 /** Ar de região secreta: o que a escuridão cobre até alguém entrar. */
 export const ehSecreto = (t: number): boolean => prop(t, 'secreto');
 

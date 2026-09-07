@@ -17,8 +17,16 @@ describe('core/constants', () => {
     expect(C.ANIM.runHold).toBe(8);
     expect(C.TILE).toBe(16);
   });
-  it('[Cross-check] JUMP_BASE derivado de jumpVel*sqrt(8/5)', () => {
-    expect(C.JUMP_BASE).toBeCloseTo(3.5 * Math.sqrt(8 / 5), 10);
+  it('⚠️ [Interface] `JUMP_BASE` e `ehChave` SAÍRAM, e este caso é o que impede que voltem por engano', () => {
+    // O caso que estava aqui verificava `JUMP_BASE === jumpVel * sqrt(8/5)` — isto é, **reafirmava a própria
+    // definição**. Um teste que não pode falhar por motivo nenhum que importe, e que mantinha viva uma
+    // constante sem um único consumidor: nem na engine, nem nos testes, nem no `game-platformer`. A issue
+    // #63 já o nomeava no «achado solto», e a etapa B levou os dois na mesma passagem.
+    //
+    // O que fica no lugar afirma a AUSÊNCIA, que é o que agora importa: a superfície pública da engine
+    // encolheu, e encolher superfície pública é uma major — não é coisa que se desfaça por distração.
+    expect('JUMP_BASE' in C, 'JUMP_BASE voltou ao catálogo').toBe(false);
+    expect('ehChave' in C, 'ehChave voltou ao catálogo').toBe(false);
   });
   it('[Interface] canvas lógico 320×180 (16:9)', () => {
     expect(C.LOGICAL_W).toBe(320);

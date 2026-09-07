@@ -96,12 +96,20 @@ const SO_DO_CARTUCHO = {
   ehEscada: 'game-platformer: elevators, level-geometry, tile-roles',
   ehPortao: 'game-platformer: tile-roles',
   ehSecreto: 'game-platformer: level-geometry',
-  JUMP_BASE: 'NINGUÉM — morta; sai no mesmo corte, porque tirá-la sozinha é uma major',
-  ehChave: 'NINGUÉM — morta; idem',
+  // ⚠️ `JUMP_BASE` e `ehChave` SAÍRAM do livro em 2026-09-07, e saíram do catálogo junto. Eram as duas
+  // linhas que diziam «NINGUÉM — morta», e a etapa B da issue #63 levou-as: zero consumidores em lado
+  // nenhum, e a major que a etapa inteira exige paga as duas de borla. O caso `[Interface]` abaixo é o que
+  // as obrigou a sair daqui no mesmo passo — uma entrada que já não descreve a árvore é folga escondida.
 };
 
-/** Tecto que só desce (ADR-0043). Hoje são oito, e oito é o máximo que este número pode voltar a ser. */
-const TETO = 8;
+/**
+ * Tecto que só desce (ADR-0043). Eram OITO; são seis desde que as duas mortas saíram na etapa B.
+ *
+ * ⚠️ Este número não é um alvo nem uma tolerância: é o máximo que a superfície só-do-cartucho pode voltar a
+ * ser. Ele desce quando um símbolo muda de casa, e a asserção de igualdade lá em baixo é o que impede que
+ * fique acima do medido — folga por cima é onde a próxima dívida cabe sem que nada reprove.
+ */
+const TETO = 6;
 
 describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa B)', () => {
   const conta = importadoresPorNome();
