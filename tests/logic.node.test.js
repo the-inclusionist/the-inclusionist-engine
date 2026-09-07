@@ -12,7 +12,8 @@ import * as RNG from '../app/js/core/rng.js';
 
 describe('core/constants', () => {
   it('[Right] valores afinados do José (TUNE/ANIM/TILE)', () => {
-    expect(C.TUNE.jumpVel).toBe(3.5);
+    // ⚠️ `C.TUNE.jumpVel` saiu daqui em 2026-09-07: a afinação foi para o `game/tuning.ts` do
+    // `game-platformer` (issue #63, etapa B). O que ficou é o que qualquer jogo 2D em pixel usa.
     expect(C.ANIM.walkHold).toBe(6);
     expect(C.ANIM.runHold).toBe(8);
     expect(C.TILE).toBe(16);

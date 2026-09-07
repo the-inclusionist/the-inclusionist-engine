@@ -90,8 +90,9 @@ function importadoresPorNome() {
  * cartucho) ou quando um módulo de engine passa a precisar dele — nunca por se levantar o tecto.
  */
 const SO_DO_CARTUCHO = {
-  COIN_TARGET: 'game-platformer: physics, session, main e mais dois (ver o cabeçalho)',
-  TUNE: 'game-platformer: physics, player, main',
+  // ⚠️ `COIN_TARGET` e `TUNE` SAÍRAM em 2026-09-07 — mudaram de casa para o `game/tuning.ts` do
+  // `game-platformer`, com o jogo editado PRIMEIRO para que nada quebrasse no intervalo. O livro encolheu de
+  // seis para quatro, e o tecto com ele.
   ehAgua: 'game-platformer: level-geometry, tile-roles',
   ehEscada: 'game-platformer: elevators, level-geometry, tile-roles',
   ehPortao: 'game-platformer: tile-roles',
@@ -109,7 +110,7 @@ const SO_DO_CARTUCHO = {
  * ser. Ele desce quando um símbolo muda de casa, e a asserção de igualdade lá em baixo é o que impede que
  * fique acima do medido — folga por cima é onde a próxima dívida cabe sem que nada reprove.
  */
-const TETO = 6;
+const TETO = 4;
 
 describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa B)', () => {
   const conta = importadoresPorNome();
@@ -122,7 +123,12 @@ describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa
     expect(conta.get('LOGICAL_W'), 'ninguém importa LOGICAL_W? o crivo partiu-se').toBeGreaterThanOrEqual(5);
     expect(conta.get('TILE_TYPES'), 'o import de vizinho (./constants.js) deixou de ser visto').toBeGreaterThanOrEqual(1);
     expect(conta.get('ehPerigo'), 'o import de vizinho deixou de ser visto').toBeGreaterThanOrEqual(1);
-    expect(Object.keys(CONSTANTES).length, 'o módulo deixou de exportar valores').toBeGreaterThanOrEqual(15);
+    // ⚠️ ESTE PISO DESCE COM O CORTE, e é a única linha deste ficheiro que se mexe nos dois sentidos — ele
+    // não mede dívida, mede que o `import` resolveu. Era 15 e passou a 10 quando a etapa B levou quatro
+    // exports (2026-09-07). O que o torna honesto é não ser a única guarda: as três asserções acima pinam
+    // nomes CONCRETOS, então um módulo vazio ou um import partido reprova por elas primeiro, e o número
+    // sozinho nunca é o que prova nada.
+    expect(Object.keys(CONSTANTES).length, 'o módulo deixou de exportar valores').toBeGreaterThanOrEqual(10);
   });
 
   it('⚠️ [Right] o livro está completo — nenhum export NOVO fica sem dono em silêncio', () => {

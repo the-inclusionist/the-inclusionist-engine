@@ -4,12 +4,17 @@
 // funciona (mutar propriedade é ok; reatribuir é que quebraria). Ver docs/plano-modularizacao.md.
 
 export const LOGICAL_W = 320, LOGICAL_H = 180, TILE = 16;
-export const COIN_TARGET = 10;
-export const TUNE = {
-  jumpVel: 3.5, waterJump: 3.5, waterJumpRun: 4, waterStrokeFrames: 30,
-  trampBase: 5, trampMax: 8, gravity: 0.15, hWalk: 2, hRun: 3, climbSpeed: 1.5,
-  maxFall: 7, waterMaxFall: 3, hTurbo: 4.5, ultraJumpVel: 10, // E12: power-ups (valores do José)
-};
+// ⚠️ `COIN_TARGET` e `TUNE` MUDARAM DE CASA EM 2026-09-07 — foram para `game/tuning.ts` do `game-platformer`
+// (issue #63, etapa B, decisão do Dev). Tinham ZERO importadores dentro desta árvore e TODOS do outro lado
+// da fronteira do pacote: não eram código morto, eram a superfície pública que o cartucho consumia.
+//
+// Uma engine que exporta a GRAVIDADE e a META DE MOEDAS está a decidir que todo jogo é uma plataforma de
+// coletar coisas. `TUNE` é gravidade, velocidade de nado e curso do trampolim — a física DAQUELE jogo; um
+// quiz não tem gravidade. `COIN_TARGET` é o objetivo, que é conteúdo.
+//
+// A etapa C (o segundo consumidor) é o que autorizou o corte: catorze achados, e nenhum reclama estes dois
+// para a engine. O `ui/debug-panel` continua a afinar o `TUNE` ao vivo — ele sempre o recebeu por INJEÇÃO
+// (`TUNE: Tune` no ctx), nunca por importação, e é por isso que a mudança não lhe custou nada.
 // ⚠️ `JUMP_BASE` SAIU EM 2026-09-07 (issue #63, etapa B, decisão do Dev). Não tinha um único consumidor:
 // nem na engine, nem no `game-platformer`, nem nos testes — fora UM, que verificava que
 // `JUMP_BASE === jumpVel * sqrt(8/5)`, ou seja **reafirmava a própria definição**. Um teste que não pode
