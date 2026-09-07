@@ -84,3 +84,20 @@
 @font-face{font-family:'UnifrakturMaguntia';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/ufmag-400.woff2') format('woff2');}
 @font-face{font-family:'Comic Neue';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/comicneue-400.woff2') format('woff2');}
 @font-face{font-family:'Comic Neue';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/comicneue-700.woff2') format('woff2');}
+
+/* ===== ARCADE (papel `jogo`: HUD, título, rótulos — NUNCA a face da interface) =====
+   ⚠️ SEM `unicode-range`, E É DELIBERADO. O Google Fonts serve esta família em CINCO ficheiros ordenados
+   por `unicode-range` **com o latino por ÚLTIMO**, e uma vendorização que pegue no primeiro `src:` traz o
+   subconjunto cirílico — um woff2 válido, corretamente declarado, corretamente carregado, e sem uma única
+   letra latina.
+
+   Isso aconteceu de verdade, no `SP-the-inclusionist-whackwhack`: o título saiu na fonte errada durante
+   QUATRO commits e todas as verificações disponíveis diziam que estava certo —
+   `document.fonts.check()` devolvia `true`, o `status` era `loaded`, o `getComputedStyle` mostrava a
+   família certa. As três comparam o NOME da família, uma string escrita duas vezes pela mesma mão; nenhuma
+   olha para dentro do ficheiro. E o CSS resolve por CODEPOINT, então uma face sem glifo para `U+0057` é
+   ignorada para aquele caractere em silêncio.
+
+   O ficheiro aqui é o subconjunto LATINO, copiado daquele repositório já verificado, e o gate que o mede
+   é `tests/fonte-arcade.browser.test.js` — pela LARGURA DE AVANÇO, que vem do glifo e portanto do ficheiro. */
+@font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/pressstart-400.woff2') format('woff2');}

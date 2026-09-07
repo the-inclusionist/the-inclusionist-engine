@@ -18,12 +18,17 @@ import * as store from '../platform/storage.js';
  *   · `caligrafica` — **só DENTRO das atividades escolares**, nunca no HUD nem nos menus, e por isso **não
  *     aparecem no menu de fonte**. Elas existem para a criança APRENDER a ler letra cursiva, o que é matéria;
  *     usá-las como interface é dar-lhe a matéria como obstáculo em todos os lugares onde ela só quer navegar.
+ *   · `jogo` — a face que o JOGO usa no HUD, no título e em rótulos curtos de arcade. Também não aparece no
+ *     menu, e pelo mesmo tipo de razão que as caligráficas: uma face de pixel de 8 bits é desenhada para
+ *     dizer POUCAS palavras em tamanho grande. Como face de interface ela contradiz o argumento que faz a
+ *     Atkinson Hyperlegible ser o padrão — pouca diferenciação entre letras, avanço largo, nenhuma variação
+ *     de altura. É certa no HUD de um jogo de pixel-art e errada num menu que a criança precisa de LER.
  *
  * ⚠️ E O CORTE NÃO É O GRUPO `hand`. O `comicneue` está lá por aparência — a face é de propósito geral e é
  * frequentemente recomendada para dislexia. Tirá-la do menu removeria uma opção legitimamente acessível. A
  * definição boa é a lista do item 2 da #87, que nomeia as caligráficas dando-lhes tamanho mínimo.
  */
-export type FontRole = 'geral' | 'caligrafica';
+export type FontRole = 'geral' | 'caligrafica' | 'jogo';
 
 export type FontItem = {
   k: string; fam: string; fb: string; d?: string; off?: string;
@@ -65,6 +70,14 @@ export const FONT_GROUPS: FontGroup[] = [
     // frequentemente recomendada para dislexia. Marcá-la como caligráfica tirá-la-ia do menu — removendo uma
     // opção legitimamente acessível pelo formato do grupo em vez de pelo papel.
     {k:'comicneue',  fam:'Comic Neue',          fb:'cursive', d:'font.desc.comicneue'} ]},
+  // ⚠️ A FACE DO JOGO, e ela tem grupo próprio porque não é nem sans, nem serifada, nem manuscrita — é uma
+  // face de PIXEL, e pô-la em qualquer um dos três diria a coisa errada sobre ela na lista.
+  //
+  // Ela NÃO aparece no menu (`papel:'jogo'`), e o ficheiro veio do `SP-the-inclusionist-whackwhack`, onde já
+  // estava verificado. Ver a nota do `@font-face` em `vendor/fonts.css`: o subconjunto errado desta família
+  // carrega, declara-se e reporta-se como certo, e não desenha uma única letra latina.
+  {g:'font.group.arcade', items:[
+    {k:'pressstart', fam:'Press Start 2P', fb:'monospace', d:'font.desc.pressstart', papel:'jogo'} ]},
 ];
 
 /** O papel de uma face; ausente no catálogo quer dizer `geral`. */
