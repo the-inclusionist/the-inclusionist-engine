@@ -81,20 +81,28 @@ export const TILE_TYPES: Record<number, TileType> = {
 const prop = (t: number, k: keyof TileType): boolean => !!TILE_TYPES[t]?.[k];
 /** Machuca ao encostar (lava). */
 export const ehPerigo = (t: number): boolean => prop(t, 'hazard');
-/** Água: nada-se dentro, e o pulo funciona lá. */
-export const ehAgua = (t: number): boolean => prop(t, 'water');
-/** Escada: sobe e desce. */
-export const ehEscada = (t: number): boolean => prop(t, 'ladder');
 /** Trampolim: arremessa para cima. */
 export const ehTrampolim = (t: number): boolean => prop(t, 'tramp');
-/** Portão: barra até a chave abrir. */
-export const ehPortao = (t: number): boolean => prop(t, 'gate');
+
+// ⚠️ `ehAgua`, `ehEscada`, `ehPortao` e `ehSecreto` MUDARAM DE CASA EM 2026-09-07 — foram para
+// `game/tile-flags.ts` do `game-platformer` (issue #63, etapa B). Tinham zero importadores aqui dentro.
+//
+// E as duas que ficaram — `ehPerigo` e `ehTrampolim` — ficaram por um motivo MEDIDO, não por simetria: a
+// engine lê-as, e não por geometria. O `isSolidType` de `core/collision` torna perigo e trampolim SÓLIDOS
+// no modo cadeira de rodas, e perigo sólido no modo cego. É uma regra de ACESSIBILIDADE — a criança em
+// cadeira de rodas não cai no fosso — e essa é da engine.
+//
+//     A engine precisa de saber que um tile é PERIGO; não precisa de saber que ele é ESCADA.
+//
+// ⚠️ O QUE FICA POR DECIDIR, e está registado na #63: a `TILE_TYPES` acima continua a carregar as bandeiras
+// `water`, `ladder`, `gate`, `key` e `secreto`, que **nenhum módulo desta árvore lê**. Enquanto elas aqui
+// estiverem, o jogo faz perguntas sobre uma tabela que a engine publica. O fim honesto é a tabela mudar de
+// casa e o jogo declarar os papéis pelo `core/contract` (`roleOf`) — que é o mecanismo que já existe para
+// isso. Não é execução: é a fronteira seguinte, e ela é decisão do Dev.
 // ⚠️ `ehChave` SAIU EM 2026-09-07, pelo mesmo motivo e no mesmo passo que a `JUMP_BASE`: zero consumidores
 // em lado nenhum — engine, testes e cartucho. Os outros predicados de tile ficam por enquanto porque o
 // `game-platformer` os importa; estes dois não eram fronteira mal cortada, eram peso morto.
 
-/** Ar de região secreta: o que a escuridão cobre até alguém entrar. */
-export const ehSecreto = (t: number): boolean => prop(t, 'secreto');
 
 export const TILE_COLOR = {
   0:'#0a0a14',1:'#241f38',2:'#6b6480',3:'#2f6fae',4:'#8a5a2b',5:'#34e29b',6:'#3a3a46',

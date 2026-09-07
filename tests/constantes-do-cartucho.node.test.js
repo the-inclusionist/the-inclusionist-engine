@@ -93,15 +93,26 @@ const SO_DO_CARTUCHO = {
   // ⚠️ `COIN_TARGET` e `TUNE` SAÍRAM em 2026-09-07 — mudaram de casa para o `game/tuning.ts` do
   // `game-platformer`, com o jogo editado PRIMEIRO para que nada quebrasse no intervalo. O livro encolheu de
   // seis para quatro, e o tecto com ele.
-  ehAgua: 'game-platformer: level-geometry, tile-roles',
-  ehEscada: 'game-platformer: elevators, level-geometry, tile-roles',
-  ehPortao: 'game-platformer: tile-roles',
-  ehSecreto: 'game-platformer: level-geometry',
-  // ⚠️ `JUMP_BASE` e `ehChave` SAÍRAM do livro em 2026-09-07, e saíram do catálogo junto. Eram as duas
-  // linhas que diziam «NINGUÉM — morta», e a etapa B da issue #63 levou-as: zero consumidores em lado
-  // nenhum, e a major que a etapa inteira exige paga as duas de borla. O caso `[Interface]` abaixo é o que
-  // as obrigou a sair daqui no mesmo passo — uma entrada que já não descreve a árvore é folga escondida.
+  // ⚠️ ZERADO EM 2026-09-07 (issue #63, etapa B). Os oito saíram em três passagens, e o livro fica — VAZIO —
+  // pela mesma razão que a `STATUS_DEBT` do `validate-adr.py` ficou: **um orçamento que chega a zero e some
+  // deixa de provar que chegou**, e a próxima entrada tem de ser uma decisão e não um esquecimento.
+  //
+  // Quem saiu, e para onde:
+  //   · `JUMP_BASE`, `ehChave`                        → apagados; zero consumidores em lado nenhum
+  //   · `TUNE`, `COIN_TARGET`                         → `game/tuning.ts` do `game-platformer`
+  //   · `ehAgua`, `ehEscada`, `ehPortao`, `ehSecreto` → `game/tile-flags.ts` do mesmo
+  //
+  // Em todas as passagens o JOGO foi editado PRIMEIRO: ele consome o pacote publicado, então deixar de
+  // depender dos exports enquanto a 7.0.1 ainda os tem é o que faz nada quebrar no intervalo.
 };
+
+/**
+ * ⚠️ O QUE O ZERO NÃO SIGNIFICA, e vale dizer para ninguém ler este ficheiro como uma vitória maior do que
+ * ela é: **a fronteira não está resolvida**. A `TILE_TYPES` continua na engine a carregar as bandeiras
+ * `water`, `ladder`, `gate`, `key` e `secreto`, que nenhum módulo de engine lê — o que este crivo mede são
+ * EXPORTS SEM IMPORTADOR, e a tabela tem um (`core/collision`). O fim honesto é a tabela mudar de casa e o
+ * jogo declarar os papéis pelo `core/contract` (`roleOf`), que é o mecanismo que já existe. Está na #63.
+ */
 
 /**
  * Tecto que só desce (ADR-0043). Eram OITO; são seis desde que as duas mortas saíram na etapa B.
@@ -110,7 +121,7 @@ const SO_DO_CARTUCHO = {
  * ser. Ele desce quando um símbolo muda de casa, e a asserção de igualdade lá em baixo é o que impede que
  * fique acima do medido — folga por cima é onde a próxima dívida cabe sem que nada reprove.
  */
-const TETO = 4;
+const TETO = 0;
 
 describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa B)', () => {
   const conta = importadoresPorNome();
@@ -123,12 +134,14 @@ describe('core/constants: o que a engine exporta e só o cartucho usa (#63 etapa
     expect(conta.get('LOGICAL_W'), 'ninguém importa LOGICAL_W? o crivo partiu-se').toBeGreaterThanOrEqual(5);
     expect(conta.get('TILE_TYPES'), 'o import de vizinho (./constants.js) deixou de ser visto').toBeGreaterThanOrEqual(1);
     expect(conta.get('ehPerigo'), 'o import de vizinho deixou de ser visto').toBeGreaterThanOrEqual(1);
-    // ⚠️ ESTE PISO DESCE COM O CORTE, e é a única linha deste ficheiro que se mexe nos dois sentidos — ele
-    // não mede dívida, mede que o `import` resolveu. Era 15 e passou a 10 quando a etapa B levou quatro
-    // exports (2026-09-07). O que o torna honesto é não ser a única guarda: as três asserções acima pinam
-    // nomes CONCRETOS, então um módulo vazio ou um import partido reprova por elas primeiro, e o número
-    // sozinho nunca é o que prova nada.
-    expect(Object.keys(CONSTANTES).length, 'o módulo deixou de exportar valores').toBeGreaterThanOrEqual(10);
+    // ⚠️ ESTE PISO NÃO MEDE DÍVIDA — mede que o `import` resolveu, e por isso é o único número deste ficheiro
+    // que pode DESCER com o corte. Já desceu duas vezes numa tarde (15 → 10 → 5) enquanto a etapa B levava
+    // oito exports, e um número que se ajusta a cada passagem não guarda nada: por isso ficou LARGO. Um
+    // import partido devolve ZERO, e é isso que ele apanha.
+    //
+    // Quem guarda de verdade são as três asserções acima, que pinam nomes CONCRETOS — um módulo vazio ou um
+    // crivo estreito reprova por elas primeiro, e o número sozinho nunca é o que prova nada.
+    expect(Object.keys(CONSTANTES).length, 'o módulo deixou de exportar valores').toBeGreaterThanOrEqual(5);
   });
 
   it('⚠️ [Right] o livro está completo — nenhum export NOVO fica sem dono em silêncio', () => {
