@@ -1,6 +1,6 @@
 ---
 metadata:
-  status: "proposed"
+  status: "accepted"
   date: 2026-09-06
   decision-makers: [Dev]
   consulted:
@@ -82,7 +82,8 @@ pros-and-cons-of-the-options:
 
 decision-outcome:
   chosen-option:
-    link: "L2 - seis camadas, PROPOSTO e não decidido: a medida mudou o número do Dev e ele não a viu ainda"
+    link: "L2 - seis camadas. ACEITE pelo Dev em 2026-09-06, depois de ver a medida que mudou o seu número de
+           quatro para seis"
     justification: |
       ===== AS SEIS, E O QUE AS SEPARA =====
       ⚠️ O TESTE NÃO É A POSIÇÃO NA TELA, É **DE QUEM A CAMADA FALA**. Três sujeitos, seis camadas:
@@ -124,9 +125,13 @@ decision-outcome:
     A medida está em `scratchpad/camadas.py` e é repetível: conta os sinks de markup e as chamadas de
     anúncio por módulo, agrupa pelas camadas declaradas e imprime o RESÍDUO. É o resíduo que decide o número.
 
-    ⚠️ ENQUANTO ESTE REGISTRO ESTIVER `proposed`, NADA NO CÓDIGO O SEGUE — e é deliberado. Uma abstração de
-    camadas escrita antes de o Dev ver que o número mudou de quatro para seis seria uma abstração imposta por
-    quem mediu, e não decidida por quem a propôs.
+    ⚠️ ESTEVE `proposed` ATÉ O DEV VER A MEDIDA, e isso fica escrito porque é o procedimento e não o acaso:
+    uma abstração de camadas escrita antes de ele saber que o número mudou de quatro para seis seria uma
+    abstração imposta por quem mediu, e não decidida por quem a propôs. Ele aceitou as seis em 2026-09-06.
+
+    ⚠️ E O CÓDIGO AINDA NÃO A SEGUE. O que este registro fixa é QUANTAS camadas e QUAIS; a FORMA do padrão de
+    nós depende de um segundo levantamento — o que os 30 sinks de menu têm em comum —, e desenhar a forma
+    antes dele repetiria o erro que esta própria medida acabou de corrigir.
 
 more-information: |
   ⚠️ ESTE REGISTRO EXISTE PORQUE A MEDIDA CONTRARIOU A PROPOSTA, e é a segunda vez hoje que isso acontece: o
