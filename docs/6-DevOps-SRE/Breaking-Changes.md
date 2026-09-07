@@ -105,9 +105,15 @@ turns each into a `9.0.0`:
   positions while the vocabulary has fourteen.
   Re-measured with `git grep` across both repositories: every remaining mention is a COMMENT; the only line of
   code is the declaration. **Removing it is a clean removal with no prerequisite.**
-  ⚠️ Not measurable from here: the other external games (`game-chess`, `game-15puzzle`, `game-soccer`,
-  `game-2048`, `game-whackwhack`) are not cloned in this session and may import it. One `git grep` per
-  repository settles it before the major is cut.
+  **Measured across all seven repositories** (2026-09-07, read through the GitHub API without cloning):
+  nothing imports it. `game-soccer` mentions it only in a comment describing the defect it repairs from the
+  outside; none of `game-2048`, `game-15puzzle`, `game-whackwhack` even has a file with "control" in its name.
+  ⚠️ Coverage is honest rather than exhaustive: paths were filtered (`ui/`, `input/`, `main`, `control`,
+  `help`), then each repo's full file list was read to find gaps in the filter — one was found
+  (`game-2048/app/js/boot/boot.ts`) and closed. A file with an unexpected name importing the table would
+  escape; that is judgement, not measurement.
+  ⚠️ Also worth knowing before that removal: `gh search code` does NOT index this organisation's private
+  repositories. It returns empty for terms that certainly exist, so an empty result from it proves nothing.
 
 This is a decision for the Dev, not a task: cutting the major sooner ships the accessibility fixes that are
 already done; cutting it later lets two breaking changes ride one release instead of three.
