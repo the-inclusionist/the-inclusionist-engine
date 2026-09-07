@@ -34,34 +34,16 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+// A conta da WCAG SAIU daqui em 2026-09-07 para `fixtures/contraste-wcag.js`, sem mudar de forma: um segundo
+// gate (a marca do ADR-0029, issue #61) passou a precisar dela, e a exportação que já existia aqui não tinha
+// importador possível — importar um ficheiro `.test.js` correria os `describe` dele duas vezes.
+import { razaoDeContraste, hex, lerToken } from './fixtures/contraste-wcag.js';
 
 const CSS = readFileSync(join(process.cwd(), 'app', 'css', 'style.css'), 'utf8');
 
-/* ===================== a conta da WCAG 1.4.3, escrita aqui e em nenhum outro lugar ===================== */
-
-/** Canal sRGB → linear. É a etapa que separa "clarinho" de LUMINÂNCIA — sem ela a conta erra feio no escuro. */
-function linear(c) {
-  const v = c / 255;
-  return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-}
-function luminancia([r, g, b]) {
-  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
-}
-export function razaoDeContraste(a, b) {
-  const x = luminancia(a), y = luminancia(b);
-  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
-}
-function hex(s) {
-  const h = s.replace('#', '').trim();
-  const n = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
-  return [0, 2, 4].map((i) => parseInt(n.slice(i, i + 2), 16));
-}
-
 /** Lê `--nome:#rrggbb` do `:root`. Falha ALTO se o token sumiu — melhor que medir `undefined`. */
 function token(nome) {
-  const m = CSS.match(new RegExp('--' + nome + ':\\s*(#[0-9a-fA-F]{3,8})'));
-  expect(m, `token --${nome} não existe mais no style.css`).toBeTruthy();
-  return hex(m[1]);
+  return lerToken(CSS, nome);
 }
 
 /* ===================== os pares que a criança de fato lê ===================== */
