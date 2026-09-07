@@ -144,7 +144,27 @@ export const KEYBOARD_DUO: readonly Readonly<Record<Action, Binding<readonly str
     leftTrigger: ['Numpad7'],
     rightShoulder: ['NumpadMultiply'],  // a tecla `*`
     rightTrigger: ['NumpadAdd'],        // a tecla `+`
-    start: ['Numpad1'],
+    /**
+     * ⚠️ `ShiftRight` É A PORTA DE SAÍDA, E ELA FALTAVA (#122).
+     *
+     * Um Chromebook não tem bloco numérico, e um Chromebook é o hardware que o pilar 1 nomeia. Medido em
+     * 2026-09-07: das catorze posições deste assento, **DEZ só se alcançam pelo numpad** — as oito ações
+     * mais o `start` e o `select`. A criança da segunda cadeira anda pelas setas, não age em nada, e **não
+     * consegue abrir o menu para consertar**, porque a tecla que abre o menu está no mesmo bloco que falta.
+     *
+     * Isso é o que a auditoria chamou de «um padrão do qual a criança não escapa», e o conserto que ela pede
+     * é textual: *«tornar o próprio padrão remapeável, e não trocar as teclas que ele escolheu».* As teclas
+     * ficam — o layout do numpad é melhor onde ele existe, é um bloco físico sob uma mão, e não tira nada ao
+     * primeiro jogador. O que entra é UMA porta que todo teclado tem, para o remapeamento ser alcançável.
+     *
+     * ⚠️ E É SÓ NO `start`, de propósito: da pausa alcança-se a tela de remapeamento, e de lá TODAS as outras
+     * treze posições. Uma porta chega para escapar; cada padrão a mais é uma tecla tirada do bolo comum, e
+     * este teclado já é repartido por duas crianças.
+     *
+     * `ShiftRight` porque existe em todo o teclado, fica ao lado do bloco de setas (a mesma mão que já as
+     * usa), não é tecla de texto — e está LIVRE nas quatro tabelas, o que foi medido e não suposto.
+     */
+    start: ['Numpad1', 'ShiftRight'],
     select: ['Numpad0'],
   },
 ]);

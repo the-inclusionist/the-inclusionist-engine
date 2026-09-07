@@ -76,9 +76,26 @@ describe('o esquema de DOIS jogadores (ADR-0096)', () => {
     expect(P1.leftShoulder).toEqual(['Digit7']);
     expect(P2.leftTrigger).toEqual(['Numpad7']);
     expect(conflitosEntreTabelas(KEYBOARD_DUO)).toEqual([]);
+    // ⚠️ ESTE CRIVO ERA UMA LISTA BRANCA DO QUE A TABELA JÁ TINHA, e não do que é um `code` válido: aceitava
+    // `Key|Digit|Numpad|Arrow|Space|Enter` e mais nada. Em 2026-09-07 a #122 acrescentou `ShiftRight` — um
+    // código legítimo da especificação — e ele reprovou. Um gate que recusa mudança CORRETA não protege
+    // ninguém; empurra quem tem pressa a apagá-lo.
+    //
+    // O que ele existe para apanhar continua a valer, e é o que ficou: alguém a escrever um `key` (`'a'`,
+    // `'7'`, `'Shift'`) onde se pede um `code`. Um `key` é um caractere solto ou um nome SEM LADO — daí a
+    // recusa explícita de `Shift`/`Control`/`Alt`/`Meta` nus, que são a forma mais fácil de cometer o erro.
+    const FAMILIAS = /^(Key[A-Z]|Digit\d|Numpad|Arrow(Up|Down|Left|Right)$|F\d{1,2}$)/;
+    const NOMEADAS = new Set(['Space', 'Enter', 'Escape', 'Tab', 'Backspace', 'Backquote', 'Minus', 'Equal',
+      'BracketLeft', 'BracketRight', 'Backslash', 'Semicolon', 'Quote', 'Comma', 'Period', 'Slash',
+      'Home', 'End', 'PageUp', 'PageDown', 'Insert', 'Delete', 'CapsLock', 'ContextMenu',
+      'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight']);
+    const SEM_LADO = new Set(['Shift', 'Control', 'Alt', 'Meta']); // estes são `key`, nunca `code`
     const todas = KEYBOARD_DUO.flatMap((t) => ACTIONS.flatMap((a) => t[a] ?? []));
-    expect(todas.every((c) => /^(Key|Digit|Numpad|Arrow)|^(Space|Enter)$/.test(c)),
-      'binding que não é um `KeyboardEvent.code` reconhecível: ' + todas.join(' ')).toBe(true);
+    const maus = todas.filter((c) => SEM_LADO.has(c) || !(FAMILIAS.test(c) || NOMEADAS.has(c)));
+    expect(maus, 'binding que não é um `KeyboardEvent.code` reconhecível').toEqual([]);
+    // E o crivo tem de saber recusar: sem isto ele podia estar verde por aceitar tudo.
+    expect(['a', '7', 'Shift', 'Escape '].filter((c) => SEM_LADO.has(c) || !(FAMILIAS.test(c) || NOMEADAS.has(c))))
+      .toEqual(['a', '7', 'Shift', 'Escape ']);
   });
 
   it('⚠️ [Interface] a geometria do jogador 2 espelha a do jogador 1 — é o que torna o padrão ensinável', () => {
@@ -195,3 +212,65 @@ describe('o que um transporte NÃO alcança é dito, não escondido', () => {
     expect(unreachable({ ...KEYBOARD_SOLO, leftTrigger: null })).toEqual(['leftTrigger']);
   });
 });
+
+// ==========================================================================================================
+// ⚠️ NENHUM ASSENTO FICA SEM PORTA PARA O REMAPEAMENTO (#122)
+//
+// Medido em 2026-09-07, no `KB_DEFAULTS.p2[1]`: das catorze posicoes do segundo assento, **DEZ so se
+// alcancam pelo bloco numerico** — as oito acoes mais o `start` e o `select`. Um Chromebook nao tem esse
+// bloco, e um Chromebook e o hardware que o pilar 1 nomeia.
+//
+// ⚠️ O QUE ISSO FAZ A UMA CRIANCA: ela anda pelas setas (que existem), nao age em nada, e **nao consegue
+// abrir o menu para consertar** — porque a tecla que abre o menu esta no mesmo bloco que falta. E a
+// definicao de «um padrao do qual a crianca nao escapa».
+//
+// ⚠️ E O CONSERTO NAO E TROCAR AS TECLAS. A auditoria e explicita: «tornar o proprio padrao remapeavel, e
+// nao trocar as teclas que ele escolheu». O layout do numpad e MELHOR onde ele existe — um bloco fisico sob
+// uma mao — e nao tira nada ao primeiro jogador. O que faltava era UMA porta.
+//
+// MUTACOES CONFERIDAS (no fim do bloco).
+// ==========================================================================================================
+describe('input/default-bindings — toda cadeira tem porta para o remapeamento (#122)', () => {
+  const soNumpad = (v) => (v ?? []).length > 0 && (v ?? []).every((c) => c.startsWith('Numpad'));
+
+  it('⚠️ [Cross-check] o segundo assento E MESMO quase todo numpad — senao nao ha defeito a consertar', () => {
+    // Ancora a premissa: se um dia este assento deixar de depender do numpad, o caso abaixo passa a proteger
+    // uma coisa que ja nao e verdade, e este aqui avisa antes disso.
+    const p2 = KEYBOARD_DUO[1];
+    const presas = ACTIONS.filter((a) => soNumpad(p2[a]));
+    expect(presas.length, 'o segundo assento deixou de depender do numpad; reler a #122').toBeGreaterThanOrEqual(8);
+    expect(presas).toContain('select');
+  });
+
+  it('⚠️ [Right] o `start` de CADA esquema de dupla e alcancavel SEM bloco numerico', () => {
+    // `start` e a pausa, e da pausa alcanca-se a tela de remapeamento — de onde todas as outras treze
+    // posicoes se mudam. Uma porta chega para escapar; e chegar a ZERO portas nao chega.
+    for (const [i, esquema] of KEYBOARD_DUO.entries()) {
+      const semNumpad = (esquema.start ?? []).filter((c) => !c.startsWith('Numpad'));
+      expect(semNumpad.length, `p${i + 1}: o start so se alcanca pelo numpad — num Chromebook esta crianca nao abre o menu`)
+        .toBeGreaterThan(0);
+    }
+  });
+
+  it('[Boundary] e a porta nova nao tira tecla de ninguem', () => {
+    expect(conflitosEntreTabelas(KEYBOARD_DUO), 'a porta nova colide com outra cadeira').toEqual([]);
+    expect(bindingProblems(KEYBOARD_DUO[1]), 'a porta nova repete uma tecla dentro do proprio esquema').toEqual([]);
+  });
+
+  it('[Right] as teclas do numpad FICAM — o conserto e acrescentar, nao trocar', () => {
+    // A auditoria pediu isto por escrito, e um caso a menos aqui deixaria o proximo a "arrumar" o esquema.
+    const p2 = KEYBOARD_DUO[1];
+    expect(p2.start).toContain('Numpad1');
+    expect(p2.action1).toEqual(['Numpad8']);
+    expect(p2.up).toEqual(['ArrowUp']);
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS =========================
+//   · voltando `start: ['Numpad1']` (tirando a porta) → "[Right] o `start` de CADA esquema" reprova nomeando
+//     `p2`. E a #122 reproduzida: a crianca do segundo assento sem forma de abrir o menu num Chromebook.
+//   · trocando a porta por outra tecla ja usada (ex.: `KeyH`) → reprovam QUATRO, e tres deles sao gates que
+//     ja existiam antes desta issue. E a melhor noticia deste bloco: a propriedade "nenhuma tecla tem dois
+//     donos" nao dependia de eu me lembrar dela ao acrescentar uma porta.
+//   · trocando `Numpad1` por `ShiftRight` em vez de acrescentar → "[Right] as teclas do numpad FICAM"
+//     reprova. O conserto pedido era acrescentar uma porta, nao mudar o layout que funciona onde ha numpad.
