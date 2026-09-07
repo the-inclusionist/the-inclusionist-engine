@@ -52,6 +52,24 @@ export const Z = {
   MENU_MAX: 39999,
   TRANSITION: 40000,         // fade/wipe de troca de fase (cobre tudo)
   /**
+   * ⚠️ A SAÍDA DE EMERGÊNCIA, E ELA FICA ACIMA DA TRANSIÇÃO (decisão do Dev, 2026-09-07).
+   *
+   * Este comentário dizia que o *skip-link* mora em `CAPTIONS` (26000) — e isso deixava-o ABAIXO de
+   * `MENU` (30000). Um «pular para o conteúdo» que um modal cobre não é alcançável, o que é a WCAG 2.4.1 ao
+   * contrário: o mecanismo que existe para atravessar blocos repetidos passa a ser mais um bloco.
+   * O gate do `z-order-css` já registava o defeito com todas as letras — «o `Z` ERRA, não o CSS» —, e ficou
+   * assim durante semanas porque nada o obrigava a mudar.
+   *
+   * ⚠️ E É ACIMA DA `TRANSITION`, não entre o menu e ela. O Dev pediu 41000 e o motivo é o que sobra depois
+   * de tudo o resto falhar: a saída não pode ficar atrás de nada que a pessoa não controla, e um fade de
+   * troca de fase é precisamente isso. O custo — o link aparecer por cima de uma animação — é nulo na
+   * prática, porque ele só é visível AO FOCO (`top:-60px` até `:focus`), e porque durante a transição já não
+   * se tabula: o foco sai da tela antiga e só reaparece na seguinte (ver a regra de foco no ADR).
+   *
+   * Só o aviso de laço morto (ADR-0054) e o painel de desenvolvimento ficam acima dela.
+   */
+  SKIP_LINK: 41000,
+  /**
    * O LAÇO MORREU (ADR-0054). Acima do `TRANSITION` de propósito: quando o quadro lança, o que estiver na
    * tela — menu aberto, fade a meio, mensagem de fase — está congelado e deixou de importar. O aviso tem de
    * ser visto por cima de tudo isso, e só o painel de desenvolvimento fica acima dele.

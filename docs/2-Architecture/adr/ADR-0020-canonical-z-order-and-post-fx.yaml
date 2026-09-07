@@ -2,6 +2,15 @@
 metadata:
   status: "accepted"
   superseded-in-part:
+    - by: ADR-0102
+      what: "§1's placement of the SKIP-LINK in `CAPTIONS` (26000). That put the keyboard's emergency exit
+              below `MENU` (30000) and below `MODAL_SCRIM` (29000) — a 'skip to content' a modal covers is not
+              reachable, which inverts WCAG 2.4.1: the mechanism for bypassing repeated blocks becomes another
+              block. ⚠️ THE STYLESHEET WAS RIGHT AND THIS RECORD WAS WRONG: `.skip-link` carried a literal
+              `z-index:100`, above everything the sheet declared, and the adoption ledger in
+              `tests/z-order-css.node.test.js` said so verbatim — «o `Z` ERRA, não o CSS». ADR-0102 gives it
+              `SKIP_LINK: 41000`, above even `TRANSITION`, because an exit must not sit behind anything the
+              person does not control. The rest of the table, the two scales and the post-fx chain stand."
     - by: ADR-0046
       what: "§1's FILTER TARGET. This record decided the CSS filter goes on `#game-region`, `o elemento que
               contém a canvas E os menus`, and it was right for the case it examined — a COLOUR-BLIND child was

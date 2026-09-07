@@ -36,6 +36,16 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- ⚠️ A SAÍDA DE EMERGÊNCIA DO TECLADO, e ela é o PRIMEIRO foco da página por definição: um "pular para o
+       conteúdo" que venha depois de outra coisa obriga a atravessar essa coisa, que é o oposto do que ele é.
+       WCAG 2.4.1 (Bypass Blocks).
+
+       Estava tudo pronto e faltava o elemento: o `.skip-link` tem regra no `style.css` (invisível em
+       `top:-60px`, desce ao foco) e a frase tem chave no dicionário (`skip.toGame`) — e nenhuma página da
+       engine o desenhava. O alvo é o `#game-region`, que já tem `tabindex="-1"` justamente para poder
+       receber foco por programa. -->
+  <a class="skip-link" href="#game-region" data-i18n="skip.toGame">Pular para o jogo</a>
+
   <!-- Regiões vivas do leitor de tela: o par que core/a11y-sr procura. Se este consumidor precisasse de mais
        do que isto para anunciar, a camada de a11y não seria reutilizável — seria uma função do jogo. -->
   <p id="sr-status" class="sr-only" role="status" aria-live="polite"></p>

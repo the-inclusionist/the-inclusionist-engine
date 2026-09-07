@@ -51,6 +51,7 @@
   --z-menu:30000;
   --z-menu-max:39999;
   --z-transition:40000;
+  --z-skip-link:41000;
   --z-loop-crash:45000;
   --z-debug:90000;
 }
@@ -178,7 +179,9 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font)
    (tolerância de 5px lógicos/lado) é cortado pelo .stage-wrap, e os menus rolam DENTRO dos cards. */
 body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-.skip-link{position:absolute;left:8px;top:-60px;background:var(--accent);color:var(--accent-ink);padding:.6em 1em;border-radius:0 0 10px 10px;font-weight:700;z-index:100;transition:top .15s}
+/* O `z-index` ADOTOU O SLOT em 2026-09-07. Era `100`, um literal que estava CERTO e cuja tabela estava
+   errada: o `Z` punha o skip-link em CAPTIONS(26000), abaixo dos modais. Ver `SKIP_LINK` em core/layers. */
+.skip-link{position:absolute;left:8px;top:-60px;background:var(--accent);color:var(--accent-ink);padding:.6em 1em;border-radius:0 0 10px 10px;font-weight:700;z-index:var(--z-skip-link);transition:top .15s}
 .skip-link:focus{top:0}
 :focus-visible{outline:4px solid var(--focus);outline-offset:2px;border-radius:6px}
 

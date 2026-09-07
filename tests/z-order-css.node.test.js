@@ -51,7 +51,11 @@ const NAO_ADOTADOS = {
   20: '`#viz-indicator`: a bolinha do modo de visão não tem slot óbvio — é a11y de mundo desenhada em DOM.',
   50: '`.overlay` fora do `#game-region` — mesma decisão do 60.',
   60: '`#game-region .overlay` → MENU(30000). Sem inversão, mas não se adota sozinho: escala misturada no mesmo contexto é pior que escala velha.',
-  100: 'O `Z` ERRA, não o CSS: o comentário põe o skip-link em CAPTIONS(26000), o que o deixaria ABAIXO de MENU(30000) — um "pular para o conteúdo" embaixo de um modal não é alcançável.',
+  /* O `100` SAIU DAQUI em 2026-09-07, e é a primeira linha desta lista a sair por ter sido PAGA. Ela dizia
+     «o `Z` ERRA, não o CSS» — o comentário punha o skip-link em CAPTIONS(26000), abaixo de MENU(30000), e um
+     "pular para o conteúdo" que um modal cobre não é alcançável. O Dev decidiu o slot `SKIP_LINK: 41000`
+     (acima até da transição, porque a saída não pode ficar atrás do que a pessoa não controla) e o `.skip-link`
+     adotou-o. A dívida encolheu por conserto, que é a única forma que esta lista aceita. */
   500: 'SEM SLOT: `crt-scan-1::after`. Idem ao 5 — pós-processo, e é o que cobre canvas E menus hoje.',
 };
 
