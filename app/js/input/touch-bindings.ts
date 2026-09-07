@@ -90,6 +90,10 @@ import { doCentro, type RectLike } from './pointer-space.js';
 import type { PlayerView } from '../core/entity.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
+// `isAction` guarda a porta: o `act` chega como string de um `data-` do markup de toque, e desde a #118 o
+// esquema só aceita as quatorze posições. Uma string que não é posição devolve `null` — o toque não faz nada,
+// que é exactamente o que o cabeçalho desta função já prometia.
+import { isAction } from '../core/actions.js';
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
 // módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
 export type { DomQuery } from '../core/dom-query.js';
@@ -170,7 +174,7 @@ export function wantsForcedTouch(search: string): boolean {
  * `null` = a ação não existe no esquema (ou o slot do mapa de toque está vazio) → o toque não faz nada.
  */
 export function codeForAction(act: string | undefined | null, controls: KeyScheme): string | null {
-  if (!act) return null;
+  if (!act || !isAction(act)) return null;
   const list = controls[act];
   return (list && list[0]) || null;
 }

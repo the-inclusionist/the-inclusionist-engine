@@ -36,6 +36,8 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { KB_DEFAULTS } from '../app/js/input/keyboard.js';
 import { KEYBOARD_SOLO, KEYBOARD_DUO, conflitosEntreTabelas } from '../app/js/input/default-bindings.js';
 import { initKeyboardRuntime } from '../app/js/input/keyboard-runtime.js';
@@ -122,6 +124,21 @@ describe('as duas tabelas de teclado concordam nas oito posições partilhadas (
     expect(rt.whichPlayer('KeyA'), 'o andar do olhar perdeu o dono').toBe(0);
     expect(rt.whichPlayer('Space'), 'o PULO do olhar não tem dono em dupla (ui/webcam.ts:40)').toBe(0);
     expect(rt.actionOf('Space', 0)).toBe('action2');
+  });
+
+  it('⚠️ [Right] JÁ NÃO HÁ DUAS TABELAS — a viva é derivada da registada, e não uma cópia dela', () => {
+    // ⚠️ ESTE CASO SUBSTITUI A PERGUNTA. Enquanto havia duas listas, o melhor que se podia fazer era medir se
+    // elas concordavam — e uma medição de concordância só apanha a divergência DEPOIS de ela existir. Desde a
+    // #118 (decisão do Dev: fechar o `KeyScheme`), `input/keyboard.ts` deriva `solo` e `p2` de
+    // `input/default-bindings`, que é onde o ADR-0096 pôs a decisão. Não há o que divergir.
+    //
+    // O crivo lê o FICHEIRO e não o valor, de propósito: um `deepEqual` continuaria verde no dia em que
+    // alguém colasse a tabela de volta com os mesmos valores — e é justamente aí que a divergência renasce.
+    const fonte = readFileSync(join(process.cwd(), 'app', 'js', 'input', 'keyboard.ts'), 'utf8');
+    const soloDeclarado = /solo\s*:\s*\{/.test(fonte);
+    expect(soloDeclarado, 'o esquema solo voltou a ser escrito à mão em input/keyboard.ts').toBe(false);
+    expect(fonte, 'a tabela viva deixou de derivar da registada').toMatch(/KEYBOARD_SOLO/);
+    expect(fonte, 'a tabela de dupla deixou de derivar da registada').toMatch(/KEYBOARD_DUO/);
   });
 
   it('[Interface] o crivo APANHA uma divergência plantada — senão os casos acima não provam nada', () => {

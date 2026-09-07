@@ -46,7 +46,8 @@ import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
-import { presetActions, type ActionPreset } from '../core/actions.js';
+import { presetActions, ACTIONS, type ActionPreset } from '../core/actions.js';
+import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
@@ -108,8 +109,11 @@ export interface CreateGameOptions {
   readonly comIndice?: () => boolean;
   readonly naBarraDe?: (i: number) => boolean;
   readonly navBar?: (i: number, k: NavKeys) => void;
-  /** Jogadores para o teclado remapeável. `Pick<ControlledPlayer,'ctrl'>` — esquema de teclas e nada mais. */
-  readonly players?: { ctrl: Record<string, string[]> }[];
+  /** Jogadores para o teclado remapeável. `Pick<ControlledPlayer,'ctrl'>` — esquema de teclas e nada mais.
+   *  ⚠️ `KeyScheme` e não `Record<string, string[]>` desde a #118: era uma CÓPIA ESTRUTURAL do tipo, e uma
+   *  cópia que ninguém obriga a concordar diverge — é a lição que o próprio `core/entity` abre a dizer, com
+   *  o `DomQuery` (dezasseis cópias) e o `KeyScheme` (seis) como as contas já pagas. */
+  readonly players?: { ctrl: KeyScheme }[];
   /** Troca de fase, para quem tem fases. Ausente = não faz nada (o jogo sem fases não perde nada). */
   readonly setPhase?: (p: 'title' | 'playing' | 'paused') => void;
   /**
@@ -330,7 +334,12 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 5. Teclado remapeável — o melhor recorte da base (achado 11): esquema de teclas, sem mundo.
   initKB();
-  const players = o.players ?? [{ ctrl: {} as Record<string, string[]> }];
+  // ⚠️ O ESQUEMA DE ARRANQUE ALCANÇA NADA, e diz isso com `null` em vez de com um objeto vazio (issue #118).
+  // Ele vive um instante — `assignControls()` logo abaixo substitui-o pelo esquema real —, mas enquanto vive
+  // é um `KeyScheme` como qualquer outro, e a única forma honesta de um esquema que não alcança nada é
+  // catorze ausências declaradas. Um `{}` fazia o tipo mentir sobre estar completo.
+  const semAlcance = Object.fromEntries(ACTIONS.map((a) => [a, null])) as KeyScheme;
+  const players = o.players ?? [{ ctrl: semAlcance }];
   const keyboard = initKeyboardRuntime({
     getKB: () => kb, getNumPlayers: () => players.length, getPlayers: () => players,
   });

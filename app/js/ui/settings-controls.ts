@@ -11,6 +11,7 @@
 import { t } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
+import { ACTIONS, isAction, type Action } from '../core/actions.js';
 import type { KBDefaults } from '../input/keyboard.js';
 import type { KeydownEventLike } from '../input/keydown.js';
 
@@ -47,7 +48,11 @@ export interface SettingsControlsCtx {
    * especial. Um quiz mostraria quatro linhas para ações que não existem nele, e uma criança tentaria
    * remapear um botão que não faz nada.
    */
-  acoesDoJogo: () => readonly { readonly acao: string; readonly rotulo: string }[];
+  // ⚠️ `acao` é `Action` e não `string` desde a issue #118, e o comentário do `render()` já dizia porquê:
+  // «`a` é o nome ABSTRATO da ação, que a engine enumera em `core/actions`» (ADR-0086). Enquanto foi
+  // `string`, um jogo podia declarar uma posição que não existe e a linha era desenhada com teclas vazias,
+  // sem que nada apontasse o erro — a criança via uma ação que nunca responderia.
+  acoesDoJogo: () => readonly { readonly acao: Action; readonly rotulo: string }[];
   /** Screen-reader "polite" announcement (core/a11y-sr's srSay), injected. */
   srSay: (msg: string) => void;
   /** Screen-reader "assertive" announcement (core/a11y-sr's srAlert) — used for the capture prompt/conflict. */
@@ -148,7 +153,7 @@ export function keyUsedByOther(code: string, mapRef: KeyScheme, schemes: readonl
   const owners = new Map<string, number>();
   schemes.forEach((m, i) => {
     if (m === mapRef) return;
-    for (const a in m) for (const c of m[a] || []) if (!owners.has(c)) owners.set(c, i);
+    for (const a of ACTIONS) for (const c of m[a] || []) if (!owners.has(c)) owners.set(c, i);
   });
   return owners.get(code) ?? -1;
 }
@@ -157,7 +162,7 @@ export function keyUsedByOther(code: string, mapRef: KeyScheme, schemes: readonl
 // DOM-facing (thin) — requires `document`/injected ctx
 // ---------------------------------------------------------------------------------------------
 
-interface CaptureState { action: string; mapRef: KeyScheme; player: number }
+interface CaptureState { action: Action; mapRef: KeyScheme; player: number }
 
 export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControlsApi {
   let kb = ctx.kb;
@@ -202,8 +207,11 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
 
     el.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((b) => {
       b.addEventListener('click', () => {
+        // ⚠️ `isAction` E NÃO SÓ `if (!act)`: o valor vem de um atributo do DOM, e desde a #118 o esquema só
+        // aceita as quatorze posições. Uma captura iniciada sobre uma posição inventada gravaria uma tecla
+        // numa chave que transporte nenhum lê — a criança carregaria a tecla nova e nada aconteceria.
         const act = b.dataset.act;
-        if (!act) return;
+        if (!act || !isAction(act)) return;
         capture = { action: act, mapRef: map, player };
         b.textContent = 'Pressione…';
         ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: t(ACT_LABEL[act]!), n: player + 1 }));

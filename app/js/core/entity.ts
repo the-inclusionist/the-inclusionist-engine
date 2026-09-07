@@ -36,8 +36,28 @@
 // jogador tem um quiz, não sabe o que é um quiz. Os tipos ricos (`Quiz` em game/quiz, `PlayerSprite` em
 // render/draw) são atribuíveis a estes, e é o compilador que garante isso no ponto de uso.
 
-/** Ação → lista de códigos físicos (`KeyA`, `ArrowLeft`…). Fonte única: estava triplicado em input/. */
-export type KeyScheme = Record<string, string[]>;
+// ⚠️ O PRIMEIRO IMPORT DESTE FICHEIRO, e ele é de propósito: `core/actions` é da MESMA camada e é a fonte
+// única das quatorze posições. A regra que `core/` respeita é não importar de `game/` nem de `render/` —
+// depender de um vizinho de camada que é puro dado não a viola, e é o que permite fechar o `KeyScheme`.
+import type { Action } from './actions.js';
+
+/**
+ * Ação → lista de códigos físicos (`KeyA`, `ArrowLeft`…). Fonte única: estava triplicado em input/.
+ *
+ * ⚠️ FECHADO EM `Action` DESDE 2026-09-07 (issue #118, decisão do Dev), e era `Record<string, string[]>`.
+ * Enquanto foi aberto, **faltar uma posição não dava erro de compilação** — e foi assim que o esquema de
+ * dupla ficou com oito das quatorze, e que a `Space` do jogador 1 desapareceu sem que nada apitasse. O
+ * defeito não era de digitação: era de o tipo aceitar um esquema incompleto como se fosse completo.
+ *
+ * ⚠️ E `null` NÃO É BURACO — é AUSÊNCIA DECLARADA, e é a metade que dá sentido a fechar o tipo. Um teclado
+ * partido por quatro pode não ter lugar físico para ombros e gatilhos; dizer `null` afirma isso, e é o que o
+ * aviso de alcance (`ui/reach-notice`, issue #112) lê para dizer à criança, ANTES de ela começar, quais das
+ * ações do jogo o controlo dela não alcança. Inventar teclas para preencher seria mentir-lhe em silêncio.
+ *
+ * Quem consome tem de tratar o `null`: `input/keyboard-runtime`, `input/touch-bindings` e
+ * `ui/settings-controls` fazem-no, e é isso que impede um `null` de virar um `undefined.includes`.
+ */
+export type KeyScheme = Record<Action, readonly string[] | null>;
 
 /** Lados da ventosa-aranha: direita, esquerda, teto, chão. */
 export type ClingSide = 'R' | 'L' | 'U' | 'D';

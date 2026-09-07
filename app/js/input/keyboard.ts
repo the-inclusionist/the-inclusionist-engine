@@ -7,6 +7,10 @@
 // A INSTÂNCIA atual (KB) e o remap ficam no composition root — aqui só config/load/save/reset.
 import * as store from '../platform/storage.js';
 import type { KeyScheme } from '../core/entity.js';
+// ⚠️ A DECLARAÇÃO DOS ESQUEMAS MORA LÁ (ADR-0096), e este ficheiro passou a derivá-los em vez de os repetir
+// — é a união que a issue #118 pede. `default-bindings` é folha (só importa `core/actions`), então não há
+// ciclo: quem depende é o ficheiro de persistência, e não o contrário.
+import { KEYBOARD_SOLO, KEYBOARD_DUO } from './default-bindings.js';
 
 const CKEY = 'inclusionist.kbcontrols.v3';
 
@@ -27,29 +31,50 @@ export type { KeyScheme } from '../core/entity.js';
  */
 export type KBDefaults = { solo: KeyScheme; p2: KeyScheme[]; p3: KeyScheme[]; p4: KeyScheme[] };
 
+/**
+ * AS SEIS POSIÇÕES QUE UM TECLADO PARTIDO NÃO ALCANÇA, declaradas como ausência (issue #118, decisão do Dev).
+ *
+ * ⚠️ `null` AQUI É UMA AFIRMAÇÃO, e é o que torna o `KeyScheme` fechado útil em vez de burocrático: quando o
+ * teclado é repartido por três ou quatro crianças, não há lugar físico para ombros, gatilhos, start e select
+ * de cada uma — o bloco de cada jogador tem oito teclas e acabou. Inventar teclas para preencher seria dar a
+ * cada criança um alcance que ela não tem, e o `ui/reach-notice` (#112) diria a coisa errada.
+ *
+ * O que `null` compra: o aviso de alcance pode dizer, ANTES de a criança começar, quais das ações do jogo o
+ * controlo dela não alcança — e o jogo pode decidir não usar essas posições no modo de quatro.
+ */
+const SEM_ALCANCE_NO_TECLADO_PARTIDO = Object.freeze({
+  leftShoulder: null, leftTrigger: null, rightShoulder: null, rightTrigger: null, start: null, select: null,
+});
+
 // 4 esquemas base p/ 3–4 jogadores (modos 3 e 4 têm esquemas SEPARADOS, p3 e p4, editáveis por jogador)
 export const KB_SCHEMES4: KeyScheme[] = [
-  { left:['KeyA'],right:['KeyD'],up:['KeyW'],down:['KeyS'], action1:['KeyZ'],action2:['KeyX'],action4:['KeyC'],action3:['KeyV'] },
-  { left:['KeyJ'],right:['KeyL'],up:['KeyI'],down:['KeyK'], action1:['KeyM'],action2:['Comma'],action4:['Period'],action3:['Semicolon','Slash'] },
-  { left:['ArrowLeft'],right:['ArrowRight'],up:['ArrowUp'],down:['ArrowDown'], action1:['Home'],action2:['End'],action4:['PageUp'],action3:['PageDown'] },
-  { left:['Numpad4'],right:['Numpad6'],up:['Numpad8'],down:['Numpad5'], action1:['Numpad2'],action2:['Numpad0'],action4:['Numpad3'],action3:['NumpadDecimal'] },
+  { left:['KeyA'],right:['KeyD'],up:['KeyW'],down:['KeyS'], action1:['KeyZ'],action2:['KeyX'],action4:['KeyC'],action3:['KeyV'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },
+  { left:['KeyJ'],right:['KeyL'],up:['KeyI'],down:['KeyK'], action1:['KeyM'],action2:['Comma'],action4:['Period'],action3:['Semicolon','Slash'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },
+  { left:['ArrowLeft'],right:['ArrowRight'],up:['ArrowUp'],down:['ArrowDown'], action1:['Home'],action2:['End'],action4:['PageUp'],action3:['PageDown'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },
+  { left:['Numpad4'],right:['Numpad6'],up:['Numpad8'],down:['Numpad5'], action1:['Numpad2'],action2:['Numpad0'],action4:['Numpad3'],action3:['NumpadDecimal'], ...SEM_ALCANCE_NO_TECLADO_PARTIDO },
 ];
+
+/**
+ * Cópia PROFUNDA e MUTÁVEL de uma tabela declarada. O remapeamento escreve dentro do esquema vivo, então ele
+ * não pode partilhar objeto com a tabela de `input/default-bindings`, que é congelada e é a declaração.
+ */
+const vivo = (t: unknown): KeyScheme => JSON.parse(JSON.stringify(t)) as KeyScheme;
+
+/**
+ * ⚠️ AS DUAS TABELAS DE TECLADO PASSARAM A SER UMA (issue #118). O solo e a dupla já não são escritos aqui:
+ * são CÓPIAS VIVAS do que `input/default-bindings` declara, que é onde o ADR-0096 pôs a decisão.
+ *
+ * Antes eram duas listas paralelas com oito posições cada, e as oito «coincidiam» — menos uma. A `Space` do
+ * jogador 1 em dupla estava numa e não na outra, e o custo era concreto: `ui/webcam.ts` sintetiza `Space`
+ * para «olhar para cima = pular», então entrar um segundo jogador tirava o PULO de quem joga com os olhos e
+ * deixava o andar. Nada errava em voz alta. Derivar em vez de repetir torna essa divergência impossível de
+ * voltar a existir, em vez de a apanhar depois de acontecer.
+ */
 export const KB_DEFAULTS: KBDefaults = {
-  // 1 jogador: WASD + setas; pulo J/Espaço; UJIK como na mão pequena do DOS. Sem Alt/AltGr/Ctrl/Shift.
-  solo:{ left:['KeyA','ArrowLeft'], right:['KeyD','ArrowRight'], up:['KeyW','ArrowUp'], down:['KeyS','ArrowDown'],
-         action1:['KeyU'], action2:['KeyJ','Space'], action4:['KeyI'], action3:['KeyK'] },
-  // ⚠️ O JOGADOR 1 EM DUPLA É O SOLO MENOS AS SETAS, E NADA MAIS (ADR-0096). A `Space` estava a faltar aqui
-  // — a única das oito posições em que esta tabela e a registada de `input/default-bindings` divergiam —, e
-  // a barra não é uma seta. Reposta em 2026-09-07 (issue #118), com o gate em `teclado-duas-tabelas`.
-  //
-  // ⚠️ E A FALTA TINHA UM CUSTO CONCRETO, que é o que a torna um defeito e não uma assimetria: `ui/webcam.ts`
-  // sintetiza `Space` para «olhar para cima = pular», e é assim que salta quem joga com os olhos. Sem a barra
-  // aqui, `whichPlayer('Space')` respondia -1 assim que entrava um segundo jogador — o andar (`KeyA`/`KeyD`)
-  // continuava a ser do jogador 1 e o PULO deixava de ter dono. Nada errava em voz alta.
-  p2:[ { left:['KeyA'],right:['KeyD'],up:['KeyW'],down:['KeyS'], action1:['KeyU'],action2:['KeyJ','Space'],action4:['KeyI'],action3:['KeyK'] },
-       { left:['ArrowLeft'],right:['ArrowRight'],up:['ArrowUp'],down:['ArrowDown'], action1:['Numpad8'],action2:['Numpad5'],action4:['Numpad9'],action3:['Numpad6'] } ],
-  p3: JSON.parse(JSON.stringify(KB_SCHEMES4.slice(0, 3))), // modo 3 jogadores (independente do 4)
-  p4: JSON.parse(JSON.stringify(KB_SCHEMES4)),             // modo 4 jogadores
+  solo: vivo(KEYBOARD_SOLO),
+  p2: KEYBOARD_DUO.map(vivo),
+  p3: KB_SCHEMES4.slice(0, 3).map(vivo), // modo 3 jogadores (independente do 4)
+  p4: KB_SCHEMES4.map(vivo),             // modo 4 jogadores
 };
 
 // dado salvo (parcial): sobrepõe os defaults; p34 é o formato ANTIGO (migra p/ p3+p4).

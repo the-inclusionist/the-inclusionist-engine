@@ -10,6 +10,7 @@
 
 import type { ControlledPlayer } from '../core/entity.js';
 import type { KeyScheme } from '../core/entity.js';
+import { ACTIONS, type Action } from '../core/actions.js';
 import type { KBDefaults } from '../input/keyboard.js';
 
 /** action -> list of physical key codes (KeyboardEvent.code), e.g. {jump:['KeyJ','Space']}. Mirrors the shape
@@ -39,14 +40,19 @@ export interface KeyboardRuntimeCtx {
 
 /** Result of the old `applyControls()` mutation, as a value: `controls` + its per-action aliases (game.js's
  *  KJUMP/KLEFT/KRIGHT/KUP/KDOWN/KRUN) + the flattened `GAME_KEYS` list. */
+/** A lista que uma posição SEM ALCANCE devolve. Congelada e partilhada: ninguém deve escrever nela. */
+const VAZIO: readonly string[] = Object.freeze([]);
+
 export interface ControlsState {
   controls: KeyScheme;
-  action2: string[];
-  left: string[];
-  right: string[];
-  up: string[];
-  down: string[];
-  action1: string[];
+  // ⚠️ `readonly` desde a #118: uma posição sem alcance devolve a lista vazia partilhada, e uma lista
+  // partilhada que alguém pudesse mutar seria uma lista vazia que deixa de ser vazia para todos.
+  action2: readonly string[];
+  left: readonly string[];
+  right: readonly string[];
+  up: readonly string[];
+  down: readonly string[];
+  action1: readonly string[];
   gameKeys: string[];
 }
 
@@ -80,8 +86,12 @@ export interface KeyboardRuntime {
  *  (mirrors ui/settings-controls.ts's keyUsedByOther: a Map built over the scheme, not a re-scan per query). */
 function buildActionIndex(scheme: KeyScheme): Map<string, string> {
   const index = new Map<string, string>();
-  for (const action in scheme) {
-    for (const code of scheme[action]) {
+  // ⚠️ O LAÇO PASSOU A SER SOBRE `ACTIONS` E NÃO SOBRE AS CHAVES DO OBJETO (issue #118). São a mesma lista
+  // agora que o `KeyScheme` é fechado — mas percorrer `ACTIONS` diz QUAL é a lista, e um esquema que ganhe
+  // uma chave a mais por engano deixa de a ver. E o `?? []` é o que trata a AUSÊNCIA DECLARADA: um `null`
+  // não é um esquema partido, é um teclado que não alcança aquela posição.
+  for (const action of ACTIONS) {
+    for (const code of scheme[action] ?? []) {
       if (!index.has(code)) index.set(code, action);
     }
   }
@@ -135,11 +145,21 @@ export function initKeyboardRuntime(ctx: KeyboardRuntimeCtx): KeyboardRuntime {
   function computeControlsState(): ControlsState {
     const kb = ctx.getKB();
     const controls = kb.solo; // alias do P1 — SEMPRE kb.solo, mesmo com numPlayers>1 (comportamento original; ver relato)
-    const { action2, left, right, up, down, action1 } = controls;
+    // Os apelidos são LISTAS, nunca `null`: quem os lê faz `.includes(code)` sem perguntar. Uma posição que o
+    // esquema não alcança vira lista vazia aqui — «não alcança» e «alcança com zero teclas» valem o mesmo
+    // para quem só pergunta se a tecla está lá.
+    //
+    // ⚠️ E DEVOLVE A MESMA REFERÊNCIA, não uma cópia. A primeira versão fazia `[...]` e um caso reprovou por
+    // identidade — corretamente: o apelido é o alias do P1, e um teste que afirma «é o mesmo array» está a
+    // afirmar que ninguém interpôs uma cópia entre o esquema vivo e quem o lê. Copiar aqui não custaria nada
+    // hoje e passaria a custar no dia em que alguém mutasse a lista no lugar.
+    const lista = (a: Action): readonly string[] => controls[a] ?? VAZIO;
+    const action2 = lista('action2'), left = lista('left'), right = lista('right');
+    const up = lista('up'), down = lista('down'), action1 = lista('action1');
     const gameKeySet = new Set<string>();
     ctx.getPlayers().forEach((_, i) => {
       const scheme = kbFor(i);
-      for (const action in scheme) for (const code of scheme[action]) gameKeySet.add(code);
+      for (const action of ACTIONS) for (const code of scheme[action] ?? []) gameKeySet.add(code);
     });
     const gameKeys = gameKeySet.size ? [...gameKeySet] : [...action2, ...left, ...right, ...up, ...down];
     return { controls, action2, left, right, up, down, action1, gameKeys };

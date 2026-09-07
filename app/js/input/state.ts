@@ -6,6 +6,7 @@
 
 // Teclas físicas seguradas AGORA (KeyboardEvent.code). Mutada por keydown/keyup no game.js.
 import type { ControlledPlayer } from '../core/entity.js';
+import type { Action } from '../core/actions.js';
 
 export const keys = new Set<string>();
 
@@ -22,5 +23,9 @@ export const PAD_DEAD = 0.5; // zona morta = primeira METADE do curso do analóg
 type HeldPlayer = Pick<ControlledPlayer, 'ctrl' | 'pad'>;
 
 // Jogador está segurando a ação? teclado (algum code do esquema pl.ctrl) OU o gamepad associado (pl.pad).
-export const held = (pl: HeldPlayer, act: string): boolean =>
-  pl.ctrl[act].some((k) => keys.has(k)) || (pl.pad >= 0 && !!padCur[pl.pad]?.[act]);
+// ⚠️ `?? []` e não `pl.ctrl[act]` cru: desde a issue #118 uma posição que o teclado NÃO ALCANÇA é um `null`
+// declarado — num teclado partido por quatro não há lugar físico para ombros e gatilhos. Segurar uma ação
+// que o teclado não alcança é `false`, e o gamepad continua a ser perguntado logo a seguir: quem tem pad
+// alcança o que o teclado dele não alcança, que é o ponto de haver dois transportes.
+export const held = (pl: HeldPlayer, act: Action): boolean =>
+  (pl.ctrl[act] ?? []).some((k) => keys.has(k)) || (pl.pad >= 0 && !!padCur[pl.pad]?.[act]);

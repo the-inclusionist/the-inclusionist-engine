@@ -72,8 +72,20 @@ describe('keyUsedByOther', () => {
   });
   it('[Many] varre corretamente um esquema com várias ações e teclas por ação', () => {
     expect(keyUsedByOther('Space', p0, [p1, p2])).toBe(-1);
-    const withSpace = { extra: ['KeyX', 'Space'] };
+    const withSpace = { action3: ['KeyX', 'Space'] };
     expect(keyUsedByOther('Space', p0, [p1, withSpace])).toBe(1);
+  });
+
+  it('⚠️ [Boundary] uma chave que NÃO é posição não reserva tecla nenhuma', () => {
+    // ⚠️ O fixture deste caso usava `{ extra: [...] }` — uma ação inventada — e esperava que ela disputasse a
+    // tecla. Desde a #118 o esquema é fechado nas quatorze posições, e o crivo percorre `ACTIONS`: uma chave
+    // fora da lista é invisível aqui, e a mudança está CERTA.
+    //
+    // O motivo é do lado da criança: um conflito só é real contra uma posição que algum transporte leia. Uma
+    // tecla amarrada a `extra` não dispara nada — `actionForCode` também já não a vê —, então acusá-la de
+    // conflito impediria a criança de usar uma tecla que na verdade está livre. Recusar o remapeamento por
+    // causa de dado que não faz nada é o pior dos dois erros possíveis aqui.
+    expect(keyUsedByOther('Space', p0, [p1, { extra: ['Space'] }])).toBe(-1);
   });
 });
 

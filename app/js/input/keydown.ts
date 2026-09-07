@@ -255,7 +255,9 @@ export function isJumpKey(code: string, s: KeydownSnapshot): boolean {
  *  jogador. NÃO inclui os atalhos do Fácil (o original também não: por isso `easyKey` é somado à parte). */
 export function isGameKeyCode(code: string, s: KeydownSnapshot): boolean {
   return s.controls.gameKeys.includes(code)
-    || s.players.some((p) => !!p.ctrl && Object.values(p.ctrl).some((arr) => arr.includes(code)));
+    // `arr &&` porque uma posição sem alcance é `null` desde a #118 — e `null.includes` seria uma exceção
+    // no caminho do teclado, ou seja, o jogo a parar de responder a qualquer tecla.
+    || s.players.some((p) => !!p.ctrl && Object.values(p.ctrl).some((arr) => !!arr && arr.includes(code)));
 }
 
 /** Os atalhos de acessibilidade do Fácil só existem SOLO (`numPlayers<=1`) e só para o Jogador 1. */

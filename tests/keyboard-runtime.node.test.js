@@ -35,9 +35,19 @@ describe('actionForCode', () => {
     expect(() => actionForCode({ action2: [] }, 'KeyJ')).not.toThrow();
     expect(actionForCode({ action2: [] }, 'KeyJ')).toBeNull();
   });
-  it('[Boundary] tecla compartilhada por duas ações no MESMO esquema (dado inconsistente): primeira ação na ordem de inserção vence', () => {
+  it('⚠️ [Boundary] tecla em duas ações do MESMO esquema: vence a primeira na ORDEM CANÓNICA, não na de inserção', () => {
+    // ⚠️ A REGRA MUDOU EM 2026-09-07 (issue #118) E MUDOU PARA MELHOR. O caso dizia «primeira na ordem de
+    // INSERÇÃO vence», e esse critério nunca foi de fiar: a ordem de inserção é um acidente de como o objeto
+    // foi construído. Um esquema recém-carregado dos padrões e o MESMO esquema depois de `Object.assign` de
+    // uma sobreposição salva têm ordens de inserção diferentes — quer dizer, a mesma criança com o mesmo dado
+    // inconsistente podia ver a tecla disparar uma ação num arranque e outra no seguinte.
+    //
+    // Com o `KeyScheme` fechado, o índice percorre `ACTIONS`, que é declarada e idêntica nos dois casos.
+    // `action3` vem antes de `action4` na lista canónica, e é por isso que ela vence aqui.
     const dup = { action4: ['KeyC'], action3: ['KeyC'] };
-    expect(actionForCode(dup, 'KeyC')).toBe('action4');
+    expect(actionForCode(dup, 'KeyC')).toBe('action3');
+    // E a prova de que é a ordem canónica e não «a outra»: invertendo a inserção, o resultado NÃO muda.
+    expect(actionForCode({ action3: ['KeyC'], action4: ['KeyC'] }, 'KeyC')).toBe('action3');
   });
 });
 

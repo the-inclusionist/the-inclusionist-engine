@@ -20,7 +20,18 @@
 // sem numpad. Um esquema salvo que deixe de casar não dá erro: as teclas simplesmente param de responder, e
 // a criança conclui que o jogo quebrou. É perda de uma adaptação, não de uma preferência.
 
-import type { KeyScheme } from '../core/entity.js';
+/**
+ * ⚠️ O DADO SALVO NÃO É UM `KeyScheme`, e a issue #118 tornou isso um erro de compilação em vez de uma
+ * suposição. Um `KeyScheme` é FECHADO nas quatorze posições e completo; o que está no navegador da criança é
+ * uma SOBREPOSIÇÃO — parcial por construção (`loadKB` funde-a sobre os padrões com `Object.assign`) e capaz
+ * de carregar chaves que este código não conhece, o que o cabeçalho de `migrarEsquema` já dizia com todas as
+ * letras: «chave desconhecida atravessa intacta».
+ *
+ * Dar-lhe o tipo fechado obrigaria este ficheiro a inventar as posições que faltam no dado antigo — quer
+ * dizer, a escrever teclas que a criança nunca escolheu, no exacto módulo que existe para não lhe perder o
+ * remapeamento. O tipo aberto é o honesto aqui, e é só aqui.
+ */
+export type EsquemaSalvo = Record<string, readonly string[]>;
 
 /**
  * Nome de plataforma → posição abstrata. **ADR-0086 §2**, e não o ADR-0074.
@@ -88,11 +99,11 @@ export function migrarMapaDeControle<T>(mapa: Record<string, T> | null | undefin
 
 /** O objeto salvo, tal como `input/keyboard` o persiste. `p34` é o formato mais antigo de todos. */
 export interface SavedKB {
-  solo?: KeyScheme;
-  p2?: KeyScheme[];
-  p3?: KeyScheme[];
-  p4?: KeyScheme[];
-  p34?: (KeyScheme | null)[];
+  solo?: EsquemaSalvo;
+  p2?: EsquemaSalvo[];
+  p3?: EsquemaSalvo[];
+  p4?: EsquemaSalvo[];
+  p34?: (EsquemaSalvo | null)[];
 }
 
 /**
@@ -104,9 +115,9 @@ export interface SavedKB {
  * sumirem. É também o que torna esta função IDEMPOTENTE: aplicada sobre um esquema já migrado, nenhuma chave
  * casa e o resultado é igual à entrada, o que importa porque `loadKB` pode correr mais de uma vez na sessão.
  */
-export function migrarEsquema(esquema: KeyScheme | null | undefined): KeyScheme | null {
+export function migrarEsquema(esquema: EsquemaSalvo | null | undefined): EsquemaSalvo | null {
   if (!esquema) return null;
-  const saida: KeyScheme = {};
+  const saida: EsquemaSalvo = {};
   for (const [chave, teclas] of Object.entries(esquema)) {
     const nova = VOCABULARIO_ANTIGO[chave] ?? chave;
     // ⚠️ Esquema MEIO migrado (as duas chaves presentes): a UNIÃO, nunca a sobreposição. Perder uma tecla é
@@ -119,8 +130,8 @@ export function migrarEsquema(esquema: KeyScheme | null | undefined): KeyScheme 
 /** Traduz o objeto salvo inteiro — o esquema solo e as listas por contagem de jogadores. */
 export function migrarSalvo(s: SavedKB | null | undefined): SavedKB | null {
   if (!s) return null;
-  const lista = (arr: (KeyScheme | null)[] | undefined): KeyScheme[] | undefined =>
-    (Array.isArray(arr) ? arr.map((m) => migrarEsquema(m) as KeyScheme) : undefined);
+  const lista = (arr: (EsquemaSalvo | null)[] | undefined): EsquemaSalvo[] | undefined =>
+    (Array.isArray(arr) ? arr.map((m) => migrarEsquema(m) as EsquemaSalvo) : undefined);
   const out: SavedKB = {};
   const solo = migrarEsquema(s.solo);
   if (solo) out.solo = solo;
