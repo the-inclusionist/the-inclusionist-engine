@@ -133,11 +133,15 @@ jobs:
       - run: npm run build
       # The preview server serves `dist/`, which is what a school would receive. Any WCAG A/AA violation in
       # our own markup fails the run; the VLibras widget is excluded by the script, not by this file.
+      # ⚠️ O ALVO É `/quiz.html` E NÃO `/`, desde 2026-09-07. `dist/` já não emite `index.html` — ele saiu com
+      # o cartucho (#111) —, então a sonda de prontidão nunca ficava pronta (esperava os 30 s inteiros) e o
+      # axe estourava à espera de `#sr-status` numa página que não existe. A sonda passou a bater na MESMA
+      # página que o gate audita: uma sonda que testa outro endereço não prova que o gate tem o que auditar.
       - name: axe against the built app
         run: |
           npm run preview -- --port 4173 &
-          for i in $(seq 1 30); do curl -sf http://localhost:4173/ >/dev/null && break; sleep 1; done
-          AXE_URL=http://localhost:4173/ npm run test:a11y
+          for i in $(seq 1 30); do curl -sf http://localhost:4173/quiz.html >/dev/null && break; sleep 1; done
+          AXE_URL=http://localhost:4173/quiz.html npm run test:a11y
 
   # ============================================================================================
   # ADR-0078: the DCO is the contribution instrument, and an instrument nothing checks is missing
