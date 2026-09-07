@@ -14,6 +14,15 @@ import { migrarMapaDeControle } from './vocabulary-migration.js';
 import { GAMEPAD_STANDARD } from './default-bindings.js';
 import type { Action } from '../core/actions.js';
 import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
+// ⚠️ O `oneButton` ENTRA POR IMPORT, e não pelo `ctx` — ao contrário de `input/keydown`, que o recebe por
+// getter. A diferença não é de gosto: o `keydown` foi extraído quando o `oneButton` era um `let` do
+// `game.js`, e a regra da casa manda o que o JOGO reatribui entrar por getter. Hoje ele é `core/state`,
+// ou seja da ENGINE — e um getter obrigaria cada consumidor a lembrar-se de o passar.
+//
+// ⚠️ E ESQUECER É EXATAMENTE O DEFEITO QUE ISTO CONSERTA (issue #120). Um campo opcional no ctx faria a
+// acomodação existir só nos jogos onde alguém se lembrou dela, que é o argumento M3 do ADR-0077 com outro
+// substantivo. Binding vivo de `core/state`: não há por onde falhar.
+import * as estadoDoJogo from '../core/state.js';
 import * as store from '../platform/storage.js';
 
 // ---------------------------------------------------------------------------------------------
@@ -154,6 +163,57 @@ export function padActions(gp: PadLike, custom: PadMap | null): PadActions {
  * posição não tem o que mapear nela — e perguntar produziria um passo mudo, ou pior, um passo a dizer
  * `action7` em voz alta.
  */
+/**
+ * AS POSIÇÕES QUE O MODO DE UM BOTÃO NÃO CORTA. Pausar é a SAÍDA, não uma jogada.
+ *
+ * ⚠️ Cortar o START prenderia a criança dentro da partida — é o mesmo raciocínio que põe «a saída
+ * primeiro» no ADR-0044 e que fez a armadilha de foco existir no ADR-0090. Uma acomodação que tranca não
+ * é acomodação. Os derivados (`_start`, `_pause`) também passam: eles descrevem o que a raiz faz com
+ * estas duas posições, não uma terceira.
+ */
+const FORA_DO_CORTE = new Set(['start', 'select', '_start', '_pause']);
+
+/**
+ * O MODO DE UM BOTÃO, APLICADO AO CONTROLE — a metade que faltava da empatia motora (issue #120).
+ *
+ * ⚠️ ELE VALIA SÓ NO TECLADO. `input/keydown.ts:407` solta todas as outras teclas de jogo quando uma nova
+ * chega com o modo ligado; `pollPads` não tinha equivalente nenhum, e `grep oneButton` neste ficheiro
+ * devolvia zero. Uma criança que ligasse o modo e tivesse um controle na mão **não estava no modo** — sem
+ * erro, sem aviso, sem sintoma, porque as definições continuavam a dizer que estava ligado.
+ *
+ * ⚠️ AS DIREÇÕES CONTAM, e é isso que torna a regra fiel ao teclado: lá, `isGameKeyCode` inclui as teclas
+ * de `p.ctrl`, que são as quatro direções — andar e pular não coexistem. Um filtro que poupasse as
+ * direções seria mais confortável e estaria a simular outra deficiência.
+ *
+ * ⚠️ E A ESCOLHA DE QUEM SOBREVIVE É DIFERENTE DA DO TECLADO, POR NECESSIDADE. No teclado a chegada nova
+ * ganha, porque HÁ uma chegada: o evento diz qual é. Um controle é lido por SONDAGEM — o que chega é um
+ * retrato, sem ordem. Então mantém-se a que já valia, e só quando ela solta é que a próxima assume. É o
+ * que impede o botão de correr de ser cortado porque o polegar encostou noutro, e é a mesma leitura de
+ * «segurar» que o ADR-0077 dá.
+ *
+ * A POLÍTICA é a mesma do `keydown`; a IMPLEMENTAÇÃO não pode ser partilhada hoje porque as formas do
+ * estado diferem — lá é um `Set` de códigos de tecla, aqui é um retrato de booleanos por posição. Unificar
+ * as duas é trabalho à parte, e escrevê-lo aqui é a alternativa a fingir que não há duas.
+ */
+export function umBotaoPorVez(
+  // ⚠️ O ANTERIOR É TIPADO PELO QUE ESTA FUNÇÃO LÊ, e não por `PadActions`: o `padPrevAct[gi]` do laço é
+  // `PadState`, mais frouxo, e exigir a forma completa obrigaria o chamador a um molde que não descreve o
+  // que se passa aqui — só se pergunta «esta chave estava em baixo?».
+  anterior: Readonly<Record<string, boolean | undefined>>,
+  atual: PadActions,
+  ligado: boolean,
+): PadActions {
+  if (!ligado) return atual;
+  const cortaveis = Object.keys(atual).filter((k) => !FORA_DO_CORTE.has(k));
+  const ativas = cortaveis.filter((k) => atual[k] === true);
+  if (ativas.length <= 1) return atual;
+  // A que já valia tem prioridade; sem nenhuma, a primeira do retrato assume.
+  const mantida = ativas.find((k) => anterior[k] === true) ?? ativas[0];
+  const saida: PadActions = { ...atual };
+  for (const k of ativas) if (k !== mantida) saida[k] = false;
+  return saida;
+}
+
 export const PADWIZ_ORDER: readonly string[] = [
   // Direções primeiro: são o que a criança encontra sem pensar, e acertar as quatro dá confiança para as
   // outras dez.
@@ -512,8 +572,10 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         openPadWizFor(gp);
         return;
       }
-      const cur = actionsFor(gp);
       const prev = padPrevAct[gi] || {};
+      // ⚠️ A EMPATIA MOTORA APLICADA AO CONTROLE (issue #120). Sem esta linha, uma criança com o modo de
+      // um botão ligado e um pad na mão NÃO ESTAVA no modo — e nada em lado nenhum o dizia.
+      const cur = umBotaoPorVez(prev, actionsFor(gp), estadoDoJogo.oneButton);
       if (ctx.isTouchMode() && (cur.left || cur.right || cur.up || cur.down || cur.action2 || cur.action1 || cur.action4 || cur.action3 || cur._start)) {
         ctx.hideTouchControls(); // botão físico usado -> some o gamepad virtual (mesma regra do teclado)
       }

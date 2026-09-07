@@ -10,9 +10,11 @@ import { GAMEPAD_STANDARD } from '../app/js/input/default-bindings.js';
 import { ACTIONS } from '../app/js/core/actions.js';
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  stdDirs, bindActive, padActions, PADWIZ_ORDER, initGamepad,
+  stdDirs, bindActive, padActions, PADWIZ_ORDER, initGamepad, umBotaoPorVez,
 } from '../app/js/input/gamepad.js';
 import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
+// `oneButton` e' binding vivo de `core/state` (nao do ctx): estes casos ligam-no e desligam-no de verdade.
+import * as estado from '../app/js/core/state.js';
 
 // padCur/padPrevAct/padPrevStart (input/state.ts) são estado GENUINAMENTE compartilhado — não fazem parte do
 // ctx, e persistem entre chamadas de initGamepad() dentro do mesmo processo (é assim que o game.js real os
@@ -22,6 +24,7 @@ beforeEach(() => {
   for (const k of Object.keys(padCur)) delete padCur[k];
   for (const k of Object.keys(padPrevAct)) delete padPrevAct[k];
   for (const k of Object.keys(padPrevStart)) delete padPrevStart[k];
+  estado.setOneButtonValue(false); // senao um caso da empatia motora vaza para os 50 de cima
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -548,5 +551,109 @@ describe('initGamepad — imagem da demonstracao', () => {
     const ctx = buildCtx({ spriteBase: 'x/y/' }); const api = initGamepad(ctx);
     api.openPadWiz();
     expect(ctx.dom.get('#padwiz-demo-img').src).toBe('x/y/idle/0.png');
+  });
+});
+
+// ===================================================================================================
+// O MODO DE UM BOTÃO TEM DE VALER NO CONTROLE TAMBÉM (issue #120)
+// ===================================================================================================
+// ⚠️ O DEFEITO QUE ESTE BLOCO EXISTE PARA FECHAR, medido em 2026-09-07: `grep oneButton` em
+// `input/gamepad.ts` devolvia ZERO. `input/keydown.ts` honra a empatia motora — quando uma tecla de jogo
+// chega e o modo está ligado, TODAS as outras teclas de jogo seguras são soltas (`releaseKeys`, :407) —
+// e o `pollPads` não tinha nada equivalente.
+//
+// ⚠️ E A CRIANÇA NÃO TEM COMO SABER. Ela liga o modo porque precisa dele, e ele funciona — até alguém
+// ligar um controle. Sem erro, sem aviso, sem sintoma: as definições dizem que está ligado e o aparelho
+// comporta-se como se não estivesse. É o pilar 2 do ADR-0010 a falhar em silêncio, e é mais velho que o
+// registro que o encontrou.
+//
+// ⚠️ AS DIREÇÕES CONTAM, e é isso que torna a regra o que ela é. No teclado, `isGameKeyCode` inclui as
+// teclas de `p.ctrl`, que são as quatro direções — então andar e pular NÃO coexistem com o modo ligado.
+// Um filtro que poupasse as direções seria mais confortável e simularia outra deficiência.
+describe('empatia motora no CONTROLE: um botão por vez (issue #120)', () => {
+  const nada = {
+    left: false, right: false, up: false, down: false,
+    action1: false, action2: false, action3: false, action4: false,
+    leftShoulder: false, leftTrigger: false, rightShoulder: false, rightTrigger: false,
+    start: false, select: false,
+  };
+  const ligadas = (a) => Object.keys(a).filter((k) => a[k] === true && !k.startsWith('_')).sort();
+
+  it('[Zero] com o modo DESLIGADO nada é filtrado — duas posições continuam a valer', () => {
+    const atual = { ...nada, right: true, action2: true };
+    expect(ligadas(umBotaoPorVez(nada, atual, false))).toEqual(['action2', 'right']);
+  });
+
+  it('⚠️ [Right] com o modo ligado, duas ao mesmo tempo viram UMA', () => {
+    const atual = { ...nada, right: true, action2: true };
+    expect(ligadas(umBotaoPorVez(nada, atual, true))).toHaveLength(1);
+  });
+
+  it('⚠️ [Right] a que já estava em baixo MANTÉM-SE — a nova não a rouba', () => {
+    // No teclado a chegada nova ganha porque HÁ uma chegada. Num controle lido por sondagem não há
+    // "nova": há um retrato. Manter a que já valia é o que faz o botão de correr não ser cortado
+    // porque o polegar encostou noutro — e é a leitura que o ADR-0077 dá ao segurar.
+    const antes = { ...nada, action2: true };
+    const atual = { ...nada, action2: true, right: true };
+    expect(ligadas(umBotaoPorVez(antes, atual, true))).toEqual(['action2']);
+  });
+
+  it('⚠️ [Right] quando a activa solta, a próxima em baixo assume', () => {
+    const antes = { ...nada, action2: true };
+    const atual = { ...nada, right: true };
+    expect(ligadas(umBotaoPorVez(antes, atual, true))).toEqual(['right']);
+  });
+
+  it('⚠️ [Interface] as DIREÇÕES contam — andar e pular não coexistem', () => {
+    const atual = { ...nada, left: true, action2: true };
+    const saida = umBotaoPorVez(nada, atual, true);
+    expect(ligadas(saida), 'um filtro que poupe as direções simula outra deficiência').toHaveLength(1);
+  });
+
+  it('[Zero] nada apertado continua nada apertado', () => {
+    expect(ligadas(umBotaoPorVez(nada, { ...nada }, true))).toEqual([]);
+  });
+
+  it('[Interface] START e SELECT NÃO são cortados — pausar é a saída, não uma jogada', () => {
+    // Cortar o START prenderia a criança dentro da partida: é o mesmo raciocínio do ADR-0044 («a saída
+    // primeiro») e da armadilha de foco do ADR-0090. Uma acomodação que tranca não é acomodação.
+    const atual = { ...nada, action2: true, start: true, select: true };
+    const saida = umBotaoPorVez(nada, atual, true);
+    expect(saida.start).toBe(true);
+    expect(saida.select).toBe(true);
+  });
+
+  it('[Interface] não muta o retrato que recebeu', () => {
+    const atual = { ...nada, right: true, action2: true };
+    const copia = { ...atual };
+    umBotaoPorVez(nada, atual, true);
+    expect(atual).toEqual(copia);
+  });
+});
+
+// ⚠️ E O FIO TEM DE ESTAR LIGADO, não só existir. O ADR-0090 registra três facilidades que a engine
+// MONTAVA e nunca ligava — «ausência seria visível; o objeto TEM uma `nav`, o laço TEM um campo
+// `aoFalhar`, e os dois parecem prontos». Uma função pura testada e nunca chamada é a quarta.
+describe('e o modo de um botão está LIGADO no laço de sondagem (issue #120)', () => {
+  const comPad = (pressed) => {
+    const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
+    ctx.setPads([makePad({ pressed })]);
+    return ctx;
+  };
+
+  it('⚠️ [Right] com o modo ligado, duas posições no mesmo quadro deixam UMA no estado', () => {
+    estado.setOneButtonValue(true);
+    const ctx = comPad([0, 15]); // action2 (A) + D-pad direita
+    initGamepad(ctx).pollPads();
+    const ligadas = Object.keys(padCur[0]).filter((k) => padCur[0][k] === true && !k.startsWith('_'));
+    expect(ligadas, 'o pad ignorou a empatia motora').toHaveLength(1);
+  });
+
+  it('[Zero] e com o modo desligado as duas continuam a valer', () => {
+    estado.setOneButtonValue(false);
+    const ctx = comPad([0, 15]);
+    initGamepad(ctx).pollPads();
+    const ligadas = Object.keys(padCur[0]).filter((k) => padCur[0][k] === true && !k.startsWith('_'));
+    expect(ligadas.length).toBeGreaterThan(1);
   });
 });
