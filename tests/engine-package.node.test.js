@@ -234,3 +234,93 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
     expect(linhasDeCodigo(comentada)).toEqual([]);
   });
 });
+
+// ===================================================================================================
+// O TERCEIRO CRIVO: O QUE O PACOTE EMITE, ELE TEM DE DEIXAR ALCANÇAR
+// ===================================================================================================
+// ⚠️ O ACHADO, e ele chegou pela SEPARAÇÃO DO CARTUCHO (issue #111), não por leitura: um teste do jogo, no
+// repositório novo, fez `import pt from '@the-inclusionist/engine/i18n/pt.js'` e recebeu
+//
+//     "./i18n/pt.js" is not exported under the conditions ["node","development","import"]
+//
+// O `tsconfig.pkg.json` INCLUI `app/js/i18n` — os três dicionários são emitidos e viajam no tarball — e o
+// `exports` não tinha entrada para eles. Emitido e inalcançável: peso no pacote que ninguém pode usar, e uma
+// porta fechada para o consumidor que quer conferir uma frase contra o dicionário em vez de contra uma cópia.
+//
+// ⚠️ E OS DOIS CRIVOS DE CIMA NÃO O VEEM, por construção: aquele olha o que o código NOMEIA, este olha o que
+// o pacote OFERECE. São perguntas diferentes sobre o mesmo `package.json`, e a primeira estava verde.
+//
+// A EXCEÇÃO É `boot`, e é declarada: o único módulo dele é `create-game`, que é a entrada `.` do pacote.
+// Uma camada de entrada não precisa de subcaminho — precisa de estar alcançável, e está.
+describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #111)', () => {
+  const PKG = JSON.parse(readFileSync(join(RAIZ_REPO, 'package.json'), 'utf8'));
+  const SUBCAMINHOS = Object.keys(PKG.exports ?? {});
+
+  /** As camadas que o `tsconfig.pkg.json` manda emitir: `app/js/<camada>` → `<camada>`. */
+  const CAMADAS_EMITIDAS = (CFG.include ?? [])
+    .filter((e) => e.startsWith('app/js/'))
+    .map((e) => e.slice('app/js/'.length));
+
+  /** `boot` entra pela raiz `.` (create-game), e é a ÚNICA camada que pode não ter subcaminho próprio. */
+  const PELA_RAIZ = new Set(['boot']);
+
+  it('[Interface] o `exports` tem uma raiz `.`, e ela aponta para dentro de `boot`', () => {
+    const raiz = PKG.exports?.['.'];
+    const alvo = typeof raiz === 'string' ? raiz : raiz?.default;
+    expect(alvo, 'sem raiz não há `import { createGame } from "@the-inclusionist/engine"`').toBeTruthy();
+    expect(alvo).toContain('/boot/');
+  });
+
+  it('[Zero] NENHUMA camada emitida fica sem porta — emitido e inalcançável é peso morto', () => {
+    const semPorta = CAMADAS_EMITIDAS
+      .filter((c) => !PELA_RAIZ.has(c))
+      .filter((c) => !SUBCAMINHOS.some((s) => s.startsWith(`./${c}/`)));
+    expect(semPorta, 'camada que o tarball carrega e o consumidor não consegue importar').toEqual([]);
+  });
+
+  it('[Right] e o crivo PEGA a lacuna real que a separação encontrou', () => {
+    // `i18n` era exatamente este caso em 06/09: incluída no build, ausente do `exports`. Sem esta prova, o
+    // `[Zero]` acima poderia estar verde por não olhar nada.
+    const semI18n = SUBCAMINHOS.filter((s) => !s.startsWith('./i18n/'));
+    const faltando = CAMADAS_EMITIDAS
+      .filter((c) => !PELA_RAIZ.has(c))
+      .filter((c) => !semI18n.some((s) => s.startsWith(`./${c}/`)));
+    expect(faltando, 'o crivo deixaria a lacuna do i18n passar').toEqual(['i18n']);
+  });
+
+  /**
+   * ⚠️ A PORTA QUE PROMETE MAIS DO QUE ENTREGA, e ela é CONHECIDA e DELIBERADA — metade dela.
+   *
+   * `"./assets/*": "./app/public/*"` casa a pasta inteira, e o `files` embarca só `app/public/vendor`.
+   * Medido no tarball 7.0.1: `assets/vendor/fonts.css` resolve; `assets/assets/sprites/…` dá 404.
+   *
+   * O QUE ESTÁ CERTO É A AUSÊNCIA: a arte NÃO é FOSS (pilar 10 do ADR-0010) e não pode viajar num pacote
+   * AGPL. O que está errado é o PADRÃO, que promete a pasta toda — e estreitá-lo para `./assets/vendor/*`
+   * mudaria o caminho de quem já escreve `engine/assets/vendor/fonts.css`, ou seja, é quebra de contrato e
+   * decisão do Dev, não de quem escreve o gate. Fica como exceção NOMEADA, com o motivo, e com issue.
+   */
+  const PORTA_LARGA_DE_PROPOSITO = new Map([['./assets/*', 'a arte não é FOSS; só `vendor/` viaja — ver a issue']]);
+
+  it('[Boundary] toda porta do `exports` aponta para algo que o pacote realmente EMBARCA', () => {
+    // A recíproca: uma porta para uma pasta que o `files` não leva é um 404 prometido ao consumidor.
+    const FILES = new Set(PKG.files ?? []);
+    const problemas = [];
+    for (const [sub, alvo] of Object.entries(PKG.exports ?? {})) {
+      if (PORTA_LARGA_DE_PROPOSITO.has(sub)) continue;
+      const destino = typeof alvo === 'string' ? alvo : alvo?.default;
+      if (!destino) { problemas.push(`${sub}: sem destino`); continue; }
+      const raiz = destino.replace(/^\.\//, '').split('/')[0];
+      if (!FILES.has(raiz) && raiz !== 'package.json' && !FILES.has(destino.replace(/^\.\//, ''))) {
+        problemas.push(`${sub} -> ${destino} (fora de \`files\`)`);
+      }
+    }
+    expect(problemas).toEqual([]);
+  });
+
+  it('[Interface] a lista de portas largas NÃO cresce, e cada uma carrega o motivo', () => {
+    // É a última saída deste crivo. Uma exceção sem motivo é afrouxamento disfarçado, e uma lista que cresce
+    // é o crivo a ser desligado devagar. UMA hoje, e ela está documentada acima com a medida do tarball.
+    expect(PORTA_LARGA_DE_PROPOSITO.size).toBeLessThanOrEqual(1);
+    for (const [, motivo] of PORTA_LARGA_DE_PROPOSITO) expect(motivo.length).toBeGreaterThan(20);
+  });
+});

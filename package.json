@@ -51,6 +51,10 @@
       "types": "./dist-pkg/educational/*.d.ts",
       "default": "./dist-pkg/educational/*.js"
     },
+    "./i18n/*.js": {
+      "types": "./dist-pkg/i18n/*.d.ts",
+      "default": "./dist-pkg/i18n/*.js"
+    },
     "./style.css": "./app/css/style.css",
     "./assets/*": "./app/public/*",
     "./package.json": "./package.json"
