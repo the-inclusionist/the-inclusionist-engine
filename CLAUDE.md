@@ -107,7 +107,12 @@ do GitHub, privada até o ato (**ADR-0066**).
 ## 2. Estrutura & toolchain
 
 - Repo `SP-the-inclusionist-tracer/` (git). O jogo publicável vive em **`app/`**; o código em **`app/js/**`** (ES
-  Modules `.ts`). Deploy = **`dist/`** no **Cloudflare Pages** (git-connected, builda no push da `main`).
+  Modules `.ts`). ⚠️ **NÃO HÁ DEPLOY LIGADO** (informado pelo Dev em 2026-09-07): **nenhum projeto do
+  Cloudflare Pages está conectado a repositório nenhum** neste momento. Esta linha dizia «Deploy = `dist/` no
+  Cloudflare Pages (git-connected, builda no push da `main`)», e a diferença não é de detalhe: com ela eu
+  levantei, na issue #111, um bloqueio que não existe — *«quando a engine esvaziar, o push seguinte publica
+  uma página vazia»*. Não publica nada, porque nada publica. Enquanto não houver conexão, **push não é
+  publicação**, e a saída do build (`dist/`) só chega a alguém por um passo manual.
 - **TypeScript + Vite** (build) + **Vitest** (node + browser/Playwright) + **vite-plugin-pwa** (SW por content-hash).
   ⚠️ **`npm run typecheck` tem de sair LIMPO — zero erros, em qualquer arquivo.** Foram 273 no `main.ts` no dia
   da conversão, tolerados por um gate com orçamento que só descia (`scripts/check-types.mjs`); chegaram a zero

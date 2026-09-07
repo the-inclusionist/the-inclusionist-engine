@@ -70,9 +70,11 @@ npm test           # testes Vitest (node + browser via Playwright); npm run test
   `allow_failure: true` e estavam vermelhos havia semanas. O histórico o guarda; o cabeçalho do `ci.yml`
   documenta o porte linha a linha.
 
-- **CD** — Cloudflare Pages (plano gratuito). ⚠️ **A conexão git dele apontava para o GitLab, que agora está
-  arquivado** — o deploy tem de ser reapontado para este repositório antes do próximo push valer publicação.
-  Não dá para conferir isto de fora do painel da Cloudflare. A cada push na `main`:
+- **CD** — ⚠️ **NÃO HÁ NENHUM**, hoje. Informado pelo Dev em 2026-09-07: **nenhum projeto do Cloudflare Pages
+  está conectado a repositório nenhum**. A ressalva anterior — «a conexão apontava para o GitLab, que agora
+  está arquivado» — descrevia um deploy desapontado; o estado atual é mais simples e mais grave de confundir:
+  **push não é publicação**, e `dist/` só chega a alguém por um passo manual.
+  A tabela abaixo fica como a RECEITA de quando houver conexão, e não como descrição do que existe:
 
   | Configuração | Valor |
   |---|---|

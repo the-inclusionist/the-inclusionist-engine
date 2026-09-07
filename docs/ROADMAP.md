@@ -31,6 +31,10 @@ decided; but items can be pulled into gaps if preferred.
 
 ## Current state (2026-07-05)
 
-- **Fase 0** (deploy) — done (public repo + Cloudflare Pages).
+- **Fase 0** (deploy) — ⚠️ **NÃO está done, e a linha dizia que estava.** Ela lia «done (public repo +
+  Cloudflare Pages)», escrita em 2026-07-05, quando era verdade. Em 2026-09-07 o Dev informou que **nenhum
+  projeto do Cloudflare Pages está conectado a repositório nenhum**. O repositório também não é público (a
+  organização é privada até o ato — ADR-0066). O que a Fase 0 de facto entregou e continua entregue é o
+  **pacote publicado** no npmjs (`@the-inclusionist/engine@7.0.1`, ADR-0072); o deploy da página não.
 - **Fase 2** (engine spine / modularization) — in progress (the current work).
 - **Migration to TS + Vite** adopted 2026-07-04 (supersedes the old "no build" preference) — `2-Architecture/plano-typescript-vite.md`.
