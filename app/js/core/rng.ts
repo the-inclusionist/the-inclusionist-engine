@@ -57,10 +57,20 @@ export const createRng = (semente: number = SEMENTE_PADRAO): Rng => {
   return { rnd, randInt, shuffle, reseed };
 };
 
-// ⚠️ A CORRENTE DO JOGO PRÓPRIO DA ENGINE, e SÓ dela. Existe porque `game/` ainda vive aqui dentro
-// (issue #111: o cartucho que ainda não saiu, ADR-0036/ADR-0083). Quando `game/` sair, isto sai com ele.
-// UM CONSUMIDOR EXTERNO NÃO DEVE IMPORTAR ESTES QUATRO — são estado partilhado, que é o defeito que a
-// fábrica acima conserta. Faça `createRng(suaSemente)`.
+// ⚠️ ESTE BLOCO TINHA DATA DE MORTE ESCRITA, E ELA NÃO CHEGOU — A PREMISSA É QUE MORREU.
+// Dizia: «Existe porque `game/` ainda vive aqui dentro (issue #111). Quando `game/` sair, isto sai com ele.»
+// O `game/` saiu em 2026-09-07 — e saiu para OUTRO REPOSITÓRIO, onde continua a consumir estes quatro pelo
+// pacote. Medido no dia: `@the-inclusionist/game-platformer` importa `rnd`, `randInt` e `shuffle` em OITO
+// módulos (`quiz`, `physics`, `life`, `traffic`, `fractions`, `coins`, `coin-spawning`,
+// `literacy-distractors`) mais o `main.ts`.
+//
+// Ou seja, o que se previu como «sai junto» virou o oposto: saindo, o cartucho tornou-os SUPERFÍCIE
+// PÚBLICA de um pacote publicado. Removê-los agora é quebra de contrato maior, não limpeza.
+//
+// ⚠️ E A ADVERTÊNCIA CONTINUA VERDADEIRA, o que é o incómodo: são estado partilhado de módulo, que é
+// exatamente o defeito que a fábrica acima conserta. Um segundo jogo na mesma página divide esta corrente
+// com o primeiro. O caminho de saída é o consumidor passar a `createRng(suaSemente)` — e isso é migração
+// dele, com aviso e um major, não uma remoção unilateral daqui.
 const _padrao = createRng(SEMENTE_PADRAO);
 export const reseed = _padrao.reseed;
 export const rnd = _padrao.rnd;

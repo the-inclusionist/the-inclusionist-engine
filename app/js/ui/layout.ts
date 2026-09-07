@@ -60,8 +60,24 @@ let _numJogadores: () => number = () => 1;
 /** Liga a contagem de jogadores. Chamado uma vez pela raiz, antes do primeiro `layout()`. */
 export function initLayout(deps: { numJogadores: () => number }): void { _numJogadores = deps.numJogadores; }
 
+/**
+ * A CASCA QUE DÁ O ESPAÇO DISPONÍVEL — por id OU por classe, e as duas formas valem o mesmo.
+ *
+ * ⚠️ ERA SÓ `#stage-wrap`, E ISSO DEIXOU A ENGINE SEM ESCALA NO PRÓPRIO HOST. O `app/index.html` do jogo
+ * trazia `<div id="stage-wrap">`; quando o cartucho saiu (issue #111) sobrou o `app/quiz.html`, que tem
+ * `<div class="stage-wrap">`. A procura por id falhava, `layout()` fazia early-return, e **nada reportava
+ * nada**: um `return` silencioso é indistinguível de «não havia o que fazer». O comentário do próprio
+ * `quiz.html` dizia «mesmo id que ui/layout escala» — quem o escreveu acreditava que corria.
+ *
+ * O consumidor não erra ao usar a classe: um documento pode ter várias telas, e um id é único. Aceitar as
+ * duas é o que torna a engine consumível por quem não copiou o markup dela.
+ */
+function cascaDoPalco(): HTMLElement | null {
+  return $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap');
+}
+
 export function layout(): void {
-  const wrap = $<HTMLElement>('#stage-wrap'); if (!wrap) return;
+  const wrap = cascaDoPalco(); if (!wrap) return;
   wrap.style.paddingRight = '0px';
   const availW = wrap.clientWidth || 320;
   const availH = wrap.clientHeight || 180;
