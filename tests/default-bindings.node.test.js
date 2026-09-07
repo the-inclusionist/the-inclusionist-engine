@@ -9,6 +9,10 @@ import { ACTIONS } from '../app/js/core/actions.js';
 import {
   KEYBOARD_SOLO, KEYBOARD_DUO, GAMEPAD_STANDARD, bindingProblems, conflitosEntreTabelas, unreachable,
 } from '../app/js/input/default-bindings.js';
+// Só o último bloco os usa. Estão aqui porque a pergunta que ele faz atravessa os dois ficheiros: uma tecla
+// pode estar livre nas TABELAS e já ser reclamada por uma constante de módulo do `input/keydown`.
+import { KB_DEFAULTS } from '../app/js/input/keyboard.js';
+import { PAUSE_KEYS, EASY_SHORTCUTS, SCREEN_DIGITS, isEasyShortcut } from '../app/js/input/keydown.js';
 
 describe('as tabelas cobrem as quatorze ações, sem buraco', () => {
   it.each([['teclado solo', KEYBOARD_SOLO], ['gamepad padrão', GAMEPAD_STANDARD]])(
@@ -274,3 +278,82 @@ describe('input/default-bindings — toda cadeira tem porta para o remapeamento 
 //     donos" nao dependia de eu me lembrar dela ao acrescentar uma porta.
 //   · trocando `Numpad1` por `ShiftRight` em vez de acrescentar → "[Right] as teclas do numpad FICAM"
 //     reprova. O conserto pedido era acrescentar uma porta, nao mudar o layout que funciona onde ha numpad.
+
+// ==========================================================================================================
+// ⚠️ UM BINDING PADRAO NAO COLIDE COM UMA TECLA QUE O MODULO JA RECLAMA
+//
+// ⚠️ ESTE BLOCO NASCEU DE UM ERRO MEU, e vale escrever assim. Ao consertar a #122 acrescentei `ShiftRight`
+// ao `start` do segundo assento e verifiquei que a tecla estava livre — nas QUATRO TABELAS. Nao olhei os
+// conjuntos de modulo do `input/keydown`, e `ShiftRight` esta em `EASY_SHORTCUTS`.
+//
+// Nao ha colisao viva: o `isEasyShortcut` exige `numPlayers <= 1` e o `p2[1]` so existe com dois. Mas isso e
+// «verdade por acidente de uma guarda noutro ficheiro» — exatamente o feitio de defeito que a #121 acabou de
+// pagar, em que o pan estava certo na plataforma por o mundo dela ser medido em pixels.
+//
+// Entao a seguranca deixa de ser acidente e passa a ser AFIRMADA: a sobreposicao esta nomeada com o motivo, e
+// ha um caso que prende a guarda que a torna inofensiva. Se alguem tirar o `numPlayers <= 1`, a suite fica
+// vermelha antes de a tecla de pausa da segunda crianca virar «trocar poder» do primeiro.
+//
+// MUTACOES CONFERIDAS (no fim do bloco).
+// ==========================================================================================================
+describe('binding padrao x teclas que o modulo ja reclama (#122, achado de 2026-09-07)', () => {
+  const TABELAS = [
+    ['solo', KB_DEFAULTS.solo],
+    ...KB_DEFAULTS.p2.map((s, i) => [`p2[${i}]`, s]),
+    ...KB_DEFAULTS.p3.map((s, i) => [`p3[${i}]`, s]),
+    ...KB_DEFAULTS.p4.map((s, i) => [`p4[${i}]`, s]),
+  ];
+  const CONJUNTOS = [
+    ['PAUSE_KEYS', (c) => PAUSE_KEYS.has(c)],
+    ['EASY_SHORTCUTS', (c) => EASY_SHORTCUTS.has(c)],
+    ['SCREEN_DIGITS', (c) => SCREEN_DIGITS.test(c)],
+  ];
+
+  /** As sobreposicoes CONHECIDAS, cada uma com o motivo. A lista nao cresce sem alguem escrever porque. */
+  const CONHECIDAS = new Map([
+    ['solo.start=Enter∩PAUSE_KEYS', 'deliberado: o `Enter` JA pausava antes de o esquema o nomear'],
+    ['p2[0].start=Enter∩PAUSE_KEYS', 'o mesmo, para o primeiro assento da dupla'],
+    ['p2[1].start=ShiftRight∩EASY_SHORTCUTS', 'inofensivo por exclusao mutua: os atalhos do Facil exigem `numPlayers <= 1` e este esquema so existe com dois — e ha caso abaixo a prender essa guarda'],
+  ]);
+
+  const sobreposicoes = () => {
+    const out = [];
+    for (const [nome, esquema] of TABELAS) {
+      for (const [acao, teclas] of Object.entries(esquema)) {
+        for (const c of teclas ?? []) {
+          for (const [conj, tem] of CONJUNTOS) if (tem(c)) out.push(`${nome}.${acao}=${c}∩${conj}`);
+        }
+      }
+    }
+    return out.sort();
+  };
+
+  it('⚠️ [Zero] NENHUMA sobreposicao nova — e cada conhecida carrega o motivo', () => {
+    const novas = sobreposicoes().filter((s) => !CONHECIDAS.has(s));
+    expect(novas, 'binding padrao numa tecla que o modulo ja reclama; nomeie a sobreposicao com o motivo').toEqual([]);
+    for (const [, motivo] of CONHECIDAS) expect(motivo.length, 'motivo curto demais para ser motivo').toBeGreaterThan(30);
+  });
+
+  it('⚠️ [Cross-check] o crivo ACHA as tres de hoje — senao o [Zero] estaria verde por nao olhar nada', () => {
+    expect(sobreposicoes()).toEqual([...CONHECIDAS.keys()].sort());
+  });
+
+  it('⚠️ [Interface] a guarda que torna a de `ShiftRight` inofensiva EXISTE, e e ela que a torna', () => {
+    // Sem `numPlayers <= 1`, a tecla de pausa da segunda crianca vira «trocar poder» do primeiro jogador.
+    const jogador = { easy: true };
+    expect(isEasyShortcut('ShiftRight', { players: [jogador], numPlayers: 1 }),
+      'a premissa do caso morreu: os atalhos do Facil ja nao valem no solo').toBe(true);
+    expect(isEasyShortcut('ShiftRight', { players: [jogador, jogador], numPlayers: 2 }),
+      'os atalhos do Facil passaram a valer em dupla, e a excecao acima deixou de ser inofensiva').toBe(false);
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS =========================
+//   · tirando `s.numPlayers <= 1` do `isEasyShortcut` → "[Interface] a guarda ... EXISTE" reprova. E o unico
+//     caminho pelo qual a excecao do `ShiftRight` deixaria de ser inofensiva, e agora ele esta fechado.
+//   · pondo `Digit1` no `select` do jogador 1 → reprovam TRES, entre eles o "[Zero] NENHUMA sobreposicao
+//     nova" contra `SCREEN_DIGITS`. E a forma exata do erro que eu cometi na #122, apanhada desta vez — e um
+//     dos tres e um caso ANTERIOR a este bloco, o que mostra que a propriedade tem mais de um dono.
+//   · tirando `ShiftRight` do `p2[1].start` → reprovam DOIS: o "[Cross-check]" daqui, porque a lista de
+//     conhecidas passa a prometer uma sobreposicao que ja nao existe (entrada orfa faz a tabela mentir sobre
+//     o tamanho da excecao), e o caso da porta da #122.
