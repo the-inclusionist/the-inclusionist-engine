@@ -1,0 +1,159 @@
+---
+# ⚠️ LIDO CONTRA A ARVORE DE 2026-09-07, e nao contra a memoria de quem o redigiu. O que mudou entre a
+# redacao e a entrada esta anotado no corpo; o que se confirmou tambem, porque uma premissa que continua
+# verdadeira so' e' util se alguem disser que a conferiu.
+#
+# ⚠️ E ELE NAO SUPERSEDE NADA AINDA. O rascunho declarava `supersedes-in-part`, e isso seria falso num
+# registo `proposed`: uma supersessao e' um PAR (ADR-0057), e marcar o registo antigo como parcialmente
+# revogado por uma proposta diria ao leitor que uma decisao foi tomada quando nao foi. Os ponteiros
+# preenchem-se — nos dois lados, no mesmo turno — se e quando o Dev aceitar. O que ele PRETENDE superseder
+# esta escrito no corpo.
+metadata:
+  status: "proposed"
+  date: 2026-09-07
+  supersedes-in-part: []
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0077 §2 — PRETENDE SUPERSEDER EM PARTE, se aceite: it decided hold-versus-latch is a per-action,
+       per-player control OPTION, and decided it as a BOOLEAN. A charge is that decision with a magnitude and
+       a time limit attached, and neither fits a boolean. Its argument against M3 governs here untouched and
+       is the reason this is an engine record at all"
+    - "ADR-0094 — ⚠️ O PRECEDENTE DE FORMA, e ele corta nos dois sentidos. Ali a engine RECUSOU-SE a possuir
+       um fornecedor e abriu uma porta para o jogo o nomear; aqui pede-se que ela POSSUA a carga. A diferença
+       que decide é de quem paga o custo de esquecer: esquecer a voz neural custa uma voz, e quem esquece é
+       quem escolheu; esquecer a rota sem cronómetro custa o jogo inteiro a uma criança que não pode segurar
+       um botão, e ela não escolheu nada. É o argumento M3 do ADR-0077 dito de outro modo"
+    - "ADR-0013 — motor input accessibility: the modifier policy, the one-button mode, and the deadzone
+       chosen as ergonomics rather than as a default"
+    - "ADR-0010 pillar 2 — WCAG 2.2. Three criteria are load-bearing here and they are cited exactly"
+    - "ADR-0079 — a transport declares slots. A charge is what a slot DOES over time, not a new slot"
+    - "`game-soccer` — the consumer that asked. Shots and passes charge while held and fire on release,
+       which is the reference game's mechanic and the first time the engine has been asked for one"
+  informed: []
+
+title: Holding is a magnitude, and every hold owes a route that needs no holding and no timing
+
+context-and-problem-statement: |
+  The football game's shots and passes charge while a button is held and fire on release: hold longer, hit
+  harder. It is the mechanic the reference game is built on, and the engine has never been asked for one.
+
+  ⚠️ ADR-0077 ALREADY DECIDED THE HARD HALF AND DECIDED IT TOO NARROWLY. It said hold-versus-latch is a
+  per-action, per-player option — the right decision — and modelled it as a BOOLEAN: hold, or latch. A
+  charge is not a boolean. It carries a magnitude (how hard) and a time limit (how long before it is full),
+  and a latch that only removes the HOLDING leaves the TIMING, which is half the barrier and the half
+  nobody notices.
+
+  ⚠️ AND THE PART THAT LOOKS LIKE A ROUNDING DETAIL IS THE ACCOMMODATION. If a zero-length hold produces
+  zero power, a child who cannot hold a button gets a pass that goes nowhere and concludes the game is
+  broken. Nothing anywhere reports an error. The floor under a tap is not tuning; it is whether she can
+  play.
+
+decision-drivers:
+  - "ADR-0077's M3 argument, unchanged: an accommodation implemented per game exists in the games somebody
+     remembered. A charge is the accommodation, so the charge is the engine's."
+  - "⚠️ WCAG 2.2.1 BITES LITERALLY HERE. A charge window is a time limit on an operation. It is met two ways
+     at once: every window is adjustable, AND there is a mode with no clock in it at all."
+  - "⚠️ WCAG 2.1.2 ALSO BITES, and it is the one nobody thinks of: a stuck switch on a charging action would
+     freeze a child's player forever. A charge must fire itself."
+  - "A power a child cannot SEE has to be one she can COUNT. A bar is nothing to her; «three of five», with
+     a tone per step, is something."
+  - "The three routes must reach the SAME outcomes, or the accommodation is a weaker game wearing the same
+     name."
+
+considered-options:
+  - "H1 - the engine owns the charge: the curve, the floor, the runaway limit and three routes to the same
+     magnitudes"
+  - "H2 - the engine keeps ADR-0077's boolean and each game implements its own charge on top"
+  - "H3 - no charge anywhere: actions fire at a fixed strength, and power is chosen some other way"
+
+pros-and-cons-of-the-options:
+  H1:
+    good:
+      - "The floor, the runaway limit and the no-timing route exist in every game that charges anything."
+      - "⚠️ THE THREE ROUTES CAN BE PROVED EQUIVALENT, once, by a gate: stepping reaches exactly the set of
+         steps holding reaches. Written per game, that property would rot in silence - every unit test
+         would still pass while the accommodation quietly became a weaker game."
+      - "It completes ADR-0077 rather than contradicting it: the option it decided becomes expressible."
+    bad:
+      - "⚠️ More state to persist and migrate, next to a keymap that already has a migration owed - which is
+         the negative ADR-0077 booked for itself and is now larger, because a mode is not a boolean."
+      - "The curve's numbers are tuning and must stay with the game, so the boundary needs stating and will
+         be got wrong at least once."
+  H2:
+    good:
+      - "No engine change; the first consumer already has it working in a leaf module."
+    bad:
+      - "It is ADR-0077's M3 again. The charge would ship in three hundred games and the no-timing route in
+         the ones that remembered."
+  H3:
+    good:
+      - "Nothing to build, and no time limit to conform to."
+    bad:
+      - "⚠️ It removes a mechanic rather than making it reachable, which is the shape of accommodation this
+         project has refused everywhere else. A child who CAN hold a button is entitled to the game too."
+
+decision-outcome:
+  chosen-option:
+    link: "H1 - the engine owns the charge, and every hold owes a route with no holding and no timing"
+    justification: |
+      ===== 1. WHAT A CHARGE IS =====
+
+      A slot that charges reports, on release, a magnitude in `0..1` AND a countable step in `1..N`. The
+      magnitude is for the simulation; the step is for the ear. Both leave together, so nothing downstream
+      has to convert one into the other and disagree.
+
+      ===== 2. THE FLOOR IS NOT A ROUNDING DETAIL =====
+
+      ⚠️ A tap produces a USABLE act, never a zero one. This is the whole accommodation for a child who
+      cannot hold a button, and without it the game reports nothing wrong while being unplayable for her.
+
+      ===== 3. THREE ROUTES, AND THE THIRD IS THE ONLY HONEST ONE =====
+
+        `hold`          press, hold, release. The default, per ADR-0077's rule that the default is what the
+                        GAME declares.
+        `latch-timed`   press starts, the clock fills, a second press fires. ⚠️ IT REMOVES THE HOLDING AND
+                        KEEPS THE TIMING, so it cannot be the only alternative - it is half the barrier
+                        removed and looks like all of it.
+        `latch-stepped` each press is one step; a pause commits. NO CLOCK ANYWHERE. This is the default
+                        whenever one-button mode or scanning is on.
+
+      ⚠️ AND THEY MUST REACH THE SAME MAGNITUDES. That is a gate, not a hope: stepping reaches exactly the
+      set of steps holding reaches. Without it the accommodation becomes a weaker game and every other test
+      still passes.
+
+      ===== 4. THE RUNAWAY LIMIT IS WCAG 2.1.2, NOT A GAMEPLAY RULE =====
+
+      A charge that outlives its window fires itself at full power. A stuck switch must not freeze a child's
+      player forever, and «the child can always release the button» is not true of the children this engine
+      is for.
+
+      ===== 5. WHAT STAYS WITH THE GAME =====
+
+      The numbers: how long is full, where the dead zone starts, how many steps, and what a step is worth in
+      the world. Those are tuning, and `core/constants` already carries the platformer's `TUNE` as a debt to
+      be evicted rather than a place to add to.
+
+  consequences:
+    positive:
+      - "A no-timing route exists for every charging action in every game."
+      - "The equivalence of the routes is provable once instead of hoped for three hundred times."
+    neutral:
+      - "The first consumer's implementation is a leaf module with no game imports; adopting it is a move."
+    negative:
+      - "⚠️ Per-action, per-player, per-mode state to persist and migrate, on top of the keymap migration
+         ADR-0077 already booked. This is the larger version of a cost that record accepted."
+      - "Three routes is three code paths a bug can hide in, and only the gate in §3 keeps them honest."
+
+  confirmation: |
+    A zero-length hold fires, above zero. A hold past the window fires itself. The set of steps reachable by
+    stepping equals the set reachable by holding. In one-button mode the stepped route is the default and
+    nothing anywhere requires two actuations at once or an interval measured by the child.
+
+more-information: |
+  ⚠️ 2.5.1 (Pointer Gestures) IS CITED BY ANALOGY IN THE GAME'S OWN NOTES AND SHOULD NOT BE CITED LITERALLY
+  HERE. It governs pointer gestures; a held button is not one. The criteria that govern literally are 2.2.1
+  (Timing Adjustable), 2.1.1 (Keyboard) and 2.1.2 (No Keyboard Trap), and ADR-0010 pillar 2's rule about
+  marking where only a weaker claim is reachable applies to the difference.
+
+  The football game's `app/js/input/charge.ts` is the shape being proposed, already gated on the floor, the
+  runaway limit, the monotone curve and the equivalence of the routes.

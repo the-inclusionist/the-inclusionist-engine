@@ -1,0 +1,130 @@
+---
+# ⚠️ LIDO CONTRA A ARVORE DE 2026-09-07. E' registo de FACTO — o endereco existe e o Dev declarou-o —,
+# nao proposta, e por isso entra `accepted`. Nao supersede nada.
+metadata:
+  status: "accepted"
+  date: 2026-09-07
+  supersedes-in-part: []
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0067 §5 — a repository is created when a record declares its address. This is that declaration:
+       the Dev named `https://github.com/the-inclusionist/game-soccer` when he asked for the game, and the
+       repository has existed on disk since, with no record saying so"
+    - "ADR-0082 — a game repository is named `game-<slug>` and mirrors its package. This address obeys it
+       without needing a suspension or an exception, which is what a rule is for"
+    - "ADR-0071 §1 — the reason the container prefix is dropped: inside the organisation the word would
+       appear twice"
+    - "ADR-0083 — a game is born in its own repository and consumes the engine as a package. This one was,
+       from its first file"
+    - "ADR-0068 §5 — a game repository holds no `adr/` folder, which is why this record is here and not
+       there"
+  informed: []
+
+title: The football game's address is `the-inclusionist/game-soccer`, and it is the first game to need no exception
+
+context-and-problem-statement: |
+  On 2026-09-06 the Dev asked for a football game built on this engine, and named its address in the same
+  breath: `https://github.com/the-inclusionist/game-soccer`. Work began the same day and the repository now
+  holds a playable headless match, a renderer, an accessibility contract and three hundred and twenty
+  gates.
+
+  ⚠️ AND NO RECORD SAYS IT EXISTS. ADR-0067 §5 is explicit that a repository is created when a record
+  declares its address; the 2048 has ADR-0081 and the pattern has ADR-0082. This one has a sentence in a
+  chat and a folder on a disk, which is the state ADR-0067 was written to stop.
+
+  The 2048's address needed a supersession (ADR-0073 had named it `pixi-2048`) and a suspension of
+  ADR-0068 §1. The chess needed a rename. This one needs neither: `game-soccer` is what ADR-0082 says a
+  game repository is called, and `@the-inclusionist/game-soccer` is what ADR-0068 §3 says its package is
+  called. **It is the first game whose address the rules simply produce**, which is the evidence ADR-0082
+  was owed.
+
+decision-drivers:
+  - "The address is the Dev's to declare and he declared it; what is in question is only whether it is
+     recorded, and under which rule."
+  - "⚠️ A repository that exists without a record is the defect ADR-0067 names, and it is worse here than
+     for a scaffold: this one already holds a working game, so the gap is not 'nothing has happened yet'."
+  - "ADR-0082 is a rule with one instance. A second instance that fits without an exception is what turns a
+     rule from a description of the past into something the next three hundred games can rely on."
+
+considered-options:
+  - "S1 - record `the-inclusionist/game-soccer` under ADR-0082, with no exception and no suspension"
+  - "S2 - record it and ALSO generalise: declare that from now on a game repository needs no record of its
+     own, because ADR-0082 already determines the name"
+  - "S3 - leave it unrecorded, since the name follows mechanically from a rule that already exists"
+
+pros-and-cons-of-the-options:
+  S1:
+    good:
+      - "Obeys ADR-0067 §5 exactly, and costs one record."
+      - "⚠️ It is EVIDENCE rather than ceremony: it is the first time the naming rule produced an address
+         with nothing to suspend and nothing to supersede, and that fact is only visible if it is written."
+    bad:
+      - "One record per game is three hundred records. The cost is real and is the whole of S2's case."
+  S2:
+    good:
+      - "Three hundred repositories do not each need a paragraph saying they follow a rule."
+    bad:
+      - "⚠️ IT ANSWERS A QUESTION NOBODY HAS ASKED YET. Two games is not the sample that justifies changing
+         how repositories come into existence, and ADR-0068 §6 already anticipates that the three hundred
+         arrive from a TEMPLATE by script - which is where that decision belongs, with the script in front
+         of whoever makes it, not here."
+  S3:
+    good:
+      - "Nothing to write."
+    bad:
+      - "⚠️ It is the exact state ADR-0067 exists to prevent, and the argument 'the name follows from a
+         rule' would have applied equally to the 2048 - which needed a supersession precisely because the
+         address in someone's head and the address in the record had drifted apart."
+
+decision-outcome:
+  chosen-option:
+    link: "S1 - recorded under ADR-0082, with no exception"
+    justification: |
+      ===== 1. THE ADDRESS =====
+
+      The repository is **`the-inclusionist/game-soccer`** and the package it holds is
+      **`@the-inclusionist/game-soccer`**. They mirror each other, so there is nothing to hold in the head.
+
+      ===== 2. WHY THIS ONE IS DIFFERENT FROM THE OTHER TWO =====
+
+      The 2048 was `pixi-2048` for a day and needed ADR-0081 to supersede ADR-0073 whole. The chess was
+      `hartwig-zdog-chess` and was renamed. Both cost a record and a correction. This address was produced
+      by ADR-0082 and needed neither, and that is the only new fact here: **a rule with one instance is a
+      description; with two it is something the next game can rely on.**
+
+      ===== 3. WHAT THIS RECORD DOES NOT DO =====
+
+      ⚠️ It does not generalise. Whether a per-game record is still needed when three hundred repositories
+      arrive from a template is a question for the template's own record (ADR-0068 §6), with the script in
+      front of whoever answers it. Two games is not that sample.
+
+  consequences:
+    positive:
+      - "ADR-0067 §5 is satisfied for the third game, and ADR-0082 has its second instance."
+    neutral:
+      - "The repository is `private: true` until there is something to publish, as ADR-0068 §3 requires."
+    negative:
+      - "One more record, and the per-game cost of records is now visible enough to be worth answering
+         where ADR-0068 §6 said it would be."
+
+  confirmation: |
+    `git remote -v` in the game repository reports `the-inclusionist/game-soccer`, and its `package.json`
+    reports `@the-inclusionist/game-soccer`. The repository holds no `adr/` folder (ADR-0068 §5).
+
+    ⚠️ CONFERIDO NA ENTRADA, 2026-09-07, e não pela memória de quem redigiu: `gh repo view
+    the-inclusionist/game-soccer` responde `isPrivate: true`, criado em 2026-09-06T14:34:22Z. O endereço
+    existe, a organização é a certa, e o registo que faltava é este.
+
+    ⚠️ E A CONTAGEM DE INSTÂNCIAS MUDOU ENTRE O RASCUNHO E AGORA. O texto acima diz «a segunda instância» do
+    ADR-0082; medido na organização em 07/09, há SEIS repositórios `game-<slug>` — `game-15puzzle`,
+    `game-2048`, `game-chess`, `game-platformer`, `game-soccer` e `game-whackwhack`. O argumento não muda de
+    sinal — este continua a ser o primeiro cujo endereço a regra produziu sem exceção nem supersessão —, mas
+    a frase «uma regra com uma instância é descrição; com duas é algo em que confiar» tem hoje seis, e o
+    `game-platformer` nasceu ontem já pelo padrão.
+
+more-information: |
+  The game is a clean reimplementation of the feature set of `modelence/open-soccer`, which carries no
+  licence at all. Its features were read from its README and the list of file names in its tree; its source
+  was not read. The rules of a game are not protected by copyright and an implementation is, so this is the
+  same move the 2048 made with the MIT descendants of Threes! and the chess made with `3D-Hartwig-chess-set`
+  — with the difference that here there was no permissive licence to decline, only one to respect.
