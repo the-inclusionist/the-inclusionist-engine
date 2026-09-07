@@ -19,6 +19,20 @@
   lista de achados é o que o passo 5 (a divisão em pacotes) vai consertar. Contornar um achado aqui destruiria
   o instrumento: ele mede exatamente aquilo que a gente for tentado a esconder.
 -->
+<!--
+  ⚠️ AS FONTES DA ENGINE, e elas ficaram sem ninguém a ligá-las em 07/09. Quem carregava o
+  `vendor/fonts.css` era o `app/index.html` do jogo, que saiu com o cartucho (issue #111) — e o painel de
+  tipografia continuou a oferecer dezassete famílias das quais NENHUMA era carregada. A criança escolhia,
+  o menu marcava a escolha, e o navegador desenhava a fonte do sistema. Sem erro em lado nenhum.
+
+  O `preload` é da Atkinson porque ela é o PADRÃO (`DEFAULT_FONT_KEY`): a face que a página desenha antes
+  de qualquer escolha é a que vale a pena não esperar.
+
+  ⚠️ E UM CONSUMIDOR DO PACOTE TEM DE FAZER O MESMO. O `exports` publica estes ficheiros em `./assets/*` e
+  o `files` leva `app/public/vendor` — mas ligá-los é dele, e isso agora está escrito no `package.json`.
+-->
+<link rel="preload" href="/vendor/fonts/atkinson-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/vendor/fonts.css">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>

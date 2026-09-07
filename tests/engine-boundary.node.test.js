@@ -194,7 +194,19 @@ describe('fronteira engine↔currículo — a aresta que a mudança de endereço
 // Um gate mais fraco que o teste que ele deveria proteger e pior que gate nenhum: ele da por resolvida uma
 // fronteira que ninguem mediu. Agora e UM casador so, usado nas duas secoes, e drift vira impossivel.
 // (`VOCAB_JOGO` e declarado na secao 2 - e o MESMO casador, e agora so existe um.)
-const VOCAB_JOGO = /\b(coin|coins|coinTarget|coinTex\w*|coinCanvas\w*|moeda|moedas|quiz|quizLevel|quizlevel)\b/i;
+// ⚠️ `quiz.html` E `consumer-quiz` NÃO CONTAM, e a distinção é de DONO e não de palavra. Eles nomeiam o
+// SEGUNDO CONSUMIDOR — o instrumento de medida que este próprio gate existe para servir, e que vive neste
+// repositório (`app/quiz.html`, `app/js/consumer-quiz/`). Um teste de engine que os nomeie está a apontar
+// para a régua, não a depender de um jogo. O achado veio de `fontes-carregam.node.test.js`, que precisa de
+// ler o host da engine para provar que ele carrega a folha de fontes.
+//
+// A exceção é ESTREITA de propósito: apaga só as duas formas com sufixo antes de casar, então `quiz`
+// sozinho, `quizLevel` e `quizlevel` continuam acusados — e há um caso no fim deste ficheiro que o prova.
+// Os TRÊS nomes que o segundo consumidor tem no disco, e nada além deles: a pasta, a página e o módulo.
+// `main-quiz` entrou porque `\bquiz\b` casa depois do hífen — foi o próprio caso abaixo que o mostrou.
+const CONSUMIDOR_DE_PROVA = /quiz\.html|consumer-quiz|main-quiz/gi;
+const VOCAB_JOGO_RE = /\b(coin|coins|coinTarget|coinTex\w*|coinCanvas\w*|moeda|moedas|quiz|quizLevel|quizlevel)\b/i;
+const VOCAB_JOGO = { test: (linha) => VOCAB_JOGO_RE.test(String(linha).replace(CONSUMIDOR_DE_PROVA, '')) };
 const MOEDA = VOCAB_JOGO;
 
 /** Dívida CONHECIDA de VOCABULÁRIO em 2026-08-25 — só encolhe, mesma regra. */
@@ -456,6 +468,22 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
     for (const f of Object.keys(FIXTURES_CONHECIDOS)) {
       expect(sujeira(f), `${f} já não fala de moeda/quiz — apague-o de FIXTURES_CONHECIDOS`).toBeGreaterThan(0);
     }
+  });
+
+  it('⚠️ [Interface] a exceção do CONSUMIDOR DE PROVA é estreita — `quiz` sozinho continua acusado', () => {
+    // Sem este caso a exceção seria um buraco por onde qualquer menção passaria escrevendo `quiz.html`.
+    // O que ela perdoa é o NOME de um ficheiro deste repositório; o conceito do jogo continua a contar.
+    expect(VOCAB_JOGO.test("const host = ler('app', 'quiz.html');"), 'o host da engine não é dívida').toBe(false);
+    expect(VOCAB_JOGO.test("import x from '../app/js/consumer-quiz/main-quiz.js';")).toBe(false);
+    expect(VOCAB_JOGO.test('const q = { quiz: null };'), '`quiz` sozinho tem de continuar acusado').toBe(true);
+    expect(VOCAB_JOGO.test('const n = quizLevel;')).toBe(true);
+    expect(VOCAB_JOGO.test('const alvo = coinTarget;')).toBe(true);
+    // ⚠️ E UM LIMITE DO CASADOR QUE JÁ EXISTIA, medido ao escrever isto: `setQuizLevel(3)` NÃO é apanhado,
+    // porque `\b` exige fronteira e não há nenhuma entre `set` e `Quiz`. Não é regressão desta exceção — o
+    // crivo sempre foi assim, e fica escrito para o próximo leitor não descobrir de novo.
+    expect(VOCAB_JOGO.test('setQuizLevel(3);'), 'limite conhecido: sem fronteira, não casa').toBe(false);
+    // ⚠️ E o caso que separa os dois: a mesma linha com as duas coisas continua acusada.
+    expect(VOCAB_JOGO.test("ler('app','quiz.html'); const c = coins;")).toBe(true);
   });
 
   it('[Interface] a exceção de prosa é REAL — se o texto sumir, a exceção some junto', () => {
