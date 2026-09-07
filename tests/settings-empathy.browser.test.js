@@ -6,6 +6,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initSettingsEmpathy, EMPATHY_VIZ_MODES } from '../app/js/ui/settings-empathy.js';
 import { hearingLoss, setHearingLossGraph } from '../app/js/platform/audio.js';
+// Os dois colaboradores REAIS do último bloco: quem reconstrói a lista e quem repõe a prosa no rodapé.
+import { vizGroupHtml } from '../app/js/render/viz-setters.js';
+import { initSettingsPanel } from '../app/js/ui/settings-panel.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -288,3 +291,125 @@ describe('ui/settings-empathy — marca o que saiu do padrão (ADR-0029)', () =>
     expect($('#empathy-list').classList.contains('is-changed')).toBe(false);
   });
 });
+
+// ==========================================================================================================
+// ⚠️ A PROSA FICA NO RODAPÉ MESMO QUANDO A LISTA É RECONSTRUÍDA POR PROCURAÇÃO (CLAUDE.md §4, #109, #62)
+//
+// Os casos acima injetam um `renderVizGroup` que só ANOTA a chamada — e é por isso que nenhum deles podia ver
+// este defeito: um dublê que não reconstrói não desfaz nada. Aqui o reconstrutor é o `vizGroupHtml` DE
+// VERDADE e o `fillExplain` é o do `ui/settings-panel` DE VERDADE, porque o defeito vive exatamente no
+// encontro dos dois.
+//
+// A sequência é a da criança: abre o painel (o `frontOverlay` limpa as linhas), clica numa simulação — e o
+// clique chama `render()` outra vez, que manda o `renderVizGroup` reescrever a lista com `innerHTML`. As
+// linhas novas vêm com o `.opt-hint` lá dentro e SEM o `data-explain-done`, então a prosa reaparece sob cada
+// rótulo e o menu volta a ser o manual que a decisão de 2026-08-25 proibiu.
+//
+// ⚠️ É o pior painel para isso acontecer: quem acabou de ligar "Simular cegueira total" está com a tela preta
+// e depende do rodapé `aria-live` para saber onde está.
+//
+// MUTAÇÕES CONFERIDAS (no fim do bloco).
+// ==========================================================================================================
+describe('⚠️ ui/settings-empathy — a lista é reconstruída pelo renderVizGroup, e a prosa não pode voltar', () => {
+  const COM_CARTAO = `
+    <div id="empathy" class="overlay">
+      <div class="overlay__card">
+        <h2 id="empathy-title">Empatia</h2>
+        <div class="ctrl-row"><span><strong>Perda auditiva</strong> — ouvir como quem tem perda auditiva.</span><button id="opt-hearing" type="button" aria-pressed="false">▶ Desligado</button></div>
+        <div class="ctrl-row"><span><strong>Um botão</strong> — jogar com uma tecla só.</span><button id="opt-onebtn" type="button" aria-pressed="false">▶ Desligado</button></div>
+        <div class="ctrl-row"><span><strong>Cadeirante</strong> — o mundo sem degraus.</span><button id="opt-wheelchair" type="button" aria-pressed="false">▶ Desligado</button></div>
+        <div id="empathy-players"></div>
+        <div id="empathy-list"></div>
+        <button id="empathy-reset" type="button">Restaurar</button>
+        <button id="empathy-close" type="button">Fechar</button>
+      </div>
+    </div>
+    <button id="opt-empathy" type="button">Empatia</button>
+    <button data-act="empatia" class="pm-btn" type="button">Modo empatia</button>
+    <p id="sr-status"></p><p id="sr-alert"></p>`;
+
+  /** O painel com os DOIS colaboradores reais: quem reconstrói e quem repõe. */
+  function bootReal() {
+    document.body.innerHTML = COM_CARTAO;
+    const painel = initSettingsPanel({
+      $, $$: (sel) => [...document.querySelectorAll(sel)],
+      doc: document,
+      computedZ: (el) => +getComputedStyle(el).zIndex || 0,
+    });
+    const ctx = fullCtx({
+      // O reconstrutor DE VERDADE, na forma exata do `render/viz-setters`: `el.innerHTML = vizGroupHtml(…)`.
+      renderVizGroup: (listSel, _tabsSel, modes) => {
+        const el = $(listSel);
+        if (el) el.innerHTML = vizGroupHtml(modes, 'normal');
+      },
+      frontOverlay: (el) => painel.frontOverlay(el),
+      fillExplain: (card) => painel.fillExplain(card),
+    });
+    return { api: initSettingsEmpathy(ctx), ctx, painel };
+  }
+
+  const dicasNaLista = () => document.querySelectorAll('#empathy-list .opt-hint').length;
+
+  it('⚠️ [Cross-check] o construtor da lista EMITE `.opt-hint` — sem isto, tudo abaixo seria vazio', () => {
+    // Um caso que conta zero `.opt-hint` fica verde de graça se o construtor nunca emitir nenhum. Este ancora
+    // a premissa no gerador de verdade, e é ele que reprova se o `vizGroupHtml` mudar de forma.
+    const html = vizGroupHtml(EMPATHY_VIZ_MODES, 'normal');
+    expect(html).toContain('opt-hint');
+    expect(html).toContain('ctrl-row');
+  });
+
+  it('[Right] abrir o painel tira a prosa das linhas e cria o rodapé aria-live', () => {
+    const { api } = bootReal();
+    api.open();
+    const rodape = $('#empathy .opt-explain');
+    expect(rodape, 'o rodapé não foi criado').not.toBe(null);
+    expect(rodape.getAttribute('aria-live')).toBe('polite');
+    expect(dicasNaLista(), 'a prosa ficou dentro das linhas já na abertura').toBe(0);
+  });
+
+  it('⚠️ [Exercise] RE-RENDERIZAR (o que um clique numa simulação faz) não devolve a prosa às linhas', () => {
+    const { api } = bootReal();
+    api.open();
+    expect(dicasNaLista()).toBe(0);
+    api.render(); // o caminho do clique: setPlayerViz → renderEmpathyPanel → render()
+    expect(dicasNaLista(), 'a prosa voltou para dentro das linhas no primeiro clique').toBe(0);
+    // E a linha continua a saber a sua descrição — quem foi limpo foi o markup, não a informação.
+    const primeira = $('#empathy-list .ctrl-row');
+    expect(primeira?.dataset.explain, 'a linha nova ficou sem descrição no rodapé').toBeTruthy();
+  });
+
+  it('[Boundary] as linhas que este painel NÃO reconstrói continuam limpas depois do redesenho', () => {
+    // As três de perda auditiva/um botão/cadeirante vivem no cartão e só mudam de `textContent`: elas
+    // atravessam o redesenho reduzidas ao rótulo curto, como o `fillExplain` as deixou na abertura.
+    //
+    // O que este caso separa é o ALCANCE do conserto. `render()` chama o `fillExplain` sobre o CARTÃO
+    // inteiro, e não só sobre `#empathy-list` — o que é certo, porque o `.opt-explain` é do cartão. Se essa
+    // segunda passada mexesse nas linhas que ninguém reconstruiu, o conserto teria efeito fora do sítio,
+    // e é isso que aqui se afere.
+    const { api } = bootReal();
+    api.open();
+    api.render();
+    const fixas = [...document.querySelectorAll('#empathy .overlay__card > .ctrl-row')];
+    expect(fixas.length).toBe(3);
+    for (const linha of fixas) {
+      expect(linha.querySelector(':scope > span').children.length,
+        'a linha fixa voltou a ter mais do que o rótulo curto').toBe(1);
+    }
+  });
+});
+
+// ========================= MUTAÇÕES CONFERIDAS =========================
+//   · apagando `ctx.fillExplain?.(…)` do fim de `render()` em `ui/settings-empathy` → "[Exercise]
+//     RE-RENDERIZAR" reprova com 9 `.opt-hint` de volta dentro das linhas (uma por simulação do catálogo).
+//     É o defeito da #109 pela terceira vez, e é o que o gate de fonte `painel-reexplica` deixava passar.
+//   · movendo a chamada para ANTES de `ctx.renderVizGroup(…)` → "[Exercise]" reprova igual: o `fillExplain`
+//     limpa linhas que o reconstrutor ainda vai substituir. A ordem é a asserção.
+//   · tirando o `class="opt-hint"` do `vizGroupHtml` (`render/viz-setters`) → "[Cross-check]" reprova, que é
+//     o ponto dele: um caso que conta zero não pode ficar verde por não haver o que contar.
+//   · ⚠️ trocando `if (row.dataset.explainDone) return;` por `if (false) return;` no `fillExplain`
+//     (`ui/settings-panel`) → NENHUM caso reprova, e a previsão de que o "[Boundary]" reprovaria estava
+//     ERRADA. Medido: o `fillExplain` é idempotente DUAS vezes — pela bandeira e pelo conteúdo. Na segunda
+//     passada a linha já teve o `<span>` reduzido ao `<strong>`, então `rowExplainText` devolve cadeia vazia
+//     e o `if (!desc) return;` guarda o resto. A bandeira poupa trabalho; não é ela que preserva a linha.
+//     Fica registado em vez de escondido: quem quiser prender a bandeira precisa de um caso que conte
+//     PASSAGENS, e nenhum aqui conta.

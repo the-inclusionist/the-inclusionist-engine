@@ -50,8 +50,22 @@ function linhasDeCodigo(texto) {
   return out;
 }
 
-/** Reconstrói markup? `innerHTML =` é a forma que este projeto usa, e a que faz a prosa voltar. */
-const reconstroi = (f) => linhasDeCodigo(fonte(f)).some(([, l]) => /\.innerHTML\s*=/.test(l));
+/**
+ * ⚠️ RECONSTRUIR TAMBÉM SE FAZ POR PROCURAÇÃO, e foi assim que este crivo deixou passar um painel inteiro.
+ *
+ * A primeira versão perguntava só `\.innerHTML\s*=` no ficheiro do painel. O `settings-empathy` não tem
+ * nenhum — e reconstrói na mesma, porque chama `ctx.renderVizGroup('#empathy-list', …)`, que é injetado e
+ * cuja implementação (`render/viz-setters.ts`) faz `el.innerHTML = vizGroupHtml(modes, cur)`. As linhas
+ * novas voltam com o `.opt-hint` lá dentro exatamente como as de qualquer outro painel; o que muda é só
+ * QUEM as escreveu, e o crivo lia pelo autor em vez de ler pelo efeito.
+ *
+ * Medido em 2026-09-07: dos oito painéis, o `settings-empathy` é o único com ZERO `innerHTML =` — ou seja,
+ * era o único que a isenção alcançava, e era precisamente o que precisava do gate. Um crivo que isenta
+ * exatamente o caso doente não é um crivo frouxo: é um crivo com o sinal trocado.
+ */
+const RECONSTRUTORES_INJETADOS = ['renderVizGroup'];
+const reconstroi = (f) => linhasDeCodigo(fonte(f)).some(([, l]) =>
+  /\.innerHTML\s*=/.test(l) || RECONSTRUTORES_INJETADOS.some((n) => new RegExp(n + '\\s*\\(').test(l)));
 
 /**
  * ⚠️ A CHAMADA, E NÃO A MENÇÃO — e a diferença foi medida, não suposta.
@@ -76,10 +90,30 @@ describe('painel que reconstrói linhas repõe a prosa no rodapé (CLAUDE.md §4
     expect(mudos, 'reconstrói as linhas e a explicação volta para dentro delas no primeiro clique').toEqual([]);
   });
 
+  it('⚠️ [Interface] o reconstrutor injetado da lista RECONSTRÓI MESMO — a isenção era sobre ele', () => {
+    // A lista `RECONSTRUTORES_INJETADOS` é uma afirmação sobre OUTRO módulo, e afirmação sobre outro módulo
+    // é a que apodrece sem ninguém reparar: se um dia `renderVizGroup` passasse a atualizar por
+    // `textContent`, o nome ficaria na lista a obrigar painéis a uma chamada que já não faz falta — e o
+    // gate viraria a cerimónia que ele existe para não ser.
+    //
+    // Este caso lê o outro lado. É a lição do `teste-que-lê-pela-ligação`: nomear o literal não basta,
+    // é preciso exigir que o que ele nomeia continue a ser o que era.
+    const VIZ = join(RAIZ_REPO, 'app', 'js', 'render', 'viz-setters.ts');
+    const corpo = readFileSync(VIZ, 'utf8').split(CR).join('');
+    const dentro = corpo.slice(corpo.indexOf('function renderVizGroup('));
+    expect(dentro, 'renderVizGroup deixou de reconstruir; rever RECONSTRUTORES_INJETADOS')
+      .toMatch(/\.innerHTML\s*=/);
+  });
+
   it('[Boundary] e um painel que NÃO reconstrói não é obrigado a nada', () => {
-    // `settings-empathy` atualiza por `textContent` em elementos que já existem: a prosa já foi movida e
-    // continua movida. Exigir-lhe a chamada seria cerimónia — e cerimónia é o que faz um gate ser
-    // contornado em vez de cumprido.
+    // A isenção continua a existir e continua a ser certa: um painel que só troque `textContent` em
+    // elementos que já existem não desfaz o trabalho do `fillExplain`, e exigir-lhe a chamada seria
+    // cerimónia — que é o que faz um gate ser contornado em vez de cumprido.
+    //
+    // ⚠️ O que mudou é QUEM cabe aqui. A versão anterior escrevia, como exemplo, que o `settings-empathy`
+    // «atualiza por `textContent` em elementos que já existem» — e isso era falso: ele delega a
+    // reconstrução da lista ao `renderVizGroup`. Hoje o conjunto está VAZIO, e um conjunto vazio é uma
+    // resposta legítima: os oito painéis reconstroem, de uma das duas maneiras.
     const soTexto = PAINEIS.filter((f) => !reconstroi(f));
     for (const f of soTexto) {
       expect(reconstroi(f), `${f} passou a reconstruir e este caso não notou`).toBe(false);

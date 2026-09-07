@@ -49,6 +49,21 @@ export interface EmpathySettingsCtx {
   reflectVizButtons(): void;
   /** Brings an overlay to front + fills its footer explanations; shared by every Sensibilidade panel. */
   frontOverlay(el: HTMLElement | null): void;
+  /**
+   * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA render.
+   *
+   * ⚠️ E AQUI A RECONSTRUÇÃO NÃO SE VÊ NO FICHEIRO, que foi o que atrasou este conserto. Este painel não tem
+   * um `innerHTML` sequer: quem reconstrói a lista é o `renderVizGroup` injetado, cuja implementação
+   * (`render/viz-setters`) faz `el.innerHTML = vizGroupHtml(…)` e devolve `.ctrl-row`s NOVAS, com o
+   * `.opt-hint` outra vez lá dentro e sem o `data-explain-done` que torna o `fillExplain` idempotente.
+   *
+   * Isto acontece a cada clique numa simulação e a cada uso do botão de perda auditiva — que é o pior caso
+   * possível, porque a criança que acabou de ligar "Simular cegueira total" está com a tela preta e depende
+   * do rodapé `aria-live` para saber onde está.
+   *
+   * Opcional (`?.`) como nos irmãos: um consumidor que não injete continua a desenhar o painel.
+   */
+  fillExplain?: (card: HTMLElement | null) => void;
   /** Devolve o foco a quem abriu o diálogo (ui/settings-panel `restoreFocus`). Injetado, e não um `#opt-*`
    *  fixo: o id que este módulo focava não existe no documento, então fechar deixava o foco no `<body>`. */
   restoreFocus?: (id: string) => boolean;
@@ -88,6 +103,8 @@ export function initSettingsEmpathy(ctx: EmpathySettingsCtx): EmpathySettingsApi
     }
     ctx.reflectMotorEmpathy();
     refreshMarks();
+    // Depois do `renderVizGroup`, e não antes: é ele quem repõe o `.opt-hint` dentro das linhas.
+    ctx.fillExplain?.(ctx.$<HTMLElement>('#empathy .overlay__card'));
   }
 
   /**
