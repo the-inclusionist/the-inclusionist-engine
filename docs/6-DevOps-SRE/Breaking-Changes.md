@@ -97,12 +97,17 @@ turns each into a `9.0.0`:
 - **`ui/settings-controls.ACT_LABEL`** — the platformer's eight words living inside the engine, and the
   direct cause of #125: the remap screen built its `aria-label` from it and announced *"Alterar tecla de
   undefined"* in a game that is not the platformer. That use is gone.
-  ⚠️ **Correction to what this file said on 2026-09-07.** It claimed the export had *no consumer at all*.
-  That was wrong: the claim came from a search whose pattern excluded `main.ts` (it sits directly in
-  `app/js/` and the glob required a subdirectory). `game-platformer/app/js/main.ts` imports it and uses it in
-  the pause menu's HELP screen. So **removing it is a migration, not a cleanup**: the cartridge has
-  `acoesDoJogo()` already and the help screen must move to it first. Listed here so the order is not
-  discovered the hard way, and no longer marked `@deprecated`.
+  ⚠️ This entry was wrong twice in one day and both corrections are kept, because the second only makes sense
+  after the first. **(1)** It first claimed the export had *no consumer at all* — false; that came from a
+  search whose pattern excluded `main.ts`. `game-platformer` used it in the pause menu's HELP screen, so
+  removal was a **migration**, not a cleanup. **(2)** That migration is now DONE: the cartridge's help screen
+  reads its own `acoesDoJogo()` instead, which also fixes a defect of its own — the table showed eight fixed
+  positions while the vocabulary has fourteen.
+  Re-measured with `git grep` across both repositories: every remaining mention is a COMMENT; the only line of
+  code is the declaration. **Removing it is a clean removal with no prerequisite.**
+  ⚠️ Not measurable from here: the other external games (`game-chess`, `game-15puzzle`, `game-soccer`,
+  `game-2048`, `game-whackwhack`) are not cloned in this session and may import it. One `git grep` per
+  repository settles it before the major is cut.
 
 This is a decision for the Dev, not a task: cutting the major sooner ships the accessibility fixes that are
 already done; cutting it later lets two breaking changes ride one release instead of three.

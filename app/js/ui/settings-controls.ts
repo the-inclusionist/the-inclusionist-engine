@@ -6,8 +6,13 @@
 // shared per-player helpers (`kbFor`/`getNumPlayers`/`applyControls`/`assignControls`) that game.js also uses
 // elsewhere (gamepad binding, HUD, other settings panels) and therefore stay there, injected. Overlay open/close
 // plumbing (#options hidden toggle, focus management, Escape-closes-dialog) and the pad-button-design select are
-// shared/unrelated infra and stay in game.js. `openHelp()` (pause-menu help screen) reuses ACT_LABEL/keyName —
-// both are exported here instead of duplicated.
+// shared/unrelated infra and stay in game.js. `openHelp()` (pause-menu help screen) reuses `keyName`, which is
+// exported here instead of duplicated.
+//
+// ⚠️ ELE TAMBÉM LIA O `ACT_LABEL`, E DEIXOU DE LER EM 2026-09-07. A tela de ajuda do cartucho passou a montar
+// as linhas do preset dele (`acoesDoJogo`), que é quem sabe quantas posições este jogo usa e como elas se
+// chamam. Com isso o `ACT_LABEL` ficou sem UM leitor sequer — conferido com `git grep` nos dois repositórios,
+// e o que resta dele são comentários e a própria declaração. Ver `docs/6-DevOps-SRE/Breaking-Changes.md`.
 import { t } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
