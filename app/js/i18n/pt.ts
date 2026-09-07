@@ -196,6 +196,7 @@ const pt: Record<string, string> = {
   'ctrl.changeKeyAria': 'Alterar tecla de {acao} do Jogador {n}',
   'sr.ctrl.pressNewKey': 'Pressione a nova tecla para {acao} do Jogador {n}, ou Esc para cancelar.',
   'sr.ctrl.keyTaken': 'Essa tecla já é do Jogador {n}. Escolha outra, ou Esc para cancelar.',
+  'sr.ctrl.keyTakenHere': 'Essa tecla já é de {acao}. Escolha outra, ou Esc para cancelar.',
   'sr.ctrl.reset': 'Controles restaurados ao padrão.',
 
   // Painel de áudio (#audio) — saídas por jogador, som/narração, bengala, motores de voz.

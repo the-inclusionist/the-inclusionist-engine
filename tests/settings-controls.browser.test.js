@@ -4,7 +4,7 @@
 // acesso a globais fora do ctx. A lógica pura (keyName/keyUsedByOther) está coberta em settings-controls.node.test.js.
 // Modelo: tests/a11y-sr.browser.test.js, tests/settings-typo.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { initSettingsControls } from '../app/js/ui/settings-controls.js';
+import { initSettingsControls, keyUsedByOther } from '../app/js/ui/settings-controls.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -217,3 +217,118 @@ describe('ui/settings-controls', () => {
     expect(ctx.kbFor(1).left).toEqual(['ArrowLeft']); // jogador 1 intocado
   });
 });
+
+// ==========================================================================================================
+// ⚠️ A MESMA TECLA EM DUAS AÇÕES DO MESMO ESQUEMA (#126) — E O DEFEITO SÓ EXISTE COM UM JOGADOR
+//
+// Medido ao construir o `game-soccer`, o primeiro consumidor a usar as catorze posições. A tela de
+// remapeamento guardava com `keyUsedByOther(code, mapRef, schemes)`, que exclui o esquema em edição **por
+// referência**. Com um jogador só, `schemesFor()` devolve exatamente esse esquema — a guarda varre uma lista
+// vazia e NUNCA PODE DISPARAR.
+//
+// ⚠️ A guarda entre JOGADORES não estava partida: estava INALCANÇÁVEL. Com dois assentos ela recusa certo, e
+// os casos abaixo afirmam as duas coisas lado a lado, porque foi essa distinção que atrasou o diagnóstico.
+//
+// ⚠️ E O FEITIO DO DEFEITO É O PIOR QUE ESTE PRODUTO TEM. O cabeçalho do `input/default-bindings` já o
+// descrevia: «as duas ações disparam juntas, e a criança vê uma ação dupla intermitente que ninguém consegue
+// reproduzir de propósito». Numa tela que ela abriu PORQUE não conseguia usar os controles padrão.
+//
+// MUTAÇÕES CONFERIDAS (no fim do ficheiro).
+// ==========================================================================================================
+describe('ui/settings-controls — uma tecla, uma ação, dentro do mesmo esquema (#126)', () => {
+  const UM_JOGADOR = { p2: [{ left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action4: ['KeyI'], action3: ['KeyK'] }] };
+
+  function soloCtx(over = {}) {
+    let kb = JSON.parse(JSON.stringify(UM_JOGADOR));
+    return buildCtx({ kb, kbFor: () => kb.p2[0], getNumPlayers: () => 1, setKB: (n) => { kb = n; }, ...over });
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="ctrl-players"></div><div id="ctrl-list"></div><button id="ctrl-reset"></button>';
+  });
+
+  it('⚠️ [Cross-check] com UM jogador a guarda antiga é cega — sem isto, nada abaixo prova o defeito', () => {
+    // `KeyW` está em `up` do único esquema. `keyUsedByOther` responde -1, porque exclui esse esquema por
+    // referência e não sobra mais nenhum. É o defeito em uma linha.
+    const ctx = soloCtx();
+    expect(keyUsedByOther('KeyW', ctx.kbFor(0), [ctx.kbFor(0)]),
+      'a guarda entre jogadores viu a tecla; entao o defeito e outro').toBe(-1);
+  });
+
+  it('⚠️ [Right] remapear para uma tecla que JA e de outra acao e RECUSADO, e o anuncio diz qual', () => {
+    const ctx = soloCtx();
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
+    ctx.alerted.length = 0;
+    const consumed = api.handleCaptureKeydown({ code: 'KeyW', preventDefault: () => {} });
+    expect(consumed).toBe(true);
+    expect(api.isCapturing(), 'associou e fechou a captura').toBe(true);
+    expect(ctx.kbFor(0).action2, 'a tecla foi presa a duas acoes').toEqual(['KeyJ']);
+    expect(ctx.kbFor(0).up, 'a acao antiga perdeu a tecla').toEqual(['KeyW']);
+    expect(ctx.alerted, 'anunciou mais do que uma coisa').toHaveLength(1);
+    expect(ctx.alerted[0], 'o anuncio nao nomeia a acao que ja tem a tecla').toContain('Subir');
+    expect(ctx.alerted[0], 'nao e a frase de conflito').toContain('Escolha outra');
+  });
+
+  it('⚠️ [Interface] o nome vem do JOGO, nao da tabela do jogo de plataforma (#125)', () => {
+    // `ACT_LABEL` diz «Subir» porque e a palavra DAQUELE jogo. Um jogo que chame a posicao de outra coisa
+    // tem de ouvir a palavra dele — e este caso e o que impede o atalho de voltar.
+    const ctx = soloCtx({ acoesDoJogo: () => [{ acao: 'up', rotulo: 'Cabecear' }, { acao: 'action2', rotulo: 'Chutar' }] });
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
+    ctx.alerted.length = 0;
+    api.handleCaptureKeydown({ code: 'KeyW', preventDefault: () => {} });
+    expect(ctx.alerted[0]).toContain('Cabecear');
+  });
+
+  it('[Boundary] reapertar a tecla que a PROPRIA acao ja tem nao e conflito', () => {
+    // Ela ja e dela. Recusar aqui seria a tela a dizer «essa tecla e sua» a quem a estava a confirmar.
+    const ctx = soloCtx();
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
+    api.handleCaptureKeydown({ code: 'KeyJ', preventDefault: () => {} });
+    expect(api.isCapturing(), 'recusou a propria tecla da acao').toBe(false);
+    expect(ctx.kbFor(0).action2).toEqual(['KeyJ']);
+  });
+
+  it('[Right] uma tecla LIVRE continua a ser aceite — a guarda nova nao fecha a tela', () => {
+    const ctx = soloCtx();
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
+    api.handleCaptureKeydown({ code: 'KeyP', preventDefault: () => {} });
+    expect(api.isCapturing()).toBe(false);
+    expect(ctx.kbFor(0).action2).toEqual(['KeyP']);
+  });
+
+  it('⚠️ [Interface] com DOIS assentos a guarda antiga continua a valer, e diz o JOGADOR', () => {
+    // A regressao que eu poderia introduzir: fazer a verificacao nova comer a antiga. Sao mensagens
+    // diferentes de proposito — «e de outra crianca» e «e de outra acao tua» nao se resolvem igual.
+    const ctx = buildCtx();
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
+    ctx.alerted.length = 0;
+    api.handleCaptureKeydown({ code: 'ArrowLeft', preventDefault: () => {} });
+    expect(api.isCapturing()).toBe(true);
+    expect(ctx.alerted[0]).toContain('Jogador 2');
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS =========================
+//   · tirando o bloco `const aqui = acaoQueJaTem(...)` de `handleCaptureKeydown` → reprovam DOIS casos:
+//     "[Right] remapear para uma tecla que JA e de outra acao" (a captura fecha e `KeyW` fica em `action2` E
+//     em `up`) e "[Interface] o nome vem do JOGO". E o defeito da #126 reproduzido.
+//   · trocando o `if (a === exceto) continue;` de `acaoQueJaTem` por nada → "[Boundary] reapertar a tecla que
+//     a PROPRIA acao ja tem" reprova: a tela recusa a tecla a quem ja a tinha.
+//   · trocando `ctx.acoesDoJogo()...rotulo` por `t(ACT_LABEL[aqui])` → "[Interface] o nome vem do JOGO"
+//     reprova, que e a #125 a nao voltar a entrar por esta porta.
+//
+// ⚠️ E UMA COISA QUE NAO E MUTACAO CONFERIDA, dita para nao passar por uma: a ORDEM entre as duas guardas
+// nao esta aferida. Eu esperaria que trocar nao mudasse nada — elas olham para conjuntos disjuntos —, mas
+// nao corri essa mutacao, e uma expectativa nao e uma medicao. Fica como buraco conhecido: se um dia uma
+// tecla puder estar em dois esquemas ao mesmo tempo, a ordem passa a decidir QUAL das duas frases a crianca
+// ouve, e ai vale um caso proprio.

@@ -125,6 +125,7 @@ const en: Record<string, string> = {
   'ctrl.changeKeyAria': 'Change the {acao} key for Player {n}',
   'sr.ctrl.pressNewKey': 'Press the new key for {acao}, Player {n}, or Esc to cancel.',
   'sr.ctrl.keyTaken': 'That key already belongs to Player {n}. Pick another, or Esc to cancel.',
+  'sr.ctrl.keyTakenHere': 'That key already belongs to {acao}. Choose another, or Esc to cancel.',
   'sr.ctrl.reset': 'Controls restored to their defaults.',
 
   // Audio panel (#audio) — per-player outputs, sound/narration, cane, speech engines.

@@ -158,6 +158,32 @@ export function keyUsedByOther(code: string, mapRef: KeyScheme, schemes: readonl
   return owners.get(code) ?? -1;
 }
 
+/**
+ * Qual OUTRA ação DO MESMO esquema já tem `code` — ou `null` se nenhuma.
+ *
+ * ⚠️ O IRMÃO QUE FALTAVA AO `keyUsedByOther`, E A FALTA ERA INVISÍVEL NUM JOGO DE UM JOGADOR (#126). Aquele
+ * exclui o esquema em edição **por referência**; com um jogador só, `schemesFor()` devolve exatamente esse
+ * esquema, então a guarda varre uma lista vazia e **nunca pode disparar**. A criança que põe `W` numa ação
+ * nova continua com `W` na antiga, e passa o jogo inteiro com as duas a disparar juntas.
+ *
+ * ⚠️ E O DEFEITO É O PIOR FEITIO POSSÍVEL, escrito no cabeçalho do `input/default-bindings` desde sempre:
+ * «as duas ações disparam juntas, e a criança vê uma ação dupla intermitente que ninguém consegue reproduzir
+ * de propósito». Numa tela que ela abriu **porque** não conseguia usar os controles padrão.
+ *
+ * ⚠️ A guarda entre JOGADORES não estava partida — estava inalcançável. Medido na auditoria: com dois
+ * assentos ela funciona e recusa certo. O que faltava era a verificação dentro do mesmo esquema.
+ *
+ * Devolve a AÇÃO e não um booleano, porque o anúncio tem de dizer qual — «essa tecla já está em uso» manda a
+ * criança procurar o que a função já sabe.
+ */
+export function acaoQueJaTem(code: string, mapRef: KeyScheme, exceto: Action): Action | null {
+  for (const a of ACTIONS) {
+    if (a === exceto) continue;
+    if ((mapRef[a] || []).includes(code)) return a;
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------------------------
 // DOM-facing (thin) — requires `document`/injected ctx
 // ---------------------------------------------------------------------------------------------
@@ -240,6 +266,20 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     const other = keyUsedByOther(e.code, capture.mapRef, schemesFor());
     if (other >= 0) {
       ctx.srAlert(t('sr.ctrl.keyTaken', { n: other + 1 }));
+      e.preventDefault();
+      return true; // não associa: segue capturando
+    }
+    // A MESMA guarda, dentro do próprio esquema (#126). Recusa em vez de MOVER, e a escolha tem motivo:
+    // mover deixaria a ação antiga com lista vazia — que o `bindingProblems` classifica como problema, e que
+    // a criança descobriria no meio do jogo, sem anúncio, com uma ação que deixou de existir. Recusar custa
+    // dois passos (soltar a antiga, prender a nova) e não perde nada pelo caminho.
+    const aqui = acaoQueJaTem(e.code, capture.mapRef, capture.action);
+    if (aqui) {
+      // ⚠️ A palavra vem do JOGO (`acoesDoJogo`), e não do `ACT_LABEL` — que é a tabela do jogo de
+      // plataforma e diz a palavra errada em qualquer outro (issue #125). Recuo para o id da posição:
+      // «action3» é feio, mas é verdade; a palavra errada não é.
+      const nome = ctx.acoesDoJogo().find((x) => x.acao === aqui)?.rotulo ?? aqui;
+      ctx.srAlert(t('sr.ctrl.keyTakenHere', { acao: nome }));
       e.preventDefault();
       return true; // não associa: segue capturando
     }
