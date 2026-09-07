@@ -134,3 +134,103 @@ describe('o pacote publicável não carrega construção que só o Vite entende 
     expect(linhasDeCodigo(comentada)).toEqual([]);
   });
 });
+
+// ===================================================================================================
+// O SEGUNDO CRIVO: O QUE O PACOTE NOMEIA TEM DE SER O QUE ELE DECLARA
+// ===================================================================================================
+// ⚠️ O ACHADO QUE ESTE BLOCO EXISTE PARA IMPEDIR, e ele chegou de FORA: um consumidor real instalou
+// `@the-inclusionist/engine@6.36.1` do registro e o build dele parou em
+//
+//     Rolldown failed to resolve import "@mintplex-labs/piper-tts-web"
+//     from ".../@the-inclusionist/engine/dist-pkg/platform/tts.js"
+//
+// `platform/tts` é código EMBARCADO e nomeia esse pacote; o `package.json` o declarava em
+// `devDependencies`, que o npm NÃO instala para quem consome. Ou seja: a versão publicada não podia
+// ser compilada por ninguém — e nada aqui dentro tinha como saber, porque neste repositório o pacote
+// está presente (é devDependency da própria árvore) e tudo resolve.
+//
+// ⚠️ E O DEFEITO ESCONDEU-SE NA FORMA DINÂMICA. A linha é `import('@mintplex-labs/piper-tts-web')`
+// dentro de uma função, não um `from` no topo. Um crivo escrito só para `from '...'` ficaria verde por
+// cima dela para sempre. Por isso o `[Right]` abaixo prende as DUAS formas pelo nome.
+//
+// POR QUE ISTO É UM `[Zero]` E NÃO UM TETO QUE ENCOLHE: medido em 06/09, os 112 módulos embarcados
+// nomeiam TRÊS especificadores de terceiros ao todo. O resíduo honesto é vazio, então qualquer entrada
+// é defeito — não há dívida legítima a tolerar.
+describe('todo pacote que o código embarcado NOMEIA é declarado como dependência de execução', () => {
+  const PKG = JSON.parse(readFileSync(join(RAIZ_REPO, 'package.json'), 'utf8'));
+  const DECLARADOS = new Set([
+    ...Object.keys(PKG.dependencies ?? {}),
+    ...Object.keys(PKG.peerDependencies ?? {}),
+  ]);
+
+  /** `from 'x'`, `import 'x'` e `import('x')` — as três formas com que um módulo nomeia outro. */
+  const ESPECIFICADOR = /(?:\bfrom|\bimport)\s*\(?\s*['"]([^'"]+)['"]/g;
+
+  /** O NOME DO PACOTE, não o caminho: `@scope/nome/sub.js` → `@scope/nome`; `foo/bar` → `foo`. */
+  function nomeDoPacote(spec) {
+    const p = spec.split('/');
+    return spec.startsWith('@') ? p.slice(0, 2).join('/') : p[0];
+  }
+
+  /** Nomes de terceiros. Relativo, absoluto, `node:` e `virtual:` não são pacotes do npm — e o
+   *  `virtual:` já é reprovado pelo crivo de cima, então reprová-lo aqui de novo só duplicaria o erro. */
+  function especificadoresNus(linha) {
+    const out = [];
+    for (const m of linha.matchAll(ESPECIFICADOR)) {
+      const s = m[1];
+      if (s.startsWith('.') || s.startsWith('/') || s.startsWith('node:') || s.startsWith('virtual:')) continue;
+      out.push(nomeDoPacote(s));
+    }
+    return out;
+  }
+
+  /** [módulo, linha, pacote] para tudo que os módulos embarcados nomeiam. */
+  function nomeados(modulos = MODULOS) {
+    const achados = [];
+    for (const m of modulos) {
+      for (const [n, linha] of linhasDeCodigo(fonte(m))) {
+        for (const nome of especificadoresNus(linha)) achados.push([m, n, nome]);
+      }
+    }
+    return achados;
+  }
+
+  it('[Zero] NENHUM módulo embarcado nomeia pacote fora de dependencies/peerDependencies', () => {
+    const orfaos = nomeados()
+      .filter(([, , nome]) => !DECLARADOS.has(nome))
+      .map(([m, n, nome]) => `${m}:${n} — ${nome}`);
+    expect(orfaos, 'devDependency não é instalada para quem consome: o pacote publicado não compila').toEqual([]);
+  });
+
+  it('[Right] o crivo enxerga a forma DINÂMICA, que é a forma em que o defeito veio', () => {
+    const dinamica = "    import('@mintplex-labs/piper-tts-web').then(async (mod) => {";
+    const estatica = "import { Application } from 'pixi.js';";
+    const lateral = "import 'algum-polyfill';";
+    expect(especificadoresNus(dinamica)).toEqual(['@mintplex-labs/piper-tts-web']);
+    expect(especificadoresNus(estatica)).toEqual(['pixi.js']);
+    expect(especificadoresNus(lateral)).toEqual(['algum-polyfill']);
+  });
+
+  it('[Right] o NOME do pacote sobrevive ao subcaminho — senão um `pixi.js/lib/x` viraria órfão', () => {
+    expect(nomeDoPacote('@scope/nome/sub/coisa.js')).toBe('@scope/nome');
+    expect(nomeDoPacote('pixi.js/lib/environment.mjs')).toBe('pixi.js');
+    expect(nomeDoPacote('pixi.js')).toBe('pixi.js');
+  });
+
+  it('[Boundary] relativo, `node:` e `virtual:` NÃO são pacotes do npm', () => {
+    expect(especificadoresNus("import * as store from './storage.js';")).toEqual([]);
+    expect(especificadoresNus("import { readFileSync } from 'node:fs';")).toEqual([]);
+    expect(especificadoresNus("import { FRAMES } from 'virtual:sprite-atlas';")).toEqual([]);
+  });
+
+  it('[Zero] e a recíproca: nada é declarado como dependência de execução sem alguém embarcado o nomear', () => {
+    const usados = new Set(nomeados().map(([, , nome]) => nome));
+    const naoUsados = [...DECLARADOS].filter((d) => !usados.has(d));
+    expect(naoUsados, 'dependência de quem CONSOME que ninguém embarcado importa — se é só do app, é devDependency').toEqual([]);
+  });
+
+  it('[Exception] prosa que MENCIONA o pacote não conta — este arquivo o menciona sete vezes', () => {
+    const comentada = "// a lib vem do npm: import('@mintplex-labs/piper-tts-web'), code-split pelo Vite";
+    expect(linhasDeCodigo(comentada)).toEqual([]);
+  });
+});

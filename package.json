@@ -62,6 +62,26 @@
     "docs/LICENSES.md",
     "docs/CREDITS.md"
   ],
+  "comment:dependencies": [
+    "⚠️ ESTE CAMPO NASCEU DE UM DEFEITO PUBLICADO. A 6.36.1 saiu com `@mintplex-labs/piper-tts-web` só em",
+    "`devDependencies`, e `platform/tts` — que é código EMBARCADO, alcançado por `createGame` — o nomeia num",
+    "`import()`. O npm não instala devDependencies para quem consome, então a versão publicada NÃO COMPILAVA",
+    "para ninguém: `Rolldown failed to resolve import`, num consumidor real, no primeiro dia.",
+    "POR QUE `dependencies` E NÃO UMA PORTA (`ctx.carregarPiper`, injetada pelo jogo, como o `render/port` faz",
+    "com o PixiJS): a porta deixaria a engine sem nomear fornecedor nenhum, mas custaria a narração neural POR",
+    "OMISSÃO a todo consumidor que não soubesse ligá-la — e a11y-first (pilar 2 do ADR-0010) não combina com",
+    "um recurso de acessibilidade que só existe para quem já sabia que ele existia. O preço medido do outro",
+    "lado é baixo: 0,5 MB e ZERO dependências transitivas; os 25,6 MB da voz são baixados em runtime do",
+    "HuggingFace e cacheados em OPFS, não vêm do npm. O `import()` continua lazy, então o pacote entra num",
+    "chunk à parte e só é buscado se a criança escolher o motor neural.",
+    "⚠️ O FORNECEDOR ESTÁ DESCONTINUADO e o ADR-0022 já marca a troca por sherpa-onnx-wasm. É por isso que o",
+    "que importa aqui não é o nome: é o gate. `tests/engine-package.node.test.js` afere que TODO pacote",
+    "nomeado por módulo embarcado esteja declarado, nas duas direções — a troca de fornecedor não pode reabrir",
+    "o mesmo buraco em silêncio."
+  ],
+  "dependencies": {
+    "@mintplex-labs/piper-tts-web": "^1.0.4"
+  },
   "comment:peerDependencies": [
     "PixiJS is a PEER, not a dependency. Measured on the emitted package (2026-09-05): exactly TWO shipped",
     "modules import it — `render/canvas` and `render/minimap` — plus their two `.d.ts`. A consumer that",
@@ -94,7 +114,6 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.0",
-    "@mintplex-labs/piper-tts-web": "^1.0.4",
     "@release-it/conventional-changelog": "^11.0.1",
     "@types/node": "^22.0.0",
     "@vitest/browser": "^4.0.0",
