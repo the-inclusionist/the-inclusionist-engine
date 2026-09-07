@@ -101,6 +101,7 @@ const SEGUROS = [
   ['ui/settings-controls.ts', 'tabs.innerHTML = `<span class="opt-hint"', 'literal + um NÚMERO (o defeito aqui é português cravado, de i18n, não de marcação)'],
   ['ui/settings-motion.ts', 'el.innerHTML =', 'literais + o índice do jogador + linhas montadas de tabelas da engine'],
   ['ui/settings-typo.ts', 'el.innerHTML = typoListHTML(fontKey)', 'as 18 fontes são tabela da engine; os grupos e rótulos saem dela'],
+  ['ui/settings-audio.ts', 'el.innerHTML = catsListHTML(', '⚠️ DECIDIDO 2026-09-06 pelo Dev: as categorias de áudio são DA ENGINE. `c.lbl` entra em dois `aria-label`, e `ctx.audioCats` é injetado — mas categoria de áudio é vocabulário de MISTURA (voz, guia, sonar, efeitos), não conteúdo de jogo. Um jogo que precisasse de uma categoria própria estaria a pedir um canal de mixer novo, o que é decisão de arquitetura e entraria por um caminho declarado, com o escape junto'],
 ];
 
 /**
@@ -112,7 +113,6 @@ const SEGUROS = [
  * de atividade, hoje catálogo no código e AUTORADO assim que o ADR-0052 chegar.
  */
 const A_REVER = [
-  ['ui/settings-audio.ts', 'el.innerHTML = catsListHTML(', '⚠️ `c.lbl` entra em DOIS `aria-label` e vem de `ctx.audioCats`, que é INJETADO. Hoje é tabela da engine e não há caminho; o que fica por decidir é se um consumidor pode declarar categorias próprias — se puder, é a mesma classe do HUD'],
 ];
 
 const chave = (onde, trecho) => `${onde} :: ${trecho}`;
@@ -143,7 +143,7 @@ describe('censo dos sinks de markup — o gate diz «ninguém acrescentou um sem
     // ⚠️ O TETO DESCEU DE 15 → 13 → 12 → 11 → 1 em 2026-09-06, à medida que cada sink deixou de ser dívida e
     // passou a ser conserto ou classificação. Baixar o número faz parte do trabalho: um teto que fica onde
     // estava deixa a dívida caber de volta sem ninguém reparar.
-    expect(A_REVER.length, 'a dívida de sinks por classificar cresceu').toBeLessThanOrEqual(1);
+    expect(A_REVER.length, 'a dívida de sinks por classificar cresceu').toBeLessThanOrEqual(0);
   });
 
   it('[Interface] toda entrada tem um PORQUÊ — sem isso a lista é uma tabela de supressões', () => {
@@ -153,11 +153,17 @@ describe('censo dos sinks de markup — o gate diz «ninguém acrescentou um sem
     }
   });
 
-  it('[Interface] e o gate é honesto sobre o que NÃO prova', () => {
-    // Os 37 não estão provados seguros por este ficheiro — 15 estão explicitamente por rever. Dizer isto
-    // numa asserção evita que o verde seja lido como auditoria, que é o erro que a própria issue #106
-    // aponta no verde do semgrep.
-    expect(A_REVER.length).toBeGreaterThan(0);
+  it('[Interface] ⚠️ e o gate continua honesto sobre o que NÃO prova', () => {
+    // ESTE CASO MUDOU DE CONTEÚDO EM 2026-09-06, quando o teto chegou a zero. Enquanto havia dívida, ele
+    // exigia a lista `A_REVER` NÃO-VAZIA — para o verde não se ler como auditoria. Com tudo classificado essa
+    // exigência deixou de fazer sentido, e apagá-la sem mais teria deixado o ficheiro a parecer uma prova.
+    //
+    // ⚠️ O QUE ELE PROVA: que todo sink que existe está numa das duas listas, com um motivo escrito — ou
+    // seja, que ninguém acrescentou um sem olhar. O que ele NÃO prova: que os 37 são seguros. Classificação
+    // é juízo humano REGISTRADO, não demonstração; sete deles só são seguros porque foram CONSERTADOS, e os
+    // gates desses conseratos vivem noutros ficheiros (`quiz-escape`, `settings-controls.browser`, `touch.browser`,
+    // `i18n-consumer-dict`, `activities-menu`, `hud`).
     expect(SEGUROS.length + A_REVER.length).toBe(sinksDeHoje().length);
+    expect(SEGUROS.length, 'sink sem classificação nenhuma').toBeGreaterThan(0);
   });
 });
