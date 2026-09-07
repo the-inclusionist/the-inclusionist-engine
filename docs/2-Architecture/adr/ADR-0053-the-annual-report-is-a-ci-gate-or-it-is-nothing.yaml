@@ -1,5 +1,13 @@
 metadata:
   status: "accepted"
+  # ⚠️ CONSTRUÍDO EM 2026-09-07 (issue #95). A `confirmation` lá em baixo fecha com «NOT YET BUILT» e FICA
+  # ASSIM: era verdade no dia em que foi escrita, e reescrevê-la não seria errata (o autor, com os factos
+  # daquele dia, teria escrito o mesmo) nem supersessão (a decisão não mudou). É uma linha de ESTADO que
+  # envelheceu, e esta chave é a forma que o ADR-0057 não tinha. A prosa é história; isto é o facto de hoje.
+  confirmed-by:
+    - scripts/check-annual-report.mjs
+    - tests/relatorio-anual.node.test.js
+    - docs/compliance/README.md
   errata:
     - date: 2026-09-04
       what: "cited the annual public report as `requerimento §49.j` in eight places. Item 49 ends at alínea `i`;

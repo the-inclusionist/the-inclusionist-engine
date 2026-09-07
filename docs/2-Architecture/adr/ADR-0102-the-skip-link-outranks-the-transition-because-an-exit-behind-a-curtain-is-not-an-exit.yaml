@@ -1,6 +1,14 @@
 ---
 metadata:
   status: "accepted"
+  # ⚠️ CONFIRMA O SLOT E O ELEMENTO, NÃO A REGRA DE FOCO. A `confirmation` diz quais três itens estão
+  # aferidos e qual está em dívida — não existe transição nesta árvore para medir a quarta. Esta chave lista
+  # o que de facto confirma; ela não promete o que o corpo já declarou por pagar.
+  confirmed-by:
+    - app/js/core/layers.ts
+    - app/quiz.html
+    - tests/z-order-css.node.test.js
+    - tests/layers.node.test.js
   # A parte substituída é a colocação do skip-link em `CAPTIONS`; o QUE está escrito do outro lado, no
   # `superseded-in-part` do ADR-0020, que é onde o leitor daquele registo precisa de o encontrar.
   supersedes-in-part: [ADR-0020]

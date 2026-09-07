@@ -31,6 +31,23 @@ except ImportError:
     sys.exit("PyYAML is missing: pip install pyyaml")
 
 META_KEYS = ["status", "date", "decision-makers", "consulted", "informed"]
+
+# ADR-0057 diz como um registo MUDA. `confirmed-by` diz outra coisa, que faltava: se ele foi CONSTRUÍDO.
+#
+# A distinção apareceu na issue #95. O ADR-0053 fecha com «⚠️ NOT YET BUILT. This record is the decision; the
+# script is its issue» — verdade no dia em que foi escrita, e falsa no dia em que o script nasceu. Não é
+# errata (o autor, com os factos daquele dia, teria escrito exactamente aquilo) nem supersessão (a decisão
+# não mudou): é uma linha de ESTADO que envelheceu, e o ADR-0057 não tem forma para ela.
+#
+# ⚠️ A PROSA DA `confirmation` NÃO SE REESCREVE. Ela é histórica e fica como estava; `confirmed-by` é o facto
+# de hoje, e vive nos METADADOS, que num YADR são a primeira coisa que se lê. Assim o registo diz as duas
+# coisas verdadeiras ao mesmo tempo — o que foi decidido, e que já existe — sem que nenhuma delas minta.
+#
+# O que a máquina passa a saber: a diferença entre «decidido» e «decidido e construído». Cada caminho listado
+# TEM DE EXISTIR, e é aí que a chave paga o próprio custo — foi medido em 2026-09-07 que três issues abertas
+# apontavam para ficheiros que tinham saído com o cartucho, e nada dizia. Um `confirmed-by` a apontar para um
+# gate apagado seria a mesma coisa, num registo aceite.
+CONFIRMED_BY = "confirmed-by"
 FULL_KEYS = [
     "metadata", "title", "context-and-problem-statement", "decision-drivers",
     "considered-options", "pros-and-cons-of-the-options", "decision-outcome",
@@ -145,6 +162,25 @@ def check(path):
         )
     if status == "superseded" and not metadata.get("superseded-by"):
         problems.append("status is `superseded` with no `superseded-by` — a dead end for the reader (ADR-0057)")
+
+    # --- issue #95: a máquina sabe a diferença entre decidido e CONSTRUÍDO --------------------
+    if CONFIRMED_BY in metadata:
+        alvos = metadata[CONFIRMED_BY]
+        if not isinstance(alvos, list) or not alvos:
+            problems.append(f"`{CONFIRMED_BY}` must be a non-empty list of repository paths")
+        else:
+            for alvo in alvos:
+                if not isinstance(alvo, str):
+                    problems.append(f"`{CONFIRMED_BY}` holds {type(alvo).__name__}; every entry is a path")
+                elif not os.path.exists(os.path.join(os.getcwd(), alvo)):
+                    problems.append(
+                        f"`{CONFIRMED_BY}` names {alvo}, which does not exist — a record that says it was "
+                        "built, pointing at nothing, is worse than one that says nothing"
+                    )
+        # Uma PROPOSTA não pode estar confirmada: o que ainda não foi decidido não pode ter sido construído,
+        # e um registo nesse estado é ou uma proposta que já correu à frente, ou um `status` esquecido.
+        if status == "proposed":
+            problems.append(f"status is `proposed` and carries `{CONFIRMED_BY}` — a proposal cannot be built yet")
 
     # `proposed` is still being written: the immutability rule binds ACCEPTED records (ADR-0057), so a
     # proposal that shows its working is doing the right thing.

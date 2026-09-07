@@ -1,5 +1,13 @@
 metadata:
   status: "accepted"
+  # A separação estrutural passou a ter gate em 07/09 (issue #85), e o registo dizia a dívida em vez de a
+  # esconder — «the gate is owed». Ele afere as duas metades: o controlo FORA da `.screen-exp` e a
+  # experiência DENTRO dela, porque um gate só do lado do controlo aprovaria esvaziar o outro.
+  # O `alcanceDoModo` (§ do mesmo registo) continua aferido em `viz-setters`, e é por isso que ele está aqui.
+  confirmed-by:
+    - app/js/ui/hud.ts
+    - tests/hud.browser.test.js
+    - tests/viz-setters.node.test.js
   supersedes-in-part: [ADR-0020]
   date: 2026-08-26
   decision-makers: [Dev]

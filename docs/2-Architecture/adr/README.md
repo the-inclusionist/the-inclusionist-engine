@@ -73,6 +73,16 @@ One file per deliberate architectural decision, in **YADR** format — the YAML 
   **Every pointer is bidirectional and the gate checks both sides**, because a reader arrives from whichever
   record they happen to hold. Three records still hold prose in `status`; breaking them out is part of the
   retrofit listed in ADR-0057.
+- **`metadata.confirmed-by` (opcional) diz que o registo foi CONSTRUÍDO**, e é uma coisa diferente de ter sido
+  decidido. Uma lista de caminhos do repositório — o módulo, o gate, o script — e **o validador exige que cada
+  um exista**. Um registo que afirma ter sido construído e aponta para nada é pior do que um que não afirma nada.
+  Uma proposta não pode carregar a chave: o que ainda não foi decidido não pode ter sido construído.
+
+  ⚠️ **A prosa da `confirmation` NÃO se reescreve.** O ADR-0053 fecha com «NOT YET BUILT» — verdade no dia em
+  que foi escrita, e falsa desde que o script nasceu. Reescrevê-la não seria errata (o autor, com os factos
+  daquele dia, teria escrito o mesmo) nem supersessão (a decisão não mudou): é uma linha de **estado** que
+  envelheceu, e o ADR-0057 não tinha forma para ela. A prosa fica como história; `confirmed-by` é o facto de
+  hoje, e mora nos metadados, que num YADR são a primeira coisa que se lê.
 - **Big design docs that *are* a decision** (e.g. the modularization plan, `../../5-Refactoring/plano-modularizacao.md`, built on
   arXiv:2409.15152) act as ADRs too — link them from the table rather than duplicating.
 - **Upgrade path:** if LGPD/compliance needs an audited, CI-validated decision log, adopt **Structured MADR**

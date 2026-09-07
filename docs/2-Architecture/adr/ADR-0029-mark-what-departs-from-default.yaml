@@ -1,5 +1,13 @@
 metadata:
   status: "accepted"
+  # Os três canais existem e o contraste do canal 1 está MEDIDO (issue #61, 07/09): 11,77:1 no pior par,
+  # contra o piso de 3:1 da WCAG 1.4.11. ⚠️ E a mesma medição achou que o canal de COR não distingue marcado
+  # de não-marcado — 1,45:1 no tema base —, o que promove o ANEL de reforço a portador da informação para
+  # quem vê em escala de cinza. O `marca-alterado-contraste` prende as duas coisas.
+  confirmed-by:
+    - app/js/ui/changed-mark.ts
+    - tests/changed-mark.browser.test.js
+    - tests/marca-alterado-contraste.node.test.js
   date: 2026-08-24
   decision-makers: [Dev]
   consulted: [ADR-0028 (the DEFAULTS this marker reads), ADR-0010 pillars 2/11, WCAG 1.4.1 and 1.4.11]

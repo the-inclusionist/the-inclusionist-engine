@@ -1,6 +1,13 @@
 ---
 metadata:
   status: "accepted"
+  # A régua saiu do registo para a folha de estilo em 07/09 (issue #117): `layout()` escreve `--alvo-min` e
+  # o `.pm-btn` lê-o. O gate traz também o ESPAÇAMENTO que este registo nomeia — e anota, com número, que
+  # ele não se deixa reprovar baixando a régua, porque a altura real do item vem do `padding` e da
+  # entrelinha. O que ele guarda é o `gap`, e isso está escrito no caso em vez de suposto.
+  confirmed-by:
+    - app/js/ui/layout.ts
+    - tests/pausa-44px.browser.test.js
   date: 2026-09-06
   supersedes-in-part: [ADR-0044]
   decision-makers: [Dev]
