@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initDraw } from '../app/js/render/draw.js';
 import { LOGICAL_W, LOGICAL_H } from '../app/js/core/constants.js';
-import { BOX, makePlayer } from '../app/js/game/player.js';
+import { BOX_FALSO as BOX, jogadorFalso as makePlayer } from './fixtures/cartucho-falso.js';
 import { createRunState } from '../app/js/core/run-state.js';
 // A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
 // ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
@@ -17,7 +17,9 @@ const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
-import { setCoins } from '../app/js/game/state.js'; // item 19: `coins`/`quizLevel` mudaram para `game/state`
+// ⚠️ O `setCoins([])` SAIU daqui na separação do cartucho (#111), e não deu falta a ninguém: `render/draw`
+// não importa `game/` desde o item 19 — os sprites de moeda ENTRAM por `ctx.getCoinSprites()`. A chamada
+// zerava um estado global do JOGO que este módulo já não lê, ou seja era resíduo de quando lia.
 import { addShake, stepFx, JUICE } from '../app/js/render/fx.js';
 
 const WPW = 2000, WPH = 1000; // mundo grande o bastante p/ o clamp não disparar no meio
@@ -96,7 +98,7 @@ function setPlayers(n, over = () => ({})) {
 
 beforeEach(() => {
   stepFx(1e6);           // drena o tremor de tela residual de outro teste (o estado de fx é singleton)
-  setCoins([]);          // sem moedas: os sprites de moeda são assunto de game/coin-spawning
+  // (sem `setCoins([])`: ver o cabeçalho do import — os sprites de moeda entram por ctx, não por estado)
   players.length = 0;
   setNumPlayersValue(1);
 });

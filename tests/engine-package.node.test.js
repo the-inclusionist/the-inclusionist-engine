@@ -107,16 +107,11 @@ describe('o pacote publicável não carrega construção que só o Vite entende 
     expect(legivel, 'sobrevive ao tsc e quebra (ou mente) do outro lado').toEqual([]);
   });
 
-  it('[Right] `render/sprites` está FORA do pacote — é o módulo que importa `virtual:sprite-atlas`', () => {
-    expect(EXCLUIDOS.has('app/js/render/sprites.ts')).toBe(true);
-    expect(/from\s*['"]virtual:sprite-atlas['"]/.test(fonte('app/js/render/sprites.ts'))).toBe(true);
-  });
-
-  it('[Boundary] e ele PODE ficar de fora: nenhum módulo embarcado o importa', () => {
-    const importadores = MODULOS.filter((m) =>
-      linhasDeCodigo(fonte(m)).some(([, l]) => /from\s*['"][^'"]*render\/sprites\.js['"]/.test(l)));
-    expect(importadores, 'excluir um módulo que alguém embarcado importa quebra o pacote').toEqual([]);
-  });
+  // ⚠️ OS DOIS CASOS SOBRE `render/sprites` SAIRAM DAQUI em 2026-09-07 (issue #111), e nao por terem
+  // deixado de importar: o MODULO mudou de repositorio. Eles afirmavam que ele estava no `exclude` do
+  // `tsconfig.pkg.json` e que nenhum modulo embarcado o importava — as duas coisas continuam verdadeiras
+  // e nenhuma e mais aferivel aqui, porque nao ha ficheiro que ler. A propriedade que elas protegiam
+  // passou a ser garantida por CONSTRUCAO: o que nao esta na arvore nao entra no pacote.
 
   it('[Cross-check] o crivo ainda pega o que os DOIS achados de 05/09 eram', () => {
     const amostras = [

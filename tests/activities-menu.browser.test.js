@@ -16,8 +16,19 @@ const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
 
-import { activity as ACTIVITY, setActivityValue } from '../app/js/game/state.js'; // GAME desde a Fase B (ADR-0038)
-import { JOGO } from '../app/js/game/save-id.js'; // ADR-0080: o id que a engine deixou de guardar
+// ⚠️ O ESTADO E O ID SÃO DO JOGO, e desde a separação do cartucho (#111) esta engine não tem jogo para os
+// pedir. Eram `game/state` e `game/save-id`; agora são um falso local, que é o que este gate sempre quis —
+// ele testa que `ui/activities-menu` LÊ e ESCREVE o que lhe injetam, e nunca o que o platformer escolheu.
+import { JOGO_FALSO as JOGO } from './fixtures/cartucho-falso.js';
+let ACTIVITY = 'alf1'; // literal, e não `DEFAULT_ACTIVITY_ID`: ao contrário do irmão node, este ficheiro
+                       // não importa o catálogo — e importá-lo só para semear um valor seria acoplar o gate
+                       // a uma tabela que ele não testa.
+// ⚠️ O SETTER GRAVA, e nao e' detalhe: o `setActivityValue` de `game/state` fazia
+//   `activity = id; store.set(store.KEYS.activity(JOGO), id); emit(...)`
+// e cinco casos deste ficheiro afirmam contra o ARMAZENAMENTO, nao contra a variavel. Um falso que so
+// atribuisse deixaria `store.get(...)` a devolver null e os casos a reprovar por um motivo que nada tem
+// a ver com o que eles testam. O `emit` fica de fora porque nenhum caso aqui o observa.
+const setActivityValue = (v) => { ACTIVITY = v; store.set(store.KEYS.activity(JOGO), v); };
 import { modeForActivity } from '../app/js/educational/activities-registry.js';
 import * as store from '../app/js/platform/storage.js';
 

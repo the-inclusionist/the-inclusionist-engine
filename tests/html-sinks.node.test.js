@@ -65,11 +65,12 @@ function sinksDeHoje() {
  * `porque` não é decoração: é a única coisa que distingue este ficheiro de uma lista de supressões.
  */
 const SEGUROS = [
-  ['main.ts', "document.querySelectorAll('.pause-legend')", 'a legenda vem de `pauseLegendHtml`, i18n (gate próprio)'],
-  ['main.ts', "const ti=$('#title-icons')", 'markup da própria engine (`iconsMarkup`)'],
+  // ⚠️ CINCO ENTRADAS SAIRAM DAQUI em 2026-09-07 (issue #111): eram sinks de main.ts e de game/**, e os
+  // dois deixaram este repositorio. O censo cobre a ENGINE; os sinks do cartucho sao agora censo do jogo,
+  // em game-platformer. O caso [Zero] deste ficheiro — a lista nao guarda sink que ja nao existe — foi
+  // exatamente quem apontou as cinco, uma a uma, em vez de as deixar a apodrecer numa lista verde.
   ['consumer-quiz/main-quiz.ts', 'if (!p) { app.innerHTML =', 'dois NÚMEROS interpolados'],
   ['consumer-quiz/main-quiz.ts', 'seletor.innerHTML = opcoes.map', 'chave enumerada + i18n'],
-  ['game/attract.ts', 'if (gr) gr.insertAdjacentHTML', 'literal inteiro: o banner do attract, sem interpolacao nenhuma'],
   ['render/viz-setters.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['render/viz-setters.ts', 'el.innerHTML = vizGroupHtml(modes, cur)', 'modos enumerados + i18n'],
   ['ui/debug-panel.ts', "p.innerHTML = '<strong>", 'literal inteiro: o titulo do painel de ?debug'],
@@ -89,14 +90,12 @@ const SEGUROS = [
   ['ui/shell.ts', 'el.innerHTML = legendHtml(l1, l2)', 'so i18n, e o dicionario tem gate proprio'],
   ['ui/settings-controls.ts', 'el.innerHTML = ctx.acoesDoJogo().map(', '⚠️ CONSERTADO 2026-09-06: a palavra do jogo saiu do markup e entra por `textContent`'],
   ['input/touch.ts', 'el.innerHTML = TOUCH_SLOTS.map((s) =>', '⚠️ CONSERTADO 2026-09-06: idem — o `<option>` nasce vazio e recebe o rótulo por texto'],
-  ['game/quiz.ts', 'ov.innerHTML = quizHtml(q, c.disp, c.QL_NAME)', '⚠️ CONSERTADO 2026-09-06: os cinco construtores escapam o conteúdo de atividade (`escAtividade`), com gate hostil em `quiz-escape`'],
   ['consumer-quiz/main-quiz.ts', 'app.innerHTML = perguntaHtml(p, foco)', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escaparHtml`, com gate hostil em `consumer-quiz`'],
   ['ui/activities-menu.ts', "const cen = ctx.$<HTMLElement>('#tm-cen')", '⚠️ CONSERTADO 2026-09-06: `c.id` (do jogo) vai por `escaparHtml` no atributo `data-cen`; o `nome` é chave de i18n'],
   ['ui/activities-menu.ts', "const alf = ctx.$<HTMLElement>('#tm-alf')", 'ids do catálogo (`educational/activities-registry`, código) + i18n'],
   ['ui/activities-menu.ts', "const mat = ctx.$<HTMLElement>('#tm-mat')", 'ids do catálogo (código) + i18n'],
   ['ui/activities-menu.ts', "const fr = ctx.$<HTMLElement>('#tm-fr')", 'ids do catálogo (código) + as cinco notações enumeradas'],
   ['ui/activities-menu.ts', "const tab = ctx.$<HTMLElement>('#tm-tab')", 'só NÚMEROS de tabuada (`TAB_ROWS`) + i18n'],
-  ['main.ts', 'if(c)c.innerHTML=`<h3 class="panel-sub">', '`titulo` é i18n; as linhas são i18n + nomes de tecla da tabela `keyName`'],
   ['ui/settings-audio.ts', "el.innerHTML = '<p class=\"opt-hint\">' +", 'uma única chave de i18n, escolhida por um booleano'],
   ['ui/settings-controls.ts', 'tabs.innerHTML = `<span class="opt-hint"', 'literal + um NÚMERO (o defeito aqui é português cravado, de i18n, não de marcação)'],
   ['ui/settings-motion.ts', 'el.innerHTML =', 'literais + o índice do jogador + linhas montadas de tabelas da engine'],

@@ -36,9 +36,13 @@
   "//7d": "(ganchos de teste do JOGO, e o próprio arquivo diz que estão de mudança) e um método de tela cheia.",
   "//7e": "Publicá-lo injetaria tudo isso no espaço de tipos do consumidor, inclusive a promessa de um módulo",
   "//7f": "virtual que ele não tem. Medido: nenhum módulo embarcado usa qualquer um dos quatro — só comentários.",
-  "//8": "⚠️ `render/sprites` NÃO É ENGINE, e isto é medido e não opinião: ele importa `virtual:sprite-atlas`,",
-  "//9": "um módulo que só existe dentro do plugin de build DESTE repositório, e o único arquivo que o importa",
-  "//10": "é `main.ts` — todas as outras ocorrências no código são comentário. Publicá-lo entregaria ao",
-  "//11": "consumidor um import que não resolve. `tests/engine-package.node.test.js` prende as duas metades.",
-  "exclude": ["app/js/render/sprites.ts"]
+  "//8": "⚠️ O `exclude` FICOU VAZIO em 2026-09-07, e a razão é a issue #111 e não uma mudança de critério.",
+  "//9": "Ele listava `app/js/render/sprites.ts`, com a nota de que o módulo NÃO É ENGINE: importa",
+  "//10": "`virtual:sprite-atlas`, que só existe dentro do plugin de build, e o único ficheiro que o importava",
+  "//11": "era `main.ts`. Publicá-lo entregaria ao consumidor um import que não resolve.",
+  "//12": "A separação do cartucho executou o que essa nota já dizia: o módulo MUDOU DE REPOSITÓRIO, para",
+  "//13": "`game-platformer`, junto com o plugin que o alimenta. Não há mais o que excluir — o que sobrou aqui",
+  "//14": "é engine inteira. A exclusão a apontar para um ficheiro ausente fazia dois gates estourarem com",
+  "//15": "ENOENT, que foi como isto se descobriu.",
+  "exclude": []
 }

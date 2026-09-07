@@ -4,7 +4,7 @@
 // persistida) + a guarda de DI de initHighContrast + o desvio "normal" de worldTexFor/spriteTexFor (não toca
 // canvas). ZOMBIES + Right-BICEP. Ver docs/2-Architecture/adr/ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect } from 'vitest';
-import { roleOf } from '../app/js/game/tile-roles.js'; // a tabela tile→papel é do JOGO; a engine a RECEBE
+import { roleOfFalso as roleOf } from './fixtures/cartucho-falso.js'; // a tabela tile→papel é do JOGO (ADR-0080); a engine a RECEBE, e o gate prova que a cor sai do PAPEL
 import {
   DIRECT_CFG, dcfg, HC_ROLE_DEF, HC_ROLE, saveHcRole,
   initHighContrast, worldTexFor, spriteTexFor,
@@ -13,7 +13,10 @@ import {
 describe('render/high-contrast — DI (initHighContrast ainda não chamado)', () => {
   it('[Error] worldTexFor/spriteTexFor lançam antes de initHighContrast', () => {
     expect(() => worldTexFor('normal')).toThrow(/initHighContrast/);
-    expect(() => spriteTexFor('coin', 'normal')).toThrow(/initHighContrast/);
+    // ⚠️ `'sprite-x'` e não `'coin'`: o gate `engine-boundary` reprova vocabulário de JOGO num fixture de
+    // engine, e uma moeda é do platformer. O que este caso prova é que a função estoura ANTES de inicializar,
+    // e para isso o nome do sprite é irrelevante — que é exatamente o argumento de o trocar.
+    expect(() => spriteTexFor('sprite-x', 'normal')).toThrow(/initHighContrast/);
   });
 });
 

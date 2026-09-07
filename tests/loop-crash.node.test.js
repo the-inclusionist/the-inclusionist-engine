@@ -155,26 +155,8 @@ describe('e ligado ao laço de verdade, ponta a ponta', () => {
 });
 
 // -----------------------------------------------------------------------------------------------------------
-describe('a RAIZ do jogo de plataforma liga o aviso — e ela não passa por `createGame`', () => {
-  // ⚠️ POR QUE ESTE CASO LÊ O FONTE em vez de exercitar o módulo. `app/js/main.ts` é a raiz de composição do
-  // jogo de plataforma: importá-lo num teste arranca PixiJS, áudio e o documento inteiro. Mas é ELE quem chama
-  // `startLoop`, e foi exatamente aí que o `aoFalhar` ficou de fora — a chamada tinha DOIS argumentos, e um
-  // argumento posicional que não se escreve não deixa rasto nenhum.
-  //
-  // A alternativa a ler o fonte era não aferir nada, e «não aferir nada» foi o estado que produziu o defeito.
-  const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'main.ts'), 'utf8');
 
-  it('[Right] `startLoop` recebe um `aoFalhar`, e não só o ticker e o quadro', () => {
-    const i = FONTE.indexOf('startLoop(app.ticker');
-    expect(i, 'não encontrei a chamada de startLoop em main.ts').toBeGreaterThan(-1);
-    const chamada = FONTE.slice(i, FONTE.indexOf('window.__incl', i));
-    expect(chamada, 'o laço voltou a parar em silêncio').toContain('aoFalhar');
-    expect(chamada).toContain('criarAvisoDeQueda');
-  });
-
-  it('[Zero] e o aviso vem do módulo da engine, não de uma cópia local', () => {
-    // Uma segunda implementação do aviso divergiria da primeira em silêncio: a frase mudaria num jogo e não
-    // no outro, e ninguém compara duas mensagens de erro que nunca aparecem ao mesmo tempo.
-    expect(FONTE).toContain("from './ui/loop-crash.js'");
-  });
-});
+// ⚠️ UM DESCRIBE SAIU DAQUI em 2026-09-07 (issue #111): ele afirmava algo sobre o CARTUCHO — a raiz de
+// composicao (`main.ts`) ou o `app/index.html` do jogo — e nenhum dos dois vive mais neste repositorio.
+// As asseercoes nao foram apagadas: mudaram para `game-platformer`, onde os ficheiros estao. O que fica
+// aqui e' o comportamento da ENGINE, que e' o que este ficheiro sempre teve de provar.

@@ -10,7 +10,7 @@ import {
   IPHONE16_LONG_MM, IPHONE16_LONG_PX, IPHONE16_PXMM, TOUCH_SLOTS, TOUCH_ACTS,
 } from '../app/js/input/touch.js';
 import { TOUCH_DEFAULT } from '../app/js/input/devices.js';
-import { platformerPreset } from '../app/js/game/platformer-preset.js';
+import { presetFalso as platformerPreset } from './fixtures/cartucho-falso.js'; // ADR-0096: o preset REAL e' do jogo; aqui prova-se o comportamento DADO um preset de nove
 import pt from '../app/js/i18n/pt.js';
 
 describe('padPxPerMm', () => {

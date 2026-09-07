@@ -170,18 +170,6 @@ describe('render/cvd-matrices — os ids são o contrato com o caminho de tela �
   });
 });
 
-describe('app/index.html — a segunda cópia das matrizes não pode voltar', () => {
-  const html = readRepo('app/index.html');
-
-  it('[Interface] o host <defs id="cvd-defs"> existe — sem ele os seis filtros não têm onde nascer', () => {
-    expect(html).toMatch(/<defs\s+id="cvd-defs"\s*>/);
-  });
-
-  // ESTE é o caso que discrimina: enquanto os números estavam no HTML, nada os ligava ao ColorMatrixFilter.
-  it('[Interface] o HTML não escreve nenhuma matriz à mão — feColorMatrix só existe gerado', () => {
-    expect(html).not.toMatch(/feColorMatrix/);
-  });
-});
 
 /* ===================== 3. installCvdFilters ===================== */
 
@@ -437,3 +425,8 @@ describe('render/viewports — renderVpOverlay', () => {
     expect(spr.texture).toBeNull(); // nem a textura do sprite é tocada
   });
 });
+
+// ⚠️ UM DESCRIBE SAIU DAQUI em 2026-09-07 (issue #111): ele afirmava algo sobre o CARTUCHO — a raiz de
+// composicao (`main.ts`) ou o `app/index.html` do jogo — e nenhum dos dois vive mais neste repositorio.
+// As asseercoes nao foram apagadas: mudaram para `game-platformer`, onde os ficheiros estao. O que fica
+// aqui e' o comportamento da ENGINE, que e' o que este ficheiro sempre teve de provar.

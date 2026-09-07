@@ -7,7 +7,9 @@ import { dirname, join } from 'node:path';
 import { readFileSync } from 'node:fs';
 // Plugin em .mjs puro (sem tipos): é ferramenta de BUILD, e tipá-la exigiria um segundo tsconfig para o
 // Node. O contrato dele é uma função que devolve o objeto de plugin, e o Vite valida isso na hora de usar.
-import atlasDeSprites from './scripts/vite-plugin-atlas.mjs';
+// ⚠️ O PLUGIN DO ATLAS SAIU COM O CARTUCHO (issue #111). Ele gera `virtual:sprite-atlas`, que so'
+// `render/sprites` importava — e `render/sprites` nao e' engine: o `tsconfig.pkg.json` ja' o excluia do
+// pacote por escrito. Os dois vivem agora em `game-platformer`, junto com o `scripts/atlas.mjs`.
 
 
 // ========================= CARIMBO DE BUILD (docs/plano-versionamento.md) =========================
@@ -28,7 +30,6 @@ import atlasDeSprites from './scripts/vite-plugin-atlas.mjs';
 const sh = (cmd: string): string => { try { return execSync(cmd, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { return ''; } };
 const cfSha = (process.env.CF_PAGES_COMMIT_SHA || '').slice(0, 7);
 const RAIZ_REPO = dirname(fileURLToPath(import.meta.url));
-const RAIZ_SPRITES = join(RAIZ_REPO, 'app/public/assets/sprites/menino');
 const versaoDoPacote = ((): string => {
   try { return String(JSON.parse(readFileSync(join(RAIZ_REPO, 'package.json'), 'utf8')).version || ''); } catch { return ''; }
 })();
@@ -60,7 +61,6 @@ export default defineConfig({
     // O ATLAS DE SPRITES (item 22, X2): 39 requisições viram UMA. Empacota em tempo de build com
     // `scripts/atlas.mjs` — zero dependência nova — e entrega o manifesto pelo módulo virtual
     // `virtual:sprite-atlas`, para o boot continuar SÍNCRONO (um .json ao lado seria a 2ª requisição).
-    atlasDeSprites({ raizSprites: RAIZ_SPRITES }),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto', // o plugin injeta o registro do SW no index.html (offline)
@@ -135,7 +135,7 @@ export default defineConfig({
       // porque este projeto builda com ROLLDOWN — o campo do rollup é ignorado em silêncio, e o único sintoma
       // é o `dist/quiz.html` que não aparece. O consumidor existe para medir a fronteira engine↔jogo, e um
       // consumidor que não é construído de verdade não mede nada.
-      input: { main: 'app/index.html', quiz: 'app/quiz.html' },
+      input: { quiz: 'app/quiz.html' }, // ⚠️ `main` saiu com o cartucho (#111): a engine nao tem app proprio
       output: {
         codeSplitting: {
           groups: [
@@ -153,7 +153,6 @@ export default defineConfig({
         // O PLUGIN DO ATLAS ENTRA AQUI TAMBÉM: os projects de teste NÃO herdam os plugins do topo, e
         // `render/sprites` importa o módulo virtual. Sem isto, `tests/logic.node.test.js` falha ao RESOLVER —
         // não ao afirmar —, que é a forma de quebra mais confusa possível numa suíte.
-        plugins: [atlasDeSprites({ raizSprites: RAIZ_SPRITES })],
         test: {
           name: 'node',
           environment: 'node',
@@ -166,7 +165,6 @@ export default defineConfig({
       {
         // render/DOM real via Chromium/Playwright (Vitest 3: browser.instances)
         root: import.meta.dirname,
-        plugins: [atlasDeSprites({ raizSprites: RAIZ_SPRITES })],
         test: {
           name: 'browser',
           include: ['tests/**/*.browser.test.js'],

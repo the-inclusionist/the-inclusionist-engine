@@ -6,7 +6,6 @@ import * as C from '../app/js/core/constants.js';
 import * as T from '../app/js/core/tiles.js';
 import * as W from '../app/js/core/world.js';
 import * as S from '../app/js/input/state.js';
-import * as SPR from '../app/js/render/sprites.js';
 import * as AUDIO from '../app/js/platform/audio.js';
 import { AUDIO_CATS } from '../app/js/platform/audio-mixer.js';
 import * as RNG from '../app/js/core/rng.js';
@@ -173,19 +172,7 @@ describe('input/state — held(pl, act)', () => {
   });
 });
 
-describe('render/sprites — contrato PURO (import não faz I/O)', () => {
-  it('[Interface] SPRITE_MANIFEST traz as contagens de quadros por animação', () => {
-    expect(SPR.SPRITE_MANIFEST.idle).toBe(4);
-    expect(SPR.SPRITE_MANIFEST.andar).toBe(8);
-    expect(SPR.SPRITE_MANIFEST.correr).toBe(4);
-    expect(SPR.SPRITE_MANIFEST.parede).toBe(4);
-  });
-  it('[Interface] FLAVORS = 3 gracinhas com seq[] e hold (dados puros)', () => {
-    expect(SPR.FLAVORS.length).toBe(3);
-    expect(SPR.FLAVORS.every((f) => Array.isArray(f.seq) && typeof f.hold === 'number')).toBe(true);
-  });
-  it('[Zero] import é PURO: TEX_WALK vazio até initCharacterSprites() (não chamamos → sem I/O)', () => {
-    expect(SPR.TEX_WALK).toEqual([]);
-    expect(typeof SPR.initCharacterSprites).toBe('function');
-  });
-});
+// ⚠️ O DESCRIBE `render/sprites — contrato PURO` SAIU DAQUI na separacao do cartucho (issue #111). O
+// modulo `render/sprites` nao e' engine e o `tsconfig.pkg.json` ja' o excluia do pacote por escrito: ele
+// importa `virtual:sprite-atlas`, que so' existe dentro do plugin de build do JOGO. As tres asseercoes
+// mudaram para `game-platformer/tests/sprites-contrato.node.test.js`, onde o modulo agora vive.

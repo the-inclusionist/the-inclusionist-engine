@@ -6,7 +6,7 @@
 //      + querySelectorAll do original, incluindo o querySelectorAll das abas que NÃO acha nada — ver relatório).
 // ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { roleOf } from '../app/js/game/tile-roles.js'; // a tabela tile→papel e do JOGO; a engine a RECEBE
+import { roleOfFalso as roleOf } from './fixtures/cartucho-falso.js'; // a tabela tile→papel e do JOGO (ADR-0080); a engine a RECEBE
 
 // lqT é lido no IMPORT de render/lq-filter → zerar antes do import dinâmico, senão um resíduo de 'incl_lq'
 // entraria compondo o filtro CSS e as asserções de string exata ficariam dependentes de outro teste.

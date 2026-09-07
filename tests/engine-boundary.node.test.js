@@ -500,41 +500,36 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
 });
 
 // -----------------------------------------------------------------------------------------------------------
-describe('A RAIZ DE COMPOSICAO — o ponto cego que a issue #111 tem de fechar', () => {
-  // ⚠️ ATE AQUI, O ZERO ACIMA ERA VERDADEIRO E INCOMPLETO. `CAMADAS_ENGINE` varre PASTAS, e `app/js/main.ts`
-  // nao esta em pasta nenhuma — nunca entrou em `MODULOS`, e por isso nunca foi contado. O plano da #111
-  // dizia «por `main.ts` no escopo do engine-boundary»; POR NO MESMO ESCOPO SERIA ERRADO, e vale escrever por
-  // que: `main.ts` e a raiz de composicao do JOGO, nao camada de engine. Importar de `game/` e o que ele
-  // existe para fazer, e exigir-lhe zero seria exigir que o jogo nao se monte.
+describe('A RAIZ DE COMPOSICAO SAIU — e este ficheiro mudou de assunto, como ele proprio previu', () => {
+  // ⚠️ ESTE BLOCO MEDIA UMA PORTA QUE JA NAO EXISTE. Ate 2026-09-07 ele afirmava tres coisas sobre
+  // `app/js/main.ts`: que era a UNICA raiz a importar de `game/`, que as arestas dela eram um TETO de 29 que
+  // so encolhia, e que o teto NAO era zero — «um zero aqui nao seria vitoria: seria o cartucho ja fora (e ai
+  // este ficheiro inteiro muda de assunto)».
   //
-  // O que faltava aferir e OUTRA COISA, e e ela que a #111 precisa: que ele seja a UNICA porta, e que a porta
-  // seja MEDIDA. Sem isso, uma segunda raiz podia nascer sem ninguem reparar, e a extracao do cartucho nao
-  // teria numero nenhum a que se agarrar.
+  // O cartucho saiu (issue #111). O ficheiro muda de assunto, e o teto de 29 cumpriu o papel para que foi
+  // escrito: foi o medidor da extracao, e chegou a zero deixando de existir em vez de sendo baixado a mao.
+  //
+  // O que fica no lugar e' a propriedade DEPOIS da mudanca, e ela e' mais forte que a anterior: nao ha raiz
+  // nenhuma, nao ha pasta `game/`, e nao ha aresta para uma. A fronteira deixou de precisar de teto porque
+  // deixou de ter porta.
   const RAIZ_TS = readdirSync(RAIZ).filter((f) => f.endsWith('.ts') && !f.endsWith('.d.ts'));
   const arestasDeJogo = (ficheiro) =>
     (readFileSync(join(RAIZ, ficheiro), 'utf8').split(CR).join('').match(/from '\.\/game\//g) || []).length;
 
-  /** ⚠️ TETO, e so encolhe. E o MEDIDOR da #111: cada peca do cartucho que sai baixa este numero. */
-  const TETO_DA_RAIZ = 29;
-
-  it('[Right] ⚠️ `main.ts` e a UNICA porta para `game/` — nenhuma segunda raiz nasceu', () => {
-    // A propriedade que torna a #111 possivel de todo: se as arestas estivessem espalhadas por varios
-    // ficheiros de raiz, mover o cartucho seria caca ao tesouro em vez de mover uma pasta e um ficheiro.
+  it('[Zero] ⚠️ NENHUM ficheiro de raiz importa de `game/` — a porta fechou-se saindo', () => {
     const portas = RAIZ_TS.filter((f) => arestasDeJogo(f) > 0);
-    expect(portas, 'apareceu uma segunda raiz que importa do jogo').toEqual(['main.ts']);
+    expect(portas, 'nasceu uma raiz que importa um jogo: o cartucho esta a voltar').toEqual([]);
   });
 
-  it('[Boundary] e as arestas dela sao um TETO que so encolhe', () => {
-    // ⚠️ O NUMERO SUBIU HOJE, de 28 para 29, por uma linha minha (`game/save-id.ts`, do ADR-0088) — e foi
-    // subir sem nada reparar que mostrou que este caso faltava. Um teto que ninguem baixa e divida; um teto
-    // que ninguem MEDE e divida invisivel.
-    expect(arestasDeJogo('main.ts'), 'a raiz ficou MAIS acoplada ao jogo').toBeLessThanOrEqual(TETO_DA_RAIZ);
+  it('[Zero] e nao ha `app/js/game/` para importar', () => {
+    // A outra metade. Sem esta, o caso acima ficaria verde para sempre por nao haver o que casar — que e' o
+    // gate a falhar ABERTO, o tipo que este repositorio nomeia por escrito noutros ficheiros.
+    expect(existsSync(join(RAIZ, 'game')), 'o cartucho voltou para dentro da engine').toBe(false);
   });
 
-  it('[Interface] e o teto NAO e zero — a raiz do jogo importa o jogo, por definicao', () => {
-    // A metade honesta. Um zero aqui nao seria vitoria: seria o cartucho ja fora (e ai este ficheiro inteiro
-    // muda de assunto) ou o gate a ter parado de medir. Dizer isso numa assercao impede que o proximo leitor
-    // leia o teto como defeito a consertar no lugar errado.
-    expect(arestasDeJogo('main.ts')).toBeGreaterThan(0);
+  it('[Interface] e a raiz de composicao que sobra e' + "'" + ' a do CONSUMIDOR DE PROVA, nao a de um jogo', () => {
+    // `consumer-quiz` fica: ele existe para medir a fronteira engine↔jogo de fora, com um jogo de mentira
+    // que a engine controla. E' a diferenca entre ter um consumidor e ser um jogo.
+    expect(existsSync(join(RAIZ, 'consumer-quiz')), 'o consumidor de prova tambem foi embora').toBe(true);
   });
 });
