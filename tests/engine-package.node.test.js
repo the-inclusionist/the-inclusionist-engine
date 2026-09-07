@@ -290,11 +290,21 @@ describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #1
    * Medido no tarball 7.0.1: `assets/vendor/fonts.css` resolve; `assets/assets/sprites/…` dá 404.
    *
    * O QUE ESTÁ CERTO É A AUSÊNCIA: a arte NÃO é FOSS (pilar 10 do ADR-0010) e não pode viajar num pacote
-   * AGPL. O que está errado é o PADRÃO, que promete a pasta toda — e estreitá-lo para `./assets/vendor/*`
-   * mudaria o caminho de quem já escreve `engine/assets/vendor/fonts.css`, ou seja, é quebra de contrato e
-   * decisão do Dev, não de quem escreve o gate. Fica como exceção NOMEADA, com o motivo, e com issue.
+   * AGPL. O que está errado é o PADRÃO, que promete a pasta toda.
+   *
+   * ⚠️ ATUALIZADO EM 2026-09-07 (#119). A porta ESTREITA `./assets/vendor/*` passou a existir ao lado da
+   * larga — aditiva, portanto sem quebrar nada. As duas resolvem `assets/vendor/fonts.css` para o mesmo
+   * ficheiro hoje; a estreita é a que diz a verdade.
+   *
+   * ⚠️ E A MEDIÇÃO MUDOU A PREMISSA DA PRÓPRIA ISSUE, que dizia que remover a larga «é quebra de contrato —
+   * major». Medido: `app/public/` tem TRÊS entradas (`vendor/`, `_headers`, `icon.svg`) e o `files` embarca
+   * só `vendor`. Ou seja, tudo o que a porta larga consegue resolver num tarball publicado já é coberto pela
+   * estreita; o resto já dá 404 hoje. Removê-la não quebra consumidor de npm nenhum.
+   *
+   * A remoção continua a ser do Dev — a medida vale para quem instala do registo, e um consumidor por
+   * `file:` alcança a árvore inteira. Fica registada em `docs/6-DevOps-SRE/Breaking-Changes.md`.
    */
-  const PORTA_LARGA_DE_PROPOSITO = new Map([['./assets/*', 'a arte não é FOSS; só `vendor/` viaja — ver a issue']]);
+  const PORTA_LARGA_DE_PROPOSITO = new Map([['./assets/*', 'a arte não é FOSS; só `vendor/` viaja — ver a #119']]);
 
   it('[Boundary] toda porta do `exports` aponta para algo que o pacote realmente EMBARCA', () => {
     // A recíproca: uma porta para uma pasta que o `files` não leva é um 404 prometido ao consumidor.
@@ -304,10 +314,20 @@ describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #1
       if (PORTA_LARGA_DE_PROPOSITO.has(sub)) continue;
       const destino = typeof alvo === 'string' ? alvo : alvo?.default;
       if (!destino) { problemas.push(`${sub}: sem destino`); continue; }
-      const raiz = destino.replace(/^\.\//, '').split('/')[0];
-      if (!FILES.has(raiz) && raiz !== 'package.json' && !FILES.has(destino.replace(/^\.\//, ''))) {
-        problemas.push(`${sub} -> ${destino} (fora de \`files\`)`);
-      }
+      // ⚠️ O CRIVO LIA SÓ O PRIMEIRO SEGMENTO, e por isso não sabia distinguir uma porta HONESTA de uma
+      // larga. `./app/public/vendor/*` tem raiz `app`, que não está no `files` — mas `app/public/vendor`
+      // está, e é exatamente a pasta que a porta promete. Em 2026-09-07 a #119 acrescentou essa porta
+      // estreita e o gate reprovou-a, sendo ela o conserto.
+      //
+      // Agora ele lê o PREFIXO LITERAL (o que vem antes do `*`) e pergunta se o `files` embarca esse
+      // prefixo, ou um antecessor dele. Com isso a porta estreita PASSA por ser verdadeira, e a larga
+      // continua a reprovar por não o ser — que é a diferença que a issue existe para nomear.
+      const limpo = destino.replace(/^\.\//, '');
+      const prefixo = limpo.includes('*') ? limpo.slice(0, limpo.indexOf('*')).replace(/\/$/, '') : limpo;
+      const embarcado = prefixo === 'package.json'
+        || FILES.has(prefixo)
+        || [...FILES].some((f) => prefixo === f || prefixo.startsWith(f + '/'));
+      if (!embarcado) problemas.push(`${sub} -> ${destino} (fora de \`files\`)`);
     }
     expect(problemas).toEqual([]);
   });
@@ -317,5 +337,36 @@ describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #1
     // é o crivo a ser desligado devagar. UMA hoje, e ela está documentada acima com a medida do tarball.
     expect(PORTA_LARGA_DE_PROPOSITO.size).toBeLessThanOrEqual(1);
     for (const [, motivo] of PORTA_LARGA_DE_PROPOSITO) expect(motivo.length).toBeGreaterThan(20);
+  });
+
+  it('⚠️ [Right] a porta ESTREITA existe, e e a que diz a verdade (#119)', () => {
+    // O conserto aditivo: `./assets/vendor/*` promete exatamente o que o `files` embarca. Ela nao substitui
+    // a larga hoje — convive com ela —, e e por isso que remover a larga um dia nao quebra quem escrever
+    // `engine/assets/vendor/...`: continua a casar aqui.
+    const exp = PKG.exports ?? {};
+    expect(exp['./assets/vendor/*'], 'a porta estreita sumiu; a promessa volta a ser so a larga')
+      .toBe('./app/public/vendor/*');
+    expect((PKG.files ?? [])).toContain('app/public/vendor');
+  });
+
+  it('⚠️ [Cross-check] e a porta LARGA continua a reprovar sem a isencao — senao a excecao nao mede nada', () => {
+    // Sem isto, alguem podia alargar o crivo ate a larga passar sozinha, e a excecao nomeada viraria
+    // decoracao. Aqui o crivo corre COM a larga e SEM a lista de isentos.
+    const FILES = new Set(PKG.files ?? []);
+    const cabe = (destino) => {
+      const limpo = destino.replace(/^\.\//, '');
+      const prefixo = limpo.includes('*') ? limpo.slice(0, limpo.indexOf('*')).replace(/\/$/, '') : limpo;
+      return prefixo === 'package.json' || FILES.has(prefixo) || [...FILES].some((f) => prefixo === f || prefixo.startsWith(f + '/'));
+    };
+    expect(cabe('./app/public/*'), 'a porta larga passou a caber no `files`; reler a #119').toBe(false);
+    expect(cabe('./app/public/vendor/*'), 'a porta estreita deixou de caber').toBe(true);
+  });
+
+  it('⚠️ [Interface] `app/public` so tem uma pasta que viaja — e o que torna a remocao segura', () => {
+    // A medicao que mudou a premissa da #119. Se aparecer coisa nova em `app/public` que o `files` embarque,
+    // a conclusao «remover a larga nao quebra ninguem» deixa de valer, e este caso avisa.
+    const publico = readdirSync(join(RAIZ_REPO, 'app', 'public'));
+    const embarcados = publico.filter((n) => (PKG.files ?? []).includes('app/public/' + n));
+    expect(embarcados, 'algo novo em app/public viaja no pacote; reler a #119').toEqual(['vendor']);
   });
 });

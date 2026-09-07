@@ -65,6 +65,7 @@
       "default": "./dist-pkg/i18n/*.js"
     },
     "./style.css": "./app/css/style.css",
+    "./assets/vendor/*": "./app/public/vendor/*",
     "./assets/*": "./app/public/*",
     "./package.json": "./package.json"
   },

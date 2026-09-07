@@ -86,6 +86,14 @@ turns each into a `9.0.0`:
   across both repositories. Its own recommendation, written before this file, was to batch it with the #63
   boundary work — and that batching is still available only until this major is cut.
 - **#63's deeper boundary** — `TILE_TYPES` moving and `core/collision` splitting in two.
+- **`exports["./assets/*"]`** (#119) — it promises the whole of `app/public/` and `files` ships only
+  `app/public/vendor`. The narrow door `./assets/vendor/*` now sits beside it and tells the truth.
+  ⚠️ **Measured, and it contradicts what #119 assumed:** `app/public/` holds three entries (`vendor/`,
+  `_headers`, `icon.svg`) and only `vendor` ships, so everything the wide door can resolve in a published
+  tarball is already covered by the narrow one — the rest already 404s. **Removing it breaks no npm
+  consumer.** It stays for now because a `file:` consumer reaches the whole tree, and that is the Dev's call.
+- **`platform/audio-sonar.SonarCtx.LOGICAL_W`** (#121) — no longer read; the pan width comes from the
+  topology. Already optional and `@deprecated`, so removing the field is the only step left.
 - **`ui/settings-controls.ACT_LABEL`** — measured on 2026-09-07 to have **no consumer at all**, in this tree
   or in `game-platformer`. It is the platformer's eight words living inside the engine, and it was the direct
   cause of #125: the remap screen built its `aria-label` from it and announced *"Alterar tecla de undefined"*
