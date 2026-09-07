@@ -101,6 +101,15 @@ export function layout(): void {
     gr.style.setProperty('--hud-fs', Math.max(9, Math.round(180 * k * 0.052)) + 'px');
     gr.style.setProperty('--ui-fs', (8 * k) + 'px');   // base LÓGICA 8px × k (16px em k=2)
     gr.style.setProperty('--tap', (22 * k) + 'px');    // toque 22px × k (44px em k=2, piso WCAG)
+    // ⚠️ O PISO DA RÉGUA (ADR-0095), e ele é OUTRA COISA que o `--tap`. O `--tap` é o tamanho PREFERIDO e
+    // cresce com a escala do canvas; `--alvo-min` é o CHÃO por altura de tela — 24 px abaixo de 540, 34 a
+    // partir de 540, 44 a partir de 720. Um botão isolado usa o preferido; um item de LISTA, que tem de
+    // caber inteiro na tela, usa o chão.
+    //
+    // ⚠️ A ALTURA É A DO ESPAÇO DISPONÍVEL, e não a da sub-tela de um jogador: o dedo toca o aparelho, não
+    // o viewport lógico. Em quatro telas divididas cada uma tem 180 px de alto, e encolher o alvo por causa
+    // disso seria ler o número errado — o aparelho continua o mesmo.
+    gr.style.setProperty('--alvo-min', alvoMinimoDeToque(availH) + 'px');
   }
   crtScanVars(); // scanlines re-alinham quando a escala k muda
   if (/[?&]debug=true/.test(location.search)) console.info(`[escala] kDev=${kDev}× px REAIS (canvas físico ${baseW * kDev}×${baseH * kDev} = múltiplo INTEIRO de ${baseW}×${baseH}); CSS ${Math.round(baseW * k)}×${Math.round(baseH * k)} (k=${k.toFixed(3)}, dpr=${dpr})`);
