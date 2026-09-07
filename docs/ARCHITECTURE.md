@@ -85,6 +85,10 @@ docs/
 │   ├── Engineering-Rules.md   #   DRY/SOLID/cohesion↑; supersede-don't-append; ADRs change in-sprint
 │   └── plano-modularizacao.md · plano-modularizacao-mapa.md   # the modularization ADR (arXiv:2409.15152) + extraction map
 ├── 6-DevOps-SRE/              # phase f
+│   ├── Breaking-Changes.md    #   what left the PACKAGE since v7.0.1, and what a consumer must edit
+│   ├── public-surface.json    #   the committed snapshot the gate compares against — NOT hand-edited:
+│   │                          #   `node scripts/snapshot-public-surface.mjs` rewrites it, and running it
+│   │                          #   IS the declaration that a removal was deliberate
 │   ├── CI-QA.md               #   axe-core a11y (now, verifies NFR) · k6 load (backend, verifies SLO)
 │   ├── Security-Pipeline.md   #   SAST + secret detection + npm audit (now) · DAST (backend) · Pentest (scheduled)
 │   └── SLO.md                 #   SLI/SLO/Error-Budget/SLA (backend, rigor by tier)
