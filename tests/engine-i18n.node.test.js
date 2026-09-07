@@ -142,7 +142,18 @@ const CRU_CONHECIDO = {
   'platform/audio-mixer.ts': 5,    // rótulos das categorias do mixer de áudio
   'input/touch.ts': 3,             // 'mão de criança' / 'mão de adulto' — classificação, mas VAI para a tela
   'core/tiles.ts': 2,
-  'input/gamepad.ts': 2,
+  // ⚠️ `input/gamepad.ts` SAIU DA TABELA em 2026-09-07 (#123), e o que ela contava não era o que estava lá.
+  // O teto era 2 — as duas frases COM acento do assistente de mapeamento. Havia CINCO: `' — aperte: '`,
+  // `'Mapeados: '` e `'. Agora SOLTE tudo.'` não têm acento nem palavra funcional da lista, e por isso o
+  // crivo passava-lhes ao lado. É exactamente o buraco que o cabeçalho deste ficheiro declara («'Coletou'
+  // sozinha teria escapado»), medido num módulo real em vez de suposto.
+  //
+  // E a causa de as cinco terem ficado tanto tempo é um nome: o parâmetro do `wizSay` chamava-se `t` e
+  // sombreava o `t` do `core/i18n` dentro da função inteira. Traduzir ali era impossível sem primeiro
+  // reparar no sombreamento, e nada dá erro por isso.
+  //
+  // As cinco passam por `t('pad.wiz.*')` nos três dicionários. O caso `[Interface]` abaixo proíbe entrada
+  // órfã, então esta linha não pode voltar sem dívida a acompanhá-la.
   'render/high-contrast.ts': 1,
   'render/viz-setters.ts': 1,
 

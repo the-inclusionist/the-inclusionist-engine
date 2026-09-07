@@ -15,6 +15,10 @@ import {
 import { padCur, padPrevAct, padPrevStart } from '../app/js/input/state.js';
 // `oneButton` e' binding vivo de `core/state` (nao do ctx): estes casos ligam-no e desligam-no de verdade.
 import * as estado from '../app/js/core/state.js';
+// Só o último bloco os usa: ele afere a FONTE do módulo, porque o buraco que ele tapa é de escrita e não
+// de execução — uma frase crua corre sem erro nenhum.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 // padCur/padPrevAct/padPrevStart (input/state.ts) são estado GENUINAMENTE compartilhado — não fazem parte do
 // ctx, e persistem entre chamadas de initGamepad() dentro do mesmo processo (é assim que o game.js real os
@@ -655,5 +659,88 @@ describe('e o modo de um botão está LIGADO no laço de sondagem (issue #120)',
     initGamepad(ctx).pollPads();
     const ligadas = Object.keys(padCur[0]).filter((k) => padCur[0][k] === true && !k.startsWith('_'));
     expect(ligadas.length).toBeGreaterThan(1);
+  });
+});
+
+// ==========================================================================================================
+// ⚠️ O QUE O ASSISTENTE DE MAPEAMENTO FALA PASSA POR `t()` — TODO ELE, E NÃO SÓ O QUE TEM ACENTO (#123)
+//
+// Este é um gate de FONTE dentro de um ficheiro de comportamento, e a razão é medida: o crivo de
+// `tests/engine-i18n.node.test.js` procura prosa por ACENTO ou por palavra funcional de pt-BR, e o próprio
+// cabeçalho dele declara o que isso deixa passar. Neste módulo deixou passar três de cinco —
+// `' — aperte: '`, `'Mapeados: '` e `'. Agora SOLTE tudo.'` não têm acento nem palavra da lista.
+//
+// A propriedade aqui não depende de como a frase se escreve: **tudo o que chega ao `wizSay` vem de `t(`**.
+// O `wizSay` é o único caminho pelo qual este assistente fala — ele escreve no `#padwiz-prompt` E anuncia ao
+// leitor de tela —, então prendê-lo prende as duas saídas de uma vez.
+//
+// ⚠️ E há uma causa a lembrar: o parâmetro do `wizSay` chamava-se `t` e SOMBREAVA o `t` do `core/i18n` dentro
+// da função inteira. Não é um esquecimento que se evite com atenção; é um nome que fecha a porta sem avisar.
+// O caso `[Interface]` abaixo é o que impede o nome de voltar.
+//
+// MUTAÇÕES CONFERIDAS:
+//   · devolvendo `wizSay('Aperte QUALQUER botão…')` ao lugar → "[Zero] tudo o que o assistente fala" reprova
+//     nomeando a linha. (E o crivo do `engine-i18n` também reprova nesta, porque ela tem acento.)
+//   · devolvendo `wizSay((padWiz.step + 1) + ' de ' + …)` → "[Zero]" reprova, e o `engine-i18n` TAMBÉM.
+//     ⚠️ Eu tinha previsto que não, e a previsão estava errada: aquela linha contém `' de '`, e `de` é
+//     palavra funcional da lista do crivo. O que passa por ele é o pedaço `' — aperte: '` sozinho.
+//   · devolvendo `'Mapeados: ' + (…)` ao rodapé de progresso → "[Right] e o rodape de progresso" reprova e
+//     o `engine-i18n` fica VERDE. Este é o buraco medido em vez de suposto: sem acento e sem palavra
+//     funcional, uma frase inteira atravessa o crivo de prosa sem tocar em nada.
+//   · renomeando o parâmetro do `wizSay` de volta para `t` → "[Interface] o `wizSay` não sombreia" reprova.
+// ==========================================================================================================
+describe('input/gamepad — o assistente de mapeamento fala por t(), sem excepção (#123, pilar 3)', () => {
+  const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'input', 'gamepad.ts'), 'utf8')
+    .split(String.fromCharCode(13)).join('');
+  const CODIGO = FONTE.split('\n')
+    .map((l, i) => [i + 1, l])
+    .filter(([, l]) => !/^\s*(\/\/|\*|\/\*)/.test(l));
+
+  it('⚠️ [Zero] tudo o que o assistente fala vem de t( — nenhuma chamada com literal', () => {
+    const crus = CODIGO
+      .filter(([, l]) => /wizSay\s*\(/.test(l) && !/function wizSay/.test(l))
+      .filter(([, l]) => !/wizSay\s*\(\s*t\s*\(/.test(l))
+      .map(([n, l]) => `${n}: ${l.trim()}`);
+    expect(crus, 'o assistente fala uma frase que nao passa por t()').toEqual([]);
+  });
+
+  it('[Right] e o rodape de progresso tambem — ele escreve na tela como o prompt', () => {
+    // Há DOIS pontos que escrevem neste rodapé, e um deles é a limpeza (`= ''`) das duas aberturas do
+    // assistente. Cadeia vazia não é idioma, então a regra é: ou apaga, ou passa por `t(`. Escrever a regra
+    // sobre o primeiro que aparecesse teria prendido a limpeza e deixado a frase solta.
+    //
+    // ⚠️ E a leitura é pela VARIÁVEL, não pela linha do seletor: uma das três escritas está na linha
+    // seguinte à do `ctx.$('#padwiz-progress')`, e um crivo por linha não a via. O caso ficou verde a
+    // reprovar por outro motivo, que é como um gate mente. Primeiro afere-se que `pr` só nasce daquele
+    // seletor; depois lê-se tudo o que se escreve nele.
+    const nascimentos = CODIGO.filter(([, l]) => /\bconst pr\s*=/.test(l));
+    expect(nascimentos.length, 'ninguem procura o rodape de progresso; rever este caso').toBeGreaterThan(0);
+    for (const [n, l] of nascimentos) {
+      expect(l, `linha ${n}: \`pr\` passou a ser outra coisa`).toMatch(/#padwiz-progress/);
+    }
+    const escritas = CODIGO.filter(([, l]) => /\bpr\.textContent\s*=/.test(l));
+    expect(escritas.length, 'ninguem escreve no rodape de progresso; rever este caso').toBeGreaterThan(0);
+    const crus = escritas
+      .filter(([, l]) => !/textContent\s*=\s*''\s*;/.test(l) && !/t\s*\(/.test(l))
+      .map(([n, l]) => `${n}: ${l.trim()}`);
+    expect(crus, 'o rodape de progresso recebe texto que nao passa por t()').toEqual([]);
+    expect(escritas.some(([, l]) => /t\s*\(\s*'pad\.wiz\.mapped'/.test(l)),
+      'a frase do progresso deixou de usar a chave').toBe(true);
+  });
+
+  it('⚠️ [Interface] o wizSay NAO sombreia o t do core/i18n', () => {
+    // Enquanto o parametro se chamar `t`, traduzir dentro do `wizSay` e impossivel — e nada da erro.
+    const decl = CODIGO.find(([, l]) => /function wizSay\s*\(/.test(l));
+    expect(decl, 'wizSay desapareceu').toBeTruthy();
+    expect(decl[1], 'o parametro voltou a chamar-se t e fecha a porta outra vez')
+      .not.toMatch(/function wizSay\s*\(\s*t\s*:/);
+  });
+
+  it('[Interface] as cinco chaves existem nos tres dicionarios', () => {
+    const CHAVES = ['pad.wiz.step', 'pad.wiz.mapped', 'pad.wiz.pressAny', 'pad.wiz.detected', 'pad.wiz.releaseAll'];
+    for (const lang of ['pt', 'en', 'es']) {
+      const d = readFileSync(join(process.cwd(), 'app', 'js', 'i18n', lang + '.ts'), 'utf8');
+      for (const k of CHAVES) expect(d, `${lang} nao tem ${k}`).toContain("'" + k + "'");
+    }
   });
 });

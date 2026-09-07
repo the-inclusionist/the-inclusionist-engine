@@ -392,10 +392,14 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
 
   // ----- wizard: anúncio + demo animada (DOM-facing, thin) -----
 
-  function wizSay(t: string): void {
+  // ⚠️ O PARÂMETRO CHAMAVA-SE `t`, E ERA ELE QUE FECHAVA A PORTA. Dentro desta função o `t` do
+  // `core/i18n` estava sombreado, então traduzir uma frase aqui era impossível sem primeiro reparar no
+  // sombreamento — e não há erro nenhum a apontá-lo. Foi assim que cinco frases em português cru ficaram a
+  // falar dentro do motor (#123): não por decisão, por um nome.
+  function wizSay(frase: string): void {
     const el = ctx.$<HTMLElement>('#padwiz-prompt');
-    if (el) el.textContent = t;
-    ctx.srSay(t);
+    if (el) el.textContent = frase;
+    ctx.srSay(frase);
   }
 
   function wizDemo(k: string | null): void {
@@ -440,10 +444,11 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     if (!padWiz) return; // fechou ao avançar
     const acao = PADWIZ_ORDER[padWiz.step]!;
     const rotulo = ctx.rotuloDaAcao(acao)!;
-    wizSay((padWiz.step + 1) + ' de ' + PADWIZ_ORDER.length + ' — aperte: ' + rotulo);
+    wizSay(t('pad.wiz.step', { n: padWiz.step + 1, total: PADWIZ_ORDER.length, acao: rotulo }));
     wizDemo(acao); // demonstração animada do que a ação FAZ
     const pr = ctx.$<HTMLElement>('#padwiz-progress');
-    if (pr) pr.textContent = 'Mapeados: ' + (Object.keys(padWiz.map).join(' · ') || '—');
+    // O travessão da lista vazia fica cru de propósito: é pontuação, não idioma.
+    if (pr) pr.textContent = t('pad.wiz.mapped', { lista: Object.keys(padWiz.map).join(' · ') || '—' });
   }
   function wizBind(bd: PadBinding): void {
     if (!padWiz) return;
@@ -459,7 +464,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     const ov = ctx.$<HTMLElement>('#padwiz'); if (!ov) return;
     ov.hidden = false; ctx.frontOverlay(ov);
     padWiz = { gi: -1, id: '', step: -1, base: null, map: {}, release: false, baseWait: false, axTrack: null, timer: null };
-    wizSay('Aperte QUALQUER botão no controle que deseja mapear.'); wizDemo(null);
+    wizSay(t('pad.wiz.pressAny')); wizDemo(null);
     const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = '';
     padWiz.timer = setInterval(padWizTick, 30);
   }
@@ -468,7 +473,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     const ov = ctx.$<HTMLElement>('#padwiz'); if (!ov) return;
     ov.hidden = false; ctx.frontOverlay(ov);
     padWiz = { gi: gp.index, id: gp.id, step: -1, base: null, map: {}, release: false, baseWait: true, axTrack: null, timer: null };
-    wizSay('Controle novo detectado: ' + gp.id + '. O jogo pausou para você configurá-lo. SOLTE tudo para começar.'); wizDemo(null);
+    wizSay(t('pad.wiz.detected', { id: gp.id })); wizDemo(null);
     const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = '';
     padWiz.timer = setInterval(padWizTick, 30);
   }
@@ -504,7 +509,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       for (const gp of pads) {
         if (gp && gp.buttons.some((b) => b && b.pressed)) {
           padWiz.gi = gp.index; padWiz.id = gp.id; padWiz.baseWait = true;
-          wizSay('Controle: ' + gp.id + '. Agora SOLTE tudo.');
+          wizSay(t('pad.wiz.releaseAll', { id: gp.id }));
           break;
         }
       }
