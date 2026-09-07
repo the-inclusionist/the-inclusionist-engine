@@ -1,6 +1,6 @@
 {
   "name": "@the-inclusionist/engine",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "type": "module",
   "description": "Accessibility-first (WCAG 2.2 + GAG) engine for educational 2D pixel-art games, built with PixiJS. Screen reader, sonar, high contrast by role, colour-vision filters, remappable input as intent, i18n and offline PWA — the parts every game inherits (ADR-0035, ADR-0036).",
   "comment:exports": [

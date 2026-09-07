@@ -1,5 +1,7 @@
 # Changelog
 
+## [7.0.1](https://github.com/the-inclusionist/the-inclusionist-engine/compare/v7.0.0...v7.0.1) (2026-09-07)
+
 ## [7.0.0](https://github.com/the-inclusionist/the-inclusionist-engine/compare/v6.36.1...v7.0.0) (2026-09-07)
 
 ### ⚠ BREAKING CHANGES
