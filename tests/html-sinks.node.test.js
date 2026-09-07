@@ -97,7 +97,7 @@ const SEGUROS = [
   ['ui/activities-menu.ts', "const fr = ctx.$<HTMLElement>('#tm-fr')", 'ids do catálogo (código) + as cinco notações enumeradas'],
   ['ui/activities-menu.ts', "const tab = ctx.$<HTMLElement>('#tm-tab')", 'só NÚMEROS de tabuada (`TAB_ROWS`) + i18n'],
   ['ui/settings-audio.ts', "el.innerHTML = '<p class=\"opt-hint\">' +", 'uma única chave de i18n, escolhida por um booleano'],
-  ['ui/settings-controls.ts', 'tabs.innerHTML = `<span class="opt-hint"', 'literal + um NÚMERO (o defeito aqui é português cravado, de i18n, não de marcação)'],
+  ['ui/settings-controls.ts', "tabs.innerHTML = '<span class=\"opt-hint\" style=\"widt", '⚠️ CONSERTADO 2026-09-07 (#125): era um literal em português cravado COM o `<strong>` e o plural à mão. Agora o sink é só ESQUELETO — zero dado, zero interpolação — e as três partes do texto entram por `textContent`, com o molde partido no marcador `{modo}` antes da substituição. O dicionário continua sem markup, que é o que o `i18n-sem-markup` exige'],
   ['ui/settings-motion.ts', 'el.innerHTML =', 'literais + o índice do jogador + linhas montadas de tabelas da engine'],
   ['ui/settings-typo.ts', 'el.innerHTML = typoListHTML(fontKey)', 'as 18 fontes são tabela da engine; os grupos e rótulos saem dela'],
   ['ui/settings-audio.ts', 'el.innerHTML = catsListHTML(', '⚠️ DECIDIDO 2026-09-06 pelo Dev: as categorias de áudio são DA ENGINE. `c.lbl` entra em dois `aria-label`, e `ctx.audioCats` é injetado — mas categoria de áudio é vocabulário de MISTURA (voz, guia, sonar, efeitos), não conteúdo de jogo. Um jogo que precisasse de uma categoria própria estaria a pedir um canal de mixer novo, o que é decisão de arquitetura e entraria por um caminho declarado, com o escape junto'],

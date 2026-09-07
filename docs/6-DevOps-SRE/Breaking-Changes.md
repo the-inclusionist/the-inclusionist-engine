@@ -86,6 +86,12 @@ turns each into a `9.0.0`:
   across both repositories. Its own recommendation, written before this file, was to batch it with the #63
   boundary work — and that batching is still available only until this major is cut.
 - **#63's deeper boundary** — `TILE_TYPES` moving and `core/collision` splitting in two.
+- **`ui/settings-controls.ACT_LABEL`** — measured on 2026-09-07 to have **no consumer at all**, in this tree
+  or in `game-platformer`. It is the platformer's eight words living inside the engine, and it was the direct
+  cause of #125: the remap screen built its `aria-label` from it and announced *"Alterar tecla de undefined"*
+  in a game that is not the platformer. It is marked `@deprecated` rather than removed, because removing a
+  published export is a break and the major is still uncut. Removing it makes the defect impossible by
+  construction instead of by comment.
 
 This is a decision for the Dev, not a task: cutting the major sooner ships the accessibility fixes that are
 already done; cutting it later lets two breaking changes ride one release instead of three.

@@ -133,7 +133,13 @@ const CRU_CONHECIDO = {
   'ui/hud.ts': 1,
 
   'ui/settings-panel.ts': 1,
-  'ui/settings-controls.ts': 1,
+  // ⚠️ `ui/settings-controls.ts` SAIU DA TABELA em 2026-09-07 (#125). O teto era 1 — o `'Pressione…'` que o
+  // botão em captura escrevia — e havia outra frase inteira ao lado dele, a linha do `#ctrl-players`, que o
+  // crivo não contava por vir num template com interpolação. As duas passam por `t()` agora.
+  //
+  // O caso `[Zero] a lista não guarda módulo que já se limpou` foi quem cobrou, e é o desenho: uma entrada
+  // órfã faz a tabela mentir sobre o tamanho da dívida, e uma dívida que parece maior do que é acaba
+  // ignorada como um todo.
 
   /* --- CURRÍCULO, e este é diferente dos outros: pilar 3 manda REESCREVER por idioma, não traduzir. --- */
   'ui/activities-menu.ts': 3,     // era 5: o item 5 do ADR-0044 tirou os `lbl` crus de PM_BTNS, que nunca iam para a tela      // 'pré-silábico', 'silábico'… as hipóteses de Ferreiro (ADR-0032)

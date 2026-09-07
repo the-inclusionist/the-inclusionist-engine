@@ -110,12 +110,22 @@ export interface SettingsControlsApi {
 // ---------------------------------------------------------------------------------------------
 
 /**
- * action key -> i18n KEY of the label shown in the panel. Also reused by main.js's openHelp() (pause-menu help
- * screen), which is why it lives here instead of being duplicated in two places.
+ * @deprecated ⚠️ SEM UM ÚNICO CONSUMIDOR, e é a causa da #125. Medido em 2026-09-07: `ACT_LABEL` não é lido
+ * em ponto nenhum do `app/js` nem do `game-platformer` — só em prosa. O último leitor era o `aria-label` da
+ * tela de remapeamento, e era exatamente ele que dizia «Alterar tecla de undefined» num jogo que não é o de
+ * plataforma. O `openHelp()` que o cabeçalho antigo citava saiu com o cartucho (#111).
  *
- * Holds keys, not text, for the reason spelled out in input/devices: a module-level const is evaluated once at
- * import, and core/i18n's `dict` is a `let` that setLocale reassigns — text captured here would freeze the
- * language at boot. Resolve with `t(ACT_LABEL[a])` at the point of use.
+ * ⚠️ NÃO A REMOVI, e digo porquê em vez de a apagar em silêncio: remover é quebra de superfície publicada, e
+ * o major ainda não foi cortado — a decisão de o cortar está aberta na #104. Fica listada como candidata em
+ * `docs/6-DevOps-SRE/Breaking-Changes.md`, que é onde essa decisão se toma. Depreciar é reversível; remover
+ * publicado não é.
+ *
+ * Quem precisar da palavra de uma posição pede-a ao JOGO, por `ctx.acoesDoJogo()`. A engine sabe que a
+ * posição existe; só o jogo sabe como ela se chama (ADR-0086).
+ *
+ * (Histórico: guardava CHAVES e não texto porque uma `const` de módulo é avaliada uma vez no import, e o
+ * `dict` do `core/i18n` é um `let` que o `setLocale` reatribui — texto capturado aqui congelaria o idioma no
+ * boot. A razão continua correta; o que morreu foi o consumidor.)
  */
 export const ACT_LABEL: Record<string, string> = {
   left: 'act.left', right: 'act.right', up: 'act.up', down: 'act.down',
@@ -200,6 +210,16 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     return Array.from({ length: n }, (_, i) => ctx.kbFor(i));
   }
 
+  /**
+   * COMO ESTE JOGO CHAMA esta posição. Um sítio só, porque três pontos precisavam dela e cada um a ia
+   * buscar por sua conta — e um deles ia buscá-la à tabela errada (#125).
+   *
+   * O recuo é o id ABSTRATO da posição: `action3` é feio, mas é verdade. Uma palavra errada não é.
+   */
+  function palavraDaAcao(a: Action): string {
+    return ctx.acoesDoJogo().find((x) => x.acao === a)?.rotulo ?? a;
+  }
+
   function render(selPlayer: number): void {
     const el = ctx.$<HTMLElement>('#ctrl-list');
     if (!el) return;
@@ -208,10 +228,26 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     lastPlayer = player;
 
     // E3: sem abas de outros jogadores — você edita só o seu controle; só o hint muda com o modo.
+    //
+    // ⚠️ ESTA FRASE ESTAVA EM PORTUGUÊS CRU DENTRO DO MOTOR (#125), inteira, com o `<strong>` e o plural à
+    // mão. Vai pelo `t()` agora — e o realce sobrevive porque o molde é PARTIDO no marcador `{modo}` antes
+    // da substituição, em vez de o dicionário carregar markup (que o gate `i18n-sem-markup` proíbe, e com
+    // razão: string de dicionário que vira markup é a porta por onde uma tradução passa a ser código).
     const tabs = ctx.$<HTMLElement>('#ctrl-players');
     if (tabs) {
       tabs.hidden = false;
-      tabs.innerHTML = `<span class="opt-hint" style="width:100%;margin:0">Editando o <strong>seu</strong> controle — modo <strong>${n === 1 ? '1 jogador' : n + ' jogadores'}</strong>.</span>`;
+      // O esqueleto por `innerHTML` — ele não tem dado nenhum de fora; o TEXTO entra por `textContent`, que
+      // é o mesmo idioma que o `.ctrl-nome` abaixo já usa.
+      tabs.innerHTML = '<span class="opt-hint" style="width:100%;margin:0">'
+        + '<span data-modo="pre"></span><strong data-modo="v"></strong><span data-modo="pos"></span></span>';
+      const [antes, depois] = t('ctrl.editingYours').split('{modo}');
+      const posto = (sel: string, txt: string): void => {
+        const el2 = tabs.querySelector<HTMLElement>(sel);
+        if (el2) el2.textContent = txt;
+      };
+      posto('[data-modo="pre"]', antes ?? '');
+      posto('[data-modo="v"]', n === 1 ? t('ctrl.mode.one') : t('ctrl.mode.many', { n }));
+      posto('[data-modo="pos"]', depois ?? '');
     }
 
     const map = ctx.kbFor(player);
@@ -221,14 +257,31 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     // `core/actions`. É separação que o ADR-0086 fez, e é ela que torna um dos dois seguro e o outro não.
     el.innerHTML = ctx.acoesDoJogo().map(({ acao: a }) =>
       `<div class="ctrl-row"><span><b class="ctrl-nome"></b>: ${(map[a] || []).map(keyName).map((k) => `<kbd>${k}</kbd>`).join(' ')}</span>` +
-      `<button class="mode-btn" data-act="${a}" type="button" aria-label="${t('ctrl.changeKeyAria', { acao: t(ACT_LABEL[a]!), n: player + 1 })}">${t('ctrl.change')}</button></div>`
+      `<button class="mode-btn" data-act="${a}" type="button">${t('ctrl.change')}</button></div>`
     ).join('');
 
-    // As palavras do jogo, por `textContent` — que escapa por construção. A ordem casa porque é a mesma lista.
+    // As palavras do jogo, por API do DOM — que escapa por construção. A ordem casa porque é a mesma lista.
+    //
+    // ⚠️ O `aria-label` DESCEU PARA CÁ, E É A CORREÇÃO DA #125. Ele era montado no template acima a partir do
+    // `ACT_LABEL`, que ficou a ser a tabela do JOGO DE PLATAFORMA quando a #106 mudou o rótulo visível para o
+    // `acoesDoJogo()`. Medido no `game-soccer`: **«Alterar tecla de undefined do Jogador 1» em seis de doze
+    // botões**, enquanto uma criança que vê lia «Conter» na mesma linha. E um `aria-label` SOBREPÕE-SE ao
+    // texto visível, então quem depende do leitor de tela ouvia a palavra errada nos outros seis — que é pior
+    // do que não ter `aria-label` nenhum, e invisível de dentro da engine, porque a plataforma é o único
+    // consumidor para o qual a tabela está certa.
+    //
+    // ⚠️ E DESCEU POR `setAttribute` E NÃO PARA O TEMPLATE, de propósito: o `rotulo` é TEXTO DO JOGO. Metê-lo
+    // num `aria-label="…"` dentro de um template literal seria interpolar texto de fora em markup — o mesmo
+    // motivo pelo qual o `.ctrl-nome` já entrava por `textContent`.
     {
-      const nomes = el.querySelectorAll<HTMLElement>('.ctrl-nome');
+      const linhas = el.querySelectorAll<HTMLElement>('.ctrl-row');
       const palavras = ctx.acoesDoJogo();
-      for (let i = 0; i < nomes.length && i < palavras.length; i++) nomes[i]!.textContent = palavras[i]!.rotulo;
+      for (let i = 0; i < linhas.length && i < palavras.length; i++) {
+        const nome = linhas[i]!.querySelector<HTMLElement>('.ctrl-nome');
+        if (nome) nome.textContent = palavras[i]!.rotulo;
+        const botao = linhas[i]!.querySelector<HTMLElement>('button[data-act]');
+        if (botao) botao.setAttribute('aria-label', t('ctrl.changeKeyAria', { acao: palavras[i]!.rotulo, n: player + 1 }));
+      }
     }
 
     el.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((b) => {
@@ -239,8 +292,8 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
         const act = b.dataset.act;
         if (!act || !isAction(act)) return;
         capture = { action: act, mapRef: map, player };
-        b.textContent = 'Pressione…';
-        ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: t(ACT_LABEL[act]!), n: player + 1 }));
+        b.textContent = t('ctrl.pressing'); // estava cravado em português dentro do motor (#125)
+        ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: palavraDaAcao(act), n: player + 1 }));
       });
     });
     // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109).
@@ -275,11 +328,7 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     // dois passos (soltar a antiga, prender a nova) e não perde nada pelo caminho.
     const aqui = acaoQueJaTem(e.code, capture.mapRef, capture.action);
     if (aqui) {
-      // ⚠️ A palavra vem do JOGO (`acoesDoJogo`), e não do `ACT_LABEL` — que é a tabela do jogo de
-      // plataforma e diz a palavra errada em qualquer outro (issue #125). Recuo para o id da posição:
-      // «action3» é feio, mas é verdade; a palavra errada não é.
-      const nome = ctx.acoesDoJogo().find((x) => x.acao === aqui)?.rotulo ?? aqui;
-      ctx.srAlert(t('sr.ctrl.keyTakenHere', { acao: nome }));
+      ctx.srAlert(t('sr.ctrl.keyTakenHere', { acao: palavraDaAcao(aqui) }));
       e.preventDefault();
       return true; // não associa: segue capturando
     }

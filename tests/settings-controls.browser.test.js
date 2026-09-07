@@ -332,3 +332,86 @@ describe('ui/settings-controls — uma tecla, uma ação, dentro do mesmo esquem
 // nao corri essa mutacao, e uma expectativa nao e uma medicao. Fica como buraco conhecido: se um dia uma
 // tecla puder estar em dois esquemas ao mesmo tempo, a ordem passa a decidir QUAL das duas frases a crianca
 // ouve, e ai vale um caso proprio.
+
+// ==========================================================================================================
+// ⚠️ O `aria-label` DIZ A PALAVRA DO JOGO, OU MENTE PARA QUEM NAO VE (#125)
+//
+// Medido ao construir o `game-soccer`: a tela anunciava **«Alterar tecla de undefined do Jogador 1» em seis
+// de doze botoes**, enquanto uma crianca que ve lia «Conter» na mesma linha. Nos outros seis dizia as
+// palavras do jogo de PLATAFORMA.
+//
+// A causa: a #106 mudou o rotulo VISIVEL para `ctx.acoesDoJogo()` e deixou o `aria-label` a ser montado do
+// `ACT_LABEL`, a tabela de oito posicoes deste ficheiro. ⚠️ E um `aria-label` SOBREPOE-SE ao texto visivel,
+// entao quem depende do leitor de tela ouvia a palavra errada — pior do que nao ter `aria-label` nenhum, e
+// invisivel de dentro da engine, porque a plataforma e o unico consumidor para o qual a tabela esta certa.
+//
+// ⚠️ O `undefined` vem das SEIS posicoes que o `ACT_LABEL` nao tem: ele conhece oito, e o vocabulario fechou
+// nas catorze (#118). `t(undefined)` devolve a chave, e a moldura interpola-a como texto.
+//
+// MUTACOES CONFERIDAS (no fim do bloco).
+// ==========================================================================================================
+describe('ui/settings-controls — o que o leitor de tela ouve e a palavra DESTE jogo (#125)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="ctrl-players"></div><div id="ctrl-list"></div><button id="ctrl-reset"></button>';
+  });
+
+  it('⚠️ [Right] o aria-label de cada botao usa o rotulo do jogo, nao a tabela da engine', () => {
+    const ctx = buildCtx({ acoesDoJogo: () => [{ acao: 'up', rotulo: 'Cabecear' }, { acao: 'action2', rotulo: 'Chutar' }] });
+    initSettingsControls(ctx).render(0);
+    const rotulos = [...$('#ctrl-list').querySelectorAll('button[data-act]')].map((b) => b.getAttribute('aria-label'));
+    expect(rotulos).toHaveLength(2);
+    expect(rotulos[0]).toContain('Cabecear');
+    expect(rotulos[1]).toContain('Chutar');
+  });
+
+  it('⚠️ [Zero] NENHUM aria-label da tela contem "undefined"', () => {
+    // O caso que teria apanhado a #125 no dia. As catorze posicoes, das quais o `ACT_LABEL` so conhecia oito.
+    const TODAS = ['left', 'right', 'up', 'down', 'action1', 'action2', 'action3', 'action4',
+      'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger', 'start', 'select'];
+    const ctx = buildCtx({ acoesDoJogo: () => TODAS.map((a) => ({ acao: a, rotulo: 'W' + a })) });
+    initSettingsControls(ctx).render(0);
+    const maus = [...$('#ctrl-list').querySelectorAll('button[data-act]')]
+      .map((b) => b.getAttribute('aria-label') ?? '')
+      .filter((s) => s.includes('undefined') || s.trim() === '');
+    expect(maus, 'aria-label sem palavra: a crianca ouve isto em vez do nome da acao').toEqual([]);
+  });
+
+  it('⚠️ [Interface] o rotulo do jogo entra por API do DOM, e nao por interpolacao em markup', () => {
+    // O rotulo e texto de FORA. Se fosse para dentro do template do `aria-label`, um preset podia fechar o
+    // atributo e abrir outro. O caso passa uma aspa e um `<img>` e exige que nada disso vire marcacao.
+    const VENENO = '" onmouseover="alert(1)" x="<img src=x onerror=alert(1)>';
+    const ctx = buildCtx({ acoesDoJogo: () => [{ acao: 'up', rotulo: VENENO }] });
+    initSettingsControls(ctx).render(0);
+    const lista = $('#ctrl-list');
+    expect(lista.querySelector('img'), 'o rotulo foi ANALISADO como marcacao').toBe(null);
+    const b = lista.querySelector('button[data-act]');
+    expect(b.getAttribute('onmouseover'), 'o rotulo abriu um atributo novo').toBe(null);
+    expect(b.getAttribute('aria-label')).toContain('onmouseover');
+  });
+
+  it('⚠️ [Right] a frase de captura e a do modo passam por t(), sem portugues cravado', () => {
+    // Duas frases estavam em portugues cru dentro do motor: o texto do botao em captura, e a linha inteira
+    // do `#ctrl-players`. As duas contra o pilar 3, na tela que a crianca abre POR NAO conseguir jogar.
+    // `kbFor` do fixture ja recua para `p2[0]`, entao um jogador so nao precisa de mais nada.
+    const ctx = buildCtx({ getNumPlayers: () => 1 });
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    expect($('#ctrl-players').textContent, 'a linha do modo nao foi montada').toContain('1 jogador');
+    expect($('#ctrl-players').querySelector('strong'), 'o realce do modo desapareceu').not.toBe(null);
+    const btn = $('#ctrl-list').querySelector('button[data-act]');
+    btn.click();
+    expect(btn.textContent).toBe('Pressione…');
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS =========================
+//   · devolvendo o `aria-label` ao template com `t(ACT_LABEL[a]!)` → reprovam TRES casos: "[Zero] NENHUM
+//     aria-label contem undefined" (com as seis posicoes que o `ACT_LABEL` nao conhece), "[Right] o
+//     aria-label usa o rotulo do jogo" e tambem o "[Interface]" — porque o template volta a interpolar. E a
+//     #125 reproduzida, com o mesmo numero que a auditoria mediu.
+//   · pondo o rotulo dentro do template (`aria-label="${rotulo}"`) em vez de `setAttribute` → "[Interface] o
+//     rotulo entra por API do DOM" reprova com o `<img>` montado e o `onmouseover` no botao.
+//   · trocando `t('ctrl.pressing')` de volta por `'Pressione…'` cravado → NENHUM caso reprova, porque o
+//     portugues cravado e a traducao pt sao a MESMA cadeia. ⚠️ Registado como mutacao que nao falha: o que a
+//     apanha e o gate de prosa do `engine-i18n`, e so porque a frase tem acento. Um caso que a prendesse
+//     teria de trocar o idioma em tempo de teste, e o `setLocale` nao esta ligado neste ficheiro.
