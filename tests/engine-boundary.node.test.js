@@ -20,11 +20,36 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const RAIZ = join(process.cwd(), 'app', 'js');
+const RAIZ_REPO = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
+const RAIZ = join(RAIZ_REPO, 'app', 'js');
+
 // `boot` entrou em 2026-08-25 com o `createGame()` (item 13). É camada de ENGINE e por isso é varrida como
 // as outras: uma raiz de composição que importasse de `game/` levaria o jogo inteiro dentro do pacote, que é
 // precisamente o que ela existe para não fazer.
-const CAMADAS_ENGINE = ['core', 'input', 'render', 'platform', 'ui', 'audio', 'boot'];
+//
+// ⚠️ A LISTA ERA ESCRITA À MÃO E NOMEAVA `audio`, QUE NÃO EXISTE. Medido em 2026-09-07: nunca houve
+// `app/js/audio/` — os módulos de áudio vivem em `platform/`. O `if (!existsSync)` devolvia lista vazia sem
+// uma palavra, e quem lesse a linha acreditava numa camada fantasma. Agora sai do `tsconfig.pkg.json`, que é
+// quem decide o que é publicado, pela mesma razão que o `engine-package` já dá para si próprio.
+function camadasPublicadas() {
+  const bruto = readFileSync(join(RAIZ_REPO, 'tsconfig.pkg.json'), 'utf8').split(String.fromCharCode(13)).join('');
+  return (JSON.parse(bruto).include ?? [])
+    .map((p) => p.split('\\').join('/'))
+    .filter((p) => p.startsWith('app/js/'))
+    .map((p) => p.slice('app/js/'.length))
+    .filter((c) => c && !c.includes('/'))
+    .sort();
+}
+
+/**
+ * Fora da varredura de ARESTAS, e cada uma por um motivo diferente do da outra:
+ *
+ *   · `i18n` são os dicionários — dado puro, e o que importam é o tipo do dicionário.
+ *   · `educational` tem regra PRÓPRIA e mais dura, aferida no caso do fim deste ficheiro: ela não importa
+ *     NADA, nem de `core/`. Metê-la aqui só perguntaria por `game/`, que é menos do que ela promete.
+ */
+const FORA_DA_VARREDURA = new Set(['i18n', 'educational']);
+const CAMADAS_ENGINE = camadasPublicadas().filter((c) => !FORA_DA_VARREDURA.has(c));
 
 function modulosDe(camada) {
   const dir = join(RAIZ, camada);
@@ -561,3 +586,66 @@ describe('A RAIZ DE COMPOSICAO SAIU — e este ficheiro mudou de assunto, como e
     expect(existsSync(join(RAIZ, 'consumer-quiz')), 'o consumidor de prova tambem foi embora').toBe(true);
   });
 });
+
+// ==========================================================================================================
+// ⚠️ `educational/` NAO IMPORTA NADA — e «nada» inclui um pacote, que o caso irmao nao via
+//
+// ⚠️ CORRECAO A MIM PROPRIO, e ela fica escrita porque a conclusao errada quase me fez apagar trabalho bom.
+// Comecei este bloco a afirmar que a regra do `CLAUDE.md` — «`educational/` … e DADO: nao importa nada» —
+// NAO ESTAVA AFERIDA. Esta: o caso `[Boundary] o curriculo NAO importa da engine nem do jogo`, logo acima,
+// afere-a desde antes. Eu tinha limitado a MINHA propria busca as primeiras seis linhas de resultado e
+// concluido de uma lista truncada — o mesmo feitio de erro que me fez dizer que o `ACT_LABEL` nao tinha
+// consumidor.
+//
+// O QUE ESTE BLOCO ACRESCENTA, MEDIDO E NAO SUPOSTO: aquele caso procura `from '../`, ou seja importacao
+// RELATIVA para fora da pasta. Um `import { Application } from 'pixi.js'` — especificador nu — passa-lhe ao
+// lado inteiro. Conferido por mutacao: com o import de pacote, so o caso deste bloco reprova.
+//
+// E a diferenca importa por causa do destino da camada. O `educational/` existe para viajar para o
+// `the-inclusionist-knowledge-tree` (ADR-0058) SEM levar codigo atras; um `pixi.js` la dentro parte isso tao
+// bem como um `../core/`. Por isso aqui a pergunta e a mais larga que da para fazer: ha um `import`, um
+// `import()` ou um `require()` em linha de codigo? Se ha, a camada deixou de ser dado.
+// ==========================================================================================================
+describe('educational/ e DADO: nao importa nada (CLAUDE.md, ADR-0032)', () => {
+  const FICHEIROS = existsSync(join(RAIZ, 'educational'))
+    ? readdirSync(join(RAIZ, 'educational')).filter((f) => f.endsWith('.ts'))
+    : [];
+
+  it('[Interface] a camada existe e tem ficheiros — senao o caso abaixo nao mede nada', () => {
+    expect(FICHEIROS.length, 'nao ha `app/js/educational/`; a regra ficou sem sujeito').toBeGreaterThan(0);
+  });
+
+  it('⚠️ [Zero] NENHUM ficheiro de educational/ tem um import', () => {
+    const comImport = [];
+    for (const f of FICHEIROS) {
+      for (const [n, ln] of linhasDeCodigo(fonte('educational/' + f))) {
+        if (/(^|[^\w$])(import\s|import\(|require\()/.test(ln)) comImport.push(`educational/${f}:${n}: ${ln.trim()}`);
+      }
+    }
+    expect(comImport, 'o curriculo passou a depender de codigo; ele deixa de viajar sozinho').toEqual([]);
+  });
+
+  it('⚠️ [Cross-check] o crivo APANHA um import — senao o [Zero] estaria verde por nao olhar nada', () => {
+    // As duas formas que existem, mais a dinamica. Sem esta prova, um regex partido deixaria a regra sem dono
+    // exatamente como ela esteve ate hoje.
+    const amostras = [
+      "import { ACTIONS } from '../core/actions.js';",
+      "import type { Role } from '../core/contract.js';",
+      "const m = await import('../core/tiles.js');",
+      "const x = require('node:fs');",
+    ];
+    for (const ln of amostras) {
+      expect(/(^|[^\w$])(import\s|import\(|require\()/.test(ln), `deixaria passar: ${ln}`).toBe(true);
+    }
+    // E nao pode confundir a PALAVRA com a construcao: o cabecalho daquela camada fala de «importa» em prosa.
+    expect(/(^|[^\w$])(import\s|import\(|require\()/.test('a que importa mais e acertar de primeira')).toBe(false);
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS (bloco do `educational`) =========================
+//   · `import { ACTIONS } from '../core/actions.js';` no `adaptive-engine` → reprovam DOIS: o `[Boundary]`
+//     irmao (que ve o `from '../`) e o `[Zero]` deste bloco. Redundancia util: a propriedade tem dois donos.
+//   · ⚠️ `import { Application } from 'pixi.js';` → reprova SO o `[Zero]` deste bloco. E a razao de ele
+//     existir: o caso irmao procura importacao relativa e um especificador nu passa-lhe ao lado inteiro.
+//   · trocando o regex por um que exija `from` → o "[Cross-check]" reprova nas amostras de `import()` e
+//     `require()`, que sao as duas formas sem `from`.
