@@ -19,6 +19,8 @@ import type { HcRoleKey } from '../render/hc-role-data.js';
 import { HC_ROLE_KEYS, HC_ROLE_DEF } from '../render/hc-role-data.js';
 import { VIZ_CORRECTIONS, VIZ_MODES, type VizMode } from '../render/viz-modes.js';
 import { DEFAULTS } from '../core/state.js';
+// O padrao dos DOIS EIXOS (ADR-0076/#104). A marca pergunta ao modelo novo, nao ao espelho p.viz.
+import { PADRAO as PADRAO_VISUAL } from '../render/viz-axes.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 export type { HcRoleKey as RoleKey } from '../render/hc-role-data.js';
 type RoleKey = HcRoleKey;
@@ -161,6 +163,22 @@ export function onOffLabel(on: boolean): string {
   return toggleLabel(on);
 }
 
+/**
+ * Lê `player[i].visual` defensivamente, sem importar o tipo do jogador — o mesmo molde do `playerViz` abaixo,
+ * e pela mesma razão: `getPlayers()` devolve `readonly unknown[]` porque o tipo real é do JOGO (ADR-0033), e
+ * cada consumidor estreita para a SUA fatia.
+ *
+ * ⚠️ Sem jogador ou sem o campo, devolve o PADRÃO — que é a resposta certa para «esta criança mexeu em
+ * alguma coisa?»: quem não existe não mexeu. Inventar `hc7` aqui marcaria um menu que ninguém tocou.
+ */
+function playerVisual(list: readonly unknown[], i: number): { tema: string; correcao: string } {
+  const v = (list[i] as { visual?: { tema?: unknown; correcao?: unknown } } | undefined)?.visual;
+  return {
+    tema: typeof v?.tema === 'string' ? v.tema : PADRAO_VISUAL.tema,
+    correcao: typeof v?.correcao === 'string' ? v.correcao : PADRAO_VISUAL.correcao,
+  };
+}
+
 /** Reads player[i].viz defensively (no player at that index -> 'normal'), without a Player type import. */
 function playerViz(list: readonly unknown[], i: number): string {
   const p = list[i] as { viz?: unknown } | undefined;
@@ -298,7 +316,28 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
    */
   function refreshMarks(): void {
     const s = ctx.getVisualSettings();
-    const contraste = resolveVisualMode(playerViz(ctx.getPlayers(), ctx.getSelectedPlayer())) !== 'normal';
+    /**
+     * 🔴 A MARCA É POR EIXO DESDE 2026-09-08, e a granularidade que ela recupera foi perdida por mim na #104
+     * etapa 4d. Enquanto o `#visual-modes` era UM rádio de sete opções, marcar o contentor era marcar a
+     * escolha. A etapa 4d pôs DOIS eixos lá dentro, e uma marca no contentor deixou de dizer QUAL saiu do
+     * padrão — que é o terceiro canal do ADR-0029 a perder informação: «a criança cega percorre o menu e OUVE,
+     * em ordem, o que saiu do padrão». Ouvir «mudado» sem saber de quê manda-a procurar em oito linhas.
+     *
+     * ⚠️ E VEM DO MODELO NOVO. Isto era `resolveVisualMode(playerViz(...))`, que lê o `p.viz` que a etapa 1a
+     * marcou `@deprecated` — um leitor que ficou para trás na migração.
+     *
+     * 📌 E A REGRA DA SIMULAÇÃO DEIXA DE SER DERIVADA E PASSA A SER ESTRUTURAL, que é o ganho de fundo. Ela
+     * está escrita logo acima: uma simulação de empatia não marca ESTE menu, porque a marca dela pertence ao
+     * menu de empatia e é lá que ela leva a criança. Antes isso dependia de o `resolveVisualMode` responder
+     * `normal`; agora a simulação vive noutro campo do `VisualState`, e perguntar pelo tema e pela correcção
+     * nunca a alcança.
+     */
+    const visual = playerVisual(ctx.getPlayers(), ctx.getSelectedPlayer());
+    const tema = visual.tema !== PADRAO_VISUAL.tema;
+    const correcao = visual.correcao !== PADRAO_VISUAL.correcao;
+    const linhaDoEixo = (eixo: string): HTMLElement | null =>
+      ctx.$<HTMLElement>(`#visual-modes button[data-eixo="${eixo}"][aria-checked="true"]`)
+        ?.closest<HTMLElement>('.ctrl-row') ?? null;
     const lqOff = s.lq !== DEFAULTS.lq;
     const owner = s.ownerColors !== DEFAULTS.ownerColors;
     const cb = s.cbSafe !== DEFAULTS.cbSafe;
@@ -307,14 +346,15 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     const papeis = ROLE_KEYS.some((k) => !sameRgb(s.roleColors[k], HC_ROLE_DEF[k]));
     const linha = (sel: string): HTMLElement | null =>
       ctx.$<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null;
-    markChanged(ctx.$<HTMLElement>('#visual-modes'), contraste);
+    markChanged(linhaDoEixo('tema'), tema);
+    markChanged(linhaDoEixo('correcao'), correcao);
     markChanged(linha('#opt-lq'), lqOff);
     markChanged(linha('#opt-ownercolors'), owner);
     markChanged(linha('#opt-cbsafe'), cb);
     markChanged(linha('#opt-outline-fg'), fg);
     markChanged(linha('#opt-outline-bg'), bg);
     markChanged(linha('#opt-role-reset'), papeis);
-    markMenuChanged(ctx.$<HTMLElement>('[data-act="visual"]'), [contraste, lqOff, owner, cb, fg, bg, papeis]);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="visual"]'), [tema, correcao, lqOff, owner, cb, fg, bg, papeis]);
   }
 
   // ---- restaurar os padrões DESTE menu (ADR-0028) ----

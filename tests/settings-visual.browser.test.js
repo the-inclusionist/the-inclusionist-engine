@@ -121,6 +121,60 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     expect(list.querySelector('#opt-role-reset')).toBeTruthy();
   });
 
+  // ===================== A MARCA DE «SAIU DO PADRÃO», POR EIXO (ADR-0029 · #61) =====================
+  // 🔴 REGRESSÃO INTRODUZIDA PELA #104 ETAPA 4D, e é minha. Antes dela o `#visual-modes` era UM rádio de sete
+  // opções, então marcar o contentor era marcar a escolha. Com dois eixos lá dentro, UMA marca no contentor
+  // não diz QUAL saiu do padrão — e é exactamente o terceiro canal do ADR-0029 a perder informação: «a criança
+  // cega percorre o menu e OUVE, em ordem, o que saiu do padrão». Ouvir «mudado» sem saber de quê manda-a
+  // procurar em oito linhas.
+  //
+  // ⚠️ E A MARCA ERA CALCULADA DO ESPELHO OBSOLETO (`resolveVisualMode(playerViz(...))` → `p.viz`), o campo que
+  // a #104 etapa 1a marcou `@deprecated`. O predicado que responde a esta pergunta exacta já existe no modelo
+  // novo, e é o `PADRAO` do `render/viz-axes`.
+  const linhaDoEixo = (eixo) => document.querySelector(`#visual-modes button[data-eixo="${eixo}"][aria-checked="true"]`)
+    ?.closest('.ctrl-row') ?? null;
+  const marcada = (el) => !!el && el.classList.contains('is-changed');
+
+  it('🎯 [Right] só o eixo que SAIU do padrão fica marcado — o outro não', () => {
+    players.push({ viz: 'hc7', visual: { ...PADRAO, tema: 'hc7' } });
+    initSettingsVisual(makeCtx().ctx).render();
+    expect(marcada(linhaDoEixo('tema')), 'o tema saiu do padrão e não foi marcado').toBe(true);
+    expect(marcada(linhaDoEixo('correcao')), 'a correção está no padrão e foi marcada').toBe(false);
+  });
+
+  it('🎯 [Right] e ao contrário: só a correção', () => {
+    players.push({ viz: 'fix-deuter', visual: { ...PADRAO, correcao: 'deuter' } });
+    initSettingsVisual(makeCtx().ctx).render();
+    expect(marcada(linhaDoEixo('correcao'))).toBe(true);
+    expect(marcada(linhaDoEixo('tema'))).toBe(false);
+  });
+
+  it('⚠️ [Boundary] os DOIS ao mesmo tempo — o caso que o campo único não exprimia', () => {
+    // `hc7 + deuter` é o par que a #104 inteira existiu para tornar possível. Se a marca continuasse a vir do
+    // espelho, ela teria de escolher um dos dois para reportar.
+    players.push({ viz: 'hc7', visual: { tema: 'hc7', correcao: 'deuter', simulacao: null } });
+    initSettingsVisual(makeCtx().ctx).render();
+    expect(marcada(linhaDoEixo('tema'))).toBe(true);
+    expect(marcada(linhaDoEixo('correcao'))).toBe(true);
+  });
+
+  it('⚠️ [Zero] uma SIMULAÇÃO não marca este menu — a marca é do menu de empatia', () => {
+    // A regra estava escrita no comentário do `refreshMarks` e vinha do `resolveVisualMode`. Com os dois
+    // eixos ela deixa de ser derivada e passa a ser ESTRUTURAL: a simulação vive noutro campo do
+    // `VisualState`, então perguntar pelo tema e pela correcção nunca a alcança.
+    players.push({ viz: 'sim-deuter', visual: migrarVisual('sim-deuter') });
+    initSettingsVisual(makeCtx().ctx).render();
+    expect(marcada(linhaDoEixo('tema')), 'a simulação marcou o menu errado').toBe(false);
+    expect(marcada(linhaDoEixo('correcao')), 'a simulação marcou o menu errado').toBe(false);
+  });
+
+  it('⚠️ [Right] o botão que ABRE o menu fica marcado quando qualquer um dos eixos saiu', () => {
+    // O canal que leva a criança até aqui: sem ele, ela teria de abrir cada menu para descobrir onde mexeu.
+    players.push({ viz: 'normal', visual: { ...PADRAO, correcao: 'protan' } });
+    initSettingsVisual(makeCtx().ctx).render();
+    expect(document.querySelector('[data-act="visual"]').classList.contains('is-changed')).toBe(true);
+  });
+
   it('⚠️ [Right] o modo visual é desenhado em DOIS rádios — um por eixo (#104)', () => {
     // O que este caso protege continua a ser a ACHABILIDADE: as correções de daltonismo estavam no menu de
     // empatia como linhas visíveis, e a primeira tentativa de as trazer para cá pô-las num `<select>`, onde
@@ -269,7 +323,12 @@ describe('ui/settings-visual — initSettingsVisual', () => {
 describe('ui/settings-visual — restaurar padrões DESTE menu (ADR-0028) + marca (ADR-0029)', () => {
   // O beforeEach zera `players` — ele é o array VIVO de core/state, compartilhado com o resto da suíte —,
   // então cada caso planta o jogador de que precisa em vez de assumir que existe um.
-  const comViz = (viz) => { players.length = 0; players.push({ viz }); };
+  // ⚠️ ESCREVE OS DOIS CAMPOS, como o `setPlayerViz` de produção faz — e derivando o novo pelo MESMO
+// `migrarVisual`, que é o que impede a tradução de existir em duas versões. O fixture criava um jogador só com
+// o `viz` obsoleto, e a #104 etapa 1a tornou o `visual` OBRIGATÓRIO: era um jogador que o programa não
+// consegue produzir, e um teste que contorna a API mede um estado que o jogo nunca alcança. Mesmo defeito que
+// a etapa 2b já tinha apanhado em três fixtures.
+const comViz = (viz) => { players.length = 0; players.push({ viz, visual: migrarVisual(viz) }); };
 
   it('[Right] devolve realce, cores de dono, paleta segura, contornos e cores de papel', () => {
     const { ctx, calls, state } = makeCtx();
@@ -332,12 +391,23 @@ describe('ui/settings-visual — restaurar padrões DESTE menu (ADR-0028) + marc
     expect(linha.querySelector('button').dataset.eixo).toBe('correcao');
   });
 
-  it('[Interface] com a correção ligada, a LISTA de modos fica marcada', () => {
+  it('⚠️ [Interface] com a correção ligada, a LINHA DELA fica marcada — e já não a lista inteira', () => {
+    // ⚠️ ESTE CASO FOI VIRADO, e o que ele afirmava era o defeito escrito como garantia. Marcar
+    // `#visual-modes` estava certo enquanto aquele contentor tinha UM rádio de sete opções: marcar o
+    // contentor era marcar a escolha. A #104 etapa 4d pôs DOIS eixos lá dentro e a mesma asserção passou a
+    // certificar uma marca que já não diz QUAL deles saiu do padrão.
+    //
+    // 📌 E a marca desceu para o sítio que tem NOME: o contentor não tem nome acessível, a linha tem. É o
+    // terceiro canal do ADR-0029 — «a criança cega percorre o menu e ouve, em ordem, o que saiu do padrão» —
+    // a voltar a funcionar.
     const { ctx, state } = makeCtx();
     state.outlineFg = 1;
     comViz('fix-tritan');
     initSettingsVisual(ctx).render();
-    expect(document.querySelector('#visual-modes').classList.contains('is-changed')).toBe(true);
+    const linhaDaCorrecao = document.querySelector('#visual-modes button[data-eixo="correcao"][aria-checked="true"]')
+      .closest('.ctrl-row');
+    expect(linhaDaCorrecao.classList.contains('is-changed'), 'a linha da correção não foi marcada').toBe(true);
+    expect(linhaDaCorrecao.textContent, 'marcou a linha errada').toContain('tritanopia');
     expect(document.querySelector('[data-act="visual"]').classList.contains('is-changed')).toBe(true);
   });
 
