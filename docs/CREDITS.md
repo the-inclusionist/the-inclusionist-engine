@@ -62,3 +62,21 @@ A narração por voz roda **inteiramente no navegador/offline** graças ao traba
 
 > Os pesos das vozes são **baixados uma vez** (de um host público) e rodam **100% localmente** depois — nenhum áudio de
 > criança sai do dispositivo. Ver `docs/2-Architecture/adr/ADR-0065-three-neural-voices-owned-by-the-engine-and-cached-on-first-use.yaml`.
+
+## Arte — Liberated Pixel Cup — CC BY-SA 3.0
+
+A atribuição do [Liberated Pixel Cup](https://github.com/OpenGameArt/LiberatedPixelCup) é **por recurso**, e por
+isso não cabe nesta página em prosa: o repositório do LCP guarda ficheiros de autoria separados para originais e
+derivados, e a cadeia lê-se recurso a recurso.
+
+**Ela mora em [`../art/lcp/ATTRIBUTION.csv`](../art/lcp/ATTRIBUTION.csv)** — caminho, autor, fonte, licença e de que
+recursos cada um derivou. É a mesma forma que o `LICENSES.md` §4 já usa para as 100 gerações do PixelLab: um
+ficheiro tabular ao lado do apontador em prosa, porque um livro-razão que cresce com o catálogo não se mantém à mão.
+
+⚠️ **Atribuição aqui é condição de uso, não linha de crédito.** Os dois braços da licença exigem-na, e um recurso
+sem autor conhecido **não entra** — «não consegui descobrir» não é licença. O gate
+`tests/lcp-quarantine.node.test.js` reprova a entrada vazia, a entrada órfã e o recurso sem entrada, e a árvore
+está em **quarentena** por uma razão que o [`LICENSES.md`](LICENSES.md) §3 e o **ADR-0107** explicam: misturar o LCP
+com a arte própria licenciaria em share-alike a obra de alguém que não está neste repositório para discordar.
+
+**Hoje o livro está vazio** — o LCP foi decidido em 2026-09-08 e ainda não entrou.
