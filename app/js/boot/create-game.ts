@@ -357,6 +357,25 @@ export function createGame(o: CreateGameOptions): Engine {
     );
   }
 
+  // 4d. QUEM ABRIU A PAUSA, quando há mais de um assento — o achado 3 da auditoria do `game-soccer`.
+  //
+  // ⚠️ O PAINEL DE CONTROLE É PARAMETRIZADO PELO ASSENTO: `render(selPlayer)` desenha as posições DAQUELE
+  // esquema, e não há selector de assento — o `#ctrl-players` é uma FRASE, não abas. Quem decide o assento é
+  // o consumidor, passando o ator da pausa: «edita o controle de quem abriu o menu».
+  //
+  // ⚠️ E É AQUI QUE ISTO FICA MUDO. O `setPauseActor` desta raiz é `() => {}` — literal, logo abaixo. Um jogo
+  // montado por `createGame` com dois assentos deixa a criança do SEGUNDO sem como remapear, e nada o diz.
+  // Não é a mesma coisa que declarar `semAtorDePausa`: essa é uma ausência declarada, e uma ausência
+  // declarada é uma escolha. Esta era uma ausência por omissão, que é a forma de defeito do ADR-0106 §2.
+  const assentos = (o.players ?? []).length;
+  if (assentos > 1 && !declines.semAtorDePausa) {
+    problems.push(
+      `declarou ${assentos} jogadores e não registra o ator da pausa: o painel de controle edita sempre o `
+      + 'assento 0, então ninguém além do primeiro consegue remapear. Declare `declines.semAtorDePausa` se '
+      + 'for de propósito',
+    );
+  }
+
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.
   const sonar = createAudioSonar({
     topology: () => o.declaration.topology(),

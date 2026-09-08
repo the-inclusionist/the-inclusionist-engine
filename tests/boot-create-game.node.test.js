@@ -174,6 +174,50 @@ describe('createGame em execução', () => {
     expect(motor.problems[0]).toMatch(/filtros/);
   });
 
+  it('⚠️ [Zero] com DOIS assentos e sem ator de pausa, a engine DIZ — o segundo não consegue remapear', async () => {
+    // O achado 3 da auditoria do `game-soccer`. O painel de controle é parametrizado pelo ASSENTO
+    // (`render(selPlayer)` desenha as posições daquele esquema) e não tem selector — quem escolhe é o
+    // consumidor, passando o ator da pausa. ⚠️ E o `setPauseActor` desta raiz é `() => {}`, literal: um jogo
+    // de dois assentos montado por `createGame` deixa a criança do SEGUNDO sem como remapear, em silêncio.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({
+      declaration: declaracaoValida(),
+      host: { doc, win },
+      players: [{ ctrl: {} }, { ctrl: {} }],
+    });
+    const linha = motor.problems.find((p) => /ator da pausa/.test(p));
+    expect(linha, 'dois assentos sem ator de pausa e a engine não disse nada').toBeTruthy();
+    // ⚠️ A frase nomeia a SAÍDA e o que se perde, como as outras deste bloco fazem — uma linha que só diz
+    // «faltou algo» manda procurar, e quem procura é quem já não sabia.
+    expect(linha).toMatch(/remapear/);
+    expect(linha).toMatch(/semAtorDePausa/);
+  });
+
+  it('[Right] UM assento não acusa nada — a frase é sobre o segundo, e não sobre existir', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({
+      declaration: declaracaoValida(), host: { doc, win }, players: [{ ctrl: {} }],
+    });
+    expect(motor.problems.filter((p) => /ator da pausa/.test(p))).toEqual([]);
+  });
+
+  it('⚠️ [Right] DECLARAR `semAtorDePausa` cala a linha — ausência declarada é escolha', async () => {
+    // A distinção que este caso guarda: declinar é uma escolha registada; não declinar é uma omissão. O
+    // ADR-0106 §2 é inteiro sobre a diferença entre as duas, e um gate que as tratasse igual apagaria a
+    // razão de os declínios existirem.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({
+      declaration: declaracaoValida(),
+      host: { doc, win },
+      players: [{ ctrl: {} }, { ctrl: {} }],
+      declines: { semAtorDePausa: true },
+    });
+    expect(motor.problems.filter((p) => /ator da pausa/.test(p))).toEqual([]);
+  });
+
   it('⚠️ [Zero] SEM barra de acessibilidade na primeira tela, a engine DIZ — e cinco jogos não a têm', () => {
     // ⚠️ `ausentes` e não `comMarcacao: false`, e a razão está escrita no próprio `domFalso`: «um duplo que
     // responde SIM a qualquer seletor não testa a pergunta — testa apenas que ela foi feita». Sem isto o caso

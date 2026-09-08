@@ -210,7 +210,15 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'boot/create-game.ts': 5,        // a mensagem do `throw` e as lacunas do hospedeiro
+  'boot/create-game.ts': 8,        // a mensagem do `throw` e as lacunas do hospedeiro
+                                   // ⚠️ 5 → 8 em 2026-09-08: o ATOR DA PAUSA com mais de um assento (achado 3
+                                   // da auditoria do `game-soccer`). São TRÊS linhas e não uma porque a frase
+                                   // é longa de propósito — ela nomeia a saída (`declines.semAtorDePausa`) e o
+                                   // que se perde (ninguém além do primeiro assento remapeia), e um caso do
+                                   // gate exige as duas coisas. Encurtá-la para pagar menos ao livro-razão
+                                   // seria pagar com a única parte que serve a quem lê a linha.
+                                   // Mesma classe das anteriores: lacuna do HOSPEDEIRO, lida por quem integra
+                                   // a engine e não por uma criança.
                                    // ⚠️ 4 → 5 em 2026-09-08: a barra de acessibilidade que falta na primeira
                                    // tela (issue #114 / pedido do Dev). Sobe pela MESMA razão que as duas
                                    // linhas abaixo — é lacuna do hospedeiro, lida por quem integra a engine
