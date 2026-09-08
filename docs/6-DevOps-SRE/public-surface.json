@@ -372,6 +372,15 @@
     "doCentro",
     "emFracao"
   ],
+  "input/pointer.ts": [
+    "AmostraDoPonteiro",
+    "BordaDoAperto",
+    "PADRAO",
+    "bordaDoAperto",
+    "dentro",
+    "prender",
+    "trocouDeTransporte"
+  ],
   "input/state.ts": [
     "PAD_DEAD",
     "held",

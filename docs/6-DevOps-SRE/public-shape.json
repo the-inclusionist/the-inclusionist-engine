@@ -616,6 +616,15 @@
       "fx"
     ]
   },
+  "input/pointer.ts": {
+    "interface AmostraDoPonteiro": [
+      "apertado",
+      "fx",
+      "fy",
+      "origem"
+    ],
+    "type BordaDoAperto": "'desceu' | 'subiu' | null"
+  },
   "input/touch-bindings.ts": {
     "interface EdgeRaise": [
       "playerIndex"
