@@ -1,0 +1,165 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0077]
+  date: 2026-09-07
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0079 §3 (a transport declares slots, and the guarantee is about the SET) — this record adds the
+       second number that the same guarantee needs"
+    - "ADR-0077 §2 (hold-versus-latch is a setting per action, per player) — scoped further here"
+    - "ADR-0091 (the notice informs and does not refuse) — the shape B follows"
+    - "ADR-0013 (toggle-move, the first latch, as an accessibility setting)"
+    - "ADR-0010 pillar 1 (public-school hardware) and pillar 2 (a11y-first)"
+    - "issue #114, which measured the blind spot; issue #112, whose card carries the sentence"
+  informed: []
+
+title: A game declares how many positions it needs HELD AT ONCE, the touch floor is two, and latching is saved per transport
+
+context-and-problem-statement: |
+  `input/transports` answers one question — does this transport REACH the actions this game asks for? — by
+  comparing `slots` with the number of actions. There is a second constraint and the model cannot see it:
+  how many positions can be HELD AT THE SAME TIME.
+
+  The Dev described the case: *«celulares mais simples só reconhecem dois dedos por vez na tela; a única
+  forma de emular segurar o botão de correr, andar para frente e pular é transformar o botão de correr num
+  toggle.»*
+
+  ⚠️ AND THE BLIND SPOT SITS EXACTLY WHERE THE WARNING DOES NOT FIRE. Measured on 2026-09-07: the platformer
+  declares NINE actions and the on-screen control has NINE slots, so `alcance().ok` is `true` and `curtos` is
+  empty — the card of issue #112 never appears. Run + walk + jump are still three fingers, and on a
+  two-finger phone the child simply cannot, with nothing anywhere saying why.
+
+decision-drivers:
+  - "⚠️ REACH AND SIMULTANEITY ARE INDEPENDENT AXES. A transport can reach all fourteen positions and hold
+     only one — eye, face, gesture and speech control all do exactly that."
+  - "⚠️ `navigator.maxTouchPoints` LIES, and it lies upwards: many devices report 5 and recognise 2. A model
+     built on it fails in the case that matters — the cheap phone — and looks correct while doing so."
+  - "A number nobody declares is a number invented by whoever writes the code that day. The Dev's words:
+     «não declarar é ter a acessibilidade programada por sorte e não de forma organizada»."
+  - "Latching is not one preference. A child may want it on the screen control, where two fingers are the
+     ceiling, and NOT on the keyboard she uses at home, where holding three keys is easy."
+  - "And for some transports it is not a preference at all: eye, face, gesture and speech emit one command at
+     a time, so latching is the only way they work."
+
+considered-options:
+  - "S1 — the count goes in `GameDeclaration`, MANDATORY, beside `topology`"
+  - "S2 — the count goes in `ActionPreset`, optional, meaning 'unknown' when absent"
+  - "S3 — trust `maxTouchPoints` and warn when it is below what the game asks"
+  - "S4 — touch floor of TWO by declaration, with an opt-in third button PROVEN BY A TEST"
+  - "S5 — latching saved globally, as ADR-0077 left it (per action, per player)"
+  - "S6 — latching saved per transport as well, and forced on for one-command transports"
+
+pros-and-cons-of-the-options:
+  S1:
+    good:
+      - "It is a property of the GAME, exactly like the topology it sits beside, so it lives where the other
+         questions the engine asks a game already live."
+      - "⚠️ Mandatory means three hundred games answer it deliberately. An optional field is answered by
+         omission, and an omission is a guess with the accessibility riding on it."
+      - "`conformanceProblems` already refuses a malformed declaration with a message that names the way out,
+         so a game that forgets finds out at boot rather than on a child's device."
+    bad:
+      - "Every existing game has to be edited before it can consume the next major — the same lockstep cost
+         issue #113 has just paid once."
+      - "A game whose answer is genuinely 'one' still has to say so."
+  S2:
+    good: ["No existing game breaks; the preset is edited by whoever designs that game's control."]
+    bad:
+      - "⚠️ 'Absent' has to mean something, and both meanings are bad: if it means 1, the card fires across the
+         whole catalogue; if it means 'do not warn', the accessibility is off by default."
+  S3:
+    good: ["Zero friction when the device tells the truth."]
+    bad:
+      - "⚠️ Fails silently in the exact case the feature exists for. A phone reporting 5 and recognising 2
+         gets no warning, and the child concludes the game is broken."
+  S4:
+    good:
+      - "The floor is a DECLARATION, not a detection, so it cannot be wrong in the dangerous direction."
+      - "⚠️ The opt-in is proven rather than believed: the child is asked to press three on-screen buttons at
+         once, and if that does not arrive, the option reverts to two buttons plus latching for the rest. The
+         device answers with the only evidence that counts — a real gesture."
+      - "It is the ADR-0091 shape applied to a capability instead of a transport: offer, verify, never refuse."
+    bad:
+      - "A capable tablet starts at two and has to opt in, so its owner does one extra step."
+      - "The test itself has to be reachable and understandable, which is UI work the card does not have yet."
+  S5:
+    good: ["Nothing to change."]
+    bad:
+      - "⚠️ Turning latching on for the screen control silently turns it on for the keyboard. That is a
+         setting the child did not choose being applied to a device where she did not need it."
+  S6:
+    good:
+      - "Matches how the child actually experiences it: the accommodation belongs to the CONTROL, the way the
+         key mapping already does."
+      - "Lets eye/face/gesture/speech force it on without that forcing leaking to the keyboard."
+    bad:
+      - "More state to store and to reset; 'restore defaults' has to say per which transport."
+
+decision-outcome:
+  chosen-option:
+    link: "S1 + S4 + S6 — declared, floored at two and proven, and saved per transport"
+    justification: |
+      ===== A · THE GAME DECLARES HOW MANY IT HOLDS AT ONCE =====
+      A new MANDATORY field on `GameDeclaration`, beside `topology()`: how many positions this game needs held
+      simultaneously. Run + walk + jump is three; a quiz is one.
+
+      ⚠️ MANDATORY, AND THAT IS THE POINT. An optional field is answered by silence, and silence here means a
+      child's accommodation was decided by whoever did not think about it. Three hundred games answering
+      deliberately is the cost; accessibility arranged by luck is the alternative.
+
+      ===== B · TOUCH IS TWO, AND THE THIRD IS EARNED BY A TEST =====
+      `navigator.maxTouchPoints` is not trusted for anything. The declared floor for the on-screen control is
+      TWO simultaneous points.
+
+      An option offers using a third on-screen button as a BUTTON rather than a latch — and taking it runs a
+      test immediately: press three on-screen buttons at the same time. If the three do not arrive, the option
+      reverts to two buttons and latching for the rest.
+
+      ⚠️ THE TEST IS THE WHOLE DESIGN. A declared floor cannot be wrong upwards, and a real gesture is the only
+      evidence a device cannot fake. Nothing is refused and nothing is assumed.
+
+      ===== C · LATCHING IS SAVED PER TRANSPORT =====
+      Hold-versus-latch is stored per transport, exactly as the key mapping already is. A child turning
+      latching on for the screen control has said nothing about the keyboard or the gamepad.
+
+      ⚠️ AND FOR ONE-COMMAND TRANSPORTS IT IS ALWAYS ON, not defaulted: eye, face, gesture and speech emit one
+      command at a time, so latching is not a preference there — it is the only way they function. Offering it
+      as a choice would be offering a child the choice of a control that does not work.
+
+  consequences:
+    good:
+      - "`alcance()` can answer both questions, and the card of issue #112 gains its third sentence — «o
+         controle de tela segura dois botões de cada vez e este jogo pede três»."
+      - "The latch stops leaking between devices, which is the defect nobody had named."
+      - "⚠️ It resolves the tension flagged against ADR-0084's own rule: latching self-enabling for camera and
+         voice is no longer an exception to «valor salvo significa escolha», because for those transports it
+         was never a choice."
+    bad:
+      - "⚠️ Mandatory declaration is a breaking change to `GameDeclaration`, so it belongs to a major and every
+         existing game is edited in lockstep."
+      - "Per-transport storage multiplies the keys, and «restaurar padrões» has to say per which transport."
+    neutral:
+      - "The floor of two is a DECLARATION, so a device that could do more is under-served until its owner
+         takes the option — a cost accepted deliberately, because the reverse error is silent."
+
+  confirmation: |
+    Owed when this is built, and none of it exists yet:
+
+    · a case asserting `conformanceProblems` refuses a declaration without the simultaneity field, with a
+      message naming the way out — the shape the other four contract fields already have;
+    · `alcance()` answering the second axis, with the platformer's nine-actions-on-nine-slots case as the
+      fixture, because that is where the old model was silent;
+    · the touch floor asserted as TWO with no reference to `maxTouchPoints` anywhere in the module;
+    · latching read and written per transport, with a case proving a value set on touch does not appear on
+      the keyboard;
+    · one-command transports reporting latching ON with no stored value, and the option not offered.
+
+more-information: |
+  ⚠️ Deliberately NOT decided here: what the third-button test looks like on screen, and how a child who
+  cannot complete it is told that the option reverted. That is the same design question the card of #112
+  already owns, and it wants a child in front of it (issue #7) before it is called done.
+
+  Also not decided: whether a transport may declare its own simultaneity ceiling the way it declares `slots`.
+  Today the floor is a project-wide declaration for touch; a registry of per-transport ceilings is a larger
+  change and nothing needs it yet.

@@ -25,6 +25,15 @@ metadata:
       what: "§5b, the ADDRESSES only — where the point count, the bars and the coin counter sit on screen.
               Everything §5b says about what a segment MEANS (the colours, that only an academic question
               paints one, that an erro is the third wrong attempt) is decided HERE and is not touched."
+    - by: ADR-0103
+      what: "§5's open clause — «The bar's home is undecided and this record does not decide it; what it
+              decides is that the round is the wrong place». The home is now decided, and the answer is that
+              the bar has NO home because it does not persist: not in the engine, not in a cartridge, not in
+              the Bússola Escolar. ⚠️ The reason is pedagogical before it is legal — development oscillates,
+              a child plays a given activity perhaps once a week, and a stored history reads a normal setback
+              as regression. What the school system keeps is THE DAY's performance; on another day the child
+              proves performance again. Everything else §5 decides about the bar — the ten segments, what a
+              segment means, and that the round is the wrong place — stands untouched."
   date: 2026-08-27
   decision-makers: [Dev]
   consulted:

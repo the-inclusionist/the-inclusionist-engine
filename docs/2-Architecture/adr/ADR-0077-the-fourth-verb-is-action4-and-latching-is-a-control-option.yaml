@@ -1,6 +1,17 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0104
+      what: "§2's SCOPE of the latch setting — «per action, per player». It is now per action, per player AND
+              per TRANSPORT: a child turning latching on for the on-screen control has said nothing about the
+              keyboard or the gamepad, and the old scope silently applied one answer to every device.
+              ⚠️ And for one-command transports — eye, face, gesture, speech — latching is ALWAYS ON rather
+              than a setting at all, because those transports emit one command at a time and cannot function
+              without it; offering it there would be offering a child the choice of a control that does not
+              work. Everything else §2 decides — that ANY action may be held or latched, and that this is an
+              accessibility SETTING and not a name in the vocabulary — stands untouched, and §1 (the nine
+              positions, `action4`) is not affected at all."
   date: 2026-09-05
   supersedes-in-part: [ADR-0074]
   decision-makers: [Dev]

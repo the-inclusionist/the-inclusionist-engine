@@ -1,0 +1,151 @@
+---
+metadata:
+  status: "accepted"
+  # ⚠️ SEM `confirmed-by`. Este registo decide que uma coisa NÃO é construída, e não há ficheiro que prove
+  # uma ausência. O que existe hoje e é consistente com ele — `educational/adaptive-engine`, que recebe o
+  # histórico como parâmetro e não lê armazenamento nenhum — foi escrito antes desta decisão e por outro
+  # motivo. Declarar-lhe `confirmed-by` seria fazer o registo parecer aferido por acidente.
+  supersedes-in-part: [ADR-0049]
+  date: 2026-09-07
+  decision-makers: [Dev]
+  consulted:
+    - "ADR-0049 §5 (the ten-segment bar; it declared the bar's home undecided, and this record decides it)"
+    - "ADR-0048 §6c (which sent the per-skill history to the Bússola Escolar)"
+    - "ADR-0037 (which buried the save game and the progression password)"
+    - "ADR-0038 (the round is the wrong place to persist, decided in ADR-0049)"
+    - "ADR-0010 pillar 6 (child privacy) and pillar 8 (offline) — both are satisfied by this, but neither is
+       the reason for it"
+    - "issue #92 (the adaptive engine) and #93 (the bar), which were both blocked on this"
+  informed: []
+
+title: The bar does not persist — not in the engine, not in the cartridge, not in the school system — because development oscillates and a stored history would read a normal setback as regression
+
+context-and-problem-statement: |
+  ADR-0049 designed a ten-segment bar showing where a child stands in a skill, and stated plainly that it did
+  not decide where that bar lives: «The bar's home is undecided and this record does not decide it; what it
+  decides is that the round is the wrong place.» ADR-0048 §6c pointed the per-skill history at the Bússola
+  Escolar. Between the two, three issues stalled — #92 (the adaptive engine), #93 (the bar itself), and the
+  §3 cut of issue #101, which cannot split ADR-0049 without knowing which half is engine.
+
+  ⚠️ THE QUESTION WAS BEING ASKED IN THE WRONG TERMS, and this record's value is mostly in correcting that.
+  It was framed as «where may we store it» — a question about ownership, jurisdiction and LGPD
+  controllership. Framed that way it has no cheap answer, because the Bússola Escolar repository exists but
+  has NO student management system inside it, so the legally tidy home is empty.
+
+  Asked pedagogically the question answers itself, and the answer is not «somewhere else». It is «nowhere».
+
+decision-drivers:
+  - "⚠️ DEVELOPMENT OSCILLATES. A child has leaps and setbacks; that is what development looks like, not what
+     failure looks like. A stored history flattens the oscillation into a trend line, and a trend line reads a
+     normal setback as regression."
+  - "The cadence makes it worse, not better. At school a child plays a given activity perhaps ONCE A WEEK. The
+     gap between two data points is exactly the interval over which a child most plausibly leaps or slips, so
+     the stored point is stalest precisely when it is used."
+  - "What the adaptive engine needs is a CURRENT reading, not a career. `faixaDe` looks at the last ten
+     questions to place a child in a band right now; nothing in it wants last month."
+  - "The games are minigames — a sitting is about fifteen minutes and reaches an end. There is no run to
+     resume, so there is no save to write."
+  - "And the property that falls out for free: a product that stores nothing about a child cannot leak,
+     cannot be subpoenaed, and does not need a controller. That is a consequence here, not the argument."
+
+considered-options:
+  - "P1 — nothing persists it, anywhere in the suite; the school system keeps THE DAY's performance and asks
+     for a fresh one on another day"
+  - "P2 — the engine persists it locally (localStorage), per child profile on the device"
+  - "P3 — the cartridge persists it, and the engine receives it as a parameter"
+  - "P4 — the Bússola Escolar persists it as a history, and the engine receives it"
+
+pros-and-cons-of-the-options:
+  P1:
+    good:
+      - "It measures the thing that is true: how this child is doing TODAY, on this activity, in this sitting."
+      - "It removes the blocker from three issues at once without waiting for a system that does not exist:
+         `educational/adaptive-engine` is already complete under this rule, and the bar of #93 becomes a
+         component that receives its segments."
+      - "⚠️ It makes a setback cost nothing. A child who has a bad week starts the next one with the bar at
+         zero and no record saying she went backwards — which is both kinder and more accurate."
+      - "Offline is unaffected (pillar 8): there is nothing to sync."
+    bad:
+      - "⚠️ A teacher cannot see progress over time from the game. Whatever longitudinal view a school needs
+         has to come from the school system's own assessment, not from a minigame's bar."
+      - "The bar restarts every sitting, and a child who liked seeing it full will see it empty again."
+  P2:
+    good: ["Works with no host at all; simplest to build."]
+    bad:
+      - "Contradicts ADR-0037, which buried the save game and left the standing sentence that the Inclusionist
+         keeps nothing about a child."
+      - "⚠️ Puts a child's academic record inside a published npm package, so the data — and the
+         responsibility for it — travels to every game that installs the engine."
+  P3:
+    good: ["Keeps it out of the published package; each game decides."]
+    bad:
+      - "Moves the same defect one repository across. The measurement error — a stored history reading a
+         setback as regression — is not fixed by changing who stores it."
+      - "Three hundred games would each answer it differently."
+  P4:
+    good: ["Matches ADR-0048 §6c as written, and puts the data where the controllership already is."]
+    bad:
+      - "⚠️ The repository exists and the student management system does not. Deciding this way blocks #92,
+         #93 and #101 §3 for an indefinite period."
+      - "And it still stores the history, so it still carries the measurement error into the school's record —
+         where it does the most damage, because that is the record someone acts on."
+
+decision-outcome:
+  chosen-option:
+    link: "P1 — nothing persists it, anywhere in the suite; the school system keeps the DAY"
+    justification: |
+      The bar does not persist, anywhere in the Inclusionist suite.
+
+      §1 · NOBODY WRITES IT. Not `app/js/**`, not a cartridge, not the Bússola Escolar. There is no per-child,
+      per-skill history stored between sittings.
+
+      §2 · WHAT THE SCHOOL SYSTEM KEEPS IS THE DAY. The Bússola Escolar records the performance OF THAT DAY.
+      On another day the child proves performance again — on other activities or on the same one. That is not a
+      weaker record; it is the record that matches how development actually moves.
+
+      §3 · THE ENGINE RECEIVES, NEVER READS. `faixaDe(historico, piso)` takes the sitting's history as a
+      parameter, and the bar of #93 takes its segments the same way. No module of the engine reaches for storage
+      to answer «where is this child».
+
+      §4 · NO GAME IS SAVED. They are minigames; a sitting ends in about fifteen minutes. There is no run to
+      resume, and the absence of a save is not a missing feature.
+
+      ⚠️ §5 · AND THE REASON IS PEDAGOGICAL BEFORE IT IS LEGAL. This record could have been argued from LGPD and
+      from pillar 6, and it would have reached the same place by a worse road — because that argument permits
+      storing the history the moment the controllership is settled. The pedagogical argument does not: it says the
+      stored history would be WRONG, and it stays wrong under any controller.
+
+  consequences:
+    good:
+      - "#92 is complete as it stands — the pure function was already written to receive, not to read."
+      - "#93 becomes buildable today: a bar that receives ten segments."
+      - "The §3 cut of issue #101 gets its line — the motor of ADR-0049 is engine, the record of the day is
+         the school system's, and there is nothing in between to argue about."
+      - "Nothing to sync, nothing to encrypt, nothing to delete on request."
+    bad:
+      - "⚠️ A child cannot see her own progress across weeks inside the game, and that is a real loss for a
+         child who is motivated by it. The answer is that the alternative loss — being told she went backwards
+         when she did not — is larger."
+      - "Anyone later wanting a longitudinal view has to reopen this record rather than add a table."
+    neutral:
+      - "The 'where does it live' question that ADR-0049 §5 left open is answered by removing the thing that
+         needed a home."
+
+  confirmation: |
+    ⚠️ There is no gate for this, and inventing one that passes today would be theatre. What CAN be gated, and
+    is owed when #93 is built:
+
+    · a case asserting that no module under `app/js/**` writes a per-skill history key — the shape of the
+      `engine-boundary` sieve, over storage calls instead of imports;
+    · the bar component of #93 taking its segments as a parameter, with no storage import at all.
+
+    `educational/adaptive-engine` is already consistent with this record, but it was written before the
+    decision and for another reason, so it confirms nothing about it.
+
+more-information: |
+  ⚠️ Deliberately NOT decided here: what the Bússola Escolar does with a day's performance once it exists —
+  whether it aggregates, and under whose controllership. This record only says the game hands over a day and
+  keeps nothing.
+
+  Also not decided: whether a child may see the bar of a sitting she is still in. She may; that is not
+  persistence, it is the current reading.
