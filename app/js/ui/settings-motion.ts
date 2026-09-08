@@ -13,24 +13,35 @@
 // retorno da extração antes de assumir que falta wiring.
 import { toggleLabel, toggleAria } from './dom.js';
 
-import type { PlayerView } from '../core/entity.js';
 import { CRT, CRT_DEFAULT, applyCrt } from '../render/crt.js';
 import { defaultReducedMotion } from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { t } from '../core/i18n.js';
 
-export type MotionSceneKey = 'parallax' | 'decor' | 'items' | 'particles';
-export type MotionCharProp = 'rmWalk' | 'rmBreath' | 'rmFlavor';
+import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena } from './motion-scene.js';
+import type {
+  MotionSceneKey as ChaveDeCenaLeaf,
+  MotionCharProp as PropDoPersonagemLeaf,
+  MotionCharDef as DefDoPersonagemLeaf,
+  MotionPlayer as JogadorDeMovimentoLeaf,
+  MotionSceneFlags as BandeirasDeCenaLeaf,
+} from './motion-scene.js';
 
-export interface MotionCharDef {
-  readonly prop: MotionCharProp;
-  readonly lbl: string;
-}
-/** As três chaves de Movimento Reduzido por personagem, derivadas de core/entity. Eram um
- *  `Partial<Record<MotionCharProp, boolean>>`, o que dizia a forma certa sem dizer que os campos são DO
- *  JOGADOR — um `Record` aceita qualquer objeto com essas chaves, inclusive um que não seja jogador nenhum. */
-export type MotionPlayer = PlayerView<'rmWalk' | 'rmBreath' | 'rmFlavor'>;
-export type MotionSceneFlags = Record<MotionSceneKey, boolean>;
+/*
+ * ⚠️ O VOCABULÁRIO MUDOU DE CASA, E OS NOMES FICARAM. As cinco declarações que estavam aqui passaram para
+ * `ui/motion-scene`, que é quem possui os VALORES — e um gate mandou: escrito ao contrário, o
+ * `tests/lotes-passo5` reprovava por CICLO entre os dois módulos.
+ *
+ * ⚠️ Ficam como ALIAS e não como re-export (`export type { X } from …`) por uma razão medida: o retrato da
+ * superfície pública deixa os re-exports de fora de propósito, então re-exportar faria os cinco nomes
+ * DESAPARECEREM do retrato deste módulo — e o gate leria uma mudança de casa como uma remoção, que é uma
+ * quebra que não existe. O alias diz a mesma coisa e continua visível.
+ */
+export type MotionSceneKey = ChaveDeCenaLeaf;
+export type MotionCharProp = PropDoPersonagemLeaf;
+export type MotionCharDef = DefDoPersonagemLeaf;
+export type MotionPlayer = JogadorDeMovimentoLeaf;
+export type MotionSceneFlags = BandeirasDeCenaLeaf;
 
 export interface SettingsMotionCtx {
   /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
@@ -54,15 +65,25 @@ export interface SettingsMotionCtx {
 
   /** Reflete on/off num botão (classe is-on + aria-pressed) — helper genérico usado por vários botões-mestre. */
   toggleBtn: (el: HTMLElement, on: boolean) => void;
-  /** Movimento reduzido de CENA (parallax/decor/items/particles) — objeto VIVO, mutado in-place. Fica em game.js:
-   *  applyCalm() (modo TEA) também o usa, não é exclusivo deste painel. */
-  rm: MotionSceneFlags;
-  /** Persiste `rm` (localStorage 'inclusionist.reducedmotion.v1') — mesmo motivo, fica em game.js. */
-  saveRM: () => void;
+  /*
+   * ⚠️ AS QUATRO PASSARAM A OPCIONAIS (ADR-0106 §4, etapa 1), e a ausência é que é a notícia: a engine
+   * passou a SABER RESPONDÊ-LAS. Elas estavam aqui porque o `applyCalm()` do cartucho também as usava — e
+   * isso continua verdade —, mas nenhuma delas continha uma escolha do jogo: `rmKeys` era a união
+   * `MotionSceneKey` inteira escrita à mão, `rmChar` as três de `MotionCharProp`, e `rm`/`saveRM` liam e
+   * escreviam uma chave de armazenamento da ENGINE com um padrão da ENGINE. Ver `ui/motion-scene`.
+   *
+   * ⚠️ Quem injecta continua a mandar, e é por isso que a mudança é ADITIVA: um cartucho que já passa o seu
+   * objecto continua a partilhá-lo por referência com os oito módulos que o leem a cada quadro. Quem não
+   * passa nada deixa de ficar sem movimento reduzido — que é o estado dos cinco jogos sem barra.
+   */
+  /** Movimento reduzido de CENA (parallax/decor/items/particles) — objeto VIVO, mutado in-place. */
+  rm?: MotionSceneFlags;
+  /** Persiste `rm` (localStorage 'inclusionist.reducedmotion.v1'). */
+  saveRM?: () => void;
   /** As 4 chaves de cena — a MESMA array que applyCalm() itera. */
-  rmKeys: readonly MotionSceneKey[];
+  rmKeys?: readonly MotionSceneKey[];
   /** Os 3 alvos de movimento reduzido do PERSONAGEM — a MESMA array que applyCalm() itera. */
-  rmChar: readonly MotionCharDef[];
+  rmChar?: readonly MotionCharDef[];
   /**
    * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA render.
    *
@@ -202,9 +223,20 @@ export interface SettingsMotionApi {
 }
 
 export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
+  /*
+   * ⚠️ RESOLVIDAS UMA VEZ, NO ARRANQUE, e não a cada uso. O `rm` é mutado in-place e partilhado por
+   * REFERÊNCIA com quem desenha a cena; resolvê-lo a cada leitura criaria um objecto novo por chamada, o
+   * interruptor deixaria de alcançar o desenho, e não haveria erro nenhum — o menu diria «reduzido» e a cena
+   * continuaria a mexer-se.
+   */
+  const rm: MotionSceneFlags = ctx.rm ?? lerCenaGuardada();
+  const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? CHAVES_DE_CENA;
+  const rmChar: readonly MotionCharDef[] = ctx.rmChar ?? ANIMACOES_DO_PERSONAGEM;
+  const saveRM: () => void = ctx.saveRM ?? (() => guardarCena(rm));
+
   function reflectMotionBtn(): void {
     const b = ctx.$<HTMLElement>('#opt-animation');
-    if (b) b.classList.toggle('is-on', ctx.rmKeys.some((k) => ctx.rm[k]));
+    if (b) b.classList.toggle('is-on', rmKeys.some((k) => rm[k]));
   }
 
   function updateMotionMaster(): void {
@@ -212,7 +244,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const m = ctx.$<HTMLElement>('#motion-master');
     if (!m) return;
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
-    const allFrozen = allMotionFrozen(ctx.rmKeys, ctx.rm, ctx.rmChar, player);
+    const allFrozen = allMotionFrozen(rmKeys, rm, rmChar, player);
     m.textContent = motionMasterLabel(allFrozen);
     ctx.toggleBtn(m, allFrozen);
   }
@@ -238,8 +270,8 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     }
 
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
-    const charRows = buildCharRowsHtml(ctx.rmChar, player);
-    const sceneRows = buildSceneRowsHtml(ctx.rmKeys, ctx.rm, RM_LABEL, RM_SOON);
+    const charRows = buildCharRowsHtml(rmChar, player);
+    const sceneRows = buildSceneRowsHtml(rmKeys, rm, RM_LABEL, RM_SOON);
     const crtRows = crtToggleRowHtml(t(CRT_LBL.scan), 'scan', !!CRT.scan) + crtToggleRowHtml(t(CRT_LBL.vig), 'vig', !!CRT.vig) + crtRoundRowHtml(t(CRT_LBL.round), CRT.round);
 
     el.innerHTML =
@@ -269,11 +301,11 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     }));
     el.querySelectorAll<HTMLButtonElement>('button[data-rm]').forEach((b) => b.addEventListener('click', () => {
       const k = b.dataset.rm as MotionSceneKey;
-      ctx.rm[k] = !ctx.rm[k];
-      ctx.saveRM();
+      rm[k] = !rm[k];
+      saveRM();
       render();
       updateMotionMaster();
-      ctx.srSay(sceneMotionAnnouncement(t(RM_LABEL[k]), ctx.rm[k]));
+      ctx.srSay(sceneMotionAnnouncement(t(RM_LABEL[k]), rm[k]));
     }));
 
     updateMotionMaster();
@@ -297,8 +329,8 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       mudou.push(changed);
       markChanged(el?.querySelector<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
     };
-    for (const c of ctx.rmChar) marcar(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== padraoRm);
-    for (const k of ctx.rmKeys) marcar(`[data-rm="${k}"]`, !!ctx.rm[k] !== padraoRm);
+    for (const c of rmChar) marcar(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== padraoRm);
+    for (const k of rmKeys) marcar(`[data-rm="${k}"]`, !!rm[k] !== padraoRm);
     marcar('[data-crt-tgl="scan"]', !!CRT.scan !== !!CRT_DEFAULT.scan);
     marcar('[data-crt-tgl="vig"]', !!CRT.vig !== !!CRT_DEFAULT.vig);
     marcar('[data-crt="round"]', CRT.round !== CRT_DEFAULT.round);
@@ -317,10 +349,10 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   const resetBtn = ctx.$<HTMLButtonElement>('#animation-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
     const padraoRm = defaultReducedMotion();
-    for (const k of ctx.rmKeys) ctx.rm[k] = padraoRm;
-    ctx.saveRM();
+    for (const k of rmKeys) rm[k] = padraoRm;
+    saveRM();
     (ctx.getPlayers() as readonly MotionPlayer[]).forEach((p, i) => {
-      for (const c of ctx.rmChar) {
+      for (const c of rmChar) {
         p[c.prop] = padraoRm;
         ctx.store.setBool('incl_' + c.prop + '_p' + i, padraoRm);
       }
@@ -353,11 +385,11 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   const master = ctx.$<HTMLElement>('#motion-master');
   if (master) master.addEventListener('click', () => {
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
-    const allFrozen = allMotionFrozen(ctx.rmKeys, ctx.rm, ctx.rmChar, player);
+    const allFrozen = allMotionFrozen(rmKeys, rm, rmChar, player);
     const next = !allFrozen;
-    for (const k of ctx.rmKeys) ctx.rm[k] = next;
-    ctx.saveRM();
-    if (player) for (const c of ctx.rmChar) {
+    for (const k of rmKeys) rm[k] = next;
+    saveRM();
+    if (player) for (const c of rmChar) {
       player[c.prop] = next;
       ctx.store.setBool('incl_' + c.prop + '_p' + selectedPlayer, next);
     }

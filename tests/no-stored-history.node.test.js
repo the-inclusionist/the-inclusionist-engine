@@ -67,6 +67,10 @@ const INVENTARIO = {
   'render/viz-setters.ts': 'criança · a simulação visual escolhida, por jogador',
   'ui/activities-menu.ts': 'partida · a notação de fração e a tabuada escolhidas NESTE jogo',
   'ui/pause-icons.ts': 'criança · o nível do modo TEA',
+  // ⚠️ Entrou em 2026-09-08 pela etapa 1 do ADR-0106, e a entrada diz de quem é a coisa guardada porque é
+  // essa a pergunta: os quatro interruptores de movimento reduzido de CENA são preferência da CRIANÇA — eram
+  // guardados por cada cartucho na MESMA chave da engine, e cinco jogos não os guardavam de todo.
+  'ui/motion-scene.ts': 'criança · os quatro interruptores de movimento reduzido de cena (parallax, decor, itens, partículas)',
   'ui/settings-audio.ts': 'criança · a saída de áudio por jogador, o motor e a voz de TTS',
   'ui/settings-motion.ts': 'criança · as reduções de movimento, por jogador',
   'ui/settings-motor.ts': 'criança · o modo fácil por jogador',

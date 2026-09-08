@@ -1704,6 +1704,16 @@
       "sharedDialogOpen"
     ]
   },
+  "ui/motion-scene.ts": {
+    "interface MotionCharDef": [
+      "lbl",
+      "prop"
+    ],
+    "type MotionSceneKey": "'parallax' | 'decor' | 'items' | 'particles'",
+    "type MotionCharProp": "'rmWalk' | 'rmBreath' | 'rmFlavor'",
+    "type MotionPlayer": "PlayerView<'rmWalk' | 'rmBreath' | 'rmFlavor'>",
+    "type MotionSceneFlags": "Record<MotionSceneKey, boolean>"
+  },
   "ui/panel-shell.ts": {
     "interface PanelShellCtx": [
       "criar",
@@ -1949,10 +1959,6 @@
     ]
   },
   "ui/settings-motion.ts": {
-    "interface MotionCharDef": [
-      "lbl",
-      "prop"
-    ],
     "interface SettingsMotionCtx": [
       "$",
       "fillExplain?",
@@ -1960,10 +1966,10 @@
       "getNumPlayers",
       "getPlayers",
       "restoreFocus?",
-      "rm",
-      "rmChar",
-      "rmKeys",
-      "saveRM",
+      "rm?",
+      "rmChar?",
+      "rmKeys?",
+      "saveRM?",
       "srSay",
       "store",
       "toggleBtn"
@@ -1973,10 +1979,11 @@
       "open",
       "render"
     ],
-    "type MotionSceneKey": "'parallax' | 'decor' | 'items' | 'particles'",
-    "type MotionCharProp": "'rmWalk' | 'rmBreath' | 'rmFlavor'",
-    "type MotionPlayer": "PlayerView<'rmWalk' | 'rmBreath' | 'rmFlavor'>",
-    "type MotionSceneFlags": "Record<MotionSceneKey, boolean>"
+    "type MotionSceneKey": "ChaveDeCenaLeaf",
+    "type MotionCharProp": "PropDoPersonagemLeaf",
+    "type MotionCharDef": "DefDoPersonagemLeaf",
+    "type MotionPlayer": "JogadorDeMovimentoLeaf",
+    "type MotionSceneFlags": "BandeirasDeCenaLeaf"
   },
   "ui/settings-motor.ts": {
     "interface MotorStore": [

@@ -1115,6 +1115,18 @@
     "selectStep",
     "selectWrap"
   ],
+  "ui/motion-scene.ts": [
+    "ANIMACOES_DO_PERSONAGEM",
+    "CHAVES_DE_CENA",
+    "MotionCharDef",
+    "MotionCharProp",
+    "MotionPlayer",
+    "MotionSceneFlags",
+    "MotionSceneKey",
+    "guardarCena",
+    "lerCenaGuardada",
+    "padraoDeCena"
+  ],
   "ui/panel-shell.ts": [
     "PanelShell",
     "PanelShellCtx",
