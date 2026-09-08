@@ -1,0 +1,157 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - "app/js/boot/create-game.ts"
+    - "tests/boot-create-game.node.test.js"
+  date: 2026-09-08
+  decision-makers: [Dev]
+  consulted:
+    - "the Dev's request of 2026-09-07, quoted in full in the context"
+    - "ADR-0044 (the quick bar moved to the HUD) — item 7 is why the bar is not inside the pause card"
+    - "ADR-0010 pillar 2 (a11y): when aesthetics fights accessibility, accessibility wins"
+    - "ADR-0068 (each game is its own repository) — which is what let five of them drift"
+    - "issue #114 and issue #112 (the reach card)"
+  informed: []
+
+title: The engine OFFERS the pause menu and the accessibility icons, because five of six games have neither and nothing said so
+
+context-and-problem-statement: |
+  The Dev, 2026-09-07: «o menu de pausa, o design do menu de pausa e os ícones de acessibilidade que aparecem
+  no jogo desde a primeira tela devem ser oferecidos pela engine e não pela programação do jogo. Todo jogo da
+  engine inclusionist deve ter o mesmo menu de pausa e ícones de acessibilidade desde a primeira.»
+
+  Read as a tidy-up, this is a refactor of the platformer. Measured, it is something else.
+
+  ⚠️ OF THE SIX GAMES IN THE LOCAL CATALOGUE, FIVE HAVE NO ACCESSIBILITY BAR AT ALL — and no pause menu
+  either. `pixi-15-puzzle`, `game-chess`, `game-soccer`, `2048` and `whackwhack` call neither
+  `initPauseIcons` nor mount a HUD. Confirmed by a second method: `boot/create-game` greps clean for
+  `initHud`, `initPauseIcons`, `iconsMarkup` and `buildQuickBar` — it has never mounted them on a game's
+  behalf. A child who depends on blind mode, on TTS, on high contrast or on Libras opens those five and has
+  no way in, before the first screen or after it.
+
+  `ui/pause-icons` states the cause without noticing it: «`initPauseIcons` é chamado pela raiz de composição
+  de CADA jogo». Every game had to remember. Five did not, and nothing anywhere reported it — which is the
+  same defect shape ADR-0104 §A named about a different field: what is left optional is answered by silence,
+  and the silence decides for the child.
+
+  ⚠️ AND THE BEHAVIOUR AND THE DESIGN WERE ALREADY IN THE ENGINE, which is what makes the gap so easy to
+  miss. `ui/pause-icons` owns the ten `PAUSE_ICONS`, `buildScreenPause`, `screenPauseMarkup` and
+  `iconsMarkup`; `ui/shell` owns the `.pm-btn` action table; `app/css/style.css` owns `.pause-card`,
+  `.pm-btn`, `.pause-menu`, `.pause-icons` and `#title-icons`, published as `./style.css` and imported by the
+  cartridge rather than copied. What was NOT in the engine was the act of MOUNTING any of it.
+
+decision-drivers:
+  - "⚠️ 300 games are the MVP. A rule that each composition root must remember is a rule that fails at scale,
+     and it has already failed at six."
+  - "The accessibility surface is the product's thesis, not a feature of one game. A game that ships without
+     it is not a game with a missing feature — it is a game the intended child cannot open."
+  - "Silence is the worst failure mode here: a game with no bar looks complete, and boots without error."
+  - "⚠️ Mounting a bar whose buttons do nothing would be WORSE than mounting none: it would tell a child that
+     the way in exists and then refuse her."
+  - "The engine must not learn what a game is. Whatever it mounts has to work for a board game, a quiz and a
+     platformer without any of them being named."
+
+considered-options:
+  - "M1 — leave it to each game, and document the expectation."
+  - "M2 — the engine REPORTS the absence and mounts nothing."
+  - "M3 — the engine MOUNTS everything, taking over the state the icons touch."
+  - "M4 — the engine reports now, and mounts in stages as it reclaims the state each icon needs."
+
+pros-and-cons-of-the-options:
+  M1:
+    good: ["No engine change; each game keeps full control of its own markup."]
+    bad:
+      - "⚠️ It is what exists today, and it produced five games without an accessibility bar. Documentation
+         that five consumers did not follow is not a mechanism."
+  M2:
+    good: ["Cheap, immediate, and it ends the silence — a missing bar becomes a line someone reads at boot."]
+    bad:
+      - "Reporting is not offering. Five games still ship without a bar until somebody acts on the line."
+  M3:
+    good: ["It is literally what the request says, and it would be true for every game at once."]
+    bad:
+      - "⚠️ It cannot be done today without lying. Of the twenty-four fields `initPauseIcons` demands, THIRTEEN
+         are supplied by the game, and some of them are the actions themselves — `setModoCego` rebuilds the
+         cane, `setPlayerViz` rebakes textures, `setToggleMove` is written in the cartridge. Mounting the bar
+         with those missing gives a child ten buttons, some of which do nothing."
+  M4:
+    good:
+      - "Every stage is shippable and none of them produces a dead button."
+      - "It separates what is game-owned BY NATURE from what is game-owned BY ACCIDENT, which is the actual
+         work — and the measurement below shows most of it is the second."
+    bad: ["Slower: the five games stay without a bar until the stages land."]
+
+decision-outcome:
+  chosen-option:
+    link: "M4 — report now, mount in stages as the engine reclaims the state each icon needs"
+    justification: |
+      §1 · THE ENGINE OFFERS THE PAUSE MENU AND THE ACCESSIBILITY ICONS. That is the standing rule, and it is
+      the Dev's. A game contributes what only it can know; it does not decide whether a child gets a way in.
+
+      §2 · TODAY THE ENGINE REPORTS. `createGame` looks for the bar — `host.a11yBarHost`, else `#title-icons`
+      — and puts a line in `problems` when it is not there, naming the way out and what is lost. This is the
+      part that is built, and it ends the silence.
+
+      ⚠️ §3 · THE DEPENDENCIES SPLIT, AND THE SPLIT IS THE PLAN. Measured over the twenty-four fields of
+      `PauseIconsCtx`:
+
+      ELEVEN ARE ALREADY THE ENGINE'S, and `createGame` can pass them without asking anyone: `srSay`/`srAlert`
+      (`core/a11y-sr`), `getAudioCat`/`setCatGain` (`platform/audio`), `toggleLibras` and `vlibrasOpen`
+      (`ui/vlibras`), `pmButtons`/`optionsButtons` (`PM_BTNS`/`PM_OPTIONS_BTNS`, `ui/activities-menu`),
+      `getModoCego` (`core/state`), and the two TTS panel hooks (`ui/settings-audio`).
+
+      THIRTEEN COME FROM THE GAME, and they are two different kinds:
+        · GAME-OWNED BY NATURE — `getNumPlayers`, `getPlayers`, `getA11yBars`, `getPauseScreens`, `dynLabel`,
+          `getPauseActs`, `setPauseActor`. Round state, the game's own HUD mount, and the menu ITEMS, whose
+          label and action only the game knows.
+        · GAME-OWNED BY ACCIDENT — `rm`, `rmKeys`, `rmChar`, `saveRM`, `setModoCego`, `setPlayerViz`,
+          `setToggleMove`. ⚠️ These are ENGINE settings whose values happen to live in a cartridge. Reduced
+          motion, blind mode, the visual simulation and latching are accessibility, not game rules; what is
+          genuinely the game's in them is the SIDE EFFECT — rebuilding the cane, rebaking a texture.
+
+      §4 · THE STAGES FOLLOW FROM THAT SPLIT. The engine reclaims the accidental seven, keeping only the side
+      effect injected; then it can mount the ICON BAR alone, whose actions become engine-only. The pause
+      MENU's item list stays a game contribution, because `dynLabel` and `getPauseActs` are game-owned by
+      nature — and the engine ships a default list so that a game which contributes nothing still gets one.
+
+      ⚠️ §5 · NO STAGE MAY SHIP A DEAD BUTTON. An icon is mounted when its action works, and not before. A bar
+      that offers a child a way in and then refuses her is worse than a bar she can see is absent, because the
+      first teaches her that the way in is not for her.
+
+  consequences:
+    good:
+      - "The absence stopped being silent on the day this record was written."
+      - "⚠️ It names seven pieces of accessibility state that live in a cartridge for no reason, which is a
+         finding independent of the bar: any game could already be diverging on them."
+      - "The engine's default `.pm-btn` list means a new game gets a pause menu by existing."
+    bad:
+      - "The five games without a bar stay without one until the stages land. The report is what stops that
+         from being invisible; it does not fix it."
+      - "Reclaiming the seven is a breaking change for whoever injects them, so it belongs to a major."
+    neutral:
+      - "`#title-icons` stays the default selector, and it is a default and not a requirement of name — a game
+         with different markup declares `host.a11yBarHost`."
+
+  confirmation: |
+    Built and gated: `createGame` reports a missing bar, with two cases and four confirmed mutations in
+    `tests/boot-create-game.node.test.js`. ⚠️ The case uses `ausentes` rather than `comMarcacao: false`,
+    because `domFalso` answers YES to any selector and its own comment records what that once cost: «um duplo
+    que responde SIM a qualquer seletor não testa a pergunta — testa apenas que ela foi feita».
+
+    Owed, and none of it exists yet:
+      · a case asserting the engine's default `.pm-btn` list is non-empty and reaches an action for every
+        entry — a menu of buttons that do nothing is the failure §5 forbids;
+      · per reclaimed setting, a case that the value is read from the engine and not from an injected field;
+      · a case over the catalogue — or over `createGame`'s own result — that no game mounts a bar with an icon
+        whose action is missing.
+
+more-information: |
+  ⚠️ COLLIDES WITH `Declinios.semMenuDePausa`, AND THIS RECORD DOES NOT RESOLVE IT. That field exists and says
+  «um quiz não tem», which contradicts «TODO jogo deve ter o mesmo menu de pausa». The decline was invented
+  because the engine had nothing to offer that suited a quiz — the same shape as everything above — but
+  retiring it changes what a consumer may decline, and that is a separate decision for the Dev.
+
+  Deliberately NOT decided here: whether the bar may be mounted somewhere other than the first screen for a
+  game whose first screen is not a title. `#title-icons` is a default, and `host.a11yBarHost` is the escape;
+  what a game with no title screen should do has not met one yet.
