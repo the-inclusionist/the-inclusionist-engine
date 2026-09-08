@@ -41,7 +41,7 @@ import { anunciarItem } from './item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
-import { menuIndexOn, DEFAULTS } from '../core/state.js';
+import { menuIndexOn, DEFAULTS, setModoCegoValue } from '../core/state.js';
 // ⚠️ IMPORT DIRETO DE `platform/storage`, e não uma peça a mais no `ctx`, e a escolha é sobre quem pode
 // esquecer: `initPauseIcons` é chamado pela raiz de composição de CADA jogo, e um `store` injetado é um
 // campo que um consumidor pode omitir — e omiti-lo faria o nível TEA voltar a não persistir, em silêncio,
@@ -497,7 +497,7 @@ export interface PauseIconsCtx {
 
   // --- blind mode (game.js owns `modoCego` + persistence + the cane/extras rebuild) ---
   getModoCego: () => boolean;
-  setModoCego: (on: boolean) => void;
+  setModoCego?: (on: boolean) => void;
 
   // --- TTS (platform/audio mixer; the panel refresh lives in ui/settings-audio) ---
   /**
@@ -599,6 +599,14 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     ?? ((i: number, on: boolean) => definirAlternanciaDeMarcha(
       { players: P(), store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers }, i, on));
 
+  /*
+   * ⚠️ O MODO CEGO IDEM, e aqui o padrão é literalmente o que o `core/state` já decidiu que um setter faz:
+   * «grava, persiste, avisa» — e nada mais. Os efeitos de jogo (refazer os extras do nível) são REACÇÃO, e
+   * quem reage assina `on('modoCego', …)`. O anúncio não se perde para quem não injecta: este ícone já diz
+   * `sr.icon.blindOn`/`Off` por si, logo abaixo.
+   */
+  const setModoCego = ctx.setModoCego ?? setModoCegoValue;
+
   function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
 
   function iconState(i: number): IconStateSnapshot {
@@ -643,7 +651,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   const ICON_ACTS: Record<string, (i: number) => void> = {
     blind: () => {
-      ctx.setModoCego(!ctx.getModoCego());
+      setModoCego(!ctx.getModoCego());
       ctx.srSay(t(ctx.getModoCego() ? 'sr.icon.blindOn' : 'sr.icon.blindOff'));
     },
     tts: () => {

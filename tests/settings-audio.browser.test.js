@@ -424,3 +424,32 @@ describe('ui/settings-audio — marca o que saiu do padrão (ADR-0029)', () => {
     expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
   });
 });
+
+describe('ui/settings-audio — o painel ASSINA o modo cego (ADR-0106 §4)', () => {
+  it('⚠️ [Interface] o botão #opt-modocego acompanha uma mudança feita FORA do painel', async () => {
+    // O defeito que este caso impede é o controlo a MENTIR o estado para o leitor de tela: a criança liga o
+    // modo cego pelo ícone da barra rápida, abre este painel, e o botão diz «Desligado» com
+    // aria-pressed=false. É o gémeo exacto do defeito do `reflectTTS` já registado no `ui/pause-icons`, e a
+    // saída é a que o `core/state` já tinha escrito ao lado do `setModoCegoValue`: quem reage assina o evento.
+    const estado = await import('../app/js/core/state.js');
+    let cego = estado.modoCego;
+    const { ctx } = fullCtx({});
+    ctx.getModoCego = () => cego;
+    initSettingsAudio(ctx);
+
+    const btn = document.querySelector('#opt-modocego');
+    expect(btn.getAttribute('aria-pressed')).toBe(String(cego));
+
+    cego = !cego;
+    estado.setModoCegoValue(cego);          // ninguém tocou no painel — só no estado
+
+    expect(btn.getAttribute('aria-pressed'), 'o painel não acompanhou o evento').toBe(String(cego));
+    estado.setModoCegoValue(!cego);
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS (ADR-0106 §4, etapa 1b) =========================
+//   · tirando o `state.on('modoCego', …)` do fim de `initSettingsAudio` -> reprova o caso acima. Sem ele, um
+//     jogo que nao injecta o seu proprio `setModoCego` deixa este botao a mentir o estado.
+//   · trocando a assinatura por `state.on('modoCego', () => {})` (assina e nao reage) -> reprova tambem, que
+//     e a medida de que o caso afirma o EFEITO e nao a subscricao.

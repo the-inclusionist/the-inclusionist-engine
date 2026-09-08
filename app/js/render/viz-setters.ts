@@ -33,7 +33,7 @@ import { recusaDaSimulacao } from '../ui/simulation-refusal.js';
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
 import { lqFilter } from './lq-filter.js';
-import { setVizModeValue } from '../core/state.js';
+import { setVizModeValue, setModoCegoValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { ComFiltro, ComTextura, Visivel, DesenhoComCirculo, AplicarFiltroCss, AlcanceDoFiltro,
@@ -195,7 +195,7 @@ export interface VizSettersCtx {
   setFrontDim: (on: boolean) => void;               // game/traffic: carros/placas/semáforo escurecem como fundo
   rebuildExtras: () => void;                        // game/level-geometry
   rebuildCoins: () => void;                         // game/coin-spawning
-  setModoCego: (on: boolean) => void;               // empatia cegueira liga bengala + pistas de áudio
+  setModoCego?: (on: boolean) => void;               // empatia cegueira liga bengala + pistas de áudio
   hideTouchControls: (reason?: string) => void;     // input/touch
   reflectVizButtons: () => void;                    // acende #opt-visual/#opt-empathy (lê hearingLoss/oneButton/wheelchair)
   renderVisualPanel: () => void;                    // visual.render() — ui/settings-visual
@@ -315,7 +315,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
    *  escritores por eixo e o antigo por chave partilham-nos, e uma cópia a mais seria uma cópia a divergir. */
   function aplicarVisualDoJogador(i: number, v: VisualState): void {
     ctx.invalidateSharedViz();
-    if (ehCego(v)) ctx.setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão
+    if (ehCego(v)) (ctx.setModoCego ?? setModoCegoValue)(true); // empatia cegueira total liga o modo cego (áudio) por padrão
     if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(v); } else { applyVpFilters(); updateVpDots(); }
     ctx.reflectVizButtons(); ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }

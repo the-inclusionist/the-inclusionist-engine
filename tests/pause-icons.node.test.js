@@ -511,6 +511,41 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(state.modoCego).toBe(false);
     expect(said[1]).toBe('Modo cego desligado.');
   });
+  it('⚠️ [Right] SEM `setModoCego` injetado, o ícone continua a ligar o modo cego — e a PERSISTIR', async () => {
+    // ADR-0106 §4, etapa 1b. Cinco jogos do catálogo nunca injectaram nada disto, e a consequência não é
+    // «o botão não faz efeito»: é uma criança cega abrir o jogo e não ter por onde. O padrão é o
+    // `setModoCegoValue` do `core/state`, que faz as três coisas que aquele registo diz que um setter faz —
+    // grava, persiste, avisa — e NADA mais: refazer os extras do nível é reacção, e quem reage assina.
+    const guardado = {};
+    globalThis.localStorage = {
+      getItem: (k) => (k in guardado ? guardado[k] : null),
+      setItem: (k, v) => { guardado[k] = String(v); },
+      removeItem: (k) => { delete guardado[k]; },
+    };
+    try {
+      const estadoReal = await import('../app/js/core/state.js');
+      const antes = estadoReal.modoCego;
+      const { ctx, said } = buildCtx();
+      delete ctx.setModoCego;                 // o jogo que não se lembrou
+      ctx.getModoCego = () => estadoReal.modoCego;
+
+      initPauseIcons(ctx).iconAct('blind', 0);
+
+      expect(estadoReal.modoCego, 'o ícone não mexeu no estado real').toBe(!antes);
+      // ⚠️ `'1'`/`'0'` e não `'true'`/`'false'`: é a codificação que o `store.setBool` grava, e é ela que o
+      // armazenamento de uma criança que já jogou contém. Pinada pelo literal de propósito — afirmar isto
+      // relendo pelo `store.getBool` mediria a ida e a volta pela mesma tabela, e as duas mover-se-iam juntas.
+      expect(guardado['incl_modocego'], 'ligou mas não persistiu — no arranque seguinte volta a estar desligado')
+        .toBe(antes ? '0' : '1');
+      // ⚠️ E o anúncio NÃO se perde nem se duplica: quem o diz é este ícone, não o setter.
+      expect(said).toEqual([antes ? 'Modo cego desligado.' : 'Modo cego ligado.']);
+
+      estadoReal.setModoCegoValue(antes);      // devolve o estado do módulo a quem vier a seguir
+    } finally {
+      delete globalThis.localStorage;
+    }
+  });
+
 
   it('o TTS alterna a categoria, reaplica o ganho e anuncia', () => {
     const { ctx, state, said } = buildCtx();

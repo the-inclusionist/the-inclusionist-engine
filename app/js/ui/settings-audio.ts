@@ -96,7 +96,7 @@ export interface SettingsAudioCtx {
   /** Core collision state (NOT owned by this panel — core/collision.ts reads it via isModoCego). The toggle's
    *  widget lives inside #audio; the state and its gameplay side effects (setupExtras) stay in game.js. */
   getModoCego: () => boolean;
-  setModoCego: (on: boolean) => void;
+  setModoCego?: (on: boolean) => void;
   /** Core collision state (cane hit spacing). Same reasoning as modo cego. */
   getCaneBlockDiv: () => number;
   setCaneBlockDiv: (div: number) => void;
@@ -245,6 +245,11 @@ export function sinkSelectValue(p: { audioSink?: string | null } | undefined): s
 // ---------------------------------------------------------------------------------------------
 
 export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
+  // ⚠️ PADRÃO DA ENGINE (ADR-0106 §4): quem injecta manda; quem não injecta deixa de ficar sem modo cego.
+  // O `setModoCegoValue` faz as três coisas que o `core/state` diz que um setter faz — grava, persiste, avisa
+  // — e nada mais: os efeitos (refazer os extras do nível) são reação, e quem reage assina o evento.
+  const setModoCego = ctx.setModoCego ?? state.setModoCegoValue;
+
   let audioDevices: MediaDeviceInfo[] = [];
 
   function reflectMaster(): void {
@@ -491,7 +496,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   });
 
   const mcBtn = ctx.$<HTMLButtonElement>('#opt-modocego');
-  if (mcBtn) mcBtn.addEventListener('click', () => { ctx.setModoCego(!ctx.getModoCego()); reflectModoCego(); });
+  if (mcBtn) mcBtn.addEventListener('click', () => { setModoCego(!ctx.getModoCego()); reflectModoCego(); });
 
   const caneDivSel = ctx.$<HTMLSelectElement>('#cane-div');
   if (caneDivSel) {
@@ -572,7 +577,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   // zerá-las tiraria da criança o fone que é dela numa sala compartilhada.
   const resetBtn = ctx.$<HTMLButtonElement>('#audio-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
-    ctx.setModoCego(DEFAULTS.modoCego);
+    setModoCego(DEFAULTS.modoCego);
     ctx.setCaneBlockDiv(DEFAULTS.caneBlockDiv);
     const state = ctx.getAudioCat();
     if (state) for (const c of ctx.audioCats) {
@@ -600,6 +605,22 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   if (audioDetectBtn) audioDetectBtn.addEventListener('click', () => { void detectAudioDevices(); });
 
   reflectMaster(); // estado inicial do botão/slider mestre, antes de qualquer abertura do painel
+
+  /*
+   * ⚠️ O PAINEL ASSINA O EVENTO, e isto não é uma ideia nova: é a decisão que o `core/state` já tinha
+   * escrito ao lado do `setModoCegoValue` — «o setter faz três coisas e só três: grava, persiste, avisa. Os
+   * efeitos … são reação, e quem reage assina o evento».
+   *
+   * Sem esta assinatura, um jogo que NÃO injecta o seu próprio `setModoCego` liga o modo cego pelo ícone da
+   * barra e o botão `#opt-modocego` deste painel continua a dizer «Desligado», com `aria-pressed=false` — o
+   * controlo a mentir o estado para o leitor de tela. É o gémeo exacto do defeito do `reflectTTS` que já está
+   * registado no `ui/pause-icons`, e não vale a pena descobri-lo uma terceira vez.
+   *
+   * ⚠️ É seguro para quem JÁ reflecte a partir do seu próprio setter: reflectir é idempotente — relê o estado
+   * e reescreve o botão. Um anúncio duplicado seria outra história, e por isso a assinatura NÃO anuncia: o
+   * ícone da barra já diz `sr.icon.blindOn`/`Off` por si.
+   */
+  state.on('modoCego', () => { reflectModoCego(); });
 
   return { renderAudio, reflectModoCego, reflectTts };
 }
