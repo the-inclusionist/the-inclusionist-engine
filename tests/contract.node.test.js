@@ -234,6 +234,36 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
 });
 
 // -----------------------------------------------------------------------------------------------------------
+describe('needsPointer — o campo OPCIONAL que não é impune (ADR-0112)', () => {
+  it('[Zero] ausente não é problema — a ausência É a resposta `false`', () => {
+    // ⚠️ E A OPCIONALIDADE É DECISÃO, não descuido. O `holdsAtOnce` é obrigatório porque não tem padrão seguro
+    // e falha INVISIVELMENTE a quem escreve o jogo — ele tem teclado completo, o jogo corre, e quem paga é a
+    // criança no telemóvel de dois dedos. Este tem padrão seguro e falha VISIVELMENTE: um jogo de desenho que
+    // se esqueça de o declarar é inoperável no próprio aparelho de quem o escreve.
+    expect(conformanceProblems(plataforma()).filter((x) => /needsPointer/.test(x))).toEqual([]);
+  });
+
+  it('[Right] declarado como função devolvendo booleano não é problema', () => {
+    expect(conformanceProblems({ ...plataforma(), needsPointer: () => true })).toEqual([]);
+    expect(conformanceProblems({ ...plataforma(), needsPointer: () => false })).toEqual([]);
+  });
+
+  it('⚠️ [Boundary] declarado como VALOR e não função é recusado', () => {
+    // `needsPointer: true` parece declarar «sim» e não declara nada: o alcance chamaria uma coisa que não é
+    // função. O jogo julgaria ter respondido, e ninguém saberia — o defeito silencioso que esta função existe
+    // para não deixar acontecer.
+    const p = conformanceProblems({ ...plataforma(), needsPointer: true });
+    expect(p.some((x) => /needsPointer: must be a function/.test(x))).toBe(true);
+  });
+
+  it('⚠️ [Boundary] devolver algo que não é booleano é recusado', () => {
+    // `() => 'sim'` é verdadeiro por ser uma string não vazia, então o jogo passaria a recusar aparelhos que
+    // ele consegue usar — e a recusa é a coisa mais cara que este campo pode fazer errado.
+    const p = conformanceProblems({ ...plataforma(), needsPointer: () => 'sim' });
+    expect(p.some((x) => /needsPointer: must return a boolean/.test(x))).toBe(true);
+  });
+});
+
 describe('distance — a métrica, que é o que faz "mais perto" existir', () => {
   const GRADE = { kind: 'grid', size: [8, 8], move: 'diagonal', frame: 'compass' };
   const DESLIZANTE = { kind: 'grid', size: [4, 4], move: 'orthogonal', frame: 'compass' };

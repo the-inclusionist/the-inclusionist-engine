@@ -694,7 +694,15 @@ export function createGame(o: CreateGameOptions): Engine {
   };
   const acoesDoJogo = o.preset ? presetActions(o.preset) : [];
   // O segundo eixo entra aqui, e vem do jogo (ADR-0104 §A): quantas posições ele segura ao mesmo tempo.
-  const alcanceAqui = alcance(transportesPadrao(disponibilidade), acoesDoJogo, o.declaration.holdsAtOnce());
+  // ⚠️ O TERCEIRO EIXO ENTRA AQUI (ADR-0112), e vem do jogo tal como os outros dois. `?? false` e não um
+  // padrão inventado: o campo é opcional de propósito — ver a nota nele —, e a ausência significa «este jogo
+  // não desenha», que é a resposta certa para a esmagadora maioria dos trezentos.
+  const alcanceAqui = alcance(
+    transportesPadrao(disponibilidade),
+    acoesDoJogo,
+    o.declaration.holdsAtOnce(),
+    o.declaration.needsPointer?.() ?? false,
+  );
 
   // ⚠️ SÓ APARECE QUANDO HÁ O QUE DIZER. Um aviso que aparece sempre deixa de ser lido, e um jogo cujas ações
   // cabem no toque não tem nada a avisar — que é o caso comum e tem de continuar silencioso.

@@ -85,6 +85,7 @@
       "focusOf",
       "holdsAtOnce",
       "nameAt",
+      "needsPointer?",
       "objectiveOf",
       "roleAt",
       "targetsOf",

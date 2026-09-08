@@ -93,7 +93,16 @@ then hold it as a `KeyScheme`.
 
 ## 4 · What is new, and none of it breaks anything
 
-`core/route.ts` (#84) · `ui/panel-shell.ts` (#62/#115) · `educational/adaptive-engine.ts` (#92)
+`core/route.ts` (#84) · `ui/panel-shell.ts` (#62/#115) · `educational/adaptive-engine.ts` (#92) ·
+`input/transporte-em-uso.ts` and `input/origem-sintetica.ts` (ADR-0109) · `input/pointer.ts` (ADR-0112)
+
+And one ADDED FIELD that is deliberately optional: `GameDeclaration.needsPointer?()`. ⚠️ The contrast with
+`holdsAtOnce` — required, in the same interface, two lines above — is the decision and not an oversight.
+`holdsAtOnce` has no safe default AND fails invisibly to whoever writes the game: they have a full keyboard,
+the game runs, and the child on a two-finger phone is the one who pays. `needsPointer` has a safe default
+(`false`) and fails visibly — a drawing game that forgets to declare it is unusable on the author's own
+device. Making three hundred games write `needsPointer: () => false` would charge `holdsAtOnce`'s price
+without its reason.
 
 ## 5 · Changes of SHAPE — the half no name gate could see
 

@@ -312,6 +312,25 @@ export interface GameDeclaration {
    * em silêncio, que é o defeito que o ADR-0084 nomeou.
    */
   holdsAtOnce(): number;
+  /**
+   * ESTE JOGO PRECISA DE UM PONTEIRO — posição contínua? (ADR-0112.)
+   *
+   * Um jogo de desenho precisa; um quiz não. Declarar faz um aparelho sem ponteiro RECUSAR-SE antes de a
+   * criança começar, em vez de ela descobrir a meio do primeiro traço.
+   *
+   * ⚠️ OPCIONAL, E A DIFERENÇA PARA O `holdsAtOnce` LOGO ACIMA É DELIBERADA — copiar a obrigatoriedade dele
+   * seria aplicar uma regra cuja premissa não se sustenta aqui. O `holdsAtOnce` é obrigatório porque não tem
+   * padrão seguro E porque falha INVISIVELMENTE a quem escreve o jogo: ele tem teclado completo, o jogo corre,
+   * e quem descobre o defeito é a criança no telemóvel de dois dedos. Este tem padrão seguro (`false`) e falha
+   * VISIVELMENTE — um jogo de desenho que se esqueça de o declarar é inoperável no próprio aparelho de quem o
+   * escreve, porque ele também precisaria do ponteiro para o experimentar.
+   *
+   * Obrigar trezentos jogos a escrever `needsPointer: () => false` cobraria o preço do `holdsAtOnce` sem o
+   * motivo dele.
+   *
+   * FUNÇÃO e não valor, pela mesma razão das outras: uma actividade pode desenhar numa fase e não noutra.
+   */
+  needsPointer?(): boolean;
   readonly tick: TickOwner;
   /** O papel do que está em `at`. É o campo 2, e é o que substitui `roleOf`. */
   roleAt(at: Spot): Role;
@@ -416,6 +435,24 @@ export function conformanceProblems(d: Partial<GameDeclaration> | null | undefin
       // Zero não é «não usa controle»: um jogo que não segura posição nenhuma não é jogável, e devolver zero
       // faria a aritmética do alcance passar por vacuidade — o mesmo defeito que o `reachable` recusa.
       p.push('holdsAtOnce: must be an integer >= 1 - a game that holds nothing cannot be played');
+    }
+  }
+
+  // ⚠️ OPCIONAL, MAS NÃO IMPUNE. Ausente é a resposta `false` e não é problema — ver a nota no campo. O que
+  // se recusa é declará-lo MAL: um `needsPointer: true` (valor em vez de função) seria sempre verdadeiro por
+  // ser um objecto, e um que devolvesse `'sim'` também. Nos dois casos o jogo julgaria ter declarado, o
+  // alcance leria uma coisa diferente do que ele quis dizer, e ninguém saberia — que é o defeito silencioso
+  // que esta função inteira existe para não deixar acontecer.
+  if (d.needsPointer !== undefined) {
+    if (typeof d.needsPointer !== 'function') {
+      // ⚠️ MENSAGENS SEM A PALAVRA `as`, e o motivo merece uma linha porque volta a morder: o detector de prosa
+      // pt-BR do `engine-i18n` casa palavras funcionais isoladas, e `as` é artigo plural em português. Uma
+      // mensagem INGLESA que diga «declare it as …» é contada como texto cru e faz o tecto do módulo subir.
+      // O cabeçalho daquele gate já admite a aproximação («senão 'mode' casa 'de'»); reescrever a frase custa
+      // nada e afrouxar o detector custaria a razão de ele existir.
+      p.push('needsPointer: must be a function - write `needsPointer: () => true`, because a game may draw in one phase and not in another');
+    } else if (typeof d.needsPointer() !== 'boolean') {
+      p.push('needsPointer: must return a boolean - a non-boolean would be truthy and refuse devices this game can actually use');
     }
   }
 

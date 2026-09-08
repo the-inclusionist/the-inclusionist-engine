@@ -87,6 +87,14 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
     appendChild(n) { this.filhos.push(n); return n; },
     querySelector: () => null, querySelectorAll: () => [],
     addEventListener: () => {}, setAttribute: () => {}, removeChild: () => {},
+    // ⚠️ `focus` ENTROU EM 2026-09-08 — a QUARTA vez que este duplo fica mais pobre que a coisa real, e vale
+    // contar porquê: o cartão de alcance (`ui/reach-notice`) leva o foco ao próprio cartão e não ao botão,
+    // «porque a criança tem de OUVIR o motivo antes de decidir». Ele só é montado quando o alcance REPROVA, e
+    // até haver um jogo a declarar ponteiro nenhum caso deste ficheiro o fazia reprovar. A falha foi boa
+    // notícia: só um aviso que dispara de verdade chega ao `focus()`.
+    // 📌 As quatro juntas são a razão de existir o `boot-create-game.browser.test.js` — um duplo só sabe o que
+    // quem o escreveu sabia, e a montagem mora onde o DOM decide.
+    focus: () => {},
     get firstChild() { return null; },
     ownerDocument: null,
   });
@@ -214,6 +222,55 @@ describe('createGame em execução', () => {
       declaration: declaracaoValida(), host: { doc, win }, declines: { semVozNeural: true },
     });
     expect(motor.problems.filter((p) => /voz neural/.test(p))).toEqual([]);
+  });
+
+  // ===================== O PONTEIRO DECLARADO (ADR-0112) =====================
+  // ⚠️ SEM ESTA FIAÇÃO, A DECISÃO É UM PARÂMETRO QUE NINGUÉM CONSEGUE PÔR. O `alcance()` aceita a pergunta
+  // desde `7ddb857` e tem gate próprio, mas o quarto argumento chegava sempre `false` porque a
+  // `GameDeclaration` não tinha por onde dizê-lo — um jogo de desenho não conseguia declarar que desenha.
+  const TRES_PALAVRAS = { up: { label: 'Subir' }, down: { label: 'Descer' }, action1: { label: 'Confirmar' } };
+  const soTeclado = (rato) => ({
+    gamepad: () => false, toque: () => false, teclado: () => true, rato: () => rato,
+  });
+
+  it('⚠️ [Zero] um jogo que DECLARA ponteiro é recusado por um aparelho que não aponta', async () => {
+    // O cenário do ADR-0112: «Desenho livre» num aparelho sem rato nem toque. A recusa tem de acontecer AQUI,
+    // antes de a criança começar, e não a meio do primeiro traço.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({
+      declaration: { ...declaracaoValida(), needsPointer: () => true },
+      host: { doc, win }, preset: TRES_PALAVRAS, disponibilidade: soTeclado(false),
+    });
+    expect(motor.alcance.pedePonteiro, 'a declaração não chegou ao alcance').toBe(true);
+    expect(motor.alcance.ok, 'disse sim a um jogo que esta criança não consegue jogar').toBe(false);
+    expect(motor.alcance.naoApontam).toEqual(['teclado']);
+  });
+
+  it('⚠️ [Right] o MESMO jogo com RATO passa — «no caso do teclado, o sinal contínuo é o mouse»', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({
+      declaration: { ...declaracaoValida(), needsPointer: () => true },
+      host: { doc, win }, preset: TRES_PALAVRAS, disponibilidade: soTeclado(true),
+    });
+    expect(motor.alcance.ok).toBe(true);
+    expect(motor.alcance.naoApontam).toEqual([]);
+  });
+
+  it('⚠️ [Zero] quem NÃO declara nada não pede ponteiro — o campo é opcional de propósito', async () => {
+    // ⚠️ E A OPCIONALIDADE É DECISÃO, não descuido. O `holdsAtOnce` é obrigatório porque não tem padrão seguro
+    // e falha INVISIVELMENTE a quem escreve o jogo — ele tem teclado completo; quem descobre é a criança no
+    // telemóvel de dois dedos. Este tem padrão seguro (`false`) e falha VISIVELMENTE: um jogo de desenho que
+    // se esqueça de declarar é inoperável no próprio aparelho de quem o escreve. Obrigar trezentos jogos a
+    // escrever `needsPointer: () => false` cobraria o preço do `holdsAtOnce` sem o motivo dele.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({
+      declaration: declaracaoValida(), host: { doc, win }, preset: TRES_PALAVRAS, disponibilidade: soTeclado(false),
+    });
+    expect(motor.alcance.pedePonteiro).toBe(false);
+    expect(motor.alcance.ok).toBe(true);
   });
 
   it('⚠️ [Right] a engine MONTA a barra de acessibilidade da primeira tela (ADR-0106 etapa 2)', async () => {
