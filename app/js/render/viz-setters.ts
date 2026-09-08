@@ -20,7 +20,10 @@
 // SEM I/O no import: initVizSetters(ctx) só fecha closures, não chama nada.
 
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, simulatesDisability, type VizMode } from './viz-modes.js';
-import { migrarVisual, filtroChave, type VisualState } from './viz-axes.js';
+import {
+  migrarVisual, filtroChave, chaveDeTextura, ehSimulacao, ehBaixaVisao, ehCego, temAltoContraste, PADRAO,
+  type VisualState,
+} from './viz-axes.js';
 import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
@@ -204,7 +207,7 @@ export interface VizSettersApi {
   /** Troca o modo de UM jogador: persiste, invalida o render estático e reaplica pelo caminho certo. */
   setPlayerViz(i: number, mode: string): void;
   /** Caminho SOLO: filtro CSS na canvas + texturas globais + overlay DOM + bolinha. */
-  applyVizGlobal(mode: string): void;
+  applyVizGlobal(v: VisualState): void;
   /** Reaplica tudo depois de uma mudança estrutural (cenário, nº de telas). */
   reapplyVizAll(): void;
   /** Bolinha global (#viz-indicator) para um `kind`. */
@@ -266,32 +269,56 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     store.setJSON(store.KEYS.visualP(i), p.visual); // nova: os dois eixos, que a chave velha não sabe dizer
     ctx.invalidateSharedViz();
     if (m.kind === 'blind') ctx.setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão
-    if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(m.key); } else { applyVpFilters(); updateVpDots(); }
+    if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(p.visual); } else { applyVpFilters(); updateVpDots(); }
     ctx.reflectVizButtons(); ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }
 
-  function applyVizGlobal(mode: string): void {
-    const m = resolveViz(mode); mode = m.key;
-    setVizModeValue(mode); // core/state: valor + persistência (incl_viz) + evento
+  /**
+   * ⚠️ AQUI É QUE OS DOIS EIXOS PASSAM A COEXISTIR (#104, ADR-0076), e a função nem cresceu — ela SEPAROU-SE.
+   *
+   * Enquanto o estado era uma chave só, cada linha abaixo perguntava a mesma coisa (`mode`, `m.kind`) e a
+   * resposta tinha de ser uma. Com dois eixos, as mesmas linhas dividem-se em três grupos que nunca se
+   * tocaram — e essa é a razão de a composição já ser mecanicamente possível, como o `viz-axes` regista:
+   *
+   *   · TEMA (contraste) → textura e classe de DOM. `chaveDeTextura` e `temAltoContraste`.
+   *   · CORREÇÃO ou SIMULAÇÃO → filtro CSS. `filtroChave`.
+   *   · SIMULAÇÃO → as classes do corpo, o overlay, os controles de toque, a bolinha.
+   *
+   * ⚠️ E O ALCANCE DO FILTRO CONTINUA A DEPENDER DE SIMULAR OU CORRIGIR, que é a distinção do ADR-0046: uma
+   * CORREÇÃO alcança os menus, porque a criança precisa dela para LER o menu; uma SIMULAÇÃO fica no mundo,
+   * porque quem simula tem de conseguir sair.
+   *
+   * `setVizModeValue` continua a escrever a chave ÚNICA legada, e a que ele escreve é a de TEXTURA — que é
+   * `simulação ?? tema ?? normal`, ou seja o que mais muda o que se vê. É espelho, não fonte: o estado a
+   * sério são os dois eixos, e esta linha sai quando o último leitor da chave velha sair.
+   */
+  function applyVizGlobal(v: VisualState): void {
+    const filtro = filtroChave(v);
+    const textura = chaveDeTextura(v);
+    setVizModeValue(textura); // core/state: valor + persistência (incl_viz) + evento — espelho legado
     // ANTES daqui saía também `ctx.setHcMode(m.kind === 'hcnew')`, alimentando um `let hcMode` no game.js cujo
     // único leitor era o gancho window.__incl. Era `vizMode` reescrito com outro nome: derivar de VIZ_BY_KEY
     // custa uma comparação e não pode divergir. (O inicializador daquele `let` usava OUTRA fórmula,
     // `vizMode!=='normal'`, e discordava do setter — sem efeito, porque applyVizGlobal roda no boot antes de
     // o gancho existir, mas é o sintoma clássico de cópia de estado.)
-    ctx.aplicarFiltroCss(cssFilterFor(mode, lqFilter()), alcanceDoModo(mode));
-    ctx.aplicarAltoContrasteNoDom(m.kind === 'hcnew'); // não é filtro: ver `AplicarAltoContrasteNoDom` // sim. daltonismo/baixa-visão/cegueira + realce L/Q compostos
-    ctx.camera.filters = (m.kind === 'hcnew') ? ctx.pixiFilterFor(mode) : null; // solo: alto contraste experimental = filtro GPU na câmera
-    ctx.setFrontDim(!!DIRECT_CFG[mode]); // HC: frente (carros/placas/semáforo) escurece como fundo
-    ctx.worldSprite.texture = worldTexFor(mode);            // alto contraste direto = Renderização Direta · resto=normal
-    ctx.parallaxLayers.forEach((ts, i) => { ts.texture = ctx.parallaxTexFor(i, mode); });
-    ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(mode); });
+    // --- eixo CORREÇÃO/SIMULAÇÃO: o filtro CSS ---
+    ctx.aplicarFiltroCss(cssFilterFor(filtro ?? '', lqFilter()), ehSimulacao(v) ? 'mundo' : 'mundo-e-menus');
+    // --- eixo TEMA: DOM e textura. Não é filtro (ver `AplicarAltoContrasteNoDom`), e é por isso que compõe.
+    ctx.aplicarAltoContrasteNoDom(temAltoContraste(v));
+    ctx.camera.filters = temAltoContraste(v) ? ctx.pixiFilterFor(textura) : null; // solo: alto contraste na câmera
+    ctx.setFrontDim(temAltoContraste(v)); // HC: frente (carros/placas/semáforo) escurece como fundo
+    ctx.worldSprite.texture = worldTexFor(textura);         // alto contraste direto = Renderização Direta · resto=normal
+    ctx.parallaxLayers.forEach((ts, i) => { ts.texture = ctx.parallaxTexFor(i, textura); });
+    ctx.decoSprites.forEach((s) => { s.texture = ctx.treeTexFor(textura); });
     ctx.rebuildExtras(); ctx.rebuildCoins();
-    // baixa visão = névoa+manchas (overlay) + bolinha verde; cegueira = tela preta (filtro) + esconde controles + bolinha branca
-    ctx.body.classList.toggle('lowvision-mode', m.kind === 'lowvision');
-    ctx.body.classList.toggle('blind-mode', m.kind === 'blind');
-    const ov = ctx.$('#viz-overlay'); if (ov) { ov.hidden = (m.kind !== 'lowvision'); ov.className = lvOverlayClassFor(m); }
-    if (m.kind === 'blind') { ctx.hideTouchControls('cegueira'); }
-    updateVizIndicator(m.kind);
+    // --- SIMULAÇÃO: baixa visão = névoa+manchas (overlay) + bolinha verde; cegueira = tela preta + esconde
+    //     controles + bolinha branca. Nenhuma delas olha para o tema, e é por isso que o tema não as apaga.
+    ctx.body.classList.toggle('lowvision-mode', ehBaixaVisao(v));
+    ctx.body.classList.toggle('blind-mode', ehCego(v));
+    const ov = ctx.$('#viz-overlay');
+    if (ov) { ov.hidden = !ehBaixaVisao(v); ov.className = ehBaixaVisao(v) ? 'lv-' + String(v.simulacao).slice(3) : ''; }
+    if (ehCego(v)) { ctx.hideTouchControls('cegueira'); }
+    updateVizIndicator(ehCego(v) ? 'blind' : ehBaixaVisao(v) ? 'lowvision' : 'normal');
     ctx.reflectVizButtons(); // (a guarda `typeof ...==='function'` do original morreu: era declaração de função, sempre verdadeira)
     ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }
@@ -308,7 +335,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   // MP: filtro CSS/overlay/bolinha globais OFF (por viewport agora)
   function reapplyVizAll(): void {
     ctx.invalidateSharedViz();
-    if (ctx.getNumPlayers() <= 1) { applyVizGlobal(ctx.getPlayers()[0].viz); }
+    if (ctx.getNumPlayers() <= 1) { applyVizGlobal(ctx.getPlayers()[0].visual ?? PADRAO); }
     else {
       ctx.aplicarFiltroCss(lqFilter(), 'mundo-e-menus'); // realce L/Q é melhoria: alcança o menu
       ctx.camera.filters = null;
@@ -321,7 +348,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   // invalida os caches de textura direta (mundo depende de bg; sprites de fg) e re-renderiza
   function rebakeDirect(): void {
     clearWorldTexCache(); clearSpriteTexCache(); resetPupTexCache(); ctx.clearPlayerDirectCache(); ctx.invalidateSharedViz();
-    if (ctx.getNumPlayers() <= 1) applyVizGlobal(ctx.getPlayers()[0].viz); else applyVpFilters();
+    if (ctx.getNumPlayers() <= 1) applyVizGlobal(ctx.getPlayers()[0].visual ?? PADRAO); else applyVpFilters();
   }
 
   function renderVizGroup(listSel: string, tabsSel: string, modes: readonly VizMode[]): void {

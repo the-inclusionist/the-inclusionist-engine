@@ -449,18 +449,18 @@ describe('applySharedTextures — texturas estáticas do multiplayer (memo por m
 describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
   it('[Right] compõe o filtro CSS da canvas com o modo ativo', () => {
     const { env, api } = setup();
-    api.applyVizGlobal('sim-tritan');
+    api.applyVizGlobal(migrarVisual('sim-tritan'));
     expect(env.app.view.style.filter).toBe('url(#cvd-tritan)');
   });
   it('[Error] modo desconhecido cai em normal — e é o `normal` que persiste/aplica', () => {
     const { env, api } = setup();
-    api.applyVizGlobal('inexistente');
+    api.applyVizGlobal(migrarVisual('inexistente'));
     expect(env.app.view.style.filter).toBe('');
     expect(localStorage.getItem('incl_viz')).toBe('normal');
   });
   it('[Right] baixa visão: classe no body + overlay visível com a classe da variante', () => {
     const { env, api } = setup();
-    api.applyVizGlobal('lv-tunnel');
+    api.applyVizGlobal(migrarVisual('lv-tunnel'));
     expect(env.bodyClasses.has('lowvision-mode')).toBe(true);
     expect(env.bodyClasses.has('blind-mode')).toBe(false);
     expect(env.els['#viz-overlay'].hidden).toBe(false);
@@ -469,15 +469,15 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
   });
   it('[Right] cegueira: classe no body, overlay escondido e controles de toque ocultos com o motivo', () => {
     const { env, api } = setup();
-    api.applyVizGlobal('blind');
+    api.applyVizGlobal(migrarVisual('blind'));
     expect(env.bodyClasses.has('blind-mode')).toBe(true);
     expect(env.els['#viz-overlay'].hidden).toBe(true);
     expect(env.log.hideTouch).toEqual(['cegueira']);
   });
   it('[Inverse] voltar a normal desfaz classes, overlay e bolinha', () => {
     const { env, api } = setup();
-    api.applyVizGlobal('lv-haze');
-    api.applyVizGlobal('normal');
+    api.applyVizGlobal(migrarVisual('lv-haze'));
+    api.applyVizGlobal(migrarVisual('normal'));
     expect(env.bodyClasses.size).toBe(0);
     expect(env.els['#viz-overlay'].hidden).toBe(true);
     expect(env.els['#viz-overlay'].className).toBe('');
@@ -486,13 +486,13 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
   });
   it('[Zero] modo não-direto NÃO põe filtro na câmera nem escurece a frente', () => {
     const { env, api } = setup();
-    api.applyVizGlobal('fix-deuter');
+    api.applyVizGlobal(migrarVisual('fix-deuter'));
     expect(env.camera.filters).toBeNull();
     expect(env.log.frontDim).toEqual([false]);
   });
   it('[Right] refaz extras e itens e repinta os painéis a cada aplicação', () => {
     const { env, api } = setup();
-    api.applyVizGlobal('normal');
+    api.applyVizGlobal(migrarVisual('normal'));
     expect(env.log.rebuildExtras).toBe(1);
     expect(env.log.rebuildCoins).toBe(1);
     expect(env.log.reflect).toBe(1);
@@ -508,7 +508,7 @@ describe('applyVizGlobal — caminho SOLO (canvas inteira)', () => {
   // módulo, `filtrosCss` fica vazio e o caso falha em "expected [] to have a length of 1".
   it('[Null] sem canvas montada, o módulo AINDA pede o filtro — a guarda é da raiz', () => {
     const { env, api } = setup({ app: { view: null } });
-    expect(() => api.applyVizGlobal('blind')).not.toThrow();
+    expect(() => api.applyVizGlobal(migrarVisual('blind'))).not.toThrow();
     expect(env.bodyClasses.has('blind-mode')).toBe(true);
     expect(env.log.filtrosCss).toHaveLength(1);
     expect(env.log.filtrosCss[0]).toBe('brightness(0)');
@@ -737,7 +737,7 @@ describe('alto contraste alcança o DOM por CLASSE, não por filtro (issue #83)'
   it('[Inverse] modo que não é alto contraste DESLIGA a classe — inclusive os de empatia', () => {
     for (const m of ['normal', 'fix-deuter', 'sim-deuter', 'lv-blur', 'blind']) {
       const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
-      api.applyVizGlobal(m);
+      api.applyVizGlobal(migrarVisual(m));
       expect(env.log.hcNoDom.at(-1), m).toBe(false);
     }
   });
