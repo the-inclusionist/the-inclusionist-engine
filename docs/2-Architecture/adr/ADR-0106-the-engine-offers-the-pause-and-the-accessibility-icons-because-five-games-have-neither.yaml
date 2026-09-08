@@ -139,12 +139,38 @@ decision-outcome:
     because `domFalso` answers YES to any selector and its own comment records what that once cost: «um duplo
     que responde SIM a qualquer seletor não testa a pergunta — testa apenas que ela foi feita».
 
-    Owed, and none of it exists yet:
-      · a case asserting the engine's default `.pm-btn` list is non-empty and reaches an action for every
-        entry — a menu of buttons that do nothing is the failure §5 forbids;
-      · per reclaimed setting, a case that the value is read from the engine and not from an injected field;
-      · a case over the catalogue — or over `createGame`'s own result — that no game mounts a bar with an icon
-        whose action is missing.
+    ✅ ALL THREE STAGES WERE BUILT ON 2026-09-08, and the three owed cases with them.
+
+    ⚠️ THE ORDER IN §4 WAS WRONG, AND THE MEASUREMENT SAID SO. This record ordered «reclaim the seven → mount
+    the bar → ship a default list». Mounting could not come second: `PauseIconsCtx` is ONE blob serving two
+    features, so `createGame` could not mount a bar without also answering the fields only the pause CARD
+    uses. The default list had to come first. Built in the order 1 → 3 → 2, and the record says so rather than
+    leaving the sequence looking prescient.
+
+    · STAGE 1 (`e943061`, `8dcaafc`, `0c9052f`, `49873a1`) — and the balance differs from the forecast: FOUR
+      of the seven were genuinely reclaimed (the reduced-motion group), TWO gained engine defaults with the
+      side effect left injected (tap-to-move, blind mode), and ONE could not be reclaimed at all. The visual
+      writers need a `render/viz-setters`, whose ctx asks for 34 fields of ONE game's render graph; nothing in
+      the engine calls `initVizSetters`, and a quiz has none of it to mount. That one was answered by §5
+      instead: an icon with nobody to action it is not mounted.
+    · STAGE 3 (`001b185`) — `pmButtons`/`optionsButtons` optional, defaulting to `PM_BTNS`/`PM_OPTIONS_BTNS`.
+      ⚠️ And §5 is what made it safe: an item whose action is missing was a button that did NOTHING, silently
+      (`const fn = acts[act]; if (fn) fn();`). `options` needed its own rule — it is a DOOR, and the engine
+      actions it, so it survived a per-item filter and would open a submenu filtered to nothing, whose only
+      exit (`pmback`) vanished with it.
+    · STAGE 2 (`e6173cf`, `fb1116c`, `092a670`) — the engine mounts the bar AND the card.
+      ⚠️ `#vp-pause-0` was looked up by this engine and created by NO game — measured, `git grep vp-pause`
+      returns zero across all six. The engine had committed §2's own defect against itself. It now creates
+      what it looks for.
+      ⚠️ And the blocker was ACHADO 15 again: `ui/pause-icons` built DOM against the GLOBAL `document`, which
+      was harmless only while every composition root was a `main.ts` in a browser.
+
+    The three owed cases, all in `tests/boot-create-game.node.test.js` and `tests/pause-icons.*`:
+      · the default list is non-empty and every entry reaches an action — plus the door rule above;
+      · per reclaimed setting, a case reading the value from the engine with the injected field deleted;
+      · over `createGame`'s own result: the mounted bar carries no icon whose action is missing.
+
+    ⬜ STILL OWED: nothing in this record. What remains is the collision below, which is the Dev's.
 
 more-information: |
   ⚠️ COLLIDES WITH `Declinios.semMenuDePausa`, AND THIS RECORD DOES NOT RESOLVE IT. That field exists and says
