@@ -12,6 +12,7 @@
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { formaDe, RETRATO_FORMA } from './shape-surface.mjs';
 
 export const RETRATO = 'docs/6-DevOps-SRE/public-surface.json';
 
@@ -48,4 +49,12 @@ if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'snapshot-public-surface.mj
   writeFileSync(join(raiz, RETRATO), JSON.stringify(s, null, 2) + '\n');
   const n = Object.values(s).reduce((t, v) => t + v.length, 0);
   console.log(`retrato escrito: ${Object.keys(s).length} módulos, ${n} nomes`);
+
+  // ⚠️ OS DOIS RETRATOS SAEM DO MESMO COMANDO, de propósito: declarar é UM acto. Dois comandos separados
+  // dariam a declaração pela metade — os nomes actualizados e a forma velha —, e o gate da forma passaria a
+  // reprovar por uma remoção que alguém julgava ter declarado.
+  const f = formaDe(join(raiz, 'app', 'js'));
+  writeFileSync(join(raiz, RETRATO_FORMA), JSON.stringify(f, null, 2) + '\n');
+  const tipos = Object.values(f).reduce((t, v) => t + Object.keys(v).length, 0);
+  console.log(`forma escrita:   ${Object.keys(f).length} módulos, ${tipos} tipos`);
 }

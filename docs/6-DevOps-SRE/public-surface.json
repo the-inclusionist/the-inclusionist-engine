@@ -242,6 +242,18 @@
     "pisoDeChute",
     "resultadoDaQuestao"
   ],
+  "educational/segment-bar.ts": [
+    "Barra",
+    "Contexto",
+    "CorDaBarra",
+    "Resultado",
+    "SEGMENTOS_DA_BARRA",
+    "Segmento",
+    "VeredictoLido",
+    "aposSinalizar",
+    "barraDe",
+    "corDoSegmento"
+  ],
   "input/default-bindings.ts": [
     "Binding",
     "GAMEPAD_STANDARD",
@@ -331,6 +343,15 @@
     "modalOwnerIndex",
     "titleNavOf"
   ],
+  "input/latch-scope.ts": [
+    "LeituraDaAlternancia",
+    "UM_COMANDO_DE_CADA_VEZ",
+    "alternanciaDe",
+    "alternanciaEhEscolha",
+    "alternanciaSempreLigada",
+    "chaveDaAlternancia",
+    "chaveLegadaDaAlternancia"
+  ],
   "input/latch.ts": [
     "LATCH_HELD",
     "LATCH_IDLE",
@@ -403,10 +424,12 @@
     "Alcance",
     "Disponibilidade",
     "LUGARES",
+    "SEGURA_TOQUE",
     "Transport",
     "alcance",
     "carriedBy",
     "carries",
+    "holds",
     "reachable",
     "transportesPadrao"
   ],
@@ -448,12 +471,19 @@
   ],
   "platform/audio-sonar.ts": [
     "AudioSonar",
+    "GUIA_HZ",
+    "GUIA_TIPO",
+    "GUIA_VOL",
+    "GuiaVivo",
+    "ORCAMENTO_DA_ROTA",
     "PAN_PACES",
     "PlayerAudioOut",
     "PlayerCtxOut",
+    "QUADROS_ENTRE_ROTAS",
     "SinkAC",
     "SonarCtx",
     "SonarPlayer",
+    "TAU_DO_GUIA",
     "createAudioSonar",
     "passoDoMundo"
   ],
@@ -849,6 +879,7 @@
     "VisualState",
     "aplicacao",
     "chaveDeTextura",
+    "chaveLegada",
     "ehBaixaVisao",
     "ehCego",
     "ehSimulacao",
@@ -880,6 +911,7 @@
     "cssFilterFor",
     "initVizSetters",
     "isDirectMode",
+    "lerVisualGuardado",
     "lvOverlayClassFor",
     "resolveViz",
     "vizDotFor",
@@ -1304,6 +1336,12 @@
     "touchActionGlyphs",
     "touchControlsPlan"
   ],
+  "ui/simulation-refusal.ts": [
+    "CHAVE_DO_MOTIVO",
+    "Recusa",
+    "mostraMesmoIndisponivel",
+    "recusaDaSimulacao"
+  ],
   "ui/title.ts": [
     "TITLE_MENU_IDS",
     "TITLE_MENU_IDS_ORDERED",
@@ -1314,6 +1352,18 @@
     "computeTitleMenuView",
     "initTitle",
     "isTitleMenuId"
+  ],
+  "ui/visual-axes-panel.ts": [
+    "CURTO_DA_CORRECAO",
+    "CURTO_DO_TEMA",
+    "EixoVisual",
+    "EscolhaDeEixo",
+    "ROTULO_DA_CORRECAO",
+    "ROTULO_DO_TEMA",
+    "Tradutor",
+    "eixosHtml",
+    "escolhaDoBotao",
+    "linhasDoEixo"
   ],
   "ui/vlibras.ts": [
     "librasOpen",

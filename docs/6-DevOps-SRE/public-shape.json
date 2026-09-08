@@ -1,0 +1,2202 @@
+{
+  "boot/create-game.ts": {
+    "interface EngineHost": [
+      "a11yBarHost?",
+      "cvdHost?",
+      "doc",
+      "win"
+    ],
+    "interface Declinios": [
+      "semAssistenteDePad?",
+      "semAtorDePausa?",
+      "semMenuDePausa?"
+    ],
+    "interface CreateGameOptions": [
+      "carregarVozNeural?",
+      "comIndice?",
+      "declaration",
+      "declines?",
+      "disponibilidade?",
+      "host",
+      "isBlindMode?",
+      "isNavigable?",
+      "naBarraDe?",
+      "navBar?",
+      "players?",
+      "preset?",
+      "setPhase?",
+      "sonarPlayers?"
+    ],
+    "interface Engine": [
+      "alcance",
+      "aoFalhar",
+      "aplicarFiltroDeVisao",
+      "cenas",
+      "cvdFilters",
+      "declaration",
+      "declines",
+      "keyboard",
+      "nav",
+      "overlays",
+      "problems",
+      "sonar",
+      "tts"
+    ]
+  },
+  "core/actions.ts": {
+    "interface ActionWord": [
+      "hint?",
+      "label",
+      "short?"
+    ],
+    "type Action": "(typeof ACTIONS)[number]",
+    "type ActionPreset": "Partial<Readonly<Record<Action, ActionWord>>>",
+    "type ActionLabeller": "(a: Action) => string"
+  },
+  "core/collision.ts": {
+    "type CollisionCtx": "{ world: number[][]"
+  },
+  "core/constants.ts": {
+    "type TileType": "{ solid?: boolean"
+  },
+  "core/contract.ts": {
+    "interface Speakable": [
+      "gender",
+      "plural",
+      "text"
+    ],
+    "interface Spot": [
+      "x"
+    ],
+    "interface Focus": [
+      "at",
+      "heading",
+      "id"
+    ],
+    "interface Objective": [
+      "have",
+      "name",
+      "need"
+    ],
+    "interface GameDeclaration": [
+      "focusOf",
+      "holdsAtOnce",
+      "nameAt",
+      "objectiveOf",
+      "roleAt",
+      "targetsOf",
+      "tick",
+      "topology",
+      "world"
+    ],
+    "type Gender": "'m' | 'f' | 'n'",
+    "type MoveRule": "| 'orthogonal' | 'diagonal' | 'free'",
+    "type Frame": "'compass' | 'clock'",
+    "type Topology": "| { readonly kind: 'grid'",
+    "type Role": "| 'hazard' | 'climb' | 'water' | 'goal' | 'gate' | 'key' | 'structure' | 'free'",
+    "type Heading": "'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw' | 'zenith' | 'nadir' | 'none'",
+    "type Bearing": "| { readonly kind: 'compass'",
+    "type TickOwner": "'player' | 'clock'",
+    "type Announcement": "| { readonly kind: 'state'",
+    "type WorldScope": "| { readonly kind: 'element'"
+  },
+  "core/dom-query.ts": {
+    "type DomQuery": "<T extends Element = HTMLElement>(sel: string) => T | null"
+  },
+  "core/entity.ts": {
+    "interface PlayerSpriteLike": [
+      "alpha",
+      "scale",
+      "texture",
+      "visible",
+      "x",
+      "y"
+    ],
+    "interface Player": [
+      "_fallV?",
+      "_swapDown",
+      "_swapSonar",
+      "_swapT",
+      "_tx",
+      "activePower",
+      "airTime",
+      "alfWins?",
+      "anim",
+      "audioSink?",
+      "caneDist?",
+      "climbFrame",
+      "clingN",
+      "clinging",
+      "collected",
+      "ctrl",
+      "easy",
+      "elevTarget?",
+      "facing",
+      "flavor",
+      "flavorT",
+      "flying",
+      "groundIdle",
+      "guardT",
+      "hasKey",
+      "hurtTimer",
+      "i",
+      "idleNow",
+      "idleTime",
+      "inWater",
+      "jumpBuffer",
+      "jumpChain",
+      "jumpEdge",
+      "leftEdge",
+      "onGround",
+      "onLadder",
+      "owned",
+      "pad",
+      "quit?",
+      "rightEdge",
+      "rmBreath",
+      "rmFlavor",
+      "rmWalk",
+      "runCane?",
+      "runEdge",
+      "runLatch",
+      "running?",
+      "specialEdge",
+      "sprite",
+      "sq?",
+      "sqT?",
+      "stepT",
+      "swapEdge",
+      "toggleMove",
+      "toggleRun",
+      "visual",
+      "viz",
+      "vx",
+      "vy",
+      "waiting?",
+      "walkAnim",
+      "walkDir",
+      "walking?",
+      "waterStroke",
+      "wnT?",
+      "x",
+      "y"
+    ],
+    "type KeyScheme": "Record<Action, readonly string[] | null>",
+    "type ClingSide": "'R' | 'L' | 'U' | 'D'",
+    "type ControlledPlayer": "Player & { ctrl: KeyScheme }",
+    "type PlayerView": "Pick<Player, K>"
+  },
+  "core/layers.ts": {
+    "type LayerName": "keyof typeof Z",
+    "type PostFx": "typeof POST_FX_ORDER[number]"
+  },
+  "core/letter-grid.ts": {
+    "interface Posicao": [
+      "coluna",
+      "linha"
+    ],
+    "interface GradeDeLetras": [
+      "apagar",
+      "capacidade",
+      "colunas",
+      "completo",
+      "digitar",
+      "faltam",
+      "indice",
+      "irPara",
+      "limpar",
+      "linhas",
+      "mover",
+      "posicao",
+      "simbolos",
+      "sob",
+      "valor"
+    ],
+    "interface OpcoesDaGrade": [
+      "capacidade?",
+      "colunas",
+      "simbolos"
+    ],
+    "type Direcao": "'esquerda' | 'direita' | 'cima' | 'baixo'"
+  },
+  "core/loop.ts": {
+    "interface OpcoesDoLaco": [
+      "aoFalhar?"
+    ]
+  },
+  "core/password.ts": {
+    "interface CampoSenha": [
+      "bits",
+      "nome"
+    ],
+    "interface CodecSenha": [
+      "campos",
+      "codificar",
+      "comprimento",
+      "decodificar"
+    ]
+  },
+  "core/rng.ts": {
+    "interface Rng": [
+      "randInt",
+      "reseed",
+      "rnd",
+      "shuffle"
+    ]
+  },
+  "core/rotulo-acessivel.ts": {
+    "interface ElementoComRotulo": [
+      "getAttribute",
+      "textContent"
+    ]
+  },
+  "core/route.ts": {
+    "interface RouteCtx": [
+      "orcamento?",
+      "roleAt",
+      "topology"
+    ],
+    "interface Rota": [
+      "ate",
+      "passos",
+      "proximo"
+    ]
+  },
+  "core/run-state.ts": {
+    "interface ExtrasDoNivel": [
+      "gate",
+      "gateOpen",
+      "gateTiles",
+      "powerups"
+    ],
+    "interface RunState": [
+      "decorSeed",
+      "ended",
+      "grassDensity",
+      "numPlayers",
+      "pauseActor",
+      "players",
+      "selVizPlayer",
+      "setDecorSeed",
+      "setEnded",
+      "setGateOpen",
+      "setGrassDensity",
+      "setLevelExtras",
+      "setNumPlayers",
+      "setPauseActor",
+      "setSelVizPlayer",
+      "setWcSolid",
+      "wcSolid"
+    ],
+    "interface OpcoesDaRodada": [
+      "aoTrocarJogadores?"
+    ]
+  },
+  "core/scenes.ts": {
+    "interface Scene": [
+      "draw?",
+      "enter?",
+      "exit?",
+      "input?",
+      "nome",
+      "update?"
+    ],
+    "interface SceneStack": [
+      "draw",
+      "input",
+      "nomes",
+      "pop",
+      "push",
+      "replace",
+      "top",
+      "update"
+    ],
+    "interface FatosDaCena": [
+      "menuDePausa",
+      "mundoRodando",
+      "telaDeTitulo"
+    ]
+  },
+  "core/screens.ts": {
+    "interface ScreenGrid": [
+      "cols"
+    ]
+  },
+  "core/state.ts": {
+    "interface EventoDoJogo": [
+      "caneBlockDiv",
+      "captionsOn",
+      "cbSafe",
+      "hcOutlineBg",
+      "hcOutlineFg",
+      "letterCase",
+      "menuIndexOn",
+      "modoCego",
+      "numPlayers",
+      "oneButton",
+      "ownerColors",
+      "vizMode",
+      "wheelchair"
+    ],
+    "interface GateTile": [
+      "tx"
+    ],
+    "type LetterCase": "'mixed' | 'upper'",
+    "type OutlineLevel": "0 | 1 | 2"
+  },
+  "educational/activities-registry.ts": {
+    "interface ActivityDef": [
+      "cat",
+      "d?",
+      "dKey?",
+      "dens?",
+      "nome",
+      "nomeKey?",
+      "pick?",
+      "sub?"
+    ],
+    "type ActivityCat": "ActivityDef['cat']",
+    "type GameMode": "'ludico' | 'somasub' | 'silabas'"
+  },
+  "educational/adaptive-engine.ts": {
+    "interface Veredicto": [
+      "efeito",
+      "faixa",
+      "motivo"
+    ],
+    "type ResultadoDaQuestao": "| 'primeira' | 'mediada' | 'falhou'",
+    "type Faixa": "'proficiente' | 'zona' | 'frustracao'",
+    "type Motivo": "| 'acertos-de-primeira' | 'quatro-seguidas' | 'resolvidas-no-piso' | 'dentro-da-zona' | 'janela-incompleta'"
+  },
+  "educational/segment-bar.ts": {
+    "interface VeredictoLido": [
+      "efeito",
+      "motivo"
+    ],
+    "interface Barra": [
+      "cor",
+      "segmentos",
+      "skill",
+      "veredicto"
+    ],
+    "interface Contexto": [
+      "copiouAResposta?"
+    ],
+    "type Resultado": "'primeira' | 'mediada' | 'falhou'",
+    "type Segmento": "| 'azul' | 'verde' | 'vermelho'",
+    "type CorDaBarra": "'nenhuma' | 'laranja' | 'roxa'"
+  },
+  "input/default-bindings.ts": {
+    "type Binding": "T | null"
+  },
+  "input/edges.ts": {
+    "interface NavKeys": [
+      "down?",
+      "left?",
+      "no?",
+      "right?",
+      "up?",
+      "yes?"
+    ],
+    "type EdgeFlag": "'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'",
+    "type EdgeAction": "'action2' | 'action1' | 'left' | 'right' | 'action4' | 'action3'"
+  },
+  "input/gamepad.ts": {
+    "interface PadButtonLike": [
+      "pressed"
+    ],
+    "interface PadLike": [
+      "axes",
+      "buttons",
+      "id",
+      "index",
+      "mapping"
+    ],
+    "interface PadBinding": [
+      "b?"
+    ],
+    "interface Dirs": [
+      "left"
+    ],
+    "interface PadActions": [
+      "_pause",
+      "_start",
+      "action2"
+    ],
+    "interface WizAnimDef": [
+      "seq?"
+    ],
+    "interface WizState": [
+      "axTrack",
+      "base",
+      "baseWait",
+      "gi",
+      "id",
+      "map",
+      "release",
+      "step",
+      "timer"
+    ],
+    "interface GamepadCtx": [
+      "$",
+      "clearWaitingBadge",
+      "frontOverlay",
+      "getGamepads",
+      "getNumPlayers",
+      "getPauseMenu",
+      "getPlayers",
+      "hasModal",
+      "hideTouchControls",
+      "isAttractActive",
+      "isTouchMode",
+      "joinPlayer",
+      "menuDePausa",
+      "modalInput",
+      "mundoRodando",
+      "naBarraDe",
+      "navBar",
+      "navDialog",
+      "navPause",
+      "navTitle",
+      "pausar",
+      "respawnPlayer",
+      "retomar",
+      "rotuloDaAcao",
+      "setPauseActor",
+      "sharedDialogOpen",
+      "spriteBase",
+      "srAlert",
+      "srSay",
+      "stopAttract"
+    ],
+    "interface GamepadApi": [
+      "closePadWiz",
+      "getPadWiz",
+      "openPadWiz",
+      "openPadWizFor",
+      "padMapFor",
+      "padWizTick",
+      "pollPads"
+    ],
+    "type GetGamepads": "() => readonly (PadLike | null | undefined)[] | null | undefined",
+    "type PadMap": "Record<string, PadBinding | boolean | undefined>",
+    "type ActionKey": "'left' | 'right' | 'up' | 'down' | 'action2' | 'action1' | 'action4' | 'action3'",
+    "type GamepadPlayer": "PlayerView< 'pad' | 'quit' | 'waiting' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge' >"
+  },
+  "input/keyboard-runtime.ts": {
+    "interface KeyboardRuntimeCtx": [
+      "getKB",
+      "getNumPlayers",
+      "getPlayers"
+    ],
+    "interface ControlsState": [
+      "action1",
+      "action2",
+      "controls",
+      "down",
+      "gameKeys",
+      "left",
+      "right",
+      "up"
+    ],
+    "interface KeyboardRuntime": [
+      "actionOf",
+      "assignControls",
+      "computeControlsState",
+      "controlsState",
+      "kbFor",
+      "refreshControls",
+      "whichPlayer"
+    ],
+    "type KeyboardConfig": "KBDefaults",
+    "type KeyboardRuntimePlayer": "Pick<ControlledPlayer, 'ctrl'>"
+  },
+  "input/keyboard.ts": {
+    "type KBDefaults": "{ solo: KeyScheme"
+  },
+  "input/keydown.ts": {
+    "interface KeydownEventLike": [
+      "altKey",
+      "code",
+      "ctrlKey",
+      "preventDefault"
+    ],
+    "interface KeyupEventLike": [
+      "code"
+    ],
+    "interface ControlsSnapshot": [
+      "action2",
+      "gameKeys"
+    ],
+    "interface KeydownSnapshot": [
+      "actionOf",
+      "controls",
+      "emJogo",
+      "escapeTargetId",
+      "heldKeys",
+      "modalOpen",
+      "numPlayers",
+      "oneButton",
+      "padWizVisible",
+      "players",
+      "telaDeTitulo",
+      "touchCfgVisible",
+      "whichPlayer",
+      "winVisible"
+    ],
+    "interface EdgeRaise": [
+      "playerIndex"
+    ],
+    "interface KeydownCtx": [
+      "$",
+      "actionOf",
+      "activateScreens",
+      "attractOnInput",
+      "clearWaitingBadge",
+      "closeOverlayById",
+      "closePadWiz",
+      "escapeTarget",
+      "getControls",
+      "getNumPlayers",
+      "getPlayers",
+      "handleCaptureKeydown",
+      "hasModal",
+      "heldKeys",
+      "hideTouchControls",
+      "isEmJogo",
+      "isOneButton",
+      "isTelaDeTitulo",
+      "modalInput",
+      "navTitle",
+      "srSay",
+      "togglePause",
+      "whichPlayer",
+      "win"
+    ],
+    "interface KeydownApi": [
+      "attach",
+      "onKeydown",
+      "onKeyup",
+      "snapshot"
+    ],
+    "type KeydownPlayer": "PlayerView< 'i' | 'ctrl' | 'waiting' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge' >",
+    "type ModalIntent": "'left' | 'right' | 'up' | 'down' | 'confirm' | 'erase'",
+    "type KeydownDecision": "| { kind: 'overlay'"
+  },
+  "input/latch-scope.ts": {
+    "interface LeituraDaAlternancia": [
+      "doLegado",
+      "doTransporte",
+      "padrao"
+    ]
+  },
+  "input/latch.ts": {
+    "type LatchDir": "-1 | 0 | 1"
+  },
+  "input/pointer-space.ts": {
+    "interface RectLike": [
+      "left"
+    ],
+    "interface DoCentro": [
+      "dx"
+    ],
+    "interface EmFracao": [
+      "fx"
+    ]
+  },
+  "input/touch-bindings.ts": {
+    "interface EdgeRaise": [
+      "playerIndex"
+    ],
+    "interface TouchBindSnapshot": [
+      "controls",
+      "heldKeys",
+      "players"
+    ],
+    "interface DirSet": [
+      "left"
+    ],
+    "interface PointerLike": [
+      "pointerId"
+    ],
+    "interface EventTargetLike": [
+      "addEventListener",
+      "fn",
+      "opts?",
+      "type"
+    ],
+    "interface TouchBindingsCtx": [
+      "$",
+      "attractOnInput",
+      "defer?",
+      "getControls",
+      "getPlayers",
+      "getSearch",
+      "getStartAction",
+      "getStickDeadPx",
+      "getStickTravelPx",
+      "getTouchMap",
+      "heldKeys",
+      "hideTips",
+      "showTouchControls",
+      "togglePause",
+      "win"
+    ],
+    "interface TouchBindingsApi": [
+      "attach",
+      "decide",
+      "doTouch",
+      "pressStart",
+      "revealForTests"
+    ],
+    "type EdgeFlag": "'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'",
+    "type TouchBindPlayer": "PlayerView< 'ctrl' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge' >",
+    "type TouchDecision": "| { kind: 'noop' } | { kind: 'pause' } | { kind: 'press'"
+  },
+  "input/touch.ts": {
+    "interface TouchStore": [
+      "get",
+      "getJSON",
+      "getNum",
+      "set",
+      "setJSON"
+    ],
+    "interface TouchCtx": [
+      "$",
+      "acoesDoJogo",
+      "frontOverlay",
+      "isMobile",
+      "onPadDesignApplied?",
+      "onTouchControlsShown?",
+      "padAllowed",
+      "root",
+      "srSay",
+      "store",
+      "viewport"
+    ],
+    "interface PadMm": [
+      "btn"
+    ],
+    "interface PadPhysicalPx": [
+      "armPx",
+      "btnPx"
+    ],
+    "interface PadMmPatch": [
+      "btn?"
+    ],
+    "interface TouchApi": [
+      "applyDirStyle",
+      "applyPadDesign",
+      "applyPadPhysical",
+      "closeTouchCfg",
+      "getPadDesign",
+      "getStickDeadPx",
+      "getStickTravelPx",
+      "getTouchMap",
+      "hideTouchControls",
+      "openTouchCfg",
+      "renderTouchMap",
+      "setPadMm",
+      "showTouchControls"
+    ],
+    "type HandTag": "'crianca' | 'adulto' | 'inter'",
+    "type PadLayout": "'sony' | 'nintendo' | 'microsoft' | 'generic'",
+    "type PadKind": "'kb' | 'x' | 'd'"
+  },
+  "input/transports.ts": {
+    "interface Disponibilidade": [
+      "gamepad",
+      "teclado",
+      "toque"
+    ],
+    "interface Transport": [
+      "available",
+      "holds?",
+      "id",
+      "slots"
+    ],
+    "interface Alcance": [
+      "curtos",
+      "naoSeguram",
+      "ok",
+      "pedidas",
+      "seguraPedidas",
+      "serviriamSeLigados"
+    ]
+  },
+  "input/vocabulary-migration.ts": {
+    "interface SavedKB": [
+      "p2?",
+      "p34?",
+      "p3?",
+      "p4?",
+      "solo?"
+    ],
+    "type EsquemaSalvo": "Record<string, readonly string[]>"
+  },
+  "platform/audio-ambient.ts": {
+    "interface AudioAmbientCtx": [
+      "TILE",
+      "audioOut",
+      "catNode",
+      "ensureAC",
+      "getAudioCat",
+      "getAudioCtx",
+      "getPlayers",
+      "getRainLevel",
+      "getSoundOn",
+      "getVolume",
+      "noiseBuffer",
+      "tileAt"
+    ],
+    "interface AudioAmbient": [
+      "thunder",
+      "updateAmbient"
+    ]
+  },
+  "platform/audio-earcons.ts": {
+    "interface SfxDef": [
+      "cap?",
+      "d",
+      "f",
+      "f2?",
+      "t"
+    ],
+    "interface AudioEarconsCtx": [
+      "SFX",
+      "audioOut",
+      "catNode",
+      "ensureAC",
+      "getCaptionsOn",
+      "getSoundOn",
+      "getVolume",
+      "noiseHit",
+      "showCaption"
+    ],
+    "interface AudioEarcons": [
+      "doorSound",
+      "sfx"
+    ]
+  },
+  "platform/audio-jingles.ts": {
+    "interface AudioJinglesCtx": [
+      "audioOut",
+      "catNode",
+      "ensureAC",
+      "getSoundOn",
+      "getVolume",
+      "tone"
+    ],
+    "interface AudioJingles": [
+      "firework",
+      "playPuzzleSolved",
+      "playVictory"
+    ]
+  },
+  "platform/audio-nav.ts": {
+    "interface AudioNavCtx": [
+      "BOX",
+      "TILE",
+      "getCenario",
+      "held",
+      "noiseHit",
+      "solidAt",
+      "sonar",
+      "tileAt",
+      "tonePan"
+    ],
+    "interface AudioNav": [
+      "caneCount",
+      "caneProbe",
+      "caneTap",
+      "guideCount",
+      "needsAudioCues",
+      "panFor",
+      "playerCtx",
+      "sonar",
+      "sonarCount",
+      "updateGuide",
+      "waterNav",
+      "waterNavCount"
+    ]
+  },
+  "platform/audio-sonar.ts": {
+    "interface SonarPlayer": [
+      "audioSink?",
+      "i",
+      "x",
+      "y"
+    ],
+    "interface GuiaVivo": [
+      "ac",
+      "desdeARota",
+      "filtro",
+      "ganho",
+      "osc",
+      "pan",
+      "panner",
+      "passos"
+    ],
+    "interface PlayerAudioOut": [
+      "_ac?",
+      "_acOut?",
+      "_guia?"
+    ],
+    "interface PlayerCtxOut": [
+      "ac"
+    ],
+    "interface SonarCtx": [
+      "LOGICAL_W?",
+      "audioOut?",
+      "catNode?",
+      "getAudioCat",
+      "getAudioCtx",
+      "getModoCego",
+      "getNumPlayers",
+      "getPlayers",
+      "getSoundOn",
+      "getVolume?",
+      "nameAt",
+      "narrate",
+      "roleAt?",
+      "srSay",
+      "targetsOf",
+      "tonePan",
+      "topology",
+      "visaoComprometida"
+    ],
+    "interface AudioSonar": [
+      "guideCount",
+      "needsAudioCues",
+      "panFor",
+      "playerCtx",
+      "sonar",
+      "sonarCount",
+      "updateGuide"
+    ],
+    "type SinkAC": "AudioContext & { setSinkId?: (id: string) => Promise<void> }"
+  },
+  "platform/guide-intensity.ts": {
+    "interface Intensidade": [
+      "corte",
+      "volume"
+    ]
+  },
+  "platform/interruptible-speech.ts": {
+    "interface MotorDeFala": [
+      "parar",
+      "sintetizar",
+      "tocar"
+    ],
+    "interface FalaInterrompivel": [
+      "calar",
+      "falando",
+      "falar"
+    ]
+  },
+  "platform/tts.ts": {
+    "interface SessaoNeural": [
+      "predict"
+    ],
+    "interface ModuloNeural": [
+      "TtsSession"
+    ],
+    "interface TtsCtx": [
+      "audioOut",
+      "carregarVozNeural?",
+      "catNode",
+      "ensureAC",
+      "getAudioCat",
+      "getSoundOn",
+      "getVolume",
+      "srAlert",
+      "srSay"
+    ],
+    "interface Tts": [
+      "failed",
+      "getEngine",
+      "getEngineSel",
+      "getVoiceObj",
+      "loadTTS",
+      "loading",
+      "narrate",
+      "narrateCount",
+      "neuralDisponivel",
+      "setEngineSel",
+      "setVoiceObj",
+      "speakWebSpeech",
+      "ttsSpeak"
+    ],
+    "type CarregarVozNeural": "() => Promise<ModuloNeural>"
+  },
+  "render/camera.ts": {
+    "interface Tamanho": [
+      "w"
+    ],
+    "interface Camera": [
+      "camX"
+    ],
+    "interface ZonaMorta": [
+      "w"
+    ],
+    "interface CameraObj": [
+      "base",
+      "pular",
+      "quadro",
+      "redimensionar",
+      "seguir"
+    ]
+  },
+  "render/canvas.ts": {
+    "type PixelBrush": "(x: number, y: number, w: number, h: number, col: string) => void",
+    "type PixelPainter": "(px: PixelBrush) => void"
+  },
+  "render/cenario-data.ts": {
+    "interface Flora": [
+      "bDk",
+      "bLt",
+      "base",
+      "center",
+      "petals",
+      "top"
+    ],
+    "interface FaixaDePredios": [
+      "aceso?",
+      "base",
+      "corpo",
+      "largura",
+      "luz?",
+      "topo",
+      "topoFundo"
+    ],
+    "interface TemaMorros": [
+      "fundo",
+      "hills"
+    ],
+    "interface TemaPredios": [
+      "fundo",
+      "predios"
+    ],
+    "type CenarioTema": "TemaMorros | TemaPredios"
+  },
+  "render/city-tex.ts": {
+    "interface CityTextures": [
+      "adultTex",
+      "carTex",
+      "lifeTex"
+    ],
+    "type TexPair": "[Tex, Tex]",
+    "type Frame": "0 | 1",
+    "type CreatureKey": "keyof typeof CREATURE_ART"
+  },
+  "render/cvd-matrices.ts": {
+    "type CvdKey": "'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'fix-protan' | 'fix-deuter' | 'fix-tritan'"
+  },
+  "render/draw.ts": {
+    "interface GraphicsLike": [
+      "beginFill",
+      "clear",
+      "drawCircle",
+      "drawRect",
+      "endFill",
+      "lineStyle",
+      "lineTo",
+      "moveTo"
+    ],
+    "interface PlayerSprite": [
+      "scale",
+      "texture",
+      "x"
+    ],
+    "interface CameraLike": [
+      "x"
+    ],
+    "interface ItemSprite": [
+      "visible"
+    ],
+    "interface ReducedMotion": [
+      "items?"
+    ],
+    "interface DrawCtx": [
+      "BOX",
+      "WORLD_PX_H",
+      "WORLD_PX_W",
+      "applySharedTextures",
+      "camera",
+      "caneLayer",
+      "caneOn",
+      "chairLayer",
+      "drawElevators",
+      "drawMinimapPlayer",
+      "easyHitbox",
+      "getFxClock",
+      "getItemSprites",
+      "getNumPlayers",
+      "getPlayers",
+      "getPowerups",
+      "getVpTex",
+      "held",
+      "isWheelchair",
+      "itemOwnedBy",
+      "itemVisibleTo",
+      "markSeen",
+      "playerTextures",
+      "playerVizTex",
+      "powerupVisibleTo",
+      "redrawMinimapIfDirty",
+      "renderVpOverlay",
+      "renderizarEm",
+      "rm",
+      "updateGameHud",
+      "updateParallax"
+    ],
+    "interface DrawApi": [
+      "animatePlayer",
+      "drawFrame",
+      "placeCam"
+    ],
+    "type DrawPlayer": "AnimPlayer & PlayerView< 'i' | 'x' | 'y' | 'facing' | 'hurtTimer' | 'sq' | 'sqT' | 'easy' | 'visual' | 'sprite' >"
+  },
+  "render/fx.ts": {
+    "interface Particle": [
+      "x"
+    ],
+    "interface JuiceFlags": [
+      "dust"
+    ]
+  },
+  "render/hc-role-data.ts": {
+    "type PaintableRole": "'hazard' | 'climb' | 'water'",
+    "type HcRoleKey": "PaintableRole | 'gate'"
+  },
+  "render/high-contrast.ts": {
+    "interface DirectCfg": [
+      "off"
+    ],
+    "interface HighContrastCtx": [
+      "W",
+      "getWorldCanvasNormal",
+      "getWorldTexNormal",
+      "outlineBg",
+      "outlineFg",
+      "roleOf",
+      "sprites"
+    ]
+  },
+  "render/lq-filter.ts": {
+    "interface LqFilterCtx": [
+      "onChange"
+    ]
+  },
+  "render/parallax.ts": {
+    "interface CamadaParallax": [
+      "factor",
+      "fy",
+      "key"
+    ],
+    "interface PosicaoParallax": [
+      "x"
+    ],
+    "interface TilingSpriteLike": [
+      "x",
+      "zIndex"
+    ],
+    "interface ParallaxCtx": [
+      "camera",
+      "citySkyTex",
+      "clearParallaxTexCache",
+      "criarAzulejo",
+      "getCenario",
+      "getDecorDeTela",
+      "getVizMode",
+      "hillsTex",
+      "placeholderTex",
+      "rm",
+      "skyTex",
+      "skylineTex"
+    ],
+    "interface ParallaxApi": [
+      "aplicarTemaParallax",
+      "layers",
+      "texNormal",
+      "updateParallax"
+    ]
+  },
+  "render/player-anim.ts": {
+    "interface FlavorLike": [
+      "hold",
+      "seq",
+      "tex"
+    ],
+    "interface PlayerTextures": [
+      "climb",
+      "clingCeil",
+      "clingWall",
+      "flavors",
+      "fly",
+      "idle",
+      "jumpDown",
+      "jumpUp",
+      "run",
+      "swim",
+      "swimIdle",
+      "walk"
+    ],
+    "interface PlayerAnimEnv": [
+      "dir",
+      "dt",
+      "held",
+      "rnd",
+      "tex",
+      "wheelchair"
+    ],
+    "type Frame": "unknown",
+    "type AnimPlayer": "Pick<ControlledPlayer, 'vx' | 'vy' | 'onGround' | 'onLadder' | 'inWater' | 'clinging' | 'clingN' | 'flying' | 'airTime' | 'runCane' | 'rmWalk' | 'rmBreath' | 'rmFlavor' | 'anim' | 'walkAnim' | 'climbFrame' | 'idleNow' | 'idleTime' | 'flavor' | 'flavorT' | 'walking' | 'running' | '_tx' | 'ctrl' | 'pad' >"
+  },
+  "render/port.ts": {
+    "interface Desenho": [
+      "beginFill",
+      "clear",
+      "drawRect",
+      "endFill"
+    ],
+    "interface DesenhoComLinha": [
+      "lineStyle",
+      "lineTo",
+      "moveTo"
+    ],
+    "interface Visivel": [
+      "visible"
+    ],
+    "interface Camada": [
+      "addChild",
+      "removeChild"
+    ],
+    "interface ComTextura": [
+      "texture"
+    ],
+    "interface Tingivel": [
+      "tint"
+    ],
+    "interface Descartavel": [
+      "destroy"
+    ],
+    "interface CamadaEsvaziavel": [
+      "removeChildren"
+    ],
+    "interface ComFiltro": [
+      "filters"
+    ],
+    "interface DesenhoComCirculo": [
+      "drawCircle"
+    ],
+    "type RenderizarEm": "(objeto: unknown, alvo: unknown, limpar: boolean) => void",
+    "type CriarSprite": "(textura: unknown) => T",
+    "type CriarAzulejo": "(textura: unknown, largura: number, altura: number) => T",
+    "type CriarDesenho": "() => T",
+    "type AplicarFiltroCss": "(css: string, alcance: AlcanceDoFiltro) => void",
+    "type AlcanceDoFiltro": "'mundo' | 'mundo-e-menus'",
+    "type AplicarAltoContrasteNoDom": "(ligado: boolean) => void"
+  },
+  "render/recycling-tex.ts": {
+    "interface RecyclingTextures": [
+      "lixeira",
+      "lixo",
+      "placa"
+    ],
+    "type Material": "'papel' | 'plastico' | 'metal' | 'vidro'",
+    "type Lixeira": "'azul' | 'vermelha' | 'amarela' | 'verde'"
+  },
+  "render/scene-city.ts": {
+    "interface SceneCityCtx": [
+      "DIRECT_CFG",
+      "WORLD_PX_W",
+      "WORLD_W",
+      "cityDecoG",
+      "darkRegions",
+      "getCenario",
+      "lifeSurfaceAt",
+      "onCenarioChange?",
+      "skyLayer",
+      "solidAt"
+    ],
+    "interface SceneCity": [
+      "buildCityDeco"
+    ]
+  },
+  "render/scene-parallax.ts": {
+    "interface Sol": [
+      "cor",
+      "x",
+      "y"
+    ]
+  },
+  "render/scene-sky.ts": {
+    "interface NuvemDeTela": [
+      "x"
+    ],
+    "interface SceneSkyCtx": [
+      "CENARIOS",
+      "CLOUD_TEX",
+      "WORLD_PX_W",
+      "getAglomeracao",
+      "getCenario",
+      "getDecorSeed",
+      "getGrassDensity",
+      "hexN",
+      "nuvemG",
+      "skyLayer",
+      "solidAt"
+    ],
+    "interface SceneSky": [
+      "stepSky"
+    ]
+  },
+  "render/screen-pipeline.ts": {
+    "interface Rect": [
+      "x"
+    ],
+    "interface ViewportPlacement": [
+      "dot",
+      "frame",
+      "x",
+      "y"
+    ],
+    "interface ScreenPlan": [
+      "canvas",
+      "cols",
+      "rows",
+      "single",
+      "viewports"
+    ],
+    "interface RenderTextureLike": [
+      "baseTexture"
+    ],
+    "interface RenderTextureFactory": [
+      "create"
+    ],
+    "interface DisplayLike": [
+      "x"
+    ],
+    "interface GraphicsLike": [],
+    "interface ContainerLike": [
+      "addChild",
+      "addChildAt",
+      "removeChild"
+    ],
+    "interface CameraLike": [
+      "parent"
+    ],
+    "interface ResizableRenderer": [
+      "resize"
+    ],
+    "interface ScreenPipelineCtx": [
+      "NEAREST",
+      "RenderTexture",
+      "applyVpFilters",
+      "buildGameHud",
+      "camera",
+      "criarDesenho",
+      "criarSprite",
+      "getNumPlayers",
+      "getVpDots",
+      "getVpFrames",
+      "getVpSpr",
+      "getVpTex",
+      "renderer",
+      "setMinimapVisible",
+      "stage",
+      "updateVpDots"
+    ],
+    "interface ScreenPipelineApi": [
+      "configureRender"
+    ],
+    "type SpriteLike": "DisplayLike & ComFiltro"
+  },
+  "render/set-cenario.ts": {
+    "interface SetCenarioCtx": [
+      "aplicarTemaParallax",
+      "applyCenarioVida",
+      "clearWorldTexCache",
+      "getCenario",
+      "getTiles",
+      "getWorldSprite",
+      "isVidaReady",
+      "isVizReady",
+      "reapplyVizAll",
+      "setCenarioValue",
+      "setWorldTextures",
+      "tex",
+      "worldCanvas"
+    ],
+    "interface SetCenarioApi": [
+      "setCenario"
+    ],
+    "type TilesDoTema": "Tileset"
+  },
+  "render/textures.ts": {
+    "interface TexturesCtx": [
+      "directCfg",
+      "directSpriteCanvas",
+      "disp",
+      "powerups",
+      "shapes"
+    ]
+  },
+  "render/title-scene.ts": {
+    "interface TitleSceneCtx": [
+      "getRm",
+      "screen",
+      "titleG"
+    ],
+    "interface TitleScene": [
+      "draw"
+    ],
+    "interface TitleCloudDef": [
+      "cx"
+    ],
+    "interface TitleGrassRow": [
+      "xStart"
+    ]
+  },
+  "render/viewports.ts": {
+    "interface ViewportsCtx": [
+      "BlurFilter",
+      "ColorMatrixFilter",
+      "cvdDefsHost",
+      "getLvOverlaySpr",
+      "getTreeTexNormal",
+      "getVpTex",
+      "parallaxTexNormal",
+      "renderizarEm"
+    ],
+    "interface ViewportsApi": [
+      "clearParallaxTexCache",
+      "clearPlayerDirectCache",
+      "lvOverlayCanvas",
+      "lvOverlayTex",
+      "parallaxTexFor",
+      "pixiFilterFor",
+      "playerVizTex",
+      "renderVpOverlay",
+      "treeTexFor"
+    ]
+  },
+  "render/viz-axes.ts": {
+    "interface VisualState": [
+      "correcao",
+      "simulacao",
+      "tema"
+    ],
+    "interface Aplicacao": [
+      "direto",
+      "filtro"
+    ],
+    "type Tema": "'padrao' | 'hc3' | 'hc45' | 'hc7'",
+    "type Correcao": "'tricro' | 'protan' | 'deuter' | 'tritan'",
+    "type Simulacao": "null | 'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'lv-blur' | 'lv-haze' | 'lv-tunnel' | 'lv-macular' | 'lv-diabetic' | 'blind'",
+    "type MotivoIndisponivel": "'tema' | 'correcao' | 'ambos'"
+  },
+  "render/viz-modes.ts": {
+    "type VizMode": "{ key: string"
+  },
+  "render/viz-setters.ts": {
+    "interface VizSettersCtx": [
+      "$",
+      "aplicarAltoContrasteNoDom",
+      "aplicarFiltroCss",
+      "body",
+      "camera",
+      "clearPlayerDirectCache",
+      "decoSprites",
+      "getItemSprites",
+      "getNumPlayers",
+      "getPlayers",
+      "getPowerups",
+      "getSelVizPlayer",
+      "getSharedViz",
+      "getVpDots",
+      "getVpSpr",
+      "hideTouchControls",
+      "invalidateSharedViz",
+      "itemTexId",
+      "parallaxLayers",
+      "parallaxTexFor",
+      "pixiFilterFor",
+      "playerVizTex",
+      "rebuildCoins",
+      "rebuildExtras",
+      "reflectVizButtons",
+      "renderEmpathyPanel",
+      "renderVisualPanel",
+      "setFrontDim",
+      "setModoCego",
+      "setSelVizPlayer",
+      "setSharedViz",
+      "srSay",
+      "treeTexFor",
+      "worldSprite"
+    ],
+    "interface VizSettersApi": [
+      "applySharedTextures",
+      "applyVizGlobal",
+      "applyVpFilters",
+      "reapplyVizAll",
+      "rebakeDirect",
+      "renderEixosVisuais",
+      "renderVizGroup",
+      "setCorrecaoDoJogador",
+      "setPlayerViz",
+      "setTemaDoJogador",
+      "setVisualDoJogador",
+      "updateVizIndicator",
+      "updateVpDots"
+    ]
+  },
+  "render/weather.ts": {
+    "interface RainDrop": [
+      "x"
+    ],
+    "interface ThunderStep": [
+      "thunderCD"
+    ],
+    "interface WeatherCtx": [
+      "getRm",
+      "mundoRodando",
+      "screen",
+      "stage",
+      "temChuva",
+      "thunder",
+      "weatherLayer"
+    ]
+  },
+  "render/wheelchair-sprites.ts": {
+    "interface DrawGraphics": [
+      "beginFill",
+      "drawCircle",
+      "endFill",
+      "lineStyle",
+      "lineTo",
+      "moveTo"
+    ]
+  },
+  "render/world-tex.ts": {
+    "interface Tileset": [
+      "fill"
+    ]
+  },
+  "ui/activities-menu.ts": {
+    "interface CenarioOption": [
+      "id"
+    ],
+    "interface ActivitiesMenuCtx": [
+      "$",
+      "cenarios",
+      "enterFullscreen",
+      "fitsN",
+      "gameId",
+      "getActiveElement",
+      "getActivityId",
+      "getNumPlayers",
+      "getPlayers",
+      "hideTips",
+      "isMobile",
+      "restartGame",
+      "setActivityId",
+      "setCenario",
+      "setNumPlayers",
+      "setPhase",
+      "setQuizLevel",
+      "srAlert",
+      "srSay",
+      "titleShow"
+    ],
+    "interface ActivitiesMenuApi": [
+      "actCat",
+      "buildTitleMenus",
+      "fracNot",
+      "getCenBack",
+      "getPendingPlayers",
+      "navTitle",
+      "reallyStart",
+      "setActivity",
+      "startActivity",
+      "tabSel",
+      "titleButtons"
+    ],
+    "interface PauseBtnDef": [
+      "act",
+      "lbl?",
+      "letra?",
+      "nivel?"
+    ],
+    "interface AbbrParts": [
+      "pre"
+    ],
+    "type FracNotKey": "'v' | 'd' | 'dec' | 'pct' | 'mix'",
+    "type FracNot": "Record<FracNotKey, number>"
+  },
+  "ui/caa-sets.ts": {
+    "interface CaaSet": [
+      "disponivel",
+      "key",
+      "licenca",
+      "nome",
+      "nota?",
+      "tier"
+    ],
+    "type CaaTier": "| 'bundled' | 'fetched' | 'negotiating'"
+  },
+  "ui/debug-panel.ts": {
+    "interface AmostraDoPersonagem": [
+      "base",
+      "escala",
+      "irmaosDesenhando",
+      "posIrmaos",
+      "posicao",
+      "recorte",
+      "texturaId"
+    ],
+    "interface ResumoDaSonda": [
+      "escalas",
+      "exemploIrmaos",
+      "maxIrmaos",
+      "quadros",
+      "sangramento",
+      "texturas",
+      "veredito"
+    ],
+    "interface DebugPanelCtx": [
+      "ANIM",
+      "JUICE",
+      "TUNE",
+      "amostrarPersonagem?",
+      "aoQuadro?",
+      "saveJuice",
+      "search?"
+    ]
+  },
+  "ui/focus-trap.ts": {
+    "interface FocusTrapCtx": [
+      "focaveisDe",
+      "focoAtual",
+      "overlayDeCima",
+      "win"
+    ],
+    "interface FocusTrapApi": [
+      "aoTeclar",
+      "attach",
+      "detach"
+    ]
+  },
+  "ui/fonts.ts": {
+    "interface FontStore": [
+      "get"
+    ],
+    "type FontRole": "'geral' | 'caligrafica' | 'jogo'",
+    "type FontItem": "{ k: string",
+    "type FontGroup": "{ g: string"
+  },
+  "ui/hud.ts": {
+    "interface ScreenRect": [
+      "L"
+    ],
+    "interface HudRowView": [
+      "have",
+      "label",
+      "power",
+      "quitHidden",
+      "visibility"
+    ],
+    "interface HudCtx": [
+      "$",
+      "buildQuickBar",
+      "buildScreenPause",
+      "getNumPlayers",
+      "getPlayers",
+      "hudIcon",
+      "hudObjective",
+      "onBarsBuilt?",
+      "onScreensBuilt?",
+      "powerShort"
+    ],
+    "interface HudApi": [
+      "buildGameHud",
+      "clearWaitingBadge",
+      "getScreen",
+      "showWaitingBadge",
+      "updateGameHud"
+    ],
+    "type HudPlayer": "PlayerView<'activePower' | 'quit'>"
+  },
+  "ui/item-announcement.ts": {
+    "interface ItemDeMenu": [
+      "estado?",
+      "posicao",
+      "rotulo",
+      "total"
+    ]
+  },
+  "ui/loop-crash.ts": {
+    "interface AvisoDeQuedaCtx": [
+      "criar",
+      "narrar?",
+      "procurar"
+    ]
+  },
+  "ui/map-hub.ts": {
+    "interface MapHubRow": [
+      "act?",
+      "lbl",
+      "mode?",
+      "soon?"
+    ],
+    "interface MapHubRowState": [
+      "dis",
+      "off"
+    ],
+    "interface MapHubCtx": [
+      "$",
+      "getNumPlayers",
+      "openOptions",
+      "openPadWiz",
+      "srAlert"
+    ],
+    "interface MapHubApi": [
+      "render"
+    ],
+    "type MapHubAction": "'options' | 'padwiz' | null"
+  },
+  "ui/menu-nav.ts": {
+    "interface NavKeyEvent": [
+      "code",
+      "preventDefault",
+      "stopPropagation"
+    ],
+    "interface MenuNavCtx": [
+      "$",
+      "actionOf",
+      "closeById",
+      "closePadWiz",
+      "comIndice",
+      "getActiveElement",
+      "getPauseMenu",
+      "isCapturing",
+      "isNavigable",
+      "naBarraDe",
+      "navBar",
+      "setPauseActor",
+      "setPhase",
+      "srSay",
+      "topVisibleOverlay",
+      "whichPlayer",
+      "win"
+    ],
+    "interface MenuNavApi": [
+      "attach",
+      "dialogBack",
+      "menuFocus",
+      "menuItems",
+      "menuNavKey",
+      "navDialog",
+      "navPause",
+      "pauseSetSel",
+      "sharedDialogOpen"
+    ]
+  },
+  "ui/panel-shell.ts": {
+    "interface PanelShellCtx": [
+      "criar",
+      "procurar"
+    ],
+    "interface PanelShellSpec": [
+      "id",
+      "introducao?",
+      "rotuloDaLista",
+      "rotuloFechar",
+      "rotuloReset",
+      "titulo"
+    ],
+    "interface PanelShell": [
+      "card",
+      "fechar",
+      "ids",
+      "lista",
+      "overlay",
+      "reset"
+    ]
+  },
+  "ui/pause-icons.ts": {
+    "interface PauseIcon": [
+      "e",
+      "k",
+      "n",
+      "soon?"
+    ],
+    "interface PauseMenuButton": [
+      "act",
+      "lbl?",
+      "letra?",
+      "nivel?"
+    ],
+    "interface IconStateSnapshot": [
+      "calmMode",
+      "librasOn",
+      "modoCego",
+      "privateOutput",
+      "toggleMove",
+      "ttsOn",
+      "visual"
+    ],
+    "interface IconVisual": [
+      "active",
+      "calm",
+      "cvd",
+      "dis",
+      "on"
+    ],
+    "interface ScreenPauseMarkupOpts": [
+      "dynLabel",
+      "numPlayers",
+      "optionsButtons",
+      "player",
+      "pmButtons",
+      "t"
+    ],
+    "interface PauseIconsCtx": [
+      "dynLabel",
+      "getA11yBars",
+      "getAudioCat",
+      "getModoCego",
+      "getNumPlayers",
+      "getPauseActs",
+      "getPauseScreens",
+      "getPlayers",
+      "isLibrasOn",
+      "optionsButtons",
+      "pmButtons",
+      "reflectTtsPanel",
+      "reflectTtsPanelEnabled",
+      "rm",
+      "rmChar",
+      "rmKeys",
+      "saveRM",
+      "setCatGain",
+      "setCorrecaoDoJogador",
+      "setModoCego",
+      "setPauseActor",
+      "setPlayerViz",
+      "setTemaDoJogador",
+      "setToggleMove",
+      "srAlert",
+      "srSay",
+      "toggleLibras"
+    ],
+    "interface PauseIconsApi": [
+      "applyCalm",
+      "buildQuickBar",
+      "buildScreenPause",
+      "entrarNaBarra",
+      "getCalmMode",
+      "iconAct",
+      "iconLabel",
+      "iconState",
+      "naBarraDe",
+      "navBar",
+      "reflectIconBtn",
+      "reflectIconsIn",
+      "reflectPauseIcons",
+      "sairDaBarra",
+      "setCalmMode"
+    ],
+    "type PausePlayer": "PlayerView<'visual' | 'toggleMove' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>",
+    "type PauseSub": "'raiz' | 'opcoes'",
+    "type AcaoNaBarra": "'sair' | 'ativar' | 'andar' | 'nada'"
+  },
+  "ui/reach-notice.ts": {
+    "interface ReachNoticeCtx": [
+      "criar",
+      "procurar",
+      "srAlert",
+      "t"
+    ],
+    "type Tradutor": "(chave: string, params?: Record<string, string | number>) => string"
+  },
+  "ui/settings-audio.ts": {
+    "interface AudioStore": [
+      "get",
+      "set"
+    ],
+    "interface AudioCatDef": [
+      "k"
+    ],
+    "interface AudioCatState": [
+      "on"
+    ],
+    "interface TtsPanelEngine": [
+      "id"
+    ],
+    "interface TtsPanel": [
+      "getEngine",
+      "getEngineSel",
+      "getVoiceObj",
+      "loadTTS",
+      "narrate",
+      "neuralDisponivel?",
+      "setEngineSel",
+      "setVoiceObj"
+    ],
+    "interface SettingsAudioCtx": [
+      "$",
+      "audioCats",
+      "fillExplain?",
+      "getAudioCat",
+      "getCaneBlockDiv",
+      "getModoCego",
+      "getNumPlayers",
+      "getPlayers",
+      "getSoundOn",
+      "getVolume",
+      "setCaneBlockDiv",
+      "setCatGain",
+      "setModoCego",
+      "setSoundOn",
+      "setVolume",
+      "srSay",
+      "store",
+      "toggleBtn",
+      "tts"
+    ],
+    "interface SettingsAudioApi": [
+      "reflectModoCego",
+      "reflectTts",
+      "renderAudio"
+    ],
+    "interface VoiceLike": [
+      "name"
+    ],
+    "interface SinkDeviceLike": [
+      "deviceId"
+    ],
+    "type SinkPlayer": "PlayerView<'audioSink'> & PlayerAudioOut"
+  },
+  "ui/settings-caa.ts": {
+    "interface SettingsCaaCtx": [
+      "$",
+      "fillExplain",
+      "frontOverlay",
+      "getLetterCase",
+      "restoreFocus?",
+      "setLetterCase",
+      "srSay"
+    ],
+    "interface SettingsCaaApi": [
+      "close",
+      "open",
+      "render"
+    ]
+  },
+  "ui/settings-controls.ts": {
+    "interface ControlsStore": [
+      "resetKB",
+      "saveKB"
+    ],
+    "interface SettingsControlsCtx": [
+      "$",
+      "acoesDoJogo",
+      "applyControls",
+      "assignControls",
+      "fillExplain?",
+      "getNumPlayers",
+      "kb",
+      "kbFor",
+      "setKB",
+      "srAlert",
+      "srSay",
+      "store"
+    ],
+    "interface SettingsControlsApi": [
+      "cancelCapture",
+      "handleCaptureKeydown",
+      "isCapturing",
+      "render"
+    ],
+    "type KeyboardConfig": "KBDefaults"
+  },
+  "ui/settings-empathy.ts": {
+    "interface EmpathySettingsCtx": [
+      "$",
+      "fillExplain?",
+      "frontOverlay",
+      "getOneButton",
+      "getPlayers",
+      "getWheelchair",
+      "reflectMotorEmpathy",
+      "reflectVizButtons",
+      "renderVizGroup",
+      "restoreFocus?",
+      "setHearingLoss",
+      "setOneButton",
+      "setPlayerViz",
+      "setWheelchair",
+      "srSay",
+      "store"
+    ],
+    "interface EmpathySettingsApi": [
+      "close",
+      "open",
+      "render"
+    ]
+  },
+  "ui/settings-motion.ts": {
+    "interface MotionCharDef": [
+      "lbl",
+      "prop"
+    ],
+    "interface SettingsMotionCtx": [
+      "$",
+      "fillExplain?",
+      "frontOverlay",
+      "getNumPlayers",
+      "getPlayers",
+      "restoreFocus?",
+      "rm",
+      "rmChar",
+      "rmKeys",
+      "saveRM",
+      "srSay",
+      "store",
+      "toggleBtn"
+    ],
+    "interface SettingsMotionApi": [
+      "close",
+      "open",
+      "render"
+    ],
+    "type MotionSceneKey": "'parallax' | 'decor' | 'items' | 'particles'",
+    "type MotionCharProp": "'rmWalk' | 'rmBreath' | 'rmFlavor'",
+    "type MotionPlayer": "PlayerView<'rmWalk' | 'rmBreath' | 'rmFlavor'>",
+    "type MotionSceneFlags": "Record<MotionSceneKey, boolean>"
+  },
+  "ui/settings-motor.ts": {
+    "interface MotorStore": [
+      "get",
+      "setBool"
+    ],
+    "interface SettingsMotorCtx": [
+      "$",
+      "fillExplain?",
+      "getNumPlayers",
+      "players",
+      "rebuildCoins",
+      "setToggleMove",
+      "setToggleRun",
+      "srSay",
+      "store"
+    ],
+    "interface SettingsMotorApi": [
+      "getSelPlayer",
+      "reflectAltMove",
+      "reflectFacil",
+      "reflectToggleRun",
+      "renderMovPlayers",
+      "setEasy",
+      "setSelPlayer"
+    ],
+    "type MotorPlayer": "PlayerView<'easy' | 'toggleMove' | 'toggleRun'>"
+  },
+  "ui/settings-panel.ts": {
+    "interface SettingsPanelCtx": [
+      "$",
+      "$$",
+      "computedZ",
+      "doc"
+    ],
+    "interface OverlayEntry": [
+      "close",
+      "inEscapeChain"
+    ],
+    "interface SettingsPanelApi": [
+      "closeById",
+      "escapeTarget",
+      "fillExplain",
+      "frontOverlay",
+      "register",
+      "registeredIds",
+      "restoreFocus",
+      "topVisibleOverlay"
+    ]
+  },
+  "ui/settings-typo.ts": {
+    "interface TypoStore": [
+      "get",
+      "set"
+    ],
+    "interface SettingsTypoCtx": [
+      "$",
+      "fillExplain?",
+      "root",
+      "srSay",
+      "store"
+    ],
+    "interface SettingsTypoApi": [
+      "getFontKey",
+      "render",
+      "setFont"
+    ],
+    "interface FontCssTarget": [
+      "customFamily",
+      "fonte"
+    ],
+    "interface TypoRow": [
+      "disabled",
+      "fam",
+      "key",
+      "note",
+      "selected"
+    ],
+    "interface TypoGroupView": [
+      "g",
+      "rows"
+    ]
+  },
+  "ui/settings-visual.ts": {
+    "interface VisualSettings": [
+      "cbSafe",
+      "lq",
+      "outlineBg",
+      "outlineFg",
+      "ownerColors",
+      "roleColors"
+    ],
+    "interface SettingsVisualCtx": [
+      "$",
+      "fillExplain?",
+      "getNumPlayers",
+      "getPlayers",
+      "getSelectedPlayer",
+      "getVisualSettings",
+      "renderEixosVisuais",
+      "resetRoleColors",
+      "setCbSafe",
+      "setLq",
+      "setOutlineBg",
+      "setOutlineFg",
+      "setOwnerColors",
+      "setPlayerViz",
+      "setRoleColor",
+      "setSelectedPlayer",
+      "srSay"
+    ],
+    "interface SettingsVisual": [
+      "render"
+    ],
+    "type RGB": "readonly [number, number, number]"
+  },
+  "ui/shell.ts": {
+    "interface ShellWindow": [
+      "addEventListener",
+      "removeEventListener",
+      "setTimeout"
+    ],
+    "interface PauseScreen": [
+      "hidden",
+      "querySelectorAll"
+    ],
+    "interface PhaseView": [
+      "focus",
+      "hideTouchControls",
+      "masterMuted",
+      "pausePressed",
+      "screenPauseHidden",
+      "titleOverlayHidden"
+    ],
+    "interface TouchControlsState": [
+      "hidden",
+      "wasOn"
+    ],
+    "interface ActionGlyphs": [
+      "action1",
+      "action2",
+      "action3",
+      "action4"
+    ],
+    "interface ShellCtx": [
+      "$",
+      "fatosDaCena",
+      "fitsN",
+      "getGamepads",
+      "getNumPlayers",
+      "getPauseActor",
+      "getPauseScreens",
+      "getPlayers",
+      "getQuizLevel",
+      "hideTouchControls",
+      "isTouchMode",
+      "joinPlayer",
+      "kbFor",
+      "keyName",
+      "openAudio",
+      "openCaa",
+      "openEmpathy",
+      "openHelp",
+      "openMotion",
+      "openMovement",
+      "openTypo",
+      "openVisual",
+      "padLayoutFromId",
+      "padMapFor",
+      "quitGame",
+      "reflectPauseIcons",
+      "retomarJogo",
+      "rotuloCurto",
+      "setMasterMuted",
+      "setMotionPlayer",
+      "setMotorPlayer",
+      "setQuizLevel",
+      "setSelVizPlayer",
+      "showWaitingBadge",
+      "srAlert",
+      "srSay",
+      "win"
+    ],
+    "interface ShellApi": [
+      "aplicarCena",
+      "pauseActs",
+      "pauseSelect",
+      "printMode",
+      "updateTitleLegend"
+    ],
+    "type PhaseFocus": "'game-region' | 'pause-menu' | 'title-button'",
+    "type PauseActs": "Record<string, () => void>"
+  },
+  "ui/simulation-refusal.ts": {
+    "interface Recusa": [
+      "chave",
+      "eixo"
+    ]
+  },
+  "ui/title.ts": {
+    "interface TitleCtx": [
+      "$"
+    ],
+    "interface TitleApi": [
+      "show"
+    ],
+    "interface TitleMenuView": [
+      "active",
+      "hidden",
+      "legendHidden",
+      "titleBlockDisplay"
+    ],
+    "type TitleMenuId": "'tm-main' | 'tm-alf' | 'tm-mat' | 'tm-tab' | 'tm-fr' | 'tm-cen'"
+  },
+  "ui/visual-axes-panel.ts": {
+    "interface EscolhaDeEixo": [
+      "eixo",
+      "valor"
+    ],
+    "type EixoVisual": "'tema' | 'correcao'",
+    "type Tradutor": "(chave: string, params?: Record<string, string | number>) => string"
+  }
+}

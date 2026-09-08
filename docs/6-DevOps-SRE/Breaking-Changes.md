@@ -13,7 +13,22 @@ publishes) at both revisions and diffs the exported names.
 > The rule for next time is one line: **a commit that breaks the package writes the footer, and the footer
 > is addressed to whoever has to edit their code because of it.**
 
-## The five commits
+> ⚠️ **RE-MEASURED ON 2026-09-08, and both halves of the number moved.** There are now **14** commits marking
+> themselves breaking with `!`, and **9 of them do write the footer** — the rule above took. Six do not, and
+> they are the original five plus one new:
+>
+> | | |
+> |---|---|
+> | `b55b88e` `7ab9658` `91b4cd2` `40f2dd9` `3726087` | the original five, written before the rule existed |
+> | `a270854` | the global pause is gone — `PhaseView.pauseOverlayHidden` left with it |
+>
+> ⚠️ **The footers were NOT added by rewriting history, and that is a decision rather than an omission.**
+> Fixing six footers means an interactive rebase across ~50 unpushed commits — a rewrite of shared history to
+> repair a generated changelog section. What the footers would have said is written in this file instead,
+> which is the reason this file exists. **Whether to rewrite is the Dev's call**, and the list above is what
+> he would need.
+
+## The fourteen breaking commits (five when this file was first written)
 
 | | |
 |---|---|
@@ -22,6 +37,10 @@ publishes) at both revisions and diffs the exported names.
 | `91b4cd2` | gravity and the coin quota leave the engine |
 | `40f2dd9` | water, ladder, gate and secret area leave |
 | `3726087` | `KeyScheme` closes on the fourteen positions |
+| `6489888` | the wide `./assets/*` door is gone |
+| `c3b3235` | a game declares `holdsAtOnce()` |
+| `d644164` | the guide stops beeping — `guideT` leaves the entity |
+| `465a3dd` `abc1235` `3d0d385` `b0e725f` `e170846` `a270854` | the two visual axes (#104) and the global pause |
 
 ## 1 · Thirty-three modules left the package
 
@@ -75,6 +94,42 @@ then hold it as a `KeyScheme`.
 ## 4 · What is new, and none of it breaks anything
 
 `core/route.ts` (#84) · `ui/panel-shell.ts` (#62/#115) · `educational/adaptive-engine.ts` (#92)
+
+## 5 · Twenty-three changes of SHAPE — the half no name gate could see
+
+**Measured on 2026-09-08** by extracting the members of every exported `interface` and the right-hand side of
+every exported `type` at `v7.0.1` and at `HEAD`, and diffing them.
+
+⚠️ **The two measurements do not overlap by a single entry.** The name diff finds 32 removed modules and 8
+removed constants; the shape diff finds the 23 below; **no item appears in both**. In every one of the 23 the
+exported *name* is exactly as it was — what changed is what a consumer has to write inside it. That is why
+`§1`–`§4` of this file, all measured from names, missed the changes that actually break the four games.
+
+| module | change | what a consumer sees |
+|---|---|---|
+| `core/contract.ts` | `GameDeclaration.holdsAtOnce` **added, required** | every game's declaration literal stops type-checking until it declares the field |
+| `core/entity.ts` | `PlayerBase.visual` **added, required** | a consumer that builds its own players must supply `VisualState` |
+| `core/entity.ts` | `Player.guideT` **removed** | the field that timed the 48 frames between beeps; the guide is continuous now |
+| `core/entity.ts` | `KeyScheme` narrowed | `Record<string, string[]>` → `Record<Action, readonly string[] \| null>` — see §3, which measured this from the source rather than from the shape |
+| `input/transports.ts` | `Alcance.seguraPedidas`, `.naoSeguram` **added, required** | anyone constructing an `Alcance` literal |
+| `platform/audio-sonar.ts` | `SonarPlayer.viz`, `.guideT` **removed**; `SonarCtx.VIZ_BY_KEY` **removed**, `visaoComprometida` **added, required** | the sonar stopped knowing what a visual mode is; the question arrives answered. ⚠️ **This one already broke a repository in the tree** — `game-chess` consumes by `file:` and was red for four commits |
+| `render/draw.ts` | `DrawPlayer` slice `'viz'` → `'visual'` | a consumer passing its own draw player |
+| `render/viz-setters.ts` | `VizSettersApi` gains `setTemaDoJogador`, `setCorrecaoDoJogador`, `setVisualDoJogador`, `renderEixosVisuais` — all required | the writers are per axis now, because one field meant "touching one erases the other" |
+| `ui/pause-icons.ts` | `IconStateSnapshot.viz` → `.visual`; `PauseIconsCtx` gains `setTemaDoJogador`/`setCorrecaoDoJogador`; `PausePlayer` slice `'viz'` → `'visual'` | the quick-bar icons stopped overwriting each other |
+| `ui/settings-visual.ts` | `SettingsVisualCtx.renderVizGroup` → `renderEixosVisuais` | the visual panel draws two radios; the empathy panel keeps `renderVizGroup` |
+| `ui/shell.ts` | `PhaseView.pauseOverlayHidden` **removed** | the engine no longer looks for a global pause overlay at all |
+
+### And the gate now sees it
+
+`tests/superficie-publica.node.test.js` gained a second half, backed by `scripts/shape-surface.mjs`. It fails
+on a member that leaves, a member that goes from optional to required, a **required member that arrives**, and
+a type alias whose right-hand side changes.
+
+⚠️ **The asymmetry is not the same as the name gate's.** There, adding is always safe. Here it is not: a new
+*required* member breaks everyone who constructs the type, which is exactly what `holdsAtOnce` did. Optional
+additions stay silent; required ones ask to be declared, like removals.
+
+Declaring is one command, and it writes both snapshots at once — `node scripts/snapshot-public-surface.mjs`.
 
 ## ⚠️ Before cutting the major, read this
 

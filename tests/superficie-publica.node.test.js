@@ -25,6 +25,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { superficieDe, RETRATO } from '../scripts/snapshot-public-surface.mjs';
+import { formaDe, formaDoTexto, quebrasDeForma, RETRATO_FORMA } from '../scripts/shape-surface.mjs';
 
 const RAIZ = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const retrato = JSON.parse(readFileSync(join(RAIZ, RETRATO), 'utf8'));
@@ -87,6 +88,90 @@ describe('a superfície pública do pacote só encolhe por declaração (docs/6-
   });
 });
 
+// ========================= A FORMA, QUE É A METADE QUE OS NOMES NÃO VEEM =========================
+// ⚠️ MEDIDO EM 2026-09-08, comparando `v7.0.1` com a árvore: o gate dos nomes acha **32 módulos** que saíram
+// e **8 constantes**, e os dois conjuntos NÃO SE TOCAM nos 23 que se seguem. Ele é cego a todos eles, porque
+// em todos o nome exportado continua exactamente igual — o que mudou foi o que está DENTRO:
+//
+//   · `GameDeclaration.holdsAtOnce` entrou como obrigatório (é ele que faz os quatro jogos não compilarem);
+//   · `PlayerBase.visual` idem; `Player.guideT` saiu;
+//   · `SonarPlayer.viz`/`.guideT` e `SonarCtx.VIZ_BY_KEY` saíram, `SonarCtx.visaoComprometida` entrou;
+//   · `IconStateSnapshot.viz` → `.visual`, e `PauseIconsCtx` ganhou dois campos obrigatórios;
+//   · `PhaseView.pauseOverlayHidden` saiu; `SettingsVisualCtx.renderVizGroup` → `renderEixosVisuais`;
+//   · e três ALIASES estreitaram: `KeyScheme` fechou-se sobre as catorze posições, `DrawPlayer` e
+//     `PausePlayer` trocaram a fatia `'viz'` por `'visual'`.
+//
+// ⚠️ E A ASSIMETRIA AQUI É OUTRA. No gate dos nomes, acrescentar é sempre seguro. Aqui não: um membro
+// OBRIGATÓRIO novo quebra toda a gente que constrói o tipo — foi o que o `holdsAtOnce` fez. Opcional passa em
+// silêncio; obrigatório pede declaração, como pede a remoção.
+describe('a FORMA dos tipos exportados também só muda por declaração', () => {
+  const forma = JSON.parse(readFileSync(join(RAIZ, RETRATO_FORMA), 'utf8'));
+  const formaArvore = formaDe(join(RAIZ, 'app', 'js'));
+
+  it('[Interface] o retrato de forma e a árvore falam do mesmo repositório', () => {
+    expect(Object.keys(forma).length, 'o retrato de forma está vazio; correu o script?').toBeGreaterThan(50);
+    expect(Object.keys(formaArvore).length, 'a varredura não achou tipo nenhum').toBeGreaterThan(50);
+    expect(formaArvore['core/contract.ts']?.['interface GameDeclaration'], 'a varredura não vê a declaração').toBeTruthy();
+  });
+
+  it('⚠️ [Zero] NENHUM tipo exportado mudou de forma sem declaração', () => {
+    expect(quebrasDeForma(forma, formaArvore), 'a forma publicada mudou:' + COMO_DECLARAR).toEqual([]);
+  });
+
+  it('⚠️ [Right] um membro que SAI reprova — é a quebra que o gate dos nomes não vê', () => {
+    const antes = { 'm.ts': { 'interface A': ['x', 'y'] } };
+    const agora = { 'm.ts': { 'interface A': ['x'] } };
+    expect(quebrasDeForma(antes, agora)).toEqual(['m.ts  interface A.y  SAIU']);
+  });
+
+  it('⚠️ [Right] um membro OBRIGATÓRIO novo reprova — foi o que o `holdsAtOnce` fez aos quatro jogos', () => {
+    const q = quebrasDeForma({ 'm.ts': { 'interface A': ['x'] } }, { 'm.ts': { 'interface A': ['x', 'y'] } });
+    expect(q).toEqual(['m.ts  interface A.y  ENTROU como obrigatório']);
+  });
+
+  it('[Right] um membro OPCIONAL novo NÃO reprova — é compatível para trás', () => {
+    expect(quebrasDeForma({ 'm.ts': { 'interface A': ['x'] } }, { 'm.ts': { 'interface A': ['x', 'y?'] } })).toEqual([]);
+  });
+
+  it('⚠️ [Right] um opcional que passa a OBRIGATÓRIO reprova — quebra quem não o preenchia', () => {
+    const q = quebrasDeForma({ 'm.ts': { 'interface A': ['x?'] } }, { 'm.ts': { 'interface A': ['x'] } });
+    expect(q).toEqual(['m.ts  interface A.x  era opcional e passou a OBRIGATÓRIO']);
+  });
+
+  it('⚠️ [Right] um alias que ESTREITA reprova — é o caso do `KeyScheme`', () => {
+    const q = quebrasDeForma(
+      { 'm.ts': { 'type K': 'Record<string, string[]>' } },
+      { 'm.ts': { 'type K': 'Record<Action, readonly string[] | null>' } },
+    );
+    expect(q).toHaveLength(1);
+    expect(q[0]).toContain('mudou de forma');
+  });
+
+  it('[Right] um tipo que desaparece INTEIRO não é contado aqui — já é caso do gate dos nomes', () => {
+    // O mesmo `continue` que o gate dos nomes tem, e pela mesma razão: contá-lo nos dois faria uma lista de
+    // seis linhas parecer doze, e a segunda metade não diria nada que a primeira não tenha dito.
+    expect(quebrasDeForma({ 'm.ts': { 'interface A': ['x'] } }, { 'm.ts': {} })).toEqual([]);
+    expect(quebrasDeForma({ 'm.ts': { 'interface A': ['x'] } }, {})).toEqual([]);
+  });
+
+  it('⚠️ [Interface] o extractor lê membros de verdade — opcional, método, readonly e assinatura de índice', () => {
+    // Sem este caso, um extractor que devolvesse listas vazias deixaria TODOS os casos acima verdes: duas
+    // listas vazias não têm diferenças. É o caso do vácuo desta metade.
+    const f = formaDoTexto([
+      'export interface A {',
+      '  readonly i: number;',
+      '  topology: () => Topology;',
+      '  LOGICAL_W?: number;',
+      '  holdsAtOnce(): number;',
+      '  [k: string]: unknown;',
+      '}',
+      'export type U = "a" | "b";',
+    ].join('\n'));
+    expect(f['interface A']).toEqual(['LOGICAL_W?', 'holdsAtOnce', 'i', 'topology']);
+    expect(f['type U']).toBe('"a" | "b"');
+  });
+});
+
 // ========================= MUTAÇÕES CONFERIDAS =========================
 //   · apagando um `export` qualquer de `app/js/core/route.ts` → "[Zero] NENHUM nome exportado desapareceu"
 //     reprova nomeando o módulo e o nome, com as duas instruções de como declarar.
@@ -98,3 +183,19 @@ describe('a superfície pública do pacote só encolhe por declaração (docs/6-
 //     escrita por extenso em vez de derivada.
 //   · esvaziando o `public-surface.json` para `{}` → "[Interface] o retrato e a árvore" reprova. Sem ele os
 //     dois casos `[Zero]` ficariam verdes por não haver nada a comparar.
+//
+// ========================= MUTAÇÕES DA METADE DA FORMA =========================
+// Seis, aplicadas por script a ficheiro e com contagem de ocorrências (=1 nas seis). ⚠️ As duas primeiras
+// são contra a ÁRVORE DE VERDADE e não contra fixtures — o gate apanha uma quebra de forma em código real.
+//   · renomeando `holdsAtOnce(): number` no `core/contract.ts` → "[Zero] NENHUM tipo mudou de forma" reprova.
+//     ⚠️ E o gate dos NOMES não diz nada: `GameDeclaration` continua exportada com o mesmo nome. É a
+//     demonstração da cegueira que esta metade existe para tapar.
+//   · tornando `SonarCtx.LOGICAL_W?` obrigatório → reprova por "era opcional e passou a OBRIGATÓRIO". Um
+//     campo que já era `@deprecated` e opcional a fechar-se quebraria quem nunca o preencheu.
+//   · matando o extractor de membros → reprovam DOIS, e o segundo é o do vácuo: sem ele, duas listas vazias
+//     não têm diferenças e todos os casos de forma passariam por não terem nada que comparar.
+//   · tirando a regra do MEMBRO OBRIGATÓRIO NOVO → reprova o caso homónimo. É a regra que separa este gate
+//     do dos nomes: lá acrescentar é sempre seguro, aqui acrescentar obrigatório quebra quem constrói.
+//   · tirando a comparação de ALIAS → reprova o caso do `KeyScheme`. Sem ela, um estreitamento de união
+//     passa — e foi um estreitamento de união que o §3 desta doc teve de descrever à mão.
+//   · tirando a regra do OPCIONAL→OBRIGATÓRIO → reprova o caso homónimo.
