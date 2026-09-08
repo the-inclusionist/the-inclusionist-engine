@@ -20,6 +20,7 @@
 // SEM I/O no import: initVizSetters(ctx) só fecha closures, não chama nada.
 
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, simulatesDisability, type VizMode } from './viz-modes.js';
+import { migrarVisual, type VisualState } from './viz-axes.js';
 import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
@@ -98,7 +99,11 @@ type Textured = ComTextura;
 /** PIXI.Graphics da bolinha por viewport — só o que updateVpDots realmente usa. */
 type DotGfx = Visivel & DesenhoComCirculo;
 interface ClassListHost { classList: { toggle(token: string, force?: boolean): unknown; remove(...tokens: string[]): unknown } }
-interface Pl { viz: string; sprite?: Textured | null; _tx?: unknown }
+// ⚠️ `visual` OPCIONAL AQUI, e `viz` não: esta é a fatia ESTRUTURAL que o módulo lê, e ela é satisfeita
+// também por fixtures de teste escritos antes da #104. Torná-lo obrigatório nesta interface local obrigaria
+// cada fixture a saber de um campo que ele não exercita — e o campo obrigatório de verdade está onde deve
+// estar, no `core/entity.PlayerBase`, que é quem descreve o jogador a sério.
+interface Pl { viz: string; visual?: VisualState; sprite?: Textured | null; _tx?: unknown }
 interface Pu { kind: string; sprite?: Textured | null }
 
 export interface VizSettersCtx {
@@ -220,7 +225,13 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   function setPlayerViz(i: number, mode: string): void {
     const m = resolveViz(mode);
-    ctx.getPlayers()[i].viz = m.key;
+    // ⚠️ OS DOIS, E É O QUE SEGURA A MIGRAÇÃO DA #104. Enquanto os controles escrevem UM valor de cada vez, o
+    // estado de dois eixos é derivado dele — `migrarVisual` é a mesma função que traduz o valor salvo, e usá-la
+    // aqui é o que impede a tradução de existir em duas versões. Quando os controles passarem a escrever por
+    // EIXO (etapas 4 e 5), esta linha inverte-se: o `visual` passa a ser a fonte e o `viz` sai.
+    const p = ctx.getPlayers()[i];
+    p.viz = m.key;
+    p.visual = migrarVisual(m.key);
     store.set(store.KEYS.vizP(i), m.key);
     ctx.invalidateSharedViz();
     if (m.kind === 'blind') ctx.setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão

@@ -733,3 +733,61 @@ describe('alto contraste alcança o DOM por CLASSE, não por filtro (issue #83)'
   });
 
 });
+
+// ===========================================================================================================
+// #104 · O INVARIANTE QUE SEGURA A MIGRAÇÃO ENQUANTO OS DOIS CAMPOS EXISTEM
+// ===========================================================================================================
+//
+// ⚠️ ISTO É ANDAIME, E TEM DATA PARA SAIR. A #104 troca `p.viz` (uma string) por `p.visual` (dois eixos mais a
+// simulação), e fazê-lo de uma vez deixaria a árvore vermelha por dezenas de erros sem nenhum ponto verde
+// onde parar. Então os dois campos coexistem: `setPlayerViz` escreve os DOIS, os leitores migram um a um, e
+// este caso é o que garante que eles não podem divergir pelo caminho.
+//
+// ⚠️ E O ESPELHO TEM UM LIMITE CONHECIDO, que é a razão de ele não poder ficar: `viz` guarda UM valor, então
+// não há chave que descreva «hc7 + fix-deuter». Enquanto os controles escrevem um valor de cada vez, o
+// espelho acompanha; assim que eles passarem a escrever por EIXO (etapas 4 e 5), ele deixa de conseguir, e é
+// aí que ele sai — junto com este bloco.
+describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existirem', () => {
+  it('⚠️ [Right] toda escrita por `setPlayerViz` deixa os dois campos a dizer a MESMA coisa', async () => {
+    const { migrarVisual, aplicacao } = await import('../app/js/render/viz-axes.js');
+    const { VIZ_FILTER, needsCanvas } = await import('../app/js/render/viz-modes.js');
+    // Os modos DIRETOS ficam de fora aqui porque repintam textura e exigem canvas — o
+    // `viz-setters.browser.test.js` é quem os cobre. O que se afirma é o espelho, e ele não depende disso.
+    for (const k of ['normal', 'fix-protan', 'fix-deuter', 'fix-tritan', 'sim-deuter', 'sim-protan',
+      'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind']) {
+      const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
+      api.setPlayerViz(0, k);
+      const p = env.players[0];
+      expect(p.viz, k).toBe(k);
+      expect(p.visual, `o espelho de «${k}» ficou para trás`).toEqual(migrarVisual(k));
+      // E o par que o render vai aplicar continua a ser o de hoje — a mesma afirmação da rede da etapa 0,
+      // agora sobre o valor que REALMENTE foi escrito no jogador e não sobre uma chave de fixture.
+      expect(aplicacao(p.visual), k).toEqual({
+        direto: needsCanvas(k) ? k : null,
+        filtro: k in VIZ_FILTER ? k : null,
+      });
+    }
+  });
+
+  it('⚠️ [Zero] uma chave desconhecida cai em `normal` nos DOIS campos, e não num só', async () => {
+    // `resolveViz` já mandava chave desconhecida para `normal`. Se o espelho não seguisse essa mesma queda,
+    // o jogador ficaria com `viz: 'normal'` e um `visual` de outra coisa — a divergência mais difícil de ver,
+    // porque os dois estão preenchidos e só um está certo.
+    const { PADRAO } = await import('../app/js/render/viz-axes.js');
+    const { env, api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
+    api.setPlayerViz(0, 'modo-que-nao-existe');
+    expect(env.players[0].viz).toBe('normal');
+    expect(env.players[0].visual).toEqual(PADRAO);
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS (o espelho da #104) =========================
+//   · apagando a escrita `p.visual = migrarVisual(m.key)` -> reprovam os DOIS casos. E o defeito que o bloco
+//     existe para impedir: os leitores migrariam um a um para um campo que ninguem mantem, e o primeiro a
+//     migrar passaria a ler o padrao para toda a gente — sem erro, sem aviso, com a arvore verde.
+//   · ⚠️ trocando `migrarVisual(m.key)` por `migrarVisual(mode)` -> NAO reprova, e a mutacao e' EQUIVALENTE,
+//     nao um buraco. `resolveViz` manda chave desconhecida para `normal` e `migrarVisual` manda-a para
+//     `PADRAO`, que sao o mesmo estado; para chave conhecida `m.key === mode`. Nao ha entrada que as separe.
+//     Fica `m.key` na mesma, porque a linha acima ja resolveu e ler duas vezes da mesma resolucao e' o que
+//     impede a terceira de divergir. Registado aqui em vez de apagado: uma mutacao sobrevivente que se
+//     confirma equivalente e' informacao, e a proxima pessoa nao precisa de a redescobrir.

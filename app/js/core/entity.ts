@@ -40,6 +40,7 @@
 // única das quatorze posições. A regra que `core/` respeita é não importar de `game/` nem de `render/` —
 // depender de um vizinho de camada que é puro dado não a viola, e é o que permite fechar o `KeyScheme`.
 import type { Action } from './actions.js';
+import type { VisualState } from '../render/viz-axes.js';
 
 /**
  * Ação → lista de códigos físicos (`KeyA`, `ArrowLeft`…). Fonte única: estava triplicado em input/.
@@ -153,6 +154,26 @@ export interface Player {
   ctrl: KeyScheme | null;
   /** Índice do gamepad, ou -1 quando o jogador não tem controle físico. */
   pad: number;
+  /**
+   * O ESTADO VISUAL desta criança, em DOIS EIXOS mais a simulação (ADR-0076, issue #104).
+   *
+   * ⚠️ `import type`, e a seta aponta para cima. `core/` não deveria importar de `render/`, e o tipo do
+   * ESTADO discutivelmente devia morar aqui em vez de lá. Fica assim de propósito e declarado: é só tipo,
+   * apagado em execução, sem aresta em runtime — e mover o módulo a meio da migração seria churn no ficheiro
+   * mais partilhado do repositório. Se `viz-axes` se dividir um dia, o `VisualState` vem para `core/` e as
+   * funções de renderização ficam lá.
+   */
+  visual: VisualState;
+  /**
+   * @deprecated ⚠️ O ESPELHO LEGADO, e ele morre nesta migração. Enquanto os dois existirem, `setPlayerViz`
+   * escreve os DOIS e um gate exige que nunca discordem — é o que deixa cada leitor migrar sozinho, com a
+   * árvore verde entre cada passo, em vez de uma passagem única onde não há onde parar.
+   *
+   * ⚠️ E ELE NÃO CONSEGUE EXPRIMIR O QUE A #104 EXISTE PARA PERMITIR: uma criança com `hc7` E `fix-deuter` ao
+   * mesmo tempo não tem chave única que a descreva. Por isso o espelho só sobrevive enquanto os controles
+   * ainda escrevem um valor de cada vez; assim que eles passam a escrever por eixo, ele deixa de poder
+   * acompanhar e sai.
+   */
   viz: string;
   easy: boolean;
   toggleMove: boolean;
