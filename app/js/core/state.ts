@@ -19,7 +19,14 @@ import * as store from '../platform/storage.js'; // persistência (as mega-vars 
  * Agora `EventoDoJogo` é um mapa nome → carga, e `emit`/`on` são genéricos sobre ele. Nome inexistente não
  * compila; carga errada não compila.
  *
- * ⚠️ POR QUE ISTO EXISTE ANTES DE TER ASSINANTE. Hoje o barramento tem ZERO `on()` em produção (só o teste
+ * ✅ ERRATA 2026-09-08: O BARRAMENTO TEM ASSINANTES EM PRODUÇÃO. O parágrafo abaixo dizia «ZERO `on()` em
+ * produção (só o teste assina)», e isso deixou de ser verdade no dia em que a engine passou a montar a barra
+ * de acessibilidade: o `ui/settings-audio` assina `modoCego` para o botão `#opt-modocego` não mentir o
+ * estado, e o `boot/create-game` assina o mesmo evento para a barra montada não mentir o dela. Os dois
+ * chegaram pela razão que o parágrafo previa — «painéis que se redesenham quando a criança muda um ajuste» —
+ * e chegaram com o contrato já tipado, que era o ponto de ele nascer assim.
+ *
+ * ⚠️ POR QUE ISTO EXISTIU ANTES DE TER ASSINANTE. Hoje o barramento tem ZERO `on()` em produção (só o teste
  * assina). Um mecanismo sem uso normalmente é dívida — mas este precisa nascer tipado, não ser retipado
  * depois: o ADR-0031 já exige que painéis e atividades se redesenhem quando a criança muda idioma ou fonte,
  * e a casca do `demos` vai reagir a ajuste durante a partida. O primeiro assinante chega com o contrato

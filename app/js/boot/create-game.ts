@@ -51,6 +51,8 @@ import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { initPauseIcons, iconsMarkup } from '../ui/pause-icons.js';
+// O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
+import * as state from '../core/state.js';
 import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
@@ -450,6 +452,18 @@ export function createGame(o: CreateGameOptions): Engine {
       srSay(botao.getAttribute('aria-label') ?? '');
     });
     pauseIcons.reflectIconsIn(a11yBar, 0);
+
+    /*
+     * ⚠️ E ELA TEM DE CONTINUAR A DIZER A VERDADE quando o estado muda NOUTRO SÍTIO. O modo cego liga-se
+     * também pelo painel de áudio e pela simulação de empatia; sem esta assinatura, o ícone da barra ficaria
+     * a dizer «desligado» com `aria-pressed=false` depois de a criança o ter ligado — o controlo a mentir o
+     * estado, que é a família de defeito que o `reflectTTS` e o `#opt-modocego` já custaram a este projeto.
+     *
+     * 📌 SÓ O MODO CEGO, e a limitação é medida e não preguiça: dos ícones que esta raiz monta, ele é o ÚNICO
+     * cujo estado tem evento (`EventoDoJogo` tem `modoCego`; TTS, Libras, TEA e alternância não emitem nada).
+     * Os outros continuam a refletir-se ao clique, que é o caminho por onde hoje eles mudam.
+     */
+    state.on('modoCego', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
   }
 
   // 4d. QUEM ABRIU A PAUSA, quando há mais de um assento — o achado 3 da auditoria do `game-soccer`.

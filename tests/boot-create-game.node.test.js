@@ -261,6 +261,11 @@ describe('createGame em execução', () => {
     // afirmação que não se consegue fazer é melhor dita assim do que fingida com um duplo que aceita tudo.
     expect(FONTE, 'a barra montada voltou a ser inalcançável por teclado').toMatch(/naBarraDe:\s*o\.naBarraDe\s*\?\?\s*\(\(i\)\s*=>\s*pauseIcons\.naBarraDe\(i\)\)/);
     expect(FONTE).toMatch(/navBar:\s*o\.navBar\s*\?\?\s*\(\(i,\s*k\)\s*=>\s*pauseIcons\.navBar\(i,\s*k\)\)/);
+    // ⚠️ E a barra montada tem de continuar a DIZER A VERDADE quando o modo cego muda noutro sítio (o painel
+    // de áudio, a simulação de empatia). Sem esta assinatura o ícone ficaria a dizer «desligado» depois de a
+    // criança o ligar — a família do `reflectTTS`, que este projeto já pagou duas vezes.
+    expect(FONTE, 'a barra montada não se refaz quando o modo cego muda fora dela')
+      .toMatch(/state\.on\('modoCego',\s*\(\)\s*=>\s*\{\s*pauseIcons\.reflectIconsIn\(a11yBar,\s*0\);\s*\}\)/);
   });
 
   it('⚠️ [Right] a engine monta o CARTÃO DE PAUSA — e com o id que ela própria procura', async () => {
