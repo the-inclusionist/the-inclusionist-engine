@@ -26,7 +26,7 @@ import {
   VIZ_CYCLE, VIZ_FILTER, VIZ_BY_KEY, needsCanvas, simulatesDisability,
 } from '../app/js/render/viz-modes.js';
 import {
-  migrarVisual, aplicacao, chaveDeTextura, ehSimulacao, ehCego, ehBaixaVisao, temAltoContraste,
+  migrarVisual, aplicacao, chaveDeTextura, chaveLegada, ehSimulacao, ehCego, ehBaixaVisao, temAltoContraste,
   nosPadroes, PADRAO, CHAVES_ANTIGAS,
 } from '../app/js/render/viz-axes.js';
 
@@ -117,6 +117,26 @@ describe('#104 · e o que a divisão TORNA POSSÍVEL, que é o ponto da issue', 
     const os_dois = { tema: 'hc7', correcao: 'deuter', simulacao: null };
     expect(aplicacao(os_dois)).toEqual({ direto: 'hc-direto-7', filtro: 'fix-deuter' });
     expect(nosPadroes(os_dois), 'com um eixo fora do padrão a simulação tem de ficar travada').toBe(false);
+  });
+
+  it('⚠️ [Right] a chave LEGADA preserva TODO ajuste que já existia — ida e volta pelos 16 modos', () => {
+    // ⚠️ ESTE CASO NASCEU DE UM GATE VERMELHO, e o defeito que ele apanhou é o pior tipo: silencioso e a
+    // custo da criança. A primeira escrita usava a `chaveDeTextura` como espelho — e ela devolve `normal`
+    // para uma correção de cor, porque correção não muda textura nenhuma. Uma criança em `fix-deuter`
+    // passaria a gravar `'normal'` na chave velha, e um leitor antigo (o cartucho publicado) perderia a
+    // correção dela sem nada dizer.
+    for (const k of VIZ_CYCLE) {
+      expect(chaveLegada(migrarVisual(k)), `o modo «${k}» não sobrevive à chave legada`).toBe(k);
+    }
+  });
+
+  it('⚠️ [Boundary] e o ÚNICO caso com perda é o que nunca existiu antes', () => {
+    // `hc7 + fix-deuter` só cabe como uma das duas metades no vocabulário antigo. Não há regressão possível
+    // nisso: o estado é NOVO, e um leitor de uma chave só nunca soube exprimi-lo. Quem quiser as duas
+    // metades lê a chave nova, que existe para isso.
+    expect(chaveLegada({ tema: 'hc7', correcao: 'deuter', simulacao: null })).toBe('hc-direto-7');
+    // E a simulação vence as duas, porque é a que apaga a tela inteira.
+    expect(chaveLegada({ tema: 'hc7', correcao: 'deuter', simulacao: 'blind' })).toBe('blind');
   });
 
   it('[Right] mexer num eixo não mexe no outro — uma asserção em cada sentido', () => {

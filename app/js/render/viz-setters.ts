@@ -21,7 +21,8 @@
 
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, simulatesDisability, type VizMode } from './viz-modes.js';
 import {
-  migrarVisual, filtroChave, chaveDeTextura, ehSimulacao, ehBaixaVisao, ehCego, temAltoContraste, PADRAO,
+  migrarVisual, filtroChave, chaveDeTextura, chaveLegada, ehSimulacao, ehBaixaVisao, ehCego, temAltoContraste, PADRAO,
+  type Tema, type Correcao,
   type VisualState,
 } from './viz-axes.js';
 import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
@@ -206,6 +207,16 @@ export interface VizSettersApi {
   applyVpFilters(): void;
   /** Troca o modo de UM jogador: persiste, invalida o render estático e reaplica pelo caminho certo. */
   setPlayerViz(i: number, mode: string): void;
+  /**
+   * O ESTADO INTEIRO de um jogador, e os DOIS escritores por eixo (#104).
+   *
+   * ⚠️ Os dois de eixo existem separados porque é isso que um painel de dois controles precisa: mexer no
+   * TEMA sem tocar na correção, e vice-versa. Enquanto havia um campo só, «mexer num» significava
+   * inevitavelmente «apagar o outro» — e era o defeito, não a API.
+   */
+  setVisualDoJogador(i: number, v: VisualState): void;
+  setTemaDoJogador(i: number, tema: Tema): void;
+  setCorrecaoDoJogador(i: number, correcao: Correcao): void;
   /** Caminho SOLO: filtro CSS na canvas + texturas globais + overlay DOM + bolinha. */
   applyVizGlobal(v: VisualState): void;
   /** Reaplica tudo depois de uma mudança estrutural (cenário, nº de telas). */
@@ -256,20 +267,50 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     }
   }
 
-  function setPlayerViz(i: number, mode: string): void {
-    const m = resolveViz(mode);
-    // ⚠️ OS DOIS, E É O QUE SEGURA A MIGRAÇÃO DA #104. Enquanto os controles escrevem UM valor de cada vez, o
-    // estado de dois eixos é derivado dele — `migrarVisual` é a mesma função que traduz o valor salvo, e usá-la
-    // aqui é o que impede a tradução de existir em duas versões. Quando os controles passarem a escrever por
-    // EIXO (etapas 4 e 5), esta linha inverte-se: o `visual` passa a ser a fonte e o `viz` sai.
+  /**
+   * O ESCRITOR DE VERDADE desde a etapa 4 da #104: recebe o ESTADO, não uma chave.
+   *
+   * ⚠️ E É AQUI QUE O ESPELHO MUDA DE SIGNIFICADO, o que estava previsto e escrito. Enquanto os controles
+   * escreviam um valor de cada vez, `viz` conseguia ser «o modo equivalente». Com dois eixos não há chave
+   * única que descreva `hc7 + fix-deuter`, então o espelho passa a ser exactamente o que ele ainda consegue
+   * ser com honestidade: **a CHAVE DE TEXTURA** — `simulação ?? tema ?? normal`, o que mais muda o que se vê.
+   *
+   * Isso não é uma perda escondida: é a mesma chave que o `setVizModeValue` já escreve, e o invariante do
+   * gate passou a afirmá-la nesses termos. Um leitor antigo continua a ver algo verdadeiro sobre a tela; o
+   * que ele deixa de ver é a metade que a forma antiga nunca soube dizer.
+   */
+  function setVisualDoJogador(i: number, v: VisualState): void {
     const p = ctx.getPlayers()[i];
-    p.viz = m.key;
-    p.visual = migrarVisual(m.key);
-    store.set(store.KEYS.vizP(i), m.key);        // legada: um leitor antigo faria `VIZ_BY_KEY[v]` e recusaria JSON
-    store.setJSON(store.KEYS.visualP(i), p.visual); // nova: os dois eixos, que a chave velha não sabe dizer
+    p.visual = v;
+    p.viz = chaveLegada(v);
+    store.set(store.KEYS.vizP(i), p.viz);        // legada: um leitor antigo faria `VIZ_BY_KEY[v]` e recusaria JSON
+    store.setJSON(store.KEYS.visualP(i), v);     // nova: os dois eixos, que a chave velha não sabe dizer
+    aplicarVisualDoJogador(i, v);
+  }
+
+  /** Muda SÓ o tema deste jogador. A correção e a simulação ficam onde estavam — é o ponto da #104. */
+  function setTemaDoJogador(i: number, tema: Tema): void {
+    const p = ctx.getPlayers()[i];
+    setVisualDoJogador(i, { ...(p.visual ?? PADRAO), tema });
+  }
+
+  /** Muda SÓ a correção de cor deste jogador. O tema e a simulação ficam onde estavam. */
+  function setCorrecaoDoJogador(i: number, correcao: Correcao): void {
+    const p = ctx.getPlayers()[i];
+    setVisualDoJogador(i, { ...(p.visual ?? PADRAO), correcao });
+  }
+
+  /** A API antiga, por chave única. Continua a valer: um jogo que escolhe um modo inteiro passa por aqui. */
+  function setPlayerViz(i: number, mode: string): void {
+    setVisualDoJogador(i, migrarVisual(resolveViz(mode).key));
+  }
+
+  /** Os efeitos colaterais de ter mudado o visual de um jogador. Separados do ESCREVER de propósito: os dois
+   *  escritores por eixo e o antigo por chave partilham-nos, e uma cópia a mais seria uma cópia a divergir. */
+  function aplicarVisualDoJogador(i: number, v: VisualState): void {
     ctx.invalidateSharedViz();
-    if (m.kind === 'blind') ctx.setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão
-    if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(p.visual); } else { applyVpFilters(); updateVpDots(); }
+    if (ehCego(v)) ctx.setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão
+    if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(v); } else { applyVpFilters(); updateVpDots(); }
     ctx.reflectVizButtons(); ctx.renderVisualPanel(); ctx.renderEmpathyPanel();
   }
 
@@ -295,7 +336,9 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
   function applyVizGlobal(v: VisualState): void {
     const filtro = filtroChave(v);
     const textura = chaveDeTextura(v);
-    setVizModeValue(textura); // core/state: valor + persistência (incl_viz) + evento — espelho legado
+    // ⚠️ `chaveLegada` E NÃO `textura`: a de textura devolve `normal` para uma correção de cor, e escrevê-la
+    // aqui faria um leitor antigo da chave global perder a correção da criança. Ver a nota em `chaveLegada`.
+    setVizModeValue(chaveLegada(v)); // core/state: valor + persistência (incl_viz) + evento — espelho legado
     // ANTES daqui saía também `ctx.setHcMode(m.kind === 'hcnew')`, alimentando um `let hcMode` no game.js cujo
     // único leitor era o gancho window.__incl. Era `vizMode` reescrito com outro nome: derivar de VIZ_BY_KEY
     // custa uma comparação e não pode divergir. (O inicializador daquele `let` usava OUTRA fórmula,
@@ -374,5 +417,10 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     }));
   }
 
-  return { applySharedTextures, updateVpDots, applyVpFilters, setPlayerViz, applyVizGlobal, reapplyVizAll, updateVizIndicator, rebakeDirect, renderVizGroup };
+  return {
+    applySharedTextures, updateVpDots, applyVpFilters, setPlayerViz, applyVizGlobal, reapplyVizAll,
+    updateVizIndicator, rebakeDirect, renderVizGroup,
+    // Os DOIS escritores por eixo (#104): é o que um painel de dois controles chama.
+    setVisualDoJogador, setTemaDoJogador, setCorrecaoDoJogador,
+  };
 }

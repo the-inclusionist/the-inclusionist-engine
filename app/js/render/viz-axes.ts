@@ -171,6 +171,26 @@ export function chaveDeTextura(v: VisualState): string {
   return v.simulacao ?? temaDireto(v) ?? 'normal';
 }
 
+/**
+ * A CHAVE ÚNICA que melhor descreve este estado no vocabulário ANTIGO — para quem só sabe ler uma.
+ *
+ * ⚠️ NÃO É A `chaveDeTextura`, e a diferença custou um gate vermelho para aparecer. A de textura devolve
+ * `normal` para uma correção de cor, porque correção não muda textura nenhuma — e usá-la como espelho faria
+ * uma criança em `fix-deuter` passar a gravar `'normal'` na chave legada. **Um leitor antigo perderia a
+ * correção dela**, que é exactamente o estrago que a migração inteira existe para não cometer.
+ *
+ * A ordem é simulação → tema → correção → padrão, e ela preserva TODO ajuste que já existia: nenhum estado
+ * antigo tinha dois eixos, então nenhum deles perde nada aqui.
+ *
+ * ⚠️ O ÚNICO CASO COM PERDA É O NOVO — `hc7 + fix-deuter` só cabe como uma das duas metades, e a escolhida é
+ * o tema. Não há regressão possível nisso: esse estado NÃO EXISTIA antes, e um leitor que só entende uma
+ * chave nunca soube exprimi-lo. Quem quiser as duas metades lê a chave nova, que existe precisamente para
+ * isso.
+ */
+export function chaveLegada(v: VisualState): string {
+  return v.simulacao ?? temaDireto(v) ?? filtroChave(v) ?? 'normal';
+}
+
 /* ===================== A MIGRAÇÃO ===================== */
 //
 // ⚠️ ELA NÃO É OPCIONAL E VEM ANTES DA PRIMEIRA LEITURA DA FORMA NOVA. O ajuste salvo guarda o valor único
