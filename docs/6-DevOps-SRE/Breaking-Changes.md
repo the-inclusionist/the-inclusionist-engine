@@ -86,8 +86,12 @@ turns each into a `9.0.0`:
   across both repositories. Its own recommendation, written before this file, was to batch it with the #63
   boundary work — and that batching is still available only until this major is cut.
 - **#63's deeper boundary** — `TILE_TYPES` moving and `core/collision` splitting in two.
-- **`exports["./assets/*"]`** (#119) — it promises the whole of `app/public/` and `files` ships only
-  `app/public/vendor`. The narrow door `./assets/vendor/*` now sits beside it and tells the truth.
+- ✅ **`exports["./assets/*"]`** (#119) — **REMOVED on 2026-09-07, by the Dev's decision.** It promised the
+  whole of `app/public/` while `files` ships only `app/public/vendor`. `./assets/vendor/*` is now the only
+  assets door and it tells the truth; **nobody's import line changes**, because
+  `engine/assets/vendor/fonts.css` still matches it. The gate no longer exempts anything: putting the wide
+  door back fails `[Boundary] toda porta do exports aponta para algo que o pacote realmente EMBARCA` on its
+  own merits.
   ⚠️ **Measured, and it contradicts what #119 assumed:** `app/public/` holds three entries (`vendor/`,
   `_headers`, `icon.svg`) and only `vendor` ships, so everything the wide door can resolve in a published
   tarball is already covered by the narrow one — the rest already 404s. **Removing it breaks no npm

@@ -304,7 +304,17 @@ describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #1
    * A remoção continua a ser do Dev — a medida vale para quem instala do registo, e um consumidor por
    * `file:` alcança a árvore inteira. Fica registada em `docs/6-DevOps-SRE/Breaking-Changes.md`.
    */
-  const PORTA_LARGA_DE_PROPOSITO = new Map([['./assets/*', 'a arte não é FOSS; só `vendor/` viaja — ver a #119']]);
+  //
+  // ⚠️ E A LISTA ESTÁ VAZIA DESDE 2026-09-07: a porta larga SAIU (#119). O Dev decidiu removê-la depois de a
+  // medição mostrar que ela não quebra consumidor nenhum — `engine/assets/vendor/fonts.css` continua a casar
+  // na porta estreita, e tudo o mais que ela alcançava já dava 404.
+  //
+  // ⚠️ E ESTE FICHEIRO QUASE DEIXOU A ENTRADA ÓRFÃ FICAR. Quando a porta saiu do `package.json`, os dezoito
+  // casos passaram na mesma: o `[Interface]` abaixo só contava o TAMANHO da lista e media o comprimento do
+  // motivo — nunca perguntava se a porta que ela isenta ainda existe. Uma isenção órfã faz a lista mentir
+  // sobre o tamanho da excepção, que é a regra que todos os outros livros-razão desta árvore já seguem, e
+  // que este não seguia por eu não a ter escrito aqui.
+  const PORTA_LARGA_DE_PROPOSITO = new Map([]);
 
   it('[Boundary] toda porta do `exports` aponta para algo que o pacote realmente EMBARCA', () => {
     // A recíproca: uma porta para uma pasta que o `files` não leva é um 404 prometido ao consumidor.
@@ -334,9 +344,15 @@ describe('toda camada EMITIDA é alcançável pelo `exports` (achado da issue #1
 
   it('[Interface] a lista de portas largas NÃO cresce, e cada uma carrega o motivo', () => {
     // É a última saída deste crivo. Uma exceção sem motivo é afrouxamento disfarçado, e uma lista que cresce
-    // é o crivo a ser desligado devagar. UMA hoje, e ela está documentada acima com a medida do tarball.
+    // é o crivo a ser desligado devagar. ZERO hoje: a porta larga saiu com a #119.
     expect(PORTA_LARGA_DE_PROPOSITO.size).toBeLessThanOrEqual(1);
     for (const [, motivo] of PORTA_LARGA_DE_PROPOSITO) expect(motivo.length).toBeGreaterThan(20);
+
+    // ⚠️ E NENHUMA ISENÇÃO É ÓRFÃ, que era o buraco desta lista. Quando a porta saiu do `package.json` os
+    // dezoito casos passaram na mesma, porque ninguém perguntava se o que a lista isenta ainda existe.
+    for (const sub of PORTA_LARGA_DE_PROPOSITO.keys()) {
+      expect(Object.keys(PKG.exports ?? {}), `isenta \`${sub}\`, que já não é porta nenhuma`).toContain(sub);
+    }
   });
 
   it('⚠️ [Right] a porta ESTREITA existe, e e a que diz a verdade (#119)', () => {

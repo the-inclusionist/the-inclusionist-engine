@@ -72,11 +72,18 @@ describe('uma fonte oferecida no menu carrega de verdade (ADR-0012)', () => {
   });
 
   it('[Interface] e o pacote entrega a folha ao consumidor', () => {
-    // `files` leva `app/public/vendor` e o `exports` publica `./assets/*`. Se um dos dois cair, o
+    // `files` leva `app/public/vendor` e o `exports` publica a porta dos assets. Se um dos dois cair, o
     // consumidor liga um caminho que dá 404 — e o gate de `engine-package` não vê isso, porque olha
     // imports de código.
+    //
+    // ⚠️ A PORTA MUDOU DE NOME EM 2026-09-07 (#119), e a diferença é o ponto: era `./assets/*`, que casava
+    // `app/public/` inteiro enquanto o `files` embarca só `vendor/`. Agora é `./assets/vendor/*`, que promete
+    // exactamente o que viaja. ⚠️ E o caminho que o consumidor escreve NÃO MUDA — `assets/vendor/fonts.css`
+    // casava na larga e casa na estreita —, que foi o que tornou a remoção segura.
     const pkg = JSON.parse(ler('package.json'));
     expect(pkg.files).toContain('app/public/vendor');
-    expect(Object.keys(pkg.exports)).toContain('./assets/*');
+    expect(Object.keys(pkg.exports)).toContain('./assets/vendor/*');
+    // E a porta larga NÃO volta: ela prometia pasta que o `files` não leva.
+    expect(Object.keys(pkg.exports), 'a porta larga voltou; ver a #119').not.toContain('./assets/*');
   });
 });
