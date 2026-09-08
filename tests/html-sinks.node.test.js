@@ -82,6 +82,14 @@ const SEGUROS = [
   ['ui/hud.ts', "gameHudEl.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/hud.ts', 'd.innerHTML = vphudHtml(', '⚠️ CONSERTADO 2026-09-06: o nome do jogo saiu do markup e vai por `setAttribute`'],
   ['ui/hud.ts', "if (scr && !scr.querySelector('.vp-wait'))", 'só o ÍNDICE da tela, um número'],
+  // ⚠️ ENTROU EM 2026-09-08 com a etapa 2 do ADR-0106: a engine passou a MONTAR a barra de acessibilidade da
+  // primeira tela. Classificado SEGURO pela mesma razão dos dois do `ui/pause-icons` logo abaixo — o que
+  // entra é `iconsMarkup`, markup da própria engine com rótulos resolvidos por `t()`; o único dado variável
+  // é QUAIS ícones, e essa lista é uma sub-lista da constante `PAUSE_ICONS` do módulo. Nada de fora do
+  // repositório alcança este sink.
+  // 📌 O trecho é CURTO de propósito: a chave é o começo da linha cortado em 52 caracteres (linha 55), e uma
+  // entrada mais LONGA do que esse corte nunca casa — foi o que me aconteceu ao registá-la inteira.
+  ['boot/create-game.ts', 'a11yBar.innerHTML = iconsMarkup(', 'markup da engine + i18n'],
   ['ui/map-hub.ts', 'el.innerHTML = mapHubMarkup(np)', 'só o número de jogadores'],
   ['ui/pause-icons.ts', 'sp.innerHTML = screenPauseMarkup({', 'markup da engine + i18n'],
   // ⚠️ O argumento entrou em 2026-09-08 (ADR-0106 §5) e NÃO muda a classificação: `iconesDoJogo` é uma

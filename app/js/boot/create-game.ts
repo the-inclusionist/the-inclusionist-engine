@@ -50,10 +50,12 @@ import { presetActions, ACTIONS, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
+import { initPauseIcons, iconsMarkup } from '../ui/pause-icons.js';
+import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
 import { createTts, type CarregarVozNeural } from '../platform/tts.js';
-import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer, tonePan, audioCtx } from '../platform/audio.js';
+import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
 // responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
@@ -90,8 +92,15 @@ export interface EngineHost {
    * A criança que depende do modo cego, do TTS ou do alto contraste abre esses cinco jogos e não tem por onde.
    *
    * Ausente, a engine procura `#title-icons` — o id que o jogo de plataforma usa desde sempre — e, não o
-   * achando, diz-o em `problems`. Dizer não é montar, e a montagem é o passo seguinte; o que isto fecha é o
-   * SILÊNCIO, que era a parte que fazia cinco jogos parecerem completos.
+   * achando, diz-o em `problems`.
+   *
+   * ✅ E DESDE 2026-09-08 ELA TAMBÉM **MONTA** (etapa 2 do ADR-0106 §4). Este parágrafo dizia «dizer não é
+   * montar, e a montagem é o passo seguinte»; o passo seguinte aconteceu. O que a destravou foram as etapas
+   * 1 e 3: nenhuma delas era sobre montar, e sem as duas o `PauseIconsCtx` exigia sete coisas que esta raiz
+   * não sabe responder por um jogo que não conhece.
+   *
+   * ⚠️ Achando o hospedeiro, a barra é escrita e fiada aqui. Não achando, continua a ser `problems` — porque
+   * a engine pode oferecer os ícones, mas não pode adivinhar ONDE eles cabem no desenho de um jogo alheio.
    */
   readonly a11yBarHost?: Element | null;
 }
@@ -355,6 +364,62 @@ export function createGame(o: CreateGameOptions): Engine {
     problems.push(
       `sem barra de acessibilidade na primeira tela: declare \`host.a11yBarHost\` ou ponha um ${SELETOR_BARRA_A11Y} no documento. Sem ela a criança não alcança modo cego, TTS, alto contraste nem Libras antes de começar`,
     );
+  }
+
+  /*
+   * ⚠️ E AGORA A ENGINE MONTA-A (ADR-0106 §4, etapa 2). Até 2026-09-08 esta raiz só REPORTAVA a ausência, e o
+   * registo dizia porquê: «reportar não é oferecer — cinco jogos continuam sem barra até alguém agir na
+   * linha». A etapa 1 tirou dos sete campos acidentais a obrigação de virem do jogo, e a 3 deu lista padrão
+   * ao menu; com isso o `PauseIconsCtx` deixou de exigir seja o que for que esta raiz não saiba responder.
+   *
+   * ⚠️ NÃO É `buildQuickBar`, e a diferença tem dono: aquele põe `tabIndex = -1` nos botões porque durante a
+   * partida dez paradas de tabulação separam a criança do jogo (ADR-0044 item 7). Na primeira tela não se
+   * está a jogar, e tirar os ícones da ordem de tabulação ali seria escondê-los de quem navega por teclado —
+   * exactamente a pessoa para quem eles existem.
+   */
+  const pauseIcons = initPauseIcons({
+    getPlayers: () => o.players ?? [],
+    getNumPlayers: () => (o.players ?? [null]).length,
+    srSay, srAlert,
+    getA11yBars: () => (a11yBar instanceof HTMLElement ? [a11yBar] : []),
+    getModoCego: o.isBlindMode ?? (() => false),
+    getAudioCat: () => audioCat,
+    setCatGain,
+    reflectTtsPanel: () => {},
+    reflectTtsPanelEnabled: false,
+    isLibrasOn: vlibrasOpen,
+    toggleLibras,
+  });
+
+  /*
+   * ⚠️ O HOSPEDEIRO TEM DE SABER SER UMA BARRA, e perguntar isso não é zelo: `a11yBarHost` é `Element` no
+   * tipo, e um consumidor pode passar um duplo, um nó de outro documento, ou um elemento de um `<svg>`. Sem
+   * esta guarda, um objecto sem `addEventListener` derruba o BOOT INTEIRO — e derrubá-lo por causa da barra
+   * de acessibilidade seria tirar o jogo a toda a gente para não o dar a ninguém.
+   *
+   * Não sabendo, é `problems` como qualquer outra lacuna do hospedeiro: o consumidor lê e conserta.
+   */
+  const barraUsavel = !!a11yBar
+    && typeof (a11yBar as HTMLElement).addEventListener === 'function'
+    && 'innerHTML' in a11yBar;
+  if (a11yBar && !barraUsavel) {
+    problems.push(
+      'o elemento da barra de acessibilidade não aceita conteúdo nem clique: os ícones não foram montados',
+    );
+  }
+
+  if (a11yBar && barraUsavel) {
+    a11yBar.innerHTML = iconsMarkup(pauseIcons.iconesMontados);
+    a11yBar.addEventListener('click', (e) => {
+      const botao = (e.target as Element | null)?.closest<HTMLElement>('.pi-btn');
+      if (!botao) return;
+      pauseIcons.iconAct(botao.dataset.pi ?? '', 0);
+      pauseIcons.reflectIconsIn(a11yBar, 0);
+      // O anúncio lê o `aria-label` DEPOIS do reflexo, porque é ele que carrega o estado NOVO — anunciar
+      // antes diria o estado que a criança acabou de deixar.
+      srSay(botao.getAttribute('aria-label') ?? '');
+    });
+    pauseIcons.reflectIconsIn(a11yBar, 0);
   }
 
   // 4d. QUEM ABRIU A PAUSA, quando há mais de um assento — o achado 3 da auditoria do `game-soccer`.

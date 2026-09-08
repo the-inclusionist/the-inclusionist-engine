@@ -75,6 +75,11 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
   const feito = [];
   const el = (id) => ({
     id, hidden: true, style: {}, dataset: {},
+    // ⚠️ `innerHTML` ENTROU EM 2026-09-08, e é a mesma lição que o `ausentes` e o `mapa` já ensinaram neste
+    // ficheiro: um duplo mais pobre do que a coisa real não testa a pergunta. Todo `Element` de verdade tem
+    // `innerHTML`; sem ele aqui, a montagem da barra (etapa 2 do ADR-0106) recusava-se a correr e o duplo
+    // fazia a engine parecer errada. O caso que isto destrava é o da barra montada, logo abaixo.
+    innerHTML: '',
     querySelector: () => null, querySelectorAll: () => [],
     addEventListener: () => {}, setAttribute: () => {}, removeChild: () => {},
     get firstChild() { return null; },
@@ -174,6 +179,39 @@ describe('createGame em execução', () => {
     expect(motor.problems[0]).toMatch(/filtros/);
   });
 
+  it('⚠️ [Right] a engine MONTA a barra de acessibilidade da primeira tela (ADR-0106 etapa 2)', async () => {
+    // ⚠️ ESTE É O PEDIDO DO DEV EM FORMA DE AFIRMAÇÃO: «todo jogo da engine inclusionist deve ter os mesmos
+    // ícones de acessibilidade desde a primeira tela». Até hoje o `createGame` só REPORTAVA a ausência — e o
+    // próprio ADR dizia que reportar não é oferecer.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const barra = {
+      id: 'title-icons', innerHTML: '', addEventListener: () => {},
+      querySelector: () => null, querySelectorAll: () => [],
+    };
+    const { doc, win } = domFalso({ mapa: { '#title-icons': barra } });
+    const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
+
+    expect(barra.innerHTML, 'a engine não escreveu ícone nenhum na barra').toContain('pi-btn');
+    expect(barra.innerHTML, 'o modo cego não está na primeira tela').toContain('data-pi="blind"');
+    expect(barra.innerHTML, 'o TTS não está na primeira tela').toContain('data-pi="tts"');
+    // ⚠️ E o §5 alcança a barra montada por AQUI também: sem escritor visual injectado, os dois ícones que
+    // precisam dele não entram — em vez de entrarem e recusarem a criança que carregar neles.
+    expect(barra.innerHTML, 'contraste montado sem quem o escreva').not.toContain('data-pi="contrast"');
+    expect(barra.innerHTML, 'correção de cor montada sem quem a escreva').not.toContain('data-pi="cvd"');
+    expect(motor.problems.filter((p) => /barra de acessibilidade/.test(p)), 'acusou uma barra que montou').toEqual([]);
+  });
+
+  it('⚠️ [Boundary] um hospedeiro que não aceita conteúdo nem clique NÃO derruba o boot', async () => {
+    // Derrubar o jogo inteiro por causa da barra seria tirá-lo de toda a gente para não o dar a ninguém. A
+    // lacuna vira `problems`, como as outras do hospedeiro.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const inutil = { id: 'title-icons', querySelector: () => null, querySelectorAll: () => [] };
+    const { doc, win } = domFalso({ mapa: { '#title-icons': inutil } });
+    let motor;
+    expect(() => { motor = createGame({ declaration: declaracaoValida(), host: { doc, win } }); }).not.toThrow();
+    expect(motor.problems.some((p) => /não aceita conteúdo nem clique/.test(p))).toBe(true);
+  });
+
   it('⚠️ [Zero] com DOIS assentos e sem ator de pausa, a engine DIZ — o segundo não consegue remapear', async () => {
     // O achado 3 da auditoria do `game-soccer`. O painel de controle é parametrizado pelo ASSENTO
     // (`render(selPlayer)` desenha as posições daquele esquema) e não tem selector — quem escolhe é o
@@ -262,7 +300,13 @@ describe('createGame em execução', () => {
     // exigir um id em vez de uma barra.
     return import('../app/js/boot/create-game.js').then(({ createGame }) => {
       const { doc, win } = domFalso({ ausentes: ['#title-icons'] });
-      const meuSitio = { id: 'outro-lugar', querySelector: () => null, querySelectorAll: () => [] };
+      // ⚠️ O duplo ganhou `innerHTML` e `addEventListener` em 2026-09-08: desde a etapa 2 do ADR-0106 a
+      // engine MONTA a barra aqui dentro, e um elemento que não aceita conteúdo nem clique é acusado por uma
+      // linha própria de `problems` — correctamente, mas não é o que este caso mede.
+      const meuSitio = {
+        id: 'outro-lugar', innerHTML: '', addEventListener: () => {},
+        querySelector: () => null, querySelectorAll: () => [],
+      };
       const motor = createGame({
         declaration: declaracaoValida(),
         host: { doc, win, a11yBarHost: meuSitio },

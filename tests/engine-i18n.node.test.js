@@ -210,7 +210,13 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'boot/create-game.ts': 8,        // a mensagem do `throw` e as lacunas do hospedeiro
+  'boot/create-game.ts': 9,        // a mensagem do `throw` e as lacunas do hospedeiro
+                                   // ⚠️ 8 → 9 em 2026-09-08: o elemento da barra que não aceita conteúdo nem
+                                   // clique (etapa 2 do ADR-0106). Mesma classe das outras — lacuna do
+                                   // HOSPEDEIRO, lida por quem integra a engine — e a linha existe porque a
+                                   // alternativa era pior: sem ela, um duplo sem `addEventListener` derrubava
+                                   // o BOOT INTEIRO, e derrubar o jogo por causa da barra seria tirá-lo de
+                                   // toda a gente para não o dar a ninguém.
                                    // ⚠️ 5 → 8 em 2026-09-08: o ATOR DA PAUSA com mais de um assento (achado 3
                                    // da auditoria do `game-soccer`). São TRÊS linhas e não uma porque a frase
                                    // é longa de propósito — ela nomeia a saída (`declines.semAtorDePausa`) e o

@@ -657,6 +657,15 @@ export interface PauseIconsApi {
   buildScreenPause: (i: number) => HTMLElement;
   /** Monta a BARRA RÁPIDA (`.screen-a11y`) da tela `i`, já fiada. Chamada por ui/hud.ts, uma por tela. */
   buildQuickBar: (i: number) => HTMLElement;
+  /**
+   * OS ÍCONES QUE ESTA INSTÂNCIA MONTA — já filtrados pelo §5 do ADR-0106.
+   *
+   * ⚠️ Existe para que quem monta a barra do TÍTULO não repita o filtro. A barra do título não pode usar
+   * `buildQuickBar` (ele põe `tabIndex = -1`, e o próprio comentário lá diz porquê: no título não se está a
+   * jogar), então ela chama `iconsMarkup` directamente — e sem este acessor teria de recalcular quais ícones
+   * accionam, que é uma segunda cópia da mesma decisão.
+   */
+  iconesMontados: readonly PauseIcon[];
   /** ENTRA no modo `accessibility` da tela `i` — é o que o item `acessibilidade` da pausa faz. */
   entrarNaBarra: (i: number) => void;
   /** SAI do modo e devolve o direcional ao personagem. */
@@ -1098,6 +1107,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   return {
     buildScreenPause, buildQuickBar, entrarNaBarra, sairDaBarra, naBarraDe, navBar,
+    iconesMontados: iconesDoJogo,
     iconAct, iconLabel, reflectIconBtn, reflectIconsIn, reflectPauseIcons,
     // ⚠️ O `setCalmMode` PERSISTE TAMBÉM, e sanea. Ele é a outra porta para o mesmo valor — se só o ciclo do
     // ícone gravasse, um nível posto por aqui sobreviveria à sessão e não ao fecho da aba, que é a metade
