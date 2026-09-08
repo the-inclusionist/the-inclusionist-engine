@@ -3,6 +3,17 @@ metadata:
   status: "accepted"
   date: 2026-09-06
   supersedes-in-part: [ADR-0093]
+  superseded-in-part:
+    - by: ADR-0110
+      what: "the clause that the game's door is the ONLY way a neural voice arrives. ⚠️ The door itself SURVIVES,
+             and so does the argument under it — 135 MB of WASM cannot be paid by a game that never speaks. What
+             changed is who opens it: issue #91 measured that `carregarVozNeural` was declared by three of the
+             six local games and NOT by the other three, which had no neural voice at all while nothing said so
+             — against ADR-0065 §3's written promise that a cartridge «does not have to know one exists». A door
+             every cartridge must remember to open is the ADR-0106 §2 defect, and three hundred games cannot
+             each answer a question about speech synthesis. From ADR-0110 the engine guarantees the voices and
+             fetches them itself; this record's door remains as the OVERRIDE for a game that wants a different
+             supplier."
   decision-makers: [Dev]
   consulted:
     - "ADR-0093 — SUPERSEDIDO EM PARTE: a escolha do CAMPO (`dependencies`) e o número que a sustentava. O

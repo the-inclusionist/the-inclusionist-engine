@@ -3,6 +3,19 @@ metadata:
   status: "accepted"
   date: 2026-08-27
   supersedes: [ADR-0022]
+  superseded-in-part:
+    - by: ADR-0110
+      what: "§2's COUNT (three locales became four voices — en_US ships two) and §4's DELIVERY MODEL. §4 chose
+             runtime cache on FIRST USE over precache, and the argument it gave is what expired: «neural speech
+             is an ACCOMMODATION, not a feature everyone uses; precaching would make every machine pay 200 MB
+             so that the few which need it are ready». The Dev did not contradict that reasoning on 2026-09-08
+             — he withdrew its premise: «o jogo é educativo e precisa de leitor de tela mesmo para pessoas não
+             cegas». When the answer is EVERY child, cost and benefit land in the same place and «few benefit»
+             stops being true. ⚠️ §3 (the voices belong to the ENGINE), §5 (one source, `vits-piper` only, never
+             `ncnn`, no `int8` — with the measured reason that int8 runs ~3x SLOWER in the WASM backend) and §6
+             (which voice file is DATA, not a decision) are UNTOUCHED and still govern. So is the clause that
+             the fallback must SPEAK while the model downloads — which ADR-0110 makes more load-bearing, not
+             less, because the download now starts before any child asked for it."
   decision-makers: [Dev]
   consulted:
     - "ADR-0022 — SUPERSEDED by this record. Its comparison of the WASM runtimes is the work this record rests on
