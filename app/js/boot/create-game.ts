@@ -126,6 +126,20 @@ export interface Declinios {
   readonly semAssistenteDePad?: boolean;
   /** Sem "ator da pausa" — quem apertou o botão que abriu o menu. */
   readonly semAtorDePausa?: boolean;
+  /**
+   * Sem voz neural — este jogo não abre a porta do ADR-0094.
+   *
+   * ⚠️ EXISTE PORQUE A AUSÊNCIA ESTAVA A SER SILENCIOSA, e a medição de 2026-09-08 diz quanto: dos SEIS jogos
+   * do catálogo local, TRÊS declaram `carregarVozNeural` (platformer, 15-puzzle, 2048) e TRÊS não
+   * (`game-soccer`, `whackwhack`, `game-chess`). Nos três últimos não há voz neural nenhuma, e nada o dizia.
+   *
+   * ⚠️ E ISSO CONTRADIZ UMA PROMESSA ESCRITA. O ADR-0065 §3 diz que as vozes «fazem parte da engine, e não do
+   * jogo em si» e que um cartucho «não tem de saber que existe»; o ADR-0094 — com razão, e por 135 MB de WASM
+   * — passou a exigir UMA LINHA do jogo. As duas coisas podem ser verdade ao mesmo tempo (a engine é dona das
+   * VOZES, o jogo nomeia o FORNECEDOR), mas só se quem esquece a linha for avisado. Declinar é escolha; não
+   * declarar era omissão.
+   */
+  readonly semVozNeural?: boolean;
 }
 
 export interface CreateGameOptions {
@@ -325,6 +339,13 @@ export function createGame(o: CreateGameOptions): Engine {
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
     carregarVozNeural: o.carregarVozNeural,
   });
+  if (!o.carregarVozNeural && !declines.semVozNeural) {
+    problems.push(
+      'sem voz neural: declare `carregarVozNeural` (uma linha — ver ADR-0094) ou `declines.semVozNeural`. '
+      + 'Sem ela a criança que não lê fica com a voz do sistema, que em Chromebook de escola pode não existir '
+      + 'em português',
+    );
+  }
 
   /**
    * O FILTRO DE VISÃO, aplicado ao MUNDO QUE O JOGO DECLAROU (ADR-0087).

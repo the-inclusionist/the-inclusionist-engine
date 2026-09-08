@@ -178,10 +178,42 @@ describe('createGame em execução', () => {
   it('[Right] com o documento completo, `problems` só acusa o que de fato falta', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
+    // ⚠️ A porta da voz neural entra aqui em 2026-09-08 porque um jogo REAL a abre (ADR-0094, uma linha). Sem
+    // ela, o `problems` acusaria — correctamente — e este caso deixaria de medir o que diz medir.
+    const motor = createGame({
+      declaration: declaracaoValida(), host: { doc, win },
+      carregarVozNeural: () => Promise.resolve({}),
+    });
     // O host de filtros não foi fornecido neste caso, e é a ÚNICA lacuna que deve sobrar.
     expect(motor.problems).toHaveLength(1);
     expect(motor.problems[0]).toMatch(/filtros/);
+  });
+
+  it('⚠️ [Zero] SEM voz neural declarada, a engine DIZ — e TRÊS dos seis jogos estão assim', async () => {
+    // 📏 Medido em 2026-09-08: `carregarVozNeural` é declarado por `game-platformer`, `pixi-15-puzzle` e
+    // `2048`, e NÃO por `game-soccer`, `whackwhack` e `game-chess`. Nesses três não há voz neural nenhuma, e
+    // nada o dizia — `neuralDisponivel` é só `!!ctx.carregarVozNeural`.
+    //
+    // ⚠️ E ISSO CONTRADIZ UMA PROMESSA ESCRITA: o ADR-0065 §3 diz que as vozes «fazem parte da engine» e que
+    // um cartucho «não tem de saber que existe». O ADR-0094 — com razão, por 135 MB de WASM — passou a exigir
+    // uma linha do jogo. As duas coisas convivem, MAS só se quem esquece a linha for avisado.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
+    const linha = motor.problems.find((p) => /voz neural/.test(p));
+    expect(linha, 'sem voz neural e a engine não disse nada').toBeTruthy();
+    expect(linha, 'não nomeia a saída').toMatch(/carregarVozNeural/);
+    expect(linha, 'não nomeia o declínio').toMatch(/semVozNeural/);
+    expect(linha, 'não diz o que a criança perde').toMatch(/não lê|português/);
+  });
+
+  it('⚠️ [Right] DECLARAR `semVozNeural` cala a linha — declinar é escolha, não declarar é omissão', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({
+      declaration: declaracaoValida(), host: { doc, win }, declines: { semVozNeural: true },
+    });
+    expect(motor.problems.filter((p) => /voz neural/.test(p))).toEqual([]);
   });
 
   it('⚠️ [Right] a engine MONTA a barra de acessibilidade da primeira tela (ADR-0106 etapa 2)', async () => {

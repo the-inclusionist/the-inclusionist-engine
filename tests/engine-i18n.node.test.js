@@ -210,7 +210,12 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'boot/create-game.ts': 12,       // a mensagem do `throw` e as lacunas do hospedeiro
+  'boot/create-game.ts': 15,       // a mensagem do `throw` e as lacunas do hospedeiro
+                                   // ⚠️ 12 → 15 em 2026-09-08: a VOZ NEURAL ausente. Medido: três dos seis
+                                   // jogos não declaram `carregarVozNeural` e ficavam sem voz neural em
+                                   // silêncio — contra a promessa escrita do ADR-0065 §3 de que um cartucho
+                                   // «não tem de saber que existe». Três linhas pela mesma razão das
+                                   // anteriores: a frase nomeia a saída, o declínio E o que a criança perde.
                                    // ⚠️ 9 → 12 em 2026-09-08: o sítio do MENU DE PAUSA (etapa 2 do ADR-0106).
                                    // Três linhas porque a frase nomeia a saída (`host.pauseHost` /
                                    // `#game-region`), o que a criança perde, E o declínio que diz «é de
