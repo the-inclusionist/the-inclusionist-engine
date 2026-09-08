@@ -201,6 +201,9 @@ const pt: Record<string, string> = {
   'sr.ctrl.pressNewKey': 'Pressione a nova tecla para {acao} do Jogador {n}, ou Esc para cancelar.',
   'sr.ctrl.keyTaken': 'Essa tecla já é do Jogador {n}. Escolha outra, ou Esc para cancelar.',
   'sr.ctrl.keyTakenHere': 'Essa tecla já é de {acao}. Escolha outra, ou Esc para cancelar.',
+  // ⚠️ SEM O NOME DA POSIÇÃO, de propósito: ela é uma que este jogo não nomeia, e o id interno (`action2`)
+  // não pode chegar a uma criança (ADR-0074). A frase diz a verdade que interessa — a tecla está ocupada.
+  'sr.ctrl.keyTakenHereUnnamed': 'Essa tecla já está em uso neste controle. Escolha outra, ou Esc para cancelar.',
   'sr.ctrl.reset': 'Controles restaurados ao padrão.',
 
   // Painel de áudio (#audio) — saídas por jogador, som/narração, bengala, motores de voz.

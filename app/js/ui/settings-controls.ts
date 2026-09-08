@@ -221,13 +221,25 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
   }
 
   /**
-   * COMO ESTE JOGO CHAMA esta posição. Um sítio só, porque três pontos precisavam dela e cada um a ia
-   * buscar por sua conta — e um deles ia buscá-la à tabela errada (#125).
+   * COMO ESTE JOGO CHAMA esta posição, ou `null` se ele não a nomeia. Um sítio só, porque três pontos
+   * precisavam dela e cada um a ia buscar por sua conta — e um deles ia buscá-la à tabela errada (#125).
    *
-   * O recuo é o id ABSTRATO da posição: `action3` é feio, mas é verdade. Uma palavra errada não é.
+   * 🔴 O RECUO ERA O ID ABSTRATO (`?? a`), DEFENDIDO AQUI COM «`action3` é feio, mas é verdade». Era um
+   * defeito, e o ADR-0074 chama-lhe isso em tantas palavras: «o nome que a CRIANÇA lê e ouve — na tela de
+   * remapeamento, na bolha de toque, no anúncio — é sempre a palavra do jogo, nunca `action1`. Um nome
+   * abstracto que chega a uma pessoa é um defeito.»
+   *
+   * ⚠️ E ESTAVA A UM TOQUE DE DISTÂNCIA, com o esquema PADRÃO desta engine: ele liga OITO posições e um quiz
+   * nomeia três. A criança escolhia «Confirmar», carregava numa tecla que o padrão tinha em `action2`, e o
+   * leitor de tela dizia «Essa tecla já é de action2» — precisamente a ela, que é quem não tem outro canal.
+   *
+   * 📌 A TERCEIRA SAÍDA JÁ ESTAVA DECIDIDA UM MÓDULO ABAIXO, e este ficheiro tinha decidido outra:
+   * `core/actions.labellerFrom` devolve `null` «e quem chama decide — uma ausência vira menos um passo, nunca
+   * um passo mudo». Duas respostas à mesma pergunta no mesmo repositório é o defeito que o `DomQuery` já
+   * custou dezasseis vezes; agora são uma.
    */
-  function palavraDaAcao(a: Action): string {
-    return ctx.acoesDoJogo().find((x) => x.acao === a)?.rotulo ?? a;
+  function palavraDaAcao(a: Action): string | null {
+    return ctx.acoesDoJogo().find((x) => x.acao === a)?.rotulo ?? null;
   }
 
   function render(selPlayer: number): void {
@@ -301,9 +313,15 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
         // numa chave que transporte nenhum lê — a criança carregaria a tecla nova e nada aconteceria.
         const act = b.dataset.act;
         if (!act || !isAction(act)) return;
+        // ⚠️ SEM PALAVRA, NÃO SE PERGUNTA — a regra do `labellerFrom`, aplicada onde ela é visível: «se o jogo
+        // não a usa, não há o que mapear; uma ausência vira menos um passo, nunca um passo mudo». As linhas
+        // vêm todas de `acoesDoJogo()`, logo isto não acontece hoje — e é essa garantia que fica escrita em
+        // vez de assumida, porque quem a partir amanhã acorda um anúncio sem sujeito.
+        const palavra = palavraDaAcao(act);
+        if (!palavra) return;
         capture = { action: act, mapRef: map, player };
         b.textContent = t('ctrl.pressing'); // estava cravado em português dentro do motor (#125)
-        ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: palavraDaAcao(act), n: player + 1 }));
+        ctx.srAlert(t('sr.ctrl.pressNewKey', { acao: palavra, n: player + 1 }));
       });
     });
     // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109).
@@ -338,7 +356,13 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
     // dois passos (soltar a antiga, prender a nova) e não perde nada pelo caminho.
     const aqui = acaoQueJaTem(e.code, capture.mapRef, capture.action);
     if (aqui) {
-      ctx.srAlert(t('sr.ctrl.keyTakenHere', { acao: palavraDaAcao(aqui) }));
+      // ⚠️ `aqui` VEM DO ESQUEMA, e o esquema liga posições que o jogo pode não nomear — é por aqui que o id
+      // abstracto chegava a uma criança. Sem palavra, a frase diz a verdade que INTERESSA («a tecla está
+      // ocupada aqui») em vez do nome interno: calar seria o defeito gémeo, e dizer `action2` era o defeito.
+      const palavra = palavraDaAcao(aqui);
+      ctx.srAlert(palavra
+        ? t('sr.ctrl.keyTakenHere', { acao: palavra })
+        : t('sr.ctrl.keyTakenHereUnnamed'));
       e.preventDefault();
       return true; // não associa: segue capturando
     }

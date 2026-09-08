@@ -163,6 +163,50 @@ describe('ui/settings-controls', () => {
     expect(ctx.store.saved).toHaveLength(0);
   });
 
+  it('🔴 [Boundary] NENHUM nome abstracto chega à criança — nem quando a tecla está numa posição sem palavra', () => {
+    // 🔴 A REGRA MAIS AFIADA DO ADR-0074, e ela nunca teve gate: «o nome que a CRIANÇA lê e ouve — na tela de
+    // remapeamento, na bolha de toque, no anúncio — é sempre a palavra do jogo, nunca `action1`. Um nome
+    // abstracto que chega a uma pessoa é um defeito.»
+    //
+    // ⚠️ E ESTAVA A UM TOQUE DE DISTÂNCIA, com o esquema PADRÃO da própria engine. Ele liga OITO posições
+    // (`left/right/up/down` + `action1..action4`); um quiz nomeia três. A criança abre a tela — que só mostra
+    // as três linhas nomeadas —, escolhe «Confirmar», e carrega numa tecla que o padrão tem em `action2`. O
+    // `acaoQueJaTem` procura no ESQUEMA e não na lista do jogo, então devolvia uma posição sem palavra, e o
+    // leitor de tela dizia «Essa tecla já é de action2» — à criança cega, que é quem a regra protege.
+    //
+    // 📌 O `core/actions.labellerFrom` já tinha decidido a saída certa — devolver `null` e o chamador tratar a
+    // ausência — e este ficheiro tinha decidido outra. Duas respostas à mesma pergunta, e uma contraria um ADR
+    // aceite.
+    const ctx = buildCtx({
+      acoesDoJogo: () => [
+        { acao: 'up', rotulo: 'Subir' }, { acao: 'down', rotulo: 'Descer' },
+        { acao: 'action1', rotulo: 'Confirmar' },
+      ],
+    });
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    const tomada = ctx.kbFor(0).action2[0]; // a tecla que o esquema padrão já deu a uma posição SEM palavra
+    $('#ctrl-list').querySelector('button[data-act="action1"]').click();
+    const consumed = api.handleCaptureKeydown({ code: tomada, preventDefault: () => {} });
+
+    expect(consumed).toBe(true);
+    expect(api.isCapturing(), 'recusar tem de manter a captura, senão a criança perde o passo').toBe(true);
+    const dito = ctx.alerted.at(-1);
+    expect(dito, 'o anúncio tem de existir — recusar em silêncio é o defeito gémeo').toBeTruthy();
+    expect(dito, 'nome abstracto de posição falado a uma criança (ADR-0074)').not.toMatch(/action[1-8]|leftShoulder|rightShoulder|leftTrigger|rightTrigger/);
+  });
+
+  it('[Right] e quando o jogo NOMEIA a posição, o anúncio diz a palavra dele', () => {
+    // O outro lado do mesmo par: sem este caso, calar o anúncio por completo passaria no caso acima.
+    const ctx = buildCtx();
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    const tomada = ctx.kbFor(0).action2[0];
+    $('#ctrl-list').querySelector('button[data-act="action1"]').click();
+    api.handleCaptureKeydown({ code: tomada, preventDefault: () => {} });
+    expect(ctx.alerted.at(-1)).toContain('Pular'); // a palavra que ESTE jogo dá a `action2`
+  });
+
   it('[Zero] handleCaptureKeydown sem captura em andamento retorna false e não toca no DOM', () => {
     const ctx = buildCtx();
     const api = initSettingsControls(ctx);
@@ -415,3 +459,17 @@ describe('ui/settings-controls — o que o leitor de tela ouve e a palavra DESTE
 //     portugues cravado e a traducao pt sao a MESMA cadeia. ⚠️ Registado como mutacao que nao falha: o que a
 //     apanha e o gate de prosa do `engine-i18n`, e so porque a frase tem acento. Um caso que a prendesse
 //     teria de trocar o idioma em tempo de teste, e o `setLocale` nao esta ligado neste ficheiro.
+//
+// --- 2026-09-08 · o nome abstracto que chegava a uma crianca (ADR-0074) ---
+//   · 🔴 `palavraDaAcao` a recuar para `?? a` — O DEFEITO REPOSTO, e nao uma mutacao inventada: era o codigo
+//     que estava aqui, defendido por um comentario. Reprova o caso novo, e so ele. Todo o resto do ficheiro
+//     fica verde com ele aplicado, que e a medida de quanto isto passava sem ser visto.
+//   · o ramo invertido (`ctx.srAlert(!palavra`) → reprovam TRES: quem tem palavra ouve a frase generica e
+//     quem nao tem ouve o id. E o par de casos a funcionar como par — um so nao apanharia a inversao.
+//   · a frase generica a ficar VAZIA → reprova o caso novo pela assercao do `toBeTruthy`. Recusar em silencio
+//     e o defeito GEMEO de dizer `action2`, e sem essa linha o gate premiaria calar o anuncio.
+//   · ⚠️ NAO MUTADA, e declarado em vez de escondido: `if (!palavra) return;` no inicio da captura. Ela e
+//     hoje INALCANCAVEL — o `render` so emite linhas de `acoesDoJogo()`, logo `capture.action` tem sempre
+//     palavra —, entao qualquer mutacao dela e EQUIVALENTE. Fica como guarda para quem mudar a origem das
+//     linhas, e o comentario no codigo diz isso; um caso que a prendesse teria de renderizar uma linha que a
+//     engine nao consegue produzir.
