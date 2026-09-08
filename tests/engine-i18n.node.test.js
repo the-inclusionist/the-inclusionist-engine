@@ -210,7 +210,13 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'boot/create-game.ts': 4,        // a mensagem do `throw` e as lacunas do hospedeiro
+  'boot/create-game.ts': 5,        // a mensagem do `throw` e as lacunas do hospedeiro
+                                   // ⚠️ 4 → 5 em 2026-09-08: a barra de acessibilidade que falta na primeira
+                                   // tela (issue #114 / pedido do Dev). Sobe pela MESMA razão que as duas
+                                   // linhas abaixo — é lacuna do hospedeiro, lida por quem integra a engine
+                                   // e não por uma criança —, e a medição que a motivou vale a nota: CINCO
+                                   // dos seis jogos do catálogo local não têm barra nenhuma. Uma linha nova
+                                   // aqui é o preço de a engine deixar de se calar sobre isso.
                                    // 3 → 4 em 2026-09-06: o ADR-0087 acrescentou «mundo declarado não
                                    // encontrado», que é a lacuna do hospedeiro para o campo novo. Sobe pela
                                    // mesma razão das outras deste bloco: são mensagens que quem INTEGRA a

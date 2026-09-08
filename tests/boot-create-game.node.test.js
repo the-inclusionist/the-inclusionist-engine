@@ -174,6 +174,60 @@ describe('createGame em execução', () => {
     expect(motor.problems[0]).toMatch(/filtros/);
   });
 
+  it('⚠️ [Zero] SEM barra de acessibilidade na primeira tela, a engine DIZ — e cinco jogos não a têm', () => {
+    // ⚠️ `ausentes` e não `comMarcacao: false`, e a razão está escrita no próprio `domFalso`: «um duplo que
+    // responde SIM a qualquer seletor não testa a pergunta — testa apenas que ela foi feita». Sem isto o caso
+    // ficaria verde sem nunca ter exercitado a ausência, que é como o caso do mundo inexistente passou verde
+    // uma vez.
+    //
+    // O PEDIDO DO DEV (2026-09-07): «os ícones de acessibilidade que aparecem no jogo desde a primeira tela
+    // devem ser oferecidos pela ENGINE e não pela programação do jogo. Todo jogo da engine inclusionist deve
+    // ter o mesmo menu de pausa e ícones de acessibilidade desde a primeira.»
+    //
+    // ⚠️ E A MEDIÇÃO DE 2026-09-08 fez disto um ACHADO: dos seis jogos do catálogo local, CINCO não têm barra
+    // nenhuma — `pixi-15-puzzle`, `game-chess`, `game-soccer`, `2048` e `whackwhack` não chamam
+    // `initPauseIcons` nem montam HUD. Uma criança que depende do modo cego, do TTS ou do alto contraste abre
+    // esses cinco e não tem por onde. Este caso não monta a barra; fecha o SILÊNCIO, que era a parte que
+    // fazia cinco jogos parecerem completos.
+    return import('../app/js/boot/create-game.js').then(({ createGame }) => {
+      const { doc, win } = domFalso({ ausentes: ['#title-icons'] });
+      const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
+      const linha = motor.problems.find((p) => /barra de acessibilidade/.test(p));
+      expect(linha, 'a engine calou-se sobre a barra que falta').toBeTruthy();
+      // A frase nomeia a SAÍDA e o que se PERDE — «falta uma coisa» manda procurar sem dizer o quê.
+      expect(linha).toMatch(/a11yBarHost/);
+      expect(linha).toMatch(/#title-icons/);
+      expect(linha, 'não diz o que a criança perde').toMatch(/cego|TTS|contraste|Libras/);
+    });
+  });
+
+  // ========================= MUTACOES CONFERIDAS (a barra de a11y da primeira tela) =========================
+  //   · `if (!a11yBar)` -> `if (false)` (a engine volta a calar-se) -> reprova o caso do Zero. E o estado do
+  //     repositorio ate hoje, e e' o que faz cinco jogos parecerem completos.
+  //   · tirando o `o.host.a11yBarHost ??` -> reprova o caso do jogo que declara o seu elemento. O gate
+  //     passaria a exigir um ID em vez de uma barra, e um cartucho com outra marcacao ficaria acusado sem ter
+  //     defeito nenhum.
+  //   · encurtando a frase para «sem barra de acessibilidade na primeira tela» -> reprova, porque ela deixa
+  //     de nomear a SAIDA (`a11yBarHost` / `#title-icons`). «Falta uma coisa» manda procurar sem dizer o que.
+  //   · tirando a segunda metade da frase -> reprova: ela deixa de dizer o que a CRIANCA perde, que e' a
+  //     parte que faz alguem consertar em vez de arquivar.
+
+  it('[Right] e um jogo que DECLARA o seu elemento não é acusado — a barra não tem de se chamar assim', () => {
+    // O id `#title-icons` é o que o jogo de plataforma usa desde sempre, e não é um requisito de nome: um
+    // cartucho com outra marcação declara o elemento e fica servido. Sem este caso, o de cima estaria a
+    // exigir um id em vez de uma barra.
+    return import('../app/js/boot/create-game.js').then(({ createGame }) => {
+      const { doc, win } = domFalso({ ausentes: ['#title-icons'] });
+      const meuSitio = { id: 'outro-lugar', querySelector: () => null, querySelectorAll: () => [] };
+      const motor = createGame({
+        declaration: declaracaoValida(),
+        host: { doc, win, a11yBarHost: meuSitio },
+      });
+      expect(motor.problems.some((p) => /barra de acessibilidade/.test(p)),
+        'acusou um jogo que declarou onde a barra entra').toBe(false);
+    });
+  });
+
 
   it('⚠️ o MUNDO declarado que NAO existe no documento vira `problems` (ADR-0087)', async () => {
     // A falha que a conformidade nao alcanca: `conformanceProblems` confere a FORMA — que ha um seletor e

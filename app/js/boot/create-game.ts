@@ -72,6 +72,26 @@ export interface EngineHost {
   readonly win: Window;
   /** Um `<svg>` vazio onde os seis filtros de daltonismo são montados em tempo de execução. */
   readonly cvdHost?: SVGElement | Element | null;
+  /**
+   * ONDE A BARRA DE ACESSIBILIDADE ENTRA, na PRIMEIRA tela do jogo.
+   *
+   * ⚠️ PEDIDO DO DEV, 2026-09-07: «o menu de pausa, o design do menu de pausa e os ícones de acessibilidade
+   * que aparecem no jogo desde a primeira tela devem ser oferecidos pela ENGINE e não pela programação do
+   * jogo. Todo jogo da engine inclusionist deve ter o mesmo menu de pausa e ícones de acessibilidade desde a
+   * primeira.»
+   *
+   * ⚠️ E A MEDIÇÃO DE 2026-09-08 MOSTROU QUE É UM ACHADO, e não uma arrumação: dos seis jogos do catálogo
+   * local, CINCO não têm barra de acessibilidade nenhuma — nem menu de pausa. `pixi-15-puzzle`, `game-chess`,
+   * `game-soccer`, `2048` e `whackwhack` não chamam `initPauseIcons` nem montam HUD, e o `createGame` nunca
+   * os montou por eles. O comentário do `ui/pause-icons` diz porquê sem o notar: «`initPauseIcons` é chamado
+   * pela raiz de composição de CADA jogo» — ou seja, cada jogo tinha de se lembrar, e cinco não se lembraram.
+   * A criança que depende do modo cego, do TTS ou do alto contraste abre esses cinco jogos e não tem por onde.
+   *
+   * Ausente, a engine procura `#title-icons` — o id que o jogo de plataforma usa desde sempre — e, não o
+   * achando, diz-o em `problems`. Dizer não é montar, e a montagem é o passo seguinte; o que isto fecha é o
+   * SILÊNCIO, que era a parte que fazia cinco jogos parecerem completos.
+   */
+  readonly a11yBarHost?: Element | null;
 }
 
 /**
@@ -228,6 +248,16 @@ export interface Engine {
 const MARCACAO_EXIGIDA: readonly string[] = ['#game-region', '#sr-status', '#sr-alert'];
 
 /**
+ * Onde a engine procura a barra de acessibilidade quando o jogo não declara `host.a11yBarHost`.
+ *
+ * ⚠️ NÃO ENTROU NA `MARCACAO_EXIGIDA` de propósito, e a diferença é de mensagem e não de rigor. Aquela lista
+ * produz «marcação ausente: #x», que é o que se diz de um id que o jogo esqueceu. Aqui o que falta não é um
+ * id — é a barra inteira, e cinco jogos do catálogo não a têm porque ninguém lhes disse que a deviam ter. A
+ * frase própria pode explicar O QUE se perde, e é isso que a torna útil a quem a lê pela primeira vez.
+ */
+const SELETOR_BARRA_A11Y = '#title-icons';
+
+/**
  * Liga a engine para um jogo declarado.
  *
  * ⚠️ LANÇA se a declaração for malformada, e NÃO lança se faltar marcação. A diferença não é gosto: uma
@@ -314,6 +344,16 @@ export function createGame(o: CreateGameOptions): Engine {
   // 4. Daltonismo: a engine ENTREGA o markup em vez de exigir que o consumidor o adivinhe (achado 7).
   const cvdFilters = installCvdFilters(o.host.cvdHost ?? null);
   if (!cvdFilters) problems.push('sem host de filtros (<svg>): a correção de daltonismo não foi montada');
+
+  // 4c. A BARRA DE ACESSIBILIDADE DA PRIMEIRA TELA. Ver a nota em `EngineHost.a11yBarHost`: cinco dos seis
+  //     jogos do catálogo não têm nenhuma, e nada o dizia. Isto não a monta — diz que ela falta, que é o
+  //     passo que tira o silêncio. A frase nomeia a saída, como as outras deste bloco fazem.
+  const a11yBar = o.host.a11yBarHost ?? $(SELETOR_BARRA_A11Y);
+  if (!a11yBar) {
+    problems.push(
+      `sem barra de acessibilidade na primeira tela: declare \`host.a11yBarHost\` ou ponha um ${SELETOR_BARRA_A11Y} no documento. Sem ela a criança não alcança modo cego, TTS, alto contraste nem Libras antes de começar`,
+    );
+  }
 
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.
   const sonar = createAudioSonar({
