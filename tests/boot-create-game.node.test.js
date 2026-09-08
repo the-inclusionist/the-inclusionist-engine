@@ -80,6 +80,11 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
     // `innerHTML`; sem ele aqui, a montagem da barra (etapa 2 do ADR-0106) recusava-se a correr e o duplo
     // fazia a engine parecer errada. O caso que isto destrava é o da barra montada, logo abaixo.
     innerHTML: '',
+    // ⚠️ `appendChild` entrou na mesma volta e pela mesma razão: desde a etapa 2 o `createGame` PENDURA o
+    // cartão de pausa no hospedeiro, e um duplo que não aceita filhos fazia a engine acusar uma lacuna que
+    // só existia no duplo. Terceira vez que este ficheiro aprende a lição — ver `ausentes` e `mapa`.
+    filhos: [],
+    appendChild(n) { this.filhos.push(n); return n; },
     querySelector: () => null, querySelectorAll: () => [],
     addEventListener: () => {}, setAttribute: () => {}, removeChild: () => {},
     get firstChild() { return null; },
@@ -199,6 +204,42 @@ describe('createGame em execução', () => {
     expect(barra.innerHTML, 'contraste montado sem quem o escreva').not.toContain('data-pi="contrast"');
     expect(barra.innerHTML, 'correção de cor montada sem quem a escreva').not.toContain('data-pi="cvd"');
     expect(motor.problems.filter((p) => /barra de acessibilidade/.test(p)), 'acusou uma barra que montou').toEqual([]);
+  });
+
+  it('⚠️ [Right] a engine monta o CARTÃO DE PAUSA — e com o id que ela própria procura', async () => {
+    // 📏 O LAÇO QUE ISTO FECHA, medido nos seis jogos: `#vp-pause-0` é procurado pelo `getPauseMenu` desta
+    // raiz e NENHUM jogo o cria (`git grep vp-pause` devolve zero nos seis). A engine inventou uma convenção,
+    // procurou-a, não a achou, e concluiu em silêncio que nenhum jogo tem menu de pausa.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const regiao = {
+      id: 'game-region', innerHTML: '', filhos: [],
+      appendChild(n) { this.filhos.push(n); return n; },
+      addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
+    };
+    const { doc, win } = domFalso({ mapa: { '#game-region': regiao } });
+    createGame({ declaration: declaracaoValida(), host: { doc, win } });
+
+    expect(regiao.filhos.length, 'a engine não pendurou cartão nenhum').toBe(1);
+    const cartao = regiao.filhos[0];
+    expect(cartao.id, 'montou sem o id que a própria engine procura — o laço fica aberto na mesma').toBe('vp-pause-0');
+    expect(cartao.className).toBe('screen-pause');
+  });
+
+  it('⚠️ [Right] quem DECLINA o menu de pausa não recebe cartão nem acusação', async () => {
+    // Declinar é escolha registada; não ter é omissão. O ADR-0106 §2 é inteiro sobre a diferença, e um gate
+    // que as tratasse igual apagaria a razão de os declínios existirem.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const regiao = {
+      id: 'game-region', innerHTML: '', filhos: [],
+      appendChild(n) { this.filhos.push(n); return n; },
+      addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
+    };
+    const { doc, win } = domFalso({ mapa: { '#game-region': regiao } });
+    const motor = createGame({
+      declaration: declaracaoValida(), host: { doc, win }, declines: { semMenuDePausa: true },
+    });
+    expect(regiao.filhos.length, 'montou pausa a quem a declinou').toBe(0);
+    expect(motor.problems.filter((p) => /menu de pausa/.test(p)), 'acusou quem declinou').toEqual([]);
   });
 
   it('⚠️ [Boundary] um hospedeiro que não aceita conteúdo nem clique NÃO derruba o boot', async () => {

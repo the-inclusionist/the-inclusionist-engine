@@ -535,6 +535,21 @@ export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
 // ---------------------------------------------------------------------------------------------
 
 export interface PauseIconsCtx {
+  /**
+   * O DOCUMENTO onde a pausa e a barra são CONSTRUÍDAS. Ausente, vale o global.
+   *
+   * ⚠️ ISTO É O ACHADO 15 OUTRA VEZ, e o `boot/create-game` já o descreve no próprio cabeçalho: «`initI18n()`
+   * chamava `applyDom(document)`, o GLOBAL, por baixo de quem a chamasse. Num navegador dá no mesmo e por
+   * isso sobreviveu; num teste de lógica pura é a diferença entre bootar e não bootar, e num futuro com dois
+   * documentos (uma engine em iframe, um editor ao lado do jogo) seria a diferença entre traduzir o documento
+   * certo e o outro.»
+   *
+   * 📏 Medido em 2026-09-08: as duas metades que constroem DOM (`buildScreenPause`, `buildQuickBar`) faziam
+   * `document.createElement` no global. Enquanto a raiz de composição de cada jogo era um `main.ts` a correr
+   * num navegador, dava no mesmo — e foi por isso que sobreviveu. Deixa de dar assim que a ENGINE monta,
+   * porque o `createGame` recebe o documento por `host.doc` e pode estar a montar noutro.
+   */
+  doc?: Document;
   /** Quantos jogadores/telas. Estado de RODADA (ADR-0038): vem da instância que a raiz possui.
    *  Era `numPlayers`, um `let` de `core/state` importado como binding vivo — e um `let` de módulo
    *  é compartilhado por qualquer segundo jogo que a mesma página carregue (D13 do `demos`). */
@@ -733,6 +748,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * `sr.icon.blindOn`/`Off` por si, logo abaixo.
    */
   const setModoCego = ctx.setModoCego ?? setModoCegoValue;
+
+  /** O documento onde se constroi. Resolvido a cada uso, e por globalThis — em node o identificador
+   *  document nem existe, e um ?? sobre ele lançaria ReferenceError em vez de cair no padrão. */
+  const docDaMontagem = (): Document => ctx.doc ?? (globalThis as { document?: Document }).document as Document;
 
   /*
    * ⚠️ O CONTRASTE E A COR SÓ APARECEM SE HOUVER QUEM OS ESCREVA (ADR-0106 §5).
@@ -1015,7 +1034,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   }
 
   function buildScreenPause(i: number): HTMLElement {
-    const sp = document.createElement('div');
+    const sp = docDaMontagem().createElement('div');
     sp.className = 'screen-pause';
     sp.hidden = true;
     sp.dataset.player = String(i);
@@ -1065,7 +1084,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * facilidade não existe —, e degradar o que existe para DAR acesso seria o contrário do que ele serve.
    */
   function buildQuickBar(i: number): HTMLElement {
-    const bar = document.createElement('div');
+    const bar = docDaMontagem().createElement('div');
     bar.className = 'screen-a11y';
     bar.dataset.player = String(i);
     bar.innerHTML = quickBarMarkup(iconesDoJogo);

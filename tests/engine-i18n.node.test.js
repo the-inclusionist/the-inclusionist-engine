@@ -210,7 +210,12 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'boot/create-game.ts': 9,        // a mensagem do `throw` e as lacunas do hospedeiro
+  'boot/create-game.ts': 12,       // a mensagem do `throw` e as lacunas do hospedeiro
+                                   // ⚠️ 9 → 12 em 2026-09-08: o sítio do MENU DE PAUSA (etapa 2 do ADR-0106).
+                                   // Três linhas porque a frase nomeia a saída (`host.pauseHost` /
+                                   // `#game-region`), o que a criança perde, E o declínio que diz «é de
+                                   // propósito» — as três coisas que separam uma lacuna consertável de um
+                                   // aviso que se arquiva. Mesma classe das anteriores: HOSPEDEIRO.
                                    // ⚠️ 8 → 9 em 2026-09-08: o elemento da barra que não aceita conteúdo nem
                                    // clique (etapa 2 do ADR-0106). Mesma classe das outras — lacuna do
                                    // HOSPEDEIRO, lida por quem integra a engine — e a linha existe porque a

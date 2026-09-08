@@ -103,6 +103,14 @@ export interface EngineHost {
    * a engine pode oferecer os ícones, mas não pode adivinhar ONDE eles cabem no desenho de um jogo alheio.
    */
   readonly a11yBarHost?: Element | null;
+  /**
+   * ONDE O CARTÃO DE PAUSA da primeira tela é pendurado. Ausente, a engine usa `#game-region`.
+   *
+   * ⚠️ Existe pela mesma razão do `a11yBarHost`: a engine pode OFERECER a pausa, mas não sabe onde ela cabe
+   * no desenho de um jogo alheio. Um jogo que não tem pausa nenhuma declara `declines.semMenuDePausa` —
+   * declinar é escolha registada, não ter é omissão, e o ADR-0106 §2 é inteiro sobre a diferença.
+   */
+  readonly pauseHost?: Element | null;
 }
 
 /**
@@ -378,6 +386,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * exactamente a pessoa para quem eles existem.
    */
   const pauseIcons = initPauseIcons({
+    doc,
     getPlayers: () => o.players ?? [],
     getNumPlayers: () => (o.players ?? [null]).length,
     srSay, srAlert,
@@ -439,6 +448,35 @@ export function createGame(o: CreateGameOptions): Engine {
       + 'assento 0, então ninguém além do primeiro consegue remapear. Declare `declines.semAtorDePausa` se '
       + 'for de propósito',
     );
+  }
+
+  /*
+   * 4e. O CARTÃO DE PAUSA DA PRIMEIRA TELA — e isto fecha um LAÇO QUE ESTAVA ABERTO.
+   *
+   * 📏 MEDIDO EM 2026-09-08, nos seis jogos do catálogo local: `#vp-pause-0` é procurado por esta raiz (o
+   * `getPauseMenu` do `initMenuNav`, mais abaixo) e **NENHUM jogo o cria**. `git grep vp-pause` devolve zero
+   * em `game-platformer`, `game-soccer`, `pixi-15-puzzle`, `2048`, `whackwhack` e `game-chess`. Ou seja: a
+   * engine inventou uma convenção, procurou-a, não a achou, e concluiu em silêncio que nenhum jogo tem menu
+   * de pausa — que é a MESMA forma de defeito do ADR-0106 §2, desta vez cometida pela engine contra si mesma.
+   *
+   * Agora ela cria o que procura. Quem declina (`semMenuDePausa`) continua sem nada e sem acusação — declinar
+   * é escolha; não ter é omissão.
+   */
+  const hospedeiroDaPausa = declines.semMenuDePausa ? null : (o.host.pauseHost ?? $('#game-region'));
+  const pausaUsavel = !!hospedeiroDaPausa && typeof (hospedeiroDaPausa as HTMLElement).appendChild === 'function';
+  if (!declines.semMenuDePausa && !pausaUsavel) {
+    problems.push(
+      'sem sítio para o menu de pausa: declare `host.pauseHost` ou tenha um #game-region que aceite filhos. '
+      + 'Sem ele a criança não alcança os ajustes durante a partida, e `declines.semMenuDePausa` é como se diz '
+      + 'que isso é de propósito',
+    );
+  }
+  if (hospedeiroDaPausa && pausaUsavel) {
+    const cartao = pauseIcons.buildScreenPause(0);
+    // ⚠️ O ID É O QUE A PRÓPRIA ENGINE PROCURA, logo abaixo, no `getPauseMenu`. Montar sem o pôr deixaria o
+    // laço tão aberto como estava — o cartão existiria e a navegação de menu continuaria a não o achar.
+    cartao.id = 'vp-pause-0';
+    hospedeiroDaPausa.appendChild(cartao);
   }
 
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.

@@ -4,6 +4,7 @@
       "a11yBarHost?",
       "cvdHost?",
       "doc",
+      "pauseHost?",
       "win"
     ],
     "interface Declinios": [
@@ -1778,6 +1779,7 @@
       "t"
     ],
     "interface PauseIconsCtx": [
+      "doc?",
       "dynLabel?",
       "getA11yBars",
       "getAudioCat",
