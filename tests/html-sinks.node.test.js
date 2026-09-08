@@ -73,6 +73,11 @@ const SEGUROS = [
   ['consumer-quiz/main-quiz.ts', 'seletor.innerHTML = opcoes.map', 'chave enumerada + i18n'],
   ['render/viz-setters.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['render/viz-setters.ts', 'el.innerHTML = vizGroupHtml(modes, cur)', 'modos enumerados + i18n'],
+  // ⚠️ OS DOIS EIXOS (#104). Mesma classe do de cima e pelo mesmo motivo: o `eixosHtml` interpola só valores
+  // ENUMERADOS (`TEMAS`/`CORRECOES`, congelados no `viz-axes`) e texto que passou por `t()`. Nada aqui vem
+  // de armazenamento, de URL ou do que uma criança digitou — que é a fronteira que este censo guarda.
+  ['render/viz-setters.ts', 'el.innerHTML = eixosHtml(v, t)', 'eixos enumerados + i18n'],
+  ['render/viz-setters.ts', 'const tabs = ctx.$(tabsSel); if (tabs) { tabs.hidden', 'string vazia: limpa o elemento, nada entra'],
   ['ui/debug-panel.ts', "p.innerHTML = '<strong>", 'literal inteiro: o titulo do painel de ?debug'],
   ['ui/hud.ts', "gameHudEl.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/hud.ts', 'd.innerHTML = vphudHtml(', '⚠️ CONSERTADO 2026-09-06: o nome do jogo saiu do markup e vai por `setAttribute`'],

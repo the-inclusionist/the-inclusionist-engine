@@ -5,6 +5,8 @@
 // próprio game.js usa). DI por closure — modelo: tests/debug-panel.browser.test.js.
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md (Estágio 4, ui/settings-visual).
 import { describe, it, expect, beforeEach } from 'vitest';
+import { eixosHtml } from '../app/js/ui/visual-axes-panel.js';
+import { PADRAO, migrarVisual } from '../app/js/render/viz-axes.js';
 import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
 import { initSettingsVisual } from '../app/js/ui/settings-visual.js';
 import { createRunState } from '../app/js/core/run-state.js';
@@ -38,6 +40,7 @@ function makeCtx(overrides = {}) {
     setPlayerViz: [], setLq: [], setOwnerColors: [], setCbSafe: [],
     setOutlineFg: [], setOutlineBg: [], setRoleColor: [], resetRoleColors: 0, srSay: [], setSelectedPlayer: [],
     renderVizGroup: [],
+    renderEixosVisuais: [],
   };
   const ctx = {
     getPlayers: () => rodada.players, getNumPlayers: () => rodada.numPlayers,
@@ -47,6 +50,16 @@ function makeCtx(overrides = {}) {
     getSelectedPlayer: () => selected,
     setSelectedPlayer: (i) => { selected = i; calls.setSelectedPlayer.push(i); },
     setPlayerViz: (i, mode) => calls.setPlayerViz.push([i, mode]),
+    // ⚠️ DUBLÊ DOS DOIS EIXOS (#104). Este painel deixou de usar o `renderVizGroup` — que fica com o menu de
+    // EMPATIA, cuja lista de simulações continua a ser mesmo exclusiva — e passou a montar dois rádios, um
+    // por eixo. O dublê usa o gerador DE VERDADE (`eixosHtml`), e não uma imitação: um dublê que inventa o
+    // markup deixa de reprovar quando o markup real muda.
+    renderEixosVisuais: (listSel, tabsSel) => {
+      calls.renderEixosVisuais.push([listSel, tabsSel]);
+      const el = document.querySelector(listSel);
+      if (!el) return;
+      el.innerHTML = eixosHtml(players[selected]?.visual ?? PADRAO, t);
+    },
     // Dublê do renderizador de linhas compartilhado com o painel de empatia (render/viz-setters). Ele desenha
     // as MESMAS linhas de rádio nos dois menus — é por isso que as correções de daltonismo mantêm a aparência
     // que a criança já conhecia ao mudar de casa (#60).
@@ -108,27 +121,39 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     expect(list.querySelector('#opt-role-reset')).toBeTruthy();
   });
 
-  it('[Right] o modo visual é desenhado em LINHAS de rádio, com os 7 modos e suas descrições', () => {
-    // O que este caso protege é a ACHABILIDADE. As correções de daltonismo estavam no menu de empatia como
-    // linhas visíveis; a primeira tentativa de trazê-las para cá as pôs num `<select>`, e elas sumiram da
-    // vista. Para um controle feito para ser achado por quem enxerga mal, isso é quase não ter movido.
-    players.push({ viz: 'normal' });
+  it('⚠️ [Right] o modo visual é desenhado em DOIS rádios — um por eixo (#104)', () => {
+    // O que este caso protege continua a ser a ACHABILIDADE: as correções de daltonismo estavam no menu de
+    // empatia como linhas visíveis, e a primeira tentativa de as trazer para cá pô-las num `<select>`, onde
+    // sumiram. Para um controle feito para ser achado por quem enxerga mal, isso é quase não ter movido.
+    //
+    // ⚠️ E O QUE MUDOU: os sete numa lista só contavam uma exclusividade que DEIXOU DE EXISTIR. Agora são
+    // dois eixos, e cada um pode estar fora do padrão ao mesmo tempo que o outro.
+    players.push({ viz: 'normal', visual: PADRAO });
     const { ctx, calls } = makeCtx();
     initSettingsVisual(ctx).render();
-    const [listSel, , modes] = calls.renderVizGroup.at(-1);
+    const [listSel] = calls.renderEixosVisuais.at(-1);
     expect(listSel).toBe('#visual-modes');
-    expect(modes.map((m) => m.key)).toEqual(
-      ['normal', 'hc-direto', 'hc-direto-45', 'hc-direto-7', 'fix-protan', 'fix-deuter', 'fix-tritan']);
-    expect(document.querySelectorAll('#visual-modes .ctrl-row')).toHaveLength(7);
+    const html = document.querySelector('#visual-modes').innerHTML;
+    for (const v of ['padrao', 'hc3', 'hc45', 'hc7']) expect(html, `tema ${v}`).toContain(`data-valor="${v}"`);
+    for (const v of ['tricro', 'protan', 'deuter', 'tritan']) expect(html, `correção ${v}`).toContain(`data-valor="${v}"`);
+    expect(html, 'voltou a ser uma caixa fechada').not.toContain('<select');
+    // OITO linhas: quatro temas + quatro correcoes. Eram sete numa lista so.
+    expect(document.querySelectorAll('#visual-modes .ctrl-row')).toHaveLength(8);
     expect(document.querySelector('#visual-modes').textContent).toContain('Correção deuteranopia');
   });
 
-  it('[Boundary] com uma SIMULAÇÃO ligada, nenhuma linha deste menu aparece escolhida', () => {
-    players.push({ viz: 'sim-deuter' }); // simulação é do menu de empatia
+  it('⚠️ [Boundary] com uma SIMULAÇÃO ligada, os dois eixos aparecem no PADRÃO (#104)', () => {
+    // ⚠️ MUDOU DE FORMA COM A DIVISÃO, e a nova é mais verdadeira. Antes, uma simulação ocupava o campo único
+    // e NENHUMA linha deste menu ficava marcada — o menu ficava mudo sobre o estado dos ajustes, quando a
+    // criança podia estar a olhar para ele justamente para saber onde estava. Agora a simulação é coisa à
+    // parte, e os dois eixos dizem o que dizem: estão no padrão — que é exactamente a condição que o
+    // ADR-0076 exige para uma simulação poder correr.
+    players.push({ viz: 'sim-deuter', visual: migrarVisual('sim-deuter') });
     const { ctx } = makeCtx();
     initSettingsVisual(ctx).render();
-    const marcadas = [...document.querySelectorAll('#visual-modes button[aria-pressed="true"]')];
-    expect(marcadas).toHaveLength(0);
+    const marcadas = [...document.querySelectorAll('#visual-modes button[aria-checked="true"]')]
+      .map((b) => b.dataset.valor);
+    expect(marcadas).toEqual(['padrao', 'tricro']);
   });
 
   it('[Boundary] jogador selecionado além da contagem atual é reclampado para 0 (jogador saiu)', () => {
@@ -140,12 +165,15 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     expect(calls.setSelectedPlayer).toContain(0);
   });
 
-  it('[Interface] clicar numa linha chama setPlayerViz(jogador, modo) — quem anuncia é o renderizador', () => {
-    players.push({ viz: 'normal' });
+  it('⚠️ [Interface] o painel DELEGA o desenho e a escrita ao renderizador dos eixos (#104)', () => {
+    // O clique deixou de ser deste painel: quem liga o botão ao escritor POR EIXO é o `renderEixosVisuais`,
+    // em `render/viz-setters`, e é lá que ele tem caso próprio. O que ESTE painel ainda promete é chamá-lo
+    // com o seletor certo — e é isso que se afirma aqui, em vez de reimplementar a fiação dentro do dublê e
+    // acabar a medir o dublê.
+    players.push({ viz: 'normal', visual: PADRAO });
     const { ctx, calls } = makeCtx();
     initSettingsVisual(ctx).render();
-    document.querySelector('#visual-modes button[data-viz="hc-direto-7"]').click();
-    expect(calls.setPlayerViz).toEqual([[0, 'hc-direto-7']]);
+    expect(calls.renderEixosVisuais.at(-1)).toEqual(['#visual-modes', '#visual-players']);
   });
 
   it('[Interface] mexer no slider L→Q chama setLq com t=0..1 e atualiza o rótulo ao vivo', () => {
@@ -294,10 +322,14 @@ describe('ui/settings-visual — restaurar padrões DESTE menu (ADR-0028) + marc
     const { ctx, calls } = makeCtx();
     comViz('normal');
     initSettingsVisual(ctx).render();
-    const linha = document.querySelector('#visual-modes button[data-viz="fix-deuter"]').closest('.ctrl-row');
+    // ⚠️ A LINHA CONTINUA A EXISTIR, e é isso que o caso protege — o que mudou é que ela vive agora no EIXO
+    // da correção, ao lado das outras três, em vez de misturada com os níveis de contraste numa lista onde
+    // escolher uma apagava o outro.
+    const linha = document.querySelector('#visual-modes button[data-valor="deuter"]').closest('.ctrl-row');
     expect(linha.textContent).toContain('Correção deuteranopia');
-    linha.querySelector('button').click();
-    expect(calls.setPlayerViz).toEqual([[0, 'fix-deuter']]);
+    // ⚠️ O CLIQUE não é afirmado aqui: quem o liga ao escritor por eixo é o `renderEixosVisuais`, e ele tem
+    // caso próprio em `viz-setters`. Afirmá-lo pelo dublê mediria o dublê.
+    expect(linha.querySelector('button').dataset.eixo).toBe('correcao');
   });
 
   it('[Interface] com a correção ligada, a LISTA de modos fica marcada', () => {

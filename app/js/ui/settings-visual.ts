@@ -77,7 +77,14 @@ export interface SettingsVisualCtx {
   /** Desenha UMA lista de rádio de modos visuais (+ abas por jogador). O MESMO helper que o painel de
    *  empatia usa — de propósito: as três correções mudaram de menu, e mudar junto a aparência delas faria a
    *  criança ter de reaprender um controle que ela já conhecia. */
-  renderVizGroup: (listSel: string, tabsSel: string, modes: readonly VizMode[]) => void;
+  /**
+   * Os DOIS eixos deste painel (#104). Substituiu o `renderVizGroup`, que fica com o painel de EMPATIA.
+   *
+   * ⚠️ A lista de sete que este painel oferecia era a forma honesta de contar uma exclusividade REAL, e o
+   * `VISUAL_MODES` explica-a em prosa logo acima. Ela deixou de existir: o estado tem dois eixos, e os
+   * escritores por eixo mexem num sem tocar no outro.
+   */
+  renderEixosVisuais: (listSel: string, tabsSel: string) => void;
   setLq: (t: number) => void;
   setOwnerColors: (on: boolean) => void;
   setCbSafe: (on: boolean) => void;
@@ -235,7 +242,11 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
 
     const contrastValue = resolveVisualMode(playerViz(ctx.getPlayers(), selected));
     const settings = ctx.getVisualSettings();
-    ctx.renderVizGroup('#visual-modes', '#visual-players', VISUAL_MODE_LIST);
+    // ⚠️ `renderEixosVisuais` E NÃO `renderVizGroup` desde a #104: este painel passou a ter DOIS controles,
+    // e o `renderVizGroup` continua a servir o painel de EMPATIA, cuja lista de simulações é mesmo exclusiva.
+    // Trocar o corpo daquela função em vez de acrescentar esta teria posto os dois eixos na lista de
+    // simulações — foi o que quase aconteceu, e o que a separação impede.
+    ctx.renderEixosVisuais('#visual-modes', '#visual-players');
     el.innerHTML = renderVisualPanelHtml(contrastValue, settings);
 
     const lq = ctx.$<HTMLInputElement>('#opt-lq');

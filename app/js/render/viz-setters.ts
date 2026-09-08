@@ -26,6 +26,9 @@ import {
   type VisualState,
 } from './viz-axes.js';
 import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
+import {
+  eixosHtml, escolhaDoBotao, ROTULO_DO_TEMA, ROTULO_DA_CORRECAO,
+} from '../ui/visual-axes-panel.js';
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
 import { lqFilter } from './lq-filter.js';
@@ -227,6 +230,8 @@ export interface VizSettersApi {
   rebakeDirect(): void;
   /** Grupo de rádios de modos visuais nos painéis (visual/empatia). */
   renderVizGroup(listSel: string, tabsSel: string, modes: readonly VizMode[]): void;
+  /** Os DOIS eixos do painel visual (#104). Irmão do de cima — ver a nota na implementação. */
+  renderEixosVisuais(listSel: string, tabsSel: string): void;
 }
 
 export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
@@ -408,7 +413,7 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       }));
     }
     const players = ctx.getPlayers(), sel = ctx.getSelVizPlayer();
-    const cur = players[sel] ? players[sel].viz : 'normal';
+    const cur = players[sel] ? chaveLegada(players[sel].visual ?? PADRAO) : 'normal';
     el.innerHTML = vizGroupHtml(modes, cur);
     el.querySelectorAll<HTMLElement>('button[data-viz]').forEach((btn) => btn.addEventListener('click', () => {
       const key = btn.dataset.viz as string;
@@ -417,9 +422,42 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     }));
   }
 
+  /**
+   * OS DOIS EIXOS no painel VISUAL (#104). Irmão do `renderVizGroup`, e SEPARADO dele de propósito.
+   *
+   * ⚠️ QUASE FIZ ISTO DENTRO DO `renderVizGroup`, E TERIA PARTIDO O PAINEL DE EMPATIA. Aquela função serve os
+   * DOIS painéis — `#visual-modes` com os sete modos e `#empathy-list` com as nove simulações —, e trocar o
+   * corpo dela teria posto os dois eixos na lista de simulações. Ali o rádio único continua CERTO: as
+   * simulações são mesmo exclusivas entre si, e o que deixou de ser exclusivo foi outra coisa.
+   *
+   * ⚠️ E OS DOIS GRUPOS ENTRAM NO CONTENEDOR QUE JÁ EXISTE, sem markup nova do hospedeiro. Exigir um elemento
+   * a mais faria cada um dos 300 jogos ter de se lembrar dele — a forma de defeito que o ADR-0106 acabou de
+   * medir em cinco jogos sem barra de acessibilidade nenhuma.
+   */
+  function renderEixosVisuais(listSel: string, tabsSel: string): void {
+    const el = ctx.$(listSel); if (!el) return;
+    if (ctx.getSelVizPlayer() >= ctx.getNumPlayers()) ctx.setSelVizPlayer(0);
+    const tabs = ctx.$(tabsSel); if (tabs) { tabs.hidden = true; tabs.innerHTML = ''; }
+    const sel = ctx.getSelVizPlayer();
+    const v = ctx.getPlayers()[sel]?.visual ?? PADRAO;
+    el.innerHTML = eixosHtml(v, t);
+    el.querySelectorAll<HTMLElement>('button[data-eixo]').forEach((btn) => btn.addEventListener('click', () => {
+      const escolha = escolhaDoBotao(btn.dataset);
+      if (!escolha) return; // botão de outro assunto, ou um `data-` editado à mão: não se adivinha
+      const i = ctx.getSelVizPlayer();
+      if (escolha.eixo === 'tema') {
+        setTemaDoJogador(i, escolha.valor as Tema);
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(ROTULO_DO_TEMA[escolha.valor as Tema])));
+      } else {
+        setCorrecaoDoJogador(i, escolha.valor as Correcao);
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), i, t(ROTULO_DA_CORRECAO[escolha.valor as Correcao])));
+      }
+    }));
+  }
+
   return {
     applySharedTextures, updateVpDots, applyVpFilters, setPlayerViz, applyVizGlobal, reapplyVizAll,
-    updateVizIndicator, rebakeDirect, renderVizGroup,
+    updateVizIndicator, rebakeDirect, renderVizGroup, renderEixosVisuais,
     // Os DOIS escritores por eixo (#104): é o que um painel de dois controles chama.
     setVisualDoJogador, setTemaDoJogador, setCorrecaoDoJogador,
   };

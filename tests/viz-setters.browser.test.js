@@ -62,7 +62,9 @@ function stage() {
 
 function setup(over = {}) {
   stage();
-  const players = over.players || [{ viz: 'normal', sprite: null, _tx: null }];
+  // O fixture DERIVA isual de iz, a mesma regra do espelho que o setVisualDoJogador mantem (#104).
+  const players = (over.players || [{ viz: 'normal', sprite: null, _tx: null }])
+    .map((p) => (p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrarVisual(p.viz) } : p));
   const env = {
     hcNoDom: [],
     players, numPlayers: over.numPlayers === undefined ? players.length : over.numPlayers,
