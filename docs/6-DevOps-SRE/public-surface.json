@@ -370,9 +370,14 @@
     "PAD_DEAD",
     "held",
     "keys",
+    "marcarTecla",
+    "origemDaTecla",
+    "origemDe",
     "padCur",
     "padPrevAct",
-    "padPrevStart"
+    "padPrevStart",
+    "soltarTecla",
+    "soltarTodas"
   ],
   "input/touch-bindings.ts": [
     "CROSS_DEAD_FRACTION",

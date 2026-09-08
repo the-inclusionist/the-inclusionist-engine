@@ -7,8 +7,66 @@
 // Teclas físicas seguradas AGORA (KeyboardEvent.code). Mutada por keydown/keyup no game.js.
 import type { ControlledPlayer } from '../core/entity.js';
 import type { Action } from '../core/actions.js';
+// ⚠️ O cabeçalho deste módulo dizia «ZERO deps», e ele já tinha DUAS de tipo (`ControlledPlayer`, `Action`) —
+// a frase queria dizer «nada em tempo de execução», que continua verdade: os três imports são `type` e
+// desaparecem no build. A terceira entra pela mesma razão que as outras duas: o vocabulário mora com quem
+// tem as REGRAS sobre ele (`input/transporte-em-uso`), e repeti-lo aqui seria a segunda cópia de uma união.
+import type { Transporte } from './transporte-em-uso.js';
 
 export const keys = new Set<string>();
+
+/**
+ * A ORIGEM DE CADA TECLA SEGURADA — código → aparelho que a produziu (ADR-0109).
+ *
+ * ⚠️ ESTE MAPA EXISTE PORQUE `keys` APAGA A ORIGEM À PORTA, e foi essa erasão que deixou o §C da issue #114
+ * por construir durante dois meses: o toque escreve códigos aqui dentro (`press()` faz
+ * `heldKeys.add(codeFor(act))`) e a webcam despacha `KeyboardEvent` sintético, então quando o `held()`
+ * responde já não há como saber QUEM carregou. O único transporte que sobrevivia identificável era o
+ * gamepad, e só porque passa por `padCur` em vez do conjunto.
+ *
+ * ⚠️ CAMPO NOVO AO LADO DO VELHO, sincronizado num ponto só (`marcarTecla`/`soltarTecla`), com os leitores a
+ * migrar um a um — é a forma que este repositório já usou no `p.visual` ao lado do `p.viz` (#104), e a razão
+ * é a mesma: uma troca de uma vez não tem estado verde onde parar, e isto é a espinha da entrada.
+ *
+ * 📌 Um código SEM entrada aqui não é um erro de dados — é uma tecla que entrou por um escritor que ainda não
+ * migrou. `origemDe` devolve `undefined` e quem pergunta decide; ver a nota lá.
+ */
+export const origemDaTecla = new Map<string, Transporte>();
+
+/**
+ * Uma tecla FOI SEGURADA, e sabe-se por quem. É o único sítio que escreve nos dois.
+ *
+ * ⚠️ OS DOIS JUNTOS OU NENHUM: enquanto forem duas estruturas, elas podem divergir, e uma divergência aqui é
+ * silenciosa — o jogo continua a andar e só a alternância fica errada. Por isso não há `keys.add` público
+ * neste módulo: quem escreve, escreve por aqui.
+ */
+export function marcarTecla(code: string, origem: Transporte): void {
+  keys.add(code);
+  origemDaTecla.set(code, origem);
+}
+
+/** A outra metade. Solta nos dois, pela mesma razão. */
+export function soltarTecla(code: string): void {
+  keys.delete(code);
+  origemDaTecla.delete(code);
+}
+
+/** Solta TUDO — o `blur` da janela. Os dois, ou o mapa fica a descrever teclas que já ninguém segura. */
+export function soltarTodas(): void {
+  keys.clear();
+  origemDaTecla.clear();
+}
+
+/**
+ * Quem produziu esta tecla? `undefined` quando não se sabe.
+ *
+ * ⚠️ `undefined` E NÃO UM PADRÃO. Um padrão `'teclado'` faria a erasão voltar por outra porta: uma tecla do
+ * toque que entrasse por um escritor não migrado seria lida como teclado, a alternância desligava-se, e nada
+ * o diria. Não saber é uma resposta; fingir que se sabe não é.
+ */
+export function origemDe(code: string): Transporte | undefined {
+  return origemDaTecla.get(code);
+}
 
 // Gamepad (B3/L1): padCur[gi] = ações seguradas neste frame; padPrevAct/padPrevStart = borda do frame anterior.
 // Associação pad↔jogador vive em p.pad. Mutados IN-PLACE por pollPads no game.js.
