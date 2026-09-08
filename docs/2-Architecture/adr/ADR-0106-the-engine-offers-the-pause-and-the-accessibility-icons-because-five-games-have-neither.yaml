@@ -170,7 +170,26 @@ decision-outcome:
       · per reclaimed setting, a case reading the value from the engine with the injected field deleted;
       · over `createGame`'s own result: the mounted bar carries no icon whose action is missing.
 
-    ⬜ STILL OWED: nothing in this record. What remains is the collision below, which is the Dev's.
+    ⬜ STILL OWED — ONE, FOUND BY READING ON 2026-09-08 AND NOT YET FIXED:
+
+    ⚠️ THE CARD IS FILTERED AT BUILD TIME, AND THE TABLE IT FILTERS BY IS DOCUMENTED AS ARRIVING LATE.
+    `buildScreenPause` calls `getPauseActs()` once, while `createGame` builds the card during `createGame(...)`
+    — but that field is a getter precisely because «`pauseActs` is a `const` declared far below the init site».
+    A consumer following that documented pattern gets a card permanently missing every item whose action was
+    wired after boot.
+
+    📌 The defect is NARROWER than it first looks, and the narrowing matters: the click handler reads
+    `getPauseActs()` again at dispatch, so a late action WORKS — what is missing is its BUTTON. So the failure
+    is «the item is not there», never «the item is there and does nothing», which is the right way round for
+    §5 but still wrong for the child who cannot find «sair do jogo».
+
+    ⚠️ AND THE FIX IS A DESIGN CHOICE, not a patch, which is why it is recorded rather than rushed: either the
+    card renders every item and marks the unactionable ones hidden at REFLECT time (turning a build-time
+    decision into one taken whenever the pause is shown), or the engine gains a «rebuild» the consumer must
+    remember to call — which is the very «cada jogo tinha de se lembrar» this record exists to end. The first
+    is almost certainly right; it deserves its own pass.
+
+    Beyond that, nothing is owed by this record. What remains is the collision below, which is the Dev's.
 
 more-information: |
   ⚠️ COLLIDES WITH `Declinios.semMenuDePausa`, AND THIS RECORD DOES NOT RESOLVE IT. That field exists and says
