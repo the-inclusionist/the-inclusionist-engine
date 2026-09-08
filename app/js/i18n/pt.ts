@@ -331,6 +331,11 @@ const pt: Record<string, string> = {
   // resolver. «Falta alguma coisa» manda procurar sem dizer o quê; «segura 2 e este jogo pede 3» diz que a
   // saída é outro controle, e diz porquê.
   'reach.naoSegura': 'O {transporte} segura {segura} botões de cada vez, e este jogo pede {pedidas} ao mesmo tempo.',
+  // ⚠️ A RECUSA DA SIMULAÇÃO (#104 / ADR-0076). Ela diz um FACTO SOBRE A DEMONSTRAÇÃO e o caminho de volta —
+  // nunca «desligue isso». Quem ligou o alto contraste ligou-o porque precisa dele para ver.
+  'sim.indisponivel.tema': 'Para ver a simulação, o tema precisa estar no padrão: por cima do alto contraste ela mostraria o que o tema faz, e não o que a deficiência faz.',
+  'sim.indisponivel.correcao': 'Para ver a simulação, a correção de cor precisa estar em visão tricromática: de uma tela já corrigida ela não mostraria nem a deficiência nem a correção.',
+  'sim.indisponivel.ambos': 'Para ver a simulação, o tema e a correção de cor precisam estar no padrão: por cima de um ajuste, a demonstração mostra o ajuste e não a deficiência.',
   'reach.ligue': 'Ligue {saida} e você joga com todas.',
   // Quando NADA resolveria: mandar ligar um controle seria mandar procurar o que não conserta.
   'reach.semSaida': 'Nenhum controle deste aparelho alcança todas. Dá para jogar assim mesmo, mas algumas ações vão ficar sem lugar.',
