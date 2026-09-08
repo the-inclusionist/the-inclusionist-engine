@@ -495,8 +495,28 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     renderNavSound();
   });
 
+  /*
+   * ⚠️ ESTE BOTÃO ERA O ÚNICO DESTE PAINEL QUE NÃO ANUNCIAVA. Medido em 2026-09-08: os cinco irmãos daqui
+   * anunciam (som, TTS, divisor da bengala, índice de menu, saída de áudio) e o modo cego não — ele parecia
+   * anunciar porque UM cartucho o fazia a partir do próprio `setModoCego`, e o painel herdava o efeito.
+   *
+   * ⚠️ E ISSO PASSOU A EXPOR SILÊNCIO no mesmo dia: desde que o campo ganhou padrão da engine
+   * (`setModoCegoValue`, que grava/persiste/avisa e NÃO fala), um jogo que não injecta o seu próprio setter
+   * ficava com este botão mudo. Um alternador que muda estado sem o dizer é invisível para quem usa leitor de
+   * tela — a mesma família de defeito que o `reflectTTS` e o `reflectModoCego` já custaram aqui.
+   *
+   * O anúncio pertence a QUEM É ACCIONADO, não ao setter: `core/state` diz que o setter faz três coisas e só
+   * três. ⚠️ Consequência de lockstep, escrita para não se descobrir depois: quando o `game-platformer` subir
+   * de versão, tem de TIRAR o `srSay` do `setModoCego` dele, senão a criança ouve o estado duas vezes.
+   */
   const mcBtn = ctx.$<HTMLButtonElement>('#opt-modocego');
-  if (mcBtn) mcBtn.addEventListener('click', () => { setModoCego(!ctx.getModoCego()); reflectModoCego(); });
+  if (mcBtn) {
+    mcBtn.addEventListener('click', () => {
+      setModoCego(!ctx.getModoCego());
+      reflectModoCego();
+      ctx.srSay(t(ctx.getModoCego() ? 'sr.blind.on' : 'sr.blind.off'));
+    });
+  }
 
   const caneDivSel = ctx.$<HTMLSelectElement>('#cane-div');
   if (caneDivSel) {

@@ -453,3 +453,37 @@ describe('ui/settings-audio — o painel ASSINA o modo cego (ADR-0106 §4)', () 
 //     jogo que nao injecta o seu proprio `setModoCego` deixa este botao a mentir o estado.
 //   · trocando a assinatura por `state.on('modoCego', () => {})` (assina e nao reage) -> reprova tambem, que
 //     e a medida de que o caso afirma o EFEITO e nao a subscricao.
+
+describe('ui/settings-audio — o modo cego ANUNCIA, como os cinco irmãos deste painel', () => {
+  it('⚠️ [Interface] ligar pelo painel diz o estado NOVO — um alternador mudo é invisível a leitor de tela', () => {
+    // 📏 Medido em 2026-09-08: os cinco irmãos deste painel anunciam (som, TTS, divisor da bengala, índice de
+    // menu, saída de áudio) e o modo cego NÃO — ele parecia anunciar porque UM cartucho o fazia a partir do
+    // próprio `setModoCego`, e o painel herdava o efeito de graça.
+    //
+    // ⚠️ E o silêncio ficou ALCANÇÁVEL no mesmo dia: com `setModoCego` a ganhar padrão da engine
+    // (`setModoCegoValue`, que grava/persiste/avisa e não fala), um jogo que não injecta o seu setter ficava
+    // com este botão mudo — a mesma família do `reflectTTS`, que já custou um controlo a mentir o estado.
+    let cego = false;
+    const { ctx, said } = fullCtx({});
+    ctx.getModoCego = () => cego;
+    ctx.setModoCego = (on) => { cego = on; };
+    initSettingsAudio(ctx);
+
+    document.querySelector('#opt-modocego').click();
+    expect(cego, 'o botão não mexeu no estado').toBe(true);
+    // O literal é pinado, e não lido por `t()`: afirmar pelo dicionário mediria a ida e a volta pela mesma
+    // tabela, e as duas metades mover-se-iam juntas.
+    expect(said.at(-1), 'ligou sem dizer nada').toBe('Modo cego ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.');
+
+    document.querySelector('#opt-modocego').click();
+    expect(cego).toBe(false);
+    // ⚠️ E o anúncio conta o estado NOVO, não o que a criança acabou de deixar — por isso ele vem DEPOIS do
+    // `setModoCego`, e é o que esta segunda metade prende.
+    expect(said.at(-1)).toBe('Modo cego desligado.');
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS (o anuncio do modo cego) =========================
+//   · tirando o `ctx.srSay(...)` do clique -> reprova. E o defeito que existia ate hoje.
+//   · movendo o `srSay` para ANTES do `setModoCego` -> reprova, porque passa a anunciar o estado que a
+//     crianca acabou de deixar. E a mesma regra do icone da barra rapida, e nenhum dos dois a tinha escrita.
