@@ -47,6 +47,29 @@ export function resolveViz(key: string | null | undefined): VizMode {
   return VIZ_BY_KEY[key as string] || VIZ_BY_KEY.normal;
 }
 
+/**
+ * O ESTADO VISUAL GUARDADO deste jogador, de qualquer das duas formas (issue #104).
+ *
+ * ⚠️ ESTA FUNÇÃO É A CAIXA «um ajuste salvo antes da divisão restaura o mesmo estado visível» da definition
+ * of done, e a ordem das duas leituras é a decisão inteira:
+ *
+ *   1. a chave NOVA (`visualP`), que é a única que sabe dizer dois eixos;
+ *   2. na falta dela, a chave VELHA (`vizP`), que guarda a string única — e é aqui que mora o ajuste de toda
+ *      criança que já jogou este jogo antes de hoje;
+ *   3. na falta das duas, o padrão.
+ *
+ * ⚠️ O RECUO NÃO É ZELO: sem ele, a primeira sessão depois da actualização apagaria o modo visual que ela
+ * escolheu — e quem escolheu `fix-deuter` ou `hc-direto-7` escolheu-o porque enxerga assim. É a diferença
+ * entre migrar e recomeçar.
+ *
+ * `migrarVisual` aceita as duas formas e é idempotente, então isto pode correr quantas vezes for preciso.
+ */
+export function lerVisualGuardado(i: number): VisualState {
+  const novo = store.getJSON<unknown>(store.KEYS.visualP(i), null);
+  if (novo !== null) return migrarVisual(novo);
+  return migrarVisual(store.get(store.KEYS.vizP(i), null));
+}
+
 /** É um dos três níveis de Renderização Direta (alto contraste)? Mesmo teste do original: `!!DIRECT_CFG[mode]`. */
 export function isDirectMode(mode: string): boolean { return !!DIRECT_CFG[mode]; }
 
@@ -232,7 +255,8 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
     const p = ctx.getPlayers()[i];
     p.viz = m.key;
     p.visual = migrarVisual(m.key);
-    store.set(store.KEYS.vizP(i), m.key);
+    store.set(store.KEYS.vizP(i), m.key);        // legada: um leitor antigo faria `VIZ_BY_KEY[v]` e recusaria JSON
+    store.setJSON(store.KEYS.visualP(i), p.visual); // nova: os dois eixos, que a chave velha não sabe dizer
     ctx.invalidateSharedViz();
     if (m.kind === 'blind') ctx.setModoCego(true); // empatia cegueira total liga o modo cego (áudio) por padrão
     if (ctx.getNumPlayers() <= 1 && i === 0) { applyVizGlobal(m.key); } else { applyVpFilters(); updateVpDots(); }

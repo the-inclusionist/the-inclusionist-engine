@@ -781,6 +781,64 @@ describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existir
   });
 });
 
+describe('#104 · o ajuste salvo ANTES da divisão restaura o mesmo estado visível', () => {
+  // A caixa da definition of done que a issue chama de «the dangerous half». O que está em jogo é concreto:
+  // toda criança que já jogou tem uma string na chave velha, e a primeira sessão depois da actualização ou
+  // a lê, ou apaga o modo visual que ela escolheu.
+  it('⚠️ [Right] só a chave VELHA presente: o ajuste dela sobrevive à actualização', async () => {
+    const { lerVisualGuardado } = await import('../app/js/render/viz-setters.js');
+    const { migrarVisual } = await import('../app/js/render/viz-axes.js');
+    const { VIZ_CYCLE } = await import('../app/js/render/viz-modes.js');
+    for (const k of VIZ_CYCLE) {
+      mem.clear();
+      mem.set('incl_viz_p0', k); // exactamente o que está no navegador dela hoje
+      expect(lerVisualGuardado(0), `«${k}» perdeu-se na actualização`).toEqual(migrarVisual(k));
+    }
+  });
+
+  it('⚠️ [Right] a chave NOVA vence a velha — é a única que sabe dizer DOIS eixos', () => {
+    // E é o caso que prova que o recuo é recuo e não a fonte: um estado de dois eixos não tem string que o
+    // descreva, então se a velha vencesse, `hc7 + fix-deuter` seria impossível de restaurar.
+    mem.clear();
+    mem.set('incl_viz_p0', 'normal');
+    mem.set('incl_visual_p0', JSON.stringify({ tema: 'hc7', correcao: 'deuter', simulacao: null }));
+    return import('../app/js/render/viz-setters.js').then(({ lerVisualGuardado }) => {
+      expect(lerVisualGuardado(0)).toEqual({ tema: 'hc7', correcao: 'deuter', simulacao: null });
+    });
+  });
+
+  it('[Zero] nenhuma das duas: o padrão, e sem estourar', async () => {
+    const { lerVisualGuardado } = await import('../app/js/render/viz-setters.js');
+    const { PADRAO } = await import('../app/js/render/viz-axes.js');
+    mem.clear();
+    expect(lerVisualGuardado(0)).toEqual(PADRAO);
+  });
+
+  it('⚠️ [Zero] JSON corrompido na chave nova cai na VELHA em vez de no padrão', async () => {
+    // O dado vem do navegador de uma criança e pode estar truncado. Cair no padrão aqui seria descartar o
+    // ajuste que a chave velha ainda tem, guardado e íntegro, ao lado.
+    const { lerVisualGuardado } = await import('../app/js/render/viz-setters.js');
+    const { migrarVisual } = await import('../app/js/render/viz-axes.js');
+    mem.clear();
+    mem.set('incl_viz_p0', 'fix-deuter');
+    mem.set('incl_visual_p0', '{"tema":"hc7"');  // truncado
+    expect(lerVisualGuardado(0)).toEqual(migrarVisual('fix-deuter'));
+  });
+
+  it('⚠️ [Interface] `setPlayerViz` escreve as DUAS chaves, e o que ele escreve volta igual', async () => {
+    const { lerVisualGuardado } = await import('../app/js/render/viz-setters.js');
+    for (const k of ['fix-deuter', 'lv-tunnel', 'blind', 'normal']) {
+      mem.clear();
+      const { api } = setup({ players: [{ viz: 'normal' }], numPlayers: 1 });
+      api.setPlayerViz(0, k);
+      expect(mem.get('incl_viz_p0'), `a chave legada de «${k}» não foi escrita`).toBe(k);
+      expect(mem.get('incl_visual_p0'), `a chave nova de «${k}» não foi escrita`).toBeTruthy();
+      expect(lerVisualGuardado(0), `«${k}» não sobreviveu à ida e volta pelo armazenamento`)
+        .toEqual(JSON.parse(mem.get('incl_visual_p0')));
+    }
+  });
+});
+
 // ========================= MUTACOES CONFERIDAS (o espelho da #104) =========================
 //   · apagando a escrita `p.visual = migrarVisual(m.key)` -> reprovam os DOIS casos. E o defeito que o bloco
 //     existe para impedir: os leitores migrariam um a um para um campo que ninguem mantem, e o primeiro a
@@ -791,3 +849,15 @@ describe('#104 · `viz` e `visual` não podem discordar enquanto os dois existir
 //     Fica `m.key` na mesma, porque a linha acima ja resolveu e ler duas vezes da mesma resolucao e' o que
 //     impede a terceira de divergir. Registado aqui em vez de apagado: uma mutacao sobrevivente que se
 //     confirma equivalente e' informacao, e a proxima pessoa nao precisa de a redescobrir.
+//
+// ========================= MUTACOES CONFERIDAS (a migracao do valor salvo, 1b) =========================
+//   · ⚠️ TIRANDO O RECUO para a chave velha (`return PADRAO`) -> reprovam TRES. E o estrago que a issue chama
+//     de «the dangerous half»: a primeira sessao depois da actualizacao apagaria o modo visual de TODA
+//     crianca que ja jogou, porque o ajuste dela vive na chave velha e mais lado nenhum.
+//   · fazendo a chave VELHA vencer a nova -> reprova o caso dos dois eixos. Nao ha string que descreva
+//     «hc7 + fix-deuter», entao com a ordem invertida esse estado seria impossivel de restaurar — a nova
+//     tem de vencer justamente porque e' a unica que sabe dizer duas coisas.
+//   · deixando de escrever a chave LEGADA -> reprovam TRES, e DOIS deles sao casos ANTIGOS. E a medida de que
+//     ela ainda carrega comportamento: um leitor da versao publicada faz `if (v && VIZ_BY_KEY[v])` e
+//     recusaria JSON, entao parar de a escrever apagaria o ajuste da crianca em silencio.
+//   · deixando de escrever a chave NOVA -> reprova a ida e volta. Os dois eixos nao teriam onde ficar.

@@ -132,7 +132,24 @@ export const KEYS = {
   reducedMotion: 'inclusionist.reducedmotion.v1', toggleMoveLegacy: 'inclusionist.togglemove',
   // POR JOGADOR — parametrizadas pelo indice da tela. Eram sufixos '_p'+i montados a mao em varios
   // pontos do game.js; virar funcao aqui e o que impede que um deles escreva num nome torto.
+  /**
+   * @deprecated ⚠️ A CHAVE LEGADA do modo visual — UM valor, do tempo em que só cabia um (issue #104).
+   *
+   * Continua a ser LIDA, e é isso que impede a criança de perder o que já escolheu; continua a ser ESCRITA
+   * enquanto os controles ainda escreverem um valor de cada vez, porque um leitor antigo (o cartucho na
+   * versão publicada) faz `if (v && VIZ_BY_KEY[v])` e rejeitaria um JSON — escrever a forma nova AQUI
+   * apagaria o ajuste dela em silêncio, que é exactamente o defeito que a migração existe para não cometer.
+   */
   vizP: (i: number): string => 'incl_viz_p' + i,
+  /**
+   * O ESTADO VISUAL de dois eixos, em JSON (ADR-0076, issue #104).
+   *
+   * ⚠️ CHAVE NOVA AO LADO DA VELHA, e não a mesma chave com conteúdo novo. É o mesmo desenho que o campo
+   * `visual` usa ao lado do `viz`: as duas formas coexistem enquanto houver leitores das duas, cada um lê a
+   * que entende, e a velha só morre quando não sobrar quem a leia. `migrarVisual` aceita as duas, então o
+   * recuo — chave nova ausente, chave velha presente — devolve exactamente o que a criança escolheu.
+   */
+  visualP: (i: number): string => 'incl_visual_p' + i,
   sinkP: (i: number): string => 'incl_sink_p' + i,
   easyP: (i: number): string => 'incl_easy_p' + i,
   /**
