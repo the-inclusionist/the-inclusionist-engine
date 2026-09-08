@@ -50,6 +50,7 @@ import { menuIndexOn, DEFAULTS, setModoCegoValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
 import { definirAlternanciaDeMarcha } from './settings-motor.js';
 import { PM_BTNS, PM_OPTIONS_BTNS } from './activities-menu.js';
+import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena } from './motion-scene.js';
 
 /**
  * A LEGENDA de um ícone da barra de acessibilidade — uma função, e não três cópias da mesma expressão.
@@ -576,12 +577,23 @@ export interface PauseIconsCtx {
    * frase. Um menu de pausa da ENGINE não sabe o que é nível de alfabetização, nem em que idioma dizê-lo.
    * Função e não valor, porque o rótulo muda em execução — de nível E de idioma.
    */
-  dynLabel: (b: PauseMenuButton) => string | null;
+  /*
+   * ⚠️ OS TRÊS SÃO DO JOGO POR NATUREZA (ADR-0106 mede-os assim) E MESMO ASSIM FICARAM OPCIONAIS, e a
+   * distinção importa: ser do jogo por natureza diz de QUEM é a resposta certa, não que a ausência dela deva
+   * impedir a pausa de existir. Um jogo que não tem rótulo dinâmico, nem tabela de acções, nem ator de pausa
+   * continua a merecer um cartão — com o que sobra depois do filtro do §5, que é honesto em vez de vazio.
+   *
+   * Ausentes: `dynLabel` vale «sem rótulo dinâmico», `getPauseActs` vale «tabela vazia» (e aí só ficam os
+   * itens que a ENGINE acciona) e `setPauseActor` não regista nada — que é o que o `createGame` já faz hoje,
+   * agora sem obrigar cada consumidor a escrever a mesma função vazia.
+   */
+  /** O rótulo dinâmico, pronto — ou `null`. Ausente: nenhum botão deste jogo tem rótulo dinâmico. */
+  dynLabel?: (b: PauseMenuButton) => string | null;
   /** The `.pm-btn` action table. LAZY: `pauseActs` is a `const` declared far below the init site in game.js. */
-  getPauseActs: () => Record<string, (() => void) | undefined>;
+  getPauseActs?: () => Record<string, (() => void) | undefined>;
   /** Records which player opened the menu. `pauseActor` itself stays in game.js — the gamepad, the keyboard
    *  router, openHelp() and openOptions() all read it there. */
-  setPauseActor: (i: number) => void;
+  setPauseActor?: (i: number) => void;
   /*
    * ⚠️ `getPauseScreens` SAIU EM 2026-09-08, e a razão é o próprio ADR-0106: era um campo OBRIGATÓRIO com
    * ZERO leitores dentro deste módulo. Medido nos três lados — na engine (`git grep ctx.getPauseScreens` em
@@ -619,10 +631,18 @@ export interface PauseIconsCtx {
   toggleLibras: () => void;
 
   // --- TEA / reduced motion (the `rm` object is co-owned with ui/settings-motion — same reference) ---
-  rm: MotionSceneFlags;
-  rmKeys: readonly MotionSceneKey[];
-  rmChar: readonly MotionCharDef[];
-  saveRM: () => void;
+  /*
+   * ⚠️ ESTES QUATRO FICARAM PARA TRÁS NA ETAPA 1a, e o gate da FORMA foi quem o mostrou. Em 2026-09-08 eles
+   * passaram a opcionais no `SettingsMotionCtx` — e AQUI continuaram obrigatórios, porque são duas cópias da
+   * mesma pergunta e eu só tratei uma. A lista de campos obrigatórios lida do retrato de forma acusou-os.
+   *
+   * 📌 É o mesmo defeito que o próprio ADR-0106 descreve: uma coisa que cada consumidor tem de se lembrar de
+   * passar, em dois sítios em vez de um. Ausentes, valem o que o `ui/motion-scene` sabe responder.
+   */
+  rm?: MotionSceneFlags;
+  rmKeys?: readonly MotionSceneKey[];
+  rmChar?: readonly MotionCharDef[];
+  saveRM?: () => void;
 
   // --- motor + visual (both mutate state and rebake textures in game.js) ---
   setToggleMove?: (i: number, on: boolean) => void;
@@ -722,6 +742,34 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     correcao: Boolean(ctx.setCorrecaoDoJogador),
   });
 
+  /*
+   * ⚠️ RESOLVIDOS UMA VEZ, no arranque, pela mesma razão do `settings-motion`: o `rm` é mutado in-place e
+   * partilhado por REFERÊNCIA com quem desenha a cena, e resolvê-lo a cada uso criaria um objecto novo por
+   * chamada — o interruptor deixaria de alcançar o desenho, sem erro nenhum.
+   *
+   * 📌 O `getPauseActs` fica FUNÇÃO e não valor, porque a laziness dele é a razão de ele existir assim: no
+   * cartucho a tabela é um `const` declarado ~1200 linhas abaixo, e lê-la aqui cairia na zona morta temporal.
+   */
+  const rm: MotionSceneFlags = ctx.rm ?? lerCenaGuardada();
+  const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? CHAVES_DE_CENA;
+  const rmChar: readonly MotionCharDef[] = ctx.rmChar ?? ANIMACOES_DO_PERSONAGEM;
+  const saveRM: () => void = ctx.saveRM ?? (() => guardarCena(rm));
+  /*
+   * ⚠️ ESTES TRÊS SÃO LIDOS A CADA CHAMADA, e não resolvidos uma vez como o `rm` acima. A diferença é
+   * deliberada e um teste apanhou-me a errá-la: congelar `ctx.getPauseActs` no arranque partiu um caso que
+   * TROCA a tabela depois do `init` — e trocar depois é legítimo, porque a laziness deste campo existe
+   * precisamente por a tabela chegar tarde. Um padrão não pode custar a ligação tardia que o campo tem.
+   *
+   * O `rm` é o contrário e por isso fica congelado: ali o que importa é a IDENTIDADE do objecto, partilhada
+   * por referência com quem desenha a cena.
+   *
+   * A anotação de tipo é necessária: sem ela o padrão `() => ({})` infere `{}`, que não aceita indexação por
+   * string, e o compilador passaria a recusar `acts[act]` — o despacho inteiro.
+   */
+  const dynLabel = (b: PauseMenuButton): string | null => (ctx.dynLabel ? ctx.dynLabel(b) : null);
+  const getPauseActs = (): Record<string, (() => void) | undefined> => (ctx.getPauseActs ? ctx.getPauseActs() : {});
+  const setPauseActor = (i: number): void => { if (ctx.setPauseActor) ctx.setPauseActor(i); };
+
   function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
 
   function iconState(i: number): IconStateSnapshot {
@@ -747,10 +795,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   function applyCalm(): void {
     const plan = calmMotionPlan(calmMode);
-    for (const k of ctx.rmKeys) ctx.rm[k] = plan.sceneReduced;
-    ctx.saveRM();
+    for (const k of rmKeys) rm[k] = plan.sceneReduced;
+    saveRM();
     // "silencioso" freezes the character too. Iterates the WHOLE players array (not just numPlayers) — verbatim.
-    for (const p of P()) for (const c of ctx.rmChar) p[c.prop] = plan.charFrozen;
+    for (const p of P()) for (const c of rmChar) p[c.prop] = plan.charFrozen;
     const cat = ctx.getAudioCat();
     for (const k of CALM_AUDIO_CATS) {
       const c = cat && cat[k];
@@ -913,7 +961,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const primeiro = bar && iconeSelecionado(bar);
     if (!bar || !primeiro) return;
     naBarra.add(i);
-    const acts = ctx.getPauseActs();
+    const acts = getPauseActs();
     if (acts.resume) acts.resume(); // volta à tela normal: o modo é para usar DURANTE a partida
     ctx.srSay(t('sr.a11y.barEnter'));
     selecionarIcone(bar, primeiro);
@@ -950,7 +998,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (!icones.length) return;
     const cur = iconeSelecionado(bar);
     const idx = cur ? icones.indexOf(cur) : 0;
-    if (acao === 'ativar') { ctx.setPauseActor(i); if (cur) cur.click(); return; }
+    if (acao === 'ativar') { setPauseActor(i); if (cur) cur.click(); return; }
     if (acao === 'andar') {
       const d = (k.down || k.right) ? 1 : -1;
       selecionarIcone(bar, icones[passoNoAnel(icones.length, idx, d)]);
@@ -967,7 +1015,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
      * cartucho a tabela é um `const` declarado ~1200 linhas abaixo do `init`, e lê-la cedo cairia na zona
      * morta temporal. Montar é o primeiro instante em que a resposta existe.
      */
-    const acts = ctx.getPauseActs();
+    const acts = getPauseActs();
     const raiz = ctx.pmButtons ?? PM_BTNS;
     const opcoes = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
     sp.innerHTML = screenPauseMarkup({
@@ -975,14 +1023,14 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       numPlayers: ctx.getNumPlayers(),
       pmButtons: raizQueAcciona(raiz, opcoes, acts),
       optionsButtons: itensQueAccionam(opcoes, acts),
-      dynLabel: ctx.dynLabel, t,
+      dynLabel: dynLabel, t,
     });
 
     sp.addEventListener('click', (e) => {
       const target = e.target as Element | null;
       const b = target && target.closest<HTMLElement>('.pm-btn');
       if (b) {
-        ctx.setPauseActor(i);
+        setPauseActor(i);
         const act = b.dataset.act || '';
         // NAVEGAÇÃO DENTRO DO CARTÃO fica aqui, e não na tabela de ações: `options` e `pmback` não fazem nada
         // ao jogo — trocam qual lista está na tela. A tabela vive em `ui/shell`, que não conhece este `sp`.
@@ -991,7 +1039,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         // é pôr o cursor nela — e a saída continua sendo a saída da pausa, que é a mesma de sempre. Quando o
         // item 7 levar a barra para o HUD, esta linha o segue; o que o item SIGNIFICA não muda.
         if (act === 'acessibilidade') { entrarNaBarra(i); return; }
-        const acts = ctx.getPauseActs();
+        const acts = getPauseActs();
         const fn = acts[act];
         if (fn) fn();
         return;
@@ -1022,7 +1070,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     bar.addEventListener('click', (e) => {
       const ib = (e.target as Element | null)?.closest<HTMLElement>('.pi-btn');
       if (!ib) return;
-      ctx.setPauseActor(i);
+      setPauseActor(i);
       iconAct(ib.dataset.pi || '', i);
       reflectPauseIcons(); // must run BEFORE reading the label back — that is what makes the caption honest
       if (cap) cap.textContent = legendaDoIcone(bar, ib);

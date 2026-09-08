@@ -702,3 +702,66 @@ describe('a barra montada obedece ao §5 do ADR-0106 — nenhum botão morto', (
 //     resultado sempre que faltam os dois escritores — e erram em direccoes opostas quando falta so um (o
 //     `&&` esconde um icone que funciona; o `||` mostra um que nao funciona). A pergunta passou a ser por
 //     ICONE (`EscritoresVisuais`), e o caso `[Boundary] com UM escritor so` vive no project node.
+
+describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (ADR-0106 etapa 2)', () => {
+  /** Só campos que a ENGINE sabe responder. Nenhum `rm`, `dynLabel`, `getPauseActs` ou `setPauseActor`. */
+  function ctxMinimo(over = {}) {
+    const bars = [];
+    return {
+      getPlayers: () => [{ visual: PADRAO, toggleMove: false, walkDir: 0 }],
+      getNumPlayers: () => 1,
+      srSay: () => {}, srAlert: () => {},
+      getA11yBars: () => bars,
+      getModoCego: () => false,
+      getAudioCat: () => ({ tts: { on: false, vol: 1 } }),
+      setCatGain: () => {},
+      reflectTtsPanel: () => {}, reflectTtsPanelEnabled: false,
+      isLibrasOn: () => false, toggleLibras: () => {},
+      ...over,
+    };
+  }
+
+  it('⚠️ [Zero] com o ctx MÍNIMO a pausa monta — é a pré-condição da etapa 2', () => {
+    // ⚠️ ESTE CASO É A ETAPA 2 EM FORMA DE AFIRMAÇÃO. Enquanto `rm`, `dynLabel`, `getPauseActs` e
+    // `setPauseActor` fossem OBRIGATÓRIOS, o `createGame` não podia montar a pausa sem inventar respostas por
+    // um jogo que ele não conhece. Agora pode: o que falta é ele MONTAR, não ele PODER.
+    const api = initPauseIcons(ctxMinimo());
+    const sp = api.buildScreenPause(0);
+    const bar = api.buildQuickBar(0);
+    expect(sp.querySelector('.pause-card'), 'o cartão não montou').toBeTruthy();
+    expect(bar.querySelectorAll('.pi-btn').length, 'a barra montou vazia').toBeGreaterThan(0);
+
+    // ⚠️ E O MODO TEA TEM DE CORRER, que é onde o `rm` é mesmo lido. Sem esta linha o caso montava a árvore e
+    // nunca tocava nos quatro campos de movimento reduzido — uma mutação que os voltasse a exigir do jogo
+    // sobreviveria a ele. (Foi o que aconteceu na primeira volta.)
+    expect(() => api.applyCalm(), 'o modo TEA rebentou sem `rm` injetado').not.toThrow();
+    expect(typeof api.getCalmMode()).toBe('number');
+  });
+
+  it('⚠️ [Zero] e o cartão mínimo NÃO oferece item que não acciona (§5)', () => {
+    // Sem tabela de acções, sobra o que a engine acciona sozinha — e nada mais. Um cartão com `quit` que não
+    // sai, ou `ajuda` que não abre, seria pior do que um cartão curto.
+    const api = initPauseIcons(ctxMinimo());
+    const sp = api.buildScreenPause(0);
+    const acts = [...sp.querySelectorAll('.pm-btn')].map((b) => b.dataset.act);
+    expect(acts).not.toContain('quit');
+    expect(acts).not.toContain('options'); // a porta cai porque a sala está vazia
+    expect(acts.every((a) => a === 'acessibilidade' || a === 'pmback'), 'sobrou item sem acção: ' + acts.join(',')).toBe(true);
+  });
+
+  it('⚠️ [Interface] trocar `getPauseActs` DEPOIS do init continua a valer — a ligação é tardia', () => {
+    // ⚠️ ESTE CASO NASCEU DE UM ERRO MEU QUE UM TESTE APANHOU. Ao dar padrão aos campos, resolvi
+    // `ctx.getPauseActs` UMA vez no arranque — e isso congelou a referência, partindo quem troca a tabela
+    // depois. Trocar depois é legítimo: a laziness deste campo existe porque a tabela chega tarde (no
+    // cartucho é um `const` ~1200 linhas abaixo do `init`). Um padrão não pode custar a ligação tardia.
+    const ctx = ctxMinimo();
+    const api = initPauseIcons(ctx);
+    let saiu = 0;
+    ctx.getPauseActs = () => ({ quit: () => { saiu++; } });
+    const sp = api.buildScreenPause(0);
+    const botao = sp.querySelector('.pm-btn[data-act="quit"]');
+    expect(botao, 'a tabela trocada depois do init não foi lida').toBeTruthy();
+    botao.click();
+    expect(saiu).toBe(1);
+  });
+});
