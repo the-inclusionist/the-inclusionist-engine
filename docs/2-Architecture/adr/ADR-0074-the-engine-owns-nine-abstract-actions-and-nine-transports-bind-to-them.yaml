@@ -36,6 +36,18 @@ metadata:
              written here would have moved THREE. Everything else in §1 governs — positions not meanings,
              the game supplying the words, no abstract name reaching a person. ADR-0085's clause about the
              SIZE of the set is separate and also still in force."
+    - by: ADR-0112
+      what: "§2, and ONLY the sentence that transports 8 and 9 «are therefore not partially built: they have
+             no foundation». That was true when written — `input/` had keyboard, gamepad and touch and no
+             pointer at all — and ADR-0112 is the foundation: a POINTER as a declared capability beside the
+             fourteen, bound from mouse, touch, stick or gaze, with the Dev's clause that on a keyboard the
+             continuous signal IS the mouse. ⚠️ The fourteen positions stay DISCRETE and untouched, which is
+             the point of the shape chosen: every accessibility mechanism defined over them — remapping,
+             one-button, latching, reach — keeps working without answering a second question. What decided it
+             was measurement rather than taste: category 19 of 35 in the catalogue («Desenho / Criativo») is
+             impossible without continuous input, in full, and magnitude on the fourteen would not have
+             unblocked it, because drawing is POSITION and not magnitude. Everything else in §2 governs — the
+             nine transports, the two families, and the built/backlog/no-foundation labels for the rest."
   decision-makers: [Dev]
   consulted:
     - "ADR-0033 — `input arrives as INTENT, never as meaning`. This record is that sentence taken to the
