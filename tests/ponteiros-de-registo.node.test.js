@@ -32,9 +32,14 @@ const RAIZ = process.cwd();
 const CAMINHO = /(?<![\w/])(?:tests|scripts)\/[A-Za-z0-9_.\-]+\.(?:m?js|py|ts)/g;
 
 /**
- * OS PONTEIROS MORTOS DE HOJE, e por que cada um morreu. ⚠️ As razões são DIFERENTES, e é isso que faz esta
- * lista valer alguma coisa: tratá-las como uma só («ficheiros que sumiram») esconderia que um deles nunca
- * existiu.
+ * OS CAMINHOS QUE UM REGISTO CITA E QUE NÃO EXISTEM AQUI, e o porquê de cada um.
+ *
+ * ⚠️ «NÃO EXISTE AQUI» NÃO É O MESMO QUE «MORREU», e a distinção custou-me um erro para aparecer: um deles é
+ * um teste do repositório do CONSUMIDOR, citado correctamente pelo registo que o nomeia. Um crivo só vê a
+ * ausência; a causa dela não é grepável, e é por isso que cada entrada tem de trazer uma frase.
+ *
+ * As causas medidas, e são quatro para seis entradas: saiu com o cartucho · o sujeito foi abolido · foi
+ * aposentado de propósito · nunca foi desta árvore.
  */
 const MORTOS = {
   'tests/main-i18n.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`, #111): testava o `main.js`, que deixou de viver aqui',
@@ -42,18 +47,48 @@ const MORTOS = {
   'tests/carregar-e-arremessar.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`): arremesso é do jogo',
   'tests/progress.node.test.js': 'O SUJEITO DEIXOU DE EXISTIR (`809bc01`, «there is no save, and the game stores nothing about a child»). O gate não foi perdido — o que ele guardava foi abolido, e é a decisão que o ADR-0103 viria a fechar',
   'scripts/check-types.mjs': 'APOSENTADO DE PROPÓSITO (`f622221`) quando a dívida de tipos chegou a ZERO. Era um tecto que só descia; chegado ao fundo, um tecto deixa de ter função',
-  'tests/docs.node.test.ts': '🔴 NUNCA EXISTIU — sem registo de remoção, e sob nenhuma extensão. O ADR-0093 afirma uma verificação que não foi construída, que é a forma mais cara desta lista: as outras seis descrevem coisas que foram verdade',
 };
+// ✅ `tests/docs.node.test.ts` SAIU DESTA LISTA NO DIA EM QUE ELA NASCEU, e a história vale mais do que a
+// entrada valia.
+//
+// ⚠️ Ela entrou com a razão ERRADA: escrevi «nunca existiu — o ADR-0093 afirma uma verificação que não foi
+// construída», porque não há registo de remoção sob nenhuma extensão. A frase que o cita desmentiu-me — ela
+// diz «(`tests/docs.node.test.ts`, DO LADO DELE)»: é um teste do repositório do CONSUMIDOR, citado
+// correctamente. O gate deste lado é o `tests/engine-package.node.test.js`, e existe.
+//
+// 📌 FOI AO ESCREVER A RAZÃO QUE O ERRO APARECEU. Um crivo que contasse «sete caminhos ausentes» teria tratado
+// duas causas diferentes como uma; a ausência de um ficheiro é grepável, a causa dela não é. É esse o trabalho
+// que uma frase à mão faz e um número não faz.
+//
+// ✅ E A DÍVIDA FOI PAGA, não apagada: o ADR-0093 ganhou `confirmed-by` a apontar para o gate real, o
+// `validate-adr.py` passou a conferi-lo, e a entrada saiu por ser a saída funcionar — que era exactamente o
+// que faltava provar.
 
 function registos() {
   return readdirSync(ADR).filter((n) => n.startsWith('ADR-') && n.endsWith('.yaml'))
     .map((n) => ({ id: n.replace(/^(ADR-\d+).*/, '$1'), texto: readFileSync(join(ADR, n), 'utf8') }));
 }
 
-/** Todo caminho citado por algum registo, sem duplicados. */
+/** O registo declara, em chave conferida, o que o confirma HOJE? */
+const temChaveConferida = (r) => /^\s{2}confirmed-by:/m.test(r.texto);
+
+/**
+ * Todo caminho citado em PROSA por um registo que ainda NÃO tem `confirmed-by`.
+ *
+ * ⚠️ E O FILTRO É A SAÍDA DESTA DÍVIDA, sem a qual o ficheiro seria um monumento. A primeira versão lia a
+ * prosa de TODOS os registos — e a prosa é história e não se reescreve (ADR-0057), então nenhuma entrada podia
+ * sair da lista nunca. Um inventário que só cresce não reporta progresso: reporta acumulação.
+ *
+ * 📌 Com o filtro, o caminho de saída é o que o repositório já decidiu: o registo ganha `confirmed-by`, o
+ * `validate-adr.py` passa a conferir esse caminho, e a prosa antiga deixa de precisar de vigilância — porque
+ * já há, ao lado dela, uma linha conferida a dizer o que confirma o registo agora.
+ */
 function citados() {
   const fora = new Set();
-  for (const r of registos()) for (const c of r.texto.match(CAMINHO) ?? []) fora.add(c);
+  for (const r of registos()) {
+    if (temChaveConferida(r)) continue;
+    for (const c of r.texto.match(CAMINHO) ?? []) fora.add(c);
+  }
   return [...fora];
 }
 
@@ -68,10 +103,19 @@ describe('um registo não aponta para um gate que não existe', () => {
     ).toEqual([]);
   });
 
-  it('[Interface] a lista não tem órfãos — um ponteiro que voltou a existir sai dela', () => {
-    // Se alguém reconstruir um destes gates, a entrada tem de sair: uma lista com nomes ressuscitados
-    // reportaria uma dívida que já foi paga.
-    expect(Object.keys(MORTOS).filter((c) => existsSync(join(RAIZ, c))), 'entrada de um ficheiro que existe').toEqual([]);
+  it('⚠️ [Interface] a lista ENCOLHE: quem já não é apanhado sai dela', () => {
+    // ⚠️ ESTE CASO FOI FORTALECIDO DEPOIS DE A PRIMEIRA VERSÃO NÃO SERVIR. Ele só perguntava se o ficheiro
+    // voltou a existir — e uma entrada pode deixar de ser dívida por DUAS vias: o ficheiro volta, OU o registo
+    // que o cita ganha `confirmed-by` e passa a declarar, em chave conferida, o que o confirma hoje. Com a
+    // pergunta antiga, a segunda via não esvaziava a lista, e um inventário que não encolhe é um monumento.
+    //
+    // 📌 Foi assim que `tests/docs.node.test.ts` saiu daqui: o ADR-0093 ganhou a chave a apontar para o
+    // `tests/engine-package.node.test.js`, que é o gate deste lado. A dívida não foi apagada — foi paga.
+    const apanhados = new Set(citados().filter((c) => !existsSync(join(RAIZ, c))));
+    expect(
+      Object.keys(MORTOS).filter((c) => !apanhados.has(c)),
+      'entrada que já não é dívida: ou o ficheiro voltou, ou o registo que o cita ganhou `confirmed-by`',
+    ).toEqual([]);
   });
 
   it('⚠️ [Interface] e a varredura está VIVA: ela lê os registos e acha caminhos a sério', () => {

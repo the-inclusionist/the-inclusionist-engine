@@ -1,6 +1,12 @@
 ---
 metadata:
   status: "accepted"
+  # ⚠️ O QUE CONFIRMA ESTE REGISTO HOJE, em chave conferida — a `confirmation` lá em baixo é história e fica.
+  # Ela cita `tests/docs.node.test.ts`, que é do repositório do CONSUMIDOR e ela própria o diz («do lado dele»);
+  # o gate DESTE lado, o das doze asseverações que nasceram vermelhas sobre o `@mintplex-labs/piper-tts-web`,
+  # é o `engine-package`. Sem esta chave, o ponteiro que um leitor encontra primeiro aponta para outra árvore.
+  confirmed-by:
+    - tests/engine-package.node.test.js
   date: 2026-09-06
   superseded-in-part:
     - by: ADR-0094
