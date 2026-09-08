@@ -287,6 +287,37 @@ describe('createGame em execução', () => {
     expect(cartao.className).toBe('screen-pause');
   });
 
+  it('⚠️ [Right] MONTAR não é MOSTRAR — e a engine dá as duas, sem o jogo caçar id nenhum', async () => {
+    // ⚠️ ESTA LACUNA ESTAVA SILENCIOSA NA MINHA PRÓPRIA ETAPA 2. O cartão nasce `hidden` — tem de nascer, uma
+    // pausa abre-se — e quem o revela é o `ui/shell`, POR FASE, que esta raiz não monta de propósito. Sem
+    // estas duas, um jogo montado por `createGame` ficava com um cartão que NADA mostrava, e a única saída
+    // era procurar `#vp-pause-0` no documento: exactamente o conhecimento que este ficheiro existe para não
+    // exigir.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const cartaoMapeado = {
+      id: '', hidden: true, className: '', dataset: {}, innerHTML: '',
+      appendChild: (n) => n, addEventListener: () => {},
+      querySelector: () => null, querySelectorAll: () => [],
+    };
+    const regiao = {
+      id: 'game-region', innerHTML: '', filhos: [],
+      appendChild(n) { this.filhos.push(n); return n; },
+      addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
+    };
+    const { doc, win } = domFalso({ mapa: { '#game-region': regiao, '#vp-pause-0': cartaoMapeado } });
+    const motor = createGame({
+      declaration: declaracaoValida(), host: { doc, win },
+      carregarVozNeural: () => Promise.resolve({}),
+    });
+
+    expect(typeof motor.pausa.mostrar, 'a engine monta e não sabe mostrar').toBe('function');
+    expect(cartaoMapeado.hidden, 'o cartão tem de nascer escondido — uma pausa ABRE-SE').toBe(true);
+    motor.pausa.mostrar(0);
+    expect(cartaoMapeado.hidden, 'mostrar não revelou o cartão').toBe(false);
+    motor.pausa.esconder(0);
+    expect(cartaoMapeado.hidden).toBe(true);
+  });
+
   it('⚠️ [Right] quem DECLINA o menu de pausa não recebe cartão nem acusação', async () => {
     // Declinar é escolha registada; não ter é omissão. O ADR-0106 §2 é inteiro sobre a diferença, e um gate
     // que as tratasse igual apagaria a razão de os declínios existirem.

@@ -216,6 +216,27 @@ export interface CreateGameOptions {
 
 export interface Engine {
   readonly declaration: GameDeclaration;
+  /**
+   * A PAUSA QUE ESTA RAIZ MONTOU — mostrar e esconder, sem o consumidor caçar id nenhum.
+   *
+   * ⚠️ EXISTE PORQUE MONTAR NÃO É MOSTRAR, e a etapa 2 do ADR-0106 tinha ficado a meio sem que nada o
+   * dissesse. O cartão nasce `hidden` (é assim que o `buildScreenPause` o entrega, e tem de ser: a pausa
+   * abre-se, não está aberta) e QUEM O REVELA é o `ui/shell`, por fase — que esta raiz **não monta**, de
+   * propósito: «não substitui o boot do main.js, que tem catorze anos de ordem própria».
+   *
+   * ⚠️ Sem estas duas, um jogo montado por `createGame` ficava com um cartão de pausa que NADA mostrava. Não
+   * é «o consumidor esqueceu-se»: não havia por onde, a não ser procurar `#vp-pause-0` no documento — que é
+   * exactamente o tipo de conhecimento que este ficheiro existe para não exigir.
+   *
+   * 📌 A engine OFERECE o mecanismo e não toma a fase. Quando abrir a pausa continua a ser do jogo, porque só
+   * ele sabe o que é estar a jogar; o que deixa de ser dele é saber COMO.
+   */
+  readonly pausa: {
+    /** Revela o cartão da tela `i` e refaz os itens — o §5 avaliado no instante em que ela abre. */
+    readonly mostrar: (i: number) => void;
+    /** Esconde-o outra vez. */
+    readonly esconder: (i: number) => void;
+  };
   readonly tts: ReturnType<typeof createTts>;
   readonly overlays: SettingsPanelApi;
   readonly nav: MenuNavApi;
@@ -413,7 +434,11 @@ export function createGame(o: CreateGameOptions): Engine {
     getPlayers: () => o.players ?? [],
     getNumPlayers: () => (o.players ?? [null]).length,
     srSay, srAlert,
-    getA11yBars: () => (a11yBar instanceof HTMLElement ? [a11yBar] : []),
+    // ⚠️ NÃO `instanceof HTMLElement`: esse é um GLOBAL DO NAVEGADOR, e lê-lo onde ele não existe LANÇA —
+    // não devolve falso. Escrito assim na etapa 2, fazia o `reflectPauseIcons` rebentar em qualquer ambiente
+    // sem DOM. É o mesmo erro de forma do ACHADO 15 no cabeçalho deste ficheiro: alcançar o global por baixo
+    // de quem injectou o documento. A pergunta certa é a mesma que o `barraUsavel` faz — sabe ser uma barra?
+    getA11yBars: () => (barraUsavel && a11yBar ? [a11yBar as HTMLElement] : []),
     getModoCego: o.isBlindMode ?? (() => false),
     getAudioCat: () => audioCat,
     setCatGain,
@@ -657,5 +682,22 @@ export function createGame(o: CreateGameOptions): Engine {
     narrar: (texto) => tts.narrate(texto),
   });
 
-  return { declaration: o.declaration, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines, aoFalhar, alcance: alcanceAqui };
+  /*
+   * ⚠️ MOSTRAR REFAZ OS ITENS ANTES DE REVELAR, e a ordem é a regra: o §5 do ADR-0106 diz que a criança nunca
+   * vê um item que não acciona, e a tabela de acções deste jogo pode ter mudado desde a montagem. Revelar
+   * primeiro e refazer depois deixaria um piscar em que ela vê o que não pode usar.
+   */
+  const pausa = {
+    mostrar: (i: number) => {
+      pauseIcons.reflectPauseIcons();
+      const cartao = $<HTMLElement>(`#vp-pause-${i}`);
+      if (cartao) cartao.hidden = false;
+    },
+    esconder: (i: number) => {
+      const cartao = $<HTMLElement>(`#vp-pause-${i}`);
+      if (cartao) cartao.hidden = true;
+    },
+  };
+
+  return { declaration: o.declaration, pausa, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines, aoFalhar, alcance: alcanceAqui };
 }
