@@ -99,6 +99,16 @@ beforeEach(() => {
  * Desde o item 7 do ADR-0044 os ícones NÃO moram mais dentro do cartão — montar só a pausa deixaria metade
  * dos casos deste arquivo medindo uma árvore que a produção não tem.
  */
+/**
+ * Os itens VISÍVEIS do cartão — os .pm-btn que não estão hidden.
+ *
+ * ⚠️ VISÍVEIS e não PRESENTES, e a diferença é a correcção de 2026-09-08: o cartão passou a montar a lista
+ * inteira e a ESCONDER o que este jogo não acciona, em vez de filtrar no arranque. Filtrar cedo decidia com
+ * uma tabela que o próprio campo declara chegar TARDE, e o item cuja acção só existisse depois do boot nunca
+ * mais aparecia. Para o §5 o que conta é o que a criança VÊ, e hidden não é focável nem lido.
+ */
+const actsVisiveis = (sp) => [...sp.querySelectorAll('.pm-btn')].filter((b) => !b.hidden).map((b) => b.dataset.act);
+
 function mount(i = 0, over = {}) {
   const { ctx, state, said, alerted } = makeCtx(over);
   const api = initPauseIcons(ctx);
@@ -170,7 +180,7 @@ describe('buildScreenPause — a árvore construída', () => {
     const { sp } = mount();
     const menu = sp.querySelector('.pause-menu');
     expect(menu.getAttribute('role')).toBe('menu');
-    const items = [...menu.querySelectorAll('.pm-btn')];
+    const items = [...menu.querySelectorAll('.pm-btn')].filter((b) => !b.hidden);
     expect(items.map((b) => b.dataset.act)).toEqual(['resume', 'letra']);
     for (const b of items) expect(b.getAttribute('role')).toBe('menuitem');
   });
@@ -242,9 +252,39 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
     // usava a lista do fixture, que não tem `options` nenhum — então ele passava por VÁCUO, e a mutação que
     // tira a regra da porta SOBREVIVEU. Um caso sobre um item que a lista não contém não afirma nada.
     const { sp } = mount(0, { pmButtons: undefined, optionsButtons: undefined, getPauseActs: () => ({}) });
-    const actsMontados = [...sp.querySelectorAll('.pm-btn')].map((b) => b.dataset.act);
+    const actsMontados = actsVisiveis(sp);
     expect(actsMontados, 'a porta para o submenu vazio ficou').not.toContain('options');
     expect(actsMontados.filter((a) => a !== 'acessibilidade' && a !== 'pmback')).toEqual([]);
+  });
+
+  it('⚠️ [Right] uma acção que chega DEPOIS do boot faz o item APARECER na abertura seguinte', () => {
+    // ⚠️ ESTE CASO É A CORRECÇÃO DE 2026-09-08, e o defeito que ele prende foi achado a ler e não a testar.
+    // O cartão era FILTRADO no `buildScreenPause`, e o `getPauseActs` é um getter precisamente porque a
+    // tabela chega TARDE — «`pauseActs` is a `const` declared far below the init site», diz o próprio campo.
+    // O `createGame` monta durante o próprio `createGame(...)`, então um consumidor que siga esse padrão
+    // documentado perdia PARA SEMPRE todo item cuja acção só existiu depois do boot.
+    //
+    // 📌 O `ui/shell` chama `reflectPauseIcons()` quando a fase vira `pause-menu` — quando a pausa ABRE —, e
+    // é aí que a decisão passou a ser tomada: o último instante possível antes de a criança ver o cartão.
+    let acts = {};                       // vazio no arranque, como no cartucho
+    const { api, sp } = mount(0, { getPauseActs: () => acts });
+    expect(actsVisiveis(sp), 'com a tabela vazia, só o que a engine acciona').not.toContain('quit');
+
+    acts = { quit: () => {} };           // a tabela chega DEPOIS — que é o que a laziness existe para permitir
+    api.reflectPauseIcons();             // o que o shell faz quando a pausa abre
+
+    expect(actsVisiveis(sp), 'a acção chegou e o item continuou escondido para sempre').toContain('quit');
+  });
+
+  it('⚠️ [Right] e o inverso também: uma acção que DESAPARECE esconde o item outra vez', () => {
+    // A outra direcção, e ela importa: um jogo pode retirar «sair» durante um tutorial. Se o refresco só
+    // soubesse mostrar, o botão morto voltaria pela porta de trás.
+    let acts = { quit: () => {} };
+    const { api, sp } = mount(0, { getPauseActs: () => acts });
+    expect(actsVisiveis(sp)).toContain('quit');
+    acts = {};
+    api.reflectPauseIcons();
+    expect(actsVisiveis(sp)).not.toContain('quit');
   });
 
   it('⚠️ [Right] com UM painel accionável, a porta `options` volta — a regra não é «esconder sempre»', () => {
@@ -254,7 +294,7 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
       pmButtons: undefined, optionsButtons: undefined,
       getPauseActs: () => ({ audio: () => {} }),
     });
-    const actsMontados = [...sp.querySelectorAll('.pm-btn')].map((b) => b.dataset.act);
+    const actsMontados = actsVisiveis(sp);
     expect(actsMontados).toContain('options');
     expect(actsMontados).toContain('audio');
   });
@@ -267,7 +307,7 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
       pmButtons: undefined, optionsButtons: undefined,
       getPauseActs: () => ({ resume: () => {}, ajuda: () => {} }),
     });
-    const actsMontados = [...sp.querySelectorAll('.pm-btn')].map((b) => b.dataset.act);
+    const actsMontados = actsVisiveis(sp);
     expect(actsMontados.length, 'a lista padrão não montou nada').toBeGreaterThan(1);
     expect(actsMontados, 'sem `resume` a pausa é uma armadilha — ADR-0044 §2').toContain('resume');
     expect(actsMontados).toContain('ajuda');
@@ -743,7 +783,7 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
     // sai, ou `ajuda` que não abre, seria pior do que um cartão curto.
     const api = initPauseIcons(ctxMinimo());
     const sp = api.buildScreenPause(0);
-    const acts = [...sp.querySelectorAll('.pm-btn')].map((b) => b.dataset.act);
+    const acts = actsVisiveis(sp);
     expect(acts).not.toContain('quit');
     expect(acts).not.toContain('options'); // a porta cai porque a sala está vazia
     expect(acts.every((a) => a === 'acessibilidade' || a === 'pmback'), 'sobrou item sem acção: ' + acts.join(',')).toBe(true);

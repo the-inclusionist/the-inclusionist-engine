@@ -170,7 +170,20 @@ decision-outcome:
       · per reclaimed setting, a case reading the value from the engine with the injected field deleted;
       · over `createGame`'s own result: the mounted bar carries no icon whose action is missing.
 
-    ⬜ STILL OWED — ONE, FOUND BY READING ON 2026-09-08 AND NOT YET FIXED:
+    ✅ AND THAT LAST ONE WAS FIXED THE SAME DAY, by the option this paragraph called «almost certainly right»:
+    the card now mounts the WHOLE list and hides what this game cannot action, recomputed on every
+    `reflectPauseIcons()` — which `ui/shell` fires when the phase becomes `pause-menu`, i.e. when the pause
+    OPENS. That is the last possible instant before a child sees the card. §5 still holds (she never sees an
+    item that does not action) and now she also sees the ones that started actioning.
+
+    📌 The module remembers the cards IT built, in a private array — NOT a new ctx field. `getPauseScreens`
+    was removed earlier the same day for having zero readers, and re-adding it would be one more thing all
+    300 games must remember to pass. Whoever built them can keep them.
+
+    ⚠️ `hidden` rather than `remove()`, deliberately: a table can grow again (a game that only enables «sair»
+    after the first level), and removing would be deciding once more.
+
+    The description of the defect, kept because it is the reason the shape is what it is:
 
     ⚠️ THE CARD IS FILTERED AT BUILD TIME, AND THE TABLE IT FILTERS BY IS DOCUMENTED AS ARRIVING LATE.
     `buildScreenPause` calls `getPauseActs()` once, while `createGame` builds the card during `createGame(...)`

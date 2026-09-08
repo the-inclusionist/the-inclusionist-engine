@@ -930,8 +930,50 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * Reflete os ícones de TODAS as telas. Varre as BARRAS e não mais os cartões de pausa: desde o item 7 do
    * ADR-0044 os ícones vivem no HUD, e um cartão de pausa não contém `.pi-btn` nenhum.
    */
+  /**
+   * OS CARTÕES QUE ESTA INSTÂNCIA CONSTRUIU. Privado, e é a resposta a um problema que eu próprio criei.
+   *
+   * ⚠️ O `PauseIconsCtx` tinha um `getPauseScreens` e eu removi-o hoje, com razão: tinha ZERO leitores. Agora
+   * este módulo precisa de alcançar os cartões — e a saída certa NÃO é repor o campo. Quem os construiu foi
+   * ele; guardar o que construiu não pede nada a consumidor nenhum, e um campo de ctx é mais uma coisa que
+   * cada um dos 300 jogos teria de se lembrar de passar.
+   */
+  const cartoes: HTMLElement[] = [];
+
+  /**
+   * ESCONDE OS ITENS QUE ESTE JOGO NÃO CONSEGUE ACCIONAR — recalculado, e não decidido no arranque.
+   *
+   * ⚠️ ESTA FUNÇÃO EXISTE POR UM DEFEITO DE TEMPO. O cartão era FILTRADO no `buildScreenPause`, e o
+   * `getPauseActs` é um getter precisamente porque a tabela CHEGA TARDE — «`pauseActs` is a `const` declared
+   * far below the init site», diz o próprio campo. Um consumidor que siga esse padrão documentado montava um
+   * cartão sem os itens cuja acção só existiu depois do boot, e nunca mais os recuperava.
+   *
+   * 📌 A avaliação passou para o ÚLTIMO instante possível: o `ui/shell` chama `reflectPauseIcons()` quando a
+   * fase vira `pause-menu`, ou seja quando a pausa ABRE. O §5 continua respeitado — a criança nunca vê um
+   * item que não acciona —, e agora também vê os que passaram a accionar.
+   */
+  function refrescarItensDaPausa(): void {
+    const acts = getPauseActs();
+    const raiz = ctx.pmButtons ?? PM_BTNS;
+    const opcoes = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
+    const vivos = new Set([
+      ...raizQueAcciona(raiz, opcoes, acts).map((b) => b.act),
+      ...itensQueAccionam(opcoes, acts).map((b) => b.act),
+    ]);
+    // ⚠️ `filter(Boolean)`: os cartões são indexados por JOGADOR, e montar só a tela 2 deixa um buraco no
+    // índice 0. Um `for…of` sobre array esparso entrega `undefined`, e foi o que rebentou à primeira.
+    for (const cartao of cartoes.filter(Boolean)) {
+      for (const btn of cartao.querySelectorAll<HTMLElement>('.pm-btn')) {
+        // ⚠️ `hidden` e não `remove()`: reaparecer tem de ser possível, porque a tabela pode crescer outra vez
+        // (um jogo que só liga «sair» depois da primeira fase). Remover seria decidir uma vez de novo.
+        btn.hidden = !vivos.has(btn.dataset.act ?? '');
+      }
+    }
+  }
+
   function reflectPauseIcons(): void {
     ctx.getA11yBars().forEach((bar, i) => reflectIconsIn(bar, i));
+    refrescarItensDaPausa();
   }
 
   // --- the pause screen ----------------------------------------------------------------------
@@ -1039,20 +1081,26 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     sp.hidden = true;
     sp.dataset.player = String(i);
     /*
-     * ⚠️ FILTRADO NO MOMENTO DE MONTAR, e não no arranque, porque o `getPauseActs` é LAZY de propósito: no
-     * cartucho a tabela é um `const` declarado ~1200 linhas abaixo do `init`, e lê-la cedo cairia na zona
-     * morta temporal. Montar é o primeiro instante em que a resposta existe.
+     * ⚠️ MONTA A LISTA INTEIRA E ESCONDE DEPOIS — e a versão anterior desta linha FILTRAVA aqui, o que estava
+     * errado por uma razão de TEMPO. O comentário que estava neste sítio dizia «montar é o primeiro instante
+     * em que a resposta existe»; não é. O `getPauseActs` é um getter precisamente porque a tabela chega
+     * TARDE — «`pauseActs` is a `const` declared far below the init site», diz o próprio campo —, e o
+     * `createGame` monta durante o próprio `createGame(...)`. Filtrar aqui apagava para sempre todo item cuja
+     * acção só passou a existir depois do boot.
+     *
+     * Quem decide o que se VÊ é o `refrescarItensDaPausa`, a cada `reflectPauseIcons()` — que o `ui/shell`
+     * dispara quando a fase vira `pause-menu`, ou seja quando a pausa ABRE. O §5 continua respeitado (a
+     * criança nunca vê um item que não acciona) e agora também vê os que passaram a accionar.
      */
-    const acts = getPauseActs();
-    const raiz = ctx.pmButtons ?? PM_BTNS;
-    const opcoes = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
     sp.innerHTML = screenPauseMarkup({
       player: i,
       numPlayers: ctx.getNumPlayers(),
-      pmButtons: raizQueAcciona(raiz, opcoes, acts),
-      optionsButtons: itensQueAccionam(opcoes, acts),
+      pmButtons: ctx.pmButtons ?? PM_BTNS,
+      optionsButtons: ctx.optionsButtons ?? PM_OPTIONS_BTNS,
       dynLabel: dynLabel, t,
     });
+    cartoes[i] = sp;
+    refrescarItensDaPausa(); // o §5 vale já na montagem, e não só na primeira abertura
 
     sp.addEventListener('click', (e) => {
       const target = e.target as Element | null;
