@@ -29,7 +29,12 @@
 import type { PlayerView } from '../core/entity.js';
 import type { NavKeys } from '../input/edges.js'; // a MESMA intenção que teclado, controle, olhar e fala montam
 import { t } from '../core/i18n.js';
-import { CONTRAST_LEVELS, CONTRAST_LABELS } from './settings-visual.js';
+import { CONTRAST_LEVELS } from './settings-visual.js';
+import { CURTO_DO_TEMA, CURTO_DA_CORRECAO } from './visual-axes-panel.js';
+import {
+  proximoTema, proximaCorrecao, temAltoContraste, PADRAO,
+  type Tema, type Correcao, type VisualState,
+} from '../render/viz-axes.js';
 import type { MotionSceneFlags, MotionSceneKey, MotionCharDef } from './settings-motion.js';
 import type { AudioCatState } from './settings-audio.js';
 import { anunciarItem } from './item-announcement.js';
@@ -153,7 +158,7 @@ export const CVD_LABELS: Readonly<Record<string, string>> = {
  * tipar `core/state.players` como `Player[]`: o compilador recusou converter um `Player` — que não tem
  * assinatura de índice — para ela, e essa recusa é a informação.
  */
-export type PausePlayer = PlayerView<'viz' | 'toggleMove' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>;
+export type PausePlayer = PlayerView<'visual' | 'toggleMove' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>;
 
 /** One `.pm-btn` descriptor — the shape of game.js's PM_BTNS (owned by ui/activities-menu). */
 export interface PauseMenuButton {
@@ -178,8 +183,15 @@ export interface IconStateSnapshot {
   librasOn: boolean;
   calmMode: number;
   toggleMove: boolean;
-  /** `player.viz` — shared by the contrast and CVD icons (they overwrite each other; that is by design). */
-  viz: string;
+  /**
+   * O estado visual em DOIS EIXOS (#104).
+   *
+   * ⚠️ ERA `viz: string`, E O COMENTÁRIO DIZIA: «shared by the contrast and CVD icons (they overwrite each
+   * other; **that is by design**)». Não era desenho — era o campo único a impor-se, e a frase é o defeito
+   * escrito como se fosse decisão. Os dois ícones sempre ciclaram DENTRO do seu eixo (`nextContrast` e
+   * `nextCvd` existem desde sempre, separados); só não tinham onde guardar o resultado sem apagar o vizinho.
+   */
+  visual: VisualState;
   /** False disables the blind/TTS icons: those need an audio output nobody else is listening to. */
   privateOutput: boolean;
 }
@@ -242,8 +254,8 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   // Era assim antes da conversão, com o texto curto embutido — preservado, não reinventado.
   if (k === 'tea') return t('icon.state', { nome: t('icon.tea.short'), v: t(CALM_NAMES[s.calmMode]!) });
   if (k === 'altmove') return rotulo(s.toggleMove ? 'state.on' : 'state.off');
-  if (k === 'contrast') return rotulo(CONTRAST_LABELS[s.viz] || 'contrast.off');
-  if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CVD_LABELS[s.viz] || 'cvd.off') });
+  if (k === 'contrast') return rotulo(CURTO_DO_TEMA[s.visual.tema]);
+  if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CURTO_DA_CORRECAO[s.visual.correcao]) });
   return t(ic.n);
 }
 
@@ -269,11 +281,12 @@ export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   else if (k === 'libras') { on = s.librasOn; }
   else if (k === 'tea') { on = s.calmMode === 2; calm = s.calmMode === 1; }
   else if (k === 'altmove') { on = s.toggleMove; }
-  else if (k === 'contrast') { on = /^hc-direto/.test(s.viz || ''); }
+  else if (k === 'contrast') { on = temAltoContraste(s.visual); }
   else if (k === 'cvd') {
-    if (s.viz === 'fix-protan') cvd = 'pi-cvd-protan';
-    else if (s.viz === 'fix-deuter') cvd = 'pi-cvd-deuter';
-    else if (s.viz === 'fix-tritan') cvd = 'pi-cvd-tritan';
+    // ⚠️ O FUNDO DE DUAS CORES É O SINAL DE LIGADO deste ícone, e agora ele lê o EIXO da correção — que
+    // continua a dizer o mesmo quando o tema também está ligado, coisa que a chave única não conseguia: com
+    // `hc-direto-7` no campo, a correção da criança desaparecia do ícone que existe para a mostrar.
+    if (s.visual.correcao !== 'tricro') cvd = 'pi-cvd-' + s.visual.correcao;
   }
   return { on, dis, calm, cvd, active: on || calm || !!cvd };
 }
@@ -515,6 +528,9 @@ export interface PauseIconsCtx {
   // --- motor + visual (both mutate state and rebake textures in game.js) ---
   setToggleMove: (i: number, on: boolean) => void;
   setPlayerViz: (i: number, mode: string) => void;
+  /** Os escritores POR EIXO (#104): mexer no tema não apaga a correção, e vice-versa. */
+  setTemaDoJogador: (i: number, tema: Tema) => void;
+  setCorrecaoDoJogador: (i: number, correcao: Correcao) => void;
 }
 
 export interface PauseIconsApi {
@@ -586,7 +602,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       // passou a ter nome em `core/state`, e `render/viz-modes` já declarava esse modo com `kind:'normal'` —
       // o que não faz nada. Dizer o padrão em vez de o deduzir é o que torna a marca do ADR-0029 possível
       // aqui, porque ela lê `DEFAULTS` e mais nada.
-      viz: p.viz || DEFAULTS.viz,
+      visual: p.visual ?? PADRAO,
       privateOutput: hasPrivateOutput(i),
     };
   }
@@ -639,15 +655,19 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       // verbatim: `players[i].toggleMove` with no `||{}` guard (unlike contrast/cvd below).
       ctx.setToggleMove(i, !P()[i].toggleMove);
     },
+    // ⚠️ OS DOIS ÍCONES DEIXARAM DE SE APAGAR UM AO OUTRO (#104). Eles SEMPRE ciclaram dentro do seu eixo —
+    // `nextContrast` e `nextCvd` existem separados desde sempre —, mas escreviam os dois no mesmo campo, e
+    // por isso mexer num zerava o outro. O snapshot dizia isso como se fosse desenho: «they overwrite each
+    // other; that is by design». Agora cada um escreve no seu eixo e o outro fica onde estava.
     contrast: (i) => {
-      const nx = nextContrast((P()[i] || {}).viz);
-      ctx.setPlayerViz(i, nx);
-      ctx.srSay(t('sr.visual.contrast', { v: t(CONTRAST_LABELS[nx] || 'contrast.off') }));
+      const v = proximoTema((P()[i] || {}).visual ?? PADRAO);
+      ctx.setTemaDoJogador(i, v.tema);
+      ctx.srSay(t('sr.visual.contrast', { v: t(CURTO_DO_TEMA[v.tema]) }));
     },
     cvd: (i) => {
-      const nx = nextCvd((P()[i] || {}).viz);
-      ctx.setPlayerViz(i, nx.mode);
-      ctx.srSay(t('sr.icon.cvd', { v: t(CVD_NAMES[nx.idx]!) }));
+      const v = proximaCorrecao((P()[i] || {}).visual ?? PADRAO);
+      ctx.setCorrecaoDoJogador(i, v.correcao);
+      ctx.srSay(t('sr.icon.cvd', { v: t(CURTO_DA_CORRECAO[v.correcao]) }));
     },
   };
 

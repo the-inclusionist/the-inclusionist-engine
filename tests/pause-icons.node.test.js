@@ -11,6 +11,7 @@
 // quando o estado muda, e um ícone `em construção` nunca se declara ligado.
 // ZOMBIES (Zero/One/Many/Boundary/Interface/Exception/Simple) + Right-BICEP.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { migrarVisual, PADRAO } from '../app/js/render/viz-axes.js';
 import pt from '../app/js/i18n/pt.js';
 import {
   PAUSE_ICONS, CALM_AUDIO_CATS, CVD_SEQ, CVD_NAMES,
@@ -130,7 +131,10 @@ function buildCtx(over = {}) {
     rmChar: RM_CHAR,
     saveRM: () => { state.saved++; },
     setToggleMove: (i, on) => { state.toggleMoveCalls.push([i, on]); const p = players[i]; if (p) p.toggleMove = on; },
-    setPlayerViz: (i, mode) => { state.vizCalls.push([i, mode]); const p = players[i]; if (p) p.viz = mode; },
+    setPlayerViz: (i, mode) => { state.vizCalls.push([i, mode]); const p = players[i]; if (p) { p.viz = mode; p.visual = migrarVisual(mode); } },
+    // Os escritores POR EIXO (#104): mexer num nao apaga o outro, e e' isso que os casos afirmam.
+    setTemaDoJogador: (i, tema) => { state.vizCalls.push([i, 'tema:' + tema]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? PADRAO), tema }; },
+    setCorrecaoDoJogador: (i, correcao) => { state.vizCalls.push([i, 'correcao:' + correcao]); const p = players[i]; if (p) p.visual = { ...(p.visual ?? PADRAO), correcao }; },
     ...over,
   };
   return { ctx, state, said, alerted };
@@ -139,11 +143,16 @@ function buildCtx(over = {}) {
 // Popula core/state.players IN PLACE (o módulo real lê o binding vivo; nunca reatribui o array).
 function setPlayers(list) {
   players.length = 0;
-  list.forEach((p) => players.push(p));
+  // ⚠️ DERIVA `visual` de `viz`, a mesma regra do espelho que a produção mantém (#104), para os casos
+  // continuarem a declarar o modo pelo nome — que é como eles falam. Quem precisa dos DOIS eixos ao mesmo
+  // tempo passa `visual` directamente, e é isso que o distingue.
+  list.forEach((p) => players.push(
+    p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrarVisual(p.viz) } : p,
+  ));
   setNumPlayersValue(list.length || 1);
 }
 
-beforeEach(() => { setPlayers([{ viz: 'normal' }]); });
+beforeEach(() => { setPlayers([{ viz: 'normal', visual: PADRAO }]); });
 
 // =============================================================================================
 // PURO — saída privada de áudio (o portão dos ícones de som)
@@ -260,11 +269,19 @@ describe('plano do modo TEA (applyCalm sem DOM)', () => {
 // =============================================================================================
 // PURO — o rótulo REFLETE o estado (o coração da acessibilidade destes botões)
 // =============================================================================================
+/**
+ * ⚠️ O SNAPSHOT PASSOU A CARREGAR `visual` (#104), e este helper DERIVA-O de `viz` para os casos continuarem
+ * a dizer o modo pelo nome — que é como eles falam. É a mesma regra do espelho que a produção mantém.
+ *
+ * Um caso que precise de um estado que a chave única NÃO exprime — `hc7` com `fix-deuter`, que é o ponto da
+ * issue — passa `visual` directamente, e é isso que o distingue dos outros.
+ */
 function snap(over = {}) {
-  return {
+  const base = {
     modoCego: false, ttsOn: false, librasOn: false, calmMode: 0,
     toggleMove: false, viz: 'normal', privateOutput: true, ...over,
   };
+  return { ...base, visual: base.visual ?? migrarVisual(base.viz) };
 }
 
 describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
@@ -553,16 +570,25 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(state.toggleMoveCalls).toEqual([[1, false]]);
   });
 
-  it('contraste e daltonismo escrevem no viz do jogador que agiu e anunciam o rótulo do novo valor', () => {
-    setPlayers([{ viz: 'normal' }, { viz: 'normal' }]);
+  it('⚠️ contraste e daltonismo ciclam CADA UM NO SEU EIXO, e um não apaga o outro (#104)', () => {
+    // ⚠️ ESTE CASO ERA A DEMONSTRAÇÃO DO DEFEITO, escrita como se fosse comportamento: ele afirmava que,
+    // depois do contraste, o ícone de daltonismo saltava para o índice 1 «porque `hc-direto` não está na
+    // sequência CVD». Não estava porque as duas sequências dividiam UM campo — a criança ligava o contraste
+    // e o daltonismo perdia o lugar dela.
+    //
+    // Agora cada ícone escreve no seu eixo, e a asserção que interessa é a última: depois de mexer nos DOIS,
+    // os DOIS continuam ligados.
+    setPlayers([{ visual: PADRAO }, { visual: PADRAO }]);
     const { ctx, state, said } = buildCtx();
     const api = initPauseIcons(ctx);
     api.iconAct('contrast', 1);
-    expect(state.vizCalls).toEqual([[1, 'hc-direto']]);
+    expect(state.vizCalls).toEqual([[1, 'tema:hc3']]);
     expect(said).toEqual(['Alto contraste: 3:1.']);
     api.iconAct('cvd', 1);
-    expect(state.vizCalls[1]).toEqual([1, 'fix-protan']); // hc-direto não está na sequência CVD → índice 1
+    expect(state.vizCalls[1]).toEqual([1, 'correcao:protan']);
     expect(said[1]).toBe('Correção de daltonismo: protanopia.');
+    // ⚠️ E O TEMA SOBREVIVEU AO SEGUNDO CLIQUE. É a linha que o modelo antigo não conseguia produzir.
+    expect(players[1].visual).toEqual({ tema: 'hc3', correcao: 'protan', simulacao: null });
   });
 
   it('EXCEÇÃO: ícone em construção só ALERTA — nenhum estado é tocado', () => {
@@ -594,7 +620,7 @@ describe('initPauseIcons — ações dos ícones', () => {
     api.iconAct('contrast', 0);
     expect(alerted).toEqual([]);
     expect(api.getCalmMode()).toBe(1);
-    expect(state.vizCalls).toEqual([[0, 'hc-direto']]);
+    expect(state.vizCalls).toEqual([[0, 'tema:hc3']]);
   });
 
   it('EXCEÇÃO: chave desconhecida é no-op silencioso (nem fala, nem alerta, nem lança)', () => {
@@ -707,7 +733,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     const b = fakeIconBtn('cvd');
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-cvd-protan')).toBe(true);
-    players[0].viz = 'fix-tritan';
+    players[0].visual = migrarVisual('fix-tritan');
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-cvd-protan')).toBe(false);
     expect(b.classList.contains('pi-cvd-tritan')).toBe(true);

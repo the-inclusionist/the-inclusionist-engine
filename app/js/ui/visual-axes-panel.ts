@@ -42,6 +42,21 @@ export const ROTULO_DA_CORRECAO: Readonly<Record<Correcao, string>> = Object.fre
   tritan: 'viz.fix-tritan',
 });
 
+/**
+ * Os rótulos CURTOS, para os ícones da barra rápida — «7:1», «deuteranopia».
+ *
+ * ⚠️ SÃO AS CHAVES QUE JÁ EXISTIAM (`contrast.*`, `cvd.*`), re-chaveadas por eixo. A barra rápida sempre
+ * falou curto porque anuncia UM ícone de cada vez, e o painel sempre falou por extenso porque a criança está
+ * a ler uma lista — a diferença é de contexto e sobrevive à divisão. Reaproveitar em vez de traduzir de novo
+ * é o que mantém a mesma palavra nos dois sítios.
+ */
+export const CURTO_DO_TEMA: Readonly<Record<Tema, string>> = Object.freeze({
+  padrao: 'contrast.off', hc3: 'contrast.3', hc45: 'contrast.45', hc7: 'contrast.7',
+});
+export const CURTO_DA_CORRECAO: Readonly<Record<Correcao, string>> = Object.freeze({
+  tricro: 'cvd.off', protan: 'cvd.protan', deuter: 'cvd.deuter', tritan: 'cvd.tritan',
+});
+
 /** Os dois eixos, como o painel os identifica no DOM. */
 export type EixoVisual = 'tema' | 'correcao';
 
