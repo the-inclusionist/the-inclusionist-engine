@@ -14,6 +14,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { initKeydown } from '../app/js/input/keydown.js';
 import { initMenuNav } from '../app/js/ui/menu-nav.js';
+// O PAR de `input/state` (ADR-0109) — o mesmo que o `keydown.node.test.js` injecta, e pela mesma razão.
+import {
+  keys as keysReais, marcarTecla, marcarTeclaSemOrigem, soltarTecla, soltarTodas,
+} from '../app/js/input/state.js';
 // A CENA é DO TESTE desde 2026-08-26. `phase` saiu de `core/state` — virou a pilha de `core/scenes`, e os
 // três nomes moram na raiz de composição (ADR-0030 C3). Quem é engine recebe BOOLEANOS. Este `let` faz o
 // papel que o binding vivo fazia, e os casos seguem escritos como estavam.
@@ -61,7 +65,16 @@ function wire({ pauseMenu = null } = {}) {
     getNumPlayers: () => 1,
     getPlayers: () => players,
     getControls: () => CONTROLS,
-    heldKeys: new Set(),
+    // 🔴 ESTE DUPLO FICOU PARA TRÁS EM `a78816c` E O CI APANHOU-O, não a suite local. Ao migrar o `keydown`
+    // para o par de `input/state` (ADR-0109) actualizei o irmão NODE deste ficheiro e não este — e o modo de
+    // falhar foi o pior possível: `ctx.marcarTeclaSemOrigem is not a function` sai como UNHANDLED ERROR, não
+    // como asserção reprovada, então os casos continuaram a PASSAR e o contador dizia «3117 verdes».
+    // ⚠️ O par VERDADEIRO e não um duplo dele, pela razão que o ficheiro node já carrega: uma segunda
+    // implementação da regra faria o caso afirmar que a minha cópia concorda com a minha asserção.
+    heldKeys: keysReais,
+    marcarTecla,
+    marcarTeclaSemOrigem,
+    soltarTecla,
     isOneButton: () => false,
     actionOf: (code) => actionOf(code),
     whichPlayer: (code) => (actionOf(code) ? 0 : -1),
@@ -89,6 +102,10 @@ const press = (code) => target.dispatchEvent(new KeyboardEvent('keydown', { code
 
 beforeEach(() => {
   log = [];
+  // ⚠️ O conjunto de teclas é estado de MÓDULO e sobrevive entre casos: sem esta reposição, uma tecla que um
+  // caso deixou premida faz o seguinte medir um mundo que ele não montou. É a mesma linha que o irmão node
+  // ganhou, e pelo mesmo motivo.
+  soltarTodas();
   document.body.innerHTML = '<div id="stage"><button id="target"></button></div>';
   host = document.getElementById('stage');
   target = document.getElementById('target');
