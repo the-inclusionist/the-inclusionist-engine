@@ -137,7 +137,40 @@ decision-outcome:
          §3 is exactly that. What it loses is being a saved CHOICE the child makes in a menu."
 
   confirmation: |
-    Owed, and none of it exists yet:
+    ⚠️ BUILT THE SAME DAY, IN THREE COMMITS, AND THE STATE IS REPORTED HONESTLY BELOW rather than as a tick.
+
+    ✅ THE MODE HALF — `input/transporte-em-uso` (8 cases, 6 mutations). The four rules as a state machine:
+    no DOM, no storage, no events. ⚠️ Its cases are SEQUENCES, not calls, because these rules are about what
+    happens AFTER something else did — «pressing a key RETURNS the keyboard» means nothing unless you had
+    left it. And the mutation that matters most is the camera losing its priority: putting the `emUso` check
+    before the assisted one compiles, reads fine, and describes a child who plays by webcam, touches the
+    screen once, and loses the latching she depends on. THE ORDER OF THOSE TWO LINES IS RULE 4.
+
+    ✅ THE EDGE HALF, STARTED BY STRANGLER — `origemDaTecla` beside `keys`, written at one point
+    (`marcarTecla`/`soltarTecla`/`soltarTodas`), writers migrating one at a time. ⚠️ `origemDe` returns
+    `undefined` and NEVER a default: a default `teclado` would make a TOUCH key entering through a
+    not-yet-migrated writer read as keyboard, latching would switch itself off, and nothing would say so.
+
+    ✅ FIRST WRITER MIGRATED — `input/touch-bindings` stamps `'toque'`. Its ctx now separates READ from
+    WRITE: `heldKeys` stays as `ReadonlySet` because the pure decision reads it, and writing goes through the
+    pair. Reading was never the problem.
+
+    ⬜ WHAT REMAINS, and why:
+    · `input/keydown` is the LAST raw writer, and it is blocked on a design choice this record does not make.
+      The webcam dispatches SYNTHETIC `KeyboardEvent`s, which arrive through `keydown` and would be stamped
+      `teclado` — the erasure returning through the front door. ⚠️ And the dispatch is LOAD-BEARING: it drives
+      the whole keydown pipeline (menu navigation, pause, edges), not just the held set, so it cannot simply
+      be replaced by calling the pair. `isTrusted` separates a real press from a dispatched one but does not
+      say WHICH assisted transport it was. Two shapes are on the table — `keydown` asking an injected
+      `origemSintetica()`, or the webcam declaring itself into a slot `keydown` reads — and that is the Dev's.
+    · the automaton is not WIRED to anything yet: nothing tells it that an edge happened, and nowhere holds
+      the per-player state. That waits on the same choice, because `keydown` is one of its feeds.
+    · and the cartridge's `onTouchControlsShown` cannot be removed until it is.
+
+    Of the five gates owed above, FOUR now exist (the rules, the camera override, the refusal to default an
+    unknown origin, and the raw-write sieve). The fifth is the cartridge one, and it is last by necessity.
+
+    The original list, kept for the record:
 
     · a case per rule, over the automaton and NOT over the DOM: given a sequence of edges with origins, the
       transport in use and the latch state after each one. Rules 1–3 are a state machine and deserve to be
