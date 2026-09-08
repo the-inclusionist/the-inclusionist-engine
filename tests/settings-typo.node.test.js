@@ -117,7 +117,10 @@ describe('as caligráficas: papel declarado e tamanho mínimo', () => {
 
   it('[Zero] há caligráficas no catálogo — senão os casos abaixo não medem nada', () => {
     expect(CALIGRAFICAS.length).toBeGreaterThan(0);
-    expect(CALIGRAFICAS.map((it) => it.k).sort()).toEqual(['pinyon', 'ufmag']);
+    // ⚠️ TRÊS desde 2026-09-07: a Fondamento entrou pela emenda do ADR-0012 (#87 item 3). A lista é escrita
+    // por extenso de propósito — uma face que ganhe `papel:'caligrafica'` sem alguém reparar passa a estar
+    // fora do menu, e isso é uma decisão de produto, não uma etiqueta.
+    expect(CALIGRAFICAS.map((it) => it.k).sort()).toEqual(['fondamento', 'pinyon', 'ufmag']);
   });
 
   it('⚠️ [Right] toda caligráfica declara `minPx`, com os números do Dev', () => {

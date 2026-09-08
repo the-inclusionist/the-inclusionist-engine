@@ -577,6 +577,8 @@ const en: Record<string, string> = {
   'font.desc.lexend': 'made to reduce visual stress and serve dyslexic readers (turns on the extra spacing)',
   'font.desc.quattro': 'built to ease the eye strain of long hours on a screen',
   'font.desc.andika': 'based on Sassoon; the fruit of research into how children read and write',
+  'font.desc.opendyslexic': 'Letters weighted at the bottom, so they do not flip upside down as you read.',
+  'font.desc.fondamento': 'Pen calligraphy, for the handwriting activities.',
   'font.desc.greatvibes': 'English calligraphy',
   'font.desc.pinyon': 'English calligraphy',
   'font.desc.ufcook': 'German blackletter',

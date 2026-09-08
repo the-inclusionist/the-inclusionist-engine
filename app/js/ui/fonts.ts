@@ -50,6 +50,12 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'lexend',     fam:'Lexend',                fb:'sans', d:'font.desc.lexend'},
     {k:'quattro',    fam:'iA Writer Quattro',     fb:'sans', d:'font.desc.quattro'},
     {k:'andika',     fam:'Andika',                fb:'sans', d:'font.desc.andika'},
+    // ⚠️ A OPENDYSLEXIC ENTRA SEM NENHUMA ALEGAÇÃO DE EFICÁCIA, e a restrição é da issue #87 item 3 e do
+    // `docs/game-design/typography.md`, que diz por extenso: «Ofereça a Dyslexie e a OpenDyslexic apenas como
+    // escolha do usuário. A pesquisa não mostra ganho de leitura com elas.» A descrição dela fala do DESENHO
+    // (hastes pesadas em baixo), nunca do efeito — prometer leitura melhor seria vender a uma criança
+    // disléxica uma coisa que a evidência não sustenta, e ela é quem menos pode pagar por isso.
+    {k:'opendyslexic', fam:'OpenDyslexic',       fb:'sans', d:'font.desc.opendyslexic'},
     {k:'sourcesans', fam:'Source Sans 3',         fb:'sans'},
     {k:'inter',      fam:'Inter',                 fb:'sans'},
     {k:'opensans',   fam:'Open Sans',             fb:'sans'},
@@ -66,6 +72,9 @@ export const FONT_GROUPS: FontGroup[] = [
   {g:'font.group.hand', items:[
     {k:'pinyon',     fam:'Pinyon Script',       fb:'cursive', d:'font.desc.pinyon', papel:'caligrafica', minPx:24},
     {k:'ufmag',      fam:'UnifrakturMaguntia',  fb:'cursive', d:'font.desc.ufmag',  papel:'caligrafica', minPx:20},
+    // Fondamento entra pela emenda do ADR-0012 (#87 item 3) com o mínimo que o Dev fixou. Caligráfica, logo
+    // fora do menu — ela é para os botões DENTRO das atividades escolares, não para a interface.
+    {k:'fondamento', fam:'Fondamento',          fb:'cursive', d:'font.desc.fondamento', papel:'caligrafica', minPx:20},
     // ⚠️ `comicneue` NÃO é caligráfica, e está neste grupo só por aparência: é uma face de propósito geral,
     // frequentemente recomendada para dislexia. Marcá-la como caligráfica tirá-la-ia do menu — removendo uma
     // opção legitimamente acessível pelo formato do grupo em vez de pelo papel.

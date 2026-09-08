@@ -101,3 +101,29 @@
    O ficheiro aqui é o subconjunto LATINO, copiado daquele repositório já verificado, e o gate que o mede
    é `tests/fonte-arcade.browser.test.js` — pela LARGURA DE AVANÇO, que vem do glifo e portanto do ficheiro. */
 @font-face{font-family:'Press Start 2P';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/pressstart-400.woff2') format('woff2');}
+
+
+/* ===== OpenDyslexic (ACESSIBILIDADE — oferecida, e SEM alegação de eficácia) =====
+   SIL OFL 1.1, confirmada na API do repositório oficial (antijingoist/opendyslexic) e não de memória — a
+   licença desta face JÁ MUDOU uma vez, e afirmar de cabeça seria afirmar o estado antigo.
+
+   ⚠️ ELA NÃO PROMETE LEITURA MELHOR, e isso é decisão registada. O `docs/game-design/typography.md` diz por
+   extenso: «Ofereça a Dyslexie e a OpenDyslexic apenas como escolha do usuário. A pesquisa não mostra ganho
+   de leitura com elas.» A descrição no menu fala do desenho — hastes pesadas na base —, nunca do efeito.
+
+   ⚠️ E ELA NÃO É SUBCONJUNTO: 100,9 KB do ficheiro compilado do próprio projeto, contra 23 KB da Fondamento
+   latina. É a face mais pesada do roster, e entra assim porque o upstream não publica subconjuntos; quem
+   quiser cortá-la depois faz por `pyftsubset`, e o gate de precache é quem reclama se o orçamento apertar. */
+@font-face{font-family:'OpenDyslexic';font-style:normal;font-weight:400;font-display:swap;
+  src:url('fonts/opendyslexic-400.woff2') format('woff2');}
+
+/* ===== Fondamento (CALIGRÁFICA — fora do menu, para dentro das atividades) =====
+   SIL OFL 1.1, do Google Fonts, nos dois subconjuntos que ele serve. Mínimo de 20 px fixado pelo Dev na
+   emenda do ADR-0012: abaixo disso a face deixa de ser DIFÍCIL e passa a ser ilegível, e as duas coisas são
+   diferentes — a dificuldade é o exercício, a ilegibilidade é a criança a desistir. */
+@font-face{font-family:'Fondamento';font-style:normal;font-weight:400;font-display:swap;
+  src:url('fonts/fondamento-400.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Fondamento';font-style:normal;font-weight:400;font-display:swap;
+  src:url('fonts/fondamento-400-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}

@@ -641,6 +641,8 @@ const pt: Record<string, string> = {
   'font.desc.lexend': 'feita para reduzir stress visual e atender pessoas disléxicas (ativa o espaçamento extra)',
   'font.desc.quattro': 'criada para diminuir a fadiga visual de quem passa muito tempo na tela',
   'font.desc.andika': 'baseada na Sassoon; fruto de pesquisa sobre como crianças leem e escrevem',
+  'font.desc.opendyslexic': 'Letras com a base mais pesada, para não virarem de cabeça para baixo ao ler.',
+  'font.desc.fondamento': 'Caligráfica de pena, para as atividades de escrita à mão.',
   'font.desc.greatvibes': 'caligráfica inglesa',
   'font.desc.pinyon': 'caligráfica inglesa',
   'font.desc.ufcook': 'blackletter alemã',
