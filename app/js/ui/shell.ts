@@ -147,9 +147,19 @@ export type { FatosDaCena } from '../core/scenes.js'; // reexportado: os consumi
 export interface PhaseView {
   /** `#title-overlay`.hidden — o splash só aparece no título. */
   titleOverlayHidden: boolean;
-  /** `#pause-overlay`.hidden — SEMPRE true. A pausa global foi aposentada na Etapa 2 (agora é uma por tela);
-   *  o elemento continua no index.html e o original o escondia incondicionalmente. Verbatim. */
-  pauseOverlayHidden: true;
+  /**
+   * ⚠️ `pauseOverlayHidden` SAIU EM 2026-09-08, e a ausência é a notícia.
+   *
+   * Ele era `true` em toda fase, e existia porque a Etapa 2 aposentou a pausa GLOBAL sem apagar o elemento: a
+   * casca continuava a procurá-lo e a escondê-lo a cada troca de fase, com dois gates a afirmar que ele ficava
+   * escondido. Código a segurar um cadáver.
+   *
+   * E o cadáver custava mais do que as linhas: aquelas quarenta linhas de `#pause-overlay` no `index.html` do
+   * cartucho eram o menu de pausa com aspecto mais OFICIAL do repositório — o que o próximo autor de cartucho
+   * copia junto com o ficheiro —, e já tinham derivado do que a engine gera (dois itens «Comunicação», e um
+   * `#opt-letra` que hoje sai do `dynLabel`). Um campo que diz «está escondido» aceita que ele exista; não o
+   * ter diz que ele não existe.
+   */
   /** `.screen-pause`.hidden de CADA tela — os menus por tela só aparecem na pausa. */
   screenPauseHidden: boolean;
   /** `setMasterMuted(...)` — GAG: fora de 'playing' TODO o som cala (loops de ambiente/chuva inclusive). */
@@ -178,7 +188,6 @@ export interface PhaseView {
 export function phaseView(f: FatosDaCena): PhaseView {
   return {
     titleOverlayHidden: !f.telaDeTitulo,
-    pauseOverlayHidden: true,
     screenPauseHidden: !f.menuDePausa,
     masterMuted: !f.mundoRodando,
     hideTouchControls: !f.mundoRodando,
@@ -514,9 +523,10 @@ export function initShell(ctx: ShellCtx): ShellApi {
 
   /** A metade IMPURA: pega a projeção pronta e a carimba no documento. */
   function applyPhaseView(v: PhaseView): void {
-    const t = ctx.$<HTMLElement>('#title-overlay'), pa = ctx.$<HTMLElement>('#pause-overlay');
+    // A pausa GLOBAL não é procurada: ela foi aposentada na Etapa 2, e a casca deixou de a segurar em
+    // 2026-09-08. Ver a nota no `PhaseView`, onde o campo estava.
+    const t = ctx.$<HTMLElement>('#title-overlay');
     if (t) t.hidden = v.titleOverlayHidden;
-    if (pa) pa.hidden = v.pauseOverlayHidden; // pausa GLOBAL aposentada (Etapa 2): agora é uma por tela
     ctx.getPauseScreens().forEach((sp) => { sp.hidden = v.screenPauseHidden; });
   }
 

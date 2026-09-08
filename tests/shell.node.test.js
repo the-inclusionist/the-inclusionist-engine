@@ -44,8 +44,22 @@ describe('phaseView — a fase projetada em ordens para o documento', () => {
     }
   });
 
-  it('a pausa GLOBAL está aposentada: #pause-overlay fica escondido em TODA fase', () => {
-    for (const p of PHASES) expect(phaseView(fase(p)).pauseOverlayHidden, p).toBe(true);
+  it('⚠️ a pausa GLOBAL não existe: a casca não PROCURA `#pause-overlay` em lado nenhum', async () => {
+    // ⚠️ A AFIRMAÇÃO MUDOU, E A NOVA É MAIS FORTE. Antes dizia «fica escondido em toda fase», e para o dizer
+    // a casca tinha de o procurar e escondê-lo a cada troca de fase — código a segurar um elemento que a
+    // Etapa 2 aposentou. Enquanto isso durou, aquelas quarenta linhas de markup no `index.html` do cartucho
+    // eram o menu de pausa com aspecto mais oficial do repositório, e é o que o próximo autor de cartucho
+    // copia junto com o ficheiro. Já tinham derivado: dois itens «Comunicação», e um `#opt-letra` que a
+    // engine hoje gera dinamicamente.
+    //
+    // Um caso que afirma «está escondido» aceita que ele exista. Este afirma que a casca não o conhece, e é
+    // por isso que ele não pode voltar por distração.
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../app/js/ui/shell.ts', import.meta.url), 'utf8');
+    const linhas = src.split(/\r?\n/)
+      .map((ln, i) => [i + 1, ln])
+      .filter(([, ln]) => !/^\s*(\/\/|\*|\/\*)/.test(ln) && /pause-overlay|pauseOverlayHidden/.test(ln));
+    expect(linhas, 'a casca voltou a procurar a pausa global').toEqual([]);
   });
 
   it('o botão de pausa diz ao leitor de tela se está pausado', () => {

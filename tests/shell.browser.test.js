@@ -186,9 +186,18 @@ describe('setPhase — a casca inteira, no documento', () => {
     expect(document.activeElement.id).toBe('tm-first');
   });
 
-  it('#pause-overlay (pausa GLOBAL aposentada) fica escondido em toda fase', () => {
+  it('⚠️ um `#pause-overlay` no documento é IGNORADO — a casca não o toca (2026-09-08)', () => {
+    // A afirmação virou-se do avesso, e é a nova que interessa. Ela dizia «fica escondido em toda fase», e
+    // para o afirmar a casca tinha de o procurar e escondê-lo — código a segurar um elemento que a Etapa 2
+    // aposentou. Agora o documento pode ter um `#pause-overlay` VISÍVEL de propósito, e a casca passa por
+    // ele sem lhe tocar: é a prova de que a pausa global saiu da engine, e não de que ela a esconde bem.
     const { shell } = boot();
-    for (const p of ['playing', 'paused', 'title']) { setPhase(p); expect($('#pause-overlay').hidden, p).toBe(true); }
+    const pa = $('#pause-overlay');
+    pa.hidden = false;
+    for (const p of ['playing', 'paused', 'title']) {
+      setPhase(p);
+      expect(pa.hidden, `a casca ainda mexe no #pause-overlay na fase ${p}`).toBe(false);
+    }
   });
 
   // (`togglePause` SAIU daqui em 2026-08-26. Alternar não é projetar: é uma decisão sobre a PILHA, e a pilha
