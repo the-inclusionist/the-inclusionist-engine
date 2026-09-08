@@ -554,10 +554,25 @@ export function createGame(o: CreateGameOptions): Engine {
     // que ele existe se vier desligado (a mesma razão de o modo cego nascer com TTS e sonar).
     comIndice: o.comIndice ?? (() => true),
     isNavigable: o.isNavigable ?? (() => true),
-    // Um hospedeiro que nao tenha barra de acessibilidade responde "nunca" e nunca chama nada — o modo e'
-    // opcional para o consumidor, obrigatorio para este jogo.
-    naBarraDe: o.naBarraDe ?? (() => false),
-    navBar: o.navBar ?? (() => {}),
+    /*
+     * ⚠️ ESTE PADRÃO ERA `() => false` / `() => {}`, E DESDE HOJE ISSO SERIA UM BURACO QUE EU ABRI. O
+     * comentário que estava aqui dizia «um hospedeiro que não tenha barra de acessibilidade responde nunca e
+     * nunca chama nada» — verdade até a etapa 2 do ADR-0106, quando esta raiz passou a MONTAR a barra.
+     *
+     * Com a barra montada e estes dois em no-op, ela existiria e **não se conseguiria navegar por teclado nem
+     * por controle**: alcançável só por ponteiro. Para uma criança cega, que navega por teclado, uma barra
+     * que ela não alcança é o mesmo que barra nenhuma — e é exactamente o «oferece o caminho e depois
+     * recusa-o» que o §5 do ADR-0106 proíbe.
+     *
+     * A engine responde com a SUA instância, que é a mesma que montou a barra. Quem injecta continua a mandar.
+     *
+     * ⚠️ E FICA UMA METADE POR LIGAR, dita aqui em vez de descoberta: o `navBar` do `ui/menu-nav` recebe
+     * `(i, k)` e não o terceiro argumento `temStart`, que é a borda do botão de pausa — a SEGUNDA saída do
+     * modo (ADR-0044 item 7). No cartucho ela chega por outra rota (o encaminhador do gamepad, `main.ts:1470`)
+     * que esta raiz ainda não monta. Logo: o direcional navega a barra; sair por START, por enquanto, não.
+     */
+    naBarraDe: o.naBarraDe ?? ((i) => pauseIcons.naBarraDe(i)),
+    navBar: o.navBar ?? ((i, k) => pauseIcons.navBar(i, k)),
     isCapturing: () => false,
     closePadWiz: () => {},
     whichPlayer: (code) => keyboard.whichPlayer(code),

@@ -238,6 +238,31 @@ describe('createGame em execução', () => {
     expect(motor.problems.filter((p) => /barra de acessibilidade/.test(p)), 'acusou uma barra que montou').toEqual([]);
   });
 
+  it('⚠️ [Zero] a barra que a engine monta é NAVEGÁVEL sem o jogo dar nada (ADR-0106 §5)', async () => {
+    // ⚠️ ESTE CASO GUARDA UM BURACO QUE A ETAPA 2 ABRIU. Antes dela, `naBarraDe`/`navBar` caírem em no-op era
+    // inofensivo: sem barra montada, ninguém os chamava — e o comentário no `create-game` dizia exactamente
+    // isso. Com a barra montada e os dois em no-op, ela existiria e só se alcançaria por PONTEIRO.
+    //
+    // Para uma criança cega, que navega por teclado, uma barra que ela não alcança é o mesmo que barra
+    // nenhuma — é o «oferece o caminho e depois recusa-o» que o §5 proíbe, com a barra no papel de porta.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({
+      declaration: declaracaoValida(), host: { doc, win },
+      carregarVozNeural: () => Promise.resolve({}),
+    });
+    // O `nav` é montado com as respostas da PRÓPRIA engine — não com no-ops. `menuNavKey` é o tradutor de
+    // teclado, e é por ele que o direcional chega à barra.
+    expect(motor.nav, 'a navegação de menu não foi montada').toBeTruthy();
+    expect(typeof motor.nav.menuNavKey, 'o tradutor de teclado não existe').toBe('function');
+    expect(typeof motor.nav.navPause, 'a navegação da pausa não existe').toBe('function');
+    // ⚠️ E a prova de que os dois padrões deixaram de ser no-op: o código-fonte desta raiz responde com a
+    // própria instância. Lido do ficheiro porque o `ctx` do `initMenuNav` não é observável de fora — e uma
+    // afirmação que não se consegue fazer é melhor dita assim do que fingida com um duplo que aceita tudo.
+    expect(FONTE, 'a barra montada voltou a ser inalcançável por teclado').toMatch(/naBarraDe:\s*o\.naBarraDe\s*\?\?\s*\(\(i\)\s*=>\s*pauseIcons\.naBarraDe\(i\)\)/);
+    expect(FONTE).toMatch(/navBar:\s*o\.navBar\s*\?\?\s*\(\(i,\s*k\)\s*=>\s*pauseIcons\.navBar\(i,\s*k\)\)/);
+  });
+
   it('⚠️ [Right] a engine monta o CARTÃO DE PAUSA — e com o id que ela própria procura', async () => {
     // 📏 O LAÇO QUE ISTO FECHA, medido nos seis jogos: `#vp-pause-0` é procurado pelo `getPauseMenu` desta
     // raiz e NENHUM jogo o cria (`git grep vp-pause` devolve zero nos seis). A engine inventou uma convenção,
