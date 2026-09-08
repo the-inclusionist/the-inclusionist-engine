@@ -429,6 +429,28 @@ export function createGame(o: CreateGameOptions): Engine {
    * está a jogar, e tirar os ícones da ordem de tabulação ali seria escondê-los de quem navega por teclado —
    * exactamente a pessoa para quem eles existem.
    */
+  /**
+   * O LEITOR DO MODO CEGO — e ele tem de ler ONDE O ESCRITOR PADRÃO ESCREVE.
+   *
+   * 🔴 ESTAS DUAS METADES GANHARAM PADRÃO EM DIAS DIFERENTES E NÃO SE FALAVAM, o que produziu um defeito que
+   * nenhum teste podia ver. O escritor recebeu o padrão da engine na etapa 1b do ADR-0106
+   * (`ui/pause-icons` → `ctx.setModoCego ?? setModoCegoValue`), que grava no `core/state`. O leitor ficou com
+   * o `() => false` que já cá estava — uma CONSTANTE. Num jogo que não injecta `isBlindMode`:
+   *
+   *   1. a criança carrega no ícone → `setModoCego(!false)` → o modo LIGA de verdade;
+   *   2. o reflexo lê `false` → o ícone diz «desligado» e o anúncio diz o mesmo;
+   *   3. ela carrega outra vez → `setModoCegoValue(!false)` = `true` OUTRA VEZ → a guarda de igualdade do
+   *      `core/state` devolve cedo → nada acontece.
+   *
+   * ⚠️ O modo cego ligava uma vez e NÃO HAVIA COMO DESLIGAR — um jogo que começa a descrever tudo em voz alta
+   * e não se cala, sem erro em lado nenhum. Para quem não depende dele, é o jogo a ficar inutilizável.
+   *
+   * 📌 UMA CONSTANTE E NÃO A EXPRESSÃO REPETIDA NOS DOIS SÍTIOS, porque a repetição É o defeito: duas
+   * respostas à mesma pergunta divergem, e foi assim que esta divergiu. `import * as state` dá ligação VIVA,
+   * então isto lê o valor de agora e não o do arranque.
+   */
+  const lerModoCego = o.isBlindMode ?? (() => state.modoCego);
+
   const pauseIcons = initPauseIcons({
     doc,
     getPlayers: () => o.players ?? [],
@@ -439,7 +461,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // sem DOM. É o mesmo erro de forma do ACHADO 15 no cabeçalho deste ficheiro: alcançar o global por baixo
     // de quem injectou o documento. A pergunta certa é a mesma que o `barraUsavel` faz — sabe ser uma barra?
     getA11yBars: () => (barraUsavel && a11yBar ? [a11yBar as HTMLElement] : []),
-    getModoCego: o.isBlindMode ?? (() => false),
+    getModoCego: lerModoCego,
     getAudioCat: () => audioCat,
     setCatGain,
     reflectTtsPanel: () => {},
@@ -557,7 +579,7 @@ export function createGame(o: CreateGameOptions): Engine {
       const v = (pl as { visual?: VisualState }).visual;
       return !!v && (ehCego(v) || ehBaixaVisao(v));
     },
-    getModoCego: o.isBlindMode ?? (() => false), LOGICAL_W,
+    getModoCego: lerModoCego, LOGICAL_W,
     // O jogador DERIVADO do foco: campo 4 respondendo "onde a criança está". Um jogo que não fornece lista
     // ainda tem sonar, e é isso que faz a pilha de acessibilidade não ser acessório.
     getPlayers: o.sonarPlayers ?? (() => {
