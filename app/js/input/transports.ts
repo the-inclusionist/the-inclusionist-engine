@@ -67,6 +67,15 @@ export interface Disponibilidade {
   gamepad: () => boolean;
   toque: () => boolean;
   teclado: () => boolean;
+  /**
+   * Há um RATO aqui? (ADR-0112)
+   *
+   * ⚠️ ELE NÃO É UM TRANSPORTE À PARTE, e é por isso que entra como uma pergunta e não como uma quarta linha
+   * do `transportesPadrao`: um rato sozinho não carrega as catorze posições. Ele é o SINAL CONTÍNUO ao lado
+   * do teclado — a frase do Dev, «no caso do teclado, o sinal contínuo passa a ser o mouse» —, e é o que dá
+   * fundação aos transportes 8 e 9 do ADR-0074, que aquele registo declarava como não tendo nenhuma.
+   */
+  rato: () => boolean;
 }
 
 /**
@@ -80,9 +89,15 @@ export interface Disponibilidade {
  */
 export function transportesPadrao(d: Disponibilidade): Transport[] {
   return [
+    // ⚠️ O GAMEPAD NÃO DECLARA PONTEIRO, e a ausência é medida e não esquecimento: o stick tem o sinal
+    // contínuo e a engine deita-o fora na fonte (`PAD_DEAD = 0.5`, `PadState = Record<string, boolean>`).
+    // Ligá-lo ao ponteiro é possível e traz de volta uma pergunta que o ADR-0112 já deixou nomeada — metade
+    // do curso morta é ergonomia certa para um BOTÃO e errada para um CURSOR.
     { id: 'gamepad', slots: LUGARES.gamepad, available: d.gamepad },
-    { id: 'teclado', slots: LUGARES.teclado, available: d.teclado },
-    { id: 'toque', slots: LUGARES.toque, holds: SEGURA_TOQUE, available: d.toque },
+    // O teclado aponta QUANDO HÁ RATO — a cláusula do Dev, e a fundação dos transportes 8 e 9 do ADR-0074.
+    { id: 'teclado', slots: LUGARES.teclado, available: d.teclado, aponta: d.rato },
+    // O toque aponta por natureza: a superfície É o ponteiro, e é o mesmo dedo que carrega nos botões.
+    { id: 'toque', slots: LUGARES.toque, holds: SEGURA_TOQUE, available: d.toque, aponta: d.toque },
   ];
 }
 
@@ -106,6 +121,17 @@ export interface Transport {
    * uma tela de toque aparece quando a criança gira o tablet.
    */
   readonly available: () => boolean;
+  /**
+   * Este transporte oferece um PONTEIRO — posição contínua (ADR-0112)?
+   *
+   * ⚠️ FUNÇÃO E NÃO BOOLEANO, pela mesma razão escrita no `available` acima: um rato é ligado no meio da
+   * partida, tal como um controle. Um valor fixo aqui responderia com o estado do arranque.
+   *
+   * ⚠️ AUSENTE SIGNIFICA «NÃO OFERECE», e aqui — ao contrário do `holds` — ler a ausência assim é o correcto:
+   * o ponteiro é uma capacidade que se DECLARA, e um transporte que não a declara não a tem. O `holds` é o
+   * oposto porque lá a ausência é «não há tecto conhecido», e lê-la como zero reprovaria todo o mundo.
+   */
+  readonly aponta?: () => boolean;
 }
 
 /** Este transporte carrega este conjunto de ações? Aritmética, como o ADR-0079 §3 a descreve. */
@@ -173,6 +199,16 @@ export interface Alcance {
    * botões de cada vez e este jogo pede três». Sem o tecto, a frase diria que algo falta sem dizer o quê.
    */
   readonly naoSeguram: readonly { readonly id: string; readonly holds: number }[];
+  /** Este jogo declarou que precisa de PONTEIRO? (ADR-0112) */
+  readonly pedePonteiro: boolean;
+  /**
+   * Os disponíveis que chegam às acções E seguram quantas o jogo pede, e falham SÓ por não apontarem.
+   *
+   * ⚠️ SÓ QUEM FALHA APENAS NISTO, pela mesma regra que o `naoSeguram` já segue: um transporte em duas listas
+   * faria o cartão da #112 dizer dois problemas onde há um, e a criança leria dois motivos para a mesma
+   * recusa. A lista é vazia quando o jogo não pede ponteiro — não «todos», porque nenhum falhou.
+   */
+  readonly naoApontam: readonly string[];
 }
 
 /**
@@ -185,17 +221,29 @@ export function alcance(
   lista: readonly Transport[],
   acoes: readonly Action[],
   seguraPedidas: number,
+  pedePonteiro = false,
 ): Alcance {
   const disponiveis = lista.filter((t) => t.available());
-  // ⚠️ «Serve» passou a ser as DUAS coisas. Enquanto era só `carries`, o `ok` respondia sim a uma criança
-  // que não conseguia jogar — ver a nota no campo `ok`.
-  const serve = (t: Transport) => carries(t, acoes) && holds(t, seguraPedidas);
+  /**
+   * ⚠️ PADRÃO `false` E NÃO PARÂMETRO OBRIGATÓRIO: os trezentos jogos que não desenham não podem sentir esta
+   * mudança, e um quarto argumento exigido faria cada chamador existente decidir hoje uma coisa que não lhe
+   * diz respeito.
+   */
+  const apontaSeFor = (t: Transport) => !pedePonteiro || (!!t.aponta && t.aponta());
+  // ⚠️ «Serve» passou a ser TRÊS coisas. Foi DUAS na #114 (o `ok` dizia sim a quem não segurava três dedos), e
+  // é três desde o ADR-0112 — pela mesma razão das duas vezes: um `ok` verdadeiro sobre um jogo que a criança
+  // não consegue jogar é a pior coisa que este campo pode fazer.
+  const serve = (t: Transport) => carries(t, acoes) && holds(t, seguraPedidas) && apontaSeFor(t);
   return {
     ok: acoes.length > 0 && disponiveis.some(serve),
     pedidas: acoes.length,
     seguraPedidas,
+    pedePonteiro,
     serviriamSeLigados: lista.filter((t) => !t.available() && serve(t)).map((t) => t.id),
     curtos: disponiveis.filter((t) => !carries(t, acoes)).map((t) => ({ id: t.id, slots: t.slots })),
+    naoApontam: disponiveis
+      .filter((t) => carries(t, acoes) && holds(t, seguraPedidas) && !apontaSeFor(t))
+      .map((t) => t.id),
     // ⚠️ SÓ QUEM CHEGA, e não quem já reprovou por lugares. Um transporte que aparecesse nas duas listas
     // faria o cartão dizer duas coisas sobre o mesmo defeito, e a criança leria dois problemas onde há um.
     naoSeguram: disponiveis

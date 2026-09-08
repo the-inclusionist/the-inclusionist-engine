@@ -727,10 +727,12 @@
   "input/transports.ts": {
     "interface Disponibilidade": [
       "gamepad",
+      "rato",
       "teclado",
       "toque"
     ],
     "interface Transport": [
+      "aponta?",
       "available",
       "holds?",
       "id",
@@ -738,8 +740,10 @@
     ],
     "interface Alcance": [
       "curtos",
+      "naoApontam",
       "naoSeguram",
       "ok",
+      "pedePonteiro",
       "pedidas",
       "seguraPedidas",
       "serviriamSeLigados"

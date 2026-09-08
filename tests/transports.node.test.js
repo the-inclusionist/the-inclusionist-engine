@@ -22,6 +22,133 @@ const ACIONADOR = t('switch', 2);   // um acionador de dois toques — o transpo
 const NOVE = ['up', 'down', 'left', 'right', 'action1', 'action2', 'action3', 'action4', 'start'];
 const DOZE = [...NOVE, 'leftShoulder', 'leftTrigger', 'rightShoulder'];
 
+// ========================= O PONTEIRO COMO CAPACIDADE DECLARADA (ADR-0112) =========================
+// ⚠️ A METADE QUE IMPORTA, na frase do registo: a declaração é o que deixa um aparelho RECUSAR-SE ANTES de a
+// criança começar. Sem ela, a criança escolhe «Desenho livre» num Chromebook sem rato e descobre a meio.
+//
+// 📌 E ELE ENTRA PELA MÁQUINA QUE JÁ EXISTE — o alcance por CONJUNTO do ADR-0079 — em vez de por um mecanismo
+// próprio. Dois mecanismos para a mesma pergunta seriam duas respostas, e elas divergem.
+//
+// 📌 `aponta` É UMA FUNÇÃO e não um booleano, pela MESMA razão escrita no campo `available` ao lado: um rato é
+// ligado no meio da partida, tal como um controle.
+const tp = (id, slots, available = true, aponta = undefined) => ({
+  id, slots, available: () => available, ...(aponta === undefined ? {} : { aponta: () => aponta }),
+});
+
+describe('ADR-0112 · um jogo que pede PONTEIRO é recusado por quem não tem', () => {
+  const TRES = ['up', 'down', 'action1'];
+
+  it('[Right] o TOQUE aponta por natureza — a superfície é o ponteiro', () => {
+    const r = alcance([tp('toque', 9, true, true)], TRES, 1, true);
+    expect(r.ok).toBe(true);
+    expect(r.pedePonteiro).toBe(true);
+    expect(r.naoApontam).toEqual([]);
+  });
+
+  it('🔴 [Zero] TECLADO SEM RATO não serve um jogo que pede ponteiro, e diz qual é o problema', () => {
+    // 🔴 O caso que este ficheiro existe para prender. O teclado carrega as três ações e segura-as todas —
+    // pela aritmética antiga, `ok` dizia SIM. Mas «Desenho livre» não se joga com teclas, e a criança só
+    // descobriria isso depois de escolher.
+    const r = alcance([tp('teclado', 40, true, false)], TRES, 1, true);
+    expect(r.ok, 'o alcance disse sim a um jogo que esta criança não consegue jogar').toBe(false);
+    expect(r.naoApontam, 'a frase precisa de saber QUEM chegou perto e falhou só nisto').toEqual(['teclado']);
+    // ⚠️ e NÃO aparece nas outras listas: ele não é curto de lugares nem falha em segurar. Um transporte em
+    // duas listas faria o cartão dizer dois problemas onde há um — a mesma regra que o `naoSeguram` já segue.
+    expect(r.curtos).toEqual([]);
+    expect(r.naoSeguram).toEqual([]);
+  });
+
+  it('⚠️ [Right] o MESMO teclado COM RATO serve — «no caso do teclado, o sinal contínuo é o rato»', () => {
+    // A cláusula do Dev, como caso. É ela que dá fundação aos transportes 8 e 9 do ADR-0074, que aquele
+    // registo declarava como «sem fundação nenhuma».
+    const r = alcance([tp('teclado', 40, true, true)], TRES, 1, true);
+    expect(r.ok).toBe(true);
+    expect(r.naoApontam).toEqual([]);
+  });
+
+  it('⚠️ [Zero] um jogo que NÃO pede ponteiro não é afectado por nada disto', () => {
+    // A garantia de aditividade: os trezentos jogos que não desenham não podem sentir esta mudança.
+    const r = alcance([tp('teclado', 40, true, false)], TRES, 1);
+    expect(r.ok).toBe(true);
+    expect(r.pedePonteiro).toBe(false);
+    expect(r.naoApontam).toEqual([]);
+  });
+
+  it('[Boundary] «ligue um controle» não é oferecido quando o controle também não aponta', () => {
+    // `serviriamSeLigados` é informação ACIONÁVEL; oferecer uma saída que não resolve é pior que não oferecer.
+    const r = alcance([tp('gamepad', 17, false, false), tp('teclado', 40, true, false)], TRES, 1, true);
+    expect(r.ok).toBe(false);
+    expect(r.serviriamSeLigados, 'mandou ligar um controle que também não desenha').toEqual([]);
+  });
+
+  it('[Right] mas É oferecido quando o que está desligado aponta', () => {
+    const r = alcance([tp('toque', 9, false, true), tp('teclado', 40, true, false)], TRES, 1, true);
+    expect(r.ok).toBe(false);
+    expect(r.serviriamSeLigados).toEqual(['toque']);
+  });
+
+  it('⚠️ [Zero] quem OMITE o campo não aponta — ausência é «não oferece», e é a forma do gamepad', () => {
+    // ⚠️ CASO ACHADO POR MUTAÇÃO SOBREVIVENTE, e o buraco era real: todos os outros casos DECLARAM `aponta`,
+    // então ler a ausência como «sim» passava despercebido. É precisamente a forma do gamepad no
+    // `transportesPadrao`, que não declara o campo — e o ADR-0112 diz que aqui a ausência significa «não
+    // oferece», ao contrário do `holds`, onde ela significa «não há tecto conhecido».
+    const semCampo = { id: 'gamepad', slots: 17, available: () => true };
+    const r = alcance([semCampo], TRES, 1, true);
+    expect(r.ok).toBe(false);
+    expect(r.naoApontam).toEqual(['gamepad']);
+  });
+
+  it('⚠️ [Boundary] quem falha por LUGARES não entra também na lista de quem não aponta', () => {
+    // Um transporte em duas listas faria o cartão dizer dois problemas onde há um. Sem este caso, a guarda
+    // que o impede podia cair sem nada reprovar — foi o que a mutação mostrou.
+    const estreito = tp('acionador', 2, true, false); // dois lugares para três acções, e sem ponteiro
+    const r = alcance([estreito], TRES, 1, true);
+    expect(r.curtos).toEqual([{ id: 'acionador', slots: 2 }]);
+    expect(r.naoApontam, 'o mesmo transporte acusado duas vezes').toEqual([]);
+  });
+});
+
+describe('ADR-0112 · a cláusula do Dev, na FÁBRICA e não num fixture', () => {
+  // ⚠️ ESTE BLOCO EXISTE PORQUE DUAS MUTAÇÕES SOBREVIVERAM: os casos acima constroem transportes à mão, então
+  // apagar `aponta: d.rato` do `transportesPadrao` não reprovava nada — e essa linha É o commit. «No caso do
+  // teclado, o sinal contínuo passa a ser o mouse» tem de ser afirmado sobre a lista que o jogo recebe.
+  const disp = (over) => ({
+    gamepad: () => false, toque: () => false, teclado: () => true, rato: () => false, ...over,
+  });
+  const acha = (lista, id) => lista.find((x) => x.id === id);
+
+  it('⚠️ [Right] o TECLADO aponta quando há rato, e não aponta quando não há', () => {
+    expect(acha(transportesPadrao(disp({ rato: () => true })), 'teclado').aponta()).toBe(true);
+    expect(acha(transportesPadrao(disp({ rato: () => false })), 'teclado').aponta()).toBe(false);
+  });
+
+  it('⚠️ [Right] o TOQUE aponta por natureza — a mesma sonda que o torna disponível', () => {
+    const lista = transportesPadrao(disp({ toque: () => true }));
+    expect(acha(lista, 'toque').aponta()).toBe(true);
+    expect(acha(lista, 'toque').available()).toBe(true);
+  });
+
+  it('⚠️ [Zero] o GAMEPAD não declara ponteiro, e a ausência é medida e não esquecimento', () => {
+    // O stick tem o sinal contínuo e a engine deita-o fora na fonte (`PAD_DEAD = 0.5`). Ligá-lo é possível e
+    // traz de volta a pergunta que o ADR-0112 já deixou nomeada — meio curso morto serve a um BOTÃO e não a
+    // um CURSOR. Enquanto não for ligado, declarar que ele aponta seria mentir para o cartão da #112.
+    expect(acha(transportesPadrao(disp({ gamepad: () => true })), 'gamepad').aponta).toBeUndefined();
+  });
+
+  // ===================== MUTACOES CONFERIDAS (o ponteiro, ADR-0112) =====================
+  // Cinco, por script e com contagem de ocorrencias. ⚠️ QUATRO SOBREVIVERAM NA PRIMEIRA VOLTA, e as quatro
+  // eram BURACOS DE COBERTURA e nao equivalencias — foi o arnes a achar o que a leitura nao acha:
+  //
+  //   1. o ponteiro fora do `serve` (o `ok` volta a mentir) -> reprovam QUATRO. Era a unica que ja morria.
+  //   2. a ausencia de `aponta` lida como SIM -> sobreviveu porque TODOS os fixtures declaravam o campo.
+  //      Nunca havia um que o OMITISSE, que e exactamente a forma do gamepad. Caso novo; agora reprova.
+  //   3. e 4. apagar `aponta` do `transportesPadrao` -> sobreviviam porque os casos construiam transportes a
+  //      mao e nunca exercitavam a FABRICA. ⚠️ E aquela linha E o commit: «no caso do teclado, o sinal
+  //      continuo passa a ser o mouse». Um bloco novo afirma-a sobre a lista que o jogo recebe de verdade.
+  //   5. `naoApontam` sem excluir quem ja falhou por lugares -> sobreviveu por nao existir caso de transporte
+  //      que falhasse por DUAS razoes. A regra «um problema, uma lista» nao estava medida; agora esta.
+});
+
 describe('um transporte carrega um conjunto quando tem lugares para ele', () => {
   it('aritmética, e nada mais', () => {
     expect(carries(TOQUE, NOVE)).toBe(true);

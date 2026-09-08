@@ -679,6 +679,18 @@ export function createGame(o: CreateGameOptions): Engine {
     gamepad: () => { try { return [...(win.navigator?.getGamepads?.() ?? [])].some(Boolean); } catch { return false; } },
     toque: () => { try { return win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches; } catch { return false; } },
     teclado: () => { try { return !(win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches); } catch { return true; } },
+    /**
+     * O RATO (ADR-0112) — e a sonda é `any-pointer` de propósito, não `pointer`.
+     *
+     * ⚠️ `(pointer:fine)` descreve o ponteiro PRIMÁRIO, então um tablet com rato ligado responde «coarse» e
+     * o rato desaparecia — exactamente o aparelho que esta pergunta existe para achar. `any-pointer:fine` diz
+     * «ALGUM dos dispositivos apontadores é fino», que é a pergunta certa: para desenhar basta um.
+     *
+     * ⚠️ ELA ERRA, e a direcção do erro é a que se aceita: um stylus também responde `fine`, e é um ponteiro
+     * a sério — logo isso não é erro. O que pode faltar é um rato ligado depois do arranque, e por isso a
+     * sonda é uma FUNÇÃO, avaliada a cada pergunta, como as três acima.
+     */
+    rato: () => { try { return win.matchMedia('(any-pointer:fine)').matches; } catch { return false; } },
   };
   const acoesDoJogo = o.preset ? presetActions(o.preset) : [];
   // O segundo eixo entra aqui, e vem do jogo (ADR-0104 §A): quantas posições ele segura ao mesmo tempo.
