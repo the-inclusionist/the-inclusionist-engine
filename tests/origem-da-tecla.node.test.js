@@ -53,8 +53,10 @@ function escritasCruasDe(p) {
 const POR_MIGRAR = {
   'input/state.ts': 'o PAR — é aqui que `marcarTecla`/`soltarTecla`/`soltarTodas` vivem, e é por isso que ele escreve',
   'input/keydown.ts': 'vai carimbar `teclado` — ⚠️ MENOS quando o evento não for de confiança: a webcam despacha `KeyboardEvent` sintético e cairia como teclado. `isTrusted` distingue-os, e QUAL transporte assistido é ainda tem de vir declarado',
-  'input/touch-bindings.ts': 'vai carimbar `toque` — é o transporte cuja alternância a regra 2 do ADR-0109 liga',
 };
+// ✅ `input/touch-bindings.ts` SAIU desta lista em 2026-09-08: migrou para o par e carimba `toque`. É a
+// primeira entrada a sair, e é o que prova que o estrangulamento anda — a lista encolhe, e quando chegar a um
+// (só o próprio `input/state`) o crivo passa a afirmar a ausência inteira.
 
 describe('ADR-0109 · a origem da tecla viaja com ela', () => {
   beforeEach(() => { soltarTodas(); });

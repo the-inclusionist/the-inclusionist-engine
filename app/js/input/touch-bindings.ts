@@ -86,6 +86,7 @@
 
 /** `ui/dom.ts` `$` — injetado; o módulo nunca alcança `document`. */
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
+import type { Transporte } from './transporte-em-uso.js';
 import { doCentro, type RectLike } from './pointer-space.js';
 import type { PlayerView } from '../core/entity.js';
 import type { DomQuery } from '../core/dom-query.js';
@@ -311,8 +312,25 @@ export interface TouchBindingsCtx {
   getControls: () => KeyScheme;
   /** o array vivo de jogadores. Getter: o main.js o repovoa a cada `restartGame`. */
   getPlayers: () => readonly TouchBindPlayer[];
-  /** `keys` de `input/state.ts`: `const` mutado in place → entra por VALOR (é sempre o mesmo objeto). */
-  heldKeys: Set<string>;
+  /*
+   * ⚠️ O PAR DE `input/state`, E NÃO O CONJUNTO CRU (ADR-0109). Isto recebia `heldKeys: Set<string>` e
+   * escrevia lá dentro — e era exactamente aí que a origem se perdia: um código posto pelo TOQUE ficava
+   * indistinguível de um posto pelo teclado, e a alternância, que é uma propriedade do APARELHO, não tinha
+   * como se resolver. A issue #114 §C mediu essa erasão e ficou dois meses por construir por causa dela.
+   *
+   * 📌 Recebido e não importado, pela razão de sempre neste módulo: um consumidor pode montar o toque sem o
+   * estado global da engine (um teste, um segundo consumidor), e o par é o que ele injecta.
+   */
+  marcarTecla: (code: string, origem: Transporte) => void;
+  soltarTecla: (code: string) => void;
+  /**
+   * O conjunto para LER — a decisão pura pergunta que teclas já estão seguradas.
+   *
+   * ⚠️ `ReadonlySet` e não `Set`, e a diferença é a razão de este par existir: LER o conjunto nunca foi o
+   * problema; ESCREVER nele é que apagava a origem. O tipo passa a dizer isso, e uma escrita crua que
+   * voltasse aqui deixa de compilar em vez de passar despercebida.
+   */
+  readonly heldKeys: ReadonlySet<string>;
   /** `game/attract.ts`: zera a ociosidade e encerra a demo; `true` = o toque foi só para acordar.
    *  LAZY obrigatoriamente — `attractCtl` é `const` declarado ABAIXO do ponto de init no main.js. */
   attractOnInput: () => boolean;
@@ -364,9 +382,11 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
   function apply(d: TouchDecision): void {
     if (d.kind === 'noop') return;
     if (d.kind === 'pause') { ctx.togglePause(); return; }
-    if (d.kind === 'release') { ctx.heldKeys.delete(d.code); return; }
+    if (d.kind === 'release') { ctx.soltarTecla(d.code); return; }
     if (d.addKey) {
-      ctx.heldKeys.add(d.code);
+      // ⚠️ `'toque'` é o carimbo, e é a regra 2 do ADR-0109 a tornar-se executável: é ESTE transporte cuja
+      // alternância liga. Enquanto o código entrava cru no conjunto, a regra não tinha como se aplicar.
+      ctx.marcarTecla(d.code, 'toque');
       const players = ctx.getPlayers();
       for (const { playerIndex, edge } of d.edges) {
         const p = players[playerIndex];

@@ -300,7 +300,7 @@ describe('wantsForcedTouch', () => {
 
 /** ctx mínimo: `initTouchBindings` não toca em DOM nenhum enquanto `attach()` não for chamado. */
 function makeCtx(over = {}) {
-  const calls = { pause: 0, hideTips: 0, show: 0, defer: [] };
+  const calls = { pause: 0, hideTips: 0, show: 0, defer: [], origens: new Map() };
   const players = over.players || [mkPlayer(SOLO)];
   const heldKeys = over.heldKeys || new Set();
   const ctx = {
@@ -309,7 +309,12 @@ function makeCtx(over = {}) {
     getSearch: () => '',
     getControls: () => over.controls || SOLO,
     getPlayers: () => players,
+    // ⚠️ O PAR de `input/state` (ADR-0109). O duplo mantém o conjunto — a decisão pura LÊ dele — e acrescenta
+    // as duas escritas, que é onde a origem passa a viajar. `origens` guarda o carimbo para os casos que
+    // querem afirmar QUE APARELHO produziu a tecla, e não só que ela entrou.
     heldKeys,
+    marcarTecla: (code, origem) => { heldKeys.add(code); calls.origens.set(code, origem); },
+    soltarTecla: (code) => { heldKeys.delete(code); calls.origens.delete(code); },
     attractOnInput: () => false,
     showTouchControls: () => { calls.show++; },
     hideTips: () => { calls.hideTips++; },

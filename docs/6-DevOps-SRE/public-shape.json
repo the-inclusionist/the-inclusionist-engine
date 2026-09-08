@@ -639,7 +639,9 @@
       "getTouchMap",
       "heldKeys",
       "hideTips",
+      "marcarTecla",
       "showTouchControls",
+      "soltarTecla",
       "togglePause",
       "win"
     ],

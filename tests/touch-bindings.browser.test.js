@@ -41,7 +41,7 @@ function markup() {
 let ctx, calls, players, heldKeys, api;
 
 function wire(over = {}) {
-  calls = { pause: 0, show: 0, hideTips: 0, defer: [] };
+  calls = { pause: 0, show: 0, hideTips: 0, defer: [], origens: new Map() };
   players = [{ ctrl: SOLO, easy: false, jumpEdge: false, runEdge: false, leftEdge: false, rightEdge: false, swapEdge: false, specialEdge: false }];
   heldKeys = new Set();
   ctx = {
@@ -50,7 +50,12 @@ function wire(over = {}) {
     getSearch: () => '',
     getControls: () => SOLO,
     getPlayers: () => players,
+    // ⚠️ O PAR de `input/state` (ADR-0109): o conjunto continua para LER, e as duas escritas são por onde a
+    // origem passa a viajar. O duplo carimba num `Map` para que um caso possa afirmar o APARELHO, e não só a
+    // tecla — que é a coisa que a erasão do §C tornava impossível.
     heldKeys,
+    marcarTecla: (code, origem) => { heldKeys.add(code); calls.origens.set(code, origem); },
+    soltarTecla: (code) => { heldKeys.delete(code); calls.origens.delete(code); },
     attractOnInput: () => false,
     showTouchControls: () => { calls.show++; },
     hideTips: () => { calls.hideTips++; },
@@ -137,6 +142,18 @@ describe('.touch-btn — a função vem do touchMap, não do data-act', () => {
     expect(players[0].jumpEdge).toBe(true);
     fire(b0(), 'pointerup');
     expect(heldKeys.has('KeyJ')).toBe(false);
+  });
+
+  it('⚠️ [Right] a tecla entra CARIMBADA como `toque` — é a regra 2 do ADR-0109 a tornar-se executável', () => {
+    // 📏 O que isto conserta, medido na issue #114 §C: o toque escrevia o código CRU no conjunto, e a partir
+    // daí ele era indistinguível de uma tecla do teclado. A alternância é uma propriedade do APARELHO, e a
+    // pergunta que ela faz — «este toque veio de um aparelho com alternância?» — tinha a resposta deitada
+    // fora antes de ser feita. Agora viaja com a tecla.
+    wire();
+    fire(b0(), 'pointerdown');
+    expect(calls.origens.get('KeyJ'), 'a tecla entrou sem origem').toBe('toque');
+    fire(b0(), 'pointerup');
+    expect(calls.origens.has('KeyJ'), 'a origem sobreviveu à tecla').toBe(false);
   });
 
   it('[Right] o slot é lido do touchMap A CADA evento: remapear vale no toque seguinte', () => {
