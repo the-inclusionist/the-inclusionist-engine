@@ -704,6 +704,13 @@
     "type PadLayout": "'sony' | 'nintendo' | 'microsoft' | 'generic'",
     "type PadKind": "'kb' | 'x' | 'd'"
   },
+  "input/transporte-em-uso.ts": {
+    "interface EstadoDaEntrada": [
+      "assistidaLigada",
+      "emUso"
+    ],
+    "type Transporte": "'teclado' | 'gamepad' | 'toque' | 'olhos' | 'rosto' | 'gestos' | 'fala'"
+  },
   "input/transports.ts": {
     "interface Disponibilidade": [
       "gamepad",

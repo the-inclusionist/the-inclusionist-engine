@@ -420,6 +420,17 @@
     "padLayoutFromId",
     "padPxPerMm"
   ],
+  "input/transporte-em-uso.ts": [
+    "COM_ALTERNANCIA_PROPRIA",
+    "EXIGEM_HABILITACAO",
+    "EstadoDaEntrada",
+    "PADRAO",
+    "Transporte",
+    "alternanciaAgora",
+    "aposAresta",
+    "desabilitarAssistida",
+    "habilitarAssistida"
+  ],
   "input/transports.ts": [
     "Alcance",
     "Disponibilidade",
