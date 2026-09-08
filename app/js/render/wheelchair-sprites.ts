@@ -4,7 +4,7 @@
 // each takes a Graphics `g` + the player. The layers (caneLayer/chairLayer) stay in game.js and are passed in.
 // `caneColor` (pure) moves here too — it was only used by the cane draws. See docs/5-Refactoring/plano-modularizacao-mapa.md.
 
-import { VIZ_BY_KEY } from './viz-modes.js';
+import { ehBaixaVisao, type VisualState } from './viz-axes.js';
 import type { PlayerView } from '../core/entity.js';
 
 /** Minimal PIXI.Graphics surface these draws use (structural → module stays PIXI-free for node tests). */
@@ -17,12 +17,18 @@ export interface DrawGraphics {
   drawCircle(x: number, y: number, r: number): unknown;
 }
 /** Cadeira e bengala: onde o jogador está, para que lado olha, e em que modo de visão desenhar. */
-type DrawablePlayer = PlayerView<'facing' | 'x' | 'y' | 'viz'>;
+type DrawablePlayer = PlayerView<'facing' | 'x' | 'y' | 'visual'>;
 
-/** Cane color: green for low-vision, white otherwise (blind). */
-export function caneColor(pl: { viz: string }): number {
-  const m = (VIZ_BY_KEY as Record<string, { kind?: string }>)[pl.viz];
-  return m && m.kind === 'lowvision' ? 0x35d06a : 0xf2f2f2;
+/**
+ * Cor da bengala: verde na baixa visão, branca no resto (cegueira).
+ *
+ * ⚠️ LÊ O `visual` E NÃO O `viz` desde a #104. A pergunta não mudou — «isto é baixa visão?» — mas quem a
+ * responde passou a ser o `ehBaixaVisao` do modelo de dois eixos, em vez de uma consulta ao `kind` da tabela
+ * antiga. É a mesma resposta para os dezasseis modos de hoje (a rede da etapa 0 afirma-o, chave a chave), e
+ * passa a ser a resposta CERTA para um estado que a tabela antiga não sabe exprimir.
+ */
+export function caneColor(pl: { visual: VisualState }): number {
+  return ehBaixaVisao(pl.visual) ? 0x35d06a : 0xf2f2f2;
 }
 
 /** Rigid half-block cane (~8px): front-hand extension, fixed to the body (does not swing on its own). */

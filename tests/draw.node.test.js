@@ -6,6 +6,7 @@
 // transformada dos sprites, a escolha ENTRE os dois caminhos de câmera (tela única × multi-tela) e a
 // visibilidade por dono no multi-tela. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (C1).
 import { describe, it, expect, beforeEach } from 'vitest';
+import { migrarVisual, PADRAO } from '../app/js/render/viz-axes.js';
 import { initDraw } from '../app/js/render/draw.js';
 import { LOGICAL_W, LOGICAL_H } from '../app/js/core/constants.js';
 import { BOX_FALSO as BOX, jogadorFalso as makePlayer } from './fixtures/cartucho-falso.js';
@@ -90,7 +91,7 @@ const TEX = {
 function setPlayers(n, over = () => ({})) {
   players.length = 0;
   for (let i = 0; i < n; i++) {
-    players.push(Object.assign(makePlayer(i), { airTime: 0, onGround: true, sprite: spr(), viz: 'normal' }, over(i)));
+    players.push(Object.assign(makePlayer(i), { airTime: 0, onGround: true, sprite: spr(), visual: PADRAO }, over(i)));
   }
   setNumPlayersValue(n);
   return players;
@@ -294,23 +295,39 @@ describe('render/draw — tela única × multi-tela', () => {
     expect(log.minimap).toEqual([]);       // minimapa é exclusivo da tela única
   });
   it('multi-tela com TODOS no mesmo modo: troca as texturas UMA vez só (a otimização do caso comum)', () => {
-    setPlayers(2, () => ({ viz: 'normal' }));
+    setPlayers(2, () => ({ visual: PADRAO }));
     const { api, log } = makeCtx();
     api.drawFrame();
     expect(log.shared).toEqual(['normal']);
   });
   it('multi-tela com modos DIFERENTES: troca por viewport, na ordem dos jogadores', () => {
-    setPlayers(2, (i) => ({ viz: i === 0 ? 'normal' : 'protanopia' }));
+    // ⚠️ «DIFERENTES» PASSOU A QUERER DIZER «DIFERENTES PARA A TEXTURA» (#104), e este caso teve de escolher
+    // um par que de facto difere: uma simulação de baixa visão contra o padrão. O par antigo — `normal` e
+    // uma CORREÇÃO de daltonismo — deixou de contar como diferente, e o caso abaixo é quem regista porquê.
+    setPlayers(2, (i) => ({ visual: migrarVisual(i === 0 ? 'normal' : 'lv-tunnel') }));
     const { api, log } = makeCtx();
     api.drawFrame();
-    expect(log.shared).toEqual(['normal', 'protanopia']);
+    expect(log.shared).toEqual(['normal', 'lv-tunnel']);
+  });
+  it('⚠️ uma CORREÇÃO de cor não conta como modo diferente para as texturas — e não deve contar', () => {
+    // Mudança de comportamento deliberada da #104, e ela é output-preservadora: `applySharedTextures` só usa
+    // o modo para escolher TEXTURA, e `worldTexFor`/`parallaxTexFor`/`treeTexFor`/`spriteTexFor`/`pupTexFor`
+    // devolvem todas a base para o que não está em `DIRECT_CFG` — conferido no fonte, não suposto. Antes,
+    // dois jogadores em `normal` e `fix-protan` disparavam DUAS re-aplicações que produziam exactamente as
+    // mesmas texturas. A correção continua a ser aplicada, e continua a ser aplicada onde ela mora: no
+    // FILTRO, que é outro caminho.
+    setPlayers(2, (i) => ({ visual: migrarVisual(i === 0 ? 'normal' : 'fix-protan') }));
+    const { api, log } = makeCtx();
+    api.drawFrame();
+    expect(log.shared, 'a correção voltou a forçar uma troca de texturas que não muda textura nenhuma')
+      .toEqual(['normal']);
   });
   it('o overlay de baixa visão só roda se ALGUÉM está em baixa visão — e aí em TODOS os viewports', () => {
-    setPlayers(2, () => ({ viz: 'normal' }));
+    setPlayers(2, () => ({ visual: PADRAO }));
     const semLv = makeCtx(); semLv.api.drawFrame();
     expect(semLv.log.overlay).toEqual([]);
 
-    setPlayers(2, (i) => ({ viz: i === 0 ? 'lv-tunnel' : 'normal' }));
+    setPlayers(2, (i) => ({ visual: migrarVisual(i === 0 ? 'lv-tunnel' : 'normal') }));
     const comLv = makeCtx(); comLv.api.drawFrame();
     expect(comLv.log.overlay).toEqual([[0, 'lv-tunnel'], [1, 'normal']]);
   });
@@ -375,13 +392,13 @@ describe('render/draw — tela única × multi-tela', () => {
 
 describe('render/draw — animatePlayer', () => {
   it('escolhe o quadro (player-anim), grava em _tx e aplica no sprite PASSANDO pelo recolor do modo', () => {
-    setPlayers(1, () => ({ viz: 'hc-cego', walkAnim: 0 }));
+    setPlayers(1, () => ({ visual: migrarVisual('blind'), walkAnim: 0 }));
     const pl = players[0];
     const { api } = makeCtx({ playerVizTex: (base, viz) => `${viz}:${base}` });
     const tx = api.animatePlayer(pl, 1, 1); // com direção → quadro de andar
     expect(tx).toBe('w0');
     expect(pl._tx).toBe('w0');              // _tx guarda o quadro EM COR (base do recolor por viewport)
-    expect(pl.sprite.texture).toBe('hc-cego:w0');
+    expect(pl.sprite.texture).toBe('blind:w0');
   });
   it('sem sprite (jogador que ainda não materializou) só decide, sem quebrar', () => {
     setPlayers(1, () => ({ sprite: null }));

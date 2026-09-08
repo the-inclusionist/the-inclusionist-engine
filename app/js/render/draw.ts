@@ -69,7 +69,7 @@ const rnd = rngDecoracao.rnd;
 import { JUICE, easeOut3, shakeAmp, drawFx } from './fx.js';
 import { criarCamera, type CameraObj } from './camera.js';
 import { drawCane, drawRunCane, drawChair } from './wheelchair-sprites.js';
-import { VIZ_BY_KEY } from './viz-modes.js';
+import { chaveDeTextura, ehBaixaVisao } from './viz-axes.js';
 // (`game/powerups` e `game/coin-spawning` SAÍRAM daqui no item 19 — ver o bloco "ITENS DECLARADOS" abaixo.)
 import { drawWeather } from './weather.js';
 
@@ -157,7 +157,7 @@ interface PowerupWithSprite {
  * hitbox de coleta tolerante translúcida; `viz` é o modo de visão, que recolore por viewport.
  */
 export type DrawPlayer = AnimPlayer & PlayerView<
-  'i' | 'x' | 'y' | 'facing' | 'hurtTimer' | 'sq' | 'sqT' | 'easy' | 'viz' | 'sprite'
+  'i' | 'x' | 'y' | 'facing' | 'hurtTimer' | 'sq' | 'sqT' | 'easy' | 'visual' | 'sprite'
 >;
 
 /** Flags de Movimento Reduzido que o DESENHO consulta (o objeto `rm` do game.js tem mais chaves). */
@@ -293,7 +293,10 @@ export function initDraw(ctx: DrawCtx): DrawApi {
       dt, dir, wheelchair: ctx.isWheelchair(), held: ctx.held, rnd, tex: ctx.playerTextures(),
     });
     // solo/default; no MP o drawFrame troca a textura por viewport (applySharedTextures)
-    if (pl.sprite) pl.sprite.texture = ctx.playerVizTex(tx, pl.viz);
+    // ⚠️ `chaveDeTextura` E NÃO A ASSINATURA DE `playerVizTex`. Medido na etapa 0 da #104: aquela função só
+    // age quando existe `DIRECT_CFG[mode]`, e devolve a textura como veio para todo o resto. Então o que
+    // muda é o CHAMADOR — a metade do estado que interessa à textura — e a porta fica onde estava.
+    if (pl.sprite) pl.sprite.texture = ctx.playerVizTex(tx, chaveDeTextura(pl.visual));
     return tx;
   }
 
@@ -342,11 +345,18 @@ export function initDraw(ctx: DrawCtx): DrawApi {
       ctx.drawMinimapPlayer(PLS[0].x, PLS[0].y - ctx.BOX.h / 2);
     } else {
       // Otimização: se TODOS estão no mesmo modo (caso comum), troca as texturas UMA vez; senão, por viewport.
-      const v0 = PLS[0].viz, allSame = PLS.every((p) => p.viz === v0);
-      const anyOverlay = PLS.some((p) => { const m = VIZ_BY_KEY[p.viz]; return !!m && m.kind === 'lowvision'; });
+      // ⚠️ A COMPARAÇÃO PASSOU A SER PELA CHAVE DE TEXTURA, e isso é output-preservador e mais barato ao
+      // mesmo tempo. `applySharedTextures` só usa o modo para escolher TEXTURA (`worldTexFor`,
+      // `parallaxTexFor`, `treeTexFor`, `spriteTexFor`, `pupTexFor`), e todas devolvem a base para o que não
+      // está em `DIRECT_CFG` — conferido em `high-contrast.worldTexFor`. Antes, dois jogadores em `normal` e
+      // `fix-deuter` contavam como modos DIFERENTES e disparavam uma re-aplicação de texturas que produzia
+      // exactamente as mesmas texturas. Agora contam como iguais, porque para a textura eles são.
+      const v0 = chaveDeTextura(PLS[0].visual);
+      const allSame = PLS.every((p) => chaveDeTextura(p.visual) === v0);
+      const anyOverlay = PLS.some((p) => ehBaixaVisao(p.visual));
       if (allSame) ctx.applySharedTextures(v0);
       for (let i = 0, n = ctx.getNumPlayers(); i < n; i++) {
-        const viz = PLS[i].viz;
+        const viz = chaveDeTextura(PLS[i].visual);
         if (!allSame) ctx.applySharedTextures(viz);            // só troca por viewport quando os modos diferem
         const itens2 = ctx.getItemSprites();
         for (let j = 0; j < itens2.length; j++) {
