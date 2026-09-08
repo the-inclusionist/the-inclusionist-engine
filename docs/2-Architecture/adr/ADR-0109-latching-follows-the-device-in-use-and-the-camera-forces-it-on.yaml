@@ -1,0 +1,166 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0104]
+  date: 2026-09-08
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-08, which answers the §C wiring that ADR-0104 left undecided and that
+       issue #114 recorded as BLOCKED: «a origem da entrada é apagada à porta»"
+    - "ADR-0104 §C — SUPERSEDED IN PART: latching stays per transport, but it stops being a SAVED CHOICE and
+       becomes an automaton driven by which device the child last used"
+    - "ADR-0013 — toggle-move, the first latch, as an accessibility setting"
+    - "ADR-0010 pillar 2 (a11y-first) — the camera clause below is that pillar deciding a conflict"
+    - "issue #114 §C, which measured the blockage by two methods before this record existed"
+  informed: []
+
+title: Latching follows the DEVICE IN USE, the camera forces it on for everyone, and the edge carries its origin
+
+context-and-problem-statement: |
+  ADR-0104 §C decided that latching is stored PER TRANSPORT, and issue #114 then measured that the wiring
+  could not be written: `input/state` keeps `keys` as a `Set<string>` of key CODES, touch writes into it
+  (`press()` does `keys.add(codeFor(act))`) and the webcam dispatches synthetic `KeyboardEvent`s. By the time
+  `held()` answers, WHO pressed is gone. Only the gamepad survives identifiable, and only because it goes
+  through `padCur` instead of the set.
+
+  ⚠️ SO THE QUESTION «IS LATCHING ON FOR THE DEVICE THAT PRODUCED THIS PRESS» HAD ITS ANSWER THROWN AWAY
+  BEFORE IT WAS ASKED. Three ways out were written down and none was chosen, because the first changes the
+  spine of input and that is not wiring work.
+
+  The Dev chose on 2026-09-08, and the choice came with the BEHAVIOUR rather than only the mechanism — which
+  is what made the mechanism decidable.
+
+decision-drivers:
+  - "⚠️ A child who cannot hold a button is not a child who wants latching EVERYWHERE. Latching helps the
+     finger that cannot hold; it gets in the way of the hand that can, and the same child may be both across
+     two devices in the same session."
+  - "The device a child last touched is the best available statement of how they are playing RIGHT NOW —
+     better than a saved preference, because the preference cannot know that they just picked up the pad."
+  - "⚠️ Camera and microphone are not a preference among others. They are used by someone who cannot hold
+     anything, and a latch they could switch off is a latch that traps them the first time it goes off."
+  - "A wrong answer here is silent: the character keeps walking, or refuses to, and nothing on screen says
+     which mode is in force."
+
+considered-options:
+  - "W1 — mark the ORIGIN on the edge (`keys` stops being a bare `Set<string>`)."
+  - "W2 — a TRANSPORT IN USE per player, updated when the origin changes."
+  - "W3 — both."
+  - "W4 — postpone §C and keep the rule written but unwired."
+
+pros-and-cons-of-the-options:
+  W1:
+    good: ["It answers «who produced THIS press», which is the question the latch actually asks."]
+    bad:
+      - "⚠️ Alone it cannot express «pressing a key puts this player back on the keyboard». That is a state
+         that OUTLIVES the event, and an edge carries no state."
+  W2:
+    good: ["Cheap, and it holds the mode between events."]
+    bad:
+      - "⚠️ Alone it cannot DETECT the switch. Something has to say «that press came from touch» for the
+         current transport to change, and without W1 nothing can."
+  W3:
+    good:
+      - "The two answer DIFFERENT questions, and the behaviour needs both: the edge says what just happened,
+         the per-player transport says what mode we are in until it happens again."
+      - "It is the smallest thing that makes rule 3 below expressible at all."
+    bad: ["Two mechanisms to keep honest instead of one, and the edge change reaches five modules."]
+  W4:
+    good: ["No risk today."]
+    bad:
+      - "⚠️ It leaves `onTouchControlsShown` in `main.ts` as the patch that fakes this behaviour for ONE
+         cartridge — the arrangement that made the gap visible in the first place."
+
+decision-outcome:
+  chosen-option:
+    link: "W3 — the edge carries its origin AND each player has a transport in use"
+    justification: |
+      §1 · THE BEHAVIOUR, which is what decides the mechanism:
+
+        1. By default, GAMEPAD and KEYBOARD are enabled, both WITHOUT latching.
+        2. A mouse click or a screen touch enables the ON-SCREEN controls, WITH latching.
+        3. Pressing a key brings the keyboard back, WITHOUT latching. The same for the gamepad: using it
+           returns control to it, WITHOUT latching.
+        4. ⚠️ CAMERA AND MICROPHONE MUST BE ENABLED EXPLICITLY, and once they are they turn latching ON for
+           every other control, with NO way to switch it off. They are priority.
+
+      ⚠️ §2 · RULE 3 IS WHY BOTH MECHANISMS ARE NEEDED, and the reason is worth stating because it is the
+      thing that was not obvious. «Pressing a key returns the keyboard without latching» is TWO facts: an
+      EVENT whose origin must be known (W1), and a MODE that then persists until the next switch (W2). An
+      edge carries no state and a stored mode cannot detect its own change. Neither half expresses rule 3;
+      together they do.
+
+      §3 · THE LATCH BEHAVES LIKE A CAPS LOCK ON A KEYBOARD WITH MEMORY — the Dev's image, kept because it
+      says the thing precisely: it is a mode, not a momentary state; it is remembered per device; and
+      switching devices does not erase what the other device remembers.
+
+      ⚠️ §4 · THE CAMERA CLAUSE IS PILLAR 2 DECIDING A CONFLICT, not a convenience. Latching that the person
+      can turn off is latching that will be off at the moment they need it, and the person using a webcam to
+      play is the person who cannot recover from that. So the override is total and has no opt-out. It is the
+      one place in this engine where an accessibility setting is NOT the child's to switch off, and that is
+      deliberate.
+
+      §5 · WHO CAN SIT WHERE, decided in the same breath because it bounds what the keyboard must carry:
+
+        · Player 2 uses the keyboard ONLY on a FULL-SIZE keyboard.
+        · Special mappings allow FOUR players on one keyboard, with the trade-off of losing the
+          shoulder/side buttons.
+        · ⚠️ OFFICIALLY: player 2 enters by full keyboard or a SECOND gamepad; players 3 and 4 enter ONLY by
+          a third and fourth gamepad.
+
+      📌 This is the same fact the Chromebook test scope states from the other side: a Chromebook's built-in
+      keyboard does not carry two seats, so two players there is not a limitation to work around — it is the
+      answer.
+
+      §6 · EYES MODE 3 IS DECLARED AND DEFERRED. For severe ALS, where only looking up, looking down and
+      blinking remain: a double blink opens the action list; looking up off-screen and down off-screen moves
+      one step at a time. ⚠️ Written here as EXPERIMENTAL and FUTURE, so it is a recorded intention rather
+      than a surprise later — and so the transport model above is built knowing it has to accommodate a
+      device whose entire vocabulary is three signals.
+
+  consequences:
+    good:
+      - "§C stops being blocked, and `input/latch-scope` — already written and gated — finally has a wiring
+         it can be correct against."
+      - "⚠️ `onTouchControlsShown` in the cartridge's `main.ts` becomes removable: it is the patch that fakes
+         rule 2 for one game, and rules 1–3 make it the engine's behaviour for all of them."
+      - "The default stops being a saved preference nobody set, and becomes the state the child is visibly in."
+    bad:
+      - "⚠️ The edge change reaches `input/state`, `keydown`, `touch-bindings`, `gamepad` and the webcam. It is
+         the spine of input, and every one of those is a place where a mistake is SILENT — the character keeps
+         walking, or refuses to, and nothing says why."
+      - "Two mechanisms must agree. A per-player transport that drifts from the edges it is fed is a lie that
+         no type catches."
+      - "⚠️ The camera's no-opt-out is a real loss of control for a child who wanted it off. Accepted on
+         pillar 2, and written here so that it is a decision and not an oversight."
+    neutral:
+      - "ADR-0104 §C's «latching is stored per transport» survives as a STRUCTURE — the per-device memory of
+         §3 is exactly that. What it loses is being a saved CHOICE the child makes in a menu."
+
+  confirmation: |
+    Owed, and none of it exists yet:
+
+    · a case per rule, over the automaton and NOT over the DOM: given a sequence of edges with origins, the
+      transport in use and the latch state after each one. Rules 1–3 are a state machine and deserve to be
+      tested as one;
+    · ⚠️ a case that the camera/microphone override CANNOT be switched off — the one rule whose failure mode
+      is a child trapped mid-game, and the one a future «let the user choose» refactor would quietly undo;
+    · a case that an edge with NO declared origin is refused rather than defaulted — a default origin would
+      reintroduce exactly the erasure this record exists to end;
+    · ⚠️ a sieve over `input/**` asserting that nothing writes into the key set without an origin, in the
+      shape of `tests/no-stored-history`: «isto perdeu a origem» is not greppable, and the erasure is what
+      made §C unwireable for two months;
+    · and, when `onTouchControlsShown` is removed from the cartridge, a case that rule 2 still holds without
+      it — otherwise the removal is a hope.
+
+more-information: |
+  ⚠️ WHAT THIS RECORD DOES NOT DECIDE:
+
+  · How the current transport is SHOWN to the child. A mode with no visible state is the defect this project
+    keeps naming; the card of issue #112 is the natural place, but the wording is interface writing and needs
+    the child of issue #7.
+  · Whether the latch state is announced when it changes. It probably must be — a caps lock that says nothing
+    is a caps lock people fight — but that is a screen-reader question and belongs with the panels.
+  · The special four-players-on-one-keyboard mappings themselves. §5 fixes WHO may sit where and what the
+    trade-off is; the actual key tables are a separate piece of work.
+  · Anything about eyes mode 3 beyond recording it. It is declared future, and the only thing it constrains
+    today is that the transport model must be able to hold a device with three signals.

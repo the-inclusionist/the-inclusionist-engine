@@ -2,6 +2,17 @@
 metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0077]
+  superseded-in-part:
+    - by: ADR-0109
+      what: "§C's clause that latching is a SAVED CHOICE stored per transport — the half that resolved the
+             collision with «valor salvo é escolha». Written on 2026-09-07, when the wiring had not been
+             attempted; issue #114 then measured that it could not be written at all, because `input/state`
+             erases the origin of an edge at the door. The Dev decided the BEHAVIOUR on 2026-09-08 and that
+             is what made the mechanism decidable: latching is no longer a preference a child sets, it
+             FOLLOWS the device last used — keyboard and gamepad without it, touch with it, camera and
+             microphone forcing it on for everyone with no opt-out.
+             📌 What SURVIVES of §C is the structure: latching is still per transport, and each device still
+             remembers its own state. What it loses is being a saved choice made in a menu."
   date: 2026-09-07
   decision-makers: [Dev]
   consulted:
