@@ -161,21 +161,27 @@ describe('buildScreenPause — a árvore construída', () => {
     expect(cap.textContent).toBe('');
   });
 
-  it('o menu é um role=menu com um role=menuitem por entrada de PM_BTNS, na ordem', () => {
-    const { sp, bar } = mount();
+  it('⚠️ o menu só monta o que o jogo ACCIONA — `quit` não tem tabela e não entra (ADR-0106 §5)', () => {
+    // ⚠️ ESTE CASO DIZIA O CONTRÁRIO, E O CONTRÁRIO ERA O DEFEITO ESCRITO COMO GARANTIA. Ele esperava
+    // `['resume','letra','quit']`, e o fixture omite `quit` da tabela DE PROPÓSITO — o comentário lá diz que
+    // isso «prova que um data-act sem entrada na tabela não quebra o clique». Não quebrava mesmo: o despacho
+    // faz `if (fn) fn()`. O que ficava institucionalizado é que o menu MOSTRA um botão que não faz nada, e
+    // quem navega por leitor de tela ouve um item que não existe.
+    const { sp } = mount();
     const menu = sp.querySelector('.pause-menu');
     expect(menu.getAttribute('role')).toBe('menu');
     const items = [...menu.querySelectorAll('.pm-btn')];
-    expect(items.map((b) => b.dataset.act)).toEqual(['resume', 'letra', 'quit']);
+    expect(items.map((b) => b.dataset.act)).toEqual(['resume', 'letra']);
     for (const b of items) expect(b.getAttribute('role')).toBe('menuitem');
   });
 
   it('o botão de rótulo DINÂMICO (ABC) não ganha data-i18n — senão o applyDom o apagaria', () => {
-    const { sp, bar } = mount();
+    const { sp } = mount();
     const letra = sp.querySelector('.pm-btn[data-act="letra"]');
     expect(letra.classList.contains('pm-letra')).toBe(true);
     expect(letra.hasAttribute('data-i18n')).toBe(false);
-    expect(sp.querySelector('.pm-btn[data-act="quit"]').getAttribute('data-i18n')).toBe('pause.quit');
+    // O contraste continua a ser feito, com um item que o jogo ACCIONA — antes era o `quit`, que já não monta.
+    expect(sp.querySelector('.pm-btn[data-act="resume"]').getAttribute('data-i18n')).toBe('pause.resume');
   });
 
   it('o título traduz pelo i18n REAL (pt) e é marcado para retradução', () => {
@@ -213,11 +219,58 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
     expect(state.ran).toEqual(['resume']);
   });
 
-  it('EXCEÇÃO: item cujo data-act não existe na tabela registra o ator e não lança', () => {
-    const { sp, bar, state } = mount(0);
-    expect(() => sp.querySelector('.pm-btn[data-act="quit"]').click()).not.toThrow();
+  it('⚠️ EXCEÇÃO: um `data-act` desconhecido NO DOM registra o ator e não lança', () => {
+    // A robustez continua a valer e é afirmada; o que mudou é o CENÁRIO. O menu já não monta item sem acção
+    // (o caso acima), então um `data-act` órfão só chega aqui vindo de fora — markup de um hospedeiro, uma
+    // extensão, um teste. Nesse caso a pausa não pode cair: regista quem carregou e não faz mais nada.
+    const { sp, state } = mount(0);
+    const menu = sp.querySelector('.pause-menu');
+    const intruso = document.createElement('button');
+    intruso.className = 'pm-btn';
+    intruso.dataset.act = 'inexistente';
+    menu.appendChild(intruso);
+    expect(() => intruso.click()).not.toThrow();
     expect(state.pauseActor).toBe(0);
     expect(state.ran).toEqual([]);
+  });
+
+  it('⚠️ [Zero] sem tabela de ações NENHUMA, o cartão não oferece porta que não abre', () => {
+    // O caso extremo do §5, e o que ele protege é o `options`: ele é accionado pela ENGINE, então sobrevive a
+    // um filtro item-a-item — e abriria um submenu vazio cuja única saída (`pmback`) desapareceu com ele.
+    //
+    // ⚠️ E USA A LISTA PADRÃO DA ENGINE de propósito (`pmButtons: undefined`). A primeira versão deste caso
+    // usava a lista do fixture, que não tem `options` nenhum — então ele passava por VÁCUO, e a mutação que
+    // tira a regra da porta SOBREVIVEU. Um caso sobre um item que a lista não contém não afirma nada.
+    const { sp } = mount(0, { pmButtons: undefined, optionsButtons: undefined, getPauseActs: () => ({}) });
+    const actsMontados = [...sp.querySelectorAll('.pm-btn')].map((b) => b.dataset.act);
+    expect(actsMontados, 'a porta para o submenu vazio ficou').not.toContain('options');
+    expect(actsMontados.filter((a) => a !== 'acessibilidade' && a !== 'pmback')).toEqual([]);
+  });
+
+  it('⚠️ [Right] com UM painel accionável, a porta `options` volta — a regra não é «esconder sempre»', () => {
+    // O outro lado, e é o que impede a correcção de custar o submenu a quem o tem: basta um painel vivo para
+    // a porta valer a pena. Sem este caso, filtrar `options` SEMPRE também passaria.
+    const { sp } = mount(0, {
+      pmButtons: undefined, optionsButtons: undefined,
+      getPauseActs: () => ({ audio: () => {} }),
+    });
+    const actsMontados = [...sp.querySelectorAll('.pm-btn')].map((b) => b.dataset.act);
+    expect(actsMontados).toContain('options');
+    expect(actsMontados).toContain('audio');
+  });
+
+  it('⚠️ [Right] a LISTA PADRÃO da engine existe — um jogo que não contribui com nada tem menu', () => {
+    // O §4 do ADR-0106 fecha com esta frase: «a engine entrega uma lista padrão, para que um jogo que não
+    // contribui com nada tenha uma». Antes desta mudança, `pmButtons` era OBRIGATÓRIO — um jogo que não a
+    // passasse não compilava, e os cinco jogos sem menu de pausa são o resultado de ninguém a passar.
+    const { sp } = mount(0, {
+      pmButtons: undefined, optionsButtons: undefined,
+      getPauseActs: () => ({ resume: () => {}, ajuda: () => {} }),
+    });
+    const actsMontados = [...sp.querySelectorAll('.pm-btn')].map((b) => b.dataset.act);
+    expect(actsMontados.length, 'a lista padrão não montou nada').toBeGreaterThan(1);
+    expect(actsMontados, 'sem `resume` a pausa é uma armadilha — ADR-0044 §2').toContain('resume');
+    expect(actsMontados).toContain('ajuda');
   });
 
   it('clique fora de qualquer botão não faz nada', () => {
@@ -629,6 +682,21 @@ describe('a barra montada obedece ao §5 do ADR-0106 — nenhum botão morto', (
 //     aqui. E a mutacao que devolve o defeito: a barra volta a oferecer um caminho que nao leva a lado nenhum.
 //   · filtrando os dois SEMPRE (ignorando o booleano) -> reprova "COM escritor visual, os dois estao la", que
 //     e a metade que impede a correccao de custar os icones a quem os tinha.
+// ========================= MUTACOES DA LISTA PADRAO DE `.pm-btn` (ADR-0106 §4/§5) =========================
+//   · tirando o filtro por ACCAO (`itensQueAccionam` a devolver tudo) -> reprovam DOIS. E o defeito que estava
+//     institucionalizado: o menu mostrava `quit` sem tabela, e o fixture omitia-o DE PROPOSITO com um
+//     comentario a dizer que isso «prova que um data-act sem entrada nao quebra o clique». Nao quebrava mesmo
+//     — so nao fazia nada, e quem navega por leitor de tela ouvia um item que nao existe.
+//   · ⚠️ tirando a regra da PORTA VAZIA -> SOBREVIVEU na primeira volta, e a sobrevivencia era um caso vazio e
+//     nao um buraco de logica: o `[Zero]` usava a lista do FIXTURE, que nao tem `options` nenhum, entao
+//     afirmava sobre um item que a lista nao continha. Refeito com a lista PADRAO DA ENGINE (que tem
+//     `options`), a mesma mutacao reprova.
+//   · escondendo `options` SEMPRE -> reprova o caso do painel unico. E a metade que impede a correccao de
+//     custar o submenu a quem o tem: basta UM painel vivo para a porta valer a pena.
+//   · trocando a lista padrao por `[]` -> reprovam DOIS. E a prova de que o padrao da engine existe: antes
+//     desta mudanca o `pmButtons` era OBRIGATORIO, e os cinco jogos sem menu de pausa sao o resultado de
+//     ninguem o passar.
+//
 //   · ⚠️ trocando o `&&` por `||` na deteccao -> SOBREVIVEU, e a sobrevivencia apontou um defeito de DESENHO
 //     em vez de um buraco de cobertura: com UMA bandeira para os dois icones, os dois operadores dao o mesmo
 //     resultado sempre que faltam os dois escritores — e erram em direccoes opostas quando falta so um (o

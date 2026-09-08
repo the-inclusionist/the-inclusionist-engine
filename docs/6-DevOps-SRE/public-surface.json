@@ -1143,6 +1143,7 @@
     "CVD_SEQ",
     "EscritoresVisuais",
     "ICON_STATE_CLASSES",
+    "ITENS_DA_ENGINE",
     "IconStateSnapshot",
     "IconVisual",
     "PAUSE_ICONS",
@@ -1164,6 +1165,7 @@
     "iconesQueAccionam",
     "iconsMarkup",
     "initPauseIcons",
+    "itensQueAccionam",
     "legendaDoIcone",
     "mostrarSubmenuDaPausa",
     "nextCalmMode",
@@ -1173,6 +1175,7 @@
     "pauseMenuHtml",
     "pmBtnMarkup",
     "quickBarMarkup",
+    "raizQueAcciona",
     "saneiaNivelTea",
     "screenPauseMarkup"
   ],

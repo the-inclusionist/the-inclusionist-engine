@@ -49,6 +49,7 @@ import { menuIndexOn, DEFAULTS, setModoCegoValue } from '../core/state.js';
 // não inverte camada nenhuma.
 import * as store from '../platform/storage.js';
 import { definirAlternanciaDeMarcha } from './settings-motor.js';
+import { PM_BTNS, PM_OPTIONS_BTNS } from './activities-menu.js';
 
 /**
  * A LEGENDA de um ícone da barra de acessibilidade — uma função, e não três cópias da mesma expressão.
@@ -340,6 +341,50 @@ export function iconesQueAccionam(escritores: EscritoresVisuais): readonly Pause
       : true));
 }
 
+/**
+ * OS TRÊS ITENS QUE A ENGINE ACCIONA SOZINHA, e que por isso nunca dependem do `getPauseActs` de um jogo.
+ *
+ * 📏 Lidos do despacho, e não decididos aqui: `options`/`pmback` trocam qual lista está no cartão e
+ * `acessibilidade` leva o cursor à barra rápida — os três são tratados neste módulo e voltam antes de a
+ * tabela do jogo ser consultada.
+ */
+export const ITENS_DA_ENGINE: ReadonlySet<string> = new Set(['options', 'pmback', 'acessibilidade']);
+
+/**
+ * OS ITENS DO MENU QUE ESTE JOGO CONSEGUE MESMO ACCIONAR (ADR-0106 §5).
+ *
+ * ⚠️ HOJE UM ITEM SEM ACÇÃO É UM BOTÃO MORTO, E EM SILÊNCIO. O despacho faz `const fn = acts[act]; if (fn)
+ * fn();` — quem carrega num item que o jogo não implementou não recebe erro, não recebe anúncio, não recebe
+ * nada. Para quem vê, parece que o clique falhou; para quem navega por leitor de tela, o menu leu-lhe um
+ * item que não existe. É exactamente o que o §5 chama de pior do que a ausência: «uma barra que oferece um
+ * caminho e depois o recusa ensina-lhe que o caminho não é para ela».
+ */
+export function itensQueAccionam(
+  botoes: readonly PauseMenuButton[],
+  acts: Record<string, (() => void) | undefined>,
+): readonly PauseMenuButton[] {
+  return botoes.filter((b) => ITENS_DA_ENGINE.has(b.act) || typeof acts[b.act] === 'function');
+}
+
+/**
+ * A LISTA RAIZ, com uma regra a mais: `options` é uma PORTA, e uma porta para uma sala vazia também é um
+ * botão morto.
+ *
+ * ⚠️ Esta é a parte que um filtro item-a-item não apanha. Se todos os painéis de ajuste forem filtrados —
+ * um jogo que não monta nenhum —, o item `options` sobrevive (a engine acciona-o) e abre uma lista sem nada.
+ * A criança atravessa uma porta e fica presa num submenu vazio, cuja única saída é o `pmback` que também
+ * sumiu com ele.
+ */
+export function raizQueAcciona(
+  raiz: readonly PauseMenuButton[],
+  opcoes: readonly PauseMenuButton[],
+  acts: Record<string, (() => void) | undefined>,
+): readonly PauseMenuButton[] {
+  const opcoesVivas = itensQueAccionam(opcoes, acts).filter((b) => b.act !== 'pmback');
+  const viva = itensQueAccionam(raiz, acts);
+  return opcoesVivas.length > 0 ? viva : viva.filter((b) => b.act !== 'options');
+}
+
 /** The whole icon bar. Used by the pause screen AND by the splash `#title-icons` (which built the same string
  *  by hand in game.js — that duplication dies with this export).
  *  O parâmetro é ADITIVO e o padrão é a lista inteira: quem já chamava sem argumentos não muda de resultado. */
@@ -511,10 +556,18 @@ export interface PauseIconsCtx {
    * mora mais dentro dela — o daltonismo é POR JOGADOR, e refletir os ícones exige achar a barra daquela tela.
    */
   getA11yBars: () => readonly HTMLElement[];
+  /*
+   * ⚠️ AS DUAS PASSARAM A OPCIONAIS (ADR-0106 §4), e o comentário que estava aqui já dizia porquê sem o
+   * notar: «PM_BTNS — owned by ui/activities-menu; injected, never copied». Se a dona é a ENGINE, pedir ao
+   * jogo que a devolva é o mesmo acidente dos outros sete campos. O registo fecha o §4 com a frase que isto
+   * cumpre: «a engine entrega uma lista padrão, para que um jogo que não contribui com nada tenha uma».
+   *
+   * Ausentes, valem `PM_BTNS` / `PM_OPTIONS_BTNS`. Quem passa a sua continua a mandar.
+   */
   /** PM_OPTIONS_BTNS — o submenu de opções. Mesma dona, mesmo motivo: ninguém tem duas cópias de uma lista. */
-  optionsButtons: readonly PauseMenuButton[];
+  optionsButtons?: readonly PauseMenuButton[];
   /** PM_BTNS — the `.pm-btn` list. Owned by ui/activities-menu; injected, never copied. */
-  pmButtons: readonly PauseMenuButton[];
+  pmButtons?: readonly PauseMenuButton[];
   /** QL_NAME — literacy-level names, for the (dormant) `nivel` button. Same owner as pmButtons. */
   /**
    * O RÓTULO de um botão dinâmico, pronto — ou `null` quando aquele botão não tem um (item 19).
@@ -909,8 +962,19 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     sp.className = 'screen-pause';
     sp.hidden = true;
     sp.dataset.player = String(i);
+    /*
+     * ⚠️ FILTRADO NO MOMENTO DE MONTAR, e não no arranque, porque o `getPauseActs` é LAZY de propósito: no
+     * cartucho a tabela é um `const` declarado ~1200 linhas abaixo do `init`, e lê-la cedo cairia na zona
+     * morta temporal. Montar é o primeiro instante em que a resposta existe.
+     */
+    const acts = ctx.getPauseActs();
+    const raiz = ctx.pmButtons ?? PM_BTNS;
+    const opcoes = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
     sp.innerHTML = screenPauseMarkup({
-      player: i, numPlayers: ctx.getNumPlayers(), pmButtons: ctx.pmButtons, optionsButtons: ctx.optionsButtons,
+      player: i,
+      numPlayers: ctx.getNumPlayers(),
+      pmButtons: raizQueAcciona(raiz, opcoes, acts),
+      optionsButtons: itensQueAccionam(opcoes, acts),
       dynLabel: ctx.dynLabel, t,
     });
 
