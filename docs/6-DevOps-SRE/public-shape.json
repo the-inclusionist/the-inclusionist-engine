@@ -964,6 +964,16 @@
     ],
     "type CarregarVozNeural": "() => Promise<ModuloNeural>"
   },
+  "platform/voice-plan.ts": {
+    "interface VozNeural": [
+      "engine",
+      "locale",
+      "voice"
+    ],
+    "type EstadoDaVoz": "'ausente' | 'a-buscar' | 'pronta' | 'falhou'",
+    "type EstadosDasVozes": "Readonly<Record<string, EstadoDaVoz | undefined>>",
+    "type VozEmUso": "| { readonly tipo: 'neural'"
+  },
   "render/camera.ts": {
     "interface Tamanho": [
       "w"

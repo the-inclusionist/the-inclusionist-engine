@@ -580,6 +580,16 @@
     "TtsCtx",
     "createTts"
   ],
+  "platform/voice-plan.ts": [
+    "EstadoDaVoz",
+    "EstadosDasVozes",
+    "VOZES_NEURAIS",
+    "VozEmUso",
+    "VozNeural",
+    "estadoDe",
+    "ordemDeBusca",
+    "vozEmUso"
+  ],
   "render/camera.ts": [
     "Camera",
     "CameraObj",
