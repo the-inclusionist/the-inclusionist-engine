@@ -1970,6 +1970,7 @@
       "getNumPlayers",
       "kb",
       "kbFor",
+      "kbPadraoFor",
       "setKB",
       "srAlert",
       "srSay",

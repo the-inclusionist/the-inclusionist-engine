@@ -17,6 +17,7 @@ import { t } from '../core/i18n.js';
 import type { DomQuery } from '../core/dom-query.js';
 import type { KeyScheme } from '../core/entity.js';
 import { ACTIONS, isAction, type Action } from '../core/actions.js';
+import { markChanged } from './changed-mark.js';
 import type { KBDefaults } from '../input/keyboard.js';
 import type { KeydownEventLike } from '../input/keydown.js';
 
@@ -71,6 +72,18 @@ export interface SettingsControlsCtx {
   /** Shared helper (game.js): the scheme for a given player index, given `kb`/numPlayers. Not owned by this panel —
    *  other systems (gamepad binding, HUD) call the same game.js function. */
   kbFor: (playerIndex: number) => KeyScheme;
+  /**
+   * O esquema DE FÁBRICA deste assento (ADR-0029) — o que ele teria se ninguém tivesse remapeado nada.
+   *
+   * ⚠️ INJECTADO PELA MESMA RAZÃO QUE O `kbFor` LOGO ACIMA: o mapeamento «quantos jogadores → que balde»
+   * (`solo`/`p2`/`p3`/`p4`) é do consumidor, e uma segunda cópia dessa regra dentro da engine divergiria da
+   * primeira no dia em que um dos dois mudasse.
+   *
+   * 🎯 E NÃO SE OBTÉM CHAMANDO `store.resetKB()`, embora ele devolva exactamente a configuração de fábrica:
+   * o `input/keyboard.resetKB` faz `store.remove(CKEY)` ANTES de devolver a cópia. Usá-lo como leitor
+   * apagaria o remapeamento da criança a cada render, e o estrago só apareceria no arranque seguinte.
+   */
+  kbPadraoFor: (playerIndex: number) => KeyScheme;
   /** Shared: current player count (core/state.ts's numPlayers, read live via game.js). */
   getNumPlayers: () => number;
   /** Shared: propagates `kb` -> the live control aliases (game.js's applyControls). Called after remap/reset. */
@@ -303,6 +316,36 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
         if (nome) nome.textContent = palavras[i]!.rotulo;
         const botao = linhas[i]!.querySelector<HTMLElement>('button[data-act]');
         if (botao) botao.setAttribute('aria-label', t('ctrl.changeKeyAria', { acao: palavras[i]!.rotulo, n: player + 1 }));
+      }
+    }
+
+    /**
+     * A MARCA DE «SAIU DO PADRÃO» (ADR-0029), e este era o ÚLTIMO menu sem ela.
+     *
+     * ⚠️ E É O MENU ONDE ELA MAIS FALTAVA, porque é o único cuja razão de existir é mexer: uma criança que
+     * remapeou as teclas percorria a lista, ouvia os nomes das acções, e nada lhe dizia onde ela própria tinha
+     * alterado. Os três canais do ADR-0029 — cor, forma (anéis) e NOME — passam a valer aqui.
+     *
+     * ⚠️ O PADRÃO VEM DO CONSUMIDOR (`ctx.kbPadraoFor`) e não de uma tabela lida aqui, pela mesma razão que o
+     * `kbFor` é injectado: o mapeamento «quantos jogadores → que balde» (`p2`/`p3`/`p4`) é dele, e uma segunda
+     * cópia dessa regra divergiria da primeira.
+     *
+     * 🎯 E NÃO SE USA O `resetKB` PARA LER O PADRÃO, embora ele devolva exactamente a configuração de fábrica:
+     * ele é DESTRUTIVO — `input/keyboard.resetKB` faz `store.remove(CKEY)` antes de devolver a cópia. Chamá-lo
+     * a cada render apagaria o remapeamento da criança, e o estrago só apareceria no arranque seguinte.
+     *
+     * 📌 COMPARA-SE A LISTA DE CÓDIGOS, não a identidade do objecto: reatribuir a MESMA tecla não é uma
+     * mudança, e uma criança que experimenta e volta atrás não pode ficar com a marca acesa para sempre.
+     */
+    {
+      const padrao = ctx.kbPadraoFor(player);
+      const atual = ctx.kbFor(player);
+      const mesmas = (a: readonly string[] | null | undefined, b: readonly string[] | null | undefined): boolean =>
+        (a ?? []).length === (b ?? []).length && (a ?? []).every((k, i) => k === (b ?? [])[i]);
+      for (const linha of el.querySelectorAll<HTMLElement>('.ctrl-row')) {
+        const act = linha.querySelector<HTMLElement>('button[data-act]')?.dataset.act;
+        if (!act || !isAction(act)) continue;
+        markChanged(linha, !mesmas(atual[act], padrao[act]));
       }
     }
 

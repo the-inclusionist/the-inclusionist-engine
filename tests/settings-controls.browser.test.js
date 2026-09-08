@@ -29,7 +29,8 @@ function buildCtx(over = {}) {
   const store = {
     saved: [],
     saveKB(k) { this.saved.push(k); },
-    resetKB() { return makeKB(); },
+    reposicoes: 0,
+    resetKB() { this.reposicoes++; return makeKB(); },
   };
   return {
     $,
@@ -46,6 +47,11 @@ function buildCtx(over = {}) {
     store,
     kb,
     kbFor: (i) => kb.p2[i] ?? kb.p2[0],
+    // ⚠️ O ESQUEMA DE FÁBRICA DESTE ASSENTO, e ele é INJECTADO pela mesma razão que o `kbFor`: o mapeamento
+    // «quantos jogadores → que balde» (`p2`/`p3`/`p4`) é do consumidor, e duplicá-lo dentro da engine seria a
+    // segunda cópia de uma regra. O duplo usa o MESMO `makeKB()` que semeia o `kb`, que é o que faz «igual ao
+    // padrão» significar aqui o que significa no jogo.
+    kbPadraoFor: (i) => makeKB().p2[i] ?? makeKB().p2[0],
     getNumPlayers: () => 2,
     applyControls: () => { applyCalls.applyControls++; },
     assignControls: () => { applyCalls.assignControls++; },
@@ -205,6 +211,70 @@ describe('ui/settings-controls', () => {
     $('#ctrl-list').querySelector('button[data-act="action1"]').click();
     api.handleCaptureKeydown({ code: tomada, preventDefault: () => {} });
     expect(ctx.alerted.at(-1)).toContain('Pular'); // a palavra que ESTE jogo dá a `action2`
+  });
+
+  // ===================== A MARCA DE «SAIU DO PADRÃO» NO REMAPEAMENTO (ADR-0029 · #61) =====================
+  // ⚠️ ERA O ÚLTIMO MENU SEM MARCA. Uma tecla remapeada É «saiu do padrão» — e este é o menu onde a criança
+  // mais provavelmente mexeu, porque é o único cuja razão de existir é mexer. Sem a marca ela percorre o menu,
+  // ouve os nomes das acções, e nada lhe diz onde ela própria alterou.
+  const linhaDe = (act) => $(`#ctrl-list button[data-act="${act}"]`)?.closest('.ctrl-row') ?? null;
+  const marcada = (el) => !!el && el.classList.contains('is-changed');
+
+  it('🎯 [Zero] com o esquema de FÁBRICA, nada fica marcado', () => {
+    const ctx = buildCtx();
+    initSettingsControls(ctx).render(0);
+    for (const a of ['action1', 'action2', 'left']) expect(marcada(linhaDe(a)), `${a} marcado sem ter mudado`).toBe(false);
+    // 📌 A marca do BOTÃO que abre este ecrã não é daqui: quem desenha o `#map-hub` é o `ui/settings-motor`, e
+    // marcá-lo de dois sítios seria a segunda resposta à mesma pergunta. Aqui marcam-se as LINHAS.
+  });
+
+  it('🎯 [Right] só a acção REMAPEADA fica marcada', () => {
+    const ctx = buildCtx();
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
+    api.handleCaptureKeydown({ code: 'KeyP', preventDefault: () => {} });
+    expect(marcada(linhaDe('action2')), 'a acção remapeada não foi marcada').toBe(true);
+    expect(marcada(linhaDe('action1')), 'marcou uma acção que ninguém tocou').toBe(false);
+  });
+
+  it('⚠️ [Boundary] a MESMA tecla do padrão, reatribuída, NÃO é uma mudança', () => {
+    // O caso que separa «mexeu» de «mexeu e voltou». Uma comparação por identidade de objecto, ou um sinal
+    // levantado no clique, diria que mudou — e a criança ouviria «alterado» sobre a tecla de fábrica.
+    const ctx = buildCtx();
+    const api = initSettingsControls(ctx);
+    api.render(0);
+    const original = ctx.kbFor(0).action2[0];
+    $('#ctrl-list').querySelector('button[data-act="action2"]').click();
+    api.handleCaptureKeydown({ code: original, preventDefault: () => {} });
+    expect(marcada(linhaDe('action2')), 'reatribuir a MESMA tecla contou como mudança').toBe(false);
+  });
+
+  it('⚠️ [Boundary] perder a tecla ALTERNATIVA é uma mudança, mesmo mantendo a primeira', () => {
+    // ⚠️ CASO ACHADO POR MUTAÇÃO SOBREVIVENTE, e o cenário é real: o esquema de fábrica tem acções com DUAS
+    // teclas (`input/keyboard.ts` dá `action3: ['Semicolon','Slash']`), e o remapeamento escreve sempre UMA
+    // (`mapRef[act] = [e.code]`). Uma criança que remapeie para a PRIMEIRA das duas fica com `['Semicolon']`
+    // onde a fábrica tinha `['Semicolon','Slash']`.
+    //
+    // 🎯 Sem a verificação de COMPRIMENTO, o `every` percorre só o array curto, responde `true`, e a marca não
+    // acende — ela perdeu a tecla alternativa e nada lho diz. O `every` sozinho compara prefixos, não listas.
+    const ctx = buildCtx();
+    const comDuas = { ...ctx.kbFor(0), action3: ['Semicolon', 'Slash'] };
+    ctx.kbPadraoFor = () => comDuas;
+    ctx.kbFor = () => ({ ...comDuas, action3: ['Semicolon'] });
+    initSettingsControls(ctx).render(0);
+    expect(marcada(linhaDe('action3')), 'perdeu a tecla alternativa e não foi marcado').toBe(true);
+    expect(marcada(linhaDe('action1')), 'marcou uma acção intacta').toBe(false);
+  });
+
+  it('⚠️ [Zero] ler o padrão NÃO apaga as teclas guardadas', () => {
+    // 🎯 A armadilha que este caso fecha: `input/keyboard.resetKB()` parece um leitor do esquema de fábrica e
+    // é DESTRUTIVO — faz `store.remove(CKEY)` antes de devolver a cópia. Usá-lo para desenhar a marca apagaria
+    // o remapeamento da criança a cada render, e o defeito só apareceria no arranque seguinte.
+    const ctx = buildCtx();
+    initSettingsControls(ctx).render(0);
+    expect(ctx.store.saved, 'desenhar a marca gravou por cima do esquema').toHaveLength(0);
+    expect(ctx.store.reposicoes ?? 0, 'desenhar a marca chamou `resetKB`').toBe(0);
   });
 
   it('[Zero] handleCaptureKeydown sem captura em andamento retorna false e não toca no DOM', () => {
