@@ -135,6 +135,18 @@ export const KEYS = {
   vizP: (i: number): string => 'incl_viz_p' + i,
   sinkP: (i: number): string => 'incl_sink_p' + i,
   easyP: (i: number): string => 'incl_easy_p' + i,
+  /**
+   * ⚠️ AS DUAS DE BAIXO SÃO AS CHAVES LEGADAS desde 2026-09-08 (ADR-0104 §C, issue #114). Continuam a ser
+   * LIDAS — é o ajuste da criança, e a herança dele é o que a impede de o perder — e não voltam a ser
+   * escritas. O que se escreve é a chave COM TRANSPORTE, porque a alternância é do APARELHO e não da pessoa:
+   * ligá-la no controle de tela, onde ninguém segura um botão virtual com conforto, ligava-a também no
+   * teclado, onde segurar uma tecla é exactamente o que a criança sabe fazer.
+   *
+   * ⚠️ E A CHAVE NOVA NÃO MORA AQUI, de propósito. Ela é `chaveDaAlternancia`, em `input/latch-scope` — este
+   * ficheiro é módulo-FOLHA e `platform/` não importa de `input/`, que é a camada acima. Montá-la aqui
+   * exigiria ou uma aresta ao contrário ou uma segunda cópia do nome, e a segunda cópia é exactamente o que
+   * o comentário do bloco acima existe para impedir. O dono do nome é quem conhece a regra do transporte.
+   */
   toggleMoveP: (i: number): string => 'incl_togglemove_p' + i,
   toggleRunP: (i: number): string => 'incl_togglerun_p' + i, // alternância do botão de CORRER (irmã da de movimento)
   rmWalkP: (i: number): string => 'incl_rmWalk_p' + i,

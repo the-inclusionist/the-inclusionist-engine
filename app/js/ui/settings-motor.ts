@@ -15,6 +15,10 @@ import { t } from '../core/i18n.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { DEFAULTS } from '../core/state.js';
 import type { DomQuery } from '../core/dom-query.js';
+// ⚠️ IMPORT DIRETO, e não uma peça a mais no `ctx`, pela mesma razão que o `ui/pause-icons` importa
+// `platform/storage`: um nome de chave injetado é um campo que um consumidor pode omitir, e omiti-lo aqui
+// faria o painel escrever num nome torto — que é o defeito que este import acaba de fechar.
+import { KEYS } from '../platform/storage.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
@@ -93,9 +97,20 @@ export function easyKey(i: number): string {
   return 'incl_easy_p' + i;
 }
 
-/** localStorage key da alternância do botão de CORRER (== `toggleRunP` de platform/storage). */
+/**
+ * localStorage key da alternância do botão de CORRER, na forma LEGADA (sem transporte).
+ *
+ * ⚠️ ERA UMA CÓPIA DO LITERAL, com um comentário ao lado a dizer «== `toggleRunP` de platform/storage» — o
+ * que é a admissão do defeito escrita como se fosse documentação. Duas cópias de um nome mudam uma de cada
+ * vez, e o `platform/storage` já tinha escrito a razão de as chaves serem funções: «virar função aqui é o
+ * que impede que um deles escreva num nome torto». Agora delega, e há um nome só.
+ *
+ * ⚠️ E É A CHAVE LEGADA. O ADR-0104 §C pôs o TRANSPORTE no nome, porque a alternância é do aparelho e não da
+ * pessoa; esta continua a ser lida para herdar o que a criança já tinha, e não é escrita. A chave nova é
+ * `chaveDaAlternancia`, em `input/latch-scope`.
+ */
 export function toggleRunKey(i: number): string {
-  return 'incl_togglerun_p' + i;
+  return KEYS.toggleRunP(i);
 }
 
 /** Clamps the selected player back to 0 once it falls outside 0..numPlayers-1 (e.g. player count dropped). */
