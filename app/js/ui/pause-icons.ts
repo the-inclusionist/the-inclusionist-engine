@@ -529,8 +529,16 @@ export interface PauseIconsCtx {
   /** Records which player opened the menu. `pauseActor` itself stays in game.js — the gamepad, the keyboard
    *  router, openHelp() and openOptions() all read it there. */
   setPauseActor: (i: number) => void;
-  /** The live `vpPause` array (game.js rebuilds it on every buildGameHud). Getter, not the array. */
-  getPauseScreens: () => readonly Element[];
+  /*
+   * ⚠️ `getPauseScreens` SAIU EM 2026-09-08, e a razão é o próprio ADR-0106: era um campo OBRIGATÓRIO com
+   * ZERO leitores dentro deste módulo. Medido nos três lados — na engine (`git grep ctx.getPauseScreens` em
+   * `ui/pause-icons` devolve zero), nos testes (só os fixtures o forneciam) e no cartucho (o
+   * `game-platformer` passava-o em `main.ts:1094` para nada).
+   *
+   * 📌 NÃO CONFUNDIR com o homónimo do `ui/shell`, que é de outro ctx e TEM cinco leitores a sério — é ele
+   * que esconde e mostra os cartões por fase. Este era a segunda cópia da mesma pergunta, feita a quem não a
+   * usava; os 300 jogos teriam de a responder na mesma.
+   */
 
   // --- blind mode (game.js owns `modoCego` + persistence + the cane/extras rebuild) ---
   getModoCego: () => boolean;

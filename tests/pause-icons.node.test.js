@@ -940,3 +940,19 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     expect(said).toEqual([]);
   });
 });
+
+describe('PauseIconsCtx — o campo que ninguém lia (ADR-0106)', () => {
+  it('⚠️ [Zero] a barra e o cartão montam-se SEM `getPauseScreens` — ele era obrigatório e morto', () => {
+    // 📏 Medido nos três lados antes de sair: zero leitores em `ui/pause-icons`, nos testes só os fixtures o
+    // forneciam, e o `game-platformer` passava-o para nada. 📌 O homónimo do `ui/shell` é de OUTRO ctx e tem
+    // cinco leitores a sério — é ele que esconde e mostra os cartões por fase.
+    const { ctx, said } = buildCtx();
+    delete ctx.getPauseScreens;
+    const api = initPauseIcons(ctx);
+
+    expect(() => api.reflectPauseIcons()).not.toThrow();
+    expect(() => api.iconAct('libras', 0)).not.toThrow();
+    expect(said.length, 'o ícone deixou de anunciar sem um campo que ele não lê').toBeGreaterThan(0);
+    expect(typeof api.iconLabel('blind', 0)).toBe('string');
+  });
+});

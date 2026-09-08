@@ -1784,7 +1784,6 @@
       "getModoCego",
       "getNumPlayers",
       "getPauseActs",
-      "getPauseScreens",
       "getPlayers",
       "isLibrasOn",
       "optionsButtons",
