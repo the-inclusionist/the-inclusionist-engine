@@ -44,12 +44,24 @@ const CAMINHO = /(?<![\w/])(?:tests|scripts)\/[A-Za-z0-9_.\-]+\.(?:m?js|py|ts)/g
 const MORTOS = {
   'tests/main-i18n.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`, #111): testava o `main.js`, que deixou de viver aqui',
   'tests/alternancia-do-correr.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`): mecânica de plataforma, não de engine',
-  'tests/carregar-e-arremessar.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`): arremesso é do jogo',
-  'tests/progress.node.test.js': 'O SUJEITO DEIXOU DE EXISTIR (`809bc01`, «there is no save, and the game stores nothing about a child»). O gate não foi perdido — o que ele guardava foi abolido, e é a decisão que o ADR-0103 viria a fechar',
   'scripts/check-types.mjs': 'APOSENTADO DE PROPÓSITO (`f622221`) quando a dívida de tipos chegou a ZERO. Era um tecto que só descia; chegado ao fundo, um tecto deixa de ter função',
 };
-// ✅ `tests/docs.node.test.ts` SAIU DESTA LISTA NO DIA EM QUE ELA NASCEU, e a história vale mais do que a
-// entrada valia.
+// ========================= O QUE JÁ SAIU, E COMO =========================
+// A lista nasceu com SETE entradas e está em TRÊS. Nenhuma foi apagada; cada uma saiu por uma via diferente, e
+// as vias é que são o assunto.
+//
+// ✅ `tests/carregar-e-arremessar.node.test.js` — citado SÓ pelo ADR-0045, que está `superseded` (pelo 0060).
+//    ⚠️ SEGUNDO FALSO POSITIVO DO MEU PRÓPRIO CRIVO: um registo que já não governa não deve um gate ACTUAL, e
+//    exigir-lho seria pedir enforcement a uma decisão revogada. O filtro do `aindaGoverna` corrige-o.
+//
+// ✅ `tests/progress.node.test.js` — o ADR-0037 ganhou `confirmed-by` apontando para as DUAS metades que ele
+//    ainda afirma: o crivo de que nada guarda o desempenho de uma criança, e a verificação exaustiva da senha
+//    copiada à mão. A prosa que cita o ficheiro morto fica: ela estava certa no dia, e o commit que a matou
+//    (`809bc01`) foi o que ABOLIU o save — o gate não se perdeu, o que ele guardava é que deixou de existir.
+//    📌 O ADR-0034 cita o mesmo ficheiro e NÃO ganhou chave: ele está superseded, e sai pela outra via.
+//
+// ✅ `tests/docs.node.test.ts` — saiu no dia em que a lista nasceu, e a história vale mais do que a entrada
+//    valia.
 //
 // ⚠️ Ela entrou com a razão ERRADA: escrevi «nunca existiu — o ADR-0093 afirma uma verificação que não foi
 // construída», porque não há registo de remoção sob nenhuma extensão. A frase que o cita desmentiu-me — ela
@@ -73,6 +85,19 @@ function registos() {
 const temChaveConferida = (r) => /^\s{2}confirmed-by:/m.test(r.texto);
 
 /**
+ * O registo ainda GOVERNA?
+ *
+ * ⚠️ SEGUNDO FALSO POSITIVO CORRIGIDO, e ele custou-me outro erro para aparecer: um registo `superseded` não
+ * deve um gate ACTUAL, porque já não decide nada — a prosa dele é história inteira, não meia. Exigir-lhe uma
+ * confirmação de hoje seria pedir enforcement a uma decisão revogada, e o `confirmed-by` que respondesse
+ * apontaria para um gate que guarda a decisão do SUCESSOR.
+ *
+ * 📌 Medido: dos sete registos que citavam um caminho morto, DOIS estavam superados — o ADR-0034 (pelo 0037) e
+ * o ADR-0045 (pelo 0060). O `carregar-e-arremessar` era citado só pelo 0045, e sai por esta regra.
+ */
+const aindaGoverna = (r) => !/^\s{2}status:\s*"?(superseded|deprecated)"?/m.test(r.texto);
+
+/**
  * Todo caminho citado em PROSA por um registo que ainda NÃO tem `confirmed-by`.
  *
  * ⚠️ E O FILTRO É A SAÍDA DESTA DÍVIDA, sem a qual o ficheiro seria um monumento. A primeira versão lia a
@@ -86,7 +111,7 @@ const temChaveConferida = (r) => /^\s{2}confirmed-by:/m.test(r.texto);
 function citados() {
   const fora = new Set();
   for (const r of registos()) {
-    if (temChaveConferida(r)) continue;
+    if (temChaveConferida(r) || !aindaGoverna(r)) continue;
     for (const c of r.texto.match(CAMINHO) ?? []) fora.add(c);
   }
   return [...fora];
@@ -150,5 +175,7 @@ describe('um registo não aponta para um gate que não existe', () => {
 //      que ela nao reprova o caso dos declarados: sem detector, «nenhum ponteiro morto novo» fica verde por
 //      nao achar nada, que e precisamente o verde falso que o caso da vivacidade existe para impedir.
 //   4. o `validate-adr.py` a deixar de conferir os caminhos do `confirmed-by` -> reprova o caso do MECANISMO.
+//   5. o filtro dos SUPERADOS removido -> reprova o caso do encolhimento: os dois registos revogados voltam a
+//      ser cobrados por um gate actual que eles nao devem, porque ja nao decidem nada.
 //      📌 Esse caso e o unico que nao olha para a divida e sim para a SAIDA dela: se a chave deixar de ser
 //      conferida, esta lista deixa de ter para onde encolher, e um inventario sem saida vira um monumento.

@@ -1,6 +1,15 @@
 metadata:
   status: "accepted"
   supersedes: [ADR-0034]
+  # ⚠️ O QUE CONFIRMA ESTE REGISTO HOJE. A `confirmation` cita `tests/progress.node.test.js`, que saiu em
+  # `809bc01` — o commit que ABOLIU o save. A prosa fica, e estava certa no dia: o gate não se perdeu, o que
+  # ele guardava é que deixou de existir. O que resta a afirmar são as DUAS metades desta decisão, e cada uma
+  # tem o seu ficheiro: que nada guarda o desempenho de uma criança (um CRIVO de inventário, porque uma
+  # ausência não se prova procurando a palavra), e que a única senha que existe é copiável à mão sem que um
+  # erro de cópia leve a criança para outra sala (verificação EXAUSTIVA sobre os dois erros de cópia).
+  confirmed-by:
+    - tests/no-stored-history.node.test.js
+    - tests/password.node.test.js
   date: 2026-08-25
   errata:
     - date: 2026-09-04
