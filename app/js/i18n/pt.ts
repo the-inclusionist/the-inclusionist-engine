@@ -333,6 +333,12 @@ const pt: Record<string, string> = {
   'reach.naoSegura': 'O {transporte} segura {segura} botões de cada vez, e este jogo pede {pedidas} ao mesmo tempo.',
   // ⚠️ A RECUSA DA SIMULAÇÃO (#104 / ADR-0076). Ela diz um FACTO SOBRE A DEMONSTRAÇÃO e o caminho de volta —
   // nunca «desligue isso». Quem ligou o alto contraste ligou-o porque precisa dele para ver.
+  'eixo.tema.titulo': 'Tema (contraste)',
+  'eixo.tema.padrao': 'Tema padrão',
+  'eixo.correcao.titulo': 'Correção de cor',
+  'eixo.correcao.tricro': 'Visão tricromática',
+  'viz.escolher': 'Selecionar',
+  'viz.escolhido': '✓ Selecionado',
   'sim.indisponivel.tema': 'Para ver a simulação, o tema precisa estar no padrão: por cima do alto contraste ela mostraria o que o tema faz, e não o que a deficiência faz.',
   'sim.indisponivel.correcao': 'Para ver a simulação, a correção de cor precisa estar em visão tricromática: de uma tela já corrigida ela não mostraria nem a deficiência nem a correção.',
   'sim.indisponivel.ambos': 'Para ver a simulação, o tema e a correção de cor precisam estar no padrão: por cima de um ajuste, a demonstração mostra o ajuste e não a deficiência.',
