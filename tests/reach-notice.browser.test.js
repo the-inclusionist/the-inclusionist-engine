@@ -16,8 +16,8 @@ import pt from '../app/js/i18n/pt.js';
 
 const sempre = () => true, nunca = () => false;
 /** O caso da issue: só o toque, e ele é curto para as catorze. */
-const TABLET = () => alcance(transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre }), ACTIONS);
-const DESKTOP = () => alcance(transportesPadrao({ gamepad: nunca, teclado: sempre, toque: nunca }), ACTIONS);
+const TABLET = () => alcance(transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca }), ACTIONS);
+const DESKTOP = () => alcance(transportesPadrao({ gamepad: nunca, teclado: sempre, toque: nunca, rato: sempre }), ACTIONS);
 
 const traduz = (k, p) => {
   let s = pt[k] ?? k;

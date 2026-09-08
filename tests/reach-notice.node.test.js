@@ -28,8 +28,8 @@ const real = (k, p) => {
 };
 
 const sempre = () => true, nunca = () => false;
-const TABLET = transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre });
-const DESKTOP = transportesPadrao({ gamepad: nunca, teclado: sempre, toque: nunca });
+const TABLET = transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca });
+const DESKTOP = transportesPadrao({ gamepad: nunca, teclado: sempre, toque: nunca, rato: sempre });
 
 describe('quando NÃO há o que dizer, não se diz nada', () => {
   it('[Zero] alcance ok devolve zero linhas — um aviso que aparece sempre deixa de ser lido', () => {
@@ -104,7 +104,7 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
     // O jogo pede mais posições do que qualquer transporte deste aparelho oferece. Aqui o problema é do JOGO,
     // e dizer «ligue um controle» mandaria a criança procurar uma coisa que não conserta nada.
     const demais = [...ACTIONS, ...ACTIONS, ...ACTIONS]; // 42 posições: acima até do gamepad
-    const linhas = linhasDoAviso(alcance(transportesPadrao({ gamepad: sempre, teclado: sempre, toque: sempre }), demais), cru);
+    const linhas = linhasDoAviso(alcance(transportesPadrao({ gamepad: sempre, teclado: sempre, toque: sempre, rato: sempre }), demais), cru);
     expect(linhas).toContain('reach.semSaida');
     expect(linhas.some((l) => l.startsWith('reach.ligue'))).toBe(false);
   });
@@ -113,7 +113,7 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
     // O tradutor `real` lança em chave ausente, então isto é a asserção. Uma chave que falta não dá erro no
     // navegador — dá a chave crua na tela, ou uma frase vazia num leitor de tela, que é pior.
     expect(() => linhasDoAviso(alcance(TABLET, ACTIONS, 1), real)).not.toThrow();
-    expect(() => linhasDoAviso(alcance(transportesPadrao({ gamepad: sempre, teclado: sempre, toque: sempre }),
+    expect(() => linhasDoAviso(alcance(transportesPadrao({ gamepad: sempre, teclado: sempre, toque: sempre, rato: sempre }),
       [...ACTIONS, ...ACTIONS, ...ACTIONS]), real)).not.toThrow();
   });
 });

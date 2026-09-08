@@ -232,7 +232,7 @@ describe('A LISTA REAL de transportes — os números saem do aparelho, não de 
   // tautológico — o código É `ACTIONS.length` —, e um caso que se move junto com a implementação não falha
   // nunca. O que interessa é o que cada número FAZ quando a aritmética o usa.
   const sempre = () => true, nunca = () => false;
-  const todos = (v) => transportesPadrao({ gamepad: v, teclado: v, toque: v });
+  const todos = (v) => transportesPadrao({ gamepad: v, teclado: v, toque: v, rato: v });
   const acha = (lista, id) => lista.find((x) => x.id === id);
 
   it('[Right] ⚠️ o TOQUE não carrega as catorze — é a combinação que a issue #112 existe para avisar', () => {
@@ -260,7 +260,7 @@ describe('A LISTA REAL de transportes — os números saem do aparelho, não de 
 
   it('[Zero] ⚠️ num tablet SEM controle ligado, o conjunto de catorze NÃO é alcançável', () => {
     // O caso da issue, inteiro: só o toque disponível, e ele é curto. É este `false` que faz a tela aparecer.
-    const tablet = transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre });
+    const tablet = transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca });
     expect(reachable(tablet, ACTIONS)).toBe(false);
 
     const a = alcance(tablet, ACTIONS);
@@ -273,14 +273,14 @@ describe('A LISTA REAL de transportes — os números saem do aparelho, não de 
   });
 
   it('[Right] e ligar um controle resolve — a mesma lista, com o gamepad disponível', () => {
-    const comPad = transportesPadrao({ gamepad: sempre, teclado: nunca, toque: sempre });
+    const comPad = transportesPadrao({ gamepad: sempre, teclado: nunca, toque: sempre, rato: nunca });
     expect(reachable(comPad, ACTIONS)).toBe(true);
     expect(alcance(comPad, ACTIONS).ok).toBe(true);
   });
 
   it('[Boundary] um jogo de NOVE ações cabe no toque, e a tela não tem por que aparecer', () => {
     // A tela avisa quando é preciso, e cala quando não é. Um aviso que aparece sempre deixa de ser lido.
-    const tablet = transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre });
+    const tablet = transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca });
     expect(reachable(tablet, NOVE)).toBe(true);
   });
 
@@ -289,7 +289,7 @@ describe('A LISTA REAL de transportes — os números saem do aparelho, não de 
     // não é o que ela tem, e nomeá-lo faria a frase apontar para um objeto que não está na sala — o oposto
     // de acionável. É a linha que separa «o toque tem 9 lugares» de uma lista de tudo o que existe no mundo.
     const acionador = { id: 'acionador', slots: 2, available: () => false };
-    const lista = [...transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre }), acionador];
+    const lista = [...transportesPadrao({ gamepad: nunca, teclado: nunca, toque: sempre, rato: nunca }), acionador];
     const a = alcance(lista, ACTIONS);
     expect(a.curtos.map((c) => c.id), 'a frase citou um aparelho desligado').toEqual(['toque']);
     // E ele também não entra em «serviria se ligado», porque não serviria: dois lugares para catorze ações.
@@ -298,7 +298,7 @@ describe('A LISTA REAL de transportes — os números saem do aparelho, não de 
 
   it('[Interface] a disponibilidade é PERGUNTADA a cada vez — um controle liga-se no meio da partida', () => {
     let ligado = false;
-    const lista = transportesPadrao({ gamepad: () => ligado, teclado: nunca, toque: sempre });
+    const lista = transportesPadrao({ gamepad: () => ligado, teclado: nunca, toque: sempre, rato: nunca });
     expect(reachable(lista, ACTIONS)).toBe(false);
     ligado = true;
     expect(reachable(lista, ACTIONS), 'a lista memorizou a resposta de antes').toBe(true);

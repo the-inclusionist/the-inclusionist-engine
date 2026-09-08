@@ -34,7 +34,7 @@ describe('input/latch-scope · a chave leva o transporte no nome', () => {
   });
 
   it('⚠️ [Interface] dois transportes NUNCA partilham chave — é o vazamento que o §C fecha', () => {
-    const chaves = transportesPadrao({ gamepad: () => true, teclado: () => true, toque: () => true })
+    const chaves = transportesPadrao({ gamepad: () => true, teclado: () => true, toque: () => true, rato: () => true })
       .map((t) => chaveDaAlternancia('togglemove', 0, t.id));
     expect(new Set(chaves).size, 'dois transportes escrevem no mesmo lugar').toBe(chaves.length);
     // E dois JOGADORES também não, que é a separação que já existia e não pode ter-se perdido no caminho.
