@@ -1,0 +1,161 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0012]
+  date: 2026-09-08
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-08, verbatim on Playwrite: «todas as ligadas a países cuja língua
+       principal seja ou inglês, ou português ou espanhol, mas nada de empacotar: estas são baixadas conforme
+       necessário, com exceção de Playwrite Brasil, Playwrite USA Traditional, Playwrite USA Modern, Playwrite
+       Canada, Playwrite Mexico, Playwrite Argentina, Playwrite Chile e Playwrite Colombia, que devem ser
+       empacotadas»"
+    - "The Dev's decision of 2026-09-08, verbatim on Ronde: «Pra ela temos 3 tipos, e nenhum pode ser
+       empacotado: é para usar somente se tiver instalado no computador do cliente e deve ser avisado que ele
+       deve ter uma das três fontes instaladas no dispositivo (liste as três) para poder usar»"
+    - "ADR-0012 — the typography roster, SUPERSEDED IN PART here on two clauses and left standing on the rest"
+    - "ADR-0057 — a revocation is a NEW record; this is why these two lines are not an edit to ADR-0012"
+    - "issue #87 items 4 and 5, which are exactly the two questions this record answers"
+  informed: []
+
+title: EIGHT Playwrite faces ship and the rest arrive on demand — and the Ronde option stops being a mute grey button
+
+context-and-problem-statement: |
+  Issue #87 left two typography questions open, and both had been sitting on the Dev's side of the line for
+  weeks because neither is derivable from the code: what SHIPS, and what a disabled control is allowed to say.
+
+  ⚠️ THE PLAYWRITE QUESTION WAS NOT «WHICH FONTS» — ADR-0012 already bounded the roster by language
+  («somente fontes de países que falam inglês, espanhol e português», Dev, 2026-08-27). The open half was
+  DELIVERY, and ADR-0012 answered it with a rule that reads well and cannot be built: «the one for the
+  player's REGION downloads automatically with the PWA».
+
+  The trouble is that «the player's region» is a runtime fact and the bundle is a build-time one. A PWA is
+  compiled once and installed on a Chromebook in a school; there is no region at the moment the bundle is
+  cut, and asking for one at install time means either shipping every regional face or shipping none.
+
+  ⚠️ AND THE RONDE QUESTION WAS ABOUT SILENCE, NOT LICENSING. ADR-0012 settled the licence — the three faces
+  of the French ronde are free for PERSONAL use only and can never be packaged — and it settled the control:
+  the option stays DISABLED while no font is present. What nobody wrote is what the option SAYS. A greyed-out
+  button with no explanation teaches an adult that the feature is broken, when in fact it is one install away.
+
+decision-drivers:
+  - "⚠️ A bundle is paid for by every school on first load, and the machines are Positivo and Chromebook
+     (ADR-0010 pillar 1). Every face that ships is a download a school did not choose."
+  - "A rule that cannot be executed at build time is not a delivery rule. «The player's region» is a runtime
+     fact and the bundle is cut before any player exists."
+  - "⚠️ The hand a child is taught is NATIONAL, not linguistic — ADR-0012's own words, and they survive this
+     record intact. What changes is which of those national hands travel INSIDE the package."
+  - "A disabled control that does not say why is indistinguishable from a broken one, and the person who has
+     to act on it is an adult who can install a font — if anyone tells them which."
+  - "Naming the three faces is not a courtesy: it is the difference between «this does not work» and «install
+     one of these three»."
+
+considered-options:
+  - "P1 — keep ADR-0012's rule: bundle the player's regional Playwrite."
+  - "P2 — bundle NOTHING; every Playwrite is fetched when chosen."
+  - "P3 — bundle a NAMED set of eight and fetch the rest on demand."
+  - "R1 — leave the Ronde option disabled and silent, as today."
+  - "R2 — the option names the three installable faces and says one must be installed."
+
+pros-and-cons-of-the-options:
+  P1:
+    good: ["Every child gets their own national hand with no wait, which is the pedagogical ideal."]
+    bad:
+      - "⚠️ It cannot be built. The bundle is cut before a player exists, so «the player's region» resolves to
+         nothing at build time — the rule silently degrades into shipping everything or shipping nothing."
+  P2:
+    good: ["The smallest possible bundle, and every school pays only for what it chooses."]
+    bad:
+      - "⚠️ The first handwriting activity would wait on a network the offline pillar says may not be there
+         (ADR-0010 pillar 8). A child in a school without connectivity would never see the hand they are taught."
+  P3:
+    good:
+      - "Buildable: eight names are a list, and a list can be read at build time."
+      - "It covers the classrooms this project actually serves first, and leaves the criterion untouched for
+         everyone else — the roster is still language-bounded, only the BUNDLE is enumerated."
+      - "Offline works for the covered countries; everywhere else degrades to a download rather than to nothing."
+    bad:
+      - "⚠️ Eight faces is a real cost paid by every school, including the ones that need only one of them."
+      - "A child in Ireland or Nigeria — inside the language criterion — waits for a download that a child in
+         Brazil does not. That inequality is chosen here, and is written down so it can be revisited."
+  R1:
+    good: ["No work, and no string to translate into three languages."]
+    bad:
+      - "⚠️ It is the defect this project keeps naming in other places: an absence that teaches the wrong
+         lesson. The adult concludes the feature is broken rather than that a font is missing."
+  R2:
+    good: ["The one thing the adult needs is the one thing the control now says."]
+    bad: ["A new user-facing string, in three languages, for a feature few will use."]
+
+decision-outcome:
+  chosen-option:
+    link: "P3 and R2 — eight bundled Playwrite faces, the rest on demand; and the Ronde option names its three"
+    justification: |
+      §1 · THE PLAYWRITE ROSTER IS UNCHANGED AND STAYS BOUNDED BY LANGUAGE. Every Playwrite tied to a country
+      whose main language is English, Portuguese or Spanish is in the roster, and ADR-0012's reasoning for that
+      criterion — including that it reaches Nigeria, Tanzania, South Africa, India and Ireland, because the hand
+      is national and not linguistic — is carried forward untouched. ⚠️ This record does not narrow WHO is
+      offered a hand; it decides who waits for it.
+
+      §2 · WHAT SHIPS IS EIGHT NAMED FACES, and nothing else: **Playwrite Brasil · USA Traditional · USA Modern ·
+      Canada · Mexico · Argentina · Chile · Colombia**. Everything else in the roster is fetched when chosen.
+
+      ⚠️ The shape of the list is the argument. It is not «the three market locales» and not «the player's
+      region»: it is the Americas, plus BOTH American hands, because the United States teaches two and picking
+      one would be picking for a child. A list can be read at build time; a region cannot.
+
+      §3 · THE RONDE IS NEVER PACKAGED, and that half of ADR-0012 is untouched — the three faces are free for
+      personal use only, and packaging them would be distributing what was not licensed for distribution.
+
+      §4 · WHAT CHANGES IS THAT THE OPTION SPEAKS. While no ronde font is present the control stays disabled,
+      and it must NAME the three that would enable it: **Ronde Script**, **OPTIFrench-Script** and **Merveille**,
+      saying that one of them must be installed on the device. ⚠️ Three names and not «install a ronde font»:
+      an adult cannot act on a category, and the whole point of the sentence is that it can be acted on.
+
+      §5 · IT IS A UI STRING AND THEREFORE i18n, in the three languages of pillar 3. A notice written in
+      Portuguese inside engine code would fail the pillar-3 gate, and rightly — this is text a person reads.
+
+  consequences:
+    good:
+      - "The delivery rule became executable: eight names can be resolved at build time, and «the player's
+         region» never could."
+      - "A school in the eight covered countries gets the child's own hand offline, on first load."
+      - "⚠️ The Ronde option stops teaching that the feature is broken. One sentence turns a dead control into
+         an instruction."
+    bad:
+      - "⚠️ Eight faces are paid for by EVERY school, including one that needs a single hand. The bundle grew
+         for a benefit that is unevenly distributed."
+      - "A child inside the language criterion but outside the eight countries waits for a download, and in a
+         school with no connectivity that means never. That is the cost of P3 over P1, and P1 was unbuildable
+         rather than merely worse."
+      - "One more user-facing string to keep in three languages."
+    neutral:
+      - "The enumeration of the ROSTER still has to be read from the live Google Fonts catalogue at build time
+         and never from memory (ADR-0012). Only the BUNDLE is enumerated here, and it is enumerated because it
+         is a decision rather than a query."
+
+  confirmation: |
+    None of this is gated yet, and it should be — a delivery rule kept by memory is a bundle that drifts.
+    Owed:
+
+    · a case that the bundled Playwrite set is exactly the EIGHT named here — neither a ninth that crept in
+      nor a missing one, asserted against whatever the build actually packages rather than against a constant
+      that repeats the list;
+    · a case that no Ronde face is packaged, in the shape of the LCP quarantine sieve — an inventory, because
+      «this got bundled» is not greppable;
+    · a case that the Ronde notice exists in the THREE languages and names all three faces, so the sentence
+      cannot decay into «install a font»;
+    · ⚠️ and the harder one: that a face in the roster but OUTSIDE the eight is reachable on demand. A gate
+      that only checks the bundle would pass a build where the other faces are unreachable — which is the
+      failure that costs a child in Ireland the hand they are taught.
+
+more-information: |
+  ⚠️ WHAT THIS RECORD DOES NOT DECIDE:
+
+  · Which faces the Google Fonts catalogue actually offers for each country. That is a query against the live
+    catalogue at build time, and ADR-0012 already forbids answering it from memory.
+  · Whether the eight can grow later. They can — this is a decision about a bundle, not a principle — but
+    growing it costs every school, so it is a decision and not a default.
+  · How the Ronde notice is worded. The record fixes what it must CONTAIN (the three names, and that one must
+    be installed); the sentence itself is interface writing.
+  · Anything about the ronde LICENCE, which ADR-0012 settled and this record leaves exactly where it was.

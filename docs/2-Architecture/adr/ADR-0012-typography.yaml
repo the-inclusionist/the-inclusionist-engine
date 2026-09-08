@@ -2,6 +2,24 @@
 metadata:
   shape: bundle          # consolidacao do REGISTRO-DE-DECISOES; ver README
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0108
+      what: "The PLAYWRITE DELIVERY clause — «the REGIONAL Playwrite is active by default» / «the one for the
+             player's REGION downloads automatically with the PWA». Written in 2026-08-27, when the roster had
+             just been bounded by language and delivery had not been examined separately. ⚠️ The rule cannot be
+             executed: the bundle is cut at BUILD time and «the player's region» is a RUNTIME fact, so it
+             silently degrades into shipping every regional face or none. The Dev replaced it on 2026-09-08
+             with an enumerated bundle of EIGHT named faces, everything else fetched on demand.
+             📌 The ROSTER criterion of this record — bounded by language, reaching every country whose main
+             language is English, Portuguese or Spanish, because the hand is national and not linguistic — is
+             NOT superseded and is carried forward by ADR-0108 word for word."
+    - by: ADR-0108
+      what: "The RONDE OPTION's silence. This record settled the licence (the three faces are free for
+             personal use only and are never packaged) and settled the control (disabled while no font is
+             present), but never said what the disabled control TELLS anyone. The Dev decided on 2026-09-08
+             that it must name the three installable faces — Ronde Script, OPTIFrench-Script and Merveille —
+             and say one must be installed on the device. 📌 The LICENCE half of this record is untouched:
+             nothing about the ronde is ever packaged."
   errata:
     - date: 2026-08-27
       what: "the spacing clause said what the values ARE and never said what happens when they collide with a
