@@ -135,8 +135,38 @@ decision-outcome:
          is a decision rather than a query."
 
   confirmation: |
-    None of this is gated yet, and it should be — a delivery rule kept by memory is a bundle that drifts.
-    Owed:
+    ⚠️ BUILT THE SAME DAY, AND THE MEASUREMENT IS PART OF THE RECORD: `tests/fontes-empacotadas.node.test.js`,
+    eight cases and six confirmed mutations. Two of the four owed gates are done; two cannot be written yet,
+    and saying which is the point of this paragraph.
+
+    📏 MEASURED WHEN BUILDING IT: **ZERO Playwrite faces are bundled today**, and `git grep` for «playwrite» or
+    «ronde» across `app/js` returns ZERO. This decision is RECORDED AND NOT YET DELIVERED. That shaped the
+    gate: a case demanding the eight would be born red and stay red, which is not a gate but a reminder that
+    blocks the suite. So what is asserted is the PROHIBITION — nothing Playwrite outside the eight, nothing of
+    the ronde — plus a FLOOR that can only rise: how many of the eight have arrived. Today zero; the day one
+    lands the floor goes to one and cannot silently go back.
+
+    ✅ DONE:
+    · no Playwrite outside the eight is bundled, caught by PREFIX so a ninth nobody predicted is caught too —
+      the fixture uses «Playwrite IE», which is Irish, therefore INSIDE the language roster and OUTSIDE the
+      bundle, which is exactly the distinction this record creates;
+    · no face of the ronde is bundled, checked through BOTH doors — family name and loose filename — because a
+      `.woff2` with no `@font-face` is still a file this repository distributes, and distributing is what the
+      licence does not allow.
+
+    📌 AND TWO CASES NOBODY ASKED FOR, which the anchor made possible: the sieve reads `fonts.css` rather than
+    the folder, so it can assert that every `@font-face` points at a file that EXISTS and that every bundled
+    file is REFERENCED. Both failures are silent in production — an orphan face makes the browser fall through
+    to the next font in the stack, so a child who needs Andika to read is quietly served something else.
+
+    ⬜ STILL OWED, and unwritable today because what they measure does not exist:
+    · the Ronde NOTICE in three languages naming the three faces — there is no i18n key for it yet;
+    · that a face inside the roster but OUTSIDE the eight is reachable on demand — there is no download
+      mechanism yet. ⚠️ This stays the most important of the four: a gate checking only the bundle would pass
+      a build where the other faces are unreachable, which is what costs a child in Ireland the hand they are
+      taught. It must be written the day the mechanism exists, not after.
+
+    The original list, kept for the record:
 
     · a case that the bundled Playwrite set is exactly the EIGHT named here — neither a ninth that crept in
       nor a missing one, asserted against whatever the build actually packages rather than against a constant
