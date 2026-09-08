@@ -217,9 +217,15 @@ export interface Player {
   // Enquanto estavam aqui, a descrição mínima (`{ close(): void }` e `unknown`) discordava da real e o
   // `unknown` escondia a discordância — inclusive um `null` que o `ui/settings-audio` escreve e que o dono
   // não admitia.
-  /** platform/audio-nav: temporizadores do sonar de parede e do guia. */
+  /**
+   * platform/audio-nav: temporizador do sonar de parede.
+   *
+   * ⚠️ `guideT` SAIU em 2026-09-07 (#84 item 2), e a ausência é a notícia: ele contava os 48 quadros entre
+   * dois bipes do guia, e não há mais bipe nenhum para temporizar. O que o substituiu — o grafo de áudio vivo
+   * — não é da entidade da engine e por isso não nasce aqui: mora em `PlayerAudioOut`, ao lado do `_ac`, pela
+   * mesma regra que o parágrafo acima explica.
+   */
   wnT?: number;
-  guideT?: number;
 }
 
 /**

@@ -43,7 +43,7 @@ export type { PlayerCtxOut };
 // `ctrl` e `pad` entram porque este módulo passa o próprio jogador para o `held` injetado, e `held`
 // (`input/state`) lê os dois. Sem eles a vista era mais estreita do que o que o módulo ENTREGA, e a
 // injeção no `main.ts` ficava vermelha falando de `HeldPlayer` — que não é nome que apareça aqui.
-type Player = PlayerView<'x' | 'y' | 'facing' | 'viz' | 'i' | 'audioSink' | 'wnT' | 'guideT' | 'pad'>
+type Player = PlayerView<'x' | 'y' | 'facing' | 'viz' | 'i' | 'audioSink' | 'wnT' | 'pad'>
   & PlayerAudioOut
   // `ctrl` NÃO-NULO, e não `KeyScheme | null`: a bengala e o nado só rodam DEPOIS do `assignControls`,
   // e é isso que o `held` exige. A vista com o nulo dentro dizia menos do que este módulo sabe.

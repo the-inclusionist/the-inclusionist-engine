@@ -39,8 +39,13 @@
 //
 // ========================= SEM I/O NO IMPORT =========================
 // Nada aqui toca `window` fora de `playerCtx`, que é chamada e não importada. Roda no project `node`.
-import { distance, bearing, type Bearing, type Spot, type Topology, type Speakable } from '../core/contract.js';
+import { distance, bearing, type Bearing, type Spot, type Topology, type Speakable, type Role } from '../core/contract.js';
 import { t } from '../core/i18n.js';
+// O GUIA (#84 item 2) é feito destes dois, e de mais nada: a ROTA diz quantos passos faltam contornando
+// parede, e a INTENSIDADE traduz esse número em brilho e volume. Nenhum dos dois toca no Web Audio; a fiação
+// — a única parte que toca — é o `updateGuide` lá em baixo, e é por isso que o desenho é conferível em `node`.
+import { rotaAte } from '../core/route.js';
+import { intensidadeDoGuia, CORTE_LONGE, PASSOS_ATE_O_FUNDO } from './guide-intensity.js';
 
 export type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
 
@@ -78,8 +83,76 @@ export interface SonarPlayer extends PlayerAudioOut {
   readonly y: number;
   readonly viz: string;
   readonly audioSink?: string | null;
-  guideT?: number;
 }
+
+/** O grafo contínuo do guia: oscilador → passa-baixo → ganho → panorâmica → categoria `guide`. */
+export interface GuiaVivo {
+  /** O contexto que o construiu — é dele que sai o `currentTime` de cada `setTargetAtTime`. */
+  readonly ac: AudioContext;
+  readonly osc: OscillatorNode;
+  readonly filtro: BiquadFilterNode;
+  readonly ganho: GainNode;
+  /** `null` em motor sem `createStereoPanner` — o guia fica mono em vez de não existir. */
+  readonly panner: StereoPannerNode | null;
+  /** Quadros desde a última vez que a ROTA foi recalculada. A rota é cara; o som não pode esperar por ela. */
+  desdeARota: number;
+  /** O último `passos` medido. É daqui que a intensidade sai a cada quadro. */
+  passos: number;
+  /** A última panorâmica medida, pelo mesmo motivo: ela vem do alvo, que só se procura com a rota. */
+  pan: number;
+}
+
+/**
+ * ⚠️ O TIMBRE TEM DE TER HARMÓNICOS, e isto é requisito técnico, não gosto.
+ *
+ * O eixo do #84 item 2 é o BRILHO, e brilho é um passa-baixo a abrir e a fechar. **Um passa-baixo sobre uma
+ * onda `sine` não faz absolutamente nada**: a senoide não tem nada acima da fundamental para o filtro cortar,
+ * e o guia ficaria com um eixo morto e só o volume a trabalhar. A dente-de-serra é a mais rica das quatro
+ * ondas do Web Audio — tem TODOS os harmónicos —, e é por isso que ela é a escolha.
+ *
+ * E ela resolve, de graça, a outra restrição do plano: o sonar e a bengala usam `sine`. Um timbre diferente
+ * era exigência de não colidirem no mesmo canal; aqui o timbre diferente É o mecanismo.
+ */
+export const GUIA_TIPO: OscillatorType = 'sawtooth';
+
+/**
+ * A fundamental do guia, fixa.
+ *
+ * ⚠️ FIXA DE PROPÓSITO: a ALTURA já é a linguagem do sonar (`380 + 740 * near`, mais perto = mais agudo). Se o
+ * guia também subisse de tom, os dois estariam a dizer a mesma coisa pelo mesmo meio, e quem ouve os dois ao
+ * mesmo tempo não teria como separá-los. O guia diz distância por brilho; o sonar, por altura.
+ */
+export const GUIA_HZ = 220;
+
+/**
+ * Quantos quadros entre dois cálculos de rota.
+ *
+ * ⚠️ A ROTA É UMA BUSCA EM LARGURA, e o `__incl.update(dt)` conta QUADROS: correr uma BFS a cada quadro num
+ * mapa de plataforma gasta o orçamento do quadro inteiro no aparelho-alvo (Positivo/Chromebook, pilar 1). Doze
+ * quadros são ~0,2 s a 60 fps — mais depressa do que a criança anda um passo, e o som não espera por eles: a
+ * intensidade é reescrita TODO quadro, com o `passos` que a última rota deixou.
+ */
+export const QUADROS_ENTRE_ROTAS = 12;
+
+/**
+ * O tecto de pontos da rota do guia. Bem abaixo dos 4096 do `core/route`, e o próprio módulo diz porquê:
+ * «uma pista por quadro tolera muito menos do que um cálculo ao carregar a fase». Estourar devolve `null`, que
+ * é «não sei» — e o guia cai na reta, que ainda soa.
+ */
+export const ORCAMENTO_DA_ROTA = 1024;
+
+/**
+ * O ganho de base do guia, antes de a intensidade e o volume mestre o multiplicarem.
+ *
+ * ⚠️ MAIS BAIXO DO QUE O BIPE QUE ELE SUBSTITUI (0,11), e não por engano: um som que **nunca para** é
+ * percebido como mais alto do que um transiente do mesmo pico, e cansa por permanência em vez de por
+ * intensidade — exactamente o que o modo TEA existe para não fazer.
+ */
+export const GUIA_VOL = 0.06;
+
+/** Constante de tempo do `setTargetAtTime`. Curta o bastante para acompanhar o passo, longa o bastante para
+ *  que a mudança seja um deslize e não um degrau — um degrau a cada rota seria um bipe outra vez. */
+export const TAU_DO_GUIA = 0.08;
 
 /**
  * A SAÍDA DEDICADA de um jogador, e este módulo é o DONO dela: é aqui que os dois campos NASCEM
@@ -94,6 +167,20 @@ export interface SonarPlayer extends PlayerAudioOut {
 export interface PlayerAudioOut {
   _ac?: SinkAC | null;
   _acOut?: GainNode | null;
+  /**
+   * O GRAFO VIVO DO GUIA deste jogador, e mora AQUI, ao lado dos outros dois, pelo mesmo motivo que eles
+   * (ADR-0039: o dono declara onde o campo nasce; ADR-0033: a entidade da engine declara o que a ENGINE
+   * possui, e um oscilador não é dela). `null`/ausente = calado.
+   *
+   * ⚠️ ELE PRECISA DE SOBREVIVER AOS QUADROS, e é aí que ele difere de tudo o resto neste ficheiro. O sonar e
+   * o bipe antigo criavam um oscilador, tocavam-no e deitavam-no fora; uma presença CONTÍNUA (#84 item 2) é um
+   * oscilador que FICA, com o filtro e o ganho a mover-se por baixo dele. É por isso que ele tem de estar
+   * pendurado no jogador: não há outro lugar onde algo por jogador dure de um quadro para o outro.
+   *
+   * ⚠️ E É POR ISSO QUE `desligarGuia` EXISTE. Um campo que dura é um campo que vaza: sem alguém a pará-lo,
+   * desligar a categoria `guide` no mixer deixaria o som a tocar.
+   */
+  _guia?: GuiaVivo | null;
 }
 
 export interface PlayerCtxOut { ac: AudioContext; out: GainNode; }
@@ -107,11 +194,36 @@ export interface SonarCtx {
   targetsOf: (playerIndex: number) => readonly Spot[];
   /** Campo 3: como se chama o que está ali. `null` = sem nome, e o anúncio cai no genérico. */
   nameAt: (at: Spot) => Speakable | null;
+  /**
+   * Campo 2: o que há neste ponto. É o que o `core/route` atravessa (ou não) para achar o caminho.
+   *
+   * ⚠️ OPCIONAL AQUI, e obrigatório na `GameDeclaration` — a diferença não é descuido. Tornar um campo do
+   * `SonarCtx` obrigatório quebra todo o consumidor que já monta este ctx à mão, e o `create-game` (que é
+   * quem o monta de verdade) sempre o tem, porque o `validateDeclaration` o exige. Ausente aqui, o guia não
+   * fica calado: ele cai na distância em reta, que é o que ele já fazia antes desta mudança.
+   */
+  roleAt?: (at: Spot) => Role;
 
   /* --- áudio, idêntico ao que `audio-nav` já recebia --- */
   tonePan: (freq: number, dur: number, cat: string, pan?: number | null, vol?: number, type?: OscillatorType, pc?: PlayerCtxOut | null) => void;
   srSay: (text: string) => void;
   narrate: (text: string) => void;
+  /**
+   * O barramento de uma categoria do mixer. A MESMA forma que `audio-ambient`, `audio-earcons`, `audio-jingles`
+   * e `tts` já recebem — o guia deixou de poder usar o `tonePan` porque `tonePan` toca e esquece, e uma
+   * presença contínua é um grafo que FICA.
+   *
+   * Opcional pelo mesmo motivo que o `roleAt`: quem não o injectar cai no `audioOut` e, na falta dele, no
+   * `destination`. O que se perde é o cursor da categoria `guide`, não o som.
+   */
+  catNode?: (cat: string) => AudioNode | null;
+  /** O nó mestre, recuo do `catNode`. */
+  audioOut?: () => AudioNode | null;
+  /**
+   * O volume mestre (0..1), que cada síntese multiplica por si — o `_masterGain` do `platform/audio` é o mudo
+   * da pausa, não o cursor. Ausente = 1: o guia soa, e ignora o cursor. Por isso o `create-game` injecta-o.
+   */
+  getVolume?: () => number;
 
   /* --- a11y e tela --- */
   VIZ_BY_KEY: Record<string, VizDef>;
@@ -140,6 +252,12 @@ export interface AudioSonar {
   sonar: (pl: SonarPlayer) => void;
   updateGuide: () => void;
   readonly sonarCount: number;
+  /**
+   * ⚠️ MUDOU DE SIGNIFICADO com o #84 item 2, e o número passa a ser muito maior. Contava BIPES (um a cada 48
+   * quadros); conta agora QUADROS EM QUE O GUIA SOA, porque não há mais nada discreto para contar — é essa a
+   * mudança. Quem o lê para dizer «o guia está a funcionar» continua certo; quem o lesse para dizer «tocou
+   * três vezes» estaria a perguntar por uma coisa que deixou de existir.
+   */
   readonly guideCount: number;
 }
 
@@ -252,19 +370,122 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     ctx.srSay(msg); ctx.narrate(msg);
   }
 
-  /** Beacon automático por quadro: o sonar contínuo de quem não vê a tela. */
+  /**
+   * QUANTOS PASSOS FALTAM, e a resposta preferida é a que contorna parede.
+   *
+   * ⚠️ AS DUAS RESPOSTAS JÁ ESTÃO NA MESMA UNIDADE, e é a única razão pela qual esta função é uma linha em vez
+   * de uma conversão: `rotaAte().passos` conta passos por definição, e `distance()` também devolve passos em
+   * TODA topologia — ela própria divide pela `unit` no ramo contínuo. Dividir aqui outra vez pelo passo do
+   * mundo era o erro à espera de ser cometido, e num jogo com `unit = 16` ele poria o guia no brilho máximo
+   * para sempre. É o mesmo defeito que a #121 tirou do `panFor`: misturar régua de mundo com régua de ecrã.
+   *
+   * A rota perde-se de duas maneiras — jogo que não injectou `roleAt`, e orçamento estourado — e as duas caem
+   * no mesmo recuo: a RETA. ⚠️ Ela mente atrás de parede (diz «perto» de um alvo que exige dar a volta), e é
+   * por isso que é recuo e não escolha. Mas é o que o guia já dizia antes desta mudança, e continuar a dizê-lo
+   * é estritamente melhor do que calar — calar afirmaria que não há alvo.
+   */
+  function passosAteOAlvo(pl: SonarPlayer, alvo: { at: Spot; d: number }): number {
+    const roleAt = ctx.roleAt;
+    if (roleAt) {
+      const rota = rotaAte(
+        { topology: ctx.topology(), roleAt, orcamento: ORCAMENTO_DA_ROTA },
+        { x: pl.x, y: pl.y }, [alvo.at],
+      );
+      if (rota) return rota.passos;
+    }
+    return alvo.d;
+  }
+
+  /** Acende o grafo contínuo deste jogador. `null` = não deu (sem contexto, ou motor sem Web Audio). */
+  function ligarGuia(pl: SonarPlayer): GuiaVivo | null {
+    const pc = playerCtx(pl);
+    const ac = pc ? pc.ac : ctx.getAudioCtx();
+    if (!ac) return null;
+    try {
+      const osc = ac.createOscillator(), filtro = ac.createBiquadFilter(), ganho = ac.createGain();
+      osc.type = GUIA_TIPO;
+      osc.frequency.value = GUIA_HZ;
+      filtro.type = 'lowpass';
+      filtro.frequency.value = CORTE_LONGE; // nasce no fundo da escala e sobe; nascer aberto seria um susto
+      ganho.gain.value = 0;                 // e nasce calado, para não estalar ao ligar
+      let saida: AudioNode = ganho;
+      let panner: StereoPannerNode | null = null;
+      if (ac.createStereoPanner) { panner = ac.createStereoPanner(); ganho.connect(panner); saida = panner; }
+      osc.connect(filtro).connect(ganho);
+      saida.connect(pc ? pc.out : (ctx.catNode?.('guide') || ctx.audioOut?.() || ac.destination));
+      osc.start();
+      // `desdeARota` nasce no tecto para que a PRIMEIRA volta já meça a rota, em vez de soar doze quadros
+      // com um `passos` inventado.
+      return { ac, osc, filtro, ganho, panner, desdeARota: QUADROS_ENTRE_ROTAS, passos: PASSOS_ATE_O_FUNDO, pan: 0 };
+    } catch (e) { return null; }
+  }
+
+  /**
+   * Apaga o grafo — e ele TEM de ser apagado, porque um oscilador que fica é a diferença entre esta forma e a
+   * anterior. O bipe morria sozinho ao fim de 0,12 s; este toca até alguém o parar. Sem esta função, desligar
+   * a categoria `guide` no mixer deixaria o som a tocar, e trocar de modo visual deixaria um segundo grafo a
+   * somar-se ao primeiro.
+   *
+   * Desce em rampa (não corta) porque um corte seco num oscilador vivo é um clique — um transiente, que é
+   * precisamente o que este item existe para tirar do ouvido da criança.
+   */
+  function desligarGuia(pl: SonarPlayer): void {
+    const g = pl._guia;
+    if (!g) return;
+    pl._guia = null;
+    try {
+      const agora = g.ac.currentTime;
+      g.ganho.gain.setTargetAtTime(0, agora, 0.05);
+      g.osc.stop(agora + 0.3);
+    } catch (e) { /* noop */ }
+  }
+
+  /**
+   * A PRESENÇA CONTÍNUA, um quadro de cada vez (#84 item 2).
+   *
+   * ⚠️ O QUE SAIU DAQUI FOI UM BIPE: um `triangle` de 0,12 s a cada 48 quadros, para sempre, independente de a
+   * criança se mexer ou de algo ter mudado. O veredicto do Dev: «um ping é a pior escolha possível, tenebroso
+   * para quem tem TEA». O que entra não dispara nada — o som já está lá, e muda de brilho.
+   *
+   * ⚠️ E CALAR CONTINUA A SER UMA AFIRMAÇÃO, com um significado só: NÃO HÁ ALVO. É por isso que «sem alvo»
+   * apaga o grafo e «longe» não: o piso do `guide-intensity` (`VOL_LONGE`) existe exactamente para que a
+   * criança não confunda «está longe» com «não há nada para achar».
+   */
   function updateGuide(): void {
     const cat = ctx.getAudioCat();
-    if (!ctx.getAudioCtx() || !ctx.getSoundOn() || !cat || !cat.guide || !cat.guide.on) return;
+    const ligado = !!ctx.getAudioCtx() && ctx.getSoundOn() && !!cat && !!cat.guide && cat.guide.on;
+    const vol = ctx.getVolume ? ctx.getVolume() : 1;
     for (const pl of ctx.getPlayers()) {
-      if (!needsAudioCues(pl)) continue;
-      pl.guideT = (pl.guideT || 0) + 1;
-      if (pl.guideT < 48) continue;
-      pl.guideT = 0; // pinga ~0,8s
-      const alvo = alvoMaisProximo(pl);
-      if (!alvo) continue;
-      const pan = panFor(alvo.at.x, pl), near = Math.max(0, 1 - alvo.d / 14);
-      ctx.tonePan(300 + 380 * near, 0.12, 'guide', pan, 0.11, 'triangle', playerCtx(pl));
+      if (!ligado || !needsAudioCues(pl)) { desligarGuia(pl); continue; }
+
+      let g = pl._guia;
+      if (!g) {
+        // ⚠️ A PERGUNTA «HÁ ALVO?» VEM ANTES DE ACENDER, e o gate cobrou-a: com o grafo a nascer primeiro, um
+        // jogador sem alvo criava um oscilador, media a rota, não achava nada e apagava-o — SESSENTA VEZES
+        // POR SEGUNDO. O bipe não tinha este problema porque não tinha nada que durasse; foi a permanência
+        // que o trouxe. `alvoMaisProximo` é um laço sobre `targetsOf`, não a BFS: perguntar por quadro custa
+        // zero quando a lista está vazia, que é exactamente o caso em questão.
+        if (!alvoMaisProximo(pl)) continue;
+        g = pl._guia = ligarGuia(pl);
+        if (!g) continue;
+      }
+
+      if (++g.desdeARota >= QUADROS_ENTRE_ROTAS) {
+        g.desdeARota = 0;
+        const alvo = alvoMaisProximo(pl);
+        if (!alvo) { desligarGuia(pl); continue; }
+        g.passos = passosAteOAlvo(pl, alvo);
+        g.pan = panFor(alvo.at.x, pl);
+      }
+
+      // TODO quadro, e não só quando a rota é nova: é isto que faz a mudança ser um deslize.
+      const i = intensidadeDoGuia(g.passos);
+      try {
+        const agora = g.ac.currentTime;
+        g.filtro.frequency.setTargetAtTime(i.corte, agora, TAU_DO_GUIA);
+        g.ganho.gain.setTargetAtTime(GUIA_VOL * i.volume * vol, agora, TAU_DO_GUIA);
+        g.panner?.pan.setTargetAtTime(g.pan, agora, TAU_DO_GUIA);
+      } catch (e) { /* noop */ }
       _guideCount++;
     }
   }

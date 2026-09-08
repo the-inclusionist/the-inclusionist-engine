@@ -11,7 +11,43 @@
 // abaixo rodam o MESMO sonar sobre três topologias — contínua, grade e lista — porque essa é a única forma de
 // afirmar que ele viaja: se um gênero precisasse de um caso especial, o corte estaria no lugar errado.
 import { describe, it, expect } from 'vitest';
-import { createAudioSonar, passoDoMundo, PAN_PACES } from '../app/js/platform/audio-sonar.js';
+import {
+  createAudioSonar, passoDoMundo, PAN_PACES, GUIA_TIPO, GUIA_VOL, QUADROS_ENTRE_ROTAS,
+} from '../app/js/platform/audio-sonar.js';
+import { CORTE_LONGE, CORTE_PERTO } from '../app/js/platform/guide-intensity.js';
+import { rotaAte } from '../app/js/core/route.js';
+import { distance } from '../app/js/core/contract.js';
+
+// ========================= O CONTEXTO DE ÁUDIO FALSO =========================
+// ⚠️ ELE PRECISOU DE EXISTIR, e o motivo é a mudança inteira do #84 item 2. Enquanto o guia era um BIPE, ele
+// saía pelo `tonePan` injectado e o fixture só precisava de um array — o `getAudioCtx: () => ({})` acima
+// bastava, porque ninguém lhe chamava método nenhum. Uma presença CONTÍNUA é um GRAFO que fica, e um grafo
+// não passa por `tonePan`: é `createOscillator` + `createBiquadFilter` + `createGain`, e são esses nós que os
+// casos abaixo interrogam.
+//
+// ⚠️ E É POR ISSO QUE OS QUATRO CASOS ANTIGOS DESTE BLOCO FORAM REESCRITOS, e não ajustados: três deles
+// afirmavam pelo `tone` (`tonePan`) — e com o guia fora do `tonePan` eles passariam para sempre, a verde,
+// sem tocar no código que dizem cobrir. Um teste que lê pela ligação não falha quando a ligação muda.
+function param() {
+  return { value: 0, alvos: [], setTargetAtTime(v) { this.value = v; this.alvos.push(v); } };
+}
+
+function fakeAC() {
+  const osciladores = [], filtros = [], ganhos = [], panners = [], destinos = [];
+  const liga = (self) => (n) => { destinos.push({ de: self, para: n }); return n; };
+  const ac = {
+    currentTime: 0,
+    destination: { _nome: 'destination', connect() {} },
+    createOscillator() {
+      const o = { _nome: 'osc', type: '', frequency: param(), inicios: 0, parouEm: null, start() { o.inicios++; }, stop(t) { o.parouEm = t; } };
+      o.connect = liga(o); osciladores.push(o); return o;
+    },
+    createBiquadFilter() { const f = { _nome: 'filtro', type: '', frequency: param(), Q: param() }; f.connect = liga(f); filtros.push(f); return f; },
+    createGain() { const g = { _nome: 'ganho', gain: param() }; g.connect = liga(g); ganhos.push(g); return g; },
+    createStereoPanner() { const p = { _nome: 'panner', pan: param() }; p.connect = liga(p); panners.push(p); return p; },
+  };
+  return { ac, osciladores, filtros, ganhos, panners, destinos };
+}
 
 const CONTINUO = { kind: 'continuous', size: [896, 992], unit: 16, move: 'free', frame: 'clock' };
 // `move: 'diagonal'` explicito: e a regra que este fixture SEMPRE assumiu, e ela deixou de ser a unica
@@ -42,8 +78,23 @@ function setup(over = {}) {
     getAudioCtx: () => (over.audioCtx === undefined ? {} : over.audioCtx),
     getSoundOn: () => (over.soundOn === undefined ? true : over.soundOn),
     getAudioCat: () => (over.audioCat === undefined ? { guide: { on: true } } : over.audioCat),
+    // Os quatro do guia. `roleAt` OMITIDO por omissão: o fixture antigo não o tinha, e o módulo tem de
+    // continuar a funcionar sem ele — é a promessa de compatibilidade que o campo opcional faz.
+    roleAt: over.roleAt,
+    catNode: over.catNode, audioOut: over.audioOut, getVolume: over.getVolume,
   };
   return { som: createAudioSonar(ctx), tone, said, narrated };
+}
+
+/** Um setup com contexto de áudio de verdade (o falso) — tudo o que interroga o GRAFO passa por aqui. */
+function setupGuia(over = {}) {
+  const f = fakeAC();
+  return { ...setup({ audioCtx: f.ac, ...over }), ...f };
+}
+
+/** Roda `n` quadros, avançando o relógio como um motor real avançaria. */
+function quadros(som, f, n) {
+  for (let i = 0; i < n; i++) { f.ac.currentTime += 1 / 60; som.updateGuide(); }
 }
 
 const pl = (o = {}) => ({ x: 32, y: 32, viz: 'cego', i: 0, ...o });
@@ -155,32 +206,161 @@ describe('platform/audio-sonar · a MÉTRICA é a declarada (é o que faz o sona
   });
 });
 
-describe('platform/audio-sonar · updateGuide, o beacon em laço', () => {
-  it('[Zero] não faz nada se a categoria guide está OFF', () => {
-    const { som, tone } = setup({ audioCat: { guide: { on: false } }, players: [pl()], alvos: [{ x: 48, y: 32 }] });
-    for (let i = 0; i < 60; i++) som.updateGuide();
-    expect(tone.length).toBe(0);
-    expect(som.guideCount).toBe(0);
+describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2)', () => {
+  it('⚠️ [Right] O BIPE MORREU: um oscilador SÓ, que começa uma vez e nunca para sozinho', () => {
+    // ESTE É O CASO QUE DEFINE A MUDANÇA. O guia antigo criava um `triangle` de 0,12 s a cada 48 quadros e
+    // deitava-o fora; em 120 quadros havia DOIS osciladores, e cada um deles era um disparo. O veredicto do
+    // Dev sobre isso: «um ping é a pior escolha possível, tenebroso para quem tem TEA». Se alguém voltar a
+    // criar um oscilador por evento, esta contagem passa de 1 e o caso cai.
+    const g = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 60, y: 32 }] });
+    quadros(g.som, g, 120);
+    expect(g.osciladores.length, 'nasceu mais de um oscilador — isto voltou a disparar').toBe(1);
+    expect(g.osciladores[0].inicios).toBe(1);
+    expect(g.osciladores[0].parouEm, 'o guia parou sozinho: virou um som com fim, que é um bipe').toBe(null);
+    expect(g.som.guideCount).toBe(120); // conta QUADROS que soam, não bipes
   });
 
-  it('[Interface] pinga (~0,8s) para o jogador que precisa de pistas', () => {
-    const { som, tone } = setup({ players: [pl({ viz: 'cego' })], alvos: [{ x: 60, y: 32 }] });
-    for (let i = 0; i < 48; i++) som.updateGuide();
-    expect(som.guideCount).toBe(1);
-    expect(tone.some((t) => t.cat === 'guide')).toBe(true);
+  it('⚠️ [Right] o timbre tem HARMÓNICOS e o filtro é passa-baixo — sem isso o eixo do brilho não existe', () => {
+    // Um passa-baixo sobre uma `sine` não corta nada: não há harmónicos acima da fundamental. O guia ficaria
+    // com o eixo principal morto e só o volume a trabalhar, sem que nada falhasse. E a `sawtooth` é também o
+    // que o separa do sonar e da bengala, que são `sine`.
+    const g = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 60, y: 32 }] });
+    quadros(g.som, g, QUADROS_ENTRE_ROTAS);
+    expect(g.osciladores[0].type).toBe(GUIA_TIPO);
+    expect(GUIA_TIPO, 'uma senoide não tem o que filtrar').not.toBe('sine');
+    expect(g.filtros[0].type).toBe('lowpass');
   });
 
-  it('[Zero] jogador SEM necessidade de pista não recebe beacon, mesmo com alvo perto', () => {
-    const { som } = setup({ players: [pl({ viz: 'normal' })], alvos: [{ x: 40, y: 32 }] });
-    for (let i = 0; i < 60; i++) som.updateGuide();
-    expect(som.guideCount).toBe(0);
+  it('⚠️ [Right] aproximar-se ABRE o filtro; afastar-se fecha-o, e nenhum dos dois cala', () => {
+    const perto = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 32 + 16, y: 32 }] });      // 1 passo
+    const longe = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 32 + 20 * 16, y: 32 }] }); // 20 passos
+    quadros(perto.som, perto, QUADROS_ENTRE_ROTAS + 2);
+    quadros(longe.som, longe, QUADROS_ENTRE_ROTAS + 2);
+    expect(perto.filtros[0].frequency.value).toBeGreaterThan(longe.filtros[0].frequency.value);
+    expect(perto.ganhos[0].gain.value).toBeGreaterThan(longe.ganhos[0].gain.value);
+    // ⚠️ E longe NÃO É SILÊNCIO. Se fosse, «longe» ficaria indistinguível de «não há alvo».
+    expect(longe.ganhos[0].gain.value, 'o guia calou ao longe').toBeGreaterThan(0);
+    expect(longe.filtros[0].frequency.value).toBeGreaterThanOrEqual(CORTE_LONGE);
+    expect(perto.filtros[0].frequency.value).toBeLessThanOrEqual(CORTE_PERTO);
   });
 
-  it('[Zero] sem alvo declarado, o beacon fica calado em vez de apontar para lugar nenhum', () => {
-    const { som, tone } = setup({ players: [pl({ viz: 'cego' })], alvos: [] });
-    for (let i = 0; i < 60; i++) som.updateGuide();
-    expect(som.guideCount).toBe(0);
-    expect(tone.length).toBe(0);
+  it('[Zero] categoria `guide` desligada: nenhum grafo nasce', () => {
+    const g = setupGuia({ audioCat: { guide: { on: false } }, players: [pl()], alvos: [{ x: 48, y: 32 }] });
+    quadros(g.som, g, 60);
+    expect(g.osciladores.length).toBe(0);
+    expect(g.som.guideCount).toBe(0);
+  });
+
+  it('[Zero] jogador que enxerga não ganha guia, mesmo com alvo ao lado', () => {
+    const g = setupGuia({ players: [pl({ viz: 'normal' })], alvos: [{ x: 40, y: 32 }] });
+    quadros(g.som, g, 60);
+    expect(g.osciladores.length).toBe(0);
+    expect(g.som.guideCount).toBe(0);
+  });
+
+  it('⚠️ [Zero] SEM ALVO o guia nem chega a acender — e nasceu vermelho a acender 60× por segundo', () => {
+    // Silêncio é a ÚNICA afirmação que o guia pode fazer, e ela quer dizer «não há alvo» (o `VOL_LONGE` do
+    // `guide-intensity` existe para que «longe» nunca a faça). Mas a primeira escrita disto acendia o grafo
+    // e só depois perguntava pelo alvo: sessenta osciladores criados e destruídos por segundo, inaudíveis e
+    // caros. É o custo novo da PERMANÊNCIA — o bipe não podia ter este defeito porque nada nele durava.
+    const g = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [] });
+    quadros(g.som, g, 60);
+    expect(g.osciladores.length, 'acendeu um grafo para não ter nada a apontar').toBe(0);
+    expect(g.som.guideCount).toBe(0);
+  });
+
+  it('⚠️ [Interface] o alvo DESAPARECER a meio apaga o grafo — apanhar a última moeda cala o guia', () => {
+    // O caminho de derrubada que o caso acima não exercita: aqui o guia chega a soar, e é a perda do alvo
+    // (não a categoria, não o modo visual) que o desliga.
+    let alvos = [{ x: 60, y: 32 }];
+    const g = setupGuia({ players: [pl({ viz: 'cego' })], targetsOf: () => alvos });
+    quadros(g.som, g, QUADROS_ENTRE_ROTAS + 2);
+    expect(g.osciladores.length).toBe(1);
+    expect(g.osciladores[0].parouEm).toBe(null);
+    alvos = [];
+    quadros(g.som, g, QUADROS_ENTRE_ROTAS + 1);
+    expect(g.osciladores[0].parouEm, 'o alvo sumiu e o guia continuou a apontar para ele').not.toBe(null);
+    expect(g.osciladores.length, 'apagou e acendeu outro — o laço voltou a girar').toBe(1);
+  });
+
+  it('⚠️ [Interface] desligar a categoria a MEIO apaga o grafo — um som que fica é um som que vaza', () => {
+    // Enquanto o guia era um bipe, «desligar» era não disparar o próximo e o problema não existia. Um
+    // oscilador permanente que ninguém pára continua a tocar com o cursor no zero.
+    const cat = { guide: { on: true } };
+    const g = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 60, y: 32 }], audioCat: cat });
+    quadros(g.som, g, 30);
+    expect(g.osciladores[0].parouEm).toBe(null);
+    cat.guide.on = false;
+    quadros(g.som, g, 2);
+    expect(g.osciladores[0].parouEm, 'a categoria desligou e o oscilador continuou vivo').not.toBe(null);
+  });
+
+  it('[Interface] o volume MESTRE multiplica o guia, e não o desliga do grafo', () => {
+    const g = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 48, y: 32 }], getVolume: () => 0 });
+    quadros(g.som, g, QUADROS_ENTRE_ROTAS + 2);
+    expect(g.ganhos[0].gain.value).toBe(0);
+    expect(g.osciladores[0].parouEm, 'baixar o volume matou o grafo em vez de o silenciar').toBe(null);
+  });
+
+  it('[Simple] o ganho de base é MAIS BAIXO do que o do bipe que substitui', () => {
+    // Um som que nunca para é percebido como mais alto do que um transiente do mesmo pico. O bipe usava 0,11.
+    expect(GUIA_VOL).toBeLessThan(0.11);
+    expect(GUIA_VOL, 'o piso de volume não pode ser zero').toBeGreaterThan(0);
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS (a fiacao do guia) =========================
+// Aplicadas por script ao ficheiro, com contagem de ocorrencias, uma de cada vez.
+//   · `let g = pl._guia` → `let g = null` (o grafo deixa de sobreviver ao quadro) → reprovam TRES: "O BIPE
+//     MORREU" (60 osciladores em vez de 1) e os dois casos de derrubada, que passam a olhar para o oscilador
+//     errado. E a mutacao produz literalmente o defeito que este item existe para tirar, sessenta vezes pior.
+//   · `GUIA_TIPO` de `sawtooth` para `sine` → reprova "o timbre tem HARMONICOS". O guia continuaria a soar e
+//     o filtro continuaria a mover-se; o que morreria em silencio e o EIXO PRINCIPAL, porque uma senoide nao
+//     tem harmonicos para um passa-baixo cortar.
+//   · tirando o `desligarGuia(pl)` da guarda de cima → reprova "desligar a categoria a MEIO". O oscilador
+//     fica vivo com o cursor no zero — um som que dura e um som que vaza.
+//   · `if (roleAt)` → `if (roleAt && false)` (tudo cai na reta) → reprova "a distancia e a que a crianca
+//     ANDA". O guia voltaria a dizer «quase la» de um alvo atras de uma parede.
+//   · `GUIA_VOL * i.volume * vol` → `GUIA_VOL * i.volume` → reprova "o volume MESTRE multiplica". O guia
+//     ignoraria o cursor de volume do jogo, e so esse.
+//   · tirando o `if (!alvoMaisProximo(pl)) continue` de antes de acender → reprovam DOIS: "SEM ALVO o guia
+//     nem chega a acender" e o caso do alvo que desaparece. E o defeito que esta bateria apanhou por si: a
+//     primeira escrita acendia e apagava um grafo por quadro.
+
+describe('platform/audio-sonar · a rota, quando o jogo a permite (#84 item 2)', () => {
+  // Uma grade 20×20 com uma PAREDE vertical em x = 5, aberta só em y = 19. O alvo fica logo do outro lado:
+  // em reta são 2 casas; a pé são muitas, porque é preciso descer, contornar e voltar.
+  const PAREDE = (at) => (at.x === 5 && at.y !== 19 ? 'solid' : 'free');
+  const GRADE_ORTO = { kind: 'grid', size: [20, 20], move: 'orthogonal', frame: 'compass' };
+
+  it('⚠️ [Right] com `roleAt`, a distância é a que a criança ANDA — não a reta que atravessa a parede', () => {
+    const comRota = setupGuia({
+      topology: GRADE_ORTO, roleAt: PAREDE,
+      players: [pl({ x: 4, y: 0, viz: 'cego' })], alvos: [{ x: 6, y: 0 }],
+    });
+    const semRota = setupGuia({ // MESMO cenário, sem o campo 2 injectado
+      topology: GRADE_ORTO,
+      players: [pl({ x: 4, y: 0, viz: 'cego' })], alvos: [{ x: 6, y: 0 }],
+    });
+    quadros(comRota.som, comRota, QUADROS_ENTRE_ROTAS + 2);
+    quadros(semRota.som, semRota, QUADROS_ENTRE_ROTAS + 2);
+    // A reta diz «2 casas» e abre o filtro quase todo; a rota sabe da parede e mantém-no fechado.
+    expect(
+      comRota.filtros[0].frequency.value,
+      'a rota não foi usada: o guia diz «quase lá» de um alvo atrás de uma parede',
+    ).toBeLessThan(semRota.filtros[0].frequency.value);
+  });
+
+  it('⚠️ [Interface] as DUAS distâncias já estão na mesma unidade: passos', () => {
+    // É a asserção que impede a conversão a mais. `distance()` divide pela `unit` no ramo contínuo, e
+    // `rotaAte().passos` conta passos por definição — dividir outra vez pelo passo do mundo poria o guia no
+    // brilho máximo para sempre num jogo com `unit = 16`. É o defeito que a #121 tirou do `panFor`.
+    const semParede = { topology: GRADE_ORTO, roleAt: () => 'free' };
+    const rota = rotaAte({ ...semParede, topology: GRADE_ORTO }, { x: 0, y: 0 }, [{ x: 7, y: 0 }]);
+    expect(rota.passos).toBe(distance(GRADE_ORTO, { x: 0, y: 0 }, { x: 7, y: 0 }));
+    // E com parede a rota é ESTRITAMENTE maior — nunca menor do que a reta, em nenhum caso.
+    const desvio = rotaAte({ topology: GRADE_ORTO, roleAt: PAREDE }, { x: 4, y: 0 }, [{ x: 6, y: 0 }]);
+    expect(desvio.passos).toBeGreaterThan(distance(GRADE_ORTO, { x: 4, y: 0 }, { x: 6, y: 0 }));
   });
 });
 

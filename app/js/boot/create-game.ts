@@ -320,7 +320,12 @@ export function createGame(o: CreateGameOptions): Engine {
     topology: () => o.declaration.topology(),
     targetsOf: (i) => o.declaration.targetsOf(i),
     nameAt: (at) => o.declaration.nameAt(at),
+    // Campo 2 + o barramento do mixer: o que o GUIA CONTÍNUO precisa e o bipe não precisava (#84 item 2). O
+    // `roleAt` é o que deixa a rota contornar parede; o `catNode`/`audioOut`/`getVolume` são o que põem um
+    // grafo PERMANENTE no mesmo cursor de volume que todo o resto do áudio usa.
+    roleAt: (at) => o.declaration.roleAt(at),
     tonePan, srSay, narrate: (texto) => tts.narrate(texto),
+    catNode, audioOut, getVolume: () => volume,
     VIZ_BY_KEY, getModoCego: o.isBlindMode ?? (() => false), LOGICAL_W,
     // O jogador DERIVADO do foco: campo 4 respondendo "onde a criança está". Um jogo que não fornece lista
     // ainda tem sonar, e é isso que faz a pilha de acessibilidade não ser acessório.
