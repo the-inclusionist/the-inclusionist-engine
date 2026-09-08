@@ -70,7 +70,12 @@ function setup(over = {}) {
     nameAt: over.nameAt || (() => ({ text: 'alvo', gender: 'm', plural: false })),
     tonePan: (freq, dur, cat, pan) => tone.push({ freq, cat, pan }),
     srSay: (t) => said.push(t), narrate: (t) => narrated.push(t),
-    VIZ_BY_KEY: { normal: { kind: 'normal' }, cego: { kind: 'blind' }, baixa: { kind: 'lowvision' } },
+    // ⚠️ A TABELA DE MODOS SAIU DAQUI (#104), e o fixture melhorou com a saída. Ela declarava
+    // `{ normal, cego, baixa }` — três chaves que NÃO EXISTEM no catálogo real (`normal`, `blind`,
+    // `lv-*`) — e o módulo atravessava-a com `pl.viz`. Ou seja: o teste inventava um vocabulário para o
+    // módulo consultar, e passava por isso. Agora o ctx responde a PERGUNTA, e o fixture diz em português
+    // quais jogadores têm a visão comprometida, que é o que os casos sempre quiseram dizer.
+    visaoComprometida: (pl) => (over.visaoComprometida ? over.visaoComprometida(pl) : !!pl.vePouco),
     getModoCego: () => over.modoCego || false,
     LOGICAL_W: 320,
     getPlayers: () => over.players || [],
@@ -97,14 +102,17 @@ function quadros(som, f, n) {
   for (let i = 0; i < n; i++) { f.ac.currentTime += 1 / 60; som.updateGuide(); }
 }
 
-const pl = (o = {}) => ({ x: 32, y: 32, viz: 'cego', i: 0, ...o });
+const pl = (o = {}) => ({ x: 32, y: 32, vePouco: true, i: 0, ...o });
 
 describe('platform/audio-sonar · o que não depende de gênero', () => {
-  it('[Boundary] needsAudioCues: modoCego=true sempre; blind/lowvision sim; normal não', () => {
-    expect(setup({ modoCego: true }).som.needsAudioCues(pl({ viz: 'normal' }))).toBe(true);
-    expect(setup().som.needsAudioCues(pl({ viz: 'cego' }))).toBe(true);
-    expect(setup().som.needsAudioCues(pl({ viz: 'baixa' }))).toBe(true);
-    expect(setup().som.needsAudioCues(pl({ viz: 'normal' }))).toBe(false);
+  it('[Boundary] needsAudioCues: o modo cego LIGA para toda a gente; fora dele, quem vê pouco recebe', () => {
+    // ⚠️ A REGRA QUE FICOU NESTE MÓDULO É A PRIMEIRA, e é a única que é mesmo dele: o modo cego vence a
+    // visão declarada, porque ele é uma escolha de quem está a jogar e não uma medida do que ela enxerga.
+    expect(setup({ modoCego: true }).som.needsAudioCues(pl({ vePouco: false }))).toBe(true);
+    expect(setup().som.needsAudioCues(pl({ vePouco: true }))).toBe(true);
+    expect(setup().som.needsAudioCues(pl({ vePouco: false }))).toBe(false);
+    // E a metade visual é INJECTADA: o módulo não a calcula, e um ctx que responda outra coisa manda.
+    expect(setup({ visaoComprometida: () => true }).som.needsAudioCues(pl({ vePouco: false }))).toBe(true);
   });
 
   it('[Simple] panFor: à direita > 0, à esquerda < 0, centrado ~0', () => {
@@ -212,7 +220,7 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
     // deitava-o fora; em 120 quadros havia DOIS osciladores, e cada um deles era um disparo. O veredicto do
     // Dev sobre isso: «um ping é a pior escolha possível, tenebroso para quem tem TEA». Se alguém voltar a
     // criar um oscilador por evento, esta contagem passa de 1 e o caso cai.
-    const g = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 60, y: 32 }] });
+    const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 60, y: 32 }] });
     quadros(g.som, g, 120);
     expect(g.osciladores.length, 'nasceu mais de um oscilador — isto voltou a disparar').toBe(1);
     expect(g.osciladores[0].inicios).toBe(1);
@@ -224,7 +232,7 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
     // Um passa-baixo sobre uma `sine` não corta nada: não há harmónicos acima da fundamental. O guia ficaria
     // com o eixo principal morto e só o volume a trabalhar, sem que nada falhasse. E a `sawtooth` é também o
     // que o separa do sonar e da bengala, que são `sine`.
-    const g = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 60, y: 32 }] });
+    const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 60, y: 32 }] });
     quadros(g.som, g, QUADROS_ENTRE_ROTAS);
     expect(g.osciladores[0].type).toBe(GUIA_TIPO);
     expect(GUIA_TIPO, 'uma senoide não tem o que filtrar').not.toBe('sine');
@@ -232,8 +240,8 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
   });
 
   it('⚠️ [Right] aproximar-se ABRE o filtro; afastar-se fecha-o, e nenhum dos dois cala', () => {
-    const perto = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 32 + 16, y: 32 }] });      // 1 passo
-    const longe = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 32 + 20 * 16, y: 32 }] }); // 20 passos
+    const perto = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 32 + 16, y: 32 }] });      // 1 passo
+    const longe = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 32 + 20 * 16, y: 32 }] }); // 20 passos
     quadros(perto.som, perto, QUADROS_ENTRE_ROTAS + 2);
     quadros(longe.som, longe, QUADROS_ENTRE_ROTAS + 2);
     expect(perto.filtros[0].frequency.value).toBeGreaterThan(longe.filtros[0].frequency.value);
@@ -252,7 +260,7 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
   });
 
   it('[Zero] jogador que enxerga não ganha guia, mesmo com alvo ao lado', () => {
-    const g = setupGuia({ players: [pl({ viz: 'normal' })], alvos: [{ x: 40, y: 32 }] });
+    const g = setupGuia({ players: [pl({ vePouco: false })], alvos: [{ x: 40, y: 32 }] });
     quadros(g.som, g, 60);
     expect(g.osciladores.length).toBe(0);
     expect(g.som.guideCount).toBe(0);
@@ -263,7 +271,7 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
     // `guide-intensity` existe para que «longe» nunca a faça). Mas a primeira escrita disto acendia o grafo
     // e só depois perguntava pelo alvo: sessenta osciladores criados e destruídos por segundo, inaudíveis e
     // caros. É o custo novo da PERMANÊNCIA — o bipe não podia ter este defeito porque nada nele durava.
-    const g = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [] });
+    const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [] });
     quadros(g.som, g, 60);
     expect(g.osciladores.length, 'acendeu um grafo para não ter nada a apontar').toBe(0);
     expect(g.som.guideCount).toBe(0);
@@ -273,7 +281,7 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
     // O caminho de derrubada que o caso acima não exercita: aqui o guia chega a soar, e é a perda do alvo
     // (não a categoria, não o modo visual) que o desliga.
     let alvos = [{ x: 60, y: 32 }];
-    const g = setupGuia({ players: [pl({ viz: 'cego' })], targetsOf: () => alvos });
+    const g = setupGuia({ players: [pl({ vePouco: true })], targetsOf: () => alvos });
     quadros(g.som, g, QUADROS_ENTRE_ROTAS + 2);
     expect(g.osciladores.length).toBe(1);
     expect(g.osciladores[0].parouEm).toBe(null);
@@ -287,7 +295,7 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
     // Enquanto o guia era um bipe, «desligar» era não disparar o próximo e o problema não existia. Um
     // oscilador permanente que ninguém pára continua a tocar com o cursor no zero.
     const cat = { guide: { on: true } };
-    const g = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 60, y: 32 }], audioCat: cat });
+    const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 60, y: 32 }], audioCat: cat });
     quadros(g.som, g, 30);
     expect(g.osciladores[0].parouEm).toBe(null);
     cat.guide.on = false;
@@ -296,7 +304,7 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
   });
 
   it('[Interface] o volume MESTRE multiplica o guia, e não o desliga do grafo', () => {
-    const g = setupGuia({ players: [pl({ viz: 'cego' })], alvos: [{ x: 48, y: 32 }], getVolume: () => 0 });
+    const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 48, y: 32 }], getVolume: () => 0 });
     quadros(g.som, g, QUADROS_ENTRE_ROTAS + 2);
     expect(g.ganhos[0].gain.value).toBe(0);
     expect(g.osciladores[0].parouEm, 'baixar o volume matou o grafo em vez de o silenciar').toBe(null);
@@ -336,11 +344,11 @@ describe('platform/audio-sonar · a rota, quando o jogo a permite (#84 item 2)',
   it('⚠️ [Right] com `roleAt`, a distância é a que a criança ANDA — não a reta que atravessa a parede', () => {
     const comRota = setupGuia({
       topology: GRADE_ORTO, roleAt: PAREDE,
-      players: [pl({ x: 4, y: 0, viz: 'cego' })], alvos: [{ x: 6, y: 0 }],
+      players: [pl({ x: 4, y: 0, vePouco: true })], alvos: [{ x: 6, y: 0 }],
     });
     const semRota = setupGuia({ // MESMO cenário, sem o campo 2 injectado
       topology: GRADE_ORTO,
-      players: [pl({ x: 4, y: 0, viz: 'cego' })], alvos: [{ x: 6, y: 0 }],
+      players: [pl({ x: 4, y: 0, vePouco: true })], alvos: [{ x: 6, y: 0 }],
     });
     quadros(comRota.som, comRota, QUADROS_ENTRE_ROTAS + 2);
     quadros(semRota.som, semRota, QUADROS_ENTRE_ROTAS + 2);

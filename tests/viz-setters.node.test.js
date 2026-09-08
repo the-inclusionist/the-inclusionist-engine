@@ -7,7 +7,8 @@
 // ZOMBIES + Right-BICEP. Comportamento verbatim do game.js (setPlayerViz/applyVizGlobal/reapplyVizAll/
 // applySharedTextures/applyVpFilters/updateVpDots/_rebakeDirect/updateVizIndicator/renderVizGroup).
 import { describe, it, expect, beforeEach } from 'vitest';
-import { t } from '../app/js/core/i18n.js'; // VIZ_MODES guarda CHAVE desde o item 14
+import { t } from '../app/js/core/i18n.js';
+import { migrarVisual } from '../app/js/render/viz-axes.js'; // VIZ_MODES guarda CHAVE desde o item 14
 
 // localStorage de mentira ANTES de qualquer coisa do jogo tocar em persistência: platform/storage engole a
 // exceção (try/catch), então sem este shim `store.set` vira no-op e o teste de persistência não poderia falhar.
@@ -83,7 +84,12 @@ const filtered = () => ({ filters: 'INTOCADO' });
 /* ===================== fixture: ctx completo + espiões ===================== */
 
 function setup(over = {}) {
-  const players = over.players || [{ viz: 'normal', sprite: null, _tx: null }];
+  // ⚠️ O FIXTURE DERIVA `visual` DE `viz`, que é a MESMA regra do espelho que o `setPlayerViz` mantém em
+  // produção (#104). Assim os casos continuam a declarar o modo pelo nome — que é como eles falam — e
+  // nenhum corpo de caso precisou de mudar quando os leitores migraram. Quando o `viz` sair de vez, sai
+  // desta linha e os casos passam a declarar `visual` directamente.
+  const players = (over.players || [{ viz: 'normal', sprite: null, _tx: null }])
+    .map((p) => (p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrarVisual(p.viz) } : p));
   const env = {
     players,
     numPlayers: over.numPlayers === undefined ? players.length : over.numPlayers,
@@ -371,7 +377,11 @@ describe('applyVpFilters — filtro PIXI por viewport', () => {
     api.applyVpFilters();
     const antigo = env.vpSpr[0];
     env.vpSpr = [filtered()]; // <- é o que configureRender faz ao trocar o nº de telas
+    // ⚠️ ESCREVE OS DOIS, como o `setPlayerViz` faz (#104). O caso escrevia só `env.players[0].viz`, o que
+    // em produção NINGUÉM faz — quem muda o modo passa pelo setter, e o setter mantém o espelho. Um teste
+    // que contorna a API acaba a medir um estado que o programa nunca produz.
     env.players[0].viz = 'lv-haze';
+    env.players[0].visual = migrarVisual('lv-haze');
     api.applyVpFilters();
     expect(env.vpSpr[0].filters).toBe('FILTER:lv-haze');
     expect(antigo.filters).toBe('FILTER:blind'); // o array velho não é mais tocado

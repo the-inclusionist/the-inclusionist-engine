@@ -55,7 +55,9 @@ import { criarPilha, type SceneStack } from '../core/scenes.js';
 import { createTts, type CarregarVozNeural } from '../platform/tts.js';
 import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer, tonePan, audioCtx } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
-import { VIZ_BY_KEY } from '../render/viz-modes.js';
+// A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
+// responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
+import { ehCego, ehBaixaVisao, PADRAO, type VisualState } from '../render/viz-axes.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
@@ -366,12 +368,19 @@ export function createGame(o: CreateGameOptions): Engine {
     roleAt: (at) => o.declaration.roleAt(at),
     tonePan, srSay, narrate: (texto) => tts.narrate(texto),
     catNode, audioOut, getVolume: () => volume,
-    VIZ_BY_KEY, getModoCego: o.isBlindMode ?? (() => false), LOGICAL_W,
+    // ⚠️ A RESPOSTA, E NÃO A TABELA (#104). O `platform/audio-sonar` recebia o `VIZ_BY_KEY` e atravessava-o
+    // com `pl.viz`; ele deixou de saber o que é um modo visual, e quem responde é aqui — a raiz é a única
+    // camada que conhece os dois eixos E pode importar de `render/`.
+    visaoComprometida: (pl) => {
+      const v = (pl as { visual?: VisualState }).visual;
+      return !!v && (ehCego(v) || ehBaixaVisao(v));
+    },
+    getModoCego: o.isBlindMode ?? (() => false), LOGICAL_W,
     // O jogador DERIVADO do foco: campo 4 respondendo "onde a criança está". Um jogo que não fornece lista
     // ainda tem sonar, e é isso que faz a pilha de acessibilidade não ser acessório.
     getPlayers: o.sonarPlayers ?? (() => {
       const f = o.declaration.focusOf(0);
-      return f ? [{ i: 0, x: f.at.x, y: f.at.y, viz: 'normal' }] : [];
+      return f ? [{ i: 0, x: f.at.x, y: f.at.y, visual: PADRAO }] : [];
     }),
     getNumPlayers: () => (o.players ?? [null]).length,
     getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat,

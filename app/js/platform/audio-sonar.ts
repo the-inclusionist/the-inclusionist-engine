@@ -81,7 +81,9 @@ export interface SonarPlayer extends PlayerAudioOut {
   readonly i: number;
   readonly x: number;
   readonly y: number;
-  readonly viz: string;
+  // ⚠️ `viz` SAIU daqui, e a ausência é a notícia: este módulo já não sabe o que é um modo visual. A pergunta
+  // que ele fazia à string — «isto é cegueira ou baixa visão?» — passou a entrar respondida, por
+  // `ctx.visaoComprometida`. Um jogador continua a poder tê-lo; o sonar é que deixou de o ler.
   readonly audioSink?: string | null;
 }
 
@@ -184,7 +186,8 @@ export interface PlayerAudioOut {
 }
 
 export interface PlayerCtxOut { ac: AudioContext; out: GainNode; }
-type VizDef = { kind?: string } | undefined;
+// `VizDef` SAIU em 2026-09-08 (#104): era a fatia da tabela de modos de render que este módulo atravessava,
+// e ele deixou de a conhecer — ver a nota em `visaoComprometida`.
 
 export interface SonarCtx {
   /* --- o CONTRATO: o que era plataforma e virou pergunta (ADR-0030) --- */
@@ -226,7 +229,18 @@ export interface SonarCtx {
   getVolume?: () => number;
 
   /* --- a11y e tela --- */
-  VIZ_BY_KEY: Record<string, VizDef>;
+  /**
+   * Esta criança tem a visão comprometida — cegueira simulada ou baixa visão?
+   *
+   * ⚠️ SUBSTITUIU O `VIZ_BY_KEY` EM 2026-09-08 (#104), e a troca encolheu este módulo em vez de o migrar.
+   * Ele recebia a TABELA de modos de render e atravessava-a com `pl.viz`; agora recebe a RESPOSTA. Quem a dá
+   * é a raiz de composição, que conhece os dois eixos e pode importar de `render/` — o que este ficheiro,
+   * estando em `platform/`, não pode sem inverter uma aresta de camada.
+   *
+   * O `pl` inteiro e não o índice: quem responde já tem o jogador em mão, e passar o índice obrigaria a raiz
+   * a procurá-lo outra vez numa lista que ela acabou de percorrer.
+   */
+  visaoComprometida: (pl: SonarPlayer) => boolean;
   getModoCego: () => boolean;
   /** Largura LÓGICA da tela. É do console, não do gênero — por isso ctx, e não campo de contrato. */
   /**
@@ -287,11 +301,25 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     return Math.max(-1, Math.min(1, (wx - pl.x) / (PAN_PACES * passo)));
   }
 
-  /** Visão comprometida? Guarda e guia só existem quando a resposta é sim (ou no modo cego). */
+  /**
+   * Visão comprometida? Guarda e guia só existem quando a resposta é sim (ou no modo cego).
+   *
+   * ⚠️ A METADE VISUAL PASSOU A SER INJECTADA (#104), e o módulo ficou MENOR em vez de migrado. Ele
+   * consultava `ctx.VIZ_BY_KEY[pl.viz]` — uma tabela de modos de RENDER, atravessada por uma chave de
+   * render, dentro de `platform/`. A #104 obrigava a escolher: ou este ficheiro passava a importar
+   * `render/viz-axes` (uma aresta ao contrário: medido, `render/` importa de `platform/` em cinco pontos e o
+   * inverso em nenhum), ou deixava de saber o que é um modo visual.
+   *
+   * A segunda é a certa, e é o movimento que o `touch.ts` já nomeia como «o mesmo do achado 10
+   * (`isNavigable`): injetar o BOOLEANO, não o estado». O que este módulo precisa de saber é «esta criança
+   * precisa de pista sonora», e isso não é uma pergunta sobre tabelas de filtro — é uma pergunta que a raiz
+   * de composição responde, porque é ela que conhece os dois eixos.
+   *
+   * O que FICA aqui é a regra que é mesmo deste módulo: **o modo cego liga as pistas para toda a gente**,
+   * independentemente do que a visão diga.
+   */
   function needsAudioCues(pl: SonarPlayer): boolean {
-    if (ctx.getModoCego()) return true;
-    const m = ctx.VIZ_BY_KEY[pl.viz];
-    return !!(m && (m.kind === 'blind' || m.kind === 'lowvision'));
+    return ctx.getModoCego() || ctx.visaoComprometida(pl);
   }
 
   /**

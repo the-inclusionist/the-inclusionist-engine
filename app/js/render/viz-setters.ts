@@ -20,7 +20,7 @@
 // SEM I/O no import: initVizSetters(ctx) só fecha closures, não chama nada.
 
 import { VIZ_MODES, VIZ_BY_KEY, VIZ_FILTER, simulatesDisability, type VizMode } from './viz-modes.js';
-import { migrarVisual, type VisualState } from './viz-axes.js';
+import { migrarVisual, filtroChave, type VisualState } from './viz-axes.js';
 import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
@@ -243,7 +243,14 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
 
   function applyVpFilters(): void {
     const spr = ctx.getVpSpr(), players = ctx.getPlayers();
-    for (let i = 0; i < ctx.getNumPlayers(); i++) { if (spr[i]) spr[i].filters = ctx.pixiFilterFor(players[i].viz); }
+    // ⚠️ `filtroChave` E NÃO `p.viz` (#104). É a outra metade do par que a etapa 0 mediu: o TEMA vai pela
+    // textura (`playerVizTex`/`applySharedTextures`) e a CORREÇÃO ou SIMULAÇÃO vai pelo FILTRO — e é
+    // exactamente por serem dois caminhos que os dois eixos podem coexistir. `null` (sem filtro) entra como
+    // `'normal'`, que é a chave que o `pixiFilterFor` já usa para «nenhum», e ele cacheia por ela.
+    for (let i = 0; i < ctx.getNumPlayers(); i++) {
+      const p = players[i];
+      if (spr[i]) spr[i].filters = ctx.pixiFilterFor((p.visual && filtroChave(p.visual)) || 'normal');
+    }
   }
 
   function setPlayerViz(i: number, mode: string): void {

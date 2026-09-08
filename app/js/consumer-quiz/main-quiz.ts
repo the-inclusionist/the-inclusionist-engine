@@ -216,7 +216,12 @@ function aoTeclado(e: KeyboardEvent): void {
   // perto". Apontar a ALTERNATIVA certa seria colar. O sonar serve a quem tem ESPAÇO — plataforma, top-down,
   // Sokoban, um mapa de fases —, e o que este consumidor prova não é que ele ajuda todo gênero: é que ligá-lo
   // não exige mais mentir para a engine. As duas coisas costumam ser confundidas.
-  if (e.code === 'KeyS') { motor?.sonar.sonar({ i: 0, x: atual, y: 0, viz: 'cego' }); e.preventDefault(); return; }
+  // ⚠️ O `viz: 'cego'` SAIU daqui em 2026-09-08 (#104), e não foi substituído: era uma chave que nem sequer
+  // existe no catálogo (o modo chama-se `blind`) e nunca fez diferença nenhuma, porque `sonar()` não lê a
+  // visão de ninguém — quem a lia era o `needsAudioCues`, e este atalho de teclado não passa por ele. Uma
+  // propriedade inventada que ninguém consulta é a forma mais silenciosa de dívida: o `SonarPlayer` a
+  // recusar agora é o que a torna visível.
+  if (e.code === 'KeyS') { motor?.sonar.sonar({ i: 0, x: atual, y: 0 }); e.preventDefault(); return; }
   const total = p.alternativas.length;
   if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { foco = proximoFoco(foco, 1, total); render(); e.preventDefault(); }
   else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { foco = proximoFoco(foco, -1, total); render(); e.preventDefault(); }
