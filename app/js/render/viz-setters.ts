@@ -29,6 +29,7 @@ import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item
 import {
   eixosHtml, escolhaDoBotao, ROTULO_DO_TEMA, ROTULO_DA_CORRECAO,
 } from '../ui/visual-axes-panel.js';
+import { recusaDaSimulacao } from '../ui/simulation-refusal.js';
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
 import { lqFilter } from './lq-filter.js';
@@ -413,13 +414,34 @@ export function initVizSetters(ctx: VizSettersCtx): VizSettersApi {
       }));
     }
     const players = ctx.getPlayers(), sel = ctx.getSelVizPlayer();
-    const cur = players[sel] ? chaveLegada(players[sel].visual ?? PADRAO) : 'normal';
+    const v = players[sel]?.visual ?? PADRAO;
+    const cur = chaveLegada(v);
     el.innerHTML = vizGroupHtml(modes, cur);
-    el.querySelectorAll<HTMLElement>('button[data-viz]').forEach((btn) => btn.addEventListener('click', () => {
+    // ⚠️ A RECUSA DA SIMULAÇÃO (#104, ADR-0076 §4). Com qualquer dos dois eixos fora do padrão, uma
+    // demonstração não mostra a deficiência — mostra o AJUSTE por cima do qual ela corre, e isso ensina uma
+    // coisa falsa. A linha CONTINUA na tela, desabilitada e com o motivo: sumir ensinaria que a coisa não
+    // existe, e um adulto concluiria que ela foi tirada em vez de perceber que foi ele que ligou o contraste.
+    //
+    // A prosa entra num `.opt-hint`, que é o que a casca (`ui/settings-panel.fillExplain`) MOVE para o rodapé
+    // — a regra das três zonas do CLAUDE.md: a explicação mora no rodapé, nunca na linha.
+    //
+    // ⚠️ SÓ AS LINHAS QUE SIMULAM. Esta função desenha hoje a lista de simulações (o painel visual passou a
+    // usar o `renderEixosVisuais`), mas ela continua a receber os modos por parâmetro — e uma correção de
+    // cor nesta lista não deve ser recusada por causa do eixo dela própria.
+    const recusa = recusaDaSimulacao(v);
+    el.querySelectorAll<HTMLElement>('button[data-viz]').forEach((btn) => {
       const key = btn.dataset.viz as string;
-      setPlayerViz(ctx.getSelVizPlayer(), key);
-      ctx.srSay(vizGroupSay(ctx.getNumPlayers(), ctx.getSelVizPlayer(), t(VIZ_MODES.find((m) => m.key === key)!.nome)));
-    }));
+      if (recusa && simulatesDisability(key)) {
+        btn.setAttribute('aria-disabled', 'true');
+        const dica = btn.closest('.ctrl-row')?.querySelector<HTMLElement>('.opt-hint');
+        if (dica) dica.textContent = `${dica.textContent} ${t(recusa.chave)}`.trim();
+        return; // sem ouvinte: aceitar o clique e ignorá-lo é a outra metade do que o ADR proíbe
+      }
+      btn.addEventListener('click', () => {
+        setPlayerViz(ctx.getSelVizPlayer(), key);
+        ctx.srSay(vizGroupSay(ctx.getNumPlayers(), ctx.getSelVizPlayer(), t(VIZ_MODES.find((m) => m.key === key)!.nome)));
+      });
+    });
   }
 
   /**

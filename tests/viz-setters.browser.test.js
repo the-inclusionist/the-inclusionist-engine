@@ -6,7 +6,7 @@
 //      + querySelectorAll do original, incluindo o querySelectorAll das abas que NÃO acha nada — ver relatório).
 // ZOMBIES + Right-BICEP. Ver ADR-0011-visual-accessibility.yaml.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { migrarVisual } from '../app/js/render/viz-axes.js';
+import { migrarVisual, PADRAO } from '../app/js/render/viz-axes.js';
 import { roleOfFalso as roleOf } from './fixtures/cartucho-falso.js'; // a tabela tile→papel e do JOGO (ADR-0080); a engine a RECEBE
 
 // lqT é lido no IMPORT de render/lq-filter → zerar antes do import dinâmico, senão um resíduo de 'incl_lq'
@@ -62,7 +62,8 @@ function stage() {
 
 function setup(over = {}) {
   stage();
-  // O fixture DERIVA isual de iz, a mesma regra do espelho que o setVisualDoJogador mantem (#104).
+  // O fixture DERIVA o campo do estado visual a partir da chave antiga — a mesma regra do espelho que o
+  // `setVisualDoJogador` mantem em producao (#104).
   const players = (over.players || [{ viz: 'normal', sprite: null, _tx: null }])
     .map((p) => (p && p.visual === undefined && p.viz !== undefined ? { ...p, visual: migrarVisual(p.viz) } : p));
   const env = {
@@ -224,6 +225,49 @@ describe('renderVizGroup — fiação no DOM real', () => {
     expect(btns.filter((b) => b.getAttribute('aria-checked') === 'true').map((b) => b.dataset.viz)).toEqual(['lv-blur']);
     expect(btns.every((b) => b.getAttribute('role') === 'radio')).toBe(true);
   });
+  it('⚠️ [Right] #104: com um eixo FORA do padrão, a simulação fica desabilitada E DIZ POR QUÊ', () => {
+    // ⚠️ AS DUAS METADES DO ADR-0076, e são defeitos diferentes. «Never silently removed»: a linha continua
+    // na tela — sumir ensinaria que a coisa não existe, e um adulto concluiria que ela foi tirada em vez de
+    // perceber que foi ele que ligou o alto contraste. «Never accepted then ignored»: o botão não ganha
+    // ouvinte nenhum, porque uma demonstração por cima de um ajuste mostra o AJUSTE e ensina uma coisa falsa.
+    const { env, api } = setup({
+      players: [{ visual: { tema: 'hc7', correcao: 'tricro', simulacao: null } }], numPlayers: 1,
+    });
+    api.renderVizGroup('#viz-list', '#viz-tabs', [VIZ_BY_KEY.blind, VIZ_BY_KEY['lv-blur']]);
+    const btns = [...document.querySelectorAll('#viz-list button[data-viz]')];
+    expect(btns.every((b) => b.getAttribute('aria-disabled') === 'true'), 'linha aceitável durante um ajuste').toBe(true);
+    // A prosa vai no `.opt-hint`, que é o que a casca MOVE para o rodapé — regra das três zonas.
+    const dica = document.querySelector('#viz-list .ctrl-row .opt-hint').textContent;
+    expect(dica, 'o motivo não chegou à linha').toContain('tema precisa estar no padrão');
+    // E o clique não faz nada: aceitar e ignorar é a metade pior.
+    document.querySelector('#viz-list button[data-viz="blind"]').click();
+    expect(env.players[0].visual.simulacao, 'a simulação correu por cima de um ajuste').toBeNull();
+  });
+
+  it('⚠️ [Boundary] a recusa alcança SÓ o que simula — uma correção na mesma lista não é recusada', () => {
+    // ⚠️ ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE, e o buraco era real: tirar a guarda
+    // `simulatesDisability` não reprovava nada, porque o fixture só passava simulações. Uma lista com uma
+    // CORREÇÃO lá dentro é o que distingue — recusá-la seria tirar de uma criança daltónica a correção dela
+    // por causa de um alto contraste que ela também precisa, que é o oposto exacto do que a #104 faz.
+    const { api } = setup({
+      players: [{ visual: { tema: 'hc7', correcao: 'tricro', simulacao: null } }], numPlayers: 1,
+    });
+    api.renderVizGroup('#viz-list', '#viz-tabs', [VIZ_BY_KEY.blind, VIZ_BY_KEY['fix-deuter']]);
+    const desabilitados = [...document.querySelectorAll('#viz-list button[aria-disabled="true"]')]
+      .map((b) => b.dataset.viz);
+    expect(desabilitados, 'a recusa passou por cima de uma correção de cor').toEqual(['blind']);
+  });
+
+  it('⚠️ [Zero] com os dois eixos no padrão, nada é recusado e o clique volta a valer', () => {
+    // Um aviso que aparece sempre deixa de ser lido, e uma recusa que nunca levanta é uma parede.
+    const { env, api } = setup({ players: [{ visual: PADRAO }], numPlayers: 1 });
+    api.renderVizGroup('#viz-list', '#viz-tabs', [VIZ_BY_KEY.blind]);
+    const btn = document.querySelector('#viz-list button[data-viz="blind"]');
+    expect(btn.getAttribute('aria-disabled')).toBeNull();
+    btn.click();
+    expect(env.players[0].visual.simulacao).toBe('blind');
+  });
+
   it('[Right] clicar num botão real troca o modo do jogador selecionado e anuncia', () => {
     const { env, api } = setup({ players: [{ viz: 'normal' }, { viz: 'normal' }], numPlayers: 2, sel: 1, vpSpr: [{ filters: null }, { filters: null }] });
     api.renderVizGroup('#viz-list', '#viz-tabs', [VIZ_BY_KEY.normal, VIZ_BY_KEY.blind]);
