@@ -478,6 +478,14 @@
     "tonePan",
     "volume"
   ],
+  "platform/guide-intensity.ts": [
+    "CORTE_LONGE",
+    "CORTE_PERTO",
+    "Intensidade",
+    "PASSOS_ATE_O_FUNDO",
+    "VOL_LONGE",
+    "intensidadeDoGuia"
+  ],
   "platform/interruptible-speech.ts": [
     "FalaInterrompivel",
     "MotorDeFala",
