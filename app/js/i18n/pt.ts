@@ -178,6 +178,10 @@ const pt: Record<string, string> = {
   'touch.dir.cross': 'cruz (D-pad)',
   'touch.dir.stick': 'analógico',
   'sr.touch.slotSet': '{slot}: {acao}.',
+  // ⚠️ SEM O NOME DA POSIÇÃO, de propósito: é uma que este jogo não nomeia, e o id interno (`action3`)
+  // não pode chegar a uma criança (ADR-0074). O anúncio EXISTE na mesma — quem navega por ouvido precisa de
+  // saber que a escolha aterrou. Gémeo do `sr.ctrl.keyTakenHereUnnamed`, que resolveu o mesmo em `7742ac0`.
+  'sr.touch.slotSetUnnamed': '{slot}: definido.',
   'sr.touch.dirSet': 'Direcional: {tipo}.',
   'sr.touch.presetChild': 'Controles no tamanho de mão de criança (6 a 12 anos).',
   'sr.touch.presetAdult': 'Controles no tamanho de mão de adulto.',

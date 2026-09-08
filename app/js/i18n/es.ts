@@ -108,6 +108,7 @@ const es: Record<string, string> = {
   'touch.dir.cross': 'cruceta (D-pad)',
   'touch.dir.stick': 'palanca analógica',
   'sr.touch.slotSet': '{slot}: {acao}.',
+  'sr.touch.slotSetUnnamed': '{slot}: asignado.',
   'sr.touch.dirSet': 'Direccional: {tipo}.',
   'sr.touch.presetChild': 'Controles del tamaño de una mano infantil (6 a 12 años).',
   'sr.touch.presetAdult': 'Controles del tamaño de una mano adulta.',

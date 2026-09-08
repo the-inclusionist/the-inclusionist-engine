@@ -262,7 +262,15 @@ export function initTouch(ctx: TouchCtx): TouchApi {
         // ⚠️ A palavra falada é a MESMA que a lida: sai da mesma lista que acabou de montar o `<option>`.
         // Antes vinham de tabelas diferentes e nada obrigava as duas a concordar.
         const escolhida = ctx.acoesDoJogo().find((x) => x.acao === sel.value);
-        ctx.srSay(t('sr.touch.slotSet', { slot: label || t('touch.slot.fallback'), acao: escolhida ? escolhida.rotulo : sel.value }));
+        const nomeDoSlot = label || t('touch.slot.fallback');
+        // ⚠️ SEM PALAVRA DO JOGO, O ANÚNCIO PERDE A POSIÇÃO — NÃO RECUA PARA O ID. `sel.value` é o nome
+        // ABSTRATO (`action3`), e o ADR-0074 diz que ele nunca chega a uma pessoa; o `7742ac0` já pagou este
+        // defeito no ecrã de remapeamento e a saída é a mesma: uma chave própria que diz o que importa.
+        // 📌 O recuo é alcançável porque `acoesDoJogo()` é FUNÇÃO do cartucho, relida a cada `change`: num hub
+        // de atividades a lista muda por baixo e a `<option>` desenhada antes fica órfã.
+        ctx.srSay(escolhida
+          ? t('sr.touch.slotSet', { slot: nomeDoSlot, acao: escolhida.rotulo })
+          : t('sr.touch.slotSetUnnamed', { slot: nomeDoSlot }));
       });
     });
   }

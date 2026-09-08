@@ -151,6 +151,37 @@ describe('initTouch — renderTouchMap / config de toque', () => {
     expect(op.textContent).toBe(FUGA);
     expect(op.value).toBe('action1'); // o nome abstrato continua no atributo
   });
+
+  // 🔴 O IRMÃO DO `7742ac0`, NO MÓDULO AO LADO. Aquele conserto disse que o leitor de tela nunca pode dizer
+  // `action2` a uma criança, e é a regra mais afiada do ADR-0074 — o quarto gate que o ADR-0111 deve. Aqui o
+  // anúncio do slot recuava para `sel.value`, que É o nome abstrato:
+  //
+  //     acao: escolhida ? escolhida.rotulo : sel.value
+  //
+  // ⚠️ E O RECUO É ALCANÇÁVEL PELA FORMA QUE ESTE PROJETO PERSEGUE, não por acidente: `acoesDoJogo()` é uma
+  // FUNÇÃO do cartucho, chamada de novo a cada `change`. Num jogo de uma tela só ela devolve sempre o mesmo;
+  // num hub de atividades — que é o desenho da #101 e do menu de atividades — a lista muda quando a criança
+  // troca de atividade, e a `<option>` desenhada antes fica órfã. Aí o `find` falha e a frase sai com o id.
+  it('[Fronteira] com a lista do jogo trocada por baixo, o anúncio NÃO diz o nome abstrato', () => {
+    const { ctx, calls } = makeCtx();
+    const api = initTouch(ctx);
+    api.renderTouchMap();
+
+    const b0 = document.querySelector('#tm-b0');
+    b0.value = 'action3'; // a posição existia no desenho anterior
+
+    // A criança troca de atividade: o preset novo nomeia outras posições.
+    ctx.acoesDoJogo = () => [{ acao: 'action1', rotulo: 'Responder' }];
+    b0.dispatchEvent(new Event('change'));
+
+    const ditos = calls.srSay.join(' | ');
+    for (const abstrato of ['action1', 'action2', 'action3', 'action4', 'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger']) {
+      expect(ditos, `o leitor de tela disse o id interno «${abstrato}»`).not.toContain(abstrato);
+    }
+    // 📌 O GÉMEO SILENCIOSO tem de ficar fechado: calar o anúncio inteiro passaria no laço acima. A criança
+    // que navega por ouvido precisa de saber que a escolha dela aterrou.
+    expect(calls.srSay.length, 'o anúncio sumiu em vez de perder o id').toBeGreaterThan(0);
+  });
 });
 
 describe('initTouch — openTouchCfg / closeTouchCfg', () => {

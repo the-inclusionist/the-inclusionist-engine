@@ -107,6 +107,7 @@ const en: Record<string, string> = {
   'touch.dir.cross': 'cross (D-pad)',
   'touch.dir.stick': 'analogue stick',
   'sr.touch.slotSet': '{slot}: {acao}.',
+  'sr.touch.slotSetUnnamed': '{slot}: set.',
   'sr.touch.dirSet': 'Directional: {tipo}.',
   'sr.touch.presetChild': 'Controls sized for a child hand (6 to 12 years).',
   'sr.touch.presetAdult': 'Controls sized for an adult hand.',
