@@ -3,10 +3,15 @@
 // renderMovPlayers()/reflectFacil()/reflectAltMove()/setEasy() (~line 2136). Pure logic (per-player tab
 // clamp/view-model, the "any player active" predicate, the Modo Fácil announcement text) is separated from the
 // thin DOM-touching render/reflect functions. DI via initSettingsMotor(ctx): `$` (DOM selector), `srSay`,
-// `store` (platform/storage shape), `players`/`getNumPlayers` (core/state.ts's live state) and two setters that
-// stay OUTSIDE this module because they are shared with other UI surfaces: `setToggleMove` (also fired by the
-// pause-menu quick-icon `iconAct('altmove', …)`, unrelated to this panel) and `rebuildCoins` (coin subsystem,
-// Modo Fácil puts coins on the ground). Overlay open/close plumbing (frontOverlay, #movement hidden toggle,
+// `store` (platform/storage shape), `players`/`getNumPlayers` (core/state.ts's live state) and `rebuildCoins`
+// (coin subsystem, Modo Fácil puts coins on the ground).
+//
+// ⚠️ `setToggleMove` DEIXOU DE ESTAR NESSA LISTA em 2026-09-08 (ADR-0106 §4, etapa 1b), e o que ela dava como
+// razão era o argumento contrário: dizia que ele «fica fora deste módulo porque é PARTILHADO com outra
+// superfície da interface» — o ícone `altmove` da pausa. Ser partilhado por duas superfícies da ENGINE é razão
+// para a engine o possuir. `definirAlternanciaDeMarcha` mora aqui; o campo do `ctx` ficou OPCIONAL, então
+// quem injecta continua a mandar e quem não injecta deixa de ficar sem ele.
+// Overlay open/close plumbing (frontOverlay, #movement hidden toggle,
 // Escape handling, renderMapHub) is the SHARED helper used by every settings panel and stays in game.js.
 
 import { toggleLabel } from './dom.js';
@@ -34,7 +39,7 @@ export interface MotorStore {
 
 /** Minimal per-player shape this module reads/writes (core/state.ts's `players` entries carry much more). */
 /** As duas escolhas motoras por jogador: modo Fácil e teclas de alternância. */
-export type MotorPlayer = PlayerView<'easy' | 'toggleMove' | 'toggleRun'>;
+export type MotorPlayer = PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>;
 
 export interface SettingsMotorCtx {
   /** DOM selector (querySelector), injected — never reaches `document` globally. */
@@ -48,7 +53,7 @@ export interface SettingsMotorCtx {
   /** Live player count (core/state.ts's `numPlayers`); a getter because the value is reassigned over time. */
   getNumPlayers: () => number;
   /** SHARED setter (also used by the pause-menu quick icon `altmove`) — stays in game.js, injected. */
-  setToggleMove: (i: number, on: boolean) => void;
+  setToggleMove?: (i: number, on: boolean) => void;
   /**
    * A ALTERNÂNCIA DO BOTÃO DE CORRER. Injetada como a irmã acima e pelo mesmo motivo: quem persiste e anuncia
    * é a raiz de composição, que é quem conhece `players` e o armazenamento.
@@ -94,7 +99,11 @@ export interface SettingsMotorApi {
 
 /** localStorage key for a player's Modo Fácil flag (== platform/storage.ts's `easy_p{i}` pattern). */
 export function easyKey(i: number): string {
-  return 'incl_easy_p' + i;
+  // ⚠️ ERA A ÚLTIMA CÓPIA DO LITERAL neste ficheiro, e o irmão logo abaixo (`toggleRunKey`) já regista por
+  // extenso porque isso é defeito: «duas cópias de um nome mudam uma de cada vez». O `platform/storage` diz o
+  // resto — as chaves são funções «para impedir que um deles escreva num nome torto». Passada em 2026-09-08,
+  // ao acrescentar o terceiro irmão; um gate afirma agora que os três concordam com o `KEYS`.
+  return KEYS.easyP(i);
 }
 
 /**
@@ -111,6 +120,53 @@ export function easyKey(i: number): string {
  */
 export function toggleRunKey(i: number): string {
   return KEYS.toggleRunP(i);
+}
+
+/** localStorage key da alternância de MARCHA, por jogador. Delega, como os dois irmãos acima. */
+export function toggleMoveKey(i: number): string {
+  return KEYS.toggleMoveP(i);
+}
+
+/**
+ * A fatia mínima que a escrita da alternância de marcha toca.
+ *
+ * ⚠️ `walkDir` ENTRA, e não é detalhe: desligar a alternância tem de PARAR quem está a andar por travamento.
+ * Sem isso, a criança desliga o modo e a personagem continua a andar sozinha, sem tecla nenhuma premida —
+ * e não há erro nenhum a dizê-lo.
+ *
+ * ⚠️ E É FATIA PRÓPRIA, e não o `MotorPlayer`, porque os DOIS chamadores têm fatias diferentes: o painel
+ * motor traz `easy`/`toggleRun` que isto não lê, e o `PausePlayer` traz o visual e as três do movimento
+ * reduzido. Uma fatia mínima é o que deixa os dois passarem sem que nenhum tenha de carregar o do outro.
+ * `MotorPlayer` e `PausePlayer` ganharam `walkDir` — quebra declarada, porque o campo é do `PlayerBase` e
+ * todo jogador da engine já o tem.
+ */
+export type JogadorDaAlternancia = PlayerView<'toggleMove' | 'walkDir'>;
+
+/** O que a escrita precisa de saber. Tudo o que está aqui já vive no `SettingsMotorCtx` e no `PauseIconsCtx`. */
+export interface EscritaDaAlternanciaCtx {
+  readonly players: readonly JogadorDaAlternancia[];
+  readonly store: { setBool(key: string, on: boolean): void };
+  readonly srSay: (msg: string) => void;
+  readonly getNumPlayers: () => number;
+}
+
+/**
+ * LIGA OU DESLIGA A ALTERNÂNCIA DE MARCHA DE UM JOGADOR — e agora é a engine que o faz (ADR-0106 §4).
+ *
+ * ⚠️ O COMENTÁRIO QUE JUSTIFICAVA A INJEÇÃO ARGUMENTAVA CONTRA ELA. Ele dizia: «SHARED setter (also used by
+ * the pause-menu quick icon `altmove`) — stays in game.js, injected». Ser partilhado por DUAS superfícies da
+ * engine é razão para a engine o possuir, não para o cartucho o guardar — e a medição de 2026-09-08 mostra
+ * que cada passo já era da engine: `toggleMove` e `walkDir` são campos do `PlayerBase`, a chave é do
+ * `platform/storage`, e `sr.motor.toggleMove*` são chaves i18n da engine. Não sobrava efeito de jogo nenhum,
+ * o que faz deste o mais limpo dos sete: aqui não há sequer um efeito colateral a injectar.
+ */
+export function definirAlternanciaDeMarcha(ctx: EscritaDaAlternanciaCtx, i: number, on: boolean): void {
+  const p = ctx.players[i];
+  if (!p) return;
+  p.toggleMove = on;
+  ctx.store.setBool(toggleMoveKey(i), on);
+  if (!on) p.walkDir = 0;
+  ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
 }
 
 /** Clamps the selected player back to 0 once it falls outside 0..numPlayers-1 (e.g. player count dropped). */
@@ -158,6 +214,9 @@ export function easyAnnouncement(i: number, numPlayers: number, on: boolean): st
 // ---------------------------------------------------------------------------------------------
 
 export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
+  // ⚠️ RESOLVIDO UMA VEZ: quem injecta manda, quem não injecta passa a ter. A engine sabe fazê-lo sozinha
+  // desde 2026-09-08 — ver definirAlternanciaDeMarcha, e o comentário do campo, que argumentava contra si.
+  const setToggleMove = ctx.setToggleMove ?? ((i: number, on: boolean) => definirAlternanciaDeMarcha(ctx, i, on));
   let selMovPlayer = 0; // jogador selecionado no painel Acessibilidade motora
 
   const facilBtn = ctx.$<HTMLElement>('#opt-facil');
@@ -264,7 +323,7 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
   }
   if (altMoveBtn) {
     altMoveBtn.addEventListener('click', () => {
-      ctx.setToggleMove(selMovPlayer, !ctx.players[selMovPlayer].toggleMove);
+      setToggleMove(selMovPlayer, !ctx.players[selMovPlayer].toggleMove);
       reflectAltMove();
     });
   }
@@ -296,7 +355,7 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
   if (resetBtn) resetBtn.addEventListener('click', () => {
     ctx.players.forEach((p, i) => {
       if (p.easy) setEasy(i, false);
-      if (p.toggleMove) ctx.setToggleMove(i, false);
+      if (p.toggleMove) setToggleMove(i, false);
       if (p.toggleRun) ctx.setToggleRun(i, false);
     });
     reflectFacil();

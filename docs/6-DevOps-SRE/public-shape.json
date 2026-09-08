@@ -1797,7 +1797,7 @@
       "setPauseActor",
       "setPlayerViz",
       "setTemaDoJogador",
-      "setToggleMove",
+      "setToggleMove?",
       "srAlert",
       "srSay",
       "toggleLibras"
@@ -1819,7 +1819,7 @@
       "sairDaBarra",
       "setCalmMode"
     ],
-    "type PausePlayer": "PlayerView<'visual' | 'toggleMove' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>",
+    "type PausePlayer": "PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>",
     "type PauseSub": "'raiz' | 'opcoes'",
     "type AcaoNaBarra": "'sair' | 'ativar' | 'andar' | 'nada'"
   },
@@ -1996,7 +1996,7 @@
       "getNumPlayers",
       "players",
       "rebuildCoins",
-      "setToggleMove",
+      "setToggleMove?",
       "setToggleRun",
       "srSay",
       "store"
@@ -2010,7 +2010,14 @@
       "setEasy",
       "setSelPlayer"
     ],
-    "type MotorPlayer": "PlayerView<'easy' | 'toggleMove' | 'toggleRun'>"
+    "interface EscritaDaAlternanciaCtx": [
+      "getNumPlayers",
+      "players",
+      "srSay",
+      "store"
+    ],
+    "type MotorPlayer": "PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>",
+    "type JogadorDaAlternancia": "PlayerView<'toggleMove' | 'walkDir'>"
   },
   "ui/settings-panel.ts": {
     "interface SettingsPanelCtx": [

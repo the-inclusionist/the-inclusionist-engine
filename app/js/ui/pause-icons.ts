@@ -48,6 +48,7 @@ import { menuIndexOn, DEFAULTS } from '../core/state.js';
 // exactamente no jogo que se esqueceu. É a mesma forma que `ui/fonts` usa, e `ui/` depender de `platform/`
 // não inverte camada nenhuma.
 import * as store from '../platform/storage.js';
+import { definirAlternanciaDeMarcha } from './settings-motor.js';
 
 /**
  * A LEGENDA de um ícone da barra de acessibilidade — uma função, e não três cópias da mesma expressão.
@@ -158,7 +159,7 @@ export const CVD_LABELS: Readonly<Record<string, string>> = {
  * tipar `core/state.players` como `Player[]`: o compilador recusou converter um `Player` — que não tem
  * assinatura de índice — para ela, e essa recusa é a informação.
  */
-export type PausePlayer = PlayerView<'visual' | 'toggleMove' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>;
+export type PausePlayer = PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>;
 
 /** One `.pm-btn` descriptor — the shape of game.js's PM_BTNS (owned by ui/activities-menu). */
 export interface PauseMenuButton {
@@ -526,7 +527,7 @@ export interface PauseIconsCtx {
   saveRM: () => void;
 
   // --- motor + visual (both mutate state and rebake textures in game.js) ---
-  setToggleMove: (i: number, on: boolean) => void;
+  setToggleMove?: (i: number, on: boolean) => void;
   setPlayerViz: (i: number, mode: string) => void;
   /** Os escritores POR EIXO (#104): mexer no tema não apaga a correção, e vice-versa. */
   setTemaDoJogador: (i: number, tema: Tema) => void;
@@ -585,6 +586,18 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   let calmMode = lerNivelTea();
 
   const P = (): readonly PausePlayer[] => ctx.getPlayers() as readonly PausePlayer[];
+
+  /*
+   * ⚠️ A ALTERNÂNCIA DE MARCHA PASSOU A TER PADRÃO DA ENGINE (ADR-0106 §4, etapa 1b). Quem injecta continua a
+   * mandar; quem não injecta deixa de ficar sem ela — que era o caso dos cinco jogos sem barra.
+   *
+   * O `store` vem do import directo deste módulo e não do `ctx`, porque é assim que este ficheiro já persiste
+   * o resto: uma chave injectada é um campo que um consumidor pode omitir, e omiti-la faria escrever num nome
+   * torto.
+   */
+  const setToggleMove = ctx.setToggleMove
+    ?? ((i: number, on: boolean) => definirAlternanciaDeMarcha(
+      { players: P(), store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers }, i, on));
 
   function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
 
@@ -653,7 +666,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     },
     altmove: (i) => {
       // verbatim: `players[i].toggleMove` with no `||{}` guard (unlike contrast/cvd below).
-      ctx.setToggleMove(i, !P()[i].toggleMove);
+      setToggleMove(i, !P()[i].toggleMove);
     },
     // ⚠️ OS DOIS ÍCONES DEIXARAM DE SE APAGAR UM AO OUTRO (#104). Eles SEMPRE ciclaram dentro do seu eixo —
     // `nextContrast` e `nextCvd` existem separados desde sempre —, mas escreviam os dois no mesmo campo, e

@@ -1263,18 +1263,22 @@
     "stopResumeAllAnnouncement"
   ],
   "ui/settings-motor.ts": [
+    "EscritaDaAlternanciaCtx",
+    "JogadorDaAlternancia",
     "MotorPlayer",
     "MotorStore",
     "SettingsMotorApi",
     "SettingsMotorCtx",
     "anyMotorActive",
     "clampSelPlayer",
+    "definirAlternanciaDeMarcha",
     "easyAnnouncement",
     "easyKey",
     "initSettingsMotor",
     "onOffLabel",
     "playerPrefix",
     "playerTabsHTML",
+    "toggleMoveKey",
     "toggleRunKey"
   ],
   "ui/settings-panel.ts": [
