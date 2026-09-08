@@ -1,0 +1,168 @@
+---
+metadata:
+  status: "accepted"
+  confirmed-by:
+    - "app/js/platform/guide-intensity.ts"
+    - "app/js/platform/audio-sonar.ts"
+    - "tests/guide-intensity.node.test.js"
+    - "tests/audio-sonar.node.test.js"
+  date: 2026-09-07
+  decision-makers: [Dev]
+  consulted:
+    - "issue #84 item 2 (the auditory guide), where the Dev ruled on the axis"
+    - "ADR-0089 (the bearing comes from the frame the game declares) — the guide's direction obeys it"
+    - "ADR-0030 (the contract): the guide asks `roleAt`/`targetsOf`/`topology`, and knows no tile"
+    - "ADR-0010 pillar 2 (a11y) and pillar 1 (school hardware) — the second is why the route is throttled"
+    - "issue #121, which removed the screen-pixel ruler from `panFor`"
+  informed: []
+
+title: The auditory guide says distance with BRIGHTNESS, plus a small volume component — because a ping is the worst possible choice for an autistic child
+
+context-and-problem-statement: |
+  The blind-navigation guide played a 0.12 s `triangle` every 48 frames, forever, independent of whether the
+  child moved or of anything having changed. The Dev's verdict on it was categorical: «um ping é a pior
+  escolha possível, tenebroso para quem tem TEA».
+
+  ⚠️ AND THE OBVIOUS REPAIR WAS THE WRONG ONE. The first proposal was to fire it only while walking. That
+  leaves the same thing hurting less often: it was never the frequency that was wrong, it was that the guide
+  was a repeated ONSET. A transient is what the ear is built to be startled by, and startling a child who
+  depends on this signal to move at all is the defect, not the interval between startles.
+
+  So the question is not «how often does it fire» but «what carries distance if nothing fires». Four
+  candidates were on the table — volume, brightness (filter cutoff), layering, and tempo — and the guide also
+  has to stay distinguishable from the sonar and the cane, which share the same ear and the same moment.
+
+decision-drivers:
+  - "⚠️ NOTHING MAY FIRE. A continuous presence that changes is the whole point; any axis that works by
+     repeating an onset reintroduces the defect under a new name."
+  - "The guide must not collide with the sonar or the cane. Those two already speak in PITCH (`380 + 740 *
+     near`) and both use `sine`; an axis or a timbre that duplicates them makes three signals in one channel."
+  - "⚠️ A child with hearing loss may not reach the band the primary axis moves in. One axis means one point
+     of failure for exactly the children this exists for."
+  - "The guide must never be silent while a target exists — silence is an assertion, and its only true
+     meaning is «there is no target»."
+  - "The engine synthesises; it has no composed material to layer."
+  - "The target hardware is a public-school Positivo/Chromebook (pillar 1): whatever computes the distance
+     runs inside a frame budget."
+
+considered-options:
+  - "P1 — VOLUME as the primary axis: nearer is louder."
+  - "P2 — BRIGHTNESS as the primary axis: a lowpass filter opens as the child approaches."
+  - "P3 — TEMPO: a pulse that accelerates as the child approaches."
+  - "P4 — LAYERING: instruments join in as the child approaches."
+  - "P5 — BRIGHTNESS as the primary axis WITH a small volume component as secondary."
+
+pros-and-cons-of-the-options:
+  P1:
+    good: ["Immediate to build; every synth already has a gain node."]
+    bad:
+      - "⚠️ It collides with the mixer slider. A child who turned the `guide` category down would lose the
+         signal entirely, and the engine could not tell that from a distant target."
+      - "Volume variation is the most fatiguing of the four over a long sitting."
+  P2:
+    good:
+      - "Continuous by nature; a `BiquadFilter` is already in the Web Audio API."
+      - "Does not compete with the volume slider, and does not compete with the sonar's pitch."
+    bad:
+      - "⚠️ Alone, it is inaudible to a child whose hearing loss sits in the band the cutoff sweeps."
+  P3:
+    good: ["Very legible; the classic parking-sensor idiom, which many children already know."]
+    bad:
+      - "⚠️ It IS the defect. A pulse is an onset, and an accelerating pulse reads as URGENCY — the opposite of
+         what the autism mode exists to protect."
+  P4:
+    good: ["Rich and pleasant when it works."]
+    bad:
+      - "Needs composed material. This engine synthesises, and pillar 1 rules out streaming stems to a school
+         Chromebook."
+  P5:
+    good:
+      - "Keeps every advantage of P2 and covers its one failure: two redundant axes mean neither decides alone."
+      - "⚠️ The two are DELIBERATELY ASYMMETRIC — cutoff interpolates exponentially, volume linearly — so they
+         do not accelerate at the same point, which would be the opposite of having two axes."
+    bad:
+      - "Two axes to keep in sync, and a floor on each that must be argued rather than assumed."
+      - "⚠️ It requires a harmonically rich waveform, which is a constraint that is easy to break silently."
+
+decision-outcome:
+  chosen-option:
+    link: "P5 — brightness as the primary axis, with a small volume component as secondary"
+    justification: |
+      §1 · BRIGHTNESS IS THE PRIMARY AXIS. A lowpass cutoff interpolates from `CORTE_LONGE` (320 Hz, muffled
+      and present) to `CORTE_PERTO` (3200 Hz, open) as the child approaches. The interpolation is
+      EXPONENTIAL, because the ear perceives brightness in RATIO and not in difference: a linear ramp would
+      open almost everything in the first third of the path and then seem stalled, so the child would feel she
+      had arrived with half the way left.
+
+      §2 · VOLUME IS THE SECONDARY AXIS, AND IT IS NOT DECORATION. It interpolates LINEARLY, and the asymmetry
+      is the point: two exponential curves would accelerate together, which is the opposite of having two
+      axes. It exists because for a child with hearing loss the brightness may sweep exactly the band she
+      cannot reach.
+
+      ⚠️ §3 · THE FLOOR IS NEVER SILENCE. `VOL_LONGE` is 0.55 and the cutoff never falls below `CORTE_LONGE`.
+      If the guide went mute at distance, «far» would be indistinguishable from «no target», and the child who
+      depends on it would conclude there is nothing to find exactly when there is and it is far. Silence is
+      reserved for its one true meaning, and tearing the graph down is how the guide says it.
+
+      ⚠️ §4 · THE TIMBRE MUST HAVE HARMONICS, and this is a technical requirement rather than a taste. A
+      lowpass over a `sine` does NOTHING — there is nothing above the fundamental to cut — so the primary axis
+      would be dead while every test stayed green. `sawtooth` is the richest of the four Web Audio waves, and
+      it settles the collision constraint for free: the sonar and the cane are `sine`.
+
+      §5 · PITCH IS NOT AN AXIS HERE. The fundamental is fixed at 220 Hz because the sonar already says
+      distance with pitch. Two signals saying the same thing by the same means cannot be told apart.
+
+      §6 · THE DISTANCE IS THE ONE THE CHILD WALKS. It comes from `core/route` as steps along the path, not as
+      the straight line, so the intensity grows with the distance actually to be covered. ⚠️ The route is a
+      breadth-first search and `__incl.update(dt)` counts FRAMES, so it runs every 12 frames on a 1024-point
+      budget; the sound does not wait for it, being rewritten every frame from the last measured step count.
+      When the route is unavailable — a game that injects no `roleAt`, or a budget overrun — the guide falls
+      back to the straight line, which lies behind a wall but still sounds. That is a fallback, not a choice.
+
+  consequences:
+    good:
+      - "Nothing fires. The signal is a presence that changes, which is what the Dev's verdict asked for."
+      - "The three navigation signals stay separable: the sonar speaks in pitch, the cane in material, the
+         guide in brightness — and the guide's timbre differs from both."
+      - "⚠️ `core/route` stops being an orphan: it was built for this and had no consumer until now."
+      - "The design half is a pure function the node project checks, so the reasoning is testable without a
+         browser — the same shape as `ui/reach-notice`."
+    bad:
+      - "⚠️ A permanent oscillator is a resource that leaks if nobody tears it down. The beep could not have
+         this defect because nothing in it lasted; the wiring commit had to add an explicit teardown, and the
+         gate caught a first writing that lit and killed a graph sixty times a second."
+      - "`guideCount` changed meaning — it counted beeps and now counts frames that sound."
+      - "The engine now needs the `guide` mixer bus and the master volume injected, where a fire-and-forget
+         `tonePan` needed neither."
+    neutral:
+      - "A game that does not inject `roleAt` still gets a continuous guide, only a less honest one. The
+         optional field keeps every hand-built `SonarCtx` compiling."
+
+  confirmation: |
+    Both halves are gated, and both were born red with confirmed mutations.
+
+    · `tests/guide-intensity.node.test.js` — seven cases over the pure mapping, five mutations: a zero floor
+      fails the silence case at four distances; a linear cutoff fails the exponential case with the arithmetic
+      mean where the geometric belongs; an exponential volume fails the asymmetry case; removing the
+      saturation clamp fails the floor beyond twelve steps; moving the scale's bottom to eight fails two.
+
+    · `tests/audio-sonar.node.test.js` — nine cases over the wiring, six mutations, and they cover the four
+      claims a reader would most want to disbelieve: that only ONE oscillator exists across 120 frames (§1,
+      the death of the beep); that the wave is not a `sine` (§4); that the route beats the straight line
+      behind a wall (§6); and that the graph is torn down when the category, the visual mode or the target
+      goes away (the leak in `consequences.bad`).
+
+    ⚠️ NOT GATED, AND HONESTLY SO: that this sounds better to a child. Nothing here measures that, and issue
+    #112's standing debt — the phrase tried with a child (#7), the card seen on a Chromebook (#8) — is the
+    shape the confirmation of that claim would have to take.
+
+more-information: |
+  ⚠️ Deliberately NOT decided here: whether the guide should also stop while the child stands still. It
+  currently sounds continuously whenever a target exists and the child needs cues. The argument for stopping
+  is fatigue; the argument against is that stillness would then be indistinguishable from arrival. It has not
+  been tried with a child, and until it has, the record should not pretend to know.
+
+  Also not decided: whether `PASSOS_ATE_O_FUNDO` (12) is the right saturation point. It was chosen to sit just
+  beyond the rulers the module already uses — `chaveDeDistancia` cuts «very close» at 4 steps and «close» at
+  9, and `PAN_PACES` saturates the stereo at 11 — so that the fine information serves whoever is already
+  arriving. That is a coherent reason, not a measured one.
