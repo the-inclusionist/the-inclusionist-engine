@@ -29,6 +29,9 @@ const plataforma = () => ({
   topology: () => ({ kind: 'continuous', size: [896, 992], unit: 16, move: 'free', frame: 'clock' }),
   tick: 'clock',
   world: () => ({ kind: 'element', selector: '#game-region' }),
+  // Três: correr, andar e pular ao mesmo tempo. É o número que o ADR-0104 usa como exemplo, e é o que faz
+  // o toque (que segura dois) reprovar — ver o caso do segundo eixo em `transports`.
+  holdsAtOnce: () => 3,
   roleAt: () => 'structure',
   nameAt: () => ({ text: 'parede', gender: 'f', plural: false }),
   focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'e' }),
@@ -42,6 +45,8 @@ const lista = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
+  // UM, e a diferença com a plataforma é o ponto do campo: escolher uma alternativa é um comando de cada vez.
+  holdsAtOnce: () => 1,
 });
 
 // -----------------------------------------------------------------------------------------------------------
@@ -186,12 +191,38 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
     expect(conformanceProblems({ ...plataforma(), roleAt: null })).toHaveLength(1);
   });
 
-  it('[Many] uma declaração vazia acusa os OITO campos de uma vez', () => {
-    // topology + world + tick + as CINCO funções. É o número que diz a quem escreve um preset quanto falta,
-    // de uma vez só — e é a diferença entre "faltam oito coisas" e oito rodadas de conserto às cegas.
-    // Era SEIS até `targetsOf` completar o campo 5 (a metade "alvo", que o sonar cobrou), e SETE até
-    // `world` (o ADR-0087) parar de deixar a engine adivinhar que o mundo é a canvas.
-    expect(conformanceProblems({})).toHaveLength(8);
+  it('[Many] uma declaração vazia acusa os NOVE campos de uma vez', () => {
+    // topology + world + holdsAtOnce + tick + as CINCO funções. É o número que diz a quem escreve um preset
+    // quanto falta, de uma vez só — e é a diferença entre "faltam nove coisas" e nove rodadas de conserto às
+    // cegas. Era SEIS até `targetsOf` completar o campo 5 (a metade "alvo", que o sonar cobrou), SETE até
+    // `world` (o ADR-0087) parar de deixar a engine adivinhar que o mundo é a canvas, e OITO até o
+    // `holdsAtOnce` (o ADR-0104) parar de deixar a acessibilidade motora ser decidida por omissão.
+    expect(conformanceProblems({})).toHaveLength(9);
+  });
+
+  it('⚠️ [Boundary] `holdsAtOnce` AUSENTE é reprovado — omitir é decidir pela criança, em silêncio', () => {
+    // Na frase do Dev: «os 300 jogos precisam declarar sim! Não declarar é ter a acessibilidade programada
+    // no controle pro sorte». Um campo opcional é respondido por silêncio, e o silêncio decide.
+    const semCampo = { ...plataforma() };
+    delete semCampo.holdsAtOnce;
+    const p = conformanceProblems(semCampo);
+    expect(p).toHaveLength(1);
+    expect(p[0], 'a mensagem não diz o que perguntar a si próprio').toMatch(/holdsAtOnce/);
+    expect(p[0], 'a mensagem não dá o exemplo que torna a pergunta respondível').toMatch(/three fingers/i);
+    // ⚠️ E ela não nomeia GÊNERO nenhum — mas quem o afirma é o `engine-boundary`, e não este caso. A
+    // primeira escrita da mensagem dizia «a quiz is 1» e aquele gate reprovou-a, com razão. Escrevi aqui uma
+    // segunda asserção sobre a mesma regra, e ela reprovou também — porque para nomear os gêneros proibidos
+    // eu tinha de os escrever. As duas recusas eram a mesma, e a lição é a do `segment-bar`: uma regra tem
+    // UM dono, e o dono desta é o crivo de fronteira, que a aplica a TODOS os módulos em vez de a um.
+  });
+
+  it('⚠️ [Zero] ZERO é reprovado, e não lido como «não usa controle»', () => {
+    // Um jogo que não segura posição nenhuma não é jogável. Aceitar zero faria a aritmética do alcance passar
+    // por vacuidade — exactamente o que o `reachable` recusa fazer com um conjunto de ações vazio.
+    for (const mau of [0, -1, 1.5, NaN, '3']) {
+      expect(conformanceProblems({ ...plataforma(), holdsAtOnce: () => mau }), `aceitou ${mau}`).toHaveLength(1);
+    }
+    expect(conformanceProblems({ ...plataforma(), holdsAtOnce: 3 }), 'aceitou um NÚMERO no lugar da função').toHaveLength(1);
   });
 
   it('[Cross-check] conformidade é FORMA, não verdade — um `roleAt` que mente passa, e tem de passar', () => {

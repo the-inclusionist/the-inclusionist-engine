@@ -40,6 +40,15 @@ export function linhasDoAviso(a: Alcance, t: Tradutor): string[] {
     linhas.push(t('reach.curto', { transporte: nome(c.id), lugares: c.slots }));
   }
 
+  // ⚠️ A TERCEIRA FRASE, e ela existe porque um transporte pode CHEGAR a todas as ações e ainda assim não
+  // deixar a criança jogar (ADR-0104). Medido: a plataforma pede nove ações, o controle de tela tem nove
+  // lugares, e o cartão nunca aparecia — mas correr, andar e pular ao mesmo tempo são três dedos, e um
+  // telemóvel que reconhece dois não os dá. A criança tentava, não acontecia nada, e concluía que o jogo
+  // estava partido. Uma frase antes de começar é a resposta honesta; meia tela jogável não é.
+  for (const s of a.naoSeguram) {
+    linhas.push(t('reach.naoSegura', { transporte: nome(s.id), segura: s.holds, pedidas: a.seguraPedidas }));
+  }
+
   linhas.push(a.serviriamSeLigados.length
     ? t('reach.ligue', { saida: a.serviriamSeLigados.map(nome).join(t('reach.ou')) })
     : t('reach.semSaida'));

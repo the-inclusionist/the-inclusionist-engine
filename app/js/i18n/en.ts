@@ -252,6 +252,7 @@ const en: Record<string, string> = {
   // ===== THE REACH NOTICE (issue #112, ADR-0079 section 3) =====
   'reach.titulo': 'This game uses {pedidas} actions.',
   'reach.curto': 'The {transporte} has {lugares} places - not enough for all of them.',
+  'reach.naoSegura': 'The {transporte} holds {segura} buttons at a time, and this game needs {pedidas} together.',
   'reach.ligue': 'Connect {saida} and you can use them all.',
   'reach.semSaida': 'No control on this device reaches all of them. You can still play, but some actions will have nowhere to go.',
   'reach.continuar': 'Play anyway',

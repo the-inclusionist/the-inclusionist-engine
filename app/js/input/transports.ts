@@ -43,6 +43,25 @@ import { ACTIONS, type Action } from '../core/actions.js';
  */
 export const LUGARES = Object.freeze({ gamepad: 17, toque: 9, teclado: ACTIONS.length });
 
+/**
+ * QUANTAS POSIÇÕES O CONTROLE DE TELA SEGURA AO MESMO TEMPO. Dois, e é uma DECLARAÇÃO (ADR-0104 §B).
+ *
+ * ⚠️ E A DECISÃO É NÃO PERGUNTAR AO APARELHO. O `navigator.maxTouchPoints` existe, responde depressa, e
+ * MENTE — mente para cima: muitos aparelhos anunciam cinco e reconhecem dois. Um modelo assente nele falha
+ * exactamente no telemóvel barato da escola pública, que é o pilar 1 deste projeto, e falha em silêncio: a
+ * criança tenta correr e pular ao mesmo tempo, não acontece nada, e ela conclui que o jogo está partido.
+ *
+ * Um piso declarado não pode errar para cima. Ele erra para baixo — um aparelho que segurava três fica
+ * servido por dois —, e esse erro tem conserto: a opção do terceiro botão, PROVADA POR TESTE, porque um
+ * gesto real é a única evidência que um aparelho não consegue falsificar. Nada é recusado e nada é assumido.
+ *
+ * ⚠️ NÃO É UM REGISTO DE TETOS POR TRANSPORTE, e o ADR diz isso em `more-information`: só o toque tem número
+ * declarado. O `holds` do `Transport` é opcional justamente por isso — ausente significa «não há tecto
+ * conhecido», não «segura uma». Um registo de tetos para teclado e controle é uma mudança maior, e nada
+ * precisa dela hoje.
+ */
+export const SEGURA_TOQUE = 2;
+
 /** Como se descobre que cada transporte está aqui AGORA. Injetado: nenhuma destas perguntas é pura. */
 export interface Disponibilidade {
   gamepad: () => boolean;
@@ -63,7 +82,7 @@ export function transportesPadrao(d: Disponibilidade): Transport[] {
   return [
     { id: 'gamepad', slots: LUGARES.gamepad, available: d.gamepad },
     { id: 'teclado', slots: LUGARES.teclado, available: d.teclado },
-    { id: 'toque', slots: LUGARES.toque, available: d.toque },
+    { id: 'toque', slots: LUGARES.toque, holds: SEGURA_TOQUE, available: d.toque },
   ];
 }
 
@@ -74,6 +93,15 @@ export interface Transport {
   /** Quantos lugares ATRIBUÍVEIS. É o número que a aritmética da garantia usa. */
   readonly slots: number;
   /**
+   * Quantas posições ele SEGURA AO MESMO TEMPO, quando isso é conhecido. Eixo diferente dos `slots`: o
+   * controle de tela tem nove lugares e segura dois.
+   *
+   * ⚠️ AUSENTE SIGNIFICA «NÃO HÁ TECTO CONHECIDO», e não «segura uma». Hoje só o toque declara um número
+   * (`SEGURA_TOQUE`), porque só sobre ele há decisão — ver a nota lá. Ler a ausência como zero faria todo
+   * transporte sem número reprovar de repente, que é o oposto do que um campo opcional deve fazer.
+   */
+  readonly holds?: number;
+  /**
    * Está disponível NESTE aparelho, AGORA? Função e não valor: um controle é ligado no meio da partida, e
    * uma tela de toque aparece quando a criança gira o tablet.
    */
@@ -83,6 +111,18 @@ export interface Transport {
 /** Este transporte carrega este conjunto de ações? Aritmética, como o ADR-0079 §3 a descreve. */
 export function carries(t: Transport, acoes: readonly Action[]): boolean {
   return t.slots >= acoes.length;
+}
+
+/**
+ * Este transporte SEGURA quantas o jogo pede ao mesmo tempo? (ADR-0104 §A.)
+ *
+ * ⚠️ TRANSPORTE SEM TECTO DECLARADO RESPONDE SIM, e a escolha é deliberada: o `holds` ausente quer dizer «não
+ * medimos isto», e recusar por falta de medida transformaria uma ignorância em acusação — o teclado e o
+ * controle passariam a reprovar todos os jogos por não terem número nenhum. Onde não há decisão, o modelo
+ * cala; é o toque que tem decisão, e é só ele que pode reprovar aqui.
+ */
+export function holds(t: Transport, pedidas: number): boolean {
+  return t.holds === undefined || t.holds >= pedidas;
 }
 
 /**
@@ -108,14 +148,31 @@ export function reachable(lista: readonly Transport[], acoes: readonly Action[])
 
 /** O que a tela de seleção precisa dizer, e o que ela precisa saber para o dizer. */
 export interface Alcance {
-  /** Verdadeiro = pelo menos um transporte disponível carrega o conjunto. */
+  /**
+   * Verdadeiro = pelo menos um transporte disponível carrega o conjunto **e segura quantas o jogo pede ao
+   * mesmo tempo**.
+   *
+   * ⚠️ A SEGUNDA METADE DESTA FRASE É NOVA (ADR-0104), e é o conserto do ponto cego que ninguém tinha
+   * nomeado: a plataforma declara nove ações, o toque tem nove lugares, o `ok` dizia sim — e correr, andar e
+   * pular ao mesmo tempo são três dedos que um telemóvel de dois não tem. O `ok` afirmava «dá para jogar»
+   * sobre um jogo que não dava, que é a pior coisa que este campo podia fazer.
+   */
   readonly ok: boolean;
   /** Quantas ações o jogo pede. */
   readonly pedidas: number;
+  /** Quantas ele pede SEGURAR ao mesmo tempo — o segundo eixo, e o que o `holdsAtOnce` declara. */
+  readonly seguraPedidas: number;
   /** Os que serviriam se estivessem ligados — a informação acionável: «ligue um controle». */
   readonly serviriamSeLigados: readonly string[];
   /** Os disponíveis que NÃO cabem, com quantos lugares têm. Para a frase dizer o número. */
   readonly curtos: readonly { readonly id: string; readonly slots: number }[];
+  /**
+   * Os disponíveis que CHEGAM às ações mas não seguram quantas o jogo pede de uma vez, com o tecto deles.
+   *
+   * É a terceira frase do cartão da #112, e ela precisa dos dois números: «o controle de tela segura dois
+   * botões de cada vez e este jogo pede três». Sem o tecto, a frase diria que algo falta sem dizer o quê.
+   */
+  readonly naoSeguram: readonly { readonly id: string; readonly holds: number }[];
 }
 
 /**
@@ -124,12 +181,25 @@ export interface Alcance {
  * ⚠️ Devolve DADO e não texto. A frase é da interface e tem de passar por `t()`; devolver português daqui
  * repetiria o defeito que o `PADWIZ_STEPS` acabou de deixar de cometer.
  */
-export function alcance(lista: readonly Transport[], acoes: readonly Action[]): Alcance {
+export function alcance(
+  lista: readonly Transport[],
+  acoes: readonly Action[],
+  seguraPedidas: number,
+): Alcance {
   const disponiveis = lista.filter((t) => t.available());
+  // ⚠️ «Serve» passou a ser as DUAS coisas. Enquanto era só `carries`, o `ok` respondia sim a uma criança
+  // que não conseguia jogar — ver a nota no campo `ok`.
+  const serve = (t: Transport) => carries(t, acoes) && holds(t, seguraPedidas);
   return {
-    ok: reachable(lista, acoes),
+    ok: acoes.length > 0 && disponiveis.some(serve),
     pedidas: acoes.length,
-    serviriamSeLigados: lista.filter((t) => !t.available() && carries(t, acoes)).map((t) => t.id),
+    seguraPedidas,
+    serviriamSeLigados: lista.filter((t) => !t.available() && serve(t)).map((t) => t.id),
     curtos: disponiveis.filter((t) => !carries(t, acoes)).map((t) => ({ id: t.id, slots: t.slots })),
+    // ⚠️ SÓ QUEM CHEGA, e não quem já reprovou por lugares. Um transporte que aparecesse nas duas listas
+    // faria o cartão dizer duas coisas sobre o mesmo defeito, e a criança leria dois problemas onde há um.
+    naoSeguram: disponiveis
+      .filter((t) => carries(t, acoes) && !holds(t, seguraPedidas))
+      .map((t) => ({ id: t.id, holds: t.holds as number })),
   };
 }

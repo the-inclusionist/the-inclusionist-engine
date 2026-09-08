@@ -292,6 +292,26 @@ export interface GameDeclaration {
    * o esquecimento passar como se fosse escolha.
    */
   world(): WorldScope;
+  /**
+   * QUANTAS POSIÇÕES ESTE JOGO PRECISA DE SEGURAR AO MESMO TEMPO. Correr + andar + pular são TRÊS; um quiz é
+   * UM. (ADR-0104 §A.)
+   *
+   * ⚠️ É UM EIXO DIFERENTE DE «QUANTAS AÇÕES», e é por não serem o mesmo que existia um ponto cego onde o
+   * aviso nunca disparava. Medido: a plataforma declara NOVE ações e o controle de tela tem NOVE lugares,
+   * então o `alcance().ok` era verdadeiro e o cartão da #112 nunca aparecia — mas correr, andar e pular ao
+   * mesmo tempo são três dedos, e num telemóvel de dois a criança simplesmente não consegue, sem nada em
+   * lado nenhum a dizer porquê. Alcançar uma ação e segurá-la junto com outra são perguntas distintas.
+   *
+   * ⚠️ OBRIGATÓRIO, e a obrigatoriedade É a decisão, na frase do Dev: «os 300 jogos precisam declarar sim!
+   * Não declarar é ter a acessibilidade programada no controle pro sorte». Um campo opcional é respondido
+   * por SILÊNCIO, e aqui o silêncio decide pela criança — decide-o quem não pensou no assunto. Trezentos
+   * jogos a responder deliberadamente é o custo; acessibilidade por sorte é a alternativa.
+   *
+   * FUNÇÃO e não valor, pela mesma razão que a `topology`: um jogo com fases troca de exigência entre elas —
+   * uma fase a pé pede três, a mesma fase num veículo pode pedir uma. Um valor memorizado ficaria defasado
+   * em silêncio, que é o defeito que o ADR-0084 nomeou.
+   */
+  holdsAtOnce(): number;
   readonly tick: TickOwner;
   /** O papel do que está em `at`. É o campo 2, e é o que substitui `roleOf`. */
   roleAt(at: Spot): Role;
@@ -379,6 +399,24 @@ export function conformanceProblems(d: Partial<GameDeclaration> | null | undefin
     else if (w.kind === 'element') {
       if (!w.selector || !w.selector.trim()) p.push('world: kind "element" needs a non-empty selector');
     } else if (w.kind !== 'none') p.push('world: unknown kind');
+  }
+
+  // ⚠️ A MENSAGEM NOMEIA A SAÍDA, como as outras quatro fazem. Um jogo que não declara isto não recebe um
+  // padrão — recebe uma frase que diz o que perguntar a si próprio, porque a resposta é do jogo e de mais
+  // ninguém. (ADR-0104 §A.)
+  if (typeof d.holdsAtOnce !== 'function') {
+    // ⚠️ A MENSAGEM NÃO NOMEIA GÊNERO, e o gate de fronteira cobrou-o: a primeira escrita dizia «run+walk+jump
+    // is 3, a quiz is 1» e o `engine-boundary` reprovou a palavra «quiz» em linha de CÓDIGO da engine. Ele
+    // tinha razão, e a frase ficou melhor: descreve a FORMA da pergunta, que serve aos 300 jogos, em vez de
+    // dois exemplos que servem a dois.
+    p.push('holdsAtOnce: missing - declare how many positions are held AT ONCE (three if three fingers must press together, one if commands arrive one at a time)');
+  } else {
+    const n = d.holdsAtOnce();
+    if (!Number.isInteger(n) || n < 1) {
+      // Zero não é «não usa controle»: um jogo que não segura posição nenhuma não é jogável, e devolver zero
+      // faria a aritmética do alcance passar por vacuidade — o mesmo defeito que o `reachable` recusa.
+      p.push('holdsAtOnce: must be an integer >= 1 - a game that holds nothing cannot be played');
+    }
   }
 
   if (d.tick !== 'player' && d.tick !== 'clock') p.push('tick: must be "player" or "clock"');

@@ -252,6 +252,7 @@ const es: Record<string, string> = {
   // ===== EL AVISO DE ALCANCE (issue #112, ADR-0079 seccion 3) =====
   'reach.titulo': 'Este juego usa {pedidas} acciones.',
   'reach.curto': 'El {transporte} tiene {lugares} lugares: no alcanzan para todas.',
+  'reach.naoSegura': 'El {transporte} sostiene {segura} botones a la vez, y este juego pide {pedidas} al mismo tiempo.',
   'reach.ligue': 'Conecta {saida} y podrás usarlas todas.',
   'reach.semSaida': 'Ningún control de este aparato alcanza todas. Puedes jugar igual, pero algunas acciones quedarán sin lugar.',
   'reach.continuar': 'Jugar así',

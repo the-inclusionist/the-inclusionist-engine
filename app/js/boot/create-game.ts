@@ -413,7 +413,8 @@ export function createGame(o: CreateGameOptions): Engine {
     teclado: () => { try { return !(win.matchMedia('(pointer:coarse)').matches && win.matchMedia('(hover:none)').matches); } catch { return true; } },
   };
   const acoesDoJogo = o.preset ? presetActions(o.preset) : [];
-  const alcanceAqui = alcance(transportesPadrao(disponibilidade), acoesDoJogo);
+  // O segundo eixo entra aqui, e vem do jogo (ADR-0104 §A): quantas posições ele segura ao mesmo tempo.
+  const alcanceAqui = alcance(transportesPadrao(disponibilidade), acoesDoJogo, o.declaration.holdsAtOnce());
 
   // ⚠️ SÓ APARECE QUANDO HÁ O QUE DIZER. Um aviso que aparece sempre deixa de ser lido, e um jogo cujas ações
   // cabem no toque não tem nada a avisar — que é o caso comum e tem de continuar silencioso.

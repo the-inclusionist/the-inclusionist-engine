@@ -109,6 +109,7 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
 /** Uma declaração de quiz conforme — sem espaço, só ordem. É o gênero que não pode fingir ser plataforma. */
 const declaracaoValida = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
+  holdsAtOnce: () => 1,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'goal',

@@ -327,6 +327,10 @@ const pt: Record<string, string> = {
   // conclui que o jogo está partido. Estas frases existem para ela saber ANTES, e o que fazer.
   'reach.titulo': 'Este jogo usa {pedidas} ações.',
   'reach.curto': 'O {transporte} tem {lugares} lugares — não chegam para todas.',
+  // ⚠️ Diz os DOIS números, porque é a diferença entre eles que a criança (ou quem a acompanha) pode
+  // resolver. «Falta alguma coisa» manda procurar sem dizer o quê; «segura 2 e este jogo pede 3» diz que a
+  // saída é outro controle, e diz porquê.
+  'reach.naoSegura': 'O {transporte} segura {segura} botões de cada vez, e este jogo pede {pedidas} ao mesmo tempo.',
   'reach.ligue': 'Ligue {saida} e você joga com todas.',
   // Quando NADA resolveria: mandar ligar um controle seria mandar procurar o que não conserta.
   'reach.semSaida': 'Nenhum controle deste aparelho alcança todas. Dá para jogar assim mesmo, mas algumas ações vão ficar sem lugar.',

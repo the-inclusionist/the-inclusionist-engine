@@ -15,6 +15,7 @@ const GRADE = { kind: 'grid', size: [8, 8], move: 'diagonal', frame: 'compass' }
 /** Uma declaração conforme, mínima. */
 const valida = (over = {}) => ({
   topology: () => GRADE,
+  holdsAtOnce: () => 1,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'free',
@@ -90,6 +91,7 @@ describe('a topologia é REAVALIADA, que é a razão inteira da mudança', () =>
 describe('o MUNDO declarado (ADR-0087)', () => {
   const valida = (over = {}) => ({
     topology: () => ({ kind: 'grid', size: [4, 4], move: 'diagonal', frame: 'compass' }),
+    holdsAtOnce: () => 1,
     world: () => ({ kind: 'element', selector: '#game-region' }),
     tick: 'player',
     roleAt: () => 'free',

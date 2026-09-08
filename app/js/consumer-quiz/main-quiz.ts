@@ -246,6 +246,11 @@ export function declararQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
     // simulação de cegueira apagaria o que ninguém vê deixando as alternativas legíveis — a
     // simulação ao contrário. Ver o bloco 8 de `core/contract`.
     world: () => ({ kind: 'element', selector: '#game-region' }),
+    // ⚠️ UM. Um quiz nunca pede dois dedos ao mesmo tempo: escolher uma alternativa é um comando de cada vez,
+    // e navegar entre elas também. É a resposta mais fácil do contrato inteiro, e é justamente por isso que
+    // ela vale escrita — o jogo que declara 1 fica jogável em QUALQUER transporte, incluindo os de olhar, de
+    // sopro e de um acionador só, e é isso que o campo obrigatório torna visível em vez de acidental.
+    holdsAtOnce: () => 1,
     tick: 'player',
     // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
     roleAt: (at) => (at.x === atual ? 'goal' : 'free'),
