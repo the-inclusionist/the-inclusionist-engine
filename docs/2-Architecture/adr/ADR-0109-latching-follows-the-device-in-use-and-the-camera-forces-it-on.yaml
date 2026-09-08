@@ -155,16 +155,39 @@ decision-outcome:
     WRITE: `heldKeys` stays as `ReadonlySet` because the pure decision reads it, and writing goes through the
     pair. Reading was never the problem.
 
+    ✅ THE LAST RAW WRITER MIGRATED, AND THE HARD POINT IS SOLVED — `input/keydown` (2026-09-08). The Dev chose
+    the third shape, which neither of the two on the table had been: the WEBCAM STAMPS THE EVENT ITSELF, and
+    `keydown` reads the stamp off the event it already receives. `input/origem-sintetica` is that stamp.
+
+    ⚠️ WHY THE STAMP TRAVELS ON THE EVENT rather than in an injected `origemSintetica()`. An injected answer is
+    GLOBAL STATE, and input is not global: a child playing by gaze with an adult pressing a key beside her
+    produces both edges in the same instant, and a global source would stamp both as gaze. An event cannot be
+    confused with another event — which is the same reason `origemDaTecla` is a map keyed by CODE.
+
+    The rule is three lines, and their ORDER is the rule:
+      1. a valid stamp wins — an explicit declaration always beats an inference, so a REAL event that someone
+         re-attributed (a pedal, a sip-and-puff switch that emits genuine keys) keeps what was declared;
+      2. no stamp but `isTrusted` → `'teclado'`, the one inference this makes, on the one property a script
+         cannot forge;
+      3. no stamp and not trusted → `undefined`. ⚠️ Returning `'teclado'` here would be the erasure coming back
+         through another door, and WORSE than the original, because it would have the shape of an answer.
+
+    ✅ AND THE INVENTORY SIEVE REACHED ITS FLOOR, which is when it changes meaning: while `POR_MIGRAR` had
+    entries it reported the state of the strangler; with only the pair left in it, it now ASSERTS THE WHOLE
+    ABSENCE — nothing in this engine writes into the key set without saying who pressed. A second sieve closes
+    the same door from the WRITER's side: no `new KeyboardEvent` anywhere without `carimbarOrigem`. A door shut
+    on one side is not shut.
+
+    ✅ Eight mutations confirmed, applied by script to a file with occurrence counts. The two that carry the
+    most: inverting rule 1 against rule 2 (inference beating declaration), and `marcarTeclaSemOrigem` not
+    DELETING — without the delete, a key re-pressed by an unsigned dispatcher inherits the previous origin, and
+    latching answers `olhos` to an edge that is no longer hers.
+
     ⬜ WHAT REMAINS, and why:
-    · `input/keydown` is the LAST raw writer, and it is blocked on a design choice this record does not make.
-      The webcam dispatches SYNTHETIC `KeyboardEvent`s, which arrive through `keydown` and would be stamped
-      `teclado` — the erasure returning through the front door. ⚠️ And the dispatch is LOAD-BEARING: it drives
-      the whole keydown pipeline (menu navigation, pause, edges), not just the held set, so it cannot simply
-      be replaced by calling the pair. `isTrusted` separates a real press from a dispatched one but does not
-      say WHICH assisted transport it was. Two shapes are on the table — `keydown` asking an injected
-      `origemSintetica()`, or the webcam declaring itself into a slot `keydown` reads — and that is the Dev's.
-    · the automaton is not WIRED to anything yet: nothing tells it that an edge happened, and nowhere holds
-      the per-player state. That waits on the same choice, because `keydown` is one of its feeds.
+    · the automaton is not WIRED to anything yet: nothing tells it that an edge happened, and nowhere holds the
+      per-player state. ⚠️ THIS IS NO LONGER BLOCKED — the feed it was waiting for exists now — it is simply
+      not built. What it still needs decided is WHERE the per-player state lives, which is a question about the
+      player entity and not about input.
     · and the cartridge's `onTouchControlsShown` cannot be removed until it is.
 
     Of the five gates owed above, FOUR now exist (the rules, the camera override, the refusal to default an

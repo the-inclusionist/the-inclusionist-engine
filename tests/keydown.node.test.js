@@ -16,6 +16,14 @@
 // repetida aqui.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { actionForCode } from '../app/js/input/keyboard-runtime.js';
+// ⚠️ O PAR VERDADEIRO, E NÃO UM DUPLO DELE (ADR-0109). Escrever um `marcarTecla` de mentira aqui seria uma
+// SEGUNDA implementação da regra, e então o caso afirmaria que a minha cópia concorda com a minha asserção —
+// as duas mexem-se juntas e nenhuma falha. Com o par a sério, o `heldKeys` que o caso lê é o conjunto que o
+// jogo lê, e o mapa de origens ao lado dele é o que a alternância vai perguntar.
+import {
+  keys as keysReais, origemDaTecla, marcarTecla, marcarTeclaSemOrigem, soltarTecla, soltarTodas,
+} from '../app/js/input/state.js';
+import { carimbarOrigem } from '../app/js/input/origem-sintetica.js';
 import {
   decideKeydown, initKeydown, isJumpKey, isGameKeyCode, isEasyShortcut,
   titleNavOf, hasTitleIntent, modalOwnerIndex, modalIntentOf, edgesFor,
@@ -468,7 +476,12 @@ function mkCtx(over = {}) {
   const els = over.els || {};
   const players = over.players || [mkPlayer(0, SOLO)];
   const schemes = players.map((p) => p.ctrl || {});
-  const heldKeys = over.heldKeys || new Set();
+  // O conjunto é o do módulo — `soltarTodas()` no `beforeEach` é o que o mantém limpo entre casos. As teclas
+  // semeadas entram pelo par, com origem `'teclado'`: um caso que semeia está a dizer «isto já estava
+  // segurado», e no mundo real algo o segurou.
+  soltarTodas();
+  for (const k of (over.heldKeys || [])) marcarTecla(k, 'teclado');
+  const heldKeys = keysReais;
   const calls = [];
   const spy = (name) => (...args) => { calls.push([name, ...args]); };
   const ctx = {
@@ -481,6 +494,9 @@ function mkCtx(over = {}) {
     getPlayers: () => players,
     getControls: () => controlsFrom(schemes),
     heldKeys,
+    marcarTecla,
+    marcarTeclaSemOrigem,
+    soltarTecla,
     isOneButton: () => !!over.oneButton,
     actionOf: (code, i) => actionForCode(schemes[i] || {}, code),
     whichPlayer: (code) => { for (let i = 0; i < schemes.length; i++) if (actionForCode(schemes[i], code)) return i; return -1; },
@@ -501,12 +517,15 @@ function mkCtx(over = {}) {
     clearWaitingBadge: spy('clearWaitingBadge'),
     win: { addEventListener: spy('addEventListener') },
   };
-  return { ctx, calls, players, heldKeys, names: () => calls.map((c) => c[0]) };
+  return { ctx, calls, players, heldKeys, origens: origemDaTecla, names: () => calls.map((c) => c[0]) };
 }
 
 const fire = (api, code, mods = {}) => {
   const prevented = [];
-  api.onKeydown({ code, altKey: false, ctrlKey: false, preventDefault: () => prevented.push(code), ...mods });
+  // ⚠️ `isTrusted: true` POR PADRÃO, e antes do `...mods` para um caso o poder contrariar: `fire` neste
+  // ficheiro significa «uma criança carregou numa tecla», e é isso que `isTrusted` quer dizer. Deixá-lo de
+  // fora faria todos estes casos exercitarem, sem o dizerem, o caminho do evento sintético não assinado.
+  api.onKeydown({ code, altKey: false, ctrlKey: false, isTrusted: true, preventDefault: () => prevented.push(code), ...mods });
   return prevented.length > 0;
 };
 
@@ -634,6 +653,35 @@ describe('initKeydown — o efeito de cada ramo', () => {
     expect(heldKeys.has('KeyJ')).toBe(true);
     expect(players[0].jumpEdge).toBe(true);
     expect(calls).toEqual([['hideTouchControls', 'teclado']]);
+  });
+
+  it('⚠️ a tecla premida chega ao mapa carimbada `teclado` (ADR-0109)', () => {
+    const { ctx, origens } = mkCtx();
+    fire(initKeydown(ctx), 'KeyJ'); // `fire` é uma criança a carregar: `isTrusted: true`
+    expect(origens.get('KeyJ')).toBe('teclado');
+  });
+
+  it('⚠️ A TECLA DA WEBCAM NÃO É LIDA COMO TECLADO — o §C da #114, de ponta a ponta', () => {
+    // ⚠️ ESTE É O CASO QUE A ISSUE ESPEROU DOIS MESES, e o defeito que ele prende não tem sintoma: a criança
+    // que joga por olhar dependia da alternância, e um evento sintético carimbado `teclado` accionaria a regra
+    // 3 do ADR-0109 («apertar uma tecla devolve o teclado SEM alternância») — desligando-a no meio da partida,
+    // sem erro e sem nada na tela. O `ui/webcam` carimba, e é o carimbo que atravessa até aqui.
+    const { ctx, heldKeys, origens } = mkCtx();
+    const api = initKeydown(ctx);
+    api.onKeydown(carimbarOrigem(
+      { code: 'KeyJ', altKey: false, ctrlKey: false, isTrusted: false, preventDefault: () => {} },
+      'olhos',
+    ));
+    expect(heldKeys.has('KeyJ')).toBe(true);
+    expect(origens.get('KeyJ')).toBe('olhos');
+  });
+
+  it('⚠️ um sintético que NINGUÉM assinou funciona, mas não finge saber de onde veio', () => {
+    // Código de consumidor que despacha teclas continua a jogar; o que ele não faz é herdar uma origem alheia.
+    const { ctx, heldKeys, origens } = mkCtx();
+    fire(initKeydown(ctx), 'KeyJ', { isTrusted: false });
+    expect(heldKeys.has('KeyJ')).toBe(true);
+    expect(origens.has('KeyJ')).toBe(false);
   });
 
   it('jogo: a tela em espera entra, o selo some e o leitor de tela anuncia', () => {

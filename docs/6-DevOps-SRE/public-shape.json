@@ -522,6 +522,7 @@
       "altKey",
       "code",
       "ctrlKey",
+      "isTrusted?",
       "preventDefault"
     ],
     "interface KeyupEventLike": [
@@ -569,8 +570,11 @@
       "isEmJogo",
       "isOneButton",
       "isTelaDeTitulo",
+      "marcarTecla",
+      "marcarTeclaSemOrigem",
       "modalInput",
       "navTitle",
+      "soltarTecla",
       "srSay",
       "togglePause",
       "whichPlayer",
@@ -595,6 +599,11 @@
   },
   "input/latch.ts": {
     "type LatchDir": "-1 | 0 | 1"
+  },
+  "input/origem-sintetica.ts": {
+    "interface EventoDeTeclaLike": [
+      "isTrusted?"
+    ]
   },
   "input/pointer-space.ts": {
     "interface RectLike": [

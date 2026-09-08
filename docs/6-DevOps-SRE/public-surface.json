@@ -359,6 +359,12 @@
     "latchedDrive",
     "nextLatchedDir"
   ],
+  "input/origem-sintetica.ts": [
+    "CHAVE_DE_ORIGEM",
+    "EventoDeTeclaLike",
+    "carimbarOrigem",
+    "origemDoEvento"
+  ],
   "input/pointer-space.ts": [
     "DoCentro",
     "EmFracao",
@@ -371,6 +377,7 @@
     "held",
     "keys",
     "marcarTecla",
+    "marcarTeclaSemOrigem",
     "origemDaTecla",
     "origemDe",
     "padCur",
@@ -430,10 +437,12 @@
     "EXIGEM_HABILITACAO",
     "EstadoDaEntrada",
     "PADRAO",
+    "TRANSPORTES",
     "Transporte",
     "alternanciaAgora",
     "aposAresta",
     "desabilitarAssistida",
+    "ehTransporte",
     "habilitarAssistida"
   ],
   "input/transports.ts": [

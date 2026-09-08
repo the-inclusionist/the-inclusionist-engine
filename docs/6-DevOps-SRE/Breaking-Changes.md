@@ -95,7 +95,12 @@ then hold it as a `KeyScheme`.
 
 `core/route.ts` (#84) · `ui/panel-shell.ts` (#62/#115) · `educational/adaptive-engine.ts` (#92)
 
-## 5 · Twenty-three changes of SHAPE — the half no name gate could see
+## 5 · Changes of SHAPE — the half no name gate could see
+
+> ⚠️ **This heading used to say «Twenty-three», and the number went stale within the day.** It was measured
+> once, against `v7.0.1`, and every shape change committed afterwards made it a little more wrong while
+> looking precise. The table below is the list; the count lives in the portrait
+> (`docs/6-DevOps-SRE/public-shape.json`), which is regenerated rather than remembered.
 
 **Measured on 2026-09-08** by extracting the members of every exported `interface` and the right-hand side of
 every exported `type` at `v7.0.1` and at `HEAD`, and diffing them.
@@ -118,6 +123,8 @@ exported *name* is exactly as it was — what changed is what a consumer has to 
 | `ui/pause-icons.ts` | `IconStateSnapshot.viz` → `.visual`; `PauseIconsCtx` gains `setTemaDoJogador`/`setCorrecaoDoJogador`; `PausePlayer` slice `'viz'` → `'visual'` | the quick-bar icons stopped overwriting each other |
 | `ui/settings-visual.ts` | `SettingsVisualCtx.renderVizGroup` → `renderEixosVisuais` | the visual panel draws two radios; the empathy panel keeps `renderVizGroup` |
 | `ui/shell.ts` | `PhaseView.pauseOverlayHidden` **removed** | the engine no longer looks for a global pause overlay at all |
+| `input/touch-bindings.ts` | `TouchBindingsCtx` gains `marcarTecla`, `soltarTecla` — both required; `heldKeys` narrows `Set` → `readonly ReadonlySet` | pass the pair from `input/state` instead of the bare set. ⚠️ **This row was MISSING until 2026-09-08**, and the gap is worth naming: the shape portrait was refreshed in that commit, so the gate went green — but this file, which is the only thing a game author reads, never got the line. Declaring to the gate and telling the consumer are two acts, and only one of them happened |
+| `input/keydown.ts` | `KeydownCtx` gains `marcarTecla`, `marcarTeclaSemOrigem`, `soltarTecla` — all required; `heldKeys` narrows `Set` → `readonly ReadonlySet`; `KeydownEventLike` gains `isTrusted?` (optional, breaks nothing) | same pair, same reason (ADR-0109): writing into the key set erased who pressed. ⚠️ The narrowing of `heldKeys` is **not** a break for anyone *providing* the ctx — a `Set` satisfies `ReadonlySet` — and that is deliberate: what it forbids is the engine writing through the injected reference |
 
 ### And the gate now sees it
 

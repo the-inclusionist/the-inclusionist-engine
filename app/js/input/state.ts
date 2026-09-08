@@ -45,6 +45,28 @@ export function marcarTecla(code: string, origem: Transporte): void {
   origemDaTecla.set(code, origem);
 }
 
+/**
+ * A tecla foi segurada e NÃO SE SABE por quem. A porta estreita, e ela é estreita de propósito.
+ *
+ * ⚠️ POR QUE UMA FUNÇÃO COM OUTRO NOME E NÃO UM SEGUNDO PARÂMETRO OPCIONAL. `marcarTecla(code)` com a origem
+ * omitida é o que se escreve quando não se pensou; `marcarTeclaSemOrigem(code)` é o que se escreve quando se
+ * pensou e a resposta é «não sei». O tipo não distingue as duas, mas o nome distingue — e é o nome que
+ * aparece na revisão. Um parâmetro esquecido não se lê; uma função assim chamada lê-se de longe.
+ *
+ * ⚠️ E O `delete` É A METADE QUE IMPORTA, não o `add`. Sem ele, uma tecla premida de novo por uma fonte
+ * desconhecida HERDAVA a origem da vez anterior: a criança joga por olhar, larga a tecla, um script de fora
+ * despacha o mesmo código, e a alternância continua a responder «olhos» a uma aresta que já não é dela. Um
+ * mapa que guarda a resposta certa de ontem é pior do que um que não guarda nada.
+ *
+ * 📌 Hoje há UM chamador — o `input/keydown`, para o evento sintético que ninguém assinou. Depois desta
+ * migração nada nesta engine produz um; quem produz é código de consumidor, e é para ele que esta porta fica
+ * aberta. Fechá-la faria a tecla dele simplesmente não funcionar, o que é uma quebra pior do que não saber.
+ */
+export function marcarTeclaSemOrigem(code: string): void {
+  keys.add(code);
+  origemDaTecla.delete(code);
+}
+
 /** A outra metade. Solta nos dois, pela mesma razão. */
 export function soltarTecla(code: string): void {
   keys.delete(code);

@@ -28,6 +28,41 @@
 export type Transporte = 'teclado' | 'gamepad' | 'toque' | 'olhos' | 'rosto' | 'gestos' | 'fala';
 
 /**
+ * A UNIÃO COMO VALOR, porque há um sítio onde ela tem de ser verificada em runtime.
+ *
+ * ⚠️ EXISTE POR CAUSA DE UMA FRONTEIRA, e é a única razão que a justifica: o `input/origem-sintetica` lê o
+ * transporte de um EXPANDO pendurado num `KeyboardEvent` — um objecto que este código não construiu e que
+ * qualquer script da página pode construir. Um valor que atravessa essa fronteira não é um `Transporte` por
+ * o TypeScript o dizer; é uma `string` até alguém a conferir. Sem lista, `'olho'` entrava no mapa de origens
+ * como transporte fantasma, e nada o diria.
+ *
+ * 📌 Não é o defeito da lista-ao-lado-da-união que este repositório já desfez três vezes (o `RM_KEYS`, os
+ * rótulos de movimento reduzido, as chaves de armazenamento), porque a guarda abaixo é do COMPILADOR: as duas
+ * não podem divergir. Uma cópia que não pode divergir é uma projecção, não uma segunda fonte.
+ */
+export const TRANSPORTES = ['teclado', 'gamepad', 'toque', 'olhos', 'rosto', 'gestos', 'fala'] as const;
+
+// `[X] extends [never]` e não `X extends never`: o condicional distribui sobre `never` e daria `never` em vez
+// de responder à pergunta. Mesma forma do `_COBRE_A_UNIAO` do `ui/motion-scene`.
+type _FaltouTransporte = Exclude<Transporte, (typeof TRANSPORTES)[number]>;
+type _SobrouTransporte = Exclude<(typeof TRANSPORTES)[number], Transporte>;
+const _COBRE_OS_TRANSPORTES: [_FaltouTransporte] extends [never]
+  ? ([_SobrouTransporte] extends [never] ? true : false)
+  : false = true;
+void _COBRE_OS_TRANSPORTES;
+
+/**
+ * Isto que veio de fora é mesmo um transporte?
+ *
+ * ⚠️ A pergunta não é de segurança — os scripts desta página são todos da casa, e quem quisesse mentir usaria
+ * um valor VÁLIDO. É de correcção: impede que um carimbo errado ou ausente vire uma entrada silenciosa no
+ * `origemDaTecla`, que é a estrutura de que a alternância inteira depende.
+ */
+export function ehTransporte(v: unknown): v is Transporte {
+  return typeof v === 'string' && (TRANSPORTES as readonly string[]).includes(v);
+}
+
+/**
  * OS QUATRO QUE EXIGEM HABILITAÇÃO EXPLÍCITA e, uma vez habilitados, mandam em todos (regra 4).
  *
  * ⚠️ É a mesma lista do `UM_COMANDO_DE_CADA_VEZ` do `input/latch-scope`, e a coincidência não é acaso: são

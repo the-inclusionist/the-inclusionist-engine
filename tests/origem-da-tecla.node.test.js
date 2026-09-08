@@ -21,8 +21,9 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  keys, origemDaTecla, marcarTecla, soltarTecla, soltarTodas, origemDe, held,
+  keys, origemDaTecla, marcarTecla, marcarTeclaSemOrigem, soltarTecla, soltarTodas, origemDe, held,
 } from '../app/js/input/state.js';
+import { carimbarOrigem, origemDoEvento, CHAVE_DE_ORIGEM } from '../app/js/input/origem-sintetica.js';
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
@@ -52,11 +53,18 @@ function escritasCruasDe(p) {
  */
 const POR_MIGRAR = {
   'input/state.ts': 'o PAR — é aqui que `marcarTecla`/`soltarTecla`/`soltarTodas` vivem, e é por isso que ele escreve',
-  'input/keydown.ts': 'vai carimbar `teclado` — ⚠️ MENOS quando o evento não for de confiança: a webcam despacha `KeyboardEvent` sintético e cairia como teclado. `isTrusted` distingue-os, e QUAL transporte assistido é ainda tem de vir declarado',
 };
-// ✅ `input/touch-bindings.ts` SAIU desta lista em 2026-09-08: migrou para o par e carimba `toque`. É a
-// primeira entrada a sair, e é o que prova que o estrangulamento anda — a lista encolhe, e quando chegar a um
-// (só o próprio `input/state`) o crivo passa a afirmar a ausência inteira.
+// ✅ `input/touch-bindings.ts` saiu em 2026-09-08 (carimba `toque`), e `input/keydown.ts` saiu no mesmo dia.
+//
+// 🎯 A LISTA CHEGOU AO PISO, e é aqui que este crivo muda de significado: enquanto tinha entradas, ele
+// reportava o estado do estrangulamento; com só o par lá dentro, ele passa a AFIRMAR A AUSÊNCIA INTEIRA —
+// nenhum módulo desta engine escreve no conjunto de teclas sem dizer quem carregou. É o gate que o
+// `confirmation` do ADR-0109 devia, e a razão de ele valer a pena está no que impede: a erasão a voltar por
+// um escritor novo que ninguém reparou que entrou.
+//
+// ⚠️ O `keydown` saiu resolvendo o ponto difícil que esta lista carregava escrito na própria entrada dele — a
+// webcam despachava `KeyboardEvent` sintético e seria carimbada `teclado`. A saída foi `input/origem-sintetica`:
+// o carimbo viaja NO EVENTO, e `isTrusted` responde por quem não carimbou. Ver os casos lá em baixo.
 
 describe('ADR-0109 · a origem da tecla viaja com ela', () => {
   beforeEach(() => { soltarTodas(); });
@@ -122,10 +130,94 @@ describe('ADR-0109 · a origem da tecla viaja com ela', () => {
     expect(Object.keys(POR_MIGRAR).filter((m) => !crus.has(m)), 'entrada de quem já não escreve cru').toEqual([]);
   });
 
-  it('⚠️ [Interface] e o crivo continua VIVO: ele acha os escritores que existem', () => {
+  it('⚠️ [Interface] e o crivo continua VIVO: ele acha o PAR, que escreve cru por definição', () => {
     // Sem isto, uma regex morta deixaria os dois casos acima verdes por não terem nada que examinar.
-    const crus = ficheirosTs().filter((p) => escritasCruasDe(p) > 0);
-    expect(crus.length, 'a varredura não achou escritor nenhum — a regex ou o caminho morreram').toBeGreaterThan(1);
+    //
+    // ⚠️ ANCORADO NUM NOME E JÁ NÃO NUMA CONTAGEM, e a troca foi obrigada pelo sucesso da migração: enquanto
+    // havia escritores por migrar, «achou mais do que um» provava vida. Com a lista no piso a contagem é 1, e
+    // `>= 1` seria uma afirmação que qualquer ficheiro satisfaria. O `input/state` é o único que escreve cru
+    // por DESENHO — é ele o par —, então é ele a âncora que não pode desaparecer sem alguém reparar.
+    const crus = new Set(ficheirosTs()
+      .filter((p) => escritasCruasDe(p) > 0)
+      .map((p) => relative(RAIZ, p).split('\\').join('/')));
+    expect([...crus], 'a varredura não achou o par — a regex ou o caminho morreram').toContain('input/state.ts');
+  });
+
+  it('⚠️ [Zero] `marcarTeclaSemOrigem` APAGA a origem anterior, em vez de a deixar herdar', () => {
+    // O defeito que esta linha impede é caro e silencioso: a criança joga por olhar, larga a tecla, e um
+    // despacho sintético de fora repete o mesmo código. Sem o `delete`, a alternância continuaria a responder
+    // «olhos» a uma aresta que já não é dela. Um mapa que guarda a resposta certa de ontem é pior que um vazio.
+    marcarTecla('KeyA', 'olhos');
+    marcarTeclaSemOrigem('KeyA');
+    expect(keys.has('KeyA')).toBe(true);   // a tecla FUNCIONA: não saber quem a produziu não a invalida
+    expect(origemDe('KeyA')).toBeUndefined();
+  });
+});
+
+// ========================= O CARIMBO NO EVENTO (input/origem-sintetica) =========================
+// ⚠️ ISTO É O PONTO DIFÍCIL QUE A LISTA ACIMA CARREGOU DESDE O PRIMEIRO DIA. A webcam despacha `KeyboardEvent`
+// sintético, entra pelo `keydown` e seria carimbada `teclado` — e a regra 3 do ADR-0109 diz que apertar uma
+// tecla devolve o teclado SEM alternância, logo o olhar da criança desligaria sozinho a alternância de que ela
+// depende, no meio da partida e sem nada na tela a dizê-lo.
+describe('ADR-0109 · quem despachou este evento', () => {
+  const ev = (over = {}) => ({ code: 'KeyA', ...over });
+
+  it('[Right] um carimbo válido responde o transporte declarado', () => {
+    expect(origemDoEvento(carimbarOrigem(ev(), 'olhos'))).toBe('olhos');
+  });
+
+  it('[Right] sem carimbo, um evento DE CONFIANÇA é o teclado — a única inferência do módulo', () => {
+    // `isTrusted` é a propriedade que um script não forja: significa que o navegador viu a pessoa carregar.
+    expect(origemDoEvento(ev({ isTrusted: true }))).toBe('teclado');
+  });
+
+  it('⚠️ [Zero] sem carimbo e SEM confiança responde `undefined`, e não `teclado`', () => {
+    // ⚠️ É AQUI QUE A ERASÃO TENTARIA VOLTAR. Um sintético que ninguém assinou é código de fora que não
+    // declarou; responder `'teclado'` seria pior do que a erasão original, porque teria forma de resposta.
+    expect(origemDoEvento(ev({ isTrusted: false }))).toBeUndefined();
+    expect(origemDoEvento(ev())).toBeUndefined(); // e a AUSÊNCIA de `isTrusted` não é um `true` por omissão
+  });
+
+  it('⚠️ [Boundary] um carimbo INVÁLIDO não vira transporte fantasma', () => {
+    // O valor vem de um expando num objecto que este código não construiu. Sem `ehTransporte`, um `'olho'`
+    // mal escrito entrava no `origemDaTecla` e a alternância passava a decidir sobre um aparelho que não existe.
+    const mau = ev({ isTrusted: true });
+    mau[CHAVE_DE_ORIGEM] = 'olho';
+    expect(origemDoEvento(mau)).toBe('teclado'); // cai na regra seguinte, em vez de aceitar o lixo
+    const naoString = ev();
+    naoString[CHAVE_DE_ORIGEM] = { emUso: 'olhos' };
+    expect(origemDoEvento(naoString)).toBeUndefined();
+  });
+
+  it('⚠️ [Boundary] o carimbo GANHA de `isTrusted` — declaração vence inferência', () => {
+    // A ordem das duas linhas é a regra. Um evento REAL que alguém reatribuiu (um pedal, um interruptor de
+    // sopro que emite teclas de verdade) tem de ficar com o que quem carimbou se deu ao trabalho de declarar.
+    expect(origemDoEvento(carimbarOrigem(ev({ isTrusted: true }), 'gestos'))).toBe('gestos');
+  });
+
+  it('⚠️ [Interface] NADA nesta engine despacha tecla sintética sem carimbar', () => {
+    // O crivo que fecha a porta do lado do ESCRITOR — o de cima fecha-a do lado do leitor, e uma porta só
+    // fechada de um lado não está fechada. Inventário sobre a árvore real, não sobre um fixture.
+    const semCarimbo = [];
+    for (const p of ficheirosTs()) {
+      for (const ln of readFileSync(p, 'utf8').split(/\r?\n/)) {
+        if (/^\s*(\/\/|\*|\/\*)/.test(ln)) continue;
+        if (/new KeyboardEvent\s*\(/.test(ln) && !/carimbarOrigem\s*\(/.test(ln)) {
+          semCarimbo.push(relative(RAIZ, p).split('\\').join('/'));
+        }
+      }
+    }
+    expect(
+      semCarimbo,
+      'despacho de tecla sintética sem declarar o transporte. Envolva em `carimbarOrigem(…, transporte)` de '
+      + '`input/origem-sintetica` — sem isso o evento chega ao `keydown` indistinguível de uma tecla premida.',
+    ).toEqual([]);
+  });
+
+  it('⚠️ [Interface] e ESTE crivo também está vivo: a webcam ainda despacha, e carimbada', () => {
+    // Vácuo ao contrário do outro: aqui o perigo é a regex morrer e o caso acima passar por não achar nada.
+    const fonte = readFileSync(join(RAIZ, 'ui/webcam.ts'), 'utf8');
+    expect(fonte, 'a webcam deixou de despachar, ou o carimbo saiu').toMatch(/carimbarOrigem\([^\n]*KeyboardEvent/);
   });
 });
 

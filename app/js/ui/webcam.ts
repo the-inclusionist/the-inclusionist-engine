@@ -7,6 +7,7 @@ import { t } from '../core/i18n.js';
 import { $ } from './dom.js';
 import { srAlert } from '../core/a11y-sr.js';
 import { emFracao } from '../input/pointer-space.js'; // #105: um lugar so converte um ponto de tela
+import { carimbarOrigem } from '../input/origem-sintetica.js'; // ADR-0109: a tecla sintetica declara quem a produziu
 
 // API mínima do WebGazer (lib externa, não tipada) — encadeável.
 type WG = { setRegression(m: string): WG; setGazeListener(fn: (d: unknown) => void): WG; begin(): WG; end(): void; showVideoPreview(b: boolean): WG; showPredictionPoints(b: boolean): WG };
@@ -20,7 +21,11 @@ const _eyeKeys: Record<EyeKey, boolean> = { left: false, right: false, up: false
 // Dispara keydown/keyup SINTÉTICO só na TRANSIÇÃO (evita repetir). code = tecla física (KeyA/KeyD/Space).
 function eyeSet(k: EyeKey, on: boolean, code: string): void {
   if (_eyeKeys[k] === on) return; _eyeKeys[k] = on;
-  const ev = new KeyboardEvent(on ? 'keydown' : 'keyup', { code, bubbles: true });
+  // ⚠️ CARIMBADO `'olhos'` ANTES DE DESPACHAR (ADR-0109). Sem esta linha o evento chega ao `input/keydown`
+  // indistinguível de uma tecla premida e é carimbado `teclado` — e o efeito não é cosmético: a regra 3 diz
+  // que apertar uma tecla devolve o teclado SEM alternância, logo o olhar da criança desligaria, sozinho e em
+  // silêncio, a alternância de que ela depende para jogar. É o defeito que o §C desta issue existe para fechar.
+  const ev = carimbarOrigem(new KeyboardEvent(on ? 'keydown' : 'keyup', { code, bubbles: true }), 'olhos');
   window.dispatchEvent(ev); document.dispatchEvent(ev);
 }
 // Recebe o ponto do olhar (px de tela), normaliza dentro do #game-region e vira direção. Exportado p/ teste.

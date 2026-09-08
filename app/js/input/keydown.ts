@@ -109,6 +109,14 @@ export interface KeydownEventLike {
   altKey: boolean;
   ctrlKey: boolean;
   preventDefault(): void;
+  /**
+   * O navegador viu a pessoa carregar? (ADR-0109) — OPCIONAL, e a opcionalidade é a decisão.
+   *
+   * ⚠️ Torná-lo obrigatório partiria todos os duplos de teste que já existem, e partiria-os por uma razão
+   * falsa: eles descrevem a decisão de teclado, que não depende disto. O que a ausência significa está
+   * escrito no `input/origem-sintetica` — «não afirmei nada», cuja resposta é `undefined` e não `'teclado'`.
+   */
+  isTrusted?: boolean;
 }
 
 /** `keyup` só precisa do código. */
@@ -287,6 +295,11 @@ export function titleNavOf(code: string, s: KeydownSnapshot, action2: boolean): 
 import { hasNavIntent as hasTitleIntent } from './edges.js';
 import type { EventTargetLike } from './touch-bindings.js'; // a porta de escuta, genérica sobre WindowEventMap
 import type { DomQuery } from '../core/dom-query.js';
+import type { Transporte } from './transporte-em-uso.js';
+// ⚠️ IMPORTADA E NÃO INJECTADA, ao contrário dos três escritores logo abaixo, e a linha que separa os dois é
+// esta: `origemDoEvento` é uma função PURA do evento — não toca estado nenhum que o cartucho possua. Os
+// escritores tocam o `input/state`, que é mutado in-place e partilhado, e é por isso que continuam a entrar.
+import { origemDoEvento } from './origem-sintetica.js';
 export { hasNavIntent as hasTitleIntent } from './edges.js';
 
 /**
@@ -427,8 +440,24 @@ export interface KeydownCtx {
   getPlayers: () => readonly KeydownPlayer[];
   /** `kbRuntime.controlsState()` — memorizado do lado de lá; uma chamada por tecla, como no original. */
   getControls: () => ControlsSnapshot;
-  /** `keys` de input/state.ts: `const` mutado in place → entra por VALOR (é sempre o mesmo objeto). */
-  heldKeys: Set<string>;
+  /**
+   * O PAR DE `input/state`, E NÃO O CONJUNTO CRU (ADR-0109) — o mesmo corte que o `input/touch-bindings` fez.
+   *
+   * ⚠️ `ReadonlySet` e não `Set`, e a diferença É a razão de o par existir: LER o conjunto nunca foi o
+   * problema; ESCREVER nele apagava a origem. Com o tipo assim, uma escrita crua deixa de compilar — o crivo
+   * do inventário passa a ter o compilador do lado dele, em vez de ser a única coisa a segurar a linha.
+   */
+  readonly heldKeys: ReadonlySet<string>;
+  /** Uma tecla foi segurada, e sabe-se por quem. */
+  marcarTecla: (code: string, origem: Transporte) => void;
+  /**
+   * Uma tecla foi segurada e NÃO se sabe por quem — o evento sintético que ninguém assinou.
+   *
+   * ⚠️ Está no ctx a par das outras duas de propósito: se fosse importada, um consumidor não teria como ver
+   * que ela existe, e é justamente ele quem produz os eventos que caem aqui.
+   */
+  marcarTeclaSemOrigem: (code: string) => void;
+  soltarTecla: (code: string) => void;
   /** `let oneButton` do game.js (empatia motora) → getter. */
   isOneButton: () => boolean;
   actionOf: (code: string, playerIndex: number) => string | null;
@@ -500,7 +529,7 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
   }
 
   /** A metade IMPURA: pega a decisão pronta e a carimba no mundo. */
-  function apply(d: KeydownDecision, code: string): void {
+  function apply(d: KeydownDecision, code: string, origem: Transporte | undefined): void {
     switch (d.kind) {
       case 'overlay': if (d.closeId) ctx.closeOverlayById(d.closeId); return;
       case 'touchcfg': { if (!d.close) return; const t = ctx.$<HTMLElement>('#touchcfg'); if (t) t.hidden = true; return; }
@@ -528,8 +557,11 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
           p.waiting = false; ctx.clearWaitingBadge(p.i); ctx.srSay(t('sr.player.entered', { n: p.i + 1 }));
         }
         for (const { playerIndex, edge } of d.edges) { const p = players[playerIndex]; if (p) p[edge] = true; }
-        for (const k of d.releaseKeys) ctx.heldKeys.delete(k);
-        ctx.heldKeys.add(code);
+        for (const k of d.releaseKeys) ctx.soltarTecla(k);
+        // ⚠️ A ORIGEM CHEGA DO EVENTO E NÃO É INVENTADA AQUI (ADR-0109). `origem` é `undefined` só para o
+        // evento sintético que ninguém assinou — e nesse caso a porta estreita APAGA a entrada anterior, em
+        // vez de deixar a tecla herdar de quem a segurou da última vez. Ver `marcarTeclaSemOrigem`.
+        if (origem) ctx.marcarTecla(code, origem); else ctx.marcarTeclaSemOrigem(code);
         return;
       }
     }
@@ -540,10 +572,12 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
     if (ctx.handleCaptureKeydown(e)) return;                  // remap: a próxima tecla vira o controle
     const d = decideKeydown(e, snapshot());
     if (d.preventDefault) e.preventDefault();
-    apply(d, e.code);
+    apply(d, e.code, origemDoEvento(e));
   }
 
-  function onKeyup(e: KeyupEventLike): void { ctx.heldKeys.delete(e.code); }
+  // ⚠️ SOLTA NOS DOIS. Um `keys.delete` cru deixava a origem para trás, e um mapa que descreve teclas que já
+  // ninguém segura responde à alternância com o aparelho errado — sem erro, e só na aresta seguinte.
+  function onKeyup(e: KeyupEventLike): void { ctx.soltarTecla(e.code); }
 
   function attach(): void {
     ctx.win.addEventListener('keydown', onKeydown);
