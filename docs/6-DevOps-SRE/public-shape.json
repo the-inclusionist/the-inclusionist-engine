@@ -1765,6 +1765,10 @@
       "dis",
       "on"
     ],
+    "interface EscritoresVisuais": [
+      "correcao",
+      "tema"
+    ],
     "interface ScreenPauseMarkupOpts": [
       "dynLabel",
       "numPlayers",
@@ -1792,11 +1796,11 @@
       "rmKeys",
       "saveRM",
       "setCatGain",
-      "setCorrecaoDoJogador",
+      "setCorrecaoDoJogador?",
       "setModoCego?",
       "setPauseActor",
-      "setPlayerViz",
-      "setTemaDoJogador",
+      "setPlayerViz?",
+      "setTemaDoJogador?",
       "setToggleMove?",
       "srAlert",
       "srSay",

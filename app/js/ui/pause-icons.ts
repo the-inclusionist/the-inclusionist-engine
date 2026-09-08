@@ -306,9 +306,46 @@ export function iconBtnMarkup(ic: PauseIcon): string {
     '" aria-label="' + (ic.soon ? t('icon.soon', { nome: t(ic.n) }) : t(ic.n)) + '">' + ic.e + '</button>';
 }
 
+/**
+ * OS ÍCONES QUE ESTE JOGO CONSEGUE MESMO ACCIONAR (ADR-0106 §5).
+ *
+ * ⚠️ NENHUMA ETAPA PODE ENTREGAR BOTÃO MORTO, e o registo diz porquê com todas as letras: «uma barra que
+ * oferece a uma criança um caminho e depois o recusa é pior do que uma barra que ela vê que não está lá,
+ * porque a primeira ensina-lhe que o caminho não é para ela».
+ *
+ * ⚠️ E O CONTRASTE E A COR SÃO O CASO REAL, medido em 2026-09-08 e diferente dos outros seis campos
+ * «acidentais»: eles não são estado que um cartucho calhou de guardar — precisam de um `render/viz-setters`,
+ * cujo contexto tem **34 campos** do grafo de render de UM jogo (`parallaxLayers`, `decoSprites`,
+ * `getPowerups`, `rebuildCoins`, `worldSprite`…). O `createGame` não monta isso, e um quiz não tem nada
+ * disso para montar. Então aqui a engine não pode oferecer um padrão — o que ela pode é **não fingir**.
+ *
+ * ⚠️ Isto NÃO é o mesmo que `soon`. `soon` é «ainda não construímos»; isto é «este jogo não tem por onde», e
+ * um botão que anuncia «em breve» diria a coisa errada.
+ */
+export interface EscritoresVisuais {
+  /** Há quem escreva o TEMA (o alto contraste)? Sem ele, o ícone `contrast` não é montado. */
+  readonly tema: boolean;
+  /** Há quem escreva a CORREÇÃO de cor? Sem ela, o ícone `cvd` não é montado. */
+  readonly correcao: boolean;
+}
+
+export function iconesQueAccionam(escritores: EscritoresVisuais): readonly PauseIcon[] {
+  // ⚠️ POR ÍCONE, e não um booleano para os dois — e foi uma MUTAÇÃO SOBREVIVENTE que o mostrou. Com uma
+  // única bandeira, `&&` e `||` produziam o mesmo resultado nos casos que eu tinha escrito, porque todos
+  // tiravam os DOIS escritores. O `&&` escondia um ícone que FUNCIONA quando só um escritor falta, e o `||`
+  // mostrava um que NÃO funciona. Os dois erram, em direcções opostas, e a pergunta certa nunca foi «este
+  // jogo tem escritores visuais» — é «este ÍCONE tem quem o accione».
+  return PAUSE_ICONS.filter((ic) => (ic.k === 'contrast' ? escritores.tema
+    : ic.k === 'cvd' ? escritores.correcao
+      : true));
+}
+
 /** The whole icon bar. Used by the pause screen AND by the splash `#title-icons` (which built the same string
- *  by hand in game.js — that duplication dies with this export). */
-export function iconsMarkup(): string { return PAUSE_ICONS.map(iconBtnMarkup).join(''); }
+ *  by hand in game.js — that duplication dies with this export).
+ *  O parâmetro é ADITIVO e o padrão é a lista inteira: quem já chamava sem argumentos não muda de resultado. */
+export function iconsMarkup(icones: readonly PauseIcon[] = PAUSE_ICONS): string {
+  return icones.map(iconBtnMarkup).join('');
+}
 
 /** One `.pm-btn`. Dynamic labels (`letra`/`nivel`) are rendered eagerly and carry NO `data-i18n`, so
  *  i18n.applyDom() cannot overwrite them. */
@@ -391,8 +428,8 @@ export function mostrarSubmenuDaPausa(sp: HTMLElement, sub: PauseSub): HTMLEleme
  * A LEGENDA VIAJA JUNTO. Ela é a dica que substitui, para quem não vê, o `title` que só o mouse revela;
  * deixá-la no cartão tornaria a barra do HUD muda.
  */
-export function quickBarMarkup(): string {
-  return '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup() +
+export function quickBarMarkup(icones: readonly PauseIcon[] = PAUSE_ICONS): string {
+  return '<div class="pause-icons" role="group" aria-label="' + t('pause.iconBarAria') + '">' + iconsMarkup(icones) +
     '</div><p class="pause-icons-cap" aria-live="polite"></p>';
 }
 
@@ -528,10 +565,10 @@ export interface PauseIconsCtx {
 
   // --- motor + visual (both mutate state and rebake textures in game.js) ---
   setToggleMove?: (i: number, on: boolean) => void;
-  setPlayerViz: (i: number, mode: string) => void;
+  setPlayerViz?: (i: number, mode: string) => void;
   /** Os escritores POR EIXO (#104): mexer no tema não apaga a correção, e vice-versa. */
-  setTemaDoJogador: (i: number, tema: Tema) => void;
-  setCorrecaoDoJogador: (i: number, correcao: Correcao) => void;
+  setTemaDoJogador?: (i: number, tema: Tema) => void;
+  setCorrecaoDoJogador?: (i: number, correcao: Correcao) => void;
 }
 
 export interface PauseIconsApi {
@@ -607,6 +644,23 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    */
   const setModoCego = ctx.setModoCego ?? setModoCegoValue;
 
+  /*
+   * ⚠️ O CONTRASTE E A COR SÓ APARECEM SE HOUVER QUEM OS ESCREVA (ADR-0106 §5).
+   *
+   * 📏 Medido em 2026-09-08, e é o que separa este caso dos outros seis campos «acidentais»: eles eram estado
+   * que um cartucho calhou de guardar, e a engine pôde reclamá-los. Estes precisam de um
+   * `render/viz-setters`, cujo contexto pede **34 campos** do grafo de render de UM jogo — `parallaxLayers`,
+   * `decoSprites`, `getPowerups`, `rebuildCoins`, `worldSprite`. O `createGame` não monta isso, e um quiz não
+   * tem nada disso para montar. A engine não pode dar um padrão aqui; o que ela pode é não FINGIR.
+   *
+   * Decidido uma vez, no arranque, e não a cada montagem de barra: o conjunto de escritores de um consumidor
+   * não muda a meio de uma partida, e recalcular por tela faria as telas discordarem entre si.
+   */
+  const iconesDoJogo = iconesQueAccionam({
+    tema: Boolean(ctx.setTemaDoJogador),
+    correcao: Boolean(ctx.setCorrecaoDoJogador),
+  });
+
   function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
 
   function iconState(i: number): IconStateSnapshot {
@@ -680,12 +734,18 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // `nextContrast` e `nextCvd` existem separados desde sempre —, mas escreviam os dois no mesmo campo, e
     // por isso mexer num zerava o outro. O snapshot dizia isso como se fosse desenho: «they overwrite each
     // other; that is by design». Agora cada um escreve no seu eixo e o outro fica onde estava.
+    // ⚠️ AS DUAS GUARDAS NÃO SÃO CINTO E SUSPENSÓRIOS. Sem escritor, o ícone nem sequer é montado
+    // (`iconesDoJogo`), então este ramo não deveria ser alcançável pela barra — mas `iconAct` é EXPORTADO e
+    // qualquer consumidor pode chamá-lo por chave. Sem a guarda, essa chamada rebentaria; com ela, não faz
+    // nada e não anuncia — que é o mesmo que dizer a verdade: este jogo não tem por onde.
     contrast: (i) => {
+      if (!ctx.setTemaDoJogador) return;
       const v = proximoTema((P()[i] || {}).visual ?? PADRAO);
       ctx.setTemaDoJogador(i, v.tema);
       ctx.srSay(t('sr.visual.contrast', { v: t(CURTO_DO_TEMA[v.tema]) }));
     },
     cvd: (i) => {
+      if (!ctx.setCorrecaoDoJogador) return;
       const v = proximaCorrecao((P()[i] || {}).visual ?? PADRAO);
       ctx.setCorrecaoDoJogador(i, v.correcao);
       ctx.srSay(t('sr.icon.cvd', { v: t(CURTO_DA_CORRECAO[v.correcao]) }));
@@ -879,7 +939,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const bar = document.createElement('div');
     bar.className = 'screen-a11y';
     bar.dataset.player = String(i);
-    bar.innerHTML = quickBarMarkup();
+    bar.innerHTML = quickBarMarkup(iconesDoJogo);
     // FORA DA ORDEM DE TABULAÇÃO durante a partida (ADR-0044, item 7). Dez paradas entre a criança e o jogo
     // seria o preço de deixá-los lá — e o alcance por teclado não se perde: ele passa a ser o modo
     // `accessibility`, que se abre pela pausa. A barra do TÍTULO não é afetada: lá não se está jogando, e o

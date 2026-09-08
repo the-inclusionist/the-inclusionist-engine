@@ -18,6 +18,7 @@ import {
   hasPrivateOutputIn, nextCalmMode, nextContrast, nextCvd, calmAudioPlan, calmMotionPlan,
   computeIconLabel, computeIconVisual, ICON_STATE_CLASSES,
   iconBtnMarkup, iconsMarkup, pmBtnMarkup, screenPauseMarkup,
+  iconesQueAccionam,
   initPauseIcons,
 } from '../app/js/ui/pause-icons.js';
 import { CONTRAST_LEVELS } from '../app/js/ui/settings-visual.js';
@@ -880,5 +881,62 @@ describe('initPauseIcons — o que NÃO acontece no import', () => {
     expect(numPlayers()).toBe(1);
     api.iconAct('blind', 0);
     expect(alerted).toHaveLength(1); // sozinho → passa, sem novo alerta
+  });
+});
+
+describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5)', () => {
+  it('⚠️ [Right] SEM escritor visual, o contraste e a cor NÃO entram na barra', () => {
+    // O registo decide isto por escrito: «uma barra que oferece a uma criança um caminho e depois o recusa é
+    // pior do que uma barra que ela vê que não está lá, porque a primeira ensina-lhe que o caminho não é
+    // para ela». Os outros oito ícones continuam — perder a barra inteira por causa de dois seria a troca
+    // errada.
+    const chaves = iconesQueAccionam({ tema: false, correcao: false }).map((ic) => ic.k);
+    expect(chaves).not.toContain('contrast');
+    expect(chaves).not.toContain('cvd');
+    expect(chaves).toContain('blind');
+    expect(chaves).toContain('tts');
+    expect(chaves).toHaveLength(PAUSE_ICONS.length - 2);
+  });
+
+  it('[Right] COM escritor visual, a barra é a lista inteira e na mesma ordem', () => {
+    expect(iconesQueAccionam({ tema: true, correcao: true })).toEqual(PAUSE_ICONS);
+  });
+
+  it('⚠️ [Boundary] com UM escritor só, aparece UM ícone só — e é o que funciona', () => {
+    // ⚠️ ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE, e ela apontava um defeito de DESENHO e não um buraco
+    // de cobertura. Enquanto a pergunta era uma bandeira só («este jogo tem escritores visuais»), trocar
+    // `&&` por `||` não reprovava nada — porque todos os casos tiravam os DOIS. E os dois operadores erram,
+    // em direcções opostas: o `&&` esconde um ícone que FUNCIONA, o `||` mostra um que NÃO funciona. A
+    // pergunta certa é por ÍCONE.
+    const soTema = iconesQueAccionam({ tema: true, correcao: false }).map((ic) => ic.k);
+    expect(soTema).toContain('contrast');
+    expect(soTema).not.toContain('cvd');
+
+    const soCor = iconesQueAccionam({ tema: false, correcao: true }).map((ic) => ic.k);
+    expect(soCor).not.toContain('contrast');
+    expect(soCor).toContain('cvd');
+  });
+
+  it('⚠️ [Right] os ícones que sobram NÃO viram `soon` — «este jogo não tem» não é «em breve»', () => {
+    // `soon` diz «ainda não construímos isto», e um botão a dizê-lo sobre o alto contraste mentiria: o alto
+    // contraste está construído. O que falta é este jogo ter por onde o aplicar.
+    for (const ic of iconesQueAccionam({ tema: false, correcao: false })) {
+      if (ic.k === 'face' || ic.k === 'eyes' || ic.k === 'voice') continue; // esses SÃO `soon`, e continuam
+      expect(ic.soon, `${ic.k} passou a soon`).toBeFalsy();
+    }
+  });
+
+  // ⚠️ A BARRA MONTADA é caso do project BROWSER (`buildQuickBar` chama `document.createElement`), e está lá:
+  // «a barra montada não tem os dois botões quando não há escritor». Aqui fica a metade pura, que é onde a
+  // REGRA vive; lá fica a prova de que ela alcança o DOM.
+
+  it('[Zero] e chamar `iconAct` por chave, sem escritor, não rebenta nem anuncia', () => {
+    // `iconAct` é EXPORTADO: a barra já não monta o botão, mas um consumidor pode chamá-lo pela chave.
+    const { ctx, said } = buildCtx();
+    delete ctx.setTemaDoJogador;
+    delete ctx.setCorrecaoDoJogador;
+    const api = initPauseIcons(ctx);
+    expect(() => { api.iconAct('contrast', 0); api.iconAct('cvd', 0); }).not.toThrow();
+    expect(said).toEqual([]);
   });
 });

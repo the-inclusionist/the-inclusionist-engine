@@ -84,7 +84,9 @@ const SEGUROS = [
   ['ui/hud.ts', "if (scr && !scr.querySelector('.vp-wait'))", 'só o ÍNDICE da tela, um número'],
   ['ui/map-hub.ts', 'el.innerHTML = mapHubMarkup(np)', 'só o número de jogadores'],
   ['ui/pause-icons.ts', 'sp.innerHTML = screenPauseMarkup({', 'markup da engine + i18n'],
-  ['ui/pause-icons.ts', 'bar.innerHTML = quickBarMarkup()', 'markup da engine + i18n'],
+  // ⚠️ O argumento entrou em 2026-09-08 (ADR-0106 §5) e NÃO muda a classificação: `iconesDoJogo` é uma
+  // sub-lista do `PAUSE_ICONS`, que é constante do módulo — nada de fora do repositório alcança este sink.
+  ['ui/pause-icons.ts', 'bar.innerHTML = quickBarMarkup(iconesDoJogo);', 'markup da engine + i18n'],
   ['ui/settings-audio.ts', "sel.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-audio.ts', "el.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['ui/settings-caa.ts', 'el.innerHTML = caaListHtml(', 'i18n + caixa enumerada'],

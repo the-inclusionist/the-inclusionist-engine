@@ -601,3 +601,36 @@ describe('o nível TEA sobrevive ao fecho da aba (#61, ADR-0028)', () => {
     localStorage.removeItem(CHAVE);
   });
 });
+
+describe('a barra montada obedece ao §5 do ADR-0106 — nenhum botão morto', () => {
+  it('⚠️ [Interface] SEM escritor visual, o contraste e a cor não são MONTADOS', () => {
+    // A metade pura (`iconesQueAccionam`) vive no project node; este caso é a prova de que a regra alcança o
+    // DOM de verdade — que é onde uma criança encontra, ou não encontra, o botão.
+    const { bar } = mount(0, { setTemaDoJogador: undefined, setCorrecaoDoJogador: undefined });
+    const chaves = [...bar.querySelectorAll('.pi-btn')].map((b) => b.dataset.pi);
+    expect(chaves).not.toContain('contrast');
+    expect(chaves).not.toContain('cvd');
+    // ⚠️ E o resto da barra fica INTEIRO: perder os oito por causa de dois seria a troca errada.
+    expect(chaves).toContain('blind');
+    expect(chaves).toContain('tts');
+    expect(chaves).toContain('libras');
+  });
+
+  it('[Right] COM escritor visual, os dois estão lá — é o caso de hoje e continua a ser', () => {
+    const { bar } = mount(0);
+    const chaves = [...bar.querySelectorAll('.pi-btn')].map((b) => b.dataset.pi);
+    expect(chaves).toContain('contrast');
+    expect(chaves).toContain('cvd');
+  });
+});
+
+// ========================= MUTACOES CONFERIDAS (ADR-0106 §5) =========================
+//   · fazendo `iconesQueAccionam` devolver sempre `PAUSE_ICONS` -> reprovam os casos SEM escritor, no node e
+//     aqui. E a mutacao que devolve o defeito: a barra volta a oferecer um caminho que nao leva a lado nenhum.
+//   · filtrando os dois SEMPRE (ignorando o booleano) -> reprova "COM escritor visual, os dois estao la", que
+//     e a metade que impede a correccao de custar os icones a quem os tinha.
+//   · ⚠️ trocando o `&&` por `||` na deteccao -> SOBREVIVEU, e a sobrevivencia apontou um defeito de DESENHO
+//     em vez de um buraco de cobertura: com UMA bandeira para os dois icones, os dois operadores dao o mesmo
+//     resultado sempre que faltam os dois escritores — e erram em direccoes opostas quando falta so um (o
+//     `&&` esconde um icone que funciona; o `||` mostra um que nao funciona). A pergunta passou a ser por
+//     ICONE (`EscritoresVisuais`), e o caso `[Boundary] com UM escritor so` vive no project node.
