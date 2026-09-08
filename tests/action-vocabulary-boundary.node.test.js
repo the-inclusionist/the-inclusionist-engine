@@ -99,6 +99,72 @@ const DIVIDA = {
                                 // mesma palavra tem neste repositório.
 };
 
+// ========================= O ESPELHO DESTA FRONTEIRA =========================
+// O bloco acima conta a engine a dizer as palavras do JOGO. Este conta o contrário: o nome ABSTRATO da engine
+// a chegar a uma PESSOA, que o ADR-0074 chama de defeito em tantas palavras — «o nome que a criança lê e ouve
+// é sempre a palavra do jogo, nunca `action1`».
+//
+// ⚠️ E ELE NÃO É HIPOTÉTICO: em 2026-09-08 o `ui/settings-controls` recuava para o id abstrato e o leitor de
+// tela dizia «Essa tecla já é de action2» — a um toque de distância, com o esquema PADRÃO da engine, e dito
+// precisamente à criança que navega de ouvido. Consertado em `7742ac0`; este caso guarda o OUTRO caminho.
+//
+// 📌 POR QUE OS DICIONÁRIOS E NÃO O CÓDIGO. As quatro conversões `Action → palavra` foram medidas e devolvem
+// todas `null` (`labellerFrom`, `shortLabellerFrom`, `palavraDaAcao`, e o `acoesDoJogo` que vem do jogo), e
+// cada uma tem caso próprio. O que o tipo NÃO alcança é alguém escrever `action1` dentro de uma frase à mão —
+// e o dicionário é o único sítio deste repositório onde texto para pessoas é escrito assim.
+const POSICOES_ABSTRATAS = /\b(action[1-8]|leftShoulder|rightShoulder|leftTrigger|rightTrigger)\b/;
+
+describe('ADR-0074 · nenhum nome abstrato de posição chega a uma pessoa', () => {
+  const DICIONARIOS = ['pt', 'en', 'es']
+    .map((l) => join(RAIZ, 'i18n', `${l}.ts`))
+    .filter((p) => existsSync(p));
+
+  /** As frases: valor de cada chave, sem os comentários que citam nomes para explicar. */
+  const frasesDe = (p) => readFileSync(p, 'utf8')
+    .replace(COMENTARIO_BLOCO, '')
+    .replace(COMENTARIO_LINHA, '')
+    .split(/\r?\n/)
+    .map((ln) => /:\s*(['"])((?:\\.|(?!\1).)*)\1/.exec(ln))
+    .filter(Boolean)
+    .map((m) => m[2]);
+
+  it('⚠️ [Zero] nenhuma frase de dicionário nomeia uma posição abstrata', () => {
+    const presos = [];
+    for (const p of DICIONARIOS) {
+      for (const f of frasesDe(p)) {
+        if (POSICOES_ABSTRATAS.test(f)) presos.push(`${p.split(/[\\/]/).pop()}: ${f.slice(0, 70)}`);
+      }
+    }
+    expect(
+      presos,
+      'nome abstrato de posição dentro de uma frase que uma criança lê ou ouve. A palavra é do JOGO '
+      + '(`acoesDoJogo`/`labellerFrom`); quando ele não a nomeia, a frase diz o que INTERESSA sem o id '
+      + 'interno — ver `sr.ctrl.keyTakenHereUnnamed`.',
+    ).toEqual([]);
+  });
+
+  it('⚠️ [Interface] e a varredura está VIVA: ela lê frases a sério nos três idiomas', () => {
+    // Sem isto o caso acima passaria por não ter nada que examinar — e um regex morto num crivo de ausência é
+    // a forma de verde falso que este repositório já apanhou mais de uma vez.
+    expect(DICIONARIOS.length, 'os três dicionários têm de existir').toBe(3);
+    for (const p of DICIONARIOS) {
+      expect(frasesDe(p).length, `${p} não devolveu frase nenhuma`).toBeGreaterThan(100);
+    }
+    // e o detector reconhece o defeito quando ele existe, em vez de nunca casar com nada
+    expect(POSICOES_ABSTRATAS.test('Essa tecla já é de action2. Escolha outra.')).toBe(true);
+    expect(POSICOES_ABSTRATAS.test('Essa tecla já está em uso neste controle.')).toBe(false);
+  });
+
+  // ===================== MUTACOES CONFERIDAS (deste bloco) =====================
+  //   · acrescentando ao dicionario pt uma frase com `action2` -> reprova o [Zero]. E o defeito consertado em
+  //     `7742ac0` a voltar pela outra porta: nao por um recuo de codigo, mas por alguem a escrever o id
+  //     dentro de uma frase a mao — que e o unico caminho que o TIPO nao alcanca.
+  //   · trocando `action[1-8]` por `zzzz[1-8]` (detector morto) -> reprova o [Interface], e SO ele. E a
+  //     medida de que o caso de vivacidade se paga: sem ele, um crivo cego passaria por nao achar nada.
+  //   · `frasesDe` a devolver zero -> reprova o [Interface] pelo piso de 100 frases. Um crivo de AUSENCIA que
+  //     nao le nada e verde falso, e este ficheiro ja carrega essa licao no cabecalho.
+});
+
 describe('a engine não fala as palavras do jogo (o corte do Dev, 2026-09-06)', () => {
   it('[Right] NENHUM módulo NOVO passa a nomear uma ação do jogo', () => {
     const novos = MODULOS.filter((m) => !(m in DIVIDA))
