@@ -87,9 +87,54 @@ import { migrarSalvo, type SavedKB } from './vocabulary-migration.js';
 // nome antigo é a função dele. Deixá-la aqui punha o acoplamento num módulo que não é histórico, e o gate
 // `action-vocabulary-boundary` reprovou — corretamente. Ver o cabeçalho de lá para saber quando se apaga.
 
+/**
+ * O PADRÃO QUE O JOGO QUER, por número de jogadores e por assento (ADR-0115). Parcial: o que ele não disser
+ * fica como a fábrica da engine o deixou.
+ */
+export type MapeamentoDoTeclado = (jogadores: number, assento: number) => Partial<KeyScheme> | null;
+
+let mapeamentoDoJogo: MapeamentoDoTeclado | null = null;
+
+/**
+ * REGISTA O PADRÃO DO JOGO. Chamado uma vez pelo arranque (`boot/create-game`), a partir da declaração.
+ *
+ * 🔴 REGISTO E NÃO PARÂMETRO, e a razão é um defeito medido em vez de uma preferência. Há DOIS sítios que
+ * materializam padrões — `loadKB` e `resetKB` — e o segundo é chamado pelo painel de controles, que não tem a
+ * declaração do jogo à mão. Um parâmetro que o painel não passasse faria «restaurar padrões» devolver o mapa
+ * da ENGINE por cima do mapa do JOGO: a criança carrega no botão esperando voltar ao que o jogo lhe deu, e
+ * volta para outra coisa — num jogo cujo autor escolheu o layout por uma razão de acessibilidade, ela perde
+ * essa razão e nada o diz.
+ *
+ * 📌 É a mesma forma que o `kb` deste ficheiro já tem, e pela mesma justificação: o dono é evidente, e as
+ * funções que o gerem vivem todas aqui.
+ */
+export function registrarMapeamentoDoTeclado(f: MapeamentoDoTeclado | null): void { mapeamentoDoJogo = f; }
+
+/**
+ * A FÁBRICA COM O PADRÃO DO JOGO POR CIMA — a **única** resolução, usada pelo `loadKB` E pelo `resetKB`.
+ *
+ * ⚠️ Uma função só, e é o ponto inteiro: enquanto eram duas cópias do `JSON.parse(JSON.stringify(...))`, a do
+ * `resetKB` não conhecia o jogo e a diferença só aparecia quando uma criança carregava em «restaurar».
+ */
+export function fabricaComOJogo(): KBDefaults {
+  const d: KBDefaults = JSON.parse(JSON.stringify(KB_DEFAULTS));
+  if (!mapeamentoDoJogo) return d;
+  const aplicar = (alvo: KeyScheme, jogadores: number, assento: number): void => {
+    const parcial = mapeamentoDoJogo!(jogadores, assento);
+    if (parcial) Object.assign(alvo, parcial);
+  };
+  aplicar(d.solo, 1, 0);
+  d.p2.forEach((esq, i) => aplicar(esq, 2, i));
+  d.p3.forEach((esq, i) => aplicar(esq, 3, i));
+  d.p4.forEach((esq, i) => aplicar(esq, 4, i));
+  return d;
+}
+
 // carrega os esquemas salvos SOBRE os defaults (com migração do dado antigo p34 → p3+p4)
 export function loadKB(): KBDefaults {
-  const d: KBDefaults = JSON.parse(JSON.stringify(KB_DEFAULTS));
+  // ⚠️ A PRECEDÊNCIA É ESTA E ESTÁ ESCRITA UMA VEZ: fábrica da engine → padrão do JOGO → remapeamento da
+  // CRIANÇA. O que a criança gravou vem sempre por último, porque é a única das três que ela escolheu.
+  const d: KBDefaults = fabricaComOJogo();
   // ⚠️ O DADO SALVO ATRAVESSA O TRADUTOR ANTES DE TOCAR NOS PADRÕES. Sem esta linha, um esquema gravado com
   // as chaves antigas (`run`, `jump`, `swap`, `especial`) seria fundido sobre defaults que já usam
   // `action1`..`action4`: o objeto ficaria com AS DUAS famílias de chaves, os transportes leriam só as novas,
@@ -126,4 +171,10 @@ export function initKB(): KBDefaults { kb = loadKB(); return kb; }
 /** Troca o mapa inteiro. Só o "restaurar padrões" do painel de controles precisa disto — remapear uma tecla
  *  MUTA o objeto, e reatribuir por engano faria as referências vivas apontarem para o mapa antigo. */
 export function setKB(next: KBDefaults): void { kb = next; }
-export function resetKB(): KBDefaults { store.remove(CKEY); return JSON.parse(JSON.stringify(KB_DEFAULTS)); }
+/**
+ * «RESTAURAR PADRÕES» — e o padrão para onde ela volta é o DO JOGO, não o da engine (ADR-0115).
+ *
+ * 🔴 Esta linha era `JSON.parse(JSON.stringify(KB_DEFAULTS))`, e com o campo do jogo a existir isso passaria
+ * a apagar em silêncio o mapeamento que o jogo escolheu. A criança espera voltar ao que o jogo lhe deu.
+ */
+export function resetKB(): KBDefaults { store.remove(CKEY); return fabricaComOJogo(); }

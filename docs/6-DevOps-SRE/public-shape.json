@@ -83,6 +83,7 @@
     "interface GameDeclaration": [
       "focusOf",
       "holdsAtOnce",
+      "mapeamentoDoTeclado?",
       "nameAt",
       "needsPointer?",
       "objectiveOf",
@@ -517,7 +518,8 @@
     "type KeyboardRuntimePlayer": "Pick<ControlledPlayer, 'ctrl'>"
   },
   "input/keyboard.ts": {
-    "type KBDefaults": "{ solo: KeyScheme"
+    "type KBDefaults": "{ solo: KeyScheme",
+    "type MapeamentoDoTeclado": "(jogadores: number, assento: number) => Partial<KeyScheme> | null"
   },
   "input/keydown.ts": {
     "interface KeydownEventLike": [

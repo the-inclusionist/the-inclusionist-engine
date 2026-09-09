@@ -75,7 +75,7 @@ import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.j
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
-import { kb, initKB } from '../input/keyboard.js';
+import { kb, initKB, registrarMapeamentoDoTeclado } from '../input/keyboard.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 
 /** O que o jogo empresta do documento. Tudo opcional menos `doc`/`win`: o que faltar vira `problems`. */
@@ -662,6 +662,17 @@ export function createGame(o: CreateGameOptions): Engine {
   });
 
   // 5. Teclado remapeável — o melhor recorte da base (achado 11): esquema de teclas, sem mundo.
+  //
+  // ⚠️ O PADRÃO DO JOGO REGISTA-SE ANTES DO `initKB()`, e a ordem é a regra: quem lê o disco já tem de saber
+  // qual é a fábrica sobre a qual o dado da criança se sobrepõe (ADR-0115). Registar depois deixaria o
+  // primeiro arranque com a fábrica da ENGINE e o segundo com a do jogo — a pior espécie de defeito, porque
+  // desaparece quando alguém vai ver.
+  // 📌 E o registo aceita `null`, que é o que um jogo sem opinião produz: fica a fábrica da engine.
+  registrarMapeamentoDoTeclado(
+    o.declaration.mapeamentoDoTeclado
+      ? (jogadores, assento) => o.declaration.mapeamentoDoTeclado!(jogadores, assento)
+      : null,
+  );
   initKB();
   // ⚠️ O ESQUEMA DE ARRANQUE ALCANÇA NADA, e diz isso com `null` em vez de com um objeto vazio (issue #118).
   // Ele vive um instante — `assignControls()` logo abaixo substitui-o pelo esquema real —, mas enquanto vive

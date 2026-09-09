@@ -312,9 +312,12 @@
     "KBDefaults",
     "KB_DEFAULTS",
     "KB_SCHEMES4",
+    "MapeamentoDoTeclado",
+    "fabricaComOJogo",
     "initKB",
     "kb",
     "loadKB",
+    "registrarMapeamentoDoTeclado",
     "resetKB",
     "saveKB",
     "setKB"

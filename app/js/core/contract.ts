@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // core/contract — OS SETE CAMPOS. A interface que o ADR-0030 escolheu como o eixo da engine.
 //
+// ⚠️ ESTE FICHEIRO NÃO TINHA IMPORT NENHUM, e o único que ganhou é `import type` — apagado na compilação, logo
+// o módulo publicado continua sem dependência de execução. O que entra é o VOCABULÁRIO das catorze posições
+// (ADR-0074), e ele tinha de entrar: um campo que fala de mapeamento e escrevesse as suas próprias chaves
+// seria a segunda cópia da união que o `core/actions` existe para ser a primeira.
+//
 // ========================= O QUE ISTO É, E O QUE NÃO É =========================
 // Não é um framework nem uma classe-base. É a ÚNICA coisa que a pilha de acessibilidade sabe sobre um jogo.
 // O ADR-0027 mediu que as três funções que MAIS pareciam genéricas eram as três mais amarradas à plataforma —
@@ -35,6 +40,8 @@
 // GÊNERO E PLURAL não são zelo gramatical: em pt-BR a moldura CONCORDA com o conteúdo. "O portão está
 // trancado" e "a porta está trancada" são a mesma frase de engine com o mesmo parâmetro, e sem o gênero uma
 // das duas sai errada. Quem monta a frase precisa saber, e só o jogo sabe.
+
+import type { Action } from './actions.js';
 
 /** Gênero gramatical do nome. `n` = neutro/indefinido (o pt-BR usa o masculino como default nesse caso). */
 export type Gender = 'm' | 'f' | 'n';
@@ -353,6 +360,30 @@ export interface GameDeclaration {
    * FUNÇÃO e não valor, pela mesma razão das outras: uma actividade pode desenhar numa fase e não noutra.
    */
   needsPointer?(): boolean;
+  /**
+   * O MAPEAMENTO DE TECLADO QUE ESTE JOGO QUER — por número de jogadores e por assento (ADR-0115).
+   *
+   * A precedência é a que o registo pede, e ela cabe entre duas linhas que já existiam no `input/keyboard`:
+   * **fábrica da engine → padrão do JOGO → remapeamento da CRIANÇA.** Devolver `null` (ou não declarar) deixa
+   * a fábrica da engine intacta, que é o comportamento de sempre.
+   *
+   * PARCIAL de propósito: um jogo que só queira trocar o `action1` troca o `action1`. A fusão já existe — é o
+   * `Object.assign` que sobrepõe o dado guardado —, então esta é mais uma camada no mesmo sítio e não uma
+   * segunda forma de fundir.
+   *
+   * ⚠️ OPCIONAL, e aqui, ao contrário do `seguraTeclas`, o silêncio tem um lado seguro: sem declaração o jogo
+   * fica com a fábrica da engine, que é jogável e é o que ele já tem hoje. Não há lado errado na ausência.
+   *
+   * ⚠️ E LEVA O ASSENTO porque o teclado de dois jogadores não é o de um: as setas mudam de dono, e um padrão
+   * que não soubesse o assento daria as mesmas teclas a duas crianças. `jogadores` é 1, 2, 3 ou 4; `assento` é
+   * o índice dentro desse arranjo.
+   *
+   * 📌 O CONTROLE NÃO TEM CAMPO IRMÃO AINDA, e a ausência é medida e não esquecimento: o `GAMEPAD_STANDARD` é
+   * lido num sítio só (`input/gamepad.ts:129`), mas nesse ponto o ASSENTO ainda não é conhecido — o `owner` só
+   * se resolve mais abaixo, por ramo. Declarar o campo antes de o consumir seria entregar ao jogo um controle
+   * que não acciona nada, que é o que o ADR-0106 §5 recusa.
+   */
+  mapeamentoDoTeclado?(jogadores: number, assento: number): Partial<Record<Action, readonly string[] | null>> | null;
   readonly tick: TickOwner;
   /** O papel do que está em `at`. É o campo 2, e é o que substitui `roleOf`. */
   roleAt(at: Spot): Role;
@@ -486,6 +517,21 @@ export function conformanceProblems(d: Partial<GameDeclaration> | null | undefin
       p.push('needsPointer: must be a function - write `needsPointer: () => true`, because a game may draw in one phase and not in another');
     } else if (typeof d.needsPointer() !== 'boolean') {
       p.push('needsPointer: must return a boolean - a non-boolean would be truthy and refuse devices this game can actually use');
+    }
+  }
+
+  // ⚠️ E O MESMO PARA O MAPEAMENTO, com uma razão própria: aqui um valor em vez de uma função não seria um
+  // erro barulhento, seria um mapeamento SILENCIOSAMENTE ignorado — a fábrica da engine ficava, e a criança
+  // jogava com um teclado que o autor do jogo julga ter mudado. E devolver algo que não é objecto nem `null`
+  // atravessaria o `Object.assign` sem escrever nada, que é a mesma ausência com outra roupa.
+  if (d.mapeamentoDoTeclado !== undefined) {
+    if (typeof d.mapeamentoDoTeclado !== 'function') {
+      p.push('mapeamentoDoTeclado: must be a function - write `mapeamentoDoTeclado: (jogadores, assento) => ({ action1: ["KeyQ"] })`, because the keyboard of two players is not the keyboard of one');
+    } else {
+      const m = d.mapeamentoDoTeclado(1, 0);
+      if (m !== null && (typeof m !== 'object' || Array.isArray(m))) {
+        p.push('mapeamentoDoTeclado: must return an object or null - anything else is merged into nothing, and this game keeps the engine factory while its author believes otherwise');
+      }
     }
   }
 
