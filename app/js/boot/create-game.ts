@@ -76,6 +76,7 @@ import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registrarMapeamentoDoTeclado } from '../input/keyboard.js';
+import { registrarMapeamentoDoPad } from '../input/pad-defaults.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 
 /** O que o jogo empresta do documento. Tudo opcional menos `doc`/`win`: o que faltar vira `problems`. */
@@ -671,6 +672,14 @@ export function createGame(o: CreateGameOptions): Engine {
   registrarMapeamentoDoTeclado(
     o.declaration.mapeamentoDoTeclado
       ? (jogadores, assento) => o.declaration.mapeamentoDoTeclado!(jogadores, assento)
+      : null,
+  );
+  // ⚠️ E O DO CONTROLE REGISTA-SE AQUI AINDA QUE ESTA RAIZ NÃO MONTE GAMEPAD NENHUM. Não é descuido: quem
+  // chama `initGamepad` é o cartucho, e é exactamente por isso que o registo não pode viver lá — seria mais
+  // um campo que um jogo pode esquecer, e esquecê-lo devolve o mapa da ENGINE a quem declarou outro, calado.
+  registrarMapeamentoDoPad(
+    o.declaration.mapeamentoDoPad
+      ? (jogadores, assento) => o.declaration.mapeamentoDoPad!(jogadores, assento)
       : null,
   );
   initKB();

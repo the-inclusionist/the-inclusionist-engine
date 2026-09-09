@@ -39,7 +39,7 @@ compiles against the tree and sees every break the day it lands. It has already 
 | **Delete `semMenuDePausa` from `declines`** | `game-chess` `app/js/boot/game-shell.ts:439` · `pixi-15-puzzle` `app/js/boot/main.ts:108` · `game-2048` `app/js/boot/main.ts:96` · `game-whackwhack` `app/js/boot/main.ts:94` | §6 |
 | **Give the accessibility bar a host** | 🔴 **Measured: none of the five has one.** No `#title-icons` element and no `host.a11yBarHost` anywhere. Without it the engine reports a `problems` line and the child gets **no accessibility bar on the first screen** — which is the rule this major exists to keep | ADR-0106 |
 | **Give the pause card a host, or accept the default** | none of the five declares `host.pauseHost`; all five have `#game-region` in their HTML, so the card mounts THERE. ⚠️ For `game-chess` that is probably wrong: its own markup says `#game-region` is only the BOARD and `#stage` is «the game as seen» | ADR-0122 |
-| **`mapeamentoDoTeclado?`** | nothing to do. Optional, and silence keeps today's behaviour | §6 |
+| **`mapeamentoDoTeclado?` · `mapeamentoDoPad?`** | nothing to do. Both optional, and silence keeps today's behaviour: the engine's factory tables. Declare one only if this game wants a different default — and remember the child's own remapping still wins over it | §6 |
 
 ### `game-chess` has one more, and it is design work
 

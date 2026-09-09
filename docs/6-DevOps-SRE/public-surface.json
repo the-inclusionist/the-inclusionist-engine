@@ -385,6 +385,12 @@
     "carimbarOrigem",
     "origemDoEvento"
   ],
+  "input/pad-defaults.ts": [
+    "MapeamentoDoPad",
+    "TabelaDoPad",
+    "registrarMapeamentoDoPad",
+    "tabelaDoPad"
+  ],
   "input/pointer-space.ts": [
     "DoCentro",
     "EmFracao",

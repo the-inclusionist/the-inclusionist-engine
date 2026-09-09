@@ -12,6 +12,7 @@ import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
 import { migrarMapaDeControle } from './vocabulary-migration.js';
 import { GAMEPAD_STANDARD } from './default-bindings.js';
+import { tabelaDoPad, type TabelaDoPad } from './pad-defaults.js';
 import type { Action } from '../core/actions.js';
 import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
 // ⚠️ O `oneButton` ENTRA POR IMPORT, e não pelo `ctx` — ao contrário de `input/keydown`, que o recebe por
@@ -107,7 +108,7 @@ export function bindActive(gp: PadLike, bd: PadBinding | null | undefined): bool
 /** Ações do frame para este gamepad. `custom` = mapa salvo pelo wizard para este `gp.id` (null/`_skip` = usa o
  *  mapa PADRÃO da Gamepad API "standard": 0=pulo · 1=especial · 2/5/7=correr · 3=troca · 9=START). Direções
  *  custom caem de volta em stdDirs quando o binding do usuário não está ativo (D-pad/stick continuam vivos). */
-export function padActions(gp: PadLike, custom: PadMap | null): PadActions {
+export function padActions(gp: PadLike, custom: PadMap | null, tabela: TabelaDoPad = GAMEPAD_STANDARD): PadActions {
   if (custom && !custom._skip) {
     const A = (k: string): boolean => bindActive(gp, bindingAt(custom, k));
     const sd = stdDirs(gp);
@@ -126,7 +127,12 @@ export function padActions(gp: PadLike, custom: PadMap | null): PadActions {
   // correr, enquanto a tabela declara R1 como `rightShoulder` e R2 como `rightTrigger`. O ADR-0086 registrou
   // esta mudança como o asterisco do seu «zero movimento»: nenhum VERBO muda de botão, mas `run` perde dois
   // dos seus três. Quem usava R1 para correr sente — e é o preço de os quatro ombros existirem.
-  const B = GAMEPAD_STANDARD;
+  // 📌 A TABELA CHEGA POR PARÂMETRO desde o ADR-0115: é a fábrica da engine COM o padrão deste jogo por cima,
+  // resolvida em `input/pad-defaults`. O padrão da assinatura é o da engine, então quem chamava com dois
+  // argumentos continua a ler exactamente o que lia.
+  // ⚠️ E ela só decide neste ramo, que é o certo: o ramo de cima é o mapa que a CRIANÇA gravou no assistente,
+  // e o padrão de um jogo não se sobrepõe a uma escolha dela.
+  const B = tabela;
   const at = (a: Action): boolean => { const i = B[a]; return typeof i === 'number' ? b(i) : false; };
   return {
     left: sd.left, right: sd.right, up: sd.up, down: sd.down,
@@ -401,7 +407,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     }
     return _padMaps.get(id) ?? null;
   }
-  function actionsFor(gp: PadLike): PadActions { return padActions(gp, padMapFor(gp.id)); }
+  function actionsFor(gp: PadLike, tabela?: TabelaDoPad): PadActions { return padActions(gp, padMapFor(gp.id), tabela); }
 
   // ----- wizard: anúncio + demo animada (DOM-facing, thin) -----
 
@@ -591,9 +597,21 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         return;
       }
       const prev = padPrevAct[gi] || {};
-      // ⚠️ A EMPATIA MOTORA APLICADA AO CONTROLE (issue #120). Sem esta linha, uma criança com o modo de
+      // ⚠️ O ASSENTO SUBIU PARA AQUI, e a razão é o ADR-0115: a tabela de botões deste jogo é declarada POR
+      // ASSENTO, e ela é lida dentro do `actionsFor`. Enquanto o `owner` só se resolvia lá em baixo, por ramo,
+      // a leitura acontecia antes de se saber de quem era o controle — e um padrão por assento chegava tarde.
+      // 📌 Os ramos abaixo passaram a usar esta constante em vez de recalcularem a mesma linha três vezes.
+      const players = ctx.getPlayers();
+      const owner = players.findIndex((p) => p.pad === gi);
+      // ⚠️ E O CONTROLE AINDA NÃO ATRIBUÍDO (`owner < 0`) LÊ O ASSENTO 0, e não «nenhum»: ele está a produzir
+      // arestas na tela do título, e um mapa vazio ali deixaria a criança sem como escolher o próprio jogo.
+      // A EMPATIA MOTORA APLICADA AO CONTROLE (issue #120). Sem esta linha, uma criança com o modo de
       // um botão ligado e um pad na mão NÃO ESTAVA no modo — e nada em lado nenhum o dizia.
-      const cur = umBotaoPorVez(prev, actionsFor(gp), estadoDoJogo.oneButton);
+      const cur = umBotaoPorVez(
+        prev,
+        actionsFor(gp, tabelaDoPad(ctx.getNumPlayers(), owner < 0 ? 0 : owner)),
+        estadoDoJogo.oneButton,
+      );
       if (ctx.isTouchMode() && (cur.left || cur.right || cur.up || cur.down || cur.action2 || cur.action1 || cur.action4 || cur.action3 || cur._start)) {
         ctx.hideTouchControls(); // botão físico usado -> some o gamepad virtual (mesma regra do teclado)
       }
@@ -612,18 +630,16 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
       // de propósito: numa cena que este módulo não conheça (um mapa, uma tela de resultados), o controle
       // deve navegar como no título — que é o comportamento seguro — em vez de não fazer nada.
       const rodando = ctx.mundoRodando(), pausado = ctx.menuDePausa();
-      const players = ctx.getPlayers();
 
       if (!rodando && !pausado) {
         const k: NavKeys = { yes: edge('action2') || startEdge, no: edge('action3'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
         const any = k.yes || k.no || k.up || k.down || k.left || k.right;
-        const owner = players.findIndex((p) => p.pad === gi);
         if (ctx.getNumPlayers() > 1 && owner > 0) { if (any) ctx.srSay(t('sr.title.waitP1')); continue; } // só o J1 escolhe
         if (any) ctx.navTitle(k); // menu inicial navegável pelo pad
         continue;
       }
       if (pausado) {
-        const owner = players.findIndex((p) => p.pad === gi); const pi = owner < 0 ? 0 : owner;
+        const pi = owner < 0 ? 0 : owner;
         if (pauseEdge) { ctx.retomar(); continue; } // START retoma
         const k: NavKeys = { yes: edge('action2'), no: edge('action3'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
         if (k.yes || k.no || k.up || k.down || k.left || k.right) {
@@ -634,7 +650,6 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         continue;
       }
       if (rodando) {
-        const owner = players.findIndex((p) => p.pad === gi);
         // ===================== O MODO `accessibility` (ADR-0044, item 7) =====================
         // Com o jogo ANDANDO, o direcional deste jogador dirige a BARRA RÁPIDA e não o personagem. Vem antes
         // de tudo o que é de jogo, porque enquanto o modo está ligado nada mais deste controle é de jogo.

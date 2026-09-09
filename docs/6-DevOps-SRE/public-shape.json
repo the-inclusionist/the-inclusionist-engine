@@ -83,6 +83,7 @@
     "interface GameDeclaration": [
       "focusOf",
       "holdsAtOnce",
+      "mapeamentoDoPad?",
       "mapeamentoDoTeclado?",
       "nameAt",
       "needsPointer?",
@@ -624,6 +625,10 @@
     "interface EventoDeTeclaLike": [
       "isTrusted?"
     ]
+  },
+  "input/pad-defaults.ts": {
+    "type MapeamentoDoPad": "(jogadores: number, assento: number) => Partial<Record<Action, number | null>> | null",
+    "type TabelaDoPad": "Readonly<Record<Action, Binding<number>>>"
   },
   "input/pointer-space.ts": {
     "interface RectLike": [

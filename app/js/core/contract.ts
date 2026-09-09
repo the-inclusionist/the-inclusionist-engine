@@ -378,12 +378,25 @@ export interface GameDeclaration {
    * que não soubesse o assento daria as mesmas teclas a duas crianças. `jogadores` é 1, 2, 3 ou 4; `assento` é
    * o índice dentro desse arranjo.
    *
-   * 📌 O CONTROLE NÃO TEM CAMPO IRMÃO AINDA, e a ausência é medida e não esquecimento: o `GAMEPAD_STANDARD` é
-   * lido num sítio só (`input/gamepad.ts:129`), mas nesse ponto o ASSENTO ainda não é conhecido — o `owner` só
-   * se resolve mais abaixo, por ramo. Declarar o campo antes de o consumir seria entregar ao jogo um controle
-   * que não acciona nada, que é o que o ADR-0106 §5 recusa.
+   * 📌 O irmão do CONTROLE é o campo logo abaixo, e chegou um commit depois: o obstáculo era que o assento
+   * ainda não se conhecia no ponto em que a tabela de botões é lida, e a saída foi subi-lo no laço.
    */
   mapeamentoDoTeclado?(jogadores: number, assento: number): Partial<Record<Action, readonly string[] | null>> | null;
+  /**
+   * O MAPEAMENTO DE BOTÕES QUE ESTE JOGO QUER NO CONTROLE — mesma pergunta, outro aparelho (ADR-0115).
+   *
+   * Índices de botão da Gamepad API «standard», parciais: `{ action1: 3 }` troca só essa. `null` num botão diz
+   * «esta posição não existe neste jogo», que é diferente de a deixar na fábrica.
+   *
+   * ⚠️ A PRECEDÊNCIA TEM UMA DIFERENÇA DE SÍTIO QUE VALE SABER: no teclado, o que a criança remapeou é uma
+   * camada POR CIMA desta; no controle, o mapa que ela gravou no assistente é um RAMO inteiro — se ele existe,
+   * este padrão não é consultado. Nos dois casos ela ganha, que é o que importa.
+   *
+   * 📌 E leva o assento pela mesma razão do teclado, ainda que por um caminho diferente: dois controles são
+   * dois aparelhos, mas o JOGO pode querer arranjos distintos por assento (o guarda-redes e o atacante não
+   * fazem o mesmo).
+   */
+  mapeamentoDoPad?(jogadores: number, assento: number): Partial<Record<Action, number | null>> | null;
   readonly tick: TickOwner;
   /** O papel do que está em `at`. É o campo 2, e é o que substitui `roleOf`. */
   roleAt(at: Spot): Role;
@@ -531,6 +544,17 @@ export function conformanceProblems(d: Partial<GameDeclaration> | null | undefin
       const m = d.mapeamentoDoTeclado(1, 0);
       if (m !== null && (typeof m !== 'object' || Array.isArray(m))) {
         p.push('mapeamentoDoTeclado: must return an object or null - anything else is merged into nothing, and this game keeps the engine factory while its author believes otherwise');
+      }
+    }
+  }
+
+  if (d.mapeamentoDoPad !== undefined) {
+    if (typeof d.mapeamentoDoPad !== 'function') {
+      p.push('mapeamentoDoPad: must be a function - write `mapeamentoDoPad: (jogadores, assento) => ({ action1: 3 })`, because two seats may want different arrangements');
+    } else {
+      const m = d.mapeamentoDoPad(1, 0);
+      if (m !== null && (typeof m !== 'object' || Array.isArray(m))) {
+        p.push('mapeamentoDoPad: must return an object or null - anything else is merged into nothing, and this game keeps the engine factory while its author believes otherwise');
       }
     }
   }
