@@ -72,38 +72,37 @@ Nem tudo aqui é nosso, e o que não é **não muda de licença por estar neste 
 - **Tipografias** — roster e restrições no **ADR-0012**. ⚠️ Ronde e as alternativas OPTIFrench-Script e
   Merveille são **gratuitas só para uso pessoal e NÃO podem ser empacotadas**: oferece-se download, e a
   opção fica desabilitada quando nenhuma está presente.
-- **Arte de terceiros — quatro licenças e mais nenhuma** (**ADR-0133**). A arte que vem de fora entra sob
-  **CC0**, **CC BY 3.0**, **CC BY 4.0** ou **OGA-BY** (3.0 ou 4.0), e sob mais nada. A OGA-BY é a licença de
-  atribuição da OpenGameArt: ⚠️ **não é uma licença Creative Commons** — a própria CC declara que não a
-  endossa — e é a CC BY *menos* a restrição sobre medidas técnicas, logo estritamente mais permissiva.
-  🔴 **E o que NÃO se aceita é nomeado, porque uma regra que só lista o permitido lê-se como lista de
-  exemplos:** **ND** (proíbe derivar, e recolorir já é derivar); **NC** (deixaria a arte mais estreita que o
-  CÓDIGO — a AGPL permite uso comercial, e quem ela convida seria travado por um sprite); e **share-alike,
-  em qualquer versão, com o braço GPL de uma licença dupla**, porque o SA **viaja**: uma imagem semântica
-  traçada de um sprite é derivada dele, logo tudo o que o pipeline produzisse a partir de uma fonte SA sairia
-  SA — e essa saída é a arte futura do próprio projeto, que ele deixaria de poder licenciar.
-  📌 **Não há quarentena, e já houve.** O ADR-0107 ia trazer o Liberated Pixel Cup sob CC BY-SA 3.0 atrás de
-  uma parede; o Dev recusou o share-alike de vez, e sem arte cujo copyleft viaje não há o que segregar. O
-  LCP não entra por nenhum dos seus dois braços — **CC BY-SA 3.0 ou GPL-3.0** — e nenhum recurso dele
-  chegou a entrar.
-  ⚠️ **E a recusa é INFORMADA, não ingénua: existe caminho legal de CC BY-SA 4.0 até um projeto AGPL** — a
-  3.0 sobe para 4.0 numa derivada (§4(b)(ii)), a Creative Commons declarou a GPLv3 compatível num sentido só
-  em 08/10/2015, e o **§13 da GPLv3** permite combinar obra GPLv3 com obra AGPLv3 num único trabalho. O
-  ADR-0133 regista o caminho **e recusa-o**, com os quatro custos escritos — entre eles que a arte passaria a
-  viver sob a licença do CÓDIGO, que é a linha que estas três secções existem para desenhar.
-- **Arte de terceiros — as fontes já medidas na origem** (2026-09-09; detalhe em [`../art/README.md`](../art/README.md)):
-  **Kenney** (`kenney.nl/assets`) sob **CC0 1.0**, confirmado em três lugares que dizem o mesmo; e **ansimuz**
-  (`ansimuz.itch.io`) sob **CC0 1.0, por pacote** — o perfil não concede nada, a página do pacote é que
-  concede. As duas entram sem quarentena e sem obrigação a viajar para a saída; a linha no livro-razão fica
-  na mesma, por proveniência.
-  🔴 **E o Tiny Swords** (`pixelfrog-assets.itch.io`) **parte-se em dois, e não é CC BY 4.0** como se supunha:
-  a página não tem campo de licença nenhum. O **pacote atual** vem sob uma concessão própria do autor, cujas
-  duas primeiras linhas são permissivas (uso pessoal e comercial, modificar à vontade, sem exigir crédito) e
-  a terceira restringe («You may not redistribute, resell, or repackage the assets, even if the files are
-  modified») — **e ele fica de fora simplesmente por não ser nenhuma das quatro**, sem que a terceira linha
-  precise de ser interpretada. Já o ficheiro **`TS_old version_CC0 Licensed` é CC0 e entra**, com a ressalva
-  de que a única afirmação disso na página é o NOME do ficheiro: a linha do livro aponta para o `LICENSE` de
-  dentro do zip.
+- **Arte de terceiros — TRÊS PORTAS, e o que decide é compatibilidade com o projeto** (**ADR-0133**), não a
+  família a que um nome pertence. Quatro perguntas: podemos **derivar**? pode ser usada **comercialmente**?
+  podemos **conveiar** o ficheiro no que publicamos? alguma coisa **viaja** da fonte para a nossa saída?
+  - **Porta `licenca`** — uma licença pública já medida: **CC0 1.0**, **CC BY 3.0/4.0**, **OGA-BY 3.0/4.0**,
+    e as permissivas de software (**MIT**, **Apache-2.0**) quando a arte carrega uma. ⚠️ A OGA-BY **não é
+    Creative Commons** — a própria CC declara que não a endossa — e é a CC BY *menos* a restrição sobre
+    medidas técnicas, logo estritamente mais permissiva. 📌 Um nome novo não é recusado: é **referido**, e
+    entra assim que um registo responder as quatro perguntas para ele.
+  - **Porta `concessao`** — o autor escreveu a permissão, sem nome de licença conhecido. A linha do livro
+    guarda a **URL onde a concessão está escrita**, porque uma permissão que ninguém consegue abrir é
+    memória e não permissão.
+  - **Porta `ponte`** — copyleft **CC BY-SA** entra convertido em **`GPL-3.0-only`** na nossa saída. O
+    mecanismo é público e tem três degraus: a CC BY-SA 3.0 §4(b)(ii) deixa uma **adaptação** sair como 4.0;
+    a Creative Commons declarou a GPLv3 compatível num sentido só em 08/10/2015; e o **§13 da GPLv3** permite
+    combinar obra GPLv3 com obra AGPLv3 num único trabalho. ⚠️ Exige **fonte modificável** (o que este
+    projeto já mantém: imagem semântica + dicionário de paletas), é de **sentido único e permanente**, e só
+    abre para **adaptação** — nenhum ficheiro CC BY-SA entra tal e qual.
+  🔴 **E o que não tem porta nenhuma: ND** (proíbe derivar, e recolorir já é derivar) e **NC** (deixaria a
+  arte mais estreita que o CÓDIGO — a AGPL permite uso comercial, e quem ela convida seria travado por um
+  sprite; e a fronteira do NC é indefinida, com uma implantação municipal em cima dela).
+  📌 **Não há quarentena, e já houve.** O ADR-0107 punha o Liberated Pixel Cup atrás de uma parede; a ponte
+  substitui-a, porque a arte que a atravessa **deixa de ser share-alike do nosso lado** em vez de ficar
+  murada do resto.
+- **Arte de terceiros — as fontes admitidas** (decisão do Dev, 2026-09-09; detalhe em
+  [`../art/README.md`](../art/README.md)). Entram **antes de qualquer arte do próprio projeto**:
+  **Kenney** (`kenney.nl/assets`, CC0 1.0, confirmado em três lugares) · **ansimuz** (`ansimuz.itch.io`,
+  CC0 1.0 **por pacote** — o perfil não concede nada) · **Tiny Swords** (`pixelfrog-assets.itch.io`), que
+  entra **pelas duas portas**: o ficheiro `TS_old version_CC0 Licensed` é CC0, e o **pacote atual** entra
+  pela **concessão** do autor, cujos termos permitem uso pessoal e comercial e modificação à vontade sem
+  exigir crédito · e o **Liberated Pixel Cup** (`OpenGameArt/LiberatedPixelCup`), pela **ponte**, como
+  adaptação sob `GPL-3.0-only`.
   **Quais recursos entram, e para que jogos, é direção de arte** e não se decide aqui.
   ⚠️ **Atribuição é condição de uso, por recurso**, e a **fonte guarda-se como URL**: uma licença declarada
   por quem nos entrega o ficheiro é indício, não autoridade, e sem a origem registada não há contra o que a
