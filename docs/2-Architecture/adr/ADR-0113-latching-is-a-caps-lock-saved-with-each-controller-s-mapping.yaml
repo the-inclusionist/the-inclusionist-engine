@@ -2,6 +2,18 @@
 metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0109]
+  superseded-in-part:
+    - by: ADR-0115
+      what: >-
+        the assumption that latching is a control EVERY game offers, with a factory default. The Dev revoked
+        his own clause of the same day: «ERREI E ERREI FEIO! Nem todo jogo precisa de alternância, somente os
+        que precisam de tecla segurando. Logo, cabe ao jogo decidir o mapeamento padrão de cada dispositivo, e
+        isso vale para teclas de alternância.» ⚠️ WHAT THIS RECORD GOT RIGHT SURVIVES INTACT — where latching
+        exists, the value belongs to the controller's mapping like a caps-lock, the icon stays reachable, and
+        the four assisted transports cannot switch it off. All three now carry a PRECONDITION instead of being
+        universal: this game holds keys. 📏 And the measurement that made the correction necessary is that the
+        contract could not answer it — `holdsAtOnce()` refuses zero with a reason about reachability, and the
+        quiz declares 1 while holding nothing, so «one at a time» and «one held» are the same number today.
   date: 2026-09-08
   decision-makers: [Dev]
   consulted:

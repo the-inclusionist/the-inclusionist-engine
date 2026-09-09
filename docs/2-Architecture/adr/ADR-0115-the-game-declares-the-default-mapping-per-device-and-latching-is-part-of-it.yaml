@@ -1,0 +1,158 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0113]
+  date: 2026-09-08
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's correction of 2026-09-08, verbatim, revoking his own clause of the same day: «Sobre a ADR
+       113: ERREI E ERREI FEIO! Nem todo jogo precisa de alternância, somente os que precisam de tecla
+       segurando. Logo, cabe ao jogo decidir o mapeamento padrão de cada dispositivo, e isso vale para teclas
+       de alternância.»"
+    - "ADR-0113 — SUPERSEDED IN PART: latching read as a control every game offers, with a factory default"
+    - "ADR-0104 §A — `holdsAtOnce()` is MANDATORY, on his own sentence: «não declarar é ter a acessibilidade
+       programada no controle pro sorte»"
+    - "ADR-0084 — a declaration is a FUNCTION, because a game changes its demands between phases"
+    - "ADR-0074 — the engine knows positions; the GAME supplies the words. This record extends it: the game
+       also supplies the DEFAULTS"
+    - "ADR-0010 pillar 2 (a11y-first) and pillar 1 (public-school hardware)"
+    - "issue #127 — the walk-latching wiring"
+  informed: []
+
+title: The GAME declares the default mapping for each device — and latching is part of it, so a game that holds nothing never offers it
+
+context-and-problem-statement: |
+  🔴 THE DEV REVOKED HIS OWN CLAUSE OF THE SAME DAY, in his words: «ERREI E ERREI FEIO! Nem todo jogo precisa
+  de alternância, somente os que precisam de tecla segurando.»
+
+  ADR-0113 answered «where does the latching value live» and got that right — with the controller's mapping,
+  like a caps-lock. It never asked the question BEFORE it: does this game hold a key at all? Latching exists
+  so a child who cannot keep a key pressed can walk without holding. In a game where nothing is ever held —
+  a quiz, a board, a tile puzzle — there is nothing to latch, and the control is an option that does nothing.
+
+  📏 AND THE CONTRACT CANNOT ANSWER IT TODAY, measured on 2026-09-08. `GameDeclaration.holdsAtOnce()` looks
+  like the field for this, and it is not: `core/contract.ts:437` refuses zero with a written reason — «a game
+  that holds nothing cannot be played» — and `consumer-quiz` declares `1`. The quiz never holds anything; it
+  declares 1 because the contract forces it to.
+
+  ⚠️ SO THE FIELD CONFLATES TWO QUESTIONS. «One at a time» and «one HELD» are the same number today, and the
+  engine cannot tell a game that taps from a game that holds. Every accessibility decision downstream — the
+  latching control, its default, whether the icon is offered at all — has been reading a number that answers a
+  different question.
+
+  📌 And the second half of his correction goes further than latching: «cabe ao jogo decidir o mapeamento
+  padrão de cada dispositivo». Today `input/default-bindings` holds the ENGINE's factory tables
+  (`KEYBOARD_SOLO`, `KEYBOARD_DUO`, `GAMEPAD_STANDARD`) and a game inherits them. That is the same shape
+  ADR-0074 already refused for the WORDS — the engine knows positions, the game supplies meaning — applied
+  now to the defaults.
+
+decision-drivers:
+  - "An option that does nothing is worse than no option: it teaches a child that the adjustment failed"
+  - "Pillar 2: the control must exist wherever it helps, and must not exist where it cannot"
+  - "The engine cannot know which games hold keys — three hundred games, one answer each"
+  - "ADR-0104 §A's rule stands: a silent default decides for the child, and it is decided by whoever did not think about it"
+  - "Whatever is added must not break the twenty-three shape changes already in the 8.0 major"
+
+considered-options:
+  - "D1 · Leave it: latching is offered everywhere, and games where it does nothing simply have a dead control"
+  - "D2 · Infer it from `holdsAtOnce() > 1`"
+  - "D3 · Allow `holdsAtOnce() === 0` to mean «holds nothing»"
+  - "D4 · THE DEV'S ANSWER — the game declares the default mapping per device, latching included"
+
+pros-and-cons-of-the-options:
+  D1:
+    good:
+      - "Costs nothing today; everything already built keeps working."
+    bad:
+      - "🔴 A dead control is exactly the defect ADR-0106 §5 forbids: «nenhuma etapa pode entregar botão morto»."
+      - "A child presses it, nothing happens, and she learns that the adjustment does not work — in the menu she opened to be able to play."
+  D2:
+    good:
+      - "No new field; the number already exists and is mandatory."
+    bad:
+      - "🔴 Factually wrong: the quiz declares 1 and holds nothing, and a platformer that holds exactly one key also declares 1."
+      - "Reads an answer to a different question, which is the defect this record exists to name."
+  D3:
+    good:
+      - "One character of contract change, and the meaning is honest."
+    bad:
+      - "⚠️ Zero is currently REFUSED with a reason — «a game that holds nothing cannot be played» — and that reason is about REACHABILITY arithmetic, not about latching. Changing it would make `alcance()` pass by vacuity, the defect `reachable` already refuses."
+      - "Still answers only the latching half; the mapping half stays with the engine."
+  D4:
+    good:
+      - "One rule covers both halves: the game owns its defaults, and latching is one of them."
+      - "Same shape ADR-0074 already chose for the words — the engine knows positions, the game supplies meaning."
+      - "A game that holds nothing simply declares no latching default, and the control is never offered."
+      - "The per-device default is what a child meets first, and only the game knows what its device layout should be."
+    bad:
+      - "It is a CONTRACT change, so it belongs to the 8.0 major alongside the twenty-three already there."
+      - "Three hundred games gain something to declare — the cost ADR-0104 §A already accepted for `holdsAtOnce`."
+      - "`input/default-bindings` stops being the last word and becomes the fallback; two sources need one precedence rule, written once."
+
+decision-outcome:
+  chosen-option:
+    link: "D4 — the game declares the default mapping per device, and latching is part of it"
+    justification: |
+      **The GAME declares the default mapping for each device, and the latching flag is part of that
+      declaration.** Two consequences, and the second is the one that corrects ADR-0113:
+
+      1. **DEFAULTS ARE THE GAME'S.** `input/default-bindings`' tables stop being the last word and become the
+         engine's FALLBACK, for a game that declares nothing. Where the game declares, the game wins.
+      2. **A GAME THAT HOLDS NOTHING NEVER OFFERS LATCHING.** Not a disabled control with a reason — ABSENT.
+         ⚠️ And that is a different absence from ADR-0113 clause 3: there the control is disabled BECAUSE the
+         device requires latching and it must not be switched off; here there is nothing to latch at all, and
+         a control that explains why it does nothing would still be a control that does nothing.
+
+      ⚠️ WHAT ADR-0113 GOT RIGHT AND SURVIVES INTACT: where latching exists, the value belongs to the
+      controller's mapping like a caps-lock; the icon stays reachable; and on eyes, face, gestures and speech
+      it cannot be switched off. All three now carry a precondition rather than being universal — **this game
+      holds keys**.
+
+      📏 AND THE MEASUREMENT SAYS WHY A NEW FIELD IS NEEDED AT ALL, rather than reading one that exists.
+      `holdsAtOnce()` cannot answer it: zero is refused by `conformanceProblems` with a reason about
+      reachability arithmetic, and `consumer-quiz` declares `1` while holding nothing. «One at a time» and
+      «one held» are the same number today. Every decision downstream has been reading a number that answers
+      a different question — including, until this record, mine.
+
+      📌 The shape follows ADR-0084: a DECLARATION IS A FUNCTION, because a game changes its demands between
+      phases. A platformer on foot holds a direction; the same phase in a vehicle may hold nothing.
+  consequences:
+    good:
+      - "A dead control disappears instead of being explained — ADR-0106 §5 applied to a case it had not reached"
+      - "The child meets the layout the game's author chose for her device, not the engine's guess"
+      - "The engine stops inferring «holds keys» from a number that means something else"
+      - "Everything built for ADR-0113 survives: the per-transport key, the automaton, the dual write, the refusal"
+    bad:
+      - "A contract change: it goes in the 8.0 major, beside the twenty-three shape breaks already there"
+      - "Three hundred games gain a declaration — the cost ADR-0104 §A already accepted once"
+      - "Two sources of default (game, then engine fallback) need ONE written precedence rule, or they drift"
+      - "⚠️ The engine's `DEFAULTS.toggleMove` stops being the answer and becomes the last resort; every reader of it has to be found"
+  confirmation: |
+    ⚠️ NOT YET BUILT, and written the same turn the correction arrived so the code cannot keep reading
+    `holdsAtOnce` as if it answered this.
+
+    The gates it owes:
+
+    · A GAME THAT HOLDS NOTHING GETS NO LATCHING CONTROL — asserted as ABSENCE from the panel and from the
+      bar, not as a disabled control. ⚠️ And the paired case: a game that DOES hold gets it, or «absent» would
+      pass by never rendering anything.
+    · THE GAME'S DEFAULT WINS OVER THE ENGINE'S — a case with both present, and the game's value observed.
+      ⚠️ Plus the fallback case, or «always use the engine's» would pass whenever a game declares nothing.
+    · THE PRECEDENCE IS WRITTEN ONCE — a sieve that there is a single place resolving game-then-engine, in the
+      shape of the inventories this repository already uses. Two resolutions of one precedence is the
+      two-tables defect it has paid for three times.
+    · ADR-0113'S THREE CLAUSES STILL HOLD WHERE LATCHING EXISTS — the existing gates are the assertion, and
+      they must keep passing with the precondition added rather than being rewritten around it.
+    · ⚠️ AND `holdsAtOnce` KEEPS MEANING WHAT IT MEANS — a case that this record did NOT redefine it, because
+      the reachability arithmetic depends on it and a second meaning would break `alcance()` silently.
+
+more-information: |
+  Supersedes ADR-0113 in part: the assumption that latching is a control every game offers, with a factory
+  default. Its answer to WHERE the value lives is untouched and is what makes this record cheap to build.
+
+  Extends ADR-0074's division — the engine knows positions, the game supplies the words — to the DEFAULTS.
+
+  Deliberately NOT decided here: the exact name and shape of the declaration field; whether a game may declare
+  a default for a device the engine does not yet support; how the engine's fallback tables are versioned once
+  they stop being the last word; and whether `holdsAtOnce` should eventually be split into «how many at once»
+  and «are any held», which is the question this record exposed and did not answer.
