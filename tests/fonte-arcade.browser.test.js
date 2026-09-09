@@ -43,6 +43,29 @@ import '../app/public/vendor/fonts.css';
 import { FONT_BY_KEY } from '../app/js/ui/fonts.js';
 
 /** Grande o bastante para que uma diferença de arredondamento não pareça diferença de glifo. */
+// ========================= ⚠️ POR QUE ESTE MÉTODO VALE AQUI, E ONDE ELE DEIXA DE VALER =========================
+// 📏 Escrito em 2026-09-09, depois de o MESMO método ter falhado noutro repositório. O `game-whackwhack`
+// copiou esta forma para a `Atkinson Hyperlegible` e o gate reprovou na primeira corrida em Linux que
+// aquele repositório já teve — `7: expected 24 not to be 24`, com a face perfeitamente carregada.
+//
+// O argumento deste ficheiro tem DUAS pernas, e só a primeira é sobre o ficheiro de fonte:
+//
+//   1. A FACE É MONOESPAÇADA a exactamente 1em, e o controlo (`serif`) é PROPORCIONAL. Um glifo que caísse
+//      para o recuo não pode coincidir, porque as duas famílias avançam por regras diferentes. O caso do
+//      `toBeCloseTo(SIZE * CARACTERES.length)` é o que prende essa perna: no dia em que a face de arcade
+//      deixar de ser monoespaçada, ele reprova — e é isso que impede o método de se tornar silenciosamente
+//      inválido, que é exactamente o que aconteceu no outro repositório com uma face PROPORCIONAL.
+//
+//   2. ⚠️ A FAMÍLIA NÃO PODE ESTAR INSTALADA NA MÁQUINA. Se estiver, o `font-family` resolve-se do SISTEMA
+//      e o `@font-face` vendorizado nunca é consultado: renomear a declaração para nunca casar deixa o
+//      ficheiro inteiro VERDE. Foi o que se mediu no outro repositório — «Atkinson Hyperlegible Regular»
+//      está entre as fontes de utilizador desta máquina, e aquele bloco não tem cobertura nenhuma aqui.
+//      📏 Medido nesta árvore em 2026-09-09: `Press Start 2P` NÃO está instalada, nem no sistema nem no
+//      utilizador, e nenhum teste desta engine mede métricas da Atkinson. Este ficheiro está limpo dos dois.
+//
+// 📌 QUEM COPIAR ESTA FORMA TEM DE VERIFICAR AS DUAS. A primeira é uma propriedade da face e afere-se com
+// um caso; a segunda é uma propriedade da MÁQUINA e não se afere de dentro do teste — só se descobre
+// tentando quebrar o `@font-face` de propósito e vendo se alguma coisa reprova.
 const SIZE = 48;
 const FAMILIA = "'Press Start 2P'";
 
