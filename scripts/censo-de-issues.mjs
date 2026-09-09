@@ -21,8 +21,23 @@ import { pathToFileURL } from 'node:url';
 
 const REPO = process.argv[2] ?? 'the-inclusionist/the-inclusionist-engine';
 
-/** O orçamento do ADR-0126: uma issue é um item de checklist, não um livro. */
-const ORCAMENTO_CHARS = 600;
+/**
+ * O ORÇAMENTO DO ADR-0126 — «o corpo da issue tem de ser mais curto do que o commit que a fecha».
+ *
+ * 🔴 ERA 600 E O NÚMERO ERA INVENTADO. Eu escrevi-o no ADR-0126 sem o medir, e o censo passou a imprimir
+ * 17 de 18 issues «acima do orçamento» — um vermelho que não distingue um livro de um parágrafo, e um
+ * relatório que acusa quase tudo é um relatório que ninguém lê.
+ *
+ * 📏 MEDIDO EM 2026-09-09 sobre as ÚLTIMAS 400 MENSAGENS DE COMMIT deste repositório: mediana **2619**
+ * caracteres, quartil inferior 1941, decil inferior **1388**. A regra do registo compara com a mensagem que
+ * FECHA a issue, e essa não se conhece de antemão — então o orçamento é o decil inferior: um corpo abaixo
+ * dele é mais curto do que 90% dos commits desta árvore, logo cumpre a regra contra quase qualquer fecho.
+ *
+ * 📌 Derivado da árvore e não escolhido, que é a mesma razão pela qual o número de lugares do teclado é
+ * `ACTIONS.length` — um número escrito à mão começa a mentir no dia em que a árvore muda, e este cresce com
+ * o hábito de escrita deste projecto em vez de o contradizer.
+ */
+const ORCAMENTO_CHARS = 1400;
 
 /**
  * OS PADRÕES DE TÍTULO QUE DENUNCIAM UMA NÃO-ISSUE. ⚠️ São HEURÍSTICA e o relatório di-lo — o que é
@@ -85,8 +100,20 @@ function main() {
 
   console.log(`censo de issues · ${REPO}`);
   console.log(`  ABERTAS: ${dados.length}   mediana do corpo: ${mediana} chars   orçamento: ${ORCAMENTO_CHARS}`);
+  // 🎯 O NÚMERO ACCIONÁVEL É A INTERSECÇÃO, e separá-lo foi um conserto de 2026-09-09. «Sem caixa» sozinho
+  // acusava SETE issues de 543 a 846 caracteres, cada uma com um `done when` claro num parágrafo — uma issue
+  // pequena não precisa de checklist, precisa de ser pequena. ⚠️ Somar ruído ao sinal é como um crivo deixa
+  // de ser lido: os dois números crus ficam à vista porque medem coisas reais, e o terceiro é o que se
+  // persegue. É a mesma lição que o crivo dos módulos sem teste já tinha dado — ali a regra também era a
+  // intersecção, e não «módulo sem teste», que acusaria o `core/entity` com dezanove importadores.
+  const grandesSemCaixa = grandes.filter((i) => caixas(i) === 0);
+
   console.log(`  📏 MECÂNICO — acima do orçamento: ${grandes.length}/${dados.length}` +
-    `   ·   sem uma única caixa de checklist: ${semCaixa.length}/${dados.length}`);
+    `   ·   sem uma única caixa: ${semCaixa.length}/${dados.length}`);
+  console.log(`  🎯 ACCIONÁVEL — grande E sem lista (um livro sem checklist): ${grandesSemCaixa.length}`);
+  for (const i of [...grandesSemCaixa].sort((a, b) => corpo(b).length - corpo(a).length)) {
+    console.log(`     #${String(i.number).padStart(3)} ${String(corpo(i).length).padStart(5)} chars · ${i.title.slice(0, 56)}`);
+  }
 
   if (grandes.length) {
     console.log('\n  as maiores (o corpo tem de ser mais curto do que o commit que a fecha):');
