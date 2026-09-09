@@ -1,9 +1,22 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
-# Neural TTS on sherpa-onnx-wasm — integration plan (ADR-0022)
+# Neural TTS on sherpa-onnx-wasm — integration plan
 
-Runtime decided in **[ADR-0022](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml)**: run VITS/Piper
-`.onnx` in the browser via **sherpa-onnx compiled to WebAssembly** (k2-fsa), replacing the discontinued
-`@mintplex-labs/piper-tts-web`. This doc is the research-first plan the Dev builds from.
+> 🛑 **SUPERSEDED ON 2026-09-09 — DO NOT BUILD FROM THIS.** The runtime is **piper**
+> (`@mintplex-labs/piper-tts-web`), owned by the engine — **ADR-0127**, which supersedes ADR-0065 §1 and with
+> it the sherpa adoption this plan was written for.
+>
+> 🔴 **AND THE PREMISE BELOW WAS MEASURED FALSE.** This document called the alternative «discontinued», and no
+> version of `@mintplex-labs/piper-tts-web` carries a `deprecated` field — 1.0.5 shipped on 2026-08-11, after
+> ADR-0022 declared it dead, and the installed 1.0.4 carries 118 voices including the four ADR-0110
+> guarantees. That single word travelled from here into five other places by being read rather than measured.
+>
+> 📌 **The research is kept rather than deleted**, because ADR-0127 names what would bring sherpa back: the
+> mintplex package actually being deprecated, a locale piper cannot serve, or its hard-wired Hugging Face host
+> blocking a school mirror the deployment needs. If any of those happens, this plan is the head start — and
+> its numbers will need re-measuring, because they are from July.
+
+Runtime originally decided in **ADR-0022** (now superseded whole by ADR-0065, whose §1 is superseded in part
+by ADR-0127): run VITS/Piper `.onnx` in the browser via **sherpa-onnx compiled to WebAssembly** (k2-fsa).
 
 ## Target voices (pt-BR, from k2-fsa `tts-models`)
 
