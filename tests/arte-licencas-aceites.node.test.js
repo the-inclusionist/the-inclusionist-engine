@@ -68,6 +68,20 @@ const SEM_PORTA = Object.freeze([
 
 /** As três portas do ADR-0133. A linha declara a sua, e cada uma exige uma coisa diferente. */
 const PORTAS = Object.freeze(['concessao', 'licenca', 'ponte']);
+
+/**
+ * 🎯 A ENTREGA, que é a pergunta 3 do ADR-0133 e NÃO é um critério de admissão.
+ *
+ * «Podemos conveiar isto?» não aprova nem recusa: ROTEIA. O que podemos conveiar viaja connosco
+ * (`repositorio`). O que não podemos é obtido por quem instala, da origem (`pessoa`), e **não entra nesta
+ * árvore nem no pacote** — é o que o ADR-0108 já decidiu para a fonte Ronde, que não pode ser empacotada.
+ *
+ * ⚠️ E a distinção não é subtil para um pacote de assets: usar arte NUM JOGO é o que uma concessão dessas
+ * costuma permitir, enquanto equipar uma engine com o pacote inteiro e entregá-lo a trezentos jogos é
+ * REEMPACOTAR. 📌 Medido em 2026-09-09: nem `itch.io` nem `kenney.nl` mandam cabeçalho CORS, logo a versão
+ * automática disto nem sequer é possível — só uma pessoa consegue buscar de lá.
+ */
+const ENTREGAS = Object.freeze(['repositorio', 'pessoa']);
 /** A ponte só existe para share-alike da Creative Commons, e só produz esta saída. */
 const FONTE_DA_PONTE = /^CC-BY-SA-[34]\.0$/;
 const SAIDA_DA_PONTE = 'GPL-3.0-only';
@@ -77,7 +91,7 @@ const SAIDA_DA_PONTE = 'GPL-3.0-only';
 /** Lê o livro-razão. Devolve as entradas; a primeira linha é cabeçalho e o vazio final ignora-se. */
 export function lerLivro(texto) {
   return texto.split(/\r?\n/).slice(1).filter((ln) => ln.trim() !== '').map((ln) => {
-    const [caminho, autor, fonte, porta, licenca, saida, derivadoDe] = ln.split(',');
+    const [caminho, autor, fonte, porta, licenca, saida, entrega, derivadoDe] = ln.split(',');
     return {
       caminho: (caminho ?? '').trim(),
       autor: (autor ?? '').trim(),
@@ -85,6 +99,7 @@ export function lerLivro(texto) {
       porta: (porta ?? '').trim(),
       licenca: (licenca ?? '').trim(),
       saida: (saida ?? '').trim(),
+      entrega: (entrega ?? '').trim(),
       derivadoDe: (derivadoDe ?? '').split(';').map((s) => s.trim()).filter(Boolean),
     };
   });
@@ -103,8 +118,20 @@ export function problemasDoLivro(entradas, vivos) {
   for (const e of entradas) {
     if (!e.autor) problemas.push(`sem autor: ${e.caminho} — «não consegui descobrir» não é licença`);
     if (!e.caminho.startsWith(ARTE)) problemas.push(`fora de ${ARTE}: ${e.caminho}`);
-    if (!vivos.has(e.caminho)) problemas.push(`órfão: ${e.caminho} — a entrada nomeia um recurso que não existe`);
     if (vistos.has(e.caminho)) problemas.push(`entrada repetida: ${e.caminho}`);
+
+    // 🎯 A entrega decide qual das DUAS afirmações opostas se faz sobre o ficheiro, e é por isso que ela
+    // vem antes do órfão: numa linha `pessoa` o ficheiro estar cá é que é o defeito.
+    if (!ENTREGAS.includes(e.entrega)) {
+      problemas.push(`entrega inválida em ${e.caminho}: «${e.entrega}» — tem de ser uma de ${ENTREGAS.join(', ')}`);
+    } else if (e.entrega === 'pessoa') {
+      if (vivos.has(e.caminho)) {
+        problemas.push(`CONVEIADO SEM PODER em ${e.caminho}: a entrega é «pessoa», e o ficheiro está nesta `
+          + `árvore — é exactamente o que a concessão proíbe (ADR-0133, ADR-0108)`);
+      }
+    } else if (!vivos.has(e.caminho)) {
+      problemas.push(`órfão: ${e.caminho} — a entrada nomeia um recurso que não existe`);
+    }
 
     // 🎯 A URL da fonte é a matéria-prima da conferência na origem que a #140 vai construir: sem ela
     // guardada por recurso, a licença declarada não tem contra o que ser conferida.
@@ -174,7 +201,7 @@ const entradas = existsSync(join(RAIZ, LIVRO)) ? lerLivro(readFileSync(join(RAIZ
 /** Uma linha sã, para os casos mudarem UM campo de cada vez em vez de repetirem o objecto inteiro. */
 const linha = (extra = {}) => ({
   caminho: `${ARTE}x.png`, autor: 'Alguém', fonte: 'https://opengameart.org/x',
-  porta: 'licenca', licenca: 'CC0-1.0', saida: '', derivadoDe: [], ...extra,
+  porta: 'licenca', licenca: 'CC0-1.0', saida: '', entrega: 'repositorio', derivadoDe: [], ...extra,
 });
 const so = (extra) => problemasDoLivro([linha(extra)], new Set([`${ARTE}x.png`]));
 
@@ -255,6 +282,25 @@ describe('ADR-0133 · as três portas por onde a arte entra', () => {
     expect(p.filter((s) => s.startsWith('licença por medir'))).toHaveLength(1);
     expect(p[0], 'a mensagem não diz COMO admitir a licença nova').toContain('quatro perguntas');
     expect(p.some((s) => s.startsWith('SEM PORTA')), 'tratou um nome novo como proibição').toBe(false);
+  });
+
+  it('🔴 [Right] uma linha de entrega `pessoa` cujo ficheiro ESTÁ na árvore reprova', () => {
+    // O caso do Tiny Swords atual, e é o que o Dev viu: a concessão dele permite usar a arte NUM JOGO, e
+    // equipar a engine com o pacote inteiro é reempacotá-lo. A linha declara-se e o ficheiro NÃO entra.
+    const p = problemasDoLivro(
+      [linha({ porta: 'concessao', licenca: 'https://pixelfrog-assets.itch.io/tiny-swords', entrega: 'pessoa' })],
+      new Set([`${ARTE}x.png`]),
+    );
+    expect(p.filter((s) => s.startsWith('CONVEIADO SEM PODER'))).toHaveLength(1);
+  });
+
+  it('⚠️ [Inverse] e a mesma linha SEM o ficheiro na árvore passa — senão não haveria como a declarar', () => {
+    // A metade oposta, e sem ela a regra não teria saída: o que a entrega `pessoa` afirma é uma AUSÊNCIA,
+    // e uma ausência que também reprovasse tornaria a porta impossível de usar.
+    expect(problemasDoLivro(
+      [linha({ porta: 'concessao', licenca: 'https://pixelfrog-assets.itch.io/tiny-swords', entrega: 'pessoa' })],
+      new Set(),
+    )).toEqual([]);
   });
 
   it('⚠️ [Right] uma fonte sem URL reprova — é a matéria-prima da conferência na origem', () => {
