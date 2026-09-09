@@ -68,9 +68,20 @@ jobs:
   gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # ⚠️ v7 HERE IS EVIDENCE, NOT SYMMETRY WITH `ci.yml`. This file is the one that reaches five other
+      # repositories, so it moved a day after the engine's own bump and only once that bump had a green run
+      # behind it (`60fdb0e`, all five real jobs green, and it carries `9a69afe`). The two breaking changes
+      # between v4 and v7 that could reach a CALLER were measured in the five callers, not here:
+      #   · setup-node v5 added automatic caching keyed on `packageManager` (narrowed to npm in v6) — none of
+      #     the five games declares that field, and this step passes `cache: npm` explicitly, which is the
+      #     path v6 kept;
+      #   · checkout v7 refuses a fork checkout under `pull_request_target`/`workflow_run` — no caller uses
+      #     either trigger; their workflows call this one from `push`/`pull_request`.
+      # 📌 A caller's own repository is what proves this, and the engine's tree cannot: the same lesson that
+      # cost an ADR on 2026-09-09 when a contract field was retired on this repository's own consumer.
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
           cache: npm
