@@ -1,0 +1,105 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0106]
+  date: 2026-09-09
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-09, verbatim: «Aposentar.»"
+    - "ADR-0106 — it PARKED this collision in writing and left it here: «COLLIDES WITH
+       `Declinios.semMenuDePausa`, AND THIS RECORD DOES NOT RESOLVE IT … retiring it changes what a consumer
+       may decline, and that is a separate decision for the Dev»"
+    - "The Dev's request of 2026-09-07 that ADR-0106 records: «Todo jogo da engine inclusionist deve ter o
+       mesmo menu de pausa e ícones de acessibilidade desde a primeira [tela]»"
+  informed: []
+
+title: The pause menu stops being declinable — the reason the decline existed was built away
+
+context-and-problem-statement: |
+  `Declinios.semMenuDePausa` was invented because the engine had NOTHING that suited a quiz: there was no
+  default button list and no mounting, so a game with no pause of its own had to say «I have none» or be
+  reported as incomplete. The field made an absence honest.
+
+  📏 THAT REASON IS GONE, and it was built away by ADR-0106 itself: stage 3 gave the engine a default
+  `.pm-btn` list (`001b185`), stage 2 made the engine MOUNT the pause card (`092a670`), and the card only
+  offers what the game can action, so a game that contributes nothing gets a card that is not a dead menu.
+
+  ⚠️ AND ADR-0106 SAW THE COLLISION AND REFUSED TO RESOLVE IT, in writing: the field says «a quiz has none»
+  and the Dev's request says «EVERY game must have the same pause menu». A record that leaves a contradiction
+  named is doing its job; one that leaves it named forever is not.
+
+decision-drivers:
+  - "A child finds the same pause in every game, or she has to learn each game's exception"
+  - "The reason a field exists dying is the moment to remove it, not a reason to keep it for compatibility"
+  - "Three hundred games must not each decide whether they have a pause"
+
+considered-options:
+  - "M1 · Keep the field: a consumer may still decline the pause"
+  - "M2 · Keep it but deprecate it, and ignore it at runtime"
+  - "M3 · THE DEV'S ANSWER — retire it"
+
+pros-and-cons-of-the-options:
+  M1:
+    good:
+      - "Nothing to migrate; every consumer keeps compiling."
+    bad:
+      - "🔴 It contradicts the request ADR-0106 was written to satisfy, and the contradiction is in the code."
+      - "A field whose reason died is a trap: the next author declines because the option exists."
+  M2:
+    good:
+      - "No compile break; the behaviour becomes uniform immediately."
+    bad:
+      - "⚠️ A field that is accepted and ignored is worse than one that is removed — the consumer believes it declined and it did not."
+  M3:
+    good:
+      - "Every game has the same pause, which is the request."
+      - "The contract stops offering a choice the engine no longer honours."
+      - "It goes in the 8.0 major, where the consumer is already editing."
+    bad:
+      - "A consumer that declined now gets a pause card it did not ask for — and must remove the line."
+      - "⚠️ A game whose design genuinely has no pause has no way to say so; if one appears, it needs a NEW decision rather than this field back."
+
+decision-outcome:
+  chosen-option:
+    link: "M3 — retire `Declinios.semMenuDePausa`"
+    justification: |
+      **THE PAUSE MENU STOPS BEING DECLINABLE.** In the Dev's word: «Aposentar.»
+
+      1. **THE FIELD LEAVES THE CONTRACT.** A consumer deletes the line; the engine mounts the card as it does
+         for every other game.
+      2. **THE OTHER THREE DECLINES ARE UNTOUCHED** — `semAtorDePausa`, `semVozNeural`, `semAssistenteDePad`
+         stay. They describe absences the engine still cannot fill; this one described an absence the engine
+         filled in `001b185` and `092a670`.
+      3. **THE `consumer-quiz` IS THE FIRST TO LOSE IT**, and it is the game the field was invented for. It
+         now gets the engine's pause card, which offers only what it can action.
+
+      📌 AND THE RECORD EXISTS BECAUSE ADR-0106 ASKED FOR IT. That record named the collision and said it was
+      the Dev's; leaving his answer in a chat would make the next reader of ADR-0106 believe the collision is
+      still open, and argue from it.
+  consequences:
+    good:
+      - "A child meets the same pause in every game — the request of 2026-09-07, now true in the contract"
+      - "The contract stops offering a choice the engine no longer honours"
+      - "ADR-0106's parked collision is closed instead of being re-read as open"
+    bad:
+      - "A consumer that declined has a line to delete; it goes in the 8.0 major alongside the others"
+      - "⚠️ A game that genuinely has no pause loses the way to say so — and would need a new decision, not this field back"
+      - "The quiz gains a card it never had, which is a behaviour change nobody asked to see and everybody asked for"
+  confirmation: |
+    The gates it owes, and both are cheap because the mechanism already exists:
+
+    · THE FIELD IS GONE FROM THE CONTRACT — the shape portrait is the assertion, and removing a member is
+      exactly what it was built to name. It fires on the way in.
+    · ⚠️ AND `tests/declinio-morto` MUST FOLLOW: that inventory lists which declines have readers, and
+      `semMenuDePausa` was one of the three alive. Leaving it in the list would make the sieve assert a field
+      that no longer exists — the monument this repository writes exit cases to prevent.
+    · THE QUIZ GETS A CARD, asserted where the engine mounts it. The absence was the old behaviour and it had
+      no case; the presence needs one, or «every game has a pause» stays prose.
+
+more-information: |
+  Supersedes ADR-0106 in part: the collision its `more-information` named and deliberately left open. Every
+  other clause of that record stands, and two of them — the default button list and the mounting — are why
+  this one could be decided at all.
+
+  Deliberately NOT decided here: what a game with no pause AT ALL would do, if one ever appears. The answer is
+  not this field returning; it is a decision about what «pause» means for a game with no running state.
