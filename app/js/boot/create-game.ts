@@ -32,14 +32,9 @@
 //
 // ========================= DECLINAR NÃO É MENTIR =========================
 // O quiz recusou o sonar e o pad em vez de inventar tiles e uma caixa de colisão falsos, e essa distinção é o
-// que separa um achado de um verde falso. Aqui ela vira TIPO: um jogo que não tem uma peça declara-o num
-// campo em vez de devolver `null` de um getter e torcer. O que se declina fica registrado no objeto devolvido,
-// e um consumidor pode ser auditado pelo que recusou.
-// ⚠️ E ESTE PARÁGRAFO NÃO NOMEIA NENHUM DOS CAMPOS, o que parece esquisito e é medido: o
-// `tests/declinio-morto` conta MENÇÕES, incluindo as de comentário, e fá-lo de propósito — «falhar para o lado
-// de vivo é a direcção certa deste erro», porque uma acusação falsa desliga um gate. A consequência é que usar
-// um declínio como EXEMPLO em prosa o faz parecer lido, e um campo genuinamente morto deixa de ser acusado.
-// 📌 O primeiro rascunho desta nota fez exactamente isso, e o crivo apanhou-o no mesmo minuto.
+// que separa um achado de um verde falso. Aqui ela vira TIPO: um jogo sem menu de pausa declara
+// `semMenuDePausa: true` em vez de devolver `null` de um getter e torcer. O que se declina fica registrado no
+// objeto devolvido, e um consumidor pode ser auditado pelo que recusou.
 //
 // ========================= O QUE ISTO AINDA NÃO FAZ, DITO AQUI E NÃO ESCONDIDO =========================
 // Não liga render, física, tiles nem o sonar — nada disso é de todo jogo, e o achado 9 mostra que o sonar hoje
@@ -115,9 +110,8 @@ export interface EngineHost {
    * ONDE O CARTÃO DE PAUSA da primeira tela é pendurado. Ausente, a engine usa `#game-region`.
    *
    * ⚠️ Existe pela mesma razão do `a11yBarHost`: a engine pode OFERECER a pausa, mas não sabe onde ela cabe
-   * no desenho de um jogo alheio. 📌 E desde o ADR-0120 ONDE já não é SE: a pausa deixou de ser declinável, e
-   * o que sobra deste campo é o lugar. Um hospedeiro que não aceite filhos vira linha de `problems`, que é a
-   * diferença entre a engine não saber e a engine calar-se.
+   * no desenho de um jogo alheio. Um jogo que não tem pausa nenhuma declara `declines.semMenuDePausa` —
+   * declinar é escolha registada, não ter é omissão, e o ADR-0106 §2 é inteiro sobre a diferença.
    */
   readonly pauseHost?: Element | null;
 }
@@ -129,15 +123,8 @@ export interface EngineHost {
  * "pausado" para navegar os próprios menus, porque a engine não tinha por onde ouvir "eu não tenho fases".
  */
 export interface Declinios {
-  /*
-   * ⚠️ `semMenuDePausa` SAIU DAQUI em 2026-09-09 (ADR-0120), e a nota fica porque a ausência dele é decisão e
-   * não esquecimento. Ele existia porque a engine não tinha nada que servisse a um jogo sem pausa própria —
-   * e essa razão foi CONSTRUÍDA fora pelo próprio ADR-0106: a lista padrão de botões (`001b185`) e a
-   * montagem do cartão (`092a670`). O Dev fechou a colisão que aquele registo tinha deixado aberta por
-   * escrito, com uma palavra: «Aposentar.»
-   * 📌 Um jogo que genuinamente não tenha pausa nenhuma NÃO recupera este campo — isso seria uma decisão
-   * nova, sobre o que «pausa» quer dizer num jogo sem estado a correr.
-   */
+  /** Sem menu de pausa por tela (um quiz não tem). */
+  readonly semMenuDePausa?: boolean;
   /** Sem assistente de mapeamento de controle. */
   readonly semAssistenteDePad?: boolean;
   /** Sem "ator da pausa" — quem apertou o botão que abriu o menu. */
@@ -596,12 +583,12 @@ export function createGame(o: CreateGameOptions): Engine {
    * engine inventou uma convenção, procurou-a, não a achou, e concluiu em silêncio que nenhum jogo tem menu
    * de pausa — que é a MESMA forma de defeito do ADR-0106 §2, desta vez cometida pela engine contra si mesma.
    *
-   * Agora ela cria o que procura — e para TODO jogo, desde o ADR-0120: o declínio saiu, porque a razão de ele
-   * existir foi construída fora por este mesmo ADR-0106.
+   * Agora ela cria o que procura. Quem declina (`semMenuDePausa`) continua sem nada e sem acusação — declinar
+   * é escolha; não ter é omissão.
    */
-  const hospedeiroDaPausa = o.host.pauseHost ?? $('#game-region');
+  const hospedeiroDaPausa = declines.semMenuDePausa ? null : (o.host.pauseHost ?? $('#game-region'));
   const pausaUsavel = !!hospedeiroDaPausa && typeof (hospedeiroDaPausa as HTMLElement).appendChild === 'function';
-  if (!pausaUsavel) {
+  if (!declines.semMenuDePausa && !pausaUsavel) {
     problems.push(
       'sem sítio para o menu de pausa: declare `host.pauseHost` ou tenha um #game-region que aceite filhos. '
       + 'Sem ele a criança não alcança os ajustes durante a partida, e `declines.semMenuDePausa` é como se diz '
@@ -662,7 +649,7 @@ export function createGame(o: CreateGameOptions): Engine {
   const nav = initMenuNav({
     $, getActiveElement: () => doc.activeElement,
     topVisibleOverlay: overlays.topVisibleOverlay, closeById: overlays.closeById,
-    getPauseMenu: (i) => $<HTMLElement>(`#vp-pause-${i}`),
+    getPauseMenu: declines.semMenuDePausa ? () => null : (i) => $<HTMLElement>(`#vp-pause-${i}`),
     setPhase: o.setPhase ?? (() => {}),
     setPauseActor: () => {},
     srSay,

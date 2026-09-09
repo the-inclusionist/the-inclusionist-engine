@@ -63,6 +63,14 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
   sim!") A linha que separa: **pergunto antes de GASTAR** (cota, dinheiro, ação irreversível, disparo de LLM);
   **não pergunto para REGISTRAR** o que ele já decidiu. E quando ele propõe direção, a resposta abre pelo que dá
   para fazer — objeção continua valendo, mas depois do caminho, não no lugar dele.
+- 🔴 **TIRAR CAMPO DE CONTRATO? MEÇA O CATÁLOGO, NÃO O CONSUMIDOR DA CASA.** Aprendido em 2026-09-09 e caro:
+  o `Declinios.semMenuDePausa` foi aposentado (ADR-0120) com a premissa medida no `consumer-quiz`, que vive
+  neste repositório. Medido depois nos cinco jogos: **quatro usam o campo**, e removê-lo tirava as setas, o
+  `Enter` e o `Space` a três deles — regressão de teclado numa engine acessibilidade-primeiro. ⚠️ **E três nem
+  falhariam no `tsc`**: consomem a versão publicada e só veriam a mudança no dia do bump, que é o dia da
+  entrega. 📌 O custo de evitar isto são **dois minutos de `git grep` nos repositórios irmãos**; o custo de o
+  não fazer foi um ADR revertido (ADR-0121) e a issue #132. **Um consumidor que vive na mesma árvore não prova
+  um contrato — ele só prova a si mesmo.**
 - **Doc alterada VIRA teste, tarefa (issue) ou ADR** — com pouquíssimas exceções, documentação que não se transforma
   em algo acionável (um teste que a verifica, uma issue de trabalho, ou um ADR que a decide) **não serve**. Ao mexer
   num doc, pergunte "isto vira o quê?" e crie.

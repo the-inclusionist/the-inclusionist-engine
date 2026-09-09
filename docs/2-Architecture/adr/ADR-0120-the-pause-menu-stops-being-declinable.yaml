@@ -2,6 +2,18 @@
 metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0106]
+  superseded-in-part:
+    - by: ADR-0121
+      what: >-
+        the RETIREMENT itself, reverted within hours. 🔴 The premise of this record — that the reason for
+        `Declinios.semMenuDePausa` had died — was measured on ONE consumer, `consumer-quiz`, which lives in
+        this repository. Measured across the catalogue on the same day: `game-chess`, `pixi-15-puzzle`,
+        `game-2048` and `game-whackwhack` ALL use the field, four of the five games. ⚠️ And it is not markup —
+        `pixi-15-puzzle` had written the cost beside its own declaration: «if `semMenuDePausa` were omitted,
+        every arrow, Enter and Space would start being eaten the moment anything created an element with a
+        pause id.» Removing it takes the KEYBOARD from four games. 📌 What this record got right survives: a
+        game with NO pause at all does not need to declare anything. What was wrong was believing that
+        describes every declining game.
   date: 2026-09-09
   decision-makers: [Dev]
   consulted:

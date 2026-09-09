@@ -99,12 +99,8 @@ function leitores(campo) {
 describe('nenhuma declinação está morta · o inventário encolhe', () => {
   it('[Vácuo] o bloco `Declinios` foi mesmo encontrado, e tem campos', () => {
     expect(BLOCO, 'a interface mudou de nome ou de forma e o crivo ficou cego').not.toBeNull();
-    // ⚠️ TRÊS e não quatro desde 2026-09-09: o `semMenuDePausa` SAIU (ADR-0120), porque a razão de ele existir
-    // — a engine não ter nada que servisse a um jogo sem pausa própria — foi construída fora pelo ADR-0106.
-    // 📌 O inventário encolheu por uma ENTREGA e não por uma limpeza, que é a única forma de encolher que
-    // interessa a este ficheiro.
-    expect(CAMPOS.length).toBeGreaterThanOrEqual(3);
-    expect(CAMPOS, 'a pausa voltou a ser declinável sem registo').not.toContain('semMenuDePausa');
+    expect(CAMPOS.length).toBeGreaterThanOrEqual(4);
+    expect(CAMPOS).toContain('semMenuDePausa');
   });
 
   it('[Feliz] todo campo sem leitor está declarado, com a razão escrita à mão', () => {
@@ -123,10 +119,8 @@ describe('nenhuma declinação está morta · o inventário encolhe', () => {
   // 📌 O PAR QUE PROVA QUE O DETECTOR MEDE ALGUMA COISA: os outros três SÃO lidos, e o crivo tem de os ver
   // vivos. Sem este caso, um detector que devolvesse sempre zero passaria o [Feliz] enquanto a lista o
   // cobrisse — e passaria a acusar tudo em silêncio.
-  it('[Fronteira] os que a engine lê aparecem como vivos', () => {
-    // Eram TRÊS até 2026-09-09; o `semMenuDePausa` saiu do contrato inteiro (ADR-0120), e por isso sai daqui
-    // em vez de continuar a ser afirmado — um crivo que exige um campo inexistente reprova para sempre.
-    for (const vivo of ['semAtorDePausa', 'semVozNeural']) {
+  it('[Fronteira] os três que a engine lê aparecem como vivos', () => {
+    for (const vivo of ['semMenuDePausa', 'semAtorDePausa', 'semVozNeural']) {
       expect(CAMPOS, `${vivo} deixou de ser um declínio`).toContain(vivo);
       expect(leitores(vivo), `${vivo} passou a ser letra morta`).toBeGreaterThan(0);
     }

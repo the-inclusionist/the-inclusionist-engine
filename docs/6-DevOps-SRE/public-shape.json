@@ -10,6 +10,7 @@
     "interface Declinios": [
       "semAssistenteDePad?",
       "semAtorDePausa?",
+      "semMenuDePausa?",
       "semVozNeural?"
     ],
     "interface CreateGameOptions": [

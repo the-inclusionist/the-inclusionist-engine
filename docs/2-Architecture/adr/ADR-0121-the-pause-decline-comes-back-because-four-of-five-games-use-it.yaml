@@ -1,0 +1,125 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0120]
+  date: 2026-09-09
+  decision-makers: [AI]
+  consulted:
+    - "ADR-0120 — SUPERSEDED IN PART: the retirement of `Declinios.semMenuDePausa`. Its premise was that the
+       reason for the field had died; that premise was measured on ONE consumer out of five"
+    - "The Dev's decision of 2026-09-09, «Aposentar.», taken on the information this AI gave him — which was
+       incomplete. The decision is not being overruled; the facts it rested on are being corrected"
+    - "issue #132 — where the choice about the pause's future now lives, with the measurement"
+    - "ADR-0106 — the standing rule that the engine offers the pause to every game; untouched, and still the
+       direction this reversal delays rather than denies"
+  informed: []
+
+title: The pause decline comes back — the retirement was measured on ONE consumer out of five
+
+context-and-problem-statement: |
+  🔴 ADR-0120 RETIRED A FIELD THAT FOUR OF FIVE GAMES USE, and this record puts it back.
+
+  📏 MEASURED ON 2026-09-09, ACROSS THE LOCAL CATALOGUE, which is the measurement ADR-0120 should have made
+  and did not:
+
+    · `game-chess`      — `boot/game-shell.ts:439`, plus TWO spikes
+    · `pixi-15-puzzle`  — `boot/main.ts:108`
+    · `game-2048`       — `boot/main.ts:96`
+    · `game-whackwhack` — `boot/main.ts:94`
+    · `game-platformer` — does not use `createGame` at all (the monolith of origin, no `GameDeclaration`)
+
+  ⚠️ AND IT IS NOT MARKUP — IT IS THE KEYBOARD. `pixi-15-puzzle` wrote the cost beside its own declaration,
+  weeks ago: «if `semMenuDePausa` were omitted, every arrow, Enter and Space would start being eaten the
+  moment anything created an element with a pause id.» With a pause card mounted, the engine's menu navigation
+  captures the arrows, `Enter` and `Space`. In a game played with arrows, that is a game that stops being
+  playable by keyboard — an accessibility regression, in an accessibility-first engine.
+
+  📌 It also explains a failure this AI first read as selector ambiguity: `game-chess`'s «the HUD came back:
+  expected 'none' to be 'flex'» is behavioural interference, not a `querySelector` accident.
+
+  🔴 THE METHOD FAILED, NOT THE CARE. ADR-0120 measured `consumer-quiz` — the consumer that lives inside this
+  repository — and generalised to a catalogue of five that was never opened. Three of those four would not
+  even have failed a typecheck: they consume the published `7.0.1` and would not have seen the change until
+  the day they bumped, which is the day `8.0.0` ships. Without this measurement the regression arrived at four
+  games at once, in production, in the release.
+
+decision-drivers:
+  - "A regression that removes keyboard access is the worst failure this engine can ship, by its own pillar 2"
+  - "A decision taken on false information is corrected by correcting the information, not by defending it"
+  - "The consumer that proves a contract is the CATALOGUE, never the example consumer living in the same repo"
+  - "The direction of ADR-0106 is not in question; only the speed and the order are"
+
+considered-options:
+  - "R1 · Leave the retirement and migrate all four games to the engine's pause now"
+  - "R2 · Leave the retirement and let the games discover it at the 8.0.0 bump"
+  - "R3 · REVERT the retirement, and let the choice happen without a broken contract"
+
+pros-and-cons-of-the-options:
+  R1:
+    good:
+      - "It is the direction ADR-0106 states, and it would end the divergence in one pass."
+    bad:
+      - "🔴 Four repositories, each with a keyboard risk, under the pressure of a contract that is already broken."
+      - "⚠️ The cost of adoption is not deleting a menu — it is GIVING THE KEYBOARD BACK, and nobody has measured that yet."
+  R2:
+    good:
+      - "No work today."
+    bad:
+      - "🔴 It ships the regression to four games in the `8.0.0` release, all at once, to whoever installs it."
+  R3:
+    good:
+      - "The four games keep working, and the choice about the pause is made with the measurement in hand."
+      - "It reverses code, not the Dev's decision: what is being corrected is the information he decided on."
+      - "ADR-0120's correct half survives in the record — «no pause at all» is not a thing a game needs to declare."
+    bad:
+      - "The contract keeps a field ADR-0106 would rather not exist, for longer."
+      - "⚠️ Two records now disagree unless this one is read, which is exactly why it exists."
+
+decision-outcome:
+  chosen-option:
+    link: "R3 — revert the retirement; the decision about the pause's future lives in issue #132"
+    justification: |
+      **`Declinios.semMenuDePausa` COMES BACK, unchanged, by `git revert` of the commit that removed it.**
+
+      1. **THIS DOES NOT OVERRULE THE DEV.** He decided «Aposentar» on the information this AI gave him: that
+         the field's reason had died. It had died for `consumer-quiz` and for nobody else. Correcting a
+         decision's premise is not reversing the decision — and the choice, with the true measurement, is now
+         issue #132, where he answers with the catalogue in front of him.
+      2. **A REVERT AND NOT A REDESIGN**, deliberately. Naming a new field (`semPausaDaEngine`, «I mount my
+         own») is the likely answer and it is still a DESIGN choice; taking it now, to fix a regression this
+         AI introduced, would be a second unilateral decision stacked on the first.
+      3. **ADR-0120's CORRECT HALF STANDS and is not re-litigated**: a game with NO pause at all does not need
+         to declare anything, because the engine now mounts a card that offers only what the game can action.
+         What was wrong was believing that describes every declining game.
+
+      ⚠️ AND THE RECORD OF THE ERROR IS THE POINT OF THIS FILE. ADR-0120 stays exactly as written — it is
+      history, and a record is not edited to look better. What this one adds is the measurement that should
+      have preceded it.
+  consequences:
+    good:
+      - "Four games keep their keyboard, and nothing regresses into the 8.0.0 release"
+      - "The choice between adopting the engine's pause and keeping a truthful escape hatch is made with numbers"
+      - "The method failure is written where the next contract change will be read: measure the CATALOGUE"
+    bad:
+      - "⚠️ The contract keeps a field with two meanings — «I have none» and «I mount my own» — and that ambiguity is what made the mistake possible in the first place"
+      - "ADR-0106's rule that every game has the same pause stays unrealised for longer"
+      - "Two records must be read together, and a reader who stops at ADR-0120 gets the wrong answer"
+  confirmation: |
+    The revert is its own confirmation: the suite that was green before ADR-0120 is green again, and
+    `game-chess` compiles against the tree once its `seguraTeclas` is added.
+
+    What this record owes, and it is one gate:
+
+    · ⚠️ A CONSUMER-SIDE SWEEP BEFORE ANY FUTURE REMOVAL FROM `Declinios` — a contract field is not retired on
+      the evidence of the consumer that ships in the same repository. `git grep` across the catalogue costs two
+      minutes and would have prevented this entirely. 📌 It cannot be a test in THIS repository (the catalogue
+      is five other repositories, and a gate that reads them would make this repo's CI depend on their state);
+      it is a step in the procedure, and it belongs in `CLAUDE.md` beside «fato duplicado apodrece».
+
+more-information: |
+  Supersedes ADR-0120 in part: the retirement itself. Its reading of why the field EXISTED — the engine had
+  nothing that suited a game with no pause of its own, and stages 2 and 3 of ADR-0106 built that away — is
+  correct and untouched.
+
+  Deliberately NOT decided here: whether the field returns permanently under a truer name, or whether the four
+  games adopt the engine's pause. That is issue #132, and it is the Dev's.
