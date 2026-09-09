@@ -142,13 +142,16 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - name: no record points at a gate that does not exist
+      # 🎯 E A CONTRAMEDIDA DA DERIVA, no mesmo trabalho porque é aqui que as duas cópias se encontram: duas
+      # versões do validador dão dois veredictos sobre a MESMA árvore, e nada diz qual está certo. Já divergiu
+      # uma vez, no dia da mudança de casa.
+      - name: no record points at a gate that does not exist, and the two validators are the same
         env:
           ADR_TREE: ${{ github.workspace }}/adr-tree/docs/2-Architecture/adr
           # 🎯 A declaração de responsabilidade: com ela, SALTAR reprova. É o que apanha um `ADR_TREE` com o
           # caminho errado — o checkout a falhar derruba o trabalho sozinho, um caminho errado não.
           ADR_TREE_REQUIRED: "1"
-        run: npx vitest run --project node tests/ponteiros-de-registo.node.test.js
+        run: npx vitest run --project node tests/ponteiros-de-registo.node.test.js tests/validador-sem-deriva.node.test.js
 
   # ============================================================================================
   # Pillar 2, measured against the app RUNNING rather than against the source.
