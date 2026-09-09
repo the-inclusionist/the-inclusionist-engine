@@ -32,6 +32,22 @@ except ImportError:
 
 META_KEYS = ["status", "date", "decision-makers", "consulted", "informed"]
 
+# 🔴 A RAIZ CONTRA A QUAL O `confirmed-by` É CONFERIDO, e ela era `os.getcwd()` escrito no meio da comparação.
+#
+# 📏 MEDIDO EM 2026-09-09, correndo este validador de FORA do repositório: 122 registos, **113 sãos e 9 com
+# problemas** — e os nove eram os nove que têm `confirmed-by`. Nenhum defeito nos registos: a comparação
+# resolvia caminhos contra a pasta de onde alguém chamou o comando, e ninguém tinha declarado que era isso.
+#
+# ⚠️ E A MEDIÇÃO VALE MAIS DO QUE O CONSERTO, porque ela desenha a fronteira de uma decisão em aberto (a
+# proposta do Dev de um repositório só para a árvore de ADR): a conferência da FORMA viaja — 113 passaram
+# fora da árvore — e a conferência da CONSTRUÇÃO não viaja, porque precisa do código ao lado. São nove
+# registos, e são exactamente os que não podem mudar de casa sem perder o que os confirma.
+#
+# 📌 O padrão continua a ser o `cwd`, para nenhum chamador de hoje mudar de comportamento; o que muda é que a
+# raiz passa a ser DECLARÁVEL (`--root=…`) e a ser DITA na mensagem de reprovação. Um caminho em falta deixa
+# de parecer um registo mentiroso quando é só o comando a correr do sítio errado.
+RAIZ = os.getcwd()
+
 # ADR-0057 diz como um registo MUDA. `confirmed-by` diz outra coisa, que faltava: se ele foi CONSTRUÍDO.
 #
 # A distinção apareceu na issue #95. O ADR-0053 fecha com «⚠️ NOT YET BUILT. This record is the decision; the
@@ -172,10 +188,10 @@ def check(path):
             for alvo in alvos:
                 if not isinstance(alvo, str):
                     problems.append(f"`{CONFIRMED_BY}` holds {type(alvo).__name__}; every entry is a path")
-                elif not os.path.exists(os.path.join(os.getcwd(), alvo)):
+                elif not os.path.exists(os.path.join(RAIZ, alvo)):
                     problems.append(
-                        f"`{CONFIRMED_BY}` names {alvo}, which does not exist — a record that says it was "
-                        "built, pointing at nothing, is worse than one that says nothing"
+                        f"`{CONFIRMED_BY}` names {alvo}, which does not exist under {RAIZ} — a record that "
+                        "says it was built, pointing at nothing, is worse than one that says nothing"
                     )
         # Uma PROPOSTA não pode estar confirmada: o que ainda não foi decidido não pode ter sido construído,
         # e um registo nesse estado é ou uma proposta que já correu à frente, ou um `status` esquecido.
@@ -272,7 +288,12 @@ def pointer_problems(files):
 
 
 def main():
-    folder = sys.argv[1] if len(sys.argv) > 1 else "docs/2-Architecture/adr"
+    global RAIZ
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    for flag in sys.argv[1:]:
+        if flag.startswith("--root="):
+            RAIZ = flag[len("--root="):]
+    folder = args[0] if args else "docs/2-Architecture/adr"
     files = sorted(glob.glob(os.path.join(folder, "ADR-*.yaml")))
     if not files:
         sys.exit(f"no ADR-*.yaml found in {folder}")
