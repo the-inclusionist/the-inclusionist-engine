@@ -88,6 +88,7 @@
       "needsPointer?",
       "objectiveOf",
       "roleAt",
+      "seguraTeclas",
       "targetsOf",
       "tick",
       "topology",
@@ -596,6 +597,12 @@
       "doLegado",
       "doTransporte",
       "padrao"
+    ]
+  },
+  "input/latch-store.ts": {
+    "interface ArmazemDaAlternancia": [
+      "get",
+      "set"
     ]
   },
   "input/latch.ts": {
@@ -1682,6 +1689,12 @@
       "total"
     ]
   },
+  "ui/latch-refusal.ts": {
+    "interface RecusaDaAlternancia": [
+      "chave",
+      "transporte"
+    ]
+  },
   "ui/loop-crash.ts": {
     "interface AvisoDeQuedaCtx": [
       "criar",
@@ -1795,6 +1808,7 @@
       "nivel?"
     ],
     "interface IconStateSnapshot": [
+      "alternanciaExigida?",
       "calmMode",
       "librasOn",
       "modoCego",
@@ -1849,7 +1863,8 @@
       "setToggleMove?",
       "srAlert",
       "srSay",
-      "toggleLibras"
+      "toggleLibras",
+      "transporteEmUso?"
     ],
     "interface PauseIconsApi": [
       "applyCalm",
@@ -2050,7 +2065,8 @@
       "setToggleMove?",
       "setToggleRun",
       "srSay",
-      "store"
+      "store",
+      "transporteEmUso?"
     ],
     "interface SettingsMotorApi": [
       "getSelPlayer",
@@ -2065,7 +2081,8 @@
       "getNumPlayers",
       "players",
       "srSay",
-      "store"
+      "store",
+      "transporteEmUso?"
     ],
     "type MotorPlayer": "PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>",
     "type JogadorDaAlternancia": "PlayerView<'toggleMove' | 'walkDir'>"

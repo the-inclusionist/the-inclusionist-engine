@@ -16,6 +16,8 @@ const GRADE = { kind: 'grid', size: [8, 8], move: 'diagonal', frame: 'compass' }
 const valida = (over = {}) => ({
   topology: () => GRADE,
   holdsAtOnce: () => 1,
+  // Um fixture de hotspots não segura nada — o par do ADR-0115, ao lado do número que não o diz.
+  seguraTeclas: () => false,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'free',
@@ -92,6 +94,8 @@ describe('o MUNDO declarado (ADR-0087)', () => {
   const valida = (over = {}) => ({
     topology: () => ({ kind: 'grid', size: [4, 4], move: 'diagonal', frame: 'compass' }),
     holdsAtOnce: () => 1,
+    // Um fixture de hotspots não segura nada — o par do ADR-0115, ao lado do número que não o diz.
+    seguraTeclas: () => false,
     world: () => ({ kind: 'element', selector: '#game-region' }),
     tick: 'player',
     roleAt: () => 'free',

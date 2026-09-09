@@ -42,6 +42,8 @@ function montarHospedeiro() {
 const declaracaoValida = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   holdsAtOnce: () => 1,
+  // Um fixture de hotspots não segura nada — o par do ADR-0115, ao lado do número que não o diz.
+  seguraTeclas: () => false,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'goal',

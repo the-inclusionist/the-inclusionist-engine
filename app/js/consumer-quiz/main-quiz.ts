@@ -255,6 +255,13 @@ export function declararQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
     // ela vale escrita — o jogo que declara 1 fica jogável em QUALQUER transporte, incluindo os de olhar, de
     // sopro e de um acionador só, e é isso que o campo obrigatório torna visível em vez de acidental.
     holdsAtOnce: () => 1,
+    // 🔴 FALSO, E ESTE JOGO É A PROVA DE QUE OS DOIS CAMPOS SÃO PERGUNTAS DIFERENTES. Ele declara `1` acima e
+    // não segura tecla NENHUMA: escolher uma alternativa é tocar e largar. O `1` está lá porque o contrato
+    // recusa zero — e foi essa colisão que fez o Dev revogar uma cláusula sua do mesmo dia: «Nem todo jogo
+    // precisa de alternância, somente os que precisam de tecla segurando» (ADR-0115).
+    // 📌 A consequência aqui é visível: a criança que abre a acessibilidade deste quiz **não vê** o controle
+    // de alternância. Não desabilitado com um motivo — AUSENTE, porque não há nada que ele pudesse fazer.
+    seguraTeclas: () => false,
     tick: 'player',
     // Papel: a pergunta corrente é o OBJETIVO; as já respondidas são passagem livre. Sem tile, sem lava.
     roleAt: (at) => (at.x === atual ? 'goal' : 'free'),

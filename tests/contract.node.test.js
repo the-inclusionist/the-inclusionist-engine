@@ -32,6 +32,8 @@ const plataforma = () => ({
   // Três: correr, andar e pular ao mesmo tempo. É o número que o ADR-0104 usa como exemplo, e é o que faz
   // o toque (que segura dois) reprovar — ver o caso do segundo eixo em `transports`.
   holdsAtOnce: () => 3,
+  // VERDADEIRO: correr é segurar. É o lado do par que OFERECE a alternância (ADR-0115).
+  seguraTeclas: () => true,
   roleAt: () => 'structure',
   nameAt: () => ({ text: 'parede', gender: 'f', plural: false }),
   focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'e' }),
@@ -47,6 +49,10 @@ const lista = () => ({
   world: () => ({ kind: 'element', selector: '#game-region' }),
   // UM, e a diferença com a plataforma é o ponto do campo: escolher uma alternativa é um comando de cada vez.
   holdsAtOnce: () => 1,
+  // 🎯 E FALSO — o par que torna os dois campos visivelmente diferentes. Este jogo declara `1` e não segura
+  // NADA; a plataforma acima declara `3` e segura. Ler o número para saber se algo é segurado dá a resposta
+  // certa aqui por acaso e errada ali, que é o achado do ADR-0115.
+  seguraTeclas: () => false,
 });
 
 // -----------------------------------------------------------------------------------------------------------
@@ -191,13 +197,14 @@ describe('conformanceProblems — os sete campos, em FORMA', () => {
     expect(conformanceProblems({ ...plataforma(), roleAt: null })).toHaveLength(1);
   });
 
-  it('[Many] uma declaração vazia acusa os NOVE campos de uma vez', () => {
-    // topology + world + holdsAtOnce + tick + as CINCO funções. É o número que diz a quem escreve um preset
-    // quanto falta, de uma vez só — e é a diferença entre "faltam nove coisas" e nove rodadas de conserto às
-    // cegas. Era SEIS até `targetsOf` completar o campo 5 (a metade "alvo", que o sonar cobrou), SETE até
-    // `world` (o ADR-0087) parar de deixar a engine adivinhar que o mundo é a canvas, e OITO até o
-    // `holdsAtOnce` (o ADR-0104) parar de deixar a acessibilidade motora ser decidida por omissão.
-    expect(conformanceProblems({})).toHaveLength(9);
+  it('[Many] uma declaração vazia acusa os DEZ campos de uma vez', () => {
+    // topology + world + holdsAtOnce + seguraTeclas + tick + as CINCO funções. É o número que diz a quem
+    // escreve um preset quanto falta, de uma vez só — e é a diferença entre "faltam dez coisas" e dez rodadas
+    // de conserto às cegas. Era SEIS até `targetsOf` completar o campo 5 (a metade "alvo", que o sonar
+    // cobrou), SETE até `world` (o ADR-0087) parar de deixar a engine adivinhar que o mundo é a canvas, OITO
+    // até o `holdsAtOnce` (o ADR-0104) parar de deixar a acessibilidade motora ser decidida por omissão, e
+    // NOVE até o `seguraTeclas` (o ADR-0115) parar de deixar a ALTERNÂNCIA ser oferecida onde não faz nada.
+    expect(conformanceProblems({})).toHaveLength(10);
   });
 
   it('⚠️ [Boundary] `holdsAtOnce` AUSENTE é reprovado — omitir é decidir pela criança, em silêncio', () => {

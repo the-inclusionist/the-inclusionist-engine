@@ -128,6 +128,9 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
 const declaracaoValida = () => ({
   topology: () => ({ kind: 'hotspots', order: ['q1', 'q2', 'q3'] }),
   holdsAtOnce: () => 1,
+  // Um jogo de hotspots não segura nada — e declarar `1` acima e `false` aqui é a distinção do ADR-0115
+  // escrita num fixture: os dois campos respondem a perguntas diferentes.
+  seguraTeclas: () => false,
   tick: 'player',
   world: () => ({ kind: 'element', selector: '#game-region' }),
   roleAt: () => 'goal',

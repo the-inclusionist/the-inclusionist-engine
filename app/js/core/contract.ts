@@ -313,6 +313,28 @@ export interface GameDeclaration {
    */
   holdsAtOnce(): number;
   /**
+   * ESTE JOGO SEGURA ALGUMA TECLA? — e a resposta não é derivável de mais nada. (ADR-0115.)
+   *
+   * 🔴 A ALTERNÂNCIA EXISTE PARA UMA CRIANÇA CONCRETA: quem não consegue MANTER uma tecla premida carrega uma
+   * vez para andar e outra para parar. Num jogo onde nada se segura — um quiz, um tabuleiro, um puzzle de
+   * peças — não há nada a travar, e o controle passa a ser uma opção que **não faz nada**. A criança abre o
+   * menu de acessibilidade, liga o ajuste de que depende, e não acontece nada: ela aprende que o ajuste está
+   * partido. É o botão morto que o ADR-0106 §5 proíbe.
+   *
+   * ⚠️ E O `holdsAtOnce` ACIMA NÃO RESPONDE ISTO, o que foi o achado que obrigou a este campo: ele conta
+   * POSIÇÕES SIMULTÂNEAS e recusa zero, porque zero faria a aritmética do alcance passar por vacuidade. O
+   * `consumer-quiz` declara **1 sem segurar coisa nenhuma**. «Um de cada vez» e «um SEGURADO» são o mesmo
+   * número, e toda decisão a jusante vinha a ler um número que responde a outra pergunta.
+   *
+   * ⚠️ OBRIGATÓRIO, e a obrigatoriedade É a decisão — a mesma do `holdsAtOnce`, pela mesma frase do Dev:
+   * «não declarar é ter a acessibilidade programada no controle pro sorte». Um campo opcional faria um jogo
+   * que ESQUECE a linha perder a alternância em silêncio, e quem paga é a criança com dificuldade motora.
+   *
+   * 📌 FUNÇÃO e não valor, pelo ADR-0084: um jogo muda de exigência entre fases. A pé segura-se uma direcção;
+   * o mesmo jogo dentro de um veículo pode não segurar nada.
+   */
+  seguraTeclas(): boolean;
+  /**
    * ESTE JOGO PRECISA DE UM PONTEIRO — posição contínua? (ADR-0112.)
    *
    * Um jogo de desenho precisa; um quiz não. Declarar faz um aparelho sem ponteiro RECUSAR-SE antes de a
@@ -436,6 +458,17 @@ export function conformanceProblems(d: Partial<GameDeclaration> | null | undefin
       // faria a aritmética do alcance passar por vacuidade — o mesmo defeito que o `reachable` recusa.
       p.push('holdsAtOnce: must be an integer >= 1 - a game that holds nothing cannot be played');
     }
+  }
+
+  // ⚠️ E ESTA É A OUTRA PERGUNTA, que o número acima parecia responder e não responde (ADR-0115). A mensagem
+  // diz o que a ausência CUSTA, e não só o que falta: sem ela, um jogo que nada segura oferece um controle de
+  // acessibilidade que não faz nada, e um que segura tudo pode não o oferecer a quem depende dele.
+  if (typeof d.seguraTeclas !== 'function') {
+    p.push('seguraTeclas: missing - declare whether any key is HELD in this game (latching is offered only where something can be held, and a game that holds nothing must not show a control that does nothing)');
+  } else if (typeof d.seguraTeclas() !== 'boolean') {
+    // Um valor não-booleano seria truthy e ofereceria a alternância a toda a gente — o mesmo defeito
+    // silencioso que o `needsPointer` recusa logo abaixo, e pela mesma razão.
+    p.push('seguraTeclas: must return a boolean - a non-boolean is truthy and would offer latching in a game where nothing is held');
   }
 
   // ⚠️ OPCIONAL, MAS NÃO IMPUNE. Ausente é a resposta `false` e não é problema — ver a nota no campo. O que

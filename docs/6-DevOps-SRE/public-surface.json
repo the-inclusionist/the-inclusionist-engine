@@ -352,6 +352,13 @@
     "chaveDaAlternancia",
     "chaveLegadaDaAlternancia"
   ],
+  "input/latch-store.ts": [
+    "ArmazemDaAlternancia",
+    "alternanciaGuardada",
+    "gravarAlternancia",
+    "leituraDaAlternancia",
+    "lerTriEstado"
+  ],
   "input/latch.ts": [
     "LATCH_HELD",
     "LATCH_IDLE",
@@ -383,6 +390,11 @@
   ],
   "input/state.ts": [
     "PAD_DEAD",
+    "arestaDoJogador",
+    "desabilitarAssistidaDe",
+    "entradaDe",
+    "esquecerEntradas",
+    "habilitarAssistidaDe",
     "held",
     "keys",
     "marcarTecla",
@@ -583,11 +595,15 @@
   "platform/voice-plan.ts": [
     "EstadoDaVoz",
     "EstadosDasVozes",
+    "HOST_DOS_MODELOS",
     "VOZES_NEURAIS",
     "VozEmUso",
     "VozNeural",
+    "caminhoDoModelo",
     "estadoDe",
     "ordemDeBusca",
+    "urlDaConfig",
+    "urlDoModelo",
     "vozEmUso"
   ],
   "render/camera.ts": [
@@ -1116,6 +1132,13 @@
   "ui/item-announcement.ts": [
     "ItemDeMenu",
     "anunciarItem"
+  ],
+  "ui/latch-refusal.ts": [
+    "CHAVE_DA_RECUSA",
+    "EXIGEM_ALTERNANCIA",
+    "RecusaDaAlternancia",
+    "mostraMesmoExigida",
+    "recusaDaAlternancia"
   ],
   "ui/layout.ts": [
     "REGUA_DE_ALVO",
