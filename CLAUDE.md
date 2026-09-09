@@ -49,6 +49,17 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
   um **ADR (YADR)** no repositório `the-inclusionist-docs`, em `docs/2-Architecture/adr/`, + entrada no índice — a
   árvore saiu daqui no ADR-0123; ver `docs/2-Architecture/ADR.md`; senão → o doc canônico certo; e **reflita no
   mapa** (`ARCHITECTURE.md`) quando muda onde algo vive. Concordar/discordar sem registrar = decisão perdida.
+- 🔴 **UM REGISTO TEM DOIS TEMPOS: a DECISÃO antes, a CONFIRMAÇÃO depois** (ADR-0128, decisão do Dev em
+  2026-09-09). A **decisão** — contexto medido, alternativas, o que se escolheu, o que a criança ganha ou perde
+  — escreve-se ANTES do código e está completa no dia em que é escrita; um teste responde «funciona?», não «é
+  esta a fronteira certa?». A **confirmação** — «como saberíamos que funcionou» — escrita antes é **profecia**:
+  📏 medido, **oito registos aceites abriam com «NOT YET BUILT» sobre trabalho construído**, e o validador
+  aprovava-os todos porque um registo sem `confirmed-by` não tem o que conferir.
+  **Enquanto o gate não existe, a confirmação declara a DÍVIDA e nomeia a ISSUE** (ADR-0126); quando o gate
+  aterra, entra no `confirmed-by` — que o validador **abre** — e uma `errata` diz o que mudou.
+  ⚠️ **Isto não muda a VELOCIDADE**: a decisão continua a sair no mesmo turno. Muda o que a confirmação pode
+  afirmar. Dois crivos seguram os dois lados: `divida-dos-registos.py` (dívida sem issue e sem `confirmed-by`)
+  e `tempo-dos-registos.py` (tem `confirmed-by` e ainda diz que está por construir → **reprova**).
 - **REGISTRAR É EXECUÇÃO, NÃO CONSULTA** (2026-08-27, depois de o Dev medir o estrago). Quando a decisão dele
   **revoga** um ADR aceito, o registro sai no MESMO turno, escrito, e ele desfaz se discordar — não se pergunta
   "quer que eu registre?".
