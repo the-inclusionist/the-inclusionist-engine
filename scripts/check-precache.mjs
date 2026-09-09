@@ -243,7 +243,14 @@ if (semPrecache.length > 0) {
  *
  * 📌 THE NUMBER IS A CEILING, NOT A JUDGEMENT ABOUT WHAT BELONGS. Raising it is a one-line commit with a
  * reason, and for the TTS runtime that line is issue #129's decision arriving where it can be seen: a 12,9 MB
- * `.wasm` plus an 18,1 MB phonemizer walks straight through this, which is what a first-day budget is for. */
+ * `.wasm` plus an 18,1 MB phonemizer walks straight through this, which is what a first-day budget is for.
+ *
+ * ⚠️ AND THE SUBJECT OF THIS BUDGET IS THE DEMO, NOT THE PRODUCT — ADR-0117, the same day. The unit a child
+ * installs is `the-inclusionist-site`, which loads the engine, the fonts, the voices and the cartridges once;
+ * this `dist` is the engine's own quiz. The ceiling below is still worth having — it is what stops a runtime
+ * from landing in the demo unnoticed — but the product's first-day number is the SITE's, and the site does
+ * not exist yet. 📌 When it does, the two budgets need DIFFERENT NAMES: two numbers sharing one is the
+ * duplicated-fact rot, and this file would be the older of the two. */
 const ORCAMENTO_KIB = 2048;
 
 /**

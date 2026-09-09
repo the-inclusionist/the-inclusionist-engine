@@ -3,6 +3,17 @@ metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0094]
   superseded-in-part:
+    - by: ADR-0117
+      what: >-
+        the DELIVERY UNIT this record reasoned about. It priced a vendored runtime as «the app's dist grows,
+        and every game's deploy carries it», which assumes each GAME is a PWA. The Dev: «O «jogo» deve ser o
+        the-inclusionist-site, que ao ser carregado carrega tudo que é da engine, incluindo fontes e vozes e
+        todos os jogos criados.» 🔴 This collapses the arithmetic in this record's own cons — ~32 MB paid once
+        by one platform, not by three hundred deploys — and it removes the CDN's best counter-argument too,
+        since Cache Storage is per origin and there was never a shared cache to share.
+        ⚠️ EVERYTHING ELSE STANDS: the split between RUNTIME and MODELS, that neither travels in the npm
+        package, and that the first precache block is a playable game — that last clause now has the SITE as
+        its subject, which is what makes it enforceable at all.
     - by: ADR-0116
       what: >-
         the clause that a CDN fetch is disqualifying because it is «a network dependency at first use», and

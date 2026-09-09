@@ -1,6 +1,16 @@
 ---
 metadata:
   status: "accepted"
+  superseded-in-part:
+    - by: ADR-0117
+      what: >-
+        the LOCUS of the fetch — «the engine fetches them itself on first boot» meant each GAME's boot,
+        because every record until then treated a game as the unit of installation. The Dev corrected it:
+        «Assim não se carregam as vozes por jogo, mas pela plataforma onde estão os vários cartuchos.»
+        ⚠️ THE GUARANTEE IS UNTOUCHED AND GETS STRONGER — four voices, owned by the engine, fetched in the
+        background, with the cartridge declaring nothing. 📏 And the reason is measurable rather than tidy:
+        Cache Storage is partitioned by ORIGIN, so one PWA per game meant N origins each fetching the same
+        ~244 MB. At the platform it is fetched once and every cartridge is served from it.
   supersedes-in-part: [ADR-0065, ADR-0094]
   date: 2026-09-08
   decision-makers: [Dev]
