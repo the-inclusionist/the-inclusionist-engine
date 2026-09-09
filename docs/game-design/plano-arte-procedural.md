@@ -95,3 +95,21 @@ Reusa as pesquisas de `plano-tiled-aseprite.md` — agora como **parsers de impo
 *Fontes:* Aseprite (modo indexado / color ramps; docs CLI, gists dacap) · técnicas de palette-swap/LUT em
 pixel-art (Slynyrd ramps; palette-swap gamedev) · Libresprite (fork GPL do Aseprite) · LDtk/Tiled (JSON) ·
 `plano-tiled-aseprite.md` (parsers de import) · semente no repo (`PIP_PAL`/`indexedToCanvas`/`silhouetteCanvasIdx`).
+
+---
+
+## 11. Backlog de temas de cenário — PAUSADO até a etapa 3 (era a issue #14)
+
+~20 temas de cenário precisam de arte (Cave, Desert, Factory, Castle, …). 🛑 **Não começar tema novo** enquanto
+o pipeline procedural deste plano não estiver pronto: cada tema desenhado à mão antes disso é arte que a etapa
+6 («migrar personagens e tiles para o sistema semântico») vai ter de refazer.
+
+⚠️ **Isto veio do tracker de issues em 2026-09-09 (ADR-0126), e o corpo da issue dizia porquê sem o notar:**
+*«Tracked so it isn't lost»* — uma coisa rastreada para não se perder é uma NOTA, não um problema. Não havia
+conserto à espera; havia uma espera. Uma issue sem fix não tem commit que a feche, e uma que ninguém pode
+fechar ensina a ignorar o quadro inteiro.
+
+📌 **O que a destranca é a etapa 3 deste plano** (o motor de recolorização), e é por isso que ela mora aqui e
+não no roadmap: quem abrir este ficheiro para construir o pipeline é exactamente quem precisa de saber que há
+vinte temas à espera dele. **Cada tema vira uma issue quando for construível**, uma por tema, com a paleta e a
+imagem semântica já decididas.
