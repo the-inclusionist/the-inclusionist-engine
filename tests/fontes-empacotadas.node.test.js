@@ -131,17 +131,19 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
     ).toEqual([]);
   });
 
-  it('⚠️ [Boundary] o PISO das oito só sobe — hoje é ZERO, e isso é a decisão por entregar', () => {
+  it('✅ [Boundary] o PISO das oito só sobe — hoje são OITO, e a decisão está entregue', () => {
     // ⚠️ ESTE É O CASO QUE DIZ A VERDADE SOBRE O ESTADO. O ADR-0108 decidiu que oito viajam; medido hoje,
     // viajam ZERO. Exigir as oito faria um caso vermelho permanente, que não é um gate — é um lembrete que
     // trava a suite. Um PISO regista o que já chegou e impede o recuo: no dia em que a Brasil entrar, este
     // número sobe para 1 e não pode voltar sem alguém o escrever aqui à mão.
-    const PISO = 0;
+    const PISO = 8;
     const presentes = familias.filter((f) => AS_OITO.includes(f.trim()));
     expect(presentes.length, `o pacote PERDEU Playwrite: tinha ${PISO}, tem ${presentes.length}`)
       .toBeGreaterThanOrEqual(PISO);
-    // E a outra metade da verdade: nenhuma delas chegou ainda.
-    expect(presentes.length, 'chegou alguma das oito — suba o PISO acima e apague esta linha').toBe(0);
+    // ✅ ENTREGUES EM 2026-09-09 — as oito chegaram (535 KB, um ficheiro variável por família) e o piso subiu
+    // de ZERO para OITO. A linha que dizia «nenhuma delas chegou ainda» saiu por ter deixado de ser verdade:
+    // era a outra metade do piso, e apagá-la é a decisão do ADR-0108 a passar de registada a entregue.
+    expect(presentes.length, 'as oito são o piso: falta alguma').toBe(AS_OITO.length);
   });
 
   it('⚠️ [Interface] todo `@font-face` aponta para um ficheiro que EXISTE', () => {

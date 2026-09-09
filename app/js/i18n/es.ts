@@ -593,6 +593,22 @@ const es: Record<string, string> = {
   'font.desc.andika': 'basada en la Sassoon; fruto de la investigación sobre cómo leen y escriben los niños',
   'font.desc.opendyslexic': 'Letras con la base más pesada, para que no se den vuelta al leer.',
   'font.desc.fondamento': 'Caligráfica de pluma, para las actividades de escritura a mano.',
+  'font.desc.pw.br': 'Cursiva escolar de Brasil.',
+
+  'font.desc.pw.ustrad': 'Cursiva escolar de EE. UU. — tradicional.',
+
+  'font.desc.pw.usmod': 'Cursiva escolar de EE. UU. — moderna.',
+
+  'font.desc.pw.ca': 'Cursiva escolar de Canadá.',
+
+  'font.desc.pw.mx': 'Cursiva escolar de México.',
+
+  'font.desc.pw.ar': 'Cursiva escolar de Argentina.',
+
+  'font.desc.pw.cl': 'Cursiva escolar de Chile.',
+
+  'font.desc.pw.co': 'Cursiva escolar de Colombia.',
+
   'font.desc.ronde': 'Ronde francesa, la letra ligada que se enseña en la escuela.',
   'font.off.ronde': 'Instale en el dispositivo una de estas tres: Ronde Script, OPTIFrench-Script o Merveille. '
     + 'Son gratuitas para uso personal, y por eso no pueden venir dentro del juego.',

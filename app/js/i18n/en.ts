@@ -595,6 +595,22 @@ const en: Record<string, string> = {
   'font.desc.andika': 'based on Sassoon; the fruit of research into how children read and write',
   'font.desc.opendyslexic': 'Letters weighted at the bottom, so they do not flip upside down as you read.',
   'font.desc.fondamento': 'Pen calligraphy, for the handwriting activities.',
+  'font.desc.pw.br': 'School cursive taught in Brazil.',
+
+  'font.desc.pw.ustrad': 'School cursive taught in the USA — traditional.',
+
+  'font.desc.pw.usmod': 'School cursive taught in the USA — modern.',
+
+  'font.desc.pw.ca': 'School cursive taught in Canada.',
+
+  'font.desc.pw.mx': 'School cursive taught in Mexico.',
+
+  'font.desc.pw.ar': 'School cursive taught in Argentina.',
+
+  'font.desc.pw.cl': 'School cursive taught in Chile.',
+
+  'font.desc.pw.co': 'School cursive taught in Colombia.',
+
   'font.desc.ronde': 'French ronde, the joined handwriting taught at school.',
   'font.off.ronde': 'Install one of these three on the device: Ronde Script, OPTIFrench-Script or Merveille. '
     + 'They are free for personal use, which is why they cannot ship inside the game.',

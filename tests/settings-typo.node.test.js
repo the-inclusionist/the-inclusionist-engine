@@ -117,10 +117,14 @@ describe('as caligráficas: papel declarado e tamanho mínimo', () => {
 
   it('[Zero] há caligráficas no catálogo — senão os casos abaixo não medem nada', () => {
     expect(CALIGRAFICAS.length).toBeGreaterThan(0);
-    // ⚠️ TRÊS desde 2026-09-07: a Fondamento entrou pela emenda do ADR-0012 (#87 item 3). A lista é escrita
-    // por extenso de propósito — uma face que ganhe `papel:'caligrafica'` sem alguém reparar passa a estar
-    // fora do menu, e isso é uma decisão de produto, não uma etiqueta.
-    expect(CALIGRAFICAS.map((it) => it.k).sort()).toEqual(['fondamento', 'pinyon', 'ufmag']);
+    // ⚠️ ONZE desde 2026-09-09: as OITO Playwrite entraram (ADR-0108 §2, #87 item 3) e são caligráficas —
+    // logo ficam FORA do menu, que é a divisão do item 1 desta issue: elas são a mão que se aprende a
+    // escrever, para os botões DENTRO das atividades, não uma opção de interface.
+    // 📌 A lista continua escrita por extenso de propósito — uma face que ganhe `papel:'caligrafica'` sem
+    // alguém reparar sai do menu, e isso é decisão de produto, não etiqueta.
+    expect(CALIGRAFICAS.map((it) => it.k).sort()).toEqual([
+      'fondamento', 'pinyon', 'pwar', 'pwbr', 'pwca', 'pwcl', 'pwco', 'pwmx', 'pwusmod', 'pwustrad', 'ufmag',
+    ]);
   });
 
   it('⚠️ [Right] toda caligráfica declara `minPx`, com os números do Dev', () => {

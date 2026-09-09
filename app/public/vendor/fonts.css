@@ -127,3 +127,24 @@
 @font-face{font-family:'Fondamento';font-style:normal;font-weight:400;font-display:swap;
   src:url('fonts/fondamento-400-ext.woff2') format('woff2');
   unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+
+/* ===== Playwrite — as OITO das Américas (ADR-0108 §2, issue #87 item 3) =====
+ * A mão que cada país ensina a escrever. Os EUA entram com AS DUAS que ensinam — escolher uma seria
+ * escolher pela criança. São variáveis no peso (100–400) e cada família é UM ficheiro: a Google não as
+ * corta por unicode-range, então não há metade `-ext` para carregar depois. SIL OFL 1.1, como as outras. */
+@font-face{font-family:'Playwrite BR';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-br.woff2') format('woff2');}
+@font-face{font-family:'Playwrite US Trad';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-us-trad.woff2') format('woff2');}
+@font-face{font-family:'Playwrite US Modern';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-us-modern.woff2') format('woff2');}
+@font-face{font-family:'Playwrite CA';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-ca.woff2') format('woff2');}
+@font-face{font-family:'Playwrite MX';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-mx.woff2') format('woff2');}
+@font-face{font-family:'Playwrite AR';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-ar.woff2') format('woff2');}
+@font-face{font-family:'Playwrite CL';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-cl.woff2') format('woff2');}
+@font-face{font-family:'Playwrite CO';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-co.woff2') format('woff2');}

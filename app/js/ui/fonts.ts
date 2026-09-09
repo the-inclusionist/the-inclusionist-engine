@@ -95,6 +95,23 @@ export const FONT_GROUPS: FontGroup[] = [
      * caligráficas são filtradas do menu (`papelDaFonte === 'geral'`), e uma linha filtrada não pode dizer
      * nada a ninguém. Marcar o papel «certo» aqui apagaria a única coisa que este item existe para fazer.
      */
+    /*
+     * AS OITO PLAYWRITE — o item 3 da #87, decidido no ADR-0108 §2 e entregue em 2026-09-09.
+     *
+     * ⚠️ `papel: caligrafica`, logo FORA DO MENU: elas são a mão que se aprende a escrever, para os botões
+     * DENTRO das atividades escolares, e não uma opção de interface. É a divisão do item 1 desta issue.
+     *
+     * 📌 `minPx: 20` é o mesmo piso que as outras três cursivas carregam. A lista de mínimos da #87 não
+     * nomeia a Playwrite — o número é o das irmãs, e não uma medição própria; corrigir-se com uma linha.
+     */
+    {k:'pwbr', fam:'Playwrite BR', fb:'cursive', d:'font.desc.pw.br', papel:'caligrafica', minPx:20},
+    {k:'pwustrad', fam:'Playwrite US Trad', fb:'cursive', d:'font.desc.pw.ustrad', papel:'caligrafica', minPx:20},
+    {k:'pwusmod', fam:'Playwrite US Modern', fb:'cursive', d:'font.desc.pw.usmod', papel:'caligrafica', minPx:20},
+    {k:'pwca', fam:'Playwrite CA', fb:'cursive', d:'font.desc.pw.ca', papel:'caligrafica', minPx:20},
+    {k:'pwmx', fam:'Playwrite MX', fb:'cursive', d:'font.desc.pw.mx', papel:'caligrafica', minPx:20},
+    {k:'pwar', fam:'Playwrite AR', fb:'cursive', d:'font.desc.pw.ar', papel:'caligrafica', minPx:20},
+    {k:'pwcl', fam:'Playwrite CL', fb:'cursive', d:'font.desc.pw.cl', papel:'caligrafica', minPx:20},
+    {k:'pwco', fam:'Playwrite CO', fb:'cursive', d:'font.desc.pw.co', papel:'caligrafica', minPx:20},
     {k:'ronde', fam:'Ronde Script, OPTIFrench-Script, Merveille', fb:'cursive',
       d:'font.desc.ronde', off:'font.off.ronde'} ]},
   // ⚠️ A FACE DO JOGO, e ela tem grupo próprio porque não é nem sans, nem serifada, nem manuscrita — é uma

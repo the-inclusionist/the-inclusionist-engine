@@ -672,6 +672,22 @@ const pt: Record<string, string> = {
   'font.desc.andika': 'baseada na Sassoon; fruto de pesquisa sobre como crianças leem e escrevem',
   'font.desc.opendyslexic': 'Letras com a base mais pesada, para não virarem de cabeça para baixo ao ler.',
   'font.desc.fondamento': 'Caligráfica de pena, para as atividades de escrita à mão.',
+  'font.desc.pw.br': 'Cursiva escolar do Brasil.',
+
+  'font.desc.pw.ustrad': 'Cursiva escolar dos EUA — tradicional.',
+
+  'font.desc.pw.usmod': 'Cursiva escolar dos EUA — moderna.',
+
+  'font.desc.pw.ca': 'Cursiva escolar do Canadá.',
+
+  'font.desc.pw.mx': 'Cursiva escolar do México.',
+
+  'font.desc.pw.ar': 'Cursiva escolar da Argentina.',
+
+  'font.desc.pw.cl': 'Cursiva escolar do Chile.',
+
+  'font.desc.pw.co': 'Cursiva escolar da Colômbia.',
+
   'font.desc.ronde': 'Ronde francesa, a letra de mão que se ensina na escola.',
   // ⚠️ AS TRÊS PELO NOME, e não «uma fonte ronde» (ADR-0108 §4): um adulto não consegue agir sobre uma
   // categoria. A frase existe para ser executável — abrir o navegador, procurar UM destes três nomes,
