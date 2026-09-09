@@ -24,8 +24,8 @@
 // text instead of its effect. This runs in CI right after `npm run build`, like `scripts/axe-check.mjs`.
 //
 //   npm run build && node scripts/check-precache.mjs
-import { readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { join, relative, sep, dirname } from 'node:path';
 
 const SW = process.env.SW_PATH || join(process.cwd(), 'dist', 'sw.js');
 
@@ -97,6 +97,102 @@ if (desprotegidas.length > 0) {
   process.exit(1);
 }
 
+/* ===================== THIRD QUESTION: is the FLOOR actually a floor? =====================
+ *
+ * The two questions above are both about entries that ARE in the manifest — can they be updated, and do the
+ * pages among them survive the SPA fallback. Neither one can see a file that never got in. That gap is the
+ * gate ADR-0114 asks for in writing: «AND THE FLOOR IS ASSERTED AS A FLOOR … without it, "offline works"
+ * degrades one convenient exclusion at a time and nobody notices until a school does».
+ *
+ * 📏 MEASURED ON 2026-09-09, and the two ways a file leaves the manifest are NOT the same failure:
+ *
+ *   · TOO BIG for `maximumFileSizeToCacheInBytes` — NOT silent. A 33 MB `.wasm` planted under `app/public/`
+ *     makes `vite-plugin-pwa` throw `PLUGIN_ERROR` and the build exits 1. This gate is belt and braces there.
+ *   · EXTENSION OUTSIDE `globPatterns` — COMPLETELY SILENT. A 2 KB `sonda.data` planted the same way reached
+ *     `dist/`, stayed out of the manifest, and the build AND this gate both exited 0.
+ *
+ * ⚠️ AND THE SILENT ONE IS THE CASE THE NEXT COMMIT WILL HIT. The runtime ADR-0114 decided to vendor is, if
+ * it is the piper/ort pair measured for issue #129, `ort-wasm-simd-threaded.wasm` (12.9 MB) plus
+ * `piper_phonemize.data` (18.1 MB) — and `data` is not in `globPatterns`. The single biggest artefact of the
+ * offline voice would land in `dist`, never enter the precache, and a school with no network would get a
+ * child who presses the speech button and hears nothing, with every gate green.
+ *
+ * So the rule is stated as COMPLETENESS and not as a list of things to look for: every file the build emits
+ * is either precached or EXCUSED HERE, in writing. A new extension, a narrowed `globPatterns` or a dropped
+ * file all fail the same way — by not being either. */
+const DIST = dirname(SW);
+
+/**
+ * The only files that may sit in `dist` and outside the precache. Each one carries the reason by hand,
+ * because a list of exceptions nobody has to justify is how a floor is lowered one entry at a time.
+ *
+ * ⚠️ An entry that matches NOTHING also fails, below: the list has to SHRINK when its reason dies, or it
+ * becomes a monument that quietly excuses whatever grows into its shape.
+ */
+const FORA_DO_PRECACHE = [
+  {
+    padrao: /^sw\.js$/,
+    porque: 'the service worker itself — it cannot precache the file it is',
+  },
+  {
+    padrao: /^workbox-[A-Za-z0-9]+\.js$/,
+    porque: 'the Workbox runtime, loaded by `importScripts` from inside the SW scope, not fetched by the page',
+  },
+  {
+    padrao: /^_headers$/,
+    porque: 'a host deploy directive (Cloudflare Pages) read by the SERVER — the browser never requests it',
+  },
+];
+
+function emitidos(dir) {
+  const out = [];
+  for (const nome of readdirSync(dir)) {
+    const p = join(dir, nome);
+    if (statSync(p).isDirectory()) { out.push(...emitidos(p)); continue; }
+    out.push(relative(DIST, p).split(sep).join('/'));
+  }
+  return out;
+}
+
+const noDisco = emitidos(DIST);
+const urls = new Set(entradas.map((e) => e.url));
+const excusado = (u) => FORA_DO_PRECACHE.some((x) => x.padrao.test(u));
+
+/* ⚠️ VACUUM GUARD, and the first one written here could not fire: `dist` cannot be empty when `sw.js` was
+ * just read out of it. The reachable emptiness is the OTHER one — a completeness check whose exclusions have
+ * grown to cover everything passes while precaching nothing, which is this repository's blind-sieve failure
+ * wearing a floor's clothes. Widen any pattern below to `/./` and it is this line that says so. */
+if (noDisco.every(excusado)) {
+  console.error(`precache gate: every file in ${DIST} is excused — the exclusions cover the whole build.`);
+  console.error('A completeness check that excuses everything reports a floor it never looked at.');
+  process.exit(1);
+}
+
+const inuteis = FORA_DO_PRECACHE.filter((x) => !noDisco.some((u) => x.padrao.test(u)));
+
+if (inuteis.length > 0) {
+  console.error(`precache gate: ${inuteis.length} exclusion(s) match no file the build emits:\n`);
+  for (const x of inuteis) console.error(`  · ${x.padrao}  —  "${x.porque}"`);
+  console.error('\nThe reason it was written for is gone. Delete the entry rather than leaving it to excuse');
+  console.error('whatever grows into its shape later.');
+  process.exit(1);
+}
+
+const semPrecache = noDisco.filter((u) => !urls.has(u) && !excusado(u));
+
+if (semPrecache.length > 0) {
+  console.error(`precache gate: ${semPrecache.length} file(s) shipped in ${DIST} but NOT precached:\n`);
+  for (const u of semPrecache) {
+    const kib = (statSync(join(DIST, u)).size / 1024).toFixed(1);
+    console.error(`  · ${u}  (${kib} KiB)`);
+  }
+  console.error('\nA machine that has never had a network will not have these. If the file is needed offline,');
+  console.error('add its extension to `globPatterns` in vite.config.ts; if it is genuinely not, excuse it in');
+  console.error('FORA_DO_PRECACHE above WITH THE REASON — silence is what lowers the floor.');
+  process.exit(1);
+}
+
 const semHash = entradas.filter((e) => e.revisao !== null).length;
 const nota = paginas.length ? ` ${paginas.length} extra page(s) excluded from the SPA fallback.` : '';
-console.log(`precache gate: ${entradas.length} entries — ${semHash} with a content revision, ${entradas.length - semHash} hash-named. None frozen.${nota}`);
+const piso = ` Floor complete: ${noDisco.length} file(s) emitted, ${FORA_DO_PRECACHE.length} excused by name.`;
+console.log(`precache gate: ${entradas.length} entries — ${semHash} with a content revision, ${entradas.length - semHash} hash-named. None frozen.${nota}${piso}`);
