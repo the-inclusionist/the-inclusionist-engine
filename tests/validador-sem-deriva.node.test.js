@@ -22,8 +22,8 @@
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const CANDIDATAS = [
   process.env.ADR_TREE,
@@ -31,7 +31,7 @@ const CANDIDATAS = [
 ].filter(Boolean);
 const ADR = CANDIDATAS.find((p) => existsSync(p)) ?? CANDIDATAS[CANDIDATAS.length - 1];
 const TEM_ARVORE = existsSync(ADR);
-const RAIZ_DOS_REGISTOS = TEM_ARVORE ? fileURLToPath(new URL('../../../', pathToFileURL(ADR))) : '';
+const RAIZ_DOS_REGISTOS = TEM_ARVORE ? resolve(ADR, '..', '..', '..') : '';
 
 const AQUI = fileURLToPath(new URL('../scripts/validate-adr.py', import.meta.url));
 const LA = TEM_ARVORE ? join(RAIZ_DOS_REGISTOS, 'scripts', 'validate-adr.py') : '';
@@ -51,6 +51,17 @@ describe.skipIf(!TEM_ARVORE)('o validador deste repositório e o dos registos', 
     expect(existsSync(LA), `o validador dos registos não está em ${LA}`).toBe(true);
     expect(corpo(AQUI).length, 'o validador daqui está vazio').toBeGreaterThan(2000);
     expect(corpo(LA).length, 'o validador dos registos está vazio').toBeGreaterThan(2000);
+    // 🔴 E OS DOIS CAMINHOS TÊM DE SER FICHEIROS DIFERENTES — a asserção que faltava, e a CI provou-o.
+    //
+    // A raiz dos registos era calculada com `new URL('../../../', …)`, que depende da BARRA FINAL: o clone
+    // irmão trazia-a, o `ADR_TREE` da CI não. Lá, a raiz resolvia um nível acima e o `LA` apontava para o
+    // validador DESTE repositório — o caso comparava o ficheiro consigo próprio e passava. Um gate cego, e
+    // cego exactamente onde só a CI o exercita.
+    //
+    // ⚠️ O vácuo antigo não o apanhava porque os dois ficheiros EXISTIAM: era o mesmo, duas vezes. «Existe»
+    // não é a pergunta toda quando dois caminhos podem colapsar num só.
+    expect(resolve(AQUI), `os dois caminhos resolvem para o MESMO ficheiro (${AQUI}) — a comparação seria consigo própria`)
+      .not.toBe(resolve(LA));
   });
 
   it('🎯 [Interface] as duas cópias são a MESMA — duas versões dão dois veredictos sobre a mesma árvore', () => {

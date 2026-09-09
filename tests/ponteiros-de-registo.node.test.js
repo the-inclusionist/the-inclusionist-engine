@@ -22,8 +22,8 @@
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * ONDE A ÁRVORE DOS REGISTOS VIVE DESDE O ADR-0123 — noutro repositório, `the-inclusionist-docs`.
@@ -44,7 +44,7 @@ const ADR = CANDIDATAS.find((p) => existsSync(p)) ?? CANDIDATAS[CANDIDATAS.lengt
 const TEM_ARVORE = existsSync(ADR);
 const RAIZ = process.cwd();
 /** A raiz do repositório onde os registos vivem: `<docs>/docs/2-Architecture/adr/` → `<docs>`. */
-const RAIZ_DOS_REGISTOS = fileURLToPath(new URL('../../../', pathToFileURL(ADR)));
+const RAIZ_DOS_REGISTOS = resolve(ADR, '..', '..', '..');
 
 /**
  * O caminho citado existe NALGUM dos dois repositórios?
