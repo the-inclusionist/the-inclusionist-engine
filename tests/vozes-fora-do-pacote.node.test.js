@@ -133,7 +133,7 @@ describe('ADR-0110 · a engine BUSCA as vozes, não as embarca', () => {
  * `app/public/vendor/`, ao lado das fontes — e esse directório ESTÁ no `files`. O caso acima já prova que ele
  * viaja; o que falta é dizer que arte não pode entrar por ali.
  *
- * 📏 MEDIDO EM 2026-09-09: `art/lcp/` tem exactamente dois ficheiros — um README e um `ATTRIBUTION.csv` de
+ * 📏 MEDIDO EM 2026-09-09: `art/` tem exactamente dois ficheiros — um README e um `ATTRIBUTION.csv` de
  * 40 bytes, que é a linha de cabeçalho sozinha. Zero arte. E `art/` não está no `files`. Este crivo existe
  * para que continue assim quando a arte chegar. */
 describe('ADR-0119 · a arte chega pela plataforma, e por isso NÃO pelo pacote', () => {
@@ -174,10 +174,12 @@ describe('ADR-0119 · a arte chega pela plataforma, e por isso NÃO pelo pacote'
     expect(arte, `o \`files\` passou a publicar a quarentena de arte: ${arte.join(', ')}`).toEqual([]);
   });
 
-  it('⚠️ [Interface] e a quarentena do ADR-0107 continua a existir, com o seu livro-razão', () => {
-    // O par que impede este bloco de virar vácuo: se `art/lcp/` desaparecer, o caso [Zero] fica verde a
-    // olhar para nada e a proibição deixa de descrever alguma coisa.
-    expect(existsSync(join(RAIZ, 'art', 'lcp', 'ATTRIBUTION.csv')), 'a quarentena do LCP sumiu').toBe(true);
+  it('⚠️ [Interface] e a árvore da arte continua a existir, com o seu livro-razão', () => {
+    // O par que impede este bloco de virar vácuo: se `art/` desaparecer, o caso [Zero] fica verde a olhar
+    // para nada e a proibição deixa de descrever alguma coisa.
+    // 📌 Era `art/lcp/` até 2026-09-09, quando o ADR-0133 recusou share-alike e a quarentena deixou de ter
+    // o que segurar. O que o caso afirma não mudou: existe um lugar declarado onde a arte de fora vive.
+    expect(existsSync(join(RAIZ, 'art', 'ATTRIBUTION.csv')), 'a árvore da arte sumiu').toBe(true);
   });
 });
 

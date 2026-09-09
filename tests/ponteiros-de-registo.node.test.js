@@ -73,6 +73,7 @@ const MORTOS = {
   'tests/main-i18n.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`, #111): testava o `main.js`, que deixou de viver aqui',
   'tests/alternancia-do-correr.node.test.js': 'SAIU COM O CARTUCHO (`b55b88e`): mecânica de plataforma, não de engine',
   'scripts/check-types.mjs': 'APOSENTADO DE PROPÓSITO (`f622221`) quando a dívida de tipos chegou a ZERO. Era um tecto que só descia; chegado ao fundo, um tecto deixa de ter função',
+  'tests/lcp-quarantine.node.test.js': 'MUDOU DE NOME COM A DECISÃO (2026-09-09): virou `tests/arte-licencas-aceites.node.test.js` quando o ADR-0133 recusou share-alike e a quarentena deixou de ter o que segurar. ⚠️ O ADR-0133 nomeia-o para dizer que foi APOSENTADO, e essa frase é história — o gate não morreu, virou-se do avesso',
 };
 // ========================= O QUE JÁ SAIU, E COMO =========================
 // A lista nasceu com SETE entradas e está em TRÊS. Nenhuma foi apagada; cada uma saiu por uma via diferente, e

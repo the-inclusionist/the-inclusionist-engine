@@ -178,17 +178,22 @@ export const PESADOS: readonly Pesado[] = Object.freeze([
   ...WEBGAZER,
 
   /*
-   * 🔴 A ARTE DO LCP — decidida (ADR-0107, ADR-0119) e SEM FONTE, e também medido: `art/lcp/` tem DOIS
+   * 🔴 O ACERVO DE ARTE — a quarta coisa pesada do ADR-0119, e a única SEM FONTE. Medido: `art/` tem DOIS
    * ficheiros — um README e um `ATTRIBUTION.csv` de 40 bytes, só o cabeçalho. Zero arte.
    *
-   * ⚠️ E ela não pode entrar por uma URL solta: é OBRA, com autoria por recurso e share-alike (CC BY-SA 3.0),
-   * e o ADR-0107 pôs a quarentena precisamente para o share-alike não alcançar a arte da autora. A fonte
-   * desta linha é o dia em que a quarentena tiver conteúdo e um livro de atribuição a sério.
+   * ⚠️ ATÉ 2026-09-09 ESTA LINHA CULPAVA A COISA ERRADA. Dizia que a quarentena estava vazia e que a arte
+   * era CC BY-SA 3.0 com autoria por recurso — descrevendo o Liberated Pixel Cup, que o ADR-0133 recusou:
+   * os dois braços dele são share-alike ou GPL, e nenhum está na lista fechada de quatro licenças.
+   *
+   * 📌 A razão de continuar sem fonte MUDOU e é mais simples: não há acervo escolhido. A arte entra sob
+   * CC0, CC BY 3.0, CC BY 4.0 ou OGA-BY, com uma linha de livro por recurso e a URL da origem — e nada
+   * disso é uma URL única que um buscador possa pedir. A fonte desta linha é o dia em que houver acervo.
    */
   {
-    id: 'arte:lcp',
+    id: 'arte:acervo',
     url: null,
-    porQueNaoTemFonte: 'a quarentena `art/lcp/` está vazia (README + cabeçalho do CSV). A arte é OBRA sob '
-      + 'CC BY-SA 3.0 com autoria por recurso — entra com o livro de atribuição, não por uma URL solta.',
+    porQueNaoTemFonte: 'não há acervo escolhido: `art/` tem só README e cabeçalho do CSV. O ADR-0133 fechou '
+      + 'a lista em CC0, CC BY 3.0/4.0 e OGA-BY, e a arte entra recurso a recurso com autoria e URL de '
+      + 'origem — não por uma URL solta que este buscador possa pedir.',
   },
 ]);

@@ -72,18 +72,23 @@ Nem tudo aqui é nosso, e o que não é **não muda de licença por estar neste 
 - **Tipografias** — roster e restrições no **ADR-0012**. ⚠️ Ronde e as alternativas OPTIFrench-Script e
   Merveille são **gratuitas só para uso pessoal e NÃO podem ser empacotadas**: oferece-se download, e a
   opção fica desabilitada quando nenhuma está presente.
-- **Arte de terceiros — o Liberated Pixel Cup** (`github.com/OpenGameArt/LiberatedPixelCup`), sob
-  **CC BY-SA 3.0** (**ADR-0107**). O conjunto é duplamente licenciado — CC BY-SA 3.0 **ou** GPL-3.0 — e o
-  projeto toma o braço **CC BY-SA**, para que arte continue governada como arte e não seja puxada para a
-  licença do CÓDIGO; é a mesma separação de regimes que este ficheiro tem em três linhas.
-  ⚠️ **E ele vive em QUARENTENA, o que é mecanismo e não arrumação.** Nenhum recurso pode conter ao mesmo
-  tempo material derivado do LCP e a **arte própria** da autora: o SA alcança o que nós alterarmos — como já
-  está escrito acima para os pictogramas — e misturar os dois licenciaria a arte DELA em share-alike, que é
-  precisamente a decisão que o **pilar 10** deixa com ela e não connosco. O CC BY-SA 3.0 também é
-  **incompatível com a família GPL**, então a mesma quarentena é o que mantém o regime do código limpo.
-  ⚠️ **Atribuição é condição de uso, por recurso**: o repositório do LCP guarda ficheiros de autoria
-  separados para originais e derivados. Recurso sem autor conhecido **não entra** — «não consegui descobrir»
-  não é licença.
+- **Arte de terceiros — quatro licenças e mais nenhuma** (**ADR-0133**). A arte que vem de fora entra sob
+  **CC0**, **CC BY 3.0**, **CC BY 4.0** ou **OGA-BY** (3.0 ou 4.0), e sob mais nada. A OGA-BY é a licença de
+  atribuição da OpenGameArt: ⚠️ **não é uma licença Creative Commons** — a própria CC declara que não a
+  endossa — e é a CC BY *menos* a restrição sobre medidas técnicas, logo estritamente mais permissiva.
+  🔴 **E o que NÃO se aceita é nomeado, porque uma regra que só lista o permitido lê-se como lista de
+  exemplos:** **ND** (proíbe derivar, e recolorir já é derivar); **NC** (deixaria a arte mais estreita que o
+  CÓDIGO — a AGPL permite uso comercial, e quem ela convida seria travado por um sprite); e **share-alike,
+  em qualquer versão, com o braço GPL de uma licença dupla**, porque o SA **viaja**: uma imagem semântica
+  traçada de um sprite é derivada dele, e um pipeline que misturasse fontes licenciaria a arte da autora em
+  share-alike — precisamente a decisão que o **pilar 10** deixa com ela e não connosco.
+  📌 **Não há quarentena, e já houve.** O ADR-0107 ia trazer o Liberated Pixel Cup sob CC BY-SA 3.0 atrás de
+  uma parede; o Dev recusou o share-alike de vez, e sem arte cujo copyleft viaje não há o que segregar. O
+  LCP não entra por nenhum dos seus dois braços — **CC BY-SA 3.0 ou GPL-3.0** — e nenhum recurso dele
+  chegou a entrar.
+  ⚠️ **Atribuição é condição de uso, por recurso**, e a **fonte guarda-se como URL**: uma licença declarada
+  por quem nos entrega o ficheiro é indício, não autoridade, e sem a origem registada não há contra o que a
+  conferir. Recurso sem autor conhecido **não entra** — «não consegui descobrir» não é licença.
 
 ---
 

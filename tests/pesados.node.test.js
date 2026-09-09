@@ -33,7 +33,7 @@ describe('o buscador das coisas pesadas', () => {
     const f = cacheFalsa();
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk() });
     const sem = r.filter((x) => x.estado === 'sem-fonte');
-    expect(sem.map((x) => x.id).sort(), 'só a arte continua por decidir — a visão ganhou fonte no ADR-0124/0132').toEqual(['arte:lcp']);
+    expect(sem.map((x) => x.id).sort(), 'só a arte continua sem acervo — a visão ganhou fonte no ADR-0124/0132, e o ADR-0133 fechou a lista de licenças sem escolher de onde a arte vem').toEqual(['arte:acervo']);
     for (const s of sem) {
       expect(s.erro, `${s.id} não diz PORQUE não tem fonte`).toBeTruthy();
       expect(s.erro.length, `${s.id} tem uma razão curta demais para servir a alguém`).toBeGreaterThan(40);

@@ -63,20 +63,23 @@ A narração por voz roda **inteiramente no navegador/offline** graças ao traba
 > Os pesos das vozes são **baixados uma vez** (de um host público) e rodam **100% localmente** depois — nenhum áudio de
 > criança sai do dispositivo. Ver `the-inclusionist-docs · docs/2-Architecture/adr/ADR-0065-three-neural-voices-owned-by-the-engine-and-cached-on-first-use.yaml`.
 
-## Arte — Liberated Pixel Cup — CC BY-SA 3.0
+## Arte importada — CC0, CC BY 3.0, CC BY 4.0 ou OGA-BY
 
-A atribuição do [Liberated Pixel Cup](https://github.com/OpenGameArt/LiberatedPixelCup) é **por recurso**, e por
-isso não cabe nesta página em prosa: o repositório do LCP guarda ficheiros de autoria separados para originais e
-derivados, e a cadeia lê-se recurso a recurso.
+A atribuição da arte que vem de fora é **por recurso**, e por isso não cabe nesta página em prosa: a autoria de um
+acervo lê-se recurso a recurso, e a cadeia de derivações com ela.
 
-**Ela mora em [`../art/lcp/ATTRIBUTION.csv`](../art/lcp/ATTRIBUTION.csv)** — caminho, autor, fonte, licença e de que
-recursos cada um derivou. É a mesma forma que o `LICENSES.md` §4 já usa para as 100 gerações do PixelLab: um
+**Ela mora em [`../art/ATTRIBUTION.csv`](../art/ATTRIBUTION.csv)** — caminho, autor, **URL da fonte**, licença e de
+que recursos cada um derivou. É a mesma forma que o `LICENSES.md` §4 já usa para as 100 gerações do PixelLab: um
 ficheiro tabular ao lado do apontador em prosa, porque um livro-razão que cresce com o catálogo não se mantém à mão.
 
-⚠️ **Atribuição aqui é condição de uso, não linha de crédito.** Os dois braços da licença exigem-na, e um recurso
+⚠️ **Atribuição aqui é condição de uso, não linha de crédito.** Três das quatro licenças exigem-na, e um recurso
 sem autor conhecido **não entra** — «não consegui descobrir» não é licença. O gate
-`tests/lcp-quarantine.node.test.js` reprova a entrada vazia, a entrada órfã e o recurso sem entrada, e a árvore
-está em **quarentena** por uma razão que o [`LICENSES.md`](LICENSES.md) §3 e o **ADR-0107** explicam: misturar o LCP
-com a arte própria licenciaria em share-alike a obra de alguém que não está neste repositório para discordar.
+`tests/arte-licencas-aceites.node.test.js` reprova a entrada vazia, a entrada órfã, o recurso sem entrada, a fonte
+sem URL e **qualquer licença fora das quatro** — com ND, NC e share-alike recusados por nome e com o motivo de
+cada um, que o [`LICENSES.md`](LICENSES.md) §3 e o **ADR-0133** explicam.
 
-**Hoje o livro está vazio** — o LCP foi decidido em 2026-09-08 e ainda não entrou.
+📌 **Não há quarentena, e já houve.** Até 2026-09-09 o Liberated Pixel Cup ia entrar sob CC BY-SA 3.0 atrás de uma
+parede (ADR-0107). O Dev recusou o share-alike e a parede saiu com ele: sem arte cujo copyleft viaje, não há o que
+segregar.
+
+**Hoje o livro está vazio** — nenhum recurso entrou nunca.
