@@ -108,44 +108,74 @@ jobs:
   # «cada repositório precisa ter seus validadores e gates para ADRs». O que mudou é de onde vem a árvore e,
   # sobretudo, o que ESTE lado consegue conferir e o outro não: passando `--repo engine=.`, os caminhos de
   # `confirmed-by` marcados `engine:` são ABERTOS. No `the-inclusionist-docs` eles só podem ser contados.
+  #
+  # 🔴 E ELE NASCE DORMENTE, o que é uma decisão e não um recuo. A primeira versão deixava o checkout falhar
+  # sem token — «falha ALTO é melhor do que um validador a correr sobre uma pasta vazia» —, e a primeira
+  # corrida depois do push provou-a certa no diagnóstico e errada na consequência: `Not Found`, `main`
+  # vermelha, e vermelha por tempo indeterminado à espera de um segredo que só o Dev pode criar.
+  #
+  # ⚠️ O CABEÇALHO DESTE FICHEIRO JÁ TINHA ESCRITO POR QUE ISSO É PIOR: os dois scanners do GitLab estiveram
+  # VERMELHOS durante semanas «e o ✗ cinzento foi lido por ninguém». Uma `main` que fica vermelha por uma
+  # razão administrativa ensina a não ler o vermelho — e o próximo vermelho é o que importa.
+  #
+  # 📌 A SAÍDA JÁ EXISTE NESTE FICHEIRO, no `check:annual-report`: um gate DORMENTE que «imprime um aviso em
+  # toda corrida — um gate dormente é um aviso, não um passe». É a mesma forma aqui: sem o segredo, o trabalho
+  # ANUNCIA que não conferiu nada e diz o que criar; com ele, corre a sério. Criar o segredo é o que o acorda.
   adr:
     runs-on: ubuntu-latest
+    env:
+      # ⚠️ Um segredo não pode ser lido num `if:` de trabalho, então vira booleano aqui e os passos leem-no.
+      TEM_TOKEN: ${{ secrets.DOCS_READ_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v7
 
-      # ⚠️ Repositório PRIVADO da mesma organização: o `GITHUB_TOKEN` de um workflow não alcança outro
-      # repositório, então isto precisa de um token com leitura em `the-inclusionist-docs`. Se ele faltar, o
-      # passo falha AQUI, com uma mensagem de permissão — que é melhor do que um validador a correr sobre uma
-      # pasta vazia e a dizer «tudo são».
+      # ⚠️ Repositório PRIVADO da mesma organização: o `GITHUB_TOKEN` de um workflow NÃO alcança outro
+      # repositório — medido na corrida 34352635399, que falhou com `Not Found`. Isto precisa de um PAT com
+      # leitura de conteúdo em `the-inclusionist-docs`, guardado aqui como `DOCS_READ_TOKEN`.
+      - name: DORMANT — the records could not be fetched, so nothing here was checked
+        if: env.TEM_TOKEN != 'true'
+        run: |
+          echo "::warning title=ADR gate dormant::the secret DOCS_READ_TOKEN is not set, so the records were" \
+               "NOT fetched and NOTHING was validated. This job is a notice, not a pass. Create a" \
+               "fine-grained PAT with read access to the-inclusionist/the-inclusionist-docs and store it as" \
+               "DOCS_READ_TOKEN in this repository."
+
       - name: the records
+        if: env.TEM_TOKEN == 'true'
         uses: actions/checkout@v7
         with:
           repository: the-inclusionist/the-inclusionist-docs
           path: adr-tree
-          token: ${{ secrets.DOCS_READ_TOKEN || github.token }}
+          token: ${{ secrets.DOCS_READ_TOKEN }}
 
       - uses: actions/setup-python@v7
+        if: env.TEM_TOKEN == 'true'
         with:
           python-version: "3.12"
-      - run: pip install --quiet pyyaml
+      - if: env.TEM_TOKEN == 'true'
+        run: pip install --quiet pyyaml
       # Eight checks, including the bidirectional supersession pointers. It caught a missing back-pointer
       # the day it was written and has caught one in almost every session since.
       # 📌 `--repo engine=.` é o que este repositório tem e o outro não: o CÓDIGO que as confirmações nomeiam.
       - name: validate the ADR records, and OPEN the confirmations that name this repository
+        if: env.TEM_TOKEN == 'true'
         run: python adr-tree/scripts/validate-adr.py adr-tree/docs/2-Architecture/adr --repo engine=.
 
       # 🎯 E O CRIVO DA PROSA, que é do lado do código porque um registo a nomear um ficheiro DESTA árvore que
       # já não existe é quebra DESTA árvore (ADR-0123 §5). Sem `ADR_TREE` ele salta, e um caso próprio recusa
       # o salto em CI.
       - uses: actions/setup-node@v7
+        if: env.TEM_TOKEN == 'true'
         with:
           node-version-file: .node-version
           cache: npm
-      - run: npm ci
+      - if: env.TEM_TOKEN == 'true'
+        run: npm ci
       # 🎯 E A CONTRAMEDIDA DA DERIVA, no mesmo trabalho porque é aqui que as duas cópias se encontram: duas
       # versões do validador dão dois veredictos sobre a MESMA árvore, e nada diz qual está certo. Já divergiu
       # uma vez, no dia da mudança de casa.
       - name: no record points at a gate that does not exist, and the two validators are the same
+        if: env.TEM_TOKEN == 'true'
         env:
           ADR_TREE: ${{ github.workspace }}/adr-tree/docs/2-Architecture/adr
           # 🎯 A declaração de responsabilidade: com ela, SALTAR reprova. É o que apanha um `ADR_TREE` com o
