@@ -40,6 +40,56 @@ export const VOZES_NEURAIS: readonly VozNeural[] = Object.freeze([
   Object.freeze({ locale: 'es-MX', engine: 'piper', voice: 'es_MX-claude-high' }),
 ]);
 
+/**
+ * DE ONDE VÊM OS MODELOS (ADR-0114), num sítio só.
+ *
+ * 📏 MEDIDO EM 2026-09-08, e não escolhido: o `piper.ttstool.com` — que o Dev nomeou ao perguntar — serve o
+ * próprio runtime da própria origem e busca os modelos aqui. As quatro vozes deste catálogo respondem 200
+ * neste endereço, com `Access-Control-Allow-Origin: *`, logo um PWA pode buscá-las de outra origem.
+ *
+ * ⚠️ UM SÍTIO SÓ É A METADE QUE O REGISTO PEDE. Um endereço repetido no ponto de uso é como o CDN do
+ * WebGazer chegou ao `ui/webcam` — escrito à mão, sem política, e sem ninguém a poder mudá-lo de uma vez.
+ */
+export const HOST_DOS_MODELOS = 'https://huggingface.co/rhasspy/piper-voices/resolve/main/';
+
+/**
+ * O CAMINHO DO MODELO, DERIVADO DO IDENTIFICADOR — e não uma segunda tabela.
+ *
+ * `pt_BR-faber-medium` diz tudo o que o caminho precisa: `pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx`.
+ * 🎯 DERIVAR EM VEZ DE TABELAR é a decisão inteira desta função: uma tabela de caminhos ao lado da tabela
+ * de vozes seria o mesmo facto escrito duas vezes, e este repositório já pagou isso três vezes — o
+ * `DomQuery`, os rótulos de movimento reduzido, as chaves de armazenamento. Duas listas divergem, e
+ * divergem uma entrada de cada vez.
+ *
+ * ⚠️ Devolve `null` para um identificador que não tenha a forma esperada, em vez de montar um caminho
+ * torto: uma URL inventada dá 404 na escola, e um `null` dá para reportar antes de sair de casa.
+ */
+export function caminhoDoModelo(v: VozNeural): string | null {
+  const partes = v.voice.split('-');
+  if (partes.length !== 3) return null;
+  const [locale, nome, qualidade] = partes as [string, string, string];
+  const idioma = locale.split('_')[0];
+  if (!idioma || !nome || !qualidade || idioma === locale) return null;
+  return `${idioma}/${locale}/${nome}/${qualidade}/${v.voice}.onnx`;
+}
+
+/** O endereço completo do modelo. `null` quando o identificador não se deixa ler. */
+export function urlDoModelo(v: VozNeural): string | null {
+  const caminho = caminhoDoModelo(v);
+  return caminho === null ? null : HOST_DOS_MODELOS + caminho;
+}
+
+/**
+ * A CONFIGURAÇÃO da voz, que o motor lê junto com o modelo.
+ *
+ * 📌 `.onnx.json` e não um segundo caminho: é o mesmo ficheiro com outro sufixo, medido a responder 200 no
+ * mesmo sítio. Escrevê-lo como derivação mantém a regra de que o identificador é a única fonte.
+ */
+export function urlDaConfig(v: VozNeural): string | null {
+  const url = urlDoModelo(v);
+  return url === null ? null : url + '.json';
+}
+
 /** Em que pé está cada voz. `falhou` é um estado e não uma excepção — ver `vozEmUso`. */
 export type EstadoDaVoz = 'ausente' | 'a-buscar' | 'pronta' | 'falhou';
 

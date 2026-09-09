@@ -38,6 +38,11 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
  * rede sem ninguém decidir — que é exactamente como esta chegou.
  */
 const BUSCAS_A_MAO = {
+  'platform/voice-plan.ts':
+    'ENDEREÇO DECLARADO, e ainda não uma busca. O ADR-0114 exige que o host dos modelos seja nomeado num ' +
+    'sítio só, e este módulo é PURO — sem `fetch`, sem `import()`, sem `script.src`. Fica aqui porque o ' +
+    'crivo lê literais e não sabe a diferença; o `nada-vem-de-fora` faz essa distinção de forma estrutural, ' +
+    'e é lá que ela é afirmada. Sai desta lista quando o buscador existir e a busca passar a viver nele',
   'ui/webcam.ts':
     'o WebGazer, carregado por `<script src>` de `webgazer.cs.brown.edu` no primeiro uso do controle por ' +
     'olhar. É a única busca de runtime externo da engine e a razão de a issue #129 existir. O ADR-0114 ' +

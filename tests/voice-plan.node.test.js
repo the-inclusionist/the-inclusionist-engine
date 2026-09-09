@@ -9,6 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   VOZES_NEURAIS, estadoDe, ordemDeBusca, vozEmUso,
+  HOST_DOS_MODELOS, urlDoModelo, urlDaConfig,
 } from '../app/js/platform/voice-plan.js';
 
 const nomes = (vs) => vs.map((v) => v.voice);
@@ -36,6 +37,56 @@ describe('o catálogo das quatro (ADR-0110)', () => {
   it('[Interface] o catálogo é congelado — um padrão partilhado que alguém muta deixa de existir para todos', () => {
     expect(Object.isFrozen(VOZES_NEURAIS)).toBe(true);
     expect(Object.isFrozen(VOZES_NEURAIS[0])).toBe(true);
+  });
+});
+
+describe('de onde vêm os modelos (ADR-0114), num sítio só', () => {
+  // 📏 OS QUATRO ENDEREÇOS SÃO LITERAIS MEDIDOS, e não a derivação chamada outra vez. Foram lidos em
+  // 2026-09-08 do que o `piper.ttstool.com` busca, e cada um respondeu 200 com `Access-Control-Allow-Origin:
+  // *`. Afirmá-los chamando `urlDoModelo` mediria a ida e a volta pela mesma função, e as duas metades
+  // mover-se-iam juntas — a mesma nota que o `pause-icons` carrega sobre a codificação `1`/`0`.
+  const MEDIDOS = {
+    'pt_BR-faber-medium': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx',
+    'en_US-ryan-medium': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/medium/en_US-ryan-medium.onnx',
+    'en_US-amy-medium': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx',
+    'es_MX-claude-high': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_MX/claude/high/es_MX-claude-high.onnx',
+  };
+
+  it('🎯 [Right] as quatro do catálogo derivam exactamente os endereços medidos', () => {
+    for (const v of VOZES_NEURAIS) {
+      expect(urlDoModelo(v), `${v.voice} deixou de derivar o endereço que respondeu 200`).toBe(MEDIDOS[v.voice]);
+    }
+  });
+
+  // ⚠️ A CONFIGURAÇÃO VIAJA COM O MODELO, e é o mesmo caminho com outro sufixo — medido a responder 200 no
+  // mesmo sítio. Um segundo caminho para ela seria a segunda tabela que a derivação existe para evitar.
+  it('[Right] a config é o mesmo caminho com `.json`', () => {
+    for (const v of VOZES_NEURAIS) {
+      expect(urlDaConfig(v)).toBe(`${MEDIDOS[v.voice]}.json`);
+    }
+  });
+
+  // 🎯 O CASO QUE IMPEDE A SEGUNDA TABELA: o endereço sai do IDENTIFICADOR, logo uma voz que ainda não está
+  // no catálogo já tem endereço sem ninguém a acrescentar uma linha. Se algum dia houver uma tabela de
+  // caminhos ao lado da de vozes, este caso é o que a apanha — ele usa uma voz que não está em lado nenhum.
+  it('🎯 [Right] uma voz FORA do catálogo também deriva, porque a fonte é o identificador', () => {
+    const inventada = { locale: 'fr-FR', engine: 'piper', voice: 'fr_FR-gilles-low' };
+    expect(urlDoModelo(inventada))
+      .toBe('https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/gilles/low/fr_FR-gilles-low.onnx');
+  });
+
+  // ⚠️ UM IDENTIFICADOR QUE NÃO SE DEIXA LER DEVOLVE `null`, e não um caminho torto: uma URL inventada dá
+  // 404 numa escola, e um `null` dá para reportar antes de sair de casa.
+  it('⚠️ [Zero] identificador malformado devolve `null`, e não uma URL inventada', () => {
+    for (const ruim of ['faber', 'pt_BR-faber', 'pt_BR-faber-medium-extra', 'pt-faber-medium']) {
+      expect(urlDoModelo({ locale: 'pt-BR', engine: 'piper', voice: ruim }), ruim).toBe(null);
+    }
+  });
+
+  // 📌 O HOST É UM SÓ, e afirmá-lo é o que o ADR-0114 pede. Um endereço repetido no ponto de uso é como o
+  // CDN do WebGazer chegou ao `ui/webcam`: escrito à mão, sem política, e sem se poder mudar de uma vez.
+  it('📌 [Interface] todo endereço começa pelo host declarado', () => {
+    for (const v of VOZES_NEURAIS) expect(urlDoModelo(v).startsWith(HOST_DOS_MODELOS)).toBe(true);
   });
 });
 

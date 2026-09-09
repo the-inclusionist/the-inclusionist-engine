@@ -59,8 +59,23 @@ function urlsEmCodigo() {
  */
 const DECLARADAS = {
   'http://www.w3.org/2000/svg': 'NAMESPACE XML, não um endereço: o `createElementNS` exige-o para criar nós SVG, e ele nunca sai da máquina. Aparece no `render/cvd-matrices` e no `render/lq-filter`, que montam os filtros de daltonismo',
+  'https://huggingface.co/rhasspy/piper-voices/resolve/main/': 'ENDEREÇO DECLARADO, e ainda não uma busca — a terceira categoria desta lista. O ADR-0114 exige que o host dos modelos seja NOMEADO NUM SÍTIO SÓ, e o `platform/voice-plan` é esse sítio: ele é PURO, não tem `fetch`, `import()` nem `script.src`, e nada nele sai da máquina. 📏 Medido em 2026-09-08 a partir do que o `piper.ttstool.com` busca; as quatro vozes respondem 200 com CORS aberto. ⚠️ Quando o buscador existir, ELE é que passa a contar como busca — e o caso estrutural abaixo é que o obriga, porque conta módulos que tocam na rede e não nomes numa lista',
   'https://webgazer.cs.brown.edu/webgazer.js': '🔴 A ÚNICA BUSCA EXTERNA DA ENGINE, e viola o pilar 8. O `ui/webcam` carrega o WebGazer de um CDN no primeiro uso, e o próprio cabeçalho do ficheiro admite-o: «vendorizar p/ offline é futuro». Numa escola sem rede, a criança que depende do olhar liga o botão e não acontece nada. Travado na #129, que decide de onde vem um runtime pesado — e a resposta serve TRÊS subsistemas, não só este',
 };
+
+/**
+ * ESTE MÓDULO TOCA NA REDE? — a pergunta que separa um ENDEREÇO de uma BUSCA.
+ *
+ * ⚠️ Estrutural e não por nome: procura a PRIMITIVA que sai da máquina. Um módulo pode nomear um endereço
+ * (o ADR-0114 exige que um deles o faça) sem nunca o pedir, e tratá-los igual acusaria um falso — que é
+ * como um gate é desligado antes de apanhar o verdadeiro.
+ */
+const REDE = /\bfetch\s*\(|\bimport\s*\(|\.src\s*=|XMLHttpRequest|navigator\.sendBeacon|new\s+WebSocket|new\s+EventSource/;
+function tocaNaRede(modulo) {
+  const src = readFileSync(join(RAIZ, modulo), 'utf8')
+    .split(/\r?\n/).filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln)).join('\n');
+  return REDE.test(src);
+}
 
 describe('pilar 8 · nada chega de fora sem estar declarado', () => {
   it('🎯 [Zero] nenhuma URL nova entrou em código sem uma razão escrita', () => {
@@ -90,8 +105,23 @@ describe('pilar 8 · nada chega de fora sem estar declarado', () => {
     // ⚠️ A afirmação forte deste ficheiro não é «há uma lista»: é que a engine tem UMA dependência de rede em
     // tempo de execução, e que ela está no transporte assistido. Duas seriam outra conversa, e o crivo tem de
     // a forçar em vez de a diluir numa lista que cresce.
-    const buscas = urlsEmCodigo().filter(({ url }) => !url.startsWith('http://www.w3.org/'));
-    expect(buscas.map((b) => b.modulo), 'a engine ganhou uma segunda busca externa').toEqual(['ui/webcam.ts']);
+    //
+    // 🎯 O DISCRIMINADOR PASSOU A SER ESTRUTURAL EM 2026-09-08, e a mudança é um aperto e não um alívio.
+    //    Era «não é o namespace do W3C, logo é uma busca» — que assume que só há duas categorias. O ADR-0114
+    //    criou a terceira: um ENDEREÇO declarado num módulo puro, para um buscador que ainda não existe.
+    //    Agora conta-se quem toca mesmo na REDE: um módulo é uma busca quando contém uma primitiva de rede.
+    //    ⚠️ Uma lista de nomes teria deixado passar o buscador no dia em que ele nascesse NAQUELE ficheiro;
+    //    esta forma apanha-o, porque é a primitiva que o denuncia e não o endereço.
+    const buscas = urlsEmCodigo().filter(({ modulo }) => tocaNaRede(modulo));
+    expect([...new Set(buscas.map((b) => b.modulo))], 'a engine ganhou uma segunda busca externa')
+      .toEqual(['ui/webcam.ts']);
+  });
+
+  // 📌 O PAR QUE IMPEDE A CATEGORIA NOVA DE VIRAR PORTA DOS FUNDOS: o módulo que NOMEIA o host tem de
+  // continuar sem tocar na rede. No dia em que ele ganhar um `fetch`, o caso acima acusa-o — e este diz
+  // porquê, antes de alguém ter de o descobrir.
+  it('📌 [Zero] o módulo que NOMEIA o host dos modelos não toca na rede', () => {
+    expect(tocaNaRede('platform/voice-plan.ts'), 'o catálogo passou a buscar — deixou de ser um endereço').toBe(false);
   });
 });
 
