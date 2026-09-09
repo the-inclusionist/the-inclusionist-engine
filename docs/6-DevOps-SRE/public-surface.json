@@ -1203,6 +1203,7 @@
   ],
   "ui/pause-icons.ts": [
     "AcaoNaBarra",
+    "AccionaveisDoJogo",
     "CALM_AUDIO_CATS",
     "CALM_NAMES",
     "CVD_LABELS",

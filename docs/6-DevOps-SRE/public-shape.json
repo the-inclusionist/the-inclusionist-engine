@@ -1824,8 +1824,9 @@
       "dis",
       "on"
     ],
-    "interface EscritoresVisuais": [
+    "interface AccionaveisDoJogo": [
       "correcao",
+      "seguraTeclas",
       "tema"
     ],
     "interface ScreenPauseMarkupOpts": [
@@ -1854,6 +1855,7 @@
       "rmChar?",
       "rmKeys?",
       "saveRM?",
+      "seguraTeclas",
       "setCatGain",
       "setCorrecaoDoJogador?",
       "setModoCego?",
@@ -1885,6 +1887,7 @@
       "setCalmMode"
     ],
     "type PausePlayer": "PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>",
+    "type EscritoresVisuais": "AccionaveisDoJogo",
     "type PauseSub": "'raiz' | 'opcoes'",
     "type AcaoNaBarra": "'sair' | 'ativar' | 'andar' | 'nada'"
   },

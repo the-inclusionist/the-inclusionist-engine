@@ -340,22 +340,46 @@ export function iconBtnMarkup(ic: PauseIcon): string {
  * ⚠️ Isto NÃO é o mesmo que `soon`. `soon` é «ainda não construímos»; isto é «este jogo não tem por onde», e
  * um botão que anuncia «em breve» diria a coisa errada.
  */
-export interface EscritoresVisuais {
+export interface AccionaveisDoJogo {
   /** Há quem escreva o TEMA (o alto contraste)? Sem ele, o ícone `contrast` não é montado. */
   readonly tema: boolean;
   /** Há quem escreva a CORREÇÃO de cor? Sem ela, o ícone `cvd` não é montado. */
   readonly correcao: boolean;
+  /**
+   * ESTE JOGO SEGURA ALGUMA TECLA? — `GameDeclaration.seguraTeclas`, o campo do ADR-0115.
+   *
+   * 🔴 Sem ele o ícone `altmove` não é montado, e a AUSÊNCIA é a decisão. A alternância existe para quem não
+   * consegue manter uma tecla premida; num jogo onde nada se segura ela não tem o que travar, e um controle
+   * que não faz nada ensina a uma criança que o ajuste de que ela depende está partido.
+   *
+   * ⚠️ E ISTO É UMA AUSÊNCIA DIFERENTE DA DO ADR-0113 cláusula 3, que também vive neste ficheiro: lá o
+   * controle fica DESABILITADO com o motivo, porque o aparelho EXIGE a alternância e ela não se pode
+   * desligar. Aqui não há nada a travar, e um controle que explica por que não faz nada continua a ser um
+   * controle que não faz nada.
+   */
+  readonly seguraTeclas: boolean;
 }
 
-export function iconesQueAccionam(escritores: EscritoresVisuais): readonly PauseIcon[] {
+/**
+ * @deprecated O nome dizia «escritores VISUAIS» e a pergunta deixou de ser só visual quando o `seguraTeclas`
+ * entrou (ADR-0115). Use `AccionaveisDoJogo`. O alias fica para o consumidor não pagar duas quebras no mesmo
+ * major — uma pelo campo novo e outra pelo nome.
+ */
+export type EscritoresVisuais = AccionaveisDoJogo;
+
+export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly PauseIcon[] {
   // ⚠️ POR ÍCONE, e não um booleano para os dois — e foi uma MUTAÇÃO SOBREVIVENTE que o mostrou. Com uma
   // única bandeira, `&&` e `||` produziam o mesmo resultado nos casos que eu tinha escrito, porque todos
   // tiravam os DOIS escritores. O `&&` escondia um ícone que FUNCIONA quando só um escritor falta, e o `||`
   // mostrava um que NÃO funciona. Os dois erram, em direcções opostas, e a pergunta certa nunca foi «este
   // jogo tem escritores visuais» — é «este ÍCONE tem quem o accione».
+  // 📌 E o `altmove` entra pela MESMA porta, que é o achado: «este jogo segura teclas?» é a mesma pergunta
+  // que «este ícone tem quem o accione», feita a um campo do contrato em vez de a um escritor injectado.
+  // Um terceiro ramo, e não uma regra nova.
   return PAUSE_ICONS.filter((ic) => (ic.k === 'contrast' ? escritores.tema
     : ic.k === 'cvd' ? escritores.correcao
-      : true));
+      : ic.k === 'altmove' ? escritores.seguraTeclas
+        : true));
 }
 
 /**
@@ -689,6 +713,21 @@ export interface PauseIconsCtx {
   /** Os escritores POR EIXO (#104): mexer no tema não apaga a correção, e vice-versa. */
   setTemaDoJogador?: (i: number, tema: Tema) => void;
   setCorrecaoDoJogador?: (i: number, correcao: Correcao) => void;
+  /**
+   * ESTE JOGO SEGURA ALGUMA TECLA? — o valor de `GameDeclaration.seguraTeclas` (ADR-0115). Sem ele o ícone
+   * `altmove` não é montado.
+   *
+   * ⚠️ OBRIGATÓRIO, e vai contra a direcção do ADR-0106, que passou a tornar campos deste ctx OPCIONAIS para
+   * a engine poder montar sozinha. A excepção tem razão medida: os campos que ganharam padrão têm um padrão
+   * SEGURO — o modo cego começa desligado, a lista de botões vem da engine. Aqui não há: `true` monta um
+   * controle que pode não fazer nada, e `false` esconde um de que uma criança depende. Os dois lados erram, e
+   * é essa a condição que o `holdsAtOnce` já usou para ser obrigatório também.
+   *
+   * 📌 Quem passa pelo `createGame` não escreve isto: a raiz lê a declaração, que já é obrigatória. O campo
+   * só é visível para um cartucho que chame `initPauseIcons` por fora — e é exactamente esse que não pode
+   * ficar em silêncio.
+   */
+  seguraTeclas: boolean;
 }
 
 export interface PauseIconsApi {
@@ -797,6 +836,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   const iconesDoJogo = iconesQueAccionam({
     tema: Boolean(ctx.setTemaDoJogador),
     correcao: Boolean(ctx.setCorrecaoDoJogador),
+    // 📌 Sem `Boolean(...)`: os dois de cima perguntam «existe escritor?» a um campo opcional; este é uma
+    // RESPOSTA que o jogo deu, e envolvê-la faria um `undefined` de um ctx mal montado virar `false` —
+    // esconder o controle em silêncio, que é metade do defeito que este campo existe para não cometer.
+    seguraTeclas: ctx.seguraTeclas,
   });
 
   /*

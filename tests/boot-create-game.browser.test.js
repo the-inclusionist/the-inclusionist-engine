@@ -190,7 +190,14 @@ describe('createGame num documento de verdade', () => {
     esquecerEntradas();
     try {
       arestaDoJogador(0, 'gamepad');           // a criança pegou no controle
-      abrir({ players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }] });
+      // ⚠️ `seguraTeclas: true` E A RAZÃO É O PONTO DO CASO: desde o ADR-0115 a raiz só monta o `altmove`
+      // num jogo que segura alguma tecla, e o fixture padrão daqui é de hotspots (declara `false`). Sem esta
+      // linha o caso passaria a medir a ausência do ícone em vez da fiação do aparelho — verde pela razão
+      // errada, que é o defeito que este ficheiro inteiro existe para não cometer.
+      abrir({
+        declaration: { ...declaracaoValida(), seguraTeclas: () => true },
+        players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }],
+      });
 
       const alvo = document.querySelector('#title-icons [data-pi="altmove"]');
       expect(alvo, 'o ícone da alternância não está na barra').not.toBeNull();
@@ -213,7 +220,11 @@ describe('createGame num documento de verdade', () => {
     esquecerEntradas();
     try {
       arestaDoJogador(0, 'toque');
-      abrir({ players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }] });
+      // `seguraTeclas: true` pela mesma razão do caso acima — sem o ícone não há clique para medir.
+      abrir({
+        declaration: { ...declaracaoValida(), seguraTeclas: () => true },
+        players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }],
+      });
       document.querySelector('#title-icons [data-pi="altmove"]')
         .dispatchEvent(new MouseEvent('click', { bubbles: true }));
 

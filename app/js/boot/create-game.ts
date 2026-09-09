@@ -454,6 +454,18 @@ export function createGame(o: CreateGameOptions): Engine {
 
   const pauseIcons = initPauseIcons({
     doc,
+    /*
+     * A RESPOSTA DO JOGO, lida da declaração (ADR-0115). Sem ela o ícone `altmove` não é montado.
+     *
+     * ⚠️ LIDA UMA VEZ, NO ARRANQUE, e a razão não é economia — é a criança. O campo é uma FUNÇÃO porque o
+     * ADR-0084 diz que um jogo muda de exigência entre fases, mas a COMPOSIÇÃO DA BARRA não pode mudar
+     * debaixo da mão de quem está a usá-la: um ícone que aparece e some entre fases é pior do que um que
+     * nunca esteve lá, e para quem navega por teclado desloca a ordem de tabulação a meio.
+     * 📌 Logo a leitura correcta do contrato é «este jogo segura teclas em ALGUMA fase» — um jogo que segura
+     * a pé e nada dentro de um veículo declara `true`, e o registo não disse isto porque a pergunta só
+     * aparece quando se monta a barra.
+     */
+    seguraTeclas: o.declaration.seguraTeclas(),
     getPlayers: () => o.players ?? [],
     getNumPlayers: () => (o.players ?? [null]).length,
     srSay, srAlert,

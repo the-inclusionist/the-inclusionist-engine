@@ -73,6 +73,9 @@ function makeCtx(over = {}) {
     // Os escritores POR EIXO (#104): cada icone escreve no seu, e o outro fica onde estava.
     setTemaDoJogador: (i, tema) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), tema }; },
     setCorrecaoDoJogador: (i, correcao) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), correcao }; },
+    // Este duplo é de forma de PLATAFORMA — segura direcção — logo a barra dele tem o `altmove` (ADR-0115).
+    // A metade que prova a AUSÊNCIA vive no project node, onde a regra mora.
+    seguraTeclas: true,
     ...over,
   };
   return { ctx, state, said, alerted };
