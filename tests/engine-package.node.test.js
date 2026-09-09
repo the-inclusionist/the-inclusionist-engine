@@ -230,6 +230,71 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
   });
 });
 
+/* ===================================================================================================
+ * O QUARTO CRIVO: A ENGINE NÃO GANHA DEPENDÊNCIA DE EXECUÇÃO — a POLÍTICA, que os três de cima não vêem
+ * ===================================================================================================
+ *
+ * 🎯 O BURACO FOI MEDIDO EM 2026-09-09 E É DE CONSTRUÇÃO, não de cobertura. Os crivos acima aferem
+ * COERÊNCIA — que o que o código nomeia está declarado, e que o que está declarado alguém nomeia. Ambos
+ * ficam VERDES se alguém acrescentar `onnxruntime-web` a `dependencies` **e** o importar: as duas metades
+ * concordam, e 135 MB entram em cada `npm ci` de trezentos repositórios.
+ *
+ * ⚠️ E o ADR-0093 empurra para o mesmo sítio sem querer: «o que o código embarcado NOMEIA, o pacote tem de
+ * declarar». Lido sozinho, ele diz que a saída para um import novo é acrescentar a dependência. As duas
+ * regras juntas dizem outra coisa, e é ela que fica escrita aqui: **a engine não importa nada pesado**.
+ *
+ * 📏 A POLÍTICA VEM DE QUATRO REGISTOS QUE DIZEM O MESMO POR CAMINHOS DIFERENTES: o ADR-0094 mediu os 135 MB
+ * e recusou-os ao cartucho; o ADR-0114 tirou runtime e modelos do pacote; o ADR-0117 pôs a entrega na
+ * PLATAFORMA porque a Cache Storage é por origem; e o ADR-0119 estendeu a lista à arte. Nenhum deles tinha
+ * gate sobre a porta do `dependencies`, que é por onde a decisão seria revertida sem ninguém a tomar. */
+describe('ADR-0119 · a engine não ganha dependência de execução, e cada `peer` diz porquê', () => {
+  const PKG = JSON.parse(readFileSync(join(RAIZ_REPO, 'package.json'), 'utf8'));
+
+  /**
+   * As dependências de quem CONSOME, com a razão de cada uma escrita à mão.
+   *
+   * ⚠️ A LISTA TEM DE ENCOLHER e não pode crescer em silêncio: uma entrada nova sem razão reprova, e uma
+   * razão cuja dependência já não existe também — senão ela fica a desculpar por antecipação o que vier
+   * ocupar o mesmo nome.
+   */
+  const PEERS_COM_RAZAO = {
+    'pixi.js':
+      'O RENDERIZADOR É DO CONSUMIDOR, e tem de ser: duas cópias de PIXI no mesmo documento são dois ' +
+      'contextos de WebGL e duas caches de textura. `peer` é a forma de dizer «traz o teu», e é por isso ' +
+      'que ele não é uma dependência normal. Sai daqui no dia em que a engine deixar de desenhar.',
+  };
+
+  it('🎯 [Zero] a engine não tem NENHUMA dependência de execução', () => {
+    const deps = Object.keys(PKG.dependencies ?? {});
+    expect(
+      deps,
+      'a engine ganhou uma dependência de execução: cada `npm ci` de trezentos repositórios passa a pagá-la, ' +
+        'e é por essa porta que o ADR-0094 seria revertido sem ninguém decidir. Coisa pesada vai pela ' +
+        `PLATAFORMA (ADR-0117/0119), nunca pelo pacote. Achado: ${deps.join(', ')}`,
+    ).toEqual([]);
+  });
+
+  it('⚠️ [Interface] cada `peerDependency` carrega a razão, e a lista não cresce sozinha', () => {
+    const peers = Object.keys(PKG.peerDependencies ?? {});
+    const semRazao = peers.filter((p) => !(p in PEERS_COM_RAZAO));
+    expect(semRazao, `\`peer\` novo sem razão escrita: ${semRazao.join(', ')}`).toEqual([]);
+  });
+
+  it('[Fronteira] razão cuja dependência já não existe SAI daqui', () => {
+    // A metade da saída. Sem ela a lista vira monumento — a entrada do PIXI continuaria a explicar um
+    // `peer` que já não há, e a próxima pessoa leria história como estado.
+    const peers = new Set(Object.keys(PKG.peerDependencies ?? {}));
+    const orfas = Object.keys(PEERS_COM_RAZAO).filter((p) => !peers.has(p));
+    expect(orfas, `razão sem \`peer\` correspondente; apague a entrada: ${orfas.join(', ')}`).toEqual([]);
+  });
+
+  /* 🎯 E O CÍRCULO FECHA-SE COM O CRIVO DE CIMA, sem o repetir. Ele já afirma que «nenhum módulo embarcado
+   * nomeia pacote fora de `dependencies`/`peerDependencies`»; com o `dependencies` provado VAZIO aqui, o
+   * conjunto declarável passa a ser só os `peers` — e importar coisa pesada deixa de ter saída legal, que é
+   * exactamente o que os quatro registos querem. 📌 Uma terceira cópia do `nomeados()` seria a duplicação que
+   * este ficheiro já recusou duas vezes; o par vive na leitura dos dois crivos juntos, e fica escrito aqui. */
+});
+
 // ===================================================================================================
 // O TERCEIRO CRIVO: O QUE O PACOTE EMITE, ELE TEM DE DEIXAR ALCANÇAR
 // ===================================================================================================
