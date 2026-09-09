@@ -347,6 +347,33 @@ describe('createGame em execução', () => {
     expect(cartao.className).toBe('screen-pause');
   });
 
+  it('🔴 [Inverse] NENHUMA declinação tira o cartão — nem a que existia e foi aposentada (ADR-0122)', async () => {
+    // 🎯 O GATE QUE O ADR-0122 DEVIA, e ele afirma a decisão do Dev inteira: «o menu de pausa da engine e os
+    // botões no hud para acessibilidade rápida deveriam estar em todos os jogos, por isso seriam
+    // responsabilidade da engine». Não é oferecido; é da engine.
+    //
+    // ⚠️ O FIXTURE PASSA `semMenuDePausa: true` DE PROPÓSITO, e é isso que o torna um gate em vez de uma
+    // repetição do caso acima. O campo saiu do contrato, logo em TypeScript isto nem compila — mas um objecto
+    // vindo de um cartucho no `7.0.1` traz a chave à mesma, e o que se afirma é que ela deixou de ter efeito.
+    // Repor a consulta (`declines.semMenuDePausa ? null : …`) faz este caso reprovar e o de cima passar.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const regiao = {
+      id: 'game-region', innerHTML: '', filhos: [],
+      appendChild(n) { this.filhos.push(n); return n; },
+      addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
+    };
+    const { doc, win } = domFalso({ mapa: { '#game-region': regiao } });
+    const motor = createGame({
+      declaration: declaracaoValida(), host: { doc, win },
+      declines: { semMenuDePausa: true, semAtorDePausa: true, semAssistenteDePad: true, semVozNeural: true },
+    });
+
+    expect(regiao.filhos.length, 'uma declinação aposentada voltou a tirar o cartão da criança').toBe(1);
+    expect(regiao.filhos[0].id).toBe('vp-pause-0');
+    // 📌 E o silêncio não volta pela outra porta: com hospedeiro válido não há nada a acusar.
+    expect(motor.problems.filter((p) => p.includes('pausa')), 'acusou pausa com hospedeiro válido').toEqual([]);
+  });
+
   it('⚠️ [Right] MONTAR não é MOSTRAR — e a engine dá as duas, sem o jogo caçar id nenhum', async () => {
     // ⚠️ ESTA LACUNA ESTAVA SILENCIOSA NA MINHA PRÓPRIA ETAPA 2. O cartão nasce `hidden` — tem de nascer, uma
     // pausa abre-se — e quem o revela é o `ui/shell`, POR FASE, que esta raiz não monta de propósito. Sem
