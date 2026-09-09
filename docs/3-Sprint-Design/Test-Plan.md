@@ -28,26 +28,36 @@ Chromebook.
 
 ### 📏 Measured across the catalogue on 2026-09-09 — 225 test files, five repositories
 
-| repository | BLIND wait (sleep and hope) | polling with a condition (the CURE) | font METRIC | system language |
-|---|---|---|---|---|
-| `game-soccer` | 🔴 **29** (up to **900 ms**) | 11 | 0 | 0 |
-| `game-chess` | 🔴 **10** | 7 | 0 | 0 |
-| `game-whackwhack` | 0 | 0 | 🔴 **2** | 0 |
-| `pixi-15-puzzle` | 0 | 0 | 🔴 **1** | 0 |
-| `game-2048` | ✅ clean | | | |
-| `game-platformer` | ✅ clean | | | |
+| repository | BLIND wait (sleep and hope) | polling with a condition (the CURE) | `sleep(0)` flush (NOT a wait) | font METRIC | system language |
+|---|---|---|---|---|---|
+| `game-soccer` | 🔴 **29** (up to **900 ms**) | 11 | 0 | 0 | 0 |
+| `game-chess` | 🔴 **4** | 7 | 6 | 0 | 0 |
+| `game-whackwhack` | 0 | 0 | 0 | 🔴 **2** | 0 |
+| `pixi-15-puzzle` | 0 | 0 | 0 | 🔴 **1** | 0 |
+| `game-2048` | ✅ clean | | | | |
+| `game-platformer` | ✅ clean | | | | |
+| **the engine itself** | ✅ **0** | 0 | 1 | 0 | 0 |
 
-⚠️ **THE DETECTOR HAD TO SEPARATE THE CURE FROM THE DISEASE, and the first version did not.**
-`while (Date.now() < until) await sleep(16)` is waiting for a CONDITION — it is the fix applied to
-`game-soccer`, not the fault. A bare `await sleep(400)` is the fault. Counting them together produced a number
-three times too large and would have reported the repair as damage.
+⚠️ **THE DETECTOR OVER-REPORTED TWICE BEFORE THESE NUMBERS WERE TRUE, and both corrections belong here more
+than the numbers do.**
+
+1. `while (Date.now() < until) await sleep(16)` is waiting for a CONDITION — it is the fix applied to
+   `game-soccer`, not the fault. Counting it as a defect made the total three times too large and reported the
+   repair as damage.
+2. 📌 `setTimeout(fn, 0)` is a **macrotask flush** — yielding one turn to the event loop so queued work
+   settles. It is a deliberate idiom, not «sleep and hope», and it does not encode the machine's speed. Six of
+   the ten hits first attributed to `game-chess` were flushes: its real number is **four**.
+
+🎯 A detector that cannot tell a fix from a fault is worse than no detector, because its output looks like
+evidence. Both versions of this table were published before the third one was true.
 
 ### 🔴 And the biggest finding is that one repair was left half done
 
 `game-soccer` had ONE blind wait replaced by `waitFor` and was called fixed. **Twenty-nine remain**, at 900 ms,
-400 ms, 350 ms. It passes today because the runner is fast; every one of those lines is a green that depends
-on a machine, and the red of 2026-09-08 was simply the first one to break. 📌 «Uma causa achada não é a causa
-toda» — the lesson was already written down, and the same repository paid for it twice.
+400 ms, 350 ms — and none of them is a flush, so that number survived both corrections. It passes today
+because the runner is fast; every one of those lines is a green that depends on a machine, and the red of
+2026-09-08 was simply the first one to break. 📌 «Uma causa achada não é a causa toda» — the lesson was already
+written down, and the same repository paid for it twice.
 
 ### The two rules, and the second is the one that hides
 
