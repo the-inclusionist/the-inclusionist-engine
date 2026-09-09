@@ -1,0 +1,132 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0117]
+  date: 2026-09-09
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's correction of 2026-09-09, verbatim: «A pasta the-inclusionist-demos é o que deveria ser
+       the-inclusionist-site.»"
+    - "ADR-0117 — SUPERSEDED IN PART: WHICH repository is the platform, and the fact it rested on («the site
+       is VAZIO»). Its decision — that the PWA is the site and the platform loads everything once — is intact"
+    - "ADR-0068 §2 — `the-inclusionist-demos` stops holding games and starts CHOOSING them, by a manifest,
+       because a byte budget forbids the whole catalogue reaching a school device"
+    - "ADR-0067 — a repository is created when a record declares its address, with a README that says it is empty"
+  informed: []
+
+title: The platform is the repository that ALREADY holds the catalogue — not the empty one that carries its name
+
+context-and-problem-statement: |
+  🔴 ADR-0117 WAS WRITTEN AN HOUR EARLIER AND RESTED ON A FACT THAT IS FALSE. It said the platform is
+  `the-inclusionist-site`, measured it as `VAZIO` in the organisation, and concluded that «this decision has
+  no code to hold it» and that its gates «cannot run until the site exists». The Dev corrected the
+  identification in one sentence: «A pasta the-inclusionist-demos é o que deveria ser the-inclusionist-site.»
+
+  📏 MEASURED IN THE TREE, and the correction is not cosmetic — the platform already exists and has code:
+
+    · `the-inclusionist-site` — an EMPTY LOCAL FOLDER with no `.git` at all, and a repository whose own
+      description says `VAZIO: ainda nao construido`.
+    · `the-inclusionist-demos` — `minigames-catalog-v2.html` (61 825 B, the 300+ games that ADR-0058 called
+      the MVP), a `404.html`, a design system under `docs/`, a licence, and a live remote.
+
+  ⚠️ AND THE REPOSITORY'S OWN README ALREADY DESCRIBED THE HALF IT DOES NOT DO: «⚠️ O que NÃO tem ainda: o
+  manifesto … este repositório descreve um papel que ainda não desempenha». It was written to be honest about
+  a role it had not yet taken. What this record does is name the role correctly: it is not a catalogue that
+  will one day choose — it is the PLATFORM, and choosing is one of the things a platform does.
+
+decision-drivers:
+  - "A record that asserts «this does not exist» about something that does will argue against the truth later"
+  - "The shell a child opens and the manifest that decides what she can open are the SAME artefact's concerns"
+  - "ADR-0067: an empty repository exists to be filled, not to hold a name another repository has earned"
+  - "One address for the platform, or two repositories drift into two platforms"
+
+considered-options:
+  - "P1 · Build the platform in the empty `the-inclusionist-site`, and leave the catalogue where it is"
+  - "P2 · Keep both: the catalogue chooses, the site presents"
+  - "P3 · THE DEV'S ANSWER — the repository that holds the catalogue IS the platform, and takes the name"
+
+pros-and-cons-of-the-options:
+  P1:
+    good:
+      - "The name already matches the role, and nothing has to be renamed."
+    bad:
+      - "🔴 It builds a second shell beside one that exists, with 300+ games catalogued in it."
+      - "The manifest and the thing that READS the manifest would live in different repositories from birth."
+  P2:
+    good:
+      - "Each repository has one job, which is the shape ADR-0068 chose for games."
+    bad:
+      - "⚠️ The split is not along a seam: a manifest exists to be read by the shell, and nothing else reads it."
+      - "Two repositories, two deploys, and the first question every time is which one a change belongs to."
+  P3:
+    good:
+      - "The platform is the artefact that already exists and already carries the catalogue."
+      - "The manifest lands in the repository whose code consumes it."
+      - "One address, one deploy, one thing to whitelist in a school network."
+      - "The empty repository is freed, and ADR-0067's rule — a repository exists once a record declares its address — is honoured rather than pre-empted."
+    bad:
+      - "⚠️ A repository rename breaks every clone, remote and link naming the old address."
+      - "The name `demos` carried a meaning — a demonstration catalogue — that the new one drops; ADR-0058's phrasing has to be read as history."
+
+decision-outcome:
+  chosen-option:
+    link: "P3 — the repository holding the catalogue is the platform, and it takes the name `the-inclusionist-site`"
+    justification: |
+      **THE PLATFORM IS THE REPOSITORY THAT ALREADY HOLDS THE CATALOGUE.** In the Dev's words: «A pasta
+      the-inclusionist-demos é o que deveria ser the-inclusionist-site.»
+
+      1. **THE ROLE FOLLOWS THE CODE, NOT THE NAME.** `the-inclusionist-demos` holds the shell a child meets;
+         `the-inclusionist-site` holds nothing. ADR-0117 named the second because a repository listing was the
+         only thing it measured, and a listing shows names.
+      2. **ADR-0068 §2 IS NOT REVERSED, IT IS COMPLETED.** That record took the games OUT of this repository
+         and gave it the job of CHOOSING which ones enter a delivery. Choosing is what a platform does with
+         its catalogue; the manifest and the shell that reads it belong together, and putting them in
+         different repositories would be the split that has no seam.
+      3. **THE EMPTY REPOSITORY IS FREED.** Under ADR-0067 a repository exists once a record declares its
+         address. Nothing declares that one now.
+
+      ⚠️ WHAT IS THE DEV'S AND IS NOT DONE HERE: renaming the repository on GitHub is an outward-facing act on
+      a shared address, and so is retiring the empty one. This record decides the ROLE; the addresses follow
+      when he moves them.
+
+      📌 AND ADR-0117'S DECISION IS UNTOUCHED — the PWA is the platform, and the platform loads the fonts, the
+      voices and the cartridges once. What changes is that it has somewhere to live, and its gates stop being
+      hypothetical: the artefact they measure exists today.
+  consequences:
+    good:
+      - "ADR-0117's gates gain a subject that exists, instead of waiting on an empty repository"
+      - "The manifest lands in the repository whose shell consumes it"
+      - "One address for the platform: one deploy, one origin, one thing a school network has to allow"
+      - "The catalogue's README stops describing «um papel que ainda não desempenha» — the role is named"
+    bad:
+      - "⚠️ A repository rename breaks every clone, remote and link that names the old address, and there are records that do"
+      - "The empty `the-inclusionist-site` has to be retired, or two names keep pointing at one idea"
+      - "🔴 The manifest ADR-0068 §2 requires STILL DOES NOT EXIST — this record moves the role, not the work"
+      - "Records written before today name `the-inclusionist-demos` by address, and they are history, not links to repair"
+  confirmation: |
+    ⚠️ THE ROLE MOVES BEFORE THE ADDRESS DOES, and that gap is the thing to watch: until the Dev renames the
+    repository, «the platform» and `the-inclusionist-demos` are the same thing under two names.
+
+    The gates it owes, and the first one can be written the day the platform has a build:
+
+    · THE PLATFORM'S SHELL READS THE MANIFEST — asserted over the built output, not over prose. ⚠️ And the
+      paired case, or «it reads the manifest» passes on a shell that reads an empty one: the number of
+      cartridges it offers must come FROM the manifest and match it.
+    · NO GAME IS EMBEDDED IN THE PLATFORM'S REPOSITORY — ADR-0068 §1's rule, asserted here rather than
+      assumed, because this is the repository the games were taken out of and it is where they would drift back.
+    · ⚠️ AND THE EMPTY REPOSITORY IS RETIRED OR DECLARED: an address with no record naming it is the defect
+      ADR-0067 was written against, and it is now on the other foot.
+
+more-information: |
+  Supersedes ADR-0117 in part: which repository is the platform, and the fact that «the site is VAZIO» which
+  its consequences and confirmation both leaned on. Its decision — the PWA is the platform, a game is a
+  cartridge, and the fonts, voices and runtime are loaded once — is intact and is what this record gives an
+  address to.
+
+  Completes ADR-0068 §2 rather than reversing it: the catalogue stopped holding games in order to start
+  choosing them, and the thing that chooses is the platform.
+
+  Deliberately NOT decided here: when the GitHub rename happens (the Dev's, outward-facing); what becomes of
+  the empty `the-inclusionist-site` repository; the manifest's own format, which ADR-0068 §2 left open and
+  which is still the missing piece its README names; and whether the design-system documents under `docs/`
+  belong to the platform or move with the brand.

@@ -2,6 +2,17 @@
 metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0110, ADR-0114]
+  superseded-in-part:
+    - by: ADR-0118
+      what: >-
+        WHICH repository is the platform, and the fact this record leaned on — «the site is VAZIO», which its
+        cons and its confirmation both used to say the gates could not run yet. The Dev corrected the
+        identification within the hour: «A pasta the-inclusionist-demos é o que deveria ser
+        the-inclusionist-site.» 📏 Measured: `the-inclusionist-site` is an empty folder with no `.git` and a
+        repository described as `VAZIO`, while `the-inclusionist-demos` holds `minigames-catalog-v2.html` —
+        the 300+ games — a `404.html` and a design system. The platform exists; it was named after a listing
+        rather than after the code. ⚠️ THE DECISION HERE IS INTACT: the PWA is the platform, a game is a
+        cartridge, and the fonts, voices and runtime are loaded once for every cartridge.
   date: 2026-09-09
   decision-makers: [Dev]
   consulted:
