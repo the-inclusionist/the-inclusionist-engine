@@ -160,6 +160,56 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
     expect(NA_PASTA.filter((n) => n.endsWith('.woff2') && !usados.has(n)), 'ficheiro empacotado que ninguém declara').toEqual([]);
   });
 
+  /* ===================== 🎯 O QUARTO GATE DO ADR-0108, e ele mudou de forma ao ser medido =====================
+   *
+   * O que a #87 pedia era «a CHEGADA POR DOWNLOAD de uma face fora das oito», e o estado ficou 🛑 durante dias
+   * com a razão certa: não havia mecanismo de download nenhum. ⚠️ **E construir um HOJE seria um defeito**, por
+   * três medições e não por preguiça:
+   *
+   *   1. O catálogo tem **as oito e mais nenhuma** Playwrite, e o jogo fala **três idiomas** (`app/js/i18n/`
+   *      tem `pt`, `en`, `es`). As oito cobrem as Américas desses três. **A «criança na Irlanda» que eu
+   *      próprio escrevi neste ficheiro não é alcançável**: o ADR-0012 limita o roster por LÍNGUA, e não há
+   *      quarta língua. Não há hoje uma só pessoa que possa pedir a nona.
+   *   2. Uma descarga SOB DEMANDA é, na forma, o defeito do WebGazer — preguiçosa, logo a máquina que nunca
+   *      pediu aquela face não a tem, e sem rede não acontece nada. É a coisa que o `nada-vem-de-fora` acusa.
+   *   3. Um gate sobre um mecanismo cujo GATILHO não pode ocorrer nasce vazio, e um gate que não pode ficar
+   *      vermelho é um gate que alguém desliga.
+   *
+   * 🎯 ENTÃO O QUE SE AFIRMA É A REGRA DE QUE O DOWNLOAD SERIA UMA CONSEQUÊNCIA, e ela mede a árvore de hoje:
+   * **nenhuma face é OFERECIDA sem uma forma de a obter.** Uma nona Playwrite não pode entrar no catálogo sem
+   * ficheiro nem remédio — e no dia em que alguém a quiser pôr, é este caso que o obriga a construir a chegada
+   * ANTES de a oferecer, que é a ordem certa.
+   *
+   * ⚠️ E ISTO NÃO É UMA REGRA INVENTADA: é a lição que o cabeçalho do `ui/fonts` já escreve por ter pagado
+   * por ela. A `learningcurve` e a `kindergarten` eram entradas `.off` SEM FICHEIRO — «o menu oferecia-as e
+   * ninguém as podia obter» — e saíram por isso. A regra existia, e nunca tinha sido gate.
+   *
+   * 📏 MEDIDO EM 2026-09-09: 26 entradas, 25 empacotadas, 1 (`ronde`) `off` com remédio accionável. Zero
+   * excepções, logo a invariante é de DUAS pernas e não precisa de uma terceira para faces do sistema. */
+  it('🎯 [Right] NENHUMA face é oferecida sem forma de a obter — empacotada, ou `off` com remédio', () => {
+    const semSaida = [];
+    for (const item of FONT_GROUPS.flatMap((g) => g.items)) {
+      const empacotada = familiasDaFace(item).some((f) => familias.includes(f.trim()));
+      if (empacotada) continue;
+      // A outra perna: `off` com uma chave que RESOLVE nos três dicionários. Um `off` sem mensagem é a linha
+      // cinzenta que não diz o que fazer — a criança perde a face e o adulto não sabe porquê.
+      const remedio = item.off && [pt, en, es].every((d) => typeof d[item.off] === 'string' && d[item.off].length > 8);
+      if (!remedio) semSaida.push(`${item.k} («${item.fam}»)`);
+    }
+    expect(
+      semSaida,
+      'face no catálogo que ninguém consegue obter: nem viaja no pacote, nem tem `off` com remédio nos três '
+      + 'idiomas. É o defeito da `learningcurve` a voltar — o menu oferece, a criança escolhe, e o navegador '
+      + 'cai na fonte seguinte da pilha sem nada o dizer. Se é uma Playwrite fora das oito, ela precisa da '
+      + 'CHEGADA antes da oferta (ADR-0108 §2).',
+    ).toEqual([]);
+
+    // 📌 O PAR, e sem ele o caso passa por vacuidade: se o catálogo esvaziar ou o CSS deixar de ser lido, a
+    // lista de faltosos fica vazia por não haver nada que medir. É a mesma armadilha do resultado vazio.
+    expect(FONT_GROUPS.flatMap((g) => g.items).length, 'o catálogo esvaziou — o caso mediria o nada')
+      .toBeGreaterThanOrEqual(26);
+  });
+
   it('[Right] uma NONA Playwrite reprova — mesmo uma dentro do roster por língua', () => {
     // «Playwrite IE» é Irlanda: inglês, logo DENTRO do roster do ADR-0012 e FORA do pacote do ADR-0108. É
     // exactamente o caso que a distinção entre roster e pacote existe para tratar.
@@ -272,5 +322,17 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
 //     producao: o navegador cai na fonte seguinte da pilha, e a crianca que precisa da Andika para ler
 //     recebe outra coisa sem que nada o diga.
 //
-// ⚠️ O QUE NENHUMA MUTACAO PROVA HOJE: que as OITO chegam. Elas nao existem no pacote, e o caso do PISO diz
-// isso por extenso em vez de o esconder. Quando a primeira entrar, o piso sobe e passa a haver o que medir.
+// ===== MUTACOES DO QUARTO GATE (2026-09-09) =====
+//  N1. uma NONA Playwrite no catalogo sem ficheiro nem remedio (`{k:'pwie', fam:'Playwrite IE', …}` — Irlanda,
+//      que e ingles logo DENTRO do roster por lingua) -> reprova, e reprova SOZINHA. 🎯 E essa solidao e a
+//      medida do buraco: o caso «uma NONA Playwrite reprova» que ja existia conduz a metade PURA com um
+//      fixture, entao ficou VERDE com a nona no catalogo a serio. Um afirma que a funcao sabe distinguir; o
+//      outro afirma que a arvore nao tem nenhuma. Nao sao a mesma coisa, e so o segundo apanha a oferta.
+//  N2. a ronde a perder o `off` -> reprovam QUATRO. A face deixa de ser empacotada E de dizer o que fazer,
+//      que e exactamente a `learningcurve` de volta: o menu oferece e ninguem a pode obter.
+//
+// ⚠️ ESTA NOTA DIZIA O CONTRARIO ATE 2026-09-09, e a correcao e de CITACAO e nao de regra. Ela lia-se «o que
+// nenhuma mutacao prova hoje: que as OITO chegam — elas nao existem no pacote». Isso deixou de ser verdade em
+// `a365f8e`: as oito viajam (535 KB, um ficheiro variavel por familia), o PISO subiu de 0 para 8 e o caso
+// exige-as por igualdade. Deixada como estava, ela mandaria o proximo leitor procurar um buraco ja tapado —
+// e pior, faria o piso de 8 parecer aspiracional quando ele e medido.
