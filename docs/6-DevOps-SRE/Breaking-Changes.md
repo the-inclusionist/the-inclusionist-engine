@@ -13,9 +13,25 @@ publishes) at both revisions and diffs the exported names.
 > The rule for next time is one line: **a commit that breaks the package writes the footer, and the footer
 > is addressed to whoever has to edit their code because of it.**
 
-> ⚠️ **RE-MEASURED ON 2026-09-08, and both halves of the number moved.** There are now **14** commits marking
-> themselves breaking with `!`, and **9 of them do write the footer** — the rule above took. Six do not, and
-> they are the original five plus one new:
+> ⚠️ **RE-MEASURED ON 2026-09-09, and the rule has clearly taken.** There are now **28** commits that declare
+> a break, and **22 of them write the footer**. The six that do not are exactly the six named below — the set
+> has not grown since 2026-09-08, which is the number that says the rule is being followed rather than
+> remembered.
+>
+> 📏 **AND THE COUNT HAD TO BE MEASURED BY THE FOOTER, NOT BY GREP.** `git log --grep='BREAKING CHANGE'`
+> returns **25**, and three of those merely MENTION the phrase — one of them is the commit that documents the
+> footer rule itself. The honest detector reads a LINE that starts with `BREAKING CHANGE:`; counting mentions
+> is the same defect this repository has now paid for in a comment sieve and in a CDN sweep.
+>
+> 📌 **And the footer goes LAST**, after `Refs` and `Co-Authored-By` — measured on 2026-09-09 with
+> `conventional-commits-parser` 6.4.0, the one `release-it` loads: the note captures everything to the END of
+> the message, so trailers placed after it are swallowed into the changelog entry. The `8.0.0-rc.1` dry run
+> printed them inside seven BREAKING CHANGES paragraphs. See `CLAUDE.md` §0.
+>
+> ⚠️ **The earlier re-measurement said 14 and 9.** Both numbers moved because eleven more breaking commits
+> landed, and every one of them wrote its footer.
+>
+> The six without footers are the original five plus one:
 >
 > | | |
 > |---|---|
@@ -148,6 +164,32 @@ a type alias whose right-hand side changes.
 additions stay silent; required ones ask to be declared, like removals.
 
 Declaring is one command, and it writes both snapshots at once — `node scripts/snapshot-public-surface.mjs`.
+
+## 6 · The ACCESSIBILITY contract of 2026-09-09 — one question every cartridge now answers
+
+📏 Five shape changes landed on 2026-09-09, and four of them are the same field arriving in three places.
+They exist because of a defect with a child in it: **latching** — press once to walk, press again to stop —
+was offered in every game, including a quiz, a board and a tile puzzle where nothing is ever held. A child who
+cannot keep a key pressed opened the accessibility menu, switched on the adjustment she depends on, and
+nothing happened. She learned that the adjustment was broken (ADR-0115, ADR-0106 §5).
+
+| what changed | what a consumer does |
+|---|---|
+| **`GameDeclaration` gains `seguraTeclas(): boolean`, REQUIRED** | Answer whether any key is HELD in your game. `false` for a quiz, a board, a tile puzzle; `true` wherever a direction, a run or a charge is held. ⚠️ **Do NOT derive it from `holdsAtOnce`** — that counts simultaneous positions, refuses zero, and a game that holds nothing still declares 1. `conformanceProblems({})` now reports TEN fields, not nine. |
+| **`PauseIconsCtx` gains `seguraTeclas: boolean`, REQUIRED** | Only for a consumer that calls `initPauseIcons` DIRECTLY. Through `createGame` nothing is written — the root reads the declaration. With `false` the `altmove` icon is not mounted. |
+| **`SettingsMotorCtx` gains `seguraTeclas: boolean`, REQUIRED** | Same answer. With `false` the engine hides the `#opt-altmove` row — the row belongs to the cartridge's markup, so the engine hides it rather than removing it. |
+| **`EscritoresVisuais` → `AccionaveisDoJogo`, and it gains `seguraTeclas`** | The old name survives as a deprecated type alias, so existing annotations keep compiling. Rename when convenient. The name stopped being true when a field that is not visual joined it. |
+| **`Declinios` LOSES `semMenuDePausa`** | Delete the line. Your game now receives the engine's pause card, mounted at `host.pauseHost` or `#game-region`, offering only what your `getPauseActs()` can action. There is no replacement field (ADR-0120). |
+
+⚠️ **AND THE THREE REQUIRED FIELDS HAVE NO SAFE DEFAULT, which is why they are required rather than optional.**
+`true` mounts a control that may do nothing; `false` hides one a child depends on. Both sides are wrong, and
+that is the same condition that made `holdsAtOnce` mandatory. 📌 Contrast `SettingsTypoCtx.fonteInstalada`,
+added the same day and OPTIONAL: without it a font row stays disabled WITH its message, and the message tells
+the adult what to install. There the silence keeps a state that is already actionable.
+
+📌 **What a game that holds nothing gets is ABSENCE, not a disabled control** — and that is a different absence
+from ADR-0113 clause 3, which lives in the same file. There the DEVICE requires latching, the control exists,
+and it is disabled with the reason, reachable so the child can read it. Here there is no reason that helps.
 
 ## ⚠️ Before cutting the major, read this
 
