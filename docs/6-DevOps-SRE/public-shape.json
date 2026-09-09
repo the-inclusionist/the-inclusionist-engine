@@ -592,6 +592,12 @@
     "type ModalIntent": "'left' | 'right' | 'up' | 'down' | 'confirm' | 'erase'",
     "type KeydownDecision": "| { kind: 'overlay'"
   },
+  "input/latch-edge.ts": {
+    "interface ArestaComAlternanciaOpts": [
+      "armazem?",
+      "padrao?"
+    ]
+  },
   "input/latch-scope.ts": {
     "interface LeituraDaAlternancia": [
       "doLegado",

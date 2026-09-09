@@ -343,6 +343,10 @@
     "modalOwnerIndex",
     "titleNavOf"
   ],
+  "input/latch-edge.ts": [
+    "ArestaComAlternanciaOpts",
+    "criarArestaComAlternancia"
+  ],
   "input/latch-scope.ts": [
     "LeituraDaAlternancia",
     "UM_COMANDO_DE_CADA_VEZ",

@@ -195,8 +195,8 @@ and it is disabled with the reason, reachable so the child can read it. Here the
 
 | what changed | what a consumer does |
 |---|---|
-| **`KeydownCtx` gains `arestaDoJogador(jogador, origem)`** | Pass `arestaDoJogador` from `@the-inclusionist/engine/input/state.js` — the same module you already take `marcarTecla` from. One line. |
-| **`TouchBindingsCtx` gains `arestaDoJogador(jogador, origem)`** | The same one line, in the touch context. |
+| **`KeydownCtx` gains `arestaDoJogador(jogador, origem)`** | Pass `criarArestaComAlternancia(() => players)` from `@the-inclusionist/engine/input/latch-edge.js`. It has the same signature as the raw `arestaDoJogador` and does the second half too — resolving that device's latching into the player the physics reads. ⚠️ Passing the raw one from `input/state.js` compiles and feeds the automaton, but leaves `p.toggleMove` frozen on the keyboard's value. |
+| **`TouchBindingsCtx` gains `arestaDoJogador(jogador, origem)`** | The same one line, in the touch context — the same instance, so both transports write the same player. |
 
 📏 **Measured, and it is why the field is required rather than optional:** before 2026-09-09
 `input/state.arestaDoJogador` had **zero callers in production**, so `entradaDe(i).emUso` answered `teclado`
