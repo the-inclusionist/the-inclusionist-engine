@@ -443,6 +443,7 @@
     ],
     "interface GamepadCtx": [
       "$",
+      "arestaDoJogador",
       "clearWaitingBadge",
       "frontOverlay",
       "getGamepads",

@@ -58,7 +58,7 @@ function buildCtx(over = {}) {
   let phase = 'playing';
   const players = over.players ?? [];
   const naBarra = over.naBarra || new Set();
-  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], hideTouchControls: 0, stopAttract: 0, navBar: [] };
+  const calls = { setPhase: [], navTitle: [], navPause: [], navDialog: [], joinPlayer: [], respawnPlayer: [], setPauseActor: [], modalInput: [], clearWaitingBadge: [], hideTouchControls: 0, stopAttract: 0, navBar: [], arestas: [] };
   return {
     $: (sel) => dom.get(sel) ?? null,
     getGamepads: () => pads,
@@ -94,6 +94,9 @@ function buildCtx(over = {}) {
     getPauseMenu: () => null,
     navPause: (menu, pi, k) => calls.navPause.push([menu, pi, k]),
     setPauseActor: (i) => calls.setPauseActor.push(i),
+    // A aresta por jogador (ADR-0113 cláusula 4). Guarda a LISTA e não um contador: a pergunta «que aparelho
+    // produz as arestas» é por assento, e um número não distingue dois controles de dois jogadores.
+    arestaDoJogador: (jogador, origem) => calls.arestas.push([jogador, origem]),
     // UMA entrada onde havia quatro (ADR-0033). O pad e o teclado tinham CÓPIAS da mesma decisão — a grade
     // de três colunas e o desvio de Braille — e duas cópias de uma regra são duas chances de divergir.
     modalInput: (p, intent) => calls.modalInput.push([p, intent]),
@@ -461,15 +464,22 @@ describe('initGamepad — pollPads', () => {
   });
   // A guarda do Fácil (input/edges.ts) vale nos TRÊS caminhos de entrada. Estes dois casos fecham o triângulo:
   // keydown e touch-bindings já a testavam, e o controle não — a regra podia ser desligada na folha sem que
-  // nada aqui reagisse. `run` no mapa padrão é o botão 5 (ombro direito).
+  // nada aqui reagisse.
+  //
+  // 🔴 E DURANTE UM TEMPO ELE MEDIU O VÁCUO, o que só se soube em 2026-09-09 por mutação. O comentário dizia
+  // «`run` no mapa padrão é o botão 5 (ombro direito)» e o caso premia o 5 — mas o **ADR-0086 tirou o `run`
+  // dos ombros**, e o próprio `input/gamepad` regista isso ao lado da tabela: «`action1` perde dois dos seus
+  // três». Com o botão 5, `runEdge` fica falso por não haver borda NENHUMA, e o caso passava sem exercitar a
+  // guarda: apagar `edgeAllowed` do laço do controle deixava-o VERDE.
+  // 📌 O botão certo é o 2, que é o que o caso [Inverse] logo abaixo já prova levantar `runEdge` sem o Fácil.
   it('[Right] Fácil: o botão de correr do controle NÃO levanta runEdge (mesma regra do teclado e do toque)', () => {
     const p = makePlayer({ pad: 0, easy: true });
     const ctx = buildCtx({ players: [p] });
     const api = initGamepad(ctx);
     ctx.setPhaseValue('playing');
-    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [5] })]);
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [2] })]);
     api.pollPads();
-    expect(p.runEdge).toBe(false);
+    expect(p.runEdge, 'a guarda do Fácil não está a valer no caminho do controle').toBe(false);
   });
   it('[Inverse] SEM Fácil, o mesmo botão levanta runEdge — prova que a guarda é o `easy`, não o mapa', () => {
     const p = makePlayer({ pad: 0, easy: false });
@@ -480,6 +490,40 @@ describe('initGamepad — pollPads', () => {
     api.pollPads();
     expect(p.runEdge).toBe(true);
   });
+  it('🎯 a aresta do CONTROLE chega ao autómato, por assento (ADR-0113 cláusula 4)', () => {
+    // 🔴 Medido em 2026-09-09: `arestaDoJogador` tinha ZERO chamadores em produção, logo a alternância lida
+    // era a do TECLADO mesmo com o controle na mão. ⚠️ E o gamepad era o único transporte que já sobrevivia
+    // identificável (passa por `padCur`, não pelo conjunto de teclas) — o que tornava esta falta invisível:
+    // o módulo sabe de que controle veio a aresta, e o autómato não sabia.
+    const p = makePlayer({ pad: 0, easy: false });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [2] })]);
+    api.pollPads();
+    expect(ctx.calls.arestas, 'a aresta do controle não chegou ao autómato').toEqual([[0, 'gamepad']]);
+
+    api.pollPads(); // mesmo botão ainda premido: não há borda nova, e não há aresta nova
+    expect(ctx.calls.arestas.length, 'segurar o botão contou como uma segunda aresta').toBe(1);
+  });
+
+  it('⚠️ e ela conta MESMO com o Modo Fácil a filtrar a bandeira — a criança carregou no botão', () => {
+    // 📌 A distinção que esta linha compra: ler a mesma condição do `p[flag]` deixaria uma criança em Modo
+    // Fácil com a alternância do TECLADO enquanto joga no controle. O Fácil decide o que o JOGO faz com o
+    // botão; não decide que aparelho está na mão dela.
+    const p = makePlayer({ pad: 0, easy: true });
+    const ctx = buildCtx({ players: [p] });
+    const api = initGamepad(ctx);
+    ctx.setPhaseValue('playing');
+    // 📌 O BOTÃO 2 e não o 5, e a escolha é medida: é o botão que o caso [Inverse] acima prova levantar
+    // `runEdge` sem o Fácil. Com o 5, `runEdge` fica falso por não haver borda NENHUMA, e o caso mediria o
+    // vazio — que é o defeito que ele existe para apanhar noutro sítio.
+    ctx.setPads([makePad({ id: 'std', index: 0, mapping: 'standard', pressed: [2] })]);
+    api.pollPads();
+    expect(p.runEdge, 'o Fácil devia ter filtrado a bandeira').toBe(false);
+    expect(ctx.calls.arestas, 'o aparelho em uso passou a depender do Modo Fácil').toEqual([[0, 'gamepad']]);
+  });
+
   it('[Right] fase "title": navTitle recebe as teclas quando algum jogador aciona', () => {
     const ctx = buildCtx({ players: [makePlayer({ pad: 0 })] });
     const api = initGamepad(ctx);

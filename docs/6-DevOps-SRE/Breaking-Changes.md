@@ -197,6 +197,7 @@ and it is disabled with the reason, reachable so the child can read it. Here the
 |---|---|
 | **`KeydownCtx` gains `arestaDoJogador(jogador, origem)`** | Pass `criarArestaComAlternancia(() => players)` from `@the-inclusionist/engine/input/latch-edge.js`. It has the same signature as the raw `arestaDoJogador` and does the second half too — resolving that device's latching into the player the physics reads. ⚠️ Passing the raw one from `input/state.js` compiles and feeds the automaton, but leaves `p.toggleMove` frozen on the keyboard's value. |
 | **`TouchBindingsCtx` gains `arestaDoJogador(jogador, origem)`** | The same one line, in the touch context — the same instance, so both transports write the same player. |
+| **`GamepadCtx` gains `arestaDoJogador(jogador, 'gamepad')`** | The same one line again. ⚠️ This one reaches **two** repositories: `game-platformer` and `game-soccer` both call `initGamepad`. |
 
 📏 **Measured, and it is why the field is required rather than optional:** before 2026-09-09
 `input/state.arestaDoJogador` had **zero callers in production**, so `entradaDe(i).emUso` answered `teclado`
@@ -204,9 +205,9 @@ for everybody, for ever, with no error anywhere. With that, ADR-0113 clause 3 ca
 plays by webcam can switch **off** the latching her input depends on, and nothing says so. A silent default
 here is not the status quo made safe; it is an accessibility rule that cannot run.
 
-📌 **Only `game-platformer` is affected** — measured across the catalogue: it is the one consumer of
-`initKeydown` and of `initTouchBindings`. `game-soccer` uses `initGamepad` (untouched by this change);
-`pixi-15-puzzle`, `2048`, `whackwhack` and `game-chess` handle their own keys.
+📌 **Measured across the catalogue, not assumed:** `game-platformer` consumes all three (`initKeydown`,
+`initTouchBindings`, `initGamepad`); `game-soccer` consumes `initGamepad` only; `pixi-15-puzzle`, `2048`,
+`whackwhack` and `game-chess` handle their own keys and none of them holds a key to latch.
 
 📌 And when it is passed, the cartridge's `onTouchControlsShown` patch (`main.ts:1695`) becomes removable: it
 exists today to compensate for exactly this missing edge.

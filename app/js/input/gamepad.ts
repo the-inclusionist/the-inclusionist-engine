@@ -332,6 +332,19 @@ export interface GamepadCtx {
   /** Qual jogador abre o submenu de a11y em seguida (game.js's `pauseActor`). */
   setPauseActor: (playerIndex: number) => void;
   /**
+   * ESTA ARESTA É DESTE JOGADOR, E VEIO DO CONTROLE (ADR-0113 cláusula 4, issue #127).
+   *
+   * 🔴 OBRIGATÓRIO, e a razão foi medida em 2026-09-09: `input/state.arestaDoJogador` tinha ZERO chamadores
+   * em produção, logo `entradaDe(i).emUso` respondia `teclado` a toda a gente — e a alternância lida era a do
+   * teclado mesmo com o controle na mão. 📌 Passe `criarArestaComAlternancia(() => players)` de
+   * `input/latch-edge`, e não o cru: é ela que também resolve a alternância deste aparelho no jogador.
+   *
+   * ⚠️ O gamepad era o ÚNICO transporte que sobrevivia identificável sem isto — ele nunca passou pelo
+   * conjunto de teclas, passa por `padCur` —, e é exactamente por isso que a falta aqui era invisível: o
+   * módulo sabe de que controle veio a aresta, e o autómato não.
+   */
+  arestaDoJogador: (jogador: number, origem: 'gamepad') => void;
+  /**
    * MODAL do PRÓPRIO jogador: a engine entrega a INTENÇÃO, o jogo decide (ADR-0033).
    *
    * Eram quatro — `quizMove(p, delta)`, `quizConfirm`, `quizErase`, `announceBraille` — e as quatro existiam
@@ -662,9 +675,18 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
           }
           // A tabela e a guarda do Fácil vêm de input/edges.ts, as MESMAS que keydown e touch usam. Antes eram
           // seis `if` à mão aqui, seis lá e seis no toque — e o do toque tinha esquecido o `!p.easy`.
+          let algumaAresta = false;
           for (const [act, flag] of EDGE_BY_ACTION) {
+            if (edge(act)) algumaAresta = true;
             if (edgeAllowed(act, p.easy) && edge(act)) p[flag] = true;
           }
+          // 📌 A ARESTA DO CONTROLE, e ela conta MESMO QUANDO O FÁCIL A FILTRA (ADR-0113 cláusula 4): a
+          // criança carregou no botão — que a regra do Modo Fácil não levante a bandeira do jogo não muda
+          // o facto de o aparelho em uso ser este. Ler a mesma condição do `p[flag]` faria uma criança em
+          // Modo Fácil ficar com a alternância do teclado enquanto joga no controle.
+          // ⚠️ E É AQUI, no ramo de JOGO, e não nos de menu: `naBarraDe`, o título e a pausa são navegação, e
+          // a pergunta que isto alimenta — que alternância vale AGORA — é sobre jogar.
+          if (algumaAresta) ctx.arestaDoJogador(owner, 'gamepad');
         }
       }
     }
