@@ -6,20 +6,28 @@
 // físicos — L1, R2, X, A — são BINDING e vivem no transporte, não no vocabulário. Este é o ficheiro onde eles
 // vivem. Um transporte novo (fala, olhar, toque) traz a sua tabela e não toca em `core/actions`.
 //
-// ⚠️ METADE DISTO ESTÁ LIGADA, e a linha que dizia o contrário morreu com a issue #103 (fechada em 06/09).
-// Ela dizia «NADA AQUI ESTÁ LIGADO AINDA … a migração é a issue #103», e era verdade no dia em que foi
-// escrita. Hoje:
+// ✅ AS TRÊS ESTÃO LIGADAS, e esta nota já mentiu duas vezes — cada versão dela era verdade no dia em que foi
+// escrita e deixou de ser sem ninguém a corrigir. A primeira dizia «NADA AQUI ESTÁ LIGADO AINDA» (morreu com a
+// issue #103, 06/09); a segunda dizia que só o gamepad estava, e morreu com a issue #118, que uniu as duas
+// tabelas de teclado. 📏 Medido em 2026-09-09:
 //
-//   · `GAMEPAD_STANDARD` — LIGADO. `input/gamepad.ts:129` lê os índices desta tabela em vez de literais, e a
-//     ligação apanhou uma discordância real: `action1` corria em X, R1 e R2 enquanto a tabela declarava R1 e
-//     R2 como ombro e gatilho.
-//   · `KEYBOARD_SOLO` / `KEYBOARD_DUO` — NÃO LIGADOS. O jogo continua a usar o `KB_DEFAULTS` de
-//     `input/keyboard.ts`, que declara OITO das quatorze posições. Unir as duas é a issue #118, e o que
-//     impede a união hoje não é trabalho: é decidir se `KeyScheme` deixa de ser um `Record` aberto, e onde
-//     moram as seis posições que faltam num teclado dividido por quatro.
+//   · `GAMEPAD_STANDARD` — `input/gamepad.ts:129` lê os índices desta tabela em vez de literais, e a ligação
+//     apanhou uma discordância real: `action1` corria em X, R1 e R2 enquanto a tabela declarava R1 e R2 como
+//     ombro e gatilho.
+//   · `KEYBOARD_SOLO` / `KEYBOARD_DUO` — `input/keyboard.ts:73` constrói o `KB_DEFAULTS` a partir delas
+//     (`vivo(KEYBOARD_SOLO)` e `KEYBOARD_DUO.map(vivo)`). Deixaram de ser duas listas paralelas: são a MESMA
+//     decisão, derivada, e por isso a divergência de antes não pode voltar por esquecimento.
 //
-// ⚠️ ENQUANTO AS DUAS EXISTIREM, ELAS NÃO PODEM DIVERGIR EM SILÊNCIO, e `tests/teclado-duas-tabelas` é quem
-// o garante. Nasceu vermelho: a `Space` do jogador 1 em dupla estava numa e não na outra.
+// ⚠️ E A DERIVAÇÃO É POR CÓPIA PROFUNDA (`vivo` faz JSON round-trip), em DUAS camadas — verificado antes de
+// escrito, porque a primeira versão desta linha dizia mais do que é verdade. `input/keyboard.ts` copia estas
+// tabelas para o `KB_DEFAULTS`, e copia OUTRA VEZ para o `kb` mutável. O remapeamento da criança muta o `kb`
+// («remapear uma tecla MUTA o objeto», diz o `setKB`), logo ele já não alcançaria isto nem sem a primeira
+// cópia. O que a primeira camada compra é o resto: `KB_DEFAULTS` é exportado, e sem ela qualquer consumidor
+// que lhe escrevesse dentro alterava o padrão de fábrica desta tabela para toda a gente.
+//
+// 📌 A LIÇÃO QUE ESTA NOTA CARREGA AGORA É SOBRE SI PRÓPRIA: um comentário que descreve estado de ligação
+// apodrece a cada entrega. Este diz a DATA da medição, para que a próxima pessoa saiba contra o que a
+// comparar em vez de acreditar.
 //
 // ========================= A SIMETRIA DO TECLADO, QUE NÃO É DECORAÇÃO =========================
 // O padrão que o Dev especificou apoia-se num bloco do QWERTY:
