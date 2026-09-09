@@ -75,9 +75,23 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 - **Doc alterada VIRA teste, tarefa (issue) ou ADR** — com pouquíssimas exceções, documentação que não se transforma
   em algo acionável (um teste que a verifica, uma issue de trabalho, ou um ADR que a decide) **não serve**. Ao mexer
   num doc, pergunte "isto vira o quê?" e crie.
-- **O TO-DO / BACKLOG do projeto vive nas Issues do GitHub** (`the-inclusionist/the-inclusionist-engine`),
-  **NÃO em docs**. Trabalho novo → uma **issue** (labels: área + tipo + prioridade P0/P1/P2); o commit fecha com
-  `Closes #N`. `ROADMAP.md` guarda só a estratégia/ordem. (Mexo no quadro por `gh`.)
+- 🔴 **UMA ISSUE É UM PROBLEMA RESOLVÍVEL POR CÓDIGO, E É UM ITEM DE CHECKLIST — NÃO UM LIVRO** (ADR-0126,
+  decisão do Dev em 2026-09-09). A linha anterior dizia só «Trabalho novo → uma issue», **sem segunda
+  categoria**, e foi ela que produziu o estrago: tudo o que não era código teve de entrar como issue —
+  decisões, fases, campo —, e o único fecho possível para uma decisão é um documento.
+  📏 **Medido:** das 33 abertas, **16 não são problemas de código**; das 126 de sempre, a **mediana do corpo é
+  1499 caracteres** e **só 14 têm uma caixa de checklist** — o instrumento que era o propósito está em 11%.
+  ⚠️ **E a regra velha nasceu sem discussão:** entrou em `51bbe07` (05/07), escrita por uma IA como passageira
+  num commit sobre a convenção de preview, e o texto original nomeava **duas** superfícies («GitHub Project
+  *The Inclusionist Roadmap* + Issues») — o quadro perdeu-se na migração e ninguém o repôs.
+  **As quatro casas:** decisão → **registo** (`the-inclusionist-docs`) · fase → **`ROADMAP.md`** · campo →
+  **`Test-Plan.md`** · **e o trabalho que um registo DEVE continua a ser issue** — é essa quarta que impede a
+  regra de apagar informação.
+  🎯 **O teste é mecânico: o corpo da issue tem de ser MAIS CURTO do que a mensagem do commit que a fecha.**
+  Se for maior, o raciocínio pertence a um registo. Orçamento ~600 caracteres + checklist; a prosa não se
+  apaga, muda para os dois sítios que já a guardam (o registo e a mensagem de commit) — escrevê-la uma
+  terceira vez era a duplicação que o §6 deste ficheiro já proíbe.
+  Labels: área + tipo + prioridade P0/P1/P2; o commit fecha com `Closes #N`. (Mexo no quadro por `gh`.)
   ⚠️ **Migrado em 2026-09-06, e os NÚMEROS sobreviveram**: as 101 issues foram recriadas em ordem crescente
   num repositório de contador zerado, então `#1`–`#101` continuam apontando para a mesma coisa. Todo `#N`
   escrito antes desta data segue válido. O GitLab está arquivado.
