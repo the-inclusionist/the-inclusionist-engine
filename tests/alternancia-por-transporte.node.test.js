@@ -9,9 +9,8 @@
 //
 //   · A CHAVE POR JOGADOR — `KEYS.toggleMoveP(i)`, o modelo antigo — tem **exactamente UM escritor** em toda
 //     a engine: `ui/settings-motor.setToggleMove`. Ela é tocada por DOIS ficheiros ao todo.
-//   · A CHAVE POR TRANSPORTE — `latch-scope.chaveDaAlternancia` — tem **UM** chamador: `input/latch-store`,
-//     o adaptador entre a regra e o armazenamento. Era zero quando este ficheiro nasceu, e o caso do PISO
-//     é que obrigou a actualizá-lo quando deixou de ser.
+//   · O MODELO NOVO tem **DOIS** participantes: `input/latch-store` (o adaptador) e `ui/settings-motor` (o
+//     painel, que escreve através dele). Era zero quando este ficheiro nasceu, no mesmo dia.
 //
 // ========================= POR QUE DUAS METADES, E NÃO UMA PROIBIÇÃO =========================
 // ⚠️ Uma proibição («ninguém escreve a chave antiga») nasceria VERMELHA e ficaria vermelha até a fiação
@@ -51,15 +50,19 @@ const AINDA_NA_CHAVE_ANTIGA = {
 };
 
 /**
- * ⚠️ O PISO, e ele JÁ SUBIU UMA VEZ — de 0 para 1, em 2026-09-08, no commit seguinte ao que o escreveu.
+ * ⚠️ O PISO, e ele JÁ SUBIU DUAS VEZES no mesmo dia — 0 → 1 → 2, em 2026-09-08.
  *
- * 🎯 O primeiro chamador é `input/latch-store`, o adaptador entre a regra e o armazenamento. E o modo como
- * ele entrou é o gate a funcionar exactamente como desenhado: o caso reprovou, nomeou o ficheiro novo, e
- * exigiu que este número e o inventário fossem revistos. Não foi lembrança de ninguém.
+ * 🎯 O primeiro foi `input/latch-store`, o adaptador entre a regra e o armazenamento, e o modo como ele
+ * entrou é o gate a funcionar como desenhado: o caso reprovou, nomeou o ficheiro, e exigiu a revisão.
+ *
+ * ⚠️ O SEGUNDO — `ui/settings-motor`, o painel — quase NÃO foi contado, e a falha era do detector: ele
+ * procurava só quem chama `chaveDaAlternancia(`, e o painel escreve através do `gravarAlternancia`, que é
+ * a forma certa. Um piso assim mede quem improvisa em vez de quem migra. Alargado, e dito aqui em vez de
+ * corrigido em silêncio.
  *
  * Ele NÃO PODE RECUAR: recuar significaria que a fiação foi desfeita sem que o registo mudasse.
  */
-const CHAMADORES_DA_CHAVE_NOVA_HOJE = 1;
+const CHAMADORES_DA_CHAVE_NOVA_HOJE = 2;
 
 function ficheiros(dir = RAIZ, pref = '') {
   const out = [];
@@ -82,9 +85,20 @@ function tocamNaChaveAntiga() {
   return ficheiros().filter((f) => /toggleMoveP|toggleMoveKey/.test(fonte(f)));
 }
 
-/** Ficheiros que CHAMAM a chave por transporte — a definição não conta como chamada. */
+/**
+ * Ficheiros que PARTICIPAM no modelo novo — a definição da regra não conta.
+ *
+ * ⚠️ O DETECTOR FOI ALARGADO EM 2026-09-08, E O MOTIVO É UM FALSO NEGATIVO MEU. Ele procurava só
+ * `chaveDaAlternancia(`, e quando o `ui/settings-motor` passou a escrever a chave nova — através do
+ * `gravarAlternancia`, que é a forma CERTA — o piso não subiu. Um piso que só conta quem chama o
+ * construtor da chave mede a arquitectura errada: mede quem improvisa, e não quem migrou.
+ *
+ * 📌 Agora conta os três pontos de entrada do modelo novo. Um ficheiro que use qualquer um deles está do
+ * lado novo da migração, que é o que o piso diz medir.
+ */
 function chamamAChaveNova() {
-  return ficheiros().filter((f) => f !== 'input/latch-scope.ts' && /chaveDaAlternancia\s*\(/.test(fonte(f)));
+  const entradas = /chaveDaAlternancia\s*\(|gravarAlternancia\s*\(|alternanciaGuardada\s*\(/;
+  return ficheiros().filter((f) => f !== 'input/latch-scope.ts' && entradas.test(fonte(f)));
 }
 
 describe('a alternância migra para a chave por transporte · o tecto que só desce', () => {

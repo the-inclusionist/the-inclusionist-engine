@@ -6,7 +6,8 @@
 // Ver docs/5-Refactoring/plano-modularizacao-mapa.md.
 import { describe, it, expect } from 'vitest';
 import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel é alias dele desde o item 14
-import { t } from '../app/js/core/i18n.js'; // os anúncios vêm do dicionário desde o item 14
+import { t } from '../app/js/core/i18n.js';
+import { chaveDaAlternancia } from '../app/js/input/latch-scope.js'; // os anúncios vêm do dicionário desde o item 14
 import {
   easyKey, toggleRunKey, toggleMoveKey, definirAlternanciaDeMarcha,
   clampSelPlayer, anyMotorActive, onOffLabel, playerTabsHTML, easyAnnouncement,
@@ -132,6 +133,36 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
       },
     };
   }
+
+  // ⚠️ A ESCRITA DUPLA (ADR-0113), e a chave ANTIGA não sai ainda: quem LÊ continua a ser o cartucho, por
+  // `KEYS.toggleMoveP(i)`. Parar de a escrever agora faria a criança perder a escolha no arranque seguinte —
+  // é a forma do `p.visual` ao lado do `p.viz` (#104 etapa 1a), pela mesma razão.
+  it('🎯 [Right] com o aparelho conhecido, escreve NAS DUAS chaves — a nova e a legada', () => {
+    const c = cenario([{ toggleMove: false, walkDir: 0 }]);
+    c.ctx.transporteEmUso = () => 'gamepad';
+    definirAlternanciaDeMarcha(c.ctx, 0, true);
+    expect(c.escrito[KEYS.toggleMoveP(0)], 'a chave legada deixou de ser escrita e a criança perde a escolha')
+      .toBe(true);
+    expect(c.escrito[chaveDaAlternancia('togglemove', 0, 'gamepad')], 'a chave por transporte não foi escrita')
+      .toBe(true);
+  });
+
+  // 📌 SEM O APARELHO, o comportamento é EXACTAMENTE o de hoje — que é o que torna o campo opcional seguro.
+  it('📌 [Zero] sem `transporteEmUso`, escreve só a legada, como antes', () => {
+    const c = cenario([{ toggleMove: false, walkDir: 0 }]);
+    definirAlternanciaDeMarcha(c.ctx, 0, true);
+    expect(Object.keys(c.escrito)).toEqual([KEYS.toggleMoveP(0)]);
+  });
+
+  // ⚠️ E NOS QUATRO ASSISTIDOS A ESCRITA NOVA RECUSA-SE (cláusula 3): não há escolha a guardar, porque a
+  // alternância é o que faz aquela entrada funcionar. A legada continua a ser escrita — ela é o ajuste que a
+  // criança leva consigo para os aparelhos onde a escolha existe.
+  it('⚠️ [Zero] em `olhos` a chave nova não é escrita, e a legada é', () => {
+    const c = cenario([{ toggleMove: false, walkDir: 0 }]);
+    c.ctx.transporteEmUso = () => 'olhos';
+    definirAlternanciaDeMarcha(c.ctx, 0, true);
+    expect(Object.keys(c.escrito), 'gravou uma escolha que o jogo vai ignorar').toEqual([KEYS.toggleMoveP(0)]);
+  });
 
   it('[Right] ligar escreve o campo, persiste na chave da engine e anuncia', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);

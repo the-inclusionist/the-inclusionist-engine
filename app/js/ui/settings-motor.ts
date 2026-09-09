@@ -24,6 +24,7 @@ import type { DomQuery } from '../core/dom-query.js';
 // `platform/storage`: um nome de chave injetado é um campo que um consumidor pode omitir, e omiti-lo aqui
 // faria o painel escrever num nome torto — que é o defeito que este import acaba de fechar.
 import { KEYS } from '../platform/storage.js';
+import { gravarAlternancia } from '../input/latch-store.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
@@ -148,6 +149,17 @@ export interface EscritaDaAlternanciaCtx {
   readonly store: { setBool(key: string, on: boolean): void };
   readonly srSay: (msg: string) => void;
   readonly getNumPlayers: () => number;
+  /**
+   * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113). `input/state.entradaDe(i).emUso` é quem responde.
+   *
+   * ⚠️ OPCIONAL DE PROPÓSITO, e a razão é o que acontece sem ele: a escrita cai exactamente no que já fazia
+   * hoje — só a chave por jogador. Torná-lo obrigatório quebraria todo consumidor que constrói este ctx,
+   * por causa de uma migração que ainda não terminou, e o `holdsAtOnce` já mostrou o que isso custa.
+   *
+   * 📌 E é INJECTADO em vez de importado: `ui/` a ler estado de módulo de `input/` é uma aresta nova entre
+   * duas camadas, para poupar um argumento. Este ctx já recebe tudo o resto assim.
+   */
+  readonly transporteEmUso?: (jogador: number) => string;
 }
 
 /**
@@ -164,7 +176,17 @@ export function definirAlternanciaDeMarcha(ctx: EscritaDaAlternanciaCtx, i: numb
   const p = ctx.players[i];
   if (!p) return;
   p.toggleMove = on;
+  // ⚠️ AS DUAS CHAVES, E A ANTIGA NÃO SAI AINDA — é a forma do `p.visual` ao lado do `p.viz` (#104 etapa 1a),
+  // e pela mesma razão: quem LÊ ainda é o cartucho, por `KEYS.toggleMoveP(i)` (`main.ts:540`). Parar de a
+  // escrever agora faria a criança perder a escolha no arranque seguinte — o defeito que o ADR-0113 nomeia
+  // como a cláusula que decide se a decisão custa um ajuste real no dia em que sai.
   ctx.store.setBool(toggleMoveKey(i), on);
+  // 📌 E a chave NOVA, quando se sabe o aparelho. `gravarAlternancia` recusa-se nos quatro assistidos, onde
+  // não há escolha a guardar (ADR-0113 cláusula 3) — e devolve `false` para quem chama desabilitar o
+  // controle com o motivo dito. Aqui a recusa não muda mais nada: o valor em memória continua a ser o que
+  // a regra resolve, e é ela que responde `true` naqueles quatro.
+  const transporte = ctx.transporteEmUso ? ctx.transporteEmUso(i) : null;
+  if (transporte) gravarAlternancia((chave, ligada) => ctx.store.setBool(chave, ligada), 'togglemove', i, transporte, on);
   if (!on) p.walkDir = 0;
   ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
 }

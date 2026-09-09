@@ -20,9 +20,15 @@ import { chaveDaAlternancia, chaveLegadaDaAlternancia } from '../app/js/input/la
 function armazem(inicial = {}) {
   const dados = { ...inicial };
   const escritas = [];
+  const set = (k, v) => { dados[k] = v; escritas.push([k, v]); };
   return {
     get: (k) => (k in dados ? dados[k] : null),
-    set: (k, v) => { dados[k] = v; escritas.push([k, v]); },
+    set,
+    // ⚠️ A FORMA QUE `gravarAlternancia` PEDE desde que o painel se ligou a ela: um ESCRITOR, e não um
+    // armazém. O `ui/settings-motor` já tem um `store.setBool` injectado, e exigir-lhe um objecto com
+    // `get`/`set` crus obrigaria a inventar um adaptador no ponto de uso — que é onde uma segunda forma de
+    // escrever a mesma chave nasce.
+    _escrever: (k, on) => set(k, on ? '1' : '0'),
     _dados: dados,
     _escritas: escritas,
   };
@@ -87,7 +93,7 @@ describe('latch-store · a cláusula 1 do ADR-0113: trocar de controle troca o v
 describe('latch-store · a escrita, e onde ela se recusa', () => {
   it('[Right] gravar escreve na chave DESTE transporte, e só nela', () => {
     const a = armazem();
-    expect(gravarAlternancia(a, BASE, 0, 'gamepad', true)).toBe(true);
+    expect(gravarAlternancia(a._escrever, BASE, 0, 'gamepad', true)).toBe(true);
     expect(a._escritas).toEqual([[chaveDaAlternancia(BASE, 0, 'gamepad'), '1']]);
     expect(a._dados[chaveLegadaDaAlternancia(BASE, 0)], 'a escrita tocou na chave legada').toBeUndefined();
   });
@@ -98,7 +104,7 @@ describe('latch-store · a escrita, e onde ela se recusa', () => {
   it('⚠️ [Zero] nos quatro assistidos a escrita RECUSA-SE, e não grava nada', () => {
     for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
       const a = armazem();
-      expect(gravarAlternancia(a, BASE, 0, t, false), `${t} aceitou uma escolha que não existe`).toBe(false);
+      expect(gravarAlternancia(a._escrever, BASE, 0, t, false), `${t} aceitou uma escolha que não existe`).toBe(false);
       expect(a._escritas, `${t} gravou um valor que o jogo vai ignorar`).toEqual([]);
     }
   });
@@ -118,7 +124,7 @@ describe('latch-store · a escrita, e onde ela se recusa', () => {
   it('[Right] os três de hoje aceitam a escolha', () => {
     for (const t of ['teclado', 'gamepad', 'toque']) {
       const a = armazem();
-      expect(gravarAlternancia(a, BASE, 0, t, true), `${t} recusou uma escolha legítima`).toBe(true);
+      expect(gravarAlternancia(a._escrever, BASE, 0, t, true), `${t} recusou uma escolha legítima`).toBe(true);
       expect(alternanciaGuardada(a, BASE, 0, t, false)).toBe(true);
     }
   });
