@@ -45,6 +45,37 @@ if (entradas.length === 0) {
   process.exit(1); // failing loudly beats reporting "0 problems" from a broken parser
 }
 
+/* ===================== EXTERNAL ENTRIES, WHICH ADR-0116 MADE POSSIBLE =====================
+ *
+ * Until 2026-09-09 a precached URL was always a file this build emitted, and the question below («can it be
+ * updated?») answered that by looking for a build hash. ADR-0116 opened a second shape: a runtime precached
+ * from a CDN, fetched at INSTALL, pinned to an exact version.
+ *
+ * 🔴 AND THE ORDER OF THESE CHECKS IS THE POINT, found by running a fixture rather than by reading. With the
+ * frozen-entry question first, EVERY external URL was reported as «can never be updated» — because `temHash`
+ * only recognises `assets/<name>-<hash>`. The gate would have refused precisely what the record permits, and
+ * with advice about `dontCacheBustURLsMatching` that means nothing for a third-party host.
+ *
+ * 📌 So pinning is asked FIRST, and a pinned external URL is then exempt from the frozen question for the
+ * same reason a hashed asset is: the version is IN the URL, so changed bytes arrive under a different one.
+ * That is exactly what `revision: null` claims, and for a pinned CDN URL the claim is true. */
+const ehExterna = (u) => /^https?:\/\//.test(u);
+
+/** Pinned means the URL carries its own version — `@1.2.3/` or `/1.2.3/`. */
+const FIXADA = (u) => /@\d+\.\d+\.\d+(?:[-+][\w.]+)?\//.test(u) || /\/\d+\.\d+\.\d+\//.test(u);
+
+const externas = entradas.map((e) => e.url).filter(ehExterna);
+const naoFixadas = externas.filter((u) => !FIXADA(u));
+
+if (naoFixadas.length > 0) {
+  console.error(`precache gate: ${naoFixadas.length} external precache entry(ies) are NOT pinned to a version:\n`);
+  for (const u of naoFixadas) console.error(`  · ${u}`);
+  console.error('\nAn unversioned URL precached with `revision: null` is the frozen-entry defect below, arriving');
+  console.error('from outside: the bytes change and no installed worker ever learns. ADR-0116 allows a CDN in');
+  console.error('the precache; it allows a PINNED one.');
+  process.exit(1);
+}
+
 /**
  * Does the URL carry a build hash? One segment under `assets/`, ending in `-<hash of 8+>`.
  *
@@ -54,7 +85,11 @@ if (entradas.length === 0) {
  */
 const temHash = (url) => /^assets\/[^/]+-[A-Za-z0-9_-]{8,}\.[^.]+$/.test(url);
 
-const congelados = entradas.filter((e) => e.revisao === null && !temHash(e.url));
+// Um URL externo FIXADO carrega a versão dentro de si, que é a mesma promessa que o hash faz — e nesse ponto
+// já passou pela pergunta acima, logo chegar aqui significa que está fixado.
+const carregaAVersao = (url) => temHash(url) || ehExterna(url);
+
+const congelados = entradas.filter((e) => e.revisao === null && !carregaAVersao(e.url));
 
 if (congelados.length > 0) {
   console.error(`precache gate: ${congelados.length} entry(ies) can NEVER be updated — \`revision: null\` on a URL with no build hash:\n`);
@@ -192,7 +227,85 @@ if (semPrecache.length > 0) {
   process.exit(1);
 }
 
+/* ===================== FOURTH QUESTION: how heavy is the first day, and is it a GAME? =====================
+ *
+ * ADR-0114 clause 3 survives ADR-0116 untouched: «the first precache block is a PLAYABLE GAME», and the cache
+ * accumulates extras afterwards. ADR-0116 adds the warning this check exists for — «offline after the first
+ * day» must not quietly grow to mean «after the 244 MB have come down».
+ *
+ * 📏 MEASURED ON 2026-09-09: the install is 1143,1 KiB over 49 entries, and 942,7 KiB of that — EIGHTY-TWO
+ * PER CENT — is `woff2`. The whole game is ~198 KiB (149 JS + 42 CSS + 7 HTML). The accessibility roster is
+ * the install, and that is the pillar working, not a defect.
+ *
+ * ⚠️ AND IT IS ABOUT TO GROW BY DECISIONS ALREADY TAKEN: ADR-0108 puts EIGHT Playwrite faces in the package
+ * and none of them has arrived yet. The budget below has room for exactly that and no more, which is the
+ * point — the next thing that does not fit has to say so out loud.
+ *
+ * 📌 THE NUMBER IS A CEILING, NOT A JUDGEMENT ABOUT WHAT BELONGS. Raising it is a one-line commit with a
+ * reason, and for the TTS runtime that line is issue #129's decision arriving where it can be seen: a 12,9 MB
+ * `.wasm` plus an 18,1 MB phonemizer walks straight through this, which is what a first-day budget is for. */
+const ORCAMENTO_KIB = 2048;
+
+/**
+ * External URLs in the precache manifest, if any. ⚠️ THE TABLE IS EMPTY BY DESIGN and the rule is written
+ * before its first entry, exactly as ADR-0116 asks: if the runtime ends up precached from a CDN, its weight
+ * has to be DECLARED here, because this script cannot stat a file it does not have — and an undeclared
+ * external entry would make the budget lie by however much it weighs.
+ */
+const EXTERNOS_NO_PRECACHE = {
+  // 'https://cdn.jsdelivr.net/npm/pacote@1.2.3/dist/x.wasm': { kib: 12345, porque: '…' },
+};
+
+const externasSemPeso = externas.filter((u) => !(u in EXTERNOS_NO_PRECACHE));
+
+if (externasSemPeso.length > 0) {
+  console.error(`precache gate: ${externasSemPeso.length} external precache entry(ies) have no declared weight:\n`);
+  for (const u of externasSemPeso) console.error(`  · ${u}`);
+  console.error('\nThis script cannot stat a file it does not have, so an undeclared entry makes the first-day');
+  console.error('budget lie by exactly its size. Add it to EXTERNOS_NO_PRECACHE with its measured KiB and why.');
+  process.exit(1);
+}
+
+const bytesLocais = entradas
+  .map((e) => e.url)
+  .filter((u) => !ehExterna(u))
+  .reduce((s, u) => s + (existsSync(join(DIST, u)) ? statSync(join(DIST, u)).size : 0), 0);
+
+const kibExternos = Object.values(EXTERNOS_NO_PRECACHE).reduce((s, x) => s + x.kib, 0);
+const kibTotal = bytesLocais / 1024 + kibExternos;
+
+/* ⚠️ THE FLOOR, and it is the vacuum guard for the ceiling: «under budget» is trivially true of a build that
+ * shipped almost nothing, and that build would also be «offline» in the emptiest possible sense. A first day
+ * that is a GAME has, at minimum, a page to open, code to run and a stylesheet to render it. */
+const TIPOS_DO_JOGO = [
+  ['html', (u) => u.endsWith('.html')],
+  ['js', (u) => u.endsWith('.js')],
+  ['css', (u) => u.endsWith('.css')],
+];
+const emFalta = TIPOS_DO_JOGO.filter(([, casa]) => !entradas.some((e) => casa(e.url))).map(([n]) => n);
+
+if (emFalta.length > 0) {
+  console.error(`precache gate: the first day is not a playable game — no ${emFalta.join(', ')} in the manifest.`);
+  console.error('A build that precaches almost nothing is under any budget and offline in the emptiest sense.');
+  process.exit(1);
+}
+
+if (kibTotal > ORCAMENTO_KIB) {
+  console.error(`precache gate: the first day weighs ${kibTotal.toFixed(1)} KiB, over the ${ORCAMENTO_KIB} KiB budget.\n`);
+  const pesadas = entradas
+    .map((e) => e.url)
+    .filter((u) => !ehExterna(u) && existsSync(join(DIST, u)))
+    .map((u) => [u, statSync(join(DIST, u)).size])
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8);
+  for (const [u, b] of pesadas) console.error(`  ${(b / 1024).toFixed(1).padStart(9)} KiB  ${u}`);
+  console.error('\nThis is what a child downloads before she can play, on a school link (pillar 1). Raising the');
+  console.error('budget is a decision with a reason, taken here in one line — not a side effect of a commit.');
+  process.exit(1);
+}
+
 const semHash = entradas.filter((e) => e.revisao !== null).length;
 const nota = paginas.length ? ` ${paginas.length} extra page(s) excluded from the SPA fallback.` : '';
 const piso = ` Floor complete: ${noDisco.length} file(s) emitted, ${FORA_DO_PRECACHE.length} excused by name.`;
-console.log(`precache gate: ${entradas.length} entries — ${semHash} with a content revision, ${entradas.length - semHash} hash-named. None frozen.${nota}${piso}`);
+const dia = ` First day: ${kibTotal.toFixed(1)} KiB of ${ORCAMENTO_KIB} KiB.`;
+console.log(`precache gate: ${entradas.length} entries — ${semHash} with a content revision, ${entradas.length - semHash} hash-named. None frozen.${nota}${piso}${dia}`);
