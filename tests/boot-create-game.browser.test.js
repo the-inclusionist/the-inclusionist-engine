@@ -29,7 +29,12 @@ let repor;
 function montarHospedeiro() {
   const raiz = document.createElement('div');
   raiz.id = 'raiz-de-teste';
-  raiz.innerHTML = '<div id="game-region"></div><div id="title-icons"></div>';
+  // ⚠️ AS DUAS REGIÕES DE LEITOR DE TELA ENTRARAM EM 2026-09-08, e a ausência delas era o motivo de o
+  // ANÚNCIO nunca ter sido exercitado aqui: sem `#sr-status` no documento, o `srSay` não acha onde escrever
+  // e falha em silêncio — que é precisamente a forma de defeito que ele existe para evitar. Um hospedeiro
+  // sem elas também não é realista: a `MARCACAO_EXIGIDA` da raiz pede as duas.
+  raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
+    + '<div id="game-region"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
   return raiz;
 }
@@ -134,6 +139,44 @@ describe('createGame num documento de verdade', () => {
     // do clique seria um órfão a dizer o estado velho — a forma de defeito do `reflectTTS`.
     const depois = document.querySelector('#title-icons [data-pi="blind"]');
     expect(depois.getAttribute('aria-pressed'), 'o clique chegou mas o ícone não diz o estado novo').toBe('true');
+  });
+
+  // 🔴 O ANÚNCIO, e ele nunca tinha sido exercitado — foi o que a verificação no navegador de 2026-09-08 não
+  // conseguiu medir: o painel estava OCULTO, o `requestAnimationFrame` congelado (medido: zero quadros em
+  // 600 ms) e o `srSay` escreve dentro de um. «O `#sr-status` não mudou» não era prova de silêncio, e eu
+  // declarei-o por verificar em vez de o reportar como regressão. Aqui a página renderiza, e dá para medir.
+  //
+  // ⚠️ E O QUE ESTE CASO PRENDE É A ORDEM, que é onde mora o defeito interessante: o anúncio lê o
+  // `aria-label` DEPOIS do reflexo, porque é ele que carrega o estado NOVO. Anunciar antes diria à criança o
+  // estado que ela acabou de DEIXAR — e o botão ficaria a mentir para quem só o ouve, que é a família do
+  // `reflectTTS`: uma saída cujo único destino é o leitor de tela não tem quem note quando ela mente.
+  //
+  // 📏 O ÍCONE É O `tea` E NÃO O MODO CEGO, e a escolha foi MEDIDA por uma mutação que sobreviveu. Com o
+  // modo cego, inverter a ordem não muda nada: `create-game` subscreve `state.on('modoCego')` e o reflexo
+  // já aconteceu DENTRO do `iconAct`, então o rótulo lido já é o novo de qualquer maneira. Era equivalência
+  // e não cobertura — e um caso que só passa por causa de uma subscrição não mede a linha que diz medir.
+  // Medido: essa é a ÚNICA subscrição de estado desta raiz, logo o `tea` percorre o caminho de todos os
+  // outros sete ícones.
+  it('🔴 [Zero] o clique ANUNCIA, e anuncia o estado NOVO — não o que a criança deixou', async () => {
+    abrir();
+    const alvo = document.querySelector('#title-icons [data-pi="tea"]');
+    const rotuloAntes = alvo.getAttribute('aria-label');
+    alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    // O `srSay` limpa e escreve no quadro seguinte (é assim que força o leitor a reanunciar texto repetido).
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    const dito = document.querySelector('#sr-status').textContent;
+    expect(dito.trim().length, 'o clique não anunciou nada a quem navega por ouvido').toBeGreaterThan(0);
+
+    // ⚠️ A AFIRMAÇÃO É IGUALDADE COM O RÓTULO, e a primeira versão deste caso usava
+    // `toContain('ligado')` — que é EXACTAMENTE o mesmo defeito que este caso existe para apanhar, cometido
+    // dentro dele: «desligado» CONTÉM «ligado». A mutação que inverte a ordem sobreviveu por isso e só por
+    // isso. Igualdade com o rótulo pós-clique apanha as três: sem anúncio, anúncio antes do reflexo, e
+    // anúncio do id interno.
+    const rotulo = document.querySelector('#title-icons [data-pi="tea"]').getAttribute('aria-label');
+    expect(dito, 'o que se ouve não é o que o ícone diz').toBe(rotulo);
+    expect(dito, 'anunciou o estado que a criança acabou de deixar').not.toBe(rotuloAntes);
   });
 
   it('🔴 [Zero] o modo cego DESLIGA — sem isto ele liga uma vez e a criança fica lá dentro', () => {
