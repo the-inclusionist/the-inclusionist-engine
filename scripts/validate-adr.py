@@ -48,6 +48,17 @@ META_KEYS = ["status", "date", "decision-makers", "consulted", "informed"]
 # de parecer um registo mentiroso quando é só o comando a correr do sítio errado.
 RAIZ = os.getcwd()
 
+# 🔴 E DESDE A MUDANÇA DE CASA, UM CAMINHO PODE VIVER NOUTRO REPOSITÓRIO. `confirmed-by: engine:app/js/x.ts`
+# diz DUAS coisas — que artefacto confirma o registo, e onde ele mora —, e a segunda passou a ser necessária
+# no dia em que os registos deixaram de morar ao lado do código (ADR-0123).
+#
+# ⚠️ SEM A RAIZ DAQUELE REPOSITÓRIO, A CONFERÊNCIA NÃO ACONTECE — e é isso que tem de aparecer. Um crivo que
+# não confere nada e imprime «tudo são» é pior do que não existir: é a forma exacta do falso relatório que
+# este projecto já apanhou três vezes. Então o que não se confere é CONTADO e DITO no fim, por repositório,
+# em toda corrida. Passa-se a raiz com `--repo engine=../SP-the-inclusionist-tracer`.
+RAIZES = {}
+NAO_CONFERIDOS = {}
+
 # ADR-0057 diz como um registo MUDA. `confirmed-by` diz outra coisa, que faltava: se ele foi CONSTRUÍDO.
 #
 # A distinção apareceu na issue #95. O ADR-0053 fecha com «⚠️ NOT YET BUILT. This record is the decision; the
@@ -188,11 +199,18 @@ def check(path):
             for alvo in alvos:
                 if not isinstance(alvo, str):
                     problems.append(f"`{CONFIRMED_BY}` holds {type(alvo).__name__}; every entry is a path")
-                elif not os.path.exists(os.path.join(RAIZ, alvo)):
-                    problems.append(
-                        f"`{CONFIRMED_BY}` names {alvo}, which does not exist under {RAIZ} — a record that "
-                        "says it was built, pointing at nothing, is worse than one that says nothing"
-                    )
+                else:
+                    repo, _, resto = alvo.partition(":")
+                    if not resto:                       # sem prefixo: o caminho é deste repositório
+                        repo, resto = "", alvo
+                    if repo and repo not in RAIZES:
+                        NAO_CONFERIDOS[repo] = NAO_CONFERIDOS.get(repo, 0) + 1
+                    elif not os.path.exists(os.path.join(RAIZES.get(repo, RAIZ), resto)):
+                        onde = RAIZES.get(repo, RAIZ)
+                        problems.append(
+                            f"`{CONFIRMED_BY}` names {alvo}, which does not exist under {onde} — a record "
+                            "that says it was built, pointing at nothing, is worse than one that says nothing"
+                        )
         # Uma PROPOSTA não pode estar confirmada: o que ainda não foi decidido não pode ter sido construído,
         # e um registo nesse estado é ou uma proposta que já correu à frente, ou um `status` esquecido.
         if status == "proposed":
@@ -289,10 +307,25 @@ def pointer_problems(files):
 
 def main():
     global RAIZ
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    for flag in sys.argv[1:]:
+    # ⚠️ UMA PASSAGEM SÓ, e o valor de `--repo` é consumido AQUI. A primeira versão filtrava as opções com um
+    # `startswith("--")` e depois lia-as noutro laço — e o `engine=…` de `--repo engine=…` não começa por
+    # traço, logo ia parar à lista de argumentos posicionais e era lido como a PASTA dos registos.
+    args = []
+    resto = list(sys.argv[1:])
+    while resto:
+        flag = resto.pop(0)
         if flag.startswith("--root="):
             RAIZ = flag[len("--root="):]
+        elif flag == "--repo" and resto:
+            nome, _, caminho = resto.pop(0).partition("=")
+            if caminho:
+                RAIZES[nome] = caminho
+        elif flag.startswith("--repo="):
+            nome, _, caminho = flag[len("--repo="):].partition("=")
+            if caminho:
+                RAIZES[nome] = caminho
+        elif not flag.startswith("--"):
+            args.append(flag)
     folder = args[0] if args else "docs/2-Architecture/adr"
     files = sorted(glob.glob(os.path.join(folder, "ADR-*.yaml")))
     if not files:
@@ -308,6 +341,12 @@ def main():
             for problem in problems:
                 print(f"       {problem}")
     print(f"\n{len(files)} records · {len(files) - failed} sound · {failed} with problems")
+    # 🔴 O QUE NÃO FOI CONFERIDO É DITO, SEMPRE. Sem esta linha, um repositório que só tem os registos
+    # imprimiria «tudo são» sem ter aberto um único artefacto — e essa é a diferença entre um crivo e um
+    # carimbo. Passe `--repo engine=<caminho>` para o conferir de verdade.
+    for repo in sorted(NAO_CONFERIDOS):
+        print(f"⚠️  {NAO_CONFERIDOS[repo]} `confirmed-by` paths in `{repo}` NOT checked "
+              f"— pass `--repo {repo}=<path>` to check them")
     return 1 if failed else 0
 
 

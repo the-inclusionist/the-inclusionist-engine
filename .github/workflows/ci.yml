@@ -104,18 +104,51 @@ jobs:
   # ============================================================================================
   # The promise the index makes about the records, kept by a machine.
   # ============================================================================================
+  # 🔴 A ÁRVORE DOS REGISTOS DEIXOU DE VIVER AQUI (ADR-0123) — e este trabalho FICA, que é a regra do Dev:
+  # «cada repositório precisa ter seus validadores e gates para ADRs». O que mudou é de onde vem a árvore e,
+  # sobretudo, o que ESTE lado consegue conferir e o outro não: passando `--repo engine=.`, os caminhos de
+  # `confirmed-by` marcados `engine:` são ABERTOS. No `the-inclusionist-docs` eles só podem ser contados.
   adr:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
+      # ⚠️ Repositório PRIVADO da mesma organização: o `GITHUB_TOKEN` de um workflow não alcança outro
+      # repositório, então isto precisa de um token com leitura em `the-inclusionist-docs`. Se ele faltar, o
+      # passo falha AQUI, com uma mensagem de permissão — que é melhor do que um validador a correr sobre uma
+      # pasta vazia e a dizer «tudo são».
+      - name: the records
+        uses: actions/checkout@v7
+        with:
+          repository: the-inclusionist/the-inclusionist-docs
+          path: adr-tree
+          token: ${{ secrets.DOCS_READ_TOKEN || github.token }}
+
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install --quiet pyyaml
       # Eight checks, including the bidirectional supersession pointers. It caught a missing back-pointer
       # the day it was written and has caught one in almost every session since.
-      - name: validate the ADR records
-        run: python scripts/validate-adr.py docs/2-Architecture/adr
+      # 📌 `--repo engine=.` é o que este repositório tem e o outro não: o CÓDIGO que as confirmações nomeiam.
+      - name: validate the ADR records, and OPEN the confirmations that name this repository
+        run: python adr-tree/scripts/validate-adr.py adr-tree/docs/2-Architecture/adr --repo engine=.
+
+      # 🎯 E O CRIVO DA PROSA, que é do lado do código porque um registo a nomear um ficheiro DESTA árvore que
+      # já não existe é quebra DESTA árvore (ADR-0123 §5). Sem `ADR_TREE` ele salta, e um caso próprio recusa
+      # o salto em CI.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: no record points at a gate that does not exist
+        env:
+          ADR_TREE: ${{ github.workspace }}/adr-tree/docs/2-Architecture/adr
+          # 🎯 A declaração de responsabilidade: com ela, SALTAR reprova. É o que apanha um `ADR_TREE` com o
+          # caminho errado — o checkout a falhar derruba o trabalho sozinho, um caminho errado não.
+          ADR_TREE_REQUIRED: "1"
+        run: npx vitest run --project node tests/ponteiros-de-registo.node.test.js
 
   # ============================================================================================
   # Pillar 2, measured against the app RUNNING rather than against the source.

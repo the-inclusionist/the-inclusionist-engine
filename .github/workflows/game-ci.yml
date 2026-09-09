@@ -18,9 +18,15 @@
 # declares an address for a workflows repository. Inventing one to hold a YAML file would be the rule
 # working backwards.
 #
-# And it is where the shared things already are, by ADR-0068 §5's own reasoning: the records, the ADR
-# validator and the eight gate checks all stay in the engine, and a game inherits them. This is the same
-# sentence applied to CI.
+# And it is where the shared things already are, by ADR-0068 §5's own reasoning: the ADR validator and the
+# eight gate checks live in the engine, and a game inherits them. This is the same sentence applied to CI.
+#
+# 🔴 ONE HALF OF THAT SENTENCE STOPPED BEING TRUE ON 2026-09-09 and is corrected here rather than left to
+# mislead: the RECORDS no longer stay in the engine — ADR-0123 moved them to `the-inclusionist-docs`, and §5's
+# argument («one place») is what that move executes. What did NOT move is the tooling: «cada repositório
+# precisa ter seus validadores e gates para ADRs», so the engine keeps its own `adr` job and this file keeps
+# being the one gate five games call. 📌 A GAME repository still has no `adr/` folder and never will — that
+# half of §5 is untouched.
 #
 # ⚠️ THE ENGINE ITSELF DOES NOT USE THIS FILE, and the reason changed on 2026-09-06. It used to be that the
 # engine's gates ran on GitLab; they now run beside this file, in `ci.yml`, and `.gitlab-ci.yml` was deleted

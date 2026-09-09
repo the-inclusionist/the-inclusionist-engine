@@ -23,10 +23,38 @@
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const ADR = fileURLToPath(new URL('../docs/2-Architecture/adr/', import.meta.url));
+/**
+ * ONDE A ÁRVORE DOS REGISTOS VIVE DESDE O ADR-0123 — noutro repositório, `the-inclusionist-docs`.
+ *
+ * ⚠️ E ESTE GATE FICA AQUI, do lado do CÓDIGO, de propósito. O que ele apanha é um registo a nomear um
+ * ficheiro **desta** árvore que já não existe — e isso é quebra da ENGINE, que tem de avermelhar onde alguém
+ * a conserta. Levá-lo para junto dos registos punha o vermelho no repositório errado (ADR-0123 §5).
+ *
+ * 📌 A árvore chega por `ADR_TREE` (é o que a CI passa, depois de a fazer checkout) ou, para quem trabalha
+ * com os dois repositórios lado a lado, pelo clone irmão. Sem nenhuma das duas, os casos abaixo SALTAM — e
+ * saltar aparece na saída do Vitest, ao contrário de passar por não ter o que ler.
+ */
+const CANDIDATAS = [
+  process.env.ADR_TREE,
+  fileURLToPath(new URL('../../the-inclusionist-docs/docs/2-Architecture/adr/', import.meta.url)),
+].filter(Boolean);
+const ADR = CANDIDATAS.find((p) => existsSync(p)) ?? CANDIDATAS[CANDIDATAS.length - 1];
+const TEM_ARVORE = existsSync(ADR);
 const RAIZ = process.cwd();
+/** A raiz do repositório onde os registos vivem: `<docs>/docs/2-Architecture/adr/` → `<docs>`. */
+const RAIZ_DOS_REGISTOS = fileURLToPath(new URL('../../../', pathToFileURL(ADR)));
+
+/**
+ * O caminho citado existe NALGUM dos dois repositórios?
+ *
+ * 🔴 A PERGUNTA GANHOU UM SEGUNDO SÍTIO NO DIA DA MUDANÇA DE CASA, e o gate apanhou-o sozinho: o ADR-0123
+ * cita `scripts/test-validate-adr.py`, que é o gate do próprio validador e vive COM os registos. Contra a
+ * engine sozinha ele parecia um ponteiro morto — e não é: está vivo, do outro lado. A pergunta que este
+ * ficheiro faz é «este gate existe?», não «existe aqui».
+ */
+const existeAlgures = (c) => existsSync(join(RAIZ, c)) || existsSync(join(RAIZ_DOS_REGISTOS, c));
 
 /** Caminhos de repositório que um registo cita: `tests/x.node.test.js`, `scripts/y.mjs`. */
 const CAMINHO = /(?<![\w/])(?:tests|scripts)\/[A-Za-z0-9_.\-]+\.(?:m?js|py|ts)/g;
@@ -117,9 +145,27 @@ function citados() {
   return [...fora];
 }
 
-describe('um registo não aponta para um gate que não existe', () => {
+describe('a árvore dos registos, que desde o ADR-0123 mora noutro repositório', () => {
+  it('🔴 [Interface] onde ela é EXIGIDA, saltar é reprovar — um gate que salta sozinho não é um gate', () => {
+    // ⚠️ SEM ESTE CASO, o dia em que o `ADR_TREE` apontasse para o sítio errado seria o dia em que este
+    // ficheiro passaria a não medir nada — e a suíte diria «verde». O checkout a falhar derruba o trabalho
+    // sozinho; o que ninguém apanharia é a variável com um caminho errado.
+    //
+    // 📌 `ADR_TREE_REQUIRED` E NÃO `CI`, e a diferença é medida: a suíte inteira corre também no trabalho
+    // `gate`, que NÃO faz checkout dos registos — usar o `CI` faria esse trabalho reprovar por não ter uma
+    // árvore que ele nem devia ir buscar. A exigência é do trabalho que se declara responsável por ela.
+    expect(
+      TEM_ARVORE || !process.env.ADR_TREE_REQUIRED,
+      `a árvore dos registos não foi encontrada em ${ADR}, e este trabalho declarou-se responsável por ela `
+      + '(`ADR_TREE_REQUIRED`). Ela vem por checkout do `the-inclusionist-docs`, com `ADR_TREE` a apontar '
+      + 'para `docs/2-Architecture/adr`; localmente, um clone irmão serve.',
+    ).toBe(true);
+  });
+});
+
+describe.skipIf(!TEM_ARVORE)('um registo não aponta para um gate que não existe', () => {
   it('⚠️ [Interface] nenhum ponteiro morto NOVO entrou sem ser declarado', () => {
-    const novos = citados().filter((c) => !existsSync(join(RAIZ, c)) && !(c in MORTOS));
+    const novos = citados().filter((c) => !existeAlgures(c) && !(c in MORTOS));
     expect(
       novos,
       'um registo nomeia um gate que não existe nesta árvore. Se ele saiu, declare-o aqui com o motivo — e se '
@@ -136,7 +182,7 @@ describe('um registo não aponta para um gate que não existe', () => {
     //
     // 📌 Foi assim que `tests/docs.node.test.ts` saiu daqui: o ADR-0093 ganhou a chave a apontar para o
     // `tests/engine-package.node.test.js`, que é o gate deste lado. A dívida não foi apagada — foi paga.
-    const apanhados = new Set(citados().filter((c) => !existsSync(join(RAIZ, c))));
+    const apanhados = new Set(citados().filter((c) => !existeAlgures(c)));
     expect(
       Object.keys(MORTOS).filter((c) => !apanhados.has(c)),
       'entrada que já não é dívida: ou o ficheiro voltou, ou o registo que o cita ganhou `confirmed-by`',

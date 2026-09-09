@@ -46,7 +46,7 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 - **Sinalize antes de executar** incoerências/erros. **Anuncie decisões não triviais:** `Decisão: X porque Y. Para
   sobrepor, diga Z.` **"ok/tudo ok" ≠ carta branca** → proponho e confirmo a próxima escolha, não sigo sozinho.
 - **Decisão confirmada ganha lar durável NO MESMO TURNO** — não deixar como prosa no chat. Se for arquitetural →
-  um **ADR (YADR)** em `docs/2-Architecture/adr/` + entrada no índice; senão → o doc canônico certo; e **reflita no
+  um **ADR (YADR)** no repositório `the-inclusionist-docs` (`docs/2-Architecture/adr/`) + entrada no índice — a árvore saiu daqui no ADR-0123; ver `docs/2-Architecture/ADR.md`; senão → o doc canônico certo; e **reflita no
   mapa** (`ARCHITECTURE.md`) quando muda onde algo vive. Concordar/discordar sem registrar = decisão perdida.
 - **REGISTRAR É EXECUÇÃO, NÃO CONSULTA** (2026-08-27, depois de o Dev medir o estrago). Quando a decisão dele
   **revoga** um ADR aceito, o registro sai no MESMO turno, escrito, e ele desfaz se discordar — não se pergunta
@@ -108,7 +108,7 @@ precache nunca deixaria o catálogo inteiro chegar ao aparelho de escola. Reposi
 registro declara o endereço, com README que diz que está vazio (**ADR-0067**), e tudo vive numa organização
 do GitHub, privada até o ato (**ADR-0066**).
 
-- **🔴 PILARES INEGOCIÁVEIS** (constituição — leia ANTES de agir): `docs/2-Architecture/adr/ADR-0010-non-negotiable-pillars.yaml`. 10 pilares:
+- **🔴 PILARES INEGOCIÁVEIS** (constituição — leia ANTES de agir): `ADR-0010-non-negotiable-pillars.yaml`, no `the-inclusionist-docs`. 10 pilares:
   hardware de escola pública BR (Positivo/Chromebook) · a11y (WCAG 2.2 + GAG; Libras em motor zdog à parte) · i18n ·
   conformidade LGPD/COPPA/China/Nórdicos (**a lei local da região de implantação vence**; a "regra mais rígida
   vence" foi aposentada pelo ADR-0010 por ser autocontraditória — ela faria a norma chinesa valer no Brasil) · pixel 320×180 (Libras 420×180) · telemetria

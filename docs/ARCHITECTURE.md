@@ -65,7 +65,9 @@ docs/
 │   └── plano-cenario-cidade.md #   city level design
 ├── 2-Architecture/            # system architecture & decisions
 │   ├── C4-Context.md          #   C4 Level 1 (L2 with backend)
-│   ├── adr/                   #   decisions in YADR (YAML) + index README
+│   ├── ADR.md                 #   🔴 the records MOVED (ADR-0123): they live in `the-inclusionist-docs`.
+│   │                          #   This file says where, and what stayed here — the `adr` CI job, which is
+│   │                          #   the only one that can OPEN the `engine:` confirmations (`--repo engine=.`)
 │   ├── Feature-Flags.md · DFD.md · STRIDE.md · CI-CD.md
 │   ├── K8s-Manifests.md       #   note: when K8s becomes worth it (deferred)
 │   ├── learning-interop.md    #   xAPI/Caliper/LTI/AfA… e-learning standards (deferred) — ADR-0004
