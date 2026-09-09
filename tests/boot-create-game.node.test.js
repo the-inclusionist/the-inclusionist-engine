@@ -64,7 +64,14 @@ describe('o veredito: a fronteira passa ou não passa', () => {
     // Achado 15, e o motivo de ele ser um caso e não uma nota: `initI18n()` alcançava o `document` global por
     // baixo de quem a chamasse. Num navegador dá no mesmo, e é por isso que sobreviveu tanto tempo.
     expect(CODIGO).toMatch(/initI18n\(doc\)/);
-    expect(CODIGO, 'nenhuma linha de código deste boot pode alcançar o document global').not.toMatch(/document/);
+    // 🔴 ESTE CASO ESTEVE MORTO E NINGUÉM SABIA. A regex tinha um caractere de CONTROLO invisível no meio —
+    // `/docu<VT>ment/` — injectado por uma edição via PowerShell, onde a crase é escape e `` `v `` é
+    // tabulação vertical. Ela nunca podia casar com `document`, logo o caso passava sempre, e passava pela
+    // pior razão possível: parecia guardar a fronteira e não guardava nada.
+    // ⚠️ E RESSUSCITADO ELE ACUSOU UM FALSO POSITIVO, que é a segunda metade da lição: a palavra PORTUGUESA
+    // «documento», dentro de uma linha de `problems` que fala a quem integra a engine, contém `document`. A
+    // fronteira de palavra separa as duas — «documento» tem um `o` a seguir, logo `\b` falha ali.
+    expect(CODIGO, 'nenhuma linha de código deste boot pode alcançar o document global').not.toMatch(/\bdocument\b/);
   });
 });
 

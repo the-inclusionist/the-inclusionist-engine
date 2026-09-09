@@ -33,7 +33,7 @@ describe('o buscador das coisas pesadas', () => {
     const f = cacheFalsa();
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk() });
     const sem = r.filter((x) => x.estado === 'sem-fonte');
-    expect(sem.map((x) => x.id).sort(), 'as duas por decidir são a visão e a arte').toEqual(['arte:lcp', 'visao:runtime']);
+    expect(sem.map((x) => x.id).sort(), 'só a arte continua por decidir — a visão ganhou fonte no ADR-0124/0132').toEqual(['arte:lcp']);
     for (const s of sem) {
       expect(s.erro, `${s.id} não diz PORQUE não tem fonte`).toBeTruthy();
       expect(s.erro.length, `${s.id} tem uma razão curta demais para servir a alguém`).toBeGreaterThan(40);
@@ -43,7 +43,9 @@ describe('o buscador das coisas pesadas', () => {
   it('[Right] as oito entradas de voz descem, e cada voz traz o MODELO e a CONFIGURAÇÃO', async () => {
     const f = cacheFalsa();
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk() });
-    const vozes = r.filter((x) => x.id.startsWith('voz:') && x.estado === 'baixado');
+    // ⚠️ oz: passou a cobrir também o RUNTIME (oz:runtime*, ADR-0127). O que este caso afirma são os
+    // MODELOS, e a diferença é a mesma que separa o .onnx do motor que o toca.
+    const vozes = r.filter((x) => /^voz:[a-z]{2}_[A-Z]{2}-/.test(x.id) && x.estado === 'baixado');
     // ⚠️ OITO e não quatro: sem o `.onnx.json` o piper não fala, e uma voz «baixada» que não fala é pior do
     // que uma voz em falta — a primeira parece resolvida.
     expect(vozes.length, 'quatro vozes são OITO ficheiros').toBe(8);
@@ -62,15 +64,25 @@ describe('o buscador das coisas pesadas', () => {
     // de `:` é o dobro da barra de um esquema, nunca o início de um comentário. Sem isto o crivo comeria a
     // linha inteira; com um tira-comentários ingénuo ele apanhava-se a si próprio — este cabeçalho CITA o
     // endereço para explicar o defeito, e contar a prosa cria o incentivo de apagar a explicação.
+    // ⚠️ E A REGRA ESTREITOU EM 2026-09-09, PORQUE A LARGA PASSOU A SER FALSA. Ela dizia «o catálogo não
+    // escreve endereço NENHUM», o que era certo enquanto só as vozes desciam: o host delas é do `voice-plan`
+    // por exigência do ADR-0114. Com os RUNTIMES (ADR-0124/0127/0132), este ficheiro passou a ser o sítio
+    // único deles — não há um `voice-plan` do MediaPipe, e inventar um seria uma casa vazia para uma linha.
+    // 🎯 O que continua a valer, e é o que o defeito exigia, é a metade das VOZES: o host dos modelos não
+    // pode ser reescrito aqui. Um crivo que proibisse todos os endereços passaria a proibir a decisão certa.
     const fonte = readFileSync(new URL('../app/js/platform/pesados-catalogo.ts', import.meta.url), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n\r]*/g, '$1');
     const literais = [...fonte.matchAll(/['"`](https?:\/\/[^'"`]+)['"`]/g)].map((m) => m[1]);
-    expect(literais, 'o catálogo voltou a escrever um endereço — importe do `voice-plan`').toEqual([]);
+    const host = HOST_DOS_MODELOS.replace(/\/resolve\/main\/?$/, '');
+    expect(
+      literais.filter((u) => u.startsWith(host) || u.includes('piper-voices')),
+      'o catálogo voltou a escrever o host das VOZES — ele é do `voice-plan`, e duas cópias divergem',
+    ).toEqual([]);
 
-    // 📌 O PAR: sem esta metade, apagar o catálogo inteiro passaria. As URLs têm de CHEGAR, derivadas.
-    const comUrl = PESADOS.filter((p) => p.url);
-    expect(comUrl.length, 'nenhuma entrada com url — o catálogo deixou de derivar do `voice-plan`').toBe(8);
-    expect(comUrl.every((p) => p.url.startsWith(HOST_DOS_MODELOS)), 'uma url não veio do host declarado').toBe(true);
+    // 📌 O PAR: sem esta metade, apagar as vozes do catálogo passaria. Elas têm de CHEGAR, derivadas.
+    const modelos = PESADOS.filter((p) => /^voz:[a-z]{2}_[A-Z]{2}-/.test(p.id) && p.url);
+    expect(modelos.length, 'as vozes deixaram de derivar do `voice-plan`').toBe(8);
+    expect(modelos.every((p) => p.url.startsWith(HOST_DOS_MODELOS)), 'uma voz não veio do host declarado').toBe(true);
   });
 
   it('📏 [Boundary] toda voz COM fonte tem peso MEDIDO — uma voz nova sem medição sub-reportaria em silêncio', () => {
@@ -95,7 +107,7 @@ describe('o buscador das coisas pesadas', () => {
     const buscar = async () => { n += 1; if (n === 1) throw new Error('rede caiu'); return { ok: true, clone: () => ({}) }; };
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar });
     expect(r.filter((x) => x.estado === 'falhou').length, 'a falha não foi reportada').toBe(1);
-    expect(r.filter((x) => x.estado === 'baixado').length, 'a lista parou na primeira falha').toBe(7);
+    expect(r.filter((x) => x.estado === 'baixado').length, 'a lista parou na primeira falha').toBe(PESADOS.filter((p) => p.url).length - 1);
   });
 
   it('[Interface] `apenas` limita a lista — um consumidor pode querer só as vozes', async () => {
@@ -108,7 +120,7 @@ describe('o buscador das coisas pesadas', () => {
   it('📏 o peso por baixar é o das que TÊM fonte e ainda não desceram', async () => {
     const semNada = pesoPorBaixar([]);
     // ~241 MB: quatro modelos de ~60 MB. As duas sem fonte não somam, porque não há o que baixar.
-    expect(Math.round(semNada / 1024 / 1024), 'o total mudou — confira o catálogo').toBe(241);
+    expect(Math.round(semNada / 1024 / 1024), 'o total mudou — confira o catálogo').toBe(285);
     const f = cacheFalsa();
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk() });
     expect(pesoPorBaixar(r), 'depois de tudo descer não falta nada').toBe(0);

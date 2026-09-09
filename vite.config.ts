@@ -107,6 +107,17 @@ export default defineConfig({
         // 📌 Um crivo prende os dois lados juntos (`tests/rota-dos-modelos.node.test.js`): a rota tem de
         // nomear o mesmo host e o mesmo nome de cache que o codigo usa, senao ela existe e nao serve nada.
         runtimeCaching: [
+          // Os RUNTIMES fixados (MediaPipe e piper/onnxruntime), pela mesma razao e com a mesma cache: o
+          // buscador desce-os na instalacao e sem rota o `import()` deles iria a rede outra vez. ⚠️ O alcance
+          // e por PACOTE e nao por dominio — `cdn.jsdelivr.net` inteiro seria a porta larga que a #119 fechou.
+          {
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/(@mediapipe\/tasks-vision|@mintplex-labs\/piper-tts-web|onnxruntime-web)@/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'incl-pesados-v1',
+              cacheableResponse: { statuses: [200] },
+            },
+          },
           {
             urlPattern: /^https:\/\/huggingface\.co\/diffusionstudio\/piper-voices\/resolve\/main\//,
             handler: 'CacheFirst',

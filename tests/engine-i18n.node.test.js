@@ -164,7 +164,7 @@ const ISENTOS = new Set(['ui/debug-panel.ts']);
 const CRU_CONHECIDO = {
   // ⚠️ OS NÚMEROS SAEM DAQUI, e não de um script meu de fora. A primeira versão desta tabela foi preenchida
   // por uma varredura à parte e ela contou MENOS em sete módulos — eu tinha perdido as fronteiras de palavra
-  // (``) do casador de prosa, e `mode` casava com `de`. O gate reprovou e estava certo. Quem for atualizar
+  // (``) do casador de prosa, e `mode` casava com `de`. O gate reprovou e estava certo. Quem for atualizar
   // esta tabela, atualize-a pelo que ESTE arquivo reporta; é a mesma lição do gate de fixtures.
 
   /* --- PAINÉIS DE AJUSTE: rótulos e dicas montados em markup, ainda sem `data-i18n`. --- */

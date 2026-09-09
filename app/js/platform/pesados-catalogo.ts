@@ -71,8 +71,97 @@ function entradasDaVoz(v: VozNeural): Pesado[] {
   ];
 }
 
+/**
+ * O RUNTIME DE VISÃO — **MediaPipe**, decidido pelo Dev em 2026-09-09 (ADR-0124): «piper-tts, mediapipe
+ * (webgazer não), e LPCP: devem acompanhar a engine».
+ *
+ * 🔴 ESTA ENTRADA DIZIA «a #129 ainda não escolheu o fornecedor» DEPOIS DE ELE TER ESCOLHIDO, e a linha
+ * sobreviveu ao registo que a contradizia. Não era só trabalho em falta: era uma afirmação FALSA a dirigir
+ * quem a lesse para uma issue já fechada. O Dev teve de perguntar três vezes.
+ *
+ * 📏 MEDIDO EM 2026-09-09, como as vozes e no mesmo minuto: os três ficheiros respondem 200 em jsDelivr com
+ * `Access-Control-Allow-Origin: *`, na versão FIXADA — 155 439 + 323 377 + 11 756 954 bytes.
+ *
+ * ⚠️ CDN FIXADA É PERMITIDA E O ADR-0116 DIZ PORQUÊ: o que o pilar 8 proíbe é depender da rede DEPOIS do
+ * primeiro dia. Isto desce na INSTALAÇÃO, com o resto — e é a diferença inteira para o WebGazer, que busca
+ * quando a criança liga o controle por olhar, logo a máquina que nunca o ligou fica sem ele para sempre.
+ * 📌 A versão vai na URL, que é o que o `check:precache` exige de qualquer entrada externa: bytes diferentes
+ * chegam por endereço diferente, e uma entrada fixada nunca congela.
+ *
+ * 🎯 SÃO OS TRÊS FICHEIROS E NÃO SÓ O `.wasm`: o `vision_bundle.mjs` é quem o carrega e o
+ * `vision_wasm_internal.js` é a cola do Emscripten. Baixar o wasm sozinho é a mesma armadilha do `.onnx` sem
+ * o `.onnx.json` — uma coisa «baixada» que não corre.
+ *
+ * ⬜ O que continua por fazer é a FIAÇÃO (issue #11): estes bytes descem e ainda ninguém os lê. O
+ * `tests/o-que-desce-tem-quem-leia.node.test.js` é onde essa dívida está declarada.
+ */
+const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1';
+const MP_MODELOS = 'https://storage.googleapis.com/mediapipe-models';
+
+/**
+ * 🔴 A PRIMEIRA VERSÃO DESTA LISTA TRAZIA O RUNTIME E NENHUM MODELO, e o Dev apanhou-o ao perguntar o que
+ * tinha ficado de fora. 11,7 MB de WebAssembly sem um `.task` não reconhecem coisa nenhuma — é o `.onnx` sem
+ * o `.onnx.json` outra vez, no ficheiro que escreve essa lição doze linhas acima.
+ *
+ * 📏 MEDIDOS EM 2026-09-09, todos 200 com CORS aberto. `float16` e não `float32`: metade do peso, e a precisão
+ * que se perde é irrelevante para dizer onde está um íris num ecrã de 320×180.
+ */
+const MEDIAPIPE: readonly Pesado[] = Object.freeze([
+  { id: 'visao:runtime', url: `${MP}/vision_bundle.mjs`, bytes: 155_439 },
+  { id: 'visao:runtime:cola', url: `${MP}/wasm/vision_wasm_internal.js`, bytes: 323_377 },
+  { id: 'visao:runtime:wasm', url: `${MP}/wasm/vision_wasm_internal.wasm`, bytes: 11_756_954 },
+  { id: 'visao:modelo:rosto', url: `${MP_MODELOS}/face_landmarker/face_landmarker/float16/1/face_landmarker.task`, bytes: 3_758_596 },
+  { id: 'visao:modelo:gestos', url: `${MP_MODELOS}/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task`, bytes: 8_373_440 },
+  { id: 'visao:modelo:maos', url: `${MP_MODELOS}/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, bytes: 7_819_105 },
+]);
+
+/**
+ * O WEBGAZER — **volta em 2026-09-09, ao lado do MediaPipe** (ADR-0132): «Traga o WebGazer de volta. Vamos
+ * usar ambos.»
+ *
+ * 🎯 ELES NÃO SE SOBREPÕEM ONDE IMPORTA, e é essa medição que produziu a decisão: o MediaPipe diz ONDE O ÍRIS
+ * ESTÁ — `FACE_LANDMARKS_LEFT_IRIS` são conjuntos de conexões sobre marcos —, e o WebGazer diz PARA ONDE A
+ * CRIANÇA OLHA NO ECRÃ, que é um modelo de regressão com calibração. Nenhuma das quinze tarefas do
+ * `tasks-vision` faz a segunda.
+ *
+ * ⚠️ E O DEFEITO DELE NUNCA FOI O FORNECEDOR: era ser PREGUIÇOSO. Buscado quando a criança liga o controle
+ * por olhar, a máquina que nunca o ligou fica sem ele, e numa escola sem rede não acontece nada — sem erro e
+ * sem explicação. Aqui desce na INSTALAÇÃO com tudo o resto, e o defeito desaparece com a capacidade intacta.
+ * 📌 Fica a dívida que o ADR-0132 nomeia: o `<script src>` do `ui/webcam.ts` tem de sair no mesmo commit em
+ * que a fiação o ler daqui, senão passam a existir dois caminhos para o mesmo ficheiro.
+ */
+const WEBGAZER: readonly Pesado[] = Object.freeze([
+  { id: 'visao:olhar', url: 'https://webgazer.cs.brown.edu/webgazer.js', bytes: 1_895_169 },
+]);
+
+/**
+ * O RUNTIME DE VOZ — **piper**, decidido no ADR-0127, e o Dev disse para que serve: «PiperTTS é o que será
+ * usado para ler para o usuário. Precisa ser carregado com a engine».
+ *
+ * 🔴 ATÉ AQUI ELE SÓ CHEGAVA PELA PORTA DO CARTUCHO (ADR-0094), e três dos seis jogos não a declaram — nesses,
+ * a engine descarregava 241 MB de modelos e não tinha com que os tocar. Descer os modelos sem o motor é a
+ * mesma armadilha do `.onnx` sem o `.onnx.json`, um nível acima.
+ *
+ * 📏 MEDIDO EM 2026-09-09 em jsDelivr, versões FIXADAS, todos 200 com `Access-Control-Allow-Origin: *`.
+ * ⚠️ SÃO CINCO FICHEIROS E NÃO UM: o `piper-tts-web.js` é só a entrada (23 KB) — os dois pedaços com hash no
+ * nome são o corpo e a tabela de vozes, e o `onnxruntime-web` é quem corre o modelo. Trazer só a entrada dá
+ * um módulo que importa o que não está lá.
+ * 📌 `ort-wasm-simd-threaded` e não o `jsep`: o jsep é o caminho WebGPU e pesa 21,7 MB contra 11,2 — e o
+ * hardware do pilar 1 não é onde a WebGPU se ganha.
+ */
+const PP = 'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/dist';
+const ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist';
+const PIPER: readonly Pesado[] = Object.freeze([
+  { id: 'voz:runtime', url: `${PP}/piper-tts-web.js`, bytes: 23_646 },
+  { id: 'voz:runtime:corpo', url: `${PP}/piper-o91UDS6e.js`, bytes: 158_217 },
+  { id: 'voz:runtime:tabela', url: `${PP}/voices_static-D_OtJDHM.js`, bytes: 147_377 },
+  { id: 'voz:runtime:ort', url: `${ORT}/ort.min.js`, bytes: 446_284 },
+  { id: 'voz:runtime:ort-wasm', url: `${ORT}/ort-wasm-simd-threaded.wasm`, bytes: 11_246_032 },
+]);
+
 export const PESADOS: readonly Pesado[] = Object.freeze([
   ...VOZES_NEURAIS.flatMap(entradasDaVoz),
+  ...PIPER,
 
   /*
    * 🔴 O RUNTIME DE VISÃO — decidido e SEM FONTE, e a ausência é medida.
@@ -85,12 +174,8 @@ export const PESADOS: readonly Pesado[] = Object.freeze([
    * decidi-la de lado — a mesma coisa que o ADR-0119 apanhou: um subsistema que a engine DECLARA possuir e
    * que na prática é outra coisa.
    */
-  {
-    id: 'visao:runtime',
-    url: null,
-    porQueNaoTemFonte: 'a #129 ainda não escolheu o fornecedor: a #11 diz MediaPipe, o código faz WebGazer '
-      + 'por CDN sem SRI. Escolher aqui seria decidir de lado.',
-  },
+  ...MEDIAPIPE,
+  ...WEBGAZER,
 
   /*
    * 🔴 A ARTE DO LCP — decidida (ADR-0107, ADR-0119) e SEM FONTE, e também medido: `art/lcp/` tem DOIS

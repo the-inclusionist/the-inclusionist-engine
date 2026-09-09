@@ -67,6 +67,24 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
  * mexer aqui e escrever porquê; descer exige actualizar o número, que é como o inventário encolhe.
  */
 const BUSCAS_A_MAO = {
+  'platform/pesados-catalogo.ts': {
+    urls: 5,
+    porque:
+      'OS RUNTIMES QUE A ENGINE PASSOU A DESCER NA INSTALAÇÃO (ADR-0124, ADR-0127, ADR-0132, decisões do Dev ' +
+      'de 2026-09-09). ⚠️ CDN FIXADA É PERMITIDA e o ADR-0116 diz porquê: o pilar 8 proíbe depender da rede ' +
+      'DEPOIS do primeiro dia, e isto desce com tudo o resto na instalação. ' +
+      '📌 O `5` são as CINCO ORIGENS, e cada uma tem de ser defensável sozinha: (1) `@mediapipe/tasks-vision` ' +
+      'em jsDelivr — o runtime de visão; (2) `storage.googleapis.com/mediapipe-models` — os modelos `.task`, ' +
+      'que vivem noutro host porque o Google os publica assim, e sem eles o runtime não reconhece nada; ' +
+      '(3) `@mintplex-labs/piper-tts-web` e (4) `onnxruntime-web`, também em jsDelivr, que são o motor de voz ' +
+      'e quem o corre; e (5) `webgazer.cs.brown.edu`, que VOLTOU pelo ADR-0132 porque o MediaPipe dá a posição ' +
+      'do íris e não o ponto no ecrã. ' +
+      '⚠️ O WebGazer aparece DUAS vezes na árvore enquanto a fiação da #11 não sair: aqui, pré-cacheado na ' +
+      'instalação, e no `ui/webcam.ts`, preguiçoso. A entrada de baixo é a que tem de morrer, e este número ' +
+      'não desce até isso acontecer. ' +
+      'Uma sexta origem é um fornecedor novo a entrar sem decisão. Sai desta lista quando os bytes forem ' +
+      'servidos de origem própria',
+  },
   'platform/voice-plan.ts': {
     urls: 1,
     porque:

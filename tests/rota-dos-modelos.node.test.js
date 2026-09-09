@@ -73,9 +73,16 @@ describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
   it('📌 [Boundary] o alcance é ESTREITO — a rota não abre `huggingface.co` inteiro', () => {
     // 🎯 A porta larga é a forma de defeito que a #119 já fechou noutro ponto: uma rota sobre o domínio
     // inteiro passaria a guardar qualquer coisa que alguém viesse a buscar de lá, sem ninguém decidir.
-    const rota = CONFIG_LIMPA.match(/urlPattern:\s*\/([^\n]*?)\/,/)?.[1] ?? '';
-    expect(rota, 'não achei o padrão da rota').toBeTruthy();
-    expect(rota, 'a rota abriu o domínio inteiro em vez do repositório dos modelos').toMatch(/piper-voices/);
+    // ⚠️ SÃO DUAS ROTAS DESDE 2026-09-09 e o caso lia só a primeira: os modelos de voz no Hugging Face, e os
+    // RUNTIMES fixados em jsDelivr (MediaPipe, piper, onnxruntime — ADR-0124/0127/0132). Ler `match` em vez
+    // de `matchAll` fazia o caso afirmar sobre uma e ignorar a outra, que é como uma porta larga entraria sem
+    // ninguém ver: bastava acrescentá-la em segundo lugar.
+    const rotas = [...CONFIG_LIMPA.matchAll(/urlPattern:\s*\/([^\n]*?)\/,/g)].map((m) => m[1]);
+    expect(rotas.length, 'não achei os padrões das rotas').toBeGreaterThanOrEqual(2);
+    for (const rota of rotas) {
+      expect(rota, `rota larga demais — abriu um domínio inteiro: ${rota}`)
+        .toMatch(/piper-voices|@mediapipe|@mintplex-labs|onnxruntime-web/);
+    }
   });
 
   it('⚠️ [Right] é `CacheFirst` e não `NetworkFirst` — o pilar 8 decide isto, não o gosto', () => {
