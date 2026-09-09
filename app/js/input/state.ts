@@ -11,7 +11,10 @@ import type { Action } from '../core/actions.js';
 // a frase queria dizer «nada em tempo de execução», que continua verdade: os três imports são `type` e
 // desaparecem no build. A terceira entra pela mesma razão que as outras duas: o vocabulário mora com quem
 // tem as REGRAS sobre ele (`input/transporte-em-uso`), e repeti-lo aqui seria a segunda cópia de uma união.
-import type { Transporte } from './transporte-em-uso.js';
+import {
+  PADRAO, aposAresta, habilitarAssistida, desabilitarAssistida,
+  type Transporte, type EstadoDaEntrada,
+} from './transporte-em-uso.js';
 
 export const keys = new Set<string>();
 
@@ -88,6 +91,60 @@ export function soltarTodas(): void {
  */
 export function origemDe(code: string): Transporte | undefined {
   return origemDaTecla.get(code);
+}
+
+// ===================== O TRANSPORTE EM USO, POR JOGADOR (ADR-0109 · ADR-0113) =====================
+//
+// ⚠️ AQUI E NÃO NO `PlayerBase`, e a escolha é medida. O autómato responde «que aparelho está a produzir as
+// arestas deste jogador» — isso é estado de ENTRADA, e a entrada já guarda estado por jogador neste módulo
+// exactamente com esta forma: o `padCur` logo abaixo é um `Record<number, …>`. Pô-lo no `PlayerBase` faria
+// dele parte do CONTRATO, e trezentos cartuchos passariam a declarar um campo sobre o qual não decidem nada.
+//
+// 📌 O que o jogador CARREGA é a alternância resolvida (`toggleMove`), que é o que a física lê. Este mapa é
+// o que está a montante dela: com ele e com o `input/latch-store`, a resposta do ADR-0113 fica completa.
+const entradaPorJogador: Record<number, EstadoDaEntrada> = {};
+
+/**
+ * O ESTADO DA ENTRADA DESTE JOGADOR. Nunca `undefined`: quem nunca produziu uma aresta está no PADRÃO.
+ *
+ * ⚠️ `PADRAO` E NÃO `undefined`, pela mesma razão que o `origemDe` faz o contrário: ali «não sei» é uma
+ * resposta honesta sobre uma tecla que já existe; aqui a pergunta é sobre um JOGADOR, e um jogador que
+ * ainda não tocou em nada está mesmo no teclado sem assistida — que é o que `PADRAO` diz.
+ */
+export function entradaDe(jogador: number): EstadoDaEntrada {
+  return entradaPorJogador[jogador] ?? PADRAO;
+}
+
+/**
+ * UMA ARESTA DESTE JOGADOR CHEGOU, com a sua origem.
+ *
+ * 📌 O `aposAresta` devolve o MESMO objecto quando nada muda, então guardar de volta não aloca por quadro.
+ * ⚠️ E uma aresta de um transporte assistido NÃO o habilita — essa regra vive no `aposAresta` e a razão
+ * está lá: um falso positivo da webcam trancaria a alternância de toda a gente sem ninguém ter pedido.
+ */
+export function arestaDoJogador(jogador: number, origem: Transporte): void {
+  entradaPorJogador[jogador] = aposAresta(entradaDe(jogador), origem);
+}
+
+/** Habilitar a assistida é um ACTO EXPLÍCITO (ADR-0109 regra 4), e por isso tem porta própria. */
+export function habilitarAssistidaDe(jogador: number): void {
+  entradaPorJogador[jogador] = habilitarAssistida(entradaDe(jogador));
+}
+
+export function desabilitarAssistidaDe(jogador: number): void {
+  entradaPorJogador[jogador] = desabilitarAssistida(entradaDe(jogador));
+}
+
+/**
+ * ⚠️ ESQUECER É UMA PORTA SEPARADA, E O `soltarTodas` NÃO A CHAMA — de propósito.
+ *
+ * O `blur` da janela solta as teclas porque elas deixaram mesmo de estar premidas. Mas a criança não trocou
+ * de aparelho por mudar de separador: zerar o transporte em uso ali devolveria toda a gente ao teclado, e
+ * quem joga por olhar perderia a alternância no meio da partida sem nada o dizer. Existe para o fim de uma
+ * PARTIDA, onde a pergunta se põe de novo.
+ */
+export function esquecerEntradas(): void {
+  for (const k of Object.keys(entradaPorJogador)) delete entradaPorJogador[Number(k)];
 }
 
 // Gamepad (B3/L1): padCur[gi] = ações seguradas neste frame; padPrevAct/padPrevStart = borda do frame anterior.
