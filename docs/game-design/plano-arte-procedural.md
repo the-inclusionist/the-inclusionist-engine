@@ -26,13 +26,59 @@ Realiza o pilar "arte = dados / GPL-clean". Research-first (fontes ao fim). Estu
 ## 3. Formato do dado semântico (a "imagem semântica")
 Por asset, dois canais por pixel: **regionId** (qual região) + **lumLevel** (nível na rampa; um valor especial
 = `contorno`). Proposta:
-- **Armazenamento legível/diffável** (coerente com o mapa-glifo): um grid de texto onde cada célula é
-  `região×luminosidade` — ex.: letra=região (`p`=pele, `c`=cabelo, `s`=camisa…) + dígito=luminosidade
-  (`p0`..`p4`), ou um glifo por combinação para asset pequeno. Alternativa compacta: PNG "de dados" (índice no
-  canal, sem cor real) — mas perde legibilidade; **preferir texto/JSON indexado** enquanto os sprites são
-  pequenos (24×32). Definir no detalhamento.
+- ~~**Armazenamento legível/diffável**: um grid de texto onde cada célula é `região×luminosidade`~~ —
+  **a proposta de 03/07 caiu em 09/09, e caiu por medição.** Ela justificava-se a si própria com a condição
+  *«preferir texto/JSON indexado **enquanto os sprites são pequenos (24×32)**»*, e essa condição morreu no dia
+  em que o LPC entrou pela ponte do ADR-0133.
 - **Animações**: várias imagens semânticas (frames) + tags (reusa `frameTags` do Aseprite na importação).
 - **Metadados**: tamanho, âncora/pés (slice), lista de regiões usadas.
+
+### 📏 A MEDIÇÃO DE 2026-09-09, e ela decidiu três coisas de uma vez
+
+Descodificadas as folhas reais do LPC (`sprite/character/Body/Base/Human_androgynous/Coffee/`), com um leitor
+PNG sem dependências:
+
+| folha | dimensões | bytes | píxeis opacos | **cores únicas** |
+|---|---|---|---|---|
+| `walk.png` | 576×256 | 30 724 | 41 923 | **11** |
+| `thrust.png` | 576×256 | 28 785 | 41 700 | **14** |
+| `hurt.png` | 448×64 | 21 528 | 8 621 | **10** |
+| **as três juntas** | — | 81 037 | 92 244 | **15** |
+
+**① A grelha de texto é inviável e o número é grande.** 576×256 = 147 456 píxeis; a dois caracteres por
+píxel, uma folha vira **~295 KB de texto** — quase dez vezes o PNG RGBA de 30 KB que ela descreve. E é uma
+folha de um corpo, antes de cabelo, roupa e das outras animações. 📌 O que a grelha protegia era
+**legibilidade**, e ninguém lê 147 mil células: a legibilidade passa a ser dada pelo editor, que desenha, e
+por uma **exportação de texto para depuração** de recursos pequenos.
+
+**② 🎯 A ANOTAÇÃO É UMA TABELA DE QUINZE LINHAS.** Três folhas inteiras têm quinze cores únicas somadas — a
+pessoa não pinta píxeis, decide quinze vezes. É isto que torna o anotador viável, e é o número que faltava
+para saber se ele valia a pena.
+
+**③ Zero alfa parcial: todos os 92 244 píxeis opacos têm alfa exactamente 255.** A máscara dura do formato
+deixa de ser uma restrição que impomos e passa a ser o que a fonte já é. ⚠️ E é ela que impede a
+**pré-multiplicação** do browser de corromper os canais R e G, que é a forma de corrupção que falha em silêncio.
+
+📌 **E a ordenação por luminância funciona nesta arte**: as seis cores mais frequentes descem 80 → 64 → 47 →
+35 → 21 → 6, que é uma rampa de corpo limpa. A sugestão automática do §7 não é uma esperança.
+
+### O formato decidido em 2026-09-09
+
+**Dois ficheiros por recurso, um partilhado por jogo.**
+
+- **`<nome>.semantic.png`** — `R` = `regionId` (0 = nada), `G` = `lumLevel` (um valor reservado = `contorno`),
+  `B` = 0 reservado, `A` = **0 ou 255 e mais nada**.
+  ⚠️ **Sem gestão de cor** (um `iCCP`/`gAMA` faz o browser transformar os valores e os índices deixam de ser
+  índices), **sem alfa parcial**, e **nunca redimensionado nem recomprimido**. 📌 `tools/png-write.mjs` já
+  escreve exactamente isto — codificador RGBA sem dependências, filtro 0, sem chunks de cor. Reusar.
+- **`<nome>.semantic.json`** — `regioes`, `niveis`, `quadros` (`{nome,x,y,w,h,pivo,duracaoMs}`), `animacoes`,
+  `mapaDeCores` (a tabela de quinze linhas que a pessoa decidiu) e `origem` — 🎯 esta com **os mesmos campos
+  da linha do `art/ATTRIBUTION.csv`**, para o livro-razão ser GERADO em vez de escrito à mão.
+- **`paletas.json`** — o §4 abaixo, inalterado: do jogo e não do recurso.
+
+⚠️ **O pivô mora no JSON e não numa convenção de nomes**, porque o ADR-0027 mediu **quinze tamanhos distintos**
+de sprite e concluiu que o atlas não pode assumir grelha uniforme. A medição acima confirma-o do lado do LPC:
+`walk` é 576×256 e `hurt` é 448×64 — **a grelha muda entre folhas da mesma personagem.**
 
 ## 4. Dicionário de paletas (separado)
 - Estrutura: `região → { variantes: { nome: rampa[] } }`, onde `rampa[lumLevel] = cor`. Ex.:
@@ -109,7 +155,9 @@ o pipeline procedural deste plano não estiver pronto: cada tema desenhado à m�
 conserto à espera; havia uma espera. Uma issue sem fix não tem commit que a feche, e uma que ninguém pode
 fechar ensina a ignorar o quadro inteiro.
 
-📌 **O que a destranca é a etapa 3 deste plano** (o motor de recolorização), e é por isso que ela mora aqui e
+📌 **O que a destranca é a etapa 1 deste plano** (o motor de recolorização), e é por isso que ela mora aqui e
 não no roadmap: quem abrir este ficheiro para construir o pipeline é exactamente quem precisa de saber que há
 vinte temas à espera dele. **Cada tema vira uma issue quando for construível**, uma por tema, com a paleta e a
 imagem semântica já decididas.
+⚠️ **Corrigido em 2026-09-09:** esta linha dizia «etapa 3» e chamava-lhe «o motor de recolorização». Pelo §9 o
+motor é a **etapa 1**; a etapa 3 é o editor. Um número errado aqui adiava vinte temas por duas etapas inteiras.

@@ -86,9 +86,12 @@ Nem tudo aqui é nosso, e o que não é **não muda de licença por estar neste 
   - **Porta `ponte`** — copyleft **CC BY-SA** entra convertido em **`GPL-3.0-only`** na nossa saída. O
     mecanismo é público e tem três degraus: a CC BY-SA 3.0 §4(b)(ii) deixa uma **adaptação** sair como 4.0;
     a Creative Commons declarou a GPLv3 compatível num sentido só em 08/10/2015; e o **§13 da GPLv3** permite
-    combinar obra GPLv3 com obra AGPLv3 num único trabalho. ⚠️ Exige **fonte modificável** (o que este
-    projeto já mantém: imagem semântica + dicionário de paletas), é de **sentido único e permanente**, e só
-    abre para **adaptação** — nenhum ficheiro CC BY-SA entra tal e qual.
+    combinar obra GPLv3 com obra AGPLv3 num único trabalho. ⚠️ Exige **fonte modificável** — a imagem
+    semântica mais o dicionário de paletas —, é de **sentido único e permanente**, e só abre para
+    **adaptação**: nenhum ficheiro CC BY-SA entra tal e qual.
+    🔴 **E essa fonte modificável AINDA NÃO EXISTE.** A versão anterior desta linha dizia «o que este projeto
+    já mantém», e era falsa: não há `app/js/art/`, não há formato semântico e não há editor. **Enquanto não
+    houver, esta porta está descrita e não está aberta** — o LPC não entra. Ver `game-design/plano-arte-procedural.md`.
   🔴 **E o que não tem porta nenhuma: ND** (proíbe derivar, e recolorir já é derivar) e **NC** (deixaria a
   arte mais estreita que o CÓDIGO — a AGPL permite uso comercial, e quem ela convida seria travado por um
   sprite; e a fronteira do NC é indefinida, com uma implantação municipal em cima dela).
