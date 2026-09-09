@@ -134,7 +134,6 @@ import { initSettingsTypo } from '../ui/settings-typo.js';
 import { montarCasca } from '../ui/panel-shell.js';
 import * as store from '../platform/storage.js';
 import { VIZ_DOM_ONLY, VIZ_FILTER, simulatesDisability } from '../render/viz-modes.js';
-import { toggleLibras, vlibrasOpen, setOnLibrasChange } from '../ui/vlibras.js';
 import { padPxPerMm } from '../input/touch.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
@@ -374,13 +373,16 @@ export function bootQuiz(): void {
     },
   });
 
-  // MODO PESSOA SURDA. Nenhum script do VLibras nesta página — de propósito.
-  const libras = $<HTMLButtonElement>('#q-libras');
-  if (libras) {
-    setOnLibrasChange(() => { libras.setAttribute('aria-pressed', String(vlibrasOpen())); });
-    libras.setAttribute('aria-pressed', String(vlibrasOpen()));
-    libras.addEventListener('click', () => { toggleLibras(); srSay(t(vlibrasOpen() ? 'sr.icon.librasOn' : 'sr.icon.librasOff')); });
-  }
+  // MODO PESSOA SURDA — ⚠️ ESTE BLOCO SAIU, e a ausência é o conserto (ADR-0106).
+  //
+  // Ele lia `#q-libras`, ligava o clique a `toggleLibras`, anunciava `sr.icon.librasOn/Off` e mantinha o
+  // `aria-pressed` por `setOnLibrasChange`. Todas as quatro coisas são agora feitas pelo ícone 🤟 da barra
+  // que o `createGame` monta — o mesmo `iconAct`, e um `aria-label` que diz o estado (o ida-e-volta que o
+  // cabeçalho do `ui/pause-icons` descreve).
+  //
+  // ⚠️ MANTÊ-LO SERIA O DEFEITO DO ANÚNCIO DUPLO, que este repositório já pagou no `setModoCego`
+  // (`ba355f3`): duas superfícies a dizer a mesma mudança, e a criança que navega por ouvido a ouvi-la
+  // duas vezes. Nenhum script do VLibras nesta página continua a ser de propósito.
 
   // TOQUE: o quiz usa a ERGONOMIA e recusa o PAD. `padPxPerMm` é puro e ancora o milímetro real no aparelho
   // (WCAG 2.5.5 / GAG); as alternativas do quiz passam a ter alvo de 9 mm de altura MEDIDOS, em vez de um

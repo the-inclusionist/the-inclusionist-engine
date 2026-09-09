@@ -69,10 +69,22 @@
           <label class="opt-hint" for="q-viz">Visão:</label>
           <select id="q-viz" aria-label="Correção de daltonismo"></select>
           <svg id="q-cvd" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute"></svg>
-          <!-- MODO PESSOA SURDA sem o widget do VLibras carregado. É o caso que o conserto de b0239e9 tornou
-               possível: o estado é NOSSO e o intérprete é um tradutor opcional. Se o modo só ligasse com a
-               biblioteca de terceiro presente, ele não seria da engine — seria da página que a carrega. -->
-          <button id="q-libras" class="mode-btn" type="button" aria-pressed="false">🤟 Modo pessoa surda</button>
+          <!-- A BARRA DE ACESSIBILIDADE DA ENGINE (ADR-0106). VAZIA DE PROPÓSITO: o `createGame` monta-a aqui,
+               como já monta os filtros de daltonismo no `#q-cvd`. Este consumidor não copia markup nenhum.
+
+               ⚠️ ANTES HAVIA AQUI UM BOTÃO À MÃO — `#q-libras`, «Modo pessoa surda» —, e tirá-lo é o conserto.
+               Ele demonstrava que o modo funciona SEM o widget do VLibras carregado (o `b0239e9`): o estado é
+               da engine e o intérprete é um tradutor opcional. Essa demonstração não se perde, muda de dono —
+               agora quem a faz é o ícone 🤟 da própria barra, que é o que os 300 jogos vão ter.
+
+               📌 E ele era a ÚNICA duplicação — MEDIDA NO NAVEGADOR e não prevista. Eu tinha escrito «cinco
+               ícones» aqui e a página serviu OITO: os cinco com estado (🦯 cego · 🗨️ TTS · 🤟 Libras ·
+               🧩 TEA · ☝️ alternância) MAIS os três `soon` (🧑 rosto · 👀 olhos · 👄 voz), que se montam
+               rotulados «(em construção)» — soon é «ainda não construímos», e dizê-lo é a decisão.
+               O 🔤 da tipografia não é ícone de barra, e os de contraste e cor NÃO são montados: este jogo
+               não tem escritor visual, e o §5 do ADR-0106 recusa oferecer um botão que não acciona nada.
+               Essa metade da previsão confirmou-se; a outra não, e fica o medido. -->
+          <div id="title-icons" class="pause-icons"></div>
           <!-- ⚠️ O PAINEL DE TIPOGRAFIA SAIU DAQUI EM 07/09, e a ausência é o conserto. Este bloco declarava
                à mão o véu, o cartão, o título, a lista e os dois botões — cinco ids que o `ui/settings-typo`
                EXIGIA e que nada no tipo dele dizia. Era o achado 6 da etapa C: «o painel abre vazio, sem
