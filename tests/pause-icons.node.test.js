@@ -738,6 +738,29 @@ describe('initPauseIcons — applyCalm', () => {
 });
 
 describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
+  // 🔴 O RÓTULO DE UM ÍCONE `soon` TAMBÉM TEM DE SER REESCRITO PELO REFLEXO, e a razão de isto não ser
+  // zelo é uma premissa que DEIXOU DE SER VERDADE. O guarda que existia aqui dizia: «`soon` buttons keep
+  // the label the markup gave them (same string) — no state to report». A segunda metade continua certa —
+  // não há estado a reportar —, mas «same string» era verdade só enquanto a marcação e o reflexo corressem
+  // no MESMO idioma.
+  //
+  // ⚠️ MEDIDO NUM NAVEGADOR EM 2026-09-08, na barra que o `createGame` passou a montar: o `initI18n` carrega
+  // en/es de forma ASSÍNCRONA (são chunks próprios), a marcação da barra é gerada ANTES de o dicionário
+  // chegar, e depois só os rótulos COM ESTADO se corrigem. Resultado servido pela página: cinco ícones a
+  // dizer «Blind mode… / Voice narration…» e três ainda a dizer «Webcam — rosto (em construção)».
+  //
+  // 📌 É a MESMA forma do ACHADO 15: uma premissa que valia enquanto toda raiz fosse um `main.ts` que
+  // montava depois do i18n, e que a engine invalidou ao passar a montar ela própria.
+  it('🔴 [Zero] um ícone `soon` recebe rótulo do reflexo — «mesma string» deixou de ser verdade', () => {
+    const { ctx } = buildCtx();
+    const api = initPauseIcons(ctx);
+    const b = fakeIconBtn('eyes');
+    api.reflectIconBtn(b, 0);
+    expect(b.getAttribute('aria-label'), 'o reflexo saltou o ícone e o rótulo ficou como a marcação o deixou')
+      .toBe('Webcam — olhos (em construção)');
+    expect(b.getAttribute('aria-pressed'), 'um `soon` nunca se declara ligado').toBe('false');
+  });
+
   it('UM botão: recebe classe, aria-pressed e aria-label coerentes com o estado', () => {
     const { ctx, state } = buildCtx();
     state.modoCego = true;
@@ -775,11 +798,19 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     expect(b.classList.contains('pi-cvd-tritan')).toBe(true);
   });
 
-  it('ícone EM CONSTRUÇÃO não recebe aria-label do reflexo — o rótulo do markup fica de pé', () => {
+  // ⚠️ ESTE CASO FOI VIRADO EM 2026-09-08, e o que ele afirmava era o DEFEITO ESCRITO COMO GARANTIA — a
+  // terceira vez que este repositório encontra essa forma. O título antigo era «ícone EM CONSTRUÇÃO não
+  // recebe aria-label do reflexo — o rótulo do markup fica de pé», e ele prendia a premissa «mesma string»
+  // que a medição num navegador desmentiu: com a engine a montar a barra antes de o dicionário assíncrono
+  // chegar, o rótulo da marcação e o do reflexo estão em IDIOMAS diferentes.
+  //
+  // 📌 O que fica afirmado é o que não regride: quando o idioma NÃO mudou, o reflexo escreve exactamente a
+  // string que a marcação escreveria. A escrita passou a ser garantida em vez de dispensada.
+  it('⚠️ [Right] um ícone EM CONSTRUÇÃO recebe do reflexo a MESMA string que a marcação lhe daria', () => {
     const { ctx } = buildCtx();
     const b = fakeIconBtn('face');
     initPauseIcons(ctx).reflectIconBtn(b, 0);
-    expect(b.getAttribute('aria-label')).toBe(null);
+    expect(b.getAttribute('aria-label')).toBe('Webcam — rosto (em construção)');
     expect(b.getAttribute('aria-pressed')).toBe('false');
   });
 
@@ -810,9 +841,10 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     api.reflectPauseIcons();
     for (const b of state.screens[0]._btns) {
       const lbl = b.getAttribute('aria-label');
-      const isSoon = !!PAUSE_ICONS.find((ic) => ic.k === b.dataset.pi).soon;
-      if (isSoon) expect(lbl).toBe(null); // o markup já pôs o dele; o reflexo não sobrescreve
-      else expect(lbl.trim().length).toBeGreaterThan(0);
+      // ⚠️ SEM RAMO POR `soon`: o título deste caso sempre disse «TODO .pi-btn», e o ramo que aqui estava
+      // dizia o contrário dele. Agora os dois concordam — e é essa concordância que apanha um ícone
+      // encalhado no idioma da marcação.
+      expect(lbl.trim().length, `${b.dataset.pi} ficou sem rótulo depois do reflexo`).toBeGreaterThan(0);
       expect(['true', 'false']).toContain(b.getAttribute('aria-pressed'));
     }
   });

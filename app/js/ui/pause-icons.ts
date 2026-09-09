@@ -917,8 +917,13 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     b.classList.toggle('pi-on', v.on);
     b.classList.toggle('pi-dis', v.dis);
     b.setAttribute('aria-pressed', String(v.active));
-    // `soon` buttons keep the label the markup gave them (same string) — no state to report.
-    if (!(ICON_BY_KEY.get(k) || {} as PauseIcon).soon) b.setAttribute('aria-label', computeIconLabel(k, st));
+    // ⚠️ TODO ÍCONE RECEBE RÓTULO, `soon` INCLUÍDO — e o guarda que aqui estava dizia por que não: «`soon`
+    // buttons keep the label the markup gave them (same string)». A segunda metade continua certa (não há
+    // estado a reportar), mas «mesma string» era verdade só enquanto a marcação e o reflexo corressem no
+    // MESMO IDIOMA — e desde que a engine passou a montar a barra (ADR-0106 etapa 2) deixam de correr.
+    // O `initI18n` carrega en/es de forma assíncrona; a marcação nasce em pt e só o reflexo a corrige.
+    // 📌 Medido num navegador: cinco ícones em inglês e três ainda em «(em construção)», na mesma barra.
+    b.setAttribute('aria-label', computeIconLabel(k, st));
   }
 
   function reflectIconsIn(root: ParentNode | null, i: number): void {

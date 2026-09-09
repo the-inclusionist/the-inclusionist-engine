@@ -41,7 +41,7 @@
 // exige seis coisas de plataforma. Não substitui o boot do `main.js`, que tem catorze anos de ordem própria.
 // O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
-import { initI18n } from '../core/i18n.js';
+import { initI18n, idiomaPronto } from '../core/i18n.js';
 import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance } from '../ui/reach-notice.js';
@@ -499,6 +499,26 @@ export function createGame(o: CreateGameOptions): Engine {
       srSay(botao.getAttribute('aria-label') ?? '');
     });
     pauseIcons.reflectIconsIn(a11yBar, 0);
+
+    /*
+     * ⚠️ E OUTRA VEZ QUANDO O IDIOMA DO ARRANQUE CHEGAR — sem isto a barra fica no idioma de RECUO.
+     *
+     * O `initI18n` aplica pt de forma síncrona (para a página nunca ficar em branco) e, se o idioma
+     * preferido for outro, PEDE a troca — que é assíncrona, porque en/es são chunks sob demanda. Esta
+     * marcação nasce nesse intervalo. 📏 Medido num navegador em 2026-09-08, com `lang="en"`: a barra
+     * servia cinco rótulos em inglês e três ainda em português, na mesma linha de ícones.
+     *
+     * 📌 O `idiomaPronto()` existe exactamente para isto, e o cabeçalho dele já descreve o defeito noutro
+     * lugar: «o `applyDom` conserta o markup ESTÁTICO, mas o que o JavaScript monta tinha capturado o
+     * texto de pt e ninguém reconstruía». A barra é a instância nova, criada quando a ENGINE passou a
+     * montá-la (ADR-0106 etapa 2).
+     *
+     * ⚠️ É O `idiomaPronto()` E NÃO O EVENTO `i18n:change`, de propósito: o evento é a troca de idioma EM
+     * EXECUÇÃO, e o próprio `core/i18n` declara essa pergunta como sendo do Dev («QUANDO a interface se
+     * reconstrói ao trocar de idioma em execução»). Isto responde só a pergunta do ARRANQUE, que aquele
+     * mesmo comentário diz não ter duas respostas.
+     */
+    void idiomaPronto().then(() => { pauseIcons.reflectIconsIn(a11yBar, 0); });
 
     /*
      * ⚠️ E ELA TEM DE CONTINUAR A DIZER A VERDADE quando o estado muda NOUTRO SÍTIO. O modo cego liga-se
