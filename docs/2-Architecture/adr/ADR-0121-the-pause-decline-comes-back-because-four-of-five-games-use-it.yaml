@@ -2,6 +2,18 @@
 metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0120]
+  superseded-in-part:
+    - by: ADR-0122
+      what: >-
+        the revert itself, and the KEYBOARD PREMISE it rested on. The Dev answered issue #132 with A — «o menu
+        de pausa da engine e os botões no hud para acessibilidade rápida deveriam estar em todos os jogos, por
+        isso seriam responsabilidade da engine» — and the cost quoted here was then measured instead of
+        quoted: both readers of the card are gated on `!menu.hidden` (`ui/menu-nav.ts:485`,
+        `input/gamepad.ts:619`) and `buildScreenPause` sets `sp.hidden = true` (`ui/pause-icons.ts:1180`), so
+        a MOUNTED card eats nothing and only an OPEN one owns the keyboard. ⚠️ THE METHOD LESSON OF THIS
+        RECORD SURVIVES INTACT and is what produced the successor: a contract field is not retired on the
+        evidence of the consumer that ships in the same repository. What failed here was applying that lesson
+        to the engine's own code — a consumer's comment was repeated as if it were a measurement.
   date: 2026-09-09
   decision-makers: [AI]
   consulted:
