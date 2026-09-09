@@ -1,11 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// NENHUM CDN ESCRITO À MÃO — o gate que o ADR-0114 deve, e o único dos cinco que já morde hoje.
+// NENHUMA BUSCA EXTERNA ESCRITA À MÃO — o inventário que estrangula por onde a engine toca na rede.
 //
-// ========================= A REGRA =========================
-// O ADR-0114 decidiu que um runtime pesado viaja COM o PWA — vendorizado no `dist` da aplicação e
-// pré-cacheado pelo service worker — e que só os MODELOS vêm da rede. A consequência imediata é que a engine
-// não pode ter um endereço externo escrito à mão dentro do código: um `<script src="https://…">` é uma
-// dependência de rede no primeiro uso, e a escola sem rede não recebe nada.
+// ========================= A REGRA, REESCRITA EM 2026-09-09 =========================
+// 🔴 A REGRA QUE ESTAVA AQUI FOI REVOGADA PELO ADR-0116, e deixá-la seria o defeito que este repositório
+// persegue: um gate a argumentar por uma decisão que já não existe. Ela dizia — «um `<script src="https://…">`
+// é uma dependência de rede NO PRIMEIRO USO, e a escola sem rede não recebe nada». O Dev derrubou a premissa:
+// «NÃO FAZ SENTIDO BAIXAR ALGO VIA PWA, E CONSIDERAR QUE SE É PRA USAR VIA PWA OFFLINE NÃO É PRA BAIXAR NADA
+// NO PRIMEIRO USO!» Um PWA chega pela rede; isso É a instalação. O pilar 8 passou a dizer o que mede:
+// **PWA no primeiro dia ONLINE, depois OFFLINE-FIRST.**
+//
+// 📌 A REGRA NOVA É SOBRE TEMPO E NÃO SOBRE ORIGEM: **pré-cacheado na instalação, nunca buscado com preguiça
+// no primeiro uso.** Um runtime de CDN fixada por versão, listado no manifesto de precache, é admissível — foi
+// o que o Dev pediu desde o início («se conseguir usar cdnjs/jsdelivr é ótimo»). O que continua proibido é o
+// endereço que só é buscado quando a criança carrega no botão, porque esse não estava lá no dia da instalação.
+//
+// ⚠️ E O VEREDICTO SOBRE O `ui/webcam.ts` NÃO MUDOU — mudou a razão. Aquele `<script src>` dispara no primeiro
+// uso do controle por olhar, logo é busca preguiçosa, com CDN ou sem CDN. A regra velha condenava-o pelo host;
+// a nova condena-o pelo MOMENTO, que é o que sempre esteve errado nele.
+//
+// 📌 ESTE CRIVO É A METADE DA FONTE. A outra metade — «e está mesmo no manifesto?» — só se afere depois de um
+// build, e vive no `scripts/check-precache.mjs`, que desde `af35a7d` exige que uma entrada externa seja
+// FIXADA e tenha peso declarado. Nenhum dos dois responde sozinho: aqui vê-se quem escreve um endereço, lá
+// vê-se se ele chegou à instalação.
 //
 // 📏 MEDIDO EM 2026-09-08: a engine tem exactamente TRÊS URLs absolutas em código, e só UMA delas é uma busca.
 // As outras duas são o espaço de nomes do SVG (`http://www.w3.org/2000/svg`), que o `createElementNS` exige e
@@ -64,12 +80,17 @@ const BUSCAS_A_MAO = {
   'ui/webcam.ts': {
     urls: 1,
     porque:
-      'o WebGazer, carregado por `<script src>` de `webgazer.cs.brown.edu` no primeiro uso do controle por ' +
-      'olhar. É a única busca de runtime externo da engine e a razão de a issue #129 existir. O ADR-0114 ' +
-      'retira-a: o runtime passa a ser vendorizado no `dist` e pré-cacheado. ' +
-      '📌 Ele já AVISA quando falha (`srAlert(sr.eyes.needsInternet)`), o que é melhor do que silêncio e não ' +
-      'satisfaz o pilar 8 — a criança continua sem controle por olhar numa escola sem rede. ' +
-      'Sai daqui quando a vendorização existir.',
+      'o WebGazer, carregado por `<script src>` de `webgazer.cs.brown.edu` NO PRIMEIRO USO do controle por ' +
+      'olhar. É a única busca de runtime externo da engine e a razão de a issue #129 existir. ' +
+      '⚠️ ACTUALIZADO EM 2026-09-09: o ADR-0116 revogou a razão velha («é CDN, logo é rede»), e ele continua ' +
+      'aqui pela razão certa — é PREGUIÇOSO. Dispara quando a criança liga o controle por olhar, não na ' +
+      'instalação, logo a máquina que nunca ligou aquele controle não o tem, e o pilar 8 novo diz que depois ' +
+      'do primeiro dia tudo tem de estar lá. Trocar `brown.edu` por uma CDN fixada não o tiraria daqui; ' +
+      'pré-cachear na instalação tira. ' +
+      '📌 Ele já AVISA quando falha (`srAlert(sr.eyes.needsInternet)`), o que é melhor do que silêncio e ' +
+      'continua a não bastar — a criança fica sem controle por olhar. ' +
+      'Sai daqui quando o runtime entrar no manifesto de precache, vendorizado OU de CDN fixada — o que a ' +
+      'issue #129 decidir.',
   },
 };
 
@@ -164,6 +185,24 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
     expect(svg.length, 'o `createElementNS` deixou de usar o espaço de nomes').toBe(2);
     for (const a of svg) expect(BUSCAS.some((b) => b.f === a.f && b.url === a.url)).toBe(false);
     expect(NAO_E_BUSCA.startsWith('http://www.w3.org/'), 'a exclusão é por prefixo do W3C, não uma lista').toBe(true);
+  });
+
+  /* 🎯 A REGRA DO ADR-0116 FEITA ESTRUTURAL: um ENDEREÇO não é uma BUSCA, e é a diferença entre o que se
+   * pré-cacheia e o que se busca com preguiça. `platform/voice-plan` NOMEIA o host e nunca o pede — é um
+   * módulo puro, e é essa pureza que deixa o buscador escolher o momento. `ui/webcam` pede, e pede tarde.
+   *
+   * ⚠️ O CASO PRENDE OS DOIS LADOS, e é por isso que ele não é decorativo: se o `voice-plan` ganhar um
+   * `fetch`, deixa de ser endereço declarado e passa a ser a busca preguiçosa que a desculpa dele diz que não
+   * é; se o `webcam` deixar de buscar, a desculpa dele passou a descrever um ficheiro que já não faz aquilo.
+   *
+   * 📌 A regex é DUPLICADA do `nada-vem-de-fora` de propósito, pela razão que aquele ficheiro escreve: um
+   * gate tem de poder discordar do outro. */
+  const REDE = /\bfetch\s*\(|\bimport\s*\(|\.src\s*=|XMLHttpRequest|navigator\.sendBeacon|new\s+WebSocket|new\s+EventSource/;
+  const pede = (f) => REDE.test(semComentarios(readFileSync(join(RAIZ, f), 'utf8')));
+
+  it('🎯 [Fronteira] endereço DECLARADO e busca PREGUIÇOSA são coisas diferentes, e o crivo sabe qual é qual', () => {
+    expect(pede('platform/voice-plan.ts'), 'o voice-plan ganhou uma busca — deixou de ser endereço declarado').toBe(false);
+    expect(pede('ui/webcam.ts'), 'o webcam deixou de buscar; a desculpa dele descreve o que já não acontece').toBe(true);
   });
 
   it('[Interface] `import()` dinâmico não traz especificador não-relativo', () => {
