@@ -52,6 +52,44 @@ function arvoreDoPacote() {
 
 const extensaoDe = (p) => { const i = p.lastIndexOf('.'); return i < 0 ? '' : p.slice(i).toLowerCase(); };
 
+describe('ADR-0114 · e ONDE o runtime vendorizado tem de ficar, que não é o sítio óbvio', () => {
+  // 🔴 A ARMADILHA, MEDIDA EM 2026-09-09 e escrita aqui porque é aqui que alguém vai estar quando o gate
+  // acima disparar. O ADR-0114 diz que um runtime pesado é «vendorizado no `dist` da aplicação, não no
+  // pacote npm». O sítio óbvio para o pôr é `app/public/vendor/` — onde já vivem as fontes — e esse é
+  // exactamente o sítio que o pacote PUBLICA.
+  //
+  // 📏 Provado plantando um `.wasm` lá: o caso acima reprova, nomeando o ficheiro. O que ele não diz, e este
+  // bloco diz, é PARA ONDE ir em vez disso.
+
+  it('🔴 [Interface] `app/public/vendor` VIAJA no pacote — é por isso que vendorizar ali reprova', () => {
+    expect(PKG.files, 'a lista de `files` mudou de forma; releia este bloco antes de confiar nele')
+      .toContain('app/public/vendor');
+  });
+
+  // 🎯 E O CAMINHO CERTO: `app/public/` é o `publicDir` do Vite (a raiz da build é `app`), logo tudo o que
+  // está lá é copiado tal e qual para `dist/` — e o `files` publica APENAS o `vendor` de dentro dele. Um
+  // runtime em `app/public/<qualquer outra pasta>/` chega ao PWA e ao precache sem entrar no `npm ci` de
+  // trezentos repositórios, que é as duas metades do que o ADR-0114 pede.
+  it('🎯 [Interface] `app/public` chega ao `dist` e NÃO é publicado, tirando o `vendor`', () => {
+    const publicados = (PKG.files ?? []).filter((f) => f.startsWith('app/public'));
+    expect(publicados, 'o `app/public` inteiro passou a ser publicado — um runtime ali iria no pacote')
+      .toEqual(['app/public/vendor']);
+
+    // ⚠️ E a outra metade da afirmação é sobre o BUILD, não sobre o `package.json`: o que está em
+    //    `app/public` aparece em `dist`. Afirmado sobre a árvore construída, e não sobre a configuração —
+    //    ler o `publicDir` do `vite.config` mediria a intenção; ler o `dist` mede o que aconteceu.
+    const noPublic = readdirSync(join(RAIZ, 'app', 'public'));
+    // ⚠️ O VÁCUO PRIMEIRO: com `app/public` vazio o laço abaixo não afirmaria nada e o caso ficaria verde a
+    //    olhar para o nada — que é a forma como esta afirmação deixaria de valer sem ninguém reparar.
+    expect(noPublic.length, '`app/public` está vazio: o laço abaixo não mede nada').toBeGreaterThan(0);
+    const noDist = existsSync(join(RAIZ, 'dist')) ? readdirSync(join(RAIZ, 'dist')) : null;
+    if (noDist === null) return; // sem build nesta árvore: a afirmação do `files` acima já vale por si
+    for (const nome of noPublic) {
+      expect(noDist, `${nome} está em app/public e não chegou ao dist`).toContain(nome);
+    }
+  });
+});
+
 describe('ADR-0110 · a engine BUSCA as vozes, não as embarca', () => {
   const ARVORE = arvoreDoPacote();
 
