@@ -2,7 +2,7 @@
 
 O alvo **mensurável** de cada atividade — o núcleo verificável da camada currículo (forma *aaa-threshold*: um objetivo
 bem-formado é observável e tem critério de aprovação). Absorve o antigo `1-Discovery/SRS.md` (currículo não é software;
-ver [ADR-0004](../2-Architecture/adr/ADR-0004-educational-documentation-subset.yaml)).
+ver [ADR-0004](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0004-educational-documentation-subset.yaml)).
 
 ## Formato (Mager + BNCC)
 

@@ -61,7 +61,7 @@ A narração por voz roda **inteiramente no navegador/offline** graças ao traba
   `es_MX` (ADR-0065, que supersede o ADR-0022).
 
 > Os pesos das vozes são **baixados uma vez** (de um host público) e rodam **100% localmente** depois — nenhum áudio de
-> criança sai do dispositivo. Ver `docs/2-Architecture/adr/ADR-0065-three-neural-voices-owned-by-the-engine-and-cached-on-first-use.yaml`.
+> criança sai do dispositivo. Ver `the-inclusionist-docs · docs/2-Architecture/adr/ADR-0065-three-neural-voices-owned-by-the-engine-and-cached-on-first-use.yaml`.
 
 ## Arte — Liberated Pixel Cup — CC BY-SA 3.0
 

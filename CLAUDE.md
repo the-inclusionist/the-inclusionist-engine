@@ -46,7 +46,7 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 - **Sinalize antes de executar** incoerências/erros. **Anuncie decisões não triviais:** `Decisão: X porque Y. Para
   sobrepor, diga Z.` **"ok/tudo ok" ≠ carta branca** → proponho e confirmo a próxima escolha, não sigo sozinho.
 - **Decisão confirmada ganha lar durável NO MESMO TURNO** — não deixar como prosa no chat. Se for arquitetural →
-  um **ADR (YADR)** no repositório `the-inclusionist-docs` (`docs/2-Architecture/adr/`) + entrada no índice — a árvore saiu daqui no ADR-0123; ver `docs/2-Architecture/ADR.md`; senão → o doc canônico certo; e **reflita no
+  um **ADR (YADR)** no repositório `the-inclusionist-docs` (`the-inclusionist-docs · docs/2-Architecture/adr/`) + entrada no índice — a árvore saiu daqui no ADR-0123; ver `docs/2-Architecture/ADR.md`; senão → o doc canônico certo; e **reflita no
   mapa** (`ARCHITECTURE.md`) quando muda onde algo vive. Concordar/discordar sem registrar = decisão perdida.
 - **REGISTRAR É EXECUÇÃO, NÃO CONSULTA** (2026-08-27, depois de o Dev medir o estrago). Quando a decisão dele
   **revoga** um ADR aceito, o registro sai no MESMO turno, escrito, e ele desfaz se discordar — não se pergunta

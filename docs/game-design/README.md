@@ -1,6 +1,6 @@
 # game-design/ — game craft layer
 
-The game-craft artifacts adopted in **[ADR-0009](../2-Architecture/adr/ADR-0009-game-documentation-subset.yaml)** — the
+The game-craft artifacts adopted in **[ADR-0009](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0009-game-documentation-subset.yaml)** — the
 "how the game plays" side, parallel to `../educational/` (the "what is learned" side). Kept **light**: 200+ minigames
 means per-game docs are one-sheets, not full GDDs.
 

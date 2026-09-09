@@ -23,7 +23,7 @@ Reports about **exposure of children's data** are welcome even if you are unsure
 
 - **Acknowledgement:** within 5 business days.
 - **Triage & severity:** we map to CVSS and to our non-negotiable pillars (child data privacy is critical
-  regardless of CVSS). See `2-Architecture/adr/ADR-0017-compliance-and-data-governance.yaml`.
+  regardless of CVSS). See `the-inclusionist-docs · docs/2-Architecture/adr/ADR-0017-compliance-and-data-governance.yaml`.
 - **Fix window:** critical/high issues are prioritized over feature work.
 - **Credit:** we credit reporters in the advisory unless you prefer to stay anonymous.
 

@@ -1,7 +1,7 @@
 # Data model — Normalization policy
 
 **Default:** normalize to **3NF**. Denormalization is the exception and must be **justified in a YADR ADR** (see
-`../../2-Architecture/adr/`), never done ad hoc.
+`the-inclusionist-docs · docs/2-Architecture/adr/`), never done ad hoc.
 
 This doc is the policy; each concrete "here we do NOT normalize to the last step" decision is its own ADR, linked below.
 

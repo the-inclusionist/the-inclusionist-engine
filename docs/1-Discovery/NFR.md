@@ -5,8 +5,8 @@ The project's hard, cross-cutting constraints — the **testable layer** of the 
 as an **ADR**.
 
 > **This is the testable derivation of the constitution.** The 10 pillars are the DECISION
-> **[ADR-0010](../2-Architecture/adr/ADR-0010-non-negotiable-pillars.yaml)**; the other ratified decisions are their
-> own ADRs in `../2-Architecture/adr/`; the legal/compliance analysis is in `../research/compliance-legal.md`. NFR
+> **[ADR-0010](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0010-non-negotiable-pillars.yaml)**; the other ratified decisions are their
+> own ADRs in `the-inclusionist-docs · docs/2-Architecture/adr/`; the legal/compliance analysis is in `../research/compliance-legal.md`. NFR
 > carries only the **testable thresholds** (the verifiable form of each pillar).
 
 Where a requirement is machine-verifiable, it carries a **threshold** (the testable part).

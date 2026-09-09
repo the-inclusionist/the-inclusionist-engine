@@ -2,10 +2,10 @@
 
 > ⚠️ **Resumos de engenharia, NÃO aconselhamento jurídico.** As sínteses de leis (LGPD, COPPA, PIPL/China,
 > GDPR/Nórdicos, ABNT, fontes de fomento) precisam ser **validadas com jurídico** antes de publicar/captar. A confiança
-> de cada ponto está marcada. Consolida a análise que estava em `../2-Architecture/adr/ADR-0010-non-negotiable-pillars.yaml` (P4/P5/P6/P10).
+> de cada ponto está marcada. Consolida a análise que estava em `the-inclusionist-docs · docs/2-Architecture/adr/ADR-0010-non-negotiable-pillars.yaml` (P4/P5/P6/P10).
 >
 > As **regras testáveis** derivadas daqui estão em [`../1-Discovery/NFR.md`](../1-Discovery/NFR.md) (RN-01..04, ABNT
-> ¼×½). As **decisões** (lei-local-vence, identidade-via-gov, GPL-3.0, arte-não-FOSS) vão em `../2-Architecture/adr/`.
+> ¼×½). As **decisões** (lei-local-vence, identidade-via-gov, GPL-3.0, arte-não-FOSS) vão em `the-inclusionist-docs · docs/2-Architecture/adr/`.
 
 ## 1. Modelo de prioridade — "a lei local da região de implantação vence"
 
@@ -78,8 +78,8 @@ Padrões que reforçam os pilares e devem entrar no mapa de conformidade:
 - **EN 301 549 / EAA (UE) — acessibilidade:** navegação **sem depender de texto** (ícones intuitivos + pistas visuais;
   ex.: os 4 dígitos do filtro = 4 bichinhos com cores primárias/secundárias); **dica quando travado** (3 min sem
   progresso → setas, instruções de botão, animação-demo) sem gerar ansiedade; **design limpo** (sem explosão de cor/som
-  — autismo). → operacionalizado em [ADR-0005](../2-Architecture/adr/ADR-0005-no-login-access-teacher-activity-code.yaml)
-  e [ADR-0006](../2-Architecture/adr/ADR-0006-ethical-engagement-wellbeing.yaml).
+  — autismo). → operacionalizado em [ADR-0005](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0005-no-login-access-teacher-activity-code.yaml)
+  e [ADR-0006](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0006-ethical-engagement-wellbeing.yaml).
 - **China "Youth Mode":** trava de **40 min** contra fadiga visual/mental (→ ADR-0006 + NFR).
 - **Padrão de transparência nórdico:** mesmo com dados na escola, o jogo permite **baixar todas as progressões**
   (portabilidade/transparência).

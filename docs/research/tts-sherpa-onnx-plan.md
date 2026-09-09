@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
 # Neural TTS on sherpa-onnx-wasm — integration plan (ADR-0022)
 
-Runtime decided in **[ADR-0022](../2-Architecture/adr/ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml)**: run VITS/Piper
+Runtime decided in **[ADR-0022](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml)**: run VITS/Piper
 `.onnx` in the browser via **sherpa-onnx compiled to WebAssembly** (k2-fsa), replacing the discontinued
 `@mintplex-labs/piper-tts-web`. This doc is the research-first plan the Dev builds from.
 

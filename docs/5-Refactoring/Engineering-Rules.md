@@ -14,7 +14,7 @@ covered by it, we do **not** add a separate rules doc — that plan carries them
 
 - A deliberate architectural change is a **new YADR ADR** that **supersedes** the one it replaces
   (`metadata.status: "superseded by ADR-NNNN"`) — never an edit to an accepted record, never a pile of additive ADRs.
-- **ADRs are modified during a sprint** and live in [`../2-Architecture/adr/`](../2-Architecture/adr/) — **not** in
+- **ADRs are modified during a sprint** and live in [`the-inclusionist-docs · docs/2-Architecture/adr/`](../2-Architecture/adr/) — **not** in
   the sprints folder.
 
 > Author's guardrail: *"an LLM 'likes' to solve a problem by writing more, not by revising."* The antidote is

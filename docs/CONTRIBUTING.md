@@ -72,7 +72,7 @@ reasonably expects it to end up free. Here it does not, and finding that out aft
 Tier **T2** (educational platform, LGPD/child-data). We adopt a **lean subset** of a fullstack SDD schema — each
 artifact is either **adopted now**, a **deferred-but-homed stub** (records where/when/how it activates), or an
 **explicit rejection**. The governing decision, with the full adopt/defer/reject matrix and rationale, is
-**[ADR-0003](docs/2-Architecture/adr/ADR-0003-tiered-sdd-documentation-subset.yaml)** — read it before adding or
+**[ADR-0003](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0003-tiered-sdd-documentation-subset.yaml)** — read it before adding or
 dropping a doc type.
 
 **Cut rule:** every statement in a doc is **either** (a) reducible to a machine-verifiable checklist/test
@@ -104,7 +104,7 @@ So we **split by layer**:
 > **Layer boundary (Dev's rule):** `1-Discovery/` is **software/engine only**; all pedagogical content — activities,
 > learning objectives, curriculum, pedagogical fundamentals — lives in `docs/educational/`. Which educational
 > artifacts we adopt/defer/reject is recorded in
-> [ADR-0004](docs/2-Architecture/adr/ADR-0004-educational-documentation-subset.yaml).
+> [ADR-0004](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0004-educational-documentation-subset.yaml).
 
 The curriculum layer *is* the SRS of learning software, in the domain-native form. Curriculum Map + Learning
 Objectives are recognized instructional-design artifacts, structured/traceable/auditable — which matters for

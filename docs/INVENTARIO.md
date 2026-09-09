@@ -8,6 +8,15 @@ regra de qual ganha.
 A lista dos problemas vem de um catálogo externo de 108 problemas de engenharia de software; os
 vereditos vêm de ler **este** repositório. A coluna da evidência é sempre daqui.
 
+> 🔴 **A ÁRVORE DE ADR SAIU DESTE REPOSITÓRIO EM 2026-09-09 (ADR-0123)** e vive em
+> [`the-inclusionist-docs`](https://github.com/the-inclusionist/the-inclusionist-docs), no mesmo caminho.
+> As **cinquenta e cinco** citações de `docs/2-Architecture/adr/…` na coluna da evidência **ficam como
+> estão**, e a decisão é a mesma que o ADR-0057 toma sobre a prosa de um registo: aquilo é EVIDÊNCIA de uma
+> leitura feita numa data, não um índice de onde procurar hoje. Reescrevê-las tornaria falsa a única coluna
+> deste ficheiro que promete ser verificável.
+> 📌 As citações em PROSA do resto da documentação foram reapontadas, porque ali o caminho serve para o leitor
+> ir lá — aqui serve para dizer o que foi lido.
+
 ## O que torna este ficheiro falso
 
 Três coisas, e todas as três alguém vai fazer a seguir a ler isto:

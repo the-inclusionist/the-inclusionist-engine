@@ -2,7 +2,7 @@
 # Por que ONNX e não NCNN para o TTS neural (estudo)
 
 Justifica a escolha do runtime **ONNX** (via sherpa-onnx-wasm) em vez de **NCNN** (via sherpa-ncnn), decidida em
-**[ADR-0022](../2-Architecture/adr/ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml)**.
+**[ADR-0022](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0022-tts-sherpa-onnx-wasm-runtime.yaml)**.
 
 ## O que o estudo confirmou
 

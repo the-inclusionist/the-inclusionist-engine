@@ -5,7 +5,7 @@ Two distinct UIs, two approaches:
 ## DOM educational activities (Duolingo-style / Playground, ex-Quizizz — out-of-engine)
 
 A real, component-rich UI. Architecture decided in
-**[ADR-0002](../2-Architecture/adr/ADR-0002-dom-activities-ui-light-dom-web-components.yaml)**:
+**[ADR-0002](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0002-dom-activities-ui-light-dom-web-components.yaml)**:
 
 - **Web Components (Custom Elements) in light DOM** — **no Shadow DOM** (it breaks cross-boundary ARIA references:
   `aria-labelledby` / `aria-activedescendant` / `aria-controls`; a11y pillar #1 wins). The footgun is Shadow DOM

@@ -8,7 +8,7 @@ relatorio-<year>.md      e.g. relatorio-2027.md
 ```
 
 `scripts/check-annual-report.mjs` runs in CI and **fails the build when a year that owed a report has
-none**. The record is [ADR-0053](../2-Architecture/adr/ADR-0053-the-annual-report-is-a-ci-gate-or-it-is-nothing.yaml);
+none**. The record is [ADR-0053](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0053-the-annual-report-is-a-ci-gate-or-it-is-nothing.yaml);
 the work item was issue #95.
 
 ## Why a gate and not a reminder

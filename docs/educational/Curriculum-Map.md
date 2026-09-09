@@ -34,7 +34,7 @@ tem desenvolvida** a habilidade necessária para jogar aquele jogo, ela **contin
 
 - Cada objetivo carrega, além do código BNCC, seu(s) **pré-requisito(s)** segundo o mapa de foco Reúna.
 - A busca por atividade também é por **taxonomia de Bloom** e **habilidade cognitiva** (para uso por
-  psicopedagogos/neuropsicólogos/fono/T.O.) — ver [ADR-0005](../2-Architecture/adr/ADR-0005-no-login-access-teacher-activity-code.yaml).
+  psicopedagogos/neuropsicólogos/fono/T.O.) — ver [ADR-0005](https://github.com/the-inclusionist/the-inclusionist-docs/blob/main/docs/2-Architecture/adr/ADR-0005-no-login-access-teacher-activity-code.yaml).
 
 ## Como usar
 
