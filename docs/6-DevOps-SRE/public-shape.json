@@ -556,6 +556,7 @@
       "$",
       "actionOf",
       "activateScreens",
+      "arestaDoJogador",
       "attractOnInput",
       "clearWaitingBadge",
       "closeOverlayById",
@@ -658,6 +659,7 @@
     ],
     "interface TouchBindingsCtx": [
       "$",
+      "arestaDoJogador",
       "attractOnInput",
       "defer?",
       "getControls",

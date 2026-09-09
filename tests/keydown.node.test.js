@@ -22,6 +22,10 @@ import { actionForCode } from '../app/js/input/keyboard-runtime.js';
 // jogo lê, e o mapa de origens ao lado dele é o que a alternância vai perguntar.
 import {
   keys as keysReais, origemDaTecla, marcarTecla, marcarTeclaSemOrigem, soltarTecla, soltarTodas,
+  // 📌 O AUTÓMATO TAMBÉM ENTRA A SÉRIO, e pela mesma razão do parágrafo acima: um `arestaDoJogador` de mentira
+  // aqui afirmaria que a minha cópia concorda com a minha asserção. Com o par verdadeiro, o `entradaDe` que o
+  // caso lê é o mesmo que a alternância vai perguntar.
+  arestaDoJogador, entradaDe, esquecerEntradas,
 } from '../app/js/input/state.js';
 import { carimbarOrigem } from '../app/js/input/origem-sintetica.js';
 import {
@@ -496,6 +500,7 @@ function mkCtx(over = {}) {
     heldKeys,
     marcarTecla,
     marcarTeclaSemOrigem,
+    arestaDoJogador,
     soltarTecla,
     isOneButton: () => !!over.oneButton,
     actionOf: (code, i) => actionForCode(schemes[i] || {}, code),
@@ -674,6 +679,42 @@ describe('initKeydown — o efeito de cada ramo', () => {
     ));
     expect(heldKeys.has('KeyJ')).toBe(true);
     expect(origens.get('KeyJ')).toBe('olhos');
+  });
+
+  it('🎯 [Sequência] o carimbo ALIMENTA o autómato: olhar vira o transporte em uso, e uma tecla premida devolve o teclado', () => {
+    // 🔴 O CASO QUE FALTAVA À FIAÇÃO INTEIRA, e a medição que o pediu é dura: até 2026-09-09 o
+    // `arestaDoJogador` tinha ZERO chamadores em produção, logo `entradaDe(i).emUso` respondia `teclado` a
+    // toda a gente, para sempre. Com isso a recusa da cláusula 3 do ADR-0113 NUNCA dispara — a criança que
+    // joga por webcam consegue desligar a alternância de que a entrada dela depende, e nada o diz.
+    //
+    // ⚠️ É SEQUÊNCIA E NÃO UMA CHAMADA: «apertar uma tecla devolve o teclado» (regra 3 do ADR-0109) não quer
+    // dizer nada sem se ter saído dele.
+    esquecerEntradas();
+    const { ctx } = mkCtx();
+    const api = initKeydown(ctx);
+
+    api.onKeydown(carimbarOrigem(
+      { code: 'KeyJ', altKey: false, ctrlKey: false, isTrusted: false, preventDefault: () => {} },
+      'olhos',
+    ));
+    expect(entradaDe(0).emUso, 'o carimbo não chegou ao autómato: a webcam continua a ser lida como teclado').toBe('olhos');
+
+    fire(api, 'KeyJ');
+    expect(entradaDe(0).emUso, 'uma tecla premida a sério tinha de devolver o teclado').toBe('teclado');
+    esquecerEntradas();
+  });
+
+  it('⚠️ o sintético SEM assinatura não move o autómato — inventar-lhe `teclado` desligaria a alternância de quem joga por olhar', () => {
+    esquecerEntradas();
+    const { ctx } = mkCtx();
+    const api = initKeydown(ctx);
+    api.onKeydown(carimbarOrigem(
+      { code: 'KeyJ', altKey: false, ctrlKey: false, isTrusted: false, preventDefault: () => {} },
+      'olhos',
+    ));
+    fire(api, 'KeyJ', { isTrusted: false });     // ninguém assinou: origem desconhecida
+    expect(entradaDe(0).emUso, 'uma aresta sem origem foi contada como teclado').toBe('olhos');
+    esquecerEntradas();
   });
 
   it('⚠️ um sintético que NINGUÉM assinou funciona, mas não finge saber de onde veio', () => {

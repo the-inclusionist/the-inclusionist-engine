@@ -457,6 +457,19 @@ export interface KeydownCtx {
    * que ela existe, e é justamente ele quem produz os eventos que caem aqui.
    */
   marcarTeclaSemOrigem: (code: string) => void;
+  /**
+   * ESTA ARESTA É DESTE JOGADOR, E VEIO DAQUI (ADR-0113 cláusula 4, issue #127) — `input/state.arestaDoJogador`.
+   *
+   * 🔴 CAMPO OBRIGATÓRIO, e a medição é a razão: em 2026-09-09 o autómato do ADR-0109 tinha ZERO alimentadores
+   * em produção, logo `entradaDe(i).emUso` respondia `teclado` a toda a gente — para sempre, e sem erro
+   * nenhum. Com isso, a recusa da cláusula 3 nunca dispara: a criança que joga por webcam consegue desligar a
+   * alternância de que a entrada dela depende, e nada o diz.
+   *
+   * ⚠️ E É AQUI QUE ELE VALE, e não no teclado que já é o padrão: o evento sintético que a webcam despacha
+   * chega carimbado (`input/origem-sintetica`), então é por esta linha que `olhos`/`rosto`/`gestos`/`fala`
+   * passam a ser o transporte em uso. Uma tecla premida a sério devolve o teclado, que é a regra 3 do ADR-0109.
+   */
+  arestaDoJogador: (jogador: number, origem: Transporte) => void;
   soltarTecla: (code: string) => void;
   /** `let oneButton` do game.js (empatia motora) → getter. */
   isOneButton: () => boolean;
@@ -562,6 +575,12 @@ export function initKeydown(ctx: KeydownCtx): KeydownApi {
         // evento sintético que ninguém assinou — e nesse caso a porta estreita APAGA a entrada anterior, em
         // vez de deixar a tecla herdar de quem a segurou da última vez. Ver `marcarTeclaSemOrigem`.
         if (origem) ctx.marcarTecla(code, origem); else ctx.marcarTeclaSemOrigem(code);
+        // 📌 A ARESTA ALIMENTA O AUTÓMATO NO MESMO PONTO E SOB A MESMA CONDIÇÃO em que a origem é gravada na
+        // tecla — origem desconhecida não é aresta de aparelho nenhum, e inventar-lhe `teclado` faria uma
+        // tecla do toque desligar a alternância de quem joga por olhar, sem erro e no meio da partida.
+        // ⚠️ Tecla genérica (sem dono) conta para o jogador 1, que é a mesma convenção do `ui/menu-nav`: quem
+        // carrega numa tecla que não é de assento nenhum está a jogar no primeiro assento.
+        if (origem) { const dono = ctx.whichPlayer(code); ctx.arestaDoJogador(dono < 0 ? 0 : dono, origem); }
         return;
       }
     }

@@ -322,6 +322,16 @@ export interface TouchBindingsCtx {
    * estado global da engine (um teste, um segundo consumidor), e o par é o que ele injecta.
    */
   marcarTecla: (code: string, origem: Transporte) => void;
+  /**
+   * ESTA ARESTA É DESTE JOGADOR, E VEIO DO TOQUE (ADR-0113 cláusula 4, issue #127) —
+   * `input/state.arestaDoJogador`.
+   *
+   * 🔴 OBRIGATÓRIO, e é aqui que a troca de aparelho fica VISÍVEL: o toque é o transporte que a criança usa
+   * ao lado do teclado, e sem esta linha o autómato responde `teclado` mesmo com o dedo no ecrã — logo a
+   * alternância lida seria a do teclado, no aparelho errado. 📌 O `onTouchControlsShown` do cartucho
+   * (`main.ts:1695`) é o remendo que existe hoje exactamente para compensar esta falta.
+   */
+  arestaDoJogador: (jogador: number, origem: Transporte) => void;
   soltarTecla: (code: string) => void;
   /**
    * O conjunto para LER — a decisão pura pergunta que teclas já estão seguradas.
@@ -391,6 +401,11 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
       for (const { playerIndex, edge } of d.edges) {
         const p = players[playerIndex];
         if (p) p[edge] = true;
+        // 📌 A ARESTA POR JOGADOR, ao lado da borda que ela levanta — e não uma vez por toque: o mesmo código
+        // pode pertencer a mais de um assento (`d.edges` é construído com `includes` sobre o esquema de cada
+        // um), e o transporte em uso é uma pergunta POR CRIANÇA. Marcar só o jogador 0 daria a alternância do
+        // primeiro assento a quem joga no segundo.
+        if (p) ctx.arestaDoJogador(playerIndex, 'toque');
       }
     }
     if (d.hideTips) ctx.hideTips();

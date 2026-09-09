@@ -191,6 +191,26 @@ the adult what to install. There the silence keeps a state that is already actio
 from ADR-0113 clause 3, which lives in the same file. There the DEVICE requires latching, the control exists,
 and it is disabled with the reason, reachable so the child can read it. Here there is no reason that helps.
 
+### 🔴 `KeydownCtx` and `TouchBindingsCtx` gain `arestaDoJogador`, REQUIRED — the automaton had no feeder
+
+| what changed | what a consumer does |
+|---|---|
+| **`KeydownCtx` gains `arestaDoJogador(jogador, origem)`** | Pass `arestaDoJogador` from `@the-inclusionist/engine/input/state.js` — the same module you already take `marcarTecla` from. One line. |
+| **`TouchBindingsCtx` gains `arestaDoJogador(jogador, origem)`** | The same one line, in the touch context. |
+
+📏 **Measured, and it is why the field is required rather than optional:** before 2026-09-09
+`input/state.arestaDoJogador` had **zero callers in production**, so `entradaDe(i).emUso` answered `teclado`
+for everybody, for ever, with no error anywhere. With that, ADR-0113 clause 3 can never fire — the child who
+plays by webcam can switch **off** the latching her input depends on, and nothing says so. A silent default
+here is not the status quo made safe; it is an accessibility rule that cannot run.
+
+📌 **Only `game-platformer` is affected** — measured across the catalogue: it is the one consumer of
+`initKeydown` and of `initTouchBindings`. `game-soccer` uses `initGamepad` (untouched by this change);
+`pixi-15-puzzle`, `2048`, `whackwhack` and `game-chess` handle their own keys.
+
+📌 And when it is passed, the cartridge's `onTouchControlsShown` patch (`main.ts:1695`) becomes removable: it
+exists today to compensate for exactly this missing edge.
+
 ### 📌 One entry in the shape portrait moved and is NOT a break — say so before someone reads the diff
 
 `ui/settings-motor.JogadorDaAlternancia` reads `JogadorDaAlternanciaDaAresta` in the portrait instead of

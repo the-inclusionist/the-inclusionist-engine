@@ -300,7 +300,7 @@ describe('wantsForcedTouch', () => {
 
 /** ctx mínimo: `initTouchBindings` não toca em DOM nenhum enquanto `attach()` não for chamado. */
 function makeCtx(over = {}) {
-  const calls = { pause: 0, hideTips: 0, show: 0, defer: [], origens: new Map() };
+  const calls = { pause: 0, hideTips: 0, show: 0, defer: [], origens: new Map(), arestas: [] };
   const players = over.players || [mkPlayer(SOLO)];
   const heldKeys = over.heldKeys || new Set();
   const ctx = {
@@ -314,6 +314,9 @@ function makeCtx(over = {}) {
     // querem afirmar QUE APARELHO produziu a tecla, e não só que ela entrou.
     heldKeys,
     marcarTecla: (code, origem) => { heldKeys.add(code); calls.origens.set(code, origem); },
+    // 📌 O duplo GUARDA A LISTA em vez de contar: a pergunta «que aparelho está a produzir as arestas» é POR
+    // JOGADOR, e um contador não distinguiria dois toques do jogador 1 de um toque de cada assento.
+    arestaDoJogador: (jogador, origem) => { calls.arestas.push([jogador, origem]); },
     soltarTecla: (code) => { heldKeys.delete(code); calls.origens.delete(code); },
     attractOnInput: () => false,
     showTouchControls: () => { calls.show++; },
@@ -356,6 +359,22 @@ describe('doTouch — a decisão carimbada no mundo', () => {
     api.doTouch('action2', true);
     expect(players[0].jumpEdge).toBe(true);
     expect(players[1].jumpEdge).toBe(false); // 'KeyJ' não está no esquema dele
+  });
+
+  it('🎯 a aresta do TOQUE é por JOGADOR, e só chega a quem tem o código (ADR-0113 cláusula 4)', () => {
+    // 🔴 O defeito que isto prende: marcar sempre o jogador 0 daria ao segundo assento a alternância do
+    // primeiro — e a alternância é o ajuste de quem não consegue manter uma tecla premida, logo o erro cai
+    // exactamente sobre quem depende dela. Medido em 2026-09-09: até esta linha, `arestaDoJogador` tinha ZERO
+    // chamadores em produção e o autómato respondia `teclado` a toda a gente.
+    const { api, calls } = makeCtx({ players: [mkPlayer(SOLO), mkPlayer(P2B)] });
+    api.doTouch('action2', true);
+    expect(calls.arestas, 'a aresta do toque não chegou ao autómato, ou chegou ao assento errado').toEqual([[0, 'toque']]);
+
+    // 🎯 E O SEGUNDO ASSENTO, que é o que separa «marca o jogador certo» de «marca sempre o 0»: com o controle
+    // do J2 a produzir o código, a aresta é DELE. Sem esta metade, fixar `0` na fiação passaria despercebido.
+    const dois = makeCtx({ controls: P2B, players: [mkPlayer(SOLO), mkPlayer(P2B)] });
+    dois.api.doTouch('action2', true);
+    expect(dois.calls.arestas, 'o toque do segundo assento foi contado no primeiro').toEqual([[1, 'toque']]);
   });
 
   it('[Boundary] apertar com a tecla já segurada não re-levanta a borda', () => {
