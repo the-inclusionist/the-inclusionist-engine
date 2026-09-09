@@ -123,7 +123,26 @@ export interface EngineHost {
  * "pausado" para navegar os próprios menus, porque a engine não tinha por onde ouvir "eu não tenho fases".
  */
 export interface Declinios {
-  /** Sem menu de pausa por tela (um quiz não tem). */
+  /**
+   * Sem menu de pausa por tela.
+   *
+   * 🔴 O COMENTÁRIO DESTA LINHA DIZIA «(um quiz não tem)», E ESSA LEITURA CUSTOU UM REGISTO REVERTIDO. Em
+   * 2026-09-09 este campo foi aposentado (ADR-0120) porque a razão dele parecia ter morrido: a engine passou a
+   * montar o cartão de pausa, logo um jogo sem pausa própria já não precisava de declinar. Verdade — para o
+   * consumidor que vive nesta árvore.
+   *
+   * 📏 MEDIDO NO CATÁLOGO, DEPOIS: `game-chess`, `pixi-15-puzzle`, `game-2048` e `game-whackwhack` usam este
+   * campo — QUATRO de cinco jogos — e **nenhum deles por não ter pausa**. Eles têm a sua, ou não querem a
+   * navegação de menu da engine por cima do teclado deles. O `pixi-15-puzzle` escreveu o custo ao lado da
+   * própria declaração: «if `semMenuDePausa` were omitted, every arrow, Enter and Space would start being
+   * eaten the moment anything created an element with a pause id». Removê-lo tira o teclado a quem joga com
+   * setas. Revertido em `7f256f0`; ADR-0121.
+   *
+   * ⚠️ ENTÃO O CAMPO TEM DOIS SIGNIFICADOS E É ESSA A AMBIGUIDADE QUE PERMITIU O ERRO: «não tenho pausa
+   * nenhuma» e «tenho a minha, não montes a tua». Quem o ler para decidir alguma coisa tem de saber qual dos
+   * dois está a medir. A escolha entre separar os dois nomes e migrar os quatro jogos para a pausa da engine
+   * é a issue #132, e é do Dev.
+   */
   readonly semMenuDePausa?: boolean;
   /** Sem assistente de mapeamento de controle. */
   readonly semAssistenteDePad?: boolean;
