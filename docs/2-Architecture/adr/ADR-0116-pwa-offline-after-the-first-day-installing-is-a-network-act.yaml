@@ -15,7 +15,11 @@ metadata:
        (buscado na rede com os modelos) e se conseguir usar cdnjs/jsdelivr é ótimo»"
     - "ADR-0114 — SUPERSEDED IN PART: the clause that a CDN fetch is disqualifying because it is «a network
        dependency at first use», and the attribution of that reason to the Dev"
-    - "ADR-0010 pillar 8 (offline/PWA) — unchanged in text; this record says what it MEASURES"
+    - "ADR-0010 pillar 8 (offline/PWA). ⚠️ ERRATUM, same day: this line first read «unchanged in text», and it
+       stopped being true within the hour — the Dev asked for the clarification to live in the PILLAR itself
+       («é preciso esclarecer no pilar que o correto é PWA first day online then offline first»), and pillar 8
+       now carries it as an erratum of its own. It is erratum there and not supersession because the pillar read
+       `Offline — PWA (base)` and never said anything about the first day at all"
     - "issue #129 — where the runtime comes from; this record makes its comparison a fair one"
   informed: []
 
