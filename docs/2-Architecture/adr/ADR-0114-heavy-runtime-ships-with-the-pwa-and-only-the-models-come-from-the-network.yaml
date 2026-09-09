@@ -1,0 +1,172 @@
+---
+metadata:
+  status: "accepted"
+  supersedes-in-part: [ADR-0094]
+  date: 2026-09-08
+  decision-makers: [Dev]
+  consulted:
+    - "The Dev's decision of 2026-09-08, verbatim: «Concordo com 3 (buscado na rede com os modelos) e se
+       conseguir usar cdnjs/jsdelivr é ótimo», followed by «E assim eu sigo sua recomendação», quoting the
+       runtime-in-the-PWA option in full"
+    - "His pillar-8 clarification, verbatim: «O jogo deve ser possível de jogar sozinho sem internet, mas
+       recursos extras só estão disponíveis via internet. Isso significa que o primeiro bloco a ser armazenado
+       em cache para PWA deve conter todo o necessário para jogar sozinho, com o cache acumulando mais
+       recursos conforme vai se baixando os extras pela internet»"
+    - "His scope cut, verbatim: «Jogar on LAN não neste primeiro momento»"
+    - "ADR-0110 — four neural voices, fetched by the engine. It decided about the MODELS and said nothing
+       about the RUNTIME; this record is the half it left open"
+    - "ADR-0094 — SUPERSEDED IN PART: the neural voice arrives through a DOOR THE GAME OPENS. The 135 MB
+       argument is intact and is exactly why the engine pays it once, in the app rather than in the package"
+    - "ADR-0065 §5 — one source, no `ncnn`, no `int8` (int8 measured ~3x SLOWER in the WASM backend)"
+    - "ADR-0010 pillar 8 (offline/PWA) and pillar 9 (LAN + store-and-forward telemetry)"
+    - "issue #129 — where a heavy runtime comes from, blocking three subsystems at once"
+    - "issue #11 — MediaPipe face/eyes/gestures; `ui/webcam.ts:62` is today the engine's ONLY hand-written CDN fetch"
+  informed: []
+
+title: A heavy runtime ships WITH the PWA and only the models come from the network — and the first precache block is a game a child can play alone
+
+context-and-problem-statement: |
+  📏 THE MEASUREMENT THAT MADE THIS ONE QUESTION AND NOT THREE: `ui/webcam.ts:62` is the ONLY fetch of an
+  external runtime in the whole engine. There is no policy — there is a CDN written by hand in one file. Three
+  subsystems are waiting on the same answer, and answering them separately would produce three mechanisms,
+  three ways to fail offline, and none of them visible to the adult installing the game in a school:
+
+    · the NEURAL VOICE (ADR-0110's four voices, and the ~135 MB of `onnxruntime-web` behind them);
+    · FACE / EYES / GESTURES (issue #11, MediaPipe);
+    · the WEBGAZER that `ui/webcam.ts` fetches today, which violates pillar 8 as written.
+
+  ⚠️ AND THE RECORDS TREAT AS ONE THING TWO THINGS THAT BEHAVE COMPLETELY DIFFERENTLY. The RUNTIME is small,
+  fixed, identical for every child, and has to be present before any voice can speak at all. The MODELS are
+  ~60 MB each, chosen per child and per language, and are useless until one is picked. ADR-0110 decided about
+  the second and was silent about the first.
+
+decision-drivers:
+  - "Pillar 8: a child in a school with no network must be able to play, alone, today"
+  - "Pillar 1: the target is a public-school Chromebook, not a developer's laptop"
+  - "ADR-0094's measured objection stands: 135 MB of WASM is not a cartridge's to pay"
+  - "Three hundred games must not each solve this, or the ones that forget go silent in silence (issue #91)"
+  - "One mechanism, one way to fail, one thing to explain to the adult who installs it"
+
+considered-options:
+  - "R1 · The runtime travels in the npm package"
+  - "R2 · The cartridge opens the door, as ADR-0094 has it"
+  - "R3 · Fetched from the network with the models"
+  - "R4 · The runtime is VENDORED IN THE APP'S `dist` and precached; only the models come from the network"
+
+pros-and-cons-of-the-options:
+  R1:
+    good:
+      - "Present offline with no extra mechanism at all; a consumer cannot forget it."
+      - "One version, resolved by the package manager, with no vendoring step to keep in sync."
+    bad:
+      - "🔴 Every `npm ci` in three hundred repositories pays ~135 MB, and most of them never open a browser."
+      - "ADR-0094 measured and refused exactly this; nothing about the measurement has changed."
+  R2:
+    good:
+      - "A game that never speaks pays nothing, which is the whole of ADR-0094's argument."
+      - "Already built and shipped — `carregarVozNeural` exists and works."
+    bad:
+      - "📏 Measured in issue #91: three of six local games simply forgot the line and had NO neural voice, with nothing saying so."
+      - "Contradicts ADR-0065 §3's written promise that a cartridge «does not have to know one exists»."
+      - "Three hundred games each answering a speech-synthesis question is the ADR-0106 §2 defect at catalogue scale."
+  R3:
+    good:
+      - "The package and the app both stay light; nothing is paid until a child asks for speech."
+      - "One mechanism for runtime and models, which is easy to explain."
+    bad:
+      - "🔴 Breaks pillar 8 at the first use: a school with no network gets no voice at all, ever."
+      - "Puts the runtime behind the same failure as a 60 MB model, when it is small and always needed."
+  R4:
+    good:
+      - "Pillar 8 becomes enforceable: the runtime is in the precache block, so a machine that never had a network has it."
+      - "`npm ci` in 300 repositories pays nothing and the published package stays light — ADR-0094's argument honoured."
+      - "A cartridge cannot forget it, so issue #91's silent mute cannot recur."
+      - "One policy answers voice, face/eyes/gestures and WebGazer, and retires the hand-written CDN."
+    bad:
+      - "The app's `dist` grows by the runtime, including for games that never speak."
+      - "Vendored means PINNED: upgrading becomes a commit in the app rather than a version range."
+      - "Thirty machines starting together still make thirty MODEL downloads; ADR-0110 named this and it is still true."
+
+decision-outcome:
+  chosen-option:
+    link: "R4 — the runtime ships with the PWA; only the models come from the network"
+    justification: |
+      **R4, which is R3 with the split made explicit.** The Dev agreed with R3 and then took the recommendation
+      that refines it, so the record states both halves as one rule:
+
+      1. **THE RUNTIME SHIPS WITH THE APPLICATION.** It is vendored into the app's `dist` — not into the npm
+         package — and the service worker precaches it. `npm ci` in three hundred repositories pays nothing, the
+         published package stays light, and the runtime is present on a machine that has never had a network.
+      2. **ONLY THE MODELS COME FROM THE NETWORK**, which is what ADR-0110 already decided.
+      3. **THE FIRST PRECACHE BLOCK IS A PLAYABLE GAME.** In the Dev's words: everything needed to play alone
+         goes in the first block, and the cache ACCUMULATES as extras are downloaded. Offline is not «the whole
+         catalogue or nothing»; it is a floor that always holds, plus extras that arrive when there is a network.
+      4. **LAN IS OUT OF SCOPE FOR NOW** — his cut, recorded so it is a decision and not an omission. Pillar 9
+         is unchanged; what changes is that nothing in this delivery waits for it.
+
+      📏 WHERE THE MODELS COME FROM — MEASURED, not assumed, because he asked. `https://piper.ttstool.com/` was
+      read on 2026-09-08: it serves its own runtime from its own origin (`piper_phonemize.js`, `bundle.js`,
+      `inference-worker.js`) and fetches models from
+      **`https://huggingface.co/rhasspy/piper-voices/resolve/main/`**. All four voices ADR-0110 named answer 200
+      there, with `Access-Control-Allow-Origin: *`, so a PWA can fetch them cross-origin:
+
+        · `pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx`  — 63 201 294 B
+        · `en/en_US/ryan/medium/en_US-ryan-medium.onnx`    — 63 201 294 B
+        · `en/en_US/amy/medium/en_US-amy-medium.onnx`      — 63 201 294 B
+        · `es/es_MX/claude/high/es_MX-claude-high.onnx`    — 63 122 309 B
+
+      The per-voice `.onnx.json` config and the repository's `voices.json` index also answer 200. ⚠️ The three
+      identical byte counts are consistent with one architecture per quality tier and are NOT evidence that the
+      files are the same; nothing here depends on that.
+
+      ⚠️ AND ON cdnjs / jsDelivr, WHICH HE ASKED FOR: measured, they can serve the RUNTIME —
+      `@mintplex-labs/piper-tts-web@1.0.5` and `onnxruntime-web@1.29.0` both answer from
+      `cdn.jsdelivr.net/npm/`. **They are still the wrong answer for it**, and for the reason he himself gave in
+      the same message: a CDN fetch is a network dependency at first use, and the school with no network gets
+      nothing. Vendoring is what makes pillar 8 true rather than intended. For the MODELS the question does not
+      arise: they live on Hugging Face, not on npm or GitHub, and jsDelivr's GitHub CDN does not serve files of
+      this size.
+  consequences:
+    good:
+      - "Pillar 8 becomes enforceable rather than aspirational: the floor is a precache block, and it is testable"
+      - "`npm ci` in 300 repositories pays nothing; the published package stays light (ADR-0094's argument, honoured)"
+      - "Issue #91's silent-mute disappears: the engine owns the runtime, so a cartridge cannot forget it"
+      - "One policy answers voice, face/eyes/gestures and WebGazer — and retires the hand-written CDN in `ui/webcam.ts:62`"
+      - "A school laboratory can be seeded once and the machines never fetch the runtime again"
+    bad:
+      - "The app's `dist` grows by the runtime, and every game's deploy carries it — including games that never speak"
+      - "Vendored means PINNED: upgrading the runtime becomes a commit in the app, not a version range"
+      - "Thirty machines starting together still make thirty model downloads. ADR-0110 named this and it is still true"
+      - "A child with no network gets the fallback voice, which on a school Chromebook may not exist in Portuguese"
+  confirmation: |
+    ⚠️ NOT YET BUILT. Written before the code so the code cannot quietly put the runtime back in the package
+    «just for now», which is the same failure ADR-0110 wrote itself to prevent for the models.
+
+    The gates it owes:
+
+    · NO RUNTIME AND NO MODEL TRAVELS IN THE NPM PACKAGE — an INVENTORY sieve over what `npm pack` produces,
+      in the shape of `tests/vozes-fora-do-pacote.node.test.js`, which already asserts the model half. ⚠️ A
+      size assertion is not enough: it passes a build that ships one file and drifts.
+    · THE RUNTIME IS IN THE FIRST PRECACHE BLOCK, and the block is a PLAYABLE GAME. Asserted over the
+      generated precache manifest, not over prose — `npm run check:precache` is where it belongs.
+    · ⚠️ AND THE FLOOR IS ASSERTED AS A FLOOR: a case that the first block contains everything a child needs
+      to play ALONE. Without it, «offline works» degrades one convenient exclusion at a time and nobody
+      notices until a school does.
+    · NO HAND-WRITTEN CDN ANYWHERE IN THE ENGINE — `ui/webcam.ts:62` is the one that exists today, and a
+      sieve that names it as the last one turns this record into a rule instead of an intention.
+    · THE MODEL HOST IS NAMED IN ONE PLACE, and `ncnn` and `int8` are refused by the same gate ADR-0065 §5
+      already justifies. `platform/voice-plan.ts` is that place and the gate exists; this record adds the host.
+
+more-information: |
+  Supersedes ADR-0094 in part: the game's door stops being the only path a heavy runtime can arrive by. Its
+  measured argument — 135 MB of `onnxruntime-web` is not a cartridge's to pay — is intact, and is precisely
+  why the engine pays it once, in the application rather than in the package. The door survives as an
+  OVERRIDE, exactly as ADR-0110 left it.
+
+  Completes ADR-0110, which decided the models and was silent on the runtime.
+
+  Deliberately NOT decided here: which runtime is vendored (the `@mintplex-labs/piper-tts-web` in use today is
+  declared DISCONTINUED by its own `package.json`, and three ADRs still name `sherpa-onnx-wasm` — that
+  divergence is its own decision); how a school laboratory avoids N machines fetching N times (pillar 9,
+  named in ADR-0110 and still open); and whether MediaPipe's runtime is the same vendored artefact or a
+  second one.

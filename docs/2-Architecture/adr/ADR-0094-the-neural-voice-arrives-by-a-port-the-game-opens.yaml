@@ -4,6 +4,15 @@ metadata:
   date: 2026-09-06
   supersedes-in-part: [ADR-0093]
   superseded-in-part:
+    - by: ADR-0114
+      what: >-
+        the same door, seen from the RUNTIME rather than the voices. ADR-0110 removed «the only path a voice
+        arrives by»; this removes «the only path a heavy RUNTIME arrives by». 📌 The 135 MB argument is not
+        weakened — it is the reason for the answer: a runtime that no cartridge should pay for is paid ONCE, by
+        the application, vendored into its `dist` and precached by the service worker, so a school machine that
+        never had a network still has it. ⚠️ And the split this record did not make is the whole point: the
+        RUNTIME is small, fixed and needed before any voice speaks; the MODELS are ~60 MB each and chosen per
+        child. The door here survives as the OVERRIDE for a game that wants a different supplier.
     - by: ADR-0110
       what: "the clause that the game's door is the ONLY way a neural voice arrives. ⚠️ The door itself SURVIVES,
              and so does the argument under it — 135 MB of WASM cannot be paid by a game that never speaks. What
