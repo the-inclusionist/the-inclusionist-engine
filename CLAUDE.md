@@ -23,6 +23,15 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
 ## 0. Regra de ouro (operacional — o que mais me guia)
 
 - **Eu faço os commits** (atômicos, **em inglês**, na `main`, com trailer `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`).
+  ⚠️ **`BREAKING CHANGE:` VAI POR ÚLTIMO, depois do `Refs` e do `Co-Authored-By`** — medido em 2026-09-09 com o
+  `conventional-commits-parser` 6.4.0 que o `release-it` usa, e não deduzido. A nota do `BREAKING CHANGE`
+  **captura tudo até ao fim da mensagem**, então com ela no meio os rodapés entram no texto dela e aparecem
+  dentro do CHANGELOG publicado — foi o que se viu no ensaio do 8.0.0-rc.1, com «`Refs ADR-0106` /
+  `Co-Authored-By: …`» impressos dentro de sete entradas de *BREAKING CHANGES*.
+  📌 **E o dois-pontos NÃO é a causa**: `Refs: ADR-0106` vaza exactamente igual a `Refs ADR-0106`. A ordem é a
+  única coisa que muda o resultado (medido nos quatro casos). ⚠️ Um gate sobre mensagens de commit **não foi
+  construído de propósito**: o `actions/checkout` traz profundidade 1, logo em CI ele veria um commit e
+  aprovaria tudo — crivo cego é pior do que nenhum.
   **O Dev roda** o push/deploy e tudo que **GASTA** (cota, dinheiro, ação irreversível).
   ⚠️ **EU RODO NODE** — medido em 2026-09-04: `node v24.14.0`, `npm 11.9.0`. A linha anterior dizia que o Dev
   rodava TODO comando Node porque eu não tinha nenhum, e isso deixou de ser verdade: eu rodo `npm run build`,
