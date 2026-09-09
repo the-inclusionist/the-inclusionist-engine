@@ -40,6 +40,15 @@ E fora do `gate`:
    `../6-DevOps-SRE/CI-QA.md`).
 7. **ADR** — `scripts/validate-adr.py`. Portão que não existia no GitLab: o índice prometia registros
    legíveis por máquina e nada conferia, e cinco de vinte e seis não parseavam.
+   🔴 **E desde 2026-09-09 (ADR-0123) a ÁRVORE não mora aqui**: o trabalho faz checkout do
+   `the-inclusionist-docs` e corre o validador com `--repo engine=.`, que é a parte que **só este lado
+   consegue** — abrir os caminhos de `confirmed-by` marcados `engine:`. No repositório dos registos eles são
+   apenas contados, e o validador diz quantos em toda corrida.
+   ⚠️ **Sem o segredo `DOCS_READ_TOKEN` o trabalho fica DORMENTE**: anuncia que não buscou nada e não
+   conferiu nada, e **não reprova**. É a forma do `check:annual-report` — um portão dormente é um aviso, não
+   um passe — e a razão é a do próprio cabeçalho do `ci.yml`: uma `main` vermelha por motivo administrativo
+   ensina a não ler o vermelho. O `GITHUB_TOKEN` de um workflow não alcança outro repositório privado
+   (medido na corrida `34352635399`, `Not Found`).
 8. **DCO** — `Signed-off-by` em toda PR (ADR-0078). Só em pull request: push do mantenedor já é atribuído
    pelo git.
 9. ⚠️ **SAST + detecção de segredo — MUDARAM DE FERRAMENTA, e por preço.** Eram os templates do GitLab.

@@ -20,6 +20,10 @@
 - **Documentation is actionable:** a doc change becomes a **test** (that verifies it), a **task** (a GitHub issue), or
   an **ADR** (that decides it). With very few exceptions, a doc that transforms into none of these earns its keep only
   as a map/index. Ask "what does this become?" and create it.
+  🔴 **AND AN ADR IS NOT WRITTEN IN THIS REPOSITORY ANY MORE** (2026-09-09, ADR-0123): the records live in
+  [`the-inclusionist-docs`](https://github.com/the-inclusionist/the-inclusionist-docs), one tree for the whole
+  project, with the validator beside them. What stays here is the GATE that opens the confirmations naming
+  this repository — see [`docs/2-Architecture/ADR.md`](docs/2-Architecture/ADR.md).
 - The **map of where everything lives** is [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — **the first doc to open**
   for any task, to find what to read/change. Any structure/name/convention change is reflected there the same commit.
   The AI agent's operating rules are in [`CLAUDE.md`](CLAUDE.md).
