@@ -96,11 +96,31 @@ export interface EstadoDaEntrada {
 export const PADRAO: EstadoDaEntrada = Object.freeze({ emUso: 'teclado', assistidaLigada: false });
 
 /**
- * HÁ ALTERNÂNCIA AGORA?
+ * HÁ ALTERNÂNCIA AGORA? — ⚠️ **NÃO PERGUNTE ISTO A ESTA FUNÇÃO.** Ver o parágrafo abaixo.
  *
  * ⚠️ A prioridade da assistida vem PRIMEIRO, e a ordem é a regra 4 inteira: enquanto ela estiver ligada,
  * nenhum outro aparelho a desliga — nem o teclado, que noutro caso a desligaria. Inverter estas duas linhas
  * é o defeito que trancaria uma criança fora do próprio jogo, e é silencioso.
+ *
+ * @deprecated 🔴 **ESTA FUNÇÃO IMPLEMENTA O MODELO QUE O ADR-0113 SUPERSEDEU**, e fica exportada por ser
+ * superfície publicada (`./input/*.js`) e por o registo ter valor histórico — não por ser a resposta.
+ *
+ * O ADR-0109 decidia a alternância **só pelo aparelho**: assistida ligada → sim; toque → sim; todo o resto
+ * → não. O ADR-0113 retirou essa cláusula, com a razão do Dev: a alternância é um **caps-lock guardado com
+ * o mapeamento do controle**, e o valor que a criança gravou vale.
+ *
+ * 🔴 A DIVERGÊNCIA TEM UMA CRIANÇA CONCRETA, e é a que motivou o registo: quem tem dificuldade motora, joga
+ * no TECLADO e gravou a alternância ligada. Esta função devolve `false` para ela — `teclado` não está em
+ * `COM_ALTERNANCIA_PROPRIA` — e é exactamente o controle que lhe seria retirado. O `latch-scope.alternanciaDe`
+ * devolve `true`, porque lê o que ela gravou.
+ *
+ * ⚠️ E A CLÁUSULA DO TOQUE TAMBÉM CAIU: sob o ADR-0113 o toque é um transporte como os outros — o valor dele
+ * é escolha e fica guardado. Só olhos, rosto, gestos e fala podem recusar-se a DESLIGAR, e essa metade vive
+ * em `latch-scope.alternanciaSempreLigada`, com um conjunto diferente deste e a responder a outra pergunta.
+ *
+ * **A resposta certa é `latch-scope.alternanciaDe(estado.emUso, leitura)`.** O papel que sobra a este
+ * módulo é o que o nome dele diz: QUAL transporte está em uso — que é o que alimenta aquele primeiro
+ * argumento. `tests/alternancia-por-transporte.node.test.js` afirma que esta função continua sem consumidor.
  */
 export function alternanciaAgora(estado: EstadoDaEntrada): boolean {
   if (estado.assistidaLigada) return true;

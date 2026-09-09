@@ -27,6 +27,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { alternanciaAgora } from '../app/js/input/transporte-em-uso.js';
+import { alternanciaDe } from '../app/js/input/latch-scope.js';
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
@@ -122,6 +124,54 @@ describe('a alternância migra para a chave por transporte · o piso que só sob
   });
 });
 
+describe('a alternância migra para a chave por transporte · o modelo superado não pode ser escolhido por engano', () => {
+  // 🔴 O CÓDIGO TEM DUAS FUNÇÕES QUE RESPONDEM «há alternância?», E UMA DELAS É A QUE O ADR-0113 RETIROU.
+  // `transporte-em-uso.alternanciaAgora` decide SÓ PELO APARELHO (a regra do ADR-0109);
+  // `latch-scope.alternanciaDe` lê o que a criança gravou (a regra do ADR-0113). Nenhuma tem consumidor
+  // hoje, então nada está partido — mas quem for ligar a fiação escolhe uma, e escolher a primeira
+  // implementa o modelo aposentado sem que nada o diga.
+  //
+  // ⚠️ ESTE BLOCO TORNA A SUPERSESSÃO EXECUTÁVEL. Um `@deprecated` é prosa; prosa não reprova.
+
+  it('🔴 [Zero] a criança do TECLADO com alternância gravada: as duas funções DIVERGEM, e o registo diz qual vale', () => {
+    const estado = { emUso: 'teclado', assistidaLigada: false };
+    const gravado = { doTransporte: true, doLegado: null, padrao: false };
+
+    // O modelo do ADR-0109: o teclado não tem alternância própria, logo NÃO.
+    expect(alternanciaAgora(estado), 'o modelo superado deixou de dizer o que dizia').toBe(false);
+    // O modelo do ADR-0113: ela gravou, logo SIM. É o controle que a leitura literal lhe tirava.
+    expect(alternanciaDe(estado.emUso, gravado), 'a regra do ADR-0113 deixou de ler o valor gravado').toBe(true);
+  });
+
+  it('⚠️ [Fronteira] e no TOQUE também divergem — a cláusula do toque caiu com a mesma frase', () => {
+    const estado = { emUso: 'toque', assistidaLigada: false };
+    const desligadoPelaCrianca = { doTransporte: false, doLegado: null, padrao: false };
+
+    expect(alternanciaAgora(estado), 'o toque deixou de estar em COM_ALTERNANCIA_PROPRIA').toBe(true);
+    expect(alternanciaDe(estado.emUso, desligadoPelaCrianca), 'o toque deixou de ser escolha').toBe(false);
+  });
+
+  // 📌 E ONDE AS DUAS CONCORDAM, que é o que impede este bloco de parecer uma acusação geral: nos quatro
+  // assistidos a alternância é obrigatória nos DOIS modelos, por razões diferentes e com o mesmo resultado.
+  it('[Feliz] nos quatro assistidos as duas concordam — obrigatória, e ninguém a desliga', () => {
+    for (const t of ['olhos', 'rosto', 'gestos', 'fala']) {
+      expect(alternanciaDe(t, { doTransporte: false, doLegado: false, padrao: false }), `${t} pôde ser desligado`)
+        .toBe(true);
+      expect(alternanciaAgora({ emUso: t, assistidaLigada: true }), `${t} habilitado deixou de forçar`).toBe(true);
+    }
+  });
+
+  // ⚠️ A GUARDA QUE MANTÉM ISTO HONESTO: enquanto a função superada não tiver consumidor, a divergência é
+  // documentação. No dia em que ganhar um, é uma DECISÃO — e este caso obriga a que seja tomada em vez de
+  // acontecer.
+  it('🎯 [Zero] a função superada continua SEM CONSUMIDOR na engine', () => {
+    const usam = ficheiros()
+      .filter((f) => f !== 'input/transporte-em-uso.ts')
+      .filter((f) => /alternanciaAgora\s*\(/.test(fonte(f)));
+    expect(usam, `alguém passou a chamar o modelo que o ADR-0113 retirou: ${usam.join(', ')}`).toEqual([]);
+  });
+});
+
 // ===== MUTAÇÕES CONFERIDAS (2026-09-08, por script, com contagem de ocorrências) =====
 // 1. tirar `ui/settings-motor.ts` do inventário          → reprovam o [Feliz] **e** a saída (a chave renomeada
 //    deixa de aparecer nos achados). Previ só o [Feliz]; fica o medido, como nos gates irmãos
@@ -134,3 +184,12 @@ describe('a alternância migra para a chave por transporte · o piso que só sob
 // 5. `semComentarios` sem o `(^|[^:])`                   → nenhuma reprova hoje: EQUIVALÊNCIA MEDIDA, porque
 //    nenhum destes ficheiros tem URL numa linha com `toggleMoveP`. Fica registada e não apagada — foi
 //    exactamente este defeito que fez a varredura irmã devolver zero, e ele não morde aqui por sorte
+//
+// ----- e as do bloco da DIVERGÊNCIA, uma por caso e sem sobreposição nenhuma -----
+// 6. `alternanciaDe` deixa de ler `doTransporte`          → o caso da criança do TECLADO reprova
+// 7. `alternanciaDe` deixa de forçar nos assistidos       → o caso do acordo nos quatro reprova
+// 8. `input/keydown` passa a chamar `alternanciaAgora`    → 🎯 o [Zero] do consumidor reprova, que é a guarda
+//    que transforma «documentação da divergência» em «decisão obrigatória» no dia em que alguém a ligar
+// 9. o modelo superado deixa de responder pelo TOQUE      → o caso da divergência no toque reprova
+//    📌 As quatro batem em casos DIFERENTES e nenhuma se sobrepõe — é a medida de que os quatro casos deste
+//    bloco afirmam quatro coisas, e não a mesma escrita quatro vezes.
