@@ -661,6 +661,14 @@ export interface PauseIconsCtx {
 
   // --- motor + visual (both mutate state and rebake textures in game.js) ---
   setToggleMove?: (i: number, on: boolean) => void;
+  /**
+   * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113).
+   *
+   * 📌 O ícone `altmove` desta barra é a OUTRA superfície que escreve a alternância — a mesma razão pela
+   * qual o escritor voltou para a engine (ADR-0106 §4). Sem este campo, ele escreveria só a chave antiga
+   * enquanto o painel escreve as duas, e as duas superfícies divergiriam em silêncio.
+   */
+  transporteEmUso?: (jogador: number) => string;
   setPlayerViz?: (i: number, mode: string) => void;
   /** Os escritores POR EIXO (#104): mexer no tema não apaga a correção, e vice-versa. */
   setTemaDoJogador?: (i: number, tema: Tema) => void;
@@ -739,7 +747,12 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    */
   const setToggleMove = ctx.setToggleMove
     ?? ((i: number, on: boolean) => definirAlternanciaDeMarcha(
-      { players: P(), store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers }, i, on));
+      {
+        players: P(), store, srSay: ctx.srSay, getNumPlayers: ctx.getNumPlayers,
+        // ⚠️ ATRAVESSA, e não se resolve aqui: o ícone e o painel têm de escrever a MESMA coisa. Resolver
+        // o aparelho num deles e não no outro é como duas superfícies da mesma engine passam a discordar.
+        transporteEmUso: ctx.transporteEmUso,
+      }, i, on));
 
   /*
    * ⚠️ O MODO CEGO IDEM, e aqui o padrão é literalmente o que o `core/state` já decidiu que um setter faz:

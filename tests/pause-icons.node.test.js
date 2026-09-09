@@ -548,6 +548,57 @@ describe('initPauseIcons — ações dos ícones', () => {
   });
 
 
+  // 🎯 O GATE QUE O ADR-0113 PEDE PARA O ÍCONE: «pressioná-lo escreve a bandeira DO TRANSPORTE EM USO, e não
+  // uma global». Este é o irmão do caso do modo cego logo acima — mesma forma, mesma razão: o ícone da barra
+  // é a OUTRA superfície que escreve a alternância, e se ela e o painel escrevessem coisas diferentes as duas
+  // divergiriam em silêncio.
+  it('🎯 [Right] o ícone `altmove` escreve as DUAS chaves — a do aparelho em uso e a legada', async () => {
+    const guardado = {};
+    globalThis.localStorage = {
+      getItem: (k) => (k in guardado ? guardado[k] : null),
+      setItem: (k, v) => { guardado[k] = String(v); },
+      removeItem: (k) => { delete guardado[k]; },
+    };
+    try {
+      setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
+      const { ctx } = buildCtx();
+      delete ctx.setToggleMove;                  // o jogo que não se lembrou
+      ctx.transporteEmUso = () => 'gamepad';     // e a raiz que sabe o aparelho
+
+      initPauseIcons(ctx).iconAct('altmove', 0);
+
+      // ⚠️ Literais, e não `chaveDaAlternancia(...)`: afirmar a chave chamando a mesma função que a escreve
+      // mediria a ida e a volta pela mesma tabela, e as duas mover-se-iam juntas. É a mesma nota que o caso
+      // do modo cego já carrega sobre a codificação `1`/`0`.
+      expect(guardado['incl_togglemove_p0_gamepad'], 'o ícone não escreveu a chave do aparelho em uso')
+        .toBe('1');
+      expect(guardado['incl_togglemove_p0'], 'o ícone deixou de escrever a legada e a criança perde a escolha')
+        .toBe('1');
+    } finally {
+      delete globalThis.localStorage;
+    }
+  });
+
+  // 📌 SEM A RAIZ A RESPONDER, o ícone faz exactamente o que já fazia — que é o que torna o campo opcional
+  // seguro, e o que garante que este commit não muda nada para quem ainda não migrou.
+  it('📌 [Zero] sem `transporteEmUso`, o ícone escreve só a legada', async () => {
+    const guardado = {};
+    globalThis.localStorage = {
+      getItem: (k) => (k in guardado ? guardado[k] : null),
+      setItem: (k, v) => { guardado[k] = String(v); },
+      removeItem: (k) => { delete guardado[k]; },
+    };
+    try {
+      setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
+      const { ctx } = buildCtx();
+      delete ctx.setToggleMove;
+      initPauseIcons(ctx).iconAct('altmove', 0);
+      expect(Object.keys(guardado)).toEqual(['incl_togglemove_p0']);
+    } finally {
+      delete globalThis.localStorage;
+    }
+  });
+
   it('o TTS alterna a categoria, reaplica o ganho e anuncia', () => {
     const { ctx, state, said } = buildCtx();
     const api = initPauseIcons(ctx);

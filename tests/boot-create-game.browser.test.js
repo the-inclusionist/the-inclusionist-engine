@@ -179,6 +179,51 @@ describe('createGame num documento de verdade', () => {
     expect(dito, 'anunciou o estado que a criança acabou de deixar').not.toBe(rotuloAntes);
   });
 
+  // 🎯 A RAIZ RESPONDE PELO APARELHO EM USO (ADR-0113), e este é o único caso que o mede de ponta a ponta.
+  // Os casos do `ui/pause-icons` injectam o `transporteEmUso` deles, então a LINHA DA RAIZ — a que lê o
+  // `input/state.entradaDe(i)` — ficava sem ninguém a afirmar. Duas mutações sobreviveram por isso, e é este
+  // caso que as mata: sem ele, a raiz podia responder «teclado» a toda a gente e nada reprovava.
+  it('🎯 [Right] a raiz lê o aparelho do jogador, e o ícone escreve na chave DELE', async () => {
+    const { arestaDoJogador, esquecerEntradas } = await import('../app/js/input/state.js');
+    esquecerEntradas();
+    try {
+      arestaDoJogador(0, 'gamepad');           // a criança pegou no controle
+      abrir({ players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }] });
+
+      const alvo = document.querySelector('#title-icons [data-pi="altmove"]');
+      expect(alvo, 'o ícone da alternância não está na barra').not.toBeNull();
+      alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      // ⚠️ Literal, e não a função que escreve a chave: afirmar pela mesma tabela mediria a ida e a volta.
+      expect(localStorage.getItem('incl_togglemove_p0_gamepad'),
+        'a raiz não levou o aparelho em uso até à escrita').toBe('1');
+    } finally {
+      esquecerEntradas();
+      localStorage.removeItem('incl_togglemove_p0_gamepad');
+      localStorage.removeItem('incl_togglemove_p0');
+    }
+  });
+
+  // 📌 O PAR: com OUTRO aparelho, a chave é outra. Sem ele, «escrever sempre no gamepad» passaria no caso
+  // acima — que é exactamente a forma da mutação que sobreviveu antes de este bloco existir.
+  it('📌 [Right] com outro aparelho, a chave é a desse aparelho', async () => {
+    const { arestaDoJogador, esquecerEntradas } = await import('../app/js/input/state.js');
+    esquecerEntradas();
+    try {
+      arestaDoJogador(0, 'toque');
+      abrir({ players: [{ toggleMove: false, walkDir: 0, viz: 'normal' }] });
+      document.querySelector('#title-icons [data-pi="altmove"]')
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+      expect(localStorage.getItem('incl_togglemove_p0_toque'), 'escreveu na chave do aparelho errado').toBe('1');
+      expect(localStorage.getItem('incl_togglemove_p0_gamepad'), 'escreveu numa chave que ninguém usou').toBeNull();
+    } finally {
+      esquecerEntradas();
+      localStorage.removeItem('incl_togglemove_p0_toque');
+      localStorage.removeItem('incl_togglemove_p0');
+    }
+  });
+
   it('🔴 [Zero] o modo cego DESLIGA — sem isto ele liga uma vez e a criança fica lá dentro', () => {
     // 🔴 ESTE CASO EXISTE POR CAUSA DE UM DEFEITO REAL QUE SÓ UM DOM REAL PODIA MOSTRAR, e ele era meu.
     //

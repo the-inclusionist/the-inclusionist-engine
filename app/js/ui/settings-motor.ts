@@ -56,6 +56,13 @@ export interface SettingsMotorCtx {
   /** SHARED setter (also used by the pause-menu quick icon `altmove`) — stays in game.js, injected. */
   setToggleMove?: (i: number, on: boolean) => void;
   /**
+   * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113) — atravessa daqui para a escrita.
+   *
+   * ⚠️ Opcional pela mesma razão que na `EscritaDaAlternanciaCtx`: sem ele a escrita cai no que já fazia,
+   * e exigi-lo quebraria todo consumidor por causa de uma migração a meio.
+   */
+  transporteEmUso?: (jogador: number) => string;
+  /**
    * A ALTERNÂNCIA DO BOTÃO DE CORRER. Injetada como a irmã acima e pelo mesmo motivo: quem persiste e anuncia
    * é a raiz de composição, que é quem conhece `players` e o armazenamento.
    */

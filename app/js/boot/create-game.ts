@@ -42,6 +42,7 @@
 // O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
 import { initI18n, idiomaPronto } from '../core/i18n.js';
+import { entradaDe } from '../input/state.js';
 import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance } from '../ui/reach-notice.js';
@@ -464,6 +465,15 @@ export function createGame(o: CreateGameOptions): Engine {
     getModoCego: lerModoCego,
     getAudioCat: () => audioCat,
     setCatGain,
+    /*
+     * ⚠️ QUEM RESPONDE PELO APARELHO EM USO É A RAIZ, e é aqui que o autómato do ADR-0109 ganha o primeiro
+     * leitor. `input/state.entradaDe(i)` devolve `PADRAO` para quem nunca produziu uma aresta, logo isto
+     * nunca é `undefined` e o ícone nunca escreve numa chave torta.
+     *
+     * 📌 E é a RAIZ que o passa, não o ícone que o importa: `ui/` a ler estado de módulo de `input/` seria
+     * uma aresta nova entre camadas para poupar um argumento. A composição é o trabalho deste ficheiro.
+     */
+    transporteEmUso: (i: number) => entradaDe(i).emUso,
     reflectTtsPanel: () => {},
     reflectTtsPanelEnabled: false,
     isLibrasOn: vlibrasOpen,
