@@ -59,6 +59,19 @@ RAIZ = os.getcwd()
 RAIZES = {}
 NAO_CONFERIDOS = {}
 
+# 🔴 OS PREFIXOS QUE EXISTEM. O ADR-0123 fechou dizendo que isto não se podia pagar — «nada confere que
+# `engine:` ainda nomeia um repositório real» — e a frase estava MAL POSTA. Um prefixo não é o nome de um
+# repositório no GitHub: é um RÓTULO que alguém liga a uma raiz com `--repo`. Renomear o repositório não o
+# parte; o que o parte é escrever um rótulo que nenhum `--repo` alguma vez fornece.
+#
+# ⚠️ E ESSE É O CASO QUE SE DISFARÇA DE NORMAL: `enigne:app/js/x.ts` num registo seria contado como «não
+# conferido», que é exactamente o que uma corrida sem a raiz imprime todos os dias. O erro de escrita ficava
+# a viver dentro da mensagem que existe para dizer que está tudo bem.
+#
+# 📌 Uma lista declarada resolve-o e custa uma linha por repositório: prefixo conhecido sem raiz é CONTADO;
+# prefixo desconhecido é PROBLEMA. Acrescentar um repositório a esta lista é o acto de o admitir.
+REPOS_CONHECIDOS = {"engine"}
+
 # ADR-0057 diz como um registo MUDA. `confirmed-by` diz outra coisa, que faltava: se ele foi CONSTRUÍDO.
 #
 # A distinção apareceu na issue #95. O ADR-0053 fecha com «⚠️ NOT YET BUILT. This record is the decision; the
@@ -203,7 +216,14 @@ def check(path):
                     repo, _, resto = alvo.partition(":")
                     if not resto:                       # sem prefixo: o caminho é deste repositório
                         repo, resto = "", alvo
-                    if repo and repo not in RAIZES:
+                    if repo and repo not in REPOS_CONHECIDOS:
+                        problems.append(
+                            f"`{CONFIRMED_BY}` names {alvo}, and `{repo}:` is not a declared repository "
+                            f"(known: {', '.join(sorted(REPOS_CONHECIDOS))}) — an undeclared prefix is "
+                            "counted as «not checked», which is what a normal run prints, so a typo would "
+                            "live inside the message that says everything is fine"
+                        )
+                    elif repo and repo not in RAIZES:
                         NAO_CONFERIDOS[repo] = NAO_CONFERIDOS.get(repo, 0) + 1
                     elif not os.path.exists(os.path.join(RAIZES.get(repo, RAIZ), resto)):
                         onde = RAIZES.get(repo, RAIZ)
