@@ -123,6 +123,64 @@ describe('ADR-0110 · a engine BUSCA as vozes, não as embarca', () => {
   });
 });
 
+/* ===================== ADR-0119 · a ARTE também não viaja no pacote =====================
+ *
+ * O ADR-0119 decidiu que a engine FORNECE quatro coisas pesadas — fontes, voz neural, runtime de visão e
+ * ARTE — e que todas chegam pela PLATAFORMA, nunca pelo pacote npm. Três dessas quatro ainda não existem, e
+ * é por isso que só ESTA metade se pode aferir hoje: uma PROIBIÇÃO não precisa da funcionalidade existir.
+ *
+ * ⚠️ E a armadilha é a mesma que o commit `6b13341` mediu para o runtime: o sítio óbvio para pôr arte é
+ * `app/public/vendor/`, ao lado das fontes — e esse directório ESTÁ no `files`. O caso acima já prova que ele
+ * viaja; o que falta é dizer que arte não pode entrar por ali.
+ *
+ * 📏 MEDIDO EM 2026-09-09: `art/lcp/` tem exactamente dois ficheiros — um README e um `ATTRIBUTION.csv` de
+ * 40 bytes, que é a linha de cabeçalho sozinha. Zero arte. E `art/` não está no `files`. Este crivo existe
+ * para que continue assim quando a arte chegar. */
+describe('ADR-0119 · a arte chega pela plataforma, e por isso NÃO pelo pacote', () => {
+  const ARVORE = arvoreDoPacote();
+
+  /**
+   * ⚠️ AS EXCLUSÕES SÃO REGRA ESCRITA, NÃO SILÊNCIO — e as duas que ficam de fora ficam por motivos opostos:
+   *
+   *   · `.svg` NÃO entra. Aqui ele é MARCAÇÃO e não obra: o `render/cvd-matrices` constrói filtros de
+   *     correcção de cor com ele, e um ícone de interface é interface. Acusá-lo faria o crivo reprovar coisa
+   *     certa, e um gate que reprova coisa certa é desligado antes de apanhar a errada.
+   *   · `.tsx` NÃO entra, e é uma COLISÃO e não uma escolha: é a extensão de um tileset do Tiled **e** de um
+   *     ficheiro TypeScript com JSX. Um falso positivo num módulo é o mesmo desligar por outra porta.
+   */
+  const EXTENSOES_DE_ARTE = new Set([
+    '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.avif',
+    '.aseprite', '.ase', '.tmx', '.pyxel', '.psd', '.xcf',
+  ]);
+
+  /** O LCP pelo NOME também, porque uma arte renomeada para `.dat` continua a ser arte de terceiro. */
+  const NOMES_DE_ARTE = /(^|[\\/])(art|lcp|liberated[-_]?pixel|sprites?|tilesets?)([\\/]|$)/i;
+
+  it('🎯 [Zero] nenhum ficheiro de ARTE viaja no pacote', () => {
+    const presos = ARVORE.filter((p) => EXTENSOES_DE_ARTE.has(extensaoDe(p)) || NOMES_DE_ARTE.test(p));
+    expect(
+      presos,
+      'arte no pacote npm: cada `npm ci` de trezentos repositórios paga por ela, e o ADR-0119 manda-a pela ' +
+        `plataforma. Ficheiros: ${presos.join(', ')}`,
+    ).toEqual([]);
+  });
+
+  it('⚠️ [Interface] `art/` NÃO está no `files` — a proibição é estrutural, não sorte', () => {
+    // 📌 O caso de cima varre o que o `files` alcança; este diz POR QUE ele não alcança a quarentena. Sem
+    // ele, acrescentar `art` ao `files` e pôr lá um `.png` reprovaria — mas acrescentar `art` e ainda não ter
+    // arte passaria, e a porta ficava aberta à espera.
+    const declarados = PKG.files ?? [];
+    const arte = declarados.filter((e) => /^art([\\/]|$)/i.test(e));
+    expect(arte, `o \`files\` passou a publicar a quarentena de arte: ${arte.join(', ')}`).toEqual([]);
+  });
+
+  it('⚠️ [Interface] e a quarentena do ADR-0107 continua a existir, com o seu livro-razão', () => {
+    // O par que impede este bloco de virar vácuo: se `art/lcp/` desaparecer, o caso [Zero] fica verde a
+    // olhar para nada e a proibição deixa de descrever alguma coisa.
+    expect(existsSync(join(RAIZ, 'art', 'lcp', 'ATTRIBUTION.csv')), 'a quarentena do LCP sumiu').toBe(true);
+  });
+});
+
 // ========================= MUTACOES CONFERIDAS =========================
 // Tres, todas mortas. ⚠️ E a primeira NAO E UMA EDICAO DE CODIGO: ela PLANTA o defeito na arvore —
 // `app/public/vendor/vits-piper-pt_BR-faber-medium/model.onnx` — e apaga-o a seguir. Um crivo de inventario
