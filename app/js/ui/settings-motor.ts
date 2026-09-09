@@ -57,6 +57,19 @@ export interface SettingsMotorCtx {
   /** SHARED setter (also used by the pause-menu quick icon `altmove`) — stays in game.js, injected. */
   setToggleMove?: (i: number, on: boolean) => void;
   /**
+   * ESTE JOGO SEGURA ALGUMA TECLA? — `GameDeclaration.seguraTeclas` (ADR-0115). Sem ele a linha da
+   * alternância fica AUSENTE deste painel.
+   *
+   * ⚠️ E A ENGINE NÃO DESENHA ESTA LINHA — o markup do `#opt-altmove` é do CARTUCHO, e a engine só o
+   * encontra pelo `$`. Logo «não oferecer» aqui não é deixar de renderizar: é tornar a linha ausente para
+   * toda a gente, com `hidden`, que a tira da tela E da árvore de acessibilidade. Um `aria-disabled` seria a
+   * resposta errada — essa é a da cláusula 3 do ADR-0113, onde o controle EXISTE e está travado com motivo.
+   *
+   * ⚠️ OBRIGATÓRIO, pela mesma razão que no `PauseIconsCtx`: não há padrão seguro. `true` deixa a linha num
+   * jogo onde ela não faz nada; `false` esconde-a de uma criança que depende dela.
+   */
+  seguraTeclas: boolean;
+  /**
    * QUAL APARELHO ESTE JOGADOR ESTÁ A USAR (ADR-0113) — atravessa daqui para a escrita.
    *
    * ⚠️ Opcional pela mesma razão que na `EscritaDaAlternanciaCtx`: sem ele a escrita cai no que já fazia,
@@ -262,6 +275,19 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
   const altMoveRow = altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null;
   const altMoveHint = altMoveRow?.querySelector<HTMLElement>('.opt-hint') ?? null;
   const dicaOriginal = altMoveHint?.textContent ?? '';
+
+  /*
+   * ADR-0115 · A LINHA SOME NUM JOGO QUE NÃO SEGURA NADA — e some para TODA A GENTE.
+   *
+   * 🔴 `hidden` e não `aria-disabled`: a criança que depende da alternância abre este painel para a ligar, e
+   * num quiz não há nada para ela ligar. Um controle desabilitado com um motivo continua a ser um controle
+   * que não faz nada — e ainda ocupa um lugar na navegação por teclado, entre dois que funcionam.
+   * 📌 A cláusula 3 do ADR-0113 é o caso oposto e continua intacta: lá o aparelho EXIGE a alternância, o
+   * controle existe, e fica `aria-disabled` COM o motivo, alcançável para que ela possa lê-lo.
+   * ⚠️ E a linha é do CARTUCHO: a engine não a criou e por isso não a destrói. `hidden` é reversível e
+   * idempotente; remover markup alheio não é nenhuma das duas coisas.
+   */
+  if (!ctx.seguraTeclas && altMoveRow) altMoveRow.hidden = true;
 
   /** A recusa DESTE jogador agora, ou `null`. Recalculada a cada reflexo: o aparelho em uso muda. */
   function recusaAgora(i: number) {

@@ -2065,6 +2065,7 @@
       "getNumPlayers",
       "players",
       "rebuildCoins",
+      "seguraTeclas",
       "setToggleMove?",
       "setToggleRun",
       "srSay",

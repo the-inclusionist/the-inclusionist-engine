@@ -24,6 +24,10 @@ function fullCtx(over = {}) {
     players,
     getNumPlayers: () => (over.numPlayers ?? players.length),
     setToggleMove: (i, on) => { toggleMoveCalls.push([i, on]); players[i].toggleMove = on; },
+  // ⚠️ EXPLÍCITO, e a razão é que a ausência dele MUDA todos os casos deste ficheiro. Desde o ADR-0115 um
+  // ctx sem este campo esconde a linha da alternância — e trinta casos passariam na mesma, a exercitar uma
+  // linha invisível sem nada o dizer. Este fixture é de um jogo que SEGURA, que é a premissa de todos eles.
+  seguraTeclas: true,
     setToggleRun: (i, on) => { toggleRunCalls.push([i, on]); players[i].toggleRun = on; escolhido.add('incl_togglerun_p' + i); },
     rebuildCoins: () => { rebuildCoinsCalls++; },
     said,
@@ -52,6 +56,50 @@ function mountDom() {
 describe('ui/settings-motor', () => {
   beforeEach(() => {
     mountDom();
+  });
+
+  /* ===================== ADR-0115 · O JOGO QUE NÃO SEGURA NADA NÃO OFERECE A LINHA =====================
+   *
+   * 🔴 A alternância existe para quem não consegue MANTER uma tecla premida. Num quiz não há nada a travar, e
+   * a linha oferecida na mesma é uma opção que não faz nada: a criança liga o ajuste de que depende e não
+   * acontece nada.
+   *
+   * ⚠️ E É O CONTRÁRIO DO BLOCO LOGO ABAIXO, de propósito. Ali o aparelho EXIGE a alternância e o controle
+   * fica `aria-disabled` COM o motivo, alcançável para ela poder lê-lo. Aqui não há motivo que ajude, porque
+   * não há nada que o controle pudesse fazer — e um lugar a mais na navegação por teclado, entre dois que
+   * funcionam, é custo sem contrapartida. */
+  describe('a linha da alternância num jogo que não segura teclas', () => {
+    it('🎯 [Zero] com `seguraTeclas: false`, a linha fica AUSENTE — não desabilitada', () => {
+      const ctx = fullCtx();
+      ctx.seguraTeclas = false;
+      initSettingsMotor(ctx);
+
+      const linha = document.querySelector('#opt-altmove')?.closest('.ctrl-row');
+      expect(linha, 'a linha do `#opt-altmove` desapareceu do fixture').not.toBeNull();
+      expect(linha.hidden, 'a linha ficou visível num jogo que não segura nada').toBe(true);
+      // ⚠️ E NÃO `aria-disabled`: essa é a resposta da cláusula 3 do ADR-0113, e usá-la aqui deixaria na tela
+      // um controle que explica por que não faz nada — que continua a ser um controle que não faz nada.
+      expect(document.querySelector('#opt-altmove').getAttribute('aria-disabled'),
+        'a ausência do ADR-0115 foi confundida com a recusa do ADR-0113').toBeNull();
+    });
+
+    it('⚠️ [Right] e o PAR: com `seguraTeclas: true` a linha FICA — senão «ausente» passaria por esconder tudo', () => {
+      const ctx = fullCtx();
+      initSettingsMotor(ctx);
+      const linha = document.querySelector('#opt-altmove').closest('.ctrl-row');
+      expect(linha.hidden, 'a linha sumiu num jogo que segura teclas').toBe(false);
+    });
+
+    it('📌 [Boundary] a ausência é do JOGO e não do aparelho — as duas regras não se confundem', () => {
+      // Com o olhar em uso (que EXIGE alternância) mas num jogo que não segura nada, a ausência ganha: não há
+      // o que exigir. Uma implementação que lesse só o transporte deixaria a linha desabilitada e visível.
+      const ctx = fullCtx();
+      ctx.seguraTeclas = false;
+      ctx.transporteEmUso = () => 'olhos';
+      initSettingsMotor(ctx);
+
+      expect(document.querySelector('#opt-altmove').closest('.ctrl-row').hidden).toBe(true);
+    });
   });
 
   // ========================= A CLÁUSULA 3 DO ADR-0113, NA TELA =========================
