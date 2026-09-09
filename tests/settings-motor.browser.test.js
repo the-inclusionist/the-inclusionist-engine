@@ -41,7 +41,8 @@ function mountDom() {
     '<div id="opt-movement" class="mode-btn"></div>' +
     '<div id="movement-players"></div>' +
     '<div class="ctrl-row"><span>Modo Fácil</span><button id="opt-facil" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>' +
-    '<div class="ctrl-row"><span>Alternância</span><button id="opt-altmove" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>' +
+    '<div class="ctrl-row"><span>Alternância</span><span class="opt-hint">Anda sem segurar.</span>'
+    + '<button id="opt-altmove" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>' +
     '<div class="ctrl-row"><span>Alternância do correr</span><button id="opt-togglerun" class="mode-btn" type="button" aria-pressed="false">▶ Desligado</button></div>' +
     '<button id="movement-reset" class="mode-btn" type="button">Restaurar</button>' +
     '<button data-act="motora" class="pm-btn" type="button">Acessibilidade motora</button>' +
@@ -51,6 +52,65 @@ function mountDom() {
 describe('ui/settings-motor', () => {
   beforeEach(() => {
     mountDom();
+  });
+
+  // ========================= A CLÁUSULA 3 DO ADR-0113, NA TELA =========================
+  // «É impossível desligá-la em modos que não tem como funcionar sem ela (voz e câmera)» — a frase do Dev.
+  // O modelo puro vive em `ui/latch-refusal`; aqui afirma-se o que a criança encontra.
+  describe('a alternância exigida pelo aparelho', () => {
+    it('🔴 [Right] com o olhar em uso, o controle fica `aria-disabled` e a dica diz POR QUÊ', () => {
+      const ctx = fullCtx();
+      ctx.transporteEmUso = () => 'olhos';
+      initSettingsMotor(ctx);
+
+      expect($('#opt-altmove').getAttribute('aria-disabled'), 'o controle continua a parecer accionável').toBe('true');
+      const dica = document.querySelector('#opt-altmove').closest('.ctrl-row').querySelector('.opt-hint');
+      expect(dica.textContent, 'a dica não diz por que o botão não responde')
+        .toContain('precisa das teclas de alternância');
+      // 📌 E a dica ORIGINAL não se perde: a explicação da linha continua lá, com o motivo a seguir.
+      expect(dica.textContent).toContain('Anda sem segurar.');
+    });
+
+    // ⚠️ «Aceitar o clique e ignorá-lo» é a outra metade do que o ADR-0076 proíbe. Aqui o ouvinte é ligado
+    // uma vez e não pode ser omitido como no `render/viz-setters`, então a recusa FALA.
+    it('🔴 [Zero] clicar não liga nada, e a recusa é DITA em vez de silenciosa', () => {
+      const ctx = fullCtx();
+      ctx.transporteEmUso = () => 'olhos';
+      initSettingsMotor(ctx);
+      $('#opt-altmove').click();
+
+      expect(ctx.players[0].toggleMove, 'o clique mexeu num ajuste que este aparelho exige').toBe(false);
+      expect(ctx.said.join(' '), 'o botão não respondeu e não disse nada — a criança fica sem saber')
+        .toContain('precisa das teclas de alternância');
+    });
+
+    // 🎯 O CASO QUE O PRECEDENTE NÃO PRECISOU DE TER, e é a diferença de forma entre os dois: o
+    // `render/viz-setters` reconstrói a lista a cada render, então acrescentar o motivo à dica basta. Este
+    // botão é persistente e a criança larga a webcam e volta ao teclado — sem restaurar, o motivo
+    // acumular-se-ia na linha a cada troca de aparelho.
+    it('🎯 [Boundary] ao voltar para o teclado, a recusa sai e a dica volta ao que era', () => {
+      const ctx = fullCtx();
+      let aparelho = 'olhos';
+      ctx.transporteEmUso = () => aparelho;
+      const api = initSettingsMotor(ctx);
+
+      aparelho = 'teclado';
+      api.reflectAltMove();
+
+      expect($('#opt-altmove').getAttribute('aria-disabled'), 'ficou desabilitado depois de o aparelho mudar')
+        .toBe(null);
+      const dica = document.querySelector('#opt-altmove').closest('.ctrl-row').querySelector('.opt-hint');
+      expect(dica.textContent, 'o motivo ficou colado na dica').toBe('Anda sem segurar.');
+    });
+
+    // 📌 SEM A RAIZ A RESPONDER, nada disto acontece — o campo é opcional e o painel comporta-se como antes.
+    it('📌 [Zero] sem `transporteEmUso`, o controle continua accionável', () => {
+      const ctx = fullCtx();
+      initSettingsMotor(ctx);
+      expect($('#opt-altmove').getAttribute('aria-disabled')).toBe(null);
+      $('#opt-altmove').click();
+      expect(ctx.players[0].toggleMove).toBe(true);
+    });
   });
 
   it('[Zero] initSettingsMotor reflete o estado inicial (tudo desligado) sem anunciar', () => {

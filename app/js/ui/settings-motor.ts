@@ -25,6 +25,7 @@ import type { DomQuery } from '../core/dom-query.js';
 // faria o painel escrever num nome torto — que é o defeito que este import acaba de fechar.
 import { KEYS } from '../platform/storage.js';
 import { gravarAlternancia } from '../input/latch-store.js';
+import { recusaDaAlternancia } from './latch-refusal.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
@@ -250,6 +251,22 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
 
   const facilBtn = ctx.$<HTMLElement>('#opt-facil');
   const altMoveBtn = ctx.$<HTMLElement>('#opt-altmove');
+  /**
+   * A DICA ORIGINAL DA LINHA, guardada uma vez.
+   *
+   * ⚠️ AQUI A RECUSA VAI E VEM, e é essa a diferença para o precedente. O `render/viz-setters` ACRESCENTA
+   * o motivo à dica e nunca o retira, o que é correcto lá: aquela lista é reconstruída a cada render. Este
+   * botão é persistente e a criança pode largar a webcam e voltar ao teclado — sem guardar o texto de
+   * origem, o motivo acumular-se-ia na linha a cada troca de aparelho.
+   */
+  const altMoveRow = altMoveBtn?.closest<HTMLElement>('.ctrl-row') ?? null;
+  const altMoveHint = altMoveRow?.querySelector<HTMLElement>('.opt-hint') ?? null;
+  const dicaOriginal = altMoveHint?.textContent ?? '';
+
+  /** A recusa DESTE jogador agora, ou `null`. Recalculada a cada reflexo: o aparelho em uso muda. */
+  function recusaAgora(i: number) {
+    return ctx.transporteEmUso ? recusaDaAlternancia(ctx.transporteEmUso(i)) : null;
+  }
   const toggleRunBtn = ctx.$<HTMLElement>('#opt-togglerun');
 
   // barra acende se QUALQUER jogador usa Fácil/alternância
@@ -314,6 +331,20 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
       altMoveBtn.classList.toggle('is-on', on);
       altMoveBtn.setAttribute('aria-pressed', String(on));
       altMoveBtn.textContent = onOffLabel(on);
+      /*
+       * ⚠️ A CLÁUSULA 3 DO ADR-0113 NA TELA: onde a alternância é exigida, o controle NÃO SOME — fica
+       * `aria-disabled` e o motivo entra na dica, que a casca (`ui/settings-panel.fillExplain`) move para o
+       * rodapé. Sumir ensinaria que a coisa não existe; deixá-lo activo faria a criança carregar e não
+       * perceber por que nada mudou.
+       *
+       * 📌 E `aria-disabled` e não `disabled`: um botão desabilitado de verdade SAI da ordem de tabulação, e
+       * quem navega por teclado deixaria de o alcançar — logo deixaria de poder LER o motivo. É a mesma
+       * escolha que a #128 nomeia como defeito quando é feita ao contrário (só classe CSS, sem `aria`).
+       */
+      const recusa = recusaAgora(selMovPlayer);
+      if (recusa) altMoveBtn.setAttribute('aria-disabled', 'true');
+      else altMoveBtn.removeAttribute('aria-disabled');
+      if (altMoveHint) altMoveHint.textContent = recusa ? `${dicaOriginal} ${t(recusa.chave)}`.trim() : dicaOriginal;
     }
     reflectMovementBtn();
   }
@@ -352,6 +383,14 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
   }
   if (altMoveBtn) {
     altMoveBtn.addEventListener('click', () => {
+      /*
+       * ⚠️ RECUSAR DIZENDO, E NÃO EM SILÊNCIO. O precedente (`render/viz-setters`) resolve isto não ligando
+       * ouvinte nenhum — pode, porque reconstrói a lista a cada render. Aqui o ouvinte é ligado uma vez, e
+       * um `return` mudo seria «aceitar o clique e ignorá-lo», que é a outra metade do que o ADR-0076
+       * proíbe. Então a recusa FALA: quem carregou fica a saber por quê, mesmo sem ver a dica.
+       */
+      const recusa = recusaAgora(selMovPlayer);
+      if (recusa) { ctx.srSay(t(recusa.chave)); return; }
       setToggleMove(selMovPlayer, !ctx.players[selMovPlayer].toggleMove);
       reflectAltMove();
     });
