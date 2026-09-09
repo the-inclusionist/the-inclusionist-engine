@@ -80,12 +80,31 @@ Nem tudo aqui é nosso, e o que não é **não muda de licença por estar neste 
   exemplos:** **ND** (proíbe derivar, e recolorir já é derivar); **NC** (deixaria a arte mais estreita que o
   CÓDIGO — a AGPL permite uso comercial, e quem ela convida seria travado por um sprite); e **share-alike,
   em qualquer versão, com o braço GPL de uma licença dupla**, porque o SA **viaja**: uma imagem semântica
-  traçada de um sprite é derivada dele, e um pipeline que misturasse fontes licenciaria a arte da autora em
-  share-alike — precisamente a decisão que o **pilar 10** deixa com ela e não connosco.
+  traçada de um sprite é derivada dele, logo tudo o que o pipeline produzisse a partir de uma fonte SA sairia
+  SA — e essa saída é a arte futura do próprio projeto, que ele deixaria de poder licenciar.
   📌 **Não há quarentena, e já houve.** O ADR-0107 ia trazer o Liberated Pixel Cup sob CC BY-SA 3.0 atrás de
   uma parede; o Dev recusou o share-alike de vez, e sem arte cujo copyleft viaje não há o que segregar. O
   LCP não entra por nenhum dos seus dois braços — **CC BY-SA 3.0 ou GPL-3.0** — e nenhum recurso dele
   chegou a entrar.
+  ⚠️ **E a recusa é INFORMADA, não ingénua: existe caminho legal de CC BY-SA 4.0 até um projeto AGPL** — a
+  3.0 sobe para 4.0 numa derivada (§4(b)(ii)), a Creative Commons declarou a GPLv3 compatível num sentido só
+  em 08/10/2015, e o **§13 da GPLv3** permite combinar obra GPLv3 com obra AGPLv3 num único trabalho. O
+  ADR-0133 regista o caminho **e recusa-o**, com os quatro custos escritos — entre eles que a arte passaria a
+  viver sob a licença do CÓDIGO, que é a linha que estas três secções existem para desenhar.
+- **Arte de terceiros — as fontes já medidas na origem** (2026-09-09; detalhe em [`../art/README.md`](../art/README.md)):
+  **Kenney** (`kenney.nl/assets`) sob **CC0 1.0**, confirmado em três lugares que dizem o mesmo; e **ansimuz**
+  (`ansimuz.itch.io`) sob **CC0 1.0, por pacote** — o perfil não concede nada, a página do pacote é que
+  concede. As duas entram sem quarentena e sem obrigação a viajar para a saída; a linha no livro-razão fica
+  na mesma, por proveniência.
+  🔴 **E o Tiny Swords** (`pixelfrog-assets.itch.io`) **parte-se em dois, e não é CC BY 4.0** como se supunha:
+  a página não tem campo de licença nenhum. O **pacote atual** vem sob uma concessão própria do autor, cujas
+  duas primeiras linhas são permissivas (uso pessoal e comercial, modificar à vontade, sem exigir crédito) e
+  a terceira restringe («You may not redistribute, resell, or repackage the assets, even if the files are
+  modified») — **e ele fica de fora simplesmente por não ser nenhuma das quatro**, sem que a terceira linha
+  precise de ser interpretada. Já o ficheiro **`TS_old version_CC0 Licensed` é CC0 e entra**, com a ressalva
+  de que a única afirmação disso na página é o NOME do ficheiro: a linha do livro aponta para o `LICENSE` de
+  dentro do zip.
+  **Quais recursos entram, e para que jogos, é direção de arte** e não se decide aqui.
   ⚠️ **Atribuição é condição de uso, por recurso**, e a **fonte guarda-se como URL**: uma licença declarada
   por quem nos entrega o ficheiro é indício, não autoridade, e sem a origem registada não há contra o que a
   conferir. Recurso sem autor conhecido **não entra** — «não consegui descobrir» não é licença.

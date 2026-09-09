@@ -20,12 +20,50 @@ material CC BY-SA. A parede saiu quando saiu o que ela segurava.
 - **NC** — deixaria a arte **mais estreita que o código**: a AGPL permite uso comercial, então alguém que a
   licença convida seria travado por um sprite.
 - **Share-alike, em qualquer versão, e o braço GPL de uma licença dupla** — o share-alike **viaja**. Uma
-  imagem semântica traçada de um sprite é derivada dele, e um pipeline que misturasse fontes licenciaria a
-  arte da autora sem lhe perguntar. Segurar isso custa uma quarentena, e o Dev decidiu não a pagar.
+  imagem semântica traçada de um sprite é derivada dele, logo tudo o que o pipeline produzisse a partir de
+  uma fonte SA sairia SA. Essa saída é a arte futura do próprio projeto, que ele deixaria de poder licenciar.
+  Segurar isso custa uma quarentena, e o Dev decidiu não a pagar.
 
 📌 A razão de fundo, que sobrevive à moda: **a CC BY é compatível num sentido só com a BY-SA.** Um acervo
 permissivo pode sempre virar share-alike; o contrário está fechado para sempre. Recusar SA hoje não fecha
 porta nenhuma.
+
+⚠️ **E a recusa é informada:** existe caminho legal de CC BY-SA **4.0** até um projeto AGPL — a 3.0 sobe para
+4.0 numa derivada, a Creative Commons declarou a GPLv3 compatível num sentido só, e o §13 da GPLv3 permite
+combinar com AGPLv3. O **ADR-0133** descreve o caminho e recusa-o, com os quatro custos escritos.
+
+## As fontes já medidas (2026-09-09)
+
+| fonte | licença lida na origem | veredicto |
+|---|---|---|
+| **Kenney** · `kenney.nl/assets` | CC0 1.0 — igual em `kenney.nl`, itch.io e OpenGameArt | ✅ entra |
+| **ansimuz** · `ansimuz.itch.io` | CC0 1.0 **por pacote** (3 amostrados) | ✅ entra, **lido pacote a pacote** |
+| **Tiny Swords** · `TS_old version_CC0 Licensed` | CC0 — declarado no **nome do ficheiro**, na página do autor | ✅ entra, **com a ressalva abaixo** |
+| **Tiny Swords** · `Tiny Swords (Free Pack).zip` | concessão própria do autor, **não é nenhuma das quatro** | ❌ fica de fora |
+| **Liberated Pixel Cup** · `OpenGameArt/LiberatedPixelCup` | CC BY-SA 3.0 **ou** GPL-3.0 | ❌ os dois braços são recusados |
+
+⚠️ **O CASO DO TINY SWORDS É O QUE JUSTIFICA A LISTA SER FECHADA, e a razão é mais simples do que uma leitura
+jurídica.** A licença do pacote atual são três linhas do próprio autor, e as duas primeiras são permissivas:
+*«Feel free to use this asset pack in both personal and commercial projects, modifying the assets as needed.
+Crediting is not required…»*. Só a terceira restringe: *«You may not redistribute, resell, or repackage the
+assets, even if the files are modified.»*
+
+**Ele fica de fora porque não é nenhuma das quatro**, e mais nada precisa de ser decidido. 🎯 É exactamente
+aqui que uma lista vale mais do que um teste: «redistribuir» exigiria interpretação — um repositório público
+serve os PNG em bruto a quem quiser, e é defensável que isso seja redistribuição, mas isso é uma **leitura** e
+não uma medição. Um acervo cuja admissibilidade depende de quem interpreta a palavra é um acervo que entra no
+dia em que alguém tiver pressa.
+
+📌 **E a ressalva do pacote CC0 é a nossa própria regra aplicada a si mesma:** a única afirmação de CC0 na
+página é o **nome do ficheiro**. Não há campo de licença, e nenhuma outra frase o diz. É o autor a declará-lo
+na página dele, o que basta para acreditar — mas a linha do livro tem de apontar para o `LICENSE` de dentro
+do zip, que é a concessão a sério, e não para um nome de ficheiro.
+
+⚠️ **E no ansimuz o perfil não concede nada: a página do PACOTE é que concede.** No `warped-city` a secção de
+música descreve termos parecidos com CC-BY enquanto o campo de metadados diz CC0 — quando o campo e a prosa
+discordam, o pacote não está resolvido, e a linha do livro não pode fingir que está.
+
+Quais recursos entram e para que jogos é **direção de arte**, e não se decide aqui.
 
 ## O livro-razão
 

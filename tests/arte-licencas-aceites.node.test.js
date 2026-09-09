@@ -3,9 +3,14 @@
 //
 // ========================= O QUE MUDOU, E POR QUE O FICHEIRO TROCOU DE NOME =========================
 // Este ficheiro era `lcp-quarantine.node.test.js` e afirmava que uma PAREDE se aguentava: material do
-// Liberated Pixel Cup de um lado, a arte da autora do outro, e nenhum recurso a misturar os dois. A parede
+// Liberated Pixel Cup de um lado, a arte do projeto do outro, e nenhum recurso a misturar os dois. A parede
 // existia porque o LCP é CC BY-SA 3.0, e o share-alike VIAJA — uma imagem semântica traçada de um sprite é
-// derivada dele, e um recurso de duas fontes licenciaria a arte da autora sem lhe perguntar.
+// derivada dele, logo tudo o que o pipeline produzisse de uma fonte SA sairia SA.
+//
+// 🔴 E A PREMISSA QUE SUSTENTAVA A PAREDE ERA FALSA, corrigida pelo Dev em 2026-09-09: o ADR-0107 dizia que
+// o share-alike alcançaria arte NÃO-FOSS de terceiro, e essa arte não existe — nenhuma arte de contribuinte
+// entrou, e nenhuma entrará enquanto o regime não estiver resolvido. O regime de licença é POLÍTICA QUE O
+// PROJETO ESCOLHE, e quem contribuir adapta-se. O que sobra do argumento é sobre a SAÍDA, escrito acima.
 //
 // 🎯 O ADR-0133 REMOVEU A PAREDE AO REMOVER O QUE ELA SEGURAVA. O Dev recusou share-alike de vez — «nada de
 // quarentena, melhor não aceitar por enquanto» — e fechou a lista em quatro licenças. Sem arte SA na árvore
