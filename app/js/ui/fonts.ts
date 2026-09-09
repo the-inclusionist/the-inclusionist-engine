@@ -78,7 +78,25 @@ export const FONT_GROUPS: FontGroup[] = [
     // ⚠️ `comicneue` NÃO é caligráfica, e está neste grupo só por aparência: é uma face de propósito geral,
     // frequentemente recomendada para dislexia. Marcá-la como caligráfica tirá-la-ia do menu — removendo uma
     // opção legitimamente acessível pelo formato do grupo em vez de pelo papel.
-    {k:'comicneue',  fam:'Comic Neue',          fb:'cursive', d:'font.desc.comicneue'} ]},
+    {k:'comicneue',  fam:'Comic Neue',          fb:'cursive', d:'font.desc.comicneue'},
+    /*
+     * A RONDE FRANCESA — o item 4 da #87, decidido no ADR-0108 §4. Ela NUNCA é empacotada: as três faces são
+     * livres só para uso PESSOAL (ADR-0012), e distribuí-las seria distribuir o que não foi licenciado para
+     * distribuição. O que muda é que a opção passa a FALAR.
+     *
+     * ⚠️ E ISTO NÃO É A ENTRADA `.off` QUE ESTE CATÁLOGO JÁ REMOVEU. O cabeçalho acima tirou a `learningcurve`
+     * e a `kindergarten` com a razão certa — «uma linha que só serve para dizer "ainda não" é uma linha que a
+     * criança lê e não pode usar». A diferença é ACCIONABILIDADE, e é a razão que o ADR-0108 dá por extenso:
+     * aquelas diziam «ainda não», que ninguém pode resolver; esta diz QUAIS TRÊS FONTES INSTALAR, que um
+     * adulto resolve numa tarde. 📌 «Instale uma fonte ronde» seria o defeito de volta — um adulto não age
+     * sobre uma categoria —, e é por isso que a mensagem nomeia as três.
+     *
+     * ⚠️ `papel` AUSENTE, logo `geral`, e é deliberado apesar de a ronde ser caligráfica por natureza: as
+     * caligráficas são filtradas do menu (`papelDaFonte === 'geral'`), e uma linha filtrada não pode dizer
+     * nada a ninguém. Marcar o papel «certo» aqui apagaria a única coisa que este item existe para fazer.
+     */
+    {k:'ronde', fam:'Ronde Script, OPTIFrench-Script, Merveille', fb:'cursive',
+      d:'font.desc.ronde', off:'font.off.ronde'} ]},
   // ⚠️ A FACE DO JOGO, e ela tem grupo próprio porque não é nem sans, nem serifada, nem manuscrita — é uma
   // face de PIXEL, e pô-la em qualquer um dos três diria a coisa errada sobre ela na lista.
   //

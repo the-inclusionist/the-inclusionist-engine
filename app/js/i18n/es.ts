@@ -593,6 +593,9 @@ const es: Record<string, string> = {
   'font.desc.andika': 'basada en la Sassoon; fruto de la investigación sobre cómo leen y escriben los niños',
   'font.desc.opendyslexic': 'Letras con la base más pesada, para que no se den vuelta al leer.',
   'font.desc.fondamento': 'Caligráfica de pluma, para las actividades de escritura a mano.',
+  'font.desc.ronde': 'Ronde francesa, la letra ligada que se enseña en la escuela.',
+  'font.off.ronde': 'Instale en el dispositivo una de estas tres: Ronde Script, OPTIFrench-Script o Merveille. '
+    + 'Son gratuitas para uso personal, y por eso no pueden venir dentro del juego.',
   'font.desc.greatvibes': 'caligráfica inglesa',
   'font.desc.pinyon': 'caligráfica inglesa',
   'font.desc.ufcook': 'blackletter alemana',

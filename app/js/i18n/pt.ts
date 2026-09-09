@@ -672,6 +672,12 @@ const pt: Record<string, string> = {
   'font.desc.andika': 'baseada na Sassoon; fruto de pesquisa sobre como crianças leem e escrevem',
   'font.desc.opendyslexic': 'Letras com a base mais pesada, para não virarem de cabeça para baixo ao ler.',
   'font.desc.fondamento': 'Caligráfica de pena, para as atividades de escrita à mão.',
+  'font.desc.ronde': 'Ronde francesa, a letra de mão que se ensina na escola.',
+  // ⚠️ AS TRÊS PELO NOME, e não «uma fonte ronde» (ADR-0108 §4): um adulto não consegue agir sobre uma
+  // categoria. A frase existe para ser executável — abrir o navegador, procurar UM destes três nomes,
+  // instalar. Nomear a categoria seria a mesma linha morta que este catálogo já removeu duas vezes.
+  'font.off.ronde': 'Instale no aparelho uma destas três: Ronde Script, OPTIFrench-Script ou Merveille. '
+    + 'Elas são gratuitas para uso pessoal, e por isso não podem vir dentro do jogo.',
   'font.desc.greatvibes': 'caligráfica inglesa',
   'font.desc.pinyon': 'caligráfica inglesa',
   'font.desc.ufcook': 'blackletter alemã',

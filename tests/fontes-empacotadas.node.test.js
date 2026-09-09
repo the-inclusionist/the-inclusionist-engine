@@ -34,6 +34,12 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// O catálogo e os três dicionários, lidos dos MÓDULOS e não de uma cópia — a frase que a criança e o adulto
+// leem é a que está aqui, e afirmá-la contra um literal ao lado mediria a cópia.
+import { FONT_GROUPS } from '../app/js/ui/fonts.js';
+import pt from '../app/js/i18n/pt.js';
+import en from '../app/js/i18n/en.js';
+import es from '../app/js/i18n/es.js';
 
 const VENDOR = fileURLToPath(new URL('../app/public/vendor/', import.meta.url));
 const CSS = readFileSync(join(VENDOR, 'fonts.css'), 'utf8');
@@ -151,6 +157,53 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
     // exactamente o caso que a distinção entre roster e pacote existe para tratar.
     expect(playwriteForaDasOito(['Playwrite BR', 'Playwrite IE'])).toEqual(['Playwrite IE']);
     expect(playwriteForaDasOito([...AS_OITO])).toEqual([]);
+  });
+
+  /* ===================== ADR-0108 §4 · A OPÇÃO DA RONDE FALA, E NOMEIA AS TRÊS =====================
+   *
+   * O ADR-0012 decidiu a licença — as três faces são livres só para uso PESSOAL e nunca são empacotadas — e
+   * decidiu o controle: fica DESABILITADO enquanto nenhuma estiver presente. O que ninguém tinha escrito é o
+   * que a opção DIZ. Um botão cinzento sem explicação ensina a um adulto que a funcionalidade está partida,
+   * quando ela está a uma instalação de distância.
+   *
+   * 🎯 E A REGRA É NOMEAR AS TRÊS, não a categoria. «Instale uma fonte ronde» é inaccionável — um adulto não
+   * age sobre uma categoria —, e é exactamente a forma que o ADR-0108 recusa por escrito. Este bloco existe
+   * para que a frase não possa deslizar para lá.
+   *
+   * ⚠️ E É O QUE SEPARA ESTA ENTRADA `.off` DAS DUAS QUE ESTE CATÁLOGO JÁ REMOVEU. A `learningcurve` e a
+   * `kindergarten` diziam «ainda não», que ninguém pode resolver, e saíram com essa razão escrita no
+   * cabeçalho de `ui/fonts`. Esta diz o que fazer. A accionabilidade é a diferença, e é ela que este gate
+   * afere — sem ele, a próxima pessoa remove a linha citando o comentário certo pelo motivo errado. */
+  describe('ADR-0108 §4 · a opção desabilitada nomeia as três faces', () => {
+    const RONDE = FONT_GROUPS.flatMap((g) => g.items).find((it) => it.k === 'ronde');
+
+    it('[Vácuo] a entrada `ronde` existe no catálogo e está DESLIGADA', () => {
+      expect(RONDE, 'a entrada da ronde saiu do catálogo — o ADR-0108 §4 ficou sem sujeito').toBeTruthy();
+      expect(RONDE.off, 'a ronde ficou selecionável: as três faces não podem ser empacotadas').toBeTruthy();
+      // 📌 `geral` e não `caligrafica`, apesar de ela ser caligráfica: o menu filtra as caligráficas, e uma
+      // linha filtrada não diz nada a ninguém. O papel «certo» apagaria a única coisa que ela faz.
+      expect(RONDE.papel, 'a ronde foi marcada como caligráfica e desapareceu do menu').toBeUndefined();
+    });
+
+    it('🎯 [Right] a mensagem nomeia AS TRÊS, nos três idiomas', () => {
+      for (const [nome, dic] of [['pt', pt], ['en', en], ['es', es]]) {
+        const msg = dic[RONDE.off];
+        expect(msg, `${nome}: a chave \`${RONDE.off}\` não existe no dicionário`).toBeTruthy();
+        for (const face of A_RONDE) {
+          expect(msg, `${nome}: a mensagem não nomeia «${face}»`).toContain(face);
+        }
+      }
+    });
+
+    it('⚠️ [Right] e uma frase que nomeia a CATEGORIA reprovaria — a forma que o ADR-0108 recusa', () => {
+      // A regra como função, conduzida por fixture: sem isto o caso acima passaria por a frase actual estar
+      // certa, e nada diria que a ERRADA é detectável. É a redacção que o registo rejeita, palavra por palavra.
+      const nomeiaAsTres = (texto) => A_RONDE.every((f) => texto.includes(f));
+      expect(nomeiaAsTres('Instale uma fonte ronde no aparelho.')).toBe(false);
+      expect(nomeiaAsTres('Instale Ronde Script, OPTIFrench-Script ou Merveille.')).toBe(true);
+      // ⚠️ E DUAS DAS TRÊS NÃO CHEGAM: quem tiver só as outras duas lê uma lista que não serve para ele.
+      expect(nomeiaAsTres('Instale Ronde Script ou Merveille.')).toBe(false);
+    });
   });
 
   it('[Right] a ronde é apanhada pela FAMÍLIA e também pelo FICHEIRO solto', () => {
