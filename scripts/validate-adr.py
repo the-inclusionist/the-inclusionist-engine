@@ -70,7 +70,14 @@ NAO_CONFERIDOS = {}
 #
 # 📌 Uma lista declarada resolve-o e custa uma linha por repositório: prefixo conhecido sem raiz é CONTADO;
 # prefixo desconhecido é PROBLEMA. Acrescentar um repositório a esta lista é o acto de o admitir.
-REPOS_CONHECIDOS = {"engine"}
+# 🔴 `docs` ENTROU EM 2026-09-09, e o que o obrigou foi o VEREDICTO DIVERGENTE que esta lista existe para
+# impedir. O ADR-0126 confirmava-se em `scripts/divida-dos-registos.py` SEM prefixo, e um caminho sem prefixo
+# resolve-se contra o repositório de onde se corre: a CI do docs abria-o e passava, a corrida a partir da
+# engine procurava-o na árvore errada e reprovava. A mesma árvore, verde de um lado e vermelha do outro, sem
+# nada a dizer qual estava certo — que é exactamente o defeito do `9d4a5e3`, agora vindo do DADO em vez da
+# ferramenta. 📌 Um caminho sem prefixo passa a significar «o repositório de onde se corre», e isso só é
+# seguro para um registo que vive com o código que ele nomeia; tudo o resto declara-se.
+REPOS_CONHECIDOS = {"engine", "docs"}
 
 # ADR-0057 diz como um registo MUDA. `confirmed-by` diz outra coisa, que faltava: se ele foi CONSTRUÍDO.
 #
@@ -322,6 +329,22 @@ def pointer_problems(files):
                 back = meta[replaced][1].get("superseded-in-part") or []
                 if not any((e.get("by") if isinstance(e, dict) else e) == name for e in back):
                     note(path, f"`supersedes-in-part: {replaced}`, but {replaced} does not point back")
+
+    # 🔴 O ÍNDICE É A PORTA, E ELE DRENA EM SILÊNCIO. Medido em 2026-09-09: 133 registos no disco e 126
+    # linhas no `README.md` — os sete últimos nunca lá entraram, um de cada vez, sem que nada o dissesse.
+    # Um registo fora do índice existe só para quem já sabe o número, e ninguém que precise dele sabe.
+    # ⚠️ A pergunta é «tem LINHA», não «é mencionado»: um registo citado dentro da prosa de outra linha
+    # apareceria a um `grep` e continuaria sem entrada própria — que é como as sete se esconderam.
+    # 📌 A pasta sai do PRÓPRIO registo e não de uma variável global: o índice vive ao lado dos ficheiros
+    # que indexa, e derivá-lo daqui é o que impede este caso de medir a pasta de onde alguém correu.
+    indice = os.path.join(os.path.dirname(next(iter(meta.values()))[0]), "README.md") if meta else None
+    if indice and os.path.exists(indice):
+        with open(indice, encoding="utf-8") as fh:
+            linhas = {mt.group(1) for mt in re.finditer(r"(?m)^\| \[(ADR-\d{4})\]", fh.read())}
+        for name, (path, _m) in sorted(meta.items()):
+            if name not in linhas:
+                note(path, "has no row in the index `README.md` — a record outside the index is reachable "
+                           "only by someone who already knows its number, and nobody who needs it does")
     return problems
 
 

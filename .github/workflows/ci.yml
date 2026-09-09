@@ -159,7 +159,7 @@ jobs:
       # 📌 `--repo engine=.` é o que este repositório tem e o outro não: o CÓDIGO que as confirmações nomeiam.
       - name: validate the ADR records, and OPEN the confirmations that name this repository
         if: env.TEM_TOKEN == 'true'
-        run: python adr-tree/scripts/validate-adr.py adr-tree/docs/2-Architecture/adr --repo engine=.
+        run: python adr-tree/scripts/validate-adr.py adr-tree/docs/2-Architecture/adr --repo engine=. --repo docs=adr-tree
 
       # 🎯 E O CRIVO DA PROSA, que é do lado do código porque um registo a nomear um ficheiro DESTA árvore que
       # já não existe é quebra DESTA árvore (ADR-0123 §5). Sem `ADR_TREE` ele salta, e um caso próprio recusa
