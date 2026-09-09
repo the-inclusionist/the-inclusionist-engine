@@ -63,6 +63,12 @@ function fakeIconBtn(pi) {
     get className() { return [...classList._set].join(' '); },
     setAttribute(n, v) { attrs[n] = v; },
     getAttribute(n) { return n in attrs ? attrs[n] : null; },
+    // ⚠️ O DUPLO FICOU CURTO PELA QUARTA VEZ NESTE FICHEIRO, e o conserto é DELE e não da engine — a lição já
+    // está no cabeçalho duas vezes. Faltava `removeAttribute`, e faltava porque até hoje nada TIRAVA um
+    // atributo: a issue #128 (`aria-disabled` a espelhar o `pi-dis`) é o primeiro caso que o faz. Um duplo
+    // mais pobre do que a coisa real não reprova o código — rebenta ao lado dele, e o erro aponta para a
+    // engine em vez de apontar para si próprio.
+    removeAttribute(n) { delete attrs[n]; },
     _attrs: attrs,
   };
 }
@@ -597,6 +603,63 @@ describe('initPauseIcons — ações dos ícones', () => {
     } finally {
       delete globalThis.localStorage;
     }
+  });
+
+  // ========================= A CLÁUSULA 3 DO ADR-0113, NO ÍCONE DA BARRA =========================
+  // ⚠️ O ÍCONE E O `#opt-altmove` ESCREVEM O MESMO VALOR. Um a aceitar o clique enquanto o outro recusa
+  // daria à criança dois botões que discordam sobre o mesmo ajuste — e o que ela veria era o painel a dizer
+  // «não dá» e a barra a fingir que deu.
+  it('🔴 [Zero] com o olhar em uso, o ícone `altmove` recusa DIZENDO, e não mexe em nada', () => {
+    setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
+    const { ctx, alerted } = buildCtx();
+    delete ctx.setToggleMove;
+    ctx.transporteEmUso = () => 'olhos';
+
+    initPauseIcons(ctx).iconAct('altmove', 0);
+
+    expect(rodada.players[0].toggleMove, 'o ícone mexeu num ajuste que este aparelho exige').toBe(false);
+    expect(alerted.join(' '), 'recusou em silêncio — a criança fica sem saber por quê')
+      .toContain('precisa das teclas de alternância');
+  });
+
+  it('📌 [Zero] sem `transporteEmUso`, o ícone continua a alternar', () => {
+    setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
+    const { ctx, state } = buildCtx();
+    initPauseIcons(ctx).iconAct('altmove', 0);
+    expect(state.toggleMoveCalls, 'o ícone deixou de accionar quando não há recusa nenhuma').toHaveLength(1);
+  });
+
+  // ⚠️ ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE, e o buraco era real: os dois casos acima medem o ACTO
+  // (recusar, dizer) e nenhum media o ASPECTO. Tirar `dis = !!s.alternanciaExigida` passava — e o resultado
+  // seria um ícone que parece accionável, não responde, e só explica depois de a criança carregar.
+  it('🔴 [Right] com o olhar em uso, o ícone MOSTRA-SE desabilitado antes de ser tocado', () => {
+    setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
+    const { ctx } = buildCtx();
+    ctx.transporteEmUso = () => 'olhos';
+    const b = fakeIconBtn('altmove');
+    initPauseIcons(ctx).reflectIconBtn(b, 0);
+
+    expect(b.classList.contains('pi-dis'), 'o ícone parece accionável e não é').toBe(true);
+    expect(b.getAttribute('aria-disabled'), 'e quem navega por ouvido não sabe disso').toBe('true');
+  });
+
+  // 🔴 A ISSUE #128, E ELA É DE UMA LINHA. `pi-dis` é CLASSE CSS: a criança que enxerga vê o ícone apagado,
+  // a que navega por leitor de tela não recebe nada — o botão anuncia-se accionável e não responde.
+  it('🔴 [Right] `pi-dis` passa a ter par em `aria-disabled` — e sai quando o motivo sai', () => {
+    const { ctx } = buildCtx();
+    const api = initPauseIcons(ctx);
+    const b = fakeIconBtn('blind');
+
+    setPlayers([{ audioSink: 'x' }, { audioSink: 'x' }]);   // dois no mesmo sink: sem saída privada
+    api.reflectIconBtn(b, 0);
+    expect(b.classList.contains('pi-dis'), 'o cenário não desabilitou o ícone').toBe(true);
+    expect(b.getAttribute('aria-disabled'), 'a criança cega não sabe que o botão não responde').toBe('true');
+
+    setPlayers([{ audioSink: 'x' }]);                        // sozinha: a saída volta a ser privada
+    api.reflectIconBtn(b, 0);
+    expect(b.classList.contains('pi-dis')).toBe(false);
+    expect(b.getAttribute('aria-disabled'), 'ficou marcado como desabilitado depois de voltar a funcionar')
+      .toBe(null);
   });
 
   it('o TTS alterna a categoria, reaplica o ganho e anuncia', () => {

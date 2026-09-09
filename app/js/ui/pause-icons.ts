@@ -49,6 +49,7 @@ import { menuIndexOn, DEFAULTS, setModoCegoValue } from '../core/state.js';
 // não inverte camada nenhuma.
 import * as store from '../platform/storage.js';
 import { definirAlternanciaDeMarcha } from './settings-motor.js';
+import { recusaDaAlternancia } from './latch-refusal.js';
 import { PM_BTNS, PM_OPTIONS_BTNS } from './activities-menu.js';
 import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena } from './motion-scene.js';
 
@@ -197,6 +198,21 @@ export interface IconStateSnapshot {
   visual: VisualState;
   /** False disables the blind/TTS icons: those need an audio output nobody else is listening to. */
   privateOutput: boolean;
+  /**
+   * O aparelho em uso EXIGE a alternância? (ADR-0113 cláusula 3.)
+   *
+   * ⚠️ Em olhos, rosto, gestos e fala ela é o que faz a entrada funcionar, logo não há escolha a oferecer.
+   * O ícone fica desabilitado COM MOTIVO, como o painel — e não pode divergir dele: as duas superfícies
+   * escrevem o mesmo valor, e uma que aceitasse o clique enquanto a outra recusa deixaria a criança com
+   * dois botões que discordam sobre o mesmo ajuste.
+   *
+   * 🔴 OPCIONAL PORQUE O GATE DA FORMA ME APANHOU: eu escrevi-o obrigatório, e o
+   * `tests/superficie-publica` reprovou com «ENTROU como obrigatório» — que é uma MUDANÇA QUEBRANTE do
+   * pacote, porque quem constrói este snapshot passa a ter de o preencher. Foi para isto que o gate da
+   * FORMA (`2f2582f`) foi escrito, e é a primeira vez que ele apanha um campo A ENTRAR e não a sair.
+   * Ausente significa «ninguém me disse», que degrada para «não exijo» — o comportamento de hoje.
+   */
+  alternanciaExigida?: boolean;
 }
 
 /** A player has private output when nobody else is on the same sink. Single screen ⇒ always private.
@@ -283,7 +299,7 @@ export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   else if (k === 'tts') { on = s.ttsOn; dis = !s.privateOutput; }
   else if (k === 'libras') { on = s.librasOn; }
   else if (k === 'tea') { on = s.calmMode === 2; calm = s.calmMode === 1; }
-  else if (k === 'altmove') { on = s.toggleMove; }
+  else if (k === 'altmove') { on = s.toggleMove; dis = !!s.alternanciaExigida; }
   else if (k === 'contrast') { on = temAltoContraste(s.visual); }
   else if (k === 'cvd') {
     // ⚠️ O FUNDO DE DUAS CORES É O SINAL DE LIGADO deste ícone, e agora ele lê o EIXO da correção — que
@@ -812,6 +828,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   const setPauseActor = (i: number): void => { if (ctx.setPauseActor) ctx.setPauseActor(i); };
 
   function hasPrivateOutput(i: number): boolean { return hasPrivateOutputIn(P(), ctx.getNumPlayers(), i); }
+  /** A recusa da alternância para este jogador agora, ou `null`. Recalculada: o aparelho em uso muda. */
+  function recusaAgora(i: number) { return ctx.transporteEmUso ? recusaDaAlternancia(ctx.transporteEmUso(i)) : null; }
 
   function iconState(i: number): IconStateSnapshot {
     const p = P()[i] || {};
@@ -829,6 +847,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       // aqui, porque ela lê `DEFAULTS` e mais nada.
       visual: p.visual ?? PADRAO,
       privateOutput: hasPrivateOutput(i),
+      alternanciaExigida: recusaAgora(i) !== null,
     };
   }
 
@@ -912,6 +931,14 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       ctx.srAlert(t('sr.icon.needsPrivateOutput'));
       return;
     }
+    // ⚠️ A MESMA RECUSA DO PAINEL, na mesma forma que as duas acima: DIZER e voltar. Aceitar o clique e
+    // ignorá-lo é a outra metade do que o ADR-0076 proíbe, e aqui há um agravante — este ícone e o
+    // `#opt-altmove` escrevem o MESMO valor, logo um a aceitar enquanto o outro recusa daria à criança dois
+    // botões que discordam sobre o mesmo ajuste.
+    if (k === 'altmove') {
+      const recusa = recusaAgora(i);
+      if (recusa) { ctx.srAlert(t(recusa.chave)); return; }
+    }
     const act = ICON_ACTS[k];
     if (act) act(i);
   }
@@ -929,6 +956,17 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (v.cvd) b.classList.add(v.cvd);
     b.classList.toggle('pi-on', v.on);
     b.classList.toggle('pi-dis', v.dis);
+    /*
+     * 🔴 A ISSUE #128, E ELA É DE UMA LINHA: `pi-dis` é CLASSE CSS. A criança que enxerga vê o ícone
+     * apagado; a que navega por leitor de tela não recebe nada — o botão anuncia-se accionável e não
+     * responde. `aria-disabled` espelha o mesmo facto para quem ouve.
+     *
+     * ⚠️ E `aria-disabled` e NÃO `disabled`: o segundo tira o botão da ordem de tabulação, e quem navega
+     * por teclado deixaria de o alcançar — logo deixaria de poder ouvir POR QUE ele não responde. É a
+     * mesma escolha que o `#opt-altmove` faz no painel, pela mesma razão.
+     */
+    if (v.dis) b.setAttribute('aria-disabled', 'true');
+    else b.removeAttribute('aria-disabled');
     b.setAttribute('aria-pressed', String(v.active));
     // ⚠️ TODO ÍCONE RECEBE RÓTULO, `soon` INCLUÍDO — e o guarda que aqui estava dizia por que não: «`soon`
     // buttons keep the label the markup gave them (same string)». A segunda metade continua certa (não há
