@@ -246,6 +246,26 @@ const CRU_CONHECIDO = {
                                    // mesma razão das outras deste bloco: são mensagens que quem INTEGRA a
                                    // engine lê, e não texto que chega a uma criança — o crivo é por FORMA e
                                    // não distingue os dois.
+  'platform/pesados-catalogo.ts': 6, // ⚠️ AS RAZÕES DE UMA COISA PESADA NÃO TER FONTE, e uma criança nunca as
+                                   // lê: elas dizem a QUEM MONTA UM JOGO que o runtime de visão espera pela
+                                   // #129 e que a arte do LCP espera pela quarentena. São o mecanismo inteiro
+                                   // do ADR-0119 — a diferença entre «este subsistema ainda não tem de onde
+                                   // vir» e «este subsistema está tratado» —, e passá-las por `t()` seria
+                                   // pedir aos três dicionários que carregassem o estado de duas issues.
+                                   // 📌 O gate do `pesados` exige que cada uma tenha MAIS DE 40 CARACTERES:
+                                   // encurtá-las para pagar menos a este livro-razão pagaria com a única
+                                   // parte que serve a quem as lê.
+                                   // 📏 SÃO SEIS LINHAS E TRÊS RAZÕES — cada uma parte-se em duas por caber
+                                   // na largura, e o crivo conta LITERAIS e não frases. O número foi MEDIDO
+                                   // depois de eu escrever `4` por estimativa e o teto me apanhar: a
+                                   // terceira razão é a do identificador de voz torto, que eu tinha
+                                   // esquecido de contar.
+  'platform/pesados.ts': 1,        // «sem Cache Storage ou sem fetch» — o estado de um ambiente sem as duas
+                                   // primitivas, que em produção é um navegador antigo e no gate é o caso do
+                                   // vácuo. Vai no campo `erro` de um relatório, que a engine não mostra a
+                                   // ninguém: quem decide se aquilo chega a uma tela é o jogo, e aí é ELE que
+                                   // escolhe as palavras (ADR-0111 — a palavra que chega a uma pessoa é a do
+                                   // JOGO).
   'core/contract.ts': 1,           // ⚠️ VOLTOU À LISTA, e a volta é honesta em vez de silenciosa: ela saiu
                                    // daqui em 2026-09-06 quando as dezesseis mensagens de `conformanceProblems`
                                    // passaram a inglês e o módulo zerou. O ADR-0087 acrescentou o campo

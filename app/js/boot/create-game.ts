@@ -77,6 +77,7 @@ import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registrarMapeamentoDoTeclado } from '../input/keyboard.js';
 import { registrarMapeamentoDoPad } from '../input/pad-defaults.js';
+import { baixarPesados, type RelatorioPesado } from '../platform/pesados.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 
 /** O que o jogo empresta do documento. Tudo opcional menos `doc`/`win`: o que faltar vira `problems`. */
@@ -235,6 +236,35 @@ export interface CreateGameOptions {
    * painel de áudio deixa de OFERECER o motor neural, em vez de o oferecer e nunca o carregar.
    */
   readonly carregarVozNeural?: CarregarVozNeural;
+  /**
+   * BAIXAR AS COISAS PESADAS NO PRIMEIRO CARREGAMENTO? Padrão **sim** (ADR-0110 (b), ADR-0116, ADR-0119).
+   *
+   * As quatro vozes neurais são ~241 MB e descem em SEGUNDO PLANO, uma de cada vez, sem bloquear o jogo: a
+   * criança joga enquanto elas chegam, e o que não pode acontecer é ela voltar no segundo dia, sem rede, e
+   * descobrir que a voz nunca foi buscada. O pilar 8 é «primeiro dia ONLINE, depois offline-first», e o
+   * ADR-0116 tirou a contradição que travava isto — instalar já é um acto de rede.
+   *
+   * ⚠️ PÔR `false` É PARA QUEM TEM RAZÃO PARA O FAZER, e a razão que já existe é um TESTE: um caso que monte
+   * o arranque num navegador de verdade não pode disparar 241 MB contra o Hugging Face. Um jogo em produção
+   * que o desligue está a decidir que a criança dele fica sem voz neural offline.
+   *
+   * 📌 E o ADR-0117 diz que quem devia pagar isto uma vez é a PLATAFORMA, não cada cartucho — a Cache Storage
+   * é particionada por origem, e num site só os 241 MB descem uma vez para todos os jogos. Enquanto a
+   * plataforma não os pede, é o jogo que os pede: melhor descer duas vezes do que nunca.
+   */
+  readonly baixarPesados?: boolean;
+  /**
+   * O QUE ACONTECEU COM CADA COISA PESADA, à medida que acontece. Ausente = ninguém está a ver.
+   *
+   * ⚠️ É AQUI E NÃO EM `problems` porque a descarga é de FUNDO: `problems` é devolvido sincronamente pelo
+   * `createGame`, e uma linha que chegue depois disso entra num vector que o leitor já leu. O ADR-0110 pede
+   * que uma busca falhada seja REPORTADA — reportar é ter um canal que existe quando a notícia chega, e não
+   * empurrar para uma lista que já foi entregue.
+   *
+   * 📌 A engine não inventa superfície nenhuma com isto: quem sabe onde cabe «faltam 241 MB» na tela de um
+   * jogo é o jogo. `pesoPorBaixar(relatorio)` dá o número para a frase.
+   */
+  readonly aoProgredirPesados?: (r: RelatorioPesado) => void;
   /**
    * Como se descobre que cada transporte está aqui. Ausente = a engine pergunta ao aparelho.
    *
@@ -831,6 +861,33 @@ export function createGame(o: CreateGameOptions): Engine {
       if (cartao) cartao.hidden = true;
     },
   };
+
+  /*
+   * AS COISAS PESADAS COMEÇAM A DESCER AQUI, e a linha é deliberadamente a ÚLTIMA coisa do arranque.
+   *
+   * ⚠️ SEM `await`. O arranque não espera por 241 MB — se esperasse, a primeira tela de uma escola com 3G
+   * ficaria em branco durante minutos e a criança concluiria que o jogo não abre. O `catch` vazio é a mesma
+   * regra escrita duas vezes: uma falha de rede aqui não pode derrubar um jogo que hoje nem usa a voz.
+   *
+   * 🔴 E O RELATÓRIO NÃO VAI PARA `problems`, embora a primeira versão o fizesse. Duas razões medidas, e a
+   * primeira é a que importa:
+   *
+   *  1. **CHEGA DEPOIS DE O LEITOR SE IR EMBORA.** `problems` é devolvido na linha abaixo, sincronamente; a
+   *     descarga é de fundo, logo TODA linha dela entraria num vector que o consumidor já leu. Quem faz
+   *     `if (motor.problems.length) …` não veria nada, e quem o lesse mais tarde veria uma lista que cresceu
+   *     depois do arranque. Um relatório que chega depois do leitor não é um relatório — é a forma exacta do
+   *     `srSay` a escrever onde não havia `#sr-status`.
+   *  2. **AFOGAVA O QUE SE PODE RESOLVER.** Sem rede — uma escola sem rede, que é o alvo e não a excepção —
+   *     são OITO falhas a empurrar para uma lista que o ADR-0106 §2 construiu para dizer o que FALTA NO
+   *     HOSPEDEIRO. A criança perde a barra de acessibilidade e a linha que o diz fica em nono lugar.
+   *
+   * 📌 O canal certo é o que a própria função já tem: `aoProgredir`, entregue a quem chama. Um consumidor que
+   * queira mostrar «faltam 241 MB» ou «a voz não desceu» tem por onde; a engine não inventa uma superfície.
+   */
+  if (o.baixarPesados !== false) {
+    void baixarPesados({ aoProgredir: o.aoProgredirPesados })
+      .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });
+  }
 
   return { declaration: o.declaration, pausa, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines, aoFalhar, alcance: alcanceAqui };
 }

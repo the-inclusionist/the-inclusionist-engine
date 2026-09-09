@@ -55,7 +55,7 @@ const declaracaoValida = () => ({
 
 const abrir = (extra = {}) => createGame({
   declaration: declaracaoValida(),
-  host: { doc: document, win: window },
+  host: { doc: document, win: window }, baixarPesados: false,
   ...extra,
 });
 

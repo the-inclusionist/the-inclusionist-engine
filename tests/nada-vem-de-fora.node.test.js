@@ -6,9 +6,16 @@
 // excepção — um módulo que busque código a um servidor de terceiros não degrada: ele simplesmente não faz
 // nada. A criança liga o botão e não acontece coisa nenhuma, sem erro e sem explicação.
 //
-// 📏 MEDIDO EM 2026-09-08: a engine inteira tem UMA busca de runtime externo, e ela é justamente no transporte
-// assistido — o `ui/webcam` carrega o WebGazer de `webgazer.cs.brown.edu`. Ou seja: o único subsistema que
-// exige internet é o que serve a criança que menos pode ir buscar outra coisa.
+// 📏 MEDIDO EM 2026-09-08: a engine inteira tinha UMA busca de runtime externo, e ela era justamente no
+// transporte assistido — o `ui/webcam` carrega o WebGazer de `webgazer.cs.brown.edu`. Ou seja: o único
+// subsistema que exigia internet era o que serve a criança que menos pode ir buscar outra coisa.
+//
+// ⚠️ E EM 2026-09-09 PASSARAM A SER DUAS, POR DECISÃO E NÃO POR DERIVA. O `platform/pesados` desce as quatro
+// vozes neurais no primeiro carregamento (ADR-0110 (b), pedido do Dev). A distinção que este ficheiro tem de
+// fazer deixou de ser «há busca ou não há» e passou a ser QUANDO: uma busca na INSTALAÇÃO cumpre o pilar 8
+// («primeiro dia online, depois offline-first», errata ditada pelo Dev); uma busca PREGUIÇOSA no primeiro uso
+// viola-o, porque a máquina que nunca ligou aquele controle nunca a fez. O WebGazer é a segunda; é por isso
+// que ele continua a ser um defeito e o buscador não.
 //
 // ⚠️ E A DISTINÇÃO QUE ESTE CRIVO TEM DE FAZER É A RAZÃO DE ELE SER INVENTÁRIO E NÃO PROIBIÇÃO: nem toda URL
 // em código é uma busca. `http://www.w3.org/2000/svg` é um NAMESPACE XML — um identificador que o
@@ -70,7 +77,47 @@ const DECLARADAS = {
  * (o ADR-0114 exige que um deles o faça) sem nunca o pedir, e tratá-los igual acusaria um falso — que é
  * como um gate é desligado antes de apanhar o verdadeiro.
  */
-const REDE = /\bfetch\s*\(|\bimport\s*\(|\.src\s*=|XMLHttpRequest|navigator\.sendBeacon|new\s+WebSocket|new\s+EventSource/;
+// 🔴 ERA `\bfetch\s*\(` ATÉ 2026-09-09, E O BUSCADOR DAS COISAS PESADAS PASSOU-LHE AO LADO. O
+// `platform/pesados.ts` RECEBE o `fetch` (`readonly buscar?: typeof fetch`, com
+// `opcoes.buscar ?? fetch`) e chama-o por outro nome — `buscar(p.url)`. A primitiva está lá, o nome
+// dela desapareceu do sítio onde ela é usada.
+// ⚠️ E ISSO NÃO FOI EVASÃO, FOI BOM DESENHO: injectar a primitiva é o que torna o buscador testável sem
+// rede, e é o mesmo movimento que o `input/touch` já recomenda («injectar o BOOLEANO, não o estado»). Um
+// discriminador derrotado por DESENHO CERTO é pior do que um derrotado por descuido: ninguém fez nada de
+// errado, e por isso ninguém vai à procura.
+// 📌 `\bfetch\b` apanha o nome em posição de VALOR (`typeof fetch`, `?? fetch`) e não só de chamada. Medido
+// em 2026-09-09 na árvore inteira: passa de três módulos para QUATRO, e o quarto é o buscador — zero falsos.
+const REDE = /\bfetch\b|\bimport\s*\(|\.src\s*=|XMLHttpRequest|navigator\.sendBeacon|new\s+WebSocket|new\s+EventSource/;
+/**
+ * OS MÓDULOS QUE TOCAM NUMA PRIMITIVA DE REDE, e o que cada um faz com ela.
+ *
+ * ⚠️ TOCAR NA PRIMITIVA NÃO É SAIR DA MÁQUINA, e é essa a distinção que a lista existe para escrever. Dois
+ * destes carregam recurso LOCAL — um chunk do próprio pacote, um sprite do próprio cartucho — e contá-los
+ * como dependência de rede seria o mesmo erro que contar o namespace do W3C como busca.
+ *
+ * 📌 A lista é afirmada por IGUALDADE e não por inclusão: um módulo novo com `fetch` reprova, e um módulo
+ * que deixe de tocar na rede também — que é como o inventário ENCOLHE quando a #129 for resolvida.
+ */
+const TOCAM_NA_REDE = {
+  'core/i18n.ts': 'LOCAL. `import(\'../i18n/en.js\')` — os dicionários de en/es são chunks do próprio pacote, '
+    + 'cortados pelo Vite e servidos pelo service worker. Nada sai da máquina; o `import()` está no crivo '
+    + 'porque com um especificador absoluto ele SAI, e é por isso que o discriminador o inclui',
+  'input/gamepad.ts': 'LOCAL. `img.src = ctx.spriteBase + …` no assistente de mapeamento — arte do CARTUCHO, '
+    + 'por caminho relativo. ⚠️ Um cartucho que ponha uma URL absoluta em `spriteBase` transforma isto numa '
+    + 'busca sem tocar na engine; o crivo não o alcança porque o literal viveria no jogo, e fica escrito aqui '
+    + 'para não ser descoberto numa escola',
+  'platform/pesados.ts': '🎯 A SEGUNDA BUSCA EXTERNA DA ENGINE, e é DECIDIDA — ADR-0110 (b): os quatro '
+    + 'modelos de voz não viajam no pacote e descem no primeiro carregamento. ⚠️ NÃO VIOLA O PILAR 8, e a '
+    + 'diferença é a errata que o próprio Dev ditou: «primeiro uso não pode ser considerado rede porque o '
+    + 'próprio sistema está sendo baixado». O que o pilar proíbe é depender da rede DEPOIS do primeiro dia — '
+    + 'e é precisamente isso que este módulo conserta, porque hoje a voz nunca desce e a criança chega ao '
+    + 'segundo dia sem ela. 📌 Ele não tem URL em código: os endereços vêm do `platform/voice-plan`, o sítio '
+    + 'único do ADR-0114',
+  'ui/webcam.ts': '🔴 A BUSCA QUE VIOLA O PILAR 8, e continua por resolver. `<script src>` do WebGazer, '
+    + 'PREGUIÇOSO — dispara quando a criança liga o controle por olhar, logo a máquina que nunca o ligou não '
+    + 'o tem, e sem rede não acontece nada. Travado na #129. Sai daqui quando o runtime entrar no precache',
+};
+
 function tocaNaRede(modulo) {
   const src = readFileSync(join(RAIZ, modulo), 'utf8')
     .split(/\r?\n/).filter((ln) => !/^\s*(\/\/|\*|\/\*)/.test(ln)).join('\n');
@@ -101,10 +148,9 @@ describe('pilar 8 · nada chega de fora sem estar declarado', () => {
     expect('const s = "https://exemplo.org/x.js";'.match(URL_QUALQUER)).toEqual(['https://exemplo.org/x.js']);
   });
 
-  it('📌 [Right] e a busca externa que existe continua a ser UMA — o número é o assunto', () => {
-    // ⚠️ A afirmação forte deste ficheiro não é «há uma lista»: é que a engine tem UMA dependência de rede em
-    // tempo de execução, e que ela está no transporte assistido. Duas seriam outra conversa, e o crivo tem de
-    // a forçar em vez de a diluir numa lista que cresce.
+  it('📌 [Right] TODO módulo que toca numa primitiva de rede está declarado — o inventário é o assunto', () => {
+    // ⚠️ A afirmação forte deste ficheiro não é «há uma lista»: é que se sabe, uma a uma, quais são as
+    // dependências de rede desta engine e o que cada uma faz. Uma a mais tem de custar uma linha escrita.
     //
     // 🎯 O DISCRIMINADOR PASSOU A SER ESTRUTURAL EM 2026-09-08, e a mudança é um aperto e não um alívio.
     //    Era «não é o namespace do W3C, logo é uma busca» — que assume que só há duas categorias. O ADR-0114
@@ -112,9 +158,18 @@ describe('pilar 8 · nada chega de fora sem estar declarado', () => {
     //    Agora conta-se quem toca mesmo na REDE: um módulo é uma busca quando contém uma primitiva de rede.
     //    ⚠️ Uma lista de nomes teria deixado passar o buscador no dia em que ele nascesse NAQUELE ficheiro;
     //    esta forma apanha-o, porque é a primitiva que o denuncia e não o endereço.
-    const buscas = urlsEmCodigo().filter(({ modulo }) => tocaNaRede(modulo));
-    expect([...new Set(buscas.map((b) => b.modulo))], 'a engine ganhou uma segunda busca externa')
-      .toEqual(['ui/webcam.ts']);
+    // 🔴 E EM 2026-09-09 O CASO MUDOU DE FORMA OUTRA VEZ, porque a forma anterior tinha um BURACO que este
+    //    ficheiro não podia ver: ela contava módulos que tocam na rede **de entre os que têm uma URL em
+    //    código**. O buscador das coisas pesadas não tem nenhuma — as quatro moram no `platform/voice-plan`,
+    //    de onde chegam por import. Ele fetcha, e era invisível ao caso que existe para contar quem fetcha.
+    //    ⚠️ Separar CATÁLOGO de BUSCADOR é bom desenho (a lista é dado, o buscador é regra), e é exactamente
+    //    o que abria a porta: o literal fica de um lado, a primitiva do outro, e um crivo que exija os dois
+    //    no mesmo ficheiro não vê nenhum dos dois. Agora conta-se a PRIMITIVA onde quer que ela esteja.
+    const naRede = ficheirosTs()
+      .map((p) => relative(RAIZ, p).split('\\').join('/'))
+      .filter((m) => tocaNaRede(m));
+    expect(naRede.sort(), 'módulo novo a tocar numa primitiva de rede — declare-o em TOCAM_NA_REDE com o que ele faz')
+      .toEqual(Object.keys(TOCAM_NA_REDE).sort());
   });
 
   // 📌 O PAR QUE IMPEDE A CATEGORIA NOVA DE VIRAR PORTA DOS FUNDOS: o módulo que NOMEIA o host tem de
@@ -137,6 +192,16 @@ describe('pilar 8 · nada chega de fora sem estar declarado', () => {
 //      NOTICIA: e a #129 resolvida. Quando acontecer, a entrada do WebGazer sai desta lista e o caso do
 //      «continua a ser UMA» passa a exigir uma lista VAZIA. Fica escrito para ninguem ler o vermelho como
 //      regressao.
+//
+//   5. 🎯 O DISCRIMINADOR DE VOLTA A `\bfetch\s*\(` (2026-09-09) -> reprova o inventario, e e a mutacao que
+//      prova o conserto do dia: com ela, o `platform/pesados` — que RECEBE o `fetch` e o chama por outro
+//      nome — desaparece do conjunto medido e a engine volta a parecer ter tres modulos de rede em vez de
+//      quatro. ⚠️ Ela nao apanha um descuido: apanha BOM DESENHO a cegar um crivo, que e o buraco mais caro
+//      porque ninguem fez nada de errado.
+//   6. um modulo novo a ganhar `fetch(` sem entrada em `TOCAM_NA_REDE` -> reprova pela mesma assercao, que e
+//      a metade para que a lista existe. ⚠️ E a IGUALDADE (e nao a inclusao) e o que faz a lista ENCOLHER:
+//      no dia em que o WebGazer entrar no precache, a entrada dele tem de SAIR, senao o inventario reporta
+//      uma divida ja paga.
 //
 //   3. ⚠️ os comentarios a voltarem a contar -> SOBREVIVE, e e equivalencia por VACUIDADE: medido, ha ZERO
 //      URLs em comentario em `app/js` inteiro, entao o filtro nao remove nada hoje. Ele FICA na mesma, e

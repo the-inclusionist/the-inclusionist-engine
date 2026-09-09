@@ -75,7 +75,12 @@ const BUSCAS_A_MAO = {
       'crivo lê literais e não sabe a diferença; o `nada-vem-de-fora` faz essa distinção de forma estrutural, ' +
       'e é lá que ela é afirmada. ⚠️ O `1` é a cláusula do registo: um segundo host aqui — um espelho, um ' +
       'recuo — é a decisão da issue #129 a ser tomada em silêncio por quem estava a ligar o buscador. ' +
-      'Sai desta lista quando o buscador existir e a busca passar a viver nele',
+      '⚠️ CORRIGIDO EM 2026-09-09: esta linha dizia «sai desta lista quando o buscador existir e a busca ' +
+      'passar a viver nele». O buscador existe (`platform/pesados`) e a entrada FICA — porque este crivo lê ' +
+      'LITERAIS, e o literal continua aqui. O buscador não escreve endereço nenhum: importa `urlDoModelo` ' +
+      'deste módulo, que é a metade que o ADR-0114 realmente pede. Deixada como estava, a frase mandaria o ' +
+      'próximo leitor apagar uma entrada ainda devida — e o `1` cairia com ela. Sai daqui quando o endereço ' +
+      'sair do código, não quando a busca nascer',
   },
   'ui/webcam.ts': {
     urls: 1,
