@@ -9,8 +9,9 @@
 //
 //   · A CHAVE POR JOGADOR — `KEYS.toggleMoveP(i)`, o modelo antigo — tem **exactamente UM escritor** em toda
 //     a engine: `ui/settings-motor.setToggleMove`. Ela é tocada por DOIS ficheiros ao todo.
-//   · A CHAVE POR TRANSPORTE — `latch-scope.chaveDaAlternancia` — existe, está aferida, e tem **ZERO**
-//     chamadores em `app/js`. O módulo foi escrito para o ADR-0104 §C e esperava por esta decisão.
+//   · A CHAVE POR TRANSPORTE — `latch-scope.chaveDaAlternancia` — tem **UM** chamador: `input/latch-store`,
+//     o adaptador entre a regra e o armazenamento. Era zero quando este ficheiro nasceu, e o caso do PISO
+//     é que obrigou a actualizá-lo quando deixou de ser.
 //
 // ========================= POR QUE DUAS METADES, E NÃO UMA PROIBIÇÃO =========================
 // ⚠️ Uma proibição («ninguém escreve a chave antiga») nasceria VERMELHA e ficaria vermelha até a fiação
@@ -49,8 +50,16 @@ const AINDA_NA_CHAVE_ANTIGA = {
     'tem um alvo e não uma intenção',
 };
 
-/** ⚠️ O PISO. Hoje zero; quando a fiação chegar, sobe — e não pode recuar em silêncio. */
-const CHAMADORES_DA_CHAVE_NOVA_HOJE = 0;
+/**
+ * ⚠️ O PISO, e ele JÁ SUBIU UMA VEZ — de 0 para 1, em 2026-09-08, no commit seguinte ao que o escreveu.
+ *
+ * 🎯 O primeiro chamador é `input/latch-store`, o adaptador entre a regra e o armazenamento. E o modo como
+ * ele entrou é o gate a funcionar exactamente como desenhado: o caso reprovou, nomeou o ficheiro novo, e
+ * exigiu que este número e o inventário fossem revistos. Não foi lembrança de ninguém.
+ *
+ * Ele NÃO PODE RECUAR: recuar significaria que a fiação foi desfeita sem que o registo mudasse.
+ */
+const CHAMADORES_DA_CHAVE_NOVA_HOJE = 1;
 
 function ficheiros(dir = RAIZ, pref = '') {
   const out = [];
@@ -108,7 +117,7 @@ describe('a alternância migra para a chave por transporte · o piso que só sob
   // 🎯 ESTA É A METADE QUE DIZ SE O TRABALHO COMEÇOU. Um inventário sozinho olha só para trás: ele aprovaria
   // para sempre uma migração que nunca arrancou. Enquanto este número for zero, o registo está decidido e não
   // entregue — e o ficheiro di-lo em voz alta em vez de deixar o verde sugerir o contrário.
-  it('🎯 [Zero] a chave por transporte ainda não tem chamador — decidido, não entregue', () => {
+  it('🎯 [Zero] o piso dos chamadores da chave nova é EXACTAMENTE o declarado', () => {
     const chamadores = chamamAChaveNova();
     expect(chamadores.length, `o piso subiu para ${chamadores.length} (${chamadores.join(', ')}) — actualize `
       + 'CHAMADORES_DA_CHAVE_NOVA_HOJE e apague as entradas do inventário que já migraram')

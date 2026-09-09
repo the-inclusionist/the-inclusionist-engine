@@ -52,6 +52,7 @@ const PUBLICADOS = {
   'latch-scope': 'a regra de escopo da alternância (ADR-0104 §C); sem consumidor externo medido',
   'transporte-em-uso': 'o autómato do ADR-0109; sem consumidor externo medido — e ele NÃO deve ganhar um, porque quem responde à alternância é a engine',
   'origem-sintetica': 'o carimbo de origem (ADR-0109); sem consumidor externo medido, e é fiação interna',
+  'latch-store': 'o adaptador entre a regra da alternância e o armazenamento (ADR-0113). Publicado pelo curinga, sem consumidor externo medido — e ele NÃO deve ganhar um: quem responde pela alternância é a engine, e um cartucho que a lesse do disco por sua conta refaria o defeito que o ADR-0113 fecha',
   'pointer-space': 'a conversão de um ponto de tela (#105); pura, e pode legitimamente servir um cartucho que desenhe',
   'pointer': 'a amostra do ponteiro (ADR-0112); é o que o controle virtual vai entregar, então sai desta lista quando ele existir',
   'vocabulary-migration': 'a tradução dos nomes antigos de acção; existe para uma migração e sai com ela',
