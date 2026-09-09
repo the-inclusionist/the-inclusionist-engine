@@ -2,6 +2,18 @@
 metadata:
   status: "accepted"
   supersedes-in-part: [ADR-0094]
+  superseded-in-part:
+    - by: ADR-0116
+      what: >-
+        the clause that a CDN fetch is disqualifying because it is «a network dependency at first use», and
+        with it the conclusion that vendoring is what makes pillar 8 true. The Dev rejected the premise:
+        «PRIMEIRO USO NÃO PODE SER CONSIDERADO REDE PORQUE O PRÓPRIO SISTEMA ESTÁ SENDO BAIXADO! NÃO FAZ
+        SENTIDO BAIXAR ALGO VIA PWA, E CONSIDERAR QUE SE É PRA USAR VIA PWA OFFLINE NÃO É PRA BAIXAR NADA NO
+        PRIMEIRO USO!», and set the guarantee where it can be measured: «a ADR deveria ser PWA offline após o
+        primeiro dia.» ⚠️ WHAT THIS RECORD GOT RIGHT SURVIVES INTACT — the split between RUNTIME and MODELS,
+        that neither travels in the npm package, that the first precache block is a playable game, and that
+        LAN is out of scope for now. What changes is that «precached at install» replaces «never fetched», so
+        the origin of the runtime goes back to issue #129 as an open comparison instead of a settled one.
   date: 2026-09-08
   decision-makers: [Dev]
   consulted:
@@ -121,11 +133,19 @@ decision-outcome:
 
       ⚠️ AND ON cdnjs / jsDelivr, WHICH HE ASKED FOR: measured, they can serve the RUNTIME —
       `@mintplex-labs/piper-tts-web@1.0.5` and `onnxruntime-web@1.29.0` both answer from
-      `cdn.jsdelivr.net/npm/`. **They are still the wrong answer for it**, and for the reason he himself gave in
-      the same message: a CDN fetch is a network dependency at first use, and the school with no network gets
-      nothing. Vendoring is what makes pillar 8 true rather than intended. For the MODELS the question does not
-      arise: they live on Hugging Face, not on npm or GitHub, and jsDelivr's GitHub CDN does not serve files of
-      this size.
+      `cdn.jsdelivr.net/npm/`. **They are still the wrong answer for it**, because a CDN fetch is a network
+      dependency at first use, and the school with no network gets nothing. Vendoring is what makes pillar 8
+      true rather than intended. For the MODELS the question does not arise: they live on Hugging Face, not on
+      npm or GitHub, and jsDelivr's GitHub CDN does not serve files of this size.
+
+      🔴 ERRATUM, 2026-09-09 — A MISQUOTE, CORRECTED IN PLACE AND LEFT VISIBLE. The paragraph above ended, as
+      written, with «and for the reason HE HIMSELF GAVE in the same message». The Dev never gave that reason.
+      His words are recorded verbatim in `consulted` above and say the opposite — «se conseguir usar
+      cdnjs/jsdelivr é ótimo» — and the argument that overrode them was the AI's own, written back as his
+      after he had said «E assim eu sigo sua recomendação». A recommendation cited as its own authority.
+      ⚠️ ONLY THE ATTRIBUTION IS ERRATUM, because ADR-0057 leaves a wrong citation to erratum and nothing else.
+      The DECISION the paragraph carried is superseded by ADR-0116 — the author with the facts of that day
+      would have written the same sentence, which is the test that says supersession and not amendment.
   consequences:
     good:
       - "Pillar 8 becomes enforceable rather than aspirational: the floor is a precache block, and it is testable"
