@@ -24,10 +24,16 @@
 //   · um PISO que só sobe: quantas das oito já chegaram. Hoje zero; no dia em que alguém acrescentar a
 //     Brasil o piso sobe para um e não pode voltar. É o «teto que só desce» deste repositório, ao contrário.
 //
-// ⬜ E DOIS GATES DO ADR-0108 CONTINUAM POR ESCREVER, porque o que eles medem não existe: o AVISO da Ronde
-// (não há chave i18n nenhuma que o diga) e a chegada POR DOWNLOAD de uma face fora das oito (não há mecanismo
-// de download). Ficam registados aqui em vez de fingidos — um caso sobre uma função inexistente passaria por
-// vácuo e diria que o trabalho está feito.
+// ✅ O AVISO DA RONDE FOI ESCRITO EM 2026-09-09, e a linha acima ficou desactualizada no mesmo dia. Ele dizia
+// «não há chave i18n nenhuma que o diga» — e a saída foi criá-la: `font.off.ronde`, nos três idiomas, mais a
+// entrada `ronde` no catálogo como `geral` + `off`. 📌 O que destravou não foi trabalho novo: foi medir que uma
+// entrada `geral` com `off` RENDERIZA (`settings-typo.ts:145` filtra por papel, não por estado), logo a
+// superfície já existia. Eu tinha assumido que a ronde teria de ser `caligrafica` e concluído que ficaria
+// invisível.
+//
+// ⬜ UM GATE DO ADR-0108 CONTINUA POR ESCREVER, e é o que mede o que não existe: a chegada POR DOWNLOAD de uma
+// face fora das oito — não há mecanismo de download nenhum. Fica registado em vez de fingido: um caso sobre
+// uma função inexistente passaria por vácuo e diria que o trabalho está feito.
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
@@ -36,7 +42,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 // O catálogo e os três dicionários, lidos dos MÓDULOS e não de uma cópia — a frase que a criança e o adulto
 // leem é a que está aqui, e afirmá-la contra um literal ao lado mediria a cópia.
-import { FONT_GROUPS } from '../app/js/ui/fonts.js';
+import { FONT_GROUPS, faceDisponivel, familiasDaFace } from '../app/js/ui/fonts.js';
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';
@@ -193,6 +199,38 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
           expect(msg, `${nome}: a mensagem não nomeia «${face}»`).toContain(face);
         }
       }
+    });
+
+    /* 🎯 O «ENQUANTO» DO ADR-0012, QUE ERA A METADE QUE FALTAVA. O registo diz que o controle fica desabilitado
+     * «enquanto nenhuma fonte estiver presente» — o que implica DEIXAR de estar quando uma estiver. Sem isto a
+     * opção nunca habilitava: o adulto seguia a instrução, instalava a face, e a linha continuava cinzenta a
+     * mandá-lo instalar o que ele acabara de instalar. */
+    it('🎯 [Right] com UMA das três instalada, a face fica disponível', () => {
+      const so = (alvo) => (f) => f === alvo;
+      for (const face of A_RONDE) {
+        expect(faceDisponivel(RONDE, so(face)), `${face} instalada e a ronde continua indisponível`).toBe(true);
+      }
+    });
+
+    it('⚠️ [Zero] sem nenhuma das três, continua indisponível — e SEM detector também', () => {
+      expect(faceDisponivel(RONDE, () => false)).toBe(false);
+      // 📌 O padrão sem detector é «indisponível», e é seguro por uma razão que não vale para todos os padrões
+      // deste repositório: a linha fica desabilitada COM a mensagem, e a mensagem é accionável.
+      expect(faceDisponivel(RONDE, undefined)).toBe(false);
+    });
+
+    it('📌 [Boundary] uma face que NÃO é `off` está disponível sem detector nenhum', () => {
+      // O par que impede a regra de virar «tudo depende do detector»: as outras dezoito nunca dependeram dele.
+      const atkinson = FONT_GROUPS.flatMap((g) => g.items).find((it) => it.k === 'atkinson');
+      expect(faceDisponivel(atkinson, undefined)).toBe(true);
+      expect(faceDisponivel(atkinson, () => false)).toBe(true);
+    });
+
+    it('⚠️ [Interface] a PILHA de três é lida como três famílias, não como uma', () => {
+      // O `fam` da ronde é `'Ronde Script, OPTIFrench-Script, Merveille'`. Tratá-lo como um nome único faria
+      // `check('16px "Ronde Script, OPTIFrench-Script, Merveille"')` — que devolve falso sempre, e a opção
+      // nunca habilitaria por mais fontes que o adulto instalasse.
+      expect(familiasDaFace(RONDE)).toEqual(A_RONDE);
     });
 
     it('⚠️ [Right] e uma frase que nomeia a CATEGORIA reprovaria — a forma que o ADR-0108 recusa', () => {

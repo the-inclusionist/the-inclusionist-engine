@@ -9,7 +9,7 @@
 
 // (`toggleLabel` saiu daqui em 2026-09-07: ele devolve «Ligado»/«Desligado», e este menu é uma ESCOLHA.)
 import { t } from '../core/i18n.js';
-import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, papelDaFonte, type FontItem } from './fonts.js';
+import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, papelDaFonte, faceDisponivel, type FontItem } from './fonts.js';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
@@ -45,6 +45,20 @@ export interface SettingsTypoCtx {
    * continua desenhando. O que ele não pode é desenhar prosa duplicada, e sem casca não há rodapé para duplicar.
    */
   fillExplain?: (card: HTMLElement | null) => void;
+  /**
+   * ESTA FAMÍLIA ESTÁ INSTALADA NO APARELHO? — em produção, `(f) => doc.fonts.check(\`16px "${f}"\`)`.
+   *
+   * É o que transforma o «enquanto» do ADR-0012 em código: a opção da Ronde fica desabilitada ENQUANTO
+   * nenhuma das três faces estiver presente, e volta a ficar disponível quando o adulto instalar uma.
+   *
+   * ⚠️ INJECTADO E NUNCA `document.fonts` LIDO AQUI, pela regra que este ficheiro já segue para o `$`: um
+   * global do navegador num módulo que corre em node é o ACHADO 15, e este projecto já pagou por ele com um
+   * boot rebentado.
+   * 📌 OPCIONAL, e aqui o padrão é mesmo seguro — ao contrário do `seguraTeclas` do `PauseIconsCtx`, onde os
+   * dois lados erravam. Sem detector a linha fica desabilitada COM a mensagem, e a mensagem diz ao adulto as
+   * três fontes que resolvem. O estado por omissão é o de hoje, e é accionável.
+   */
+  fonteInstalada?: (familia: string) => boolean;
 }
 
 export interface SettingsTypoApi {
@@ -70,9 +84,9 @@ export interface SettingsTypoApi {
  * `resolveFontKey` de uma chave guardada, um `data-font` num markup de consumidor. «Não está na lista» e «não
  * pode ser escolhida» têm de ser a mesma afirmação, ou a lista é só uma sugestão.
  */
-export function isSelectableFont(k: string): boolean {
+export function isSelectableFont(k: string, instalada?: (familia: string) => boolean): boolean {
   const it = FONT_BY_KEY[k];
-  return !!it && !it.off && papelDaFonte(it) === 'geral';
+  return !!it && faceDisponivel(it, instalada) && papelDaFonte(it) === 'geral';
 }
 
 // A semantica da chave (validacao + migracao da chave antiga) mora em ui/fonts.ts, que e o dono do
@@ -124,8 +138,11 @@ export interface TypoGroupView {
  * três faces estiver instalada, porque duas delas são gratuitas apenas para uso pessoal e não podem ser
  * empacotadas.
  */
-export function linhaDaFonte(it: FontItem, fontKey: string): TypoRow {
-  const disabled = !!it.off;
+export function linhaDaFonte(it: FontItem, fontKey: string, instalada?: (familia: string) => boolean): TypoRow {
+  // ⚠️ A MESMA pergunta que o `isSelectableFont` faz, pela MESMA função. Duas respostas dariam uma linha
+  // clicável que o clique recusa — ou, pior, uma linha cinzenta que o `resolveFontKey` aceita por outro
+  // caminho. «Não está disponível» e «não pode ser escolhida» têm de ser a mesma afirmação.
+  const disabled = !faceDisponivel(it, instalada);
   // `d` e `off` também guardam CHAVE. O travessão que junta os dois é pontuação, não frase — as duas
   // metades são independentes e cada uma traduz por si.
   const desc = it.d ? t(it.d) : '', motivo = it.off ? t(it.off) : '';
@@ -134,7 +151,7 @@ export function linhaDaFonte(it: FontItem, fontKey: string): TypoRow {
 }
 
 /** Pure view-model for the typography list: which row is selected/disabled and its note, per catalog group. */
-export function typoGroups(fontKey: string): TypoGroupView[] {
+export function typoGroups(fontKey: string, instalada?: (familia: string) => boolean): TypoGroupView[] {
   // ⚠️ SÓ AS GERAIS ENTRAM NA LISTA (emenda do ADR-0012, issue #87). As caligráficas existem para a criança
   // APRENDER a ler letra cursiva — isso é matéria, e vive DENTRO das atividades, em botões próprios. Oferecê-
   // las aqui é dar-lhe a matéria como obstáculo em todo lugar onde ela só quer navegar o menu.
@@ -142,7 +159,7 @@ export function typoGroups(fontKey: string): TypoGroupView[] {
   // Um grupo que fique sem nenhuma face geral desaparece da lista, em vez de aparecer como título vazio.
   return FONT_GROUPS.map((g) => ({
     g: t(g.g),  // `g` guarda CHAVE i18n desde o item 14 (ver ui/fonts)
-    rows: g.items.filter((it) => papelDaFonte(it) === 'geral').map((it) => linhaDaFonte(it, fontKey)),
+    rows: g.items.filter((it) => papelDaFonte(it) === 'geral').map((it) => linhaDaFonte(it, fontKey, instalada)),
   })).filter((grupo) => grupo.rows.length > 0);
 }
 
@@ -183,8 +200,8 @@ function rowHTML(row: TypoRow): string {
  * A TOGGLE […] One font is active; the others are alternatives, not switches.» O `switch` do
  * `style.css:427` desenha uma chave de 52×28 px com bolinha — era o desenho de um estado que não existe.
  */
-export function typoListHTML(fontKey: string): string {
-  const grupos = typoGroups(fontKey)
+export function typoListHTML(fontKey: string, instalada?: (familia: string) => boolean): string {
+  const grupos = typoGroups(fontKey, instalada)
     .map((group) => `<h3 class="panel-sub">${group.g}</h3>` + group.rows.map(rowHTML).join(''))
     .join('');
   return `<div role="radiogroup" aria-label="${t('font.grupo.rotulo')}">${grupos}</div>`;
@@ -199,7 +216,9 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
 
   function setFont(k: string, announce = false): void {
     const it = FONT_BY_KEY[k];
-    if (!it || it.off) return;
+    // A MESMA função das outras duas leituras: uma face que a lista mostra clicável tem de ser aceite aqui,
+    // e uma que ela mostra cinzenta tem de ser recusada. Três respostas à mesma pergunta divergem.
+    if (!it || !faceDisponivel(it, ctx.fonteInstalada)) return;
     fontKey = k;
     persistFontKey(ctx.store, k);
     const target = fontCssTarget(k, it);
@@ -214,7 +233,7 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
   function render(): void {
     const el = ctx.$<HTMLElement>('#typo-list');
     if (!el) return;
-    el.innerHTML = typoListHTML(fontKey);
+    el.innerHTML = typoListHTML(fontKey, ctx.fonteInstalada);
     el.querySelectorAll<HTMLButtonElement>('button[data-font]').forEach((b) => {
       b.addEventListener('click', () => {
         const k = b.dataset.font;

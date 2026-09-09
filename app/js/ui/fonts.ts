@@ -110,6 +110,37 @@ export const FONT_GROUPS: FontGroup[] = [
 /** O papel de uma face; ausente no catálogo quer dizer `geral`. */
 export function papelDaFonte(it: FontItem): FontRole { return it.papel ?? 'geral'; }
 
+/**
+ * AS FAMÍLIAS QUE UMA FACE ACEITA, do `fam` que pode ser uma PILHA.
+ *
+ * 📌 A Ronde declara três (`'Ronde Script, OPTIFrench-Script, Merveille'`) porque qualquer uma delas serve —
+ * são três desenhos da mesma letra de mão, e um adulto instala a que encontrar. As outras faces declaram uma
+ * só, e para elas isto devolve uma lista de um.
+ */
+export function familiasDaFace(it: FontItem): string[] {
+  return it.fam.split(',').map((f) => f.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+}
+
+/**
+ * ESTA FACE PODE SER USADA AGORA? — o `off` deixa de ser uma sentença e passa a ser uma CONDIÇÃO.
+ *
+ * O ADR-0012 decidiu que a opção da ronde «fica DESABILITADA enquanto nenhuma fonte estiver presente», e o
+ * ADR-0108 §4 acrescentou o que ela diz. A palavra «enquanto» é o que esta função constrói: uma face `off`
+ * volta a ficar disponível no instante em que o adulto instala uma das que a mensagem nomeia.
+ *
+ * ⚠️ O DETECTOR É INJECTADO, e nunca `document.fonts` lido daqui: este módulo é o catálogo, corre em node nos
+ * gates, e ler um global do navegador aqui é o ACHADO 15 outra vez — o `srAlert` que rebentou o boot contra um
+ * documento injectado.
+ * 📌 E o PADRÃO É «não instalada», que é seguro por uma razão que não vale para todos os padrões deste
+ * repositório: sem detector a opção fica desabilitada COM a mensagem, e a mensagem diz ao adulto exactamente
+ * o que fazer. O silêncio não decide nada contra a criança — ele mantém o estado que já existia e que é
+ * accionável. É o oposto do `seguraTeclas`, onde os dois lados do padrão erravam.
+ */
+export function faceDisponivel(it: FontItem, instalada?: (familia: string) => boolean): boolean {
+  if (!it.off) return true;
+  return !!instalada && familiasDaFace(it).some((f) => instalada(f));
+}
+
 /** As faces que o MENU pode oferecer: só as gerais (emenda do ADR-0012). */
 export const OFERECIVEIS: FontItem[] = FONT_GROUPS.flatMap((g) => g.items).filter((it) => papelDaFonte(it) === 'geral');
 export const FONT_BY_KEY: Record<string, FontItem> = {}; FONT_GROUPS.forEach((g) => g.items.forEach((it) => { FONT_BY_KEY[it.k] = it; }));
