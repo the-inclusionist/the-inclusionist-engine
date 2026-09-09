@@ -604,6 +604,9 @@
       "set"
     ]
   },
+  "input/latch-sync.ts": {
+    "type JogadorDaAlternancia": "PlayerView<'toggleMove' | 'walkDir'>"
+  },
   "input/latch.ts": {
     "type LatchDir": "-1 | 0 | 1"
   },
@@ -2088,7 +2091,7 @@
       "transporteEmUso?"
     ],
     "type MotorPlayer": "PlayerView<'easy' | 'toggleMove' | 'toggleRun' | 'walkDir'>",
-    "type JogadorDaAlternancia": "PlayerView<'toggleMove' | 'walkDir'>"
+    "type JogadorDaAlternancia": "JogadorDaAlternanciaDaAresta"
   },
   "ui/settings-panel.ts": {
     "interface SettingsPanelCtx": [

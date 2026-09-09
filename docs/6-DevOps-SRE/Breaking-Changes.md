@@ -191,6 +191,19 @@ the adult what to install. There the silence keeps a state that is already actio
 from ADR-0113 clause 3, which lives in the same file. There the DEVICE requires latching, the control exists,
 and it is disabled with the reason, reachable so the child can read it. Here there is no reason that helps.
 
+### 📌 One entry in the shape portrait moved and is NOT a break — say so before someone reads the diff
+
+`ui/settings-motor.JogadorDaAlternancia` reads `JogadorDaAlternanciaDaAresta` in the portrait instead of
+`PlayerView<'toggleMove' | 'walkDir'>`. **Nothing a consumer writes has to change**: the definition moved to
+`input/latch-sync` (where the edge-synchronisation rule that touches those two fields lives) and the panel
+keeps publishing the NAME by alias, so the resolved type is character-for-character the same.
+
+⚠️ **The gate reported it because the gate compares TEXT, not resolved types** — its own header says so: «não
+é um analisador de TypeScript … um crivo grosso e não uma prova». That is the right trade: a sieve that
+over-reports a rename is worth having next to one that would have missed `holdsAtOnce`. It is declared here
+so the over-report is visible as one, and does not become a fifth line in a migration note that costs
+somebody an afternoon.
+
 ## ⚠️ Before cutting the major, read this
 
 Two pieces of work are **waiting for a major that has not been cut yet**, and cutting `8.0.0` without them

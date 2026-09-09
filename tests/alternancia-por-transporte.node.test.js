@@ -61,8 +61,14 @@ const AINDA_NA_CHAVE_ANTIGA = {
  * corrigido em silêncio.
  *
  * Ele NÃO PODE RECUAR: recuar significaria que a fiação foi desfeita sem que o registo mudasse.
+ *
+ * 🎯 O TERCEIRO SUBIU EM 2026-09-09 e é de outra espécie que os dois primeiros: `input/latch-sync` é o
+ * primeiro LEITOR. Os dois anteriores escrevem a chave nova; este resolve-a para o transporte em uso e põe a
+ * resposta no jogador — que é a issue #127 a deixar de ser «a regra existe e ninguém a lê». 📌 O piso passou
+ * a contar as duas metades porque a chave só carrega comportamento a sério quando alguém a LÊ: enquanto era
+ * só escrita, um `2` honesto descrevia uma migração que não tinha chegado a lado nenhum.
  */
-const CHAMADORES_DA_CHAVE_NOVA_HOJE = 2;
+const CHAMADORES_DA_CHAVE_NOVA_HOJE = 3;
 
 function ficheiros(dir = RAIZ, pref = '') {
   const out = [];

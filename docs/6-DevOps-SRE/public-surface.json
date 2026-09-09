@@ -359,6 +359,12 @@
     "leituraDaAlternancia",
     "lerTriEstado"
   ],
+  "input/latch-sync.ts": [
+    "BASE_DA_MARCHA",
+    "JogadorDaAlternancia",
+    "aplicarAlternancia",
+    "sincronizarAlternancia"
+  ],
   "input/latch.ts": [
     "LATCH_HELD",
     "LATCH_IDLE",

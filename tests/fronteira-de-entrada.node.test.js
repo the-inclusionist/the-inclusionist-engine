@@ -53,6 +53,7 @@ const PUBLICADOS = {
   'transporte-em-uso': 'o autómato do ADR-0109; sem consumidor externo medido — e ele NÃO deve ganhar um, porque quem responde à alternância é a engine',
   'origem-sintetica': 'o carimbo de origem (ADR-0109); sem consumidor externo medido, e é fiação interna',
   'latch-store': 'o adaptador entre a regra da alternância e o armazenamento (ADR-0113). Publicado pelo curinga, sem consumidor externo medido — e ele NÃO deve ganhar um: quem responde pela alternância é a engine, e um cartucho que a lesse do disco por sua conta refaria o defeito que o ADR-0113 fecha',
+  'latch-sync': 'a alternância do transporte em uso posta no jogador (ADR-0113 cláusula 1, issue #127). Publicado pelo curinga, sem consumidor externo medido — e a fronteira NÃO se fecha sobre ele hoje por um facto do catálogo: quem lê `p.toggleMove` é o laço de física de um CARTUCHO (`game/physics.ts`, `game/run-toggle.ts`), noutro repositório, e a sincronização tem de acontecer onde as arestas chegam. Sai desta lista quando a aresta do teclado alimentar o autómato dentro da engine',
   'pointer-space': 'a conversão de um ponto de tela (#105); pura, e pode legitimamente servir um cartucho que desenhe',
   'pointer': 'a amostra do ponteiro (ADR-0112); é o que o controle virtual vai entregar, então sai desta lista quando ele existir',
   'vocabulary-migration': 'a tradução dos nomes antigos de acção; existe para uma migração e sai com ela',

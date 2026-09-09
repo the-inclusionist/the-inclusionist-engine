@@ -25,6 +25,9 @@ import type { DomQuery } from '../core/dom-query.js';
 // faria o painel escrever num nome torto — que é o defeito que este import acaba de fechar.
 import { KEYS } from '../platform/storage.js';
 import { gravarAlternancia } from '../input/latch-store.js';
+import {
+  aplicarAlternancia, BASE_DA_MARCHA, type JogadorDaAlternancia as JogadorDaAlternanciaDaAresta,
+} from '../input/latch-sync.js';
 import { recusaDaAlternancia } from './latch-refusal.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
@@ -161,8 +164,14 @@ export function toggleMoveKey(i: number): string {
  * reduzido. Uma fatia mínima é o que deixa os dois passarem sem que nenhum tenha de carregar o do outro.
  * `MotorPlayer` e `PausePlayer` ganharam `walkDir` — quebra declarada, porque o campo é do `PlayerBase` e
  * todo jogador da engine já o tem.
+ *
+ * 📌 A DEFINIÇÃO MUDOU DE CASA (issue #127) e o NOME fica publicado aqui. Ela vive em `input/latch-sync`, ao
+ * lado da regra que a usa, porque a sincronização da aresta toca exactamente estes dois campos — duas cópias
+ * do mesmo tipo divergiriam no dia em que a regra ganhasse um terceiro. ⚠️ **Alias e não `export ... from`**:
+ * o retrato de nomes deixa re-exports de fora e leria a mudança de casa como remoção, que é a lição da etapa
+ * 1a do ADR-0106.
  */
-export type JogadorDaAlternancia = PlayerView<'toggleMove' | 'walkDir'>;
+export type JogadorDaAlternancia = JogadorDaAlternanciaDaAresta;
 
 /** O que a escrita precisa de saber. Tudo o que está aqui já vive no `SettingsMotorCtx` e no `PauseIconsCtx`. */
 export interface EscritaDaAlternanciaCtx {
@@ -196,7 +205,11 @@ export interface EscritaDaAlternanciaCtx {
 export function definirAlternanciaDeMarcha(ctx: EscritaDaAlternanciaCtx, i: number, on: boolean): void {
   const p = ctx.players[i];
   if (!p) return;
-  p.toggleMove = on;
+  // 📌 A REGRA DE DESLIGAR MORA NUM SÍTIO SÓ desde a issue #127: `aplicarAlternancia` põe o valor E pára quem
+  // anda por travamento. Ela era duas linhas aqui, e passou a ser partilhada com a sincronização da aresta
+  // (`input/latch-sync`) — que resolve a MESMA pergunta ao trocar de aparelho. Duas cópias do «senão a
+  // personagem anda sozinha» divergiriam no dia em que uma delas mudasse.
+  aplicarAlternancia(p, on);
   // ⚠️ AS DUAS CHAVES, E A ANTIGA NÃO SAI AINDA — é a forma do `p.visual` ao lado do `p.viz` (#104 etapa 1a),
   // e pela mesma razão: quem LÊ ainda é o cartucho, por `KEYS.toggleMoveP(i)` (`main.ts:540`). Parar de a
   // escrever agora faria a criança perder a escolha no arranque seguinte — o defeito que o ADR-0113 nomeia
@@ -207,8 +220,9 @@ export function definirAlternanciaDeMarcha(ctx: EscritaDaAlternanciaCtx, i: numb
   // controle com o motivo dito. Aqui a recusa não muda mais nada: o valor em memória continua a ser o que
   // a regra resolve, e é ela que responde `true` naqueles quatro.
   const transporte = ctx.transporteEmUso ? ctx.transporteEmUso(i) : null;
-  if (transporte) gravarAlternancia((chave, ligada) => ctx.store.setBool(chave, ligada), 'togglemove', i, transporte, on);
-  if (!on) p.walkDir = 0;
+  if (transporte) gravarAlternancia((chave, ligada) => ctx.store.setBool(chave, ligada), BASE_DA_MARCHA, i, transporte, on);
+  // 📌 O ANÚNCIO É INCONDICIONAL, ao contrário do `aplicarAlternancia`, que devolve «mudou». A criança
+  // carregou no ícone: calar-se porque o valor já era esse deixaria o botão sem resposta para quem ouve.
   ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
 }
 
