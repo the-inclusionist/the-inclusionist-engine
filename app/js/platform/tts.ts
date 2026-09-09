@@ -77,7 +77,22 @@ export interface Tts {
 
 // ⚠️ MIGRAÇÃO PENDENTE (ADR-0022): a implementação neural de hoje é o @mintplex-labs/piper-tts-web e será SUBSTITUÍDA
 // por sherpa-onnx-wasm (loader universal, modelos VITS/Piper + Kokoro-multi-lang carregados de qq URL R2 em runtime via
-// FS.writeFile; lazy-fetch; eSpeak/Web Speech de fallback). @mintplex-labs foi descontinuado e só carrega 2 vozes pt-BR.
+// FS.writeFile; lazy-fetch; eSpeak/Web Speech de fallback).
+// 🔴 O MOTIVO ESCRITO AQUI ERA «@mintplex-labs foi descontinuado e só carrega 2 vozes pt-BR», E AS DUAS METADES
+// FORAM MEDIDAS FALSAS EM 2026-09-09 — não pela leitura de um registo, que é como elas se propagaram por seis
+// sítios, mas pelo registo npm e pelo pacote instalado:
+//   · DESCONTINUADO: nenhuma versão tem campo `deprecated`, e a 1.0.5 foi publicada em 2026-08-11 — depois de
+//     o ADR-0022 (2026-07-06) a dar por morta. A frase é de Julho e está atribuída ao Dev; o registo não a nega
+//     no passado, nega-a HOJE.
+//   · DUAS VOZES pt-BR: o `VoiceId` da 1.0.4 instalada traz 118 vozes, e entre elas as QUATRO exactas do
+//     ADR-0110 — `pt_BR-faber-medium`, `en_US-ryan-medium`, `en_US-amy-medium`, `es_MX-claude-high`.
+// ⚠️ O QUE CONTINUA VERDADEIRO, e é mais afiado do que o motivo velho: o bundle prende `HF_BASE` a
+// `huggingface.co/diffusionstudio/piper-voices` COM UMA GUARDA (`if (!url.match("https://huggingface.co")) return`),
+// logo nenhum espelho de escola é alcançável por ele; e ele busca o PRÓPRIO runtime de cdnjs/jsDelivr por
+// omissão, que é o que o ADR-0114 retira. A montante, o Piper mudou para `OHF-Voice/piper1-gpl` e a Open Home
+// Foundation procura mantenedores — o risco existe, mas está noutro sítio.
+// 📌 A ESCOLHA CONTINUA A SER A #129, e este comentário não a toma: descreve o que foi medido para que o
+// próximo leitor não herde o motivo velho como se fosse medição.
 // ⚠️ E DESDE O ADR-0094 ESTE MÓDULO NÃO NOMEIA FORNECEDOR NENHUM — quem o nomeia é o JOGO, por `ctx.carregarVozNeural`.
 // O nome estava aqui num `import()` e o pacote em `devDependencies`, o que publicou uma engine que não compilava
 // (ADR-0093); pô-lo em `dependencies` consertava o build e obrigava todo consumidor a 135,4 MB de `onnxruntime-web`,
