@@ -91,6 +91,34 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg,woff2,txt,json,webmanifest,wasm}'],
         maximumFileSizeToCacheInBytes: 32 * 1024 * 1024, // 32 MB: cabe o runtime de 25,6 MB com folga
         cleanupOutdatedCaches: true,
+        // ========================= A ROTA QUE FAZ OS 241 MB SERVIREM PARA ALGUMA COISA =========================
+        // 🔴 MEDIDO EM 2026-09-09: o `platform/pesados` descia os quatro modelos de voz no primeiro
+        // carregamento e guardava-os na Cache Storage `incl-pesados-v1` — e NINGUEM OS LIA. A Cache Storage
+        // nao e consultada sozinha por um `fetch`: sem uma rota do service worker, o pedido da biblioteca de
+        // voz ia direto a rede e descarregava os mesmos 241 MB outra vez. Ate 482 MB num link de escola para
+        // UMA voz.
+        // 🎯 `CacheFirst` com o MESMO nome de cache que o buscador usa e o que fecha o circuito: o pedido
+        // encontra o que ja desceu, e nunca sai da maquina. Um `NetworkFirst` seria o oposto do pilar 8 —
+        // iria a rede primeiro e so recuaria para a cache quando a escola estivesse offline, que e
+        // exatamente o dia em que ja e tarde.
+        // ⚠️ E o alcance e ESTREITO de proposito: so o host dos modelos, nomeado no
+        // `platform/voice-plan.HOST_DOS_MODELOS`. Uma rota larga sobre `huggingface.co` cacharia qualquer
+        // coisa que alguem viesse a buscar de la, o que e a porta larga que a #119 fechou noutro sitio.
+        // 📌 Um crivo prende os dois lados juntos (`tests/rota-dos-modelos.node.test.js`): a rota tem de
+        // nomear o mesmo host e o mesmo nome de cache que o codigo usa, senao ela existe e nao serve nada.
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/huggingface\.co\/diffusionstudio\/piper-voices\/resolve\/main\//,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'incl-pesados-v1',
+              // Sem isto o Workbox recusa guardar respostas opacas; as do Hugging Face vem com
+              // `Access-Control-Allow-Origin: *` (medido), entao 0 nao e necessario e seria pior — uma
+              // resposta opaca de 60 MB conta como muito mais no orcamento de quota do navegador.
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+        ],
         // A ARTE NUNCA MAIS ATUALIZAVA, e ninguem veria: o padrao do vite-plugin-pwa e
         // `dontCacheBustURLsMatching = /^assets/` — ele assume que TUDO sob `assets/` tem hash no nome, o que
         // vale para o que o Vite emite e NAO vale para `app/public/assets/**`, que e copiado verbatim. Os 38

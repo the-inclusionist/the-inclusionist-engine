@@ -49,8 +49,27 @@ export const VOZES_NEURAIS: readonly VozNeural[] = Object.freeze([
  *
  * ⚠️ UM SÍTIO SÓ É A METADE QUE O REGISTO PEDE. Um endereço repetido no ponto de uso é como o CDN do
  * WebGazer chegou ao `ui/webcam` — escrito à mão, sem política, e sem ninguém a poder mudá-lo de uma vez.
+ *
+ * ========================= 🔴 MUDOU DE ESPELHO EM 2026-09-09, E A REGRA É «BUSCAR DE ONDE O LEITOR LÊ» ====
+ * Era `rhasspy/piper-voices`, medido a 08/09 como o espelho que o `piper.ttstool.com` usa. Depois de o
+ * `platform/pesados` passar a descer os modelos no primeiro carregamento, mediu-se o outro lado — o
+ * `@mintplex-labs/piper-tts-web@1.0.4` INSTALADO, lido do bundle e não do README — e ele busca em
+ * `diffusionstudio/piper-voices`, com uma guarda que recusa qualquer URL fora de `huggingface.co`.
+ *
+ * 🎯 ENDEREÇOS DIFERENTES SIGNIFICAM CACHE DIFERENTE: a Cache Storage é indexada pela URL do pedido, logo os
+ * 241 MB que desciam no primeiro dia NÃO ERAM LIDOS POR NINGUÉM, e a biblioteca descarregava tudo outra vez
+ * no dia em que a voz fosse pedida. Até 482 MB num link de escola para uma voz.
+ *
+ * 📏 E OS DOIS ESPELHOS SERVEM OS MESMOS BYTES — 63 201 294 para o `pt_BR-faber-medium`, caminhos idênticos,
+ * `Access-Control-Allow-Origin: *` nos dois. Medido nos dois no mesmo minuto, o que torna esta troca uma
+ * correcção de facto e não uma preferência entre fornecedores.
+ *
+ * ⚠️ A CLÁUSULA DO ADR-0114 NÃO SE MEXE: o host continua nomeado num ponto só. O que mudou foi QUAL, e a
+ * regra que decide isso passa a estar escrita para não voltar a divergir — **busca-se de onde o LEITOR lê**.
+ * No dia em que a engine for dona do runtime (ADR-0124 cláusula 2), o leitor passa a ser ela e é ela que
+ * escolhe; até lá, o único leitor é a porta do cartucho.
  */
-export const HOST_DOS_MODELOS = 'https://huggingface.co/rhasspy/piper-voices/resolve/main/';
+export const HOST_DOS_MODELOS = 'https://huggingface.co/diffusionstudio/piper-voices/resolve/main/';
 
 /**
  * O CAMINHO DO MODELO, DERIVADO DO IDENTIFICADOR — e não uma segunda tabela.

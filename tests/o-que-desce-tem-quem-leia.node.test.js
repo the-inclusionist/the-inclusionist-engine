@@ -61,15 +61,16 @@ function hostsDaBiblioteca() {
  * é o defeito que o `nada-vem-de-fora` já registou nas próprias mutações.
  */
 const DESENCONTROS = {
-  'host': 'A engine busca em `rhasspy/piper-voices` (escolhido no ADR-0114 por ser o que o `piper.ttstool.com` '
-    + 'usa) e o fornecedor instalado busca em `diffusionstudio/piper-voices`, com uma guarda no bundle que '
-    + 'recusa qualquer URL fora de `huggingface.co` — logo nem um espelho de escola o alcança. 📏 Os dois '
-    + 'servem os MESMOS bytes (63 201 294, medido nos dois). Resolve-se com a cláusula 2 do ADR-0124: quando '
-    + 'a engine for dona do runtime, é ela que escolhe o endereço e o desencontro deixa de existir.',
+  // ✅ O DESENCONTRO DE `host` SAIU DAQUI EM 2026-09-09, e sair é o ponto: o `HOST_DOS_MODELOS` passou a
+  // apontar para `diffusionstudio`, que é onde o único leitor destes bytes lê. Uma entrada que fica depois de
+  // paga faz o inventário reportar um defeito consertado — o erro que o `nada-de-cdn-a-mao` cometeu com a
+  // frase «sai desta lista quando o buscador existir». O caso do host abaixo agora exige a AUSÊNCIA dela.
   'armazenamento': 'O buscador guarda em Cache Storage (`incl-pesados-v1`) e a biblioteca guarda com '
-    + '`navigator.storage`. Mesmo com a URL igual, ela não leria o que desceu. 📏 E não há ponte: o '
-    + '`vite.config` não regista `runtimeCaching` nenhum, logo nenhum service worker serve estes pedidos a '
-    + 'partir da nossa cache. Resolve-se pela mesma cláusula, ou por uma rota de runtime declarada.',
+    + '`navigator.storage`. ⚠️ Com a URL alinhada isto DEIXOU de custar uma segunda descarga — o pedido da '
+    + 'biblioteca passa pelo service worker e é servido da nossa cache — e passou a custar DISCO: os mesmos '
+    + '241 MB ficam guardados duas vezes no aparelho, uma em cada armazenamento. Num tablet de escola isso é '
+    + 'o dobro do que a criança pode gastar. 📌 Resolve-se com a cláusula 2 do ADR-0124 (a engine dona do '
+    + 'runtime lê da própria cache) — a rota de runtime é o remendo, não a saída.',
 };
 
 describe('o que desce tem quem o leia', () => {
@@ -115,11 +116,13 @@ describe('o que desce tem quem o leia', () => {
     }
   });
 
-  it('📌 [Boundary] a lista de desencontros é um TECTO: hoje são DOIS e ela só encolhe', () => {
-    // 🎯 O número é a cláusula. Um terceiro desencontro — outro fornecedor, outro formato, outra cache — é a
-    // decisão da #129 a ser tomada de lado por quem estava a ligar um cabo, e tem de custar uma linha escrita.
+  it('📌 [Boundary] a lista de desencontros é um TECTO que só desce: eram DOIS, é UM', () => {
+    // 🎯 O número é a cláusula, e desceu por trabalho e não por edição: o desencontro de `host` foi PAGO em
+    // 2026-09-09 (o `HOST_DOS_MODELOS` passou a apontar para onde o leitor lê). Um terceiro — outro
+    // fornecedor, outro formato, outra cache — é a decisão da #129 a ser tomada de lado por quem estava a
+    // ligar um cabo, e tem de custar uma linha escrita.
     expect(Object.keys(DESENCONTROS).sort(), 'o inventário mudou de tamanho — escreva porquê')
-      .toEqual(['armazenamento', 'host']);
+      .toEqual(['armazenamento']);
   });
 });
 

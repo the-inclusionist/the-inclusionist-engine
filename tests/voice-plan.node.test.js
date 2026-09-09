@@ -46,10 +46,10 @@ describe('de onde vêm os modelos (ADR-0114), num sítio só', () => {
   // *`. Afirmá-los chamando `urlDoModelo` mediria a ida e a volta pela mesma função, e as duas metades
   // mover-se-iam juntas — a mesma nota que o `pause-icons` carrega sobre a codificação `1`/`0`.
   const MEDIDOS = {
-    'pt_BR-faber-medium': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx',
-    'en_US-ryan-medium': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/medium/en_US-ryan-medium.onnx',
-    'en_US-amy-medium': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx',
-    'es_MX-claude-high': 'https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_MX/claude/high/es_MX-claude-high.onnx',
+    'pt_BR-faber-medium': 'https://huggingface.co/diffusionstudio/piper-voices/resolve/main/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx',
+    'en_US-ryan-medium': 'https://huggingface.co/diffusionstudio/piper-voices/resolve/main/en/en_US/ryan/medium/en_US-ryan-medium.onnx',
+    'en_US-amy-medium': 'https://huggingface.co/diffusionstudio/piper-voices/resolve/main/en/en_US/amy/medium/en_US-amy-medium.onnx',
+    'es_MX-claude-high': 'https://huggingface.co/diffusionstudio/piper-voices/resolve/main/es/es_MX/claude/high/es_MX-claude-high.onnx',
   };
 
   it('🎯 [Right] as quatro do catálogo derivam exactamente os endereços medidos', () => {
@@ -72,7 +72,7 @@ describe('de onde vêm os modelos (ADR-0114), num sítio só', () => {
   it('🎯 [Right] uma voz FORA do catálogo também deriva, porque a fonte é o identificador', () => {
     const inventada = { locale: 'fr-FR', engine: 'piper', voice: 'fr_FR-gilles-low' };
     expect(urlDoModelo(inventada))
-      .toBe('https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/gilles/low/fr_FR-gilles-low.onnx');
+      .toBe('https://huggingface.co/diffusionstudio/piper-voices/resolve/main/fr/fr_FR/gilles/low/fr_FR-gilles-low.onnx');
   });
 
   // ⚠️ UM IDENTIFICADOR QUE NÃO SE DEIXA LER DEVOLVE `null`, e não um caminho torto: uma URL inventada dá
