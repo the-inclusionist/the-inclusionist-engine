@@ -37,19 +37,40 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
  * ⚠️ A LISTA TEM DE ENCOLHER. Uma entrada nova sem razão escrita à mão é a engine a ganhar uma dependência de
  * rede sem ninguém decidir — que é exactamente como esta chegou.
  */
+/**
+ * ⚠️ A DESCULPA CARREGA UMA CONTAGEM, E NÃO SÓ UMA RAZÃO — medido em 2026-09-09, e a razão é um defeito que
+ * este ficheiro tinha e que a sua própria entrada descrevia.
+ *
+ * O ADR-0114 pede que «o host dos modelos seja nomeado NUM SÍTIO SÓ». A lista, indexada por FICHEIRO,
+ * afirmava isso à granularidade errada: plantei um segundo host no `platform/voice-plan.ts` —
+ * `export const ESPELHO = 'https://cdn.jsdelivr.net/gh/rhasspy/piper-voices@main/'`, que é exactamente o
+ * movimento de quem constrói o buscador e quer um espelho para a escola — e os CINCO casos ficaram verdes.
+ * O ficheiro já estava desculpado, então tudo o que crescesse dentro dele estava desculpado com ele.
+ *
+ * 📌 Com o número, «um sítio só» passa a ser afirmado como UM. Ele é um TECTO QUE SÓ DESCE: subir exige
+ * mexer aqui e escrever porquê; descer exige actualizar o número, que é como o inventário encolhe.
+ */
 const BUSCAS_A_MAO = {
-  'platform/voice-plan.ts':
-    'ENDEREÇO DECLARADO, e ainda não uma busca. O ADR-0114 exige que o host dos modelos seja nomeado num ' +
-    'sítio só, e este módulo é PURO — sem `fetch`, sem `import()`, sem `script.src`. Fica aqui porque o ' +
-    'crivo lê literais e não sabe a diferença; o `nada-vem-de-fora` faz essa distinção de forma estrutural, ' +
-    'e é lá que ela é afirmada. Sai desta lista quando o buscador existir e a busca passar a viver nele',
-  'ui/webcam.ts':
-    'o WebGazer, carregado por `<script src>` de `webgazer.cs.brown.edu` no primeiro uso do controle por ' +
-    'olhar. É a única busca de runtime externo da engine e a razão de a issue #129 existir. O ADR-0114 ' +
-    'retira-a: o runtime passa a ser vendorizado no `dist` e pré-cacheado. ' +
-    '📌 Ele já AVISA quando falha (`srAlert(sr.eyes.needsInternet)`), o que é melhor do que silêncio e não ' +
-    'satisfaz o pilar 8 — a criança continua sem controle por olhar numa escola sem rede. ' +
-    'Sai daqui quando a vendorização existir.',
+  'platform/voice-plan.ts': {
+    urls: 1,
+    porque:
+      'ENDEREÇO DECLARADO, e ainda não uma busca. O ADR-0114 exige que o host dos modelos seja nomeado num ' +
+      'sítio só, e este módulo é PURO — sem `fetch`, sem `import()`, sem `script.src`. Fica aqui porque o ' +
+      'crivo lê literais e não sabe a diferença; o `nada-vem-de-fora` faz essa distinção de forma estrutural, ' +
+      'e é lá que ela é afirmada. ⚠️ O `1` é a cláusula do registo: um segundo host aqui — um espelho, um ' +
+      'recuo — é a decisão da issue #129 a ser tomada em silêncio por quem estava a ligar o buscador. ' +
+      'Sai desta lista quando o buscador existir e a busca passar a viver nele',
+  },
+  'ui/webcam.ts': {
+    urls: 1,
+    porque:
+      'o WebGazer, carregado por `<script src>` de `webgazer.cs.brown.edu` no primeiro uso do controle por ' +
+      'olhar. É a única busca de runtime externo da engine e a razão de a issue #129 existir. O ADR-0114 ' +
+      'retira-a: o runtime passa a ser vendorizado no `dist` e pré-cacheado. ' +
+      '📌 Ele já AVISA quando falha (`srAlert(sr.eyes.needsInternet)`), o que é melhor do que silêncio e não ' +
+      'satisfaz o pilar 8 — a criança continua sem controle por olhar numa escola sem rede. ' +
+      'Sai daqui quando a vendorização existir.',
+  },
 };
 
 /**
@@ -106,11 +127,34 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
     expect(desc, `busca externa que ninguém declarou: ${desc.join(' · ')}`).toEqual([]);
   });
 
-  // ⚠️ A SAÍDA. Sem ela a lista vira monumento: a entrada do WebGazer continuaria a dizer que existe uma
-  // dependência de rede depois de o ADR-0114 a ter retirado, e a próxima pessoa leria história como estado.
-  it('[Fronteira] entrada da lista que já não busca nada sai daqui', () => {
+  /* 🎯 O CASO QUE FALTAVA, e o defeito que ele apanha estava DENTRO da desculpa. «Num sítio só» era afirmado
+   * por FICHEIRO: com o ficheiro na lista, uma segunda URL dentro dele passava. Provado plantando um
+   * `ESPELHO` jsDelivr ao lado do `HOST_DOS_MODELOS` — cinco casos verdes, e a cláusula do ADR-0114 morta.
+   *
+   * ⚠️ E o sítio onde ele morde é o único sítio onde isto vai acontecer: quem ligar o buscador da #129 tem
+   * um problema real de escola sem rede e um espelho é a resposta óbvia. O gate não a proíbe — obriga-a a
+   * passar por aqui, com o número e a razão, em vez de aparecer como uma linha a mais num ficheiro puro. */
+  it('🎯 [Fronteira] um ficheiro desculpado não pode ganhar uma SEGUNDA URL', () => {
+    const aMais = [];
+    for (const [f, { urls }] of Object.entries(BUSCAS_A_MAO)) {
+      const suas = BUSCAS.filter((a) => a.f === f).map((a) => a.url);
+      if (suas.length > urls) aMais.push(`${f}: ${urls} declarada(s), ${suas.length} achada(s) → ${suas.join(' · ')}`);
+    }
+    expect(aMais, `URL nova dentro de um ficheiro já desculpado: ${aMais.join(' | ')}`).toEqual([]);
+  });
+
+  // ⚠️ A SAÍDA, e agora ela tem DUAS metades. Sem elas a lista vira monumento: a entrada do WebGazer
+  // continuaria a dizer que existe uma dependência de rede depois de o ADR-0114 a ter retirado, e a próxima
+  // pessoa leria história como estado. A segunda metade é o número: um tecto que ficou acima do real
+  // desculpa por antecipação a URL que ainda não existe.
+  it('[Fronteira] entrada da lista que já não busca nada sai daqui, e o número acompanha a descida', () => {
     const resolvidas = Object.keys(BUSCAS_A_MAO).filter((f) => !BUSCAS.some((a) => a.f === f));
     expect(resolvidas, `já não faz busca externa; apague a entrada: ${resolvidas.join(', ')}`).toEqual([]);
+
+    const inchadas = Object.entries(BUSCAS_A_MAO)
+      .filter(([f, { urls }]) => BUSCAS.some((a) => a.f === f) && BUSCAS.filter((a) => a.f === f).length < urls)
+      .map(([f, { urls }]) => `${f}: declara ${urls}, tem ${BUSCAS.filter((a) => a.f === f).length}`);
+    expect(inchadas, `o tecto ficou acima do real e desculpa por antecipação: ${inchadas.join(' | ')}`).toEqual([]);
   });
 
   // 📌 O PAR que prova que a exclusão é uma REGRA e não um buraco: um espaço de nomes é aceite, e uma URL
