@@ -56,9 +56,9 @@ jobs:
   gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
@@ -107,8 +107,8 @@ jobs:
   adr:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - run: pip install --quiet pyyaml
@@ -123,8 +123,8 @@ jobs:
   a11y:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
@@ -152,7 +152,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # ⚠️ The message TEACHES rather than scolds. A rejected first contribution is often the last one,
@@ -183,7 +183,7 @@ jobs:
       # ⚠️ `fetch-depth: 0` — the whole history. A secret that was committed and then deleted is still in
       # the history, and the history is what becomes public. A shallow clone would gate the tip and miss
       # every commit that matters.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -213,7 +213,7 @@ jobs:
     container:
       image: semgrep/semgrep:1.176.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Registry rulesets by name, pinned image: `--config auto` would pull whatever the registry decides
       # today, which makes a red run impossible to reproduce tomorrow. `--metrics=off` because a project
       # that argues about child telemetry does not send its own source metrics to a vendor by default.
