@@ -225,6 +225,32 @@ over-reports a rename is worth having next to one that would have missed `holdsA
 so the over-report is visible as one, and does not become a fifth line in a migration note that costs
 somebody an afternoon.
 
+## 📏 Audited against the published `8.0.0-rc.1` — 2026-09-09
+
+Before cutting another pre-release, the question that matters is not «did we write things down» but «does the
+list cover every break that actually happened». It was measured rather than assumed, with the repository's own
+instrument: the shape portrait at the tag versus the portrait at `HEAD`, compared by `quebrasDeForma`.
+
+**Eight breaks since `v8.0.0-rc.1`, and all eight are in this file:**
+
+| break | where it is written |
+|---|---|
+| `Declinios.semMenuDePausa` LEFT | §6 |
+| `GameDeclaration.seguraTeclas` entered as REQUIRED | §6 |
+| `PauseIconsCtx.seguraTeclas` · `SettingsMotorCtx.seguraTeclas` entered as REQUIRED | §6 |
+| `KeydownCtx` · `TouchBindingsCtx` · `GamepadCtx` gained `arestaDoJogador`, REQUIRED | §6 |
+| `ui/settings-motor.JogadorDaAlternancia` changed shape | §6, declared as a NON-break |
+
+📌 `mapeamentoDoTeclado` and `mapeamentoDoPad` are absent from that list on purpose: an OPTIONAL member is
+additive, the portrait says so, and a consumer has nothing to edit.
+
+⚠️ **AND THE GATE THIS AUDIT WANTED DOES NOT EXIST.** The portrait proves a break HAPPENED and the commit
+footer says it was intended, but nothing asserts it was EXPLAINED here — a break can land declared and
+undocumented, and the reader who needs it is the one person not in the room. 📏 The obstacle is measured
+rather than guessed: the baseline is a TAG, and `actions/checkout` fetches none at depth 1, so the gate needs
+`fetch-tags` and a skip path for a clone that has none. It is named here so the next audit starts from a
+number instead of from scratch.
+
 ## 📌 The other cut of these facts
 
 This file answers «what changed, and why». **[Adopting-8.0.md](Adopting-8.0.md)** answers the question a
