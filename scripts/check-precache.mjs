@@ -251,7 +251,6 @@ if (semPrecache.length > 0) {
  * from landing in the demo unnoticed — but the product's first-day number is the SITE's, and the site does
  * not exist yet. 📌 When it does, the two budgets need DIFFERENT NAMES: two numbers sharing one is the
  * duplicated-fact rot, and this file would be the older of the two. */
-const ORCAMENTO_KIB = 2048;
 
 /**
  * External URLs in the precache manifest, if any. ⚠️ THE TABLE IS EMPTY BY DESIGN and the rule is written
@@ -297,22 +296,30 @@ if (emFalta.length > 0) {
   process.exit(1);
 }
 
-if (kibTotal > ORCAMENTO_KIB) {
-  console.error(`precache gate: the first day weighs ${kibTotal.toFixed(1)} KiB, over the ${ORCAMENTO_KIB} KiB budget.\n`);
-  const pesadas = entradas
-    .map((e) => e.url)
-    .filter((u) => !ehExterna(u) && existsSync(join(DIST, u)))
-    .map((u) => [u, statSync(join(DIST, u)).size])
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8);
-  for (const [u, b] of pesadas) console.error(`  ${(b / 1024).toFixed(1).padStart(9)} KiB  ${u}`);
-  console.error('\nThis is what a child downloads before she can play, on a school link (pillar 1). Raising the');
-  console.error('budget is a decision with a reason, taken here in one line — not a side effect of a commit.');
-  process.exit(1);
-}
+/* ===================== O TECTO SAIU EM 2026-09-09, POR DECISÃO DO DEV =====================
+ *
+ * Ele perguntou de onde vinha o número e mandou tirá-lo: «Por que tem que caber em 2MB? Limite que eu coloquei
+ * para abrir em dispositivo ruim? Quero que retire este limite.»
+ *
+ * 📏 E A PROVENIÊNCIA RESPONDE À PERGUNTA DELE: o `2048` não era dele. Entrou hoje, em `af35a7d`, num commit
+ * co-autorado por esta IA, e não estava em registo nenhum — era um número num script. Não havia decisão para
+ * superar; havia uma linha para retirar.
+ *
+ * ⚠️ O QUE SE PERDE ESTÁ ESCRITO, porque perder em silêncio é o que este ficheiro inteiro combate: deixa de
+ * haver alarme quando alguma coisa pesada aterra no primeiro dia por acidente. O peso continua a ser MEDIDO e
+ * IMPRESSO em toda corrida — o que deixou de existir é a reprovação.
+ *
+ * 📌 E O TECTO NUNCA FOI O QUE TRAVAVA OS RUNTIMES. O ADR-0124 põe o MediaPipe e o piper a chegar pelo
+ * `platform/pesados`, na INSTALAÇÃO, e não pelo manifesto de precache: 11,21 MB nunca iam caber aqui e nunca
+ * precisaram de caber. O sujeito deste ficheiro é a DEMO (o quiz da engine); a unidade que uma criança instala
+ * é o `the-inclusionist-site` (ADR-0117), e o primeiro dia do PRODUTO é um número que ainda não existe.
+ *
+ * 🎯 O QUE FICA A SEGURAR A MESMA CRIANÇA É O PISO, não o tecto: o crivo acima reprova quando o primeiro dia
+ * NÃO é um jogo jogável. Um build que precacheia quase nada está debaixo de qualquer orçamento e offline no
+ * sentido mais vazio — e essa é a metade que o pilar 1 realmente compra. */
 
 const semHash = entradas.filter((e) => e.revisao !== null).length;
 const nota = paginas.length ? ` ${paginas.length} extra page(s) excluded from the SPA fallback.` : '';
 const piso = ` Floor complete: ${noDisco.length} file(s) emitted, ${FORA_DO_PRECACHE.length} excused by name.`;
-const dia = ` First day: ${kibTotal.toFixed(1)} KiB of ${ORCAMENTO_KIB} KiB.`;
+const dia = ` First day: ${kibTotal.toFixed(1)} KiB (measured, no ceiling — the Dev removed it on 2026-09-09).`;
 console.log(`precache gate: ${entradas.length} entries — ${semHash} with a content revision, ${entradas.length - semHash} hash-named. None frozen.${nota}${piso}${dia}`);
