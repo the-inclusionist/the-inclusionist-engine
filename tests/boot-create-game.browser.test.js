@@ -161,6 +161,21 @@ describe('createGame num documento de verdade', () => {
   // outros sete ícones.
   it('🔴 [Zero] o clique ANUNCIA, e anuncia o estado NOVO — não o que a criança deixou', async () => {
     abrir();
+    // 🔴 ESPERAR O IDIOMA É O QUE FALTAVA, e foi a CI que o mostrou — verde aqui, vermelho lá:
+    // «expected 'Modo TEA: calmo' to be 'Autism mode: calm'». Este caso compara DUAS leituras feitas em
+    // instantes diferentes — o anúncio, composto no clique, e o rótulo, lido depois. O `initI18n` aplica pt
+    // de forma síncrona e pede en/es em chunks ASSÍNCRONOS; num runner mais lento o chunk aterra ENTRE as
+    // duas, e a comparação passa a medir o relógio da máquina em vez do comportamento.
+    //
+    // ⚠️ E É A CLASSE DE DEFEITO QUE ESTE REPOSITÓRIO CATALOGOU ESTA SEMANA — «um teste que mede a MÁQUINA».
+    // Não reproduz localmente nem isolado nem emparelhado; só num runner com outro tempo.
+    //
+    // 📌 O QUE ELE DESTAPA NO PRODUTO, e fica dito em vez de consertado às cegas: uma criança que carregue no
+    // ícone ANTES de o dicionário aterrar ouve o idioma de recuo enquanto o rótulo já mudou. É a mesma
+    // fronteira do `424ee36` (a barra bilingue), do lado do ANÚNCIO em vez do rótulo — e ali a resposta foi
+    // reflectir depois do `idiomaPronto()`. Aqui o anúncio é composto uma vez e não se reflecte.
+    const { idiomaPronto } = await import('../app/js/core/i18n.js');
+    await idiomaPronto();
     const alvo = document.querySelector('#title-icons [data-pi="tea"]');
     const rotuloAntes = alvo.getAttribute('aria-label');
     alvo.dispatchEvent(new MouseEvent('click', { bubbles: true }));
