@@ -104,6 +104,61 @@ describe('a regra que acompanha o desligar', () => {
   });
 });
 
+// ============================================================================================
+// O QUE FAZ DA CACHE UMA CACHE: UM ESCRITOR SÓ
+// ============================================================================================
+//
+// 🎯 `p.toggleMove` é uma CACHE DERIVADA desde a issue #127 — a engine reescreve-o na aresta, a partir da
+// chave do transporte em uso, e o laço de física do cartucho continua a lê-lo. Isso só é verdade enquanto
+// houver UM escritor. Um segundo, em qualquer módulo, faz o campo divergir da fonte de que ele diz derivar —
+// e a divergência não erra em voz alta: a criança troca de aparelho, o valor não a acompanha, e nada o diz.
+//
+// ⚠️ TECTO E NÃO PISO. Este número não pode SUBIR. Ele pode descer (se um dia o campo sair), e por isso a
+// asserção é sobre o conjunto e não sobre a contagem: um nome novo tem de aparecer na mensagem de reprovação
+// para quem o leia saber onde foi.
+//
+// 📌 E ele fala só da ENGINE. O `game-platformer` escreve `pl.toggleMove` no laço dele, e isso é legítimo e
+// não é medível daqui — a lição do ADR-0121 é que a CI deste repositório não pode depender do estado de
+// outro. O que se afirma é o que esta árvore controla.
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const RAIZ = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'app', 'js');
+
+/** ⚠️ NÃO come URLs: `(^|[^:])//` deixa o `https://` em paz. Um tira-comentários ingénuo já enganou este
+ *  repositório duas vezes, e das duas o resultado foi uma varredura vazia lida como ausência. */
+const semComentarios = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n\r]*/g, '$1');
+
+function ficheiros(dir) {
+  const out = [];
+  for (const n of readdirSync(dir)) {
+    const p = join(dir, n);
+    if (statSync(p).isDirectory()) { out.push(...ficheiros(p)); continue; }
+    if (n.endsWith('.ts')) out.push(p);
+  }
+  return out;
+}
+
+const escritores = () => ficheiros(RAIZ)
+  .filter((f) => /\.toggleMove\s*=[^=]/.test(semComentarios(readFileSync(f, 'utf8'))))
+  .map((f) => f.replace(RAIZ, '').replace(/\\/g, '/').replace(/^\//, ''))
+  .sort();
+
+describe('quem escreve a alternância no jogador', () => {
+  it('🎯 [Interface] a engine tem UM escritor, e é o dono da regra', () => {
+    expect(escritores(), 'escritor novo de `toggleMove`: a cache deixou de derivar da chave do transporte')
+      .toEqual(['input/latch-sync.ts']);
+  });
+
+  it('📌 [Vácuo] a varredura ACHA o escritor que existe — senão ela aprovaria uma árvore vazia', () => {
+    // Sem este caso, matar a regex deixa o [Interface] a comparar `[]` com `[]` e o gate fica cego para
+    // sempre. É a metade da SAÍDA, que é o que separa inventário de monumento.
+    expect(escritores().length, 'a varredura não acha nada — está cega, e não é a árvore que está limpa')
+      .toBeGreaterThan(0);
+  });
+});
+
 // ================================ MUTAÇÕES CONFERIDAS ================================
 // 1. `sincronizarAlternancia` a gravar o valor resolvido (`armazem.set(...)`) → 🎯 a [Sequência] reprova pela
 //    contagem de escritas, e SÓ por ela: todos os casos de valor continuariam verdes. É a mutação que separa
