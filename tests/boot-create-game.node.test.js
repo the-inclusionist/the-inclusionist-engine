@@ -388,11 +388,15 @@ describe('createGame em execução', () => {
       addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
     };
     const { doc, win } = domFalso({ mapa: { '#game-region': regiao } });
-    const motor = createGame({
-      declaration: declaracaoValida(), host: { doc, win }, declines: { semMenuDePausa: true },
-    });
-    expect(regiao.filhos.length, 'montou pausa a quem a declinou').toBe(0);
-    expect(motor.problems.filter((p) => /menu de pausa/.test(p)), 'acusou quem declinou').toEqual([]);
+    const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
+    // 🔴 VIRADO EM 2026-09-09 (ADR-0120), e o caso mudou de lado inteiro. Ele afirmava «montou pausa a quem a
+    // declinou → 0 filhos», e essa era a verdade enquanto a pausa fosse declinável. O Dev aposentou o
+    // declínio — «Aposentar.» — porque a razão dele foi construída fora pelo próprio ADR-0106: lista padrão
+    // de botões (`001b185`) e montagem do cartão (`092a670`).
+    // 📌 Agora a afirmação é a OPOSTA e mais forte: TODO jogo recebe o cartão, sem nada a declarar. Um jogo
+    // que antes se calava passa a ter onde a criança alcança os ajustes durante a partida.
+    expect(regiao.filhos.length, 'a engine deixou de montar a pausa que agora é de todos').toBeGreaterThan(0);
+    expect(motor.problems.filter((p) => /menu de pausa/.test(p)), 'acusou um jogo com hospedeiro válido').toEqual([]);
   });
 
   it('⚠️ [Boundary] um hospedeiro que não aceita conteúdo nem clique NÃO derruba o boot', async () => {
@@ -653,9 +657,12 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso();
     const motor = createGame({
       declaration: declaracaoValida(), host: { doc, win },
-      declines: { semMenuDePausa: true, semAssistenteDePad: true },
+      // ⚠️ ERA `semMenuDePausa` AQUI, e o campo saiu do contrato (ADR-0122). O caso é sobre a TRAVESSIA dos
+      // declínios, não sobre qual deles existe — trocado por dois que continuam a descrever ausências que a
+      // engine não pode preencher, para o caso não morrer com a decisão que ele nunca mediu.
+      declines: { semVozNeural: true, semAssistenteDePad: true },
     });
-    expect(motor.declines.semMenuDePausa).toBe(true);
+    expect(motor.declines.semVozNeural).toBe(true);
     expect(motor.declines.semAssistenteDePad).toBe(true);
     expect(motor.declines.semAtorDePausa).toBeUndefined();
   });

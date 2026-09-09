@@ -32,9 +32,14 @@
 //
 // ========================= DECLINAR NÃO É MENTIR =========================
 // O quiz recusou o sonar e o pad em vez de inventar tiles e uma caixa de colisão falsos, e essa distinção é o
-// que separa um achado de um verde falso. Aqui ela vira TIPO: um jogo sem menu de pausa declara
-// `semMenuDePausa: true` em vez de devolver `null` de um getter e torcer. O que se declina fica registrado no
-// objeto devolvido, e um consumidor pode ser auditado pelo que recusou.
+// que separa um achado de um verde falso. Aqui ela vira TIPO: um jogo que não tem uma peça declara-o num
+// campo em vez de devolver `null` de um getter e torcer. O que se declina fica registrado no objeto devolvido,
+// e um consumidor pode ser auditado pelo que recusou.
+// ⚠️ E ESTE PARÁGRAFO NÃO NOMEIA NENHUM DOS CAMPOS, o que parece esquisito e é medido: o
+// `tests/declinio-morto` conta MENÇÕES, incluindo as de comentário, e fá-lo de propósito — «falhar para o lado
+// de vivo é a direcção certa deste erro», porque uma acusação falsa desliga um gate. A consequência é que usar
+// um declínio como EXEMPLO em prosa o faz parecer lido, e um campo genuinamente morto deixa de ser acusado.
+// 📌 O primeiro rascunho desta nota fez exactamente isso, e o crivo apanhou-o no mesmo minuto.
 //
 // ========================= O QUE ISTO AINDA NÃO FAZ, DITO AQUI E NÃO ESCONDIDO =========================
 // Não liga render, física, tiles nem o sonar — nada disso é de todo jogo, e o achado 9 mostra que o sonar hoje
@@ -110,8 +115,9 @@ export interface EngineHost {
    * ONDE O CARTÃO DE PAUSA da primeira tela é pendurado. Ausente, a engine usa `#game-region`.
    *
    * ⚠️ Existe pela mesma razão do `a11yBarHost`: a engine pode OFERECER a pausa, mas não sabe onde ela cabe
-   * no desenho de um jogo alheio. Um jogo que não tem pausa nenhuma declara `declines.semMenuDePausa` —
-   * declinar é escolha registada, não ter é omissão, e o ADR-0106 §2 é inteiro sobre a diferença.
+   * no desenho de um jogo alheio. 📌 E desde o ADR-0120 ONDE já não é SE: a pausa deixou de ser declinável, e
+   * o que sobra deste campo é o lugar. Um hospedeiro que não aceite filhos vira linha de `problems`, que é a
+   * diferença entre a engine não saber e a engine calar-se.
    */
   readonly pauseHost?: Element | null;
 }
@@ -123,27 +129,30 @@ export interface EngineHost {
  * "pausado" para navegar os próprios menus, porque a engine não tinha por onde ouvir "eu não tenho fases".
  */
 export interface Declinios {
-  /**
-   * Sem menu de pausa por tela.
+  /*
+   * ⚠️ `semMenuDePausa` SAIU DAQUI, E SAIU DUAS VEZES — a nota fica porque a ausência dele é decisão, e
+   * porque o caminho até ela é a coisa mais instrutiva deste ficheiro.
    *
-   * 🔴 O COMENTÁRIO DESTA LINHA DIZIA «(um quiz não tem)», E ESSA LEITURA CUSTOU UM REGISTO REVERTIDO. Em
-   * 2026-09-09 este campo foi aposentado (ADR-0120) porque a razão dele parecia ter morrido: a engine passou a
-   * montar o cartão de pausa, logo um jogo sem pausa própria já não precisava de declinar. Verdade — para o
-   * consumidor que vive nesta árvore.
+   * 1. **Aposentado** (ADR-0120): ele existia porque a engine não tinha nada que servisse a um jogo sem pausa
+   *    própria, e essa razão foi CONSTRUÍDA fora pelo próprio ADR-0106 — lista padrão de botões (`001b185`) e
+   *    montagem do cartão (`092a670`). O Dev fechou a colisão numa palavra: «Aposentar.»
+   * 2. 🔴 **Revertido** (ADR-0121, `7f256f0`): medido depois, QUATRO de cinco jogos usavam o campo, e o
+   *    `pixi-15-puzzle` tinha o custo escrito ao lado da própria declaração — «every arrow, Enter and Space
+   *    would start being eaten the moment anything created an element with a pause id».
+   * 3. **Aposentado outra vez** (ADR-0122), porque o Dev respondeu a issue #132 com a razão que já tinha dado
+   *    uma vez: o menu de pausa e os ícones de acessibilidade do HUD devem estar em TODO jogo, e é por isso
+   *    que são responsabilidade da engine.
    *
-   * 📏 MEDIDO NO CATÁLOGO, DEPOIS: `game-chess`, `pixi-15-puzzle`, `game-2048` e `game-whackwhack` usam este
-   * campo — QUATRO de cinco jogos — e **nenhum deles por não ter pausa**. Eles têm a sua, ou não querem a
-   * navegação de menu da engine por cima do teclado deles. O `pixi-15-puzzle` escreveu o custo ao lado da
-   * própria declaração: «if `semMenuDePausa` were omitted, every arrow, Enter and Space would start being
-   * eaten the moment anything created an element with a pause id». Removê-lo tira o teclado a quem joga com
-   * setas. Revertido em `7f256f0`; ADR-0121.
+   * 📏 E A CITAÇÃO DO PASSO 2 FOI MEDIDA NO PASSO 3, que é o que ela nunca tinha sido: os dois leitores do
+   * cartão só consomem a tecla com `!menu.hidden` (`ui/menu-nav.ts:485`, `input/gamepad.ts:619`) e o
+   * `buildScreenPause` entrega-o com `sp.hidden = true` (`ui/pause-icons.ts:1180`). Cartão MONTADO não come
+   * tecla nenhuma; só o cartão ABERTO é dono do teclado, onde isso é o comportamento certo. A guarda entrou
+   * em `1519682` (25/08) e está no `v7.0.1`, a versão que os quatro instalam.
    *
-   * ⚠️ ENTÃO O CAMPO TEM DOIS SIGNIFICADOS E É ESSA A AMBIGUIDADE QUE PERMITIU O ERRO: «não tenho pausa
-   * nenhuma» e «tenho a minha, não montes a tua». Quem o ler para decidir alguma coisa tem de saber qual dos
-   * dois está a medir. A escolha entre separar os dois nomes e migrar os quatro jogos para a pausa da engine
-   * é a issue #132, e é do Dev.
+   * 📌 Um jogo que genuinamente não tenha pausa nenhuma NÃO recupera este campo — seria decisão nova, sobre o
+   * que «pausa» quer dizer num jogo sem estado a correr. O que um jogo ainda declara é ONDE ela cabe:
+   * `host.pauseHost`, com `#game-region` de recuo.
    */
-  readonly semMenuDePausa?: boolean;
   /** Sem assistente de mapeamento de controle. */
   readonly semAssistenteDePad?: boolean;
   /** Sem "ator da pausa" — quem apertou o botão que abriu o menu. */
@@ -602,16 +611,17 @@ export function createGame(o: CreateGameOptions): Engine {
    * engine inventou uma convenção, procurou-a, não a achou, e concluiu em silêncio que nenhum jogo tem menu
    * de pausa — que é a MESMA forma de defeito do ADR-0106 §2, desta vez cometida pela engine contra si mesma.
    *
-   * Agora ela cria o que procura. Quem declina (`semMenuDePausa`) continua sem nada e sem acusação — declinar
-   * é escolha; não ter é omissão.
+   * Agora ela cria o que procura — e para TODO jogo, desde o ADR-0120 e outra vez desde o ADR-0122: o
+   * declínio saiu, porque a razão de ele existir foi construída fora por este mesmo ADR-0106, e porque a
+   * regra é do Dev — a pausa e os ícones de acessibilidade estão em todo jogo, logo são da engine.
    */
-  const hospedeiroDaPausa = declines.semMenuDePausa ? null : (o.host.pauseHost ?? $('#game-region'));
+  const hospedeiroDaPausa = o.host.pauseHost ?? $('#game-region');
   const pausaUsavel = !!hospedeiroDaPausa && typeof (hospedeiroDaPausa as HTMLElement).appendChild === 'function';
-  if (!declines.semMenuDePausa && !pausaUsavel) {
+  if (!pausaUsavel) {
     problems.push(
       'sem sítio para o menu de pausa: declare `host.pauseHost` ou tenha um #game-region que aceite filhos. '
-      + 'Sem ele a criança não alcança os ajustes durante a partida, e `declines.semMenuDePausa` é como se diz '
-      + 'que isso é de propósito',
+      + 'Sem ele a criança não alcança os ajustes durante a partida — e NÃO há como declinar: desde o '
+      + 'ADR-0122 a pausa é da engine em todo jogo, e o que este jogo declara é só ONDE ela cabe',
     );
   }
   if (hospedeiroDaPausa && pausaUsavel) {
@@ -668,7 +678,7 @@ export function createGame(o: CreateGameOptions): Engine {
   const nav = initMenuNav({
     $, getActiveElement: () => doc.activeElement,
     topVisibleOverlay: overlays.topVisibleOverlay, closeById: overlays.closeById,
-    getPauseMenu: declines.semMenuDePausa ? () => null : (i) => $<HTMLElement>(`#vp-pause-${i}`),
+    getPauseMenu: (i) => $<HTMLElement>(`#vp-pause-${i}`),
     setPhase: o.setPhase ?? (() => {}),
     setPauseActor: () => {},
     srSay,

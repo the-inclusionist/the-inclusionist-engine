@@ -295,7 +295,10 @@ export function bootQuiz(): void {
     host: { doc: document, win: window, cvdHost: $<SVGElement>('#q-cvd') },
     // Um quiz não tem pausa, nem assistente de pad, nem ator de pausa. Declarado, e não deduzido de getters
     // que devolvem null — ver o achado 10 e o cabeçalho do `boot/create-game`.
-    declines: { semMenuDePausa: true, semAssistenteDePad: true, semAtorDePausa: true },
+    // ⚠️ O `semMenuDePausa` SAIU daqui em 2026-09-09 (ADR-0120), e este jogo é o motivo de ele ter existido:
+    // era o quiz que «não tinha pausa». Passou a ter — a engine monta o cartão e ele só oferece o que este
+    // jogo acciona. Um botão a menos para uma criança encontrar é um ajuste a menos que ela alcança.
+    declines: { semAssistenteDePad: true, semAtorDePausa: true },
     // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
     isNavigable: () => true,
   });
