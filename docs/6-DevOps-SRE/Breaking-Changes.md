@@ -225,6 +225,12 @@ over-reports a rename is worth having next to one that would have missed `holdsA
 so the over-report is visible as one, and does not become a fifth line in a migration note that costs
 somebody an afternoon.
 
+## 📌 The other cut of these facts
+
+This file answers «what changed, and why». **[Adopting-8.0.md](Adopting-8.0.md)** answers the question a
+consumer actually asks — «what do *I* have to edit» — with each repository's file and line, measured in the
+six trees on 2026-09-09. Neither repeats the other: the reasons live here, the addresses live there.
+
 ## ⚠️ Before cutting the major, read this
 
 Two pieces of work are **waiting for a major that has not been cut yet**, and cutting `8.0.0` without them

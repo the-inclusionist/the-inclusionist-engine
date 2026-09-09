@@ -85,7 +85,9 @@ docs/
 │   ├── Engineering-Rules.md   #   DRY/SOLID/cohesion↑; supersede-don't-append; ADRs change in-sprint
 │   └── plano-modularizacao.md · plano-modularizacao-mapa.md   # the modularization ADR (arXiv:2409.15152) + extraction map
 ├── 6-DevOps-SRE/              # phase f
-│   ├── Breaking-Changes.md    #   what left the PACKAGE since v7.0.1, and what a consumer must edit
+│   ├── Breaking-Changes.md    #   what left the PACKAGE since v7.0.1, by CHANGE: what moved, and why
+│   ├── Adopting-8.0.md        #   the SAME facts by REPOSITORY: which consumer edits what, on which line.
+│   │                          #   Measured in the six trees; no gate here, on purpose (ADR-0121)
 │   ├── public-surface.json    #   the committed snapshot the gate compares against — NOT hand-edited:
 │   │                          #   `node scripts/snapshot-public-surface.mjs` rewrites it, and running it
 │   │                          #   IS the declaration that a removal was deliberate
