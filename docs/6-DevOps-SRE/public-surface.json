@@ -4,6 +4,7 @@
     "Declinios",
     "Engine",
     "EngineHost",
+    "GanchosDoCartucho",
     "createGame"
   ],
   "consumer-quiz/main-quiz.ts": [
@@ -586,6 +587,17 @@
     "MotorDeFala",
     "criarFalaInterrompivel"
   ],
+  "platform/pesados-catalogo.ts": [
+    "CACHE_PESADOS",
+    "PESADOS",
+    "Pesado"
+  ],
+  "platform/pesados.ts": [
+    "OpcoesDosPesados",
+    "RelatorioPesado",
+    "baixarPesados",
+    "pesoPorBaixar"
+  ],
   "platform/speech.ts": [
     "gameSay"
   ],
@@ -624,6 +636,10 @@
     "urlDaConfig",
     "urlDoModelo",
     "vozEmUso"
+  ],
+  "platform/vozes-prontas.ts": [
+    "estadosDasVozes",
+    "idsDasVozes"
   ],
   "render/camera.ts": [
     "Camera",

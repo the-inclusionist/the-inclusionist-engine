@@ -401,6 +401,40 @@ export interface Engine {
    * tem de poder ser auditado em vez de ficar só numa tela que já fechou.
    */
   readonly alcance: Alcance;
+  /**
+   * TORNA ESTE CARTUCHO O CORRENTE (ADR-0142). Uma raiz de composição, vários jogos.
+   *
+   * ⚠️ **LANÇA** numa declaração malformada, e não a põe em `problems`: o contrato é PRÉ-CONDIÇÃO e não
+   * diagnóstico, tal como no arranque. Um cartucho mau não chega a ser montado.
+   *
+   * 📌 O que ele refaz é só o que não se conserta lendo de novo: os dois registos de mapeamento, que são
+   * efeito global, e o alcance com o seu aviso, que escreve DOM. `problems` e `alcance` passam a descrever
+   * o cartucho montado porque são derivados, não porque `mount` os copie.
+   */
+  mount(declaration: GameDeclaration, ganchos?: GanchosDoCartucho): void;
+  /**
+   * SOLTA O CORRENTE: mapeamentos a `null`, aviso de alcance retirado, pilha de cenas esvaziada.
+   *
+   * ⚠️ A pilha esvazia-se com `pop()` e não com um `clear()`, e a diferença é a decisão: 📏 medido nos seis
+   * jogos, os quatro `exit()` que existem são LIMPEZA DE DOM, logo dispará-los é o teardown que se quer.
+   * Um `clear()` que os saltasse seria o conserto errado.
+   */
+  unmount(): void;
+}
+
+/** A metade do jogo SEM a declaração — o que `mount` recebe ao lado dela. */
+export type GanchosDoCartucho = Omit<MetadeDoJogo, 'declaration'>;
+
+/*
+ * UMA FRASE SÓ PARA AS DUAS RECUSAS, e o gate do pilar 3 é que a pediu.
+ *
+ * ⚠️ O arranque e o `mount()` recusam uma declaração malformada pela MESMA razão e com a mesma frase, e
+ * escrevê-la duas vezes fez o teto de texto cru deste módulo subir de 15 para 16 — o crivo de i18n reprovou,
+ * e reprovou com razão. Duas cópias de uma frase são dois sítios para ela divergir, e é também a segunda
+ * tradução a fazer quando o pilar 3 chegar aqui.
+ */
+function recusarDeclaracao(quem: string, problemas: readonly string[]): never {
+  throw new Error(`${quem}: declaração malformada — ${problemas.join('; ')}`);
 }
 
 /** Os ids que os painéis emprestados exigem do documento. Achado 6: sem eles o painel abre VAZIO, sem erro. */
@@ -451,7 +485,7 @@ export function createGame(o: CreateGameOptions): Engine {
 
   const problemasDoContrato = conformanceProblems(cartucho.declaration);
   if (problemasDoContrato.length) {
-    throw new Error('createGame: declaração malformada — ' + problemasDoContrato.join('; '));
+    recusarDeclaracao('createGame', problemasDoContrato);
   }
 
   const { doc, win } = o.host;
@@ -466,13 +500,13 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const SEM_DECLINIOS: Declinios = {};
   const declines = () => cartucho.declines ?? SEM_DECLINIOS;
-  const problems: string[] = [];
+  const problemasDoHospedeiro: string[] = [];
 
   const $ = <T extends Element = Element>(sel: string): T | null => doc.querySelector<T>(sel);
   const $$ = <T extends Element = Element>(sel: string): T[] => [...doc.querySelectorAll<T>(sel)];
 
   for (const sel of MARCACAO_EXIGIDA) {
-    if (!$(sel)) problems.push(`marcação ausente: ${sel}`);
+    if (!$(sel)) problemasDoHospedeiro.push(`marcação ausente: ${sel}`);
   }
 
   // ⚠️ O MUNDO DECLARADO TEM DE EXISTIR NO DOCUMENTO, e esta é a falha que o ADR-0087 deixaria aberta se
@@ -483,9 +517,44 @@ export function createGame(o: CreateGameOptions): Engine {
   // que o registro existe para eliminar: a simulação de empatia aplicada a NADA, e um adulto informado de
   // que sentiu algo que não sentiu. É um problema do HOSPEDEIRO e não do programa, então entra em
   // `problems` como as marcações — o jogo abre, e quem o integrou lê que o mundo dele não está lá.
-  const mundo = cartucho.declaration.world();
-  if (mundo.kind === 'element' && !$(mundo.selector)) {
-    problems.push(`mundo declarado não encontrado: ${mundo.selector}`);
+  /*
+   * AS TRÊS LINHAS DE `problems` QUE DEPENDEM DO CARTUCHO, juntas e recalculáveis.
+   *
+   * 📏 Medido: das oito que esta raiz produz, CINCO são sobre a PÁGINA — marcação ausente, sem host de
+   * filtros, sem barra de acessibilidade, uma barra que não aceita conteúdo, sem sítio para a pausa — e
+   * essas não mexem quando se troca de jogo, porque não é o jogo que as causa. Só estas três mexem.
+   *
+   * ⚠️ E é por isso que `problems` não podia continuar a ser UM array construído no arranque: metade dele
+   * descreve o hospedeiro e vale para sempre, a outra metade descreve um cartucho e caduca no `mount()`.
+   * Recalcular tudo apagaria diagnósticos do hospedeiro que ninguém consertou; não recalcular nada deixaria
+   * o diagnóstico a falar do jogo errado.
+   */
+  function problemasDoCartucho(): string[] {
+    const p: string[] = [];
+    // O mundo declarado tem de existir na página — e quem o declara é o jogo, não o hospedeiro.
+    const mundo = cartucho.declaration.world();
+    if (mundo.kind === 'element' && !$(mundo.selector)) {
+      p.push(`mundo declarado não encontrado: ${mundo.selector}`);
+    }
+    // ⚠️ MISTA, e fica deste lado por causa da segunda metade: a porta é do hospedeiro
+    // (`carregarVozNeural`), mas o declínio é do CARTUCHO — logo a linha pode aparecer ou calar-se ao
+    // trocar de jogo, com o mesmo hospedeiro.
+    if (!o.carregarVozNeural && !declines().semVozNeural) {
+      p.push(
+        'sem voz neural: declare `carregarVozNeural` (uma linha — ver ADR-0094) ou `declines.semVozNeural`. '
+        + 'Sem ela a criança que não lê fica com a voz do sistema, que em Chromebook de escola pode não existir '
+        + 'em português',
+      );
+    }
+    const assentos = (cartucho.players ?? []).length;
+    if (assentos > 1 && !declines().semAtorDePausa && !cartucho.setPauseActor) {
+      p.push(
+        `declarou ${assentos} jogadores e não registra o ator da pausa: o painel de controle edita sempre o `
+        + 'assento 0, então ninguém além do primeiro consegue remapear. Declare `declines.semAtorDePausa` se '
+        + 'for de propósito',
+      );
+    }
+    return p;
   }
 
   // 1. IDIOMA ANTES DE TUDO. A interface não pode ser construída antes de a língua ser conhecida — foi o que
@@ -499,13 +568,7 @@ export function createGame(o: CreateGameOptions): Engine {
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
     carregarVozNeural: o.carregarVozNeural,
   });
-  if (!o.carregarVozNeural && !declines().semVozNeural) {
-    problems.push(
-      'sem voz neural: declare `carregarVozNeural` (uma linha — ver ADR-0094) ou `declines.semVozNeural`. '
-      + 'Sem ela a criança que não lê fica com a voz do sistema, que em Chromebook de escola pode não existir '
-      + 'em português',
-    );
-  }
+  // 📌 A linha da voz neural mudou-se para `problemasDoCartucho()`: o declínio que a cala é do jogo.
 
   /**
    * O FILTRO DE VISÃO, aplicado ao MUNDO QUE O JOGO DECLAROU (ADR-0087).
@@ -543,14 +606,14 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 4. Daltonismo: a engine ENTREGA o markup em vez de exigir que o consumidor o adivinhe (achado 7).
   const cvdFilters = installCvdFilters(o.host.cvdHost ?? null);
-  if (!cvdFilters) problems.push('sem host de filtros (<svg>): a correção de daltonismo não foi montada');
+  if (!cvdFilters) problemasDoHospedeiro.push('sem host de filtros (<svg>): a correção de daltonismo não foi montada');
 
   // 4c. A BARRA DE ACESSIBILIDADE DA PRIMEIRA TELA. Ver a nota em `EngineHost.a11yBarHost`: cinco dos seis
   //     jogos do catálogo não têm nenhuma, e nada o dizia. Isto não a monta — diz que ela falta, que é o
   //     passo que tira o silêncio. A frase nomeia a saída, como as outras deste bloco fazem.
   const a11yBar = o.host.a11yBarHost ?? $(SELETOR_BARRA_A11Y);
   if (!a11yBar) {
-    problems.push(
+    problemasDoHospedeiro.push(
       `sem barra de acessibilidade na primeira tela: declare \`host.a11yBarHost\` ou ponha um ${SELETOR_BARRA_A11Y} no documento. Sem ela a criança não alcança modo cego, TTS, alto contraste nem Libras antes de começar`,
     );
   }
@@ -651,7 +714,7 @@ export function createGame(o: CreateGameOptions): Engine {
     && typeof (a11yBar as HTMLElement).addEventListener === 'function'
     && 'innerHTML' in a11yBar;
   if (a11yBar && !barraUsavel) {
-    problems.push(
+    problemasDoHospedeiro.push(
       'o elemento da barra de acessibilidade não aceita conteúdo nem clique: os ícones não foram montados',
     );
   }
@@ -712,14 +775,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // jogo o entregar: a linha abaixo dizia «conserte» sem haver por onde, e a única saída era declarar
   // `semAtorDePausa`, que é aceitar a perda em vez de a corrigir. Agora ela só acusa quem NÃO respondeu —
   // que é o que uma linha de `problems` deve fazer, pelo §2 do ADR-0106.
-  const assentos = (cartucho.players ?? []).length;
-  if (assentos > 1 && !declines().semAtorDePausa && !cartucho.setPauseActor) {
-    problems.push(
-      `declarou ${assentos} jogadores e não registra o ator da pausa: o painel de controle edita sempre o `
-      + 'assento 0, então ninguém além do primeiro consegue remapear. Declare `declines.semAtorDePausa` se '
-      + 'for de propósito',
-    );
-  }
+  // 📌 A linha do ator da pausa mudou-se para `problemasDoCartucho()`: quem declara assentos é o jogo.
 
   /*
    * 4e. O CARTÃO DE PAUSA DA PRIMEIRA TELA — e isto fecha um LAÇO QUE ESTAVA ABERTO.
@@ -737,7 +793,7 @@ export function createGame(o: CreateGameOptions): Engine {
   const hospedeiroDaPausa = o.host.pauseHost ?? $('#game-region');
   const pausaUsavel = !!hospedeiroDaPausa && typeof (hospedeiroDaPausa as HTMLElement).appendChild === 'function';
   if (!pausaUsavel) {
-    problems.push(
+    problemasDoHospedeiro.push(
       'sem sítio para o menu de pausa: declare `host.pauseHost` ou tenha um #game-region que aceite filhos. '
       + 'Sem ele a criança não alcança os ajustes durante a partida — e NÃO há como declinar: desde o '
       + 'ADR-0122 a pausa é da engine em todo jogo, e o que este jogo declara é só ONDE ela cabe',
@@ -1033,9 +1089,38 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 `problems` e `alcance` ainda são fixos, e ainda descrevem o arranque. É a dívida que o ADR-0142
    * nomeia e que o `mount()` fecha.
    */
+  /*
+   * A PILHA DE CENAS É DA RAIZ, e não do retorno, porque o `desmontar()` tem de a alcançar. Nasce uma vez
+   * (ADR-0117 §2: a página tem uma) e é esvaziada entre cartuchos, nunca substituída.
+   */
+  const cenasDaRaiz = criarPilha();
+
+  function montar(declaration: GameDeclaration, ganchos: GanchosDoCartucho = {}): void {
+    // ⚠️ LANÇA, NÃO DIAGNOSTICA — a mesma regra do arranque, e por isso a mesma frase. Uma declaração
+    // malformada é pré-condição: `problems` é para lacunas com que se consegue jogar, e isto não é uma.
+    const malformada = conformanceProblems(declaration);
+    if (malformada.length) {
+      recusarDeclaracao('mount', malformada);
+    }
+    cartucho = { ...ganchos, declaration };
+    registrarMapeamentosDoCartucho();
+    alcanceAtual = derivarAlcance();
+  }
+
+  function desmontar(): void {
+    registrarMapeamentoDoTeclado(null);
+    registrarMapeamentoDoPad(null);
+    retirarAvisoDeAlcance();
+    // ⚠️ `pop()` E NÃO UM `clear()`: cada `exit()` é a limpeza de DOM daquela cena, e saltá-la deixaria na
+    // página o que o cartucho anterior desenhou. O laço tem fim porque `pop()` devolve `null` na pilha vazia.
+    while (cenasDaRaiz.pop()) { /* o `exit()` de cada cena É o teardown dela */ }
+  }
+
   return {
     get declaration() { return cartucho.declaration; },
     get declines() { return declines(); },
+    mount: montar,
+    unmount: desmontar,
     pausa,
     tts,
     overlays,
@@ -1043,9 +1128,9 @@ export function createGame(o: CreateGameOptions): Engine {
     keyboard,
     sonar,
     aplicarFiltroDeVisao,
-    cenas: criarPilha(),
+    cenas: cenasDaRaiz,
     cvdFilters,
-    problems,
+    get problems() { return [...problemasDoHospedeiro, ...problemasDoCartucho()]; },
     aoFalhar,
     get alcance() { return alcanceAtual; },
   };

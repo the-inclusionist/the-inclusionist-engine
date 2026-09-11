@@ -13,11 +13,14 @@
       "semVozNeural?"
     ],
     "interface CreateGameOptions": [
+      "aoProgredirPesados?",
+      "baixarPesados?",
       "carregarVozNeural?",
       "comIndice?",
       "declaration",
       "declines?",
       "disponibilidade?",
+      "getPauseActs?",
       "host",
       "isBlindMode?",
       "isNavigable?",
@@ -25,7 +28,10 @@
       "navBar?",
       "players?",
       "preset?",
+      "setCorrecaoDoJogador?",
+      "setPauseActor?",
       "setPhase?",
+      "setTemaDoJogador?",
       "sonarPlayers?"
     ],
     "interface Engine": [
@@ -37,13 +43,16 @@
       "declaration",
       "declines",
       "keyboard",
+      "mount",
       "nav",
       "overlays",
       "pausa",
       "problems",
       "sonar",
-      "tts"
-    ]
+      "tts",
+      "unmount"
+    ],
+    "type GanchosDoCartucho": "Omit<MetadeDoJogo, 'declaration'>"
   },
   "core/actions.ts": {
     "interface ActionWord": [
@@ -952,6 +961,28 @@
       "calar",
       "falando",
       "falar"
+    ]
+  },
+  "platform/pesados-catalogo.ts": {
+    "interface Pesado": [
+      "bytes?",
+      "id",
+      "porQueNaoTemFonte?",
+      "url"
+    ]
+  },
+  "platform/pesados.ts": {
+    "interface RelatorioPesado": [
+      "bytes?",
+      "erro?",
+      "estado",
+      "id"
+    ],
+    "interface OpcoesDosPesados": [
+      "aoProgredir?",
+      "apenas?",
+      "buscar?",
+      "cacheStorage?"
     ]
   },
   "platform/tts.ts": {

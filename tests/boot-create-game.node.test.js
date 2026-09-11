@@ -724,3 +724,82 @@ describe('createGame em execução', () => {
     expect(() => createGame({ declaration: declaracaoValida(), host: { doc, win } })).not.toThrow();
   });
 });
+
+/*
+ * MONTAR E DESMONTAR — uma raiz de composição, vários cartuchos (ADR-0142).
+ *
+ * ⚠️ O caso que decide é o PRIMEIRO: sem ele, `mount()` seria uma função que troca um campo e o diagnóstico
+ * continuaria a falar do jogo que arrancou — que é exactamente a dívida que o ADR-0139 §5 registou e que
+ * este registo veio pagar. Um teste que só verificasse que `mount` não lança não provaria nada disso.
+ */
+describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
+  // ⚠️ O DUPLO DEVOLVE ELEMENTO PARA QUALQUER SELETOR, então «um mundo que não existe» só existe se o
+  // dissermos ao duplo — é para isso que `ausentes` está lá. Sem ele estes casos passavam a verde sem nunca
+  // terem exercitado a linha que dizem exercitar, que é a forma mais cara de um teste mentir.
+  const SELETOR_AUSENTE = '#mundo-que-nao-existe';
+  const semDom = () => domFalso({ ausentes: [SELETOR_AUSENTE] });
+  const semMundo = () => ({
+    ...declaracaoValida(),
+    world: () => ({ kind: 'element', selector: SELETOR_AUSENTE }),
+  });
+
+  it('🎯 [Right] `problems` passa a descrever o cartucho MONTADO, e não o que arrancou', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = semDom();
+    const motor = createGame({ declaration: semMundo(), host: { doc, win } });
+    expect(motor.problems.join(' '), 'o arranque devia acusar o mundo que não existe').toMatch(/mundo declarado/);
+
+    motor.mount(declaracaoValida());
+    expect(motor.problems.join(' '), 'o diagnóstico ficou a falar do cartucho anterior').not.toMatch(/mundo declarado/);
+  });
+
+  it('⚠️ [Right] e o PAR: montar um cartucho sem mundo ACUSA — senão «sumiu» passaria por nunca olhar', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = semDom();
+    const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
+    expect(motor.problems.join(' ')).not.toMatch(/mundo declarado/);
+
+    motor.mount(semMundo());
+    expect(motor.problems.join(' '), 'montou um mundo inexistente e não disse nada').toMatch(/mundo declarado/);
+  });
+
+  it('🔴 [Zero] `mount` LANÇA numa declaração malformada — contrato é pré-condição, não diagnóstico', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
+    expect(() => motor.mount({ ...declaracaoValida(), topology: undefined })).toThrow(/malformada/);
+    // ⚠️ E O CARTUCHO BOM CONTINUA MONTADO: uma recusa não pode deixar a raiz a meio caminho.
+    expect(motor.problems.join(' ')).not.toMatch(/mundo declarado/);
+  });
+
+  it('[Right] `declaration` devolve o cartucho corrente', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const primeira = declaracaoValida();
+    const segunda = declaracaoValida();
+    const motor = createGame({ declaration: primeira, host: { doc, win } });
+    expect(motor.declaration).toBe(primeira);
+    motor.mount(segunda);
+    expect(motor.declaration, 'a engine devolveu a declaração do cartucho anterior').toBe(segunda);
+  });
+
+  it('⚠️ [Zero] `unmount` esvazia a pilha de cenas, e cada `exit()` corre — é ele o teardown', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
+    const saiu = [];
+    motor.cenas.push({ nome: 'a', exit: () => saiu.push('a') });
+    motor.cenas.push({ nome: 'b', exit: () => saiu.push('b') });
+    expect(motor.cenas.nomes()).toEqual(['a', 'b']);
+
+    // ⚠️ `push` JÁ CORRE O `exit()` DA CENA DE BAIXO — medido aqui, e não suposto: empilhar `b` sobre `a`
+    // produz um `'a'` antes de o `unmount` existir. Medir só a CAUDA é o que separa o que este caso afirma
+    // do que a pilha já fazia sozinha.
+    const antes = saiu.length;
+    motor.unmount();
+    expect(motor.cenas.nomes(), 'a pilha guardou cenas do cartucho anterior').toEqual([]);
+    // A ORDEM É DE CIMA PARA BAIXO: `pop()` desfaz o que foi empilhado por último, que é a única ordem em
+    // que uma cena pode contar com o que empilhou por baixo dela ainda estar lá.
+    expect(saiu.slice(antes), 'uma cena saiu sem correr o seu `exit()`').toEqual(['b', 'a']);
+  });
+});
