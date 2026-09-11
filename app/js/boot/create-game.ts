@@ -772,9 +772,17 @@ export function createGame(o: CreateGameOptions): Engine {
   // é um `KeyScheme` como qualquer outro, e a única forma honesta de um esquema que não alcança nada é
   // catorze ausências declaradas. Um `{}` fazia o tipo mentir sobre estar completo.
   const semAlcance = Object.fromEntries(ACTIONS.map((a) => [a, null])) as KeyScheme;
-  const players = o.players ?? [{ ctrl: semAlcance }];
+  // ⚠️ O FALLBACK É UMA CONSTANTE e não um literal novo a cada chamada: `getPlayers` é lido pelo runtime de
+  // teclado a cada leitura de controlo, e devolver um array novo de cada vez faria qualquer comparação de
+  // identidade mentir — um defeito que só aparece em quem compara, e tarde.
+  const semJogadores = [{ ctrl: semAlcance }];
+  // ⚠️ LÊ `o.players`, E NÃO UM INSTANTÂNEO. Os getters já existiam; o que eles fechavam é que era um `const`
+  // tirado no arranque. As linhas de `initPauseIcons` e do sonar, neste mesmo ficheiro, já liam a fonte viva —
+  // esta era a que faltava. Com vários cartuchos numa raiz de composição (ADR-0142), o teclado ficava com os
+  // jogadores do cartucho que arrancou primeiro.
+  const players = () => o.players ?? semJogadores;
   const keyboard = initKeyboardRuntime({
-    getKB: () => kb, getNumPlayers: () => players.length, getPlayers: () => players,
+    getKB: () => kb, getNumPlayers: () => players().length, getPlayers: () => players(),
   });
   keyboard.assignControls();
 
