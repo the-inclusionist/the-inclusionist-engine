@@ -326,8 +326,11 @@ describe('createGame em execução', () => {
     // ⚠️ E a prova de que os dois padrões deixaram de ser no-op: o código-fonte desta raiz responde com a
     // própria instância. Lido do ficheiro porque o `ctx` do `initMenuNav` não é observável de fora — e uma
     // afirmação que não se consegue fazer é melhor dita assim do que fingida com um duplo que aceita tudo.
-    expect(FONTE, 'a barra montada voltou a ser inalcançável por teclado').toMatch(/naBarraDe:\s*o\.naBarraDe\s*\?\?\s*\(\(i\)\s*=>\s*pauseIcons\.naBarraDe\(i\)\)/);
-    expect(FONTE).toMatch(/navBar:\s*o\.navBar\s*\?\?\s*\(\(i,\s*k\)\s*=>\s*pauseIcons\.navBar\(i,\s*k\)\)/);
+    // ⚠️ ESTES DOIS CRIVOS LEEM O TEXTO DA FONTE, logo estão presos ao NOME de quem guarda a metade do jogo.
+    // Era `o.` até 2026-09-11 e passou a `cartucho.` quando essa metade ganhou um detentor próprio (ADR-0142).
+    // Um rename futuro reprova aqui com a mensagem certa — o que se quer — mas a causa é o nome, não a regra.
+    expect(FONTE, 'a barra montada voltou a ser inalcançável por teclado').toMatch(/naBarraDe:\s*cartucho\.naBarraDe\s*\?\?\s*\(\(i\)\s*=>\s*pauseIcons\.naBarraDe\(i\)\)/);
+    expect(FONTE).toMatch(/navBar:\s*cartucho\.navBar\s*\?\?\s*\(\(i,\s*k\)\s*=>\s*pauseIcons\.navBar\(i,\s*k\)\)/);
     // ⚠️ E a barra montada tem de continuar a DIZER A VERDADE quando o modo cego muda noutro sítio (o painel
     // de áudio, a simulação de empatia). Sem esta assinatura o ícone ficaria a dizer «desligado» depois de a
     // criança o ligar — a família do `reflectTTS`, que este projeto já pagou duas vezes.

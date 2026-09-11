@@ -424,14 +424,38 @@ const SELETOR_BARRA_A11Y = '#title-icons';
  * um id ausente é lacuna do HOSPEDEIRO, e o quiz provou que ligar só a parte que serve é legítimo — foi
  * assim que ele recusou o pad e o sonar sem mentir. Por isso um vira exceção e o outro vira `problems`.
  */
+/**
+ * A METADE DO JOGO de `CreateGameOptions` — os quinze campos que o ADR-0139 §1 diz que um cartucho
+ * FORNECE, separados dos cinco que descrevem a página e o aparelho.
+ *
+ * ⚠️ São quinze e não dez: a primeira versão daquele registo contou quinze campos num total de vinte e
+ * deixou `declines`, `getPauseActs`, `setPauseActor`, `setTemaDoJogador` e `setCorrecaoDoJogador` de fora.
+ * O teste que ele próprio dá — «uma PÁGINA conseguiria responder isto sem saber que jogo corre?» — põe os
+ * cinco deste lado, e a errata de 2026-09-11 corrigiu a lista.
+ */
+type MetadeDoJogo = Pick<CreateGameOptions,
+  'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
+  | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
+  | 'setTemaDoJogador' | 'setCorrecaoDoJogador'>;
+
 export function createGame(o: CreateGameOptions): Engine {
-  const problemasDoContrato = conformanceProblems(o.declaration);
+  /*
+   * O CARTUCHO CORRENTE, e por enquanto ele É as opções que chegaram.
+   *
+   * ⚠️ Este passo não muda comportamento nenhum: `cartucho` começa como o próprio `o`, então toda leitura
+   * abaixo devolve exatamente o que devolvia. O que ele compra é o LUGAR onde `mount()` vai escrever
+   * (ADR-0142) — sem ele, as trinta e seis leituras da metade do jogo estão presas ao argumento, e uma raiz
+   * de composição a servir vários cartuchos ficaria com o primeiro deles para sempre.
+   */
+  let cartucho: MetadeDoJogo = o;
+
+  const problemasDoContrato = conformanceProblems(cartucho.declaration);
   if (problemasDoContrato.length) {
     throw new Error('createGame: declaração malformada — ' + problemasDoContrato.join('; '));
   }
 
   const { doc, win } = o.host;
-  const declines = o.declines ?? {};
+  const declines = cartucho.declines ?? {};
   const problems: string[] = [];
 
   const $ = <T extends Element = Element>(sel: string): T | null => doc.querySelector<T>(sel);
@@ -449,7 +473,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // que o registro existe para eliminar: a simulação de empatia aplicada a NADA, e um adulto informado de
   // que sentiu algo que não sentiu. É um problema do HOSPEDEIRO e não do programa, então entra em
   // `problems` como as marcações — o jogo abre, e quem o integrou lê que o mundo dele não está lá.
-  const mundo = o.declaration.world();
+  const mundo = cartucho.declaration.world();
   if (mundo.kind === 'element' && !$(mundo.selector)) {
     problems.push(`mundo declarado não encontrado: ${mundo.selector}`);
   }
@@ -486,7 +510,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * filtro sobre ela seria a mentira que o ADR-0087 existe para impedir, só que ao contrário.
    */
   function aplicarFiltroDeVisao(css: string, alcance: AlcanceDoFiltro): void {
-    const mundo = o.declaration.world();
+    const mundo = cartucho.declaration.world();
     if (mundo.kind !== 'element') return;
     const el = $<HTMLElement>(mundo.selector);
     if (!el) return; // já reportado em `problems`; não se inventa superfície
@@ -552,7 +576,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * respostas à mesma pergunta divergem, e foi assim que esta divergiu. `import * as state` dá ligação VIVA,
    * então isto lê o valor de agora e não o do arranque.
    */
-  const lerModoCego = o.isBlindMode ?? (() => state.modoCego);
+  const lerModoCego = cartucho.isBlindMode ?? (() => state.modoCego);
 
   const pauseIcons = initPauseIcons({
     doc,
@@ -570,9 +594,9 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ A REFERÊNCIA, e não o resultado. Chamar aqui congelava a resposta no arranque, e o
     // `reflectPauseIcons` — que existe porque a tabela de acções muda (ADR-0106 §5) — refrescava a partir
     // dela. Com vários cartuchos numa raiz de composição (ADR-0142) o ícone descrevia o primeiro deles.
-    seguraTeclas: () => o.declaration.seguraTeclas(),
-    getPlayers: () => o.players ?? [],
-    getNumPlayers: () => (o.players ?? [null]).length,
+    seguraTeclas: () => cartucho.declaration.seguraTeclas(),
+    getPlayers: () => cartucho.players ?? [],
+    getNumPlayers: () => (cartucho.players ?? [null]).length,
     srSay, srAlert,
     // ⚠️ NÃO `instanceof HTMLElement`: esse é um GLOBAL DO NAVEGADOR, e lê-lo onde ele não existe LANÇA —
     // não devolve falso. Escrito assim na etapa 2, fazia o `reflectPauseIcons` rebentar em qualquer ambiente
@@ -600,9 +624,9 @@ export function createGame(o: CreateGameOptions): Engine {
      * lados: ausentes, tudo se comporta como antes — tabela de acções vazia e os dois ícones visuais
      * não montados. Ver as notas em `CreateGameOptions` para o que a ausência custava.
      */
-    ...(o.getPauseActs ? { getPauseActs: o.getPauseActs } : {}),
-    ...(o.setTemaDoJogador ? { setTemaDoJogador: o.setTemaDoJogador } : {}),
-    ...(o.setCorrecaoDoJogador ? { setCorrecaoDoJogador: o.setCorrecaoDoJogador } : {}),
+    ...(cartucho.getPauseActs ? { getPauseActs: cartucho.getPauseActs } : {}),
+    ...(cartucho.setTemaDoJogador ? { setTemaDoJogador: cartucho.setTemaDoJogador } : {}),
+    ...(cartucho.setCorrecaoDoJogador ? { setCorrecaoDoJogador: cartucho.setCorrecaoDoJogador } : {}),
   });
 
   /*
@@ -678,8 +702,8 @@ export function createGame(o: CreateGameOptions): Engine {
   // jogo o entregar: a linha abaixo dizia «conserte» sem haver por onde, e a única saída era declarar
   // `semAtorDePausa`, que é aceitar a perda em vez de a corrigir. Agora ela só acusa quem NÃO respondeu —
   // que é o que uma linha de `problems` deve fazer, pelo §2 do ADR-0106.
-  const assentos = (o.players ?? []).length;
-  if (assentos > 1 && !declines.semAtorDePausa && !o.setPauseActor) {
+  const assentos = (cartucho.players ?? []).length;
+  if (assentos > 1 && !declines.semAtorDePausa && !cartucho.setPauseActor) {
     problems.push(
       `declarou ${assentos} jogadores e não registra o ator da pausa: o painel de controle edita sempre o `
       + 'assento 0, então ninguém além do primeiro consegue remapear. Declare `declines.semAtorDePausa` se '
@@ -719,13 +743,13 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.
   const sonar = createAudioSonar({
-    topology: () => o.declaration.topology(),
-    targetsOf: (i) => o.declaration.targetsOf(i),
-    nameAt: (at) => o.declaration.nameAt(at),
+    topology: () => cartucho.declaration.topology(),
+    targetsOf: (i) => cartucho.declaration.targetsOf(i),
+    nameAt: (at) => cartucho.declaration.nameAt(at),
     // Campo 2 + o barramento do mixer: o que o GUIA CONTÍNUO precisa e o bipe não precisava (#84 item 2). O
     // `roleAt` é o que deixa a rota contornar parede; o `catNode`/`audioOut`/`getVolume` são o que põem um
     // grafo PERMANENTE no mesmo cursor de volume que todo o resto do áudio usa.
-    roleAt: (at) => o.declaration.roleAt(at),
+    roleAt: (at) => cartucho.declaration.roleAt(at),
     tonePan, srSay, narrate: (texto) => tts.narrate(texto),
     catNode, audioOut, getVolume: () => volume,
     // ⚠️ A RESPOSTA, E NÃO A TABELA (#104). O `platform/audio-sonar` recebia o `VIZ_BY_KEY` e atravessava-o
@@ -738,11 +762,11 @@ export function createGame(o: CreateGameOptions): Engine {
     getModoCego: lerModoCego, LOGICAL_W,
     // O jogador DERIVADO do foco: campo 4 respondendo "onde a criança está". Um jogo que não fornece lista
     // ainda tem sonar, e é isso que faz a pilha de acessibilidade não ser acessório.
-    getPlayers: o.sonarPlayers ?? (() => {
-      const f = o.declaration.focusOf(0);
+    getPlayers: cartucho.sonarPlayers ?? (() => {
+      const f = cartucho.declaration.focusOf(0);
       return f ? [{ i: 0, x: f.at.x, y: f.at.y, visual: PADRAO }] : [];
     }),
-    getNumPlayers: () => (o.players ?? [null]).length,
+    getNumPlayers: () => (cartucho.players ?? [null]).length,
     getAudioCtx: () => audioCtx, getSoundOn: () => soundOn, getAudioCat: () => audioCat,
   });
 
@@ -754,16 +778,16 @@ export function createGame(o: CreateGameOptions): Engine {
   // desaparece quando alguém vai ver.
   // 📌 E o registo aceita `null`, que é o que um jogo sem opinião produz: fica a fábrica da engine.
   registrarMapeamentoDoTeclado(
-    o.declaration.mapeamentoDoTeclado
-      ? (jogadores, assento) => o.declaration.mapeamentoDoTeclado!(jogadores, assento)
+    cartucho.declaration.mapeamentoDoTeclado
+      ? (jogadores, assento) => cartucho.declaration.mapeamentoDoTeclado!(jogadores, assento)
       : null,
   );
   // ⚠️ E O DO CONTROLE REGISTA-SE AQUI AINDA QUE ESTA RAIZ NÃO MONTE GAMEPAD NENHUM. Não é descuido: quem
   // chama `initGamepad` é o cartucho, e é exactamente por isso que o registo não pode viver lá — seria mais
   // um campo que um jogo pode esquecer, e esquecê-lo devolve o mapa da ENGINE a quem declarou outro, calado.
   registrarMapeamentoDoPad(
-    o.declaration.mapeamentoDoPad
-      ? (jogadores, assento) => o.declaration.mapeamentoDoPad!(jogadores, assento)
+    cartucho.declaration.mapeamentoDoPad
+      ? (jogadores, assento) => cartucho.declaration.mapeamentoDoPad!(jogadores, assento)
       : null,
   );
   initKB();
@@ -776,11 +800,11 @@ export function createGame(o: CreateGameOptions): Engine {
   // teclado a cada leitura de controlo, e devolver um array novo de cada vez faria qualquer comparação de
   // identidade mentir — um defeito que só aparece em quem compara, e tarde.
   const semJogadores = [{ ctrl: semAlcance }];
-  // ⚠️ LÊ `o.players`, E NÃO UM INSTANTÂNEO. Os getters já existiam; o que eles fechavam é que era um `const`
+  // ⚠️ LÊ `cartucho.players`, E NÃO UM INSTANTÂNEO. Os getters já existiam; o que eles fechavam é que era um `const`
   // tirado no arranque. As linhas de `initPauseIcons` e do sonar, neste mesmo ficheiro, já liam a fonte viva —
   // esta era a que faltava. Com vários cartuchos numa raiz de composição (ADR-0142), o teclado ficava com os
   // jogadores do cartucho que arrancou primeiro.
-  const players = () => o.players ?? semJogadores;
+  const players = () => cartucho.players ?? semJogadores;
   const keyboard = initKeyboardRuntime({
     getKB: () => kb, getNumPlayers: () => players().length, getPlayers: () => players(),
   });
@@ -791,13 +815,13 @@ export function createGame(o: CreateGameOptions): Engine {
     $, getActiveElement: () => doc.activeElement,
     topVisibleOverlay: overlays.topVisibleOverlay, closeById: overlays.closeById,
     getPauseMenu: (i) => $<HTMLElement>(`#vp-pause-${i}`),
-    setPhase: o.setPhase ?? (() => {}),
-    setPauseActor: o.setPauseActor ?? (() => {}),
+    setPhase: cartucho.setPhase ?? (() => {}),
+    setPauseActor: cartucho.setPauseActor ?? (() => {}),
     srSay,
     // Sem opinião declarada, o índice fica LIGADO: quem precisa dele para se orientar não tem como saber
     // que ele existe se vier desligado (a mesma razão de o modo cego nascer com TTS e sonar).
-    comIndice: o.comIndice ?? (() => true),
-    isNavigable: o.isNavigable ?? (() => true),
+    comIndice: cartucho.comIndice ?? (() => true),
+    isNavigable: cartucho.isNavigable ?? (() => true),
     /*
      * ⚠️ ESTE PADRÃO ERA `() => false` / `() => {}`, E DESDE HOJE ISSO SERIA UM BURACO QUE EU ABRI. O
      * comentário que estava aqui dizia «um hospedeiro que não tenha barra de acessibilidade responde nunca e
@@ -815,8 +839,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * modo (ADR-0044 item 7). No cartucho ela chega por outra rota (o encaminhador do gamepad, `main.ts:1470`)
      * que esta raiz ainda não monta. Logo: o direcional navega a barra; sair por START, por enquanto, não.
      */
-    naBarraDe: o.naBarraDe ?? ((i) => pauseIcons.naBarraDe(i)),
-    navBar: o.navBar ?? ((i, k) => pauseIcons.navBar(i, k)),
+    naBarraDe: cartucho.naBarraDe ?? ((i) => pauseIcons.naBarraDe(i)),
+    navBar: cartucho.navBar ?? ((i, k) => pauseIcons.navBar(i, k)),
     isCapturing: () => false,
     closePadWiz: () => {},
     whichPlayer: (code) => keyboard.whichPlayer(code),
@@ -875,7 +899,7 @@ export function createGame(o: CreateGameOptions): Engine {
      */
     rato: () => { try { return win.matchMedia('(any-pointer:fine)').matches; } catch { return false; } },
   };
-  const acoesDoJogo = o.preset ? presetActions(o.preset) : [];
+  const acoesDoJogo = cartucho.preset ? presetActions(cartucho.preset) : [];
   // O segundo eixo entra aqui, e vem do jogo (ADR-0104 §A): quantas posições ele segura ao mesmo tempo.
   // ⚠️ O TERCEIRO EIXO ENTRA AQUI (ADR-0112), e vem do jogo tal como os outros dois. `?? false` e não um
   // padrão inventado: o campo é opcional de propósito — ver a nota nele —, e a ausência significa «este jogo
@@ -883,8 +907,8 @@ export function createGame(o: CreateGameOptions): Engine {
   const alcanceAqui = alcance(
     transportesPadrao(disponibilidade),
     acoesDoJogo,
-    o.declaration.holdsAtOnce(),
-    o.declaration.needsPointer?.() ?? false,
+    cartucho.declaration.holdsAtOnce(),
+    cartucho.declaration.needsPointer?.() ?? false,
   );
 
   // ⚠️ SÓ APARECE QUANDO HÁ O QUE DIZER. Um aviso que aparece sempre deixa de ser lido, e um jogo cujas ações
@@ -951,5 +975,5 @@ export function createGame(o: CreateGameOptions): Engine {
       .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });
   }
 
-  return { declaration: o.declaration, pausa, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines, aoFalhar, alcance: alcanceAqui };
+  return { declaration: cartucho.declaration, pausa, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines, aoFalhar, alcance: alcanceAqui };
 }
