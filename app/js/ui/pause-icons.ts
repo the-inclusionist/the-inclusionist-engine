@@ -356,8 +356,14 @@ export interface AccionaveisDoJogo {
    * controle fica DESABILITADO com o motivo, porque o aparelho EXIGE a alternância e ela não se pode
    * desligar. Aqui não há nada a travar, e um controle que explica por que não faz nada continua a ser um
    * controle que não faz nada.
+   *
+   * ⚠️ É FUNÇÃO E NÃO VALOR, e a razão é a mesma do ADR-0084: uma resposta lida uma vez envelhece em
+   * silêncio. Aqui envelhecia no pior sítio — o `reflectPauseIcons` existe justamente porque «a tabela de
+   * acções deste jogo pode ter mudado desde a montagem» (ADR-0106 §5), e refrescava a partir de um booleano
+   * congelado no arranque. Com um `createGame` a servir vários cartuchos (ADR-0142), o ícone descrevia o
+   * jogo que arrancou primeiro. O contrato nunca esteve errado: `GameDeclaration.seguraTeclas` já é função.
    */
-  readonly seguraTeclas: boolean;
+  readonly seguraTeclas: () => boolean;
 }
 
 /**
@@ -378,7 +384,7 @@ export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly Pause
   // Um terceiro ramo, e não uma regra nova.
   return PAUSE_ICONS.filter((ic) => (ic.k === 'contrast' ? escritores.tema
     : ic.k === 'cvd' ? escritores.correcao
-      : ic.k === 'altmove' ? escritores.seguraTeclas
+      : ic.k === 'altmove' ? escritores.seguraTeclas()
         : true));
 }
 
@@ -726,8 +732,11 @@ export interface PauseIconsCtx {
    * 📌 Quem passa pelo `createGame` não escreve isto: a raiz lê a declaração, que já é obrigatória. O campo
    * só é visível para um cartucho que chame `initPauseIcons` por fora — e é exactamente esse que não pode
    * ficar em silêncio.
+   *
+   * ⚠️ FUNÇÃO, não valor — ver a nota no campo homónimo de `EscritoresVisuais`. Um cartucho que monte isto
+   * por fora passa `() => this.declaration.seguraTeclas()` e não o resultado dela.
    */
-  seguraTeclas: boolean;
+  seguraTeclas: () => boolean;
 }
 
 export interface PauseIconsApi {

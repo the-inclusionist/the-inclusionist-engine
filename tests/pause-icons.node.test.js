@@ -119,6 +119,11 @@ function buildCtx(over = {}) {
     optionsButtons: PM_OPTS,
     qlName: QL_NAME,
     getPauseActs: () => state.acts,
+    // ⚠️ CAMPO OBRIGATÓRIO, e este fixture omitia-o. Em JS isso dava `undefined`, que é falso, e o ícone
+    // `altmove` desaparecia em silêncio — «metade do defeito que este campo existe para não cometer», nas
+    // palavras do próprio `ui/pause-icons`. Agora é função (ADR-0142) e a omissão passa a LANÇAR, que é o
+    // que se quer: um ctx mal montado deixou de poder mentir baixinho.
+    seguraTeclas: () => true,
     setPauseActor: (i) => { state.pauseActor = i; },
     getPauseScreens: () => state.screens,
     // As BARRAS RÁPIDAS (ADR-0044, item 7): desde que elas saíram do cartão, é aqui que os ícones vivem, e é
@@ -1036,7 +1041,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // pior do que uma barra que ela vê que não está lá, porque a primeira ensina-lhe que o caminho não é
     // para ela». Os outros oito ícones continuam — perder a barra inteira por causa de dois seria a troca
     // errada.
-    const chaves = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: true }).map((ic) => ic.k);
+    const chaves = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true }).map((ic) => ic.k);
     expect(chaves).not.toContain('contrast');
     expect(chaves).not.toContain('cvd');
     expect(chaves).toContain('blind');
@@ -1045,7 +1050,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   });
 
   it('[Right] COM escritor visual, a barra é a lista inteira e na mesma ordem', () => {
-    expect(iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: true })).toEqual(PAUSE_ICONS);
+    expect(iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true })).toEqual(PAUSE_ICONS);
   });
 
   it('⚠️ [Boundary] com UM escritor só, aparece UM ícone só — e é o que funciona', () => {
@@ -1054,11 +1059,11 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // `&&` por `||` não reprovava nada — porque todos os casos tiravam os DOIS. E os dois operadores erram,
     // em direcções opostas: o `&&` esconde um ícone que FUNCIONA, o `||` mostra um que NÃO funciona. A
     // pergunta certa é por ÍCONE.
-    const soTema = iconesQueAccionam({ tema: true, correcao: false, seguraTeclas: true }).map((ic) => ic.k);
+    const soTema = iconesQueAccionam({ tema: true, correcao: false, seguraTeclas: () => true }).map((ic) => ic.k);
     expect(soTema).toContain('contrast');
     expect(soTema).not.toContain('cvd');
 
-    const soCor = iconesQueAccionam({ tema: false, correcao: true, seguraTeclas: true }).map((ic) => ic.k);
+    const soCor = iconesQueAccionam({ tema: false, correcao: true, seguraTeclas: () => true }).map((ic) => ic.k);
     expect(soCor).not.toContain('contrast');
     expect(soCor).toContain('cvd');
   });
@@ -1066,7 +1071,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   it('⚠️ [Right] os ícones que sobram NÃO viram `soon` — «este jogo não tem» não é «em breve»', () => {
     // `soon` diz «ainda não construímos isto», e um botão a dizê-lo sobre o alto contraste mentiria: o alto
     // contraste está construído. O que falta é este jogo ter por onde o aplicar.
-    for (const ic of iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: true })) {
+    for (const ic of iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true })) {
       if (ic.k === 'face' || ic.k === 'eyes' || ic.k === 'voice') continue; // esses SÃO `soon`, e continuam
       expect(ic.soon, `${ic.k} passou a soon`).toBeFalsy();
     }
@@ -1083,7 +1088,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
    * DESABILITADO com o motivo, porque o aparelho EXIGE a alternância. Aqui não há nada a travar, e explicar
    * por que um controle não faz nada continua a ser entregar um controle que não faz nada. */
   it('🎯 [Zero] um jogo que NÃO segura teclas não recebe o ícone `altmove`', () => {
-    const chaves = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: false }).map((ic) => ic.k);
+    const chaves = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => false }).map((ic) => ic.k);
     expect(chaves, 'o `altmove` foi montado num jogo que não segura nada').not.toContain('altmove');
     expect(chaves).toHaveLength(PAUSE_ICONS.length - 1);
   });
@@ -1091,7 +1096,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   it('⚠️ [Right] e o PAR: um jogo que segura recebe-o — senão «ausente» passaria por nunca montar nada', () => {
     // Sem este caso, uma implementação que devolvesse lista vazia satisfaria o de cima. É a mesma razão pela
     // qual o [Zero] dos escritores visuais tem o seu par logo acima.
-    const chaves = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: true }).map((ic) => ic.k);
+    const chaves = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true }).map((ic) => ic.k);
     expect(chaves).toContain('altmove');
   });
 
@@ -1099,19 +1104,19 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // Os três ramos do filtro são perguntas separadas, e uma implementação que colapsasse duas delas numa
     // bandeira só passaria nos casos de cima — foi exactamente o defeito que a mutação `&&`/`||` expôs para
     // o par tema/correcção.
-    const semNada = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: false }).map((ic) => ic.k);
+    const semNada = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => false }).map((ic) => ic.k);
     expect(semNada).not.toContain('contrast');
     expect(semNada).not.toContain('cvd');
     expect(semNada).not.toContain('altmove');
     expect(semNada).toHaveLength(PAUSE_ICONS.length - 3);
 
-    const soAlternancia = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: true }).map((ic) => ic.k);
+    const soAlternancia = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true }).map((ic) => ic.k);
     expect(soAlternancia).toContain('altmove');
     expect(soAlternancia).not.toContain('contrast');
   });
 
   it('📌 [Interface] e o `altmove` que sobra NÃO vira `soon` — «este jogo não tem» não é «em breve»', () => {
-    for (const ic of iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: true })) {
+    for (const ic of iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true })) {
       if (ic.k !== 'altmove') continue;
       expect(ic.soon, 'a alternância passou a anunciar-se como em construção').toBeFalsy();
     }

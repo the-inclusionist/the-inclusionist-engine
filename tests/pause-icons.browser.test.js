@@ -75,7 +75,7 @@ function makeCtx(over = {}) {
     setCorrecaoDoJogador: (i, correcao) => { if (players[i]) players[i].visual = { ...(players[i].visual ?? PADRAO), correcao }; },
     // Este duplo é de forma de PLATAFORMA — segura direcção — logo a barra dele tem o `altmove` (ADR-0115).
     // A metade que prova a AUSÊNCIA vive no project node, onde a regra mora.
-    seguraTeclas: true,
+    seguraTeclas: () => true,
     ...over,
   };
   return { ctx, state, said, alerted };
@@ -756,6 +756,11 @@ describe('o ctx MÍNIMO — o que o `createGame` conseguiria responder sozinho (
       srSay: () => {}, srAlert: () => {},
       getA11yBars: () => bars,
       getModoCego: () => false,
+      // ⚠️ ESTE CAMPO PERTENCE AO MÍNIMO, e faltava. A engine SABE respondê-lo — lê-o da declaração —, então
+      // omiti-lo nunca foi «mínimo», foi esquecimento. E o esquecimento sustentava um caso: com `undefined`,
+      // que é falso, o `altmove` sumia e o teste do §5 passava POR ACIDENTE. Agora a resposta é declarada —
+      // um jogo mínimo não segura teclas — e o caso passa pelo motivo que diz ter.
+      seguraTeclas: () => false,
       getAudioCat: () => ({ tts: { on: false, vol: 1 } }),
       setCatGain: () => {},
       reflectTtsPanel: () => {}, reflectTtsPanelEnabled: false,

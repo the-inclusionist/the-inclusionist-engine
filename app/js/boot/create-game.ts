@@ -567,7 +567,10 @@ export function createGame(o: CreateGameOptions): Engine {
      * a pé e nada dentro de um veículo declara `true`, e o registo não disse isto porque a pergunta só
      * aparece quando se monta a barra.
      */
-    seguraTeclas: o.declaration.seguraTeclas(),
+    // ⚠️ A REFERÊNCIA, e não o resultado. Chamar aqui congelava a resposta no arranque, e o
+    // `reflectPauseIcons` — que existe porque a tabela de acções muda (ADR-0106 §5) — refrescava a partir
+    // dela. Com vários cartuchos numa raiz de composição (ADR-0142) o ícone descrevia o primeiro deles.
+    seguraTeclas: () => o.declaration.seguraTeclas(),
     getPlayers: () => o.players ?? [],
     getNumPlayers: () => (o.players ?? [null]).length,
     srSay, srAlert,
