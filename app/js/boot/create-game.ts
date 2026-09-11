@@ -455,7 +455,17 @@ export function createGame(o: CreateGameOptions): Engine {
   }
 
   const { doc, win } = o.host;
-  const declines = cartucho.declines ?? {};
+  /*
+   * ⚠️ LEITOR E NÃO INSTANTÂNEO — terceira vez que este ficheiro comete e conserta o mesmo padrão, depois do
+   * `seguraTeclas` e do `players`. `declines` é da metade do JOGO (ADR-0139, errata de 2026-09-11: é o
+   * cartucho que declara o que NÃO tem), então um `const` tirado no arranque devolve, depois de um `mount()`,
+   * os declínios do cartucho anterior — e um declínio lido errado esconde uma linha de `problems` ou
+   * inventa outra.
+   *
+   * 📌 O vazio é uma constante e não um literal por chamada: `declines()` é lido em sítios que comparam.
+   */
+  const SEM_DECLINIOS: Declinios = {};
+  const declines = () => cartucho.declines ?? SEM_DECLINIOS;
   const problems: string[] = [];
 
   const $ = <T extends Element = Element>(sel: string): T | null => doc.querySelector<T>(sel);
@@ -489,7 +499,7 @@ export function createGame(o: CreateGameOptions): Engine {
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
     carregarVozNeural: o.carregarVozNeural,
   });
-  if (!o.carregarVozNeural && !declines.semVozNeural) {
+  if (!o.carregarVozNeural && !declines().semVozNeural) {
     problems.push(
       'sem voz neural: declare `carregarVozNeural` (uma linha — ver ADR-0094) ou `declines.semVozNeural`. '
       + 'Sem ela a criança que não lê fica com a voz do sistema, que em Chromebook de escola pode não existir '
@@ -703,7 +713,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // `semAtorDePausa`, que é aceitar a perda em vez de a corrigir. Agora ela só acusa quem NÃO respondeu —
   // que é o que uma linha de `problems` deve fazer, pelo §2 do ADR-0106.
   const assentos = (cartucho.players ?? []).length;
-  if (assentos > 1 && !declines.semAtorDePausa && !cartucho.setPauseActor) {
+  if (assentos > 1 && !declines().semAtorDePausa && !cartucho.setPauseActor) {
     problems.push(
       `declarou ${assentos} jogadores e não registra o ator da pausa: o painel de controle edita sempre o `
       + 'assento 0, então ninguém além do primeiro consegue remapear. Declare `declines.semAtorDePausa` se '
@@ -975,5 +985,31 @@ export function createGame(o: CreateGameOptions): Engine {
       .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });
   }
 
-  return { declaration: cartucho.declaration, pausa, tts, overlays, nav, keyboard, sonar, aplicarFiltroDeVisao, cenas: criarPilha(), cvdFilters, problems, declines, aoFalhar, alcance: alcanceAqui };
+  /*
+   * ⚠️ `declaration` E `declines` SÃO GETTERS; o resto não é, e a assimetria é a decisão.
+   *
+   * Os dois pertencem à metade do JOGO (ADR-0139 §1), logo têm de seguir o cartucho que estiver montado —
+   * um campo fixo aqui devolveria, depois de um `mount()`, a declaração do cartucho que arrancou primeiro.
+   * `pausa`, `tts`, `overlays`, `nav`, `keyboard` e o sonar são da PÁGINA e existem uma vez só, que é a
+   * decisão inteira do ADR-0117 §2 — e é por isso que eles ficam como estão.
+   *
+   * 📌 `problems` e `alcance` ainda são fixos, e ainda descrevem o arranque. É a dívida que o ADR-0142
+   * nomeia e que o `mount()` fecha.
+   */
+  return {
+    get declaration() { return cartucho.declaration; },
+    get declines() { return declines(); },
+    pausa,
+    tts,
+    overlays,
+    nav,
+    keyboard,
+    sonar,
+    aplicarFiltroDeVisao,
+    cenas: criarPilha(),
+    cvdFilters,
+    problems,
+    aoFalhar,
+    alcance: alcanceAqui,
+  };
 }
