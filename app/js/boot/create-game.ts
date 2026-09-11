@@ -50,7 +50,7 @@ import { initI18n, idiomaPronto } from '../core/i18n.js';
 import { entradaDe } from '../input/state.js';
 import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
-import { mostrarAvisoDeAlcance } from '../ui/reach-notice.js';
+import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
 import { presetActions, ACTIONS, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
@@ -787,19 +787,32 @@ export function createGame(o: CreateGameOptions): Engine {
   // primeiro arranque com a fábrica da ENGINE e o segundo com a do jogo — a pior espécie de defeito, porque
   // desaparece quando alguém vai ver.
   // 📌 E o registo aceita `null`, que é o que um jogo sem opinião produz: fica a fábrica da engine.
-  registrarMapeamentoDoTeclado(
-    cartucho.declaration.mapeamentoDoTeclado
-      ? (jogadores, assento) => cartucho.declaration.mapeamentoDoTeclado!(jogadores, assento)
-      : null,
-  );
-  // ⚠️ E O DO CONTROLE REGISTA-SE AQUI AINDA QUE ESTA RAIZ NÃO MONTE GAMEPAD NENHUM. Não é descuido: quem
-  // chama `initGamepad` é o cartucho, e é exactamente por isso que o registo não pode viver lá — seria mais
-  // um campo que um jogo pode esquecer, e esquecê-lo devolve o mapa da ENGINE a quem declarou outro, calado.
-  registrarMapeamentoDoPad(
-    cartucho.declaration.mapeamentoDoPad
-      ? (jogadores, assento) => cartucho.declaration.mapeamentoDoPad!(jogadores, assento)
-      : null,
-  );
+  /*
+   * OS DOIS REGISTOS NUMA FUNÇÃO, porque são EFEITO GLOBAL e não valor: quem os chama por último ganha.
+   *
+   * ⚠️ É o que os torna diferentes de tudo o mais nesta raiz. Repontar uma leitura para o `cartucho` chega
+   * para os campos que são lidos quando alguém pergunta; estes dois já foram escritos noutro sítio no
+   * momento do arranque, então trocar de cartucho sem os reescrever deixa o mapa do anterior a valer —
+   * calado, e exactamente no lugar onde uma criança que remapeou teclas iria notar primeiro.
+   *
+   * 📌 `null` é o valor honesto de «este jogo não tem opinião», e é também o que o `desmontar()` escreve.
+   */
+  function registrarMapeamentosDoCartucho(): void {
+    registrarMapeamentoDoTeclado(
+      cartucho.declaration.mapeamentoDoTeclado
+        ? (jogadores, assento) => cartucho.declaration.mapeamentoDoTeclado!(jogadores, assento)
+        : null,
+    );
+    // ⚠️ E O DO CONTROLE REGISTA-SE AQUI AINDA QUE ESTA RAIZ NÃO MONTE GAMEPAD NENHUM. Não é descuido: quem
+    // chama `initGamepad` é o cartucho, e é exactamente por isso que o registo não pode viver lá — seria mais
+    // um campo que um jogo pode esquecer, e esquecê-lo devolve o mapa da ENGINE a quem declarou outro, calado.
+    registrarMapeamentoDoPad(
+      cartucho.declaration.mapeamentoDoPad
+        ? (jogadores, assento) => cartucho.declaration.mapeamentoDoPad!(jogadores, assento)
+        : null,
+    );
+  }
+  registrarMapeamentosDoCartucho();
   initKB();
   // ⚠️ O ESQUEMA DE ARRANQUE ALCANÇA NADA, e diz isso com `null` em vez de com um objeto vazio (issue #118).
   // Ele vive um instante — `assignControls()` logo abaixo substitui-o pelo esquema real —, mas enquanto vive
@@ -909,28 +922,52 @@ export function createGame(o: CreateGameOptions): Engine {
      */
     rato: () => { try { return win.matchMedia('(any-pointer:fine)').matches; } catch { return false; } },
   };
-  const acoesDoJogo = cartucho.preset ? presetActions(cartucho.preset) : [];
   // O segundo eixo entra aqui, e vem do jogo (ADR-0104 §A): quantas posições ele segura ao mesmo tempo.
   // ⚠️ O TERCEIRO EIXO ENTRA AQUI (ADR-0112), e vem do jogo tal como os outros dois. `?? false` e não um
   // padrão inventado: o campo é opcional de propósito — ver a nota nele —, e a ausência significa «este jogo
   // não desenha», que é a resposta certa para a esmagadora maioria dos trezentos.
-  const alcanceAqui = alcance(
-    transportesPadrao(disponibilidade),
-    acoesDoJogo,
-    cartucho.declaration.holdsAtOnce(),
-    cartucho.declaration.needsPointer?.() ?? false,
-  );
-
-  // ⚠️ SÓ APARECE QUANDO HÁ O QUE DIZER. Um aviso que aparece sempre deixa de ser lido, e um jogo cujas ações
-  // cabem no toque não tem nada a avisar — que é o caso comum e tem de continuar silencioso.
-  if (acoesDoJogo.length) {
-    mostrarAvisoDeAlcance({
-      procurar: (sel) => $<HTMLElement>(sel),
-      criar: (tag) => doc.createElement(tag),
-      t,
-      srAlert,
-    }, alcanceAqui);
+  /*
+   * O ALCANCE E O SEU AVISO, numa função, porque os dois dependem do cartucho e o segundo CRIA DOM.
+   *
+   * ⚠️ O aviso é o único sítio desta raiz que escreve um elemento a partir de uma resposta do jogo, e por
+   * isso é o único que precisa de ser RETIRADO antes de ser reescrito: `mostrarAvisoDeAlcance` cria um `div`
+   * com `id` fixo, então chamá-lo duas vezes deixaria dois — e o segundo cartucho ficaria com o aviso do
+   * primeiro por baixo do seu.
+   *
+   * 📌 `retirarAvisoDeAlcance()` corre SEMPRE antes, e não só quando há o que mostrar: um cartucho que não
+   * tem nada a avisar tem de apagar o aviso do anterior, e é esse o caso que se esquece.
+   */
+  function retirarAvisoDeAlcance(): void {
+    const aviso = $<HTMLElement>(`#${REACH_NOTICE_ID}`);
+    if (!aviso) return;
+    // ⚠️ CAPACIDADE E NÃO TIPO, pela mesma razão que este ficheiro já escreve mais acima sobre o
+    // `instanceof HTMLElement`: o hospedeiro pode ser um documento falso, e os que estes testes usam têm
+    // `parentNode` mas não `remove`. Perguntar pelo método é o que funciona nos dois.
+    if (typeof aviso.remove === 'function') aviso.remove();
+    else aviso.parentNode?.removeChild(aviso);
   }
+  function derivarAlcance(): Alcance {
+    const acoes = cartucho.preset ? presetActions(cartucho.preset) : [];
+    const a = alcance(
+      transportesPadrao(disponibilidade),
+      acoes,
+      cartucho.declaration.holdsAtOnce(),
+      cartucho.declaration.needsPointer?.() ?? false,
+    );
+    retirarAvisoDeAlcance();
+    // ⚠️ SÓ APARECE QUANDO HÁ O QUE DIZER. Um aviso que aparece sempre deixa de ser lido, e um jogo cujas
+    // ações cabem no toque não tem nada a avisar — que é o caso comum e tem de continuar silencioso.
+    if (acoes.length) {
+      mostrarAvisoDeAlcance({
+        procurar: (sel) => $<HTMLElement>(sel),
+        criar: (tag) => doc.createElement(tag),
+        t,
+        srAlert,
+      }, a);
+    }
+    return a;
+  }
+  let alcanceAtual = derivarAlcance();
 
   // O ANÚNCIO DE QUE O LAÇO PAROU (ADR-0054). Entregue e não instalado: quem chama `startLoop` é o JOGO, que
   // é o dono do ticker. Um jogo que monte o laço sem passar isto continua a PARAR — parar não é opcional; o
@@ -1010,6 +1047,6 @@ export function createGame(o: CreateGameOptions): Engine {
     cvdFilters,
     problems,
     aoFalhar,
-    alcance: alcanceAqui,
+    get alcance() { return alcanceAtual; },
   };
 }
