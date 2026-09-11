@@ -277,6 +277,69 @@ describe('createGame num documento de verdade', () => {
     expect(q().getAttribute('aria-pressed'), 'ligou e não há como voltar').toBe('false');
   });
 
+  /*
+   * ⚠️ O QUE UM CONSUMIDOR NÃO TINHA COMO ENTREGAR, E QUE POR ISSO NENHUM JOGO TINHA.
+   *
+   * O `initPauseIcons` aceita `getPauseActs`, `setPauseActor`, `setTemaDoJogador` e `setCorrecaoDoJogador`
+   * desde que existem — todos opcionais, todos documentados. O `createGame` simplesmente não os passava e o
+   * `CreateGameOptions` não tinha campo para eles, então **nenhum jogo montado por esta raiz** conseguia
+   * ligar um item do cartão de pausa nem fazer aparecer os ícones de alto contraste e correcção de cor.
+   *
+   * Medido de fora, pelo `game-pinball`, que é o consumidor externo: ele lia a ausência dos dois ícones como
+   * «este jogo tem os seus próprios», o que é verdade sobre o resultado e falso sobre a causa — ele não
+   * PODIA entregar um escritor. Uma lacuna que o consumidor lê como escolha é a pior forma de lacuna.
+   */
+  describe('o que o jogo pode entregar ao cartão e à barra', () => {
+    it('⚠️ [Zero] sem `getPauseActs`, o item que o JOGO acciona nasce escondido', () => {
+      // A engine só acciona três itens sozinha (ITENS_DA_ENGINE); todo o resto depende da tabela do jogo, e
+      // o `refrescarItensDaPausa` esconde o que não tem acção — o §5 do ADR-0106, que proíbe botão morto.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+
+      const sair = document.querySelector('#vp-pause-0 .pm-btn[data-act="quit"]');
+      expect(sair, 'o cartão nem sequer desenha o item').not.toBeNull();
+      expect(sair.hidden, 'um item sem acção tem de estar escondido').toBe(true);
+    });
+
+    it('⚠️ [Right] com `getPauseActs`, o item APARECE e o clique chega ao jogo', () => {
+      let saiu = 0;
+      const motor = abrir({ getPauseActs: () => ({ quit: () => { saiu += 1; } }) });
+      motor.pausa.mostrar(0);
+
+      const sair = document.querySelector('#vp-pause-0 .pm-btn[data-act="quit"]');
+      expect(sair.hidden, 'o jogo ligou o item e ele continua escondido').toBe(false);
+
+      sair.click();
+      expect(saiu, 'o clique percorreu o caminho todo até à função do jogo').toBe(1);
+    });
+
+    it('⚠️ [Zero] sem escritores visuais, os ícones de contraste e cor NÃO são montados', () => {
+      // `iconesQueAccionam` monta `contrast` e `cvd` só para quem entrega quem os escreve. É a regra certa:
+      // um ícone que não acciona é pior que um ícone a menos. O que faltava era a PORTA.
+      abrir();
+
+      expect(document.querySelector('#title-icons [data-pi="contrast"]')).toBeNull();
+      expect(document.querySelector('#title-icons [data-pi="cvd"]')).toBeNull();
+    });
+
+    it('⚠️ [Right] com eles, os dois ícones aparecem — e o §4 do ADR-0044 fica alcançável', () => {
+      abrir({ setTemaDoJogador: () => {}, setCorrecaoDoJogador: () => {} });
+
+      expect(document.querySelector('#title-icons [data-pi="contrast"]'), 'alto contraste').not.toBeNull();
+      expect(document.querySelector('#title-icons [data-pi="cvd"]'), 'correcção de cor').not.toBeNull();
+    });
+
+    it('⚠️ [Right] e UM escritor só monta UM ícone, porque são duas perguntas diferentes', () => {
+      // O par não é um botão de dois estados: um jogo pode saber repintar para alto contraste e não ter
+      // como corrigir daltonismo, ou o contrário — que é exactamente o caso do `game-pinball`, cuja imagem
+      // é um framebuffer de 320x180 sem textura para repintar, mas que aplica um filtro de cor há semanas.
+      abrir({ setCorrecaoDoJogador: () => {} });
+
+      expect(document.querySelector('#title-icons [data-pi="cvd"]'), 'o que ele sabe fazer').not.toBeNull();
+      expect(document.querySelector('#title-icons [data-pi="contrast"]'), 'o que ele não sabe').toBeNull();
+    });
+  });
+
   it('⚠️ [Boundary] a barra monta no hospedeiro DECLARADO, e não caça um id fixo', () => {
     // O jogo diz onde ela cabe no desenho dele; a engine não adivinha. Num documento a sério isto prova-se
     // pelo sítio onde os nós ficaram, que é a única coisa que um duplo com um mapa de ids não distingue.

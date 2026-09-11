@@ -67,7 +67,7 @@ import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer,
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
 // responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
-import { ehCego, ehBaixaVisao, PADRAO, type VisualState } from '../render/viz-axes.js';
+import { ehCego, ehBaixaVisao, PADRAO, type VisualState, type Tema, type Correcao } from '../render/viz-axes.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
@@ -272,6 +272,49 @@ export interface CreateGameOptions {
    * teste que não as possa responder não consegue exercitar a tela que depende delas.
    */
   readonly disponibilidade?: Disponibilidade;
+  /**
+   * O QUE CADA ITEM DO CARTÃO DE PAUSA FAZ NESTE JOGO — «continuar», «sair», «ajuda», o que o jogo ligar.
+   *
+   * 🔴 ESTE CAMPO FALTAVA, E A FALTA ALCANÇAVA TODOS OS CONSUMIDORES DE UMA VEZ. O `initPauseIcons`
+   * aceita `getPauseActs` desde que existe; esta raiz não o passava e não tinha campo para ele, logo
+   * **nenhum jogo montado por `createGame`** conseguia ligar um item. O `refrescarItensDaPausa` esconde o
+   * que não acciona — o §5 do ADR-0106, que proíbe botão morto — e o resultado era um cartão com os TRÊS
+   * itens que a engine acciona sozinha (`ITENS_DA_ENGINE`) e nada mais, em todo o catálogo.
+   *
+   * ⚠️ E O CUSTO MAIOR NÃO ERA O CARTÃO, ERA A BARRA. O `entrarNaBarra` chama `acts.resume?.()` para sair
+   * do cartão antes de entregar as direcções à barra de acessibilidade; com a tabela vazia esse `resume` era
+   * `undefined`, o cartão ficava por cima do jogo, e o item 7 do ADR-0044 — o direccional a conduzir a barra
+   * — era **inalcançável a partir de qualquer jogo**.
+   *
+   * 📌 FUNÇÃO e não valor, pela razão que o próprio `ui/pause-icons` regista: a tabela de um jogo muda
+   * durante a partida (um «sair» que só liga depois da primeira fase), e congelá-la no arranque já partiu
+   * um caso lá dentro. Ausente = tabela vazia, que é o comportamento de sempre.
+   */
+  readonly getPauseActs?: () => Record<string, (() => void) | undefined>;
+  /**
+   * QUEM ABRIU A PAUSA, quando há mais de um assento — o painel de controle edita o assento DESTE índice.
+   *
+   * ⚠️ A RAIZ JÁ SE DENUNCIAVA POR NÃO TER ISTO: o bloco 4d empurra uma linha de `problems` quando um jogo
+   * declara mais de um jogador, porque sem ator da pausa a criança do SEGUNDO assento não tem como remapear.
+   * O que faltava para a linha ser accionável era este campo — até agora ela dizia «conserte» sem haver por
+   * onde, e a única saída era declarar `semAtorDePausa`, que é aceitar a perda em vez de a corrigir.
+   */
+  readonly setPauseActor?: (i: number, ...resto: unknown[]) => void;
+  /**
+   * COMO ESTE JOGO REPINTA PARA ALTO CONTRASTE, e como corrige daltonismo — os dois eixos do ADR-0104.
+   *
+   * 🔴 SEM ELES OS ÍCONES ⚫ E 🚥 NÃO SÃO MONTÁVEIS POR NENHUM JOGO. O `iconesQueAccionam` só os monta
+   * para quem entrega quem os escreve, e essa regra está certa — um ícone que não acciona é pior que um
+   * ícone a menos. O que estava errado era não haver PORTA: o consumidor externo que mediu isto leu a
+   * ausência como «este jogo tem os seus próprios controles», o que é verdade sobre o resultado e falso
+   * sobre a causa. Uma lacuna que o consumidor lê como escolha é a pior forma de lacuna.
+   *
+   * ⚠️ SÃO DOIS CAMPOS E NÃO UM, porque são duas perguntas: um jogo pode saber repintar texturas e não ter
+   * como corrigir cor, ou o contrário. O `game-pinball` é o segundo caso — a imagem dele é um framebuffer
+   * de 320x180 sem textura para repintar, e o filtro de cor ele aplica há semanas.
+   */
+  readonly setTemaDoJogador?: (i: number, tema: Tema) => void;
+  readonly setCorrecaoDoJogador?: (i: number, correcao: Correcao) => void;
 }
 
 export interface Engine {
@@ -549,6 +592,14 @@ export function createGame(o: CreateGameOptions): Engine {
     reflectTtsPanelEnabled: false,
     isLibrasOn: vlibrasOpen,
     toggleLibras,
+    /*
+     * ⚠️ O QUE O JOGO ENTREGA, E QUE ATÉ HOJE NÃO TINHA POR ONDE. Os três campos são opcionais dos dois
+     * lados: ausentes, tudo se comporta como antes — tabela de acções vazia e os dois ícones visuais
+     * não montados. Ver as notas em `CreateGameOptions` para o que a ausência custava.
+     */
+    ...(o.getPauseActs ? { getPauseActs: o.getPauseActs } : {}),
+    ...(o.setTemaDoJogador ? { setTemaDoJogador: o.setTemaDoJogador } : {}),
+    ...(o.setCorrecaoDoJogador ? { setCorrecaoDoJogador: o.setCorrecaoDoJogador } : {}),
   });
 
   /*
@@ -620,12 +671,12 @@ export function createGame(o: CreateGameOptions): Engine {
   // esquema, e não há selector de assento — o `#ctrl-players` é uma FRASE, não abas. Quem decide o assento é
   // o consumidor, passando o ator da pausa: «edita o controle de quem abriu o menu».
   //
-  // ⚠️ E É AQUI QUE ISTO FICA MUDO. O `setPauseActor` desta raiz é `() => {}` — literal, logo abaixo. Um jogo
-  // montado por `createGame` com dois assentos deixa a criança do SEGUNDO sem como remapear, e nada o diz.
-  // Não é a mesma coisa que declarar `semAtorDePausa`: essa é uma ausência declarada, e uma ausência
-  // declarada é uma escolha. Esta era uma ausência por omissão, que é a forma de defeito do ADR-0106 §2.
+  // ✅ E ISTO DEIXOU DE SER MUDO. O `setPauseActor` desta raiz era `() => {}` LITERAL, sem campo por onde um
+  // jogo o entregar: a linha abaixo dizia «conserte» sem haver por onde, e a única saída era declarar
+  // `semAtorDePausa`, que é aceitar a perda em vez de a corrigir. Agora ela só acusa quem NÃO respondeu —
+  // que é o que uma linha de `problems` deve fazer, pelo §2 do ADR-0106.
   const assentos = (o.players ?? []).length;
-  if (assentos > 1 && !declines.semAtorDePausa) {
+  if (assentos > 1 && !declines.semAtorDePausa && !o.setPauseActor) {
     problems.push(
       `declarou ${assentos} jogadores e não registra o ator da pausa: o painel de controle edita sempre o `
       + 'assento 0, então ninguém além do primeiro consegue remapear. Declare `declines.semAtorDePausa` se '
@@ -730,7 +781,7 @@ export function createGame(o: CreateGameOptions): Engine {
     topVisibleOverlay: overlays.topVisibleOverlay, closeById: overlays.closeById,
     getPauseMenu: (i) => $<HTMLElement>(`#vp-pause-${i}`),
     setPhase: o.setPhase ?? (() => {}),
-    setPauseActor: () => {},
+    setPauseActor: o.setPauseActor ?? (() => {}),
     srSay,
     // Sem opinião declarada, o índice fica LIGADO: quem precisa dele para se orientar não tem como saber
     // que ele existe se vier desligado (a mesma razão de o modo cego nascer com TTS e sonar).
