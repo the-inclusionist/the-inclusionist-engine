@@ -1,5 +1,29 @@
 # Changelog
 
+## [9.0.0](https://github.com/the-inclusionist/the-inclusionist-engine/compare/v8.0.0...v9.0.0) (2026-09-11)
+
+### ⚠ BREAKING CHANGES
+
+* **boot:** Engine gains two required members, mount(declaration, ganchos?)
+and unmount(). Anyone implementing Engine by hand has to add them; consumers that
+only call createGame and read the result are unaffected. GanchosDoCartucho is
+exported alongside them.
+* **pause-icons:** EscritoresVisuais.seguraTeclas and PauseIconsCtx.seguraTeclas are
+now () => boolean instead of boolean. A consumer that builds a pause-icons context
+by hand passes () => declaration.seguraTeclas() rather than the result of calling
+it. Nothing in the catalogue does today; game-platformer, the only outside caller
+of initPauseIcons, omits the field.
+
+### Features
+
+* **boot:** a game can finally hand over its pause actions and its visual writers ([55b71ce](https://github.com/the-inclusionist/the-inclusionist-engine/commit/55b71ce20679f11bafa70d849e456147bf9a408e))
+* **boot:** the engine mounts and unmounts a cartridge ([26b6d92](https://github.com/the-inclusionist/the-inclusionist-engine/commit/26b6d92a5e93d00365dbeea3a44544c7d272a3ad))
+
+### Bug Fixes
+
+* **boot:** the keyboard runtime reads o.players live, not a boot snapshot ([a7437ad](https://github.com/the-inclusionist/the-inclusionist-engine/commit/a7437ad5293695c244596e7d01e419bab9ef9cab))
+* **pause-icons:** seguraTeclas is a reference, because the icon was describing the game that booted ([d621fef](https://github.com/the-inclusionist/the-inclusionist-engine/commit/d621fefec518c29d878f73bb0fef23366273ee6e))
+
 ## [8.0.0](https://github.com/the-inclusionist/the-inclusionist-engine/compare/v8.0.0-rc.2...v8.0.0) (2026-09-11)
 
 ## [8.0.0-rc.2](https://github.com/the-inclusionist/the-inclusionist-engine/compare/v8.0.0-rc.1...v8.0.0-rc.2) (2026-09-11)
