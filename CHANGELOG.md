@@ -1,5 +1,107 @@
 # Changelog
 
+## [8.0.0-rc.2](https://github.com/the-inclusionist/the-inclusionist-engine/compare/v8.0.0-rc.1...v8.0.0-rc.2) (2026-09-11)
+
+### ⚠ BREAKING CHANGES
+
+* **platform:** platform/pesados now downloads ~285 MB on first load instead of ~241 MB, and the catalogue
+exposes runtime entries alongside the voice models. A consumer filtering ids by the oz: prefix now also
+matches oz:runtime*.
+
+And a gate was found DEAD. 	ests/boot-create-game.node.test.js asserted that no line of the boot reaches the
+global document, and its regex carried an invisible control character - /docu<VT>ment/ - injected by a
+PowerShell edit where the backtick is an escape. It could never match, so the case passed always, for the worst
+possible reason. Revived, it produced a false positive on the Portuguese word 'documento' inside a problems
+line; a word boundary separates them. Three files were swept clean of control characters.
+
+Refs ADR-0124, ADR-0127, ADR-0132, ADR-0116
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+* **pwa:** `npm run check:precache` no longer fails on total precache weight. A build that grows the
+first-day download now passes; only the floor and the update-safety questions still fail it.
+
+Refs ADR-0114, ADR-0117, ADR-0124
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+* **docs:** the ADR tree is no longer in this repository. It lives in
+`github.com/the-inclusionist/the-inclusionist-docs`, at the same path, and `docs/2-Architecture/ADR.md` says
+so. Anything that read `docs/2-Architecture/adr/` — a script, a link, another repository's job — must point at
+the records' repository instead. The engine's own `adr` job shows the shape: check the tree out, then
+`python scripts/validate-adr.py <tree> --repo engine=.`.
+* **input:** `GamepadCtx` gains a required `arestaDoJogador(jogador, 'gamepad')`. Pass
+`criarArestaComAlternancia(() => players)` from `@the-inclusionist/engine/input/latch-edge.js` — the same
+instance you pass to `initKeydown` and `initTouchBindings`, so every transport writes the same player.
+Measured across the catalogue, this one reaches TWO repositories: `game-platformer` and `game-soccer`.
+* **input:** `KeydownCtx` and `TouchBindingsCtx` gain a required `arestaDoJogador(jogador, origem)`. Pass
+`arestaDoJogador` from `@the-inclusionist/engine/input/state.js` — the same module you already take
+`marcarTecla` from; one line in each context. Measured across the catalogue, `game-platformer` is the only
+consumer of either. Once it is passed, that repository's `onTouchControlsShown` patch (`main.ts:1695`) can go:
+it exists to compensate for the edge this change delivers.
+* **a11y:** `Declinios.semMenuDePausa` is removed. Delete the line from your `createGame({ declines })`;
+there is no replacement field. Your game receives the engine's pause card, mounted at `host.pauseHost` or, by
+default, `#game-region`, and it offers only what your `getPauseActs()` can action. It is born hidden and eats
+no keys until it is opened. `game-chess` has more to do than delete a line: its own `ui/pause-menu.ts` holds
+«leave the lesson», and those items are `getPauseActs()` material.
+* **a11y:** `Declinios` loses `semMenuDePausa`. A consumer that declined the pause deletes the line and
+receives the engine's pause card, mounted at `host.pauseHost` or `#game-region`; a host that cannot accept
+children is reported in `problems` as it already was. There is no replacement field — a game that genuinely
+has no pause would need a new decision about what «pause» means without running state, not this field back.
+* **a11y:** `SettingsMotorCtx` gains the required `seguraTeclas: boolean`. A consumer answers whether any
+key is held in its game; with `false` the engine hides the `#opt-altmove` row it does not own. There is no
+safe default — `true` leaves a row that does nothing, `false` hides one a child depends on — which is the
+same condition that made `holdsAtOnce` mandatory.
+* **a11y:** `PauseIconsCtx` gains the required `seguraTeclas: boolean` — a consumer that calls
+`initPauseIcons` directly answers whether any key is held in its game, and a consumer that goes through
+`createGame` writes nothing, because the root reads the declaration. `EscritoresVisuais` is renamed
+`AccionaveisDoJogo` and gains `seguraTeclas`; the old name survives as a deprecated type alias, so existing
+type annotations keep compiling.
+* **contract:** `GameDeclaration` gains the mandatory `seguraTeclas(): boolean`. `conformanceProblems` now
+reports TEN missing fields for an empty declaration instead of nine. Every cartridge answers whether any key
+is held in it — `false` for a quiz, a board or a tile puzzle; `true` wherever a direction, a run or a charge
+is held. ⚠️ Do NOT derive it from `holdsAtOnce`: that field counts simultaneous positions, refuses zero, and a
+game that holds nothing still declares 1.
+
+### Features
+
+* **a11y:** a game that holds nothing does not OFFER latching — absent, not disabled ([41cd345](https://github.com/the-inclusionist/the-inclusionist-engine/commit/41cd345a7b5645096cba74f457aada6b97646306))
+* **a11y:** the latching ROW disappears too — and thirty cases were exercising a hidden one without knowing ([4ed9dec](https://github.com/the-inclusionist/the-inclusionist-engine/commit/4ed9dec1fd3d163e22346096fb739922db379b04))
+* **a11y:** the pause stops being declinable — ADR-0106 parked this collision and the Dev closed it ([bd168ee](https://github.com/the-inclusionist/the-inclusionist-engine/commit/bd168ee1c48d9404776b29a1557c863f7346895a))
+* **a11y:** the pause stops being declinable, for good — and this time the keyboard cost was measured ([70c124e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/70c124e54cbe351ba9ba476999173411c9b5495c)), closes [#132](https://github.com/the-inclusionist/the-inclusionist-engine/issues/132) [#132](https://github.com/the-inclusionist/the-inclusionist-engine/issues/132)
+* **a11y:** the Ronde option ENABLES when a face is installed — the «enquanto» ADR-0012 wrote ([fcce4e2](https://github.com/the-inclusionist/the-inclusionist-engine/commit/fcce4e223d234e38cd1ada8556697b6cbe86ac55)), closes [#87](https://github.com/the-inclusionist/the-inclusionist-engine/issues/87)
+* **a11y:** the Ronde option speaks — it names the THREE faces that would enable it ([919c4c1](https://github.com/the-inclusionist/the-inclusionist-engine/commit/919c4c16e6e1a042f4e188bd454399e3317e5ebb)), closes [#87](https://github.com/the-inclusionist/the-inclusionist-engine/issues/87)
+* **art:** "may we convey it" stops approving and starts ROUTING, and the ledger says how it arrives ([a99d4b3](https://github.com/the-inclusionist/the-inclusionist-engine/commit/a99d4b322809e7ea4b6b482297af553154e43f76)), closes [#140](https://github.com/the-inclusionist/the-inclusionist-engine/issues/140)
+* **art:** the gate learns three doors, and share-alike stops being refused by name ([dd5fa79](https://github.com/the-inclusionist/the-inclusionist-engine/commit/dd5fa7945f97734cc73ba722794c3a61d029a9d2)), closes [#140](https://github.com/the-inclusionist/the-inclusionist-engine/issues/140)
+* **art:** the quarantine gate turns inside out — four licences accepted, ND/NC/SA refused by name ([65c6007](https://github.com/the-inclusionist/the-inclusionist-engine/commit/65c6007ee55e07613d6a7759ab8e99ce76863f17)), closes [#140](https://github.com/the-inclusionist/the-inclusionist-engine/issues/140) [#140](https://github.com/the-inclusionist/the-inclusionist-engine/issues/140)
+* **contract:** a game DECLARES whether it holds keys — the question `holdsAtOnce` looked like it answered ([2dfd4f6](https://github.com/the-inclusionist/the-inclusionist-engine/commit/2dfd4f61fcee853efb9037b21551d292e2a8d6de))
+* **fonts:** as OITO Playwrite entram no pacote — a decisão do ADR-0108 deixa de ser registada e passa a entregue ([a365f8e](https://github.com/the-inclusionist/the-inclusionist-engine/commit/a365f8e602eefdc0cc182c2d277d131246189112)), closes [#87](https://github.com/the-inclusionist/the-inclusionist-engine/issues/87) [#87](https://github.com/the-inclusionist/the-inclusionist-engine/issues/87) [#87](https://github.com/the-inclusionist/the-inclusionist-engine/issues/87)
+* **input:** the automaton finally gets fed — the keyboard and the touch record WHOSE edge it was ([ca08b7d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/ca08b7d4713da4cfea08b446ad2557e246e013e8)), closes [#127](https://github.com/the-inclusionist/the-inclusionist-engine/issues/127)
+* **input:** the chain closes — one edge records the device AND resolves that device's latching ([403cb65](https://github.com/the-inclusionist/the-inclusionist-engine/commit/403cb65591386df5cc75e3815a5bd25d50edd16b)), closes [#127](https://github.com/the-inclusionist/the-inclusionist-engine/issues/127)
+* **input:** the game declares its button map too — ADR-0115's second half is finished ([2e7a92d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/2e7a92d491207b6fe4b10d72281fc6abf8bfb2b5)), closes [#127](https://github.com/the-inclusionist/the-inclusionist-engine/issues/127)
+* **input:** the GAME declares its default keyboard — and «restore defaults» goes back to ITS map, not ours ([dbaff04](https://github.com/the-inclusionist/the-inclusionist-engine/commit/dbaff044ff472a6abbcfe7fbafb18a7e83c0311e)), closes [#127](https://github.com/the-inclusionist/the-inclusionist-engine/issues/127) [#127](https://github.com/the-inclusionist/the-inclusionist-engine/issues/127) [#127](https://github.com/the-inclusionist/the-inclusionist-engine/issues/127)
+* **input:** the gamepad feeds the automaton too — and the case that guarded the Easy mode was measuring the void ([50b7b4d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/50b7b4d117e390a73d194527d86df86408bb9948)), closes [#127](https://github.com/the-inclusionist/the-inclusionist-engine/issues/127)
+* **input:** the latching finally has a READER — the transport in use decides, and switching writes nothing ([326d95d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/326d95dc92044de483f781d759f69c5525d28b6d)), closes [#127](https://github.com/the-inclusionist/the-inclusionist-engine/issues/127) [#127](https://github.com/the-inclusionist/the-inclusionist-engine/issues/127)
+* **platform:** the four neural voices come down on first load, and what has no source SAYS SO ([c7b165d](https://github.com/the-inclusionist/the-inclusionist-engine/commit/c7b165df3246a26636541bf1c1921c012a9152a2)), closes [#129](https://github.com/the-inclusionist/the-inclusionist-engine/issues/129)
+* **platform:** the vision and voice runtimes come down with the engine — and a dead gate is found ([188f076](https://github.com/the-inclusionist/the-inclusionist-engine/commit/188f07683a29a89bbd8a4c56e1d97ce36e22d4a2)), closes [#129](https://github.com/the-inclusionist/the-inclusionist-engine/issues/129) [#119](https://github.com/the-inclusionist/the-inclusionist-engine/issues/119)
+* **platform:** what came down reaches whoever answers "which voice is this child hearing" — ADR-0110 gates 3 and 4 ([2d13c7a](https://github.com/the-inclusionist/the-inclusionist-engine/commit/2d13c7a9d55785af1cadd16e9fd2a8df82136318))
+* **pwa:** the first-day ceiling is removed — it was never the Dev's number ([d1df800](https://github.com/the-inclusionist/the-inclusionist-engine/commit/d1df8000ffb4bc8c0221bfbce691b06655119fb3))
+* **scripts:** scaffold a new repository, and turn ADR-0067 §5 from a gate into a form field ([9fbceef](https://github.com/the-inclusionist/the-inclusionist-engine/commit/9fbceeff7cf3a984a4533a4be46cd77b262a7bba))
+* **scripts:** the issue census is repeatable — the second gate ADR-0126 owed ([f8ff54f](https://github.com/the-inclusionist/the-inclusionist-engine/commit/f8ff54f1152dcb4b845756b687510a8fed52f52c))
+
+### Bug Fixes
+
+* **adr:** sync the validator copy and give the cross-repo run the `docs` root ([8738067](https://github.com/the-inclusionist/the-inclusionist-engine/commit/8738067a00b4862745172e243fb252ab24798ac5))
+* **adr:** the validator's root becomes DECLARABLE — and measuring it drew the line of an open decision ([d432a88](https://github.com/the-inclusionist/the-inclusionist-engine/commit/d432a8828e6b0694df02fcf2e3886480ac63853e)), closes [#101](https://github.com/the-inclusionist/the-inclusionist-engine/issues/101)
+* **pwa:** the 241 MB become readable — fetch from where the READER reads, and route it through the SW ([fada5a1](https://github.com/the-inclusionist/the-inclusionist-engine/commit/fada5a1de0c757e9e318b0d5c412a6ce484e8334)), closes [#119](https://github.com/the-inclusionist/the-inclusionist-engine/issues/119)
+* **scripts:** the issue census had an invented budget and reported noise ([1ea2bbc](https://github.com/the-inclusionist/the-inclusionist-engine/commit/1ea2bbcb7e1f457d7a5c65f29ba1f6cb26065d2b))
+* **test:** a trailing slash decided where the records' root was — and it made the drift gate BLIND ([6a23287](https://github.com/the-inclusionist/the-inclusionist-engine/commit/6a23287c839a9803b165e9aeafe88255b1c91d44))
+* **test:** the TEA announcement case measured the CLOCK — green here, red on the runner ([1c83320](https://github.com/the-inclusionist/the-inclusionist-engine/commit/1c83320df39d50e86ea807161b1e0eb6f020750c)), closes [#112](https://github.com/the-inclusionist/the-inclusionist-engine/issues/112)
+
+### Reverts
+
+* **a11y:** the pause decline comes back — I retired it after measuring ONE consumer of five ([7f256f0](https://github.com/the-inclusionist/the-inclusionist-engine/commit/7f256f003b70953375b108abed8cebce489703b6)), closes [#132](https://github.com/the-inclusionist/the-inclusionist-engine/issues/132) [#132](https://github.com/the-inclusionist/the-inclusionist-engine/issues/132)
+
+### Code Refactoring
+
+* **docs:** the records leave the engine — and the gate that stays is the one that can OPEN them ([0cb6ed5](https://github.com/the-inclusionist/the-inclusionist-engine/commit/0cb6ed51e5b2992020f64352e961f802e7f708f1)), closes [#101](https://github.com/the-inclusionist/the-inclusionist-engine/issues/101) [the-inclusionist/the-inclusionist-engine#101](https://github.com/the-inclusionist/the-inclusionist-engine/issues/101)
+
 ## [8.0.0-rc.1](https://github.com/the-inclusionist/the-inclusionist-engine/compare/v7.0.1...v8.0.0-rc.1) (2026-09-09)
 
 ### ⚠ BREAKING CHANGES
