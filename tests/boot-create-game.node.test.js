@@ -802,4 +802,52 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     // que uma cena pode contar com o que empilhou por baixo dela ainda estar lá.
     expect(saiu.slice(antes), 'uma cena saiu sem correr o seu `exit()`').toEqual(['b', 'a']);
   });
+
+  /*
+   * OS DOIS MAPEAMENTOS DEPOIS DO `unmount()`.
+   *
+   * ⚠️ ESTE PAR QUASE NÃO FOI ESCRITO, e vale contar porquê: a confirmação do ADR-0142 afirmava que ele era
+   * impossível sem alargar a superfície pública, porque `registrarMapeamentoDoTeclado` e
+   * `registrarMapeamentoDoPad` são só de escrita e não há leitor do campo. A primeira metade é verdade e a
+   * conclusão não era: não há leitor do CAMPO, mas há duas funções exportadas cujo RESULTADO muda conforme
+   * ele esteja registado — `fabricaComOJogo()` e `tabelaDoPad()`.
+   *
+   * 🎯 E o crivo por comportamento é o melhor dos dois: «o campo interno está nulo» mede a implementação;
+   * «depois de soltar o cartucho, as teclas voltam a ser as da engine» mede o que a criança encontra.
+   */
+  const comTeclas = () => ({
+    ...declaracaoValida(),
+    mapeamentoDoTeclado: () => ({ up: ['KeyZ'] }),
+    mapeamentoDoPad: () => ({ up: 99 }),
+  });
+
+  it('🎯 [Right] `unmount` devolve o TECLADO à fábrica da engine — o mapa do cartucho sai com ele', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { fabricaComOJogo } = await import('../app/js/input/keyboard.js');
+    const { doc, win } = domFalso();
+
+    const motor = createGame({ declaration: comTeclas(), host: { doc, win } });
+    expect(fabricaComOJogo().solo.up, 'o mapa do jogo nem chegou a valer').toEqual(['KeyZ']);
+
+    motor.unmount();
+    expect(fabricaComOJogo().solo.up, 'as teclas do cartucho anterior ficaram a valer depois de ele sair')
+      .toEqual(['KeyW', 'ArrowUp']);
+  });
+
+  it('🎯 [Right] e o PAD volta à tabela padrão — inclusive a memória que o registo limpa', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { tabelaDoPad } = await import('../app/js/input/pad-defaults.js');
+    // 📌 A constante mora em `default-bindings`, e o `pad-defaults` importa-a — não a reexporta.
+    const { GAMEPAD_STANDARD } = await import('../app/js/input/default-bindings.js');
+    const { doc, win } = domFalso();
+
+    const motor = createGame({ declaration: comTeclas(), host: { doc, win } });
+    expect(tabelaDoPad(1, 0).up, 'o mapa de pad do jogo nem chegou a valer').not.toEqual(GAMEPAD_STANDARD.up);
+
+    motor.unmount();
+    // ⚠️ IDENTIDADE E NÃO IGUALDADE: sem mapeamento registado a função devolve a PRÓPRIA constante, e é isso
+    // que prova também que a memória por `jogadores:assento` foi limpa — uma tabela fundida em cache seria
+    // igual em valor a nada e diferente em identidade da constante.
+    expect(tabelaDoPad(1, 0), 'o pad ficou com a tabela do cartucho anterior em cache').toBe(GAMEPAD_STANDARD);
+  });
 });

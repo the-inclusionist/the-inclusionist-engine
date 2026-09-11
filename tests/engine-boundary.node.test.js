@@ -447,7 +447,21 @@ const FIXTURES_CONHECIDOS = {
  * de ter do que excetuar. Fica VAZIA em vez de apagada porque a distinção continua valendo: prosa que
  * descreve o jogo não é dependência do jogo, e o próximo a encontrar um caso desses precisa achar o lugar.
  */
-const PROSA_EM_STRING = new Set([]);
+const PROSA_EM_STRING = new Set([
+  /*
+   * ⚠️ ESTE FICHEIRO NOMEIA `coinTarget` PARA AFIRMAR QUE ELE NÃO EXISTE. A sua primeira linha de caso é
+   * `expect(CODIGO).not.toMatch(/coinTarget/)` — o veredito do ADR-0027 virado crivo. Contá-la como
+   * dependência inverte o registo: passaria a acusar de sujidade exactamente o teste que prova a limpeza.
+   *
+   * 📌 E ELE ENTROU AQUI EM 2026-09-11 SEM MUDAR DE COMPORTAMENTO, o que vale explicar para não parecer um
+   * relaxamento: `IMPORTA_ENGINE` casa `core|input|render|platform|ui|audio|i18n` e NÃO casa `boot`, então
+   * enquanto o ficheiro só importava `boot/create-game` ele nunca era classificado como teste de engine e o
+   * crivo nunca o olhou. Ao ganhar os casos do `unmount` — que importam `input/keyboard` e
+   * `input/pad-defaults` para medir o mapeamento pelo comportamento — passou a qualificar-se, e o crivo
+   * achou uma linha que estava lá desde sempre. O achado é sobre o ALCANCE do crivo, não sobre o ficheiro.
+   */
+  'boot-create-game.node.test.js',
+]);
 
 /** Linhas de CÓDIGO de um teste, sem comentários e sem títulos de caso. */
 function linhasDeFixture(arquivo) {

@@ -350,6 +350,40 @@ describe('createGame num documento de verdade', () => {
     expect(meu.querySelectorAll('[data-pi]').length).toBeGreaterThan(0);
     expect(document.querySelector('#title-icons').children.length, 'montou nos DOIS sítios').toBe(0);
   });
+
+  /*
+   * O AVISO DE ALCANCE ENTRE CARTUCHOS (ADR-0142).
+   *
+   * ⚠️ ESTE CASO SÓ PODE VIVER AQUI, e a regra do cabeçalho deste ficheiro é que o diz: o `domFalso` do
+   * projeto node devolve um elemento para QUALQUER seletor que não esteja em `ausentes`, logo
+   * `#reach-notice` responde «existe» quer tenha sido criado quer não; e o `removeChild` dele é uma função
+   * vazia. As duas metades da pergunta — apareceu? saiu? — são invisíveis ao duplo. Aqui há árvore a sério.
+   *
+   * 🎯 E o que se mede não é o aviso APARECER: é ele SAIR quando o cartucho seguinte não tem o que avisar.
+   * `retirarAvisoDeAlcance()` corre sempre, e não só quando há o que mostrar, exactamente por isto — um
+   * cartucho calado tem de apagar o barulho do anterior, e é esse o caso que se esquece.
+   */
+  it('🎯 [Zero] um cartucho sem nada a avisar APAGA o aviso de alcance do anterior', () => {
+    // ⚠️ UM APARELHO SEM NADA, e não «só com toque», que foi a primeira tentativa e passou: o `ok` do
+    // alcance é `acoes.length > 0 && disponiveis.some(serve)`, e o toque APONTA — logo servia ao jogo que
+    // pede ponteiro, e o aviso não chegava a existir. Sem transporte nenhum disponível, `some` é falso e a
+    // engine tem o que dizer, que é a pré-condição deste caso.
+    const semNada = {
+      gamepad: () => false, toque: () => false, teclado: () => false, rato: () => false,
+    };
+    const motor = abrir({
+      declaration: { ...declaracaoValida(), needsPointer: () => true },
+      disponibilidade: semNada,
+      preset: { up: { label: 'Cima' }, down: { label: 'Baixo' }, action1: { label: 'Agir' } },
+    });
+    expect(document.querySelector('#reach-notice'), 'o aviso nem chegou a aparecer — o caso não mede nada')
+      .not.toBeNull();
+
+    // Sem ganchos: o cartucho novo não declara `preset`, logo não tem ações a avisar.
+    motor.mount(declaracaoValida());
+    expect(document.querySelector('#reach-notice'), 'o aviso do cartucho anterior ficou na página')
+      .toBeNull();
+  });
 });
 
 // ========================= MUTACOES CONFERIDAS =========================
