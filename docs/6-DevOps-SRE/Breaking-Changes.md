@@ -438,6 +438,24 @@ panels (`e9bea8a`). The typography WRITER still runs, because the eleventh quick
 through it. **What to do:** nothing, unless you relied on the engine's `#typo` or `#caa` existing; if you mount
 your own, the engine no longer empties it.
 
+## I · Section D2 is out of date: `start` is the QUICK PAUSE, and `select` opens the card (ADR-0155)
+
+🔴 **Behaviour again, with no name or shape changed** — the blind spot of sections C and D2.
+
+**What changed.** The `start` action no longer reveals the pause card. It freezes the game
+(`cartucho.setPhase?.('paused')`), puts the directional on the quick bar and shows the word PAUSED at the centre
+of `#game-region` (`.pausa-rapida`, localised); `start` again returns to the game, and so does «back» inside the
+bar. The **`select`** action (`KeyF` in the solo scheme) now opens the six-item card. The touch pad's START pill
+is the quick pause too, and the pad stays visible while it lasts, because the pill is the way out.
+
+**`ui/pause-icons.entrarNaBarra` no longer calls `acts.resume()`.** The bar is used with the game frozen now.
+📏 Measured in the game repositories: none calls `entrarNaBarra` directly; they reach it through the
+`acessibilidade` pause item, which still closes the card first — that call moved to the item.
+
+**What to do:** if your game's help or tutorial says «press START for the menu», it now means SELECT. If `KeyF`
+was a play key, remap it. `sairDaBarra` gained an optional second argument and `PauseIconsCtx` an optional
+`aoSairDaBarra` — both additive.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

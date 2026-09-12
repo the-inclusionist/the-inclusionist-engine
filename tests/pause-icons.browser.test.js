@@ -442,13 +442,15 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
   // do que os de entrada, e por isso o primeiro deles é o anúncio — a frase que diz como sair, dita na hora
   // de entrar, é a única coisa que separa o modo da armadilha para quem não vê a tela.
 
-  it('[Right] entrar ANUNCIA como sair, põe o cursor no 1º ícone e VOLTA ao jogo', () => {
+  it('[Right] entrar ANUNCIA como sair, põe o cursor no 1º ícone — e NÃO retoma o jogo (ADR-0155)', () => {
     const { api, bar, said, ctx } = mount();
     let retomou = 0;
     ctx.getPauseActs = () => ({ resume: () => { retomou++; } });
     api.entrarNaBarra(0);
     expect(api.naBarraDe(0)).toBe(true);
-    expect(retomou, 'o modo é para usar DURANTE a partida: entrar tem de despausar').toBe(1);
+    // 🔴 ATÉ AO ADR-0155 ERA O CONTRÁRIO: entrar despausava, porque o modo era para usar com o jogo a andar.
+    // Agora a barra é a metade da PAUSA RÁPIDA, e retomar ao entrar descongelaria o mundo que a criança parou.
+    expect(retomou, 'entrar na barra retomou o jogo que a pausa rápida acabou de congelar').toBe(0);
     expect(said.some((f) => /volt|back/i.test(f)), 'o anúncio de entrada tem de dizer como sair: ' + said.join(' | ')).toBe(true);
     expect(bar.querySelectorAll('.pi-sel')).toHaveLength(1);
   });
@@ -469,6 +471,23 @@ describe('modo `accessibility` — entrar, andar e SAIR (ADR-0044, item 7)', () 
     api.entrarNaBarra(0);
     api.navBar(0, {}, true);
     expect(api.naBarraDe(0)).toBe(false);
+  });
+
+  it('🔴 TODA saída chama `aoSairDaBarra` — e a silenciosa não diz «de volta ao jogo» (ADR-0155)', () => {
+    // ⚠️ É o gancho por onde a raiz descongela o jogo. Uma saída que não o chamasse deixava o mundo parado com a
+    // criança de volta ao personagem; e o SELECT sai em silêncio porque vai para o cartão, não para o jogo.
+    const { api, said, ctx } = mount();
+    const saidas = [];
+    ctx.aoSairDaBarra = (i, silencioso) => saidas.push([i, silencioso]);
+    api.entrarNaBarra(0);
+    api.navBar(0, { no: true });
+    api.entrarNaBarra(0);
+    said.length = 0;
+    api.sairDaBarra(0, true);
+    expect(saidas, 'uma das saídas não avisou a raiz').toEqual([[0, false], [0, true]]);
+    expect(said, 'a saída silenciosa anunciou a volta ao jogo').toEqual([]);
+    api.sairDaBarra(0);
+    expect(saidas, 'sair de um modo em que não se estava avisou a raiz').toHaveLength(2);
   });
 
   it('[Boundary] depois de sair, a direção NÃO mexe mais na barra', () => {

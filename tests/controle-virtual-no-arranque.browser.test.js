@@ -100,14 +100,27 @@ describe('createGame mounts the virtual pad from the preset', () => {
     expect(keys.has(novas[0]), 'the key stayed held after the finger left').toBe(false);
   });
 
-  it('🔴 [Right] the START pill opens the pause card and asks the game to pause', () => {
-    const cartao = document.getElementById('vp-pause-0');
-    expect(cartao?.hidden, 'the card was already open; the case would measure nothing').toBe(true);
+  it('🔴 [Right] the START pill is the QUICK PAUSE (ADR-0155) — and the second tap leaves it', () => {
+    const pausado = () => document.querySelector('#game-region .pausa-rapida');
+    toque(document.getElementById('game-region'), 'pointerdown');
+    expect(pausado()?.hidden ?? true, 'PAUSED was already showing; the case would measure nothing').toBe(true);
+    fases.length = 0;
     document.getElementById('touch-start').click();
-    expect(cartao.hidden, 'the START pill did not open the pause').toBe(false);
-    expect(fases).toContain('paused');
-    // 📌 The pair: with the card OPEN, a touch does not bring the pad back over the menu the child is tapping.
-    expect(pad().hidden, 'opening the pause left the pad over the card').toBe(true);
+    expect(pausado()?.hidden, 'the START pill did not pause').toBe(false);
+    expect(document.getElementById('vp-pause-0').hidden, 'the START pill opened the menu card: that is SELECT now').toBe(true);
+    expect(fases).toEqual(['paused']);
+    // ⚠️ THE PAD STAYS: its START pill is the only exit a touch-only child has. Hiding it, as the card did, would
+    // leave her in a frozen game with no door.
+    expect(pad().hidden, 'the quick pause hid the pad, and with it the only way out').toBe(false);
+    document.getElementById('touch-start').click();
+    expect(pausado().hidden, 'the second tap did not leave the quick pause').toBe(true);
+    expect(fases).toEqual(['paused', 'playing']);
+  });
+
+  it('🔴 [Right] with the menu card OPEN, a touch does not bring the pad back over its buttons', () => {
+    document.getElementById('game-region').dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', bubbles: true }));
+    expect(pad().hidden, 'the pad was showing before the card opened; the case would measure nothing').toBe(true);
+    motor.pausa.mostrar(0);
     toque(document.getElementById('game-region'), 'pointerdown');
     expect(pad().hidden, 'a touch on the open pause revealed the pad on top of its buttons').toBe(true);
     motor.pausa.esconder(0);
@@ -187,7 +200,9 @@ describe('the START pill, with the real stylesheet', () => {
 //   P8 getStartAction back to the old broken read            🔴 the START pill opens nothing
 //   P9 the pad is allowed over an open pause card            🔴 pad over the menu buttons
 //   P10 the pad's gaps do not reach `problems`               🔴 silent gap
-//   P11 opening the pause by touch leaves the pad up         🔴 pad over the card
+//   P11 (retired by ADR-0155: the touch START is the quick pause, and the pad STAYS — it is the exit)
+//   Q1  the touch START opens the card instead of the quick pause  🔴 (checked with the ADR-0155 change)
+//   Q2  the touch START hides the pad on entering                 🔴 no way out for a touch-only child
 //   P12 `.touch-start` loses `width:auto`                   🔴 «START» spills 66px out of 56px (it was red before the fix)
 // ⚠️ And wiring the modules together found THREE defects none of their own tests could see: arms the
 // stylesheet does not draw and the bindings do not light, a START pill with no text, and a bare global

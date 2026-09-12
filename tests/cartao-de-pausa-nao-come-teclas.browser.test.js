@@ -108,15 +108,15 @@ describe('o cartão de pausa que a engine monta', () => {
     }
   });
 
-  it('⚠️ `Enter` SAIU dessa lista por DECISÃO e não por regressão — ele é `start` (ADR-0144)', () => {
+  it('⚠️ `Enter` SAIU dessa lista por DECISÃO e não por regressão — ele é `start` (ADR-0144, ADR-0155)', () => {
     /*
      * 🔴 ESTE CASO ERA A QUARTA TECLA DO CASO ACIMA, e vale a pena dizer porque saiu, em vez de o número
      * mudar em silêncio. A citação que fundou este ficheiro nomeava «every arrow, Enter and Space», e o que
      * ela acusava era o cartão MONTADO a comer teclas pela navegação de menu. Isso continua verdade e
      * continua medido — a seta e o `Space` acima.
      *
-     * 🎯 O QUE MUDOU É OUTRA COISA, E É UMA DECISÃO: desde o ADR-0144 a engine ouve a ACÇÃO `start` e abre a
-     * pausa com ela. O esquema solo põe `start` em `KeyH` E `Enter` (`input/default-bindings:89`), e a nota
+     * 🎯 O QUE MUDOU É OUTRA COISA, E É UMA DECISÃO: desde o ADR-0144 a engine ouve a ACÇÃO `start` e pausa com
+     * ela — desde o ADR-0155, a PAUSA RÁPIDA (PAUSADO e a barra), e já não o cartão. O esquema solo põe `start` em `KeyH` E `Enter` (`input/default-bindings:89`), e a nota
      * de lá explica que `Enter` foi escolhido porque JÁ pausava no monólito (`PAUSE_KEYS = {Escape, Enter}`)
      * — declará-lo descrevia o que a tecla fazia há anos, não lhe dava trabalho novo.
      *
@@ -129,8 +129,10 @@ describe('o cartão de pausa que a engine monta', () => {
 
     const ev = apertar('Enter');
 
-    expect(cartao.hidden, '`Enter` está em `start` e não abriu a pausa').toBe(false);
-    expect(ev.defaultPrevented, 'a engine abriu a pausa e deixou a tecla seguir para o jogo por baixo').toBe(true);
+    const pausado = document.querySelector('#game-region .pausa-rapida');
+    expect(pausado?.hidden, '`Enter` está em `start` e não pausou').toBe(false);
+    expect(cartao.hidden, 'o START abriu o cartão de menus, que é do SELECT desde o ADR-0155').toBe(true);
+    expect(ev.defaultPrevented, 'a engine pausou e deixou a tecla seguir para o jogo por baixo').toBe(true);
   });
 });
 

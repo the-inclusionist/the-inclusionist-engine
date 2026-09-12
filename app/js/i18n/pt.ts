@@ -110,6 +110,8 @@ const pt: Record<string, string> = {
   // Menu de pausa (por tela — buildScreenPause). O botão de letra (ABC/abc/Braille) é dinâmico, fica fora.
   'pause.title': 'Pausado',
   'pause.resume': '▶ Voltar ao jogo',
+  // A palavra da PAUSA RÁPIDA, ao centro da tela congelada (ADR-0155). Curta: é para ler de relance.
+  'pause.quick': 'PAUSADO',
   'pause.acessibilidade': '♿ Acessibilidade',
   'pause.options': '⚙ Configurações de inclusão',
   'pause.opcoesdojogo': '🎮 Opções do jogo',
@@ -313,8 +315,9 @@ const pt: Record<string, string> = {
   'sr.menu.index': '{n} de {m}',
   'sr.menu.indexOn': 'Posição na lista ligada.',
   'sr.menu.indexOff': 'Posição na lista desligada.',
-  'sr.a11y.barEnter': 'Barra de acessibilidade. Use as direções para escolher e confirmar para ligar. Para voltar ao jogo, aperte voltar ou START.',
+  'sr.a11y.barEnter': 'Jogo pausado. Barra de acessibilidade. Use as direções para escolher e confirmar para ligar. Para voltar ao jogo, aperte voltar ou START.',
   'sr.a11y.barExit': 'De volta ao jogo.',
+  'sr.a11y.quickPause': 'Jogo pausado. Para voltar ao jogo, aperte START.',
   'pad.glyph.cross': 'xis',
   'pad.glyph.circle': 'bola',
   'pad.glyph.square': 'quadrado',

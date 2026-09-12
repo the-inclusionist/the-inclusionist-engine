@@ -659,6 +659,11 @@ export interface PauseIconsCtx {
   srSay: (text: string) => void;
   /** aria-live "assertive" — the two refusals (`soon` icon, shared audio output). */
   srAlert: (text: string) => void;
+  /**
+   * Chamado depois de TODA saída do modo barra, com a tela e se foi silenciosa. Ausente, não se faz nada.
+   * Existe para a raiz descongelar o jogo pela porta que for (ADR-0155) — a barra não sabe de fases.
+   */
+  aoSairDaBarra?: (i: number, silencioso: boolean) => void;
 
   // --- the per-screen pause menu ---
   /**
@@ -817,10 +822,10 @@ export interface PauseIconsApi {
    * accionam, que é uma segunda cópia da mesma decisão.
    */
   iconesMontados: readonly PauseIcon[];
-  /** ENTRA no modo `accessibility` da tela `i` — é o que o item `acessibilidade` da pausa faz. */
+  /** ENTRA no modo `accessibility` da tela `i` — a metade da barra da pausa rápida (ADR-0155). Não mexe na fase. */
   entrarNaBarra: (i: number) => void;
-  /** SAI do modo e devolve o direcional ao personagem. */
-  sairDaBarra: (i: number) => void;
+  /** SAI do modo e devolve o direcional ao personagem. `silencioso` = sai para outro ecrã, não para o jogo. */
+  sairDaBarra: (i: number, silencioso?: boolean) => void;
   /** A tela `i` está com o direcional na BARRA em vez de no personagem? Perguntado a cada quadro. */
   naBarraDe: (i: number) => boolean;
   /** Um passo dentro do modo. `temStart` é a borda do botão de pausa — a segunda saída (ADR-0044, item 7). */
@@ -1241,7 +1246,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   }
 
   /**
-   * ENTRA no modo: o direcional passa a dirigir a barra da tela `i`, e o jogo VOLTA a rodar.
+   * ENTRA no modo: o direcional passa a dirigir a barra da tela `i`.
+   *
+   * 🔴 E JÁ NÃO RETOMA O JOGO (ADR-0155). Até ali o modo era «para usar DURANTE a partida» e entrar chamava
+   * `acts.resume()`; desde que o START é a PAUSA RÁPIDA, a barra é usada com o jogo CONGELADO, e retomar ao
+   * entrar descongelaria o mundo no instante em que a criança pediu que parasse. Quem entra decide a fase.
    *
    * O anúncio diz como SAIR, e diz na hora de entrar. É a linha que desarma a armadilha que o próprio
    * ADR-0044 anotou como consequência negativa desta decisão: quem não enxerga aperta a direção, o personagem
@@ -1252,14 +1261,21 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const primeiro = bar && iconeSelecionado(bar);
     if (!bar || !primeiro) return;
     naBarra.add(i);
-    const acts = getPauseActs();
-    if (acts.resume) acts.resume(); // volta à tela normal: o modo é para usar DURANTE a partida
     ctx.srSay(t('sr.a11y.barEnter'));
     selecionarIcone(bar, primeiro);
   }
 
-  /** SAI do modo e devolve o direcional ao personagem. Anuncia, porque a devolução também é informação. */
-  function sairDaBarra(i: number): void {
+  /**
+   * SAI do modo e devolve o direcional ao personagem. Anuncia, porque a devolução também é informação.
+   *
+   * `silencioso` é para quem sai da barra para OUTRO ecrã e não para o jogo — o SELECT, que troca a pausa rápida
+   * pelo cartão (ADR-0155): «de volta ao jogo» dito aí seria mentira, com o cartão a abrir por cima.
+   *
+   * 📌 E `aoSairDaBarra` corre em TODA saída — Voltar, START ou quem chame isto —, porque a raiz tem de
+   * descongelar o jogo por qualquer porta. Uma saída que só um caminho conhecesse deixava o outro com a criança
+   * de volta ao personagem num mundo parado.
+   */
+  function sairDaBarra(i: number, silencioso = false): void {
     if (!naBarra.delete(i)) return;
     const bar = ctx.getA11yBars()[i];
     if (bar) {
@@ -1267,7 +1283,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       const cap = bar.querySelector('.pause-icons-cap');
       if (cap) cap.textContent = '';
     }
-    ctx.srSay(t('sr.a11y.barExit'));
+    if (!silencioso) ctx.srSay(t('sr.a11y.barExit'));
+    ctx.aoSairDaBarra?.(i, silencioso);
   }
 
   /** A tela `i` está com o direcional na barra? É o que o roteamento de entrada pergunta a cada quadro. */
@@ -1339,7 +1356,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         // `acessibilidade` leva o cursor à BARRA RÁPIDA. Enquanto ela mora dentro do cartão, "entrar no modo"
         // é pôr o cursor nela — e a saída continua sendo a saída da pausa, que é a mesma de sempre. Quando o
         // item 7 levar a barra para o HUD, esta linha o segue; o que o item SIGNIFICA não muda.
-        if (act === 'acessibilidade') { entrarNaBarra(i); return; }
+        // ⚠️ O ITEM SAIU DA RAIZ (ADR-0151) e só o alcança uma lista que o JOGO passe; para ela o comportamento
+        // antigo fica aqui, explícito — fechar o cartão e jogar com a barra —, já que `entrarNaBarra` deixou de
+        // retomar sozinho (ADR-0155).
+        if (act === 'acessibilidade') { getPauseActs().resume?.(); entrarNaBarra(i); return; }
         const acts = getPauseActs();
         const fn = acts[act];
         if (fn) fn();

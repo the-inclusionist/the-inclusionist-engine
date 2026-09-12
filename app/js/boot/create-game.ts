@@ -956,6 +956,8 @@ export function createGame(o: CreateGameOptions): Engine {
     getPlayers: () => players(),
     getNumPlayers: () => players().length,
     srSay, srAlert,
+    // A saída da barra é a saída da pausa rápida, por qualquer porta (ADR-0155). Função içada: lida ao chamar.
+    aoSairDaBarra: (i, silencioso) => terminarPausaRapida(i, silencioso),
     // ⚠️ NÃO `instanceof HTMLElement`: esse é um GLOBAL DO NAVEGADOR, e lê-lo onde ele não existe LANÇA —
     // não devolve falso. Escrito assim na etapa 2, fazia o `reflectPauseIcons` rebentar em qualquer ambiente
     // sem DOM. É o mesmo erro de forma do ACHADO 15 no cabeçalho deste ficheiro: alcançar o global por baixo
@@ -1759,73 +1761,118 @@ export function createGame(o: CreateGameOptions): Engine {
    * só duas. Congelar a física e calar o ambiente eram do `ui/shell`, que esta raiz recusa montar de
    * propósito — e por isso a segunda metade é um pedido, `setPhase('paused')`, e não uma ordem.
    */
-  function assentoDoStart(code: string): number | null {
+  /** O assento dono de uma tecla, se ela for a posição `acao` DELE; senão `null`. */
+  function assentoDaPosicao(code: string, acao: 'start' | 'select'): number | null {
     // ⚠️ O DONO DA TECLA DECIDE O ASSENTO, como em `menuNavKey`: quem carregou é quem abre a SUA pausa. Uma
     // tecla que não é de ninguém (`-1`) não pode ser «start» de assento nenhum — perguntar por ela ao
     // assento 0 devolveria a pausa do Jogador 1 a quem carregou numa tecla solta.
     const dono = keyboard.whichPlayer(code);
     if (dono < 0) return null;
-    return keyboard.actionOf(code, dono) === 'start' ? dono : null;
+    return keyboard.actionOf(code, dono) === acao ? dono : null;
   }
 
-  function abrirPausaPeloStart(e: KeyboardEvent): void {
-    const assento = assentoDoStart(e.code);
+  /*
+   * ===================== A PAUSA RÁPIDA — o START (ADR-0155) =====================
+   *
+   * O jogo CONGELA (pede-se `setPhase('paused')`, como o ADR-0144 §2 pedia para o cartão), o direcional vai para
+   * a BARRA, e a palavra PAUSADO aparece ao centro. Nenhum cartão é desenhado: é a vista do print.
+   *
+   * 📌 UMA SAÍDA SÓ, por qualquer porta. O Voltar dentro da barra, o START outra vez e o SELECT todos acabam em
+   * `pauseIcons.sairDaBarra`, e é o gancho `aoSairDaBarra` que descongela. Duas saídas escritas à parte seriam
+   * duas oportunidades de uma delas deixar o mundo parado com a criança de volta ao personagem.
+   *
+   * ⚠️ E O ESTADO É «EM PAUSA RÁPIDA», não «na barra»: um hospedeiro sem `#title-icons` não tem barra onde
+   * entrar, e a pausa rápida continua a congelar e a dizer PAUSADO — com o START a sair dela. Perguntar à barra
+   * seria prender essa criança num jogo parado.
+   */
+  const emPausaRapida = new Set<number>();
+  let palavraPausado: HTMLElement | null = null;
+
+  function mostrarPausado(): void {
+    const regiao = $<HTMLElement>('#game-region');
+    if (!palavraPausado && regiao && typeof regiao.appendChild === 'function') {
+      palavraPausado = doc.createElement('div');
+      palavraPausado.className = 'pausa-rapida';
+      // O leitor de tela já ouve a entrada na barra, que diz que o jogo parou e como voltar; a palavra é para
+      // os olhos, e dita duas vezes atropelava o anúncio que ensina a sair.
+      palavraPausado.setAttribute('aria-hidden', 'true');
+      regiao.appendChild(palavraPausado);
+    }
+    if (!palavraPausado) return;
+    palavraPausado.textContent = t('pause.quick'); // resolvida AO MOSTRAR: o idioma pode ter mudado desde o arranque
+    palavraPausado.hidden = false;
+  }
+
+  function entrarNaPausaRapida(assento: number): void {
+    emPausaRapida.add(assento);
+    pauseIcons.entrarNaBarra(assento);
+    if (!pauseIcons.naBarraDe(assento)) srSay(t('sr.a11y.quickPause'));
+    mostrarPausado();
+    mudarDeFase('paused');
+  }
+
+  /** Sai por qualquer porta. `para` diz para onde: o jogo (descongela) ou o cartão (fica parado). */
+  function sairDaPausaRapida(assento: number, para: 'jogo' | 'cartao'): void {
+    if (pauseIcons.naBarraDe(assento)) { pauseIcons.sairDaBarra(assento, para === 'cartao'); return; } // o gancho termina
+    if (para === 'jogo') srSay(t('sr.a11y.barExit'));
+    terminarPausaRapida(assento, para === 'cartao');
+  }
+
+  function terminarPausaRapida(assento: number, paraOutroEcra: boolean): void {
+    if (!emPausaRapida.delete(assento)) return;
+    if (palavraPausado && emPausaRapida.size === 0) palavraPausado.hidden = true;
+    if (!paraOutroEcra) mudarDeFase('playing');
+  }
+
+  function alternarPausaRapidaPeloStart(e: KeyboardEvent): void {
+    const assento = assentoDaPosicao(e.code, 'start');
     if (assento === null) return;
 
     // GUARDA 1 — HÁ UM PAINEL ABERTO. Medido: com um overlay visível, `menuNavKey` recebe a tecla, não lhe
-    // acha intenção e sai sem consumir. Sem este guarda o cartão abria POR BAIXO do painel em que a criança
-    // está, e ela sairia do painel para um ecrã que não pediu. Quem fecha um painel é o Escape, não o START.
+    // acha intenção e sai sem consumir. Sem este guarda a pausa rápida entrava POR BAIXO do painel em que a
+    // criança está. Quem fecha um painel é o Escape, não o START.
     if (overlays.topVisibleOverlay()) return;
 
-    // GUARDA 2 — A CRIANÇA ESTÁ NA BARRA DE ACESSIBILIDADE. O item 7 do ADR-0044 dá o START à barra: ele é a
-    // SEGUNDA saída do modo. Essa rota ainda não está montada nesta raiz (a nota do `navBar`, mais acima,
-    // já o diz em tantas palavras), e tomar-lhe a tecla agora fecharia a porta antes de ela existir.
-    if (pauseIcons.naBarraDe(assento)) return;
+    // O START OUTRA VEZ SAI — a segunda saída do modo que o item 7 do ADR-0044 já dava ao START.
+    if (emPausaRapida.has(assento)) { sairDaPausaRapida(assento, 'jogo'); e.preventDefault(); return; }
 
-    // GUARDA 3 — O CARTÃO JÁ ESTÁ ABERTO. Com ele aberto e uma tecla de «start» que não seja `Enter`,
-    // `menuNavKey` também não acha intenção e deixa passar: sem este guarda, cada carregar voltava a chamar
-    // `setPhase('paused')` num jogo já parado. FECHAR é do `no`/Escape (ADR-0044 §2), não daqui.
+    // GUARDA 2 — O CARTÃO ESTÁ ABERTO. Com ele aberto e uma tecla de «start» que não seja `Enter`,
+    // `menuNavKey` não acha intenção e deixa passar. Fechar o cartão é do «Voltar ao jogo» e do Escape.
     const cartao = $<HTMLElement>(`#vp-pause-${assento}`);
-    if (!cartao || cartao.hidden === false) return;
+    if (cartao && cartao.hidden === false) return;
 
-    // ⚠️ MOSTRAR VEM PRIMEIRO, e a ordem é a defesa: um jogo sem `setPhase` tem de receber o cartão na
-    // mesma. Escrito ao contrário — o `?.` a guardar as duas linhas — a ausência do gancho engolia a
-    // abertura, e o jogo sem fases, que é o caso comum, ficava exactamente como estava antes deste registo.
-    pausa.mostrar(assento);
-    mudarDeFase('paused');
+    entrarNaPausaRapida(assento);
     // 📌 E SÓ AQUI, depois de a tecla ter sido NOSSA de facto. `Enter` é «start» por omissão
-    // (`input/default-bindings`), e sem isto o mesmo carregar abriria a pausa E accionaria o que estivesse
-    // focado por trás dela — uma acção num ecrã que a criança acabou de deixar.
+    // (`input/default-bindings`), e sem isto o mesmo carregar pausaria E accionaria o que estivesse focado.
     e.preventDefault();
   }
 
-  win.addEventListener('keydown', abrirPausaPeloStart);
+  win.addEventListener('keydown', alternarPausaRapidaPeloStart);
 
   /*
-   * O SELECT ENTRA NA BARRA RÁPIDA — e sai dela (ADR-0151 §1).
+   * ===================== O SELECT ABRE OS MENUS (ADR-0155) =====================
    *
-   * 🔴 O ITEM «ACESSIBILIDADE» SAIU DA RAIZ, e esta é a porta que o substitui: sem ela a barra ficava alcançável
-   * só por ponteiro, e quem navega por teclado — a criança cega em primeiro lugar — perdia o modo cego, o TTS e
-   * o contraste. Por isso as duas mudanças entram no mesmo commit, e nunca a primeira sem a segunda.
+   * O cartão de seis itens do ADR-0151. 📏 `select` estava mapeado (`KeyF`, `input/default-bindings`) e até ao
+   * ADR-0151 nenhum módulo o lia; o ADR-0086 guardou-o para «o que é da sessão», e os menus da pausa são isso.
    *
-   * 📏 MEDIDO antes: `select` estava mapeado (`KeyF`, `input/default-bindings`) e NENHUM módulo o lia. Era uma
-   * posição de sistema com tecla e sem função — o ADR-0086 guardou-a precisamente para «o que é da sessão».
-   *
-   * ⚠️ O dono da tecla decide o assento, como no START: quem carregou é quem entra na SUA barra. E um painel
-   * aberto recusa, pela mesma razão do guarda 1 da pausa — a criança está noutro ecrã.
-   *
-   * 📌 `entrarNaBarra` já retoma o jogo ao entrar (o `resume` da errata do ADR-0144), logo o SELECT com a pausa
-   * aberta fecha o cartão e leva o direcional à barra, que é o que o item fazia.
+   * ⚠️ DA PAUSA RÁPIDA PARA O CARTÃO o jogo NÃO descongela: a barra sai em silêncio (dizer «de volta ao jogo»
+   * com o cartão a abrir seria mentira) e a fase já é `paused` — pedi-la outra vez seria um segundo `paused`
+   * num jogo parado.
    */
-  function alternarBarraPeloSelect(e: KeyboardEvent): void {
-    const dono = keyboard.whichPlayer(e.code);
-    if (dono < 0 || keyboard.actionOf(e.code, dono) !== 'select') return;
+  function abrirMenusPeloSelect(e: KeyboardEvent): void {
+    const assento = assentoDaPosicao(e.code, 'select');
+    if (assento === null) return;
     if (overlays.topVisibleOverlay()) return;
-    if (pauseIcons.naBarraDe(dono)) pauseIcons.sairDaBarra(dono);
-    else pauseIcons.entrarNaBarra(dono);
+    const cartao = $<HTMLElement>(`#vp-pause-${assento}`);
+    if (!cartao || cartao.hidden === false) return;
+    const jaParado = emPausaRapida.has(assento);
+    if (jaParado) sairDaPausaRapida(assento, 'cartao');
+    // ⚠️ MOSTRAR VEM PRIMEIRO, e a ordem é a defesa: um jogo sem `setPhase` tem de receber o cartão na mesma.
+    pausa.mostrar(assento);
+    if (!jaParado) mudarDeFase('paused');
     e.preventDefault();
   }
-  win.addEventListener('keydown', alternarBarraPeloSelect);
+  win.addEventListener('keydown', abrirMenusPeloSelect);
 
   /*
    * ===================== O CONTROLE VIRTUAL (ADR-0143, fase 4 do plano) =====================
@@ -1894,13 +1941,17 @@ export function createGame(o: CreateGameOptions): Engine {
     : ['the virtual pad has nowhere to mount: set `host.touchHost`, or give #game-region room for children. '
       + 'Without it, a child on a keyboardless tablet cannot play, nor reach the pause']);
 
-  /** O START da tela: abre a pausa do assento 0 como a tecla abre — e fecha-a, se já estiver aberta. */
+  /**
+   * O START da tela: a PAUSA RÁPIDA do assento 0, como a tecla (ADR-0155) — e sai dela ao segundo toque.
+   *
+   * ⚠️ O PAD FICA À VISTA, ao contrário do cartão, que o escondia: a pílula START É a saída de quem só tem dedo.
+   * Escondê-la deixava a criança num jogo parado sem porta. Com o cartão aberto, o START fecha-o, como fechava.
+   */
   function alternarPausaPeloToque(): void {
     if (overlays.topVisibleOverlay()) return;
+    if (emPausaRapida.has(0)) { sairDaPausaRapida(0, 'jogo'); return; }
     if (cartaoDoAssento0Aberto()) { mudarDeFase('playing'); return; }
-    toque.hideTouchControls();
-    pausa.mostrar(0);
-    mudarDeFase('paused');
+    entrarNaPausaRapida(0);
   }
 
   const ligacoesDoToque = initTouchBindings({
