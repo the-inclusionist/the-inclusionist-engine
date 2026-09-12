@@ -4,20 +4,21 @@
 // a lista das categorias, o estado inicial (com o default TTS-off) e o save por categoria. (Fase 2, áudio)
 import * as store from './storage.js';
 
-type AudioCat = { k: string; lbl: string; dica?: string };
+type AudioCat = { k: string; lbl: string };
 type AudioCatState = { on: boolean; vol: number };
 
 // 🔴 `other` SAIU em 2026-09-12 (ADR-0151, errata): «O que esta categoria controla? Nada. Então pra que?» (Dev).
 // 📏 Medido: nenhum som da engine nem dos repositórios dos jogos era encaminhado por ela — era um volume sem nada
 // por baixo, o botão morto do ADR-0106 §5.
-// 🔴 `lbl` and `dica` are i18n KEYS since 2026-09-12 (ADR-0158). The labels were raw Portuguese with their explanation
-// in parentheses — «Sons ambiente (água, rua, trânsito, folhas, chuva)» — and a page in English showed them as they
-// were (measured in dist). The short word stays in the row; what the parentheses held is the hint the footer shows.
+// 🔴 `lbl` is an i18n KEY since 2026-09-12 (ADR-0158). The labels were raw Portuguese with examples in parentheses —
+// «Sons ambiente (água, rua, trânsito, folhas, chuva)» — and a page in English showed them as they were (measured in
+// dist). ⚠️ The examples are GONE, not moved to a hint: water, doors, coins are one game's sounds, and the engine does
+// not describe a game it does not know (the Dev: «Não se faz abstração sem precisar»).
 export const AUDIO_CATS: AudioCat[] = [
   {k:'music',   lbl:'audio.cat.music'},
-  {k:'ambient', lbl:'audio.cat.ambient',  dica:'audio.cat.ambient.dica'},
-  {k:'interact',lbl:'audio.cat.interact', dica:'audio.cat.interact.dica'},
-  {k:'earcons', lbl:'audio.cat.earcons',  dica:'audio.cat.earcons.dica'},
+  {k:'ambient', lbl:'audio.cat.ambient'},
+  {k:'interact',lbl:'audio.cat.interact'},
+  {k:'earcons', lbl:'audio.cat.earcons'},
   {k:'tts',     lbl:'audio.cat.tts'},
   {k:'sonar',   lbl:'audio.cat.sonar'},
   {k:'guard',   lbl:'audio.cat.guard'},

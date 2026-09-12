@@ -38,8 +38,8 @@ export interface AudioStore {
   set(key: string, value: string | number | boolean): boolean;
 }
 
-/** `lbl`/`dica` are i18n keys (a key missing from the dictionaries is shown as written). */
-export interface AudioCatDef { k: string; lbl: string; dica?: string; }
+/** `lbl` is an i18n key (a key missing from the dictionaries is shown as written). */
+export interface AudioCatDef { k: string; lbl: string; }
 export interface AudioCatState { on: boolean; vol: number; }
 
 export interface TtsPanelEngine { id: string; speak: (text: string) => void; }
@@ -151,10 +151,8 @@ export function catRowHTML(k: string, cats: readonly AudioCatDef[], state: Reado
   const c = cats.find((x) => x.k === k);
   const a = state[k];
   if (!c || !a) return '';
-  // ADR-0158: the short word in `<strong>`, the explanation in `.opt-hint` — which `fillExplain` moves to the footer.
   const rotulo = t(c.lbl);
-  const dica = c.dica ? `<span class="opt-hint">${t(c.dica)}</span>` : '';
-  return `<div class="ctrl-row"><span><strong>${rotulo}</strong>${dica}</span><span style="display:flex;gap:.5rem;align-items:center;flex-shrink:0">` +
+  return `<div class="ctrl-row"><span><strong>${rotulo}</strong></span><span style="display:flex;gap:.5rem;align-items:center;flex-shrink:0">` +
     `<input class="vol" type="range" min="0" max="100" step="5" value="${volPercent(a.vol)}" data-avol="${k}" aria-label="${t('audio.cat.volumeDe', { c: rotulo })}">` +
     `<button class="mode-btn switch${a.on ? ' is-on' : ''}" data-acat="${k}" type="button" aria-pressed="${a.on}" aria-label="${rotulo}"></button></span></div>`;
 }

@@ -12,7 +12,7 @@ import pt from '../app/js/i18n/pt.ts';
 import en from '../app/js/i18n/en.ts';
 import es from '../app/js/i18n/es.ts';
 import { AUDIO_CATS } from '../app/js/platform/audio-mixer.ts';
-import { RM_LABEL, RM_DICA } from '../app/js/ui/settings-motion.ts';
+import { RM_LABEL } from '../app/js/ui/settings-motion.ts';
 import { PERSONAS_DO_PAD } from '../app/js/input/touch.ts';
 
 const DICIONARIOS = { pt, en, es };
@@ -24,12 +24,20 @@ const ROTULOS = [
   ...PERSONAS_DO_PAD.map((p) => p.rotulo),
   'audio.modocego', 'audio.narracao',
 ];
-const DICAS = [...AUDIO_CATS.map((c) => c.dica).filter(Boolean), ...Object.values(RM_DICA)];
+// ⚠️ NO HINTS HERE ON PURPOSE. The parentheses held one game's examples — «água, rua», «moedas», «andar, escalar» — and
+// they were first moved into engine hints; the Dev refused: «Você está criando regras para jogo que não existe.»
+// They were deleted, not moved: the engine does not describe a game it does not know.
 
-describe('panel labels are short, and their explanations are hints', () => {
+describe('panel labels carry no parentheses', () => {
   it('[Zero] the tables are not empty — the case would pass over nothing', () => {
     expect(ROTULOS.length).toBeGreaterThan(15);
-    expect(DICAS.length).toBeGreaterThan(5);
+  });
+
+  it('🔴 [Zero] the platformer\'s examples did not come back as ENGINE hints', () => {
+    for (const [lang, dic] of Object.entries(DICIONARIOS)) {
+      const voltaram = Object.keys(dic).filter((k) => /^(audio\.cat\.[a-z]+|rm\.[a-z]+)\.dica$/.test(k));
+      expect(voltaram, `${lang}: ${voltaram.join(', ')}`).toEqual([]);
+    }
   });
 
   it('🔴 [Right] no label has a parenthesis, in pt, en or es', () => {
@@ -40,10 +48,10 @@ describe('panel labels are short, and their explanations are hints', () => {
     expect(achados, achados.join(' · ')).toEqual([]);
   });
 
-  it('🔴 [Right] every label and every hint EXISTS in the three dictionaries — a missing key is shown as its id', () => {
+  it('🔴 [Right] every label EXISTS in the three dictionaries — a missing key is shown as its id', () => {
     const faltam = [];
     for (const [lang, dic] of Object.entries(DICIONARIOS)) {
-      for (const k of [...ROTULOS, ...DICAS]) if (!dic[k]) faltam.push(`${lang} ${k}`);
+      for (const k of ROTULOS) if (!dic[k]) faltam.push(`${lang} ${k}`);
     }
     expect(faltam, faltam.join(' · ')).toEqual([]);
   });
@@ -56,5 +64,4 @@ describe('panel labels are short, and their explanations are hints', () => {
 //    which is the reason this file exists
 // R3 the blind-mode row back on the bar's `icon.blind`          → red (browser: the row the child sees)
 // R4 a category hint written back into its label, in parens     → red (browser)
-// R5 a motion row drops its hint                                → red (browser pair: the footer stays idle)
-// R6 the ambient category loses its hint key                    → red (browser pair)
+// (R5 and R6 gated the hints, which were removed on the Dev's objection — see above)

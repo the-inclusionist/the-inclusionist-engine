@@ -850,13 +850,6 @@ describe('createGame num documento de verdade', () => {
           const texto = copia.textContent.replace(/\s+/g, ' ').trim();
           if (/\(/.test(texto)) achados.push(`#${id}: «${texto}»`);
         }
-        // 📌 THE PAIR: the explanation did not vanish with the parentheses — it reaches the footer on focus
-        const pistas = { animation: ['[data-rm="decor"]', 'Nuvens, grama.'], som: ['[data-acat="ambient"]', 'Água, rua, trânsito, folhas, chuva.'] };
-        if (pistas[id]) {
-          const [sel, esperado] = pistas[id];
-          document.querySelector(`#${id} ${sel}`).focus();
-          expect(document.querySelector(`#${id} .opt-explain`)?.textContent, `#${id}: the hint did not reach the footer`).toBe(esperado);
-        }
         document.getElementById(`${id}-close`).click();
       }
       expect(achados, achados.join(' · ')).toEqual([]);
