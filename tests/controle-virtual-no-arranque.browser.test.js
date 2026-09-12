@@ -156,6 +156,46 @@ describe('the SELECT pill opens the menus (ADR-0155)', () => {
   });
 });
 
+describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
+  const abrirMotora = () => {
+    motor.pausa.mostrar(0);
+    document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
+    const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="motora"]');
+    expect(item?.hidden, 'the engine does not action «Acessibilidade motora» even with a pad').toBe(false);
+    item.click();
+    return document.getElementById('opt-pad-persona');
+  };
+  const fechar = () => { for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true; motor.pausa.esconder(0); };
+
+  it('🎯 [Right] the panel opens with ONE row, «◀ Controller size: <persona> ▶», read from the stored size', () => {
+    try { localStorage.removeItem('incl_padbtnmm'); } catch { /* sem storage: vale o de fábrica */ }
+    const passos = abrirMotora();
+    expect(passos, 'no persona step control in the motor panel').not.toBeNull();
+    // the factory 12.5 mm reads as «small adult»
+    expect(passos.getAttribute('aria-valuetext')).toBe('adulto pequeno');
+    expect(passos.querySelector('.passo-valor').textContent).toBe('Tamanho do controle: adulto pequeno');
+    // 🔴 and the rows ADR-0151 removed are not in THIS panel
+    const painel = document.getElementById('motora');
+    for (const sel of ['#opt-facil', '#opt-altmove', '#opt-togglerun']) expect(painel.querySelector(sel), sel).toBeNull();
+    fechar();
+  });
+
+  it('🔴 [Right] a step APPLIES the persona: the stored size and the pad geometry change together', () => {
+    const passos = abrirMotora();
+    const antes = getComputedStyle(document.documentElement).getPropertyValue('--pad-btn');
+    passos.querySelector('[data-passo="1"]').click(); // small adult → adult with large hands
+    expect(passos.getAttribute('aria-valuetext')).toBe('adulto de mãos grandes');
+    expect(localStorage.getItem('incl_padbtnmm'), 'the choice was not stored').toBe('15');
+    expect(getComputedStyle(document.documentElement).getPropertyValue('--pad-btn'), 'the pad did not change size').not.toBe(antes);
+    passos.querySelector('[data-passo="-1"]').click();
+    passos.querySelector('[data-passo="-1"]').click();
+    passos.querySelector('[data-passo="-1"]').click(); // to the wall: small child
+    expect(localStorage.getItem('incl_padbtnmm')).toBe('16');
+    fechar();
+    try { localStorage.removeItem('incl_padbtnmm'); } catch { /* idem */ }
+  });
+});
+
 describe('mount() rebuilds the pad for the new cartridge', () => {
   it('🔴 [Zero] without a preset: no action button, the START stays, AND `problems` says why', () => {
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
@@ -243,6 +283,8 @@ describe('the START pill, with the real stylesheet', () => {
 //   Q3  the SELECT pill is not wired                         🔴 no way to the menus by touch
 //   Q4  the SELECT pill leaves the pad over the card         🔴 pad over «Voltar ao jogo»
 //   Q5  the two pills lose their container                   🔴 SELECT on top of START
+//   M1  acoesDaEngine.motora is not set                      🔴 no door to the motor panel
+//   M2  the step does not call setPadMm                      🔴 the size is shown and never applied
 // ⚠️ And wiring the modules together found THREE defects none of their own tests could see: arms the
 // stylesheet does not draw and the bindings do not light, a START pill with no text, and a bare global
 // `addEventListener` in `input/touch` that took down every boot on a document with no window.

@@ -374,6 +374,12 @@ const en: Record<string, string> = {
   'motor.togglerun': 'Run toggle',
   'motor.togglerun.dica': 'The run button stays on with one tap, instead of having to be held down.',
   'motor.grupo.rotulo': 'Movement choices',
+  'motora.pad': 'Controller size',
+  'motora.pad.dica': 'Choose by the hand that plays. A small child gets the largest buttons, because small children still land far from the centre.',
+  'motora.pad.crianca-pequena': 'small child (up to 6)',
+  'motora.pad.crianca-grande': 'older child (12)',
+  'motora.pad.adulto-pequeno': 'small adult',
+  'motora.pad.adulto-maos-grandes': 'adult with large hands',
   'menu.motora': 'Motor accessibility',
   // ===================== THE AUDIO PANEL'S ROWS =====================
   // Where a word for the thing already existed it is REUSED — `icon.blind` and `icon.tts` name these same two

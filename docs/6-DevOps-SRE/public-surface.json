@@ -476,15 +476,18 @@
     "wantsForcedTouch"
   ],
   "input/touch.ts": [
+    "ChaveDaPersona",
     "HandTag",
     "IPHONE16_LONG_MM",
     "IPHONE16_LONG_PX",
     "IPHONE16_PXMM",
+    "PERSONAS_DO_PAD",
     "PadKind",
     "PadLayout",
     "PadMm",
     "PadMmPatch",
     "PadPhysicalPx",
+    "PersonaDoPad",
     "TOUCH_ACTS",
     "TOUCH_SLOTS",
     "TouchApi",
@@ -500,7 +503,8 @@
     "padHandTag",
     "padKind",
     "padLayoutFromId",
-    "padPxPerMm"
+    "padPxPerMm",
+    "personaMaisProxima"
   ],
   "input/transporte-em-uso.ts": [
     "COM_ALTERNANCIA_PROPRIA",

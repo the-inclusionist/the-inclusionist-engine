@@ -84,6 +84,8 @@ import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
+import { montarPassos, atualizarPassos, passoSeguinte } from '../ui/panel-widgets.js';
+import { PERSONAS_DO_PAD, personaMaisProxima } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
 import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type SettingsAudioApi } from '../ui/settings-audio.js';
@@ -2036,6 +2038,72 @@ export function createGame(o: CreateGameOptions): Engine {
   });
   desenharPad();
   ligacoesDoToque.attach();
+
+  /*
+   * ===================== ACESSIBILIDADE MOTORA — o painel da engine (ADR-0151 §2 item 5) =====================
+   *
+   * 🔴 O PAINEL ANTIGO NÃO SERVE, e não é por gosto: o `ui/settings-motor` monta Modo Fácil e as duas alternâncias, e o
+   * ADR-0151 tirou os três deste painel («dificuldade é opção do jogo»; as alternâncias ficam no ☝️). Por isso este é
+   * um painel NOVO (`#motora`), e o antigo continua a servir quem o monta com markup próprio.
+   *
+   * 📌 NASCE COM UMA LINHA, a primeira da lista do Dev: o TAMANHO DO CONTROLE em quatro passos, um por persona. As
+   * outras linhas da lista (mapear toque, controle e teclado; microfone; webcam) são portas para painéis que a engine
+   * ainda não monta, e uma porta para uma sala que não existe é o botão morto do ADR-0106 §5 — entram com as salas.
+   *
+   * ⚠️ SÓ EXISTE ONDE HÁ PAD: sem hospedeiro de toque não há tamanho para escolher, e a porta do submenu cai sozinha
+   * (`acoesDaEngine.motora` não é definida).
+   */
+  if (hospedeiroDaPausa && pausaUsavel && toqueUsavel) {
+    const ctxDaMotora = {
+      procurar: (sel: string) => $<HTMLElement>(sel),
+      criar: (tag: string) => doc.createElement(tag),
+      host: hospedeiroDaPausa as HTMLElement,
+      overlays,
+    };
+    let passosDoPad: HTMLElement | null = null;
+    let personaAtual = personaMaisProxima(store.getNum(store.KEYS.padBtnMm, 12.5));
+    const specDoPad = () => ({
+      rotulo: t('motora.pad'),
+      valores: PERSONAS_DO_PAD.map((p) => t(p.rotulo)),
+      atual: personaAtual,
+    });
+    const painelDaMotora = montarPainel(ctxDaMotora, {
+      id: 'motora',
+      rotulos: () => ({
+        titulo: t('menu.motora'),
+        rotuloDaLista: t('menu.motora'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('menu.close'),
+      }),
+      // Relido a cada abertura: o tamanho pode ter mudado noutro sítio, e os rótulos seguem o idioma de agora.
+      render: () => {
+        personaAtual = personaMaisProxima(store.getNum(store.KEYS.padBtnMm, 12.5));
+        if (passosDoPad) atualizarPassos(passosDoPad, specDoPad());
+      },
+      primeiroFoco: '#opt-pad-persona',
+    });
+    const linha = doc.createElement('div');
+    linha.className = 'ctrl-row ctrl-row--passos';
+    const dica = doc.createElement('span');
+    dica.className = 'opt-hint';
+    dica.textContent = t('motora.pad.dica');
+    const envelope = doc.createElement('span');
+    envelope.appendChild(dica);
+    linha.appendChild(envelope);
+    passosDoPad = montarPassos(ctxDaMotora, specDoPad());
+    passosDoPad.id = 'opt-pad-persona';
+    linha.appendChild(passosDoPad);
+    painelDaMotora.casca.lista.appendChild(linha);
+    passosDoPad.addEventListener('passo', (ev) => {
+      const nova = passoSeguinte(personaAtual, PERSONAS_DO_PAD.length, (ev as CustomEvent<number>).detail);
+      if (nova === personaAtual) return; // na ponta não se anuncia um passo que não aconteceu
+      personaAtual = nova;
+      toque.setPadMm(PERSONAS_DO_PAD[nova]!.mm);
+      atualizarPassos(passosDoPad!, specDoPad());
+      srSay(`${t('motora.pad')}: ${t(PERSONAS_DO_PAD[nova]!.rotulo)}`);
+    });
+    acoesDaEngine.motora = painelDaMotora.abrir;
+  }
   // Jogar no teclado ESCONDE o pad — a mesma alternância por modalidade do `input/keydown` do cartucho. Só as
   // teclas de algum jogador: um atalho do navegador não é a criança a trocar de aparelho.
   win.addEventListener('keydown', (e: KeyboardEvent) => {

@@ -480,6 +480,13 @@ const pt: Record<string, string> = {
   'motor.togglerun.dica': 'O botão de correr fica ligado num toque, em vez de precisar ser segurado.',
   'motor.grupo.rotulo': 'Escolhas de movimento',
   'menu.motora': 'Acessibilidade motora',
+  // O tamanho do controle de toque, em quatro passos — um por persona (errata do ADR-0151).
+  'motora.pad': 'Tamanho do controle',
+  'motora.pad.dica': 'Escolha pela mão de quem joga. A criança pequena tem os botões maiores: ela ainda acerta longe do centro.',
+  'motora.pad.crianca-pequena': 'criança pequena (até 6 anos)',
+  'motora.pad.crianca-grande': 'criança grande (12 anos)',
+  'motora.pad.adulto-pequeno': 'adulto pequeno',
+  'motora.pad.adulto-maos-grandes': 'adulto de mãos grandes',
   // ===================== AS LINHAS DO PAINEL AUDITIVO =====================
   // Onde já havia palavra para a coisa, ela é REUSADA — `icon.blind` e `icon.tts` nomeiam os mesmos dois
   // ajustes na barra de acessibilidade. Dois nomes para o mesmo ajuste em duas telas da mesma engine é como

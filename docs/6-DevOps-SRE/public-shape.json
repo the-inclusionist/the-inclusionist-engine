@@ -791,9 +791,15 @@
       "mapa",
       "rotuloDoSlot"
     ],
+    "interface PersonaDoPad": [
+      "chave",
+      "mm",
+      "rotulo"
+    ],
     "type HandTag": "'crianca' | 'adulto' | 'inter'",
     "type PadLayout": "'sony' | 'nintendo' | 'microsoft' | 'generic'",
-    "type PadKind": "'kb' | 'x' | 'd'"
+    "type PadKind": "'kb' | 'x' | 'd'",
+    "type ChaveDaPersona": "'crianca-pequena' | 'crianca-grande' | 'adulto-pequeno' | 'adulto-maos-grandes'"
   },
   "input/transporte-em-uso.ts": {
     "interface EstadoDaEntrada": [

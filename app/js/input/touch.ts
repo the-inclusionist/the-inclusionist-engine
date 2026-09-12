@@ -583,3 +583,77 @@ export function lacunasDoToque(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo
   return [`o controle virtual não alcança ${foraDoToque.join(', ')}: nenhum dos nove slots dispara essas `
     + 'acções. Quem joga por toque não as tem — remapeie um slot no painel do pad, ou declare menos acções'];
 }
+
+// ===================== THE FOUR SIZES OF THE VIRTUAL PAD, one per persona (ADR-0151 erratum) =====================
+//
+// The Dev: the touch pad size is chosen with left/right in FOUR steps, «cada um direcionado a uma persona» —
+// small child (under 6), older child (12), small adult, adult with large hands. Data and one pure function, no DOM, no
+// storage. ⚠️ HERE and not in a module of its own: the input boundary (ADR-0111) closes by shrinking, and the pad
+// module already owns every pad size — a new `input/` file would be one more door for cartridges.
+//
+// ========================= WHERE THE MILLIMETRES COME FROM =========================
+// Research first (`CLAUDE.md` §4): the numbers are DERIVED from these measurements, not chosen by taste.
+//   · Vatavu, Cramariuc & Schipor (2015), «Touch interaction for children aged 3 to 6 years», IJHCS 74:54–76 —
+//     mean touch offset 4.5 mm at 3 years, 3.8 mm at 4, 3.4 mm above 5, against 2.1–3.3 mm for adults; and the
+//     guideline to accept offsets of up to 10 mm for 3-year-olds.
+//   · Anthony et al. (2013), cited there — children aged 7–10 miss 7 mm targets almost 30% of the time and 11–17
+//     year-olds 20%; 9 mm targets are missed once in six attempts until 17.
+//   · Parhi, Karlson & Bederson (2006), «Target size study for one-handed thumb use on small touchscreen
+//     devices», MobileHCI — for adults, no error difference above 9.6 mm (discrete) and 9.2–9.6 mm sufficient;
+//     performance levels off above 11.5 mm.
+//   · MIT Touch Lab, as reported by Smashing Magazine (2012) — adult index finger 16–20 mm wide, pad 10–14 mm.
+//
+// 📌 AND SO THE SMALL CHILD GETS THE LARGEST BUTTONS, which reads backwards and is not: the small hand is not the
+// constraint, the imprecision is. A 3-year-old lands up to twice as far from the centre as an adult (Vatavu), so
+// her target has to absorb that spread. The large-handed adult is second largest for the other reason — the
+// finger itself is 16–20 mm and covers a smaller button entirely.
+//
+// ⚠️ `gap`, `stick`, `travel` and `dpad` follow the button in proportion to the engine's factory pad (button
+// 12.5, gap 3, stick 18, travel 4.5, cross 12 mm — `input/touch`), because no source measures them per age.
+// That is stated rather than hidden: they are the part of this table that is proportion, not measurement.
+
+export type ChaveDaPersona = 'crianca-pequena' | 'crianca-grande' | 'adulto-pequeno' | 'adulto-maos-grandes';
+
+export interface PersonaDoPad {
+  readonly chave: ChaveDaPersona;
+  /** The i18n key of the persona's name. */
+  readonly rotulo: string;
+  readonly mm: Readonly<PadMm>;
+}
+
+/** The factory pad of `input/touch`, the base the non-button sizes are proportioned from. */
+const FABRICA: Readonly<PadMm> = { btn: 12.5, gap: 3, stick: 18, travel: 4.5, dpad: 12 };
+
+/** A persona's pad: the button from the sources, the rest in proportion to the factory pad. */
+function pad(btn: number): PadMm {
+  const k = btn / FABRICA.btn;
+  const r = (n: number): number => Math.round(n * k * 10) / 10;
+  return { btn, gap: r(FABRICA.gap), stick: r(FABRICA.stick), travel: r(FABRICA.travel), dpad: r(FABRICA.dpad) };
+}
+
+/** The four, in the Dev's order. */
+export const PERSONAS_DO_PAD: readonly PersonaDoPad[] = Object.freeze([
+  // 16 mm: an adult's 9.6 mm plus twice the extra spread of a 3-year-old (≈ 2.4 mm each side), rounded up.
+  { chave: 'crianca-pequena', rotulo: 'motora.pad.crianca-pequena', mm: pad(16) },
+  // 14 mm: 9 mm is still missed once in six until 17 (Anthony), and 12.7 mm was the size that did not trouble them.
+  { chave: 'crianca-grande', rotulo: 'motora.pad.crianca-grande', mm: pad(14) },
+  // 11.5 mm: where adult performance levels off (Parhi) — above it there is no gain, only lost room.
+  { chave: 'adulto-pequeno', rotulo: 'motora.pad.adulto-pequeno', mm: pad(11.5) },
+  // 15 mm: a 16–20 mm finger covers anything smaller and hides the label under the thumb (MIT Touch Lab).
+  { chave: 'adulto-maos-grandes', rotulo: 'motora.pad.adulto-maos-grandes', mm: pad(15) },
+]);
+
+/**
+ * The persona whose button is closest to `btnMm` — what the step control shows for a pad that was sized before
+ * the personas existed (the factory 12.5 mm reads as «small adult»). Ties go to the LARGER button: when in doubt,
+ * the easier target.
+ */
+export function personaMaisProxima(btnMm: number): number {
+  let melhor = 0;
+  PERSONAS_DO_PAD.forEach((p, i) => {
+    const d = Math.abs(p.mm.btn - btnMm);
+    const dm = Math.abs(PERSONAS_DO_PAD[melhor]!.mm.btn - btnMm);
+    if (d < dm || (d === dm && p.mm.btn > PERSONAS_DO_PAD[melhor]!.mm.btn)) melhor = i;
+  });
+  return melhor;
+}
