@@ -2066,6 +2066,7 @@ export function createGame(o: CreateGameOptions): Engine {
       overlays,
     };
     let passosDoPad: HTMLElement | null = null;
+    let dicaDoPad: HTMLElement | null = null;
     /** Reflecte as linhas do mapeamento de teclado (definido mais abaixo, com o painel `#ctrl`). */
     let refletirTeclado = (): void => {};
     let personaAtual = personaMaisProxima(store.getNum(store.KEYS.padBtnMm, 12.5));
@@ -2086,6 +2087,9 @@ export function createGame(o: CreateGameOptions): Engine {
       render: () => {
         personaAtual = personaMaisProxima(store.getNum(store.KEYS.padBtnMm, 12.5));
         if (passosDoPad) atualizarPassos(passosDoPad, specDoPad());
+        // ⚠️ A DICA NO IDIOMA DE AGORA, antes de o rodapé a recolher: escrita no arranque, saía no idioma de recuo
+        // (medido no `dist` com a página em inglês — o rodapé em português).
+        if (dicaDoPad) dicaDoPad.textContent = t('motora.pad.dica');
         refletirTeclado();
       },
       primeiroFoco: '#opt-pad-persona',
@@ -2094,7 +2098,7 @@ export function createGame(o: CreateGameOptions): Engine {
     linha.className = 'ctrl-row ctrl-row--passos';
     const dica = doc.createElement('span');
     dica.className = 'opt-hint';
-    dica.textContent = t('motora.pad.dica');
+    dicaDoPad = dica;
     const envelope = doc.createElement('span');
     envelope.appendChild(dica);
     linha.appendChild(envelope);

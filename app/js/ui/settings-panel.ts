@@ -166,6 +166,25 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
       if (row.dataset.explainDone) return; // idempotente: render() redesenha o card, mas linha feita não repete
       const span = row.querySelector<HTMLElement>(':scope > span');
       const strong = span ? span.querySelector<HTMLElement>('strong') : null;
+      /*
+       * 🔴 A LINHA DE PASSOS NÃO TEM `<strong>`, e isto deixava a dica DENTRO dela: desde a errata do ADR-0130 o
+       * rótulo mora no próprio controle («◀ Tamanho do controle: adulto pequeno ▶»), e esta função desistia de
+       * qualquer linha sem rótulo curto à parte. Medido num print do Dev: a dica ao lado dos passos, a espremê-los
+       * até quebrarem em quatro linhas. Para ela, a descrição é a dica inteira, e o `<span>` fica vazio.
+       */
+      const dicaDosPassos = !strong && span ? span.querySelector<HTMLElement>('.opt-hint') : null;
+      if (span && dicaDosPassos && row.querySelector('[data-passos]')) {
+        const descDosPassos = (dicaDosPassos.textContent ?? '').trim();
+        row.dataset.explainDone = '1';
+        if (!descDosPassos) return;
+        row.dataset.explain = descDosPassos;
+        span.textContent = '';
+        const mostrar = (): void => { footer.textContent = descDosPassos; };
+        row.addEventListener('mouseenter', mostrar);
+        row.addEventListener('focusin', mostrar);
+        row.addEventListener('mouseleave', (): void => { footer.textContent = footer.dataset.idle ?? ''; });
+        return;
+      }
       if (!span || !strong) { row.dataset.explainDone = '1'; return; } // linha sem rótulo curto: nada a mover
       const hint = span.querySelector<HTMLElement>('.opt-hint');
       const desc = rowExplainText(span.textContent ?? '', strong.textContent ?? '', hint ? (hint.textContent ?? '') : null);

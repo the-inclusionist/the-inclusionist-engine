@@ -478,7 +478,11 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .passo-seta.no-limite{opacity:.35;cursor:default}
 .passo-valor{min-width:6ch;text-align:center;flex:1}
 /* «◀ Rótulo: valor ▶» ocupa a LINHA inteira (errata do ADR-0130): não há rótulo à esquerda a disputar o espaço. */
-.ctrl-row--passos .passos{flex:1;justify-content:space-between}
+/* 🔴 E SEM CAIXA DENTRO DA CAIXA: a LINHA é o item. A primeira versão manteve a borda e o fundo do `.passos`, e o texto
+   quebrava em quatro linhas dentro de uma caixa ao lado da dica — o Dev: «Por que continua desenhando os botões de seleção
+   de <=5 itens do jeito errado?!». Numa linha só, `◀ Rótulo: valor ▶`, sem quebra. */
+.ctrl-row--passos .passos{flex:1;justify-content:space-between;border:0;background:transparent;padding:0;white-space:nowrap}
+.ctrl-row--passos .passo-valor{white-space:nowrap}
 /* TOGGLE (switch): substitui os botões "ícone + Ligado/Desligado". Estado = trilho + manopla que desliza.
    Semântica de botão de alternância via aria-pressed (o texto interno fica oculto por font-size:0). */
 .mode-btn.switch{--sw-w:52px;--sw-h:28px;position:relative;width:var(--sw-w);min-width:var(--sw-w);height:var(--sw-h);min-height:var(--sw-h);padding:0;flex:0 0 auto;border-radius:999px;border:2px solid var(--ink-soft);background:#0e1326;color:transparent;font-size:0;transition:background .18s,border-color .18s}

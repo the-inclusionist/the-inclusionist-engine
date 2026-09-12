@@ -180,6 +180,28 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
     fechar();
   });
 
+  it('🔴 [Right] with the real stylesheet the row IS the item: the hint went to the footer, no box inside, one line', async () => {
+    // «Por que continua desenhando os botões de seleção de <=5 itens do jeito errado?!» (the Dev, on a screenshot:
+    // the hint beside the stepper, and «Controller size: small adult» broken into four lines inside a bordered box).
+    const { default: css } = await import('../app/css/style.css?raw');
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+    try {
+      const passos = abrirMotora();
+      const linha = passos.closest('.ctrl-row');
+      // `fillExplain` moves the prose to the footer and leaves the node empty in the row
+      expect(linha.querySelector('.opt-hint')?.textContent.trim() ?? '', 'the hint stayed inside the row instead of the footer').toBe('');
+      expect(getComputedStyle(passos).borderTopWidth, 'a box drawn inside the row').toBe('0px');
+      const valor = passos.querySelector('.passo-valor');
+      const alturaDeUmaLinha = parseFloat(getComputedStyle(valor).lineHeight) || parseFloat(getComputedStyle(valor).fontSize) * 1.5;
+      expect(valor.getBoundingClientRect().height, 'the label wrapped onto more than one line').toBeLessThan(alturaDeUmaLinha * 1.6);
+    } finally {
+      fechar();
+      style.remove();
+    }
+  });
+
   it('🔴 [Right] a step APPLIES the persona: the stored size and the pad geometry change together', () => {
     const passos = abrirMotora();
     const antes = getComputedStyle(document.documentElement).getPropertyValue('--pad-btn');
@@ -285,6 +307,8 @@ describe('the START pill, with the real stylesheet', () => {
 //   Q5  the two pills lose their container                   🔴 SELECT on top of START
 //   M1  acoesDaEngine.motora is not set                      🔴 no door to the motor panel
 //   M2  the step does not call setPadMm                      🔴 the size is shown and never applied
+//   M3  the motor panel render does not fill the footer      🔴 hint inside the row
+//   M4  the stepper keeps its border inside the row          🔴 a box inside the box
 // ⚠️ And wiring the modules together found THREE defects none of their own tests could see: arms the
 // stylesheet does not draw and the bindings do not light, a START pill with no text, and a bare global
 // `addEventListener` in `input/touch` that took down every boot on a document with no window.
