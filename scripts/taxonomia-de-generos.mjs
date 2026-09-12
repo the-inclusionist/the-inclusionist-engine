@@ -19,15 +19,13 @@
 //   4. um mapeamento a mais, que já não corresponde a categoria nenhuma do catálogo
 //   5. um eixo (perspectiva, jogadores) VAZIO ou com um valor que não é dos conhecidos
 //   6. uma categoria cujo NOME é um eixo e cujo eixo não o diz — «Isométrico» com duas perspectivas
-//   7. uma prateleira sem género que deixa um JOGO sem género, ou um `porJogo` que nomeia um jogo que o catálogo
-//      não tem (um nome mal escrito casaria zero e o jogo ficaria sem género, calado)
 //
 //   node scripts/taxonomia-de-generos.mjs [caminho-do-catalogo.html]
-import { CATALOGO_PADRAO, lerCatalogo, REVISAO, SECOES, RAZOES, EIXOS_DA_TAXONOMIA, MAPA, generosDoJogo } from './lib/taxonomia.mjs';
+import { CATALOGO_PADRAO, lerCatalogo, REVISAO, SECOES, RAZOES, EIXOS_DA_TAXONOMIA, MAPA } from './lib/taxonomia.mjs';
 
 const categorias = lerCatalogo(process.argv[2] ?? CATALOGO_PADRAO, 'node scripts/taxonomia-de-generos.mjs <catalogo.html>');
 
-/* ===================== as sete guardas ===================== */
+/* ===================== as seis guardas ===================== */
 const nomes = categorias.map((c) => c.nome);
 const problemas = [];
 for (const n of nomes) if (!(n in MAPA)) problemas.push(`categoria SEM mapeamento: ${n}`);
@@ -38,14 +36,6 @@ for (const [n, m] of Object.entries(MAPA)) {
   }
   for (const s of m.proposito) if (!s.startsWith('11.')) problemas.push(`${n}: propósito «${s}» não é da secção 11 («by purpose»)`);
   if (!m.generos.length && !m.naoE) problemas.push(`${n}: sem género nenhum e sem dizer PORQUÊ`);
-  // 7 · o género por jogo: todo jogo de uma prateleira sem género tem o seu, e todo nome existe no catálogo
-  const titulos = categorias.find((c) => c.nome === n)?.titulos ?? [];
-  for (const [j, gs] of Object.entries(m.porJogo ?? {})) {
-    if (!titulos.includes(j)) problemas.push(`${n}: porJogo nomeia «${j}», que o catálogo não tem`);
-    if (!gs.length) problemas.push(`${n}: «${j}» com género vazio`);
-    for (const g of gs) if (!(g in SECOES)) problemas.push(`${n}: «${j}» → secção «${g}» NÃO existe na revisão ${REVISAO.id}`);
-  }
-  if (!m.generos.length) for (const j of titulos) if (!m.porJogo?.[j]?.length) problemas.push(`${n}: o jogo «${j}» ficou sem género`);
   if (m.naoE && !RAZOES.has(m.naoE)) problemas.push(`${n}: razão «${m.naoE}» não é uma das conhecidas`);
   for (const [eixo, validos] of Object.entries(EIXOS_DA_TAXONOMIA)) {
     const v = m[eixo];
@@ -63,19 +53,15 @@ if (problemas.length) { for (const p of problemas) console.error('⚠️ ' + p);
 const TOTAL = categorias.reduce((a, c) => a + c.jogos, 0);
 const jogosDe = Object.fromEntries(categorias.map((c) => [c.nome, c.jogos]));
 const topo = (s) => s.split('.')[0];
-// 📌 POR JOGO, e não por prateleira: uma prateleira sem género reparte os seus jogos por vários géneros.
 const porTopo = {};
-for (const c of categorias) {
-  for (const j of c.titulos) {
-    for (const t of new Set(generosDoJogo(c.nome, j).map(topo))) {
-      const e = (porTopo[t] ??= { categorias: new Set(), jogos: 0 });
-      e.categorias.add(c.nome); e.jogos += 1;
-    }
+for (const [n, m] of Object.entries(MAPA)) {
+  for (const t of new Set(m.generos.map(topo))) {
+    (porTopo[t] ??= { categorias: [], jogos: 0 }).categorias.push(n);
+    porTopo[t].jogos += jogosDe[n];
   }
 }
 const naoGenero = Object.entries(MAPA).filter(([, m]) => m.naoE);
 const semGeneroNenhum = Object.entries(MAPA).filter(([, m]) => !m.generos.length);
-const porJogoLidos = semGeneroNenhum.reduce((a, [, m]) => a + Object.keys(m.porJogo ?? {}).length, 0);
 
 console.log(`taxonomia: Wikipédia rev ${REVISAO.id} (${REVISAO.data})`);
 console.log(`catálogo: ${categorias.length} categorias · ${TOTAL} jogos — ${categorias.length} de ${categorias.length} mapeadas\n`);
@@ -84,11 +70,11 @@ console.log(`catálogo: ${categorias.length} categorias · ${TOTAL} jogos — ${
 console.log('=== onde as categorias caem, por género de TOPO da página (com sobreposição) ===');
 for (const t of Object.keys(porTopo).sort((a, b) => Number(a) - Number(b))) {
   const e = porTopo[t];
-  console.log(`  ${t.padStart(2)} ${String(SECOES[t] ?? '').padEnd(28)} ${String(e.categorias.size).padStart(2)} categorias · ${String(e.jogos).padStart(3)} jogos`);
+  console.log(`  ${t.padStart(2)} ${String(SECOES[t] ?? '').padEnd(28)} ${String(e.categorias.length).padStart(2)} categorias · ${String(e.jogos).padStart(3)} jogos`);
 }
 console.log(`\n=== ${naoGenero.length} categorias cujo NOME não é um género ===`);
 for (const [n, m] of naoGenero) console.log(`  ${n.padEnd(26)} ${m.naoE.padEnd(18)} ${m.nota ?? ''}`);
-console.log(`\n=== ${semGeneroNenhum.length} prateleiras sem género próprio — ${porJogoLidos} jogos com género lido POR JOGO ===`);
+console.log(`\n=== ${semGeneroNenhum.length} sem género nenhum a atribuir (${semGeneroNenhum.reduce((a, [n]) => a + jogosDe[n], 0)} jogos) ===`);
 for (const [n, m] of semGeneroNenhum) console.log(`  ${n.padEnd(26)} ${jogosDe[n]} jogos · ${m.naoE}`);
 console.log('\n=== os eixos que NÃO são género — alcance em jogos (com sobreposição) ===');
 for (const eixo of Object.keys(EIXOS_DA_TAXONOMIA)) {

@@ -23,11 +23,10 @@ export function lerCatalogo(caminho, uso) {
   }
   const html = readFileSync(caminho, 'utf8');
   const limpo = (s) => s.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
-  const categorias = [...html.matchAll(/<article class="card[^"]*"[\s\S]*?<\/article>/g)].map((m) => {
-    // the game's NAME is the item without its <small> descriptor: «Co-op puzzle <small>cada jogador…</small>»
-    const titulos = [...m[0].matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)].map((li) => limpo(li[1].replace(/<small[\s\S]*?<\/small>/g, '')));
-    return { nome: limpo((m[0].match(/<h3[^>]*class="card-title"[^>]*>([\s\S]*?)<\/h3>/) ?? [, ''])[1]), jogos: titulos.length, titulos };
-  });
+  const categorias = [...html.matchAll(/<article class="card[^"]*"[\s\S]*?<\/article>/g)].map((m) => ({
+    nome: limpo((m[0].match(/<h3[^>]*class="card-title"[^>]*>([\s\S]*?)<\/h3>/) ?? [, ''])[1]),
+    jogos: [...m[0].matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)].length,
+  }));
   if (!categorias.length) { console.error('no category read — did the catalogue markup change?'); process.exit(2); }
   return categorias;
 }
@@ -76,10 +75,7 @@ export const EIXOS_DA_TAXONOMIA = Object.freeze({
 /* ===================== THE 35 CATEGORIES → THE TAXONOMY =====================
  * `generos` = Wikipedia sections. `naoE` = what the category is when its NAME is not a genre.
  * `perspectiva` / `jogadores` = the sets its games span. `proposito` = «by purpose» sections (11.x), usually none.
- * `porJogo` = the genres of EACH game, only on a shelf whose name is not a genre and so has no `generos` of its
- * own. Keyed by the game's name as the catalogue writes it, without the <small> descriptor.
  */
-export const generosDoJogo = (categoria, titulo) => MAPA[categoria].porJogo?.[titulo] ?? MAPA[categoria].generos;
 export const MAPA = {
   'Arcade Clássico': { generos: ['1'], naoE: 'era', nota: 'an ERA; its games are mostly action', perspectiva: ['topo', 'lado'], jogadores: ['solo', 'local'], proposito: [] },
   'Shooters / Tiros': { generos: ['1.2'], perspectiva: ['topo', 'lado'], jogadores: ['solo', 'local'], proposito: [] },
@@ -109,32 +105,11 @@ export const MAPA = {
   'Sandbox / Sim Físico': { generos: ['12.1', '4.2.1'], perspectiva: ['lado', 'topo'], jogadores: ['solo'], proposito: [] },
   'Pseudo-3D / Raycasting': { generos: ['1.2.1'], naoE: 'tecnica-de-render', nota: 'a TECHNIQUE; raycasters are almost all first-person shooting', perspectiva: ['primeira-pessoa', 'atras'], jogadores: ['solo'], proposito: [] },
   'Isométrico': { generos: ['5', '7'], naoE: 'perspectiva', nota: 'a PERSPECTIVE; isometric games are almost all RPG and strategy', perspectiva: ['isometrica'], jogadores: ['solo'], proposito: [] },
-  // 📌 THE DEV'S CHOICE, 2026-09-12 («Opção A para todos»): the shelf is a player mode, so the genre is read
-  // per GAME. Each of the ten was offered with alternatives; these are the first ones, which he took.
-  'Multiplayer Local': { generos: [], naoE: 'modo-de-jogadores', nota: 'a PLAYER MODE that crosses any genre', perspectiva: ['topo', 'lado', 'plana'], jogadores: ['local'], proposito: [],
-    porJogo: {
-      'Pong 2P': ['8.2'], 'Tank battle 2P': ['1.2'], 'Co-op puzzle': ['4'], 'Split-screen race': ['8.1'],
-      'Bomberman-like 2-4P': ['1'], 'Sumô / push-out arena': ['1.3'], 'Duelo de reflexo': ['10.8'],
-      'Capturar bandeira local': ['1.2'], 'Quiz para 2 jogadores': ['10.11'], 'Co-op de apertar botões': ['1.7'],
-    } },
-  // ⚠️ MY READING, not yet confirmed by the Dev — the same per-game cut he applied above. Correct a row, rerun.
-  'Experimentais / Arte': { generos: [], naoE: 'proposito', nota: 'the page itself files «art game» under «by purpose»', perspectiva: ['plana', 'primeira-pessoa'], jogadores: ['solo'], proposito: ['11.2'],
-    porJogo: {
-      'Generative art toy': ['12.2'], 'Music visualizer game': ['12.2'], 'Walking simulator mini': ['3'],
-      'Zen / no-goal toys': ['4'], 'One-button games': ['1'], 'ASMR clickers': ['10.7'],
-      'Brinquedos contemplativos': ['12.1'], 'Poemas interativos': ['3'],
-    } },
+  'Multiplayer Local': { generos: [], naoE: 'modo-de-jogadores', nota: 'a PLAYER MODE that crosses any genre', perspectiva: ['topo', 'lado', 'plana'], jogadores: ['local'], proposito: [] },
+  'Experimentais / Arte': { generos: [], naoE: 'proposito', nota: 'the page itself files «art game» under «by purpose»', perspectiva: ['plana', 'primeira-pessoa'], jogadores: ['solo'], proposito: ['11.2'] },
   'Cozinha Produção': { generos: ['6.1'], perspectiva: ['topo', 'plana'], jogadores: ['solo'], proposito: [] },
   'Point-and-Click / Hidden': { generos: ['3.2', '4.3'], perspectiva: ['plana'], jogadores: ['solo'], proposito: [] },
   'Narrativo Detetive': { generos: ['3', '3.3'], perspectiva: ['plana'], jogadores: ['solo'], proposito: [] },
   'Labirinto Exploração': { generos: ['1'], naoE: 'mecanica', nota: 'the maze is a MECHANIC; the page does not list «maze» as a genre', perspectiva: ['topo'], jogadores: ['solo'], proposito: [] },
-  // ⚠️ MY READING, not yet confirmed by the Dev. A mashup is TWO genres by definition, so each game names both.
-  'Híbridos / Mashups': { generos: [], naoE: 'multigenero', nota: 'multi-genre BY DEFINITION — each game names its two', perspectiva: ['topo', 'lado'], jogadores: ['solo'], proposito: [],
-    porJogo: {
-      'Snake roguelite': ['1', '5'], 'Breakout RPG': ['1', '5'], 'Tetris com combate': ['4', '1'],
-      'Match-3 com inimigo': ['4', '5'], 'Runner com cartas': ['1.1', '10.1'], 'Quiz com batalha RPG': ['10.11', '5'],
-      'Plataforma com puzzle de chaves': ['1.1', '4'], 'Labirinto com stealth': ['1.5'], 'Tower defense com cartas': ['7', '10.1'],
-      'Ritmo com shooter': ['1.7', '1.2'], 'Memória com terror leve': ['4.6', '10.6'], 'Fishing RPG curto': ['8.2', '5'],
-      'Mini dungeon com dados': ['5', '10.1'], 'Clicker com boss fight': ['10.7', '1'], 'Auto-battler com deckbuilder': ['7', '10.1'],
-    } },
+  'Híbridos / Mashups': { generos: [], naoE: 'multigenero', nota: 'multi-genre BY DEFINITION — there is no single genre to assign', perspectiva: ['topo', 'lado'], jogadores: ['solo'], proposito: [] },
 };
