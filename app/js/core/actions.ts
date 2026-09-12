@@ -191,12 +191,25 @@ export function presetProblems(p: ActionPreset | null | undefined): string[] {
  * nobody calls it yet (issue for the wiring); this one is a PRE-CONDITION the boot refuses on, which is a
  * different rubric — a malformed label degrades a remap screen, a stolen `start` removes the pause.
  *
- * 📌 `select` IS NOT HERE. The other system position stays free because no record has claimed it; refusing
- * it too would be deciding, in advance, something nobody decided.
+ * 📌 `select` has its own sibling below, since ADR-0155 made it the door to the pause menus. Until then it stayed
+ * free on purpose: refusing it would have been deciding, in advance, something nobody had decided.
  */
 export function startClaimProblem(p: ActionPreset | null | undefined): string | null {
   if (!p || p.start === undefined) return null;
   return 'preset: «start» is the position that opens the pause (ADR-0144 §4) and a game may not claim it; '
+    + 'use one of the eight verb positions instead (action1..action4, leftShoulder, leftTrigger, rightShoulder, rightTrigger)';
+}
+
+/**
+ * `select` OPENS THE PAUSE MENUS, AND A GAME DOES NOT TAKE IT EITHER (ADR-0155 §4). Returns the reason, or `null`.
+ *
+ * ⚠️ The same argument as `start`, one door over: START is now the quick pause and SELECT the six-item card, so
+ * a game claiming `select` would leave quitting, the number of players and the inclusion settings unreachable.
+ * 📏 Measured when written: no game repository declares `select` in a preset.
+ */
+export function selectClaimProblem(p: ActionPreset | null | undefined): string | null {
+  if (!p || p.select === undefined) return null;
+  return 'preset: «select» is the position that opens the pause menus (ADR-0155 §4) and a game may not claim it; '
     + 'use one of the eight verb positions instead (action1..action4, leftShoulder, leftTrigger, rightShoulder, rightTrigger)';
 }
 

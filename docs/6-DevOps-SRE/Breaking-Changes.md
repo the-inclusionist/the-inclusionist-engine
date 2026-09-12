@@ -456,6 +456,10 @@ is the quick pause too, and the pad stays visible while it lasts, because the pi
 was a play key, remap it. `sairDaBarra` gained an optional second argument and `PauseIconsCtx` an optional
 `aoSairDaBarra` — both additive.
 
+⚠️ **AND `select` IS NOW REFUSED IN A PRESET**, like `start` (section D2): `createGame` and `mount()` throw with
+the reason said (`core/actions.selectClaimProblem`). 📏 Measured in the game repositories: none declares
+`select`, so this refuses nothing that exists.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

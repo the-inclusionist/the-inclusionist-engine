@@ -56,7 +56,7 @@ import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
 import { accommodationAnswersProblems, subjectWord, type AccommodationAnswers } from '../core/accommodations.js';
 import { contractSubjects } from '../core/accommodation-subjects.js';
-import { presetActions, startClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
+import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
@@ -502,8 +502,9 @@ function recusarDeclaracao(quem: string, problemas: readonly string[]): never {
  * para uma posição que não lhe pertence —, e não lacuna do hospedeiro. `problems` é para o que deixa jogar.
  */
 function recusarSeTomaOStart(quem: string, preset: ActionPreset | undefined): void {
-  const problema = startClaimProblem(preset);
-  if (problema) recusarDeclaracao(quem, [problema]);
+  // 📌 E O SELECT TAMBÉM, desde o ADR-0155: as duas posições de sistema são as duas portas da pausa.
+  const problemas = [startClaimProblem(preset), selectClaimProblem(preset)].filter((x): x is string => x !== null);
+  if (problemas.length) recusarDeclaracao(quem, problemas);
 }
 
 /**

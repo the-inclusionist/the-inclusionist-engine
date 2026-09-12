@@ -281,6 +281,21 @@ describe('createGame em execução', () => {
       .toThrow(/«start» is the position that opens the pause/);
   });
 
+  it('🔴 [Zero] e um cartucho que declara «select» também é RECUSADO — é a porta dos menus (ADR-0155 §4)', async () => {
+    // Mesma construção do caso acima, e pela mesma razão: nenhum jogo declara «select» hoje (medido nos
+    // repositórios dos jogos), então só um cartucho CONSTRUÍDO pode pôr este crivo vermelho.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const base = () => ({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    expect(() => createGame({ ...base(), preset: { select: { label: 'Mapa' } } }))
+      .toThrow(/«select» is the position that opens the pause menus/);
+    // o par: um preset sem posição de sistema passa
+    expect(() => createGame({ ...base(), preset: { action1: { label: 'Mapa' } } })).not.toThrow();
+    const motor = createGame(base());
+    expect(() => motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO, preset: { select: { label: 'Mapa' } } }))
+      .toThrow(/«select» is the position that opens the pause menus/);
+  });
+
   it('[Right] a exceção DIZ o que falta, em vez de "erro ao iniciar"', () => {
     // Quem escreve um preset lê esta mensagem no primeiro `npm run dev`; ela é o manual naquele momento.
     return import('../app/js/boot/create-game.js').then(({ createGame }) => {
