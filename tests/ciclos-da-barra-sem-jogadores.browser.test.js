@@ -12,6 +12,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
+import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
 
 let state;
 const paleta = () => document.documentElement.dataset.paleta;
@@ -26,7 +27,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>'
     + '<svg id="cvd-host" width="0" height="0" aria-hidden="true"></svg>';
   document.body.appendChild(raiz);
-  createGame({
+  createGame({ acomodacoes: SEM_ASSUNTO,
     declaration: {
       topology: () => ({ kind: 'hotspots', order: ['a'] }), holdsAtOnce: () => 1, seguraTeclas: () => false,
       tick: 'player', world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',

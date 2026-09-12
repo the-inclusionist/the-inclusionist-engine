@@ -397,6 +397,47 @@ instead of a puzzle. Use one of the eight verb positions instead.
 the «continue» item is alive and Escape closes the card even for a game that declares no hooks at all. A
 cartridge that supplies its own `resume` still wins — `getPauseActs` spreads the game over the engine.
 
+## G · Every cartridge now ANSWERS its accommodations, and the boot refuses one that does not (ADR-0153)
+
+🔴 **This breaks every game at boot, on purpose.** `CreateGameOptions.acomodacoes` is REQUIRED, and so is the
+second argument of `mount()`. The Dev: «Gênero não precisa responder todas as acomodações, mas sim o cartucho,
+obrigatoriamente.»
+
+**What changed.** For each of the sixteen accommodations only the game can answer (`GAME_KEYED` in
+`core/accommodations`), the cartridge writes its WORD when the accommodation has a subject in this game, or
+`false` when it has none. A missing answer, a missing key, `true` or a blank label is a malformed declaration:
+`createGame` and `mount()` throw, with the accommodation named. General accommodations still mount always and
+the contract-keyed ones are derived — neither is answered here.
+
+**Why it is mandatory and not optional:** there is no safe default. «Yes» mounts a wheelchair in chess; «no»
+hides it from a platformer; and forgetting fails invisibly to whoever writes the game. It is the rubric of
+`holdsAtOnce`.
+
+**The first readers**, so the answer is not a field nobody reads: the cane row of the hearing panel
+(`caneSpacing`) and the «Character» section of the visual sensitivity panel (`reducedCharacterMotion`) no longer
+mount in a game that answers `false`.
+
+**What to do:** add `acomodacoes` to your `createGame` call, all sixteen keys. The plainest honest start is
+`false` everywhere, then a word for each accommodation your game really has:
+
+```ts
+acomodacoes: {
+  cameraSway: false, easyMode: false, wheelchairMode: false, detectionLeniency: false, intensity: false,
+  hints: false, reducedCharacterMotion: false, caneSpacing: false, textPace: false, lexicalDifficulty: false,
+  wordHighlight: false, pieceSets: false, distinguishableSuits: false, timingWindow: false, aimAssist: false,
+  repeatedInput: false,
+},
+```
+
+A `mount()` call passes the same object in its second argument: `motor.mount(declaration, { acomodacoes, … })`.
+
+## H · Section A is out of date: `#typo` and `#caa` are no longer mounted (ADR-0151)
+
+The pause's inclusion settings lost «Comunicação» and «Tipografia», and `createGame` stopped mounting those two
+panels (`e9bea8a`). The typography WRITER still runs, because the eleventh quick-bar button writes the face
+through it. **What to do:** nothing, unless you relied on the engine's `#typo` or `#caa` existing; if you mount
+your own, the engine no longer empties it.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

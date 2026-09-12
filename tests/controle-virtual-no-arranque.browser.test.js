@@ -11,6 +11,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
+import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
 import { keys } from '../app/js/input/state.js';
 
 let motor;
@@ -49,7 +50,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
   fases = [];
-  motor = createGame({
+  motor = createGame({ acomodacoes: SEM_ASSUNTO,
     declaration: declaracao(),
     host: { doc: document, win: window },
     baixarPesados: false,
@@ -115,7 +116,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
 
 describe('mount() rebuilds the pad for the new cartridge', () => {
   it('🔴 [Zero] without a preset: no action button, the START stays, AND `problems` says why', () => {
-    motor.mount(declaracao(), {});
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
     expect(botoes()).toHaveLength(0);
     expect(document.getElementById('touch-start'), 'the pause lost its only touch door').not.toBeNull();
     expect(motor.problems.some((l) => /sem `preset`: o controle virtual/.test(l)), 'the gap was silent').toBe(true);
@@ -123,7 +124,7 @@ describe('mount() rebuilds the pad for the new cartridge', () => {
 
   it('🎯 [Boundary] a platform preset gets the cross with its arms drawn the way the bindings light them', () => {
     try { localStorage.setItem('incl_paddir', 'cross'); } catch { /* sem storage não há como pedir a cruz */ }
-    motor.mount(declaracao(), { preset: PLATAFORMA });
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: PLATAFORMA });
     const cruz = document.getElementById('touch-cross');
     expect(cruz, 'four declared directions and no cross').not.toBeNull();
     // ⚠️ `touch-bindings` lights `.dpad-up` & co. on the cross and the stylesheet draws `.dpad-arm`: an arm

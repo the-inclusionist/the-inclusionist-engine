@@ -23,6 +23,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
 
 let createGame;
 let raiz;
@@ -61,7 +62,7 @@ beforeEach(async () => {
   // 📌 E A RAIZ LIGA A NAVEGAÇÃO SOZINHA — `create-game.ts:729`, desde `dfaec02` e contido no `v7.0.1`. Este
   // ficheiro tinha um `motor.nav.attach()` aqui, e a mutação 3 mostrou que ele não fazia nada: `attach` passa
   // sempre a MESMA função com a mesma bandeira de captura, e o DOM não regista o mesmo ouvinte duas vezes.
-  motor = createGame({ declaration: declaracaoValida(), host: { doc: document, win: window }, baixarPesados: false });
+  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc: document, win: window }, baixarPesados: false });
 
   // O ouvinte DO JOGO: uma seta é comando de jogo, e é ele que a perde quando alguém a consome antes.
   vistas = [];

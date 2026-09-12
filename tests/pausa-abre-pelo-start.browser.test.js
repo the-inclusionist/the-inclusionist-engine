@@ -20,6 +20,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
 
 let createGame;
 let motor;
@@ -58,7 +59,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
   fases = [];
-  motor = createGame({
+  motor = createGame({ acomodacoes: SEM_ASSUNTO,
     declaration: declaracaoValida(),
     host: { doc: document, win: window },
     baixarPesados: false,
@@ -127,14 +128,14 @@ describe('a acção `start` abre a pausa', () => {
     // ⚠️ É O CASO QUE APANHA O `??` ESCRITO AO CONTRÁRIO. Com as duas linhas guardadas pelo gancho, a
     // ausência dele engolia a ABERTURA — e o jogo sem fases, que é o caso comum e para o qual um cartão
     // sobre um mundo a andar é a resposta CERTA, ficava exactamente como estava antes deste registo.
-    motor.mount(declaracaoValida(), {}); // sem `setPhase`: o cartucho mais pobre que existe
+    motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO }); // sem `setPhase`: o cartucho mais pobre que existe
     try {
       apertar('KeyH');
       expect(cartao().hidden, 'sem `setPhase` o cartão não abriu').toBe(false);
       expect(fases, 'o gancho do cartucho ANTERIOR foi chamado depois de ele sair').toEqual([]);
     } finally {
       // devolve o cartucho com gancho: os casos seguintes medem-no
-      motor.mount(declaracaoValida(), { setPhase: (p) => fases.push(p) });
+      motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO, setPhase: (p) => fases.push(p) });
     }
   });
 });
@@ -161,14 +162,14 @@ describe('o cartão que abre tem por onde SAIR (ADR-0144, errata)', () => {
     // 📏 `ui/menu-nav:403` faz `ctx.setPhase('playing')` e MAIS NADA: não esconde cartão nenhum. Enquanto
     // essa porta era o `setPhase` do cartucho com padrão vazio, um jogo sem o gancho ficava com o Escape a
     // não fazer absolutamente nada — a criança que navega sem ver presa no cartão que a engine lhe abriu.
-    motor.mount(declaracaoValida(), {});
+    motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
     try {
       apertar('KeyH');
       expect(cartao().hidden).toBe(false);
       apertar('Escape');
       expect(cartao().hidden, 'o Escape não fechou a pausa de um jogo sem `setPhase`').toBe(true);
     } finally {
-      motor.mount(declaracaoValida(), { setPhase: (p) => fases.push(p) });
+      motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO, setPhase: (p) => fases.push(p) });
     }
   });
 });

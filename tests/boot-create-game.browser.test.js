@@ -21,6 +21,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
 
 let createGame;
 let repor;
@@ -53,7 +54,7 @@ const declaracaoValida = () => ({
   targetsOf: () => [{ x: 0, y: 0 }],
 });
 
-const abrir = (extra = {}) => createGame({
+const abrir = (extra = {}) => createGame({ acomodacoes: SEM_ASSUNTO,
   declaration: declaracaoValida(),
   host: { doc: document, win: window }, baixarPesados: false,
   ...extra,
@@ -562,7 +563,7 @@ describe('createGame num documento de verdade', () => {
       .not.toBeNull();
 
     // Sem ganchos: o cartucho novo não declara `preset`, logo não tem ações a avisar.
-    motor.mount(declaracaoValida());
+    motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
     expect(document.querySelector('#reach-notice'), 'o aviso do cartucho anterior ficou na página')
       .toBeNull();
   });
@@ -834,8 +835,8 @@ describe('createGame num documento de verdade', () => {
       // «uma barra, um cartão e quatro painéis» — e um `mount()` que um dia passasse a remontá-los deixaria
       // dois de cada, com o segundo a roubar os ids do primeiro.
       const motor = abrir();
-      motor.mount(declaracaoValida());
-      motor.mount(declaracaoValida());
+      motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
+      motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
 
       expect(document.querySelectorAll('#title-icons').length).toBe(1);
       expect(document.querySelectorAll('[id^="vp-pause-"]').length, 'sobrou mais de um cartão de pausa').toBe(1);

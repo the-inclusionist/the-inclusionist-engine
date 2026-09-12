@@ -525,6 +525,10 @@ const pt: Record<string, string> = {
   'sr.caa.caixaAltaOn': 'Letras maiúsculas ligadas: o jogo inteiro em caixa alta.',
   'sr.caa.caixaAltaOff': 'Letras maiúsculas desligadas: maiúsculas e minúsculas.',
   'sr.quiz.bemVindo': 'Quiz. Use as setas para escolher e Enter para responder.',
+  'quiz.acom.hints': 'Dicas',
+  'quiz.acom.textPace': 'Ritmo do texto',
+  'quiz.acom.lexicalDifficulty': 'Dificuldade das palavras',
+  'quiz.acom.wordHighlight': 'Realce de palavras',
   'sr.nav.sonarFound': 'Sonar: {alvo} {lado}, {dist}.',
   // `sr.nav.coin` ficou para o JOGO nomear o alvo (item 19): o sonar recebe o nome por `nameAt`, campo 3 do
   // contrato. `sr.nav.target` e o que ele diz quando o jogo declara um alvo SEM nome — melhor uma palavra

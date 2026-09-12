@@ -86,6 +86,16 @@ export interface SettingsMotionCtx {
   /** Os 3 alvos de movimento reduzido do PERSONAGEM — a MESMA array que applyCalm() itera. */
   rmChar?: readonly MotionCharDef[];
   /**
+   * ESTE JOGO TEM UM PERSONAGEM QUE ANDA, RESPIRA OU FAZ GRACINHAS? (ADR-0153, `reducedCharacterMotion`.)
+   *
+   * 🔴 Sem ele a secção «Personagem» montava em TODO jogo — três interruptores para parar o andar, a respiração e as
+   * gracinhas de um personagem que um jogo de tabuleiro não tem. É o botão sem assunto do ADR-0145. `false` tira a
+   * secção e as três linhas deixam de contar para o botão-mestre e para o repor.
+   *
+   * ⚠️ OPCIONAL, com o padrão de SEMPRE (`true`): quem monta este painel fora do `createGame` continua igual.
+   */
+  comPersonagem?: () => boolean;
+  /**
    * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA render.
    *
    * ⚠️ NÃO É OPCIONAL POR ELEGÂNCIA: `fillExplain` roda uma vez quando o overlay é frontalizado e move o
@@ -258,7 +268,9 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
    */
   const rm: MotionSceneFlags = ctx.rm ?? lerCenaGuardada();
   const rmKeys: readonly MotionSceneKey[] = ctx.rmKeys ?? CHAVES_DE_CENA;
-  const rmChar: readonly MotionCharDef[] = ctx.rmChar ?? ANIMACOES_DO_PERSONAGEM;
+  const rmCharTodas: readonly MotionCharDef[] = ctx.rmChar ?? ANIMACOES_DO_PERSONAGEM;
+  /** Os alvos do personagem QUE TÊM ASSUNTO neste jogo — lido a cada uso, porque o cartucho muda no `mount()`. */
+  const rmChar = (): readonly MotionCharDef[] => (ctx.comPersonagem?.() === false ? [] : rmCharTodas);
   const saveRM: () => void = ctx.saveRM ?? (() => guardarCena(rm));
 
   function reflectMotionBtn(): void {
@@ -271,7 +283,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const m = ctx.$<HTMLElement>('#motion-master');
     if (!m) return;
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
-    const allFrozen = allMotionFrozen(rmKeys, rm, rmChar, player);
+    const allFrozen = allMotionFrozen(rmKeys, rm, rmChar(), player);
     m.textContent = motionMasterLabel(allFrozen);
     ctx.toggleBtn(m, allFrozen);
   }
@@ -297,7 +309,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     }
 
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
-    const charRows = buildCharRowsHtml(rmChar, player);
+    const charRows = buildCharRowsHtml(rmChar(), player);
     const sceneRows = buildSceneRowsHtml(rmKeys, rm, RM_LABEL, RM_SOON);
     const crtRows = crtToggleRowHtml(t(CRT_LBL.scan), 'scan', !!CRT.scan) + crtToggleRowHtml(t(CRT_LBL.vig), 'vig', !!CRT.vig) + crtRoundRowHtml(t(CRT_LBL.round), CRT.round);
 
@@ -312,7 +324,8 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       //
       // 📌 Os outros dois rótulos deste subtítulo continuam crus e estão no livro-razão do módulo — são
       // outras duas linhas, e consertá-las de passagem misturava duas decisões num commit.
-      `<h3 class="panel-sub">Personagem${ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: selectedPlayer + 1 }) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` +
+      // A secção inteira só existe se o jogo tem personagem (ADR-0153): um subtítulo sem linhas seria o mesmo defeito.
+      (charRows ? `<h3 class="panel-sub">Personagem${ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: selectedPlayer + 1 }) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` : '') +
       `${secao('Cena')}${sceneRows}` +
       `${secao('Estética CRT')}${crtRows}`;
 
@@ -380,7 +393,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       mudou.push(changed);
       markChanged(el?.querySelector<HTMLElement>(sel)?.closest<HTMLElement>('.ctrl-row') ?? null, changed);
     };
-    for (const c of rmChar) marcar(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== padraoRm);
+    for (const c of rmChar()) marcar(`[data-rmc="${c.prop}"]`, !!(player && player[c.prop]) !== padraoRm);
     for (const k of rmKeys) marcar(`[data-rm="${k}"]`, !!rm[k] !== padraoRm);
     marcar('[data-crt-tgl="scan"]', !!CRT.scan !== !!CRT_DEFAULT.scan);
     marcar('[data-crt-tgl="vig"]', !!CRT.vig !== !!CRT_DEFAULT.vig);
@@ -403,7 +416,7 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     for (const k of rmKeys) rm[k] = padraoRm;
     saveRM();
     (ctx.getPlayers() as readonly MotionPlayer[]).forEach((p, i) => {
-      for (const c of rmChar) {
+      for (const c of rmChar()) {
         p[c.prop] = padraoRm;
         ctx.store.setBool('incl_' + c.prop + '_p' + i, padraoRm);
       }
@@ -436,11 +449,11 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
   const master = ctx.$<HTMLElement>('#motion-master');
   if (master) master.addEventListener('click', () => {
     const player = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];
-    const allFrozen = allMotionFrozen(rmKeys, rm, rmChar, player);
+    const allFrozen = allMotionFrozen(rmKeys, rm, rmChar(), player);
     const next = !allFrozen;
     for (const k of rmKeys) rm[k] = next;
     saveRM();
-    if (player) for (const c of rmChar) {
+    if (player) for (const c of rmChar()) {
       player[c.prop] = next;
       ctx.store.setBool('incl_' + c.prop + '_p' + selectedPlayer, next);
     }

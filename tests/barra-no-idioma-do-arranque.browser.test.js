@@ -22,6 +22,7 @@
 //
 // MUTACOES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
 
 const CHAVE_LANG = 'incl_lang';
 let anterior = null;
@@ -70,7 +71,7 @@ describe('a barra da primeira tela fala o idioma do arranque', () => {
     const { idiomaPronto, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = palco();
 
-    createGame({
+    createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(),
       host: { doc: document, win: window, a11yBarHost: raiz.querySelector('#title-icons') },
       baixarPesados: false,

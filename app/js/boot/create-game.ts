@@ -54,6 +54,7 @@ import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
+import { accommodationAnswersProblems, subjectWord, type AccommodationAnswers } from '../core/accommodations.js';
 import { presetActions, startClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
@@ -258,6 +259,20 @@ export interface CreateGameOptions {
    * aparece, que é o comportamento de hoje e não uma regressão.
    */
   readonly preset?: ActionPreset;
+  /**
+   * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO — a resposta do cartucho, OBRIGATÓRIA (ADR-0153).
+   *
+   * 🔴 Para cada uma das dezasseis que só o jogo sabe responder (`GAME_KEYED` em `core/accommodations`): a PALAVRA
+   * do jogo, se tem assunto aqui, ou `false`. Nas palavras do Dev: «Gênero não precisa responder todas as
+   * acomodações, mas sim o cartucho, obrigatoriamente.»
+   *
+   * ⚠️ OBRIGATÓRIO, e pela rubrica do `holdsAtOnce`: não há padrão seguro — «sim» monta a cadeira de rodas no
+   * xadrez, «não» esconde-a da plataforma — e o esquecimento falha INVISIVELMENTE a quem escreve o jogo. Uma resposta
+   * ausente ou incompleta é declaração malformada, e o arranque RECUSA.
+   *
+   * 📌 As gerais montam sempre e as do contrato derivam-se; nenhuma delas se responde aqui.
+   */
+  readonly acomodacoes: AccommodationAnswers;
   /**
    * COMO SE CARREGA A VOZ NEURAL — uma linha do lado do jogo (ADR-0094):
    *
@@ -490,6 +505,15 @@ function recusarSeTomaOStart(quem: string, preset: ActionPreset | undefined): vo
   if (problema) recusarDeclaracao(quem, [problema]);
 }
 
+/**
+ * O cartucho RESPONDEU às suas acomodações? (ADR-0153.) Mesma rubrica do contrato: resposta ausente ou incompleta é
+ * pré-condição, não lacuna — `problems` é para o que deixa jogar, e aqui a engine não saberia que linhas montar.
+ */
+function recusarSeNaoResponde(quem: string, acomodacoes: unknown): void {
+  const problemas = accommodationAnswersProblems(acomodacoes);
+  if (problemas.length) recusarDeclaracao(quem, problemas);
+}
+
 /** Os ids que os painéis emprestados exigem do documento. Achado 6: sem eles o painel abre VAZIO, sem erro. */
 const MARCACAO_EXIGIDA: readonly string[] = ['#game-region', '#sr-status', '#sr-alert'];
 
@@ -523,7 +547,7 @@ const SELETOR_BARRA_A11Y = '#title-icons';
 type MetadeDoJogo = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
-  | 'setTemaDoJogador' | 'setCorrecaoDoJogador'>;
+  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes'>;
 
 export function createGame(o: CreateGameOptions): Engine {
   /*
@@ -541,6 +565,7 @@ export function createGame(o: CreateGameOptions): Engine {
     recusarDeclaracao('createGame', problemasDoContrato);
   }
   recusarSeTomaOStart('createGame', cartucho.preset);
+  recusarSeNaoResponde('createGame', cartucho.acomodacoes);
 
   const { doc, win } = o.host;
   /*
@@ -1322,6 +1347,8 @@ export function createGame(o: CreateGameOptions): Engine {
       restoreFocus: overlays.restoreFocus,
       fillExplain: overlays.fillExplain,
       toggleBtn,
+      // A secção «Personagem» só existe se o JOGO disse que tem um (ADR-0153). Lido a cada render: muda no `mount()`.
+      comPersonagem: () => subjectWord(cartucho.acomodacoes, 'reducedCharacterMotion') !== null,
     });
     acoesDaEngine.anim = painelDeAnim.abrir;
 
@@ -1356,11 +1383,25 @@ export function createGame(o: CreateGameOptions): Engine {
        */
       render: () => {
         montarInteriorDoAudio(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
+        esconderLinhasSemAssunto();
         audio?.renderAudio();
       },
       primeiroFoco: '#audio-master',
     });
     montarInteriorDoAudio(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
+    /*
+     * A BENGALA SÓ SE OFERECE A QUEM ANDA A PÉ (ADR-0153, `caneSpacing`).
+     *
+     * ⚠️ `hidden` NA LINHA, e não a linha fora do documento, e a razão é medida: o `initSettingsAudio` liga o
+     * `#cane-div` UMA VEZ, no arranque. Uma linha que não existisse no arranque e que um `mount()` posterior trouxesse
+     * chegaria sem ouvinte — um controle morto. `hidden` tira-a da árvore de acessibilidade inteira, que é o
+     * «não se oferece» do ADR-0113 cláusula 3, e deixa o ouvinte vivo para o cartucho que a tiver.
+     */
+    function esconderLinhasSemAssunto(): void {
+      const linha = $<HTMLElement>('#cane-div')?.closest<HTMLElement>('.ctrl-row');
+      if (linha) linha.hidden = subjectWord(cartucho.acomodacoes, 'caneSpacing') === null;
+    }
+    esconderLinhasSemAssunto();
     audio = initSettingsAudio({
       $, srSay, store,
       audioCats: AUDIO_CATS,
@@ -1915,7 +1956,9 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const cenasDaRaiz = criarPilha();
 
-  function montar(declaration: GameDeclaration, ganchos: GanchosDoCartucho = {}): void {
+  // ⚠️ SEM PADRÃO `{}` desde o ADR-0153: os ganchos carregam a resposta obrigatória às acomodações, e um padrão vazio
+  // seria o cartucho que não respondeu — o arranque recusá-lo-ia de qualquer forma, com uma mensagem pior.
+  function montar(declaration: GameDeclaration, ganchos: GanchosDoCartucho): void {
     // ⚠️ LANÇA, NÃO DIAGNOSTICA — a mesma regra do arranque, e por isso a mesma frase. Uma declaração
     // malformada é pré-condição: `problems` é para lacunas com que se consegue jogar, e isto não é uma.
     const malformada = conformanceProblems(declaration);
@@ -1926,6 +1969,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // `Omit<MetadeDoJogo, 'declaration'>`, logo carrega `preset` — um segundo cartucho podia tomar o «start»
     // que o primeiro respeitou, e a raiz ficava com a pausa inalcançável a meio da sessão.
     recusarSeTomaOStart('mount', ganchos.preset);
+    recusarSeNaoResponde('mount', ganchos.acomodacoes);
     cartucho = { ...ganchos, declaration };
     registrarMapeamentosDoCartucho();
     alcanceAtual = derivarAlcance();

@@ -301,6 +301,24 @@ export function bootQuiz(): void {
     declines: { semAssistenteDePad: true, semAtorDePausa: true },
     // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
     isNavigable: () => true,
+    /*
+     * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO (ADR-0153) — a resposta é obrigatória, e o arranque recusa sem ela.
+     *
+     * 📌 Pelo estudo das acomodações: um jogo de perguntas é género «trivia» (Wikipédia 10.11) e o TEXTO É A
+     * MATÉRIA — logo dicas, ritmo do texto, dificuldade das palavras e realce de palavras têm assunto aqui. Não há
+     * personagem, câmara, peças, bengala, detecção, sustos nem janela de acerto: as outras doze são «não», escritas.
+     *
+     * ⚠️ As palavras são resolvidas no arranque, como as outras deste boot; nenhuma linha as mostra ainda.
+     */
+    acomodacoes: {
+      cameraSway: false, easyMode: false, wheelchairMode: false, detectionLeniency: false, intensity: false,
+      hints: { label: t('quiz.acom.hints') },
+      reducedCharacterMotion: false, caneSpacing: false,
+      textPace: { label: t('quiz.acom.textPace') },
+      lexicalDifficulty: { label: t('quiz.acom.lexicalDifficulty') },
+      wordHighlight: { label: t('quiz.acom.wordHighlight') },
+      pieceSets: false, distinguishableSuits: false, timingWindow: false, aimAssist: false, repeatedInput: false,
+    },
   });
   const { overlays } = motor;
   // O que o hospedeiro não entregou vira lista legível em vez de painel vazio (achado 6). Num jogo de
