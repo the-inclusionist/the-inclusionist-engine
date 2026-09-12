@@ -1821,6 +1821,28 @@
     "type MotionPlayer": "PlayerView<'rmWalk' | 'rmBreath' | 'rmFlavor'>",
     "type MotionSceneFlags": "Record<MotionSceneKey, boolean>"
   },
+  "ui/mount-panel.ts": {
+    "interface PanelStack": [
+      "frontOverlay",
+      "register",
+      "restoreFocus?"
+    ],
+    "interface MountPanelCtx": [
+      "host",
+      "overlays"
+    ],
+    "interface MountPanelSpec": [
+      "id",
+      "primeiroFoco?",
+      "render",
+      "rotulos"
+    ],
+    "interface MountedPanel": [
+      "abrir",
+      "casca",
+      "fechar"
+    ]
+  },
   "ui/panel-shell.ts": {
     "interface PanelShellCtx": [
       "criar",
@@ -1840,8 +1862,10 @@
       "ids",
       "lista",
       "overlay",
-      "reset"
-    ]
+      "reset",
+      "titulo"
+    ],
+    "type PanelLabels": "Omit<PanelShellSpec, 'id'>"
   },
   "ui/pause-icons.ts": {
     "interface PauseIcon": [

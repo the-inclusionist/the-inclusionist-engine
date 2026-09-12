@@ -20,8 +20,8 @@
 // ⚠️ WHAT THIS DOES NOT DO, AND THE LINE IS ADR-0106 §5: it does not decide WHETHER a panel is mounted. A
 // panel whose writers the engine cannot supply must not be mounted at all — «an icon is mounted when its
 // action works, and not before». That judgement belongs to the composition root, which knows what it has.
-import type { PanelShell, PanelShellCtx, PanelShellSpec } from './panel-shell.js';
-import { montarCasca } from './panel-shell.js';
+import type { PanelLabels, PanelShell, PanelShellCtx } from './panel-shell.js';
+import { aplicarRotulos, montarCasca } from './panel-shell.js';
 
 /** The slice of the overlay stack a panel needs. Narrow on purpose: this file never opens a second panel. */
 export interface PanelStack {
@@ -39,7 +39,23 @@ export interface MountPanelCtx extends PanelShellCtx {
   readonly overlays: PanelStack;
 }
 
-export interface MountPanelSpec extends PanelShellSpec {
+export interface MountPanelSpec {
+  /** The panel's id: `typo`, `audio`, `visual`… Identity, resolved once — unlike the words below. */
+  readonly id: string;
+  /**
+   * The panel's WORDS, already translated — and resolved AT EVERY OPEN rather than once at mount.
+   *
+   * 🔴 A function and not four strings, because the panel is born hidden and the boot has a gap. `initI18n`
+   * applies the fallback language synchronously — so the page is never blank — and then ASKS for en/es, which
+   * is asynchronous. Anything the JavaScript builds inside that gap captures the fallback text and nothing
+   * rebuilds it; 📏 measured in a browser on 2026-09-08, the icon bar served five labels in English and three
+   * still in the fallback, on the same line.
+   *
+   * 🎯 AND THE PANEL IS THE ONE PLACE WHERE THAT COSTS NOTHING TO FIX. Nobody reads a hidden dialog, so its
+   * words only have to be right when it opens — no `idiomaPronto()` wiring per panel, and a language changed
+   * mid-game is right on the next open too.
+   */
+  readonly rotulos: () => PanelLabels;
   /**
    * The panel's own `render()`.
    *
@@ -74,7 +90,7 @@ export interface MountedPanel {
  * leaves one panel, which is what ADR-0139's third gate asks of two cartridges on one page.
  */
 export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPanel {
-  const casca = montarCasca(ctx, spec);
+  const casca = montarCasca(ctx, { id: spec.id, ...spec.rotulos() });
   // Appending an element that is already a child moves it; it never duplicates. Guarding on `parentNode`
   // would be the same operation written twice.
   ctx.host.appendChild(casca.overlay);
@@ -85,6 +101,9 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
   };
 
   const abrir = (): void => {
+    // ⚠️ OS RÓTULOS ANTES DO `render()`, e a ordem tem consequência: `ui/settings-panel.fillExplain` lê o
+    // `data-explain-idle` do cartão para montar o rodapé, e quem o chama é o render de cada painel.
+    aplicarRotulos(casca, spec.rotulos());
     spec.render();
     casca.overlay.hidden = false;
     ctx.overlays.frontOverlay(casca.overlay);

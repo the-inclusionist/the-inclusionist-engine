@@ -73,10 +73,21 @@ export interface PanelShellSpec {
   introducao?: string;
 }
 
+/**
+ * AS PALAVRAS DA CASCA, sem o id — tudo o que muda quando o idioma muda, e nada do que não muda.
+ *
+ * ⚠️ SEPARADAS DO `id` DE PROPÓSITO, e a separação é a que `ui/mount-panel` precisa: o id é identidade e
+ * resolve-se uma vez; os rótulos são TEXTO TRADUZIDO e resolvem-se a cada abertura. Um tipo que os juntasse
+ * obrigaria quem retraduz a repetir o id, e repetir uma identidade é como ela diverge.
+ */
+export type PanelLabels = Omit<PanelShellSpec, 'id'>;
+
 /** O que a casca devolve: o nó e os ids que ela criou, para o painel não os adivinhar. */
 export interface PanelShell {
   overlay: HTMLElement;
   card: HTMLElement;
+  /** O `<h2>` do cartão. Exposto porque quem retraduz o painel escreve nele — ver `aplicarRotulos`. */
+  titulo: HTMLElement;
   lista: HTMLElement;
   reset: HTMLElement;
   fechar: HTMLElement;
@@ -109,40 +120,65 @@ export function montarCasca(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShel
   card.setAttribute('role', 'dialog');
   card.setAttribute('aria-modal', 'true');
   card.setAttribute('aria-labelledby', ids.title);
-  // A introdução do painel é o texto de REPOUSO do rodapé (CLAUDE.md §4), nunca um `<p>` no topo.
-  if (spec.introducao) card.setAttribute('data-explain-idle', spec.introducao);
 
   const h2 = ctx.criar('h2');
   h2.id = ids.title;
-  h2.textContent = spec.titulo;
   card.appendChild(h2);
 
   const lista = ctx.criar('div');
   lista.id = ids.lista;
   lista.className = 'ctrl-list';
   lista.setAttribute('role', 'group');
-  lista.setAttribute('aria-label', spec.rotuloDaLista);
   card.appendChild(lista);
 
   const acoes = ctx.criar('div');
   acoes.className = 'overlay__actions';
-  const reset = botao(ctx, ids.reset, spec.rotuloReset, 'mode-btn');
-  const fechar = botao(ctx, ids.fechar, spec.rotuloFechar, 'mode-btn is-on');
+  const reset = botao(ctx, ids.reset, 'mode-btn');
+  const fechar = botao(ctx, ids.fechar, 'mode-btn is-on');
   acoes.appendChild(reset);
   acoes.appendChild(fechar);
   card.appendChild(acoes);
 
   overlay.appendChild(card);
-  return { overlay, card, lista, reset, fechar, ids };
+  const casca: PanelShell = { overlay, card, titulo: h2, lista, reset, fechar, ids };
+  aplicarRotulos(casca, spec);
+  return casca;
 }
 
-function botao(ctx: PanelShellCtx, id: string, rotulo: string, classe: string): HTMLElement {
+/**
+ * ESCREVE AS PALAVRAS DA CASCA — separado da construção porque elas mudam DEPOIS de ela existir.
+ *
+ * 🔴 O DEFEITO QUE ISTO FECHA JÁ FOI MEDIDO NA BARRA DE ÍCONES, e está escrito em `boot/create-game.ts`: o
+ * `initI18n` aplica pt de forma síncrona — para a página nunca ficar em branco — e, se o idioma preferido for
+ * en ou es, PEDE a troca, que é assíncrona. Tudo o que o JavaScript monta nesse intervalo captura o texto de
+ * recuo e ninguém o reconstrói. 📏 Medido num navegador em 2026-09-08, com `lang="en"`: a barra servia cinco
+ * rótulos em inglês e três ainda em português, na mesma linha.
+ *
+ * ⚠️ E NÃO SERVE RECONSTRUIR A CASCA PARA CORRIGIR O TÍTULO. `montarCasca` esvazia o cartão, e cada
+ * `ui/settings-*` liga o seu `#X-reset` UMA VEZ, no `init` — remontar deixa o botão de repor no documento e
+ * sem escuta, que é um botão morto com aparência de vivo (ADR-0106 §5). Escrever só as palavras não toca em
+ * escuta nenhuma.
+ *
+ * IDEMPOTENTE: escrever os mesmos rótulos duas vezes é escrever os mesmos rótulos.
+ */
+export function aplicarRotulos(casca: PanelShell, r: PanelLabels): void {
+  casca.titulo.textContent = r.titulo;
+  casca.lista.setAttribute('aria-label', r.rotuloDaLista);
+  casca.reset.textContent = r.rotuloReset;
+  casca.fechar.textContent = r.rotuloFechar;
+  // A introdução do painel é o texto de REPOUSO do rodapé (CLAUDE.md §4), nunca um `<p>` no topo.
+  // ⚠️ A AUSÊNCIA TEM DE APAGAR, e não só deixar de escrever: numa retradução para um dicionário que não tem
+  // a chave, o atributo antigo sobreviveria e o rodapé descansaria no idioma anterior.
+  if (r.introducao) casca.card.setAttribute('data-explain-idle', r.introducao);
+  else casca.card.removeAttribute('data-explain-idle');
+}
+
+function botao(ctx: PanelShellCtx, id: string, classe: string): HTMLElement {
   const b = ctx.criar('button');
   b.id = id;
   b.className = classe;
   b.setAttribute('type', 'button');
-  // `textContent` e não `innerHTML`: um rótulo traduzido é dado de fora como qualquer outro, e um dicionário
-  // de consumidor pode trazer o que quiser dentro dele.
-  b.textContent = rotulo;
+  // O rótulo entra pelo `aplicarRotulos`, por `textContent` e não `innerHTML`: um rótulo traduzido é dado de
+  // fora como qualquer outro, e um dicionário de consumidor pode trazer o que quiser dentro dele.
   return b;
 }

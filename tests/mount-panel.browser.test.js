@@ -31,15 +31,20 @@ const ctx = () => ({
 
 const spec = (extra = {}) => ({
   id: 'fixture',
-  titulo: 'Fixture',
-  rotuloDaLista: 'Lista da fixture',
-  rotuloReset: 'Repor',
-  rotuloFechar: 'Fechar',
+  rotulos: () => ({
+    titulo: `Fixture ${idioma}`,
+    rotuloDaLista: 'Lista da fixture',
+    rotuloReset: 'Repor',
+    rotuloFechar: 'Fechar',
+  }),
   render: () => { renderizou += 1; },
   ...extra,
 });
 
 let renderizou = 0;
+// O idioma que o arranque ainda não tem. O `initI18n` aplica o de recuo de forma síncrona e PEDE o preferido
+// depois; esta variável é esse intervalo, escrito de forma que um caso o possa atravessar.
+let idioma = 'pt';
 
 beforeEach(() => {
   host = document.createElement('div');
@@ -47,6 +52,7 @@ beforeEach(() => {
   document.body.appendChild(host);
   registados = new Map();
   renderizou = 0;
+  idioma = 'pt';
 });
 
 afterEach(() => { host.remove(); });
@@ -122,6 +128,51 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     expect(document.querySelectorAll('#fixture').length, 'duas montagens deixaram dois painéis').toBe(1);
   });
 
+  it('🎯 [Right] o IDIOMA QUE CHEGA DEPOIS DO ARRANQUE alcança o título, sem remontar a casca', () => {
+    // O `initI18n` aplica o idioma de recuo de forma síncrona e pede en/es depois. Um painel montado nesse
+    // intervalo ficava com o título de recuo — o mesmo defeito que a barra de ícones pagou em 08/09. Aqui a
+    // janela é atravessada de propósito: monta em «pt», o idioma chega, e só então a criança abre.
+    const p = montarPainel(ctx(), spec());
+    expect(p.casca.titulo.textContent).toBe('Fixture pt');
+    idioma = 'en';
+    p.abrir();
+    expect(p.casca.titulo.textContent, 'o título ficou no idioma de recuo depois de o preferido chegar').toBe('Fixture en');
+  });
+
+  it('⚠️ [Boundary] retraduzir NÃO remonta a casca: a escuta que o painel ligou no repor sobrevive', () => {
+    // `montarCasca` esvazia o cartão, e cada `ui/settings-*` liga o seu `#X-reset` UMA VEZ no `init`. Corrigir
+    // o título por remontagem deixaria o botão de repor no documento e sem escuta — um botão morto com
+    // aparência de vivo, que é precisamente o que o ADR-0106 §5 proíbe.
+    const p = montarPainel(ctx(), spec());
+    let reposto = 0;
+    p.casca.reset.addEventListener('click', () => { reposto += 1; });
+    const mesmoNo = p.casca.reset;
+    idioma = 'en';
+    p.abrir();
+    // Pelo DOCUMENTO e não pela casca: uma remontagem devolveria um botão novo com o mesmo id, e o antigo
+    // — o que tem a escuta — sairia da árvore sem ninguém reparar.
+    const noDocumento = document.getElementById('fixture-reset');
+    expect(noDocumento, 'o botão de repor no documento não é o que o painel ligou').toBe(mesmoNo);
+    expect(noDocumento.textContent, 'o rótulo do repor não foi retraduzido').toBe('Repor');
+    noDocumento.click();
+    expect(reposto, 'a escuta do repor morreu na retradução').toBe(1);
+  });
+
+  it('[Boundary] uma introdução que SOME apaga o `data-explain-idle` — não sobrevive ao idioma anterior', () => {
+    // Um dicionário sem a chave é uma introdução ausente. Deixar de escrever não chega: o atributo antigo
+    // ficaria, e o rodapé descansaria no idioma que a criança acabou de deixar.
+    const p = montarPainel(ctx(), spec({
+      rotulos: () => ({
+        titulo: 'Fixture', rotuloDaLista: 'Lista', rotuloReset: 'Repor', rotuloFechar: 'Fechar',
+        ...(idioma === 'pt' ? { introducao: 'Escolha uma fonte.' } : {}),
+      }),
+    }));
+    expect(p.casca.card.getAttribute('data-explain-idle')).toBe('Escolha uma fonte.');
+    idioma = 'en';
+    p.abrir();
+    expect(p.casca.card.hasAttribute('data-explain-idle'), 'a introdução do idioma anterior sobreviveu').toBe(false);
+  });
+
   it('[Right] o render corre a CADA abertura, não uma vez na montagem', () => {
     // Um painel que renderiza uma vez mostra estado velho depois de a criança mexer no mesmo ajuste pela
     // barra rápida — e o `fillExplain` tem de correr outra vez ou a prosa volta para dentro das linhas.
@@ -144,3 +195,11 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
 //   · chamar `spec.render()` na montagem em vez de na abertura -> reprova o último caso (conta 1, não 0).
 //   · tirar o `appendChild` -> reprova o [Interface] PRIMEIRO: a casca existe e não está em lado nenhum,
 //     que é exactamente «o painel abre vazio, sem erro» visto do outro lado.
+//   · resolver os rótulos SÓ na montagem (tirar o `aplicarRotulos` do `abrir`) -> reprova dois: o título fica
+//     no idioma de recuo, e a introdução do idioma anterior sobrevive. É o defeito que a barra de ícones já
+//     pagou em 08/09, reproduzido num painel.
+//   · retraduzir REMONTANDO a casca (trocar `aplicarRotulos` por `montarCasca`) -> reprova seis, e a que
+//     importa é a do repor: `montarCasca` esvazia o cartão, o botão com a escuta sai da árvore e fica lá um
+//     homónimo mudo. Um botão morto com aparência de vivo é pior do que um ausente (ADR-0106 §5).
+//   · a introdução ausente deixar de APAGAR o `data-explain-idle` (tirar o `else removeAttribute`) -> reprova
+//     o caso da introdução: deixar de escrever não é apagar, e o rodapé descansa no idioma anterior.

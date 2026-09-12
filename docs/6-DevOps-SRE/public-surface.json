@@ -1231,10 +1231,19 @@
     "lerCenaGuardada",
     "padraoDeCena"
   ],
+  "ui/mount-panel.ts": [
+    "MountPanelCtx",
+    "MountPanelSpec",
+    "MountedPanel",
+    "PanelStack",
+    "montarPainel"
+  ],
   "ui/panel-shell.ts": [
+    "PanelLabels",
     "PanelShell",
     "PanelShellCtx",
     "PanelShellSpec",
+    "aplicarRotulos",
     "idsDaCasca",
     "montarCasca"
   ],
