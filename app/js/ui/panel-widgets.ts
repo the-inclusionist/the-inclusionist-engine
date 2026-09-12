@@ -164,6 +164,10 @@ function criarControle(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
  * linear, misto e quadrático da mesma forma que se troca o número de jogadores, isto é, apertando botões
  * direita e esquerda, e não através de uma barra», e os cantos arredondados «também». Uma barra esconde quantas
  * posições há; uma lista suspensa esconde-as todas até abrir. Os passos dizem sempre onde se está.
+ *
+ * 🔴 E A FORMA É UMA LINHA SÓ: «◀ Rótulo: valor ▶» (errata do ADR-0130, regra 3). A primeira construção pôs o rótulo
+ * à esquerda e uma caixa «◀ pequeno ▶» à direita, e o Dev: «Não faça essa coisa estranha. Escreva "< Rounded
+ * corner: off >"». É a forma de ciclar entre POUCAS posições — até cinco; acima disso, lista suspensa.
  */
 export interface PassosSpec {
   /** O nome falado do controle — vai para o `aria-label`. */
@@ -213,9 +217,9 @@ export function montarPassos(ctx: PanelShellCtx, spec: PassosSpec): HTMLElement 
   };
   const valor = ctx.criar('span');
   valor.className = 'passo-valor';
-  el.appendChild(seta(-1, '⯇'));
+  el.appendChild(seta(-1, '◀'));
   el.appendChild(valor);
-  el.appendChild(seta(1, '⯈'));
+  el.appendChild(seta(1, '▶'));
   atualizarPassos(el, spec);
   return el;
 }
@@ -231,7 +235,9 @@ export function atualizarPassos(el: HTMLElement, spec: PassosSpec): void {
   el.setAttribute('aria-valuenow', String(atual));
   el.setAttribute('aria-valuetext', texto);
   const valor = el.querySelector<HTMLElement>('.passo-valor');
-  if (valor) valor.textContent = texto;
+  // O RÓTULO ENTRA NO TEXTO: a linha inteira é o controle, «◀ Cantos arredondados: pequeno ▶». Quem ouve recebe o
+  // mesmo em duas partes — o nome no `aria-label` e a posição no `aria-valuetext` —, sem o nome repetido.
+  if (valor) valor.textContent = spec.rotulo ? `${spec.rotulo}: ${texto}` : texto;
   // A ponta que já não anda fica marcada — sem isto a seta de uma parede parece um botão avariado.
   el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', atual === 0);
   el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', atual === ultimo);

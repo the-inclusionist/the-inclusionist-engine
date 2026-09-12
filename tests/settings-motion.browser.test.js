@@ -148,6 +148,9 @@ describe('initSettingsMotion — estética CRT', () => {
     const passos = $('#motion-list').querySelector('[data-crt="round"][data-passos]');
     expect(passos, 'os cantos não viraram passos').not.toBeNull();
     expect($('#motion-list').querySelector('select[data-crt]'), 'sobrou o <select> antigo').toBeNull();
+    // 🔴 UMA LINHA SÓ, «◀ Cantos arredondados: pequeno ▶» (errata do ADR-0130): nada de rótulo à esquerda da caixa.
+    expect(passos.closest('.ctrl-row').children.length, 'sobrou o rótulo à parte, ao lado dos passos').toBe(1);
+    expect(passos.querySelector('.passo-valor').textContent).toBe('Cantos arredondados: pequeno');
     passos.querySelector('[data-passo="1"]').click();
     expect(CRT.round).toBe(2);
     expect(calls.srSay.at(-1)).toBe('Cantos arredondados: grande.');

@@ -183,8 +183,10 @@ export function crtToggleRowHtml(label: string, key: string, on: boolean): strin
  * Era um `<select>`: uma lista suspensa esconde as posições até abrir, e o Dev pediu que se escolha «apertando
  * para esquerda e direita».
  */
-export function crtRoundRowHtml(label: string, round: number): string {
-  return `<div class="ctrl-row"><span>${label}</span><span data-passos-lugar="round" data-valor="${round}"></span></div>`;
+export function crtRoundRowHtml(_label: string, round: number): string {
+  // ⚠️ SEM O RÓTULO À PARTE (errata do ADR-0130): o controle de passos escreve «◀ Cantos arredondados: pequeno ▶» na
+  // linha inteira. O primeiro argumento fica, para quem já chama com ele; quem dá o nome ao controle é o `spec`.
+  return `<div class="ctrl-row ctrl-row--passos"><span data-passos-lugar="round" data-valor="${round}"></span></div>`;
 }
 
 /** true quando TUDO (cena + personagem selecionado) já está com movimento reduzido LIGADO, isto é,

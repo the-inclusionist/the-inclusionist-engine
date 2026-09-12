@@ -232,7 +232,9 @@ export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings)
     // 🔴 O REALCE DE CONTRASTE, EM PASSOS E COM A PROSA NO SÍTIO CERTO (ADR-0151). O Dev viu a explicação DENTRO da
     // linha: ela vinha colada ao rótulo e dependia de o hospedeiro passar o `fillExplain` para descer ao rodapé.
     // Agora mora num `.opt-hint` desde a nascença (`CLAUDE.md` §4), e o cursor virou o lugar dos passos ⯇ ⯈.
-    '<div class="ctrl-row"><span><strong>' + escaparHtml(t('visual.lq')) + '</strong><span class="opt-hint">' +
+    // E O RÓTULO VAI PARA DENTRO DOS PASSOS — «◀ Realce de contraste: linear ▶» (errata do ADR-0130); a dica fica
+    // no seu `.opt-hint`, que o rodapé recolhe.
+    '<div class="ctrl-row ctrl-row--passos"><span><span class="opt-hint">' +
     escaparHtml(t('visual.lq.dica')) + '</span></span><span data-passos-lugar="lq"></span></div>' +
     '<div class="ctrl-row"><span><strong>Itens na cor do dono</strong> — no multiplayer, cada jogador vê os próprios itens na cor dele. Desligado: itens na cor original para todos.</span>' +
     `<button id="opt-ownercolors" class="mode-btn${s.ownerColors ? ' is-on' : ''}" type="button" aria-pressed="${s.ownerColors}">${onOffLabel(s.ownerColors)}</button></div>` +

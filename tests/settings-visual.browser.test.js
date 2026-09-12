@@ -251,7 +251,9 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     const { ctx } = makeCtx();
     initSettingsVisual(ctx).render();
     const linha = document.querySelector('#opt-lq').closest('.ctrl-row');
-    expect(linha.querySelector(':scope > span > strong').textContent).toBe('Realce de contraste');
+    // 📌 E o rótulo mora DENTRO dos passos, «◀ Realce de contraste: … ▶» (errata do ADR-0130) — nada à parte.
+    expect(linha.querySelector('strong'), 'sobrou um rótulo à esquerda dos passos').toBeNull();
+    expect(linha.querySelector('.passo-valor').textContent).toMatch(/^Realce de contraste: /);
     expect(linha.querySelector('.opt-hint')?.textContent, 'a prosa não está no .opt-hint').toMatch(/linear/);
   });
 

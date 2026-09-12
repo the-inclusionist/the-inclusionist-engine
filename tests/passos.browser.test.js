@@ -39,7 +39,9 @@ describe('montarPassos — one focusable control, two finger targets', () => {
     expect(el.getAttribute('role')).toBe('spinbutton');
     expect(el.getAttribute('aria-label')).toBe('Rounded corners');
     expect(el.getAttribute('aria-valuetext')).toBe('small');
-    expect(el.querySelector('.passo-valor').textContent).toBe('small');
+    // 🔴 «◀ Rounded corners: small ▶» — the label is INSIDE the control, on one line (ADR-0130 erratum, the Dev)
+    expect(el.querySelector('.passo-valor').textContent).toBe('Rounded corners: small');
+    expect(el.textContent.replace(/\s+/g, ' ').trim()).toBe('◀Rounded corners: small▶');
   });
 
   it('🔴 [Interface] the arrows are NOT buttons and are hidden from the accessibility tree', () => {
@@ -77,3 +79,4 @@ describe('montarPassos — one focusable control, two finger targets', () => {
 //   W1 passoSeguinte wraps around instead of holding           🔴 the walls case
 //   W2 the arrows become <button>                              🔴 three stops for one setting
 //   W3 atualizarPassos stops writing aria-valuetext            🔴 the eye and the ear disagree
+//   W4 the label is left out of the visible text               🔴 back to the «label left, box right» shape
