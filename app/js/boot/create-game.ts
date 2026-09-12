@@ -838,13 +838,42 @@ export function createGame(o: CreateGameOptions): Engine {
   const hospedeiroDaPausa = o.host.pauseHost ?? $('#game-region');
   const pausaUsavel = !!hospedeiroDaPausa && typeof (hospedeiroDaPausa as HTMLElement).appendChild === 'function';
   /*
-   * ⚠️ O 	ypo TAMBÉM SUBIU, e pelo mesmo motivo: ele era let DENTRO do bloco que monta os painéis, e
+   * ⚠️ O `typo` TAMBÉM SUBIU, e pelo mesmo motivo: ele era `let` DENTRO do bloco que monta os painéis, e
    * o ciclo de tipografia da barra — que é decidido antes — precisa de o alcançar. Continua a ser atribuído
    * lá em baixo; o que mudou é o ESCOPO, não o instante.
    */
   let typo: SettingsTypoApi | null = null;
   /** A posição corrente do ciclo de tipografia. Ver a nota em `ciclarTipografia`, logo abaixo. */
   let passoDaTipografia = INICIO_DO_CICLO;
+
+  /*
+   * A PALETA SEGURA PARA DALTONISMO NOS MENUS E NO HUD (ADR-0151) — Okabe-Ito, por `:root[data-paleta]`.
+   *
+   * 📏 ANTES DISTO O `core/state.cbSafe` ERA UMA BANDEIRA SEM LEITOR: gravava, persistia e avisava, e nada na
+   * engine pintava menu ou HUD de outra cor. Ligá-la à correcção sem este escritor seria virar uma chave que
+   * ninguém lê. As cores e a medida que as escolheu estão na folha (`style.css`, junto do `data-cursiva`).
+   *
+   * 🎯 A REGRA É DO DEV, nas palavras dele: «ativada automaticamente quando se liga correção para protano,
+   * deutero e tritanopia e desativada automaticamente quando muda para visão padrão (tricromática). Aqui se
+   * permite ativá-la sem usar o filtro.» Logo o estado é UM (`cbSafe`), e a correcção só o empurra.
+   */
+  const aplicarPaletaSegura = (on: boolean): void => {
+    if (on) doc.documentElement.dataset.paleta = 'okabe-ito';
+    else delete doc.documentElement.dataset.paleta;
+  };
+  aplicarPaletaSegura(state.cbSafe);
+  state.on('cbSafe', (v) => aplicarPaletaSegura(Boolean(v)));
+  /**
+   * Envolve QUALQUER escritor de correcção — o do cartucho ou o da engine: a paleta segue a correcção seja quem
+   * for que a aplica. ⚠️ Envolver só o da engine deixaria um jogo que corrige no próprio render (o `game-pinball`)
+   * sem a paleta que a criança pediu ao carregar no mesmo ícone.
+   */
+  function comPaletaSegura(escrever: (i: number, correcao: Correcao) => void): (i: number, correcao: Correcao) => void {
+    return (i, correcao) => {
+      escrever(i, correcao);
+      state.setCbSafeValue(correcao !== 'tricro');
+    };
+  }
 
   const pauseIcons = initPauseIcons({
     doc,
@@ -973,7 +1002,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * `game-pinball` corrige num framebuffer há semanas — entrega o seu e a engine sai da frente.
      */
     ...(cartucho.setCorrecaoDoJogador
-      ? { setCorrecaoDoJogador: cartucho.setCorrecaoDoJogador }
+      ? { setCorrecaoDoJogador: comPaletaSegura(cartucho.setCorrecaoDoJogador) }
       : cvdFilters
         /*
          * ⚠️ `filtroChave` E NÃO `VIZ_FILTER[correcao]`, e a primeira versão desta linha errou aqui: os dois
@@ -983,7 +1012,7 @@ export function createGame(o: CreateGameOptions): Engine {
          * 📌 E `filtroChave` faz mais do que colar um prefixo: ela põe a SIMULAÇÃO à frente da correcção
          * quando há uma, que é a regra que este módulo não teria de reinventar.
          */
-        ? { setCorrecaoDoJogador: (i: number, correcao: Correcao) => {
+        ? { setCorrecaoDoJogador: comPaletaSegura((i: number, correcao: Correcao) => {
           /*
            * 🔴 GUARDA ANTES DE APLICAR, e a primeira versão desta linha só aplicava — o que fazia o ciclo
            * ficar PRESO na primeira posição. Quem calcula o passo seguinte é `proximaCorrecao(p.visual)`, em
@@ -1001,7 +1030,7 @@ export function createGame(o: CreateGameOptions): Engine {
           if (jogador) jogador.visual = estado;
           const chave = filtroChave(estado);
           aplicarFiltroDeVisao(chave ? (VIZ_FILTER[chave] ?? '') : '', 'mundo');
-        } }
+        }) }
         : {}),
   });
 
