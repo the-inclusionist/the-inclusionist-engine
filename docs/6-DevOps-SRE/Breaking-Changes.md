@@ -460,6 +460,17 @@ was a play key, remap it. `sairDaBarra` gained an optional second argument and `
 the reason said (`core/actions.selectClaimProblem`). 📏 Measured in the game repositories: none declares
 `select`, so this refuses nothing that exists.
 
+## J · The hearing panel split in two, and the `other` sound category is gone (ADR-0151)
+
+**Behaviour and a VALUE, no shape.** The engine's `#audio` panel keeps blind mode, cane taps, the sonar/guard/guide
+list (now its shell list, `#navsound-list`), narration and the spoken index. A new `#som` panel («Áudio», item `som`
+in the settings submenu) holds the general sound switch and volume (`#audio-master`, `#audio-master-vol`) and the
+four taste categories (`#audio-list`). `#navsound-master` is no longer built. `AUDIO_CATS`, `GEN_CATS` and
+`CALM_AUDIO_CATS` lost `other` — 📏 measured, no sound in the engine or the game repositories was routed through it.
+
+**What to do:** nothing, unless your game played sounds on the `other` category (it will now have no gain node
+state) or relied on `#navsound-master` existing.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { linhaDeControle, rotularLinha } from '../app/js/ui/panel-widgets.js';
 import { montarInteriorDoMotor } from '../app/js/ui/settings-motor.js';
-import { montarInteriorDoAudio } from '../app/js/ui/settings-audio.js';
+import { montarInteriorDoAudio, montarInteriorDoSom } from '../app/js/ui/settings-audio.js';
 import { montarCasca } from '../app/js/ui/panel-shell.js';
 
 const ctx = {
@@ -166,7 +166,7 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
 describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () => {
   function casca() {
     const c = montarCasca(ctx, {
-      id: 'audio', titulo: 'Auditiva', rotuloDaLista: 'Sons do jogo', rotuloReset: 'Repor', rotuloFechar: 'Fechar',
+      id: 'audio', idDaLista: 'navsound-list', titulo: 'Auditiva', rotuloDaLista: 'Sons de navegação', rotuloReset: 'Repor', rotuloFechar: 'Fechar',
     });
     hospedeiro.appendChild(c.overlay);
     return c;
@@ -175,9 +175,6 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
   // 📏 Os quinze que `ui/settings-audio` alcança e nunca criou, medidos do próprio ficheiro. `#opt-sound` NÃO
   // entra: ele é o espelho deste ajuste na barra rápida, fora do painel, e é alcançado com guarda.
   const CONTROLES = {
-    'audio-master': 'BUTTON',
-    'audio-master-vol': 'INPUT',
-    'navsound-master': 'INPUT',
     'opt-modocego': 'BUTTON',
     'cane-div': 'SELECT',
     'opt-menuindex': 'BUTTON',
@@ -186,7 +183,8 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
   };
 
   /** O que o ADR-0151 tirou do painel — afirmado AUSENTE, e não só deixado de fora da lista acima. */
-  const SAIRAM = ['tts-engine', 'tts-voice', 'opt-tts-test', 'audio-sinks', 'audio-detect'];
+  // E o som e o volume GERAIS mudaram-se para o painel «Áudio»; o volume da navegação saiu (um lugar por escolha).
+  const SAIRAM = ['tts-engine', 'tts-voice', 'opt-tts-test', 'audio-sinks', 'audio-detect', 'audio-master', 'audio-master-vol', 'navsound-master'];
 
   it('🎯 [Right] cria os controles, cada um com a TAG que o painel escreve', () => {
     // ⚠️ A TAG É O DEFEITO SILENCIOSO. `renderAudio` faz `ctx.$<HTMLSelectElement>('#cane-div').value = …`;
@@ -204,39 +202,41 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
       expect(document.getElementById(id), `#${id} continua no painel — o Dev tirou-o`).toBeNull();
     }
     // e os três volumes são cursores de verdade, não caixas de texto
-    for (const id of ['audio-master-vol', 'navsound-master', 'tts-vol']) {
+    for (const id of ['tts-vol']) {
       expect(document.getElementById(id).type, `#${id} não é um cursor`).toBe('range');
     }
   });
 
-  it('🎯 [Right] cria o contentor que o painel preenche, e a lista da casca fica no cartão', () => {
+  it('🎯 [Right] a lista da casca — a da navegação sonora — fica no cartão', () => {
     const c = casca();
     montarInteriorDoAudio(ctx, c.card, c.lista);
-    for (const id of ['navsound-list']) {
-      const el = document.getElementById(id);
-      expect(el, `#${id} não foi criado`).not.toBeNull();
-      expect(el.getAttribute('role'), `#${id} não é um grupo que o leitor de tela anuncie`).toBe('group');
-      expect(el.getAttribute('aria-label'), `#${id} é um grupo sem nome`).toBeTruthy();
-    }
+    expect(c.lista.id).toBe('navsound-list');
     expect(c.card.contains(c.lista), 'a lista da casca saiu do cartão').toBe(true);
   });
 
-  it('⚠️ [Right] a ORDEM é a decisão: o volume da navegação vem ANTES da lista que ele governa', () => {
-    // ADR-0044 §2. Um cursor que governa um grupo e aparece depois dele obriga a criança a descobrir o que
-    // ele faz descendo primeiro — e quem navega por teclado passa o grupo inteiro antes de chegar ao mestre.
+  it('⚠️ [Right] a ORDEM é a decisão (ADR-0151): modo cego, bengala, navegação, narração, índice falado', () => {
+    // O modo cego primeiro, porque é nele que os outros sons passam a ser a tela; o índice logo depois da
+    // narração, porque é a narração que ele encurta.
     const c = casca();
     montarInteriorDoAudio(ctx, c.card, c.lista);
     const ordem = [...c.card.children];
     const posicao = (sel) => ordem.findIndex((n) => n.matches(sel) || n.querySelector(sel));
-    expect(posicao('#navsound-master')).toBeLessThan(posicao('#navsound-list'));
-    expect(posicao('#audio-master')).toBeLessThan(posicao('#navsound-master'));
+    const seq = ['#opt-modocego', '#cane-div', '#navsound-list', '#opt-tts', '#tts-vol', '#opt-menuindex'].map(posicao);
+    expect(seq.every((p) => p >= 0), 'uma das peças não está no cartão: ' + seq.join(',')).toBe(true);
+    expect([...seq].sort((a, b) => a - b), 'a ordem do painel auditivo mudou').toEqual(seq);
+  });
+
+  it('🔴 [Zero] o modo cego NÃO tem dica — «quem precisa sabe o que é» (ADR-0151)', () => {
+    const c = casca();
+    montarInteriorDoAudio(ctx, c.card, c.lista);
+    expect(document.getElementById('opt-modocego').closest('.ctrl-row').querySelector('.opt-hint')).toBeNull();
   });
 
   it('⚠️ [Zero] montar DUAS vezes deixa UM de cada — a raiz monta mais do que uma vez', () => {
     const c = casca();
     montarInteriorDoAudio(ctx, c.card, c.lista);
     montarInteriorDoAudio(ctx, c.card, c.lista);
-    for (const id of [...Object.keys(CONTROLES), 'navsound-list', 'audio-list']) {
+    for (const id of [...Object.keys(CONTROLES), 'navsound-list']) {
       expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
     }
   });
@@ -252,15 +252,13 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     const { setLocale } = await import('../app/js/core/i18n.js');
     const c = casca();
     montarInteriorDoAudio(ctx, c.card, c.lista);
-    const antes = document.querySelector('#audio-master').closest('.ctrl-row').querySelector('strong').textContent;
+    const antes = document.querySelector('#opt-tts').closest('.ctrl-row').querySelector('strong').textContent;
 
     await setLocale('en');
     montarInteriorDoAudio(ctx, c.card, c.lista);
-    const linha = document.querySelector('#audio-master').closest('.ctrl-row');
+    const linha = document.querySelector('#opt-tts').closest('.ctrl-row');
     expect(linha.querySelector('strong').textContent, 'a linha ficou no idioma de recuo').not.toBe(antes);
-    expect(linha.querySelector('strong').textContent).toBe('Sound');
-    // e o grupo também: um `aria-label` velho faz o leitor de tela anunciar o idioma anterior
-    expect(document.getElementById('navsound-list').getAttribute('aria-label')).toBe('Navigation sounds');
+    expect(linha.querySelector('strong').textContent).toBe('Voice narration (TTS)');
     await setLocale('pt');
   });
 
@@ -271,6 +269,44 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     montarInteriorDoAudio(ctx, c.card, c.lista);
     expect(document.getElementById('opt-sound')).toBeNull();
   });
+});
+
+describe('montarInteriorDoSom — o painel «Áudio» (ADR-0151 §2 item 4)', () => {
+  function casca() {
+    const c = montarCasca(ctx, {
+      id: 'som', idDaLista: 'audio-list', titulo: 'Áudio', rotuloDaLista: 'Sons do jogo', rotuloReset: 'Repor', rotuloFechar: 'Fechar',
+    });
+    hospedeiro.appendChild(c.overlay);
+    return c;
+  }
+
+  it('🎯 [Right] o som geral VOLTOU — interruptor e volume, com as tags que `initSettingsAudio` escreve', () => {
+    // O Dev tirou-os e devolveu-os no mesmo dia: «toggle + barra para som geral voltam».
+    const c = casca();
+    montarInteriorDoSom(ctx, c.card, c.lista);
+    expect(document.getElementById('audio-master')?.tagName).toBe('BUTTON');
+    expect(document.getElementById('audio-master-vol')?.type, 'o volume geral não é um cursor').toBe('range');
+  });
+
+  it('⚠️ [Right] o som geral vem ANTES da lista das categorias, e a lista fica no cartão', () => {
+    const c = casca();
+    montarInteriorDoSom(ctx, c.card, c.lista);
+    const ordem = [...c.card.children];
+    const posicao = (sel) => ordem.findIndex((n) => n.matches(sel) || n.querySelector(sel));
+    expect(posicao('#audio-master')).toBeGreaterThanOrEqual(0);
+    expect(posicao('#audio-master')).toBeLessThan(posicao('#audio-master-vol'));
+    expect(posicao('#audio-master-vol')).toBeLessThan(posicao('#audio-list'));
+  });
+
+  it('⚠️ [Zero] montar DUAS vezes deixa UM de cada', () => {
+    const c = casca();
+    montarInteriorDoSom(ctx, c.card, c.lista);
+    montarInteriorDoSom(ctx, c.card, c.lista);
+    for (const id of ['audio-master', 'audio-master-vol', 'audio-list']) {
+      expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
+    }
+  });
+
 });
 
 // ========================= MUTACOES CONFERIDAS =========================

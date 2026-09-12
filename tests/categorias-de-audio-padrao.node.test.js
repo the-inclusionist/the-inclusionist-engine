@@ -29,8 +29,13 @@ const DESLIGADAS = ['tts', 'guide'];
 
 describe('categorias de áudio · o estado de fábrica é decisão, não acaso', () => {
   it('[Zero] o gate está lendo o catálogo de verdade', () => {
-    expect(AUDIO_CATS.length).toBeGreaterThanOrEqual(9);
+    expect(AUDIO_CATS.length).toBeGreaterThanOrEqual(8);
     expect(AUDIO_CATS.map((c) => c.k)).toEqual(expect.arrayContaining(DESLIGADAS));
+  });
+
+  it('🔴 [Zero] `other` SAIU do mixer (ADR-0151, errata) — não controlava som nenhum', () => {
+    // «O que esta categoria controla? Nada. Então pra que?» (Dev). Um volume sem nada por baixo é botão morto.
+    expect(AUDIO_CATS.map((c) => c.k)).not.toContain('other');
   });
 
   it('[Right] EXATAMENTE `tts` e `guide` nascem desligadas', () => {

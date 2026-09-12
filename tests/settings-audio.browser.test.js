@@ -30,11 +30,13 @@ const AUDIO_HTML = `
     <button id="opt-sound" type="button">Som</button>
     <button id="audio-reset" type="button">Restaurar padrões deste menu</button>
   </div>
-  <button data-act="audio" class="pm-btn" type="button">Acessibilidade auditiva</button>`;
+  <button id="som-reset" type="button">Restaurar padrões do Áudio</button>
+  <button data-act="audio" class="pm-btn" type="button">Acessibilidade auditiva</button>
+  <button data-act="som" class="pm-btn" type="button">Áudio</button>`;
 
 const AUDIO_CATS = [
   { k: 'music', lbl: 'Música' }, { k: 'ambient', lbl: 'Sons ambiente' }, { k: 'interact', lbl: 'Interação' },
-  { k: 'earcons', lbl: 'Earcons' }, { k: 'other', lbl: 'Outros' }, { k: 'tts', lbl: 'Narração (TTS)' },
+  { k: 'earcons', lbl: 'Earcons' }, { k: 'tts', lbl: 'Narração (TTS)' },
   { k: 'sonar', lbl: 'Sonar' }, { k: 'guard', lbl: 'Guarda' }, { k: 'guide', lbl: 'Guia' },
 ];
 
@@ -366,18 +368,32 @@ describe('ui/settings-audio — restaurar padrões DESTE menu (ADR-0028)', () =>
   // O caso que importa mais não é o de o reset funcionar: é o de ele NÃO alcançar fora de si. Um reset que
   // apagasse em silêncio a configuração motora seria pior que a armadilha que ele existe para desfazer — a
   // criança desfaz um ajuste de som e perde o que a deixava jogar, sem relação visível entre uma coisa e outra.
-  it('[Right] devolve modo cego, bengala e as categorias do mixer ao padrão de fábrica', () => {
+  it('[Right] devolve modo cego, bengala, navegação e narração ao padrão — e NÃO a música, que é do «Áudio»', () => {
     const cat = freshAudioCat();
-    cat.music.on = false; cat.music.vol = 0.1;   // mexido
+    cat.music.on = false; cat.music.vol = 0.1;   // mexido, mas no OUTRO painel desde o ADR-0151
+    cat.sonar.vol = 0.2;                          // mexido, e deste painel
     cat.tts.on = true;                            // o TTS nasce DESLIGADO, então isto é desvio
     const { ctx, said, getModoCego, getCaneBlockDiv } = fullCtx({ audioCat: cat, modoCego: true, caneBlockDiv: 2 });
     initSettingsAudio(ctx);
     document.querySelector('#audio-reset').click();
     expect(getModoCego()).toBe(false);
     expect(getCaneBlockDiv()).toBe(1);
-    expect(cat.music).toEqual({ on: true, vol: 0.8 });
+    expect(cat.sonar).toEqual(defaultAudioCat('sonar'));
     expect(cat.tts).toEqual({ on: false, vol: 0.8 }); // volta a DESLIGADO, o padrão dele
+    // 🔴 O ESCOPO: repor a acessibilidade auditiva não alcança o painel ao lado.
+    expect(cat.music, 'o «repor» auditivo desfez a música, que é do painel Áudio').toEqual({ on: false, vol: 0.1 });
     expect(said.at(-1)).toContain('auditiva');
+  });
+
+  it('[Right] o «repor» do ÁUDIO devolve as quatro categorias de gosto — e só elas', () => {
+    const cat = freshAudioCat();
+    cat.music.on = false; cat.music.vol = 0.1;
+    cat.sonar.vol = 0.2;
+    const { ctx } = fullCtx({ audioCat: cat, modoCego: true });
+    initSettingsAudio(ctx);
+    document.querySelector('#som-reset').click();
+    expect(cat.music).toEqual(defaultAudioCat('music'));
+    expect(cat.sonar.vol, 'o «repor» do Áudio alcançou o sonar, que é da acessibilidade auditiva').toBe(0.2);
   });
 
   it('[Interface] NÃO toca no que não é deste menu — motor de voz e saída de áudio ficam', () => {
@@ -404,7 +420,10 @@ describe('ui/settings-audio — marca o que saiu do padrão (ADR-0029)', () => {
     document.querySelector('#audio-list button[data-acat="music"]').click();
     const linha = document.querySelector('#audio-list button[data-acat="music"]').closest('.ctrl-row');
     expect(linha.classList.contains('is-changed')).toBe(true);
-    expect(document.querySelector('[data-act="audio"]').classList.contains('is-changed')).toBe(true);
+    // ⚠️ A MARCA VAI AO MENU DE QUEM TEM A LINHA: a música é do «Áudio», e acender a acessibilidade auditiva
+    // mandaria a criança procurar no painel errado.
+    expect(document.querySelector('[data-act="som"]').classList.contains('is-changed')).toBe(true);
+    expect(document.querySelector('[data-act="audio"]').classList.contains('is-changed')).toBe(false);
   });
 
   it('[Right] clicar de volta APAGA a marca — a música volta ao padrão, e a marca some com ela', () => {
@@ -413,14 +432,16 @@ describe('ui/settings-audio — marca o que saiu do padrão (ADR-0029)', () => {
     b().click();
     b().click();
     expect(b().closest('.ctrl-row').classList.contains('is-changed')).toBe(false);
-    expect(document.querySelector('[data-act="audio"]').classList.contains('is-changed')).toBe(false);
+    expect(document.querySelector('[data-act="som"]').classList.contains('is-changed')).toBe(false);
   });
 
   it('[Right] o reset limpa todas as marcas do menu', () => {
     montar({ modoCego: true });
     document.querySelector('#audio-list button[data-acat="music"]').click();
     expect(document.querySelectorAll('.is-changed').length).toBeGreaterThan(0);
+    // cada «repor» limpa o que é seu; os dois juntos limpam o documento
     document.querySelector('#audio-reset').click();
+    document.querySelector('#som-reset').click();
     expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
   });
 });

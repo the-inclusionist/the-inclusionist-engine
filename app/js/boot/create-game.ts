@@ -86,7 +86,7 @@ import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.j
 import { montarPainel } from '../ui/mount-panel.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
-import { initSettingsAudio, montarInteriorDoAudio, type SettingsAudioApi } from '../ui/settings-audio.js';
+import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type SettingsAudioApi } from '../ui/settings-audio.js';
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn } from '../ui/dom.js';
 import * as store from '../platform/storage.js';
@@ -1369,9 +1369,12 @@ export function createGame(o: CreateGameOptions): Engine {
      */
     const painelDeAudio = montarPainel(ctxDoPainel, {
       id: 'audio',
+      // 📌 A LISTA DA CASCA É A DA NAVEGAÇÃO SONORA desde o ADR-0151: as categorias de gosto foram para o «Áudio».
+      // O id `navsound-list` é o que `initSettingsAudio` já preenche com sonar, guarda e guia.
+      idDaLista: 'navsound-list',
       rotulos: () => ({
         titulo: t('menu.audio'),
-        rotuloDaLista: t('audio.grupo.rotulo'),
+        rotuloDaLista: t('audio.navsound.grupo'),
         rotuloReset: t('menu.restoreDefaults'),
         rotuloFechar: t('menu.close'),
       }),
@@ -1390,9 +1393,30 @@ export function createGame(o: CreateGameOptions): Engine {
         esconderLinhasSemAssunto();
         audio?.renderAudio();
       },
-      primeiroFoco: '#audio-master',
+      primeiroFoco: '#opt-modocego',
     });
     montarInteriorDoAudio(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
+    /*
+     * ÁUDIO — o som geral e as quatro categorias de gosto (ADR-0151 §2 item 4), separado da acessibilidade auditiva.
+     * ⚠️ MONTADO ANTES do `initSettingsAudio`, pela regra de ordem dos irmãos: o interruptor geral, o volume e o
+     * «repor» deste painel são ligados UMA vez, no arranque.
+     */
+    const painelDeSom = montarPainel(ctxDoPainel, {
+      id: 'som',
+      idDaLista: 'audio-list',
+      rotulos: () => ({
+        titulo: t('menu.som'),
+        rotuloDaLista: t('audio.grupo.rotulo'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('menu.close'),
+      }),
+      render: () => {
+        montarInteriorDoSom(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
+        audio?.renderAudio();
+      },
+      primeiroFoco: '#audio-master',
+    });
+    montarInteriorDoSom(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
     /*
      * A BENGALA SÓ SE OFERECE A QUEM ANDA A PÉ (ADR-0153, `caneSpacing`).
      *
@@ -1416,8 +1440,6 @@ export function createGame(o: CreateGameOptions): Engine {
         players: players().length,
       });
       const semNavegacao = !sujeitos.has('navigationSound');
-      const linhaDoVolume = $<HTMLElement>('#navsound-master')?.closest<HTMLElement>('.ctrl-row');
-      if (linhaDoVolume) linhaDoVolume.hidden = semNavegacao;
       const listaDaNavegacao = $<HTMLElement>('#navsound-list');
       if (listaDaNavegacao) listaDaNavegacao.hidden = semNavegacao;
     }
@@ -1444,6 +1466,7 @@ export function createGame(o: CreateGameOptions): Engine {
       fillExplain: overlays.fillExplain,
     });
     acoesDaEngine.audio = painelDeAudio.abrir;
+    acoesDaEngine.som = painelDeSom.abrir;
   }
 
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.

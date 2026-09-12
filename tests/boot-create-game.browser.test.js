@@ -774,20 +774,45 @@ describe('createGame num documento de verdade', () => {
       item.click();
       expect(document.querySelector('#audio').hidden, 'o clique não revelou o painel').toBe(false);
       expect(document.querySelector('#cane-div').tagName, 'a bengala não é uma escolha').toBe('SELECT');
-      expect(document.querySelector('#audio-master-vol').type, 'o volume não é um cursor').toBe('range');
-      // e a lista de categorias foi PREENCHIDA pelo painel: um grupo vazio é o achado 6 outra vez
-      expect(document.querySelectorAll('#audio-list [data-acat]').length,
-        'o painel abriu com a lista de sons vazia').toBeGreaterThan(0);
+      expect(document.querySelector('#tts-vol').type, 'o volume da narração não é um cursor').toBe('range');
+      // e a lista da navegação sonora foi PREENCHIDA pelo painel: um grupo vazio é o achado 6 outra vez
+      expect([...document.querySelectorAll('#navsound-list [data-acat]')].map((b) => b.dataset.acat),
+        'o painel abriu sem sonar, guarda e guia').toEqual(['sonar', 'guard', 'guide']);
+      // 🔴 O QUE O ADR-0151 TIROU DESTE PAINEL, afirmado AUSENTE dentro dele
+      const painel = document.querySelector('#audio');
+      for (const sel of ['#audio-master', '#audio-master-vol', '#navsound-master', '[data-acat="music"]']) {
+        expect(painel.querySelector(sel), `${sel} continua na acessibilidade auditiva`).toBeNull();
+      }
 
-      // ⚠️ E OS TREZE CONTROLES ESTÁTICOS ESTÃO LIGADOS — a regra de ordem, medida no que ela produz.
-      // `initSettingsAudio` liga-os UMA VEZ, no arranque; com o interior montado DEPOIS, ficariam treze
-      // botões no documento e sem escuta nenhuma. Sem este pedaço a mutação da ordem sobrevivia.
-      const mestre = document.querySelector('#audio-master');
+      // ⚠️ E OS CONTROLES ESTÁTICOS ESTÃO LIGADOS — a regra de ordem, medida no que ela produz.
+      // `initSettingsAudio` liga-os UMA VEZ, no arranque; com o interior montado DEPOIS, ficariam botões no
+      // documento e sem escuta nenhuma. Sem este pedaço a mutação da ordem sobrevivia.
+      const indice = document.querySelector('#opt-menuindex');
+      const antes = indice.getAttribute('aria-pressed');
+      indice.click();
+      expect(document.querySelector('#opt-menuindex').getAttribute('aria-pressed'),
+        'o clique no índice falado não fez nada — o interior montou DEPOIS do `init`').not.toBe(antes);
+      indice.click(); // devolve: o índice é estado de módulo
+    });
+
+    it('🎯 [Right] o painel ÁUDIO abre pelo submenu, com o SOM GERAL e as quatro categorias de gosto (ADR-0151)', () => {
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="som"]');
+      expect(item, 'o item «Áudio» nem foi montado').not.toBeNull();
+      expect(item.hidden, 'o item «Áudio» está escondido: a engine não o acciona').toBe(false);
+      item.click();
+      expect(document.querySelector('#som').hidden, 'o clique não revelou o painel Áudio').toBe(false);
+      expect([...document.querySelectorAll('#som #audio-list [data-acat]')].map((b) => b.dataset.acat),
+        'as categorias de gosto não são as quatro — ou `other` voltou').toEqual(['music', 'ambient', 'interact', 'earcons']);
+      // «toggle + barra para som geral voltam» — e LIGADOS antes do `init`, pela mesma regra de ordem
+      expect(document.querySelector('#som #audio-master-vol')?.type, 'o volume geral não voltou').toBe('range');
+      const mestre = document.querySelector('#som #audio-master');
       const antesDoSom = mestre.getAttribute('aria-pressed');
       mestre.click();
       expect(document.querySelector('#audio-master').getAttribute('aria-pressed'),
-        'o clique no som não fez nada — o interior montou DEPOIS do `init`').not.toBe(antesDoSom);
-      mestre.click(); // devolve ao estado anterior, que é global ao módulo de áudio
+        'o clique no som geral não fez nada — o painel montou DEPOIS do `init`').not.toBe(antesDoSom);
+      mestre.click();
     });
 
     it('🔴 [Right] ligar o TTS pelo ÍCONE refresca o painel — o guarda morto do monólito voltou a valer', () => {

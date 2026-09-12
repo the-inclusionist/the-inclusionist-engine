@@ -136,7 +136,7 @@ function lerNivelTea(): number {
   return saneiaNivelTea(store.getNum(store.KEYS.tea, DEFAULTS.calmMode));
 }
 /** The audio categories `applyCalm` governs. TTS/sonar/guarda/guia stay untouched — a calm player still needs them. */
-export const CALM_AUDIO_CATS: readonly string[] = ['ambient', 'music', 'earcons', 'other', 'interact'];
+export const CALM_AUDIO_CATS: readonly string[] = ['ambient', 'music', 'earcons', 'interact'];
 /** Colour-vision-deficiency cycle, in `player.viz` values. */
 export const CVD_SEQ: readonly string[] = ['normal', 'fix-protan', 'fix-deuter', 'fix-tritan'];
 /** i18n keys of the CVD announcement names, indexed the same as CVD_SEQ.

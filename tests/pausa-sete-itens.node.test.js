@@ -70,7 +70,8 @@ describe('menu de pausa · seis itens na raiz, os ajustes num submenu', () => {
   it('[Right] o submenu tem os painéis do ADR-0151, e a saída dele também vem primeiro', () => {
     const acts = atos(markup(), 'opcoes');
     expect(acts[0], 'o "Voltar" do submenu tem de ser a primeira parada, como `resume` na raiz').toBe('pmback');
-    expect(acts.slice(1)).toEqual(['empatia', 'audio', 'motora', 'visual', 'anim']);
+    // «Áudio» (`som`) logo a seguir à acessibilidade auditiva: os dois painéis de som, lado a lado (ADR-0151 §2).
+    expect(acts.slice(1)).toEqual(['empatia', 'audio', 'som', 'motora', 'visual', 'anim']);
   });
 
   it('🔴 [Zero] «Comunicação» e «Tipografia» SAÍRAM do submenu (ADR-0151) — a ausência é o caso', () => {

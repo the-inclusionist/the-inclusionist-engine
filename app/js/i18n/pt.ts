@@ -156,6 +156,7 @@ const pt: Record<string, string> = {
   'pause.tipo': '🔤 Tipografia',
   'pause.addplayer': '👥 Número de jogadores',
   'pause.audio': '🦻 Acessibilidade auditiva',
+  'pause.som': '🔊 Áudio',
   'pause.motora': '♿ Acessibilidade motora',
   'pause.anim': '🎞 Sensibilidade visual',
   'pause.visual': '🎨 Acessibilidade visual',
@@ -483,10 +484,7 @@ const pt: Record<string, string> = {
   'audio.som': 'Som',
   'audio.som.dica': 'Desliga todo o som do jogo de uma vez, sem mexer nas escolhas de cada tipo.',
   'audio.volume': 'Volume geral',
-  'audio.navsound': 'Volume da navegação sonora',
-  'audio.navsound.dica': 'Governa só os sons que ajudam a se localizar — bengala, sonar e guia — sem mexer no som do jogo.',
   'audio.navsound.grupo': 'Sons de navegação',
-  'audio.modocego.dica': 'Bengala e pistas de áudio no lugar da tela: dá para jogar sem enxergar nada.',
   'audio.cane': 'Batida da bengala',
   'audio.cane.dica': 'De quanto em quanto chão a bengala bate. Uma batida por bloco é mais calma; a cada meio bloco dá mais detalhe.',
   'audio.menuindex': 'Índice falado dos menus',
@@ -501,6 +499,7 @@ const pt: Record<string, string> = {
   'audio.sinks.grupo': 'Saída de áudio por jogador',
   'audio.detect': 'Detectar saídas',
   'menu.audio': 'Acessibilidade auditiva',
+  'menu.som': 'Áudio',
   'audio.grupo.rotulo': 'Sons do jogo',
   // O texto de REPOUSO do rodapé de todo painel — o que ele diz enquanto ninguém aponta para linha nenhuma.
   // Era um literal em português dentro do `ui/settings-panel`, e até 2026-09-12 ninguém o via: nenhum painel

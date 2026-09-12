@@ -135,7 +135,9 @@ export interface SettingsAudioApi {
 /** Categorias de NAVEGAÇÃO SONORA (bengala/sonar/guarda/guia) — volume geral separado do som do jogo. */
 export const NAV_CATS = ['sonar', 'guard', 'guide'] as const;
 /** Categorias GERAIS do jogo (TTS fica na seção Voz, fora desta lista). */
-export const GEN_CATS = ['music', 'ambient', 'interact', 'earcons', 'other'] as const;
+// ⚠️ SÃO DO PAINEL «ÁUDIO» desde o ADR-0151, e não do auditivo: o que é gosto (música, ambiente) não mora ao lado
+// do que é acessibilidade (sonar, guarda, guia). E `other` saiu — não controlava som nenhum.
+export const GEN_CATS = ['music', 'ambient', 'interact', 'earcons'] as const;
 
 /** 0..1 -> 0..100 rounded (slider display value). */
 export function volPercent(v: number): number {
@@ -269,16 +271,24 @@ export function sinkSelectValue(p: { audioSink?: string | null } | undefined): s
 export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
   // Cada entrada: ou uma linha de controle, ou um CONTENTOR que o painel preenche por `innerHTML`.
   const pecas: (ControlRowSpec | { readonly contentor: string; readonly rotulo?: string })[] = [
-    { id: 'audio-master', rotulo: t('audio.som'), dica: t('audio.som.dica') },
-    { id: 'audio-master-vol', rotulo: t('audio.volume'), forma: 'cursor' },
-    { contentor: '@lista' }, // a lista da casca: as categorias gerais do jogo
-    { id: 'navsound-master', rotulo: t('audio.navsound'), dica: t('audio.navsound.dica'), forma: 'cursor' },
-    { contentor: 'navsound-list', rotulo: t('audio.navsound.grupo') },
-    { id: 'opt-modocego', rotulo: t('icon.blind'), dica: t('audio.modocego.dica') },
+    /*
+     * 🔴 A COMPOSIÇÃO DO ADR-0151 E DAS ERRATAS DELE (2026-09-12), na ordem do geral para o particular:
+     *   · o MODO CEGO primeiro, porque é o modo em que os outros sons passam a ser a tela — e SEM a dica: «é
+     *     redundante. Quem precisa sabe o que é»;
+     *   · a BENGALA ao lado dele (e só num jogo que responde que alguém anda, ADR-0153);
+     *   · o SONAR, a GUARDA e a GUIA, cada um com o seu interruptor e o seu volume: são a lista da casca;
+     *   · a NARRAÇÃO e o seu volume, com o ÍNDICE FALADO logo a seguir, porque é a narração que ele encurta.
+     * 🔴 O SOM e o VOLUME GERAIS MUDARAM-SE para o painel «Áudio» (`montarInteriorDoSom`): o Dev primeiro tirou-os
+     * («Volume geral é o do computador») e no mesmo dia devolveu-os — «toggle + barra para som geral voltam» —, e
+     * voltam para o painel do som, não para o da acessibilidade. SAIU o VOLUME DA NAVEGAÇÃO, que era um segundo
+     * lugar para os três volumes da lista (um lugar por escolha, D2 do registo).
+     */
+    { id: 'opt-modocego', rotulo: t('icon.blind') },
     { id: 'cane-div', rotulo: t('audio.cane'), dica: t('audio.cane.dica'), forma: 'escolha' },
-    { id: 'opt-menuindex', rotulo: t('audio.menuindex'), dica: t('audio.menuindex.dica') },
+    { contentor: '@lista' }, // a lista da casca: sonar, guarda e guia
     { id: 'opt-tts', rotulo: t('icon.tts'), dica: t('audio.tts.dica') },
     { id: 'tts-vol', rotulo: t('audio.ttsVol'), forma: 'cursor' },
+    { id: 'opt-menuindex', rotulo: t('audio.menuindex'), dica: t('audio.menuindex.dica') },
     /*
      * 🔴 SAÍRAM QUATRO LINHAS em 2026-09-12 (ADR-0151), pelas palavras do Dev:
      *   · o MOTOR, a VOZ e o TESTAR VOZ — «quem escolhe a voz é o jogo (cartucho), não o jogador. Jogador só
@@ -323,6 +333,31 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
     }
     card.appendChild(linhaDeControle(ctx, peca).linha);
   }
+}
+
+/**
+ * MONTA O INTERIOR DO PAINEL «ÁUDIO» (ADR-0151 §2 item 4): o som geral — interruptor e volume — e, a seguir, a
+ * lista da casca com as quatro categorias de gosto (música, ambiente, interacção, earcons).
+ *
+ * ⚠️ OS IDS SÃO OS QUE `initSettingsAudio` JÁ ESCUTA (`#audio-master`, `#audio-master-vol`, `#audio-list`): o
+ * painel mudou de sítio e o contrato invisível não. E a mesma regra de ordem: montar ANTES do `init`.
+ * Idempotente e reetiquetável, como o irmão auditivo.
+ */
+export function montarInteriorDoSom(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
+  const linhas: ControlRowSpec[] = [
+    { id: 'audio-master', rotulo: t('audio.som'), dica: t('audio.som.dica') },
+    { id: 'audio-master-vol', rotulo: t('audio.volume'), forma: 'cursor' },
+  ];
+  for (const peca of linhas) {
+    const jaExiste = ctx.procurar('#' + peca.id);
+    if (jaExiste) {
+      const linha = jaExiste.closest<HTMLElement>('.ctrl-row');
+      if (linha) rotularLinha(linha, peca);
+      continue;
+    }
+    card.insertBefore(linhaDeControle(ctx, peca).linha, lista.parentNode === card ? lista : null);
+  }
+  if (lista.parentNode !== card) card.appendChild(lista);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -382,8 +417,9 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (!el || !state) return;
     el.innerHTML = catsListHTML(keys, ctx.audioCats, state);
     wireCatControls(el);
-    // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109).
-    ctx.fillExplain?.(ctx.$<HTMLElement>('#audio .overlay__card'));
+    // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109) — no cartão
+    // de QUEM tem esta lista: desde o ADR-0151 são dois painéis, e o rodapé do outro não é o desta criança.
+    ctx.fillExplain?.(el.closest<HTMLElement>('.overlay__card'));
   }
 
   function renderNavSound(): void {
@@ -517,6 +553,9 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     renderNavSound();
     reflectModoCego();
     reflectTts();
+    // 🔴 FALTAVA, e só o caso do painel montado pela engine o viu (2026-09-12): o índice nasce LIGADO, o botão nascia
+    // sem estado, e o painel abria a dizer «desligado» — o controle a mentir para o leitor de tela outra vez.
+    reflectMenuIndex();
     populateTtsEngines();
     populateTtsVoices();
     const cd = ctx.$<HTMLSelectElement>('#cane-div');
@@ -548,12 +587,20 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     };
     marcar('#opt-modocego', ctx.getModoCego() !== DEFAULTS.modoCego);
     marcar('#cane-div', ctx.getCaneBlockDiv() !== DEFAULTS.caneBlockDiv);
+    // ⚠️ DUAS MARCAS DE MENU, uma por painel: a de «Áudio» acesa por um sonar mudado mandaria a criança
+    // procurar no painel errado.
+    const doSom: boolean[] = [];
     for (const c of ctx.audioCats) {
       const d = defaultAudioCat(c.k);
       const a = state?.[c.k];
-      marcar(`[data-acat="${c.k}"]`, !!a && (a.on !== d.on || a.vol !== d.vol));
+      const mudouAqui = !!a && (a.on !== d.on || a.vol !== d.vol);
+      if ((GEN_CATS as readonly string[]).includes(c.k)) {
+        doSom.push(mudouAqui);
+        markChanged(ctx.$<HTMLElement>(`[data-acat="${c.k}"]`)?.closest<HTMLElement>('.ctrl-row') ?? null, mudouAqui);
+      } else marcar(`[data-acat="${c.k}"]`, mudouAqui);
     }
     markMenuChanged(ctx.$<HTMLElement>('[data-act="audio"]'), mudou);
+    markMenuChanged(ctx.$<HTMLElement>('[data-act="som"]'), doSom);
   }
 
   // ----- widgets estáticos (existem sempre no #audio; fiados UMA vez, nunca recriados por renderAudio) -----
@@ -680,18 +727,32 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
   // O que é deste menu: o modo cego, o espaçamento da bengala e as nove categorias do mixer. O motor de voz
   // e a saída de áudio por jogador NÃO entram — são escolha de dispositivo, não preferência restaurável, e
   // zerá-las tiraria da criança o fone que é dela numa sala compartilhada.
+  /** Repõe as categorias de `keys` (as que existirem no mixer) no estado de fábrica. */
+  function reporCategorias(keys: readonly string[]): void {
+    const state = ctx.getAudioCat();
+    if (!state) return;
+    for (const k of keys) {
+      if (!state[k]) continue;
+      const d = defaultAudioCat(k);
+      state[k]!.on = d.on; state[k]!.vol = d.vol;
+      ctx.setCatGain(k);
+    }
+  }
   const resetBtn = ctx.$<HTMLButtonElement>('#audio-reset');
   if (resetBtn) resetBtn.addEventListener('click', () => {
     setModoCego(DEFAULTS.modoCego);
     ctx.setCaneBlockDiv(DEFAULTS.caneBlockDiv);
-    const state = ctx.getAudioCat();
-    if (state) for (const c of ctx.audioCats) {
-      const d = defaultAudioCat(c.k);
-      if (!state[c.k]) continue;
-      state[c.k]!.on = d.on; state[c.k]!.vol = d.vol;
-      ctx.setCatGain(c.k);
-    }
+    // 🔴 DESDE O ADR-0151 ESTE MENU NÃO TEM A MÚSICA: repor aqui a música seria alcançar fora de si — a regra do
+    // escopo, acima. Tudo o que não é das categorias de gosto é deste painel.
+    reporCategorias(ctx.audioCats.map((c) => c.k).filter((k) => !(GEN_CATS as readonly string[]).includes(k)));
     renderAudio(); reflectModoCego(); reflectTts(); reflectMenuIndex();
+    ctx.srSay(t('sr.audio.reset'));
+  });
+  // O «repor» do painel ÁUDIO: as categorias de gosto e nada mais.
+  const resetDoSom = ctx.$<HTMLButtonElement>('#som-reset');
+  if (resetDoSom) resetDoSom.addEventListener('click', () => {
+    reporCategorias(GEN_CATS);
+    renderAudio();
     ctx.srSay(t('sr.audio.reset'));
   });
 

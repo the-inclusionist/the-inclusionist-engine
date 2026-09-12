@@ -80,7 +80,8 @@ describe('the rows follow the cartridge\'s answer', () => {
 });
 
 describe('and the rows the CONTRACT answers are derived, not asked (ADR-0153)', () => {
-  const linhaDoSonar = () => document.querySelector('#navsound-master')?.closest('.ctrl-row');
+  // 📌 Desde o ADR-0151 não há volume-mestre da navegação: o que se esconde é a LISTA do sonar, guarda e guia.
+  const linhaDoSonar = () => document.querySelector('#navsound-list');
   const abrirAuditiva = () => {
     motor.pausa.mostrar(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
@@ -90,17 +91,15 @@ describe('and the rows the CONTRACT answers are derived, not asked (ADR-0153)', 
   it('🎯 [Right] a game with a grid world offers navigation sound', () => {
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
     abrirAuditiva();
-    expect(linhaDoSonar(), 'the hearing panel has no navigation-sound row — the case would measure nothing').toBeTruthy();
+    expect(linhaDoSonar()?.querySelector('[data-acat="sonar"]'), 'the hearing panel has no sonar row — the case would measure nothing').toBeTruthy();
     expect(linhaDoSonar().hidden).toBe(false);
-    expect(document.querySelector('#navsound-list').hidden).toBe(false);
     fecharTudo();
   });
 
   it('🔴 [Zero] a game of HOTSPOTS does not — the sonar has no direction there, the contract says so', () => {
     motor.mount({ ...declaracao(), topology: () => ({ kind: 'hotspots', order: ['q1', 'q2'] }) }, { acomodacoes: SEM_ASSUNTO });
     abrirAuditiva();
-    expect(linhaDoSonar().hidden, 'a sonar volume offered to a list of points').toBe(true);
-    expect(document.querySelector('#navsound-list').hidden, 'the cane/guard/guide volumes stayed').toBe(true);
+    expect(linhaDoSonar().hidden, 'sonar, guard and guide volumes offered to a list of points').toBe(true);
     fecharTudo();
   });
 });

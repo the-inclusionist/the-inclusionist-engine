@@ -23,9 +23,10 @@ const STATE = {
 };
 
 describe('ui/settings-audio — categorias (dados)', () => {
-  it('[Zero] NAV_CATS e GEN_CATS não se sobrepõem e cobrem sonar/guard/guide + music/ambient/interact/earcons/other', () => {
+  it('[Zero] NAV_CATS e GEN_CATS não se sobrepõem e cobrem sonar/guard/guide + music/ambient/interact/earcons', () => {
     expect(NAV_CATS).toEqual(['sonar', 'guard', 'guide']);
-    expect(GEN_CATS).toEqual(['music', 'ambient', 'interact', 'earcons', 'other']);
+    // `other` SAIU (ADR-0151, errata): não controlava som nenhum.
+    expect(GEN_CATS).toEqual(['music', 'ambient', 'interact', 'earcons']);
     expect(NAV_CATS.some((k) => GEN_CATS.includes(k))).toBe(false);
   });
 });

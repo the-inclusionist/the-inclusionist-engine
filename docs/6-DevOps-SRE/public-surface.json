@@ -1375,6 +1375,7 @@
     "catsListHTML",
     "initSettingsAudio",
     "montarInteriorDoAudio",
+    "montarInteriorDoSom",
     "navMasterVolume",
     "opcoesDeMotor",
     "parseCaneDiv",

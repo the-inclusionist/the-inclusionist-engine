@@ -249,11 +249,12 @@ export const PM_OPTIONS_BTNS: readonly PauseBtnDef[] = [
   //     acessibilidade rápida».
   // 📏 E O NÚMERO É O QUE CABE: com oito entradas este submenu transbordava 24 px a 640×360, e nenhum crivo o
   // via — só a raiz era medida. O caso do submenu está agora no `pausa-44px`.
-  // ⚠️ O painel «Áudio» (música, ambiente, interacção, earcons), separado da acessibilidade auditiva, entra
-  // quando existir: uma porta para um painel que não existe seria o botão morto do ADR-0106 §5.
+  // ✅ O painel «Áudio» (música, ambiente, interacção, earcons), separado da acessibilidade auditiva, ENTROU com o
+  // painel que ele abre — nunca antes: uma porta para um painel que não existe seria o botão morto do ADR-0106 §5.
   { act: 'pmback' },
   { act: 'empatia' },
   { act: 'audio' },
+  { act: 'som' },
   { act: 'motora' },
   { act: 'visual' },
   { act: 'anim' },

@@ -7,10 +7,13 @@ import * as store from './storage.js';
 type AudioCat = { k: string; lbl: string };
 type AudioCatState = { on: boolean; vol: number };
 
+// 🔴 `other` SAIU em 2026-09-12 (ADR-0151, errata): «O que esta categoria controla? Nada. Então pra que?» (Dev).
+// 📏 Medido: nenhum som da engine nem dos repositórios dos jogos era encaminhado por ela — era um volume sem nada
+// por baixo, o botão morto do ADR-0106 §5.
 export const AUDIO_CATS: AudioCat[] = [
   {k:'music',   lbl:'Música'}, {k:'ambient', lbl:'Sons ambiente (água, rua, trânsito, folhas, chuva)'},
   {k:'interact',lbl:'Efeitos de interação (passos, portas, escada)'}, {k:'earcons', lbl:'Earcons (pulo, moeda, dano…)'},
-  {k:'other',   lbl:'Outros efeitos'}, {k:'tts', lbl:'Narração (TTS)'}, {k:'sonar', lbl:'Sonar'},
+  {k:'tts', lbl:'Narração (TTS)'}, {k:'sonar', lbl:'Sonar'},
   {k:'guard',   lbl:'Guarda de beirada'}, {k:'guide', lbl:'Pista / guia auditivo'},
 ];
 
