@@ -173,7 +173,24 @@ export function crtRoundRowHtml(label: string, round: number): string {
  *  se o botão-mestre oferece "Retomar" (true) ou "Parar" (false) — mesma variável `allOn` do game.js
  *  original, aqui renomeada por clareza (o valor/comportamento não muda). */
 export function allMotionFrozen(rmKeys: readonly MotionSceneKey[], rm: MotionSceneFlags, rmChar: readonly MotionCharDef[], player: MotionPlayer | undefined): boolean {
-  return rmKeys.every((k) => rm[k]) && rmChar.every((c) => !!(player && player[c.prop]));
+  // 🔴 SEM PERSONAGEM, A METADE DO PERSONAGEM NÃO PESA — e a versão anterior fazia o contrário, com
+  // `rmChar.every((c) => !!(player && player[c.prop]))`, que é SEMPRE FALSO quando não há jogador.
+  //
+  // 📏 Medido em 2026-09-11, quando a engine passou a montar este painel para todo jogo: num jogo que não
+  // declara `players` — um quiz, um puzzle — `allFrozen` ficava preso em `false`, logo o botão-mestre
+  // calculava `next = !false = true` a CADA clique. A criança parava todas as animações e **não tinha como
+  // as trazer de volta**: o botão continuava a oferecer «Parar» e a fazer o que já estava feito.
+  //
+  // É a mesma forma do defeito que o `boot/create-game` já regista sobre o modo cego — «ligava uma vez e NÃO
+  // HAVIA COMO DESLIGAR» —, e custa mais a quem ligou o congelamento por precisar dele: essa pessoa não
+  // experimenta o botão por curiosidade, carrega nele com enjoo.
+  //
+  // ⚠️ E O CASO QUE COBRIA ISTO FIXAVA O DEFEITO: ele afirmava «sem player nunca dá true» com a razão escrita
+  // em termos do mecanismo — «RM_CHAR.every falha» —, e não da pessoa. Um caso que descreve a implementação
+  // não pode discordar dela.
+  //
+  // 📌 Com jogador, nada muda: `!player` é falso e a conta é a de sempre, alvo a alvo.
+  return rmKeys.every((k) => rm[k]) && (!player || rmChar.every((c) => !!player[c.prop]));
 }
 
 /** allFrozen=true (tudo já congelado) → oferece "Retomar"; caso contrário → oferece "Parar". */

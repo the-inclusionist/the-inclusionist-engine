@@ -123,8 +123,26 @@ describe('allMotionFrozen', () => {
     const rm = { parallax: true, decor: true, items: true, particles: true };
     expect(allMotionFrozen(RM_KEYS, rm, RM_CHAR, partiallyFrozenPlayer)).toBe(false);
   });
-  it('[Zero] sem player (undefined) nunca dá true (RM_CHAR.every falha)', () => {
+  it('🔴 [Zero] SEM personagem, a cena inteira congelada JÁ É "tudo congelado" — e dá para voltar', () => {
+    // ⚠️ ESTE CASO AFIRMAVA O CONTRÁRIO, e afirmava-o pelo MECANISMO: «sem player (undefined) nunca dá true
+    // (RM_CHAR.every falha)». Um caso escrito em termos da implementação não consegue discordar dela, e este
+    // fixou um defeito como se fosse a decisão.
+    //
+    // 📏 O que ele deixava passar, medido quando a engine passou a montar o painel para todo jogo: num jogo
+    // sem `players` — um quiz, um puzzle — `allFrozen` ficava preso em `false`, então o botão-mestre calculava
+    // `next = !false = true` a cada clique. A criança parava todas as animações e NÃO TINHA COMO AS TRAZER DE
+    // VOLTA. Quem carrega nesse botão não o faz por curiosidade; carrega com enjoo.
     const rm = { parallax: true, decor: true, items: true, particles: true };
+    expect(allMotionFrozen(RM_KEYS, rm, RM_CHAR, undefined),
+      'sem personagem, a metade do personagem não pode pesar na resposta').toBe(true);
+    // e o rótulo que daí sai é o que oferece a VOLTA — a metade que a criança precisa de ver
+    expect(motionMasterLabel(allMotionFrozen(RM_KEYS, rm, RM_CHAR, undefined)))
+      .toBe('▶ Retomar todas as animações');
+  });
+
+  it('[Inverse] sem personagem, cena por congelar continua a dar false', () => {
+    // O par do caso acima: a mudança tira o peso da metade AUSENTE, não o da metade que existe.
+    const rm = { parallax: true, decor: false, items: true, particles: true };
     expect(allMotionFrozen(RM_KEYS, rm, RM_CHAR, undefined)).toBe(false);
   });
 });
