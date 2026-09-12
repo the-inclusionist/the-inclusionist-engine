@@ -111,6 +111,8 @@ const pt: Record<string, string> = {
   'pause.options': '⚙ Opções',
   'pause.pmback': '↩ Voltar',
   'pause.cardAria': 'Menu de pausa do jogador {n}',
+  // O sufixo do título do cartão, só em multijogador. Era português cru colado no markup de `ui/pause-icons`.
+  'pause.cardSeat': ' · Jogador {n}',
   /* --- CATÁLOGO DE ATIVIDADES: só o que NÃO é alfabetização. As cinco de alfabetização seguem cruas em
      pt-BR no `educational/activities-registry`, porque a palavra e a sílaba SÃO a matéria (pilar 3). --- */
   'act.ludico.nome': 'Coletar 10 moedas',

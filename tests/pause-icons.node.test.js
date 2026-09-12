@@ -455,6 +455,26 @@ describe('markup dos ícones e do menu', () => {
     }
   });
 
+  it('🔴 o sufixo do assento é CHAVE, e não português cru colado no markup', () => {
+    // 🔴 A linha era `' · Jogador ' + (o.player + 1)`, dentro de um módulo de ENGINE. Num jogo em inglês
+    // lia-se «Paused · Jogador 2» — a mesma família do «📚 Nível» que este ficheiro já apanhou uma vez, e o
+    // crivo de prosa crua não a via porque ela nasce de uma concatenação e não de um literal inteiro.
+    //
+    // ⚠️ ESTE CASO MEDE A FORMA, E O IDIOMA MEDE-SE NOUTRO SÍTIO. Aqui o dicionário activo é o pt, onde a
+    // chave e o literal antigo produzem a MESMA string — uma asserção «não contém Jogador» estaria a medir
+    // o dicionário e não o mecanismo, e ficaria verde com o literal de volta. Quem distingue literal de
+    // chave é o ARRANQUE EM `en`: `tests/barra-no-idioma-do-arranque.browser.test.js`.
+    const h = screenPauseMarkup({ player: 1, numPlayers: 2, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
+    // O `<span>` próprio é o que o `refrescarItensDaPausa` precisa para REPINTAR o sufixo quando a pausa
+    // abre — sem um sítio nomeado, o conserto do idioma não tem onde pousar.
+    expect(h, 'o sufixo do assento desapareceu em multijogador').toContain('class="pause-seat"');
+    expect(h.match(/class="pause-seat">([^<]*)</)[1].trim().length,
+      'o `<span>` do assento existe e está vazio com dois jogadores').toBeGreaterThan(0);
+    // E com UM jogador ele fica vazio — o sufixo é informação de multijogador, não decoração.
+    const solo = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
+    expect(solo).toContain('<span class="pause-seat"></span>');
+  });
+
   it('ZERO botões de menu: o cartão, o título, as duas listas e o rodapé continuam lá', () => {
     const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: [], optionsButtons: [], dynLabel: SEM_DIN, t: (k) => k });
     expect(h).toContain('class="pause-card" role="dialog" aria-modal="true"');

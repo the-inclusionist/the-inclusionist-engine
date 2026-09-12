@@ -570,7 +570,14 @@ export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
   // ADR-0044, um nível acima. E `aria-label`, não `aria-labelledby`: o `<h2>` é rótulo VISUAL, e é por isso
   // que escondê-lo num quadro apertado não tira o nome do diálogo de quem escuta.
   return '<div class="pause-card" role="dialog" aria-modal="true" aria-label="' + t('pause.cardAria', { n: o.player + 1 }) + '">' +
-    '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>' + (o.numPlayers > 1 ? ' · Jogador ' + (o.player + 1) : '') + '</h2>' +
+    '<h2><span data-i18n="pause.title">' + o.t('pause.title') + '</span>'
+    // ⚠️ O SUFIXO DO ASSENTO ERA `' · Jogador ' + (o.player + 1)` — PORTUGUÊS CRU dentro de um módulo de
+    // engine, e num jogo em inglês lia-se «Paused · Jogador 2». Agora é chave, e vive num `<span>` próprio
+    // porque o `refrescarItensDaPausa` precisa de um sítio para o REPINTAR: como `pause.cardSeat` leva um
+    // parâmetro, o `data-i18n` de `applyDom` — que chama `t(k)` sem parâmetros — não serve aqui.
+    // 📌 `t` do módulo e não `o.t`, pela mesma razão que a linha do `aria-label` acima já usa: a porta
+    // injectada é `(key) => string` e não atravessa parâmetros.
+    + '<span class="pause-seat">' + (o.numPlayers > 1 ? t('pause.cardSeat', { n: o.player + 1 }) : '') + '</span></h2>' +
     pauseMenuHtml(o.pmButtons, 'raiz', o.dynLabel, o.t) +
     pauseMenuHtml(o.optionsButtons, 'opcoes', o.dynLabel, o.t) +
     '<p class="pause-legend"></p></div>';
@@ -1060,6 +1067,33 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
    * fase vira `pause-menu`, ou seja quando a pausa ABRE. O §5 continua respeitado — a criança nunca vê um
    * item que não acciona —, e agora também vê os que passaram a accionar.
    */
+  /**
+   * O NOME DO CARTÃO — o que se VÊ e o que se OUVE — repintado no idioma corrente.
+   *
+   * 🔴 MEDIDO em 2026-09-12, no `dist/quiz.html` com `documentElement.lang === 'en'`: o cartão de pausa
+   * mostrava «Paused», «Resume», «Accessibility», «Typography» — tudo em inglês — e anunciava-se a quem usa
+   * leitor de tela como **«Menu de pausa do jogador 1»**. A chave existe nos três dicionários; o que falha é
+   * o TEMPO, o mesmo do ficheiro `barra-no-idioma-do-arranque`: o `initI18n` aplica pt de forma síncrona e
+   * pede en/es de forma assíncrona, a marcação nasce nesse intervalo, e um `aria-label` colado não tem como
+   * ser corrigido depois — `applyDom` só alcança `[data-i18n]` e `[data-i18n-aria]`.
+   *
+   * ⚠️ E `data-i18n-aria` NÃO SERVIRIA AQUI: `applyDom` chama `t(k)` sem parâmetros, e esta chave leva o
+   * número do assento. Um `data-i18n-aria` deixaria a pessoa a ouvir «Player {n} pause menu», com as chavetas.
+   *
+   * 🎯 Por isso repinta-se aqui: `refrescarItensDaPausa` já corre a cada `reflectPauseIcons()`, ou seja a
+   * cada vez que a pausa ABRE. O idioma vale no instante em que a criança a abre, que é o instante certo.
+   *
+   * ⚠️ QUEM PERDIA ERA SÓ QUEM ESCUTA, e é isso que faz este defeito ser da família que o ADR-0044 item 4
+   * nomeia: para quem vê, o cartão estava inteiro em inglês e nada havia a notar. O canal partido era o
+   * único canal de outra criança.
+   */
+  function renomearCartao(cartao: HTMLElement, i: number): void {
+    const card = cartao.querySelector<HTMLElement>('.pause-card');
+    if (card) card.setAttribute('aria-label', t('pause.cardAria', { n: i + 1 }));
+    const assento = cartao.querySelector<HTMLElement>('h2 .pause-seat');
+    if (assento) assento.textContent = ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: i + 1 }) : '';
+  }
+
   function refrescarItensDaPausa(): void {
     const acts = getPauseActs();
     const raiz = ctx.pmButtons ?? PM_BTNS;
@@ -1068,9 +1102,13 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       ...raizQueAcciona(raiz, opcoes, acts).map((b) => b.act),
       ...itensQueAccionam(opcoes, acts).map((b) => b.act),
     ]);
-    // ⚠️ `filter(Boolean)`: os cartões são indexados por JOGADOR, e montar só a tela 2 deixa um buraco no
-    // índice 0. Um `for…of` sobre array esparso entrega `undefined`, e foi o que rebentou à primeira.
-    for (const cartao of cartoes.filter(Boolean)) {
+    // ⚠️ `filter(Boolean)` VIROU ÍNDICE EXPLÍCITO, e a razão é a linha do nome logo abaixo: os cartões são
+    // indexados por JOGADOR, montar só a tela 2 deixa um buraco no índice 0 — e `filter` fechava o buraco,
+    // o que renumerava os assentos. O guarda de `undefined` que ele dava fica, escrito à mão.
+    for (let i = 0; i < cartoes.length; i++) {
+      const cartao = cartoes[i];
+      if (!cartao) continue;
+      renomearCartao(cartao, i);
       for (const btn of cartao.querySelectorAll<HTMLElement>('.pm-btn')) {
         // ⚠️ `hidden` e não `remove()`: reaparecer tem de ser possível, porque a tabela pode crescer outra vez
         // (um jogo que só liga «sair» depois da primeira fase). Remover seria decidir uma vez de novo.
