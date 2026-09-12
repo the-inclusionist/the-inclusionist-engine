@@ -1251,6 +1251,12 @@
     "soonName",
     "wrongModeMessage"
   ],
+  "ui/menu-items.ts": [
+    "ATRIBUTO_DO_NUMERO",
+    "ITEM_SELECTOR",
+    "itensNavegaveis",
+    "numerarItens"
+  ],
   "ui/menu-nav.ts": [
     "KEY_DOWN",
     "KEY_LEFT",

@@ -162,6 +162,7 @@ import { mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from './pause-icons.js';
 import { anunciarItem } from './item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js';
+import { itensNavegaveis } from './menu-items.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
 // A CONTA DO ANEL mudou de casa para `core/anel` no item 7 do ADR-0044: `ui/pause-icons` passou a precisar
@@ -307,10 +308,8 @@ export interface MenuNavApi {
   attach: () => void;
 }
 
-/** Os controles que contam como "item navegável" de um menu. Verbatim do seletor do `menuItems`. */
-// `[data-passos]` desde 2026-09-12 (ADR-0151): o controle de passos ⯇ ⯈ de `ui/panel-widgets` é UM item — as setas
-// dentro dele são alvo de dedo, não paragens do cursor.
-const ITEM_SELECTOR = 'button:not([disabled]), select:not([disabled]), input[type=range]:not([disabled]), [data-passos]';
+// O SELECTOR DOS ITENS mudou-se para `ui/menu-items` (ADR-0158): a numeração visível lê a MESMA lista, porque o número
+// escrito tem de ser o do índice falado — duas cópias do selector eram como «2 de 7» e um «3» escrito divergiriam.
 /** Onde os itens moram: o card do diálogo (`.overlay__card`) ou o card da pausa (`.pause-card`). */
 const CARD_SELECTOR = '.overlay__card, .pause-card';
 
@@ -322,10 +321,8 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
 
   function menuItems(menu: HTMLElement): HTMLElement[] {
     const card = menu.querySelector<HTMLElement>(CARD_SELECTOR) || menu;
-    // `offsetParent === null` = fora do fluxo de layout (escondido, `display:none` ou dentro de aba oculta).
-    // É o único filtro de VISIBILIDADE real que existe aqui: sem ele o cursor pousa em botão invisível e o
-    // leitor de tela anuncia um controle que ninguém vê. Verbatim.
-    return [...card.querySelectorAll<HTMLElement>(ITEM_SELECTOR)].filter((el) => el.offsetParent !== null);
+    // O filtro de VISIBILIDADE (`offsetParent`) mora com o selector em `ui/menu-items` — verbatim do que estava aqui.
+    return itensNavegaveis(card);
   }
 
   function menuFocus(menu: HTMLElement | null): void {

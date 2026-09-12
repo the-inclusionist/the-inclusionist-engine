@@ -22,6 +22,7 @@
 // action works, and not before». That judgement belongs to the composition root, which knows what it has.
 import type { PanelLabels, PanelShell, PanelShellCtx } from './panel-shell.js';
 import { aplicarRotulos, montarCasca } from './panel-shell.js';
+import { numerarItens } from './menu-items.js';
 
 /** The slice of the overlay stack a panel needs. Narrow on purpose: this file never opens a second panel. */
 export interface PanelStack {
@@ -110,6 +111,24 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
     ctx.overlays.restoreFocus?.(spec.id);
   });
 
+  /*
+   * ADR-0158: every stop of the cursor shows its number, the spoken index's (`ui/menu-items`). Renumbered on every
+   * change while the panel is open, and not only on open: panels re-render their rows on each click, and a row can
+   * hide (the keyboard seat row, the 3–4 row) — a number written once would point at the wrong row a click later.
+   * 📌 The observer disconnects while it writes: the numbers it inserts are mutations too.
+   */
+  const Observador = (globalThis as { MutationObserver?: typeof MutationObserver }).MutationObserver;
+  const vigiar = (): void => {
+    observador?.observe(casca.card, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'disabled'] });
+  };
+  const observador = Observador ? new Observador(() => {
+    if (casca.overlay.hidden) return;
+    observador?.disconnect();
+    numerarItens(casca.card);
+    observador?.takeRecords();
+    vigiar();
+  }) : null;
+
   const abrir = (): void => {
     // ⚠️ OS RÓTULOS ANTES DO `render()`, e a ordem tem consequência: `ui/settings-panel.fillExplain` lê o
     // `data-explain-idle` do cartão para montar o rodapé, e quem o chama é o render de cada painel.
@@ -117,6 +136,9 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
     spec.render();
     casca.overlay.hidden = false;
     ctx.overlays.frontOverlay(casca.overlay);
+    // After the reveal: a stop is counted only if it is laid out, and a hidden overlay lays out nothing.
+    numerarItens(casca.card);
+    vigiar();
     casca.fechar.focus?.();
   };
 
