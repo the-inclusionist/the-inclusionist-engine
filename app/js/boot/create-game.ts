@@ -63,7 +63,7 @@ import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
 import { createTts, type CarregarVozNeural } from '../platform/tts.js';
-import { ensureAC, catNode, audioOut, soundOn, volume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain } from '../platform/audio.js';
+import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
 // responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
@@ -76,6 +76,8 @@ import { montarPainel } from '../ui/mount-panel.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsCaa, type SettingsCaaApi } from '../ui/settings-caa.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
+import { initSettingsAudio, montarInteriorDoAudio, type SettingsAudioApi } from '../ui/settings-audio.js';
+import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn } from '../ui/dom.js';
 import * as store from '../platform/storage.js';
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
@@ -205,7 +207,20 @@ export interface CreateGameOptions {
    *  ⚠️ `KeyScheme` e não `Record<string, string[]>` desde a #118: era uma CÓPIA ESTRUTURAL do tipo, e uma
    *  cópia que ninguém obriga a concordar diverge — é a lição que o próprio `core/entity` abre a dizer, com
    *  o `DomQuery` (dezasseis cópias) e o `KeyScheme` (seis) como as contas já pagas. */
-  readonly players?: { ctrl: KeyScheme }[];
+  /**
+   * ⚠️ `audioSink` ENTROU EM 2026-09-12, e é ADITIVO E OPCIONAL: nenhum consumidor precisa de o escrever.
+   *
+   * 🎯 Ele entra porque o assento passou a ter um segundo leitor dentro da engine. O painel auditivo, que a
+   * engine agora monta, escreve nele a saída de áudio que a criança escolheu — e `ui/pause-icons` lê-o para
+   * responder a uma pergunta que muda o que a barra oferece: «esta criança tem uma saída SÓ dela?». Sem isso,
+   * mexer em som, TTS ou modo cego num fone partilhado mudaria o áudio de toda a gente.
+   *
+   * 📌 E É SÓ ESTE CAMPO. Os campos MOTORES (`easy`, `toggleMove`, `toggleRun`) não entram: eles são
+   * obrigatórios em `MotorPlayer` — o painel LÊ-OS para desenhar o estado —, e torná-los exigíveis aqui
+   * obrigaria todo jogo a carregá-los. Essa é uma decisão de contrato por tomar, e ela não se toma de
+   * passagem por um cast que faria o compilador calar-se.
+   */
+  readonly players?: { ctrl: KeyScheme; audioSink?: string | null }[];
   /** Troca de fase, para quem tem fases. Ausente = não faz nada (o jogo sem fases não perde nada). */
   readonly setPhase?: (p: 'title' | 'playing' | 'paused') => void;
   /**
@@ -675,6 +690,21 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const acoesDaEngine: Record<string, () => void> = {};
 
+  /**
+   * O PAINEL AUDITIVO, resolvido tarde e lido cedo — a mesma preguiça do `acoesDaEngine` acima, e pela mesma
+   * razão: `initPauseIcons` corre aqui e os painéis montam-se ~150 linhas abaixo.
+   *
+   * 🔴 ELE EXISTE COMO `let` POR CAUSA DE UM DEFEITO PRESERVADO VERBATIM. O `ui/pause-icons` documenta-o: no
+   * monólito a chamada que refresca a linha do TTS estava atrás de `typeof reflectTTS === 'function'`, um
+   * símbolo que já não existia, «so it never fires». O guarda veio portado como `reflectTtsPanelEnabled`, com
+   * o padrão `false`, para não consertar em silêncio — e com um campo por onde o ligar de volta.
+   *
+   * 🎯 AGORA HÁ POR ONDE: a engine monta o painel, logo ela tem o `reflectTts` para lhe dar. Sem isto, a
+   * criança liga a narração pelo ícone 🗣 da barra e o painel continua a dizer que ela está desligada — a
+   * família de defeito do controlo a mentir o estado, que este repositório já pagou com o `#opt-modocego`.
+   */
+  let audio: SettingsAudioApi | null = null;
+
   const pauseIcons = initPauseIcons({
     doc,
     /*
@@ -712,8 +742,9 @@ export function createGame(o: CreateGameOptions): Engine {
      * uma aresta nova entre camadas para poupar um argumento. A composição é o trabalho deste ficheiro.
      */
     transporteEmUso: (i: number) => entradaDe(i).emUso,
-    reflectTtsPanel: () => {},
-    reflectTtsPanelEnabled: false,
+    // ✅ O guarda morto do monólito volta a valer — ver a nota em `audio`, acima.
+    reflectTtsPanel: () => { audio?.reflectTts(); },
+    reflectTtsPanelEnabled: true,
     isLibrasOn: vlibrasOpen,
     toggleLibras,
     /*
@@ -999,6 +1030,52 @@ export function createGame(o: CreateGameOptions): Engine {
       toggleBtn,
     });
     acoesDaEngine.anim = painelDeAnim.abrir;
+
+    /*
+     * ACESSIBILIDADE AUDITIVA — o maior dos oito, e o que mais tinha a perder por não existir.
+     *
+     * 📏 Quinze nós que o painel alcançava e nunca criava; quem os constrói é `montarInteriorDoAudio`, ao lado
+     * dele. ⚠️ E o interior entra ANTES do `init`, pela regra de ordem que os três painéis anteriores já
+     * pagaram: `initSettingsAudio` liga TREZE cliques uma vez, no arranque.
+     *
+     * 📌 Nenhum dos dezanove campos do `ctx` é do jogo: o mixer, o volume, o modo cego, a bengala e a voz são
+     * todos da engine, e `SinkPlayer` tem os campos todos opcionais — logo os jogadores do cartucho servem
+     * como estão. Era o painel mais caro de montar e o menos dependente de quem o monta.
+     */
+    const painelDeAudio = montarPainel(ctxDoPainel, {
+      id: 'audio',
+      rotulos: () => ({
+        titulo: t('menu.audio'),
+        rotuloDaLista: t('audio.grupo.rotulo'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('menu.close'),
+      }),
+      render: () => audio?.renderAudio(),
+      primeiroFoco: '#audio-master',
+    });
+    montarInteriorDoAudio(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
+    audio = initSettingsAudio({
+      $, srSay, store,
+      audioCats: AUDIO_CATS,
+      toggleBtn,
+      getNumPlayers: () => players().length,
+      getPlayers: () => cartucho.players ?? [],
+      getSoundOn: () => soundOn,
+      setSoundOn,
+      getVolume: () => volume,
+      setVolume,
+      getAudioCat: () => audioCat,
+      setCatGain,
+      tts,
+      getModoCego: lerModoCego,
+      // 📌 O padrão do `core/state`: grava, persiste, avisa. Os efeitos de jogo são REACÇÃO, e quem reage
+      // assina `on('modoCego', …)` — é a mesma decisão que o `ui/pause-icons` já tomou para o ícone.
+      setModoCego: state.setModoCegoValue,
+      getCaneBlockDiv: () => state.caneBlockDiv,
+      setCaneBlockDiv: state.setCaneBlockDivValue,
+      fillExplain: overlays.fillExplain,
+    });
+    acoesDaEngine.audio = painelDeAudio.abrir;
   }
 
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.

@@ -389,6 +389,8 @@ const en: Record<string, string> = {
   'audio.ttsTest.dica': 'Speaks a sample sentence with the voice chosen right now.',
   'audio.sinks.grupo': 'Audio output per player',
   'audio.detect': 'Detect outputs',
+  'menu.audio': 'Hearing accessibility',
+  'audio.grupo.rotulo': 'Game sounds',
   'sr.audio.reset': 'Hearing accessibility restored to its defaults. The other menus did not change.',
   'sr.empathy.reset': 'Empathy mode restored to its defaults: simulations off. Colour-blindness corrections and the other menus did not change.',
   'sr.motor.reset': 'Easy Mode and latched movement restored to their defaults. Eye control and the key mapping are unchanged.',

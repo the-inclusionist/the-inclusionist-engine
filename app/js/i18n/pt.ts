@@ -478,6 +478,8 @@ const pt: Record<string, string> = {
   'audio.ttsTest.dica': 'Fala uma frase de exemplo com a voz escolhida agora.',
   'audio.sinks.grupo': 'Saída de áudio por jogador',
   'audio.detect': 'Detectar saídas',
+  'menu.audio': 'Acessibilidade auditiva',
+  'audio.grupo.rotulo': 'Sons do jogo',
   'sr.audio.reset': 'Acessibilidade auditiva restaurada aos padrões. Os outros menus não mudaram.',
   'sr.empathy.reset': 'Modo empatia restaurado aos padrões: simulações desligadas. Correções de daltonismo e os outros menus não mudaram.',
   'sr.motor.reset': 'Modo Fácil e movimento por alternância restaurados aos padrões. O controle pelos olhos e o mapeamento de teclas continuam como estavam.',

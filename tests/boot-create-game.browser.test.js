@@ -588,6 +588,56 @@ describe('createGame num documento de verdade', () => {
       document.querySelector('#animation-reset').click();
     });
 
+    it('🎯 [Right] o painel AUDITIVO abre com os seus controles, cada um com a tag certa', () => {
+      // O maior dos oito: quinze nós que o painel alcançava e nunca criava. Aqui o que se mede é o percurso
+      // inteiro — item da pausa, tabela da engine, `abrir()`, `renderAudio()` — e que a tag sobreviveu a ele.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]');
+      expect(item, 'o item de acessibilidade auditiva nem foi montado').not.toBeNull();
+      expect(item.hidden).toBe(false);
+
+      item.click();
+      expect(document.querySelector('#audio').hidden, 'o clique não revelou o painel').toBe(false);
+      expect(document.querySelector('#cane-div').tagName, 'a bengala não é uma escolha').toBe('SELECT');
+      expect(document.querySelector('#audio-master-vol').type, 'o volume não é um cursor').toBe('range');
+      // e a lista de categorias foi PREENCHIDA pelo painel: um grupo vazio é o achado 6 outra vez
+      expect(document.querySelectorAll('#audio-list [data-acat]').length,
+        'o painel abriu com a lista de sons vazia').toBeGreaterThan(0);
+
+      // ⚠️ E OS TREZE CONTROLES ESTÁTICOS ESTÃO LIGADOS — a regra de ordem, medida no que ela produz.
+      // `initSettingsAudio` liga-os UMA VEZ, no arranque; com o interior montado DEPOIS, ficariam treze
+      // botões no documento e sem escuta nenhuma. Sem este pedaço a mutação da ordem sobrevivia.
+      const mestre = document.querySelector('#audio-master');
+      const antesDoSom = mestre.getAttribute('aria-pressed');
+      mestre.click();
+      expect(document.querySelector('#audio-master').getAttribute('aria-pressed'),
+        'o clique no som não fez nada — o interior montou DEPOIS do `init`').not.toBe(antesDoSom);
+      mestre.click(); // devolve ao estado anterior, que é global ao módulo de áudio
+    });
+
+    it('🔴 [Right] ligar o TTS pelo ÍCONE refresca o painel — o guarda morto do monólito voltou a valer', () => {
+      // ⚠️ `ui/pause-icons` documenta o defeito e preservou-o verbatim: no monólito esta chamada estava atrás
+      // de `typeof reflectTTS === 'function'`, um símbolo que já não existia, «so it never fires». O campo
+      // `reflectTtsPanelEnabled` existe para o ligar de volta, e só agora há um painel para refrescar.
+      //
+      // 📌 Sem isto, a criança liga a narração pelo ícone 🗣 e o painel continua a dizer que está desligada —
+      // a família do controlo a mentir o estado, que este repositório já pagou com o `#opt-modocego`.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
+      const botao = document.querySelector('#opt-tts');
+      const antes = botao.getAttribute('aria-pressed');
+
+      // o ícone da barra da primeira tela, que é outra superfície da MESMA engine
+      const icone = document.querySelector('#title-icons [data-pi="tts"]');
+      expect(icone, 'o ícone de narração não está na barra: o caso não mede nada').not.toBeNull();
+      icone.click();
+
+      expect(document.querySelector('#opt-tts').getAttribute('aria-pressed'),
+        'o ícone mudou o estado e o painel continua a anunciar o anterior').not.toBe(antes);
+    });
+
     it('🔴 [Boundary] hospedeiro FORA de `#game-region` vira linha em `problems`, e não silêncio', () => {
       // ⚠️ ESTE É O CASO DO SILÊNCIO. `ui/settings-panel.topVisibleOverlay` varre `'#game-region .overlay'`, e é
       // por ele que o `ui/menu-nav` acha o diálogo de cima para andar com as setas. Um painel pendurado fora

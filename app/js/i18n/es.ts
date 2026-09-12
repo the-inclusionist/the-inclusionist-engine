@@ -388,6 +388,8 @@ const es: Record<string, string> = {
   'audio.ttsTest.dica': 'Dice una frase de ejemplo con la voz elegida ahora.',
   'audio.sinks.grupo': 'Salida de audio por jugador',
   'audio.detect': 'Detectar salidas',
+  'menu.audio': 'Accesibilidad auditiva',
+  'audio.grupo.rotulo': 'Sonidos del juego',
   'sr.audio.reset': 'Accesibilidad auditiva restaurada a sus valores predeterminados. Los demás menús no cambiaron.',
   'sr.empathy.reset': 'Modo empatía restaurado a sus valores predeterminados: simulaciones desactivadas. Las correcciones de daltonismo y los demás menús no cambiaron.',
   'sr.motor.reset': 'Modo Fácil y movimiento por alternancia restaurados a sus valores predeterminados. El control con los ojos y el mapeo de teclas siguen igual.',
