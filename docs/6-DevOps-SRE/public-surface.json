@@ -1511,6 +1511,7 @@
     "SettingsVisualCtx",
     "VISUAL_MODES",
     "VISUAL_MODE_LIST",
+    "VisualRowsOffered",
     "VisualSettings",
     "clamp01",
     "clampSelectedPlayer",

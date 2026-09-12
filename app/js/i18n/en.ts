@@ -210,6 +210,10 @@ const en: Record<string, string> = {
   'contrast.7': '7:1',
   'visual.lq': 'Contrast enhancement',
   'visual.lq.dica': 'A tone curve over the whole screen: linear stretches the contrast, quadratic brings out shadows and highlights, and mixed sits between them. Applies to every player.',
+  'menu.visual': 'Visual accessibility',
+  'visual.grupo.rotulo': 'Visual settings',
+  'visual.cbsafe': 'Colour-blind safe palette',
+  'visual.cbsafe.dica': 'Swaps the colours of the menus and the HUD for a palette that stays distinct in every kind of colour blindness (Okabe-Ito).',
   'lq.off': 'off',
   'lq.linear': 'linear',
   'lq.mixed': 'mixed',
@@ -651,7 +655,6 @@ const en: Record<string, string> = {
   'pause.motivo.addplayer': 'The game decides how many players can play.',
   'pause.motivo.opcoesdojogo': 'This game has no options of its own.',
   'pause.motivo.empatia': 'Empathy mode is still under construction.',
-  'pause.motivo.visual': 'Visual accessibility is still under construction.',
   'a11y.gameRegion': 'Game area. Move with A and D or the arrow keys; jump with L or Space; climb ladders up and down (and swim in water) with W and S or the arrow keys; run with P or Shift. Collect 10 coins.',
   'game.instructions': 'Move the character through the cave and collect 10 coins. No time limit. Controls: A and D or the arrow keys move; L or Space jump; W and S (or up/down arrows) climb ladders and swim; P or Shift run.',
   // ===================== ARIA-LABELS FROM index.html =====================

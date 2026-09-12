@@ -90,6 +90,9 @@ import { montarPassos, atualizarPassos, passoSeguinte } from '../ui/panel-widget
 import { PERSONAS_DO_PAD, personaMaisProxima } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
+import { initSettingsVisual } from '../ui/settings-visual.js';
+import { HC_ROLE_DEF } from '../render/hc-role-data.js';
+import { initLqFilter, setLq, getLqT, lqFilter } from '../render/lq-filter.js';
 import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type SettingsAudioApi } from '../ui/settings-audio.js';
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn } from '../ui/dom.js';
@@ -689,6 +692,18 @@ export function createGame(o: CreateGameOptions): Engine {
     }
   }
 
+  /*
+   * O FILTRO DO MUNDO É UMA COMPOSIÇÃO: a correcção de cor do 🚥 e o realce de contraste L→Q (ADR-0151). Escritos à
+   * parte, o segundo a escrever apagava o primeiro — ligar o realce desligava a correcção que a criança daltónica
+   * tinha posto. Cada escritor guarda a sua parte e pede a composição.
+   */
+  let filtroDaCorrecao = '';
+  function recomporFiltroDoMundo(): void {
+    aplicarFiltroDeVisao([filtroDaCorrecao, lqFilter()].filter(Boolean).join(' '), 'mundo');
+  }
+  initLqFilter({ onChange: recomporFiltroDoMundo });
+  if (getLqT() > 0) recomporFiltroDoMundo(); // o realce guardado vale desde o arranque
+
   // 3. A pilha de diálogos. O ctx é o mesmo em qualquer jogo — é boilerplate, e boilerplate repetido é onde
   //    consumidores divergem sem querer.
   const overlays = initSettingsPanel({
@@ -1084,7 +1099,8 @@ export function createGame(o: CreateGameOptions): Engine {
           const estado: VisualState = { ...(jogador?.visual ?? PADRAO), correcao };
           if (jogador) jogador.visual = estado;
           const chave = filtroChave(estado);
-          aplicarFiltroDeVisao(chave ? (VIZ_FILTER[chave] ?? '') : '', 'mundo');
+          filtroDaCorrecao = chave ? (VIZ_FILTER[chave] ?? '') : '';
+          recomporFiltroDoMundo();
         }) }
         : {}),
   });
@@ -1369,6 +1385,50 @@ export function createGame(o: CreateGameOptions): Engine {
       comPersonagem: () => subjectWord(cartucho.acomodacoes, 'reducedCharacterMotion') !== null,
     });
     acoesDaEngine.anim = painelDeAnim.abrir;
+
+    /*
+     * ACESSIBILIDADE VISUAL (ADR-0151) — e o item deixa de estar travado (ADR-0161).
+     *
+     * 📌 O MÓDULO É O QUE O JOGO DE PLATAFORMA JÁ USA (`ui/settings-visual`), com as duas linhas que a engine SABE
+     * accionar: o realce de contraste (o filtro L→Q, composto no mundo com a correcção de cor) e a paleta segura
+     * (`core/state.cbSafe`, que pinta menus e HUD). ⚠️ «Itens na cor do dono» e as cores de papel («lava, escada, água,
+     * portão») ficam FORA: são de um jogo com donos de itens e com esses papéis, e a engine não descreve um jogo que não
+     * conhece. O alto contraste e a correcção de cor saíram deste painel para a barra rápida (ADR-0151).
+     * ⚠️ Os escritores das linhas não oferecidas são inertes DE PROPÓSITO: o `reset` só os chama quando o valor lido
+     * difere do padrão, e o valor devolvido aqui É o padrão.
+     */
+    const painelVisual = montarPainel(ctxDoPainel, {
+      id: 'visual',
+      rotulos: () => ({
+        titulo: t('menu.visual'),
+        rotuloDaLista: t('visual.grupo.rotulo'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('pause.pmback'),
+      }),
+      render: () => visual.render(),
+    });
+    const semEfeito = (): void => {};
+    const visual = initSettingsVisual({
+      $, srSay,
+      getNumPlayers: () => players().length,
+      getPlayers: () => cartucho.players ?? [],
+      getVisualSettings: () => ({
+        lq: getLqT(), cbSafe: state.cbSafe,
+        ownerColors: state.DEFAULTS.ownerColors, outlineFg: state.DEFAULTS.hcOutlineFg, outlineBg: state.DEFAULTS.hcOutlineBg,
+        roleColors: { ...HC_ROLE_DEF },
+      }),
+      getSelectedPlayer: () => 0,
+      setSelectedPlayer: semEfeito,
+      setPlayerViz: semEfeito,
+      renderEixosVisuais: semEfeito,
+      setLq,
+      setCbSafe: state.setCbSafeValue,
+      setOwnerColors: semEfeito, setOutlineFg: semEfeito, setOutlineBg: semEfeito,
+      setRoleColor: semEfeito, resetRoleColors: semEfeito,
+      fillExplain: overlays.fillExplain,
+      oferecer: { dono: false, papeis: false },
+    });
+    acoesDaEngine.visual = painelVisual.abrir;
 
     /*
      * ACESSIBILIDADE AUDITIVA — o maior dos oito, e o que mais tinha a perder por não existir.

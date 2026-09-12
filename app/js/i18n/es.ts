@@ -211,6 +211,10 @@ const es: Record<string, string> = {
   'contrast.7': '7:1',
   'visual.lq': 'Realce de contraste',
   'visual.lq.dica': 'Curva de tono en toda la pantalla: lineal estira el contraste, cuadrático realza sombras y luces, y mixto queda entre los dos. Vale para todos los jugadores.',
+  'menu.visual': 'Accesibilidad visual',
+  'visual.grupo.rotulo': 'Ajustes visuales',
+  'visual.cbsafe': 'Paleta segura para daltonismo',
+  'visual.cbsafe.dica': 'Cambia los colores de los menús y del HUD por una paleta que se distingue en cualquier tipo de daltonismo (Okabe-Ito).',
   'lq.off': 'desactivado',
   'lq.linear': 'lineal',
   'lq.mixed': 'mixto',
@@ -648,7 +652,6 @@ const es: Record<string, string> = {
   'pause.motivo.addplayer': 'Es el juego quien decide cuántos jugadores pueden jugar.',
   'pause.motivo.opcoesdojogo': 'Este juego no tiene opciones propias.',
   'pause.motivo.empatia': 'El modo empatía todavía está en construcción.',
-  'pause.motivo.visual': 'La accesibilidad visual todavía está en construcción.',
   'a11y.gameRegion': 'Área de juego. Muévete con A y D o las flechas; salta con L o Espacio; sube y baja escaleras (y nada en el agua) con W y S o las flechas; corre con P o Shift. Recoge 10 monedas.',
   'game.instructions': 'Mueve al personaje por la cueva y recoge 10 monedas. Sin límite de tiempo. Controles: A y D o las flechas mueven; L o Espacio saltan; W y S (o flechas arriba/abajo) suben escaleras y nadan; P o Shift corren.',
   // ===================== ARIA-LABEL DEL index.html =====================

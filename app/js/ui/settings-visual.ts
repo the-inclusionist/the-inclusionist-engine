@@ -109,6 +109,8 @@ export interface SettingsVisualCtx {
    * consumidor): sem casca não há rodapé para duplicar.
    */
   fillExplain?: (card: HTMLElement | null) => void;
+  /** Which host-specific rows to draw (see `VisualRowsOffered`). Absent = all, as before. */
+  oferecer?: VisualRowsOffered;
 }
 
 // ---------- Pure logic (Right-BICEP/ZOMBIES-tested in node) ----------
@@ -223,7 +225,17 @@ function playerViz(list: readonly unknown[], i: number): string {
 export const VISUAL_MODE_LIST: readonly VizMode[] =
   VIZ_MODES.filter((m) => m.kind === 'normal' || m.kind === 'hcnew').concat(VIZ_CORRECTIONS);
 
-export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings): string {
+/**
+ * The rows a host OFFERS beyond the two every host can drive (contrast enhancement and the safe palette).
+ *
+ * ⚠️ Owner colours and the colour-blocking roles belong to a game that has item owners and «lava, ladder, water, gate»
+ * roles; the engine's own panel (`createGame`) has no writer for either and must not describe a game it does not know.
+ * The default keeps every existing consumer's panel exactly as it was.
+ */
+export interface VisualRowsOffered { readonly dono: boolean; readonly papeis: boolean }
+const TODAS_AS_LINHAS: VisualRowsOffered = { dono: true, papeis: true };
+
+export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings, oferecer: VisualRowsOffered = TODAS_AS_LINHAS): string {
   const roleInputs = ROLE_KEYS.map(
     (k) =>
       `<input type="color" id="opt-role-${k}" value="${rgbToHex(s.roleColors[k])}" aria-label="Cor de ${ROLE_LABELS[k]}" style="inline-size:2.2em;block-size:1.8em;padding:0;border:1px solid #666;border-radius:4px;background:none">`,
@@ -236,14 +248,20 @@ export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings)
     // no seu `.opt-hint`, que o rodapé recolhe.
     '<div class="ctrl-row ctrl-row--passos"><span><span class="opt-hint">' +
     escaparHtml(t('visual.lq.dica')) + '</span></span><span data-passos-lugar="lq"></span></div>' +
-    '<div class="ctrl-row"><span><strong>Itens na cor do dono</strong> — no multiplayer, cada jogador vê os próprios itens na cor dele. Desligado: itens na cor original para todos.</span>' +
-    `<button id="opt-ownercolors" class="mode-btn${s.ownerColors ? ' is-on' : ''}" type="button" aria-pressed="${s.ownerColors}">${onOffLabel(s.ownerColors)}</button></div>` +
-    '<div class="ctrl-row"><span><strong>Paleta segura para daltonismo</strong> — troca as cores de jogadores, itens e efeitos pela paleta Okabe-Ito (distinguível em protan/deutan/tritan). O cenário mantém as cores naturais.</span>' +
+    (oferecer.dono
+      ? '<div class="ctrl-row"><span><strong>Itens na cor do dono</strong> — no multiplayer, cada jogador vê os próprios itens na cor dele. Desligado: itens na cor original para todos.</span>' +
+        `<button id="opt-ownercolors" class="mode-btn${s.ownerColors ? ' is-on' : ''}" type="button" aria-pressed="${s.ownerColors}">${onOffLabel(s.ownerColors)}</button></div>`
+      : '') +
+    // 🔴 The safe palette's words through the dictionary, the explanation in `.opt-hint` (`CLAUDE.md` §4): it was raw
+    // Portuguese with its explanation glued after a dash, and the engine now mounts this row on pages in any language.
+    `<div class="ctrl-row"><span><strong>${escaparHtml(t('visual.cbsafe'))}</strong><span class="opt-hint">${escaparHtml(t('visual.cbsafe.dica'))}</span></span>` +
     `<button id="opt-cbsafe" class="mode-btn${s.cbSafe ? ' is-on' : ''}" type="button" aria-pressed="${s.cbSafe}">${onOffLabel(s.cbSafe)}</button></div>` +
-    '<div class="ctrl-row"><span><strong>Cores do color-blocking</strong> — nos modos de alto contraste, escolha a cor de cada papel: perigo, escalável, água e portão. ↺ restaura o padrão.</span>' +
-    '<span style="display:flex;gap:.35rem;align-items:center">' +
-    roleInputs +
-    '<button id="opt-role-reset" class="mode-btn" type="button" aria-label="Restaurar cores padrão">↺</button></span></div>'
+    (oferecer.papeis
+      ? '<div class="ctrl-row"><span><strong>Cores do color-blocking</strong> — nos modos de alto contraste, escolha a cor de cada papel: perigo, escalável, água e portão. ↺ restaura o padrão.</span>' +
+        '<span style="display:flex;gap:.35rem;align-items:center">' +
+        roleInputs +
+        '<button id="opt-role-reset" class="mode-btn" type="button" aria-label="Restaurar cores padrão">↺</button></span></div>'
+      : '')
   );
 }
 
@@ -292,7 +310,7 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     // Trocar o corpo daquela função em vez de acrescentar esta teria posto os dois eixos na lista de
     // simulações — foi o que quase aconteceu, e o que a separação impede.
     ctx.renderEixosVisuais('#visual-modes', '#visual-players');
-    el.innerHTML = renderVisualPanelHtml(contrastValue, settings);
+    el.innerHTML = renderVisualPanelHtml(contrastValue, settings, ctx.oferecer);
 
     // OS PASSOS DO REALCE (ADR-0151). A posição é LOCAL ao controle: o `setLq` injectado pode não devolver o valor
     // novo em `getVisualSettings` até ao próximo render, e reler dali voltaria a posição para trás.

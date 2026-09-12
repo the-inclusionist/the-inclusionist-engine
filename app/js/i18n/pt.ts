@@ -171,7 +171,6 @@ const pt: Record<string, string> = {
   'pause.motivo.addplayer': 'Quem decide quantos jogadores podem jogar é o jogo.',
   'pause.motivo.opcoesdojogo': 'Este jogo não tem opções próprias.',
   'pause.motivo.empatia': 'O modo empatia ainda está em construção.',
-  'pause.motivo.visual': 'A acessibilidade visual ainda está em construção.',
 
   // Acessibilidade (leitores de tela)
   'a11y.gameRegion': 'Área de jogo. Mova com A e D ou setas; pule com L ou Espaço; suba e desça escadas (e nade na água) com W e S ou setas; corra com P ou Shift. Colete 10 moedas.',
@@ -309,6 +308,10 @@ const pt: Record<string, string> = {
   'contrast.7': '7:1',
   'visual.lq': 'Realce de contraste',
   'visual.lq.dica': 'Curva de tom na tela inteira: linear estica o contraste, quadrático realça sombras e altas-luzes, e misto fica entre os dois. Vale para todos os jogadores.',
+  'menu.visual': 'Acessibilidade visual',
+  'visual.grupo.rotulo': 'Ajustes visuais',
+  'visual.cbsafe': 'Paleta segura para daltonismo',
+  'visual.cbsafe.dica': 'Troca as cores dos menus e do HUD por uma paleta que se distingue em qualquer tipo de daltonismo (Okabe-Ito).',
   'lq.off': 'desligado',
   'lq.linear': 'linear',
   'lq.mixed': 'misto',

@@ -521,6 +521,55 @@ describe('createGame num documento de verdade', () => {
       expect(mundo.style.filter, 'o ícone anunciou uma correcção que não aconteceu').toMatch(/url\(["']?#cvd-fix-/);
     });
 
+    it('🔴 [Right] the contrast enhancement COMPOSES with the colour correction — one never switches the other off', async () => {
+      // Two writers of one `style.filter`: written apart, the last one erased the first, and turning the enhancement on
+      // would silently undo the correction a colour-blind child had chosen.
+      const { setLq } = await import('../app/js/render/lq-filter.js');
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      raiz.appendChild(svg);
+      const motor = abrir({ host: { doc: document, win: window, cvdHost: svg } });
+      const mundo = document.querySelector('#game-region');
+      try {
+        document.querySelector('#title-icons [data-pi="cvd"]').click();
+        motor.pausa.mostrar(0);
+        document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]').click();
+        const passo = (d) => document.getElementById('opt-lq').dispatchEvent(new CustomEvent('passo', { detail: d }));
+        passo(1);
+        expect(mundo.style.filter, 'the enhancement erased the correction').toMatch(/cvd-fix-/);
+        expect(mundo.style.filter, 'the enhancement is not on the world').toMatch(/lq-enh/);
+        passo(-1);
+        expect(mundo.style.filter, 'turning the enhancement off erased the correction').toMatch(/cvd-fix-/);
+        expect(mundo.style.filter).not.toMatch(/lq-enh/);
+      } finally {
+        setLq(0);
+        document.getElementById('visual-close')?.click();
+        motor.pausa.esconder(0);
+      }
+    });
+
+    it('🔴 [Right] the VISUAL panel offers the two rows the engine can drive — and none of a game it does not know', () => {
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="visual"]');
+      expect(item.getAttribute('aria-disabled'), 'the visual item is still locked').toBeNull();
+      item.click();
+      expect(document.getElementById('visual').hidden, 'the panel did not open').toBe(false);
+      expect(document.getElementById('opt-lq'), 'no contrast enhancement').not.toBeNull();
+      const paleta = document.getElementById('opt-cbsafe');
+      expect(paleta, 'no safe palette').not.toBeNull();
+      // 🔴 the platformer's rows — item owners, and «lava, ladder, water, gate» — are not the engine's to offer
+      expect(document.getElementById('opt-ownercolors')).toBeNull();
+      expect(document.getElementById('opt-role-reset')).toBeNull();
+      // the palette row does what it says: the menus and HUD switch palette
+      const antes = document.documentElement.dataset.paleta;
+      paleta.click();
+      expect(document.documentElement.dataset.paleta, 'the safe palette did nothing').not.toBe(antes);
+      document.getElementById('opt-cbsafe').click(); // back (the panel re-rendered the row)
+      expect(document.documentElement.dataset.paleta).toBe(antes);
+      document.getElementById('visual-close').click();
+      motor.pausa.esconder(0);
+    });
+
     it('🔴 [Boundary] o ciclo ANDA e LIMPA quando o jogo declara jogadores', () => {
       /*
        * 🔴 ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE: «aplica sempre um filtro, nunca limpa» ficava verde,
@@ -893,7 +942,7 @@ describe('createGame num documento de verdade', () => {
       // 📏 Measured in dist before this case: the hearing panel appended its rows AFTER the actions, so the reset sat
       // between «Voltar» and the first row. The shell alone cannot promise the order; the interiors can break it.
       const motor = abrir();
-      for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora']]) {
+      for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora'], ['visual', 'visual']]) {
         motor.pausa.mostrar(0);
         const item = document.querySelector(`#vp-pause-0 .pm-btn[data-act="${act}"]`);
         expect(item?.hidden, `the «${act}» item is not live — the case would skip it`).toBe(false);
@@ -914,7 +963,7 @@ describe('createGame num documento de verdade', () => {
       // (a hint is in the footer by then, or hidden until it moves there).
       const motor = abrir();
       const achados = [];
-      for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora']]) {
+      for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora'], ['visual', 'visual']]) {
         motor.pausa.mostrar(0);
         document.querySelector(`#vp-pause-0 .pm-btn[data-act="${act}"]`).click();
         for (const linha of document.querySelectorAll(`#${id} .ctrl-row`)) {
