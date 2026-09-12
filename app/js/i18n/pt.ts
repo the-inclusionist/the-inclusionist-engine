@@ -480,6 +480,11 @@ const pt: Record<string, string> = {
   'audio.detect': 'Detectar saídas',
   'menu.audio': 'Acessibilidade auditiva',
   'audio.grupo.rotulo': 'Sons do jogo',
+  // O texto de REPOUSO do rodapé de todo painel — o que ele diz enquanto ninguém aponta para linha nenhuma.
+  // Era um literal em português dentro do `ui/settings-panel`, e até 2026-09-12 ninguém o via: nenhum painel
+  // montado pela engine existia. Com quatro deles montados, ele passou a aparecer — em português, num jogo
+  // em inglês.
+  'menu.explainIdle': 'Passe o mouse ou navegue pelas opções para ver a explicação.',
   'sr.audio.reset': 'Acessibilidade auditiva restaurada aos padrões. Os outros menus não mudaram.',
   'sr.empathy.reset': 'Modo empatia restaurado aos padrões: simulações desligadas. Correções de daltonismo e os outros menus não mudaram.',
   'sr.motor.reset': 'Modo Fácil e movimento por alternância restaurados aos padrões. O controle pelos olhos e o mapeamento de teclas continuam como estavam.',

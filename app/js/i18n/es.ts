@@ -390,6 +390,8 @@ const es: Record<string, string> = {
   'audio.detect': 'Detectar salidas',
   'menu.audio': 'Accesibilidad auditiva',
   'audio.grupo.rotulo': 'Sonidos del juego',
+  // El texto de REPOSO del pie de cada panel — lo que dice mientras nadie apunta a ninguna línea.
+  'menu.explainIdle': 'Pasa el ratón o navega por las opciones para ver la explicación.',
   'sr.audio.reset': 'Accesibilidad auditiva restaurada a sus valores predeterminados. Los demás menús no cambiaron.',
   'sr.empathy.reset': 'Modo empatía restaurado a sus valores predeterminados: simulaciones desactivadas. Las correcciones de daltonismo y los demás menús no cambiaron.',
   'sr.motor.reset': 'Modo Fácil y movimiento por alternancia restaurados a sus valores predeterminados. El control con los ojos y el mapeo de teclas siguen igual.',

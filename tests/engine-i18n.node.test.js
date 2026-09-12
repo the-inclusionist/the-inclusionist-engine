@@ -176,7 +176,12 @@ const CRU_CONHECIDO = {
   'ui/caa-sets.ts': 3,             // descrições dos conjuntos de pictogramas (licença, origem cultural)
   'ui/hud.ts': 1,
 
-  'ui/settings-panel.ts': 1,
+  // ✅ `ui/settings-panel.ts` SAIU DA LISTA em 2026-09-12, e é a primeira entrada que este livro-razão perde
+  // por conserto em vez de por contagem. Era o `EXPLAIN_IDLE` — o texto de REPOUSO do rodapé de todo painel —,
+  // e até esse dia ninguém o via: nenhum painel montado pela engine existia, logo o rodapé nunca chegava a uma
+  // tela. 📏 Com quatro painéis montados, ele apareceu: medido no navegador, no `quiz.html` com `lang="en"`, o
+  // cartão dizia «Hearing accessibility» e o rodapé respondia em português. Virou chave i18n, resolvida no
+  // ponto de uso — que corre a cada `fillExplain`, logo acompanha a troca de idioma.
   // ⚠️ `ui/settings-controls.ts` SAIU DA TABELA em 2026-09-07 (#125). O teto era 1 — o `'Pressione…'` que o
   // botão em captura escrevia — e havia outra frase inteira ao lado dele, a linha do `#ctrl-players`, que o
   // crivo não contava por vir num template com interpolação. As duas passam por `t()` agora.
@@ -339,8 +344,10 @@ describe('texto cru em português nas camadas de ENGINE (o buraco do gate do ite
     // `touch-bindings.ts:506` desistia sem uma palavra, e um jogo ficava sem controle virtual sem que nada o
     // dissesse. Trocar cinco literais deste livro-razão por uma lacuna que deixa de ser invisível é a troca
     // que este tecto existe para tornar consciente, não a que ele existe para proibir.
+    // ✅ E 79 → 78 no mesmo dia, pela outra direcção: o `ui/settings-panel` saiu da lista inteiro. Um tecto
+    // que só sobe é um orçamento; este desce quando alguém conserta, e foi o que aconteceu.
     const total = Object.values(CRU_CONHECIDO).reduce((a, b) => a + b, 0);
-    expect(total).toBeLessThanOrEqual(79);
+    expect(total).toBeLessThanOrEqual(78);
     expect(Object.keys(CRU_CONHECIDO).length).toBeLessThanOrEqual(20);
   });
 

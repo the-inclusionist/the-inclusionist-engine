@@ -8,6 +8,7 @@
 // única forma de provar de ponta a ponta o requisito de acessibilidade — abrir foca um controle DENTRO do
 // diálogo, fechar devolve o foco ao botão que abriu, e Escape fecha UM diálogo só.
 import { describe, it, expect, beforeEach } from 'vitest';
+import { t } from '../app/js/core/i18n.js';
 import { initSettingsPanel, EXPLAIN_IDLE } from '../app/js/ui/settings-panel.js';
 import { initSettingsMotion, setSelectedPlayer } from '../app/js/ui/settings-motion.js';
 import { initSettingsEmpathy } from '../app/js/ui/settings-empathy.js';
@@ -276,7 +277,7 @@ describe('fillExplain no DOM real — ordem de leitura', () => {
     panel.fillExplain(card);
     const footer = card.querySelector('.opt-explain');
     expect(footer.getAttribute('aria-live')).toBe('polite');
-    expect(footer.textContent).toBe(EXPLAIN_IDLE);
+    expect(footer.textContent).toBe(t(EXPLAIN_IDLE));
     expect(row.dataset.explain).toBe('gravidade menor, pulo mais alto.');
     expect(row.querySelector(':scope > span').textContent).toBe('♿ Modo Fácil');
   });
@@ -298,7 +299,7 @@ describe('fillExplain no DOM real — ordem de leitura', () => {
     row.dispatchEvent(new MouseEvent('mouseenter'));
     expect(footer.textContent).toBe('em volta do personagem.');
     row.dispatchEvent(new MouseEvent('mouseleave'));
-    expect(footer.textContent).toBe(EXPLAIN_IDLE);
+    expect(footer.textContent).toBe(t(EXPLAIN_IDLE));
   });
 
   it('[Right] com .opt-hint dentro do span é o hint que vira a explicação', () => {

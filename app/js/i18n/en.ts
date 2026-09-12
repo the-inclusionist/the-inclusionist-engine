@@ -391,6 +391,8 @@ const en: Record<string, string> = {
   'audio.detect': 'Detect outputs',
   'menu.audio': 'Hearing accessibility',
   'audio.grupo.rotulo': 'Game sounds',
+  // Every panel footer's RESTING text — what it says while nobody is pointing at any row.
+  'menu.explainIdle': 'Hover or move through the options to see the explanation.',
   'sr.audio.reset': 'Hearing accessibility restored to its defaults. The other menus did not change.',
   'sr.empathy.reset': 'Empathy mode restored to its defaults: simulations off. Colour-blindness corrections and the other menus did not change.',
   'sr.motor.reset': 'Easy Mode and latched movement restored to their defaults. Eye control and the key mapping are unchanged.',

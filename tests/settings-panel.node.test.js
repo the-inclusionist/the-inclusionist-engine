@@ -8,6 +8,7 @@
 // tecla), o empilhamento z crescente e a ORDEM DE LEITURA que fillExplain produz (rótulo na linha, descrição
 // num rodapé aria-live).
 import { describe, it, expect, beforeEach } from 'vitest';
+import { t } from '../app/js/core/i18n.js';
 import {
   initSettingsPanel, rowExplainText, topByZ, EXPLAIN_IDLE, OVERLAY_BASE_Z, OVERLAY_SCOPE_SELECTOR,
 } from '../app/js/ui/settings-panel.js';
@@ -200,8 +201,8 @@ describe('fillExplain — rótulo na linha, descrição no rodapé', () => {
     api.fillExplain(card);
     const f = card.querySelector('.opt-explain');
     expect(f.getAttribute('aria-live')).toBe('polite');
-    expect(f.textContent).toBe(EXPLAIN_IDLE);
-    expect(f.dataset.idle).toBe(EXPLAIN_IDLE);
+    expect(f.textContent).toBe(t(EXPLAIN_IDLE));
+    expect(f.dataset.idle).toBe(t(EXPLAIN_IDLE));
   });
   it('[Right] tira a descrição da linha: sobra só o <strong>, e o texto vai para data-explain', () => {
     const row = ctrlRow('♿ Modo Fácil', ' — ', 'gravidade menor.');
@@ -218,7 +219,7 @@ describe('fillExplain — rótulo na linha, descrição no rodapé', () => {
     row.fire('focusin');
     expect(f.textContent).toBe('em volta do personagem.');
     row.fire('mouseleave');
-    expect(f.textContent).toBe(EXPLAIN_IDLE);
+    expect(f.textContent).toBe(t(EXPLAIN_IDLE));
     row.fire('mouseenter');
     expect(f.textContent).toBe('em volta do personagem.');
   });

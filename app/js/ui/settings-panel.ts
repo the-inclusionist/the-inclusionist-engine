@@ -25,12 +25,25 @@
 // (leitura do z-index efetivo). Nenhuma I/O no import; todo o estado (o contador `_ovZ` e o registro de
 // overlays) vive no closure do init — dois inits em processos de teste distintos não vazam um no outro.
 
+import { t } from '../core/i18n.js';
+
 /** Escopo dos overlays de a11y: o inCanvasMenus() do game.js reparenta TODOS para dentro do #game-region
  *  ("nenhuma tela fora do canvas"). Verbatim do sharedDialogOpen() original. */
 export const OVERLAY_SCOPE_SELECTOR = '#game-region .overlay';
 
-/** Texto de repouso do rodapé de explicação (verbatim do game.js). */
-export const EXPLAIN_IDLE = 'Passe o mouse ou navegue pelas opções para ver a explicação.';
+/**
+ * A CHAVE i18n do texto de repouso do rodapé de explicação.
+ *
+ * 🔴 ERA O TEXTO, EM PORTUGUÊS CRU, e até 2026-09-12 ninguém o via: nenhum painel montado pela engine
+ * existia, logo este rodapé nunca chegava a uma tela. 📏 Medido no navegador nesse dia, no `quiz.html` com
+ * `lang="en"`, com a engine já a montar quatro painéis: o cartão dizia «Hearing accessibility» e o rodapé
+ * dizia «Passe o mouse ou navegue pelas opções para ver a explicação.» — na mesma tela.
+ *
+ * ⚠️ CHAVE E NÃO TEXTO, pela regra que o `input/devices` já escreveu para a mesma armadilha: «a tabela é uma
+ * `const` de módulo, avaliada UMA vez no import. Se guardasse `t('…')` já resolvido, o idioma congelaria no
+ * boot». Guardando a chave, quem resolve é o ponto de uso — e o ponto de uso corre a cada `fillExplain`.
+ */
+export const EXPLAIN_IDLE = 'menu.explainIdle';
 
 /** z-index inicial da pilha: o primeiro overlay trazido à frente recebe 61. Verbatim (`let _ovZ=60`). */
 export const OVERLAY_BASE_Z = 60;
@@ -141,7 +154,9 @@ export function initSettingsPanel(ctx: SettingsPanelCtx): SettingsPanelApi {
       // O texto de repouso pode ser DO PAINEL, via `data-explain-idle` no card. É onde uma introdução de menu
       // deve morar: um parágrafo de prosa no topo transforma o menu num manual, e o rodapé já é o lugar da
       // explicação — o painel só passa a ter algo a dizer enquanto ninguém aponta para nenhuma linha.
-      const idle = card.dataset.explainIdle || EXPLAIN_IDLE;
+      // ⚠️ RESOLVIDO AQUI, e não no topo do módulo: `fillExplain` corre a cada render, logo o texto acompanha
+      // a troca de idioma. Um `t()` numa `const` de módulo congelaria o idioma do arranque.
+      const idle = card.dataset.explainIdle || t(EXPLAIN_IDLE);
       f.dataset.idle = idle;
       f.textContent = idle;
       card.appendChild(f);
