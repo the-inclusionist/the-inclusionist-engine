@@ -130,10 +130,6 @@ import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createGame, type Engine } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
-import { initSettingsTypo } from '../ui/settings-typo.js';
-import { montarCasca } from '../ui/panel-shell.js';
-import * as store from '../platform/storage.js';
-import { VIZ_DOM_ONLY, VIZ_FILTER, simulatesDisability } from '../render/viz-modes.js';
 import { padPxPerMm } from '../input/touch.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
@@ -288,8 +284,7 @@ export function declararQuiz(perguntas: readonly Pergunta[]): GameDeclaration {
 export function bootQuiz(): void {
   // A ENGINE INTEIRA, numa chamada. Antes eram nove inicializações à mão nesta função, em ordem que só o
   // achado 3 revelava — e o consumidor tinha de acertá-la sozinho. O que sobrou aqui embaixo é o que é
-  // realmente DESTE jogo: o painel de tipografia, o seletor de visão, o botão de Libras, a ergonomia do
-  // toque e o desenho das perguntas.
+  // realmente DESTE jogo: a ergonomia do toque e o desenho das perguntas.
   motor = createGame({
     declaration: declararQuiz(PERGUNTAS),
     host: { doc: document, win: window, cvdHost: $<SVGElement>('#q-cvd') },
@@ -320,64 +315,14 @@ export function bootQuiz(): void {
       pieceSets: false, distinguishableSuits: false, timingWindow: false, aimAssist: false, repeatedInput: false,
     },
   });
-  const { overlays } = motor;
   // O que o hospedeiro não entregou vira lista legível em vez de painel vazio (achado 6). Num jogo de
   // verdade isto iria para a tela; aqui basta o console, porque o instrumento é lido por quem desenvolve.
   if (motor.problems.length) console.warn('[quiz] lacunas do hospedeiro:', motor.problems);
 
-  // PAINEL DE TIPOGRAFIA — emprestado da engine, ligado por este jogo. Ver o achado 5.
-  //
-  // ⚠️ A CASCA VEM DA ENGINE DESDE 07/09, e é o achado 6 consertado: o markup do painel estava escrito à mão
-  // no `quiz.html`, e o que o `settings-typo` exigia — cinco ids — não estava dito em lado nenhum. Agora a
-  // `montarCasca` monta-os E DEVOLVE-OS, então este consumidor lê o contrato do tipo em vez de o descobrir
-  // por tentativa. O `quiz.html` deixou de ter o bloco.
-  //
-  // O `#typo-preview` fica AQUI e não na casca, e a distinção é a que importa: ele é o «Juiz foge e bota
-  // fita de cetim na xícara» — a amostra que só o painel de TIPOGRAFIA tem. Uma casca que soubesse dele
-  // saberia de um painel em particular, que é o oposto do que ela é.
-  const casca = montarCasca({ procurar: (s) => document.querySelector<HTMLElement>(s), criar: (t) => document.createElement(t) }, {
-    id: 'typo',
-    titulo: t('menu.typo'),
-    rotuloDaLista: t('font.grupo.rotulo'),
-    rotuloReset: t('menu.restoreDefaults'),
-    rotuloFechar: t('menu.close'),
-  });
-  const amostra = document.createElement('div');
-  amostra.id = 'typo-preview';
-  amostra.className = 'typo-preview';
-  amostra.textContent = 'Juiz foge e bota fita de cetim na xícara';
-  casca.card.insertBefore(amostra, casca.lista);
-  ($<HTMLElement>('#game-region') ?? document.body).appendChild(casca.overlay);
-
-  const typo = initSettingsTypo({ $, srSay, store, root: document.documentElement });
-  const abrir = $<HTMLElement>('#q-abrir-typo');
-  if (abrir) abrir.addEventListener('click', () => {
-    const ov = $<HTMLElement>('#typo');
-    if (!ov) return;
-    typo.render(); ov.hidden = false; overlays.frontOverlay(ov);
-    ov.querySelector<HTMLElement>('button[data-font]:not([disabled])')?.focus();
-  });
-  const fechar = $<HTMLElement>('#typo-close');
-  if (fechar) fechar.addEventListener('click', () => { const ov = $<HTMLElement>('#typo'); if (ov) ov.hidden = true; });
-  overlays.register('typo', { close: () => { const ov = $<HTMLElement>('#typo'); if (ov) ov.hidden = true; }, inEscapeChain: true });
-
-  // VISÃO: o SELETOR é deste jogo; os filtros já foram montados pelo `createGame` (achado 7).
-  const seletor = $<HTMLSelectElement>('#q-viz');
-  const alvoViz = $<HTMLElement>('#game-region');
-  if (seletor && alvoViz && motor.cvdFilters > 0) {
-    // PERGUNTA em vez de reconstruir. Este trecho era
-    //     `VIZ_MODES.filter((m) => m.kind === 'normal' || (m.kind === 'filter' && !simulatesDisability(m.key)))`
-    // — uma expressão que misturava DUAS perguntas: "precisa de canvas?" e "isto simula deficiência?". A
-    // primeira é da ENGINE e agora tem resposta declarada (`VIZ_DOM_ONLY`, achado 8); a segunda é DESTE
-    // consumidor, que escolheu não oferecer simulações. Separá-las é o conserto: cada consumidor futuro
-    // herda a primeira em vez de a redescobrir, e continua livre na segunda.
-    const opcoes = VIZ_DOM_ONLY.filter((m) => !simulatesDisability(m.key));
-    seletor.innerHTML = opcoes.map((m) => `<option value="${m.key}">${t(m.nome)}</option>`).join('');
-    seletor.addEventListener('change', () => {
-      alvoViz.style.filter = VIZ_FILTER[seletor.value] || '';
-      srSay(seletor.options[seletor.selectedIndex]?.text ?? '');
-    });
-  }
+  // 🔴 O PAINEL DE TIPOGRAFIA E O SELETOR DE VISÃO DESTE JOGO SAÍRAM (2026-09-12). Desenhavam um botão e uma lista na
+  // zona do rodapé, que é da explicação (`CLAUDE.md` §4), e repetiam a barra rápida: a letra muda pelo ciclo de
+  // comunicação e a correcção de cor pelo 🚥 (ADR-0151). Os achados 5 e 7 que eles provavam ficam no git: a engine
+  // passou a montar e a ligar as duas coisas sozinha, que era o que eles pediam.
 
   // ⚠️ O `motor.nav.attach()` SAIU DAQUI (issue #109). Era um remendo do consumidor: a engine montava a
   // navegação de menu e não a ligava, então este quiz tinha de a ligar à mão logo depois do `createGame` — e

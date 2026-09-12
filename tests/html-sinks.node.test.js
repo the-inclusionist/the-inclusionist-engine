@@ -82,7 +82,6 @@ const SEGUROS = [
   // a sink nenhum, que é exactamente o que o caso [Zero] deste ficheiro reprova.
   ['boot/create-game.ts', 'lista.innerHTML = helpListHtml(', 'palavras do JOGO, no documento do próprio jogo'],
   ['consumer-quiz/main-quiz.ts', 'if (!p) { app.innerHTML =', 'dois NÚMEROS interpolados'],
-  ['consumer-quiz/main-quiz.ts', 'seletor.innerHTML = opcoes.map', 'chave enumerada + i18n'],
   ['render/viz-setters.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
   ['render/viz-setters.ts', 'el.innerHTML = vizGroupHtml(modes, cur)', 'modos enumerados + i18n'],
   // ⚠️ OS DOIS EIXOS (#104). Mesma classe do de cima e pelo mesmo motivo: o `eixosHtml` interpola só valores

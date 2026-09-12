@@ -59,15 +59,10 @@
         <section id="game-region" class="game-region" tabindex="-1" aria-label="Quiz">
           <div id="quiz-app" class="quiz-app"></div>
 
-          <!-- O MENU DE ACESSIBILIDADE, EMPRESTADO. A pergunta que este pedaço faz: os sete painéis do jogo de
-               plataforma servem a um jogo que não é ele? A tipografia é o caso mais favorável — ela não fala de
-               moeda, tile nem física —, então se ELA não couber aqui, nenhum dos outros cabe. -->
-          <button id="q-abrir-typo" class="pm-btn" type="button" data-act="tipo">🔤 Tipografia</button>
-          <!-- CORREÇÃO DE DALTONISMO fora do gênero: um seletor e o host dos filtros SVG. O host é vazio de
-               propósito — `installCvdFilters()` o preenche em tempo de execução, então o consumidor NÃO copia
-               markup nenhum da engine. -->
-          <label class="opt-hint" for="q-viz">Visão:</label>
-          <select id="q-viz" aria-label="Correção de daltonismo"></select>
+          <!-- 🔴 «TIPOGRAFIA» E «VISÃO» SAÍRAM DAQUI em 2026-09-12, e a ausência é o conserto: estavam na zona do RODAPÉ,
+               que é o lugar da explicação (`CLAUDE.md` §4, as três zonas), e duplicavam o que a barra rápida já dá — o
+               ciclo de comunicação escolhe a letra, e o 🚥 a correcção de cor (ADR-0151). O Dev viu-os num print.
+               O host dos filtros fica: é ele que o `createGame` preenche para o 🚥 funcionar. -->
           <svg id="q-cvd" aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute"></svg>
           <!-- A BARRA DE ACESSIBILIDADE DA ENGINE (ADR-0106). VAZIA DE PROPÓSITO: o `createGame` monta-a aqui,
                como já monta os filtros de daltonismo no `#q-cvd`. Este consumidor não copia markup nenhum.

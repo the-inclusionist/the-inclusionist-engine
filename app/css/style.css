@@ -548,6 +548,9 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* "tela = canvas": os diálogos de a11y são reparentados para dentro do #game-region (JS) e ficam
    presos aos limites do canvas; o último aberto sobe (z-index via JS). Só afeta os que estão dentro. */
 #game-region .overlay{position:absolute;z-index:60;padding:.6rem}
+/* O QUIZ COMEÇA ABAIXO DA BARRA RÁPIDA (ADR-0148). A engine declara `--barra-a11y-h` no `#game-region`; a barra fica a
+   10 px do topo (`#title-icons`), e o enunciado estava desenhado atrás dela — medido num print do Dev. */
+.quiz-app{padding-top:calc(var(--barra-a11y-h,0px) + 14px)}
 /* A PAUSA RÁPIDA (ADR-0155): PAUSADO ao centro da tela congelada — SÓ A PALAVRA, branca, com CONTORNO PRETO NAS
    LETRAS e nenhuma caixa: «Borda nas letras, não numa caixa» (Dev, errata do registo). O contorno é o que a mantém
    legível sobre um cenário claro; `paint-order` põe o traço POR BAIXO do preenchimento, para a letra não emagrecer, e
