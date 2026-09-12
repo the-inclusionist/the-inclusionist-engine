@@ -542,13 +542,15 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* "tela = canvas": os diálogos de a11y são reparentados para dentro do #game-region (JS) e ficam
    presos aos limites do canvas; o último aberto sobe (z-index via JS). Só afeta os que estão dentro. */
 #game-region .overlay{position:absolute;z-index:60;padding:.6rem}
-/* A PAUSA RÁPIDA (ADR-0155): PAUSADO ao centro da tela congelada. Fundo PRÓPRIO e opaco, porque por trás está
-   um jogo qualquer — um texto branco só com sombra perde o contraste no primeiro cenário claro. z-index 12, o
-   NÚMERO JÁ EM DÍVIDA do seletor do desafio, e não um literal novo (`tests/z-order-css`): por cima do conteúdo do
-   jogo pela ordem do documento, por baixo do pad (14), que é a saída de quem só tem dedo, e dos painéis (60). O
-   slot certo é GAME_MSG, e adoptá-lo sozinho poria PAUSADO por cima de um painel na escala velha. Sem ponteiro. */
+/* A PAUSA RÁPIDA (ADR-0155): PAUSADO ao centro da tela congelada — SÓ A PALAVRA, branca, com CONTORNO PRETO NAS
+   LETRAS e nenhuma caixa: «Borda nas letras, não numa caixa» (Dev, errata do registo). O contorno é o que a mantém
+   legível sobre um cenário claro; `paint-order` põe o traço POR BAIXO do preenchimento, para a letra não emagrecer, e
+   a sombra em oito direcções cobre os navegadores sem `-webkit-text-stroke`. z-index 12, o NÚMERO JÁ EM DÍVIDA do
+   seletor do desafio (`tests/z-order-css`): por cima do conteúdo pela ordem do documento, por baixo do pad (14) e
+   dos painéis (60). O slot certo é GAME_MSG, e adoptá-lo sozinho poria PAUSADO por cima de um painel. Sem ponteiro. */
 .pausa-rapida{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:12;pointer-events:none;
-  padding:.2em .7em;border-radius:.4em;background:rgba(13,17,32,.9);color:#fff;border:2px solid rgba(255,255,255,.75);
+  color:#fff;-webkit-text-stroke:.08em #000;paint-order:stroke fill;
+  text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px 2px #000,2px -2px #000,-2px -2px #000;
   font-family:var(--font);font-weight:800;font-size:calc(var(--ui-fs,16px)*2);letter-spacing:.12em;white-space:nowrap}
 .pausa-rapida[hidden]{display:none}
 #game-region .overlay__card{max-height:94%;max-width:96%}
