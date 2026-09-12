@@ -22,15 +22,20 @@
   "core/accommodations.ts": [
     "ACCOMMODATIONS",
     "Accommodation",
+    "AccommodationAnswers",
     "AccommodationPreset",
     "AccommodationWord",
     "CONTRACT_KEYED",
     "GAME_KEYED",
     "GENERAL",
+    "GameKeyedAccommodation",
+    "accommodationAnswersProblems",
     "accommodationLabellerFrom",
     "accommodationPresetProblems",
     "isAccommodation",
-    "presetAccommodations"
+    "isGameKeyed",
+    "presetAccommodations",
+    "subjectWord"
   ],
   "core/actions.ts": [
     "ACTIONS",

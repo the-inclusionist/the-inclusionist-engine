@@ -165,3 +165,74 @@ export function accommodationPresetProblems(p: AccommodationPreset | null | unde
   }
   return problems;
 }
+
+/* ===================== THE CARTRIDGE'S ANSWER (ADR-0153) ===================== */
+
+/** The accommodations only the game can answer. */
+export type GameKeyedAccommodation = (typeof GAME_KEYED)[number];
+
+/**
+ * THE CARTRIDGE'S ANSWER, for every GAME_KEYED accommodation: its WORD when the accommodation has a subject in this
+ * game, or `false` when it has none.
+ *
+ * 🔴 COMPLETE, NOT PARTIAL — and that is the difference from `AccommodationPreset`, and the decision. The Dev:
+ * «Gênero não precisa responder todas as acomodações, mas sim o cartucho, obrigatoriamente.» A partial map lets
+ * SILENCE answer, and silence here decides for the child: it would mount a wheelchair in chess, or hide one from a
+ * platformer, with nothing anywhere to say which. So a missing key is not «no»; it is a malformed declaration.
+ *
+ * 📌 `false` and not `null`/absence, so a «no» is always something somebody wrote. GENERAL accommodations mount
+ * always and CONTRACT_KEYED ones are derived from the contract, so neither is asked here — asking twice would let
+ * the two answers disagree.
+ */
+export type AccommodationAnswers = Readonly<Record<GameKeyedAccommodation, AccommodationWord | false>>;
+
+/** Is it one of the accommodations the cartridge must answer? */
+export function isGameKeyed(x: unknown): x is GameKeyedAccommodation {
+  return typeof x === 'string' && (GAME_KEYED as readonly string[]).includes(x);
+}
+
+/**
+ * Is the cartridge's answer well formed? Returns the problems — EMPTY means conformant.
+ *
+ * ⚠️ UNLIKE `accommodationPresetProblems`, AN ABSENT ANSWER IS A PROBLEM: the answer is mandatory (ADR-0153), and a
+ * boot that accepted its absence would be the optional field the Dev refused. The messages go to whoever INTEGRATES
+ * the engine; each one names the accommodation and what to write.
+ */
+export function accommodationAnswersProblems(a: unknown): string[] {
+  if (a === null || a === undefined) {
+    return ['accommodations: missing - the cartridge must answer every game-keyed accommodation (ADR-0153): its word, or false'];
+  }
+  if (typeof a !== 'object' || Array.isArray(a)) return ['accommodations: must be an object keyed by accommodation'];
+  const answers = a as Record<string, unknown>;
+  const problems: string[] = [];
+  for (const k of GAME_KEYED) {
+    if (!(k in answers)) {
+      problems.push(`accommodations: ${k} is not answered - write its word if it has a subject in this game, or false`);
+      continue;
+    }
+    const v = answers[k];
+    if (v === false) continue;
+    if (!v || typeof v !== 'object' || typeof (v as { label?: unknown }).label !== 'string' || !(v as { label: string }).label.trim()) {
+      problems.push(`accommodations: ${k} must be false or a word with a non-empty label`);
+    }
+  }
+  for (const k of Object.keys(answers)) {
+    if (!isGameKeyed(k)) {
+      problems.push(isAccommodation(k)
+        ? `accommodations: ${k} is not the cartridge's to answer - general ones mount always and contract ones are derived`
+        : `accommodations: «${k}» is not in the catalogue - a game's own accommodation is an addition (ADR-0145 §2)`);
+    }
+  }
+  return problems;
+}
+
+/**
+ * Does this accommodation have a subject in this game? The question a panel asks before mounting a row.
+ *
+ * 📌 It returns the WORD, or `null` — never the id, never `true`: a row that mounts must have a name to show, and
+ * «has a subject» without a word is the `action2` defect one level up.
+ */
+export function subjectWord(answers: AccommodationAnswers, k: GameKeyedAccommodation): AccommodationWord | null {
+  const v = answers[k];
+  return v && v.label.trim() ? v : null;
+}

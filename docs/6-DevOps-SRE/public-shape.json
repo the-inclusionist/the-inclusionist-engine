@@ -62,7 +62,9 @@
       "short?"
     ],
     "type Accommodation": "(typeof ACCOMMODATIONS)[number]",
-    "type AccommodationPreset": "Partial<Readonly<Record<Accommodation, AccommodationWord>>>"
+    "type AccommodationPreset": "Partial<Readonly<Record<Accommodation, AccommodationWord>>>",
+    "type GameKeyedAccommodation": "(typeof GAME_KEYED)[number]",
+    "type AccommodationAnswers": "Readonly<Record<GameKeyedAccommodation, AccommodationWord | false>>"
   },
   "core/actions.ts": {
     "interface ActionWord": [

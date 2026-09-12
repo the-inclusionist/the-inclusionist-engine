@@ -11,7 +11,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ACCOMMODATIONS, GENERAL, CONTRACT_KEYED, GAME_KEYED, isAccommodation, presetAccommodations,
-  accommodationLabellerFrom, accommodationPresetProblems,
+  accommodationLabellerFrom, accommodationPresetProblems, accommodationAnswersProblems, subjectWord, isGameKeyed,
 } from '../app/js/core/accommodations.js';
 import { ACOM, U } from '../scripts/lib/acomodacoes.mjs';
 
@@ -99,6 +99,47 @@ describe('the preset — a game names only what has a subject in it', () => {
   });
 });
 
+describe('the cartridge\'s answer — COMPLETE, and mandatory (ADR-0153)', () => {
+  /** A game where nothing game-keyed has a subject, and every «no» is written. */
+  const NENHUMA = Object.fromEntries(GAME_KEYED.map((k) => [k, false]));
+  const PLATFORM = { ...NENHUMA, wheelchairMode: { label: 'Wheelchair mode' }, caneSpacing: { label: 'Cane taps' } };
+
+  it('🎯 [Right] an answer that covers all sixteen is conformant — «no» everywhere included', () => {
+    expect(accommodationAnswersProblems(NENHUMA)).toEqual([]);
+    expect(accommodationAnswersProblems(PLATFORM)).toEqual([]);
+  });
+
+  it('🔴 [Zero] NO answer is a problem — the difference from the preset, and the Dev\'s decision', () => {
+    expect(accommodationAnswersProblems(undefined)[0]).toMatch(/missing .*ADR-0153/);
+    expect(accommodationAnswersProblems(null)).toHaveLength(1);
+  });
+
+  it('🔴 [Boundary] ONE missing key is a problem, named — silence is not «no»', () => {
+    const { easyMode: _fora, ...semUma } = NENHUMA;
+    const p = accommodationAnswersProblems(semUma);
+    expect(p).toHaveLength(1);
+    expect(p[0]).toMatch(/easyMode is not answered/);
+  });
+
+  it('🔴 [Error] «true», a blank label and a string are refused — a subject needs a WORD', () => {
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: true })[0]).toMatch(/hints must be false or a word/);
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: { label: ' ' } })[0]).toMatch(/hints must be false or a word/);
+    expect(accommodationAnswersProblems({ ...NENHUMA, hints: 'Hints' })[0]).toMatch(/hints must be false or a word/);
+  });
+
+  it('🔴 [Error] answering a general or contract-keyed one is refused, and says why — asking twice lets answers disagree', () => {
+    expect(accommodationAnswersProblems({ ...NENHUMA, gameSpeed: false })[0]).toMatch(/gameSpeed is not the cartridge's to answer/);
+    expect(accommodationAnswersProblems({ ...NENHUMA, wheelchair: false })[0]).toMatch(/«wheelchair» is not in the catalogue/);
+  });
+
+  it('🎯 [Right] subjectWord gives the game\'s word, and null for «no» — never the id, never true', () => {
+    expect(subjectWord(PLATFORM, 'wheelchairMode')).toEqual({ label: 'Wheelchair mode' });
+    expect(subjectWord(PLATFORM, 'pieceSets')).toBeNull();
+    expect(isGameKeyed('caneSpacing')).toBe(true);
+    expect(isGameKeyed('typography')).toBe(false);
+  });
+});
+
 // ============================== MUTATIONS CHECKED ==============================
 // Applied by script, occurrence count checked before each:
 //   A1 an accommodation drops out of its family               🔴 orphan
@@ -111,3 +152,7 @@ describe('the preset — a game names only what has a subject in it', () => {
 //   A8 unknown keys stop being reported                       🔴 a typo vanishes
 //   A9 blank labels stop being reported                       🔴 nameless row
 //   A10 an accommodation added to the study and not here      🔴 the two lists part
+//   R1 an absent answer passes                                 🔴 the optional field the Dev refused
+//   R2 missing keys are not reported                           🔴 silence answers
+//   R3 `true` is accepted as an answer                          🔴 a subject with no word
+//   R4 a non-game-keyed key is not reported                    🔴 two answers for one question
