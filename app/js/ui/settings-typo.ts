@@ -100,6 +100,17 @@ export interface FontCssTarget {
   fonte: 'padrao' | 'alfabetizacao' | 'dislexia' | 'custom';
   /** Value for the --font-custom CSS property, or null to remove the property. */
   customFamily: string | null;
+  /**
+   * Is this a JOINED face? (ADR-0149 §3.)
+   *
+   * 🔴 It drives `data-cursiva` on the root, which is what removes the BDA letter/word spacing. Letter
+   * spacing on a joined face pulls the letters apart at exactly the joins that make it cursive — the spacing
+   * meant to help reading would destroy the thing being read. The Dev's words: «para manter os conectores».
+   *
+   * 📌 Read off `FontItem.fb` rather than a new field: the catalogue already tells cursive faces apart, and a
+   * second source for the same fact is a second place for it to drift.
+   */
+  cursiva: boolean;
 }
 
 /**
@@ -109,11 +120,14 @@ export interface FontCssTarget {
  * Verbatim port of the branching inside the old setGameFont().
  */
 export function fontCssTarget(k: string, it: FontItem): FontCssTarget {
-  if (k === 'atkinson') return { fonte: 'padrao', customFamily: null };
-  if (k === 'andika') return { fonte: 'alfabetizacao', customFamily: null };
-  if (k === 'lexend') return { fonte: 'dislexia', customFamily: null };
-  const suffix = it.fb === 'serif' ? ',Georgia,serif' : it.fb === 'cursive' ? ',cursive' : '';
-  return { fonte: 'custom', customFamily: `'${it.fam}'${suffix}` };
+  // ⚠️ AS TRÊS CANÓNICAS NÃO SÃO CURSIVAS, e responder `false` por elas é afirmação e não descuido: Atkinson,
+  // Andika e Lexend são faces de leitura, e é justamente nelas que o espaçamento da BDA tem de valer.
+  if (k === 'atkinson') return { fonte: 'padrao', customFamily: null, cursiva: false };
+  if (k === 'andika') return { fonte: 'alfabetizacao', customFamily: null, cursiva: false };
+  if (k === 'lexend') return { fonte: 'dislexia', customFamily: null, cursiva: false };
+  const cursiva = it.fb === 'cursive';
+  const suffix = it.fb === 'serif' ? ',Georgia,serif' : cursiva ? ',cursive' : '';
+  return { fonte: 'custom', customFamily: `'${it.fam}'${suffix}`, cursiva };
 }
 
 export interface TypoRow {
@@ -223,6 +237,17 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     persistFontKey(ctx.store, k);
     const target = fontCssTarget(k, it);
     ctx.root.dataset.fonte = target.fonte;
+    /*
+     * 🔴 A MARCA DA FACE LIGADA (ADR-0149 §3), e é ela que tira o espaçamento da BDA. `:root[data-cursiva]`
+     * devolve `letter-spacing`/`word-spacing` a `normal`, porque espaçar uma cursiva parte-a nas junções que
+     * a fazem cursiva — «para manter os conectores».
+     *
+     * ⚠️ APAGA QUANDO NÃO É, e não só escreve quando é: sem o `delete`, uma criança que escolhesse uma
+     * cursiva e voltasse para a Atkinson ficava com a face de leitura SEM o espaçamento — o defeito na
+     * direcção mais cara, porque quem volta para a face de leitura é quem precisa dele.
+     */
+    if (target.cursiva) ctx.root.dataset.cursiva = '1';
+    else delete ctx.root.dataset.cursiva;
     if (target.customFamily) ctx.root.style.setProperty('--font-custom', target.customFamily);
     else ctx.root.style.removeProperty('--font-custom');
     const pv = ctx.$<HTMLElement>('#typo-preview');

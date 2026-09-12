@@ -89,22 +89,22 @@ describe('persistFontKey', () => {
 
 describe('fontCssTarget', () => {
   it('[Right] atkinson → data-fonte="padrao", sem --font-custom', () => {
-    expect(fontCssTarget('atkinson', FONT_BY_KEY.atkinson)).toEqual({ fonte: 'padrao', customFamily: null });
+    expect(fontCssTarget('atkinson', FONT_BY_KEY.atkinson)).toEqual({ fonte: 'padrao', customFamily: null, cursiva: false });
   });
   it('[Right] andika → data-fonte="alfabetizacao"', () => {
-    expect(fontCssTarget('andika', FONT_BY_KEY.andika)).toEqual({ fonte: 'alfabetizacao', customFamily: null });
+    expect(fontCssTarget('andika', FONT_BY_KEY.andika)).toEqual({ fonte: 'alfabetizacao', customFamily: null, cursiva: false });
   });
   it('[Right] lexend → data-fonte="dislexia" (mantém o espaçamento BDA)', () => {
-    expect(fontCssTarget('lexend', FONT_BY_KEY.lexend)).toEqual({ fonte: 'dislexia', customFamily: null });
+    expect(fontCssTarget('lexend', FONT_BY_KEY.lexend)).toEqual({ fonte: 'dislexia', customFamily: null, cursiva: false });
   });
   it('[Edge-case] fonte sans genérica → custom sem fallback extra', () => {
-    expect(fontCssTarget('inter', FONT_BY_KEY.inter)).toEqual({ fonte: 'custom', customFamily: "'Inter'" });
+    expect(fontCssTarget('inter', FONT_BY_KEY.inter)).toEqual({ fonte: 'custom', customFamily: "'Inter'", cursiva: false });
   });
   it('[Edge-case] fonte serifada → custom com fallback ,Georgia,serif', () => {
-    expect(fontCssTarget('literata', FONT_BY_KEY.literata)).toEqual({ fonte: 'custom', customFamily: "'Literata',Georgia,serif" });
+    expect(fontCssTarget('literata', FONT_BY_KEY.literata)).toEqual({ fonte: 'custom', customFamily: "'Literata',Georgia,serif", cursiva: false });
   });
   it('[Edge-case] fonte manuscrita → custom com fallback ,cursive', () => {
-    expect(fontCssTarget('comicneue', FONT_BY_KEY.comicneue)).toEqual({ fonte: 'custom', customFamily: "'Comic Neue',cursive" });
+    expect(fontCssTarget('comicneue', FONT_BY_KEY.comicneue)).toEqual({ fonte: 'custom', customFamily: "'Comic Neue',cursive", cursiva: true });
   });
 });
 

@@ -757,6 +757,16 @@
       "setPadMm",
       "showTouchControls"
     ],
+    "interface TouchMarkupCtx": [
+      "criar",
+      "procurar"
+    ],
+    "interface TouchMarkupSpec": [
+      "acoesDoJogo",
+      "direcional?",
+      "mapa",
+      "rotuloDoSlot"
+    ],
     "type HandTag": "'crianca' | 'adulto' | 'inter'",
     "type PadLayout": "'sony' | 'nintendo' | 'microsoft' | 'generic'",
     "type PadKind": "'kb' | 'x' | 'd'"
@@ -1698,6 +1708,14 @@
     "type FontItem": "{ k: string",
     "type FontGroup": "{ g: string"
   },
+  "ui/help-panel.ts": {
+    "interface HelpRow": [
+      "action",
+      "hint?",
+      "key",
+      "word"
+    ]
+  },
   "ui/hud.ts": {
     "interface ScreenRect": [
       "L"
@@ -1742,6 +1760,14 @@
     "interface RecusaDaAlternancia": [
       "chave",
       "transporte"
+    ]
+  },
+  "ui/layout.ts": {
+    "interface CaixaNomeada": [
+      "nome"
+    ],
+    "interface Caixa": [
+      "x"
     ]
   },
   "ui/loop-crash.ts": {
@@ -1832,7 +1858,9 @@
       "overlays"
     ],
     "interface MountPanelSpec": [
+      "fecharProprio?",
       "id",
+      "idDaLista?",
       "primeiroFoco?",
       "render",
       "rotulos"
@@ -1850,6 +1878,7 @@
     ],
     "interface PanelShellSpec": [
       "id",
+      "idDaLista?",
       "introducao?",
       "rotuloDaLista",
       "rotuloFechar",
@@ -1866,6 +1895,20 @@
       "titulo"
     ],
     "type PanelLabels": "Omit<PanelShellSpec, 'id'>"
+  },
+  "ui/panel-widgets.ts": {
+    "interface ControlRowSpec": [
+      "dica?",
+      "forma?",
+      "id",
+      "rotulo",
+      "rotuloAria?"
+    ],
+    "interface ControlRow": [
+      "controle",
+      "linha"
+    ],
+    "type FormaDoControle": "'interruptor' | 'escolha' | 'cursor'"
   },
   "ui/pause-icons.ts": {
     "interface PauseIcon": [
@@ -2137,10 +2180,10 @@
       "fillExplain?",
       "getNumPlayers",
       "players",
-      "rebuildCoins",
+      "rebuildCoins?",
       "seguraTeclas",
       "setToggleMove?",
-      "setToggleRun",
+      "setToggleRun?",
       "srSay",
       "store",
       "transporteEmUso?"
@@ -2205,6 +2248,7 @@
       "setFont"
     ],
     "interface FontCssTarget": [
+      "cursiva",
       "customFamily",
       "fonte"
     ],

@@ -3,6 +3,7 @@
 // (ctx.$/srSay/store/root), nenhum acesso a globais fora do ctx. A lógica pura (mapeamento/validação/view-model)
 // está coberta em settings-typo.node.test.js. Modelo: tests/a11y-sr.browser.test.js, tests/debug-panel.browser.test.js.
 import { describe, it, expect, beforeEach } from 'vitest';
+import cssDoJogo from '../app/css/style.css?raw'; // a folha do jogo, para o caso do espaçamento medir o computado
 import { initSettingsTypo } from '../app/js/ui/settings-typo.js';
 
 // Fake de platform/storage.ts (mesma forma get/set), em memória.
@@ -117,6 +118,75 @@ describe('ui/settings-typo', () => {
     api.setFont('literata', false);
     expect(document.documentElement.dataset.fonte).toBe('custom');
     expect(document.documentElement.style.getPropertyValue('--font-custom')).toBe("'Literata',Georgia,serif");
+  });
+
+  it('🔴 [Right] o espaçamento PADRÃO do documento é o da BDA — e a cursiva devolve-o a `normal`', () => {
+    /*
+     * 🔴 ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE, e é a mais importante desta mudança: repor o `--ls`
+     * em 0.12em — o piso da WCAG §1.4.12, que era o valor de antes — não reprovava NADA. O número que a
+     * decisão inteira do Dev move não estava preso em lado nenhum.
+     *
+     * 📏 A regra: 0.18em de letra e 0.63em de palavra, que é a recomendação da British Dyslexia Association
+     * (palavra ≥ 3,5× letra). Antes eles viviam só em `[data-fonte="dislexia"]`, e a face PADRÃO — a que
+     * todos os jogos desenham — ficava no piso mais baixo dos dois.
+     *
+     * ⚠️ MEDIDO PELO COMPUTADO e não pelo texto do ficheiro: o que importa é o que o navegador resolve na
+     * raiz, que é onde a cascata acaba. Ler o CSS como string mediria o que eu escrevi, não o que se aplica.
+     */
+    // 📌 A FOLHA ENTRA À MÃO, pelo precedente de `palco-tem-prioridade.browser.test.js`: o ambiente do vitest
+    // não carrega o `style.css` do jogo, e sem ela tudo responde `normal` — o caso do vácuo abaixo apanhou
+    // exactamente isso na primeira volta.
+    const folha = document.createElement('style');
+    folha.textContent = cssDoJogo;
+    document.head.appendChild(folha);
+    const raiz = document.documentElement;
+    const espaco = () => {
+      const c = getComputedStyle(raiz);
+      return { ls: c.letterSpacing, ws: c.wordSpacing };
+    };
+    const ctx = fullCtx();
+    const api = initSettingsTypo(ctx);
+
+    api.setFont('atkinson', false);
+    const padrao = espaco();
+    // O caso do vácuo: sem a folha carregada, tudo seria `normal` e as duas metades passariam de graça.
+    expect(padrao.ls, 'a folha de estilo não foi aplicada; o caso mediria o nada').not.toBe('normal');
+    // 16px de base × 0.18em = 2.88px; × 0.63em = 10.08px. Comparado em px porque é o que o computado devolve.
+    expect(parseFloat(padrao.ls) / 16, 'o espaçamento de LETRA não é o da BDA').toBeCloseTo(0.18, 2);
+    expect(parseFloat(padrao.ws) / 16, 'o espaçamento de PALAVRA não é o da BDA').toBeCloseTo(0.63, 2);
+
+    // 🔴 E a cursiva devolve os dois a `normal` — espaçar uma face ligada parte-a nas junções.
+    api.setFont('comicneue', false);
+    // ⚠️ O COMPUTADO É ASSIMÉTRICO, e é do navegador e não da regra: para `normal`, o Chromium devolve
+    // `'normal'` em `letterSpacing` e `'0px'` em `wordSpacing`. Escrito à espera de `'normal'` nos dois, o
+    // caso reprovava com o CSS certo. O que se afirma é «não há espaçamento extra», e é isso que se mede.
+    const cursiva = espaco();
+    expect(cursiva.ls, 'a face ligada ficou com espaçamento de letra a partir-lhe os conectores').toBe('normal');
+    expect(parseFloat(cursiva.ws) || 0, 'a face ligada ficou com espaçamento de palavra').toBe(0);
+
+    folha.remove();
+    delete raiz.dataset.cursiva;
+  });
+
+  it('🔴 [Right] uma face LIGADA marca `data-cursiva`, e voltar a uma de leitura APAGA a marca', () => {
+    /*
+     * 🔴 É a excepção do ADR-0149 §3, e a marca é o que tira o espaçamento da BDA: espaçar uma cursiva
+     * parte-a nas junções que a fazem cursiva — «para manter os conectores», palavras do Dev.
+     *
+     * ⚠️ E O SEGUNDO METADE DO CASO É QUE IMPORTA. Escrever a marca sem a APAGAR deixaria uma criança que
+     * experimentou uma cursiva e voltou para a Atkinson com a face de LEITURA sem espaçamento nenhum — o
+     * defeito na direcção mais cara, porque quem volta para a face de leitura é exactamente quem precisa
+     * dele. Um caso que só medisse a ida ficaria verde com essa metade partida.
+     */
+    const ctx = fullCtx();
+    const api = initSettingsTypo(ctx);
+
+    api.setFont('comicneue', false);
+    expect(document.documentElement.dataset.cursiva, 'a face ligada não marcou a excepção').toBe('1');
+
+    api.setFont('atkinson', false);
+    expect(document.documentElement.dataset.cursiva,
+      'voltou para a face de leitura e ficou sem o espaçamento da BDA').toBeUndefined();
   });
 
   it('[Cross-check] render() sincroniza a família do #typo-preview com a fonte ativa', () => {

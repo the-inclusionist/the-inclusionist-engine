@@ -33,7 +33,8 @@
     "labellerFrom",
     "presetActions",
     "presetProblems",
-    "shortLabellerFrom"
+    "shortLabellerFrom",
+    "startClaimProblem"
   ],
   "core/anel.ts": [
     "passoNoAnel"
@@ -464,9 +465,13 @@
     "TOUCH_SLOTS",
     "TouchApi",
     "TouchCtx",
+    "TouchMarkupCtx",
+    "TouchMarkupSpec",
     "TouchStore",
     "computePadPhysicalPx",
     "initTouch",
+    "lacunasDoToque",
+    "montarControleDeToque",
     "normalizeTouchMap",
     "padHandTag",
     "padKind",
@@ -1151,6 +1156,12 @@
     "resolveFontKey",
     "saveFontKey"
   ],
+  "ui/help-panel.ts": [
+    "HelpRow",
+    "SEM_TECLA",
+    "helpListHtml",
+    "helpRows"
+  ],
   "ui/hud.ts": [
     "HudApi",
     "HudCtx",
@@ -1178,9 +1189,12 @@
     "recusaDaAlternancia"
   ],
   "ui/layout.ts": [
+    "Caixa",
+    "CaixaNomeada",
     "REGUA_DE_ALVO",
     "alvoMinimoDeToque",
     "initLayout",
+    "invasoresDaBarra",
     "layout"
   ],
   "ui/loop-crash.ts": [
@@ -1246,6 +1260,13 @@
     "aplicarRotulos",
     "idsDaCasca",
     "montarCasca"
+  ],
+  "ui/panel-widgets.ts": [
+    "ControlRow",
+    "ControlRowSpec",
+    "FormaDoControle",
+    "linhaDeControle",
+    "rotularLinha"
   ],
   "ui/pause-icons.ts": [
     "AcaoNaBarra",
@@ -1318,6 +1339,7 @@
     "catRowHTML",
     "catsListHTML",
     "initSettingsAudio",
+    "montarInteriorDoAudio",
     "navMasterVolume",
     "opcoesDeMotor",
     "parseCaneDiv",
@@ -1390,10 +1412,12 @@
     "SettingsMotorCtx",
     "anyMotorActive",
     "clampSelPlayer",
+    "definirAlternanciaDeCorrida",
     "definirAlternanciaDeMarcha",
     "easyAnnouncement",
     "easyKey",
     "initSettingsMotor",
+    "montarInteriorDoMotor",
     "onOffLabel",
     "playerPrefix",
     "playerTabsHTML",
