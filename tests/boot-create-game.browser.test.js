@@ -570,6 +570,79 @@ describe('createGame num documento de verdade', () => {
       motor.pausa.esconder(0);
     });
 
+    it('🔴 [Right] the EMPATHY panel offers the simulations the engine can draw, and hearing loss — nothing it cannot', async () => {
+      const audio = await import('../app/js/platform/audio.js');
+      const motor = abrir();
+      const mundo = document.querySelector('#game-region');
+      motor.pausa.mostrar(0);
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]');
+      expect(item.getAttribute('aria-disabled'), 'the empathy item is still locked').toBeNull();
+      item.click();
+      try {
+        expect(document.getElementById('empathy').hidden, 'the panel did not open').toBe(false);
+        const chaves = [...document.querySelectorAll('#empathy-list button[data-viz]')].map((b) => b.dataset.viz);
+        expect(chaves).toEqual(['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'blind']);
+        // 🔴 what the engine cannot draw is not offered: those need the platformer's DOM layer, and wheelchair was cut
+        for (const id of ['opt-wheelchair', 'opt-onebtn']) expect(document.getElementById(id), id).toBeNull();
+        // a simulation puts its filter on the world, and «normal» takes it off
+        document.querySelector('#empathy-list button[data-viz="sim-deuter"]').click();
+        expect(mundo.style.filter, 'the simulation did not reach the world').toMatch(/cvd-deuter/);
+        document.querySelector('#empathy-list button[data-viz="normal"]').click();
+        expect(mundo.style.filter).toBe('');
+        // hearing loss switches the audio graph, both ways
+        const antes = audio.hearingLoss;
+        document.getElementById('opt-hearing').click();
+        expect(audio.hearingLoss, 'the hearing-loss row did nothing').toBe(!antes);
+        document.getElementById('opt-hearing').click();
+        expect(audio.hearingLoss).toBe(antes);
+      } finally {
+        document.querySelector('#empathy-list button[data-viz="normal"]')?.click();
+        document.getElementById('empathy-close').click();
+        motor.pausa.esconder(0);
+      }
+    });
+
+    it('🔴 [Boundary] with a colour CORRECTION on, a simulation is REFUSED and says why (ADR-0076)', async () => {
+      // A demonstration drawn over a correction shows neither the disability nor the correction.
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      raiz.appendChild(svg);
+      const motor = abrir({ host: { doc: document, win: window, cvdHost: svg } });
+      const mundo = document.querySelector('#game-region');
+      document.querySelector('#title-icons [data-pi="cvd"]').click();
+      motor.pausa.mostrar(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
+      try {
+        document.querySelector('#empathy-list button[data-viz="blind"]').click();
+        expect(mundo.style.filter, 'the simulation ran over the correction').not.toMatch(/brightness\(0\)/);
+        expect(mundo.style.filter, 'the refusal erased the correction').toMatch(/cvd-fix-/);
+        await new Promise((r) => requestAnimationFrame(r));
+        expect(document.querySelector('#sr-status')?.textContent, 'the refusal was silent').toMatch(/correção de cor/);
+      } finally {
+        document.getElementById('empathy-close').click();
+        motor.pausa.esconder(0);
+      }
+    });
+
+    it('🔴 [Boundary] turning a correction ON while a simulation runs STOPS the simulation — the adaptation wins (ADR-0076)', () => {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      raiz.appendChild(svg);
+      const motor = abrir({ host: { doc: document, win: window, cvdHost: svg } });
+      const mundo = document.querySelector('#game-region');
+      motor.pausa.mostrar(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
+      try {
+        document.querySelector('#empathy-list button[data-viz="blind"]').click();
+        expect(mundo.style.filter, 'the case would measure nothing').toMatch(/brightness\(0\)/);
+        document.getElementById('empathy-close').click();
+        motor.pausa.esconder(0);
+        document.querySelector('#title-icons [data-pi="cvd"]').click();
+        expect(mundo.style.filter, 'the correction did not reach the world').toMatch(/cvd-fix-/);
+        expect(mundo.style.filter, 'the simulation kept running over the correction').not.toMatch(/brightness\(0\)/);
+      } finally {
+        motor.pausa.esconder(0);
+      }
+    });
+
     it('🔴 [Boundary] o ciclo ANDA e LIMPA quando o jogo declara jogadores', () => {
       /*
        * 🔴 ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE: «aplica sempre um filtro, nunca limpa» ficava verde,
@@ -942,7 +1015,7 @@ describe('createGame num documento de verdade', () => {
       // 📏 Measured in dist before this case: the hearing panel appended its rows AFTER the actions, so the reset sat
       // between «Voltar» and the first row. The shell alone cannot promise the order; the interiors can break it.
       const motor = abrir();
-      for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora'], ['visual', 'visual']]) {
+      for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora'], ['visual', 'visual'], ['empatia', 'empathy']]) {
         motor.pausa.mostrar(0);
         const item = document.querySelector(`#vp-pause-0 .pm-btn[data-act="${act}"]`);
         expect(item?.hidden, `the «${act}» item is not live — the case would skip it`).toBe(false);
@@ -963,7 +1036,7 @@ describe('createGame num documento de verdade', () => {
       // (a hint is in the footer by then, or hidden until it moves there).
       const motor = abrir();
       const achados = [];
-      for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora'], ['visual', 'visual']]) {
+      for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora'], ['visual', 'visual'], ['empatia', 'empathy']]) {
         motor.pausa.mostrar(0);
         document.querySelector(`#vp-pause-0 .pm-btn[data-act="${act}"]`).click();
         for (const linha of document.querySelectorAll(`#${id} .ctrl-row`)) {

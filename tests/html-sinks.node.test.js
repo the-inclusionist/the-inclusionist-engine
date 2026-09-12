@@ -101,6 +101,7 @@ const SEGUROS = [
   // 📌 O trecho é CURTO de propósito: a chave é o começo da linha cortado em 52 caracteres (linha 55), e uma
   // entrada mais LONGA do que esse corte nunca casa — foi o que me aconteceu ao registá-la inteira.
   ['boot/create-game.ts', 'a11yBar.innerHTML = iconsMarkup(', 'markup da engine + i18n'],
+  ['boot/create-game.ts', 'lista.innerHTML = SIMULACOES_DO_MUNDO.map(', 'chaves do catálogo da engine; nome e descrição passam por `escaparHtml`'],
   ['ui/map-hub.ts', 'el.innerHTML = mapHubMarkup(np)', 'só o número de jogadores'],
   ['ui/pause-icons.ts', 'sp.innerHTML = screenPauseMarkup({', 'markup da engine + i18n'],
   // ⚠️ O argumento entrou em 2026-09-08 (ADR-0106 §5) e NÃO muda a classificação: `iconesDoJogo` é uma

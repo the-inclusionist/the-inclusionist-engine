@@ -59,6 +59,7 @@ const INVENTARIO = {
   'input/keyboard.ts': 'criança · o esquema de teclas',
   'input/touch.ts': 'criança · mapa de toque, medidas do pad em milímetros, desenho e direção',
   'platform/audio-mixer.ts': 'criança · liga/desliga e volume de cada categoria do mixer',
+  'boot/create-game.ts': 'criança/adulto · a simulação de perda auditiva do modo empatia, ligada ou não',
   'platform/storage.ts': 'a própria camada — é aqui que o `localStorage.setItem` vive, e só aqui',
   'render/crt.ts': 'criança · os parâmetros do filtro CRT',
   'render/fx.ts': 'criança · a intensidade dos efeitos de tela',

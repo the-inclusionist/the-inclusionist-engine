@@ -69,13 +69,13 @@ import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
 import { createTts, type CarregarVozNeural } from '../platform/tts.js';
-import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain } from '../platform/audio.js';
+import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain, setHearingLossGraph } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
 // responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
-import { ehCego, ehBaixaVisao, PADRAO, filtroChave, type VisualState, type Tema, type Correcao } from '../render/viz-axes.js';
+import { ehCego, ehBaixaVisao, PADRAO, filtroChave, simulacaoIndisponivel, type VisualState, type Tema, type Correcao } from '../render/viz-axes.js';
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
-import { VIZ_FILTER } from '../render/viz-modes.js';
+import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
 import { cicloDeTipografia, INICIO_DO_CICLO, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
 import { invasoresDaBarra, type Caixa } from '../ui/layout.js';
@@ -86,11 +86,13 @@ import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.j
 import { montarPainel } from '../ui/mount-panel.js';
 import { PAD_DESIGNS } from '../input/devices.js';
 import { carimbarOrigem, origemDoEvento } from '../input/origem-sintetica.js';
-import { montarPassos, atualizarPassos, passoSeguinte } from '../ui/panel-widgets.js';
+import { montarPassos, atualizarPassos, passoSeguinte, linhaDeControle, rotularLinha } from '../ui/panel-widgets.js';
+import { escaparHtml } from '../core/escape-html.js';
 import { PERSONAS_DO_PAD, personaMaisProxima } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
 import { initSettingsVisual } from '../ui/settings-visual.js';
+import { initSettingsEmpathy } from '../ui/settings-empathy.js';
 import { HC_ROLE_DEF } from '../render/hc-role-data.js';
 import { initLqFilter, setLq, getLqT, lqFilter } from '../render/lq-filter.js';
 import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type SettingsAudioApi } from '../ui/settings-audio.js';
@@ -697,9 +699,12 @@ export function createGame(o: CreateGameOptions): Engine {
    * parte, o segundo a escrever apagava o primeiro — ligar o realce desligava a correcção que a criança daltónica
    * tinha posto. Cada escritor guarda a sua parte e pede a composição.
    */
-  let filtroDaCorrecao = '';
+  // O estado visual que o MUNDO mostra: a correcção (🚥) e a simulação (modo empatia) são dois campos dele, e
+  // `filtroChave` já sabe que a simulação só corre com a correcção no padrão (ADR-0076).
+  let estadoDoMundo: VisualState = PADRAO;
   function recomporFiltroDoMundo(): void {
-    aplicarFiltroDeVisao([filtroDaCorrecao, lqFilter()].filter(Boolean).join(' '), 'mundo');
+    const chave = filtroChave(estadoDoMundo);
+    aplicarFiltroDeVisao([chave ? (VIZ_FILTER[chave] ?? '') : '', lqFilter()].filter(Boolean).join(' '), 'mundo');
   }
   initLqFilter({ onChange: recomporFiltroDoMundo });
   if (getLqT() > 0) recomporFiltroDoMundo(); // o realce guardado vale desde o arranque
@@ -1096,10 +1101,11 @@ export function createGame(o: CreateGameOptions): Engine {
           // a um sítio que ninguém relê. 🔴 Num jogo que não declara jogadores não há onde guardar, e o ciclo
           // fica preso na primeira posição — o defeito do `getPlayers` nomeado mais acima, e não deste ramo.
           const jogador = players()[i] as { visual?: VisualState } | undefined;
-          const estado: VisualState = { ...(jogador?.visual ?? PADRAO), correcao };
+          // Uma correcção LIGADA pára a demonstração (ADR-0076): a simulação por cima de uma adaptação ensina uma coisa falsa.
+          const antes = jogador?.visual ?? estadoDoMundo;
+          const estado: VisualState = { ...antes, correcao, simulacao: correcao === 'tricro' ? antes.simulacao : null };
           if (jogador) jogador.visual = estado;
-          const chave = filtroChave(estado);
-          filtroDaCorrecao = chave ? (VIZ_FILTER[chave] ?? '') : '';
+          estadoDoMundo = estado;
           recomporFiltroDoMundo();
         }) }
         : {}),
@@ -1429,6 +1435,90 @@ export function createGame(o: CreateGameOptions): Engine {
       oferecer: { dono: false, papeis: false },
     });
     acoesDaEngine.visual = painelVisual.abrir;
+
+    /*
+     * MODO EMPATIA (ADR-0151) — e o último item travado do submenu destrava (ADR-0161).
+     *
+     * 📌 O MÓDULO É O DO JOGO DE PLATAFORMA (`ui/settings-empathy`), com o que a engine SABE fazer:
+     *   · as SIMULAÇÕES que são um filtro no mundo — as três de daltonismo (as matrizes do `installCvdFilters`), o
+     *     desfoque, a névoa e a cegueira. ⚠️ FORA, e medido: túnel, mancha macular e manchas diabéticas — o `VIZ_FILTER`
+     *     delas é vazio ou só um desfoque; o que as desenha é uma camada DOM do jogo de plataforma, que esta raiz não tem.
+     *     Oferecê-las mostraria outra coisa com o nome da deficiência;
+     *   · a PERDA AUDITIVA (`platform/audio.setHearingLossGraph`, que já é da engine).
+     * ⚠️ Sem cadeira de rodas (cortada pelo ADR-0151) e sem «um botão só» (não há escritor na engine: Fase 5).
+     * ⚠️ E a simulação respeita o ADR-0076: com uma correcção de cor ligada ela não corre, e DIZ porquê.
+     */
+    const SIMULACOES_DO_MUNDO = ['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'blind'];
+    const painelDeEmpatia = montarPainel(ctxDoPainel, {
+      id: 'empathy',
+      rotulos: () => ({
+        titulo: t('menu.empathy'),
+        rotuloDaLista: t('empathy.grupo.rotulo'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('pause.pmback'),
+      }),
+      // a linha da perda auditiva nasceu no idioma de recuo: reetiquetada a cada abertura, como o interior auditivo
+      render: () => { rotularLinha(linhaDaAudicao, specDaAudicao()); empatia.render(); },
+    });
+    // A linha da perda auditiva nasce ANTES do `init`, que liga o clique dela uma vez (a regra de ordem do `#typo-reset`).
+    const specDaAudicao = () => ({ id: 'opt-hearing', rotulo: t('empathy.hearing'), dica: t('empathy.hearing.dica') });
+    const linhaDaAudicao = linhaDeControle(ctxDoPainel, specDaAudicao()).linha;
+    painelDeEmpatia.casca.card.insertBefore(linhaDaAudicao, painelDeEmpatia.casca.lista);
+    const simular = (i: number, chave: string): boolean => {
+      const simulacao = (chave === 'normal' ? null : chave) as VisualState['simulacao'];
+      const jogador = players()[i] as { visual?: VisualState; viz?: string } | undefined;
+      const base = jogador?.visual ?? estadoDoMundo;
+      const motivo = simulacao ? simulacaoIndisponivel(base) : null;
+      if (motivo) { srSay(t(`sim.indisponivel.${motivo}`)); return false; } // recusa VISÍVEL e explicada (ADR-0076)
+      const estado: VisualState = { ...base, simulacao };
+      if (jogador) { jogador.visual = estado; jogador.viz = chave; }
+      estadoDoMundo = estado;
+      recomporFiltroDoMundo();
+      return true;
+    };
+    const empatia = initSettingsEmpathy({
+      $, srSay, store,
+      renderVizGroup: (listSel) => {
+        const lista = $<HTMLElement>(listSel);
+        if (!lista) return;
+        const atual = estadoDoMundo.simulacao ?? 'normal';
+        lista.innerHTML = SIMULACOES_DO_MUNDO.map((chave) => {
+          const modo = VIZ_BY_KEY[chave];
+          if (!modo) return '';
+          const sel = chave === atual;
+          // ⚠️ O parêntese final de algumas descrições — «(bolinha verde; toque 2× p/ sair)» — descreve o indicador do
+          // jogo de plataforma, que a engine não desenha: prometê-lo aqui seria dizer à criança uma saída que não existe.
+          const desc = t(modo.desc).replace(/\s*\([^)]*\)\s*$/, '');
+          return `<div class="ctrl-row"><span><strong>${escaparHtml(t(modo.nome))}</strong><span class="opt-hint">${escaparHtml(desc)}</span></span>`
+            + `<button class="mode-btn${sel ? ' is-on' : ''}" role="radio" aria-checked="${sel}" data-viz="${chave}" type="button">${escaparHtml(t(sel ? 'empathy.selected' : 'empathy.select'))}</button></div>`;
+        }).join('');
+        lista.querySelectorAll<HTMLElement>('button[data-viz]').forEach((b) => {
+          b.addEventListener('click', () => {
+            const aplicou = simular(0, b.dataset.viz ?? 'normal');
+            empatia.render();
+            // a recusa já foi dita: anunciar o modo por cima dela calava o motivo
+            if (aplicou) srSay(t(VIZ_BY_KEY[estadoDoMundo.simulacao ?? 'normal']?.nome ?? 'viz.normal'));
+          });
+        });
+      },
+      reflectMotorEmpathy: semEfeito,
+      reflectVizButtons: semEfeito,
+      frontOverlay: overlays.frontOverlay,
+      fillExplain: overlays.fillExplain,
+      restoreFocus: overlays.restoreFocus,
+      setHearingLoss: (on) => {
+        setHearingLossGraph(on);
+        store.set(store.KEYS.hearingloss, on);
+        srSay(t(on ? 'sr.empathy.hearingOn' : 'sr.empathy.hearingOff'));
+      },
+      setOneButton: semEfeito,
+      setWheelchair: semEfeito,
+      getOneButton: () => state.DEFAULTS.oneButton,
+      getWheelchair: () => state.DEFAULTS.wheelchair,
+      getPlayers: () => [{ viz: estadoDoMundo.simulacao ?? 'normal' }],
+      setPlayerViz: (i, modo) => { simular(i, modo); },
+    });
+    acoesDaEngine.empatia = painelDeEmpatia.abrir;
 
     /*
      * ACESSIBILIDADE AUDITIVA — o maior dos oito, e o que mais tinha a perder por não existir.

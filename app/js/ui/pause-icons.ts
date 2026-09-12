@@ -463,7 +463,7 @@ export const ITENS_DA_ENGINE: ReadonlySet<string> = new Set(['options', 'opcoesd
  * «Número de jogadores»: the GAME decides how many (ADR-0147) — and one general reason for the rest. Resolved at every
  * refresh, so it follows the language of the moment the card opens.
  */
-const MOTIVOS_PROPRIOS: ReadonlySet<string> = new Set(['ajuda', 'addplayer', 'opcoesdojogo', 'empatia']);
+const MOTIVOS_PROPRIOS: ReadonlySet<string> = new Set(['ajuda', 'addplayer', 'opcoesdojogo']);
 export function motivoDoItem(act: string): string {
   return t(MOTIVOS_PROPRIOS.has(act) ? `pause.motivo.${act}` : 'pause.motivo');
 }
