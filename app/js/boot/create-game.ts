@@ -738,6 +738,58 @@ export function createGame(o: CreateGameOptions): Engine {
   }
   acoesDaEngine.resume = () => mudarDeFase('playing');
 
+  /*
+   * SAIR — «voltar à tela de press start» (decisão do Dev, 2026-09-12; errata do ADR-0144 §5).
+   *
+   * 🔴 O §5 daquele registo tinha deixado isto EM ABERTO de propósito, porque a resposta errada perde o jogo
+   * de uma criança: recarregar? `history.back()`? um menu de actividades que pode não existir? A resposta
+   * dele não é nenhuma das três — é uma FASE que o projeto já tem nome e contrato para.
+   *
+   * ⚠️ E A ARESTA FICA DITA: o `ui/shell`, que DESENHAVA essa tela, é deliberadamente não montado por esta
+   * raiz (`:325-336`). A engine esconde o cartão dela e PEDE a fase; um jogo sem o gancho fica onde está. É a
+   * mesma assimetria do `setPhase('paused')` no ADR-0144 §2, e é por isso que o crivo afirma a CHAMADA.
+   *
+   * 📌 SEM CONFIRMAÇÃO, e isso é escolha e não esquecimento. O anel põe `quit` a um passo de `resume`
+   * (ADR-0044 item 1), o que o torna fácil de alcançar por engano — mas o ADR-0037 é o que decide: não há
+   * salvamento nenhum neste projeto, logo o que se perde é a rodada corrente e não progresso. Um diálogo de
+   * confirmação custaria uma parada a mais na varredura de TODA saída para proteger o que não existe.
+   */
+  acoesDaEngine.quit = () => mudarDeFase('title');
+
+  /*
+   * PRINT — «ver a tela sem menus», e qualquer botão volta.
+   *
+   * 📌 O `ui/shell.printMode` já fazia isto no monólito e não vem com o `ui/shell`, que esta raiz recusa
+   * montar. Mas ele não precisa da máquina de fases: precisa dos cartões, da janela e do anúncio — os três
+   * que a engine tem. Reescrito aqui com o MESMO comportamento, incluindo o adiamento.
+   *
+   * ⚠️ OS 80 ms NÃO SÃO SUPERSTIÇÃO, e a linha original já os explicava: sem eles, o próprio evento que
+   * ACCIONOU o print é o que o desfaz — a criança carrega uma vez e vê a tela limpa piscar.
+   *
+   * 📌 EM CAPTURA, e não em bolha, porque o ponto é interceptar ANTES de quem quer que seja: em modo print a
+   * tecla não é do jogo nem da pausa, é a saída. 🎯 E ela não colide com o gancho do `start` (ADR-0144), que
+   * é de bolha: o `voltar` revela o cartão na captura, e quando o de bolha chega o guarda do «cartão já
+   * aberto» manda-o embora. Medido a ler os dois lado a lado, não assumido.
+   */
+  acoesDaEngine.print = () => {
+    const cartao = (): HTMLElement | null => $<HTMLElement>('#vp-pause-0');
+    const alvo = cartao();
+    if (!alvo) return;
+    alvo.hidden = true;
+    const voltar = (e?: Event): void => {
+      if (e && typeof e.preventDefault === 'function') { try { e.preventDefault(); } catch { /* noop */ } }
+      win.removeEventListener('keydown', voltar, true);
+      win.removeEventListener('pointerdown', voltar, true);
+      const c = cartao();
+      if (c) c.hidden = false;
+    };
+    win.setTimeout(() => {
+      win.addEventListener('keydown', voltar, true);
+      win.addEventListener('pointerdown', voltar, true);
+    }, 80);
+    srSay(t('sr.print.on'));
+  };
+
   /**
    * O PAINEL AUDITIVO, resolvido tarde e lido cedo — a mesma preguiça do `acoesDaEngine` acima, e pela mesma
    * razão: `initPauseIcons` corre aqui e os painéis montam-se ~150 linhas abaixo.

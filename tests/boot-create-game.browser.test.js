@@ -290,27 +290,97 @@ describe('createGame num documento de verdade', () => {
    * PODIA entregar um escritor. Uma lacuna que o consumidor lê como escolha é a pior forma de lacuna.
    */
   describe('o que o jogo pode entregar ao cartão e à barra', () => {
-    it('⚠️ [Zero] sem `getPauseActs`, o item que o JOGO acciona nasce escondido', () => {
-      // A engine só acciona três itens sozinha (ITENS_DA_ENGINE); todo o resto depende da tabela do jogo, e
-      // o `refrescarItensDaPausa` esconde o que não tem acção — o §5 do ADR-0106, que proíbe botão morto.
+    it('⚠️ [Zero] sem `getPauseActs`, o item que SÓ o jogo acciona nasce escondido', () => {
+      // O `refrescarItensDaPausa` esconde o que não tem acção — o §5 do ADR-0106, que proíbe botão morto.
+      //
+      // ⚠️ O EXEMPLO MUDOU DE `quit` PARA `addplayer` em 2026-09-12, e a troca é a notícia: a engine passou a
+      // accionar `resume`, `ajuda`, `print` e `quit` sozinha (ADR-0144 errata, ADR-0147 §4 e §5), logo `quit`
+      // deixou de servir como exemplo de «item que só o jogo acciona» — ele aparece agora sem o jogo dizer
+      // nada. `addplayer` continua a ser do jogo: entrar um segundo jogador é uma decisão que só ele sabe
+      // tomar. 📌 Um caso cujo exemplo deixa de ser exemplo mede o oposto do que diz.
       const motor = abrir();
       motor.pausa.mostrar(0);
 
-      const sair = document.querySelector('#vp-pause-0 .pm-btn[data-act="quit"]');
-      expect(sair, 'o cartão nem sequer desenha o item').not.toBeNull();
-      expect(sair.hidden, 'um item sem acção tem de estar escondido').toBe(true);
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="addplayer"]');
+      expect(item, 'o cartão nem sequer desenha o item').not.toBeNull();
+      expect(item.hidden, 'um item sem acção tem de estar escondido').toBe(true);
     });
 
     it('⚠️ [Right] com `getPauseActs`, o item APARECE e o clique chega ao jogo', () => {
-      let saiu = 0;
-      const motor = abrir({ getPauseActs: () => ({ quit: () => { saiu += 1; } }) });
+      let entrou = 0;
+      const motor = abrir({ getPauseActs: () => ({ addplayer: () => { entrou += 1; } }) });
       motor.pausa.mostrar(0);
 
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="addplayer"]');
+      expect(item.hidden, 'o jogo ligou o item e ele continua escondido').toBe(false);
+
+      item.click();
+      expect(entrou, 'o clique percorreu o caminho todo até à função do jogo').toBe(1);
+    });
+
+    it('🔴 [Right] o `quit` do JOGO ganha ao da engine — o padrão não é uma tomada', () => {
+      /*
+       * 🎯 A engine passou a oferecer um `quit` («voltar à tela de press start», decisão do Dev), e este caso
+       * é o que impede isso de virar confisco: `getPauseActs` espalha a tabela do JOGO POR CIMA da da engine,
+       * então um jogo que precise de guardar alguma coisa, confirmar, ou desligar uma ligação antes de sair
+       * continua a mandar. 📌 É a mesma forma do `resume` na errata do ADR-0144.
+       */
+      let saiuPeloJogo = 0;
+      let fase = null;
+      const motor = abrir({
+        getPauseActs: () => ({ quit: () => { saiuPeloJogo += 1; } }),
+        setPhase: (p) => { fase = p; },
+      });
+      motor.pausa.mostrar(0);
+
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="quit"]').click();
+
+      expect(saiuPeloJogo, 'o `quit` da engine atropelou o do jogo').toBe(1);
+      expect(fase, 'a engine pediu a fase por cima do jogo, que já tinha decidido como sair').toBeNull();
+    });
+
+    it('🎯 [Right] sem `quit` do jogo, a engine leva à TELA DE PRESS START', () => {
+      // A outra metade: o jogo que não declara nada recebe uma saída na mesma (errata do ADR-0144 §5).
+      // ⚠️ O crivo afirma a CHAMADA e não os pixels, porque quem desenha essa tela é o `ui/shell`, que esta
+      // raiz recusa montar de propósito — a engine esconde o cartão dela e PEDE a fase.
+      const fases = [];
+      const motor = abrir({ setPhase: (p) => fases.push(p) });
+      motor.pausa.mostrar(0);
       const sair = document.querySelector('#vp-pause-0 .pm-btn[data-act="quit"]');
-      expect(sair.hidden, 'o jogo ligou o item e ele continua escondido').toBe(false);
+      expect(sair.hidden, 'a engine oferece `quit` e o item continua escondido').toBe(false);
 
       sair.click();
-      expect(saiu, 'o clique percorreu o caminho todo até à função do jogo').toBe(1);
+
+      expect(fases, 'a saída não pediu a tela de press start').toEqual(['title']);
+      expect(document.querySelector('#vp-pause-0').hidden, 'saiu do jogo e o cartão ficou aberto').toBe(true);
+    });
+
+    it('🔴 [Right] o PRINT esconde o cartão, e qualquer tecla o traz de volta', async () => {
+      /*
+       * 🔴 «Ver a tela sem menus» é um item que a engine nunca soube accionar. O `ui/shell.printMode` fazia-o
+       * no monólito e não vem com o `ui/shell`, que esta raiz recusa montar — mas ele não precisa da máquina
+       * de fases, só dos cartões, da janela e do anúncio.
+       *
+       * ⚠️ E O ADIAMENTO DE 80 ms É O CASO, não um detalhe: sem ele o próprio evento que ACCIONOU o print é o
+       * que o desfaz, e a criança carrega uma vez e vê a tela limpa piscar. Por isso o caso ESPERA — e a
+       * espera é o que o prende.
+       */
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      const cartao = document.querySelector('#vp-pause-0');
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="print"]');
+      expect(item.hidden, 'a engine oferece `print` e o item continua escondido').toBe(false);
+
+      item.click();
+      expect(cartao.hidden, 'o print não escondeu o cartão').toBe(true);
+
+      // ⚠️ ANTES dos 80 ms a tecla NÃO devolve — é exactamente o evento que o print existe para ignorar.
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ', bubbles: true }));
+      expect(cartao.hidden, 'o print desfez-se com o próprio evento que o accionou').toBe(true);
+
+      await new Promise((r) => setTimeout(r, 140));
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ', bubbles: true }));
+      expect(cartao.hidden, 'depois do adiamento, qualquer tecla tinha de trazer o cartão de volta').toBe(false);
     });
 
     it('⚠️ [Zero] sem escritores visuais, os ícones de contraste e cor NÃO são montados', () => {
