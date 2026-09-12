@@ -50,38 +50,25 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
     expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(4);
   });
 
-  it('🔴 [Right] o QUIZ recebe DOIS alvos e NENHUM direcional — não nove botões mortos', () => {
-    // ⚠️ É a objecção do segundo consumidor, virada afirmação: «um quiz quer dois alvos grandes, não um
-    // direcional de plataforma». Montar o pad do platformer aqui daria nove controles que o leitor de tela
-    // anuncia e que não disparam nada — o ADR-0106 §5 quebrado pelo trabalho que o cita.
-    const raiz = montar(DUAS_ACOES);
-    expect(raiz.querySelector('#touch-cross'), 'recebeu um direcional que a declaração não pede').toBeNull();
-    expect(raiz.querySelector('#touch-stick')).toBeNull();
-    expect(raiz.querySelectorAll('.touch-arm')).toHaveLength(0);
-    // `action1` e `action2` estão no mapa em `b2` e `b0`; as outras duas não são declaradas
-    expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(2);
+  it('🔴 [Right] o QUIZ recebe o MÍNIMO — quatro direções e quatro botões (ADR-0157)', () => {
+    // 🔴 ERA O CONTRÁRIO (ADR-0143): «um quiz quer dois alvos grandes, não um direcional de plataforma». O Dev abriu o
+    // quiz num ecrã de toque e não conseguiu andar em menu nenhum — o pad só tinha START. As direções e as acções 2 e 3
+    // são o que os menus pedem, e existem num jogo que não as usa em jogo.
+    const raiz = montar(DUAS_ACOES, { direcional: 'cruz' });
+    expect(raiz.querySelectorAll('.touch-arm')).toHaveLength(4);
+    expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(4);
   });
 
-  it('🔴 [Boundary] um jogo de duas direções não recebe braços mortos', () => {
-    // ⚠️ É O RISCO QUE O REGISTO NOMEIA: «um jogo que declara só `left` e `right` não deve receber uma cruz
-    // com dois braços mortos». A cruz é um CONJUNTO de braços aqui, não um molde de quatro.
-    const raiz = montar(['left', 'right', 'action1']);
-    const bracos = [...raiz.querySelectorAll('.touch-arm')].map((b) => b.dataset.dir);
-    expect(bracos.sort()).toEqual(['left', 'right']);
-  });
-
-  it('🎯 [Right] o slot dispara pelo MAPA, não pelo próprio nome — o remapeamento da criança vale', () => {
-    // 📌 `touch-bindings.ts:451` faz `doTouch(ctx.getTouchMap()['b' + b.dataset.btn])`: «a função vem do
-    // touchMap (remapeável), não do data-act». Ler o nome do slot desenharia o pad de fábrica a quem o mudou.
-    // Aqui a criança pôs `action1` no `b3` e mais nada; só o `b3` pode existir.
+  it('🎯 [Right] e cada botão recebe o nome que `rotuloDoSlot` lhe dá — o do jogo ou o do botão físico, decide a raiz', () => {
     const raiz = montarControleDeToque(ctx, {
-      mapa: { ...TOUCH_DEFAULT, b0: 'action4', b1: 'action4', b2: 'action4', b3: 'action1' },
+      mapa: TOUCH_DEFAULT,
       acoesDoJogo: new Set(['action1']),
-      rotuloDoSlot: (s) => s,
+      rotuloDoSlot: (s) => (s === 'b2' ? 'Confirmar' : `face ${s}`),
     });
     hospedeiro.appendChild(raiz);
-    const btns = [...raiz.querySelectorAll('.touch-btn[data-btn]')].map((b) => b.dataset.btn);
-    expect(btns, 'desenhou os slots pelo nome de fábrica em vez do mapa de agora').toEqual(['3']);
+    const nomes = [...raiz.querySelectorAll('.touch-btn[data-btn]')].map((b) => b.textContent);
+    expect(nomes).toContain('Confirmar');
+    expect(nomes.filter((n) => n.startsWith('face'))).toHaveLength(3);
   });
 
   it('⚠️ [Interface] `data-btn` casa com o `\'b\' + dataset.btn` que o `touch-bindings` recompõe', () => {
@@ -126,17 +113,15 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
 });
 
 describe('ADR-0143 §4 · o silêncio acaba', () => {
-  it('🔴 [Zero] sem `preset`: o markup NÃO é montado E a linha É dita — as duas metades', () => {
-    // ⚠️ ESTE É O CASO QUE O PRÓPRIO REGISTO AVISOU QUE PASSA POR ACIDENTE. Hoje o pad já está ausente e já
-    // está calado; um caso que afirme só a ausência continua verde com nada construído. Só o par prova.
-    const raiz = montar([]);
-    expect(raiz.querySelectorAll('.touch-arm')).toHaveLength(0);
-    expect(raiz.querySelectorAll('.touch-btn[data-btn]'), 'desenhou botões para um jogo sem acções')
-      .toHaveLength(0);
-
+  it('🔴 [Zero] sem `preset`: o MÍNIMO é montado E a linha diz que faltam as palavras (ADR-0157)', () => {
+    // As duas metades, como antes: o pad existe (senão ninguém anda nos menus por toque) e a lacuna diz-se (os botões
+    // mostram as letras do controle físico, e uma criança não sabe o que cada um faz neste jogo).
+    const raiz = montar([], { direcional: 'cruz' });
+    expect(raiz.querySelectorAll('.touch-arm')).toHaveLength(4);
+    expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(4);
     const linhas = lacunasDoToque({ mapa: TOUCH_DEFAULT, acoesDoJogo: new Set() });
-    expect(linhas, 'a engine não montou o pad e calou-se, que é o estado de hoje').toHaveLength(1);
-    expect(linhas[0], 'a linha não nomeia a saída, logo é queixa e não conserto').toMatch(/preset/);
+    expect(linhas).toHaveLength(1);
+    expect(linhas[0], 'a linha não nomeia a saída').toMatch(/preset/);
     expect(linhas[0], 'a linha não diz o que a criança perde').toMatch(/tablet/);
   });
 

@@ -66,11 +66,15 @@ describe('createGame mounts the virtual pad from the preset', () => {
     expect(pad().hidden, 'a pad born visible covers the game of whoever never touches it').toBe(true);
   });
 
-  it('🔴 [Right] a preset of TWO actions gets TWO buttons and no directional — not nine', () => {
-    expect(botoes()).toHaveLength(2);
-    expect(document.querySelector('#touch-cross, #touch-stick'), 'a directional nobody declared').toBeNull();
-    // the game's own words, not an id
-    expect(botoes().map((b) => b.textContent).sort()).toEqual(['Back', 'Confirm']);
+  it('🔴 [Right] a preset of two actions gets the MINIMUM pad — four buttons and a directional (ADR-0157)', () => {
+    expect(botoes()).toHaveLength(4);
+    expect(document.querySelector('#touch-cross, #touch-stick'), 'no directional: no menu can be moved by touch').not.toBeNull();
+    const nomes = botoes().map((b) => b.textContent);
+    // the game's own words where it has them…
+    expect(nomes).toEqual(expect.arrayContaining(['Confirm', 'Back']));
+    // …and the physical face label elsewhere — never an id
+    for (const n of nomes) expect(n, 'a pad button shows an action id').not.toMatch(/^action\d|^b\d$/);
+    expect(nomes.every((n) => n.trim() !== ''), 'a pad button with no label').toBe(true);
   });
 
   it('🔴 [Right] the START pill exists anyway — the pause is not declinable (ADR-0122)', () => {
@@ -117,13 +121,67 @@ describe('createGame mounts the virtual pad from the preset', () => {
     expect(fases).toEqual(['paused', 'playing']);
   });
 
-  it('🔴 [Right] with the menu card OPEN, a touch does not bring the pad back over its buttons', () => {
-    document.getElementById('game-region').dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', bubbles: true }));
-    expect(pad().hidden, 'the pad was showing before the card opened; the case would measure nothing').toBe(true);
+  it('🔴 [Right] with the menu card OPEN the pad STAYS, and its directional MOVES the card (ADR-0157)', async () => {
+    // 🔴 It was the opposite: the pad hid over the card, and a pad press only marked a held key with no keyboard event —
+    // the menu navigation never saw it. The Dev could not move through any menu by touch.
+    // 📌 With the real stylesheet and the CROSS: the directional reads the finger's position against its own rectangle,
+    // and an unstyled pad measures nothing — the case would pass or fail by geometry, not by the bridge.
+    const { default: css } = await import('../app/css/style.css?raw');
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+    try { localStorage.setItem('incl_paddir', 'cross'); } catch { /* sem storage */ }
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
     motor.pausa.mostrar(0);
+    try {
+      toque(document.getElementById('game-region'), 'pointerdown');
+      expect(pad().hidden, 'the pad hid with the card open: a touch-only child has no directional').toBe(false);
+      const marcado = () => document.querySelector('#vp-pause-0 .pm-sel')?.dataset.act;
+      const antes = marcado();
+      const cruz = document.getElementById('touch-cross');
+      const r = cruz.getBoundingClientRect();
+      expect(r.height, 'the cross has no size — the case would measure nothing').toBeGreaterThan(0);
+      const em = { bubbles: true, cancelable: true, pointerId: 7, clientX: r.left + r.width / 2, clientY: r.bottom - 2 };
+      cruz.dispatchEvent(new PointerEvent('pointerdown', em));
+      cruz.dispatchEvent(new PointerEvent('pointerup', em));
+      expect(marcado(), 'the pad directional did not move the card cursor').toBeTruthy();
+      expect(marcado()).not.toBe(antes);
+      // ⚠️ the key the pad handed to the menu is stamped as TOUCH (ADR-0109): the «keyboard hides the pad» listener must not
+      // take it for a keyboard, or the pad would vanish after every step it gives
+      expect(pad().hidden, 'the pad hid itself after its own press').toBe(false);
+    } finally {
+      motor.pausa.esconder(0);
+      style.remove();
+      try { localStorage.removeItem('incl_paddir'); } catch { /* idem */ }
+      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+    }
+  });
+
+  it('🔴 [Right] from the QUICK PAUSE the pad\'s action-4 button opens the menus — and the pad stays (ADR-0155, ADR-0157)', () => {
+    // ⚠️ The door the footer legend names. The key the pad hands over is NOT consumed by the menu navigation here (no menu
+    // intent for action 4), so it reaches the «keyboard hides the pad» listener: only its TOUCH stamp (ADR-0109) keeps
+    // the pad from vanishing under the finger that just used it.
     toque(document.getElementById('game-region'), 'pointerdown');
-    expect(pad().hidden, 'a touch on the open pause revealed the pad on top of its buttons').toBe(true);
-    motor.pausa.esconder(0);
+    document.getElementById('touch-start').click();
+    try {
+      expect(document.querySelector('#game-region .pausa-rapida')?.hidden, 'the START pill did not pause').toBe(false);
+      const menu = document.querySelector('#touch-controls .touch-btn[data-btn="3"]'); // b3 → action4 by default
+      toque(menu, 'pointerdown');
+      toque(menu, 'pointerup');
+      expect(document.getElementById('vp-pause-0').hidden, 'action 4 on the pad did not open the menus').toBe(false);
+      expect(pad().hidden, 'the pad hid itself after the key it handed over').toBe(false);
+    } finally {
+      for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
+      motor.pausa.esconder(0);
+    }
+  });
+
+  it('🔴 [Right] in PLAY a pad press still holds the key — the menu bridge only works with a menu open', () => {
+    const confirmar = botoes().find((b) => b.textContent === 'Confirm');
+    const antes = new Set(keys);
+    toque(confirmar, 'pointerdown');
+    expect([...keys].filter((k) => !antes.has(k)), 'in play the pad stopped holding the key').toHaveLength(1);
+    toque(confirmar, 'pointerup');
   });
 });
 
@@ -134,13 +192,13 @@ describe('the SELECT pill opens the menus (ADR-0155)', () => {
     expect(select.textContent.trim()).not.toBe('');
   });
 
-  it('🔴 [Right] a tap opens the card, asks the game to pause once, and hides the pad over the card', () => {
+  it('🔴 [Right] a tap opens the card, asks the game to pause once — and the pad stays, it is the way to move in it', () => {
     toque(document.getElementById('game-region'), 'pointerdown');
     fases.length = 0;
     document.getElementById('touch-select').click();
     expect(document.getElementById('vp-pause-0').hidden, 'the SELECT pill did not open the menus').toBe(false);
     expect(fases).toEqual(['paused']);
-    expect(pad().hidden, 'the pad stayed over the card buttons').toBe(true);
+    expect(pad().hidden, 'the pad hid with the card open (ADR-0157)').toBe(false);
     motor.pausa.esconder(0);
   });
 
@@ -219,11 +277,11 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
 });
 
 describe('mount() rebuilds the pad for the new cartridge', () => {
-  it('🔴 [Zero] without a preset: no action button, the START stays, AND `problems` says why', () => {
+  it('🔴 [Zero] without a preset: the MINIMUM pad, with face labels, AND `problems` says the words are missing', () => {
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
-    expect(botoes()).toHaveLength(0);
+    expect(botoes()).toHaveLength(4);
     expect(document.getElementById('touch-start'), 'the pause lost its only touch door').not.toBeNull();
-    expect(motor.problems.some((l) => /sem `preset`: o controle virtual/.test(l)), 'the gap was silent').toBe(true);
+    expect(motor.problems.some((l) => /sem `preset`: o controle virtual mostra só o mínimo/.test(l)), 'the gap was silent').toBe(true);
   });
 
   it('🎯 [Boundary] a platform preset gets the cross with its arms drawn the way the bindings light them', () => {
@@ -236,7 +294,7 @@ describe('mount() rebuilds the pad for the new cartridge', () => {
     for (const d of ['up', 'down', 'left', 'right']) {
       expect(cruz.querySelector(`.dpad-arm.dpad-${d}`), `arm ${d} without the classes that draw and light it`).not.toBeNull();
     }
-    expect(botoes()).toHaveLength(2);
+    expect(botoes()).toHaveLength(4);
     expect(motor.problems.some((l) => /sem `preset`/.test(l)), 'the old cartridge\'s gap outlived it').toBe(false);
   });
 

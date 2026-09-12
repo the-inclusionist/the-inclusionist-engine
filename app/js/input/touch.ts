@@ -475,9 +475,11 @@ const BOTOES = ['b0', 'b1', 'b2', 'b3'] as const;
  * ⚠️ NASCE ESCONDIDO, e não é detalhe: a alternância por modalidade é do `touch-bindings` — «toque/clique
  * MOSTRA; teclado/controle OCULTA». Um pad que nasce à vista cobre o jogo de quem nunca lhe vai tocar.
  *
- * ⚠️ E O `#touch-start` É INCONDICIONAL, ao contrário de tudo o resto aqui. Ele é a PAUSA, e desde o ADR-0122
- * a pausa não é declinável: uma criança com um tablet e sem teclado não tem outra forma de lá chegar. Os
- * outros oito slots respondem ao que o jogo declara; este responde a uma decisão que já foi tomada.
+ * 🔴 DESDE O ADR-0157 O PAD É SEMPRE O MÍNIMO: as quatro direções e os quatro botões de acção, mais SELECT e START.
+ * Até ali ele desenhava só as posições do `preset`, e o quiz, que não declara nenhuma, tinha START e mais nada — o
+ * Dev não conseguia navegar menu nenhum por toque. As direções, a acção 2 (confirmar) e a acção 3 (voltar) são o que
+ * os menus pedem, e existem num jogo que não as usa em jogo. Quem dá o NOME a cada uma é `rotuloDoSlot`: a palavra
+ * do jogo onde ele a tem, e a legenda do botão físico onde não tem.
  *
  * Idempotente: montar duas vezes devolve o mesmo nó, com o conteúdo refeito para o mapa de agora.
  */
@@ -488,11 +490,8 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
   raiz.hidden = true;
   while (raiz.firstChild) raiz.removeChild(raiz.firstChild);
 
-  const vivo = (slot: string): boolean => spec.acoesDoJogo.has(spec.mapa[slot] ?? '');
-
-  // ⚠️ A CRUZ É UM CONJUNTO DE BRAÇOS, E NÃO UM MOLDE DE QUATRO — é o risco que o ADR-0143 nomeia: «um jogo
-  // que declara só `left` e `right` não deve receber uma cruz com dois braços mortos».
-  const direcoesVivas = DIRECOES.filter(vivo);
+  // (O ADR-0143 filtrava aqui pelas acções do jogo; o ADR-0157 fixou o mínimo — ver o cabeçalho.)
+  const direcoesVivas = [...DIRECOES];
   if (direcoesVivas.length) {
     const analogico = spec.direcional === 'analogico';
     const dir = ctx.criar('div');
@@ -521,7 +520,7 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
     raiz.appendChild(dir);
   }
 
-  const botoesVivos = BOTOES.filter(vivo);
+  const botoesVivos = [...BOTOES];
   if (botoesVivos.length) {
     const losango = ctx.criar('div');
     losango.className = 'touch-pad';
@@ -570,10 +569,12 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
  * de `problems` já segue. As frases vão para o consumidor que INTEGRA a engine, e não para uma criança.
  */
 export function lacunasDoToque(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo'>): string[] {
+  // ⚠️ SEM `preset` O PAD MONTA-SE NA MESMA desde o ADR-0157 (o mínimo navega os menus); o que falta é a PALAVRA do
+  // jogo nos botões, que ficam com a legenda física. É lacuna de quem integra, e diz-se.
   if (!spec.acoesDoJogo.size) {
-    return ['sem `preset`: o controle virtual não foi montado, porque não há acção nenhuma para ele disparar. '
-      + 'Declare as posições que este jogo usa, com a palavra de cada uma, e ele aparece — e sem ele uma '
-      + 'criança com tablet e sem teclado não tem por onde jogar'];
+    return ['sem `preset`: o controle virtual mostra só o mínimo (direções e quatro botões), com as letras do '
+      + 'controle físico em vez das palavras do jogo — declare as posições que este jogo usa, com a palavra de cada '
+      + 'uma, para que uma criança com tablet e sem teclado saiba o que cada botão faz'];
   }
   // ⚠️ E A LACUNA PARCIAL TAMBÉM SE DIZ. Um jogo pode declarar uma acção que nenhum slot dispara: ela existe
   // no teclado e não existe no toque, e hoje isso não aparece em lado nenhum.

@@ -690,6 +690,10 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
    de texto num botão de 56px à escala 1,25 da mão cursiva (ADR-0149). A pílula cresce com a palavra, e o piso é o alvo. */
 /* As duas pílulas de sistema, SELECT e START, num contentor ao centro (ADR-0155). Dentro dele deixam de se posicionar
    sozinhas: o contentor põe-nas lado a lado, e cada uma continua com a largura do seu texto. */
+/* 🔴 COM UM PAINEL ABERTO, O PAD FICA POR CIMA DELE (ADR-0157): é o direccional dele que anda no painel. O véu do painel
+   (`#game-region .overlay`, 60) cobria o pad (14), e um toque na seta caía no véu. `--z-menu-max` é o topo da faixa de
+   menus, e é esse o papel do pad enquanto um menu está aberto — uma variável e não um literal novo (`tests/z-order-css`). */
+#game-region:has(.overlay:not([hidden])) .touch{z-index:var(--z-menu-max)}
 .touch-sistema{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;gap:10px;pointer-events:none}
 .touch-sistema .touch-start,.touch-sistema .touch-select{position:static;transform:none}
 .touch-start,.touch-select{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--tap);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:.82rem;letter-spacing:.08em;background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}

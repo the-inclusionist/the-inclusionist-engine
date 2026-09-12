@@ -359,6 +359,14 @@ export interface TouchBindingsCtx {
   togglePause: () => void;
   /** A pílula SELECT abre os menus da pausa (ADR-0155). Ausente, a pílula não faz nada — só a raiz que a desenha a liga. */
   abrirMenus?: () => void;
+  /**
+   * HÁ UM MENU COM O DIRECCIONAL? (ADR-0157) — o cartão, um painel ou a barra da pausa rápida. Enquanto sim, uma
+   * pressão no pad NÃO segura tecla nenhuma: vira `teclaDeMenu`, que é o que a navegação de menus ouve. Ausente, o
+   * pad faz o que sempre fez — e nenhum menu anda por toque.
+   */
+  emMenu?: () => boolean;
+  /** Entrega o código da tecla da acção ao menu como uma pressão de teclado. Ver `emMenu`. */
+  teclaDeMenu?: (code: string) => void;
   /** `input/touch.ts:getTouchMap()` — slot → ação, remapeável. Lido A CADA evento, verbatim: remapear no
    *  painel passa a valer no toque seguinte, sem re-amarrar ouvinte nenhum. */
   getTouchMap: () => Record<string, string>;
@@ -412,6 +420,9 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
     if (d.kind === 'noop') return;
     if (d.kind === 'pause') { ctx.togglePause(); return; }
     if (d.kind === 'release') { ctx.soltarTecla(d.code); return; }
+    // 🔴 COM UM MENU ABERTO, A PRESSÃO VAI AO MENU (ADR-0157). Até aqui ela só marcava a tecla como segurada, sem evento
+    // de teclado nenhum — e a navegação de menus só ouve eventos: o direccional do pad nunca movia um menu.
+    if (ctx.emMenu?.() && ctx.teclaDeMenu) { ctx.teclaDeMenu(d.code); return; }
     if (d.addKey) {
       // ⚠️ `'toque'` é o carimbo, e é a regra 2 do ADR-0109 a tornar-se executável: é ESTE transporte cuja
       // alternância liga. Enquanto o código entrava cru no conjunto, a regra não tinha como se aplicar.

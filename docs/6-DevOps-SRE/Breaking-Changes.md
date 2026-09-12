@@ -471,6 +471,18 @@ four taste categories (`#audio-list`). `#navsound-master` is no longer built. `A
 **What to do:** nothing, unless your game played sounds on the `other` category (it will now have no gain node
 state) or relied on `#navsound-master` existing.
 
+## K · The virtual pad is always the minimum, and it drives the menus (ADR-0157)
+
+**Behaviour, no shape.** `input/touch.montarControleDeToque` no longer filters the directions and action buttons by
+the game's actions: every game gets the four directions and four action buttons, plus SELECT and START. Positions
+the game names keep its short word; the others show the face label of the chosen pad design (via the root's
+`rotuloDoSlot`). While a menu, a panel or the quick pause has the directional, a pad press is delivered to it as a
+keydown stamped `toque` (ADR-0109) instead of a held key; in play nothing changes. The pad no longer hides when the
+pause card or a panel opens. `TouchBindingsCtx` gains two optional fields, `emMenu` and `teclaDeMenu`.
+
+**What to do:** nothing, unless your game relied on the pad drawing only its declared positions, or on the pad
+hiding under a menu.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

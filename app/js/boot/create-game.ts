@@ -84,6 +84,8 @@ import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
+import { PAD_DESIGNS } from '../input/devices.js';
+import { carimbarOrigem, origemDoEvento } from '../input/origem-sintetica.js';
 import { montarPassos, atualizarPassos, passoSeguinte } from '../ui/panel-widgets.js';
 import { PERSONAS_DO_PAD, personaMaisProxima } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
@@ -1976,10 +1978,21 @@ export function createGame(o: CreateGameOptions): Engine {
     frontOverlay: overlays.frontOverlay,
     // O toque é sempre do Jogador 1 (`touch-bindings`), e com o cartão ou um painel aberto a criança toca
     // DIRECTO nos botões do menu — um pad por cima deles taparia o que ela quer tocar.
-    padAllowed: () => players().length <= 1 && !cartaoDoAssento0Aberto() && !overlays.topVisibleOverlay(),
+    // ⚠️ O PAD JÁ NÃO SE ESCONDE COM UM MENU ABERTO (ADR-0157): é com ele que quem só tem dedo anda nos menus.
+    padAllowed: () => players().length <= 1,
   });
 
   const acoesDoCartucho = (): Set<string> => new Set(cartucho.preset ? presetActions(cartucho.preset) : []);
+
+  /**
+   * O nome de um slot que o jogo NÃO nomeia (ADR-0157): a direção por extenso, ou a legenda do botão físico do desenho
+   * que a criança escolheu (A/B/X/Y, 0–3, ✕○□△). Nunca o id da posição (ADR-0074).
+   */
+  function rotuloSemPalavra(slot: string): string {
+    if (slot === 'up' || slot === 'down' || slot === 'left' || slot === 'right') return t(`touch.dir.${slot}`);
+    const face = PAD_DESIGNS[toque.getPadDesign()]?.[slot.slice(1)]?.[0] ?? PAD_DESIGNS.generic![slot.slice(1)]?.[0] ?? '';
+    return face;
+  }
 
   function desenharPad(): void {
     if (!toqueUsavel || !hospedeiroDoToque) return;
@@ -1992,7 +2005,8 @@ export function createGame(o: CreateGameOptions): Engine {
         acoesDoJogo: acoesDoCartucho(),
         // `start` é de SISTEMA e a engine pode nomeá-lo (`core/actions` SYSTEM); os outros slots levam a palavra
         // CURTA do jogo, porque vivem dentro de um botão de dedo e não numa lista.
-        rotuloDoSlot: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select') : (curto(mapa[slot] as Action) ?? '')),
+        rotuloDoSlot: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select')
+            : (curto(mapa[slot] as Action) ?? rotuloSemPalavra(slot))),
         direcional: store.get(store.KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
       },
     );
@@ -2033,7 +2047,16 @@ export function createGame(o: CreateGameOptions): Engine {
      * jogadores nem às configurações — o SELECT era tecla. ⚠️ O PAD ESCONDE-SE ao abrir o cartão, como o START
      * fazia: por cima do cartão ele taparia os botões que agora são a saída dela («Voltar ao jogo»).
      */
-    abrirMenus: () => { if (abrirMenusDoAssento(0)) toque.hideTouchControls(); },
+    // O pad FICA à vista com o cartão aberto (ADR-0157): é o direccional dele que anda no cartão.
+    abrirMenus: () => { abrirMenusDoAssento(0); },
+    emMenu: () => !!overlays.topVisibleOverlay() || cartaoDoAssento0Aberto() || emPausaRapida.has(0),
+    teclaDeMenu: (code) => {
+      const alvo = $<HTMLElement>('#game-region') ?? doc.body;
+      // CARIMBADA como toque (ADR-0109): quem ouve sabe que não foi um teclado — o «teclado esconde o pad» logo abaixo
+      // pergunta exactamente isso, e sem o carimbo o pad sumiria a cada seta que ele próprio entregou.
+      const ev = carimbarOrigem(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), 'toque');
+      alvo.dispatchEvent(ev);
+    },
     getTouchMap: () => toque.getTouchMap(),
     // ✅ O DEFEITO QUE O `TouchBindingsCtx` GUARDAVA MORRE AQUI: no cartucho a linha era `touchMap.start` num
     // escopo onde `touchMap` não existia, e o START da tela estava quebrado. Esta raiz TEM o mapa.
@@ -2043,6 +2066,9 @@ export function createGame(o: CreateGameOptions): Engine {
   });
   desenharPad();
   ligacoesDoToque.attach();
+  // 🔴 O PAD NASCE NO IDIOMA DE RECUO, como a barra acima (medido no `dist`: «Cima/Baixo» numa página em inglês). Os
+  // nomes dos braços e dos botões sem palavra do jogo saem de `t()` no desenho; redesenhar quando o idioma chega.
+  void idiomaPronto().then(() => { desenharPad(); ligacoesDoToque.rewire(); });
 
   /*
    * ===================== ACESSIBILIDADE MOTORA — o painel da engine (ADR-0151 §2 item 5) =====================
@@ -2263,6 +2289,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // Jogar no teclado ESCONDE o pad — a mesma alternância por modalidade do `input/keydown` do cartucho. Só as
   // teclas de algum jogador: um atalho do navegador não é a criança a trocar de aparelho.
   win.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (origemDoEvento(e) === 'toque') return; // a tecla que o próprio pad entregou a um menu
     if (keyboard.whichPlayer(e.code) >= 0) toque.hideTouchControls();
   });
 
