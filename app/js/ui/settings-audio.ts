@@ -26,7 +26,7 @@ import type { PlayerView } from '../core/entity.js';
 import type { PlayerAudioOut } from '../platform/audio-sonar.js'; // ADR-0039: o dono declara `_ac`/`_acOut`
 import type { DomQuery } from '../core/dom-query.js';
 import type { PanelShellCtx } from './panel-shell.js';
-import { linhaDeControle, type ControlRowSpec } from './panel-widgets.js';
+import { linhaDeControle, rotularLinha, type ControlRowSpec } from './panel-widgets.js';
 
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
 // módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
@@ -286,10 +286,24 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
     { id: 'audio-detect', rotulo: t('audio.detect'), dica: t('audio.sinksHint') },
   ];
 
+  /*
+   * ⚠️ REETIQUETA EM VEZ DE SALTAR o que já existe, e é por isso que esta função é chamada também do
+   * `render()` de cada abertura.
+   *
+   * 🔴 📏 MEDIDO NUM NAVEGADOR COM `lang="en"` em 2026-09-12: este painel servia o TÍTULO em inglês e as
+   * LINHAS em português, na mesma tela. A moldura foi corrigida quando `MountPanelSpec.rotulos` passou a
+   * resolver-se a cada abertura; o interior ficou para trás, porque corria uma vez e capturava o texto do
+   * intervalo de arranque — `initI18n` aplica o idioma de recuo de forma síncrona e PEDE o preferido, que
+   * chega depois. Nenhum teste unitário o apanhava: todos correm num idioma só.
+   */
   for (const peca of pecas) {
     if ('contentor' in peca) {
       if (peca.contentor === '@lista') { card.appendChild(lista); continue; }
-      if (ctx.procurar('#' + peca.contentor)) continue;
+      const jaHa = ctx.procurar('#' + peca.contentor);
+      if (jaHa) {
+        if (peca.rotulo) jaHa.setAttribute('aria-label', peca.rotulo);
+        continue;
+      }
       const c = ctx.criar('div');
       c.id = peca.contentor;
       c.className = 'ctrl-list';
@@ -298,7 +312,12 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
       card.appendChild(c);
       continue;
     }
-    if (ctx.procurar('#' + peca.id)) continue;
+    const jaExiste = ctx.procurar('#' + peca.id);
+    if (jaExiste) {
+      const linha = jaExiste.closest<HTMLElement>('.ctrl-row');
+      if (linha) rotularLinha(linha, peca);
+      continue;
+    }
     card.appendChild(linhaDeControle(ctx, peca).linha);
   }
 }

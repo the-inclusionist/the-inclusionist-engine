@@ -99,6 +99,34 @@ export function linhaDeControle(ctx: PanelShellCtx, spec: ControlRowSpec): Contr
   return { linha, controle };
 }
 
+/**
+ * REESCREVE AS PALAVRAS DE UMA LINHA QUE JÁ EXISTE — o par do `ui/panel-shell.aplicarRotulos`, um nível
+ * abaixo.
+ *
+ * 🔴 O DEFEITO QUE ISTO FECHA FOI MEDIDO NUM NAVEGADOR A SÉRIO, em 2026-09-12, com `lang="en"`: o painel
+ * auditivo servia o TÍTULO em inglês e as LINHAS em português, na mesma tela. A moldura ganhou a correcção
+ * quando `MountPanelSpec.rotulos` passou a ser resolvido a cada abertura; o interior ficou para trás, porque
+ * `montarInterior*` corre uma vez e captura o texto do intervalo de arranque — `initI18n` aplica o idioma de
+ * recuo de forma síncrona e PEDE o preferido, que chega depois.
+ *
+ * ⚠️ E NENHUM TESTE UNITÁRIO O APANHA, porque todos correm num idioma só. É o mesmo buraco que a barra de
+ * ícones já pagou em 08/09, agora um nível mais fundo.
+ *
+ * ⚠️ REESCREVER E NÃO RECONSTRUIR, pela razão que o `aplicarRotulos` já escreveu: cada `ui/settings-*` liga
+ * os cliques dos seus controles UMA VEZ, no arranque. Refazer a linha deixaria um controle no documento e sem
+ * escuta — um botão morto com aparência de vivo (ADR-0106 §5).
+ */
+export function rotularLinha(linha: HTMLElement, spec: ControlRowSpec): void {
+  const forte = linha.querySelector<HTMLElement>('strong');
+  if (forte) forte.textContent = spec.rotulo;
+  const dica = linha.querySelector<HTMLElement>('.opt-hint');
+  // ⚠️ A dica que SOME tem de ser apagada, e não só deixar de ser escrita: numa retradução para um dicionário
+  // sem a chave, o texto antigo sobreviveria e o rodapé descansaria no idioma anterior.
+  if (dica) dica.textContent = spec.dica ?? '';
+  const controle = linha.querySelector<HTMLElement>('#' + CSS.escape(spec.id));
+  if (controle) controle.setAttribute('aria-label', spec.rotuloAria ?? spec.rotulo);
+}
+
 function criarControle(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
   const forma = spec.forma ?? 'interruptor';
   if (forma === 'escolha') {

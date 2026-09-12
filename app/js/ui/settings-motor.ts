@@ -30,7 +30,7 @@ import {
 } from '../input/latch-sync.js';
 import { recusaDaAlternancia } from './latch-refusal.js';
 import type { PanelShellCtx } from './panel-shell.js';
-import { linhaDeControle, type ControlRowSpec } from './panel-widgets.js';
+import { linhaDeControle, rotularLinha, type ControlRowSpec } from './panel-widgets.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
@@ -304,7 +304,16 @@ export function montarInteriorDoMotor(ctx: PanelShellCtx, card: HTMLElement, lis
     { id: 'opt-togglerun', rotulo: t('motor.togglerun'), dica: t('motor.togglerun.dica') },
   ];
   for (const spec of linhas) {
-    if (ctx.procurar('#' + spec.id)) continue;
+    // ⚠️ REETIQUETA EM VEZ DE SALTAR quando a linha já existe, e é por isso que esta função é chamada
+    // também do `render()` de cada abertura: o texto foi capturado no intervalo de arranque, onde o idioma
+    // ainda é o de recuo. 📏 Medido num navegador com `lang="en"`: o título vinha em inglês e as linhas em
+    // português, na mesma tela. Ver `ui/panel-widgets.rotularLinha`.
+    const jaExiste = ctx.procurar('#' + spec.id);
+    if (jaExiste) {
+      const linha = jaExiste.closest<HTMLElement>('.ctrl-row');
+      if (linha) rotularLinha(linha, spec);
+      continue;
+    }
     lista.appendChild(linhaDeControle(ctx, spec).linha);
   }
 }

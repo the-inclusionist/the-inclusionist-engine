@@ -1050,7 +1050,20 @@ export function createGame(o: CreateGameOptions): Engine {
         rotuloReset: t('menu.restoreDefaults'),
         rotuloFechar: t('menu.close'),
       }),
-      render: () => audio?.renderAudio(),
+      /*
+       * ⚠️ O INTERIOR ENTRA NO RENDER, E NÃO SÓ NA MONTAGEM — e isto foi MEDIDO NUM NAVEGADOR a sério, com
+       * `lang="en"`, em 2026-09-12: o painel servia o TÍTULO em inglês e as LINHAS em português, na mesma
+       * tela. A moldura já se retraduzia (`MountPanelSpec.rotulos`); o interior corria uma vez e capturava o
+       * texto do intervalo de arranque, onde o idioma ainda é o de recuo.
+       *
+       * 📌 `montarInteriorDoAudio` REETIQUETA o que já existe em vez de o refazer — refazer deixaria treze
+       * controles no documento e sem escuta. E nenhum teste unitário apanhava isto: todos correm num idioma
+       * só. Foi preciso o passo do plano que eu ainda não tinha dado.
+       */
+      render: () => {
+        montarInteriorDoAudio(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
+        audio?.renderAudio();
+      },
       primeiroFoco: '#audio-master',
     });
     montarInteriorDoAudio(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);

@@ -9,7 +9,7 @@
 //
 // MUTAÇÕES CONFERIDAS no fim do ficheiro.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { linhaDeControle } from '../app/js/ui/panel-widgets.js';
+import { linhaDeControle, rotularLinha } from '../app/js/ui/panel-widgets.js';
 import { montarInteriorDoMotor } from '../app/js/ui/settings-motor.js';
 import { montarInteriorDoAudio } from '../app/js/ui/settings-audio.js';
 import { montarCasca } from '../app/js/ui/panel-shell.js';
@@ -73,6 +73,18 @@ describe('linhaDeControle — a regra de menu do CLAUDE.md §4, por construção
     expect(controle.getAttribute('aria-label')).toBe('Modo Fácil');
     expect(controle.getAttribute('aria-pressed'), 'nasce sem estado dito, e um estado por dizer é um estado errado')
       .toBe('false');
+  });
+
+  it('🔴 [Boundary] `rotularLinha` APAGA a dica que some — não a deixa no idioma anterior', () => {
+    // ⚠️ Uma dica que existe num dicionário e não noutro tem de DESAPARECER na retradução. Deixar de a
+    // escrever não chega: o texto antigo sobrevive e o rodapé descansa no idioma que a criança acabou de
+    // deixar. É a mesma regra que o `aplicarRotulos` já segue para o `data-explain-idle` da moldura.
+    const { linha, controle } = linhaDeControle(ctx, { id: 'x', rotulo: 'Antes', dica: 'Explicação antiga.' });
+    hospedeiro.appendChild(linha);
+    rotularLinha(linha, { id: 'x', rotulo: 'Depois' });
+    expect(linha.querySelector('strong').textContent).toBe('Depois');
+    expect(linha.querySelector('.opt-hint').textContent, 'a dica do idioma anterior sobreviveu').toBe('');
+    expect(controle.getAttribute('aria-label'), 'o nome falado ficou no idioma anterior').toBe('Depois');
   });
 
   it('[Right] `rotuloAria` ganha ao rótulo, para quando o nome falado não é o escrito', () => {
@@ -225,6 +237,29 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     for (const id of [...Object.keys(CONTROLES), 'navsound-list', 'audio-sinks', 'audio-list']) {
       expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
     }
+  });
+
+  it('🔴 [Right] o IDIOMA QUE CHEGA DEPOIS DO ARRANQUE alcança as LINHAS, e não só a moldura', async () => {
+    // 🔴 ESTE CASO NASCEU DE UM DEFEITO MEDIDO NUM NAVEGADOR, e nenhum teste unitário o apanhava: eles correm
+    // todos num idioma só. 📏 No `quiz.html` com `lang="en"`, em 2026-09-12: o título dizia «Hearing
+    // accessibility» e a primeira linha dizia «Som», na mesma tela. A moldura já se retraduzia desde que
+    // `MountPanelSpec.rotulos` passou a resolver-se a cada abertura; o INTERIOR ficou para trás.
+    //
+    // 📌 O que o conserta é montar o interior outra vez a cada abertura — e por isso `montarInteriorDoAudio`
+    // reetiqueta o que já existe em vez de o refazer: refazer deixaria treze controles sem escuta.
+    const { setLocale } = await import('../app/js/core/i18n.js');
+    const c = casca();
+    montarInteriorDoAudio(ctx, c.card, c.lista);
+    const antes = document.querySelector('#audio-master').closest('.ctrl-row').querySelector('strong').textContent;
+
+    await setLocale('en');
+    montarInteriorDoAudio(ctx, c.card, c.lista);
+    const linha = document.querySelector('#audio-master').closest('.ctrl-row');
+    expect(linha.querySelector('strong').textContent, 'a linha ficou no idioma de recuo').not.toBe(antes);
+    expect(linha.querySelector('strong').textContent).toBe('Sound');
+    // e o grupo também: um `aria-label` velho faz o leitor de tela anunciar o idioma anterior
+    expect(document.getElementById('navsound-list').getAttribute('aria-label')).toBe('Navigation sounds');
+    await setLocale('pt');
   });
 
   it('🔴 [Zero] `#opt-sound` NÃO é criado — ele mora na barra rápida, fora do painel', () => {

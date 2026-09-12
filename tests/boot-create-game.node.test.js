@@ -133,6 +133,13 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
       return novo;
     },
     contains(n) { return n === this || this.filhos.some((f) => f === n || (f.contains && f.contains(n))); },
+    /*
+     * ⚠️ `closest` — a SÉTIMA vez que este duplo fica mais pobre que a coisa real, e entrou com a retradução
+     * do interior dos painéis: `montarInteriorDoAudio` sobe de um controle para a `.ctrl-row` dele para lhe
+     * reescrever as palavras. 📌 Devolve `null` e não `this`: aqui os nós não têm pai, logo a resposta honesta
+     * a «qual é o ancestral que casa» é «nenhum» — e quem chama já a trata (`if (linha)`).
+     */
+    closest() { return null; },
     querySelector: () => null, querySelectorAll: () => [],
     addEventListener: () => {}, setAttribute: () => {}, removeAttribute: () => {}, removeChild: () => {},
     // ⚠️ `focus` ENTROU EM 2026-09-08 — a QUARTA vez que este duplo fica mais pobre que a coisa real, e vale
