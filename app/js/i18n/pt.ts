@@ -109,9 +109,10 @@ const pt: Record<string, string> = {
 
   // Menu de pausa (por tela — buildScreenPause). O botão de letra (ABC/abc/Braille) é dinâmico, fica fora.
   'pause.title': 'Pausado',
-  'pause.resume': '▶ Continuar',
+  'pause.resume': '▶ Voltar ao jogo',
   'pause.acessibilidade': '♿ Acessibilidade',
-  'pause.options': '⚙ Opções',
+  'pause.options': '⚙ Configurações de inclusão',
+  'pause.opcoesdojogo': '🎮 Opções do jogo',
   'pause.pmback': '↩ Voltar',
   'pause.cardAria': 'Menu de pausa do jogador {n}',
   // O sufixo do título do cartão, só em multijogador. Era português cru colado no markup de `ui/pause-icons`.
@@ -151,13 +152,13 @@ const pt: Record<string, string> = {
   'act.fr2a6.nome': 'Soma e subtração com frações de meio a sextos',
   'act.fr2a6.d': 'Some e subtraia frações de meios a sextos.',
   'pause.tipo': '🔤 Tipografia',
-  'pause.addplayer': '👥 Adicionar jogador',
+  'pause.addplayer': '👥 Número de jogadores',
   'pause.audio': '🦻 Acessibilidade auditiva',
   'pause.motora': '♿ Acessibilidade motora',
   'pause.anim': '🎞 Sensibilidade visual',
   'pause.visual': '🎨 Acessibilidade visual',
   'pause.empatia': '🫂 Modo empatia',
-  'pause.ajuda': '❓ Ajuda',
+  'pause.ajuda': '❓ Ajuda — Como jogar',
   'pause.print': '📷 Print (ver a tela)',
   'pause.quit': '🚪 Sair do jogo',
 

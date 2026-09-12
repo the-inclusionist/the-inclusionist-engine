@@ -201,14 +201,23 @@ describe('os guardas: três situações em que a tecla chega aqui e NÃO é noss
     // montada nesta raiz (a nota do `navBar`, em `create-game.ts`, di-lo em tantas palavras), e tomar-lhe a
     // tecla agora fecharia a porta antes de ela existir.
     apertar('KeyH');
-    item('acessibilidade').click(); // entra no modo — e o `resume` da errata fecha o cartão ao entrar
+    // ⚠️ DESDE O ADR-0151 A PORTA É O SELECT (`KeyF` por omissão), e não o item «acessibilidade», que saiu da
+    // raiz. Entra no modo — e o `resume` da errata do ADR-0144 fecha o cartão ao entrar.
+    const select = apertar('KeyF');
     expect(cartao().hidden, 'entrar na barra tinha de fechar o cartão — é o `acts.resume()` do modo').toBe(true);
+    expect(select.defaultPrevented, 'o SELECT foi nosso e seguiu para trás').toBe(true);
 
     fases.length = 0;
     apertar('KeyH');
 
     expect(cartao().hidden, 'a pausa abriu por cima do modo barra, roubando-lhe o START').toBe(true);
     expect(fases, 'pediu a pausa com a criança na barra').toEqual([]);
+
+    // 📌 O PAR: o SELECT outra vez SAI da barra — e o START volta a ser da pausa. Sem isto, um SELECT que
+    // só entrasse deixava a criança presa no modo, e o caso de cima passava na mesma.
+    apertar('KeyF');
+    apertar('KeyH');
+    expect(cartao().hidden, 'o SELECT não tirou a criança da barra: o START continuou a ser dela').toBe(false);
   });
 });
 

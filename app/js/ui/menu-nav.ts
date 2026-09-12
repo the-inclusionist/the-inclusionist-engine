@@ -398,8 +398,12 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       // "não" DENTRO do submenu de opções volta à raiz, e não ao jogo (ADR-0044, item 5). A regra "voltar sai
       // um nível" já valia para os diálogos de configuração (`dialogBack`); o que mudou é que o menu de pausa
       // passou a TER um nível a mais. Sem esta linha, quem entra em Opções sem enxergar só sairia despausando.
+      // ⚠️ ERA `=== 'opcoes'`, E COM TRÊS LISTAS ISSO PASSOU A SER O RAMO ERRADO. A pergunta certa nunca foi
+      // «é a lista de opções?» — é «NÃO é a raiz?»: de qualquer submenu, «não» sobe UM nível (ADR-0044 item
+      // 5). Escrita como estava, a lista nova do ADR-0146 caía no ramo de baixo e o «não» DESPAUSAVA o jogo a
+      // partir dela, que é sair do jogo quando a criança pediu para voltar.
       const aberto = menu.querySelector<HTMLElement>('.pause-menu:not([hidden])');
-      if (aberto && aberto.dataset.sub === 'opcoes') { mostrarSubmenuDaPausa(menu, 'raiz'); return; }
+      if (aberto && aberto.dataset.sub && aberto.dataset.sub !== 'raiz') { mostrarSubmenuDaPausa(menu, 'raiz'); return; }
       ctx.setPhase('playing'); return; // "não" na raiz → volta ao jogo (retoma todos)
     }
 

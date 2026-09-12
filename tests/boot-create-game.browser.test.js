@@ -355,34 +355,19 @@ describe('createGame num documento de verdade', () => {
       expect(document.querySelector('#vp-pause-0').hidden, 'saiu do jogo e o cartão ficou aberto').toBe(true);
     });
 
-    it('🔴 [Right] o PRINT esconde o cartão, e qualquer tecla o traz de volta', async () => {
+    it('🔴 [Zero] o PRINT SAIU da raiz (ADR-0151) — o item não está no cartão, nem escondido', () => {
       /*
-       * 🔴 «Ver a tela sem menus» é um item que a engine nunca soube accionar. O `ui/shell.printMode` fazia-o
-       * no monólito e não vem com o `ui/shell`, que esta raiz recusa montar — mas ele não precisa da máquina
-       * de fases, só dos cartões, da janela e do anúncio.
-       *
-       * ⚠️ E O ADIAMENTO DE 80 ms É O CASO, não um detalhe: sem ele o próprio evento que ACCIONOU o print é o
-       * que o desfaz, e a criança carrega uma vez e vê a tela limpa piscar. Por isso o caso ESPERA — e a
-       * espera é o que o prende.
+       * ⚠️ ESTE CASO MEDIA O COMPORTAMENTO do print (esconder o cartão; qualquer tecla, depois de 80 ms, o traz
+       * de volta), e a porta dele era o item da raiz. O Dev tirou-o de lá: «basta apertar SELECT que se tem a
+       * visão apropriada pra print». O que o SELECT mostra para o print é pergunta em aberto no ADR-0151, e a
+       * acção print da engine FICA no código à espera dessa resposta — sem porta, e por isso sem caso que a
+       * exercite. Dito aqui para ninguém ler a ausência como cobertura.
        */
       const motor = abrir();
       motor.pausa.mostrar(0);
-      const cartao = document.querySelector('#vp-pause-0');
-      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="print"]');
-      expect(item.hidden, 'a engine oferece `print` e o item continua escondido').toBe(false);
-
-      item.click();
-      expect(cartao.hidden, 'o print não escondeu o cartão').toBe(true);
-
-      // ⚠️ ANTES dos 80 ms a tecla NÃO devolve — é exactamente o evento que o print existe para ignorar.
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ', bubbles: true }));
-      expect(cartao.hidden, 'o print desfez-se com o próprio evento que o accionou').toBe(true);
-
-      await new Promise((r) => setTimeout(r, 140));
-      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ', bubbles: true }));
-      expect(cartao.hidden, 'depois do adiamento, qualquer tecla tinha de trazer o cartão de volta').toBe(false);
+      expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="print"]'), 'o print continua na raiz').toBeNull();
+      expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="quit"]'), 'o caso mediria um cartão vazio').not.toBeNull();
     });
-
     it('🔴 [Right] o jogo que escreve POR CIMA da barra é acusado, com o nó pelo nome', () => {
       /*
        * 🔴 O caso do Dev, no documento a sério. Medido no `dist/quiz.html`: `#title-icons` é absoluto DENTRO

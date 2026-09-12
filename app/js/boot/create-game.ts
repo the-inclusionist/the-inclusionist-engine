@@ -1755,6 +1755,32 @@ export function createGame(o: CreateGameOptions): Engine {
   win.addEventListener('keydown', abrirPausaPeloStart);
 
   /*
+   * O SELECT ENTRA NA BARRA RÁPIDA — e sai dela (ADR-0151 §1).
+   *
+   * 🔴 O ITEM «ACESSIBILIDADE» SAIU DA RAIZ, e esta é a porta que o substitui: sem ela a barra ficava alcançável
+   * só por ponteiro, e quem navega por teclado — a criança cega em primeiro lugar — perdia o modo cego, o TTS e
+   * o contraste. Por isso as duas mudanças entram no mesmo commit, e nunca a primeira sem a segunda.
+   *
+   * 📏 MEDIDO antes: `select` estava mapeado (`KeyF`, `input/default-bindings`) e NENHUM módulo o lia. Era uma
+   * posição de sistema com tecla e sem função — o ADR-0086 guardou-a precisamente para «o que é da sessão».
+   *
+   * ⚠️ O dono da tecla decide o assento, como no START: quem carregou é quem entra na SUA barra. E um painel
+   * aberto recusa, pela mesma razão do guarda 1 da pausa — a criança está noutro ecrã.
+   *
+   * 📌 `entrarNaBarra` já retoma o jogo ao entrar (o `resume` da errata do ADR-0144), logo o SELECT com a pausa
+   * aberta fecha o cartão e leva o direcional à barra, que é o que o item fazia.
+   */
+  function alternarBarraPeloSelect(e: KeyboardEvent): void {
+    const dono = keyboard.whichPlayer(e.code);
+    if (dono < 0 || keyboard.actionOf(e.code, dono) !== 'select') return;
+    if (overlays.topVisibleOverlay()) return;
+    if (pauseIcons.naBarraDe(dono)) pauseIcons.sairDaBarra(dono);
+    else pauseIcons.entrarNaBarra(dono);
+    e.preventDefault();
+  }
+  win.addEventListener('keydown', alternarBarraPeloSelect);
+
+  /*
    * ===================== O CONTROLE VIRTUAL (ADR-0143, fase 4 do plano) =====================
    *
    * 🔴 MEDIDO em 2026-09-12: `montarControleDeToque`, `initTouch` e `initTouchBindings` tinham testes e ZERO

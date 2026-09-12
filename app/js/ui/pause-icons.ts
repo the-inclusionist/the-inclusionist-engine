@@ -50,7 +50,7 @@ import { menuIndexOn, DEFAULTS, setModoCegoValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
 import { definirAlternanciaDeMarcha } from './settings-motor.js';
 import { recusaDaAlternancia } from './latch-refusal.js';
-import { PM_BTNS, PM_OPTIONS_BTNS } from './activities-menu.js';
+import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from './activities-menu.js';
 import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena } from './motion-scene.js';
 
 /**
@@ -416,7 +416,10 @@ export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly Pause
  * `acessibilidade` leva o cursor à barra rápida — os três são tratados neste módulo e voltam antes de a
  * tabela do jogo ser consultada.
  */
-export const ITENS_DA_ENGINE: ReadonlySet<string> = new Set(['options', 'pmback', 'acessibilidade']);
+// ⚠️ QUATRO desde 2026-09-12: `opcoesdojogo` entra pela MESMA razão que `options` já estava — ele não faz
+// nada ao jogo, troca qual lista está no cartão, e é tratado neste módulo antes de a tabela do jogo ser
+// consultada. Não é a engine a reclamar um item do jogo: o que é do jogo é o CONTEÚDO da lista que ele abre.
+export const ITENS_DA_ENGINE: ReadonlySet<string> = new Set(['options', 'opcoesdojogo', 'pmback', 'acessibilidade']);
 
 /**
  * OS ITENS DO MENU QUE ESTE JOGO CONSEGUE MESMO ACCIONAR (ADR-0106 §5).
@@ -447,10 +450,20 @@ export function raizQueAcciona(
   raiz: readonly PauseMenuButton[],
   opcoes: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
+  // ⚠️ TERCEIRO ARGUMENTO OPCIONAL, e o padrão é a lista VAZIA de propósito: quem já chamava com três
+  // argumentos continua a receber o que recebia, e um jogo que não declare nada do seu é exactamente o caso
+  // do vazio — logo o padrão é também a resposta certa, e não um remendo para não partir chamadores.
+  doJogo: readonly PauseMenuButton[] = [],
 ): readonly PauseMenuButton[] {
-  const opcoesVivas = itensQueAccionam(opcoes, acts).filter((b) => b.act !== 'pmback');
-  const viva = itensQueAccionam(raiz, acts);
-  return opcoesVivas.length > 0 ? viva : viva.filter((b) => b.act !== 'options');
+  const vivas = (bs: readonly PauseMenuButton[]): number =>
+    itensQueAccionam(bs, acts).filter((b) => b.act !== 'pmback').length;
+  let viva = itensQueAccionam(raiz, acts);
+  if (vivas(opcoes) === 0) viva = viva.filter((b) => b.act !== 'options');
+  // 📌 A MESMA REGRA PARA A PORTA NOVA, e é o gate que o ADR-0146 nomeia: um jogo sem nada seu não recebe
+  // «opções do jogo». Afirmar a ausência é o caso; oferecer a porta e abrir uma sala vazia é o que o §5 do
+  // ADR-0106 chama de pior do que a ausência.
+  if (vivas(doJogo) === 0) viva = viva.filter((b) => b.act !== 'opcoesdojogo');
+  return viva;
 }
 
 /** The whole icon bar. Used by the pause screen AND by the splash `#title-icons` (which built the same string
@@ -494,7 +507,10 @@ export function pmBtnMarkup(
  * inteira. É o que faz "um menu por tela" (ADR-0044 §5) valer para quem escuta e não só para quem vê, e é o
  * que permite o anel dar a volta DENTRO da lista visível sem nunca atravessar para a outra.
  */
-export type PauseSub = 'raiz' | 'opcoes';
+// ⚠️ TRÊS desde 2026-09-12 (ADR-0146): `jogo` é a lista do que é DESTE jogo, ao lado da lista do que a
+// criança carrega entre jogos. A regra de cima não muda por serem três — UMA visível, as outras `hidden`,
+// que é o que tira as escondidas da árvore de acessibilidade inteira.
+export type PauseSub = 'raiz' | 'opcoes' | 'jogo';
 
 /**
  * Os itens navegáveis de um cartão de pausa — os da lista VISÍVEL, e só eles.
@@ -578,6 +594,8 @@ export interface ScreenPauseMarkupOpts {
   pmButtons: readonly PauseMenuButton[];
   /** O submenu de opções: os sete painéis de ajuste, com o "Voltar" na frente. */
   optionsButtons: readonly PauseMenuButton[];
+  /** O submenu do JOGO (ADR-0146). Ausente = só o «voltar», que é o caso de um jogo que não declara nada. */
+  jogoButtons?: readonly PauseMenuButton[];
   /** Rótulo pronto de um botão DINÂMICO, ou `null` se aquele botão não tem um. Quem monta a frase é o jogo. */
   dynLabel: (b: PauseMenuButton) => string | null;
   t: (key: string) => string;
@@ -601,6 +619,11 @@ export function screenPauseMarkup(o: ScreenPauseMarkupOpts): string {
     + '<span class="pause-seat">' + (o.numPlayers > 1 ? t('pause.cardSeat', { n: o.player + 1 }) : '') + '</span></h2>' +
     pauseMenuHtml(o.pmButtons, 'raiz', o.dynLabel, o.t) +
     pauseMenuHtml(o.optionsButtons, 'opcoes', o.dynLabel, o.t) +
+    // ⚠️ A TERCEIRA LISTA ENTRA SEMPRE NO MARKUP, mesmo com um jogo que não declare nada — e não é desperdício:
+    // é a mesma razão pela qual as outras duas são montadas inteiras e escondidas depois (ver a nota do
+    // `buildScreenPause`). A tabela do jogo chega TARDE, e uma lista filtrada na montagem apagava para sempre
+    // o que só passou a existir depois do boot. Quem decide o que se VÊ é o `refrescarItensDaPausa`.
+    pauseMenuHtml(o.jogoButtons ?? PM_JOGO_BTNS, 'jogo', o.dynLabel, o.t) +
     '<p class="pause-legend"></p></div>';
 }
 
@@ -656,6 +679,8 @@ export interface PauseIconsCtx {
    */
   /** PM_OPTIONS_BTNS — o submenu de opções. Mesma dona, mesmo motivo: ninguém tem duas cópias de uma lista. */
   optionsButtons?: readonly PauseMenuButton[];
+  /** A lista do JOGO (ADR-0146). Ausente = `PM_JOGO_BTNS`, que é só o «voltar» — e a porta cai sozinha. */
+  jogoButtons?: readonly PauseMenuButton[];
   /** PM_BTNS — the `.pm-btn` list. Owned by ui/activities-menu; injected, never copied. */
   pmButtons?: readonly PauseMenuButton[];
   /** QL_NAME — literacy-level names, for the (dormant) `nivel` button. Same owner as pmButtons. */
@@ -1146,9 +1171,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const acts = getPauseActs();
     const raiz = ctx.pmButtons ?? PM_BTNS;
     const opcoes = ctx.optionsButtons ?? PM_OPTIONS_BTNS;
+    const doJogo = ctx.jogoButtons ?? PM_JOGO_BTNS;
     const vivos = new Set([
-      ...raizQueAcciona(raiz, opcoes, acts).map((b) => b.act),
+      ...raizQueAcciona(raiz, opcoes, acts, doJogo).map((b) => b.act),
       ...itensQueAccionam(opcoes, acts).map((b) => b.act),
+      ...itensQueAccionam(doJogo, acts).map((b) => b.act),
     ]);
     // ⚠️ `filter(Boolean)` VIROU ÍNDICE EXPLÍCITO, e a razão é a linha do nome logo abaixo: os cartões são
     // indexados por JOGADOR, montar só a tela 2 deixa um buraco no índice 0 — e `filter` fechava o buraco,
@@ -1291,6 +1318,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       numPlayers: ctx.getNumPlayers(),
       pmButtons: ctx.pmButtons ?? PM_BTNS,
       optionsButtons: ctx.optionsButtons ?? PM_OPTIONS_BTNS,
+      jogoButtons: ctx.jogoButtons ?? PM_JOGO_BTNS,
       dynLabel: dynLabel, t,
     });
     cartoes[i] = sp;
@@ -1304,7 +1332,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         const act = b.dataset.act || '';
         // NAVEGAÇÃO DENTRO DO CARTÃO fica aqui, e não na tabela de ações: `options` e `pmback` não fazem nada
         // ao jogo — trocam qual lista está na tela. A tabela vive em `ui/shell`, que não conhece este `sp`.
-        if (act === 'options' || act === 'pmback') { anunciarLista(sp, act === 'options' ? 'opcoes' : 'raiz'); return; }
+        // ⚠️ TRÊS PORTAS AGORA, e o `pmback` volta sempre à RAIZ — de qualquer das duas listas. Escrito como
+        // tabela e não como encadeado de `if`, porque uma quarta lista seria mais uma linha e não mais um ramo.
+        const PARA: Record<string, PauseSub> = { options: 'opcoes', opcoesdojogo: 'jogo', pmback: 'raiz' };
+        if (PARA[act]) { anunciarLista(sp, PARA[act]!); return; }
         // `acessibilidade` leva o cursor à BARRA RÁPIDA. Enquanto ela mora dentro do cartão, "entrar no modo"
         // é pôr o cursor nela — e a saída continua sendo a saída da pausa, que é a mesma de sempre. Quando o
         // item 7 levar a barra para o HUD, esta linha o segue; o que o item SIGNIFICA não muda.

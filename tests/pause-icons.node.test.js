@@ -525,7 +525,8 @@ describe('markup dos ícones e do menu', () => {
     // e é ela que está visível. A ordem de NAVEGAÇÃO, essa, sai de `PM_ITENS_VISIVEIS` e nunca mistura as duas.
     const h = screenPauseMarkup({ player: 0, numPlayers: 1, pmButtons: PM_BTNS, optionsButtons: PM_OPTS, dynLabel: SEM_DIN, t: (k) => k });
     const acts = [...h.matchAll(/data-act="([^"]+)"/g)].map((m) => m[1]);
-    expect(acts).toEqual(['resume', 'letra', 'quit', 'pmback', 'caa']);
+    // ⚠️ E a TERCEIRA lista vem no fim (ADR-0146): sem `jogoButtons` ela é o padrão, só o «voltar».
+    expect(acts).toEqual(['resume', 'letra', 'quit', 'pmback', 'caa', 'pmback']);
   });
 });
 

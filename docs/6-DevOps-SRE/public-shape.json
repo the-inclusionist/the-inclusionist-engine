@@ -1965,6 +1965,7 @@
     ],
     "interface ScreenPauseMarkupOpts": [
       "dynLabel",
+      "jogoButtons?",
       "numPlayers",
       "optionsButtons",
       "player",
@@ -1982,6 +1983,7 @@
       "getPauseActs?",
       "getPlayers",
       "isLibrasOn",
+      "jogoButtons?",
       "optionsButtons?",
       "pmButtons?",
       "reflectTtsPanel",
@@ -2023,7 +2025,7 @@
     ],
     "type PausePlayer": "PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>",
     "type EscritoresVisuais": "AccionaveisDoJogo",
-    "type PauseSub": "'raiz' | 'opcoes'",
+    "type PauseSub": "'raiz' | 'opcoes' | 'jogo'",
     "type AcaoNaBarra": "'sair' | 'ativar' | 'andar' | 'nada'"
   },
   "ui/reach-notice.ts": {

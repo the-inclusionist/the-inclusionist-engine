@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A PAUSA VIRA SETE ITENS, E A ORDEM É A DECISÃO — item 5 do ADR-0044.
+// A PAUSA VIRA SETE ITENS, E A ORDEM É A DECISÃO — item 5 do ADR-0044. (SEIS desde o ADR-0151 — ver o primeiro caso.)
 //
 // ========================= O QUE FOI MEDIDO, E POR QUE MUDA =========================
 // O cartão de pausa tinha 22 paradas em UMA tela, em dois blocos com dois modelos de interação: dez
@@ -26,8 +26,8 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { screenPauseMarkup, PM_ITENS_VISIVEIS } from '../app/js/ui/pause-icons.js';
-import { PM_BTNS, PM_OPTIONS_BTNS } from '../app/js/ui/activities-menu.js';
+import { screenPauseMarkup, PM_ITENS_VISIVEIS, raizQueAcciona } from '../app/js/ui/pause-icons.js';
+import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from '../app/js/ui/activities-menu.js';
 import { t } from '../app/js/core/i18n.js';
 
 const SEM_DIN = () => null;
@@ -42,11 +42,20 @@ function atos(html, sub) {
   return [...bloco[1].matchAll(/data-act="([^"]+)"/g)].map((m) => m[1]);
 }
 
-describe('menu de pausa · sete itens na raiz, os ajustes num submenu', () => {
-  it('[Right] a lista raiz é EXATAMENTE os sete itens da decisão, nessa ordem', () => {
+describe('menu de pausa · seis itens na raiz, os ajustes num submenu', () => {
+  it('[Right] a lista raiz é EXATAMENTE os SEIS itens do ADR-0151, nessa ordem', () => {
+    // ⚠️ Eram sete (ADR-0044 §2) e chegaram a nove no papel (ADR-0147). Seis é MEDIDO: nove transbordavam 64 px
+    // a 640×360, e o crivo que prova que a raiz cabe é o `[Right] com a régua aplicada` do `pausa-44px`.
     expect(PM_BTNS.map((b) => b.act)).toEqual(
-      ['resume', 'acessibilidade', 'addplayer', 'options', 'ajuda', 'print', 'quit'],
+      ['resume', 'ajuda', 'addplayer', 'options', 'opcoesdojogo', 'quit'],
     );
+  });
+
+  it('🔴 [Zero] «acessibilidade» e «print» SAÍRAM da raiz — foram para o SELECT, e a ausência é o caso', () => {
+    // O par do caso de cima: uma lista que mantivesse os dois e perdesse outros dois passaria no comprimento.
+    const acts = atos(markup(), 'raiz');
+    expect(acts).not.toContain('acessibilidade');
+    expect(acts).not.toContain('print');
   });
 
   it('[Right] a saída é o PRIMEIRO item e `quit` é o ÚLTIMO', () => {
@@ -55,7 +64,7 @@ describe('menu de pausa · sete itens na raiz, os ajustes num submenu', () => {
     const acts = atos(markup(), 'raiz');
     expect(acts[0], 'a saída deixou de ser a primeira parada — é a armadilha que o ADR-0044 desfaz').toBe('resume');
     expect(acts[acts.length - 1], '`quit` deixou de ser o último').toBe('quit');
-    expect(acts).toHaveLength(7);
+    expect(acts).toHaveLength(6);
   });
 
   it('[Right] o submenu de opções tem os SETE painéis, e a saída dele também vem primeiro', () => {
@@ -71,6 +80,9 @@ describe('menu de pausa · sete itens na raiz, os ajustes num submenu', () => {
     expect(html).toContain('data-sub="raiz"');
     expect(html).toMatch(/<div class="pause-menu"[^>]*data-sub="opcoes"[^>]*hidden/);
     expect(html).not.toMatch(/<div class="pause-menu"[^>]*data-sub="raiz"[^>]*hidden/);
+    // ⚠️ E A TERCEIRA (ADR-0146): também montada, também escondida, e a saída também primeiro.
+    expect(html).toMatch(/<div class="pause-menu"[^>]*data-sub="jogo"[^>]*hidden/);
+    expect(atos(html, 'jogo')[0]).toBe('pmback');
   });
 
   it('[Interface] o seletor de itens navegáveis IGNORA a lista escondida', () => {
@@ -98,6 +110,18 @@ describe('menu de pausa · sete itens na raiz, os ajustes num submenu', () => {
     expect(h).toContain('aria-label="' + t('pause.cardAria', { n: 1 }) + '"');
     expect(t('pause.cardAria', { n: 3 }), 'o número do jogador tem de entrar por parâmetro').toContain('3');
     expect(h, 'o `<h2>` não pode virar o nome do diálogo — ele é rótulo VISUAL').not.toContain('aria-labelledby');
+  });
+
+  it('🔴 [Zero] um jogo SEM NADA SEU não recebe a porta «Opções do jogo» — e o par: com algo seu, recebe', () => {
+    // O gate que o ADR-0146 nomeia. Oferecer a porta e abrir uma sala com só o «voltar» é o que o §5 do
+    // ADR-0106 chama de pior do que a ausência; e a ausência sozinha passaria com uma porta que nunca aparece.
+    const fn = () => {};
+    const acts = { resume: fn, ajuda: fn, addplayer: fn, quit: fn, caa: fn, tabuleiro: fn };
+    const semNada = raizQueAcciona(PM_BTNS, PM_OPTIONS_BTNS, acts, PM_JOGO_BTNS).map((b) => b.act);
+    expect(semNada, 'a porta abriu para uma sala vazia').not.toContain('opcoesdojogo');
+    expect(semNada, 'o caso mediria uma raiz vazia').toContain('options');
+    const comAlgo = raizQueAcciona(PM_BTNS, PM_OPTIONS_BTNS, acts, [...PM_JOGO_BTNS, { act: 'tabuleiro' }]).map((b) => b.act);
+    expect(comAlgo, 'o jogo declarou algo seu e a porta não apareceu').toContain('opcoesdojogo');
   });
 
   it('[Zero] nenhum ato aparece nas DUAS listas', () => {

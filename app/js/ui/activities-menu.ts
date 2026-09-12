@@ -196,16 +196,39 @@ export const PM_BTNS: readonly PauseBtnDef[] = [
   // longe na leitura, perto no dedo.
   //
   // Os sete painéis de ajuste desceram para `PM_OPTIONS_BTNS`.
+  //
+  // 🔴 SEIS desde 2026-09-12 (ADR-0151), e o número é MEDIDO, não gosto: com nove itens (ADR-0147) o cartão
+  // transbordava 64 px a 640×360, a tela-alvo; sete cabem exactamente, e a régua de alvo já está no piso
+  // (ADR-0095: «tela menor mostra menos itens, não alvos menores»). O critério do §2 continua o mesmo —
+  // `resume` primeiro, `quit` último, e como a lista é ANEL, CIMA a partir de `resume` cai no `quit`.
+  //
+  // 📌 SAÍRAM DOIS, e cada um tem para onde ir: `acessibilidade` (a barra rápida) passa ao botão SELECT, e
+  // `print` vai com ele — «basta apertar SELECT que se tem a visão apropriada pra print», nas palavras do Dev.
+  // Os `act` continuam a existir e a funcionar para quem passar a sua própria lista; só não estão nesta.
   { act: 'resume' },
-  // `acessibilidade` leva o direcional à BARRA RÁPIDA de acessibilidade em vez de ao jogador. Enquanto a
-  // barra mora dentro do cartão de pausa, é para lá que ele aponta; quando o item 7 a levar para o HUD, o
-  // item a segue. O que ele significa não muda: "dirigir a barra rápida".
-  { act: 'acessibilidade' },
-  { act: 'addplayer' },
-  { act: 'options' },
+  // «Ajuda — Como jogar» SOBE para segundo: é a primeira coisa que quem pausou sem saber jogar procura.
   { act: 'ajuda' },
-  { act: 'print' },
+  // ⚠️ O `act` CONTINUA `addplayer` e o RÓTULO é que é «número de jogadores» (ADR-0147 §3): `ui/shell.ts`
+  // implementa `pauseActs.addplayer` e quatro casos de `shell.browser.test.js` chamam-no.
+  { act: 'addplayer' },
+  // «Configurações de inclusão»: o que a criança CARREGA entre jogos (ADR-0146, nome do ADR-0151).
+  { act: 'options' },
+  // «Opções do jogo»: o que é DESTE jogo. A porta cai sozinha quando o jogo não declara nada seu.
+  { act: 'opcoesdojogo' },
   { act: 'quit' },
+];
+
+/**
+ * A TERCEIRA LISTA: o que é DESTE jogo (ADR-0146, ADR-0145).
+ *
+ * ⚠️ NASCE COM O «VOLTAR» E MAIS NADA, e o vazio é a decisão: a engine não sabe o que um jogo tem de seu — o
+ * jogo declara-o. Uma lista que a engine preenchesse seria a cadeira de rodas no xadrez outra vez.
+ *
+ * 📌 E por isso a porta cai sozinha: `raizQueAcciona` deixa cair uma porta cuja sala está vazia, e com esta
+ * lista reduzida ao `pmback` é exactamente esse o caso de um jogo que não declara nada.
+ */
+export const PM_JOGO_BTNS: readonly PauseBtnDef[] = [
+  { act: 'pmback' },
 ];
 
 /**
