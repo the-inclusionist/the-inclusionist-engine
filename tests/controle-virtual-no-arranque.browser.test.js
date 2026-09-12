@@ -149,6 +149,13 @@ describe('createGame mounts the virtual pad from the preset', () => {
       // ⚠️ the key the pad handed to the menu is stamped as TOUCH (ADR-0109): the «keyboard hides the pad» listener must not
       // take it for a keyboard, or the pad would vanish after every step it gives
       expect(pad().hidden, 'the pad hid itself after its own press').toBe(false);
+      // 🔴 THE PAIR, found by the Dev: a REAL key in the same menu hides the pad. The menu navigation consumes the key
+      // in the window's CAPTURE phase with `stopPropagation()`, so a listener in the bubble phase never heard it — the
+      // child switched to the keyboard and the pad stayed over the card.
+      const depoisDoPad = marcado();
+      document.getElementById('game-region').dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', bubbles: true, cancelable: true }));
+      expect(marcado(), 'the key did not reach the menu — the case would not be in a menu').not.toBe(depoisDoPad);
+      expect(pad().hidden, 'switching to the keyboard inside a menu left the pad on screen').toBe(true);
     } finally {
       motor.pausa.esconder(0);
       style.remove();

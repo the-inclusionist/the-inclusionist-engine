@@ -2283,10 +2283,13 @@ export function createGame(o: CreateGameOptions): Engine {
   }
   // Jogar no teclado ESCONDE o pad — a mesma alternância por modalidade do `input/keydown` do cartucho. Só as
   // teclas de algum jogador: um atalho do navegador não é a criança a trocar de aparelho.
+  // 🔴 EM CAPTURA (`true`): o `ui/menu-nav` consome a tecla de um menu na captura da janela com `stopPropagation()`, e um
+  // ouvinte de bolha nunca a ouvia — num menu, a criança passava ao teclado e o pad ficava por cima do cartão (medido
+  // pelo Dev). `stopPropagation` não cala outro ouvinte do MESMO nó, logo a ordem de registo não importa.
   win.addEventListener('keydown', (e: KeyboardEvent) => {
     if (origemDoEvento(e) === 'toque') return; // a tecla que o próprio pad entregou a um menu
     if (keyboard.whichPlayer(e.code) >= 0) toque.hideTouchControls();
-  });
+  }, true);
 
   /*
    * AS COISAS PESADAS COMEÇAM A DESCER AQUI, e a linha é deliberadamente a ÚLTIMA coisa do arranque.
