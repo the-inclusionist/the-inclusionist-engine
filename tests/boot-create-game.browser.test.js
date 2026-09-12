@@ -330,6 +330,19 @@ describe('createGame num documento de verdade', () => {
       motor.pausa.esconder(0);
     });
 
+    it('🔴 [Right] opening the card puts the cursor on item 1 of the ROOT — even if it was closed inside the submenu (ADR-0158)', () => {
+      // 📏 Measured in dist: opened by SELECT, no item was marked, and the first ArrowDown jumped to item 2.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      expect(document.querySelector('#vp-pause-0 .pm-sel')?.dataset.act, 'no cursor on open').toBe('resume');
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
+      motor.pausa.esconder(0);
+      motor.pausa.mostrar(0);
+      expect(document.querySelector('#vp-pause-0 .pause-menu[data-sub="raiz"]').hidden, 'reopened inside the submenu').toBe(false);
+      expect(document.querySelector('#vp-pause-0 .pm-sel')?.dataset.act).toBe('resume');
+      motor.pausa.esconder(0);
+    });
+
     it('🔴 [Right] a game that declares NOTHING still gets the six root items and the seven of the submenu, in order (ADR-0161)', () => {
       // The Dev found three items in the quiz and listed both menus in full. Order is literal, from his list.
       const motor = abrir();
@@ -356,14 +369,14 @@ describe('createGame num documento de verdade', () => {
       await new Promise((r) => requestAnimationFrame(r)); // `srSay` writes on the next frame
       expect(document.querySelector('#sr-status')?.textContent, 'reaching it did not say the reason')
         .toContain('Quem decide quantos jogadores podem jogar é o jogo.');
-      expect(document.querySelector('#game-region .barra-explicacao')?.textContent, 'the reason is not in the footer')
+      expect([...document.querySelectorAll('#game-region .barra-explicacao')].at(-1)?.textContent, 'the reason is not in the footer')
         .toBe('Quem decide quantos jogadores podem jogar é o jogo.');
       // activated: a locked DOOR does not open — «Opções do jogo» would switch to its (empty) list if the click passed
       const opcoes = document.querySelector('#vp-pause-0 .pm-btn[data-act="opcoesdojogo"]');
       expect(opcoes.getAttribute('aria-disabled')).toBe('true');
       opcoes.click();
       expect(document.querySelector('#vp-pause-0 .pause-menu[data-sub="raiz"]').hidden, 'the locked door opened').toBe(false);
-      expect(document.querySelector('#game-region .barra-explicacao')?.textContent).toBe('Este jogo não tem opções próprias.');
+      expect([...document.querySelectorAll('#game-region .barra-explicacao')].at(-1)?.textContent).toBe('Este jogo não tem opções próprias.');
       motor.pausa.esconder(0);
     });
 

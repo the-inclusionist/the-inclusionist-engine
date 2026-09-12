@@ -60,7 +60,7 @@ import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, sho
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
-import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, legendaDoIcone } from '../ui/pause-icons.js';
+import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, legendaDoIcone, mostrarSubmenuDaPausa } from '../ui/pause-icons.js';
 import { helpRows, helpListHtml } from '../ui/help-panel.js';
 import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
@@ -1771,7 +1771,11 @@ export function createGame(o: CreateGameOptions): Engine {
     mostrar: (i: number) => {
       pauseIcons.reflectPauseIcons();
       const cartao = $<HTMLElement>(`#vp-pause-${i}`);
-      if (cartao) cartao.hidden = false;
+      if (!cartao) return;
+      cartao.hidden = false;
+      // 🔴 O CURSOR POUSA NO ITEM 1, na raiz (ADR-0158: «a saída é onde o cursor cai ao abrir»). Medido no `dist`: aberto
+      // pelo SELECT nenhum item ficava marcado, e a primeira seta saltava para o item 2.
+      mostrarSubmenuDaPausa(cartao, 'raiz');
     },
     esconder: (i: number) => {
       const cartao = $<HTMLElement>(`#vp-pause-${i}`);
