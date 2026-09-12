@@ -59,7 +59,21 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'sourcesans', fam:'Source Sans 3',         fb:'sans'},
     {k:'inter',      fam:'Inter',                 fb:'sans'},
     {k:'opensans',   fam:'Open Sans',             fb:'sans'},
-    {k:'lato',       fam:'Lato',                  fb:'sans'} ]},
+    {k:'lato',       fam:'Lato',                  fb:'sans'},
+    // ⚠️ AS QUATRO ARREDONDADAS entram a pedido do Dev (2026-09-12) e entram SEM descrição, de propósito: as
+    // quatro linhas acima também não a têm, e um `d` existe quando há algo a dizer que o nome não diz — a
+    // Atkinson tem-no porque o Braille Institute a desenhou para isto, a OpenDyslexic porque a descrição dela
+    // tem de falar do DESENHO e nunca do efeito. «Arredondada» não é uma alegação, é o que se vê.
+    //
+    // 📌 `geral` (papel implícito): são faces de interface, não caligráficas e não de jogo — logo seguem o
+    // espaçamento da BDA que o ADR-0149 §2 generaliza, e aparecem no menu de tipografia como as outras.
+    //
+    // ⚠️ `Fredoka` E NÃO «Fredoka One»: o pedido usou o nome legado. A Google publica hoje a família variável
+    // como `Fredoka`; a estática antiga era o peso 600 dela. Ver o bloco correspondente em `fonts.css`.
+    {k:'fredoka',    fam:'Fredoka',               fb:'sans'},
+    {k:'comfortaa',  fam:'Comfortaa',             fb:'sans'},
+    {k:'quicksand',  fam:'Quicksand',             fb:'sans'},
+    {k:'nunito',     fam:'Nunito',                fb:'sans'} ]},
   {g:'font.group.serif', items:[
     {k:'literata',    fam:'Literata',       fb:'serif'},
     {k:'sourceserif', fam:'Source Serif 4', fb:'serif'},
