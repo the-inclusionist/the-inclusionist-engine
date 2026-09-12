@@ -55,6 +55,7 @@ import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
 import { accommodationAnswersProblems, subjectWord, type AccommodationAnswers } from '../core/accommodations.js';
+import { contractSubjects } from '../core/accommodation-subjects.js';
 import { presetActions, startClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
@@ -1400,6 +1401,22 @@ export function createGame(o: CreateGameOptions): Engine {
     function esconderLinhasSemAssunto(): void {
       const linha = $<HTMLElement>('#cane-div')?.closest<HTMLElement>('.ctrl-row');
       if (linha) linha.hidden = subjectWord(cartucho.acomodacoes, 'caneSpacing') === null;
+      /*
+       * 🔴 A NAVEGAÇÃO SONORA É DERIVADA DO CONTRATO, e não perguntada ao cartucho (ADR-0153): o sonar precisa de um
+       * mundo e de uma DIRECÇÃO, e `bearing` responde `none` em `hotspots`. Num jogo de lista de pontos o volume do
+       * sonar, da guarda e da guia eram três cursores sem assunto. Lido a cada render: a topologia é função, e muda
+       * entre fases (ADR-0084).
+       */
+      const sujeitos = contractSubjects({
+        declaration: cartucho.declaration,
+        actions: cartucho.preset ? presetActions(cartucho.preset) : [],
+        players: players().length,
+      });
+      const semNavegacao = !sujeitos.has('navigationSound');
+      const linhaDoVolume = $<HTMLElement>('#navsound-master')?.closest<HTMLElement>('.ctrl-row');
+      if (linhaDoVolume) linhaDoVolume.hidden = semNavegacao;
+      const listaDaNavegacao = $<HTMLElement>('#navsound-list');
+      if (listaDaNavegacao) listaDaNavegacao.hidden = semNavegacao;
     }
     esconderLinhasSemAssunto();
     audio = initSettingsAudio({

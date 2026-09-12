@@ -19,6 +19,11 @@
     "srAlert",
     "srSay"
   ],
+  "core/accommodation-subjects.ts": [
+    "ContractKeyedAccommodation",
+    "SubjectInputs",
+    "contractSubjects"
+  ],
   "core/accommodations.ts": [
     "ACCOMMODATIONS",
     "Accommodation",
