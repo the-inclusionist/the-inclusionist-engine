@@ -197,3 +197,142 @@
 @font-face{font-family:'Teachers';font-style:normal;font-weight:400 800;font-display:swap;
   src:url('fonts/teachers-var-ext.woff2') format('woff2');
   unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+
+/* ===== SETE PLAYWRITE A MAIS (ADR-0150, decisão do Dev de 2026-09-12) =====
+ * Cuba e Peru, pedidas por nome; e os três RECUOS POR LÍNGUA — Espanha, Portugal e Inglaterra —, que é a
+ * regra nova: um país sem Playwrite própria recebe a do COLONIZADOR, e já não a dos Estados Unidos.
+ * `ES Deco` e `GB S` entram pela outra metade: onde o país tem mais de um TRAÇO, aparecem os dois.
+ *
+ * ⚠️ AS «GUIDES» NÃO ENTRAM, por decisão do Dev, e a ausência é decidida e não esquecida. 📏 Medido:
+ * catorze países têm uma `Playwrite XX Guides`, e ela não é um segundo traço — é o MESMO traço com as
+ * pautas de caligrafia por cima. A engine não as usa; um jogo que precise delas traz a sua própria fonte.
+ *
+ * ⚠️ E ELAS SÃO EMPACOTADAS, revogando o P3 do ADR-0108: «devem ser baixadas no primeiro dia para fazer
+ * parte do PWA» (Dev, 2026-09-12). São variáveis (100–400) como as oito que já cá estavam. */
+@font-face{font-family:'Playwrite ES';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-es.woff2') format('woff2');}
+@font-face{font-family:'Playwrite ES Deco';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-es-deco.woff2') format('woff2');}
+@font-face{font-family:'Playwrite PT';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-pt.woff2') format('woff2');}
+@font-face{font-family:'Playwrite GB J';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-gb-j.woff2') format('woff2');}
+@font-face{font-family:'Playwrite GB S';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-gb-s.woff2') format('woff2');}
+@font-face{font-family:'Playwrite CU';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-cu.woff2') format('woff2');}
+@font-face{font-family:'Playwrite PE';font-style:normal;font-weight:100 400;font-display:swap;
+  src:url('fonts/playwrite-pe.woff2') format('woff2');}
+
+/* ===== O REPERTÓRIO PADRÃO CRESCE (ADR-0150) =====
+ * Quinze faces pedidas pelo Dev em 2026-09-12. Sete da lista dele já cá estavam (Source Sans 3, Inter,
+ * Open Sans, Lato, Literata, Source Serif 4, Newsreader) e não se repetem.
+ *
+ * 🔴 A CLASH DISPLAY NÃO ENTRA, e a ausência é medida: ela NÃO está no Google Fonts — é da Fontshare
+ * (Indian Type Foundry), e o §3 do `LICENSES.md` exige a licença conferida ANTES de empacotar. É o mesmo
+ * teste que as três faces da ronde reprovaram, e reprovaram por serem livres só para uso PESSOAL.
+ *
+ * ⚠️ TRÊS DELAS NÃO SÃO VARIÁVEIS e por isso têm dois ficheiros por subconjunto, como a Atkinson: Ubuntu,
+ * Spectral e DM Serif Display. 📌 A DM Serif Display tem só o 400 — é uma face de display de um peso só. */
+@font-face{font-family:'Roboto Flex';font-style:normal;font-weight:100 1000;font-display:swap;
+  src:url('fonts/robotoflex-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Roboto Flex';font-style:normal;font-weight:100 1000;font-display:swap;
+  src:url('fonts/robotoflex-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Noto Sans';font-style:normal;font-weight:200 900;font-display:swap;
+  src:url('fonts/notosans-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Noto Sans';font-style:normal;font-weight:200 900;font-display:swap;
+  src:url('fonts/notosans-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:400 700;font-display:swap;
+  src:url('fonts/spacegrotesk-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Space Grotesk';font-style:normal;font-weight:400 700;font-display:swap;
+  src:url('fonts/spacegrotesk-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Sora';font-style:normal;font-weight:300 800;font-display:swap;
+  src:url('fonts/sora-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Sora';font-style:normal;font-weight:300 800;font-display:swap;
+  src:url('fonts/sora-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:300 800;font-display:swap;
+  src:url('fonts/jakarta-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Plus Jakarta Sans';font-style:normal;font-weight:300 800;font-display:swap;
+  src:url('fonts/jakarta-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Merriweather';font-style:normal;font-weight:300 800;font-display:swap;
+  src:url('fonts/merriweather-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Merriweather';font-style:normal;font-weight:300 800;font-display:swap;
+  src:url('fonts/merriweather-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Lora';font-style:normal;font-weight:400 700;font-display:swap;
+  src:url('fonts/lora-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Lora';font-style:normal;font-weight:400 700;font-display:swap;
+  src:url('fonts/lora-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Domine';font-style:normal;font-weight:400 700;font-display:swap;
+  src:url('fonts/domine-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Domine';font-style:normal;font-weight:400 700;font-display:swap;
+  src:url('fonts/domine-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Bitter';font-style:normal;font-weight:200 900;font-display:swap;
+  src:url('fonts/bitter-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Bitter';font-style:normal;font-weight:200 900;font-display:swap;
+  src:url('fonts/bitter-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400 700;font-display:swap;
+  src:url('fonts/playfair-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400 700;font-display:swap;
+  src:url('fonts/playfair-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Fraunces';font-style:normal;font-weight:200 900;font-display:swap;
+  src:url('fonts/fraunces-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Fraunces';font-style:normal;font-weight:200 900;font-display:swap;
+  src:url('fonts/fraunces-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Bodoni Moda';font-style:normal;font-weight:400 700;font-display:swap;
+  src:url('fonts/bodonimoda-var.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Bodoni Moda';font-style:normal;font-weight:400 700;font-display:swap;
+  src:url('fonts/bodonimoda-var-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Ubuntu';font-style:normal;font-weight:400;font-display:swap;
+  src:url('fonts/ubuntu-400.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Ubuntu';font-style:normal;font-weight:400;font-display:swap;
+  src:url('fonts/ubuntu-400-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Ubuntu';font-style:normal;font-weight:700;font-display:swap;
+  src:url('fonts/ubuntu-700.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Ubuntu';font-style:normal;font-weight:700;font-display:swap;
+  src:url('fonts/ubuntu-700-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Spectral';font-style:normal;font-weight:400;font-display:swap;
+  src:url('fonts/spectral-400.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Spectral';font-style:normal;font-weight:400;font-display:swap;
+  src:url('fonts/spectral-400-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'Spectral';font-style:normal;font-weight:700;font-display:swap;
+  src:url('fonts/spectral-700.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'Spectral';font-style:normal;font-weight:700;font-display:swap;
+  src:url('fonts/spectral-700-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}
+@font-face{font-family:'DM Serif Display';font-style:normal;font-weight:400;font-display:swap;
+  src:url('fonts/dmserifdisplay-400.woff2') format('woff2');
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
+@font-face{font-family:'DM Serif Display';font-style:normal;font-weight:400;font-display:swap;
+  src:url('fonts/dmserifdisplay-400-ext.woff2') format('woff2');
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;}

@@ -52,15 +52,32 @@ const CSS = readFileSync(join(VENDOR, 'fonts.css'), 'utf8');
 const NA_PASTA = readdirSync(join(VENDOR, 'fonts'));
 
 /**
- * AS OITO QUE VIAJAM (ADR-0108 §2). Escritas como aparecem no nome de família da Google Fonts.
+ * AS QUE VIAJAM. Escritas como aparecem no nome de família da Google Fonts.
  *
- * ⚠️ A forma da lista É o argumento, e o registo di-lo: são as Américas com as DUAS mãos americanas, porque
- * os EUA ensinam duas e escolher uma seria escolher pela criança.
+ * ⚠️ A forma da lista É o argumento, e ela mudou DUAS VEZES por decisão do Dev — por isso as duas camadas
+ * ficam escritas separadas, em vez de fundidas numa lista de quinze que não diz de onde veio nenhuma.
+ *
+ * 📌 AS OITO ORIGINAIS (ADR-0108 §2) são as Américas com as DUAS mãos americanas, porque os EUA ensinam duas
+ * e escolher uma seria escolher pela criança.
+ *
+ * 🔴 AS SETE NOVAS (ADR-0150) entram por uma regra diferente, e revogam o «nada de empacotar» do ADR-0108:
+ * três são o RECUO POR LÍNGUA — um país sem mão própria recebe a do colonizador, e por isso Espanha,
+ * Portugal e Inglaterra cobrem TODO país que falta —, duas foram pedidas por nome (Cuba, Peru), e duas são a
+ * segunda mão de um país que ensina duas, exactamente como US Trad/Modern.
+ *
+ * ⚠️ E O CRIVO CONTINUA A PERGUNTAR PELO PREFIXO, que é o que o mantém vivo: uma décima sexta («Playwrite
+ * IE», «Playwrite NG», ou qualquer `Guides`) é apanhada sem ter de ser prevista pelo nome.
  */
 const AS_OITO = Object.freeze([
   'Playwrite BR', 'Playwrite US Trad', 'Playwrite US Modern', 'Playwrite CA',
   'Playwrite MX', 'Playwrite AR', 'Playwrite CL', 'Playwrite CO',
 ]);
+const AS_SETE_NOVAS = Object.freeze([
+  'Playwrite ES', 'Playwrite PT', 'Playwrite GB J',   // os recuos por língua
+  'Playwrite CU', 'Playwrite PE',                      // pedidas por nome
+  'Playwrite ES Deco', 'Playwrite GB S',               // a segunda mão de quem ensina duas
+]);
+const AS_EMPACOTADAS = Object.freeze([...AS_OITO, ...AS_SETE_NOVAS]);
 
 /** As três faces da ronde francesa. NENHUMA pode ser empacotada — são gratuitas só para uso PESSOAL. */
 const A_RONDE = Object.freeze(['Ronde Script', 'OPTIFrench-Script', 'Merveille']);
@@ -85,9 +102,9 @@ export function ehPlaywrite(familia) {
   return /^playwrite\b/i.test(familia.trim());
 }
 
-/** As Playwrite empacotadas que NÃO estão nas oito. */
+/** As Playwrite empacotadas que NÃO estão na lista. */
 export function playwriteForaDasOito(familias) {
-  return familias.filter((f) => ehPlaywrite(f) && !AS_OITO.includes(f.trim()));
+  return familias.filter((f) => ehPlaywrite(f) && !AS_EMPACOTADAS.includes(f.trim()));
 }
 
 /**

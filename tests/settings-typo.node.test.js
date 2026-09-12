@@ -122,8 +122,18 @@ describe('as caligráficas: papel declarado e tamanho mínimo', () => {
     // escrever, para os botões DENTRO das atividades, não uma opção de interface.
     // 📌 A lista continua escrita por extenso de propósito — uma face que ganhe `papel:'caligrafica'` sem
     // alguém reparar sai do menu, e isso é decisão de produto, não etiqueta.
+    //
+    // 🔴 DEZOITO desde 2026-09-12 (ADR-0150): mais sete Playwrite, e elas entram por uma REGRA — três são o
+    // recuo por LÍNGUA (`pwes`, `pwpt`, `pwgbj`: um país sem mão própria recebe a do colonizador), duas
+    // foram pedidas por nome (`pwcu`, `pwpe`) e duas são a segunda mão de um país que ensina duas
+    // (`pwesdeco`, `pwgbs`), como já acontecia com `pwustrad`/`pwusmod`.
+    // ⚠️ E ELAS CONTINUAM FORA DO MENU DE FONTE, que é o que este caso mede. O que o ADR-0149 §4 abriu foi
+    // uma porta ESTREITA e noutro sítio: a posição (e) do ciclo da barra rápida, onde a criança escolhe a
+    // mão do país DELA. Isso não as põe de volta nesta lista — e se alguém as puser, este caso reprova.
     expect(CALIGRAFICAS.map((it) => it.k).sort()).toEqual([
-      'fondamento', 'pinyon', 'pwar', 'pwbr', 'pwca', 'pwcl', 'pwco', 'pwmx', 'pwusmod', 'pwustrad', 'ufmag',
+      'fondamento', 'pinyon',
+      'pwar', 'pwbr', 'pwca', 'pwcl', 'pwco', 'pwcu', 'pwes', 'pwesdeco', 'pwgbj', 'pwgbs',
+      'pwmx', 'pwpe', 'pwpt', 'pwusmod', 'pwustrad', 'ufmag',
     ]);
   });
 

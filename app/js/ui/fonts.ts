@@ -73,7 +73,22 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'fredoka',    fam:'Fredoka',               fb:'sans'},
     {k:'quicksand',  fam:'Quicksand',             fb:'sans'},
     {k:'nunito',     fam:'Nunito',                fb:'sans'},
-    {k:'teachers',   fam:'Teachers',              fb:'sans'} ]},
+    {k:'teachers',   fam:'Teachers',              fb:'sans'},
+    /*
+     * MAIS SETE SEM SERIFA (ADR-0150, pedido do Dev de 2026-09-12). Sete da lista dele já cá estavam —
+     * Source Sans 3, Inter, Open Sans, Lato acima, e as três serifadas abaixo — e não se repetem.
+     *
+     * 🔴 A CLASH DISPLAY NÃO ENTRA, e a ausência é medida e não esquecida: ela **não está no Google Fonts**.
+     * É da Fontshare (Indian Type Foundry), e o §3 do `LICENSES.md` exige a licença conferida ANTES de
+     * empacotar — o mesmo teste que as três faces da ronde reprovaram, por serem livres só para uso PESSOAL.
+     * Quando a licença estiver conferida, ela entra aqui.
+     */
+    {k:'robotoflex', fam:'Roboto Flex',           fb:'sans'},
+    {k:'ubuntu',     fam:'Ubuntu',                fb:'sans'},
+    {k:'notosans',   fam:'Noto Sans',             fb:'sans'},
+    {k:'spacegrotesk', fam:'Space Grotesk',       fb:'sans'},
+    {k:'sora',       fam:'Sora',                  fb:'sans'},
+    {k:'jakarta',    fam:'Plus Jakarta Sans',     fb:'sans'} ]},
     // ⚠️ A COMFORTAA ENTROU E SAIU NO MESMO DIA, por decisão do Dev: «ruim para dislexia». A razão está na
     // face — as formas quase geométricas reduzem a diferenciação entre letras, que é o eixo pelo qual a
     // Atkinson Hyperlegible é a padrão deste projeto. Fica escrito porque uma face que sai sem rasto volta a
@@ -81,7 +96,29 @@ export const FONT_GROUPS: FontGroup[] = [
   {g:'font.group.serif', items:[
     {k:'literata',    fam:'Literata',       fb:'serif'},
     {k:'sourceserif', fam:'Source Serif 4', fb:'serif'},
-    {k:'newsreader',  fam:'Newsreader',     fb:'serif'} ]},
+    {k:'newsreader',  fam:'Newsreader',     fb:'serif'},
+    // Cinco de LEITURA, do mesmo pedido: serifadas de texto corrido, como as três acima.
+    {k:'merriweather', fam:'Merriweather',  fb:'serif'},
+    {k:'lora',        fam:'Lora',           fb:'serif'},
+    {k:'spectral',    fam:'Spectral',       fb:'serif'},
+    {k:'domine',      fam:'Domine',         fb:'serif'},
+    {k:'bitter',      fam:'Bitter',         fb:'serif'},
+    /*
+     * ⚠️ AS QUATRO DE DISPLAY SÃO OUTRA COISA, e entram com o aviso escrito em vez de misturadas com as de
+     * leitura. Playfair Display, DM Serif Display, Fraunces e Bodoni Moda têm CONTRASTE ALTO — hastes grossas
+     * ao lado de hastes finíssimas — e a Bodoni é o extremo do eixo. É exactamente o que a Atkinson
+     * Hyperlegible foi desenhada para NÃO ser, e em corpo pequeno as hastes finas desaparecem primeiro para
+     * quem menos enxerga.
+     *
+     * 📌 Ficam na mesma, porque OFERECER não é aplicar: o padrão continua a ser a Atkinson, e quem escolhe
+     * uma destas está a escolher. O que seria defeito é a engine ADOPTAR uma delas sozinha.
+     * 🔴 E elas não são para corpo de texto de atividade; um jogo que as use num enunciado longo está a usar
+     * uma face de título como face de leitura.
+     */
+    {k:'playfair',    fam:'Playfair Display', fb:'serif'},
+    {k:'dmserifdisplay', fam:'DM Serif Display', fb:'serif'},
+    {k:'fraunces',    fam:'Fraunces',       fb:'serif'},
+    {k:'bodonimoda',  fam:'Bodoni Moda',    fb:'serif'} ]},
   // ⚠️ QUATRO FACES SAÍRAM DAQUI EM 2026-09-07 (issue #87, item 3, decisão do Dev):
   //   · `greatvibes` (44 KB) e `ufcook` (20 KB) — peso que o roster não paga;
   //   · `learningcurve` e `kindergarten` — eram entradas `.off` SEM FICHEIRO, isto é, o menu oferecia-as
@@ -130,11 +167,30 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'pwar', fam:'Playwrite AR', fb:'cursive', d:'font.desc.pw.ar', papel:'caligrafica', minPx:20},
     {k:'pwcl', fam:'Playwrite CL', fb:'cursive', d:'font.desc.pw.cl', papel:'caligrafica', minPx:20},
     {k:'pwco', fam:'Playwrite CO', fb:'cursive', d:'font.desc.pw.co', papel:'caligrafica', minPx:20},
-    // 🔴 MAIS SETE PLAYWRITE ESPERAM POR UMA DECISÃO, e não entram por omissão: `ES`, `ES Deco`, `PT`,
-    // `GB J`, `GB S`, `CU` e `PE` (ADR-0150). 📏 Medidas em 2026-09-12: **430 KB** no pacote, contra o
-    // ADR-0108, que é uma decisão do próprio Dev — «nada de empacotar: estas são baixadas conforme
-    // necessário» — e que fixa a regra «nenhuma face é oferecida sem uma forma de a obter». Oferecê-las aqui
-    // sem construir a chegada seria exactamente o que aquele registo existe para impedir.
+    /*
+     * MAIS SETE, e elas existem por uma REGRA e não por gosto (ADR-0150, decisão do Dev de 2026-09-12).
+     *
+     * 🎯 `pwes`, `pwpt` e `pwgbj` são o RECUO POR LÍNGUA: um país sem Playwrite própria recebe a do
+     * COLONIZADOR — espanhol → Espanha, português → Portugal, inglês → Inglaterra —, e já não a dos Estados
+     * Unidos, que era o recuo da primeira versão do ADR-0149.
+     * 📌 `pwcu` e `pwpe` foram pedidas por nome; `pwesdeco` e `pwgbs` entram pela outra metade da regra, que
+     * é «onde o país tem mais de um TRAÇO, aparecem os dois» — como US Trad e US Modern.
+     *
+     * ⚠️ AS «GUIDES» NÃO ENTRAM, por decisão do Dev. 📏 Medido no catálogo da Google: catorze países têm uma
+     * `Playwrite XX Guides`, e ela não é um segundo traço — é o MESMO traço com as pautas de caligrafia por
+     * cima. A engine não as usa; um jogo que precise delas traz a sua própria fonte.
+     *
+     * 🔴 E ELAS SÃO EMPACOTADAS, o que REVOGA o P3 do ADR-0108 («nada de empacotar: estas são baixadas
+     * conforme necessário»). A decisão nova é dele e é literal: «estas fontes devem ser baixadas no primeiro
+     * dia para fazer parte do PWA». Fica escrito porque o registo antigo continua a dizer o contrário.
+     */
+    {k:'pwes', fam:'Playwrite ES', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwesdeco', fam:'Playwrite ES Deco', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwpt', fam:'Playwrite PT', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwgbj', fam:'Playwrite GB J', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwgbs', fam:'Playwrite GB S', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwcu', fam:'Playwrite CU', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwpe', fam:'Playwrite PE', fb:'cursive', papel:'caligrafica', minPx:20},
     {k:'ronde', fam:'Ronde Script, OPTIFrench-Script, Merveille', fb:'cursive',
       d:'font.desc.ronde', off:'font.off.ronde'} ]},
   // ⚠️ A FACE DO JOGO, e ela tem grupo próprio porque não é nem sans, nem serifada, nem manuscrita — é uma
