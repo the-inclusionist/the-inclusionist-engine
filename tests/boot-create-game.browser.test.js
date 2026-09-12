@@ -383,6 +383,91 @@ describe('createGame num documento de verdade', () => {
       expect(cartao.hidden, 'depois do adiamento, qualquer tecla tinha de trazer o cartão de volta').toBe(false);
     });
 
+    it('🔴 [Right] COM host de filtros, a engine acciona 🚥 sozinha — e 🌗 continua a ser do jogo', () => {
+      /*
+       * 📏 MEDIDO no `dist/quiz.html`: a barra servia sete ícones, três deles a dizer «em construção», e o 🚥
+       * ficava de fora — com a engine a ter tudo à mão. `installCvdFilters` monta os seis `<filter>` e
+       * `aplicarFiltroDeVisao` sabe pô-los no mundo; faltava ligá-los ao ícone.
+       *
+       * 🔴 E O PAR É O QUE IMPEDE ISTO DE SE TORNAR UMA PROMESSA A MAIS: o 🌗 NÃO aparece, porque
+       * `setTemaDoJogador` não é um filtro — é um REPINTE de texturas (`render/textures`), e os níveis
+       * `hc-direto-45`/`hc-direto-7` são os rácios 4,5:1 e 7:1 da WCAG. A engine não tem texturas, e
+       * aproximá-lo com `filter: contrast()` seria anunciar um rácio que nada garante.
+       */
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      raiz.appendChild(svg);
+      abrir({ host: { doc: document, win: window, cvdHost: svg } });
+
+      expect(document.querySelector('#title-icons [data-pi="cvd"]'),
+        'a engine tem os filtros e o ícone de daltonismo continua a faltar').not.toBeNull();
+      expect(document.querySelector('#title-icons [data-pi="contrast"]'),
+        'o 🌗 apareceu, e a engine não sabe repintar as texturas de jogo nenhum').toBeNull();
+    });
+
+    it('🎯 [Right] carregar no 🚥 põe MESMO o filtro no mundo — não só anuncia', () => {
+      // ⚠️ Sem isto o caso acima ficaria verde com um ícone inerte, que é o botão morto do §5 com outra roupa.
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      raiz.appendChild(svg);
+      abrir({ host: { doc: document, win: window, cvdHost: svg } });
+      const mundo = document.querySelector('#game-region');
+      expect(mundo.style.filter, 'o mundo já nasceu com filtro').toBe('');
+
+      document.querySelector('#title-icons [data-pi="cvd"]').click();
+
+      // ⚠️ A asserção aceita aspas: o navegador normaliza `url(#x)` para `url("#x")` ao devolver o estilo, e a
+      // primeira versão deste caso reprovou por causa disso — com o filtro JÁ aplicado. Medir o que o
+      // navegador devolve, e não o que se escreveu.
+      expect(mundo.style.filter, 'o ícone anunciou uma correcção que não aconteceu').toMatch(/url\(["']?#cvd-fix-/);
+    });
+
+    it('🔴 [Boundary] o ciclo ANDA e LIMPA quando o jogo declara jogadores', () => {
+      /*
+       * 🔴 ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE: «aplica sempre um filtro, nunca limpa» ficava verde,
+       * porque o caso de cima carrega UMA vez. O ciclo tem quatro posições — tricromata, protan, deuter,
+       * tritan — e a quarta volta ao início.
+       *
+       * ⚠️ E VOLTAR AO INÍCIO TEM DE LIMPAR DE FACTO. A criança que experimenta as três e decide que nenhuma
+       * serve ficaria, sem isso, com a última por cima do jogo para sempre — e o ícone a anunciar «visão
+       * tricromata». É o controle a mentir o estado na direcção mais cruel: ela mexeu para desfazer.
+       *
+       * 🔴 E O `players` AQUI É O CASO, não cenário. Sem ele o ciclo fica PRESO na primeira posição, porque
+       * `initPauseIcons` recebe uma lista VAZIA (`create-game.ts`, nota do `getPlayers`) e o passo seguinte é
+       * calculado a partir do estado do jogador. O defeito é dessa linha e não deste eixo; está nomeado lá,
+       * medido, e o conserto é refactor de ordem de arranque.
+       */
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      raiz.appendChild(svg);
+      abrir({ host: { doc: document, win: window, cvdHost: svg }, players: [{ ctrl: {} }] });
+      const mundo = document.querySelector('#game-region');
+      const icone = document.querySelector('#title-icons [data-pi="cvd"]');
+
+      const vistos = [];
+      for (let n = 0; n < 4; n += 1) { icone.click(); vistos.push(mundo.style.filter); }
+
+      expect(vistos.slice(0, 3).every((f) => /url\(["']?#cvd-fix-/.test(f)),
+        `as três correcções não pintaram: ${JSON.stringify(vistos)}`).toBe(true);
+      expect(new Set(vistos.slice(0, 3)).size, 'as três correcções pintaram o MESMO filtro').toBe(3);
+      expect(vistos[3], 'a volta ao tricromata deixou a última correcção por cima do jogo').toBe('');
+    });
+
+    it('🔴 [Right] o `setCorrecaoDoJogador` do JOGO ganha ao padrão da engine', () => {
+      // O padrão é piso, não tomada: um jogo que corrija a cor no seu próprio render — o `game-pinball`
+      // fá-lo num framebuffer há semanas — entrega o seu e a engine sai da frente.
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      raiz.appendChild(svg);
+      const vistas = [];
+      abrir({
+        host: { doc: document, win: window, cvdHost: svg },
+        setCorrecaoDoJogador: (i, c) => vistas.push(c),
+      });
+      const mundo = document.querySelector('#game-region');
+
+      document.querySelector('#title-icons [data-pi="cvd"]').click();
+
+      expect(vistas.length, 'o padrão da engine atropelou o escritor do jogo').toBe(1);
+      expect(mundo.style.filter, 'a engine pintou por cima de um jogo que já sabia corrigir').toBe('');
+    });
+
     it('⚠️ [Zero] sem escritores visuais, os ícones de contraste e cor NÃO são montados', () => {
       // `iconesQueAccionam` monta `contrast` e `cvd` só para quem entrega quem os escreve. É a regra certa:
       // um ícone que não acciona é pior que um ícone a menos. O que faltava era a PORTA.

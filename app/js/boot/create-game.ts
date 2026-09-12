@@ -69,7 +69,9 @@ import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, au
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
 // responder ao `platform/audio-sonar`, que não pode importar daqui sem inverter uma aresta (#104).
-import { ehCego, ehBaixaVisao, PADRAO, type VisualState, type Tema, type Correcao } from '../render/viz-axes.js';
+import { ehCego, ehBaixaVisao, PADRAO, filtroChave, type VisualState, type Tema, type Correcao } from '../render/viz-axes.js';
+// 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
+import { VIZ_FILTER } from '../render/viz-modes.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
@@ -822,6 +824,25 @@ export function createGame(o: CreateGameOptions): Engine {
     // `reflectPauseIcons` — que existe porque a tabela de acções muda (ADR-0106 §5) — refrescava a partir
     // dela. Com vários cartuchos numa raiz de composição (ADR-0142) o ícone descrevia o primeiro deles.
     seguraTeclas: () => cartucho.declaration.seguraTeclas(),
+    /*
+     * 🔴 O VAZIO AQUI É UM DEFEITO MEDIDO, e fica NOMEADO em vez de consertado de passagem.
+     *
+     * 📏 Medido em 2026-09-12 ao ligar a correcção de cor: `iconAct('cvd', i)` calcula o passo seguinte com
+     * `proximaCorrecao((P()[i] || {}).visual ?? PADRAO)`. Com a lista VAZIA, `P()[0]` é `undefined`, o estado
+     * relido é sempre o padrão, e **o ciclo fica preso na primeira posição**: a criança carrega três vezes e
+     * vê a mesma tela, enquanto o ícone anuncia correcções diferentes. Vale igual para o `altmove` e para o
+     * `tea`, que também leem e escrevem no jogador — não é defeito do eixo de cor, é desta lista.
+     *
+     * ⚠️ E A MESMA PERGUNTA JÁ TEM OUTRA RESPOSTA NESTE FICHEIRO: o runtime de teclado recebe `players()`,
+     * que recua para `semJogadores` — UM assento. Um jogo que não declara jogadores tem UMA criança a jogar,
+     * não nenhuma.
+     *
+     * 🔴 TROCAR ESTA LINHA POR `() => players()` NÃO FUNCIONA, e foi tentado: `initPauseIcons` consome
+     * `getPlayers()` AVIDAMENTE no arranque (`ui/pause-icons:822`, ao montar o sub-ctx do áudio), então o
+     * `const players` — declarado ~500 linhas abaixo — cai em TDZ e o boot inteiro morre. 📏 Medido: 39 casos
+     * de `boot-create-game.node` de uma vez. O conserto é içar `players`/`semJogadores` para cima desta
+     * chamada, que é refactor de ordem de arranque e merece o seu próprio commit.
+     */
     getPlayers: () => cartucho.players ?? [],
     getNumPlayers: () => (cartucho.players ?? [null]).length,
     srSay, srAlert,
@@ -856,7 +877,58 @@ export function createGame(o: CreateGameOptions): Engine {
     // significar «tabela vazia»: significa «só o que a engine acciona», que é o que ADR-0106 §1 manda.
     getPauseActs: () => ({ ...acoesDaEngine, ...(cartucho.getPauseActs ? cartucho.getPauseActs() : {}) }),
     ...(cartucho.setTemaDoJogador ? { setTemaDoJogador: cartucho.setTemaDoJogador } : {}),
-    ...(cartucho.setCorrecaoDoJogador ? { setCorrecaoDoJogador: cartucho.setCorrecaoDoJogador } : {}),
+    /*
+     * 🚥 A CORREÇÃO DE DALTONISMO PASSA A TER PADRÃO DA ENGINE (ADR-0148 §1), e o ícone deixa de faltar.
+     *
+     * 📏 MEDIDO no `dist/quiz.html`: a barra servia sete ícones — três deles a dizer «em construção» — e o
+     * 🚥 ficava de fora, porque `iconesQueAccionam` pergunta «este ícone tem quem o accione» e esta raiz não
+     * passava escritor nenhum. E não passava tendo tudo à mão: `installCvdFilters` já montou os seis
+     * `<filter>` e `aplicarFiltroDeVisao` já sabe pô-los no elemento do mundo.
+     *
+     * 🎯 UM FILTRO NÃO PRECISA DE CONHECER O JOGO — é o argumento que torna isto legítimo. Ele passa por cima
+     * do que quer que o jogo tenha desenhado, que é o mesmo caminho que o `consumer-quiz` já usa à mão
+     * (`main-quiz.ts:359`). O que a engine NÃO pode é repintar texturas, e por isso o 🌗 continua a ser do
+     * jogo (ver a errata do ADR-0148).
+     *
+     * ⚠️ E SÓ SE OS FILTROS EXISTIREM. Sem `host.cvdHost` o `installCvdFilters` devolve zero, o
+     * `url(#cvd-fix-protan)` aponta para coisa nenhuma e o ícone anunciaria uma correcção que não acontece —
+     * um controle que mente o estado, que é pior do que o ícone a menos (ADR-0106 §5). A linha de `problems`
+     * para essa lacuna já existe, logo quem a tem sabe o que fazer.
+     *
+     * 📌 O CARTUCHO CONTINUA A GANHAR: um jogo que saiba corrigir a cor no seu próprio render — o
+     * `game-pinball` corrige num framebuffer há semanas — entrega o seu e a engine sai da frente.
+     */
+    ...(cartucho.setCorrecaoDoJogador
+      ? { setCorrecaoDoJogador: cartucho.setCorrecaoDoJogador }
+      : cvdFilters
+        /*
+         * ⚠️ `filtroChave` E NÃO `VIZ_FILTER[correcao]`, e a primeira versão desta linha errou aqui: os dois
+         * vocabulários são DIFERENTES. O eixo diz `protan`; o `VIZ_FILTER` conhece `fix-protan`. Escrita à
+         * mão, a tradução dava `undefined`, o filtro saía vazio e o ícone ANUNCIAVA uma correcção que não
+         * acontecia — que é exactamente o controle a mentir o estado.
+         * 📌 E `filtroChave` faz mais do que colar um prefixo: ela põe a SIMULAÇÃO à frente da correcção
+         * quando há uma, que é a regra que este módulo não teria de reinventar.
+         */
+        ? { setCorrecaoDoJogador: (i: number, correcao: Correcao) => {
+          /*
+           * 🔴 GUARDA ANTES DE APLICAR, e a primeira versão desta linha só aplicava — o que fazia o ciclo
+           * ficar PRESO na primeira posição. Quem calcula o passo seguinte é `proximaCorrecao(p.visual)`, em
+           * `ui/pause-icons`; sem escrever de volta, toda pressão relia o padrão e devolvia `protan`.
+           * ⚠️ Não dava erro nenhum: o ícone anunciava a correcção certa, o filtro mudava na primeira vez, e
+           * a criança carregava mais duas vezes a ver a mesma tela. Apanhado por uma MUTAÇÃO sobrevivente —
+           * «aplica sempre, nunca limpa» ficava verde porque o caso só carregava uma vez.
+           */
+          // ⚠️ `cartucho.players` E NÃO `players()`, para escrever no MESMO array que o `ui/pause-icons` lê
+          // ao calcular o passo seguinte. Com o recuo `semJogadores` os dois discordavam, e o estado ia parar
+          // a um sítio que ninguém relê. 🔴 Num jogo que não declara jogadores não há onde guardar, e o ciclo
+          // fica preso na primeira posição — o defeito do `getPlayers` nomeado mais acima, e não deste ramo.
+          const jogador = cartucho.players?.[i] as { visual?: VisualState } | undefined;
+          const estado: VisualState = { ...(jogador?.visual ?? PADRAO), correcao };
+          if (jogador) jogador.visual = estado;
+          const chave = filtroChave(estado);
+          aplicarFiltroDeVisao(chave ? (VIZ_FILTER[chave] ?? '') : '', 'mundo');
+        } }
+        : {}),
   });
 
   /*
