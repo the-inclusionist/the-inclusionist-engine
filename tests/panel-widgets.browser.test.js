@@ -182,14 +182,13 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     'cane-div': 'SELECT',
     'opt-menuindex': 'BUTTON',
     'opt-tts': 'BUTTON',
-    'tts-engine': 'SELECT',
-    'tts-voice': 'SELECT',
     'tts-vol': 'INPUT',
-    'opt-tts-test': 'BUTTON',
-    'audio-detect': 'BUTTON',
   };
 
-  it('🎯 [Right] cria os doze controles, cada um com a TAG que o painel escreve', () => {
+  /** O que o ADR-0151 tirou do painel — afirmado AUSENTE, e não só deixado de fora da lista acima. */
+  const SAIRAM = ['tts-engine', 'tts-voice', 'opt-tts-test', 'audio-sinks', 'audio-detect'];
+
+  it('🎯 [Right] cria os controles, cada um com a TAG que o painel escreve', () => {
     // ⚠️ A TAG É O DEFEITO SILENCIOSO. `renderAudio` faz `ctx.$<HTMLSelectElement>('#cane-div').value = …`;
     // num `<button>` isso cria uma propriedade que ninguém lê, sem erro nenhum, e a escolha some.
     const c = casca();
@@ -199,16 +198,21 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
       expect(el, `#${id} não foi criado`).not.toBeNull();
       expect(el.tagName, `#${id} nasceu com a tag errada`).toBe(tag);
     }
+    // 🔴 O PAR (ADR-0151): motor, voz, testar voz e as saídas por jogador NÃO estão no painel. Sem isto, uma lista
+    // de controles que voltasse a crescer passaria no caso de cima — ele só confere os que DEVEM existir.
+    for (const id of SAIRAM) {
+      expect(document.getElementById(id), `#${id} continua no painel — o Dev tirou-o`).toBeNull();
+    }
     // e os três volumes são cursores de verdade, não caixas de texto
     for (const id of ['audio-master-vol', 'navsound-master', 'tts-vol']) {
       expect(document.getElementById(id).type, `#${id} não é um cursor`).toBe('range');
     }
   });
 
-  it('🎯 [Right] cria os DOIS contentores que o painel preenche, e a lista da casca fica no cartão', () => {
+  it('🎯 [Right] cria o contentor que o painel preenche, e a lista da casca fica no cartão', () => {
     const c = casca();
     montarInteriorDoAudio(ctx, c.card, c.lista);
-    for (const id of ['navsound-list', 'audio-sinks']) {
+    for (const id of ['navsound-list']) {
       const el = document.getElementById(id);
       expect(el, `#${id} não foi criado`).not.toBeNull();
       expect(el.getAttribute('role'), `#${id} não é um grupo que o leitor de tela anuncie`).toBe('group');
@@ -226,15 +230,13 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     const posicao = (sel) => ordem.findIndex((n) => n.matches(sel) || n.querySelector(sel));
     expect(posicao('#navsound-master')).toBeLessThan(posicao('#navsound-list'));
     expect(posicao('#audio-master')).toBeLessThan(posicao('#navsound-master'));
-    // as saídas de áudio são escolha de APARELHO, e ficam por último
-    expect(posicao('#audio-sinks')).toBeGreaterThan(posicao('#opt-tts'));
   });
 
   it('⚠️ [Zero] montar DUAS vezes deixa UM de cada — a raiz monta mais do que uma vez', () => {
     const c = casca();
     montarInteriorDoAudio(ctx, c.card, c.lista);
     montarInteriorDoAudio(ctx, c.card, c.lista);
-    for (const id of [...Object.keys(CONTROLES), 'navsound-list', 'audio-sinks', 'audio-list']) {
+    for (const id of [...Object.keys(CONTROLES), 'navsound-list', 'audio-list']) {
       expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
     }
   });

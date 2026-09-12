@@ -278,12 +278,15 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
     { id: 'cane-div', rotulo: t('audio.cane'), dica: t('audio.cane.dica'), forma: 'escolha' },
     { id: 'opt-menuindex', rotulo: t('audio.menuindex'), dica: t('audio.menuindex.dica') },
     { id: 'opt-tts', rotulo: t('icon.tts'), dica: t('audio.tts.dica') },
-    { id: 'tts-engine', rotulo: t('audio.ttsEngine'), dica: t('audio.ttsEngine.dica'), forma: 'escolha' },
-    { id: 'tts-voice', rotulo: t('audio.ttsVoice'), forma: 'escolha' },
     { id: 'tts-vol', rotulo: t('audio.ttsVol'), forma: 'cursor' },
-    { id: 'opt-tts-test', rotulo: t('audio.ttsTest'), dica: t('audio.ttsTest.dica') },
-    { contentor: 'audio-sinks', rotulo: t('audio.sinks.grupo') },
-    { id: 'audio-detect', rotulo: t('audio.detect'), dica: t('audio.sinksHint') },
+    /*
+     * 🔴 SAÍRAM QUATRO LINHAS em 2026-09-12 (ADR-0151), pelas palavras do Dev:
+     *   · o MOTOR, a VOZ e o TESTAR VOZ — «quem escolhe a voz é o jogo (cartucho), não o jogador. Jogador só
+     *     habilita/desabilita o TTS»;
+     *   · as SAÍDAS DE ÁUDIO POR JOGADOR e o «detectar» — «navegadores não são bons nisso».
+     * 📌 A fiação do `initSettingsAudio` para esses ids CONTINUA e está guardada (`if (el)`): um jogo com
+     * marcação própria não parte. O que muda é que a engine deixou de OFERECER a escolha à criança.
+     */
   ];
 
   /*
