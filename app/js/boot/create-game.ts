@@ -847,6 +847,29 @@ export function createGame(o: CreateGameOptions): Engine {
   let passoDaTipografia = INICIO_DO_CICLO;
 
   /*
+   * 🔴 OS JOGADORES SOBEM PARA AQUI (issue #147), e a razão é uma medição de ordem de arranque: `initPauseIcons`
+   * consome `getPlayers()` AVIDAMENTE (`ui/pause-icons`, ao montar o sub-ctx do áudio), então um `players`
+   * declarado mais abaixo caía na zona morta temporal e derrubava o boot — 39 casos de uma vez, na primeira
+   * tentativa. Com a barra a ler `cartucho.players ?? []` em vez disto, um jogo que não declara jogadores tinha
+   * ZERO assentos para a barra e UM para o teclado, e os ciclos da barra (🚥 correcção, ☝️, TEA) ficavam presos
+   * na primeira posição: o estado não tinha onde ser guardado e cada pressão relia o padrão.
+   */
+  // ⚠️ O ESQUEMA DE ARRANQUE ALCANÇA NADA, e diz isso com `null` em vez de com um objeto vazio (issue #118).
+  // Ele vive um instante — `assignControls()` logo abaixo substitui-o pelo esquema real —, mas enquanto vive
+  // é um `KeyScheme` como qualquer outro, e a única forma honesta de um esquema que não alcança nada é
+  // catorze ausências declaradas. Um `{}` fazia o tipo mentir sobre estar completo.
+  const semAlcance = Object.fromEntries(ACTIONS.map((a) => [a, null])) as KeyScheme;
+  // ⚠️ O FALLBACK É UMA CONSTANTE e não um literal novo a cada chamada: `getPlayers` é lido pelo runtime de
+  // teclado a cada leitura de controlo, e devolver um array novo de cada vez faria qualquer comparação de
+  // identidade mentir — um defeito que só aparece em quem compara, e tarde.
+  const semJogadores = [{ ctrl: semAlcance }];
+  // ⚠️ LÊ `cartucho.players`, E NÃO UM INSTANTÂNEO. Os getters já existiam; o que eles fechavam é que era um `const`
+  // tirado no arranque. As linhas de `initPauseIcons` e do sonar, neste mesmo ficheiro, já liam a fonte viva —
+  // esta era a que faltava. Com vários cartuchos numa raiz de composição (ADR-0142), o teclado ficava com os
+  // jogadores do cartucho que arrancou primeiro.
+  const players = () => cartucho.players ?? semJogadores;
+
+  /*
    * A PALETA SEGURA PARA DALTONISMO NOS MENUS E NO HUD (ADR-0151) — Okabe-Ito, por `:root[data-paleta]`.
    *
    * 📏 ANTES DISTO O `core/state.cbSafe` ERA UMA BANDEIRA SEM LEITOR: gravava, persistia e avisava, e nada na
@@ -893,26 +916,19 @@ export function createGame(o: CreateGameOptions): Engine {
     // dela. Com vários cartuchos numa raiz de composição (ADR-0142) o ícone descrevia o primeiro deles.
     seguraTeclas: () => cartucho.declaration.seguraTeclas(),
     /*
-     * 🔴 O VAZIO AQUI É UM DEFEITO MEDIDO, e fica NOMEADO em vez de consertado de passagem.
+     * ✅ A MESMA LISTA DO TECLADO (issue #147, consertada em 2026-09-12).
      *
-     * 📏 Medido em 2026-09-12 ao ligar a correcção de cor: `iconAct('cvd', i)` calcula o passo seguinte com
-     * `proximaCorrecao((P()[i] || {}).visual ?? PADRAO)`. Com a lista VAZIA, `P()[0]` é `undefined`, o estado
-     * relido é sempre o padrão, e **o ciclo fica preso na primeira posição**: a criança carrega três vezes e
-     * vê a mesma tela, enquanto o ícone anuncia correcções diferentes. Vale igual para o `altmove` e para o
-     * `tea`, que também leem e escrevem no jogador — não é defeito do eixo de cor, é desta lista.
+     * 📏 ERA `cartucho.players ?? []`, e com a lista VAZIA `iconAct('cvd', i)` relia `(P()[i] || {}).visual` como
+     * `undefined` a cada pressão: o ciclo ficava PRESO na primeira posição enquanto o ícone anunciava correcções
+     * diferentes. Valia igual para o ☝️ e o TEA. E desde o ADR-0151 o defeito tinha ficado pior, porque a
+     * correcção passou a ligar a paleta segura — que é PERSISTIDA —, e quem carregasse uma vez ficava com ela.
      *
-     * ⚠️ E A MESMA PERGUNTA JÁ TEM OUTRA RESPOSTA NESTE FICHEIRO: o runtime de teclado recebe `players()`,
-     * que recua para `semJogadores` — UM assento. Um jogo que não declara jogadores tem UMA criança a jogar,
-     * não nenhuma.
-     *
-     * 🔴 TROCAR ESTA LINHA POR `() => players()` NÃO FUNCIONA, e foi tentado: `initPauseIcons` consome
-     * `getPlayers()` AVIDAMENTE no arranque (`ui/pause-icons:822`, ao montar o sub-ctx do áudio), então o
-     * `const players` — declarado ~500 linhas abaixo — cai em TDZ e o boot inteiro morre. 📏 Medido: 39 casos
-     * de `boot-create-game.node` de uma vez. O conserto é içar `players`/`semJogadores` para cima desta
-     * chamada, que é refactor de ordem de arranque e merece o seu próprio commit.
+     * ⚠️ `() => players()` já tinha sido tentado e derrubara o boot (TDZ, 39 casos): `initPauseIcons` consome
+     * isto AVIDAMENTE. O conserto foi içar `players`/`semJogadores` para cima desta chamada. Um jogo que não
+     * declara jogadores tem UMA criança a jogar, não nenhuma.
      */
-    getPlayers: () => cartucho.players ?? [],
-    getNumPlayers: () => (cartucho.players ?? [null]).length,
+    getPlayers: () => players(),
+    getNumPlayers: () => players().length,
     srSay, srAlert,
     // ⚠️ NÃO `instanceof HTMLElement`: esse é um GLOBAL DO NAVEGADOR, e lê-lo onde ele não existe LANÇA —
     // não devolve falso. Escrito assim na etapa 2, fazia o `reflectPauseIcons` rebentar em qualquer ambiente
@@ -1025,7 +1041,7 @@ export function createGame(o: CreateGameOptions): Engine {
           // ao calcular o passo seguinte. Com o recuo `semJogadores` os dois discordavam, e o estado ia parar
           // a um sítio que ninguém relê. 🔴 Num jogo que não declara jogadores não há onde guardar, e o ciclo
           // fica preso na primeira posição — o defeito do `getPlayers` nomeado mais acima, e não deste ramo.
-          const jogador = cartucho.players?.[i] as { visual?: VisualState } | undefined;
+          const jogador = players()[i] as { visual?: VisualState } | undefined;
           const estado: VisualState = { ...(jogador?.visual ?? PADRAO), correcao };
           if (jogador) jogador.visual = estado;
           const chave = filtroChave(estado);
@@ -1432,20 +1448,7 @@ export function createGame(o: CreateGameOptions): Engine {
   }
   registrarMapeamentosDoCartucho();
   initKB();
-  // ⚠️ O ESQUEMA DE ARRANQUE ALCANÇA NADA, e diz isso com `null` em vez de com um objeto vazio (issue #118).
-  // Ele vive um instante — `assignControls()` logo abaixo substitui-o pelo esquema real —, mas enquanto vive
-  // é um `KeyScheme` como qualquer outro, e a única forma honesta de um esquema que não alcança nada é
-  // catorze ausências declaradas. Um `{}` fazia o tipo mentir sobre estar completo.
-  const semAlcance = Object.fromEntries(ACTIONS.map((a) => [a, null])) as KeyScheme;
-  // ⚠️ O FALLBACK É UMA CONSTANTE e não um literal novo a cada chamada: `getPlayers` é lido pelo runtime de
-  // teclado a cada leitura de controlo, e devolver um array novo de cada vez faria qualquer comparação de
-  // identidade mentir — um defeito que só aparece em quem compara, e tarde.
-  const semJogadores = [{ ctrl: semAlcance }];
-  // ⚠️ LÊ `cartucho.players`, E NÃO UM INSTANTÂNEO. Os getters já existiam; o que eles fechavam é que era um `const`
-  // tirado no arranque. As linhas de `initPauseIcons` e do sonar, neste mesmo ficheiro, já liam a fonte viva —
-  // esta era a que faltava. Com vários cartuchos numa raiz de composição (ADR-0142), o teclado ficava com os
-  // jogadores do cartucho que arrancou primeiro.
-  const players = () => cartucho.players ?? semJogadores;
+  // (`semAlcance`, `semJogadores` e `players` SUBIRAM para cima do `initPauseIcons` em 2026-09-12 — issue #147.)
   const keyboard = initKeyboardRuntime({
     getKB: () => kb, getNumPlayers: () => players().length, getPlayers: () => players(),
   });
