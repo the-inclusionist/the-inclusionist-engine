@@ -302,3 +302,94 @@ turns each into a `9.0.0`:
 
 This is a decision for the Dev, not a task: cutting the major sooner ships the accessibility fixes that are
 already done; cutting it later lets two breaking changes ride one release instead of three.
+
+---
+
+# Since v9.0.0 — the engine starts mounting the pause panels (ADR-0106 §1)
+
+**Measured on 2026-09-12** by diffing `docs/6-DevOps-SRE/public-shape.json` and `public-surface.json` between
+the `v9.0.0` tag and `HEAD`, plus a hand pass for the one class of change those snapshots cannot see. Thirteen
+commits; three of them break something.
+
+🔴 **READ §A FIRST EVEN IF YOU READ NOTHING ELSE.** It is the only change here that can break a game whose
+source you never touched, and it does not show up in any type error.
+
+## A · If your game already mounts `#typo`, `#caa`, `#animation` or `#audio`, the engine now REBUILDS it
+
+`createGame` now mounts four settings panels by itself. It builds each one through
+`ui/panel-shell.montarCasca`, which is idempotent **by id**: given an existing `#typo`, it REUSES that element
+and then empties it — `while (overlay.firstChild) overlay.removeChild(overlay.firstChild)`.
+
+So a consumer that already has one of those four overlays in its own markup gets it **emptied and rebuilt**,
+and every listener that consumer had wired inside it is gone. There is no error, no warning, and the panel
+still opens — it just opens as the engine's panel instead of yours.
+
+**What to do:** delete your own markup for those four overlays and stop calling their `initSettings*`
+yourself. The engine now supplies the shell, the interior and the wiring; your `getPauseActs` still wins for
+the matching item if you provide one, so a game with a genuinely different typography panel keeps it by
+supplying `getPauseActs().tipo` — it is the engine's *default* that a cartridge overrides, not a mandate.
+
+📌 The four are `typo`, `caa`, `animation` (whose list is `#motion-list`, not `#animation-list`) and `audio`.
+The remaining four are NOT mounted yet: `movement`, `ctrl`, `visual` and `empathy`.
+
+## B · `PanelShell` gained a required field
+
+| | |
+|---|---|
+| before | `{ overlay, card, lista, reset, fechar, ids }` |
+| after | `{ overlay, card, titulo, lista, reset, fechar, ids }` |
+
+`titulo` is the card's `<h2>`, exposed because whoever retranslates a panel writes into it.
+
+**What to do:** nothing, if you only READ what `montarCasca` returns. If you CONSTRUCT a `PanelShell` by hand
+— a test double is the realistic case — add the field.
+
+## C · `EXPLAIN_IDLE` changed VALUE, and no gate could see it
+
+`ui/settings-panel.EXPLAIN_IDLE` was the Portuguese sentence itself; it is now the i18n key
+`'menu.explainIdle'`.
+
+**What to do:** wrap it — `t(EXPLAIN_IDLE)` — anywhere you displayed it directly. If you only pass it to
+`fillExplain`, or set `data-explain-idle` on a card, you are unaffected.
+
+⚠️ **AND THIS IS THE CLASS OF BREAK THE SURFACE GATE CANNOT CATCH**, which is worth more than the change
+itself. `tests/superficie-publica.node.test.js` compares exported NAMES and type SHAPES. A string constant
+whose value changes keeps both, so it passed green. It was caught by measuring the surface by hand to write
+this section — which is to say, by the ritual this file exists for, and not by the machine.
+
+## D · `allMotionFrozen` answers differently with no player
+
+`allMotionFrozen(rmKeys, rm, rmChar, undefined)` returned `false` always; it now returns `true` when every
+scene key is frozen.
+
+**What to do:** nothing, unless you render the master toggle's label from it directly. If you do, you will see
+«Retomar» offered where «Parar» used to be — which is the point: 📏 measured, the old label offered an action
+that could not be undone, because with `allFrozen` stuck at `false` the master button computed `next = true`
+on every press. A child could stop every animation and had no way back.
+
+## E · What is ADDITIVE, listed so nobody migrates for nothing
+
+| | |
+|---|---|
+| `ui/mount-panel.ts` | new module: the five lines every consumer had to write to mount a panel |
+| `ui/panel-widgets.ts` | new module: one menu row, built rather than demanded |
+| `ui/panel-shell` | gains `PanelLabels` and `aplicarRotulos` |
+| `ui/panel-shell.idsDaCasca` | gains an optional second argument, the list's id |
+| `ui/settings-motor` | gains `definirAlternanciaDeCorrida`, `montarInteriorDoMotor` |
+| `ui/settings-audio` | gains `montarInteriorDoAudio` |
+| `input/touch` | gains `montarControleDeToque`, `lacunasDoToque` |
+| `SettingsMotorCtx` | `setToggleRun` and `rebuildCoins` became OPTIONAL — a widening; whoever injects still rules |
+| `CreateGameOptions.players` | gains an optional `audioSink`, written by the hearing panel and read by `ui/pause-icons` |
+
+## F · The commits, and whether they carry the footer
+
+| | |
+|---|---|
+| `218f315` | `PanelShell.titulo` — footer written |
+| `f96354d` | `allMotionFrozen` — footer written |
+| `1207308` | `EXPLAIN_IDLE` — footer written, **after this measurement caught its absence** |
+
+⚠️ The third is the honest entry in this table. The rule this file states — «a commit that breaks the package
+writes the footer» — was followed for the two breaks that a type error would have surfaced, and missed for the
+one that would not. The footer was added by amending an unpushed commit, which rewrites nothing anybody else
+has seen.
