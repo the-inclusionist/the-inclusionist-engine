@@ -48,7 +48,8 @@ docs/
 │   ├── User-Stories.md        #   engine/game features — negotiable layer
 │   ├── NFR.md                 #   non-functional reqs + the 10 pillars      ← ADR-0010
 │   ├── Event-Storming.md      #   DDD events — deferred (telemetry + Student Manager)
-│   └── plano-acessibilidade.md · plano-audio-fase-f.md · plano-tts-fase-f5.md · plano-i18n.md   # a11y/audio/i18n design
+│   ├── plano-acessibilidade.md · plano-audio-fase-f.md · plano-tts-fase-f5.md · plano-i18n.md   # a11y/audio/i18n design
+│   └── estudo-acomodacoes-por-genero.md  # 35 gêneros × 380 jogos → o que é geral e o que é do gênero (ADR-0145 §3)
 ├── educational/               # CURRICULUM / pedagogy layer (pt-BR domain) — see ADR-0004
 │   ├── Learning-Objectives.md #   measurable objectives (BNCC + Mager) — absorbs old SRS
 │   ├── Curriculum-Map.md      #   scope & sequence, BNCC coverage (+ Instituto Reúna focus-map)
