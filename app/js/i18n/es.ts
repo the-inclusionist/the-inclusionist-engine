@@ -176,7 +176,7 @@ const es: Record<string, string> = {
   'icon.face': 'Cámara web — rostro',
   'icon.eyes': 'Cámara web — ojos',
   'icon.voice': 'Comando de voz',
-  'icon.tipografia': 'Tipografía (letra y caja)',
+  'icon.tipografia': 'Comunicación',
   'icon.state': '{nome}: {v}',
   'icon.soon': '{nome} (en construcción)',
   'state.on': 'activado',
