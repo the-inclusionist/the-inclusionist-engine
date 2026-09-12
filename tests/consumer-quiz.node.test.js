@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { perguntaHtml, proximoFoco, respostaTexto } from '../app/js/consumer-quiz/main-quiz.js';
+import { perguntaHtml, proximoFoco, respostaTexto, narracaoDaPergunta, narracaoAoDesenhar } from '../app/js/consumer-quiz/main-quiz.js';
 
 const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'consumer-quiz', 'main-quiz.ts'), 'utf8');
 
@@ -87,5 +87,27 @@ describe('perguntaHtml — a marcação', () => {
     const html = perguntaHtml({ enunciado: 'Quanto é 2 + 3?', alternativas: ['5', 'não sei'], certa: 0 }, 0);
     expect(html).toContain('Quanto é 2 + 3?');
     expect(html).toContain('não sei');
+  });
+});
+
+describe('the voice of a question — the statement, then the options with their numbers (ADR-0158)', () => {
+  const galinha = { enunciado: 'Qual animal põe ovos e tem bico?', alternativas: ['Gato', 'Galinha', 'Cavalo', 'Peixe'], certa: 1 };
+
+  it('🔴 [Right] opening a question says the statement and then «1 Gato, 2 Galinha, 3 Cavalo, 4 Peixe»', () => {
+    // The Dev's own sentence, as a literal: a format computed in the test would move with the code.
+    expect(narracaoDaPergunta(galinha)).toBe('Qual animal põe ovos e tem bico? 1 Gato, 2 Galinha, 3 Cavalo, 4 Peixe');
+  });
+
+  it('[Zero] a question with no options says only its statement — no dangling space', () => {
+    expect(narracaoDaPergunta({ enunciado: 'Vazio?', alternativas: [], certa: 0 })).toBe('Vazio?');
+  });
+
+  it('🔴 [Right] the WHOLE question only when it opens; a move on the same question says only the option reached', () => {
+    const abre = narracaoAoDesenhar(galinha, 0, 0, -1);
+    expect(abre).toEqual({ texto: 'Qual animal põe ovos e tem bico? 1 Gato, 2 Galinha, 3 Cavalo, 4 Peixe', narrada: 0 });
+    // before, every arrow press re-read the statement and never said where the cursor was
+    expect(narracaoAoDesenhar(galinha, 0, 1, abre.narrada)).toEqual({ texto: '2 Galinha', narrada: 0 });
+    // and the next question opens whole again
+    expect(narracaoAoDesenhar(galinha, 1, 0, 0).narrada).toBe(1);
   });
 });

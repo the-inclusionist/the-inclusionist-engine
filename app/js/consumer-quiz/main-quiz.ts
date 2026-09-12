@@ -148,6 +148,8 @@ const PERGUNTAS: readonly Pergunta[] = [
 let atual = 0;
 let foco = 0;
 let acertos = 0;
+/** The question whose statement and options were last narrated — see `narracaoAoDesenhar`. */
+let perguntaNarrada = -1;
 let motor: Engine | null = null;
 
 const $ = <T extends Element = Element>(sel: string): T | null => document.querySelector<T>(sel);
@@ -169,6 +171,35 @@ export function proximoFoco(atualIdx: number, delta: number, total: number): num
   return ((atualIdx + delta) % total + total) % total;
 }
 
+/**
+ * WHAT THE VOICE SAYS WHEN A QUESTION OPENS: the statement, then every option with its number (ADR-0158 rule 3).
+ *
+ * The Dev: «Ao abrir uma questão do quiz com TTS on ele fala o enunciado, correto. Mas não fala as opções […] O certo
+ * seria após falar o enunciado falar: "1 Gato, 2 Galinha, 3 Cavalo, 4 Peixe".» A question is not answerable by ear
+ * until its options are heard, and the number is the one drawn on each option.
+ */
+export function narracaoDaPergunta(p: Pergunta): string {
+  const opcoes = p.alternativas.map((_, i) => opcaoFalada(p, i)).join(', ');
+  return opcoes ? `${p.enunciado} ${opcoes}` : p.enunciado;
+}
+
+/** One option as it is said: its number, then its words — «2 Galinha». */
+export function opcaoFalada(p: Pergunta, i: number): string {
+  return `${i + 1} ${p.alternativas[i] ?? ''}`.trim();
+}
+
+/**
+ * What to narrate on a draw, and which question has now been narrated.
+ *
+ * The whole question only when it OPENS; a draw on the same question is the cursor moving, and then only the option
+ * under it is said. 🔴 Before this, every arrow press re-read the statement and never said which option was reached.
+ */
+export function narracaoAoDesenhar(p: Pergunta, pergunta: number, focoIdx: number, jaNarrada: number): { texto: string; narrada: number } {
+  return pergunta === jaNarrada
+    ? { texto: opcaoFalada(p, focoIdx), narrada: jaNarrada }
+    : { texto: narracaoDaPergunta(p), narrada: pergunta };
+}
+
 /** O texto que o leitor de tela ouve ao responder. Separado do DOM porque é o que a criança cega RECEBE. */
 export function respostaTexto(acertou: boolean, certa: string): string {
   return acertou ? `Certo! ${certa}.` : `Ainda não. A resposta certa é ${certa}.`;
@@ -180,7 +211,10 @@ function render(): void {
   const p = PERGUNTAS[atual];
   if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">Fim! ${acertos} de ${PERGUNTAS.length}.</h2>`; return; }
   app.innerHTML = perguntaHtml(p, foco);
-  motor?.tts.narrate(p.enunciado); // a narração do enunciado é do consumidor: a engine só empresta a voz
+  // a narração é do consumidor: a engine só empresta a voz
+  const fala = narracaoAoDesenhar(p, atual, foco, perguntaNarrada);
+  perguntaNarrada = fala.narrada;
+  motor?.tts.narrate(fala.texto);
   app.querySelectorAll<HTMLButtonElement>('button[data-alt]').forEach((b) => {
     b.addEventListener('click', () => responder(Number(b.dataset.alt)));
   });

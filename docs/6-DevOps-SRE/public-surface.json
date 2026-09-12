@@ -10,6 +10,9 @@
   "consumer-quiz/main-quiz.ts": [
     "bootQuiz",
     "declararQuiz",
+    "narracaoAoDesenhar",
+    "narracaoDaPergunta",
+    "opcaoFalada",
     "perguntaHtml",
     "proximoFoco",
     "respostaTexto"
