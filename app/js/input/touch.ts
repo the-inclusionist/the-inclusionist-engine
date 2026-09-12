@@ -412,3 +412,147 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     getStickDeadPx: () => _stickDeadPx,
   };
 }
+
+// =============================================================================================
+// O CONTROLE VIRTUAL, DESENHADO A PARTIR DO QUE O JOGO DECLARA (ADR-0143)
+// =============================================================================================
+//
+// 🔴 O QUE ISTO CONSERTA. 📏 Medido em 2026-09-12: este ficheiro alcança **26 ids** e cria **ZERO**, e
+// `input/touch-bindings.ts:506` é `const tc = ctx.$('#touch-controls'); if (!tc) return;` — **sem uma linha
+// em `problems`**. Um jogo sem essa marcação não tem pad, não tem erro e não tem como saber porquê. Numa
+// escola onde o aparelho é um tablet sem teclado, isso não é uma comodidade em falta: é a única entrada.
+//
+// ⚠️ E MORA AQUI, E NÃO NUM MÓDULO AO LADO, porque um gate desta casa recusou a alternativa em tantas
+// palavras: «o `exports` do pacote é um CURINGA (`./input/*.js`) — logo ele já está alcançável por trezentos
+// cartuchos. Declare-o, ou construa-o ATRÁS do controle virtual em vez de ao lado dele». Um ficheiro novo em
+// `input/` nasce API pública por acidente; uma função neste, não.
+//
+// ========================= POR QUE NÃO É UM MOLDE FIXO =========================
+// A leitura óbvia do pedido do Dev já tinha sido recusada, por escrito, pelo segundo consumidor da própria
+// engine (`consumer-quiz/main-quiz.ts` item 14): «reproduzir doze ids para um conjunto de controles que o
+// quiz não quer seria o mesmo tipo de mentira do sonar». Montar o pad do platformer em todo jogo entregaria
+// NOVE BOTÕES MORTOS a quem declara duas acções — o ADR-0106 §5 quebrado pelo trabalho que o cita.
+//
+// 🎯 Então a forma vem do `preset`: um slot é desenhado quando a acção que ele dispara é uma que ESTE jogo
+// declara. 📌 E dispara pelo MAPA, não pelo nome do slot — `touch-bindings.ts:451` faz
+// `doTouch(ctx.getTouchMap()['b' + b.dataset.btn])`, «a função vem do touchMap (remapeável), não do
+// data-act». Ler o nome desenharia o pad de fábrica a quem o remapeou.
+
+/** As três coisas do `document` de que a marcação do pad precisa. Mesma forma do `ui/panel-shell`. */
+export interface TouchMarkupCtx {
+  procurar: (sel: string) => HTMLElement | null;
+  criar: (tag: string) => HTMLElement;
+}
+
+export interface TouchMarkupSpec {
+  /** O MAPA VIVO de slot→acção (`TOUCH_DEFAULT` fundido com o que a criança remapeou). */
+  readonly mapa: Readonly<Record<string, string>>;
+  /** As acções que ESTE jogo declara (`presetActions(preset)`). Vazio = não há o que desenhar. */
+  readonly acoesDoJogo: ReadonlySet<string>;
+  /** O rótulo de cada slot, já traduzido — a palavra do JOGO para a acção que ele dispara. */
+  readonly rotuloDoSlot: (slot: string) => string;
+  /** O desenho do direcional: `cruz` ou `analogico`. Vem do ajuste persistido do pad (`padDir`). */
+  readonly direcional?: 'cruz' | 'analogico';
+}
+
+/** Os quatro slots direcionais, na ordem em que a cruz os desenha. */
+const DIRECOES = ['up', 'left', 'right', 'down'] as const;
+/** Os quatro slots de botão de acção, na ordem do losango. */
+const BOTOES = ['b0', 'b1', 'b2', 'b3'] as const;
+
+/**
+ * Constrói (ou reaproveita) `#touch-controls` e devolve-o.
+ *
+ * ⚠️ NASCE ESCONDIDO, e não é detalhe: a alternância por modalidade é do `touch-bindings` — «toque/clique
+ * MOSTRA; teclado/controle OCULTA». Um pad que nasce à vista cobre o jogo de quem nunca lhe vai tocar.
+ *
+ * ⚠️ E O `#touch-start` É INCONDICIONAL, ao contrário de tudo o resto aqui. Ele é a PAUSA, e desde o ADR-0122
+ * a pausa não é declinável: uma criança com um tablet e sem teclado não tem outra forma de lá chegar. Os
+ * outros oito slots respondem ao que o jogo declara; este responde a uma decisão que já foi tomada.
+ *
+ * Idempotente: montar duas vezes devolve o mesmo nó, com o conteúdo refeito para o mapa de agora.
+ */
+export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec): HTMLElement {
+  const raiz = ctx.procurar('#touch-controls') ?? ctx.criar('div');
+  raiz.id = 'touch-controls';
+  raiz.className = 'touch';
+  raiz.hidden = true;
+  while (raiz.firstChild) raiz.removeChild(raiz.firstChild);
+
+  const vivo = (slot: string): boolean => spec.acoesDoJogo.has(spec.mapa[slot] ?? '');
+
+  // ⚠️ A CRUZ É UM CONJUNTO DE BRAÇOS, E NÃO UM MOLDE DE QUATRO — é o risco que o ADR-0143 nomeia: «um jogo
+  // que declara só `left` e `right` não deve receber uma cruz com dois braços mortos».
+  const direcoesVivas = DIRECOES.filter(vivo);
+  if (direcoesVivas.length) {
+    const analogico = spec.direcional === 'analogico';
+    const dir = ctx.criar('div');
+    dir.id = analogico ? 'touch-stick' : 'touch-cross';
+    dir.className = analogico ? 'touch-stick' : 'touch-cross';
+    if (analogico) {
+      // `touch-bindings` exige a `.touch-knob` dentro da base (`if (stick && knob)`), e sem ela desiste do
+      // analógico inteiro — em silêncio.
+      const knob = ctx.criar('div');
+      knob.className = 'touch-knob';
+      dir.appendChild(knob);
+    } else {
+      for (const d of direcoesVivas) {
+        const braco = ctx.criar('button');
+        braco.className = 'touch-arm';
+        braco.dataset.dir = d;
+        braco.setAttribute('type', 'button');
+        braco.setAttribute('aria-label', spec.rotuloDoSlot(d));
+        dir.appendChild(braco);
+      }
+    }
+    raiz.appendChild(dir);
+  }
+
+  const botoesVivos = BOTOES.filter(vivo);
+  if (botoesVivos.length) {
+    const losango = ctx.criar('div');
+    losango.className = 'touch-pad';
+    for (const b of botoesVivos) {
+      const botao = ctx.criar('button');
+      botao.className = 'touch-btn';
+      // `b2` -> `2`, que é o que `'b' + dataset.btn` volta a compor no despacho. Escrever a ACÇÃO aqui
+      // criaria uma segunda fonte para a mesma resposta, e o remapeamento da criança deixaria de valer.
+      botao.dataset.btn = b.slice(1);
+      botao.setAttribute('type', 'button');
+      botao.setAttribute('aria-label', spec.rotuloDoSlot(b));
+      botao.textContent = spec.rotuloDoSlot(b);
+      losango.appendChild(botao);
+    }
+    raiz.appendChild(losango);
+  }
+
+  const start = ctx.criar('button');
+  start.id = 'touch-start';
+  start.className = 'touch-btn touch-start';
+  start.setAttribute('type', 'button');
+  start.setAttribute('aria-label', spec.rotuloDoSlot('start'));
+  raiz.appendChild(start);
+
+  return raiz;
+}
+
+/**
+ * O que este jogo NÃO alcança pelo toque, dito em vez de calado — a metade do ADR-0143 §4 que não é markup.
+ *
+ * 📌 Devolve LINHAS e não lança: uma lacuna do hospedeiro nunca derruba o boot, pela mesma regra que o resto
+ * de `problems` já segue. As frases vão para o consumidor que INTEGRA a engine, e não para uma criança.
+ */
+export function lacunasDoToque(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo'>): string[] {
+  if (!spec.acoesDoJogo.size) {
+    return ['sem `preset`: o controle virtual não foi montado, porque não há acção nenhuma para ele disparar. '
+      + 'Declare as posições que este jogo usa, com a palavra de cada uma, e ele aparece — e sem ele uma '
+      + 'criança com tablet e sem teclado não tem por onde jogar'];
+  }
+  // ⚠️ E A LACUNA PARCIAL TAMBÉM SE DIZ. Um jogo pode declarar uma acção que nenhum slot dispara: ela existe
+  // no teclado e não existe no toque, e hoje isso não aparece em lado nenhum.
+  const alcancadas = new Set(TOUCH_SLOTS.map((s) => spec.mapa[s.k]).filter(Boolean));
+  const foraDoToque = [...spec.acoesDoJogo].filter((a) => !alcancadas.has(a));
+  if (!foraDoToque.length) return [];
+  return [`o controle virtual não alcança ${foraDoToque.join(', ')}: nenhum dos nove slots dispara essas `
+    + 'acções. Quem joga por toque não as tem — remapeie um slot no painel do pad, ou declare menos acções'];
+}

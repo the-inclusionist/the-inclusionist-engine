@@ -190,7 +190,16 @@ const CRU_CONHECIDO = {
 
   /* --- FORA de `ui/`: menos, e cada um por um motivo próprio. --- */
   'platform/audio-mixer.ts': 5,    // rótulos das categorias do mixer de áudio
-  'input/touch.ts': 3,             // 'mão de criança' / 'mão de adulto' — classificação, mas VAI para a tela
+  'input/touch.ts': 8,             // 'mão de criança' / 'mão de adulto' — classificação, mas VAI para a tela
+                                   // ⚠️ 3 → 8 em 2026-09-12: as DUAS linhas de `lacunasDoToque` (ADR-0143 §4),
+                                   // partidas em cinco literais por caberem na largura. Mesma classe de todas
+                                   // as do `boot/create-game`: é lacuna lida por quem INTEGRA a engine, e não
+                                   // texto que chegue a uma criança — o crivo é por FORMA e não distingue os
+                                   // dois. 📌 E elas existem para acabar com o silêncio que este mesmo
+                                   // subsistema tinha: `touch-bindings.ts:506` desistia sem uma palavra, e um
+                                   // jogo ficava sem pad sem que nada o dissesse. Encurtá-las para pagar menos
+                                   // a este livro-razão pagaria com a parte que serve a quem as lê — a frase
+                                   // nomeia a saída (`preset`, «remapeie um slot») E o que a criança perde.
   'core/tiles.ts': 2,
   // ⚠️ `input/gamepad.ts` SAIU DA TABELA em 2026-09-07 (#123), e o que ela contava não era o que estava lá.
   // O teto era 2 — as duas frases COM acento do assistente de mapeamento. Havia CINCO: `' — aperte: '`,
@@ -320,8 +329,18 @@ describe('texto cru em português nas camadas de ENGINE (o buraco do gate do ite
 
   it('[Interface] o total é CONTÁVEL, e o número é o tamanho do que falta', () => {
     // 75 em 19 módulos. Não é decoração: é a diferença entre "o pilar 3 vale" e "o pilar 3 vale no main.js".
+    //
+    // ⚠️ 76 → 79 em 2026-09-12, E ISTO É CRESCIMENTO DE DÍVIDA, dito como tal. As três entradas são as linhas
+    // de `lacunasDoToque` (ADR-0143 §4), e a razão de elas não passarem por `t()` é a que o
+    // `platform/pesados-catalogo` já escreveu: são mensagens que quem INTEGRA a engine lê, e pô-las no
+    // dicionário seria pedir aos três idiomas que carregassem diagnóstico de integração.
+    //
+    // 📌 O que compra a subida é o que ela paga: elas existem para acabar com um silêncio TOTAL —
+    // `touch-bindings.ts:506` desistia sem uma palavra, e um jogo ficava sem controle virtual sem que nada o
+    // dissesse. Trocar cinco literais deste livro-razão por uma lacuna que deixa de ser invisível é a troca
+    // que este tecto existe para tornar consciente, não a que ele existe para proibir.
     const total = Object.values(CRU_CONHECIDO).reduce((a, b) => a + b, 0);
-    expect(total).toBeLessThanOrEqual(76);
+    expect(total).toBeLessThanOrEqual(79);
     expect(Object.keys(CRU_CONHECIDO).length).toBeLessThanOrEqual(20);
   });
 
