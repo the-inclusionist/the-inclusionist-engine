@@ -112,6 +112,8 @@ const pt: Record<string, string> = {
   'pause.resume': '▶ Voltar ao jogo',
   // A palavra da PAUSA RÁPIDA, ao centro da tela congelada (ADR-0155). Curta: é para ler de relance.
   'pause.quick': 'PAUSADO',
+  // A legenda do rodapé da pausa rápida (errata do ADR-0155), nas palavras do Dev.
+  'pause.quick.legenda': 'Ação 2: confirmar · Ação 3: voltar · Ação 4: menu · START: voltar ao jogo',
   'pause.acessibilidade': '♿ Acessibilidade',
   'pause.options': '⚙ Configurações de inclusão',
   'pause.opcoesdojogo': '🎮 Opções do jogo',

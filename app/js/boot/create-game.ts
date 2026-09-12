@@ -1786,7 +1786,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * propósito — e por isso a segunda metade é um pedido, `setPhase('paused')`, e não uma ordem.
    */
   /** O assento dono de uma tecla, se ela for a posição `acao` DELE; senão `null`. */
-  function assentoDaPosicao(code: string, acao: 'start' | 'select'): number | null {
+  function assentoDaPosicao(code: string, acao: 'start' | 'select' | 'action4'): number | null {
     // ⚠️ O DONO DA TECLA DECIDE O ASSENTO, como em `menuNavKey`: quem carregou é quem abre a SUA pausa. Uma
     // tecla que não é de ninguém (`-1`) não pode ser «start» de assento nenhum — perguntar por ela ao
     // assento 0 devolveria a pausa do Jogador 1 a quem carregou numa tecla solta.
@@ -1811,6 +1811,12 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const emPausaRapida = new Set<number>();
   let palavraPausado: HTMLElement | null = null;
+  /*
+   * A LEGENDA DO RODAPÉ da tela congelada (errata do ADR-0155, «Ambos»): «Ação 2: confirmar · Ação 3: voltar ·
+   * Ação 4: menu · START: voltar ao jogo». É a segunda porta dos menus — o `action4` — e é também o que diz à
+   * criança que o SELECT não é a única: a tela parada passa a ensinar como se sai dela e para onde.
+   */
+  let legendaDaPausa: HTMLElement | null = null;
 
   function mostrarPausado(): void {
     const regiao = $<HTMLElement>('#game-region');
@@ -1821,10 +1827,16 @@ export function createGame(o: CreateGameOptions): Engine {
       // os olhos, e dita duas vezes atropelava o anúncio que ensina a sair.
       palavraPausado.setAttribute('aria-hidden', 'true');
       regiao.appendChild(palavraPausado);
+      legendaDaPausa = doc.createElement('div');
+      legendaDaPausa.className = 'pausa-legenda';
+      legendaDaPausa.setAttribute('aria-hidden', 'true');
+      regiao.appendChild(legendaDaPausa);
     }
     if (!palavraPausado) return;
-    palavraPausado.textContent = t('pause.quick'); // resolvida AO MOSTRAR: o idioma pode ter mudado desde o arranque
+    // resolvidas AO MOSTRAR: o idioma pode ter mudado desde o arranque
+    palavraPausado.textContent = t('pause.quick');
     palavraPausado.hidden = false;
+    if (legendaDaPausa) { legendaDaPausa.textContent = t('pause.quick.legenda'); legendaDaPausa.hidden = false; }
   }
 
   function entrarNaPausaRapida(assento: number): void {
@@ -1845,6 +1857,7 @@ export function createGame(o: CreateGameOptions): Engine {
   function terminarPausaRapida(assento: number, paraOutroEcra: boolean): void {
     if (!emPausaRapida.delete(assento)) return;
     if (palavraPausado && emPausaRapida.size === 0) palavraPausado.hidden = true;
+    if (legendaDaPausa && emPausaRapida.size === 0) legendaDaPausa.hidden = true;
     if (!paraOutroEcra) mudarDeFase('playing');
   }
 
@@ -1897,6 +1910,21 @@ export function createGame(o: CreateGameOptions): Engine {
     e.preventDefault();
   }
   win.addEventListener('keydown', abrirMenusPeloSelect);
+
+  /*
+   * A SEGUNDA PORTA DOS MENUS: o `action4`, só DENTRO da pausa rápida (errata do ADR-0155). Fora dela o `action4` é
+   * do jogo, e a engine não lhe toca — é o par que impede a porta de roubar um verbo a meio da partida.
+   * 📏 `menuNavKey` não tem intenção para `action4` e, na barra, deixa-o subir sem o consumir: chega aqui.
+   */
+  function abrirMenusPeloAction4(e: KeyboardEvent): void {
+    const assento = assentoDaPosicao(e.code, 'action4');
+    if (assento === null || !emPausaRapida.has(assento)) return;
+    if (overlays.topVisibleOverlay()) return;
+    sairDaPausaRapida(assento, 'cartao');
+    pausa.mostrar(assento);
+    e.preventDefault();
+  }
+  win.addEventListener('keydown', abrirMenusPeloAction4);
 
   /*
    * ===================== O CONTROLE VIRTUAL (ADR-0143, fase 4 do plano) =====================

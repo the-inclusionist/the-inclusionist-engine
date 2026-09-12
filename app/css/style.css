@@ -555,6 +555,15 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
   text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px 2px #000,2px -2px #000,-2px -2px #000;
   font-family:var(--font);font-weight:800;font-size:calc(var(--ui-fs,16px)*2);letter-spacing:.12em;white-space:nowrap}
 .pausa-rapida[hidden]{display:none}
+/* A LEGENDA DO RODAPÉ da pausa rápida (errata do ADR-0155): as mesmas letras brancas contornadas, sem caixa, logo
+   ACIMA da pílula START do pad — que continua à vista, porque é a saída de quem só tem dedo. ⚠️ `left`/`right` e não
+   `left:50%` + `translate`: com ele a caixa encolhia para METADE da região (medido: 271 px, três linhas, por cima do
+   PAUSADO). */
+.pausa-legenda{position:absolute;left:2%;right:2%;bottom:calc(var(--pad-btn,66px)*.7 + 12px);z-index:12;
+  pointer-events:none;color:#fff;-webkit-text-stroke:.06em #000;paint-order:stroke fill;
+  text-shadow:1px 0 #000,-1px 0 #000,0 1px #000,0 -1px #000,1px 1px #000,-1px 1px #000,1px -1px #000,-1px -1px #000;
+  font-family:var(--font);font-weight:700;font-size:var(--ui-fs,16px);text-align:center}
+.pausa-legenda[hidden]{display:none}
 #game-region .overlay__card{max-height:94%;max-width:96%}
 /* Rodapé de explicação: branco sobre preto translúcido 0,82 → contraste do branco >7:1 mesmo sobre 100% branco
    (composição: 1-0,82=0,18 → L≈0,027 → ~13:1), sem ser 100% opaco. Fixo no rodapé do card. */

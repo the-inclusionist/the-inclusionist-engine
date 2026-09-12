@@ -197,6 +197,38 @@ describe('o SELECT abre os MENUS', () => {
   });
 });
 
+describe('a SEGUNDA porta dos menus: a legenda no rodapé e o `action4` (ADR-0155, errata «Ambos»)', () => {
+  const legenda = () => document.querySelector('#game-region .pausa-legenda');
+
+  it('🎯 a pausa rápida mostra a legenda com as QUATRO teclas — e ela some ao sair', () => {
+    apertar('KeyH');
+    expect(legenda()?.hidden, 'a tela congelada não diz como chegar aos menus').toBe(false);
+    const texto = legenda().textContent;
+    for (const pedaco of [/2/, /3/, /4/, /START/]) expect(texto, 'a legenda perdeu uma das quatro').toMatch(pedaco);
+    expect(texto, 'a criança leu o nome da chave').not.toMatch(/pause\.quick/);
+    apertar('KeyH');
+    expect(legenda().hidden, 'saiu da pausa rápida e a legenda ficou por cima do jogo').toBe(true);
+  });
+
+  it('🔴 o `action4` NA PAUSA RÁPIDA abre o cartão — sem descongelar pelo caminho', () => {
+    apertar('KeyH');
+    const ev = apertar('KeyI'); // `action4` no esquema solo
+    expect(cartao().hidden, 'o `action4` da legenda não abriu os menus').toBe(false);
+    expect(pausadoAVista(), 'PAUSADO ficou por baixo do cartão').toBe(false);
+    expect(legenda().hidden, 'a legenda ficou por baixo do cartão').toBe(true);
+    expect(fases, 'o jogo foi retomado a caminho dos menus').toEqual(['paused']);
+    expect(ev.defaultPrevented).toBe(true);
+  });
+
+  it('🔴 [Zero] FORA da pausa rápida o `action4` é do JOGO — não abre nada e não é consumido', () => {
+    // O par que impede a porta de roubar um verbo a meio da partida.
+    const ev = apertar('KeyI');
+    expect(cartao().hidden, 'o `action4` abriu os menus com o jogo a correr').toBe(true);
+    expect(fases).toEqual([]);
+    expect(ev.defaultPrevented, 'a engine consumiu um verbo do jogo').toBe(false);
+  });
+});
+
 describe('o guarda comum: com um PAINEL aberto, nenhuma das portas é nossa', () => {
   it('⚠️ nem o START nem o SELECT abrem nada por baixo de um painel', () => {
     // 📌 ESTE ESTADO É O DO QUIZ: um jogo cujos ajustes estão sempre disponíveis tem painéis abertos com o cartão
@@ -231,6 +263,10 @@ describe('o guarda comum: com um PAINEL aberto, nenhuma das portas é nossa', ()
 //   S7  o guarda do cartão aberto sai (START)                                🔴 pausa rápida por baixo do cartão
 //   S8  `e.preventDefault()` sai do START                                    🔴 a tecla segue para trás
 //   S9  o SELECT abre com `mudarDeFase` antes de `pausa.mostrar` só com gancho 🔴 cartucho sem `setPhase`
+//   L1  a legenda não é criada                                             🔴 a tela não diz como chegar aos menus
+//   L2  a legenda não se esconde ao sair                                   🔴 legenda por cima do jogo
+//   L3  o `action4` abre também fora da pausa rápida                       🔴 rouba um verbo ao jogo
+//   L4  o ouvinte do `action4` não é registado                             🔴 a segunda porta não abre
 // E as da errata do ADR-0144, que continuam a valer para o cartão:
 //   M8  `acoesDaEngine.resume` sai                                           🔴 cartão sem «Voltar ao jogo»
 //   M9  `setPhase: mudarDeFase` → `cartucho.setPhase ?? (() => {})`          🔴 Escape não fecha

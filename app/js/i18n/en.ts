@@ -562,6 +562,7 @@ const en: Record<string, string> = {
   'pause.title': 'Paused',
   'pause.resume': '▶ Back to the game',
   'pause.quick': 'PAUSED',
+  'pause.quick.legenda': 'Action 2: confirm · Action 3: back · Action 4: menu · START: back to the game',
   'pause.acessibilidade': '♿ Accessibility',
   'pause.options': '⚙ Inclusion settings',
   'pause.opcoesdojogo': '🎮 Game options',
