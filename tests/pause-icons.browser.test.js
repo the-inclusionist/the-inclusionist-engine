@@ -114,7 +114,11 @@ beforeEach(() => {
  * uma tabela que o próprio campo declara chegar TARDE, e o item cuja acção só existisse depois do boot nunca
  * mais aparecia. Para o §5 o que conta é o que a criança VÊ, e hidden não é focável nem lido.
  */
-const actsVisiveis = (sp) => [...sp.querySelectorAll('.pm-btn')].filter((b) => !b.hidden).map((b) => b.dataset.act);
+// 🔴 DESDE O ADR-0161 (2026-09-12) nenhum item se esconde: o que o jogo não acciona fica TRAVADO (`aria-disabled`) e diz o
+// motivo. «Vivo» passa a ser «não escondido E não travado» — a pergunta do §5 («este item faz alguma coisa?») continua
+// a mesma; o que mudou é a resposta visível para o «não».
+const actsVisiveis = (sp) => [...sp.querySelectorAll('.pm-btn')]
+  .filter((b) => !b.hidden && b.getAttribute('aria-disabled') !== 'true').map((b) => b.dataset.act);
 
 function mount(i = 0, over = {}) {
   const { ctx, state, said, alerted } = makeCtx(over);
@@ -178,7 +182,15 @@ describe('buildScreenPause — a árvore construída', () => {
     expect(cap.textContent).toBe('');
   });
 
-  it('⚠️ o menu só monta o que o jogo ACCIONA — `quit` não tem tabela e não entra (ADR-0106 §5)', () => {
+  it('🔴 `quit` sem tabela FICA no menu, travado e com o motivo — não escondido (ADR-0161, supersede o §5 aqui)', () => {
+    const { sp } = mount();
+    const quit = sp.querySelector('.pause-menu .pm-btn[data-act="quit"]');
+    expect(quit.hidden, 'the locked item vanished: the card changes shape per game again').toBe(false);
+    expect(quit.getAttribute('aria-disabled')).toBe('true');
+    expect((quit.dataset.motivo ?? '').length, 'a locked item without its reason').toBeGreaterThan(0);
+  });
+
+  it('⚠️ o menu só OFERECE vivo o que o jogo ACCIONA — `quit` sem tabela fica travado (ADR-0106 §5 → ADR-0161)', () => {
     // ⚠️ ESTE CASO DIZIA O CONTRÁRIO, E O CONTRÁRIO ERA O DEFEITO ESCRITO COMO GARANTIA. Ele esperava
     // `['resume','letra','quit']`, e o fixture omite `quit` da tabela DE PROPÓSITO — o comentário lá diz que
     // isso «prova que um data-act sem entrada na tabela não quebra o clique». Não quebrava mesmo: o despacho
@@ -187,7 +199,7 @@ describe('buildScreenPause — a árvore construída', () => {
     const { sp } = mount();
     const menu = sp.querySelector('.pause-menu');
     expect(menu.getAttribute('role')).toBe('menu');
-    const items = [...menu.querySelectorAll('.pm-btn')].filter((b) => !b.hidden);
+    const items = [...menu.querySelectorAll('.pm-btn')].filter((b) => !b.hidden && b.getAttribute('aria-disabled') !== 'true');
     expect(items.map((b) => b.dataset.act)).toEqual(['resume', 'letra']);
     for (const b of items) expect(b.getAttribute('role')).toBe('menuitem');
   });

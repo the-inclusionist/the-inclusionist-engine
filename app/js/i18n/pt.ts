@@ -158,7 +158,7 @@ const pt: Record<string, string> = {
   'pause.tipo': '🔤 Tipografia',
   'pause.addplayer': '👥 Número de jogadores',
   'pause.audio': '🦻 Acessibilidade auditiva',
-  'pause.som': '🔊 Áudio',
+  'pause.som': '🔊 Conforto auditivo',
   'pause.motora': '♿ Acessibilidade motora',
   'pause.anim': '🎞 Sensibilidade visual',
   'pause.visual': '🎨 Acessibilidade visual',
@@ -166,6 +166,12 @@ const pt: Record<string, string> = {
   'pause.ajuda': '❓ Ajuda — Como jogar',
   'pause.print': '📷 Print (ver a tela)',
   'pause.quit': '🚪 Sair do jogo',
+  'pause.motivo': 'Este jogo não usa esta opção.',
+  'pause.motivo.ajuda': 'Este jogo ainda não disse o que cada botão faz.',
+  'pause.motivo.addplayer': 'Quem decide quantos jogadores podem jogar é o jogo.',
+  'pause.motivo.opcoesdojogo': 'Este jogo não tem opções próprias.',
+  'pause.motivo.empatia': 'O modo empatia ainda está em construção.',
+  'pause.motivo.visual': 'A acessibilidade visual ainda está em construção.',
 
   // Acessibilidade (leitores de tela)
   'a11y.gameRegion': 'Área de jogo. Mova com A e D ou setas; pule com L ou Espaço; suba e desça escadas (e nade na água) com W e S ou setas; corra com P ou Shift. Colete 10 moedas.',
@@ -542,7 +548,7 @@ const pt: Record<string, string> = {
   'audio.sinks.grupo': 'Saída de áudio por jogador',
   'audio.detect': 'Detectar saídas',
   'menu.audio': 'Acessibilidade auditiva',
-  'menu.som': 'Áudio',
+  'menu.som': 'Conforto auditivo',
   'audio.grupo.rotulo': 'Sons do jogo',
   // O texto de REPOUSO do rodapé de todo painel — o que ele diz enquanto ninguém aponta para linha nenhuma.
   // Era um literal em português dentro do `ui/settings-panel`, e até 2026-09-12 ninguém o via: nenhum painel

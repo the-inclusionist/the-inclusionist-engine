@@ -495,6 +495,17 @@ before `.overlay__actions` instead of appending them after it.
 the card, insert before `.overlay__actions`, or the reset stops being the last item. If your markup relied on
 `#X-close` sitting inside `.overlay__actions`, move that styling to `.overlay__back`.
 
+## M · Pause items with no action are locked, not hidden (ADR-0161)
+
+**Behaviour and VALUES, no shape.** `ui/pause-icons.refrescarItensDaPausa` no longer sets `hidden` on a `.pm-btn`
+nothing acts on: it sets `aria-disabled="true"` and `data-motivo` (the reason, from `pause.motivo.*`). Activating a
+locked item announces the reason and does nothing; the menu navigation says the reason after the item's name and
+passes it to the new optional `MenuNavCtx.explicarItem` / `PauseIconsCtx.explicarItem`. The values of `pause.som` and
+`menu.som` changed to «Conforto auditivo» / «Hearing comfort» / «Confort auditivo».
+
+**What to do:** if your code or tests read `.pm-btn[hidden]` to know what a game offers, read
+`[aria-disabled="true"]` instead.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

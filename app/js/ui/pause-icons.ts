@@ -458,6 +458,16 @@ export const ITENS_DA_ENGINE: ReadonlySet<string> = new Set(['options', 'opcoesd
  * item que não existe. É exactamente o que o §5 chama de pior do que a ausência: «uma barra que oferece um
  * caminho e depois o recusa ensina-lhe que o caminho não é para ela».
  */
+/**
+ * Why a pause item is locked, in the child's words (ADR-0161). A key per item where the reason is particular to it —
+ * «Número de jogadores»: the GAME decides how many (ADR-0147) — and one general reason for the rest. Resolved at every
+ * refresh, so it follows the language of the moment the card opens.
+ */
+const MOTIVOS_PROPRIOS: ReadonlySet<string> = new Set(['ajuda', 'addplayer', 'opcoesdojogo', 'empatia', 'visual']);
+export function motivoDoItem(act: string): string {
+  return t(MOTIVOS_PROPRIOS.has(act) ? `pause.motivo.${act}` : 'pause.motivo');
+}
+
 export function itensQueAccionam(
   botoes: readonly PauseMenuButton[],
   acts: Record<string, (() => void) | undefined>,
@@ -700,6 +710,8 @@ export interface PauseIconsCtx {
    * `CLAUDE.md` §4, the three zones). Absent, the bar still shows the name.
    */
   explicarIcone?: (i: number, k: string | null) => void;
+  /** A text for the screen footer — the reason of a locked pause item (ADR-0161) — or `null` to clear it. */
+  explicarItem?: (texto: string | null) => void;
 
   // --- the per-screen pause menu ---
   /**
@@ -1226,9 +1238,18 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       if (!cartao) continue;
       renomearCartao(cartao, i);
       for (const btn of cartao.querySelectorAll<HTMLElement>('.pm-btn')) {
-        // ⚠️ `hidden` e não `remove()`: reaparecer tem de ser possível, porque a tabela pode crescer outra vez
-        // (um jogo que só liga «sair» depois da primeira fase). Remover seria decidir uma vez de novo.
-        btn.hidden = !vivos.has(btn.dataset.act ?? '');
+        // 🔴 TRAVADO COM O MOTIVO, E NÃO ESCONDIDO (ADR-0161, que supersede aqui o §5 do ADR-0106). O Dev achou três
+        // itens no quiz em vez de seis: o cartão mudava de forma a cada jogo, e a criança não sabia que a opção
+        // existia. O cursor continua a parar no item e o número dele conta; alcançá-lo ou accioná-lo diz o motivo.
+        // ⚠️ E NÃO `remove()`: a tabela pode crescer depois (um jogo que liga «sair» só depois da primeira fase).
+        const act = btn.dataset.act ?? '';
+        if (vivos.has(act)) {
+          btn.removeAttribute('aria-disabled');
+          delete btn.dataset.motivo;
+        } else {
+          btn.setAttribute('aria-disabled', 'true');
+          btn.dataset.motivo = motivoDoItem(act);
+        }
       }
     }
   }
@@ -1383,6 +1404,13 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       const target = e.target as Element | null;
       const b = target && target.closest<HTMLElement>('.pm-btn');
       if (b) {
+        // TRAVADO (ADR-0161): accioná-lo DIZ o motivo e não faz nada — nem porta, nem acção.
+        if (b.getAttribute('aria-disabled') === 'true') {
+          const motivo = b.dataset.motivo ?? '';
+          ctx.srSay(motivo);
+          ctx.explicarItem?.(motivo);
+          return;
+        }
         setPauseActor(i);
         const act = b.dataset.act || '';
         // NAVEGAÇÃO DENTRO DO CARTÃO fica aqui, e não na tabela de ações: `options` e `pmback` não fazem nada

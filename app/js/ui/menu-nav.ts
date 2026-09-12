@@ -267,6 +267,8 @@ export interface MenuNavCtx {
    * e ela quase voltou por aqui: eu tinha escrito o `import` antes de o gate me lembrar.
    */
   comIndice: () => boolean;
+  /** Writes the reason of a locked pause item in the screen footer, or clears it with `null` (ADR-0161). Optional. */
+  explicarItem?: (texto: string | null) => void;
   /**
    * A tela `i` está no modo `accessibility` (ADR-0044, item 7)? Perguntado ANTES de `isNavigable`, porque
    * esse modo roda com o jogo ANDANDO — é a única coisa deste módulo que age fora da pausa.
@@ -429,7 +431,11 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // que o item 5 reconstruiu.
     // `rotuloAcessivel` e não `textContent`: um item com `aria-label` seria narrado de um jeito pelo jogo e de
     // outro pelo leitor de tela, e quem ouve os dois não teria como saber qual é a verdadeira.
-    ctx.srSay(anunciarItem({ rotulo: rotuloAcessivel(items[n]), posicao: n + 1, total: items.length }, ctx.comIndice()));
+    // 🔴 UM ITEM TRAVADO DIZ PORQUÊ ao ser alcançado (ADR-0161): dito a seguir ao nome, e escrito no rodapé.
+    const motivo = items[n].getAttribute('aria-disabled') === 'true' ? (items[n].dataset.motivo ?? '') : '';
+    const anuncio = anunciarItem({ rotulo: rotuloAcessivel(items[n]), posicao: n + 1, total: items.length }, ctx.comIndice());
+    ctx.srSay(motivo ? `${anuncio}. ${motivo}` : anuncio);
+    ctx.explicarItem?.(motivo || null);
   }
 
   /* ===================== teclado ===================== */

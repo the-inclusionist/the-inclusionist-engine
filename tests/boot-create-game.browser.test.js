@@ -291,8 +291,8 @@ describe('createGame num documento de verdade', () => {
    * PODIA entregar um escritor. Uma lacuna que o consumidor lê como escolha é a pior forma de lacuna.
    */
   describe('o que o jogo pode entregar ao cartão e à barra', () => {
-    it('⚠️ [Zero] sem `getPauseActs`, o item que SÓ o jogo acciona nasce escondido', () => {
-      // O `refrescarItensDaPausa` esconde o que não tem acção — o §5 do ADR-0106, que proíbe botão morto.
+    it('⚠️ [Zero] sem `getPauseActs`, o item que SÓ o jogo acciona nasce TRAVADO (ADR-0161)', () => {
+      // O `refrescarItensDaPausa` escondia o que não tem acção (§5 do ADR-0106); desde o ADR-0161 trava-o com o motivo.
       //
       // ⚠️ O EXEMPLO MUDOU DE `quit` PARA `addplayer` em 2026-09-12, e a troca é a notícia: a engine passou a
       // accionar `resume`, `ajuda`, `print` e `quit` sozinha (ADR-0144 errata, ADR-0147 §4 e §5), logo `quit`
@@ -304,15 +304,18 @@ describe('createGame num documento de verdade', () => {
 
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="addplayer"]');
       expect(item, 'o cartão nem sequer desenha o item').not.toBeNull();
-      expect(item.hidden, 'um item sem acção tem de estar escondido').toBe(true);
+      expect(item.hidden, 'the item vanished instead of being locked').toBe(false);
+      expect(item.getAttribute('aria-disabled'), 'um item sem acção tem de estar travado').toBe('true');
     });
 
     it('🔴 [Right] the cursor NEVER lands on a hidden item — the ring walks only what the child sees', () => {
       // 📏 Measured in dist (quiz, 2026-09-12): ArrowDown from «Voltar ao jogo» put the cursor on «Ajuda», which is
       // hidden without a `preset`. `PM_ITENS_VISIVEIS` excluded hidden LISTS and not hidden ITEMS, so the child pressed
       // down and saw nothing selected; the count «N of M» counted the invisible ones too.
+      // ⚠️ Since ADR-0161 the engine hides nothing, but a game may pass its own lists: the item is hidden by hand here.
       const motor = abrir();
       motor.pausa.mostrar(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]').hidden = true;
       const visiveis = [...document.querySelectorAll('#vp-pause-0 .pause-menu:not([hidden]) .pm-btn')].filter((b) => !b.hidden);
       expect(visiveis.length, 'nothing is hidden — the case would measure nothing').toBeLessThan(
         document.querySelectorAll('#vp-pause-0 .pause-menu:not([hidden]) .pm-btn').length);
@@ -323,6 +326,44 @@ describe('createGame num documento de verdade', () => {
         expect(sel, 'no item selected after a step').not.toBeNull();
         expect(sel.hidden, `the cursor landed on the hidden «${sel.dataset.act}»`).toBe(false);
       }
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]').hidden = false;
+      motor.pausa.esconder(0);
+    });
+
+    it('🔴 [Right] a game that declares NOTHING still gets the six root items and the seven of the submenu, in order (ADR-0161)', () => {
+      // The Dev found three items in the quiz and listed both menus in full. Order is literal, from his list.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      const lista = (sub) => [...document.querySelectorAll(`#vp-pause-0 .pause-menu[data-sub="${sub}"] .pm-btn`)]
+        .filter((b) => !b.hidden).map((b) => b.dataset.act);
+      expect(lista('raiz')).toEqual(['resume', 'ajuda', 'addplayer', 'options', 'opcoesdojogo', 'quit']);
+      expect(lista('opcoes')).toEqual(['pmback', 'empatia', 'audio', 'som', 'motora', 'visual', 'anim']);
+      // «Conforto auditivo (era Audio)» — the Dev's rename, on the item and on the panel it opens
+      expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="som"]').textContent).toContain('Conforto auditivo');
+      motor.pausa.esconder(0);
+    });
+
+    it('🔴 [Right] a locked item SAYS WHY — reached by the cursor, and activated — and does nothing (ADR-0161)', async () => {
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      const jogadores = document.querySelector('#vp-pause-0 .pm-btn[data-act="addplayer"]');
+      expect(jogadores.getAttribute('aria-disabled'), '«Número de jogadores» is not locked in a game that does not act on it').toBe('true');
+      // reached: the cursor stops on it, and the reason follows its name
+      const regiao = document.getElementById('game-region') ?? document.body;
+      const seta = () => regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', bubbles: true, cancelable: true }));
+      for (let i = 0; i < 6 && document.querySelector('#vp-pause-0 .pm-sel') !== jogadores; i++) seta();
+      expect(document.querySelector('#vp-pause-0 .pm-sel'), 'the cursor skips the locked item').toBe(jogadores);
+      await new Promise((r) => requestAnimationFrame(r)); // `srSay` writes on the next frame
+      expect(document.querySelector('#sr-status')?.textContent, 'reaching it did not say the reason')
+        .toContain('Quem decide quantos jogadores podem jogar é o jogo.');
+      expect(document.querySelector('#game-region .barra-explicacao')?.textContent, 'the reason is not in the footer')
+        .toBe('Quem decide quantos jogadores podem jogar é o jogo.');
+      // activated: a locked DOOR does not open — «Opções do jogo» would switch to its (empty) list if the click passed
+      const opcoes = document.querySelector('#vp-pause-0 .pm-btn[data-act="opcoesdojogo"]');
+      expect(opcoes.getAttribute('aria-disabled')).toBe('true');
+      opcoes.click();
+      expect(document.querySelector('#vp-pause-0 .pause-menu[data-sub="raiz"]').hidden, 'the locked door opened').toBe(false);
+      expect(document.querySelector('#game-region .barra-explicacao')?.textContent).toBe('Este jogo não tem opções próprias.');
       motor.pausa.esconder(0);
     });
 
@@ -656,13 +697,14 @@ describe('createGame num documento de verdade', () => {
       expect(linhas[1].querySelector('.help-key').textContent.trim().length).toBeGreaterThan(0);
     });
 
-    it('🔴 [Zero] SEM `preset` o item de ajuda fica ESCONDIDO — afirmar a ausência', () => {
-      // O par do caso acima. Sem as palavras do jogo a ajuda não se monta (ADR-0074), logo a tabela da engine
-      // não ganha `ajuda` e o filtro do §5 esconde o item. Medir só a presença deixaria isto passar.
+    it('🔴 [Zero] SEM `preset` o item de ajuda fica TRAVADO — presente, e sem painel por trás (ADR-0161)', () => {
+      // O par do caso acima. Sem as palavras do jogo a ajuda não se monta (ADR-0074); desde o ADR-0161 o item fica à
+      // vista e travado com o motivo, em vez de sumir. Medir só a presença deixaria passar uma ajuda vazia.
       const motor = abrir();
       motor.pausa.mostrar(0);
       const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]');
-      expect(item.hidden, 'a ajuda acendeu sem o jogo declarar uma palavra sequer').toBe(true);
+      expect(item.hidden, 'the help item vanished — the card changes shape per game').toBe(false);
+      expect(item.getAttribute('aria-disabled'), 'a ajuda acendeu sem o jogo declarar uma palavra sequer').toBe('true');
       expect(document.querySelector('#help'), 'o painel foi montado sem ter o que dizer').toBeNull();
     });
 

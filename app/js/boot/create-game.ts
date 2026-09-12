@@ -782,10 +782,13 @@ export function createGame(o: CreateGameOptions): Engine {
    * tenha o seu próprio «continuar» — porque retomar ali é descongelar física, retomar áudio e mais — ganha
    * a este. O que a engine garante é que NUNCA falta um.
    */
+  // O rodapé da tela (ver `rodapeDaTela`): declarados AQUI, antes do primeiro `mudarDeFase`, que já o limpa.
+  let rodape: HTMLElement | null = null;
+  let explicacaoDaBarra: HTMLElement | null = null;
   function mudarDeFase(p: 'title' | 'playing' | 'paused'): void {
     // ⚠️ A ENGINE FECHA O SEU CARTÃO; O JOGO CONTINUA A DECIDIR O MUNDO. É a simetria exacta do ADR-0144 §2
     // do outro lado: lá a engine revela e PEDE a pausa, aqui esconde e PEDE a retoma.
-    if (p !== 'paused') pausa.esconder(0);
+    if (p !== 'paused') { pausa.esconder(0); escreverNoRodape(null); } // o motivo de um item não fica sobre o jogo
     cartucho.setPhase?.(p);
   }
   acoesDaEngine.resume = () => mudarDeFase('playing');
@@ -965,6 +968,7 @@ export function createGame(o: CreateGameOptions): Engine {
     aoSairDaBarra: (i, silencioso) => terminarPausaRapida(i, silencioso),
     // O que o ícone apontado FAZ vai ao rodapé (função içada, lida ao chamar).
     explicarIcone: (_i, k) => explicarIconeNoRodape(k),
+    explicarItem: (texto) => escreverNoRodape(texto),
     // ⚠️ NÃO `instanceof HTMLElement`: esse é um GLOBAL DO NAVEGADOR, e lê-lo onde ele não existe LANÇA —
     // não devolve falso. Escrito assim na etapa 2, fazia o `reflectPauseIcons` rebentar em qualquer ambiente
     // sem DOM. É o mesmo erro de forma do ACHADO 15 no cabeçalho deste ficheiro: alcançar o global por baixo
@@ -1564,6 +1568,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // Sem opinião declarada, o índice fica LIGADO: quem precisa dele para se orientar não tem como saber
     // que ele existe se vier desligado (a mesma razão de o modo cego nascer com TTS e sonar).
     comIndice: cartucho.comIndice ?? (() => true),
+    explicarItem: (texto) => escreverNoRodape(texto),
     isNavigable: cartucho.isNavigable ?? (() => true),
     /*
      * ⚠️ ESTE PADRÃO ERA `() => false` / `() => {}`, E DESDE HOJE ISSO SERIA UM BURACO QUE EU ABRI. O
@@ -1858,7 +1863,6 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ UMA COLUNA e não duas faixas posicionadas à parte: a pausa rápida já pousa o cursor no primeiro ícone ao entrar,
    * logo as duas aparecem juntas desde o primeiro instante, e duas caixas absolutas tapavam-se quando uma quebrava linha.
    */
-  let rodape: HTMLElement | null = null;
   function rodapeDaTela(regiao: HTMLElement | null): HTMLElement | null {
     if (rodape || !regiao || typeof regiao.appendChild !== 'function') return rodape;
     rodape = doc.createElement('div');
@@ -1866,9 +1870,12 @@ export function createGame(o: CreateGameOptions): Engine {
     regiao.appendChild(rodape);
     return rodape;
   }
-  let explicacaoDaBarra: HTMLElement | null = null;
   function explicarIconeNoRodape(k: string | null): void {
-    if (!explicacaoDaBarra && k) {
+    escreverNoRodape(k ? t(`icon.${k}.dica`) : null);
+  }
+  /** O rodapé diz UMA explicação de cada vez: a do ícone apontado, ou o motivo de um item travado (ADR-0161). */
+  function escreverNoRodape(texto: string | null): void {
+    if (!explicacaoDaBarra && texto) {
       const casa = rodapeDaTela($<HTMLElement>('#game-region'));
       if (casa) {
         explicacaoDaBarra = doc.createElement('div');
@@ -1878,8 +1885,7 @@ export function createGame(o: CreateGameOptions): Engine {
       }
     }
     if (!explicacaoDaBarra) return;
-    const texto = k ? t(`icon.${k}.dica`) : '';
-    explicacaoDaBarra.textContent = texto;
+    explicacaoDaBarra.textContent = texto ?? '';
     explicacaoDaBarra.hidden = !texto;
   }
 
