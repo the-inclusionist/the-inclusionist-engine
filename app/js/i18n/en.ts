@@ -95,6 +95,7 @@ const en: Record<string, string> = {
   'touch.slot.right': 'D-pad → (right)',
   'touch.slot.start': 'START (enter)',
   'touch.start': 'START',
+  'touch.select': 'SELECT',
   'touch.slot.b0': 'Button 0 (bottom)',
   'touch.slot.b1': 'Button 1 (right)',
   'touch.slot.b2': 'Button 2 (left)',

@@ -1896,18 +1896,22 @@ export function createGame(o: CreateGameOptions): Engine {
    * com o cartão a abrir seria mentira) e a fase já é `paused` — pedi-la outra vez seria um segundo `paused`
    * num jogo parado.
    */
-  function abrirMenusPeloSelect(e: KeyboardEvent): void {
-    const assento = assentoDaPosicao(e.code, 'select');
-    if (assento === null) return;
-    if (overlays.topVisibleOverlay()) return;
+  /** Abre o cartão do assento, venha a porta de onde vier — a tecla SELECT ou a pílula do toque. Devolve se abriu. */
+  function abrirMenusDoAssento(assento: number): boolean {
+    if (overlays.topVisibleOverlay()) return false;
     const cartao = $<HTMLElement>(`#vp-pause-${assento}`);
-    if (!cartao || cartao.hidden === false) return;
+    if (!cartao || cartao.hidden === false) return false;
     const jaParado = emPausaRapida.has(assento);
     if (jaParado) sairDaPausaRapida(assento, 'cartao');
     // ⚠️ MOSTRAR VEM PRIMEIRO, e a ordem é a defesa: um jogo sem `setPhase` tem de receber o cartão na mesma.
     pausa.mostrar(assento);
     if (!jaParado) mudarDeFase('paused');
-    e.preventDefault();
+    return true;
+  }
+  function abrirMenusPeloSelect(e: KeyboardEvent): void {
+    const assento = assentoDaPosicao(e.code, 'select');
+    if (assento === null) return;
+    if (abrirMenusDoAssento(assento)) e.preventDefault();
   }
   win.addEventListener('keydown', abrirMenusPeloSelect);
 
@@ -1981,7 +1985,7 @@ export function createGame(o: CreateGameOptions): Engine {
         acoesDoJogo: acoesDoCartucho(),
         // `start` é de SISTEMA e a engine pode nomeá-lo (`core/actions` SYSTEM); os outros slots levam a palavra
         // CURTA do jogo, porque vivem dentro de um botão de dedo e não numa lista.
-        rotuloDoSlot: (slot) => (slot === 'start' ? t('touch.start') : (curto(mapa[slot] as Action) ?? '')),
+        rotuloDoSlot: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select') : (curto(mapa[slot] as Action) ?? '')),
         direcional: store.get(store.KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
       },
     );
@@ -2017,6 +2021,12 @@ export function createGame(o: CreateGameOptions): Engine {
     showTouchControls: () => toque.showTouchControls(),
     hideTips: () => {},
     togglePause: alternarPausaPeloToque,
+    /*
+     * A PÍLULA SELECT (ADR-0155): os menus pelo toque. Sem ela, quem só tem dedo não chegava a «Sair», ao número de
+     * jogadores nem às configurações — o SELECT era tecla. ⚠️ O PAD ESCONDE-SE ao abrir o cartão, como o START
+     * fazia: por cima do cartão ele taparia os botões que agora são a saída dela («Voltar ao jogo»).
+     */
+    abrirMenus: () => { if (abrirMenusDoAssento(0)) toque.hideTouchControls(); },
     getTouchMap: () => toque.getTouchMap(),
     // ✅ O DEFEITO QUE O `TouchBindingsCtx` GUARDAVA MORRE AQUI: no cartucho a linha era `touchMap.start` num
     // escopo onde `touchMap` não existia, e o START da tela estava quebrado. Esta raiz TEM o mapa.

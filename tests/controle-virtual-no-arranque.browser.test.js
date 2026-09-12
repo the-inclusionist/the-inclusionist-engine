@@ -127,6 +127,35 @@ describe('createGame mounts the virtual pad from the preset', () => {
   });
 });
 
+describe('the SELECT pill opens the menus (ADR-0155)', () => {
+  it('🔴 [Right] it exists anyway, with its word — the menus are a door of the pause, not declinable', () => {
+    const select = document.getElementById('touch-select');
+    expect(select, 'a touch-only child has no way to the menus').not.toBeNull();
+    expect(select.textContent.trim()).not.toBe('');
+  });
+
+  it('🔴 [Right] a tap opens the card, asks the game to pause once, and hides the pad over the card', () => {
+    toque(document.getElementById('game-region'), 'pointerdown');
+    fases.length = 0;
+    document.getElementById('touch-select').click();
+    expect(document.getElementById('vp-pause-0').hidden, 'the SELECT pill did not open the menus').toBe(false);
+    expect(fases).toEqual(['paused']);
+    expect(pad().hidden, 'the pad stayed over the card buttons').toBe(true);
+    motor.pausa.esconder(0);
+  });
+
+  it('🔴 [Right] from the QUICK PAUSE, the tap goes to the card without thawing the game', () => {
+    toque(document.getElementById('game-region'), 'pointerdown');
+    document.getElementById('touch-start').click();
+    fases.length = 0;
+    document.getElementById('touch-select').click();
+    expect(document.getElementById('vp-pause-0').hidden).toBe(false);
+    expect(document.querySelector('#game-region .pausa-rapida').hidden, 'PAUSED stayed under the card').toBe(true);
+    expect(fases, 'the game was resumed on the way to the menus').toEqual([]);
+    motor.pausa.esconder(0);
+  });
+});
+
 describe('mount() rebuilds the pad for the new cartridge', () => {
   it('🔴 [Zero] without a preset: no action button, the START stays, AND `problems` says why', () => {
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
@@ -172,14 +201,21 @@ describe('the START pill, with the real stylesheet', () => {
     document.documentElement.style.setProperty('--fonte-escala', '1.25');
     try {
       pad().hidden = false;
-      const start = document.getElementById('touch-start');
-      const caixa = start.getBoundingClientRect();
-      const r = document.createRange();
-      r.selectNodeContents(start);
-      const texto = r.getBoundingClientRect();
-      expect(texto.width, 'the pill measured no text — the case would pass by measuring nothing').toBeGreaterThan(0);
-      expect(texto.left >= caixa.left - 0.5 && texto.right <= caixa.right + 0.5,
-        `the word spills out of the pill: text ${Math.round(texto.width)}px in a ${Math.round(caixa.width)}px button`).toBe(true);
+      // 📌 BOTH system pills since ADR-0155 — SELECT beside START — and each word fits its own pill
+      for (const id of ['touch-select', 'touch-start']) {
+        const pill = document.getElementById(id);
+        const caixa = pill.getBoundingClientRect();
+        const r = document.createRange();
+        r.selectNodeContents(pill);
+        const texto = r.getBoundingClientRect();
+        expect(texto.width, `#${id} measured no text — the case would pass by measuring nothing`).toBeGreaterThan(0);
+        expect(texto.left >= caixa.left - 0.5 && texto.right <= caixa.right + 0.5,
+          `the word spills out of #${id}: text ${Math.round(texto.width)}px in a ${Math.round(caixa.width)}px button`).toBe(true);
+      }
+      // 🔴 and the two pills do not sit on top of each other — two absolutely-placed pills at the centre would
+      const a = document.getElementById('touch-select').getBoundingClientRect();
+      const b = document.getElementById('touch-start').getBoundingClientRect();
+      expect(a.right <= b.left + 0.5, `SELECT (${Math.round(a.left)}–${Math.round(a.right)}) overlaps START (${Math.round(b.left)}–${Math.round(b.right)})`).toBe(true);
     } finally {
       pad().hidden = true;
       style.remove();
@@ -204,6 +240,9 @@ describe('the START pill, with the real stylesheet', () => {
 //   Q1  the touch START opens the card instead of the quick pause  🔴 (checked with the ADR-0155 change)
 //   Q2  the touch START hides the pad on entering                 🔴 no way out for a touch-only child
 //   P12 `.touch-start` loses `width:auto`                   🔴 «START» spills 66px out of 56px (it was red before the fix)
+//   Q3  the SELECT pill is not wired                         🔴 no way to the menus by touch
+//   Q4  the SELECT pill leaves the pad over the card         🔴 pad over «Voltar ao jogo»
+//   Q5  the two pills lose their container                   🔴 SELECT on top of START
 // ⚠️ And wiring the modules together found THREE defects none of their own tests could see: arms the
 // stylesheet does not draw and the bindings do not light, a START pill with no text, and a bare global
 // `addEventListener` in `input/touch` that took down every boot on a document with no window.

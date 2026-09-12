@@ -681,7 +681,11 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 .pad-right{right:0;top:50%;transform:translateY(-50%)}
 /* `width:auto`: a pílula também é `.touch-btn`, cujo 56px fixo cortava a palavra — medido no dist, «START» com 66px
    de texto num botão de 56px à escala 1,25 da mão cursiva (ADR-0149). A pílula cresce com a palavra, e o piso é o alvo. */
-.touch-start{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--tap);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:.82rem;letter-spacing:.08em;background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
+/* As duas pílulas de sistema, SELECT e START, num contentor ao centro (ADR-0155). Dentro dele deixam de se posicionar
+   sozinhas: o contentor põe-nas lado a lado, e cada uma continua com a largura do seu texto. */
+.touch-sistema{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;gap:10px;pointer-events:none}
+.touch-sistema .touch-start,.touch-sistema .touch-select{position:static;transform:none}
+.touch-start,.touch-select{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--tap);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:.82rem;letter-spacing:.08em;background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
 .touch-start:active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 /* joystick digital: base (círculo maior) + manopla (círculo menor) */
 /* Direcional (analógico/"alavanca"): base = superfície + deslocamento; manopla = superfície de contato. Ambos em mm (JS). */

@@ -539,15 +539,26 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
     raiz.appendChild(losango);
   }
 
-  const start = ctx.criar('button');
-  start.id = 'touch-start';
-  start.className = 'touch-btn touch-start';
-  start.setAttribute('type', 'button');
-  start.setAttribute('aria-label', spec.rotuloDoSlot('start'));
-  // ⚠️ E ESCRITO, não só dito: a folha desenha uma pílula (`.touch-start`), e uma pílula sem texto é um botão
-  // que quem vê não sabe ler. O leitor de tela tinha o nome; o olho não tinha nada.
-  start.textContent = spec.rotuloDoSlot('start');
-  raiz.appendChild(start);
+  /*
+   * AS DUAS PÍLULAS DE SISTEMA, lado a lado e ao centro: SELECT (os menus) e START (a pausa rápida), na ordem de
+   * um comando de consola. ⚠️ AMBAS INCONDICIONAIS, pela mesma razão: desde o ADR-0155 são as duas portas da pausa,
+   * e a pausa não é declinável (ADR-0122) — um tablet sem teclado não tem outra forma de chegar a «Sair».
+   */
+  const sistema = ctx.criar('div');
+  sistema.className = 'touch-sistema';
+  const pilula = (id: string, slot: 'select' | 'start'): HTMLElement => {
+    const b = ctx.criar('button');
+    b.id = id;
+    b.className = `touch-btn touch-${slot}`;
+    b.setAttribute('type', 'button');
+    b.setAttribute('aria-label', spec.rotuloDoSlot(slot));
+    // ⚠️ E ESCRITO, não só dito: uma pílula sem texto é um botão que quem vê não sabe ler.
+    b.textContent = spec.rotuloDoSlot(slot);
+    return b;
+  };
+  sistema.appendChild(pilula('touch-select', 'select'));
+  sistema.appendChild(pilula('touch-start', 'start'));
+  raiz.appendChild(sistema);
 
   return raiz;
 }

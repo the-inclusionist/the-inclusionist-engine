@@ -703,6 +703,7 @@
     ],
     "interface TouchBindingsCtx": [
       "$",
+      "abrirMenus?",
       "arestaDoJogador",
       "attractOnInput",
       "defer?",
