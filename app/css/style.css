@@ -173,6 +173,10 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 .title-legend .lg{display:inline-flex;align-items:center;gap:.35em}
 .title-legend .lg-ico{display:inline-flex;align-items:center;justify-content:center;min-width:1.35em;height:1.35em;padding:0 .2em;border-radius:.68em;font-weight:800;font-size:.9em;color:#fff;background:rgba(13,13,26,.85);text-shadow:0 1px 1px rgba(0,0,0,.55)}
 #title-icons{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:.3em;justify-content:center;flex-wrap:nowrap;white-space:nowrap} /* CABEÇALHO: 10px do topo, UMA fileira */
+/* The NAME of the pointed icon, just below the row. Absolute, so the bar's height — the band the game must not draw
+   over (ADR-0148) — does not grow when a name appears; the explanation goes to the footer, not here. */
+#title-icons .pause-icons-cap{position:absolute;top:calc(100% + .2rem);left:50%;transform:translateX(-50%);margin:0;text-align:center;font-size:.85em;color:#f6f5f0;pointer-events:none;white-space:nowrap;min-height:0}
+#title-icons .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px;padding:.2em .6em}
 /* Seletor de jogadores = UM botão só ("◀ Nº de jogadores: X ▶"); o lado clicado decide +1/−1 */
 #np-btn{letter-spacing:.02em}
 #np-btn #np-n{display:inline-block;min-width:1.1em;text-align:center}
@@ -572,11 +576,15 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    ACIMA da pílula START do pad — que continua à vista, porque é a saída de quem só tem dedo. ⚠️ `left`/`right` e não
    `left:50%` + `translate`: com ele a caixa encolhia para METADE da região (medido: 271 px, três linhas, por cima do
    PAUSADO). */
-.pausa-legenda{position:absolute;left:2%;right:2%;bottom:calc(var(--pad-btn,66px)*.7 + 12px);z-index:12;
-  pointer-events:none;color:#fff;-webkit-text-stroke:.06em #000;paint-order:stroke fill;
+/* 🔴 The footer is ONE column (2026-09-12): the explanation of the pointed bar icon above the quick-pause legend. Two
+   absolute strips covered each other as soon as one wrapped. */
+.rodape-da-tela{position:absolute;left:2%;right:2%;bottom:calc(var(--pad-btn,66px)*.7 + 12px);z-index:12;
+  display:flex;flex-direction:column;gap:.25em;pointer-events:none}
+.pausa-legenda,.barra-explicacao{
+  color:#fff;-webkit-text-stroke:.06em #000;paint-order:stroke fill;
   text-shadow:1px 0 #000,-1px 0 #000,0 1px #000,0 -1px #000,1px 1px #000,-1px 1px #000,1px -1px #000,-1px -1px #000;
   font-family:var(--font);font-weight:700;font-size:var(--ui-fs,16px);text-align:center}
-.pausa-legenda[hidden]{display:none}
+.pausa-legenda[hidden],.barra-explicacao[hidden]{display:none}
 #game-region .overlay__card{max-height:94%;max-width:96%}
 /* Rodapé de explicação: branco sobre preto translúcido 0,82 → contraste do branco >7:1 mesmo sobre 100% branco
    (composição: 1-0,82=0,18 → L≈0,027 → ~13:1), sem ser 100% opaco. Fixo no rodapé do card. */

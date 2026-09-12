@@ -307,9 +307,9 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
 
   it('os 5 toggles booleanos dizem on/off e MUDAM quando o estado muda', () => {
     const cases = [
-      ['blind', 'modoCego', 'Modo cego (navegação sonora)'],
-      ['tts', 'ttsOn', 'Narração por voz (TTS)'],
-      ['libras', 'librasOn', 'Modo pessoa surda (Libras)'],
+      ['blind', 'modoCego', 'Modo cego'],
+      ['tts', 'ttsOn', 'Narração por voz'],
+      ['libras', 'librasOn', 'Modo pessoa surda'],
       ['altmove', 'toggleMove', 'Teclas de alternância'],
     ];
     for (const [k, flag, prefix] of cases) {
@@ -909,7 +909,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-on')).toBe(true);
     expect(b.getAttribute('aria-pressed')).toBe('true');
-    expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora): ligado');
+    expect(b.getAttribute('aria-label')).toBe('Modo cego: ligado');
   });
 
   it('o reflexo é IDEMPOTENTE e reversível: desligar limpa a classe e corrige o rótulo', () => {
@@ -922,7 +922,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     state.modoCego = false;
     api.reflectIconBtn(b, 0);
     expect(b.classList.contains('pi-on')).toBe(false);
-    expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora): desligado');
+    expect(b.getAttribute('aria-label')).toBe('Modo cego: desligado');
   });
 
   it('BORDA: sair do daltonismo LIMPA a classe bicolor anterior (o remove roda antes do add)', () => {

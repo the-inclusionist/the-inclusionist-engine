@@ -60,7 +60,7 @@ import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, sho
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
-import { initPauseIcons, iconsMarkup } from '../ui/pause-icons.js';
+import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, legendaDoIcone } from '../ui/pause-icons.js';
 import { helpRows, helpListHtml } from '../ui/help-panel.js';
 import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
@@ -963,6 +963,8 @@ export function createGame(o: CreateGameOptions): Engine {
     srSay, srAlert,
     // A saída da barra é a saída da pausa rápida, por qualquer porta (ADR-0155). Função içada: lida ao chamar.
     aoSairDaBarra: (i, silencioso) => terminarPausaRapida(i, silencioso),
+    // O que o ícone apontado FAZ vai ao rodapé (função içada, lida ao chamar).
+    explicarIcone: (_i, k) => explicarIconeNoRodape(k),
     // ⚠️ NÃO `instanceof HTMLElement`: esse é um GLOBAL DO NAVEGADOR, e lê-lo onde ele não existe LANÇA —
     // não devolve falso. Escrito assim na etapa 2, fazia o `reflectPauseIcons` rebentar em qualquer ambiente
     // sem DOM. É o mesmo erro de forma do ACHADO 15 no cabeçalho deste ficheiro: alcançar o global por baixo
@@ -1101,12 +1103,17 @@ export function createGame(o: CreateGameOptions): Engine {
   }
 
   if (a11yBar && barraUsavel) {
-    a11yBar.innerHTML = iconsMarkup(pauseIcons.iconesMontados);
+    // 🔴 COM A LEGENDA DO NOME, debaixo da fileira: a barra montada pela engine não a tinha, e o Dev viu-a muda ao
+    // navegar e ao passar o rato. `aria-hidden` porque o nome já é DITO (`srSay` no cursor, o `aria-label` no foco).
+    a11yBar.innerHTML = iconsMarkup(pauseIcons.iconesMontados) + '<p class="pause-icons-cap" aria-hidden="true"></p>';
+    ligarLegendaDaBarra(a11yBar as HTMLElement, explicarIconeNoRodape);
     a11yBar.addEventListener('click', (e) => {
       const botao = (e.target as Element | null)?.closest<HTMLElement>('.pi-btn');
       if (!botao) return;
       pauseIcons.iconAct(botao.dataset.pi ?? '', 0);
       pauseIcons.reflectIconsIn(a11yBar, 0);
+      const legenda = a11yBar.querySelector('.pause-icons-cap');
+      if (legenda) legenda.textContent = legendaDoIcone(a11yBar, botao); // o estado NOVO, depois do reflexo
       // O anúncio lê o `aria-label` DEPOIS do reflexo, porque é ele que carrega o estado NOVO — anunciar
       // antes diria o estado que a criança acabou de deixar.
       srSay(botao.getAttribute('aria-label') ?? '');
@@ -1836,13 +1843,44 @@ export function createGame(o: CreateGameOptions): Engine {
       legendaDaPausa = doc.createElement('div');
       legendaDaPausa.className = 'pausa-legenda';
       legendaDaPausa.setAttribute('aria-hidden', 'true');
-      regiao.appendChild(legendaDaPausa);
+      rodapeDaTela(regiao)?.appendChild(legendaDaPausa);
     }
     if (!palavraPausado) return;
     // resolvidas AO MOSTRAR: o idioma pode ter mudado desde o arranque
     palavraPausado.textContent = t('pause.quick');
     palavraPausado.hidden = false;
     if (legendaDaPausa) { legendaDaPausa.textContent = t('pause.quick.legenda'); legendaDaPausa.hidden = false; }
+  }
+
+  /*
+   * O RODAPÉ DA TELA: uma coluna só, no fundo da região, com a EXPLICAÇÃO do ícone apontado por cima da LEGENDA da
+   * pausa rápida. Pedido do Dev — o nome debaixo da fileira, o que ele faz no rodapé (`CLAUDE.md` §4, as três zonas).
+   * ⚠️ UMA COLUNA e não duas faixas posicionadas à parte: a pausa rápida já pousa o cursor no primeiro ícone ao entrar,
+   * logo as duas aparecem juntas desde o primeiro instante, e duas caixas absolutas tapavam-se quando uma quebrava linha.
+   */
+  let rodape: HTMLElement | null = null;
+  function rodapeDaTela(regiao: HTMLElement | null): HTMLElement | null {
+    if (rodape || !regiao || typeof regiao.appendChild !== 'function') return rodape;
+    rodape = doc.createElement('div');
+    rodape.className = 'rodape-da-tela';
+    regiao.appendChild(rodape);
+    return rodape;
+  }
+  let explicacaoDaBarra: HTMLElement | null = null;
+  function explicarIconeNoRodape(k: string | null): void {
+    if (!explicacaoDaBarra && k) {
+      const casa = rodapeDaTela($<HTMLElement>('#game-region'));
+      if (casa) {
+        explicacaoDaBarra = doc.createElement('div');
+        explicacaoDaBarra.className = 'barra-explicacao';
+        explicacaoDaBarra.setAttribute('aria-live', 'polite');
+        casa.insertBefore(explicacaoDaBarra, casa.firstChild);
+      }
+    }
+    if (!explicacaoDaBarra) return;
+    const texto = k ? t(`icon.${k}.dica`) : '';
+    explicacaoDaBarra.textContent = texto;
+    explicacaoDaBarra.hidden = !texto;
   }
 
   function entrarNaPausaRapida(assento: number): void {

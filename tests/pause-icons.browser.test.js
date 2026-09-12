@@ -344,14 +344,14 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
   it('clicar num ícone age, REFLETE e escreve na legenda o estado NOVO (não o antigo)', () => {
     const { sp, bar, state } = mount(0);
     const b = bar.querySelector('.pi-btn[data-pi="blind"]');
-    expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora)'); // rótulo cru do markup
+    expect(b.getAttribute('aria-label')).toBe('Modo cego'); // rótulo cru do markup
     b.click();
     expect(state.modoCego).toBe(true);
     expect(state.pauseActor).toBe(0);
-    expect(b.getAttribute('aria-label')).toBe('Modo cego (navegação sonora): ligado');
+    expect(b.getAttribute('aria-label')).toBe('Modo cego: ligado');
     expect(b.getAttribute('aria-pressed')).toBe('true');
     expect(bar.querySelector('.pause-icons-cap').textContent).toBe(legendaEsperada(bar, b));
-    expect(bar.querySelector('.pause-icons-cap').textContent).toContain('Modo cego (navegação sonora): ligado');
+    expect(bar.querySelector('.pause-icons-cap').textContent).toContain('Modo cego: ligado');
   });
 
   it('clicar de novo desliga e a legenda acompanha (Right-BICEP: inverso)', () => {
@@ -360,7 +360,7 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     b.click(); b.click();
     expect(b.getAttribute('aria-pressed')).toBe('false');
     expect(bar.querySelector('.pause-icons-cap').textContent).toBe(legendaEsperada(bar, b));
-    expect(bar.querySelector('.pause-icons-cap').textContent).toContain('Modo cego (navegação sonora): desligado');
+    expect(bar.querySelector('.pause-icons-cap').textContent).toContain('Modo cego: desligado');
   });
 
   it('BORDA do TEA: 3 cliques passam por .pi-calm → .pi-on → base, com a legenda certa em cada passo', () => {
@@ -422,7 +422,7 @@ describe('buildScreenPause — a legenda segue o foco e o mouse', () => {
     const b = bar.querySelector('.pi-btn[data-pi="libras"]');
     b.dispatchEvent(new MouseEvent('mouseenter'));
     expect(bar.querySelector('.pause-icons-cap').textContent).toBe(legendaEsperada(bar, b));
-    expect(bar.querySelector('.pause-icons-cap').textContent).toContain('Modo pessoa surda (Libras)');
+    expect(bar.querySelector('.pause-icons-cap').textContent).toContain('Modo pessoa surda');
   });
 
   it('depois de um reflexo, o foco mostra o estado ATUAL — não o rótulo cru do markup', () => {
@@ -432,7 +432,7 @@ describe('buildScreenPause — a legenda segue o foco e o mouse', () => {
     const b = bar.querySelector('.pi-btn[data-pi="blind"]');
     b.dispatchEvent(new FocusEvent('focus'));
     expect(bar.querySelector('.pause-icons-cap').textContent).toBe(legendaEsperada(bar, b));
-    expect(bar.querySelector('.pause-icons-cap').textContent).toContain('Modo cego (navegação sonora): ligado');
+    expect(bar.querySelector('.pause-icons-cap').textContent).toContain('Modo cego: ligado');
   });
 });
 

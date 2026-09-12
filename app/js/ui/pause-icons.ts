@@ -64,6 +64,34 @@ import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena }
  * O `aria-label` já conta o ESTADO ("Alto contraste, ativado"): é ele que o `reflectIconBtn` reescreve a cada
  * mudança, e é por isso que a legenda o lê de volta em vez de recompor o texto por conta própria.
  */
+/**
+ * Hover and focus on a bar's icons write its NAME in the bar's `.pause-icons-cap` and ask for its EXPLANATION.
+ *
+ * Shared by the per-screen quick bars and the bar the engine mounts in `#title-icons`: two copies of this wiring is
+ * how one bar showed the name and the other did not — the Dev found the engine's bar silent on hover and on the
+ * cursor. Leaving an icon falls back to the CURSOR of the bar's mode when there is one (`.pi-sel`): it is the only
+ * thing saying where that cursor is.
+ */
+export function ligarLegendaDaBarra(bar: HTMLElement, explicar: (k: string | null) => void): void {
+  const cap = bar.querySelector('.pause-icons-cap');
+  const mostrar = (b: HTMLElement): void => {
+    if (cap) cap.textContent = legendaDoIcone(bar, b);
+    explicar(b.dataset.pi ?? null);
+  };
+  const largar = (): void => {
+    const cursor = bar.querySelector<HTMLElement>('.pi-sel');
+    if (cursor) { mostrar(cursor); return; }
+    if (cap) cap.textContent = '';
+    explicar(null);
+  };
+  bar.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => {
+    b.addEventListener('mouseenter', () => mostrar(b));
+    b.addEventListener('focus', () => mostrar(b));
+    b.addEventListener('mouseleave', largar);
+    b.addEventListener('blur', largar);
+  });
+}
+
 export function legendaDoIcone(barra: ParentNode, el: HTMLElement): string {
   const icones = [...barra.querySelectorAll<HTMLElement>('.pi-btn')];
   // A regra "rótulo declarado vence" nasceu AQUI e valia só para os dez ícones. Virou `core/rotulo-acessivel`
@@ -666,6 +694,12 @@ export interface PauseIconsCtx {
    * Existe para a raiz descongelar o jogo pela porta que for (ADR-0155) — a barra não sabe de fases.
    */
   aoSairDaBarra?: (i: number, silencioso: boolean) => void;
+  /**
+   * The icon screen `i` is pointing at — by the cursor of the bar, or hover/focus — or `null` when nothing is. The
+   * root writes that icon's EXPLANATION in the footer (the Dev: the name below the row, what it does in the footer;
+   * `CLAUDE.md` §4, the three zones). Absent, the bar still shows the name.
+   */
+  explicarIcone?: (i: number, k: string | null) => void;
 
   // --- the per-screen pause menu ---
   /**
@@ -1239,12 +1273,13 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   }
 
   /** Põe o cursor num ícone, escreve a legenda e ANUNCIA — a legenda é o canal de quem não vê o ícone. */
-  function selecionarIcone(bar: HTMLElement, el: HTMLElement): void {
+  function selecionarIcone(i: number, bar: HTMLElement, el: HTMLElement): void {
     bar.querySelectorAll<HTMLElement>('.pi-sel').forEach((x) => x.classList.remove('pi-sel'));
     el.classList.add('pi-sel');
     const cap = bar.querySelector('.pause-icons-cap');
     if (cap) cap.textContent = legendaDoIcone(bar, el);
     ctx.srSay(legendaDoIcone(bar, el));
+    ctx.explicarIcone?.(i, el.dataset.pi ?? null);
   }
 
   /**
@@ -1264,7 +1299,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (!bar || !primeiro) return;
     naBarra.add(i);
     ctx.srSay(t('sr.a11y.barEnter'));
-    selecionarIcone(bar, primeiro);
+    selecionarIcone(i, bar, primeiro);
   }
 
   /**
@@ -1285,6 +1320,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       const cap = bar.querySelector('.pause-icons-cap');
       if (cap) cap.textContent = '';
     }
+    ctx.explicarIcone?.(i, null);
     if (!silencioso) ctx.srSay(t('sr.a11y.barExit'));
     ctx.aoSairDaBarra?.(i, silencioso);
   }
@@ -1311,7 +1347,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     if (acao === 'ativar') { setPauseActor(i); if (cur) cur.click(); return; }
     if (acao === 'andar') {
       const d = (k.down || k.right) ? 1 : -1;
-      selecionarIcone(bar, icones[passoNoAnel(icones.length, idx, d)]);
+      selecionarIcone(i, bar, icones[passoNoAnel(icones.length, idx, d)]);
     }
   }
 
@@ -1408,14 +1444,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     //
     // A EXCEÇÃO É O CURSOR DO MODO `accessibility`: quando ele está pousado num ícone, a legenda é a única
     // coisa que diz onde ele está, e apagá-la ao mexer o mouse cegaria o modo. Daí a pergunta pelo `.pi-sel`.
-    const limpar = (): void => { if (cap && !bar.querySelector('.pi-sel')) cap.textContent = ''; };
-    bar.querySelectorAll<HTMLElement>('.pi-btn').forEach((b) => {
-      const show = (): void => { if (cap) cap.textContent = legendaDoIcone(bar, b); };
-      b.addEventListener('mouseenter', show);
-      b.addEventListener('focus', show);
-      b.addEventListener('mouseleave', limpar);
-      b.addEventListener('blur', limpar);
-    });
+    ligarLegendaDaBarra(bar, (k) => ctx.explicarIcone?.(i, k));
     return bar;
   }
 

@@ -14,6 +14,7 @@ import es from '../app/js/i18n/es.ts';
 import { AUDIO_CATS } from '../app/js/platform/audio-mixer.ts';
 import { RM_LABEL } from '../app/js/ui/settings-motion.ts';
 import { PERSONAS_DO_PAD } from '../app/js/input/touch.ts';
+import { PAUSE_ICONS } from '../app/js/ui/pause-icons.ts';
 
 const DICIONARIOS = { pt, en, es };
 
@@ -46,6 +47,19 @@ describe('panel labels carry no parentheses', () => {
       for (const k of ROTULOS) if (/[()]/.test(dic[k] ?? '')) achados.push(`${lang} ${k} «${dic[k]}»`);
     }
     expect(achados, achados.join(' · ')).toEqual([]);
+  });
+
+  it('🔴 [Right] every quick-bar icon has a short NAME and an EXPLANATION for the footer, in pt, en and es', () => {
+    // The Dev: the name below the row, what it does in the footer. The names carried their explanation in parentheses
+    // («Modo cego (navegação sonora)»); the explanation is the icon's own `.dica`, which the footer shows.
+    const problemas = [];
+    for (const [lang, dic] of Object.entries(DICIONARIOS)) {
+      for (const { n } of PAUSE_ICONS) {
+        if (/[()]/.test(dic[n] ?? '')) problemas.push(`${lang} ${n} «${dic[n]}»`);
+        if (!dic[`${n}.dica`]) problemas.push(`${lang} ${n}.dica missing`);
+      }
+    }
+    expect(problemas, problemas.join(' · ')).toEqual([]);
   });
 
   it('🔴 [Right] every label EXISTS in the three dictionaries — a missing key is shown as its id', () => {

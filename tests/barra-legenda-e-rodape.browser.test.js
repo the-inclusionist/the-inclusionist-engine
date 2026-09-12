@@ -1,0 +1,95 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// THE QUICK BAR SAYS THE NAME BELOW ITS ROW AND WHAT THE ICON DOES IN THE FOOTER (`CLAUDE.md` §4, the three zones).
+//
+// 🔴 The Dev: «O menu de acessibilidade rápida deveria mostrar o nome do item embaixo da fileira ao se navegar por ele
+// via controle/teclado ou passar o mouse por cima, e a explicação do que faz no rodapé. Isso não está acontecendo.»
+// 📏 Measured: the bar `createGame` mounts in `#title-icons` had no caption element and no hover/focus wiring — the
+// caption and its listeners lived only in the per-screen quick bars (`buildQuickBar`), which this root does not mount.
+//
+// 📌 With the REAL stylesheet: «below the row» and «the explanation above the legend, not on it» are geometry.
+//
+// MUTATIONS CHECKED — at the end of the file.
+import { describe, it, expect, beforeAll } from 'vitest';
+import css from '../app/css/style.css?raw';
+import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+
+let raiz;
+const barra = () => raiz.querySelector('#title-icons');
+const legenda = () => barra().querySelector('.pause-icons-cap');
+const explicacao = () => raiz.querySelector('#game-region .barra-explicacao');
+const icone = (k) => barra().querySelector(`.pi-btn[data-pi="${k}"]`);
+
+beforeAll(async () => {
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+  const { createGame } = await import('../app/js/boot/create-game.js');
+  raiz = document.createElement('div');
+  raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
+    + '<div id="game-region" tabindex="-1" style="position:relative;width:640px;height:360px"><div id="title-icons"></div></div>';
+  document.body.appendChild(raiz);
+  createGame({ acomodacoes: SEM_ASSUNTO,
+    declaration: {
+      topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => false, tick: 'player',
+      world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
+      nameAt: () => ({ text: 'pergunta', gender: 'f', plural: false }), focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'none' }),
+      objectiveOf: () => ({ name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [{ x: 0, y: 0 }],
+    },
+    host: { doc: document, win: window },
+    baixarPesados: false,
+  });
+});
+
+describe('the quick bar: name below, explanation in the footer', () => {
+  it('🔴 [Right] hovering an icon writes its NAME below the row and its EXPLANATION in the footer', () => {
+    icone('blind').dispatchEvent(new MouseEvent('mouseenter'));
+    expect(legenda()?.textContent, 'no name below the row').toMatch(/^Modo cego/);
+    // the explanation is a literal: reading it through `t()` would move with the dictionary and prove nothing
+    expect(explicacao()?.textContent).toBe('Joga-se pelo som: a navegação sonora diz o que a tela mostra.');
+    expect(explicacao().hidden).toBe(false);
+    // geometry: the name is BELOW the row, and the explanation in the lower half of the screen
+    const fileira = icone('blind').getBoundingClientRect();
+    expect(legenda().getBoundingClientRect().top, 'the name is not below the row').toBeGreaterThanOrEqual(fileira.bottom);
+    const regiao = raiz.querySelector('#game-region').getBoundingClientRect();
+    expect(explicacao().getBoundingClientRect().top, 'the explanation is not in the footer').toBeGreaterThan(regiao.top + regiao.height / 2);
+  });
+
+  it('🎯 [Zero] leaving the icon clears both — no strip of text left over the game', () => {
+    icone('blind').dispatchEvent(new MouseEvent('mouseleave'));
+    expect(legenda().textContent).toBe('');
+    expect(explicacao().hidden, 'the explanation stayed over the game').toBe(true);
+  });
+
+  it('🔴 [Right] with the CURSOR of the quick pause, the name and the explanation follow it — above the legend, not on it', () => {
+    document.getElementById('touch-start').click(); // START: the quick pause puts the cursor on the first icon
+    try {
+      const primeiro = barra().querySelector('.pi-sel');
+      expect(primeiro, 'the quick pause did not put the cursor on the bar').not.toBeNull();
+      expect(legenda().textContent.length, 'the cursor has no name below the row').toBeGreaterThan(0);
+      expect(explicacao().hidden, 'the cursor has no explanation in the footer').toBe(false);
+      const pausaLegenda = raiz.querySelector('#game-region .pausa-legenda');
+      expect(pausaLegenda.hidden, 'the explanation took the legend\'s place').toBe(false);
+      expect(explicacao().getBoundingClientRect().bottom, 'the explanation covers the legend').toBeLessThanOrEqual(pausaLegenda.getBoundingClientRect().top + 0.5);
+      // hovering another icon and leaving it goes back to the CURSOR, not to nothing
+      const nomeDoCursor = legenda().textContent;
+      icone('tts').dispatchEvent(new MouseEvent('mouseenter'));
+      expect(legenda().textContent, 'hovering did not show the hovered icon').not.toBe(nomeDoCursor);
+      icone('tts').dispatchEvent(new MouseEvent('mouseleave'));
+      expect(legenda().textContent, 'leaving an icon lost the cursor\'s name').toBe(nomeDoCursor);
+      expect(explicacao().hidden, 'leaving an icon lost the cursor\'s explanation').toBe(false);
+    } finally {
+      document.getElementById('touch-start').click();
+    }
+    expect(explicacao().hidden, 'leaving the quick pause left the explanation').toBe(true);
+  });
+});
+
+// ===== MUTATIONS CHECKED (2026-09-12) =====
+// B1 the engine's bar without the caption element        → red (3)
+// B2 no hover/focus wiring on the engine's bar            → red (3)
+// B3 the cursor asks no explanation                        → red
+// B4 leaving an icon does not fall back to the cursor      → red
+// B5 leaving the bar leaves the explanation on screen      → red
+// B6 the footer as loose absolute strips                   → red (the explanation covers the legend)
+// B7 an icon name back with its parentheses                → red (node dictionary case)
+// B8 the name laid out inside the row instead of below     → red
