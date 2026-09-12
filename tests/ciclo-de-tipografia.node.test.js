@@ -101,6 +101,20 @@ describe('cicloDeTipografia — as cinco posições, ou seis', () => {
   });
 });
 
+describe('o ciclo de COMUNICAÇÃO PULA ARASAAC e PCS (ADR-0155 §3)', () => {
+  it('🔴 [Zero] numa volta inteira, em qualquer etiqueta, o ciclo NUNCA pára numa posição de pictogramas', () => {
+    // «Pular» (Dev): enquanto a licença não deixa, uma posição que não se pode escolher não se oferece — nem
+    // desabilitada, nem anunciada. ⚠️ Este caso MUDA no dia em que a licença chegar: não é para o apagar calado,
+    // é para o substituir pelo que a posição passar a fazer.
+    for (const tag of ['pt-BR', 'en-US', 'es-ES', 'es', 'fr-FR', null]) {
+      const ciclo = cicloDeTipografia(tag);
+      expect(ciclo.length, `o ciclo de ${tag} veio vazio — o caso mediria nada`).toBeGreaterThanOrEqual(4);
+      const pictos = ciclo.filter((p) => /arasaac|pcs|picto/i.test(p.fonte));
+      expect(pictos, `o ciclo de ${tag} oferece uma posição sem licença`).toEqual([]);
+    }
+  });
+});
+
 describe('a ESCALA da mão do país — 25% maior, e o piso não é gosto', () => {
   it('🔴 [Right] a escala × a base do documento dá EXACTAMENTE o `minPx` da face', () => {
     /*

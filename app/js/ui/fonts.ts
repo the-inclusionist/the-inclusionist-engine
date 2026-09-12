@@ -106,6 +106,10 @@ export const BASE_EM_PX = 16;
  * ⚠️ A MÃO DO PAÍS PODE NÃO EXISTIR — uma etiqueta sem região e numa língua fora do repertório devolve vazio.
  * Nesse caso o ciclo tem QUATRO posições, e isso é a resposta certa: melhor uma posição a menos do que uma
  * que mostre a mão de um país que não é o daquela criança.
+ *
+ * 🔴 ARASAAC E PCS NÃO SÃO POSIÇÕES, e é a decisão e não um esquecimento: o ADR-0151 pô-los no ciclo de comunicação
+ * como desabilitados, e o ADR-0155 §3 mudou para «Pular» — enquanto a licença não deixa, o ciclo não pára neles nem os
+ * anuncia. Uma posição que existisse só para ser saltada seria dado sem leitor; entram no dia em que funcionarem.
  */
 export function cicloDeTipografia(tag: string | null | undefined): readonly PassoDeTipografia[] {
   const maos = maosDaEtiqueta(tag);
