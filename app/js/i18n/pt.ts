@@ -116,6 +116,13 @@ const pt: Record<string, string> = {
   'pause.cardAria': 'Menu de pausa do jogador {n}',
   // O sufixo do título do cartão, só em multijogador. Era português cru colado no markup de `ui/pause-icons`.
   'pause.cardSeat': ' · Jogador {n}',
+  // A TELA DE AJUDA (ADR-0147 §4): qual botão faz o quê, neste jogo, no teclado desta criança. A moldura mora
+  // aqui; as PALAVRAS de cada posição são do jogo e chegam pelo `preset` (ADR-0085).
+  'menu.help': 'Ajuda',
+  'help.grupo.rotulo': 'Os botões deste jogo',
+  // O que a linha diz quando o teclado não alcança aquela posição. É informação e não erro: quem joga só com
+  // controle ou só com o dedo tem posições sem tecla, e dizê-lo é melhor do que mostrar uma linha vazia.
+  'help.noKey': 'sem tecla',
   /* --- CATÁLOGO DE ATIVIDADES: só o que NÃO é alfabetização. As cinco de alfabetização seguem cruas em
      pt-BR no `educational/activities-registry`, porque a palavra e a sílaba SÃO a matéria (pilar 3). --- */
   'act.ludico.nome': 'Coletar 10 moedas',

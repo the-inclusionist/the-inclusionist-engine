@@ -57,6 +57,8 @@ import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { initPauseIcons, iconsMarkup } from '../ui/pause-icons.js';
+import { helpRows, helpListHtml } from '../ui/help-panel.js';
+import { keyName } from '../ui/settings-controls.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
 import * as state from '../core/state.js';
 import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
@@ -1025,6 +1027,50 @@ export function createGame(o: CreateGameOptions): Engine {
       restoreFocus: overlays.restoreFocus,
     });
     acoesDaEngine.caa = painelDeCaa.abrir;
+
+    /*
+     * AJUDA — qual botão faz o quê, NESTE jogo, no teclado DESTA criança (ADR-0147 §4).
+     *
+     * 🔴 O item `ajuda` está na lista de pausa desde o ADR-0044 e a engine nunca o soube accionar, logo
+     * `itensQueAccionam` escondia-o em todo jogo. A tela que o preenchia saiu com o cartucho (#111) e vive
+     * hoje no `game-platformer`; deixá-la lá era pedir a trezentos jogos que a escrevessem cada um.
+     *
+     * ⚠️ NÃO SE MONTA SEM `preset`, e a ausência é a resposta certa: sem as palavras do jogo, a tabela só
+     * poderia mostrar `action2` — um identificador à frente de uma criança, que é o defeito que o ADR-0074
+     * proíbe em tantas palavras. Melhor não haver ajuda do que haver uma que não se lê.
+     *
+     * 📌 A TECLA VEM DE `kbFor(0)`, e não do mapa de fábrica: quem remapeou vê a tecla DELA. É a mesma razão
+     * pela qual o ADR-0144 escuta a acção e não a tecla.
+     */
+    if (cartucho.preset) {
+      const painelDeAjuda = montarPainel(ctxDoPainel, {
+        id: 'help',
+        rotulos: () => ({
+          titulo: t('menu.help'),
+          rotuloDaLista: t('help.grupo.rotulo'),
+          rotuloReset: t('menu.restoreDefaults'),
+          rotuloFechar: t('menu.close'),
+        }),
+        // ⚠️ `render` E NÃO UMA MONTAGEM ÚNICA: o preset pode mudar com o `mount()` de outro cartucho
+        // (ADR-0142) e a criança pode ter remapeado entre duas aberturas. Uma tabela construída no arranque
+        // mostraria a tecla de ontem — que é a forma exacta do controle a mentir o estado.
+        render: () => {
+          const lista = $<HTMLElement>('#help-list');
+          if (lista) {
+            lista.innerHTML = helpListHtml(
+              helpRows(cartucho.preset, (a) => keyboard.kbFor(0)[a], keyName),
+              t,
+            );
+          }
+        },
+      });
+      acoesDaEngine.ajuda = painelDeAjuda.abrir;
+    } else {
+      problemasDoHospedeiro.push(
+        'sem `preset` a ajuda não é montada: ela lista POSIÇÃO ↔ tecla ↔ a palavra do jogo, e sem as palavras '
+        + 'só restaria mostrar `action2` a uma criança. Declare `preset` (ADR-0085) e o item de ajuda acende',
+      );
+    }
 
     /*
      * ANIMAÇÃO — sensibilidade a movimento, e os quatro campos que a engine ganhou na etapa 1 do ADR-0106.

@@ -69,6 +69,18 @@ const SEGUROS = [
   // dois deixaram este repositorio. O censo cobre a ENGINE; os sinks do cartucho sao agora censo do jogo,
   // em game-platformer. O caso [Zero] deste ficheiro — a lista nao guarda sink que ja nao existe — foi
   // exatamente quem apontou as cinco, uma a uma, em vez de as deixar a apodrecer numa lista verde.
+  // A TELA DE AJUDA (ADR-0147 §4). ⚠️ Ela interpola as PALAVRAS DO JOGO — `label` e `hint` do `ActionPreset`
+  // —, que vêm de outro repositório (ADR-0083) e portanto de fora desta árvore. 📌 O que a mantém entre as
+  // SEGURAS é a forma do dado, não a confiança em quem o escreve: cada célula é texto que o próprio jogo
+  // declarou para ser MOSTRADO à criança dele, no seu próprio documento — o mesmo alcance que ele já tem por
+  // `registerDict`, que o `core/i18n.temMarcacao` recusa justamente por ser a fronteira ÚNICA por onde a
+  // string de um jogo entra. 🔴 Se um dia o preset puder vir de fora do jogo (um mapa gravado, uma URL), esta
+  // linha muda de coluna no mesmo commit.
+  // 📌 O `ui/help-panel.helpListHtml` NÃO entra na lista, e a ausência é do CENSO e não da classificação: ele
+  // conta atribuições a `innerHTML`, e aquela função DEVOLVE uma string. O sink real é a linha de baixo, que
+  // é onde a string encontra o documento — pôr as duas faria a lista guardar uma entrada que não corresponde
+  // a sink nenhum, que é exactamente o que o caso [Zero] deste ficheiro reprova.
+  ['boot/create-game.ts', 'lista.innerHTML = helpListHtml(', 'palavras do JOGO, no documento do próprio jogo'],
   ['consumer-quiz/main-quiz.ts', 'if (!p) { app.innerHTML =', 'dois NÚMEROS interpolados'],
   ['consumer-quiz/main-quiz.ts', 'seletor.innerHTML = opcoes.map', 'chave enumerada + i18n'],
   ['render/viz-setters.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],

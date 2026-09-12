@@ -413,6 +413,54 @@ describe('createGame num documento de verdade', () => {
       }
     });
 
+    it('🔴 [Right] a AJUDA abre por um clique e diz POSIÇÃO ↔ tecla ↔ a palavra do jogo', () => {
+      /*
+       * 🔴 O item `ajuda` está na lista desde o ADR-0044 e a engine nunca o soube accionar — a tela que o
+       * preenchia saiu com o cartucho (#111). Este caso é o percurso inteiro da criança: item da pausa →
+       * despacho → tabela da engine → `abrir()` → `render()` → as linhas no documento.
+       *
+       * 📌 E TEM DE VIVER AQUI e não no ficheiro `node`: lá a metade pura já está presa (`helpRows`), mas
+       * «o painel está NA ÁRVORE», «um clique de verdade o abre» e «a lista foi preenchida» são as três
+       * coisas que só um documento sabe — é a regra do cabeçalho deste ficheiro.
+       */
+      const motor = abrir({
+        preset: {
+          action2: { label: 'Confirmar', hint: 'Escolhe a alternativa em que está o cursor.' },
+          left: { label: 'Alternativa anterior' },
+        },
+      });
+      motor.pausa.mostrar(0);
+
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]');
+      expect(item, 'o item de ajuda nem foi montado').not.toBeNull();
+      expect(item.hidden, 'o item existe e está escondido: o filtro do §5 não o viu accionar').toBe(false);
+
+      item.click();
+
+      const painel = document.querySelector('#help');
+      expect(painel, 'a engine não montou o painel de ajuda').not.toBeNull();
+      expect(painel.hidden, 'o clique não abriu a ajuda').toBe(false);
+      const linhas = [...document.querySelectorAll('#help-list .ctrl-row')];
+      expect(linhas.length, 'a ajuda abriu vazia').toBe(2);
+      // A ordem é a canónica de `ACTIONS`: `left` antes de `action2`, e não a ordem do objeto do jogo.
+      expect(linhas.map((l) => l.dataset.act)).toEqual(['left', 'action2']);
+      // 🔴 A PALAVRA É A DO JOGO, e nenhuma célula mostra um identificador.
+      expect(painel.textContent).toContain('Confirmar');
+      expect(painel.textContent, 'a ajuda mostrou um identificador a uma criança').not.toContain('action2');
+      // A tecla é a do esquema desta criança, resolvida pelo runtime de teclado e não inventada aqui.
+      expect(linhas[1].querySelector('.help-key').textContent.trim().length).toBeGreaterThan(0);
+    });
+
+    it('🔴 [Zero] SEM `preset` o item de ajuda fica ESCONDIDO — afirmar a ausência', () => {
+      // O par do caso acima. Sem as palavras do jogo a ajuda não se monta (ADR-0074), logo a tabela da engine
+      // não ganha `ajuda` e o filtro do §5 esconde o item. Medir só a presença deixaria isto passar.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]');
+      expect(item.hidden, 'a ajuda acendeu sem o jogo declarar uma palavra sequer').toBe(true);
+      expect(document.querySelector('#help'), 'o painel foi montado sem ter o que dizer').toBeNull();
+    });
+
     it('🎯 [Right] o item `tipo` SOBREVIVE ao filtro do §5 — a tabela da engine deixou de ser vazia', () => {
       // 📏 A cascata que produzia um cartão de um botão: sem `getPauseActs` a tabela é `{}`, `itensQueAccionam`
       // guarda só os três de `ITENS_DA_ENGINE`, e `raizQueAcciona` tira também o `options` porque seria «uma

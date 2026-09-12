@@ -313,10 +313,34 @@ describe('createGame em execução', () => {
     const motor = createGame({
       declaration: declaracaoValida(), host: { doc, win },
       carregarVozNeural: () => Promise.resolve({}),
+      // ⚠️ O `preset` ENTRA AQUI em 2026-09-12 pela mesma razão que a porta da voz neural entrou em 08/09: a
+      // ajuda passou a ser montada pela engine (ADR-0147 §4) e, sem as palavras do jogo, ela acusa — com
+      // razão. Sem esta linha o caso deixaria de medir o que diz medir.
+      preset: { action2: { label: 'Confirmar' } },
     });
     // O host de filtros não foi fornecido neste caso, e é a ÚNICA lacuna que deve sobrar.
     expect(motor.problems).toHaveLength(1);
     expect(motor.problems[0]).toMatch(/filtros/);
+  });
+
+  it('🔴 [Zero] SEM `preset` a AJUDA não é montada, e a engine DIZ porquê', async () => {
+    // 🔴 A tela de ajuda lista POSIÇÃO ↔ tecla ↔ a palavra do jogo. Sem as palavras só restaria mostrar
+    // `action2` a uma criança que abriu a ajuda precisamente por não saber o que o botão faz — o defeito que
+    // o ADR-0074 proíbe. Então não se monta; e o §5 do ADR-0106 prefere a ausência ao botão morto.
+    //
+    // ⚠️ MAS A AUSÊNCIA TEM DE SER DITA, pelo precedente que o caso da voz neural fixou logo abaixo: uma
+    // funcionalidade da engine que some por falta de UMA declaração, em silêncio, é a mesma classe de defeito.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const motor = createGame({
+      declaration: declaracaoValida(), host: { doc, win },
+      carregarVozNeural: () => Promise.resolve({}),
+    });
+    const daAjuda = motor.problems.filter((p) => /ajuda/.test(p));
+    expect(daAjuda, 'sem `preset` a ajuda sumiu e nada o disse').toHaveLength(1);
+    // 📌 E a linha tem de ser ACCIONÁVEL: diz o campo que falta e o registo que o define. Uma linha que só
+    // dissesse «falta algo» seria a «lacuna que o consumidor lê como escolha» do ADR-0106 §2.
+    expect(daAjuda[0]).toMatch(/preset/);
   });
 
   it('⚠️ [Zero] SEM voz neural declarada, a engine DIZ — e TRÊS dos seis jogos estão assim', async () => {

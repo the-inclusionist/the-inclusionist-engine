@@ -240,7 +240,12 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'boot/create-game.ts': 18,       // a mensagem do `throw` e as lacunas do hospedeiro
+  'boot/create-game.ts': 20,       // a mensagem do `throw` e as lacunas do hospedeiro
+                                   // ⚠️ 18 → 20 em 2026-09-12: a linha que diz porque a AJUDA não foi montada
+                                   // sem `preset` (ADR-0147 §4). Mesma classe de todas as anteriores — quem a
+                                   // lê é quem INTEGRA a engine, e ela nomeia o campo que falta e o registo
+                                   // que o define, porque uma linha que só dissesse «falta algo» seria a
+                                   // «lacuna que o consumidor lê como escolha» do ADR-0106 §2.
                                    // ⚠️ 15 → 18 em 2026-09-11: o hospedeiro da pausa FORA de `#game-region`
                                    // (ADR-0106 §1, os painéis de ajustes). Mesma classe de todas as anteriores
                                    // — lacuna do HOSPEDEIRO, lida por quem integra a engine — e a linha existe
@@ -362,8 +367,22 @@ describe('texto cru em português nas camadas de ENGINE (o buraco do gate do ite
     // que este tecto existe para tornar consciente, não a que ele existe para proibir.
     // ✅ E 79 → 78 no mesmo dia, pela outra direcção: o `ui/settings-panel` saiu da lista inteiro. Um tecto
     // que só sobe é um orçamento; este desce quando alguém conserta, e foi o que aconteceu.
+    //
+    // 📌 78 → 77 → 79 em 2026-09-12, e as duas metades são deliberadas e de sinais contrários:
+    //   ✅ −1 · `ui/hud.ts` SAIU inteiro. Era o selo «aperte um botão para entrar» da tela ainda sem dono — a
+    //      única frase que diz a uma criança COMO entrar, em português num jogo em inglês. É a SEGUNDA
+    //      entrada que este livro-razão perde por conserto em vez de por contagem.
+    //   ⚠️ +2 · a linha que diz porque a AJUDA não foi montada sem `preset` (ADR-0147 §4). Mesma classe das
+    //      outras de `boot/create-game`: quem a lê é quem INTEGRA a engine, e pô-la no dicionário seria pedir
+    //      aos três idiomas que carregassem diagnóstico de integração.
+    //
+    // 🔴 E O QUE ESTE NÚMERO NÃO MEDE ficou medido no mesmo dia, ao consertar os dois «Jogador N» que o Dev
+    // nomeou: o crivo conta literais que `pareceProsa` reconhece como texto de interface, e um fragmento de
+    // UMA palavra colado a um número por concatenação não se parece com prosa. A forma «palavra + variável»
+    // — que é como o português cru sobrevive dentro de markup gerado — atravessa este livro-razão inteiro sem
+    // ser vista, e os dois que o Dev apontou estavam ambos nela. O total é um piso, não um retrato.
     const total = Object.values(CRU_CONHECIDO).reduce((a, b) => a + b, 0);
-    expect(total).toBeLessThanOrEqual(78);
+    expect(total).toBeLessThanOrEqual(79);
     expect(Object.keys(CRU_CONHECIDO).length).toBeLessThanOrEqual(20);
   });
 
