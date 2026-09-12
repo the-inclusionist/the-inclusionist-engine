@@ -183,7 +183,9 @@ export const FONT_GROUPS: FontGroup[] = [
      * 🔴 A CLASH DISPLAY NÃO ENTRA, e a ausência é medida e não esquecida: ela **não está no Google Fonts**.
      * É da Fontshare (Indian Type Foundry), e o §3 do `LICENSES.md` exige a licença conferida ANTES de
      * empacotar — o mesmo teste que as três faces da ronde reprovaram, por serem livres só para uso PESSOAL.
-     * Quando a licença estiver conferida, ela entra aqui.
+     * 🔴 LIDA EM 2026-09-12, E REPROVA: é «Closed Source», sob a ITF Free Font License, cujo §02 proíbe distribuir
+     * o ficheiro por repositório, aplicação ou servidor público e servi-lo como fonte selecionável a terceiros.
+     * O que era espera virou recusa com motivo; o crivo está em `tests/fontes-empacotadas.node.test.js`.
      */
     {k:'robotoflex', fam:'Roboto Flex',           fb:'sans'},
     {k:'ubuntu',     fam:'Ubuntu',                fb:'sans'},

@@ -75,7 +75,9 @@ A Noto Sans entra quando o critério é cobrir muitos idiomas. As três últimas
 
 A Montserrat e a Poppins têm "1" sem serifa e "0" muito redondo. Por isso não as use em placa com número, como preço ou código. Quando precisar de número em display, prefira **Lexend** ou **Outfit**; as duas são livres e têm dígitos claros.
 
-> ⚠️ A **Clash Display** tem licença própria, da Indian Type Foundry. Confirme o uso em aplicativo antes de adotá-la.
+> 🔴 A **Clash Display** não pode ser adotada pela engine. A licença foi lida em 2026-09-12: é «Closed Source», sob a
+> ITF Free Font License, cujo §02 proíbe distribuir o ficheiro por repositório, aplicação ou servidor público e
+> servi-lo como fonte selecionável a terceiros (ADR-0150, errata). Na ordem acima, quem a substitui é a Space Grotesk.
 
 ### 2.3 Sans serif para texto pequeno
 
@@ -207,7 +209,7 @@ A maioria das fontes é livre (OFL, Apache, CC0 ou ISC). Guarde uma cópia de ca
 
 | Fonte | Situação | O que fazer |
 |---|---|---|
-| Clash Display | Licença própria (ITF) | Confirmar uso em aplicativo |
+| Clash Display | ITF Free Font License (Closed Source) | 🔴 **Não empacotável** — §02 proíbe distribuição e uso como fonte selecionável por terceiros |
 | APHont | Restritiva | Confirmar uso comercial |
 | Luciole | Restritiva | Confirmar uso embarcado |
 | Bembo Infant e Plantin Infant | Monotype, pagas | Orçar licença de aplicativo |

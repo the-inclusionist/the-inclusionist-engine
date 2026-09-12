@@ -120,6 +120,21 @@ export function sinaisDeRonde(familias, ficheiros) {
   return [...porFamilia, ...porFicheiro];
 }
 
+/**
+ * Qualquer sinal de uma face «Closed Source» da Fontshare — família OU ficheiro.
+ *
+ * 🔴 A LICENÇA FOI LIDA EM 2026-09-12 (ITF Free Font License, versão 2.0 de 17/08/2026) e reprova duas vezes:
+ * o §02 proíbe disponibilizar o ficheiro a terceiros por repositório, aplicação, plataforma ou servidor público,
+ * e proíbe oferecê-lo como fonte selecionável a utilizadores terceiros. A engine é um repositório público AGPL e
+ * uma biblioteca para trezentos jogos de terceiros. E a definição de obra derivada inclui a conversão de formato
+ * — o `.woff2` que empacotamos já seria uma.
+ */
+export function sinaisDeFontshareFechada(familias, ficheiros) {
+  const porFamilia = familias.filter((f) => /^clash\b/i.test(f.trim()));
+  const porFicheiro = ficheiros.filter((n) => n.toLowerCase().includes('clash'));
+  return [...porFamilia, ...porFicheiro];
+}
+
 const familias = familiasDe(CSS);
 const referidos = referidosPor(CSS);
 
@@ -146,6 +161,18 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
       'ronde no pacote: as três são gratuitas só para uso pessoal, e empacotá-las é distribuir o que não '
       + 'foi licenciado para distribuição (ADR-0012, mantido pelo ADR-0108 §3)',
     ).toEqual([]);
+  });
+
+  it('🔴 [Zero] a Clash Display NÃO é empacotada — a ITF Free Font License proíbe distribuí-la (ADR-0150)', () => {
+    // O ADR-0150 recusou-a «até a licença ser lida». Foi lida, e o que era espera virou recusa com motivo.
+    expect(
+      sinaisDeFontshareFechada(familias, NA_PASTA),
+      'face Closed Source da Fontshare no pacote: a ITF FFL §02 proíbe distribuí-la por repositório, aplicação '
+      + 'ou servidor público, e servi-la como fonte selecionável a terceiros — que é o que a engine faz',
+    ).toEqual([]);
+    // 📌 O par: o detector VÊ a família e o ficheiro, senão a ausência acima passava por cegueira.
+    expect(sinaisDeFontshareFechada(['Clash Display', 'Lexend'], ['clashdisplay-var.woff2', 'lexend-var.woff2']))
+      .toEqual(['Clash Display', 'clashdisplay-var.woff2']);
   });
 
   it('✅ [Boundary] o PISO das oito só sobe — hoje são OITO, e a decisão está entregue', () => {
