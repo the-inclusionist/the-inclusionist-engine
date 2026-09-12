@@ -259,7 +259,6 @@ const MOEDA_CONHECIDA = new Set([
   // foi para o dicionário no item 14. Ganho lateral da i18n — texto que sai do código sai também da fronteira.
   // `ui/settings-motor.ts` SAIU (2026-08-25): a única menção era 'moedas no chão', dentro do anúncio do Modo
   // Fácil, que foi para o dicionário no item 14. Segundo módulo que a i18n tira daqui de carona.
-  'platform/audio-mixer.ts', // rótulos/anúncios, não dependência
   // ---- OITO MÓDULOS que só ficaram VISÍVEIS quando o casador foi unificado (2026-08-25). A dívida deles é
   //      antiga; o que era novo é o gate conseguir vê-la. A maioria já tinha o par dela na lista de FIXTURES
   //      abaixo — a correspondência que a seção 3 afirma só passou a ser verdadeira agora.

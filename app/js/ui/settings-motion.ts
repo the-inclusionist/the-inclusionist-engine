@@ -123,6 +123,15 @@ export const RM_LABEL: Record<string, string> = {
   parallax: 'rm.parallax', decor: 'rm.decor', items: 'rm.items',
   walk: 'rm.walk', breath: 'rm.breath', flavor: 'rm.flavor', particles: 'rm.particles',
 };
+/**
+ * Label KEY → the KEY of its footer hint (ADR-0158). What these labels carried in parentheses — «Decoração (nuvens,
+ * grama)» — is an explanation, and an explanation goes to the footer: the row keeps the short word.
+ */
+export const RM_DICA: Readonly<Record<string, string>> = {
+  'rm.decor': 'rm.decor.dica', 'rm.items': 'rm.items.dica',
+  'rm.walk': 'rm.walk.dica', 'rm.breath': 'rm.breath.dica', 'rm.flavor': 'rm.flavor.dica',
+};
+const dicaDe = (chave: string): string | undefined => (RM_DICA[chave] ? t(RM_DICA[chave]) : undefined);
 // Alvos de cena "em breve" (hoje nenhum — os 4 já agem).
 export const RM_SOON: ReadonlySet<MotionSceneKey> = new Set([]);
 
@@ -150,23 +159,25 @@ export function clampSelectedPlayer(selected: number, total: number): number {
 }
 
 /** Uma linha de switch "Animado/Congelado" (usada tanto para o personagem quanto para a cena). */
-export function motionRowHtml(label: string, frozen: boolean, attr: string, soon: boolean): string {
+export function motionRowHtml(label: string, frozen: boolean, attr: string, soon: boolean, dica?: string): string {
   const on = !frozen;
   const soonTag = soon ? ' <em style="opacity:.7">(em breve)</em>' : '';
   const cls = 'mode-btn switch' + (on ? ' is-on' : '');
   const btnText = on ? '▶ Animado' : '❄ Congelado';
   const state = on ? 'animação ligada' : 'animação congelada';
-  return `<div class="ctrl-row"><span>${label}${soonTag}</span><button class="${cls}" ${attr} type="button" aria-pressed="${on}" aria-label="${label}: ${state}">${btnText}</button></div>`;
+  // with a hint: the short word in `<strong>` and the hint in `.opt-hint`, which `fillExplain` moves to the footer
+  const rotulo = dica ? `<strong>${label}</strong><span class="opt-hint">${dica}</span>` : label;
+  return `<div class="ctrl-row"><span>${rotulo}${soonTag}</span><button class="${cls}" ${attr} type="button" aria-pressed="${on}" aria-label="${label}: ${state}">${btnText}</button></div>`;
 }
 
 /** Linhas "Personagem" (por jogador selecionado). */
 export function buildCharRowsHtml(rmChar: readonly MotionCharDef[], player: MotionPlayer | undefined): string {
-  return rmChar.map((c) => motionRowHtml(t(c.lbl), !!(player && player[c.prop]), `data-rmc="${c.prop}"`, false)).join('');
+  return rmChar.map((c) => motionRowHtml(t(c.lbl), !!(player && player[c.prop]), `data-rmc="${c.prop}"`, false, dicaDe(c.lbl))).join('');
 }
 
 /** Linhas "Cena" (globais, valem para todos os jogadores). */
 export function buildSceneRowsHtml(rmKeys: readonly MotionSceneKey[], rm: MotionSceneFlags, labels: Record<string, string>, soon: ReadonlySet<MotionSceneKey>): string {
-  return rmKeys.map((k) => motionRowHtml(t(labels[k]), !!rm[k], `data-rm="${k}"`, soon.has(k))).join('');
+  return rmKeys.map((k) => motionRowHtml(t(labels[k]), !!rm[k], `data-rm="${k}"`, soon.has(k), dicaDe(labels[k]))).join('');
 }
 
 /** Toggle liga/desliga da estética CRT (scanlines/vinheta). */

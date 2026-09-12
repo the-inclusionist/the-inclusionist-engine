@@ -834,6 +834,34 @@ describe('createGame num documento de verdade', () => {
       }
     });
 
+    it('🔴 [Zero] NO row of an engine panel carries an explanation in parentheses — it belongs to the footer (ADR-0158)', () => {
+      // The Dev: «Você está colocando entre parênteses informações que deveriam ir para o rodapé.» Read as the child
+      // sees it: after the panel's own render and `fillExplain`, the text left INSIDE each visible row, hints excluded
+      // (a hint is in the footer by then, or hidden until it moves there).
+      const motor = abrir();
+      const achados = [];
+      for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora']]) {
+        motor.pausa.mostrar(0);
+        document.querySelector(`#vp-pause-0 .pm-btn[data-act="${act}"]`).click();
+        for (const linha of document.querySelectorAll(`#${id} .ctrl-row`)) {
+          if (!linha.offsetParent) continue;
+          const copia = linha.cloneNode(true);
+          copia.querySelectorAll('.opt-hint').forEach((h) => h.remove());
+          const texto = copia.textContent.replace(/\s+/g, ' ').trim();
+          if (/\(/.test(texto)) achados.push(`#${id}: «${texto}»`);
+        }
+        // 📌 THE PAIR: the explanation did not vanish with the parentheses — it reaches the footer on focus
+        const pistas = { animation: ['[data-rm="decor"]', 'Nuvens, grama.'], som: ['[data-acat="ambient"]', 'Água, rua, trânsito, folhas, chuva.'] };
+        if (pistas[id]) {
+          const [sel, esperado] = pistas[id];
+          document.querySelector(`#${id} ${sel}`).focus();
+          expect(document.querySelector(`#${id} .opt-explain`)?.textContent, `#${id}: the hint did not reach the footer`).toBe(esperado);
+        }
+        document.getElementById(`${id}-close`).click();
+      }
+      expect(achados, achados.join(' · ')).toEqual([]);
+    });
+
     it('🔴 [Right] ligar o TTS pelo ÍCONE refresca o painel — o guarda morto do monólito voltou a valer', () => {
       // ⚠️ `ui/pause-icons` documenta o defeito e preservou-o verbatim: no monólito esta chamada estava atrás
       // de `typeof reflectTTS === 'function'`, um símbolo que já não existia, «so it never fires». O campo

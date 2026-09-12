@@ -1431,6 +1431,7 @@
     "MotionPlayer",
     "MotionSceneFlags",
     "MotionSceneKey",
+    "RM_DICA",
     "RM_LABEL",
     "RM_SOON",
     "SettingsMotionApi",

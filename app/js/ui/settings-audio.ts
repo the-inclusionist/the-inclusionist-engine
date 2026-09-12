@@ -38,7 +38,8 @@ export interface AudioStore {
   set(key: string, value: string | number | boolean): boolean;
 }
 
-export interface AudioCatDef { k: string; lbl: string; }
+/** `lbl`/`dica` are i18n keys (a key missing from the dictionaries is shown as written). */
+export interface AudioCatDef { k: string; lbl: string; dica?: string; }
 export interface AudioCatState { on: boolean; vol: number; }
 
 export interface TtsPanelEngine { id: string; speak: (text: string) => void; }
@@ -150,9 +151,12 @@ export function catRowHTML(k: string, cats: readonly AudioCatDef[], state: Reado
   const c = cats.find((x) => x.k === k);
   const a = state[k];
   if (!c || !a) return '';
-  return `<div class="ctrl-row"><span>${c.lbl}</span><span style="display:flex;gap:.5rem;align-items:center;flex-shrink:0">` +
-    `<input class="vol" type="range" min="0" max="100" step="5" value="${volPercent(a.vol)}" data-avol="${k}" aria-label="Volume de ${c.lbl}">` +
-    `<button class="mode-btn switch${a.on ? ' is-on' : ''}" data-acat="${k}" type="button" aria-pressed="${a.on}" aria-label="${c.lbl}"></button></span></div>`;
+  // ADR-0158: the short word in `<strong>`, the explanation in `.opt-hint` — which `fillExplain` moves to the footer.
+  const rotulo = t(c.lbl);
+  const dica = c.dica ? `<span class="opt-hint">${t(c.dica)}</span>` : '';
+  return `<div class="ctrl-row"><span><strong>${rotulo}</strong>${dica}</span><span style="display:flex;gap:.5rem;align-items:center;flex-shrink:0">` +
+    `<input class="vol" type="range" min="0" max="100" step="5" value="${volPercent(a.vol)}" data-avol="${k}" aria-label="${t('audio.cat.volumeDe', { c: rotulo })}">` +
+    `<button class="mode-btn switch${a.on ? ' is-on' : ''}" data-acat="${k}" type="button" aria-pressed="${a.on}" aria-label="${rotulo}"></button></span></div>`;
 }
 
 /** Full innerHTML for a category list (#audio-list or #navsound-list). Pure string building — no DOM. */
@@ -283,10 +287,12 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
      * voltam para o painel do som, não para o da acessibilidade. SAIU o VOLUME DA NAVEGAÇÃO, que era um segundo
      * lugar para os três volumes da lista (um lugar por escolha, D2 do registo).
      */
-    { id: 'opt-modocego', rotulo: t('icon.blind') },
+    // ⚠️ Their own short keys, not the bar's `icon.blind`/`icon.tts`: those carry «(navegação sonora)» and «(TTS)», and
+    // a row keeps no explanation in parentheses (ADR-0158).
+    { id: 'opt-modocego', rotulo: t('audio.modocego') },
     { id: 'cane-div', rotulo: t('audio.cane'), dica: t('audio.cane.dica'), forma: 'escolha' },
     { contentor: '@lista' }, // a lista da casca: sonar, guarda e guia
-    { id: 'opt-tts', rotulo: t('icon.tts'), dica: t('audio.tts.dica') },
+    { id: 'opt-tts', rotulo: t('audio.narracao'), dica: t('audio.tts.dica') },
     { id: 'tts-vol', rotulo: t('audio.ttsVol'), forma: 'cursor' },
     { id: 'opt-menuindex', rotulo: t('audio.menuindex'), dica: t('audio.menuindex.dica') },
     /*

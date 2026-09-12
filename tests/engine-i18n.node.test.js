@@ -210,7 +210,6 @@ const CRU_CONHECIDO = {
   'ui/activities-menu.ts': 3,     // era 5: o item 5 do ADR-0044 tirou os `lbl` crus de PM_BTNS, que nunca iam para a tela      // 'pré-silábico', 'silábico'… as hipóteses de Ferreiro (ADR-0032)
 
   /* --- FORA de `ui/`: menos, e cada um por um motivo próprio. --- */
-  'platform/audio-mixer.ts': 5,    // rótulos das categorias do mixer de áudio
   'input/touch.ts': 8,             // 'mão de criança' / 'mão de adulto' — classificação, mas VAI para a tela
                                    // ⚠️ 3 → 8 em 2026-09-12: as DUAS linhas de `lacunasDoToque` (ADR-0143 §4),
                                    // partidas em cinco literais por caberem na largura. Mesma classe de todas

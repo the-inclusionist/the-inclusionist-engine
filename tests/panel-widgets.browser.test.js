@@ -258,7 +258,8 @@ describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () =>
     montarInteriorDoAudio(ctx, c.card, c.lista);
     const linha = document.querySelector('#opt-tts').closest('.ctrl-row');
     expect(linha.querySelector('strong').textContent, 'a linha ficou no idioma de recuo').not.toBe(antes);
-    expect(linha.querySelector('strong').textContent).toBe('Voice narration (TTS)');
+    // «(TTS)» left the label on 2026-09-12 (ADR-0158): an explanation in parentheses goes to the footer
+    expect(linha.querySelector('strong').textContent).toBe('Voice narration');
     await setLocale('pt');
   });
 
