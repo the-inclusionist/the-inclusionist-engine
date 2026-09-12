@@ -56,6 +56,19 @@ export interface PanelShellCtx {
 export interface PanelShellSpec {
   /** O id do painel: `typo`, `audio`, `visual`… Gera `#X`, `#X-title`, `#X-list`, `#X-reset`, `#X-close`. */
   id: string;
+  /**
+   * O id da LISTA, quando ele não é `${id}-list`.
+   *
+   * 📏 MEDIDO NOS OITO EM 2026-09-11, e há exactamente uma divergência: `settings-motion` vive no overlay
+   * `#animation` — com `#animation-reset` e `#animation-close`, que casam — e lê a lista em **`#motion-list`**.
+   * É herança do monólito, onde o painel se chamava «motion» e o overlay «animation».
+   *
+   * ⚠️ E A SAÍDA NÃO É RENOMEAR. O id que um `settings-*` lê é contrato com o markup de quem já o usa, e a
+   * regra do `CLAUDE.md` sobre tirar campo de contrato aplica-se inteira: mede-se o CATÁLOGO, não o consumidor
+   * da casa — e o catálogo vive em repositórios que não são este. Um campo opcional custa uma linha e não
+   * quebra ninguém; a renomeação custaria o painel de movimento a quem já tem markup.
+   */
+  idDaLista?: string;
   /** O título, JÁ TRADUZIDO. Vai por `textContent`. */
   titulo: string;
   /** O `aria-label` da lista, já traduzido — o nome do grupo que a criança ouve ao entrar nele. */
@@ -96,8 +109,14 @@ export interface PanelShell {
 }
 
 /** Os ids que um painel de `id` ocupa. Exportado porque um gate e um consumidor precisam de os nomear. */
-export function idsDaCasca(id: string): PanelShell['ids'] {
-  return { overlay: id, title: `${id}-title`, lista: `${id}-list`, reset: `${id}-reset`, fechar: `${id}-close` };
+export function idsDaCasca(id: string, idDaLista?: string): PanelShell['ids'] {
+  return {
+    overlay: id,
+    title: `${id}-title`,
+    lista: idDaLista ?? `${id}-list`,
+    reset: `${id}-reset`,
+    fechar: `${id}-close`,
+  };
 }
 
 /**
@@ -108,7 +127,7 @@ export function idsDaCasca(id: string): PanelShell['ids'] {
  * contagem de jogadores muda a grade de telas.
  */
 export function montarCasca(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShell {
-  const ids = idsDaCasca(spec.id);
+  const ids = idsDaCasca(spec.id, spec.idDaLista);
   const overlay = ctx.procurar('#' + ids.overlay) ?? ctx.criar('div');
   overlay.id = ids.overlay;
   overlay.className = 'overlay';

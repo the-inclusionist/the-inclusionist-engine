@@ -75,6 +75,8 @@ import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.j
 import { montarPainel } from '../ui/mount-panel.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsCaa, type SettingsCaaApi } from '../ui/settings-caa.js';
+import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
+import { toggleBtn } from '../ui/dom.js';
 import * as store from '../platform/storage.js';
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
@@ -946,6 +948,57 @@ export function createGame(o: CreateGameOptions): Engine {
       restoreFocus: overlays.restoreFocus,
     });
     acoesDaEngine.caa = painelDeCaa.abrir;
+
+    /*
+     * ANIMAÇÃO — sensibilidade a movimento, e os quatro campos que a engine ganhou na etapa 1 do ADR-0106.
+     *
+     * 📌 `rm`, `saveRM`, `rmKeys` e `rmChar` são OPCIONAIS desde então, e a ausência é a notícia: nenhum deles
+     * continha escolha do jogo — `rmKeys` era a união `MotionSceneKey` escrita à mão e `rm`/`saveRM` liam uma
+     * chave de armazenamento da engine com um padrão da engine. `ui/motion-scene` responde pelos quatro, então
+     * este painel não precisa de nada que só o cartucho saiba.
+     *
+     * ⚠️ E A LISTA DELE É `#motion-list`, NÃO `#animation-list` — a única divergência dos oito, herdada do
+     * monólito onde o painel se chamava «motion» e o overlay «animation». Ver `PanelShellSpec.idDaLista`:
+     * renomear seria mexer no contrato com markup de consumidores que este repositório não pode medir.
+     */
+    let motion: SettingsMotionApi | null = null;
+    const painelDeAnim = montarPainel(ctxDoPainel, {
+      id: 'animation',
+      idDaLista: 'motion-list',
+      rotulos: () => ({
+        titulo: t('menu.animation'),
+        rotuloDaLista: t('animation.grupo.rotulo'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('menu.close'),
+      }),
+      render: () => motion?.render(),
+      primeiroFoco: '#motion-master',
+    });
+    /*
+     * O BOTÃO-MESTRE — «parar todas as animações» de uma vez.
+     *
+     * ⚠️ CRIADO AQUI E ANTES DO `init`, pela mesma regra de ordem do `#typo-reset`: `initSettingsMotion` liga
+     * o clique dele UMA VEZ, no arranque. E ele não é decoração — é a saída de quem sentiu enjoo com a tela a
+     * mexer e precisa de parar TUDO num gesto, em vez de percorrer sete linhas uma a uma.
+     * 📌 O rótulo entra pelo próprio painel (`motionMasterLabel`), que o troca conforme o estado; pô-lo aqui
+     * daria duas mãos a escrever o mesmo texto, e a que ficasse para trás mentiria sobre o estado.
+     */
+    const mestreDeAnim = doc.createElement('button');
+    mestreDeAnim.id = 'motion-master';
+    mestreDeAnim.className = 'mode-btn switch';
+    mestreDeAnim.setAttribute('type', 'button');
+    painelDeAnim.casca.card.insertBefore(mestreDeAnim, painelDeAnim.casca.lista);
+
+    motion = initSettingsMotion({
+      $, srSay, store,
+      getNumPlayers: () => (cartucho.players ?? [null]).length,
+      getPlayers: () => cartucho.players ?? [],
+      frontOverlay: overlays.frontOverlay,
+      restoreFocus: overlays.restoreFocus,
+      fillExplain: overlays.fillExplain,
+      toggleBtn,
+    });
+    acoesDaEngine.anim = painelDeAnim.abrir;
   }
 
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.

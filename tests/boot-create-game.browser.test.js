@@ -548,6 +548,46 @@ describe('createGame num documento de verdade', () => {
       expect(motor.overlays.escapeTarget(), 'fechou à vista e continua a ser o alvo do Escape').toBeNull();
     });
 
+    it('🎯 [Right] o painel de SENSIBILIDADE VISUAL abre, e a lista dele é `#motion-list`', () => {
+      // ⚠️ A ÚNICA DIVERGÊNCIA DE ID DOS OITO, e ela é silenciosa: `settings-motion` vive em `#animation` — com
+      // `#animation-reset` e `#animation-close`, que casam — e lê a lista em `#motion-list`. A casca que
+      // criasse `#animation-list` devolveria um painel que abre VAZIO, sem erro, que é o achado 6 outra vez.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]');
+      expect(item, 'o item de sensibilidade visual nem foi montado').not.toBeNull();
+      expect(item.hidden).toBe(false);
+
+      item.click();
+      expect(document.querySelector('#animation').hidden, 'o clique não revelou o painel').toBe(false);
+      const lista = document.querySelector('#motion-list');
+      expect(lista, 'a casca criou a lista com o id errado — o painel abre vazio e ninguém sabe').not.toBeNull();
+      expect(lista.querySelectorAll('button').length, 'a lista existe e está vazia').toBeGreaterThan(0);
+      // e não sobrou uma lista órfã com o id que a convenção daria
+      expect(document.querySelector('#animation-list'), 'ficaram DUAS listas no cartão').toBeNull();
+    });
+
+    it('🔴 [Right] o BOTÃO-MESTRE congela tudo de um gesto — e existe antes do `init`, ou é morto', () => {
+      // ⚠️ Mesma regra de ordem do `#typo-reset`: `initSettingsMotion` liga o clique dele UMA VEZ, no arranque.
+      // E ele não é conveniência — é a saída de quem sentiu enjoo com a tela a mexer e precisa de parar TUDO
+      // num gesto, em vez de percorrer sete linhas uma a uma.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]').click();
+
+      const mestre = document.querySelector('#motion-master');
+      expect(mestre, 'o painel abriu sem o botão de parar tudo').not.toBeNull();
+      expect(mestre.textContent.length, 'o botão-mestre está sem rótulo: ninguém sabe o que ele faz')
+        .toBeGreaterThan(0);
+      const antes = mestre.getAttribute('aria-pressed');
+      mestre.click();
+      expect(document.querySelector('#motion-master').getAttribute('aria-pressed'),
+        'o clique não fez nada — a casca montou DEPOIS do `init` e o botão ficou sem escuta').not.toBe(antes);
+
+      // devolve ao padrão para não deixar tudo congelado aos casos seguintes
+      document.querySelector('#animation-reset').click();
+    });
+
     it('🔴 [Boundary] hospedeiro FORA de `#game-region` vira linha em `problems`, e não silêncio', () => {
       // ⚠️ ESTE É O CASO DO SILÊNCIO. `ui/settings-panel.topVisibleOverlay` varre `'#game-region .overlay'`, e é
       // por ele que o `ui/menu-nav` acha o diálogo de cima para andar com as setas. Um painel pendurado fora

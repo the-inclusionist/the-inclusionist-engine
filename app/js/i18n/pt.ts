@@ -437,6 +437,11 @@ const pt: Record<string, string> = {
   // em voz alta por quem usa leitor de tela antes do nome do que ele abriu.
   'menu.caa': 'Comunicação',
   'caa.grupo.rotulo': 'Escolhas de comunicação',
+  // O nome vem do botão da pausa (`pause.anim`), sem o emoji, pela mesma razão do `menu.caa`. E o nome é
+  // «Sensibilidade visual» e não «Animação» porque é o que a pessoa sente: quem precisa deste painel chega
+  // por enjoo ou por crise, não por curiosidade sobre quadros por segundo.
+  'menu.animation': 'Sensibilidade visual',
+  'animation.grupo.rotulo': 'Movimento e animação',
   'sr.audio.reset': 'Acessibilidade auditiva restaurada aos padrões. Os outros menus não mudaram.',
   'sr.empathy.reset': 'Modo empatia restaurado aos padrões: simulações desligadas. Correções de daltonismo e os outros menus não mudaram.',
   'sr.motor.reset': 'Modo Fácil e movimento por alternância restaurados aos padrões. O controle pelos olhos e o mapeamento de teclas continuam como estavam.',

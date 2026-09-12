@@ -348,6 +348,10 @@ const es: Record<string, string> = {
   // el `<h2>` se lee en voz alta antes del nombre de lo que abrió.
   'menu.caa': 'Comunicación',
   'caa.grupo.rotulo': 'Opciones de comunicación',
+  // Nombrado por lo que la persona siente, no por lo que hace el código: quien necesita este panel llega por
+  // mareo o por riesgo de crisis, no por curiosidad sobre los fotogramas.
+  'menu.animation': 'Sensibilidad visual',
+  'animation.grupo.rotulo': 'Movimiento y animación',
   'sr.audio.reset': 'Accesibilidad auditiva restaurada a sus valores predeterminados. Los demás menús no cambiaron.',
   'sr.empathy.reset': 'Modo empatía restaurado a sus valores predeterminados: simulaciones desactivadas. Las correcciones de daltonismo y los demás menús no cambiaron.',
   'sr.motor.reset': 'Modo Fácil y movimiento por alternancia restaurados a sus valores predeterminados. El control con los ojos y el mapeo de teclas siguen igual.',

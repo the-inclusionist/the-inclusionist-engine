@@ -348,6 +348,10 @@ const en: Record<string, string> = {
   // `<h2>` is read aloud before the name of what it opened.
   'menu.caa': 'Communication',
   'caa.grupo.rotulo': 'Communication choices',
+  // Named for what a person feels, not for what the code does: whoever needs this panel arrives through nausea
+  // or a seizure risk, not through curiosity about frame rates.
+  'menu.animation': 'Visual sensitivity',
+  'animation.grupo.rotulo': 'Motion and animation',
   'sr.audio.reset': 'Hearing accessibility restored to its defaults. The other menus did not change.',
   'sr.empathy.reset': 'Empathy mode restored to its defaults: simulations off. Colour-blindness corrections and the other menus did not change.',
   'sr.motor.reset': 'Easy Mode and latched movement restored to their defaults. Eye control and the key mapping are unchanged.',

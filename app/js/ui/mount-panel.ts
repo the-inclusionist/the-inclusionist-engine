@@ -42,6 +42,8 @@ export interface MountPanelCtx extends PanelShellCtx {
 export interface MountPanelSpec {
   /** The panel's id: `typo`, `audio`, `visual`… Identity, resolved once — unlike the words below. */
   readonly id: string;
+  /** The list's id when it is not `${id}-list`. One of the eight needs it — see `PanelShellSpec.idDaLista`. */
+  readonly idDaLista?: string;
   /**
    * The panel's WORDS, already translated — and resolved AT EVERY OPEN rather than once at mount.
    *
@@ -105,7 +107,7 @@ export interface MountedPanel {
  * leaves one panel, which is what ADR-0139's third gate asks of two cartridges on one page.
  */
 export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedPanel {
-  const casca = montarCasca(ctx, { id: spec.id, ...spec.rotulos() });
+  const casca = montarCasca(ctx, { id: spec.id, idDaLista: spec.idDaLista, ...spec.rotulos() });
   // Appending an element that is already a child moves it; it never duplicates. Guarding on `parentNode`
   // would be the same operation written twice.
   ctx.host.appendChild(casca.overlay);

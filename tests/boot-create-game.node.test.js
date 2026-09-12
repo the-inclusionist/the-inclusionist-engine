@@ -91,6 +91,28 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
      */
     style: { setProperty() {}, removeProperty() {} },
     dataset: {},
+    /*
+     * ⚠️ `classList` QUE FUNCIONA, e não um que engole — a SEXTA vez que este duplo fica mais pobre que a
+     * coisa real. Entrou com o painel de sensibilidade visual: `reflectMotionBtn` faz
+     * `b.classList.toggle('is-on', …)` e o `ui/dom.toggleBtn` faz o mesmo em qualquer botão-mestre.
+     *
+     * 📌 Sobre um `Set` e não com métodos vazios, pela lição que este ficheiro já aprendeu cinco vezes: um
+     * duplo que aceita a chamada e não guarda nada responde «sim» a qualquer pergunta sobre classe, e um
+     * teste que pergunte «ficou ligado?» passa sem que nada tenha ficado.
+     */
+    classList: (() => {
+      const s = new Set();
+      return {
+        add: (c) => s.add(c),
+        remove: (c) => s.delete(c),
+        contains: (c) => s.has(c),
+        toggle: (c, forcar) => {
+          const por = forcar ?? !s.has(c);
+          if (por) s.add(c); else s.delete(c);
+          return por;
+        },
+      };
+    })(),
     // ⚠️ `innerHTML` ENTROU EM 2026-09-08, e é a mesma lição que o `ausentes` e o `mapa` já ensinaram neste
     // ficheiro: um duplo mais pobre do que a coisa real não testa a pergunta. Todo `Element` de verdade tem
     // `innerHTML`; sem ele aqui, a montagem da barra (etapa 2 do ADR-0106) recusava-se a correr e o duplo
