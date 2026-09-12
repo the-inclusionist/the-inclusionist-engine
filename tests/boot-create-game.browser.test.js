@@ -307,6 +307,25 @@ describe('createGame num documento de verdade', () => {
       expect(item.hidden, 'um item sem acção tem de estar escondido').toBe(true);
     });
 
+    it('🔴 [Right] the cursor NEVER lands on a hidden item — the ring walks only what the child sees', () => {
+      // 📏 Measured in dist (quiz, 2026-09-12): ArrowDown from «Voltar ao jogo» put the cursor on «Ajuda», which is
+      // hidden without a `preset`. `PM_ITENS_VISIVEIS` excluded hidden LISTS and not hidden ITEMS, so the child pressed
+      // down and saw nothing selected; the count «N of M» counted the invisible ones too.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      const visiveis = [...document.querySelectorAll('#vp-pause-0 .pause-menu:not([hidden]) .pm-btn')].filter((b) => !b.hidden);
+      expect(visiveis.length, 'nothing is hidden — the case would measure nothing').toBeLessThan(
+        document.querySelectorAll('#vp-pause-0 .pause-menu:not([hidden]) .pm-btn').length);
+      const regiao = document.getElementById('game-region') ?? document.body;
+      for (let i = 0; i < visiveis.length + 1; i++) {
+        regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', bubbles: true, cancelable: true }));
+        const sel = document.querySelector('#vp-pause-0 .pm-sel');
+        expect(sel, 'no item selected after a step').not.toBeNull();
+        expect(sel.hidden, `the cursor landed on the hidden «${sel.dataset.act}»`).toBe(false);
+      }
+      motor.pausa.esconder(0);
+    });
+
     it('⚠️ [Right] com `getPauseActs`, o item APARECE e o clique chega ao jogo', () => {
       let entrou = 0;
       const motor = abrir({ getPauseActs: () => ({ addplayer: () => { entrou += 1; } }) });

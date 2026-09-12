@@ -520,7 +520,9 @@ export type PauseSub = 'raiz' | 'opcoes' | 'jogo';
  * esquecer o `:not([hidden])` para o anel atravessar para a lista invisível — e a criança ouviria itens de um
  * menu que não está na tela.
  */
-export const PM_ITENS_VISIVEIS = '.pause-menu:not([hidden]) .pm-btn';
+// 🔴 `:not([hidden])` ON THE ITEM TOO (2026-09-12): the engine hides an item with no actuator (`refrescarItensDaPausa`),
+// and without it the ring stepped onto «Ajuda» hidden in the quiz — measured in dist — and «N de M» counted it.
+export const PM_ITENS_VISIVEIS = '.pause-menu:not([hidden]) .pm-btn:not([hidden])';
 
 /** O innerHTML de UMA `.pause-menu`: a lista, e só ela. */
 export function pauseMenuHtml(
