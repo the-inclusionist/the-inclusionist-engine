@@ -487,6 +487,13 @@ const pt: Record<string, string> = {
   'motora.pad.crianca-grande': 'criança grande (12 anos)',
   'motora.pad.adulto-pequeno': 'adulto pequeno',
   'motora.pad.adulto-maos-grandes': 'adulto de mãos grandes',
+  // O mapeamento de teclado por modo de jogadores (ADR-0151 §2 item 5). A de 3–4 só aparece sem ombros nem gatilhos.
+  'motora.teclado.1': 'Mapear teclado — 1 jogador',
+  'motora.teclado.2': 'Mapear teclado — 2 jogadores',
+  'motora.teclado.34': 'Mapear teclado — 3–4 jogadores',
+  'motora.abrir': 'Abrir',
+  'ctrl.assento': 'Teclado de',
+  'ctrl.jogador': 'Jogador {n}',
   // ===================== AS LINHAS DO PAINEL AUDITIVO =====================
   // Onde já havia palavra para a coisa, ela é REUSADA — `icon.blind` e `icon.tts` nomeiam os mesmos dois
   // ajustes na barra de acessibilidade. Dois nomes para o mesmo ajuste em duas telas da mesma engine é como

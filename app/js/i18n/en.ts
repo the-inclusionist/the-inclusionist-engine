@@ -380,6 +380,12 @@ const en: Record<string, string> = {
   'motora.pad.crianca-grande': 'older child (12)',
   'motora.pad.adulto-pequeno': 'small adult',
   'motora.pad.adulto-maos-grandes': 'adult with large hands',
+  'motora.teclado.1': 'Map the keyboard — 1 player',
+  'motora.teclado.2': 'Map the keyboard — 2 players',
+  'motora.teclado.34': 'Map the keyboard — 3–4 players',
+  'motora.abrir': 'Open',
+  'ctrl.assento': 'Keyboard of',
+  'ctrl.jogador': 'Player {n}',
   'menu.motora': 'Motor accessibility',
   // ===================== THE AUDIO PANEL'S ROWS =====================
   // Where a word for the thing already existed it is REUSED — `icon.blind` and `icon.tts` name these same two

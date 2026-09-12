@@ -379,6 +379,12 @@ const es: Record<string, string> = {
   'motora.pad.crianca-grande': 'niño mayor (12 años)',
   'motora.pad.adulto-pequeno': 'adulto pequeño',
   'motora.pad.adulto-maos-grandes': 'adulto de manos grandes',
+  'motora.teclado.1': 'Asignar teclado — 1 jugador',
+  'motora.teclado.2': 'Asignar teclado — 2 jugadores',
+  'motora.teclado.34': 'Asignar teclado — 3–4 jugadores',
+  'motora.abrir': 'Abrir',
+  'ctrl.assento': 'Teclado de',
+  'ctrl.jogador': 'Jugador {n}',
   'menu.motora': 'Accesibilidad motora',
   // ===================== LAS LÍNEAS DEL PANEL AUDITIVO =====================
   // Donde ya había palabra para la cosa, se REUSA — `icon.blind` e `icon.tts` nombran esos mismos dos ajustes

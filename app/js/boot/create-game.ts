@@ -62,7 +62,7 @@ import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { initPauseIcons, iconsMarkup } from '../ui/pause-icons.js';
 import { helpRows, helpListHtml } from '../ui/help-panel.js';
-import { keyName } from '../ui/settings-controls.js';
+import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
 import * as state from '../core/state.js';
 import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
@@ -95,7 +95,7 @@ import * as store from '../platform/storage.js';
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
-import { kb, initKB, registrarMapeamentoDoTeclado } from '../input/keyboard.js';
+import { kb, initKB, registrarMapeamentoDoTeclado, saveKB, setKB, fabricaComOJogo, type KBDefaults } from '../input/keyboard.js';
 import { registrarMapeamentoDoPad } from '../input/pad-defaults.js';
 import { baixarPesados, type RelatorioPesado } from '../platform/pesados.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
@@ -1538,6 +1538,9 @@ export function createGame(o: CreateGameOptions): Engine {
   const keyboard = initKeyboardRuntime({
     getKB: () => kb, getNumPlayers: () => players().length, getPlayers: () => players(),
   });
+  /** O painel «Mapear teclado», quando montado. Declarado aqui porque a navegação de menu, logo abaixo, pergunta-lhe se
+   *  está a capturar uma tecla — e ele só nasce com o painel motora, mais adiante. */
+  let controlesDoTeclado: SettingsControlsApi | null = null;
   keyboard.assignControls();
 
   // 6. Navegação de menu. Os três declínios entram como AUSÊNCIA DECLARADA, não como getter que devolve null.
@@ -1575,7 +1578,9 @@ export function createGame(o: CreateGameOptions): Engine {
      */
     naBarraDe: cartucho.naBarraDe ?? ((i) => pauseIcons.naBarraDe(i)),
     navBar: cartucho.navBar ?? ((i, k) => pauseIcons.navBar(i, k)),
-    isCapturing: () => false,
+    // ⚠️ ERA `() => false`: sem painel de remapeamento não havia captura. Agora há (ADR-0151), e com isto a falso a
+    // seta que a criança quer gravar navegava o menu em vez de ficar na tecla.
+    isCapturing: () => controlesDoTeclado?.isCapturing() ?? false,
     closePadWiz: () => {},
     whichPlayer: (code) => keyboard.whichPlayer(code),
     actionOf: (code, i) => keyboard.actionOf(code, i),
@@ -2061,6 +2066,8 @@ export function createGame(o: CreateGameOptions): Engine {
       overlays,
     };
     let passosDoPad: HTMLElement | null = null;
+    /** Reflecte as linhas do mapeamento de teclado (definido mais abaixo, com o painel `#ctrl`). */
+    let refletirTeclado = (): void => {};
     let personaAtual = personaMaisProxima(store.getNum(store.KEYS.padBtnMm, 12.5));
     const specDoPad = () => ({
       rotulo: t('motora.pad'),
@@ -2079,6 +2086,7 @@ export function createGame(o: CreateGameOptions): Engine {
       render: () => {
         personaAtual = personaMaisProxima(store.getNum(store.KEYS.padBtnMm, 12.5));
         if (passosDoPad) atualizarPassos(passosDoPad, specDoPad());
+        refletirTeclado();
       },
       primeiroFoco: '#opt-pad-persona',
     });
@@ -2103,6 +2111,150 @@ export function createGame(o: CreateGameOptions): Engine {
       srSay(`${t('motora.pad')}: ${t(PERSONAS_DO_PAD[nova]!.rotulo)}`);
     });
     acoesDaEngine.motora = painelDaMotora.abrir;
+
+    /*
+     * ===================== MAPEAR TECLADO — para 1, para 2 e para 3–4 jogadores (ADR-0151 §2 item 5) =====================
+     *
+     * 🎯 TRÊS LINHAS, UM PAINEL: cada linha abre o `#ctrl` no MODO dela, e o `ui/settings-controls` vê só os esquemas
+     * desse modo (`kbFor` e `getNumPlayers` respondem pelo modo, não pela partida). Uma criança sozinha pode assim
+     * preparar o teclado para quando o irmão se sentar ao lado, sem ter de entrar numa partida de dois.
+     *
+     * ⚠️ «3–4» É UM TECLADO SÓ, como o Dev o nomeou: edita-se o esquema de quatro, e os três primeiros assentos do
+     * modo de três acompanham (`kb.p3` é guardado à parte desde a migração do `p34`). Sem isto, a criança remapeava
+     * para «3–4» e, numa partida de três, as teclas antigas voltavam.
+     *
+     * ⚠️ E A LINHA «3–4» SÓ EXISTE SEM OMBROS NEM GATILHOS no preset: quatro esquemas num teclado já não têm teclas para
+     * as quatro posições laterais (errata do ADR-0151). A razão do Dev: no xadrez, quatro crianças contra quatro
+     * computadores diferentes — «o modo competitivo deve ser desencorajado».
+     */
+    type ModoDoTeclado = 1 | 2 | 4;
+    let modoDoTeclado: ModoDoTeclado = 1;
+    let assentoNoMapa = 0;
+    const esquemaDoModo = (conf: KBDefaults, i: number) => (modoDoTeclado === 1 ? conf.solo
+      : modoDoTeclado === 2 ? (conf.p2[i] ?? conf.p2[0]!) : (conf.p4[i] ?? conf.p4[0]!));
+    const rotuloDoModo = (m: ModoDoTeclado): string => t(m === 1 ? 'motora.teclado.1' : m === 2 ? 'motora.teclado.2' : 'motora.teclado.34');
+    const LATERAIS = ['leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger'] as const;
+    const acoesParaMapear = () => {
+      if (!cartucho.preset) return [];
+      const palavra = labellerFrom(cartucho.preset);
+      return presetActions(cartucho.preset).flatMap((acao) => {
+        const rotulo = palavra(acao);
+        return rotulo ? [{ acao, rotulo }] : [];
+      });
+    };
+    let passosDoAssento: HTMLElement | null = null;
+    const specDoAssento = () => ({
+      rotulo: t('ctrl.assento'),
+      valores: Array.from({ length: modoDoTeclado }, (_, i) => t('ctrl.jogador', { n: i + 1 })),
+      atual: assentoNoMapa,
+    });
+    const painelDoTeclado = montarPainel(ctxDaMotora, {
+      id: 'ctrl',
+      rotulos: () => ({
+        titulo: rotuloDoModo(modoDoTeclado),
+        rotuloDaLista: rotuloDoModo(modoDoTeclado),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('menu.close'),
+      }),
+      render: () => {
+        if (passosDoAssento) {
+          assentoNoMapa = Math.min(assentoNoMapa, modoDoTeclado - 1);
+          atualizarPassos(passosDoAssento, specDoAssento());
+          (passosDoAssento.closest('.ctrl-row') as HTMLElement).hidden = modoDoTeclado === 1;
+        }
+        controlesDoTeclado?.render(assentoNoMapa);
+      },
+      primeiroFoco: '#ctrl-list button',
+    });
+    {
+      // O ASSENTO, por passos — só nos modos de mais de um: «◀ Teclado de: Jogador 2 ▶».
+      const linhaDoAssento = doc.createElement('div');
+      linhaDoAssento.className = 'ctrl-row ctrl-row--passos';
+      passosDoAssento = montarPassos(ctxDaMotora, specDoAssento());
+      passosDoAssento.id = 'ctrl-assento';
+      linhaDoAssento.appendChild(passosDoAssento);
+      painelDoTeclado.casca.card.insertBefore(linhaDoAssento, painelDoTeclado.casca.lista);
+      passosDoAssento.addEventListener('passo', (ev) => {
+        const novo = passoSeguinte(assentoNoMapa, modoDoTeclado, (ev as CustomEvent<number>).detail);
+        if (novo === assentoNoMapa) return;
+        assentoNoMapa = novo;
+        atualizarPassos(passosDoAssento!, specDoAssento());
+        controlesDoTeclado?.render(assentoNoMapa);
+        srSay(`${t('ctrl.assento')}: ${t('ctrl.jogador', { n: novo + 1 })}`);
+      });
+    }
+    /** O modo de quatro arrasta os três primeiros assentos do modo de três — ver o cabeçalho acima. */
+    const sincronizarTres = (conf: KBDefaults): void => {
+      conf.p3.forEach((esq, i) => {
+        const de = conf.p4[i];
+        if (de) for (const a of ACTIONS) esq[a] = de[a] ? [...de[a]!] : de[a];
+      });
+    };
+    controlesDoTeclado = initSettingsControls({
+      $, srSay, srAlert,
+      acoesDoJogo: acoesParaMapear,
+      store: {
+        saveKB: (conf) => { if (modoDoTeclado === 4) sincronizarTres(conf); saveKB(conf); },
+        // ⚠️ «RESTAURAR» DESTE MODO, e não do teclado inteiro: quem repõe o teclado de dois não apaga o de um.
+        resetKB: () => {
+          const fabrica = fabricaComOJogo();
+          if (modoDoTeclado === 1) kb.solo = fabrica.solo;
+          else if (modoDoTeclado === 2) kb.p2 = fabrica.p2;
+          else { kb.p4 = fabrica.p4; kb.p3 = fabrica.p3; }
+          saveKB(kb);
+          return kb;
+        },
+      },
+      kb,
+      setKB,
+      kbFor: (i) => esquemaDoModo(kb, i),
+      kbPadraoFor: (i) => esquemaDoModo(fabricaComOJogo(), i),
+      getNumPlayers: () => modoDoTeclado,
+      applyControls: () => { keyboard.refreshControls(); },
+      assignControls: () => { keyboard.assignControls(); },
+      fillExplain: overlays.fillExplain,
+    });
+    // A CAPTURA RECEBE A TECLA ANTES DE TUDO O RESTO: em captura a navegação de menu já se afasta, e isto impede que a
+    // tecla gravada suba ainda até ao START, ao SELECT ou ao jogo.
+    win.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (controlesDoTeclado?.isCapturing() && controlesDoTeclado.handleCaptureKeydown(e)) e.stopPropagation();
+    }, true);
+
+    // AS TRÊS LINHAS no painel motora, cada uma uma PORTA para o `#ctrl` no seu modo.
+    const linhasDoTeclado: { modo: ModoDoTeclado; linha: HTMLElement; forte: HTMLElement; botao: HTMLElement }[] = [];
+    for (const modo of [1, 2, 4] as const) {
+      const linhaT = doc.createElement('div');
+      linhaT.className = 'ctrl-row';
+      const envelope = doc.createElement('span');
+      const forte = doc.createElement('strong');
+      envelope.appendChild(forte);
+      linhaT.appendChild(envelope);
+      const botao = doc.createElement('button');
+      botao.className = 'mode-btn';
+      botao.setAttribute('type', 'button');
+      botao.id = `opt-teclado-${modo}`;
+      botao.addEventListener('click', () => {
+        modoDoTeclado = modo;
+        assentoNoMapa = 0;
+        painelDoTeclado.abrir();
+      });
+      linhaT.appendChild(botao);
+      painelDaMotora.casca.lista.appendChild(linhaT);
+      linhasDoTeclado.push({ modo, linha: linhaT, forte, botao });
+    }
+    /** Rótulos no idioma de agora, e quem aparece: sem posições nomeadas não há o que mapear; «3–4» sem laterais. */
+    const refletirLinhasDoTeclado = (): void => {
+      const acoes = cartucho.preset ? presetActions(cartucho.preset) : [];
+      const temLaterais = acoes.some((a) => (LATERAIS as readonly string[]).includes(a));
+      for (const { modo, linha: l, forte, botao } of linhasDoTeclado) {
+        forte.textContent = rotuloDoModo(modo);
+        botao.textContent = t('motora.abrir');
+        botao.setAttribute('aria-label', rotuloDoModo(modo));
+        l.hidden = acoesParaMapear().length === 0 || (modo === 4 && temLaterais);
+      }
+    };
+    refletirLinhasDoTeclado();
+    refletirTeclado = refletirLinhasDoTeclado;
   }
   // Jogar no teclado ESCONDE o pad — a mesma alternância por modalidade do `input/keydown` do cartucho. Só as
   // teclas de algum jogador: um atalho do navegador não é a criança a trocar de aparelho.

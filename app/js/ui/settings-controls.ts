@@ -368,7 +368,9 @@ export function initSettingsControls(ctx: SettingsControlsCtx): SettingsControls
       });
     });
     // A prosa volta para o rodapé depois de as linhas serem reconstruídas (CLAUDE.md §4, #109).
-    ctx.fillExplain?.(ctx.$<HTMLElement>('#options .overlay__card'));
+    // ⚠️ NO CARTÃO DE QUEM TEM A LISTA, e não num `#options` fixo: a engine monta este painel com outro id
+    // (`#ctrl`, ADR-0151), e o rodapé de um painel que não está aberto não é o desta criança.
+    ctx.fillExplain?.(el.closest<HTMLElement>('.overlay__card'));
   }
 
   function isCapturing(): boolean {
