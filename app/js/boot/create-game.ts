@@ -72,6 +72,8 @@ import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform
 import { ehCego, ehBaixaVisao, PADRAO, filtroChave, type VisualState, type Tema, type Correcao } from '../render/viz-axes.js';
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
 import { VIZ_FILTER } from '../render/viz-modes.js';
+import { cicloDeTipografia, INICIO_DO_CICLO, FONT_BY_KEY } from '../ui/fonts.js';
+import { bcp47 } from '../core/i18n.js';
 import { invasoresDaBarra, type Caixa } from '../ui/layout.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
@@ -808,6 +810,26 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   let audio: SettingsAudioApi | null = null;
 
+  /*
+   * ⚠️ IÇADOS PARA CIMA DO `initPauseIcons` em 2026-09-12, e o motivo é de ORDEM e não de arrumação: a barra
+   * decide QUE ÍCONES monta no arranque (`iconesQueAccionam`, resolvido uma vez), e o 11.º — o ciclo de
+   * tipografia — só existe se o painel de tipografia existir. O painel nasce dentro de
+   * `if (hospedeiroDaPausa && pausaUsavel)`, ~250 linhas abaixo; lidos lá, a barra já tinha decidido.
+   *
+   * 📌 Içar em vez de duplicar a pergunta: `o.host.pauseHost ?? $('#game-region')` escrito em dois sítios
+   * seria a mesma resposta com duas fontes — o defeito que este ficheiro já apanhou no `getPlayers`.
+   */
+  const hospedeiroDaPausa = o.host.pauseHost ?? $('#game-region');
+  const pausaUsavel = !!hospedeiroDaPausa && typeof (hospedeiroDaPausa as HTMLElement).appendChild === 'function';
+  /*
+   * ⚠️ O 	ypo TAMBÉM SUBIU, e pelo mesmo motivo: ele era let DENTRO do bloco que monta os painéis, e
+   * o ciclo de tipografia da barra — que é decidido antes — precisa de o alcançar. Continua a ser atribuído
+   * lá em baixo; o que mudou é o ESCOPO, não o instante.
+   */
+  let typo: SettingsTypoApi | null = null;
+  /** A posição corrente do ciclo de tipografia. Ver a nota em `ciclarTipografia`, logo abaixo. */
+  let passoDaTipografia = INICIO_DO_CICLO;
+
   const pauseIcons = initPauseIcons({
     doc,
     /*
@@ -877,6 +899,33 @@ export function createGame(o: CreateGameOptions): Engine {
     // ⚠️ SEMPRE PASSADO AGORA, e já não só quando o jogo traz o seu. A ausência do cartucho deixou de
     // significar «tabela vazia»: significa «só o que a engine acciona», que é o que ADR-0106 §1 manda.
     getPauseActs: () => ({ ...acoesDaEngine, ...(cartucho.getPauseActs ? cartucho.getPauseActs() : {}) }),
+    /*
+     * O CICLO DE TIPOGRAFIA DO 11.º ÍCONE (ADR-0149 §1, ADR-0150 §2).
+     *
+     * 🎯 UMA PRESSÃO MUDA A CAIXA **E** A FACE, e é essa a decisão: `letterCase` (ADR-0028) e a face são hoje
+     * dois controles em dois sítios, e «Andika em caixa alta» é UMA escolha pedagógica de quem alfabetiza.
+     * Uma criança não devia ter de saber o modelo para a fazer.
+     *
+     * 📌 A POSIÇÃO VIVE AQUI, num `let` da raiz, e não em `core/state`: ela é derivada — a caixa e a face já
+     * são persistidas cada uma por si —, e guardar um índice ao lado do que ele deriva é o terceiro sítio
+     * para os três divergirem. Ao reabrir, o ciclo recomeça na posição padrão com a face que ficou.
+     *
+     * ⚠️ A MÃO DO PAÍS SAI DA ETIQUETA BCP-47 do idioma corrente, e o recuo é o do COLONIZADOR (ADR-0150):
+     * espanhol → Espanha, português → Portugal, inglês → Inglaterra. Uma língua fora do repertório devolve
+     * lista vazia e o ciclo fica com quatro posições — melhor uma a menos do que a mão de um país que não é
+     * o daquela criança.
+     */
+    ciclarTipografia: pausaUsavel ? (): string | null => {
+      // ⚠️ `typo` é lido AQUI e não na condição: ele nasce ~250 linhas abaixo, e a condição corre agora.
+      // Quem decide se o ícone existe é `pausaUsavel`, que é a MESMA pergunta que decide se o painel nasce.
+      if (!typo) return null;
+      const ciclo = cicloDeTipografia(bcp47());
+      passoDaTipografia = (passoDaTipografia + 1) % ciclo.length;
+      const passo = ciclo[passoDaTipografia]!;
+      state.setLetterCaseValue(passo.caixa);
+      typo.setFont(passo.fonte, false);
+      return FONT_BY_KEY[passo.fonte]?.fam ?? null;
+    } : undefined,
     ...(cartucho.setTemaDoJogador ? { setTemaDoJogador: cartucho.setTemaDoJogador } : {}),
     /*
      * 🚥 A CORREÇÃO DE DALTONISMO PASSA A TER PADRÃO DA ENGINE (ADR-0148 §1), e o ícone deixa de faltar.
@@ -1020,8 +1069,9 @@ export function createGame(o: CreateGameOptions): Engine {
    * declínio saiu, porque a razão de ele existir foi construída fora por este mesmo ADR-0106, e porque a
    * regra é do Dev — a pausa e os ícones de acessibilidade estão em todo jogo, logo são da engine.
    */
-  const hospedeiroDaPausa = o.host.pauseHost ?? $('#game-region');
-  const pausaUsavel = !!hospedeiroDaPausa && typeof (hospedeiroDaPausa as HTMLElement).appendChild === 'function';
+  // (`hospedeiroDaPausa` e `pausaUsavel` foram IÇADOS para cima do `initPauseIcons` em 2026-09-12 — ver a
+  //  nota lá. Dependem só de `o.host` e do `$`, que existem desde o início, e a barra precisa da resposta
+  //  ANTES de decidir que ícones monta.)
   if (!pausaUsavel) {
     problemasDoHospedeiro.push(
       'sem sítio para o menu de pausa: declare `host.pauseHost` ou tenha um #game-region que aceite filhos. '
@@ -1079,7 +1129,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * `initSettingsTypo` liga o `#typo-reset` UMA VEZ, no arranque (`ui/settings-typo:279`): com o `init`
      * antes, o botão de repor existiria e não faria nada — um botão morto, que é o que o §5 proíbe.
      */
-    let typo: SettingsTypoApi | null = null;
+    // (`let typo` subiu para cima do `initPauseIcons` em 2026-09-12 — ver a nota lá. A ATRIBUIÇÃO fica aqui.)
     const painelDeTipo = montarPainel(ctxDoPainel, {
       id: 'typo',
       rotulos: () => ({

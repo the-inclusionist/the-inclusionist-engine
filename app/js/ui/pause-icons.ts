@@ -105,6 +105,16 @@ export const PAUSE_ICONS: readonly PauseIcon[] = [
   { k: 'face', e: '🧑', n: 'icon.face', soon: true },
   { k: 'eyes', e: '👀', n: 'icon.eyes', soon: true },
   { k: 'voice', e: '👄', n: 'icon.voice', soon: true },
+  /*
+   * O DÉCIMO PRIMEIRO (ADR-0149 §1), e ele entra no FIM por uma razão de ordem e não de importância: quem
+   * navega a barra por teclado já aprendeu onde estão os dez, e inserir no meio deslocaria todos eles — o
+   * mesmo custo que o §2 do ADR-0044 recusa pagar no cartão de pausa.
+   *
+   * 📌 UM CICLO E NÃO UMA PORTA. O painel de tipografia continua a existir nas Configurações com as suas
+   * trinta faces; este botão é a escolha que se faz SEM sair da tela, numa pressão, e por isso é uma lista
+   * curta e curada em vez de um menu.
+   */
+  { k: 'tipografia', e: '🔤', n: 'icon.tipografia' },
 ];
 
 const ICON_BY_KEY: ReadonlyMap<string, PauseIcon> = new Map(PAUSE_ICONS.map((ic) => [ic.k, ic]));
@@ -364,6 +374,14 @@ export interface AccionaveisDoJogo {
    * jogo que arrancou primeiro. O contrato nunca esteve errado: `GameDeclaration.seguraTeclas` já é função.
    */
   readonly seguraTeclas: () => boolean;
+  /**
+   * Alguém sabe andar no ciclo de tipografia? (ADR-0149 §1.)
+   *
+   * ⚠️ OPCIONAL, e o padrão é `false` por omissão do chamador — ao contrário do `seguraTeclas`, que é
+   * obrigatório porque os dois valores dele erram. Aqui não: `false` esconde um ícone que não faria nada,
+   * que é exactamente o que o §5 do ADR-0106 quer. A assimetria é a mesma dos dois escritores visuais.
+   */
+  readonly tipografia?: boolean;
 }
 
 /**
@@ -385,7 +403,10 @@ export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly Pause
   return PAUSE_ICONS.filter((ic) => (ic.k === 'contrast' ? escritores.tema
     : ic.k === 'cvd' ? escritores.correcao
       : ic.k === 'altmove' ? escritores.seguraTeclas()
-        : true));
+        // 📌 O QUARTO RAMO, e é a mesma pergunta feita ao ciclo de tipografia (ADR-0149): o ícone existe
+        // quando alguém sabe andar nele. Sem isso seria um botão que anuncia e não muda nada.
+        : ic.k === 'tipografia' ? escritores.tipografia
+          : true));
 }
 
 /**
@@ -727,6 +748,17 @@ export interface PauseIconsCtx {
   setTemaDoJogador?: (i: number, tema: Tema) => void;
   setCorrecaoDoJogador?: (i: number, correcao: Correcao) => void;
   /**
+   * ANDA UM PASSO NO CICLO DE TIPOGRAFIA e devolve a face que ficou (ADR-0149 §1).
+   *
+   * 📌 UM CAMPO E NÃO DOIS (ler + escrever), porque quem tem de saber a posição é quem guarda o ciclo, e
+   * espalhá-la em dois sítios é a forma de eles divergirem. Este módulo só precisa do NOME da face para
+   * anunciar — o resto é da raiz.
+   *
+   * ⚠️ AUSENTE = O ÍCONE NÃO É MONTADO, pela mesma regra dos dois escritores visuais acima: um ícone que não
+   * acciona é pior do que um ícone a menos (ADR-0106 §5).
+   */
+  ciclarTipografia?: () => string | null;
+  /**
    * ESTE JOGO SEGURA ALGUMA TECLA? — o valor de `GameDeclaration.seguraTeclas` (ADR-0115). Sem ele o ícone
    * `altmove` não é montado.
    *
@@ -856,6 +888,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // RESPOSTA que o jogo deu, e envolvê-la faria um `undefined` de um ctx mal montado virar `false` —
     // esconder o controle em silêncio, que é metade do defeito que este campo existe para não cometer.
     seguraTeclas: ctx.seguraTeclas,
+    tipografia: Boolean(ctx.ciclarTipografia),
   });
 
   /*
@@ -971,6 +1004,21 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       const v = proximoTema((P()[i] || {}).visual ?? PADRAO);
       ctx.setTemaDoJogador(i, v.tema);
       ctx.srSay(t('sr.visual.contrast', { v: t(CURTO_DO_TEMA[v.tema]) }));
+    },
+    /*
+     * O CICLO DE TIPOGRAFIA (ADR-0149 §1): uma pressão muda a CAIXA e a FACE de uma vez.
+     *
+     * 📌 A guarda é a mesma dos dois abaixo e pela mesma razão escrita ali: sem quem accione, o ícone nem é
+     * montado — mas `iconAct` é EXPORTADO e um consumidor pode chamá-lo por chave. Sem ela, essa chamada
+     * rebentava; com ela, não faz nada e não anuncia, que é dizer a verdade.
+     *
+     * ⚠️ ANUNCIA A FACE E NÃO A POSIÇÃO. «Posição 3 de 5» não diz nada a ninguém; o nome da face é o que a
+     * criança reconhece, e é a mesma razão pela qual o ADR-0074 proíbe `action2` chegar a uma pessoa.
+     */
+    tipografia: () => {
+      if (!ctx.ciclarTipografia) return;
+      const face = ctx.ciclarTipografia();
+      if (face) ctx.srSay(t('sr.typo.font', { fam: face }));
     },
     cvd: (i) => {
       if (!ctx.setCorrecaoDoJogador) return;

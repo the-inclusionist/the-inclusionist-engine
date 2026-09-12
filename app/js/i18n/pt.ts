@@ -259,6 +259,8 @@ const pt: Record<string, string> = {
   'icon.face': 'Webcam — rosto',
   'icon.eyes': 'Webcam — olhos',
   'icon.voice': 'Comando de voz',
+  // O 11.º ícone (ADR-0149): um ciclo de tipografia — muda a CAIXA e a FACE de uma vez, sem sair da tela.
+  'icon.tipografia': 'Tipografia (letra e caixa)',
   'icon.state': '{nome}: {v}',
   'icon.soon': '{nome} (em construção)',
   'state.on': 'ligado',

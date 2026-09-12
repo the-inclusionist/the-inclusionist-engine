@@ -1061,7 +1061,9 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // pior do que uma barra que ela vê que não está lá, porque a primeira ensina-lhe que o caminho não é
     // para ela». Os outros oito ícones continuam — perder a barra inteira por causa de dois seria a troca
     // errada.
-    const chaves = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true }).map((ic) => ic.k);
+    // 📌 	ipografia: true desde 2026-09-12 (ADR-0149): o 11.o icone tem a mesma regra dos dois visuais, e
+    // deixa-lo de fora aqui mediria DUAS ausencias em vez da que o caso nomeia.
+    const chaves = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
     expect(chaves).not.toContain('contrast');
     expect(chaves).not.toContain('cvd');
     expect(chaves).toContain('blind');
@@ -1070,7 +1072,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   });
 
   it('[Right] COM escritor visual, a barra é a lista inteira e na mesma ordem', () => {
-    expect(iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true })).toEqual(PAUSE_ICONS);
+    expect(iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true, tipografia: true })).toEqual(PAUSE_ICONS);
   });
 
   it('⚠️ [Boundary] com UM escritor só, aparece UM ícone só — e é o que funciona', () => {
@@ -1079,7 +1081,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // `&&` por `||` não reprovava nada — porque todos os casos tiravam os DOIS. E os dois operadores erram,
     // em direcções opostas: o `&&` esconde um ícone que FUNCIONA, o `||` mostra um que NÃO funciona. A
     // pergunta certa é por ÍCONE.
-    const soTema = iconesQueAccionam({ tema: true, correcao: false, seguraTeclas: () => true }).map((ic) => ic.k);
+    const soTema = iconesQueAccionam({ tema: true, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
     expect(soTema).toContain('contrast');
     expect(soTema).not.toContain('cvd');
 
@@ -1108,7 +1110,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
    * DESABILITADO com o motivo, porque o aparelho EXIGE a alternância. Aqui não há nada a travar, e explicar
    * por que um controle não faz nada continua a ser entregar um controle que não faz nada. */
   it('🎯 [Zero] um jogo que NÃO segura teclas não recebe o ícone `altmove`', () => {
-    const chaves = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => false }).map((ic) => ic.k);
+    const chaves = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => false, tipografia: true }).map((ic) => ic.k);
     expect(chaves, 'o `altmove` foi montado num jogo que não segura nada').not.toContain('altmove');
     expect(chaves).toHaveLength(PAUSE_ICONS.length - 1);
   });
@@ -1116,7 +1118,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   it('⚠️ [Right] e o PAR: um jogo que segura recebe-o — senão «ausente» passaria por nunca montar nada', () => {
     // Sem este caso, uma implementação que devolvesse lista vazia satisfaria o de cima. É a mesma razão pela
     // qual o [Zero] dos escritores visuais tem o seu par logo acima.
-    const chaves = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true }).map((ic) => ic.k);
+    const chaves = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
     expect(chaves).toContain('altmove');
   });
 
@@ -1124,13 +1126,16 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // Os três ramos do filtro são perguntas separadas, e uma implementação que colapsasse duas delas numa
     // bandeira só passaria nos casos de cima — foi exactamente o defeito que a mutação `&&`/`||` expôs para
     // o par tema/correcção.
+    // ⚠️ 	ipografia FICA DE FORA aqui de propósito, e o número abaixo conta QUATRO ausências: este caso mede
+    // que os ramos do filtro sao INDEPENDENTES, e o quarto ramo entrou em 2026-09-12 (ADR-0149).
     const semNada = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => false }).map((ic) => ic.k);
     expect(semNada).not.toContain('contrast');
     expect(semNada).not.toContain('cvd');
     expect(semNada).not.toContain('altmove');
-    expect(semNada).toHaveLength(PAUSE_ICONS.length - 3);
+    expect(semNada).not.toContain('tipografia');
+    expect(semNada).toHaveLength(PAUSE_ICONS.length - 4);
 
-    const soAlternancia = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true }).map((ic) => ic.k);
+    const soAlternancia = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
     expect(soAlternancia).toContain('altmove');
     expect(soAlternancia).not.toContain('contrast');
   });

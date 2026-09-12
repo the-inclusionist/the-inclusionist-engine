@@ -174,6 +174,7 @@ const en: Record<string, string> = {
   'icon.face': 'Webcam — face',
   'icon.eyes': 'Webcam — eyes',
   'icon.voice': 'Voice command',
+  'icon.tipografia': 'Typography (letterform and case)',
   'icon.state': '{nome}: {v}',
   'icon.soon': '{nome} (under construction)',
   'state.on': 'on',

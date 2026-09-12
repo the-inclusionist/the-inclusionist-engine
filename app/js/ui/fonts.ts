@@ -30,6 +30,92 @@ import * as store from '../platform/storage.js';
  */
 export type FontRole = 'geral' | 'caligrafica' | 'jogo';
 
+/**
+ * A MÃO DO PAÍS DESTA CRIANÇA, e o recuo do COLONIZADOR quando o país não tem a sua (ADR-0150 §1).
+ *
+ * 🎯 A regra é do Dev e é mais verdadeira do que a que substituiu: o ADR-0012 diz que a mão que se aprende a
+ * escrever é NACIONAL e não linguística, e nunca disse o que fazer com as nações sem face própria. «O que os
+ * Estados Unidos ensinam» era um padrão vestido de país; a mão do colonizador é uma afirmação verdadeira
+ * sobre como a escola daquela criança a ensinou a escrever.
+ *
+ * 📌 E TRÊS FACES FECHAM O BURACO INTEIRO, porque o repertório já está limitado a inglês, português e
+ * espanhol (ADR-0012). É o que torna a regra mais verdadeira também a mais barata de empacotar.
+ *
+ * ⚠️ ONDE O PAÍS ENSINA DUAS MÃOS, DEVOLVE AS DUAS, na ordem do Dev — a tradicional primeiro. É o que faz o
+ * ciclo do 11.º botão ter SEIS posições nesses países em vez de cinco.
+ */
+const MAO_POR_PAIS: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  BR: ['pwbr'],
+  US: ['pwustrad', 'pwusmod'],   // os EUA ensinam duas, e escolher uma seria escolher pela criança
+  GB: ['pwgbj', 'pwgbs'],        // joined e semi-joined
+  ES: ['pwes', 'pwesdeco'],
+  PT: ['pwpt'],
+  CA: ['pwca'], MX: ['pwmx'], AR: ['pwar'], CL: ['pwcl'], CO: ['pwco'], CU: ['pwcu'], PE: ['pwpe'],
+});
+
+/** O recuo por LÍNGUA: a mão do colonizador. Três entradas cobrem todo país que o repertório admite. */
+const MAO_POR_LINGUA: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  es: ['pwes', 'pwesdeco'],
+  pt: ['pwpt'],
+  en: ['pwgbj', 'pwgbs'],
+});
+
+/**
+ * As chaves de fonte manuscrita para uma etiqueta BCP-47 — `pt-BR` → `['pwbr']`, `es-MX` → `['pwmx']`.
+ *
+ * ⚠️ LÊ A REGIÃO E DEPOIS A LÍNGUA, nesta ordem, e o caso que se esquece é a etiqueta SEM região: `en` sozinho
+ * não nomeia país nenhum, e cair no recuo é a resposta certa — não é um erro, é uma criança cujo navegador
+ * não disse onde ela está.
+ *
+ * 📌 Devolve LISTA e não uma face: onde o país ensina duas mãos, as duas entram no ciclo.
+ * 📌 Devolve VAZIO para uma língua fora do repertório, e o vazio é dizível: quem chama tira a posição do
+ * ciclo em vez de mostrar uma mão que não é de ninguém.
+ */
+/** Uma posição do ciclo de tipografia do 11.º botão: a CAIXA e a FACE, juntas (ADR-0149 §1). */
+export interface PassoDeTipografia {
+  /** `upper` = CAIXA ALTA; `mixed` = maiúscula e minúscula. Os valores de `core/state.letterCase`. */
+  readonly caixa: 'upper' | 'mixed';
+  /** A chave da face no catálogo. */
+  readonly fonte: string;
+}
+
+/**
+ * O CICLO DO 11.º BOTÃO — cinco posições, ou seis onde o país ensina duas mãos (ADR-0149 §1, ADR-0150 §2).
+ *
+ * 🎯 CADA PASSO MUDA A CAIXA **E** A FACE, e é essa a decisão inteira. Hoje `letterCase` (`core/state`,
+ * ADR-0028) e a face são dois controles em dois sítios; «Andika em caixa alta» é UMA escolha pedagógica de
+ * quem alfabetiza, não duas. Uma criança não devia ter de saber o modelo para a fazer.
+ *
+ * 📌 COMEÇA NA ATKINSON, que é a posição (c) e o padrão do projeto. O ciclo é um anel: a partir dela, uma
+ * pressão vai para a Lexend e a última volta ao início.
+ *
+ * ⚠️ A MÃO DO PAÍS PODE NÃO EXISTIR — uma etiqueta sem região e numa língua fora do repertório devolve vazio.
+ * Nesse caso o ciclo tem QUATRO posições, e isso é a resposta certa: melhor uma posição a menos do que uma
+ * que mostre a mão de um país que não é o daquela criança.
+ */
+export function cicloDeTipografia(tag: string | null | undefined): readonly PassoDeTipografia[] {
+  const maos = maosDaEtiqueta(tag);
+  return Object.freeze([
+    { caixa: 'upper', fonte: 'andika' } as const,   // (a) o par da alfabetização
+    { caixa: 'mixed', fonte: 'andika' } as const,   // (b)
+    { caixa: 'mixed', fonte: 'atkinson' } as const, // (c) o padrão — o ciclo começa aqui
+    { caixa: 'mixed', fonte: 'lexend' } as const,   // (d)
+    ...maos.map((fonte) => ({ caixa: 'mixed', fonte } as const)), // (e), e (f) onde o país ensina duas
+  ]);
+}
+
+/** O índice de onde o ciclo COMEÇA — a posição (c). Nomeado para o crivo o poder afirmar sem o recontar. */
+export const INICIO_DO_CICLO = 2;
+
+export function maosDaEtiqueta(tag: string | null | undefined): readonly string[] {
+  if (!tag) return [];
+  const partes = String(tag).split('-');
+  const lingua = (partes[0] ?? '').toLowerCase();
+  const regiao = partes.slice(1).find((p) => /^[A-Za-z]{2}$/.test(p))?.toUpperCase();
+  if (regiao && MAO_POR_PAIS[regiao]) return MAO_POR_PAIS[regiao]!;
+  return MAO_POR_LINGUA[lingua] ?? [];
+}
+
 export type FontItem = {
   k: string; fam: string; fb: string; d?: string; off?: string;
   /** Ausente = `geral`. Só as caligráficas se declaram, porque são a excepção. */

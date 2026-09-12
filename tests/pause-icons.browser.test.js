@@ -76,6 +76,10 @@ function makeCtx(over = {}) {
     // Este duplo é de forma de PLATAFORMA — segura direcção — logo a barra dele tem o `altmove` (ADR-0115).
     // A metade que prova a AUSÊNCIA vive no project node, onde a regra mora.
     seguraTeclas: () => true,
+    // 📌 O 11.º ícone (ADR-0149) só é montado por quem sabe andar no ciclo de tipografia — a mesma regra dos
+    // dois escritores visuais acima. Este ficheiro mede as INVARIANTES da barra montada e não o filtro, que
+    // vive no project node; sem esta linha ele mediria uma barra com um ícone a menos.
+    ciclarTipografia: () => 'Atkinson Hyperlegible',
     ...over,
   };
   return { ctx, state, said, alerted };
