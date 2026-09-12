@@ -432,6 +432,11 @@ const pt: Record<string, string> = {
   'menu.restoreDefaults': 'Restaurar padrões deste menu',
   'menu.close': 'Fechar',
   'menu.typo': 'Tipografia',
+  // O TÍTULO do painel, sem o emoji: `pause.caa` é o rótulo do BOTÃO no cartão de pausa, onde o símbolo ajuda
+  // a distinguir sete itens de relance. Dentro do painel já se sabe onde se está, e um emoji no `<h2>` é lido
+  // em voz alta por quem usa leitor de tela antes do nome do que ele abriu.
+  'menu.caa': 'Comunicação',
+  'caa.grupo.rotulo': 'Escolhas de comunicação',
   'sr.audio.reset': 'Acessibilidade auditiva restaurada aos padrões. Os outros menus não mudaram.',
   'sr.empathy.reset': 'Modo empatia restaurado aos padrões: simulações desligadas. Correções de daltonismo e os outros menus não mudaram.',
   'sr.motor.reset': 'Modo Fácil e movimento por alternância restaurados aos padrões. O controle pelos olhos e o mapeamento de teclas continuam como estavam.',

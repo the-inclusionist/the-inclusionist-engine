@@ -343,6 +343,11 @@ const en: Record<string, string> = {
   'menu.restoreDefaults': 'Restore this menu to its defaults',
   'menu.close': 'Close',
   'menu.typo': 'Typography',
+  // The panel TITLE, without the emoji: `pause.caa` labels the BUTTON on the pause card, where a symbol helps
+  // tell seven items apart at a glance. Inside the panel you already know where you are, and an emoji in the
+  // `<h2>` is read aloud before the name of what it opened.
+  'menu.caa': 'Communication',
+  'caa.grupo.rotulo': 'Communication choices',
   'sr.audio.reset': 'Hearing accessibility restored to its defaults. The other menus did not change.',
   'sr.empathy.reset': 'Empathy mode restored to its defaults: simulations off. Colour-blindness corrections and the other menus did not change.',
   'sr.motor.reset': 'Easy Mode and latched movement restored to their defaults. Eye control and the key mapping are unchanged.',

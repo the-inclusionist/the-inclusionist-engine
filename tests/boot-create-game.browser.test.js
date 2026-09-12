@@ -496,6 +496,58 @@ describe('createGame num documento de verdade', () => {
         .toContain(padrao);
     });
 
+    it('🎯 [Right] o painel de COMUNICAÇÃO também está lá, e o clique abre-o com a caixa da letra', () => {
+      // O segundo dos oito, e o que ele mede é a generalização: o `montarPainel` serve um painel que tem
+      // `open()`/`close()` próprios tão bem como um que não tem. 📌 O estado já era da engine desde a Fase 2
+      // (`core/state.letterCase`) — o que faltava era alguém ligar duas peças da mesma casa.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="caa"]');
+      expect(item, 'o item de comunicação nem foi montado').not.toBeNull();
+      expect(item.hidden, 'o item existe e está escondido: a engine não o acciona').toBe(false);
+
+      item.click();
+      const painel = document.querySelector('#caa');
+      expect(painel.hidden, 'o clique não revelou o painel').toBe(false);
+      expect(document.querySelector('#caa-caixa-alta'), 'abriu sem a escolha da caixa da letra').not.toBeNull();
+    });
+
+    it('🔴 [Right] o interruptor da CAIXA ALTA diz a verdade depois de a criança lhe tocar', async () => {
+      // ⚠️ ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE. Congelar o `getLetterCase` no arranque não reprovava
+      // nada, e o defeito que ele produz é o pior desta casa: o estado MUDA e o controle continua a dizer o
+      // contrário. É a família do `reflectTTS` e do `#opt-modocego`, que este projeto já pagou duas vezes.
+      // 📌 As duas metades juntas, e é isso que o torna um portão: o `core/state` mudou E o botão conta-o.
+      const state = await import('../app/js/core/state.js');
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="caa"]').click();
+
+      const antes = state.letterCase;
+      document.querySelector('#caa-caixa-alta').click();
+      expect(state.letterCase, 'o clique não mudou o estado da engine').not.toBe(antes);
+      // ⚠️ RELIDO DO DOCUMENTO: o `render()` reconstrói a lista inteira, então o nó de antes do clique está
+      // fora da árvore e responderia pelo estado velho sem ninguém reparar.
+      expect(document.querySelector('#caa-caixa-alta').getAttribute('aria-pressed'),
+        'o estado mudou e o interruptor continua a anunciar o anterior').toBe(String(state.letterCase === 'upper'));
+
+      // e devolve ao padrão, para não deixar a caixa trocada aos casos seguintes
+      document.querySelector('#caa-reset').click();
+    });
+
+    it('🔴 [Right] o FECHAR do CAA tem UM dono — e o Escape passa pelo mesmo caminho', () => {
+      // ⚠️ `settings-caa` liga o `#caa-close` sozinho no init. Se a casca ligasse um segundo ouvinte, o botão
+      // teria dois donos; e se ela registasse o SEU closer na cadeia do Escape, o botão e a tecla fariam o
+      // mesmo trabalho por caminhos diferentes — que é como um deles fica para trás.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="caa"]').click();
+      expect(motor.overlays.escapeTarget(), 'o painel abriu fora da cadeia do Escape').toBe('caa');
+
+      document.querySelector('#caa-close').click();
+      expect(document.querySelector('#caa').hidden, 'o botão de fechar não fechou').toBe(true);
+      expect(motor.overlays.escapeTarget(), 'fechou à vista e continua a ser o alvo do Escape').toBeNull();
+    });
+
     it('🔴 [Boundary] hospedeiro FORA de `#game-region` vira linha em `problems`, e não silêncio', () => {
       // ⚠️ ESTE É O CASO DO SILÊNCIO. `ui/settings-panel.topVisibleOverlay` varre `'#game-region .overlay'`, e é
       // por ele que o `ui/menu-nav` acha o diálogo de cima para andar com as setas. Um painel pendurado fora

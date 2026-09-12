@@ -343,6 +343,11 @@ const es: Record<string, string> = {
   'menu.restoreDefaults': 'Restaurar los valores predeterminados de este menú',
   'menu.close': 'Cerrar',
   'menu.typo': 'Tipografía',
+  // El TÍTULO del panel, sin el emoji: `pause.caa` rotula el BOTÓN de la tarjeta de pausa, donde un símbolo
+  // ayuda a distinguir siete elementos de un vistazo. Dentro del panel ya se sabe dónde se está, y un emoji en
+  // el `<h2>` se lee en voz alta antes del nombre de lo que abrió.
+  'menu.caa': 'Comunicación',
+  'caa.grupo.rotulo': 'Opciones de comunicación',
   'sr.audio.reset': 'Accesibilidad auditiva restaurada a sus valores predeterminados. Los demás menús no cambiaron.',
   'sr.empathy.reset': 'Modo empatía restaurado a sus valores predeterminados: simulaciones desactivadas. Las correcciones de daltonismo y los demás menús no cambiaron.',
   'sr.motor.reset': 'Modo Fácil y movimiento por alternancia restaurados a sus valores predeterminados. El control con los ojos y el mapeo de teclas siguen igual.',

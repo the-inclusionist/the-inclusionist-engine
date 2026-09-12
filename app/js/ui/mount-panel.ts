@@ -75,6 +75,21 @@ export interface MountPanelSpec {
    * keyboard, and `aria-modal` makes that worse: the reader is told it is modal and then left outside.
    */
   readonly primeiroFoco?: string;
+  /**
+   * THIS PANEL ALREADY WIRES ITS OWN `#X-close`, so pass its `close()` here instead of letting this file wire
+   * a second listener onto the same button.
+   *
+   * 📏 Measured across the eight on 2026-09-11, and the three-way split is why this field is a function rather
+   * than a flag: `settings-typo`, `-motor`, `-controls`, `-visual` and `-audio` have no `close()` at all and
+   * need the whole five lines; `settings-caa` and `-empathy` have one AND bind the button themselves at init;
+   * `settings-motion` has one and does NOT bind the button, so it takes the default path and its `close()`
+   * simply goes unused.
+   *
+   * ⚠️ AND IT IS THE ESCAPE CHAIN THAT MAKES THIS MATTER, not tidiness. If this file wired its own closer and
+   * registered it while the panel's button ran the panel's closer, one control would take two paths to the
+   * same job — and the day one of them learns to do something extra, only half the ways out learn it.
+   */
+  readonly fecharProprio?: () => void;
 }
 
 export interface MountedPanel {
@@ -95,10 +110,10 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
   // would be the same operation written twice.
   ctx.host.appendChild(casca.overlay);
 
-  const fechar = (): void => {
+  const fechar = spec.fecharProprio ?? ((): void => {
     casca.overlay.hidden = true;
     ctx.overlays.restoreFocus?.(spec.id);
-  };
+  });
 
   const abrir = (): void => {
     // ⚠️ OS RÓTULOS ANTES DO `render()`, e a ordem tem consequência: `ui/settings-panel.fillExplain` lê o
@@ -112,7 +127,9 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
     (pedido ?? primeiroVivo ?? casca.fechar).focus?.();
   };
 
-  casca.fechar.addEventListener('click', fechar);
+  // Só quando o painel NÃO liga o próprio botão. Ver `fecharProprio`: dois ouvintes no mesmo controle são dois
+  // donos da mesma saída, e é assim que elas divergem.
+  if (!spec.fecharProprio) casca.fechar.addEventListener('click', fechar);
   // ⚠️ THE ESCAPE CHAIN IS NOT DECORATION. `ui/settings-panel.escapeTarget()` walks the registry, and under
   // `createGame` that registry was EMPTY — nothing had ever registered. A modal dialog no key closes is the
   // trap ADR-0044 §2 names about the pause itself: «a menu you cannot leave is a trap, and the trap costs

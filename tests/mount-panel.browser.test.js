@@ -173,6 +173,26 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     expect(p.casca.card.hasAttribute('data-explain-idle'), 'a introdução do idioma anterior sobreviveu').toBe(false);
   });
 
+  it('🎯 [Right] com `fecharProprio`, o botão tem UM dono — e a cadeia do Escape usa o MESMO', () => {
+    // 📏 Três dos oito painéis têm `close()` próprio, e dois deles (`caa`, `empathy`) ligam o `#X-close`
+    // sozinhos no init. Ligar aqui um segundo ouvinte punha dois donos no mesmo botão; e, pior, a cadeia do
+    // Escape usaria o desta casca enquanto o botão usava o do painel — uma saída, dois caminhos.
+    let fechou = 0;
+    const meuFechar = () => { fechou += 1; };
+    const p = montarPainel(ctx(), spec({ fecharProprio: meuFechar }));
+    p.abrir();
+    p.casca.fechar.click();
+    expect(fechou, 'a casca ligou um ouvinte por cima do que o painel já tinha').toBe(0);
+
+    // e a cadeia do Escape fecha pelo caminho DO PAINEL, não por um closer paralelo desta casca
+    registados.get('fixture').close();
+    expect(fechou, 'o Escape fechou por um caminho que o botão não usa').toBe(1);
+    expect(p.fechar, 'o `fechar` devolvido não é o do painel').toBe(meuFechar);
+
+    // ⚠️ E a casca NÃO esconde por conta própria: quem sabe o que fechar significa neste painel é ele.
+    expect(p.casca.overlay.hidden, 'a casca escondeu por trás do closer do painel').toBe(false);
+  });
+
   it('[Right] o render corre a CADA abertura, não uma vez na montagem', () => {
     // Um painel que renderiza uma vez mostra estado velho depois de a criança mexer no mesmo ajuste pela
     // barra rápida — e o `fillExplain` tem de correr outra vez ou a prosa volta para dentro das linhas.

@@ -74,6 +74,7 @@ import { LOGICAL_W } from '../core/constants.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
+import { initSettingsCaa, type SettingsCaaApi } from '../ui/settings-caa.js';
 import * as store from '../platform/storage.js';
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
@@ -910,6 +911,41 @@ export function createGame(o: CreateGameOptions): Engine {
         : {}),
     });
     acoesDaEngine.tipo = painelDeTipo.abrir;
+
+    /*
+     * CAA — COMUNICAÇÃO ALTERNATIVA, e a caixa da letra (ADR-0028).
+     *
+     * 📌 O ESTADO JÁ ERA DA ENGINE, o que faltava era a porta: `core/state.letterCase` e `setLetterCaseValue`
+     * existem desde a Fase 2, e o painel só pedia um leitor e um escritor à volta deles. É a medida do que
+     * separava os oito painéis da engine — não conhecimento novo, apenas ninguém a ligar duas peças suas.
+     *
+     * ⚠️ O `setLetterCase` do `ctx` é o do `core/state` MAIS «a reflexão que o jogo precisa», diz o campo. A
+     * engine faz a primeira metade e não inventa a segunda: um jogo que redesenhe texto ao trocar a caixa
+     * sobrepõe o item `caa` pela sua própria tabela, como qualquer outro.
+     */
+    let caa: SettingsCaaApi | null = null;
+    const painelDeCaa = montarPainel(ctxDoPainel, {
+      id: 'caa',
+      rotulos: () => ({
+        titulo: t('menu.caa'),
+        rotuloDaLista: t('caa.grupo.rotulo'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('menu.close'),
+      }),
+      render: () => caa?.render(),
+      // ⚠️ ELE LIGA O PRÓPRIO `#caa-close` no init — medido, e é a razão de este campo existir. Ver a nota em
+      // `MountPanelSpec.fecharProprio`: dois ouvintes no mesmo botão são dois donos da mesma saída.
+      fecharProprio: () => caa?.close(),
+    });
+    caa = initSettingsCaa({
+      $, srSay,
+      getLetterCase: () => state.letterCase,
+      setLetterCase: (c) => state.setLetterCaseValue(c),
+      frontOverlay: overlays.frontOverlay,
+      fillExplain: overlays.fillExplain,
+      restoreFocus: overlays.restoreFocus,
+    });
+    acoesDaEngine.caa = painelDeCaa.abrir;
   }
 
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.
