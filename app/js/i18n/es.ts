@@ -193,6 +193,8 @@ const es: Record<string, string> = {
   'contrast.3': '3:1',
   'contrast.45': '4,5:1',
   'contrast.7': '7:1',
+  'visual.lq': 'Realce de contraste',
+  'visual.lq.dica': 'Curva de tono en toda la pantalla: lineal estira el contraste, cuadrático realza sombras y luces, y mixto queda entre los dos. Vale para todos los jugadores.',
   'lq.off': 'desactivado',
   'lq.linear': 'lineal',
   'lq.mixed': 'mixto',

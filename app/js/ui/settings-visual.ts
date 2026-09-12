@@ -9,6 +9,8 @@
 
 import { toggleLabel } from './dom.js';
 import { t } from '../core/i18n.js';
+import { montarPassos, atualizarPassos, passoSeguinte } from './panel-widgets.js';
+import { escaparHtml } from '../core/escape-html.js';
 
 import { lqName as lqLabel } from '../render/lq-filter.js';
 
@@ -138,12 +140,32 @@ export function clamp01(t: number): number {
  */
 export { lqName as lqLabel } from '../render/lq-filter.js';
 
-/** t (0..1) -> slider percent (0..100, rounded) — mirrors `Math.round(lqT*100)`. */
+/**
+ * AS QUATRO POSIÇÕES DO REALCE DE CONTRASTE, escolhidas com esquerda e direita (ADR-0151): desligado, linear, misto
+ * e quadrático — «da mesma forma que se troca o número de jogadores, e não através de uma barra».
+ *
+ * ⚠️ O VALOR DE «LINEAR» NÃO PODE SER ZERO: `setLq(0)` desliga o filtro, e qualquer valor acima liga a curva. 0,05 é
+ * o primeiro passo que o cursor antigo dava — o valor mais linear que ainda liga o filtro. Misto é o meio, e
+ * quadrático é a curva S inteira. Cada posição cai na faixa que o `lqName` já dá ao seu nome.
+ */
+export const LQ_PASSOS: readonly number[] = [0, 0.05, 0.5, 1];
+
+/**
+ * Em que posição está um valor contínuo — incluindo um GUARDADO pelo cursor antigo (0,35, 0,7…). Pela faixa do
+ * `lqName`, e não pelo valor mais próximo: é o NOME que a criança ouviu que tem de continuar a ser o de agora.
+ */
+export function lqPosicao(amount: number): number {
+  return Math.max(0, ['lq.off', 'lq.linear', 'lq.mixed', 'lq.quadratic'].indexOf(lqLabel(amount)));
+}
+
+/** t (0..1) -> slider percent (0..100, rounded) — mirrors `Math.round(lqT*100)`.
+ *  @deprecated Desde o ADR-0151 o realce é escolhido por PASSOS (`LQ_PASSOS`/`lqPosicao`); fica pelo consumidor. */
 export function lqPercent(t: number): number {
   return Math.round(clamp01(t) * 100);
 }
 
-/** slider percent (any number) -> clamped t (0..1) — mirrors `+lq.value/100` fed into setLq's clamp. */
+/** slider percent (any number) -> clamped t (0..1) — mirrors `+lq.value/100` fed into setLq's clamp.
+ *  @deprecated Desde o ADR-0151 o realce é escolhido por PASSOS; fica pelo consumidor. */
 export function lqFromPercent(pct: number): number {
   return clamp01(pct / 100);
 }
@@ -207,8 +229,11 @@ export function renderVisualPanelHtml(_contrastValue: string, s: VisualSettings)
       `<input type="color" id="opt-role-${k}" value="${rgbToHex(s.roleColors[k])}" aria-label="Cor de ${ROLE_LABELS[k]}" style="inline-size:2.2em;block-size:1.8em;padding:0;border:1px solid #666;border-radius:4px;background:none">`,
   ).join('');
   return (
-    '<div class="ctrl-row"><span><strong>Realce de contraste (Linear → Quadrático)</strong> — curva de tom na tela inteira: o começo da faixa estica o contraste (linear), o fim realça sombras e altas-luzes (curva S quadrática). Zero desliga. Vale para todos os jogadores.</span>' +
-    '<span style="display:flex;align-items:center;gap:.4rem"><input type="range" id="opt-lq" min="0" max="100" step="5" style="width:9em" aria-label="Realce de contraste: zero desligado, começo linear, fim quadrático"><strong id="opt-lq-val" aria-hidden="true"></strong></span></div>' +
+    // 🔴 O REALCE DE CONTRASTE, EM PASSOS E COM A PROSA NO SÍTIO CERTO (ADR-0151). O Dev viu a explicação DENTRO da
+    // linha: ela vinha colada ao rótulo e dependia de o hospedeiro passar o `fillExplain` para descer ao rodapé.
+    // Agora mora num `.opt-hint` desde a nascença (`CLAUDE.md` §4), e o cursor virou o lugar dos passos ⯇ ⯈.
+    '<div class="ctrl-row"><span><strong>' + escaparHtml(t('visual.lq')) + '</strong><span class="opt-hint">' +
+    escaparHtml(t('visual.lq.dica')) + '</span></span><span data-passos-lugar="lq"></span></div>' +
     '<div class="ctrl-row"><span><strong>Itens na cor do dono</strong> — no multiplayer, cada jogador vê os próprios itens na cor dele. Desligado: itens na cor original para todos.</span>' +
     `<button id="opt-ownercolors" class="mode-btn${s.ownerColors ? ' is-on' : ''}" type="button" aria-pressed="${s.ownerColors}">${onOffLabel(s.ownerColors)}</button></div>` +
     '<div class="ctrl-row"><span><strong>Paleta segura para daltonismo</strong> — troca as cores de jogadores, itens e efeitos pela paleta Okabe-Ito (distinguível em protan/deutan/tritan). O cenário mantém as cores naturais.</span>' +
@@ -267,23 +292,23 @@ export function initSettingsVisual(ctx: SettingsVisualCtx): SettingsVisual {
     ctx.renderEixosVisuais('#visual-modes', '#visual-players');
     el.innerHTML = renderVisualPanelHtml(contrastValue, settings);
 
-    const lq = ctx.$<HTMLInputElement>('#opt-lq');
-    const lqv = ctx.$<HTMLElement>('#opt-lq-val');
-    if (lq) {
-      // O parâmetro chamava-se `t` e passou a `amount`: `lqLabel` agora devolve uma chave que precisa de
-      // `t()` para virar texto, e o nome antigo sombreava justamente a função que faltava chamar aqui.
-      const reflect = (amount: number): void => {
-        if (lqv) lqv.textContent = t(lqLabel(amount));
-      };
-      lq.value = String(lqPercent(settings.lq));
-      reflect(settings.lq);
-      lq.addEventListener('input', () => {
-        const amount = lqFromPercent(Number(lq.value));
-        ctx.setLq(amount);
-        reflect(amount);
-      });
-      lq.addEventListener('change', () => {
-        ctx.srSay(t('sr.visual.lq', { v: t(lqLabel(lqFromPercent(Number(lq.value)))) }));
+    // OS PASSOS DO REALCE (ADR-0151). A posição é LOCAL ao controle: o `setLq` injectado pode não devolver o valor
+    // novo em `getVisualSettings` até ao próximo render, e reler dali voltaria a posição para trás.
+    const lugarLq = ctx.$<HTMLElement>('[data-passos-lugar="lq"]');
+    if (lugarLq) {
+      const doc = lugarLq.ownerDocument;
+      let posicao = lqPosicao(settings.lq);
+      const spec = () => ({ rotulo: t('visual.lq'), valores: LQ_PASSOS.map((v) => t(lqLabel(v))), atual: posicao });
+      const passos = montarPassos({ procurar: (sel) => ctx.$<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) }, spec());
+      passos.id = 'opt-lq';
+      lugarLq.replaceWith(passos);
+      passos.addEventListener('passo', (ev) => {
+        const nova = passoSeguinte(posicao, LQ_PASSOS.length, (ev as CustomEvent<number>).detail);
+        if (nova === posicao) return; // na ponta não se anuncia um passo que não aconteceu
+        posicao = nova;
+        ctx.setLq(LQ_PASSOS[posicao] as number);
+        atualizarPassos(passos, spec());
+        ctx.srSay(t('sr.visual.lq', { v: t(lqLabel(LQ_PASSOS[posicao] as number)) }));
       });
     }
 

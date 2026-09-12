@@ -192,6 +192,8 @@ const en: Record<string, string> = {
   'contrast.3': '3:1',
   'contrast.45': '4.5:1',
   'contrast.7': '7:1',
+  'visual.lq': 'Contrast enhancement',
+  'visual.lq.dica': 'A tone curve over the whole screen: linear stretches the contrast, quadratic brings out shadows and highlights, and mixed sits between them. Applies to every player.',
   'lq.off': 'off',
   'lq.linear': 'linear',
   'lq.mixed': 'mixed',

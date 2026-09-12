@@ -1476,6 +1476,7 @@
   "ui/settings-visual.ts": [
     "CONTRAST_LABELS",
     "CONTRAST_LEVELS",
+    "LQ_PASSOS",
     "RGB",
     "ROLE_KEYS",
     "ROLE_LABELS",
@@ -1490,6 +1491,7 @@
     "initSettingsVisual",
     "lqFromPercent",
     "lqPercent",
+    "lqPosicao",
     "onOffLabel",
     "renderVisualPanelHtml",
     "resolveVisualMode",

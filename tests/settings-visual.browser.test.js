@@ -230,27 +230,29 @@ describe('ui/settings-visual — initSettingsVisual', () => {
     expect(calls.renderEixosVisuais.at(-1)).toEqual(['#visual-modes', '#visual-players']);
   });
 
-  it('[Interface] mexer no slider L→Q chama setLq com t=0..1 e atualiza o rótulo ao vivo', () => {
+  it('🔴 [Right] o realce de contraste são PASSOS ⯇ ⯈: um passo grava a posição, anuncia, e não há barra (ADR-0151)', () => {
     players.push({ viz: 'normal' });
     const { ctx, calls } = makeCtx();
-    const panel = initSettingsVisual(ctx);
-    panel.render();
-    const lq = document.querySelector('#opt-lq');
-    lq.value = '70';
-    lq.dispatchEvent(new Event('input'));
-    expect(calls.setLq).toEqual([0.7]);
-    expect(document.querySelector('#opt-lq-val').textContent).toBe('quadrático');
+    initSettingsVisual(ctx).render();
+    const passos = document.querySelector('#opt-lq');
+    expect(passos?.hasAttribute('data-passos'), 'o realce não virou passos').toBe(true);
+    expect(document.querySelector('#visual-list input[type="range"]'), 'sobrou a barra').toBeNull();
+    const antes = passos.getAttribute('aria-valuetext');
+    passos.querySelector('[data-passo="1"]').click();
+    expect(calls.setLq.at(-1), 'o passo não gravou a posição seguinte').toBeGreaterThan(0);
+    expect(passos.getAttribute('aria-valuetext')).not.toBe(antes);
+    expect(calls.srSay.at(-1)).toMatch(/^Realce de contraste: /);
   });
 
-  it('[Interface] soltar o slider (change) anuncia o rótulo via srSay', () => {
+  it('🔴 [Right] a EXPLICAÇÃO nasce num .opt-hint e não colada ao rótulo — o defeito que o Dev viu', () => {
+    // «A EXPLICAÇÃO ESTÁ NA OPÇÃO AO INVÉS DE IR PARA O RODAPÉ, CORRIJA». Com um .opt-hint o `fillExplain` a leva
+    // ao rodapé; e o <strong> guarda só o rótulo curto, sem o «(Linear → Quadrático)» que o alongava.
     players.push({ viz: 'normal' });
-    const { ctx, calls } = makeCtx();
-    const panel = initSettingsVisual(ctx);
-    panel.render();
-    const lq = document.querySelector('#opt-lq');
-    lq.value = '20';
-    lq.dispatchEvent(new Event('change'));
-    expect(calls.srSay).toEqual(['Realce de contraste: linear.']);
+    const { ctx } = makeCtx();
+    initSettingsVisual(ctx).render();
+    const linha = document.querySelector('#opt-lq').closest('.ctrl-row');
+    expect(linha.querySelector(':scope > span > strong').textContent).toBe('Realce de contraste');
+    expect(linha.querySelector('.opt-hint')?.textContent, 'a prosa não está no .opt-hint').toMatch(/linear/);
   });
 
   it('[Interface] clicar em "Itens na cor do dono" alterna e re-renderiza refletindo o novo estado', () => {
