@@ -352,6 +352,16 @@ const es: Record<string, string> = {
   // mareo o por riesgo de crisis, no por curiosidad sobre los fotogramas.
   'menu.animation': 'Sensibilidad visual',
   'animation.grupo.rotulo': 'Movimiento y animación',
+  // ===================== LAS LÍNEAS DEL PANEL MOTOR =====================
+  // Rótulo CORTO y la explicación en una sola pista, que la casca mueve al pie (CLAUDE.md §4). Las pistas son
+  // las mismas frases que los anuncios `sr.motor.*On` ya dicen, en presente en vez de en pasado: dos
+  // redacciones de la misma opción divergen, y quien oye el anuncio tras leer la línea merece reconocerla.
+  'motor.facil': 'Modo Fácil',
+  'motor.facil.dica': 'Menos gravedad, salto más alto, recogida tolerante, monedas en el suelo, sin peligros ni caídas accidentales.',
+  'motor.altmove': 'Movimiento por alternancia',
+  'motor.altmove.dica': 'Toca la dirección para andar sin mantener; toca de nuevo para parar. El salto no interrumpe la marcha.',
+  'motor.togglerun': 'Alternancia de correr',
+  'motor.togglerun.dica': 'El botón de correr queda activado con un toque, en vez de tener que mantenerlo.',
   'sr.audio.reset': 'Accesibilidad auditiva restaurada a sus valores predeterminados. Los demás menús no cambiaron.',
   'sr.empathy.reset': 'Modo empatía restaurado a sus valores predeterminados: simulaciones desactivadas. Las correcciones de daltonismo y los demás menús no cambiaron.',
   'sr.motor.reset': 'Modo Fácil y movimiento por alternancia restaurados a sus valores predeterminados. El control con los ojos y el mapeo de teclas siguen igual.',

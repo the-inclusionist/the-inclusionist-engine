@@ -352,6 +352,17 @@ const en: Record<string, string> = {
   // or a seizure risk, not through curiosity about frame rates.
   'menu.animation': 'Visual sensitivity',
   'animation.grupo.rotulo': 'Motion and animation',
+  // ===================== THE MOTOR PANEL'S ROWS =====================
+  // Short label, and the explanation in a single hint the shell moves to the footer (CLAUDE.md §4). The hints
+  // are the same sentences the `sr.motor.*On` announcements already say, in the present instead of the past:
+  // two wordings of one choice drift apart, and whoever hears the announcement after reading the row deserves
+  // to recognise it.
+  'motor.facil': 'Easy Mode',
+  'motor.facil.dica': 'Lower gravity, higher jump, forgiving pickup, coins on the ground, no hazards and no accidental falls.',
+  'motor.altmove': 'Tap to move',
+  'motor.altmove.dica': 'Tap a direction to walk without holding; tap again to stop. Jumping does not interrupt the walk.',
+  'motor.togglerun': 'Run toggle',
+  'motor.togglerun.dica': 'The run button stays on with one tap, instead of having to be held down.',
   'sr.audio.reset': 'Hearing accessibility restored to its defaults. The other menus did not change.',
   'sr.empathy.reset': 'Empathy mode restored to its defaults: simulations off. Colour-blindness corrections and the other menus did not change.',
   'sr.motor.reset': 'Easy Mode and latched movement restored to their defaults. Eye control and the key mapping are unchanged.',

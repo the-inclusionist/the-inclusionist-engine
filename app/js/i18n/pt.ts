@@ -442,6 +442,16 @@ const pt: Record<string, string> = {
   // por enjoo ou por crise, não por curiosidade sobre quadros por segundo.
   'menu.animation': 'Sensibilidade visual',
   'animation.grupo.rotulo': 'Movimento e animação',
+  // ===================== AS LINHAS DO PAINEL MOTORA =====================
+  // O rótulo é CURTO e a explicação vai numa dica só, que a casca move para o rodapé (CLAUDE.md §4). As dicas
+  // são as mesmas frases que os anúncios `sr.motor.*On` já dizem, no PRESENTE em vez de no passado: duas
+  // redações da mesma escolha divergem, e quem ouve o anúncio depois de ler a linha merece reconhecê-la.
+  'motor.facil': 'Modo Fácil',
+  'motor.facil.dica': 'Gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais.',
+  'motor.altmove': 'Movimento por alternância',
+  'motor.altmove.dica': 'Toque a direção para andar sem segurar; toque de novo para parar. O pulo não interrompe a caminhada.',
+  'motor.togglerun': 'Alternância do correr',
+  'motor.togglerun.dica': 'O botão de correr fica ligado num toque, em vez de precisar ser segurado.',
   'sr.audio.reset': 'Acessibilidade auditiva restaurada aos padrões. Os outros menus não mudaram.',
   'sr.empathy.reset': 'Modo empatia restaurado aos padrões: simulações desligadas. Correções de daltonismo e os outros menus não mudaram.',
   'sr.motor.reset': 'Modo Fácil e movimento por alternância restaurados aos padrões. O controle pelos olhos e o mapeamento de teclas continuam como estavam.',

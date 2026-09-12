@@ -29,6 +29,8 @@ import {
   aplicarAlternancia, BASE_DA_MARCHA, type JogadorDaAlternancia as JogadorDaAlternanciaDaAresta,
 } from '../input/latch-sync.js';
 import { recusaDaAlternancia } from './latch-refusal.js';
+import type { PanelShellCtx } from './panel-shell.js';
+import { linhaDeControle, type ControlRowSpec } from './panel-widgets.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
@@ -262,6 +264,49 @@ export function definirAlternanciaDeCorrida(ctx: EscritaDaAlternanciaCtx, i: num
   p.toggleRun = on;
   ctx.store.setBool(toggleRunKey(i), on);
   ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleRunOn' : 'sr.motor.toggleRunOff'));
+}
+
+/**
+ * MONTA O INTERIOR DESTE PAINEL — as abas por assento e as três linhas que ele alcança mas não criava.
+ *
+ * 🔴 O CONTRATO ERA INVISÍVEL, e o cabeçalho do `ui/panel-shell` já nomeou a forma do defeito um nível acima:
+ * este módulo procura `#movement-players`, `#opt-facil`, `#opt-altmove` e `#opt-togglerun`, e nada no tipo o
+ * dizia. O markup vivia no `app/index.html`, que saiu com o cartucho (#111) — desde então o painel abria com o
+ * cartão, o título e o botão de repor, e NENHUMA das três escolhas.
+ *
+ * ⚠️ E ISTO MORA AQUI, e não na raiz de composição, pela razão que o `panel-shell` já provou: quem conhece
+ * estes quatro ids e a forma de cada controle é este ficheiro, e mais ninguém. Uma raiz que os escrevesse
+ * seria uma raiz a adivinhar — e adivinhar um id é como se descobre por tentativa que o painel abre vazio.
+ *
+ * ⚠️ AS TRÊS LINHAS SÃO SEMPRE CRIADAS, incluindo a da alternância. Quem decide se ela se VÊ é o
+ * `reflectAltMove`, pelo `seguraTeclas` (ADR-0115) — e a decisão dele é `hidden`, que tira a linha da tela E
+ * da árvore de acessibilidade. Criar só quando se aplica poria a mesma regra em dois sítios, e o dia em que
+ * elas divergissem é o dia em que a linha aparece num jogo onde não faz nada.
+ *
+ * 📌 A ORDEM É A DA DECISÃO, como em todo menu deste projeto (ADR-0044 §2): as abas primeiro, porque elas
+ * dizem de QUEM são as escolhas seguintes; depois Modo Fácil, que é a mais procurada; e as duas alternâncias
+ * juntas, porque são a mesma ideia aplicada a dois botões.
+ *
+ * Idempotente: chamar duas vezes reaproveita a lista em vez de a duplicar.
+ */
+export function montarInteriorDoMotor(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
+  if (!ctx.procurar('#movement-players')) {
+    const abas = ctx.criar('div');
+    abas.id = 'movement-players';
+    // Nascem escondidas e vazias: quem as desenha é `renderMovPlayers()`, que sabe quantos assentos há AGORA —
+    // e o número muda durante a partida.
+    abas.hidden = true;
+    card.insertBefore(abas, lista);
+  }
+  const linhas: ControlRowSpec[] = [
+    { id: 'opt-facil', rotulo: t('motor.facil'), dica: t('motor.facil.dica') },
+    { id: 'opt-altmove', rotulo: t('motor.altmove'), dica: t('motor.altmove.dica') },
+    { id: 'opt-togglerun', rotulo: t('motor.togglerun'), dica: t('motor.togglerun.dica') },
+  ];
+  for (const spec of linhas) {
+    if (ctx.procurar('#' + spec.id)) continue;
+    lista.appendChild(linhaDeControle(ctx, spec).linha);
+  }
 }
 
 /** Clamps the selected player back to 0 once it falls outside 0..numPlayers-1 (e.g. player count dropped). */
