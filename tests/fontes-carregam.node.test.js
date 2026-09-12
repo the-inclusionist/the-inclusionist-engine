@@ -37,6 +37,35 @@ describe('uma fonte oferecida no menu carrega de verdade (ADR-0012)', () => {
     expect(DECLARADAS.size).toBeGreaterThanOrEqual(12);
   });
 
+  it('🔴 [Zero] NENHUMA face declarada fica ÓRFÃ — o sentido que faltava a este crivo', () => {
+    /*
+     * 📏 MEDIDO em 2026-09-12, ao acrescentar vinte e duas faces: a corrente estava guardada em dois
+     * sentidos e faltava o terceiro. Uma entrada do catálogo sem `@font-face` reprova; um `@font-face` cujo
+     * woff2 não existe reprova; **um `@font-face` sem entrada no catálogo passava VERDE**.
+     *
+     * 🔴 E isso é uma face ÓRFÃ: bytes que entram no precache — hoje 106 entradas e 3512 KiB — e que nenhum
+     * menu consegue oferecer. Ninguém a escolhe e toda escola a descarrega. Já era verdade das vinte e seis
+     * faces de antes; não foi introduzido pelas novas, foi só medido por causa delas.
+     *
+     * ⚠️ A LISTA DE EXCEPÇÕES É NOMEADA E TEM DE DIZER PORQUÊ, senão vira a porta por onde a próxima órfã
+     * entra. São as faces alcançadas por VARIÁVEL DE CSS em vez de escolhidas num menu — e, medido, é UMA.
+     */
+    const ALCANCADAS_POR_VARIAVEL = Object.freeze({
+      // `--font-math` em `app/css/style.css`: os algarismos da matemática. Ela não é uma escolha de
+      // tipografia — é a face que a engine impõe onde a forma do algarismo é a matéria (ADR-0010, pilar 5).
+      'Atkinson Hyperlegible Mono': '--font-math (matemática)',
+    });
+    const catalogo = new Set(ITENS.map((i) => i.fam));
+    const orfas = [...DECLARADAS].filter((f) => !catalogo.has(f) && !(f in ALCANCADAS_POR_VARIAVEL));
+    expect(orfas, 'face declarada que nenhum menu oferece: bytes no precache que ninguém escolhe').toEqual([]);
+
+    // 📌 O PAR, e sem ele a lista de excepções seria a porta aberta: cada excepção tem de estar MESMO
+    // declarada. Uma entrada que sobreviva ao ficheiro que a justificava passa a autorizar uma órfã de graça.
+    for (const fam of Object.keys(ALCANCADAS_POR_VARIAVEL)) {
+      expect(DECLARADAS.has(fam), `a excepção «${fam}» já não existe no fonts.css — tire-a da lista`).toBe(true);
+    }
+  });
+
   it('⚠️ [Zero] NENHUMA fonte oferecível fica sem `@font-face`', () => {
     const fantasmas = ITENS.filter((i) => i.oferecivel && !DECLARADAS.has(i.fam)).map((i) => i.fam);
     expect(fantasmas, 'a criança escolhe e o navegador desenha outra coisa, sem erro nenhum').toEqual([]);
