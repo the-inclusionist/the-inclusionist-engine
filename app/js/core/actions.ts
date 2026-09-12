@@ -178,6 +178,28 @@ export function presetProblems(p: ActionPreset | null | undefined): string[] {
   return problemas;
 }
 
+/**
+ * `start` IS THE PAUSE'S, AND A GAME DOES NOT TAKE IT (ADR-0144 §4). Returns the reason, or `null`.
+ *
+ * ⚠️ THIS IS THE ONE CLAUSE OF THAT RECORD THAT ADDS A RESTRICTION instead of reusing something that was
+ * already there, and it is written down — rather than discovered in a conflict — because the record asked
+ * for exactly that. Since ADR-0122 the pause is not declinable, and `start` is the only position that
+ * reaches it: a game that claimed it for something else would be declining the pause by the back door, and
+ * the child would get four settings panels that are mounted, in the document, and unreachable.
+ *
+ * 📌 SEPARATE FROM `presetProblems`, and on purpose. That one answers «is this preset well formed?» and
+ * nobody calls it yet (issue for the wiring); this one is a PRE-CONDITION the boot refuses on, which is a
+ * different rubric — a malformed label degrades a remap screen, a stolen `start` removes the pause.
+ *
+ * 📌 `select` IS NOT HERE. The other system position stays free because no record has claimed it; refusing
+ * it too would be deciding, in advance, something nobody decided.
+ */
+export function startClaimProblem(p: ActionPreset | null | undefined): string | null {
+  if (!p || p.start === undefined) return null;
+  return 'preset: «start» is the position that opens the pause (ADR-0144 §4) and a game may not claim it; '
+    + 'use one of the eight verb positions instead (action1..action4, leftShoulder, leftTrigger, rightShoulder, rightTrigger)';
+}
+
 /** É uma ação conhecida? Guarda de fronteira para dado que veio de fora (mapa salvo, remapeamento). */
 export function isAction(x: unknown): x is Action {
   return typeof x === 'string' && (ACTIONS as readonly string[]).includes(x);

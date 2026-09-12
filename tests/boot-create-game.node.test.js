@@ -254,6 +254,32 @@ describe('createGame em execução', () => {
     expect(() => createGame({ declaration: ruim, host: { doc, win } })).toThrow(/malformada/);
   });
 
+  it('🔴 [Zero] um cartucho que declara «start» no preset é RECUSADO, com o motivo dito (ADR-0144 §4)', async () => {
+    // 🔴 ESTE É O GATE QUE UMA IMPLEMENTAÇÃO DESCUIDADA PASSA POR ACIDENTE, e o próprio registo avisa disso:
+    // HOJE nenhum cartucho declara «start», então afirmar só «nada partiu» ficaria verde com nada a valer.
+    // Por isso o caso CONSTRÓI o cartucho proibido em vez de esperar por um.
+    //
+    // ⚠️ E A REGRA NÃO É ARRUMAÇÃO: desde o ADR-0122 a pausa não é declinável, e «start» é a única posição
+    // por onde se lá chega. Um jogo que a tomasse para outra coisa declinava a pausa pela porta dos fundos —
+    // com os quatro painéis montados, no documento, e inalcançáveis, sem uma linha vermelha em lado nenhum.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const base = () => ({ declaration: declaracaoValida(), host: { doc, win } });
+
+    expect(() => createGame({ ...base(), preset: { start: { label: 'Turbo' } } }))
+      .toThrow(/«start» is the position that opens the pause/);
+
+    // O PAR QUE IMPEDE UM CRIVO QUE ACUSA SEMPRE: o mesmo preset sem «start» passa. Sem ele, uma recusa
+    // escrita `if (preset) throw` ficaria verde acima e tiraria o vocabulário a todo o catálogo.
+    expect(() => createGame({ ...base(), preset: { action2: { label: 'Confirmar' } } })).not.toThrow();
+
+    // E O `mount()` RECUSA PELA MESMA REGRA. `GanchosDoCartucho` carrega `preset`, logo um SEGUNDO cartucho
+    // podia tomar o «start» que o primeiro respeitou — e a pausa ficava inalcançável a meio da sessão.
+    const motor = createGame(base());
+    expect(() => motor.mount(declaracaoValida(), { preset: { start: { label: 'Turbo' } } }))
+      .toThrow(/«start» is the position that opens the pause/);
+  });
+
   it('[Right] a exceção DIZ o que falta, em vez de "erro ao iniciar"', () => {
     // Quem escreve um preset lê esta mensagem no primeiro `npm run dev`; ela é o manual naquele momento.
     return import('../app/js/boot/create-game.js').then(({ createGame }) => {

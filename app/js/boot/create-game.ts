@@ -52,7 +52,7 @@ import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
-import { presetActions, ACTIONS, type ActionPreset } from '../core/actions.js';
+import { presetActions, startClaimProblem, ACTIONS, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
@@ -458,6 +458,22 @@ function recusarDeclaracao(quem: string, problemas: readonly string[]): never {
   throw new Error(`${quem}: declaração malformada — ${problemas.join('; ')}`);
 }
 
+/*
+ * «start» É DA PAUSA, E UM CARTUCHO NÃO A TOMA (ADR-0144 §4).
+ *
+ * ⚠️ A FRASE MORA EM `core/actions`, e não aqui, por duas razões que apontam para o mesmo sítio: é lá que a
+ * validade de um `ActionPreset` vive, e é lá que o livro-razão de prosa crua já responde por mensagens que
+ * quem ESCREVE um preset lê. Uma frase nova neste módulo subia o teto dele para pagar por texto que é do
+ * vocabulário de entrada, não do arranque.
+ *
+ * ⚠️ LANÇA, e a rubrica é a das duas linhas acima: isto é defeito de PROGRAMA — o jogo declarou uma palavra
+ * para uma posição que não lhe pertence —, e não lacuna do hospedeiro. `problems` é para o que deixa jogar.
+ */
+function recusarSeTomaOStart(quem: string, preset: ActionPreset | undefined): void {
+  const problema = startClaimProblem(preset);
+  if (problema) recusarDeclaracao(quem, [problema]);
+}
+
 /** Os ids que os painéis emprestados exigem do documento. Achado 6: sem eles o painel abre VAZIO, sem erro. */
 const MARCACAO_EXIGIDA: readonly string[] = ['#game-region', '#sr-status', '#sr-alert'];
 
@@ -508,6 +524,7 @@ export function createGame(o: CreateGameOptions): Engine {
   if (problemasDoContrato.length) {
     recusarDeclaracao('createGame', problemasDoContrato);
   }
+  recusarSeTomaOStart('createGame', cartucho.preset);
 
   const { doc, win } = o.host;
   /*
@@ -689,6 +706,35 @@ export function createGame(o: CreateGameOptions): Engine {
    * ADR-0122 torna não-declinável é a pausa EXISTIR, não a engine ser dona de cada item dentro dela.
    */
   const acoesDaEngine: Record<string, () => void> = {};
+
+  /*
+   * ===================== A SAÍDA, QUE TINHA DE NASCER COM A ENTRADA (ADR-0144, errata) =====================
+   *
+   * 🔴 MEDIDO ao construir o ADR-0144, e é a metade que aquele registo não viu: `ITENS_DA_ENGINE` é
+   * `{options, pmback, acessibilidade}` — **`resume` não está lá** —, e esta tabela não o definia. Logo
+   * `itensQueAccionam` cortava o «continuar» do cartão de TODO jogo que só chame `createGame`. E o Escape
+   * também não fechava: `ui/menu-nav:403` faz `ctx.setPhase('playing')`, que aqui era
+   * `cartucho.setPhase ?? (() => {})` — um no-op. Antes disto ninguém reparava, porque nada ABRIA o cartão.
+   *
+   * ⚠️ ABRIR UMA PORTA SEM SAÍDA É PIOR DO QUE NÃO A ABRIR. É o §5 do ADR-0106 em tantas palavras — «uma
+   * barra que oferece um caminho e depois o recusa ensina-lhe que o caminho não é para ela» —, e a criança
+   * que ficasse presa no cartão seria precisamente a que navega sem ver, que não tem o rato por alternativa.
+   *
+   * 📌 E ISTO DESTRANCA UMA TERCEIRA COISA, que o campo `getPauseActs` já anotava como perda: `entrarNaBarra`
+   * chama `acts.resume?.()` antes de entregar o direccional à barra. Com a tabela vazia esse `resume` era
+   * `undefined` e o item 7 do ADR-0044 ficava «inalcançável a partir de qualquer jogo». Deixa de ficar.
+   *
+   * 📌 O CARTUCHO CONTINUA A SOBREPOR-SE (a ordem do espalhamento em `getPauseActs` não muda): um jogo que
+   * tenha o seu próprio «continuar» — porque retomar ali é descongelar física, retomar áudio e mais — ganha
+   * a este. O que a engine garante é que NUNCA falta um.
+   */
+  function mudarDeFase(p: 'title' | 'playing' | 'paused'): void {
+    // ⚠️ A ENGINE FECHA O SEU CARTÃO; O JOGO CONTINUA A DECIDIR O MUNDO. É a simetria exacta do ADR-0144 §2
+    // do outro lado: lá a engine revela e PEDE a pausa, aqui esconde e PEDE a retoma.
+    if (p !== 'paused') pausa.esconder(0);
+    cartucho.setPhase?.(p);
+  }
+  acoesDaEngine.resume = () => mudarDeFase('playing');
 
   /**
    * O PAINEL AUDITIVO, resolvido tarde e lido cedo — a mesma preguiça do `acoesDaEngine` acima, e pela mesma
@@ -1178,7 +1224,11 @@ export function createGame(o: CreateGameOptions): Engine {
     $, getActiveElement: () => doc.activeElement,
     topVisibleOverlay: overlays.topVisibleOverlay, closeById: overlays.closeById,
     getPauseMenu: (i) => $<HTMLElement>(`#vp-pause-${i}`),
-    setPhase: cartucho.setPhase ?? (() => {}),
+    // ⚠️ ERA `cartucho.setPhase ?? (() => {})`, E ESSE PADRÃO VAZIO ERA A SAÍDA DA PAUSA A CAIR NO CHÃO. O
+    // «não» na raiz do cartão faz `setPhase('playing')` (`ui/menu-nav:403`) e mais nada — não esconde nada —,
+    // então num jogo sem o gancho o Escape não fechava a pausa que o ADR-0144 agora abre. Passa pelo mesmo
+    // `mudarDeFase` que o item «continuar»: uma saída só, seja qual for a porta por que a criança sai.
+    setPhase: mudarDeFase,
     setPauseActor: cartucho.setPauseActor ?? (() => {}),
     srSay,
     // Sem opinião declarada, o índice fica LIGADO: quem precisa dele para se orientar não tem como saber
@@ -1336,6 +1386,72 @@ export function createGame(o: CreateGameOptions): Engine {
   };
 
   /*
+   * ===================== E AGORA ALGUMA COISA ABRE A PAUSA (ADR-0144) =====================
+   *
+   * 🔴 MEDIDO em 2026-09-12, e é o buraco por baixo de tudo o que esta semana construiu: `git grep` por
+   * `vp-pause-` devolvia a montagem, o `getPauseMenu` da navegação e o par `mostrar`/`esconder` daqui —
+   * NADA revelava o cartão sem o jogo pedir. Os quatro painéis estavam no documento e inalcançáveis, que é
+   * o mesmo que não existirem e custou mais a construir.
+   *
+   * ⚠️ BOLHA, E NÃO CAPTURA, e esta foi a decisão medida antes de escrever uma linha. `menuNavKey` corre em
+   * CAPTURA com `stopPropagation()`, e o cabeçalho de `ui/menu-nav` guarda DOIS defeitos preservados sobre
+   * isso — o comportamento correcto de hoje depende daquele `stopPropagation()` e não da cadeia registada.
+   * Pôr um segundo significado na mesma fase seria mexer nessa rede de segurança acidental de lado. Em
+   * bolha, `menuNavKey` tem sempre a primeira recusa, e o ouvinte do PRÓPRIO jogo — que vive em
+   * `#game-region`, por baixo da janela — corre antes deste. Quem é dono da tecla continua dono dela.
+   *
+   * 📏 E `menuNavKey` NÃO come esta tecla: `menuKeyIntent` não tem ramo para «start» (só `action2`,
+   * `action3` e as quatro direcções), logo `hasIntent` é falso e ele sai sem consumir. É precisamente por
+   * isso que os TRÊS GUARDAS abaixo tiveram de ser escritos — em três situações reais a tecla chega aqui e
+   * não é nossa. Cada um deles foi lido no código que o produz, não imaginado.
+   *
+   * ⚠️ A ENGINE ABRE O CARTÃO; QUEM PÁRA O MUNDO É O JOGO (ADR-0144 §2). `pausa.mostrar` faz duas coisas e
+   * só duas. Congelar a física e calar o ambiente eram do `ui/shell`, que esta raiz recusa montar de
+   * propósito — e por isso a segunda metade é um pedido, `setPhase('paused')`, e não uma ordem.
+   */
+  function assentoDoStart(code: string): number | null {
+    // ⚠️ O DONO DA TECLA DECIDE O ASSENTO, como em `menuNavKey`: quem carregou é quem abre a SUA pausa. Uma
+    // tecla que não é de ninguém (`-1`) não pode ser «start» de assento nenhum — perguntar por ela ao
+    // assento 0 devolveria a pausa do Jogador 1 a quem carregou numa tecla solta.
+    const dono = keyboard.whichPlayer(code);
+    if (dono < 0) return null;
+    return keyboard.actionOf(code, dono) === 'start' ? dono : null;
+  }
+
+  function abrirPausaPeloStart(e: KeyboardEvent): void {
+    const assento = assentoDoStart(e.code);
+    if (assento === null) return;
+
+    // GUARDA 1 — HÁ UM PAINEL ABERTO. Medido: com um overlay visível, `menuNavKey` recebe a tecla, não lhe
+    // acha intenção e sai sem consumir. Sem este guarda o cartão abria POR BAIXO do painel em que a criança
+    // está, e ela sairia do painel para um ecrã que não pediu. Quem fecha um painel é o Escape, não o START.
+    if (overlays.topVisibleOverlay()) return;
+
+    // GUARDA 2 — A CRIANÇA ESTÁ NA BARRA DE ACESSIBILIDADE. O item 7 do ADR-0044 dá o START à barra: ele é a
+    // SEGUNDA saída do modo. Essa rota ainda não está montada nesta raiz (a nota do `navBar`, mais acima,
+    // já o diz em tantas palavras), e tomar-lhe a tecla agora fecharia a porta antes de ela existir.
+    if (pauseIcons.naBarraDe(assento)) return;
+
+    // GUARDA 3 — O CARTÃO JÁ ESTÁ ABERTO. Com ele aberto e uma tecla de «start» que não seja `Enter`,
+    // `menuNavKey` também não acha intenção e deixa passar: sem este guarda, cada carregar voltava a chamar
+    // `setPhase('paused')` num jogo já parado. FECHAR é do `no`/Escape (ADR-0044 §2), não daqui.
+    const cartao = $<HTMLElement>(`#vp-pause-${assento}`);
+    if (!cartao || cartao.hidden === false) return;
+
+    // ⚠️ MOSTRAR VEM PRIMEIRO, e a ordem é a defesa: um jogo sem `setPhase` tem de receber o cartão na
+    // mesma. Escrito ao contrário — o `?.` a guardar as duas linhas — a ausência do gancho engolia a
+    // abertura, e o jogo sem fases, que é o caso comum, ficava exactamente como estava antes deste registo.
+    pausa.mostrar(assento);
+    mudarDeFase('paused');
+    // 📌 E SÓ AQUI, depois de a tecla ter sido NOSSA de facto. `Enter` é «start» por omissão
+    // (`input/default-bindings`), e sem isto o mesmo carregar abriria a pausa E accionaria o que estivesse
+    // focado por trás dela — uma acção num ecrã que a criança acabou de deixar.
+    e.preventDefault();
+  }
+
+  win.addEventListener('keydown', abrirPausaPeloStart);
+
+  /*
    * AS COISAS PESADAS COMEÇAM A DESCER AQUI, e a linha é deliberadamente a ÚLTIMA coisa do arranque.
    *
    * ⚠️ SEM `await`. O arranque não espera por 241 MB — se esperasse, a primeira tela de uma escola com 3G
@@ -1386,6 +1502,10 @@ export function createGame(o: CreateGameOptions): Engine {
     if (malformada.length) {
       recusarDeclaracao('mount', malformada);
     }
+    // ⚠️ E O `mount()` RECUSA PELA MESMA REGRA, antes de escrever em `cartucho`. `GanchosDoCartucho` é
+    // `Omit<MetadeDoJogo, 'declaration'>`, logo carrega `preset` — um segundo cartucho podia tomar o «start»
+    // que o primeiro respeitou, e a raiz ficava com a pausa inalcançável a meio da sessão.
+    recusarSeTomaOStart('mount', ganchos.preset);
     cartucho = { ...ganchos, declaration };
     registrarMapeamentosDoCartucho();
     alcanceAtual = derivarAlcance();

@@ -367,6 +367,36 @@ scene key is frozen.
 that could not be undone, because with `allFrozen` stuck at `false` the master button computed `next = true`
 on every press. A child could stop every animation and had no way back.
 
+## D2 · The `start` action now opens the pause — and `Enter` is `start` (ADR-0144)
+
+🔴 **This one changes BEHAVIOUR without changing a single exported name or shape**, which is the same blind
+spot section C above already paid for. Nothing in the surface gate can see it; the only place it can be
+written down is here.
+
+**What changed.** `createGame` now listens for the `start` ACTION and, when it fires, reveals the seat's pause
+card and calls `cartucho.setPhase?.('paused')`. Before this, nothing in the engine opened the card: the four
+settings panels it mounts were in the document and unreachable unless the game called `pausa.mostrar` itself.
+
+**What a consumer will actually notice:** the solo keyboard scheme puts `start` on **`KeyH` and `Enter`**
+(`input/default-bindings.ts:89`), so **`Enter` now opens the pause during play**, and the engine calls
+`preventDefault()` on it when it does. 📏 That is the behaviour the monolith always had — `input/keydown.ts`
+carries `PAUSE_KEYS = {Escape, Enter}`, and it is the stated reason `Enter` was bound to `start` in the first
+place — but a game that grew to rely on `Enter` reaching it while the pause card was closed will feel this.
+
+**What to do:** nothing, if `Enter` was not one of your play keys. If it was, remap it: the child's own scheme
+is the source of truth, and `start` is remappable like any other position.
+
+⚠️ **AND ONE THING IS NOW REFUSED AT BOOT.** A cartridge that declares `start` in its `preset` is rejected —
+by `createGame` and by `mount()` — with the reason said (`core/actions.startClaimProblem`). Since ADR-0122 the
+pause is not declinable, and `start` is the only position that reaches it, so a game claiming it for something
+else would be declining the pause by the back door. 📏 Measured: no game in the catalogue declares `start`
+today, so this refuses nothing that exists — it is written here so the first one to try finds a sentence
+instead of a puzzle. Use one of the eight verb positions instead.
+
+📌 **Additive, in the same change:** the engine now also supplies `resume` in its own pause-action table, so
+the «continue» item is alive and Escape closes the card even for a game that declares no hooks at all. A
+cartridge that supplies its own `resume` still wins — `getPauseActs` spreads the game over the engine.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

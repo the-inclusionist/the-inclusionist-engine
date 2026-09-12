@@ -99,12 +99,37 @@ describe('o cartão de pausa que a engine monta', () => {
     expect(vistas, 'a seta desceu ao jogo por baixo de um menu aberto').not.toContain('ArrowRight');
   });
 
-  it('📌 [Boundary] as três teclas que a citação nomeia — seta, Enter e Space — passam todas com o cartão fechado', () => {
-    for (const code of ['ArrowLeft', 'ArrowUp', 'Enter', 'Space']) {
+  it('📌 [Boundary] as teclas de JOGO que a citação nomeia — seta e Space — passam com o cartão fechado', () => {
+    for (const code of ['ArrowLeft', 'ArrowUp', 'Space']) {
       const ev = apertar(code);
       expect(ev.defaultPrevented, `${code} foi cancelada com o menu fechado`).toBe(false);
       expect(vistas, `${code} não chegou ao jogo`).toContain(code);
     }
+  });
+
+  it('⚠️ `Enter` SAIU dessa lista por DECISÃO e não por regressão — ele é `start` (ADR-0144)', () => {
+    /*
+     * 🔴 ESTE CASO ERA A QUARTA TECLA DO CASO ACIMA, e vale a pena dizer porque saiu, em vez de o número
+     * mudar em silêncio. A citação que fundou este ficheiro nomeava «every arrow, Enter and Space», e o que
+     * ela acusava era o cartão MONTADO a comer teclas pela navegação de menu. Isso continua verdade e
+     * continua medido — a seta e o `Space` acima.
+     *
+     * 🎯 O QUE MUDOU É OUTRA COISA, E É UMA DECISÃO: desde o ADR-0144 a engine ouve a ACÇÃO `start` e abre a
+     * pausa com ela. O esquema solo põe `start` em `KeyH` E `Enter` (`input/default-bindings:89`), e a nota
+     * de lá explica que `Enter` foi escolhido porque JÁ pausava no monólito (`PAUSE_KEYS = {Escape, Enter}`)
+     * — declará-lo descrevia o que a tecla fazia há anos, não lhe dava trabalho novo.
+     *
+     * ⚠️ E A CAUSA NÃO É O DEFEITO QUE ESTE FICHEIRO GUARDA, que é o ponto de o caso viver aqui: o cartão
+     * estava ESCONDIDO quando a tecla chegou. Quem a consumiu foi o gancho da pausa, de propósito, e não a
+     * navegação de menu a correr sobre um cartão que ninguém abriu.
+     */
+    const cartao = document.getElementById('vp-pause-0');
+    expect(cartao.hidden, 'o cartão já estava aberto: o caso mediria a navegação e não o gancho').toBe(true);
+
+    const ev = apertar('Enter');
+
+    expect(cartao.hidden, '`Enter` está em `start` e não abriu a pausa').toBe(false);
+    expect(ev.defaultPrevented, 'a engine abriu a pausa e deixou a tecla seguir para o jogo por baixo').toBe(true);
   });
 });
 
