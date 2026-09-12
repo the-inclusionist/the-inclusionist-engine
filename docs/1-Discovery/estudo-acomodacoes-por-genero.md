@@ -74,8 +74,7 @@ tem sujeito nelas **pelo género**, e terá de o ter pelo eixo.
 ### O que fica por fazer nesta fase (2a)
 
 1. ✅ **Re-chavear as acomodações pelos eixos certos** — feito, secção 0.1 abaixo.
-2. **Semear o catálogo de acomodações pela GAG**, percorrendo as três camadas (Basic → Intermediate →
-   Advanced) e os seis eixos — com **duas colunas de prioridade**, alcance medido e nível GAG.
+2. ✅ **Semear o catálogo de acomodações pela GAG** — feito, secção 0.2 abaixo.
 
 ---
 
@@ -142,6 +141,80 @@ entrarem como campos, entram pela rubrica do `holdsAtOnce` (sem padrão seguro �
 > que produziu as listas. **Onde um número delas contradiz a tabela acima, vale a de cima**: a §1 inteira, a
 > §2 (os universais são DOZE — entram remapear e tamanho do alvo, sai a simulação visual), a §5 (a cauda) e o
 > número da §6.
+
+---
+
+## 0.2 · A segunda coluna: o nível da GAG
+
+📏 `node scripts/acomodacoes-gag.mjs` — lê a [lista completa](https://gameaccessibilityguidelines.com/full-list/)
+ao vivo (ou `--gag <cópia.html>`), classifica **as 105 directrizes** (122 entradas: há directrizes listadas
+em mais de um eixo, e cada uma vale pelo MELHOR nível em que aparece) e cruza cada acomodação com o alcance da 0.1.
+
+⚠️ **O texto da GAG não entra no repositório.** A página não declara licença; ficam só os **slugs** (o
+identificador de cada directriz na URL dela) e a classificação. ⚠️ **E a página não tem revisão**, então a lista
+é fixada por impressão digital (sha256 dos pares eixo/nível/slug, lida em 2026-09-12): se a GAG mudar, o script
+reprova em vez de classificar uma lista que já não é a que foi lida. Seis guardas; onze mutações. Duas
+sobreviveram sozinhas — são as duas defesas contra a barra lateral da página, e cada uma segura a falta da
+outra; tiradas juntas, reprovam. Nenhuma é inerte.
+
+### Para onde foram as 105
+
+| destino | directrizes |
+|---|---|
+| **viram acomodação** | **63** |
+| autoria — regra de desenho de quem escreve o jogo | 18 |
+| regra da engine — ela já o faz, sem interruptor (a nota diz onde) | 10 |
+| fora do escopo — a engine não tem a coisa (conversa online, vibração, janela de PC) | 8 |
+| processo — testes com pessoas, feedback, página pública | 5 |
+| ⚠️ **conflito com pilar** | **1** |
+
+🔴 **O conflito é «allow play in both landscape and portrait»** (Advanced/Motor) contra o **pilar 5**
+(320×180, paisagem). Não se resolve num estudo: fica nomeado.
+
+### 🎯 A intersecção que o plano pedia — Basic × a engine NÃO tem
+
+| acomodação | alcance | eixos GAG | onde estava no plano |
+|---|---|---|---|
+| tamanho do alvo | 100% | Motor · Vision | fase 5b ✅ |
+| 🔴 **dificuldade** | **100%** | Cognitive · **General Basic** | **não estava** |
+| 🔴 **um botão só** | **93%** | Motor Basic | **fase 6, com 36%** |
+| velocidade do jogo | 82% | Motor Basic | fase 5a ✅ |
+| velocidade do texto | 25% | Cognitive Basic | fase 5c ✅ |
+| dificuldade lexical | 25% | Cognitive Basic | fase 6 |
+| sensibilidade do controle | 23% | Motor Basic | **não estava** |
+| balanço da câmara | 23% | Vision Basic | fase 6, com 6% |
+| naipes distinguíveis | 13% | Vision Basic | fase 6 |
+
+📌 **Três leituras que mudam a ordem das fases, e nenhuma é tomada aqui:**
+
+1. **A dificuldade é Basic e universal, e o plano não a tinha.** A GAG pede-a em três directrizes — escolher,
+   mudar durante o jogo, praticar sem falhar. A engine não pode fazer um jogo mais fácil; pode **guardar,
+   persistir e anunciar** a escolha, e o jogo lê-a — a mesma forma que a fase 5a propõe para a velocidade. O
+   Modo Fácil de plataforma é uma instância dela, não a acomodação.
+2. **O um botão só sai da cauda.** Na versão por categoria tinha 36%; chaveado e com o nível, é Basic a 93%.
+3. **A cauda da fase 6 deixa de ser ordenável só por alcance**: balanço da câmara e naipes são Basic, e ficam à
+   frente de acomodações Intermediate com o dobro do alcance.
+
+### O que a GAG trouxe — dezanove acomodações: dezasseis novas, três que a engine já tinha
+
+Por nível: **Basic** dificuldade, sensibilidade do controle · **Intermediate** lembrete do objectivo,
+mono/estéreo, tamanho da interface, rearranjar a interface, saltar trecho, macros, assistência de mira e
+direcção, realce de palavras, cor do ponteiro, entrada repetida · **Advanced** repetir a instrução, perfis,
+audiodescrição, intervalo entre entradas. E três que **a engine já tinha e o estudo não contava**: ajuda dos
+controles (`ui/help-panel.ts`, fase 1d), legendas de som (`captionsOn`) e leitor de tela (`core/a11y-sr`).
+
+🔴 **Um achado de passagem, e é o mesmo padrão do `tick`:** o lembrete do objectivo é Intermediate e
+universal, e o contrato **já pede** `objectiveOf` a todo jogo — com **zero leitores** em `app/js`. O dado está
+declarado em todos os jogos; falta quem o diga.
+
+### Fora da GAG — e isso não é defeito
+
+Treze acomodações nenhuma directriz pede: caixa da letra, índice falado, as duas simulações de empatia,
+controle virtual, redução do personagem, bengala, saída de áudio por jogador, estabilizar ponteiro, peças,
+Modo Fácil, cadeira de rodas e detecção. As simulações **não são acessibilidade de quem joga** — são empatia
+de quem assiste —, e as outras são formas concretas de directrizes mais gerais (a bengala é uma forma do
+«sonar-style audio map»; o controle virtual, do «large and well spaced»). ⚠️ Onde a forma concreta ficou
+sem directriz, é porque classifiquei a directriz na forma geral: é juízo, e está escrito linha a linha.
 
 ---
 
@@ -326,13 +399,15 @@ entregaria três interruptores sem assunto a dois terços do catálogo.**
 ## Como refazer
 
 O cruzamento não é prosa: ele está escrito célula a célula, e a contagem é derivada. Para o repetir depois de
-o catálogo mudar, ou para discordar de uma célula e ver o efeito, há três ficheiros:
+o catálogo mudar, ou para discordar de uma célula e ver o efeito, há cinco ficheiros:
 
 - `scripts/lib/taxonomia.mjs` — o leitor do catálogo, a revisão fixada da Wikipédia e, por categoria, os
   géneros, a perspectiva, os jogadores e o propósito;
 - `scripts/taxonomia-de-generos.mjs` — as guardas da taxonomia e a cobertura (secção 0);
-- `scripts/acomodacoes-por-genero.mjs` — por categoria, os eixos da declaração (`DECL`); por acomodação, a
-  sua chave (`ACOM`); e a tabela da secção 0.1.
+- `scripts/lib/acomodacoes.mjs` — por categoria, os eixos da declaração (`DECL`); por acomodação, a sua
+  chave (`ACOM`); as guardas e a medição do alcance;
+- `scripts/acomodacoes-por-genero.mjs` — a tabela da secção 0.1;
+- `scripts/acomodacoes-gag.mjs` — a classificação das directrizes da GAG por slug e a tabela da secção 0.2.
 
 ⚠️ Discordar de uma célula é editar **uma linha**: a declaração de uma categoria, ou a chave de uma
 acomodação. ⚠️ **As guardas conferem FORMA, não verdade** — um eixo esquecido, um valor que casaria zero, uma
