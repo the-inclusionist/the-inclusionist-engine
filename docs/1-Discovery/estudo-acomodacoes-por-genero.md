@@ -12,6 +12,79 @@ confusão entre as duas que gerou o ADR-0145, e este documento é a metade que a
 
 ---
 
+## 0 · 🔴 A CHAVE DESTE ESTUDO ESTAVA ERRADA, e a correcção é do Dev
+
+> «Você está tomando uma lista de pesquisa rápida feita em uma tarde como a lista canônica de gênero para uma
+> engine que será usada por milhões de pessoas.» — o Dev, 2026-09-12
+
+As 35 categorias do catálogo são um **backlog de produção**, não uma taxonomia. As secções 1–9 abaixo
+usaram-nas como chave de género, e isso tem uma consequência técnica e não só de nome: a mesma acomodação
+ficava espalhada por várias chaves quando o que a governa é **um eixo só**. `balancoDaCamara` aparecia sob
+*Corrida*, *Pseudo-3D* e *Isométrico* — e o que a governa é a **perspectiva**. `saidaDeAudio` aparecia sob seis
+— e o que a governa é o **modo de jogadores**.
+
+### A taxonomia passa a vir da Wikipédia, fixada numa revisão
+
+<https://en.wikipedia.org/wiki/List_of_video_game_genres>, **revisão 1367745358 de 2026-08-04**. Fixada porque
+uma taxonomia tirada de uma wiki que muda todos os dias, sem dizer de que dia é, é uma lista que um dia deixa de
+concordar consigo mesma sem nada que o diga.
+
+📌 **E a própria página confirma o corte que o Dev pediu:** a secção 11 é «*Video game genres by purpose*»
+(educativo, sério, arte…) — um EIXO, separado dos géneros pela mesma página que os lista.
+
+### As 35 categorias passam a ser a PROVA DE COBERTURA, e cabem
+
+📏 `node scripts/taxonomia-de-generos.mjs` — **35 de 35 mapeadas, 380 jogos**:
+
+| género de topo (Wikipédia) | categorias | jogos* |
+|---|---|---|
+| 1 · Action | 10 | 108 |
+| 2 · Action-adventure | 1 | 8 |
+| 3 · Adventure | 3 | 34 |
+| 4 · Puzzle | 6 | 71 |
+| 5 · Role-playing | 2 | 16 |
+| 6 · Simulation | 2 | 23 |
+| 7 · Strategy | 2 | 16 |
+| 8 · Sports | 2 | 25 |
+| 10 · Other notable genres | 8 | 84 |
+| 12 · Sandbox / open world | 2 | 20 |
+
+\* ⚠️ **A coluna não é partição**: uma categoria de dois géneros conta nos dois (RPG / Aventura cai em 5 e em 3).
+
+### 🔴 Oito categorias cujo NOME não é um género — exactamente as que o Dev apontou
+
+| categoria | o que é, de facto |
+|---|---|
+| Arcade Clássico | uma **época** |
+| Pseudo-3D / Raycasting | uma **técnica de render** → eixo *perspectiva* (1.ª pessoa) |
+| Isométrico | uma **perspectiva** |
+| Multiplayer Local | um **modo de jogadores** |
+| Reação / Reflexo | uma **mecânica** |
+| Labirinto Exploração | uma **mecânica** (a página não lista «maze» como género) |
+| Experimentais / Arte | um **propósito** — a própria página põe «art game» em «por propósito» |
+| Híbridos / Mashups | **multi-género** por definição |
+
+📌 **E há uma nona que é metade de cada:** *Educativo / Quiz* é género (trivia, 10.11) **e** propósito
+(educativo, 11.5), e é assim que o script a regista.
+
+⚠️ **Três não têm género nenhum a atribuir** — Multiplayer Local, Experimentais/Arte e Híbridos, **33 jogos**
+— e isso não é lacuna: são exactamente as que atravessam géneros. Uma acomodação que dependa do género não
+tem sujeito nelas **pelo género**, e terá de o ter pelo eixo.
+
+### O que fica por fazer nesta fase (2a)
+
+1. **Re-chavear as acomodações pelos eixos certos** — cada uma com UMA chave: género, perspectiva, modo de
+   jogadores ou propósito. É o que faz as divergências de `balancoDaCamara` e `saidaDeAudio` desaparecerem
+   antes de serem escritas.
+2. **Semear o catálogo de acomodações pela GAG**, percorrendo as três camadas (Basic → Intermediate →
+   Advanced) e os seis eixos — com **duas colunas de prioridade**, alcance medido e nível GAG.
+
+> ⚠️ **As secções 1–9 abaixo continuam a valer como MEDIÇÃO** — os números por categoria são o que são. O que
+> muda é que a categoria deixa de ser tratada como género, e as conclusões que dependiam disso são refeitas
+> no passo 1 acima.
+
+---
+
 ## 1 · O resultado, por alcance
 
 | acomodação | a engine tem? | gêneros | jogos | % do catálogo |
