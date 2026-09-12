@@ -78,26 +78,18 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
     expect(p.casca.overlay.hidden).toBe(false);
     expect(p.casca.overlay.dataset.aFrente, 'não foi trazido à frente da pilha').toBe('1');
     expect(p.casca.card.contains(document.activeElement), 'o foco ficou FORA de um diálogo modal').toBe(true);
-    expect(document.activeElement).toBe(botao);
+    // 🔴 ADR-0158: the cursor lands on «Voltar», item 1 — even with a live control in the list, which is the case
+    // that used to take the focus.
+    expect(document.activeElement, 'the panel opened with the cursor away from its way out').toBe(p.casca.fechar);
   });
 
-  it('🔴 [Boundary] sem controle na lista, o foco cai no FECHAR — nunca num `div` que não o aceita', () => {
+  it('🔴 [Boundary] sem controle na lista, o foco cai no VOLTAR — nunca num `div` que não o aceita', () => {
     // O defeito que eu escrevi e este caso apanhou: `casca.lista` é `div[role=group]` sem `tabindex`, e
     // `.focus()` nele não faz nada E NÃO DIZ NADA. Num DOM falso isto passava.
     const p = montarPainel(ctx(), spec());
     p.abrir();
     expect(document.activeElement, 'o foco não pousou em elemento nenhum').toBe(p.casca.fechar);
     expect(document.activeElement).not.toBe(p.casca.lista);
-  });
-
-  it('[Right] `primeiroFoco` ganha ao primeiro controle da lista', () => {
-    const p = montarPainel(ctx(), spec({ primeiroFoco: '#o-escolhido' }));
-    const primeiro = document.createElement('button');
-    const escolhido = document.createElement('button');
-    escolhido.id = 'o-escolhido';
-    p.casca.lista.append(primeiro, escolhido);
-    p.abrir();
-    expect(document.activeElement).toBe(escolhido);
   });
 
   it('⚠️ [Right] um clique DE VERDADE no fechar esconde e devolve o foco a quem abriu', () => {
@@ -223,3 +215,5 @@ describe('ADR-0106 · a engine monta o painel, e o consumidor não escreve nenhu
 //     homónimo mudo. Um botão morto com aparência de vivo é pior do que um ausente (ADR-0106 §5).
 //   · a introdução ausente deixar de APAGAR o `data-explain-idle` (tirar o `else removeAttribute`) -> reprova
 //     o caso da introdução: deixar de escrever não é apagar, e o rodapé descansa no idioma anterior.
+//   · (2026-09-12, ADR-0158) focus on the first live control of the list instead of «Voltar» -> the [Right] open case
+//     is red: that is exactly the old fallback, and the panel would open with the cursor away from its way out.

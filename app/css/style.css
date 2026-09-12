@@ -629,6 +629,8 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
 .overlay__card{background:var(--panel);border:3px solid var(--accent);border-radius:12px;padding:1.5rem;max-width:420px;width:100%;text-align:center;font-size:var(--ui-fs,16px);
   max-height:92dvh;overflow-y:auto;overscroll-behavior:contain} /* base = --ui-fs (16 mín, escala com o canvas); internos em em */
 .overlay__card h2{margin-top:0}
+/* ADR-0158: «Voltar» is the panel's item 1 — a full-width row above the list, not a pill at the bottom. */
+.overlay__back{display:flex;align-items:center;width:100%;margin:0 0 .45rem;text-align:left;border-radius:8px}
 .topbar__right{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 .title-card{text-align:center}
 .title-big{font-size:2rem;margin:.2rem 0;color:var(--accent)}

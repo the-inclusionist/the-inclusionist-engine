@@ -815,6 +815,25 @@ describe('createGame num documento de verdade', () => {
       mestre.click();
     });
 
+    it('🔴 [Right] EVERY panel of the submenu opens on «Voltar», item 1, and ends on its reset — no close after the rows (ADR-0158)', () => {
+      // 📏 Measured in dist before this case: the hearing panel appended its rows AFTER the actions, so the reset sat
+      // between «Voltar» and the first row. The shell alone cannot promise the order; the interiors can break it.
+      const motor = abrir();
+      for (const [act, id] of [['anim', 'animation'], ['audio', 'audio'], ['som', 'som'], ['motora', 'motora']]) {
+        motor.pausa.mostrar(0);
+        const item = document.querySelector(`#vp-pause-0 .pm-btn[data-act="${act}"]`);
+        expect(item?.hidden, `the «${act}» item is not live — the case would skip it`).toBe(false);
+        item.click();
+        const card = document.querySelector(`#${id} .overlay__card`);
+        expect(card, `#${id} did not open`).not.toBeNull();
+        const botoes = [...card.querySelectorAll('button')].filter((b) => !b.closest('.opt-explain'));
+        expect(botoes[0]?.id, `#${id}: «Voltar» is not item 1`).toBe(`${id}-close`);
+        expect(botoes.at(-1)?.id, `#${id}: something comes after the reset`).toBe(`${id}-reset`);
+        expect(document.activeElement?.id, `#${id} opened with the cursor away from «Voltar»`).toBe(`${id}-close`);
+        document.getElementById(`${id}-close`).click();
+      }
+    });
+
     it('🔴 [Right] ligar o TTS pelo ÍCONE refresca o painel — o guarda morto do monólito voltou a valer', () => {
       // ⚠️ `ui/pause-icons` documenta o defeito e preservou-o verbatim: no monólito esta chamada estava atrás
       // de `typeof reflectTTS === 'function'`, um símbolo que já não existia, «so it never fires». O campo
@@ -938,3 +957,7 @@ describe('createGame num documento de verdade', () => {
 //      calar-se sobre um painel onde as setas nao andam.
 //  13. `dentroDoEscopo` sempre FALSO -> reprova o par dele. Sem este, o crivo aprovaria uma engine que acusa
 //      sempre, que e tao inutil quanto uma que nunca acusa.
+//  14. (2026-09-12, ADR-0158) the hearing panel's rows appended AFTER the actions again -> the «Voltar first» case
+//      is red: the reset sits between «Voltar» and the first row again, as measured in dist.
+//      ⚠️ The twin in the «Áudio» interior (its list appended after the actions) SURVIVES: under the shell the list
+//      is already a child of the card, so that line only runs for a card without the shell.

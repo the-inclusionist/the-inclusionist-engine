@@ -309,9 +309,11 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
    * intervalo de arranque — `initI18n` aplica o idioma de recuo de forma síncrona e PEDE o preferido, que
    * chega depois. Nenhum teste unitário o apanhava: todos correm num idioma só.
    */
+  // ADR-0158: the rows go BEFORE the reset, never after it — the reset is the panel's last item, and «Voltar» its first.
+  const acoes = card.querySelector<HTMLElement>(':scope > .overlay__actions');
   for (const peca of pecas) {
     if ('contentor' in peca) {
-      if (peca.contentor === '@lista') { card.appendChild(lista); continue; }
+      if (peca.contentor === '@lista') { card.insertBefore(lista, acoes); continue; }
       const jaHa = ctx.procurar('#' + peca.contentor);
       if (jaHa) {
         if (peca.rotulo) jaHa.setAttribute('aria-label', peca.rotulo);
@@ -322,7 +324,7 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
       c.className = 'ctrl-list';
       c.setAttribute('role', 'group');
       if (peca.rotulo) c.setAttribute('aria-label', peca.rotulo);
-      card.appendChild(c);
+      card.insertBefore(c, acoes);
       continue;
     }
     const jaExiste = ctx.procurar('#' + peca.id);
@@ -331,7 +333,7 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
       if (linha) rotularLinha(linha, peca);
       continue;
     }
-    card.appendChild(linhaDeControle(ctx, peca).linha);
+    card.insertBefore(linhaDeControle(ctx, peca).linha, acoes);
   }
 }
 
@@ -344,6 +346,7 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
  * Idempotente e reetiquetável, como o irmão auditivo.
  */
 export function montarInteriorDoSom(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
+  const acoes = card.querySelector<HTMLElement>(':scope > .overlay__actions');
   const linhas: ControlRowSpec[] = [
     { id: 'audio-master', rotulo: t('audio.som'), dica: t('audio.som.dica') },
     { id: 'audio-master-vol', rotulo: t('audio.volume'), forma: 'cursor' },
@@ -355,9 +358,9 @@ export function montarInteriorDoSom(ctx: PanelShellCtx, card: HTMLElement, lista
       if (linha) rotularLinha(linha, peca);
       continue;
     }
-    card.insertBefore(linhaDeControle(ctx, peca).linha, lista.parentNode === card ? lista : null);
+    card.insertBefore(linhaDeControle(ctx, peca).linha, lista.parentNode === card ? lista : acoes);
   }
-  if (lista.parentNode !== card) card.appendChild(lista);
+  if (lista.parentNode !== card) card.insertBefore(lista, acoes);
 }
 
 // ---------------------------------------------------------------------------------------------

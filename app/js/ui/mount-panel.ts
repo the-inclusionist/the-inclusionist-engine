@@ -67,16 +67,9 @@ export interface MountPanelSpec {
    * on the first click — the defect ADR-0129 measured in `settings-visual` and `settings-empathy`.
    */
   readonly render: () => void;
-  /**
-   * What receives focus when the panel opens, as a selector inside the card.
-   *
-   * 📌 Optional, and the fallback is a real element rather than a polite gesture: the first enabled control
-   * in the list, else the close button. ⚠️ It is NOT `casca.lista` — that is a `div[role=group]` with no
-   * `tabindex`, so `.focus()` on it does nothing AND REPORTS NOTHING, which is the failure shape this
-   * repository keeps paying for. A dialog that opens with focus still outside it cannot be reached by a
-   * keyboard, and `aria-modal` makes that worse: the reader is told it is modal and then left outside.
-   */
-  readonly primeiroFoco?: string;
+  // 🔴 `primeiroFoco` WAS REMOVED (ADR-0158): focus now always lands on «Voltar», item 1 — the way out is where the
+  // cursor lands, as `resume` is in the pause root. ⚠️ Never `casca.lista`: a `div[role=group]` with no `tabindex`
+  // accepts `.focus()`, moves nothing and reports nothing, and an `aria-modal` dialog would leave the reader outside.
   /**
    * THIS PANEL ALREADY WIRES ITS OWN `#X-close`, so pass its `close()` here instead of letting this file wire
    * a second listener onto the same button.
@@ -124,9 +117,7 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
     spec.render();
     casca.overlay.hidden = false;
     ctx.overlays.frontOverlay(casca.overlay);
-    const pedido = spec.primeiroFoco ? casca.card.querySelector<HTMLElement>(spec.primeiroFoco) : null;
-    const primeiroVivo = casca.lista.querySelector<HTMLElement>('button:not([disabled]), [tabindex]:not([tabindex="-1"])');
-    (pedido ?? primeiroVivo ?? casca.fechar).focus?.();
+    casca.fechar.focus?.();
   };
 
   // Só quando o painel NÃO liga o próprio botão. Ver `fecharProprio`: dois ouvintes no mesmo controle são dois

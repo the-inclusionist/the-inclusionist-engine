@@ -483,6 +483,18 @@ pause card or a panel opens. `TouchBindingsCtx` gains two optional fields, `emMe
 **What to do:** nothing, unless your game relied on the pad drawing only its declared positions, or on the pad
 hiding under a menu.
 
+## L · A panel opens on «Voltar», its item 1, and has no close button at the bottom (ADR-0158)
+
+**Shape and behaviour.** `ui/panel-shell.montarCasca` now builds `#X-close` right after the title and before the
+list, with the class `overlay__back`; `.overlay__actions` holds only `#X-reset`. The ids did not change. The engine
+passes the back word (`pause.pmback`) as `rotuloFechar`. `ui/mount-panel` always puts the focus on `#X-close` when a
+panel opens, and **`MountPanelSpec.primeiroFoco` is removed**. `ui/settings-audio`'s two interiors insert their rows
+before `.overlay__actions` instead of appending them after it.
+
+**What to do:** drop `primeiroFoco` from your `montarPainel` calls. If you build a panel interior that appends to
+the card, insert before `.overlay__actions`, or the reset stops being the last item. If your markup relied on
+`#X-close` sitting inside `.overlay__actions`, move that styling to `.overlay__back`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

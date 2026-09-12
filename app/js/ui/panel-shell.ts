@@ -26,9 +26,10 @@
 //     <div id="X" class="overlay" hidden>
 //       <div class="overlay__card" role="dialog" aria-modal="true" aria-labelledby="X-title" [data-explain-idle]>
 //         <h2 id="X-title">…</h2>
+//         <button id="X-close">Voltar</button>                                      ← item 1 (ADR-0158)
 //         <div id="X-list" class="ctrl-list" role="group" aria-label="…"></div>   ← o interior, do settings-*
 //         <div class="overlay__actions">
-//           <button id="X-reset">…</button>  <button id="X-close">…</button>
+//           <button id="X-reset">…</button>
 //         </div>
 //       </div>
 //     </div>
@@ -73,7 +74,7 @@ export interface PanelShellSpec {
   titulo: string;
   /** O `aria-label` da lista, já traduzido — o nome do grupo que a criança ouve ao entrar nele. */
   rotuloDaLista: string;
-  /** Os rótulos dos dois botões, já traduzidos. */
+  /** Os rótulos dos dois botões, já traduzidos. `rotuloFechar` é a palavra de VOLTAR (item 1, ADR-0158). */
   rotuloReset: string;
   rotuloFechar: string;
   /**
@@ -144,6 +145,12 @@ export function montarCasca(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShel
   h2.id = ids.title;
   card.appendChild(h2);
 
+  // ADR-0158: «Voltar» is item 1 and nothing closes the panel after its rows. The way out is where the cursor lands
+  // when the panel opens — a close button at the bottom made the child walk every row to leave. The id stays
+  // `#X-close`, which is contract; only its place and its word changed.
+  const fechar = botao(ctx, ids.fechar, 'mode-btn overlay__back');
+  card.appendChild(fechar);
+
   const lista = ctx.criar('div');
   lista.id = ids.lista;
   lista.className = 'ctrl-list';
@@ -153,9 +160,7 @@ export function montarCasca(ctx: PanelShellCtx, spec: PanelShellSpec): PanelShel
   const acoes = ctx.criar('div');
   acoes.className = 'overlay__actions';
   const reset = botao(ctx, ids.reset, 'mode-btn');
-  const fechar = botao(ctx, ids.fechar, 'mode-btn is-on');
   acoes.appendChild(reset);
-  acoes.appendChild(fechar);
   card.appendChild(acoes);
 
   overlay.appendChild(card);

@@ -47,6 +47,20 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
     expect(casca.ids).toEqual(ids);
   });
 
+  it('🔴 [Right] «Voltar» is the FIRST control, and no close button comes after the rows (ADR-0158)', () => {
+    // The Dev, on a panel ending in «Restore» and «Close»: «Não pode haver botão "close" no final, mas sim o
+    // primeiro item deve ser o botão "voltar"». The order a keyboard walks is the DOM order, so the DOM order is
+    // what this case reads.
+    const casca = montarCasca(ctx, SPEC);
+    document.body.appendChild(casca.overlay);
+    const item = document.createElement('button');
+    casca.lista.appendChild(item);
+    const botoes = [...casca.card.querySelectorAll('button')];
+    expect(botoes[0], 'the way out is not item 1').toBe(casca.fechar);
+    expect(botoes.at(-1), 'something comes after the reset — a close at the bottom again?').toBe(casca.reset);
+    expect(botoes.indexOf(casca.fechar)).toBeLessThan(botoes.indexOf(item));
+  });
+
   it('⚠️ [Right] o cartão é um diálogo NOMEADO pelo próprio título', () => {
     // O `aria-labelledby` a apontar para o `<h2>` é o que faz o leitor de tela anunciar QUAL painel abriu.
     // Sem ele a criança ouve «diálogo» e tem de adivinhar em qual dos oito entrou.
@@ -119,3 +133,5 @@ describe('ui/panel-shell · a casca declara o que exigia em silêncio', () => {
 //     com o `<img>` montado.
 //   · tirando o `while (overlay.firstChild)` da remontagem → "[Exercise] montar duas vezes" reprova com dois
 //     `#audio-title` no documento.
+//   · (2026-09-12, ADR-0158) «Voltar» appended AFTER the list → the «Voltar is the FIRST control» case is red; and
+//     the close button put back into `.overlay__actions` after the reset → red too, by the last-button assertion.

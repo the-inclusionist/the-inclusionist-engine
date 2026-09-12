@@ -1284,7 +1284,7 @@ export function createGame(o: CreateGameOptions): Engine {
           titulo: t('menu.help'),
           rotuloDaLista: t('help.grupo.rotulo'),
           rotuloReset: t('menu.restoreDefaults'),
-          rotuloFechar: t('menu.close'),
+          rotuloFechar: t('pause.pmback'),
         }),
         // ⚠️ `render` E NÃO UMA MONTAGEM ÚNICA: o preset pode mudar com o `mount()` de outro cartucho
         // (ADR-0142) e a criança pode ter remapeado entre duas aberturas. Uma tabela construída no arranque
@@ -1327,10 +1327,9 @@ export function createGame(o: CreateGameOptions): Engine {
         titulo: t('menu.animation'),
         rotuloDaLista: t('animation.grupo.rotulo'),
         rotuloReset: t('menu.restoreDefaults'),
-        rotuloFechar: t('menu.close'),
+        rotuloFechar: t('pause.pmback'),
       }),
       render: () => motion?.render(),
-      primeiroFoco: '#motion-master',
     });
     /*
      * O BOTÃO-MESTRE — «parar todas as animações» de uma vez.
@@ -1380,7 +1379,7 @@ export function createGame(o: CreateGameOptions): Engine {
         titulo: t('menu.audio'),
         rotuloDaLista: t('audio.navsound.grupo'),
         rotuloReset: t('menu.restoreDefaults'),
-        rotuloFechar: t('menu.close'),
+        rotuloFechar: t('pause.pmback'),
       }),
       /*
        * ⚠️ O INTERIOR ENTRA NO RENDER, E NÃO SÓ NA MONTAGEM — e isto foi MEDIDO NUM NAVEGADOR a sério, com
@@ -1397,7 +1396,6 @@ export function createGame(o: CreateGameOptions): Engine {
         esconderLinhasSemAssunto();
         audio?.renderAudio();
       },
-      primeiroFoco: '#opt-modocego',
     });
     montarInteriorDoAudio(ctxDoPainel, painelDeAudio.casca.card, painelDeAudio.casca.lista);
     /*
@@ -1412,13 +1410,12 @@ export function createGame(o: CreateGameOptions): Engine {
         titulo: t('menu.som'),
         rotuloDaLista: t('audio.grupo.rotulo'),
         rotuloReset: t('menu.restoreDefaults'),
-        rotuloFechar: t('menu.close'),
+        rotuloFechar: t('pause.pmback'),
       }),
       render: () => {
         montarInteriorDoSom(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
         audio?.renderAudio();
       },
-      primeiroFoco: '#audio-master',
     });
     montarInteriorDoSom(ctxDoPainel, painelDeSom.casca.card, painelDeSom.casca.lista);
     /*
@@ -2107,7 +2104,7 @@ export function createGame(o: CreateGameOptions): Engine {
         titulo: t('menu.motora'),
         rotuloDaLista: t('menu.motora'),
         rotuloReset: t('menu.restoreDefaults'),
-        rotuloFechar: t('menu.close'),
+        rotuloFechar: t('pause.pmback'),
       }),
       // Relido a cada abertura: o tamanho pode ter mudado noutro sítio, e os rótulos seguem o idioma de agora.
       render: () => {
@@ -2118,7 +2115,6 @@ export function createGame(o: CreateGameOptions): Engine {
         if (dicaDoPad) dicaDoPad.textContent = t('motora.pad.dica');
         refletirTeclado();
       },
-      primeiroFoco: '#opt-pad-persona',
     });
     const linha = doc.createElement('div');
     linha.className = 'ctrl-row ctrl-row--passos';
@@ -2184,7 +2180,7 @@ export function createGame(o: CreateGameOptions): Engine {
         titulo: rotuloDoModo(modoDoTeclado),
         rotuloDaLista: rotuloDoModo(modoDoTeclado),
         rotuloReset: t('menu.restoreDefaults'),
-        rotuloFechar: t('menu.close'),
+        rotuloFechar: t('pause.pmback'),
       }),
       render: () => {
         if (passosDoAssento) {
@@ -2194,7 +2190,6 @@ export function createGame(o: CreateGameOptions): Engine {
         }
         controlesDoTeclado?.render(assentoNoMapa);
       },
-      primeiroFoco: '#ctrl-list button',
     });
     {
       // O ASSENTO, por passos — só nos modos de mais de um: «◀ Teclado de: Jogador 2 ▶».
