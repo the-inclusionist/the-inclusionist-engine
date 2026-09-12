@@ -46,6 +46,40 @@ export const REGUA_DE_ALVO: readonly { readonly altura: number; readonly alvo: n
  * ⚠️ NUNCA DEVOLVE MENOS DE 24: abaixo disso não é «AA num aparelho pequeno», é furar o piso da WCAG. Uma
  * tela mais baixa que 360 não compra o direito de encolher mais — compra o direito de mostrar menos itens.
  */
+/**
+ * OS NÓS DO JOGO QUE INVADEM O RECTÂNGULO DA BARRA DE ACESSIBILIDADE (ADR-0148 §3).
+ *
+ * 🔴 MEDIDO no `dist/quiz.html` em 2026-09-12, e a queixa do Dev é literal na tela: `#title-icons` é
+ * `position:absolute` DENTRO do `#game-region`, em (123,15) 337×44 — e o `H2.quiz-pergunta`, o título da
+ * pergunta, ocupa os mesmos pixels. A criança que procura o modo cego encontra texto por cima dos botões.
+ *
+ * ⚠️ E NADA FALHAVA. Não há erro, não há tipo, não há consola: só uma fila de botões tapada — e quem mais
+ * depende dela é precisamente quem não vê que ela está tapada.
+ *
+ * 📌 PURA E COM AS CAIXAS INJECTADAS, para o crivo a poder conduzir sem navegador. Quem mede é quem chama;
+ * o que esta função decide é o que CONTA como invasão, que é a parte que se erra.
+ *
+ * ⚠️ IGNORA OS DESCENDENTES DA PRÓPRIA BARRA: os botões dela intersectam-na por definição, e contá-los faria
+ * o crivo acusar sempre — o defeito que o ADR-0106 §2 chama de afogar o que se pode resolver.
+ */
+export interface CaixaNomeada { readonly nome: string; readonly caixa: Caixa; readonly daBarra: boolean; }
+export interface Caixa { readonly x: number; readonly y: number; readonly w: number; readonly h: number }
+
+export function invasoresDaBarra(barra: Caixa | null, nos: readonly CaixaNomeada[]): string[] {
+  // Uma barra sem área não reserva nada — e acusar contra um rectângulo de zero seria acusar toda a gente.
+  if (!barra || barra.w <= 0 || barra.h <= 0) return [];
+  // ⚠️ O GUARDA DE ÁREA ZERO FAZ TRABALHO, e eu quase o tirei por uma leitura errada. Uma mutação que o
+  // removia ficou VERDE, e a minha conclusão — «as desigualdades estritas já excluem quem não tem área» —
+  // era falsa: elas excluem um nó DEGENERADO NA FRONTEIRA, não um em geral. Uma risca de largura zero
+  // atravessando a barra passa nas quatro comparações. 📌 Contentores de altura ou largura zero são comuns
+  // em markup gerado, e acusá-los seria ruído puro — que é como se ensina um consumidor a ignorar a linha.
+  return nos
+    .filter((n) => !n.daBarra && n.caixa.w > 0 && n.caixa.h > 0)
+    .filter((n) => n.caixa.x < barra.x + barra.w && barra.x < n.caixa.x + n.caixa.w
+      && n.caixa.y < barra.y + barra.h && barra.y < n.caixa.y + n.caixa.h)
+    .map((n) => n.nome);
+}
+
 export function alvoMinimoDeToque(alturaCss: number): number {
   const h = Number.isFinite(alturaCss) ? alturaCss : 0;
   for (const degrau of REGUA_DE_ALVO) if (h >= degrau.altura) return degrau.alvo;

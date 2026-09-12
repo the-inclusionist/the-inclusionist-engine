@@ -383,6 +383,48 @@ describe('createGame num documento de verdade', () => {
       expect(cartao.hidden, 'depois do adiamento, qualquer tecla tinha de trazer o cartão de volta').toBe(false);
     });
 
+    it('🔴 [Right] o jogo que escreve POR CIMA da barra é acusado, com o nó pelo nome', () => {
+      /*
+       * 🔴 O caso do Dev, no documento a sério. Medido no `dist/quiz.html`: `#title-icons` é absoluto DENTRO
+       * do `#game-region` e o `H2.quiz-pergunta` ocupa os mesmos pixels. ⚠️ Nada falhava — sem erro, sem
+       * tipo, sem consola —, e quem mais depende daqueles botões é quem não vê que eles estão tapados.
+       *
+       * 📌 TEM DE SER NO NAVEGADOR: o que se afirma é uma INTERSECÇÃO de rectângulos reais. Um duplo
+       * devolveria o que o duplo quisesse, e a metade pura já está presa em `barra-a11y-e-hud.node`.
+       */
+      const regiao = raiz.querySelector('#game-region');
+      regiao.style.position = 'relative';
+      const titulo = document.createElement('h2');
+      // ⚠️ Nome NEUTRO: o crivo `engine-boundary` reprova um fixture de engine que precise do vocabulário de
+      // um género. O defeito foi medido num quiz, mas o que se afirma — um título por cima da barra — é de
+      // qualquer jogo que desenhe um cabeçalho.
+      titulo.className = 'titulo-da-atividade';
+      titulo.textContent = 'Um título qualquer';
+      titulo.style.cssText = 'position:absolute;left:0;top:0;width:400px;height:120px';
+      regiao.appendChild(titulo);
+      // A barra tem de estar DENTRO da região e a ocupar espaço, senão o caso mede a ausência dela.
+      const barra = raiz.querySelector('#title-icons');
+      regiao.appendChild(barra);
+      barra.style.cssText = 'position:absolute;left:10px;top:10px;width:300px;height:44px';
+
+      const motor = abrir({ host: { doc: document, win: window, a11yBarHost: barra } });
+
+      const linha = motor.problems.filter((p) => /barra de acessibilidade/.test(p) && /por cima/.test(p));
+      expect(linha, 'o jogo desenha por cima da barra e a engine cala-se').toHaveLength(1);
+      expect(linha[0], 'a linha não nomeia o nó que invade — o consumidor fica a caçar').toMatch(/titulo-da-atividade/);
+      expect(linha[0], 'a linha não diz por onde se conserta').toMatch(/--barra-a11y-h/);
+    });
+
+    it('🎯 [Zero] sem nada por cima, a engine NÃO acusa — e declara a faixa reservada', () => {
+      // O par. Sem ele, um crivo que acusasse sempre passaria o caso acima sem provar nada.
+      const motor = abrir();
+      expect(motor.problems.filter((p) => /por cima da barra/.test(p)),
+        'acusou sobreposição num jogo que não desenhou nada').toEqual([]);
+      // 📌 E a faixa é DECLARADA onde o jogo a lê, ao lado do `--tap` e do `--alvo-min`.
+      const regiao = document.querySelector('#game-region');
+      expect(regiao.style.getPropertyValue('--barra-a11y-h'), 'a engine não disse que faixa reserva').toMatch(/^\d+px$/);
+    });
+
     it('🔴 [Right] COM host de filtros, a engine acciona 🚥 sozinha — e 🌗 continua a ser do jogo', () => {
       /*
        * 📏 MEDIDO no `dist/quiz.html`: a barra servia sete ícones, três deles a dizer «em construção», e o 🚥

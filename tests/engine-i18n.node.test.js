@@ -240,7 +240,15 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'boot/create-game.ts': 20,       // a mensagem do `throw` e as lacunas do hospedeiro
+  'boot/create-game.ts': 23,       // a mensagem do `throw` e as lacunas do hospedeiro
+                                   // ⚠️ 20 → 23 em 2026-09-12: a linha que diz que o JOGO desenha por cima
+                                   // da barra de acessibilidade (ADR-0148 §3). Mesma classe das outras deste
+                                   // módulo — quem a lê é quem INTEGRA a engine —, e ela nomeia os nós que
+                                   // invadem e a variável a ler, porque uma linha que só dissesse «há
+                                   // sobreposição» deixava o consumidor a caçar.
+                                   // 📏 E ela existe porque este defeito NÃO FALHA em lado nenhum: medido no
+                                   // `dist/quiz.html`, o `H2.quiz-pergunta` ocupa os mesmos pixels dos botões
+                                   // e nada — nem erro, nem tipo, nem consola — o dizia.
                                    // ⚠️ 18 → 20 em 2026-09-12: a linha que diz porque a AJUDA não foi montada
                                    // sem `preset` (ADR-0147 §4). Mesma classe de todas as anteriores — quem a
                                    // lê é quem INTEGRA a engine, e ela nomeia o campo que falta e o registo
@@ -381,8 +389,11 @@ describe('texto cru em português nas camadas de ENGINE (o buraco do gate do ite
     // UMA palavra colado a um número por concatenação não se parece com prosa. A forma «palavra + variável»
     // — que é como o português cru sobrevive dentro de markup gerado — atravessa este livro-razão inteiro sem
     // ser vista, e os dois que o Dev apontou estavam ambos nela. O total é um piso, não um retrato.
+    // ⚠️ 79 → 82 no mesmo dia: a linha da barra de acessibilidade tapada (ADR-0148 §3). É dívida a crescer,
+    // dita como tal — e o que a compra é o que ela paga: um defeito que não falhava em lado nenhum passou a
+    // ter uma linha que nomeia os nós invasores e a variável que os tira de lá.
     const total = Object.values(CRU_CONHECIDO).reduce((a, b) => a + b, 0);
-    expect(total).toBeLessThanOrEqual(79);
+    expect(total).toBeLessThanOrEqual(82);
     expect(Object.keys(CRU_CONHECIDO).length).toBeLessThanOrEqual(20);
   });
 

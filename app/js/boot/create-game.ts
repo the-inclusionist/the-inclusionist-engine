@@ -72,6 +72,7 @@ import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform
 import { ehCego, ehBaixaVisao, PADRAO, filtroChave, type VisualState, type Tema, type Correcao } from '../render/viz-axes.js';
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
 import { VIZ_FILTER } from '../render/viz-modes.js';
+import { invasoresDaBarra, type Caixa } from '../ui/layout.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
@@ -1532,6 +1533,63 @@ export function createGame(o: CreateGameOptions): Engine {
   // O ANÚNCIO DE QUE O LAÇO PAROU (ADR-0054). Entregue e não instalado: quem chama `startLoop` é o JOGO, que
   // é o dono do ticker. Um jogo que monte o laço sem passar isto continua a PARAR — parar não é opcional; o
   // que ele perde é dizer que parou.
+  /*
+   * A BARRA É HUD, E O JOGO NÃO ESCREVE POR CIMA DELA (ADR-0148 §3).
+   *
+   * 🔴 MEDIDO no `dist/quiz.html` em 2026-09-12: `#title-icons` é `position:absolute` DENTRO do
+   * `#game-region`, em (123,15) 337×44 — e o `H2.quiz-pergunta` ocupa os mesmos pixels. A criança que
+   * procura o modo cego encontra o título da pergunta por cima dos botões. ⚠️ E nada falhava: sem erro, sem
+   * tipo, sem consola. Só uma fila de botões tapada, e quem mais depende dela é quem não vê que está tapada.
+   *
+   * 📌 A ENGINE DIZ, e não conserta — porque não pode. Empurrar o conteúdo do jogo significaria mexer na
+   * largura e altura que o `ui/layout` trava em múltiplo inteiro de pixels reais, e isso é a escala do
+   * ADR-001. O que ela tem é o rectângulo; quem desenha é o jogo, e agora sabe onde não desenhar.
+   *
+   * ⚠️ POR CAPACIDADE E NÃO POR TIPO, como o resto deste ficheiro já faz: um documento falso não tem
+   * `getBoundingClientRect`, e lê-lo às cegas derrubaria o boot num ambiente sem DOM — que é metade dos
+   * testes desta árvore. Sem a medida, não se acusa: silêncio é melhor do que uma acusação inventada.
+   */
+  function medirInvasoresDaBarra(): string[] {
+    const regiao = $<HTMLElement>('#game-region');
+    if (!a11yBar || !regiao || typeof (a11yBar as HTMLElement).getBoundingClientRect !== 'function') return [];
+    const caixaDe = (el: Element): Caixa => {
+      const b = el.getBoundingClientRect();
+      return { x: b.x, y: b.y, w: b.width, h: b.height };
+    };
+    const barra = caixaDe(a11yBar);
+    const nos = [...regiao.querySelectorAll('*')].map((el) => ({
+      nome: el.tagName.toLowerCase() + (el.id ? `#${el.id}` : '') + (el.className ? `.${String(el.className).trim().split(/\s+/)[0]}` : ''),
+      caixa: caixaDe(el),
+      daBarra: el === a11yBar || a11yBar.contains(el),
+    }));
+    return invasoresDaBarra(barra, nos);
+  }
+  {
+    /*
+     * 📌 A FAIXA RESERVADA, ESCRITA ONDE O JOGO A LÊ. `--barra-a11y-h` vive no `#game-region`, ao lado do
+     * `--tap` e do `--alvo-min` que o `ui/layout` já escreve — mesma superfície, mesma convenção, e é a
+     * variável que um jogo usa para deixar a faixa livre em vez de adivinhar um número.
+     *
+     * ⚠️ ZERO QUANDO NÃO HÁ BARRA, e isso é a resposta certa: sem barra não há nada a reservar, e um valor
+     * inventado faria todo jogo empurrar conteúdo por uma coisa que não está lá.
+     */
+    const regiao = $<HTMLElement>('#game-region');
+    const alturaDaBarra = a11yBar && typeof (a11yBar as HTMLElement).getBoundingClientRect === 'function'
+      ? Math.round(a11yBar.getBoundingClientRect().height) : 0;
+    if (regiao && typeof regiao.style?.setProperty === 'function') {
+      regiao.style.setProperty('--barra-a11y-h', `${alturaDaBarra}px`);
+    }
+
+    const invasores = medirInvasoresDaBarra();
+    if (invasores.length) {
+      problemasDoHospedeiro.push(
+        `o jogo desenha por cima da barra de acessibilidade (${invasores.slice(0, 4).join(', ')}): ela é HUD e `
+        + 'o rectângulo dela é reservado. Quem depende dos botões para começar a jogar não os alcança, e nada '
+        + 'falha — leia `--barra-a11y-h` no `#game-region` e deixe essa faixa livre',
+      );
+    }
+  }
+
   const aoFalhar = criarAvisoDeQueda({
     procurar: (sel) => $<HTMLElement>(sel),
     criar: (tag) => doc.createElement(tag),
