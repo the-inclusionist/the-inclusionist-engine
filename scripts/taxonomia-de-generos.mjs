@@ -9,120 +9,43 @@
 //
 // 📌 AS 35 CATEGORIAS PASSAM A SER A PROVA DE COBERTURA, e não a chave: os 380 jogos têm de caber na taxonomia.
 //
-// ⚠️ E A PÁGINA ESTÁ FIXADA NUMA REVISÃO. Uma taxonomia tirada de uma wiki que muda todos os dias sem dizer de
-// que dia é seria uma lista que um dia deixa de concordar consigo mesma, sem nada que o diga.
+// ⚠️ A TABELA MORA EM `lib/taxonomia.mjs`, partilhada com `acomodacoes-por-genero.mjs`: os dois scripts têm de
+// ler o catálogo e chavear as categorias da mesma forma. Aqui ficam as GUARDAS e a contagem.
 //
-// ⚠️ QUATRO GUARDAS, e nenhuma é zelo — cada uma é uma forma de uma célula esquecida parecer uma decisão:
+// ⚠️ SEIS GUARDAS, e nenhuma é zelo — cada uma é uma forma de uma célula esquecida parecer uma decisão:
 //   1. uma categoria do catálogo SEM mapeamento
 //   2. um mapeamento que nomeia uma secção que NÃO existe na revisão fixada
 //   3. uma categoria sem género nenhum que NÃO diz porquê
 //   4. um mapeamento a mais, que já não corresponde a categoria nenhuma do catálogo
+//   5. um eixo (perspectiva, jogadores) VAZIO ou com um valor que não é dos conhecidos
+//   6. uma categoria cujo NOME é um eixo e cujo eixo não o diz — «Isométrico» com duas perspectivas
 //
 //   node scripts/taxonomia-de-generos.mjs [caminho-do-catalogo.html]
-import { readFileSync, existsSync } from 'node:fs';
+import { CATALOGO_PADRAO, lerCatalogo, REVISAO, SECOES, RAZOES, EIXOS_DA_TAXONOMIA, MAPA } from './lib/taxonomia.mjs';
 
-const CATALOGO = process.argv[2] ?? 'C:/Users/candi/Claude/minigames-catalog-v2.html';
-if (!existsSync(CATALOGO)) {
-  console.error(`catálogo não encontrado: ${CATALOGO}\npasse o caminho: node scripts/taxonomia-de-generos.mjs <catalogo.html>`);
-  process.exit(2);
-}
+const categorias = lerCatalogo(process.argv[2] ?? CATALOGO_PADRAO, 'node scripts/taxonomia-de-generos.mjs <catalogo.html>');
 
-/* ===================== A TAXONOMIA, FIXADA =====================
- * `https://en.wikipedia.org/wiki/List_of_video_game_genres`, revisão 1367745358 de 2026-08-04T23:25:35Z.
- * Só as secções que o mapeamento abaixo usa, com o NÚMERO de secção da própria página — para que cada linha
- * possa ser conferida à mão contra a revisão, sem interpretação no meio.
- *
- * 📌 AS SECÇÕES 11 («por propósito») E 12 («sandbox / mundo aberto») estão aqui, mas o 11 NÃO é tratado como
- * género: a própria página o separa, e é o mesmo corte que a correcção do Dev pediu.
- */
-const REVISAO = { id: 1367745358, data: '2026-08-04T23:25:35Z' };
-const SECOES = Object.freeze({
-  '1': 'Action', '1.1': 'Platform games', '1.2': 'Shooter games', '1.2.1': 'First-person shooters',
-  '1.3': 'Fighting games', '1.5': 'Stealth games', '1.7': 'Rhythm games',
-  '2': 'Action-adventure', '2.1': 'Survival horror',
-  '8': 'Sports', '10': 'Other notable genres', '11': 'Video game genres by purpose', '12': 'Sandbox / open world games',
-  '3': 'Adventure', '3.2': 'Graphic adventures', '3.3': 'Visual novels',
-  '4': 'Puzzle', '4.2': 'Logical game', '4.2.1': 'Physics game', '4.3': 'Hidden object game',
-  '4.6': 'Traditional puzzle game',
-  '5': 'Role-playing',
-  '6': 'Simulation', '6.1': 'Construction and management simulation',
-  '7': 'Strategy',
-  '8.1': 'Racing', '8.2': 'Sports game',
-  '10.1': 'Board game or card game', '10.2': 'Casino game', '10.6': 'Horror game', '10.7': 'Idle game',
-  '10.8': 'Party game', '10.11': 'Trivia game', '10.12': 'Typing game',
-  '11.2': 'Art game', '11.5': 'Educational game',
-  '12.1': 'Sandbox', '12.2': 'Creative',
-});
-/** O que um género é NÃO sendo: os eixos que a correcção do Dev separou. */
-const RAZOES = new Set(['era', 'tecnica-de-render', 'perspectiva', 'modo-de-jogadores', 'mecanica', 'proposito', 'multigenero']);
-
-/* ===================== AS 35 CATEGORIAS → A TAXONOMIA =====================
- * `generos` = secções da Wikipédia. `naoE` = o que a categoria é, quando o NOME dela não é um género.
- * `eixos` = perspectiva / modo de jogadores / propósito, que o estudo tinha misturado com género.
- *
- * ⚠️ ISTO É JUÍZO, e está escrito como dado para poder ser discordado linha a linha: editar uma entrada e voltar
- * a correr é mais honesto do que discutir uma tabela em prosa.
- */
-const MAPA = {
-  'Arcade Clássico': { generos: ['1'], naoE: 'era', nota: 'uma ÉPOCA; os jogos dela são, na maioria, acção' },
-  'Shooters / Tiros': { generos: ['1.2'] },
-  'Endless Runner': { generos: ['1.1'] },
-  'Puzzle Lógico': { generos: ['4.2'] },
-  'Puzzle de Palavras': { generos: ['4'], nota: 'a página não tem subsecção de palavras; fica no Puzzle de topo' },
-  'Puzzle Físico': { generos: ['4.2.1'] },
-  'Memória': { generos: ['4.6'] },
-  'Platformer': { generos: ['1.1'] },
-  'Corrida / Racing': { generos: ['8.1'] },
-  'Esportes': { generos: ['8.2'] },
-  'Cartas': { generos: ['10.1'] },
-  'Tabuleiro': { generos: ['10.1'] },
-  'Cassino / Sorte': { generos: ['10.2'] },
-  'Simulação / Idle': { generos: ['6', '10.7'] },
-  'RPG / Aventura': { generos: ['5', '3'] },
-  'Estratégia': { generos: ['7'] },
-  'Ritmo / Música': { generos: ['1.7'] },
-  'Digitação': { generos: ['10.12'] },
-  'Desenho / Criativo': { generos: ['12.2'] },
-  'Educativo / Quiz': { generos: ['10.11'], eixos: { proposito: '11.5' }, nota: 'metade GÉNERO (quiz), metade PROPÓSITO (educativo)' },
-  'Reação / Reflexo': { generos: ['1'], naoE: 'mecanica', nota: 'reagir depressa é uma MECÂNICA que atravessa géneros' },
-  'Party / Microgames': { generos: ['10.8'], eixos: { modoDeJogadores: 'local' } },
-  'Stealth / Furtivo': { generos: ['1.5'] },
-  'Luta / Fighting': { generos: ['1.3'] },
-  'Terror / Atmosfera': { generos: ['10.6', '2.1'] },
-  'Sandbox / Sim Físico': { generos: ['12.1', '4.2.1'] },
-  'Pseudo-3D / Raycasting': { generos: ['1.2.1'], naoE: 'tecnica-de-render', eixos: { perspectiva: 'primeira-pessoa' }, nota: 'uma TÉCNICA; os raycasters são quase todos tiro em 1.ª pessoa' },
-  'Isométrico': { generos: ['5', '7'], naoE: 'perspectiva', eixos: { perspectiva: 'isometrica' }, nota: 'uma PERSPECTIVA; os isométricos são quase todos RPG e estratégia' },
-  'Multiplayer Local': { generos: [], naoE: 'modo-de-jogadores', eixos: { modoDeJogadores: 'local' }, nota: 'um MODO DE JOGADORES que atravessa qualquer género' },
-  'Experimentais / Arte': { generos: [], naoE: 'proposito', eixos: { proposito: '11.2' }, nota: 'a própria página põe «art game» em «por propósito»' },
-  'Cozinha Produção': { generos: ['6.1'] },
-  'Point-and-Click / Hidden': { generos: ['3.2', '4.3'] },
-  'Narrativo Detetive': { generos: ['3', '3.3'] },
-  'Labirinto Exploração': { generos: ['1'], naoE: 'mecanica', nota: 'o labirinto é uma MECÂNICA; a página não lista «maze» como género' },
-  'Híbridos / Mashups': { generos: [], naoE: 'multigenero', nota: 'multi-género POR DEFINIÇÃO — não há género único a atribuir' },
-};
-
-/* ===================== ler o catálogo — o MESMO leitor de `acomodacoes-por-genero.mjs` ===================== */
-// ⚠️ Copiado verbatim de propósito: os dois scripts têm de ler o catálogo da mesma forma, senão um conta 380
-// jogos e o outro 379 e ninguém sabe qual está certo.
-const html = readFileSync(CATALOGO, 'utf8');
-const limpo = (s) => s.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
-const categorias = [...html.matchAll(/<article class="card[^"]*"[\s\S]*?<\/article>/g)].map((m) => ({
-  nome: limpo((m[0].match(/<h3[^>]*class="card-title"[^>]*>([\s\S]*?)<\/h3>/) ?? [, ''])[1]),
-  jogos: [...m[0].matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g)].length,
-}));
-if (!categorias.length) { console.error('nenhuma categoria lida — o markup do catálogo mudou?'); process.exit(2); }
-
-/* ===================== as quatro guardas ===================== */
+/* ===================== as seis guardas ===================== */
 const nomes = categorias.map((c) => c.nome);
 const problemas = [];
 for (const n of nomes) if (!(n in MAPA)) problemas.push(`categoria SEM mapeamento: ${n}`);
 for (const n of Object.keys(MAPA)) if (!nomes.includes(n)) problemas.push(`mapeamento SEM categoria no catálogo: ${n}`);
 for (const [n, m] of Object.entries(MAPA)) {
-  for (const s of [...m.generos, ...Object.values(m.eixos ?? {}).filter((v) => /^\d/.test(v))]) {
+  for (const s of [...m.generos, ...m.proposito]) {
     if (!(s in SECOES)) problemas.push(`${n}: secção «${s}» NÃO existe na revisão ${REVISAO.id}`);
   }
+  for (const s of m.proposito) if (!s.startsWith('11.')) problemas.push(`${n}: propósito «${s}» não é da secção 11 («by purpose»)`);
   if (!m.generos.length && !m.naoE) problemas.push(`${n}: sem género nenhum e sem dizer PORQUÊ`);
   if (m.naoE && !RAZOES.has(m.naoE)) problemas.push(`${n}: razão «${m.naoE}» não é uma das conhecidas`);
+  for (const [eixo, validos] of Object.entries(EIXOS_DA_TAXONOMIA)) {
+    const v = m[eixo];
+    if (!Array.isArray(v) || !v.length) problemas.push(`${n}: eixo «${eixo}» vazio — toda categoria declara o seu`);
+    else for (const x of v) if (!validos.has(x)) problemas.push(`${n}: «${x}» não é um valor de «${eixo}»`);
+  }
+  // 6 · o nome que É um eixo tem de o fixar num valor só; senão a categoria diz uma coisa e o dado outra.
+  if (m.naoE === 'perspectiva' && m.perspectiva?.length !== 1) problemas.push(`${n}: é uma PERSPECTIVA e declara ${m.perspectiva?.length ?? 0}`);
+  if (m.naoE === 'modo-de-jogadores' && String(m.jogadores) !== 'local') problemas.push(`${n}: é um MODO DE JOGADORES e não declara só «local»`);
+  if (m.naoE === 'proposito' && !m.proposito.length) problemas.push(`${n}: é um PROPÓSITO e não declara nenhum`);
 }
 if (problemas.length) { for (const p of problemas) console.error('⚠️ ' + p); process.exit(1); }
 
@@ -153,3 +76,11 @@ console.log(`\n=== ${naoGenero.length} categorias cujo NOME não é um género =
 for (const [n, m] of naoGenero) console.log(`  ${n.padEnd(26)} ${m.naoE.padEnd(18)} ${m.nota ?? ''}`);
 console.log(`\n=== ${semGeneroNenhum.length} sem género nenhum a atribuir (${semGeneroNenhum.reduce((a, [n]) => a + jogosDe[n], 0)} jogos) ===`);
 for (const [n, m] of semGeneroNenhum) console.log(`  ${n.padEnd(26)} ${jogosDe[n]} jogos · ${m.naoE}`);
+console.log('\n=== os eixos que NÃO são género — alcance em jogos (com sobreposição) ===');
+for (const eixo of Object.keys(EIXOS_DA_TAXONOMIA)) {
+  const partes = [...EIXOS_DA_TAXONOMIA[eixo]].map((v) => {
+    const j = Object.entries(MAPA).filter(([, m]) => m[eixo].includes(v)).reduce((a, [n]) => a + jogosDe[n], 0);
+    return `${v} ${j}`;
+  });
+  console.log(`  ${eixo.padEnd(12)} ${partes.join(' · ')}`);
+}

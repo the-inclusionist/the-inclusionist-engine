@@ -73,15 +73,75 @@ tem sujeito nelas **pelo género**, e terá de o ter pelo eixo.
 
 ### O que fica por fazer nesta fase (2a)
 
-1. **Re-chavear as acomodações pelos eixos certos** — cada uma com UMA chave: género, perspectiva, modo de
-   jogadores ou propósito. É o que faz as divergências de `balancoDaCamara` e `saidaDeAudio` desaparecerem
-   antes de serem escritas.
+1. ✅ **Re-chavear as acomodações pelos eixos certos** — feito, secção 0.1 abaixo.
 2. **Semear o catálogo de acomodações pela GAG**, percorrendo as três camadas (Basic → Intermediate →
    Advanced) e os seis eixos — com **duas colunas de prioridade**, alcance medido e nível GAG.
 
-> ⚠️ **As secções 1–9 abaixo continuam a valer como MEDIÇÃO** — os números por categoria são o que são. O que
-> muda é que a categoria deixa de ser tratada como género, e as conclusões que dependiam disso são refeitas
-> no passo 1 acima.
+---
+
+## 0.1 · As acomodações re-chaveadas — UMA chave cada
+
+📏 `node scripts/acomodacoes-por-genero.mjs`. A primeira versão guardava **35 listas escritas à mão**, uma por
+categoria, e por isso a mesma pergunta era respondida muitas vezes e podia sê-lo de formas diferentes. Agora
+**cada acomodação tem uma chave — um eixo e os valores onde tem assunto —, e cada categoria declara uma vez os
+valores que os jogos dela cobrem.** A divergência deixa de ser possível por construção: não há segunda célula
+onde escrever outra resposta. Sete guardas; **catorze mutações distintas, catorze vermelhas** — quatro delas nas guardas novas da taxonomia.
+
+### 🎯 O achado: metade das chaves o contrato JÁ PERGUNTA
+
+O plano previa quatro eixos (género, perspectiva, modo de jogadores, propósito). Chaveadas uma a uma, as
+acomodações caíram em **três espécies**, e a do meio é a que muda a fase 2c:
+
+| espécie | eixos | acomodações |
+|---|---|---|
+| **taxonomia** — o que o jogo É | `generos` · `perspectiva` · `jogadores` | saída de áudio, balanço da câmara, Modo Fácil, cadeira de rodas, detecção, intensidade, dica |
+| 🎯 **declaração que o contrato já tem** | `tick` · `seguraTeclas()` · `needsPointer()` · `world()` · `topology()` | velocidade do jogo, as duas alternâncias, controle virtual, um botão só, estabilizar ponteiro, simulação visual, modo cego, navegação sonora |
+| ⚠️ **declaração que o contrato ainda não pede** | `avatar` · `texto` · `pecas` · `precisao` | redução do personagem, bengala, velocidade do texto, dificuldade lexical, peças, naipes, janela de acerto |
+
+🔴 **Nove acomodações não precisam de género nenhum**: a engine pode filtrá-las pelo que o jogo já declarou, e
+seis dessas nove a engine já tem. É a regra do ADR-0145 a funcionar sem o campo `genero` — o que a fase 1h
+já tinha visto no ☝️, que some num quiz porque `seguraTeclas()` é `false`.
+
+📌 **E um eixo teve de ser DERIVADO**, e é a mesma regra que a engine aplica: o sonar precisa de mundo
+(`world: none` ⇒ «empatia e sonar NÃO são oferecidos», `core/contract.ts` bloco 8) **e** de direcção
+(`bearing` devolve `{ kind: 'none' }` em `hotspots`, `contract.ts:610`). Chaveado só pela topologia, o modo
+cego foi dado ao Desenho, que declara `none` — medido, e corrigido antes de escrever isto.
+
+### O que mudou, por acomodação
+
+| acomodação | chave | antes | depois | porquê |
+|---|---|---|---|---|
+| modo cego · navegação sonora | `espaco ∈ espacial` | 18% | **78%** | a §6 dizia «mundo espacial» e contou 6 categorias; o contrato dá direcção a **toda** grelha e espaço contínuo — o Tabuleiro (xadrez às cegas) incluído |
+| um botão só | `entrada ∈ acoes` | 36% | **93%** | com varredura, colapsar as acções tem assunto em qualquer jogo de acções — xadrez incluído |
+| tamanho do alvo | universal | 61% | **100%** | a régua da fase 5b é da INTERFACE (menus, pad, barra), e há interface em todo jogo |
+| remapear teclas | universal | 62% | **100%** | todo jogo tem confirmar e pausa, e menus navegados por tecla |
+| bengala | `avatar ∈ anda` | 6% | 48% | a bengala é de quem anda a pé, e anda-se a pé em muito mais do que Platformer e Labirinto |
+| alternância de marcha | `segura ∈ direcao·botao` | 34% | 65% | lido nos títulos: Tetris segura a descida, o pinball segura o flipper |
+| alternância do correr | `segura ∈ botao` | 11% | 36% | ⚠️ generaliza para **qualquer botão segurado** (carregar força, bloquear), não só correr |
+| janela de acerto | `precisao ∈ precisa` | 34% | 53% | Shooters, Corrida, Pseudo-3D e Cartas (Speed) tinham-na e não estavam contados |
+| balanço da câmara | `perspectiva ∈ 1.ª pessoa·atrás` | 6% | 23% | ⚠️ **perdeu o Isométrico** — a câmara isométrica não balança; ganhou a câmara de perseguição |
+| estabilizar ponteiro | `entrada ∈ ponteiro` | 7% | 23% | **era «assistência de traço»**: a mão trémula que desenha também mira e arrasta |
+| velocidade do texto · dificuldade lexical | `texto ∈ narrativo·materia` | 18% · 11% | 25% · 25% | ⚠️ perdeu Simulação e Estratégia, onde o texto é rótulo |
+| Modo Fácil | `generos ∈ 1.1` | 30% | **6%** | a física dele (gravidade, moedas no chão) é de PLATAFORMA; «mais fácil» em geral é outra acomodação, e a GAG é que a nomeia (passo 2) |
+| intensidade | `generos ∈ 10.6·2.1` | 10% | 2% | ⚠️ flashes saíram: fotossensibilidade é da redução de cena, que é universal |
+| simulação visual | `mundo ∈ element` | 100% | 98% | o Desenho declara `none`, e o contrato recusa-lhe a simulação |
+| controle virtual | `entrada ∈ acoes` | 96% | 93% | Desenho e Sandbox são ponteiro contínuo; Palavras ganhou (a forca escolhe letras por acção) |
+| velocidade do jogo | `tick ∈ clock` | 82% | 82% | **o total não mudou, e a composição sim**: entraram Platformer, Runner e Luta (que a versão anterior só pusera na janela), Sandbox e Experimentais; saíram Tabuleiro, Narrativo, Point-and-Click e Palavras, que são por turno |
+
+⚠️ **O Modo Fácil e a cadeira de rodas caíram para 22 jogos, e isso é o estudo a funcionar**: montá-los
+fora de Platformer e Runner seria o interruptor sem assunto que o ADR-0145 existe para evitar.
+
+### O que isto pede à fase 2c
+
+Os quatro eixos que o contrato ainda não pergunta — **`avatar`, `texto`, `pecas`, `precisao`** — chaveiam sete
+acomodações, e **duas a engine tem** (a bengala e a redução do personagem, que hoje montam sem filtro). Se
+entrarem como campos, entram pela rubrica do `holdsAtOnce` (sem padrão seguro ⇒ obrigatórios) ou pela do
+`needsPointer` (padrão seguro ⇒ opcionais). Essa decisão é da 2c, e não é tomada aqui.
+
+> ⚠️ **As secções 1–9 abaixo continuam a valer como MEDIÇÃO da primeira versão** — o raciocínio delas é o
+> que produziu as listas. **Onde um número delas contradiz a tabela acima, vale a de cima**: a §1 inteira, a
+> §2 (os universais são DOZE — entram remapear e tamanho do alvo, sai a simulação visual), a §5 (a cauda) e o
+> número da §6.
 
 ---
 
@@ -266,8 +326,15 @@ entregaria três interruptores sem assunto a dois terços do catálogo.**
 ## Como refazer
 
 O cruzamento não é prosa: ele está escrito célula a célula, e a contagem é derivada. Para o repetir depois de
-o catálogo mudar, ou para discordar de uma célula e ver o efeito, o ficheiro de classificação tem o mapa
-`EXTRA` — um gênero por linha, com as acomodações que lhe **acrescem** aos onze universais — e imprime a
-tabela do §1 inteira. ⚠️ Ele confere também que nenhum gênero ficou sem classificação, que nenhuma
-classificação aponta para um gênero que não existe e que nenhuma lista repete um universal; sem essas três
-guardas, uma célula esquecida aparece como «não se aplica» e ninguém dá por ela.
+o catálogo mudar, ou para discordar de uma célula e ver o efeito, há três ficheiros:
+
+- `scripts/lib/taxonomia.mjs` — o leitor do catálogo, a revisão fixada da Wikipédia e, por categoria, os
+  géneros, a perspectiva, os jogadores e o propósito;
+- `scripts/taxonomia-de-generos.mjs` — as guardas da taxonomia e a cobertura (secção 0);
+- `scripts/acomodacoes-por-genero.mjs` — por categoria, os eixos da declaração (`DECL`); por acomodação, a
+  sua chave (`ACOM`); e a tabela da secção 0.1.
+
+⚠️ Discordar de uma célula é editar **uma linha**: a declaração de uma categoria, ou a chave de uma
+acomodação. ⚠️ **As guardas conferem FORMA, não verdade** — um eixo esquecido, um valor que casaria zero, uma
+chave com dois eixos reprovam; uma categoria declarada com o valor errado passa, e é por isso que a coluna
+«porquê» da 0.1 existe. A primeira versão (o mapa `EXTRA`, secções 1–9) está no histórico de `scripts/acomodacoes-por-genero.mjs` (`git log -p`).
