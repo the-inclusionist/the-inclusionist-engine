@@ -11,6 +11,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { linhaDeControle } from '../app/js/ui/panel-widgets.js';
 import { montarInteriorDoMotor } from '../app/js/ui/settings-motor.js';
+import { montarInteriorDoAudio } from '../app/js/ui/settings-audio.js';
 import { montarCasca } from '../app/js/ui/panel-shell.js';
 
 const ctx = {
@@ -147,6 +148,91 @@ describe('montarInteriorDoMotor — o painel constrói o que ele próprio alcan�
       expect(linha.querySelector('.opt-hint'), `#${id} ficou sem explicação`).not.toBeNull();
       expect(linha.querySelector('strong').textContent.length, `#${id} ficou sem rótulo`).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('montarInteriorDoAudio — o maior contrato invisível dos oito', () => {
+  function casca() {
+    const c = montarCasca(ctx, {
+      id: 'audio', titulo: 'Auditiva', rotuloDaLista: 'Sons do jogo', rotuloReset: 'Repor', rotuloFechar: 'Fechar',
+    });
+    hospedeiro.appendChild(c.overlay);
+    return c;
+  }
+
+  // 📏 Os quinze que `ui/settings-audio` alcança e nunca criou, medidos do próprio ficheiro. `#opt-sound` NÃO
+  // entra: ele é o espelho deste ajuste na barra rápida, fora do painel, e é alcançado com guarda.
+  const CONTROLES = {
+    'audio-master': 'BUTTON',
+    'audio-master-vol': 'INPUT',
+    'navsound-master': 'INPUT',
+    'opt-modocego': 'BUTTON',
+    'cane-div': 'SELECT',
+    'opt-menuindex': 'BUTTON',
+    'opt-tts': 'BUTTON',
+    'tts-engine': 'SELECT',
+    'tts-voice': 'SELECT',
+    'tts-vol': 'INPUT',
+    'opt-tts-test': 'BUTTON',
+    'audio-detect': 'BUTTON',
+  };
+
+  it('🎯 [Right] cria os doze controles, cada um com a TAG que o painel escreve', () => {
+    // ⚠️ A TAG É O DEFEITO SILENCIOSO. `renderAudio` faz `ctx.$<HTMLSelectElement>('#cane-div').value = …`;
+    // num `<button>` isso cria uma propriedade que ninguém lê, sem erro nenhum, e a escolha some.
+    const c = casca();
+    montarInteriorDoAudio(ctx, c.card, c.lista);
+    for (const [id, tag] of Object.entries(CONTROLES)) {
+      const el = document.getElementById(id);
+      expect(el, `#${id} não foi criado`).not.toBeNull();
+      expect(el.tagName, `#${id} nasceu com a tag errada`).toBe(tag);
+    }
+    // e os três volumes são cursores de verdade, não caixas de texto
+    for (const id of ['audio-master-vol', 'navsound-master', 'tts-vol']) {
+      expect(document.getElementById(id).type, `#${id} não é um cursor`).toBe('range');
+    }
+  });
+
+  it('🎯 [Right] cria os DOIS contentores que o painel preenche, e a lista da casca fica no cartão', () => {
+    const c = casca();
+    montarInteriorDoAudio(ctx, c.card, c.lista);
+    for (const id of ['navsound-list', 'audio-sinks']) {
+      const el = document.getElementById(id);
+      expect(el, `#${id} não foi criado`).not.toBeNull();
+      expect(el.getAttribute('role'), `#${id} não é um grupo que o leitor de tela anuncie`).toBe('group');
+      expect(el.getAttribute('aria-label'), `#${id} é um grupo sem nome`).toBeTruthy();
+    }
+    expect(c.card.contains(c.lista), 'a lista da casca saiu do cartão').toBe(true);
+  });
+
+  it('⚠️ [Right] a ORDEM é a decisão: o volume da navegação vem ANTES da lista que ele governa', () => {
+    // ADR-0044 §2. Um cursor que governa um grupo e aparece depois dele obriga a criança a descobrir o que
+    // ele faz descendo primeiro — e quem navega por teclado passa o grupo inteiro antes de chegar ao mestre.
+    const c = casca();
+    montarInteriorDoAudio(ctx, c.card, c.lista);
+    const ordem = [...c.card.children];
+    const posicao = (sel) => ordem.findIndex((n) => n.matches(sel) || n.querySelector(sel));
+    expect(posicao('#navsound-master')).toBeLessThan(posicao('#navsound-list'));
+    expect(posicao('#audio-master')).toBeLessThan(posicao('#navsound-master'));
+    // as saídas de áudio são escolha de APARELHO, e ficam por último
+    expect(posicao('#audio-sinks')).toBeGreaterThan(posicao('#opt-tts'));
+  });
+
+  it('⚠️ [Zero] montar DUAS vezes deixa UM de cada — a raiz monta mais do que uma vez', () => {
+    const c = casca();
+    montarInteriorDoAudio(ctx, c.card, c.lista);
+    montarInteriorDoAudio(ctx, c.card, c.lista);
+    for (const id of [...Object.keys(CONTROLES), 'navsound-list', 'audio-sinks', 'audio-list']) {
+      expect(document.querySelectorAll('#' + id), `#${id} ficou duplicado`).toHaveLength(1);
+    }
+  });
+
+  it('🔴 [Zero] `#opt-sound` NÃO é criado — ele mora na barra rápida, fora do painel', () => {
+    // Criá-lo aqui poria DOIS espelhos do mesmo ajuste no documento, e o `reflectMaster` acenderia o de
+    // dentro do painel enquanto a barra continuava a dizer o contrário.
+    const c = casca();
+    montarInteriorDoAudio(ctx, c.card, c.lista);
+    expect(document.getElementById('opt-sound')).toBeNull();
   });
 });
 

@@ -25,6 +25,8 @@ import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
 import type { PlayerAudioOut } from '../platform/audio-sonar.js'; // ADR-0039: o dono declara `_ac`/`_acOut`
 import type { DomQuery } from '../core/dom-query.js';
+import type { PanelShellCtx } from './panel-shell.js';
+import { linhaDeControle, type ControlRowSpec } from './panel-widgets.js';
 
 // `DomQuery` mora em `core/dom-query` desde 2026-08-26: esta linha estava copiada em DEZESSEIS
 // módulos, e as cópias divergiram. Reexportada para quem já a importava daqui.
@@ -238,6 +240,67 @@ export function sinkOptionLabel(d: SinkDeviceLike, index: number): string {
 /** A player's current sink select value ('' = default/shared). */
 export function sinkSelectValue(p: { audioSink?: string | null } | undefined): string {
   return (p && p.audioSink) || '';
+}
+
+/**
+ * MONTA O INTERIOR DESTE PAINEL — os treze controles e os dois contentores que ele alcança e nunca criou.
+ *
+ * 🔴 É O MAIOR CONTRATO INVISÍVEL DOS OITO. 📏 Medido em 2026-09-11: este ficheiro procura `#audio-master`,
+ * `#audio-master-vol`, `#navsound-master`, `#navsound-list`, `#opt-modocego`, `#cane-div`, `#opt-menuindex`,
+ * `#opt-tts`, `#tts-engine`, `#tts-voice`, `#tts-vol`, `#opt-tts-test`, `#audio-detect` e `#audio-sinks` — e
+ * nada no tipo o diz. O markup vivia no `app/index.html`, que saiu com o cartucho (#111); desde então o painel
+ * de acessibilidade AUDITIVA abria com o cartão, o título e o botão de repor.
+ *
+ * ⚠️ E A TAG DE CADA UM IMPORTA, o que torna este o pior sítio para adivinhar: `#cane-div`, `#tts-engine` e
+ * `#tts-voice` têm de ser `<select>` — o painel escreve `.value` neles —, e os três volumes têm de ser
+ * `<input type=range>`. Num `<button>`, escrever `.value` não dá erro nenhum: cria uma propriedade que
+ * ninguém lê, e a escolha da criança some em silêncio.
+ *
+ * 📌 A ORDEM É A DECISÃO (ADR-0044 §2), e ela vai do geral para o particular: o som primeiro, porque é o que
+ * mais gente procura; a navegação sonora a seguir, com o seu volume acima da lista que ele governa; depois o
+ * modo cego e a bengala, que andam juntos; a voz inteira num bloco, do interruptor ao teste; e as saídas de
+ * áudio por último, porque são escolha de APARELHO e não preferência.
+ *
+ * ⚠️ `#opt-sound` NÃO É CRIADO AQUI, e a ausência é deliberada: ele é o espelho deste ajuste na barra rápida,
+ * fora do painel. O `reflectMaster` alcança-o com guarda (`if (sb)`), porque um jogo pode não ter barra.
+ *
+ * Idempotente: chamar duas vezes reaproveita o que já existe em vez de o duplicar.
+ */
+export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lista: HTMLElement): void {
+  // Cada entrada: ou uma linha de controle, ou um CONTENTOR que o painel preenche por `innerHTML`.
+  const pecas: (ControlRowSpec | { readonly contentor: string; readonly rotulo?: string })[] = [
+    { id: 'audio-master', rotulo: t('audio.som'), dica: t('audio.som.dica') },
+    { id: 'audio-master-vol', rotulo: t('audio.volume'), forma: 'cursor' },
+    { contentor: '@lista' }, // a lista da casca: as categorias gerais do jogo
+    { id: 'navsound-master', rotulo: t('audio.navsound'), dica: t('audio.navsound.dica'), forma: 'cursor' },
+    { contentor: 'navsound-list', rotulo: t('audio.navsound.grupo') },
+    { id: 'opt-modocego', rotulo: t('icon.blind'), dica: t('audio.modocego.dica') },
+    { id: 'cane-div', rotulo: t('audio.cane'), dica: t('audio.cane.dica'), forma: 'escolha' },
+    { id: 'opt-menuindex', rotulo: t('audio.menuindex'), dica: t('audio.menuindex.dica') },
+    { id: 'opt-tts', rotulo: t('icon.tts'), dica: t('audio.tts.dica') },
+    { id: 'tts-engine', rotulo: t('audio.ttsEngine'), dica: t('audio.ttsEngine.dica'), forma: 'escolha' },
+    { id: 'tts-voice', rotulo: t('audio.ttsVoice'), forma: 'escolha' },
+    { id: 'tts-vol', rotulo: t('audio.ttsVol'), forma: 'cursor' },
+    { id: 'opt-tts-test', rotulo: t('audio.ttsTest'), dica: t('audio.ttsTest.dica') },
+    { contentor: 'audio-sinks', rotulo: t('audio.sinks.grupo') },
+    { id: 'audio-detect', rotulo: t('audio.detect'), dica: t('audio.sinksHint') },
+  ];
+
+  for (const peca of pecas) {
+    if ('contentor' in peca) {
+      if (peca.contentor === '@lista') { card.appendChild(lista); continue; }
+      if (ctx.procurar('#' + peca.contentor)) continue;
+      const c = ctx.criar('div');
+      c.id = peca.contentor;
+      c.className = 'ctrl-list';
+      c.setAttribute('role', 'group');
+      if (peca.rotulo) c.setAttribute('aria-label', peca.rotulo);
+      card.appendChild(c);
+      continue;
+    }
+    if (ctx.procurar('#' + peca.id)) continue;
+    card.appendChild(linhaDeControle(ctx, peca).linha);
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
