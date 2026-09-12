@@ -353,6 +353,12 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
    exatamente o que acontecia no `quiz.html` até 07/09. */
 .pm-btn{background:#1a2740;color:#eaf2f8;border:1px solid #3a4a6a;border-radius:10px;padding:.5rem .8rem;min-height:var(--alvo-min,44px);display:flex;align-items:center;justify-content:center;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
 .pm-btn:hover,.pm-btn:focus,.pm-btn.pm-sel{background:#2a3a5e;border-color:#ffd23f;outline:2px solid #ffd23f;outline-offset:1px}
+/* ADR-0158: every item shows its position, 1..n per list. A CSS counter and not a span: an item hidden by
+   `[hidden]{display:none}` takes no number, and no label rewrite (`applyDom`, dynamic labels) can wipe it. The
+   `/ ""` keeps it out of the accessible name — the engine's spoken index (ADR-0044 item 3) says the same number. */
+.pause-menu{counter-reset:item-menu}
+.pm-btn{counter-increment:item-menu}
+.pm-btn::before{content:counter(item-menu) / "";margin-inline-end:.5em;font-variant-numeric:tabular-nums}
 /* Legenda sim/não: ícone do botão (conforme layout do controle) + a palavra. Sony/Nintendo invertem 0↔1. */
 .pause-legend{display:flex;gap:1.1rem;justify-content:center;margin:.7rem 0 .1rem;font-size:.82em;color:#c3cfe0}
 .pause-legend .lg{display:inline-flex;align-items:center;gap:.35rem}
