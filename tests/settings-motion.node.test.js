@@ -96,12 +96,12 @@ describe('crtToggleRowHtml / crtRoundRowHtml', () => {
     expect(html).toContain('▶ Desligado');
     expect(html).not.toContain('is-on');
   });
-  it('[Boundary] cantos: cada nível (0/1/2) marca a option certa com "selected"', () => {
+  it('[Boundary] cantos: a linha deixa o LUGAR dos passos ⯇ ⯈ com o nível de agora — e já não é um <select>', () => {
+    // ADR-0151: «apertando para esquerda e direita». O controle é construído por DOM no render; aqui fica o lugar.
     for (const round of [0, 1, 2]) {
       const html = crtRoundRowHtml('Cantos arredondados', round);
-      const opt = new RegExp(`<option value="${round}" selected>`);
-      expect(html).toMatch(opt);
-      expect((html.match(/selected/g) || []).length).toBe(1); // só uma option marcada
+      expect(html).toContain(`data-passos-lugar="round" data-valor="${round}"`);
+      expect(html).not.toContain('<select');
     }
   });
 });

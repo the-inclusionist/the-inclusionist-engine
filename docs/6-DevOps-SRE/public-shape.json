@@ -1925,6 +1925,11 @@
       "controle",
       "linha"
     ],
+    "interface PassosSpec": [
+      "atual",
+      "rotulo",
+      "valores"
+    ],
     "type FormaDoControle": "'interruptor' | 'escolha' | 'cursor'"
   },
   "ui/pause-icons.ts": {

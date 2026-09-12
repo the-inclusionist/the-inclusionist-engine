@@ -154,3 +154,85 @@ function criarControle(ctx: PanelShellCtx, spec: ControlRowSpec): HTMLElement {
   b.setAttribute('aria-pressed', 'false');
   return b;
 }
+
+/* ===================== OS PASSOS ⯇ ⯈ — escolher entre posições com esquerda e direita (ADR-0151) ===================== */
+
+/**
+ * O que um controle de passos precisa: um nome, as posições (já traduzidas) e a de agora.
+ *
+ * 🎯 PEDIDO DO DEV, e com uma forma exacta: o realce de contraste «deve funcionar trocando entre desligado,
+ * linear, misto e quadrático da mesma forma que se troca o número de jogadores, isto é, apertando botões
+ * direita e esquerda, e não através de uma barra», e os cantos arredondados «também». Uma barra esconde quantas
+ * posições há; uma lista suspensa esconde-as todas até abrir. Os passos dizem sempre onde se está.
+ */
+export interface PassosSpec {
+  /** O nome falado do controle — vai para o `aria-label`. */
+  readonly rotulo: string;
+  /** As posições, na ordem, já traduzidas. */
+  readonly valores: readonly string[];
+  /** O índice da posição de agora. */
+  readonly atual: number;
+}
+
+/**
+ * O passo seguinte, PRESO nas pontas — e não em anel, e a diferença é a decisão.
+ *
+ * ⚠️ Num anel, «direita» a partir de «grande» voltava a «desligado»: quem ajusta à procura do máximo passaria por
+ * ele sem aviso e desligaria o que queria aumentar. Preso, a ponta é uma parede que se sente — o número de
+ * jogadores, que é o modelo que o Dev deu, também não dá a volta.
+ */
+export function passoSeguinte(atual: number, total: number, delta: number): number {
+  if (total <= 0) return 0;
+  return Math.max(0, Math.min(total - 1, atual + Math.sign(delta)));
+}
+
+/**
+ * Constrói o controle: UM elemento focável (`role="spinbutton"`) com as duas setas dentro.
+ *
+ * ⚠️ AS SETAS NÃO SÃO BOTÕES, e é de propósito: a navegação de menus trata todo `button` como item, e três
+ * itens para um só ajuste fariam o cursor parar duas vezes em setas sem nome. O foco é do controle; as setas são
+ * alvo de DEDO (`data-passo`), e ficam fora da árvore de acessibilidade — quem ouve recebe o `aria-valuetext`.
+ *
+ * O controle emite `passo` (`CustomEvent<number>`, -1 ou +1): a seta tocada emite-o daqui, e a esquerda e a
+ * direita do teclado e do controle emitem-no pelo `ui/menu-nav`. Quem usa ouve um evento só.
+ */
+export function montarPassos(ctx: PanelShellCtx, spec: PassosSpec): HTMLElement {
+  const el = ctx.criar('div');
+  el.className = 'passos';
+  el.setAttribute('role', 'spinbutton');
+  el.setAttribute('tabindex', '0');
+  el.setAttribute('data-passos', '');
+  const seta = (delta: -1 | 1, glifo: string): HTMLElement => {
+    const s = ctx.criar('span');
+    s.className = 'passo-seta';
+    s.setAttribute('data-passo', String(delta));
+    s.setAttribute('aria-hidden', 'true');
+    s.textContent = glifo;
+    s.addEventListener('click', () => el.dispatchEvent(new CustomEvent('passo', { detail: delta, bubbles: true })));
+    return s;
+  };
+  const valor = ctx.criar('span');
+  valor.className = 'passo-valor';
+  el.appendChild(seta(-1, '⯇'));
+  el.appendChild(valor);
+  el.appendChild(seta(1, '⯈'));
+  atualizarPassos(el, spec);
+  return el;
+}
+
+/** Reflecte a posição de agora: o valor escrito, o que se ouve, e as pontas que já não andam. */
+export function atualizarPassos(el: HTMLElement, spec: PassosSpec): void {
+  const ultimo = Math.max(0, spec.valores.length - 1);
+  const atual = Math.max(0, Math.min(ultimo, spec.atual));
+  const texto = spec.valores[atual] ?? '';
+  el.setAttribute('aria-label', spec.rotulo);
+  el.setAttribute('aria-valuemin', '0');
+  el.setAttribute('aria-valuemax', String(ultimo));
+  el.setAttribute('aria-valuenow', String(atual));
+  el.setAttribute('aria-valuetext', texto);
+  const valor = el.querySelector<HTMLElement>('.passo-valor');
+  if (valor) valor.textContent = texto;
+  // A ponta que já não anda fica marcada — sem isto a seta de uma parede parece um botão avariado.
+  el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', atual === 0);
+  el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', atual === ultimo);
+}

@@ -308,7 +308,9 @@ export interface MenuNavApi {
 }
 
 /** Os controles que contam como "item navegável" de um menu. Verbatim do seletor do `menuItems`. */
-const ITEM_SELECTOR = 'button:not([disabled]), select:not([disabled]), input[type=range]:not([disabled])';
+// `[data-passos]` desde 2026-09-12 (ADR-0151): o controle de passos ⯇ ⯈ de `ui/panel-widgets` é UM item — as setas
+// dentro dele são alvo de dedo, não paragens do cursor.
+const ITEM_SELECTOR = 'button:not([disabled]), select:not([disabled]), input[type=range]:not([disabled]), [data-passos]';
 /** Onde os itens moram: o card do diálogo (`.overlay__card`) ou o card da pausa (`.pause-card`). */
 const CARD_SELECTOR = '.overlay__card, .pause-card';
 
@@ -364,6 +366,8 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
       const d = k.right ? 1 : -1;
       if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, d); return; }
       if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); return; }
+      // Os PASSOS ⯇ ⯈ (ADR-0151): esquerda e direita são o próprio ajuste, e quem o aplica ouve o `passo`.
+      if (cur.hasAttribute('data-passos')) { cur.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true })); return; }
       items[passoNoAnel(items.length, idx, d)].focus();
       return;
     }
@@ -373,6 +377,7 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     if (k.yes) {
       if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, 'wrap'); return; }
       if (cur.tagName === 'INPUT') return; // slider não tem "confirmar" — só ajuste
+      if (cur.hasAttribute('data-passos')) return; // os passos também não: «sim» num ajuste não significa nada
       cur.click();
     }
   }

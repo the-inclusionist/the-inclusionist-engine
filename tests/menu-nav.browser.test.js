@@ -259,6 +259,25 @@ describe('navDialog — andar dentro de um diálogo', () => {
     expect(sel.selectedIndex).toBe(0);
   });
 
+  it('🔴 nos PASSOS ⯇ ⯈, esquerda/direita emitem `passo` e NÃO andam de item; e o controle é UM item só (ADR-0151)', async () => {
+    const { montarPassos } = await import('../app/js/ui/panel-widgets.js');
+    const { nav, openAudio } = boot();
+    openAudio();
+    const dlg = $('#audio');
+    const passos = montarPassos({ procurar: (s) => $(s), criar: (t) => document.createElement(t) },
+      { rotulo: 'Cantos', valores: ['off', 'small', 'large'], atual: 1 });
+    $('#a-voz').after(passos);
+    const vistos = []; passos.addEventListener('passo', (e) => vistos.push(e.detail));
+    passos.focus();
+    nav.navDialog(dlg, K({ right: true }));
+    nav.navDialog(dlg, K({ left: true }));
+    expect(vistos).toEqual([1, -1]);
+    expect(document.activeElement, 'esquerda/direita tiraram o foco do controle').toBe(passos);
+    // e as setas lá dentro não são paragens do cursor: descer a partir do controle sai dele de uma vez
+    nav.navDialog(dlg, K({ down: true }));
+    expect(passos.contains(document.activeElement), 'o cursor parou numa seta').toBe(false);
+  });
+
   it('num slider, esquerda/direita andam um step e disparam input; "sim" não faz nada', () => {
     const { nav, openAudio } = boot();
     openAudio();

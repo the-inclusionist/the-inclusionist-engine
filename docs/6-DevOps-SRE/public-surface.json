@@ -1285,7 +1285,11 @@
     "ControlRow",
     "ControlRowSpec",
     "FormaDoControle",
+    "PassosSpec",
+    "atualizarPassos",
     "linhaDeControle",
+    "montarPassos",
+    "passoSeguinte",
     "rotularLinha"
   ],
   "ui/pause-icons.ts": [

@@ -17,6 +17,7 @@ import { CRT, CRT_DEFAULT, applyCrt } from '../render/crt.js';
 import { defaultReducedMotion } from '../core/state.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { t } from '../core/i18n.js';
+import { montarPassos, atualizarPassos, passoSeguinte } from './panel-widgets.js';
 
 import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena } from './motion-scene.js';
 import type {
@@ -125,7 +126,9 @@ const secao = (titulo: string): string =>
   `<h3 class="panel-sub">${titulo} <span class="panel-sub__tag">${t('rm.sec.all')}</span></h3>`;
 
 const CRT_LBL: Record<'scan' | 'vig' | 'round', string> = { scan: 'rm.crt.scan', vig: 'rm.crt.vig', round: 'rm.crt.round' }; // CHAVES i18n (ver RM_LABEL)
-const CRT_ROUND_LEVELS: readonly string[] = ['desligado', 'pequeno', 'grande'];
+// ⚠️ CHAVES desde 2026-09-12: eram as três palavras em português cru, e o anúncio saía «Rounded corners: grande»
+// num jogo em inglês. Passaram pelo dicionário quando os cantos viraram passos ⯇ ⯈ (ADR-0151).
+const CRT_ROUND_LEVELS: readonly string[] = ['crt.round.off', 'crt.round.small', 'crt.round.large'];
 
 // ---------------------------------------------------------------------------------------------------------
 // Lógica PURA — testável em node, sem `document`.
@@ -162,10 +165,16 @@ export function crtToggleRowHtml(label: string, key: string, on: boolean): strin
   return `<div class="ctrl-row"><span>${label}</span><button class="${cls}" data-crt-tgl="${key}" type="button" aria-pressed="${on}" aria-label="${toggleAria(label, on)}">${toggleLabel(on)}</button></div>`;
 }
 
-/** Cantos CRT: 3 níveis (0=quadrado · 1=pequeno · 2=grande). */
+/**
+ * Cantos CRT: 3 níveis (0=quadrado · 1=pequeno · 2=grande), escolhidos com ESQUERDA e DIREITA (ADR-0151).
+ *
+ * ⚠️ DEVOLVE UM LUGAR, e não o controle: este painel desenha por `innerHTML`, e o controle de passos de
+ * `ui/panel-widgets` é construído por DOM — sem marcação crua —, então o `render()` troca o lugar pelo controle.
+ * Era um `<select>`: uma lista suspensa esconde as posições até abrir, e o Dev pediu que se escolha «apertando
+ * para esquerda e direita».
+ */
 export function crtRoundRowHtml(label: string, round: number): string {
-  const opt = (v: number, text: string) => `<option value="${v}"${round === v ? ' selected' : ''}>${text}</option>`;
-  return `<div class="ctrl-row"><span>${label}</span><select class="vol" data-crt="round" aria-label="${label}">${opt(0, 'Desligado (quadrado)')}${opt(1, 'Pequeno')}${opt(2, 'Grande')}</select></div>`;
+  return `<div class="ctrl-row"><span>${label}</span><span data-passos-lugar="round" data-valor="${round}"></span></div>`;
 }
 
 /** true quando TUDO (cena + personagem selecionado) já está com movimento reduzido LIGADO, isto é,
@@ -207,7 +216,8 @@ export function crtToggleAnnouncement(label: string, on: boolean): string {
   return t(on ? 'sr.crt.on' : 'sr.crt.off', { efeito: label });
 }
 export function crtLevelLabel(level: number): string {
-  return CRT_ROUND_LEVELS[level] as string;
+  const chave = CRT_ROUND_LEVELS[level];
+  return chave ? t(chave) : '';
 }
 export function crtRoundAnnouncement(label: string, level: number): string {
   return t('sr.crt.round', { efeito: label, nivel: crtLevelLabel(level) });
@@ -313,12 +323,26 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
       render();
       ctx.srSay(crtToggleAnnouncement(t(CRT_LBL[k]), !!CRT[k]));
     }));
-    el.querySelectorAll<HTMLSelectElement>('select[data-crt]').forEach((s) => s.addEventListener('change', () => {
-      const key = s.dataset.crt as 'round';
-      CRT[key] = +s.value;
-      applyCrt();
-      ctx.srSay(crtRoundAnnouncement(t(CRT_LBL[key]), CRT[key]));
-    }));
+    // OS CANTOS, POR PASSOS ⯇ ⯈ (ADR-0151). O lugar deixado pelo `crtRoundRowHtml` recebe o controle.
+    const lugarDosCantos = el.querySelector<HTMLElement>('[data-passos-lugar="round"]');
+    if (lugarDosCantos) {
+      const doc = el.ownerDocument;
+      const spec = () => ({ rotulo: t(CRT_LBL.round), valores: [0, 1, 2].map(crtLevelLabel), atual: CRT.round });
+      const passos = montarPassos({ procurar: (sel) => ctx.$<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) }, spec());
+      passos.setAttribute('data-crt', 'round');
+      lugarDosCantos.replaceWith(passos);
+      passos.addEventListener('passo', (ev) => {
+        const novo = passoSeguinte(CRT.round, CRT_ROUND_LEVELS.length, (ev as CustomEvent<number>).detail);
+        // ⚠️ NA PONTA NÃO SE ANUNCIA NADA: repetir «grande» a quem já está no máximo soaria a um passo dado.
+        if (novo === CRT.round) return;
+        CRT.round = novo;
+        applyCrt();
+        // Actualiza o controle NO SÍTIO em vez de redesenhar a lista: redesenhar tirava o foco de quem ajusta.
+        atualizarPassos(passos, spec());
+        refreshMarks();
+        ctx.srSay(crtRoundAnnouncement(t(CRT_LBL.round), CRT.round));
+      });
+    }
     el.querySelectorAll<HTMLButtonElement>('button[data-rmc]').forEach((b) => b.addEventListener('click', () => {
       const prop = b.dataset.rmc as MotionCharProp;
       const p = (ctx.getPlayers() as readonly MotionPlayer[])[selectedPlayer];

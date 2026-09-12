@@ -141,14 +141,32 @@ describe('initSettingsMotion — estética CRT', () => {
     expect(calls.srSay.at(-1)).toBe('Scanlines desligada.');
   });
 
-  it('[Boundary] select de cantos muda CRT.round e anuncia o nível por extenso', () => {
+  it('🔴 [Right] os cantos são PASSOS ⯇ ⯈: um passo muda CRT.round, anuncia, e o controle fica no sítio (ADR-0151)', () => {
     const { ctx, calls } = makeCtx();
+    CRT.round = 1;
     initSettingsMotion(ctx).render();
-    const sel = $('#motion-list').querySelector('select[data-crt="round"]');
-    sel.value = '2';
-    sel.dispatchEvent(new Event('change'));
+    const passos = $('#motion-list').querySelector('[data-crt="round"][data-passos]');
+    expect(passos, 'os cantos não viraram passos').not.toBeNull();
+    expect($('#motion-list').querySelector('select[data-crt]'), 'sobrou o <select> antigo').toBeNull();
+    passos.querySelector('[data-passo="1"]').click();
     expect(CRT.round).toBe(2);
     expect(calls.srSay.at(-1)).toBe('Cantos arredondados: grande.');
+    // ⚠️ O MESMO NÓ, e não um redesenho: redesenhar a lista tirava o foco a quem está a ajustar.
+    expect(passos.isConnected, 'o passo redesenhou a lista e o controle focado saiu do documento').toBe(true);
+    expect(passos.getAttribute('aria-valuetext')).toBe('grande');
+  });
+
+  it('🔴 [Boundary] na PONTA o passo não anda e não anuncia — repetir «grande» soaria a um passo dado', () => {
+    const { ctx, calls } = makeCtx();
+    CRT.round = 2;
+    initSettingsMotion(ctx).render();
+    const antes = calls.srSay.length;
+    const passos = $('#motion-list').querySelector('[data-crt="round"][data-passos]');
+    passos.dispatchEvent(new CustomEvent('passo', { detail: 1 }));
+    expect(CRT.round).toBe(2);
+    expect(calls.srSay.length, 'anunciou um passo que não aconteceu').toBe(antes);
+    passos.dispatchEvent(new CustomEvent('passo', { detail: -1 }));
+    expect(CRT.round).toBe(1);
   });
 });
 
