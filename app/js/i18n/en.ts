@@ -585,6 +585,10 @@ const en: Record<string, string> = {
   'legend.swap': 'switch',
   // ===================== FONT CATALOGUE =====================
   'font.grupo.rotulo': 'Letter family',
+  // A PANGRAM, not a translation: the sample exists to put the whole alphabet in front of a child who is
+  // asking «can I read this?», and a literal translation would leave letters out of the very language they
+  // are about to read in.
+  'font.amostra': 'The quick brown fox jumps over the lazy dog',
   'font.group.sans': 'Sans serif',
   'font.group.serif': 'Serif',
   'font.group.hand': 'Handwritten',

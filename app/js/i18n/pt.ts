@@ -662,6 +662,10 @@ const pt: Record<string, string> = {
   // catálogo, como os nomes dos motores de voz. O que traduz é o nome do GRUPO e a descrição — que é o texto
   // que explica à criança (ou a quem a acompanha) POR QUE aquela fonte existe na lista.
   'font.grupo.rotulo': 'Família de letra',
+  // A AMOSTRA do painel: um PANGRAMA, e por isso ele muda de idioma em vez de traduzir. A frase existe para
+  // pôr o alfabeto inteiro à vista — quem escolhe uma fonte está a perguntar «consigo ler isto?», e uma
+  // tradução literal deixaria letras de fora justamente no idioma em que a criança vai ler.
+  'font.amostra': 'Juiz foge e bota fita de cetim na xícara',
   'font.group.sans': 'Sem serifa',
   'font.group.serif': 'Serifada',
   'font.group.hand': 'Manuscrita',

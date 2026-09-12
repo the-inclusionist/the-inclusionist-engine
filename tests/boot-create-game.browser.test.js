@@ -384,6 +384,141 @@ describe('createGame num documento de verdade', () => {
     expect(document.querySelector('#reach-notice'), 'o aviso do cartucho anterior ficou na página')
       .toBeNull();
   });
+
+  /*
+   * ===================== OS PAINÉIS DE AJUSTES (ADR-0106 §1) =====================
+   *
+   * 🔴 O QUE ESTES CASOS MEDEM JÁ FOI MEDIDO A VALER, e o número é o argumento: um jogo que chama só
+   * `createGame` recebia ZERO painéis. `ui/panel-shell.montarCasca` existe desde 07/09 e nenhum módulo da
+   * engine a chamava — o único chamador da árvore era o quiz. Cada `ui/settings-*` preenchia o interior de ids
+   * que ninguém criava, e o quiz registou o sintoma como achado 6: «o painel abre VAZIO, sem erro».
+   *
+   * 🎯 E TÊM DE VIVER AQUI, pela regra do cabeçalho: a pergunta é se o painel está NA ÁRVORE, se um clique de
+   * verdade o abre, se as opções de fonte PARSEIAM e se o foco pousa dentro do cartão. Um duplo responde «sim»
+   * às quatro sem que nenhuma seja verdade.
+   */
+  describe('os painéis de ajustes, que a engine passou a montar', () => {
+    const itemTipo = () => document.querySelector('#vp-pause-0 .pm-btn[data-act="tipo"]');
+
+    it('🎯 [Right] com ZERO campos opcionais, o painel de TIPOGRAFIA está no documento e nasce escondido', () => {
+      // O caso que carrega a etapa: nada de `getPauseActs`, nada de escritores. O jogo só chamou `createGame`.
+      abrir();
+      const painel = document.querySelector('#typo');
+      expect(painel, 'a engine não montou painel nenhum — é o estado de antes').not.toBeNull();
+      expect(painel.isConnected).toBe(true);
+      expect(painel.hidden, 'um painel que nasce aberto é um painel que ninguém abriu').toBe(true);
+      // Os cinco ids que o `ui/settings-typo` exige e que ninguém declarava. O contrato agora é construído.
+      for (const id of ['typo-title', 'typo-list', 'typo-reset', 'typo-close']) {
+        expect(document.getElementById(id), `a casca não criou #${id}`).not.toBeNull();
+      }
+    });
+
+    it('🎯 [Right] o item `tipo` SOBREVIVE ao filtro do §5 — a tabela da engine deixou de ser vazia', () => {
+      // 📏 A cascata que produzia um cartão de um botão: sem `getPauseActs` a tabela é `{}`, `itensQueAccionam`
+      // guarda só os três de `ITENS_DA_ENGINE`, e `raizQueAcciona` tira também o `options` porque seria «uma
+      // porta para uma sala vazia». Com uma acção de verdade, a porta e a sala existem.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      expect(itemTipo(), 'o item de tipografia nem foi montado').not.toBeNull();
+      expect(itemTipo().hidden, 'o item existe e está escondido: o filtro do §5 não o viu accionar').toBe(false);
+      const porta = document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]');
+      expect(porta.hidden, 'a porta de opções continua fechada sobre uma sala que agora tem gente').toBe(false);
+    });
+
+    it('🎯 [Right] UM CLIQUE DE VERDADE no item abre o painel, com as fontes desenhadas e o foco dentro', () => {
+      // O caminho inteiro: botão da pausa -> despacho de `ui/pause-icons` -> tabela da engine -> `abrir()` ->
+      // `render()` do painel. Nenhum duplo percorre isto; e é o percurso que a criança faz.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      itemTipo().click();
+
+      const painel = document.querySelector('#typo');
+      expect(painel.hidden, 'o clique não revelou o painel').toBe(false);
+      const fontes = painel.querySelectorAll('button[data-font]');
+      expect(fontes.length, 'o painel abriu VAZIO — é o achado 6, outra vez').toBeGreaterThan(0);
+      expect(painel.querySelector('.overlay__card').contains(document.activeElement),
+        'o foco ficou FORA de um diálogo `aria-modal`').toBe(true);
+    });
+
+    it('⚠️ [Right] o painel ENTRA na cadeia do Escape — o registo estava vazio sob o `createGame`', () => {
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      expect(motor.overlays.escapeTarget(), 'com tudo fechado a cadeia não tem alvo').toBeNull();
+      itemTipo().click();
+      expect(motor.overlays.escapeTarget(), 'o painel abriu e nenhuma tecla o fecha — a armadilha do ADR-0044 §2')
+        .toBe('typo');
+    });
+
+    it('⚠️ [Right] a AMOSTRA existe e veste a fonte escolhida — é a pergunta que o painel responde', () => {
+      // «Consigo ler isto?» é a única pergunta que um menu de fontes responde, e ela não se responde por nome.
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      itemTipo().click();
+      const amostra = document.querySelector('#typo-preview');
+      expect(amostra, 'o painel de tipografia abriu sem amostra nenhuma').not.toBeNull();
+      expect(amostra.textContent.length, 'a amostra está vazia: não mostra letra nenhuma').toBeGreaterThan(10);
+      expect(amostra.style.fontFamily, 'a amostra não vestiu a fonte — é texto a fingir que é amostra').not.toBe('');
+    });
+
+    it('⚠️ [Right] o CARTUCHO sobrepõe a acção da engine — não-declinável é a pausa, não cada item dela', () => {
+      // ADR-0122 torna não-declinável a pausa EXISTIR; não faz da engine dona de cada item dentro dela. Um
+      // jogo que já tenha o seu painel de tipografia continua a ser quem responde pelo item.
+      let meu = 0;
+      const motor = abrir({ getPauseActs: () => ({ tipo: () => { meu += 1; } }) });
+      motor.pausa.mostrar(0);
+      itemTipo().click();
+      expect(meu, 'a engine ganhou ao jogo na própria mesa dele').toBe(1);
+      expect(document.querySelector('#typo').hidden,
+        'abriu o painel da engine por cima do jogo — dois painéis para o mesmo ajuste').toBe(true);
+    });
+
+    it('🔴 [Right] o REPOR está LIGADO — a casca entra no documento ANTES do `init` do painel', async () => {
+      // ⚠️ A ORDEM DAS DUAS CHAMADAS É A DECISÃO, e este é o caso que a prende. `initSettingsTypo` liga o
+      // `#typo-reset` UMA VEZ, no arranque (`ui/settings-typo:279`): montar a casca DEPOIS do `init` deixa o
+      // botão no documento e sem escuta nenhuma — um botão morto com aparência de vivo, que é o que o
+      // ADR-0106 §5 proíbe. E o repor não volta para uma fonte qualquer: volta para a Atkinson Hyperlegible,
+      // que é o padrão por ter sido desenhada para quem tem baixa visão.
+      const { DEFAULT_FONT_KEY, FONT_BY_KEY } = await import('../app/js/ui/fonts.js');
+      const padrao = FONT_BY_KEY[DEFAULT_FONT_KEY].fam;
+      const motor = abrir();
+      motor.pausa.mostrar(0);
+      itemTipo().click();
+      const amostra = document.querySelector('#typo-preview');
+
+      const outra = [...document.querySelectorAll('#typo-list button[data-font]:not([disabled])')]
+        .find((b) => b.dataset.font !== DEFAULT_FONT_KEY);
+      expect(outra, 'não há segunda fonte escolhível: o caso não conseguiria medir o repor').toBeTruthy();
+      outra.click();
+      expect(amostra.style.fontFamily, 'escolher outra fonte não mudou a amostra').not.toContain(padrao);
+
+      document.querySelector('#typo-reset').click();
+      expect(amostra.style.fontFamily, 'o REPOR não faz nada — a casca montou DEPOIS do `init`')
+        .toContain(padrao);
+    });
+
+    it('🔴 [Boundary] hospedeiro FORA de `#game-region` vira linha em `problems`, e não silêncio', () => {
+      // ⚠️ ESTE É O CASO DO SILÊNCIO. `ui/settings-panel.topVisibleOverlay` varre `'#game-region .overlay'`, e é
+      // por ele que o `ui/menu-nav` acha o diálogo de cima para andar com as setas. Um painel pendurado fora
+      // desse escopo ABRE e fecha com Escape — e as setas não andam dentro dele, sem erro em lado nenhum.
+      const fora = document.createElement('div');
+      fora.id = 'fora-da-regiao';
+      raiz.appendChild(fora); // irmão do #game-region, não filho
+      const motor = abrir({ host: { doc: document, win: window, pauseHost: fora } });
+
+      const linha = motor.problems.find((p) => p.includes('#game-region'));
+      expect(linha, 'a engine montou fora do escopo dos overlays e calou-se').toBeTruthy();
+      expect(linha, 'a linha tem de nomear a saída, ou é queixa em vez de conserto').toMatch(/pauseHost/);
+      // E a lacuna é DITA, não fingida: o painel foi mesmo montado onde o jogo mandou.
+      expect(fora.querySelector('#typo'), 'acusou e não montou — pior do que montar e calar').not.toBeNull();
+    });
+
+    it('🎯 [Zero] com hospedeiro DENTRO da região, `problems` não inventa a lacuna', () => {
+      // O par do caso acima, e sem ele o crivo aprovaria uma engine que acusa sempre.
+      const motor = abrir();
+      expect(motor.problems.filter((p) => p.includes('#game-region') && p.includes('setas')),
+        'acusou o escopo dos overlays com o hospedeiro no sítio certo').toEqual([]);
+    });
+  });
 });
 
 // ========================= MUTACOES CONFERIDAS =========================
@@ -400,3 +535,21 @@ describe('createGame num documento de verdade', () => {
 //   5. o hospedeiro DECLARADO ignorado -> reprova UM. A engine nao adivinha onde a barra cabe num jogo alheio.
 //   6. `tabindex="-1"` nos icones -> reprova UM. E o argumento da etapa 2 a pagar-se: na primeira tela ninguem
 //      esta a jogar, e tirar os icones da tabulacao esconde-os de quem navega por teclado.
+//
+// ========================= E MAIS SETE, PELOS PAINEIS (2026-09-11) =========================
+//   7. a accao do painel nunca entrar na tabela da engine (`acoesDaEngine.tipo` apagado) -> reprovam QUATRO.
+//      E o ESTADO EM QUE O CODIGO ESTAVA: sem accao, a cascata do §5 esconde o item, a porta `options` fecha
+//      sobre uma sala vazia, e a crianca chega a pausa e encontra um botao.
+//   8. a tabela da engine nao se juntar a do cartucho (`...acoesDaEngine` fora do merge) -> os mesmos quatro.
+//      Duas maneiras de a mesma ligacao morrer, e as duas tinham de custar.
+//   9. o CARTUCHO deixar de sobrepor a engine (ordem do merge trocada) -> reprova UM, e so um. O ADR-0122
+//      torna nao-declinavel a pausa EXISTIR; nao faz da engine dona de cada item dentro dela.
+//  10. o `init` do painel correr ANTES de a casca entrar no documento -> reprova UM: o repor. `initSettingsTypo`
+//      liga o `#typo-reset` uma vez, no arranque, e a ordem invertida deixa um botao no documento sem escuta
+//      nenhuma — morto com aparencia de vivo (ADR-0106 §5). A ORDEM das duas chamadas e a decisao.
+//  11. a amostra nao entrar no cartao -> reprovam DOIS. Um menu de fontes sem amostra nao responde a unica
+//      pergunta que ele existe para responder, e ela nao se responde por nome de fonte.
+//  12. `dentroDoEscopo` sempre VERDADEIRO -> reprova o caso do hospedeiro fora da regiao: a engine volta a
+//      calar-se sobre um painel onde as setas nao andam.
+//  13. `dentroDoEscopo` sempre FALSO -> reprova o par dele. Sem este, o crivo aprovaria uma engine que acusa
+//      sempre, que e tao inutil quanto uma que nunca acusa.

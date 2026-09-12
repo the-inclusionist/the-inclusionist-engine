@@ -81,7 +81,16 @@ describe('o veredito: a fronteira passa ou não passa', () => {
 function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } = {}) {
   const feito = [];
   const el = (id) => ({
-    id, hidden: true, style: {}, dataset: {},
+    id,
+    hidden: true,
+    /*
+     * ⚠️ `style` COM OS DOIS MÉTODOS — a QUINTA vez que este duplo fica mais pobre que a coisa real, e a
+     * primeira em que não é um método solto: `{}` parece um `style` e não é. Desde que a engine monta o painel
+     * de tipografia (ADR-0106 §1), o `initSettingsTypo` aplica a fonte persistida no arranque e escreve
+     * `--font-custom` na raiz do documento — com `{}` isso é um `TypeError` no meio do boot.
+     */
+    style: { setProperty() {}, removeProperty() {} },
+    dataset: {},
     // ⚠️ `innerHTML` ENTROU EM 2026-09-08, e é a mesma lição que o `ausentes` e o `mapa` já ensinaram neste
     // ficheiro: um duplo mais pobre do que a coisa real não testa a pergunta. Todo `Element` de verdade tem
     // `innerHTML`; sem ele aqui, a montagem da barra (etapa 2 do ADR-0106) recusava-se a correr e o duplo
@@ -92,8 +101,18 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
     // só existia no duplo. Terceira vez que este ficheiro aprende a lição — ver `ausentes` e `mapa`.
     filhos: [],
     appendChild(n) { this.filhos.push(n); return n; },
+    // ⚠️ `insertBefore` e `contains` entraram em 2026-09-11, com os painéis de ajustes. O `contains` é o que
+    // responde à pergunta que a engine passou a fazer — «este hospedeiro está dentro de `#game-region`?» —, e
+    // um duplo que respondesse sempre `false` faria a engine acusar uma lacuna que só existe no duplo, que é a
+    // armadilha que este ficheiro já documentou quatro vezes. Recursivo porque a pergunta real também é.
+    insertBefore(novo, ref) {
+      const i = this.filhos.indexOf(ref);
+      if (i < 0) this.filhos.push(novo); else this.filhos.splice(i, 0, novo);
+      return novo;
+    },
+    contains(n) { return n === this || this.filhos.some((f) => f === n || (f.contains && f.contains(n))); },
     querySelector: () => null, querySelectorAll: () => [],
-    addEventListener: () => {}, setAttribute: () => {}, removeChild: () => {},
+    addEventListener: () => {}, setAttribute: () => {}, removeAttribute: () => {}, removeChild: () => {},
     // ⚠️ `focus` ENTROU EM 2026-09-08 — a QUARTA vez que este duplo fica mais pobre que a coisa real, e vale
     // contar porquê: o cartão de alcance (`ui/reach-notice`) leva o foco ao próprio cartão e não ao botão,
     // «porque a criança tem de OUVIR o motivo antes de decidir». Ele só é montado quando o alcance REPROVA, e
@@ -105,7 +124,23 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
     get firstChild() { return null; },
     ownerDocument: null,
   });
+  /*
+   * 🔴 O MESMO SELETOR DEVOLVE O MESMO NÓ — e esta era a mentira mais cara do duplo.
+   *
+   * Num documento a sério, `$('#game-region')` chamado duas vezes devolve o MESMO elemento; aqui devolvia dois
+   * objetos diferentes, e nenhum teste conseguia observar o que tinha sido escrito num deles. O `mapa` existe
+   * precisamente por causa disso — é o remendo por caso de uma mentira que se conserta de uma vez.
+   *
+   * ⚠️ E DEIXOU DE SER FOLCLORE EM 2026-09-11: a engine pergunta se o hospedeiro da pausa está DENTRO de
+   * `#game-region`, porque `ui/settings-panel.topVisibleOverlay` varre `'#game-region .overlay'` e é por ele
+   * que as setas acham o painel aberto. Com dois objetos a responder ao mesmo id, a resposta é «não» sempre —
+   * e a engine acusaria uma lacuna que só existe aqui.
+   */
+  const memo = new Map();
   const doc = {
+    // A raiz onde a fonte escolhida é aplicada (`dataset.fonte` + `--font-custom`). UM objeto e não um getter
+    // que fabrica: é a mesma razão do memo acima — quem escreve e quem lê têm de encontrar o mesmo nó.
+    documentElement: el('html'),
     activeElement: null,
     createElement: (tag) => { feito.push(tag); return el(tag); },
     contains: () => false,
@@ -113,8 +148,12 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
     // testa apenas que ela foi feita. Foi o que deixou o caso do mundo inexistente passar verde.
     // ⚠️ `mapa` deixa um caso NOMEAR o elemento que um seletor devolve. Sem ele o duplo respondia
     // sempre um objeto novo, e nenhum teste conseguia observar o que foi escrito NAQUELE elemento.
-    querySelector: (sel) => (mapa[sel] !== undefined ? mapa[sel]
-      : (ausentes.includes(sel) ? null : (comMarcacao ? el(sel) : null))),
+    querySelector: (sel) => {
+      if (mapa[sel] !== undefined) return mapa[sel];
+      if (ausentes.includes(sel) || !comMarcacao) return null;
+      if (!memo.has(sel)) memo.set(sel, el(sel));
+      return memo.get(sel);
+    },
     // ⚠️ POR SELETOR, e nao uma lista so: devolver a mesma coisa a todo seletor fazia os overlays de
     // mentira chegarem tambem a `[data-i18n]`, e o `applyDom` chamava `getAttribute` num objeto que
     // nao o tem. Um duplo que nao distingue a pergunta acaba a responder a errada.
@@ -129,6 +168,24 @@ function domFalso({ comMarcacao = true, ausentes = [], mapa = {}, listas = {} } 
     getComputedStyle: () => ({ zIndex: '0' }),
   };
   return { doc, win, ouvintes };
+}
+
+/**
+ * O `#game-region` que um caso NOMEIA, para poder ver o que a engine pendurou nele.
+ *
+ * ⚠️ ERA QUATRO CÓPIAS DO MESMO LITERAL, e a duplicação cobrou em 2026-09-11: a engine passou a perguntar se o
+ * hospedeiro da pausa está DENTRO de `#game-region` (é por `'#game-region .overlay'` que as setas acham o
+ * painel aberto), e as quatro cópias precisavam da mesma resposta nova ao mesmo tempo. Uma função é o sítio
+ * onde uma resposta dessas se escreve uma vez.
+ */
+function regiaoFalsa() {
+  return {
+    id: 'game-region', innerHTML: '', filhos: [],
+    appendChild(n) { this.filhos.push(n); return n; },
+    // `contains` diz a verdade sobre si mesmo e sobre os filhos — é a pergunta que a engine faz.
+    contains(n) { return n === this || this.filhos.includes(n); },
+    addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
+  };
 }
 
 /** Uma declaração de quiz conforme — sem espaço, só ordem. É o gênero que não pode fingir ser plataforma. */
@@ -343,17 +400,17 @@ describe('createGame em execução', () => {
     // raiz e NENHUM jogo o cria (`git grep vp-pause` devolve zero nos seis). A engine inventou uma convenção,
     // procurou-a, não a achou, e concluiu em silêncio que nenhum jogo tem menu de pausa.
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const regiao = {
-      id: 'game-region', innerHTML: '', filhos: [],
-      appendChild(n) { this.filhos.push(n); return n; },
-      addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
-    };
+    const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ mapa: { '#game-region': regiao } });
     createGame({ declaration: declaracaoValida(), host: { doc, win } });
 
-    expect(regiao.filhos.length, 'a engine não pendurou cartão nenhum').toBe(1);
-    const cartao = regiao.filhos[0];
-    expect(cartao.id, 'montou sem o id que a própria engine procura — o laço fica aberto na mesma').toBe('vp-pause-0');
+    // ⚠️ PELO ID E NÃO PELA CONTAGEM. Isto dizia `filhos.length === 1`, e a contagem nunca foi a exigência —
+    // era um proxy, verdadeiro enquanto o cartão era a única coisa que a engine pendurava ali. Desde
+    // 2026-09-11 ela pendura também os painéis de ajustes, e o proxy passou a medir «quantas coisas a engine
+    // monta» em vez de «o cartão está lá»: um número que muda a cada etapa do ADR-0106 e reprova sem nada ter
+    // partido. O que o caso afirma é o que ele sempre quis afirmar.
+    const cartao = regiao.filhos.find((f) => f.id === 'vp-pause-0');
+    expect(cartao, 'a engine não pendurou o cartão com o id que ela própria procura').toBeTruthy();
     expect(cartao.className).toBe('screen-pause');
   });
 
@@ -367,19 +424,16 @@ describe('createGame em execução', () => {
     // vindo de um cartucho no `7.0.1` traz a chave à mesma, e o que se afirma é que ela deixou de ter efeito.
     // Repor a consulta (`declines.semMenuDePausa ? null : …`) faz este caso reprovar e o de cima passar.
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const regiao = {
-      id: 'game-region', innerHTML: '', filhos: [],
-      appendChild(n) { this.filhos.push(n); return n; },
-      addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
-    };
+    const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ mapa: { '#game-region': regiao } });
     const motor = createGame({
       declaration: declaracaoValida(), host: { doc, win },
       declines: { semMenuDePausa: true, semAtorDePausa: true, semAssistenteDePad: true, semVozNeural: true },
     });
 
-    expect(regiao.filhos.length, 'uma declinação aposentada voltou a tirar o cartão da criança').toBe(1);
-    expect(regiao.filhos[0].id).toBe('vp-pause-0');
+    // Pelo id e não pela contagem, pela razão escrita no caso acima.
+    expect(regiao.filhos.some((f) => f.id === 'vp-pause-0'),
+      'uma declinação aposentada voltou a tirar o cartão da criança').toBe(true);
     // 📌 E o silêncio não volta pela outra porta: com hospedeiro válido não há nada a acusar.
     expect(motor.problems.filter((p) => p.includes('pausa')), 'acusou pausa com hospedeiro válido').toEqual([]);
   });
@@ -396,11 +450,7 @@ describe('createGame em execução', () => {
       appendChild: (n) => n, addEventListener: () => {},
       querySelector: () => null, querySelectorAll: () => [],
     };
-    const regiao = {
-      id: 'game-region', innerHTML: '', filhos: [],
-      appendChild(n) { this.filhos.push(n); return n; },
-      addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
-    };
+    const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ mapa: { '#game-region': regiao, '#vp-pause-0': cartaoMapeado } });
     const motor = createGame({
       declaration: declaracaoValida(), host: { doc, win },
@@ -419,11 +469,7 @@ describe('createGame em execução', () => {
     // Declinar é escolha registada; não ter é omissão. O ADR-0106 §2 é inteiro sobre a diferença, e um gate
     // que as tratasse igual apagaria a razão de os declínios existirem.
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const regiao = {
-      id: 'game-region', innerHTML: '', filhos: [],
-      appendChild(n) { this.filhos.push(n); return n; },
-      addEventListener: () => {}, querySelector: () => null, querySelectorAll: () => [],
-    };
+    const regiao = regiaoFalsa();
     const { doc, win } = domFalso({ mapa: { '#game-region': regiao } });
     const motor = createGame({ declaration: declaracaoValida(), host: { doc, win } });
     // 🔴 VIRADO EM 2026-09-09 (ADR-0120), e o caso mudou de lado inteiro. Ele afirmava «montou pausa a quem a

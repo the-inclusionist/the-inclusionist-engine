@@ -583,6 +583,10 @@ const es: Record<string, string> = {
   'legend.swap': 'cambiar',
   // ===================== CATÁLOGO DE FUENTES =====================
   'font.grupo.rotulo': 'Familia de letra',
+  // UN PANGRAMA, y por eso cambia de idioma en vez de traducirse: la muestra existe para poner el alfabeto
+  // entero a la vista de quien pregunta «¿consigo leer esto?». Este lleva la ñ, los acentos y la apertura de
+  // exclamación — las formas que deciden si una fuente sirve en español.
+  'font.amostra': 'Jovencillo emponzoñado de whisky: ¡qué figurota exhibe!',
   'font.group.sans': 'Sin serifa',
   'font.group.serif': 'Con serifa',
   'font.group.hand': 'Manuscrita',

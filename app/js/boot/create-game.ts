@@ -72,6 +72,9 @@ import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
+import { montarPainel } from '../ui/mount-panel.js';
+import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
+import * as store from '../platform/storage.js';
 import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
@@ -651,6 +654,24 @@ export function createGame(o: CreateGameOptions): Engine {
    */
   const lerModoCego = cartucho.isBlindMode ?? (() => state.modoCego);
 
+  /**
+   * O QUE A ENGINE SABE ACCIONAR SOZINHA NO MENU DE PAUSA — preenchido pelo bloco 4f, lido quando a pausa abre.
+   *
+   * 🔴 O CARTÃO DE PAUSA TINHA UM BOTÃO. 📏 Medido em 2026-09-11 contra um jogo que chama só `createGame`:
+   * sem `getPauseActs` a tabela é vazia (`ui/pause-icons:879`), `itensQueAccionam` guarda só os três de
+   * `ITENS_DA_ENGINE`, e `raizQueAcciona` tira também o `options` — «uma porta para uma sala vazia». O que
+   * sobrevive é `acessibilidade`. Um menu de pausa com um item não é um menu de pausa.
+   *
+   * ⚠️ MUTÁVEL E LIDO TARDE, de propósito, e é para isto que a preguiça do campo existe: `initPauseIcons`
+   * corre aqui e os painéis montam-se ~150 linhas abaixo. O próprio campo documenta o padrão — «`pauseActs` is
+   * a `const` declared far below the init site» —, e `refrescarItensDaPausa` reavalia quando a pausa ABRE, não
+   * na montagem. Ler a tabela agora congelaria um objecto vazio.
+   *
+   * 📌 E O CARTUCHO SOBREPÕE-SE, não o contrário: um jogo que traga o seu `tipo` ganha ao da engine. O que
+   * ADR-0122 torna não-declinável é a pausa EXISTIR, não a engine ser dona de cada item dentro dela.
+   */
+  const acoesDaEngine: Record<string, () => void> = {};
+
   const pauseIcons = initPauseIcons({
     doc,
     /*
@@ -697,7 +718,9 @@ export function createGame(o: CreateGameOptions): Engine {
      * lados: ausentes, tudo se comporta como antes — tabela de acções vazia e os dois ícones visuais
      * não montados. Ver as notas em `CreateGameOptions` para o que a ausência custava.
      */
-    ...(cartucho.getPauseActs ? { getPauseActs: cartucho.getPauseActs } : {}),
+    // ⚠️ SEMPRE PASSADO AGORA, e já não só quando o jogo traz o seu. A ausência do cartucho deixou de
+    // significar «tabela vazia»: significa «só o que a engine acciona», que é o que ADR-0106 §1 manda.
+    getPauseActs: () => ({ ...acoesDaEngine, ...(cartucho.getPauseActs ? cartucho.getPauseActs() : {}) }),
     ...(cartucho.setTemaDoJogador ? { setTemaDoJogador: cartucho.setTemaDoJogador } : {}),
     ...(cartucho.setCorrecaoDoJogador ? { setCorrecaoDoJogador: cartucho.setCorrecaoDoJogador } : {}),
   });
@@ -805,6 +828,88 @@ export function createGame(o: CreateGameOptions): Engine {
     // laço tão aberto como estava — o cartão existiria e a navegação de menu continuaria a não o achar.
     cartao.id = 'vp-pause-0';
     hospedeiroDaPausa.appendChild(cartao);
+  }
+
+  /*
+   * 4f. OS PAINÉIS DE AJUSTES — e este é o buraco que o ADR-0106 §1 deixou aberto por mais tempo.
+   *
+   * 🔴 `ui/panel-shell.montarCasca` CONSTRÓI a casca de um painel e NENHUM módulo da engine a chamava: o único
+   * chamador da árvore era o `consumer-quiz/main-quiz.ts:320`. Cada `ui/settings-*` preenche o INTERIOR de ids
+   * que ninguém cria, então a falha tomava a pior forma disponível — o quiz registou-a como achado 6, «o painel
+   * abre VAZIO, sem erro». Um jogo que chama só `createGame` tinha ZERO painéis.
+   *
+   * ⚠️ E OS PAINÉIS MORAM ONDE O CARTÃO MORA, o que não é arrumação: `ui/settings-panel.topVisibleOverlay`
+   * varre `'#game-region .overlay'` (o `OVERLAY_SCOPE_SELECTOR`), e é por ele que o `ui/menu-nav` chega ao
+   * diálogo de cima para andar com as setas. Um painel pendurado fora desse escopo ABRE, fecha com Escape — e
+   * **as setas não andam dentro dele**, sem erro nenhum. Daí a linha de `problems` abaixo em vez do silêncio.
+   */
+  if (hospedeiroDaPausa && pausaUsavel) {
+    const regiao = $<HTMLElement>('#game-region');
+    const dentroDoEscopo = !!regiao && typeof regiao.contains === 'function'
+      && regiao.contains(hospedeiroDaPausa);
+    if (!dentroDoEscopo) {
+      problemasDoHospedeiro.push(
+        'o hospedeiro da pausa está FORA de #game-region: os painéis de ajustes abrem e fecham, mas as setas '
+        + 'não andam dentro deles — a navegação de menu procura o diálogo de cima em `#game-region .overlay`. '
+        + 'Ponha `host.pauseHost` dentro de #game-region, ou quem só navega por teclado não alcança os ajustes',
+      );
+    }
+
+    const ctxDoPainel = {
+      procurar: (sel: string) => $<HTMLElement>(sel),
+      criar: (tag: string) => doc.createElement(tag),
+      host: hospedeiroDaPausa as HTMLElement,
+      overlays,
+    };
+
+    /*
+     * TIPOGRAFIA — o primeiro, e a ordem tem medida: dos oito, é o que precisa de menos contexto (quatro
+     * campos), e o segundo consumidor já o provou fora do género do jogo dele — «serve fora do género, sem
+     * uma linha de mudança» (achado 5). Os que dependem de escritores que esta raiz não tem ficam por montar,
+     * e ficar por montar é a resposta certa: ADR-0106 §5, «um ícone é montado quando a acção dele funciona».
+     *
+     * ⚠️ A ORDEM DESTAS DUAS CHAMADAS É A DECISÃO. A casca entra no documento PRIMEIRO, porque
+     * `initSettingsTypo` liga o `#typo-reset` UMA VEZ, no arranque (`ui/settings-typo:279`): com o `init`
+     * antes, o botão de repor existiria e não faria nada — um botão morto, que é o que o §5 proíbe.
+     */
+    let typo: SettingsTypoApi | null = null;
+    const painelDeTipo = montarPainel(ctxDoPainel, {
+      id: 'typo',
+      rotulos: () => ({
+        titulo: t('menu.typo'),
+        rotuloDaLista: t('font.grupo.rotulo'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('menu.close'),
+      }),
+      // ⚠️ PELO LET E NÃO PELA API DIRECTA: o painel só existe depois da casca, e `abrir()` só corre quando a
+      // criança abre. Um `render` que capturasse `typo` agora capturaria `null` para sempre.
+      render: () => typo?.render(),
+      primeiroFoco: 'button[data-font]:not([disabled])',
+    });
+    /*
+     * A AMOSTRA — «Juiz foge e bota fita de cetim na xícara», o pangrama que mostra a fonte a fazer o seu
+     * trabalho. Ela fica AQUI e não na casca, e a distinção é a que importa: uma casca que soubesse do
+     * `#typo-preview` saberia de um painel em particular, que é o oposto do que ela é.
+     */
+    const amostra = doc.createElement('div');
+    amostra.id = 'typo-preview';
+    amostra.className = 'typo-preview';
+    amostra.textContent = t('font.amostra');
+    painelDeTipo.casca.card.insertBefore(amostra, painelDeTipo.casca.lista);
+
+    typo = initSettingsTypo({
+      $, srSay, store, root: doc.documentElement,
+      // A prosa das linhas vai para o rodapé a CADA render, ou ela aparece duas vezes no primeiro clique.
+      fillExplain: overlays.fillExplain,
+      // ⚠️ `doc.fonts` É UM GLOBAL DO NAVEGADOR ALCANÇADO POR BAIXO DE QUEM INJECTOU O DOCUMENTO — o ACHADO 15
+      // deste ficheiro. Aqui ele vem do `doc` do hospedeiro e ainda assim se pergunta se existe: um documento
+      // falso não tem `fonts`, e a ausência tem resposta declarada (a linha fica desabilitada COM a mensagem
+      // que diz ao adulto quais fontes a resolvem).
+      ...(typeof doc.fonts?.check === 'function'
+        ? { fonteInstalada: (familia: string) => doc.fonts.check(`16px "${familia}"`) }
+        : {}),
+    });
+    acoesDaEngine.tipo = painelDeTipo.abrir;
   }
 
   // 4b. NAVEGAÇÃO SONORA. Só o contrato entra: nada de tile, caixa de colisão ou array de moedas.

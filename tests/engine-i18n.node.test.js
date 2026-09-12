@@ -210,7 +210,17 @@ const CRU_CONHECIDO = {
   /* --- MENSAGENS DE PROGRAMADOR, e não de interface: `throw` e listas de conformidade que quem escreve um
    *     preset lê no console. Ficam na lista mesmo assim, COM o motivo — um crivo por FORMA não distingue "o
    *     que a criança lê" de "o que o dev lê", e uma exceção sem contagem é uma porta aberta. --- */
-  'boot/create-game.ts': 15,       // a mensagem do `throw` e as lacunas do hospedeiro
+  'boot/create-game.ts': 18,       // a mensagem do `throw` e as lacunas do hospedeiro
+                                   // ⚠️ 15 → 18 em 2026-09-11: o hospedeiro da pausa FORA de `#game-region`
+                                   // (ADR-0106 §1, os painéis de ajustes). Mesma classe de todas as anteriores
+                                   // — lacuna do HOSPEDEIRO, lida por quem integra a engine — e a linha existe
+                                   // porque a alternativa é o silêncio que este repositório já paga caro:
+                                   // `ui/settings-panel.topVisibleOverlay` varre `'#game-region .overlay'`, e
+                                   // é por ele que o `ui/menu-nav` acha o diálogo de cima. Um painel fora desse
+                                   // escopo ABRE e fecha com Escape, e as SETAS não andam dentro dele — quem só
+                                   // navega por teclado descobre-o sozinho, sem erro em lado nenhum. Três
+                                   // literais pela razão das outras: a frase nomeia a saída (`host.pauseHost`
+                                   // dentro de `#game-region`), o mecanismo e o que a criança perde.
                                    // ⚠️ 12 → 15 em 2026-09-08: a VOZ NEURAL ausente. Medido: três dos seis
                                    // jogos não declaram `carregarVozNeural` e ficavam sem voz neural em
                                    // silêncio — contra a promessa escrita do ADR-0065 §3 de que um cartucho
