@@ -12,7 +12,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
-import { cicloDeTipografia, maosDaEtiqueta, INICIO_DO_CICLO } from '../app/js/ui/fonts.js';
+import { cicloDeTipografia, maosDaEtiqueta, INICIO_DO_CICLO, ESCALA_DA_MAO, BASE_EM_PX, FONT_BY_KEY } from '../app/js/ui/fonts.js';
 
 describe('maosDaEtiqueta — a mão do país, e o recuo do colonizador', () => {
   it('🎯 [Right] a REGIÃO decide primeiro', () => {
@@ -70,21 +70,21 @@ describe('cicloDeTipografia — as cinco posições, ou seis', () => {
   it('🎯 [Right] as quatro primeiras são fixas, e a CAIXA anda com a FACE', () => {
     const c = cicloDeTipografia('pt-BR');
     expect(c.slice(0, 4)).toEqual([
-      { caixa: 'upper', fonte: 'andika' },
-      { caixa: 'mixed', fonte: 'andika' },
-      { caixa: 'mixed', fonte: 'atkinson' },
-      { caixa: 'mixed', fonte: 'lexend' },
+      { caixa: 'upper', fonte: 'andika', escala: 1 },
+      { caixa: 'mixed', fonte: 'andika', escala: 1 },
+      { caixa: 'mixed', fonte: 'atkinson', escala: 1 },
+      { caixa: 'mixed', fonte: 'lexend', escala: 1 },
     ]);
   });
 
   it('🔴 [Right] o ciclo COMEÇA na Atkinson, que é a posição (c) e o padrão do projeto', () => {
-    expect(cicloDeTipografia('pt-BR')[INICIO_DO_CICLO]).toEqual({ caixa: 'mixed', fonte: 'atkinson' });
+    expect(cicloDeTipografia('pt-BR')[INICIO_DO_CICLO]).toEqual({ caixa: 'mixed', fonte: 'atkinson', escala: 1 });
   });
 
   it('🔴 [Boundary] SEIS posições onde o país ensina duas mãos, CINCO onde ensina uma', () => {
     expect(cicloDeTipografia('pt-BR')).toHaveLength(5);
     expect(cicloDeTipografia('en-US')).toHaveLength(6);
-    expect(cicloDeTipografia('en-US')[5]).toEqual({ caixa: 'mixed', fonte: 'pwusmod' });
+    expect(cicloDeTipografia('en-US')[5]).toEqual({ caixa: 'mixed', fonte: 'pwusmod', escala: ESCALA_DA_MAO });
   });
 
   it('🔴 [Zero] sem mão nenhuma o ciclo tem QUATRO — e isso é a resposta certa', () => {
@@ -97,7 +97,38 @@ describe('cicloDeTipografia — as cinco posições, ou seis', () => {
   it('📌 [Right] a POSIÇÃO (a) é a única em caixa alta — é o par da alfabetização', () => {
     // Sem isto, um ciclo que pusesse tudo em `mixed` passaria os casos de face acima.
     const c = cicloDeTipografia('pt-BR');
-    expect(c.filter((p) => p.caixa === 'upper')).toEqual([{ caixa: 'upper', fonte: 'andika' }]);
+    expect(c.filter((p) => p.caixa === 'upper')).toEqual([{ caixa: 'upper', fonte: 'andika', escala: 1 }]);
+  });
+});
+
+describe('a ESCALA da mão do país — 25% maior, e o piso não é gosto', () => {
+  it('🔴 [Right] a escala × a base do documento dá EXACTAMENTE o `minPx` da face', () => {
+    /*
+     * 🔴 ESTE É O CASO QUE FAZ O 1,25 SER UMA RAZÃO E NÃO UM NÚMERO SOLTO. As Playwrite declaram `minPx: 20`
+     * desde a emenda do ADR-0012, com a frase que explica porquê: «abaixo disto a face deixa de ser DIFÍCIL e
+     * passa a ser ILEGÍVEL, que são coisas diferentes — a dificuldade é o exercício, a ilegibilidade é a
+     * criança a desistir». A base do documento é 16 px, e 16 × 1,25 é 20.
+     *
+     * ⚠️ E ELE MEDE CONTRA O CATÁLOGO, não contra o número escrito: se alguém subir o `minPx` de uma mão sem
+     * subir a escala, este caso reprova — que é exactamente o dia em que a criança perderia a legibilidade.
+     */
+    for (const tag of ['pt-BR', 'en-US', 'es-ES', 'pt-AO']) {
+      for (const passo of cicloDeTipografia(tag).filter((p) => p.escala !== 1)) {
+        const piso = FONT_BY_KEY[passo.fonte]?.minPx;
+        expect(piso, `a mão ${passo.fonte} não declara piso de tamanho`).toBeGreaterThan(0);
+        expect(BASE_EM_PX * passo.escala,
+          `${passo.fonte}: ${BASE_EM_PX}px × ${passo.escala} fica abaixo do piso de ${piso}px`)
+          .toBeGreaterThanOrEqual(piso);
+      }
+    }
+  });
+
+  it('🔴 [Zero] só a mão do país é AUMENTADA — as faces de leitura ficam em 1', () => {
+    // O par. Sem ele, uma escala aplicada a tudo passaria o caso de cima e daria a toda a interface um
+    // tamanho que só uma das posições justifica.
+    const c = cicloDeTipografia('en-US');
+    expect(c.filter((p) => p.escala !== 1).map((p) => p.fonte)).toEqual(['pwustrad', 'pwusmod']);
+    expect(c.slice(0, 4).every((p) => p.escala === 1), 'uma face de leitura foi aumentada').toBe(true);
   });
 });
 
@@ -110,4 +141,14 @@ describe('cicloDeTipografia — as cinco posições, ou seis', () => {
 //   J4 o ciclo começa na posição (a) e não na (c)        🔴 abriria em caixa alta
 //   J5 a posição (a) deixa de ser CAIXA ALTA             🔴 some o par da alfabetização
 //   J6 língua fora do repertório ganha uma mão           🔴 a mão de um país que não é o dela
-//   J7 o 11.º ícone monta sem quem o accione (pause-icons.node)  🔴 o §5 do ADR-0106
+//   J7 o 11.o icone monta sem quem o accione (pause-icons.node)  🔴 o §5 do ADR-0106
+//
+// E mais QUATRO na escala da mao do pais (ADR-0149 §1), as quatro vermelhas:
+//   K1 a escala cai para 1,1                             🔴 16 × 1,1 = 17,6 px, abaixo do piso de 20
+//   K2 a escala aplica-se a TODAS as posicoes            🔴 a interface inteira aumentaria
+//   K3 a mao deixa de ser aumentada                      🔴 fica em 16 px, abaixo do piso
+//   K4 o calc() sai do ont-size (settings-typo.browser)   🔴 a escala escrita e o documento ignora-a
+//
+// ⚠️ A K4 SOBREVIVEU A PRIMEIRA VOLTA: a regra que faz a posicao (e) ser 25% maior estava escrita no CSS e
+// nao estava presa por caso nenhum. O crivo que a prende mede o ont-size COMPUTADO com a variavel posta —
+// ler a folha como texto mediria o que eu escrevi, nao o que se aplica.

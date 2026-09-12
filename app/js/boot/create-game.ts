@@ -924,6 +924,14 @@ export function createGame(o: CreateGameOptions): Engine {
       const passo = ciclo[passoDaTipografia]!;
       state.setLetterCaseValue(passo.caixa);
       typo.setFont(passo.fonte, false);
+      /*
+       * ⚠️ A ESCALA É ESCRITA SEMPRE, e não só quando é maior que 1. Escrever só na subida deixaria a mão do
+       * país a valer depois de a criança voltar para a Atkinson — o texto inteiro 25% maior sem nada o
+       * explicar, e ela a carregar no botão outra vez para tentar desfazer.
+       * 📌 Na raiz do documento e não no `#game-region`: o `font-size` de base é de `html,body`, e é ele que
+       * esta razão multiplica.
+       */
+      doc.documentElement.style.setProperty('--fonte-escala', String(passo.escala));
       return FONT_BY_KEY[passo.fonte]?.fam ?? null;
     } : undefined,
     ...(cartucho.setTemaDoJogador ? { setTemaDoJogador: cartucho.setTemaDoJogador } : {}),

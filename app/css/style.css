@@ -189,7 +189,12 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
   :root{ --bg:#000; --panel:#000; --ink:#fff; --ink-soft:#fff; --accent:#ffe600; --changed:#ffe600; }
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:var(--lh);letter-spacing:var(--ls);word-spacing:var(--ws)}
+/* ⚠️ O `font-size` PASSOU A SER MULTIPLICADO (ADR-0149 §1): a mão do país entra 25% maior, porque as
+   Playwrite declaram `minPx: 20` e 16 × 1,25 é exactamente esse piso. Quem escreve `--fonte-escala` é o ciclo
+   do 11.º ícone; ausente, vale 1 e nada muda — que é o que faz esta linha continuar a ser a de sempre para
+   todas as outras faces. 📌 O piso não é «recomendação»: abaixo dele a face deixa de ser DIFÍCIL e passa a
+   ser ILEGÍVEL, e a dificuldade é o exercício enquanto a ilegibilidade é a criança a desistir. */
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:calc(16px * var(--fonte-escala,1));line-height:var(--lh);letter-spacing:var(--ls);word-spacing:var(--ws)}
 /* matemática em mono tabular (algarismos alinhados/legíveis) */
 .quiz-box--math .quiz-prob,.quiz-box--math .quiz-choice,#hud-coins,#hud-total{font-family:var(--font-math);font-variant-numeric:tabular-nums}
 /* espaçamento de parágrafo ≥2× só em blocos de leitura (não quebra HUD/menus) */

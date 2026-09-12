@@ -77,7 +77,21 @@ export interface PassoDeTipografia {
   readonly caixa: 'upper' | 'mixed';
   /** A chave da face no catálogo. */
   readonly fonte: string;
+  /**
+   * O multiplicador de tamanho desta posição — 1 nas faces de leitura, **1,25 na mão do país** (ADR-0149 §1).
+   *
+   * 🔴 NÃO É PREFERÊNCIA, É O PISO DE LEGIBILIDADE JÁ MEDIDO. As Playwrite declaram `minPx: 20` desde a
+   * emenda do ADR-0012 («abaixo disto a face deixa de ser DIFÍCIL e passa a ser ILEGÍVEL, que são coisas
+   * diferentes: a dificuldade é o exercício, a ilegibilidade é a criança a desistir»). A base do documento é
+   * 16 px, e 16 × 1,25 = 20 — o multiplicador É o piso, escrito como razão em vez de como número solto.
+   */
+  readonly escala: number;
 }
+
+/** O aumento da mão do país. Nomeado para o crivo o poder afirmar contra o `minPx` em vez de o repetir. */
+export const ESCALA_DA_MAO = 1.25;
+/** A base do documento, em px — o `font-size` de `html,body`. O piso sai de multiplicá-la pela escala. */
+export const BASE_EM_PX = 16;
 
 /**
  * O CICLO DO 11.º BOTÃO — cinco posições, ou seis onde o país ensina duas mãos (ADR-0149 §1, ADR-0150 §2).
@@ -96,11 +110,13 @@ export interface PassoDeTipografia {
 export function cicloDeTipografia(tag: string | null | undefined): readonly PassoDeTipografia[] {
   const maos = maosDaEtiqueta(tag);
   return Object.freeze([
-    { caixa: 'upper', fonte: 'andika' } as const,   // (a) o par da alfabetização
-    { caixa: 'mixed', fonte: 'andika' } as const,   // (b)
-    { caixa: 'mixed', fonte: 'atkinson' } as const, // (c) o padrão — o ciclo começa aqui
-    { caixa: 'mixed', fonte: 'lexend' } as const,   // (d)
-    ...maos.map((fonte) => ({ caixa: 'mixed', fonte } as const)), // (e), e (f) onde o país ensina duas
+    { caixa: 'upper', fonte: 'andika', escala: 1 } as const,   // (a) o par da alfabetização
+    { caixa: 'mixed', fonte: 'andika', escala: 1 } as const,   // (b)
+    { caixa: 'mixed', fonte: 'atkinson', escala: 1 } as const, // (c) o padrão — o ciclo começa aqui
+    { caixa: 'mixed', fonte: 'lexend', escala: 1 } as const,   // (d)
+    // (e), e (f) onde o país ensina duas. ⚠️ 25% MAIOR, e o número não é gosto: a base do documento é 16 px,
+    // as Playwrite declaram `minPx: 20`, e 16 × 1,25 é exactamente 20. A escala É o piso.
+    ...maos.map((fonte) => ({ caixa: 'mixed', fonte, escala: ESCALA_DA_MAO } as const)),
   ]);
 }
 

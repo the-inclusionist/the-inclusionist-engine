@@ -164,6 +164,21 @@ describe('ui/settings-typo', () => {
     expect(cursiva.ls, 'a face ligada ficou com espaçamento de letra a partir-lhe os conectores').toBe('normal');
     expect(parseFloat(cursiva.ws) || 0, 'a face ligada ficou com espaçamento de palavra').toBe(0);
 
+    /*
+     * 🔴 E A ESCALA DA MÃO DO PAÍS, no mesmo sítio e pelo mesmo motivo: uma mutação que tirava o `calc()` do
+     * `font-size` de `html,body` não reprovava NADA — a regra que faz a posição (e) ser 25% maior estava
+     * escrita e não estava presa.
+     *
+     * 📏 16 px × 1,25 = 20 px, que é exactamente o `minPx` das Playwrite. O número não é gosto: abaixo do
+     * piso a face deixa de ser DIFÍCIL e passa a ser ILEGÍVEL, e a dificuldade é o exercício enquanto a
+     * ilegibilidade é a criança a desistir (emenda do ADR-0012).
+     */
+    expect(parseFloat(getComputedStyle(raiz).fontSize), 'a base do documento não é 16 px').toBe(16);
+    raiz.style.setProperty('--fonte-escala', '1.25');
+    expect(parseFloat(getComputedStyle(raiz).fontSize),
+      'a escala foi escrita e o documento não a multiplicou — a mão do país fica abaixo do piso').toBe(20);
+
+    raiz.style.removeProperty('--fonte-escala');
     folha.remove();
     delete raiz.dataset.cursiva;
   });
