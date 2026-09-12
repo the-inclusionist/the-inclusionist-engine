@@ -83,7 +83,6 @@ import { LOGICAL_W } from '../core/constants.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
-import { initSettingsCaa, type SettingsCaaApi } from '../ui/settings-caa.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
 import { initSettingsAudio, montarInteriorDoAudio, type SettingsAudioApi } from '../ui/settings-audio.js';
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
@@ -1155,30 +1154,15 @@ export function createGame(o: CreateGameOptions): Engine {
      * antes, o botão de repor existiria e não faria nada — um botão morto, que é o que o §5 proíbe.
      */
     // (`let typo` subiu para cima do `initPauseIcons` em 2026-09-12 — ver a nota lá. A ATRIBUIÇÃO fica aqui.)
-    const painelDeTipo = montarPainel(ctxDoPainel, {
-      id: 'typo',
-      rotulos: () => ({
-        titulo: t('menu.typo'),
-        rotuloDaLista: t('font.grupo.rotulo'),
-        rotuloReset: t('menu.restoreDefaults'),
-        rotuloFechar: t('menu.close'),
-      }),
-      // ⚠️ PELO LET E NÃO PELA API DIRECTA: o painel só existe depois da casca, e `abrir()` só corre quando a
-      // criança abre. Um `render` que capturasse `typo` agora capturaria `null` para sempre.
-      render: () => typo?.render(),
-      primeiroFoco: 'button[data-font]:not([disabled])',
-    });
     /*
-     * A AMOSTRA — «Juiz foge e bota fita de cetim na xícara», o pangrama que mostra a fonte a fazer o seu
-     * trabalho. Ela fica AQUI e não na casca, e a distinção é a que importa: uma casca que soubesse do
-     * `#typo-preview` saberia de um painel em particular, que é o oposto do que ela é.
+     * 🔴 SEM PAINEL desde o ADR-0151: «quem escolhe a tipografia é o jogo, o jogador escolhe suas fontes via o
+     * menu de acessibilidade rápida». A porta saiu das configurações de inclusão e a casca deixou de ser montada
+     * — um diálogo no documento que ninguém alcança é o defeito que o ADR-0144 mediu.
+     *
+     * 📌 MAS O ESCRITOR FICA, e é por isso que o `init` continua aqui: o ciclo do 11.º botão escreve a face por
+     * esta API (`typo.setFont`), e o `init` aplica no arranque a fonte que a criança deixou guardada.
+     * `initSettingsTypo` guarda cada acesso ao documento, logo corre sem a casca — medido, não suposto.
      */
-    const amostra = doc.createElement('div');
-    amostra.id = 'typo-preview';
-    amostra.className = 'typo-preview';
-    amostra.textContent = t('font.amostra');
-    painelDeTipo.casca.card.insertBefore(amostra, painelDeTipo.casca.lista);
-
     typo = initSettingsTypo({
       $, srSay, store, root: doc.documentElement,
       // A prosa das linhas vai para o rodapé a CADA render, ou ela aparece duas vezes no primeiro clique.
@@ -1191,42 +1175,15 @@ export function createGame(o: CreateGameOptions): Engine {
         ? { fonteInstalada: (familia: string) => doc.fonts.check(`16px "${familia}"`) }
         : {}),
     });
-    acoesDaEngine.tipo = painelDeTipo.abrir;
 
     /*
-     * CAA — COMUNICAÇÃO ALTERNATIVA, e a caixa da letra (ADR-0028).
+     * CAA — COMUNICAÇÃO: O PAINEL DEIXOU DE SER MONTADO (ADR-0151).
      *
-     * 📌 O ESTADO JÁ ERA DA ENGINE, o que faltava era a porta: `core/state.letterCase` e `setLetterCaseValue`
-     * existem desde a Fase 2, e o painel só pedia um leitor e um escritor à volta deles. É a medida do que
-     * separava os oito painéis da engine — não conhecimento novo, apenas ninguém a ligar duas peças suas.
-     *
-     * ⚠️ O `setLetterCase` do `ctx` é o do `core/state` MAIS «a reflexão que o jogo precisa», diz o campo. A
-     * engine faz a primeira metade e não inventa a segunda: um jogo que redesenhe texto ao trocar a caixa
-     * sobrepõe o item `caa` pela sua própria tabela, como qualquer outro.
+     * 🔴 A porta «Comunicação» saiu das configurações de inclusão: a caixa da letra anda no ciclo do 11.º botão
+     * da barra, que passa a ser o ciclo de COMUNICAÇÃO (com ARASAAC e PCS desabilitados). Montar um painel sem
+     * porta nenhuma deixaria no documento um diálogo que ninguém alcança — o defeito que o ADR-0144 mediu nos
+     * quatro painéis de antes. O módulo `ui/settings-caa` continua na engine para quem o quiser montar.
      */
-    let caa: SettingsCaaApi | null = null;
-    const painelDeCaa = montarPainel(ctxDoPainel, {
-      id: 'caa',
-      rotulos: () => ({
-        titulo: t('menu.caa'),
-        rotuloDaLista: t('caa.grupo.rotulo'),
-        rotuloReset: t('menu.restoreDefaults'),
-        rotuloFechar: t('menu.close'),
-      }),
-      render: () => caa?.render(),
-      // ⚠️ ELE LIGA O PRÓPRIO `#caa-close` no init — medido, e é a razão de este campo existir. Ver a nota em
-      // `MountPanelSpec.fecharProprio`: dois ouvintes no mesmo botão são dois donos da mesma saída.
-      fecharProprio: () => caa?.close(),
-    });
-    caa = initSettingsCaa({
-      $, srSay,
-      getLetterCase: () => state.letterCase,
-      setLetterCase: (c) => state.setLetterCaseValue(c),
-      frontOverlay: overlays.frontOverlay,
-      fillExplain: overlays.fillExplain,
-      restoreFocus: overlays.restoreFocus,
-    });
-    acoesDaEngine.caa = painelDeCaa.abrir;
 
     /*
      * AJUDA — qual botão faz o quê, NESTE jogo, no teclado DESTA criança (ADR-0147 §4).

@@ -180,9 +180,10 @@ describe('os guardas: três situações em que a tecla chega aqui e NÃO é noss
     // abria POR BAIXO do painel em que a criança está — e ela sairia dele para um ecrã que não pediu.
     apertar('KeyH');
     item('options').click();
-    item('tipo').click();
+    // Desde o ADR-0151 a «Tipografia» não tem porta; o painel de acessibilidade auditiva serve o mesmo caso.
+    item('audio').click();
     motor.pausa.esconder(0);
-    const painel = document.querySelector('#typo');
+    const painel = document.querySelector('#audio');
     expect(painel.hidden, 'o painel não abriu; o caso mediria a ausência do painel').toBe(false);
 
     fases.length = 0;

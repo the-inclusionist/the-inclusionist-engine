@@ -244,6 +244,18 @@ describe('o alvo de toque segue a régua da altura de viewport (ADR-0095)', () =
     expect(card.scrollHeight - card.clientHeight, 'o cartão continua a rolar').toBeLessThanOrEqual(0);
   });
 
+  it('🔴 [Right] e o SUBMENU também cabe a 640×360 — antes do ADR-0151 ele transbordava 24 px e nada o via', () => {
+    // 📏 MEDIDO em 2026-09-12: com oito entradas (o «voltar» e sete painéis) o submenu rolava 24 px no quadro
+    // mínimo, enquanto este ficheiro só media a raiz. É a lista onde a criança passa mais tempo.
+    const sp = montarComRegua(MENOR_QUADRO.w, MENOR_QUADRO.h);
+    sp.querySelector('.pause-menu[data-sub="raiz"]').hidden = true;
+    sp.querySelector('.pause-menu[data-sub="opcoes"]').hidden = false;
+    expect(itensVisiveis(sp).length, 'o caso mediria um submenu vazio').toBe(PM_OPTIONS_BTNS.length);
+    const card = sp.querySelector('.pause-card');
+    const excesso = card.scrollHeight - card.clientHeight;
+    expect(excesso, `o submenu transborda ${excesso}px a 640×360`).toBeLessThanOrEqual(0);
+  });
+
   it('[Boundary] ⚠️ o EXCESSO foi PAGO — o teto de 42 px chegou a zero', () => {
     // ⚠️ ESTE CASO MUDOU DE ASSUNTO EM 07/09, e a história vale mais que o número. Ele nasceu como TETO:
     // «a 640×360 o cartão tem 391 px de conteúdo para 349 visíveis, então rola 42», com a nota de que a

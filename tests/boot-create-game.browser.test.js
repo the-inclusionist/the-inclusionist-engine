@@ -580,17 +580,20 @@ describe('createGame num documento de verdade', () => {
    * às quatro sem que nenhuma seja verdade.
    */
   describe('os painéis de ajustes, que a engine passou a montar', () => {
-    const itemTipo = () => document.querySelector('#vp-pause-0 .pm-btn[data-act="tipo"]');
+    // ⚠️ ERA O ITEM `tipo`. Desde o ADR-0151 a tipografia não tem painel nem porta, e os casos que mediam a
+    // MAQUINARIA dos painéis (o filtro do §5, o clique até ao foco, a cadeia do Escape, o cartucho que sobrepõe)
+    // passaram a medi-la no painel de sensibilidade visual, que é da engine e continua na lista.
+    const itemAnim = () => document.querySelector('#vp-pause-0 .pm-btn[data-act="anim"]');
 
-    it('🎯 [Right] com ZERO campos opcionais, o painel de TIPOGRAFIA está no documento e nasce escondido', () => {
+    it('🎯 [Right] com ZERO campos opcionais, o painel de SENSIBILIDADE VISUAL está no documento e nasce escondido', () => {
       // O caso que carrega a etapa: nada de `getPauseActs`, nada de escritores. O jogo só chamou `createGame`.
       abrir();
-      const painel = document.querySelector('#typo');
+      const painel = document.querySelector('#animation');
       expect(painel, 'a engine não montou painel nenhum — é o estado de antes').not.toBeNull();
       expect(painel.isConnected).toBe(true);
       expect(painel.hidden, 'um painel que nasce aberto é um painel que ninguém abriu').toBe(true);
-      // Os cinco ids que o `ui/settings-typo` exige e que ninguém declarava. O contrato agora é construído.
-      for (const id of ['typo-title', 'typo-list', 'typo-reset', 'typo-close']) {
+      // Os ids que o `ui/settings-motion` exige e que ninguém declarava. O contrato agora é construído.
+      for (const id of ['motion-list', 'animation-reset', 'animation-close']) {
         expect(document.getElementById(id), `a casca não criou #${id}`).not.toBeNull();
       }
     });
@@ -643,14 +646,14 @@ describe('createGame num documento de verdade', () => {
       expect(document.querySelector('#help'), 'o painel foi montado sem ter o que dizer').toBeNull();
     });
 
-    it('🎯 [Right] o item `tipo` SOBREVIVE ao filtro do §5 — a tabela da engine deixou de ser vazia', () => {
+    it('🎯 [Right] o item `anim` SOBREVIVE ao filtro do §5 — a tabela da engine deixou de ser vazia', () => {
       // 📏 A cascata que produzia um cartão de um botão: sem `getPauseActs` a tabela é `{}`, `itensQueAccionam`
       // guarda só os três de `ITENS_DA_ENGINE`, e `raizQueAcciona` tira também o `options` porque seria «uma
       // porta para uma sala vazia». Com uma acção de verdade, a porta e a sala existem.
       const motor = abrir();
       motor.pausa.mostrar(0);
-      expect(itemTipo(), 'o item de tipografia nem foi montado').not.toBeNull();
-      expect(itemTipo().hidden, 'o item existe e está escondido: o filtro do §5 não o viu accionar').toBe(false);
+      expect(itemAnim(), 'o item de sensibilidade visual nem foi montado').not.toBeNull();
+      expect(itemAnim().hidden, 'o item existe e está escondido: o filtro do §5 não o viu accionar').toBe(false);
       const porta = document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]');
       expect(porta.hidden, 'a porta de opções continua fechada sobre uma sala que agora tem gente').toBe(false);
     });
@@ -660,12 +663,12 @@ describe('createGame num documento de verdade', () => {
       // `render()` do painel. Nenhum duplo percorre isto; e é o percurso que a criança faz.
       const motor = abrir();
       motor.pausa.mostrar(0);
-      itemTipo().click();
+      itemAnim().click();
 
-      const painel = document.querySelector('#typo');
+      const painel = document.querySelector('#animation');
       expect(painel.hidden, 'o clique não revelou o painel').toBe(false);
-      const fontes = painel.querySelectorAll('button[data-font]');
-      expect(fontes.length, 'o painel abriu VAZIO — é o achado 6, outra vez').toBeGreaterThan(0);
+      const linhas = painel.querySelectorAll('#motion-list button');
+      expect(linhas.length, 'o painel abriu VAZIO — é o achado 6, outra vez').toBeGreaterThan(0);
       expect(painel.querySelector('.overlay__card').contains(document.activeElement),
         'o foco ficou FORA de um diálogo `aria-modal`').toBe(true);
     });
@@ -674,108 +677,48 @@ describe('createGame num documento de verdade', () => {
       const motor = abrir();
       motor.pausa.mostrar(0);
       expect(motor.overlays.escapeTarget(), 'com tudo fechado a cadeia não tem alvo').toBeNull();
-      itemTipo().click();
+      itemAnim().click();
       expect(motor.overlays.escapeTarget(), 'o painel abriu e nenhuma tecla o fecha — a armadilha do ADR-0044 §2')
-        .toBe('typo');
-    });
-
-    it('⚠️ [Right] a AMOSTRA existe e veste a fonte escolhida — é a pergunta que o painel responde', () => {
-      // «Consigo ler isto?» é a única pergunta que um menu de fontes responde, e ela não se responde por nome.
-      const motor = abrir();
-      motor.pausa.mostrar(0);
-      itemTipo().click();
-      const amostra = document.querySelector('#typo-preview');
-      expect(amostra, 'o painel de tipografia abriu sem amostra nenhuma').not.toBeNull();
-      expect(amostra.textContent.length, 'a amostra está vazia: não mostra letra nenhuma').toBeGreaterThan(10);
-      expect(amostra.style.fontFamily, 'a amostra não vestiu a fonte — é texto a fingir que é amostra').not.toBe('');
+        .toBe('animation');
     });
 
     it('⚠️ [Right] o CARTUCHO sobrepõe a acção da engine — não-declinável é a pausa, não cada item dela', () => {
       // ADR-0122 torna não-declinável a pausa EXISTIR; não faz da engine dona de cada item dentro dela. Um
-      // jogo que já tenha o seu painel de tipografia continua a ser quem responde pelo item.
+      // jogo que já tenha o seu painel de sensibilidade visual continua a ser quem responde pelo item.
       let meu = 0;
-      const motor = abrir({ getPauseActs: () => ({ tipo: () => { meu += 1; } }) });
+      const motor = abrir({ getPauseActs: () => ({ anim: () => { meu += 1; } }) });
       motor.pausa.mostrar(0);
-      itemTipo().click();
+      itemAnim().click();
       expect(meu, 'a engine ganhou ao jogo na própria mesa dele').toBe(1);
-      expect(document.querySelector('#typo').hidden,
+      expect(document.querySelector('#animation').hidden,
         'abriu o painel da engine por cima do jogo — dois painéis para o mesmo ajuste').toBe(true);
     });
 
-    it('🔴 [Right] o REPOR está LIGADO — a casca entra no documento ANTES do `init` do painel', async () => {
-      // ⚠️ A ORDEM DAS DUAS CHAMADAS É A DECISÃO, e este é o caso que a prende. `initSettingsTypo` liga o
-      // `#typo-reset` UMA VEZ, no arranque (`ui/settings-typo:279`): montar a casca DEPOIS do `init` deixa o
-      // botão no documento e sem escuta nenhuma — um botão morto com aparência de vivo, que é o que o
-      // ADR-0106 §5 proíbe. E o repor não volta para uma fonte qualquer: volta para a Atkinson Hyperlegible,
-      // que é o padrão por ter sido desenhada para quem tem baixa visão.
-      const { DEFAULT_FONT_KEY, FONT_BY_KEY } = await import('../app/js/ui/fonts.js');
-      const padrao = FONT_BY_KEY[DEFAULT_FONT_KEY].fam;
+    it('🔴 [Zero] os painéis de COMUNICAÇÃO e de TIPOGRAFIA não são montados, nem têm porta (ADR-0151)', () => {
+      // ⚠️ ESTES CASOS MEDIAM O PAINEL DE CAA (a caixa da letra, o dono do fechar, a cadeia do Escape) pela porta
+      // «Comunicação». O Dev tirou-a das configurações de inclusão: a caixa da letra anda no ciclo do 11.º botão.
+      // Um painel sem porta seria um diálogo no documento que ninguém alcança, e por isso a engine deixou de o
+      // montar — os casos do comportamento dele saíram com a montagem, e o módulo tem os seus em
+      // `settings-caa.browser.test.js`.
       const motor = abrir();
       motor.pausa.mostrar(0);
-      itemTipo().click();
-      const amostra = document.querySelector('#typo-preview');
-
-      const outra = [...document.querySelectorAll('#typo-list button[data-font]:not([disabled])')]
-        .find((b) => b.dataset.font !== DEFAULT_FONT_KEY);
-      expect(outra, 'não há segunda fonte escolhível: o caso não conseguiria medir o repor').toBeTruthy();
-      outra.click();
-      expect(amostra.style.fontFamily, 'escolher outra fonte não mudou a amostra').not.toContain(padrao);
-
-      document.querySelector('#typo-reset').click();
-      expect(amostra.style.fontFamily, 'o REPOR não faz nada — a casca montou DEPOIS do `init`')
-        .toContain(padrao);
+      expect(document.querySelector('#caa'), 'o painel de CAA continua montado sem porta').toBeNull();
+      expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="caa"]'), 'a porta «Comunicação» continua').toBeNull();
+      expect(document.querySelector('#vp-pause-0 .pm-btn[data-act="tipo"]'), 'a porta «Tipografia» continua').toBeNull();
+      // ⚠️ E OS DOIS CASOS QUE SÓ A TIPOGRAFIA TINHA — a amostra e o repor — saíram com a casca dela; o módulo
+      // `ui/settings-typo` guarda os seus em `settings-typo.browser.test.js`.
+      expect(document.querySelector('#typo'), 'o painel de tipografia continua no documento sem porta').toBeNull();
     });
 
-    it('🎯 [Right] o painel de COMUNICAÇÃO também está lá, e o clique abre-o com a caixa da letra', () => {
-      // O segundo dos oito, e o que ele mede é a generalização: o `montarPainel` serve um painel que tem
-      // `open()`/`close()` próprios tão bem como um que não tem. 📌 O estado já era da engine desde a Fase 2
-      // (`core/state.letterCase`) — o que faltava era alguém ligar duas peças da mesma casa.
-      const motor = abrir();
-      motor.pausa.mostrar(0);
-      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="caa"]');
-      expect(item, 'o item de comunicação nem foi montado').not.toBeNull();
-      expect(item.hidden, 'o item existe e está escondido: a engine não o acciona').toBe(false);
-
-      item.click();
-      const painel = document.querySelector('#caa');
-      expect(painel.hidden, 'o clique não revelou o painel').toBe(false);
-      expect(document.querySelector('#caa-caixa-alta'), 'abriu sem a escolha da caixa da letra').not.toBeNull();
-    });
-
-    it('🔴 [Right] o interruptor da CAIXA ALTA diz a verdade depois de a criança lhe tocar', async () => {
-      // ⚠️ ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE. Congelar o `getLetterCase` no arranque não reprovava
-      // nada, e o defeito que ele produz é o pior desta casa: o estado MUDA e o controle continua a dizer o
-      // contrário. É a família do `reflectTTS` e do `#opt-modocego`, que este projeto já pagou duas vezes.
-      // 📌 As duas metades juntas, e é isso que o torna um portão: o `core/state` mudou E o botão conta-o.
-      const state = await import('../app/js/core/state.js');
-      const motor = abrir();
-      motor.pausa.mostrar(0);
-      document.querySelector('#vp-pause-0 .pm-btn[data-act="caa"]').click();
-
-      const antes = state.letterCase;
-      document.querySelector('#caa-caixa-alta').click();
-      expect(state.letterCase, 'o clique não mudou o estado da engine').not.toBe(antes);
-      // ⚠️ RELIDO DO DOCUMENTO: o `render()` reconstrói a lista inteira, então o nó de antes do clique está
-      // fora da árvore e responderia pelo estado velho sem ninguém reparar.
-      expect(document.querySelector('#caa-caixa-alta').getAttribute('aria-pressed'),
-        'o estado mudou e o interruptor continua a anunciar o anterior').toBe(String(state.letterCase === 'upper'));
-
-      // e devolve ao padrão, para não deixar a caixa trocada aos casos seguintes
-      document.querySelector('#caa-reset').click();
-    });
-
-    it('🔴 [Right] o FECHAR do CAA tem UM dono — e o Escape passa pelo mesmo caminho', () => {
-      // ⚠️ `settings-caa` liga o `#caa-close` sozinho no init. Se a casca ligasse um segundo ouvinte, o botão
-      // teria dois donos; e se ela registasse o SEU closer na cadeia do Escape, o botão e a tecla fariam o
-      // mesmo trabalho por caminhos diferentes — que é como um deles fica para trás.
-      const motor = abrir();
-      motor.pausa.mostrar(0);
-      document.querySelector('#vp-pause-0 .pm-btn[data-act="caa"]').click();
-      expect(motor.overlays.escapeTarget(), 'o painel abriu fora da cadeia do Escape').toBe('caa');
-
-      document.querySelector('#caa-close').click();
-      expect(document.querySelector('#caa').hidden, 'o botão de fechar não fechou').toBe(true);
-      expect(motor.overlays.escapeTarget(), 'fechou à vista e continua a ser o alvo do Escape').toBeNull();
+    it('🔴 [Right] sem o painel, o ESCRITOR da tipografia continua vivo — o 11.º botão ainda troca a face', () => {
+      // 📌 O par do caso de cima, e a razão de o `initSettingsTypo` continuar a correr: tirar a casca não pode
+      // levar a escrita. Sem este caso, um `createGame` que deixasse de iniciar o módulo passaria em tudo.
+      abrir();
+      const botao = document.querySelector('#title-icons [data-pi="tipografia"]');
+      expect(botao, 'o 11.º botão não montou — o caso mediria nada').not.toBeNull();
+      const antes = document.documentElement.dataset.fonte;
+      botao.click();
+      expect(document.documentElement.dataset.fonte, 'o ciclo carregou e a face do documento não mudou').not.toBe(antes);
     });
 
     it('🎯 [Right] o painel de SENSIBILIDADE VISUAL abre, e a lista dele é `#motion-list`', () => {
@@ -881,7 +824,8 @@ describe('createGame num documento de verdade', () => {
       expect(linha, 'a engine montou fora do escopo dos overlays e calou-se').toBeTruthy();
       expect(linha, 'a linha tem de nomear a saída, ou é queixa em vez de conserto').toMatch(/pauseHost/);
       // E a lacuna é DITA, não fingida: o painel foi mesmo montado onde o jogo mandou.
-      expect(fora.querySelector('#typo'), 'acusou e não montou — pior do que montar e calar').not.toBeNull();
+      // (Era `#typo`; a tipografia deixou de ter painel no ADR-0151 — o de sensibilidade visual mede o mesmo.)
+      expect(fora.querySelector('#animation'), 'acusou e não montou — pior do que montar e calar').not.toBeNull();
     });
 
     it('🎯 [Zero] DOIS cartuchos em sequência deixam UM de cada — o terceiro gate do ADR-0139', () => {
@@ -895,7 +839,7 @@ describe('createGame num documento de verdade', () => {
 
       expect(document.querySelectorAll('#title-icons').length).toBe(1);
       expect(document.querySelectorAll('[id^="vp-pause-"]').length, 'sobrou mais de um cartão de pausa').toBe(1);
-      for (const id of ['typo', 'caa', 'animation', 'audio']) {
+      for (const id of ['animation', 'audio']) {
         expect(document.querySelectorAll('#' + id).length, `#${id} ficou duplicado`).toBe(1);
       }
       // e a barra não ganhou uma segunda fiada de ícones dentro de si
@@ -916,13 +860,14 @@ describe('createGame num documento de verdade', () => {
       expect(document.querySelector('#title-icons [data-pi]'), 'a barra de acessibilidade saiu com o cartucho')
         .not.toBeNull();
       expect(document.querySelector('#vp-pause-0'), 'o cartão de pausa saiu com o cartucho').not.toBeNull();
-      for (const id of ['typo', 'caa', 'animation', 'audio']) {
+      for (const id of ['animation', 'audio']) {
         expect(document.getElementById(id), `#${id} saiu com o cartucho`).not.toBeNull();
       }
       // e o que sobra ainda ABRE: um painel que fica no documento e deixa de responder é pior do que um que sai
       motor.pausa.mostrar(0);
-      document.querySelector('#vp-pause-0 .pm-btn[data-act="tipo"]').click();
-      expect(document.querySelector('#typo').hidden, 'o painel sobreviveu ao `unmount` e deixou de abrir')
+      // Desde o ADR-0151 a tipografia não tem porta: o painel que ABRE a medir é o de acessibilidade auditiva.
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
+      expect(document.querySelector('#audio').hidden, 'o painel sobreviveu ao `unmount` e deixou de abrir')
         .toBe(false);
     });
 

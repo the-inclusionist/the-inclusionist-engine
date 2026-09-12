@@ -242,12 +242,19 @@ export const PM_JOGO_BTNS: readonly PauseBtnDef[] = [
  * irmãos — o `letra: true` existia só para o i18n não sobrescrever o ABC/abc que o ciclo escrevia.
  */
 export const PM_OPTIONS_BTNS: readonly PauseBtnDef[] = [
+  // 🔴 «CONFIGURAÇÕES DE INCLUSÃO» DESDE 2026-09-12 (ADR-0151), e SAÍRAM DOIS:
+  //   · `caa` (Comunicação) — a caixa da letra já anda no ciclo do 11.º botão da barra, que vira o ciclo de
+  //     COMUNICAÇÃO e ganha ARASAAC e PCS (desabilitados até a licença deixar);
+  //   · `tipo` (Tipografia) — «quem escolhe a tipografia é o jogo, o jogador escolhe suas fontes via o menu de
+  //     acessibilidade rápida».
+  // 📏 E O NÚMERO É O QUE CABE: com oito entradas este submenu transbordava 24 px a 640×360, e nenhum crivo o
+  // via — só a raiz era medida. O caso do submenu está agora no `pausa-44px`.
+  // ⚠️ O painel «Áudio» (música, ambiente, interacção, earcons), separado da acessibilidade auditiva, entra
+  // quando existir: uma porta para um painel que não existe seria o botão morto do ADR-0106 §5.
   { act: 'pmback' },
-  { act: 'caa' },
   { act: 'empatia' },
   { act: 'audio' },
   { act: 'motora' },
-  { act: 'tipo' },
   { act: 'visual' },
   { act: 'anim' },
 ];

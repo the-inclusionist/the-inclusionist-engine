@@ -67,10 +67,17 @@ describe('menu de pausa · seis itens na raiz, os ajustes num submenu', () => {
     expect(acts).toHaveLength(6);
   });
 
-  it('[Right] o submenu de opções tem os SETE painéis, e a saída dele também vem primeiro', () => {
+  it('[Right] o submenu tem os painéis do ADR-0151, e a saída dele também vem primeiro', () => {
     const acts = atos(markup(), 'opcoes');
     expect(acts[0], 'o "Voltar" do submenu tem de ser a primeira parada, como `resume` na raiz').toBe('pmback');
-    expect(acts.slice(1)).toEqual(['caa', 'empatia', 'audio', 'motora', 'tipo', 'visual', 'anim']);
+    expect(acts.slice(1)).toEqual(['empatia', 'audio', 'motora', 'visual', 'anim']);
+  });
+
+  it('🔴 [Zero] «Comunicação» e «Tipografia» SAÍRAM do submenu (ADR-0151) — a ausência é o caso', () => {
+    // O par do caso de cima: uma lista que as mantivesse e perdesse outras duas passaria no comprimento.
+    const acts = atos(markup(), 'opcoes');
+    expect(acts).not.toContain('caa');
+    expect(acts).not.toContain('tipo');
   });
 
   it('[Right] só UMA lista é visível — a outra sai da árvore de acessibilidade', () => {
@@ -116,7 +123,7 @@ describe('menu de pausa · seis itens na raiz, os ajustes num submenu', () => {
     // O gate que o ADR-0146 nomeia. Oferecer a porta e abrir uma sala com só o «voltar» é o que o §5 do
     // ADR-0106 chama de pior do que a ausência; e a ausência sozinha passaria com uma porta que nunca aparece.
     const fn = () => {};
-    const acts = { resume: fn, ajuda: fn, addplayer: fn, quit: fn, caa: fn, tabuleiro: fn };
+    const acts = { resume: fn, ajuda: fn, addplayer: fn, quit: fn, audio: fn, tabuleiro: fn };
     const semNada = raizQueAcciona(PM_BTNS, PM_OPTIONS_BTNS, acts, PM_JOGO_BTNS).map((b) => b.act);
     expect(semNada, 'a porta abriu para uma sala vazia').not.toContain('opcoesdojogo');
     expect(semNada, 'o caso mediria uma raiz vazia').toContain('options');
