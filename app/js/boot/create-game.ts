@@ -47,12 +47,14 @@
 // O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
 import { initI18n, idiomaPronto } from '../core/i18n.js';
-import { entradaDe } from '../input/state.js';
+import { entradaDe, keys, marcarTecla, soltarTecla, arestaDoJogador } from '../input/state.js';
+import { initTouch, montarControleDeToque, lacunasDoToque } from '../input/touch.js';
+import { initTouchBindings } from '../input/touch-bindings.js';
 import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
-import { presetActions, startClaimProblem, ACTIONS, type ActionPreset } from '../core/actions.js';
+import { presetActions, startClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
@@ -137,6 +139,14 @@ export interface EngineHost {
    * diferença entre a engine não saber e a engine calar-se.
    */
   readonly pauseHost?: Element | null;
+  /**
+   * ONDE O CONTROLE VIRTUAL É PENDURADO (ADR-0143). Ausente, a engine usa `#game-region`.
+   *
+   * ⚠️ Pela mesma razão do `pauseHost`: a engine desenha o pad a partir do `preset`, mas não sabe onde ele cabe
+   * no desenho de um jogo alheio. E a folha põe `.touch` em `position:absolute` no fundo do hospedeiro — logo
+   * o hospedeiro é o rectângulo do jogo, não a página.
+   */
+  readonly touchHost?: Element | null;
 }
 
 /**
@@ -574,8 +584,15 @@ export function createGame(o: CreateGameOptions): Engine {
    * Recalcular tudo apagaria diagnósticos do hospedeiro que ninguém consertou; não recalcular nada deixaria
    * o diagnóstico a falar do jogo errado.
    */
+  /**
+   * As lacunas do CONTROLE VIRTUAL deste cartucho. Começa vazia e é trocada quando o pad é montado, mais abaixo:
+   * `problemasDoCartucho` é chamada só no `problems`, depois do arranque, mas ler o pad daqui antes de ele
+   * existir cairia na zona morta temporal — o mesmo tropeço que o `getPlayers` já deu neste ficheiro.
+   */
+  let lacunasDoPad: () => string[] = () => [];
+
   function problemasDoCartucho(): string[] {
-    const p: string[] = [];
+    const p: string[] = [...lacunasDoPad()];
     // O mundo declarado tem de existir na página — e quem o declara é o jogo, não o hospedeiro.
     const mundo = cartucho.declaration.world();
     if (mundo.kind === 'element' && !$(mundo.selector)) {
@@ -1738,6 +1755,108 @@ export function createGame(o: CreateGameOptions): Engine {
   win.addEventListener('keydown', abrirPausaPeloStart);
 
   /*
+   * ===================== O CONTROLE VIRTUAL (ADR-0143, fase 4 do plano) =====================
+   *
+   * 🔴 MEDIDO em 2026-09-12: `montarControleDeToque`, `initTouch` e `initTouchBindings` tinham testes e ZERO
+   * chamadores em produção — `git grep` achava-os só nos próprios módulos. Numa escola onde o aparelho é um
+   * tablet sem teclado, um jogo arrancado por esta raiz não tinha por onde ser jogado, e nada o dizia.
+   *
+   * ⚠️ E LIGÁ-LOS ACHOU DOIS DEFEITOS NA JUNÇÃO, que nenhum dos testes separados via: a cruz desenhada tinha
+   * braços `.touch-arm` que a folha não estiliza e que o `touch-bindings` não acende (ele procura `.dpad-up`),
+   * e a pílula START tinha nome falado e nenhum texto. Os dois estão consertados em `input/touch`.
+   *
+   * 📌 O PAD MONTA SEMPRE, com ou sem `preset`: sem acções ele fica só com o START, porque a pausa não é
+   * declinável (ADR-0122) e num tablet sem teclado o START é a única porta para ela. O que falta diz-se em
+   * `problems` (`lacunasDoToque`).
+   */
+  const hospedeiroDoToque = o.host.touchHost ?? $('#game-region');
+  const toqueUsavel = !!hospedeiroDoToque && typeof (hospedeiroDoToque as HTMLElement).appendChild === 'function';
+  const cartaoDoAssento0Aberto = (): boolean => {
+    const c = $<HTMLElement>('#vp-pause-0');
+    return !!c && c.hidden === false;
+  };
+  const acoesDoPreset = (): readonly { acao: string; rotulo: string }[] => {
+    const preset = cartucho.preset;
+    if (!preset) return [];
+    const nome = labellerFrom(preset);
+    return presetActions(preset).flatMap((a) => {
+      const rotulo = nome(a);
+      return rotulo ? [{ acao: a, rotulo }] : [];
+    });
+  };
+  const toque = initTouch({
+    $, srSay, store, win,
+    acoesDoJogo: acoesDoPreset,
+    root: doc.documentElement,
+    isMobile: disponibilidade.toque,
+    viewport: () => ({ w: win.innerWidth, h: win.innerHeight }),
+    frontOverlay: overlays.frontOverlay,
+    // O toque é sempre do Jogador 1 (`touch-bindings`), e com o cartão ou um painel aberto a criança toca
+    // DIRECTO nos botões do menu — um pad por cima deles taparia o que ela quer tocar.
+    padAllowed: () => players().length <= 1 && !cartaoDoAssento0Aberto() && !overlays.topVisibleOverlay(),
+  });
+
+  const acoesDoCartucho = (): Set<string> => new Set(cartucho.preset ? presetActions(cartucho.preset) : []);
+
+  function desenharPad(): void {
+    if (!toqueUsavel || !hospedeiroDoToque) return;
+    const mapa = toque.getTouchMap();
+    const curto = cartucho.preset ? shortLabellerFrom(cartucho.preset) : (): null => null;
+    const pad = montarControleDeToque(
+      { procurar: (sel) => $<HTMLElement>(sel), criar: (tag) => doc.createElement(tag) },
+      {
+        mapa,
+        acoesDoJogo: acoesDoCartucho(),
+        // `start` é de SISTEMA e a engine pode nomeá-lo (`core/actions` SYSTEM); os outros slots levam a palavra
+        // CURTA do jogo, porque vivem dentro de um botão de dedo e não numa lista.
+        rotuloDoSlot: (slot) => (slot === 'start' ? t('touch.start') : (curto(mapa[slot] as Action) ?? '')),
+        direcional: store.get(store.KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
+      },
+    );
+    if (!pad.parentNode) hospedeiroDoToque.appendChild(pad);
+  }
+
+  lacunasDoPad = () => (toqueUsavel
+    ? lacunasDoToque({ mapa: toque.getTouchMap(), acoesDoJogo: acoesDoCartucho() })
+    : ['the virtual pad has nowhere to mount: set `host.touchHost`, or give #game-region room for children. '
+      + 'Without it, a child on a keyboardless tablet cannot play, nor reach the pause']);
+
+  /** O START da tela: abre a pausa do assento 0 como a tecla abre — e fecha-a, se já estiver aberta. */
+  function alternarPausaPeloToque(): void {
+    if (overlays.topVisibleOverlay()) return;
+    if (cartaoDoAssento0Aberto()) { mudarDeFase('playing'); return; }
+    toque.hideTouchControls();
+    pausa.mostrar(0);
+    mudarDeFase('paused');
+  }
+
+  const ligacoesDoToque = initTouchBindings({
+    $, win,
+    getSearch: () => win.location?.search ?? '',
+    getControls: () => keyboard.controlsState().controls,
+    getPlayers: () => players(),
+    marcarTecla, arestaDoJogador, soltarTecla,
+    heldKeys: keys,
+    attractOnInput: () => false,
+    showTouchControls: () => toque.showTouchControls(),
+    hideTips: () => {},
+    togglePause: alternarPausaPeloToque,
+    getTouchMap: () => toque.getTouchMap(),
+    // ✅ O DEFEITO QUE O `TouchBindingsCtx` GUARDAVA MORRE AQUI: no cartucho a linha era `touchMap.start` num
+    // escopo onde `touchMap` não existia, e o START da tela estava quebrado. Esta raiz TEM o mapa.
+    getStartAction: () => toque.getTouchMap().start,
+    getStickTravelPx: () => toque.getStickTravelPx(),
+    getStickDeadPx: () => toque.getStickDeadPx(),
+  });
+  desenharPad();
+  ligacoesDoToque.attach();
+  // Jogar no teclado ESCONDE o pad — a mesma alternância por modalidade do `input/keydown` do cartucho. Só as
+  // teclas de algum jogador: um atalho do navegador não é a criança a trocar de aparelho.
+  win.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (keyboard.whichPlayer(e.code) >= 0) toque.hideTouchControls();
+  });
+
+  /*
    * AS COISAS PESADAS COMEÇAM A DESCER AQUI, e a linha é deliberadamente a ÚLTIMA coisa do arranque.
    *
    * ⚠️ SEM `await`. O arranque não espera por 241 MB — se esperasse, a primeira tela de uma escola com 3G
@@ -1795,6 +1914,9 @@ export function createGame(o: CreateGameOptions): Engine {
     cartucho = { ...ganchos, declaration };
     registrarMapeamentosDoCartucho();
     alcanceAtual = derivarAlcance();
+    // O pad é da FORMA do preset, logo muda com o cartucho; os ouvintes da janela ficam (`rewire`, e não `attach`).
+    desenharPad();
+    ligacoesDoToque.rewire();
   }
 
   function desmontar(): void {

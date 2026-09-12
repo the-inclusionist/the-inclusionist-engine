@@ -19,6 +19,19 @@
     "srAlert",
     "srSay"
   ],
+  "core/accommodations.ts": [
+    "ACCOMMODATIONS",
+    "Accommodation",
+    "AccommodationPreset",
+    "AccommodationWord",
+    "CONTRACT_KEYED",
+    "GAME_KEYED",
+    "GENERAL",
+    "accommodationLabellerFrom",
+    "accommodationPresetProblems",
+    "isAccommodation",
+    "presetAccommodations"
+  ],
   "core/actions.ts": [
     "ACTIONS",
     "Action",
@@ -1138,7 +1151,9 @@
     "proximoNaArmadilha"
   ],
   "ui/fonts.ts": [
+    "BASE_EM_PX",
     "DEFAULT_FONT_KEY",
+    "ESCALA_DA_MAO",
     "FONT_BY_KEY",
     "FONT_GROUPS",
     "FONT_KEY",
@@ -1147,10 +1162,14 @@
     "FontItem",
     "FontRole",
     "FontStore",
+    "INICIO_DO_CICLO",
     "OFERECIVEIS",
+    "PassoDeTipografia",
+    "cicloDeTipografia",
     "faceDisponivel",
     "familiasDaFace",
     "loadFontKey",
+    "maosDaEtiqueta",
     "papelDaFonte",
     "persistFontKey",
     "resolveFontKey",

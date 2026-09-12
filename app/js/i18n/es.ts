@@ -95,6 +95,7 @@ const es: Record<string, string> = {
   'touch.slot.left': 'Direccional ← (izquierda)',
   'touch.slot.right': 'Direccional → (derecha)',
   'touch.slot.start': 'START (enter)',
+  'touch.start': 'START',
   'touch.slot.b0': 'Botón 0 (abajo)',
   'touch.slot.b1': 'Botón 1 (derecha)',
   'touch.slot.b2': 'Botón 2 (izquierda)',

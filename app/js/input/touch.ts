@@ -84,6 +84,11 @@ export interface TouchCtx {
    * módulo deixou de importar `core/state` — não sobrou leitura de estado compartilhado nenhuma.
    */
   padAllowed: () => boolean;
+  /**
+   * A janela, só para ouvir `resize`. Opcional: sem ela o módulo recua para o global quando existe, e num
+   * ambiente sem janela nenhuma simplesmente não ouve — a geometria fica a do arranque.
+   */
+  win?: Pick<Window, 'addEventListener'> | null;
 }
 
 // ===================== PURO (sem DOM/store — project node) =====================
@@ -396,7 +401,11 @@ export function initTouch(ctx: TouchCtx): TouchApi {
   if (padPresetChild) padPresetChild.addEventListener('click', () => { setPadMm({ btn: 12, gap: 2.5, stick: 16.5, travel: 4, dpad: 11.5 }); ctx.srSay(t('sr.touch.presetChild')); });
   const padPresetAdult = ctx.$<HTMLElement>('#pad-preset-adult');
   if (padPresetAdult) padPresetAdult.addEventListener('click', () => { setPadMm({ btn: 14, gap: 4.5, stick: 20, travel: 5.5, dpad: 14 }); ctx.srSay(t('sr.touch.presetAdult')); });
-  addEventListener('resize', applyPadPhysical); // recalcula os px ao girar/redimensionar; os mm são fixos
+  // Recalcula os px ao girar/redimensionar; os mm são fixos.
+  // ⚠️ ERA `addEventListener('resize', …)` NU — o global —, num módulo cujo cabeçalho diz que nunca alcança a
+  // janela. Ninguém o via porque ninguém montava isto fora de um navegador; ligado ao `createGame`, derrubou
+  // todo arranque num documento falso. A janela entra pelo `ctx`, e sem ela não há o que ouvir.
+  (ctx.win ?? (typeof addEventListener === 'function' ? globalThis : null))?.addEventListener('resize', applyPadPhysical);
 
   // estado inicial (equivalente aos `applyPadDesign(padDesign); applyPadPhysical(); applyDirStyle();` de boot no game.js)
   applyPadDesign();
@@ -498,7 +507,11 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
     } else {
       for (const d of direcoesVivas) {
         const braco = ctx.criar('button');
-        braco.className = 'touch-arm';
+        // ⚠️ AS TRÊS CLASSES, e cada uma tem um leitor. `touch-arm` é a deste módulo; `dpad-arm` é a que a folha
+        // de estilo DESENHA; `dpad-<dir>` é a que o `touch-bindings` ACENDE ao toque (`.dpad-up` & co.). Com só
+        // a primeira — que era o que isto escrevia até ser ligado ao `createGame` —, o braço era um botão sem
+        // estilo que nunca acendia, e nenhum caso o via, porque nada tinha ainda montado os dois juntos.
+        braco.className = `touch-arm dpad-arm dpad-${d}`;
         braco.dataset.dir = d;
         braco.setAttribute('type', 'button');
         braco.setAttribute('aria-label', spec.rotuloDoSlot(d));
@@ -531,6 +544,9 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
   start.className = 'touch-btn touch-start';
   start.setAttribute('type', 'button');
   start.setAttribute('aria-label', spec.rotuloDoSlot('start'));
+  // ⚠️ E ESCRITO, não só dito: a folha desenha uma pílula (`.touch-start`), e uma pílula sem texto é um botão
+  // que quem vê não sabe ler. O leitor de tela tinha o nome; o olho não tinha nada.
+  start.textContent = spec.rotuloDoSlot('start');
   raiz.appendChild(start);
 
   return raiz;

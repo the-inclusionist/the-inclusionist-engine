@@ -5,6 +5,7 @@
       "cvdHost?",
       "doc",
       "pauseHost?",
+      "touchHost?",
       "win"
     ],
     "interface Declinios": [
@@ -53,6 +54,15 @@
       "unmount"
     ],
     "type GanchosDoCartucho": "Omit<MetadeDoJogo, 'declaration'>"
+  },
+  "core/accommodations.ts": {
+    "interface AccommodationWord": [
+      "hint?",
+      "label",
+      "short?"
+    ],
+    "type Accommodation": "(typeof ACCOMMODATIONS)[number]",
+    "type AccommodationPreset": "Partial<Readonly<Record<Accommodation, AccommodationWord>>>"
   },
   "core/actions.ts": {
     "interface ActionWord": [
@@ -705,10 +715,11 @@
       "decide",
       "doTouch",
       "pressStart",
-      "revealForTests"
+      "revealForTests",
+      "rewire"
     ],
     "type EdgeFlag": "'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'",
-    "type TouchBindPlayer": "PlayerView< 'ctrl' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge' >",
+    "type TouchBindPlayer": "PlayerView<'ctrl'> & Partial<PlayerView<'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'>>",
     "type TouchDecision": "| { kind: 'noop' } | { kind: 'pause' } | { kind: 'press'"
   },
   "input/touch.ts": {
@@ -730,7 +741,8 @@
       "root",
       "srSay",
       "store",
-      "viewport"
+      "viewport",
+      "win?"
     ],
     "interface PadMm": [
       "btn"
@@ -1701,6 +1713,11 @@
     ]
   },
   "ui/fonts.ts": {
+    "interface PassoDeTipografia": [
+      "caixa",
+      "escala",
+      "fonte"
+    ],
     "interface FontStore": [
       "get"
     ],
@@ -1943,7 +1960,8 @@
     "interface AccionaveisDoJogo": [
       "correcao",
       "seguraTeclas",
-      "tema"
+      "tema",
+      "tipografia?"
     ],
     "interface ScreenPauseMarkupOpts": [
       "dynLabel",
@@ -1954,6 +1972,7 @@
       "t"
     ],
     "interface PauseIconsCtx": [
+      "ciclarTipografia?",
       "doc?",
       "dynLabel?",
       "getA11yBars",

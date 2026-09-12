@@ -114,9 +114,17 @@ export interface EdgeRaise { playerIndex: number; edge: EdgeFlag }
 /** O que este módulo lê (e escreve) de um jogador — e SÓ isso. DERIVADA de core/entity.
  *  `easy`: quem está no modo Fácil não levanta `runEdge`, e portanto não gruda na parede — a mesma regra do
  *  teclado e do controle, que é justamente a que divergiu em três cópias uma vez. Ver o cabeçalho. */
-export type TouchBindPlayer = PlayerView<
-  'ctrl' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'
->;
+export type TouchBindPlayer = PlayerView<'ctrl'>
+  & Partial<PlayerView<'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'>>;
+/*
+ * ⚠️ AS SEIS BORDAS E O `easy` SÃO OPCIONAIS DESDE A FASE 4, e era o bloqueio que o plano nomeava: exigi-los
+ * obrigava o `createGame` — cujos jogadores são `{ ctrl, audioSink? }` — a pendurar vocabulário de PLATAFORMA
+ * (`jumpEdge`, `swapEdge`) no jogador de um quiz para o pad poder existir. É o que o ADR-0145 D4 recusa: o
+ * `jumpEdge` fica no `Player` para quem pula, e quem não pula nunca o declara.
+ *
+ * 📌 NÃO MUDA O QUE O MÓDULO FAZ: `edgeAllowed` já aceitava `easy` indefinido, e escrever `p[edge] = true`
+ * num jogador que não tem a borda deixa lá uma bandeira que ninguém lê — inofensiva, e sem assunto só no quiz.
+ */
 
 /** TUDO o que a decisão precisa saber do mundo, num objeto só, montado ANTES de qualquer efeito. */
 export interface TouchBindSnapshot {
@@ -374,6 +382,15 @@ export interface TouchBindingsApi {
   revealForTests: () => void;
   /** Amarra tudo: os dois ouvintes globais, os `.touch-btn`, o START, o analógico e a cruz. */
   attach: () => void;
+  /**
+   * Amarra SÓ o que está dentro de `#touch-controls` — botões, START, analógico, cruz —, sem os ouvintes da
+   * janela. É o que se chama depois de o pad ser REDESENHADO (um `mount()` de outro cartucho, ADR-0142).
+   *
+   * ⚠️ EXISTE PORQUE `attach()` DUAS VEZES ACUMULA OUVINTES NA JANELA: um hub que monta dez cartuchos ficaria
+   * com vinte ouvintes de `pointerdown`. Os nós do pad são novos a cada desenho, e os ouvintes deles morrem
+   * com os nós antigos; os da janela, não.
+   */
+  rewire: () => void;
 }
 
 export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
@@ -513,6 +530,12 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
     ctx.win.addEventListener('pointerdown', onPointerDown, true);
     ctx.win.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
 
+    rewire();
+  }
+
+  function rewire(): void {
+    const tc = ctx.$<HTMLElement>('#touch-controls');
+    if (!tc) return;
     wireButtons(tc);
 
     const startBtn = ctx.$<HTMLElement>('#touch-start');
@@ -547,5 +570,5 @@ export function initTouchBindings(ctx: TouchBindingsCtx): TouchBindingsApi {
     }
   }
 
-  return { decide, doTouch, pressStart, revealForTests, attach };
+  return { decide, doTouch, pressStart, revealForTests, attach, rewire };
 }
