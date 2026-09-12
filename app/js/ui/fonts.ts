@@ -71,9 +71,13 @@ export const FONT_GROUPS: FontGroup[] = [
     // ⚠️ `Fredoka` E NÃO «Fredoka One»: o pedido usou o nome legado. A Google publica hoje a família variável
     // como `Fredoka`; a estática antiga era o peso 600 dela. Ver o bloco correspondente em `fonts.css`.
     {k:'fredoka',    fam:'Fredoka',               fb:'sans'},
-    {k:'comfortaa',  fam:'Comfortaa',             fb:'sans'},
     {k:'quicksand',  fam:'Quicksand',             fb:'sans'},
-    {k:'nunito',     fam:'Nunito',                fb:'sans'} ]},
+    {k:'nunito',     fam:'Nunito',                fb:'sans'},
+    {k:'teachers',   fam:'Teachers',              fb:'sans'} ]},
+    // ⚠️ A COMFORTAA ENTROU E SAIU NO MESMO DIA, por decisão do Dev: «ruim para dislexia». A razão está na
+    // face — as formas quase geométricas reduzem a diferenciação entre letras, que é o eixo pelo qual a
+    // Atkinson Hyperlegible é a padrão deste projeto. Fica escrito porque uma face que sai sem rasto volta a
+    // ser proposta pelo próximo que olhar para a lista e achar que falta uma arredondada.
   {g:'font.group.serif', items:[
     {k:'literata',    fam:'Literata',       fb:'serif'},
     {k:'sourceserif', fam:'Source Serif 4', fb:'serif'},
@@ -126,6 +130,11 @@ export const FONT_GROUPS: FontGroup[] = [
     {k:'pwar', fam:'Playwrite AR', fb:'cursive', d:'font.desc.pw.ar', papel:'caligrafica', minPx:20},
     {k:'pwcl', fam:'Playwrite CL', fb:'cursive', d:'font.desc.pw.cl', papel:'caligrafica', minPx:20},
     {k:'pwco', fam:'Playwrite CO', fb:'cursive', d:'font.desc.pw.co', papel:'caligrafica', minPx:20},
+    // 🔴 MAIS SETE PLAYWRITE ESPERAM POR UMA DECISÃO, e não entram por omissão: `ES`, `ES Deco`, `PT`,
+    // `GB J`, `GB S`, `CU` e `PE` (ADR-0150). 📏 Medidas em 2026-09-12: **430 KB** no pacote, contra o
+    // ADR-0108, que é uma decisão do próprio Dev — «nada de empacotar: estas são baixadas conforme
+    // necessário» — e que fixa a regra «nenhuma face é oferecida sem uma forma de a obter». Oferecê-las aqui
+    // sem construir a chegada seria exactamente o que aquele registo existe para impedir.
     {k:'ronde', fam:'Ronde Script, OPTIFrench-Script, Merveille', fb:'cursive',
       d:'font.desc.ronde', off:'font.off.ronde'} ]},
   // ⚠️ A FACE DO JOGO, e ela tem grupo próprio porque não é nem sans, nem serifada, nem manuscrita — é uma
