@@ -654,6 +654,48 @@ describe('createGame num documento de verdade', () => {
       expect(fora.querySelector('#typo'), 'acusou e não montou — pior do que montar e calar').not.toBeNull();
     });
 
+    it('🎯 [Zero] DOIS cartuchos em sequência deixam UM de cada — o terceiro gate do ADR-0139', () => {
+      // ⚠️ O gate existia como frase e não como contagem, e até hoje ele não tinha o que contar: a engine
+      // montava a barra e o cartão, e mais nada. Com quatro painéis montados, «uma barra» passou a ser
+      // «uma barra, um cartão e quatro painéis» — e um `mount()` que um dia passasse a remontá-los deixaria
+      // dois de cada, com o segundo a roubar os ids do primeiro.
+      const motor = abrir();
+      motor.mount(declaracaoValida());
+      motor.mount(declaracaoValida());
+
+      expect(document.querySelectorAll('#title-icons').length).toBe(1);
+      expect(document.querySelectorAll('[id^="vp-pause-"]').length, 'sobrou mais de um cartão de pausa').toBe(1);
+      for (const id of ['typo', 'caa', 'animation', 'audio']) {
+        expect(document.querySelectorAll('#' + id).length, `#${id} ficou duplicado`).toBe(1);
+      }
+      // e a barra não ganhou uma segunda fiada de ícones dentro de si
+      const porIcone = [...document.querySelectorAll('#title-icons [data-pi]')].map((b) => b.dataset.pi);
+      expect(new Set(porIcone).size, 'a barra remontou por cima de si mesma').toBe(porIcone.length);
+    });
+
+    it('🔴 [Inverse] `unmount` NÃO leva a acessibilidade — ela é da PÁGINA, não do cartucho (ADR-0038)', () => {
+      // ⚠️ ESTE CASO AFIRMA UMA AUSÊNCIA DE EFEITO, e é a metade que um teardown esquece. O ADR-0038 corta o
+      // estado em PÁGINA / RODADA / JOGO, e a barra, o cartão e os painéis são da PÁGINA: uma criança que
+      // trocou de jogo não pode perder o modo cego, a tipografia e a pausa no caminho.
+      //
+      // 📌 O que `unmount` solta é o que é do cartucho — mapeamentos, aviso de alcance, pilha de cenas —, e
+      // isso já tem casos no ficheiro node. O que se guarda aqui é o que ele NÃO pode tocar.
+      const motor = abrir();
+      motor.unmount();
+
+      expect(document.querySelector('#title-icons [data-pi]'), 'a barra de acessibilidade saiu com o cartucho')
+        .not.toBeNull();
+      expect(document.querySelector('#vp-pause-0'), 'o cartão de pausa saiu com o cartucho').not.toBeNull();
+      for (const id of ['typo', 'caa', 'animation', 'audio']) {
+        expect(document.getElementById(id), `#${id} saiu com o cartucho`).not.toBeNull();
+      }
+      // e o que sobra ainda ABRE: um painel que fica no documento e deixa de responder é pior do que um que sai
+      motor.pausa.mostrar(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="tipo"]').click();
+      expect(document.querySelector('#typo').hidden, 'o painel sobreviveu ao `unmount` e deixou de abrir')
+        .toBe(false);
+    });
+
     it('🎯 [Zero] com hospedeiro DENTRO da região, `problems` não inventa a lacuna', () => {
       // O par do caso acima, e sem ele o crivo aprovaria uma engine que acusa sempre.
       const motor = abrir();
