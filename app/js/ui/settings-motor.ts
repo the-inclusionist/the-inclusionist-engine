@@ -80,12 +80,25 @@ export interface SettingsMotorCtx {
    */
   transporteEmUso?: (jogador: number) => string;
   /**
-   * A ALTERNÂNCIA DO BOTÃO DE CORRER. Injetada como a irmã acima e pelo mesmo motivo: quem persiste e anuncia
-   * é a raiz de composição, que é quem conhece `players` e o armazenamento.
+   * A ALTERNÂNCIA DO BOTÃO DE CORRER.
+   *
+   * ⚠️ PASSOU A OPCIONAL (ADR-0106 §1), e a ausência é a notícia: a engine passou a saber respondê-la, por
+   * `definirAlternanciaDeCorrida` — ver o que está escrito lá, e o teste é o mesmo que autorizou a irmã da
+   * marcha: nenhum dos passos é do jogo. Quem injecta continua a mandar.
    */
-  setToggleRun: (i: number, on: boolean) => void;
-  /** Coin layout depends on any player's Modo Fácil (moedas no chão) — owned by the coin subsystem, injected. */
-  rebuildCoins: () => void;
+  setToggleRun?: (i: number, on: boolean) => void;
+  /**
+   * A REACÇÃO DO MUNDO ao Modo Fácil (moedas no chão) — do jogo, e por isso OPCIONAL em vez de obrigatória.
+   *
+   * 📌 O padrão é NÃO FAZER NADA, e é exactamente o que o `ui/pause-icons` já decidiu para o modo cego: «o
+   * padrão é literalmente o que o `core/state` já decidiu que um setter faz — grava, persiste, avisa — e nada
+   * mais. Os efeitos de jogo são REACÇÃO, e quem reage assina.» A escolha da criança fica gravada e vale para
+   * quem a lê; um jogo sem moedas não tem o que refazer, e um que tenha continua a injectar a sua.
+   *
+   * ⚠️ E A LINHA CONTINUA VIVA SEM ELA — não é um botão morto. `setEasy` escreve `p.easy`, persiste e anuncia
+   * antes de chamar isto; o que falta sem a injecção é o remate no mundo, não o efeito.
+   */
+  rebuildCoins?: () => void;
   /**
    * Move a prosa das linhas para o rodapé (`ui/settings-panel` → `fillExplain`). Chamado a CADA render.
    *
@@ -226,6 +239,31 @@ export function definirAlternanciaDeMarcha(ctx: EscritaDaAlternanciaCtx, i: numb
   ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleMoveOn' : 'sr.motor.toggleMoveOff'));
 }
 
+/**
+ * LIGA OU DESLIGA A ALTERNÂNCIA DO CORRER — a irmã de `definirAlternanciaDeMarcha`, e mais limpa do que ela.
+ *
+ * 🎯 A RAZÃO DE EXISTIR É A MESMA, e o teste que a autoriza está escrito no comentário da irmã: «cada passo já
+ * era da engine». Aqui é ainda mais verdade — `toggleRun` é campo de `PlayerBase`, a chave é
+ * `KEYS.toggleRunP(i)` do `platform/storage`, e `sr.motor.toggleRun*` são chaves i18n da engine. **Não há um
+ * único efeito de jogo a injectar**, e por isso `SettingsMotorCtx.setToggleRun` deixa de ser obrigatório: um
+ * jogo que não o forneça deixa de ficar sem a linha do correr, em vez de a ter morta.
+ *
+ * ⚠️ E NÃO CHAMA `aplicarAlternancia`, ao contrário da irmã. Aquela pára quem anda por travamento ao desligar,
+ * porque a alternância de MARCHA deixa a personagem a andar sozinha; a do correr governa uma trava de
+ * velocidade, que não tem como deixar ninguém em movimento. Copiar a linha «por simetria» seria mexer em
+ * `walkDir` por causa de um botão que não lhe toca.
+ *
+ * 📌 O anúncio é INCONDICIONAL, como o da irmã: a criança carregou no botão, e calar-se porque o valor já era
+ * aquele deixa o controle sem resposta para quem ouve em vez de ver.
+ */
+export function definirAlternanciaDeCorrida(ctx: EscritaDaAlternanciaCtx, i: number, on: boolean): void {
+  const p = ctx.players[i] as ({ toggleRun?: boolean } | undefined);
+  if (!p) return;
+  p.toggleRun = on;
+  ctx.store.setBool(toggleRunKey(i), on);
+  ctx.srSay(playerPrefix(i, ctx.getNumPlayers()) + t(on ? 'sr.motor.toggleRunOn' : 'sr.motor.toggleRunOff'));
+}
+
 /** Clamps the selected player back to 0 once it falls outside 0..numPlayers-1 (e.g. player count dropped). */
 export function clampSelPlayer(sel: number, numPlayers: number): number {
   return sel >= numPlayers ? 0 : sel;
@@ -274,6 +312,11 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
   // ⚠️ RESOLVIDO UMA VEZ: quem injecta manda, quem não injecta passa a ter. A engine sabe fazê-lo sozinha
   // desde 2026-09-08 — ver definirAlternanciaDeMarcha, e o comentário do campo, que argumentava contra si.
   const setToggleMove = ctx.setToggleMove ?? ((i: number, on: boolean) => definirAlternanciaDeMarcha(ctx, i, on));
+  // A irmã, pela mesma regra e pela mesma razão — ver `definirAlternanciaDeCorrida`.
+  const setToggleRun = ctx.setToggleRun ?? ((i: number, on: boolean) => definirAlternanciaDeCorrida(ctx, i, on));
+  // ⚠️ A REACÇÃO DO MUNDO É DO JOGO, e a ausência dela não é um botão morto: `setEasy` já escreveu, persistiu
+  // e anunciou antes de chegar aqui. É o padrão que o `ui/pause-icons` fixou para o modo cego.
+  const rebuildCoins = ctx.rebuildCoins ?? ((): void => {});
   let selMovPlayer = 0; // jogador selecionado no painel Acessibilidade motora
 
   const facilBtn = ctx.$<HTMLElement>('#opt-facil');
@@ -395,7 +438,7 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
     p.easy = on;
     ctx.store.setBool(easyKey(i), on);
     reflectFacil();
-    ctx.rebuildCoins();
+    rebuildCoins();
     ctx.srSay(easyAnnouncement(i, ctx.getNumPlayers(), on));
   }
 
@@ -437,7 +480,7 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
   }
   if (toggleRunBtn) {
     toggleRunBtn.addEventListener('click', () => {
-      ctx.setToggleRun(selMovPlayer, !ctx.players[selMovPlayer].toggleRun);
+      setToggleRun(selMovPlayer, !ctx.players[selMovPlayer].toggleRun);
       reflectToggleRun();
     });
   }
@@ -464,7 +507,7 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
     ctx.players.forEach((p, i) => {
       if (p.easy) setEasy(i, false);
       if (p.toggleMove) setToggleMove(i, false);
-      if (p.toggleRun) ctx.setToggleRun(i, false);
+      if (p.toggleRun) setToggleRun(i, false);
     });
     reflectFacil();
     reflectAltMove();

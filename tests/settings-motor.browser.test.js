@@ -375,3 +375,39 @@ describe('ui/settings-motor — marca o que saiu do padrão (ADR-0029)', () => {
     expect(document.querySelectorAll('.is-changed')).toHaveLength(0);
   });
 });
+
+describe('o ctx que a ENGINE consegue montar sozinha (ADR-0106 §1)', () => {
+  beforeEach(() => { mountDom(); });
+
+  it('🎯 [Zero] sem `rebuildCoins` e sem `setToggleRun`, o painel continua INTEIRO', () => {
+    // ⚠️ ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE: tirar o padrão de `rebuildCoins` não reprovava nada,
+    // porque TODOS os fixtures deste ficheiro o injectam. Um campo tornado opcional sem um caso que o omita é
+    // uma promessa que ninguém verifica — e a promessa aqui é a que decide se a engine pode montar o painel.
+    //
+    // 📌 As duas ausências significam coisas diferentes, e as duas têm de ficar bem: `setToggleRun` é uma
+    // ESCRITA que a engine agora sabe fazer (`definirAlternanciaDeCorrida`); `rebuildCoins` é a REACÇÃO DO
+    // MUNDO, que continua a ser do jogo — e cuja falta não pode apagar a escolha da criança.
+    const players = [{ easy: false, toggleMove: false, toggleRun: false, walkDir: 0 }];
+    const guardado = new Map();
+    const ditos = [];
+    initSettingsMotor({
+      $,
+      srSay: (m) => ditos.push(m),
+      store: { setBool: (k, on) => guardado.set(k, on ? '1' : '0'), get: () => null },
+      players,
+      getNumPlayers: () => 1,
+      seguraTeclas: true,
+    });
+
+    $('#opt-facil').click();
+    expect(players[0].easy, 'sem `rebuildCoins` o Modo Fácil deixou de ligar').toBe(true);
+    expect(guardado.get('incl_easy_p0'), 'a escolha não foi persistida').toBe('1');
+    expect(ditos.at(-1), 'o Modo Fácil ligou em silêncio, para quem ouve em vez de ver')
+      .toBe(t('sr.motor.easyOn'));
+
+    $('#opt-togglerun').click();
+    expect(players[0].toggleRun, 'sem `setToggleRun` a linha do correr ficou morta').toBe(true);
+    expect(guardado.get('incl_togglerun_p0'), 'a escolha do correr não foi persistida').toBe('1');
+    expect(ditos.at(-1)).toBe(t('sr.motor.toggleRunOn'));
+  });
+});

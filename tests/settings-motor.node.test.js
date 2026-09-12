@@ -9,7 +9,7 @@ import { toggleLabel } from '../app/js/ui/dom.js'; // onOffLabel é alias dele d
 import { t } from '../app/js/core/i18n.js';
 import { chaveDaAlternancia } from '../app/js/input/latch-scope.js'; // os anúncios vêm do dicionário desde o item 14
 import {
-  easyKey, toggleRunKey, toggleMoveKey, definirAlternanciaDeMarcha,
+  easyKey, toggleRunKey, toggleMoveKey, definirAlternanciaDeMarcha, definirAlternanciaDeCorrida,
   clampSelPlayer, anyMotorActive, onOffLabel, playerTabsHTML, easyAnnouncement,
 } from '../app/js/ui/settings-motor.js';
 import { KEYS } from '../app/js/platform/storage.js';
@@ -197,6 +197,44 @@ describe('definirAlternanciaDeMarcha — a escrita que voltou para a engine (ADR
   it('[Zero] um assento que não existe não escreve, não anuncia e não rebenta', () => {
     const c = cenario([{ toggleMove: false, walkDir: 0 }]);
     definirAlternanciaDeMarcha(c.ctx, 7, true);
+    expect(Object.keys(c.escrito)).toEqual([]);
+    expect(c.ditos).toEqual([]);
+  });
+
+  // ===================== A IRMÃ, A DO CORRER =====================
+  //
+  // 🎯 Ela existe pela mesma razão e passa no mesmo teste: «cada passo já era da engine». Aqui é ainda mais
+  // verdade — `toggleRun` é campo de `PlayerBase`, a chave é `KEYS.toggleRunP(i)` e o anúncio é
+  // `sr.motor.toggleRun*`. NÃO HÁ um efeito de jogo a injectar, e é isso que torna o campo do ctx opcional.
+  it('[Right] a do CORRER escreve o campo, persiste na chave da engine e anuncia', () => {
+    const c = cenario([{ toggleRun: false, walkDir: 0 }]);
+    definirAlternanciaDeCorrida(c.ctx, 0, true);
+    expect(c.ctx.players[0].toggleRun).toBe(true);
+    expect(c.escrito[KEYS.toggleRunP(0)], 'não persistiu: a escolha some no arranque seguinte').toBe(true);
+    expect(c.ditos).toEqual([t('sr.motor.toggleRunOn')]);
+  });
+
+  it('🔴 [Inverse] DESLIGAR a do correr NÃO mexe em `walkDir` — ela não governa quem anda', () => {
+    // ⚠️ A DIFERENÇA ENTRE AS DUAS IRMÃS, e é por isso que este caso existe. A de MARCHA chama
+    // `aplicarAlternancia`, que pára quem anda por travamento: sem isso a personagem anda sozinha. A do CORRER
+    // governa uma trava de VELOCIDADE e não tem como deixar ninguém em movimento — copiar aquela linha «por
+    // simetria» mexeria em `walkDir` por causa de um botão que não lhe toca.
+    const c = cenario([{ toggleRun: true, walkDir: -1 }]);
+    definirAlternanciaDeCorrida(c.ctx, 0, false);
+    expect(c.ctx.players[0].toggleRun).toBe(false);
+    expect(c.ctx.players[0].walkDir, 'parou quem andava por causa de um botão que não governa o andar').toBe(-1);
+    expect(c.ditos).toEqual([t('sr.motor.toggleRunOff')]);
+  });
+
+  it('[Interface] com mais de um jogador, a do correr leva o prefixo do assento', () => {
+    const c = cenario([{ toggleRun: false }, { toggleRun: false }]);
+    definirAlternanciaDeCorrida(c.ctx, 1, true);
+    expect(c.ditos).toEqual([t('sr.player.prefix', { n: 2 }) + t('sr.motor.toggleRunOn')]);
+  });
+
+  it('[Zero] assento inexistente: a do correr também não escreve, não anuncia e não rebenta', () => {
+    const c = cenario([{ toggleRun: false }]);
+    definirAlternanciaDeCorrida(c.ctx, 7, true);
     expect(Object.keys(c.escrito)).toEqual([]);
     expect(c.ditos).toEqual([]);
   });
