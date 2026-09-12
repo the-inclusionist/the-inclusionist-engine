@@ -256,6 +256,37 @@ describe('ui/hud · waitBadgeHtml', () => {
     expect(html).toContain('teclado');
     expect(html).toContain('controle livre');
   });
+
+  it('🔴 o selo sai do DICIONÁRIO e não de um literal — e os três casos acima não distinguem os dois', async () => {
+    /*
+     * 🔴 ESTE CASO EXISTE PORQUE OS TRÊS DE CIMA FICAM VERDES COM O DEFEITO DE VOLTA. O dicionário activo
+     * aqui é o pt, e a frase da chave é a MESMA que estava colada no módulo — logo «contém Jogador 1» não
+     * separa «lê o dicionário» de «tem um literal em português». É a armadilha do gate coberto só por
+     * dourado, e ela custou-me uma suposição errada neste mesmo item.
+     *
+     * 🎯 O que separa os dois é SUBSTITUIR a entrada: um literal não muda, uma chave muda. `registerDict`
+     * escreve em `EXTRA`, que o `resolver` consulta ANTES do dicionário da engine (é assim que um jogo
+     * sobrepõe qualquer chave, ADR-0083).
+     *
+     * ⚠️ E REPÕE NO FIM, porque `EXTRA` é estado de módulo e não há como desregistar: sem a reposição, a
+     * sobreposição vazava para todo caso deste ficheiro que corresse depois — que é a mesma classe de
+     * contaminação por ordem que já apanhei no crivo do idioma do cartão de pausa.
+     */
+    const { registerDict } = await import('../app/js/core/i18n.js');
+    const pt = (await import('../app/js/i18n/pt.js')).default;
+    const original = pt['hud.waitBadge'];
+    expect(original, 'a chave saiu do dicionário pt; o caso mediria o nada').toBeTruthy();
+
+    try {
+      registerDict('pt', { 'hud.waitBadge': 'ENTRADA TROCADA {n}' });
+      const html = waitBadgeHtml(2);
+      expect(html, 'o selo ignorou o dicionário — o texto está colado no módulo').toContain('ENTRADA TROCADA 3');
+      expect(html, 'o literal antigo continua lá').not.toContain('aperte um botão do SEU teclado');
+    } finally {
+      registerDict('pt', { 'hud.waitBadge': original });
+    }
+    expect(waitBadgeHtml(0), 'a reposição falhou e a sobreposição vaza para os outros casos').toContain('Jogador 1:');
+  });
 });
 
 // ---------------------------------------------------------------------------------------------

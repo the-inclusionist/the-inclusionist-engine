@@ -29,6 +29,9 @@ const pt: Record<string, string> = {
   'lixo.cor.verde': 'verde',
   'sr.print.on': 'Modo Print: veja a tela sem menus. Aperte qualquer botão para voltar.',
   'sr.player.pressToJoin': 'Jogador {n}: aperte um botão para entrar.',
+  // O selo VISÍVEL da tela sem dono (`ui/hud.waitBadgeHtml`). Parece-se com a linha acima e não é a mesma: a
+  // de cima é para quem ESCUTA, esta diz QUAL botão, porque quem a lê tem outras pessoas à volta.
+  'hud.waitBadge': 'Jogador {n}: aperte um botão do SEU teclado ou de um controle livre para entrar',
   'sr.libras.loading': 'Intérprete de Libras ainda carregando — tente de novo em instantes.',
   'sr.eyes.loadFailed': 'WebGazer não carregou.',
   'sr.eyes.calibrate': 'Jogar com os olhos: olhe pela tela e clique em alguns pontos para calibrar. Olhar esquerda/direita anda; olhar para cima pula.',

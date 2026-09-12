@@ -171,10 +171,26 @@ const CRU_CONHECIDO = {
   'ui/map-hub.ts': 8,
   'ui/settings-motion.ts': 6,   // 7 → 6 em 2026-08-27: a etiqueta "todos os jogadores" das seções, que estava
                                // escrita à mão três vezes, virou uma chamada a `t('rm.sec.all')`
+                               // 🔴 FICA EM 6 EM 2026-09-12, e o motivo vale mais que o número: o sufixo do
+                               // assento deste módulo foi consertado (passou a `t('pause.cardSeat')`) e a
+                               // contagem NÃO MEXEU. Eu baixei o teto para 5 por suposição e o próprio crivo
+                               // me reprovou.
+                               // ⚠️ A causa é um CEGO deste crivo, e é do tamanho do defeito que ele existe
+                               // para apanhar: ele conta literais que `pareceProsa` reconhece como texto de
+                               // interface, e um fragmento de UMA palavra — o nome de um papel, colado a um
+                               // número por concatenação — não se parece com prosa. Logo a forma «palavra +
+                               // variável», que é exactamente como o português cru sobrevive em markup
+                               // gerado, atravessa o livro-razão inteiro sem ser vista.
+                               // 📌 Os dois «Jogador N» que o Dev nomeou em 2026-09-12 estavam AMBOS nesta
+                               // forma, e nenhum dos dois estava contado em lado nenhum.
   'ui/settings-visual.ts': 7,
   'ui/settings-caa.ts': 5,
   'ui/caa-sets.ts': 3,             // descrições dos conjuntos de pictogramas (licença, origem cultural)
-  'ui/hud.ts': 1,
+  // ✅ `ui/hud.ts` SAIU DA LISTA em 2026-09-12, e é a SEGUNDA entrada que este livro-razão perde por conserto
+  // em vez de por contagem. Era o selo «aperte um botão para entrar» da tela ainda sem dono — a única frase
+  // que diz a uma criança COMO entrar, em português, num jogo em inglês. Virou `hud.waitBadge`.
+  // 📌 Chave PRÓPRIA e não o `sr.player.pressToJoin` que se lhe parece: aquela é para quem escuta e diz
+  // «aperte um botão»; esta diz QUAL botão, porque quem a lê tem outras pessoas à volta.
 
   // ✅ `ui/settings-panel.ts` SAIU DA LISTA em 2026-09-12, e é a primeira entrada que este livro-razão perde
   // por conserto em vez de por contagem. Era o `EXPLAIN_IDLE` — o texto de REPOUSO do rodapé de todo painel —,

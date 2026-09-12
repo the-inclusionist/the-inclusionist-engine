@@ -30,6 +30,7 @@ const es: Record<string, string> = {
   'lixo.cor.verde': 'verde',
   'sr.print.on': 'Modo Foto: mira la pantalla sin menús. Aprieta cualquier botón para volver.',
   'sr.player.pressToJoin': 'Jugador {n}: aprieta un botón para entrar.',
+  'hud.waitBadge': 'Jugador {n}: aprieta un botón de TU teclado, o de un mando libre, para entrar',
   'sr.libras.loading': 'El intérprete de lengua de señas todavía está cargando — inténtalo de nuevo en un momento.',
   'sr.eyes.loadFailed': 'WebGazer no cargó.',
   'sr.eyes.calibrate': 'Jugar con los ojos: mira por la pantalla y haz clic en algunos puntos para calibrar. Mirar izquierda y derecha camina; mirar arriba salta.',

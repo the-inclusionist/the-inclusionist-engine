@@ -122,10 +122,20 @@ function numero(v: number): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-/** Markup do selo "aperte um botão para entrar" (tela criada em jogo, ainda sem dono). `i` é o índice 0-based. */
+/**
+ * Markup do selo "aperte um botão para entrar" (tela criada em jogo, ainda sem dono). `i` é o índice 0-based.
+ *
+ * 🔴 ERA PORTUGUÊS CRU, e era a última linha deste módulo no livro-razão do `engine-i18n`. Num jogo em inglês
+ * a criança que acabou de ganhar uma tela lia, em português, a única frase que lhe diz COMO entrar — e o
+ * selo é a tela inteira dela nesse instante, não um detalhe de canto.
+ *
+ * 📌 CHAVE PRÓPRIA e não o `sr.player.pressToJoin` que já existe, apesar de as duas frases se parecerem: a
+ * do leitor de tela diz «aperte um botão», esta diz QUAL botão — «do SEU teclado ou de um controle livre» —,
+ * porque quem a lê está a olhar para uma tela com outras pessoas à volta e precisa de saber que não é
+ * qualquer teclado. Juntá-las apagaria essa metade de uma das duas.
+ */
 export function waitBadgeHtml(i: number): string {
-  return '<div class="vphud-quit vp-wait">Jogador ' + (i + 1)
-    + ': aperte um botão do SEU teclado ou de um controle livre para entrar</div>';
+  return '<div class="vphud-quit vp-wait">' + t('hud.waitBadge', { n: i + 1 }) + '</div>';
 }
 
 /** Projeção do HUD de UMA tela: tudo que updateGameHud() escreve no DOM, sem tocar no DOM. */

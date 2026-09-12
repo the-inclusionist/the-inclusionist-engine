@@ -292,7 +292,17 @@ export function initSettingsMotion(ctx: SettingsMotionCtx): SettingsMotionApi {
     const crtRows = crtToggleRowHtml(t(CRT_LBL.scan), 'scan', !!CRT.scan) + crtToggleRowHtml(t(CRT_LBL.vig), 'vig', !!CRT.vig) + crtRoundRowHtml(t(CRT_LBL.round), CRT.round);
 
     el.innerHTML =
-      `<h3 class="panel-sub">Personagem${ctx.getNumPlayers() > 1 ? ' · Jogador ' + (selectedPlayer + 1) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` +
+      // ⚠️ O SUFIXO DO ASSENTO passou a chave em 2026-09-12: era o nome do jogador concatenado aqui, e a
+      // mesma linha existia em `ui/pause-icons`. 📌 Reusa a `pause.cardSeat` em vez de criar uma segunda: é a
+      // MESMA frase para a MESMA pessoa, e duas chaves seriam dois sítios para ela divergir entre idiomas.
+      //
+      // 🔴 E A PRIMEIRA VERSÃO DESTA NOTA CITAVA O LITERAL REMOVIDO, o que o fez voltar a contar: o crivo de
+      // prosa crua lê a FORMA sobre o texto do ficheiro e não distingue código de comentário. O teto
+      // continuou em 6 com o conserto feito. Comentário que cita o que se tirou desfaz a conta.
+      //
+      // 📌 Os outros dois rótulos deste subtítulo continuam crus e estão no livro-razão do módulo — são
+      // outras duas linhas, e consertá-las de passagem misturava duas decisões num commit.
+      `<h3 class="panel-sub">Personagem${ctx.getNumPlayers() > 1 ? t('pause.cardSeat', { n: selectedPlayer + 1 }) : ''} <span class="panel-sub__tag">por jogador</span></h3>${charRows}` +
       `${secao('Cena')}${sceneRows}` +
       `${secao('Estética CRT')}${crtRows}`;
 
