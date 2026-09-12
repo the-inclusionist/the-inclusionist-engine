@@ -124,7 +124,10 @@ educação básica brasileira** (infantil · fundamental · médio) e, por proxi
 **profissionalizante/capacitação** (letramento digital para cidadania e mercado de trabalho), além de
 **passatempos de convivência** (centros de convivência de idosos e pessoas assistidas socialmente).
 Plataforma 2D pixel-art **acessível** (PixiJS). Reimplementação clean-room do engine Clarity. ⚠️ **O plano dos "35+ jogos" morreu em
-2026-08-28**, por decisão do Dev: o MVP são os **300+ jogos** do `minigames-catalog-v2.html`. ⚠️ **Não há contratação:
+2026-08-28**, por decisão do Dev: o MVP são os **300+ jogos** do `minigames-catalog-v2.html`.
+🔴 **E OS 300 JOGOS TAMBÉM NÃO SÃO O MVP DESDE 2026-09-12 (ADR-0152):** «NÃO vamos fazer os 300 jogos». O catálogo
+fica como **amostra de estudo**, não como lista a construir; não use «300 jogos» como custo nem como razão de
+uma decisão de contrato — meça os consumidores reais. O que o MVP passa a ser **não foi decidido**. ⚠️ **Não há contratação:
 o trabalho só existe por VOLUNTARIADO (ADR-0070)** — a linha anterior dizia "pixel artistas contratados" e
 descrevia um orçamento que não existe. Consequência que muda o dia a dia: **descoberta é insumo de produção**,
 e os 300 jogos **não têm cronograma**. Topologia: **ADR-0058** (que supersede o ADR-0055).
