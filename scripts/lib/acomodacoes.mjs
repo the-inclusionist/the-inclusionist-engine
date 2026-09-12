@@ -3,7 +3,7 @@
 // O CATÁLOGO DE ACOMODAÇÕES — cada uma com a sua chave —, as declarações por categoria e a medição do alcance.
 // Partilhado por `acomodacoes-por-genero.mjs` (a tabela de alcance) e `acomodacoes-gag.mjs` (a prioridade
 // pela Game Accessibility Guidelines). O raciocínio das chaves está no cabeçalho do primeiro.
-import { MAPA, EIXOS_DA_TAXONOMIA, SECOES } from './taxonomia.mjs';
+import { MAPA, EIXOS_DA_TAXONOMIA, SECOES, generosDoJogo } from './taxonomia.mjs';
 
 /* ===================== OS EIXOS DA DECLARAÇÃO =====================
  * `fonte` diz de onde vem o eixo: um campo do contrato que já existe, ou nenhum (⚠️ ainda por declarar).
@@ -220,9 +220,16 @@ export function medir(categorias) {
   const jogosDe = Object.fromEntries(categorias.map((c) => [c.nome, c.jogos]));
   const TOTAL = categorias.reduce((a, c) => a + c.jogos, 0);
   const casa = (chave, nome) => chave === U || eixosDe(nome)[chave.eixo].some((v) => chave.valores.includes(v));
+  // 📌 O GÉNERO conta-se POR JOGO: numa prateleira sem género próprio (Multiplayer Local, Experimentais,
+  // Híbridos) cada jogo tem o seu, e a prateleira inteira não casa nem deixa de casar. Os outros eixos são
+  // declarados por prateleira, logo contam a prateleira inteira.
+  const quantosCasam = (chave, c) => (chave !== U && chave.eixo === 'generos'
+    ? c.titulos.filter((j) => generosDoJogo(c.nome, j).some((v) => chave.valores.includes(v))).length
+    : (casa(chave, c.nome) ? c.jogos : 0));
   const linhas = Object.entries(ACOM).map(([k, meta]) => {
-    const gens = nomes.filter((n) => casa(meta.chave, n));
-    return { k, ...meta, nGen: gens.length, nJogos: gens.reduce((a, n) => a + jogosDe[n], 0), gens };
+    const contas = categorias.map((c) => [c.nome, quantosCasam(meta.chave, c)]).filter(([, q]) => q > 0);
+    const gens = contas.map(([n]) => n);
+    return { k, ...meta, nGen: gens.length, nJogos: contas.reduce((a, [, q]) => a + q, 0), gens };
   }).sort((a, b) => b.nJogos - a.nJogos || b.nGen - a.nGen);
 
   for (const l of linhas) if (!l.nGen) problemas.push(`${l.k}: a chave não alcança categoria nenhuma — acomodação sem assunto em lado nenhum`);

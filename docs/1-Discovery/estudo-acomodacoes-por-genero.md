@@ -67,9 +67,13 @@ concordar consigo mesma sem nada que o diga.
 📌 **E há uma nona que é metade de cada:** *Educativo / Quiz* é género (trivia, 10.11) **e** propósito
 (educativo, 11.5), e é assim que o script a regista.
 
-⚠️ **Três não têm género nenhum a atribuir** — Multiplayer Local, Experimentais/Arte e Híbridos, **33 jogos**
-— e isso não é lacuna: são exactamente as que atravessam géneros. Uma acomodação que dependa do género não
-tem sujeito nelas **pelo género**, e terá de o ter pelo eixo.
+⚠️ **Três prateleiras não têm género próprio** — Multiplayer Local, Experimentais/Arte e Híbridos, **33 jogos**
+— e isso não é lacuna: são exactamente as que atravessam géneros. ✅ **Por isso o género delas lê-se POR JOGO**
+(`porJogo` em `scripts/lib/taxonomia.mjs`, com uma sétima guarda: nenhum jogo sem género, nenhum nome que o
+catálogo não tenha). Os dez de Multiplayer Local são escolha do Dev em 2026-09-12 («Opção A para todos»); os
+23 de Experimentais e Híbridos são a mesma leitura aplicada por mim, **ainda por confirmar**. 📏 Contado por
+jogo, as cinco acomodações chaveadas por género mudam pouco: dica/realce 150 → 164 jogos, Modo Fácil e cadeira
+22 → 24, detecção 9 → 10, intensidade 8 → 9.
 
 ### O que fica por fazer nesta fase (2a)
 
