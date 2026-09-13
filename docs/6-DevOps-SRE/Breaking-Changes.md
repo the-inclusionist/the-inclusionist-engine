@@ -597,6 +597,17 @@ not «…, 1 de 9»; `legendaDoIcone` still returns the spoken form with the ind
 place, speak `ui/item-announcement.anunciarItem({ rotulo, estado, posicao, total }, comIndice)`. Tests that read
 «, N de M» in the bar's visible name read it from what is spoken instead.
 
+## U · Every line of `problems` is in English, with the child's cost and the fix (ADR-0169)
+
+**VALUES, no shape.** The Portuguese lines of `createGame`'s `problems` and of `input/touch.lacunasDoToque` are rewritten
+in English, and every line now says what is wrong by name, what it costs the child, and the fix: «there is no neural
+voice…», «the pause menu has nowhere to mount…», «the declared world #x is not in the page…», «the virtual pad shows only
+SELECT and START…». Measured across the sibling games: none matches the old wording in a test (pinball asserts an empty
+list), only comments quote it.
+
+**What to do:** a test or tool that matched a Portuguese line matches the English one, or better, matches the name it
+carries (`carregarVozNeural`, `host.pauseHost`, the selector).
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

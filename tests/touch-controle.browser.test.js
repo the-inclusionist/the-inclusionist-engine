@@ -161,7 +161,7 @@ describe('ADR-0143 §4 · o silêncio acaba', () => {
     });
     expect(linhas).toHaveLength(1);
     expect(linhas[0]).toMatch(/select/);
-    expect(linhas[0], 'a linha não nomeia a saída').toMatch(/remapeie/);
+    expect(linhas[0], 'a linha não nomeia a saída').toMatch(/remap a slot/);
   });
 });
 

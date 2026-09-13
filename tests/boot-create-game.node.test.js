@@ -336,7 +336,7 @@ describe('createGame em execução', () => {
     });
     // O host de filtros não foi fornecido neste caso, e é a ÚNICA lacuna que deve sobrar.
     expect(motor.problems).toHaveLength(1);
-    expect(motor.problems[0]).toMatch(/filtros/);
+    expect(motor.problems[0]).toMatch(/filter host/);
   });
 
   it('🔴 [Zero] SEM `preset` a AJUDA não é montada, e a engine DIZ porquê', async () => {
@@ -352,7 +352,7 @@ describe('createGame em execução', () => {
       declaration: declaracaoValida(), host: { doc, win },
       carregarVozNeural: () => Promise.resolve({}),
     });
-    const daAjuda = motor.problems.filter((p) => /ajuda/.test(p));
+    const daAjuda = motor.problems.filter((p) => /help screen/.test(p));
     expect(daAjuda, 'sem `preset` a ajuda sumiu e nada o disse').toHaveLength(1);
     // 📌 E a linha tem de ser ACCIONÁVEL: diz o campo que falta e o registo que o define. Uma linha que só
     // dissesse «falta algo» seria a «lacuna que o consumidor lê como escolha» do ADR-0106 §2.
@@ -370,11 +370,11 @@ describe('createGame em execução', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
-    const linha = motor.problems.find((p) => /voz neural/.test(p));
+    const linha = motor.problems.find((p) => /neural voice/.test(p));
     expect(linha, 'sem voz neural e a engine não disse nada').toBeTruthy();
     expect(linha, 'não nomeia a saída').toMatch(/carregarVozNeural/);
     expect(linha, 'não nomeia o declínio').toMatch(/semVozNeural/);
-    expect(linha, 'não diz o que a criança perde').toMatch(/não lê|português/);
+    expect(linha, 'não diz o que a criança perde').toMatch(/cannot read|Portuguese/);
   });
 
   it('⚠️ [Right] DECLARAR `semVozNeural` cala a linha — declinar é escolha, não declarar é omissão', async () => {
@@ -383,7 +383,7 @@ describe('createGame em execução', () => {
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win }, declines: { semVozNeural: true },
     });
-    expect(motor.problems.filter((p) => /voz neural/.test(p))).toEqual([]);
+    expect(motor.problems.filter((p) => /neural voice/.test(p))).toEqual([]);
   });
 
   // ===================== O PONTEIRO DECLARADO (ADR-0112) =====================
@@ -454,7 +454,7 @@ describe('createGame em execução', () => {
     // precisam dele não entram — em vez de entrarem e recusarem a criança que carregar neles.
     expect(barra.innerHTML, 'contraste montado sem quem o escreva').not.toContain('data-pi="contrast"');
     expect(barra.innerHTML, 'correção de cor montada sem quem a escreva').not.toContain('data-pi="cvd"');
-    expect(motor.problems.filter((p) => /barra de acessibilidade/.test(p)), 'acusou uma barra que montou').toEqual([]);
+    expect(motor.problems.filter((p) => /accessibility bar/.test(p)), 'acusou uma barra que montou').toEqual([]);
   });
 
   it('⚠️ [Zero] a barra que a engine monta é NAVEGÁVEL sem o jogo dar nada (ADR-0106 §5)', async () => {
@@ -585,7 +585,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso({ mapa: { '#title-icons': inutil } });
     let motor;
     expect(() => { motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } }); }).not.toThrow();
-    expect(motor.problems.some((p) => /não aceita conteúdo nem clique/.test(p))).toBe(true);
+    expect(motor.problems.some((p) => /takes neither content nor clicks/.test(p))).toBe(true);
   });
 
   it('⚠️ [Zero] com DOIS assentos e sem ator de pausa, a engine DIZ — o segundo não consegue remapear', async () => {
@@ -600,11 +600,11 @@ describe('createGame em execução', () => {
       host: { doc, win },
       players: [{ ctrl: {} }, { ctrl: {} }],
     });
-    const linha = motor.problems.find((p) => /ator da pausa/.test(p));
+    const linha = motor.problems.find((p) => /pause actor/.test(p));
     expect(linha, 'dois assentos sem ator de pausa e a engine não disse nada').toBeTruthy();
     // ⚠️ A frase nomeia a SAÍDA e o que se perde, como as outras deste bloco fazem — uma linha que só diz
     // «faltou algo» manda procurar, e quem procura é quem já não sabia.
-    expect(linha).toMatch(/remapear/);
+    expect(linha).toMatch(/remap/);
     expect(linha).toMatch(/semAtorDePausa/);
   });
 
@@ -614,7 +614,7 @@ describe('createGame em execução', () => {
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win }, players: [{ ctrl: {} }],
     });
-    expect(motor.problems.filter((p) => /ator da pausa/.test(p))).toEqual([]);
+    expect(motor.problems.filter((p) => /pause actor/.test(p))).toEqual([]);
   });
 
   it('⚠️ [Right] DECLARAR `semAtorDePausa` cala a linha — ausência declarada é escolha', async () => {
@@ -629,7 +629,7 @@ describe('createGame em execução', () => {
       players: [{ ctrl: {} }, { ctrl: {} }],
       declines: { semAtorDePausa: true },
     });
-    expect(motor.problems.filter((p) => /ator da pausa/.test(p))).toEqual([]);
+    expect(motor.problems.filter((p) => /pause actor/.test(p))).toEqual([]);
   });
 
   it('⚠️ [Zero] SEM barra de acessibilidade na primeira tela, a engine DIZ — e cinco jogos não a têm', () => {
@@ -650,12 +650,12 @@ describe('createGame em execução', () => {
     return import('../app/js/boot/create-game.js').then(({ createGame }) => {
       const { doc, win } = domFalso({ ausentes: ['#title-icons'] });
       const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
-      const linha = motor.problems.find((p) => /barra de acessibilidade/.test(p));
+      const linha = motor.problems.find((p) => /accessibility bar/.test(p));
       expect(linha, 'a engine calou-se sobre a barra que falta').toBeTruthy();
       // A frase nomeia a SAÍDA e o que se PERDE — «falta uma coisa» manda procurar sem dizer o quê.
       expect(linha).toMatch(/a11yBarHost/);
       expect(linha).toMatch(/#title-icons/);
-      expect(linha, 'não diz o que a criança perde').toMatch(/cego|TTS|contraste|Libras/);
+      expect(linha, 'não diz o que a criança perde').toMatch(/blind mode|narration|Libras/);
     });
   });
 
@@ -687,7 +687,7 @@ describe('createGame em execução', () => {
         declaration: declaracaoValida(),
         host: { doc, win, a11yBarHost: meuSitio },
       });
-      expect(motor.problems.some((p) => /barra de acessibilidade/.test(p)),
+      expect(motor.problems.some((p) => /accessibility bar/.test(p)),
         'acusou um jogo que declarou onde a barra entra').toBe(false);
     });
   });
@@ -705,7 +705,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso({ ausentes: ['#gaem-region'] });
     const torto = { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#gaem-region' }) };
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: torto, host: { doc, win } });
-    expect(motor.problems.join(' ')).toMatch(/mundo declarado nao encontrado|mundo declarado não encontrado/);
+    expect(motor.problems.join(' ')).toMatch(/declared world \S+ is not in the page/);
     expect(motor.tts, 'o jogo abre mesmo assim').toBeTruthy();
   });
 
@@ -714,7 +714,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso();
     const paint = { ...declaracaoValida(), world: () => ({ kind: 'none' }) };
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: paint, host: { doc, win } });
-    expect(motor.problems.join(' ')).not.toMatch(/mundo declarado/);
+    expect(motor.problems.join(' ')).not.toMatch(/declared world/);
   });
 
   it('⚠️ a navegacao de menu fica LIGADA, e nao so montada (issue #109)', async () => {
@@ -888,20 +888,20 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = semDom();
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: semMundo(), host: { doc, win } });
-    expect(motor.problems.join(' '), 'o arranque devia acusar o mundo que não existe').toMatch(/mundo declarado/);
+    expect(motor.problems.join(' '), 'o arranque devia acusar o mundo que não existe').toMatch(/declared world/);
 
     motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO });
-    expect(motor.problems.join(' '), 'o diagnóstico ficou a falar do cartucho anterior').not.toMatch(/mundo declarado/);
+    expect(motor.problems.join(' '), 'o diagnóstico ficou a falar do cartucho anterior').not.toMatch(/declared world/);
   });
 
   it('⚠️ [Right] e o PAR: montar um cartucho sem mundo ACUSA — senão «sumiu» passaria por nunca olhar', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = semDom();
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
-    expect(motor.problems.join(' ')).not.toMatch(/mundo declarado/);
+    expect(motor.problems.join(' ')).not.toMatch(/declared world/);
 
     motor.mount(semMundo(), { acomodacoes: SEM_ASSUNTO });
-    expect(motor.problems.join(' '), 'montou um mundo inexistente e não disse nada').toMatch(/mundo declarado/);
+    expect(motor.problems.join(' '), 'montou um mundo inexistente e não disse nada').toMatch(/declared world/);
   });
 
   it('🔴 [Zero] um cartucho que NÃO RESPONDE às suas acomodações é RECUSADO no arranque e no mount (ADR-0153)', async () => {
@@ -926,7 +926,7 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     expect(() => motor.mount({ ...declaracaoValida(), topology: undefined }, { acomodacoes: SEM_ASSUNTO })).toThrow(/malformada/);
     // ⚠️ E O CARTUCHO BOM CONTINUA MONTADO: uma recusa não pode deixar a raiz a meio caminho.
-    expect(motor.problems.join(' ')).not.toMatch(/mundo declarado/);
+    expect(motor.problems.join(' ')).not.toMatch(/declared world/);
   });
 
   it('[Right] `declaration` devolve o cartucho corrente', async () => {
@@ -1007,4 +1007,29 @@ describe('mount / unmount — uma raiz, vários cartuchos (ADR-0142)', () => {
     // igual em valor a nada e diferente em identidade da constante.
     expect(tabelaDoPad(1, 0), 'o pad ficou com a tabela do cartucho anterior em cache').toBe(GAMEPAD_STANDARD);
   });
+});
+
+describe('the shape of a line of `problems` (ADR-0169, issue #163)', () => {
+  it('🔴 [Right] every line is in English and says what it costs the child', async () => {
+    // 📏 Measured on 2026-09-13: of the lines this root pushed, the older were Portuguese («sem sítio para o menu de
+    // pausa…») and the newer English; several named the fix and not the child. A host that lacks almost everything
+    // gives the most lines at once: no markup, no bar, two seats with no pause actor, no preset, a world not in the page.
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso({ comMarcacao: false, ausentes: ['#title-icons', '#missing-world'] });
+    const motor = createGame({ acomodacoes: SEM_ASSUNTO,
+      declaration: { ...declaracaoValida(), world: () => ({ kind: 'element', selector: '#missing-world' }) },
+      host: { doc, win }, players: [{ ctrl: 'kb' }, { ctrl: 'kb' }],
+    });
+    const linhas = motor.problems;
+    expect(linhas.length, 'too few lines — the case would measure little').toBeGreaterThanOrEqual(5);
+    // Portuguese by its accents and its words that are not English words too («no», «do», «as» are left out)
+    const PORTUGUES = /[áàâãéêíóôõúüç]|\b(de|da|das|dos|para|com|sem|em|na|nos|nas|um|uma|ou|que|ao|aos|pelo|pela|seu|sua|mais|não)\b/i;
+    for (const l of linhas) {
+      expect(PORTUGUES.test(l), `a line in Portuguese: «${l.slice(0, 80)}»`).toBe(false);
+      expect(l, `a line that does not say what the child loses: «${l.slice(0, 80)}»`).toMatch(/\bchild\b/);
+    }
+  });
+  // MUTATIONS CHECKED (2026-09-13): the neural-voice line back in Portuguese 🔴 · «child» taken out of the pause-actor
+  // line 🔴. ⚠️ Browser-only lines (stylesheet, bar, resolution, floor, storage, flashes, dictionaries) are not reached by
+  // this node host; their Portuguese is still counted by `engine-i18n`, their «child» by review.
 });

@@ -398,7 +398,7 @@ describe('mount() rebuilds the pad for the new cartridge', () => {
     expect(document.querySelector('#touch-cross, #touch-stick'), 'a directional nobody named').toBeNull();
     expect(document.getElementById('touch-start'), 'the pause lost its only touch door').not.toBeNull();
     expect(document.getElementById('touch-select')).not.toBeNull();
-    expect(motor.problems.some((l) => /sem `preset`: o controle virtual mostra só SELECT e START/.test(l)), 'the gap was silent').toBe(true);
+    expect(motor.problems.some((l) => /the virtual pad shows only SELECT and START/.test(l)), 'the gap was silent').toBe(true);
   });
 
   it('🎯 [Boundary] a platform preset gets the cross with its arms drawn the way the bindings light them', () => {
@@ -412,7 +412,7 @@ describe('mount() rebuilds the pad for the new cartridge', () => {
       expect(cruz.querySelector(`.dpad-arm.dpad-${d}`), `arm ${d} without the classes that draw and light it`).not.toBeNull();
     }
     expect(botoes().map(funcao).sort(), 'the platform named two actions').toEqual(['Jump', 'Run']);
-    expect(motor.problems.some((l) => /sem `preset`/.test(l)), 'the old cartridge\'s gap outlived it').toBe(false);
+    expect(motor.problems.some((l) => /shows only SELECT and START/.test(l)), 'the old cartridge\'s gap outlived it').toBe(false);
   });
 
   it('🔴 [Right] the rebuilt buttons are WIRED — a mount does not leave dead buttons', () => {

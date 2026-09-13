@@ -468,7 +468,7 @@ describe('createGame num documento de verdade', () => {
 
       const motor = abrir({ host: { doc: document, win: window, a11yBarHost: barra } });
 
-      const linha = motor.problems.filter((p) => /barra de acessibilidade/.test(p) && /por cima/.test(p));
+      const linha = motor.problems.filter((p) => /accessibility bar/.test(p) && /draws over/.test(p));
       expect(linha, 'o jogo desenha por cima da barra e a engine cala-se').toHaveLength(1);
       expect(linha[0], 'a linha não nomeia o nó que invade — o consumidor fica a caçar').toMatch(/titulo-da-atividade/);
       expect(linha[0], 'a linha não diz por onde se conserta').toMatch(/--barra-a11y-h/);
@@ -494,7 +494,7 @@ describe('createGame num documento de verdade', () => {
       barra.style.cssText = 'position:absolute;left:10px;top:10px;width:300px;height:44px';
 
       const motor = abrir({ host: { doc: document, win: window, a11yBarHost: barra } });
-      expect(motor.problems.filter((p) => /por cima da barra/.test(p)), 'a transparent container was accused').toEqual([]);
+      expect(motor.problems.filter((p) => /draws over the accessibility bar/.test(p)), 'a transparent container was accused').toEqual([]);
     });
 
     it('🔴 [Right] a box with NO text that PAINTS a background over the bar is accused', () => {
@@ -508,7 +508,7 @@ describe('createGame num documento de verdade', () => {
       regiao.appendChild(barra);
       barra.style.cssText = 'position:absolute;left:10px;top:10px;width:300px;height:44px';
       const motor = abrir({ host: { doc: document, win: window, a11yBarHost: barra } });
-      const linha = motor.problems.filter((p) => /por cima da barra/.test(p));
+      const linha = motor.problems.filter((p) => /draws over the accessibility bar/.test(p));
       expect(linha, 'a painted box over the bar was not said').toHaveLength(1);
       expect(linha[0]).toMatch(/faixa-pintada/);
     });
@@ -516,7 +516,7 @@ describe('createGame num documento de verdade', () => {
     it('🎯 [Zero] sem nada por cima, a engine NÃO acusa — e declara a faixa reservada', () => {
       // O par. Sem ele, um crivo que acusasse sempre passaria o caso acima sem provar nada.
       const motor = abrir();
-      expect(motor.problems.filter((p) => /por cima da barra/.test(p)),
+      expect(motor.problems.filter((p) => /draws over the accessibility bar/.test(p)),
         'acusou sobreposição num jogo que não desenhou nada').toEqual([]);
       // 📌 E a faixa é DECLARADA onde o jogo a lê, ao lado do `--tap` e do `--alvo-min`.
       const regiao = document.querySelector('#game-region');

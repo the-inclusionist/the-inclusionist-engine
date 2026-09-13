@@ -621,17 +621,16 @@ export function lacunasDoToque(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo
   // ⚠️ SEM `preset` O PAD SÓ TEM SELECT E START (ADR-0162): nenhuma direção, nenhum botão — nem para andar nos menus.
   // É lacuna de quem integra, e diz-se.
   if (!spec.acoesDoJogo.size) {
-    return ['sem `preset`: o controle virtual mostra só SELECT e START — nenhuma direção nem botão, nem para andar nos '
-      + 'menus. Declare as posições que este jogo usa, com a palavra de cada uma, para que uma criança com tablet e sem '
-      + 'teclado consiga jogar e navegar'];
+    return ['the virtual pad shows only SELECT and START — no direction and no button: a child on a tablet without a '
+      + 'keyboard cannot play — declare `preset` with the positions this game uses and a word for each'];
   }
   // ⚠️ E A LACUNA PARCIAL TAMBÉM SE DIZ. Um jogo pode declarar uma acção que nenhum slot dispara: ela existe
   // no teclado e não existe no toque, e hoje isso não aparece em lado nenhum.
   const alcancadas = new Set(TOUCH_SLOTS.map((s) => spec.mapa[s.k]).filter(Boolean));
   const foraDoToque = [...spec.acoesDoJogo].filter((a) => !alcancadas.has(a));
   if (!foraDoToque.length) return [];
-  return [`o controle virtual não alcança ${foraDoToque.join(', ')}: nenhum dos nove slots dispara essas `
-    + 'acções. Quem joga por toque não as tem — remapeie um slot no painel do pad, ou declare menos acções'];
+  return [`the virtual pad does not reach ${foraDoToque.join(', ')}: no slot fires them, so a child playing by touch `
+    + 'does not have them — remap a slot in the pad panel, or declare fewer actions'];
 }
 
 // ===================== THE FOUR SIZES OF THE VIRTUAL PAD, one per persona (ADR-0151 erratum) =====================

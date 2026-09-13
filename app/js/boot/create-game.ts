@@ -631,7 +631,7 @@ export function createGame(o: CreateGameOptions): Engine {
   const $$ = <T extends Element = Element>(sel: string): T[] => [...doc.querySelectorAll<T>(sel)];
 
   for (const sel of MARCACAO_EXIGIDA) {
-    if (!$(sel)) problemasDoHospedeiro.push(`marcação ausente: ${sel}`);
+    if (!$(sel)) problemasDoHospedeiro.push(`the page lacks ${sel}: the engine announces and draws into it, and without it a child who listens hears nothing — add it to the page`);
   }
 
   // ⚠️ O MUNDO DECLARADO TEM DE EXISTIR NO DOCUMENTO, e esta é a falha que o ADR-0087 deixaria aberta se
@@ -670,24 +670,22 @@ export function createGame(o: CreateGameOptions): Engine {
     // O mundo declarado tem de existir na página — e quem o declara é o jogo, não o hospedeiro.
     const mundo = cartucho.declaration.world();
     if (mundo.kind === 'element' && !$(mundo.selector)) {
-      p.push(`mundo declarado não encontrado: ${mundo.selector}`);
+      p.push(`the declared world ${mundo.selector} is not in the page: the colour correction and vision filters a child turns on reach nothing — fix \`world()\``);
     }
     // ⚠️ MISTA, e fica deste lado por causa da segunda metade: a porta é do hospedeiro
     // (`carregarVozNeural`), mas o declínio é do CARTUCHO — logo a linha pode aparecer ou calar-se ao
     // trocar de jogo, com o mesmo hospedeiro.
     if (!o.carregarVozNeural && !declines().semVozNeural) {
       p.push(
-        'sem voz neural: declare `carregarVozNeural` (uma linha — ver ADR-0094) ou `declines.semVozNeural`. '
-        + 'Sem ela a criança que não lê fica com a voz do sistema, que em Chromebook de escola pode não existir '
-        + 'em português',
+        'there is no neural voice: a child who cannot read gets the system voice, which a school Chromebook may not have '
+        + 'for Portuguese — pass `carregarVozNeural` (ADR-0094) or declare `declines.semVozNeural`',
       );
     }
     const assentos = (cartucho.players ?? []).length;
     if (assentos > 1 && !declines().semAtorDePausa && !cartucho.setPauseActor) {
       p.push(
-        `declarou ${assentos} jogadores e não registra o ator da pausa: o painel de controle edita sempre o `
-        + 'assento 0, então ninguém além do primeiro consegue remapear. Declare `declines.semAtorDePausa` se '
-        + 'for de propósito',
+        `${assentos} players are declared and the pause actor is not set: the controls panel always edits seat 0, so `
+        + 'no child but the first can remap — pass `setPauseActor`, or declare `declines.semAtorDePausa` if on purpose',
       );
     }
     return p;
@@ -769,7 +767,7 @@ export function createGame(o: CreateGameOptions): Engine {
 
   // 4. Daltonismo: a engine ENTREGA o markup em vez de exigir que o consumidor o adivinhe (achado 7).
   const cvdFilters = installCvdFilters(o.host.cvdHost ?? null);
-  if (!cvdFilters) problemasDoHospedeiro.push('sem host de filtros (<svg>): a correção de daltonismo não foi montada');
+  if (!cvdFilters) problemasDoHospedeiro.push('there is no filter host (<svg>): colour-vision correction was not mounted, so a colour-blind child cannot turn it on — set `host.cvdHost`');
 
   // 4c. A BARRA DE ACESSIBILIDADE DA PRIMEIRA TELA. Ver a nota em `EngineHost.a11yBarHost`: cinco dos seis
   //     jogos do catálogo não têm nenhuma, e nada o dizia. Isto não a monta — diz que ela falta, que é o
@@ -777,7 +775,7 @@ export function createGame(o: CreateGameOptions): Engine {
   const a11yBar = o.host.a11yBarHost ?? $(SELETOR_BARRA_A11Y);
   if (!a11yBar) {
     problemasDoHospedeiro.push(
-      `sem barra de acessibilidade na primeira tela: declare \`host.a11yBarHost\` ou ponha um ${SELETOR_BARRA_A11Y} no documento. Sem ela a criança não alcança modo cego, TTS, alto contraste nem Libras antes de começar`,
+      `there is no accessibility bar on the first screen: a child cannot reach blind mode, narration or Libras before starting — set \`host.a11yBarHost\` or put a ${SELETOR_BARRA_A11Y} in the page`,
     );
   }
 
@@ -1180,7 +1178,7 @@ export function createGame(o: CreateGameOptions): Engine {
     && 'innerHTML' in a11yBar;
   if (a11yBar && !barraUsavel) {
     problemasDoHospedeiro.push(
-      'o elemento da barra de acessibilidade não aceita conteúdo nem clique: os ícones não foram montados',
+      'the accessibility bar element takes neither content nor clicks: its icons were not mounted, so a child cannot reach them — give `host.a11yBarHost` a real element',
     );
   }
 
@@ -1258,9 +1256,8 @@ export function createGame(o: CreateGameOptions): Engine {
   //  ANTES de decidir que ícones monta.)
   if (!pausaUsavel) {
     problemasDoHospedeiro.push(
-      'sem sítio para o menu de pausa: declare `host.pauseHost` ou tenha um #game-region que aceite filhos. '
-      + 'Sem ele a criança não alcança os ajustes durante a partida — e NÃO há como declinar: desde o '
-      + 'ADR-0122 a pausa é da engine em todo jogo, e o que este jogo declara é só ONDE ela cabe',
+      'the pause menu has nowhere to mount: a child cannot reach the settings during play — set `host.pauseHost` or give '
+      + '#game-region room for children (the pause is the engine\'s in every game, ADR-0122; the game only says where it fits)',
     );
   }
   if (hospedeiroDaPausa && pausaUsavel) {
@@ -1290,9 +1287,8 @@ export function createGame(o: CreateGameOptions): Engine {
       && regiao.contains(hospedeiroDaPausa);
     if (!dentroDoEscopo) {
       problemasDoHospedeiro.push(
-        'o hospedeiro da pausa está FORA de #game-region: os painéis de ajustes abrem e fecham, mas as setas '
-        + 'não andam dentro deles — a navegação de menu procura o diálogo de cima em `#game-region .overlay`. '
-        + 'Ponha `host.pauseHost` dentro de #game-region, ou quem só navega por teclado não alcança os ajustes',
+        'the pause host is outside #game-region: settings panels open, but arrows do not move inside them, so a child '
+        + 'who plays by keyboard cannot reach the settings — put `host.pauseHost` inside #game-region',
       );
     }
 
@@ -1384,8 +1380,8 @@ export function createGame(o: CreateGameOptions): Engine {
       acoesDaEngine.ajuda = painelDeAjuda.abrir;
     } else {
       problemasDoHospedeiro.push(
-        'sem `preset` a ajuda não é montada: ela lista POSIÇÃO ↔ tecla ↔ a palavra do jogo, e sem as palavras '
-        + 'só restaria mostrar `action2` a uma criança. Declare `preset` (ADR-0085) e o item de ajuda acende',
+        'the help screen was not mounted: it lists each position, its key and the game\'s word, and without `preset` it '
+        + 'could only show a child `action2` — declare `preset` (ADR-0085)',
       );
     }
 
@@ -1958,8 +1954,8 @@ export function createGame(o: CreateGameOptions): Engine {
     const { largura, altura } = escalaAplicada;
     if (Math.abs(r.width - largura) < 1 && Math.abs(r.height - altura) < 1) return null;
     return `the cartridge sized #game-region to ${Math.round(r.width)}×${Math.round(r.height)} over the engine's `
-      + `${Math.round(largura)}×${Math.round(altura)}: the resolution is the engine's (ADR-0163) — lay the game out `
-      + 'inside the region and read `--ui-fs` and `--alvo-min`';
+      + `${Math.round(largura)}×${Math.round(altura)}: text and targets stop following the screen, so a child with low vision `
+      + 'gets them small — the resolution is the engine\'s (ADR-0163): lay the game out inside the region and read `--ui-fs` and `--alvo-min`';
   }
   /**
    * The engine's own nodes in the region (bar, pause card, panels, pad, footer, PAUSED, crash banner) — its sizes are held
@@ -1988,8 +1984,9 @@ export function createGame(o: CreateGameOptions): Engine {
       texto.length ? `text under ${8 * k} px (${texto.slice(0, 4).join(', ')})` : '',
       alvos.length ? `targets under ${22 * k} px (${alvos.slice(0, 4).join(', ')})` : '',
     ].filter(Boolean);
-    return `the cartridge draws ${partes.join(' and ')} in #game-region: text and targets start at 16 and 44 px at `
-      + '640×360 and grow with the scale (ADR-0163) — size them from `--ui-fs` and `--alvo-min`';
+    return `the cartridge draws ${partes.join(' and ')} in #game-region: a child with low vision or unsteady hands cannot `
+      + 'read or hit them — text and targets start at 16 and 44 px at 640×360 and grow with the scale (ADR-0163): size them '
+      + 'from `--ui-fs` and `--alvo-min`';
   }
   function aplicarResolucao(): void {
     const regiao = $<HTMLElement>('#game-region');
@@ -2087,9 +2084,8 @@ export function createGame(o: CreateGameOptions): Engine {
     const invasores = medirInvasoresDaBarra();
     if (invasores.length) {
       problemasDoHospedeiro.push(
-        `o jogo desenha por cima da barra de acessibilidade (${invasores.slice(0, 4).join(', ')}): ela é HUD e `
-        + 'o rectângulo dela é reservado. Quem depende dos botões para começar a jogar não os alcança, e nada '
-        + 'falha — leia `--barra-a11y-h` no `#game-region` e deixe essa faixa livre',
+        `the game draws over the accessibility bar (${invasores.slice(0, 4).join(', ')}): a child who needs its buttons `
+        + 'to start cannot reach them — read `--barra-a11y-h` on #game-region and leave that room free (ADR-0148)',
       );
     }
   }
@@ -2905,7 +2901,7 @@ export function createGame(o: CreateGameOptions): Engine {
     if (!estilo || typeof estilo.getPropertyValue !== 'function') return [];
     return estilo.getPropertyValue('--incl-engine-stylesheet').trim() ? [] : [`the page does not link the engine stylesheet \
 (package export \`the-inclusionist-engine/style.css\`): panels, the footer band, the target floor and the focus rings are \
-unstyled`];
+unstyled, so a child who plays by keyboard cannot see where focus is — link that stylesheet`];
   }
 
   /*
@@ -2935,9 +2931,9 @@ unstyled`];
     const novas = [...chavesDoArmazenamento()].filter((k) => !chavesNoArranque.has(k));
     const fora = store.chavesForaDosEscopos(novas);
     if (!fora.length) return [];
-    return [`the cartridge stored keys outside the engine's scopes (${fora.slice(0, 5).join(', ')}): what belongs to `
-      + 'the child goes under incl_* through the engine\'s settings, and what belongs to the game under incl.<game>.* '
-      + '(storage.kJogo)'];
+    return [`the cartridge stored keys outside the engine's scopes (${fora.slice(0, 5).join(', ')}): a child's settings `
+      + 'kept there do not follow them to the next game, and a game\'s own collide with other games\' — what belongs to '
+      + 'the child goes under incl_* through the engine\'s settings, what belongs to the game under incl.<game>.* (storage.kJogo)'];
   }
 
   const problemasMedidos: string[] = [];
@@ -2987,7 +2983,7 @@ unstyled`];
         const { passa, piorSegundo } = analisarFlashes(quadros);
         if (!passa) {
           problemasMedidos.push(`the world's canvas flashed ${piorSegundo} times in one second within a 10-degree field `
-            + '(WCAG 2.3.1 allows 3): it can trigger seizures');
+            + '(WCAG 2.3.1 allows 3): it can trigger a seizure in a child with photosensitive epilepsy — slow or dim it');
         }
         resolver({ lido: true, passa, piorSegundo });
       };
