@@ -136,6 +136,7 @@ docs/
 | `1-Discovery/NFR.md` | The 10 pillars as testable non-functional requirements | dev (constraints), reviewer (audit) |
 | `game-design/` | Game craft: Art Bible, character/animation, typography, genre catalog, LM-GM map, game feel | dev, designer |
 | `1-Discovery/Event-Storming.md` | Deferred DDD scope for telemetry + Student Manager | (future) |
+| `1-Discovery/study-adr-rules-the-engine-does-not-impose.md` | What the ADRs require that `createGame` does not impose on a cartridge (hypothetical rule, 2026-09-12) | Dev (decision), dev |
 | `2-Architecture/` … `6-DevOps-SRE/` | The remaining SDD phases — decided section by section (see §… of this doc's evaluation) | dev, reviewer |
 | `research/` | Studies with sources that justify decisions | reviewer (evidence), dev |
 
