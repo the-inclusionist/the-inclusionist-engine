@@ -109,18 +109,24 @@ function cascaDoPalco(): HTMLElement | null {
   return $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap');
 }
 
-/** The scale ADR-0001 gives a stage: the integer factor in REAL pixels, the CSS factor, and the region's CSS size. */
+/**
+ * The scale ADR-0001 gives a stage: the factor in REAL pixels (whole, except at the floor — ADR-0179), the CSS factor, and
+ * the region's CSS size.
+ */
 export interface Escala { readonly kDev: number; readonly k: number; readonly largura: number; readonly altura: number }
 
 /**
  * ADR-0001 AS A PURE FUNCTION — so the engine can apply it to every cartridge (ADR-0163) and a test can pin it.
  *
- * Integer multiple of 320×180 (per the screen grid) in REAL pixels; never under 2× (640×360 per viewport); up to 5
- * logical px of crop per side when that buys one more step (the `−10`: `base·kDev − avail·dpr ≤ 10·kDev`).
+ * Integer multiple of 320×180 (per the screen grid) in REAL pixels; up to 5 logical px of crop per side when that buys one
+ * more step (the `−10`: `base·kDev − avail·dpr ≤ 10·kDev`). Never under 2 CSS px per logical pixel — 640×360 CSS, text 16 px,
+ * targets 44 px: where the whole multiple gives less (a fractional display scale on the minimum window) the scale is exactly
+ * 2 CSS px, whole in real pixels or not, because WCAG 2.2 AA decides (ADR-0179).
  */
 export function escalaDoPalco(availW: number, availH: number, dpr: number, baseW: number, baseH: number): Escala {
   const MIN_K = 2;
-  const kDev = Math.max(Math.round(MIN_K * dpr), Math.floor(Math.min(availW * dpr / (baseW - 10), availH * dpr / (baseH - 10))));
+  const inteiro = Math.floor(Math.min(availW * dpr / (baseW - 10), availH * dpr / (baseH - 10)));
+  const kDev = inteiro / dpr >= MIN_K ? inteiro : MIN_K * dpr;
   const k = kDev / dpr;
   return { kDev, k, largura: baseW * k, altura: baseH * k };
 }

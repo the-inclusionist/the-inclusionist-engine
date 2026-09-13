@@ -18,8 +18,10 @@ function regiaoFalsa() {
 }
 
 describe('one target ruler', () => {
-  it('🔴 [Right] at a 110% display scale, `--tap` is not under the 44 px floor — it is `--alvo-min`', () => {
-    const e = escalaDoPalco(640, 360, 1.1, 320, 180);
+  it('🔴 [Right] with a scale under 2 CSS px per logical pixel, `--tap` is not under the 44 px floor — it is `--alvo-min`', () => {
+    // Since ADR-0179 `escalaDoPalco` no longer returns such a scale (it was k = 1.82 at 110% on the minimum window); the
+    // ruler still holds for one, built here by hand, so a future scale rule cannot drop the tap target again.
+    const e = { kDev: 2, k: 2 / 1.1, largura: 320 * (2 / 1.1), altura: 180 * (2 / 1.1) };
     expect(e.k, 'the case needs a scale under 2 CSS px per logical pixel').toBeLessThan(2);
     const r = regiaoFalsa();
     aplicarEscala(r, e);
