@@ -31,7 +31,7 @@ again), one download at a time, in the background.
 | **T**ampering | A CDN or a mirror serves altered JavaScript or WebAssembly, and it runs in the child's page | B2, B4 | Versions pinned in the URL; the host list is an inventory (`nada-vem-de-fora`, `nada-de-cdn-a-mao`) | ✅ Heavy files held since #168: a measured `sha256` per entry, checked before `cache.put`; the service worker only reads that cache. ✅ And `webgazer.js` since #169: it runs from those checked bytes (a `blob:`), never fetched on first use |
 | **T**ampering | An altered model is cached and served offline from then on | B1, B3 | Cache versioned by name; `incl-pesados-v2` holds only checked bytes (#168) | ✅ Held — an altered body is refused and reported |
 | **T**ampering | Adult-written text injects markup | B5 | The sink census (#106, closed; none left to review) and the `html-sinks` gate; `registerDict` refuses markup; `escaparHtml` in the quiz | ✅ Held — every new sink is a gate failure |
-| **T**ampering | The bundle is altered between host and device | B7 | HTTPS; Workbox precache by content hash | ⚠️ **No Content-Security-Policy** in `_headers`: nothing limits which hosts may run script |
+| **T**ampering | The bundle is altered between host and device | B7 | HTTPS; Workbox precache by content hash | ✅ Held since #170: a Content-Security-Policy in `_headers` — script only from this origin, the checked `blob:` and the pinned jsDelivr runtimes; fetches only to the catalogue's hosts; measured blocking an outside script and an inline one |
 | **I**nformation disclosure | Every fetch tells a third party the school's IP address and when a child played | B1–B4 | — | 🔴 **Not held.** An IP address is personal data under LGPD; the requests go to four companies before any adult is asked. This is a decision, not only code |
 | **I**nformation disclosure | A game reads the child's settings or another game's data | B6 | Two storage scopes (ADR-0027 step 7); keys outside them said in `problems` (E2) | ⚠️ Same-origin games share `localStorage` by design (the child's settings follow them); no child data is stored (ADR-0037) |
 | **E**levation of privilege | Third-party script runs with the page's powers: storage, DOM, speech, camera once granted | B4, B2 | — | ⚠️ Reduced, not removed: since #168/#169 only the pinned bytes run, but `webgazer.js` and the JS runtimes still execute as the page, and eye control holds the camera stream |
@@ -43,7 +43,7 @@ again), one download at a time, in the background.
 
 - ✅ Every heavy download is verified against a pinned `sha256` before it enters Cache Storage (#168).
 - ✅ `webgazer.js` runs from the checked cache, not the network (#169).
-- Add a Content-Security-Policy to `_headers` naming the hosts that may serve script, and `connect-src` for the rest (#170).
+- ✅ A Content-Security-Policy in `_headers` names the hosts that may serve script and be fetched (#170).
 - ⏸ **For the Dev:** whether a child's machine may contact Hugging Face, jsDelivr, Google and Brown without an adult
   being told — or the heavy files are served from the project's own origin.
 
