@@ -110,6 +110,36 @@ function cascaDoPalco(): HTMLElement | null {
   return $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap');
 }
 
+/** The scale ADR-0001 gives a stage: the integer factor in REAL pixels, the CSS factor, and the region's CSS size. */
+export interface Escala { readonly kDev: number; readonly k: number; readonly largura: number; readonly altura: number }
+
+/**
+ * ADR-0001 AS A PURE FUNCTION — so the engine can apply it to every cartridge (ADR-0163) and a test can pin it.
+ *
+ * Integer multiple of 320×180 (per the screen grid) in REAL pixels; never under 2× (640×360 per viewport); up to 5
+ * logical px of crop per side when that buys one more step (the `−10`: `base·kDev − avail·dpr ≤ 10·kDev`).
+ */
+export function escalaDoPalco(availW: number, availH: number, dpr: number, baseW: number, baseH: number): Escala {
+  const MIN_K = 2;
+  const kDev = Math.max(Math.round(MIN_K * dpr), Math.floor(Math.min(availW * dpr / (baseW - 10), availH * dpr / (baseH - 10))));
+  const k = kDev / dpr;
+  return { kDev, k, largura: baseW * k, altura: baseH * k };
+}
+
+/**
+ * Writes a scale onto the game region: its size, and the UI variables that grow with it.
+ *
+ * ⚠️ HOST-INJECTED (the region is passed in, the height of the available space too): `createGame` serves documents that
+ * are not the global one — the fault the root's finding 15 names about reaching `document` from under the injection.
+ */
+export function aplicarEscala(regiao: HTMLElement, e: Escala, alturaDisponivel: number): void {
+  regiao.style.width = e.largura + 'px'; regiao.style.height = e.altura + 'px';
+  regiao.style.setProperty('--hud-fs', Math.max(9, Math.round(180 * e.k * 0.052)) + 'px');
+  regiao.style.setProperty('--ui-fs', (8 * e.k) + 'px');   // base LÓGICA 8px × k (16px em k=2)
+  regiao.style.setProperty('--tap', (22 * e.k) + 'px');    // toque 22px × k (44px em k=2, piso WCAG)
+  regiao.style.setProperty('--alvo-min', alvoMinimoDeToque(alturaDisponivel) + 'px');
+}
+
 export function layout(): void {
   const wrap = cascaDoPalco(); if (!wrap) return;
   wrap.style.paddingRight = '0px';
@@ -121,29 +151,20 @@ export function layout(): void {
   //  `screenBaseSize`, logo abaixo. Era uma chamada paga a cada `layout()` por nada. `noUnusedLocals` achou.)
   const { w: baseW, h: baseH } = screenBaseSize(n);
   // Piso k=2: CADA viewport tem no mínimo 640×360. Assim 2×2 = 1280×720 cabe num Chromebook do governo (1366×768).
-  const MIN_K = 2;
   // ADR-001 (CORRIGIDO 2026-07-04): ESCALA travada em PIXELS REAIS INTEIROS. Cada pixel de arte = kDev pixels
   // FÍSICOS (inteiro) → scanlines SEMPRE regulares e arte uniforme em QUALQUER dpr. Tolera ≤5px lógicos de corte
   // por lado (o −10): base·kDev − avail·dpr ≤ 10·kDev ⇒ kDev ≤ avail·dpr/(base−10). (José escolheu inteiro-REAL.)
+  // A conta mora em `escalaDoPalco` desde o ADR-0163, para a engine a aplicar a todo cartucho.
   const dpr = window.devicePixelRatio || 1;
-  const kDev = Math.max(Math.round(MIN_K * dpr), Math.floor(Math.min(availW * dpr / (baseW - 10), availH * dpr / (baseH - 10))));
-  const k = kDev / dpr; // fator LÓGICO/CSS (kDev = fator em pixels REAIS, inteiro)
+  const escala = escalaDoPalco(availW, availH, dpr, baseW, baseH);
+  const { kDev, k } = escala;
   // ESCALA das vars de UI é ESCOPADA ao #game-region: só a UI DENTRO do canvas (menus/HUD/pausa/quiz) escala com o
   // k. Fora do canvas (barra de topo, painel de debug) herda o :root → texto SEMPRE 16px, toque 44px (José).
   const gr = $<HTMLElement>('#game-region'); if (gr) {
-    gr.style.width = (baseW * k) + 'px'; gr.style.height = (baseH * k) + 'px';
-    gr.style.setProperty('--hud-fs', Math.max(9, Math.round(180 * k * 0.052)) + 'px');
-    gr.style.setProperty('--ui-fs', (8 * k) + 'px');   // base LÓGICA 8px × k (16px em k=2)
-    gr.style.setProperty('--tap', (22 * k) + 'px');    // toque 22px × k (44px em k=2, piso WCAG)
     // ⚠️ O PISO DA RÉGUA (ADR-0095), e ele é OUTRA COISA que o `--tap`. O `--tap` é o tamanho PREFERIDO e
-    // cresce com a escala do canvas; `--alvo-min` é o CHÃO por altura de tela — 24 px abaixo de 540, 34 a
-    // partir de 540, 44 a partir de 720. Um botão isolado usa o preferido; um item de LISTA, que tem de
-    // caber inteiro na tela, usa o chão.
-    //
-    // ⚠️ A ALTURA É A DO ESPAÇO DISPONÍVEL, e não a da sub-tela de um jogador: o dedo toca o aparelho, não
-    // o viewport lógico. Em quatro telas divididas cada uma tem 180 px de alto, e encolher o alvo por causa
-    // disso seria ler o número errado — o aparelho continua o mesmo.
-    gr.style.setProperty('--alvo-min', alvoMinimoDeToque(availH) + 'px');
+    // cresce com a escala do canvas; `--alvo-min` é o CHÃO por altura de tela. ⚠️ A ALTURA É A DO ESPAÇO DISPONÍVEL,
+    // e não a da sub-tela de um jogador: o dedo toca o aparelho, não o viewport lógico. (Escrito em `aplicarEscala`.)
+    aplicarEscala(gr, escala, availH);
   }
   crtScanVars(); // scanlines re-alinham quando a escala k muda
   if (/[?&]debug=true/.test(location.search)) console.info(`[escala] kDev=${kDev}× px REAIS (canvas físico ${baseW * kDev}×${baseH * kDev} = múltiplo INTEIRO de ${baseW}×${baseH}); CSS ${Math.round(baseW * k)}×${Math.round(baseH * k)} (k=${k.toFixed(3)}, dpr=${dpr})`);

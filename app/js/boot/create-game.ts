@@ -78,7 +78,8 @@ import { ehCego, ehBaixaVisao, PADRAO, filtroChave, simulacaoIndisponivel, type 
 import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
 import { cicloDeTipografia, INICIO_DO_CICLO, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
-import { invasoresDaBarra, type Caixa } from '../ui/layout.js';
+import { invasoresDaBarra, escalaDoPalco, aplicarEscala, type Caixa } from '../ui/layout.js';
+import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
@@ -1864,6 +1865,28 @@ export function createGame(o: CreateGameOptions): Engine {
    * `getBoundingClientRect`, e lê-lo às cegas derrubaria o boot num ambiente sem DOM — que é metade dos
    * testes desta árvore. Sem a medida, não se acusa: silêncio é melhor do que uma acusação inventada.
    */
+  /*
+   * A RESOLUÇÃO É DA ENGINE (ADR-0163), e o cartucho não tem outra.
+   *
+   * 🔴 O `createGame` nunca corria o ADR-0001: medido, o quiz saía a 569×395 — nem múltiplo de 320×180 nem 640 de
+   * largura —, e o piso de alvo por altura nunca era escrito. O Dev: «A Engine deve forçar isso e guiar esta construção,
+   * de modo que o cartucho não tenha alternativa». A região passa a ter o maior múltiplo inteiro de 320×180 em pixels
+   * REAIS que cabe no palco, nunca menos de 640×360, com a tolerância de ≤5 px lógicos de corte por lado — e de novo a
+   * cada mudança de tamanho da janela.
+   * ⚠️ O PALCO é a casca `#stage-wrap`/`.stage-wrap` quando existe; sem ela, o pai da região — o espaço que ela tem.
+   * ⚠️ POR CAPACIDADE, como o resto: um duplo sem `style.setProperty` não é redimensionado, e o boot não cai por isso.
+   */
+  function aplicarResolucao(): void {
+    const regiao = $<HTMLElement>('#game-region');
+    const palco = $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap') ?? (regiao?.parentElement ?? null);
+    if (!regiao || !palco || typeof regiao.style?.setProperty !== 'function') return;
+    const { w, h } = screenBaseSize(Math.max(1, players().length));
+    const altura = palco.clientHeight || h;
+    aplicarEscala(regiao, escalaDoPalco(palco.clientWidth || w, altura, win.devicePixelRatio || 1, w, h), altura);
+  }
+  aplicarResolucao();
+  if (typeof win.addEventListener === 'function') win.addEventListener('resize', aplicarResolucao);
+
   function medirInvasoresDaBarra(): string[] {
     const regiao = $<HTMLElement>('#game-region');
     if (!a11yBar || !regiao || typeof (a11yBar as HTMLElement).getBoundingClientRect !== 'function') return [];

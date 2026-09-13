@@ -1229,8 +1229,11 @@
   "ui/layout.ts": [
     "Caixa",
     "CaixaNomeada",
+    "Escala",
     "REGUA_DE_ALVO",
     "alvoMinimoDeToque",
+    "aplicarEscala",
+    "escalaDoPalco",
     "initLayout",
     "invasoresDaBarra",
     "layout"

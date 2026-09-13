@@ -1805,6 +1805,9 @@
     ],
     "interface Caixa": [
       "x"
+    ],
+    "interface Escala": [
+      "kDev"
     ]
   },
   "ui/loop-crash.ts": {
