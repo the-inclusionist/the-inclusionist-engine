@@ -73,6 +73,9 @@ const pt: Record<string, string> = {
   // gênero gramatical, e o `gender` do Speakable fica para as frases que precisam concordar.
   'hud.contador': '{have} de {need} {nome}',
   'hud.numero': '{nome}: {valor}',
+  'hud.barra': '{nome}: {azuis} de primeira, {verdes} com ajuda, {vermelhos} sem acertar',
+  'hud.barra.sobe': 'o nível sobe',
+  'hud.barra.desce': 'o nível desce',
   // O NOME do que este jogo junta. Currículo não se traduz (pilar 3), mas "moedas" não é currículo — é um
   // substantivo comum da interface, e a criança que joga em inglês tem de ouvir "coins". Por isso o nome
   // atravessa por `{nome}` JÁ RESOLVIDO pelo jogo, e a chave mora aqui.

@@ -6,8 +6,8 @@
 // o jogo declarando os números por faixa», and «Superpoder e contador de objetivo ficam ABAIXO da barra de acessibilidade
 // rápida».
 //
-// 📌 Geometry, so a real stylesheet and a 640×360 stage. The clock (the adult's, ADR-0050) and the learning bars (ADR-0049 §5)
-// have no producer yet and are not mounted — nothing here measures them.
+// 📌 Geometry, so a real stylesheet and a 640×360 stage. The session clock is the adult's (ADR-0050) and nothing holds a session
+// length yet: it is not mounted, and nothing here measures it.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
@@ -37,6 +37,12 @@ const nome = (text) => ({ text, gender: 'm', plural: true });
 const HUD = () => [
   { band: 'identity', name: nome('Pontos'), value: () => pontos },
   { band: 'round', name: nome('moedas'), value: () => ({ have: 3, need: 10 }) },
+];
+/** Two skills: eleven questions of addition (the bar keeps the last ten) turned purple, and two of reading. */
+const BARRAS = () => [
+  { band: 'learning', name: nome('Adição'), value: () => ({
+    segmentos: ['vermelho', 'verde', 'azul', 'azul', 'vermelho', 'azul', 'azul', 'azul', 'azul', 'azul', 'verde'], cor: 'roxa' }) },
+  { band: 'learning', name: nome('Leitura'), value: () => ({ segmentos: ['azul', 'vermelho', 'verde'], cor: 'nenhuma' }) },
 ];
 const abrir = (extra = {}) => createGame({
   acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, ...extra,
@@ -172,7 +178,74 @@ describe('the HUD the engine mounts (issue #162)', () => {
     } finally { forcar.remove(); }
   });
 
+  it('🔴 [Right] one learning bar per skill, side by side, centred at the bottom', async () => {
+    motor = abrir({ hud: BARRAS() });
+    await esperar(80);
+    const regiao = caixa('#game-region');
+    const barras = [...document.querySelectorAll('.hud-barra')].map((b) => b.getBoundingClientRect());
+    expect(barras.length).toBe(2);
+    const faixa = caixa('.hud-aprendizagem');
+    expect(regiao.bottom - faixa.bottom, 'not at the bottom').toBeLessThanOrEqual(8);
+    expect(Math.abs((faixa.left + faixa.right) / 2 - (regiao.left + regiao.right) / 2), 'not centred').toBeLessThanOrEqual(2);
+    expect(Math.abs(barras[0].top - barras[1].top), 'not side by side').toBeLessThanOrEqual(1);
+    expect(cruza(barras[0], barras[1])).toBe(false);
+  });
+
+  it('🔴 [Right] a bar shows the last ten segments, oldest first, and each state has a cue besides colour', async () => {
+    motor = abrir({ hud: BARRAS() });
+    await esperar(80);
+    const [adicao, leitura] = document.querySelectorAll('.hud-barra');
+    const segs = (b) => [...b.querySelectorAll('.hud-seg')].map((s) => s.dataset.seg);
+    expect(segs(adicao)).toEqual(['verde', 'azul', 'azul', 'vermelho', 'azul', 'azul', 'azul', 'azul', 'azul', 'verde']);
+    expect(segs(leitura)).toEqual(['azul', 'vermelho', 'verde', 'vazio', 'vazio', 'vazio', 'vazio', 'vazio', 'vazio', 'vazio']);
+    const estilo = (b, i) => getComputedStyle(b.querySelectorAll('.hud-seg')[i]);
+    expect(estilo(leitura, 0).backgroundColor, 'first-time right is not the Okabe-Ito blue').toBe('rgb(0, 114, 178)');
+    expect(estilo(leitura, 2).backgroundImage, 'a green segment has no cue but colour').not.toBe('none');
+    expect(estilo(leitura, 1).backgroundImage, 'a red segment has no cue but colour').not.toBe('none');
+    expect(estilo(leitura, 0).backgroundImage, 'blue carries a pattern too — the cues no longer tell the states apart').toBe('none');
+    expect(estilo(leitura, 3).borderTopWidth, 'an empty slot has no outline').not.toBe('0px');
+    expect(getComputedStyle(adicao, '::after').content, 'a purple bar has no cue but colour').toBe('"▲"');
+    expect(estilo(adicao, 1).backgroundColor, 'the purple bar does not cover its segments').toBe('rgb(204, 121, 167)');
+  });
+
+  it('🔴 [Right] a bar is named for a listener: the skill, the counts and the level', async () => {
+    motor = abrir({ hud: BARRAS() });
+    await esperar(80);
+    const [adicao, leitura] = document.querySelectorAll('.hud-barra');
+    expect(adicao.getAttribute('role')).toBe('img');
+    expect(adicao.getAttribute('aria-label')).toMatch(/^Adição: 7 .*2 .*1 .*(sobe|goes up|sube)/);
+    expect(leitura.getAttribute('aria-label')).toMatch(/^Leitura: 1 .*1 .*1 /);
+    expect(leitura.getAttribute('aria-label')).not.toMatch(/sobe|goes up|sube|desce|goes down|baja/);
+  });
+
+  it('🔴 [Right] the explanation band covers the bars while it shows — also when the footer was there first', async () => {
+    // both are `pointer-events: none`, which `elementFromPoint` skips: turned on here only, so the hit test reads paint order
+    const tocar = document.createElement('style');
+    tocar.textContent = '.rodape-da-tela, .rodape-da-tela *, .hud-faixa, .hud-faixa * { pointer-events: auto !important }';
+    document.head.appendChild(tocar);
+    const coberta = () => [...document.querySelectorAll('.hud-barra')].every((b) => {
+      const r = b.getBoundingClientRect();
+      // the runner's frame can be narrower than the 640 px stage, and a point outside it hits nothing: sample inside both
+      const x = Math.max(r.left + 2, Math.min((r.left + r.right) / 2, window.innerWidth - 2));
+      if (x >= r.right) throw new Error('the bar is outside the runner viewport; nothing to measure');
+      return document.elementFromPoint(x, (r.top + r.bottom) / 2)?.closest('.rodape-da-tela') != null;
+    });
+    motor = abrir({ hud: BARRAS() });
+    await esperar(80);
+    const icone = document.querySelector('#title-icons .pi-btn');
+    icone.focus();
+    icone.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+    await esperar();
+    expect(document.querySelector('.barra-explicacao')?.hidden, 'no explanation showing — the case measures nothing').toBe(false);
+    expect(coberta(), 'the explanation does not cover the learning bars').toBe(true);
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, hud: BARRAS() });
+    await esperar(80);
+    expect(coberta(), 'a cartridge mounted after the footer drew its bars over the explanation').toBe(true);
+    tocar.remove();
+  });
+
   it('🔴 [Right] a malformed list is refused, at boot and at mount', () => {
+    expect(() => abrir({ hud: [...BARRAS(), ...BARRAS()] }), 'four bars are not a reading').toThrow(/4 learning bars/);
     expect(() => abrir({ hud: [{ band: 'clock', name: nome('tempo'), value: () => 1 }] })).toThrow(/hud\[0\]\.band/);
     motor = abrir();
     expect(() => motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, hud: [{ band: 'round', name: nome(''), value: () => 1 }] }))
@@ -194,3 +267,15 @@ describe('the HUD the engine mounts (issue #162)', () => {
 //   H11 the HUD not excluded from the text floor              🔴 not accused
 //   H12 the wrapped identity not counted in the room          🔴 long identity (SURVIVED with one line: case strengthened)
 //   H13 the HUD not excluded from the bar check               🔴 not blamed (SURVIVED with the HUD in place: case added)
+//   L1 the learning band appended after the footer            🔴 covered, footer there first
+//   L2 a bar without its accessible name                      🔴 named
+//   L3 not the last ten segments                              🔴 segments · named
+//   L4 four bars accepted                                     🔴 refused
+//   L5 green without its dot                                  🔴 cue besides colour
+//   L6 red without its stripes                                🔴 cue besides colour
+//   L7 purple without its arrow                               🔴 cue besides colour
+//   L8 the bars off the bottom                                🔴 at the bottom · covered
+//   L9 empty slots unmarked                                   🔴 segments
+//   L10 the bar's colour not applied                          🔴 purple covers
+//   L11 the level not said                                    🔴 named
+//   L12 the bars on a layer above the footer                  🔴 covered

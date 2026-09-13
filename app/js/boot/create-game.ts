@@ -284,7 +284,8 @@ export interface CreateGameOptions {
   readonly controleNaTela?: boolean;
   /**
    * THE NUMBERS THIS GAME SHOWS, each in the band of what it is about (ADR-0168; ADR-0059 §1; issue #162). The engine mounts
-   * the HUD and places them: `identity` top left beside the quick bar, `round` below it; the room the game leaves free at the
+   * the HUD and places them: `identity` top left beside the quick bar, `round` below it, `learning` bars (one to three, as
+   * `educational/segment-bar.barraDe` returns them) centred in the footer, under the explanation; the room the game leaves free at the
    * top (`--barra-a11y-h`) grows by what they take. Absent = no HUD mounted, and the game keeps drawing its own.
    * 📏 Measured on 2026-09-13: six sibling games, six HUDs of their own, none in the bands.
    * A malformed list is refused at boot and at `mount`, like the declaration.

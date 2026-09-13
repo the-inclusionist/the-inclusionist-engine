@@ -606,6 +606,22 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .hud-faixa[hidden]{display:none}
 .hud-identidade{top:10px;left:4px;flex-direction:column;align-items:flex-start}
 .hud-rodada{left:50%;transform:translateX(-50%);flex-direction:row;flex-wrap:wrap;justify-content:center;gap:.5em;max-width:calc(100% - 8px)}
+/* The learning bars (ADR-0049 §5): one ten-segment bar per skill, side by side, centred at the bottom — under the footer
+   column, which comes later in the region on the same layer and covers them. Okabe-Ito colours, and a second cue beside
+   each, so no state is told by colour alone (WCAG 1.4.1): green carries a dot, red stripes, an empty slot only its outline;
+   a purple bar a ▲, an orange one a ▼. */
+.hud-aprendizagem{left:50%;bottom:4px;transform:translateX(-50%);flex-direction:row;gap:.75em}
+.hud-barra{display:flex;align-items:center;gap:.15em;padding:.2em .3em;background:rgba(8,8,16,.92);border-radius:8px}
+.hud-seg{display:block;width:.8em;height:1em;border-radius:2px;box-sizing:border-box}
+.hud-seg[data-seg="vazio"]{border:1px solid #8a8f98}
+.hud-seg[data-seg="azul"]{background:#0072B2}
+.hud-seg[data-seg="verde"]{background:radial-gradient(circle,#08080f 0 .14em,transparent .16em),#009E73}
+.hud-seg[data-seg="vermelho"]{background:repeating-linear-gradient(45deg,#08080f 0 .12em,transparent .12em .3em),#D55E00}
+.hud-barra[data-cor="roxa"] .hud-seg:not([data-seg="vazio"]){background:#CC79A7}
+.hud-barra[data-cor="laranja"] .hud-seg:not([data-seg="vazio"]){background:#E69F00}
+.hud-barra[data-cor="roxa"]::after,.hud-barra[data-cor="laranja"]::after{color:#f6f5f0;font-size:1em;line-height:1;margin-left:.15em}
+.hud-barra[data-cor="roxa"]::after{content:"▲"}
+.hud-barra[data-cor="laranja"]::after{content:"▼"}
 .hud-numero{margin:0;padding:0 .3em;color:#f6f5f0;background:rgba(8,8,16,.92);border-radius:8px;max-width:100%;overflow-wrap:anywhere}
 .rodape-da-tela{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;flex-direction:column;gap:0;pointer-events:none}
 .rodape-da-tela:not(:has(> :not([hidden]))){display:none}
