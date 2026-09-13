@@ -104,7 +104,9 @@ import { initLqFilter, setLq, getLqT, lqFilter } from '../render/lq-filter.js';
 import { initCrt, applyCrt, crtScanVars } from '../render/crt.js';
 import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type SettingsAudioApi } from '../ui/settings-audio.js';
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
-import { toggleBtn } from '../ui/dom.js';
+import { toggleBtn, toggleLabel } from '../ui/dom.js';
+import { criarFiltroMotor } from '../input/motor-simulation.js';
+import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
 import * as store from '../platform/storage.js';
 import { initMenuNav, partesDoControle, type MenuNavApi } from '../ui/menu-nav.js';
@@ -1536,7 +1538,9 @@ export function createGame(o: CreateGameOptions): Engine {
      *     delas é vazio ou só um desfoque; o que as desenha é uma camada DOM do jogo de plataforma, que esta raiz não tem.
      *     Oferecê-las mostraria outra coisa com o nome da deficiência;
      *   · a PERDA AUDITIVA (`platform/audio.setHearingLossGraph`, que já é da engine).
-     * ⚠️ Sem cadeira de rodas (cortada pelo ADR-0151) e sem «um botão só» (não há escritor na engine: Fase 5).
+     *   · the two MOTOR simulations (ADR-0181): «um botão por vez» and «sem força para segurar», applied to game keys by
+     *     the filter at the end of the boot, before any cartridge hears them.
+     * ⚠️ Sem cadeira de rodas (cortada pelo ADR-0151).
      * ⚠️ E a simulação respeita o ADR-0076: com uma correcção de cor ligada ela não corre, e DIZ porquê.
      */
     const SIMULACOES_DO_MUNDO = ['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'blind'];
@@ -1549,12 +1553,33 @@ export function createGame(o: CreateGameOptions): Engine {
         rotuloFechar: t('pause.pmback'),
       }),
       // a linha da perda auditiva nasceu no idioma de recuo: reetiquetada a cada abertura, como o interior auditivo
-      render: () => { rotularLinha(linhaDaAudicao, specDaAudicao()); empatia.render(); },
+      render: () => {
+        rotularLinha(linhaDaAudicao, specDaAudicao());
+        rotularLinha(linhaUmPorVez, specUmPorVez());
+        rotularLinha(linhaSemForca, specSemForca());
+        empatia.render();
+      },
     });
     // A linha da perda auditiva nasce ANTES do `init`, que liga o clique dela uma vez (a regra de ordem do `#typo-reset`).
     const specDaAudicao = () => ({ id: 'opt-hearing', rotulo: t('empathy.hearing'), dica: t('empathy.hearing.dica') });
     const linhaDaAudicao = linhaDeControle(ctxDoPainel, specDaAudicao()).linha;
     painelDeEmpatia.casca.card.insertBefore(linhaDaAudicao, painelDeEmpatia.casca.lista);
+    // THE TWO MOTOR SIMULATIONS (ADR-0181), before the `init`, which wires `#opt-onebtn` once (the same order rule).
+    const specUmPorVez = () => ({ id: 'opt-onebtn', rotulo: t('empathy.onebtn'), dica: t('empathy.onebtn.dica') });
+    const specSemForca = () => ({ id: 'opt-semforca', rotulo: t('empathy.semforca'), dica: t('empathy.semforca.dica') });
+    const linhaUmPorVez = linhaDeControle(ctxDoPainel, specUmPorVez()).linha;
+    const linhaSemForca = linhaDeControle(ctxDoPainel, specSemForca()).linha;
+    painelDeEmpatia.casca.card.insertBefore(linhaUmPorVez, painelDeEmpatia.casca.lista);
+    painelDeEmpatia.casca.card.insertBefore(linhaSemForca, painelDeEmpatia.casca.lista);
+    const refletirSimulacoesMotoras = (): void => {
+      for (const [id, on] of [['#opt-onebtn', state.oneButton], ['#opt-semforca', state.semForca]] as const) {
+        const b = $<HTMLElement>(id);
+        if (!b) continue;
+        toggleBtn(b, on);
+        b.textContent = toggleLabel(on);
+      }
+      markChanged(linhaSemForca, state.semForca !== state.DEFAULTS.semForca);
+    };
     const simular = (i: number, chave: string): boolean => {
       const simulacao = (chave === 'normal' ? null : chave) as VisualState['simulacao'];
       const jogador = players()[i] as { visual?: VisualState; viz?: string } | undefined;
@@ -1612,7 +1637,7 @@ export function createGame(o: CreateGameOptions): Engine {
         }
         escolha.value = estadoDoMundo.simulacao ?? 'normal';
       },
-      reflectMotorEmpathy: semEfeito,
+      reflectMotorEmpathy: refletirSimulacoesMotoras,
       reflectVizButtons: semEfeito,
       frontOverlay: overlays.frontOverlay,
       fillExplain: overlays.fillExplain,
@@ -1622,13 +1647,28 @@ export function createGame(o: CreateGameOptions): Engine {
         store.set(store.KEYS.hearingloss, on);
         srSay(t(on ? 'sr.empathy.hearingOn' : 'sr.empathy.hearingOff'));
       },
-      setOneButton: semEfeito,
+      setOneButton: (on) => {
+        state.setOneButtonValue(on);
+        srSay(t(on ? 'sr.empathy.onebtnOn' : 'sr.empathy.onebtnOff'));
+        refletirSimulacoesMotoras();
+      },
       setWheelchair: semEfeito,
-      getOneButton: () => state.DEFAULTS.oneButton,
+      getOneButton: () => state.oneButton,
       getWheelchair: () => state.DEFAULTS.wheelchair,
       getPlayers: () => [{ viz: estadoDoMundo.simulacao ?? 'normal' }],
       setPlayerViz: (i, modo) => { simular(i, modo); },
     });
+    // «sem força para segurar» is wired here: the empathy module predates it. Refused over toggle keys (ADR-0076): a latch
+    // would hold what the simulation lets go, and the demonstration would show the accommodation instead of the difficulty.
+    $<HTMLElement>('#opt-semforca')?.addEventListener('click', () => {
+      const ligar = !state.semForca;
+      if (ligar && players().some((p) => (p as { toggleMove?: boolean }).toggleMove)) { srAlert(t('sim.indisponivel.alternancia')); return; }
+      state.setSemForcaValue(ligar);
+      srSay(t(ligar ? 'sr.empathy.semforcaOn' : 'sr.empathy.semforcaOff'));
+      empatia.render();
+    });
+    // and the panel's «restore defaults» turns it off too, after the module's own reset
+    $<HTMLElement>('#empathy-reset')?.addEventListener('click', () => { state.setSemForcaValue(false); empatia.render(); });
     acoesDaEngine.empatia = painelDeEmpatia.abrir;
 
     /*
@@ -2930,6 +2970,33 @@ export function createGame(o: CreateGameOptions): Engine {
     refletirLinhasDoTeclado();
     refletirTeclado = refletirLinhasDoTeclado;
   }
+  /*
+   * THE MOTOR EMPATHY SIMULATIONS REACH THE GAME HERE (ADR-0181): in the window's capture, after the menu navigation registered
+   * its own, and before any cartridge hears a game key. A refused key and its release stop here; a tapped key passes and is
+   * released at once by a synthetic keyup, which this filter lets through.
+   */
+  const filtroMotor = criarFiltroMotor();
+  const soltasPeloFiltro = new WeakSet<Event>();
+  const barrar = (e: Event): void => { e.preventDefault(); e.stopImmediatePropagation(); };
+  win.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (keyboard.whichPlayer(e.code) < 0) return;
+    const decisao = filtroMotor.keydown(e.code, e.repeat, { umPorVez: state.oneButton, semForca: state.semForca });
+    if (decisao === 'barrar') { barrar(e); return; }
+    if (decisao === 'tocar') {
+      const alvo = e.target ?? win;
+      setTimeout(() => {
+        // a release the keyboard's own press produced
+        const solta = carimbarOrigem(new KeyboardEvent('keyup', { code: e.code, key: e.key, bubbles: true, cancelable: true }), 'teclado');
+        soltasPeloFiltro.add(solta);
+        alvo.dispatchEvent(solta);
+      }, 0);
+    }
+  }, true);
+  win.addEventListener('keyup', (e: KeyboardEvent) => {
+    if (soltasPeloFiltro.has(e) || keyboard.whichPlayer(e.code) < 0) return;
+    if (filtroMotor.keyup(e.code) === 'barrar') barrar(e);
+  }, true);
+
   // Jogar no teclado ESCONDE o pad — a mesma alternância por modalidade do `input/keydown` do cartucho. Só as
   // teclas de algum jogador: um atalho do navegador não é a criança a trocar de aparelho.
   // 🔴 EM CAPTURA (`true`): o `ui/menu-nav` consome a tecla de um menu na captura da janela com `stopPropagation()`, e um

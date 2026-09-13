@@ -632,7 +632,9 @@ describe('createGame num documento de verdade', () => {
         expect(chaves).toEqual(['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'blind']);
         expect(document.getElementById('opt-simulacao').closest('.ctrl-row').querySelector('strong')?.textContent, 'the list has no label').toBe('Simulações');
         // 🔴 what the engine cannot draw is not offered: those need the platformer's DOM layer, and wheelchair was cut
-        for (const id of ['opt-wheelchair', 'opt-onebtn']) expect(document.getElementById(id), id).toBeNull();
+        expect(document.getElementById('opt-wheelchair'), 'opt-wheelchair').toBeNull();
+      // ADR-0181: the two motor simulations the engine can now apply are offered
+      for (const id of ['opt-onebtn', 'opt-semforca']) expect(document.getElementById(id), id).not.toBeNull();
         // a simulation puts its filter on the world, and «normal» takes it off
         escolherSimulacao('sim-deuter');
         expect(mundo.style.filter, 'the simulation did not reach the world').toMatch(/cvd-deuter/);

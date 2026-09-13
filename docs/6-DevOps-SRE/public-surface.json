@@ -252,6 +252,7 @@
     "on",
     "oneButton",
     "ownerColors",
+    "semForca",
     "setCaneBlockDivValue",
     "setCaptionsOnValue",
     "setCbSafeValue",
@@ -263,6 +264,7 @@
     "setOutlineBgValue",
     "setOutlineFgValue",
     "setOwnerColorsValue",
+    "setSemForcaValue",
     "setVizModeValue",
     "setWheelchairValue",
     "vizMode",
@@ -448,6 +450,12 @@
     "LatchDir",
     "latchedDrive",
     "nextLatchedDir"
+  ],
+  "input/motor-simulation.ts": [
+    "DecisaoDeTecla",
+    "FiltroMotor",
+    "SimulacaoMotora",
+    "criarFiltroMotor"
   ],
   "input/origem-sintetica.ts": [
     "CHAVE_DE_ORIGEM",

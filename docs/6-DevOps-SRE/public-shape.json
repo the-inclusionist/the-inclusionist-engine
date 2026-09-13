@@ -416,6 +416,7 @@
       "numPlayers",
       "oneButton",
       "ownerColors",
+      "semForca",
       "vizMode",
       "wheelchair"
     ],
@@ -705,6 +706,16 @@
   },
   "input/latch.ts": {
     "type LatchDir": "-1 | 0 | 1"
+  },
+  "input/motor-simulation.ts": {
+    "interface SimulacaoMotora": [
+      "umPorVez"
+    ],
+    "interface FiltroMotor": [
+      "keydown",
+      "keyup"
+    ],
+    "type DecisaoDeTecla": "'passar' | 'barrar' | 'tocar'"
   },
   "input/origem-sintetica.ts": {
     "interface EventoDeTeclaLike": [

@@ -280,6 +280,10 @@ const pt: Record<string, string> = {
   'empathy.simulacao.dica': 'Mostra o jogo como o vê quem tem a deficiência escolhida.',
   'empathy.hearing': 'Simular perda auditiva',
   'empathy.hearing.dica': 'Sons fracos ficam abafados e os agudos são cortados, como ouve quem tem perda auditiva.',
+  'empathy.onebtn': 'Simular um botão por vez',
+  'empathy.onebtn.dica': 'Enquanto um botão está apertado, o jogo não aceita um segundo, como para quem não consegue apertar dois ao mesmo tempo.',
+  'empathy.semforca': 'Simular sem força para segurar',
+  'empathy.semforca.dica': 'Segurar um botão vale só um toque, como para quem não tem força para manter o botão apertado.',
   'empathy.select': 'Selecionar',
   'empathy.selected': '✓ Selecionado',
   'visual.grupo.rotulo': 'Ajustes visuais',
@@ -351,6 +355,7 @@ const pt: Record<string, string> = {
   'eixo.correcao.tricro': 'Visão tricromática',
   'viz.escolher': 'Selecionar',
   'viz.escolhido': '✓ Selecionado',
+  'sim.indisponivel.alternancia': 'Para ver a simulação sem força para segurar, as teclas de alternância precisam estar desligadas: com elas ligadas, a demonstração mostraria o ajuste e não a dificuldade.',
   'sim.indisponivel.tema': 'Para ver a simulação, o tema precisa estar no padrão: por cima do alto contraste ela mostraria o que o tema faz, e não o que a deficiência faz.',
   'sim.indisponivel.correcao': 'Para ver a simulação, a correção de cor precisa estar em visão tricromática: de uma tela já corrigida ela não mostraria nem a deficiência nem a correção.',
   'sim.indisponivel.ambos': 'Para ver a simulação, o tema e a correção de cor precisam estar no padrão: por cima de um ajuste, a demonstração mostra o ajuste e não a deficiência.',
@@ -536,6 +541,10 @@ const pt: Record<string, string> = {
   'sr.player.prefix': 'Jogador {n}: ',
   'sr.empathy.hearingOn': 'Simulação de perda auditiva ligada: sons fracos ficam abafados e os agudos são cortados; falas ficam difíceis de entender.',
   'sr.empathy.hearingOff': 'Simulação de perda auditiva desligada.',
+  'sr.empathy.onebtnOn': 'Simulação de um botão por vez ligada: um segundo botão apertado junto não conta.',
+  'sr.empathy.onebtnOff': 'Simulação de um botão por vez desligada.',
+  'sr.empathy.semforcaOn': 'Simulação sem força para segurar ligada: segurar um botão vale só um toque.',
+  'sr.empathy.semforcaOff': 'Simulação sem força para segurar desligada.',
   // ===================== PODERES =====================
   // `sr.power.*` é FALADO quando o poder muda (game/physics, game/session); `hud.power.*` é o rótulo curto do
   // HUD. Eram duas tabelas de `const` no main.js, e por isso estavam CONGELADAS no idioma do boot: um `const`

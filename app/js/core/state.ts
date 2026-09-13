@@ -77,6 +77,8 @@ export interface EventoDoJogo {
   oneButton: boolean;
   /** The game speed, a step of `core/game-speed` (ADR-0180): 1 is 100%. */
   gameSpeed: number;
+  /** The «no strength to hold» empathy simulation (ADR-0181): a held game key reads as one tap. */
+  semForca: boolean;
 
   /* --- JOGO: `game/state` AUMENTA esta interface com `cenario`, `activity`, `quizLevel` e `coins`.
      Ver a declaração de aumento no fim daquele arquivo. A engine não pode nomear a carga de `coins` — é um
@@ -226,6 +228,7 @@ export const DEFAULTS = Object.freeze({
   wheelchair: false,
   oneButton: false,
   gameSpeed: 1,
+  semForca: false,
   easy: false,        // por jogador (Modo Fácil)
   toggleMove: false,  // por jogador (movimento por alternância)
   // A alternância do botão de CORRER nasce desligada de FÁBRICA — e liga sozinha no controle de tela, que é
@@ -433,8 +436,8 @@ export function setWheelchairValue(on: boolean): void {
   const p = armazem('setWheelchairValue'); p.setBool('incl_wheelchair', on); wheelchair = on; emit('wheelchair', on);
 }
 
-// --- oneButton: UM BOTÃO POR VEZ. Ignora combinações simultâneas, para quem não consegue pressionar duas
-//     teclas ao mesmo tempo. ---
+// --- oneButton: «um botão por vez», an EMPATHY SIMULATION (ADR-0181): while one game key is held, a second is never
+//     accepted. It was described as an accommodation; the Dev: it simulates a motor difficulty. ---
 export let oneButton: boolean = VAZIO.getBool('incl_onebtn', DEFAULTS.oneButton);
 export function setOneButtonValue(on: boolean): void {
   if (oneButton === on) return;
@@ -443,6 +446,15 @@ export function setOneButtonValue(on: boolean): void {
 
 // --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
 //     by it. Stored and carried between games; a stored value outside the steps reads as 100%. ---
+// --- semForca: «sem força para segurar botão», the second motor empathy simulation (ADR-0181): any sustained contact of a
+//     game key reads as one tap. Stored like the other simulations, off by default. ---
+export let semForca: boolean = VAZIO.getBool('incl_sem_forca', DEFAULTS.semForca);
+export function setSemForcaValue(on: boolean): void {
+  const v = !!on;
+  if (semForca === v) return;
+  const p = armazem('setSemForcaValue'); p.setBool('incl_sem_forca', v); semForca = v; emit('semForca', v);
+}
+
 export let gameSpeed: number = velocidadeValida(VAZIO.getNum('incl_game_speed', DEFAULTS.gameSpeed));
 export function setGameSpeedValue(v: number): void {
   const valida = velocidadeValida(v);
@@ -480,4 +492,5 @@ export function carregarEstado(p: PortaDoEstado): void {
   wheelchair = p.getBool('incl_wheelchair', DEFAULTS.wheelchair);
   oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
   gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
+  semForca = p.getBool('incl_sem_forca', DEFAULTS.semForca);
 }
