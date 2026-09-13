@@ -24,7 +24,6 @@ const FORA_DA_PILHA = new Set(['educational', 'consumer-quiz']);
 const DIVIDA = {
   'core/i18n.ts -> platform/storage.ts': 'the chosen language persists: inject the store, or move its pure half down',
   'core/state.ts -> platform/storage.ts': 'state persists: inject the store, or move its pure half down',
-  'input/touch.ts -> render/minimap.ts': 'the pad corner moves the minimap: inject the setter',
   'render/viz-setters.ts -> ui/visual-axes-panel.ts': 'shared visual-axes data: move it down to render or core',
   'render/viz-setters.ts -> ui/simulation-refusal.ts': 'the refusal rule: move it down to core',
   'ui/activities-menu.ts -> educational/activities-registry.ts': 'curriculum reaches the menu: the platform passes it in',

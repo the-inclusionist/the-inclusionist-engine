@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Testes de input/touch — render/DOM real (project BROWSER: usa document + querySelector). Injeção por closure
 // (mesmo padrão de ui/settings-motion.browser.test.js): ctx com $/srSay/store/root/isMobile/viewport/
-// frontOverlay/onPadDesignApplied FALSOS (spies), mas `players`/`numPlayers`/`phase` (core/state.js) e
-// `setMinimapCorner` (render/minimap.js) são os módulos REAIS — os mesmos que initTouch importa direto.
+// frontOverlay/onPadDesignApplied FALSOS (spies), mas `players`/`numPlayers`/`phase` (core/state.js) são os módulos REAIS.
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initTouch } from '../app/js/input/touch.js';
 // A CENA é DO TESTE desde 2026-08-26. `phase` saiu de `core/state` — virou a pilha de `core/scenes`, e os
@@ -17,8 +16,6 @@ import { createRunState } from '../app/js/core/run-state.js';
 const rodada = createRunState();
 const players = rodada.players;
 const setNumPlayersValue = (n) => rodada.setNumPlayers(n);
-
-import { getMinimap } from '../app/js/render/minimap.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -209,13 +206,16 @@ describe('initTouch — openTouchCfg / closeTouchCfg', () => {
 });
 
 describe('initTouch — hideTouchControls / showTouchControls', () => {
-  it('[Right] showTouchControls: desoculta #touch-controls, marca body.touch-mode, mexe no minimapa', () => {
+  it('[Right] showTouchControls: desoculta #touch-controls, marca body.touch-mode, avisa a raiz', () => {
     const { ctx } = makeCtx();
-    const api = initTouch(ctx);
+    const avisos = [];
+    const api = initTouch({ ...ctx, onTouchControlsShown: () => avisos.push('shown'), onTouchControlsHidden: () => avisos.push('hidden') });
     api.showTouchControls();
     expect($('#touch-controls').hidden).toBe(false);
     expect(document.body.classList.contains('touch-mode')).toBe(true);
-    expect(getMinimap()).toBeNull(); // sem initMinimap() no teste — setMinimapCorner() só faz no-op seguro
+    expect(avisos).toEqual(['shown']);
+    api.hideTouchControls();
+    expect(avisos, 'the root is not told the pad left — a minimap moved out of its way stays there').toEqual(['shown', 'hidden']);
   });
   it('[Inverse] hideTouchControls desfaz o showTouchControls', () => {
     const { ctx } = makeCtx();

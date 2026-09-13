@@ -86,6 +86,9 @@
     "platform/voice-plan.ts": [
       "caminhoDoModelo"
     ],
+    "render/minimap.ts": [
+      "setMinimapCorner"
+    ],
     "render/viz-axes.ts": [
       "temaDireto"
     ],

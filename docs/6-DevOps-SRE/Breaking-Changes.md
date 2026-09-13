@@ -629,6 +629,20 @@ reached the device. The value of `sr.eyes.needsInternet` changes accordingly in 
 **What to do:** a game that passes `baixarPesados: false` to `createGame` gets no eye control; leave the download on, or
 call `baixarPesados` yourself. A Content-Security-Policy must allow `blob:` in `script-src`.
 
+## X · The touch controls no longer move the minimap (issue #167)
+
+**Behaviour.** `input/touch` called `render/minimap.setMinimapCorner` itself when the on-screen controls appeared (top
+right) and left (bottom left) — an import from `input/` up into `render/` (ADR-0173). It now tells the root instead:
+`onTouchControlsShown` as before, and the new optional `TouchCtx.onTouchControlsHidden`. No type breaks.
+
+**What to do:** only a game that mounts the minimap moves it. 📏 Measured: `game-platformer` alone (`app/js/main.ts`,
+`initTouch({ … })` near line 1874). Without this, its minimap stays in the bottom-left corner, under the pad:
+
+```ts
+onTouchControlsShown: () => { setMinimapCorner(true); /* …what it already does… */ },
+onTouchControlsHidden: () => setMinimapCorner(false),
+```
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

@@ -10,7 +10,6 @@ import { PAD_DESIGNS, TOUCH_DEFAULT } from './devices.js';
 import { migrarMapaDeToque } from './vocabulary-migration.js';
 import { t } from '../core/i18n.js';
 import { KEYS } from '../platform/storage.js'; // só as CHAVES (constantes) — leitura/escrita passam por ctx.store (DI)
-import { setMinimapCorner } from '../render/minimap.js'; // já módulo próprio (Estágio 4, Tier 1) — importado direto
 import type { DomQuery } from '../core/dom-query.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
@@ -70,6 +69,11 @@ export interface TouchCtx {
    * nenhum. Quem sabe o que ligar é quem possui os jogadores.
    */
   onTouchControlsShown?: () => void;
+  /**
+   * The on-screen controls LEFT the screen — the pair of `onTouchControlsShown`. A root that moves something out of the
+   * pad's way (the platformer's minimap corner) moves it back here; `input/` does not reach `render/` for it (issue #167).
+   */
+  onTouchControlsHidden?: () => void;
   /**
    * PODE mostrar o pad virtual AGORA? Injetado, e é o corte do item 19 neste módulo.
    *
@@ -304,7 +308,7 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     const tc = ctx.$<HTMLElement>('#touch-controls');
     if (tc && !tc.hidden) tc.hidden = true;
     ctx.$<HTMLElement>('body')?.classList.remove('touch-mode');
-    setMinimapCorner(false);
+    ctx.onTouchControlsHidden?.();
   }
   function showTouchControls(): void {
     // MENU ativo = sem controle virtual: dá pra tocar direto nos botões da tela. QUEM decide é o jogo.
@@ -312,7 +316,6 @@ export function initTouch(ctx: TouchCtx): TouchApi {
     const tc = ctx.$<HTMLElement>('#touch-controls');
     if (tc) tc.hidden = false;
     ctx.$<HTMLElement>('body')?.classList.add('touch-mode');
-    setMinimapCorner(true);
     ctx.onTouchControlsShown?.();
   }
 
