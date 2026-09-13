@@ -586,6 +586,10 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    With the quick-pause legend also showing, each keeps ONE line, so the band never grows past two.
    `--rodape-h` is the room it takes, declared so a game's workspace can end above it (the `--barra-a11y-h` model). */
 #game-region{--rodape-h:calc(var(--ui-fs,16px) * 2.6 + 8px)}
+/* ADR-0163 rule 3: the region's text grows with the scale the engine forces — 16 px at 640×360, 32 at 1280×720 — times the
+   communication cycle's type scale, which the root size also carries. Without it everything in the region read the ROOT
+   16 px: measured at 1280×720, quiz options at 16 px and the bar's emoji at 20 px under a `--ui-fs` of 32. */
+#game-region{font-size:calc(var(--ui-fs,16px) * var(--fonte-escala,1))}
 .rodape-da-tela{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;flex-direction:column;gap:0;
   padding:4px .6em;background:rgba(0,0,0,.82);pointer-events:none}
 .rodape-da-tela:not(:has(> :not([hidden]))){display:none}
