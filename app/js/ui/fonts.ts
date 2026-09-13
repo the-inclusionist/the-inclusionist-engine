@@ -24,7 +24,7 @@ import * as store from '../platform/storage.js';
  *     Atkinson Hyperlegible ser o padrão — pouca diferenciação entre letras, avanço largo, nenhuma variação
  *     de altura. É certa no HUD de um jogo de pixel-art e errada num menu que a criança precisa de LER.
  *
- * ⚠️ E O CORTE NÃO É O GRUPO `hand`. O `comicneue` está lá por aparência — a face é de propósito geral e é
+ * ⚠️ E O CORTE NÃO É O GRUPO `hand`. A `pwbr` está lá por aparência — é a face GERAL do grupo (ADR-0176) e é
  * frequentemente recomendada para dislexia. Tirá-la do menu removeria uma opção legitimamente acessível. A
  * definição boa é a lista do item 2 da #87, que nomeia as caligráficas dando-lhes tamanho mínimo.
  */
@@ -137,6 +137,8 @@ export function maosDaEtiqueta(tag: string | null | undefined): readonly string[
 }
 
 export type FontItem = {
+  /** The face's `id` in `catalogo_tipografico.json` (ADR-0176): the key that holds it to the catalogue's status, layer, floor and coverage. */
+  id: string;
   k: string; fam: string; fb: string; d?: string; off?: string;
   /** Ausente = `geral`. Só as caligráficas se declaram, porque são a excepção. */
   papel?: FontRole;
@@ -152,20 +154,20 @@ export type FontItem = {
 export type FontGroup = { g: string; items: FontItem[] };
 export const FONT_GROUPS: FontGroup[] = [
   {g:'font.group.sans', items:[
-    {k:'atkinson',   fam:'Atkinson Hyperlegible', fb:'sans', d:'font.desc.atkinson'},
-    {k:'lexend',     fam:'Lexend',                fb:'sans', d:'font.desc.lexend'},
-    {k:'quattro',    fam:'iA Writer Quattro',     fb:'sans', d:'font.desc.quattro'},
-    {k:'andika',     fam:'Andika',                fb:'sans', d:'font.desc.andika'},
+    {k:'atkinson', id:'atkinson_hyperlegible',   fam:'Atkinson Hyperlegible', fb:'sans', d:'font.desc.atkinson'},
+    {k:'lexend', id:'lexend',     fam:'Lexend',                fb:'sans', d:'font.desc.lexend'},
+    {k:'quattro', id:'ia_writer_quattro',    fam:'iA Writer Quattro',     fb:'sans', d:'font.desc.quattro'},
+    {k:'andika', id:'andika',     fam:'Andika',                fb:'sans', d:'font.desc.andika'},
     // ⚠️ A OPENDYSLEXIC ENTRA SEM NENHUMA ALEGAÇÃO DE EFICÁCIA, e a restrição é da issue #87 item 3 e do
     // `docs/game-design/typography.md`, que diz por extenso: «Ofereça a Dyslexie e a OpenDyslexic apenas como
     // escolha do usuário. A pesquisa não mostra ganho de leitura com elas.» A descrição dela fala do DESENHO
     // (hastes pesadas em baixo), nunca do efeito — prometer leitura melhor seria vender a uma criança
     // disléxica uma coisa que a evidência não sustenta, e ela é quem menos pode pagar por isso.
-    {k:'opendyslexic', fam:'OpenDyslexic',       fb:'sans', d:'font.desc.opendyslexic'},
-    {k:'sourcesans', fam:'Source Sans 3',         fb:'sans'},
-    {k:'inter',      fam:'Inter',                 fb:'sans'},
-    {k:'opensans',   fam:'Open Sans',             fb:'sans'},
-    {k:'lato',       fam:'Lato',                  fb:'sans'},
+    {k:'opendyslexic', id:'opendyslexic', fam:'OpenDyslexic',       fb:'sans', d:'font.desc.opendyslexic'},
+    {k:'sourcesans', id:'source_sans_3', fam:'Source Sans 3',         fb:'sans'},
+    {k:'inter', id:'inter',      fam:'Inter',                 fb:'sans'},
+    {k:'opensans', id:'open_sans',   fam:'Open Sans',             fb:'sans'},
+    {k:'lato', id:'lato',       fam:'Lato',                  fb:'sans'},
     // ⚠️ AS QUATRO ARREDONDADAS entram a pedido do Dev (2026-09-12) e entram SEM descrição, de propósito: as
     // quatro linhas acima também não a têm, e um `d` existe quando há algo a dizer que o nome não diz — a
     // Atkinson tem-no porque o Braille Institute a desenhou para isto, a OpenDyslexic porque a descrição dela
@@ -176,10 +178,10 @@ export const FONT_GROUPS: FontGroup[] = [
     //
     // ⚠️ `Fredoka` E NÃO «Fredoka One»: o pedido usou o nome legado. A Google publica hoje a família variável
     // como `Fredoka`; a estática antiga era o peso 600 dela. Ver o bloco correspondente em `fonts.css`.
-    {k:'fredoka',    fam:'Fredoka',               fb:'sans'},
-    {k:'quicksand',  fam:'Quicksand',             fb:'sans'},
-    {k:'nunito',     fam:'Nunito',                fb:'sans'},
-    {k:'teachers',   fam:'Teachers',              fb:'sans'},
+    {k:'fredoka', id:'fredoka',    fam:'Fredoka',               fb:'sans'},
+    {k:'quicksand', id:'quicksand',  fam:'Quicksand',             fb:'sans'},
+    {k:'nunito', id:'nunito',     fam:'Nunito',                fb:'sans'},
+    {k:'teachers', id:'teachers',   fam:'Teachers',              fb:'sans'},
     /*
      * MAIS SETE SEM SERIFA (ADR-0150, pedido do Dev de 2026-09-12). Sete da lista dele já cá estavam —
      * Source Sans 3, Inter, Open Sans, Lato acima, e as três serifadas abaixo — e não se repetem.
@@ -191,26 +193,26 @@ export const FONT_GROUPS: FontGroup[] = [
      * o ficheiro por repositório, aplicação ou servidor público e servi-lo como fonte selecionável a terceiros.
      * O que era espera virou recusa com motivo; o crivo está em `tests/fontes-empacotadas.node.test.js`.
      */
-    {k:'robotoflex', fam:'Roboto Flex',           fb:'sans'},
-    {k:'ubuntu',     fam:'Ubuntu',                fb:'sans'},
-    {k:'notosans',   fam:'Noto Sans',             fb:'sans'},
-    {k:'spacegrotesk', fam:'Space Grotesk',       fb:'sans'},
-    {k:'sora',       fam:'Sora',                  fb:'sans'},
-    {k:'jakarta',    fam:'Plus Jakarta Sans',     fb:'sans'} ]},
+    {k:'robotoflex', id:'roboto_flex', fam:'Roboto Flex',           fb:'sans'},
+    {k:'ubuntu', id:'ubuntu',     fam:'Ubuntu',                fb:'sans'},
+    {k:'notosans', id:'noto_sans',   fam:'Noto Sans',             fb:'sans'},
+    {k:'spacegrotesk', id:'space_grotesk', fam:'Space Grotesk',       fb:'sans', minPx:20},
+    {k:'sora', id:'sora',       fam:'Sora',                  fb:'sans', minPx:20},
+    {k:'jakarta', id:'plus_jakarta_sans',    fam:'Plus Jakarta Sans',     fb:'sans', minPx:20} ]},
     // ⚠️ A COMFORTAA ENTROU E SAIU NO MESMO DIA, por decisão do Dev: «ruim para dislexia». A razão está na
     // face — as formas quase geométricas reduzem a diferenciação entre letras, que é o eixo pelo qual a
     // Atkinson Hyperlegible é a padrão deste projeto. Fica escrito porque uma face que sai sem rasto volta a
     // ser proposta pelo próximo que olhar para a lista e achar que falta uma arredondada.
   {g:'font.group.serif', items:[
-    {k:'literata',    fam:'Literata',       fb:'serif'},
-    {k:'sourceserif', fam:'Source Serif 4', fb:'serif'},
-    {k:'newsreader',  fam:'Newsreader',     fb:'serif'},
+    {k:'literata', id:'literata',    fam:'Literata',       fb:'serif'},
+    {k:'sourceserif', id:'source_serif_4', fam:'Source Serif 4', fb:'serif'},
+    {k:'newsreader', id:'newsreader',  fam:'Newsreader',     fb:'serif'},
     // Cinco de LEITURA, do mesmo pedido: serifadas de texto corrido, como as três acima.
-    {k:'merriweather', fam:'Merriweather',  fb:'serif'},
-    {k:'lora',        fam:'Lora',           fb:'serif'},
-    {k:'spectral',    fam:'Spectral',       fb:'serif'},
-    {k:'domine',      fam:'Domine',         fb:'serif'},
-    {k:'bitter',      fam:'Bitter',         fb:'serif'},
+    {k:'merriweather', id:'merriweather', fam:'Merriweather',  fb:'serif'},
+    {k:'lora', id:'lora',        fam:'Lora',           fb:'serif'},
+    {k:'spectral', id:'spectral',    fam:'Spectral',       fb:'serif'},
+    {k:'domine', id:'domine',      fam:'Domine',         fb:'serif'},
+    {k:'bitter', id:'bitter',      fam:'Bitter',         fb:'serif'},
     /*
      * ⚠️ AS QUATRO DE DISPLAY SÃO OUTRA COISA, e entram com o aviso escrito em vez de misturadas com as de
      * leitura. Playfair Display, DM Serif Display, Fraunces e Bodoni Moda têm CONTRASTE ALTO — hastes grossas
@@ -223,25 +225,21 @@ export const FONT_GROUPS: FontGroup[] = [
      * 🔴 E elas não são para corpo de texto de atividade; um jogo que as use num enunciado longo está a usar
      * uma face de título como face de leitura.
      */
-    {k:'playfair',    fam:'Playfair Display', fb:'serif'},
-    {k:'dmserifdisplay', fam:'DM Serif Display', fb:'serif'},
-    {k:'fraunces',    fam:'Fraunces',       fb:'serif'},
-    {k:'bodonimoda',  fam:'Bodoni Moda',    fb:'serif'} ]},
+    {k:'playfair', id:'playfair_display',    fam:'Playfair Display', fb:'serif', minPx:20},
+    {k:'dmserifdisplay', id:'dm_serif_display', fam:'DM Serif Display', fb:'serif', minPx:20},
+    {k:'fraunces', id:'fraunces',    fam:'Fraunces',       fb:'serif', minPx:20},
+    {k:'bodonimoda', id:'bodoni_moda',  fam:'Bodoni Moda',    fb:'serif', minPx:20} ]},
   // ⚠️ QUATRO FACES SAÍRAM DAQUI EM 2026-09-07 (issue #87, item 3, decisão do Dev):
   //   · `greatvibes` (44 KB) e `ufcook` (20 KB) — peso que o roster não paga;
   //   · `learningcurve` e `kindergarten` — eram entradas `.off` SEM FICHEIRO, isto é, o menu oferecia-as
   //     desabilitadas e nada existia por trás. Uma linha que só serve para dizer «ainda não» é uma linha que
   //     a criança lê e não pode usar.
   {g:'font.group.hand', items:[
-    {k:'pinyon',     fam:'Pinyon Script',       fb:'cursive', d:'font.desc.pinyon', papel:'caligrafica', minPx:24},
-    {k:'ufmag',      fam:'UnifrakturMaguntia',  fb:'cursive', d:'font.desc.ufmag',  papel:'caligrafica', minPx:20},
+    {k:'pinyon', id:'pinyon_script',     fam:'Pinyon Script',       fb:'cursive', d:'font.desc.pinyon', papel:'caligrafica', minPx:24},
+    {k:'ufmag', id:'unifrakturmaguntia',      fam:'UnifrakturMaguntia',  fb:'cursive', d:'font.desc.ufmag',  papel:'caligrafica', minPx:20},
     // Fondamento entra pela emenda do ADR-0012 (#87 item 3) com o mínimo que o Dev fixou. Caligráfica, logo
     // fora do menu — ela é para os botões DENTRO das atividades escolares, não para a interface.
-    {k:'fondamento', fam:'Fondamento',          fb:'cursive', d:'font.desc.fondamento', papel:'caligrafica', minPx:20},
-    // ⚠️ `comicneue` NÃO é caligráfica, e está neste grupo só por aparência: é uma face de propósito geral,
-    // frequentemente recomendada para dislexia. Marcá-la como caligráfica tirá-la-ia do menu — removendo uma
-    // opção legitimamente acessível pelo formato do grupo em vez de pelo papel.
-    {k:'comicneue',  fam:'Comic Neue',          fb:'cursive', d:'font.desc.comicneue'},
+    {k:'fondamento', id:'fondamento', fam:'Fondamento',          fb:'cursive', d:'font.desc.fondamento', papel:'caligrafica', minPx:20},
     /*
      * A RONDE FRANCESA — o item 4 da #87, decidido no ADR-0108 §4. Ela NUNCA é empacotada: as três faces são
      * livres só para uso PESSOAL (ADR-0012), e distribuí-las seria distribuir o que não foi licenciado para
@@ -267,14 +265,15 @@ export const FONT_GROUPS: FontGroup[] = [
      * 📌 `minPx: 20` é o mesmo piso que as outras três cursivas carregam. A lista de mínimos da #87 não
      * nomeia a Playwrite — o número é o das irmãs, e não uma medição própria; corrigir-se com uma linha.
      */
-    {k:'pwbr', fam:'Playwrite BR', fb:'cursive', d:'font.desc.pw.br', papel:'caligrafica', minPx:20},
-    {k:'pwustrad', fam:'Playwrite US Trad', fb:'cursive', d:'font.desc.pw.ustrad', papel:'caligrafica', minPx:20},
-    {k:'pwusmod', fam:'Playwrite US Modern', fb:'cursive', d:'font.desc.pw.usmod', papel:'caligrafica', minPx:20},
-    {k:'pwca', fam:'Playwrite CA', fb:'cursive', d:'font.desc.pw.ca', papel:'caligrafica', minPx:20},
-    {k:'pwmx', fam:'Playwrite MX', fb:'cursive', d:'font.desc.pw.mx', papel:'caligrafica', minPx:20},
-    {k:'pwar', fam:'Playwrite AR', fb:'cursive', d:'font.desc.pw.ar', papel:'caligrafica', minPx:20},
-    {k:'pwcl', fam:'Playwrite CL', fb:'cursive', d:'font.desc.pw.cl', papel:'caligrafica', minPx:20},
-    {k:'pwco', fam:'Playwrite CO', fb:'cursive', d:'font.desc.pw.co', papel:'caligrafica', minPx:20},
+    // THE HANDWRITING GROUP'S GENERAL FACE (ADR-0176 §6, the Dev): in the menu, drawn at `minPx` by the face's scale.
+    {k:'pwbr', id:'playwrite_br', fam:'Playwrite BR', fb:'cursive', d:'font.desc.pw.br', minPx:20},
+    {k:'pwustrad', id:'playwrite_us_trad', fam:'Playwrite US Trad', fb:'cursive', d:'font.desc.pw.ustrad', papel:'caligrafica', minPx:20},
+    {k:'pwusmod', id:'playwrite_us_modern', fam:'Playwrite US Modern', fb:'cursive', d:'font.desc.pw.usmod', papel:'caligrafica', minPx:20},
+    {k:'pwca', id:'playwrite_ca', fam:'Playwrite CA', fb:'cursive', d:'font.desc.pw.ca', papel:'caligrafica', minPx:20},
+    {k:'pwmx', id:'playwrite_mx', fam:'Playwrite MX', fb:'cursive', d:'font.desc.pw.mx', papel:'caligrafica', minPx:20},
+    {k:'pwar', id:'playwrite_ar', fam:'Playwrite AR', fb:'cursive', d:'font.desc.pw.ar', papel:'caligrafica', minPx:20},
+    {k:'pwcl', id:'playwrite_cl', fam:'Playwrite CL', fb:'cursive', d:'font.desc.pw.cl', papel:'caligrafica', minPx:20},
+    {k:'pwco', id:'playwrite_co', fam:'Playwrite CO', fb:'cursive', d:'font.desc.pw.co', papel:'caligrafica', minPx:20},
     /*
      * MAIS SETE, e elas existem por uma REGRA e não por gosto (ADR-0150, decisão do Dev de 2026-09-12).
      *
@@ -292,15 +291,15 @@ export const FONT_GROUPS: FontGroup[] = [
      * conforme necessário»). A decisão nova é dele e é literal: «estas fontes devem ser baixadas no primeiro
      * dia para fazer parte do PWA». Fica escrito porque o registo antigo continua a dizer o contrário.
      */
-    {k:'pwes', fam:'Playwrite ES', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwesdeco', fam:'Playwrite ES Deco', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwpt', fam:'Playwrite PT', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwgbj', fam:'Playwrite GB J', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwgbs', fam:'Playwrite GB S', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwcu', fam:'Playwrite CU', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'pwpe', fam:'Playwrite PE', fb:'cursive', papel:'caligrafica', minPx:20},
-    {k:'ronde', fam:'Ronde Script, OPTIFrench-Script, Merveille', fb:'cursive',
-      d:'font.desc.ronde', off:'font.off.ronde'} ]},
+    {k:'pwes', id:'playwrite_es', fam:'Playwrite ES', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwesdeco', id:'playwrite_es_deco', fam:'Playwrite ES Deco', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwpt', id:'playwrite_pt', fam:'Playwrite PT', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwgbj', id:'playwrite_gb_j', fam:'Playwrite GB J', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwgbs', id:'playwrite_gb_s', fam:'Playwrite GB S', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwcu', id:'playwrite_cu', fam:'Playwrite CU', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'pwpe', id:'playwrite_pe', fam:'Playwrite PE', fb:'cursive', papel:'caligrafica', minPx:20},
+    {k:'ronde', id:'ronde_script', fam:'Ronde Script, OPTIFrench-Script, Merveille', fb:'cursive',
+      d:'font.desc.ronde', off:'font.off.ronde', minPx:18} ]},
   // ⚠️ A FACE DO JOGO, e ela tem grupo próprio porque não é nem sans, nem serifada, nem manuscrita — é uma
   // face de PIXEL, e pô-la em qualquer um dos três diria a coisa errada sobre ela na lista.
   //
@@ -308,10 +307,17 @@ export const FONT_GROUPS: FontGroup[] = [
   // estava verificado. Ver a nota do `@font-face` em `vendor/fonts.css`: o subconjunto errado desta família
   // carrega, declara-se e reporta-se como certo, e não desenha uma única letra latina.
   {g:'font.group.arcade', items:[
-    {k:'pressstart', fam:'Press Start 2P', fb:'monospace', d:'font.desc.pressstart', papel:'jogo'} ]},
+    {k:'pressstart', id:'press_start_2p', fam:'Press Start 2P', fb:'monospace', d:'font.desc.pressstart', papel:'jogo'} ]},
 ];
 
 /** O papel de uma face; ausente no catálogo quer dizer `geral`. */
+/**
+ * How much larger the text is drawn with this face: enough to reach its `minPx` from the document's base, never smaller.
+ * A face whose catalogue floor is above the base (a display sans, the handwriting) is offered at that size, not under it
+ * (ADR-0176 §4, the catalogue's rule R2). The cycle's hand of the country is the same rule (`ESCALA_DA_MAO`).
+ */
+export function escalaDaFace(it: FontItem): number { return Math.max(1, (it.minPx ?? BASE_EM_PX) / BASE_EM_PX); }
+
 export function papelDaFonte(it: FontItem): FontRole { return it.papel ?? 'geral'; }
 
 /**

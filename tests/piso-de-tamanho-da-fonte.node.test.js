@@ -36,7 +36,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { FONT_GROUPS, OFERECIVEIS, papelDaFonte } from '../app/js/ui/fonts.js';
+import { FONT_GROUPS, OFERECIVEIS, papelDaFonte, escalaDaFace, BASE_EM_PX } from '../app/js/ui/fonts.js';
 
 const RAIZ = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const CSS = readFileSync(join(RAIZ, 'app', 'css', 'style.css'), 'utf8');
@@ -67,8 +67,10 @@ describe('o tamanho mínimo de uma face é aferido contra o que a tela usa (#87 
 
   it('⚠️ [Zero] NENHUMA face oferecida no menu pede mais do que a tela dá', () => {
     // A regra inteira, e a única que precisa de existir. `minPx` ausente = a face não tem mínimo declarado.
+    // 📌 Since ADR-0176 a face offered with a floor above the screen's is drawn LARGER, by its own scale: what is measured is the
+    // size the child gets, the screen's base times that scale.
     const grandes = OFERECIVEIS
-      .filter((it) => typeof it.minPx === 'number' && it.minPx > TETO_DO_PISO)
+      .filter((it) => typeof it.minPx === 'number' && it.minPx > TETO_DO_PISO * escalaDaFace(it) && it.minPx > BASE_EM_PX * escalaDaFace(it))
       .map((it) => `${it.k} pede ${it.minPx}px e a tela desce a ${TETO_DO_PISO}px ou menos`);
     expect(grandes, 'face oferecida que a interface desenharia abaixo do legível').toEqual([]);
   });

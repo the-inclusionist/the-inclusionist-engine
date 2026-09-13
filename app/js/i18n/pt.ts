@@ -707,7 +707,6 @@ const pt: Record<string, string> = {
   'font.desc.pinyon': 'caligráfica inglesa',
   'font.desc.ufcook': 'blackletter alemã',
   'font.desc.ufmag': 'blackletter alemã',
-  'font.desc.comicneue': 'bola e bastão (alfabetização)',
   'font.desc.pressstart': 'pixel de 8 bits (HUD e título do jogo)',
   'font.desc.learningcurve': 'cursiva inglesa',
   'font.desc.kindergarten': 'cursiva brasileira',

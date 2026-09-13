@@ -9,7 +9,7 @@
 
 // (`toggleLabel` saiu daqui em 2026-09-07: ele devolve «Ligado»/«Desligado», e este menu é uma ESCOLHA.)
 import { t } from '../core/i18n.js';
-import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, papelDaFonte, faceDisponivel, type FontItem } from './fonts.js';
+import { FONT_GROUPS, FONT_BY_KEY, DEFAULT_FONT_KEY, papelDaFonte, faceDisponivel, escalaDaFace, type FontItem } from './fonts.js';
 import { markChanged, markMenuChanged, CHANGED_CLASS } from './changed-mark.js';
 
 /** Minimal DOM-selector shape (matches ui/dom.ts's `$`). */
@@ -250,6 +250,8 @@ export function initSettingsTypo(ctx: SettingsTypoCtx): SettingsTypoApi {
     else delete ctx.root.dataset.cursiva;
     if (target.customFamily) ctx.root.style.setProperty('--font-custom', target.customFamily);
     else ctx.root.style.removeProperty('--font-custom');
+    // drawn at its floor, never under it (ADR-0176 §4): a face asking 20 px makes the text 25% larger; the others give it back
+    ctx.root.style.setProperty('--fonte-escala', String(escalaDaFace(it)));
     const pv = ctx.$<HTMLElement>('#typo-preview');
     if (pv) pv.style.fontFamily = `'${it.fam}'`;
     if (announce) ctx.srSay(t('sr.typo.font', { fam: it.fam }));

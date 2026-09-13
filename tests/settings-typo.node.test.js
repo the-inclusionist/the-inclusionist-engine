@@ -8,7 +8,7 @@ import { t } from '../app/js/core/i18n.js'; // o catálogo de fontes guarda CHAV
 import {
   isSelectableFont, resolveFontKey, persistFontKey, fontCssTarget, typoGroups, typoListHTML, linhaDaFonte,
 } from '../app/js/ui/settings-typo.js';
-import { FONT_BY_KEY, FONT_GROUPS, papelDaFonte } from '../app/js/ui/fonts.js';
+import { FONT_BY_KEY, FONT_GROUPS, papelDaFonte, escalaDaFace, BASE_EM_PX } from '../app/js/ui/fonts.js';
 
 // Fake de platform/storage.ts: um Map em memória, mesma forma (get/set) do módulo real.
 function fakeStore(seed = {}) {
@@ -35,8 +35,8 @@ describe('isSelectableFont', () => {
     // menu não a oferece e a emenda do ADR-0012 diz que ela não pode ser a face da interface.
     expect(isSelectableFont('pinyon'), 'uma caligráfica virou selecionável').toBe(false);
     expect(isSelectableFont('ufmag'), 'uma caligráfica virou selecionável').toBe(false);
-    // E o contrapeso: a Comic Neue está no mesmo GRUPO e é de papel geral — continua selecionável.
-    expect(isSelectableFont('comicneue')).toBe(true);
+    // E o contrapeso: a Playwrite BR está no mesmo GRUPO e é a face geral dele (ADR-0176) — continua selecionável.
+    expect(isSelectableFont('pwbr')).toBe(true);
   });
   it('[Zero/Error] falso para chave inexistente', () => {
     expect(isSelectableFont('')).toBe(false);
@@ -104,7 +104,7 @@ describe('fontCssTarget', () => {
     expect(fontCssTarget('literata', FONT_BY_KEY.literata)).toEqual({ fonte: 'custom', customFamily: "'Literata',Georgia,serif", cursiva: false });
   });
   it('[Edge-case] fonte manuscrita → custom com fallback ,cursive', () => {
-    expect(fontCssTarget('comicneue', FONT_BY_KEY.comicneue)).toEqual({ fonte: 'custom', customFamily: "'Comic Neue',cursive", cursiva: true });
+    expect(fontCssTarget('pwbr', FONT_BY_KEY.pwbr)).toEqual({ fonte: 'custom', customFamily: "'Playwrite BR',cursive", cursiva: true });
   });
 });
 
@@ -130,9 +130,10 @@ describe('as caligráficas: papel declarado e tamanho mínimo', () => {
     // ⚠️ E ELAS CONTINUAM FORA DO MENU DE FONTE, que é o que este caso mede. O que o ADR-0149 §4 abriu foi
     // uma porta ESTREITA e noutro sítio: a posição (e) do ciclo da barra rápida, onde a criança escolhe a
     // mão do país DELA. Isso não as põe de volta nesta lista — e se alguém as puser, este caso reprova.
+    // 📌 A `pwbr` saiu desta lista em 2026-09-13: é a face GERAL do grupo manuscrito (ADR-0176, o Dev), no menu e aumentada até o piso.
     expect(CALIGRAFICAS.map((it) => it.k).sort()).toEqual([
       'fondamento', 'pinyon',
-      'pwar', 'pwbr', 'pwca', 'pwcl', 'pwco', 'pwcu', 'pwes', 'pwesdeco', 'pwgbj', 'pwgbs',
+      'pwar', 'pwca', 'pwcl', 'pwco', 'pwcu', 'pwes', 'pwesdeco', 'pwgbj', 'pwgbs',
       'pwmx', 'pwpe', 'pwpt', 'pwusmod', 'pwustrad', 'ufmag',
     ]);
   });
@@ -149,17 +150,19 @@ describe('as caligráficas: papel declarado e tamanho mínimo', () => {
     expect(FONT_BY_KEY.ufmag.minPx).toBe(20);
   });
 
-  it('⚠️ [Interface] nenhuma GERAL declara `minPx` — o mínimo é a marca de quem é caligráfica', () => {
-    // Se uma face geral ganhasse mínimo, o número deixaria de dizer «esta é difícil de ler em pequeno» e
-    // passaria a ser um campo opcional qualquer. O papel e o mínimo andam juntos ou nenhum dos dois informa.
-    const erradas = TODAS.filter((it) => papelDaFonte(it) === 'geral' && it.minPx !== undefined).map((it) => it.k);
-    expect(erradas, 'face geral com tamanho mínimo: ' + erradas.join(', ')).toEqual([]);
+  it('⚠️ [Interface] uma GERAL que declara `minPx` é desenhada nele — a escala da face leva a base até lá (ADR-0176 §4)', () => {
+    // The catalogue's floor replaced the old mark («only a calligraphic face declares a minimum»): seven sans and serif faces
+    // of the menu ask 20 px, and so does Playwrite BR. They stay offered, drawn at their floor, never under it.
+    const gerais = TODAS.filter((it) => papelDaFonte(it) === 'geral' && it.minPx !== undefined);
+    expect(gerais.length, 'no general face with a floor — the case measures nothing').toBeGreaterThan(0);
+    for (const it of gerais) expect(BASE_EM_PX * escalaDaFace(it), `${it.k} is drawn under its floor`).toBeGreaterThanOrEqual(it.minPx);
+    expect(escalaDaFace(FONT_BY_KEY.atkinson), 'a face with no floor above the base is drawn larger').toBe(1);
   });
 
-  it('[Boundary] a Comic Neue está no grupo `hand` e é GERAL — o corte é por papel, não por grupo', () => {
+  it('[Boundary] a Playwrite BR está no grupo `hand` e é GERAL — o corte é por papel, não por grupo', () => {
     const hand = FONT_GROUPS.find((g) => g.g === 'font.group.hand');
-    expect(hand.items.map((it) => it.k)).toContain('comicneue');
-    expect(papelDaFonte(FONT_BY_KEY.comicneue)).toBe('geral');
+    expect(hand.items.map((it) => it.k)).toContain('pwbr');
+    expect(papelDaFonte(FONT_BY_KEY.pwbr)).toBe('geral');
   });
 });
 
@@ -268,9 +271,8 @@ const botaoDe = (html, chave) => html.match(new RegExp(`<button[^>]*data-font="$
     for (const k of ['pinyon', 'ufmag']) {
       expect(botaoDe(html, k), `a caligráfica ${k} voltou ao menu`).toBe(null);
     }
-    // E o contrapeso: `comicneue` está no MESMO grupo por aparência e é de propósito geral — tirá-la seria
-    // remover uma opção legitimamente acessível pelo formato do grupo em vez de pelo papel.
-    expect(botaoDe(html, 'comicneue'), 'a Comic Neue saiu do menu por estar no grupo `hand`').not.toBe(null);
+    // E o contrapeso: `pwbr` está no MESMO grupo e é a face geral dele (ADR-0176) — tirá-la seria cortar pelo grupo, não pelo papel.
+    expect(botaoDe(html, 'pwbr'), 'a Playwrite BR saiu do menu por estar no grupo `hand`').not.toBe(null);
   });
 
   it('[Error] chave desconhecida não derruba a geração (nenhuma linha fica selected)', () => {

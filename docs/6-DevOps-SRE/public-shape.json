@@ -1734,7 +1734,7 @@
       "get"
     ],
     "type FontRole": "'geral' | 'caligrafica' | 'jogo'",
-    "type FontItem": "{ k: string",
+    "type FontItem": "{ id: string",
     "type FontGroup": "{ g: string"
   },
   "ui/help-panel.ts": {

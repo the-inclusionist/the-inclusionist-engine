@@ -102,7 +102,7 @@ describe('ui/settings-typo', () => {
     for (const k of ['pinyon', 'ufmag']) {
       expect($('#typo-list').querySelector(`button[data-font="${k}"]`), `${k} apareceu no menu`).toBe(null);
     }
-    expect($('#typo-list').querySelector('button[data-font="comicneue"]'), 'a Comic Neue sumiu do menu').not.toBe(null);
+    expect($('#typo-list').querySelector('button[data-font="pwbr"]'), 'a Playwrite BR sumiu do menu').not.toBe(null);
   });
 
   it('[Error] setFont com chave desconhecida é no-op e não lança', () => {
@@ -156,7 +156,7 @@ describe('ui/settings-typo', () => {
     expect(parseFloat(padrao.ws) / 16, 'o espaçamento de PALAVRA não é o da BDA').toBeCloseTo(0.63, 2);
 
     // 🔴 E a cursiva devolve os dois a `normal` — espaçar uma face ligada parte-a nas junções.
-    api.setFont('comicneue', false);
+    api.setFont('pwbr', false);
     // ⚠️ O COMPUTADO É ASSIMÉTRICO, e é do navegador e não da regra: para `normal`, o Chromium devolve
     // `'normal'` em `letterSpacing` e `'0px'` em `wordSpacing`. Escrito à espera de `'normal'` nos dois, o
     // caso reprovava com o CSS certo. O que se afirma é «não há espaçamento extra», e é isso que se mede.
@@ -173,6 +173,10 @@ describe('ui/settings-typo', () => {
      * piso a face deixa de ser DIFÍCIL e passa a ser ILEGÍVEL, e a dificuldade é o exercício enquanto a
      * ilegibilidade é a criança a desistir (emenda do ADR-0012).
      */
+    // 📌 Since ADR-0176 the menu itself draws a face at its floor: choosing Playwrite BR (20 px) makes the document 25% larger,
+    // and going back to a reading face gives the base back.
+    expect(parseFloat(getComputedStyle(raiz).fontSize), 'the menu did not draw Playwrite BR at its floor').toBe(20);
+    api.setFont('atkinson', false);
     expect(parseFloat(getComputedStyle(raiz).fontSize), 'a base do documento não é 16 px').toBe(16);
     raiz.style.setProperty('--fonte-escala', '1.25');
     expect(parseFloat(getComputedStyle(raiz).fontSize),
@@ -196,7 +200,7 @@ describe('ui/settings-typo', () => {
     const ctx = fullCtx();
     const api = initSettingsTypo(ctx);
 
-    api.setFont('comicneue', false);
+    api.setFont('pwbr', false);
     expect(document.documentElement.dataset.cursiva, 'a face ligada não marcou a excepção').toBe('1');
 
     api.setFont('atkinson', false);
@@ -247,13 +251,13 @@ describe('ui/settings-typo — restaurar padrões DESTE menu (ADR-0028)', () => 
     // o data-fonte, a criança ficaria com o padrão declarado e a fonte anterior ainda desenhada na tela.
     const ctx = fullCtx();
     const api = initSettingsTypo(ctx);
-    api.setFont('comicneue', true); // fonte de catálogo → passa pelo --font-custom, não por um data-fonte próprio
+    api.setFont('pwbr', true); // fonte de catálogo → passa pelo --font-custom, não por um data-fonte próprio
     api.render();
     const antes = document.documentElement.style.getPropertyValue('--font-custom');
 
     $('#typo-reset').click();
 
-    expect(antes).toContain('Comic Neue');
+    expect(antes).toContain('Playwrite BR');
     expect(document.documentElement.style.getPropertyValue('--font-custom')).toBe('');
     expect(document.documentElement.dataset.fonte).toBe('padrao');
   });

@@ -82,8 +82,6 @@
 /* Manuscritas (caligráficas inglesas · blackletter alemãs · alfabetização) */
 @font-face{font-family:'Pinyon Script';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/pinyon-400.woff2') format('woff2');}
 @font-face{font-family:'UnifrakturMaguntia';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/ufmag-400.woff2') format('woff2');}
-@font-face{font-family:'Comic Neue';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/comicneue-400.woff2') format('woff2');}
-@font-face{font-family:'Comic Neue';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/comicneue-700.woff2') format('woff2');}
 
 /* ===== ARCADE (papel `jogo`: HUD, título, rótulos — NUNCA a face da interface) =====
    ⚠️ SEM `unicode-range`, E É DELIBERADO. O Google Fonts serve esta família em CINCO ficheiros ordenados

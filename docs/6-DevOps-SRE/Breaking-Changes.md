@@ -661,6 +661,22 @@ import in `app/js/main.ts`:
 import { PM_BTNS, PM_OPTIONS_BTNS } from '@the-inclusionist/engine/ui/pause-buttons.js';
 ```
 
+## Z · The faces answer to the typographic catalogue (ADR-0176, issue #172)
+
+**Behaviour.** `catalogo_tipografico.json` is the source for which faces exist.
+- **Comic Neue left** — it is not in the catalogue: its `@font-face`, its two woff2 files and `font.desc.comicneue` are gone.
+  A child who had chosen it lands on Atkinson Hyperlegible (`resolveFontKey`'s fallback), with nothing lost but the face.
+- **Playwrite BR is offered in the reading menu** — the handwriting group's general face (the Dev).
+- **A face whose catalogue floor is above the 16 px base is drawn at that floor**: Playwrite BR, Space Grotesk, Sora, Plus
+  Jakarta Sans, Playfair Display, DM Serif Display, Fraunces and Bodoni Moda declare `minPx: 20`, and choosing one in the menu
+  writes `--fonte-escala: 1.25` on the document (`ui/fonts.escalaDaFace`); a reading face writes 1.
+
+**Shape.** `FontItem` gains a required `id`, the catalogue's key. 📏 Measured: no sibling repository builds a `FontItem`
+(`game-platformer` reads `FONT_GROUPS`).
+
+**What to do:** nothing, unless a game draws its own text in a face of the menu and assumed 16 px after the child chose one
+of the eight above — the document is 25% larger then.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |
