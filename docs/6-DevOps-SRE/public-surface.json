@@ -680,6 +680,7 @@
   ],
   "platform/tts.ts": [
     "CarregarVozNeural",
+    "LocaisDoRuntime",
     "ModuloNeural",
     "SessaoNeural",
     "Tts",

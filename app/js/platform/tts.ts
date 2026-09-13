@@ -20,13 +20,21 @@ interface TtsEngine { id: string; speak: (text: string) => void; }
 export interface SessaoNeural {
   predict: (texto: string) => Promise<{ arrayBuffer: () => Promise<ArrayBuffer> }>;
 }
+export interface LocaisDoRuntime {
+  onnxWasm: string;
+  piperData: string;
+  piperWasm: string;
+}
 export interface ModuloNeural {
   TtsSession: {
     create: (o: {
       voiceId: string;
       progress?: (p: { loaded: number; total: number }) => void;
       logger?: (...a: unknown[]) => void;
+      wasmPaths?: LocaisDoRuntime;
     }) => Promise<SessaoNeural>;
+    /** The provider's default runtime addresses; read so the engine overrides one of them and writes none (#173). */
+    WASM_LOCATIONS?: LocaisDoRuntime;
   };
 }
 /** A PORTA (ADR-0094). Uma linha do lado do jogo: `() => import('@mintplex-labs/piper-tts-web')`. */
@@ -142,9 +150,15 @@ export function createTts(ctx: TtsCtx): Tts {
     if (!fonte) { ctx.srAlert(t('sr.tts.noNeuralForLanguage')); return; }
     ttsLoading = true; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
     carregar().then(async (mod) => { // o jogo é que sabe de onde; o Vite dele faz o code-split. Ver ADR-0021 e ADR-0094
+      // 🎯 onnxruntime runs the wasm the GAME bundled (ADR-0177, issue #173): the provider otherwise points
+      // `ort.env.wasm.wasmPaths` at cdnjs 1.18.0 — a host outside the policy, and not the version the game imports.
+      // `undefined` lets onnxruntime resolve the file Vite emitted next to it. The phonemizer keeps the provider's own
+      // addresses, read from the module; without them no wasmPaths goes, since a partial one would leave it with none.
+      const locais = mod.TtsSession.WASM_LOCATIONS;
+      const wasmPaths = locais ? { ...locais, onnxWasm: undefined as unknown as string } : undefined;
       const session = await mod.TtsSession.create({ voiceId: fonte.voice,
         progress: (p: { loaded: number; total: number }) => { if (!p || !p.total) return; const pct = Math.round(p.loaded * 100 / p.total); if (pct >= _ttsPct + 25 && pct < 100) { _ttsPct = pct; ctx.srSay(t('sr.tts.progress', { pct })); } },
-        logger: () => {} });
+        logger: () => {}, ...(wasmPaths ? { wasmPaths } : {}) });
       // A FILA DE UM SAIU (ADR-0044, item 2). Ela era `if (busy) next = text; else speakNow(text)`, e o
       // efeito, varrendo cinco itens de menu, era ouvir o PRIMEIRO inteiro e depois o ÚLTIMO — os três do
       // meio sumiam, porque cada pedido sobrescrevia o `next`. Lento e lacunar, e quem não enxerga navega

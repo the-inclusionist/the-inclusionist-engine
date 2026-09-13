@@ -1080,6 +1080,11 @@
     "interface SessaoNeural": [
       "predict"
     ],
+    "interface LocaisDoRuntime": [
+      "onnxWasm",
+      "piperData",
+      "piperWasm"
+    ],
     "interface ModuloNeural": [
       "TtsSession"
     ],

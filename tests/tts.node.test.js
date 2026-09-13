@@ -169,3 +169,60 @@ describe('platform/tts — a porta da voz neural', () => {
     expect(spoke.length).toBe(1);
   });
 });
+
+// ===================================================================================================
+// WHERE THE VOICE RUNTIME COMES FROM (ADR-0177, issue #173)
+// ===================================================================================================
+// 📌 The provider sets `ort.env.wasm.wasmPaths` to cdnjs onnxruntime-web 1.18.0 unless told otherwise, while the games
+// bundle their own onnxruntime-web (1.29.0 in the platformer and the 15-puzzle) and Vite emits its `.wasm` next to the
+// game. The old default asked a host outside the policy for a runtime of another version.
+const LOCAIS_DO_FORNECEDOR = Object.freeze({
+  onnxWasm: 'https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.18.0/',
+  piperData: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.data',
+  piperWasm: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.wasm',
+});
+function fornecedorComLocais(registro, locais = LOCAIS_DO_FORNECEDOR) {
+  const TtsSession = { create: (o) => { registro.opcoes = o; return Promise.resolve({ predict: () => Promise.reject(new Error('sem áudio no node')) }); } };
+  if (locais) TtsSession.WASM_LOCATIONS = locais;
+  return () => Promise.resolve({ TtsSession });
+}
+
+describe('platform/tts — the voice runtime the game bundled', () => {
+  it('🔴 [Right] onnxruntime runs the wasm the game bundled, not the provider\'s cdnjs default', async () => {
+    const registro = {};
+    const { tts } = setup({ carregarVozNeural: fornecedorComLocais(registro) });
+    tts.setEngineSel('piper');
+    tts.loadTTS();
+    await assentar();
+    expect(registro.opcoes.wasmPaths, 'no wasmPaths: the provider falls back to cdnjs 1.18.0').toBeDefined();
+    expect('onnxWasm' in registro.opcoes.wasmPaths, 'the key must be present, or the provider keeps its default').toBe(true);
+    expect(registro.opcoes.wasmPaths.onnxWasm, 'an address here overrides the wasm Vite emitted next to the game').toBeUndefined();
+  });
+
+  it('🔴 [Right] the phonemizer keeps the provider\'s own addresses, read from the module and not written here', async () => {
+    const registro = {};
+    const outros = { ...LOCAIS_DO_FORNECEDOR, piperData: 'https://example.test/p.data', piperWasm: 'https://example.test/p.wasm' };
+    const { tts } = setup({ carregarVozNeural: fornecedorComLocais(registro, outros) });
+    tts.setEngineSel('piper');
+    tts.loadTTS();
+    await assentar();
+    expect(registro.opcoes.wasmPaths.piperData).toBe('https://example.test/p.data');
+    expect(registro.opcoes.wasmPaths.piperWasm).toBe('https://example.test/p.wasm');
+  });
+
+  it('📌 [Boundary] a provider without `WASM_LOCATIONS` gets no wasmPaths, rather than a phonemizer with no address', async () => {
+    const registro = {};
+    const { tts } = setup({ carregarVozNeural: fornecedorComLocais(registro, null) });
+    tts.setEngineSel('piper');
+    tts.loadTTS();
+    await assentar();
+    expect(registro.opcoes.wasmPaths).toBeUndefined();
+    expect(tts.getEngine()?.id).toBe('piper');
+  });
+});
+
+// ============================== MUTATIONS CHECKED (the runtime block) ==============================
+//   W1 no wasmPaths passed                          🔴 bundled wasm
+//   W2 onnxWasm kept from the provider              🔴 bundled wasm
+//   W3 phonemizer addresses written in the engine   🔴 read from the module
+//   W4 wasmPaths built without WASM_LOCATIONS       🔴 [Boundary]
