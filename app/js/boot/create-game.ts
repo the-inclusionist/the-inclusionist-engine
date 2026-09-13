@@ -2046,7 +2046,13 @@ export function createGame(o: CreateGameOptions): Engine {
         const fs = parseFloat(cs.fontSize) || 16;
         const linha = (parseFloat(cs.lineHeight) || fs * 1.2) + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
         fundo = nome.getBoundingClientRect().top + linha;
-        respiro = fs / 4;
+        // A quarter of the scale's base size, not of the name's, and yielding like the bar's offset above it: a face with a
+        // higher floor grows its text, not this gap (#172). Resolved by the stylesheet through a probe, so the rule has one home.
+        const sonda = regiao.ownerDocument.createElement('div');
+        sonda.style.cssText = 'position:absolute;visibility:hidden;height:calc(var(--ui-fs,16px) / 4 * var(--espaco-fixo,1))';
+        regiao.appendChild(sonda);
+        respiro = sonda.getBoundingClientRect().height || fs / 4;
+        sonda.remove();
       }
       sala = fundo - topo + respiro;
     }

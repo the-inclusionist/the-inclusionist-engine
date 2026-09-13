@@ -174,10 +174,11 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 .title-legend .lg-row{display:flex;gap:1.1em;justify-content:center;flex-wrap:wrap}
 .title-legend .lg{display:inline-flex;align-items:center;gap:.35em}
 .title-legend .lg-ico{display:inline-flex;align-items:center;justify-content:center;min-width:1.35em;height:1.35em;padding:0 .2em;border-radius:.68em;font-weight:800;font-size:1em;color:#fff;background:rgba(13,13,26,.85);text-shadow:0 1px 1px rgba(0,0,0,.55)}
-#title-icons{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:.3em;justify-content:center;flex-wrap:nowrap;white-space:nowrap} /* CABEÇALHO: 10px do topo, UMA fileira */
+#title-icons{position:absolute;top:calc(10px * var(--espaco-fixo,1));left:50%;transform:translateX(-50%);display:flex;gap:calc(var(--ui-fs,16px) * .3);justify-content:center;flex-wrap:nowrap;white-space:nowrap} /* header: 10 px from the top (yielding under a larger face), ONE row */
+#title-icons.pause-icons{margin:calc(.1rem * var(--espaco-fixo,1)) 0 calc(.35rem * var(--espaco-fixo,1))}
 /* The NAME of the pointed icon, just below the row. Absolute, so the bar's height — the band the game must not draw
    over (ADR-0148) — does not grow when a name appears; the explanation goes to the footer, not here. */
-#title-icons .pause-icons-cap{position:absolute;top:100%;line-height:1.25;left:50%;transform:translateX(-50%);margin:0;text-align:center;font-size:1em;color:#f6f5f0;pointer-events:none;white-space:nowrap;min-height:0;padding:.2em .6em}
+#title-icons .pause-icons-cap{position:absolute;top:100%;line-height:1.25;left:50%;transform:translateX(-50%);margin:0;text-align:center;font-size:1em;color:#f6f5f0;pointer-events:none;white-space:nowrap;min-height:0;padding:calc(var(--ui-fs,16px) * .2) calc(var(--ui-fs,16px) * .6)}
 /* the padding stays when empty: the room `createGame` reserves under the bar reads it (issue #160) */
 #title-icons .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px}
 /* Seletor de jogadores = UM botão só ("◀ Nº de jogadores: X ▶"); o lado clicado decide +1/−1 */
@@ -203,12 +204,13 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
   :root{ --bg:#000; --panel:#000; --ink:#fff; --ink-soft:#fff; --accent:#ffe600; --changed:#ffe600; }
 }
 *{box-sizing:border-box}
-/* ⚠️ O `font-size` PASSOU A SER MULTIPLICADO (ADR-0149 §1): a mão do país entra 25% maior, porque as
-   Playwrite declaram `minPx: 20` e 16 × 1,25 é exactamente esse piso. Quem escreve `--fonte-escala` é o ciclo
-   do 11.º ícone; ausente, vale 1 e nada muda — que é o que faz esta linha continuar a ser a de sempre para
-   todas as outras faces. 📌 O piso não é «recomendação»: abaixo dele a face deixa de ser DIFÍCIL e passa a
-   ser ILEGÍVEL, e a dificuldade é o exercício enquanto a ilegibilidade é a criança a desistir. */
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:calc(16px * var(--fonte-escala,1));line-height:var(--lh);letter-spacing:var(--ls);word-spacing:var(--ws)}
+/* A face with a floor above 16 px (`--fonte-escala`, written by the typography cycle and menu; ADR-0176 rule 4) enlarges
+   ITS OWN TEXT and not the whole document (interface log 2026-09-13, issue #172): the scale lives on `#game-region`'s
+   `font-size`, spacing bound to the text is written in `--ui-fs`, and the root stays 16 px so `rem` does not grow.
+   `--espaco-fixo` is the factor of the spaces that do NOT follow the scale — the ones the Dev saw shrink under a 25% browser
+   zoom while the text held «mantendo o design muito bom»: 1 at the base, down to that quarter at the 20 px floor. */
+:root{--espaco-fixo:max(.25, 4 - 3 * var(--fonte-escala,1))}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:var(--lh);letter-spacing:var(--ls);word-spacing:var(--ws)}
 /* matemática em mono tabular (algarismos alinhados/legíveis) */
 .quiz-box--math .quiz-prob,.quiz-box--math .quiz-choice,#hud-coins,#hud-total{font-family:var(--font-math);font-variant-numeric:tabular-nums}
 /* espaçamento de parágrafo ≥2× só em blocos de leitura (não quebra HUD/menus) */
@@ -566,9 +568,9 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .quiz-app{padding-top:var(--barra-a11y-h,0px);padding-bottom:var(--rodape-h,0px)} /* the footer band is its own zone (ADR-0164) */
 /* ADR-0163: at 640×360 the bar, the statement, four 44 px options and the footer band had 404 px to fit in 360 (measured).
    The spacing goes, not the targets or the 16 px floor: the statement keeps its size on a 1.25 line and no outer margins. */
-.quiz-pergunta{margin:0 0 .25rem;line-height:1.25}
+.quiz-pergunta{margin:0 0 calc(.25rem * var(--espaco-fixo,1));line-height:1.25}
 /* The quiz's MENU button (ADR-0166 erratum), in the top-left corner the bar leaves free: the engine's target size. */
-.quiz-menu{position:absolute;top:10px;left:10px;z-index:5;min-height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);padding:0 .8em}
+.quiz-menu{position:absolute;top:calc(10px * var(--espaco-fixo,1));left:calc(10px * var(--espaco-fixo,1));z-index:5;min-height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);padding:0 calc(var(--ui-fs,16px) * .8)}
 /* A PAUSA RÁPIDA (ADR-0155): PAUSADO ao centro da tela congelada — SÓ A PALAVRA, branca, com CONTORNO PRETO NAS
    LETRAS e nenhuma caixa: «Borda nas letras, não numa caixa» (Dev, errata do registo). O contorno é o que a mantém
    legível sobre um cenário claro; `paint-order` põe o traço POR BAIXO do preenchimento, para a letra não emagrecer, e
@@ -687,10 +689,10 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
    a soletrar letra por letra, que é o que ALL CAPS de verdade provoca em NVDA/JAWS. */
 /* Quiz options take the ENGINE's target floor (ADR-0163 rule 2): 44 px at 640×360, growing with the scale. They had
    9 mm computed by the quiz (54 px on a desktop), and four of them pushed the last one out of a 360 px region. */
-.quiz-alt{min-height:var(--alvo-min,44px);display:block;width:100%;margin:0} /* the list gap spaces them: issue #160 took the room for the icon name */
+.quiz-alt{min-height:var(--alvo-min,44px);display:block;width:100%;margin:0;padding:calc(var(--ui-fs,16px) * .4) calc(var(--ui-fs,16px) * .9)} /* the list gap spaces them (#160); padding in `--ui-fs`, so a larger face grows the text only (#172) */
 /* the marked option is not colour alone either (ADR-0159 rule 10): the same base stripe as an icon switched on */
 .quiz-alt.is-on{box-shadow:inset 0 0 0 3px var(--accent-ink)} /* a ring, not a bottom strip: the strip left the fill looking shifted up (#166) */
-.quiz-alts{display:flex;flex-direction:column;gap:.25rem}
+.quiz-alts{display:flex;flex-direction:column;gap:calc(.25rem * var(--espaco-fixo,1))}
 :root[data-letras="upper"] body,
 :root[data-letras="upper"] button,
 :root[data-letras="upper"] select,

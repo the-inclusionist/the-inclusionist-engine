@@ -92,6 +92,97 @@ describe('the quiz page', () => {
   });
 });
 
+// A FACE WITH A 20 px FLOOR ENLARGES ITS OWN TEXT, NOT THE WHOLE DOCUMENT (interface log 2026-09-13; issue #172).
+// 📏 Measured in dist/quiz.html at 640×360 with Playwrite BR (scale 1.25): the last option ended 40.6 px past the footer —
+// the options' `em` padding grew with the text (+24), the `rem` gaps with the root (+4), the statement and the name line
+// under the bar with the text (+15). The Dev, after zooming out to 25%: the text held its size while «uma série de espaços»
+// shrank, «mantendo o design muito bom» — those spaces are the ones that yield.
+const alturaDoRodape = () => {
+  const sonda = document.createElement('div');
+  sonda.style.cssText = 'position:absolute;height:var(--rodape-h,0px)';
+  document.getElementById('game-region').appendChild(sonda);
+  const h = sonda.getBoundingClientRect().height;
+  sonda.remove();
+  return h;
+};
+const espacos = () => {
+  const alt = document.querySelector('.quiz-alt'), cs = getComputedStyle(alt);
+  return {
+    raiz: parseFloat(getComputedStyle(document.documentElement).fontSize),
+    letraOpcao: parseFloat(cs.fontSize),
+    letraEnunciado: parseFloat(getComputedStyle(document.querySelector('.quiz-pergunta')).fontSize),
+    paddingOpcao: parseFloat(cs.paddingTop),
+    paddingNome: parseFloat(getComputedStyle(document.querySelector('#title-icons .pause-icons-cap')).paddingTop),
+    vaoOpcoes: parseFloat(getComputedStyle(document.querySelector('.quiz-alts')).rowGap),
+    margemEnunciado: parseFloat(getComputedStyle(document.querySelector('.quiz-pergunta')).marginBottom),
+    topoDaBarra: parseFloat(getComputedStyle(document.getElementById('title-icons')).top),
+  };
+};
+async function ateAEscala(valor) {
+  const botao = [...document.querySelectorAll('#title-icons .pi-btn')].find((b) => /comunica/i.test(b.getAttribute('aria-label') ?? ''));
+  expect(botao, 'no communication button on the bar').toBeTruthy();
+  for (let i = 0; i < 6 && (document.documentElement.style.getPropertyValue('--fonte-escala') || '1') !== valor; i++) {
+    botao.click();
+    await new Promise((r) => setTimeout(r, 60));
+  }
+  expect(document.documentElement.style.getPropertyValue('--fonte-escala') || '1', `the cycle never reached scale ${valor}`).toBe(valor);
+}
+
+describe('the quiz with a face whose floor is 20 px (issue #172)', () => {
+  let base;
+  it('📌 [Right] at the base scale the approved spacing stands: options and statement 4 px apart, bar 10 px from the top', () => {
+    base = espacos();
+    expect(base.vaoOpcoes).toBe(4);
+    expect(base.margemEnunciado).toBe(4);
+    expect(Math.round(base.topoDaBarra)).toBe(10);
+  });
+
+  it('🔴 [Right] the hand enlarges its own text, and neither the document nor the text-bound spaces', async () => {
+    await ateAEscala('1.25');
+    const e = espacos();
+    expect(e.letraOpcao, 'the options\' text did not grow to the floor').toBeCloseTo(base.letraOpcao * 1.25, 1);
+    expect(e.letraEnunciado).toBeCloseTo(base.letraEnunciado * 1.25, 1);
+    expect(e.raiz, 'the whole document grew with the hand').toBe(base.raiz);
+    expect(e.paddingOpcao, 'the options\' padding grew with the text').toBeCloseTo(base.paddingOpcao, 1);
+    expect(e.paddingNome, 'the padding of the icon name under the bar grew with the text').toBeCloseTo(base.paddingNome, 1);
+  });
+
+  it('🔴 [Right] the spaces that shrink under zoom-out yield while the text is larger', () => {
+    const e = espacos();
+    expect(e.vaoOpcoes, 'the gap between options did not yield').toBeLessThan(base.vaoOpcoes);
+    expect(e.margemEnunciado).toBeLessThan(base.margemEnunciado);
+    expect(e.topoDaBarra, 'the bar\'s offset did not yield').toBeLessThan(base.topoDaBarra);
+  });
+
+  it('🔴 [Right] and the last option still ends above the footer at 640×360', async () => {
+    const regiao = document.getElementById('game-region').getBoundingClientRect();
+    const ultima = [...document.querySelectorAll('.quiz-alt')].at(-1).getBoundingClientRect();
+    const rodape = alturaDoRodape();
+    try {
+      expect(Math.round(regiao.height)).toBe(360);
+      expect(Math.round(ultima.bottom - regiao.top), `last option ends at ${Math.round(ultima.bottom - regiao.top)} (footer from ${Math.round(regiao.height - rodape)})`)
+        .toBeLessThanOrEqual(Math.round(regiao.height - rodape));
+    } finally {
+      await ateAEscala('1');
+    }
+  });
+
+  it('📌 [Inverse] back at the base scale, the spaces come back', () => {
+    const e = espacos();
+    expect(e.vaoOpcoes).toBe(base.vaoOpcoes);
+    expect(Math.round(e.topoDaBarra)).toBe(Math.round(base.topoDaBarra));
+  });
+});
+
 // ============================== MUTATIONS CHECKED ==============================
 //   Q1 `.quiz-app` loses the bar offset                 🔴 statement behind the bar
 //   Q2 the «Visão» select comes back to quiz.html       🔴 a control in the footer zone
+// the face with a 20 px floor (issue #172), with `settings-typo`'s scale case:
+//   F1 the root scales with the face again              🔴 the document grew (both files)
+//   F2 the options' padding back to `em`                🔴 padding grew · last option in the footer
+//   F3 `--espaco-fixo` fixed at 1                        🔴 spaces yield · last option in the footer
+//   F4 the options' gap does not yield                  🔴 spaces yield · last option in the footer
+//   F5 the bar's offset does not yield                  🔴 spaces yield · last option in the footer
+//   F6 the gap under the bar is the name's quarter      🔴 last option in the footer
+//   F7 the name's padding back to `em`                  🔴 the name's padding grew (survived before that assertion existed)
+//   F8 the spaces yield only to half                    🔴 last option in the footer

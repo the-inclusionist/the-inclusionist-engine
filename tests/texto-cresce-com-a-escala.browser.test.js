@@ -70,8 +70,8 @@ describe('text inside the game region follows the scale', () => {
   });
 
   it('⚠️ [Right] the communication cycle\'s type scale still applies on top of it (the handwriting step is 1.25×)', () => {
-    // The root size carries `--fonte-escala`; a region size of `--ui-fs` alone would drop the 25 % the Playwrite step
-    // needs to reach its own 20 px floor.
+    // The region size carries `--fonte-escala` (since issue #172 the root does not); a region size of `--ui-fs` alone would
+    // drop the 25 % the Playwrite step needs to reach its own 20 px floor.
     palcoDe(700, 420);
     document.documentElement.style.setProperty('--fonte-escala', '1.25');
     try {

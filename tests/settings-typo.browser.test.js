@@ -173,14 +173,23 @@ describe('ui/settings-typo', () => {
      * piso a face deixa de ser DIFÍCIL e passa a ser ILEGÍVEL, e a dificuldade é o exercício enquanto a
      * ilegibilidade é a criança a desistir (emenda do ADR-0012).
      */
-    // 📌 Since ADR-0176 the menu itself draws a face at its floor: choosing Playwrite BR (20 px) makes the document 25% larger,
-    // and going back to a reading face gives the base back.
-    expect(parseFloat(getComputedStyle(raiz).fontSize), 'the menu did not draw Playwrite BR at its floor').toBe(20);
-    api.setFont('atkinson', false);
-    expect(parseFloat(getComputedStyle(raiz).fontSize), 'a base do documento não é 16 px').toBe(16);
-    raiz.style.setProperty('--fonte-escala', '1.25');
-    expect(parseFloat(getComputedStyle(raiz).fontSize),
-      'a escala foi escrita e o documento não a multiplicou — a mão do país fica abaixo do piso').toBe(20);
+    // 📌 Since ADR-0176 the menu itself draws a face at its floor: choosing Playwrite BR (20 px) makes the game's TEXT 25%
+    // larger, and going back to a reading face gives the base back. Since issue #172 the scale is the region's, never the
+    // document's: the root stays 16 px, so `rem` spacing does not grow with the hand (interface log 2026-09-13).
+    const regiao = document.createElement('div');
+    regiao.id = 'game-region';
+    document.body.appendChild(regiao);
+    try {
+      expect(parseFloat(getComputedStyle(regiao).fontSize), 'the menu did not draw Playwrite BR at its floor').toBe(20);
+      expect(parseFloat(getComputedStyle(raiz).fontSize), 'the whole document grew with the hand').toBe(16);
+      api.setFont('atkinson', false);
+      expect(parseFloat(getComputedStyle(regiao).fontSize), 'a base do texto não é 16 px').toBe(16);
+      raiz.style.setProperty('--fonte-escala', '1.25');
+      expect(parseFloat(getComputedStyle(regiao).fontSize),
+        'a escala foi escrita e o texto não a multiplicou — a mão do país fica abaixo do piso').toBe(20);
+    } finally {
+      regiao.remove();
+    }
 
     raiz.style.removeProperty('--fonte-escala');
     folha.remove();
