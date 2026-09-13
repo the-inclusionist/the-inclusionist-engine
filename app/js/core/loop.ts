@@ -26,6 +26,15 @@ export interface OpcoesDoLaco {
   aoFalhar?: (erro: unknown) => void;
 }
 
+/**
+ * THE NOTICE A LOOP USES WHEN ITS CALLER PASSED NONE (study item D1; ADR-0054: «stops the loop and says so»).
+ * 📏 Measured on 2026-09-13: `game-soccer` calls `startLoop` without `aoFalhar`, so its frame would stop in silence — the
+ * announcement depended on each game remembering it. `createGame` registers its own notice here and withdraws it on
+ * `unmount`; a caller's own `aoFalhar` still wins. The same shape as `registrarMapeamentoDoTeclado`.
+ */
+let avisoRegistrado: ((erro: unknown) => void) | null = null;
+export function registrarAvisoDeQueda(aviso: ((erro: unknown) => void) | null): void { avisoRegistrado = aviso; }
+
 export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2, opcoes: OpcoesDoLaco = {}): void {
   let parado = false;
   const passo = (): void => {
@@ -37,7 +46,8 @@ export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2
       ticker.remove?.(passo); // some do ticker quando dá: callback que roda 60×/s para nada custa em hardware fraco
       // O anúncio não pode ressuscitar o problema. Se o próprio aviso quebrar — sem leitor de tela, sem DOM —,
       // uma exceção aqui voltaria a ser invisível dentro do ticker, que é exatamente o defeito que isto fecha.
-      try { opcoes.aoFalhar?.(erro); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
+      // read at the throw, not at the start: a root mounted after the loop began still announces it
+      try { (opcoes.aoFalhar ?? avisoRegistrado)?.(erro); } catch { /* noop: o aviso falhou; o laço já parou, que é o essencial */ }
     }
   };
   ticker.add(passo);

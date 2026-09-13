@@ -51,6 +51,7 @@ import { entradaDe, keys, marcarTecla, soltarTecla, arestaDoJogador } from '../i
 import { initTouch, montarControleDeToque, lacunasDoToque } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
 import { criarAvisoDeQueda } from '../ui/loop-crash.js';
+import { registrarAvisoDeQueda } from '../core/loop.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
@@ -2081,6 +2082,8 @@ export function createGame(o: CreateGameOptions): Engine {
     criar: (tag) => doc.createElement(tag),
     narrar: (texto) => tts.narrate(texto),
   });
+  // study item D1: every `startLoop` that passes no `aoFalhar` announces through this one (measured: game-soccer passes none)
+  registrarAvisoDeQueda(aoFalhar);
 
   /*
    * ⚠️ MOSTRAR REFAZ OS ITENS ANTES DE REVELAR, e a ordem é a regra: o §5 do ADR-0106 diz que a criança nunca
@@ -2891,6 +2894,7 @@ unstyled`];
   function desmontar(): void {
     registrarMapeamentoDoTeclado(null);
     registrarMapeamentoDoPad(null);
+    registrarAvisoDeQueda(null);
     retirarAvisoDeAlcance();
     // ⚠️ `pop()` E NÃO UM `clear()`: cada `exit()` é a limpeza de DOM daquela cena, e saltá-la deixaria na
     // página o que o cartucho anterior desenhou. O laço tem fim porque `pop()` devolve `null` na pilha vazia.

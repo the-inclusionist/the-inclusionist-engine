@@ -18,7 +18,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { startLoop } from '../app/js/core/loop.js';
+import { startLoop, registrarAvisoDeQueda } from '../app/js/core/loop.js';
 
 /** Um ticker mínimo com a forma que `startLoop` pede, e com `remove` para provar que o laço se desregistra. */
 function fakeTicker(deltaTime = 1) {
@@ -91,6 +91,42 @@ describe('core/loop · o laço para e anuncia quando o quadro lança', () => {
       t.tick(); t.tick();
     }, 'a exceção não pode escapar para o ticker').not.toThrow();
     expect(chamadas).toBe(1);
+  });
+
+  // STUDY ITEM D1 (ADR-0054). 📏 Measured on 2026-09-13: `game-soccer` calls `startLoop` WITHOUT `aoFalhar`, so a frame
+  // that throws there stops in silence — the announcement depended on each game remembering. The root registers its own.
+  it('🔴 [Right] a loop started without `aoFalhar` announces through the one the root REGISTERED', () => {
+    const t = fakeTicker();
+    const erros = [];
+    registrarAvisoDeQueda((e) => erros.push(e));
+    try {
+      startLoop(t, () => { throw new Error('quadro'); }, 2);
+      t.tick(); t.tick();
+    } finally { registrarAvisoDeQueda(null); }
+    expect(erros.map((e) => e.message), 'the registered notice was not called exactly once').toEqual(['quadro']);
+  });
+
+  it('🎯 [Right] a game\'s own `aoFalhar` wins over the registered one — the engine\'s is a default', () => {
+    const t = fakeTicker();
+    const doRegisto = [];
+    const doJogo = [];
+    registrarAvisoDeQueda((e) => doRegisto.push(e));
+    try {
+      startLoop(t, () => { throw new Error('x'); }, 2, { aoFalhar: (e) => doJogo.push(e) });
+      t.tick();
+    } finally { registrarAvisoDeQueda(null); }
+    expect([doJogo.length, doRegisto.length]).toEqual([1, 0]);
+  });
+
+  it('🎯 [Zero] with the registration withdrawn, nothing is called — and the loop still stops', () => {
+    const t = fakeTicker();
+    const erros = [];
+    registrarAvisoDeQueda((e) => erros.push(e));
+    registrarAvisoDeQueda(null);
+    startLoop(t, () => { throw new Error('x'); }, 2);
+    t.tick();
+    expect(erros).toEqual([]);
+    expect(t.inscritas).toBe(0);
   });
 
   it('[Interface] o que `aoFalhar` lançar não pode ressuscitar o problema', () => {

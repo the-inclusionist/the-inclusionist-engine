@@ -10,6 +10,7 @@
   "consumer-quiz/main-quiz.ts": [
     "bootQuiz",
     "declararQuiz",
+    "fimTexto",
     "narracaoAoDesenhar",
     "narracaoDaPergunta",
     "opcaoFalada",
@@ -150,6 +151,7 @@
   ],
   "core/loop.ts": [
     "OpcoesDoLaco",
+    "registrarAvisoDeQueda",
     "startLoop"
   ],
   "core/password.ts": [
