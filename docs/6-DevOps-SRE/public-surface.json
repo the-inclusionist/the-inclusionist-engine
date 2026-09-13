@@ -125,6 +125,13 @@
   "core/escape-html.ts": [
     "escaparHtml"
   ],
+  "core/flash-threshold.ts": [
+    "COLUNAS",
+    "LINHAS",
+    "QuadroDeLuminancia",
+    "VeredictoDeFlashes",
+    "analisarFlashes"
+  ],
   "core/i18n.ts": [
     "applyDom",
     "availableLocales",

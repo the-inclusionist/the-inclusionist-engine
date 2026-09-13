@@ -224,6 +224,16 @@
     "type ControlledPlayer": "Player & { ctrl: KeyScheme }",
     "type PlayerView": "Pick<Player, K>"
   },
+  "core/flash-threshold.ts": {
+    "interface QuadroDeLuminancia": [
+      "luminancias",
+      "t"
+    ],
+    "interface VeredictoDeFlashes": [
+      "passa",
+      "piorSegundo"
+    ]
+  },
   "core/layers.ts": {
     "type LayerName": "keyof typeof Z",
     "type PostFx": "typeof POST_FX_ORDER[number]"
