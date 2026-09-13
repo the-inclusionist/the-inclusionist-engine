@@ -82,13 +82,14 @@ import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform
 import { ehCego, ehBaixaVisao, PADRAO, filtroChave, simulacaoIndisponivel, type VisualState, type Tema, type Correcao } from '../render/viz-axes.js';
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
 import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
+import { desenharBaixaVisao } from '../render/low-vision-drawing.js';
 import { cicloDeTipografia, INICIO_DO_CICLO, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
 import { invasoresDaBarra, escalaDoPalco, aplicarEscala, abaixoDoPiso, alvoMinimo, type Caixa, type Escala, type MedidaDeNo } from '../ui/layout.js';
 import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
-import { LOGICAL_W } from '../core/constants.js';
+import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { duracaoDaLegenda } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
@@ -798,9 +799,45 @@ export function createGame(o: CreateGameOptions): Engine {
   // O estado visual que o MUNDO mostra: a correcção (🚥) e a simulação (modo empatia) são dois campos dele, e
   // `filtroChave` já sabe que a simulação só corre com a correcção no padrão (ADR-0076).
   let estadoDoMundo: VisualState = PADRAO;
+  /*
+   * THE DRAWN SIMULATIONS (ADR-0151 §2 item 2; issue #182): tunnel vision, a central scotoma and scattered scotomas are a
+   * drawing over the declared world — the colour filter only blurs for them. A 320×180 layer stretched over the world, inside
+   * it, or beside it when the world is a canvas (which cannot hold children); `#viz-overlay` takes no click (style.css).
+   */
+  const DESENHADAS: ReadonlySet<string> = new Set(['tunnel', 'macular', 'diabetic']);
+  function desenharCamadaDoMundo(chave: string | null): void {
+    const lv = chave ? VIZ_BY_KEY[chave]?.lv : undefined;
+    let camada = $<HTMLCanvasElement>('#viz-overlay');
+    if (!lv || !DESENHADAS.has(lv)) { if (camada) camada.hidden = true; return; }
+    const mundo = cartucho.declaration.world();
+    if (mundo.kind !== 'element') return;
+    const el = $<HTMLElement>(mundo.selector);
+    if (!el) return; // already in `problems`
+    const eCanvas = el.tagName === 'CANVAS';
+    const hospedeiro = eCanvas ? el.parentElement : el;
+    if (!hospedeiro) return;
+    if (!camada) {
+      camada = doc.createElement('canvas');
+      camada.id = 'viz-overlay';
+      camada.setAttribute('aria-hidden', 'true');
+      // inline and not only in style.css: a page without the stylesheet must still let the clicks through to the game
+      Object.assign(camada.style, { position: 'absolute', inset: '0', pointerEvents: 'none', zIndex: '8' });
+      camada.width = LOGICAL_W;
+      camada.height = LOGICAL_H;
+    }
+    if (camada.parentElement !== hospedeiro) hospedeiro.appendChild(camada);
+    if (eCanvas) Object.assign(camada.style, { inset: 'auto', left: `${el.offsetLeft}px`, top: `${el.offsetTop}px`, width: `${el.offsetWidth}px`, height: `${el.offsetHeight}px` });
+    else Object.assign(camada.style, { width: '100%', height: '100%' });
+    const c = camada.getContext('2d');
+    if (!c) return;
+    c.clearRect(0, 0, camada.width, camada.height);
+    desenharBaixaVisao(c, lv, camada.width, camada.height);
+    camada.hidden = false;
+  }
   function recomporFiltroDoMundo(): void {
     const chave = filtroChave(estadoDoMundo);
     aplicarFiltroDeVisao([chave ? (VIZ_FILTER[chave] ?? '') : '', lqFilter()].filter(Boolean).join(' '), 'mundo');
+    desenharCamadaDoMundo(chave);
     applyCrt(); // the decorative CRT yields to every visual mode, and comes back when none is on (ADR-0047)
   }
   /*
@@ -1581,16 +1618,15 @@ export function createGame(o: CreateGameOptions): Engine {
      *
      * 📌 O MÓDULO É O DO JOGO DE PLATAFORMA (`ui/settings-empathy`), com o que a engine SABE fazer:
      *   · as SIMULAÇÕES que são um filtro no mundo — as três de daltonismo (as matrizes do `installCvdFilters`), o
-     *     desfoque, a névoa e a cegueira. ⚠️ FORA, e medido: túnel, mancha macular e manchas diabéticas — o `VIZ_FILTER`
-     *     delas é vazio ou só um desfoque; o que as desenha é uma camada DOM do jogo de plataforma, que esta raiz não tem.
-     *     Oferecê-las mostraria outra coisa com o nome da deficiência;
+     *     desfoque, a névoa e a cegueira; and the three DRAWN ones — tunnel vision, a central scotoma, scattered scotomas —
+     *     whose filter is only a blur: `desenharCamadaDoMundo` lays their drawing over the world (issue #182);
      *   · a PERDA AUDITIVA (`platform/audio.setHearingLossGraph`, que já é da engine).
      *   · the two MOTOR simulations (ADR-0181): «um botão por vez» and «sem força para segurar», applied to game keys by
      *     the filter at the end of the boot, before any cartridge hears them.
      * ⚠️ Sem cadeira de rodas (cortada pelo ADR-0151).
      * ⚠️ E a simulação respeita o ADR-0076: com uma correcção de cor ligada ela não corre, e DIZ porquê.
      */
-    const SIMULACOES_DO_MUNDO = ['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'blind'];
+    const SIMULACOES_DO_MUNDO = ['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind'];
     const painelDeEmpatia = montarPainel(ctxDoPainel, {
       id: 'empathy',
       rotulos: () => ({

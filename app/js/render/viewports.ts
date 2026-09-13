@@ -42,6 +42,7 @@ import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { makeCanvas, tex } from './canvas.js';
 import { DIRECT_CFG, directBgTexture, directSpriteTexture } from './high-contrast.js';
 import { VIZ_BY_KEY } from './viz-modes.js';
+import { desenharBaixaVisao } from './low-vision-drawing.js';
 import { CVD_MATRIX, installCvdFilters, type CvdKey } from './cvd-matrices.js';
 import type { RenderizarEm } from './port.js';
 
@@ -169,11 +170,8 @@ export function initViewports(ctx: ViewportsCtx): ViewportsApi {
   // O que o filtro GPU não sabe fazer: névoa de catarata, o túnel do glaucoma, a mancha central da degeneração
   // macular e as manchas espalhadas da retinopatia. São desenho, não transformação de cor — vêm como textura.
   function lvOverlayCanvas(lv: string): HTMLCanvasElement {
-    const W = LOGICAL_W, H = LOGICAL_H, cv = makeCanvas(W, H), c = cv.getContext('2d')!, cx = W / 2, cy = H / 2;
-    if (lv === 'haze') { c.fillStyle = 'rgba(244,246,250,0.42)'; c.fillRect(0, 0, W, H); }
-    else if (lv === 'tunnel') { const g = c.createRadialGradient(cx, cy, H * 0.12, cx, cy, H * 0.6); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(.5, 'rgba(0,0,0,.55)'); g.addColorStop(1, 'rgba(0,0,0,.99)'); c.fillStyle = g; c.fillRect(0, 0, W, H); }
-    else if (lv === 'macular') { const g = c.createRadialGradient(cx, cy, 2, cx, cy, H * 0.34); g.addColorStop(0, 'rgba(12,12,15,.95)'); g.addColorStop(.55, 'rgba(12,12,15,.5)'); g.addColorStop(1, 'rgba(12,12,15,0)'); c.fillStyle = g; c.fillRect(0, 0, W, H); }
-    else if (lv === 'diabetic') { for (const [fx, fy, fr] of [[.22, .3, .1], [.64, .22, .075], [.8, .58, .11], [.4, .7, .085], [.16, .8, .07], [.54, .48, .06]]) { const x = fx * W, y = fy * H, r = fr * W, g = c.createRadialGradient(x, y, 1, x, y, r); g.addColorStop(0, 'rgba(10,10,14,.95)'); g.addColorStop(.5, 'rgba(10,10,14,.7)'); g.addColorStop(1, 'rgba(10,10,14,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, 2 * r, 2 * r); } }
+    const W = LOGICAL_W, H = LOGICAL_H, cv = makeCanvas(W, H), c = cv.getContext('2d')!;
+    desenharBaixaVisao(c, lv, W, H); // one drawing for the viewports and for the world `createGame` declares (issue #182)
     return cv;
   }
 

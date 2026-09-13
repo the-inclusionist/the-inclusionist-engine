@@ -629,9 +629,9 @@ describe('createGame num documento de verdade', () => {
         // ADR-0159 rule 7: one choice among SEVEN positions is a dropdown list, not seven buttons (>5 → list)
         expect(document.querySelectorAll('#empathy-list button[data-viz], #empathy-list [role="radio"]'), 'the simulations are still seven buttons').toHaveLength(0);
         const chaves = [...document.getElementById('opt-simulacao').options].map((o) => o.value);
-        expect(chaves).toEqual(['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'blind']);
+        expect(chaves).toEqual(['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'lv-tunnel', 'lv-macular', 'lv-diabetic', 'blind']);
         expect(document.getElementById('opt-simulacao').closest('.ctrl-row').querySelector('strong')?.textContent, 'the list has no label').toBe('Simulações');
-        // 🔴 what the engine cannot draw is not offered: those need the platformer's DOM layer, and wheelchair was cut
+        // the three drawn simulations are offered since issue #182 (the engine lays their drawing over the world); wheelchair was cut
         expect(document.getElementById('opt-wheelchair'), 'opt-wheelchair').toBeNull();
       // ADR-0181: the two motor simulations the engine can now apply are offered
       for (const id of ['opt-onebtn', 'opt-semforca']) expect(document.getElementById(id), id).not.toBeNull();
