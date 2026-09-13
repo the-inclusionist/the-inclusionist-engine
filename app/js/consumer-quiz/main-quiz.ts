@@ -372,6 +372,7 @@ export function bootQuiz(): void {
       lexicalDifficulty: { label: t('quiz.acom.lexicalDifficulty') },
       wordHighlight: { label: t('quiz.acom.wordHighlight') },
       pieceSets: false, distinguishableSuits: false, timingWindow: false, aimAssist: false, repeatedInput: false,
+      ownerColors: false, contrastOutlines: false,
     },
   });
   // O que o hospedeiro não entregou vira lista legível em vez de painel vazio (achado 6). Num jogo de

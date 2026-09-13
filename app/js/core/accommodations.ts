@@ -43,6 +43,8 @@ export const ACCOMMODATIONS = [
   'cameraSway', 'easyMode', 'wheelchairMode', 'detectionLeniency', 'intensity', 'hints',
   'reducedCharacterMotion', 'caneSpacing', 'textPace', 'lexicalDifficulty', 'wordHighlight', 'pieceSets',
   'distinguishableSuits', 'timingWindow', 'aimAssist', 'repeatedInput',
+  // ADR-0188, the Dev: «Criar os dois assuntos.» Only the game knows whether items have an owner, or a drawing to outline.
+  'ownerColors', 'contrastOutlines',
 ] as const;
 
 export type Accommodation = (typeof ACCOMMODATIONS)[number];
@@ -89,6 +91,7 @@ export const GAME_KEYED = [
   'cameraSway', 'easyMode', 'wheelchairMode', 'detectionLeniency', 'intensity', 'hints',
   'reducedCharacterMotion', 'caneSpacing', 'textPace', 'lexicalDifficulty', 'wordHighlight', 'pieceSets',
   'distinguishableSuits', 'timingWindow', 'aimAssist', 'repeatedInput',
+  'ownerColors', 'contrastOutlines',
 ] as const satisfies readonly Accommodation[];
 
 /* ===================== THE PRESET: WHERE A GAME'S WORDS LIVE ===================== */

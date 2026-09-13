@@ -714,6 +714,17 @@ delivery with neural voice carries it too (18.7 MB). ⚠️ Until the same day, 
 of its runtime routes (a navigation fallback to an `index.html` the engine does not build threw inside the worker's promise):
 a build without an `index.html` has the same fault — set `navigateFallback`. 📏 The seven sibling games all have `app/index.html`.
 
+## AC · Two more game-keyed accommodations to answer: `ownerColors` and `contrastOutlines` (ADR-0188, issue #183)
+
+**Behaviour.** `core/accommodations.GAME_KEYED` grows from sixteen to eighteen. `createGame` and `mount()` refuse an
+`acomodacoes` answer that lacks either, naming it (ADR-0153). Answered with a word (`{ label, hint? }`), owner colours is a row
+in the visual panel in that word, writing `core/state.ownerColors`; contrast outlines are two step rows (foreground,
+background) writing `hcOutlineFg` / `hcOutlineBg`. Answered `false`, no row.
+
+**What to do:** add both keys to the `acomodacoes` answer — `ownerColors: false, contrastOutlines: false` where the game has no
+owned items and draws no outlines, or its word where it does. 📏 Measured in the sibling repositories on 2026-09-13: none of the
+seven passes `acomodacoes` yet (they consume an engine from before ADR-0153), so the change reaches them with that one.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

@@ -1633,6 +1633,7 @@ export function createGame(o: CreateGameOptions): Engine {
       }),
       render: () => {
         visual.render();
+        oferecerDonoEContornos();
         rotularLinha(linhaDasLegendas, specDasLegendas()); // in the language of the opening
         refletirLegendas();
       },
@@ -1655,6 +1656,66 @@ export function createGame(o: CreateGameOptions): Engine {
       refletirLegendas();
       srSay(t(state.captionsOn ? 'sr.visual.captionsOn' : 'sr.visual.captionsOff'));
     });
+    /*
+     * OWNER COLOURS AND CONTRAST OUTLINES (ADR-0188; issue #183): rows only where the cartridge answers the subject. Built once
+     * beside the panel's list (`visual.render()` rewrites that by markup), with their own ids — `ui/settings-visual` wires
+     * `#opt-ownercolors` at every render — and shown or hidden at each opening: `mount()` may have swapped the answer.
+     * Owner colours carries the game's word; the outlines are two positions of one subject, named by the engine.
+     */
+    const specDoDono = () => {
+      const palavra = subjectWord(cartucho.acomodacoes, 'ownerColors');
+      return { id: 'opt-dono', rotulo: palavra?.label ?? '', dica: palavra?.hint };
+    };
+    const { linha: linhaDoDono, controle: botaoDoDono } = linhaDeControle(ctxDoPainel, specDoDono());
+    const refletirDono = (): void => {
+      toggleBtn(botaoDoDono, state.ownerColors);
+      botaoDoDono.textContent = toggleLabel(state.ownerColors);
+      markChanged(linhaDoDono, state.ownerColors !== state.DEFAULTS.ownerColors);
+    };
+    botaoDoDono.addEventListener('click', () => {
+      state.setOwnerColorsValue(!state.ownerColors);
+      refletirDono();
+      srSay(`${specDoDono().rotulo}: ${toggleLabel(state.ownerColors)}`);
+    });
+    const NIVEIS_DE_CONTORNO = ['visual.contorno.0', 'visual.contorno.1', 'visual.contorno.2'] as const;
+    const contorno = (plano: 'fg' | 'bg') => {
+      const ler = (): number => (plano === 'fg' ? state.hcOutlineFg : state.hcOutlineBg);
+      const escrever = plano === 'fg' ? state.setOutlineFgValue : state.setOutlineBgValue;
+      const spec = () => ({ rotulo: t(`visual.contorno.${plano}`), valores: NIVEIS_DE_CONTORNO.map((k) => t(k)), atual: ler() });
+      const linhaC = doc.createElement('div');
+      linhaC.className = 'ctrl-row ctrl-row--passos';
+      const envelope = doc.createElement('span');
+      const dica = doc.createElement('span');
+      dica.className = 'opt-hint';
+      envelope.appendChild(dica);
+      linhaC.appendChild(envelope);
+      const passos = montarPassos(ctxDoPainel, spec());
+      passos.id = `opt-contorno-${plano}`;
+      linhaC.appendChild(passos);
+      passos.addEventListener('passo', (ev) => {
+        const nova = passoSeguinte(ler(), NIVEIS_DE_CONTORNO.length, (ev as CustomEvent<number>).detail);
+        if (nova === ler()) return;
+        escrever(nova);
+        atualizarPassos(passos, spec());
+        srSay(`${t(`visual.contorno.${plano}`)}: ${t(NIVEIS_DE_CONTORNO[nova]!)}`);
+      });
+      const refletir = (): void => {
+        atualizarPassos(passos, spec());
+        dica.textContent = subjectWord(cartucho.acomodacoes, 'contrastOutlines')?.hint ?? t(`visual.contorno.${plano}.dica`);
+      };
+      return { linha: linhaC, refletir };
+    };
+    const contornoFg = contorno('fg');
+    const contornoBg = contorno('bg');
+    const oferecerDonoEContornos = (): void => {
+      linhaDoDono.hidden = subjectWord(cartucho.acomodacoes, 'ownerColors') === null;
+      if (!linhaDoDono.hidden) { rotularLinha(linhaDoDono, specDoDono()); refletirDono(); }
+      const semContornos = subjectWord(cartucho.acomodacoes, 'contrastOutlines') === null;
+      for (const c of [contornoFg, contornoBg]) { c.linha.hidden = semContornos; if (!semContornos) c.refletir(); }
+    };
+    // after the list, owner colours first, then the two outlines (the captions row, built above, follows them)
+    for (const l of [contornoBg.linha, contornoFg.linha, linhaDoDono]) painelVisual.casca.card.insertBefore(l, painelVisual.casca.lista.nextSibling);
+    oferecerDonoEContornos();
     const semEfeito = (): void => {};
     const visual = initSettingsVisual({
       $, srSay,
@@ -1662,7 +1723,7 @@ export function createGame(o: CreateGameOptions): Engine {
       getPlayers: () => cartucho.players ?? [],
       getVisualSettings: () => ({
         lq: getLqT(), cbSafe: state.cbSafe,
-        ownerColors: state.DEFAULTS.ownerColors, outlineFg: state.DEFAULTS.hcOutlineFg, outlineBg: state.DEFAULTS.hcOutlineBg,
+        ownerColors: state.ownerColors, outlineFg: state.hcOutlineFg, outlineBg: state.hcOutlineBg,
         roleColors: { ...HC_ROLE_DEF },
       }),
       getSelectedPlayer: () => 0,
@@ -1671,7 +1732,8 @@ export function createGame(o: CreateGameOptions): Engine {
       renderEixosVisuais: semEfeito,
       setLq,
       setCbSafe: state.setCbSafeValue,
-      setOwnerColors: semEfeito, setOutlineFg: semEfeito, setOutlineBg: semEfeito,
+      // the panel's «restore» puts these back too (ADR-0188): their rows now exist where the game answered them
+      setOwnerColors: state.setOwnerColorsValue, setOutlineFg: state.setOutlineFgValue, setOutlineBg: state.setOutlineBgValue,
       setRoleColor: semEfeito, resetRoleColors: semEfeito,
       fillExplain: overlays.fillExplain,
       oferecer: { dono: false, papeis: false },

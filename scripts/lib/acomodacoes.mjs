@@ -176,6 +176,12 @@ export const ACOM = {
   dificuldade: { tem: false, o: 'escolher e mudar a dificuldade durante o jogo', chave: U },
   pularTrecho: { tem: false, o: 'saltar o que não é a mecânica central', chave: U },
   perfis: { tem: false, o: 'guardar conjuntos de ajustes por criança', chave: U },
+
+  // ============ DECIDIDAS PELO DEV, SEM MEDIÇÃO NO CATÁLOGO (ADR-0188) ============
+  // ⚠️ `semMedida`: a chave é a RESPOSTA do cartucho, e não um eixo que se declare categoria a categoria — pô-la em cada uma
+  // das 35 seria adivinhar pelo catálogo, que é amostra de estudo e não lista a construir. `medir` salta-as.
+  corDoDono: { tem: true, o: 'cada item na cor de quem o pode pegar', chave: { eixo: 'resposta', valores: ['sim'] }, semMedida: 'ADR-0188' },
+  contornos: { tem: true, o: 'contorno de 1º e 2º plano no alto contraste', chave: { eixo: 'resposta', valores: ['sim'] }, semMedida: 'ADR-0188' },
 };
 
 /* ===================== os eixos, juntos ===================== */
@@ -208,6 +214,7 @@ export function medir(categorias) {
     }
   }
   for (const [k, a] of Object.entries(ACOM)) {
+    if (a.semMedida) continue; // decided without measuring the catalogue — see the entries
     if (!a.chave) { problemas.push(`${k}: SEM chave`); continue; }
     if (a.chave === U) continue;
     if (Object.keys(a.chave).sort().join() !== 'eixo,valores') { problemas.push(`${k}: a chave tem de ser { eixo, valores } — UM eixo`); continue; }
@@ -220,7 +227,7 @@ export function medir(categorias) {
   const jogosDe = Object.fromEntries(categorias.map((c) => [c.nome, c.jogos]));
   const TOTAL = categorias.reduce((a, c) => a + c.jogos, 0);
   const casa = (chave, nome) => chave === U || eixosDe(nome)[chave.eixo].some((v) => chave.valores.includes(v));
-  const linhas = Object.entries(ACOM).map(([k, meta]) => {
+  const linhas = Object.entries(ACOM).filter(([, meta]) => !meta.semMedida).map(([k, meta]) => {
     const gens = nomes.filter((n) => casa(meta.chave, n));
     return { k, ...meta, nGen: gens.length, nJogos: gens.reduce((a, n) => a + jogosDe[n], 0), gens };
   }).sort((a, b) => b.nJogos - a.nJogos || b.nGen - a.nGen);
