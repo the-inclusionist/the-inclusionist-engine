@@ -579,6 +579,12 @@ a panel's `.overlay__back`, and drawn by `style.css` in the number's `::before` 
 **What to do:** if your own menu shows `t('pause.<act>')` and relied on its glyph, draw the glyph yourself out of the name
 (`data-glifo` with the engine stylesheet does it); if you matched a glyph in those strings, match the words.
 
+**And the switch words.** `ui.toggle.on` / `ui.toggle.off` are «Ligado» / «Desligado» (en «On» / «Off», es «Activado» /
+«Desactivado») without «❚❚» / «▶». `ui/settings-audio`'s master sound button uses them instead of «🔊 Ligado» /
+«🔇 Desligado»; `ui/settings-motion.motionRowHtml` writes them instead of «▶ Animado» / «❄ Congelado» and names the switch
+by its row only (`aria-label="<row>"`, the state is `aria-pressed`); `motionMasterLabel` returns the new
+`a11y.resumeAll` / `a11y.stopAll` instead of Portuguese literals with «▶» / «⏸».
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

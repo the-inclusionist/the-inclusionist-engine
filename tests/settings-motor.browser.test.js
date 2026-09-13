@@ -175,7 +175,7 @@ describe('ui/settings-motor', () => {
     initSettingsMotor(ctx);
     expect($('#opt-facil').classList.contains('is-on')).toBe(true);
     expect($('#opt-facil').getAttribute('aria-pressed')).toBe('true');
-    expect($('#opt-facil').textContent).toBe('❚❚ Ligado');
+    expect($('#opt-facil').textContent).toBe('Ligado');
     expect($('#opt-movement').classList.contains('is-on')).toBe(true); // barra acende
   });
 

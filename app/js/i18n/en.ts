@@ -557,8 +557,8 @@ const en: Record<string, string> = {
   'sr.crt.off': '{efeito} off.',
   'sr.crt.round': '{efeito}: {nivel}.',
   // ===================== ON / OFF =====================
-  'ui.toggle.on': '❚❚ On',
-  'ui.toggle.off': '▶ Off',
+  'ui.toggle.on': 'On',
+  'ui.toggle.off': 'Off',
   'ui.toggle.ariaOn': '{alvo}: on',
   'ui.toggle.ariaOff': '{alvo}: off',
   // ===================== THE TWO PER-PLAYER MOTOR CHOICES =====================
@@ -710,6 +710,7 @@ const en: Record<string, string> = {
   'a11y.pauseMenu': 'Pause menu',
   'a11y.simActive': 'Simulation mode on. Tap twice to go back to normal colours.',
   'a11y.stopAll': 'Stop all animations',
+  'a11y.resumeAll': 'Resume all animations',
   'a11y.btnJump': 'Jump (button 0)',
   'a11y.audioOut': 'Audio output per player',
   'a11y.visualSim': 'Visual simulation',

@@ -189,7 +189,7 @@ describe('ui/settings-audio — som mestre', () => {
     const btn = document.querySelector('#audio-master');
     btn.click();
     expect(getSoundOn()).toBe(false);
-    expect(btn.textContent).toBe('🔇 Desligado');
+    expect(btn.textContent).toBe('Desligado');
     expect(btn.getAttribute('aria-pressed')).toBe('false');
     expect(said.at(-1)).toBe('Som desligado.');
   });
@@ -222,7 +222,7 @@ describe('ui/settings-audio — modo cego / bengala', () => {
     const btn = document.querySelector('#opt-modocego');
     btn.click();
     expect(getModoCego()).toBe(true);
-    expect(btn.textContent).toBe('❚❚ Ligado');
+    expect(btn.textContent).toBe('Ligado');
   });
 
   it('[Interface] trocar a bengala para "meio bloco" persiste via ctx.setCaneBlockDiv e anuncia a mensagem certa', () => {

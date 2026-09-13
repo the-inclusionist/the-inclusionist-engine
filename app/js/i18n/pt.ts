@@ -685,8 +685,8 @@ const pt: Record<string, string> = {
   // ===================== LIGADO / DESLIGADO =====================
   // Duas palavras que estavam copiadas TREZE vezes, em nove arquivos — e dois desses arquivos declaravam um
   // helper "compartilhado" que só eles usavam. Agora é um só, em ui/dom, ao lado do `toggleBtn`.
-  'ui.toggle.on': '❚❚ Ligado',
-  'ui.toggle.off': '▶ Desligado',
+  'ui.toggle.on': 'Ligado',
+  'ui.toggle.off': 'Desligado',
   'ui.toggle.ariaOn': '{alvo}: ligado',
   'ui.toggle.ariaOff': '{alvo}: desligado',
   // ===================== AS DUAS ESCOLHAS MOTORAS POR JOGADOR =====================
@@ -792,6 +792,7 @@ const pt: Record<string, string> = {
   'a11y.pauseMenu': 'Menu de pausa',
   'a11y.simActive': 'Modo de simulação ativo. Toque duas vezes para voltar às cores normais.',
   'a11y.stopAll': 'Parar todas as animações',
+  'a11y.resumeAll': 'Retomar todas as animações',
   'a11y.btnJump': 'Pular (botão 0)',
   'a11y.audioOut': 'Saída de áudio por jogador',
   'a11y.visualSim': 'Simulação visual',

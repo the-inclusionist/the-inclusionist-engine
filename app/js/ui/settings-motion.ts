@@ -154,9 +154,9 @@ export function motionRowHtml(label: string, frozen: boolean, attr: string, soon
   const on = !frozen;
   const soonTag = soon ? ' <em style="opacity:.7">(em breve)</em>' : '';
   const cls = 'mode-btn switch' + (on ? ' is-on' : '');
-  const btnText = on ? '▶ Animado' : '❄ Congelado';
-  const state = on ? 'animação ligada' : 'animação congelada';
-  return `<div class="ctrl-row"><span>${label}${soonTag}</span><button class="${cls}" ${attr} type="button" aria-pressed="${on}" aria-label="${label}: ${state}">${btnText}</button></div>`;
+  // ADR-0159 rules 1 and 12: the switch is named by its row and says its state through `aria-pressed`; its text is the
+  // dictionary's on/off word — no glyph, and no Portuguese literal on a page in another language
+  return `<div class="ctrl-row"><span>${label}${soonTag}</span><button class="${cls}" ${attr} type="button" aria-pressed="${on}" aria-label="${label}">${toggleLabel(on)}</button></div>`;
 }
 
 /** Linhas "Personagem" (por jogador selecionado). */
@@ -216,7 +216,7 @@ export function allMotionFrozen(rmKeys: readonly MotionSceneKey[], rm: MotionSce
 
 /** allFrozen=true (tudo já congelado) → oferece "Retomar"; caso contrário → oferece "Parar". */
 export function motionMasterLabel(allFrozen: boolean): string {
-  return allFrozen ? '▶ Retomar todas as animações' : '⏸ Parar todas as animações';
+  return t(allFrozen ? 'a11y.resumeAll' : 'a11y.stopAll'); // no glyph in the name (ADR-0159 rule 12), in the page's language
 }
 
 /** `label` chega JÁ TRADUZIDO; o que era concatenação (' congelado.') virou moldura com `{alvo}` — é o que

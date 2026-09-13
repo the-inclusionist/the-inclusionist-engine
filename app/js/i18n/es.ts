@@ -556,8 +556,8 @@ const es: Record<string, string> = {
   'sr.crt.off': '{efeito} desactivada.',
   'sr.crt.round': '{efeito}: {nivel}.',
   // ===================== ENCENDIDO / APAGADO =====================
-  'ui.toggle.on': '❚❚ Activado',
-  'ui.toggle.off': '▶ Desactivado',
+  'ui.toggle.on': 'Activado',
+  'ui.toggle.off': 'Desactivado',
   'ui.toggle.ariaOn': '{alvo}: activado',
   'ui.toggle.ariaOff': '{alvo}: desactivado',
   // ===================== LAS DOS OPCIONES MOTORAS POR JUGADOR =====================
@@ -707,6 +707,7 @@ const es: Record<string, string> = {
   'a11y.pauseMenu': 'Menú de pausa',
   'a11y.simActive': 'Modo de simulación activo. Toca dos veces para volver a los colores normales.',
   'a11y.stopAll': 'Detener todas las animaciones',
+  'a11y.resumeAll': 'Reanudar todas las animaciones',
   'a11y.btnJump': 'Saltar (botón 0)',
   'a11y.audioOut': 'Salida de audio por jugador',
   'a11y.visualSim': 'Simulación visual',

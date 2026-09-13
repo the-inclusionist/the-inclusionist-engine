@@ -384,7 +384,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (b) {
       b.classList.toggle('is-on', ctx.getSoundOn());
       b.setAttribute('aria-pressed', String(ctx.getSoundOn()));
-      b.textContent = ctx.getSoundOn() ? '🔊 Ligado' : '🔇 Desligado';
+      b.textContent = toggleLabel(ctx.getSoundOn()); // the dictionary's words, no glyph in the name (ADR-0159 rule 12)
     }
     const v = ctx.$<HTMLInputElement>('#audio-master-vol');
     if (v) v.value = String(volPercent(ctx.getVolume()));

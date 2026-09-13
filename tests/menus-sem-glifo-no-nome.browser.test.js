@@ -58,6 +58,31 @@ describe('menu names carry no glyph', () => {
     const voltar = [...regiao.querySelectorAll('.overlay')].find((o) => !o.hidden).querySelector('.overlay__back');
     expect(rotuloAcessivel(voltar)).toBe('Voltar');
     expect(getComputedStyle(voltar, '::before').content, 'the arrow is no longer drawn').toContain('↩');
+    for (const ov of regiao.querySelectorAll('.overlay')) ov.hidden = true;
+    for (const c of regiao.querySelectorAll('.screen-pause')) c.hidden = true;
+  });
+
+  it('🔴 [Right] every control of every panel: no glyph in its name — switches\' state words included', async () => {
+    // Measured in the dist: «❚❚ On» / «▶ Off» on the switches, «🔇 Off» on the master sound, «⏸ Stop all animations».
+    const nomes = [];
+    for (const act of ['empatia', 'audio', 'som', 'motora', 'visual', 'anim']) {
+      regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF', key: 'f', bubbles: true, cancelable: true }));
+      const cartao = document.querySelector('.screen-pause:not([hidden])');
+      cartao.querySelector('.pm-btn[data-act="options"]').click();
+      cartao.querySelector(`.pm-btn[data-act="${act}"]`).click();
+      await esperar();
+      const painel = [...regiao.querySelectorAll('.overlay')].find((o) => !o.hidden);
+      for (const el of painel.querySelectorAll('button, select, input[type=range], [data-passos]')) {
+        if (el.offsetParent) nomes.push(`${painel.id}: ${rotuloAcessivel(el)}`);
+      }
+      painel.hidden = true;
+      cartao.hidden = true;
+      await esperar();
+    }
+    expect(nomes.length, 'no controls — the case would measure nothing').toBeGreaterThan(20);
+    expect(nomes.filter((n) => GLIFO.test(n)), 'control names that speak a symbol').toEqual([]);
+    // the master motion button speaks the page's words, not a Portuguese literal on every page
+    expect(nomes.some((n) => /^animation: Parar todas as animações$/.test(n)), 'the motion master button is not in the dictionary').toBe(true);
   });
 });
 
@@ -67,3 +92,9 @@ describe('menu names carry no glyph', () => {
 //   G3 the panel «Back» carries no arrow             🔴
 //   G4 a glyph back in a dictionary value          🔴
 //   G5 the glyph drawn WITH alternative text        🔴 (after the `/ ""` assertion was added)
+// ---- second cut: the switches (2026-09-12) ----
+//   T1 a glyph back in the off word                 🔴 five cases across three files
+//   T2 the motion master label with its glyph       🔴
+//   T3 the master sound literal back                 🔴 (settings-audio)
+//   T4 the motion row with its old text              🔴 (settings-motion)
+//   ⚠️ NOT caught here: the master motion label as a Portuguese literal WITHOUT glyph — these files run in pt.

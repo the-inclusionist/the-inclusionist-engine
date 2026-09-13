@@ -145,8 +145,8 @@ describe('ui/settings-visual — rgbToHex', () => {
 
 describe('ui/settings-visual — onOffLabel', () => {
   it('[Right] rótulo ligado/desligado', () => {
-    expect(onOffLabel(true)).toBe('❚❚ Ligado');
-    expect(onOffLabel(false)).toBe('▶ Desligado');
+    expect(onOffLabel(true)).toBe('Ligado');
+    expect(onOffLabel(false)).toBe('Desligado');
   });
 });
 

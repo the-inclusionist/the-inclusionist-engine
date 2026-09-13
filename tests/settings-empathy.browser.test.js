@@ -87,7 +87,7 @@ describe('ui/settings-empathy', () => {
     const h = $('#opt-hearing');
     expect(h.classList.contains('is-on')).toBe(false);
     expect(h.getAttribute('aria-pressed')).toBe('false');
-    expect(h.textContent).toBe('▶ Desligado');
+    expect(h.textContent).toBe('Desligado');
     expect(ctx.calls.reflectMotorEmpathy).toBe(1);
   });
 

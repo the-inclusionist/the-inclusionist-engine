@@ -33,19 +33,19 @@ describe('clampSelectedPlayer', () => {
 });
 
 describe('motionRowHtml', () => {
-  it('[Right] animado (frozen=false): switch is-on, aria-pressed=true, texto ▶ Animado', () => {
+  it('[Right] animado (frozen=false): switch is-on, aria-pressed=true, texto «Ligado» (sem glifo, ADR-0159 regra 12)', () => {
     const html = motionRowHtml('Andar', false, 'data-rmc="rmWalk"', false);
     expect(html).toContain('Andar');
     expect(html).toContain('is-on');
     expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain('▶ Animado');
+    expect(html).toContain('>Ligado<');
     expect(html).toContain('data-rmc="rmWalk"');
   });
-  it('[Inverse] congelado (frozen=true): sem is-on, aria-pressed=false, texto ❄ Congelado', () => {
+  it('[Inverse] congelado (frozen=true): sem is-on, aria-pressed=false, texto «Desligado» (sem glifo, ADR-0159 regra 12)', () => {
     const html = motionRowHtml('Andar', true, 'data-rmc="rmWalk"', false);
     expect(html).not.toContain('is-on');
     expect(html).toContain('aria-pressed="false"');
-    expect(html).toContain('❄ Congelado');
+    expect(html).toContain('>Desligado<');
   });
   it('[Boundary] soon=true acrescenta a marca "(em breve)"', () => {
     expect(motionRowHtml('X', true, '', true)).toContain('(em breve)');
@@ -58,12 +58,12 @@ describe('buildCharRowsHtml', () => {
     const player = { rmWalk: true, rmBreath: false, rmFlavor: false };
     const html = buildCharRowsHtml(RM_CHAR, player);
     expect((html.match(/ctrl-row/g) || []).length).toBe(3);
-    expect(html).toContain('❄ Congelado'); // rmWalk=true (congelado)
+    expect(html).toContain('>Desligado<'); // rmWalk=true (congelado)
   });
   it('[Zero] sem player (undefined) trata tudo como não-congelado (animado)', () => {
     const html = buildCharRowsHtml(RM_CHAR, undefined);
-    expect(html).not.toContain('❄ Congelado');
-    expect((html.match(/▶ Animado/g) || []).length).toBe(3);
+    expect(html).not.toContain('>Desligado<');
+    expect((html.match(/>Ligado</g) || []).length).toBe(3);
   });
 });
 
@@ -88,12 +88,12 @@ describe('crtToggleRowHtml / crtRoundRowHtml', () => {
   it('[Right] toggle ligado usa o rótulo "Ligado" e data-crt-tgl com a chave', () => {
     const html = crtToggleRowHtml('Scanlines', 'scan', true);
     expect(html).toContain('data-crt-tgl="scan"');
-    expect(html).toContain('❚❚ Ligado');
+    expect(html).toContain('>Ligado<');
     expect(html).toContain('is-on');
   });
-  it('[Inverse] toggle desligado usa "▶ Desligado" e não marca is-on', () => {
+  it('[Inverse] toggle desligado usa "Desligado" e não marca is-on', () => {
     const html = crtToggleRowHtml('Vinheta', 'vig', false);
-    expect(html).toContain('▶ Desligado');
+    expect(html).toContain('>Desligado<');
     expect(html).not.toContain('is-on');
   });
   it('[Boundary] cantos: a linha deixa o LUGAR dos passos ⯇ ⯈ com o nível de agora — e já não é um <select>', () => {
@@ -137,7 +137,7 @@ describe('allMotionFrozen', () => {
       'sem personagem, a metade do personagem não pode pesar na resposta').toBe(true);
     // e o rótulo que daí sai é o que oferece a VOLTA — a metade que a criança precisa de ver
     expect(motionMasterLabel(allMotionFrozen(RM_KEYS, rm, RM_CHAR, undefined)))
-      .toBe('▶ Retomar todas as animações');
+      .toBe('Retomar todas as animações');
   });
 
   it('[Inverse] sem personagem, cena por congelar continua a dar false', () => {
@@ -149,8 +149,8 @@ describe('allMotionFrozen', () => {
 
 describe('motionMasterLabel', () => {
   it('[Right] allFrozen=true → "Retomar"; allFrozen=false → "Parar"', () => {
-    expect(motionMasterLabel(true)).toBe('▶ Retomar todas as animações');
-    expect(motionMasterLabel(false)).toBe('⏸ Parar todas as animações');
+    expect(motionMasterLabel(true)).toBe('Retomar todas as animações');
+    expect(motionMasterLabel(false)).toBe('Parar todas as animações');
   });
 });
 
