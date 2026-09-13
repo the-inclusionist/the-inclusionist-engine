@@ -3191,7 +3191,56 @@ export function createGame(o: CreateGameOptions): Engine {
       linhaDoControle.hidden = acoesParaMapear().length === 0; // nothing named, nothing to map
     };
     refletirLinhaDoControle();
-    refletirTeclado = () => { refletirLinhasDoTeclado(); refletirLinhaDoControle(); };
+
+    /*
+     * MAPEAR TOQUE (ADR-0151 §2; issue #182): which function each on-screen pad button carries, with `input/touch`'s own
+     * editor (`renderTouchMap`, slot → one of the functions the game names). Offered only to a cartridge with a pad (ADR-0166),
+     * and only for the buttons the pad DRAWS — a slot whose function the game does not name is not drawn (ADR-0162), so its
+     * row would change nothing on screen. The pad is redrawn with every choice.
+     */
+    const painelDoToque = montarPainel(ctxDaMotora, {
+      id: 'touchcfg',
+      idDaLista: 'touchmap-list',
+      rotulos: () => ({
+        titulo: t('motora.toque'),
+        rotuloDaLista: t('motora.toque'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('pause.pmback'),
+      }),
+      render: () => { toque.renderTouchMap(); esconderSlotsSemFuncao(); },
+    });
+    painelDoToque.casca.reset.hidden = true;
+    const esconderSlotsSemFuncao = (): void => {
+      const nomeadas = acoesDoCartucho();
+      const mapa = toque.getTouchMap();
+      for (const sel of Array.from(painelDoToque.casca.lista.querySelectorAll<HTMLSelectElement>('select[data-slot]'))) {
+        const linha = sel.closest<HTMLElement>('.ctrl-row');
+        if (linha) linha.hidden = !nomeadas.has(mapa[sel.dataset.slot ?? ''] ?? '');
+      }
+    };
+    // after the select's own listener (it writes the map), the pad is drawn again with the new function
+    painelDoToque.casca.lista.addEventListener('change', () => { desenharPad(); esconderSlotsSemFuncao(); });
+    const linhaDoToque = doc.createElement('div');
+    linhaDoToque.className = 'ctrl-row';
+    const envelopeDoToque = doc.createElement('span');
+    const forteDoToque = doc.createElement('strong');
+    envelopeDoToque.appendChild(forteDoToque);
+    linhaDoToque.appendChild(envelopeDoToque);
+    const botaoDoToque = doc.createElement('button');
+    botaoDoToque.className = 'mode-btn';
+    botaoDoToque.setAttribute('type', 'button');
+    botaoDoToque.id = 'opt-toque';
+    botaoDoToque.addEventListener('click', () => painelDoToque.abrir());
+    linhaDoToque.appendChild(botaoDoToque);
+    painelDaMotora.casca.lista.appendChild(linhaDoToque);
+    const refletirLinhaDoToque = (): void => {
+      forteDoToque.textContent = t('motora.toque');
+      botaoDoToque.textContent = t('motora.abrir');
+      botaoDoToque.setAttribute('aria-label', t('motora.toque'));
+      linhaDoToque.hidden = !cartucho.controleNaTela || acoesParaMapear().length === 0; // no pad, or nothing named
+    };
+    refletirLinhaDoToque();
+    refletirTeclado = () => { refletirLinhasDoTeclado(); refletirLinhaDoControle(); refletirLinhaDoToque(); };
   }
   /*
    * THE MOTOR EMPATHY SIMULATIONS REACH THE GAME HERE (ADR-0181): in the window's capture, after the menu navigation registered
