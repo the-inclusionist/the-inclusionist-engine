@@ -523,6 +523,20 @@ directions and `action2`/`action3` if a touch-only child must move through the p
 `#touch-controls` covers the whole region (`inset:0`, still `pointer-events:none`), so the shoulder pairs sit in its top
 corners. A stored touch map from before keeps working: the new slots fall back to their defaults.
 
+## O · The engine sizes the game region, and the target floor is 22 × k (ADR-0163)
+
+**Behaviour, VALUES and two removed names.** `createGame` sizes `#game-region` itself — the largest integer multiple of
+320×180 in real pixels that fits the stage, never under 640×360, with ADR-0001's crop tolerance — on boot and on every
+window resize, and writes `--ui-fs`, `--tap`, `--hud-fs` and `--alvo-min` on it. A width or height the cartridge set on
+the region is overwritten. ADR-0095's height ruler is gone: **`ui/layout.REGUA_DE_ALVO` and
+`ui/layout.alvoMinimoDeToque` are removed**, replaced by `alvoMinimo(k)` (44 px at k = 2, growing with the scale), and
+`ui/layout.aplicarEscala(regiao, escala)` takes no height. `--alvo-min` is therefore never 24 or 34 px any more. The pause
+card's title is 1em with a 1.25 line.
+
+**What to do:** stop sizing `#game-region`; put your layout inside it and read `--ui-fs` / `--alvo-min`. Replace
+`alvoMinimoDeToque(altura)` with `alvoMinimo(k)`. If your screens counted on 24 or 34 px items to fit a small viewport,
+they now get 44 px or more — shorten the list, not the target.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

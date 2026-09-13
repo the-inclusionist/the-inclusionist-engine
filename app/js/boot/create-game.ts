@@ -1881,8 +1881,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const palco = $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap') ?? (regiao?.parentElement ?? null);
     if (!regiao || !palco || typeof regiao.style?.setProperty !== 'function') return;
     const { w, h } = screenBaseSize(Math.max(1, players().length));
-    const altura = palco.clientHeight || h;
-    aplicarEscala(regiao, escalaDoPalco(palco.clientWidth || w, altura, win.devicePixelRatio || 1, w, h), altura);
+    aplicarEscala(regiao, escalaDoPalco(palco.clientWidth || w, palco.clientHeight || h, win.devicePixelRatio || 1, w, h));
   }
   aplicarResolucao();
   if (typeof win.addEventListener === 'function') win.addEventListener('resize', aplicarResolucao);

@@ -247,14 +247,19 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 /* Etapa 2: menu de pausa POR TELA (dentro de cada .player-screen). Cada jogador vê e navega o seu. */
 .screen-pause{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:var(--bg-solid);font-family:var(--font);font-size:var(--ui-fs,16px);pointer-events:auto} /* base = --ui-fs (16 no mínimo, escala com o canvas) */
 .screen-pause[hidden]{display:none}
-.screen-pause .pause-card{max-width:94%;max-height:98%;padding:.5rem .7rem}
-.screen-pause .pause-card h2{font-size:1.2em;margin:.05rem 0 .28rem}
+/* ADR-0163: seven 44 px items are 308 of the 360 px at 640×360 (measured). The title keeps the 16 px text floor with a tight
+   line (20 px, not 29) and the card may use the whole height. */
+.screen-pause .pause-card{max-width:94%;max-height:100%;padding:.25rem .7rem}
+.screen-pause .pause-card h2{font-size:1em;line-height:1.25;margin:0 0 .1rem}
 .screen-pause .pause-menu{gap:.3rem}
 /* O quadro por jogador aperta o PADDING, nunca a altura mínima: o quadro apertado é o do jogo com quatro
    crianças, onde os dedos disputam espaço — o pior lugar possível para encolher um alvo de toque. O cartão
    tem `overflow:auto` e rola; o botão não diminui. */
 .screen-pause .pm-btn{padding:.3rem .7rem}
-.screen-pause .pause-legend{margin:.28rem 0 0}
+.screen-pause .pause-legend{margin:.1rem 0 0}
+/* ADR-0163: with 42 px items the seven-item submenu overflowed 640×360 by 28 px (measured). The gap goes, not the target:
+   centres stay 44 px apart, far above the 24 px the WCAG 2.5.8 spacing exception protects. */
+.screen-pause .pause-menu{gap:2px}
 /* Atalhos de a11y = botões do menu em forma de ícone, DENTRO do card (sem barra/sombra própria).
    Navegáveis por teclado (cima a partir de Continuar) e por toque/clique. */
 .pause-icons{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;align-items:center;margin:.1rem 0 .35rem}
@@ -344,17 +349,9 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 
    ⚠️ ESTA LINHA DIZIA TAMBÉM «e este projeto trata piso como piso», e essa metade morreu no ADR-0095: o
    piso deixou de ser um número único e passou a ser a régua abaixo. Fica o resto, que continua a valer. */
-/* ⚠️ O ALVO DO ITEM DE MENU SEGUE A RÉGUA DO ADR-0095, e não um literal.
-   Era `min-height:44px` cravado. O registro fixou que o alvo é função da ALTURA DA TELA — 24 px (WCAG
-   2.5.8, AA) abaixo de 540, 34 a partir de 540, 44 (2.5.5, AAA) a partir de 720 — porque um alvo grande
-   que exige ROLAGEM para ser alcançado pode custar mais dedo do que um menor que está à vista.
-
-   ⚠️ E ELE USA `--alvo-min` E NÃO `--tap`, que são coisas diferentes: `--tap` é o tamanho PREFERIDO e
-   cresce com a escala do canvas (22 × k, nunca menos de 44); `--alvo-min` é o CHÃO por altura. Um botão
-   isolado pode ser o preferido; um item de LISTA, que tem de caber inteiro, usa o chão.
-
-   O `44px` do fallback é o comportamento de antes, para o caso de `layout()` não ter corrido — que era
-   exatamente o que acontecia no `quiz.html` até 07/09. */
+/* The menu item's target is `--alvo-min`, never a literal. ADR-0163 superseded ADR-0095's height ruler (24/34/44 px):
+   the engine forces the resolution, no screen is under 640×360, and the floor is 22 × k — 44 px there, growing with the
+   scale. `aplicarEscala` writes it on the game region; the 44 px fallback is that same floor at k = 2. */
 .pm-btn{background:#1a2740;color:#eaf2f8;border:1px solid #3a4a6a;border-radius:10px;padding:.5rem .8rem;min-height:var(--alvo-min,44px);display:flex;align-items:center;justify-content:center;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
 /* ADR-0161: a locked item stays in the list, visibly muted; the cursor still lands on it and it says its reason. */
 .pm-btn[aria-disabled="true"]{color:#9aa6b8;border-style:dashed;cursor:not-allowed}

@@ -31,17 +31,15 @@
 // O que ele acertou em cheio foi o TAMANHO DO QUADRO: o gate media 420×300, um número que eu inventei. O piso
 // de verdade é 640×360, e é ele que o [Boundary] usa agora. Medir num quadro que ninguém vive é não medir.
 //
-// ⚠️ E A MEDIÇÃO EXPÔS UM CUSTO ainda não resolvido: a 640×360 o cartão tem 413px de conteúdo para 353
-// visíveis — os sete itens de 44px NÃO CABEM e a lista rola. Para quem navega às cegas a rolagem é inofensiva
-// (o anel dá a volta e cada item se anuncia); para o dedo é uma rolagem a mais. A escolha entre rolar,
-// encolher espaçamentos ou esconder o cabeçalho é do Dev.
+// ⚠️ (2026-09-12) The cost this measurement once exposed — 413 px of content for 353 visible at 640×360 — is closed
+// by the ADR-0163 block below: seven 44 px items fit, with the title at the 16 px floor and a 2 px gap.
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import '../app/css/style.css';
 import { screenPauseMarkup } from '../app/js/ui/pause-icons.js';
 import { PM_BTNS, PM_OPTIONS_BTNS } from '../app/js/ui/activities-menu.js';
-import { alvoMinimoDeToque } from '../app/js/ui/layout.js';
+import { alvoMinimo } from '../app/js/ui/layout.js';
 
 /** O alvo do ADR-0044 §6, em CSS px. */
 const ALVO_PX = 44;
@@ -174,177 +172,69 @@ describe('menu de pausa · 44 px, centrado e mais largo (ADR-0044, item 6)', () 
 });
 
 // ===================================================================================================
-// A RÉGUA POR ALTURA DE VIEWPORT (ADR-0095) — o alvo deixou de ser UM número
+// O ALVO É 44 px A 640×360 E CRESCE COM A ESCALA (ADR-0163) — a régua por altura do ADR-0095 saiu
 // ===================================================================================================
-// ⚠️ ESTE BLOCO É A RESPOSTA À PERGUNTA QUE O CABEÇALHO DESTE FICHEIRO DEIXOU EM ABERTO. Ele mediu que a
-// 640×360 o cartão não cabe e a lista rola, e escreveu que «a escolha entre rolar, encolher espaçamentos ou
-// esconder o cabeçalho é do Dev». O Dev escolheu uma QUARTA saída, que não estava na lista: o alvo passa a
-// ser função da ALTURA DO VIEWPORT, com os dois extremos ancorados nas duas normas.
-//
-//     altura ≥ 720   44 px   WCAG 2.2 · 2.5.5 (Enhanced) — AAA
-//     altura ≥ 540   34 px   o degrau do meio
-//     altura <  540  24 px   WCAG 2.2 · 2.5.8 (Minimum)  — AA
-//
-// ⚠️ E A RÉGUA É UM PISO, NÃO UM VALOR. Nada obriga o cartão a usar 24 px em 360; o que ela dá é a LICENÇA
-// de descer até lá. Medido: em 360 o excesso é de 42 px e descer os sete itens a 24 libertaria 140 — a
-// decisão resolve o encaixe com margem larga, e é essa margem que o `[Boundary]` do excesso vigia.
-describe('o alvo de toque segue a régua da altura de viewport (ADR-0095)', () => {
-  /** A altura MEDIDA do menor item visível, no quadro pedido. */
-  function menorItem(largura, altura) {
-    const sp = montar(largura, altura);
-    return Math.min(...itensVisiveis(sp).map((b) => b.getBoundingClientRect().height));
-  }
-
-  it('[Interface] a régua é do CÓDIGO, não deste teste — e os degraus são os três do Dev', () => {
-    // ⚠️ A régua vive em `ui/layout` e é importada aqui. Copiá-la para dentro do gate seria a divergência
-    // clássica: alguém muda o degrau no código, o gate segue aferindo o degrau antigo e continua verde.
-    expect(alvoMinimoDeToque(720)).toBe(44);
-    expect(alvoMinimoDeToque(540)).toBe(34);
-    expect(alvoMinimoDeToque(360)).toBe(24);
-  });
-
-  it('[Right] em cada um dos três degraus o item medido respeita o PISO daquele degrau', () => {
-    for (const h of [360, 540, 720]) {
-      const piso = alvoMinimoDeToque(h);
-      const medido = menorItem(640, h);
-      expect(medido, `a ${h}px de altura o item mede ${medido.toFixed(1)}px, abaixo do piso de ${piso}px`)
-        .toBeGreaterThanOrEqual(piso - 0.5);
-      palco.remove(); palco = null;
-    }
-  });
-
-  /** Monta o cartão com a variável que `layout()` escreveria para aquela altura — o caminho de produção. */
-  function montarComRegua(largura, altura) {
-    const sp = montar(largura, altura);
-    palco.style.setProperty('--alvo-min', alvoMinimoDeToque(altura) + 'px');
+// 🔴 O ADR-0095 fazia o alvo DESCER com a altura do viewport (24 px abaixo de 540, 34 abaixo de 720), porque a 640×360
+// um cartão de itens de 44 px rolava. O ADR-0163 tornou a resolução da ENGINE — nunca menos de 640×360 — e o Dev fixou
+// o alvo: 44 px («44px é o correto, eu errei quando disse 42px»). Não sobra tela menor para encolher; sobra o
+// cartão ter de CABER com itens de 44 px.
+describe('o alvo de toque é 44 px a 640×360 e cresce com a escala (ADR-0163)', () => {
+  /** Monta o cartão com a variável que `aplicarEscala` escreve para a escala `k` — o caminho de produção. */
+  function montarNaEscala(k) {
+    const sp = montar(320 * k, 180 * k);
+    palco.style.setProperty('--alvo-min', alvoMinimo(k) + 'px');
     return sp;
   }
 
-  it('⚠️ [Right] o item SEGUE a régua quando `layout()` escreve a variável', () => {
-    // ⚠️ SEM ESTE CASO O CONSERTO NÃO ESTAVA PROVADO. Os casos acima montam o cartão sem `layout()`, então
-    // `--alvo-min` não existe e o `.pm-btn` cai no fallback de 44 px — que é o valor de ANTES. Eles ficavam
-    // verdes sobre um CSS que nunca tinha lido a régua.
-    const sp = montarComRegua(640, 360);
-    const h = Math.min(...itensVisiveis(sp).map((b) => b.getBoundingClientRect().height));
-    expect(h, 'o item ignorou `--alvo-min` e ficou no literal de antes').toBeLessThan(ALVO_PX);
-    expect(h).toBeGreaterThanOrEqual(alvoMinimoDeToque(360) - 0.5);
+  it('[Interface] o piso é do CÓDIGO, não deste teste — 44 px no mínimo, e cresce com k', () => {
+    expect(alvoMinimo(2)).toBe(44);
+    expect(alvoMinimo(4)).toBe(88);
+    // abaixo de k=2 não há tela (ADR-0163), e um k inválido não inventa um alvo menor
+    expect(alvoMinimo(1)).toBe(44);
+    expect(alvoMinimo(NaN)).toBe(44);
   });
 
-  it('⚠️ [Right] e a 720 ele volta aos 44 — a régua sobe tanto quanto desce', () => {
-    const sp = montarComRegua(1280, 720);
-    const h = Math.min(...itensVisiveis(sp).map((b) => b.getBoundingClientRect().height));
-    expect(h).toBeGreaterThanOrEqual(ALVO_PX - 0.5);
-  });
-
-  it('⚠️ [Right] com a régua aplicada, o cartão CABE a 640×360 — a rolagem some', () => {
-    // Este é o custo que abriu o ADR-0095: 391 px de conteúdo para 349 visíveis, 42 de excesso. Com o
-    // alvo a seguir a régua, os sete itens passam a caber — que é a coisa toda que a decisão comprou.
-    const sp = montarComRegua(MENOR_QUADRO.w, MENOR_QUADRO.h);
-    const card = sp.querySelector('.pause-card');
-    expect(card.scrollHeight - card.clientHeight, 'o cartão continua a rolar').toBeLessThanOrEqual(0);
-  });
-
-  it('🔴 [Right] e o SUBMENU também cabe a 640×360 — antes do ADR-0151 ele transbordava 24 px e nada o via', () => {
-    // 📏 MEDIDO em 2026-09-12: com oito entradas (o «voltar» e sete painéis) o submenu rolava 24 px no quadro
-    // mínimo, enquanto este ficheiro só media a raiz. É a lista onde a criança passa mais tempo.
-    const sp = montarComRegua(MENOR_QUADRO.w, MENOR_QUADRO.h);
-    sp.querySelector('.pause-menu[data-sub="raiz"]').hidden = true;
-    sp.querySelector('.pause-menu[data-sub="opcoes"]').hidden = false;
-    expect(itensVisiveis(sp).length, 'o caso mediria um submenu vazio').toBe(PM_OPTIONS_BTNS.length);
-    const card = sp.querySelector('.pause-card');
-    const excesso = card.scrollHeight - card.clientHeight;
-    expect(excesso, `o submenu transborda ${excesso}px a 640×360`).toBeLessThanOrEqual(0);
-  });
-
-  it('[Boundary] ⚠️ o EXCESSO foi PAGO — o teto de 42 px chegou a zero', () => {
-    // ⚠️ ESTE CASO MUDOU DE ASSUNTO EM 07/09, e a história vale mais que o número. Ele nasceu como TETO:
-    // «a 640×360 o cartão tem 391 px de conteúdo para 349 visíveis, então rola 42», com a nota de que a
-    // régua do ADR-0095 dava a licença de resolver e o CSS ainda não a usava — `.pm-btn` tinha
-    // `min-height:44px` literal e nem lia o `--tap`.
-    //
-    // O CSS passou a ler `--alvo-min`. O teto foi pago e vira ZERO, que é o que um teto que encolhe faz
-    // quando chega ao fim: deixa de ser orçamento e passa a ser afirmação.
-    //
-    // ⚠️ E ELE MEDE O CAMINHO DE PRODUÇÃO — com a variável que `layout()` escreve. Medi-lo sem ela seria
-    // aferir o fallback de 44 px, que é o valor de ANTES: o caso ficaria verde sobre um cartão que ninguém
-    // consertou.
-    const sp = montarComRegua(MENOR_QUADRO.w, MENOR_QUADRO.h);
-    const card = sp.querySelector('.pause-card');
-    const excesso = card.scrollHeight - card.clientHeight;
-    expect(excesso, `o cartão voltou a transbordar: ${excesso}px`).toBeLessThanOrEqual(0);
-  });
-
-  it('[Zero] a régua NUNCA desce abaixo de 24 — tela menor mostra menos itens, não alvos menores', () => {
-    // Uma tela mais baixa que 360 não compra o direito de encolher mais: abaixo de 24 não é «AA num
-    // aparelho pequeno», é furar o piso da 2.5.8.
-    expect(alvoMinimoDeToque(0)).toBe(24);
-    expect(alvoMinimoDeToque(180)).toBe(24);
-    expect(alvoMinimoDeToque(-1)).toBe(24);
-    expect(alvoMinimoDeToque(NaN)).toBe(24);
-  });
-
-  it('[Boundary] os degraus abrem NO número, e nunca descem quando a tela cresce', () => {
-    expect(alvoMinimoDeToque(539)).toBe(24);
-    expect(alvoMinimoDeToque(540)).toBe(34); // o degrau abre EM 540, não depois
-    expect(alvoMinimoDeToque(719)).toBe(34);
-    expect(alvoMinimoDeToque(720)).toBe(44);
-    expect(alvoMinimoDeToque(4000), 'acima de 720 o piso é teto: 44 continua a valer').toBe(44);
-    let anterior = 0;
-    for (let h = 0; h <= 1200; h += 7) {
-      const v = alvoMinimoDeToque(h);
-      expect(v, `a régua DESCEU de ${anterior} para ${v} em ${h}px`).toBeGreaterThanOrEqual(anterior);
-      anterior = v;
+  it('🔴 [Right] a 640×360 todo item da raiz e do submenu mede pelo menos 44 px', () => {
+    const sp = montarNaEscala(2);
+    for (const sub of ['raiz', 'opcoes']) {
+      sp.querySelectorAll('.pause-menu').forEach((m) => { m.hidden = m.dataset.sub !== sub; });
+      const baixos = itensVisiveis(sp).map((b) => [b.dataset.act, b.getBoundingClientRect().height]).filter(([, h]) => h < 43.5);
+      expect(baixos, `${sub}: ${baixos.map(([a, h]) => `${a} ${h.toFixed(1)}px`).join(' | ')}`).toEqual([]);
     }
   });
 
-  it('⚠️ [Right] o ESPAÇAMENTO protege o dedo onde o tamanho desce — 24 px entre centros', () => {
-    // ⚠️ O ADR-0095 NOMEIA ISTO E NADA O AFERIA: «onde o TAMANHO não pode proteger o dedo, o ESPAÇAMENTO
-    // passa a ser o que protege — a mesma saída que a própria 2.5.8 dá na sua exceção de spacing».
-    //
-    // A exceção da WCAG 2.5.8 é uma medida, não uma intenção: um alvo menor que 24×24 ainda cumpre o
-    // critério se couber um CÍRCULO DE 24 px centrado nele sem tocar outro alvo. Entre itens empilhados
-    // isso é a distância entre CENTROS — e é ela que se mede aqui, nos três degraus.
-    //
-    // Medir o `gap` do CSS não serviria: o que separa dois dedos é a distância real, e ela sai da altura do
-    // item MAIS o gap. Ler a folha diria que a regra está escrita, não que ela acontece.
-    //
-    // ⚠️ E ESTE CASO NÃO SE DEIXA REPROVAR BAIXANDO A RÉGUA — está medido, e fica escrito para que ninguém o
-    // redescubra. Baixar o piso de `REGUA_DE_ALVO` de 24 para 14 reprova os TRÊS casos de tamanho e deixa
-    // este VERDE. O motivo é o número que a própria lista de mutações abaixo já tinha: sem `min-height`
-    // nenhum, um `.pm-btn` mede ~35,6 px, porque a altura real vem do `padding:.5rem .8rem` mais a
-    // line-height do `--ui-fs`. O `min-height` só morde quando pede MAIS que isso; 14 px não pede.
-    //
-    // Isso não faz do caso um verde vazio — faz dele um gate de OUTRA coisa, e a distinção importa: ele não
-    // protege a régua (os três casos de tamanho fazem isso), protege o `gap` e o `padding`. Uma mão futura
-    // que aperte `.pause-menu{gap}` ou encolha o padding do item para ganhar linha na tela de 360 encontra
-    // este caso vermelho — que é exatamente a mão que a exceção de spacing da 2.5.8 existe para deter.
-    for (const h of [360, 540, 720]) {
-      const sp = montarComRegua(640, h);
-      const centros = itensVisiveis(sp)
-        .map((b) => { const r = b.getBoundingClientRect(); return r.top + r.height / 2; })
-        .sort((a, b) => a - b);
+  it('🔴 [Right] com itens de 44 px, o cartão CABE a 640×360 — a raiz e o submenu, sem rolar', () => {
+    const sp = montarNaEscala(2);
+    for (const [sub, n] of [['raiz', PM_BTNS.length], ['opcoes', PM_OPTIONS_BTNS.length]]) {
+      sp.querySelectorAll('.pause-menu').forEach((m) => { m.hidden = m.dataset.sub !== sub; });
+      expect(itensVisiveis(sp).length, 'o caso mediria uma lista vazia').toBe(n);
+      const card = sp.querySelector('.pause-card');
+      const excesso = card.scrollHeight - card.clientHeight;
+      expect(excesso, `${sub}: o cartão transborda ${excesso}px a 640×360`).toBeLessThanOrEqual(0);
+    }
+  });
+
+  it('⚠️ [Right] a 1280×720 o alvo acompanha a escala (88 px)', () => {
+    const sp = montarNaEscala(4);
+    const h = Math.min(...itensVisiveis(sp).map((b) => b.getBoundingClientRect().height));
+    expect(h).toBeGreaterThanOrEqual(87.5);
+  });
+
+  it('⚠️ [Right] o ESPAÇAMENTO entre centros continua a proteger o dedo — nunca menos de 24 px', () => {
+    for (const k of [2, 3, 4]) {
+      const sp = montarNaEscala(k);
+      const centros = itensVisiveis(sp).map((b) => { const r = b.getBoundingClientRect(); return r.top + r.height / 2; }).sort((a, b) => a - b);
       for (let i = 1; i < centros.length; i++) {
-        const d = centros[i] - centros[i - 1];
-        expect(d, `a ${h}px de altura, dois itens ficaram a ${d.toFixed(1)}px de centro a centro`)
-          .toBeGreaterThanOrEqual(24);
+        expect(centros[i] - centros[i - 1], `k=${k}: dois itens a ${(centros[i] - centros[i - 1]).toFixed(1)}px`).toBeGreaterThanOrEqual(24);
       }
       palco.remove(); palco = null;
     }
   });
-
-  it('[Interface] o que se PERDE em 360 fica com número, porque AA honesto não é AA silencioso', () => {
-    // ⚠️ Este caso é o contrapeso do `[Interface] 44 CSS px é a MEDIDA FÍSICA` lá em cima, e os dois têm de
-    // conviver: a 96 px/pol, 24 CSS px são 6,4 mm — ABAIXO do alvo de polegar de 9,6 mm que o painel de
-    // toque deste jogo cita. A régua não faz esse custo desaparecer; ela decide pagá-lo em 360 para que o
-    // alvo esteja À VISTA em vez de atrás de uma rolagem. Quem propuser estender os 24 px para cima da
-    // régua encontra aqui o que estaria a gastar.
-    expect(+(24 * MM_POR_PX).toFixed(1)).toBeLessThan(9.6);
-    expect(+(44 * MM_POR_PX).toFixed(1)).toBeGreaterThanOrEqual(11);
-    expect(alvoMinimoDeToque(720), 'a tela grande continua a dever a faixa da mão de criança').toBe(ALVO_PX);
-  });
 });
 
 // ========================= MUTAÇÕES CONFERIDAS =========================
+//   ⚠️ (2026-09-12) the ADR-0095 ruler cases were replaced by the ADR-0163 block above; their mutations below that name
+//   `REGUA_DE_ALVO` or the 24/34/44 steps are history — the ones for this block are at its end of the list.
 //   · tirando `min-height:44px` de `.pm-btn` → "[Right] todo item" reprova medindo ~35,6 px.
 //   · devolvendo `.screen-pause .pm-btn{padding:.3rem .5rem}` sem altura mínima → "[Boundary] o quadro
 //     apertado" reprova, e os outros casos continuam verdes — que é exatamente o buraco que ele fecha.

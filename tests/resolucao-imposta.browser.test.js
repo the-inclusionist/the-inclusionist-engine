@@ -77,6 +77,13 @@ describe('createGame applies it — the cartridge has no other', () => {
     const r = regiao.getBoundingClientRect();
     expect([Math.round(r.width), Math.round(r.height)], 'the region did not follow the smaller space down to 640×360').toEqual([640, 360]);
   });
+
+  it('🔴 [Right] the target floor is written from the SAME scale — 44 px at 640×360 (ADR-0163 rule 2)', () => {
+    // After the resize above the region is 640×360 CSS px, so k = 640 / 320.
+    const k = regiao.getBoundingClientRect().width / 320;
+    expect(regiao.style.getPropertyValue('--alvo-min'), 'no target floor on the region').toBe(`${22 * k}px`);
+    expect(regiao.style.getPropertyValue('--alvo-min')).toBe('44px');
+  });
 });
 
 // ===== MUTATIONS CHECKED (2026-09-12) =====

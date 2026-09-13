@@ -14,38 +14,17 @@ import { screenBaseSize } from '../core/screens.js';
 import { crtScanVars } from '../render/crt.js';
 
 /**
- * A RÉGUA DO ALVO DE TOQUE, INDEXADA PELA ALTURA DO VIEWPORT (ADR-0095, decisão do Dev).
+ * THE TOUCH TARGET FLOOR, in CSS px, for a CSS scale factor `k` (ADR-0163).
  *
- * ⚠️ O ALVO DEIXOU DE SER UM NÚMERO E PASSOU A SER UMA FUNÇÃO DA TELA, e o motivo é um custo que o gate de
- * `pausa-44px` já tinha MEDIDO e deixado por resolver: a 640×360 o cartão de pausa não cabe e a lista ROLA.
- * Remedido em 06/09, porque o cartão mudou desde então: 391 px de conteúdo para 349 visíveis, ou seja 42 px
- * de excesso (o comentário antigo dizia 413/353). Um alvo de 44 px que exige rolagem para ser alcançado
- * pode custar mais dedo do que um de 24 px que está à vista.
- *
- * Os três degraus são os do Dev, e os dois extremos são as duas normas — não números de gosto:
- *
- *     altura ≥ 720   44 px   WCAG 2.2 · 2.5.5 Target Size (Enhanced) — AAA
- *     altura ≥ 540   34 px   o degrau do meio
- *     altura <  540  24 px   WCAG 2.2 · 2.5.8 Target Size (Minimum)  — AA
- *
- * ⚠️ ISTO É «MARCAR HONESTAMENTE ONDE SÓ DÁ AA», que é regra escrita do projeto — e não uma renúncia
- * silenciosa. O que se perde em 360 está registrado com número no ADR-0095: a 96 px/pol, 24 CSS px são
- * 6,4 mm, abaixo do alvo de polegar de 9,6 mm que o painel de toque deste jogo cita. É por isso que o
- * ESPAÇAMENTO entre alvos passa a ser o que protege o dedo onde o tamanho não pode — a mesma saída que a
- * própria 2.5.8 dá na sua exceção de spacing.
+ * 🔴 IT WAS A RULER BY VIEWPORT HEIGHT (ADR-0095: 24 px under 540, 34 under 720, 44 above), because a 640×360 pause
+ * card with 44 px items scrolled. ADR-0163 made the resolution the engine's — never under 640×360 — and the Dev set the
+ * target — «44px é o correto, eu errei quando disse 42px» — so the floor is 44 px at the minimum (k = 2) and
+ * grows with the scale, like the text; there is no smaller screen left to shrink for.
  */
-export const REGUA_DE_ALVO: readonly { readonly altura: number; readonly alvo: number }[] = Object.freeze([
-  { altura: 720, alvo: 44 },
-  { altura: 540, alvo: 34 },
-  { altura: 0, alvo: 24 },
-]);
+export function alvoMinimo(k: number): number {
+  return 22 * (Number.isFinite(k) && k > 2 ? k : 2);
+}
 
-/**
- * O menor alvo de toque aceitável num viewport desta altura, em CSS px.
- *
- * ⚠️ NUNCA DEVOLVE MENOS DE 24: abaixo disso não é «AA num aparelho pequeno», é furar o piso da WCAG. Uma
- * tela mais baixa que 360 não compra o direito de encolher mais — compra o direito de mostrar menos itens.
- */
 /**
  * OS NÓS DO JOGO QUE INVADEM O RECTÂNGULO DA BARRA DE ACESSIBILIDADE (ADR-0148 §3).
  *
@@ -80,11 +59,6 @@ export function invasoresDaBarra(barra: Caixa | null, nos: readonly CaixaNomeada
     .map((n) => n.nome);
 }
 
-export function alvoMinimoDeToque(alturaCss: number): number {
-  const h = Number.isFinite(alturaCss) ? alturaCss : 0;
-  for (const degrau of REGUA_DE_ALVO) if (h >= degrau.altura) return degrau.alvo;
-  return 24;
-}
 
 // A CONTAGEM DE JOGADORES entra por injeção desde 2026-08-26. Era `numPlayers`, um `let` de `core/state`
 // importado como binding vivo — e um `let` de módulo é compartilhado por qualquer segundo jogo que a
@@ -129,15 +103,15 @@ export function escalaDoPalco(availW: number, availH: number, dpr: number, baseW
 /**
  * Writes a scale onto the game region: its size, and the UI variables that grow with it.
  *
- * ⚠️ HOST-INJECTED (the region is passed in, the height of the available space too): `createGame` serves documents that
+ * ⚠️ HOST-INJECTED (the region is passed in): `createGame` serves documents that
  * are not the global one — the fault the root's finding 15 names about reaching `document` from under the injection.
  */
-export function aplicarEscala(regiao: HTMLElement, e: Escala, alturaDisponivel: number): void {
+export function aplicarEscala(regiao: HTMLElement, e: Escala): void {
   regiao.style.width = e.largura + 'px'; regiao.style.height = e.altura + 'px';
   regiao.style.setProperty('--hud-fs', Math.max(9, Math.round(180 * e.k * 0.052)) + 'px');
   regiao.style.setProperty('--ui-fs', (8 * e.k) + 'px');   // base LÓGICA 8px × k (16px em k=2)
   regiao.style.setProperty('--tap', (22 * e.k) + 'px');    // toque 22px × k (44px em k=2, piso WCAG)
-  regiao.style.setProperty('--alvo-min', alvoMinimoDeToque(alturaDisponivel) + 'px');
+  regiao.style.setProperty('--alvo-min', alvoMinimo(e.k) + 'px'); // 44 px at 640×360, growing with k (ADR-0163)
 }
 
 export function layout(): void {
@@ -161,10 +135,8 @@ export function layout(): void {
   // ESCALA das vars de UI é ESCOPADA ao #game-region: só a UI DENTRO do canvas (menus/HUD/pausa/quiz) escala com o
   // k. Fora do canvas (barra de topo, painel de debug) herda o :root → texto SEMPRE 16px, toque 44px (José).
   const gr = $<HTMLElement>('#game-region'); if (gr) {
-    // ⚠️ O PISO DA RÉGUA (ADR-0095), e ele é OUTRA COISA que o `--tap`. O `--tap` é o tamanho PREFERIDO e
-    // cresce com a escala do canvas; `--alvo-min` é o CHÃO por altura de tela. ⚠️ A ALTURA É A DO ESPAÇO DISPONÍVEL,
-    // e não a da sub-tela de um jogador: o dedo toca o aparelho, não o viewport lógico. (Escrito em `aplicarEscala`.)
-    aplicarEscala(gr, escala, availH);
+    // `--tap` é o tamanho PREFERIDO (22·k) e `--alvo-min` o CHÃO (22·k, 44 px a 640×360 — ADR-0163), escritos em `aplicarEscala`.
+    aplicarEscala(gr, escala);
   }
   crtScanVars(); // scanlines re-alinham quando a escala k muda
   if (/[?&]debug=true/.test(location.search)) console.info(`[escala] kDev=${kDev}× px REAIS (canvas físico ${baseW * kDev}×${baseH * kDev} = múltiplo INTEIRO de ${baseW}×${baseH}); CSS ${Math.round(baseW * k)}×${Math.round(baseH * k)} (k=${k.toFixed(3)}, dpr=${dpr})`);
