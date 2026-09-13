@@ -22,6 +22,12 @@ describe('padPxPerMm', () => {
     expect(padPxPerMm(true, 390, 844)).toBeCloseTo(844 / IPHONE16_LONG_MM, 6); // retrato: 844 é a longa
     expect(padPxPerMm(true, 844, 390)).toBeCloseTo(844 / IPHONE16_LONG_MM, 6); // paisagem: mesmo valor (max)
   });
+  it('📌 [Right] it is an ESTIMATE, not a measurement: a 10-inch tablet window is read as an iPhone 16 display (plan phase 5b)', () => {
+    // 1280×800 CSS on a tablet whose glass is ~216 mm long: the function answers 1280 / 141.1 ≈ 9.07 px/mm, not 1280 / 216 ≈ 5.93.
+    // The documented example is this case; a consumer reading «real millimetres» from it sizes a target ~53% larger than meant.
+    expect(padPxPerMm(true, 1280, 800)).toBeCloseTo(9.07, 2);
+    expect(padPxPerMm(true, 1280, 800)).not.toBeCloseTo(1280 / 216, 1);
+  });
   it('[Boundary] tela quadrada (w===h): max() não quebra, resultado = w/141.1', () => {
     expect(padPxPerMm(true, 500, 500)).toBeCloseTo(500 / IPHONE16_LONG_MM, 6);
   });

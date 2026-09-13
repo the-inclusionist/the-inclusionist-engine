@@ -103,9 +103,14 @@ export const IPHONE16_LONG_MM = 141.1;
 export const IPHONE16_LONG_PX = 852;
 export const IPHONE16_PXMM = IPHONE16_LONG_PX / IPHONE16_LONG_MM; // ~6,04 px CSS/mm
 
-/** mm→px CSS. No celular, ancora na aresta longa da JANELA (físico exato, retrato ou paisagem). No
- *  desktop/notebook, fixa no ratio do iPhone 16 (não cresce com a largura do monitor). Determinístico e puro:
- *  `mobile`/`viewW`/`viewH` chegam já resolvidos (isMobile()/innerWidth/innerHeight ficam no lado impuro). */
+/**
+ * CSS px per ASSUMED millimetre — an estimate anchored on one phone, NOT a measurement of the device (plan phase 5b).
+ * On a mobile, the window's long edge is taken to be an iPhone 16's display (141.1 mm), whatever the device: a 10-inch
+ * tablet window of 1280×800 is read as 141.1 mm long, about 9.07 px/mm, where its glass is about 216 mm. On a desktop it is
+ * the iPhone 16 ratio, fixed (it does not grow with the monitor). The browser exposes no physical size, so a «real
+ * millimetre» is not reachable from here; targets that must meet a floor use the engine's `--alvo-min` (ADR-0163).
+ * Pure: `mobile`/`viewW`/`viewH` arrive resolved (isMobile()/innerWidth/innerHeight stay on the impure side).
+ */
 export function padPxPerMm(mobile: boolean, viewW: number, viewH: number): number {
   return mobile ? Math.max(viewW, viewH) / IPHONE16_LONG_MM : IPHONE16_PXMM;
 }
