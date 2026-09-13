@@ -413,6 +413,13 @@ export interface Engine {
     readonly esconder: (i: number) => void;
   };
   readonly tts: ReturnType<typeof createTts>;
+  /**
+   * THE SOUND CAPTION, hosted by the engine (study item D3; ADR-0014; ADR-0164 rules 4–5): a line for eyes that cannot
+   * hear, in the screen footer above the explanation, at most two lines, gone after a moment. Written only while the
+   * child has captions on. Pass it as `createAudioEarcons`'s `showCaption`.
+   * 📏 Before it, each game wrote its own `#caption` with its own timer (platformer 1300 ms, soccer 2600 ms).
+   */
+  readonly legendarSom: (texto: string) => void;
   readonly overlays: SettingsPanelApi;
   readonly nav: MenuNavApi;
   readonly keyboard: KeyboardRuntime;
@@ -2278,6 +2285,31 @@ export function createGame(o: CreateGameOptions): Engine {
   function explicarIconeNoRodape(k: string | null): void {
     escreverNoRodape(k ? t(`icon.${k}.dica`) : null);
   }
+  /*
+   * THE SOUND CAPTION (study item D3). In the footer column, above the button legend and the explanation (ADR-0164 rule 4:
+   * «the sound caption above, the explanation below it»); `aria-hidden`, because whoever listens heard the sound itself.
+   * 📌 Its time on screen is the soccer game's, 2600 ms — the longer of the two the consumers had measured in play; a new
+   * caption restarts it.
+   */
+  const LEGENDA_DE_SOM_MS = 2600;
+  let legendaDeSom: HTMLElement | null = null;
+  let apagarLegendaDeSom: ReturnType<typeof setTimeout> | null = null;
+  function legendarSom(texto: string): void {
+    if (!state.captionsOn || !texto) return;
+    if (!legendaDeSom) {
+      const casa = rodapeDaTela($<HTMLElement>('#game-region'));
+      if (!casa) return;
+      legendaDeSom = doc.createElement('div');
+      legendaDeSom.className = 'legenda-de-som';
+      legendaDeSom.setAttribute('aria-hidden', 'true');
+      casa.appendChild(legendaDeSom);
+    }
+    const casaDaLegenda = legendaDeSom;
+    casaDaLegenda.textContent = texto;
+    casaDaLegenda.hidden = false;
+    if (apagarLegendaDeSom !== null) clearTimeout(apagarLegendaDeSom);
+    apagarLegendaDeSom = setTimeout(() => { casaDaLegenda.hidden = true; casaDaLegenda.textContent = ''; }, LEGENDA_DE_SOM_MS);
+  }
   /** O rodapé diz UMA explicação de cada vez: a do ícone apontado, ou o motivo de um item travado (ADR-0161). */
   function escreverNoRodape(texto: string | null): void {
     if (!explicacaoDaBarra && texto) {
@@ -2872,6 +2904,7 @@ unstyled`];
     unmount: desmontar,
     pausa,
     tts,
+    legendarSom,
     overlays,
     nav,
     keyboard,

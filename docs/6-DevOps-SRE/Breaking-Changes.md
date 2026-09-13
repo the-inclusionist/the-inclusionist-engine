@@ -610,6 +610,7 @@ place, speak `ui/item-announcement.anunciarItem({ rotulo, estado, posicao, total
 | `input/touch` | gains `montarControleDeToque`, `lacunasDoToque` |
 | `SettingsMotorCtx` | `setToggleRun` and `rebuildCoins` became OPTIONAL — a widening; whoever injects still rules |
 | `CreateGameOptions.players` | gains an optional `audioSink`, written by the hearing panel and read by `ui/pause-icons` |
+| `Engine.legendarSom` | new: the engine hosts the sound caption in the screen footer (study item D3); pass it as `createAudioEarcons`'s `showCaption` instead of a page `#caption` |
 
 ## F · The commits, and whether they carry the footer
 
