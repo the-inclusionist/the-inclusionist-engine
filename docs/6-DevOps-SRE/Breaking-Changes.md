@@ -610,6 +610,7 @@ place, speak `ui/item-announcement.anunciarItem({ rotulo, estado, posicao, total
 | `input/touch` | gains `montarControleDeToque`, `lacunasDoToque` |
 | `SettingsMotorCtx` | `setToggleRun` and `rebuildCoins` became OPTIONAL — a widening; whoever injects still rules |
 | `CreateGameOptions.players` | gains an optional `audioSink`, written by the hearing panel and read by `ui/pause-icons` |
+| `Engine.medirFlashes` · `core/flash-threshold` | new: measures the world's canvas against the WCAG 2.3.1 general flash threshold, only when called; a failure is a line of `problems` (study item B2) |
 | `core/i18n.lacunasDosDicionarios` | new: keys a cartridge registered in one of pt/en/es and not another, read by `createGame`'s `problems` (study item E4) |
 | `core/loop.registrarAvisoDeQueda` | new: `createGame` registers its crash notice, and a `startLoop` with no `aoFalhar` announces through it (study item D1); a game's own `aoFalhar` still wins |
 | `Engine.legendarSom` | new: the engine hosts the sound caption in the screen footer (study item D3); pass it as `createAudioEarcons`'s `showCaption` instead of a page `#caption` |

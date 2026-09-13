@@ -37,6 +37,12 @@
       "setTemaDoJogador?",
       "sonarPlayers?"
     ],
+    "interface MedicaoDeFlashes": [
+      "lido",
+      "motivo?",
+      "passa?",
+      "piorSegundo?"
+    ],
     "interface Engine": [
       "alcance",
       "aoFalhar",
@@ -47,6 +53,7 @@
       "declines",
       "keyboard",
       "legendarSom",
+      "medirFlashes",
       "mount",
       "nav",
       "overlays",

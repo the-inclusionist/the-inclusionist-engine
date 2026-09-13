@@ -5,6 +5,7 @@
     "Engine",
     "EngineHost",
     "GanchosDoCartucho",
+    "MedicaoDeFlashes",
     "createGame"
   ],
   "consumer-quiz/main-quiz.ts": [

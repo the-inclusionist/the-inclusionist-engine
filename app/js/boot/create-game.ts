@@ -52,6 +52,7 @@ import { initTouch, montarControleDeToque, lacunasDoToque } from '../input/touch
 import { initTouchBindings } from '../input/touch-bindings.js';
 import { criarAvisoDeQueda } from '../ui/loop-crash.js';
 import { registrarAvisoDeQueda } from '../core/loop.js';
+import { analisarFlashes, COLUNAS, LINHAS, type QuadroDeLuminancia } from '../core/flash-threshold.js';
 import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
@@ -390,6 +391,14 @@ export interface CreateGameOptions {
   readonly setCorrecaoDoJogador?: (i: number, correcao: Correcao) => void;
 }
 
+/** What `Engine.medirFlashes` found. `passa` and `piorSegundo` exist only when the canvas was read. */
+export interface MedicaoDeFlashes {
+  readonly lido: boolean;
+  readonly motivo?: string;
+  readonly passa?: boolean;
+  readonly piorSegundo?: number;
+}
+
 export interface Engine {
   readonly declaration: GameDeclaration;
   /**
@@ -421,6 +430,14 @@ export interface Engine {
    * 📏 Before it, each game wrote its own `#caption` with its own timer (platformer 1300 ms, soccer 2600 ms).
    */
   readonly legendarSom: (texto: string) => void;
+  /**
+   * MEASURES WHAT THE WORLD'S CANVAS FLASHES for `ms`, against the WCAG 2.3.1 general flash threshold (study item B2;
+   * `core/flash-threshold`). Only when called — reading pixels every frame costs a school machine (pillar 1), so play never
+   * pays for it. A failure is also a line of `problems`. `lido: false` says why nothing was measured (no canvas, a canvas
+   * the page may not read, or one that reads transparent, as a WebGL canvas without `preserveDrawingBuffer` does) — never a
+   * pass by silence. The red flash is not measured.
+   */
+  readonly medirFlashes: (ms: number) => Promise<MedicaoDeFlashes>;
   readonly overlays: SettingsPanelApi;
   readonly nav: MenuNavApi;
   readonly keyboard: KeyboardRuntime;
@@ -2891,6 +2908,67 @@ export function createGame(o: CreateGameOptions): Engine {
 unstyled`];
   }
 
+  /*
+   * THE FLASH SAMPLER (study item B2, cut 2). Each animation frame the world's canvas is drawn into 160×120, the relative
+   * luminance is computed per pixel (WCAG's sRGB formula) and averaged into the 16×12 grid of `core/flash-threshold` — per
+   * pixel and then averaged, so a small bright area weighs by its area; a direct 16×12 downscale samples a few pixels and a
+   * flash between them goes unseen. Registered from the frame after the call, gone when the time is up.
+   */
+  const problemasMedidos: string[] = [];
+  const AMOSTRA_C = COLUNAS * 10;
+  const AMOSTRA_L = LINHAS * 10;
+  const linear = (v: number): number => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  function medirFlashes(ms: number): Promise<MedicaoDeFlashes> {
+    const mundo = cartucho.declaration.world();
+    const alvo = mundo.kind === 'element' ? $<HTMLElement>(mundo.selector) : null;
+    const canvas = alvo?.tagName === 'CANVAS' ? alvo as HTMLCanvasElement : alvo?.querySelector('canvas') ?? null;
+    if (!canvas) return Promise.resolve({ lido: false, motivo: 'the world is not a canvas and contains none to read' });
+    const copia = doc.createElement('canvas');
+    copia.width = AMOSTRA_C;
+    copia.height = AMOSTRA_L;
+    const ctx = copia.getContext('2d', { willReadFrequently: true });
+    if (!ctx || typeof win.requestAnimationFrame !== 'function') return Promise.resolve({ lido: false, motivo: 'this host cannot sample canvases' });
+    return new Promise((resolver) => {
+      const quadros: QuadroDeLuminancia[] = [];
+      let inicio = -1;
+      let algumPixel = false;
+      const passo = (agora: number): void => {
+        if (inicio < 0) inicio = agora;
+        let px: Uint8ClampedArray;
+        try {
+          ctx.clearRect(0, 0, AMOSTRA_C, AMOSTRA_L);
+          ctx.drawImage(canvas, 0, 0, AMOSTRA_C, AMOSTRA_L);
+          px = ctx.getImageData(0, 0, AMOSTRA_C, AMOSTRA_L).data;
+        } catch {
+          resolver({ lido: false, motivo: 'the page may not read the world\'s canvas (an image from another origin drew on it)' });
+          return;
+        }
+        const grade = new Float32Array(COLUNAS * LINHAS);
+        for (let y = 0; y < AMOSTRA_L; y++) {
+          for (let x = 0; x < AMOSTRA_C; x++) {
+            const i = (y * AMOSTRA_C + x) * 4;
+            if (px[i + 3]) algumPixel = true;
+            const l = 0.2126 * linear(px[i]!) + 0.7152 * linear(px[i + 1]!) + 0.0722 * linear(px[i + 2]!);
+            grade[Math.floor(y / 10) * COLUNAS + Math.floor(x / 10)] += l / 100;
+          }
+        }
+        quadros.push({ t: agora - inicio, luminancias: grade });
+        if (agora - inicio < ms) { win.requestAnimationFrame(passo); return; }
+        if (!algumPixel) {
+          resolver({ lido: false, motivo: 'the world\'s canvas read transparent in every frame (WebGL canvases need preserveDrawingBuffer)' });
+          return;
+        }
+        const { passa, piorSegundo } = analisarFlashes(quadros);
+        if (!passa) {
+          problemasMedidos.push(`the world's canvas flashed ${piorSegundo} times in one second within a 10-degree field `
+            + '(WCAG 2.3.1 allows 3): it can trigger seizures');
+        }
+        resolver({ lido: true, passa, piorSegundo });
+      };
+      win.requestAnimationFrame(passo);
+    });
+  }
+
   function desmontar(): void {
     registrarMapeamentoDoTeclado(null);
     registrarMapeamentoDoPad(null);
@@ -2909,6 +2987,7 @@ unstyled`];
     pausa,
     tts,
     legendarSom,
+    medirFlashes,
     overlays,
     nav,
     keyboard,
@@ -2916,7 +2995,7 @@ unstyled`];
     aplicarFiltroDeVisao,
     cenas: cenasDaRaiz,
     cvdFilters,
-    get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho(), ...lacunasDosDicionarios()]; },
+    get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho(), ...lacunasDosDicionarios(), ...problemasMedidos]; },
     aoFalhar,
     get alcance() { return alcanceAtual; },
   };
