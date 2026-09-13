@@ -619,6 +619,16 @@ is kept. The service worker routes on that cache now only READ it (`cacheWillUpd
 **What to do:** nothing, unless a tool read `incl-pesados-v1` by name. A deployment served over plain HTTP (no secure
 context) keeps no heavy file — serve it over HTTPS or localhost.
 
+## W · WebGazer runs only from the checked cache (issue #169)
+
+**Behaviour.** `ui/webcam.loadWebGazer` no longer appends `<script src="https://webgazer.cs.brown.edu/webgazer.js">`. It
+reads the file from `CACHE_PESADOS` — downloaded at install by `baixarPesados` and kept only when its sha256 matches (#168)
+— and runs it from a `blob:`. When the file is not there yet, nothing runs and `#sr-alert` says eye control has not
+reached the device. The value of `sr.eyes.needsInternet` changes accordingly in pt, en and es.
+
+**What to do:** a game that passes `baixarPesados: false` to `createGame` gets no eye control; leave the download on, or
+call `baixarPesados` yourself. A Content-Security-Policy must allow `blob:` in `script-src`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

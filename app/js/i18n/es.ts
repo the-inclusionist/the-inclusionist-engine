@@ -37,7 +37,7 @@ const es: Record<string, string> = {
   'sr.libras.loading': 'El intérprete de lengua de señas todavía está cargando — inténtalo de nuevo en un momento.',
   'sr.eyes.loadFailed': 'WebGazer no cargó.',
   'sr.eyes.calibrate': 'Jugar con los ojos: mira por la pantalla y haz clic en algunos puntos para calibrar. Mirar izquierda y derecha camina; mirar arriba salta.',
-  'sr.eyes.needsInternet': 'No se pudo cargar WebGazer (necesita internet la primera vez).',
+  'sr.eyes.needsInternet': 'El control con la mirada todavía no llegó a este aparato: se descarga la primera vez que el juego se abre con internet.',
   'sr.typo.font': 'Tipografía: {fam}.',
   'sr.visual.contrast': 'Alto contraste: {v}.',
   'sr.visual.lq': 'Realce de contraste: {v}.',

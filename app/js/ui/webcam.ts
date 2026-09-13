@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // ui/webcam.ts — JOGAR COM OS OLHOS (acessibilidade motora): controle por olhar via WebGazer (webcam). Estágio 4,
-// Tier 1. WebGazer entra lazy (script do CDN no 1º uso; vendorizar p/ offline é futuro). onGaze mapeia o olhar
+// Tier 1. WebGazer runs from the sha256-checked cache the install filled (#168, #169) — never from the network. onGaze mapeia o olhar
 // para teclas SINTÉTICAS (olhar esq/dir = andar A/D; olhar p/ cima = pular Espaço) → reusa o input do teclado.
 // O botão (#opt-eyes) fica no game.js (usa toggleBtn); aqui a lógica. Deps: ui/dom ($) + core/a11y-sr (srSay/srAlert).
 import { t } from '../core/i18n.js';
@@ -8,6 +8,7 @@ import { $ } from './dom.js';
 import { srAlert } from '../core/a11y-sr.js';
 import { emFracao } from '../input/pointer-space.js'; // #105: um lugar so converte um ponto de tela
 import { carimbarOrigem } from '../input/origem-sintetica.js'; // ADR-0109: a tecla sintetica declara quem a produziu
+import { PESADOS, CACHE_PESADOS } from '../platform/pesados.js'; // #169: WebGazer runs from the sha256-checked cache
 
 // API mínima do WebGazer (lib externa, não tipada) — encadeável.
 type WG = { setRegression(m: string): WG; setGazeListener(fn: (d: unknown) => void): WG; begin(): WG; end(): void; showVideoPreview(b: boolean): WG; showPredictionPoints(b: boolean): WG };
@@ -56,11 +57,30 @@ export function stopEyeControl(): void {
   try { const g = wg(); if (g) g.end(); } catch (e) { /* noop */ }
   eyeSet('left', false, 'KeyA'); eyeSet('right', false, 'KeyD'); eyeSet('up', false, 'Space');
 }
-// Carrega o WebGazer (uma vez) do CDN e chama cb ao terminar. Precisa de internet no 1º uso.
+/**
+ * Loads WebGazer once, FROM THE CHECKED CACHE, and calls `cb` when it has run (issue #169; ADR-0132).
+ *
+ * The file is downloaded at install by `platform/pesados` and kept in `CACHE_PESADOS` only when its sha256 matches (#168);
+ * it runs from a `blob:` of those bytes. Never from the network on first use: that ran third-party code unchecked, with the
+ * page's powers and the camera, and did nothing at all in a school without a network. Not downloaded yet: nothing runs,
+ * and the child hears why.
+ */
 export function loadWebGazer(cb?: () => void): void {
   if (wg()) { if (cb) cb(); return; }
-  const s = document.createElement('script'); s.src = 'https://webgazer.cs.brown.edu/webgazer.js'; s.async = true;
-  s.onload = () => { if (cb) cb(); };
-  s.onerror = () => srAlert(t('sr.eyes.needsInternet'));
-  document.head.appendChild(s);
+  void daCacheVerificada().then((blob) => {
+    if (!blob) { srAlert(t('sr.eyes.needsInternet')); return; }
+    const endereco = URL.createObjectURL(blob);
+    const s = document.createElement('script'); s.src = endereco; s.async = true;
+    s.onload = () => { URL.revokeObjectURL(endereco); if (cb) cb(); };
+    s.onerror = () => { URL.revokeObjectURL(endereco); srAlert(t('sr.eyes.loadFailed')); };
+    document.head.appendChild(s);
+  });
+}
+async function daCacheVerificada(): Promise<Blob | null> {
+  const url = PESADOS.find((p) => p.id === 'visao:olhar')?.url;
+  if (!url || typeof caches === 'undefined') return null;
+  try {
+    const resp = await (await caches.open(CACHE_PESADOS)).match(url);
+    return resp ? await resp.blob() : null;
+  } catch { return null; }
 }

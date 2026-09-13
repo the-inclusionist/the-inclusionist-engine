@@ -71,7 +71,7 @@ const DECLARADAS = {
   'https://storage.googleapis.com/mediapipe-models': 'OS MODELOS `.task` do MediaPipe — rosto+íris, gestos e mãos. ⚠️ Host diferente do runtime porque é assim que o Google os publica, e sem eles os 11,7 MB de WebAssembly não reconhecem coisa nenhuma: é o `.onnx` sem o `.onnx.json` outra vez. 📏 Medidos em 2026-09-09, `float16`',
   'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/dist': 'O MOTOR DE VOZ (ADR-0127), fixado. São três ficheiros e não um — a entrada de 23 KB importa dois pedaços com hash no nome, e trazer só a entrada dá um módulo que importa o que não está lá',
   'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist': 'QUEM CORRE O MODELO DE VOZ. ⚠️ `ort-wasm-simd-threaded` e não o `jsep`: o jsep é o caminho WebGPU, pesa 21,7 MB contra 11,2, e o hardware do pilar 1 não é onde a WebGPU se ganha',
-  'https://webgazer.cs.brown.edu/webgazer.js': '🔴 A ÚNICA BUSCA EXTERNA DA ENGINE, e viola o pilar 8. O `ui/webcam` carrega o WebGazer de um CDN no primeiro uso, e o próprio cabeçalho do ficheiro admite-o: «vendorizar p/ offline é futuro». Numa escola sem rede, a criança que depende do olhar liga o botão e não acontece nada. Travado na #129, que decide de onde vem um runtime pesado — e a resposta serve TRÊS subsistemas, não só este',
+  'https://webgazer.cs.brown.edu/webgazer.js': 'WEBGAZER (ADR-0132), downloaded at INSTALL by `platform/pesados` and kept only when its sha256 matches (#168). `ui/webcam` runs it from that checked cache and no longer fetches it on first use (#169), so it no longer breaks pillar 8. ⚠️ The request still tells brown.edu the school\'s IP address — the open decision of the STRIDE client pass',
 };
 
 /**

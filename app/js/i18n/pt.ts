@@ -35,7 +35,7 @@ const pt: Record<string, string> = {
   'sr.libras.loading': 'Intérprete de Libras ainda carregando — tente de novo em instantes.',
   'sr.eyes.loadFailed': 'WebGazer não carregou.',
   'sr.eyes.calibrate': 'Jogar com os olhos: olhe pela tela e clique em alguns pontos para calibrar. Olhar esquerda/direita anda; olhar para cima pula.',
-  'sr.eyes.needsInternet': 'Não foi possível carregar o WebGazer (precisa de internet no 1º uso).',
+  'sr.eyes.needsInternet': 'O controle pelo olhar ainda não chegou a este aparelho: ele desce na primeira vez que o jogo abre com internet.',
   'sr.typo.font': 'Tipografia: {fam}.',
   'sr.visual.contrast': 'Alto contraste: {v}.',
   'sr.visual.lq': 'Realce de contraste: {v}.',

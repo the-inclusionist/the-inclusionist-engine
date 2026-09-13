@@ -26,10 +26,10 @@ describe('ui/webcam — carga/parada sem o WebGazer', () => {
     noWebGazer();
     expect(() => W.stopEyeControl()).not.toThrow();
   });
-  it('[Interface] loadWebGazer sem WebGazer injeta o <script> do CDN', () => {
+  it('[Interface] loadWebGazer sem WebGazer NÃO injeta o <script> do CDN — ele vem da cache verificada (#169)', () => {
     noWebGazer(); document.querySelectorAll('script[src*="webgazer"]').forEach((s) => s.remove());
     W.loadWebGazer();
-    expect(document.querySelector('script[src*="webgazer"]')).not.toBeNull();
+    expect(document.querySelector('script[src*="webgazer"]')).toBeNull();
   });
 });
 

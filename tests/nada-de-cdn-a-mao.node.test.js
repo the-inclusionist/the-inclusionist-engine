@@ -79,9 +79,7 @@ const BUSCAS_A_MAO = {
       '(3) `@mintplex-labs/piper-tts-web` e (4) `onnxruntime-web`, também em jsDelivr, que são o motor de voz ' +
       'e quem o corre; e (5) `webgazer.cs.brown.edu`, que VOLTOU pelo ADR-0132 porque o MediaPipe dá a posição ' +
       'do íris e não o ponto no ecrã. ' +
-      '⚠️ O WebGazer aparece DUAS vezes na árvore enquanto a fiação da #11 não sair: aqui, pré-cacheado na ' +
-      'instalação, e no `ui/webcam.ts`, preguiçoso. A entrada de baixo é a que tem de morrer, e este número ' +
-      'não desce até isso acontecer. ' +
+      'The WebGazer lives here only since #169: `ui/webcam.ts` reads it from the checked cache instead of fetching it. ' +
       'Uma sexta origem é um fornecedor novo a entrar sem decisão. Sai desta lista quando os bytes forem ' +
       'servidos de origem própria',
   },
@@ -100,21 +98,8 @@ const BUSCAS_A_MAO = {
       'próximo leitor apagar uma entrada ainda devida — e o `1` cairia com ela. Sai daqui quando o endereço ' +
       'sair do código, não quando a busca nascer',
   },
-  'ui/webcam.ts': {
-    urls: 1,
-    porque:
-      'o WebGazer, carregado por `<script src>` de `webgazer.cs.brown.edu` NO PRIMEIRO USO do controle por ' +
-      'olhar. É a única busca de runtime externo da engine e a razão de a issue #129 existir. ' +
-      '⚠️ ACTUALIZADO EM 2026-09-09: o ADR-0116 revogou a razão velha («é CDN, logo é rede»), e ele continua ' +
-      'aqui pela razão certa — é PREGUIÇOSO. Dispara quando a criança liga o controle por olhar, não na ' +
-      'instalação, logo a máquina que nunca ligou aquele controle não o tem, e o pilar 8 novo diz que depois ' +
-      'do primeiro dia tudo tem de estar lá. Trocar `brown.edu` por uma CDN fixada não o tiraria daqui; ' +
-      'pré-cachear na instalação tira. ' +
-      '📌 Ele já AVISA quando falha (`srAlert(sr.eyes.needsInternet)`), o que é melhor do que silêncio e ' +
-      'continua a não bastar — a criança fica sem controle por olhar. ' +
-      'Sai daqui quando o runtime entrar no manifesto de precache, vendorizado OU de CDN fixada — o que a ' +
-      'issue #129 decidir.',
-  },
+  // `ui/webcam.ts` LEFT on 2026-09-13 (#169): it runs WebGazer from the sha256-checked cache the install filled,
+  // and asks the network for nothing.
 };
 
 /**
@@ -225,7 +210,12 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
 
   it('🎯 [Fronteira] endereço DECLARADO e busca PREGUIÇOSA são coisas diferentes, e o crivo sabe qual é qual', () => {
     expect(pede('platform/voice-plan.ts'), 'o voice-plan ganhou uma busca — deixou de ser endereço declarado').toBe(false);
-    expect(pede('ui/webcam.ts'), 'o webcam deixou de buscar; a desculpa dele descreve o que já não acontece').toBe(true);
+    // #169: the webcam stopped fetching — it runs the bytes of the checked cache. Its only `.src =` is a `blob:` it makes
+    // itself; what would reopen the lazy door is a network address in its code, or a `src` that is not an object URL.
+    const webcam = semComentarios(readFileSync(join(RAIZ, 'ui/webcam.ts'), 'utf8'));
+    expect(webcam, 'ui/webcam names a network address again (#169)').not.toMatch(/https?:\/\//);
+    expect(webcam, 'ui/webcam fetches again (#169)').not.toMatch(/\bfetch\s*\(|\bimport\s*\(|XMLHttpRequest/);
+    expect(webcam, 'the script src of ui/webcam no longer comes from the checked bytes').toMatch(/URL\.createObjectURL\(/);
   });
 
   it('[Interface] `import()` dinâmico não traz especificador não-relativo', () => {
