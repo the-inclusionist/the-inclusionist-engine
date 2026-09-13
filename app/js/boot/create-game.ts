@@ -1082,6 +1082,7 @@ export function createGame(o: CreateGameOptions): Engine {
        * esta razão multiplica.
        */
       doc.documentElement.style.setProperty('--fonte-escala', String(passo.escala));
+      reservarFaixaDaBarra(); // the name line under the bar grows with the text (issue #160)
       return FONT_BY_KEY[passo.fonte]?.fam ?? null;
     } : undefined,
     ...(cartucho.setTemaDoJogador ? { setTemaDoJogador: cartucho.setTemaDoJogador } : {}),
@@ -1973,6 +1974,37 @@ export function createGame(o: CreateGameOptions): Engine {
     escalaAplicada = escalaDoPalco(palco.clientWidth || w, palco.clientHeight || h, win.devicePixelRatio || 1, w, h);
     aplicarEscala(regiao, escalaAplicada);
     crtScanVars(); // the scanline period is one art pixel in REAL pixels, so it follows the scale (study item A5)
+    reservarFaixaDaBarra();
+  }
+  /**
+   * THE ROOM THE GAME LEAVES FREE UNDER THE TOP EDGE (ADR-0148 §3, erratum of 2026-09-13; issue #160), written as
+   * `--barra-a11y-h` on the region: the bar's own offset, the bar, the line of the pointed icon's NAME under it, and a
+   * light gap of a quarter of that line's font (4 px at 640×360). 📏 Measured at 640×360: the variable said 44 px (the bar alone) and the name, at
+   * 57–87 px, covered the quiz statement. The Dev: «é necessário que exista um leve espaçamento abaixo da barra».
+   * 📌 The name line is counted whether or not a name is showing — reserving only while pointing would move the game
+   * under the child's finger. Measured again at every scale and every typography step: both change the text's size.
+   * ⚠️ Zero without a bar: nothing to reserve.
+   */
+  function reservarFaixaDaBarra(): void {
+    const regiao = $<HTMLElement>('#game-region');
+    if (!regiao || typeof regiao.style?.setProperty !== 'function') return;
+    const barra = a11yBar as HTMLElement | null;
+    if (!barra || typeof barra.getBoundingClientRect !== 'function' || typeof regiao.getBoundingClientRect !== 'function') {
+      regiao.style.setProperty('--barra-a11y-h', '0px');
+      return;
+    }
+    const topo = regiao.getBoundingClientRect().top;
+    let fundo = barra.getBoundingClientRect().bottom;
+    let respiro = 0;
+    const nome = barra.querySelector<HTMLElement>('.pause-icons-cap');
+    if (nome && typeof win.getComputedStyle === 'function') {
+      const cs = win.getComputedStyle(nome);
+      const fs = parseFloat(cs.fontSize) || 16;
+      const linha = (parseFloat(cs.lineHeight) || fs * 1.2) + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+      fundo = nome.getBoundingClientRect().top + linha;
+      respiro = fs / 4;
+    }
+    regiao.style.setProperty('--barra-a11y-h', `${Math.ceil(fundo - topo + respiro)}px`);
   }
   aplicarResolucao();
   if (typeof win.addEventListener === 'function') win.addEventListener('resize', aplicarResolucao);
@@ -2025,21 +2057,8 @@ export function createGame(o: CreateGameOptions): Engine {
     return invasoresDaBarra(barra, nos);
   }
   {
-    /*
-     * 📌 A FAIXA RESERVADA, ESCRITA ONDE O JOGO A LÊ. `--barra-a11y-h` vive no `#game-region`, ao lado do
-     * `--tap` e do `--alvo-min` que o `ui/layout` já escreve — mesma superfície, mesma convenção, e é a
-     * variável que um jogo usa para deixar a faixa livre em vez de adivinhar um número.
-     *
-     * ⚠️ ZERO QUANDO NÃO HÁ BARRA, e isso é a resposta certa: sem barra não há nada a reservar, e um valor
-     * inventado faria todo jogo empurrar conteúdo por uma coisa que não está lá.
-     */
-    const regiao = $<HTMLElement>('#game-region');
-    const alturaDaBarra = a11yBar && typeof (a11yBar as HTMLElement).getBoundingClientRect === 'function'
-      ? Math.round(a11yBar.getBoundingClientRect().height) : 0;
-    if (regiao && typeof regiao.style?.setProperty === 'function') {
-      regiao.style.setProperty('--barra-a11y-h', `${alturaDaBarra}px`);
-    }
-
+    // the reserved room itself (`--barra-a11y-h`, next to `--tap` and `--alvo-min`) is written by `reservarFaixaDaBarra`,
+    // inside `aplicarResolucao`; here the engine says who draws over the bar anyway
     const invasores = medirInvasoresDaBarra();
     if (invasores.length) {
       problemasDoHospedeiro.push(
