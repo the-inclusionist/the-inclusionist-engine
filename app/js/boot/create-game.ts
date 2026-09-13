@@ -108,6 +108,7 @@ import { toggleBtn, toggleLabel } from '../ui/dom.js';
 import { criarFiltroMotor } from '../input/motor-simulation.js';
 import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
+import { gameOptionsProblems, desenharOpcoesDoJogo, type GameOption } from '../ui/game-options.js';
 import * as store from '../platform/storage.js';
 import { initMenuNav, partesDoControle, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
@@ -295,6 +296,13 @@ export interface CreateGameOptions {
    * A malformed list is refused at boot and at `mount`, like the declaration.
    */
   readonly hud?: readonly HudNumber[];
+  /**
+   * THE OPTIONS OF THIS GAME, as rows the engine draws (ADR-0182; issue #178): a label and hint in the game's words, a kind
+   * (steps, list or switch), how to read the value and how to write it. «Opções do jogo» opens them in a panel of the
+   * engine's own; absent or empty, the door stays on the card locked with its reason (ADR-0161). A cartridge draws its own
+   * options only where rows cannot express what it needs. A malformed list is refused at boot and at `mount`.
+   */
+  readonly gameOptions?: readonly GameOption[];
   /**
    * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO — a resposta do cartucho, OBRIGATÓRIA (ADR-0153).
    *
@@ -597,6 +605,12 @@ function recusarSeHudMalformado(quem: string, hud: unknown): void {
   if (problemas.length) recusarDeclaracao(quem, problemas);
 }
 
+/** Malformed game options are a program defect, refused like the declaration (ADR-0169): the engine would not know what to draw. */
+function recusarSeOpcoesMalformadas(quem: string, opcoes: unknown): void {
+  const problemas = gameOptionsProblems(opcoes);
+  if (problemas.length) recusarDeclaracao(quem, problemas);
+}
+
 /** Os ids que os painéis emprestados exigem do documento. Achado 6: sem eles o painel abre VAZIO, sem erro. */
 const MARCACAO_EXIGIDA: readonly string[] = ['#game-region', '#sr-status', '#sr-alert'];
 
@@ -630,7 +644,7 @@ const SELETOR_BARRA_A11Y = '#title-icons';
 type MetadeDoJogo = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
-  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud'>;
+  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud' | 'gameOptions'>;
 
 export function createGame(o: CreateGameOptions): Engine {
   /*
@@ -651,6 +665,7 @@ export function createGame(o: CreateGameOptions): Engine {
   recusarSeNaoResponde('createGame', cartucho.acomodacoes);
   recusarSeGeneroRecusado('createGame', cartucho.genero);
   recusarSeHudMalformado('createGame', cartucho.hud);
+  recusarSeOpcoesMalformadas('createGame', cartucho.gameOptions);
 
   const { doc, win } = o.host;
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
@@ -873,6 +888,9 @@ export function createGame(o: CreateGameOptions): Engine {
    * ADR-0122 torna não-declinável é a pausa EXISTIR, não a engine ser dona de cada item dentro dela.
    */
   const acoesDaEngine: Record<string, () => void> = {};
+  /** Opens the game options panel, once mounted (ADR-0182). Offered as the door's action only while the cartridge declares rows. */
+  let abrirOpcoesDoJogo: (() => void) | null = null;
+  let redesenharOpcoesDoJogo = (): void => {};
 
   /*
    * ===================== A SAÍDA, QUE TINHA DE NASCER COM A ENTRADA (ADR-0144, errata) =====================
@@ -1119,7 +1137,11 @@ export function createGame(o: CreateGameOptions): Engine {
      */
     // ⚠️ SEMPRE PASSADO AGORA, e já não só quando o jogo traz o seu. A ausência do cartucho deixou de
     // significar «tabela vazia»: significa «só o que a engine acciona», que é o que ADR-0106 §1 manda.
-    getPauseActs: () => ({ ...acoesDaEngine, ...(cartucho.getPauseActs ? cartucho.getPauseActs() : {}) }),
+    getPauseActs: () => ({
+      ...acoesDaEngine,
+      ...(abrirOpcoesDoJogo && cartucho.gameOptions?.length ? { opcoesdojogo: abrirOpcoesDoJogo } : {}),
+      ...(cartucho.getPauseActs ? cartucho.getPauseActs() : {}),
+    }),
     /*
      * O CICLO DE TIPOGRAFIA DO 11.º ÍCONE (ADR-0149 §1, ADR-0150 §2).
      *
@@ -1432,6 +1454,29 @@ export function createGame(o: CreateGameOptions): Engine {
         + 'could only show a child `action2` — declare `preset` (ADR-0085)',
       );
     }
+
+    /*
+     * OPÇÕES DO JOGO — the cartridge's rows, drawn by the engine (ADR-0182; issue #178).
+     * 📌 Drawn at every opening and at every `mount()`: the rows are the CURRENT cartridge's, and each value is read from it.
+     * The shell's «restore defaults» is hidden: a cartridge declares no defaults, and a button that does nothing is the
+     * dead control ADR-0106 §5 forbids.
+     */
+    const painelDoJogo = montarPainel(ctxDoPainel, {
+      id: 'game-options',
+      rotulos: () => ({
+        titulo: t('pause.opcoesdojogo'),
+        rotuloDaLista: t('pause.opcoesdojogo'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('pause.pmback'),
+      }),
+      render: () => redesenharOpcoesDoJogo(),
+    });
+    painelDoJogo.casca.reset.hidden = true;
+    redesenharOpcoesDoJogo = () => {
+      desenharOpcoesDoJogo({ ...ctxDoPainel, dizer: srSay }, painelDoJogo.casca.lista, cartucho.gameOptions ?? []);
+      if (!painelDoJogo.casca.overlay.hidden) overlays.fillExplain(painelDoJogo.casca.card);
+    };
+    abrirOpcoesDoJogo = painelDoJogo.abrir;
 
     /*
      * ANIMAÇÃO — sensibilidade a movimento, e os quatro campos que a engine ganhou na etapa 1 do ADR-0106.
@@ -3069,9 +3114,11 @@ export function createGame(o: CreateGameOptions): Engine {
     recusarSeNaoResponde('mount', ganchos.acomodacoes);
     recusarSeGeneroRecusado('mount', ganchos.genero);
     recusarSeHudMalformado('mount', ganchos.hud);
+    recusarSeOpcoesMalformadas('mount', ganchos.gameOptions);
     cartucho = { ...ganchos, declaration };
     montarHud(); // the numbers are the cartridge's: the new one's replace the old one's, and the room is measured again
     registrarMapeamentosDoCartucho();
+    redesenharOpcoesDoJogo(); // the rows are the new cartridge's, drawn or cleared before its door is weighed
     pauseIcons.reflectPauseIcons(); // the bar follows the new cartridge: the hourglass exists only where time runs by itself
     alcanceAtual = derivarAlcance();
     // O pad é da FORMA do preset, logo muda com o cartucho; os ouvintes da janela ficam (`rewire`, e não `attach`).

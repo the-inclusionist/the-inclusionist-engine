@@ -1219,6 +1219,13 @@
     "resolveFontKey",
     "saveFontKey"
   ],
+  "ui/game-options.ts": [
+    "GameOption",
+    "GameOptionValue",
+    "GameOptionsDrawCtx",
+    "desenharOpcoesDoJogo",
+    "gameOptionsProblems"
+  ],
   "ui/help-panel.ts": [
     "HelpRow",
     "SEM_TECLA",

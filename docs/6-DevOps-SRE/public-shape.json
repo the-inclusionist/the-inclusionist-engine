@@ -23,6 +23,7 @@
       "declaration",
       "declines?",
       "disponibilidade?",
+      "gameOptions?",
       "genero?",
       "getPauseActs?",
       "host",
@@ -1781,6 +1782,16 @@
     "type FontRole": "'geral' | 'caligrafica' | 'jogo'",
     "type FontItem": "{ id: string",
     "type FontGroup": "{ g: string"
+  },
+  "ui/game-options.ts": {
+    "interface GameOptionValue": [
+      "label",
+      "value"
+    ],
+    "interface GameOptionsDrawCtx": [
+      "dizer"
+    ],
+    "type GameOption": "| (GameOptionBase & { readonly kind: 'steps' | 'list'"
   },
   "ui/help-panel.ts": {
     "interface HelpRow": [

@@ -517,7 +517,8 @@ export function raizQueAcciona(
   // 📌 A MESMA REGRA PARA A PORTA NOVA, e é o gate que o ADR-0146 nomeia: um jogo sem nada seu não recebe
   // «opções do jogo». Afirmar a ausência é o caso; oferecer a porta e abrir uma sala vazia é o que o §5 do
   // ADR-0106 chama de pior do que a ausência.
-  if (vivas(doJogo) === 0) viva = viva.filter((b) => b.act !== 'opcoesdojogo');
+  // ADR-0182: a door whose room the ENGINE draws from the cartridge's rows is live through its action, with no list behind it
+  if (vivas(doJogo) === 0 && typeof acts.opcoesdojogo !== 'function') viva = viva.filter((b) => b.act !== 'opcoesdojogo');
   return viva;
 }
 
@@ -1470,7 +1471,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
         // ⚠️ TRÊS PORTAS AGORA, e o `pmback` volta sempre à RAIZ — de qualquer das duas listas. Escrito como
         // tabela e não como encadeado de `if`, porque uma quarta lista seria mais uma linha e não mais um ramo.
         const PARA: Record<string, PauseSub> = { options: 'opcoes', opcoesdojogo: 'jogo', pmback: 'raiz' };
-        if (PARA[act]) { anunciarLista(sp, PARA[act]!); return; }
+        // «Opções do jogo» with the cartridge's rows opens the engine's panel (ADR-0182), not the list a host may pass
+        const portaComPainel = act === 'opcoesdojogo' && typeof getPauseActs().opcoesdojogo === 'function';
+        if (PARA[act] && !portaComPainel) { anunciarLista(sp, PARA[act]!); return; }
         // `acessibilidade` leva o cursor à BARRA RÁPIDA. Enquanto ela mora dentro do cartão, "entrar no modo"
         // é pôr o cursor nela — e a saída continua sendo a saída da pausa, que é a mesma de sempre. Quando o
         // item 7 levar a barra para o HUD, esta linha o segue; o que o item SIGNIFICA não muda.
