@@ -144,6 +144,7 @@
     "build:pkg": "node scripts/clean-dist-pkg.mjs && tsc -p tsconfig.pkg.json && node scripts/stamp-license.mjs dist-pkg",
     "prepare": "npm run build:pkg",
     "prepack": "npm run build:pkg",
+    "pesados:entrega": "npm run build:pkg && node scripts/pesados-na-entrega.mjs dist",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "validate": "npm run typecheck && vitest run && npm run build:pkg && vite build",

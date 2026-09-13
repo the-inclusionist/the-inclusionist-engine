@@ -1070,6 +1070,7 @@
     "interface OpcoesDosPesados": [
       "aoProgredir?",
       "apenas?",
+      "base?",
       "buscar?",
       "cacheStorage?",
       "digest?"

@@ -95,10 +95,12 @@ describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
     }
   });
 
-  it('⚠️ [Right] é `CacheFirst` e não `NetworkFirst` — o pilar 8 decide isto, não o gosto', () => {
+  it('⚠️ [Right] é `CacheOnly` — nunca a rede do terceiro (ADR-0177), e o pilar 8 continua servido pela cache', () => {
     // `NetworkFirst` iria à rede primeiro e só recuaria para a cache quando a escola estivesse offline — que
     // é exactamente o dia em que já é tarde, e é a metade do pilar 8 que o ADR-0116 deixou de pé.
-    expect(CONFIG_LIMPA, 'a rota deixou de servir da cache primeiro').toMatch(/handler:\s*'CacheFirst'/);
+    // ADR-0177: CacheOnly — the files come from the delivery into the cache; a library request never reaches the upstream host.
+    expect(CONFIG_LIMPA, 'a rota pode buscar na rede do terceiro').toMatch(/handler:\s*'CacheOnly'/);
+    expect(CONFIG_LIMPA, 'a route on the checked cache falls back to the network').not.toMatch(/handler:\s*'(CacheFirst|NetworkFirst|StaleWhileRevalidate|NetworkOnly)'/);
   });
 });
 

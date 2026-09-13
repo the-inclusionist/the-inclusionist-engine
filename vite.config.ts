@@ -97,10 +97,9 @@ export default defineConfig({
         // nao e consultada sozinha por um `fetch`: sem uma rota do service worker, o pedido da biblioteca de
         // voz ia direto a rede e descarregava os mesmos 241 MB outra vez. Ate 482 MB num link de escola para
         // UMA voz.
-        // 🎯 `CacheFirst` com o MESMO nome de cache que o buscador usa e o que fecha o circuito: o pedido
-        // encontra o que ja desceu, e nunca sai da maquina. Um `NetworkFirst` seria o oposto do pilar 8 —
-        // iria a rede primeiro e so recuaria para a cache quando a escola estivesse offline, que e
-        // exatamente o dia em que ja e tarde.
+        // 🎯 `CacheOnly` with the SAME cache name the fetcher writes (ADR-0177, issue #173): the library's request finds what
+        // descended from the delivery's own `pesados/` and never leaves the machine — not on a miss either, when a network
+        // fallback would reach the upstream host. Not there yet means no neural voice, and the download reports why.
         // ⚠️ E o alcance e ESTREITO de proposito: so o host dos modelos, nomeado no
         // `platform/voice-plan.HOST_DOS_MODELOS`. Uma rota larga sobre `huggingface.co` cacharia qualquer
         // coisa que alguem viesse a buscar de la, o que e a porta larga que a #119 fechou noutro sitio.
@@ -112,7 +111,7 @@ export default defineConfig({
           // e por PACOTE e nao por dominio — `cdn.jsdelivr.net` inteiro seria a porta larga que a #119 fechou.
           {
             urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/(@mediapipe\/tasks-vision|@mintplex-labs\/piper-tts-web|onnxruntime-web)@/,
-            handler: 'CacheFirst',
+            handler: 'CacheOnly',
             options: {
               cacheName: 'incl-pesados-v2',
               cacheableResponse: { statuses: [200] },
@@ -123,7 +122,7 @@ export default defineConfig({
           },
           {
             urlPattern: /^https:\/\/huggingface\.co\/diffusionstudio\/piper-voices\/resolve\/main\//,
-            handler: 'CacheFirst',
+            handler: 'CacheOnly',
             options: {
               cacheName: 'incl-pesados-v2',
               // #168: the route READS the checked cache and never WRITES it — only `platform/pesados` writes, after the sha256.

@@ -656,6 +656,7 @@
     "OpcoesDosPesados",
     "RelatorioPesado",
     "baixarPesados",
+    "caminhoNaEntrega",
     "pesoPorBaixar",
     "sha256Hex"
   ],

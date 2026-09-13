@@ -48,6 +48,19 @@ export interface OpcoesDosPesados {
   readonly digest?: ((corpo: ArrayBuffer) => Promise<string>) | null;
   /** Só estas ids, se dado. Serve ao consumidor que quer as vozes e não o resto. */
   readonly apenas?: readonly string[];
+  /** The page's address the delivery's `pesados/` folder is resolved against. By default the page's own (`location.href`). */
+  readonly base?: string;
+}
+
+/**
+ * WHERE THE DELIVERY SERVES A HEAVY FILE (ADR-0177, issue #173): `pesados/<host><path>` beside the page. The child's device
+ * reads it from the game's own origin; the upstream address is only where the build fetched it from.
+ * 📌 The upstream address stays the CACHE KEY: it is what the voice and vision libraries ask for, and the service worker answers
+ * them from the checked cache without a network request.
+ */
+export function caminhoNaEntrega(url: string): string {
+  const u = new URL(url);
+  return `pesados/${u.host}${u.pathname}`;
 }
 
 /**
@@ -73,13 +86,16 @@ export async function baixarPesados(opcoes: OpcoesDosPesados = {}): Promise<Rela
   }
 
   const digest = opcoes.digest === undefined ? (temSubtle() ? sha256Hex : null) : opcoes.digest;
+  const base = opcoes.base ?? (globalThis as { location?: { href: string } }).location?.href;
 
   const cache = await cs.open(CACHE_PESADOS);
   for (const p of alvos) {
     if (!p.url) { conta({ id: p.id, estado: 'sem-fonte', erro: p.porQueNaoTemFonte }); continue; }
     try {
       if (await cache.match(p.url)) { conta({ id: p.id, estado: 'ja-tinha' }); continue; }
-      const resp = await buscar(p.url);
+      // from the delivery's own origin, never from the upstream host (ADR-0177)
+      const naEntrega = caminhoNaEntrega(p.url);
+      const resp = await buscar(base ? new URL(naEntrega, base).href : naEntrega);
       if (!resp.ok) { conta({ id: p.id, estado: 'falhou', erro: `HTTP ${resp.status}` }); continue; }
       /*
        * CHECKED BEFORE KEPT (issue #168; STRIDE client pass). What is kept runs in the child's page and is served offline

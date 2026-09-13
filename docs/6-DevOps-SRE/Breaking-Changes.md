@@ -696,6 +696,20 @@ the default, not the child's choice.
   language until `createGame` loads and initialises again. Load first, or drop the early call.
 - `game-soccer`, `game-chess`, `game-whackwhack` write settings only after `createGame`: nothing to change.
 
+## AB · The heavy files come from the delivery's own origin (ADR-0177, issue #173 — first cut)
+
+**Behaviour.** `platform/pesados.baixarPesados` no longer fetches from Hugging Face, jsDelivr, Google Storage or
+webgazer.cs.brown.edu. It asks the page's own origin for `pesados/<host><path>` (`caminhoNaEntrega(url)`) and keeps the body,
+after the sha256 check, under the upstream address — the one the voice and vision libraries request. The service worker
+routes on the checked cache are `CacheOnly`: a library request is answered from the cache or fails, and never reaches the
+upstream host. 📏 Measured in the rebuilt dist: every request of the quiz page went to its own origin.
+
+**What to do:** a delivery that offers neural voices, vision or eye control carries the files in `pesados/`. For the engine's
+own dist: `npm run build`, then `npm run pesados:entrega` (fetches about 300 MB once, checks each sha256, writes into
+`dist/pesados/`, and fails the run on a mismatch). ⚠️ A cartridge's delivery needs the same step, and the script does not ship
+in the package yet — until it does, a game's own build has no voices from the delivery (issue #173, second cut). The
+Content-Security-Policy still names the four hosts: the libraries request those addresses, and the policy judges the address.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

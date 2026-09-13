@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { baixarPesados, pesoPorBaixar, PESADOS, CACHE_PESADOS, sha256Hex } from '../app/js/platform/pesados.js';
+import { baixarPesados, pesoPorBaixar, PESADOS, CACHE_PESADOS, sha256Hex, caminhoNaEntrega } from '../app/js/platform/pesados.js';
 import { HOST_DOS_MODELOS } from '../app/js/platform/voice-plan.js';
 
 /** Uma Cache Storage de mentira, que CONTA o que lhe pedem. */
@@ -30,7 +30,9 @@ function cacheFalsa(jaTem = []) {
 /** A response whose body is the URL itself — so the fake digest below can recognise the RIGHT body of each entry. */
 const corpo = (u) => new TextEncoder().encode(u).buffer;
 const resposta = (u, dados = corpo(u)) => ({ ok: true, status: 200, statusText: 'OK', headers: new Headers(), arrayBuffer: async () => dados, clone: () => ({}) });
-const buscarOk = () => async (u) => resposta(u);
+/** The upstream address a delivery path stands for (ADR-0177: the download asks the delivery, the body is still that file). */
+const urlDe = (pedido) => PESADOS.find((p) => p.url && caminhoNaEntrega(p.url) === pedido)?.url ?? pedido;
+const buscarOk = () => async (u) => resposta(urlDe(u));
 /** #168: the pinned hash of the entry whose URL the body spells; anything else hashes to garbage. */
 const digestPelaUrl = async (buf) => {
   const texto = new TextDecoder().decode(buf);
@@ -113,7 +115,7 @@ describe('o buscador das coisas pesadas', () => {
   it('🔴 [Inverse] uma falha de rede é REPORTADA e a lista CONTINUA — não derruba o arranque', async () => {
     const f = cacheFalsa();
     let n = 0;
-    const buscar = async (u) => { n += 1; if (n === 1) throw new Error('rede caiu'); return resposta(u); };
+    const buscar = async (u) => { n += 1; if (n === 1) throw new Error('rede caiu'); return resposta(urlDe(u)); };
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl });
     expect(r.filter((x) => x.estado === 'falhou').length, 'a falha não foi reportada').toBe(1);
     expect(r.filter((x) => x.estado === 'baixado').length, 'a lista parou na primeira falha').toBe(PESADOS.filter((p) => p.url).length - 1);
@@ -175,7 +177,7 @@ describe('what comes from outside is checked before it is kept (issue #168; STRI
   it('🔴 [Right] an altered body is NOT kept — reported, and the list goes on', async () => {
     const f = cacheFalsa();
     const [alvo, outro] = PESADOS.filter((p) => p.url);
-    const buscar = async (u) => (u === alvo.url ? resposta(u, new TextEncoder().encode('altered').buffer) : resposta(u));
+    const buscar = async (u) => (urlDe(u) === alvo.url ? resposta(u, new TextEncoder().encode('altered').buffer) : resposta(urlDe(u)));
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id, outro.id] });
     expect(f.postos.includes(alvo.url), 'the altered body entered the cache').toBe(false);
     const dele = r.find((x) => x.id === alvo.id);
@@ -213,6 +215,33 @@ describe('what comes from outside is checked before it is kept (issue #168; STRI
     expect(CACHE_PESADOS).toBe('incl-pesados-v2');
   });
 });
+
+describe('the heavy files come from the delivery\'s own origin (ADR-0177, issue #173)', () => {
+  it('🔴 [Right] the download asks the page\'s origin for each file, and keeps it under the upstream address', async () => {
+    const f = cacheFalsa();
+    const pedidos = [];
+    const buscar = async (u) => { pedidos.push(u); return resposta(urlDe(u.slice('https://escola.example/jogo/'.length))); };
+    const alvo = PESADOS.find((p) => p.url);
+    await baixarPesados({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id], base: 'https://escola.example/jogo/' });
+    expect(pedidos, 'the download asked a third party').toEqual([`https://escola.example/jogo/${caminhoNaEntrega(alvo.url)}`]);
+    expect(f.postos, 'the file is not kept under the address the libraries ask for').toEqual([alvo.url]);
+  });
+
+  it('🎯 [Zero] no file is asked of a host outside the page\'s origin', async () => {
+    const f = cacheFalsa();
+    const hosts = new Set();
+    const buscar = async (u) => { hosts.add(new URL(u).host); return resposta(urlDe(new URL(u).pathname.slice(1))); };
+    await baixarPesados({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, base: 'https://escola.example/' });
+    expect([...hosts]).toEqual(['escola.example']);
+  });
+
+  it('📌 [Right] a delivery path keeps the upstream host and path, so two files never share one', () => {
+    const caminhos = PESADOS.filter((p) => p.url).map((p) => caminhoNaEntrega(p.url));
+    expect(new Set(caminhos).size).toBe(caminhos.length);
+    for (const c of caminhos) expect(c).toMatch(/^pesados\/[\w.-]+\//);
+  });
+});
+
 
 // MUTATIONS CHECKED for issue #168 (2026-09-13), 6 of 6 red: the check removed · an unverifiable body kept · SHA-1 for
 // SHA-256 · the cache name back to v1 · one entry without its hash · a broken default digest. Two first SURVIVED (an
