@@ -69,6 +69,20 @@ describe('the rows follow the cartridge\'s answer', () => {
     fecharTudo();
   });
 
+  it('🔴 [Right] and what applies carries the GAME\'s word, never the engine\'s (ADR-0153 confirmation)', () => {
+    motor.mount(declaracao(), { acomodacoes: COM_PERSONAGEM_E_BENGALA });
+    abrirSensibilidade();
+    const titulo = [...document.querySelectorAll('#motion-list h3.panel-sub')].find((h) => h.nextElementSibling?.querySelector?.('[data-rmc]') || h.parentElement.querySelector('[data-rmc]'));
+    expect(document.querySelector('#motion-list').textContent, 'the character section is not named with the game\'s word').toContain('Character motion');
+    expect(titulo?.textContent ?? '', 'the character section still carries the engine\'s own title').not.toMatch(/Personagem/);
+    fecharTudo();
+    motor.pausa.mostrar(0);
+    document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
+    document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
+    expect(linhaDaBengala().querySelector('strong')?.textContent, 'the cane row is not named with the game\'s word').toBe('Cane taps');
+    fecharTudo();
+  });
+
   it('🔴 [Right] and swapping back to «no» hides them again — no leak from the previous cartridge (ADR-0142)', () => {
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
     motor.pausa.mostrar(0);
@@ -109,3 +123,6 @@ describe('and the rows the CONTRACT answers are derived, not asked (ADR-0153)', 
 //   C2 comPersonagem always true                                 🔴 character switches in a game with none
 //   C3 the cane decision is read once at boot, not per render    🔴 the mounted «yes» cartridge stays without it
 //   D1 the navigation-sound rows are never hidden                🔴 sonar volumes on hotspots
+//   W1 the character section's title ignores the game's word     🔴 the game's word
+//   W2 the cane row keeps the engine's label                     🔴 the game's word
+//   W3 createGame passes no word to the motion panel             🔴 the game's word

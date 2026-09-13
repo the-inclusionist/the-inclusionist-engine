@@ -1471,6 +1471,8 @@ export function createGame(o: CreateGameOptions): Engine {
       toggleBtn,
       // A secção «Personagem» só existe se o JOGO disse que tem um (ADR-0153). Lido a cada render: muda no `mount()`.
       comPersonagem: () => subjectWord(cartucho.acomodacoes, 'reducedCharacterMotion') !== null,
+      // and its title is the game's word for it (ADR-0153 confirmation)
+      rotuloDoPersonagem: () => subjectWord(cartucho.acomodacoes, 'reducedCharacterMotion')?.label ?? null,
     });
     acoesDaEngine.anim = painelDeAnim.abrir;
 
@@ -1691,7 +1693,16 @@ export function createGame(o: CreateGameOptions): Engine {
      */
     function esconderLinhasSemAssunto(): void {
       const linha = $<HTMLElement>('#cane-div')?.closest<HTMLElement>('.ctrl-row');
-      if (linha) linha.hidden = subjectWord(cartucho.acomodacoes, 'caneSpacing') === null;
+      const palavraDaBengala = subjectWord(cartucho.acomodacoes, 'caneSpacing');
+      if (linha) {
+        linha.hidden = palavraDaBengala === null;
+        // What applies carries the GAME's word (ADR-0153 confirmation). `montarInteriorDoAudio` re-labels in the engine's
+        // words on every open, and this runs after it; the game's hint, when given, goes where the footer reads it.
+        const rotulo = linha.querySelector<HTMLElement>('strong');
+        if (palavraDaBengala && rotulo) rotulo.textContent = palavraDaBengala.label;
+        const dica = linha.querySelector<HTMLElement>('.opt-hint');
+        if (palavraDaBengala?.hint && dica) dica.textContent = palavraDaBengala.hint;
+      }
       /*
        * 🔴 A NAVEGAÇÃO SONORA É DERIVADA DO CONTRATO, e não perguntada ao cartucho (ADR-0153): o sonar precisa de um
        * mundo e de uma DIRECÇÃO, e `bearing` responde `none` em `hotspots`. Num jogo de lista de pontos o volume do

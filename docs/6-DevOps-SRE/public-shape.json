@@ -2257,6 +2257,7 @@
       "rm?",
       "rmChar?",
       "rmKeys?",
+      "rotuloDoPersonagem?",
       "saveRM?",
       "srSay",
       "store",
