@@ -317,6 +317,10 @@ const CRU_CONHECIDO = {
                                    // ninguém: quem decide se aquilo chega a uma tela é o jogo, e aí é ELE que
                                    // escolhe as palavras (ADR-0111 — a palavra que chega a uma pessoa é a do
                                    // JOGO).
+  'core/genres.ts': 3,             // The engine's genre list (ADR-0156): two genre NAMES with an apostrophe («Shoot 'em
+                                   // ups», «Beat 'em up games»), kept exactly as the Dev transcribed them, and the
+                                   // refusal a cartridge's author reads when a genre is not in the list. Data and a
+                                   // message for whoever writes a cartridge (ADR-0169), never text a child sees.
   'core/contract.ts': 1,           // ⚠️ VOLTOU À LISTA, e a volta é honesta em vez de silenciosa: ela saiu
                                    // daqui em 2026-09-06 quando as dezesseis mensagens de `conformanceProblems`
                                    // passaram a inglês e o módulo zerou. O ADR-0087 acrescentou o campo

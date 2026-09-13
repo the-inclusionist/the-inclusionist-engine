@@ -57,6 +57,7 @@ import { initFocusTrap, focaveisNoDom } from '../ui/focus-trap.js';
 import { mostrarAvisoDeAlcance, REACH_NOTICE_ID } from '../ui/reach-notice.js';
 import { alcance, transportesPadrao, type Alcance, type Disponibilidade } from '../input/transports.js';
 import { accommodationAnswersProblems, subjectWord, type AccommodationAnswers } from '../core/accommodations.js';
+import { generoProblems, generoAviso } from '../core/genres.js';
 import { contractSubjects } from '../core/accommodation-subjects.js';
 import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, shortLabellerFrom, ACTIONS, type Action, type ActionPreset } from '../core/actions.js';
 import type { KeyScheme } from '../core/entity.js';
@@ -306,6 +307,12 @@ export interface CreateGameOptions {
    * 📌 As gerais montam sempre e as do contrato derivam-se; nenhuma delas se responde aqui.
    */
   readonly acomodacoes: AccommodationAnswers;
+  /**
+   * The game's genre, OPTIONAL (ADR-0153), from the engine's list (`core/genres`, ADR-0156): what the game plays like.
+   * The cartridge chooses it and nobody assigns it. Casino game and a name outside the list refuse the boot; Horror game
+   * boots and `problems` carries its «avoid» mark.
+   */
+  readonly genero?: string;
   /**
    * COMO SE CARREGA A VOZ NEURAL — uma linha do lado do jogo (ADR-0094):
    *
@@ -571,6 +578,12 @@ function recusarSeNaoResponde(quem: string, acomodacoes: unknown): void {
   if (problemas.length) recusarDeclaracao(quem, problemas);
 }
 
+/** A genre outside the engine's list, or Casino game, refuses the boot (ADR-0156 §2, §4); an absent genre is conformant. */
+function recusarSeGeneroRecusado(quem: string, genero: unknown): void {
+  const problemas = generoProblems(genero);
+  if (problemas.length) recusarDeclaracao(quem, problemas);
+}
+
 /** A malformed `hud` is a program defect, refused like the declaration (ADR-0169): the engine would not know what to place. */
 function recusarSeHudMalformado(quem: string, hud: unknown): void {
   const problemas = hudNumbersProblems(hud);
@@ -610,7 +623,7 @@ const SELETOR_BARRA_A11Y = '#title-icons';
 type MetadeDoJogo = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
-  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'controleNaTela' | 'hud'>;
+  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud'>;
 
 export function createGame(o: CreateGameOptions): Engine {
   /*
@@ -629,6 +642,7 @@ export function createGame(o: CreateGameOptions): Engine {
   }
   recusarSeTomaOStart('createGame', cartucho.preset);
   recusarSeNaoResponde('createGame', cartucho.acomodacoes);
+  recusarSeGeneroRecusado('createGame', cartucho.genero);
   recusarSeHudMalformado('createGame', cartucho.hud);
 
   const { doc, win } = o.host;
@@ -688,6 +702,8 @@ export function createGame(o: CreateGameOptions): Engine {
     if (tamanho) p.push(tamanho);
     const piso = desenhadoAbaixoDoPiso();
     if (piso) p.push(piso);
+    const avisoDoGenero = generoAviso(cartucho.genero);
+    if (avisoDoGenero) p.push(avisoDoGenero);
     // O mundo declarado tem de existir na página — e quem o declara é o jogo, não o hospedeiro.
     const mundo = cartucho.declaration.world();
     if (mundo.kind === 'element' && !$(mundo.selector)) {
@@ -2964,6 +2980,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // que o primeiro respeitou, e a raiz ficava com a pausa inalcançável a meio da sessão.
     recusarSeTomaOStart('mount', ganchos.preset);
     recusarSeNaoResponde('mount', ganchos.acomodacoes);
+    recusarSeGeneroRecusado('mount', ganchos.genero);
     recusarSeHudMalformado('mount', ganchos.hud);
     cartucho = { ...ganchos, declaration };
     montarHud(); // the numbers are the cartridge's: the new one's replace the old one's, and the room is measured again

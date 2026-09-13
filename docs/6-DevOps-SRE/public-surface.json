@@ -140,6 +140,12 @@
     "VeredictoDeFlashes",
     "analisarFlashes"
   ],
+  "core/genres.ts": [
+    "GENEROS",
+    "Genero",
+    "generoAviso",
+    "generoProblems"
+  ],
   "core/i18n.ts": [
     "PortaDoIdioma",
     "applyDom",

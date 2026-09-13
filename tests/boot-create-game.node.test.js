@@ -281,6 +281,20 @@ describe('createGame em execução', () => {
       .toThrow(/«start» is the position that opens the pause/);
   });
 
+  it('🔴 [Right] the optional genre (ADR-0156): Casino game refused at createGame and mount; Horror game reported «avoid»', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { doc, win } = domFalso();
+    const base = () => ({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
+    expect(() => createGame({ ...base(), genero: 'Casino game' })).toThrow(/Casino game.*prohibited/);
+    expect(() => createGame({ ...base(), genero: 'Educational game' })).toThrow(/not in the engine's genre list/);
+    // the pair: no genre, and a listed one, boot
+    expect(() => createGame(base())).not.toThrow();
+    const motor = createGame({ ...base(), genero: 'Horror game' });
+    expect(motor.problems.join(' '), 'Horror game boots without its «avoid» mark said').toMatch(/Horror game.*avoid/);
+    expect(createGame({ ...base(), genero: 'Platform games' }).problems.join(' ')).not.toMatch(/genre/i);
+    expect(() => motor.mount(declaracaoValida(), { acomodacoes: SEM_ASSUNTO, genero: 'Casino game' })).toThrow(/Casino game.*prohibited/);
+  });
+
   it('🔴 [Zero] e um cartucho que declara «select» também é RECUSADO — é a porta dos menus (ADR-0155 §4)', async () => {
     // Mesma construção do caso acima, e pela mesma razão: nenhum jogo declara «select» hoje (medido nos
     // repositórios dos jogos), então só um cartucho CONSTRUÍDO pode pôr este crivo vermelho.

@@ -23,6 +23,7 @@
       "declaration",
       "declines?",
       "disponibilidade?",
+      "genero?",
       "getPauseActs?",
       "host",
       "hud?",
@@ -240,6 +241,13 @@
     "interface VeredictoDeFlashes": [
       "passa",
       "piorSegundo"
+    ]
+  },
+  "core/genres.ts": {
+    "interface Genero": [
+      "familia",
+      "marca?",
+      "nome"
     ]
   },
   "core/i18n.ts": {
