@@ -97,6 +97,7 @@ import { initSettingsVisual } from '../ui/settings-visual.js';
 import { initSettingsEmpathy } from '../ui/settings-empathy.js';
 import { HC_ROLE_DEF } from '../render/hc-role-data.js';
 import { initLqFilter, setLq, getLqT, lqFilter } from '../render/lq-filter.js';
+import { initCrt, applyCrt, crtScanVars } from '../render/crt.js';
 import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type SettingsAudioApi } from '../ui/settings-audio.js';
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn } from '../ui/dom.js';
@@ -718,9 +719,21 @@ export function createGame(o: CreateGameOptions): Engine {
   function recomporFiltroDoMundo(): void {
     const chave = filtroChave(estadoDoMundo);
     aplicarFiltroDeVisao([chave ? (VIZ_FILTER[chave] ?? '') : '', lqFilter()].filter(Boolean).join(' '), 'mundo');
+    applyCrt(); // the decorative CRT yields to every visual mode, and comes back when none is on (ADR-0047)
   }
+  /*
+   * THE CRT, applied by the engine (study items A5, B1). 📏 Measured: the panel said «Scanlines: on» and the region had no
+   * CRT class until a toggle was pressed — `render/crt` was never started under `createGame`. It yields to a colour
+   * correction, a simulation and the contrast enhancement; its scanlines are re-anchored to real pixels at every scale.
+   */
+  initCrt({
+    // `cartucho` and not `players()`: this runs at boot, above the `players` declaration (temporal dead zone)
+    numJogadores: () => Math.max(1, (cartucho.players ?? []).length),
+    a11yVisualAtiva: () => filtroChave(estadoDoMundo) !== null || getLqT() > 0,
+  });
   initLqFilter({ onChange: recomporFiltroDoMundo });
   if (getLqT() > 0) recomporFiltroDoMundo(); // o realce guardado vale desde o arranque
+  else applyCrt(); // and the stored CRT too (the recompose above applies it when it runs)
 
   // 3. A pilha de diálogos. O ctx é o mesmo em qualquer jogo — é boilerplate, e boilerplate repetido é onde
   //    consumidores divergem sem querer.
@@ -1966,6 +1979,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const { w, h } = screenBaseSize(Math.max(1, players().length));
     escalaAplicada = escalaDoPalco(palco.clientWidth || w, palco.clientHeight || h, win.devicePixelRatio || 1, w, h);
     aplicarEscala(regiao, escalaAplicada);
+    crtScanVars(); // the scanline period is one art pixel in REAL pixels, so it follows the scale (study item A5)
   }
   aplicarResolucao();
   if (typeof win.addEventListener === 'function') win.addEventListener('resize', aplicarResolucao);
