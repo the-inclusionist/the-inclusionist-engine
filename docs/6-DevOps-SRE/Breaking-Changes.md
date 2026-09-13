@@ -708,7 +708,11 @@ upstream host. 📏 Measured in the rebuilt dist: every request of the quiz page
 own dist: `npm run build`, then `npm run pesados:entrega` (fetches about 300 MB once, checks each sha256, writes into
 `dist/pesados/`, and fails the run on a mismatch). ⚠️ A cartridge's delivery needs the same step, and the script does not ship
 in the package yet — until it does, a game's own build has no voices from the delivery (issue #173, second cut). The
-Content-Security-Policy still names the four hosts: the libraries request those addresses, and the policy judges the address.
+Content-Security-Policy keeps only `huggingface.co` in `connect-src` (the voice provider hardcodes its models' host; the
+service worker answers from the checked cache); the voice's phonemizer is catalogued and asked for at `pesados/`, and a
+delivery with neural voice carries it too (18.7 MB). ⚠️ Until the same day, the engine's own service worker registered NONE
+of its runtime routes (a navigation fallback to an `index.html` the engine does not build threw inside the worker's promise):
+a build without an `index.html` has the same fault — set `navigateFallback`. 📏 The seven sibling games all have `app/index.html`.
 
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
