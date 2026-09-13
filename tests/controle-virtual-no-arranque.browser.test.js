@@ -371,6 +371,24 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
     fechar();
     try { localStorage.removeItem('incl_padbtnmm'); } catch { /* idem */ }
   });
+
+  it('🔴 [Zero] a cartridge with NO on-screen pad is not offered its size — the keyboard rows stay (ADR-0166, ADR-0106 §5)', () => {
+    // Found in the dist after ADR-0166: the quiz asks for no pad, and the motor panel still offered «Controller size» — a
+    // row with nothing to act on. It is hidden («not offered», ADR-0113 clause 3), not locked: there is no pad to unlock.
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+    try {
+      const passos = abrirMotora();
+      expect(passos.closest('.ctrl-row').hidden, 'the pad size is offered to a game with no pad').toBe(true);
+      const visiveis = [...document.querySelectorAll('#motora .ctrl-row')].filter((l) => !l.hidden);
+      expect(visiveis.length, 'the keyboard rows went with the pad row').toBeGreaterThan(0);
+    } finally {
+      fechar();
+      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, controleNaTela: true, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+    }
+    // the pair: with the pad asked for, the row is offered again
+    expect(abrirMotora().closest('.ctrl-row').hidden, 'the pad size row stayed hidden with a pad').toBe(false);
+    fechar();
+  });
 });
 
 describe('mount() rebuilds the pad for the new cartridge', () => {
@@ -478,3 +496,6 @@ describe('the START pill, with the real stylesheet', () => {
 //   P5 the keyboard does not forget the touch           🔴
 //   P6 a panel is not a menu                            🔴 the panel case
 //   P7 the quiz menu button opens nothing (quiz tests)  🔴
+//   H1 the opening does not re-ask the cartridge for the pad row   🔴 the [Zero] no-pad case
+//   H2 the row hidden at mount as well                              ✅ SURVIVED: the opening decides — that line was removed
+//   H3 the pad row hidden always                                    🔴 the pair

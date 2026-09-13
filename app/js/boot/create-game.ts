@@ -2435,6 +2435,7 @@ export function createGame(o: CreateGameOptions): Engine {
     };
     let passosDoPad: HTMLElement | null = null;
     let dicaDoPad: HTMLElement | null = null;
+    let linhaDoPad: HTMLElement | null = null;
     /** Reflecte as linhas do mapeamento de teclado (definido mais abaixo, com o painel `#ctrl`). */
     let refletirTeclado = (): void => {};
     let personaAtual = personaMaisProxima(store.getNum(store.KEYS.padBtnMm, 12.5));
@@ -2454,6 +2455,9 @@ export function createGame(o: CreateGameOptions): Engine {
       // Relido a cada abertura: o tamanho pode ter mudado noutro sítio, e os rótulos seguem o idioma de agora.
       render: () => {
         personaAtual = personaMaisProxima(store.getNum(store.KEYS.padBtnMm, 12.5));
+        // ADR-0166 + ADR-0106 §5: the pad's size is offered only to a cartridge that has a pad — hidden, not locked, because
+        // there is nothing to unlock. Read at each opening: `mount()` may have swapped the cartridge.
+        if (linhaDoPad) linhaDoPad.hidden = !cartucho.controleNaTela;
         if (passosDoPad) atualizarPassos(passosDoPad, specDoPad());
         // ⚠️ A DICA NO IDIOMA DE AGORA, antes de o rodapé a recolher: escrita no arranque, saía no idioma de recuo
         // (medido no `dist` com a página em inglês — o rodapé em português).
@@ -2463,6 +2467,7 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     const linha = doc.createElement('div');
     linha.className = 'ctrl-row ctrl-row--passos';
+    linhaDoPad = linha; // offered or not is decided at each opening (`render` above)
     const dica = doc.createElement('span');
     dica.className = 'opt-hint';
     dicaDoPad = dica;
