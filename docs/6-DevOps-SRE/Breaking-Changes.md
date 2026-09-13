@@ -531,7 +531,9 @@ window resize, and writes `--ui-fs`, `--tap`, `--hud-fs` and `--alvo-min` on it.
 the region is overwritten. ADR-0095's height ruler is gone: **`ui/layout.REGUA_DE_ALVO` and
 `ui/layout.alvoMinimoDeToque` are removed**, replaced by `alvoMinimo(k)` (44 px at k = 2, growing with the scale), and
 `ui/layout.aplicarEscala(regiao, escala)` takes no height. `--alvo-min` is therefore never 24 or 34 px any more. The pause
-card's title is 1em with a 1.25 line.
+card's title is 1em with a 1.25 line. `#game-region`'s font size is `--ui-fs` × `--fonte-escala`, and no size in
+`style.css` is under 1em or 16 px, or written in `rem`: text that was .8em–.95em (captions, hints, tags, the START pill)
+is now 1em, and a `rem` size became the same number in `em`, so it grows with the scale.
 
 **What to do:** stop sizing `#game-region`; put your layout inside it and read `--ui-fs` / `--alvo-min`. Replace
 `alvoMinimoDeToque(altura)` with `alvoMinimo(k)`. If your screens counted on 24 or 34 px items to fit a small viewport,

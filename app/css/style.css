@@ -99,9 +99,9 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 .title-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;max-height:96%;}
 .game-title{color:#fff;font-size:2em;line-height:1.2;margin:0;text-align:center;letter-spacing:1px;text-shadow:2px 2px 0 #0d0d1a,-1px -1px 0 #0d0d1a}
 .title-block{display:inline-block}
-.game-byline{color:#f6f5f0;font-size:.8em;text-align:right;margin-top:2px;text-shadow:1px 1px 0 #0d0d1a}
-.game-version{color:#9999b3;font-size:.6em;text-align:right;letter-spacing:1px;margin-top:2px;text-shadow:1px 1px 0 #0d0d1a}
-.game-subtitle{color:#f6f5f0;font-size:.8em;margin:0 0 4px;text-shadow:1px 1px 0 #0d0d1a;text-align:center}
+.game-byline{color:#f6f5f0;font-size:1em;text-align:right;margin-top:2px;text-shadow:1px 1px 0 #0d0d1a}
+.game-version{color:#9999b3;font-size:1em;text-align:right;letter-spacing:1px;margin-top:2px;text-shadow:1px 1px 0 #0d0d1a}
+.game-subtitle{color:#f6f5f0;font-size:1em;margin:0 0 4px;text-shadow:1px 1px 0 #0d0d1a;text-align:center}
 /* Splash DENTRO do canvas, SEM rolagem. GESTALT (José): a11y no CABEÇALHO · menu no ESPAÇO DE TRABALHO · legenda no RODAPÉ */
 .title-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;max-height:none}
 .title-legend{position:absolute;left:0;right:0;bottom:8px}                 /* RODAPÉ, como a legenda da pausa */
@@ -140,17 +140,17 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
    "entrar" que na verdade ligam e desligam. A moldura (`fieldset`/`legend`) é a fronteira, e a marca ☑/☐ é o
    estado sem depender de cor (a cor sozinha reprova a WCAG 1.4.1). */
 #tm-fr .frac-nots{border:2px solid var(--ink-soft);border-radius:10px;padding:.3em .5em .5em;margin:0 0 .45em}
-#tm-fr .frac-nots legend{padding:0 .4em;font-size:.8em;font-weight:700;color:var(--ink-soft)}
+#tm-fr .frac-nots legend{padding:0 .4em;font-size:1em;font-weight:700;color:var(--ink-soft)}
 #tm-fr .fnot-opt{display:flex;align-items:center;gap:.5em;width:100%;min-height:44px;padding:.2em .4em;background:transparent;color:#fff;border:0;border-radius:8px;font:inherit;cursor:pointer;text-align:left}
 #tm-fr .fnot-opt:hover,#tm-fr .fnot-opt:focus-visible{background:#16233f}
 #tm-fr .fnot-marca{font-size:1.15em;line-height:1;min-width:1.1em}
 #tm-fr .fnot-opt[aria-checked="true"] .fnot-marca{color:var(--accent)}
 #tm-fr .fnot-sym{font-size:1em}
-#tm-fr .fnot-opt .fv{font-size:.8em}
+#tm-fr .fnot-opt .fv{font-size:1em}
 .tm-title{color:#fff;font-size:1em;margin:0 0 .1em;text-align:center;text-shadow:1px 1px 0 #0d0d1a} /* título do submenu */
-.title-btn{background:var(--accent);color:var(--accent-ink);border:3px solid #0d0d1a;font-family:inherit;font-weight:bold;font-size:.95em;padding:.4em .6em;border-radius:6px;cursor:pointer;min-width:0;width:100%;min-height:2.3em} /* contorno PRETO grosso (3px) = mesma cor do texto (José) */
+.title-btn{background:var(--accent);color:var(--accent-ink);border:3px solid #0d0d1a;font-family:inherit;font-weight:bold;font-size:1em;padding:.4em .6em;border-radius:6px;cursor:pointer;min-width:0;width:100%;min-height:2.3em} /* contorno PRETO grosso (3px) = mesma cor do texto (José) */
 .title-btn.ghost{background:#e8862b;color:#0d0d1a;border:2px solid #0d0d1a} /* Voltar = preenchimento LARANJA */
-.act-sub{display:block;font-size:.72em;font-weight:600;opacity:.7;letter-spacing:.02em;margin-top:.06em;font-family:var(--font-math,inherit);white-space:nowrap} /* subtítulo de exemplo (2ª linha, NUNCA quebra — botão largo o bastante) */
+.act-sub{display:block;font-size:1em;font-weight:600;opacity:.7;letter-spacing:.02em;margin-top:.06em;font-family:var(--font-math,inherit);white-space:nowrap} /* subtítulo de exemplo (2ª linha, NUNCA quebra — botão largo o bastante) */
 /* Seletor VERMELHO fixo (piscar removido a pedido do José). Especificidade via #title-overlay. */
 #title-overlay .title-btn:focus-visible,#title-overlay .title-btn:focus{outline:4px solid #ff3b30;outline-offset:2px}
 #title-overlay .title-btn.act-fx{animation:titleAct .22s ease}         /* efeito de ATIVAÇÃO (antes de trocar de tela) */
@@ -165,17 +165,17 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 #tm-tab .tab-row .title-btn{width:100%;padding:.4em .5em}
 /* RODAPÉ (mesmo estilo do menu de pausa): descrição no fundo do canvas, NÃO colada ao grupo de botões (José).
    Fundo fumê PRETO → contraste ≥7:1 entre o texto claro (#f6f5f0) e o fundo (≈#0a0a12). */
-.tm-desc:not(:empty){position:absolute;left:50%;transform:translateX(-50%);bottom:10px;max-width:88%;color:#f6f5f0;font-size:.8em;text-align:center;background:rgba(8,8,16,.92);padding:.35em .7em;border-radius:8px;line-height:1.25}
+.tm-desc:not(:empty){position:absolute;left:50%;transform:translateX(-50%);bottom:10px;max-width:88%;color:#f6f5f0;font-size:1em;text-align:center;background:rgba(8,8,16,.92);padding:.35em .7em;border-radius:8px;line-height:1.25}
 .tm-desc:empty{position:absolute;left:0;bottom:10px}
 /* Legenda de controles: mesmo visual/posição da legenda do menu de pausa (chips), em 2 LINHAS */
-.title-legend{display:flex;flex-direction:column;gap:.25em;align-items:center;margin:.5em 0 .1em;font-size:.82em;color:#c3cfe0}
+.title-legend{display:flex;flex-direction:column;gap:.25em;align-items:center;margin:.5em 0 .1em;font-size:1em;color:#c3cfe0}
 .title-legend .lg-row{display:flex;gap:1.1em;justify-content:center;flex-wrap:wrap}
 .title-legend .lg{display:inline-flex;align-items:center;gap:.35em}
-.title-legend .lg-ico{display:inline-flex;align-items:center;justify-content:center;min-width:1.35em;height:1.35em;padding:0 .2em;border-radius:.68em;font-weight:800;font-size:.9em;color:#fff;background:rgba(13,13,26,.85);text-shadow:0 1px 1px rgba(0,0,0,.55)}
+.title-legend .lg-ico{display:inline-flex;align-items:center;justify-content:center;min-width:1.35em;height:1.35em;padding:0 .2em;border-radius:.68em;font-weight:800;font-size:1em;color:#fff;background:rgba(13,13,26,.85);text-shadow:0 1px 1px rgba(0,0,0,.55)}
 #title-icons{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:.3em;justify-content:center;flex-wrap:nowrap;white-space:nowrap} /* CABEÇALHO: 10px do topo, UMA fileira */
 /* The NAME of the pointed icon, just below the row. Absolute, so the bar's height — the band the game must not draw
    over (ADR-0148) — does not grow when a name appears; the explanation goes to the footer, not here. */
-#title-icons .pause-icons-cap{position:absolute;top:calc(100% + .2rem);left:50%;transform:translateX(-50%);margin:0;text-align:center;font-size:.85em;color:#f6f5f0;pointer-events:none;white-space:nowrap;min-height:0}
+#title-icons .pause-icons-cap{position:absolute;top:calc(100% + .2rem);left:50%;transform:translateX(-50%);margin:0;text-align:center;font-size:1em;color:#f6f5f0;pointer-events:none;white-space:nowrap;min-height:0}
 #title-icons .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px;padding:.2em .6em}
 /* Seletor de jogadores = UM botão só ("◀ Nº de jogadores: X ▶"); o lado clicado decide +1/−1 */
 #np-btn{letter-spacing:.02em}
@@ -222,16 +222,16 @@ body{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidd
 
 .topbar{max-width:var(--maxw);margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
 body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o jogo já mostra no splash); recupera a vertical */
-.title{font-size:1.3rem;margin:0}
-.ver{color:var(--ink-soft);font-weight:400;font-size:.9rem}
-.badge{margin:0;color:var(--accent-ink);background:var(--accent);border-radius:999px;padding:.2em .8em;font-weight:700;font-size:.8rem}
+.title{font-size:1.3em;margin:0}
+.ver{color:var(--ink-soft);font-weight:400;font-size:1em}
+.badge{margin:0;color:var(--accent-ink);background:var(--accent);border-radius:999px;padding:.2em .8em;font-weight:700;font-size:1em}
 
 .hud{max-width:var(--maxw);margin:0 auto;padding:0 1rem .5rem;display:flex;gap:1.5rem;flex-wrap:wrap}
-.hud__item{margin:0;font-size:1.05rem}
+.hud__item{margin:0;font-size:1.05em}
 /* moedas/missão/poder migraram para dentro da tela de cada jogador; ficam sr-only (leitor de tela) */
 .hud__item--sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 /* HUD por jogador SOBRE o canvas (DOM = alta definição, não pixela). Um por viewport; moedas na 1ª coluna, poder na 2ª. */
-#game-hud{position:absolute;inset:0;pointer-events:none;z-index:4;font-family:var(--font);font-size:var(--hud-fs,14px);font-weight:800}
+#game-hud{position:absolute;inset:0;pointer-events:none;z-index:4;font-family:var(--font);font-size:var(--hud-fs,16px);font-weight:800}
 /* "Tela do jogador": um contêiner por jogador (posicionado na fatia do viewport dele). Hospeda HUD, e nas
    próximas etapas a pausa e os menus daquele jogador. O render segue compartilhado (um contexto WebGL). */
 .player-screen{position:absolute;pointer-events:none}
@@ -239,7 +239,7 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 .vphud-obj,.vphud-power{flex:1 1 50%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vphud-ico{font-weight:400}
 /* jogador que saiu (MP): viewport preto com "Jogo abandonado" no centro; os outros seguem */
-.vphud-quit{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;color:#cdd6f2;font-family:var(--font);font-weight:800;font-size:var(--hud-fs,14px);text-align:center}
+.vphud-quit{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;color:#cdd6f2;font-family:var(--font);font-weight:800;font-size:var(--hud-fs,16px);text-align:center}
 .vphud-quit[hidden]{display:none}
 /* PAUSA dentro do canvas (tela = canvas) — sobreposta ao #game-region, não à página */
 .pause-incanvas{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:var(--bg-solid);font-family:var(--font)}
@@ -281,7 +281,7 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 /* SÓ OS BOTÕES OCUPAM ESPAÇO. A explicação é ABSOLUTA e fica fora do fluxo — ela aparece por cima do jogo ao
    passar o mouse (ou quando o cursor do modo `accessibility` pousa num ícone) e some sem deixar buraco. Uma
    faixa de texto reservando altura na tela de jogo é o contrário do que uma barra de atalho serve. */
-.screen-a11y .pause-icons-cap{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--a11y-h) + .1rem);margin:0;max-width:92%;text-align:center;font-size:.8em;color:#f6f5f0;pointer-events:none}
+.screen-a11y .pause-icons-cap{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--a11y-h) + .1rem);margin:0;max-width:92%;text-align:center;font-size:1em;color:#f6f5f0;pointer-events:none}
 .screen-a11y .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px;padding:.2em .6em}
 /* O HUD desce para DEBAIXO da barra. É a mesma conta, e é por isso que ela mora num token: as duas medidas
    não podem divergir sem que uma tape a outra. */
@@ -324,7 +324,7 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 .pi-btn.pi-dis{opacity:.35;cursor:not-allowed}
 .pi-btn.pi-soon{opacity:.55}
 .pi-btn.pi-sel,.pi-btn:focus,.pi-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
-.pause-icons-cap{text-align:center;margin:0 0 .3rem;font-size:.82em;color:var(--ink-soft);min-height:1.1em}
+.pause-icons-cap{text-align:center;margin:0 0 .3rem;font-size:1em;color:var(--ink-soft);min-height:1.1em}
 /* `scrollbar-gutter: stable both-edges` — MEDIDO no navegador depois do item 6: com a lista em 44 px o
    cartão passa a rolar, a barra de rolagem come largura de UM lado só, e a lista centrada saía 7,5 px do
    centro. Reservar a calha nos dois lados devolve a simetria, role ou não. */
@@ -363,9 +363,9 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 .pm-btn,.quiz-alt{counter-increment:item-menu}
 .pm-btn::before,.quiz-alt::before{content:counter(item-menu) / "";margin-inline-end:.5em;font-variant-numeric:tabular-nums}
 /* Legenda sim/não: ícone do botão (conforme layout do controle) + a palavra. Sony/Nintendo invertem 0↔1. */
-.pause-legend{display:flex;gap:1.1rem;justify-content:center;margin:.7rem 0 .1rem;font-size:.82em;color:#c3cfe0}
+.pause-legend{display:flex;gap:1.1rem;justify-content:center;margin:.7rem 0 .1rem;font-size:1em;color:#c3cfe0}
 .pause-legend .lg{display:inline-flex;align-items:center;gap:.35rem}
-.pause-legend .lg-ico{display:inline-flex;align-items:center;justify-content:center;width:1.35rem;height:1.35rem;border-radius:50%;font-weight:800;font-size:.8rem;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55)}
+.pause-legend .lg-ico{display:inline-flex;align-items:center;justify-content:center;width:1.35rem;height:1.35rem;border-radius:50%;font-weight:800;font-size:1em;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55)}
 .hud__item strong{font-variant-numeric:tabular-nums}
 .hud__fps{color:var(--ink-soft)}
 
@@ -446,7 +446,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
   position:absolute;inset:auto 0 0 0;z-index:var(--z-loop-crash);
   padding:14px 18px;
   background:#7f1d1d;color:#fff;border-top:3px solid #fff;
-  font:700 15px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;
+  font:700 1em/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;
   text-align:center;text-wrap:balance
 }
 .pixi-mount,.pixi-mount canvas{display:block;width:100%;height:100%}
@@ -470,7 +470,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
   display:flex;flex-direction:column;gap:.5rem;align-items:center;pointer-events:none;
   transition:opacity .5s ease;z-index:6;max-width:92%}
 .start-tips p{margin:0;background:rgba(5,7,15,.85);color:#fff;border:2px solid rgba(255,255,255,.45);
-  border-radius:10px;padding:.4em .9em;font-size:1.05rem;font-weight:600;text-align:center}
+  border-radius:10px;padding:.4em .9em;font-size:1.05em;font-weight:600;text-align:center}
 .start-tips kbd{background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:.05em .5em;font-weight:800}
 .start-tips.hide{opacity:0}
 @media (prefers-reduced-motion: reduce){ .start-tips{transition:none} }
@@ -512,19 +512,19 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 @keyframes qwPop{0%{transform:scale(1)}45%{transform:scale(1.4);box-shadow:0 0 .9rem .3rem var(--accent)}100%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){ .quiz-wins.celebrate .qw-dot.on{animation:none} }
 .quiz-shape{color:var(--accent);font-weight:800;text-transform:capitalize}
-.quiz-prob{font-size:1.6rem;font-weight:800;margin:.4rem 0 .8rem}
+.quiz-prob{font-size:1.6em;font-weight:800;margin:.4rem 0 .8rem}
 .quiz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
-.quiz-choice{min-height:var(--tap);min-width:var(--tap);font:inherit;font-size:1.2rem;font-weight:700;color:var(--ink);background:#131a30;border:2px solid var(--ink-soft);border-radius:8px;cursor:pointer}
+.quiz-choice{min-height:var(--tap);min-width:var(--tap);font:inherit;font-size:1.2em;font-weight:700;color:var(--ink);background:#131a30;border:2px solid var(--ink-soft);border-radius:8px;cursor:pointer}
 .quiz-choice.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .quiz-choice.reveal{outline:3px solid var(--good);outline-offset:2px}
-.quiz-hint{font-size:.85rem;margin-top:.6rem;color:var(--ink-soft)}
-.quiz-emoji{font-size:2.4rem;line-height:1}
+.quiz-hint{font-size:1em;margin-top:.6rem;color:var(--ink-soft)}
+.quiz-emoji{font-size:2.4em;line-height:1}
 /* Palavra do topo = emoji SELECIONÁVEL (pular sobre ela repete a fala / VLibras gesticula) */
-.quiz-word{font-size:2.4rem;line-height:1;background:transparent;border:2px solid transparent;border-radius:12px;padding:.05em .2em;cursor:pointer}
+.quiz-word{font-size:2.4em;line-height:1;background:transparent;border:2px solid transparent;border-radius:12px;padding:.05em .2em;cursor:pointer}
 .quiz-word.sel{border-color:var(--accent);background:rgba(255,230,0,.12)}
-.quiz-letter{font-size:.8rem;color:var(--ink-soft);margin:.1rem 0 .4rem}
+.quiz-letter{font-size:1em;color:var(--ink-soft);margin:.1rem 0 .4rem}
 .silaba-boxes{display:flex;gap:.4rem;justify-content:center;margin-bottom:.5rem}
-.silaba-box{min-width:34px;min-height:28px;border:2px dashed var(--ink-soft);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.15rem}
+.silaba-box{min-width:34px;min-height:28px;border:2px dashed var(--ink-soft);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.15em}
 .silaba-box.filled{border-style:solid;border-color:var(--accent);background:rgba(255,255,255,.08)}
 .silaba-actions{display:flex;gap:.4rem;justify-content:center;margin-top:.4rem}
 /* E8: cela Braille */
@@ -538,9 +538,9 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 
 .opts{max-width:var(--maxw);margin:0 auto .5rem;padding:0 1rem;display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center}
 /* barra de controles compacta → cabe em UMA fileira em telas comuns (não afeta botões de overlay) */
-.opts .mode-btn{padding:.35em .65em;font-size:.92rem;white-space:nowrap}
+.opts .mode-btn{padding:.35em .65em;font-size:1em;white-space:nowrap}
 .caption{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:rgba(0,0,0,.82);color:#fff;
-  border:2px solid rgba(255,255,255,.5);border-radius:8px;padding:.25em .7em;font-weight:700;font-size:.95rem;
+  border:2px solid rgba(255,255,255,.5);border-radius:8px;padding:.25em .7em;font-weight:700;font-size:1em;
   z-index:8;pointer-events:none;max-width:90%;opacity:0;transition:opacity .15s}
 .caption.show{opacity:1}
 @media (prefers-reduced-motion: reduce){ .caption{transition:none} }
@@ -601,7 +601,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* Rodapé de explicação: branco sobre preto translúcido 0,82 → contraste do branco >7:1 mesmo sobre 100% branco
    (composição: 1-0,82=0,18 → L≈0,027 → ~13:1), sem ser 100% opaco. Fixo no rodapé do card. */
 .opt-explain{position:sticky;bottom:calc(-1 * var(--card-pad,1.5rem));margin:.8rem calc(-1 * var(--card-pad,1.5rem)) calc(-1 * var(--card-pad,1.5rem));padding:.6rem .9rem;min-height:2.8rem;text-align:left;
-  background:rgba(0,0,0,.82);color:#fff;font-size:.9em;line-height:1.35;border-top:1px solid rgba(255,255,255,.18);border-radius:0 0 9px 9px;backdrop-filter:blur(1px);
+  background:rgba(0,0,0,.82);color:#fff;font-size:1em;line-height:1.35;border-top:1px solid rgba(255,255,255,.18);border-radius:0 0 9px 9px;backdrop-filter:blur(1px);
   /* ADR-0164: two lines at most — a longer explanation is cut here and has to be rewritten to fit */
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 #game-region .overlay__actions{position:static;background:transparent;padding:.5rem 0 0;margin:0}
@@ -660,19 +660,19 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
 .item-num{font-weight:700;font-variant-numeric:tabular-nums}
 .topbar__right{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 .title-card{text-align:center}
-.title-big{font-size:2rem;margin:.2rem 0;color:var(--accent)}
+.title-big{font-size:2em;margin:.2rem 0;color:var(--accent)}
 .title-by{color:var(--ink-soft);margin:.2rem 0 1rem}
-.title-card .btn{margin-top:.4rem;font-size:1.1rem;padding:.6em 1.6em}
+.title-card .btn{margin-top:.4rem;font-size:1.1em;padding:.6em 1.6em}
 .overlay__actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;justify-content:flex-end;
   position:sticky;bottom:-1.5rem;background:var(--panel);padding:.6rem 0 1.5rem;margin-bottom:-1.5rem}
-.opt-hint{color:var(--ink-soft);font-size:.9em;margin:.2rem 0 .8rem}
-.panel-sub{text-align:left;font-size:1rem;margin:1rem 0 .4rem;border-bottom:1px solid var(--accent);padding-bottom:.2rem}
+.opt-hint{color:var(--ink-soft);font-size:1em;margin:.2rem 0 .8rem}
+.panel-sub{text-align:left;font-size:1em;margin:1rem 0 .4rem;border-bottom:1px solid var(--accent);padding-bottom:.2rem}
 .panel-sub:first-of-type{margin-top:.4rem}
-.panel-sub__tag{color:var(--ink-soft);font-size:.78em;font-weight:400}
+.panel-sub__tag{color:var(--ink-soft);font-size:1em;font-weight:400}
 .vol{width:140px;max-width:45%;accent-color:var(--accent);height:1.5rem;cursor:pointer} /* barra de volume (range) */
 /* Caixas de seleção com a IDENTIDADE do jogo: fonte escolhida, cores e tamanho (não o estilo do SO) */
 select.vol, .overlay__card select, .ctrl-col select{
-  font-family:var(--font);font-size:.95em;font-weight:600;color:var(--ink);
+  font-family:var(--font);font-size:1em;font-weight:600;color:var(--ink);
   width:auto;max-width:100%;height:auto;min-height:var(--tap);
   background:#0e1326;border:2px solid var(--ink-soft);border-radius:8px;
   padding:.35em 2em .35em .7em;cursor:pointer;
@@ -682,7 +682,7 @@ select.vol, .overlay__card select, .ctrl-col select{
 select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .overlay__card select option{background:#0e1326;color:var(--ink);font-weight:600}
 .ctrl-players{display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center;margin-bottom:.7rem}
-.ctrl-players .mode-btn{padding:.3em .7em;font-size:.95rem}
+.ctrl-players .mode-btn{padding:.3em .7em;font-size:1em}
 .ctrl-list{display:flex;flex-direction:column;gap:.45rem;text-align:left}
 .ctrl-row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;background:#0e1326;border:2px solid var(--ink-soft);border-radius:8px;padding:.4rem .6rem}
 /* ADR-0029 — SAIU DO PADRÃO. Dois canais visuais no mesmo lugar: a COR da moldura e a FORMA, que é uma
@@ -699,10 +699,10 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 .ctrl-row.ctrl-col{flex-direction:column;align-items:stretch;gap:.4rem}
 .ctrl-row.ctrl-col label{font-weight:700}
 .pad-presets{display:flex;gap:.5rem;flex-wrap:wrap}
-.pad-tag{font-size:.8rem;font-weight:700;padding:.05em .5em;border-radius:999px;background:#20304e;color:#bcd}
+.pad-tag{font-size:1em;font-weight:700;padding:.05em .5em;border-radius:999px;background:#20304e;color:#bcd}
 .pad-tag[data-who="crianca"]{background:#2a4a2e;color:#bfe9c2}
 .pad-tag[data-who="adulto"]{background:#2a3a5e;color:#c3d4f0}
-.pad-warn{font-size:.85rem;color:#ffdf9e;background:#3a2e12;border:1px solid #6a5220;border-radius:8px;padding:.45rem .6rem}
+.pad-warn{font-size:1em;color:#ffdf9e;background:#3a2e12;border:1px solid #6a5220;border-radius:8px;padding:.45rem .6rem}
 .ctrl-col input[type=range]{width:100%;min-height:var(--tap);accent-color:var(--accent)}
 
 /* E13: controles de toque (mobile) — overlay nas bordas inferiores, não cobre o centro */
@@ -719,7 +719,7 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 .touch-btn[data-acao="action4"]{grid-area:a4}
 .touch-btn[data-acao="action2"]{grid-area:a2}
 .touch-btn[data-acao="action3"]{grid-area:a3}
-.touch-btn{width:56px;height:56px;min-width:var(--tap);min-height:var(--tap);border-radius:12px;border:2px solid rgba(255,255,255,.75);background:rgba(13,17,32,.92);color:#fff;font-size:1.4rem;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
+.touch-btn{width:56px;height:56px;min-width:var(--tap);min-height:var(--tap);border-radius:12px;border:2px solid rgba(255,255,255,.75);background:rgba(13,17,32,.92);color:#fff;font-size:1.4em;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
 .touch-btn:active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .touch-jump{background:rgba(18,74,52,.94)}
 /* Botões de ação em LOSANGO (4 bolhas: 0 baixo, 1 direita, 2 esquerda, 3 cima) + START pílula */
@@ -742,7 +742,7 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 #game-region:has(.overlay:not([hidden])) .touch{z-index:var(--z-menu-max)}
 .touch-sistema{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;gap:10px;pointer-events:none}
 .touch-sistema .touch-start,.touch-sistema .touch-select{position:static;transform:none}
-.touch-start,.touch-select{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--tap);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:.82rem;letter-spacing:.08em;background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
+.touch-start,.touch-select{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--tap);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:1em;letter-spacing:.08em;background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
 .touch-start:active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 /* joystick digital: base (círculo maior) + manopla (círculo menor) */
 /* Direcional (analógico/"alavanca"): base = superfície + deslocamento; manopla = superfície de contato. Ambos em mm (JS). */
@@ -764,4 +764,4 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 @media (prefers-reduced-motion: reduce){ .touch-knob{transition:none} }
 @media (prefers-contrast: more){ .touch-btn{background:#000;border-color:#fff} .touch-btn:active{background:#fff;color:#000} .touch-stick{background:#000;border-color:#fff} .touch-knob{background:#fff} }
 
-@media (max-width:560px){.title{font-size:1.1rem}.hud{gap:1rem}}
+@media (max-width:560px){.title{font-size:1.1em}.hud{gap:1rem}}

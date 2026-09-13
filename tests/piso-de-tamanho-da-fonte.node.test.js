@@ -29,6 +29,9 @@
 // ⚠️ O que este ficheiro NÃO afirma: que 14px é o piso real. Afirma que é um teto dele, e a asserção usa-o
 // só nessa direção. Um caso que dissesse «o piso é 14» estaria a inventar precisão que a medição não tem.
 //
+// ⚠️ (2026-09-12) The numbers above are history: ADR-0163 raised every size to 16 px or more, so the smallest px size is
+// now 16 and nothing relative goes under 1em (`texto-nunca-abaixo-de-16`). The argument holds with 16 as the ceiling.
+//
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
