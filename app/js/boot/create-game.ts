@@ -2799,6 +2799,21 @@ export function createGame(o: CreateGameOptions): Engine {
     ligacoesDoToque.rewire();
   }
 
+  /**
+   * THE PAGE LINKS THE ENGINE STYLESHEET, or it is told (study item B4). `createGame` injects no CSS; without
+   * `style.css` the panels, the footer band, the target floor and the focus rings are all missing, and nothing said so.
+   * Read when `problems` is read, by the sentinel only that stylesheet declares — a stylesheet loading late is not
+   * accused; a host without `getComputedStyle` measures nothing and accuses nothing.
+   */
+  function folhaDeEstiloAusente(): string[] {
+    if (typeof win.getComputedStyle !== 'function' || !doc.documentElement) return [];
+    const estilo = win.getComputedStyle(doc.documentElement);
+    if (!estilo || typeof estilo.getPropertyValue !== 'function') return [];
+    return estilo.getPropertyValue('--incl-engine-stylesheet').trim() ? [] : [`the page does not link the engine stylesheet \
+(package export \`the-inclusionist-engine/style.css\`): panels, the footer band, the target floor and the focus rings are \
+unstyled`];
+  }
+
   function desmontar(): void {
     registrarMapeamentoDoTeclado(null);
     registrarMapeamentoDoPad(null);
@@ -2822,7 +2837,7 @@ export function createGame(o: CreateGameOptions): Engine {
     aplicarFiltroDeVisao,
     cenas: cenasDaRaiz,
     cvdFilters,
-    get problems() { return [...problemasDoHospedeiro, ...problemasDoCartucho()]; },
+    get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho()]; },
     aoFalhar,
     get alcance() { return alcanceAtual; },
   };

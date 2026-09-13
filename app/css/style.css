@@ -1,5 +1,7 @@
 /* SPDX-License-Identifier: AGPL-3.0-or-later */
 :root{
+  /* The engine stylesheet's sentinel: `createGame` reads it to say in `problems` when a page did not link this file. */
+  --incl-engine-stylesheet:1;
   --bg:#0b1020; --panel:#1b2440; --ink:#f5f8ff; --ink-soft:#cdd6f2;
   --accent:#ffd23f; --accent-ink:#1a1400; --focus:#ffd23f; --good:#34e29b;
   --changed:#fff; /* ADR-0029: moldura de quem saiu do padrão */
