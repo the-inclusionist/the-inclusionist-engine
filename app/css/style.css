@@ -352,7 +352,9 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 /* The menu item's target is `--alvo-min`, never a literal. ADR-0163 superseded ADR-0095's height ruler (24/34/44 px):
    the engine forces the resolution, no screen is under 640×360, and the floor is 22 × k — 44 px there, growing with the
    scale. `aplicarEscala` writes it on the game region; the 44 px fallback is that same floor at k = 2. */
-.pm-btn{background:#1a2740;color:#eaf2f8;border:1px solid #3a4a6a;border-radius:10px;padding:.5rem .8rem;min-height:var(--alvo-min,44px);display:flex;align-items:center;justify-content:center;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+/* ADR-0159 rule 8 / WCAG 1.4.11: the item's border is its boundary against the card (#0e1626). #3a4a6a measured 2.04:1;
+   #6a7a96 is 4.2:1. */
+.pm-btn{background:#1a2740;color:#eaf2f8;border:1px solid #6a7a96;border-radius:10px;padding:.5rem .8rem;min-height:var(--alvo-min,44px);display:flex;align-items:center;justify-content:center;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
 /* ADR-0161: a locked item stays in the list, visibly muted; the cursor still lands on it and it says its reason. */
 .pm-btn[aria-disabled="true"]{color:#9aa6b8;border-style:dashed;cursor:not-allowed}
 .pm-btn:hover,.pm-btn:focus,.pm-btn.pm-sel{background:#2a3a5e;border-color:#ffd23f;outline:2px solid #ffd23f;outline-offset:1px}
