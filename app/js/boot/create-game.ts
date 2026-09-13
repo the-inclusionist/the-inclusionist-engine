@@ -2105,6 +2105,19 @@ export function createGame(o: CreateGameOptions): Engine {
     doc.body.insertBefore(pular, doc.body.firstChild); // `data-i18n`: every `setLocale` rewrites it, the boot's included
   }
 
+  /*
+   * THE LETTER CASE REACHES THE PAGE (ADR-0028; ADR-0149 §1). The stylesheet capitalises under `:root[data-letras="upper"]`,
+   * and nothing wrote that attribute: the communication button's first position kept «capitals» in the state and showed
+   * natural case (reported by the Dev). Written at every change, and at boot only when the child CHOSE a case — the state's
+   * default is `upper` (ADR-0028) while the cycle's default is position (c), natural case (ADR-0149), and writing the default
+   * would put every new child's game in capitals.
+   */
+  const escreverCaixa = (c: state.LetterCase): void => {
+    if (doc.documentElement?.dataset) doc.documentElement.dataset.letras = c;
+  };
+  if (store.get(store.KEYS.letterCase, null) !== null) escreverCaixa(state.letterCase);
+  state.on('letterCase', escreverCaixa);
+
   /** A node named the way a developer finds it: `tag#id.firstClass`. */
   function nomeDoNo(el: Element): string {
     return el.tagName.toLowerCase() + (el.id ? `#${el.id}` : '') + (el.className ? `.${String(el.className).trim().split(/\s+/)[0]}` : '');
