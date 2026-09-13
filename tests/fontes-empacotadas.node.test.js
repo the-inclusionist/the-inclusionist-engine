@@ -79,6 +79,13 @@ const AS_SETE_NOVAS = Object.freeze([
 ]);
 const AS_EMPACOTADAS = Object.freeze([...AS_OITO, ...AS_SETE_NOVAS]);
 
+/**
+ * Since the ADR-0176 erratum («Engine empacota tudo por enquanto») the package is every `ativo` family of the typographic
+ * catalogue, the Guides included; the fifteen above stay as the ones the reading menu grew from.
+ */
+const ATIVAS_DO_CATALOGO = Object.freeze(new Set(JSON.parse(readFileSync(new URL('../catalogo_tipografico.json', import.meta.url), 'utf8'))
+  .fontes.filter((f) => f.status === 'ativo').map((f) => f.familia)));
+
 /** As três faces da ronde francesa. NENHUMA pode ser empacotada — são gratuitas só para uso PESSOAL. */
 const A_RONDE = Object.freeze(['Ronde Script', 'OPTIFrench-Script', 'Merveille']);
 
@@ -102,9 +109,9 @@ export function ehPlaywrite(familia) {
   return /^playwrite\b/i.test(familia.trim());
 }
 
-/** As Playwrite empacotadas que NÃO estão na lista. */
-export function playwriteForaDasOito(familias) {
-  return familias.filter((f) => ehPlaywrite(f) && !AS_EMPACOTADAS.includes(f.trim()));
+/** The packaged Playwrite families that are NOT `ativo` in the typographic catalogue (ADR-0176). */
+export function playwriteForaDoCatalogo(familias, ativas = ATIVAS_DO_CATALOGO) {
+  return familias.filter((f) => ehPlaywrite(f) && !ativas.has(f.trim()));
 }
 
 /**
@@ -147,11 +154,10 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
     expect(familias, 'a família âncora não foi lida').toContain('Atkinson Hyperlegible');
   });
 
-  it('⚠️ [Zero] NENHUMA Playwrite fora das oito viaja no pacote', () => {
+  it('⚠️ [Zero] NO Playwrite outside the catalogue\'s active families travels in the package (ADR-0176 erratum)', () => {
     expect(
-      playwriteForaDasOito(familias),
-      'Playwrite empacotada que o ADR-0108 não nomeia. Cada face é um download que TODA escola paga, '
-      + 'inclusive a que precisa de uma só — o roster é por língua, o PACOTE são as oito.',
+      playwriteForaDoCatalogo(familias),
+      'a packaged Playwrite the typographic catalogue does not mark `ativo`: the catalogue is the source of which fonts exist',
     ).toEqual([]);
   });
 
@@ -254,11 +260,11 @@ describe('ADR-0108 · o que viaja dentro do pacote', () => {
       .toBeGreaterThanOrEqual(26);
   });
 
-  it('[Right] uma NONA Playwrite reprova — mesmo uma dentro do roster por língua', () => {
-    // «Playwrite IE» é Irlanda: inglês, logo DENTRO do roster do ADR-0012 e FORA do pacote do ADR-0108. É
-    // exactamente o caso que a distinção entre roster e pacote existe para tratar.
-    expect(playwriteForaDasOito(['Playwrite BR', 'Playwrite IE'])).toEqual(['Playwrite IE']);
-    expect(playwriteForaDasOito([...AS_OITO])).toEqual([]);
+  it('[Right] a Playwrite the catalogue does not hold is refused — and one it holds as active is not', () => {
+    // «Playwrite IE» was outside the ADR-0108 package; the catalogue marks it active, so it travels now. A name the
+    // catalogue does not have is still caught by its prefix.
+    expect(playwriteForaDoCatalogo(['Playwrite BR', 'Playwrite IE', 'Playwrite ZZ'])).toEqual(['Playwrite ZZ']);
+    expect(playwriteForaDoCatalogo([...AS_OITO])).toEqual([]);
   });
 
   /* ===================== ADR-0108 §4 · A OPÇÃO DA RONDE FALA, E NOMEIA AS TRÊS =====================

@@ -17,6 +17,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FONT_GROUPS } from '../app/js/ui/fonts.js';
 
+/** The typographic catalogue's active families (ADR-0176): what may be packaged. */
+const ATIVAS = new Set(JSON.parse(readFileSync(join(process.cwd(), 'catalogo_tipografico.json'), 'utf8'))
+  .fontes.filter((f) => f.status === 'ativo').map((f) => f.familia));
+
 const RAIZ_REPO = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();
 const ler = (...p) => readFileSync(join(RAIZ_REPO, ...p), 'utf8');
 
@@ -55,9 +59,12 @@ describe('uma fonte oferecida no menu carrega de verdade (ADR-0012)', () => {
       // tipografia — é a face que a engine impõe onde a forma do algarismo é a matéria (ADR-0010, pilar 5).
       'Atkinson Hyperlegible Mono': '--font-math (matemática)',
     });
-    const catalogo = new Set(ITENS.map((i) => i.fam));
-    const orfas = [...DECLARADAS].filter((f) => !catalogo.has(f) && !(f in ALCANCADAS_POR_VARIAVEL));
-    expect(orfas, 'face declarada que nenhum menu oferece: bytes no precache que ninguém escolhe').toEqual([]);
+    // Since the ADR-0176 erratum («Engine empacota tudo por enquanto») a declared face is orphan when the typographic
+    // catalogue does not hold it as `ativo` — the catalogue, not the reading menu, says what exists; layer B faces are
+    // packaged for ornament and never offered in the reading menu (R1).
+    const orfas = [...DECLARADAS].filter((f) => !ATIVAS.has(f) && !(f in ALCANCADAS_POR_VARIAVEL));
+    expect(orfas, 'a declared face the typographic catalogue does not hold as active: bytes in the precache nobody can use').toEqual([]);
+    expect(ATIVAS.size, 'the catalogue was not read — the case would measure nothing').toBeGreaterThan(100);
 
     // 📌 O PAR, e sem ele a lista de excepções seria a porta aberta: cada excepção tem de estar MESMO
     // declarada. Uma entrada que sobreviva ao ficheiro que a justificava passa a autorizar uma órfã de graça.
