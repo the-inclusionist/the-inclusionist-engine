@@ -450,7 +450,9 @@ describe('⚠️ TODA ação que o toque oferece é reconhecida pelo DESPACHO', 
   //
   // No mundo, o defeito era o botão START do controle de tela deixar de pausar — sem erro, sem aviso, e
   // num tablet de escola pública esse é o único botão de pausa que existe.
-  const SOLO = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action3: ['KeyK'], action4: ['KeyI'] };
+  // com os ombros do esquema solo real (`input/default-bindings`): o toque passou a carregá-los (ADR-0160)
+  const SOLO = { left: ['KeyA'], right: ['KeyD'], up: ['KeyW'], down: ['KeyS'], action1: ['KeyU'], action2: ['KeyJ'], action3: ['KeyK'], action4: ['KeyI'],
+    leftShoulder: ['Digit7'], leftTrigger: ['KeyY'], rightShoulder: ['Digit8'], rightTrigger: ['KeyO'] };
   const mundo = () => ({ controls: SOLO, heldKeys: new Set(), players: [{ ctrl: SOLO, easy: false }] });
 
   it.each(TOUCH_ACTS)('«%s» produz uma decisão, nunca no-op ao apertar', (acao) => {

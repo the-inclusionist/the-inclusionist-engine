@@ -694,7 +694,12 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 .ctrl-col input[type=range]{width:100%;min-height:var(--tap);accent-color:var(--accent)}
 
 /* E13: controles de toque (mobile) — overlay nas bordas inferiores, não cobre o centro */
-.touch{position:absolute;inset:auto 0 0 0;z-index:14;display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:6px 8px;pointer-events:none}
+.touch{position:absolute;inset:0;z-index:14;display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:6px 8px;pointer-events:none}
+/* ADR-0160: the shoulders in the TOP corners of the region, the trigger (2) above the bumper (1). `.touch` covers the whole
+   region since then (`inset:0`, still `pointer-events:none`) so a corner is the region's corner, not the pad strip's. */
+.touch-ombros{position:absolute;top:8px;display:flex;flex-direction:column;gap:6px;pointer-events:auto}
+.touch-ombros--esq{left:8px}
+.touch-ombros--dir{right:8px}
 /* ADR-0160: the action buttons sit by ACTION NUMBER — 1 and 4 on top, 2 and 3 below — whatever slot fires them.
    `margin-left:auto` keeps the block on the right when the game names no direction (ADR-0162). */
 .touch-pad{display:grid;grid-template-areas:"a1 a4" "a2 a3";gap:8px;margin-left:auto;pointer-events:auto}

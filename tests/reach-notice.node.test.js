@@ -77,7 +77,7 @@ describe('⚠️ O PONTO CEGO DO ADR-0104: cabe nas ações e ainda assim não d
   it('⚠️ [Interface] o transporte que já está CURTO de lugares não aparece duas vezes', () => {
     // Um transporte nas duas listas faria o cartão dizer dois problemas onde há um, e a criança leria uma
     // parede em vez de uma diferença.
-    const a = alcance(TABLET, ACTIONS, 3); // 14 ações num transporte de 9 lugares, e ainda pede 3 dedos
+    const a = alcance(TABLET, ACTIONS, 3); // 14 ações num transporte de 13 lugares (nove até os ombros do ADR-0160), e ainda pede 3 dedos
     expect(a.curtos.map((c) => c.id)).toEqual(['toque']);
     expect(a.naoSeguram, 'o toque foi acusado duas vezes pelo mesmo aparelho').toEqual([]);
   });
@@ -88,7 +88,7 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
     const linhas = linhasDoAviso(alcance(TABLET, ACTIONS, 1), cru);
     expect(linhas).toEqual([
       `reach.titulo(pedidas=${ACTIONS.length})`,
-      'reach.curto(transporte=reach.nome.toque,lugares=9)',
+      'reach.curto(transporte=reach.nome.toque,lugares=13)',
       'reach.ligue(saida=reach.nome.gamepadreach.oureach.nome.teclado)',
     ]);
   });
@@ -96,7 +96,7 @@ describe('quando há, a informação é ACIONÁVEL — não «faltam lugares»',
   it('[Right] e em português sai uma frase que uma criança consegue seguir', () => {
     const linhas = linhasDoAviso(alcance(TABLET, ACTIONS, 1), real);
     expect(linhas[0]).toBe('Este jogo usa 14 ações.');
-    expect(linhas[1]).toBe('O controle de tela tem 9 lugares — não chegam para todas.');
+    expect(linhas[1]).toBe('O controle de tela tem 13 lugares — não chegam para todas.');
     expect(linhas[2]).toBe('Ligue controle ou teclado e você joga com todas.');
   });
 

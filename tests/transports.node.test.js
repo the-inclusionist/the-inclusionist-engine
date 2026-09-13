@@ -267,7 +267,7 @@ describe('A LISTA REAL de transportes — os números saem do aparelho, não de 
     expect(a.ok).toBe(false);
     // ⚠️ E a informação tem de ser ACIONÁVEL: «faltam lugares» não ajuda ninguém. Quem está curto, com quantos
     // lugares tem, e o que resolveria se fosse ligado — é isso que vira frase.
-    expect(a.curtos).toEqual([{ id: 'toque', slots: 9 }]);
+    expect(a.curtos).toEqual([{ id: 'toque', slots: 13 }]); // nove até os ombros do ADR-0160
     expect(a.serviriamSeLigados).toEqual(['gamepad', 'teclado']);
     expect(a.pedidas).toBe(ACTIONS.length);
   });

@@ -135,10 +135,11 @@ describe('ADR-0143 §4 · o silêncio acaba', () => {
     // toque. Quem joga por toque simplesmente não a tem, e ninguém lhe diz.
     const linhas = lacunasDoToque({
       mapa: TOUCH_DEFAULT,
-      acoesDoJogo: new Set(['action1', 'leftShoulder']),
+      // ⚠️ `select` e não `leftShoulder`: desde o ADR-0160 os ombros TÊM slot, e o exemplo deixaria de ser exemplo
+      acoesDoJogo: new Set(['action1', 'select']),
     });
     expect(linhas).toHaveLength(1);
-    expect(linhas[0]).toMatch(/leftShoulder/);
+    expect(linhas[0]).toMatch(/select/);
     expect(linhas[0], 'a linha não nomeia a saída').toMatch(/remapeie/);
   });
 });

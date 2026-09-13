@@ -88,6 +88,40 @@ describe('createGame mounts the virtual pad from the preset', () => {
     }
   });
 
+  it('🔴 [Right] the SHOULDERS sit in the top corners, the trigger over the bumper — and are WIRED (ADR-0160)', async () => {
+    const { default: css } = await import('../app/css/style.css?raw');
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+    const OMBROS = { leftTrigger: { label: 'L-two' }, leftShoulder: { label: 'L-one' }, rightTrigger: { label: 'R-two' }, rightShoulder: { label: 'R-one' } };
+    const regiao = document.getElementById('game-region');
+    regiao.style.cssText = 'position:relative;width:640px;height:360px';
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: OMBROS, setPhase: (p) => fases.push(p) });
+    pad().hidden = false;
+    try {
+      const botao = (palavra) => [...document.querySelectorAll('#touch-controls .touch-ombro')].find((b) => b.textContent === palavra);
+      const r = regiao.getBoundingClientRect();
+      const [l2, l1, r2, r1] = ['L-two', 'L-one', 'R-two', 'R-one'].map((p) => botao(p).getBoundingClientRect());
+      expect(l2.top, 'L2 is not above L1').toBeLessThan(l1.top);
+      expect(r2.top, 'R2 is not above R1').toBeLessThan(r1.top);
+      expect(l2.left - r.left, 'the left pair is not in the left corner').toBeLessThan(r.width / 4);
+      expect(r.right - r2.right, 'the right pair is not in the right corner').toBeLessThan(r.width / 4);
+      expect(l2.top - r.top, 'the shoulders are not at the top').toBeLessThan(r.height / 4);
+      // wired: L1 holds the key the child mapped to «leftShoulder»
+      const antes = new Set(keys);
+      toque(botao('L-one'), 'pointerdown');
+      expect([...keys].filter((k) => !antes.has(k)), 'the shoulder does nothing').toHaveLength(1);
+      toque(botao('L-one'), 'pointerup');
+    } finally {
+      pad().hidden = true;
+      style.remove();
+      regiao.style.cssText = '';
+      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+    }
+    // and the game that names no shoulder gets none
+    expect(document.querySelectorAll('#touch-controls .touch-ombro'), 'a shoulder nobody named').toHaveLength(0);
+  });
+
   it('🔴 [Right] the four action buttons sit by NUMBER — 1 and 4 on top, 2 and 3 below (ADR-0160)', async () => {
     const { default: css } = await import('../app/css/style.css?raw');
     const style = document.createElement('style');

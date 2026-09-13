@@ -517,6 +517,12 @@ up/down/left/right are gone.
 **What to do:** declare in `preset` every position your game — and its menus — needs by touch: at least the
 directions and `action2`/`action3` if a touch-only child must move through the pause card and panels.
 
+**And the touch transport gains the four shoulders (ADR-0160).** `TOUCH_DEFAULT` has 13 slots (`bl1`/`bl2`/`br1`/`br2`
+→ `leftShoulder`/`leftTrigger`/`rightShoulder`/`rightTrigger`), `TOUCH_SLOTS` and `TOUCH_ACTS` grow with them, and
+`transports.LUGARES.toque` is 13 — so a game of up to 13 positions now fits the touch transport in the reach notice.
+`#touch-controls` covers the whole region (`inset:0`, still `pointer-events:none`), so the shoulder pairs sit in its top
+corners. A stored touch map from before keeps working: the new slots fall back to their defaults.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

@@ -29,7 +29,7 @@ import { ACTIONS, type Action } from '../core/actions.js';
  * um número que só existe num teste não chega a criança nenhuma.
  *
  *   · `gamepad: 17` — a Gamepad API «standard» declara dezassete botões. Não é escolha nossa.
- *   · `toque: 9` — `TOUCH_DEFAULT` (input/devices) nomeia nove slots, e são nove desde sempre.
+ *   · `toque: 13` — `TOUCH_DEFAULT` (input/devices) nomeia treze slots: eram nove até os quatro ombros do ADR-0160.
  *   · `teclado: ACTIONS.length` — ⚠️ e este é o que precisou de decisão.
  *
  * ⚠️ O NÚMERO DO TECLADO NÃO É O NÚMERO DE TECLAS, e também não é o número de ligações do esquema atual. Não
@@ -41,7 +41,7 @@ import { ACTIONS, type Action } from '../core/actions.js';
  * escrito à mão de propósito — quando o vocabulário crescer (foi de nove para catorze em 2026-09-06), este
  * número cresce com ele e nunca passa a mentir.
  */
-export const LUGARES = Object.freeze({ gamepad: 17, toque: 9, teclado: ACTIONS.length });
+export const LUGARES = Object.freeze({ gamepad: 17, toque: 13, teclado: ACTIONS.length });
 
 /**
  * QUANTAS POSIÇÕES O CONTROLE DE TELA SEGURA AO MESMO TEMPO. Dois, e é uma DECLARAÇÃO (ADR-0104 §B).

@@ -151,6 +151,8 @@ export const TOUCH_SLOTS: ReadonlyArray<{ k: string; lbl: string }> = [
   { k: 'start', lbl: 'touch.slot.start' },
   { k: 'b0', lbl: 'touch.slot.b0' }, { k: 'b1', lbl: 'touch.slot.b1' },
   { k: 'b2', lbl: 'touch.slot.b2' }, { k: 'b3', lbl: 'touch.slot.b3' },
+  { k: 'bl2', lbl: 'touch.slot.bl2' }, { k: 'bl1', lbl: 'touch.slot.bl1' },
+  { k: 'br2', lbl: 'touch.slot.br2' }, { k: 'br1', lbl: 'touch.slot.br1' },
 ];
 /**
  * As ações que o TRANSPORTE de toque consegue carregar.
@@ -160,7 +162,8 @@ export const TOUCH_SLOTS: ReadonlyArray<{ k: string; lbl: string }> = [
  * ela que o gate de `input/touch-bindings` confere se o despacho reconhece tudo o que se pode oferecer.
  * As duas coisas eram a mesma por acidente enquanto só havia um jogo.
  */
-export const TOUCH_ACTS: readonly string[] = ['left', 'right', 'up', 'down', 'action2', 'action1', 'action3', 'action4', 'start'];
+export const TOUCH_ACTS: readonly string[] = ['left', 'right', 'up', 'down', 'action2', 'action1', 'action3', 'action4', 'start',
+  'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger'];
 
 /** Funde o mapa persistido (JSON solto do localStorage) sobre TOUCH_DEFAULT. Mantido IDÊNTICO ao original:
  *  NÃO valida chaves/valores contra TOUCH_SLOTS/TOUCH_ACTS — um JSON malformado com chaves/valores estranhos
@@ -468,6 +471,8 @@ export interface TouchMarkupSpec {
 const DIRECOES = ['up', 'left', 'right', 'down'] as const;
 /** Os quatro slots de botão de acção, na ordem do losango. */
 const BOTOES = ['b0', 'b1', 'b2', 'b3'] as const;
+/** Os OMBROS por canto, de cima para baixo (ADR-0160): o gatilho (2) sobre o ombro (1). */
+const OMBROS = [['esq', ['bl2', 'bl1']], ['dir', ['br2', 'br1']]] as const;
 
 /**
  * Constrói (ou reaproveita) `#touch-controls` e devolve-o.
@@ -541,6 +546,24 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
       losango.appendChild(botao);
     }
     raiz.appendChild(losango);
+  }
+
+  // OS OMBROS, cada par no seu canto superior (ADR-0160), e só os que o jogo nomeia (ADR-0162).
+  for (const [lado, slots] of OMBROS) {
+    const vivos = slots.filter(nomeado);
+    if (!vivos.length) continue;
+    const canto = ctx.criar('div');
+    canto.className = `touch-ombros touch-ombros--${lado}`;
+    for (const s of vivos) {
+      const botao = ctx.criar('button');
+      botao.className = 'touch-btn touch-ombro';
+      botao.dataset.btn = s.slice(1); // `bl1` -> `l1`: o `'b' + dataset.btn` do `touch-bindings` recompõe o slot
+      botao.setAttribute('type', 'button');
+      botao.setAttribute('aria-label', spec.rotuloDoSlot(s));
+      botao.textContent = spec.rotuloDoSlot(s);
+      canto.appendChild(botao);
+    }
+    raiz.appendChild(canto);
   }
 
   /*

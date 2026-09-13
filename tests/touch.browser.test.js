@@ -115,12 +115,12 @@ describe('initTouch — boot', () => {
 });
 
 describe('initTouch — renderTouchMap / config de toque', () => {
-  it('[Right] popula #touchmap-list com 9 linhas (uma por slot) e persiste ao trocar', () => {
+  it('[Right] popula #touchmap-list com 13 linhas (uma por slot) e persiste ao trocar', () => {
     const { ctx, calls, store } = makeCtx();
     const api = initTouch(ctx);
     api.renderTouchMap();
     const selects = document.querySelectorAll('#touchmap-list select[data-slot]');
-    expect(selects.length).toBe(9);
+    expect(selects.length).toBe(13); // nove até os quatro ombros do ADR-0160
     const b0 = document.querySelector('#tm-b0');
     b0.value = 'action1';
     b0.dispatchEvent(new Event('change'));

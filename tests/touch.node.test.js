@@ -151,8 +151,9 @@ describe('normalizeTouchMap', () => {
 });
 
 describe('TOUCH_SLOTS / TOUCH_ACTS (dados de apresentação do painel)', () => {
-  it('[Right] 9 posições de toque, cada uma com chave e chave-i18n de rótulo', () => {
-    expect(TOUCH_SLOTS.length).toBe(9);
+  it('[Right] 13 posições de toque, cada uma com chave e chave-i18n de rótulo', () => {
+    // nove até 2026-09-12; os quatro ombros do ADR-0160 (L2, L1, R2, R1) fazem treze
+    expect(TOUCH_SLOTS.length).toBe(13);
     for (const s of TOUCH_SLOTS) { expect(typeof s.k).toBe('string'); expect(typeof s.lbl).toBe('string'); }
   });
   // ESTE TESTE ANTES NÃO PODIA FALHAR: dizia verificar a cobertura "no devices.ts real" e só aferia
@@ -166,7 +167,10 @@ describe('TOUCH_SLOTS / TOUCH_ACTS (dados de apresentação do painel)', () => {
     // deixasse de nomear uma posição que o toque carrega, o menu daquele slot perderia a opção. Para OUTRO
     // jogo isso seria decisão legítima; para este é regressão, e é isso que se afirma.
     const preset = platformerPreset();
-    for (const a of TOUCH_ACTS) {
+    // ⚠️ Os OMBROS são posições que o toque carrega desde o ADR-0160 e que a plataforma não usa: só aparecem se o jogo os
+    // nomeia (ADR-0162), logo não os nomear é legítimo e não regressão.
+    const OMBROS = new Set(['leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger']);
+    for (const a of TOUCH_ACTS.filter((x) => !OMBROS.has(x))) {
       expect(preset[a], `a plataforma não nomeia "${a}", que o toque carrega`).toBeTruthy();
       expect(preset[a].label, `rótulo vazio para "${a}"`).toBeTruthy();
     }

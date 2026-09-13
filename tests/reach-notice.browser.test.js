@@ -48,7 +48,7 @@ describe('o cartão aparece — e só quando há o que dizer', () => {
     const ps = [...cartao().querySelectorAll('p')].map((p) => p.textContent);
     expect(ps).toHaveLength(3);
     expect(ps[0]).toBe('Este jogo usa 14 ações.');
-    expect(ps[1]).toContain('9 lugares');
+    expect(ps[1]).toContain('13 lugares'); // nove até os ombros do ADR-0160
   });
 
   it('[Zero] com alcance ok, nada é criado — o caso comum tem de continuar silencioso', () => {

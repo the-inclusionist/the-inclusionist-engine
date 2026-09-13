@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // input/devices.ts — rótulos/mapeamentos de gamepad e toque (dados). Módulo-folha, ZERO deps.
 // PAD_DESIGNS: como rotular os 4 botões de ação por modelo de controle (o navegador detecta genérico no
-// Windows). TOUCH_DEFAULT: mapa padrão dos 9 slots de toque.
+// Windows). TOUCH_DEFAULT: mapa padrão dos 13 slots de toque (os 4 de ombro desde o ADR-0160).
 // A leitura de pads (pollPads) e o layout de toque ficam no game.js. (Fase 2, subsistema input)
 //
 // POR QUE CHAVES E NÃO TEXTO: a tabela é uma `const` de módulo, avaliada UMA vez no import. Se guardasse
@@ -28,4 +28,6 @@ export const PAD_DESIGNS: Record<string, Record<string, string[]>> = { // por bo
 export const PAD_GLYPH_SPOKEN: Record<string, string> = {
   '✕': 'pad.glyph.cross', '○': 'pad.glyph.circle', '□': 'pad.glyph.square', '△': 'pad.glyph.triangle',
 };
-export const TOUCH_DEFAULT: Record<string, string> = { up:'up',down:'down',left:'left',right:'right',start:'start',b0:'action2',b1:'action3',b2:'action1',b3:'action4' };
+export const TOUCH_DEFAULT: Record<string, string> = { up:'up',down:'down',left:'left',right:'right',start:'start',b0:'action2',b1:'action3',b2:'action1',b3:'action4',
+  // Os OMBROS (ADR-0160): L1/L2 no canto superior esquerdo, R1/R2 no direito. Só aparecem se o jogo os nomeia (ADR-0162).
+  bl1:'leftShoulder',bl2:'leftTrigger',br1:'rightShoulder',br2:'rightTrigger' };

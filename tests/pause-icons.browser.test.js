@@ -376,6 +376,10 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
   });
 
   it('BORDA do TEA: 3 cliques passam por .pi-calm → .pi-on → base, com a legenda certa em cada passo', () => {
+    // ⚠️ O NÍVEL TEA PERSISTE, e o `localStorage` de um navegador é partilhado pelos ficheiros que correm em paralelo:
+    // este caso falhou cinco vezes sob a suíte inteira (o primeiro clique não dava `.pi-calm`) e passava sozinho — o
+    // nível de partida vinha de outro ficheiro. Parte-se do nível 0, escrito antes de montar.
+    try { localStorage.setItem('incl_tea', '0'); } catch { /* sem storage, o padrão já é 0 */ }
     const { sp, bar } = mount(0);
     const b = bar.querySelector('.pi-btn[data-pi="tea"]');
     b.click();
