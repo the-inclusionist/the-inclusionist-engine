@@ -6,7 +6,8 @@
 // 📏 Measured: the bar `createGame` mounts in `#title-icons` had no caption element and no hover/focus wiring — the
 // caption and its listeners lived only in the per-screen quick bars (`buildQuickBar`), which this root does not mount.
 //
-// 📌 With the REAL stylesheet: «below the row» and «the explanation above the legend, not on it» are geometry.
+// 📌 With the REAL stylesheet: «below the row», «the explanation at the lowest edge, the legend above it» and «a band
+// behind the explanation, a chip behind each legend name» (ADR-0164 as the Dev corrected it) are geometry.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -18,6 +19,11 @@ const barra = () => raiz.querySelector('#title-icons');
 const legenda = () => barra().querySelector('.pause-icons-cap');
 const explicacao = () => raiz.querySelector('#game-region .barra-explicacao');
 const icone = (k) => barra().querySelector(`.pi-btn[data-pi="${k}"]`);
+/** The height of an element's TEXT: its box without the vertical padding (the band's padding is not a line). */
+const alturaDoTexto = (el) => {
+  const s = getComputedStyle(el);
+  return el.getBoundingClientRect().height - parseFloat(s.paddingTop) - parseFloat(s.paddingBottom);
+};
 
 beforeAll(async () => {
   const style = document.createElement('style');
@@ -62,16 +68,20 @@ describe('the quick bar: name below, explanation in the footer', () => {
     const regiao = raiz.querySelector('#game-region').getBoundingClientRect();
     const caixa = rodape.getBoundingClientRect();
     expect(Math.abs(caixa.bottom - regiao.bottom), 'the footer is not at the bottom edge').toBeLessThan(1);
-    expect(getComputedStyle(rodape).backgroundColor, 'no dark band behind the footer').toBe('rgba(0, 0, 0, 0.82)');
+    // the band is the EXPLANATION's, side to side (ADR-0164 rules 1–2); the column around it paints nothing
+    expect(getComputedStyle(explicacao()).backgroundColor, 'no dark band behind the explanation').toBe('rgba(0, 0, 0, 0.82)');
+    const faixa = explicacao().getBoundingClientRect();
+    expect([Math.round(faixa.left - regiao.left), Math.round(regiao.right - faixa.right)], 'the band is not side to side').toEqual([0, 0]);
+    expect(Math.abs(faixa.bottom - regiao.bottom), 'the explanation is not at the lowest edge').toBeLessThan(1);
     const linha = parseFloat(getComputedStyle(explicacao()).lineHeight);
-    expect(explicacao().getBoundingClientRect().height, 'the explanation runs past two lines').toBeLessThanOrEqual(2 * linha + 0.5);
+    expect(alturaDoTexto(explicacao()), 'the explanation runs past two lines').toBeLessThanOrEqual(2 * linha + 0.5);
     // ⚠️ and a text that WOULD run longer is cut at two: at 640 px this explanation fits anyway, and the clamp removed
     // stayed green — so the region is narrowed for a moment until the same words need three lines or more
     const elRegiao = raiz.querySelector('#game-region');
     elRegiao.style.width = '240px';
     try {
       expect(explicacao().scrollHeight, 'the case would not measure the cut').toBeGreaterThan(2 * linha + 0.5);
-      expect(explicacao().getBoundingClientRect().height, 'a long explanation grows the band past two lines').toBeLessThanOrEqual(2 * linha + 0.5);
+      expect(alturaDoTexto(explicacao()), 'a long explanation grows the band past two lines').toBeLessThanOrEqual(2 * linha + 0.5);
     } finally {
       elRegiao.style.width = '640px';
     }
@@ -85,7 +95,24 @@ describe('the quick bar: name below, explanation in the footer', () => {
     expect(explicacao().hidden, 'the explanation stayed over the game').toBe(true);
   });
 
-  it('🔴 [Right] with the CURSOR of the quick pause, the name and the explanation follow it — above the legend, not on it', () => {
+  it('🔴 [Right] the button legend has NO band — a dark background behind each «name: function» only (ADR-0164 rule 3)', () => {
+    document.getElementById('touch-start').click();
+    try {
+      const pausaLegenda = raiz.querySelector('#game-region .pausa-legenda');
+      expect(getComputedStyle(pausaLegenda).backgroundColor, 'the legend is on a band').toBe('rgba(0, 0, 0, 0)');
+      expect(getComputedStyle(raiz.querySelector('#game-region .rodape-da-tela')).backgroundColor, 'the footer column paints a band').toBe('rgba(0, 0, 0, 0)');
+      const nomes = [...pausaLegenda.querySelectorAll('.lg-nome')];
+      expect(nomes.map((n) => n.textContent), 'the legend names the buttons, not «Ação 2»').toEqual(['2: confirmar', '3: voltar', '4: menu', 'START: voltar ao jogo']);
+      for (const n of nomes) expect(getComputedStyle(n).backgroundColor, `no dark background behind «${n.textContent}»`).toBe('rgba(0, 0, 0, 0.82)');
+      const regiao = raiz.querySelector('#game-region').getBoundingClientRect();
+      const caixa = pausaLegenda.getBoundingClientRect();
+      expect([Math.round(caixa.left - regiao.left), Math.round(regiao.right - caixa.right)], 'the legend is not side to side').toEqual([0, 0]);
+    } finally {
+      document.getElementById('touch-start').click();
+    }
+  });
+
+  it('🔴 [Right] with the CURSOR of the quick pause, the name and the explanation follow it — the explanation at the lowest edge, the legend above it', () => {
     document.getElementById('touch-start').click(); // START: the quick pause puts the cursor on the first icon
     try {
       const primeiro = barra().querySelector('.pi-sel');
@@ -94,10 +121,11 @@ describe('the quick bar: name below, explanation in the footer', () => {
       expect(explicacao().hidden, 'the cursor has no explanation in the footer').toBe(false);
       const pausaLegenda = raiz.querySelector('#game-region .pausa-legenda');
       expect(pausaLegenda.hidden, 'the explanation took the legend\'s place').toBe(false);
-      expect(explicacao().getBoundingClientRect().bottom, 'the explanation covers the legend').toBeLessThanOrEqual(pausaLegenda.getBoundingClientRect().top + 0.5);
+      // ADR-0164 rule 4: the explanation is at the lowest edge; the legend sits above it and neither covers the other
+      expect(pausaLegenda.getBoundingClientRect().bottom, 'the legend covers the explanation').toBeLessThanOrEqual(explicacao().getBoundingClientRect().top + 0.5);
       // ADR-0164: with the legend showing too, the band still holds TWO lines in all
       const linhaDoRodape = parseFloat(getComputedStyle(pausaLegenda).lineHeight);
-      const textos = explicacao().getBoundingClientRect().height + pausaLegenda.getBoundingClientRect().height;
+      const textos = alturaDoTexto(explicacao()) + alturaDoTexto(pausaLegenda);
       expect(textos, 'explanation and legend together run past two lines').toBeLessThanOrEqual(2 * linhaDoRodape + 0.5);
       // hovering another icon and leaving it goes back to the CURSOR, not to nothing
       const nomeDoCursor = legenda().textContent;
@@ -122,3 +150,9 @@ describe('the quick bar: name below, explanation in the footer', () => {
 // B6 the footer as loose absolute strips                   → red (the explanation covers the legend)
 // B7 an icon name back with its parentheses                → red (node dictionary case)
 // B8 the name laid out inside the row instead of below     → red
+// R3 no dark background behind each legend name          → red
+// R4 the band back on the whole footer column            → red
+// R5 the legend below the explanation                    → red
+// R6 the legend written as one string                    → red (no name chips)
+// R7 the legend says «Ação 2» again                      → red
+// R8 the explanation band not side to side               → red

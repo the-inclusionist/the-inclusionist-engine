@@ -539,6 +539,17 @@ is now 1em, and a `rem` size became the same number in `em`, so it grows with th
 `alvoMinimoDeToque(altura)` with `alvoMinimo(k)`. If your screens counted on 24 or 34 px items to fit a small viewport,
 they now get 44 px or more — shorten the list, not the target.
 
+## P · The footer: a band for explanations, chips for the button legend (ADR-0164, ADR-0165)
+
+**Behaviour and VALUES, no shape.** `.rodape-da-tela` paints no background; `.barra-explicacao` has the dark band and
+sits at the lowest edge, `.pausa-legenda` above it with one `.lg-nome` chip per item. The value of `pause.quick.legenda`
+names buttons, not actions: «2: confirmar · 3: voltar · 4: menu · START: voltar ao jogo» (and en/es). Inside
+`#game-region`, a panel's `.opt-explain` is absolutely positioned at the region's bottom, full width, and its overlay
+keeps `--rodape-h` free below the card.
+
+**What to do:** if your styles or tests read the band on `.rodape-da-tela`, read it on `.barra-explicacao`; if you
+matched «Ação 2» in the legend, match «2:».
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

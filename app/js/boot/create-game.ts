@@ -2084,7 +2084,7 @@ export function createGame(o: CreateGameOptions): Engine {
     // resolvidas AO MOSTRAR: o idioma pode ter mudado desde o arranque
     palavraPausado.textContent = t('pause.quick');
     palavraPausado.hidden = false;
-    if (legendaDaPausa) { legendaDaPausa.textContent = t('pause.quick.legenda'); legendaDaPausa.hidden = false; }
+    if (legendaDaPausa) { escreverLegenda(legendaDaPausa, t('pause.quick.legenda')); legendaDaPausa.hidden = false; }
   }
 
   /*
@@ -2099,6 +2099,20 @@ export function createGame(o: CreateGameOptions): Engine {
     rodape.className = 'rodape-da-tela';
     regiao.appendChild(rodape);
     return rodape;
+  }
+  /**
+   * The button legend as one dark chip per «name: function» (ADR-0164 rule 3) — the dictionary writes the items joined
+   * by « · », and each becomes its own element so the background sits behind the words and not across the screen.
+   */
+  function escreverLegenda(casa: HTMLElement, texto: string): void {
+    casa.textContent = '';
+    texto.split('·').map((s) => s.trim()).filter(Boolean).forEach((item, i) => {
+      if (i > 0) casa.appendChild(doc.createTextNode(' '));
+      const nome = doc.createElement('span');
+      nome.className = 'lg-nome';
+      nome.textContent = item;
+      casa.appendChild(nome);
+    });
   }
   function explicarIconeNoRodape(k: string | null): void {
     escreverNoRodape(k ? t(`icon.${k}.dica`) : null);

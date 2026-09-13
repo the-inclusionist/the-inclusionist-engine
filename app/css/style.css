@@ -590,11 +590,17 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    communication cycle's type scale, which the root size also carries. Without it everything in the region read the ROOT
    16 px: measured at 1280×720, quiz options at 16 px and the bar's emoji at 20 px under a `--ui-fs` of 32. */
 #game-region{font-size:calc(var(--ui-fs,16px) * var(--fonte-escala,1))}
-.rodape-da-tela{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;flex-direction:column;gap:0;
-  padding:4px .6em;background:rgba(0,0,0,.82);pointer-events:none}
+/* ADR-0164 as the Dev corrected it: the EXPLANATION stands on a full-width dark band at the lowest edge (rule 2, rule 4);
+   the BUTTON LEGEND runs the full width with NO band, a dark background only behind each «name: function» (rule 3), and
+   sits above the explanation. The column itself paints nothing. Padding adds to 8 px, so two lines fit `--rodape-h`. */
+.rodape-da-tela{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;flex-direction:column;gap:0;pointer-events:none}
 .rodape-da-tela:not(:has(> :not([hidden]))){display:none}
 .pausa-legenda,.barra-explicacao{color:#fff;font-family:var(--font);font-weight:700;font-size:var(--ui-fs,16px);
   line-height:1.3;text-align:center;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.barra-explicacao{order:2;padding:4px .6em;background:rgba(0,0,0,.82)}
+.pausa-legenda{order:1;padding:0 .6em}
+.rodape-da-tela:not(:has(> .barra-explicacao:not([hidden]))) > .pausa-legenda{padding-bottom:8px}
+.pausa-legenda .lg-nome{background:rgba(0,0,0,.82);padding:0 .35em;border-radius:4px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .rodape-da-tela:has(> .pausa-legenda:not([hidden])):has(> .barra-explicacao:not([hidden])) > *{-webkit-line-clamp:1}
 .pausa-legenda[hidden],.barra-explicacao[hidden]{display:none}
 #game-region .overlay__card{max-height:94%;max-width:96%}
@@ -604,6 +610,13 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
   background:rgba(0,0,0,.82);color:#fff;font-size:1em;line-height:1.35;border-top:1px solid rgba(255,255,255,.18);border-radius:0 0 9px 9px;backdrop-filter:blur(1px);
   /* ADR-0164: two lines at most — a longer explanation is cut here and has to be rewritten to fit */
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+/* ADR-0164 rule 1: a panel's explanation is a footer of the SCREEN, not of the card — «está ajustado ao menu, não ao
+   canvas», the Dev on a screenshot. The card sets no position, so the overlay (the region's size) is the containing block:
+   the band lands at the region's lowest edge, side to side, and does not scroll with the card. The overlay keeps that
+   room free, so the card ends above the band instead of under it. */
+#game-region .opt-explain{position:absolute;left:0;right:0;bottom:0;z-index:1;margin:0;padding:4px .6em;min-height:0;
+  border:0;border-radius:0;text-align:center;line-height:1.3;font-size:var(--ui-fs,16px)}
+#game-region .overlay:has(.opt-explain){padding-bottom:calc(var(--rodape-h,50px) + .6rem)}
 #game-region .overlay__actions{position:static;background:transparent;padding:.5rem 0 0;margin:0}
 #visual{background:rgba(0,0,0,.28);align-items:start;padding-top:3.5rem} /* cor: fundo translúcido p/ ver o efeito imediato no jogo */
 

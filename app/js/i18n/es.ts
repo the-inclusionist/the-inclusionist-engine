@@ -612,7 +612,7 @@ const es: Record<string, string> = {
   'pause.title': 'En pausa',
   'pause.resume': '▶ Volver al juego',
   'pause.quick': 'EN PAUSA',
-  'pause.quick.legenda': 'Acción 2: confirmar · Acción 3: volver · Acción 4: menú · START: volver al juego',
+  'pause.quick.legenda': '2: confirmar · 3: volver · 4: menú · START: volver al juego',
   'pause.acessibilidade': '♿ Accesibilidad',
   'pause.options': '⚙ Ajustes de inclusión',
   'pause.opcoesdojogo': '🎮 Opciones del juego',
