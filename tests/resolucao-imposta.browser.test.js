@@ -29,6 +29,18 @@ describe('ADR-0001 as a pure function', () => {
     expect(escalaDoPalco(1239, 720, 1, 320, 180).kDev, '41 px of crop is past it').toBe(3);
   });
 
+  it('🎯 [Right] TEXT AT 200% on the school devices still fits the screen (ADR-0159 rule 11)', () => {
+    // A 200% zoom halves the CSS space and doubles the device pixel ratio. 📏 Measured in dist/quiz.html: at 683×384 CSS
+    // (1366×768, the Positivo) and at 640×400 (1280×800, a Chromebook, stage 632×396 inside `main`'s padding) the page does
+    // not scroll and the region is 640×360 — cropped at most by ADR-0001's tolerance of 5 logical px per side.
+    for (const [w, h] of [[683, 384], [632, 396]]) {
+      const e = escalaDoPalco(w, h, 2, 320, 180);
+      expect([e.largura, e.altura], `${w}×${h} at 200%`).toEqual([640, 360]);
+      expect(Math.max(0, e.largura - w), `${w}×${h}: cropped past the tolerance`).toBeLessThanOrEqual(2 * 5 * e.k);
+      expect(Math.max(0, e.altura - h)).toBeLessThanOrEqual(2 * 5 * e.k);
+    }
+  });
+
   it('🎯 [Right] with a fractional device pixel ratio the multiple is in REAL pixels, not CSS ones', () => {
     const e = escalaDoPalco(1093, 614, 1.25, 320, 180);
     expect(Number.isInteger(e.kDev)).toBe(true);
