@@ -8,32 +8,16 @@
 // importa — importável em node, sem I/O no import — continua valendo; o que se perdeu foi a contagem de zero
 // dependências, e o que se ganhou está escrito no comentário de `toggleLabel`.
 import { t } from '../core/i18n.js';
+import { $ as consultar, $$ as consultarTodos } from '../core/dom-query.js';
 
 // O PADRAO E `HTMLElement`, NAO `Element`, e a diferenca aparece em dezessete pontos de chamada: `.hidden`,
 // `.focus()` e `.value` nao existem em `Element`, e sao exatamente o que uma aplicacao faz com o que
 // seleciona. `Element` e o padrao do lib.dom porque `querySelector` tambem serve para SVG e MathML —
 // nenhum seletor deste projeto pega um desses (conferido). Quem precisar de um tipo mais estreito passa
 // o parametro: `$<HTMLSelectElement>('#pad-design')`.
-/**
- * ⚠️ RESOLVIDO POR `globalThis` E NÃO PELO GLOBAL CRU, e a diferença é entre devolver `null` e LANÇAR.
- *
- * `document.querySelector(...)` com `document` inexistente dá `ReferenceError` — não `undefined` —, e a
- * assinatura destas duas funções promete `T | null`. Uma consulta que lança onde promete `null` é um defeito
- * pela própria assinatura, e ele viajava longe: medido em 2026-09-08, o `core/a11y-sr.srAlert` chama o `$`
- * daqui, e o `createGame` chama o `srAlert` ao mostrar o aviso de alcance — logo bootar a engine contra um
- * documento INJECTADO (um iframe, um editor ao lado do jogo, um teste) rebentava o boot inteiro num anúncio.
- *
- * 📌 É o ACHADO 15 do `boot/create-game` outra vez, e sobreviveu pela mesma razão: enquanto toda raiz era um
- * `main.ts` num navegador, o global ERA o documento certo. `globalThis.document` é a mesma coisa onde ele
- * existe, e é `undefined` — em vez de explosão — onde não existe.
- *
- * ⚠️ E ELAS CONTINUAM A OLHAR PARA O GLOBAL, de propósito: quem precisa de consultar OUTRO documento injecta
- * o seu (`create-game` tem um `$` próprio ligado ao `doc` do hospedeiro, e o `ui/pause-icons` tem o
- * `docDaMontagem`). O que este conserto muda não é ONDE se procura — é o que acontece quando não há onde.
- */
-const docGlobal = (): Document | undefined => (globalThis as { document?: Document }).document;
-export const $ = <T extends Element = HTMLElement>(s: string): T | null => docGlobal()?.querySelector<T>(s) ?? null;
-export const $$ = <T extends Element = HTMLElement>(s: string): T[] => [...(docGlobal()?.querySelectorAll<T>(s) ?? [])];
+// The two global queries moved to `core/dom-query` (issue #167); the names stay here for whoever imports them from ui.
+export const $ = consultar;
+export const $$ = consultarTodos;
 
 /**
  * Reflects an on/off state onto a toggle button: the visual class AND `aria-pressed`.

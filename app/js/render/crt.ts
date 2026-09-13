@@ -3,8 +3,8 @@
 // #game-region). Extraído do game.js (Estágio 4, Tier 1). CRT = config {scan,vig,round} (0=off,1,2; scan/vig são
 // on/off) carregada do localStorage com migração do formato antigo booleano. crtScanVars ancora a scanline em
 // PIXELS REAIS (recomputa da altura real do #game-region + dpr → 1 linha por pixel de arte, espaçamento regular).
-// Auto-contido: depende de ui/dom ($). A contagem de jogadores entra por `initCrt` (ver abaixo).
-import { $ } from '../ui/dom.js';
+// Auto-contido: depende de core/dom-query ($). A contagem de jogadores entra por `initCrt` (ver abaixo).
+import { $ } from '../core/dom-query.js';
 
 import { screenGrid } from '../core/screens.js';
 import * as store from '../platform/storage.js';
