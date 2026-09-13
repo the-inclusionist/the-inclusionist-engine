@@ -46,7 +46,7 @@
 // exige seis coisas de plataforma. Não substitui o boot do `main.js`, que tem catorze anos de ordem própria.
 // O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
-import { initI18n, idiomaPronto } from '../core/i18n.js';
+import { initI18n } from '../core/i18n.js';
 import { entradaDe, keys, marcarTecla, soltarTecla, arestaDoJogador } from '../input/state.js';
 import { initTouch, montarControleDeToque, lacunasDoToque } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
@@ -1184,17 +1184,10 @@ export function createGame(o: CreateGameOptions): Engine {
      * marcação nasce nesse intervalo. 📏 Medido num navegador em 2026-09-08, com `lang="en"`: a barra
      * servia cinco rótulos em inglês e três ainda em português, na mesma linha de ícones.
      *
-     * 📌 O `idiomaPronto()` existe exactamente para isto, e o cabeçalho dele já descreve o defeito noutro
-     * lugar: «o `applyDom` conserta o markup ESTÁTICO, mas o que o JavaScript monta tinha capturado o
-     * texto de pt e ninguém reconstruía». A barra é a instância nova, criada quando a ENGINE passou a
-     * montá-la (ADR-0106 etapa 2).
-     *
-     * ⚠️ É O `idiomaPronto()` E NÃO O EVENTO `i18n:change`, de propósito: o evento é a troca de idioma EM
-     * EXECUÇÃO, e o próprio `core/i18n` declara essa pergunta como sendo do Dev («QUANDO a interface se
-     * reconstrói ao trocar de idioma em execução»). Isto responde só a pergunta do ARRANQUE, que aquele
-     * mesmo comentário diz não ter duas respostas.
+     * 📌 SINCE STUDY ITEM C6 (ADR-0031) IT IS THE `i18n:change` LISTENER near the pad that repaints it: the boot's
+     * preferred language arrives through `setLocale`, which dispatches that same event, so one path serves the boot
+     * and a change made mid-game. The `idiomaPronto()` repaint that stood here was the same work twice.
      */
-    void idiomaPronto().then(() => { pauseIcons.reflectIconsIn(a11yBar, 0); });
 
     /*
      * ⚠️ E ELA TEM DE CONTINUAR A DIZER A VERDADE quando o estado muda NOUTRO SÍTIO. O modo cego liga-se
@@ -1996,8 +1989,7 @@ export function createGame(o: CreateGameOptions): Engine {
     pular.setAttribute('href', '#game-region');
     pular.setAttribute('data-i18n', 'skip.toGame');
     pular.textContent = t('skip.toGame');
-    doc.body.insertBefore(pular, doc.body.firstChild);
-    void idiomaPronto().then(() => { pular.textContent = t('skip.toGame'); }); // the preferred language arrives after boot
+    doc.body.insertBefore(pular, doc.body.firstChild); // `data-i18n`: every `setLocale` rewrites it, the boot's included
   }
 
   /** A node named the way a developer finds it: `tag#id.firstClass`. */
@@ -2516,9 +2508,24 @@ export function createGame(o: CreateGameOptions): Engine {
   });
   desenharPad();
   ligacoesDoToque.attach();
-  // 🔴 O PAD NASCE NO IDIOMA DE RECUO, como a barra acima (medido no `dist`: «Cima/Baixo» numa página em inglês). Os
-  // nomes dos braços e dos botões sem palavra do jogo saem de `t()` no desenho; redesenhar quando o idioma chega.
-  void idiomaPronto().then(() => { desenharPad(); ligacoesDoToque.rewire(); });
+  /*
+   * A LANGUAGE CHANGED MID-GAME REACHES WHAT THE ENGINE DREW (study item C6; ADR-0031). 📏 Measured in the quiz: after
+   * `setLocale('en')` the icon bar's names, the card's name, the button legend and the PAUSED word stayed in the old
+   * language — `applyDom` reaches only `[data-i18n]`, and these are written by code. An open panel redraws itself
+   * (`ui/mount-panel`), keeping focus where it was; nothing here moves focus.
+   * 🔴 THE BOOT IS THE SAME EVENT: the pad and the bar are drawn in the fallback language, and the preferred one arrives
+   * through `setLocale` (measured in the `dist`: «Cima/Baixo» on an English page). This listener replaced the
+   * `idiomaPronto()` repaints that did it for the boot alone.
+   */
+  if (typeof win.addEventListener === 'function') {
+    win.addEventListener('i18n:change', () => {
+      pauseIcons.reflectPauseIcons();
+      atualizarLegenda();
+      if (palavraPausado && !palavraPausado.hidden) palavraPausado.textContent = t('pause.quick');
+      desenharPad();
+      ligacoesDoToque.rewire();
+    });
+  }
 
   /*
    * ===================== ACESSIBILIDADE MOTORA — o painel da engine (ADR-0151 §2 item 5) =====================

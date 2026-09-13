@@ -22,7 +22,14 @@
 // action works, and not before». That judgement belongs to the composition root, which knows what it has.
 import type { PanelLabels, PanelShell, PanelShellCtx } from './panel-shell.js';
 import { aplicarRotulos, montarCasca } from './panel-shell.js';
-import { numerarItens } from './menu-items.js';
+import { itensNavegaveis, numerarItens } from './menu-items.js';
+
+/**
+ * The latest redraw of each mounted overlay. A panel mounted twice (two cartridges on one page, ADR-0139) keeps ONE
+ * language listener, and the listener asks this table — so it redraws with the words and render of the last mount.
+ */
+const redesenhoDoPainel = new WeakMap<HTMLElement, () => void>();
+const ouvindoIdioma = new WeakSet<HTMLElement>();
 
 /** The slice of the overlay stack a panel needs. Narrow on purpose: this file never opens a second panel. */
 export interface PanelStack {
@@ -141,6 +148,30 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
     vigiar();
     casca.fechar.focus?.();
   };
+
+  /*
+   * A LANGUAGE CHANGED WITH THE PANEL OPEN REDRAWS IT, AND THE CHILD STAYS WHERE THEY WERE (ADR-0031). 📏 Measured: with
+   * the panel open, `setLocale` left every word of it in the old language until it was closed and reopened.
+   * 📌 Focus is kept by PLACE: the control itself when the render left it in the document, else the stop at the same
+   * position — `render()` rebuilds rows by `innerHTML`, and a redraw that drops focus on «Voltar» loses the child's place.
+   * A hidden panel does nothing: its words are resolved when it opens.
+   */
+  redesenhoDoPainel.set(casca.overlay, () => {
+    if (casca.overlay.hidden) return;
+    const doc = casca.card.ownerDocument;
+    const focado = doc.activeElement as HTMLElement | null;
+    const lugar = focado && casca.card.contains(focado) ? itensNavegaveis(casca.card).indexOf(focado) : -1;
+    aplicarRotulos(casca, spec.rotulos());
+    spec.render(); // the observer above renumbers what the render rebuilt
+    if (lugar < 0 || !focado) return;
+    const destino = focado.isConnected ? focado : itensNavegaveis(casca.card)[lugar];
+    if (destino && destino !== doc.activeElement) destino.focus();
+  });
+  const janela = casca.overlay.ownerDocument?.defaultView;
+  if (janela && typeof janela.addEventListener === 'function' && !ouvindoIdioma.has(casca.overlay)) {
+    ouvindoIdioma.add(casca.overlay);
+    janela.addEventListener('i18n:change', () => { redesenhoDoPainel.get(casca.overlay)?.(); });
+  }
 
   // Só quando o painel NÃO liga o próprio botão. Ver `fecharProprio`: dois ouvintes no mesmo controle são dois
   // donos da mesma saída, e é assim que elas divergem.
