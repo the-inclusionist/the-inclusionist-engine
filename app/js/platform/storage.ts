@@ -69,6 +69,16 @@ export function setJSON(key: string, obj: unknown): void { try { set(key, JSON.s
 export function kJogo(jogo: string, nome: string): string { return 'incl.' + jogo + '.' + nome; }
 
 /**
+ * THE KEYS OUTSIDE EVERY ENGINE SCOPE (study item E2): not the child's `incl_*` (and the older `inclusionist.*`), not a
+ * game's `incl.<game>.*`. 📏 Measured: pinball stores `pinball:*`. ⚠️ A game's data stored in the CHILD's scope
+ * (chess's `incl_chess_*`) is not seen: the engine's own `incl_` keys are not one closed list, so that question would
+ * accuse the engine.
+ */
+export function chavesForaDosEscopos(chaves: Iterable<string>): string[] {
+  return [...chaves].filter((k) => !k.startsWith('incl_') && !k.startsWith('inclusionist.') && !k.startsWith('incl.'));
+}
+
+/**
  * Lê a chave NOVA; se ela ainda não existe, herda o valor da LEGADA. Só de leitura: quem grava, grava na nova.
  * É o que permite renomear chave sem um passo de migração e sem perder o ajuste de ninguém.
  */

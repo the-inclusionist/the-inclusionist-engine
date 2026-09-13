@@ -2914,6 +2914,32 @@ unstyled`];
    * pixel and then averaged, so a small bright area weighs by its area; a direct 16×12 downscale samples a few pixels and a
    * flash between them goes unseen. Registered from the frame after the call, gone when the time is up.
    */
+  /*
+   * STORAGE OUTSIDE THE ENGINE'S SCOPES (study item E2). The keys of both storages are photographed at boot; `problems`
+   * names the ones that appeared since and sit outside every scope. Only what appeared: on a shared origin (localhost)
+   * the keys already there are other pages'. By capability: a host without storage, or one that throws, measures nothing.
+   */
+  function chavesDoArmazenamento(): Set<string> {
+    const chaves = new Set<string>();
+    for (const nome of ['localStorage', 'sessionStorage'] as const) {
+      try {
+        const area = (win as unknown as Record<string, Storage | undefined>)[nome];
+        if (!area || typeof area.key !== 'function') continue;
+        for (let i = 0; i < area.length; i++) { const k = area.key(i); if (k !== null) chaves.add(k); }
+      } catch { /* private mode or a host double: nothing to read */ }
+    }
+    return chaves;
+  }
+  const chavesNoArranque = chavesDoArmazenamento();
+  function armazenamentoForaDoEscopo(): string[] {
+    const novas = [...chavesDoArmazenamento()].filter((k) => !chavesNoArranque.has(k));
+    const fora = store.chavesForaDosEscopos(novas);
+    if (!fora.length) return [];
+    return [`the cartridge stored keys outside the engine's scopes (${fora.slice(0, 5).join(', ')}): what belongs to `
+      + 'the child goes under incl_* through the engine\'s settings, and what belongs to the game under incl.<game>.* '
+      + '(storage.kJogo)'];
+  }
+
   const problemasMedidos: string[] = [];
   const AMOSTRA_C = COLUNAS * 10;
   const AMOSTRA_L = LINHAS * 10;
@@ -2995,7 +3021,7 @@ unstyled`];
     aplicarFiltroDeVisao,
     cenas: cenasDaRaiz,
     cvdFilters,
-    get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho(), ...lacunasDosDicionarios(), ...problemasMedidos]; },
+    get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho(), ...lacunasDosDicionarios(), ...problemasMedidos, ...armazenamentoForaDoEscopo()]; },
     aoFalhar,
     get alcance() { return alcanceAtual; },
   };
