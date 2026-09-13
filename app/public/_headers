@@ -6,13 +6,15 @@
 # mudam raramente e o SW cobre o cliente offline; se um mudar sem novo hash, purgar o cache do CF (ou separar o
 # build.assetsDir do Vite). Antes tinha regras /js/* e /css/* — não existem mais (o Vite bundla p/ /assets/).
 
-# CONTENT-SECURITY-POLICY (issue #170, STRIDE client pass): which hosts may run script and which may be fetched.
+# CONTENT-SECURITY-POLICY (issue #170; narrowed by ADR-0177, issue #173): which hosts may run script and be fetched.
 #  • script-src: this origin; `blob:` — WebGazer runs from the sha256-checked cache (#169); `'wasm-unsafe-eval'` — the
-#    voice and vision runtimes compile WebAssembly; jsDelivr — the pinned runtimes (served from the checked cache).
-#  • connect-src: the four inventoried hosts (`nada-vem-de-fora`) and `*.hf.co`, where Hugging Face redirects big models.
+#    voice and vision runtimes compile WebAssembly. No third-party host: the game bundles its runtimes.
+#  • connect-src: only what a library requests by itself — huggingface.co (the voice provider hardcodes its models; the
+#    service worker answers from the checked cache) and jsDelivr (its phonemizer, not in the catalogue yet). The heavy
+#    files download from this origin, so the catalogue's other hosts are contacted by the build alone.
 #  • style-src 'unsafe-inline': eight panel modules write `style="…"` through innerHTML (measured 2026-09-13).
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net; worker-src 'self' blob:; connect-src 'self' https://huggingface.co https://*.hf.co https://cdn.jsdelivr.net https://storage.googleapis.com https://webgazer.cs.brown.edu; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' https://huggingface.co https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
 
 /sw.js
   Cache-Control: no-cache
