@@ -635,9 +635,9 @@ describe('createGame num documento de verdade', () => {
         expect(document.getElementById('opt-wheelchair'), 'opt-wheelchair').toBeNull();
       // ADR-0181: the two motor simulations the engine can now apply are offered
       for (const id of ['opt-onebtn', 'opt-semforca']) expect(document.getElementById(id), id).not.toBeNull();
-        // a simulation puts its filter on the world, and «normal» takes it off
+        // a simulation runs in the game, never under an open menu (issue #182): with this panel open the world is not simulated
         escolherSimulacao('sim-deuter');
-        expect(mundo.style.filter, 'the simulation did not reach the world').toMatch(/cvd-deuter/);
+        expect(mundo.style.filter, 'the simulation runs under the open panel').not.toMatch(/cvd-deuter/);
         // closed and opened again, the list shows the simulation that runs — not its first option
         document.getElementById('empathy-close').click();
         document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
@@ -683,21 +683,25 @@ describe('createGame num documento de verdade', () => {
       }
     });
 
-    it('🔴 [Boundary] turning a correction ON while a simulation runs STOPS the simulation — the adaptation wins (ADR-0076)', () => {
+    it('🔴 [Boundary] turning a correction ON while a simulation runs STOPS the simulation — the adaptation wins (ADR-0076)', async () => {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       raiz.appendChild(svg);
       const motor = abrir({ host: { doc: document, win: window, cvdHost: svg } });
       const mundo = document.querySelector('#game-region');
+      // the game's own part of the world: a simulation runs there, never on the menus beside it (issue #182)
+      const parte = mundo.appendChild(document.createElement('div'));
+      const tick = () => new Promise((r) => setTimeout(r, 20));
       motor.pausa.mostrar(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
       try {
         escolherSimulacao('blind');
-        expect(mundo.style.filter, 'the case would measure nothing').toMatch(/brightness\(0\)/);
         document.getElementById('empathy-close').click();
         motor.pausa.esconder(0);
+        await tick();
+        expect(parte.style.filter, 'the case would measure nothing').toMatch(/brightness\(0\)/);
         document.querySelector('#title-icons [data-pi="cvd"]').click();
         expect(mundo.style.filter, 'the correction did not reach the world').toMatch(/cvd-fix-/);
-        expect(mundo.style.filter, 'the simulation kept running over the correction').not.toMatch(/brightness\(0\)/);
+        expect(parte.style.filter + mundo.style.filter, 'the simulation kept running over the correction').not.toMatch(/brightness\(0\)/);
         // and the panel's list says what runs now, not the simulation that was stopped from outside it
         motor.pausa.mostrar(0);
         document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();

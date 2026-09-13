@@ -17,7 +17,7 @@ const declaracao = () => ({
   nameAt: () => ({ text: 'a', gender: 'f', plural: false }), focusOf: () => null,
   objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],
 });
-function escolher(chave) {
+async function escolher(chave) {
   motor.pausa.mostrar(0);
   document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
   document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
@@ -26,6 +26,7 @@ function escolher(chave) {
   sel.dispatchEvent(new Event('change', { bubbles: true }));
   for (const ov of document.querySelectorAll('#game-region .overlay')) ov.hidden = true;
   motor.pausa.esconder(0);
+  await new Promise((r) => setTimeout(r, 30)); // a simulation comes back with the game once the menus close (issue #182)
 }
 const camada = () => document.querySelector('#viz-overlay');
 /** The drawing's opacity (0–255) at a point given as a fraction of the 320×180 layer. */
@@ -56,8 +57,8 @@ describe('the field-of-vision simulations', () => {
     motor.pausa.esconder(0);
   });
 
-  it('🔴 [Right] tunnel vision darkens the edge and leaves the centre clear, over the world, taking no click', () => {
-    escolher('lv-tunnel');
+  it('🔴 [Right] tunnel vision darkens the edge and leaves the centre clear, over the world, taking no click', async () => {
+    await escolher('lv-tunnel');
     const c = camada();
     expect(c, 'nothing drawn over the world').not.toBeNull();
     expect(c.hidden).toBe(false);
@@ -67,27 +68,27 @@ describe('the field-of-vision simulations', () => {
     expect(opacidade(0.5, 0.5), 'the centre is not clear').toBeLessThan(20);
   });
 
-  it('🔴 [Right] a central scotoma darkens the centre and leaves the edge clear', () => {
-    escolher('lv-macular');
+  it('🔴 [Right] a central scotoma darkens the centre and leaves the edge clear', async () => {
+    await escolher('lv-macular');
     expect(opacidade(0.5, 0.5), 'the centre is not dark').toBeGreaterThan(200);
     expect(opacidade(0.02, 0.05), 'the edge is not clear').toBeLessThan(20);
   });
 
-  it('🔴 [Right] scattered scotomas darken spots and leave a corner clear', () => {
-    escolher('lv-diabetic');
+  it('🔴 [Right] scattered scotomas darken spots and leave a corner clear', async () => {
+    await escolher('lv-diabetic');
     expect(opacidade(0.22, 0.3), 'no spot where the drawing puts one').toBeGreaterThan(200);
     expect(opacidade(0.98, 0.05), 'the corner is not clear').toBeLessThan(20);
   });
 
-  it('🎯 [Zero] back to normal, nothing is drawn over the world', () => {
-    escolher('normal');
+  it('🎯 [Zero] back to normal, nothing is drawn over the world', async () => {
+    await escolher('normal');
     expect(camada()?.hidden ?? true, 'the drawing stayed after the simulation ended').toBe(true);
   });
 
-  it('🎯 [Zero] a simulation made by a filter draws nothing', () => {
-    escolher('lv-blur');
+  it('🎯 [Zero] a simulation made by a filter draws nothing', async () => {
+    await escolher('lv-blur');
     expect(camada()?.hidden ?? true).toBe(true);
-    escolher('normal');
+    await escolher('normal');
   });
 });
 

@@ -800,6 +800,41 @@ export function createGame(o: CreateGameOptions): Engine {
   // `filtroChave` já sabe que a simulação só corre com a correcção no padrão (ADR-0076).
   let estadoDoMundo: VisualState = PADRAO;
   /*
+   * A DISABILITY SIMULATION RUNS IN THE GAME, NEVER IN A MENU (issue #182). The Dev: «Simulação de deficiência não pode
+   * funcionar no menu! Só no jogo! Senão fica impossível desabilitar em certos casos.» Two rules make it so:
+   *   · SUSPENDED while a menu is open — the pause card, a panel, the quick pause — and back when the child returns to play;
+   *   · NEVER ON AN ANCESTOR OF A MENU: a CSS filter reaches every descendant, and clearing it on the child does not undo it.
+   *     📏 In the quiz the world is the whole region, menus inside it: a simulated blindness blacked out the empathy panel
+   *     where it is turned off. So the filter goes on the world's parts that hold no menu, down to the world itself when
+   *     it holds none (a canvas world).
+   */
+  // `[data-incl-menu]` is the cartridge's own door to the menus (ADR-0187): the engine cannot tell which of a game's buttons
+  // opens the pause card, and a simulation over that door is the one a touch child cannot turn off.
+  const MENUS_DA_ENGINE = '.overlay, .screen-pause, .screen-a11y, #title-icons, .rodape-da-tela, .pausa-rapida, .touch, #viz-overlay, [data-incl-menu]';
+  /** Assigned once the menus exist (below): until then no menu can be open. */
+  let simulacaoSuspensa = (): boolean => false;
+  let simulados: HTMLElement[] = [];
+  function simularSoNoJogo(css: string, melhoria: string): void {
+    for (const n of simulados) n.style.filter = '';
+    simulados = [];
+    const mundo = cartucho.declaration.world();
+    if (!css || mundo.kind !== 'element') return;
+    const el = $<HTMLElement>(mundo.selector);
+    if (!el) return;
+    const semMenus = (n: HTMLElement): boolean => typeof n.querySelector !== 'function' || !n.querySelector(MENUS_DA_ENGINE);
+    if (semMenus(el)) {
+      el.style.filter = [melhoria, css].filter(Boolean).join(' '); // the world itself, over what helps
+      return; // recomposed from `melhoria` on the next call, so it is not tracked here
+    }
+    const partes = (pai: HTMLElement): void => {
+      for (const filho of Array.from(pai.children) as HTMLElement[]) {
+        if (filho.matches(MENUS_DA_ENGINE)) continue;
+        if (semMenus(filho)) { filho.style.filter = css; simulados.push(filho); } else partes(filho);
+      }
+    };
+    partes(el);
+  }
+  /*
    * THE DRAWN SIMULATIONS (ADR-0151 §2 item 2; issue #182): tunnel vision, a central scotoma and scattered scotomas are a
    * drawing over the declared world — the colour filter only blurs for them. A 320×180 layer stretched over the world, inside
    * it, or beside it when the world is a canvas (which cannot hold children); `#viz-overlay` takes no click (style.css).
@@ -821,7 +856,8 @@ export function createGame(o: CreateGameOptions): Engine {
       camada.id = 'viz-overlay';
       camada.setAttribute('aria-hidden', 'true');
       // inline and not only in style.css: a page without the stylesheet must still let the clicks through to the game
-      Object.assign(camada.style, { position: 'absolute', inset: '0', pointerEvents: 'none', zIndex: '8' });
+      // z 4: over the game, under the quick bar (5), the pause card (6) and the panels (60) — a simulation is never over a menu
+      Object.assign(camada.style, { position: 'absolute', inset: '0', pointerEvents: 'none', zIndex: '4' });
       camada.width = LOGICAL_W;
       camada.height = LOGICAL_H;
     }
@@ -835,9 +871,13 @@ export function createGame(o: CreateGameOptions): Engine {
     camada.hidden = false;
   }
   function recomporFiltroDoMundo(): void {
-    const chave = filtroChave(estadoDoMundo);
-    aplicarFiltroDeVisao([chave ? (VIZ_FILTER[chave] ?? '') : '', lqFilter()].filter(Boolean).join(' '), 'mundo');
-    desenharCamadaDoMundo(chave);
+    // what HELPS (the colour correction, the contrast enhancement) stays on the world as before; the SIMULATION is laid apart
+    const chaveDaMelhoria = filtroChave({ ...estadoDoMundo, simulacao: null });
+    const melhoria = [chaveDaMelhoria ? (VIZ_FILTER[chaveDaMelhoria] ?? '') : '', lqFilter()].filter(Boolean).join(' ');
+    aplicarFiltroDeVisao(melhoria, 'mundo');
+    const simulacao = simulacaoSuspensa() ? null : estadoDoMundo.simulacao;
+    simularSoNoJogo(simulacao ? (VIZ_FILTER[simulacao] ?? '') : '', melhoria);
+    desenharCamadaDoMundo(simulacao);
     applyCrt(); // the decorative CRT yields to every visual mode, and comes back when none is on (ADR-0047)
   }
   /*
@@ -956,6 +996,8 @@ export function createGame(o: CreateGameOptions): Engine {
   // The quick-pause state and the button legend, declared before the first `mudarDeFase` too: its `pausa.esconder`
   // refreshes the legend (ADR-0164 rule 3), and reading them earlier would be a temporal-dead-zone error at boot.
   const emPausaRapida = new Set<number>();
+  // the menus and the quick pause exist from here on: a simulation is suspended while one is open (issue #182)
+  simulacaoSuspensa = () => menuAberto() || emPausaRapida.size > 0;
   let legendaDaPausa: HTMLElement | null = null;
   function mudarDeFase(p: 'title' | 'playing' | 'paused'): void {
     // ⚠️ A ENGINE FECHA O SEU CARTÃO; O JOGO CONTINUA A DECIDIR O MUNDO. É a simetria exacta do ADR-0144 §2
@@ -2507,6 +2549,8 @@ export function createGame(o: CreateGameOptions): Engine {
         if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay') || c?.contains('pause-menu'))) anunciarContexto();
         // ADR-0166: the pad leaves when the card or a panel opens, and comes back when the last of them closes
         if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) refletirPadNosMenus();
+        // a simulation stops while a menu is open and comes back with the game (issue #182)
+        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) recomporFiltroDoMundo();
       }).observe(regiao, { attributes: true, attributeFilter: ['hidden'], subtree: true });
     }
   }
@@ -2584,6 +2628,7 @@ export function createGame(o: CreateGameOptions): Engine {
 
   function entrarNaPausaRapida(assento: number): void {
     emPausaRapida.add(assento);
+    recomporFiltroDoMundo(); // the quick pause is a menu: the simulation stops (issue #182)
     pauseIcons.entrarNaBarra(assento);
     if (!pauseIcons.naBarraDe(assento)) srSay(t('sr.a11y.quickPause'));
     mostrarPausado();
@@ -2598,7 +2643,7 @@ export function createGame(o: CreateGameOptions): Engine {
   }
 
   function terminarPausaRapida(assento: number, paraOutroEcra: boolean): void {
-    if (!emPausaRapida.delete(assento)) return;
+    if (!emPausaRapida.delete(assento)) return; // the simulation returns through the observer: leaving writes the card's `hidden`
     if (palavraPausado && emPausaRapida.size === 0) palavraPausado.hidden = true;
     if (!paraOutroEcra) mudarDeFase('playing');
   }
