@@ -78,7 +78,7 @@ import { ehCego, ehBaixaVisao, PADRAO, filtroChave, simulacaoIndisponivel, type 
 import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
 import { cicloDeTipografia, INICIO_DO_CICLO, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
-import { invasoresDaBarra, escalaDoPalco, aplicarEscala, type Caixa } from '../ui/layout.js';
+import { invasoresDaBarra, escalaDoPalco, aplicarEscala, type Caixa, type Escala } from '../ui/layout.js';
 import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
@@ -628,6 +628,8 @@ export function createGame(o: CreateGameOptions): Engine {
 
   function problemasDoCartucho(): string[] {
     const p: string[] = [...lacunasDoPad()];
+    const tamanho = regiaoRedimensionadaPeloCartucho();
+    if (tamanho) p.push(tamanho);
     // O mundo declarado tem de existir na página — e quem o declara é o jogo, não o hospedeiro.
     const mundo = cartucho.declaration.world();
     if (mundo.kind === 'element' && !$(mundo.selector)) {
@@ -1876,12 +1878,29 @@ export function createGame(o: CreateGameOptions): Engine {
    * ⚠️ O PALCO é a casca `#stage-wrap`/`.stage-wrap` quando existe; sem ela, o pai da região — o espaço que ela tem.
    * ⚠️ POR CAPACIDADE, como o resto: um duplo sem `style.setProperty` não é redimensionado, e o boot não cai por isso.
    */
+  let escalaAplicada: Escala | null = null;
+  /**
+   * What departs is SAID (ADR-0163 rule 4): the region's measured size against the one the engine gave it, read when
+   * `problems` is read — a cartridge that resizes the region after boot is seen then, and the line goes when it stops.
+   */
+  function regiaoRedimensionadaPeloCartucho(): string | null {
+    const regiao = $<HTMLElement>('#game-region');
+    if (!escalaAplicada || !regiao || typeof regiao.getBoundingClientRect !== 'function') return null;
+    const r = regiao.getBoundingClientRect();
+    if (!r.width || !r.height) return null; // not laid out: nothing measured, nothing to accuse
+    const { largura, altura } = escalaAplicada;
+    if (Math.abs(r.width - largura) < 1 && Math.abs(r.height - altura) < 1) return null;
+    return `the cartridge sized #game-region to ${Math.round(r.width)}×${Math.round(r.height)} over the engine's `
+      + `${Math.round(largura)}×${Math.round(altura)}: the resolution is the engine's (ADR-0163) — lay the game out `
+      + 'inside the region and read `--ui-fs` and `--alvo-min`';
+  }
   function aplicarResolucao(): void {
     const regiao = $<HTMLElement>('#game-region');
     const palco = $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap') ?? (regiao?.parentElement ?? null);
     if (!regiao || !palco || typeof regiao.style?.setProperty !== 'function') return;
     const { w, h } = screenBaseSize(Math.max(1, players().length));
-    aplicarEscala(regiao, escalaDoPalco(palco.clientWidth || w, palco.clientHeight || h, win.devicePixelRatio || 1, w, h));
+    escalaAplicada = escalaDoPalco(palco.clientWidth || w, palco.clientHeight || h, win.devicePixelRatio || 1, w, h);
+    aplicarEscala(regiao, escalaAplicada);
   }
   aplicarResolucao();
   if (typeof win.addEventListener === 'function') win.addEventListener('resize', aplicarResolucao);

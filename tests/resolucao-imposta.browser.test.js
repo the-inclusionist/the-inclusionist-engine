@@ -40,6 +40,7 @@ describe('ADR-0001 as a pure function', () => {
 describe('createGame applies it — the cartridge has no other', () => {
   let regiao;
   let palco;
+  let motor;
 
   beforeAll(async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
@@ -49,7 +50,7 @@ describe('createGame applies it — the cartridge has no other', () => {
     palco.innerHTML = '<div id="game-region" tabindex="-1" style="width:569px;height:395px"></div>';
     document.body.append(Object.assign(document.createElement('p'), { id: 'sr-status' }), palco);
     regiao = palco.querySelector('#game-region');
-    createGame({ acomodacoes: SEM_ASSUNTO,
+    motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: {
         topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => false, tick: 'player',
         world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
@@ -84,6 +85,30 @@ describe('createGame applies it — the cartridge has no other', () => {
     expect(regiao.style.getPropertyValue('--alvo-min'), 'no target floor on the region').toBe(`${22 * k}px`);
     expect(regiao.style.getPropertyValue('--alvo-min')).toBe('44px');
   });
+
+  it('🔴 [Right] a cartridge that sizes the region itself is NAMED in `problems` (ADR-0163 rule 4)', () => {
+    const doTamanho = () => motor.problems.filter((p) => p.includes('#game-region') && p.includes('ADR-0163'));
+    expect(doTamanho(), 'the engine\'s own size was reported as a departure').toEqual([]);
+    const antes = [regiao.style.width, regiao.style.height];
+    regiao.style.width = '569px';
+    regiao.style.height = '395px';
+    try {
+      const linhas = doTamanho();
+      expect(linhas, 'the departure was not said').toHaveLength(1);
+      expect(linhas[0]).toContain('569×395');
+      expect(linhas[0]).toContain('640×360');
+    } finally {
+      [regiao.style.width, regiao.style.height] = antes;
+    }
+    expect(doTamanho(), 'the line stayed after the size came back').toEqual([]);
+    // and each axis on its own: a cartridge that only changes the height has still sized the region
+    regiao.style.height = '400px';
+    try {
+      expect(doTamanho(), 'a height-only change was not said').toHaveLength(1);
+    } finally {
+      regiao.style.height = antes[1];
+    }
+  });
 });
 
 // ===== MUTATIONS CHECKED (2026-09-12) =====
@@ -92,3 +117,8 @@ describe('createGame applies it — the cartridge has no other', () => {
 // R3 floor at 1× instead of 2×                         → red (a small space gets 320×180)
 // R4 no crop tolerance (`base` instead of `base − 10`)  → red, twice
 // R5 the multiple rounded in CSS px, not real px       → red (the fractional-dpr case)
+// P1 the size line is not pushed to `problems`          → red
+// P2 a tolerance of 1000 px                            → red
+// P3 the applied scale is not kept                     → red (nothing to compare)
+// P4 only the width compared                          → red (the height-only step)
+// P5 no early return: the engine's own size accused    → red
