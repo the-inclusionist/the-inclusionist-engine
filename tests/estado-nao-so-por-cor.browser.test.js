@@ -16,6 +16,9 @@ import css from '../app/css/style.css?raw';
 
 let regiao;
 const esperar = (ms = 60) => new Promise((r) => setTimeout(r, ms));
+/** Waits for a condition instead of a fixed time: under a full run the node project shares the CPU, and 60 ms was not
+ *  always enough for the quiz to boot or for a click's reflection — the case failed about one run in four. */
+async function ate(cond, ms = 3000) { const fim = Date.now() + ms; while (!cond() && Date.now() < fim) await esperar(20); return cond(); }
 const semCores = (s) => s.replace(/rgba?\([^)]*\)/g, '').replace(/\s+/g, ' ').trim();
 /** What an element draws, with every colour taken out. */
 const formaDe = (el) => {
@@ -41,7 +44,7 @@ beforeAll(async () => {
     .replace(/<script[\s\S]*?<\/script>/g, '');
   document.querySelector('.stage-wrap').style.cssText = 'width:700px;height:420px;display:flex;flex:none';
   await import('../app/js/consumer-quiz/main-quiz.ts');
-  await esperar();
+  await ate(() => document.querySelector('#title-icons .pi-btn[data-pi="tts"]') && document.querySelector('.quiz-alt.is-on'));
   regiao = document.getElementById('game-region');
 });
 
@@ -51,7 +54,7 @@ describe('state beyond colour', () => {
     expect(icone.classList.contains('pi-on'), 'the icon was already on — the case would compare on with on').toBe(false);
     const desligado = formaDe(icone);
     icone.click();
-    await esperar();
+    await ate(() => icone.classList.contains('pi-on'), 1000);
     try {
       expect(icone.classList.contains('pi-on'), 'the click did not switch the icon on').toBe(true);
       expect(formaDe(icone), 'on and off differ only in colour').not.toBe(desligado);
