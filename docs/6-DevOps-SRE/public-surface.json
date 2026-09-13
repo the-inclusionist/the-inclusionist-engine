@@ -132,6 +132,7 @@
     "getLocale",
     "idiomaPronto",
     "initI18n",
+    "lacunasDosDicionarios",
     "registerDict",
     "setLocale",
     "t"

@@ -59,6 +59,28 @@ export function registerDict(code: string, entries: LocaleDict): string[] {
 }
 
 /**
+ * THE KEYS A CARTRIDGE REGISTERED IN ONE OF THE THREE LANGUAGES AND NOT IN ANOTHER (study item E4; ADR-0010 pillar 3),
+ * one line per missing language, for `problems`. 📏 Measured: the games that register a dictionary do it in pt, en and es,
+ * and nothing checked it — a key forgotten in one language shows Portuguese there, and nobody is told.
+ * A cartridge that registered nothing is not accused: strings it never gave the engine, the engine cannot see.
+ */
+export function lacunasDosDicionarios(): string[] {
+  const registadas = new Set<string>();
+  for (const code of AVAILABLE) for (const chave in EXTRA[code] ?? {}) registadas.add(chave);
+  if (!registadas.size) return [];
+  const MOSTRAR = 5;
+  const linhas: string[] = [];
+  for (const code of AVAILABLE) {
+    const faltam = [...registadas].filter((chave) => !(chave in (EXTRA[code] ?? {})));
+    if (!faltam.length) continue;
+    const resto = faltam.length > MOSTRAR ? ` (and ${faltam.length - MOSTRAR} more)` : '';
+    linhas.push(`the cartridge's dictionary lacks ${code} for ${faltam.slice(0, MOSTRAR).join(', ')}${resto}: `
+      + `a child playing in ${code} reads the fallback there (registerDict)`);
+  }
+  return linhas;
+}
+
+/**
  * A string traz marcação?
  *
  * ⚠️ POR QUE ISTO EXISTE AQUI, E NÃO NOS ~15 SINKS QUE CONSOMEM i18n. O gate

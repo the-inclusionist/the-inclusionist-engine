@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// `createGame`'s `problems` names a cartridge key missing in one of the three languages (study item E4, contract part).
+// The rule itself is gated in `dicionario-do-cartucho-nas-tres-linguas.node`; this file gates the WIRING, read when read.
+//
+// MUTATIONS CHECKED — at the end of the file.
+import { describe, it, expect } from 'vitest';
+import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+
+const declaracao = () => ({
+  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => false, tick: 'player',
+  world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
+  nameAt: () => ({ text: 'pergunta', gender: 'f', plural: false }), focusOf: () => ({ id: 'p0', at: { x: 0, y: 0 }, heading: 'none' }),
+  objectiveOf: () => ({ name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [{ x: 0, y: 0 }],
+});
+
+describe('a cartridge dictionary under createGame', () => {
+  it('🔴 [Right] a key missing in es is a line of `problems` — and completing es takes it away', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const { registerDict } = await import('../app/js/core/i18n.js');
+    document.body.innerHTML = '<p id="sr-status"></p><div id="game-region" tabindex="-1"></div>';
+    registerDict('pt', { 'jogo.fixture.vitoria': 'Vitória' });
+    registerDict('en', { 'jogo.fixture.vitoria': 'Victory' });
+    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false });
+    const linhas = () => motor.problems.filter((p) => p.includes('jogo.fixture.vitoria'));
+    expect(linhas(), 'the missing es was not said').toHaveLength(1);
+    expect(linhas()[0]).toMatch(/lacks es/);
+    registerDict('es', { 'jogo.fixture.vitoria': 'Victoria' }); // after boot: `problems` is read when it is read
+    expect(linhas(), 'the line outlived the fix').toEqual([]);
+  });
+});
+
+// ============================== MUTATIONS CHECKED ==============================
+//   M1 `problems` does not read the dictionaries   🔴

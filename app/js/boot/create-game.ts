@@ -46,7 +46,7 @@
 // exige seis coisas de plataforma. Não substitui o boot do `main.js`, que tem catorze anos de ordem própria.
 // O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
-import { initI18n } from '../core/i18n.js';
+import { initI18n, lacunasDosDicionarios } from '../core/i18n.js';
 import { entradaDe, keys, marcarTecla, soltarTecla, arestaDoJogador } from '../input/state.js';
 import { initTouch, montarControleDeToque, lacunasDoToque } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
@@ -2916,7 +2916,7 @@ unstyled`];
     aplicarFiltroDeVisao,
     cenas: cenasDaRaiz,
     cvdFilters,
-    get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho()]; },
+    get problems() { return [...problemasDoHospedeiro, ...folhaDeEstiloAusente(), ...problemasDoCartucho(), ...lacunasDosDicionarios()]; },
     aoFalhar,
     get alcance() { return alcanceAtual; },
   };
