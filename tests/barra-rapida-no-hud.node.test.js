@@ -38,12 +38,12 @@ describe('barra rápida · sai do cartão de pausa e vira HUD', () => {
     expect(h).not.toContain('pause-icons');
   });
 
-  it('[Right] a barra existe por si, com os onze alternadores e a sua legenda', () => {
+  it('[Right] a barra existe por si, com os doze alternadores e a sua legenda (o 12.º é a ampulheta, ADR-0180)', () => {
     const b = quickBarMarkup();
     expect(b).toContain('class="pause-icons"');
     // ⚠️ ONZE desde 2026-09-12: entrou o ciclo de tipografia (ADR-0149). O número é escrito por extenso de
     // propósito — um ícone que entre ou saia da barra sem alguém reparar é decisão de produto, não etiqueta.
-    expect((b.match(/class="pi-btn/g) || []).length).toBe(11);
+    expect((b.match(/class="pi-btn/g) || []).length).toBe(12);
     // A legenda viaja COM a barra: ela é a dica que substitui, para quem não vê, o `title` que só o mouse
     // revela. Deixá-la para trás no cartão tornaria a barra do HUD muda.
     expect(b).toContain('class="pause-icons-cap"');

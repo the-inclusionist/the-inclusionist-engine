@@ -6,6 +6,8 @@
 // ⚠️ NO STORAGE IMPORT (ADR-0178, issue #174): the child's settings come through the port `carregarEstado` receives — the
 // shape `platform/storage` already has — so `core` does not reach up to `platform` (ADR-0173).
 
+import { velocidadeValida } from './game-speed.js';
+
 /** The port the settings are read and written through. `platform/storage` has this shape; a test passes a double. */
 export interface PortaDoEstado {
   get(key: string, fallback: string | null): string | null;
@@ -73,6 +75,8 @@ export interface EventoDoJogo {
   caneBlockDiv: number;
   wheelchair: boolean;
   oneButton: boolean;
+  /** The game speed, a step of `core/game-speed` (ADR-0180): 1 is 100%. */
+  gameSpeed: number;
 
   /* --- JOGO: `game/state` AUMENTA esta interface com `cenario`, `activity`, `quizLevel` e `coins`.
      Ver a declaração de aumento no fim daquele arquivo. A engine não pode nomear a carga de `coins` — é um
@@ -221,6 +225,7 @@ export const DEFAULTS = Object.freeze({
   // motora
   wheelchair: false,
   oneButton: false,
+  gameSpeed: 1,
   easy: false,        // por jogador (Modo Fácil)
   toggleMove: false,  // por jogador (movimento por alternância)
   // A alternância do botão de CORRER nasce desligada de FÁBRICA — e liga sozinha no controle de tela, que é
@@ -436,6 +441,15 @@ export function setOneButtonValue(on: boolean): void {
   const p = armazem('setOneButtonValue'); p.setBool('incl_onebtn', on); oneButton = on; emit('oneButton', on);
 }
 
+// --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
+//     by it. Stored and carried between games; a stored value outside the steps reads as 100%. ---
+export let gameSpeed: number = velocidadeValida(VAZIO.getNum('incl_game_speed', DEFAULTS.gameSpeed));
+export function setGameSpeedValue(v: number): void {
+  const valida = velocidadeValida(v);
+  if (gameSpeed === valida) return;
+  const p = armazem('setGameSpeedValue'); p.set('incl_game_speed', valida); gameSpeed = valida; emit('gameSpeed', valida);
+}
+
 /* ===================== THE STORED SETTINGS, LOADED BY THE ROOT (ADR-0178, issue #174) ===================== */
 
 
@@ -465,4 +479,5 @@ export function carregarEstado(p: PortaDoEstado): void {
   caneBlockDiv = p.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
   wheelchair = p.getBool('incl_wheelchair', DEFAULTS.wheelchair);
   oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
+  gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
 }

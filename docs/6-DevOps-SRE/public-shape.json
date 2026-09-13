@@ -63,7 +63,8 @@
       "problems",
       "sonar",
       "tts",
-      "unmount"
+      "unmount",
+      "velocidadeDoJogo"
     ],
     "type GanchosDoCartucho": "Omit<MetadeDoJogo, 'declaration'>"
   },
@@ -406,6 +407,7 @@
       "caneBlockDiv",
       "captionsOn",
       "cbSafe",
+      "gameSpeed",
       "hcOutlineBg",
       "hcOutlineFg",
       "letterCase",
@@ -2026,6 +2028,7 @@
       "privateOutput",
       "toggleMove",
       "ttsOn",
+      "velocidade?",
       "visual"
     ],
     "interface IconVisual": [
@@ -2037,6 +2040,7 @@
     ],
     "interface AccionaveisDoJogo": [
       "correcao",
+      "relogio?",
       "seguraTeclas",
       "tema",
       "tipografia?"
@@ -2069,6 +2073,7 @@
       "pmButtons?",
       "reflectTtsPanel",
       "reflectTtsPanelEnabled",
+      "relogio?",
       "rm?",
       "rmChar?",
       "rmKeys?",

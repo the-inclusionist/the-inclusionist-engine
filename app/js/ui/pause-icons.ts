@@ -41,7 +41,8 @@ import { anunciarItem } from './item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
-import { menuIndexOn, DEFAULTS, setModoCegoValue } from '../core/state.js';
+import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue } from '../core/state.js';
+import { proximaVelocidade } from '../core/game-speed.js';
 // ⚠️ IMPORT DIRETO DE `platform/storage`, e não uma peça a mais no `ctx`, e a escolha é sobre quem pode
 // esquecer: `initPauseIcons` é chamado pela raiz de composição de CADA jogo, e um `store` injetado é um
 // campo que um consumidor pode omitir — e omiti-lo faria o nível TEA voltar a não persistir, em silêncio,
@@ -143,6 +144,9 @@ export const PAUSE_ICONS: readonly PauseIcon[] = [
    * curta e curada em vez de um menu.
    */
   { k: 'tipografia', e: '🔤', n: 'icon.tipografia' },
+  // THE TWELFTH (ADR-0180): the game speed, its own button beside toggle keys, at the end for the same reason as the eleventh.
+  // An hourglass and no animal: a snail, a turtle or a hare can read as an insult to the child who needs the slower game.
+  { k: 'velocidade', e: '⏳', n: 'icon.velocidade' },
 ];
 
 const ICON_BY_KEY: ReadonlyMap<string, PauseIcon> = new Map(PAUSE_ICONS.map((ic) => [ic.k, ic]));
@@ -234,6 +238,8 @@ export interface IconStateSnapshot {
    * `nextCvd` existem desde sempre, separados); só não tinham onde guardar o resultado sem apagar o vizinho.
    */
   visual: VisualState;
+  /** The game speed (ADR-0180), a step of `core/game-speed`; absent reads as 100%. */
+  velocidade?: number;
   /** False disables the blind/TTS icons: those need an audio output nobody else is listening to. */
   privateOutput: boolean;
   /**
@@ -313,6 +319,7 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   if (k === 'altmove') return rotulo(s.toggleMove ? 'state.on' : 'state.off');
   if (k === 'contrast') return rotulo(CURTO_DO_TEMA[s.visual.tema]);
   if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CURTO_DA_CORRECAO[s.visual.correcao]) });
+  if (k === 'velocidade') return t('icon.state', { nome: t(ic.n), v: t('icon.velocidade.valor', { pct: Math.round((s.velocidade ?? 1) * 100) }) });
   return t(ic.n);
 }
 
@@ -339,6 +346,7 @@ export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   else if (k === 'tea') { on = s.calmMode === 2; calm = s.calmMode === 1; }
   else if (k === 'altmove') { on = s.toggleMove; dis = !!s.alternanciaExigida; }
   else if (k === 'contrast') { on = temAltoContraste(s.visual); }
+  else if (k === 'velocidade') { on = (s.velocidade ?? 1) < 1; }
   else if (k === 'cvd') {
     // ⚠️ O FUNDO DE DUAS CORES É O SINAL DE LIGADO deste ícone, e agora ele lê o EIXO da correção — que
     // continua a dizer o mesmo quando o tema também está ligado, coisa que a chave única não conseguia: com
@@ -403,6 +411,11 @@ export interface AccionaveisDoJogo {
    */
   readonly seguraTeclas: () => boolean;
   /**
+   * Does this game's time run by itself? (`tick: 'clock'`, ADR-0180.) Without it the hourglass is not mounted. A function,
+   * like `seguraTeclas`, so a cartridge mounted later answers for itself (ADR-0142).
+   */
+  readonly relogio?: () => boolean;
+  /**
    * Alguém sabe andar no ciclo de tipografia? (ADR-0149 §1.)
    *
    * ⚠️ OPCIONAL, e o padrão é `false` por omissão do chamador — ao contrário do `seguraTeclas`, que é
@@ -434,7 +447,9 @@ export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly Pause
         // 📌 O QUARTO RAMO, e é a mesma pergunta feita ao ciclo de tipografia (ADR-0149): o ícone existe
         // quando alguém sabe andar nele. Sem isso seria um botão que anuncia e não muda nada.
         : ic.k === 'tipografia' ? escritores.tipografia
-          : true));
+          // the hourglass exists where time runs by itself (ADR-0180): a turn game has nothing to slow
+          : ic.k === 'velocidade' ? Boolean(escritores.relogio?.())
+            : true));
 }
 
 /**
@@ -868,6 +883,8 @@ export interface PauseIconsCtx {
    * por fora passa `() => this.declaration.seguraTeclas()` e não o resultado dela.
    */
   seguraTeclas: () => boolean;
+  /** Does the current game's time run by itself? (ADR-0180: the hourglass.) Optional; absent, no hourglass. */
+  relogio?: () => boolean;
 }
 
 export interface PauseIconsApi {
@@ -981,6 +998,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // esconder o controle em silêncio, que é metade do defeito que este campo existe para não cometer.
     seguraTeclas: ctx.seguraTeclas,
     tipografia: Boolean(ctx.ciclarTipografia),
+    // mounted when the root can answer the clock question; shown or hidden per cartridge in `reflectIconBtn` (ADR-0142)
+    relogio: () => Boolean(ctx.relogio),
   });
 
   /*
@@ -1030,6 +1049,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       // o que não faz nada. Dizer o padrão em vez de o deduzir é o que torna a marca do ADR-0029 possível
       // aqui, porque ela lê `DEFAULTS` e mais nada.
       visual: p.visual ?? PADRAO,
+      velocidade: gameSpeed,
       privateOutput: hasPrivateOutput(i),
       alternanciaExigida: recusaAgora(i) !== null,
     };
@@ -1112,6 +1132,12 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       const face = ctx.ciclarTipografia();
       if (face) ctx.srSay(t('sr.typo.font', { fam: face }));
     },
+    // THE GAME SPEED (ADR-0180): one step down, wrapping at 50%; stored, and felt on the next frame of `startLoop`.
+    velocidade: () => {
+      const v = proximaVelocidade(gameSpeed);
+      setGameSpeedValue(v);
+      ctx.srSay(t('sr.icon.velocidade', { pct: Math.round(v * 100) }));
+    },
     cvd: (i) => {
       if (!ctx.setCorrecaoDoJogador) return;
       const v = proximaCorrecao((P()[i] || {}).visual ?? PADRAO);
@@ -1148,6 +1174,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
 
   function reflectIconBtn(b: HTMLElement, i: number): void {
     const k = b.dataset.pi || '';
+    // the hourglass follows the CURRENT cartridge's clock (ADR-0180): a turn game mounted later hides it, a clock game shows it
+    if (k === 'velocidade') b.hidden = !ctx.relogio?.();
     const st = iconState(i);
     const v = computeIconVisual(k, st);
     b.classList.remove(...ICON_STATE_CLASSES);

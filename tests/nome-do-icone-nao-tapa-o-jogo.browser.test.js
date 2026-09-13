@@ -64,7 +64,7 @@ describe('the icon name under the quick bar', () => {
   });
 
   it('🔴 [Right] after the typography cycle makes the text 25% larger, the room grows with it', async () => {
-    const tipo = document.querySelector('#title-icons [data-pi="typo"], #title-icons [data-pi="comunicacao"]')
+    const tipo = document.querySelector('#title-icons [data-pi="tipografia"]')
       ?? [...document.querySelectorAll('#title-icons .pi-btn')].at(-1);
     for (let i = 0; i < 6 && document.documentElement.style.getPropertyValue('--fonte-escala') !== '1.25'; i++) {
       tipo.click();

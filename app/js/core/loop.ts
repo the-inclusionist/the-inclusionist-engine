@@ -14,6 +14,8 @@
 // jogo silenciosamente errado, rodando para sempre computando lixo. A regra aqui é a mesma que o ADR-0047 aplicou
 // ao CRT — pega UMA vez, PARA, e ANUNCIA.
 
+import { gameSpeed } from './state.js';
+
 type Ticker = { add: (fn: () => void) => void; deltaTime: number; remove?: (fn: () => void) => void };
 
 export interface OpcoesDoLaco {
@@ -40,7 +42,8 @@ export function startLoop(ticker: Ticker, frame: (dt: number) => void, maxDt = 2
   const passo = (): void => {
     if (parado) return; // ticker sem `remove` não desregistra — a trava é o que faz o laço parar mesmo assim
     try {
-      frame(Math.min(ticker.deltaTime, maxDt));
+      // the game speed (ADR-0180) applies to the clamped time, read each frame: a change is felt on the next one
+      frame(Math.min(ticker.deltaTime, maxDt) * gameSpeed);
     } catch (erro) {
       parado = true;
       ticker.remove?.(passo); // some do ticker quando dá: callback que roda 60×/s para nada custa em hardware fraco

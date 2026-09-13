@@ -130,11 +130,12 @@ async function ateAEscala(valor) {
 
 describe('the quiz with a face whose floor is 20 px (issue #172)', () => {
   let base;
-  it('📌 [Right] at the base scale the approved spacing stands: options and statement 4 px apart, bar 10 px from the top', () => {
+  it('📌 [Right] at the base scale the approved spacing stands: options and statement 4 px apart, the bar on the top edge', () => {
     base = espacos();
     expect(base.vaoOpcoes).toBe(4);
     expect(base.margemEnunciado).toBe(4);
-    expect(Math.round(base.topoDaBarra)).toBe(10);
+    // since the Dev's «eleve este painel para que compartilhe a borda com a tela» (interface log 2026-09-13) the bar has no offset
+    expect(Math.round(base.topoDaBarra)).toBe(0);
   });
 
   it('🔴 [Right] the hand enlarges its own text, and neither the document nor the text-bound spaces', async () => {
@@ -151,7 +152,7 @@ describe('the quiz with a face whose floor is 20 px (issue #172)', () => {
     const e = espacos();
     expect(e.vaoOpcoes, 'the gap between options did not yield').toBeLessThan(base.vaoOpcoes);
     expect(e.margemEnunciado).toBeLessThan(base.margemEnunciado);
-    expect(e.topoDaBarra, 'the bar\'s offset did not yield').toBeLessThan(base.topoDaBarra);
+    expect(e.topoDaBarra, 'the bar left the top edge').toBe(0);
   });
 
   it('🔴 [Right] and the last option still ends above the footer at 640×360', async () => {

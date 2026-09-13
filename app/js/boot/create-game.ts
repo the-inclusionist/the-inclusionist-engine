@@ -449,6 +449,11 @@ export interface Engine {
    */
   readonly legendarSom: (texto: string) => void;
   /**
+   * The game speed the child chose on the quick bar (ADR-0180): 1 is 100%, down to 0.5. `startLoop` already multiplies the
+   * frame time by it; a game that runs its own frames multiplies by this.
+   */
+  readonly velocidadeDoJogo: () => number;
+  /**
    * MEASURES WHAT THE WORLD'S CANVAS FLASHES for `ms`, against the WCAG 2.3.1 general flash threshold (study item B2;
    * `core/flash-threshold`). Only when called — reading pixels every frame costs a school machine (pillar 1), so play never
    * pays for it. A failure is also a line of `problems`. `lido: false` says why nothing was measured (no canvas, a canvas
@@ -1059,6 +1064,8 @@ export function createGame(o: CreateGameOptions): Engine {
     // `reflectPauseIcons` — que existe porque a tabela de acções muda (ADR-0106 §5) — refrescava a partir
     // dela. Com vários cartuchos numa raiz de composição (ADR-0142) o ícone descrevia o primeiro deles.
     seguraTeclas: () => cartucho.declaration.seguraTeclas(),
+    // the hourglass is offered where time runs by itself (ADR-0180), read per cartridge
+    relogio: () => cartucho.declaration.tick === 'clock',
     /*
      * ✅ A MESMA LISTA DO TECLADO (issue #147, consertada em 2026-09-12).
      *
@@ -2996,6 +3003,7 @@ export function createGame(o: CreateGameOptions): Engine {
     cartucho = { ...ganchos, declaration };
     montarHud(); // the numbers are the cartridge's: the new one's replace the old one's, and the room is measured again
     registrarMapeamentosDoCartucho();
+    pauseIcons.reflectPauseIcons(); // the bar follows the new cartridge: the hourglass exists only where time runs by itself
     alcanceAtual = derivarAlcance();
     // O pad é da FORMA do preset, logo muda com o cartucho; os ouvintes da janela ficam (`rewire`, e não `attach`).
     desenharPad();
@@ -3125,6 +3133,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     pausa,
     tts,
     legendarSom,
+    velocidadeDoJogo: () => state.gameSpeed,
     medirFlashes,
     overlays,
     nav,

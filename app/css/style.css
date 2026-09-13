@@ -174,8 +174,8 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 .title-legend .lg-row{display:flex;gap:1.1em;justify-content:center;flex-wrap:wrap}
 .title-legend .lg{display:inline-flex;align-items:center;gap:.35em}
 .title-legend .lg-ico{display:inline-flex;align-items:center;justify-content:center;min-width:1.35em;height:1.35em;padding:0 .2em;border-radius:.68em;font-weight:800;font-size:1em;color:#fff;background:rgba(13,13,26,.85);text-shadow:0 1px 1px rgba(0,0,0,.55)}
-#title-icons{position:absolute;top:calc(10px * var(--espaco-fixo,1));left:50%;transform:translateX(-50%);display:flex;gap:calc(var(--ui-fs,16px) * .3);justify-content:center;flex-wrap:nowrap;white-space:nowrap} /* header: 10 px from the top (yielding under a larger face), ONE row */
-#title-icons.pause-icons{margin:calc(.1rem * var(--espaco-fixo,1)) 0 calc(.35rem * var(--espaco-fixo,1))}
+#title-icons{position:absolute;top:0;left:50%;transform:translateX(-50%);display:flex;gap:calc(var(--ui-fs,16px) * .3);justify-content:center;flex-wrap:nowrap;white-space:nowrap} /* header: on the screen's top edge, giving that room to the game (interface log 2026-09-13), ONE row */
+#title-icons.pause-icons{margin:0 0 calc(.35rem * var(--espaco-fixo,1))}
 /* The NAME of the pointed icon, just below the row. Absolute, so the bar's height — the band the game must not draw
    over (ADR-0148) — does not grow when a name appears; the explanation goes to the footer, not here. */
 #title-icons .pause-icons-cap{position:absolute;top:100%;line-height:1.25;left:50%;transform:translateX(-50%);margin:0;text-align:center;font-size:1em;color:#f6f5f0;pointer-events:none;white-space:nowrap;min-height:0;padding:calc(var(--ui-fs,16px) * .2) calc(var(--ui-fs,16px) * .6)}
@@ -570,7 +570,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    The spacing goes, not the targets or the 16 px floor: the statement keeps its size on a 1.25 line and no outer margins. */
 .quiz-pergunta{margin:0 0 calc(.25rem * var(--espaco-fixo,1));line-height:1.25}
 /* The quiz's MENU button (ADR-0166 erratum), in the top-left corner the bar leaves free: the engine's target size. */
-.quiz-menu{position:absolute;top:calc(10px * var(--espaco-fixo,1));left:calc(10px * var(--espaco-fixo,1));z-index:5;min-height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);padding:0 calc(var(--ui-fs,16px) * .8)}
+.quiz-menu{position:absolute;top:0;left:calc(10px * var(--espaco-fixo,1));z-index:5;min-height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);padding:0 calc(var(--ui-fs,16px) * .8)}
 /* A PAUSA RÁPIDA (ADR-0155): PAUSADO ao centro da tela congelada — SÓ A PALAVRA, branca, com CONTORNO PRETO NAS
    LETRAS e nenhuma caixa: «Borda nas letras, não numa caixa» (Dev, errata do registo). O contorno é o que a mantém
    legível sobre um cenário claro; `paint-order` põe o traço POR BAIXO do preenchimento, para a letra não emagrecer, e
@@ -606,8 +606,8 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    icon's name; no pointer events, so a finger passes through to the game. */
 .hud-faixa{position:absolute;z-index:12;margin:0;pointer-events:none;font-size:var(--ui-fs,16px);line-height:1.25;display:flex;gap:2px}
 .hud-faixa[hidden]{display:none}
-.hud-esquerda{top:10px;left:4px;flex-direction:column;align-items:flex-start}
-.hud-direita{top:10px;right:4px;flex-direction:column;align-items:flex-end;text-align:right}
+.hud-esquerda{top:0;left:4px;flex-direction:column;align-items:flex-start}
+.hud-direita{top:0;right:4px;flex-direction:column;align-items:flex-end;text-align:right}
 /* The learning bars (ADR-0049 §5): one ten-segment bar per skill, side by side, centred at the bottom — under the footer
    column, which comes later in the region on the same layer and covers them. Okabe-Ito colours, and a second cue beside
    each, so no state is told by colour alone (WCAG 1.4.1): green carries a dot, red stripes, an empty slot only its outline;

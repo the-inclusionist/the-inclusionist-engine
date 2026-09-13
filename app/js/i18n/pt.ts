@@ -33,6 +33,7 @@ const pt: Record<string, string> = {
   'sr.eyes.calibrate': 'Jogar com os olhos: olhe pela tela e clique em alguns pontos para calibrar. Olhar esquerda/direita anda; olhar para cima pula.',
   'sr.eyes.needsInternet': 'O controle pelo olhar ainda não chegou a este aparelho: ele desce na primeira vez que o jogo abre com internet.',
   'sr.typo.font': 'Tipografia: {fam}.',
+  'sr.icon.velocidade': 'Velocidade do jogo: {pct}%.',
   'sr.visual.contrast': 'Alto contraste: {v}.',
   'sr.visual.lq': 'Realce de contraste: {v}.',
 
@@ -240,6 +241,8 @@ const pt: Record<string, string> = {
   // O 11.º ícone (ADR-0149): um ciclo de tipografia — muda a CAIXA e a FACE de uma vez, sem sair da tela.
   // ADR-0151: o ciclo de «leitura e tipografia» virou o ciclo de COMUNICAÇÃO (vai ganhar ARASAAC e PCS).
   'icon.tipografia': 'Comunicação',
+  'icon.velocidade': 'Velocidade do jogo',
+  'icon.velocidade.valor': '{pct}%',
   'icon.blind.dica': 'Joga-se pelo som: a navegação sonora diz o que a tela mostra.',
   'icon.tts.dica': 'O jogo lê em voz alta o que está escrito na tela.',
   'icon.libras.dica': 'Um intérprete de Libras mostra em sinais o que o jogo diz.',
@@ -251,6 +254,7 @@ const pt: Record<string, string> = {
   'icon.eyes.dica': 'Controlar o jogo com o olhar, pela webcam.',
   'icon.voice.dica': 'Controlar o jogo falando.',
   'icon.tipografia.dica': 'Troca a forma das letras: caixa alta, letras mais legíveis ou a letra cursiva do seu país.',
+  'icon.velocidade.dica': 'Deixa o jogo inteiro mais devagar: o tempo, o mundo e o momento de agir.',
   'icon.state': '{nome}: {v}',
   'icon.soon': '{nome}, em construção',
   'ui.soon': 'em breve',

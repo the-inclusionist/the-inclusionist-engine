@@ -80,6 +80,7 @@ function makeCtx(over = {}) {
     // dois escritores visuais acima. Este ficheiro mede as INVARIANTES da barra montada e não o filtro, que
     // vive no project node; sem esta linha ele mediria uma barra com um ícone a menos.
     ciclarTipografia: () => 'Atkinson Hyperlegible',
+    relogio: () => true, // the hourglass (ADR-0180) mounts only where time runs by itself
     ...over,
   };
   return { ctx, state, said, alerted };
