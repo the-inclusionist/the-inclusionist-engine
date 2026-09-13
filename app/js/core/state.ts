@@ -3,7 +3,33 @@
 // UMA A UMA, lidas como binding vivo (import) e escritas por setter.
 // Bus mínimo (Map<evento, Set<fn>>) para os poucos leitores "de longe" que virão com os outros subsistemas.
 
-import * as store from '../platform/storage.js'; // persistência (as mega-vars com chave leem/gravam aqui)
+// ⚠️ NO STORAGE IMPORT (ADR-0178, issue #174): the child's settings come through the port `carregarEstado` receives — the
+// shape `platform/storage` already has — so `core` does not reach up to `platform` (ADR-0173).
+
+/** The port the settings are read and written through. `platform/storage` has this shape; a test passes a double. */
+export interface PortaDoEstado {
+  get(key: string, fallback: string | null): string | null;
+  set(key: string, value: string | number | boolean): unknown;
+  getBool(key: string, fallback?: boolean): boolean;
+  setBool(key: string, on: boolean): unknown;
+  getNum(key: string, fallback?: number): number;
+  readonly KEYS: {
+    readonly letterCase: string; readonly captions: string; readonly menuIndex: string; readonly cbsafe: string;
+    readonly ownercolors: string; readonly outfg: string; readonly outbg: string;
+  };
+}
+
+/** An empty storage: every read gives its fallback. What the bindings hold until the root loads the child's settings. */
+const VAZIO: PortaDoEstado = {
+  get: (_k, fallback) => fallback,
+  set: () => false,
+  getBool: (_k, fallback = false) => fallback,
+  setBool: () => undefined,
+  getNum: (_k, fallback = 0) => fallback,
+  KEYS: { letterCase: '', captions: '', menuIndex: '', cbsafe: '', ownercolors: '', outfg: '', outbg: '' },
+};
+
+let porta: PortaDoEstado | null = null;
 
 /**
  * ========================= O BARRAMENTO, TIPADO (Fase C do plano) =========================
@@ -133,7 +159,7 @@ export function emit<K extends keyof EventoDoJogo>(evt: K, val: EventoDoJogo[K])
 //     boot; persistir travaria o rastreio de prefers-contrast). Mudanças do usuário usam setVizModeValue. ---
 export let vizMode = 'normal';
 export function initVizMode(mode: string): void { vizMode = mode; }
-export function setVizModeValue(mode: string): void { vizMode = mode; store.set('incl_viz', mode); emit('vizMode', mode); }
+export function setVizModeValue(mode: string): void { const p = armazem('setVizModeValue'); p.set('incl_viz', mode); vizMode = mode; emit('vizMode', mode); }
 
 /* (`coins` SAIU daqui em 2026-08-25, item 19 — está em `game/state`. Ele era `unknown[]` porque `core/` não
  *  podia conhecer o tipo, e esse `unknown` era o SINTOMA: um estado que não consegue declarar o próprio tipo
@@ -236,10 +262,10 @@ export const DEFAULTS = Object.freeze({
 //     antigo `setModoCego` — refazer os extras do nível, refletir o painel, anunciar ao leitor de tela — NÃO
 //     entram aqui: são reação, e quem reage assina o evento. Um setter que sabe redesenhar a tela é um setter
 //     que nenhum teste consegue chamar. ---
-export let modoCego: boolean = store.getBool('incl_modocego', DEFAULTS.modoCego);
+export let modoCego: boolean = VAZIO.getBool('incl_modocego', DEFAULTS.modoCego);
 export function setModoCegoValue(on: boolean): void {
   if (modoCego === on) return; // a guarda VEM DO ORIGINAL: sem ela o anúncio repetiria a cada clique redundante
-  modoCego = on; store.setBool('incl_modocego', on); emit('modoCego', on);
+  const p = armazem('setModoCegoValue'); p.setBool('incl_modocego', on); modoCego = on; emit('modoCego', on);
 }
 
 
@@ -313,17 +339,17 @@ export interface GateTile { readonly tx: number; readonly ty: number }
 //     escolhíveis, uma segunda variável para a mesma pergunta seria o MODE × activity de novo (#54). Quando um
 //     conjunto de pictogramas puder ser escolhido, `caaMode` nasce e `letterCase` passa a derivar dele. ---
 export type LetterCase = 'mixed' | 'upper';
-export let letterCase: LetterCase = store.get(store.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
+export let letterCase: LetterCase = VAZIO.get(VAZIO.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
 export function setLetterCaseValue(c: LetterCase): void {
   if (letterCase === c) return;
-  letterCase = c; store.set(store.KEYS.letterCase, c); emit('letterCase', c);
+  const p = armazem('setLetterCaseValue'); p.set(p.KEYS.letterCase, c); letterCase = c; emit('letterCase', c);
 }
 
-export let captionsOn = store.getBool(store.KEYS.captions, DEFAULTS.captionsOn);
+export let captionsOn = VAZIO.getBool(VAZIO.KEYS.captions, DEFAULTS.captionsOn);
 export function setCaptionsOnValue(on: boolean): void {
   const v = !!on;
   if (captionsOn === v) return;
-  captionsOn = v; store.setBool(store.KEYS.captions, v); emit('captionsOn', v);
+  const p = armazem('setCaptionsOnValue'); p.setBool(p.KEYS.captions, v); captionsOn = v; emit('captionsOn', v);
 }
 
 // --- menuIndexOn: o "6 de 10" no fim do anuncio de cada item de menu (ADR-0044, item 3).
@@ -333,29 +359,29 @@ export function setCaptionsOnValue(on: boolean): void {
 //     lendo o menu, que e justamente a coisa que essa pessoa consegue fazer.
 //
 //     PERSISTE em `incl_menuindex` (escopo da CRIANCA, ADR-0027): a preferencia segue com ela de jogo em jogo.
-export let menuIndexOn = store.getBool(store.KEYS.menuIndex, DEFAULTS.menuIndexOn);
+export let menuIndexOn = VAZIO.getBool(VAZIO.KEYS.menuIndex, DEFAULTS.menuIndexOn);
 export function setMenuIndexOnValue(on: boolean): void {
   const v = !!on;
   if (menuIndexOn === v) return;
-  menuIndexOn = v; store.setBool(store.KEYS.menuIndex, v); emit('menuIndexOn', v);
+  const p = armazem('setMenuIndexOnValue'); p.setBool(p.KEYS.menuIndex, v); menuIndexOn = v; emit('menuIndexOn', v);
 }
 
 // --- cbSafe: PALETA SEGURA PARA DALTONISMO (Okabe-Ito). Não é um filtro sobre a imagem — é a escolha das
 //     cores de origem, aplicada IN-PLACE em PCOLOR para que todo mundo que já referencia a array veja a troca. ---
-export let cbSafe: boolean = store.getBool(store.KEYS.cbsafe, DEFAULTS.cbSafe);
+export let cbSafe: boolean = VAZIO.getBool(VAZIO.KEYS.cbsafe, DEFAULTS.cbSafe);
 export function setCbSafeValue(on: boolean): void {
   const v = !!on;
   if (cbSafe === v) return;
-  cbSafe = v; store.setBool(store.KEYS.cbsafe, v); emit('cbSafe', v);
+  const p = armazem('setCbSafeValue'); p.setBool(p.KEYS.cbsafe, v); cbSafe = v; emit('cbSafe', v);
 }
 
 // --- ownerColors: no multijogador, cada item aparece na cor de QUEM pode pegá-lo. Desligado, todos veem a cor
 //     original — o que é preferível para quem não distingue as cores dos donos. ---
-export let ownerColors: boolean = store.getBool(store.KEYS.ownercolors, DEFAULTS.ownerColors);
+export let ownerColors: boolean = VAZIO.getBool(VAZIO.KEYS.ownercolors, DEFAULTS.ownerColors);
 export function setOwnerColorsValue(on: boolean): void {
   const v = !!on;
   if (ownerColors === v) return;
-  ownerColors = v; store.setBool(store.KEYS.ownercolors, v); emit('ownerColors', v);
+  const p = armazem('setOwnerColorsValue'); p.setBool(p.KEYS.ownercolors, v); ownerColors = v; emit('ownerColors', v);
 }
 
 /** Espessura de contorno: 0 nenhum · 1 fino · 2 grosso. Fora da faixa satura, não rejeita. */
@@ -370,42 +396,73 @@ const nivelContorno = (v: number): OutlineLevel => Math.max(0, Math.min(2, v | 0
 //     A saturação em 0..2 vem do original e é dupla: no boot (contra um localStorage corrompido) e na escrita
 //     (contra um chamador). No main.js isso obrigava a declarar com um valor provisório e reatribuir na linha
 //     seguinte, porque a leitura saturada não cabia no mesmo `let`; aqui a função a resolve de uma vez. ---
-export let hcOutlineFg: OutlineLevel = nivelContorno(store.getNum(store.KEYS.outfg, DEFAULTS.hcOutlineFg));
+export let hcOutlineFg: OutlineLevel = nivelContorno(VAZIO.getNum(VAZIO.KEYS.outfg, DEFAULTS.hcOutlineFg));
 export function setOutlineFgValue(v: number): void {
   const n = nivelContorno(v);
   if (hcOutlineFg === n) return;
-  hcOutlineFg = n; store.set(store.KEYS.outfg, n); emit('hcOutlineFg', n);
+  const p = armazem('setOutlineFgValue'); p.set(p.KEYS.outfg, n); hcOutlineFg = n; emit('hcOutlineFg', n);
 }
-export let hcOutlineBg: OutlineLevel = nivelContorno(store.getNum(store.KEYS.outbg, DEFAULTS.hcOutlineBg));
+export let hcOutlineBg: OutlineLevel = nivelContorno(VAZIO.getNum(VAZIO.KEYS.outbg, DEFAULTS.hcOutlineBg));
 export function setOutlineBgValue(v: number): void {
   const n = nivelContorno(v);
   if (hcOutlineBg === n) return;
-  hcOutlineBg = n; store.set(store.KEYS.outbg, n); emit('hcOutlineBg', n);
+  const p = armazem('setOutlineBgValue'); p.set(p.KEYS.outbg, n); hcOutlineBg = n; emit('hcOutlineBg', n);
 }
 
 // --- caneBlockDiv: espaçamento da batida da BENGALA, em blocos pisados. 1 = uma batida por bloco;
 //     2 = uma batida a cada meio bloco. Não é preferência de som: é a resolução com que uma criança cega
 //     mede a distância que andou, e por isso a colisão a lê a cada passo. ---
-export let caneBlockDiv: number = store.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
+export let caneBlockDiv: number = VAZIO.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
 export function setCaneBlockDivValue(div: number): void {
   const d = (+div) || 1; // o `|| 1` vem do original: um valor corrompido no localStorage viraria NaN e a
   if (caneBlockDiv === d) return; //  bengala pararia de bater, que é o modo de falha mais silencioso possível
-  caneBlockDiv = d; store.set('incl_cane_div', d); emit('caneBlockDiv', d);
+  const p = armazem('setCaneBlockDivValue'); p.set('incl_cane_div', d); caneBlockDiv = d; emit('caneBlockDiv', d);
 }
 
 // --- wheelchair: MODO CADEIRANTE. Muda a geometria do nível inteiro — degraus e escada viram rampas e
 //     elevadores, moedas descem para o chão, lava vira chão, e só voo e super-corrida sobrevivem como poderes.
 //     Por isso a colisão a lê: `isSolidType` responde diferente com ela ligada. ---
-export let wheelchair: boolean = store.getBool('incl_wheelchair', DEFAULTS.wheelchair);
+export let wheelchair: boolean = VAZIO.getBool('incl_wheelchair', DEFAULTS.wheelchair);
 export function setWheelchairValue(on: boolean): void {
   if (wheelchair === on) return;
-  wheelchair = on; store.setBool('incl_wheelchair', on); emit('wheelchair', on);
+  const p = armazem('setWheelchairValue'); p.setBool('incl_wheelchair', on); wheelchair = on; emit('wheelchair', on);
 }
 
 // --- oneButton: UM BOTÃO POR VEZ. Ignora combinações simultâneas, para quem não consegue pressionar duas
 //     teclas ao mesmo tempo. ---
-export let oneButton: boolean = store.getBool('incl_onebtn', DEFAULTS.oneButton);
+export let oneButton: boolean = VAZIO.getBool('incl_onebtn', DEFAULTS.oneButton);
 export function setOneButtonValue(on: boolean): void {
   if (oneButton === on) return;
-  oneButton = on; store.setBool('incl_onebtn', on); emit('oneButton', on);
+  const p = armazem('setOneButtonValue'); p.setBool('incl_onebtn', on); oneButton = on; emit('oneButton', on);
+}
+
+/* ===================== THE STORED SETTINGS, LOADED BY THE ROOT (ADR-0178, issue #174) ===================== */
+
+
+/**
+ * The port for a write — or an error. ⚠️ A write before the load would put a default over what the child saved, and nobody
+ * would see it; the error names the setter, so the root that calls it too early is found the first time it runs.
+ */
+function armazem(setter: string): PortaDoEstado {
+  if (!porta) throw new Error(`core/state: ${setter} wrote a setting before carregarEstado — it would overwrite the child's stored choice; the composition root loads the settings first (ADR-0178)`);
+  return porta;
+}
+
+/**
+ * Loads the child's stored settings into the bindings, and keeps the port for the setters. The composition root calls it
+ * first (`createGame` does); calling it again reads again.
+ */
+export function carregarEstado(p: PortaDoEstado): void {
+  porta = p;
+  modoCego = p.getBool('incl_modocego', DEFAULTS.modoCego);
+  letterCase = p.get(p.KEYS.letterCase, DEFAULTS.letterCase) === 'upper' ? 'upper' : 'mixed';
+  captionsOn = p.getBool(p.KEYS.captions, DEFAULTS.captionsOn);
+  menuIndexOn = p.getBool(p.KEYS.menuIndex, DEFAULTS.menuIndexOn);
+  cbSafe = p.getBool(p.KEYS.cbsafe, DEFAULTS.cbSafe);
+  ownerColors = p.getBool(p.KEYS.ownercolors, DEFAULTS.ownerColors);
+  hcOutlineFg = nivelContorno(p.getNum(p.KEYS.outfg, DEFAULTS.hcOutlineFg));
+  hcOutlineBg = nivelContorno(p.getNum(p.KEYS.outbg, DEFAULTS.hcOutlineBg));
+  caneBlockDiv = p.getNum('incl_cane_div', DEFAULTS.caneBlockDiv) || DEFAULTS.caneBlockDiv;
+  wheelchair = p.getBool('incl_wheelchair', DEFAULTS.wheelchair);
+  oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
 }

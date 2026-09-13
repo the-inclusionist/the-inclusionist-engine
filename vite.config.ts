@@ -205,6 +205,7 @@ export default defineConfig({
           // conferida pelo `tsc`, mas o ADR exige que eles rodem no comando que a pipeline já roda, e não
           // num ritual separado — um teste que ninguém executa é decoração.
           include: ['tests/**/*.node.test.{js,ts}'],
+          setupFiles: ['./vitest.setup.node.js'],
         },
       },
       {

@@ -45,7 +45,10 @@ function dublarDocumento() {
 async function carregarI18n() {
   vi.resetModules();
   dublarDocumento();
-  return import('../app/js/core/i18n.js');
+  const m = await import('../app/js/core/i18n.js');
+  // a fresh module has no port: the composition root would have loaded one (ADR-0178), and so does this double
+  m.carregarIdioma({ get: () => null, set: () => undefined, KEYS: { lang: 'incl_lang' } });
+  return m;
 }
 
 describe('core/i18n aceita o dicionário de um CONSUMIDOR (achado 2, de fora do repositório)', () => {

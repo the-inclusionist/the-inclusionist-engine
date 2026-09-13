@@ -5,14 +5,21 @@
 // Vite gera um chunk por locale e o SW cacheia). import.meta.glob (em vez de import(`…${code}.ts`) cru) é o
 // jeito nativo do Vite: casa arquivos .ts no build de forma explícita, sem depender do glob "adivinhado".
 import pt from '../i18n/pt.js';
-import * as store from '../platform/storage.js';
 
 type LocaleDict = Record<string, string>;
 
 const AVAILABLE = ['pt', 'en', 'es'];
 const base: LocaleDict = pt;                // dicionário-base (fallback), tipado
 const DICTS: Record<string, LocaleDict> = { pt: base }; // dicionários já carregados (pt embutido)
-const STORE_KEY = store.KEYS.lang;
+/** The port the chosen language is kept through (ADR-0178): `platform/storage` has this shape. */
+export interface PortaDoIdioma {
+  get(key: string, fallback: string | null): string | null;
+  set(key: string, value: string): unknown;
+  readonly KEYS: { readonly lang: string };
+}
+let portaDoIdioma: PortaDoIdioma | null = null;
+/** Gives this module the port for the chosen language; the composition root calls it before `initI18n`. */
+export function carregarIdioma(p: PortaDoIdioma): void { portaDoIdioma = p; }
 
 /* ===================== O DICIONÁRIO DE QUEM CONSOME A ENGINE =====================
  *
@@ -199,17 +206,20 @@ async function ensure(code: string): Promise<LocaleDict> {
 
 // Troca o idioma (carrega sob demanda), persiste, atualiza <html lang>, reaplica o DOM e avisa a UI.
 export async function setLocale(code: string): Promise<void> {
+  // first, before anything changes: a language switched and then refused would leave the page half moved (ADR-0178)
+  const porta = portaDoIdioma;
+  if (!porta) throw new Error('core/i18n: setLocale kept a language before carregarIdioma — the composition root loads the stored settings first (ADR-0178)');
   if (!AVAILABLE.includes(code)) code = 'pt';
   dict = await ensure(code);
   locale = code;
-  store.set(STORE_KEY, code);
+  porta.set(porta.KEYS.lang, code);
   document.documentElement.lang = bcp47(code);
   applyDom(document);
   window.dispatchEvent(new CustomEvent('i18n:change', { detail: { locale } }));
 }
 
 function pickDefault(): string {
-  const saved = store.get(STORE_KEY, null);
+  const saved = portaDoIdioma ? portaDoIdioma.get(portaDoIdioma.KEYS.lang, null) : null;
   if (saved && AVAILABLE.includes(saved)) return saved;
   const nav = ((navigator.language || 'pt').slice(0, 2)).toLowerCase();
   return AVAILABLE.includes(nav) ? nav : 'pt';

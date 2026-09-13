@@ -46,7 +46,7 @@
 // exige seis coisas de plataforma. Não substitui o boot do `main.js`, que tem catorze anos de ordem própria.
 // O que ele cobre é o que o quiz provou ser IDÊNTICO em qualquer jogo: idioma, leitor de tela, mixer, voz,
 // pilha de diálogos, filtros de daltonismo, teclado remapeável e navegação de menu.
-import { initI18n, lacunasDosDicionarios } from '../core/i18n.js';
+import { initI18n, lacunasDosDicionarios, carregarIdioma } from '../core/i18n.js';
 import { entradaDe, keys, marcarTecla, soltarTecla, arestaDoJogador } from '../input/state.js';
 import { initTouch, montarControleDeToque, lacunasDoToque } from '../input/touch.js';
 import { initTouchBindings } from '../input/touch-bindings.js';
@@ -631,6 +631,9 @@ export function createGame(o: CreateGameOptions): Engine {
   recusarSeHudMalformado('createGame', cartucho.hud);
 
   const { doc, win } = o.host;
+  // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
+  state.carregarEstado(store);
+  carregarIdioma(store);
   /*
    * ⚠️ LEITOR E NÃO INSTANTÂNEO — terceira vez que este ficheiro comete e conserta o mesmo padrão, depois do
    * `seguraTeclas` e do `players`. `declines` é da metade do JOGO (ADR-0139, errata de 2026-09-11: é o

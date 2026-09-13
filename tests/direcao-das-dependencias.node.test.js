@@ -22,8 +22,6 @@ const FORA_DA_PILHA = new Set(['educational', 'consumer-quiz']);
 
 /** The imports against the direction measured on 2026-09-13, each with its way out (issue #167). Only shrinks. */
 const DIVIDA = {
-  'core/i18n.ts -> platform/storage.ts': 'the chosen language persists: inject the store, or move its pure half down',
-  'core/state.ts -> platform/storage.ts': 'state persists: inject the store, or move its pure half down',
 };
 
 function modulos() {

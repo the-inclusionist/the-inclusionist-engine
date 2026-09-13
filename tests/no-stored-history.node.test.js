@@ -25,8 +25,12 @@ import { fileURLToPath } from 'node:url';
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 
-/** Toda escrita em armazenamento, em qualquer das formas que este repositório usa. */
-const ESCREVE = /(?:^|[^\w.])(?:store|ctx\.store)\.(?:set|setBool|setJSON)\s*\(|localStorage\.setItem|sessionStorage\.setItem|indexedDB/;
+/**
+ * Toda escrita em armazenamento, em qualquer das formas que este repositório usa.
+ * ⚠️ Since ADR-0178 `core/state` and `core/i18n` write through the port the root loads (`armazem('setter')` before the write,
+ * `porta.set(` in `setLocale`): without those two forms this sieve went blind to them, and their inventory lines read as orphans.
+ */
+const ESCREVE = /(?:^|[^\w.])(?:store|ctx\.store)\.(?:set|setBool|setJSON)\s*\(|armazem\('\w+'\)|porta\.set\s*\(|localStorage\.setItem|sessionStorage\.setItem|indexedDB/;
 
 function ficheirosTs(dir = RAIZ) {
   const saida = [];

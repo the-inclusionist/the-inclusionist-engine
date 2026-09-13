@@ -242,6 +242,13 @@
       "piorSegundo"
     ]
   },
+  "core/i18n.ts": {
+    "interface PortaDoIdioma": [
+      "KEYS",
+      "get",
+      "set"
+    ]
+  },
   "core/layers.ts": {
     "type LayerName": "keyof typeof Z",
     "type PostFx": "typeof POST_FX_ORDER[number]"
@@ -379,6 +386,14 @@
     ]
   },
   "core/state.ts": {
+    "interface PortaDoEstado": [
+      "KEYS",
+      "get",
+      "getBool",
+      "getNum",
+      "set",
+      "setBool"
+    ],
     "interface EventoDoJogo": [
       "caneBlockDiv",
       "captionsOn",

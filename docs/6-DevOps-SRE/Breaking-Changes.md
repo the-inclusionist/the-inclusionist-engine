@@ -677,6 +677,25 @@ import { PM_BTNS, PM_OPTIONS_BTNS } from '@the-inclusionist/engine/ui/pause-butt
 **What to do:** nothing, unless a game draws its own text in a face of the menu and assumed 16 px after the child chose one
 of the eight above — the document is 25% larger then.
 
+## AA · The stored settings are loaded by the root, not at import (ADR-0178, issue #174)
+
+**Behaviour.** `core/state` and `core/i18n` no longer import `platform/storage`. Their bindings start from what an empty
+storage gives (the defaults) until the composition root calls `carregarEstado(store)` and `carregarIdioma(store)`;
+`createGame` calls both first. A setter that would write before `carregarEstado` **throws**, naming itself, and changes
+nothing; `setLocale` before `carregarIdioma` is refused the same way. A setter that changes nothing writes nothing and does
+not throw. ⚠️ A READ before the load is not an error: it gives the default, so a root that reads a setting before loading sees
+the default, not the child's choice.
+
+**What to do** — measured in the sibling repositories on 2026-09-13:
+- `game-platformer` does not go through `createGame`: `app/js/main.ts` calls `i18n.initI18n()` (line 312) and thirteen setters
+  from its own boot. Call `carregarEstado(store)` and `carregarIdioma(store)` before line 312 —
+  `import { carregarEstado } from '@the-inclusionist/engine/core/state.js'`,
+  `import { carregarIdioma } from '@the-inclusionist/engine/core/i18n.js'`,
+  `import * as store from '@the-inclusionist/engine/platform/storage.js'`.
+- `game-pinball` `app/js/standalone.ts:34` calls `initI18n(document)` before `createGame` (line 134): it picks the browser's
+  language until `createGame` loads and initialises again. Load first, or drop the early call.
+- `game-soccer`, `game-chess`, `game-whackwhack` write settings only after `createGame`: nothing to change.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

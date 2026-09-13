@@ -136,9 +136,11 @@
     "analisarFlashes"
   ],
   "core/i18n.ts": [
+    "PortaDoIdioma",
     "applyDom",
     "availableLocales",
     "bcp47",
+    "carregarIdioma",
     "getLocale",
     "idiomaPronto",
     "initI18n",
@@ -216,8 +218,10 @@
     "GateTile",
     "LetterCase",
     "OutlineLevel",
+    "PortaDoEstado",
     "caneBlockDiv",
     "captionsOn",
+    "carregarEstado",
     "cbSafe",
     "defaultReducedMotion",
     "emit",
