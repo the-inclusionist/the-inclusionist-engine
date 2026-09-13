@@ -112,6 +112,13 @@ describe('the HUD the engine mounts (issue #162)', () => {
     expect(Math.abs((rodada.left + rodada.right) / 2 - (regiao.left + regiao.right) / 2), 'not centred').toBeLessThanOrEqual(2);
   });
 
+  it('🔴 [Right] the round numbers sit side by side while the region has room for them', async () => {
+    motor = abrir({ hud: [...HUD(), { band: 'round', name: nome('Superpoder'), value: () => 1 }] });
+    await esperar(150);
+    const [a, b] = [...document.querySelectorAll('.hud-rodada .hud-numero')].map((p) => p.getBoundingClientRect());
+    expect(Math.abs(a.top - b.top), 'two short round numbers broke onto two lines').toBeLessThanOrEqual(1);
+  });
+
   it('🔴 [Right] the room the game leaves free at the top holds the HUD', async () => {
     motor = abrir({ hud: HUD() });
     await esperar(150);
@@ -189,6 +196,7 @@ describe('the HUD the engine mounts (issue #162)', () => {
     expect(Math.abs((faixa.left + faixa.right) / 2 - (regiao.left + regiao.right) / 2), 'not centred').toBeLessThanOrEqual(2);
     expect(Math.abs(barras[0].top - barras[1].top), 'not side by side').toBeLessThanOrEqual(1);
     expect(cruza(barras[0], barras[1])).toBe(false);
+    expect(getComputedStyle(document.querySelector('.hud-aprendizagem')).visibility, 'no explanation shows, and the bars are hidden').toBe('visible');
   });
 
   it('🔴 [Right] a bar shows the last ten segments, oldest first, and each state has a cue besides colour', async () => {
@@ -238,6 +246,8 @@ describe('the HUD the engine mounts (issue #162)', () => {
     await esperar();
     expect(document.querySelector('.barra-explicacao')?.hidden, 'no explanation showing — the case measures nothing').toBe(false);
     expect(coberta(), 'the explanation does not cover the learning bars').toBe(true);
+    // and not only on top: the band is translucent, and seen in a demo page the segments showed through its words
+    expect(getComputedStyle(document.querySelector('.hud-aprendizagem')).visibility, 'the bars show through the explanation').toBe('hidden');
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, hud: BARRAS() });
     await esperar(80);
     expect(coberta(), 'a cartridge mounted after the footer drew its bars over the explanation').toBe(true);
@@ -279,3 +289,5 @@ describe('the HUD the engine mounts (issue #162)', () => {
 //   L10 the bar's colour not applied                          🔴 purple covers
 //   L11 the level not said                                    🔴 named
 //   L12 the bars on a layer above the footer                  🔴 covered
+//   L13 the bars drawn under the translucent explanation      🔴 covered (seen in a demo page, not by the first cases)
+//   L14 the round band without max-content                     🔴 side by side (seen in the same demo page)
