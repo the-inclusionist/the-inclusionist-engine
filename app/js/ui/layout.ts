@@ -135,7 +135,9 @@ export function aplicarEscala(regiao: HTMLElement, e: Escala): void {
   regiao.style.width = e.largura + 'px'; regiao.style.height = e.altura + 'px';
   regiao.style.setProperty('--hud-fs', Math.max(9, Math.round(180 * e.k * 0.052)) + 'px');
   regiao.style.setProperty('--ui-fs', (8 * e.k) + 'px');   // base LÓGICA 8px × k (16px em k=2)
-  regiao.style.setProperty('--tap', (22 * e.k) + 'px');    // toque 22px × k (44px em k=2, piso WCAG)
+  // One ruler (plan phase 5b): `--tap` is the name three sibling games read, `--alvo-min` the engine's (ADR-0163); both come
+  // from `alvoMinimo`, so a display scale that gives k under 2 (Windows 110%) no longer drops `--tap` under 44 px.
+  regiao.style.setProperty('--tap', alvoMinimo(e.k) + 'px');
   regiao.style.setProperty('--alvo-min', alvoMinimo(e.k) + 'px'); // 44 px at 640×360, growing with k (ADR-0163)
 }
 

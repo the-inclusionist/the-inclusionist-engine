@@ -280,7 +280,7 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
    são a exceção, como o cartão de pausa já era. */
 /* A ALTURA DA BARRA, num token: é ela que empurra o HUD para baixo. Sem isto os dois ficavam ancorados no
    topo e se sobrepunham — o HUD lido por cima dos ícones, que foi o que o Dev viu e chamou de péssimo. */
-.player-screen{--a11y-h:calc(var(--tap) + .5rem)}
+.player-screen{--a11y-h:calc(var(--alvo-min,44px) + .5rem)}
 .screen-a11y{position:absolute;left:0;right:0;top:0;height:var(--a11y-h);z-index:5;pointer-events:auto;font-family:var(--font);font-size:var(--ui-fs,16px)}
 .screen-a11y .pause-icons{flex-wrap:nowrap;white-space:nowrap;gap:.25rem;margin:0;height:100%}
 /* SÓ OS BOTÕES OCUPAM ESPAÇO. A explicação é ABSOLUTA e fica fora do fluxo — ela aparece por cima do jogo ao
@@ -291,7 +291,7 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 /* O HUD desce para DEBAIXO da barra. É a mesma conta, e é por isso que ela mora num token: as duas medidas
    não podem divergir sem que uma tape a outra. */
 .screen-exp .vphud{top:var(--a11y-h)}
-.pi-btn{width:var(--tap);height:var(--tap);min-width:var(--tap);min-height:var(--tap);border-radius:10px;border:2px solid var(--ink-soft);background:#1a2740;font-size:1.25em;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pi-btn{width:var(--alvo-min,44px);height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);min-height:var(--alvo-min,44px);border-radius:10px;border:2px solid var(--ink-soft);background:#1a2740;font-size:1.25em;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 /* Wizard de gamepad: demonstração com ANIMAÇÃO REAL (frames do jogo trocados via JS) + deslocamento CSS */
 #padwiz-demo{height:86px;display:flex;align-items:flex-end;justify-content:center;position:relative;margin:.15rem 0 .4rem;overflow:hidden}
 #padwiz-demo-img{height:64px;image-rendering:pixelated}
@@ -482,7 +482,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 
 /* seletor de modo */
 .modes{max-width:var(--maxw);margin:0 auto .5rem;padding:0 1rem;display:flex;gap:.5rem;flex-wrap:wrap}
-.mode-btn{min-height:var(--tap);padding:.4em .9em;font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:2px solid var(--ink-soft);border-radius:999px;cursor:pointer}
+.mode-btn{min-height:var(--alvo-min,44px);padding:.4em .9em;font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:2px solid var(--ink-soft);border-radius:999px;cursor:pointer}
 .mode-btn.is-on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 /* PASSOS ⯇ ⯈ (ADR-0151): escolher entre posições com esquerda e direita. As setas são alvo de DEDO e seguem a
    régua de alvo (`--alvo-min`, ADR-0095); o foco é do controle inteiro, e a ponta que não anda fica apagada. */
@@ -519,7 +519,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .quiz-shape{color:var(--accent);font-weight:800;text-transform:capitalize}
 .quiz-prob{font-size:1.6em;font-weight:800;margin:.4rem 0 .8rem}
 .quiz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
-.quiz-choice{min-height:var(--tap);min-width:var(--tap);font:inherit;font-size:1.2em;font-weight:700;color:var(--ink);background:#131a30;border:2px solid var(--ink-soft);border-radius:8px;cursor:pointer}
+.quiz-choice{min-height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);font:inherit;font-size:1.2em;font-weight:700;color:var(--ink);background:#131a30;border:2px solid var(--ink-soft);border-radius:8px;cursor:pointer}
 .quiz-choice.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .quiz-choice.reveal{outline:3px solid var(--good);outline-offset:2px}
 .quiz-hint{font-size:1em;margin-top:.6rem;color:var(--ink-soft)}
@@ -551,11 +551,11 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 @media (prefers-reduced-motion: reduce){ .caption{transition:none} }
 
 .help{max-width:var(--maxw);margin:1rem auto 0;color:var(--ink-soft)}
-.help summary{cursor:pointer;font-weight:700;color:var(--ink);min-height:var(--tap);display:flex;align-items:center}
+.help summary{cursor:pointer;font-weight:700;color:var(--ink);min-height:var(--alvo-min,44px);display:flex;align-items:center}
 .help ul{padding-left:1.1rem}
 .help li{margin:.3rem 0}
 
-.btn{min-height:var(--tap);min-width:var(--tap);padding:.5em 1em;font:inherit;font-weight:600;color:var(--ink);background:var(--panel);border:2px solid var(--ink-soft);border-radius:10px;cursor:pointer}
+.btn{min-height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);padding:.5em 1em;font:inherit;font-weight:600;color:var(--ink);background:var(--panel);border:2px solid var(--ink-soft);border-radius:10px;cursor:pointer}
 .btn--primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 
 .overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:rgba(0,0,0,.7);padding:1rem}
@@ -726,7 +726,7 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
 /* Caixas de seleção com a IDENTIDADE do jogo: fonte escolhida, cores e tamanho (não o estilo do SO) */
 select.vol, .overlay__card select, .ctrl-col select{
   font-family:var(--font);font-size:1em;font-weight:600;color:var(--ink);
-  width:auto;max-width:100%;height:auto;min-height:var(--tap);
+  width:auto;max-width:100%;height:auto;min-height:var(--alvo-min,44px);
   background:#0e1326;border:2px solid var(--ink-soft);border-radius:8px;
   padding:.35em 2em .35em .7em;cursor:pointer;
   -webkit-appearance:none;-moz-appearance:none;appearance:none;
@@ -756,7 +756,7 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 .pad-tag[data-who="crianca"]{background:#2a4a2e;color:#bfe9c2}
 .pad-tag[data-who="adulto"]{background:#2a3a5e;color:#c3d4f0}
 .pad-warn{font-size:1em;color:#ffdf9e;background:#3a2e12;border:1px solid #6a5220;border-radius:8px;padding:.45rem .6rem}
-.ctrl-col input[type=range]{width:100%;min-height:var(--tap);accent-color:var(--accent)}
+.ctrl-col input[type=range]{width:100%;min-height:var(--alvo-min,44px);accent-color:var(--accent)}
 
 /* E13: controles de toque (mobile) — overlay nas bordas inferiores, não cobre o centro */
 .touch{position:absolute;inset:0;z-index:14;display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:6px 8px;pointer-events:none}
@@ -772,7 +772,7 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 .touch-btn[data-acao="action4"]{grid-area:a4}
 .touch-btn[data-acao="action2"]{grid-area:a2}
 .touch-btn[data-acao="action3"]{grid-area:a3}
-.touch-btn{width:56px;height:56px;min-width:var(--tap);min-height:var(--tap);border-radius:12px;border:2px solid rgba(255,255,255,.75);background:rgba(13,17,32,.92);color:#fff;font-size:1.4em;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
+.touch-btn{width:56px;height:56px;min-width:var(--alvo-min,44px);min-height:var(--alvo-min,44px);border-radius:12px;border:2px solid rgba(255,255,255,.75);background:rgba(13,17,32,.92);color:#fff;font-size:1.4em;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
 .touch-btn:active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .touch-jump{background:rgba(18,74,52,.94)}
 /* Botões de ação em LOSANGO (4 bolhas: 0 baixo, 1 direita, 2 esquerda, 3 cima) + START pílula */
@@ -795,7 +795,7 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 #game-region:has(.overlay:not([hidden])) .touch{z-index:var(--z-menu-max)}
 .touch-sistema{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;gap:10px;pointer-events:none}
 .touch-sistema .touch-start,.touch-sistema .touch-select{position:static;transform:none}
-.touch-start,.touch-select{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--tap);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:1em;letter-spacing:.08em;background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
+.touch-start,.touch-select{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--alvo-min,44px);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:1em;letter-spacing:.08em;background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
 .touch-start:active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 /* joystick digital: base (círculo maior) + manopla (círculo menor) */
 /* Direcional (analógico/"alavanca"): base = superfície + deslocamento; manopla = superfície de contato. Ambos em mm (JS). */
