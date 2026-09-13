@@ -123,7 +123,7 @@ export const KEYS = {
   outfg: 'incl_outfg', outbg: 'incl_outbg', hcrole: 'incl_hcrole', juice: 'incl_juice', crt: 'incl_crt2',
   crtLegacy: 'incl_crt', // formato antigo (booleano); crt.ts migra p/ incl_crt2 na 1ª leitura (fresh)
   // áudio / voz / i18n
-  ttsEngine: 'incl_tts_engine', ttsVoice: 'incl_tts_voice', lang: 'incl_lang', // audiocat_{k}
+  ttsEngine: 'incl_tts_engine', ttsVoice: 'incl_tts_voice', ttsVoz: 'incl_tts_voz', lang: 'incl_lang', // audiocat_{k}
   // comunicação / legendas (ADR-0028: todo menu persiste)
   letterCase: 'incl_lettercase', captions: 'incl_captions',
   // ⚠️ O NÍVEL TEA (calmo / silencioso) PASSOU A PERSISTIR EM 2026-09-07, e antes não persistia: era um

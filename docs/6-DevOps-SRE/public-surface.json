@@ -726,7 +726,8 @@
     "ordemDeBusca",
     "urlDaConfig",
     "urlDoModelo",
-    "vozEmUso"
+    "vozEmUso",
+    "vozesDoIdioma"
   ],
   "platform/vozes-prontas.ts": [
     "estadosDasVozes",
@@ -1427,6 +1428,7 @@
     "TtsPanel",
     "TtsPanelEngine",
     "VoiceLike",
+    "VozDoPainel",
     "caneDivMessage",
     "catRowHTML",
     "catsListHTML",

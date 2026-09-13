@@ -58,7 +58,23 @@ export interface TtsPanel {
    * que esse teste afirma sem que ninguém tenha escrito a mudança.
    */
   neuralDisponivel?: boolean;
+  /** The voices of the language (ADR-0185). Optional: a panel driven without them offers no «Voz» list and locks nothing. */
+  vozes?: () => readonly VozDoPainel[];
+  vozAtual?: () => VozDoPainel | null;
+  setVoz?: (id: string) => boolean;
 }
+
+/** A voice as this panel lists it: the provider's identifier, `locale-name-quality`. */
+export interface VozDoPainel { readonly voice: string }
+
+/** The name a child sees for a voice: the middle of its identifier — `pt_BR-faber-medium` is «Faber». */
+function nomeDaVoz(v: VozDoPainel): string {
+  const nome = v.voice.split('-')[1] ?? v.voice;
+  return nome.charAt(0).toUpperCase() + nome.slice(1);
+}
+
+/** The four rows a missing voice locks (ADR-0185 §4): narration, its volume, the spoken index, and the voice. */
+const LINHAS_DA_FALA: readonly string[] = ['#opt-tts', '#tts-vol', '#opt-menuindex', '#tts-voz'];
 
 /**
  * Saída de áudio dedicada de um jogador: o id do dispositivo e o AudioContext/ganho que ele abriu.
@@ -292,6 +308,8 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
     { contentor: '@lista' }, // a lista da casca: sonar, guarda e guia
     { id: 'opt-tts', rotulo: t('audio.narracao'), dica: t('audio.tts.dica') },
     { id: 'tts-vol', rotulo: t('audio.ttsVol'), forma: 'cursor' },
+    // ADR-0185: the child picks the voice, among the voices that speak the language — a list, since English passes five
+    { id: 'tts-voz', rotulo: t('audio.voz'), forma: 'escolha' },
     { id: 'opt-menuindex', rotulo: t('audio.menuindex'), dica: t('audio.menuindex.dica') },
     /*
      * 🔴 SAÍRAM QUATRO LINHAS em 2026-09-12 (ADR-0151), pelas palavras do Dev:
@@ -488,6 +506,37 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     ctx.tts.setVoiceObj(pick);
   }
 
+  const semVoz = (): boolean => !!ctx.tts.vozes && ctx.tts.vozes().length === 0;
+
+  function renderVozes(): void {
+    const sel = ctx.$<HTMLSelectElement>('#tts-voz');
+    if (!sel || !ctx.tts.vozes) return;
+    const lista = ctx.tts.vozes();
+    sel.replaceChildren(); // options built node by node: no markup sink
+    if (!lista.length) {
+      const o = document.createElement('option'); o.textContent = t('audio.voz.nenhuma'); sel.appendChild(o);
+      return;
+    }
+    for (const v of lista) {
+      const o = document.createElement('option'); o.value = v.voice; o.textContent = nomeDaVoz(v); sel.appendChild(o);
+    }
+    sel.value = ctx.tts.vozAtual?.()?.voice ?? lista[0]!.voice;
+  }
+
+  /**
+   * No voice speaks the language (ADR-0185 §4): the four speech rows are LOCKED with the reason, never hidden (ADR-0161).
+   * `aria-disabled` and not `disabled`, so the keyboard still reaches the row and hears why.
+   */
+  function travarFala(): void {
+    const travar = semVoz();
+    for (const id of LINHAS_DA_FALA) {
+      const el = ctx.$<HTMLElement>(id);
+      if (!el) continue;
+      if (travar) { el.setAttribute('aria-disabled', 'true'); el.dataset.motivo = t('audio.semVoz'); }
+      else { el.removeAttribute('aria-disabled'); delete el.dataset.motivo; }
+    }
+  }
+
   function hasEnumerateDevices(): boolean {
     return !!(navigator.mediaDevices && navigator.mediaDevices.enumerateDevices);
   }
@@ -565,6 +614,8 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     reflectMenuIndex();
     populateTtsEngines();
     populateTtsVoices();
+    renderVozes();
+    travarFala();
     const cd = ctx.$<HTMLSelectElement>('#cane-div');
     if (cd) cd.value = String(ctx.getCaneBlockDiv());
     void enumerateSinks(); // sem await no original: dispara e segue (lista assíncrona atualiza sozinha)
@@ -666,6 +717,37 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
       ctx.srSay(caneDivMessage(div));
     });
   }
+
+  /*
+   * A LOCKED SPEECH ROW DOES NOTHING AND SAYS WHY (ADR-0185 §4). In the CAPTURE phase on the control itself, so it runs
+   * before the row's own listener and stops it; a moved range goes back to the stored volume, a changed list to the voice in use.
+   * The footer shows the reason when the row takes focus: the card hears `focusin` after the row's own explanation.
+   */
+  for (const id of LINHAS_DA_FALA) {
+    const el = ctx.$<HTMLElement>(id);
+    if (!el) continue;
+    const recusar = (e: Event): void => {
+      if (el.getAttribute('aria-disabled') !== 'true') return;
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      if (id === '#tts-vol') { const cat = ctx.getAudioCat(); if (cat?.tts) (el as HTMLInputElement).value = String(volPercent(cat.tts.vol)); }
+      if (id === '#tts-voz') renderVozes();
+      ctx.srSay(el.dataset.motivo ?? t('audio.semVoz'));
+    };
+    for (const tipo of ['click', 'input', 'change']) el.addEventListener(tipo, recusar, true);
+    el.closest<HTMLElement>('.overlay__card')?.addEventListener('focusin', (e) => {
+      if (e.target !== el || el.getAttribute('aria-disabled') !== 'true') return;
+      const rodape = el.closest<HTMLElement>('.overlay__card')?.querySelector<HTMLElement>('.opt-explain');
+      if (rodape) rodape.textContent = el.dataset.motivo ?? '';
+    });
+  }
+
+  const vozSel = ctx.$<HTMLSelectElement>('#tts-voz');
+  if (vozSel) vozSel.addEventListener('change', () => {
+    if (!ctx.tts.setVoz?.(vozSel.value)) { renderVozes(); return; }
+    const v = ctx.tts.vozAtual?.();
+    if (v) ctx.srSay(t('sr.audio.voz', { nome: nomeDaVoz(v) }));
+  });
 
   const ttsBtn = ctx.$<HTMLButtonElement>('#opt-tts');
   if (ttsBtn) ttsBtn.addEventListener('click', () => {

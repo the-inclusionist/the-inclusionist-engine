@@ -10,6 +10,7 @@ import * as store from './storage.js';
 import { t, bcp47 } from '../core/i18n.js';
 import { criarFalaInterrompivel } from './interruptible-speech.js';
 import { caminhoNaEntrega } from './pesados.js';
+import { vozesDoIdioma, type VozNeural } from './voice-plan.js';
 
 interface TtsEngine { id: string; speak: (text: string) => void; }
 
@@ -82,6 +83,12 @@ export interface Tts {
    * nunca começa, e quem navega por escuta não tem como ver que não começou.
    */
   readonly neuralDisponivel: boolean;
+  /** The voices of the current language the child may pick (ADR-0185); empty locks the speech rows and the bar's button. */
+  vozes: () => readonly VozNeural[];
+  /** The voice in use: the stored choice when it speaks the language, else the language's first voice, else none. */
+  vozAtual: () => VozNeural | null;
+  /** Stores the choice. A voice that does not speak the current language is refused (`false`). */
+  setVoz: (id: string) => boolean;
 }
 
 // ⚠️ MIGRAÇÃO PENDENTE (ADR-0022): a implementação neural de hoje é o @mintplex-labs/piper-tts-web e será SUBSTITUÍDA
@@ -106,23 +113,26 @@ export interface Tts {
 // O nome estava aqui num `import()` e o pacote em `devDependencies`, o que publicou uma engine que não compilava
 // (ADR-0093); pô-lo em `dependencies` consertava o build e obrigava todo consumidor a 135,4 MB de `onnxruntime-web`,
 // que o fornecedor traz como peer não-opcional. A porta é o que faz a troca do ADR-0022 não ser um segundo abalo.
-/**
- * Voz NEURAL por idioma, indexada pela etiqueta BCP-47 de core/i18n. Só o pt-BR tem uma hoje, e essa ausência
- * é agora CONSULTÁVEL em vez de presumida: `loadTTS` pergunta à tabela se existe voz para o idioma corrente,
- * em vez de carregar a portuguesa aconteça o que acontecer.
- *
- * Era `TTS_SOURCES['pt-BR']` escrito à mão no ponto de uso, o que fazia o jogo em inglês baixar 25,6 MB de
- * voz portuguesa para ler texto em inglês com fonética errada — pior que não ter voz neural nenhuma, porque
- * gasta a banda da escola para entregar algo ininteligível.
- */
-const TTS_SOURCES: Readonly<Record<string, { engine: string; voice: string } | undefined>> = {
-  'pt-BR': { engine: 'piper', voice: 'pt_BR-faber-medium' },
-};
-
 export function createTts(ctx: TtsCtx): Tts {
   let ttsEngine: TtsEngine | null = null, ttsLoading = false, ttsFailed = false, _ttsPct = 0, _narrateCount = 0;
   let _ttsVoiceObj: SpeechSynthesisVoice | null = null; // voz do Web Speech selecionada
-  let ttsEngineSel = store.get(store.KEYS.ttsEngine, null) || 'webspeech'; // webspeech | piper | kokoro | kitten | espeak
+  // With the neural engine the voice of the language speaks by default (ADR-0185 §3); without it, the browser's voice —
+  // defaulting to Piper there would open every game without the engine on a «not bundled» alert.
+  let ttsEngineSel = store.get(store.KEYS.ttsEngine, null) || (ctx.carregarVozNeural ? 'piper' : 'webspeech'); // webspeech | piper | kokoro | kitten | espeak
+  let vozCarregada: string | null = null; // the voice the loaded engine speaks; another choice reloads it
+
+  const vozes = (): readonly VozNeural[] => vozesDoIdioma(bcp47());
+  function vozAtual(): VozNeural | null {
+    const lista = vozes();
+    const guardada = store.get(store.KEYS.ttsVoz, null);
+    return lista.find((v) => v.voice === guardada) ?? lista[0] ?? null;
+  }
+  function setVoz(id: string): boolean {
+    if (!vozes().some((v) => v.voice === id)) return false;
+    store.set(store.KEYS.ttsVoz, id);
+    if (ctx.carregarVozNeural) ttsEngineSel = 'piper';
+    return true;
+  }
 
   function speakWebSpeech(text: string): boolean {
     try {
@@ -145,11 +155,11 @@ export function createTts(ctx: TtsCtx): Tts {
     // pensar que trocar de idioma resolveria. `ttsFailed` para não repetir a pergunta a cada fala.
     const carregar = ctx.carregarVozNeural;
     if (!carregar) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
-    // O Piper só tem voz para os idiomas em TTS_SOURCES. Sem voz para o idioma corrente, NÃO se baixa a de
-    // outro idioma: avisa e segue na voz do navegador, que fala a língua certa.
-    const fonte = TTS_SOURCES[bcp47()];
+    // The voice in use for the current language (ADR-0185). None: another language's voice is NOT fetched — it would read
+    // this text with the wrong phonetics.
+    const fonte = vozAtual();
     if (!fonte) { ctx.srAlert(t('sr.tts.noNeuralForLanguage')); return; }
-    ttsLoading = true; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
+    ttsLoading = true; vozCarregada = fonte.voice; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
     carregar().then(async (mod) => { // o jogo é que sabe de onde; o Vite dele faz o code-split. Ver ADR-0021 e ADR-0094
       // 🎯 onnxruntime runs the wasm the GAME bundled (ADR-0177, issue #173): the provider otherwise points
       // `ort.env.wasm.wasmPaths` at cdnjs 1.18.0 — a host outside the policy, and not the version the game imports.
@@ -202,6 +212,8 @@ export function createTts(ctx: TtsCtx): Tts {
 
   function ttsSpeak(text: string): boolean {
     if (ttsEngineSel !== 'webspeech') {
+      // another voice picked, or the language changed, since the engine loaded: load the voice in use
+      if (ttsEngine && vozCarregada !== vozAtual()?.voice) { ttsEngine = null; ttsFailed = false; }
       if (ttsEngine && ttsEngine.id === ttsEngineSel && ttsEngine.speak) { try { ttsEngine.speak(text); } catch (e) { /* noop */ } return true; }
       loadTTS(); // motor neural (baixando/indisponível) → cai no fallback
     }
@@ -209,7 +221,9 @@ export function createTts(ctx: TtsCtx): Tts {
   }
 
   function narrate(text: string): void { // gated pelo toggle 'Narração (TTS)' do mixer, independente das legendas
-    const cat = ctx.getAudioCat(); if (!ctx.getSoundOn() || !cat || !cat.tts || !cat.tts.on || !text) return; _narrateCount++; ttsSpeak(text);
+    const cat = ctx.getAudioCat(); if (!ctx.getSoundOn() || !cat || !cat.tts || !cat.tts.on || !text) return;
+    if (vozes().length === 0) return; // no voice speaks this language: narration is locked (ADR-0185 §4)
+    _narrateCount++; ttsSpeak(text);
   }
 
   return {
@@ -218,5 +232,6 @@ export function createTts(ctx: TtsCtx): Tts {
     getEngine: () => ttsEngine, getVoiceObj: () => _ttsVoiceObj, setVoiceObj: (v) => { _ttsVoiceObj = v; },
     get loading() { return ttsLoading; }, get failed() { return ttsFailed; }, get narrateCount() { return _narrateCount; },
     get neuralDisponivel() { return !!ctx.carregarVozNeural; },
+    vozes, vozAtual, setVoz,
   };
 }

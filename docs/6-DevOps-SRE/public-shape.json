@@ -1132,8 +1132,11 @@
       "neuralDisponivel",
       "setEngineSel",
       "setVoiceObj",
+      "setVoz",
       "speakWebSpeech",
-      "ttsSpeak"
+      "ttsSpeak",
+      "vozAtual",
+      "vozes"
     ],
     "type CarregarVozNeural": "() => Promise<ModuloNeural>"
   },
@@ -2037,6 +2040,7 @@
       "librasOn",
       "modoCego",
       "privateOutput",
+      "semVoz?",
       "toggleMove",
       "ttsOn",
       "velocidade?",
@@ -2090,6 +2094,7 @@
       "rmKeys?",
       "saveRM?",
       "seguraTeclas",
+      "semVoz?",
       "setCatGain",
       "setCorrecaoDoJogador?",
       "setModoCego?",
@@ -2156,7 +2161,13 @@
       "narrate",
       "neuralDisponivel?",
       "setEngineSel",
-      "setVoiceObj"
+      "setVoiceObj",
+      "setVoz?",
+      "vozAtual?",
+      "vozes?"
+    ],
+    "interface VozDoPainel": [
+      "voice"
     ],
     "interface SettingsAudioCtx": [
       "$",

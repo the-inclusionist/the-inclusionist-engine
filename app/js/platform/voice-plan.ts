@@ -6,15 +6,12 @@
 // a resposta honesta a «o que é que esta criança está a ouvir AGORA». Sem rede, sem cache, sem tempo. Quem
 // busca de facto é a outra metade; quem decide O QUE buscar e o que DIZER é esta.
 //
-// ⚠️ POR QUE O CATÁLOGO VIVE AQUI E NÃO NO `TTS_SOURCES`. A tabela do `platform/tts` é indexada por idioma e
-// tem UMA voz por idioma; este catálogo tem QUATRO vozes para TRÊS idiomas, porque o en-US tem duas. Ligá-las
-// hoje mudaria comportamento: o `loadTTS` passaria a pedir `en_US-ryan-medium` à PORTA DO CARTUCHO
-// (ADR-0094), que pode não ter essa voz. A tabela liga-se a isto quando o buscador existir, e nem um dia
-// antes — uma lista ligada a um fornecedor que não a conhece é pior do que uma lista à espera.
+// 📌 `platform/tts` speaks from THIS catalogue (ADR-0185): the hearing panel lists the voices of the child's language, and
+// the one she picks is the one the neural engine loads. The delivery carries all four (ADR-0177), and the provider the
+// games bundle knows all four.
 //
-// ⚠️ E QUAL DAS DUAS VOZES EN-US A CRIANÇA OUVE POR PADRÃO NÃO SE DECIDE AQUI. O ADR-0110 deixa-o
-// explicitamente em aberto, e a ORDEM DESTE ARRAY NÃO É UMA PREFERÊNCIA — é a ordem em que o Dev as nomeou.
-// Ler ordem como escolha seria decidir por omissão, que é o defeito que este projeto persegue.
+// ⚠️ THE ORDER OF THIS ARRAY IS NOT A PREFERENCE — it is the order the Dev named them in (ADR-0110). Without a choice the
+// first voice of the language speaks because one has to; which English voice a child prefers is hers to pick.
 
 /** Uma voz do catálogo. `voice` é o identificador no fornecedor; `engine` é o motor que a lê. */
 export interface VozNeural {
@@ -39,6 +36,16 @@ export const VOZES_NEURAIS: readonly VozNeural[] = Object.freeze([
   Object.freeze({ locale: 'en-US', engine: 'piper', voice: 'en_US-amy-medium' }),
   Object.freeze({ locale: 'es-MX', engine: 'piper', voice: 'es_MX-claude-high' }),
 ]);
+
+/**
+ * The voices a child may pick for a language (ADR-0185): matched on the LANGUAGE of the tag, not the region — a Mexican
+ * voice reads Spanish from Spain, and a Brazilian game tagged `pt` is still Portuguese. A voice reading another language
+ * is not offered: Portuguese text through English phonemes is noise.
+ */
+export function vozesDoIdioma(etiqueta: string, catalogo: readonly VozNeural[] = VOZES_NEURAIS): readonly VozNeural[] {
+  const idioma = (etiqueta.split('-')[0] ?? '').toLowerCase();
+  return catalogo.filter((v) => (v.locale.split('-')[0] ?? '').toLowerCase() === idioma);
+}
 
 /**
  * DE ONDE VÊM OS MODELOS (ADR-0114), num sítio só.

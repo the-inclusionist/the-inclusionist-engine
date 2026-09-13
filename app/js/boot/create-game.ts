@@ -1068,6 +1068,8 @@ export function createGame(o: CreateGameOptions): Engine {
     seguraTeclas: () => cartucho.declaration.seguraTeclas(),
     // the hourglass is offered where time runs by itself (ADR-0180), read per cartridge
     relogio: () => cartucho.declaration.tick === 'clock',
+    // no voice speaks the current language: the narration icon locks like the panel's rows (ADR-0185)
+    semVoz: () => tts.vozes().length === 0,
     /*
      * ✅ A MESMA LISTA DO TECLADO (issue #147, consertada em 2026-09-12).
      *

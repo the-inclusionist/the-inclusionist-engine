@@ -381,6 +381,12 @@ describe('computeIconVisual — o visual e o aria-pressed andam juntos', () => {
     expect(computeIconVisual('tts', s)).toMatchObject({ on: true, dis: true });
   });
 
+  it('🔴 [Right] tts is LOCKED when no voice speaks the language (ADR-0185), even with a private output', () => {
+    expect(computeIconVisual('tts', snap({ ttsOn: true, semVoz: true }))).toMatchObject({ on: true, dis: true });
+    expect(computeIconVisual('tts', snap({ ttsOn: true, semVoz: false })), 'locked with a voice for the language').toMatchObject({ dis: false });
+    expect(computeIconVisual('blind', snap({ modoCego: true, semVoz: true })), 'blind mode needs no voice').toMatchObject({ dis: false });
+  });
+
   it('BORDA do TEA: nível 1 é `.pi-calm` (não `.pi-on`) e nível 2 é `.pi-on` (não `.pi-calm`)', () => {
     expect(computeIconVisual('tea', snap({ calmMode: 0 }))).toMatchObject({ on: false, calm: false, active: false });
     expect(computeIconVisual('tea', snap({ calmMode: 1 }))).toMatchObject({ on: false, calm: true, active: true });
@@ -534,6 +540,14 @@ describe('markup dos ícones e do menu', () => {
 // CASCA — initPauseIcons com DOM falso
 // =============================================================================================
 describe('initPauseIcons — ações dos ícones', () => {
+  it('🔴 [Right] with no voice for the language, the narration icon says why and turns nothing on (ADR-0185)', () => {
+    const { ctx, state, alerted } = buildCtx();
+    ctx.semVoz = () => true;
+    const antes = state.audioCat.tts.on;
+    initPauseIcons(ctx).iconAct('tts', 0);
+    expect(state.audioCat.tts.on, 'the locked icon still toggled narration').toBe(antes);
+    expect(alerted.join(' '), 'refused in silence').toMatch(/voz|voice/i);
+  });
   it('SIMPLES: o modo cego liga e o anúncio conta o estado NOVO', () => {
     const { ctx, state, said } = buildCtx();
     const api = initPauseIcons(ctx);

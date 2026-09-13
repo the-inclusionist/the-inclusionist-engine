@@ -257,6 +257,8 @@ export interface IconStateSnapshot {
    * Ausente significa «ninguém me disse», que degrada para «não exijo» — o comportamento de hoje.
    */
   alternanciaExigida?: boolean;
+  /** No voice speaks the current language (ADR-0185): the narration icon is locked. Absent reads as a voice. */
+  semVoz?: boolean;
 }
 
 /** A player has private output when nobody else is on the same sink. Single screen ⇒ always private.
@@ -341,7 +343,7 @@ export interface IconVisual {
 export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   let on = false, dis = false, calm = false, cvd = '';
   if (k === 'blind') { on = s.modoCego; dis = !s.privateOutput; }
-  else if (k === 'tts') { on = s.ttsOn; dis = !s.privateOutput; }
+  else if (k === 'tts') { on = s.ttsOn; dis = !s.privateOutput || !!s.semVoz; }
   else if (k === 'libras') { on = s.librasOn; }
   else if (k === 'tea') { on = s.calmMode === 2; calm = s.calmMode === 1; }
   else if (k === 'altmove') { on = s.toggleMove; dis = !!s.alternanciaExigida; }
@@ -885,6 +887,8 @@ export interface PauseIconsCtx {
   seguraTeclas: () => boolean;
   /** Does the current game's time run by itself? (ADR-0180: the hourglass.) Optional; absent, no hourglass. */
   relogio?: () => boolean;
+  /** Does no voice speak the current language? (ADR-0185: the narration icon locks.) Optional; absent, a voice. */
+  semVoz?: () => boolean;
 }
 
 export interface PauseIconsApi {
@@ -1052,6 +1056,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       velocidade: gameSpeed,
       privateOutput: hasPrivateOutput(i),
       alternanciaExigida: recusaAgora(i) !== null,
+      semVoz: !!ctx.semVoz?.(),
     };
   }
 
@@ -1150,6 +1155,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const ic = ICON_BY_KEY.get(k);
     if (ic && ic.soon) {
       ctx.srAlert(t('sr.icon.underConstruction', { nome: t(ic.n) }));
+      return;
+    }
+    // locked like the panel's row (ADR-0185): the same reason, said, and nothing turned on
+    if (k === 'tts' && ctx.semVoz?.()) {
+      ctx.srAlert(t('audio.semVoz'));
       return;
     }
     if ((k === 'blind' || k === 'tts') && !hasPrivateOutput(i)) {

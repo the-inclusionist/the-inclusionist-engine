@@ -22,6 +22,7 @@ const AUDIO_HTML = `
     <select id="tts-voice"></select>
     <button id="opt-tts-test" type="button">Testar</button>
     <input id="tts-vol" type="range" min="0" max="100" step="5">
+    <div class="ctrl-row"><span><strong>Voz</strong></span><select id="tts-voz"></select></div>
     <div id="audio-sinks"></div>
     <button id="audio-detect" type="button">Detectar</button>
     <button id="audio-master" type="button" aria-pressed="true">🔊 Ligado</button>
@@ -508,3 +509,84 @@ describe('ui/settings-audio — o modo cego ANUNCIA, como os cinco irmãos deste
 //   · tirando o `ctx.srSay(...)` do clique -> reprova. E o defeito que existia ate hoje.
 //   · movendo o `srSay` para ANTES do `setModoCego` -> reprova, porque passa a anunciar o estado que a
 //     crianca acabou de deixar. E a mesma regra do icone da barra rapida, e nenhum dos dois a tinha escrita.
+
+// ===================================================================================================
+// THE VOICE CHOICE AND THE LOCK (ADR-0185; issue #180)
+// ===================================================================================================
+const FABER = { locale: 'pt-BR', engine: 'piper', voice: 'pt_BR-faber-medium' };
+const OUTRA = { locale: 'pt-BR', engine: 'piper', voice: 'pt_BR-edresson-low' };
+function comVozes(vozes) {
+  const r = fullCtx({});
+  let escolhida = null;
+  Object.assign(r.tts, {
+    vozes: () => vozes,
+    vozAtual: () => vozes.find((v) => v.voice === escolhida) ?? vozes[0] ?? null,
+    setVoz: (id) => { if (!vozes.some((v) => v.voice === id)) return false; escolhida = id; return true; },
+  });
+  return r;
+}
+const LINHAS_DA_FALA = ['#opt-tts', '#tts-vol', '#opt-menuindex', '#tts-voz'];
+
+describe('ui/settings-audio — the voice choice (ADR-0185)', () => {
+  it('🔴 [Right] the «Voz» list holds the voices of the language, the one in use selected', () => {
+    const { ctx } = comVozes([FABER, OUTRA]);
+    initSettingsAudio(ctx).renderAudio();
+    const sel = document.querySelector('#tts-voz');
+    expect([...sel.options].map((o) => o.value)).toEqual(['pt_BR-faber-medium', 'pt_BR-edresson-low']);
+    expect(sel.value).toBe('pt_BR-faber-medium');
+    expect([...sel.options].map((o) => o.textContent), 'the option shows the identifier, not a name').toEqual(['Faber', 'Edresson']);
+  });
+
+  it('🔴 [Right] the list opens on the voice in use, even when it is not the first', () => {
+    // a <select> opens on its first option by itself, so only a pick further down shows the list was set
+    const { ctx, tts } = comVozes([FABER, OUTRA]);
+    tts.setVoz('pt_BR-edresson-low');
+    initSettingsAudio(ctx).renderAudio();
+    expect(document.querySelector('#tts-voz').value).toBe('pt_BR-edresson-low');
+  });
+
+  it('🔴 [Right] picking a voice sets it and says it', () => {
+    const { ctx, tts, said } = comVozes([FABER, OUTRA]);
+    initSettingsAudio(ctx).renderAudio();
+    const sel = document.querySelector('#tts-voz');
+    sel.value = 'pt_BR-edresson-low';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(tts.vozAtual().voice).toBe('pt_BR-edresson-low');
+    expect(said.at(-1) ?? '', 'the choice was silent').toMatch(/Edresson/);
+  });
+
+  it('🎯 [Zero] with a voice, nothing of the speech is locked', () => {
+    const { ctx } = comVozes([FABER]);
+    initSettingsAudio(ctx).renderAudio();
+    for (const id of LINHAS_DA_FALA) expect(document.querySelector(id).getAttribute('aria-disabled'), id).toBeNull();
+  });
+
+  it('🔴 [Right] with no voice for the language, the four speech rows are locked with the reason, never hidden', () => {
+    const { ctx } = comVozes([]);
+    initSettingsAudio(ctx).renderAudio();
+    for (const id of LINHAS_DA_FALA) {
+      const el = document.querySelector(id);
+      expect(el.getAttribute('aria-disabled'), id + ' not locked').toBe('true');
+      expect(el.dataset.motivo ?? '', id + ' locked without its reason').toMatch(/voz/i);
+      expect(el.closest('[hidden]'), id + ' hidden instead of locked').toBeNull();
+    }
+  });
+
+  it('🔴 [Right] a locked row turns nothing on, and says why', () => {
+    const { ctx, audioCat, said } = comVozes([]);
+    initSettingsAudio(ctx).renderAudio();
+    const narracao = audioCat.tts.on;
+    const indice = menuIndexOn;
+    document.querySelector('#opt-tts').click();
+    document.querySelector('#opt-menuindex').click();
+    const vol = document.querySelector('#tts-vol');
+    const volAntes = audioCat.tts.vol;
+    vol.value = '5';
+    vol.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(audioCat.tts.on, 'narration toggled').toBe(narracao);
+    expect(menuIndexOn, 'the spoken index toggled').toBe(indice);
+    expect(audioCat.tts.vol, 'the narration volume moved').toBe(volAntes);
+    expect(said.at(-1) ?? '', 'refused in silence').toMatch(/voz/i);
+    setMenuIndexOnValue(indice);
+  });
+});
