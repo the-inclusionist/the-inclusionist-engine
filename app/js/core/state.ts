@@ -7,6 +7,7 @@
 // shape `platform/storage` already has — so `core` does not reach up to `platform` (ADR-0173).
 
 import { velocidadeValida } from './game-speed.js';
+import { ritmoDaLegendaValido } from './caption-duration.js';
 
 /** The port the settings are read and written through. `platform/storage` has this shape; a test passes a double. */
 export interface PortaDoEstado {
@@ -77,6 +78,8 @@ export interface EventoDoJogo {
   oneButton: boolean;
   /** The game speed, a step of `core/game-speed` (ADR-0180): 1 is 100%. */
   gameSpeed: number;
+  /** The child's caption reading rate, words a minute (ADR-0183 §4): 125, 145 or 175. */
+  captionPpm: number;
   /** The «no strength to hold» empathy simulation (ADR-0181): a held game key reads as one tap. */
   semForca: boolean;
 
@@ -228,6 +231,7 @@ export const DEFAULTS = Object.freeze({
   wheelchair: false,
   oneButton: false,
   gameSpeed: 1,
+  captionPpm: 125,
   semForca: false,
   easy: false,        // por jogador (Modo Fácil)
   toggleMove: false,  // por jogador (movimento por alternância)
@@ -444,8 +448,6 @@ export function setOneButtonValue(on: boolean): void {
   const p = armazem('setOneButtonValue'); p.setBool('incl_onebtn', on); oneButton = on; emit('oneButton', on);
 }
 
-// --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
-//     by it. Stored and carried between games; a stored value outside the steps reads as 100%. ---
 // --- semForca: «sem força para segurar botão», the second motor empathy simulation (ADR-0181): any sustained contact of a
 //     game key reads as one tap. Stored like the other simulations, off by default. ---
 export let semForca: boolean = VAZIO.getBool('incl_sem_forca', DEFAULTS.semForca);
@@ -455,11 +457,22 @@ export function setSemForcaValue(on: boolean): void {
   const p = armazem('setSemForcaValue'); p.setBool('incl_sem_forca', v); semForca = v; emit('semForca', v);
 }
 
+// --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
+//     by it. Stored and carried between games; a stored value outside the steps reads as 100%. ---
 export let gameSpeed: number = velocidadeValida(VAZIO.getNum('incl_game_speed', DEFAULTS.gameSpeed));
 export function setGameSpeedValue(v: number): void {
   const valida = velocidadeValida(v);
   if (gameSpeed === valida) return;
   const p = armazem('setGameSpeedValue'); p.set('incl_game_speed', valida); gameSpeed = valida; emit('gameSpeed', valida);
+}
+
+// --- captionPpm: the child's caption reading rate, words a minute (ADR-0183 §4): how long a sound caption stays. One of
+//     125, 145, 175; anything else reads as 125. ---
+export let captionPpm: number = ritmoDaLegendaValido(VAZIO.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
+export function setCaptionPpmValue(ppm: number): void {
+  const valido = ritmoDaLegendaValido(ppm);
+  if (captionPpm === valido) return;
+  const p = armazem('setCaptionPpmValue'); p.set('incl_caption_ppm', valido); captionPpm = valido; emit('captionPpm', valido);
 }
 
 /* ===================== THE STORED SETTINGS, LOADED BY THE ROOT (ADR-0178, issue #174) ===================== */
@@ -493,4 +506,5 @@ export function carregarEstado(p: PortaDoEstado): void {
   oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
   gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
   semForca = p.getBool('incl_sem_forca', DEFAULTS.semForca);
+  captionPpm = ritmoDaLegendaValido(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
 }

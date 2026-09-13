@@ -1,38 +1,89 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A SOUND CAPTION STAYS LONG ENOUGH TO BE READ BY A CHILD (plan phase 5c; ADR-0164 rule 4; GAG Hearing).
+// A SOUND CAPTION STAYS FOR ITS WORDS, AT THE CHILD'S READING RATE (plan phase 5c; ADR-0183 §4; issue #179).
 //
-// 📏 Measured on 2026-09-13: `legendarSom` hid every caption after 2600 ms, whatever its length. The BBC's subtitle
-// guidelines (a resource the Game Accessibility Guidelines list) set 160–180 words per minute for adults and 120–140 for
-// children's programmes. At 120 words per minute a word takes 500 ms, so an eight-word caption needs 4 s and was gone at 2.6.
+// 📏 Measured on 2026-09-13: `legendarSom` hid every caption after 2600 ms, whatever its length; a fixed 120 words a minute
+// followed. ADR-0183 makes the rate the child's: «125 WPM (leitor iniciante), 145WPM (confortável na década de 90 segundo
+// pesquisa), 175WPM (confortável hoje segundo pesquisa)» — 145 is Jensema's measured comfortable rate (1998), 125 sits between
+// Burnham's 120 for children and the DCMP's 130, and 175 is kept as the Dev's choice though no study measures it comfortable.
 // 2600 ms stays the floor: a one-word caption («Sino») keeps the time the games had measured in play.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect } from 'vitest';
-import { duracaoDaLegenda, LEGENDA_MINIMA_MS, MS_POR_PALAVRA } from '../app/js/core/caption-duration.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { duracaoDaLegenda, LEGENDA_MINIMA_MS, RITMOS_DA_LEGENDA, ritmoDaLegendaValido } from '../app/js/core/caption-duration.js';
+import * as state from '../app/js/core/state.js';
+
+const OITO = 'Uma porta de madeira velha rangendo bem devagar';
 
 describe('how long a sound caption stays', () => {
-  it('📌 [Right] the numbers are the sources\': 500 ms a word is 120 words a minute, and the floor is the games\' 2600 ms', () => {
-    expect(60_000 / MS_POR_PALAVRA).toBe(120);
+  it('📌 [Right] the rates are the Dev\'s three, and the floor is the games\' 2600 ms', () => {
+    expect(RITMOS_DA_LEGENDA).toEqual([125, 145, 175]);
     expect(LEGENDA_MINIMA_MS).toBe(2600);
   });
 
-  it('🔴 [Right] a long caption stays for its words, at a child\'s reading rate', () => {
-    expect(duracaoDaLegenda('Uma porta de madeira velha rangendo bem devagar')).toBe(8 * 500);
+  it('🔴 [Right] a long caption stays for its words at the chosen rate', () => {
+    expect(duracaoDaLegenda(OITO, 125)).toBe(3840); // 8 × 60 000 / 125
+    expect(duracaoDaLegenda(OITO, 145)).toBe(3310);
+    expect(duracaoDaLegenda(OITO, 175)).toBe(2743);
   });
 
-  it('🎯 [Boundary] a short caption keeps the floor', () => {
-    expect(duracaoDaLegenda('Sino')).toBe(2600);
-    expect(duracaoDaLegenda('Porta rangendo devagar lá fora')).toBe(2600); // 5 words = 2500 ms, under the floor
+  it('🔴 [Right] a caption at 125 words a minute stays longer than at 175 (ADR-0183 confirmation)', () => {
+    expect(duracaoDaLegenda(OITO, 125)).toBeGreaterThan(duracaoDaLegenda(OITO, 175));
+  });
+
+  it('🎯 [Boundary] a short caption keeps the floor, at any rate', () => {
+    for (const ppm of RITMOS_DA_LEGENDA) expect(duracaoDaLegenda('Sino', ppm)).toBe(2600);
+    expect(duracaoDaLegenda('Porta rangendo devagar lá fora', 175)).toBe(2600); // 5 words = 1714 ms, under the floor
   });
 
   it('🎯 [Zero] spaces are not words', () => {
-    expect(duracaoDaLegenda('  Gol   do   time  ')).toBe(2600);
-    expect(duracaoDaLegenda('')).toBe(2600);
+    expect(duracaoDaLegenda('  Gol   do   time  ', 125)).toBe(2600);
+    expect(duracaoDaLegenda('', 125)).toBe(2600);
+  });
+
+  it('🎯 [Boundary] a rate outside the three is not a rate — it reads as the slowest, never as a caption that flashes', () => {
+    expect(ritmoDaLegendaValido(999)).toBe(125);
+    expect(ritmoDaLegendaValido(0)).toBe(125);
+    expect(ritmoDaLegendaValido(Number.NaN)).toBe(125);
+    expect(ritmoDaLegendaValido(145)).toBe(145);
+    expect(duracaoDaLegenda(OITO, 0)).toBe(3840);
+  });
+});
+
+function portaFalsa(guardado = {}) {
+  const dados = { ...guardado };
+  return {
+    dados,
+    get: (k, f) => (k in dados ? String(dados[k]) : f),
+    set: (k, v) => { dados[k] = v; },
+    getBool: (k, f = false) => (k in dados ? dados[k] === true || dados[k] === 'true' : f),
+    setBool: (k, on) => { dados[k] = on; },
+    getNum: (k, f = 0) => (k in dados ? Number(dados[k]) : f),
+    KEYS: { letterCase: 'incl_lettercase', captions: 'incl_captions', menuIndex: 'incl_menuindex', cbsafe: 'incl_cbsafe', ownercolors: 'incl_ownercolors', outfg: 'incl_outfg', outbg: 'incl_outbg' },
+  };
+}
+
+describe('the stored caption rate', () => {
+  beforeEach(() => { state.carregarEstado(portaFalsa()); });
+
+  it('🎯 [Zero] nothing stored is 125, the slowest of the three', () => {
+    expect(state.captionPpm).toBe(125);
+  });
+
+  it('🔴 [Right] it is loaded from the child\'s storage and written back', () => {
+    const p = portaFalsa({ incl_caption_ppm: 175 });
+    state.carregarEstado(p);
+    expect(state.captionPpm).toBe(175);
+    state.setCaptionPpmValue(145);
+    expect(state.captionPpm).toBe(145);
+    expect(p.dados.incl_caption_ppm).toBe(145);
+  });
+
+  it('🎯 [Boundary] a stored typo lands on 125', () => {
+    state.carregarEstado(portaFalsa({ incl_caption_ppm: 160 }));
+    expect(state.captionPpm).toBe(125);
   });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
-//   D1 a fixed 2600 ms again                               🔴 long caption
-//   D2 no floor                                            🔴 short caption
-//   D3 empty strings counted as words                      🔴 spaces
-//   D4 the adult rate (0.33 s a word)                      🔴 the numbers, long caption
+//   R1 the rate ignored · R2 no floor · R3 a typo reads as the fastest · R4 setter does not store · R5 load ignores it   🔴 each
+//   (R6–R8 in `ritmo-da-legenda.browser`)

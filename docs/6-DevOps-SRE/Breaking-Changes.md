@@ -725,6 +725,16 @@ background) writing `hcOutlineFg` / `hcOutlineBg`. Answered `false`, no row.
 owned items and draws no outlines, or its word where it does. 📏 Measured in the sibling repositories on 2026-09-13: none of the
 seven passes `acomodacoes` yet (they consume an engine from before ADR-0153), so the change reaches them with that one.
 
+## AD · A caption's time is read at the child's rate (ADR-0183 §4, issue #179)
+
+**Behaviour.** `core/caption-duration.duracaoDaLegenda(texto, ppm)` takes the reading rate, one of `RITMOS_DA_LEGENDA` (125, 145,
+175 words a minute; anything else reads as 125); `MS_POR_PALAVRA` (a fixed 500 ms, 120 words a minute) left. The rate is
+`core/state.captionPpm` (`incl_caption_ppm`, 125 by default), set in the visual panel; `EventoDoJogo` gains `captionPpm`.
+
+**What to do:** a caller of `duracaoDaLegenda(texto)` passes `state.captionPpm`; a reader of `MS_POR_PALAVRA` computes
+`60 000 / state.captionPpm`. 📏 Measured on 2026-09-13: no sibling repository imports either — the module entered on the same day
+(`engine:2bd2826`) and is in no published version.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

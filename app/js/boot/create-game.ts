@@ -91,7 +91,7 @@ import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
-import { duracaoDaLegenda } from '../core/caption-duration.js';
+import { duracaoDaLegenda, RITMOS_DA_LEGENDA } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
 import { carimbarOrigem, origemDoEvento } from '../input/origem-sintetica.js';
@@ -1636,6 +1636,7 @@ export function createGame(o: CreateGameOptions): Engine {
         oferecerDonoEContornos();
         rotularLinha(linhaDasLegendas, specDasLegendas()); // in the language of the opening
         refletirLegendas();
+        refletirRitmoDaLegenda();
       },
     });
     /*
@@ -1650,6 +1651,37 @@ export function createGame(o: CreateGameOptions): Engine {
       toggleBtn(botaoDasLegendas, state.captionsOn);
       botaoDasLegendas.textContent = toggleLabel(state.captionsOn);
       markChanged(linhaDasLegendas, state.captionsOn !== state.DEFAULTS.captionsOn);
+    };
+    /* THE CAPTION RATE (ADR-0183 §4; issue #179): 125, 145 or 175 words a minute, by steps, right after the captions switch. */
+    const specDoRitmo = () => ({
+      rotulo: t('visual.legenda.ritmo'),
+      valores: RITMOS_DA_LEGENDA.map((n) => t('visual.legenda.ppm', { n })),
+      atual: Math.max(0, (RITMOS_DA_LEGENDA as readonly number[]).indexOf(state.captionPpm)),
+    });
+    const linhaDoRitmo = doc.createElement('div');
+    linhaDoRitmo.className = 'ctrl-row ctrl-row--passos';
+    const envelopeDoRitmo = doc.createElement('span');
+    const dicaDoRitmo = doc.createElement('span');
+    dicaDoRitmo.className = 'opt-hint';
+    envelopeDoRitmo.appendChild(dicaDoRitmo);
+    linhaDoRitmo.appendChild(envelopeDoRitmo);
+    const passosDoRitmo = montarPassos(ctxDoPainel, specDoRitmo());
+    passosDoRitmo.id = 'opt-legenda-ppm';
+    linhaDoRitmo.appendChild(passosDoRitmo);
+    painelVisual.casca.card.insertBefore(linhaDoRitmo, linhaDasLegendas.nextSibling);
+    passosDoRitmo.addEventListener('passo', (ev) => {
+      const atual = specDoRitmo().atual;
+      const nova = passoSeguinte(atual, RITMOS_DA_LEGENDA.length, (ev as CustomEvent<number>).detail);
+      if (nova === atual) return;
+      state.setCaptionPpmValue(RITMOS_DA_LEGENDA[nova]!);
+      atualizarPassos(passosDoRitmo, specDoRitmo());
+      markChanged(linhaDoRitmo, state.captionPpm !== state.DEFAULTS.captionPpm);
+      srSay(`${t('visual.legenda.ritmo')}: ${t('visual.legenda.ppm', { n: state.captionPpm })}`);
+    });
+    const refletirRitmoDaLegenda = (): void => {
+      atualizarPassos(passosDoRitmo, specDoRitmo());
+      dicaDoRitmo.textContent = t('visual.legenda.ritmo.dica');
+      markChanged(linhaDoRitmo, state.captionPpm !== state.DEFAULTS.captionPpm);
     };
     botaoDasLegendas.addEventListener('click', () => {
       state.setCaptionsOnValue(!state.captionsOn);
@@ -2693,7 +2725,7 @@ export function createGame(o: CreateGameOptions): Engine {
     casaDaLegenda.textContent = texto;
     casaDaLegenda.hidden = false;
     if (apagarLegendaDeSom !== null) clearTimeout(apagarLegendaDeSom);
-    apagarLegendaDeSom = setTimeout(() => { casaDaLegenda.hidden = true; casaDaLegenda.textContent = ''; }, duracaoDaLegenda(texto));
+    apagarLegendaDeSom = setTimeout(() => { casaDaLegenda.hidden = true; casaDaLegenda.textContent = ''; }, duracaoDaLegenda(texto, state.captionPpm));
   }
   /** O rodapé diz UMA explicação de cada vez: a do ícone apontado, ou o motivo de um item travado (ADR-0161). */
   function escreverNoRodape(texto: string | null): void {

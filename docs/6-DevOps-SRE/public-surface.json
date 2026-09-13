@@ -70,8 +70,10 @@
   ],
   "core/caption-duration.ts": [
     "LEGENDA_MINIMA_MS",
-    "MS_POR_PALAVRA",
-    "duracaoDaLegenda"
+    "RITMOS_DA_LEGENDA",
+    "RitmoDaLegenda",
+    "duracaoDaLegenda",
+    "ritmoDaLegendaValido"
   ],
   "core/collision.ts": [
     "CollisionCtx",
@@ -236,6 +238,7 @@
     "OutlineLevel",
     "PortaDoEstado",
     "caneBlockDiv",
+    "captionPpm",
     "captionsOn",
     "carregarEstado",
     "cbSafe",
@@ -254,6 +257,7 @@
     "ownerColors",
     "semForca",
     "setCaneBlockDivValue",
+    "setCaptionPpmValue",
     "setCaptionsOnValue",
     "setCbSafeValue",
     "setGameSpeedValue",

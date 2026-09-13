@@ -98,6 +98,9 @@
     "type ActionPreset": "Partial<Readonly<Record<Action, ActionWord>>>",
     "type ActionLabeller": "(a: Action) => string"
   },
+  "core/caption-duration.ts": {
+    "type RitmoDaLegenda": "(typeof RITMOS_DA_LEGENDA)[number]"
+  },
   "core/collision.ts": {
     "type CollisionCtx": "{ world: number[][]"
   },
@@ -406,6 +409,7 @@
     ],
     "interface EventoDoJogo": [
       "caneBlockDiv",
+      "captionPpm",
       "captionsOn",
       "cbSafe",
       "gameSpeed",
