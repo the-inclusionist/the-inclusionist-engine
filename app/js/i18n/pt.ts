@@ -13,15 +13,11 @@ const pt: Record<string, string> = {
   'sr.player.entered': 'Jogador {n} entrou!',
   // A RECICLAGEM (ADR-0049 §1: a boa ação vale um PONTO, e ponto não move barra nenhuma). As quatro cores
   // são conteúdo curricular — Resolução CONAMA 275/2001 —, então a fala DIZ a cor, e não só "certo/errado".
-  'sr.lixo.pegou': 'Você pegou: {o}.',
   'sr.lixo.soltou': 'Você soltou: {o}.',
-  'sr.lixo.acertou': 'Certo! {o} vai na lixeira {cor}. Um ponto.',
-  'sr.lixo.errou': 'Essa não é a lixeira do {o}. Tente outra cor.',
   'sr.lixo.solta': 'Aqui não se joga lixo. Você deixou cair na placa.',
   'sr.lixo.barreira': 'A placa não deixa o lixo passar.',
   'lixo.obj.papel': 'caixa de papelão',
   'lixo.obj.plastico': 'garrafa PET',
-  'lixo.obj.metal': 'latinha de alumínio',
   'lixo.obj.vidro': 'pote de vidro',
   'lixo.cor.azul': 'azul',
   'lixo.cor.vermelha': 'vermelha',
@@ -39,35 +35,13 @@ const pt: Record<string, string> = {
   'sr.typo.font': 'Tipografia: {fam}.',
   'sr.visual.contrast': 'Alto contraste: {v}.',
   'sr.visual.lq': 'Realce de contraste: {v}.',
-  'sr.gate.open': 'Portão aberto!',
-  'sr.key.taken': '{who}pegou a chave. Toque no portão para abri-lo.',
-  'sr.key.returned': 'A chave voltou para o lugar de origem.',
-  'sr.power.swapHint': '{msg} (Trocar poder cicla entre os coletados.)',
 
-  'sr.round.multi': '{n} jogadores, cada um na sua tela. Corram pelas moedas.',
-  'sr.round.somasub': 'Modo Soma-Sub. Toque nas figuras e resolva as contas.',
-  'sr.round.silabas': 'Modo Sílabas. Toque nas letras e monte as palavras.',
-  'sr.round.ludico': 'Nova rodada. Colete 10 moedas.',
 
-  'sr.screens.mobileOnly': 'No celular o jogo roda em uma tela só.',
-  'sr.screens.alreadyN': '{n} telas já ativas.',
-  'sr.screens.already1': '1 tela.',
-  'sr.screens.wontFitN': 'Não cabem {n} telas nesta janela — cada tela precisa de ao menos 640×360. Aumente a janela ou use tela cheia.',
   'sr.screens.wontFitOneMore': 'Não cabe mais uma tela nesta janela — cada tela precisa de ao menos 640×360. Aumente a janela ou use tela cheia.',
-  'sr.screens.activeN': '{n} telas ativas.',
-  'sr.screens.newRoundN': '{n} telas ativas — nova rodada.',
-  'sr.screens.newRound1': '1 tela — nova rodada.',
   'sr.screens.maxPlayers': 'Já são 4 jogadores.',
 
-  'sr.player.restarted': 'Jogador {n} recomeçou nesta tela.',
-  'sr.player.joined': 'Jogador {n} entrou no jogo em andamento.',
-  'sr.player.quit': 'Jogador {n} abandonou o jogo.',
 
   // Objetivo no HUD (texto em DOM, mesma árvore de decisão do anúncio de rodada)
-  'hud.objective.multi': '{n} jogadores — corrida pelas {alvo} moedas',
-  'hud.objective.somasub': 'Resolva 10 contas',
-  'hud.objective.silabas': 'Monte 10 palavras',
-  'hud.objective.ludico': 'Colete 10 moedas',
   // A MOLDURA do contador do HUD. O nome do objetivo atravessa por `{nome}` e NÃO se traduz aqui: quem
   // o declara é o jogo (campo 5 do contrato). Sem artigo de propósito — assim a frase serve a qualquer
   // gênero gramatical, e o `gender` do Speakable fica para as frases que precisam concordar.
@@ -79,37 +53,19 @@ const pt: Record<string, string> = {
   // O NOME do que este jogo junta. Currículo não se traduz (pilar 3), mas "moedas" não é currículo — é um
   // substantivo comum da interface, e a criança que joga em inglês tem de ouvir "coins". Por isso o nome
   // atravessa por `{nome}` JÁ RESOLVIDO pelo jogo, e a chave mora aqui.
-  'hud.nome.moedas': 'moedas',
-  'hud.nome.moeda': 'moeda',
   // O rótulo do botão dinâmico do menu de pausa. `{nome}` é o nome do nível, que o JOGO resolve — currículo
   // não se traduz (pilar 3); a MOLDURA, sim, e é ela que mora aqui.
   'pause.nivel': '📚 Nível {n} · {nome}',
   // LEGENDAS DOS EARCONS (item 19). Eram texto cru dentro de `platform/audio` — nove frases numa camada de
   // engine, invisíveis ao gate de i18n do `main.js`. É o que a criança SURDA lê no lugar do som: deixá-las em
   // português num build em inglês tirava dela exatamente a informação que a legenda existe para dar.
-  'sfx.jump': '🔊 Pulo',
-  'sfx.coin': '🔊 Coletou',
-  'sfx.hurt': '🔊 Ai! Dano',
-  'sfx.win': '🔊 Vitória!',
-  'sfx.correct': '🔊 Acertou!',
-  'sfx.wrong': '🔊 Tente de novo',
-  'sfx.power': '🔊 Power-up!',
-  'sfx.key': '🔊 Chave',
-  'sfx.gate': '🔊 Portão abriu',
 
   // Chrome / navegação
   'skip.toGame': 'Pular para o jogo',
-  'menu.ludico': 'Lúdico',
-  'menu.alfabetizacao': 'Alfabetização',
-  'menu.matematica': 'Matemática',
 
   // Tela de título
-  'title.byline': 'by Prof. José Rocha',
-  'title.wait': 'Aguarde o Jogador 1 escolher o jogo',
 
   // Vitória
-  'win.title': '🎉 Você coletou as 10 moedas!',
-  'win.again': 'Jogar de novo',
 
   // Menu de pausa (por tela — buildScreenPause). O botão de letra (ABC/abc/Braille) é dinâmico, fica fora.
   'pause.title': 'Pausado',
@@ -177,8 +133,6 @@ const pt: Record<string, string> = {
   'pause.motivo.opcoesdojogo': 'Este jogo não tem opções próprias.',
 
   // Acessibilidade (leitores de tela)
-  'a11y.gameRegion': 'Área de jogo. Mova com A e D ou setas; pule com L ou Espaço; suba e desça escadas (e nade na água) com W e S ou setas; corra com P ou Shift. Colete 10 moedas.',
-  'game.instructions': 'Mova o personagem pela caverna e colete 10 moedas. Sem limite de tempo. Controles: A e D ou setas movem; L ou Espaço pulam; W e S (ou setas cima/baixo) sobem/descem escadas e nadam; P ou Shift correm.',
 
   // Controles de toque — rótulos das 9 posições e das 9 ações mapeáveis (painel #touchcfg) e os anúncios.
   // Rótulo é MOLDURA inteira: em inglês "(cima)" vira "(up)" e a seta fica onde está, então a seta viaja
@@ -211,7 +165,6 @@ const pt: Record<string, string> = {
   'touch.act.run': 'Correr / interagir',
   'touch.act.especial': 'Especial',
   'touch.act.swap': 'Trocar poder',
-  'touch.act.pause': 'Pausar (START)',
   'touch.dir.cross': 'cruz (D-pad)',
   'touch.dir.stick': 'analógico',
   'sr.touch.slotSet': '{slot}: {acao}.',
@@ -345,17 +298,6 @@ const pt: Record<string, string> = {
   'pause.iconBarAria': 'Atalhos de acessibilidade',
 
   // Menu de atividades (splash) — escolha de atividade, cenário, nº de jogadores e notações de fração.
-  'fnot.v': 'Fracionária vertical',
-  'fnot.d': 'Fracionária diagonal',
-  'fnot.dec': 'Decimal',
-  'fnot.pct': 'Percentual',
-  'fnot.mix': 'Mista',
-  'menu.playerCountAria': 'Número de jogadores: {n}. Clique à esquerda para menos, à direita para mais.',
-  'sr.menu.pickScenario': 'Escolha o cenário.',
-  'sr.menu.gameStarted': '{atividade}. Jogo iniciado.',
-  'sr.menu.pickNumbers': '{atividade}: escolha os números.',
-  'sr.menu.player1': '{n} jogador.',
-  'sr.menu.playersN': '{n} jogadores.',
   'sr.menu.index': '{n} de {m}',
   'sr.papel.botao': 'botão',
   'sr.papel.interruptor': 'interruptor',
@@ -379,24 +321,10 @@ const pt: Record<string, string> = {
   'pad.wiz.detected': 'Controle novo detectado: {id}. O jogo pausou para você configurá-lo. SOLTE tudo para começar.',
   'pad.wiz.releaseAll': 'Controle: {id}. Agora SOLTE tudo.',
   'menu.legendSpoken': 'Botão {sim} para confirmar, botão {nao} para voltar.',
-  'sr.menu.fractionsIntro': 'Soma e subtração de frações: escolha a notação e o tipo.',
-  'sr.menu.keepOneNotation': 'Deixe ao menos uma notação ligada.',
-  'sr.menu.notationOn': '{notacao} ligada.',
-  'sr.menu.notationOff': '{notacao} desligada.',
-  'sr.menu.pickOneNumber': 'Escolha ao menos um número para treinar.',
-  'sr.menu.numberOn': 'Número {n} ligado.',
-  'sr.menu.numberOff': 'Número {n} desligado.',
-  'fnot.desc.v': 'Liga a exibição de frações verticais.',
-  'fnot.desc.d': 'Liga a exibição de frações na horizontal.',
   'fnot.desc.dec': 'Liga números que sempre aparecem com uma casa decimal.',
-  'fnot.desc.pct': 'Liga números percentuais.',
-  'fnot.desc.mix': 'Liga números inteiros e frações reduzidas.',
-  'menu.notationGroupAria': 'Notação',
 
   // Física (lava, ventosa-aranha), navegação sonora e o modo de demonstração.
-  'sr.physics.lava': 'Cuidado! Tocou na lava. As moedas voltaram para posições aleatórias.',
   'sr.physics.spiderOn': 'Modo aranha! Engatinha em paredes e teto; contorna quinas. {botao} solta.',
-  'sr.physics.spiderOff': 'Soltou da superfície.',
   'sr.nav.noTargetNear': 'Nada por perto.',
   // O laço parou porque um quadro lançou (ADR-0054). Criança cega não vê tela congelada: sem esta frase,
   // «travou» e «está pensando» são o mesmo silêncio.
@@ -430,19 +358,10 @@ const pt: Record<string, string> = {
   'reach.nome.gamepad': 'controle',
   'reach.nome.teclado': 'teclado',
   'reach.nome.toque': 'controle de tela',
-  'sr.attract.demo': 'Demonstração.',
-  'sr.attract.recorded': 'Demo de 30 segundos gravada para {cenario}.',
 
   // Molduras dos submenus de título e os nomes dos cenários.
   'menu.back': 'Voltar',
-  'menu.play': 'Jogar',
   'menu.alf': 'Alfabetização',
-  'menu.mat': 'Matemática',
-  'menu.frac': 'Fração',
-  'menu.fracTitle': 'Soma e subtração de frações',
-  'menu.tab': 'Tabuada',
-  'menu.tabHint': 'Escolha os números para treinar',
-  'menu.cen': 'Cenário',
   'cen.cidade': 'Cidade',
   'cen.campo': 'Dia no Campo',
   'cen.cemiterio': 'Amanhecer no Campo',
@@ -463,45 +382,19 @@ const pt: Record<string, string> = {
 
   // Quiz — só a MOLDURA. O currículo de alfabetização (palavra, letra, sílaba, soletração, célula Braille) NÃO
   // entra aqui: é específico da língua e pede currículo próprio por idioma, não tradução. Ver o CLAUDE.md.
-  'sr.quiz.tryAgain': 'Tente de novo.',
-  'sr.quiz.erase': 'apagar',
   'sr.quiz.ok': 'ok',
   'sr.blind.on': 'Modo cego ligado: bengala e pistas de áudio ativas. O 1º item de poder vira a bengala de corrida.',
   'sr.blind.off': 'Modo cego desligado.',
   'sr.motor.oneButtonOn': 'Um botão por vez ligado: só uma tecla/botão de cada vez.',
-  'sr.motor.oneButtonOff': 'Um botão por vez desligado.',
-  'sr.motor.wheelchairOn': 'Modo cadeirante ligado: sem pulo; rampas e elevadores no lugar de degraus e escada; moedas no chão; só voo e super-corrida.',
-  'sr.motor.wheelchairOff': 'Modo cadeirante desligado.',
-  'sr.visual.ownerColorsOn': 'Itens na cor do dono ligados.',
-  'sr.visual.ownerColorsOff': 'Itens na cor do dono desligados: todos na cor original.',
-  'sr.visual.cbSafeOn': 'Paleta segura para daltonismo ligada (Okabe-Ito).',
-  'sr.visual.cbSafeOff': 'Paleta segura para daltonismo desligada.',
-  'sr.visual.outlineFg': 'Contorno do primeiro plano: {v}.',
-  'sr.visual.outlineBg': 'Contorno do segundo plano: {v}.',
-  'outline.none': 'nenhum',
-  'outline.thin': 'fino',
-  'outline.thick': 'grosso',
-  'sr.captions.on': 'Legendas ligadas.',
-  'sr.captions.off': 'Legendas desligadas.',
 
   // Quiz — MATEMÁTICA: enunciado inteiro, operadores inclusive (2+3 independe de língua).
-  'math.howManyDots': 'Quantas bolinhas?',
-  'math.op.plus': 'mais',
-  'math.op.minus': 'menos',
-  'math.op.times': 'vezes',
-  'math.op.dividedBy': 'dividido por',
-  'sr.math.howManyDots': 'Quantas bolinhas você vê?',
-  'sr.math.howMuchIs': 'Quanto é {a} {op} {b}?',
   // Quiz — ALFABETIZAÇÃO: a MOLDURA traduz; a palavra, a letra e a cela Braille atravessam por parâmetro,
   // em pt-BR, porque são a matéria de uma disciplina de idioma e não se traduzem ao trocar o idioma do jogo.
-  'sr.quiz.who': 'Jogador {n}: ',
-  'sr.quiz.wins': '{n} de 3 acertos para a moeda',
   'sr.quiz.buildWord': 'Letra {letra}. Monte a palavra: {palavra}.',
   'sr.quiz.whichSpelling': '{palavra}. Qual é a escrita certa? O jogo soletra cada opção.',
   'sr.quiz.writeWord': 'Escreva a palavra: {palavra}. {n} letras.',
   'sr.quiz.brailleDictation': '{palavra}. {celas} Pule para coletar.',
   'sr.quiz.wellDone': 'Muito bem! {palavra}. {n} de 3.',
-  'sr.quiz.correctSoFar': 'Acertou! {n} de 3 para ganhar a moeda.',
   'menu.restoreDefaults': 'Restaurar padrões deste menu',
   'menu.close': 'Fechar',
   'menu.typo': 'Tipografia',
@@ -639,16 +532,6 @@ const pt: Record<string, string> = {
   'sr.player.prefix': 'Jogador {n}: ',
   'sr.empathy.hearingOn': 'Simulação de perda auditiva ligada: sons fracos ficam abafados e os agudos são cortados; falas ficam difíceis de entender.',
   'sr.empathy.hearingOff': 'Simulação de perda auditiva desligada.',
-  'sr.pad.disconnected': 'Controle do Jogador {n} desconectado — o teclado continua funcionando. Aperte START para reassociar.',
-  'sr.quiz.levelSet': 'Nível {n}: {v}.',
-  'sr.visual.roleColorSet': 'Cor de {v} alterada.',
-  'sr.visual.roleColorsReset': 'Cores do color-blocking restauradas ao padrão.',
-  'sr.visual.defaultColors': 'Cores padrão restauradas.',
-  'sr.pad.connected': 'Controle conectado: layout {v}.',
-  'sr.pad.design': 'Desenho dos botões: {v}.',
-  'sr.eyes.loading': 'Jogar com os olhos: carregando a webcam (permita o acesso).',
-  'sr.eyes.off': 'Jogar com os olhos desligado.',
-  'sr.boot.loaded': 'Jogo carregado. Colete {n} moedas. Suba escadas com W/S, nade segurando pulo na água.',
   // ===================== PODERES =====================
   // `sr.power.*` é FALADO quando o poder muda (game/physics, game/session); `hud.power.*` é o rótulo curto do
   // HUD. Eram duas tabelas de `const` no main.js, e por isso estavam CONGELADAS no idioma do boot: um `const`
@@ -658,13 +541,10 @@ const pt: Record<string, string> = {
   'sr.power.turbo': 'Super-corrida! Correndo você fica bem mais rápido.',
   'sr.power.fly': 'Voo! No ar, aperte Pular para começar a voar; Pular de novo encerra.',
   'sr.power.wallcling': 'Escalada (aranha)! No ar, aperte {botao} perto de uma parede/teto para grudar; engatinha e contorna quinas; {botao} de novo solta.',
-  'sr.power.none': 'Sem poder ativo.',
-  'sr.power.generic': 'Poder ativado!',
   'hud.power.off': '—',
   'hud.power.superjump': '🐇 Super-pulo',
   'hud.power.ultrajump': '🦘 Ultra-pulo',
   'hud.power.turbo': '👟 Super-corrida',
-  'hud.power.fly': '🎈 Voo',
   'hud.power.wallcling': '🕷️ Escalada',
   'hud.power.runcane': '👟 Bengala de corrida',
   // ===================== MOVIMENTO REDUZIDO (WCAG 2.3.3) + CRT =====================
@@ -715,19 +595,10 @@ const pt: Record<string, string> = {
   'alt.exigida.fala': 'O comando de voz precisa das teclas de alternância para funcionar.',
   'sr.motor.toggleRunOn': 'Alternância do correr ligada.',
   'sr.motor.toggleRunOff': 'Alternância do correr desligada.',
-  'sr.physics.runLatchOn': 'Correndo.',
-  'sr.physics.runLatchOff': 'Andando.',
   // ===================== AJUDA (menu de pausa) + rótulo de nível =====================
   // `pause.level` é MOLDURA: `{v}` é o nome do nível da psicogênese de Ferreiro e atravessa SEM TRADUÇÃO —
   // currículo de alfabetização não se traduz, reescreve-se por idioma (pilar 3 do ADR-0010). Ver `QL_NAME`.
   'pause.level': '📚 Nível {n} · {v}',
-  'help.controls': 'Seus controles',
-  'help.controlsPlayer': 'Seus controles · Jogador {n}',
-  'help.keyboard': 'teclado',
-  'help.buildNotes': 'Notas desta build',
-  'help.powerups': 'Power-ups: 👟 super-corrida · 🕷️ escalada · 🎈 voo · 🐇 super-pulo · 🦘 ultra-pulo · 🔑 chave abre o 🚪 portão.',
-  'help.multiplayer': '2–4 jogadores: telas lado a lado, cada uma com seu menu e sua configuração.',
-  'help.tech': 'v{v} — PixiJS (WebGL, fallback Canvas) · texto/UI no DOM (acessibilidade) · offline via PWA.',
   // A legenda 'Sim'/'Não' do rodapé de cada pausa (os dois botões do controle). Achado pelo crivo LARGO do
   // item 14: o estreito não o pegou porque 'Sim' não tem acento e 'Não' tem três letras.
   'menu.yes': 'Sim',
@@ -772,45 +643,13 @@ const pt: Record<string, string> = {
   // 41 rótulos de leitor de tela (36 distintos) estavam em português CRU no markup, e só UM dos 53 usava o
   // `data-i18n-aria` que já existia. Numa build em inglês, uma criança cega ouvia a interface inteira em
   // português — o pilar 2 falhando na superfície onde ele mais importa, e em silêncio.
-  'a11y.choosePlayer': 'Escolha o jogador',
-  'a11y.animations': 'Animações',
-  'a11y.literacy': 'Alfabetização',
-  'a11y.shortcuts': 'Atalhos de acessibilidade',
-  'a11y.hearing': 'Audição',
-  'a11y.actionButtons': 'Botões de ação',
-  'a11y.screenButtons': 'Botões de tela (toque)',
-  'a11y.touchButtons': 'Botões de toque na tela',
-  'a11y.audioCategories': 'Categorias de áudio',
   'a11y.communication': 'Comunicação: letras e símbolos',
-  'a11y.outlineFg': 'Contorno de primeiro plano',
-  'a11y.outlineBg': 'Contorno de segundo plano',
-  'a11y.outlines': 'Contornos do alto contraste',
-  'a11y.touchControls': 'Controles de toque',
-  'a11y.padDesign': 'Desenho dos botões',
-  'a11y.chooseScenery': 'Escolha o cenário',
-  'a11y.chooseGame': 'Escolha o jogo',
-  'a11y.chooseNumbers': 'Escolha os números',
-  'a11y.hideDebug': 'Esconder as ferramentas de debug',
-  'a11y.btnSpecial': 'Especial (botão 1)',
-  'a11y.fraction': 'Fração',
-  'a11y.touchRoles': 'Função de cada botão de toque',
-  'a11y.btnRun': 'Interagir / correr (botão 2)',
-  'a11y.eyeGaze': 'Jogar com os olhos',
-  'a11y.mapControls': 'Mapear controles (por jogador)',
-  'a11y.math': 'Matemática',
   'a11y.pauseMenu': 'Menu de pausa',
-  'a11y.simActive': 'Modo de simulação ativo. Toque duas vezes para voltar às cores normais.',
   'a11y.stopAll': 'Parar todas as animações',
   'a11y.resumeAll': 'Retomar todas as animações',
-  'a11y.btnJump': 'Pular (botão 0)',
-  'a11y.audioOut': 'Saída de áudio por jogador',
-  'a11y.visualSim': 'Simulação visual',
-  'a11y.switchScreens': 'Trocar o número de telas (jogadores)',
-  'a11y.btnSwap': 'Trocar poder (botão 3)',
   // O rótulo VISÍVEL do #np-btn. Estava cru no index.html e não podia levar `data-i18n`: o texto embrulha um
   // `<span id="np-n">` com o número, e o `applyDom` escreve `textContent`, o que destruiria o span. A saída é
   // o JavaScript passar a ser dono do rótulo inteiro — o número já é dinâmico, então o texto sempre foi dele.
-  'menu.playerCount': '◀ Nº de jogadores: {n} ▶',
   // ===================== A LEGENDA DE CONTROLES (fileira sob o título) =====================
   // TERCEIRA família de rótulos para as mesmas ações, e de propósito. `act.*` serve à LISTA de mapeamento
   // ("Correr / interagir") e `touch.act.*` ao painel de toque ("Pausar (START)"); os dois cabem lá porque

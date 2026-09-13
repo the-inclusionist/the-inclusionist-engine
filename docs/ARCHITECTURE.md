@@ -160,7 +160,7 @@ This file is structure only.
 | `platform/` | audio · audio-ambient · audio-earcons · audio-jingles · audio-mixer · audio-nav · speech · storage · tts |
 | `input/` | devices · edges · gamepad · keyboard · keyboard-runtime · keydown · **latch** · state · touch · touch-bindings |
 | `render/` | canvas · cenario-data · city-tex · crt · cvd-matrices · draw · fx · hc-role-data · high-contrast · lq-filter · minimap · parallax · player-anim · props · scene-city · scene-parallax · scene-sky · screen-pipeline · set-cenario · sprite-fx · sprites · textures · title-scene · viewports · viz-modes · viz-setters · weather · wheelchair-sprites · world-tex |
-| `ui/` | activities-menu · debug-panel · dom · fonts · hud · layout · map-hub · menu-nav · pause-icons · settings-audio · settings-controls · settings-empathy · settings-motion · settings-motor · settings-panel · settings-typo · settings-visual · shell · title · vlibras · webcam |
+| `ui/` | debug-panel · dom · fonts · hud · layout · map-hub · menu-nav · pause-buttons · pause-icons · settings-audio · settings-controls · settings-empathy · settings-motion · settings-motor · settings-panel · settings-typo · settings-visual · shell · title · vlibras · webcam |
 | `game/` | activities-registry · activity-content · attract · braille · coin-spawning · coins · elevators · fractions · level-geometry · life · literacy-distractors · physics · player · powerups · quiz · secret-areas · session · traffic |
 | (root) | `main.js` — composition root: builds the instances, wires them together, registers the listeners. Was `game.js` until D2; typing it as `main.ts` is the step that remains. |
 

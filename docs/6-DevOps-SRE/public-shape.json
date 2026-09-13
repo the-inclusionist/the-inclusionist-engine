@@ -1671,57 +1671,6 @@
       "fill"
     ]
   },
-  "ui/activities-menu.ts": {
-    "interface CenarioOption": [
-      "id"
-    ],
-    "interface ActivitiesMenuCtx": [
-      "$",
-      "cenarios",
-      "enterFullscreen",
-      "fitsN",
-      "gameId",
-      "getActiveElement",
-      "getActivityId",
-      "getNumPlayers",
-      "getPlayers",
-      "hideTips",
-      "isMobile",
-      "restartGame",
-      "setActivityId",
-      "setCenario",
-      "setNumPlayers",
-      "setPhase",
-      "setQuizLevel",
-      "srAlert",
-      "srSay",
-      "titleShow"
-    ],
-    "interface ActivitiesMenuApi": [
-      "actCat",
-      "buildTitleMenus",
-      "fracNot",
-      "getCenBack",
-      "getPendingPlayers",
-      "navTitle",
-      "reallyStart",
-      "setActivity",
-      "startActivity",
-      "tabSel",
-      "titleButtons"
-    ],
-    "interface PauseBtnDef": [
-      "act",
-      "lbl?",
-      "letra?",
-      "nivel?"
-    ],
-    "interface AbbrParts": [
-      "pre"
-    ],
-    "type FracNotKey": "'v' | 'd' | 'dec' | 'pct' | 'mix'",
-    "type FracNot": "Record<FracNotKey, number>"
-  },
   "ui/caa-sets.ts": {
     "interface CaaSet": [
       "disponivel",
@@ -2018,6 +1967,14 @@
       "valores"
     ],
     "type FormaDoControle": "'interruptor' | 'escolha' | 'cursor'"
+  },
+  "ui/pause-buttons.ts": {
+    "interface PauseBtnDef": [
+      "act",
+      "lbl?",
+      "letra?",
+      "nivel?"
+    ]
   },
   "ui/pause-icons.ts": {
     "interface PauseIcon": [

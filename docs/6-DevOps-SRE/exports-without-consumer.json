@@ -47,6 +47,7 @@
     "render/world-tex.ts worldCanvas": "game-platformer app/js/main.ts",
     "ui/layout.ts initLayout": "game-2048 app/js/boot/main.ts",
     "ui/settings-motor.ts playerPrefix": "game-platformer app/js/main.ts",
+    "ui/title.ts TITLE_MENU_IDS_ORDERED": "game-platformer app/js/ui/activities-menu.ts",
     "ui/vlibras.ts vlibrasSay": "game-platformer app/js/main.ts"
   },
   "debt": {
@@ -93,19 +94,6 @@
     ],
     "render/world-tex.ts": [
       "worldToTexture"
-    ],
-    "ui/activities-menu.ts": [
-      "ABBR_MID",
-      "ALF_MENU_IDS",
-      "FNOT_DESC",
-      "FNOT_SYM",
-      "FR_MENU_IDS",
-      "MAT_MENU_IDS",
-      "TAB_ROWS",
-      "TAB_SEL_DEFAULT",
-      "TM_DESC_HTML",
-      "matMenuHtml",
-      "tmTitleHtml"
     ],
     "ui/fonts.ts": [
       "FONT_KEY",

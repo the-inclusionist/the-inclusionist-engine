@@ -117,11 +117,6 @@ const SEGUROS = [
   ['ui/settings-controls.ts', 'el.innerHTML = ctx.acoesDoJogo().map(', '⚠️ CONSERTADO 2026-09-06: a palavra do jogo saiu do markup e entra por `textContent`'],
   ['input/touch.ts', 'el.innerHTML = TOUCH_SLOTS.map((s) =>', '⚠️ CONSERTADO 2026-09-06: idem — o `<option>` nasce vazio e recebe o rótulo por texto'],
   ['consumer-quiz/main-quiz.ts', 'app.innerHTML = perguntaHtml(p, foco)', '⚠️ CONSERTADO 2026-09-06: enunciado e alternativas passam por `escaparHtml`, com gate hostil em `consumer-quiz`'],
-  ['ui/activities-menu.ts', "const cen = ctx.$<HTMLElement>('#tm-cen')", '⚠️ CONSERTADO 2026-09-06: `c.id` (do jogo) vai por `escaparHtml` no atributo `data-cen`; o `nome` é chave de i18n'],
-  ['ui/activities-menu.ts', "const alf = ctx.$<HTMLElement>('#tm-alf')", 'ids do catálogo (`educational/activities-registry`, código) + i18n'],
-  ['ui/activities-menu.ts', "const mat = ctx.$<HTMLElement>('#tm-mat')", 'ids do catálogo (código) + i18n'],
-  ['ui/activities-menu.ts', "const fr = ctx.$<HTMLElement>('#tm-fr')", 'ids do catálogo (código) + as cinco notações enumeradas'],
-  ['ui/activities-menu.ts', "const tab = ctx.$<HTMLElement>('#tm-tab')", 'só NÚMEROS de tabuada (`TAB_ROWS`) + i18n'],
   ['ui/settings-audio.ts', "el.innerHTML = '<p class=\"opt-hint\">' +", 'uma única chave de i18n, escolhida por um booleano'],
   ['ui/settings-controls.ts', "tabs.innerHTML = '<span class=\"opt-hint\" style=\"widt", '⚠️ CONSERTADO 2026-09-07 (#125): era um literal em português cravado COM o `<strong>` e o plural à mão. Agora o sink é só ESQUELETO — zero dado, zero interpolação — e as três partes do texto entram por `textContent`, com o molde partido no marcador `{modo}` antes da substituição. O dicionário continua sem markup, que é o que o `i18n-sem-markup` exige'],
   ['ui/settings-motion.ts', 'el.innerHTML =', 'literais + o índice do jogador + linhas montadas de tabelas da engine'],
@@ -191,7 +186,7 @@ describe('censo dos sinks de markup — o gate diz «ninguém acrescentou um sem
     // seja, que ninguém acrescentou um sem olhar. O que ele NÃO prova: que os 37 são seguros. Classificação
     // é juízo humano REGISTRADO, não demonstração; sete deles só são seguros porque foram CONSERTADOS, e os
     // gates desses conseratos vivem noutros ficheiros (`quiz-escape`, `settings-controls.browser`, `touch.browser`,
-    // `i18n-consumer-dict`, `activities-menu`, `hud`).
+    // `i18n-consumer-dict`, `hud`; o do menu de título foi com ele para o platformer).
     expect(SEGUROS.length + A_REVER.length).toBe(sinksDeHoje().length);
     expect(SEGUROS.length, 'sink sem classificação nenhuma').toBeGreaterThan(0);
   });

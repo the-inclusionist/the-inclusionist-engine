@@ -192,7 +192,8 @@ describe('a fronteira currículo × moldura', () => {
     // O que prova que a moldura foi separada do conteúdo: se o número estivesse na frase, haveria uma chave por
     // número, e a tradução teria de reproduzir a aritmética.
     const comNumero = chavesSr.filter((k) => /player\.|screens\.(alreadyN|activeN|newRoundN|wontFitN)|round\.multi/.test(k));
-    expect(comNumero.length).toBeGreaterThan(5);
+    // three left since the platformer's screen and round sentences moved to it (ADR-0174); it holds the same rule on them
+    expect(comNumero.length).toBeGreaterThanOrEqual(3);
     for (const k of comNumero) expect(paramsDe(pt[k]), k).toContain('n');
   });
 });

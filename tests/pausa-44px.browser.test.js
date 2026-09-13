@@ -38,7 +38,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import '../app/css/style.css';
 import { screenPauseMarkup } from '../app/js/ui/pause-icons.js';
-import { PM_BTNS, PM_OPTIONS_BTNS } from '../app/js/ui/activities-menu.js';
+import { PM_BTNS, PM_OPTIONS_BTNS } from '../app/js/ui/pause-buttons.js';
 import { alvoMinimo } from '../app/js/ui/layout.js';
 
 /** O alvo do ADR-0044 §6, em CSS px. */

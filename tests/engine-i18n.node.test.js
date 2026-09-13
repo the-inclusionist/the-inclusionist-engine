@@ -207,7 +207,6 @@ const CRU_CONHECIDO = {
   // ignorada como um todo.
 
   /* --- CURRÍCULO, e este é diferente dos outros: pilar 3 manda REESCREVER por idioma, não traduzir. --- */
-  'ui/activities-menu.ts': 3,     // era 5: o item 5 do ADR-0044 tirou os `lbl` crus de PM_BTNS, que nunca iam para a tela      // 'pré-silábico', 'silábico'… as hipóteses de Ferreiro (ADR-0032)
 
   /* --- FORA de `ui/`: menos, e cada um por um motivo próprio. --- */
   'input/touch.ts': 8,             // 'mão de criança' / 'mão de adulto' — classificação, mas VAI para a tela

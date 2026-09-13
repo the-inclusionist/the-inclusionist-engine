@@ -115,7 +115,6 @@ const IMPORTS_CONHECIDOS = {
  *  Menos errada não é certa: o menu ainda sabe o nome de um catálogo. O conserto final é a EdSP entregá-lo por
  *  injeção, e enquanto ela não existe esta lista é o lugar onde a dívida fica CONTÁVEL em vez de invisível. */
 const IMPORTS_CURRICULO = {
-  'ui/activities-menu.ts': ['educational/activities-registry.js'],
 };
 
 function importsDeJogo(m) {
@@ -420,15 +419,6 @@ const FIXTURES_CONHECIDOS = {
   // `QL_NAME` para o módulo MONTAR a frase do botão de nível. Agora a frase chega pronta e o fixture passa
   // `() => null` ou uma string qualquer — o que ele afirma deixou de ser o texto e passou a ser o que a
   // engine de fato decide: usar o rótulo entregue e NÃO pôr `data-i18n` no botão dinâmico.
-  'activities-menu.browser.test.js': 2,
-  // `activities-menu.node.test.js` FICOU VISÍVEL em 2026-08-25 (ADR-0032), e a dívida não é nova: ela estava
-  // aqui o tempo todo, escondida pelo próprio filtro. `testesDeEngine()` pula quem importa de `game/`, e este
-  // teste importava o catálogo de atividades de lá — então nunca foi varrido. O catálogo mudou para
-  // `educational/`, o teste virou "teste de engine puro" aos olhos da varredura, e as 5 linhas apareceram.
-  //
-  // A saída barata seria fazer `IMPORTA_JOGO` casar `educational/` também: o caso ficaria verde na hora e a
-  // cegueira voltaria com outro nome. Currículo não é jogo — a lista é o lugar certo para isto.
-  'activities-menu.node.test.js': 5,
   // Conteúdo do jogo em tabelas da engine.
   // `audio-earcons.node.test.js` SAIU junto: o fixture declarava um earcon chamado 'coin' com a legenda em
   // texto. Agora declara 'alvo' com uma CHAVE que nem existe no dicionário — `t()` devolve a própria chave
@@ -550,13 +540,13 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
     //
     // SOBRAM SEIS, e elas não são todas da mesma natureza — escrevo a separação porque um número sozinho
     // convida a "zerar a lista", que é como um gate passa a mentir:
-    //   · `activities-menu.*` (7)   — o menu do CURRÍCULO. Sai com a EdSP (ADR-0032), não antes.
+    //   · `activities-menu.*` saiu com o próprio menu, que é do platformer (ADR-0174, issue #171).
     //   · `i18n-dicts` (3)          — as chaves `sr.quiz.*`. É o ACHADO 2 do segundo consumidor (peso morto
     //     no dicionário), e não acoplamento: um segundo jogo herda 253 chaves e usa um punhado.
     //   · `storage-escopos` (2)     — a chave `quizlevel`, pelo mesmo motivo de `platform/storage`: `kJogo()`
     //     É o mecanismo de escopo de jogo, e a palavra é que chama a atenção do casador.
     // As duas últimas são o casador notando uma PALAVRA, não a fronteira notando um vazamento.
-    expect(Object.keys(FIXTURES_CONHECIDOS)).toHaveLength(4);
+    expect(Object.keys(FIXTURES_CONHECIDOS)).toHaveLength(2);
     const porSubsistema = new Set(Object.keys(FIXTURES_CONHECIDOS).map((f) => f.split('.')[0]));
     for (const limpo of ['hud', 'audio-nav', 'audio-sonar', 'high-contrast', 'viewports', 'keydown', 'gamepad', 'pause-icons']) {
       expect(porSubsistema, `${limpo} voltou a precisar de moeda/quiz no fixture — o item 19 andou para trás`)

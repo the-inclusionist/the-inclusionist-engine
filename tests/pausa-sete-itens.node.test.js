@@ -27,7 +27,7 @@
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
 import { screenPauseMarkup, PM_ITENS_VISIVEIS, raizQueAcciona } from '../app/js/ui/pause-icons.js';
-import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from '../app/js/ui/activities-menu.js';
+import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from '../app/js/ui/pause-buttons.js';
 import { t } from '../app/js/core/i18n.js';
 
 const SEM_DIN = () => null;

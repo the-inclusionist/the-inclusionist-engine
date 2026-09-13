@@ -66,7 +66,6 @@ const INVENTARIO = {
   'render/high-contrast.ts': 'criança · as cores por papel do alto contraste',
   'render/lq-filter.ts': 'criança · o nível do filtro de baixa qualidade',
   'render/viz-setters.ts': 'criança · a simulação visual escolhida, por jogador',
-  'ui/activities-menu.ts': 'partida · a notação de fração e a tabuada escolhidas NESTE jogo',
   'ui/pause-icons.ts': 'criança · o nível do modo TEA',
   // ⚠️ Entrou em 2026-09-08 pela etapa 1 do ADR-0106, e a entrada diz de quem é a coisa guardada porque é
   // essa a pergunta: os quatro interruptores de movimento reduzido de CENA são preferência da CRIANÇA — eram

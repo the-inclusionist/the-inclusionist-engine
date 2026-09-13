@@ -24,7 +24,7 @@
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
 import { screenPauseMarkup, quickBarMarkup } from '../app/js/ui/pause-icons.js';
-import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from '../app/js/ui/activities-menu.js';
+import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from '../app/js/ui/pause-buttons.js';
 import { passoNoAnel } from '../app/js/ui/menu-nav.js';
 
 const markup = () => screenPauseMarkup({

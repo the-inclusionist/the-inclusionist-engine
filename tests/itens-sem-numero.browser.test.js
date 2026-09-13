@@ -14,7 +14,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import pagina from '../app/quiz.html?raw';
 import css from '../app/css/style.css?raw';
 import { screenPauseMarkup } from '../app/js/ui/pause-icons.js';
-import { PM_BTNS, PM_OPTIONS_BTNS } from '../app/js/ui/activities-menu.js';
+import { PM_BTNS, PM_OPTIONS_BTNS } from '../app/js/ui/pause-buttons.js';
 import pt from '../app/js/i18n/pt.js';
 import en from '../app/js/i18n/en.js';
 import es from '../app/js/i18n/es.js';

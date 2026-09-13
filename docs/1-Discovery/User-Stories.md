@@ -97,8 +97,8 @@ said so. A document that describes the code has to be able to notice when it sto
 ## Teacher
 
 - 🟡 As a **teacher**, I want to **pick the activity per screen**, so that each child gets the right one.
-  `app/js/ui/activities-menu.ts`, `app/js/educational/activities-registry.ts` ·
-  `tests/activities-menu.browser.test.js` — the menu and the registry exist; the per-child assignment is
+  `app/js/educational/activities-registry.ts` — the registry exists here; the title menu that offers it is the platformer's
+  since ADR-0174 (in `game-platformer`); the per-child assignment is
   **#92**/**#96**.
 - 🟡 As a **teacher**, I want to **set the difficulty per player**, so that children at different levels play
   together. `app/js/ui/settings-motor.ts` · `tests/settings-motor.browser.test.js` — "Modo Fácil" is per

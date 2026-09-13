@@ -18,7 +18,7 @@ Este documento é também matéria-prima do **relatório anual** (ADR-0053), que
 | critério | o que promete | onde é aferido |
 |---|---|---|
 | **1.3.1** Info and Relationships | a estrutura chega ao leitor de tela | `tests/menu-nav.browser.test.js` |
-| **1.4.1** Use of Color | cor nunca é o único portador | `tests/activities-menu.browser.test.js`, `tests/notacoes-de-fracao.node.test.js` |
+| **1.4.1** Use of Color | cor nunca é o único portador | `tests/estado-nao-so-por-cor.browser.test.js` (os dois gates do menu de título foram com ele para o `game-platformer`, ADR-0174) |
 | **1.4.11** Non-text Contrast (3:1) | indicador não-textual visível | `tests/contraste-menu.node.test.js`, `tests/marca-alterado-contraste.node.test.js` |
 | **2.2.2** Pause, Stop, Hide | movimento automático pode parar | `tests/weather.node.test.js` |
 | **2.3.3** Animation from Interactions | movimento de interação é desligável | `tests/settings-motion.browser.test.js`, `tests/state.node.test.js` |

@@ -24,7 +24,6 @@ const FORA_DA_PILHA = new Set(['educational', 'consumer-quiz']);
 const DIVIDA = {
   'core/i18n.ts -> platform/storage.ts': 'the chosen language persists: inject the store, or move its pure half down',
   'core/state.ts -> platform/storage.ts': 'state persists: inject the store, or move its pure half down',
-  'ui/activities-menu.ts -> educational/activities-registry.ts': 'curriculum reaches the menu: the platform passes it in',
 };
 
 function modulos() {

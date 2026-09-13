@@ -643,6 +643,24 @@ onTouchControlsShown: () => { setMinimapCorner(true); /* …what it already does
 onTouchControlsHidden: () => setMinimapCorner(false),
 ```
 
+## Y · The platformer's title menu and its sentences left the engine (ADR-0174, issue #171)
+
+**Removed.** `ui/activities-menu` — the title menu of Lúdico, Alfabetização and Matemática, its fraction notations and
+tabuada picker — and **161 keys** of the pt/en/es dictionaries that only `game-platformer` used (`sr.physics.*`,
+`sr.screens.*`, `sr.round.*`, `hud.objective.*`, `a11y.btnJump`…). Measured with git grep across the sibling
+repositories; a key the engine's code, pages or tests still name stayed (15 of the 176 the platformer registers).
+
+**Moved.** The pause card's buttons — `PauseBtnDef`, `PM_BTNS`, `PM_JOGO_BTNS`, `PM_OPTIONS_BTNS` — now live in
+`ui/pause-buttons`: the card is the engine's.
+
+**What to do:** only `game-platformer` is affected, and it already carries both halves (`game-platformer:636aa5b`:
+`app/js/ui/activities-menu.ts` and `app/js/i18n/game-keys.ts`, registered in `create()`). On this version it changes one
+import in `app/js/main.ts`:
+
+```ts
+import { PM_BTNS, PM_OPTIONS_BTNS } from '@the-inclusionist/engine/ui/pause-buttons.js';
+```
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

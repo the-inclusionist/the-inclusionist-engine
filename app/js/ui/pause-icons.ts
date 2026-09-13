@@ -23,7 +23,7 @@
 //   · `vpPause`         — the array of built pause screens; game.js rebuilds it in buildGameHud() and reads it
 //                         in setPhase/navPause/printMode/pauseSelect/__incl. Injected as a getter.
 //   · `rm`/`saveRM`     — the reduced-motion flags object, co-owned with ui/settings-motion (same reference).
-//   · `PM_BTNS`/`QL_NAME` — owned by ui/activities-menu; injected, never copied.
+//   · `PM_BTNS`/`QL_NAME` — owned by ui/pause-buttons; injected, never copied.
 
 
 import type { PlayerView } from '../core/entity.js';
@@ -50,7 +50,7 @@ import { menuIndexOn, DEFAULTS, setModoCegoValue } from '../core/state.js';
 import * as store from '../platform/storage.js';
 import { definirAlternanciaDeMarcha } from './settings-motor.js';
 import { recusaDaAlternancia } from './latch-refusal.js';
-import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from './activities-menu.js';
+import { PM_BTNS, PM_OPTIONS_BTNS, PM_JOGO_BTNS } from './pause-buttons.js';
 import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena } from './motion-scene.js';
 
 /**
@@ -202,7 +202,7 @@ export const CVD_LABELS: Readonly<Record<string, string>> = {
  */
 export type PausePlayer = PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>;
 
-/** One `.pm-btn` descriptor — the shape of game.js's PM_BTNS (owned by ui/activities-menu). */
+/** One `.pm-btn` descriptor — the shape of game.js's PM_BTNS (owned by ui/pause-buttons). */
 export interface PauseMenuButton {
   act: string;
   /** Só é lido quando o botão tem rótulo dinâmico; ver a nota em `PauseBtnDef` (ui/activities-menu). */
@@ -738,7 +738,7 @@ export interface PauseIconsCtx {
   getA11yBars: () => readonly HTMLElement[];
   /*
    * ⚠️ AS DUAS PASSARAM A OPCIONAIS (ADR-0106 §4), e o comentário que estava aqui já dizia porquê sem o
-   * notar: «PM_BTNS — owned by ui/activities-menu; injected, never copied». Se a dona é a ENGINE, pedir ao
+   * notar: «PM_BTNS — owned by ui/pause-buttons; injected, never copied». Se a dona é a ENGINE, pedir ao
    * jogo que a devolva é o mesmo acidente dos outros sete campos. O registo fecha o §4 com a frase que isto
    * cumpre: «a engine entrega uma lista padrão, para que um jogo que não contribui com nada tenha uma».
    *
