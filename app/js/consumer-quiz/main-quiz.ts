@@ -128,6 +128,8 @@
 import { escaparHtml } from '../core/escape-html.js'; // #106: enunciado e alternativas sao TEXTO
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
+import { menuIndexOn } from '../core/state.js';
+import { anunciarItem } from '../ui/item-announcement.js';
 import { createGame, type Engine } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
 
@@ -171,20 +173,20 @@ export function proximoFoco(atualIdx: number, delta: number, total: number): num
 }
 
 /**
- * WHAT THE VOICE SAYS WHEN A QUESTION OPENS: the statement, then every option with its number (ADR-0158 rule 3).
+ * WHAT THE VOICE SAYS WHEN A QUESTION OPENS: the statement, then every option (ADR-0158 rule 3), each with its PLACE
+ * after its name (ADR-0167) — «Gato, 1 de 4. Galinha, 2 de 4. …».
  *
- * The Dev: «Ao abrir uma questão do quiz com TTS on ele fala o enunciado, correto. Mas não fala as opções […] O certo
- * seria após falar o enunciado falar: "1 Gato, 2 Galinha, 3 Cavalo, 4 Peixe".» A question is not answerable by ear
- * until its options are heard, and the number is the one drawn on each option.
+ * A question is not answerable by ear until its options are heard. The place is said the way every menu item says it:
+ * the Dev asked for «uma única função que capture a posição de item e a totalidade de itens», and it is the engine's.
  */
 export function narracaoDaPergunta(p: Pergunta): string {
-  const opcoes = p.alternativas.map((_, i) => opcaoFalada(p, i)).join(', ');
+  const opcoes = p.alternativas.map((_, i) => opcaoFalada(p, i)).join('. ');
   return opcoes ? `${p.enunciado} ${opcoes}` : p.enunciado;
 }
 
-/** One option as it is said: its number, then its words — «2 Galinha». */
+/** One option as it is said: its words, then its place — «Galinha, 2 de 4» (the index can be turned off, ADR-0044). */
 export function opcaoFalada(p: Pergunta, i: number): string {
-  return `${i + 1} ${p.alternativas[i] ?? ''}`.trim();
+  return anunciarItem({ rotulo: p.alternativas[i] ?? '', posicao: i + 1, total: p.alternativas.length }, menuIndexOn);
 }
 
 /**

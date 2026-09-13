@@ -347,9 +347,9 @@ describe('buildScreenPause — delegação de clique nos .pm-btn', () => {
  * A posição é recontada AQUI, a partir do DOM, e não lida da implementação: se as duas contas divergirem, é
  * porque uma delas está errada, e é justamente isso que o caso existe para descobrir.
  */
+// ADR-0167: the VISIBLE name is the accessible name alone — «N de M» is spoken, never written under the bar.
 function legendaEsperada(bar, b) {
-  const icones = [...bar.querySelectorAll('.pi-btn')];
-  return b.getAttribute('aria-label') + ', ' + (icones.indexOf(b) + 1) + ' de ' + icones.length;
+  return b.getAttribute('aria-label');
 }
 
 describe('buildScreenPause — delegação de clique nos .pi-btn', () => {

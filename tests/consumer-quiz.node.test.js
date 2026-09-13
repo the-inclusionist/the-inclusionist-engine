@@ -90,12 +90,13 @@ describe('perguntaHtml — a marcação', () => {
   });
 });
 
-describe('the voice of a question — the statement, then the options with their numbers (ADR-0158)', () => {
+describe('the voice of a question — the statement, then each option with its place after its name (ADR-0167)', () => {
   const galinha = { enunciado: 'Qual animal põe ovos e tem bico?', alternativas: ['Gato', 'Galinha', 'Cavalo', 'Peixe'], certa: 1 };
+  const ABERTA = 'Qual animal põe ovos e tem bico? Gato, 1 de 4. Galinha, 2 de 4. Cavalo, 3 de 4. Peixe, 4 de 4';
 
-  it('🔴 [Right] opening a question says the statement and then «1 Gato, 2 Galinha, 3 Cavalo, 4 Peixe»', () => {
-    // The Dev's own sentence, as a literal: a format computed in the test would move with the code.
-    expect(narracaoDaPergunta(galinha)).toBe('Qual animal põe ovos e tem bico? 1 Gato, 2 Galinha, 3 Cavalo, 4 Peixe');
+  it('🔴 [Right] opening a question says the statement and then «Gato, 1 de 4. Galinha, 2 de 4. …»', () => {
+    // A literal: a format computed in the test would move with the code. The place comes AFTER the name (ADR-0167).
+    expect(narracaoDaPergunta(galinha)).toBe(ABERTA);
   });
 
   it('[Zero] a question with no options says only its statement — no dangling space', () => {
@@ -104,9 +105,9 @@ describe('the voice of a question — the statement, then the options with their
 
   it('🔴 [Right] the WHOLE question only when it opens; a move on the same question says only the option reached', () => {
     const abre = narracaoAoDesenhar(galinha, 0, 0, -1);
-    expect(abre).toEqual({ texto: 'Qual animal põe ovos e tem bico? 1 Gato, 2 Galinha, 3 Cavalo, 4 Peixe', narrada: 0 });
+    expect(abre).toEqual({ texto: ABERTA, narrada: 0 });
     // before, every arrow press re-read the statement and never said where the cursor was
-    expect(narracaoAoDesenhar(galinha, 0, 1, abre.narrada)).toEqual({ texto: '2 Galinha', narrada: 0 });
+    expect(narracaoAoDesenhar(galinha, 0, 1, abre.narrada)).toEqual({ texto: 'Galinha, 2 de 4', narrada: 0 });
     // and the next question opens whole again
     expect(narracaoAoDesenhar(galinha, 1, 0, 0).narrada).toBe(1);
   });

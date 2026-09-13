@@ -37,15 +37,15 @@ afterAll(() => {
 });
 
 describe('the quiz, heard', () => {
-  it('🔴 [Right] opening the first question says its statement AND «1 Gato, 2 Galinha, 3 Cavalo, 4 Peixe»', () => {
+  it('🔴 [Right] opening the first question says its statement AND «Gato, 1 de 4. Galinha, 2 de 4. …» (ADR-0167)', () => {
     expect(falas, 'nothing reached the voice — is narration off by default?').not.toHaveLength(0);
-    expect(falas).toContain('Qual animal põe ovos e tem bico? 1 Gato, 2 Galinha, 3 Cavalo, 4 Peixe');
+    expect(falas).toContain('Qual animal põe ovos e tem bico? Gato, 1 de 4. Galinha, 2 de 4. Cavalo, 3 de 4. Peixe, 4 de 4');
   });
 
-  it('🔴 [Right] an arrow press says the option REACHED, with its number — not the statement again', () => {
+  it('🔴 [Right] an arrow press says the option REACHED, its place after its name — not the statement again', () => {
     const antes = falas.length;
     document.getElementById('game-region').dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', bubbles: true }));
-    expect(falas.slice(antes)).toEqual(['2 Galinha']);
+    expect(falas.slice(antes)).toEqual(['Galinha, 2 de 4']);
   });
 
   it('🔴 [Zero] the quiz asks for NO on-screen pad — its options and its menu button are touched directly (ADR-0166 erratum)', () => {
@@ -53,12 +53,12 @@ describe('the quiz, heard', () => {
     expect(document.getElementById('touch-controls'), 'the quiz still draws an on-screen pad').toBeNull();
   });
 
-  it('🎯 [Right] the options DRAW their numbers — the counter the pause card uses', () => {
-    const lista = document.querySelector('.quiz-alts');
-    const opcao = document.querySelector('.quiz-alt');
-    expect(getComputedStyle(lista).counterReset).toMatch(/^item-menu\b/);
-    expect(getComputedStyle(opcao).counterIncrement).toMatch(/^item-menu\b/);
-    expect(getComputedStyle(opcao, '::before').content, 'no number, or the number enters the name').toBe('counter(item-menu) / ""');
+  it('🔴 [Zero] the options draw NO number — the place is heard, not read (ADR-0167)', () => {
+    for (const opcao of document.querySelectorAll('.quiz-alt')) {
+      const antes = getComputedStyle(opcao, '::before').content;
+      expect(antes === 'none' || antes === 'normal', `«${opcao.textContent}» draws «${antes}» before its name`).toBe(true);
+      expect(opcao.textContent.trim(), 'an option\'s text starts with a digit').not.toMatch(/^\d/);
+    }
   });
 });
 
@@ -67,5 +67,4 @@ describe('the quiz, heard', () => {
 //   Q2 an option said without its number                     🔴 (this file and the node file)
 //   Q3 every draw re-reads the whole question                🔴 the arrow press says the statement again
 //   Q4 the narrated question is not remembered               🔴 the arrow press re-reads everything
-//   Q5 `.quiz-alts` loses the counter reset                  🔴
-//   Q6 `.quiz-alt` draws no number                           🔴
+//   (Q5, Q6 held the drawn number; ADR-0167 took it out — see the checks in `itens-sem-numero`)

@@ -585,6 +585,18 @@ a panel's `.overlay__back`, and drawn by `style.css` in the number's `::before` 
 by its row only (`aria-label="<row>"`, the state is `aria-pressed`); `motionMasterLabel` returns the new
 `a11y.resumeAll` / `a11y.stopAll` instead of Portuguese literals with «▶» / «⏸».
 
+## T · Menu items show no number; the place is spoken after the name (ADR-0167)
+
+**Two names removed, and behaviour.** `ui/menu-items.numerarItens` and `ui/menu-items.ATRIBUTO_DO_NUMERO` are gone, and
+`ui/mount-panel` no longer writes `data-item-num` on panel rows nor `.item-num` spans. `style.css` drops the `item-menu`
+counter on `.pause-menu`/`.pm-btn` and `.quiz-alts`/`.quiz-alt`; a glyph (`data-glifo`) is still drawn before the name.
+The name written under the quick bar (`.pause-icons-cap`) is the icon's accessible name alone — «Modo cego: desligado»,
+not «…, 1 de 9»; `legendaDoIcone` still returns the spoken form with the index. This undoes ADR-0158's visible numbers.
+
+**What to do:** a game that numbered its own rows with `numerarItens` or styled `[data-item-num]` drops it; to say a
+place, speak `ui/item-announcement.anunciarItem({ rotulo, estado, posicao, total }, comIndice)`. Tests that read
+«, N de M» in the bar's visible name read it from what is spoken instead.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

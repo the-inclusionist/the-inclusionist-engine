@@ -75,7 +75,7 @@ import { CHAVES_DE_CENA, ANIMACOES_DO_PERSONAGEM, lerCenaGuardada, guardarCena }
 export function ligarLegendaDaBarra(bar: HTMLElement, explicar: (k: string | null) => void): void {
   const cap = bar.querySelector('.pause-icons-cap');
   const mostrar = (b: HTMLElement): void => {
-    if (cap) cap.textContent = legendaDoIcone(bar, b);
+    if (cap) cap.textContent = rotuloAcessivel(b); // name and state only: «N de M» is spoken, never written (ADR-0167)
     explicar(b.dataset.pi ?? null);
   };
   const largar = (): void => {
@@ -1312,8 +1312,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     bar.querySelectorAll<HTMLElement>('.pi-sel').forEach((x) => x.classList.remove('pi-sel'));
     el.classList.add('pi-sel');
     const cap = bar.querySelector('.pause-icons-cap');
-    if (cap) cap.textContent = legendaDoIcone(bar, el);
-    ctx.srSay(legendaDoIcone(bar, el));
+    if (cap) cap.textContent = rotuloAcessivel(el);
+    ctx.srSay(legendaDoIcone(bar, el)); // the spoken one carries the place (ADR-0167)
     ctx.explicarIcone?.(i, el.dataset.pi ?? null);
   }
 
@@ -1474,7 +1474,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       setPauseActor(i);
       iconAct(ib.dataset.pi || '', i);
       reflectPauseIcons(); // must run BEFORE reading the label back — that is what makes the caption honest
-      if (cap) cap.textContent = legendaDoIcone(bar, ib);
+      if (cap) cap.textContent = rotuloAcessivel(ib);
     });
 
     // Legenda = o `aria-label` do botão, para que passar o mouse ou focar diga a MESMA verdade que um leitor

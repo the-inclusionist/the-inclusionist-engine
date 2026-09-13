@@ -362,14 +362,9 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 /* ADR-0161: a locked item stays in the list, visibly muted; the cursor still lands on it and it says its reason. */
 .pm-btn[aria-disabled="true"]{color:#9aa6b8;border-style:dashed;cursor:not-allowed}
 .pm-btn:hover,.pm-btn:focus,.pm-btn.pm-sel{background:#2a3a5e;border-color:#ffd23f;outline:2px solid #ffd23f;outline-offset:1px}
-/* ADR-0158: every item shows its position, 1..n per list. A CSS counter and not a span: an item hidden by
-   `[hidden]{display:none}` takes no number, and no label rewrite (`applyDom`, dynamic labels) can wipe it. The
-   `/ ""` keeps it out of the accessible name — the engine's spoken index (ADR-0044 item 3) says the same number. */
-.pause-menu,.quiz-alts{counter-reset:item-menu}
-.pm-btn,.quiz-alt{counter-increment:item-menu}
-.pm-btn::before,.quiz-alt::before{content:counter(item-menu) / "";margin-inline-end:.5em;font-variant-numeric:tabular-nums}
-/* ADR-0159 rule 12: a pause item's glyph is drawn after its number with empty alternative text — out of the name. */
-.pm-btn[data-glifo]::before{content:counter(item-menu) "\00a0\00a0" attr(data-glifo) / ""}
+/* ADR-0167: no item shows a position number — the place is SPOKEN after the name («…, 2 de 6»), never drawn.
+   ADR-0159 rule 12: a pause item's glyph is drawn with empty alternative text, out of the name. */
+.pm-btn[data-glifo]::before{content:attr(data-glifo) / "";margin-inline-end:.5em}
 /* Legenda sim/não: ícone do botão (conforme layout do controle) + a palavra. Sony/Nintendo invertem 0↔1. */
 .pause-legend{display:flex;gap:1.1rem;justify-content:center;margin:.7rem 0 .1rem;font-size:1em;color:#c3cfe0}
 .pause-legend .lg{display:inline-flex;align-items:center;gap:.35rem}
@@ -679,12 +674,8 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
 .overlay__card h2{margin-top:0}
 /* ADR-0158: «Voltar» is the panel's item 1 — a full-width row above the list, not a pill at the bottom. */
 .overlay__back{display:flex;align-items:center;width:100%;margin:0 0 .45rem;text-align:left;border-radius:8px}
-/* ADR-0158: a panel's stops carry the spoken index's number (`ui/menu-items` writes it). The row keeps its label next
-   to the number and its control at the far end; `/ ""` keeps the number out of the accessible name. */
-.ctrl-row[data-item-num]>:last-child{margin-inline-start:auto}
-.ctrl-row[data-item-num]::before,.overlay__card button[data-item-num]::before{content:attr(data-item-num) / "";font-weight:700;font-variant-numeric:tabular-nums;margin-inline-end:.5em}
-.overlay__card button[data-item-num][data-glifo]::before{content:attr(data-item-num) "\00a0\00a0" attr(data-glifo) / ""}
-.item-num{font-weight:700;font-variant-numeric:tabular-nums}
+/* ADR-0167: a panel's stops draw no number; «Voltar»'s glyph stays, out of the accessible name (ADR-0159 rule 12). */
+.overlay__card button[data-glifo]::before{content:attr(data-glifo) / "";margin-inline-end:.5em}
 .topbar__right{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
 .title-card{text-align:center}
 .title-big{font-size:2em;margin:.2rem 0;color:var(--accent)}

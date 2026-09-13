@@ -1260,10 +1260,8 @@
     "wrongModeMessage"
   ],
   "ui/menu-items.ts": [
-    "ATRIBUTO_DO_NUMERO",
     "ITEM_SELECTOR",
-    "itensNavegaveis",
-    "numerarItens"
+    "itensNavegaveis"
   ],
   "ui/menu-nav.ts": [
     "KEY_DOWN",
@@ -1331,6 +1329,7 @@
     "CVD_NAMES",
     "CVD_SEQ",
     "EscritoresVisuais",
+    "GLIFO_DO_ITEM",
     "ICON_STATE_CLASSES",
     "ITENS_DA_ENGINE",
     "IconStateSnapshot",

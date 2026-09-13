@@ -22,7 +22,7 @@
 // action works, and not before». That judgement belongs to the composition root, which knows what it has.
 import type { PanelLabels, PanelShell, PanelShellCtx } from './panel-shell.js';
 import { aplicarRotulos, montarCasca } from './panel-shell.js';
-import { itensNavegaveis, numerarItens } from './menu-items.js';
+import { itensNavegaveis } from './menu-items.js';
 
 /**
  * The latest redraw of each mounted overlay. A panel mounted twice (two cartridges on one page, ADR-0139) keeps ONE
@@ -118,23 +118,8 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
     ctx.overlays.restoreFocus?.(spec.id);
   });
 
-  /*
-   * ADR-0158: every stop of the cursor shows its number, the spoken index's (`ui/menu-items`). Renumbered on every
-   * change while the panel is open, and not only on open: panels re-render their rows on each click, and a row can
-   * hide (the keyboard seat row, the 3–4 row) — a number written once would point at the wrong row a click later.
-   * 📌 The observer disconnects while it writes: the numbers it inserts are mutations too.
-   */
-  const Observador = (globalThis as { MutationObserver?: typeof MutationObserver }).MutationObserver;
-  const vigiar = (): void => {
-    observador?.observe(casca.card, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'disabled'] });
-  };
-  const observador = Observador ? new Observador(() => {
-    if (casca.overlay.hidden) return;
-    observador?.disconnect();
-    numerarItens(casca.card);
-    observador?.takeRecords();
-    vigiar();
-  }) : null;
+  // 🔴 NO NUMBERING (ADR-0167): the stops drew their index here, renumbered by an observer on every render; the place is
+  // now only spoken, after the name, by the navigation.
 
   const abrir = (): void => {
     // ⚠️ OS RÓTULOS ANTES DO `render()`, e a ordem tem consequência: `ui/settings-panel.fillExplain` lê o
@@ -143,9 +128,6 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
     spec.render();
     casca.overlay.hidden = false;
     ctx.overlays.frontOverlay(casca.overlay);
-    // After the reveal: a stop is counted only if it is laid out, and a hidden overlay lays out nothing.
-    numerarItens(casca.card);
-    vigiar();
     casca.fechar.focus?.();
   };
 
@@ -162,7 +144,7 @@ export function montarPainel(ctx: MountPanelCtx, spec: MountPanelSpec): MountedP
     const focado = doc.activeElement as HTMLElement | null;
     const lugar = focado && casca.card.contains(focado) ? itensNavegaveis(casca.card).indexOf(focado) : -1;
     aplicarRotulos(casca, spec.rotulos());
-    spec.render(); // the observer above renumbers what the render rebuilt
+    spec.render();
     if (lugar < 0 || !focado) return;
     const destino = focado.isConnected ? focado : itensNavegaveis(casca.card)[lugar];
     if (destino && destino !== doc.activeElement) destino.focus();

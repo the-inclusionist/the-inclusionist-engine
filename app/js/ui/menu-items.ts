@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/menu-items — WHAT COUNTS AS A MENU ITEM, and the number each one shows (ADR-0158).
+// ui/menu-items — WHAT COUNTS AS A MENU ITEM: the stops of the cursor, whose position the spoken index says.
 //
-// ========================= WHY ONE MODULE HOLDS BOTH =========================
-// ADR-0158 rule 2: «the number is the spoken index's number». The spoken index is computed by `ui/menu-nav` over
-// the cursor's stops; if the numbers were computed over anything else — rows, say — a row holding a switch and a
-// volume slider would show one number and be announced as two. So the list of stops lives HERE, once, and both the
-// navigation and the numbering read it. Two copies of a selector is how «2 of 7» and a written «3» drift apart.
+// The list of stops lives HERE, once, and everything that speaks a place or keeps focus by place reads it: a second
+// copy of the selector is how «2 de 7» and the item the cursor is on drift apart. (Until ADR-0167 it also drew a
+// visible number per stop; that left — the place is heard, after the name.)
 //
-// 📌 A LEAF, importing nothing: `ui/mount-panel` needs the numbering and must not pull `ui/menu-nav`, which pulls the
+// 📌 A LEAF, importing nothing: `ui/mount-panel` needs the stops and must not pull `ui/menu-nav`, which pulls the
 // whole pause slice.
 
 /** The controls that are a stop of the cursor. `[data-passos]` is ONE stop: its arrows are finger targets. */
@@ -23,34 +21,5 @@ export function itensNavegaveis(card: ParentNode): HTMLElement[] {
   return [...card.querySelectorAll<HTMLElement>(ITEM_SELECTOR)].filter((el) => el.offsetParent !== null);
 }
 
-/** The attribute a row or a button carries its number in; drawn by `style.css` with `attr()`. */
-export const ATRIBUTO_DO_NUMERO = 'data-item-num';
-const CLASSE_DO_NUMERO = 'item-num';
-
-/**
- * Writes each stop's number, 1..n, where the eye finds it.
- *
- * · the FIRST stop of a `.ctrl-row` numbers the ROW — the number sits before the row's label;
- * · a further stop in the same row gets its own number right before it (a `span`, since a range input draws no
- *   `::before`);
- * · a stop outside any row (the «Voltar» row, the reset) numbers itself.
- *
- * IDEMPOTENT: every earlier number is cleared first, so a re-render, a row that hides, or a panel opened twice
- * leaves exactly one number per stop. `aria-hidden` on the span, `/ ""` in the stylesheet: the number stays out of
- * the accessible name, because the spoken index already says it.
- */
-export function numerarItens(card: HTMLElement): void {
-  for (const el of card.querySelectorAll<HTMLElement>(`[${ATRIBUTO_DO_NUMERO}]`)) el.removeAttribute(ATRIBUTO_DO_NUMERO);
-  for (const el of card.querySelectorAll<HTMLElement>(`.${CLASSE_DO_NUMERO}`)) el.remove();
-  itensNavegaveis(card).forEach((item, i) => {
-    const n = String(i + 1);
-    const linha = item.closest<HTMLElement>('.ctrl-row');
-    if (!linha || !card.contains(linha)) { item.setAttribute(ATRIBUTO_DO_NUMERO, n); return; }
-    if (!linha.hasAttribute(ATRIBUTO_DO_NUMERO)) { linha.setAttribute(ATRIBUTO_DO_NUMERO, n); return; }
-    const marca = (card.ownerDocument ?? document).createElement('span');
-    marca.className = CLASSE_DO_NUMERO;
-    marca.setAttribute('aria-hidden', 'true');
-    marca.textContent = n;
-    item.before(marca);
-  });
-}
+// 🔴 `numerarItens` AND `ATRIBUTO_DO_NUMERO` LEFT (ADR-0167): no stop shows a number. The list above still gives the
+// spoken index its position — «…, 2 de 7» after the name, from `ui/item-announcement.anunciarItem`.
