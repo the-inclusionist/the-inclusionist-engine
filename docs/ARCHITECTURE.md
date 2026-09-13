@@ -94,6 +94,10 @@ docs/
 │   ├── public-surface.json    #   the committed snapshot the gate compares against — NOT hand-edited:
 │   │                          #   `node scripts/snapshot-public-surface.mjs` rewrites it, and running it
 │   │                          #   IS the declaration that a removal was deliberate
+│   ├── public-page-surface.json #  the CSS variables, classes, ids, data-* and keys cartridges read, each with its
+│   │                          #   reader (ADR-0170); hand-kept, held by `superficie-da-pagina`
+│   ├── exports-without-consumer.json # exported values nothing here imports: the cartridge that does, or the
+│   │                          #   debt (only shrinks). `node scripts/exports-without-consumer.mjs --catalogue ..`
 │   ├── CI-QA.md               #   axe-core a11y (now, verifies NFR) · k6 load (backend, verifies SLO)
 │   ├── Security-Pipeline.md   #   SAST + secret detection + npm audit (now) · DAST (backend) · Pentest (scheduled)
 │   └── SLO.md                 #   SLI/SLO/Error-Budget/SLA (backend, rigor by tier)

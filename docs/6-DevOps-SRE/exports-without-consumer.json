@@ -1,0 +1,136 @@
+{
+  "about": "Exports no engine module, test or script imports (ADR-0170 §3, issue #164). cartridgeConsumers: the ones a sibling game repository imports, with the place. debt: the ones nothing imports — candidates to become internal; the list only shrinks. A new export with no importer in this repository names its cartridge here. Rewritten by `node scripts/exports-without-consumer.mjs --catalogue ..`; held by tests/exports-sem-consumidor.node.test.js.",
+  "cartridgeConsumers": {
+    "core/collision.ts isWcRampRiser": "game-platformer app/js/game/physics.ts",
+    "core/i18n.ts availableLocales": "game-soccer tests/i18n.node.test.ts",
+    "core/state.ts emit": "game-platformer app/js/game/state.ts",
+    "core/state.ts hcOutlineBg": "game-platformer app/js/main.ts",
+    "core/state.ts hcOutlineFg": "game-platformer app/js/main.ts",
+    "core/state.ts initVizMode": "game-platformer app/js/main.ts",
+    "core/state.ts letterCase": "game-platformer app/js/main.ts",
+    "core/state.ts ownerColors": "game-platformer app/js/main.ts",
+    "core/state.ts setOutlineBgValue": "game-platformer app/js/main.ts",
+    "core/state.ts setOutlineFgValue": "game-platformer app/js/main.ts",
+    "core/state.ts setOwnerColorsValue": "game-platformer app/js/main.ts",
+    "core/state.ts setWheelchairValue": "game-platformer app/js/main.ts",
+    "core/state.ts vizMode": "game-platformer app/js/game/coin-spawning.ts",
+    "core/state.ts wheelchair": "game-platformer app/js/main.ts",
+    "platform/audio.ts _footCount": "game-platformer app/js/main.ts",
+    "platform/audio.ts noiseBuffer": "game-platformer app/js/main.ts",
+    "platform/audio.ts noiseHit": "game-platformer app/js/main.ts",
+    "platform/audio.ts setMasterMuted": "game-platformer app/js/main.ts",
+    "platform/audio.ts tone": "game-platformer app/js/main.ts",
+    "render/city-tiles.ts cityTiles": "game-platformer app/js/main.ts",
+    "render/fx.ts burstSparkle": "game-platformer app/js/main.ts",
+    "render/fx.ts getShakeT": "game-platformer app/js/main.ts",
+    "render/fx.ts initFx": "game-platformer app/js/main.ts",
+    "render/fx.ts puffDust": "game-platformer app/js/main.ts",
+    "render/fx.ts saveJuice": "game-platformer app/js/main.ts",
+    "render/player-anim.ts COYOTE": "game-platformer tests/player-anim.node.test.js",
+    "render/recycling-tex.ts COR_DA_LIXEIRA": "game-platformer tests/recycling-tex.node.test.js",
+    "render/recycling-tex.ts LIXEIRA_W": "game-platformer app/js/main.ts",
+    "render/recycling-tex.ts LIXO_ART": "game-platformer app/js/main.ts",
+    "render/recycling-tex.ts PLACA_W": "game-platformer tests/recycling-tex.node.test.js",
+    "render/recycling-tex.ts createRecyclingTextures": "game-platformer app/js/main.ts",
+    "render/recycling-tex.ts paintCaixaDePapelao": "game-platformer tests/recycling-tex.node.test.js",
+    "render/recycling-tex.ts paintGarrafaPet": "game-platformer tests/recycling-tex.node.test.js",
+    "render/recycling-tex.ts paintLatinha": "game-platformer tests/recycling-tex.node.test.js",
+    "render/recycling-tex.ts paintLixeira": "game-platformer tests/recycling-tex.node.test.js",
+    "render/recycling-tex.ts paintPlaca": "game-platformer tests/recycling-tex.node.test.js",
+    "render/recycling-tex.ts paintPoteDeVidro": "game-platformer tests/recycling-tex.node.test.js",
+    "render/scene-parallax.ts parallaxPlaceholder": "game-platformer app/js/main.ts",
+    "render/scene-parallax.ts themeCitySkyTexture": "game-platformer app/js/main.ts",
+    "render/scene-parallax.ts themeHillsTexture": "game-platformer app/js/main.ts",
+    "render/scene-parallax.ts themeSkyTexture": "game-platformer app/js/main.ts",
+    "render/scene-parallax.ts themeSkylineTexture": "game-platformer app/js/main.ts",
+    "render/weather.ts getAglomeracao": "game-platformer app/js/main.ts",
+    "render/world-tex.ts initWorldTex": "game-platformer app/js/main.ts",
+    "render/world-tex.ts worldCanvas": "game-platformer app/js/main.ts",
+    "ui/layout.ts initLayout": "game-2048 app/js/boot/main.ts",
+    "ui/settings-motor.ts playerPrefix": "game-platformer app/js/main.ts",
+    "ui/vlibras.ts vlibrasSay": "game-platformer app/js/main.ts"
+  },
+  "debt": {
+    "consumer-quiz/main-quiz.ts": [
+      "bootQuiz",
+      "declararQuiz",
+      "opcaoFalada"
+    ],
+    "core/contract.ts": [
+      "dimension"
+    ],
+    "core/i18n.ts": [
+      "applyDom"
+    ],
+    "input/gamepad.ts": [
+      "PADWIZ_ANIM"
+    ],
+    "input/keyboard.ts": [
+      "KB_SCHEMES4"
+    ],
+    "input/touch-bindings.ts": [
+      "TOUCH_FORCE_RE"
+    ],
+    "input/touch.ts": [
+      "nomeDoBotao"
+    ],
+    "input/transports.ts": [
+      "SEGURA_TOQUE",
+      "holds"
+    ],
+    "platform/audio-sonar.ts": [
+      "GUIA_HZ",
+      "ORCAMENTO_DA_ROTA",
+      "TAU_DO_GUIA"
+    ],
+    "platform/voice-plan.ts": [
+      "caminhoDoModelo"
+    ],
+    "render/viz-axes.ts": [
+      "temaDireto"
+    ],
+    "render/world-tex.ts": [
+      "worldToTexture"
+    ],
+    "ui/activities-menu.ts": [
+      "ABBR_MID",
+      "ALF_MENU_IDS",
+      "FNOT_DESC",
+      "FNOT_SYM",
+      "FR_MENU_IDS",
+      "MAT_MENU_IDS",
+      "TAB_ROWS",
+      "TAB_SEL_DEFAULT",
+      "TM_DESC_HTML",
+      "matMenuHtml",
+      "tmTitleHtml"
+    ],
+    "ui/fonts.ts": [
+      "FONT_KEY",
+      "FONT_KEY_LEGACY",
+      "loadFontKey",
+      "saveFontKey"
+    ],
+    "ui/loop-crash.ts": [
+      "AVISO_DE_QUEDA_ID"
+    ],
+    "ui/menu-items.ts": [
+      "ITEM_SELECTOR"
+    ],
+    "ui/pause-icons.ts": [
+      "CVD_LABELS",
+      "GLIFO_DO_ITEM",
+      "ITENS_DA_ENGINE",
+      "itensQueAccionam",
+      "motivoDoItem",
+      "pauseIcon",
+      "pauseMenuHtml"
+    ],
+    "ui/settings-controls.ts": [
+      "acaoQueJaTem"
+    ],
+    "ui/settings-visual.ts": [
+      "sameRgb"
+    ]
+  }
+}

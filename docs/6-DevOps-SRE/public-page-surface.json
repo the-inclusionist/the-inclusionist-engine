@@ -1,0 +1,56 @@
+{
+  "about": "What a cartridge reads from the engine's page that TypeScript does not see (ADR-0170, issue #164). Every name says who reads it: a sibling repository (measured with git grep on 2026-09-13, first place shown) or the record that tells games to read it. Changing a name, or what it MEANS, writes a note in Breaking-Changes.md, as an export does. Held by tests/superficie-da-pagina.node.test.js.",
+  "cssVariables": {
+    "--tap": ["game-chess app/css/board.css:359", "game-whackwhack app/css/style.css:9", "pixi-15-puzzle app/css/style.css:18"],
+    "--ui-fs": ["game-2048 app/css/game.css:26", "game-chess app/css/board.css:159", "game-whackwhack app/css/style.css:143", "pixi-15-puzzle app/css/style.css:130"],
+    "--maxw": ["game-whackwhack app/css/style.css:19"],
+    "--accent": ["game-chess app/css/board.css:552", "pixi-15-puzzle app/css/style.css:142"],
+    "--frac-fill": ["game-platformer app/js/game/fractions.ts:39"],
+    "--barra-a11y-h": ["ADR-0148"],
+    "--alvo-min": ["ADR-0095", "ADR-0163"],
+    "--rodape-h": ["ADR-0164", "ADR-0170"]
+  },
+  "mountedClasses": {
+    "pi-btn": ["game-2048 tests/factory.browser.test.ts:118", "game-pinball app/css/style.css:183", "game-whackwhack tests/a11y.browser.test.ts:293", "pixi-15-puzzle tests/cartridge.browser.test.ts:146"],
+    "pi-cvd-protan": ["game-whackwhack tests/a11y.browser.test.ts:497"],
+    "pause-menu": ["game-soccer tests/boot.browser.test.ts:449"],
+    "pm-btn": ["game-soccer tests/boot.browser.test.ts:449"],
+    "pm-sel": ["game-soccer tests/boot.browser.test.ts:457"],
+    "pause-legend": ["game-platformer app/js/main.ts:1941"],
+    "overlay": ["game-2048 app/css/game.css:194", "game-pinball tests/engine-sees-our-screens.browser.test.ts:86", "game-platformer app/js/main.ts:1838"],
+    "ctrl-row": ["game-soccer app/css/game.css:173", "pixi-15-puzzle app/css/style.css:358"],
+    "opt-hint": ["pixi-15-puzzle app/css/style.css:367"],
+    "mode-btn": ["game-2048 app/css/game.css:194"],
+    "rodape-da-tela": ["ADR-0164", "ADR-0170"],
+    "legenda-de-som": ["ADR-0170"],
+    "pause-icons-cap": ["ADR-0170"]
+  },
+  "styledClasses": {
+    "sr-only": ["game-chess app/css/board.css:1188", "game-soccer app/css/game.css:22", "game-whackwhack app/css/style.css:313", "pixi-15-puzzle app/css/style.css:321"]
+  },
+  "ids": {
+    "vp-pause-0": ["game-chess tests/shell.browser.test.ts:1404", "game-soccer tests/boot.browser.test.ts:366", "game-whackwhack tests/a11y.browser.test.ts:283"],
+    "title-icons": ["game-pinball tests/accessibility.browser.test.ts:171"],
+    "reach-notice": ["game-pinball tests/boot.browser.test.ts:73"],
+    "dom-layer": ["game-platformer app/js/main.ts:1837"],
+    "game-region": ["game-chess app/css/board.css:128", "game-pinball app/css/style.css:98", "game-whackwhack app/css/style.css:99", "pixi-15-puzzle app/css/style.css:87"],
+    "stage-wrap": ["game-chess app/css/board.css:191", "game-whackwhack app/css/style.css:87", "pixi-15-puzzle app/css/style.css:69"]
+  },
+  "dataAttributes": {
+    "data-pi": ["game-pinball tests/accessibility.browser.test.ts:171", "game-platformer app/js/main.ts:2204", "game-whackwhack tests/a11y.browser.test.ts:301"],
+    "data-act": ["game-soccer tests/boot.browser.test.ts:394"],
+    "data-i18n": ["game-2048 app/index.html:38", "game-platformer app/index.html:21"],
+    "data-i18n-aria": ["game-2048 app/index.html:57", "game-platformer app/index.html:43"],
+    "data-glifo": ["ADR-0170"]
+  },
+  "dictionaryKeys": {
+    "menu.restoreDefaults": ["game-2048 app/index.html:159", "game-platformer app/index.html:225"],
+    "menu.close": ["game-2048 app/index.html:138"],
+    "eixo.correcao.titulo": ["game-2048 app/index.html:110"],
+    "skip.toGame": ["game-platformer app/index.html:21"],
+    "act.up": ["game-platformer app/js/game/platformer-preset.ts:31"],
+    "act.down": ["game-platformer app/js/game/platformer-preset.ts:32"],
+    "act.left": ["game-platformer app/js/game/platformer-preset.ts:33"],
+    "act.right": ["game-platformer app/js/game/platformer-preset.ts:34"]
+  }
+}
