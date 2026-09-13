@@ -163,6 +163,7 @@ import { anunciarItem } from './item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js';
 import { itensNavegaveis } from './menu-items.js';
+import { t } from '../core/i18n.js';
 export { hasNavIntent as hasIntent } from '../input/edges.js';
 
 // A CONTA DO ANEL mudou de casa para `core/anel` no item 7 do ADR-0044: `ui/pause-icons` passou a precisar
@@ -312,6 +313,39 @@ export interface MenuNavApi {
 
 // O SELECTOR DOS ITENS mudou-se para `ui/menu-items` (ADR-0158): a numeração visível lê a MESMA lista, porque o número
 // escrito tem de ser o do índice falado — duas cópias do selector eram como «2 de 7» e um «3» escrito divergiriam.
+/**
+ * As partes que um controle de painel DIZ (ADR-0159 regra 1, XAG 106: «Gamma, slider, 38%, 6 of 9»): o rótulo com o
+ * PAPEL, e o VALOR. O índice junta-se no `anunciarItem`.
+ *
+ * O rótulo é o `<strong>` da linha quando o controle vive numa (é o que se VÊ, e o texto de um interruptor é o estado,
+ * não o nome); fora de linha, ou num cursor com nome próprio («Volume de Música»), é o nome acessível.
+ */
+export function partesDoControle(el: HTMLElement): { rotulo: string; estado: string } {
+  const forte = el.closest('.ctrl-row')?.querySelector('strong')?.textContent?.trim() || '';
+  const nome = rotuloAcessivel(el);
+  const com = (rotulo: string, papel: string): string => `${rotulo}, ${t(papel)}`;
+  if (el.hasAttribute('data-passos')) {
+    return { rotulo: com(el.getAttribute('aria-label') || forte, 'sr.papel.passos'), estado: el.getAttribute('aria-valuetext') ?? '' };
+  }
+  if (el.tagName === 'SELECT') {
+    const s = el as HTMLSelectElement;
+    return { rotulo: com(forte || nome, 'sr.papel.lista'), estado: s.selectedOptions?.[0]?.textContent?.trim() ?? '' };
+  }
+  if (el.tagName === 'INPUT') {
+    const r = el as HTMLInputElement;
+    const min = +r.min || 0, max = +r.max || 100;
+    const pct = max > min ? Math.round(((+r.value - min) / (max - min)) * 100) : 0;
+    return { rotulo: com(el.getAttribute('aria-label') || forte, 'sr.papel.cursor'), estado: `${pct}%` };
+  }
+  if (el.hasAttribute('aria-pressed')) {
+    return { rotulo: com(forte || nome, 'sr.papel.interruptor'), estado: t(el.getAttribute('aria-pressed') === 'true' ? 'state.on' : 'state.off') };
+  }
+  if (el.getAttribute('role') === 'radio') {
+    return { rotulo: com(forte || nome, 'sr.papel.opcao'), estado: el.getAttribute('aria-checked') === 'true' ? t('sr.estado.selecionado') : '' };
+  }
+  return { rotulo: com(nome, 'sr.papel.botao'), estado: '' };
+}
+
 /** Onde os itens moram: o card do diálogo (`.overlay__card`) ou o card da pausa (`.pause-card`). */
 const CARD_SELECTOR = '.overlay__card, .pause-card';
 
@@ -352,29 +386,49 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     el.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
+  /**
+   * O ITEM ALCANÇADO SE DIZ (ADR-0159 regra 1): rótulo, papel, valor e «N de M», nessa ordem.
+   *
+   * 🔴 Medido no `dist` em 2026-09-12: dentro de um painel o cursor andava e o `#sr-status` ficava calado — o índice
+   * falado só existia no cartão de pausa. O foco do navegador move-se, mas a narração da engine (a de quem joga no
+   * modo cego) não ouve foco; ouve isto.
+   */
+  function dizerItem(items: readonly HTMLElement[], n: number): void {
+    const el = items[n];
+    if (!el) return;
+    const { rotulo, estado } = partesDoControle(el);
+    ctx.srSay(anunciarItem({ rotulo, estado, posicao: n + 1, total: items.length }, ctx.comIndice()));
+  }
+
+  function focarEDizer(items: readonly HTMLElement[], n: number): void {
+    items[n]?.focus();
+    dizerItem(items, n);
+  }
+
   function navDialog(menu: HTMLElement, k: NavKeys): void {
     const items = menuItems(menu);
     if (!items.length) return;
     let idx = items.indexOf(ctx.getActiveElement() as HTMLElement);
-    if (idx < 0) { idx = 0; items[0].focus(); } // foco fora do diálogo (ou no card): entra pelo primeiro
+    if (idx < 0) { idx = 0; focarEDizer(items, 0); } // foco fora do diálogo (ou no card): entra pelo primeiro
     const cur = items[idx];
 
     if (k.no) { dialogBack(menu); return; }
 
     if (k.left || k.right) {
       const d = k.right ? 1 : -1;
-      if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, d); return; }
-      if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); return; }
-      // Os PASSOS ⯇ ⯈ (ADR-0151): esquerda e direita são o próprio ajuste, e quem o aplica ouve o `passo`.
+      // o VALOR novo é dito: quem ajusta de ouvido não tem outra forma de saber onde parou
+      if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, d); dizerItem(items, idx); return; }
+      if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); dizerItem(items, idx); return; }
+      // Os PASSOS ⯇ ⯈ (ADR-0151): esquerda e direita são o próprio ajuste, e quem o aplica ouve o `passo` (e anuncia).
       if (cur.hasAttribute('data-passos')) { cur.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true })); return; }
-      items[passoNoAnel(items.length, idx, d)].focus();
+      focarEDizer(items, passoNoAnel(items.length, idx, d));
       return;
     }
 
-    if (k.up || k.down) { items[passoNoAnel(items.length, idx, k.down ? 1 : -1)].focus(); return; }
+    if (k.up || k.down) { focarEDizer(items, passoNoAnel(items.length, idx, k.down ? 1 : -1)); return; }
 
     if (k.yes) {
-      if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, 'wrap'); return; }
+      if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, 'wrap'); dizerItem(items, idx); return; }
       if (cur.tagName === 'INPUT') return; // slider não tem "confirmar" — só ajuste
       if (cur.hasAttribute('data-passos')) return; // os passos também não: «sim» num ajuste não significa nada
       cur.click();

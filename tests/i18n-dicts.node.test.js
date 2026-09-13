@@ -101,6 +101,10 @@ describe('dicionários de locale — estrutura', () => {
       // 'Modo TEA: {v}.' — "TEA" (Transtorno do Espectro Autista / Trastorno del Espectro Autista) é a mesma
       // sigla nas duas línguas, e o nível chega pelo parâmetro, esse sim traduzido (calmo/calmado).
       'sr.icon.tea',
+      // The control types spoken after a panel item's label (ADR-0159 rule 1): «interruptor» and «lista» are the same
+      // word in pt-BR and es (RAE: interruptor, lista), not a copy left untranslated.
+      'sr.papel.interruptor',
+      'sr.papel.lista',
       // 'ok' — empréstimo do inglês que entrou nas três línguas com a mesma grafia e o mesmo som. Traduzir
       // por "de acordo"/"aceptar" seria trocar a palavra que a criança já reconhece no botão por uma mais
       // longa e menos familiar, justamente no cursor de confirmar.

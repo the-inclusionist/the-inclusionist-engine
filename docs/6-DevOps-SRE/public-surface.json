@@ -1277,6 +1277,7 @@
     "NavKeyEvent",
     "initMenuNav",
     "menuKeyIntent",
+    "partesDoControle",
     "passoNaPausa",
     "rangeStep",
     "selectStep",

@@ -373,7 +373,7 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     expect(log.phase).toContain('playing');
   });
 
-  it('[Boundary] o DIÁLOGO de ajuste NÃO fala o item — quem o anuncia é o foco', () => {
+  it('🔴 [Right] moving inside a settings PANEL speaks the item reached — label, type, «N de M» (ADR-0159 rule 1)', () => {
     // A FRONTEIRA do item 3 do ADR-0044, e ela é decisão e não esquecimento.
     //
     // O item diz que todo item navegável anuncia posição e total "em todo lugar — pausa, título, opções,
@@ -392,11 +392,53 @@ describe('navPause — andar no menu de pausa (seleção por classe, não por fo
     //
     // Indexar os diálogos exige mudar os papéis e implementar o padrão ARIA inteiro. É trabalho de verdade e
     // não cabe aqui; o que cabe é que ninguém o faça pela metade sem perceber.
+    //
+    // ⚠️ SUPERSEDED on 2026-09-12 by ADR-0159 rule 1, the Dev's: «On focus, an item is spoken as label, control type,
+    // value or state, "N de M"» — in panels too. Measured in the dist: inside a panel the cursor moved and `#sr-status`
+    // said nothing, so a child playing by ear heard no item. The cost is written down rather than hidden: with an
+    // external screen reader the label is heard from the focus AND from the live region. The ARIA reason above still
+    // holds — the index is spoken, not put in `aria-posinset`.
     const { nav, log, openTypo } = boot(); // `openTypo` vem do boot, não do escopo do arquivo
     openTypo();
     log.said.length = 0;
     nav.navDialog($('#typo'), K({ down: true }));
-    expect(log.said, 'o diálogo passou a falar por cima do leitor de tela').toEqual([]);
+    const itens = $$('#typo .overlay__card button, #typo .overlay__card select, #typo .overlay__card input').filter((e) => e.offsetParent !== null);
+    expect(log.said.length, 'moving inside a panel said nothing').toBe(1);
+    expect(log.said[0], 'label, control type and position, in that order').toMatch(/^.+, botão, \d+ de \d+$/);
+    expect(document.activeElement.textContent.trim() || document.activeElement.getAttribute('aria-label'), 'the item spoken is not the one focused')
+      .toBe(log.said[0].split(', ')[0]);
+    expect(itens.length).toBeGreaterThan(0);
+  });
+
+  it('🔴 [Right] adjusting a list or a slider speaks its NEW value — whoever adjusts by ear has no other way to know', () => {
+    const { nav, log, openAudio } = boot();
+    openAudio();
+    $('#a-voz').focus();
+    log.said.length = 0;
+    nav.navDialog($('#audio'), K({ right: true }));
+    expect(log.said.at(-1), 'the list changed and said nothing').toMatch(/, lista, dois, \d+ de \d+$/);
+    $('#a-vol').focus();
+    nav.navDialog($('#audio'), K({ right: true }));
+    expect(log.said.at(-1), 'the slider changed and said nothing').toMatch(/controle deslizante, 60%, \d+ de \d+$/);
+  });
+
+  it('🔴 [Right] each control says its TYPE and VALUE after its label (ADR-0159 rule 1, XAG 106)', async () => {
+    const { partesDoControle } = await import('../app/js/ui/menu-nav.js');
+    const linha = (html) => {
+      const row = document.createElement('div');
+      row.className = 'ctrl-row';
+      row.innerHTML = `<span><strong>Som</strong></span>${html}`;
+      document.body.appendChild(row);
+      return row.lastElementChild;
+    };
+    try {
+      expect(partesDoControle(linha('<button aria-pressed="true">Ligado</button>'))).toEqual({ rotulo: 'Som, interruptor', estado: 'ligado' });
+      expect(partesDoControle(linha('<select><option>Baixo</option><option selected>Alto</option></select>'))).toEqual({ rotulo: 'Som, lista', estado: 'Alto' });
+      expect(partesDoControle(linha('<input type="range" min="0" max="10" value="4" aria-label="Volume">'))).toEqual({ rotulo: 'Volume, controle deslizante', estado: '40%' });
+      expect(partesDoControle(linha('<div data-passos aria-label="Tamanho" aria-valuetext="adulto"></div>'))).toEqual({ rotulo: 'Tamanho, seletor', estado: 'adulto' });
+    } finally {
+      for (const r of document.querySelectorAll('body > .ctrl-row')) r.remove();
+    }
   });
 
   it('[Right] andar na lista de pausa FALA o item — senão o menu é mudo para quem o navega por escuta', () => {
@@ -619,3 +661,11 @@ describe('menuNavKey — o tradutor de teclado', () => {
     expect(log.phase).toEqual(['playing']);
   });
 });
+
+// ---- ADR-0159 rule 1 in panels (2026-09-12) ----
+//   R1 moving in a panel focuses and says nothing       🔴
+//   R2 no control type after the label                  🔴 three cases
+//   R3 a list change says nothing                        🔴
+//   R4 a slider change says nothing                      🔴
+//   R5 the slider's percentage from the raw value        🔴 two cases
+//   R6 a switch's state not read                         🔴
