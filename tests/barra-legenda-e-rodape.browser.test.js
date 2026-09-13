@@ -54,6 +54,31 @@ describe('the quick bar: name below, explanation in the footer', () => {
     expect(explicacao().getBoundingClientRect().top, 'the explanation is not in the footer').toBeGreaterThan(regiao.top + regiao.height / 2);
   });
 
+  it('🔴 [Right] the footer sits at the BOTTOM edge, over a DARK band, and holds at most TWO lines (ADR-0164)', () => {
+    // The Dev: «O rodapé deve ocupar no máximo duas linhas de texto e estar na parte mais baixa da tela (canvas), na
+    // frente de uma faixa escurecida». Seen on his screenshot: three lines, mid-screen, over a quiz option, no background.
+    icone('tipografia').dispatchEvent(new MouseEvent('mouseenter')); // a long explanation (the 🚥 needs a filter host)
+    const rodape = raiz.querySelector('#game-region .rodape-da-tela');
+    const regiao = raiz.querySelector('#game-region').getBoundingClientRect();
+    const caixa = rodape.getBoundingClientRect();
+    expect(Math.abs(caixa.bottom - regiao.bottom), 'the footer is not at the bottom edge').toBeLessThan(1);
+    expect(getComputedStyle(rodape).backgroundColor, 'no dark band behind the footer').toBe('rgba(0, 0, 0, 0.82)');
+    const linha = parseFloat(getComputedStyle(explicacao()).lineHeight);
+    expect(explicacao().getBoundingClientRect().height, 'the explanation runs past two lines').toBeLessThanOrEqual(2 * linha + 0.5);
+    // ⚠️ and a text that WOULD run longer is cut at two: at 640 px this explanation fits anyway, and the clamp removed
+    // stayed green — so the region is narrowed for a moment until the same words need three lines or more
+    const elRegiao = raiz.querySelector('#game-region');
+    elRegiao.style.width = '240px';
+    try {
+      expect(explicacao().scrollHeight, 'the case would not measure the cut').toBeGreaterThan(2 * linha + 0.5);
+      expect(explicacao().getBoundingClientRect().height, 'a long explanation grows the band past two lines').toBeLessThanOrEqual(2 * linha + 0.5);
+    } finally {
+      elRegiao.style.width = '640px';
+    }
+    icone('tipografia').dispatchEvent(new MouseEvent('mouseleave'));
+    expect(getComputedStyle(rodape).display, 'an empty dark band stays over the game').toBe('none');
+  });
+
   it('🎯 [Zero] leaving the icon clears both — no strip of text left over the game', () => {
     icone('blind').dispatchEvent(new MouseEvent('mouseleave'));
     expect(legenda().textContent).toBe('');
@@ -70,6 +95,10 @@ describe('the quick bar: name below, explanation in the footer', () => {
       const pausaLegenda = raiz.querySelector('#game-region .pausa-legenda');
       expect(pausaLegenda.hidden, 'the explanation took the legend\'s place').toBe(false);
       expect(explicacao().getBoundingClientRect().bottom, 'the explanation covers the legend').toBeLessThanOrEqual(pausaLegenda.getBoundingClientRect().top + 0.5);
+      // ADR-0164: with the legend showing too, the band still holds TWO lines in all
+      const linhaDoRodape = parseFloat(getComputedStyle(pausaLegenda).lineHeight);
+      const textos = explicacao().getBoundingClientRect().height + pausaLegenda.getBoundingClientRect().height;
+      expect(textos, 'explanation and legend together run past two lines').toBeLessThanOrEqual(2 * linhaDoRodape + 0.5);
       // hovering another icon and leaving it goes back to the CURSOR, not to nothing
       const nomeDoCursor = legenda().textContent;
       icone('tts').dispatchEvent(new MouseEvent('mouseenter'));

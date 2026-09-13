@@ -105,6 +105,20 @@ describe('panel items are numbered with the spoken index (ADR-0158)', () => {
     expect(painel.casca.card.querySelector('.item-num').getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('🔴 [Right] the panel footer holds at most TWO lines, over its dark band (ADR-0164)', () => {
+    painel.abrir();
+    const rodape = document.createElement('div');
+    rodape.className = 'opt-explain';
+    rodape.textContent = 'uma explicação longa demais '.repeat(12);
+    painel.casca.card.style.width = '320px';
+    painel.casca.card.appendChild(rodape);
+    const cs = getComputedStyle(rodape);
+    const linhas = (rodape.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) / parseFloat(cs.lineHeight);
+    expect(rodape.scrollHeight, 'the case would not measure the cut').toBeGreaterThan(rodape.clientHeight);
+    expect(linhas, 'the panel footer grew past two lines').toBeLessThanOrEqual(2.05);
+    expect(cs.backgroundColor).toBe('rgba(0, 0, 0, 0.82)');
+  });
+
   it('⚠️ [Right] the row keeps its control at the FAR end — the number does not push the label to the middle', () => {
     painel.abrir();
     const linha0 = painel.casca.lista.querySelector('.ctrl-row');
