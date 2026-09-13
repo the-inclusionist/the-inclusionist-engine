@@ -126,7 +126,7 @@
 //     Não liguei o `initTouch`: reproduzir doze ids para um conjunto de controles que o quiz não quer seria o
 //     mesmo tipo de mentira do sonar. Usei a metade pura, que é exatamente o que a divisão deveria separar.
 import { escaparHtml } from '../core/escape-html.js'; // #106: enunciado e alternativas sao TEXTO
-import { t } from '../core/i18n.js';
+import { t, idiomaPronto } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { menuIndexOn } from '../core/state.js';
 import { anunciarItem } from '../ui/item-announcement.js';
@@ -162,7 +162,7 @@ export function perguntaHtml(p: Pergunta, selecionada: number): string {
     ` role="radio" aria-checked="${i === selecionada}">${escaparHtml(a)}</button>`).join('');
   return (
     `<h2 class="quiz-pergunta">${escaparHtml(p.enunciado)}</h2>` +
-    `<div class="quiz-alts" role="radiogroup" aria-label="Alternativas">${alts}</div>`
+    `<div class="quiz-alts" role="radiogroup" aria-label="${escaparHtml(t('quiz.alternativas'))}">${alts}</div>`
   );
 }
 
@@ -201,9 +201,17 @@ export function narracaoAoDesenhar(p: Pergunta, pergunta: number, focoIdx: numbe
     : { texto: narracaoDaPergunta(p), narrada: pergunta };
 }
 
-/** O texto que o leitor de tela ouve ao responder. Separado do DOM porque é o que a criança cega RECEBE. */
+/**
+ * O texto que o leitor de tela ouve ao responder. Separado do DOM porque é o que a criança cega RECEBE.
+ * The frame is the dictionary's (study item E4): the right answer crosses as `{certa}`, the words around it translate.
+ */
 export function respostaTexto(acertou: boolean, certa: string): string {
-  return acertou ? `Certo! ${certa}.` : `Ainda não. A resposta certa é ${certa}.`;
+  return t(acertou ? 'quiz.resposta.certa' : 'quiz.resposta.errada', { certa });
+}
+
+/** The closing line — how many were right out of how many — in the child's language. */
+export function fimTexto(acertou: number, total: number): string {
+  return t('quiz.fim', { n: acertou, m: total });
 }
 
 function render(): void {
@@ -213,7 +221,7 @@ function render(): void {
   const botaoMenu = $<HTMLElement>('#quiz-menu');
   if (botaoMenu) botaoMenu.textContent = t('quiz.menu');
   const p = PERGUNTAS[atual];
-  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">Fim! ${acertos} de ${PERGUNTAS.length}.</h2>`; return; }
+  if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escaparHtml(fimTexto(acertos, PERGUNTAS.length))}</h2>`; return; }
   app.innerHTML = perguntaHtml(p, foco);
   // a narração é do consumidor: a engine só empresta a voz
   const fala = narracaoAoDesenhar(p, atual, foco, perguntaNarrada);
@@ -418,8 +426,12 @@ export function bootQuiz(): void {
 
   const região = $<HTMLElement>('#game-region');
   if (região) região.addEventListener('keydown', aoTeclado);
-  motor.cenas.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
-  srSay(t('sr.quiz.bemVindo'));
+  // The first draw and the welcome wait for the boot language (study item E4): drawn in the gap, the first question was
+  // grouped as «Alternativas» and read «Gato, 1 de 4» on an English page (measured). For pt it resolves at once.
+  void idiomaPronto().then(() => {
+    motor?.cenas.draw(); // era `render()` direto — agora quem desenha é a pilha, que é quem sabe o que está no topo
+    srSay(t('sr.quiz.bemVindo'));
+  });
 }
 
 if (typeof document !== 'undefined' && document.getElementById('quiz-app')) bootQuiz();

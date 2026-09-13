@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { perguntaHtml, proximoFoco, respostaTexto, narracaoDaPergunta, narracaoAoDesenhar } from '../app/js/consumer-quiz/main-quiz.js';
+import { perguntaHtml, proximoFoco, respostaTexto, fimTexto, narracaoDaPergunta, narracaoAoDesenhar } from '../app/js/consumer-quiz/main-quiz.js';
 
 const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'consumer-quiz', 'main-quiz.ts'), 'utf8');
 
@@ -57,6 +57,39 @@ describe('respostaTexto — o que a criança cega RECEBE', () => {
     expect(respostaTexto(true, 'Galinha')).toContain('Certo');
     expect(respostaTexto(false, 'Galinha')).toContain('Galinha');
   });
+});
+
+describe('the quiz\'s own sentences come from the dictionary (study item E4, local part; ADR-0010 pillar 3)', () => {
+  // 📏 Measured on 2026-09-13: «Certo!», «Ainda não. A resposta certa é …», «Fim! N de M.» and the options' group name
+  // «Alternativas» were Portuguese literals in the consumer — an English page said them in Portuguese.
+  const CHAVES = ['quiz.resposta.certa', 'quiz.resposta.errada', 'quiz.fim', 'quiz.alternativas'];
+
+  it('🔴 [Right] no frame is a Portuguese literal in the source', () => {
+    expect(FONTE).not.toMatch(/Certo!|Ainda não|Fim!|aria-label="Alternativas"/);
+  });
+
+  it('🔴 [Right] each frame exists in pt, en and es — and English is not Portuguese', () => {
+    // The dictionaries are READ as files, like the source above: importing them would make this the test of an ENGINE
+    // module, and the boundary gate would then count the consumer's own key names as a debt (measured).
+    const dicionario = (l) => {
+      const txt = readFileSync(join(process.cwd(), 'app', 'js', 'i18n', `${l}.ts`), 'utf8');
+      return Object.fromEntries(CHAVES.map((k) => [k, txt.match(new RegExp(`'${k.replace(/\./g, '\\.')}':\\s*'([^']*)'`))?.[1]]));
+    };
+    const [pt, en, es] = ['pt', 'en', 'es'].map(dicionario);
+    for (const k of CHAVES) {
+      for (const [nome, d] of [['pt', pt], ['en', en], ['es', es]]) expect(d[k], `${k} missing in ${nome}`).toBeTruthy();
+      expect(en[k], `${k}: the English is the Portuguese`).not.toBe(pt[k]);
+    }
+  });
+
+  it('🎯 [Right] in Portuguese the child hears the same words as before — literals, not the dictionary read back', () => {
+    expect(respostaTexto(true, 'Galinha')).toBe('Certo! Galinha.');
+    expect(respostaTexto(false, 'Galinha')).toBe('Ainda não. A resposta certa é Galinha.');
+    expect(fimTexto(3, 4)).toBe('Fim! 3 de 4.');
+    expect(perguntaHtml({ enunciado: 'Quantos?', alternativas: ['Um'], certa: 0 }, 0)).toContain('aria-label="Alternativas"');
+  });
+  // MUTATIONS CHECKED (2026-09-13), 6 of 6 red: the answer frames back to literals · `quiz.fim` missing in es · en equal to
+  // pt · the group name a literal again · one key for both answers · right and total swapped in the closing line.
 });
 
 describe('perguntaHtml — a marcação', () => {
