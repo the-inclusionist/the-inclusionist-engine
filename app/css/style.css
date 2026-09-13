@@ -310,7 +310,8 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 @keyframes pwPulse{0%,100%{scale:1;opacity:.7}50%{scale:1.5;opacity:1}}
 @keyframes pwBlink{0%,100%{opacity:1}50%{opacity:.25}}
 @media (prefers-reduced-motion: reduce){ #padwiz-demo *{animation:none !important} }
-.pi-btn.pi-on{background:var(--accent);border-color:var(--accent)}
+/* ADR-0159 rule 10 / WCAG 1.4.1: «on» is not colour alone — a thick stripe along the base appears with it. */
+.pi-btn.pi-on{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 -5px 0 var(--accent-ink)}
 /* Modo TEA (🧩): pi-on preenchido de amarelo = silencioso · fundo branco = calmo · base (azul) = off.
    (fundo, não borda — a borda é reservada ao realce de seleção :focus/.pi-sel e sobreporia o sinal.) */
 .pi-btn.pi-calm{background:#fff;border-color:var(--ink-soft)}
@@ -655,6 +656,8 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
 /* Quiz options take the ENGINE's target floor (ADR-0163 rule 2): 44 px at 640×360, growing with the scale. They had
    9 mm computed by the quiz (54 px on a desktop), and four of them pushed the last one out of a 360 px region. */
 .quiz-alt{min-height:var(--alvo-min,44px);display:block;width:100%;margin:.25rem 0}
+/* the marked option is not colour alone either (ADR-0159 rule 10): the same base stripe as an icon switched on */
+.quiz-alt.is-on{box-shadow:inset 0 -5px 0 var(--accent-ink)}
 .quiz-alts{display:flex;flex-direction:column;gap:.25rem}
 :root[data-letras="upper"] body,
 :root[data-letras="upper"] button,
