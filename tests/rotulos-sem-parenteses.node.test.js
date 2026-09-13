@@ -49,6 +49,14 @@ describe('panel labels carry no parentheses', () => {
     expect(achados, achados.join(' · ')).toEqual([]);
   });
 
+  it('🔴 [Right] an icon still under construction says so AFTER its name, not in parentheses (ADR-0159 rule 6)', () => {
+    // Measured in dist/quiz.html: «Webcam — face (under construction)» was the name of three bar icons.
+    for (const [lang, dic] of Object.entries(DICIONARIOS)) {
+      expect(dic['icon.soon'], `${lang} icon.soon missing`).toContain('{nome}');
+      expect(dic['icon.soon'], `${lang} «${dic['icon.soon']}»`).not.toMatch(/[()]/);
+    }
+  });
+
   it('🔴 [Right] every quick-bar icon has a short NAME and an EXPLANATION for the footer, in pt, en and es', () => {
     // The Dev: the name below the row, what it does in the footer. The names carried their explanation in parentheses
     // («Modo cego (navegação sonora)»); the explanation is the icon's own `.dica`, which the footer shows.

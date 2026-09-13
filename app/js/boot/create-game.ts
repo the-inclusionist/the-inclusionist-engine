@@ -1982,7 +1982,20 @@ export function createGame(o: CreateGameOptions): Engine {
       return { x: b.x, y: b.y, w: b.width, h: b.height };
     };
     const barra = caixaDe(a11yBar);
-    const nos = [...regiao.querySelectorAll('*')].map((el) => ({
+    /*
+     * ONLY WHAT PAINTS. 📏 Measured in dist/quiz.html: the quiz was accused at every boot because `#quiz-app`, a
+     * transparent box the size of the region whose top padding IS the bar's room, intersects the bar's rectangle — and
+     * draws nothing there. A node is counted when it has its own text, is a control or a medium, or paints a background.
+     */
+    const pinta = (el: Element): boolean => {
+      if ([...el.childNodes].some((c) => c.nodeType === 3 && (c.textContent ?? '').trim() !== '')) return true;
+      if (/^(img|canvas|svg|video|input|button|select|textarea)$/i.test(el.tagName)) return true;
+      if (typeof win.getComputedStyle !== 'function') return true; // no way to tell: count it, as before
+      const cs = win.getComputedStyle(el);
+      return (cs.backgroundColor !== '' && cs.backgroundColor !== 'transparent' && cs.backgroundColor !== 'rgba(0, 0, 0, 0)')
+        || (cs.backgroundImage !== '' && cs.backgroundImage !== 'none');
+    };
+    const nos = [...regiao.querySelectorAll('*')].filter((el) => pinta(el)).map((el) => ({
       nome: nomeDoNo(el),
       caixa: caixaDe(el),
       daBarra: el === a11yBar || a11yBar.contains(el),

@@ -48,7 +48,8 @@ describe('motionRowHtml', () => {
     expect(html).toContain('>Desligado<');
   });
   it('[Boundary] soon=true acrescenta a marca "(em breve)"', () => {
-    expect(motionRowHtml('X', true, '', true)).toContain('(em breve)');
+    expect(motionRowHtml('X', true, '', true)).toContain('>em breve<');
+    expect(motionRowHtml('X', true, '', true), 'the tag came back in parentheses (ADR-0159 rule 6)').not.toMatch(/[()]/);
     expect(motionRowHtml('X', true, '', false)).not.toContain('em breve');
   });
 });
@@ -77,10 +78,10 @@ describe('buildSceneRowsHtml', () => {
     expect(html).not.toContain('rm.parallax'); // a chave NUNCA vaza para a interface
     expect((html.match(/ctrl-row/g) || []).length).toBe(4);
   });
-  it('[Boundary] alvo marcado em RM_SOON aparece com "(em breve)"', () => {
+  it('[Boundary] alvo marcado em RM_SOON aparece com «em breve», sem parênteses', () => {
     const rm = { parallax: false, decor: false, items: false, particles: false };
     const html = buildSceneRowsHtml(RM_KEYS, rm, RM_LABEL, new Set(['decor']));
-    expect(html).toContain('(em breve)');
+    expect(html).toContain('>em breve<');
   });
 });
 

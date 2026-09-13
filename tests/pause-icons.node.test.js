@@ -350,7 +350,7 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
   it('ícone EM CONSTRUÇÃO diz que está em construção — e nunca diz on/off', () => {
     for (const ic of PAUSE_ICONS.filter((x) => x.soon)) {
       const lbl = computeIconLabel(ic.k, snap({ modoCego: true, ttsOn: true, calmMode: 2 }));
-      expect(lbl).toBe(pt[ic.n] + ' (em construção)'); // `n` e a chave i18n; o rotulo e o texto dela
+      expect(lbl).toBe(pt[ic.n] + ', em construção'); // `n` e a chave i18n; o rotulo e o texto dela
       expect(lbl).not.toMatch(/: on$/);
     }
   });
@@ -451,7 +451,7 @@ describe('markup dos ícones e do menu', () => {
     for (const ic of PAUSE_ICONS) {
       const h = iconBtnMarkup(ic);
       expect(h.includes('pi-soon')).toBe(!!ic.soon);
-      expect(h.includes('(em construção)')).toBe(!!ic.soon);
+      expect(h.includes(', em construção')).toBe(!!ic.soon);
     }
   });
 
@@ -897,7 +897,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     const b = fakeIconBtn('eyes');
     api.reflectIconBtn(b, 0);
     expect(b.getAttribute('aria-label'), 'o reflexo saltou o ícone e o rótulo ficou como a marcação o deixou')
-      .toBe('Webcam — olhos (em construção)');
+      .toBe('Webcam — olhos, em construção');
     expect(b.getAttribute('aria-pressed'), 'um `soon` nunca se declara ligado').toBe('false');
   });
 
@@ -950,7 +950,7 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     const { ctx } = buildCtx();
     const b = fakeIconBtn('face');
     initPauseIcons(ctx).reflectIconBtn(b, 0);
-    expect(b.getAttribute('aria-label')).toBe('Webcam — rosto (em construção)');
+    expect(b.getAttribute('aria-label')).toBe('Webcam — rosto, em construção');
     expect(b.getAttribute('aria-pressed')).toBe('false');
   });
 

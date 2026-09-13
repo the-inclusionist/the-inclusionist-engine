@@ -171,7 +171,7 @@ describe('buildScreenPause — a árvore construída', () => {
     for (const ic of PAUSE_ICONS) {
       const b = bar.querySelector(`.pi-btn[data-pi="${ic.k}"]`);
       expect(b.classList.contains('pi-soon')).toBe(!!ic.soon);
-      expect(b.getAttribute('aria-label').includes('(em construção)')).toBe(!!ic.soon);
+      expect(b.getAttribute('aria-label').includes(', em construção')).toBe(!!ic.soon);
     }
   });
 
@@ -403,7 +403,7 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     expect(alerted).toHaveLength(1);
     expect(b.getAttribute('aria-pressed')).toBe('false');
     expect(b.classList.contains('pi-on')).toBe(false);
-    expect(b.getAttribute('aria-label')).toBe('Comando de voz (em construção)'); // o reflexo não sobrescreve
+    expect(b.getAttribute('aria-label')).toBe('Comando de voz, em construção'); // o reflexo não sobrescreve
   });
 
   it('MUITAS telas: o clique numa tela reflete TODAS (o estado de daltonismo é por jogador)', () => {

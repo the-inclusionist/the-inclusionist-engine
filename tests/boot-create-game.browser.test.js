@@ -474,6 +474,45 @@ describe('createGame num documento de verdade', () => {
       expect(linha[0], 'a linha não diz por onde se conserta').toMatch(/--barra-a11y-h/);
     });
 
+    it('🎯 [Boundary] a CONTAINER whose padding keeps its content below the bar paints nothing over it — not accused', () => {
+      // 📏 Measured in dist/quiz.html: the quiz was accused at every boot because `#quiz-app` — a transparent box the size
+      // of the region, whose top padding is exactly the bar's room (ADR-0148) — intersects the bar's rectangle. The
+      // box draws nothing there; its text starts below. An accusation that is always there teaches the reader to skip it.
+      const regiao = raiz.querySelector('#game-region');
+      regiao.style.position = 'relative';
+      const caixa = document.createElement('div');
+      caixa.className = 'conteudo-do-jogo';
+      caixa.style.cssText = 'position:absolute;left:0;top:0;width:400px;height:200px;padding-top:80px;box-sizing:border-box';
+      const texto = document.createElement('p');
+      texto.className = 'texto-abaixo';
+      texto.textContent = 'Texto abaixo da barra';
+      texto.style.margin = '0';
+      caixa.appendChild(texto);
+      regiao.appendChild(caixa);
+      const barra = raiz.querySelector('#title-icons');
+      regiao.appendChild(barra);
+      barra.style.cssText = 'position:absolute;left:10px;top:10px;width:300px;height:44px';
+
+      const motor = abrir({ host: { doc: document, win: window, a11yBarHost: barra } });
+      expect(motor.problems.filter((p) => /por cima da barra/.test(p)), 'a transparent container was accused').toEqual([]);
+    });
+
+    it('🔴 [Right] a box with NO text that PAINTS a background over the bar is accused', () => {
+      const regiao = raiz.querySelector('#game-region');
+      regiao.style.position = 'relative';
+      const faixa = document.createElement('div');
+      faixa.className = 'faixa-pintada';
+      faixa.style.cssText = 'position:absolute;left:0;top:0;width:400px;height:60px;background:#123';
+      regiao.appendChild(faixa);
+      const barra = raiz.querySelector('#title-icons');
+      regiao.appendChild(barra);
+      barra.style.cssText = 'position:absolute;left:10px;top:10px;width:300px;height:44px';
+      const motor = abrir({ host: { doc: document, win: window, a11yBarHost: barra } });
+      const linha = motor.problems.filter((p) => /por cima da barra/.test(p));
+      expect(linha, 'a painted box over the bar was not said').toHaveLength(1);
+      expect(linha[0]).toMatch(/faixa-pintada/);
+    });
+
     it('🎯 [Zero] sem nada por cima, a engine NÃO acusa — e declara a faixa reservada', () => {
       // O par. Sem ele, um crivo que acusasse sempre passaria o caso acima sem provar nada.
       const motor = abrir();
@@ -1207,3 +1246,9 @@ describe('createGame num documento de verdade', () => {
 //   S1 an explicit put-back of a refused choice    ✅ SURVIVED: the render writes the list from the world — removed
 //   S2 the list speaks over the refusal (menu-nav)  🔴 the refusal case
 //   S3 the list does not follow the world on opening 🔴 the reopen step
+
+// ---- ADR-0148 check counts only what paints (2026-09-12) ----
+//   V1 every intersecting box counts                  🔴 the container case
+//   V2 a node's own text does not count               🔴 the title case
+//   V3 a painted background does not count            🔴 the painted-box case
+//   V4 excluding the engine's own nodes              ✅ SURVIVED: the check runs at boot, cards hidden — the exclusion was removed

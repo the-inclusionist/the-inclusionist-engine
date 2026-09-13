@@ -152,7 +152,8 @@ export function clampSelectedPlayer(selected: number, total: number): number {
 /** Uma linha de switch "Animado/Congelado" (usada tanto para o personagem quanto para a cena). */
 export function motionRowHtml(label: string, frozen: boolean, attr: string, soon: boolean): string {
   const on = !frozen;
-  const soonTag = soon ? ' <em style="opacity:.7">(em breve)</em>' : '';
+  // a tag after the label, from the dictionary and without parentheses (ADR-0159 rule 6)
+  const soonTag = soon ? ` <em style="opacity:.7">${t('ui.soon')}</em>` : '';
   const cls = 'mode-btn switch' + (on ? ' is-on' : '');
   // ADR-0159 rules 1 and 12: the switch is named by its row and says its state through `aria-pressed`; its text is the
   // dictionary's on/off word — no glyph, and no Portuguese literal on a page in another language
