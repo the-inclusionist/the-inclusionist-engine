@@ -60,7 +60,10 @@ import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, sho
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
-import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, legendaDoIcone, mostrarSubmenuDaPausa } from '../ui/pause-icons.js';
+import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, legendaDoIcone, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from '../ui/pause-icons.js';
+import { anunciarItem } from '../ui/item-announcement.js';
+import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
+import { itensNavegaveis } from '../ui/menu-items.js';
 import { helpRows, helpListHtml } from '../ui/help-panel.js';
 import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
@@ -98,7 +101,7 @@ import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type Set
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn } from '../ui/dom.js';
 import * as store from '../platform/storage.js';
-import { initMenuNav, type MenuNavApi } from '../ui/menu-nav.js';
+import { initMenuNav, partesDoControle, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registrarMapeamentoDoTeclado, saveKB, setKB, fabricaComOJogo, type KBDefaults } from '../input/keyboard.js';
@@ -2134,6 +2137,48 @@ export function createGame(o: CreateGameOptions): Engine {
     escreverLegenda(legendaDaPausa, texto); // resolved when shown: the language may have changed since boot
     legendaDaPausa.hidden = false;
   }
+  /*
+   * EVERY CHANGE OF CONTEXT IS ANNOUNCED (ADR-0159 rule 3): «Opening a menu or panel speaks its title; closing it speaks
+   * where the child is back to; entering play is announced.» 📏 Measured in the dist: SELECT opened the card in silence,
+   * and a panel opened, closed and went back to the root without a word.
+   * 📌 ONE PLACE, by comparison: the observer below asks where the child is now — a panel, a list of the card, or the
+   * game — and speaks only when that changed. An arrow changes no `hidden`, so it still says only the item.
+   */
+  let telaAnunciada = 'jogo';
+  const comIndiceDaRaiz = (): boolean => (cartucho.comIndice ?? (() => true))();
+  function ondeEsta(): { chave: string; frase: string | null } {
+    const painel = overlays.topVisibleOverlay();
+    if (painel) {
+      const titulo = painel.querySelector('h2')?.textContent?.trim() ?? '';
+      const itens = itensNavegaveis(painel.querySelector<HTMLElement>('.overlay__card') ?? painel);
+      const focado = itens.indexOf(doc.activeElement as HTMLElement);
+      const n = focado >= 0 ? focado : 0;
+      const item = itens[n] ? anunciarItem({ ...partesDoControle(itens[n]!), posicao: n + 1, total: itens.length }, comIndiceDaRaiz()) : '';
+      return { chave: `painel:${painel.id}`, frase: [titulo, item].filter(Boolean).join('. ') };
+    }
+    const cartao = $<HTMLElement>('.screen-pause:not([hidden])');
+    if (cartao) {
+      const sub = cartao.querySelector<HTMLElement>('.pause-menu:not([hidden])')?.dataset.sub ?? 'raiz';
+      // a submenu is named by the item that opens it; the root by the card's title
+      const porta = sub === 'opcoes' ? 'options' : sub === 'jogo' ? 'opcoesdojogo' : null;
+      const botao = porta ? cartao.querySelector<HTMLElement>(`.pm-btn[data-act="${porta}"]`) : null;
+      const titulo = botao ? rotuloAcessivel(botao) : (cartao.querySelector('h2')?.textContent?.trim() ?? '');
+      const itens = [...cartao.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
+      const sel = cartao.querySelector<HTMLElement>('.pm-sel') ?? itens[0];
+      const item = sel ? anunciarItem({ rotulo: rotuloAcessivel(sel), posicao: itens.indexOf(sel) + 1, total: itens.length }, comIndiceDaRaiz()) : '';
+      return { chave: `cartao:${cartao.id}:${sub}`, frase: [titulo, item].filter(Boolean).join('. ') };
+    }
+    return { chave: 'jogo', frase: null };
+  }
+  function anunciarContexto(): void {
+    const agora = ondeEsta();
+    if (agora.chave === telaAnunciada) return;
+    const vinhaDeUmMenu = telaAnunciada !== 'jogo';
+    telaAnunciada = agora.chave;
+    if (agora.frase) srSay(agora.frase);
+    // back in play from a menu — the quick pause says its own exit
+    else if (vinhaDeUmMenu && !emPausaRapida.size) srSay(t('sr.a11y.barExit'));
+  }
   {
     const regiao = $<HTMLElement>('#game-region');
     const Observador = (win as unknown as { MutationObserver?: typeof MutationObserver }).MutationObserver;
@@ -2141,6 +2186,7 @@ export function createGame(o: CreateGameOptions): Engine {
       new Observador((registos) => {
         const classes = registos.map((r) => (r.target as Element).classList);
         if (classes.some((c) => c?.contains('screen-pause'))) atualizarLegenda();
+        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay') || c?.contains('pause-menu'))) anunciarContexto();
         // ADR-0166: the pad leaves when the card or a panel opens, and comes back when the last of them closes
         if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) refletirPadNosMenus();
       }).observe(regiao, { attributes: true, attributeFilter: ['hidden'], subtree: true });
