@@ -7,7 +7,6 @@
     "core/state.ts hcOutlineBg": "game-platformer app/js/main.ts",
     "core/state.ts hcOutlineFg": "game-platformer app/js/main.ts",
     "core/state.ts initVizMode": "game-platformer app/js/main.ts",
-    "core/state.ts letterCase": "game-platformer app/js/main.ts",
     "core/state.ts ownerColors": "game-platformer app/js/main.ts",
     "core/state.ts setOutlineBgValue": "game-platformer app/js/main.ts",
     "core/state.ts setOutlineFgValue": "game-platformer app/js/main.ts",
@@ -125,6 +124,7 @@
       "GLIFO_DO_ITEM",
       "ITENS_DA_ENGINE",
       "itensQueAccionam",
+      "legendaDoIcone",
       "motivoDoItem",
       "pauseIcon",
       "pauseMenuHtml"

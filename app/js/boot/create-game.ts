@@ -62,7 +62,7 @@ import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, sho
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
-import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, legendaDoIcone, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from '../ui/pause-icons.js';
+import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from '../ui/pause-icons.js';
 import { anunciarItem } from '../ui/item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { itensNavegaveis } from '../ui/menu-items.js';
@@ -1210,7 +1210,7 @@ export function createGame(o: CreateGameOptions): Engine {
       pauseIcons.iconAct(botao.dataset.pi ?? '', 0);
       pauseIcons.reflectIconsIn(a11yBar, 0);
       const legenda = a11yBar.querySelector('.pause-icons-cap');
-      if (legenda) legenda.textContent = legendaDoIcone(a11yBar, botao); // o estado NOVO, depois do reflexo
+      if (legenda) legenda.textContent = rotuloAcessivel(botao); // the NEW state, after the reflection; «N de M» is spoken, never written (ADR-0167)
       // O anúncio lê o `aria-label` DEPOIS do reflexo, porque é ele que carrega o estado NOVO — anunciar
       // antes diria o estado que a criança acabou de deixar.
       srSay(botao.getAttribute('aria-label') ?? '');

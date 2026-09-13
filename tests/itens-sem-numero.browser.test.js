@@ -59,6 +59,24 @@ describe('the quick bar', () => {
     tecla('KeyH');
     await esperar();
   });
+
+  it('🔴 [Right] a click — a mouse or a finger — writes name and state only, too', async () => {
+    // 📏 Seen in the dist on 2026-09-13: after clicking «Comunicação» the line read «COMUNICAÇÃO, 9 DE 9» — the hover and
+    // focus paths wrote the name, the click path of the bar the engine mounts wrote the spoken legend.
+    const botao = document.querySelector('#title-icons [data-pi="tipografia"]');
+    const raiz = document.documentElement;
+    const antes = [raiz.dataset.fonte, raiz.dataset.letras, raiz.style.getPropertyValue('--fonte-escala')].join('|');
+    botao.click();
+    await esperar();
+    const nome = document.querySelector('#title-icons .pause-icons-cap').textContent.trim();
+    expect(nome, 'no name shown — the case would measure nothing').not.toBe('');
+    expect(nome, 'the click wrote the spoken index under the row').not.toMatch(/\d+ (de|of) \d+/);
+    // put the typography back where the other cases expect it: once around the ring
+    for (let i = 0; i < 7 && [raiz.dataset.fonte, raiz.dataset.letras, raiz.style.getPropertyValue('--fonte-escala')].join('|') !== antes; i++) {
+      botao.click();
+      await esperar();
+    }
+  });
 });
 
 describe('the pause card', () => {
