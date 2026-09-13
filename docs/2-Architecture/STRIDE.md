@@ -28,8 +28,8 @@ again), one download at a time, in the background.
 
 | STRIDE | Threat | Boundary | What holds it today | Gap |
 |---|---|---|---|---|
-| **T**ampering | A CDN or a mirror serves altered JavaScript or WebAssembly, and it runs in the child's page | B2, B4 | Versions pinned in the URL; the host list is an inventory (`nada-vem-de-fora`, `nada-de-cdn-a-mao`) | 🔴 **No integrity check**: no `sha256` before `cache.put`, no SRI on `webgazer.js`. A pinned URL is not pinned content |
-| **T**ampering | An altered model is cached and served offline from then on | B1, B3 | Cache is versioned by name (`incl-pesados-v1`) | 🔴 Same gap: once in Cache Storage, it stays |
+| **T**ampering | A CDN or a mirror serves altered JavaScript or WebAssembly, and it runs in the child's page | B2, B4 | Versions pinned in the URL; the host list is an inventory (`nada-vem-de-fora`, `nada-de-cdn-a-mao`) | ✅ Heavy files held since #168: a measured `sha256` per entry, checked before `cache.put`; the service worker only reads that cache. 🔴 Still open: the `<script src>` of `webgazer.js` on first use (#169) |
+| **T**ampering | An altered model is cached and served offline from then on | B1, B3 | Cache versioned by name; `incl-pesados-v2` holds only checked bytes (#168) | ✅ Held — an altered body is refused and reported |
 | **T**ampering | Adult-written text injects markup | B5 | The sink census (#106, closed; none left to review) and the `html-sinks` gate; `registerDict` refuses markup; `escaparHtml` in the quiz | ✅ Held — every new sink is a gate failure |
 | **T**ampering | The bundle is altered between host and device | B7 | HTTPS; Workbox precache by content hash | ⚠️ **No Content-Security-Policy** in `_headers`: nothing limits which hosts may run script |
 | **I**nformation disclosure | Every fetch tells a third party the school's IP address and when a child played | B1–B4 | — | 🔴 **Not held.** An IP address is personal data under LGPD; the requests go to four companies before any adult is asked. This is a decision, not only code |
