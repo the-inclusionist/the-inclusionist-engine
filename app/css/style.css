@@ -559,7 +559,10 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 #game-region .overlay{position:absolute;z-index:60;padding:.6rem}
 /* O QUIZ COMEÇA ABAIXO DA BARRA RÁPIDA (ADR-0148). A engine declara `--barra-a11y-h` no `#game-region`; a barra fica a
    10 px do topo (`#title-icons`), e o enunciado estava desenhado atrás dela — medido num print do Dev. */
-.quiz-app{padding-top:calc(var(--barra-a11y-h,0px) + 14px);padding-bottom:var(--rodape-h,0px)} /* the footer band is its own zone (ADR-0164) */
+.quiz-app{padding-top:calc(var(--barra-a11y-h,0px) + 12px);padding-bottom:var(--rodape-h,0px)} /* the footer band is its own zone (ADR-0164) */
+/* ADR-0163: at 640×360 the bar, the statement, four 44 px options and the footer band had 404 px to fit in 360 (measured).
+   The spacing goes, not the targets or the 16 px floor: the statement keeps its size on a 1.25 line and no outer margins. */
+.quiz-pergunta{margin:0 0 .25rem;line-height:1.25}
 /* A PAUSA RÁPIDA (ADR-0155): PAUSADO ao centro da tela congelada — SÓ A PALAVRA, branca, com CONTORNO PRETO NAS
    LETRAS e nenhuma caixa: «Borda nas letras, não numa caixa» (Dev, errata do registo). O contorno é o que a mantém
    legível sobre um cenário claro; `paint-order` põe o traço POR BAIXO do preenchimento, para a letra não emagrecer, e
@@ -626,9 +629,9 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
    "maiúsculas" e os menus continuavam mistos.
    `text-transform` e NÃO transformar o texto: o conteúdo acessível fica intacto, e um leitor de tela não passa
    a soletrar letra por letra, que é o que ALL CAPS de verdade provoca em NVDA/JAWS. */
-/* Alternativas do quiz (segundo consumidor): altura mínima em MILÍMETROS REAIS, calculada por
-   `input/touch.padPxPerMm` — WCAG 2.5.5 / GAG. O valor chega em `--quiz-alt-min`. */
-.quiz-alt{min-height:var(--quiz-alt-min,44px);display:block;width:100%;margin:.25rem 0}
+/* Quiz options take the ENGINE's target floor (ADR-0163 rule 2): 44 px at 640×360, growing with the scale. They had
+   9 mm computed by the quiz (54 px on a desktop), and four of them pushed the last one out of a 360 px region. */
+.quiz-alt{min-height:var(--alvo-min,44px);display:block;width:100%;margin:.25rem 0}
 .quiz-alts{display:flex;flex-direction:column;gap:.25rem}
 :root[data-letras="upper"] body,
 :root[data-letras="upper"] button,

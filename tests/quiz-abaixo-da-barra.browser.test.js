@@ -41,6 +41,33 @@ describe('the quiz page', () => {
     // 📌 and the filter host stays: it is what the 🚥 correction needs
     expect(document.getElementById('q-cvd')).not.toBeNull();
   });
+
+  it('🔴 [Right] every option is the ENGINE\'s target — `--alvo-min`, not a size the quiz computes (ADR-0163 rule 2)', () => {
+    const regiao = document.getElementById('game-region');
+    const alvo = parseFloat(regiao.style.getPropertyValue('--alvo-min'));
+    expect(alvo, 'createGame wrote no target floor').toBeGreaterThanOrEqual(44);
+    const alturas = [...document.querySelectorAll('.quiz-alt')].map((b) => b.getBoundingClientRect().height);
+    expect(alturas.length, 'no options — the case would measure nothing').toBeGreaterThan(1);
+    for (const h of alturas) expect(Math.round(h), `an option of ${h.toFixed(1)} px under a floor of ${alvo}`).toBeGreaterThanOrEqual(alvo);
+    // and not the quiz's own 9 mm (54 px on a desktop), which pushed the last option out of a 360 px region
+    expect(document.documentElement.style.getPropertyValue('--quiz-alt-min')).toBe('');
+  });
+
+  it('🔴 [Right] the last option ENDS INSIDE the region, above the footer zone (ADR-0163, ADR-0164 D1)', () => {
+    const regiao = document.getElementById('game-region').getBoundingClientRect();
+    const opcoes = [...document.querySelectorAll('.quiz-alt')];
+    const ultima = opcoes.at(-1).getBoundingClientRect();
+    // the footer height is a calc() on the region: resolve it through a probe, not by parsing the declaration
+    const sonda = document.createElement('div');
+    sonda.style.cssText = 'position:absolute;height:var(--rodape-h,0px)';
+    document.getElementById('game-region').appendChild(sonda);
+    const rodape = sonda.getBoundingClientRect().height;
+    sonda.remove();
+    expect(rodape, 'the footer zone resolved to nothing — the case would not see it').toBeGreaterThan(0);
+    expect(Math.round(regiao.height), 'the region is not at its 640×360 floor here').toBe(360);
+    expect(Math.round(ultima.bottom), `last option ends at ${Math.round(ultima.bottom - regiao.top)} of ${Math.round(regiao.height)} (footer ${rodape.toFixed(0)} px)`)
+      .toBeLessThanOrEqual(Math.round(regiao.bottom - rodape));
+  });
 });
 
 // ============================== MUTATIONS CHECKED ==============================

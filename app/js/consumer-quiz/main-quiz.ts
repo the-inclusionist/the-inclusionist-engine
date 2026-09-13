@@ -130,7 +130,6 @@ import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createGame, type Engine } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
-import { padPxPerMm } from '../input/touch.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
 interface Pergunta {
@@ -404,11 +403,8 @@ export function bootQuiz(): void {
   // (`ba355f3`): duas superfícies a dizer a mesma mudança, e a criança que navega por ouvido a ouvi-la
   // duas vezes. Nenhum script do VLibras nesta página continua a ser de propósito.
 
-  // TOQUE: o quiz usa a ERGONOMIA e recusa o PAD. `padPxPerMm` é puro e ancora o milímetro real no aparelho
-  // (WCAG 2.5.5 / GAG); as alternativas do quiz passam a ter alvo de 9 mm de altura MEDIDOS, em vez de um
-  // palpite em pixels. O `initTouch` inteiro não foi ligado de propósito — ver o achado 14.
-  const pxmm = padPxPerMm(matchMedia('(pointer: coarse)').matches, window.innerWidth, window.innerHeight);
-  document.documentElement.style.setProperty('--quiz-alt-min', (9 * pxmm).toFixed(1) + 'px');
+  // TOUCH TARGETS are the engine's since ADR-0163: the options read `--alvo-min`, which `createGame` writes from the
+  // resolution it forces. The quiz used to compute its own 9 mm, and the last option fell out of the region.
 
   const região = $<HTMLElement>('#game-region');
   if (região) região.addEventListener('keydown', aoTeclado);
