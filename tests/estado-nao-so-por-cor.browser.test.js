@@ -72,6 +72,17 @@ describe('state beyond colour', () => {
     expect(semTexto(marcada), 'the marked option differs only in colour').not.toBe(semTexto(outra));
   });
 
+  it('🔴 [Right] that mark is SYMMETRIC — the fill sits centred inside the border, not shifted up (#166)', () => {
+    // The Dev at 640×360: «ao selecionar com teclado, a opção selecionada está ficando com o preenchimento levemente acima
+    // da região com borda». Measured: the mark was `inset 0 -5px 0` — a dark strip at the bottom only, so the yellow fill
+    // ended 5 px above the bottom border and read as shifted up.
+    const marcada = regiao.querySelector('.quiz-alt.is-on');
+    const sombra = getComputedStyle(marcada).boxShadow;
+    expect(sombra, 'the mark left with the fix — rule 10 still needs it').not.toBe('none');
+    const [dx, dy] = (sombra.replace(/rgba?\([^)]*\)/g, '').match(/-?\d+(\.\d+)?px/g) ?? []).map(parseFloat);
+    expect([dx, dy], `the mark «${sombra}» is offset`).toEqual([0, 0]);
+  });
+
   it('🎯 [Right] a locked pause item says WHY, and does not rely on colour to look locked', async () => {
     regiao.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF', key: 'f', bubbles: true, cancelable: true }));
     await esperar();

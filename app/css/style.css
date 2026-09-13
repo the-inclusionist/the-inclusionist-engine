@@ -662,7 +662,7 @@ body.blind-mode .hud, body.blind-mode #touch-controls, body.blind-mode #start-ti
    9 mm computed by the quiz (54 px on a desktop), and four of them pushed the last one out of a 360 px region. */
 .quiz-alt{min-height:var(--alvo-min,44px);display:block;width:100%;margin:0} /* the list gap spaces them: issue #160 took the room for the icon name */
 /* the marked option is not colour alone either (ADR-0159 rule 10): the same base stripe as an icon switched on */
-.quiz-alt.is-on{box-shadow:inset 0 -5px 0 var(--accent-ink)}
+.quiz-alt.is-on{box-shadow:inset 0 0 0 3px var(--accent-ink)} /* a ring, not a bottom strip: the strip left the fill looking shifted up (#166) */
 .quiz-alts{display:flex;flex-direction:column;gap:.25rem}
 :root[data-letras="upper"] body,
 :root[data-letras="upper"] button,
