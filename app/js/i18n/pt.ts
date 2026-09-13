@@ -114,6 +114,7 @@ const pt: Record<string, string> = {
   'pause.quick': 'PAUSADO',
   // A legenda do rodapé da pausa rápida (errata do ADR-0155), nas palavras do Dev.
   'pause.quick.legenda': '2: confirmar · 3: voltar · 4: menu · START: voltar ao jogo',
+  'pause.card.legenda': '2: confirmar · 3: voltar',
   'pause.acessibilidade': '♿ Acessibilidade',
   'pause.options': '⚙ Configurações de inclusão',
   'pause.opcoesdojogo': '🎮 Opções do jogo',

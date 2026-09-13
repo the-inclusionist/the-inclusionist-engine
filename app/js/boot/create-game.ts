@@ -809,6 +809,10 @@ export function createGame(o: CreateGameOptions): Engine {
   // O rodapé da tela (ver `rodapeDaTela`): declarados AQUI, antes do primeiro `mudarDeFase`, que já o limpa.
   let rodape: HTMLElement | null = null;
   let explicacaoDaBarra: HTMLElement | null = null;
+  // The quick-pause state and the button legend, declared before the first `mudarDeFase` too: its `pausa.esconder`
+  // refreshes the legend (ADR-0164 rule 3), and reading them earlier would be a temporal-dead-zone error at boot.
+  const emPausaRapida = new Set<number>();
+  let legendaDaPausa: HTMLElement | null = null;
   function mudarDeFase(p: 'title' | 'playing' | 'paused'): void {
     // ⚠️ A ENGINE FECHA O SEU CARTÃO; O JOGO CONTINUA A DECIDIR O MUNDO. É a simetria exacta do ADR-0144 §2
     // do outro lado: lá a engine revela e PEDE a pausa, aqui esconde e PEDE a retoma.
@@ -1999,6 +2003,7 @@ export function createGame(o: CreateGameOptions): Engine {
       const cartao = $<HTMLElement>(`#vp-pause-${i}`);
       if (!cartao) return;
       cartao.hidden = false;
+      atualizarLegenda();
       // 🔴 O CURSOR POUSA NO ITEM 1, na raiz (ADR-0158: «a saída é onde o cursor cai ao abrir»). Medido no `dist`: aberto
       // pelo SELECT nenhum item ficava marcado, e a primeira seta saltava para o item 2.
       mostrarSubmenuDaPausa(cartao, 'raiz');
@@ -2006,6 +2011,7 @@ export function createGame(o: CreateGameOptions): Engine {
     esconder: (i: number) => {
       const cartao = $<HTMLElement>(`#vp-pause-${i}`);
       if (cartao) cartao.hidden = true;
+      atualizarLegenda();
     },
   };
 
@@ -2057,14 +2063,13 @@ export function createGame(o: CreateGameOptions): Engine {
    * entrar, e a pausa rápida continua a congelar e a dizer PAUSADO — com o START a sair dela. Perguntar à barra
    * seria prender essa criança num jogo parado.
    */
-  const emPausaRapida = new Set<number>();
   let palavraPausado: HTMLElement | null = null;
   /*
    * A LEGENDA DO RODAPÉ da tela congelada (errata do ADR-0155, «Ambos»): «Ação 2: confirmar · Ação 3: voltar ·
    * Ação 4: menu · START: voltar ao jogo». É a segunda porta dos menus — o `action4` — e é também o que diz à
    * criança que o SELECT não é a única: a tela parada passa a ensinar como se sai dela e para onde.
+   * (`legendaDaPausa` is declared before `mudarDeFase`; see there.)
    */
-  let legendaDaPausa: HTMLElement | null = null;
 
   function mostrarPausado(): void {
     const regiao = $<HTMLElement>('#game-region');
@@ -2075,16 +2080,42 @@ export function createGame(o: CreateGameOptions): Engine {
       // os olhos, e dita duas vezes atropelava o anúncio que ensina a sair.
       palavraPausado.setAttribute('aria-hidden', 'true');
       regiao.appendChild(palavraPausado);
-      legendaDaPausa = doc.createElement('div');
-      legendaDaPausa.className = 'pausa-legenda';
-      legendaDaPausa.setAttribute('aria-hidden', 'true');
-      rodapeDaTela(regiao)?.appendChild(legendaDaPausa);
     }
     if (!palavraPausado) return;
     // resolvidas AO MOSTRAR: o idioma pode ter mudado desde o arranque
     palavraPausado.textContent = t('pause.quick');
     palavraPausado.hidden = false;
-    if (legendaDaPausa) { escreverLegenda(legendaDaPausa, t('pause.quick.legenda')); legendaDaPausa.hidden = false; }
+    atualizarLegenda();
+  }
+
+  /**
+   * THE BUTTON LEGEND FOLLOWS THE SCREEN (ADR-0164 rule 3): on the quick pause it says the quick pause's buttons, on the
+   * pause card (SELECT) the menu's — «2: confirmar · 3: voltar» —, and nothing in play. Asked again whenever one of them
+   * opens or closes; a card hidden by a path that calls nothing here (the print mode) is seen by the observer below.
+   */
+  function atualizarLegenda(): void {
+    const cartaoAberto = !!$<HTMLElement>('.screen-pause:not([hidden])');
+    const texto = emPausaRapida.size ? t('pause.quick.legenda') : cartaoAberto ? t('pause.card.legenda') : null;
+    if (!texto) { if (legendaDaPausa) legendaDaPausa.hidden = true; return; }
+    if (!legendaDaPausa) {
+      const casa = rodapeDaTela($<HTMLElement>('#game-region'));
+      if (!casa) return;
+      legendaDaPausa = doc.createElement('div');
+      legendaDaPausa.className = 'pausa-legenda';
+      legendaDaPausa.setAttribute('aria-hidden', 'true');
+      casa.appendChild(legendaDaPausa);
+    }
+    escreverLegenda(legendaDaPausa, texto); // resolved when shown: the language may have changed since boot
+    legendaDaPausa.hidden = false;
+  }
+  {
+    const regiao = $<HTMLElement>('#game-region');
+    const Observador = (win as unknown as { MutationObserver?: typeof MutationObserver }).MutationObserver;
+    if (regiao && Observador && typeof regiao.appendChild === 'function') {
+      new Observador((registos) => {
+        if (registos.some((r) => (r.target as Element).classList?.contains('screen-pause'))) atualizarLegenda();
+      }).observe(regiao, { attributes: true, attributeFilter: ['hidden'], subtree: true });
+    }
   }
 
   /*
@@ -2107,7 +2138,8 @@ export function createGame(o: CreateGameOptions): Engine {
   function escreverLegenda(casa: HTMLElement, texto: string): void {
     casa.textContent = '';
     texto.split('·').map((s) => s.trim()).filter(Boolean).forEach((item, i) => {
-      if (i > 0) casa.appendChild(doc.createTextNode(' '));
+      // a space between chips, by capability: a host document without createTextNode still gets the chips
+      if (i > 0 && typeof doc.createTextNode === 'function') casa.appendChild(doc.createTextNode(' '));
       const nome = doc.createElement('span');
       nome.className = 'lg-nome';
       nome.textContent = item;
@@ -2151,7 +2183,6 @@ export function createGame(o: CreateGameOptions): Engine {
   function terminarPausaRapida(assento: number, paraOutroEcra: boolean): void {
     if (!emPausaRapida.delete(assento)) return;
     if (palavraPausado && emPausaRapida.size === 0) palavraPausado.hidden = true;
-    if (legendaDaPausa && emPausaRapida.size === 0) legendaDaPausa.hidden = true;
     if (!paraOutroEcra) mudarDeFase('playing');
   }
 

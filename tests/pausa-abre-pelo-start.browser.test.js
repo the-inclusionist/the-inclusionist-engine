@@ -215,9 +215,29 @@ describe('a SEGUNDA porta dos menus: a legenda no rodapé e o `action4` (ADR-015
     const ev = apertar('KeyI'); // `action4` no esquema solo
     expect(cartao().hidden, 'o `action4` da legenda não abriu os menus').toBe(false);
     expect(pausadoAVista(), 'PAUSADO ficou por baixo do cartão').toBe(false);
-    expect(legenda().hidden, 'a legenda ficou por baixo do cartão').toBe(true);
+    // ADR-0164 rule 3: on the card the legend CHANGES to the menu's functions — the quick pause's START line is gone
+    expect(legenda().textContent, 'a legenda da pausa rápida ficou por baixo do cartão').not.toMatch(/START/);
     expect(fases, 'o jogo foi retomado a caminho dos menus').toEqual(['paused']);
     expect(ev.defaultPrevented).toBe(true);
+  });
+
+  it('🔴 [Right] on the pause card (SELECT) the button legend shows the MENU\'s functions, and leaves with the card (ADR-0164 rule 3)', async () => {
+    // The Dev: «explicação de botões deve aparecer em toda tela de pausa (START), com a função dos botões sendo
+    // alteradas na tela de menu (SELECT)». In the card, 2 confirms and 3 goes back; SELECT and START do nothing there.
+    const nomes = () => [...legenda().querySelectorAll('.lg-nome')].map((n) => n.textContent);
+    apertar('KeyF');
+    expect(cartao().hidden, 'SELECT did not open the card').toBe(false);
+    expect(legenda()?.hidden, 'the card has no button legend').toBe(false);
+    expect(nomes()).toEqual(['2: confirmar', '3: voltar']);
+    // closed through the engine's own door, the legend goes with it
+    motor.pausa.esconder(0);
+    expect(legenda().hidden, 'the card closed and its legend stayed over the game').toBe(true);
+    // and closed by a path that calls nothing of the engine (the print mode hides the card by its attribute)
+    apertar('KeyF');
+    expect(legenda().hidden).toBe(false);
+    cartao().hidden = true;
+    await new Promise((r) => setTimeout(r, 0));
+    expect(legenda().hidden, 'a card hidden by its attribute left its legend on screen').toBe(true);
   });
 
   it('🔴 [Zero] FORA da pausa rápida o `action4` é do JOGO — não abre nada e não é consumido', () => {
@@ -271,3 +291,10 @@ describe('o guarda comum: com um PAINEL aberto, nenhuma das portas é nossa', ()
 //   M8  `acoesDaEngine.resume` sai                                           🔴 cartão sem «Voltar ao jogo»
 //   M9  `setPhase: mudarDeFase` → `cartucho.setPhase ?? (() => {})`          🔴 Escape não fecha
 //   M10 `if (p !== 'paused') pausa.esconder(0)` nunca corre                  🔴 «Voltar» não fecha
+
+// ---- the button legend on the pause card (ADR-0164 rule 3, 2026-09-12) ----
+//   L1 opening the card does not refresh the legend      🔴 action4 case and the card-legend case
+//   L2 closing the card does not refresh the legend      🔴 card-legend case
+//   L3 no observer for paths that only set `hidden`       🔴 card-legend case
+//   L4 the card shows the quick-pause legend             🔴 two cases
+//   L5 leaving the quick pause refreshes nothing itself   ✅ SURVIVED: `mudarDeFase` → `pausa.esconder` already refreshes — the call was removed

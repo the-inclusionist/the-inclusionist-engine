@@ -620,6 +620,7 @@ const en: Record<string, string> = {
   'pause.resume': '▶ Back to the game',
   'pause.quick': 'PAUSED',
   'pause.quick.legenda': '2: confirm · 3: back · 4: menu · START: back to the game',
+  'pause.card.legenda': '2: confirm · 3: back',
   'pause.acessibilidade': '♿ Accessibility',
   'pause.options': '⚙ Inclusion settings',
   'pause.opcoesdojogo': '🎮 Game options',
