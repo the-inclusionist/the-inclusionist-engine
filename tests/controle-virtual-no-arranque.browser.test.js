@@ -45,6 +45,8 @@ const PLATAFORMA = {
 
 const pad = () => document.getElementById('touch-controls');
 const botoes = () => [...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')];
+/** ADR-0165: a pad button's FUNCTION is said after its name in the accessible name («2, Confirm»); the face is the name. */
+const funcao = (b) => (b.getAttribute('aria-label') ?? '').split(', ').slice(1).join(', ');
 const toque = (el, tipo) => el.dispatchEvent(new PointerEvent(tipo, { bubbles: true, cancelable: true, pointerId: 1 }));
 
 beforeAll(async () => {
@@ -71,16 +73,17 @@ describe('createGame mounts the virtual pad from the preset', () => {
     expect(pad().hidden, 'a pad born visible covers the game of whoever never touches it').toBe(true);
   });
 
-  it('🔴 [Right] the pad draws exactly what the game NAMES, with the game\'s words (ADR-0162)', () => {
-    const nomes = botoes().map((b) => b.textContent).sort();
+  it('🔴 [Right] the pad draws exactly what the game NAMES — the button\'s name on the face, the game\'s word as its function (ADR-0162, ADR-0165)', () => {
+    const nomes = botoes().map(funcao).sort();
     expect(nomes, 'a button the game did not name, or a named one missing').toEqual(['Back', 'Confirm', 'Menu']);
+    expect(botoes().map((b) => b.textContent).sort(), 'a face shows the function, not the name').toEqual(['2', '3', '4']);
     expect(document.querySelector('#touch-cross, #touch-stick'), 'the game named up and down: no directional').not.toBeNull();
   });
 
   it('🔴 [Boundary] two actions and no direction: two buttons and NO directional (ADR-0162)', () => {
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: SO_DUAS, setPhase: (p) => fases.push(p) });
     try {
-      expect(botoes().map((b) => b.textContent).sort()).toEqual(['Jump', 'Run']);
+      expect(botoes().map(funcao).sort()).toEqual(['Jump', 'Run']);
       expect(document.querySelector('#touch-cross, #touch-stick'), 'a directional the game never named').toBeNull();
       expect(document.getElementById('touch-start'), 'SELECT and START stay: they are the doors of the pause').not.toBeNull();
     } finally {
@@ -99,7 +102,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: OMBROS, setPhase: (p) => fases.push(p) });
     pad().hidden = false;
     try {
-      const botao = (palavra) => [...document.querySelectorAll('#touch-controls .touch-ombro')].find((b) => b.textContent === palavra);
+      const botao = (palavra) => [...document.querySelectorAll('#touch-controls .touch-ombro')].find((b) => funcao(b) === palavra);
       const r = regiao.getBoundingClientRect();
       const [l2, l1, r2, r1] = ['L-two', 'L-one', 'R-two', 'R-one'].map((p) => botao(p).getBoundingClientRect());
       expect(l2.top, 'L2 is not above L1').toBeLessThan(l1.top);
@@ -131,7 +134,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: QUATRO, setPhase: (p) => fases.push(p) });
     pad().hidden = false;
     try {
-      const caixa = (palavra) => botoes().find((b) => b.textContent === palavra).getBoundingClientRect();
+      const caixa = (palavra) => botoes().find((b) => funcao(b) === palavra).getBoundingClientRect();
       const [um, dois, tres, quatro] = ['One', 'Two', 'Three', 'Four'].map(caixa);
       expect(um.top, '1 is not above 2').toBeLessThan(dois.top);
       expect(quatro.top, '4 is not above 3').toBeLessThan(tres.top);
@@ -163,7 +166,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
   });
 
   it('🔴 [Right] pressing a pad button holds the KEY of that action, and releasing lets it go', () => {
-    const confirmar = botoes().find((b) => b.textContent === 'Confirm');
+    const confirmar = botoes().find((b) => funcao(b) === 'Confirm');
     const antes = new Set(keys);
     toque(confirmar, 'pointerdown');
     const novas = [...keys].filter((k) => !antes.has(k));
@@ -252,7 +255,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
   });
 
   it('🔴 [Right] in PLAY a pad press still holds the key — the menu bridge only works with a menu open', () => {
-    const confirmar = botoes().find((b) => b.textContent === 'Confirm');
+    const confirmar = botoes().find((b) => funcao(b) === 'Confirm');
     const antes = new Set(keys);
     toque(confirmar, 'pointerdown');
     expect([...keys].filter((k) => !antes.has(k)), 'in play the pad stopped holding the key').toHaveLength(1);
@@ -371,12 +374,12 @@ describe('mount() rebuilds the pad for the new cartridge', () => {
     for (const d of ['up', 'down', 'left', 'right']) {
       expect(cruz.querySelector(`.dpad-arm.dpad-${d}`), `arm ${d} without the classes that draw and light it`).not.toBeNull();
     }
-    expect(botoes().map((b) => b.textContent).sort(), 'the platform named two actions').toEqual(['Jump', 'Run']);
+    expect(botoes().map(funcao).sort(), 'the platform named two actions').toEqual(['Jump', 'Run']);
     expect(motor.problems.some((l) => /sem `preset`/.test(l)), 'the old cartridge\'s gap outlived it').toBe(false);
   });
 
   it('🔴 [Right] the rebuilt buttons are WIRED — a mount does not leave dead buttons', () => {
-    const pular = botoes().find((b) => b.textContent === 'Jump');
+    const pular = botoes().find((b) => funcao(b) === 'Jump');
     const antes = new Set(keys);
     toque(pular, 'pointerdown');
     expect([...keys].filter((k) => !antes.has(k)), 'the button of the new cartridge does nothing').toHaveLength(1);

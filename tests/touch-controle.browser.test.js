@@ -59,16 +59,37 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
     expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(2);
   });
 
-  it('🎯 [Right] cada botão recebe o nome que `rotuloDoSlot` lhe dá, e leva a ACÇÃO que o põe no lugar (ADR-0160)', () => {
+  it('🔴 [Right] the FACE shows the button\'s NAME, never the cartridge\'s word; the accessible name holds both (ADR-0165)', () => {
+    // The Dev: «Botões 2 e 3 devem continuar sendo 2 e 3, confirm e back não são seus nomes, mas suas funções atribuídas
+    // pelo cartucho.» Measured before: the quiz's pad wrote «Confirm» and «Back» on the faces of 2 and 3.
+    const slotDe = (acao) => Object.keys(TOUCH_DEFAULT).find((s) => TOUCH_DEFAULT[s] === acao);
+    const FUNCOES = { action2: 'Confirm', action3: 'Back', leftShoulder: 'Page', up: 'Climb' };
     const raiz = montarControleDeToque(ctx, {
       mapa: TOUCH_DEFAULT,
-      acoesDoJogo: new Set(['action1']),
-      rotuloDoSlot: (s) => (s === 'b2' ? 'Confirmar' : `face ${s}`),
+      acoesDoJogo: new Set(Object.keys(FUNCOES)),
+      rotuloDoSlot: (s) => FUNCOES[TOUCH_DEFAULT[s]] ?? (s === 'start' ? 'START' : s === 'select' ? 'SELECT' : ''),
+      direcional: 'cruz',
     });
     hospedeiro.appendChild(raiz);
-    const botoes = [...raiz.querySelectorAll('.touch-btn[data-btn]')];
-    expect(botoes.map((b) => b.textContent)).toEqual(['Confirmar']);
-    expect(botoes[0].dataset.acao, 'the button does not say which action places it').toBe('action1');
+    const botao = (acao) => raiz.querySelector(`[data-btn="${slotDe(acao).slice(1)}"]`);
+    expect(botao('action2').textContent, 'the face shows the function').toBe('2');
+    expect(botao('action3').textContent).toBe('3');
+    expect(botao('leftShoulder').textContent).toBe('L1');
+    expect(botao('action2').getAttribute('aria-label')).toBe('2, Confirm');
+    expect(botao('leftShoulder').getAttribute('aria-label')).toBe('L1, Page');
+    expect(botao('action2').dataset.acao, 'the button does not say which action places it').toBe('action2');
+    // a direction keeps its direction name (in the language of the moment) and says its function after it
+    expect(raiz.querySelector('.dpad-up').getAttribute('aria-label')).toMatch(/^Cima, Climb$/);
+    // SELECT and START: name and function are the same word, said once
+    expect(raiz.querySelector('#touch-start').textContent).toBe('START');
+    expect(raiz.querySelector('#touch-start').getAttribute('aria-label')).toBe('START');
+    expect(raiz.textContent, 'a function word reached a face').not.toMatch(/Confirm|Back|Page/);
+  });
+
+  it('⚠️ [Right] a REMAPPED slot takes the name of the action it now fires — the name follows the place', () => {
+    const slot = Object.keys(TOUCH_DEFAULT).find((s) => TOUCH_DEFAULT[s] === 'action2');
+    const raiz = montar(['action4'], { mapa: { ...TOUCH_DEFAULT, [slot]: 'action4' } });
+    expect([...raiz.querySelectorAll('.touch-btn[data-btn]')].map((b) => b.textContent)).toContain('4');
   });
 
   it('⚠️ [Interface] `data-btn` casa com o `\'b\' + dataset.btn` que o `touch-bindings` recompõe', () => {
@@ -145,3 +166,8 @@ describe('ADR-0143 §4 · o silêncio acaba', () => {
 });
 
 // ========================= MUTACOES CONFERIDAS =========================
+//   N1 the face shows the function again (ADR-0165)       🔴 name and remap cases
+//   N2 the accessible name is the name only               🔴
+//   N3 L1 and L2 swapped                                   🔴
+//   N4 directions without a spoken name                   🔴
+//   N5 the name read from the slot, not the action it fires 🔴

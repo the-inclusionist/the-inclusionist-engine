@@ -77,11 +77,13 @@ describe('the virtual pad speaks the boot language', () => {
 
     const nomes = ['up', 'down']
       .map((d) => document.querySelector(`#touch-cross .dpad-${d}`)?.getAttribute('aria-label') ?? '');
-    expect(nomes).toEqual(['Visual accessibility', 'Empathy mode']);
-    expect([...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')].map((b) => b.textContent).sort()).toEqual(['Back', 'Close']);
+    // ADR-0165: «name, function» — the direction's NAME and the game's word both follow the language that arrived
+    expect(nomes).toEqual(['Up, Visual accessibility', 'Down, Empathy mode']);
+    const funcao = (b) => (b.getAttribute('aria-label') ?? '').split(', ').slice(1).join(', ');
+    expect([...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')].map(funcao).sort()).toEqual(['Back', 'Close']);
 
     // 📌 THE PAIR: the rebuilt buttons must still be wired, or the language fix would leave a dead pad.
-    const confirmar = [...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')].find((b) => b.textContent === 'Close');
+    const confirmar = [...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')].find((b) => funcao(b) === 'Close');
     const { keys } = await import('../app/js/input/state.js');
     const antes = new Set(keys);
     confirmar.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1 }));

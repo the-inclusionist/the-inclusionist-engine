@@ -467,6 +467,20 @@ export interface TouchMarkupSpec {
   readonly direcional?: 'cruz' | 'analogico';
 }
 
+/**
+ * A BUTTON'S NAME, from the position it fires (ADR-0165): the same in every game — 1 to 4, L1/L2/R1/R2, SELECT, START,
+ * and the four directions by their spoken name. The cartridge's word is the FUNCTION, and it never reaches the face.
+ */
+const NOME_DA_POSICAO: Readonly<Record<string, string>> = {
+  action1: '1', action2: '2', action3: '3', action4: '4',
+  leftShoulder: 'L1', leftTrigger: 'L2', rightShoulder: 'R1', rightTrigger: 'R2',
+  select: 'SELECT', start: 'START',
+};
+export function nomeDoBotao(acao: string): string | null {
+  if (NOME_DA_POSICAO[acao]) return NOME_DA_POSICAO[acao]!;
+  return acao === 'up' || acao === 'down' || acao === 'left' || acao === 'right' ? t(`touch.nome.${acao}`) : null;
+}
+
 /** Os quatro slots direcionais, na ordem em que a cruz os desenha. */
 const DIRECOES = ['up', 'left', 'right', 'down'] as const;
 /** Os quatro slots de botão de acção, na ordem do losango. */
@@ -498,6 +512,13 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
   // 🔴 SÓ O QUE O JOGO NOMEIA (ADR-0162, supersede o mínimo do ADR-0157): «Vale para todos os botões: somente aparecem
   // se o jogo os nomeia.» Um botão na tela é uma promessa de que ele faz alguma coisa, e quem sabe isso é o jogo.
   const nomeado = (slot: string): boolean => spec.acoesDoJogo.has(spec.mapa[slot] ?? '');
+  // ADR-0165: the face is the NAME of the position the slot fires; the accessible name is «name, function».
+  const nomeDe = (slot: string): string => nomeDoBotao(spec.mapa[slot] ?? slot) ?? spec.rotuloDoSlot(slot);
+  const acessivel = (slot: string): string => {
+    const nome = nomeDe(slot);
+    const funcao = spec.rotuloDoSlot(slot);
+    return funcao && funcao !== nome ? `${nome}, ${funcao}` : nome;
+  };
   const direcoesVivas = DIRECOES.filter(nomeado);
   if (direcoesVivas.length) {
     const analogico = spec.direcional === 'analogico';
@@ -520,7 +541,7 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
         braco.className = `touch-arm dpad-arm dpad-${d}`;
         braco.dataset.dir = d;
         braco.setAttribute('type', 'button');
-        braco.setAttribute('aria-label', spec.rotuloDoSlot(d));
+        braco.setAttribute('aria-label', acessivel(d));
         dir.appendChild(braco);
       }
     }
@@ -541,8 +562,8 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
       // célula do seu número, e um slot remapeado leva o botão para o lugar da acção que passou a disparar.
       botao.dataset.acao = spec.mapa[b] ?? '';
       botao.setAttribute('type', 'button');
-      botao.setAttribute('aria-label', spec.rotuloDoSlot(b));
-      botao.textContent = spec.rotuloDoSlot(b);
+      botao.setAttribute('aria-label', acessivel(b));
+      botao.textContent = nomeDe(b);
       losango.appendChild(botao);
     }
     raiz.appendChild(losango);
@@ -559,8 +580,8 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
       botao.className = 'touch-btn touch-ombro';
       botao.dataset.btn = s.slice(1); // `bl1` -> `l1`: o `'b' + dataset.btn` do `touch-bindings` recompõe o slot
       botao.setAttribute('type', 'button');
-      botao.setAttribute('aria-label', spec.rotuloDoSlot(s));
-      botao.textContent = spec.rotuloDoSlot(s);
+      botao.setAttribute('aria-label', acessivel(s));
+      botao.textContent = nomeDe(s);
       canto.appendChild(botao);
     }
     raiz.appendChild(canto);
@@ -578,9 +599,9 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
     b.id = id;
     b.className = `touch-btn touch-${slot}`;
     b.setAttribute('type', 'button');
-    b.setAttribute('aria-label', spec.rotuloDoSlot(slot));
+    b.setAttribute('aria-label', acessivel(slot));
     // ⚠️ E ESCRITO, não só dito: uma pílula sem texto é um botão que quem vê não sabe ler.
-    b.textContent = spec.rotuloDoSlot(slot);
+    b.textContent = nomeDe(slot);
     return b;
   };
   sistema.appendChild(pilula('touch-select', 'select'));

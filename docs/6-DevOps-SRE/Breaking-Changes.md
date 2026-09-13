@@ -550,6 +550,15 @@ keeps `--rodape-h` free below the card.
 **What to do:** if your styles or tests read the band on `.rodape-da-tela`, read it on `.barra-explicacao`; if you
 matched «Ação 2» in the legend, match «2:».
 
+## Q · A pad button's face is its name; the game's word is its function (ADR-0165)
+
+**Behaviour, no shape.** `input/touch.montarControleDeToque` writes on each face the NAME of the position the slot fires
+(`1`–`4`, `L1`/`L2`/`R1`/`R2`, `SELECT`, `START`), and sets `aria-label` to «name, function», where the function is what
+`rotuloDoSlot` returns; a direction arm says its direction name (`touch.nome.*`) before the function. New export
+`nomeDoBotao(acao)`.
+
+**What to do:** if your tests find pad buttons by the game's word in `textContent`, read it after «, » in `aria-label`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

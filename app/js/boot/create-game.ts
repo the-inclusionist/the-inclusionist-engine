@@ -2279,8 +2279,8 @@ export function createGame(o: CreateGameOptions): Engine {
       {
         mapa,
         acoesDoJogo: acoesDoCartucho(),
-        // `start` é de SISTEMA e a engine pode nomeá-lo (`core/actions` SYSTEM); os outros slots levam a palavra
-        // CURTA do jogo, porque vivem dentro de um botão de dedo e não numa lista.
+        // The FUNCTION of each slot (ADR-0165): the game's SHORT word, said after the button's name in its accessible
+        // name; the face shows the name. `start`/`select` are system positions the engine names itself.
         rotuloDoSlot: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select')
             // só se desenha o que o jogo nomeia (ADR-0162), logo a palavra dele existe sempre
             : (curto(mapa[slot] as Action) ?? '')),

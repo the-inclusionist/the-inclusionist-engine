@@ -502,6 +502,7 @@
     "initTouch",
     "lacunasDoToque",
     "montarControleDeToque",
+    "nomeDoBotao",
     "normalizeTouchMap",
     "padHandTag",
     "padKind",
