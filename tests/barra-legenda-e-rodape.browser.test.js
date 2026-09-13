@@ -34,7 +34,7 @@ beforeAll(async () => {
   raiz.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1" style="position:relative;width:640px;height:360px"><div id="title-icons"></div></div>';
   document.body.appendChild(raiz);
-  createGame({ acomodacoes: SEM_ASSUNTO,
+  createGame({ acomodacoes: SEM_ASSUNTO, controleNaTela: true,
     declaration: {
       topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => false, tick: 'player',
       world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',

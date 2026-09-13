@@ -478,6 +478,7 @@ const en: Record<string, string> = {
   'quiz.pos.down': 'Down',
   'quiz.pos.confirm': 'Confirm',
   'quiz.pos.back': 'Back',
+  'quiz.menu': 'Menu',
   'quiz.acom.hints': 'Hints',
   'quiz.acom.textPace': 'Text pace',
   'quiz.acom.lexicalDifficulty': 'Word difficulty',

@@ -559,6 +559,17 @@ matched «Ação 2» in the legend, match «2:».
 
 **What to do:** if your tests find pad buttons by the game's word in `textContent`, read it after «, » in `aria-label`.
 
+## R · The on-screen pad only on request, and out of the menus (ADR-0166)
+
+**Behaviour and one new optional field.** `createGame` mounts `#touch-controls` only when the cartridge passes
+`controleNaTela: true` (also through `mount()`); without it there is no pad and no pad line in `problems`. With it, the pad
+hides while the pause card or a settings panel is open and comes back in play when the child was on touch; it stays on
+the quick pause. A touch inside a menu no longer reveals the pad. This undoes section K's «the pad stays in view above
+the menus».
+
+**What to do:** a game that does not play well by mouse or touch passes `controleNaTela: true`. Menus need nothing: their
+items take clicks and touches.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

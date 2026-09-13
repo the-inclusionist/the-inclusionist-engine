@@ -42,6 +42,28 @@ describe('the quiz page', () => {
     expect(document.getElementById('q-cvd')).not.toBeNull();
   });
 
+  it('🔴 [Right] the quiz has a MENU button — a target of the engine\'s size, clear of the bar, that opens the menus (ADR-0166 erratum)', () => {
+    // The Dev: «crie um botão para menu (não faz sentido pausar um quiz)». Without the pad, it is the touch door to «Sair»
+    // and to the settings.
+    const botao = document.getElementById('quiz-menu');
+    expect(botao, 'no menu button').not.toBeNull();
+    expect(botao.textContent.trim(), 'the button has no word').toBe('Menu');
+    const r = botao.getBoundingClientRect();
+    const alvo = parseFloat(document.getElementById('game-region').style.getPropertyValue('--alvo-min'));
+    expect(Math.min(r.width, r.height), 'the menu button is under the target floor').toBeGreaterThanOrEqual(alvo - 0.5);
+    const barra = document.getElementById('title-icons').getBoundingClientRect();
+    const cruza = r.left < barra.right && barra.left < r.right && r.top < barra.bottom && barra.top < r.bottom;
+    expect(cruza, 'the menu button sits on the accessibility bar').toBe(false);
+    const cartao = document.getElementById('vp-pause-0');
+    expect(cartao.hidden, 'the card was already open').toBe(true);
+    botao.click();
+    try {
+      expect(cartao.hidden, 'the menu button did not open the menus').toBe(false);
+    } finally {
+      cartao.hidden = true;
+    }
+  });
+
   it('🔴 [Right] every option is the ENGINE\'s target — `--alvo-min`, not a size the quiz computes (ADR-0163 rule 2)', () => {
     const regiao = document.getElementById('game-region');
     const alvo = parseFloat(regiao.style.getPropertyValue('--alvo-min'));

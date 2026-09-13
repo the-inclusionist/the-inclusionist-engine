@@ -270,6 +270,13 @@ export interface CreateGameOptions {
    */
   readonly preset?: ActionPreset;
   /**
+   * THE ON-SCREEN PAD, only when the cartridge asks for it (ADR-0166): «Controle de tela é só para jogo que não funciona tão
+   * bem como via mouse e/ou touch (o cartucho decide), nunca para menu.» Absent = no pad — a game played by touching its
+   * own elements, and every menu, need none on top of them. It leaves the pause card and the panels; it stays on the quick
+   * pause.
+   */
+  readonly controleNaTela?: boolean;
+  /**
    * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO — a resposta do cartucho, OBRIGATÓRIA (ADR-0153).
    *
    * 🔴 Para cada uma das dezasseis que só o jogo sabe responder (`GAME_KEYED` em `core/accommodations`): a PALAVRA
@@ -558,7 +565,7 @@ const SELETOR_BARRA_A11Y = '#title-icons';
 type MetadeDoJogo = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
-  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes'>;
+  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'controleNaTela'>;
 
 export function createGame(o: CreateGameOptions): Engine {
   /*
@@ -2113,7 +2120,10 @@ export function createGame(o: CreateGameOptions): Engine {
     const Observador = (win as unknown as { MutationObserver?: typeof MutationObserver }).MutationObserver;
     if (regiao && Observador && typeof regiao.appendChild === 'function') {
       new Observador((registos) => {
-        if (registos.some((r) => (r.target as Element).classList?.contains('screen-pause'))) atualizarLegenda();
+        const classes = registos.map((r) => (r.target as Element).classList);
+        if (classes.some((c) => c?.contains('screen-pause'))) atualizarLegenda();
+        // ADR-0166: the pad leaves when the card or a panel opens, and comes back when the last of them closes
+        if (classes.some((c) => c?.contains('screen-pause') || c?.contains('overlay'))) refletirPadNosMenus();
       }).observe(regiao, { attributes: true, attributeFilter: ['hidden'], subtree: true });
     }
   }
@@ -2293,16 +2303,39 @@ export function createGame(o: CreateGameOptions): Engine {
     viewport: () => ({ w: win.innerWidth, h: win.innerHeight }),
     frontOverlay: overlays.frontOverlay,
     // O toque é sempre do Jogador 1 (`touch-bindings`), e com o cartão ou um painel aberto a criança toca
-    // DIRECTO nos botões do menu — um pad por cima deles taparia o que ela quer tocar.
-    // ⚠️ O PAD JÁ NÃO SE ESCONDE COM UM MENU ABERTO (ADR-0157): é com ele que quem só tem dedo anda nos menus.
+    // DIRECTO nos botões do menu (ADR-0166, which undid ADR-0157's «the pad stays over the menus»). The only two callers
+    // that show the pad — the touch listener below and `refletirPadNosMenus` — already ask `menuAberto()` first.
     padAllowed: () => players().length <= 1,
   });
+
+  /** A menu the child touches directly is open: the pause card or a settings panel (ADR-0166 rule 2). */
+  function menuAberto(): boolean {
+    return !!overlays.topVisibleOverlay() || !!$<HTMLElement>('.screen-pause:not([hidden])');
+  }
+  /** The pad was in view (or asked for by a touch) when a menu took the screen — it comes back when the menu goes. */
+  let padAntesDoMenu = false;
+  function refletirPadNosMenus(): void {
+    const pad = $<HTMLElement>('#touch-controls');
+    if (!pad) return;
+    if (menuAberto()) {
+      if (!pad.hidden) { padAntesDoMenu = true; toque.hideTouchControls('menu'); }
+    } else if (padAntesDoMenu) {
+      padAntesDoMenu = false;
+      toque.showTouchControls();
+    }
+  }
 
   const acoesDoCartucho = (): Set<string> => new Set(cartucho.preset ? presetActions(cartucho.preset) : []);
 
 
   function desenharPad(): void {
     if (!toqueUsavel || !hospedeiroDoToque) return;
+    // ADR-0166: a cartridge that does not ask for the pad gets none — and one swapped in by `mount()` takes the last one away
+    if (!cartucho.controleNaTela) {
+      const velho = $<HTMLElement>('#touch-controls');
+      velho?.parentNode?.removeChild(velho);
+      return;
+    }
     const mapa = toque.getTouchMap();
     const curto = cartucho.preset ? shortLabellerFrom(cartucho.preset) : (): null => null;
     const pad = montarControleDeToque(
@@ -2321,7 +2354,7 @@ export function createGame(o: CreateGameOptions): Engine {
     if (!pad.parentNode) hospedeiroDoToque.appendChild(pad);
   }
 
-  lacunasDoPad = () => (toqueUsavel
+  lacunasDoPad = () => (!cartucho.controleNaTela ? [] : toqueUsavel
     ? lacunasDoToque({ mapa: toque.getTouchMap(), acoesDoJogo: acoesDoCartucho() })
     : ['the virtual pad has nowhere to mount: set `host.touchHost`, or give #game-region room for children. '
       + 'Without it, a child on a keyboardless tablet cannot play, nor reach the pause']);
@@ -2347,7 +2380,8 @@ export function createGame(o: CreateGameOptions): Engine {
     marcarTecla, arestaDoJogador, soltarTecla,
     heldKeys: keys,
     attractOnInput: () => false,
-    showTouchControls: () => toque.showTouchControls(),
+    // a touch inside a menu does not bring the pad over it; it only remembers that the child is on touch (ADR-0166)
+    showTouchControls: () => { if (menuAberto()) { padAntesDoMenu = true; return; } toque.showTouchControls(); },
     hideTips: () => {},
     togglePause: alternarPausaPeloToque,
     /*
@@ -2599,7 +2633,7 @@ export function createGame(o: CreateGameOptions): Engine {
   // pelo Dev). `stopPropagation` não cala outro ouvinte do MESMO nó, logo a ordem de registo não importa.
   win.addEventListener('keydown', (e: KeyboardEvent) => {
     if (origemDoEvento(e) === 'toque') return; // a tecla que o próprio pad entregou a um menu
-    if (keyboard.whichPlayer(e.code) >= 0) toque.hideTouchControls();
+    if (keyboard.whichPlayer(e.code) >= 0) { toque.hideTouchControls(); padAntesDoMenu = false; } // on the keyboard now
   }, true);
 
   /*

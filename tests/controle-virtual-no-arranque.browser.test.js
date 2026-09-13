@@ -57,7 +57,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
   fases = [];
-  motor = createGame({ acomodacoes: SEM_ASSUNTO,
+  motor = createGame({ acomodacoes: SEM_ASSUNTO, controleNaTela: true,
     declaration: declaracao(),
     host: { doc: document, win: window },
     baixarPesados: false,
@@ -81,13 +81,13 @@ describe('createGame mounts the virtual pad from the preset', () => {
   });
 
   it('🔴 [Boundary] two actions and no direction: two buttons and NO directional (ADR-0162)', () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: SO_DUAS, setPhase: (p) => fases.push(p) });
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, controleNaTela: true, preset: SO_DUAS, setPhase: (p) => fases.push(p) });
     try {
       expect(botoes().map(funcao).sort()).toEqual(['Jump', 'Run']);
       expect(document.querySelector('#touch-cross, #touch-stick'), 'a directional the game never named').toBeNull();
       expect(document.getElementById('touch-start'), 'SELECT and START stay: they are the doors of the pause').not.toBeNull();
     } finally {
-      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, controleNaTela: true, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
     }
   });
 
@@ -99,7 +99,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
     const OMBROS = { leftTrigger: { label: 'L-two' }, leftShoulder: { label: 'L-one' }, rightTrigger: { label: 'R-two' }, rightShoulder: { label: 'R-one' } };
     const regiao = document.getElementById('game-region');
     regiao.style.cssText = 'position:relative;width:640px;height:360px';
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: OMBROS, setPhase: (p) => fases.push(p) });
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, controleNaTela: true, preset: OMBROS, setPhase: (p) => fases.push(p) });
     pad().hidden = false;
     try {
       const botao = (palavra) => [...document.querySelectorAll('#touch-controls .touch-ombro')].find((b) => funcao(b) === palavra);
@@ -119,7 +119,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
       pad().hidden = true;
       style.remove();
       regiao.style.cssText = '';
-      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, controleNaTela: true, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
     }
     // and the game that names no shoulder gets none
     expect(document.querySelectorAll('#touch-controls .touch-ombro'), 'a shoulder nobody named').toHaveLength(0);
@@ -131,7 +131,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
     style.textContent = css;
     document.head.appendChild(style);
     const QUATRO = { action1: { label: 'One' }, action2: { label: 'Two' }, action3: { label: 'Three' }, action4: { label: 'Four' } };
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: QUATRO, setPhase: (p) => fases.push(p) });
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, controleNaTela: true, preset: QUATRO, setPhase: (p) => fases.push(p) });
     pad().hidden = false;
     try {
       const caixa = (palavra) => botoes().find((b) => funcao(b) === palavra).getBoundingClientRect();
@@ -144,7 +144,7 @@ describe('createGame mounts the virtual pad from the preset', () => {
     } finally {
       pad().hidden = true;
       style.remove();
-      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, controleNaTela: true, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
     }
   });
 
@@ -192,47 +192,65 @@ describe('createGame mounts the virtual pad from the preset', () => {
     expect(fases).toEqual(['paused', 'playing']);
   });
 
-  it('🔴 [Right] with the menu card OPEN the pad STAYS, and its directional MOVES the card (ADR-0157)', async () => {
-    // 🔴 It was the opposite: the pad hid over the card, and a pad press only marked a held key with no keyboard event —
-    // the menu navigation never saw it. The Dev could not move through any menu by touch.
-    // 📌 With the real stylesheet and the CROSS: the directional reads the finger's position against its own rectangle,
-    // and an unstyled pad measures nothing — the case would pass or fail by geometry, not by the bridge.
-    const { default: css } = await import('../app/css/style.css?raw');
-    const style = document.createElement('style');
-    style.textContent = css;
-    document.head.appendChild(style);
-    try { localStorage.setItem('incl_paddir', 'cross'); } catch { /* sem storage */ }
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+  it('🔴 [Right] the pad LEAVES when the card opens and COMES BACK in play; the keyboard still moves the card (ADR-0166)', async () => {
+    // The Dev: «Ao acessar um menu (via SELECT por exemplo) o controle na tela deve desaparecer para que o usuário controle
+    // com cliques ou toques como em uma página de internet. Teclados, controles de video-game […] continuam funcionando.»
+    // It undoes ADR-0157's pad over the menus, which this case pinned until 2026-09-12.
+    const esperar = () => new Promise((r) => setTimeout(r, 0));
+    toque(document.getElementById('game-region'), 'pointerdown');
+    expect(pad().hidden, 'the pad was not in view in play — the case would measure nothing').toBe(false);
     motor.pausa.mostrar(0);
+    await esperar();
     try {
+      expect(pad().hidden, 'the pad stayed over the card').toBe(true);
+      // a touch inside the menu does not bring it back over the items
       toque(document.getElementById('game-region'), 'pointerdown');
-      expect(pad().hidden, 'the pad hid with the card open: a touch-only child has no directional').toBe(false);
+      expect(pad().hidden, 'a touch in the menu put the pad over it again').toBe(true);
+      // the keyboard still drives the card with the pad gone
       const marcado = () => document.querySelector('#vp-pause-0 .pm-sel')?.dataset.act;
       const antes = marcado();
-      const cruz = document.getElementById('touch-cross');
-      const r = cruz.getBoundingClientRect();
-      expect(r.height, 'the cross has no size — the case would measure nothing').toBeGreaterThan(0);
-      const em = { bubbles: true, cancelable: true, pointerId: 7, clientX: r.left + r.width / 2, clientY: r.bottom - 2 };
-      cruz.dispatchEvent(new PointerEvent('pointerdown', em));
-      cruz.dispatchEvent(new PointerEvent('pointerup', em));
-      expect(marcado(), 'the pad directional did not move the card cursor').toBeTruthy();
-      expect(marcado()).not.toBe(antes);
-      // ⚠️ the key the pad handed to the menu is stamped as TOUCH (ADR-0109): the «keyboard hides the pad» listener must not
-      // take it for a keyboard, or the pad would vanish after every step it gives
-      expect(pad().hidden, 'the pad hid itself after its own press').toBe(false);
-      // 🔴 THE PAIR, found by the Dev: a REAL key in the same menu hides the pad. The menu navigation consumes the key
-      // in the window's CAPTURE phase with `stopPropagation()`, so a listener in the bubble phase never heard it — the
-      // child switched to the keyboard and the pad stayed over the card.
-      const depoisDoPad = marcado();
       document.getElementById('game-region').dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', bubbles: true, cancelable: true }));
-      expect(marcado(), 'the key did not reach the menu — the case would not be in a menu').not.toBe(depoisDoPad);
-      expect(pad().hidden, 'switching to the keyboard inside a menu left the pad on screen').toBe(true);
+      expect(marcado(), 'the keyboard stopped moving the card').not.toBe(antes);
     } finally {
       motor.pausa.esconder(0);
-      style.remove();
-      try { localStorage.removeItem('incl_paddir'); } catch { /* idem */ }
-      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
     }
+    await esperar();
+    // the arrow above was a KEYBOARD: the child is on the keyboard now, and the pad does not come back on its own
+    expect(pad().hidden, 'the pad came back after the child switched to the keyboard').toBe(true);
+    // on touch all the way, it does come back
+    toque(document.getElementById('game-region'), 'pointerdown');
+    motor.pausa.mostrar(0);
+    await esperar();
+    motor.pausa.esconder(0);
+    await esperar();
+    expect(pad().hidden, 'back in play, the pad did not come back for a touch-only child').toBe(false);
+  });
+
+  it('🔴 [Right] a settings PANEL takes the pad away too, and gives it back when it closes (ADR-0166)', async () => {
+    const esperar = () => new Promise((r) => setTimeout(r, 0));
+    toque(document.getElementById('game-region'), 'pointerdown');
+    const painel = document.querySelector('#game-region .overlay');
+    expect(painel, 'no panel mounted — the case would measure nothing').not.toBeNull();
+    painel.hidden = false;
+    await esperar();
+    try {
+      expect(pad().hidden, 'the pad stayed over an open panel').toBe(true);
+    } finally {
+      painel.hidden = true;
+    }
+    await esperar();
+    expect(pad().hidden, 'the panel closed and the pad did not come back').toBe(false);
+  });
+
+  it('🔴 [Zero] a cartridge that does NOT ask for the pad gets none — and no pad line in `problems` (ADR-0166)', () => {
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+    try {
+      expect(pad(), 'a pad for a cartridge that never asked for one').toBeNull();
+      expect(motor.problems.filter((l) => /pad|preset/.test(l)), 'a pad gap reported for a game without a pad').toEqual([]);
+    } finally {
+      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, controleNaTela: true, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+    }
+    expect(pad(), 'asking again did not bring the pad back').not.toBeNull();
   });
 
   it('🔴 [Right] from the QUICK PAUSE the pad\'s action-4 button opens the menus — and the pad stays (ADR-0155, ADR-0157)', () => {
@@ -270,13 +288,14 @@ describe('the SELECT pill opens the menus (ADR-0155)', () => {
     expect(select.textContent.trim()).not.toBe('');
   });
 
-  it('🔴 [Right] a tap opens the card, asks the game to pause once — and the pad stays, it is the way to move in it', () => {
+  it('🔴 [Right] a tap opens the card, asks the game to pause once — and the pad leaves, the card is touched directly (ADR-0166)', async () => {
     toque(document.getElementById('game-region'), 'pointerdown');
     fases.length = 0;
     document.getElementById('touch-select').click();
     expect(document.getElementById('vp-pause-0').hidden, 'the SELECT pill did not open the menus').toBe(false);
     expect(fases).toEqual(['paused']);
-    expect(pad().hidden, 'the pad hid with the card open (ADR-0157)').toBe(false);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(pad().hidden, 'the pad stayed over the card').toBe(true);
     motor.pausa.esconder(0);
   });
 
@@ -356,7 +375,7 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
 
 describe('mount() rebuilds the pad for the new cartridge', () => {
   it('🔴 [Zero] without a preset: only SELECT and START, AND `problems` says what is missing (ADR-0162)', () => {
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, controleNaTela: true });
     expect(botoes(), 'a button nobody named').toHaveLength(0);
     expect(document.querySelector('#touch-cross, #touch-stick'), 'a directional nobody named').toBeNull();
     expect(document.getElementById('touch-start'), 'the pause lost its only touch door').not.toBeNull();
@@ -366,7 +385,7 @@ describe('mount() rebuilds the pad for the new cartridge', () => {
 
   it('🎯 [Boundary] a platform preset gets the cross with its arms drawn the way the bindings light them', () => {
     try { localStorage.setItem('incl_paddir', 'cross'); } catch { /* sem storage não há como pedir a cruz */ }
-    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: PLATAFORMA });
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, controleNaTela: true, preset: PLATAFORMA });
     const cruz = document.getElementById('touch-cross');
     expect(cruz, 'four declared directions and no cross').not.toBeNull();
     // ⚠️ `touch-bindings` lights `.dpad-up` & co. on the cross and the stylesheet draws `.dpad-arm`: an arm
@@ -450,3 +469,12 @@ describe('the START pill, with the real stylesheet', () => {
 // ⚠️ And wiring the modules together found THREE defects none of their own tests could see: arms the
 // stylesheet does not draw and the bindings do not light, a START pill with no text, and a bare global
 // `addEventListener` in `input/touch` that took down every boot on a document with no window.
+
+// ---- ADR-0166 (2026-09-12): the pad only on request, and out of the menus ----
+//   P1 a pad for every cartridge                       🔴 the quiz case and the [Zero] case
+//   P2 `padAllowed` without the menu check              ✅ SURVIVED: both callers already ask `menuAberto()` — the check was removed
+//   P3 the observer does not reflect the pad            🔴 four cases
+//   P4 the pad never comes back                         🔴 two cases
+//   P5 the keyboard does not forget the touch           🔴
+//   P6 a panel is not a menu                            🔴 the panel case
+//   P7 the quiz menu button opens nothing (quiz tests)  🔴

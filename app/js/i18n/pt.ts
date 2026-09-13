@@ -593,6 +593,7 @@ const pt: Record<string, string> = {
   'quiz.pos.down': 'Abaixo',
   'quiz.pos.confirm': 'Confirmar',
   'quiz.pos.back': 'Voltar',
+  'quiz.menu': 'Menu',
   'quiz.acom.hints': 'Dicas',
   'quiz.acom.textPace': 'Ritmo do texto',
   'quiz.acom.lexicalDifficulty': 'Dificuldade das palavras',

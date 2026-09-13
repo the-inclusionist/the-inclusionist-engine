@@ -48,13 +48,9 @@ describe('the quiz, heard', () => {
     expect(falas.slice(antes)).toEqual(['2 Galinha']);
   });
 
-  it('🔴 [Right] the quiz NAMES its positions, so its virtual pad can move through questions and menus (ADR-0162)', () => {
-    // Since a pad button appears only when the game names it, a quiz with no `preset` would have SELECT and START only.
-    // ADR-0165: the face is the button's name; the quiz's word is the function, said after it
-    const botoes = [...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')];
-    expect(botoes.map((b) => b.textContent).sort()).toEqual(['2', '3']);
-    expect(botoes.map((b) => b.getAttribute('aria-label')).sort()).toEqual(['2, Confirmar', '3, Voltar']);
-    expect(document.querySelector('#touch-controls #touch-stick, #touch-controls #touch-cross'), 'no directional on the quiz').not.toBeNull();
+  it('🔴 [Zero] the quiz asks for NO on-screen pad — its options and its menu button are touched directly (ADR-0166 erratum)', () => {
+    // The Dev, asked whether the quiz keeps the pad: «Sim» to taking it out, «e crie um botão para menu».
+    expect(document.getElementById('touch-controls'), 'the quiz still draws an on-screen pad').toBeNull();
   });
 
   it('🎯 [Right] the options DRAW their numbers — the counter the pause card uses', () => {

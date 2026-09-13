@@ -207,6 +207,9 @@ export function respostaTexto(acertou: boolean, certa: string): string {
 function render(): void {
   const app = $<HTMLElement>('#quiz-app');
   if (!app) return;
+  // the menu button's word, resolved at each draw — the preferred language arrives after this boot
+  const botaoMenu = $<HTMLElement>('#quiz-menu');
+  if (botaoMenu) botaoMenu.textContent = t('quiz.menu');
   const p = PERGUNTAS[atual];
   if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">Fim! ${acertos} de ${PERGUNTAS.length}.</h2>`; return; }
   app.innerHTML = perguntaHtml(p, foco);
@@ -330,9 +333,9 @@ export function bootQuiz(): void {
     // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
     isNavigable: () => true,
     /*
-     * AS POSIÇÕES QUE ESTE JOGO USA (ADR-0162). Desde que um botão do controle virtual só aparece se o jogo o nomeia,
-     * um quiz sem `preset` teria SELECT e START e mais nada — nem para andar nas alternativas, nem nos menus. Cima e
-     * baixo escolhem; a acção 2 confirma e a 3 volta, que é o que os menus da engine também pedem (ADR-0157 §2).
+     * AS POSIÇÕES QUE ESTE JOGO USA (ADR-0162): cima e baixo escolhem, a acção 2 confirma e a 3 volta — on the keyboard and a
+     * gamepad, and in the help screen. ⚠️ Since ADR-0166 they draw no on-screen pad: this quiz does not ask for one
+     * (`controleNaTela` absent), because its options are touched directly and its menu button opens the menus.
      * 📌 GETTERS e não cadeias: o `preset` é lido a cada desenho, e uma palavra resolvida aqui ficaria no idioma de
      * recuo — este boot corre antes de o idioma preferido chegar.
      */
@@ -405,6 +408,11 @@ export function bootQuiz(): void {
 
   // TOUCH TARGETS are the engine's since ADR-0163: the options read `--alvo-min`, which `createGame` writes from the
   // resolution it forces. The quiz used to compute its own 9 mm, and the last option fell out of the region.
+
+  // THE MENU BUTTON (ADR-0166 erratum): this quiz asks for no on-screen pad — its options are touched directly — and
+  // «não faz sentido pausar um quiz», so the touch door to the menus is a button that opens them.
+  const botaoMenu = $<HTMLButtonElement>('#quiz-menu');
+  if (botaoMenu) botaoMenu.addEventListener('click', () => motor?.pausa.mostrar(0));
 
   const região = $<HTMLElement>('#game-region');
   if (região) região.addEventListener('keydown', aoTeclado);
