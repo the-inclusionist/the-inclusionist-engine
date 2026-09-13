@@ -72,6 +72,7 @@ const pt: Record<string, string> = {
   // o declara é o jogo (campo 5 do contrato). Sem artigo de propósito — assim a frase serve a qualquer
   // gênero gramatical, e o `gender` do Speakable fica para as frases que precisam concordar.
   'hud.contador': '{have} de {need} {nome}',
+  'hud.numero': '{nome}: {valor}',
   // O NOME do que este jogo junta. Currículo não se traduz (pilar 3), mas "moedas" não é currículo — é um
   // substantivo comum da interface, e a criança que joga em inglês tem de ouvir "coins". Por isso o nome
   // atravessa por `{nome}` JÁ RESOLVIDO pelo jogo, e a chave mora aqui.

@@ -599,6 +599,14 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* ADR-0164 as the Dev corrected it: the EXPLANATION stands on a full-width dark band at the lowest edge (rule 2, rule 4);
    the BUTTON LEGEND runs the full width with NO band, a dark background only behind each «name: function» (rule 3), and
    sits above the explanation. The column itself paints nothing. Padding adds to 8 px, so two lines fit `--rodape-h`. */
+/* THE HUD BANDS the engine mounts from a cartridge's `hud` (ADR-0168; issue #162): identity top left, level with the quick bar and
+   narrowed by the root so it never reaches it; round below the bar's room, where the root sets `top`. State on dark chips, like the
+   icon's name; no pointer events, so a finger passes through to the game. */
+.hud-faixa{position:absolute;z-index:12;margin:0;pointer-events:none;font-size:var(--ui-fs,16px);line-height:1.25;display:flex;gap:2px}
+.hud-faixa[hidden]{display:none}
+.hud-identidade{top:10px;left:4px;flex-direction:column;align-items:flex-start}
+.hud-rodada{left:50%;transform:translateX(-50%);flex-direction:row;flex-wrap:wrap;justify-content:center;gap:.5em;max-width:calc(100% - 8px)}
+.hud-numero{margin:0;padding:0 .3em;color:#f6f5f0;background:rgba(8,8,16,.92);border-radius:8px;max-width:100%;overflow-wrap:anywhere}
 .rodape-da-tela{position:absolute;left:0;right:0;bottom:0;z-index:12;display:flex;flex-direction:column;gap:0;pointer-events:none}
 .rodape-da-tela:not(:has(> :not([hidden]))){display:none}
 .pausa-legenda,.barra-explicacao{color:#fff;font-family:var(--font);font-weight:700;font-size:var(--ui-fs,16px);

@@ -71,6 +71,7 @@ const es: Record<string, string> = {
   'hud.objective.silabas': 'Arma 10 palabras',
   'hud.objective.ludico': 'Junta 10 monedas',
   'hud.contador': '{have} de {need} {nome}',
+  'hud.numero': '{nome}: {valor}',
   'hud.nome.moedas': 'monedas',
   'hud.nome.moeda': 'moneda',
   'pause.nivel': '📚 Nivel {n} · {nome}',

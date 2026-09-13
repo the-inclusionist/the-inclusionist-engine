@@ -103,6 +103,7 @@ import { initCrt, applyCrt, crtScanVars } from '../render/crt.js';
 import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type SettingsAudioApi } from '../ui/settings-audio.js';
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn } from '../ui/dom.js';
+import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
 import * as store from '../platform/storage.js';
 import { initMenuNav, partesDoControle, type MenuNavApi } from '../ui/menu-nav.js';
 import type { NavKeys } from '../input/edges.js';
@@ -281,6 +282,14 @@ export interface CreateGameOptions {
    * pause.
    */
   readonly controleNaTela?: boolean;
+  /**
+   * THE NUMBERS THIS GAME SHOWS, each in the band of what it is about (ADR-0168; ADR-0059 §1; issue #162). The engine mounts
+   * the HUD and places them: `identity` top left beside the quick bar, `round` below it; the room the game leaves free at the
+   * top (`--barra-a11y-h`) grows by what they take. Absent = no HUD mounted, and the game keeps drawing its own.
+   * 📏 Measured on 2026-09-13: six sibling games, six HUDs of their own, none in the bands.
+   * A malformed list is refused at boot and at `mount`, like the declaration.
+   */
+  readonly hud?: readonly HudNumber[];
   /**
    * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO — a resposta do cartucho, OBRIGATÓRIA (ADR-0153).
    *
@@ -560,6 +569,12 @@ function recusarSeNaoResponde(quem: string, acomodacoes: unknown): void {
   if (problemas.length) recusarDeclaracao(quem, problemas);
 }
 
+/** A malformed `hud` is a program defect, refused like the declaration (ADR-0169): the engine would not know what to place. */
+function recusarSeHudMalformado(quem: string, hud: unknown): void {
+  const problemas = hudNumbersProblems(hud);
+  if (problemas.length) recusarDeclaracao(quem, problemas);
+}
+
 /** Os ids que os painéis emprestados exigem do documento. Achado 6: sem eles o painel abre VAZIO, sem erro. */
 const MARCACAO_EXIGIDA: readonly string[] = ['#game-region', '#sr-status', '#sr-alert'];
 
@@ -593,7 +608,7 @@ const SELETOR_BARRA_A11Y = '#title-icons';
 type MetadeDoJogo = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
-  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'controleNaTela'>;
+  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'controleNaTela' | 'hud'>;
 
 export function createGame(o: CreateGameOptions): Engine {
   /*
@@ -612,6 +627,7 @@ export function createGame(o: CreateGameOptions): Engine {
   }
   recusarSeTomaOStart('createGame', cartucho.preset);
   recusarSeNaoResponde('createGame', cartucho.acomodacoes);
+  recusarSeHudMalformado('createGame', cartucho.hud);
 
   const { doc, win } = o.host;
   /*
@@ -1961,7 +1977,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * The engine's own nodes in the region (bar, pause card, panels, pad, footer, PAUSED, crash banner) — its sizes are held
    * by its own gates — and what is not drawn for the eye at all (`.sr-only`).
    */
-  const FORA_DO_CARTUCHO = '#title-icons, .screen-pause, .overlay, #touch-controls, .rodape-da-tela, .pausa-rapida, #incl-parou, .sr-only';
+  const FORA_DO_CARTUCHO = '#title-icons, .screen-pause, .overlay, #touch-controls, .rodape-da-tela, .pausa-rapida, #incl-parou, .sr-only, .hud-faixa';
   const ALVO_DE_TOQUE = 'button, a[href], input:not([type="hidden"]), select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])';
   /** ADR-0163 rule 4, second half: text and targets the CARTRIDGE draws under the floor, named — read when `problems` is. */
   function desenhadoAbaixoDoPiso(): string | null {
@@ -2006,28 +2022,70 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 The name line is counted whether or not a name is showing — reserving only while pointing would move the game
    * under the child's finger. Measured again at every scale and every typography step: both change the text's size.
    * ⚠️ Zero without a bar: nothing to reserve.
+   * 📌 With a HUD (ADR-0168) the room also holds the identity band, when it reaches lower than the bar's room, and the round
+   * band, which starts where the bar's room ends; the identity band is narrowed so it never reaches the bar.
    */
   function reservarFaixaDaBarra(): void {
     const regiao = $<HTMLElement>('#game-region');
     if (!regiao || typeof regiao.style?.setProperty !== 'function') return;
     const barra = a11yBar as HTMLElement | null;
-    if (!barra || typeof barra.getBoundingClientRect !== 'function' || typeof regiao.getBoundingClientRect !== 'function') {
-      regiao.style.setProperty('--barra-a11y-h', '0px');
-      return;
+    const mede = typeof regiao.getBoundingClientRect === 'function';
+    let sala = 0;
+    let respiro = 4;
+    const topo = mede ? regiao.getBoundingClientRect().top : 0;
+    if (barra && mede && typeof barra.getBoundingClientRect === 'function') {
+      let fundo = barra.getBoundingClientRect().bottom;
+      respiro = 0;
+      const nome = barra.querySelector<HTMLElement>('.pause-icons-cap');
+      if (nome && typeof win.getComputedStyle === 'function') {
+        const cs = win.getComputedStyle(nome);
+        const fs = parseFloat(cs.fontSize) || 16;
+        const linha = (parseFloat(cs.lineHeight) || fs * 1.2) + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+        fundo = nome.getBoundingClientRect().top + linha;
+        respiro = fs / 4;
+      }
+      sala = fundo - topo + respiro;
     }
-    const topo = regiao.getBoundingClientRect().top;
-    let fundo = barra.getBoundingClientRect().bottom;
-    let respiro = 0;
-    const nome = barra.querySelector<HTMLElement>('.pause-icons-cap');
-    if (nome && typeof win.getComputedStyle === 'function') {
-      const cs = win.getComputedStyle(nome);
-      const fs = parseFloat(cs.fontSize) || 16;
-      const linha = (parseFloat(cs.lineHeight) || fs * 1.2) + (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
-      fundo = nome.getBoundingClientRect().top + linha;
-      respiro = fs / 4;
+    if (hudMontado && mede) {
+      const { identity: identidade, round: rodada } = hudMontado;
+      if (!identidade.hidden) {
+        const esquerdaDaBarra = barra && typeof barra.getBoundingClientRect === 'function' ? barra.getBoundingClientRect().left : Infinity;
+        const esquerda = regiao.getBoundingClientRect().left;
+        identidade.style.maxWidth = Number.isFinite(esquerdaDaBarra) ? `${Math.max(0, Math.floor(esquerdaDaBarra - esquerda - 2 * respiro))}px` : '';
+        sala = Math.max(sala, identidade.getBoundingClientRect().bottom - topo + respiro);
+      }
+      if (!rodada.hidden) {
+        rodada.style.top = `${Math.ceil(sala)}px`;
+        sala += rodada.getBoundingClientRect().height + respiro;
+      }
     }
-    regiao.style.setProperty('--barra-a11y-h', `${Math.ceil(fundo - topo + respiro)}px`);
+    regiao.style.setProperty('--barra-a11y-h', `${Math.ceil(sala)}px`);
   }
+  /*
+   * THE HUD the engine mounts from the cartridge's `hud` (ADR-0168; issue #162). Read on every animation frame while mounted —
+   * the numbers are functions, so a game never has to say «refresh»; only a changed text is written, and a changed text
+   * measures the room again, because a longer number can wrap.
+   */
+  let hudMontado: HudBandsMounted | null = null;
+  let quadroDoHud = false;
+  function montarHud(): void {
+    hudMontado?.remove();
+    hudMontado = null;
+    const regiao = $<HTMLElement>('#game-region');
+    const numeros = cartucho.hud ?? [];
+    if (numeros.length && regiao && typeof regiao.appendChild === 'function') hudMontado = mountHudBands(doc, regiao, numeros);
+    reservarFaixaDaBarra();
+    if (hudMontado && !quadroDoHud && typeof win.requestAnimationFrame === 'function') {
+      quadroDoHud = true;
+      const passo = (): void => {
+        if (!hudMontado) { quadroDoHud = false; return; }
+        if (hudMontado.refresh()) reservarFaixaDaBarra();
+        win.requestAnimationFrame(passo);
+      };
+      win.requestAnimationFrame(passo);
+    }
+  }
+  montarHud();
   aplicarResolucao();
   if (typeof win.addEventListener === 'function') win.addEventListener('resize', aplicarResolucao);
 
@@ -2074,7 +2132,8 @@ export function createGame(o: CreateGameOptions): Engine {
     const nos = [...regiao.querySelectorAll('*')].filter((el) => pinta(el)).map((el) => ({
       nome: nomeDoNo(el),
       caixa: caixaDe(el),
-      daBarra: el === a11yBar || a11yBar.contains(el),
+      // the engine's HUD bands are placed by the engine: if one reaches the bar, that is the engine's defect, not the game's
+      daBarra: el === a11yBar || a11yBar.contains(el) || el.closest('.hud-faixa') !== null,
     }));
     return invasoresDaBarra(barra, nos);
   }
@@ -2881,7 +2940,9 @@ export function createGame(o: CreateGameOptions): Engine {
     // que o primeiro respeitou, e a raiz ficava com a pausa inalcançável a meio da sessão.
     recusarSeTomaOStart('mount', ganchos.preset);
     recusarSeNaoResponde('mount', ganchos.acomodacoes);
+    recusarSeHudMalformado('mount', ganchos.hud);
     cartucho = { ...ganchos, declaration };
+    montarHud(); // the numbers are the cartridge's: the new one's replace the old one's, and the room is measured again
     registrarMapeamentosDoCartucho();
     alcanceAtual = derivarAlcance();
     // O pad é da FORMA do preset, logo muda com o cartucho; os ouvintes da janela ficam (`rewire`, e não `attach`).
@@ -2996,6 +3057,9 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     registrarMapeamentoDoPad(null);
     registrarAvisoDeQueda(null);
     retirarAvisoDeAlcance();
+    hudMontado?.remove();
+    hudMontado = null;
+    reservarFaixaDaBarra();
     // ⚠️ `pop()` E NÃO UM `clear()`: cada `exit()` é a limpeza de DOM daquela cena, e saltá-la deixaria na
     // página o que o cartucho anterior desenhou. O laço tem fim porque `pop()` devolve `null` na pilha vazia.
     while (cenasDaRaiz.pop()) { /* o `exit()` de cada cena É o teardown dela */ }
