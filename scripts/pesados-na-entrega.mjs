@@ -6,13 +6,20 @@
 // it. A file whose hash differs stops the build: nothing unchecked reaches a delivery.
 //
 // Usage (after `npm run build`): `npm run pesados:entrega` — builds the package, then `node scripts/pesados-na-entrega.mjs dist`.
+// A cartridge, after its own build, runs the published command: `npx inclusionist-pesados dist`. The catalogue is read from the
+// package beside this script, never from the caller's folder.
 // ⚠️ It downloads about 300 MB from Hugging Face, jsDelivr, Google Storage and webgazer.cs.brown.edu: the build machine
 // contacts them once, and the child's device never does.
 
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync, existsSync, realpathSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
+
+/** The compiled catalogue of the package this script ships in — beside it, whatever folder the build runs from. */
+export function moduloDoPacote() {
+  return new URL('../dist-pkg/platform/pesados.js', import.meta.url).href;
+}
 
 const sha256DoNode = (buf) => createHash('sha256').update(Buffer.from(buf)).digest('hex');
 
@@ -45,12 +52,14 @@ export async function levarPesadosParaEntrega({ destino, pesados, caminhoNaEntre
   return { ok: linhas.every((l) => l.estado !== 'falhou'), linhas };
 }
 
-if ((process.argv[1] ?? '').split(/[\\/]/).pop() === 'pesados-na-entrega.mjs') {
+// Run as a program (directly, or through the `inclusionist-pesados` shim, which may be a symlink): compare real paths.
+const executado = (() => { try { return realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
+if (executado) {
   const destino = process.argv[2];
-  if (!destino) { console.error('usage: node scripts/pesados-na-entrega.mjs <delivery folder, e.g. dist>'); process.exit(2); }
-  const modulo = join(process.cwd(), 'dist-pkg', 'platform', 'pesados.js');
-  if (!existsSync(modulo)) { console.error('dist-pkg/platform/pesados.js is missing: run `npm run build:pkg` first'); process.exit(2); }
-  const { PESADOS, caminhoNaEntrega } = await import(pathToFileURL(modulo).href);
+  if (!destino) { console.error('usage: inclusionist-pesados <delivery folder, e.g. dist>'); process.exit(2); }
+  const modulo = moduloDoPacote();
+  if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/pesados.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
+  const { PESADOS, caminhoNaEntrega } = await import(modulo);
   const { ok, linhas } = await levarPesadosParaEntrega({ destino, pesados: PESADOS, caminhoNaEntrega });
   for (const l of linhas) console.log(`${l.estado.padEnd(9)} ${l.id}${l.erro ? ` — ${l.erro}` : ''}`);
   if (!ok) { console.error('a heavy file failed: the delivery is incomplete, and nothing unchecked was written'); process.exit(1); }

@@ -706,8 +706,8 @@ upstream host. 📏 Measured in the rebuilt dist: every request of the quiz page
 
 **What to do:** a delivery that offers neural voices, vision or eye control carries the files in `pesados/`. For the engine's
 own dist: `npm run build`, then `npm run pesados:entrega` (fetches about 300 MB once, checks each sha256, writes into
-`dist/pesados/`, and fails the run on a mismatch). ⚠️ A cartridge's delivery needs the same step, and the script does not ship
-in the package yet — until it does, a game's own build has no voices from the delivery (issue #173, second cut). The
+`dist/pesados/`, and fails the run on a mismatch). A cartridge's delivery needs the same step: after its own build,
+`npx inclusionist-pesados dist` (the package's command; it reads the catalogue from the installed engine). The
 Content-Security-Policy keeps only `huggingface.co` in `connect-src` (the voice provider hardcodes its models' host; the
 service worker answers from the checked cache); the voice's phonemizer is catalogued and asked for at `pesados/`, and a
 delivery with neural voice carries it too (18.7 MB). ⚠️ Until the same day, the engine's own service worker registered NONE

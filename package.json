@@ -107,8 +107,12 @@
     "LICENSE",
     "README.md",
     "docs/LICENSES.md",
-    "docs/CREDITS.md"
+    "docs/CREDITS.md",
+    "scripts/pesados-na-entrega.mjs"
   ],
+  "bin": {
+    "inclusionist-pesados": "scripts/pesados-na-entrega.mjs"
+  },
   "comment:no-dependencies": [
     "⚠️ ESTE PACOTE NÃO TEM `dependencies`, E ISSO É UMA DECISÃO MEDIDA (ADR-0094), não um acaso.",
     "A 6.36.1 saiu com `@mintplex-labs/piper-tts-web` em `devDependencies` enquanto `platform/tts` — código",
