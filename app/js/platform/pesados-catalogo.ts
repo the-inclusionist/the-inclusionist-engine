@@ -25,12 +25,18 @@ export interface Pesado {
   readonly url: string | null;
   /** Medido, não estimado — é o número que uma frase honesta usa antes de começar a descarga. */
   readonly bytes?: number;
+  /**
+   * The SHA-256 of the bytes, MEASURED (issue #168): what the fetcher compares before keeping anything. A pinned URL is
+   * not pinned content — a CDN or a mirror can serve other bytes at the same address, and these run in the child's page.
+   */
+  readonly sha256?: string;
   /** Obrigatório quando `url` é `null`: uma ausência sem razão escrita vira uma ausência esquecida. */
   readonly porQueNaoTemFonte?: string;
 }
 
 /** O nome da Cache Storage. Versionado: mudar o conteúdo do catálogo não deve servir bytes velhos. */
-export const CACHE_PESADOS = 'incl-pesados-v1';
+// v2 since issue #168: what v1 kept was never checked against a hash, so it is not trusted — it is fetched again, checked.
+export const CACHE_PESADOS = 'incl-pesados-v2';
 
 /**
  * O PESO DE CADA VOZ, MEDIDO EM 2026-09-09 e não estimado — `Content-Length` do modelo e corpo da configuração.
@@ -43,11 +49,15 @@ export const CACHE_PESADOS = 'incl-pesados-v1';
  * sub-reportar em silêncio. É por isso que o gate exige `bytes > 0` em toda entrada de voz COM url: o buraco
  * é pequeno e mudo, que é a forma de defeito que este repositório persegue.
  */
-const PESO_MEDIDO: Readonly<Record<string, { readonly modelo: number; readonly config: number }>> = Object.freeze({
-  'pt_BR-faber-medium': { modelo: 63_201_294, config: 4_855 },
-  'en_US-ryan-medium': { modelo: 63_201_294, config: 4_883 },
-  'en_US-amy-medium': { modelo: 63_201_294, config: 4_882 },
-  'es_MX-claude-high': { modelo: 63_122_309, config: 4_963 },
+const PESO_MEDIDO: Readonly<Record<string, { readonly modelo: number; readonly config: number; readonly sha256Modelo: string; readonly sha256Config: string }>> = Object.freeze({
+  'pt_BR-faber-medium': { modelo: 63_201_294, config: 4_855,
+    sha256Modelo: '858555e3a064209c57088fe6bd70c4c3dc54d03eaa00c45d5ecaf43a33f95aa7', sha256Config: '7e694de195ae3fc36dd732c445eb04fb49b649854893cb5506b978f0d50a1d6f' },
+  'en_US-ryan-medium': { modelo: 63_201_294, config: 4_883,
+    sha256Modelo: 'abf4c274862564ed647ba0d2c47f8ee7c9b717d27bdad9219100eb310db4047a', sha256Config: '44034c056cb15681b2ad494307c7f3f2e4499d1253c700c711fa0a4607ffe78d' },
+  'en_US-amy-medium': { modelo: 63_201_294, config: 4_882,
+    sha256Modelo: 'b3a6e47b57b8c7fbe6a0ce2518161a50f59a9cdd8a50835c02cb02bdd6206c18', sha256Config: '95a23eb4d42909d38df73bb9ac7f45f597dbfcde2d1bf9526fdeaf5466977d77' },
+  'es_MX-claude-high': { modelo: 63_122_309, config: 4_963,
+    sha256Modelo: '3ef40a71ea63852cd8ab7e6fa7d2ecdcfa67a0b47c9c48e3f10e02ee02083ea0', sha256Config: '1afc81f703c0e4cb3b4d7c0dca096b8b54a98806807f0170cf5eb5557723c12d' },
 });
 
 /**
@@ -66,8 +76,8 @@ const RAZAO_ID_TORTO = 'o identificador da voz não tem a forma `locale-nome-qua
 function entradasDaVoz(v: VozNeural): Pesado[] {
   const peso = PESO_MEDIDO[v.voice];
   return [
-    { id: `voz:${v.voice}`, url: urlDoModelo(v), bytes: peso?.modelo, porQueNaoTemFonte: RAZAO_ID_TORTO },
-    { id: `voz:${v.voice}:cfg`, url: urlDaConfig(v), bytes: peso?.config, porQueNaoTemFonte: RAZAO_ID_TORTO },
+    { id: `voz:${v.voice}`, url: urlDoModelo(v), bytes: peso?.modelo, sha256: peso?.sha256Modelo, porQueNaoTemFonte: RAZAO_ID_TORTO },
+    { id: `voz:${v.voice}:cfg`, url: urlDaConfig(v), bytes: peso?.config, sha256: peso?.sha256Config, porQueNaoTemFonte: RAZAO_ID_TORTO },
   ];
 }
 
@@ -107,12 +117,18 @@ const MP_MODELOS = 'https://storage.googleapis.com/mediapipe-models';
  * que se perde é irrelevante para dizer onde está um íris num ecrã de 320×180.
  */
 const MEDIAPIPE: readonly Pesado[] = Object.freeze([
-  { id: 'visao:runtime', url: `${MP}/vision_bundle.mjs`, bytes: 155_439 },
-  { id: 'visao:runtime:cola', url: `${MP}/wasm/vision_wasm_internal.js`, bytes: 323_377 },
-  { id: 'visao:runtime:wasm', url: `${MP}/wasm/vision_wasm_internal.wasm`, bytes: 11_756_954 },
-  { id: 'visao:modelo:rosto', url: `${MP_MODELOS}/face_landmarker/face_landmarker/float16/1/face_landmarker.task`, bytes: 3_758_596 },
-  { id: 'visao:modelo:gestos', url: `${MP_MODELOS}/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task`, bytes: 8_373_440 },
-  { id: 'visao:modelo:maos', url: `${MP_MODELOS}/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, bytes: 7_819_105 },
+  { id: 'visao:runtime', url: `${MP}/vision_bundle.mjs`, bytes: 155_439,
+    sha256: 'd885630c297c0b20b1fe86096cb06291c4c8080876f27852e724f24ac603713f' },
+  { id: 'visao:runtime:cola', url: `${MP}/wasm/vision_wasm_internal.js`, bytes: 323_377,
+    sha256: 'e170ee67dd4e16c1a6fcd8840a206687e5a59b22c20e4a902bc445b095454d73' },
+  { id: 'visao:runtime:wasm', url: `${MP}/wasm/vision_wasm_internal.wasm`, bytes: 11_756_954,
+    sha256: '8da277a733926eacd0474b8704b36742d6ec3231c57a860c5b889dff8f1df886' },
+  { id: 'visao:modelo:rosto', url: `${MP_MODELOS}/face_landmarker/face_landmarker/float16/1/face_landmarker.task`, bytes: 3_758_596,
+    sha256: '64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff' },
+  { id: 'visao:modelo:gestos', url: `${MP_MODELOS}/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task`, bytes: 8_373_440,
+    sha256: '97952348cf6a6a4915c2ea1496b4b37ebabc50cbbf80571435643c455f2b0482' },
+  { id: 'visao:modelo:maos', url: `${MP_MODELOS}/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, bytes: 7_819_105,
+    sha256: 'fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1' },
 ]);
 
 /**
@@ -131,7 +147,8 @@ const MEDIAPIPE: readonly Pesado[] = Object.freeze([
  * que a fiação o ler daqui, senão passam a existir dois caminhos para o mesmo ficheiro.
  */
 const WEBGAZER: readonly Pesado[] = Object.freeze([
-  { id: 'visao:olhar', url: 'https://webgazer.cs.brown.edu/webgazer.js', bytes: 1_895_169 },
+  { id: 'visao:olhar', url: 'https://webgazer.cs.brown.edu/webgazer.js', bytes: 1_895_169,
+    sha256: 'e276d085eb490b5ba65481c368371be03b1a358d12d95336af0a8239f643f8e0' },
 ]);
 
 /**
@@ -152,11 +169,16 @@ const WEBGAZER: readonly Pesado[] = Object.freeze([
 const PP = 'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/dist';
 const ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist';
 const PIPER: readonly Pesado[] = Object.freeze([
-  { id: 'voz:runtime', url: `${PP}/piper-tts-web.js`, bytes: 23_646 },
-  { id: 'voz:runtime:corpo', url: `${PP}/piper-o91UDS6e.js`, bytes: 158_217 },
-  { id: 'voz:runtime:tabela', url: `${PP}/voices_static-D_OtJDHM.js`, bytes: 147_377 },
-  { id: 'voz:runtime:ort', url: `${ORT}/ort.min.js`, bytes: 446_284 },
-  { id: 'voz:runtime:ort-wasm', url: `${ORT}/ort-wasm-simd-threaded.wasm`, bytes: 11_246_032 },
+  { id: 'voz:runtime', url: `${PP}/piper-tts-web.js`, bytes: 23_646,
+    sha256: '531aa8a16605c07e5d791dfea540cadee1bd457b4a75c5303f01e843722f700f' },
+  { id: 'voz:runtime:corpo', url: `${PP}/piper-o91UDS6e.js`, bytes: 158_217,
+    sha256: 'b5ac96981729547606fd026b8e3829aad81e9e3c22308869d50473259c563283' },
+  { id: 'voz:runtime:tabela', url: `${PP}/voices_static-D_OtJDHM.js`, bytes: 147_377,
+    sha256: '72cbd46fecaa067a09ed9455ca04b970d722810905d90bb2421e0911a5c4d758' },
+  { id: 'voz:runtime:ort', url: `${ORT}/ort.min.js`, bytes: 446_284,
+    sha256: 'be6e560b64c03c99252eedc0e1989e9e51e44d9f191e7655c9bf011bf9f576c8' },
+  { id: 'voz:runtime:ort-wasm', url: `${ORT}/ort-wasm-simd-threaded.wasm`, bytes: 11_246_032,
+    sha256: '207d02be4591c156b0a98f024f3d58005b5b04c92274d759fb390338c63559ea' },
 ]);
 
 export const PESADOS: readonly Pesado[] = Object.freeze([

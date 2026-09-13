@@ -1029,6 +1029,7 @@
       "bytes?",
       "id",
       "porQueNaoTemFonte?",
+      "sha256?",
       "url"
     ]
   },
@@ -1043,7 +1044,8 @@
       "aoProgredir?",
       "apenas?",
       "buscar?",
-      "cacheStorage?"
+      "cacheStorage?",
+      "digest?"
     ]
   },
   "platform/tts.ts": {

@@ -644,7 +644,8 @@
     "OpcoesDosPesados",
     "RelatorioPesado",
     "baixarPesados",
-    "pesoPorBaixar"
+    "pesoPorBaixar",
+    "sha256Hex"
   ],
   "platform/speech.ts": [
     "gameSay"

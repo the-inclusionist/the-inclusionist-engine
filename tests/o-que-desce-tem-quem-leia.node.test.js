@@ -65,7 +65,7 @@ const DESENCONTROS = {
   // apontar para `diffusionstudio`, que é onde o único leitor destes bytes lê. Uma entrada que fica depois de
   // paga faz o inventário reportar um defeito consertado — o erro que o `nada-de-cdn-a-mao` cometeu com a
   // frase «sai desta lista quando o buscador existir». O caso do host abaixo agora exige a AUSÊNCIA dela.
-  'armazenamento': 'O buscador guarda em Cache Storage (`incl-pesados-v1`) e a biblioteca guarda com '
+  'armazenamento': 'O buscador guarda em Cache Storage (`incl-pesados-v2`, checked by sha256 since #168) e a biblioteca guarda com '
     + '`navigator.storage`. ⚠️ Com a URL alinhada isto DEIXOU de custar uma segunda descarga — o pedido da '
     + 'biblioteca passa pelo service worker e é servido da nossa cache — e passou a custar DISCO: os mesmos '
     + '241 MB ficam guardados duas vezes no aparelho, uma em cada armazenamento. Num tablet de escola isso é '

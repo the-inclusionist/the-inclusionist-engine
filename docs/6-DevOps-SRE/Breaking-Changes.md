@@ -608,6 +608,17 @@ list), only comments quote it.
 **What to do:** a test or tool that matched a Portuguese line matches the English one, or better, matches the name it
 carries (`carregarVozNeural`, `host.pauseHost`, the selector).
 
+## V · Heavy downloads are checked by sha256; the cache is `incl-pesados-v2` (issue #168)
+
+**A value and a behaviour.** `platform/pesados.CACHE_PESADOS` is `incl-pesados-v2`: what `v1` held was never checked, so
+it is not trusted and is fetched again (once, ~275 MB). `baixarPesados` keeps a body only when its SHA-256 is the entry's
+pinned `sha256`; a mismatch, an entry with no hash, or a host without `crypto.subtle` is reported as `falhou` and nothing
+is kept. The service worker routes on that cache now only READ it (`cacheWillUpdate` returns `null`). Additive with it:
+`Pesado.sha256`, `OpcoesDosPesados.digest`, `sha256Hex`.
+
+**What to do:** nothing, unless a tool read `incl-pesados-v1` by name. A deployment served over plain HTTP (no secure
+context) keeps no heavy file — serve it over HTTPS or localhost.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

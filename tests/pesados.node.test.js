@@ -12,7 +12,8 @@
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { baixarPesados, pesoPorBaixar, PESADOS, CACHE_PESADOS } from '../app/js/platform/pesados.js';
+import { createHash } from 'node:crypto';
+import { baixarPesados, pesoPorBaixar, PESADOS, CACHE_PESADOS, sha256Hex } from '../app/js/platform/pesados.js';
 import { HOST_DOS_MODELOS } from '../app/js/platform/voice-plan.js';
 
 /** Uma Cache Storage de mentira, que CONTA o que lhe pedem. */
@@ -26,12 +27,20 @@ function cacheFalsa(jaTem = []) {
   return { abertos: [], postos, cacheStorage: { open: async (n) => { cache._nome = n; return cache; } }, cache };
 }
 
-const buscarOk = () => async () => ({ ok: true, status: 200, clone: () => ({}) });
+/** A response whose body is the URL itself — so the fake digest below can recognise the RIGHT body of each entry. */
+const corpo = (u) => new TextEncoder().encode(u).buffer;
+const resposta = (u, dados = corpo(u)) => ({ ok: true, status: 200, statusText: 'OK', headers: new Headers(), arrayBuffer: async () => dados, clone: () => ({}) });
+const buscarOk = () => async (u) => resposta(u);
+/** #168: the pinned hash of the entry whose URL the body spells; anything else hashes to garbage. */
+const digestPelaUrl = async (buf) => {
+  const texto = new TextDecoder().decode(buf);
+  return PESADOS.find((p) => p.url === texto)?.sha256 ?? '0'.repeat(64);
+};
 
 describe('o buscador das coisas pesadas', () => {
   it('🎯 [Zero] o que NÃO tem fonte devolve `sem-fonte` COM a razão — nunca é saltado em silêncio', async () => {
     const f = cacheFalsa();
-    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk() });
+    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
     const sem = r.filter((x) => x.estado === 'sem-fonte');
     expect(sem.map((x) => x.id).sort(), 'só a arte continua sem acervo — a visão ganhou fonte no ADR-0124/0132, e o ADR-0133 fechou a lista de licenças sem escolher de onde a arte vem').toEqual(['arte:acervo']);
     for (const s of sem) {
@@ -42,7 +51,7 @@ describe('o buscador das coisas pesadas', () => {
 
   it('[Right] as oito entradas de voz descem, e cada voz traz o MODELO e a CONFIGURAÇÃO', async () => {
     const f = cacheFalsa();
-    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk() });
+    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
     // ⚠️ oz: passou a cobrir também o RUNTIME (oz:runtime*, ADR-0127). O que este caso afirma são os
     // MODELOS, e a diferença é a mesma que separa o .onnx do motor que o toca.
     const vozes = r.filter((x) => /^voz:[a-z]{2}_[A-Z]{2}-/.test(x.id) && x.estado === 'baixado');
@@ -96,7 +105,7 @@ describe('o buscador das coisas pesadas', () => {
   it('📌 [Boundary] o que já está na cache não é buscado outra vez — isto corre em TODO arranque', async () => {
     const primeiro = PESADOS.find((p) => p.url).url;
     const f = cacheFalsa([primeiro]);
-    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk() });
+    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
     expect(r.find((x) => x.estado === 'ja-tinha'), 'não reconheceu o que já tinha').toBeTruthy();
     expect(f.postos.includes(primeiro), 'voltou a gravar o que já estava lá').toBe(false);
   });
@@ -104,8 +113,8 @@ describe('o buscador das coisas pesadas', () => {
   it('🔴 [Inverse] uma falha de rede é REPORTADA e a lista CONTINUA — não derruba o arranque', async () => {
     const f = cacheFalsa();
     let n = 0;
-    const buscar = async () => { n += 1; if (n === 1) throw new Error('rede caiu'); return { ok: true, clone: () => ({}) }; };
-    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar });
+    const buscar = async (u) => { n += 1; if (n === 1) throw new Error('rede caiu'); return resposta(u); };
+    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl });
     expect(r.filter((x) => x.estado === 'falhou').length, 'a falha não foi reportada').toBe(1);
     expect(r.filter((x) => x.estado === 'baixado').length, 'a lista parou na primeira falha').toBe(PESADOS.filter((p) => p.url).length - 1);
   });
@@ -113,7 +122,7 @@ describe('o buscador das coisas pesadas', () => {
   it('[Interface] `apenas` limita a lista — um consumidor pode querer só as vozes', async () => {
     const f = cacheFalsa();
     const id = PESADOS.find((p) => p.url).id;
-    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), apenas: [id] });
+    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl, apenas: [id] });
     expect(r.map((x) => x.id)).toEqual([id]);
   });
 
@@ -122,7 +131,7 @@ describe('o buscador das coisas pesadas', () => {
     // ~241 MB: quatro modelos de ~60 MB. As duas sem fonte não somam, porque não há o que baixar.
     expect(Math.round(semNada / 1024 / 1024), 'o total mudou — confira o catálogo').toBe(285);
     const f = cacheFalsa();
-    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk() });
+    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
     expect(pesoPorBaixar(r), 'depois de tudo descer não falta nada').toBe(0);
   });
 
@@ -153,3 +162,58 @@ describe('o buscador das coisas pesadas', () => {
 //    total acusa 241 → 181 MB. ⚠️ Sem o primeiro, o segundo sozinho só apanharia a falta enquanto o total
 //    fosse conhecido: no dia em que uma quinta voz entrar, o número muda de propósito e alguém actualiza-o —
 //    e a voz sem medição passaria despercebida DENTRO dessa actualização.
+
+describe('what comes from outside is checked before it is kept (issue #168; STRIDE client pass)', () => {
+  // 📏 Measured on 2026-09-13: `baixarPesados` put the response into Cache Storage as it came — JavaScript and WebAssembly
+  // from jsDelivr and Brown, models from Hugging Face and Google — and a pinned URL is not pinned content. What is cached
+  // runs in the child's page and is served offline from then on.
+  it('📏 [Boundary] every entry with a URL carries a measured sha256', () => {
+    const sem = PESADOS.filter((p) => p.url && !/^[0-9a-f]{64}$/.test(p.sha256 ?? ''));
+    expect(sem.map((p) => p.id), 'an entry with no pinned hash would be kept unchecked').toEqual([]);
+  });
+
+  it('🔴 [Right] an altered body is NOT kept — reported, and the list goes on', async () => {
+    const f = cacheFalsa();
+    const [alvo, outro] = PESADOS.filter((p) => p.url);
+    const buscar = async (u) => (u === alvo.url ? resposta(u, new TextEncoder().encode('altered').buffer) : resposta(u));
+    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar, digest: digestPelaUrl, apenas: [alvo.id, outro.id] });
+    expect(f.postos.includes(alvo.url), 'the altered body entered the cache').toBe(false);
+    const dele = r.find((x) => x.id === alvo.id);
+    expect(dele.estado).toBe('falhou');
+    expect(dele.erro, 'the report does not say it was the integrity check').toMatch(/sha256/);
+    expect(r.find((x) => x.id === outro.id).estado, 'one refusal stopped the list').toBe('baixado');
+  });
+
+  it('🔴 [Right] with no injected digest, the REAL one runs — a body that is not the file is refused', async () => {
+    const f = cacheFalsa();
+    const alvo = PESADOS.find((p) => p.url);
+    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), apenas: [alvo.id] });
+    expect(f.postos, 'the default path kept a body without hashing it').toEqual([]);
+    // the hash it reports is the body's real SHA-256 — a broken default that hashed to anything would still refuse
+    const real = createHash('sha256').update(alvo.url).digest('hex');
+    expect(r[0].erro, 'the reported hash is not the body\'s real SHA-256').toContain(`got ${real}`);
+  });
+
+  it('🎯 [Zero] a host that cannot hash keeps NOTHING — unverifiable is not verified', async () => {
+    const f = cacheFalsa();
+    const alvo = PESADOS.find((p) => p.url);
+    const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: null, apenas: [alvo.id] });
+    expect(f.postos).toEqual([]);
+    expect(r[0].estado).toBe('falhou');
+    expect(r[0].erro, 'the report does not say the host cannot hash').toMatch(/cannot compute a sha256/);
+  });
+
+  it('🔴 [Right] the default digest IS SHA-256 — the FIPS 180-2 vector for «abc»', async () => {
+    // The refusal case above passes with any wrong algorithm (SHA-1 refuses a wrong body too); this pins the real one.
+    expect(await sha256Hex(new TextEncoder().encode('abc').buffer))
+      .toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  });
+
+  it('📌 [Right] what was cached before the check is not trusted: the cache has a new name', () => {
+    expect(CACHE_PESADOS).toBe('incl-pesados-v2');
+  });
+});
+
+// MUTATIONS CHECKED for issue #168 (2026-09-13), 6 of 6 red: the check removed · an unverifiable body kept · SHA-1 for
+// SHA-256 · the cache name back to v1 · one entry without its hash · a broken default digest. Two first SURVIVED (an
+// unverifiable body, a broken default): the cases asserted a refusal and not its reason, nor the real hash reported.

@@ -70,6 +70,16 @@ describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
     ).toContain(`cacheName: '${CACHE_PESADOS}'`);
   });
 
+  it('🔴 [Right] every route on the checked cache READS it and never WRITES it (issue #168)', () => {
+    // 📏 Measured on 2026-09-13: `CacheFirst` stores a network response on a miss. A library request that came before the
+    // fetcher would put unchecked bytes into the same cache, and the fetcher would then see them and say «already had».
+    const blocos = CONFIG_LIMPA.split(/urlPattern:/).slice(1).filter((b) => b.includes(`cacheName: '${CACHE_PESADOS}'`));
+    expect(blocos.length, 'no route on the checked cache — the case would measure nothing').toBeGreaterThanOrEqual(2);
+    for (const b of blocos) {
+      expect(b, 'a route on the checked cache can write to it').toMatch(/cacheWillUpdate:\s*async\s*\(\)\s*=>\s*null/);
+    }
+  });
+
   it('📌 [Boundary] o alcance é ESTREITO — a rota não abre `huggingface.co` inteiro', () => {
     // 🎯 A porta larga é a forma de defeito que a #119 já fechou noutro ponto: uma rota sobre o domínio
     // inteiro passaria a guardar qualquer coisa que alguém viesse a buscar de lá, sem ninguém decidir.
@@ -101,3 +111,5 @@ describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
 // 3. a rota alargada para `/^https:\/\/huggingface\.co\//` → o [Boundary] reprova. Uma porta larga entra a
 //    resolver um caso e fica a guardar tudo o que alguém buscar daquele domínio.
 // 4. `CacheFirst` → `NetworkFirst` → o [Right] reprova, e o defeito é o segundo dia sem rede.
+// #168 (2026-09-13): one route without the read-only plugin → 🔴 the new case. Measured in the rebuilt dist under the service
+// worker: a page fetch of a jsDelivr runtime was served and NOT stored; the cache held only what the fetcher had checked.

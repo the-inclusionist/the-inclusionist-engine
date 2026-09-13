@@ -41,6 +41,11 @@ export interface OpcoesDosPesados {
   readonly buscar?: typeof fetch;
   /** Chamado a cada entrada resolvida — é o que deixa a interface dizer o que está a acontecer. */
   readonly aoProgredir?: (r: RelatorioPesado) => void;
+  /**
+   * The SHA-256 of a body, as lowercase hex (issue #168). Injected for the gate; by default `crypto.subtle`. `null`, or a
+   * host without `crypto.subtle` (an insecure context), keeps NOTHING: unverifiable is not verified.
+   */
+  readonly digest?: ((corpo: ArrayBuffer) => Promise<string>) | null;
   /** Só estas ids, se dado. Serve ao consumidor que quer as vozes e não o resto. */
   readonly apenas?: readonly string[];
 }
@@ -67,6 +72,8 @@ export async function baixarPesados(opcoes: OpcoesDosPesados = {}): Promise<Rela
     return out;
   }
 
+  const digest = opcoes.digest === undefined ? (temSubtle() ? sha256Hex : null) : opcoes.digest;
+
   const cache = await cs.open(CACHE_PESADOS);
   for (const p of alvos) {
     if (!p.url) { conta({ id: p.id, estado: 'sem-fonte', erro: p.porQueNaoTemFonte }); continue; }
@@ -74,13 +81,35 @@ export async function baixarPesados(opcoes: OpcoesDosPesados = {}): Promise<Rela
       if (await cache.match(p.url)) { conta({ id: p.id, estado: 'ja-tinha' }); continue; }
       const resp = await buscar(p.url);
       if (!resp.ok) { conta({ id: p.id, estado: 'falhou', erro: `HTTP ${resp.status}` }); continue; }
-      await cache.put(p.url, resp.clone());
+      /*
+       * CHECKED BEFORE KEPT (issue #168; STRIDE client pass). What is kept runs in the child's page and is served offline
+       * from then on, so a body whose SHA-256 is not the measured one never enters the cache.
+       */
+      if (!p.sha256 || !digest) {
+        conta({ id: p.id, estado: 'falhou', erro: !p.sha256 ? 'this entry pins its sha256 nowhere: there is nothing to check it against' : 'this host cannot compute a sha256 (crypto.subtle needs a secure context)' });
+        continue;
+      }
+      const corpo = await resp.arrayBuffer();
+      const obtido = await digest(corpo);
+      if (obtido !== p.sha256) {
+        conta({ id: p.id, estado: 'falhou', erro: `sha256 mismatch: expected ${p.sha256}, got ${obtido} — not kept` });
+        continue;
+      }
+      await cache.put(p.url, new Response(corpo, { status: resp.status, statusText: resp.statusText, headers: resp.headers }));
       conta({ id: p.id, estado: 'baixado', bytes: p.bytes });
     } catch (e) {
       conta({ id: p.id, estado: 'falhou', erro: e instanceof Error ? e.message : String(e) });
     }
   }
   return out;
+}
+
+const temSubtle = (): boolean => !!(globalThis as { crypto?: Crypto }).crypto?.subtle;
+
+/** The SHA-256 of a body as lowercase hex, by `crypto.subtle` (issue #168). Needs a secure context. */
+export async function sha256Hex(corpo: ArrayBuffer): Promise<string> {
+  const bytes = new Uint8Array(await (globalThis as { crypto: Crypto }).crypto.subtle.digest('SHA-256', corpo));
+  return [...bytes].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
 
 /** O peso do que ainda falta, em bytes — para um aviso poder dizer «faltam 241 MB» antes de começar. */

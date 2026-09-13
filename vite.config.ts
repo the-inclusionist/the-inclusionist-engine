@@ -114,15 +114,21 @@ export default defineConfig({
             urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/(@mediapipe\/tasks-vision|@mintplex-labs\/piper-tts-web|onnxruntime-web)@/,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'incl-pesados-v1',
+              cacheName: 'incl-pesados-v2',
               cacheableResponse: { statuses: [200] },
+              // #168: the route READS the checked cache and never WRITES it — only `platform/pesados` writes, after the sha256.
+              // Without this a library request that came first would be cached unchecked, and the fetcher would then trust it.
+              plugins: [{ cacheWillUpdate: async () => null }],
             },
           },
           {
             urlPattern: /^https:\/\/huggingface\.co\/diffusionstudio\/piper-voices\/resolve\/main\//,
             handler: 'CacheFirst',
             options: {
-              cacheName: 'incl-pesados-v1',
+              cacheName: 'incl-pesados-v2',
+              // #168: the route READS the checked cache and never WRITES it — only `platform/pesados` writes, after the sha256.
+              // Without this a library request that came first would be cached unchecked, and the fetcher would then trust it.
+              plugins: [{ cacheWillUpdate: async () => null }],
               // Sem isto o Workbox recusa guardar respostas opacas; as do Hugging Face vem com
               // `Access-Control-Allow-Origin: *` (medido), entao 0 nao e necessario e seria pior — uma
               // resposta opaca de 60 MB conta como muito mais no orcamento de quota do navegador.
