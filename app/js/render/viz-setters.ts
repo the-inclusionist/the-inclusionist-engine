@@ -28,8 +28,8 @@ import {
 import { t } from '../core/i18n.js'; // VIZ_MODES guarda CHAVE i18n desde o item 14; quem exibe resolve
 import {
   eixosHtml, escolhaDoBotao, ROTULO_DO_TEMA, ROTULO_DA_CORRECAO,
-} from '../ui/visual-axes-panel.js';
-import { recusaDaSimulacao } from '../ui/simulation-refusal.js';
+} from './viz-axes-labels.js';
+import { recusaDaSimulacao } from './viz-refusal.js';
 import { DIRECT_CFG, worldTexFor, spriteTexFor, clearWorldTexCache, clearSpriteTexCache } from './high-contrast.js';
 import { pupTexFor, resetPupTexCache } from './textures.js';
 import { lqFilter } from './lq-filter.js';

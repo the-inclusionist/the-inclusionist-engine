@@ -1018,6 +1018,18 @@
     "ViewportsCtx",
     "initViewports"
   ],
+  "render/viz-axes-labels.ts": [
+    "CURTO_DA_CORRECAO",
+    "CURTO_DO_TEMA",
+    "EixoVisual",
+    "EscolhaDeEixo",
+    "ROTULO_DA_CORRECAO",
+    "ROTULO_DO_TEMA",
+    "Tradutor",
+    "eixosHtml",
+    "escolhaDoBotao",
+    "linhasDoEixo"
+  ],
   "render/viz-axes.ts": [
     "Aplicacao",
     "CHAVES_ANTIGAS",
@@ -1056,6 +1068,12 @@
     "VizMode",
     "needsCanvas",
     "simulatesDisability"
+  ],
+  "render/viz-refusal.ts": [
+    "CHAVE_DO_MOTIVO",
+    "Recusa",
+    "mostraMesmoIndisponivel",
+    "recusaDaSimulacao"
   ],
   "render/viz-setters.ts": [
     "VizSettersApi",
