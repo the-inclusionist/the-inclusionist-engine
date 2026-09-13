@@ -1230,6 +1230,8 @@
     "Caixa",
     "CaixaNomeada",
     "Escala",
+    "MedidaDeNo",
+    "abaixoDoPiso",
     "alvoMinimo",
     "aplicarEscala",
     "escalaDoPalco",

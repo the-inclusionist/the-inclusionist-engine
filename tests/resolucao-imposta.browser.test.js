@@ -109,6 +109,31 @@ describe('createGame applies it — the cartridge has no other', () => {
       regiao.style.height = antes[1];
     }
   });
+
+  it('🔴 [Right] text and targets the CARTRIDGE draws under the floor are named; the engine\'s own are not (ADR-0163 rule 4)', () => {
+    const doPiso = () => motor.problems.filter((p) => p.includes('under') && p.includes('ADR-0163'));
+    expect(doPiso(), 'nothing of the cartridge drawn yet, and a line already').toEqual([]);
+    // the engine's own node with small text is not the cartridge's to answer for
+    const daEngine = Object.assign(document.createElement('div'), { className: 'rodape-da-tela', textContent: 'engine' });
+    daEngine.style.fontSize = '10px';
+    regiao.appendChild(daEngine);
+    const letra = Object.assign(document.createElement('p'), { className: 'miuda', textContent: 'fine print' });
+    letra.style.fontSize = '12px';
+    const botao = Object.assign(document.createElement('button'), { className: 'baixo', textContent: 'Go' });
+    botao.style.cssText = 'height:30px;width:200px;font-size:20px';
+    try {
+      regiao.append(letra, botao);
+      const linhas = doPiso();
+      expect(linhas, 'the cartridge\'s small text and short button were not said').toHaveLength(1);
+      expect(linhas[0]).toContain('p.miuda');
+      expect(linhas[0]).toContain('button.baixo');
+      expect(linhas[0], 'the engine\'s footer was accused').not.toContain('rodape-da-tela');
+      expect(linhas[0], 'the button\'s 20 px label was accused as text').not.toMatch(/text under[^)]*button\.baixo/);
+    } finally {
+      letra.remove(); botao.remove(); daEngine.remove();
+    }
+    expect(doPiso(), 'the line stayed after the nodes left').toEqual([]);
+  });
 });
 
 // ===== MUTATIONS CHECKED (2026-09-12) =====
@@ -122,3 +147,6 @@ describe('createGame applies it — the cartridge has no other', () => {
 // P3 the applied scale is not kept                     → red (nothing to compare)
 // P4 only the width compared                          → red (the height-only step)
 // P5 no early return: the engine's own size accused    → red
+// F1 the floor line is not pushed                     → red
+// F2 the engine's nodes not told apart (footer accused) → red
+// F5 buttons are not targets                          → red

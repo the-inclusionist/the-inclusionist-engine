@@ -25,6 +25,31 @@ export function alvoMinimo(k: number): number {
   return 22 * (Number.isFinite(k) && k > 2 ? k : 2);
 }
 
+/** One node inside the region, as measured by whoever calls: its computed font size if it holds text, its box if it is a target. */
+export interface MedidaDeNo {
+  readonly nome: string;
+  readonly daEngine: boolean;
+  readonly fontePx: number | null;
+  readonly alvo: { readonly w: number; readonly h: number } | null;
+}
+
+/**
+ * WHAT A CARTRIDGE DRAWS UNDER THE FLOOR (ADR-0163 rule 4): text under 8·k px (16 at 640×360) and targets whose SMALLER
+ * side is under 22·k px (44 at 640×360). The engine's own nodes are not the cartridge's to answer for, and a node with no
+ * area is not drawn. Half a pixel of slack absorbs subpixel layout.
+ */
+export function abaixoDoPiso(nos: readonly MedidaDeNo[], k: number): { texto: string[]; alvos: string[] } {
+  const escala = alvoMinimo(k) / 22;
+  const texto: string[] = [];
+  const alvos: string[] = [];
+  for (const n of nos) {
+    if (n.daEngine) continue;
+    if (n.fontePx !== null && n.fontePx > 0 && n.fontePx < 8 * escala - 0.5) texto.push(n.nome);
+    if (n.alvo && n.alvo.w > 0 && n.alvo.h > 0 && Math.min(n.alvo.w, n.alvo.h) < alvoMinimo(k) - 0.5) alvos.push(n.nome);
+  }
+  return { texto, alvos };
+}
+
 /**
  * OS NÓS DO JOGO QUE INVADEM O RECTÂNGULO DA BARRA DE ACESSIBILIDADE (ADR-0148 §3).
  *

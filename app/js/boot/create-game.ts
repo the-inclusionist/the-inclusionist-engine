@@ -78,7 +78,7 @@ import { ehCego, ehBaixaVisao, PADRAO, filtroChave, simulacaoIndisponivel, type 
 import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
 import { cicloDeTipografia, INICIO_DO_CICLO, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
-import { invasoresDaBarra, escalaDoPalco, aplicarEscala, type Caixa, type Escala } from '../ui/layout.js';
+import { invasoresDaBarra, escalaDoPalco, aplicarEscala, abaixoDoPiso, alvoMinimo, type Caixa, type Escala, type MedidaDeNo } from '../ui/layout.js';
 import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
@@ -630,6 +630,8 @@ export function createGame(o: CreateGameOptions): Engine {
     const p: string[] = [...lacunasDoPad()];
     const tamanho = regiaoRedimensionadaPeloCartucho();
     if (tamanho) p.push(tamanho);
+    const piso = desenhadoAbaixoDoPiso();
+    if (piso) p.push(piso);
     // O mundo declarado tem de existir na página — e quem o declara é o jogo, não o hospedeiro.
     const mundo = cartucho.declaration.world();
     if (mundo.kind === 'element' && !$(mundo.selector)) {
@@ -1894,6 +1896,36 @@ export function createGame(o: CreateGameOptions): Engine {
       + `${Math.round(largura)}×${Math.round(altura)}: the resolution is the engine's (ADR-0163) — lay the game out `
       + 'inside the region and read `--ui-fs` and `--alvo-min`';
   }
+  /**
+   * The engine's own nodes in the region (bar, pause card, panels, pad, footer, PAUSED, crash banner) — its sizes are held
+   * by its own gates — and what is not drawn for the eye at all (`.sr-only`).
+   */
+  const FORA_DO_CARTUCHO = '#title-icons, .screen-pause, .overlay, #touch-controls, .rodape-da-tela, .pausa-rapida, #incl-parou, .sr-only';
+  const ALVO_DE_TOQUE = 'button, a[href], input:not([type="hidden"]), select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])';
+  /** ADR-0163 rule 4, second half: text and targets the CARTRIDGE draws under the floor, named — read when `problems` is. */
+  function desenhadoAbaixoDoPiso(): string | null {
+    const regiao = $<HTMLElement>('#game-region');
+    if (!escalaAplicada || !regiao || typeof regiao.querySelectorAll !== 'function' || typeof win.getComputedStyle !== 'function') return null;
+    const nos: MedidaDeNo[] = [...regiao.querySelectorAll<HTMLElement>('*')].map((el) => {
+      const b = el.getBoundingClientRect();
+      const temTexto = [...el.childNodes].some((c) => c.nodeType === 3 && (c.textContent ?? '').trim() !== '');
+      return {
+        nome: nomeDoNo(el),
+        daEngine: el.closest(FORA_DO_CARTUCHO) !== null,
+        fontePx: temTexto && b.width > 0 && b.height > 0 ? parseFloat(win.getComputedStyle(el).fontSize) : null,
+        alvo: el.matches(ALVO_DE_TOQUE) ? { w: b.width, h: b.height } : null,
+      };
+    });
+    const { texto, alvos } = abaixoDoPiso(nos, escalaAplicada.k);
+    if (!texto.length && !alvos.length) return null;
+    const k = alvoMinimo(escalaAplicada.k) / 22;
+    const partes = [
+      texto.length ? `text under ${8 * k} px (${texto.slice(0, 4).join(', ')})` : '',
+      alvos.length ? `targets under ${22 * k} px (${alvos.slice(0, 4).join(', ')})` : '',
+    ].filter(Boolean);
+    return `the cartridge draws ${partes.join(' and ')} in #game-region: text and targets start at 16 and 44 px at `
+      + '640×360 and grow with the scale (ADR-0163) — size them from `--ui-fs` and `--alvo-min`';
+  }
   function aplicarResolucao(): void {
     const regiao = $<HTMLElement>('#game-region');
     const palco = $<HTMLElement>('#stage-wrap') ?? $<HTMLElement>('.stage-wrap') ?? (regiao?.parentElement ?? null);
@@ -1905,6 +1937,10 @@ export function createGame(o: CreateGameOptions): Engine {
   aplicarResolucao();
   if (typeof win.addEventListener === 'function') win.addEventListener('resize', aplicarResolucao);
 
+  /** A node named the way a developer finds it: `tag#id.firstClass`. */
+  function nomeDoNo(el: Element): string {
+    return el.tagName.toLowerCase() + (el.id ? `#${el.id}` : '') + (el.className ? `.${String(el.className).trim().split(/\s+/)[0]}` : '');
+  }
   function medirInvasoresDaBarra(): string[] {
     const regiao = $<HTMLElement>('#game-region');
     if (!a11yBar || !regiao || typeof (a11yBar as HTMLElement).getBoundingClientRect !== 'function') return [];
@@ -1914,7 +1950,7 @@ export function createGame(o: CreateGameOptions): Engine {
     };
     const barra = caixaDe(a11yBar);
     const nos = [...regiao.querySelectorAll('*')].map((el) => ({
-      nome: el.tagName.toLowerCase() + (el.id ? `#${el.id}` : '') + (el.className ? `.${String(el.className).trim().split(/\s+/)[0]}` : ''),
+      nome: nomeDoNo(el),
       caixa: caixaDe(el),
       daBarra: el === a11yBar || a11yBar.contains(el),
     }));

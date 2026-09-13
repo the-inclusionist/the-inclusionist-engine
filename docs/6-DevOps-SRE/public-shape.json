@@ -1800,6 +1800,12 @@
     ]
   },
   "ui/layout.ts": {
+    "interface MedidaDeNo": [
+      "alvo",
+      "daEngine",
+      "fontePx",
+      "nome"
+    ],
     "interface CaixaNomeada": [
       "nome"
     ],
