@@ -113,6 +113,8 @@
     "speakableProblems"
   ],
   "core/dom-query.ts": [
+    "$",
+    "$$",
     "DomQuery"
   ],
   "core/entity.ts": [
@@ -251,6 +253,12 @@
     "gridToGlyphs",
     "parseLevel",
     "selfTest"
+  ],
+  "core/visual-state.ts": [
+    "Correcao",
+    "Simulacao",
+    "Tema",
+    "VisualState"
   ],
   "core/world.ts": [
     "buildWorldFromText"
@@ -1213,6 +1221,14 @@
     "SEM_TECLA",
     "helpListHtml",
     "helpRows"
+  ],
+  "ui/hud-bands.ts": [
+    "HudBand",
+    "HudBandsMounted",
+    "HudBar",
+    "HudNumber",
+    "hudNumbersProblems",
+    "mountHudBands"
   ],
   "ui/hud.ts": [
     "HudApi",

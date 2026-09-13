@@ -25,6 +25,7 @@
       "disponibilidade?",
       "getPauseActs?",
       "host",
+      "hud?",
       "isBlindMode?",
       "isNavigable?",
       "naBarraDe?",
@@ -398,6 +399,16 @@
     ],
     "type LetterCase": "'mixed' | 'upper'",
     "type OutlineLevel": "0 | 1 | 2"
+  },
+  "core/visual-state.ts": {
+    "interface VisualState": [
+      "correcao",
+      "simulacao",
+      "tema"
+    ],
+    "type Tema": "'padrao' | 'hc3' | 'hc45' | 'hc7'",
+    "type Correcao": "'tricro' | 'protan' | 'deuter' | 'tritan'",
+    "type Simulacao": "null | 'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'lv-blur' | 'lv-haze' | 'lv-tunnel' | 'lv-macular' | 'lv-diabetic' | 'blind'"
   },
   "educational/activities-registry.ts": {
     "interface ActivityDef": [
@@ -1547,18 +1558,14 @@
     ]
   },
   "render/viz-axes.ts": {
-    "interface VisualState": [
-      "correcao",
-      "simulacao",
-      "tema"
-    ],
     "interface Aplicacao": [
       "direto",
       "filtro"
     ],
-    "type Tema": "'padrao' | 'hc3' | 'hc45' | 'hc7'",
-    "type Correcao": "'tricro' | 'protan' | 'deuter' | 'tritan'",
-    "type Simulacao": "null | 'sim-protan' | 'sim-deuter' | 'sim-tritan' | 'lv-blur' | 'lv-haze' | 'lv-tunnel' | 'lv-macular' | 'lv-diabetic' | 'blind'",
+    "type Tema": "TemaDoCore",
+    "type Correcao": "CorrecaoDoCore",
+    "type Simulacao": "SimulacaoDoCore",
+    "type VisualState": "VisualStateDoCore",
     "type MotivoIndisponivel": "'tema' | 'correcao' | 'ambos'"
   },
   "render/viz-modes.ts": {
@@ -1773,6 +1780,21 @@
       "key",
       "word"
     ]
+  },
+  "ui/hud-bands.ts": {
+    "interface HudBar": [
+      "cor",
+      "segmentos"
+    ],
+    "interface HudBandsMounted": [
+      "identity",
+      "learning",
+      "refresh",
+      "remove",
+      "round"
+    ],
+    "type HudBand": "'identity' | 'round' | 'learning'",
+    "type HudNumber": "| { readonly band: 'identity' | 'round'"
   },
   "ui/hud.ts": {
     "interface ScreenRect": [

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// render/viz-axes — OS DOIS EIXOS, e a simulação que NÃO é um deles (ADR-0076). Módulo-folha, zero deps.
+// render/viz-axes — OS DOIS EIXOS, e a simulação que NÃO é um deles (ADR-0076). Only dependency: the shapes, from `core/visual-state`.
 //
 // ========================= O DEFEITO QUE ISTO CONSERTA =========================
 // Hoje o menu visual é UM rádio e `p.viz` guarda UMA string. Escolher `fix-deuter` desliga o contraste 7:1;
@@ -19,22 +19,19 @@
 // de alto contraste, mostra o que o tema faz e não o que a deuteranopia faz. Uma demonstração a correr em
 // cima de uma adaptação não é uma demonstração mais fraca — **ela ensina uma coisa falsa**.
 
-/** O eixo do CONTRASTE. `padrao` não é ausência de tema: é o tema desenhado do jogo. */
-export type Tema = 'padrao' | 'hc3' | 'hc45' | 'hc7';
-
-/** O eixo da CORREÇÃO DE COR. `tricro` = visão tricromática, e é um nome, não uma ausência. */
-export type Correcao = 'tricro' | 'protan' | 'deuter' | 'tritan';
-
-/** A simulação, que NÃO é eixo. `null` = nenhuma a correr. */
-export type Simulacao = null | 'sim-protan' | 'sim-deuter' | 'sim-tritan'
-  | 'lv-blur' | 'lv-haze' | 'lv-tunnel' | 'lv-macular' | 'lv-diabetic' | 'blind';
-
-/** O estado visual de UM jogador. Substitui a string única de `p.viz`. */
-export interface VisualState {
-  readonly tema: Tema;
-  readonly correcao: Correcao;
-  readonly simulacao: Simulacao;
-}
+// The shapes live in `core/visual-state` (issue #167: `core/entity` holds them and may not import upward); the names
+// stay exported here, where cartridges import them.
+import type {
+  Tema as TemaDoCore, Correcao as CorrecaoDoCore, Simulacao as SimulacaoDoCore, VisualState as VisualStateDoCore,
+} from '../core/visual-state.js';
+/** O eixo do CONTRASTE (`core/visual-state`). */
+export type Tema = TemaDoCore;
+/** O eixo da CORREÇÃO DE COR (`core/visual-state`). */
+export type Correcao = CorrecaoDoCore;
+/** A simulação, que NÃO é eixo (`core/visual-state`). */
+export type Simulacao = SimulacaoDoCore;
+/** O estado visual de UM jogador (`core/visual-state`). */
+export type VisualState = VisualStateDoCore;
 
 export const PADRAO: VisualState = Object.freeze({ tema: 'padrao', correcao: 'tricro', simulacao: null });
 
