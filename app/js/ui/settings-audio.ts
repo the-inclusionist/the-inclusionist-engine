@@ -65,12 +65,20 @@ export interface TtsPanel {
 }
 
 /** A voice as this panel lists it: the provider's identifier, `locale-name-quality`. */
-export interface VozDoPainel { readonly voice: string }
+export interface VozDoPainel { readonly voice: string; readonly engine?: string }
 
 /** The name a child sees for a voice: the middle of its identifier — `pt_BR-faber-medium` is «Faber». */
 function nomeDaVoz(v: VozDoPainel): string {
-  const nome = v.voice.split('-')[1] ?? v.voice;
+  // Piper ids read `locale-name-quality`; Kokoro ids read `xx_name` (`pf_dora`)
+  const nome = v.voice.includes('-') ? (v.voice.split('-')[1] ?? v.voice) : (v.voice.split('_')[1] ?? v.voice);
   return nome.charAt(0).toUpperCase() + nome.slice(1);
+}
+/**
+ * What the list SHOWS: a Piper voice carries a feather — the Dev: «uma vez que elas carregam bem menos dados de Kokoro para a
+ * memória por vez». Only shown: what is said is the name alone (ADR-0159 rule 12, no glyph in a spoken name).
+ */
+function rotuloDaVoz(v: VozDoPainel): string {
+  return (v.engine === 'piper' ? '🪶 ' : '') + nomeDaVoz(v);
 }
 
 /** The four rows a missing voice locks (ADR-0185 §4): narration, its volume, the spoken index, and the voice. */
@@ -518,7 +526,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
       return;
     }
     for (const v of lista) {
-      const o = document.createElement('option'); o.value = v.voice; o.textContent = nomeDaVoz(v); sel.appendChild(o);
+      const o = document.createElement('option'); o.value = v.voice; o.textContent = rotuloDaVoz(v); sel.appendChild(o);
     }
     sel.value = ctx.tts.vozAtual?.()?.voice ?? lista[0]!.voice;
   }

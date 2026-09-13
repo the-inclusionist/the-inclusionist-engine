@@ -534,7 +534,21 @@ describe('ui/settings-audio — the voice choice (ADR-0185)', () => {
     const sel = document.querySelector('#tts-voz');
     expect([...sel.options].map((o) => o.value)).toEqual(['pt_BR-faber-medium', 'pt_BR-edresson-low']);
     expect(sel.value).toBe('pt_BR-faber-medium');
-    expect([...sel.options].map((o) => o.textContent), 'the option shows the identifier, not a name').toEqual(['Faber', 'Edresson']);
+    expect([...sel.options].map((o) => o.textContent), 'the option shows the identifier, not a name').toEqual(['🪶 Faber', '🪶 Edresson']);
+  });
+
+  it('🔴 [Right] a Piper voice carries a feather, and a Kokoro voice does not — Piper holds far less in memory at a time', () => {
+    // The Dev: «coloque o emoji de uma pena 🪶 antes dos nomes das vozes Piper, uma vez que elas carregam bem menos dados de
+    // Kokoro para a memória por vez.» Only in what is SEEN: the choice is said by the name alone (ADR-0159 rule 12).
+    const KOKORO = { locale: 'pt-BR', engine: 'kokoro', voice: 'pf_dora' };
+    const { ctx, said, tts } = comVozes([FABER, KOKORO]);
+    initSettingsAudio(ctx).renderAudio();
+    const sel = document.querySelector('#tts-voz');
+    expect([...sel.options].map((o) => o.textContent)).toEqual(['🪶 Faber', 'Dora']);
+    sel.value = 'pt_BR-faber-medium';
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(tts.vozAtual().voice).toBe('pt_BR-faber-medium');
+    expect(said.at(-1) ?? '', 'the feather is spoken').not.toMatch(/🪶/);
   });
 
   it('🔴 [Right] the list opens on the voice in use, even when it is not the first', () => {
