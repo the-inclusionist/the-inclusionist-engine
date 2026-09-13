@@ -1630,7 +1630,29 @@ export function createGame(o: CreateGameOptions): Engine {
         rotuloReset: t('menu.restoreDefaults'),
         rotuloFechar: t('pause.pmback'),
       }),
-      render: () => visual.render(),
+      render: () => {
+        visual.render();
+        rotularLinha(linhaDasLegendas, specDasLegendas()); // in the language of the opening
+        refletirLegendas();
+      },
+    });
+    /*
+     * CAPTIONS (ADR-0151 §2; issue #182): the Dev listed them in the visual panel. `state.captionsOn` was stored and read by
+     * the sound captions (`legendarSom`) with no row to change it. Placed after the panel's list, which `visual.render()`
+     * rewrites by markup; built once, so its listener is not lost.
+     */
+    const specDasLegendas = () => ({ id: 'opt-captions', rotulo: t('visual.captions'), dica: t('visual.captions.dica') });
+    const { linha: linhaDasLegendas, controle: botaoDasLegendas } = linhaDeControle(ctxDoPainel, specDasLegendas());
+    painelVisual.casca.card.insertBefore(linhaDasLegendas, painelVisual.casca.lista.nextSibling);
+    const refletirLegendas = (): void => {
+      toggleBtn(botaoDasLegendas, state.captionsOn);
+      botaoDasLegendas.textContent = toggleLabel(state.captionsOn);
+      markChanged(linhaDasLegendas, state.captionsOn !== state.DEFAULTS.captionsOn);
+    };
+    botaoDasLegendas.addEventListener('click', () => {
+      state.setCaptionsOnValue(!state.captionsOn);
+      refletirLegendas();
+      srSay(t(state.captionsOn ? 'sr.visual.captionsOn' : 'sr.visual.captionsOff'));
     });
     const semEfeito = (): void => {};
     const visual = initSettingsVisual({
