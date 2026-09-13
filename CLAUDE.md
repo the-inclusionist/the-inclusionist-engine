@@ -49,6 +49,9 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
   um **ADR (YADR)** no repositório `the-inclusionist-docs`, em `docs/2-Architecture/adr/`, + entrada no índice — a
   árvore saiu daqui no ADR-0123; ver `docs/2-Architecture/ADR.md`; senão → o doc canônico certo; e **reflita no
   mapa** (`ARCHITECTURE.md`) quando muda onde algo vive. Concordar/discordar sem registrar = decisão perdida.
+  📌 **PORTA DE MÃO ÚNICA × MÃO DUPLA (ADR-0172, 2026-09-13):** contrato, superfície pública, chaves guardadas, pacotes,
+  licenças e privacidade → **registro**. Escolha de interface que um commit desfaz (layout, ordem, texto, espaçamento) →
+  **entrada datada** em `the-inclusionist-docs:docs/2-Architecture/interface-log.md`, no mesmo turno. Na dúvida, registro.
 - 🔴 **UM REGISTO TEM DOIS TEMPOS: a DECISÃO antes, a CONFIRMAÇÃO depois** (ADR-0128, decisão do Dev em
   2026-09-09). A **decisão** — contexto medido, alternativas, o que se escolheu, o que a criança ganha ou perde
   — escreve-se ANTES do código e está completa no dia em que é escrita; um teste responde «funciona?», não «é
@@ -186,6 +189,10 @@ do GitHub, privada até o ato (**ADR-0066**).
 - **Commits FREQUENTES e atômicos** (um bloco lógico por commit; nunca um "initial" gigante). Sem caminhos
   absolutos em arquivos versionados; to-dos pessoais ficam em arquivo git-ignored, não no README.
 - **a11y honesto:** não vender "AAA em bloco" — marcar onde só dá AA (detalhe em §1).
+- **Comentário de código diz o PORQUÊ ATUAL e nomeia o registro/issue; a história (medições datadas, versões anteriores)
+  mora no commit e no registro** (ADR-0171). Ao mudar uma decisão, os comentários dela mudam no mesmo commit.
+- **`problems` é o canal de diagnóstico: linha em inglês com o sujeito pelo nome, o custo para a criança e o conserto.**
+  A engine RECUSA contrato malformado, REPORTA o que funciona em parte, TOLERA calada só capacidade do ambiente (ADR-0169).
 - **DESIGN DE MENU (decisão do Dev, 2026-08-25): a explicação mora no RODAPÉ, e fica lá.** A linha carrega o
   rótulo curto em `<strong>` e nada mais à vista; toda a prosa entra num único `.opt-hint` dentro do `<span>`,
   que a casca (`ui/settings-panel` → `fillExplain`) MOVE para o rodapé `.opt-explain` (`aria-live`), mostrado
