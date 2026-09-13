@@ -1984,6 +1984,22 @@ export function createGame(o: CreateGameOptions): Engine {
   aplicarResolucao();
   if (typeof win.addEventListener === 'function') win.addEventListener('resize', aplicarResolucao);
 
+  /*
+   * THE SKIP LINK, when the page has none (study item C5; WCAG 2.4.1). The stylesheet rule, the dictionary sentence and its
+   * layer (ADR-0102) already existed, and the element depended on each page remembering it: the quiz writes its own, and a
+   * cartridge page that did not copy it left a keyboard no way over what precedes the game. First in the body, so it is the
+   * first thing a keyboard reaches; a page's own link is kept. By capability: a host double without a body mounts nothing.
+   */
+  if (doc.body && typeof doc.body.insertBefore === 'function' && !$('.skip-link')) {
+    const pular = doc.createElement('a');
+    pular.className = 'skip-link';
+    pular.setAttribute('href', '#game-region');
+    pular.setAttribute('data-i18n', 'skip.toGame');
+    pular.textContent = t('skip.toGame');
+    doc.body.insertBefore(pular, doc.body.firstChild);
+    void idiomaPronto().then(() => { pular.textContent = t('skip.toGame'); }); // the preferred language arrives after boot
+  }
+
   /** A node named the way a developer finds it: `tag#id.firstClass`. */
   function nomeDoNo(el: Element): string {
     return el.tagName.toLowerCase() + (el.id ? `#${el.id}` : '') + (el.className ? `.${String(el.className).trim().split(/\s+/)[0]}` : '');
