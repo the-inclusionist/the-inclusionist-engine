@@ -199,15 +199,16 @@ describe('platform/tts — the voice runtime the game bundled', () => {
     expect(registro.opcoes.wasmPaths.onnxWasm, 'an address here overrides the wasm Vite emitted next to the game').toBeUndefined();
   });
 
-  it('🔴 [Right] the phonemizer keeps the provider\'s own addresses, read from the module and not written here', async () => {
+  it('🔴 [Right] the phonemizer is asked at the delivery path of the provider\'s own addresses, read from the module', async () => {
+    // ADR-0177: the delivery carries it in `pesados/<host><path>`; the service worker answers that path from the checked cache.
     const registro = {};
-    const outros = { ...LOCAIS_DO_FORNECEDOR, piperData: 'https://example.test/p.data', piperWasm: 'https://example.test/p.wasm' };
+    const outros = { ...LOCAIS_DO_FORNECEDOR, piperData: 'https://example.test/x/p.data', piperWasm: 'https://example.test/x/p.wasm' };
     const { tts } = setup({ carregarVozNeural: fornecedorComLocais(registro, outros) });
     tts.setEngineSel('piper');
     tts.loadTTS();
     await assentar();
-    expect(registro.opcoes.wasmPaths.piperData).toBe('https://example.test/p.data');
-    expect(registro.opcoes.wasmPaths.piperWasm).toBe('https://example.test/p.wasm');
+    expect(registro.opcoes.wasmPaths.piperData, 'the phonemizer data goes to a third party').toBe('pesados/example.test/x/p.data');
+    expect(registro.opcoes.wasmPaths.piperWasm).toBe('pesados/example.test/x/p.wasm');
   });
 
   it('📌 [Boundary] a provider without `WASM_LOCATIONS` gets no wasmPaths, rather than a phonemizer with no address', async () => {
@@ -225,4 +226,5 @@ describe('platform/tts — the voice runtime the game bundled', () => {
 //   W1 no wasmPaths passed                          🔴 bundled wasm
 //   W2 onnxWasm kept from the provider              🔴 bundled wasm
 //   W3 phonemizer addresses written in the engine   🔴 read from the module
+//   W5 phonemizer asked at the upstream address     🔴 delivery path
 //   W4 wasmPaths built without WASM_LOCATIONS       🔴 [Boundary]

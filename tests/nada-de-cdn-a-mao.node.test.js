@@ -68,7 +68,7 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
  */
 const BUSCAS_A_MAO = {
   'platform/pesados-catalogo.ts': {
-    urls: 5,
+    urls: 6,
     porque:
       'OS RUNTIMES QUE A ENGINE PASSOU A DESCER NA INSTALAÇÃO (ADR-0124, ADR-0127, ADR-0132, decisões do Dev ' +
       'de 2026-09-09). ⚠️ CDN FIXADA É PERMITIDA e o ADR-0116 diz porquê: o pilar 8 proíbe depender da rede ' +
@@ -80,7 +80,9 @@ const BUSCAS_A_MAO = {
       'e quem o corre; e (5) `webgazer.cs.brown.edu`, que VOLTOU pelo ADR-0132 porque o MediaPipe dá a posição ' +
       'do íris e não o ponto no ecrã. ' +
       'The WebGazer lives here only since #169: `ui/webcam.ts` reads it from the checked cache instead of fetching it. ' +
-      'Uma sexta origem é um fornecedor novo a entrar sem decisão. Sai desta lista quando os bytes forem ' +
+      '(6) `@diffusionstudio/piper-wasm` in jsDelivr — the voice provider\'s phonemizer at its own default address (#173), ' +
+      'fetched by the BUILD into the delivery; the device asks for it at `pesados/`. ' +
+      'Uma sétima origem é um fornecedor novo a entrar sem decisão. Sai desta lista quando os bytes forem ' +
       'servidos de origem própria',
   },
   'platform/voice-plan.ts': {

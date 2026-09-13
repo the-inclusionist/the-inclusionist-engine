@@ -168,6 +168,7 @@ const WEBGAZER: readonly Pesado[] = Object.freeze([
  */
 const PP = 'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/dist';
 const ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist';
+const FONEMIZADOR = 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize';
 const PIPER: readonly Pesado[] = Object.freeze([
   { id: 'voz:runtime', url: `${PP}/piper-tts-web.js`, bytes: 23_646,
     sha256: '531aa8a16605c07e5d791dfea540cadee1bd457b4a75c5303f01e843722f700f' },
@@ -179,6 +180,15 @@ const PIPER: readonly Pesado[] = Object.freeze([
     sha256: 'be6e560b64c03c99252eedc0e1989e9e51e44d9f191e7655c9bf011bf9f576c8' },
   { id: 'voz:runtime:ort-wasm', url: `${ORT}/ort-wasm-simd-threaded.wasm`, bytes: 11_246_032,
     sha256: '207d02be4591c156b0a98f024f3d58005b5b04c92274d759fb390338c63559ea' },
+  /*
+   * The PHONEMIZER (issue #173): espeak-ng in WebAssembly, which turns the text into the phonemes the voice model reads, and
+   * its pronunciation data. At the provider's own default addresses (`TtsSession.WASM_LOCATIONS`); `platform/tts` asks for
+   * them at the delivery path. 📏 Measured 2026-09-13, sha256 equal to jsDelivr's package metadata.
+   */
+  { id: 'voz:fonemizador', url: `${FONEMIZADOR}.wasm`, bytes: 635_212,
+    sha256: 'b777cd107a91d2bcc6a1ea46f2c26a662a7407394fe84589198aeaa83dd7a9d6' },
+  { id: 'voz:fonemizador:dados', url: `${FONEMIZADOR}.data`, bytes: 18_077_249,
+    sha256: '29f1025eb23a5b5c192cd14a6efbce4509402ff265405072ee6f7d1a09b78f8c' },
 ]);
 
 export const PESADOS: readonly Pesado[] = Object.freeze([

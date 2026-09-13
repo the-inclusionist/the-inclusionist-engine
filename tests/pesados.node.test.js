@@ -131,7 +131,8 @@ describe('o buscador das coisas pesadas', () => {
   it('📏 o peso por baixar é o das que TÊM fonte e ainda não desceram', async () => {
     const semNada = pesoPorBaixar([]);
     // ~241 MB: quatro modelos de ~60 MB. As duas sem fonte não somam, porque não há o que baixar.
-    expect(Math.round(semNada / 1024 / 1024), 'o total mudou — confira o catálogo').toBe(285);
+    // +18.7 MB since #173: the voice's phonemizer (wasm and pronunciation data)
+    expect(Math.round(semNada / 1024 / 1024), 'o total mudou — confira o catálogo').toBe(303);
     const f = cacheFalsa();
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
     expect(pesoPorBaixar(r), 'depois de tudo descer não falta nada').toBe(0);

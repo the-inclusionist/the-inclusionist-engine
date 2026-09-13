@@ -64,6 +64,18 @@ export function caminhoNaEntrega(url: string): string {
 }
 
 /**
+ * The inverse, for the service worker: a request for `…/pesados/<host><path>` is answered from the entry kept under
+ * `https://<host><path>`; any other address has no key (`null`). It is the route's `cacheKeyWillBeUsed` itself, so it also
+ * takes Workbox's `{ request }`. Self-contained on purpose — the PWA plugin copies this function's SOURCE into `sw.js`, where
+ * nothing else from this module exists.
+ */
+export function chaveDaEntrega(pedido: string | { readonly request: { readonly url: string } }): string | null {
+  const caminho = new URL(typeof pedido === 'string' ? pedido : pedido.request.url).pathname;
+  const i = caminho.indexOf('/pesados/');
+  return i < 0 ? null : 'https://' + caminho.slice(i + 9);
+}
+
+/**
  * BAIXA O QUE FALTA, UM DE CADA VEZ, E DEVOLVE O QUE ACONTECEU COM CADA UM.
  *
  * ⚠️ AS ENTRADAS SEM `url` NÃO SÃO SALTADAS EM SILÊNCIO — devolvem `sem-fonte`. É a diferença entre «este

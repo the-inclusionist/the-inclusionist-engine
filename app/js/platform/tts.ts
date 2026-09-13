@@ -9,6 +9,7 @@
 import * as store from './storage.js';
 import { t, bcp47 } from '../core/i18n.js';
 import { criarFalaInterrompivel } from './interruptible-speech.js';
+import { caminhoNaEntrega } from './pesados.js';
 
 interface TtsEngine { id: string; speak: (text: string) => void; }
 
@@ -152,10 +153,16 @@ export function createTts(ctx: TtsCtx): Tts {
     carregar().then(async (mod) => { // o jogo é que sabe de onde; o Vite dele faz o code-split. Ver ADR-0021 e ADR-0094
       // 🎯 onnxruntime runs the wasm the GAME bundled (ADR-0177, issue #173): the provider otherwise points
       // `ort.env.wasm.wasmPaths` at cdnjs 1.18.0 — a host outside the policy, and not the version the game imports.
-      // `undefined` lets onnxruntime resolve the file Vite emitted next to it. The phonemizer keeps the provider's own
-      // addresses, read from the module; without them no wasmPaths goes, since a partial one would leave it with none.
+      // `undefined` lets onnxruntime resolve the file Vite emitted next to it. The phonemizer is asked at the DELIVERY path
+      // of the provider's own addresses (read from the module, never written here): the delivery carries it in `pesados/`
+      // and the service worker answers from the checked cache. Without those addresses no wasmPaths goes, since a partial
+      // one would leave the phonemizer with none.
       const locais = mod.TtsSession.WASM_LOCATIONS;
-      const wasmPaths = locais ? { ...locais, onnxWasm: undefined as unknown as string } : undefined;
+      const wasmPaths = locais ? {
+        onnxWasm: undefined as unknown as string,
+        piperWasm: caminhoNaEntrega(locais.piperWasm),
+        piperData: caminhoNaEntrega(locais.piperData),
+      } : undefined;
       const session = await mod.TtsSession.create({ voiceId: fonte.voice,
         progress: (p: { loaded: number; total: number }) => { if (!p || !p.total) return; const pct = Math.round(p.loaded * 100 / p.total); if (pct >= _ttsPct + 25 && pct < 100) { _ttsPct = pct; ctx.srSay(t('sr.tts.progress', { pct })); } },
         logger: () => {}, ...(wasmPaths ? { wasmPaths } : {}) });

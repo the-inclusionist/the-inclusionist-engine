@@ -5,6 +5,7 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { readFileSync } from 'node:fs';
+import { chaveDaEntrega } from './app/js/platform/pesados.js'; // the `pesados/` route's cache key (issue #173)
 // Plugin em .mjs puro (sem tipos): é ferramenta de BUILD, e tipá-la exigiria um segundo tsconfig para o
 // Node. O contrato dele é uma função que devolve o objeto de plugin, e o Vite valida isso na hora de usar.
 // ⚠️ O PLUGIN DO ATLAS SAIU COM O CARTUCHO (issue #111). Ele gera `virtual:sprite-atlas`, que so'
@@ -106,6 +107,19 @@ export default defineConfig({
         // 📌 Um crivo prende os dois lados juntos (`tests/rota-dos-modelos.node.test.js`): a rota tem de
         // nomear o mesmo host e o mesmo nome de cache que o codigo usa, senao ela existe e nao serve nada.
         runtimeCaching: [
+          // The delivery's own `pesados/` (ADR-0177, issue #173): what the engine asks at the delivery path — the voice's
+          // phonemizer — is answered from the checked cache, where the fetcher keeps it under the upstream address. On a miss
+          // the request goes to this origin, never a third party; the fetcher's own download passes through the same way.
+          {
+            urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.includes('/pesados/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'incl-pesados-v2',
+              cacheableResponse: { statuses: [200] },
+              // the key is never null here: the pattern above already admits `pesados/` paths only
+              plugins: [{ cacheWillUpdate: async () => null, cacheKeyWillBeUsed: chaveDaEntrega as unknown as (p: { request: Request }) => Promise<string> }],
+            },
+          },
           // Os RUNTIMES fixados (MediaPipe e piper/onnxruntime), pela mesma razao e com a mesma cache: o
           // buscador desce-os na instalacao e sem rota o `import()` deles iria a rede outra vez. ⚠️ O alcance
           // e por PACOTE e nao por dominio — `cdn.jsdelivr.net` inteiro seria a porta larga que a #119 fechou.

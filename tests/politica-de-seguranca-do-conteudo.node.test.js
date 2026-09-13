@@ -31,11 +31,10 @@ const hostsDe = (fontes) => fontes.filter((f) => /^https:\/\//.test(f)).map((f) 
  * The hosts a library on the page requests by itself, each with its requester.
  * · the voice models: `@mintplex-labs/piper-tts-web` hardcodes this host with a guard, so no delivery path can replace it;
  *   the service worker answers from the checked cache (`CacheOnly`), and the policy judges the address before that.
- * · the phonemizer: the same provider fetches `piper_phonemize.wasm`/`.data` from jsDelivr; not in the catalogue yet (#173).
+ * The phonemizer is not here: since issue #173 the engine asks for it at the delivery path (`platform/tts`).
  */
 const PEDIDOS_PELAS_BIBLIOTECAS = new Map([
   [new URL(HOST_DOS_MODELOS).host, 'voice models, hardcoded by the provider'],
-  ['cdn.jsdelivr.net', 'the phonemizer of the voice provider (#173)'],
 ]);
 
 describe('the Content-Security-Policy (issues #170, #173)', () => {
@@ -80,3 +79,4 @@ describe('the Content-Security-Policy (issues #170, #173)', () => {
 //   C5 `object-src` removed                               🔴 [Zero]
 //   C6 storage.googleapis.com back in connect-src         🔴 connect, build only
 //   C7 `*.hf.co` back in connect-src                      🔴 connect, build only
+//   C8 jsDelivr back in connect-src (the phonemizer)      🔴 connect, build only
