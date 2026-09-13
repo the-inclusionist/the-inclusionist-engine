@@ -417,7 +417,13 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     if (k.left || k.right) {
       const d = k.right ? 1 : -1;
       // o VALOR novo é dito: quem ajusta de ouvido não tem outra forma de saber onde parou
-      if (cur.tagName === 'SELECT') { tweakSelect(cur as HTMLSelectElement, d); dizerItem(items, idx); return; }
+      if (cur.tagName === 'SELECT') {
+        const antes = (cur as HTMLSelectElement).value;
+        tweakSelect(cur as HTMLSelectElement, d);
+        // an adjustment its owner refused (and put back) says nothing here: the owner already said why
+        if ((cur as HTMLSelectElement).value !== antes) dizerItem(items, idx);
+        return;
+      }
       if (cur.tagName === 'INPUT') { tweakRange(cur as HTMLInputElement, d); dizerItem(items, idx); return; }
       // Os PASSOS ⯇ ⯈ (ADR-0151): esquerda e direita são o próprio ajuste, e quem o aplica ouve o `passo` (e anuncia).
       if (cur.hasAttribute('data-passos')) { cur.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true })); return; }

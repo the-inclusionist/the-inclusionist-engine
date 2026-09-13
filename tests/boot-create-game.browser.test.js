@@ -570,6 +570,13 @@ describe('createGame num documento de verdade', () => {
       motor.pausa.esconder(0);
     });
 
+    /** A simulation chosen in the panel's list, the way a mouse or a touch picks an option. */
+    const escolherSimulacao = (chave) => {
+      const lista = document.getElementById('opt-simulacao');
+      lista.value = chave;
+      lista.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
     it('🔴 [Right] the EMPATHY panel offers the simulations the engine can draw, and hearing loss — nothing it cannot', async () => {
       const audio = await import('../app/js/platform/audio.js');
       const motor = abrir();
@@ -580,14 +587,21 @@ describe('createGame num documento de verdade', () => {
       item.click();
       try {
         expect(document.getElementById('empathy').hidden, 'the panel did not open').toBe(false);
-        const chaves = [...document.querySelectorAll('#empathy-list button[data-viz]')].map((b) => b.dataset.viz);
+        // ADR-0159 rule 7: one choice among SEVEN positions is a dropdown list, not seven buttons (>5 → list)
+        expect(document.querySelectorAll('#empathy-list button[data-viz], #empathy-list [role="radio"]'), 'the simulations are still seven buttons').toHaveLength(0);
+        const chaves = [...document.getElementById('opt-simulacao').options].map((o) => o.value);
         expect(chaves).toEqual(['normal', 'sim-protan', 'sim-deuter', 'sim-tritan', 'lv-blur', 'lv-haze', 'blind']);
+        expect(document.getElementById('opt-simulacao').closest('.ctrl-row').querySelector('strong')?.textContent, 'the list has no label').toBe('Simulações');
         // 🔴 what the engine cannot draw is not offered: those need the platformer's DOM layer, and wheelchair was cut
         for (const id of ['opt-wheelchair', 'opt-onebtn']) expect(document.getElementById(id), id).toBeNull();
         // a simulation puts its filter on the world, and «normal» takes it off
-        document.querySelector('#empathy-list button[data-viz="sim-deuter"]').click();
+        escolherSimulacao('sim-deuter');
         expect(mundo.style.filter, 'the simulation did not reach the world').toMatch(/cvd-deuter/);
-        document.querySelector('#empathy-list button[data-viz="normal"]').click();
+        // closed and opened again, the list shows the simulation that runs — not its first option
+        document.getElementById('empathy-close').click();
+        document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
+        expect(document.getElementById('opt-simulacao').value, 'the reopened list forgot the running simulation').toBe('sim-deuter');
+        escolherSimulacao('normal');
         expect(mundo.style.filter).toBe('');
         // hearing loss switches the audio graph, both ways
         const antes = audio.hearingLoss;
@@ -596,7 +610,7 @@ describe('createGame num documento de verdade', () => {
         document.getElementById('opt-hearing').click();
         expect(audio.hearingLoss).toBe(antes);
       } finally {
-        document.querySelector('#empathy-list button[data-viz="normal"]')?.click();
+        if (document.getElementById('opt-simulacao')) escolherSimulacao('normal');
         document.getElementById('empathy-close').click();
         motor.pausa.esconder(0);
       }
@@ -612,7 +626,12 @@ describe('createGame num documento de verdade', () => {
       motor.pausa.mostrar(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
       try {
-        document.querySelector('#empathy-list button[data-viz="blind"]').click();
+        // by the KEYBOARD, the way a child adjusts a list: the refusal must not be spoken over by the list's new value
+        const lista = document.getElementById('opt-simulacao');
+        lista.value = 'normal'; // the world's state: the arrow asks for protanopia, which the correction refuses
+        lista.focus();
+        document.querySelector('#game-region').dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight', key: 'ArrowRight', bubbles: true, cancelable: true }));
+        expect(lista.value, 'a refused simulation stayed selected in the list').toBe('normal');
         expect(mundo.style.filter, 'the simulation ran over the correction').not.toMatch(/brightness\(0\)/);
         expect(mundo.style.filter, 'the refusal erased the correction').toMatch(/cvd-fix-/);
         await new Promise((r) => requestAnimationFrame(r));
@@ -631,13 +650,18 @@ describe('createGame num documento de verdade', () => {
       motor.pausa.mostrar(0);
       document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
       try {
-        document.querySelector('#empathy-list button[data-viz="blind"]').click();
+        escolherSimulacao('blind');
         expect(mundo.style.filter, 'the case would measure nothing').toMatch(/brightness\(0\)/);
         document.getElementById('empathy-close').click();
         motor.pausa.esconder(0);
         document.querySelector('#title-icons [data-pi="cvd"]').click();
         expect(mundo.style.filter, 'the correction did not reach the world').toMatch(/cvd-fix-/);
         expect(mundo.style.filter, 'the simulation kept running over the correction').not.toMatch(/brightness\(0\)/);
+        // and the panel's list says what runs now, not the simulation that was stopped from outside it
+        motor.pausa.mostrar(0);
+        document.querySelector('#vp-pause-0 .pm-btn[data-act="empatia"]').click();
+        expect(document.getElementById('opt-simulacao').value, 'the list still shows the stopped simulation').toBe('normal');
+        document.getElementById('empathy-close').click();
       } finally {
         motor.pausa.esconder(0);
       }
@@ -1178,3 +1202,8 @@ describe('createGame num documento de verdade', () => {
 //      is red: the reset sits between «Voltar» and the first row again, as measured in dist.
 //      ⚠️ The twin in the «Áudio» interior (its list appended after the actions) SURVIVES: under the shell the list
 //      is already a child of the card, so that line only runs for a card without the shell.
+
+// ---- ADR-0159 rule 7 in the empathy panel (2026-09-12) ----
+//   S1 an explicit put-back of a refused choice    ✅ SURVIVED: the render writes the list from the world — removed
+//   S2 the list speaks over the refusal (menu-nav)  🔴 the refusal case
+//   S3 the list does not follow the world on opening 🔴 the reopen step

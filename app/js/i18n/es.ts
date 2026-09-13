@@ -218,6 +218,7 @@ const es: Record<string, string> = {
   'menu.visual': 'Accesibilidad visual',
   'menu.empathy': 'Modo empatía',
   'empathy.grupo.rotulo': 'Simulaciones',
+  'empathy.simulacao.dica': 'Muestra el juego como lo ve quien tiene la discapacidad elegida.',
   'empathy.hearing': 'Simular pérdida auditiva',
   'empathy.hearing.dica': 'Los sonidos suaves se oyen apagados y los agudos se cortan, como oye quien tiene pérdida auditiva.',
   'empathy.select': 'Seleccionar',

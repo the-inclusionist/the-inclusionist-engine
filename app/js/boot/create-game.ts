@@ -87,7 +87,6 @@ import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.j
 import { montarPainel } from '../ui/mount-panel.js';
 import { carimbarOrigem, origemDoEvento } from '../input/origem-sintetica.js';
 import { montarPassos, atualizarPassos, passoSeguinte, linhaDeControle, rotularLinha } from '../ui/panel-widgets.js';
-import { escaparHtml } from '../core/escape-html.js';
 import { PERSONAS_DO_PAD, personaMaisProxima } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
 import { initSettingsMotion, type SettingsMotionApi } from '../ui/settings-motion.js';
@@ -1493,28 +1492,48 @@ export function createGame(o: CreateGameOptions): Engine {
     };
     const empatia = initSettingsEmpathy({
       $, srSay, store,
+      /*
+       * ONE LIST, NOT SEVEN BUTTONS (ADR-0159 rule 7: more than five positions → a dropdown). Built once and kept, so the
+       * focus stays on it while the child adjusts; its label and options are rewritten at each opening, in the language
+       * of now. A refused simulation (ADR-0076) puts the list back and the refusal is the only thing said.
+       */
       renderVizGroup: (listSel) => {
         const lista = $<HTMLElement>(listSel);
         if (!lista) return;
-        const atual = estadoDoMundo.simulacao ?? 'normal';
-        lista.innerHTML = SIMULACOES_DO_MUNDO.map((chave) => {
+        let escolha = lista.querySelector<HTMLSelectElement>('#opt-simulacao');
+        if (!escolha) {
+          const linha = doc.createElement('div');
+          linha.className = 'ctrl-row';
+          const envelope = doc.createElement('span');
+          envelope.appendChild(doc.createElement('strong'));
+          const dica = doc.createElement('span');
+          dica.className = 'opt-hint';
+          dica.textContent = t('empathy.simulacao.dica');
+          envelope.appendChild(dica);
+          linha.appendChild(envelope);
+          escolha = doc.createElement('select') as HTMLSelectElement;
+          escolha.id = 'opt-simulacao';
+          escolha.className = 'vol';
+          linha.appendChild(escolha);
+          lista.textContent = '';
+          lista.appendChild(linha);
+          const alvo = escolha;
+          // the render below writes the list back from the world, so a refused choice returns to what runs
+          alvo.addEventListener('change', () => { simular(0, alvo.value); empatia.render(); });
+        }
+        const rotulo = t('empathy.grupo.rotulo');
+        (escolha.closest('.ctrl-row')?.querySelector('strong') as HTMLElement).textContent = rotulo;
+        escolha.setAttribute('aria-label', rotulo);
+        escolha.textContent = '';
+        for (const chave of SIMULACOES_DO_MUNDO) {
           const modo = VIZ_BY_KEY[chave];
-          if (!modo) return '';
-          const sel = chave === atual;
-          // ⚠️ O parêntese final de algumas descrições — «(bolinha verde; toque 2× p/ sair)» — descreve o indicador do
-          // jogo de plataforma, que a engine não desenha: prometê-lo aqui seria dizer à criança uma saída que não existe.
-          const desc = t(modo.desc).replace(/\s*\([^)]*\)\s*$/, '');
-          return `<div class="ctrl-row"><span><strong>${escaparHtml(t(modo.nome))}</strong><span class="opt-hint">${escaparHtml(desc)}</span></span>`
-            + `<button class="mode-btn${sel ? ' is-on' : ''}" role="radio" aria-checked="${sel}" data-viz="${chave}" type="button">${escaparHtml(t(sel ? 'empathy.selected' : 'empathy.select'))}</button></div>`;
-        }).join('');
-        lista.querySelectorAll<HTMLElement>('button[data-viz]').forEach((b) => {
-          b.addEventListener('click', () => {
-            const aplicou = simular(0, b.dataset.viz ?? 'normal');
-            empatia.render();
-            // a recusa já foi dita: anunciar o modo por cima dela calava o motivo
-            if (aplicou) srSay(t(VIZ_BY_KEY[estadoDoMundo.simulacao ?? 'normal']?.nome ?? 'viz.normal'));
-          });
-        });
+          if (!modo) continue;
+          const opcao = doc.createElement('option');
+          opcao.value = chave;
+          opcao.textContent = t(modo.nome);
+          escolha.appendChild(opcao);
+        }
+        escolha.value = estadoDoMundo.simulacao ?? 'normal';
       },
       reflectMotorEmpathy: semEfeito,
       reflectVizButtons: semEfeito,
