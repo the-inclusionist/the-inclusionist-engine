@@ -283,8 +283,8 @@ export interface CreateGameOptions {
    */
   readonly controleNaTela?: boolean;
   /**
-   * THE NUMBERS THIS GAME SHOWS, each in the band of what it is about (ADR-0168; ADR-0059 §1; issue #162). The engine mounts
-   * the HUD and places them: `identity` top left beside the quick bar, `round` below it, `learning` bars (one to three, as
+   * THE NUMBERS THIS GAME SHOWS, each in the band of what it is about (ADR-0168, ADR-0175; issue #162). The engine mounts
+   * the HUD and places them: `identity` top left and `mission` under it, `power` top right (under the clock), `learning` bars (one to three, as
    * `educational/segment-bar.barraDe` returns them) centred in the footer, under the explanation; the room the game leaves free at the
    * top (`--barra-a11y-h`) grows by what they take. Absent = no HUD mounted, and the game keeps drawing its own.
    * 📏 Measured on 2026-09-13: six sibling games, six HUDs of their own, none in the bands.
@@ -2023,8 +2023,8 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 The name line is counted whether or not a name is showing — reserving only while pointing would move the game
    * under the child's finger. Measured again at every scale and every typography step: both change the text's size.
    * ⚠️ Zero without a bar: nothing to reserve.
-   * 📌 With a HUD (ADR-0168) the room also holds the identity band, when it reaches lower than the bar's room, and the round
-   * band, which starts where the bar's room ends; the identity band is narrowed so it never reaches the bar.
+   * 📌 With a HUD (ADR-0175) the room also holds the two top columns — points and mission on the left, power on the right —
+   * when either reaches lower than the bar's room; each is narrowed so it never reaches the bar.
    */
   function reservarFaixaDaBarra(): void {
     const regiao = $<HTMLElement>('#game-region');
@@ -2048,16 +2048,17 @@ export function createGame(o: CreateGameOptions): Engine {
       sala = fundo - topo + respiro;
     }
     if (hudMontado && mede) {
-      const { identity: identidade, round: rodada } = hudMontado;
-      if (!identidade.hidden) {
-        const esquerdaDaBarra = barra && typeof barra.getBoundingClientRect === 'function' ? barra.getBoundingClientRect().left : Infinity;
-        const esquerda = regiao.getBoundingClientRect().left;
-        identidade.style.maxWidth = Number.isFinite(esquerdaDaBarra) ? `${Math.max(0, Math.floor(esquerdaDaBarra - esquerda - 2 * respiro))}px` : '';
-        sala = Math.max(sala, identidade.getBoundingClientRect().bottom - topo + respiro);
+      const caixaDaRegiao = regiao.getBoundingClientRect();
+      const caixaDaBarra = barra && typeof barra.getBoundingClientRect === 'function' ? barra.getBoundingClientRect() : null;
+      const { left: esquerda, right: direita } = hudMontado;
+      const folga = Math.max(respiro, 4);
+      if (!esquerda.hidden) {
+        esquerda.style.maxWidth = caixaDaBarra ? `${Math.max(0, Math.floor(caixaDaBarra.left - caixaDaRegiao.left - 2 * folga))}px` : '';
+        sala = Math.max(sala, esquerda.getBoundingClientRect().bottom - topo + folga);
       }
-      if (!rodada.hidden) {
-        rodada.style.top = `${Math.ceil(sala)}px`;
-        sala += rodada.getBoundingClientRect().height + respiro;
+      if (!direita.hidden) {
+        direita.style.maxWidth = caixaDaBarra ? `${Math.max(0, Math.floor(caixaDaRegiao.right - caixaDaBarra.right - 2 * folga))}px` : '';
+        sala = Math.max(sala, direita.getBoundingClientRect().bottom - topo + folga);
       }
     }
     regiao.style.setProperty('--barra-a11y-h', `${Math.ceil(sala)}px`);

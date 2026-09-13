@@ -599,13 +599,13 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* ADR-0164 as the Dev corrected it: the EXPLANATION stands on a full-width dark band at the lowest edge (rule 2, rule 4);
    the BUTTON LEGEND runs the full width with NO band, a dark background only behind each «name: function» (rule 3), and
    sits above the explanation. The column itself paints nothing. Padding adds to 8 px, so two lines fit `--rodape-h`. */
-/* THE HUD BANDS the engine mounts from a cartridge's `hud` (ADR-0168; issue #162): identity top left, level with the quick bar and
-   narrowed by the root so it never reaches it; round below the bar's room, where the root sets `top`. State on dark chips, like the
+/* THE HUD the engine mounts from a cartridge's `hud` (ADR-0168, ADR-0175; issue #162): two columns level with the quick bar —
+   points and mission top left, power top right — each narrowed by the root so it never reaches the bar. State on dark chips, like the
    icon's name; no pointer events, so a finger passes through to the game. */
 .hud-faixa{position:absolute;z-index:12;margin:0;pointer-events:none;font-size:var(--ui-fs,16px);line-height:1.25;display:flex;gap:2px}
 .hud-faixa[hidden]{display:none}
-.hud-identidade{top:10px;left:4px;flex-direction:column;align-items:flex-start}
-.hud-rodada{left:50%;transform:translateX(-50%);flex-direction:row;flex-wrap:wrap;justify-content:center;gap:.5em;width:max-content;max-width:calc(100% - 8px)} /* max-content: from left:50% only half the region was its room, and two numbers broke onto two lines */
+.hud-esquerda{top:10px;left:4px;flex-direction:column;align-items:flex-start}
+.hud-direita{top:10px;right:4px;flex-direction:column;align-items:flex-end;text-align:right}
 /* The learning bars (ADR-0049 §5): one ten-segment bar per skill, side by side, centred at the bottom — under the footer
    column, which comes later in the region on the same layer and covers them. Okabe-Ito colours, and a second cue beside
    each, so no state is told by colour alone (WCAG 1.4.1): green carries a dot, red stripes, an empty slot only its outline;

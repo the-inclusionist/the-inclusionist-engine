@@ -1802,14 +1802,14 @@
       "segmentos"
     ],
     "interface HudBandsMounted": [
-      "identity",
       "learning",
+      "left",
       "refresh",
       "remove",
-      "round"
+      "right"
     ],
-    "type HudBand": "'identity' | 'round' | 'learning'",
-    "type HudNumber": "| { readonly band: 'identity' | 'round'"
+    "type HudBand": "'identity' | 'mission' | 'power' | 'learning'",
+    "type HudNumber": "| { readonly band: 'identity' | 'mission' | 'power'"
   },
   "ui/hud.ts": {
     "interface ScreenRect": [

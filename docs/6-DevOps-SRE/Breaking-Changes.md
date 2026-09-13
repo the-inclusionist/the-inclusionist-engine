@@ -661,7 +661,7 @@ onTouchControlsHidden: () => setMinimapCorner(false),
 | `core/i18n.lacunasDosDicionarios` | new: keys a cartridge registered in one of pt/en/es and not another, read by `createGame`'s `problems` (study item E4) |
 | `core/loop.registrarAvisoDeQueda` | new: `createGame` registers its crash notice, and a `startLoop` with no `aoFalhar` announces through it (study item D1); a game's own `aoFalhar` still wins |
 | `Engine.legendarSom` | new: the engine hosts the sound caption in the screen footer (study item D3); pass it as `createAudioEarcons`'s `showCaption` instead of a page `#caption` |
-| `CreateGameOptions.hud` · `ui/hud-bands` | new, optional: the numbers a game shows, each with its band (`identity`, `round`, `learning`); the engine mounts the HUD — identity top left beside the quick bar, round below it, one to three learning bars (a `Barra` from `educational/segment-bar`) centred in the footer under the explanation — and `--barra-a11y-h` grows by what it takes (ADR-0168, issue #162). A malformed list is refused. A game that keeps its own HUD passes nothing |
+| `CreateGameOptions.hud` · `ui/hud-bands` | new, optional: the numbers a game shows, each with its band (`identity`, `mission`, `power`, `learning`); the engine mounts the HUD — points and mission top left, power top right (under the clock, ADR-0175), nothing under the quick bar, one to three learning bars (a `Barra` from `educational/segment-bar`) centred in the footer under the explanation — and `--barra-a11y-h` grows by what it takes (ADR-0168, issue #162). A malformed list is refused. A game that keeps its own HUD passes nothing |
 
 ## F · The commits, and whether they carry the footer
 
