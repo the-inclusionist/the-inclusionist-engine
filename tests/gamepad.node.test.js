@@ -733,51 +733,45 @@ describe('e o modo de um botão está LIGADO no laço de sondagem (issue #120)',
 //     funcional, uma frase inteira atravessa o crivo de prosa sem tocar em nada.
 //   · renomeando o parâmetro do `wizSay` de volta para `t` → "[Interface] o `wizSay` não sombreia" reprova.
 // ==========================================================================================================
-describe('input/gamepad — o assistente de mapeamento fala por t(), sem excepção (#123, pilar 3)', () => {
-  const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'input', 'gamepad.ts'), 'utf8')
+describe('input/pad-wizard — o assistente de mapeamento fala por t(), sem excepção (#123, pilar 3)', () => {
+  // 📌 The wizard moved to `input/pad-wizard` (issue #182): its sentences are said THERE, through `ctx.dizer` and
+  // `ctx.progresso`, and the host only shows them. Each rule below first finds its subject, so a move cannot leave it green
+  // measuring nothing.
+  const FONTE = readFileSync(join(process.cwd(), 'app', 'js', 'input', 'pad-wizard.ts'), 'utf8')
     .split(String.fromCharCode(13)).join('');
   const CODIGO = FONTE.split('\n')
     .map((l, i) => [i + 1, l])
     .filter(([, l]) => !/^\s*(\/\/|\*|\/\*)/.test(l));
 
   it('⚠️ [Zero] tudo o que o assistente fala vem de t( — nenhuma chamada com literal', () => {
-    const crus = CODIGO
-      .filter(([, l]) => /wizSay\s*\(/.test(l) && !/function wizSay/.test(l))
-      .filter(([, l]) => !/wizSay\s*\(\s*t\s*\(/.test(l))
+    const falas = CODIGO.filter(([, l]) => /ctx\.dizer\s*\(/.test(l));
+    expect(falas.length, 'ninguem fala pelo assistente; rever este caso').toBeGreaterThan(0);
+    const crus = falas
+      .filter(([, l]) => !/ctx\.dizer\s*\(\s*t\s*\(/.test(l) && !/ctx\.dizer\s*\(\s*frase\s*\)/.test(l))
       .map(([n, l]) => `${n}: ${l.trim()}`);
     expect(crus, 'o assistente fala uma frase que nao passa por t()').toEqual([]);
+    // the one `ctx.dizer(frase)` is `comecar`'s, and every caller of `comecar` hands it a `t(`
+    const comecos = CODIGO.filter(([, l]) => /comecar\s*\(/.test(l) && !/function comecar/.test(l));
+    expect(comecos.length).toBeGreaterThan(0);
+    for (const [n, l] of comecos) expect(l, `linha ${n}`).toMatch(/t\s*\(\s*'pad\.wiz\./);
   });
 
-  it('[Right] e o rodape de progresso tambem — ele escreve na tela como o prompt', () => {
-    // Há DOIS pontos que escrevem neste rodapé, e um deles é a limpeza (`= ''`) das duas aberturas do
-    // assistente. Cadeia vazia não é idioma, então a regra é: ou apaga, ou passa por `t(`. Escrever a regra
-    // sobre o primeiro que aparecesse teria prendido a limpeza e deixado a frase solta.
-    //
-    // ⚠️ E a leitura é pela VARIÁVEL, não pela linha do seletor: uma das três escritas está na linha
-    // seguinte à do `ctx.$('#padwiz-progress')`, e um crivo por linha não a via. O caso ficou verde a
-    // reprovar por outro motivo, que é como um gate mente. Primeiro afere-se que `pr` só nasce daquele
-    // seletor; depois lê-se tudo o que se escreve nele.
-    const nascimentos = CODIGO.filter(([, l]) => /\bconst pr\s*=/.test(l));
-    expect(nascimentos.length, 'ninguem procura o rodape de progresso; rever este caso').toBeGreaterThan(0);
-    for (const [n, l] of nascimentos) {
-      expect(l, `linha ${n}: \`pr\` passou a ser outra coisa`).toMatch(/#padwiz-progress/);
-    }
-    const escritas = CODIGO.filter(([, l]) => /\bpr\.textContent\s*=/.test(l));
+  it('[Right] e o rodape de progresso tambem — ou apaga, ou passa por t(', () => {
+    const escritas = CODIGO.filter(([, l]) => /ctx\.progresso\s*\(/.test(l));
     expect(escritas.length, 'ninguem escreve no rodape de progresso; rever este caso').toBeGreaterThan(0);
     const crus = escritas
-      .filter(([, l]) => !/textContent\s*=\s*''\s*;/.test(l) && !/t\s*\(/.test(l))
+      .filter(([, l]) => !/ctx\.progresso\s*\(\s*''\s*\)/.test(l) && !/ctx\.progresso\s*\(\s*t\s*\(/.test(l))
       .map(([n, l]) => `${n}: ${l.trim()}`);
     expect(crus, 'o rodape de progresso recebe texto que nao passa por t()').toEqual([]);
     expect(escritas.some(([, l]) => /t\s*\(\s*'pad\.wiz\.mapped'/.test(l)),
       'a frase do progresso deixou de usar a chave').toBe(true);
   });
 
-  it('⚠️ [Interface] o wizSay NAO sombreia o t do core/i18n', () => {
-    // Enquanto o parametro se chamar `t`, traduzir dentro do `wizSay` e impossivel — e nada da erro.
-    const decl = CODIGO.find(([, l]) => /function wizSay\s*\(/.test(l));
-    expect(decl, 'wizSay desapareceu').toBeTruthy();
-    expect(decl[1], 'o parametro voltou a chamar-se t e fecha a porta outra vez')
-      .not.toMatch(/function wizSay\s*\(\s*t\s*:/);
+  it('⚠️ [Interface] nada no assistente sombreia o t do core/i18n', () => {
+    // A parameter or a local named `t` makes translating impossible where it is in scope — and nothing errors.
+    expect(FONTE, 'o assistente deixou de importar t').toMatch(/import \{ t \} from '\.\.\/core\/i18n\.js'/);
+    const sombras = CODIGO.filter(([, l]) => /\(\s*t\s*[:,)]|\bconst t\b|\blet t\b/.test(l)).map(([n, l]) => `${n}: ${l.trim()}`);
+    expect(sombras, 'um t local fecha a porta outra vez').toEqual([]);
   });
 
   it('[Interface] as cinco chaves existem nos tres dicionarios', () => {

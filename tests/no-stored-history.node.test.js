@@ -59,7 +59,7 @@ function escritasDe(p) {
 const INVENTARIO = {
   'core/i18n.ts': 'criança · o idioma da interface',
   'core/state.ts': 'criança · modo visual, modo cego, caixa da letra, legendas, índice de menu, cores seguras e por dono, contornos do alto contraste, divisor da bengala, cadeira de rodas, um-botão',
-  'input/gamepad.ts': 'criança · o mapa de botões deste MODELO de controle',
+  'input/pad-wizard.ts': 'criança · o mapa de botões deste MODELO de controle, gravado pelo assistente',
   'input/keyboard.ts': 'criança · o esquema de teclas',
   'input/touch.ts': 'criança · mapa de toque, medidas do pad em milímetros, desenho e direção',
   'platform/audio-mixer.ts': 'criança · liga/desliga e volume de cada categoria do mixer',

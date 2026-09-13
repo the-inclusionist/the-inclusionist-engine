@@ -10,7 +10,7 @@
 import { t } from '../core/i18n.js';
 import type { PlayerView } from '../core/entity.js';
 import { EDGE_BY_ACTION, edgeAllowed } from './edges.js';
-import { migrarMapaDeControle } from './vocabulary-migration.js';
+import { criarAssistenteDoPad, mapaDoPad, PADWIZ_ORDER as ORDEM_DO_ASSISTENTE } from './pad-wizard.js';
 import { GAMEPAD_STANDARD } from './default-bindings.js';
 import { tabelaDoPad, type TabelaDoPad } from './pad-defaults.js';
 import type { Action } from '../core/actions.js';
@@ -24,7 +24,6 @@ import { padCur, padPrevAct, padPrevStart, PAD_DEAD } from './state.js';
 // acomodação existir só nos jogos onde alguém se lembrou dela, que é o argumento M3 do ADR-0077 com outro
 // substantivo. Binding vivo de `core/state`: não há por onde falhar.
 import * as estadoDoJogo from '../core/state.js';
-import * as store from '../platform/storage.js';
 
 // ---------------------------------------------------------------------------------------------
 // Gamepad API surface (minimal, adapter-friendly — mirrors the real Gamepad/GamepadButton shape)
@@ -220,21 +219,8 @@ export function umBotaoPorVez(
   return saida;
 }
 
-export const PADWIZ_ORDER: readonly string[] = [
-  // Direções primeiro: são o que a criança encontra sem pensar, e acertar as quatro dá confiança para as
-  // outras dez.
-  'up', 'down', 'left', 'right',
-  // O losango, na ordem em que o dedo o percorre neste projeto (ADR-0086 §2).
-  'action2', 'action1', 'action4', 'action3',
-  // ⚠️ OS QUATRO OMBROS FALTAVAM AQUI ATÉ 2026-09-06, e a falta era um buraco de acessibilidade e não uma
-  // omissão cosmética: o assistente existe PARA controles que não são «standard» — genéricos, adaptados,
-  // de uma mão —, e um jogo que declarasse `leftShoulder` não tinha por onde a criança o mapear. Cinco das
-  // quatorze posições eram inalcançáveis exatamente para quem mais precisa do assistente.
-  'leftShoulder', 'leftTrigger', 'rightShoulder', 'rightTrigger',
-  // Sistema por último: `start` e `select` costumam ser os botões mais pequenos e mais escondidos, e pedi-los
-  // no fim deixa a criança já habituada ao ritmo do assistente quando chega neles.
-  'start', 'select',
-];
+/** The wizard's steps — the same list input/pad-wizard walks, where they live apart from any game (issue #182). */
+export const PADWIZ_ORDER: readonly string[] = ORDEM_DO_ASSISTENTE;
 
 export interface WizAnimDef { seq?: string[]; hold?: number; cls: string; fx?: string; noimg?: number; flip?: number; }
 /** Demonstração animada de cada ação (frames reais do jogo) mostrada durante o passo correspondente do wizard. */
@@ -390,37 +376,14 @@ export interface GamepadApi {
 }
 
 export function initGamepad(ctx: GamepadCtx): GamepadApi {
-  const _padMaps = new Map<string, PadMap | null>(); // cache id -> mapa custom (evita reparsear JSON a cada frame)
-  let padWiz: WizState | null = null;
   let padWizAutoResume = false; // wizard aberto automaticamente no meio do jogo -> retoma a fase ao fechar
   let padWizAnim: { seq: string[]; hold: number; t: number } | null = null;
 
-  function padMapFor(id: string): PadMap | null {
-    // ⚠️ O MAPA SALVO PASSA PELO TRADUTOR NA LEITURA. Ele é indexado por AÇÃO — `{ jump: { b: 0 } }` — e um
-    // mapa gravado antes do ADR-0086 tem as chaves antigas, que `bindingAt` já não procura: o controle
-    // custom simplesmente pararia de responder, e o jogo cairia no mapa padrão sem dizer nada.
-    // É o mais caro dos três formatos a perder: um mapa destes existe porque alguém passou por um assistente
-    // de nove passos, botão a botão, quase sempre porque o controle NÃO é «standard» — e controles genéricos
-    // ou adaptados raramente são. Ver `input/vocabulary-migration.ts`.
-    if (!_padMaps.has(id)) {
-      _padMaps.set(id, migrarMapaDeControle(store.getJSON<PadMap>('incl_padmap_' + id, null)));
-    }
-    return _padMaps.get(id) ?? null;
-  }
+  // the page's one cache of stored maps (input/pad-wizard): a map saved by the engine's own wizard is read here next frame
+  const padMapFor = (id: string): PadMap | null => mapaDoPad(id);
   function actionsFor(gp: PadLike, tabela?: TabelaDoPad): PadActions { return padActions(gp, padMapFor(gp.id), tabela); }
 
-  // ----- wizard: anúncio + demo animada (DOM-facing, thin) -----
-
-  // ⚠️ O PARÂMETRO CHAMAVA-SE `t`, E ERA ELE QUE FECHAVA A PORTA. Dentro desta função o `t` do
-  // `core/i18n` estava sombreado, então traduzir uma frase aqui era impossível sem primeiro reparar no
-  // sombreamento — e não há erro nenhum a apontá-lo. Foi assim que cinco frases em português cru ficaram a
-  // falar dentro do motor (#123): não por decisão, por um nome.
-  function wizSay(frase: string): void {
-    const el = ctx.$<HTMLElement>('#padwiz-prompt');
-    if (el) el.textContent = frase;
-    ctx.srSay(frase);
-  }
-
+  // ----- wizard: the demonstration is THIS module's host's (the platformer's sprites), not the wizard's -----
   function wizDemo(k: string | null): void {
     const d = ctx.$<HTMLElement>('#padwiz-demo');
     const img = ctx.$<HTMLImageElement>('#padwiz-demo-img');
@@ -443,135 +406,39 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     const img = ctx.$<HTMLImageElement>('#padwiz-demo-img');
     if (img) img.src = ctx.spriteBase + a.seq[Math.floor(a.t / a.hold) % a.seq.length] + '.png';
   }
-  /**
-   * Anda até o próximo passo que ESTE jogo usa, ou fecha se não houver mais.
-   *
-   * ⚠️ UMA FUNÇÃO SÓ, e antes eram duas com regras diferentes: `wizBind` incrementava e fechava no fim,
-   * `wizPrompt` saltava as não nomeadas. Depois do último passo nomeado o assistente ficava aberto a
-   * apontar para uma posição que o jogo não usa, e só fechava no tique seguinte — uma criança veria o
-   * assistente pendurado, sem pergunta nenhuma na tela.
-   */
-  function wizAvancar(): void {
-    if (!padWiz) return;
-    while (padWiz.step < PADWIZ_ORDER.length && !ctx.rotuloDaAcao(PADWIZ_ORDER[padWiz.step]!)) padWiz.step++;
-    if (padWiz.step >= PADWIZ_ORDER.length) closePadWiz(true);
-  }
 
-  function wizPrompt(): void {
-    if (!padWiz) return;
-    wizAvancar();
-    if (!padWiz) return; // fechou ao avançar
-    const acao = PADWIZ_ORDER[padWiz.step]!;
-    const rotulo = ctx.rotuloDaAcao(acao)!;
-    wizSay(t('pad.wiz.step', { n: padWiz.step + 1, total: PADWIZ_ORDER.length, acao: rotulo }));
-    wizDemo(acao); // demonstração animada do que a ação FAZ
-    const pr = ctx.$<HTMLElement>('#padwiz-progress');
-    // O travessão da lista vazia fica cru de propósito: é pontuação, não idioma.
-    if (pr) pr.textContent = t('pad.wiz.mapped', { lista: Object.keys(padWiz.map).join(' · ') || '—' });
-  }
-  function wizBind(bd: PadBinding): void {
-    if (!padWiz) return;
-    padWiz.map[PADWIZ_ORDER[padWiz.step]!] = bd;
-    padWiz.step++;
-    padWiz.release = true; // exige soltar antes do próximo passo (mesmo botão segurado não dobra pro passo seguinte)
-    wizAvancar(); // salta o que este jogo não usa, e fecha se o resto da lista for tudo isso
-  }
-
-  // ----- wizard: abrir/fechar -----
-
+  const assistente = criarAssistenteDoPad({
+    getGamepads: () => ctx.getGamepads(),
+    rotuloDaAcao: (acao) => ctx.rotuloDaAcao(acao),
+    dizer: (frase) => { const el = ctx.$<HTMLElement>('#padwiz-prompt'); if (el) el.textContent = frase; ctx.srSay(frase); },
+    progresso: (texto) => { const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = texto; },
+    srAlert: (frase) => ctx.srAlert(frase),
+    aoPasso: wizDemo,
+    aoTique: wizDemoTick,
+    aoFechar: (gi) => {
+      const ov = ctx.$<HTMLElement>('#padwiz'); if (ov) ov.hidden = true;
+      // sem edges fantasmas: o botão ainda SEGURADO do último passo (START) não pode pausar/agir ao retomar
+      try {
+        const pads = ctx.getGamepads() ?? [];
+        const gp = pads[gi];
+        if (gp) { const c = actionsFor(gp); padCur[gi] = c; padPrevAct[gi] = c; padPrevStart[gi] = c._start; }
+      } catch { /* espelha o try/catch silencioso do original */ }
+      if (padWizAutoResume) { padWizAutoResume = false; if (ctx.menuDePausa()) ctx.retomar(); }
+    },
+  });
   function openPadWiz(): void {
     const ov = ctx.$<HTMLElement>('#padwiz'); if (!ov) return;
     ov.hidden = false; ctx.frontOverlay(ov);
-    padWiz = { gi: -1, id: '', step: -1, base: null, map: {}, release: false, baseWait: false, axTrack: null, timer: null };
-    wizSay(t('pad.wiz.pressAny')); wizDemo(null);
-    const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = '';
-    padWiz.timer = setInterval(padWizTick, 30);
+    assistente.abrir();
   }
   // Wizard aberto AUTOMATICAMENTE (controle DirectInput sem mapa apertou algo): já sabemos qual controle é.
   function openPadWizFor(gp: PadLike): void {
     const ov = ctx.$<HTMLElement>('#padwiz'); if (!ov) return;
     ov.hidden = false; ctx.frontOverlay(ov);
-    padWiz = { gi: gp.index, id: gp.id, step: -1, base: null, map: {}, release: false, baseWait: true, axTrack: null, timer: null };
-    wizSay(t('pad.wiz.detected', { id: gp.id })); wizDemo(null);
-    const pr = ctx.$<HTMLElement>('#padwiz-progress'); if (pr) pr.textContent = '';
-    padWiz.timer = setInterval(padWizTick, 30);
+    assistente.abrirPara(gp);
   }
-  function closePadWiz(save: boolean): void {
-    if (!padWiz) return;
-    if (padWiz.timer != null) clearInterval(padWiz.timer);
-    if (save && padWiz.id) {
-      store.setJSON('incl_padmap_' + padWiz.id, padWiz.map);
-      _padMaps.set(padWiz.id, padWiz.map);
-      ctx.srAlert(t('sr.pad.mapSaved', { id: padWiz.id }));
-    } else if (padWiz.id && !_padMaps.get(padWiz.id)) {
-      _padMaps.set(padWiz.id, { _skip: true }); // cancelou: usa o mapa PADRÃO nesta sessão (não persiste, evita reabrir em loop)
-    }
-    const gi = padWiz.gi;
-    padWiz = null;
-    const ov = ctx.$<HTMLElement>('#padwiz'); if (ov) ov.hidden = true;
-    // sem edges fantasmas: o botão ainda SEGURADO do último passo (START) não pode pausar/agir ao retomar
-    try {
-      const pads = ctx.getGamepads() ?? [];
-      const gp = pads[gi];
-      if (gp) { const c = actionsFor(gp); padCur[gi] = c; padPrevAct[gi] = c; padPrevStart[gi] = c._start; }
-    } catch { /* espelha o try/catch silencioso do original */ }
-    if (padWizAutoResume) { padWizAutoResume = false; if (ctx.menuDePausa()) ctx.retomar(); }
-  }
-
-  // ----- wizard: tick (roda a cada 30ms enquanto aberto) -----
-
-  function padWizTick(): void {
-    if (!padWiz) return;
-    wizDemoTick();
-    const pads = ctx.getGamepads() ?? [];
-    if (padWiz.gi < 0) {
-      for (const gp of pads) {
-        if (gp && gp.buttons.some((b) => b && b.pressed)) {
-          padWiz.gi = gp.index; padWiz.id = gp.id; padWiz.baseWait = true;
-          wizSay(t('pad.wiz.releaseAll', { id: gp.id }));
-          break;
-        }
-      }
-      return;
-    }
-    const gp = pads[padWiz.gi];
-    if (!gp) return; // controle desconectado (ou índice ainda não populado): congela até voltar
-    if (padWiz.baseWait) {
-      if (!gp.buttons.some((b) => b && b.pressed)) {
-        padWiz.baseWait = false;
-        padWiz.base = { b: gp.buttons.map((x) => !!(x && x.pressed)), a: gp.axes.slice() };
-        padWiz.step = 0;
-        wizPrompt();
-      }
-      return;
-    }
-    const base = padWiz.base!;
-    if (padWiz.release) {
-      const idle = !gp.buttons.some((b, i) => b && b.pressed && !base.b[i]) && gp.axes.every((v, i) => Math.abs((v || 0) - base.a[i]) < 0.35);
-      if (idle) { padWiz.release = false; wizPrompt(); }
-      return;
-    }
-    // eixo em rastreio (~240ms): classifica pelo COMPORTAMENTO — varia continuamente = analógico (limiar por
-    // sinal); salta e FICA CONSTANTE = D-pad/POV hat (valor exato, ±0.13).
-    if (padWiz.axTrack) {
-      const t = padWiz.axTrack; const v = gp.axes[t.i] || 0;
-      if (Math.abs(v - t.last) > 0.03) t.changes++;
-      t.last = v;
-      if (Math.abs(v - base.a[t.i]) > Math.abs(t.v - base.a[t.i])) t.v = v;
-      if (++t.ticks >= 8) {
-        const pv = t.v; padWiz.axTrack = null;
-        wizBind(t.changes >= 2 ? { ax: t.i, s: pv > 0 ? 1 : -1 } : { av: t.i, v: Math.round(pv * 10000) / 10000 });
-      }
-      return;
-    }
-    for (let i = 0; i < gp.buttons.length; i++) {
-      if (gp.buttons[i] && gp.buttons[i]!.pressed && !base.b[i]) { wizBind({ b: i }); return; }
-    }
-    for (let i = 0; i < gp.axes.length; i++) {
-      const v = gp.axes[i] || 0;
-      if (Math.abs(v - base.a[i]) > 0.45) { padWiz.axTrack = { i, v, last: v, changes: 0, ticks: 0 }; return; }
-    }
-  }
+  const closePadWiz = (save: boolean): void => assistente.fechar(save);
+  const padWizTick = (): void => assistente.tique();
 
   const cancelBtn = ctx.$<HTMLButtonElement>('#padwiz-cancel');
   if (cancelBtn) cancelBtn.addEventListener('click', () => closePadWiz(false));
@@ -579,7 +446,7 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
   // ----- poll (chamado a cada frame do loop) -----
 
   function pollPads(): void {
-    if (padWiz) return; // durante o wizard, os pads falam só com ele
+    if (assistente.estado()) return; // durante o wizard, os pads falam só com ele
     const pads = ctx.getGamepads();
     if (!pads) return;
     if (ctx.isAttractActive()) {
@@ -707,5 +574,5 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
     }
   }
 
-  return { pollPads, openPadWiz, openPadWizFor, closePadWiz, padWizTick, padMapFor, getPadWiz: () => padWiz };
+  return { pollPads, openPadWiz, openPadWizFor, closePadWiz, padWizTick, padMapFor, getPadWiz: () => assistente.estado() };
 }

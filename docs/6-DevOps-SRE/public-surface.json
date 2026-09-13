@@ -469,6 +469,13 @@
     "registrarMapeamentoDoPad",
     "tabelaDoPad"
   ],
+  "input/pad-wizard.ts": [
+    "PADWIZ_ORDER",
+    "PadWizard",
+    "PadWizardCtx",
+    "criarAssistenteDoPad",
+    "mapaDoPad"
+  ],
   "input/pointer-space.ts": [
     "DoCentro",
     "EmFracao",
@@ -857,6 +864,10 @@
     "spriteTexFor",
     "worldTexFor",
     "worldToTextureDirect"
+  ],
+  "render/low-vision-drawing.ts": [
+    "DesenhoDeBaixaVisao",
+    "desenharBaixaVisao"
   ],
   "render/lq-filter.ts": [
     "LqFilterCtx",

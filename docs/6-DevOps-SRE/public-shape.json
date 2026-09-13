@@ -727,6 +727,25 @@
     "type MapeamentoDoPad": "(jogadores: number, assento: number) => Partial<Record<Action, number | null>> | null",
     "type TabelaDoPad": "Readonly<Record<Action, Binding<number>>>"
   },
+  "input/pad-wizard.ts": {
+    "interface PadWizardCtx": [
+      "aoFechar?",
+      "aoPasso?",
+      "aoTique?",
+      "dizer",
+      "getGamepads",
+      "progresso",
+      "rotuloDaAcao",
+      "srAlert"
+    ],
+    "interface PadWizard": [
+      "abrir",
+      "abrirPara",
+      "estado",
+      "fechar",
+      "tique"
+    ]
+  },
   "input/pointer-space.ts": {
     "interface RectLike": [
       "left"
@@ -1304,6 +1323,9 @@
       "roleOf",
       "sprites"
     ]
+  },
+  "render/low-vision-drawing.ts": {
+    "type DesenhoDeBaixaVisao": "'haze' | 'tunnel' | 'macular' | 'diabetic'"
   },
   "render/lq-filter.ts": {
     "interface LqFilterCtx": [
