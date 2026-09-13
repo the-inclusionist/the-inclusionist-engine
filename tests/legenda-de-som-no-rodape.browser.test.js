@@ -93,6 +93,14 @@ describe('the sound caption', () => {
     expect(legenda().hidden, 'the caption stayed over the game').toBe(true);
   });
 
+  it('🔴 [Right] a long caption stays for its words — eight words are still there after the 2600 ms floor (plan phase 5c)', async () => {
+    motor.legendarSom('Uma porta de madeira velha rangendo bem devagar');
+    await esperar(2900);
+    expect(legenda().hidden, 'the long caption left before a child could read it').toBe(false);
+    await esperar(1300); // 4000 ms at 500 ms a word
+    expect(legenda().hidden, 'the long caption did not leave after its own time').toBe(true);
+  });
+
   it('🎯 [Right] a new caption gets its own time — it does not leave with the previous one\'s', async () => {
     motor.legendarSom('Sino');
     await esperar(2000);
@@ -122,3 +130,4 @@ describe('the sound caption', () => {
 //   L6 the one-line rule for legend + explanation only     🔴 beside the explanation
 //   L7 written in the region, not the footer               🔴 five
 //   L8 a new caption keeps the old one's timer             🔴 own time — FIRST SURVIVED: no case gave two captions in a row
+//   B1 a fixed 2600 ms again (plan phase 5c)                🔴 a long caption stays for its words

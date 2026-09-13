@@ -88,6 +88,7 @@ import { screenBaseSize } from '../core/screens.js';
 import { OVERLAY_SCOPE_SELECTOR } from '../ui/settings-panel.js';
 import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
+import { duracaoDaLegenda } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
 import { carimbarOrigem, origemDoEvento } from '../input/origem-sintetica.js';
@@ -2387,10 +2388,9 @@ export function createGame(o: CreateGameOptions): Engine {
   /*
    * THE SOUND CAPTION (study item D3). In the footer column, above the button legend and the explanation (ADR-0164 rule 4:
    * «the sound caption above, the explanation below it»); `aria-hidden`, because whoever listens heard the sound itself.
-   * 📌 Its time on screen is the soccer game's, 2600 ms — the longer of the two the consumers had measured in play; a new
-   * caption restarts it.
+   * 📌 Its time on screen is a child's reading time for its words, never under the 2600 ms the games had measured in play
+   * (`core/caption-duration`, plan phase 5c); a new caption restarts it.
    */
-  const LEGENDA_DE_SOM_MS = 2600;
   let legendaDeSom: HTMLElement | null = null;
   let apagarLegendaDeSom: ReturnType<typeof setTimeout> | null = null;
   function legendarSom(texto: string): void {
@@ -2407,7 +2407,7 @@ export function createGame(o: CreateGameOptions): Engine {
     casaDaLegenda.textContent = texto;
     casaDaLegenda.hidden = false;
     if (apagarLegendaDeSom !== null) clearTimeout(apagarLegendaDeSom);
-    apagarLegendaDeSom = setTimeout(() => { casaDaLegenda.hidden = true; casaDaLegenda.textContent = ''; }, LEGENDA_DE_SOM_MS);
+    apagarLegendaDeSom = setTimeout(() => { casaDaLegenda.hidden = true; casaDaLegenda.textContent = ''; }, duracaoDaLegenda(texto));
   }
   /** O rodapé diz UMA explicação de cada vez: a do ícone apontado, ou o motivo de um item travado (ADR-0161). */
   function escreverNoRodape(texto: string | null): void {

@@ -68,6 +68,11 @@
   "core/anel.ts": [
     "passoNoAnel"
   ],
+  "core/caption-duration.ts": [
+    "LEGENDA_MINIMA_MS",
+    "MS_POR_PALAVRA",
+    "duracaoDaLegenda"
+  ],
   "core/collision.ts": [
     "CollisionCtx",
     "caneBlockPx",
