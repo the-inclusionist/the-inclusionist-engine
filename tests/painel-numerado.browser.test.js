@@ -99,8 +99,9 @@ describe('panel items are numbered with the spoken index (ADR-0158)', () => {
     painel.abrir();
     const linha0 = painel.casca.lista.querySelector('.ctrl-row');
     // 📏 Chromium RESOLVES `attr()` in the computed `content` — so this reads the number actually drawn, not a rule.
-    for (const [el, n] of [[painel.casca.fechar, '1'], [linha0, '2'], [painel.casca.reset, '7']]) {
-      expect(getComputedStyle(el, '::before').content, 'the number is not drawn, or enters the name').toBe(`"${n}" / ""`);
+    // «Voltar» also draws its arrow after the number — out of the name too (ADR-0159 rule 12)
+    for (const [el, desenho] of [[painel.casca.fechar, '1  ↩'], [linha0, '2'], [painel.casca.reset, '7']]) {
+      expect(getComputedStyle(el, '::before').content, 'the number is not drawn, or enters the name').toBe(`"${desenho}" / ""`);
     }
     expect(painel.casca.card.querySelector('.item-num').getAttribute('aria-hidden')).toBe('true');
   });

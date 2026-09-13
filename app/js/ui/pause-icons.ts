@@ -533,10 +533,24 @@ export function pmBtnMarkup(
 ): string {
   const dyn = b.letra || b.nivel;
   const lbl = dynLabel(b) ?? (dyn ? (b.lbl ?? '') : tr('pause.' + b.act));
+  const glifo = GLIFO_DO_ITEM[b.act];
   return '<button class="pm-btn' + (b.letra ? ' pm-letra' : '') + (b.nivel ? ' pm-nivel' : '') +
     '" role="menuitem" type="button" data-act="' + b.act + '"' +
+    (glifo ? ' data-glifo="' + glifo + '"' : '') +
     (dyn ? '' : (' data-i18n="pause.' + b.act + '"')) + '>' + lbl + '</button>';
 }
+
+/**
+ * THE GLYPH OF EACH PAUSE ITEM, drawn by the stylesheet and never part of the name (ADR-0159 rule 12: «An emoji or
+ * symbol in a menu is decorative and hidden from narration»). It lived at the start of each dictionary value, so the
+ * engine's narration and a screen reader both said «⚙ Inclusion settings». The glyph is the same in every language;
+ * the words stay in the dictionary.
+ */
+export const GLIFO_DO_ITEM: Readonly<Record<string, string>> = {
+  resume: '▶', acessibilidade: '♿', options: '⚙', opcoesdojogo: '🎮', pmback: '↩', tipo: '🔤', addplayer: '👥',
+  audio: '🦻', som: '🔊', motora: '♿', anim: '🎞', visual: '🎨', empatia: '🫂', ajuda: '❓', print: '📷', quit: '🚪',
+  caa: '🔠',
+};
 
 /**
  * Qual das duas listas o cartão de pausa está mostrando.

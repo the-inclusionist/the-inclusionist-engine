@@ -190,6 +190,8 @@ export function aplicarRotulos(casca: PanelShell, r: PanelLabels): void {
   casca.lista.setAttribute('aria-label', r.rotuloDaLista);
   casca.reset.textContent = r.rotuloReset;
   casca.fechar.textContent = r.rotuloFechar;
+  // the arrow is drawn by the stylesheet, out of the name (ADR-0159 rule 12)
+  casca.fechar.setAttribute('data-glifo', '↩');
   // A introdução do painel é o texto de REPOUSO do rodapé (CLAUDE.md §4), nunca um `<p>` no topo.
   // ⚠️ A AUSÊNCIA TEM DE APAGAR, e não só deixar de escrever: numa retradução para um dicionário que não tem
   // a chave, o atributo antigo sobreviveria e o rodapé descansaria no idioma anterior.

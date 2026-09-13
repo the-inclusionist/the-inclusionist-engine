@@ -570,6 +570,15 @@ the menus».
 **What to do:** a game that does not play well by mouse or touch passes `controleNaTela: true`. Menus need nothing: their
 items take clicks and touches.
 
+## S · Pause item glyphs left the dictionary (ADR-0159 rule 12)
+
+**VALUES, no shape.** The seventeen `pause.<act>` values in pt/en/es no longer start with a glyph («Inclusion settings»,
+not «⚙ Inclusion settings»). The glyph is `ui/pause-icons.GLIFO_DO_ITEM`, written as `data-glifo` on each `.pm-btn` and on
+a panel's `.overlay__back`, and drawn by `style.css` in the number's `::before` with empty alternative text.
+
+**What to do:** if your own menu shows `t('pause.<act>')` and relied on its glyph, draw the glyph yourself out of the name
+(`data-glifo` with the engine stylesheet does it); if you matched a glyph in those strings, match the words.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

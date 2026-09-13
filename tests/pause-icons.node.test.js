@@ -502,7 +502,7 @@ describe('markup dos ícones e do menu', () => {
   it('botão de rótulo ESTÁTICO é traduzido e ganha data-i18n; o dinâmico não ganha (senão o applyDom o apaga)', () => {
     const t = (k) => 'T:' + k;
     expect(pmBtnMarkup({ act: 'quit', lbl: 'x' }, SEM_DIN, t))
-      .toBe('<button class="pm-btn" role="menuitem" type="button" data-act="quit" data-i18n="pause.quit">T:pause.quit</button>');
+      .toBe('<button class="pm-btn" role="menuitem" type="button" data-act="quit" data-glifo="🚪" data-i18n="pause.quit">T:pause.quit</button>');
     const letra = pmBtnMarkup({ act: 'letra', lbl: '🔠 ABC', letra: true }, SEM_DIN, t);
     expect(letra).toContain('pm-letra');
     expect(letra).not.toContain('data-i18n');
