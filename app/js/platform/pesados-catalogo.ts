@@ -152,34 +152,12 @@ const WEBGAZER: readonly Pesado[] = Object.freeze([
 ]);
 
 /**
- * O RUNTIME DE VOZ — **piper**, decidido no ADR-0127, e o Dev disse para que serve: «PiperTTS é o que será
- * usado para ler para o usuário. Precisa ser carregado com a engine».
- *
- * 🔴 ATÉ AQUI ELE SÓ CHEGAVA PELA PORTA DO CARTUCHO (ADR-0094), e três dos seis jogos não a declaram — nesses,
- * a engine descarregava 241 MB de modelos e não tinha com que os tocar. Descer os modelos sem o motor é a
- * mesma armadilha do `.onnx` sem o `.onnx.json`, um nível acima.
- *
- * 📏 MEDIDO EM 2026-09-09 em jsDelivr, versões FIXADAS, todos 200 com `Access-Control-Allow-Origin: *`.
- * ⚠️ SÃO CINCO FICHEIROS E NÃO UM: o `piper-tts-web.js` é só a entrada (23 KB) — os dois pedaços com hash no
- * nome são o corpo e a tabela de vozes, e o `onnxruntime-web` é quem corre o modelo. Trazer só a entrada dá
- * um módulo que importa o que não está lá.
- * 📌 `ort-wasm-simd-threaded` e não o `jsep`: o jsep é o caminho WebGPU e pesa 21,7 MB contra 11,2 — e o
- * hardware do pilar 1 não é onde a WebGPU se ganha.
+ * THE VOICE FILES THE PROVIDER ASKS FOR, beside the models: its phonemizer. The runtime itself (`piper-tts-web` and
+ * `onnxruntime-web`) is NOT here: the game bundles it and that bundle is what runs (ADR-0184, which supersedes the part of
+ * ADR-0127 that put the runtime in this catalogue).
  */
-const PP = 'https://cdn.jsdelivr.net/npm/@mintplex-labs/piper-tts-web@1.0.5/dist';
-const ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist';
 const FONEMIZADOR = 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize';
 const PIPER: readonly Pesado[] = Object.freeze([
-  { id: 'voz:runtime', url: `${PP}/piper-tts-web.js`, bytes: 23_646,
-    sha256: '531aa8a16605c07e5d791dfea540cadee1bd457b4a75c5303f01e843722f700f' },
-  { id: 'voz:runtime:corpo', url: `${PP}/piper-o91UDS6e.js`, bytes: 158_217,
-    sha256: 'b5ac96981729547606fd026b8e3829aad81e9e3c22308869d50473259c563283' },
-  { id: 'voz:runtime:tabela', url: `${PP}/voices_static-D_OtJDHM.js`, bytes: 147_377,
-    sha256: '72cbd46fecaa067a09ed9455ca04b970d722810905d90bb2421e0911a5c4d758' },
-  { id: 'voz:runtime:ort', url: `${ORT}/ort.min.js`, bytes: 446_284,
-    sha256: 'be6e560b64c03c99252eedc0e1989e9e51e44d9f191e7655c9bf011bf9f576c8' },
-  { id: 'voz:runtime:ort-wasm', url: `${ORT}/ort-wasm-simd-threaded.wasm`, bytes: 11_246_032,
-    sha256: '207d02be4591c156b0a98f024f3d58005b5b04c92274d759fb390338c63559ea' },
   /*
    * The PHONEMIZER (issue #173): espeak-ng in WebAssembly, which turns the text into the phonemes the voice model reads, and
    * its pronunciation data. At the provider's own default addresses (`TtsSession.WASM_LOCATIONS`); `platform/tts` asks for

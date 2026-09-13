@@ -39,6 +39,14 @@ describe('the phonemizer, from the delivery', () => {
     }
   });
 
+  it('🔴 [Zero] the voice runtime is not downloaded — the game\'s bundle is what runs (ADR-0184)', () => {
+    const runtime = PESADOS.filter((p) => p.url && /piper-tts-web|onnxruntime-web/.test(p.url)).map((p) => p.id);
+    expect(runtime, 'a voice-runtime file nothing reads is still downloaded').toEqual([]);
+    // the pair: what the provider asks for stays — the phonemizer and the voice models
+    expect(PESADOS.some((p) => p.id === 'voz:fonemizador')).toBe(true);
+    expect(PESADOS.filter((p) => p.url && p.url.includes('huggingface.co')).length).toBeGreaterThan(0);
+  });
+
   it('🔴 [Right] a delivery path maps back to the upstream address the fetcher keeps it under', () => {
     for (const p of PESADOS.filter((x) => x.url)) {
       expect(chaveDaEntrega(`https://escola.example/jogo/${caminhoNaEntrega(p.url)}`)).toBe(p.url);

@@ -68,7 +68,7 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
  */
 const BUSCAS_A_MAO = {
   'platform/pesados-catalogo.ts': {
-    urls: 6,
+    urls: 4,
     porque:
       'OS RUNTIMES QUE A ENGINE PASSOU A DESCER NA INSTALAÇÃO (ADR-0124, ADR-0127, ADR-0132, decisões do Dev ' +
       'de 2026-09-09). ⚠️ CDN FIXADA É PERMITIDA e o ADR-0116 diz porquê: o pilar 8 proíbe depender da rede ' +
@@ -76,13 +76,13 @@ const BUSCAS_A_MAO = {
       '📌 O `5` são as CINCO ORIGENS, e cada uma tem de ser defensável sozinha: (1) `@mediapipe/tasks-vision` ' +
       'em jsDelivr — o runtime de visão; (2) `storage.googleapis.com/mediapipe-models` — os modelos `.task`, ' +
       'que vivem noutro host porque o Google os publica assim, e sem eles o runtime não reconhece nada; ' +
-      '(3) `@mintplex-labs/piper-tts-web` e (4) `onnxruntime-web`, também em jsDelivr, que são o motor de voz ' +
-      'e quem o corre; e (5) `webgazer.cs.brown.edu`, que VOLTOU pelo ADR-0132 porque o MediaPipe dá a posição ' +
+      'the voice runtime (`@mintplex-labs/piper-tts-web`, `onnxruntime-web`) LEFT with ADR-0184 — the game bundles it; ' +
+      'and (3) `webgazer.cs.brown.edu`, que VOLTOU pelo ADR-0132 porque o MediaPipe dá a posição ' +
       'do íris e não o ponto no ecrã. ' +
       'The WebGazer lives here only since #169: `ui/webcam.ts` reads it from the checked cache instead of fetching it. ' +
-      '(6) `@diffusionstudio/piper-wasm` in jsDelivr — the voice provider\'s phonemizer at its own default address (#173), ' +
+      '(4) `@diffusionstudio/piper-wasm` in jsDelivr — the voice provider\'s phonemizer at its own default address (#173), ' +
       'fetched by the BUILD into the delivery; the device asks for it at `pesados/`. ' +
-      'Uma sétima origem é um fornecedor novo a entrar sem decisão. Sai desta lista quando os bytes forem ' +
+      'A fifth origin is a new supplier entering without a decision. Sai desta lista quando os bytes forem ' +
       'servidos de origem própria',
   },
   'platform/voice-plan.ts': {

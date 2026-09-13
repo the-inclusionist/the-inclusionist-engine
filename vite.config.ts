@@ -124,7 +124,7 @@ export default defineConfig({
           // buscador desce-os na instalacao e sem rota o `import()` deles iria a rede outra vez. ⚠️ O alcance
           // e por PACOTE e nao por dominio — `cdn.jsdelivr.net` inteiro seria a porta larga que a #119 fechou.
           {
-            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/(@mediapipe\/tasks-vision|@mintplex-labs\/piper-tts-web|onnxruntime-web)@/,
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/npm\/@mediapipe\/tasks-vision@/, // the voice runtime left the catalogue (ADR-0184)
             handler: 'CacheOnly',
             options: {
               cacheName: 'incl-pesados-v2',
