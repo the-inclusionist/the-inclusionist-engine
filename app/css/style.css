@@ -695,7 +695,13 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 
 /* E13: controles de toque (mobile) — overlay nas bordas inferiores, não cobre o centro */
 .touch{position:absolute;inset:auto 0 0 0;z-index:14;display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:6px 8px;pointer-events:none}
-.touch-pad{display:flex;gap:8px;pointer-events:auto}
+/* ADR-0160: the action buttons sit by ACTION NUMBER — 1 and 4 on top, 2 and 3 below — whatever slot fires them.
+   `margin-left:auto` keeps the block on the right when the game names no direction (ADR-0162). */
+.touch-pad{display:grid;grid-template-areas:"a1 a4" "a2 a3";gap:8px;margin-left:auto;pointer-events:auto}
+.touch-btn[data-acao="action1"]{grid-area:a1}
+.touch-btn[data-acao="action4"]{grid-area:a4}
+.touch-btn[data-acao="action2"]{grid-area:a2}
+.touch-btn[data-acao="action3"]{grid-area:a3}
 .touch-btn{width:56px;height:56px;min-width:var(--tap);min-height:var(--tap);border-radius:12px;border:2px solid rgba(255,255,255,.75);background:rgba(13,17,32,.92);color:#fff;font-size:1.4rem;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-user-select:none;user-select:none;cursor:pointer}
 .touch-btn:active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .touch-jump{background:rgba(18,74,52,.94)}

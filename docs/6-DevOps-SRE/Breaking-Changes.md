@@ -506,6 +506,17 @@ passes it to the new optional `MenuNavCtx.explicarItem` / `PauseIconsCtx.explica
 **What to do:** if your code or tests read `.pm-btn[hidden]` to know what a game offers, read
 `[aria-disabled="true"]` instead.
 
+## N · The virtual pad draws only what the game names, by action number (ADR-0162, ADR-0160)
+
+**Behaviour, no shape — and it reverses the minimum of section K.** `input/touch.montarControleDeToque` draws a
+direction or an action button only when the game's `preset` names the action its slot fires; SELECT and START stay
+unconditional. Unnamed buttons no longer get the physical face label. Each action button carries `data-acao`, and the
+stylesheet places them in a 2×2 block by action number: 1 and 4 on top, 2 and 3 below. The `touch.dir.*` keys for
+up/down/left/right are gone.
+
+**What to do:** declare in `preset` every position your game — and its menus — needs by touch: at least the
+directions and `action2`/`action3` if a touch-only child must move through the pause card and panels.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

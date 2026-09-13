@@ -10,6 +10,9 @@
 // asynchronously, and the pad is drawn in that gap. The labels are written as attributes at draw time, so
 // nothing corrects them afterwards unless the pad is drawn again.
 //
+// 🔴 SINCE ADR-0162 THE ENGINE NAMES NO BUTTON — only named ones are drawn, with the game's word. The redraw still
+// matters: a game whose words follow the language (the quiz reads them through getters) was drawn in the gap too.
+//
 // 📌 OWN FILE, for the reason the pause-card file measured: a clean module registry is what makes the gap
 // exist. In a file where an earlier case already awaited `idiomaPronto()`, the `en` chunk is warm and this case
 // would pass with the fix undone.
@@ -48,7 +51,7 @@ const declaracaoValida = () => ({
 });
 
 describe('the virtual pad speaks the boot language', () => {
-  it('🔴 [Zero] with `en` stored, the arms the game gave no word to are named in English', async () => {
+  it('🔴 [Zero] with `en` stored, the pad shows the game\'s words in English — drawn again once the language arrives', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { idiomaPronto, getLocale } = await import('../app/js/core/i18n.js');
     const raiz = document.createElement('div');
@@ -56,23 +59,29 @@ describe('the virtual pad speaks the boot language', () => {
       + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
     document.body.appendChild(raiz);
 
-    // ⚠️ A two-action preset, the quiz shape: no word for any direction, so every arm is named by the ENGINE.
+    // ⚠️ Engine keys stand in for a game's words — what is measured is the LANGUAGE, not the meaning (an engine test may
+    // not lean on the quiz's vocabulary, ADR-0027). The quiz's shape: words read through GETTERS, so they follow the language — and the pad was drawn before it came.
+    const { t } = await import('../app/js/core/i18n.js');
     createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(),
       host: { doc: document, win: window },
       baixarPesados: false,
-      preset: { action1: { label: 'Confirm' }, action2: { label: 'Back' } },
+      preset: {
+        up: { get label() { return t('menu.visual'); } }, down: { get label() { return t('menu.empathy'); } },
+        action2: { get label() { return t('menu.close'); } }, action3: { get label() { return t('menu.back'); } },
+      },
     });
 
     await idiomaPronto();
     expect(getLocale(), 'the en chunk did not load; the case would measure nothing').toBe('en');
 
-    const nomes = ['up', 'down', 'left', 'right']
+    const nomes = ['up', 'down']
       .map((d) => document.querySelector(`#touch-cross .dpad-${d}`)?.getAttribute('aria-label') ?? '');
-    expect(nomes).toEqual(['Up', 'Down', 'Left', 'Right']);
+    expect(nomes).toEqual(['Visual accessibility', 'Empathy mode']);
+    expect([...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')].map((b) => b.textContent).sort()).toEqual(['Back', 'Close']);
 
     // 📌 THE PAIR: the rebuilt buttons must still be wired, or the language fix would leave a dead pad.
-    const confirmar = [...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')].find((b) => b.textContent === 'Confirm');
+    const confirmar = [...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')].find((b) => b.textContent === 'Close');
     const { keys } = await import('../app/js/input/state.js');
     const antes = new Set(keys);
     confirmar.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1 }));
@@ -84,7 +93,7 @@ describe('the virtual pad speaks the boot language', () => {
 });
 
 // ===== MUTATIONS CHECKED (2026-09-12) =====
-// 1. remove the `void idiomaPronto().then(…)` redraw from `create-game`   → red: the arms stay «Cima/Baixo…»
+// 1. remove the `void idiomaPronto().then(…)` redraw from `create-game`   → red: the pad stays in the fallback language
 // 2. redraw without `ligacoesDoToque.rewire()`                            → red, by the PAIR only: the labels are
 //    right and the redrawn buttons are dead. 🎯 It first SURVIVED, while the pair only counted buttons — a count
 //    does not prove a wire.

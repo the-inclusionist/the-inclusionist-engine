@@ -50,25 +50,25 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
     expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(4);
   });
 
-  it('🔴 [Right] o QUIZ recebe o MÍNIMO — quatro direções e quatro botões (ADR-0157)', () => {
-    // 🔴 ERA O CONTRÁRIO (ADR-0143): «um quiz quer dois alvos grandes, não um direcional de plataforma». O Dev abriu o
-    // quiz num ecrã de toque e não conseguiu andar em menu nenhum — o pad só tinha START. As direções e as acções 2 e 3
-    // são o que os menus pedem, e existem num jogo que não as usa em jogo.
+  it('🔴 [Right] duas acções e nenhuma direção: DOIS botões e NENHUM braço (ADR-0162)', () => {
+    // O ADR-0157 dava o mínimo a todo jogo (direções e quatro botões); o Dev: «Vale para todos os botões: somente
+    // aparecem se o jogo os nomeia.»
     const raiz = montar(DUAS_ACOES, { direcional: 'cruz' });
-    expect(raiz.querySelectorAll('.touch-arm')).toHaveLength(4);
-    expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(4);
+    expect(raiz.querySelectorAll('.touch-arm'), 'um braço que o jogo não nomeou').toHaveLength(0);
+    expect(raiz.querySelector('#touch-cross'), 'uma cruz sem braço nenhum').toBeNull();
+    expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(2);
   });
 
-  it('🎯 [Right] e cada botão recebe o nome que `rotuloDoSlot` lhe dá — o do jogo ou o do botão físico, decide a raiz', () => {
+  it('🎯 [Right] cada botão recebe o nome que `rotuloDoSlot` lhe dá, e leva a ACÇÃO que o põe no lugar (ADR-0160)', () => {
     const raiz = montarControleDeToque(ctx, {
       mapa: TOUCH_DEFAULT,
       acoesDoJogo: new Set(['action1']),
       rotuloDoSlot: (s) => (s === 'b2' ? 'Confirmar' : `face ${s}`),
     });
     hospedeiro.appendChild(raiz);
-    const nomes = [...raiz.querySelectorAll('.touch-btn[data-btn]')].map((b) => b.textContent);
-    expect(nomes).toContain('Confirmar');
-    expect(nomes.filter((n) => n.startsWith('face'))).toHaveLength(3);
+    const botoes = [...raiz.querySelectorAll('.touch-btn[data-btn]')];
+    expect(botoes.map((b) => b.textContent)).toEqual(['Confirmar']);
+    expect(botoes[0].dataset.acao, 'the button does not say which action places it').toBe('action1');
   });
 
   it('⚠️ [Interface] `data-btn` casa com o `\'b\' + dataset.btn` que o `touch-bindings` recompõe', () => {
@@ -113,12 +113,11 @@ describe('ADR-0143 · a FORMA vem do que o jogo declara', () => {
 });
 
 describe('ADR-0143 §4 · o silêncio acaba', () => {
-  it('🔴 [Zero] sem `preset`: o MÍNIMO é montado E a linha diz que faltam as palavras (ADR-0157)', () => {
-    // As duas metades, como antes: o pad existe (senão ninguém anda nos menus por toque) e a lacuna diz-se (os botões
-    // mostram as letras do controle físico, e uma criança não sabe o que cada um faz neste jogo).
+  it('🔴 [Zero] sem `preset`: só SELECT e START, E a linha diz o que falta (ADR-0162)', () => {
     const raiz = montar([], { direcional: 'cruz' });
-    expect(raiz.querySelectorAll('.touch-arm')).toHaveLength(4);
-    expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(4);
+    expect(raiz.querySelectorAll('.touch-arm')).toHaveLength(0);
+    expect(raiz.querySelectorAll('.touch-btn[data-btn]')).toHaveLength(0);
+    expect(raiz.querySelector('#touch-start')).not.toBeNull();
     const linhas = lacunasDoToque({ mapa: TOUCH_DEFAULT, acoesDoJogo: new Set() });
     expect(linhas).toHaveLength(1);
     expect(linhas[0], 'a linha não nomeia a saída').toMatch(/preset/);

@@ -84,7 +84,6 @@ import type { AlcanceDoFiltro } from '../render/port.js';
 import { LOGICAL_W } from '../core/constants.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
-import { PAD_DESIGNS } from '../input/devices.js';
 import { carimbarOrigem, origemDoEvento } from '../input/origem-sintetica.js';
 import { montarPassos, atualizarPassos, passoSeguinte, linhaDeControle, rotularLinha } from '../ui/panel-widgets.js';
 import { escaparHtml } from '../core/escape-html.js';
@@ -2179,15 +2178,6 @@ export function createGame(o: CreateGameOptions): Engine {
 
   const acoesDoCartucho = (): Set<string> => new Set(cartucho.preset ? presetActions(cartucho.preset) : []);
 
-  /**
-   * O nome de um slot que o jogo NÃO nomeia (ADR-0157): a direção por extenso, ou a legenda do botão físico do desenho
-   * que a criança escolheu (A/B/X/Y, 0–3, ✕○□△). Nunca o id da posição (ADR-0074).
-   */
-  function rotuloSemPalavra(slot: string): string {
-    if (slot === 'up' || slot === 'down' || slot === 'left' || slot === 'right') return t(`touch.dir.${slot}`);
-    const face = PAD_DESIGNS[toque.getPadDesign()]?.[slot.slice(1)]?.[0] ?? PAD_DESIGNS.generic![slot.slice(1)]?.[0] ?? '';
-    return face;
-  }
 
   function desenharPad(): void {
     if (!toqueUsavel || !hospedeiroDoToque) return;
@@ -2201,7 +2191,8 @@ export function createGame(o: CreateGameOptions): Engine {
         // `start` é de SISTEMA e a engine pode nomeá-lo (`core/actions` SYSTEM); os outros slots levam a palavra
         // CURTA do jogo, porque vivem dentro de um botão de dedo e não numa lista.
         rotuloDoSlot: (slot) => (slot === 'start' ? t('touch.start') : slot === 'select' ? t('touch.select')
-            : (curto(mapa[slot] as Action) ?? rotuloSemPalavra(slot))),
+            // só se desenha o que o jogo nomeia (ADR-0162), logo a palavra dele existe sempre
+            : (curto(mapa[slot] as Action) ?? '')),
         direcional: store.get(store.KEYS.padDir, 'stick') === 'cross' ? 'cruz' : 'analogico',
       },
     );

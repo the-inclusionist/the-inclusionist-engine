@@ -48,6 +48,13 @@ describe('the quiz, heard', () => {
     expect(falas.slice(antes)).toEqual(['2 Galinha']);
   });
 
+  it('🔴 [Right] the quiz NAMES its positions, so its virtual pad can move through questions and menus (ADR-0162)', () => {
+    // Since a pad button appears only when the game names it, a quiz with no `preset` would have SELECT and START only.
+    expect([...document.querySelectorAll('#touch-controls .touch-btn[data-btn]')].map((b) => b.textContent).sort())
+      .toEqual(['Confirmar', 'Voltar']);
+    expect(document.querySelector('#touch-controls #touch-stick, #touch-controls #touch-cross'), 'no directional on the quiz').not.toBeNull();
+  });
+
   it('🎯 [Right] the options DRAW their numbers — the counter the pause card uses', () => {
     const lista = document.querySelector('.quiz-alts');
     const opcao = document.querySelector('.quiz-alt');

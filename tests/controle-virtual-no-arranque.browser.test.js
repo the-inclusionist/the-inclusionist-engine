@@ -31,8 +31,13 @@ const declaracao = () => ({
   targetsOf: () => [{ x: 0, y: 0 }],
 });
 
-/** Two actions, and nothing else — the quiz shape. `action1` sits on slot b2 and `action2` on b0 by default. */
-const DUAS_ACOES = { action1: { label: 'Confirm' }, action2: { label: 'Back' } };
+/**
+ * What a game with menus declares since ADR-0162 — a pad button appears only when the game names it, so a game that
+ * names no direction cannot move through a menu by touch. `action2` sits on slot b0, `action3` on b1, `action4` on b3.
+ */
+const DUAS_ACOES = { up: { label: 'Up' }, down: { label: 'Down' }, action2: { label: 'Confirm' }, action3: { label: 'Back' }, action4: { label: 'Menu' } };
+/** Two actions and no direction: the ADR-0162 boundary. */
+const SO_DUAS = { action1: { label: 'Jump' }, action2: { label: 'Run' } };
 const PLATAFORMA = {
   up: { label: 'Up' }, down: { label: 'Down' }, left: { label: 'Left' }, right: { label: 'Right' },
   action1: { label: 'Jump' }, action2: { label: 'Run' },
@@ -66,15 +71,44 @@ describe('createGame mounts the virtual pad from the preset', () => {
     expect(pad().hidden, 'a pad born visible covers the game of whoever never touches it').toBe(true);
   });
 
-  it('🔴 [Right] a preset of two actions gets the MINIMUM pad — four buttons and a directional (ADR-0157)', () => {
-    expect(botoes()).toHaveLength(4);
-    expect(document.querySelector('#touch-cross, #touch-stick'), 'no directional: no menu can be moved by touch').not.toBeNull();
-    const nomes = botoes().map((b) => b.textContent);
-    // the game's own words where it has them…
-    expect(nomes).toEqual(expect.arrayContaining(['Confirm', 'Back']));
-    // …and the physical face label elsewhere — never an id
-    for (const n of nomes) expect(n, 'a pad button shows an action id').not.toMatch(/^action\d|^b\d$/);
-    expect(nomes.every((n) => n.trim() !== ''), 'a pad button with no label').toBe(true);
+  it('🔴 [Right] the pad draws exactly what the game NAMES, with the game\'s words (ADR-0162)', () => {
+    const nomes = botoes().map((b) => b.textContent).sort();
+    expect(nomes, 'a button the game did not name, or a named one missing').toEqual(['Back', 'Confirm', 'Menu']);
+    expect(document.querySelector('#touch-cross, #touch-stick'), 'the game named up and down: no directional').not.toBeNull();
+  });
+
+  it('🔴 [Boundary] two actions and no direction: two buttons and NO directional (ADR-0162)', () => {
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: SO_DUAS, setPhase: (p) => fases.push(p) });
+    try {
+      expect(botoes().map((b) => b.textContent).sort()).toEqual(['Jump', 'Run']);
+      expect(document.querySelector('#touch-cross, #touch-stick'), 'a directional the game never named').toBeNull();
+      expect(document.getElementById('touch-start'), 'SELECT and START stay: they are the doors of the pause').not.toBeNull();
+    } finally {
+      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+    }
+  });
+
+  it('🔴 [Right] the four action buttons sit by NUMBER — 1 and 4 on top, 2 and 3 below (ADR-0160)', async () => {
+    const { default: css } = await import('../app/css/style.css?raw');
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+    const QUATRO = { action1: { label: 'One' }, action2: { label: 'Two' }, action3: { label: 'Three' }, action4: { label: 'Four' } };
+    motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: QUATRO, setPhase: (p) => fases.push(p) });
+    pad().hidden = false;
+    try {
+      const caixa = (palavra) => botoes().find((b) => b.textContent === palavra).getBoundingClientRect();
+      const [um, dois, tres, quatro] = ['One', 'Two', 'Three', 'Four'].map(caixa);
+      expect(um.top, '1 is not above 2').toBeLessThan(dois.top);
+      expect(quatro.top, '4 is not above 3').toBeLessThan(tres.top);
+      expect(um.left, '1 is not left of 4').toBeLessThan(quatro.left);
+      expect(dois.left, '2 is not left of 3').toBeLessThan(tres.left);
+      expect(Math.abs(um.top - quatro.top), '1 and 4 are not one row').toBeLessThan(1);
+    } finally {
+      pad().hidden = true;
+      style.remove();
+      motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, preset: DUAS_ACOES, setPhase: (p) => fases.push(p) });
+    }
   });
 
   it('🔴 [Right] the START pill exists anyway — the pause is not declinable (ADR-0122)', () => {
@@ -284,11 +318,13 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
 });
 
 describe('mount() rebuilds the pad for the new cartridge', () => {
-  it('🔴 [Zero] without a preset: the MINIMUM pad, with face labels, AND `problems` says the words are missing', () => {
+  it('🔴 [Zero] without a preset: only SELECT and START, AND `problems` says what is missing (ADR-0162)', () => {
     motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO });
-    expect(botoes()).toHaveLength(4);
+    expect(botoes(), 'a button nobody named').toHaveLength(0);
+    expect(document.querySelector('#touch-cross, #touch-stick'), 'a directional nobody named').toBeNull();
     expect(document.getElementById('touch-start'), 'the pause lost its only touch door').not.toBeNull();
-    expect(motor.problems.some((l) => /sem `preset`: o controle virtual mostra só o mínimo/.test(l)), 'the gap was silent').toBe(true);
+    expect(document.getElementById('touch-select')).not.toBeNull();
+    expect(motor.problems.some((l) => /sem `preset`: o controle virtual mostra só SELECT e START/.test(l)), 'the gap was silent').toBe(true);
   });
 
   it('🎯 [Boundary] a platform preset gets the cross with its arms drawn the way the bindings light them', () => {
@@ -301,7 +337,7 @@ describe('mount() rebuilds the pad for the new cartridge', () => {
     for (const d of ['up', 'down', 'left', 'right']) {
       expect(cruz.querySelector(`.dpad-arm.dpad-${d}`), `arm ${d} without the classes that draw and light it`).not.toBeNull();
     }
-    expect(botoes()).toHaveLength(4);
+    expect(botoes().map((b) => b.textContent).sort(), 'the platform named two actions').toEqual(['Jump', 'Run']);
     expect(motor.problems.some((l) => /sem `preset`/.test(l)), 'the old cartridge\'s gap outlived it').toBe(false);
   });
 

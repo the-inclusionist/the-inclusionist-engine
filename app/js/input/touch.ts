@@ -475,11 +475,11 @@ const BOTOES = ['b0', 'b1', 'b2', 'b3'] as const;
  * ⚠️ NASCE ESCONDIDO, e não é detalhe: a alternância por modalidade é do `touch-bindings` — «toque/clique
  * MOSTRA; teclado/controle OCULTA». Um pad que nasce à vista cobre o jogo de quem nunca lhe vai tocar.
  *
- * 🔴 DESDE O ADR-0157 O PAD É SEMPRE O MÍNIMO: as quatro direções e os quatro botões de acção, mais SELECT e START.
- * Até ali ele desenhava só as posições do `preset`, e o quiz, que não declara nenhuma, tinha START e mais nada — o
- * Dev não conseguia navegar menu nenhum por toque. As direções, a acção 2 (confirmar) e a acção 3 (voltar) são o que
- * os menus pedem, e existem num jogo que não as usa em jogo. Quem dá o NOME a cada uma é `rotuloDoSlot`: a palavra
- * do jogo onde ele a tem, e a legenda do botão físico onde não tem.
+ * 🔴 SÓ O QUE O JOGO NOMEIA, desde o ADR-0162 — que desfez o mínimo do ADR-0157 (direções e quatro botões em todo
+ * jogo, com a legenda física nos sem nome): «Vale para todos os botões: somente aparecem se o jogo os nomeia.» SELECT
+ * e START ficam sempre, porque são as portas da pausa. ⚠️ Um jogo que não nomeia direção não anda nos menus por toque;
+ * por isso o `consumer-quiz` declara as posições que usa. Os quatro botões ficam em bloco 2×2 pelo NÚMERO da acção
+ * (ADR-0160): 1 e 4 em cima, 2 e 3 embaixo.
  *
  * Idempotente: montar duas vezes devolve o mesmo nó, com o conteúdo refeito para o mapa de agora.
  */
@@ -490,8 +490,10 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
   raiz.hidden = true;
   while (raiz.firstChild) raiz.removeChild(raiz.firstChild);
 
-  // (O ADR-0143 filtrava aqui pelas acções do jogo; o ADR-0157 fixou o mínimo — ver o cabeçalho.)
-  const direcoesVivas = [...DIRECOES];
+  // 🔴 SÓ O QUE O JOGO NOMEIA (ADR-0162, supersede o mínimo do ADR-0157): «Vale para todos os botões: somente aparecem
+  // se o jogo os nomeia.» Um botão na tela é uma promessa de que ele faz alguma coisa, e quem sabe isso é o jogo.
+  const nomeado = (slot: string): boolean => spec.acoesDoJogo.has(spec.mapa[slot] ?? '');
+  const direcoesVivas = DIRECOES.filter(nomeado);
   if (direcoesVivas.length) {
     const analogico = spec.direcional === 'analogico';
     const dir = ctx.criar('div');
@@ -520,7 +522,7 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
     raiz.appendChild(dir);
   }
 
-  const botoesVivos = [...BOTOES];
+  const botoesVivos = BOTOES.filter(nomeado);
   if (botoesVivos.length) {
     const losango = ctx.criar('div');
     losango.className = 'touch-pad';
@@ -530,6 +532,9 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
       // `b2` -> `2`, que é o que `'b' + dataset.btn` volta a compor no despacho. Escrever a ACÇÃO aqui
       // criaria uma segunda fonte para a mesma resposta, e o remapeamento da criança deixaria de valer.
       botao.dataset.btn = b.slice(1);
+      // O LUGAR SEGUE A ACÇÃO, não o slot (ADR-0160: 1 4 em cima, 2 3 embaixo): a folha de estilo põe cada botão na
+      // célula do seu número, e um slot remapeado leva o botão para o lugar da acção que passou a disparar.
+      botao.dataset.acao = spec.mapa[b] ?? '';
       botao.setAttribute('type', 'button');
       botao.setAttribute('aria-label', spec.rotuloDoSlot(b));
       botao.textContent = spec.rotuloDoSlot(b);
@@ -569,12 +574,12 @@ export function montarControleDeToque(ctx: TouchMarkupCtx, spec: TouchMarkupSpec
  * de `problems` já segue. As frases vão para o consumidor que INTEGRA a engine, e não para uma criança.
  */
 export function lacunasDoToque(spec: Pick<TouchMarkupSpec, 'mapa' | 'acoesDoJogo'>): string[] {
-  // ⚠️ SEM `preset` O PAD MONTA-SE NA MESMA desde o ADR-0157 (o mínimo navega os menus); o que falta é a PALAVRA do
-  // jogo nos botões, que ficam com a legenda física. É lacuna de quem integra, e diz-se.
+  // ⚠️ SEM `preset` O PAD SÓ TEM SELECT E START (ADR-0162): nenhuma direção, nenhum botão — nem para andar nos menus.
+  // É lacuna de quem integra, e diz-se.
   if (!spec.acoesDoJogo.size) {
-    return ['sem `preset`: o controle virtual mostra só o mínimo (direções e quatro botões), com as letras do '
-      + 'controle físico em vez das palavras do jogo — declare as posições que este jogo usa, com a palavra de cada '
-      + 'uma, para que uma criança com tablet e sem teclado saiba o que cada botão faz'];
+    return ['sem `preset`: o controle virtual mostra só SELECT e START — nenhuma direção nem botão, nem para andar nos '
+      + 'menus. Declare as posições que este jogo usa, com a palavra de cada uma, para que uma criança com tablet e sem '
+      + 'teclado consiga jogar e navegar'];
   }
   // ⚠️ E A LACUNA PARCIAL TAMBÉM SE DIZ. Um jogo pode declarar uma acção que nenhum slot dispara: ela existe
   // no teclado e não existe no toque, e hoje isso não aparece em lado nenhum.

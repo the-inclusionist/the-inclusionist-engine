@@ -331,6 +331,19 @@ export function bootQuiz(): void {
     // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
     isNavigable: () => true,
     /*
+     * AS POSIÇÕES QUE ESTE JOGO USA (ADR-0162). Desde que um botão do controle virtual só aparece se o jogo o nomeia,
+     * um quiz sem `preset` teria SELECT e START e mais nada — nem para andar nas alternativas, nem nos menus. Cima e
+     * baixo escolhem; a acção 2 confirma e a 3 volta, que é o que os menus da engine também pedem (ADR-0157 §2).
+     * 📌 GETTERS e não cadeias: o `preset` é lido a cada desenho, e uma palavra resolvida aqui ficaria no idioma de
+     * recuo — este boot corre antes de o idioma preferido chegar.
+     */
+    preset: {
+      up: { get label() { return t('quiz.pos.up'); } },
+      down: { get label() { return t('quiz.pos.down'); } },
+      action2: { get label() { return t('quiz.pos.confirm'); } },
+      action3: { get label() { return t('quiz.pos.back'); } },
+    },
+    /*
      * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO (ADR-0153) — a resposta é obrigatória, e o arranque recusa sem ela.
      *
      * 📌 Pelo estudo das acomodações: um jogo de perguntas é género «trivia» (Wikipédia 10.11) e o TEXTO É A
