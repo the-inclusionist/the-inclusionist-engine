@@ -333,6 +333,7 @@ const en: Record<string, string> = {
   'motora.teclado.1': 'Map the keyboard — 1 player',
   'motora.teclado.2': 'Map the keyboard — 2 players',
   'motora.teclado.34': 'Map the keyboard — 3–4 players',
+  'motora.controle': 'Map gamepad',
   'motora.abrir': 'Open',
   'ctrl.assento': 'Keyboard of',
   'ctrl.jogador': 'Player {n}',

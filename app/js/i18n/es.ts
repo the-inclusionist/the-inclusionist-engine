@@ -332,6 +332,7 @@ const es: Record<string, string> = {
   'motora.teclado.1': 'Asignar teclado — 1 jugador',
   'motora.teclado.2': 'Asignar teclado — 2 jugadores',
   'motora.teclado.34': 'Asignar teclado — 3–4 jugadores',
+  'motora.controle': 'Mapear mando',
   'motora.abrir': 'Abrir',
   'ctrl.assento': 'Teclado de',
   'ctrl.jogador': 'Jugador {n}',

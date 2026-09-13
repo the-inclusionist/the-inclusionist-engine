@@ -440,6 +440,7 @@ const pt: Record<string, string> = {
   'motora.teclado.1': 'Mapear teclado — 1 jogador',
   'motora.teclado.2': 'Mapear teclado — 2 jogadores',
   'motora.teclado.34': 'Mapear teclado — 3–4 jogadores',
+  'motora.controle': 'Mapear controle',
   'motora.abrir': 'Abrir',
   'ctrl.assento': 'Teclado de',
   'ctrl.jogador': 'Jogador {n}',

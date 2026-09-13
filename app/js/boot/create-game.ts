@@ -83,6 +83,7 @@ import { ehCego, ehBaixaVisao, PADRAO, filtroChave, simulacaoIndisponivel, type 
 // 📌 A tabela modo → `url(#...)`, que `render/cvd-matrices` já instala e o `consumer-quiz` já consome.
 import { VIZ_FILTER, VIZ_BY_KEY } from '../render/viz-modes.js';
 import { desenharBaixaVisao } from '../render/low-vision-drawing.js';
+import { criarAssistenteDoPad } from '../input/pad-wizard.js';
 import { cicloDeTipografia, INICIO_DO_CICLO, FONT_BY_KEY } from '../ui/fonts.js';
 import { bcp47 } from '../core/i18n.js';
 import { invasoresDaBarra, escalaDoPalco, aplicarEscala, abaixoDoPiso, alvoMinimo, type Caixa, type Escala, type MedidaDeNo } from '../ui/layout.js';
@@ -3118,7 +3119,79 @@ export function createGame(o: CreateGameOptions): Engine {
       }
     };
     refletirLinhasDoTeclado();
-    refletirTeclado = refletirLinhasDoTeclado;
+
+    /*
+     * MAPEAR CONTROLE (ADR-0151 §2; issue #182): the engine's own wizard (`input/pad-wizard`), asking only the positions this
+     * game names, in its words, and storing the map `initGamepad` reads — one cache for the page. It reads the pads only
+     * while it is open. «Voltar» cancels; the last named position saves and closes. The shell's «restore» is hidden: a pad's
+     * map is replaced by mapping again.
+     */
+    let assistenteDoPad: ReturnType<typeof criarAssistenteDoPad> | null = null;
+    /** One closer for «Voltar» and Escape: a running wizard is cancelled (and its close hides the panel); an idle one just hides. */
+    const fecharControle = (): void => {
+      if (assistenteDoPad?.estado()) { assistenteDoPad.fechar(false); return; }
+      painelDoControle.casca.overlay.hidden = true;
+      overlays.restoreFocus?.('padwiz');
+    };
+    const painelDoControle = montarPainel(ctxDaMotora, {
+      id: 'padwiz',
+      rotulos: () => ({
+        titulo: t('motora.controle'),
+        rotuloDaLista: t('motora.controle'),
+        rotuloReset: t('menu.restoreDefaults'),
+        rotuloFechar: t('pause.pmback'),
+      }),
+      render: () => {},
+      fecharProprio: () => fecharControle(),
+    });
+    painelDoControle.casca.reset.hidden = true;
+    painelDoControle.casca.fechar.addEventListener('click', fecharControle); // `fecharProprio` means this panel wires its own button
+    const fraseDoControle = doc.createElement('p');
+    fraseDoControle.id = 'padwiz-prompt';
+    fraseDoControle.setAttribute('aria-live', 'assertive');
+    const progressoDoControle = doc.createElement('p');
+    progressoDoControle.id = 'padwiz-progress';
+    progressoDoControle.className = 'opt-hint';
+    painelDoControle.casca.card.insertBefore(fraseDoControle, painelDoControle.casca.lista);
+    painelDoControle.casca.card.insertBefore(progressoDoControle, painelDoControle.casca.lista);
+    assistenteDoPad = criarAssistenteDoPad({
+      getGamepads: () => {
+        const nav = win.navigator as Navigator | undefined;
+        return typeof nav?.getGamepads === 'function' ? nav.getGamepads() : null;
+      },
+      rotuloDaAcao: (acao) => acoesParaMapear().find((x) => x.acao === acao)?.rotulo ?? null,
+      dizer: (frase) => { fraseDoControle.textContent = frase; srSay(frase); },
+      progresso: (texto) => { progressoDoControle.textContent = texto; },
+      srAlert,
+      aoFechar: () => {
+        painelDoControle.casca.overlay.hidden = true;
+        overlays.restoreFocus?.('padwiz');
+      },
+    });
+    const linhaDoControle = doc.createElement('div');
+    linhaDoControle.className = 'ctrl-row';
+    const envelopeDoControle = doc.createElement('span');
+    const forteDoControle = doc.createElement('strong');
+    envelopeDoControle.appendChild(forteDoControle);
+    linhaDoControle.appendChild(envelopeDoControle);
+    const botaoDoControle = doc.createElement('button');
+    botaoDoControle.className = 'mode-btn';
+    botaoDoControle.setAttribute('type', 'button');
+    botaoDoControle.id = 'opt-controle';
+    botaoDoControle.addEventListener('click', () => {
+      painelDoControle.abrir();
+      assistenteDoPad?.abrir();
+    });
+    linhaDoControle.appendChild(botaoDoControle);
+    painelDaMotora.casca.lista.appendChild(linhaDoControle);
+    const refletirLinhaDoControle = (): void => {
+      forteDoControle.textContent = t('motora.controle');
+      botaoDoControle.textContent = t('motora.abrir');
+      botaoDoControle.setAttribute('aria-label', t('motora.controle'));
+      linhaDoControle.hidden = acoesParaMapear().length === 0; // nothing named, nothing to map
+    };
+    refletirLinhaDoControle();
+    refletirTeclado = () => { refletirLinhasDoTeclado(); refletirLinhaDoControle(); };
   }
   /*
    * THE MOTOR EMPATHY SIMULATIONS REACH THE GAME HERE (ADR-0181): in the window's capture, after the menu navigation registered
