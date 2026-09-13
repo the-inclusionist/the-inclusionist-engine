@@ -483,6 +483,10 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // UMA LISTA, um anel. A barra de ícones saiu do cartão no item 7 do ADR-0044, e com ela saíram as quatro
     // regras de fronteira que ninguém conseguia descobrir sem esbarrar.
     const n = passoNaPausa(items.length, items.indexOf(cur), k);
+    selecionarEDizerNaPausa(menu, items, n);
+  }
+
+  function selecionarEDizerNaPausa(menu: HTMLElement, items: readonly HTMLElement[], n: number): void {
     pauseSetSel(menu, items[n]);
     // E O ITEM NOVO É FALADO. Este menu não usa foco do navegador — seleciona por classe, porque é desenhado
     // dentro da tela do jogador —, então nada dispara anúncio sozinho: nem foco, nem `aria-activedescendant`,
@@ -558,8 +562,74 @@ export function initMenuNav(ctx: MenuNavCtx): MenuNavApi {
     // Sem diálogo e sem menu: a tecla NÃO é nossa. Segue o caminho dela até quem for o dono.
   }
 
+  /* ===================== segurar sobre um item ===================== */
+
+  /*
+   * A PRESS HELD ON AN ITEM PLACES THE CURSOR THERE AND SAYS IT, WITHOUT ACTIVATING IT (ADR-0159 rule 2, erratum of
+   * 2026-09-13). «Deixar o dedo apertado ou o botão do mouse apertado sobre o item deve dar a função de posicionar o
+   * cursor sem "apertar".» (Dev) — the pad left the menus (ADR-0166), and a pointer had one meaning only: activation.
+   * 📌 A short press is untouched; after a hold, the ONE click the browser fires on release is swallowed, in capture,
+   * before the item's own listener. Threshold: the iOS long-press default, 0.5 s.
+   */
+  const SEGURAR_MS = 500;
+  let segurando: { id: number; timer: ReturnType<typeof setTimeout> } | null = null;
+  let engolirClique: HTMLElement | null = null;
+
+  /** The open menu and the item under `alvo`, when `alvo` is inside one: the top dialog first, else a pause card. */
+  function itemSob(alvo: EventTarget | null): { menu: HTMLElement; items: HTMLElement[]; n: number; pausa: boolean } | null {
+    const no = alvo as HTMLElement | null;
+    if (!no || typeof no.closest !== 'function') return null;
+    const dlg = sharedDialogOpen();
+    if (dlg) {
+      const items = menuItems(dlg);
+      const n = items.findIndex((el) => el.contains(no));
+      return n >= 0 ? { menu: dlg, items, n, pausa: false } : null;
+    }
+    const menu = no.closest<HTMLElement>('.screen-pause');
+    if (!menu || menu.hidden) return null;
+    const items = [...menu.querySelectorAll<HTMLElement>(PM_ITENS_VISIVEIS)];
+    const n = items.findIndex((el) => el.contains(no));
+    return n >= 0 ? { menu, items, n, pausa: true } : null;
+  }
+
+  function soltar(): void {
+    if (segurando) clearTimeout(segurando.timer);
+    segurando = null;
+  }
+
+  function aoPremir(e: PointerEvent): void {
+    soltar();
+    engolirClique = null;
+    const sob = itemSob(e.target);
+    if (!sob) return;
+    const id = e.pointerId;
+    segurando = {
+      id,
+      timer: setTimeout(() => {
+        segurando = null;
+        engolirClique = sob.items[sob.n] ?? null;
+        if (sob.pausa) selecionarEDizerNaPausa(sob.menu, sob.items, sob.n);
+        else focarEDizer(sob.items, sob.n);
+      }, SEGURAR_MS),
+    };
+  }
+
+  function aoSoltar(e: PointerEvent): void {
+    if (segurando && segurando.id === e.pointerId) soltar();
+  }
+
+  function aoClicar(e: MouseEvent): void {
+    const alvo = engolirClique;
+    engolirClique = null;
+    if (alvo && e.target instanceof Node && alvo.contains(e.target)) { e.preventDefault(); e.stopPropagation(); }
+  }
+
   function attach(): void {
     ctx.win.addEventListener('keydown', menuNavKey, true);
+    ctx.win.addEventListener('pointerdown', aoPremir, true);
+    ctx.win.addEventListener('pointerup', aoSoltar, true);
+    ctx.win.addEventListener('pointercancel', aoSoltar, true);
+    ctx.win.addEventListener('click', aoClicar, true);
   }
 
   return { sharedDialogOpen, menuItems, menuFocus, dialogBack, navDialog, pauseSetSel, navPause, menuNavKey, attach };
