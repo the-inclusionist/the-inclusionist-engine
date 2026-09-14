@@ -71,6 +71,23 @@
     ],
     "type GanchosDoCartucho": "Omit<MetadeDoJogo, 'declaration'>"
   },
+  "consumer-quiz/kokoro-porta.ts": {
+    "interface SistemaDeFicheirosDoEspeak": [
+      "readFile",
+      "writeFile"
+    ],
+    "interface RuntimeOnnx": [
+      "InferenceSession",
+      "Tensor"
+    ],
+    "interface DependenciasDaPortaKokoro": [
+      "base",
+      "buscar",
+      "espeak",
+      "ort"
+    ],
+    "type FabricaEspeak": "(opcoes: { readonly arguments: readonly string[]"
+  },
   "core/accommodation-subjects.ts": {
     "interface SubjectInputs": [
       "actions",

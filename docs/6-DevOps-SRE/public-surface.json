@@ -8,6 +8,16 @@
     "MedicaoDeFlashes",
     "createGame"
   ],
+  "consumer-quiz/kokoro-carregar.ts": [
+    "moduloKokoro"
+  ],
+  "consumer-quiz/kokoro-porta.ts": [
+    "DependenciasDaPortaKokoro",
+    "FabricaEspeak",
+    "RuntimeOnnx",
+    "SistemaDeFicheirosDoEspeak",
+    "criarPortaKokoro"
+  ],
   "consumer-quiz/main-quiz.ts": [
     "bootQuiz",
     "declararQuiz",
