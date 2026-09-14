@@ -142,6 +142,7 @@ docs/
 | `1-Discovery/Event-Storming.md` | Deferred DDD scope for telemetry + Student Manager | (future) |
 | `1-Discovery/study-adr-rules-the-engine-does-not-impose.md` | What the ADRs require that `createGame` does not impose on a cartridge (hypothetical rule, 2026-09-12) | Dev (decision), dev |
 | `1-Discovery/study-microphone-control.md` | Which recogniser a microphone control transport can use: on-device, offline, restricted to the game's words (issue #182, 2026-09-13) | Dev (decision), dev |
+| `1-Discovery/study-webcam-control.md` | What a gesture, a face movement and a gaze do in a game: positions, mappings, dwell, consent (issue #182, 2026-09-13) | Dev (decision), dev |
 | `2-Architecture/` … `6-DevOps-SRE/` | The remaining SDD phases — decided section by section (see §… of this doc's evaluation) | dev, reviewer |
 | `research/` | Studies with sources that justify decisions | reviewer (evidence), dev |
 
