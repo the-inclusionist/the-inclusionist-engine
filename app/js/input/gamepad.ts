@@ -521,9 +521,9 @@ export function initGamepad(ctx: GamepadCtx): GamepadApi {
         // Com o jogo ANDANDO, o direcional deste jogador dirige a BARRA RÁPIDA e não o personagem. Vem antes
         // de tudo o que é de jogo, porque enquanto o modo está ligado nada mais deste controle é de jogo.
         //
-        // As DUAS saídas chegam juntas: `especial` é o VOLTAR do projeto (X no PlayStation, B no Xbox, A no
-        // Nintendo) e `startEdge` é o botão que abre a pausa — de onde se entrou aqui. Quem se perde tenta
-        // voltar por onde veio, e quem já conhece o jogo tenta o voltar de sempre; as duas dão certo.
+        // Both exits arrive together: `especial` (action 3) is the project's BACK — the east button: B on Xbox, ◯ on
+        // PlayStation, A on Nintendo — and `startEdge` is the button that opens the pause, where this was entered. A child
+        // who is lost goes back the way they came, one who knows the game tries the usual back; both work.
         if (owner >= 0 && ctx.naBarraDe(owner)) {
           const k: NavKeys = { yes: edge('action2'), no: edge('action3'), up: edge('up'), down: edge('down'), left: edge('left'), right: edge('right') };
           if (startEdge || k.yes || k.no || k.up || k.down || k.left || k.right) ctx.navBar(owner, k, !!startEdge);

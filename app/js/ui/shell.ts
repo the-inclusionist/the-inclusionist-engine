@@ -255,8 +255,8 @@ export function glifoFalado(g: string): string {
  * de tela, com os glifos já traduzidos em palavra. Duas leituras da mesma informação, cada uma no sentido
  * que a alcança.
  *
- * Recebe os pares `[glifo, cor]` que `simNaoGlyphs` escolhe a partir do desenho do controle — a inversão
- * PlayStation/Nintendo (onde "sim" é o botão 1) já vem decidida de lá.
+ * Takes the `[glyph, colour]` pairs of the pad's design by position: yes is the south button (A · ✕ · B) and no the east one
+ * (B · ◯ · A) on every design — no design swaps them (the Dev's association, ADR-0013 erratum).
  */
 export function pauseLegendHtml(sim: readonly [string, string], nao: readonly [string, string]): string {
   const mudo = (g: readonly [string, string], palavra: string): string =>

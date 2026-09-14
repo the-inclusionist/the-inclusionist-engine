@@ -376,7 +376,8 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 /* ADR-0167: no item shows a position number — the place is SPOKEN after the name («…, 2 de 6»), never drawn.
    ADR-0159 rule 12: a pause item's glyph is drawn with empty alternative text, out of the name. */
 .pm-btn[data-glifo]::before{content:attr(data-glifo) / "";margin-inline-end:.5em}
-/* Legenda sim/não: ícone do botão (conforme layout do controle) + a palavra. Sony/Nintendo invertem 0↔1. */
+/* Yes/no legend: the button's glyph (from the pad's design) + the word. By POSITION on every design — yes is the south button
+   (A · ✕ · B), no is the east one (B · ◯ · A); no design swaps them (the Dev's association, ADR-0013 erratum). */
 .pause-legend{display:flex;gap:1.1rem;justify-content:center;margin:.7rem 0 .1rem;font-size:1em;color:#c3cfe0}
 .pause-legend .lg{display:inline-flex;align-items:center;gap:.35rem}
 .pause-legend .lg-ico{display:inline-flex;align-items:center;justify-content:center;width:1.35rem;height:1.35rem;border-radius:50%;font-weight:800;font-size:1em;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55)}

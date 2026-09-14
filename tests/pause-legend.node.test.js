@@ -24,15 +24,15 @@ import { describe, it, expect } from 'vitest';
 import { pauseLegendHtml, glifoFalado } from '../app/js/ui/shell.js';
 import { PAD_DESIGNS } from '../app/js/input/devices.js';
 
-/** O par (sim, não) de um desenho de controle, na ordem em que a legenda o usa. */
-function par(desenho, inverte) {
+/** A pad design's (yes, no) pair: the south button (index 0) and the east one (index 1) on every design, no swap (ADR-0013 erratum). */
+function par(desenho) {
   const s = PAD_DESIGNS[desenho];
-  return [s[inverte ? '1' : '0'], s[inverte ? '0' : '1']];
+  return [s['0'], s['1']];
 }
 
 describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido', () => {
   it('[Right] os chips visíveis ficam MUDOS e a frase falada nasce ao lado', () => {
-    const [sim, nao] = par('microsoft', false);
+    const [sim, nao] = par('microsoft');
     const html = pauseLegendHtml(sim, nao);
     // O que se vê: dois chips com o glifo e a palavra, marcados para o leitor de tela ignorar.
     expect(html).toContain('<span class="lg" aria-hidden="true">');
@@ -45,17 +45,17 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
   it('[Right] o glifo do PlayStation vira PALAVRA na frase falada — e continua glifo na tela', () => {
     // O caso que justifica o item inteiro. `✕` na tela é reconhecível para quem enxerga; no ouvido ele é
     // "sinal de multiplicação" ou silêncio. As duas coisas têm de valer ao mesmo tempo.
-    const [sim, nao] = par('sony', true); // no PlayStation o "sim" é o botão 1 (círculo), não o 0
+    const [sim, nao] = par('sony'); // yes is the south button on PlayStation too: cross (ADR-0013 erratum)
     const html = pauseLegendHtml(sim, nao);
     expect(html).toContain('>○<');
     expect(html).toContain('>✕<');
-    expect(html).toContain('<span class="sr-only">Botão bola para confirmar, botão xis para voltar.</span>');
+    expect(html).toContain('<span class="sr-only">Botão xis para confirmar, botão bola para voltar.</span>');
   });
 
   it('[Zero] NADA na legenda carrega `aria-hidden` no elemento de fora — só nos chips', () => {
     // A regressão que este caso impede é a volta do atributo para o `<p>`: bastaria isso para a frase falada
     // sumir junto, e o teste de cima continuaria verde, porque a frase estaria lá — apenas inalcançável.
-    const [sim, nao] = par('generic', false);
+    const [sim, nao] = par('generic');
     const html = pauseLegendHtml(sim, nao);
     expect(html.startsWith('<span class="lg"')).toBe(true); // sem invólucro nenhum: quem monta o `<p>` é o DOM
     expect(html).toContain('class="sr-only"');
@@ -77,7 +77,7 @@ describe('legenda da pausa · o glifo fica na tela, a palavra vai para o ouvido'
   it('[Interface] a cor do chip continua saindo do desenho do controle', () => {
     // A legenda é a única pista de cor que casa a tela com o controle físico na mão da criança. Ela não pode
     // ser vítima da mudança de acessibilidade.
-    const [sim, nao] = par('microsoft', false);
+    const [sim, nao] = par('microsoft');
     const html = pauseLegendHtml(sim, nao);
     expect(html).toContain('background:' + sim[1]);
     expect(html).toContain('background:' + nao[1]);
