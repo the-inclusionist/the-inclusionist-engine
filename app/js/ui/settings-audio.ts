@@ -70,7 +70,9 @@ export interface VozDoPainel { readonly voice: string; readonly engine?: string;
 
 /** The name a child sees for a voice: the middle of its identifier — `pt_BR-faber-medium` is «Faber». */
 function nomeDaVoz(v: VozDoPainel): string {
-  // Piper ids read `locale-name-quality`; Kokoro ids read `xx_name` (`pf_dora`)
+  // a browser voice is named by the browser (ADR-0200); Piper ids read `locale-name-quality`; Kokoro ids read `xx_name` (`pf_dora`)
+  // («Microsoft Maria - Portuguese (Brazil)» is «Microsoft Maria»: the language is already the list's, and no parentheses, ADR-0158)
+  if (v.voice.startsWith('webspeech:')) return v.voice.slice('webspeech:'.length).replace(/\s*\([^)]*\)/g, '').split(' - ')[0]!.trim();
   const nome = v.voice.includes('-') ? (v.voice.split('-')[1] ?? v.voice) : (v.voice.split('_')[1] ?? v.voice);
   return nome.charAt(0).toUpperCase() + nome.slice(1);
 }

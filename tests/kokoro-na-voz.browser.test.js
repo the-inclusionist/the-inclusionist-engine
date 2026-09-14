@@ -49,11 +49,15 @@ const declaracaoMinima = () => ({
 
 async function esperar(cond) { for (let i = 0; i < 200 && !cond(); i++) await new Promise((r) => setTimeout(r, 25)); }
 
+// The neural path, measured on a browser that offers no voice: where it offers one, it speaks first (ADR-0200)
+const getVoicesOriginal = window.speechSynthesis.getVoices;
 beforeAll(() => {
+  window.speechSynthesis.getVoices = () => [];
   vozGuardada = localStorage.getItem('incl_tts_voz');
   HTMLMediaElement.prototype.play = function () { tocados.push(this); return Promise.resolve(); };
 });
 afterAll(async () => {
+  window.speechSynthesis.getVoices = getVoicesOriginal;
   HTMLMediaElement.prototype.play = playOriginal;
   if (vozGuardada === null) localStorage.removeItem('incl_tts_voz'); else localStorage.setItem('incl_tts_voz', vozGuardada);
   await setLocale('pt');

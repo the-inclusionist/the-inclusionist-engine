@@ -36,7 +36,10 @@ const declaracao = () => ({
   objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],
 });
 
+// The neural path, measured on a browser that offers no voice: where it offers one, it speaks first (ADR-0200)
+const getVoicesOriginal = window.speechSynthesis.getVoices;
 beforeAll(async () => {
+  window.speechSynthesis.getVoices = () => [];
   for (const k of CHAVES) { guardados[k] = localStorage.getItem(k); localStorage.removeItem(k); }
   HTMLMediaElement.prototype.play = function () { tocados.push(this); return Promise.resolve(); };
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
@@ -49,6 +52,7 @@ beforeAll(async () => {
   });
 });
 afterAll(() => {
+  window.speechSynthesis.getVoices = getVoicesOriginal;
   HTMLMediaElement.prototype.play = playOriginal;
   for (const k of CHAVES) { if (guardados[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, guardados[k]); }
 });

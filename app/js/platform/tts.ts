@@ -147,9 +147,15 @@ export interface Tts {
 export function createTts(ctx: TtsCtx): Tts {
   let ttsEngine: TtsEngine | null = null, ttsLoading = false, ttsFailed = false, _ttsPct = 0, _narrateCount = 0;
   let _ttsVoiceObj: SpeechSynthesisVoice | null = null; // voz do Web Speech selecionada
-  // With the neural engine the voice of the language speaks by default (ADR-0185 §3); without it, the browser's voice —
-  // defaulting to Piper there would open every game without the engine on a «not bundled» alert.
-  let ttsEngineSel = store.get(store.KEYS.ttsEngine, null) || (ctx.carregarVozNeural || ctx.carregarKokoro ? 'piper' : 'webspeech'); // webspeech | piper | kokoro | kitten | espeak
+  // An engine set explicitly (stored, or by the panel) wins; otherwise the engine of the voice in use, which is the browser's when it
+  // offers one for the language (ADR-0200) — measured on the device at every call, since the browser lists its voices late.
+  let ttsEngineSelExplicito: string | null = store.get(store.KEYS.ttsEngine, null) || null; // webspeech | piper | kokoro | kitten | espeak
+  const motorSel = (): string => {
+    if (ttsEngineSelExplicito) return ttsEngineSelExplicito;
+    const e = vozAtual()?.engine;
+    // a fallback the game does not bundle is not the default: without its port, the browser's voice (no «not bundled» alert)
+    return (e === 'piper' && ctx.carregarVozNeural) || (e === 'kokoro' && ctx.carregarKokoro) ? e : 'webspeech';
+  };
   let kokoroDispositivo: 'webgpu' | 'wasm' | null = null;
   let vozCarregada: string | null = null; // the voice the loaded engine speaks; another choice reloads it
   // Each voice's words per minute, averaged over the utterances long enough to measure (`core/speech-rate`): what a short
@@ -161,8 +167,21 @@ export function createTts(ctx: TtsCtx): Tts {
     mediaDaVoz.set(voz, antes ? antes * 0.7 + ppm * 0.3 : ppm);
   };
 
-  // Piper first, then Kokoro's, where the game hands in the Kokoro port (ADR-0198 §1–2)
-  const vozes = (): readonly VozNeural[] => [...vozesDoIdioma(bcp47()), ...(ctx.carregarKokoro ? vozesDoIdioma(bcp47(), VOZES_KOKORO) : [])];
+  /**
+   * WEB SPEECH FIRST (ADR-0200; issue #190): the browser's voices for the language lead the list, so where the device already speaks
+   * no neural voice is loaded; then Piper, then Kokoro's where the game hands in the Kokoro port (ADR-0198 §1–2) — the fallback.
+   */
+  const vozesDoNavegador = (): readonly VozNeural[] => {
+    let lista: readonly SpeechSynthesisVoice[] = [];
+    try { lista = window.speechSynthesis?.getVoices() ?? []; } catch { /* no speech synthesis here */ }
+    return vozesDoIdioma(bcp47(), lista.map((v) => ({ locale: v.lang.replace('_', '-'), engine: 'webspeech', voice: 'webspeech:' + v.name })));
+  };
+  const vozes = (): readonly VozNeural[] => [...vozesDoNavegador(), ...vozesDoIdioma(bcp47()), ...(ctx.carregarKokoro ? vozesDoIdioma(bcp47(), VOZES_KOKORO) : [])];
+  /** The browser voice an entry names, or null. */
+  const vozDoNavegador = (id: string | undefined): SpeechSynthesisVoice | null => {
+    if (!id?.startsWith('webspeech:')) return null;
+    try { return window.speechSynthesis?.getVoices().find((v) => 'webspeech:' + v.name === id) ?? null; } catch { return null; }
+  };
   function vozAtual(): VozNeural | null {
     const lista = vozes();
     const guardada = store.get(store.KEYS.ttsVoz, null);
@@ -171,7 +190,8 @@ export function createTts(ctx: TtsCtx): Tts {
   function setVoz(id: string): boolean {
     if (!vozes().some((v) => v.voice === id)) return false;
     store.set(store.KEYS.ttsVoz, id);
-    if (ctx.carregarVozNeural || ctx.carregarKokoro) ttsEngineSel = vozes().find((v) => v.voice === id)!.engine;
+    ttsEngineSelExplicito = vozes().find((v) => v.voice === id)!.engine;
+    _ttsVoiceObj = vozDoNavegador(id);
     return true;
   }
 
@@ -181,19 +201,20 @@ export function createTts(ctx: TtsCtx): Tts {
       // `u.lang` era 'pt-BR' fixo. Com o jogo em inglês ou espanhol isso pedia ao navegador uma voz
       // PORTUGUESA para um texto que não é português — e o resultado não é sotaque, é ininteligível: a
       // fonética errada aplicada às letras erradas. Segue o idioma do jogo.
-      const u = new SpeechSynthesisUtterance(text); u.lang = bcp47(); if (_ttsVoiceObj) u.voice = _ttsVoiceObj; u.volume = Math.min(1, ctx.getVolume() * 1.4);
+      const voz = _ttsVoiceObj ?? vozDoNavegador(vozAtual()?.voice);
+      const u = new SpeechSynthesisUtterance(text); u.lang = bcp47(); if (voz) u.voice = voz; u.volume = Math.min(1, ctx.getVolume() * 1.4);
       // ADR-0183 §1: the browser's `rate` is a multiplier. The voice's words a minute at rate 1 is measured on its own utterances
       // (start to end, so the silent ends count — an approximation the neural path does not need); until one is measured, 1.
-      const vozDoNavegador = 'webspeech:' + (_ttsVoiceObj?.name ?? bcp47());
+      const idDaVoz = 'webspeech:' + (voz?.name ?? bcp47());
       const palavras = palavrasFaladas(text);
-      const baseDaVoz = mediaDaVoz.get(vozDoNavegador) ?? null;
+      const baseDaVoz = mediaDaVoz.get(idDaVoz) ?? null;
       u.rate = ctx.getSpeechPpm && baseDaVoz ? taxaDaFala(0, 0, ctx.getSpeechPpm(), baseDaVoz).taxa : 1;
       let inicio = 0;
       u.onstart = () => { inicio = performance.now(); };
       u.onend = () => {
         const segundos = inicio ? (performance.now() - inicio) / 1000 : 0;
         const medido = taxaDaFala(palavras, segundos, 150, null).ppmDaVoz;
-        if (medido) media(vozDoNavegador, medido / u.rate);
+        if (medido) media(idDaVoz, medido / u.rate);
       };
       ss.speak(u); return true;
     } catch (e) { return false; }
@@ -267,10 +288,11 @@ export function createTts(ctx: TtsCtx): Tts {
 
   function loadTTS(): void {
     if (ttsEngine || ttsLoading || ttsFailed) return;
-    const escolhida = ttsEngineSel !== 'webspeech' ? vozAtual() : null;
+    const sel = motorSel();
+    const escolhida = sel !== 'webspeech' ? vozAtual() : null;
     if (escolhida?.engine === 'kokoro') { carregarMotorKokoro(escolhida); return; }
-    if (ttsEngineSel !== 'piper' && ttsEngineSel !== 'kokoro') { // Kitten/eSpeak NG ainda não entraram
-      if (ttsEngineSel !== 'webspeech') ctx.srAlert(t('sr.tts.engineNoLanguage'));
+    if (sel !== 'piper' && sel !== 'kokoro') { // Kitten/eSpeak NG ainda não entraram
+      if (sel !== 'webspeech') ctx.srAlert(t('sr.tts.engineNoLanguage'));
       return;
     }
     // ESTA MONTAGEM NÃO TRAZ MOTOR NEURAL (ADR-0094). Vem ANTES da pergunta do idioma de propósito: sem
@@ -278,9 +300,10 @@ export function createTts(ctx: TtsCtx): Tts {
     // pensar que trocar de idioma resolveria. `ttsFailed` para não repetir a pergunta a cada fala.
     const carregar = ctx.carregarVozNeural;
     if (!carregar) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
-    // The voice in use for the current language (ADR-0185). None: another language's voice is NOT fetched — it would read
-    // this text with the wrong phonetics.
-    const fonte = vozAtual();
+    // The voice in use for the current language (ADR-0185); a browser voice in use with Piper set explicitly gives way to the
+    // language's first Piper voice. None: another language's voice is NOT fetched — it would read this text with the wrong phonetics.
+    const atual = vozAtual();
+    const fonte = atual?.engine === 'piper' ? atual : vozesDoIdioma(bcp47())[0] ?? null;
     if (!fonte) { ctx.srAlert(t('sr.tts.noNeuralForLanguage')); return; }
     ttsLoading = true; vozCarregada = fonte.voice; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
     carregar().then(async (mod) => { // o jogo é que sabe de onde; o Vite dele faz o code-split. Ver ADR-0021 e ADR-0094
@@ -318,9 +341,10 @@ export function createTts(ctx: TtsCtx): Tts {
   }
 
   function ttsSpeak(text: string): boolean {
-    if (ttsEngineSel !== 'webspeech') {
+    if (motorSel() !== 'webspeech') {
       // another voice picked, or the language changed, since the engine loaded: load the voice in use
-      if (ttsEngine && vozCarregada !== vozAtual()?.voice) { ttsEngine = null; ttsFailed = false; }
+      const emUso = vozAtual();
+      if (ttsEngine && emUso?.engine !== 'webspeech' && vozCarregada !== emUso?.voice) { ttsEngine = null; ttsFailed = false; }
       if (ttsEngine && ttsEngine.speak) { try { ttsEngine.speak(text); } catch (e) { /* noop */ } return true; }
       loadTTS(); // motor neural (baixando/indisponível) → cai no fallback
     }
@@ -335,7 +359,7 @@ export function createTts(ctx: TtsCtx): Tts {
 
   return {
     narrate, ttsSpeak, loadTTS, speakWebSpeech,
-    getEngineSel: () => ttsEngineSel, setEngineSel: (v) => { ttsEngineSel = v; },
+    getEngineSel: motorSel, setEngineSel: (v) => { ttsEngineSelExplicito = v; },
     getEngine: () => ttsEngine, getVoiceObj: () => _ttsVoiceObj, setVoiceObj: (v) => { _ttsVoiceObj = v; },
     get loading() { return ttsLoading; }, get failed() { return ttsFailed; }, get narrateCount() { return _narrateCount; },
     get neuralDisponivel() { return !!ctx.carregarVozNeural || !!ctx.carregarKokoro; },
