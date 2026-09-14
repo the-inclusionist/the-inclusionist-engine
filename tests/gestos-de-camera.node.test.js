@@ -213,6 +213,15 @@ describe('the eyes (ADR-0197 §4)', () => {
       .toEqual([['confirm'], ['back'], ['menu']]);
   });
 
+  it('⚠️ [Boundary] a camera above the screen: eyes resting low, a weak look up is still up — the look is one axis from rest', () => {
+    const neutro = { yaw: 0, pitch: 0, pontuacoes: { eyeLookDownLeft: 0.35, eyeLookDownRight: 0.35 } };
+    const repouso = { eyeLookDownLeft: 0.35, eyeLookDownRight: 0.35 };
+    const olharFraco = { eyeLookUpLeft: 0.3, eyeLookUpRight: 0.34 }; // measured 2026-09-14: the Dev's look up reached 0.34
+    const lentaCom = (olhar) => olhos([[0, 100, olhar], [100, 800, { ...fechado, ...olhar }], [800, 1500, olhar]]);
+    expect(correr(criarLeitorDosOlhos(neutro), lentaCom(olharFraco)), 'a look up from a low rest was not up').toEqual(['confirm']);
+    expect(correr(criarLeitorDosOlhos(neutro), lentaCom(repouso)), 'rest itself read as a look down').toEqual(['menu']);
+  });
+
   it('⚠️ [Boundary] two quick blinks with the look changed between them are no command', () => {
     expect(correr(criarLeitorDosOlhos(), olhos([[0, 100, cima], [100, 250, { ...fechado, ...cima }], [250, 400, baixo], [400, 550, { ...fechado, ...baixo }], [550, 1500, aberto]])))
       .toEqual([]);
@@ -317,3 +326,5 @@ describe('one group at a time (ADR-0197 errata)', () => {
 //   G24 a double ignores the look (always up)                    🔴 blink twice · looking ahead · look changed
 //   G25 a slow blink ignores the look (always back)              🔴 slow blink looking up/down/ahead
 //   G26 two blinks with different looks still command            🔴 look changed between them
+//   G27 the look read per score against 0.5 (not one axis)      🔴 camera above the screen
+//   G28 the look's axis ignores rest                             🔴 camera above the screen (rest read as down)

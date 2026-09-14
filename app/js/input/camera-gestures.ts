@@ -290,9 +290,14 @@ const PISCADA_RAPIDA_MS = 300;
 const PISCADA_LENTA_MS = 600;
 /** Two quick blinks must fall within this time, start to start. */
 const DUPLA_MS = 700;
-/** Blendshape score of a closed eye, and of a look up or down. */
+/** Blendshape score of a closed eye. */
 const OLHO_FECHADO = 0.5;
-const OLHAR_MINIMO = 0.5;
+/**
+ * How far the vertical look (looking up minus looking down) must move from rest. Read as ONE axis because a camera above the screen
+ * sees the eyes at rest already looking down: measured 2026-09-14, rest held `eyeLookDown` 0.35 and a look up reached `eyeLookUp`
+ * only 0.34 — past rest on the axis, never past a 0.5 score of its own.
+ */
+const OLHAR_DELTA = 0.3;
 
 type Olhar = 'cima' | 'baixo' | null;
 
@@ -326,8 +331,10 @@ export function criarLeitorDosOlhos(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorD
         if (fechouEm === null) { fechouEm = ms; olharAoFechar = olharAntes; }
         return null;
       }
-      olharAntes = subida(b, neutro, 'eyeLookUpLeft', 'eyeLookUpRight') >= OLHAR_MINIMO ? 'cima'
-        : subida(b, neutro, 'eyeLookDownLeft', 'eyeLookDownRight') >= OLHAR_MINIMO ? 'baixo' : null;
+      const vertical = (x: PontuacoesDoRosto): number =>
+        ((x.eyeLookUpLeft ?? 0) + (x.eyeLookUpRight ?? 0) - (x.eyeLookDownLeft ?? 0) - (x.eyeLookDownRight ?? 0)) / 2;
+      const movido = vertical(b) - vertical(neutro.pontuacoes ?? {});
+      olharAntes = movido >= OLHAR_DELTA ? 'cima' : movido <= -OLHAR_DELTA ? 'baixo' : null;
       if (fechouEm !== null) {
         const duracao = ms - fechouEm;
         const inicio = fechouEm;
