@@ -68,8 +68,20 @@ A narração por voz roda **inteiramente no navegador/offline** graças ao traba
   | `en_US-amy-medium` | MycroftAI/mimic3-voices («See URL») | **CC BY-SA 4.0** — a licença do repositório indicado; a voz `amy` não aparece na lista dele, então a procedência não está confirmada |
   | `en_US-ryan-medium` | roholazandie/ryanspeech (Kaggle) | ⚠️ **CC BY-NC-SA 4.0 — uso NÃO comercial** |
 
-  ⚠️ **Ryan é não comercial**: distribuí-la numa entrega ou espelhá-la exige que todo uso fique fora de fins comerciais — decisão
-  do Dev antes de qualquer espelho (ADR-0203). Amy pede atribuição e compartilhamento pela mesma licença.
+  ✅ **Ryan é não comercial, e o projeto também**: o Dev, 2026-09-14 — «nosso projeto não tem fins lucrativos». Amy pede
+  atribuição e compartilhamento pela mesma licença.
+
+  🔴 **Faber, Amy e Ryan partem da voz `lessac`** (cada `MODEL_CARD`, lido em 2026-09-14 em `huggingface.co/rhasspy/piper-voices`:
+  «Finetuned from U.S. English lessac voice»). A `lessac` foi treinada no conjunto **Blizzard 2013** (CSTR, Universidade de
+  Edimburgo), cuja licença limita o uso a pesquisa, proíbe distribuir o material e exclui o desenvolvimento de produtos ou serviços
+  de síntese de voz. Se uma voz ajustada a partir dela fica presa a essa licença não está resolvido aqui; por isso as três **não são
+  espelhadas** até decisão do Dev (errata do ADR-0203, issue #192). A `es_MX-claude-high` diz «See URL» sobre o treino: a origem
+  não foi verificada.
+
+## Kokoro-82M — hexgrad — Apache-2.0
+
+Os pesos são **Apache-2.0** (`huggingface.co/hexgrad/Kokoro-82M`), treinados só com áudio permissivo — entre ele, áudio **CC BY**:
+**Koniwa** (CC BY 3.0) e **SIWIS** (CC BY 4.0), creditados aqui. A exportação ONNX usada é a `onnx-community/Kokoro-82M-v1.0-ONNX`.
 
 > Os pesos das vozes são **baixados uma vez** (de um host público) e rodam **100% localmente** depois — nenhum áudio de
 > criança sai do dispositivo. Ver `the-inclusionist-docs · docs/2-Architecture/adr/ADR-0065-three-neural-voices-owned-by-the-engine-and-cached-on-first-use.yaml`.
