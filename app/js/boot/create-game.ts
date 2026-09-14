@@ -74,7 +74,7 @@ import * as state from '../core/state.js';
 import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
-import { createTts, type CarregarVozNeural } from '../platform/tts.js';
+import { createTts, type CarregarVozNeural, type CarregarKokoro } from '../platform/tts.js';
 import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain, setHearingLossGraph } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
@@ -347,6 +347,12 @@ export interface CreateGameOptions {
    * painel de áudio deixa de OFERECER o motor neural, em vez de o oferecer e nunca o carregar.
    */
   readonly carregarVozNeural?: CarregarVozNeural;
+  /**
+   * HOW THE KOKORO VOICES LOAD (ADR-0186, ADR-0198; issue #181) — filled by the game, like `carregarVozNeural`: it loads its own
+   * phonemizer (espeak-ng, GPL-3.0-or-later), runtime (onnxruntime) and model, and hands the engine four functions (`ModuloKokoro`).
+   * Absent = no Kokoro voice is listed; the Piper voices and the browser's stay.
+   */
+  readonly carregarKokoro?: CarregarKokoro;
   /**
    * BAIXAR AS COISAS PESADAS NO PRIMEIRO CARREGAMENTO? Padrão **sim** (ADR-0110 (b), ADR-0116, ADR-0119).
    *
@@ -776,6 +782,7 @@ export function createGame(o: CreateGameOptions): Engine {
     srSay, srAlert, ensureAC, catNode, audioOut,
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
     carregarVozNeural: o.carregarVozNeural,
+    carregarKokoro: o.carregarKokoro,
     getSpeechPpm: () => state.speechPpm, // ADR-0183 §1: the child's speech rate
   });
   // 📌 A linha da voz neural mudou-se para `problemasDoCartucho()`: o declínio que a cala é do jogo.

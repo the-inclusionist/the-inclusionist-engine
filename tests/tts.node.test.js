@@ -105,7 +105,7 @@ describe('platform/tts', () => {
     // estaria errada — o motor não fala o idioma DO JOGO, seja ele qual for. A asserção passa pelo dicionário
     // em vez de repetir o texto: continua provando que a pessoa foi avisada, sem congelar a redação.
     const { tts, alerted } = setup();
-    tts.setEngineSel('kokoro');
+    tts.setEngineSel('kitten'); // Kokoro speaks since ADR-0198; Kitten has not entered
     tts.loadTTS();
     expect(alerted).toContain(pt['sr.tts.engineNoLanguage']);
     expect(tts.loading).toBe(false);

@@ -12,6 +12,7 @@ import { criarFalaInterrompivel } from './interruptible-speech.js';
 import { caminhoNaEntrega } from './pesados.js';
 import { vozesDoIdioma, type VozNeural } from './voice-plan.js';
 import { palavrasFaladas, segundosDeFala, taxaDaFala } from '../core/speech-rate.js';
+import { VOZES_KOKORO, tokenizar, estiloDaFrase, eFala, wavDe } from './kokoro.js';
 
 interface TtsEngine { id: string; speak: (text: string) => void; }
 
@@ -43,6 +44,24 @@ export interface ModuloNeural {
 /** A PORTA (ADR-0094). Uma linha do lado do jogo: `() => import('@mintplex-labs/piper-tts-web')`. */
 export type CarregarVozNeural = () => Promise<ModuloNeural>;
 
+/** A Kokoro inference session on one device: token ids and a style row in, a 24 kHz waveform out. */
+export interface SessaoKokoro {
+  readonly sintetizar: (ids: readonly number[], estilo: Float32Array) => Promise<Float32Array>;
+}
+/**
+ * WHAT THE ENGINE NEEDS FROM KOKORO (ADR-0198 §5) — the game fills it; the engine names no phonemizer, runtime or model file.
+ * `fonemizar` is espeak-ng in the voice's language (`pt-br`, `es-419`, `en-us`, `en-gb`); `vocabulario` the model tokenizer's symbols;
+ * `voz` a voice's style table; `sessao` a session on WebGPU or WASM.
+ */
+export interface ModuloKokoro {
+  readonly fonemizar: (texto: string, espeak: string) => Promise<string>;
+  readonly vocabulario: () => Promise<Readonly<{ [simbolo: string]: number }>>;
+  readonly voz: (id: string) => Promise<Float32Array>;
+  readonly sessao: (dispositivo: 'webgpu' | 'wasm') => Promise<SessaoKokoro>;
+}
+/** The Kokoro port (ADR-0198): one line on the game's side, loading its own phonemizer, runtime and model. */
+export type CarregarKokoro = () => Promise<ModuloKokoro>;
+
 export interface TtsCtx {
   srSay: (t: string) => void;
   srAlert: (t: string) => void;
@@ -63,6 +82,8 @@ export interface TtsCtx {
    * Ausente = a narração cai na voz do navegador (Web Speech), que fala o idioma certo e não pesa nada.
    */
   carregarVozNeural?: CarregarVozNeural;
+  /** How the Kokoro voices load (ADR-0198). Absent = no Kokoro voice is listed. */
+  carregarKokoro?: CarregarKokoro;
   /** The child's speech rate, words a minute (ADR-0183 §1). Absent = each voice at its own rate. */
   getSpeechPpm?: () => number;
   /**
@@ -93,6 +114,8 @@ export interface Tts {
   readonly neuralDisponivel: boolean;
   /** The voices of the current language the child may pick (ADR-0185); empty locks the speech rows and the bar's button. */
   vozes: () => readonly VozNeural[];
+  /** Where the loaded Kokoro voice runs: WebGPU when its test synthesis was speech, else WASM; null before one loads. */
+  readonly kokoroDispositivo: 'webgpu' | 'wasm' | null;
   /** The voice in use: the stored choice when it speaks the language, else the language's first voice, else none. */
   vozAtual: () => VozNeural | null;
   /** Stores the choice. A voice that does not speak the current language is refused (`false`). */
@@ -126,7 +149,8 @@ export function createTts(ctx: TtsCtx): Tts {
   let _ttsVoiceObj: SpeechSynthesisVoice | null = null; // voz do Web Speech selecionada
   // With the neural engine the voice of the language speaks by default (ADR-0185 §3); without it, the browser's voice —
   // defaulting to Piper there would open every game without the engine on a «not bundled» alert.
-  let ttsEngineSel = store.get(store.KEYS.ttsEngine, null) || (ctx.carregarVozNeural ? 'piper' : 'webspeech'); // webspeech | piper | kokoro | kitten | espeak
+  let ttsEngineSel = store.get(store.KEYS.ttsEngine, null) || (ctx.carregarVozNeural || ctx.carregarKokoro ? 'piper' : 'webspeech'); // webspeech | piper | kokoro | kitten | espeak
+  let kokoroDispositivo: 'webgpu' | 'wasm' | null = null;
   let vozCarregada: string | null = null; // the voice the loaded engine speaks; another choice reloads it
   // Each voice's words per minute, averaged over the utterances long enough to measure (`core/speech-rate`): what a short
   // utterance («Voltar») is played against. Neural voices by id; browser voices by name.
@@ -137,7 +161,8 @@ export function createTts(ctx: TtsCtx): Tts {
     mediaDaVoz.set(voz, antes ? antes * 0.7 + ppm * 0.3 : ppm);
   };
 
-  const vozes = (): readonly VozNeural[] => vozesDoIdioma(bcp47());
+  // Piper first, then Kokoro's, where the game hands in the Kokoro port (ADR-0198 §1–2)
+  const vozes = (): readonly VozNeural[] => [...vozesDoIdioma(bcp47()), ...(ctx.carregarKokoro ? vozesDoIdioma(bcp47(), VOZES_KOKORO) : [])];
   function vozAtual(): VozNeural | null {
     const lista = vozes();
     const guardada = store.get(store.KEYS.ttsVoz, null);
@@ -146,7 +171,7 @@ export function createTts(ctx: TtsCtx): Tts {
   function setVoz(id: string): boolean {
     if (!vozes().some((v) => v.voice === id)) return false;
     store.set(store.KEYS.ttsVoz, id);
-    if (ctx.carregarVozNeural) ttsEngineSel = 'piper';
+    if (ctx.carregarVozNeural || ctx.carregarKokoro) ttsEngineSel = vozes().find((v) => v.voice === id)!.engine;
     return true;
   }
 
@@ -174,9 +199,77 @@ export function createTts(ctx: TtsCtx): Tts {
     } catch (e) { return false; }
   }
 
+  /**
+   * A neural voice's utterances, whatever made the WAV (ADR-0183 §1): every utterance is measured — its words over its speech time,
+   * silent ends trimmed — and played at the child's rate over the voice's, through a media element that keeps the pitch.
+   */
+  function falaPorWav(vozId: string, produzir: (texto: string) => Promise<ArrayBuffer>): { falar: (texto: string) => void } {
+    return criarFalaInterrompivel<{ url: string; taxa: number }, HTMLAudioElement>({
+      sintetizar: async (texto) => {
+        const bytes = await produzir(texto);
+        const ac = ctx.ensureAC();
+        if (!ac) throw new Error('AudioContext unavailable'); // o `catch` de lá trata: silêncio deste item, motor vivo
+        let taxa = 1;
+        if (ctx.getSpeechPpm) {
+          const buf = await ac.decodeAudioData(bytes.slice(0));
+          const medida = taxaDaFala(palavrasFaladas(texto), segundosDeFala(buf.getChannelData(0), buf.sampleRate), ctx.getSpeechPpm(), mediaDaVoz.get(vozId) ?? null);
+          media(vozId, medida.ppmDaVoz);
+          taxa = medida.taxa;
+        }
+        return { url: URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' })), taxa };
+      },
+      tocar: (som, aoTerminar) => {
+        const ac = ctx.ensureAC();
+        if (!ac) { URL.revokeObjectURL(som.url); return null; }
+        const el = ctx.criarAudio ? ctx.criarAudio() : document.createElement('audio');
+        el.preservesPitch = true;
+        el.src = som.url;
+        el.playbackRate = som.taxa;
+        try { ac.createMediaElementSource(el).connect(ctx.catNode('tts') || ctx.audioOut() || ac.destination); } catch { /* already routed */ }
+        el.onended = () => { URL.revokeObjectURL(som.url); aoTerminar(); };
+        void el.play().catch(() => { URL.revokeObjectURL(som.url); aoTerminar(); });
+        return el;
+      },
+      parar: (el) => { el.pause(); URL.revokeObjectURL(el.src); },
+    });
+  }
+
+  /**
+   * KOKORO (ADR-0186, ADR-0198; issue #181): through the game's port, the voice's text becomes espeak-ng phonemes in its language,
+   * then the model's ids and a waveform. WebGPU only where a short test synthesis is speech — measured, WebGPU can run and return
+   * noise — and WASM with threads otherwise (ADR-0192).
+   */
+  function carregarMotorKokoro(fonte: VozNeural): void {
+    const carregar = ctx.carregarKokoro;
+    const kv = VOZES_KOKORO.find((v) => v.voice === fonte.voice);
+    if (!carregar || !kv) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
+    ttsLoading = true; vozCarregada = fonte.voice; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
+    carregar().then(async (mod) => {
+      const [vocabulario, tabela] = await Promise.all([mod.vocabulario(), mod.voz(kv.voice)]);
+      const sintetizarCom = async (sessao: SessaoKokoro, texto: string): Promise<Float32Array> => {
+        const ids = tokenizar(await mod.fonemizar(texto, kv.espeak), vocabulario);
+        return sessao.sintetizar(ids, estiloDaFrase(tabela, ids.length - 2));
+      };
+      let sessao: SessaoKokoro | null = null;
+      try {
+        const gpu = await mod.sessao('webgpu');
+        if (eFala(await sintetizarCom(gpu, t('tts.kokoro.teste')))) { sessao = gpu; kokoroDispositivo = 'webgpu'; }
+      } catch { /* no WebGPU here: WASM below */ }
+      if (!sessao) { sessao = await mod.sessao('wasm'); kokoroDispositivo = 'wasm'; }
+      const usada = sessao;
+      const fala = falaPorWav(kv.voice, async (texto) => wavDe(await sintetizarCom(usada, texto)));
+      ttsEngine = { id: 'kokoro', speak: (text: string) => { fala.falar(text); } };
+      ttsLoading = false;
+      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) { /* noop */ }
+      narrate(t('sr.tts.ready', { s: ((performance.now() - t0) / 1000).toFixed(0) }));
+    }).catch(() => { ttsLoading = false; ttsFailed = true; ctx.srAlert(t('sr.tts.loadFailed')); });
+  }
+
   function loadTTS(): void {
     if (ttsEngine || ttsLoading || ttsFailed) return;
-    if (ttsEngineSel !== 'piper') { // Kokoro/Kitten/eSpeak NG ainda não entraram
+    const escolhida = ttsEngineSel !== 'webspeech' ? vozAtual() : null;
+    if (escolhida?.engine === 'kokoro') { carregarMotorKokoro(escolhida); return; }
+    if (ttsEngineSel !== 'piper' && ttsEngineSel !== 'kokoro') { // Kitten/eSpeak NG ainda não entraram
       if (ttsEngineSel !== 'webspeech') ctx.srAlert(t('sr.tts.engineNoLanguage'));
       return;
     }
@@ -216,35 +309,7 @@ export function createTts(ctx: TtsCtx): Tts {
       // lenta de atropelar a mais nova.
       // ADR-0183 §1: every utterance is measured — its words over its speech time, silent ends trimmed — and played at the
       // child's rate over the voice's, through a media element that keeps the pitch (`preservesPitch`).
-      const fala = criarFalaInterrompivel<{ url: string; taxa: number }, HTMLAudioElement>({
-        sintetizar: async (texto) => {
-          const wav = await session.predict(texto);
-          const bytes = await wav.arrayBuffer();
-          const ac = ctx.ensureAC();
-          if (!ac) throw new Error('AudioContext unavailable'); // o `catch` de lá trata: silêncio deste item, motor vivo
-          let taxa = 1;
-          if (ctx.getSpeechPpm) {
-            const buf = await ac.decodeAudioData(bytes.slice(0));
-            const medida = taxaDaFala(palavrasFaladas(texto), segundosDeFala(buf.getChannelData(0), buf.sampleRate), ctx.getSpeechPpm(), mediaDaVoz.get(fonte.voice) ?? null);
-            media(fonte.voice, medida.ppmDaVoz);
-            taxa = medida.taxa;
-          }
-          return { url: URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' })), taxa };
-        },
-        tocar: (som, aoTerminar) => {
-          const ac = ctx.ensureAC();
-          if (!ac) { URL.revokeObjectURL(som.url); return null; }
-          const el = ctx.criarAudio ? ctx.criarAudio() : document.createElement('audio');
-          el.preservesPitch = true;
-          el.src = som.url;
-          el.playbackRate = som.taxa;
-          try { ac.createMediaElementSource(el).connect(ctx.catNode('tts') || ctx.audioOut() || ac.destination); } catch { /* already routed */ }
-          el.onended = () => { URL.revokeObjectURL(som.url); aoTerminar(); };
-          void el.play().catch(() => { URL.revokeObjectURL(som.url); aoTerminar(); });
-          return el;
-        },
-        parar: (el) => { el.pause(); URL.revokeObjectURL(el.src); },
-      });
+      const fala = falaPorWav(fonte.voice, async (texto) => (await session.predict(texto)).arrayBuffer());
       ttsEngine = { id: 'piper', speak: (text: string) => { fala.falar(text); } };
       ttsLoading = false;
       try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) { /* noop */ }
@@ -256,7 +321,7 @@ export function createTts(ctx: TtsCtx): Tts {
     if (ttsEngineSel !== 'webspeech') {
       // another voice picked, or the language changed, since the engine loaded: load the voice in use
       if (ttsEngine && vozCarregada !== vozAtual()?.voice) { ttsEngine = null; ttsFailed = false; }
-      if (ttsEngine && ttsEngine.id === ttsEngineSel && ttsEngine.speak) { try { ttsEngine.speak(text); } catch (e) { /* noop */ } return true; }
+      if (ttsEngine && ttsEngine.speak) { try { ttsEngine.speak(text); } catch (e) { /* noop */ } return true; }
       loadTTS(); // motor neural (baixando/indisponível) → cai no fallback
     }
     return speakWebSpeech(text); // fallback imediato: Web Speech, no idioma do jogo
@@ -273,7 +338,8 @@ export function createTts(ctx: TtsCtx): Tts {
     getEngineSel: () => ttsEngineSel, setEngineSel: (v) => { ttsEngineSel = v; },
     getEngine: () => ttsEngine, getVoiceObj: () => _ttsVoiceObj, setVoiceObj: (v) => { _ttsVoiceObj = v; },
     get loading() { return ttsLoading; }, get failed() { return ttsFailed; }, get narrateCount() { return _narrateCount; },
-    get neuralDisponivel() { return !!ctx.carregarVozNeural; },
+    get neuralDisponivel() { return !!ctx.carregarVozNeural || !!ctx.carregarKokoro; },
+    get kokoroDispositivo() { return kokoroDispositivo; },
     vozes, vozAtual, setVoz,
   };
 }

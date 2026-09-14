@@ -756,9 +756,12 @@
     "setJSON"
   ],
   "platform/tts.ts": [
+    "CarregarKokoro",
     "CarregarVozNeural",
     "LocaisDoRuntime",
+    "ModuloKokoro",
     "ModuloNeural",
+    "SessaoKokoro",
     "SessaoNeural",
     "Tts",
     "TtsCtx",

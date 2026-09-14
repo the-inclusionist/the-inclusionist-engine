@@ -17,6 +17,7 @@
       "acomodacoes",
       "aoProgredirPesados?",
       "baixarPesados?",
+      "carregarKokoro?",
       "carregarVozNeural?",
       "comIndice?",
       "controleNaTela?",
@@ -1163,8 +1164,18 @@
     "interface ModuloNeural": [
       "TtsSession"
     ],
+    "interface SessaoKokoro": [
+      "sintetizar"
+    ],
+    "interface ModuloKokoro": [
+      "fonemizar",
+      "sessao",
+      "vocabulario",
+      "voz"
+    ],
     "interface TtsCtx": [
       "audioOut",
+      "carregarKokoro?",
       "carregarVozNeural?",
       "catNode",
       "criarAudio?",
@@ -1181,6 +1192,7 @@
       "getEngine",
       "getEngineSel",
       "getVoiceObj",
+      "kokoroDispositivo",
       "loadTTS",
       "loading",
       "narrate",
@@ -1194,7 +1206,8 @@
       "vozAtual",
       "vozes"
     ],
-    "type CarregarVozNeural": "() => Promise<ModuloNeural>"
+    "type CarregarVozNeural": "() => Promise<ModuloNeural>",
+    "type CarregarKokoro": "() => Promise<ModuloKokoro>"
   },
   "platform/voice-plan.ts": {
     "interface VozNeural": [

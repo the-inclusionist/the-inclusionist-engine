@@ -369,6 +369,7 @@ const es: Record<string, string> = {
   'audio.ttsVol': 'Volumen de la narración',
   'audio.ttsPpm': 'Ritmo del habla',
   'audio.ttsPpm.dica': 'Cuántas palabras por minuto dice la narración.',
+  'tts.kokoro.teste': 'Hola.', // the short sentence that tests whether WebGPU speaks (ADR-0198 §4)
   'visual.captions': 'Subtítulos',
   'visual.legenda.ritmo': 'Ritmo de los subtítulos',
   'visual.legenda.ppm': '{n} PPM',

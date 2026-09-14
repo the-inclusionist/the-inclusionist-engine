@@ -66,7 +66,7 @@ export interface TtsPanel {
 }
 
 /** A voice as this panel lists it: the provider's identifier, `locale-name-quality`. */
-export interface VozDoPainel { readonly voice: string; readonly engine?: string }
+export interface VozDoPainel { readonly voice: string; readonly engine?: string; readonly boa?: boolean }
 
 /** The name a child sees for a voice: the middle of its identifier — `pt_BR-faber-medium` is «Faber». */
 function nomeDaVoz(v: VozDoPainel): string {
@@ -76,10 +76,11 @@ function nomeDaVoz(v: VozDoPainel): string {
 }
 /**
  * What the list SHOWS: a Piper voice carries a feather — the Dev: «uma vez que elas carregam bem menos dados de Kokoro para a
- * memória por vez». Only shown: what is said is the name alone (ADR-0159 rule 12, no glyph in a spoken name).
+ * memória por vez» — and Kokoro's two good voices, Heart and Bella, a heart (ADR-0198 §3). Only shown: what is said is the name
+ * alone (ADR-0159 rule 12, no glyph in a spoken name).
  */
 function rotuloDaVoz(v: VozDoPainel): string {
-  return (v.engine === 'piper' ? '🪶 ' : '') + nomeDaVoz(v);
+  return (v.engine === 'piper' ? '🪶 ' : v.boa ? '❤️ ' : '') + nomeDaVoz(v);
 }
 
 /** The rows a missing voice locks (ADR-0185 §4): narration, its volume and rate, the spoken index, and the voice. */
