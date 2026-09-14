@@ -419,6 +419,8 @@ const en: Record<string, string> = {
   'quiz.pos.up': 'Up',
   'quiz.pos.down': 'Down',
   'quiz.pos.confirm': 'Confirm',
+  'quiz.comoJogar.ler': 'Read the question at the top of the screen.',
+  'quiz.comoJogar.escolher': 'Choose the answer with the arrows and confirm.',
   'quiz.pos.back': 'Back',
   'quiz.menu': 'Menu',
   'quiz.resposta.certa': 'Right! {certa}.',

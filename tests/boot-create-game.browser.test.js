@@ -915,6 +915,40 @@ describe('createGame num documento de verdade', () => {
       expect(slide().dataset.act, 'left did not turn back').toBe('left');
     });
 
+    it('🔴 [Right] «how to play» is the cartridge\'s: its slides open the help, before the button slides (ADR-0195)', () => {
+      const motor = abrir({
+        preset: { action2: { label: 'Confirmar' } },
+        howToPlay: [{ text: () => 'Leia a pergunta.' }, { text: () => 'Escolha a resposta certa.', figure: () => {} }],
+      });
+      motor.pausa.mostrar(0);
+      document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]').click();
+      const slides = document.querySelector('#help .slides');
+      const slide = () => slides.querySelector('.slide');
+      const passo = (d) => slides.dispatchEvent(new CustomEvent('passo', { detail: d, bubbles: true }));
+      expect([slide().dataset.kind, slide().querySelector('.slide-texto').textContent], 'the help does not open on the game\'s first slide')
+        .toEqual(['play', 'Leia a pergunta.']);
+      passo(1);
+      expect(slide().querySelector('.slide-figura').hidden, 'the second slide\'s figure is not shown').toBe(false);
+      passo(1);
+      expect([slide().dataset.kind, slide().dataset.act], 'the button slides do not follow').toEqual(['button', 'action2']);
+      expect(slides.querySelectorAll('.slide-ponto').length).toBe(3);
+    });
+
+    it('⚠️ [Boundary] a cartridge with «how to play» and no preset still has a help — its slides alone', () => {
+      const motor = abrir({ howToPlay: [{ text: () => 'Toque na figura certa.' }] });
+      motor.pausa.mostrar(0);
+      const item = document.querySelector('#vp-pause-0 .pm-btn[data-act="ajuda"]');
+      expect(item.getAttribute('aria-disabled'), 'the help is locked though the game tells how to play').not.toBe('true');
+      item.click();
+      const slides = document.querySelector('#help .slides');
+      expect(slides, 'no help mounted for a game that only tells how to play').not.toBeNull();
+      expect(slides.querySelectorAll('.slide-ponto').length).toBe(1);
+    });
+
+    it('🔴 [Zero] a «how to play» slide without text refuses the boot, naming it (ADR-0169)', () => {
+      expect(() => abrir({ howToPlay: [{ figure: () => {} }] })).toThrow(/howToPlay\[0\]\.text/);
+    });
+
     it('🔴 [Zero] SEM `preset` o item de ajuda fica TRAVADO — presente, e sem painel por trás (ADR-0161)', () => {
       // O par do caso acima. Sem as palavras do jogo a ajuda não se monta (ADR-0074); desde o ADR-0161 o item fica à
       // vista e travado com o motivo, em vez de sumir. Medir só a presença deixaria passar uma ajuda vazia.

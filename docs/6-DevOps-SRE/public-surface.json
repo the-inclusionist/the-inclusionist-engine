@@ -1242,10 +1242,15 @@
     "gameOptionsProblems"
   ],
   "ui/help-panel.ts": [
+    "FigureClock",
     "HelpRow",
+    "HowToPlaySlide",
+    "HowToPlaySurface",
     "SEM_TECLA",
     "SlideCtx",
+    "animarFigura",
     "helpRows",
+    "howToPlayProblems",
     "montarSlides",
     "mostrarSlide"
   ],

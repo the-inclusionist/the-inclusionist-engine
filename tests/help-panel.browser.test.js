@@ -7,7 +7,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { helpRows, montarSlides, mostrarSlide, SEM_TECLA } from '../app/js/ui/help-panel.js';
+import { helpRows, montarSlides, mostrarSlide, animarFigura, howToPlayProblems, SEM_TECLA } from '../app/js/ui/help-panel.js';
 
 const PRESET = {
   action2: { label: 'Pular', hint: 'Sai do chão e volta.' },
@@ -88,6 +88,70 @@ describe('the help slide show', () => {
     el.querySelector('[data-passo="1"]').click();
     el.querySelector('[data-passo="-1"]').click();
     expect(pedidos).toEqual([1, -1]);
+  });
+});
+
+describe('a cartridge\'s «how to play» slide (ADR-0195)', () => {
+  const figurasDesenhadas = [];
+  const COMO_JOGAR = [
+    { text: () => 'Leia a pergunta.', figure: (s) => figurasDesenhadas.push([s.width > 0, s.height > 0, typeof s.ctx.fillRect, s.time]) },
+    { text: () => 'Escolha a resposta!' },
+  ];
+  const todos = [...COMO_JOGAR, ...linhas];
+
+  it('🔴 [Right] shows the game\'s text, no key cap and no word, and says the text', () => {
+    const el = novo();
+    const { falado } = mostrarSlide(el, todos, 1, ctx);
+    expect(el.querySelector('.slide').dataset.kind).toBe('play');
+    expect(el.querySelector('.slide-texto').textContent).toBe('Escolha a resposta!');
+    expect([el.querySelector('.slide-tecla').hidden, el.querySelector('.slide-palavra').hidden]).toEqual([true, true]);
+    expect(falado).toBe('Escolha a resposta');
+    expect(el.querySelectorAll('.slide-ponto').length, 'one dot per slide, the game\'s and the buttons\'').toBe(5);
+  });
+
+  it('🔴 [Right] a button slide after it shows the key again — the kinds do not leak into each other', () => {
+    const el = novo();
+    mostrarSlide(el, todos, 0, ctx);
+    mostrarSlide(el, todos, 3, ctx);
+    expect(el.querySelector('.slide').dataset.kind).toBe('button');
+    expect([el.querySelector('.slide-tecla').hidden, el.querySelector('.slide-figura').hidden]).toEqual([false, true]);
+  });
+
+  it('🔴 [Right] the figure is shown and drawn on the engine\'s surface; a slide without one hides it', () => {
+    const el = novo();
+    document.body.appendChild(el);
+    mostrarSlide(el, todos, 0, ctx);
+    expect(el.querySelector('.slide-figura').hidden).toBe(false);
+    const parar = animarFigura(el, COMO_JOGAR[0], { requestFrame: () => 1, cancelFrame: () => {}, reduced: false });
+    parar();
+    expect(figurasDesenhadas.at(-1).slice(0, 3)).toEqual([true, true, 'function']);
+    mostrarSlide(el, todos, 1, ctx);
+    expect(el.querySelector('.slide-figura').hidden).toBe(true);
+    el.remove();
+  });
+
+  it('⚠️ [Boundary] under reduced motion the figure is drawn once, at time 0, and no frame is asked', () => {
+    const el = novo();
+    document.body.appendChild(el);
+    mostrarSlide(el, todos, 0, ctx);
+    let pedidos = 0;
+    const antes = figurasDesenhadas.length;
+    animarFigura(el, COMO_JOGAR[0], { requestFrame: () => { pedidos++; return 1; }, cancelFrame: () => {}, reduced: true });
+    expect([figurasDesenhadas.length - antes, figurasDesenhadas.at(-1)[3], pedidos]).toEqual([1, 0, 0]);
+    let quadros = 0;
+    const loop = animarFigura(el, COMO_JOGAR[0], { requestFrame: () => { quadros++; return quadros; }, cancelFrame: () => {}, reduced: false });
+    loop();
+    expect(quadros, 'with motion allowed the figure asks for the next frame').toBe(1);
+    el.remove();
+  });
+
+  it('🔴 [Zero] howToPlayProblems: absent is well formed; a slide without text, or a figure that is not a function, is not', () => {
+    expect(howToPlayProblems(undefined)).toEqual([]);
+    expect(howToPlayProblems(COMO_JOGAR)).toEqual([]);
+    expect(howToPlayProblems([{ figure: () => {} }]).join(' ')).toMatch(/howToPlay\[0\]\.text/);
+    expect(howToPlayProblems([{ text: 'Leia' }]).join(' '), 'a string instead of a function would freeze the language').toMatch(/text/);
+    expect(howToPlayProblems([{ text: () => 'x', figure: 'desenho.png' }]).join(' ')).toMatch(/figure/);
+    expect(howToPlayProblems('slides')).toEqual(['howToPlay must be a list of slides']);
   });
 });
 

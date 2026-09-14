@@ -67,7 +67,7 @@ import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa
 import { anunciarItem } from '../ui/item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { itensNavegaveis } from '../ui/menu-items.js';
-import { helpRows, montarSlides, mostrarSlide } from '../ui/help-panel.js';
+import { helpRows, montarSlides, mostrarSlide, animarFigura, howToPlayProblems, type HowToPlaySlide } from '../ui/help-panel.js';
 import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
 import * as state from '../core/state.js';
@@ -305,6 +305,13 @@ export interface CreateGameOptions {
    * options only where rows cannot express what it needs. A malformed list is refused at boot and at `mount`.
    */
   readonly gameOptions?: readonly GameOption[];
+  /**
+   * HOW TO PLAY THIS GAME, as slides the help shows before the buttons (ADR-0195; issue #188): «O "Como jogar" é justamente algo a
+   * ser feito pelo cartucho.» Each slide's text is read at every showing, in the page's language; its figure, when given, is drawn
+   * by the cartridge on a surface the engine gives, with the time for an animation (still under reduced motion). Absent = the help
+   * shows the buttons alone. A malformed list is refused at boot and at `mount`.
+   */
+  readonly howToPlay?: readonly HowToPlaySlide[];
   /**
    * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO — a resposta do cartucho, OBRIGATÓRIA (ADR-0153).
    *
@@ -613,6 +620,12 @@ function recusarSeOpcoesMalformadas(quem: string, opcoes: unknown): void {
   if (problemas.length) recusarDeclaracao(quem, problemas);
 }
 
+/** A malformed `howToPlay` is a program defect, refused like the declaration (ADR-0169): the help would not know what to show. */
+function recusarSeComoJogarMalformado(quem: string, slides: unknown): void {
+  const problemas = howToPlayProblems(slides);
+  if (problemas.length) recusarDeclaracao(quem, problemas);
+}
+
 /** Os ids que os painéis emprestados exigem do documento. Achado 6: sem eles o painel abre VAZIO, sem erro. */
 const MARCACAO_EXIGIDA: readonly string[] = ['#game-region', '#sr-status', '#sr-alert'];
 
@@ -646,7 +659,7 @@ const SELETOR_BARRA_A11Y = '#title-icons';
 type MetadeDoJogo = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
-  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud' | 'gameOptions'>;
+  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud' | 'gameOptions' | 'howToPlay'>;
 
 export function createGame(o: CreateGameOptions): Engine {
   /*
@@ -668,6 +681,7 @@ export function createGame(o: CreateGameOptions): Engine {
   recusarSeGeneroRecusado('createGame', cartucho.genero);
   recusarSeHudMalformado('createGame', cartucho.hud);
   recusarSeOpcoesMalformadas('createGame', cartucho.gameOptions);
+  recusarSeComoJogarMalformado('createGame', cartucho.howToPlay);
 
   const { doc, win } = o.host;
   // THE CHILD'S STORED SETTINGS, FIRST (ADR-0178): nothing below reads or writes one before this.
@@ -1505,7 +1519,9 @@ export function createGame(o: CreateGameOptions): Engine {
      * 📌 A TECLA VEM DE `kbFor(0)`, e não do mapa de fábrica: quem remapeou vê a tecla DELA. É a mesma razão
      * pela qual o ADR-0144 escuta a acção e não a tecla.
      */
-    if (cartucho.preset) {
+    // The cartridge's «how to play» slides come first (ADR-0195; issue #188); the help stands with them, with the buttons, or both.
+    if (cartucho.preset || cartucho.howToPlay?.length) {
+      let pararFigura = (): void => {};
       const painelDeAjuda = montarPainel(ctxDoPainel, {
         id: 'help',
         rotulos: () => ({
@@ -1522,15 +1538,27 @@ export function createGame(o: CreateGameOptions): Engine {
           const lista = $<HTMLElement>('#help-list');
           if (!lista) return;
           while (lista.firstChild) lista.removeChild(lista.firstChild);
-          const linhas = helpRows(cartucho.preset, (a) => keyboard.kbFor(0)[a], keyName);
+          const linhas = [...(cartucho.howToPlay ?? []), ...helpRows(cartucho.preset, (a) => keyboard.kbFor(0)[a], keyName)];
           const ctxDoSlide = { criar: (tag: string) => doc.createElement(tag), t, titulo: t('menu.help') };
           const slides = montarSlides(ctxDoSlide);
           lista.appendChild(slides);
-          let atual = mostrarSlide(slides, linhas, 0, ctxDoSlide).indice;
+          const relogio = {
+            requestFrame: (cb: (ms: number) => void) => win.requestAnimationFrame(cb),
+            cancelFrame: (id: number) => win.cancelAnimationFrame(id),
+            reduced: state.defaultReducedMotion(),
+          };
+          const mostrar = (i: number): { indice: number; falado: string } => {
+            pararFigura();
+            const mostrado = mostrarSlide(slides, linhas, i, ctxDoSlide);
+            const slide = linhas[mostrado.indice];
+            if (slide && 'text' in slide) pararFigura = animarFigura(slides, slide, relogio);
+            return mostrado;
+          };
+          let atual = mostrar(0).indice;
           slides.addEventListener('passo', (ev) => {
             const nova = passoSeguinte(atual, linhas.length, (ev as CustomEvent<number>).detail);
             if (nova === atual) return;
-            const mostrado = mostrarSlide(slides, linhas, nova, ctxDoSlide);
+            const mostrado = mostrar(nova);
             atual = mostrado.indice;
             srSay(mostrado.falado);
           });
@@ -1542,8 +1570,8 @@ export function createGame(o: CreateGameOptions): Engine {
       acoesDaEngine.ajuda = painelDeAjuda.abrir;
     } else {
       problemasDoHospedeiro.push(
-        'the help screen was not mounted: it lists each position, its key and the game\'s word, and without `preset` it '
-        + 'could only show a child `action2` — declare `preset` (ADR-0085)',
+        'the help screen was not mounted: it shows how to play and each position, its key and the game\'s word, and without '
+        + '`howToPlay` or `preset` it could only show a child `action2` — declare `howToPlay` (ADR-0195) or `preset` (ADR-0085)',
       );
     }
 
@@ -3454,6 +3482,7 @@ export function createGame(o: CreateGameOptions): Engine {
     recusarSeGeneroRecusado('mount', ganchos.genero);
     recusarSeHudMalformado('mount', ganchos.hud);
     recusarSeOpcoesMalformadas('mount', ganchos.gameOptions);
+    recusarSeComoJogarMalformado('mount', ganchos.howToPlay);
     cartucho = { ...ganchos, declaration };
     montarHud(); // the numbers are the cartridge's: the new one's replace the old one's, and the room is measured again
     registrarMapeamentosDoCartucho();

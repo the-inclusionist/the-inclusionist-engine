@@ -349,6 +349,20 @@ export function bootQuiz(): void {
      * 📌 GETTERS e não cadeias: o `preset` é lido a cada desenho, e uma palavra resolvida aqui ficaria no idioma de
      * recuo — este boot corre antes de o idioma preferido chegar.
      */
+    /*
+     * HOW TO PLAY THIS QUIZ (ADR-0195): the cartridge tells it, the engine's help shows it before the buttons. The figures are drawn
+     * here from shapes — a question bar and four options — and the second one moves the marked option down, which is the game.
+     */
+    howToPlay: [
+      {
+        text: () => t('quiz.comoJogar.ler'),
+        figure: ({ ctx, width, height }) => desenharQuizFigura(ctx, width, height, -1),
+      },
+      {
+        text: () => t('quiz.comoJogar.escolher'),
+        figure: ({ ctx, width, height, time }) => desenharQuizFigura(ctx, width, height, Math.floor(time / 0.9) % 4),
+      },
+    ],
     preset: {
       up: { get label() { return t('quiz.pos.up'); } },
       down: { get label() { return t('quiz.pos.down'); } },
@@ -436,3 +450,22 @@ export function bootQuiz(): void {
 }
 
 if (typeof document !== 'undefined' && document.getElementById('quiz-app')) bootQuiz();
+
+/** The quiz drawn small, for its «how to play» slides: the question bar and four options, `marcada` outlined (−1: none). */
+function desenharQuizFigura(ctx: CanvasRenderingContext2D, w: number, h: number, marcada: number): void {
+  const m = Math.round(h * 0.06);
+  const barra = Math.round(h * 0.16);
+  ctx.fillStyle = '#eaf2f8';
+  ctx.fillRect(m, m, w - 2 * m, barra);
+  const altura = Math.floor((h - 3 * m - barra - 3 * m) / 4);
+  for (let i = 0; i < 4; i++) {
+    const y = 2 * m + barra + i * (altura + m);
+    ctx.fillStyle = '#3a4a6a'; // lighter than the slide's own #1a2740, or the options vanish into it
+    ctx.fillRect(m * 3, y, w - 6 * m, altura);
+    if (i === marcada) {
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = Math.max(2, Math.round(m / 2));
+      ctx.strokeRect(m * 3, y, w - 6 * m, altura);
+    }
+  }
+}

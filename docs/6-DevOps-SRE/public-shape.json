@@ -27,6 +27,7 @@
       "genero?",
       "getPauseActs?",
       "host",
+      "howToPlay?",
       "hud?",
       "isBlindMode?",
       "isNavigable?",
@@ -1828,6 +1829,21 @@
     ],
     "interface SlideCtx": [
       "criar"
+    ],
+    "interface HowToPlaySurface": [
+      "ctx",
+      "height",
+      "time",
+      "width"
+    ],
+    "interface HowToPlaySlide": [
+      "figure?",
+      "text"
+    ],
+    "interface FigureClock": [
+      "cancelFrame",
+      "reduced",
+      "requestFrame"
     ]
   },
   "ui/hud-bands.ts": {

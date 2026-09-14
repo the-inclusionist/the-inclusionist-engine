@@ -87,6 +87,73 @@ export interface SlideCtx {
   readonly criar: (tag: string) => HTMLElement;
 }
 
+/** The surface a «how to play» figure draws on, and the time in seconds since the slide showed (still under reduced motion). */
+export interface HowToPlaySurface {
+  readonly ctx: CanvasRenderingContext2D;
+  readonly width: number;
+  readonly height: number;
+  readonly time: number;
+}
+
+/**
+ * One «how to play» slide, declared by the cartridge (ADR-0195; issue #188): «O "Como jogar" é justamente algo a ser feito pelo
+ * cartucho.» The text is resolved at every showing, so it follows the language; the figure is drawn by the game on the engine's
+ * surface — art stays data the game draws, never an embedded picture — and may animate by the time it is given.
+ */
+export interface HowToPlaySlide {
+  readonly text: () => string;
+  readonly figure?: (surface: HowToPlaySurface) => void;
+}
+
+/** Why a `howToPlay` declaration is malformed; empty when well formed. Absent is well formed: the help shows the buttons alone. */
+export function howToPlayProblems(slides: unknown): string[] {
+  if (slides === undefined) return [];
+  if (!Array.isArray(slides)) return ['howToPlay must be a list of slides'];
+  const out: string[] = [];
+  slides.forEach((s: Record<string, unknown> | null, i) => {
+    const at = `howToPlay[${i}]`;
+    if (!s || typeof s !== 'object') { out.push(`${at} must be a slide`); return; }
+    if (typeof s.text !== 'function') out.push(`${at}.text must be a function returning the slide's text, in the page's language`);
+    if (s.figure !== undefined && typeof s.figure !== 'function') out.push(`${at}.figure must be a function drawing on the surface it is given`);
+  });
+  return out;
+}
+
+const eDoJogo = (s: HelpRow | HowToPlaySlide): s is HowToPlaySlide => typeof (s as HowToPlaySlide).text === 'function';
+
+/** What the engine's frame loop gives an animated figure; injected, so the loop is the page's. */
+export interface FigureClock {
+  readonly requestFrame: (cb: (ms: number) => void) => number;
+  readonly cancelFrame: (id: number) => void;
+  /** Reduced motion: the figure is drawn once, at time 0, and never again. */
+  readonly reduced: boolean;
+}
+
+/**
+ * Draws the shown slide's figure, and keeps drawing it while the slide show is in the document and the same slide is shown.
+ * Returns a stop. A figure that throws is a cartridge defect: it stops drawing and the text stays.
+ */
+export function animarFigura(el: HTMLElement, slide: HowToPlaySlide, clock: FigureClock): () => void {
+  const tela = el.querySelector<HTMLCanvasElement>('.slide-figura');
+  const ctx = tela?.getContext('2d');
+  if (!tela || !ctx || !slide.figure) return () => {};
+  const figura = slide.figure;
+  // the drawing surface is the size it is shown at, in CSS pixels, so a figure's coordinates are the ones the child sees
+  const caixa = tela.getBoundingClientRect();
+  if (caixa.width > 0 && caixa.height > 0) { tela.width = Math.round(caixa.width); tela.height = Math.round(caixa.height); }
+  let id = 0, parado = false, inicio = -1;
+  const desenhar = (ms: number): void => {
+    if (parado || !el.isConnected) return;
+    if (inicio < 0) inicio = ms;
+    const time = clock.reduced ? 0 : (ms - inicio) / 1000;
+    ctx.clearRect(0, 0, tela.width, tela.height);
+    try { figura({ ctx, width: tela.width, height: tela.height, time }); } catch { parado = true; return; }
+    if (!clock.reduced) id = clock.requestFrame(desenhar);
+  };
+  desenhar(0);
+  return () => { parado = true; clock.cancelFrame(id); };
+}
+
 /** Builds the slide show's frame: the stop, its two arrows, the slide and the dots. `mostrarSlide` fills it. */
 export function montarSlides(ctx: SlideCtx): HTMLElement {
   const el = ctx.criar('div');
@@ -106,6 +173,9 @@ export function montarSlides(ctx: SlideCtx): HTMLElement {
   const slide = ctx.criar('div');
   slide.className = 'slide';
   slide.setAttribute('aria-hidden', 'true'); // heard through the stop's value, once
+  const figura = ctx.criar('canvas');
+  figura.className = 'slide-figura';
+  figura.hidden = true;
   const tecla = ctx.criar('kbd');
   tecla.className = 'slide-tecla';
   const palavra = ctx.criar('p');
@@ -114,7 +184,7 @@ export function montarSlides(ctx: SlideCtx): HTMLElement {
   texto.className = 'slide-texto';
   const pontos = ctx.criar('div');
   pontos.className = 'slide-pontos';
-  for (const filho of [tecla, palavra, texto, pontos]) slide.appendChild(filho);
+  for (const filho of [figura, tecla, palavra, texto, pontos]) slide.appendChild(filho);
   el.appendChild(seta(-1, '◀'));
   el.appendChild(slide);
   el.appendChild(seta(1, '▶'));
@@ -123,11 +193,12 @@ export function montarSlides(ctx: SlideCtx): HTMLElement {
 
 /**
  * Shows slide `i` (held at the ends, like every steps control: the last slide is a wall, not a way back to the first) and returns
- * the index shown, and what a screen reader hears of it.
+ * the index shown, and what a screen reader hears of it. A slide is a button row (`helpRows`) or a cartridge's «how to play» slide
+ * (ADR-0195), which the help puts first.
  */
 export function mostrarSlide(
   el: HTMLElement,
-  rows: readonly HelpRow[],
+  rows: readonly (HelpRow | HowToPlaySlide)[],
   i: number,
   ctx: SlideCtx & { readonly t: (k: string, p?: Record<string, string>) => string; readonly titulo: string },
 ): { readonly indice: number; readonly falado: string } {
@@ -135,27 +206,46 @@ export function mostrarSlide(
   const indice = Math.max(0, Math.min(ultimo, i));
   const r = rows[indice];
   const slide = el.querySelector<HTMLElement>('.slide');
+  const figura = el.querySelector<HTMLCanvasElement>('.slide-figura');
   const tecla = el.querySelector<HTMLElement>('.slide-tecla');
   const palavra = el.querySelector<HTMLElement>('.slide-palavra');
   const texto = el.querySelector<HTMLElement>('.slide-texto');
   const pontos = el.querySelector<HTMLElement>('.slide-pontos');
-  if (!r || !slide || !tecla || !palavra || !texto || !pontos) return { indice, falado: '' };
-  slide.setAttribute('data-act', r.action);
-  tecla.textContent = r.key ?? ctx.t(SEM_TECLA);
-  if (r.key) tecla.removeAttribute('data-sem-tecla');
-  else tecla.setAttribute('data-sem-tecla', '1');
-  palavra.textContent = r.word;
-  texto.textContent = r.hint ?? '';
-  texto.hidden = !r.hint;
+  if (!r || !slide || !figura || !tecla || !palavra || !texto || !pontos) return { indice, falado: '' };
   while (pontos.firstChild) pontos.removeChild(pontos.firstChild);
   rows.forEach((_, n) => {
     const p = ctx.criar('span');
     p.className = n === indice ? 'slide-ponto is-on' : 'slide-ponto';
     pontos.appendChild(p);
   });
-  // a game's sentence that already ends in a full stop is not given a second one
-  const falado = [r.word, r.hint, r.key ? ctx.t('help.slide.tecla', { k: r.key }) : ctx.t(SEM_TECLA)]
-    .filter(Boolean).map((parte) => parte!.replace(/[.!?…]+\s*$/, '')).join('. ');
+  // a sentence that already ends in a full stop is not given a second one
+  const juntar = (partes: readonly (string | undefined)[]): string =>
+    partes.filter(Boolean).map((parte) => parte!.replace(/[.!?…]+\s*$/, '')).join('. ');
+  let falado: string;
+  if (eDoJogo(r)) {
+    slide.setAttribute('data-kind', 'play');
+    slide.removeAttribute('data-act');
+    figura.hidden = !r.figure;
+    tecla.hidden = true;
+    palavra.hidden = true;
+    const frase = r.text();
+    texto.textContent = frase;
+    texto.hidden = false;
+    falado = juntar([frase]);
+  } else {
+    slide.setAttribute('data-kind', 'button');
+    slide.setAttribute('data-act', r.action);
+    figura.hidden = true;
+    tecla.hidden = false;
+    palavra.hidden = false;
+    tecla.textContent = r.key ?? ctx.t(SEM_TECLA);
+    if (r.key) tecla.removeAttribute('data-sem-tecla');
+    else tecla.setAttribute('data-sem-tecla', '1');
+    palavra.textContent = r.word;
+    texto.textContent = r.hint ?? '';
+    texto.hidden = !r.hint;
+    falado = juntar([r.word, r.hint, r.key ? ctx.t('help.slide.tecla', { k: r.key }) : ctx.t(SEM_TECLA)]);
+  }
   el.setAttribute('aria-label', ctx.titulo);
   el.setAttribute('aria-valuemin', '0');
   el.setAttribute('aria-valuemax', String(ultimo));
