@@ -32,6 +32,17 @@ function mao({ x = 0.5, y = 0.7, p = 0.1, dedos = [true, true, true, true], pole
 
 const correr = (leitor, quadros) => quadros.map(([ms, q]) => leitor.quadro(ms, q)).filter(Boolean);
 
+/** A head turned `yawGraus` and tilted `pitchGraus`, as MediaPipe's column-major 4×4 matrix: R = Ry(yaw) · Rx(-pitch). */
+const rotacao = (yawGraus, pitchGraus) => {
+  const y = (yawGraus * Math.PI) / 180, p = (pitchGraus * Math.PI) / 180;
+  const cy = Math.cos(y), sy = Math.sin(y), cp = Math.cos(-p), sp = Math.sin(-p);
+  const R = [[cy, sy * sp, sy * cp], [0, cp, -sp], [-sy, cy * sp, cy * cp]];
+  const m = new Array(16).fill(0);
+  for (let c = 0; c < 3; c++) for (let r = 0; r < 3; r++) m[c * 4 + r] = R[r][c];
+  m[15] = 1;
+  return m;
+};
+
 describe('static hand gestures (ADR-0197 §1)', () => {
   it('🔴 [Right] the Dev\'s seven canned gestures map to their commands', () => {
     expect(GESTOS_ESTATICOS).toEqual({
@@ -116,17 +127,6 @@ describe('moving hand gestures (ADR-0197 §2)', () => {
 });
 
 describe('face and head (ADR-0197 §3)', () => {
-  const rotacao = (yawGraus, pitchGraus) => {
-    const y = (yawGraus * Math.PI) / 180, p = (pitchGraus * Math.PI) / 180;
-    // R = Ry(yaw) · Rx(-pitch), column-major 4×4
-    const cy = Math.cos(y), sy = Math.sin(y), cp = Math.cos(-p), sp = Math.sin(-p);
-    const R = [[cy, sy * sp, sy * cp], [0, cp, -sp], [-sy, cy * sp, cy * cp]];
-    const m = new Array(16).fill(0);
-    for (let c = 0; c < 3; c++) for (let r = 0; r < 3; r++) m[c * 4 + r] = R[r][c];
-    m[15] = 1;
-    return m;
-  };
-
   it('🔴 [Right] the head pose is read from the matrix', () => {
     const p = poseDaCabeca(rotacao(30, -10));
     expect([Math.round(p.yaw), Math.round(p.pitch)]).toEqual([30, -10]);
@@ -147,6 +147,13 @@ describe('face and head (ADR-0197 §3)', () => {
   it('⚠️ [Boundary] a neutral pose the child calibrated is the zero', () => {
     const l = criarLeitorDoRosto({ yaw: 25, pitch: 0 });
     expect(correr(l, Array.from({ length: 12 }, (_, i) => [i * 33, { blendshapes: {}, matriz: rotacao(30, 0) }]))).toEqual([]);
+  });
+
+  it('⚠️ [Boundary] an expression is its rise from the face\'s rest: brows that rest high are not «back»; raised from there, they are', () => {
+    const neutro = { yaw: 0, pitch: 0, pontuacoes: { browInnerUp: 0.6 } };
+    const cmd = (b) => correr(criarLeitorDoRosto(neutro), Array.from({ length: 12 }, (_, i) => [i * 33, { blendshapes: b, matriz: rotacao(0, 0) }]));
+    expect(cmd({ browInnerUp: 0.6 }), 'the face at rest commanded').toEqual([]);
+    expect(cmd({ browInnerUp: 0.95 })).toEqual(['back']);
   });
 });
 
@@ -185,6 +192,25 @@ describe('the eyes (ADR-0197 §4)', () => {
       .toEqual([]);
   });
 
+  it('⚠️ [Boundary] lids that rest low — eyes lowered to a screen — are open; a blink is their rise from rest', () => {
+    const neutro = { yaw: 0, pitch: 0, pontuacoes: { eyeBlinkLeft: 0.6, eyeBlinkRight: 0.6 } };
+    const repouso = { eyeBlinkLeft: 0.6, eyeBlinkRight: 0.6 }, arregalado = { eyeBlinkLeft: 0.4, eyeBlinkRight: 0.4 };
+    const tremor = olhos([[0, 100, repouso], [100, 250, arregalado], [250, 400, repouso], [400, 550, arregalado], [550, 1500, repouso]]);
+    expect(correr(criarLeitorDosOlhos(neutro), tremor), 'resting lids read as two quick blinks').toEqual([]);
+    expect(correr(criarLeitorDosOlhos(neutro), olhos([[0, 100, repouso], [100, 250, fechado], [250, 400, repouso], [400, 550, fechado], [550, 1500, repouso]])))
+      .toEqual(['confirm']);
+  });
+
+  it('🔴 [Zero] while the head is turned or tilted the eyes command nothing — they move against the head to keep the screen in view', () => {
+    const cabeca = (matriz, trechos) => olhos(trechos).map(([ms, q]) => [ms, { ...q, matriz }]);
+    const cima = [[0, 450, { eyeLookUpLeft: 0.8, eyeLookUpRight: 0.8 }]];
+    expect(correr(criarLeitorDosOlhos(), cabeca(rotacao(0, -25), cima)), 'the head tilted down, the eyes up').toEqual([]);
+    expect(correr(criarLeitorDosOlhos(), cabeca(rotacao(-30, 0), [[0, 100, aberto], [100, 250, fechado], [250, 400, aberto], [400, 550, fechado], [550, 1500, aberto]])))
+      .toEqual([]);
+    expect(correr(criarLeitorDosOlhos(), cabeca(rotacao(0, 0), cima)), 'the head at rest').toEqual(['up']);
+    expect(correr(criarLeitorDosOlhos({ yaw: 0, pitch: -25 }), cabeca(rotacao(0, -25), cima)), 'rest is the calibrated pose').toEqual(['up']);
+  });
+
   it('🔴 [Right] looking up or down, held, commands up or down', () => {
     expect(correr(criarLeitorDosOlhos(), olhos([[0, 450, { eyeLookUpLeft: 0.8, eyeLookUpRight: 0.8 }]]))).toEqual(['up']);
     expect(correr(criarLeitorDosOlhos(), olhos([[0, 450, baixo]]))).toEqual(['down']);
@@ -200,3 +226,6 @@ describe('the eyes (ADR-0197 §4)', () => {
 //   G6 slow blink threshold at the quick one                   🔴 slow blink · (quick doubles)
 //   G7 double blink ignores looking down                       🔴 menu
 //   G8 the neutral pose ignored                                🔴 calibrated zero
+//   G9 expressions read as absolute scores                     🔴 brows at rest · lids at rest
+//   G10 the eyes read while the head is off rest               🔴 head turned or tilted
+//   G11 the eyes' head check ignores the calibrated pose       🔴 head turned or tilted (rest is calibrated)

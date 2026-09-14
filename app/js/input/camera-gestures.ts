@@ -172,11 +172,39 @@ export interface QuadroDoRosto {
   readonly matriz?: ArrayLike<number> | null;
 }
 
-const media = (b: PontuacoesDoRosto, ...nomes: string[]): number =>
-  nomes.reduce((s, n) => s + (b[n] ?? 0), 0) / nomes.length;
+/**
+ * The child's face at rest, calibrated in front of the game: the head's pose and, when measured, each expression's resting score.
+ * Faces rest differently — a lid that droops, brows that sit high, eyes lowered to a screen below the camera — so an expression is
+ * read as its RISE from rest, never as an absolute score (the palm-size rule of the hand, applied to the face).
+ */
+export interface NeutroDoRosto {
+  readonly yaw: number;
+  readonly pitch: number;
+  readonly pontuacoes?: PontuacoesDoRosto;
+}
+
+const SEM_NEUTRO: NeutroDoRosto = Object.freeze({ yaw: 0, pitch: 0 });
+
+/** How far each named score rose from its resting value, as a fraction of the room above rest; the mean of the names. */
+const subida = (b: PontuacoesDoRosto, neutro: NeutroDoRosto, ...nomes: string[]): number =>
+  nomes.reduce((s, n) => {
+    const repouso = neutro.pontuacoes?.[n] ?? 0;
+    return s + (repouso >= 1 ? 0 : Math.max(0, ((b[n] ?? 0) - repouso) / (1 - repouso)));
+  }, 0) / nomes.length;
+
+/** The head turned or tilted past the command thresholds, measured from rest. */
+function cabecaForaDoRepouso(matriz: ArrayLike<number>, neutro: NeutroDoRosto): 'right' | 'left' | 'up' | 'down' | null {
+  const p = poseDaCabeca(matriz);
+  const giro = p.yaw - neutro.yaw, inclina = p.pitch - neutro.pitch;
+  if (giro >= GIRO_GRAUS) return 'right';
+  if (giro <= -GIRO_GRAUS) return 'left';
+  if (inclina >= INCLINACAO_GRAUS) return 'up';
+  if (inclina <= -INCLINACAO_GRAUS) return 'down';
+  return null;
+}
 
 /** ADR-0197 §3: turn → left/right, tilt → up/down, mouth open → confirm, smile → menu, brows up → back. */
-export function criarLeitorDoRosto(neutro: { yaw: number; pitch: number } = { yaw: 0, pitch: 0 }): LeitorDeCamera<QuadroDoRosto> {
+export function criarLeitorDoRosto(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDeCamera<QuadroDoRosto> {
   let esperaAte = -Infinity;
   let firme: { c: CameraCommand; desde: number } | null = null;
   return {
@@ -184,19 +212,11 @@ export function criarLeitorDoRosto(neutro: { yaw: number; pitch: number } = { ya
       if (!q.blendshapes) { firme = null; return null; }
       if (ms < esperaAte) return null;
       const b = q.blendshapes;
-      let c: CameraCommand | null = null;
-      if (q.matriz) {
-        const p = poseDaCabeca(q.matriz);
-        const giro = p.yaw - neutro.yaw, inclina = p.pitch - neutro.pitch;
-        if (giro >= GIRO_GRAUS) c = 'right';
-        else if (giro <= -GIRO_GRAUS) c = 'left';
-        else if (inclina >= INCLINACAO_GRAUS) c = 'up';
-        else if (inclina <= -INCLINACAO_GRAUS) c = 'down';
-      }
+      let c: CameraCommand | null = q.matriz ? cabecaForaDoRepouso(q.matriz, neutro) : null;
       if (!c) {
-        if ((b.jawOpen ?? 0) >= EXPRESSAO_MINIMA) c = 'confirm';
-        else if (media(b, 'mouthSmileLeft', 'mouthSmileRight') >= EXPRESSAO_MINIMA) c = 'menu';
-        else if (Math.max(b.browInnerUp ?? 0, media(b, 'browOuterUpLeft', 'browOuterUpRight')) >= EXPRESSAO_MINIMA) c = 'back';
+        if (subida(b, neutro, 'jawOpen') >= EXPRESSAO_MINIMA) c = 'confirm';
+        else if (subida(b, neutro, 'mouthSmileLeft', 'mouthSmileRight') >= EXPRESSAO_MINIMA) c = 'menu';
+        else if (Math.max(subida(b, neutro, 'browInnerUp'), subida(b, neutro, 'browOuterUpLeft', 'browOuterUpRight')) >= EXPRESSAO_MINIMA) c = 'back';
       }
       if (!c) { firme = null; return null; }
       if (!firme || firme.c !== c) { firme = { c, desde: ms }; return null; }
@@ -224,9 +244,10 @@ const OLHAR_MINIMO = 0.5;
 /**
  * ADR-0197 §4: look up → up; look down → down; two quick blinks → confirm; one slow blink → back; two quick blinks while looking
  * down → menu. A single quick blink commands nothing — it is how people blink. A double is decided once the time for a second blink
- * has passed, so it never fires half-way.
+ * has passed, so it never fires half-way. The eyes command only while the head rests: a head turned or tilted moves the eyes the
+ * other way to keep the screen in view, and lowers or raises the lids — the head reader owns that moment.
  */
-export function criarLeitorDosOlhos(): LeitorDeCamera<QuadroDoRosto> {
+export function criarLeitorDosOlhos(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDeCamera<QuadroDoRosto> {
   let esperaAte = -Infinity;
   let fechouEm: number | null = null;
   let olhavaBaixoAoFechar = false;
@@ -243,10 +264,11 @@ export function criarLeitorDosOlhos(): LeitorDeCamera<QuadroDoRosto> {
   return {
     quadro(ms, q) {
       if (!q.blendshapes) { fechouEm = null; firme = null; return null; }
+      if (q.matriz && cabecaForaDoRepouso(q.matriz, neutro)) { fechouEm = null; rapidas.length = 0; firme = null; return null; }
       const b = q.blendshapes;
-      const fechado = media(b, 'eyeBlinkLeft', 'eyeBlinkRight') >= OLHO_FECHADO;
-      const olhaBaixo = media(b, 'eyeLookDownLeft', 'eyeLookDownRight') >= OLHAR_MINIMO;
-      const olhaCima = media(b, 'eyeLookUpLeft', 'eyeLookUpRight') >= OLHAR_MINIMO;
+      const fechado = subida(b, neutro, 'eyeBlinkLeft', 'eyeBlinkRight') >= OLHO_FECHADO;
+      const olhaBaixo = subida(b, neutro, 'eyeLookDownLeft', 'eyeLookDownRight') >= OLHAR_MINIMO;
+      const olhaCima = subida(b, neutro, 'eyeLookUpLeft', 'eyeLookUpRight') >= OLHAR_MINIMO;
 
       if (fechado) {
         if (fechouEm === null) { fechouEm = ms; olhavaBaixoAoFechar = olhaBaixo || (firme?.c === 'down'); }

@@ -504,6 +504,11 @@
       "blendshapes",
       "matriz?"
     ],
+    "interface NeutroDoRosto": [
+      "pitch",
+      "pontuacoes?",
+      "yaw"
+    ],
     "type CameraCommand": "'up' | 'down' | 'left' | 'right' | 'confirm' | 'back' | 'menu'",
     "type PontuacoesDoRosto": "Readonly<{ [expressao: string]: number }>"
   },
