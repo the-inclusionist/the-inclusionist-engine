@@ -764,6 +764,18 @@
     "pesoPorBaixar",
     "sha256Hex"
   ],
+  "platform/speech-recognition.ts": [
+    "ApiDeReconhecimento",
+    "ComandoOuvido",
+    "EstadoLocal",
+    "InstanciaDeReconhecimento",
+    "LeitorDeComandos",
+    "RotaDoReconhecimento",
+    "criarLeitorDeComandos",
+    "criarReconhecimentoLocal",
+    "rotaDoReconhecimento",
+    "textoFalado"
+  ],
   "platform/speech.ts": [
     "gameSay"
   ],

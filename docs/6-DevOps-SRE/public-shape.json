@@ -1181,6 +1181,29 @@
       "digest?"
     ]
   },
+  "platform/speech-recognition.ts": {
+    "interface ApiDeReconhecimento": [
+      "available?",
+      "new",
+      "prototype"
+    ],
+    "interface InstanciaDeReconhecimento": [
+      "continuous",
+      "interimResults",
+      "lang",
+      "processLocally?"
+    ],
+    "interface RotaDoReconhecimento": [
+      "estado",
+      "rota"
+    ],
+    "interface LeitorDeComandos": [
+      "itens",
+      "ler"
+    ],
+    "type EstadoLocal": "'available' | 'downloadable' | 'downloading' | 'unavailable'",
+    "type ComandoOuvido": "{ readonly tipo: 'palavra'"
+  },
   "platform/tts.ts": {
     "interface SessaoNeural": [
       "predict"
