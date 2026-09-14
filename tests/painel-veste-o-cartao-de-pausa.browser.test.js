@@ -109,8 +109,27 @@ describe('a settings panel opened from the pause card', () => {
   });
 });
 
+describe('the help, opened from the pause card', () => {
+  // The help is a slide show (interface log, 2026-09-13): it wears the same card, and shows no menu footer telling the child to
+  // point at an option. Measured here because this file carries the real stylesheet.
+  it('🔴 [Zero] shows no «point at an option» band', async () => {
+    const aberto = painelAberto();
+    if (aberto) { aberto.querySelector('.overlay__back').click(); await esperar(50); }
+    cartaoDePausa.querySelector('.pm-btn[data-act="pmback"]:not([hidden])')?.click();
+    await esperar(50);
+    const painel = await abrir('ajuda');
+    expect(painel.id, 'the help did not open').toBe('help');
+    const faixa = painel.querySelector('.opt-explain');
+    expect(faixa === null || getComputedStyle(faixa).display === 'none', 'the help shows a menu\'s band').toBe(true);
+    const pausa = cartaoDePausa.querySelector('.pause-card').getBoundingClientRect();
+    const card = painel.querySelector('.overlay__card').getBoundingClientRect();
+    expect([Math.abs(Math.round(card.top - pausa.top)), Math.abs(Math.round(card.bottom - pausa.bottom))], 'the help\'s card').toEqual([0, 0]);
+  });
+});
+
 // ============================== MUTATIONS CHECKED ==============================
 //   P1 the panel card rule removed (height/background/border)   🔴 height · background/border/radius · visual cross-check
 //   P2 the title rule removed                                     🔴 title
 //   P3 the row rule removed                                       🔴 items
 //   P4 min-width removed                                          🔴 never narrower
+//   P5 the help's band rule removed                               🔴 no band

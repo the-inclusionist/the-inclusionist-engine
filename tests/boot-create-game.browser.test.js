@@ -890,15 +890,29 @@ describe('createGame num documento de verdade', () => {
       const painel = document.querySelector('#help');
       expect(painel, 'a engine não montou o painel de ajuda').not.toBeNull();
       expect(painel.hidden, 'o clique não abriu a ajuda').toBe(false);
-      const linhas = [...document.querySelectorAll('#help-list .ctrl-row')];
-      expect(linhas.length, 'a ajuda abriu vazia').toBe(2);
+      // A SLIDE SHOW, NOT A MENU (interface log, 2026-09-13): no settings rows and no «restore defaults».
+      expect(document.querySelectorAll('#help-list .ctrl-row').length, 'the help is drawn as menu rows').toBe(0);
+      const repor = document.querySelector('#help-reset');
+      expect(repor === null || repor.offsetParent === null, 'the help offers «restore defaults»').toBe(true);      const slides = document.querySelector('#help .slides');
+      expect(slides, 'no slide show in the help').not.toBeNull();
+      const slide = () => slides.querySelector('.slide');
       // A ordem é a canónica de `ACTIONS`: `left` antes de `action2`, e não a ordem do objeto do jogo.
-      expect(linhas.map((l) => l.dataset.act)).toEqual(['left', 'action2']);
-      // 🔴 A PALAVRA É A DO JOGO, e nenhuma célula mostra um identificador.
-      expect(painel.textContent).toContain('Confirmar');
+      expect(slide().dataset.act, 'the show does not open on the first position').toBe('left');
+      expect(slide().querySelectorAll('.slide-ponto').length, 'one dot per slide').toBe(2);
+      slides.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
+      expect(slide().dataset.act, 'right did not turn the page').toBe('action2');
+      // 🔴 A PALAVRA É A DO JOGO, e o slide não mostra um identificador.
+      expect(slide().querySelector('.slide-palavra').textContent).toBe('Confirmar');
+      expect(slide().querySelector('.slide-texto').textContent).toBe('Escolhe a alternativa em que está o cursor.');
       expect(painel.textContent, 'a ajuda mostrou um identificador a uma criança').not.toContain('action2');
       // A tecla é a do esquema desta criança, resolvida pelo runtime de teclado e não inventada aqui.
-      expect(linhas[1].querySelector('.help-key').textContent.trim().length).toBeGreaterThan(0);
+      expect(slide().querySelector('.slide-tecla').hasAttribute('data-sem-tecla'), 'the child\'s key is not drawn').toBe(false);
+      expect(slide().querySelector('.slide-tecla').textContent.trim().length).toBeGreaterThan(0);
+      // The last slide is a wall, as every steps control's end is.
+      slides.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
+      expect(slide().dataset.act, 'the show wrapped past its last slide').toBe('action2');
+      slides.dispatchEvent(new CustomEvent('passo', { detail: -1, bubbles: true }));
+      expect(slide().dataset.act, 'left did not turn back').toBe('left');
     });
 
     it('🔴 [Zero] SEM `preset` o item de ajuda fica TRAVADO — presente, e sem painel por trás (ADR-0161)', () => {

@@ -1244,8 +1244,10 @@
   "ui/help-panel.ts": [
     "HelpRow",
     "SEM_TECLA",
-    "helpListHtml",
-    "helpRows"
+    "SlideCtx",
+    "helpRows",
+    "montarSlides",
+    "mostrarSlide"
   ],
   "ui/hud-bands.ts": [
     "HudBand",

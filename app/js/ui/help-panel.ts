@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// ui/help-panel — WHICH BUTTON DOES WHAT, in this game, on this child's keyboard.
+// ui/help-panel — WHICH BUTTON DOES WHAT, in this game, on this child's keyboard: a slide show, one slide per button.
 //
 // ========================= WHY THIS MODULE EXISTS =========================
 // 🔴 MEASURED 2026-09-12: the pause card carries a `ajuda` item and NOTHING in the engine can action it, so
@@ -70,24 +70,98 @@ export function helpRows(
   return rows;
 }
 
-/** What the row says where the keyboard reaches nothing. A KEY, not a sentence — the caller translates it. */
+/** What the slide says where the keyboard reaches nothing. A KEY, not a sentence — the caller translates it. */
 export const SEM_TECLA = 'help.noKey';
 
-/**
- * The help list as markup, in the shape the §4 rule of `CLAUDE.md` fixes: the short label in `<strong>`, the
- * prose in a SINGLE `.opt-hint` inside the `<span>`, which `fillExplain` then moves to the footer.
- *
- * ⚠️ ONE `.opt-hint` PER ROW, like `linhaDeControle` enforces by construction one module over: two of them
- * would give one control two descriptions, the footer would show the first, and the second would stay in the
- * row — which is exactly the defect §4 exists to prevent.
+/*
+ * HELP IS A SLIDE SHOW, NOT A MENU (interface log, 2026-09-13). The Dev: the help screen «se assemelha a um menu e inclusive tem
+ * um botão "restaurar padrões deste menu" quando na verdade deveria conter uma "apresentação de slides" (textos, figuras e no
+ * máximo animações)». One slide per position the game names: the child's key drawn as a key cap (the figure), the game's word
+ * and its sentence (the text). The slide show is ONE stop of the cursor, `[data-passos]`, so left and right turn the page through
+ * the navigation every panel already has, and the arrows are finger targets; the dots say where the child is without a number
+ * (ADR-0167).
  */
-export function helpListHtml(rows: readonly HelpRow[], t: (k: string) => string): string {
-  return rows.map((r) => {
-    const dica = r.hint ? `<span class="opt-hint">${r.hint}</span>` : '';
-    const tecla = r.key ?? t(SEM_TECLA);
-    return `<div class="ctrl-row" data-act="${r.action}">`
-      + `<span><strong>${r.word}</strong>${dica}</span>`
-      + `<kbd class="help-key"${r.key ? '' : ' data-sem-tecla="1"'}>${tecla}</kbd>`
-      + '</div>';
-  }).join('');
+
+/** What building the slide show needs from the document — injected, as the panel shell takes it. */
+export interface SlideCtx {
+  readonly criar: (tag: string) => HTMLElement;
+}
+
+/** Builds the slide show's frame: the stop, its two arrows, the slide and the dots. `mostrarSlide` fills it. */
+export function montarSlides(ctx: SlideCtx): HTMLElement {
+  const el = ctx.criar('div');
+  el.className = 'slides';
+  el.setAttribute('role', 'spinbutton');
+  el.setAttribute('tabindex', '0');
+  el.setAttribute('data-passos', '');
+  const seta = (delta: -1 | 1, glifo: string): HTMLElement => {
+    const s = ctx.criar('span');
+    s.className = 'passo-seta';
+    s.setAttribute('data-passo', String(delta));
+    s.setAttribute('aria-hidden', 'true');
+    s.textContent = glifo;
+    s.addEventListener('click', () => el.dispatchEvent(new CustomEvent('passo', { detail: delta, bubbles: true })));
+    return s;
+  };
+  const slide = ctx.criar('div');
+  slide.className = 'slide';
+  slide.setAttribute('aria-hidden', 'true'); // heard through the stop's value, once
+  const tecla = ctx.criar('kbd');
+  tecla.className = 'slide-tecla';
+  const palavra = ctx.criar('p');
+  palavra.className = 'slide-palavra';
+  const texto = ctx.criar('p');
+  texto.className = 'slide-texto';
+  const pontos = ctx.criar('div');
+  pontos.className = 'slide-pontos';
+  for (const filho of [tecla, palavra, texto, pontos]) slide.appendChild(filho);
+  el.appendChild(seta(-1, '◀'));
+  el.appendChild(slide);
+  el.appendChild(seta(1, '▶'));
+  return el;
+}
+
+/**
+ * Shows slide `i` (held at the ends, like every steps control: the last slide is a wall, not a way back to the first) and returns
+ * the index shown, and what a screen reader hears of it.
+ */
+export function mostrarSlide(
+  el: HTMLElement,
+  rows: readonly HelpRow[],
+  i: number,
+  ctx: SlideCtx & { readonly t: (k: string, p?: Record<string, string>) => string; readonly titulo: string },
+): { readonly indice: number; readonly falado: string } {
+  const ultimo = Math.max(0, rows.length - 1);
+  const indice = Math.max(0, Math.min(ultimo, i));
+  const r = rows[indice];
+  const slide = el.querySelector<HTMLElement>('.slide');
+  const tecla = el.querySelector<HTMLElement>('.slide-tecla');
+  const palavra = el.querySelector<HTMLElement>('.slide-palavra');
+  const texto = el.querySelector<HTMLElement>('.slide-texto');
+  const pontos = el.querySelector<HTMLElement>('.slide-pontos');
+  if (!r || !slide || !tecla || !palavra || !texto || !pontos) return { indice, falado: '' };
+  slide.setAttribute('data-act', r.action);
+  tecla.textContent = r.key ?? ctx.t(SEM_TECLA);
+  if (r.key) tecla.removeAttribute('data-sem-tecla');
+  else tecla.setAttribute('data-sem-tecla', '1');
+  palavra.textContent = r.word;
+  texto.textContent = r.hint ?? '';
+  texto.hidden = !r.hint;
+  while (pontos.firstChild) pontos.removeChild(pontos.firstChild);
+  rows.forEach((_, n) => {
+    const p = ctx.criar('span');
+    p.className = n === indice ? 'slide-ponto is-on' : 'slide-ponto';
+    pontos.appendChild(p);
+  });
+  // a game's sentence that already ends in a full stop is not given a second one
+  const falado = [r.word, r.hint, r.key ? ctx.t('help.slide.tecla', { k: r.key }) : ctx.t(SEM_TECLA)]
+    .filter(Boolean).map((parte) => parte!.replace(/[.!?…]+\s*$/, '')).join('. ');
+  el.setAttribute('aria-label', ctx.titulo);
+  el.setAttribute('aria-valuemin', '0');
+  el.setAttribute('aria-valuemax', String(ultimo));
+  el.setAttribute('aria-valuenow', String(indice));
+  el.setAttribute('aria-valuetext', falado);
+  el.querySelector<HTMLElement>('[data-passo="-1"]')?.classList.toggle('no-limite', indice === 0);
+  el.querySelector<HTMLElement>('[data-passo="1"]')?.classList.toggle('no-limite', indice === ultimo);
+  return { indice, falado };
 }

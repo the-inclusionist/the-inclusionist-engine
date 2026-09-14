@@ -669,6 +669,26 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* The card runs under the explanation band, as the pause card runs under its legend: the room at the end of the card and
    the scroll padding let the last row, and the focused one, come to rest above the band. */
 #game-region .overlay__card::after{content:"";display:block;height:var(--rodape-h,50px)}
+/* HELP IS A SLIDE SHOW (interface log, 2026-09-13; `ui/help-panel`): «textos, figuras e no máximo animações», not a menu. One stop
+   with the page arrows at its sides; the slide holds the child's key drawn as a key cap, the game's word and its sentence, and
+   dots that say where the child is by fill and not by colour alone. The key cap presses itself now and then — the one animation,
+   gone under reduced motion. */
+/* a slide explains itself: no footer band telling the child to point at an option, and no room kept for it */
+#help .opt-explain,#help .overlay__card::after{display:none}
+.slides{display:flex;align-items:stretch;gap:.25rem;min-height:11em;border:1px solid #6a7a96;border-radius:10px;background:#1a2740;color:#eaf2f8}
+.slides:focus,.slides:focus-visible{outline:2px solid #ffd23f;outline-offset:1px;border-color:#ffd23f}
+.slides .passo-seta{align-self:center;color:#ffd23f;font-size:1.3em}
+.slide{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.45em;padding:.5em .2em;text-align:center}
+.slide-tecla{display:inline-flex;align-items:center;justify-content:center;min-width:3em;min-height:2em;padding:.15em .6em;font:inherit;font-size:1.4em;
+  font-weight:800;color:#0e1626;background:#eaf2f8;border-radius:10px;box-shadow:0 .22em 0 #6a7a96;animation:tecla-aperta 2.4s ease-in-out infinite}
+.slide-tecla[data-sem-tecla]{color:#c3cfe0;background:transparent;border:2px dashed #6a7a96;box-shadow:none;animation:none}
+@keyframes tecla-aperta{0%,70%,100%{transform:translateY(0);box-shadow:0 .22em 0 #6a7a96}82%{transform:translateY(.16em);box-shadow:0 .06em 0 #6a7a96}}
+@media (prefers-reduced-motion: reduce){ .slide-tecla{animation:none} }
+.slide-palavra{margin:0;font-size:1.2em;font-weight:800;color:#ffd23f}
+.slide-texto{margin:0;max-width:28em;line-height:1.35}
+.slide-pontos{display:flex;gap:.45em;justify-content:center;margin-top:.2em}
+.slide-ponto{width:.6em;height:.6em;border-radius:50%;border:1px solid #eaf2f8;box-sizing:border-box}
+.slide-ponto.is-on{background:#ffd23f;border-color:#ffd23f}
 /* Rodapé de explicação: branco sobre preto translúcido 0,82 → contraste do branco >7:1 mesmo sobre 100% branco
    (composição: 1-0,82=0,18 → L≈0,027 → ~13:1), sem ser 100% opaco. Fixo no rodapé do card. */
 .opt-explain{position:sticky;bottom:calc(-1 * var(--card-pad,1.5rem));margin:.8rem calc(-1 * var(--card-pad,1.5rem)) calc(-1 * var(--card-pad,1.5rem));padding:.6rem .9rem;min-height:2.8rem;text-align:left;

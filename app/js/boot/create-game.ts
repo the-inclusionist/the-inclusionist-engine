@@ -67,7 +67,7 @@ import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa
 import { anunciarItem } from '../ui/item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { itensNavegaveis } from '../ui/menu-items.js';
-import { helpRows, helpListHtml } from '../ui/help-panel.js';
+import { helpRows, montarSlides, mostrarSlide } from '../ui/help-panel.js';
 import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
 import * as state from '../core/state.js';
@@ -1517,16 +1517,28 @@ export function createGame(o: CreateGameOptions): Engine {
         // ⚠️ `render` E NÃO UMA MONTAGEM ÚNICA: o preset pode mudar com o `mount()` de outro cartucho
         // (ADR-0142) e a criança pode ter remapeado entre duas aberturas. Uma tabela construída no arranque
         // mostraria a tecla de ontem — que é a forma exacta do controle a mentir o estado.
+        // The slide show opens on its first slide (interface log, 2026-09-13; `ui/help-panel`).
         render: () => {
           const lista = $<HTMLElement>('#help-list');
-          if (lista) {
-            lista.innerHTML = helpListHtml(
-              helpRows(cartucho.preset, (a) => keyboard.kbFor(0)[a], keyName),
-              t,
-            );
-          }
+          if (!lista) return;
+          while (lista.firstChild) lista.removeChild(lista.firstChild);
+          const linhas = helpRows(cartucho.preset, (a) => keyboard.kbFor(0)[a], keyName);
+          const ctxDoSlide = { criar: (tag: string) => doc.createElement(tag), t, titulo: t('menu.help') };
+          const slides = montarSlides(ctxDoSlide);
+          lista.appendChild(slides);
+          let atual = mostrarSlide(slides, linhas, 0, ctxDoSlide).indice;
+          slides.addEventListener('passo', (ev) => {
+            const nova = passoSeguinte(atual, linhas.length, (ev as CustomEvent<number>).detail);
+            if (nova === atual) return;
+            const mostrado = mostrarSlide(slides, linhas, nova, ctxDoSlide);
+            atual = mostrado.indice;
+            srSay(mostrado.falado);
+          });
         },
       });
+      // A slide show restores nothing: the reset row the panel shell builds does not show here.
+      const acoesDaAjuda = painelDeAjuda.casca.reset.parentElement;
+      if (acoesDaAjuda) acoesDaAjuda.hidden = true;
       acoesDaEngine.ajuda = painelDeAjuda.abrir;
     } else {
       problemasDoHospedeiro.push(

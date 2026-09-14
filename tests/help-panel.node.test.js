@@ -13,7 +13,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
-import { helpRows, helpListHtml, SEM_TECLA } from '../app/js/ui/help-panel.js';
+import { helpRows } from '../app/js/ui/help-panel.js';
 
 /** Um `keyName` de mentira, para o caso não medir a formatação de tecla — que é doutro módulo. */
 const nomeDaTecla = (code) => `«${code}»`;
@@ -81,29 +81,7 @@ describe('helpRows — a tabela de ajuda de um assento', () => {
   });
 });
 
-describe('helpListHtml — a marcação, com a regra do §4 por construção', () => {
-  const t = (k) => (k === SEM_TECLA ? 'SEM TECLA' : k);
-
-  it('🔴 [Right] UM só `.opt-hint` por linha, e DENTRO do `<span>`', () => {
-    // É a regra do `CLAUDE.md` §4: a explicação mora no rodapé, e o `fillExplain` procura UM `.opt-hint`.
-    // Dois na mesma linha dariam duas descrições ao mesmo item, e a segunda ficaria à vista na linha.
-    const html = helpListHtml(helpRows(PRESET, teclas, nomeDaTecla), t);
-    expect((html.match(/opt-hint/g) || []).length, 'há mais `.opt-hint` do que linhas com explicação').toBe(1);
-    expect(html).toContain('<span><strong>Pular</strong><span class="opt-hint">Sai do chão e volta.</span></span>');
-  });
-
-  it('📌 [Boundary] a linha sem tecla DIZ que não tem, e marca-se para quem lê o DOM', () => {
-    const html = helpListHtml(helpRows(PRESET, teclas, nomeDaTecla), t);
-    expect(html).toContain('data-sem-tecla="1"');
-    expect(html).toContain('SEM TECLA');
-    // O PAR: as que TÊM tecla não levam a marca, senão ela não distingue nada.
-    expect((html.match(/data-sem-tecla/g) || []).length, 'a marca apareceu numa linha que tem tecla').toBe(1);
-  });
-
-  it('[Zero] tabela vazia dá marcação vazia — e não uma lista com uma linha em branco', () => {
-    expect(helpListHtml([], t)).toBe('');
-  });
-});
+// The slide show built from these rows is measured in a document: `tests/help-panel.browser.test.js`.
 
 // ============================== MUTAÇÕES CONFERIDAS ==============================
 // Aplicadas por script ao ficheiro, com a contagem de ocorrências conferida ANTES de cada uma.
@@ -112,8 +90,6 @@ describe('helpListHtml — a marcação, com a regra do §4 por construção', (
 //   D2 o guarda inteiro sai                                    🔴 as catorze posições viram linhas
 //   D3 a ordem passa a ser a das chaves do objeto do jogo      🔴 a canónica deixa de valer
 //   D5 a tecla ausente vira `''` em vez de `null`              🔴 «não alcança» deixa de ser dizível
-//   D6 dois `.opt-hint` na mesma linha                         🔴 a regra do §4 do `CLAUDE.md`
-//   D7 a marca `data-sem-tecla` em TODAS as linhas             🔴 o par: ela deixa de distinguir
 //   D8 a ajuda monta-se sem `preset`   (alvo: `boot-create-game.node`)
 //   D9 a lacuna da ajuda deixa de ser dita  (idem)
 //

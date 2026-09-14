@@ -90,6 +90,7 @@ const pt: Record<string, string> = {
   // O que a linha diz quando o teclado não alcança aquela posição. É informação e não erro: quem joga só com
   // controle ou só com o dedo tem posições sem tecla, e dizê-lo é melhor do que mostrar uma linha vazia.
   'help.noKey': 'sem tecla',
+  'help.slide.tecla': 'Tecla {k}',
   /* --- CATÁLOGO DE ATIVIDADES: só o que NÃO é alfabetização. As cinco de alfabetização seguem cruas em
      pt-BR no `educational/activities-registry`, porque a palavra e a sílaba SÃO a matéria (pilar 3). --- */
   'act.ludico.nome': 'Coletar 10 moedas',

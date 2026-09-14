@@ -735,6 +735,17 @@ seven passes `acomodacoes` yet (they consume an engine from before ADR-0153), so
 `60 000 / state.captionPpm`. 📏 Measured on 2026-09-13: no sibling repository imports either — the module entered on the same day
 (`engine:2bd2826`) and is in no published version.
 
+## AE · The help is a slide show; `helpListHtml` left (interface log, 2026-09-13)
+
+**Behaviour.** The help panel the engine mounts shows one slide per position the game names — the child's key drawn as a key
+cap, the game's word and its sentence, dots for the place — turned with left and right, with no «restore defaults» and no footer
+band. `ui/help-panel.helpListHtml` (the rows as settings-menu markup) left; `montarSlides`, `mostrarSlide` and `SlideCtx` entered.
+`helpRows` is unchanged. The panel's shape is the engine's: `#help-list` now holds one `.slides` element, not `.ctrl-row`s.
+
+**What to do:** a caller of `helpListHtml(rows, t)` builds the frame with `montarSlides({ criar })` and shows a row with
+`mostrarSlide(el, rows, i, { criar, t, titulo })`. 📏 Measured on 2026-09-13: none of the seven game repositories imports
+`ui/help-panel`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

@@ -30,6 +30,7 @@ const es: Record<string, string> = {
   'menu.help': 'Ayuda',
   'help.grupo.rotulo': 'Los botones de este juego',
   'help.noKey': 'sin tecla',
+  'help.slide.tecla': 'Tecla {k}',
   'sr.libras.loading': 'El intérprete de lengua de señas todavía está cargando — inténtalo de nuevo en un momento.',
   'sr.eyes.loadFailed': 'WebGazer no cargó.',
   'sr.eyes.calibrate': 'Jugar con los ojos: mira por la pantalla y haz clic en algunos puntos para calibrar. Mirar izquierda y derecha camina; mirar arriba salta.',

@@ -29,6 +29,7 @@ const en: Record<string, string> = {
   'menu.help': 'Help',
   'help.grupo.rotulo': 'This game’s buttons',
   'help.noKey': 'no key',
+  'help.slide.tecla': 'Key {k}',
   'sr.libras.loading': 'The sign-language interpreter is still loading — try again in a moment.',
   'sr.eyes.loadFailed': 'WebGazer did not load.',
   'sr.eyes.calibrate': 'Play with your eyes: look around the screen and click a few spots to calibrate. Looking left and right walks; looking up jumps.',
