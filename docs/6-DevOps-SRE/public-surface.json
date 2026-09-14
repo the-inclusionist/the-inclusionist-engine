@@ -713,6 +713,16 @@
     "MotorDeFala",
     "criarFalaInterrompivel"
   ],
+  "platform/kokoro.ts": [
+    "DIMENSAO_DO_ESTILO",
+    "TOKENS_MAXIMOS",
+    "VOZES_KOKORO",
+    "VozKokoro",
+    "eFala",
+    "estiloDaFrase",
+    "tokenizar",
+    "wavDe"
+  ],
   "platform/pesados-catalogo.ts": [
     "CACHE_PESADOS",
     "PESADOS",

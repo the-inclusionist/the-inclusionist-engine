@@ -1119,6 +1119,13 @@
       "falar"
     ]
   },
+  "platform/kokoro.ts": {
+    "interface VozKokoro": [
+      "boa",
+      "engine",
+      "espeak"
+    ]
+  },
   "platform/pesados-catalogo.ts": {
     "interface Pesado": [
       "bytes?",
