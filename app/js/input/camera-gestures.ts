@@ -7,10 +7,12 @@
 // command or nothing. The runtime, the camera and the wiring to positions are elsewhere; the thresholds are a first reading, to be
 // measured with a camera on real hands and faces (ADR-0197, more information).
 //
-// Two rules hold for every reader: a signal must be steady for a moment before it commands (a passing shape is not a gesture), and
-// after a command the reader waits (the Dev: «adicione um tempo de espera (ex: 0.5 segundos) antes de permitir que o código leia o
-// gesto novamente»). Distances are measured against the palm's size, never in pixels, so a child farther from the camera commands
-// with the same gesture.
+// The camera reads ONE group at a time, chosen (ADR-0197 errata): moving hand gestures, face and eyes, eyes only, or static hand
+// gestures — what belongs to another group is not read, so a moving hand's shape never fires a static command. Three rules hold for
+// every reader: a signal must be steady for a moment before it commands (a passing shape is not a gesture); after a command the reader
+// waits (ADR-0197 §5); and a held signal never commands twice — it fires again only after resting (the Dev: «nunca repetir, a não ser
+// após voltar ao repouso»). Distances are measured against the palm's size, never in pixels, so a child farther from the camera
+// commands with the same gesture.
 
 /** What a camera gesture asks for. Each maps to a POSITION the game names (ADR-0197 §6), never to a key. */
 export type CameraCommand = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'back' | 'menu';
@@ -21,6 +23,51 @@ export interface Landmark { readonly x: number; readonly y: number; readonly z?:
 export const ESPERA_MS = 500;
 /** A static shape or an expression must hold this long before it commands. */
 export const FIRMEZA_MS = 300;
+/** A reader rests when it reads nothing for this long; only then can the same command fire again (ADR-0197 errata). */
+export const REPOUSO_MS = 300;
+
+/** The four groups, in the order the Dev named them. Exactly one is read at a time. */
+export const GRUPOS_DA_CAMERA = Object.freeze(['dinamicos', 'rostoEOlhos', 'olhos', 'estaticos'] as const);
+export type GrupoDaCamera = (typeof GRUPOS_DA_CAMERA)[number];
+
+export interface LeitorDeCamera<Q> {
+  /** Reads one frame at `ms` and returns the command it completes, or null. */
+  readonly quadro: (ms: number, q: Q) => CameraCommand | null;
+}
+
+/**
+ * A HELD SIGNAL, READ ONCE: `ler` takes what a frame shows (a command, or null for nothing) and returns the command when it has held
+ * `FIRMEZA_MS`, outside the wait, and is not the last command still unrested. An event reader (a blink, a motion) marks its own
+ * command with `comandou`; `suspender` forgets a signal half-held without counting rest (closed eyes are not eyes at rest).
+ */
+function sinalSegurado() {
+  let firme: { c: CameraCommand; desde: number } | null = null;
+  let ultimo: CameraCommand | null = null;
+  let repousoDesde: number | null = null;
+  let esperaAte = -Infinity;
+  return {
+    ler(ms: number, c: CameraCommand | null): CameraCommand | null {
+      if (c === null) {
+        firme = null;
+        repousoDesde ??= ms;
+        if (ms - repousoDesde >= REPOUSO_MS) ultimo = null;
+        return null;
+      }
+      repousoDesde = null;
+      if (ms < esperaAte || c === ultimo) { firme = null; return null; }
+      if (!firme || firme.c !== c) { firme = { c, desde: ms }; return null; }
+      if (ms - firme.desde < FIRMEZA_MS) return null;
+      return this.comandou(ms, c);
+    },
+    comandou(ms: number, c: CameraCommand): CameraCommand {
+      firme = null; ultimo = c; repousoDesde = null; esperaAte = ms + ESPERA_MS;
+      return c;
+    },
+    suspender(): void { firme = null; },
+    livre: (ms: number): boolean => ms >= esperaAte,
+    segurando: (): CameraCommand | null => firme?.c ?? null,
+  };
+}
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // Static hand gestures (MediaPipe Gesture Recognizer names)
@@ -71,7 +118,7 @@ export function tresDedos(mao: readonly Landmark[]): boolean {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------
-// The hand reader: static gestures, three fingers, and moving gestures
+// The hand readers: static gestures (§1) and moving gestures with three fingers (§2), each its own group
 // ---------------------------------------------------------------------------------------------------------------------------
 
 /** The index tip must travel this many palm sizes, within `JANELA_MS`, to move «up» or «down». */
@@ -87,54 +134,62 @@ export interface QuadroDaMao {
   readonly gesto?: string | null;
 }
 
-export interface LeitorDeCamera<Q> {
-  /** Reads one frame at `ms` and returns the command it completes, or null. */
-  readonly quadro: (ms: number, q: Q) => CameraCommand | null;
+/** ADR-0197 §1: a canned gesture held commands once; the hand must rest — no mapped gesture — before the same one commands again. */
+export function criarLeitorDosGestosEstaticos(): LeitorDeCamera<QuadroDaMao> {
+  const sinal = sinalSegurado();
+  return {
+    quadro(ms, q) {
+      const gesto = q.landmarks && q.gesto ? GESTOS_ESTATICOS[q.gesto] ?? null : null;
+      return sinal.ler(ms, gesto);
+    },
+  };
 }
 
-export function criarLeitorDaMao(): LeitorDeCamera<QuadroDaMao> {
+/**
+ * ADR-0197 §2: the index moving up or down, an open or closed hand falling quickly, and three fingers held. After a motion commands,
+ * the next one waits for the hand to be still (or gone) for `REPOUSO_MS`: a hand coming back up is not a new gesture.
+ */
+export function criarLeitorDosGestosDinamicos(): LeitorDeCamera<QuadroDaMao> {
+  const tres = sinalSegurado();
   let esperaAte = -Infinity;
-  let firme: { chave: string; desde: number } | null = null;
-  const historico: { ms: number; indiceY: number; pulsoY: number; palma: number; forma: string }[] = [];
+  let movimentoArmado = true;
+  let paradaDesde: number | null = null;
+  const historico: { ms: number; indiceY: number; pulsoY: number; forma: string }[] = [];
 
-  const comandar = (ms: number, c: CameraCommand): CameraCommand => {
-    esperaAte = ms + ESPERA_MS;
-    firme = null;
-    historico.length = 0;
+  const mover = (ms: number, c: CameraCommand): CameraCommand => {
+    esperaAte = ms + ESPERA_MS; movimentoArmado = false; paradaDesde = null; historico.length = 0;
+    tres.suspender();
     return c;
+  };
+  const repousar = (ms: number): void => {
+    paradaDesde ??= ms;
+    if (ms - paradaDesde >= REPOUSO_MS) movimentoArmado = true;
   };
 
   return {
     quadro(ms, q) {
-      if (!q.landmarks || q.landmarks.length < 21) { firme = null; historico.length = 0; return null; }
+      if (!q.landmarks || q.landmarks.length < 21) { historico.length = 0; repousar(ms); return tres.ler(ms, null); }
       const mao = q.landmarks;
       const palma = tamanhoDaPalma(mao);
-      historico.push({ ms, indiceY: mao[8]!.y, pulsoY: mao[PULSO]!.y, palma, forma: formaDaMao(mao) });
+      if (palma <= 0) return null;
+      historico.push({ ms, indiceY: mao[8]!.y, pulsoY: mao[PULSO]!.y, forma: formaDaMao(mao) });
       while (historico.length && ms - historico[0]!.ms > JANELA_MS) historico.shift();
-      if (ms < esperaAte || palma <= 0) return null;
 
-      // moving gestures first: a quick motion is over before a shape could hold
       const primeiro = historico[0]!;
-      if (primeiro.ms < ms) {
-        const quedaDoPulso = (mao[PULSO]!.y - primeiro.pulsoY) / palma;
+      const quedaDoPulso = (mao[PULSO]!.y - primeiro.pulsoY) / palma;
+      const subidaDoIndice = (primeiro.indiceY - mao[8]!.y) / palma;
+      const parada = Math.abs(quedaDoPulso) < PULSO_PALMAS / 2 && Math.abs(subidaDoIndice) < INDICADOR_PALMAS / 2;
+      if (parada) repousar(ms); else paradaDesde = null;
+
+      if (movimentoArmado && ms >= esperaAte && primeiro.ms < ms) {
         const forma = formaDaMao(mao);
-        if (quedaDoPulso >= PULSO_PALMAS && forma !== 'outra' && primeiro.forma === forma) {
-          return comandar(ms, forma === 'aberta' ? 'confirm' : 'back');
-        }
-        const indiceEstendido = dedosEstendidos(mao)[0];
-        const subidaDoIndice = (primeiro.indiceY - mao[8]!.y) / palma;
-        if (indiceEstendido && Math.abs(quedaDoPulso) < PULSO_PALMAS / 2) {
-          if (subidaDoIndice >= INDICADOR_PALMAS) return comandar(ms, 'up');
-          if (subidaDoIndice <= -INDICADOR_PALMAS) return comandar(ms, 'down');
+        if (quedaDoPulso >= PULSO_PALMAS && forma !== 'outra' && primeiro.forma === forma) return mover(ms, forma === 'aberta' ? 'confirm' : 'back');
+        if (dedosEstendidos(mao)[0] && Math.abs(quedaDoPulso) < PULSO_PALMAS / 2) {
+          if (subidaDoIndice >= INDICADOR_PALMAS) return mover(ms, 'up');
+          if (subidaDoIndice <= -INDICADOR_PALMAS) return mover(ms, 'down');
         }
       }
-
-      // steady shapes: three fingers, then the canned gesture
-      const chave = tresDedos(mao) ? '#tres' : (q.gesto && GESTOS_ESTATICOS[q.gesto] ? q.gesto : null);
-      if (!chave) { firme = null; return null; }
-      if (!firme || firme.chave !== chave) { firme = { chave, desde: ms }; return null; }
-      if (ms - firme.desde < FIRMEZA_MS) return null;
-      return comandar(ms, chave === '#tres' ? 'menu' : GESTOS_ESTATICOS[chave]!);
+      return ms < esperaAte ? null : tres.ler(ms, tresDedos(mao) ? 'menu' : null);
     },
   };
 }
@@ -205,12 +260,10 @@ function cabecaForaDoRepouso(matriz: ArrayLike<number>, neutro: NeutroDoRosto): 
 
 /** ADR-0197 §3: turn → left/right, tilt → up/down, mouth open → confirm, smile → menu, brows up → back. */
 export function criarLeitorDoRosto(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDeCamera<QuadroDoRosto> {
-  let esperaAte = -Infinity;
-  let firme: { c: CameraCommand; desde: number } | null = null;
+  const sinal = sinalSegurado();
   return {
     quadro(ms, q) {
-      if (!q.blendshapes) { firme = null; return null; }
-      if (ms < esperaAte) return null;
+      if (!q.blendshapes) return sinal.ler(ms, null);
       const b = q.blendshapes;
       let c: CameraCommand | null = q.matriz ? cabecaForaDoRepouso(q.matriz, neutro) : null;
       if (!c) {
@@ -218,12 +271,7 @@ export function criarLeitorDoRosto(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDe
         else if (subida(b, neutro, 'mouthSmileLeft', 'mouthSmileRight') >= EXPRESSAO_MINIMA) c = 'menu';
         else if (Math.max(subida(b, neutro, 'browInnerUp'), subida(b, neutro, 'browOuterUpLeft', 'browOuterUpRight')) >= EXPRESSAO_MINIMA) c = 'back';
       }
-      if (!c) { firme = null; return null; }
-      if (!firme || firme.c !== c) { firme = { c, desde: ms }; return null; }
-      if (ms - firme.desde < FIRMEZA_MS) return null;
-      esperaAte = ms + ESPERA_MS;
-      firme = null;
-      return c;
+      return sinal.ler(ms, c);
     },
   };
 }
@@ -248,54 +296,79 @@ const OLHAR_MINIMO = 0.5;
  * other way to keep the screen in view, and lowers or raises the lids — the head reader owns that moment.
  */
 export function criarLeitorDosOlhos(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDeCamera<QuadroDoRosto> {
-  let esperaAte = -Infinity;
+  const olhar = sinalSegurado();
   let fechouEm: number | null = null;
   let olhavaBaixoAoFechar = false;
   const rapidas: { ms: number; baixo: boolean }[] = [];
-  let firme: { c: CameraCommand; desde: number } | null = null;
 
-  const comandar = (ms: number, c: CameraCommand): CameraCommand => {
-    esperaAte = ms + ESPERA_MS;
+  const piscou = (ms: number, c: CameraCommand): CameraCommand => {
     rapidas.length = 0;
-    firme = null;
-    return c;
+    return olhar.comandou(ms, c);
   };
 
   return {
     quadro(ms, q) {
-      if (!q.blendshapes) { fechouEm = null; firme = null; return null; }
-      if (q.matriz && cabecaForaDoRepouso(q.matriz, neutro)) { fechouEm = null; rapidas.length = 0; firme = null; return null; }
+      if (!q.blendshapes) { fechouEm = null; olhar.suspender(); return null; }
+      if (q.matriz && cabecaForaDoRepouso(q.matriz, neutro)) { fechouEm = null; rapidas.length = 0; olhar.suspender(); return null; }
       const b = q.blendshapes;
       const fechado = subida(b, neutro, 'eyeBlinkLeft', 'eyeBlinkRight') >= OLHO_FECHADO;
       const olhaBaixo = subida(b, neutro, 'eyeLookDownLeft', 'eyeLookDownRight') >= OLHAR_MINIMO;
       const olhaCima = subida(b, neutro, 'eyeLookUpLeft', 'eyeLookUpRight') >= OLHAR_MINIMO;
 
       if (fechado) {
-        if (fechouEm === null) { fechouEm = ms; olhavaBaixoAoFechar = olhaBaixo || (firme?.c === 'down'); }
-        firme = null;
+        if (fechouEm === null) { fechouEm = ms; olhavaBaixoAoFechar = olhaBaixo || olhar.segurando() === 'down'; }
+        olhar.suspender();
         return null;
       }
       if (fechouEm !== null) {
         const duracao = ms - fechouEm;
         const inicio = fechouEm;
         fechouEm = null;
-        if (ms >= esperaAte) {
-          if (duracao >= PISCADA_LENTA_MS) return comandar(ms, 'back');
+        if (olhar.livre(ms)) {
+          if (duracao >= PISCADA_LENTA_MS) return piscou(ms, 'back');
           if (duracao < PISCADA_RAPIDA_MS) rapidas.push({ ms: inicio, baixo: olhavaBaixoAoFechar });
         }
       }
       while (rapidas.length && ms - rapidas[0]!.ms > DUPLA_MS) rapidas.shift();
       if (rapidas.length >= 2) {
         const baixo = rapidas[0]!.baixo && rapidas[1]!.baixo;
-        return comandar(ms, baixo ? 'menu' : 'confirm');
+        return piscou(ms, baixo ? 'menu' : 'confirm');
       }
-      if (ms < esperaAte || rapidas.length) return null;
+      if (rapidas.length) { olhar.suspender(); return null; }
+      return olhar.ler(ms, olhaCima ? 'up' : olhaBaixo ? 'down' : null);
+    },
+  };
+}
 
-      const c: CameraCommand | null = olhaCima ? 'up' : olhaBaixo ? 'down' : null;
-      if (!c) { firme = null; return null; }
-      if (!firme || firme.c !== c) { firme = { c, desde: ms }; return null; }
-      if (ms - firme.desde < FIRMEZA_MS) return null;
-      return comandar(ms, c);
+// ---------------------------------------------------------------------------------------------------------------------------
+// The camera: one group at a time
+// ---------------------------------------------------------------------------------------------------------------------------
+
+/** What the vision runtime gives for one frame: the hand's reading and the face's, either absent. */
+export interface QuadroDaCamera {
+  readonly landmarks?: readonly Landmark[] | null;
+  readonly gesto?: string | null;
+  readonly blendshapes?: PontuacoesDoRosto | null;
+  readonly matriz?: ArrayLike<number> | null;
+}
+
+/** ADR-0197 errata: reads only the chosen group — moving hand, face and eyes, eyes only, or static hand — and nothing of the others. */
+export function criarLeitorDaCamera(grupo: GrupoDaCamera, neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDeCamera<QuadroDaCamera> {
+  const daMao = (q: QuadroDaCamera): QuadroDaMao => ({ landmarks: q.landmarks ?? null, gesto: q.gesto ?? null });
+  const doRosto = (q: QuadroDaCamera): QuadroDoRosto => ({ blendshapes: q.blendshapes ?? null, matriz: q.matriz ?? null });
+  if (grupo === 'estaticos' || grupo === 'dinamicos') {
+    const mao = grupo === 'estaticos' ? criarLeitorDosGestosEstaticos() : criarLeitorDosGestosDinamicos();
+    return { quadro: (ms, q) => mao.quadro(ms, daMao(q)) };
+  }
+  const olhos = criarLeitorDosOlhos(neutro);
+  if (grupo === 'olhos') return { quadro: (ms, q) => olhos.quadro(ms, doRosto(q)) };
+  const rosto = criarLeitorDoRosto(neutro);
+  return {
+    quadro(ms, q) {
+      const r = doRosto(q);
+      const doRostoCmd = rosto.quadro(ms, r);
+      const dosOlhosCmd = olhos.quadro(ms, r); // both read every frame, so a blink's timing is never skipped
+      return doRostoCmd ?? dosOlhosCmd;
     },
   };
 }

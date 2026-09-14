@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // WHAT A HAND, A FACE AND THE EYES DO, READ AS COMMANDS (ADR-0197; issue #189).
 //
-// The Dev's first webcam mappings, measured here on synthetic frames — landmarks, gesture names, blendshapes and head matrices built
+// The Dev's webcam mappings, one group read at a time, measured here on synthetic frames — landmarks, gesture names, blendshapes and head matrices built
 // by hand — because the camera and the vision runtime are not in this tree. The thresholds are a first reading.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import {
-  GESTOS_ESTATICOS, criarLeitorDaMao, criarLeitorDoRosto, criarLeitorDosOlhos, formaDaMao, tresDedos, poseDaCabeca,
-  ESPERA_MS, FIRMEZA_MS,
+  GESTOS_ESTATICOS, criarLeitorDosGestosEstaticos, criarLeitorDosGestosDinamicos, criarLeitorDoRosto, criarLeitorDosOlhos,
+  criarLeitorDaCamera, GRUPOS_DA_CAMERA, formaDaMao, tresDedos, poseDaCabeca, ESPERA_MS, FIRMEZA_MS, REPOUSO_MS,
 } from '../app/js/input/camera-gestures.js';
 
 /** A hand of palm size `p` (wrist to middle base) with the wrist at (x, y); `dedos` = which of index…little are extended. */
@@ -51,7 +51,7 @@ describe('static hand gestures (ADR-0197 §1)', () => {
   });
 
   it('🔴 [Right] a gesture held past the steadiness time commands once, then waits', () => {
-    const l = criarLeitorDaMao();
+    const l = criarLeitorDosGestosEstaticos();
     const q = { landmarks: mao({ dedos: [false, false, false, false] }), gesto: 'Closed_Fist' };
     const saidas = [];
     for (let ms = 0; ms <= ESPERA_MS + FIRMEZA_MS - 10; ms += 33) { const c = l.quadro(ms, q); if (c) saidas.push([ms, c]); }
@@ -60,9 +60,19 @@ describe('static hand gestures (ADR-0197 §1)', () => {
   });
 
   it('⚠️ [Boundary] a gesture shown for less than the steadiness time commands nothing; an unmapped one never', () => {
-    const l = criarLeitorDaMao();
+    const l = criarLeitorDosGestosEstaticos();
     expect(correr(l, [[0, { landmarks: mao(), gesto: 'Victory' }], [150, { landmarks: mao(), gesto: 'Victory' }], [200, { landmarks: mao(), gesto: 'None' }]])).toEqual([]);
-    expect(correr(criarLeitorDaMao(), Array.from({ length: 20 }, (_, i) => [i * 50, { landmarks: mao(), gesto: 'None' }]))).toEqual([]);
+    expect(correr(criarLeitorDosGestosEstaticos(), Array.from({ length: 20 }, (_, i) => [i * 50, { landmarks: mao(), gesto: 'None' }]))).toEqual([]);
+  });
+
+  it('🔴 [Right] a gesture held never commands twice; after the hand rests, it does (ADR-0197 errata)', () => {
+    const palma = { landmarks: mao(), gesto: 'Open_Palm' };
+    const nada = { landmarks: mao(), gesto: 'None' };
+    const trechos = (...partes) => { const q = []; let ms = 0; for (const [dur, quadro] of partes) for (const fim = ms + dur; ms < fim; ms += 33) q.push([ms, quadro]); return q; };
+    expect(correr(criarLeitorDosGestosEstaticos(), trechos([2000, palma])), 'a held palm repeated').toEqual(['menu']);
+    expect(correr(criarLeitorDosGestosEstaticos(), trechos([1000, palma], [REPOUSO_MS + 100, nada], [1000, palma]))).toEqual(['menu', 'menu']);
+    expect(correr(criarLeitorDosGestosEstaticos(), trechos([1000, palma], [100, nada], [1000, palma])), 'a flicker of the recogniser taken for rest')
+      .toEqual(['menu']);
   });
 });
 
@@ -77,13 +87,13 @@ describe('the hand\'s shape and three fingers', () => {
 
   it('🔴 [Right] three fingers held command «menu»', () => {
     const q = { landmarks: mao({ dedos: [true, true, true, false], polegarDobrado: true }) };
-    expect(correr(criarLeitorDaMao(), Array.from({ length: 12 }, (_, i) => [i * 33, q]))).toEqual(['menu']);
+    expect(correr(criarLeitorDosGestosDinamicos(), Array.from({ length: 60 }, (_, i) => [i * 33, q])), 'three fingers held repeated').toEqual(['menu']);
   });
 });
 
 describe('moving hand gestures (ADR-0197 §2)', () => {
   it('🔴 [Right] the index moving up by more than the threshold commands «up»; moving down, «down»', () => {
-    const sobe = criarLeitorDaMao();
+    const sobe = criarLeitorDosGestosDinamicos();
     const ponto = [true, false, false, false];
     const quadros = [0, 50, 100, 150].map((ms, i) => {
       const m = mao({ dedos: ponto });
@@ -91,38 +101,48 @@ describe('moving hand gestures (ADR-0197 §2)', () => {
       return [ms, { landmarks: m }];
     });
     expect(correr(sobe, quadros)).toEqual(['up']);
-    const desce = criarLeitorDaMao();
+    const desce = criarLeitorDosGestosDinamicos();
     expect(correr(desce, quadros.map(([ms, q], i) => { const m = mao({ dedos: ponto }); m[8] = { x: m[8].x, y: m[8].y + i * 0.03 }; return [ms, { landmarks: m }]; })))
       .toEqual(['down']);
   });
 
   it('⚠️ [Boundary] a tremor under the threshold commands nothing — and the threshold is in palms, not pixels', () => {
-    const treme = criarLeitorDaMao();
+    const treme = criarLeitorDosGestosDinamicos();
     const quadros = [0, 50, 100, 150].map((ms, i) => { const m = mao({ dedos: [true, false, false, false] }); m[8] = { x: m[8].x, y: m[8].y - (i % 2) * 0.02 }; return [ms, { landmarks: m }]; });
     expect(correr(treme, quadros)).toEqual([]);
     // the same 0.09 of the frame, for a hand twice as large (the child closer), is under the threshold
-    const perto = criarLeitorDaMao();
+    const perto = criarLeitorDosGestosDinamicos();
     const grandes = [0, 50, 100, 150].map((ms, i) => { const m = mao({ dedos: [true, false, false, false], p: 0.2 }); m[8] = { x: m[8].x, y: m[8].y - i * 0.03 }; return [ms, { landmarks: m }]; });
     expect(correr(perto, grandes)).toEqual([]);
   });
 
   it('🔴 [Right] an open hand falling quickly commands «confirm»; a closed one, «back»', () => {
     const queda = (dedos) => [0, 60, 120, 180].map((ms, i) => [ms, { landmarks: mao({ dedos, y: 0.4 + i * 0.05 }) }]); // 1.5 palms in 180 ms
-    expect(correr(criarLeitorDaMao(), queda([true, true, true, true]))).toEqual(['confirm']);
-    expect(correr(criarLeitorDaMao(), queda([false, false, false, false]))).toEqual(['back']);
+    expect(correr(criarLeitorDosGestosDinamicos(), queda([true, true, true, true]))).toEqual(['confirm']);
+    expect(correr(criarLeitorDosGestosDinamicos(), queda([false, false, false, false]))).toEqual(['back']);
   });
 
   it('⚠️ [Boundary] a slow fall is no gesture', () => {
     const lenta = Array.from({ length: 16 }, (_, i) => [i * 100, { landmarks: mao({ y: 0.4 + i * 0.01 }) }]); // 0.1 palm every 100 ms
-    expect(correr(criarLeitorDaMao(), lenta)).toEqual([]);
+    expect(correr(criarLeitorDosGestosDinamicos(), lenta)).toEqual([]);
   });
 
   it('🔴 [Right] after a command the reader waits before the next one (ADR-0197 §5)', () => {
-    const l = criarLeitorDaMao();
-    const q = { landmarks: mao(), gesto: 'Open_Palm' };
-    const saidas = correr(l, Array.from({ length: 40 }, (_, i) => [i * 33, q]));
-    // 1.3 s of a steady palm: the first after 300 ms, the next only after the 500 ms wait and another 300 ms of steadiness
-    expect(saidas).toEqual(['menu', 'menu']);
+    const l = criarLeitorDosGestosEstaticos();
+    const saidas = [];
+    for (let ms = 0; ms < 1500; ms += 33) {
+      const c = l.quadro(ms, { landmarks: mao(), gesto: ms < 400 ? 'Closed_Fist' : 'Victory' });
+      if (c) saidas.push([ms, c]);
+    }
+    expect(saidas.map((s) => s[1])).toEqual(['confirm', 'back']);
+    expect(saidas[1][0] - saidas[0][0], 'the next gesture did not wait').toBeGreaterThanOrEqual(ESPERA_MS);
+  });
+
+  it('⚠️ [Boundary] a hand still falling after its gesture is not a second one; still, then falling again, it is', () => {
+    const cai = (y0, n, t0) => Array.from({ length: n }, (_, i) => [t0 + i * 60, { landmarks: mao({ dedos: [true, true, true, true], y: y0 + i * 0.05 }) }]);
+    const parada = (y, t0, dur) => Array.from({ length: Math.ceil(dur / 60) }, (_, i) => [t0 + i * 60, { landmarks: mao({ y }) }]);
+    expect(correr(criarLeitorDosGestosDinamicos(), cai(0.1, 16, 0)), 'one long fall commanded twice').toEqual(['confirm']);
+    expect(correr(criarLeitorDosGestosDinamicos(), [...cai(0.1, 4, 0), ...parada(0.25, 240, 900), ...cai(0.25, 4, 1200)])).toEqual(['confirm', 'confirm']);
   });
 });
 
@@ -142,6 +162,12 @@ describe('face and head (ADR-0197 §3)', () => {
     const cmd = (b) => correr(criarLeitorDoRosto(), Array.from({ length: 12 }, (_, i) => [i * 33, { blendshapes: b, matriz: rotacao(0, 0) }]));
     expect([cmd({ jawOpen: 0.7 }), cmd({ mouthSmileLeft: 0.8, mouthSmileRight: 0.7 }), cmd({ browInnerUp: 0.6 })]).toEqual([['confirm'], ['menu'], ['back']]);
     expect(cmd({ jawOpen: 0.3 }), 'a mouth slightly open commands nothing').toEqual([]);
+  });
+
+  it('🔴 [Right] a head held turned commands once; back at rest and turned again, twice (ADR-0197 errata)', () => {
+    const quadros = (partes) => { const q = []; let ms = 0; for (const [dur, yaw] of partes) for (const fim = ms + dur; ms < fim; ms += 33) q.push([ms, { blendshapes: {}, matriz: rotacao(yaw, 0) }]); return q; };
+    expect(correr(criarLeitorDoRosto(), quadros([[2000, 30]]))).toEqual(['right']);
+    expect(correr(criarLeitorDoRosto(), quadros([[1000, 30], [REPOUSO_MS + 100, 0], [1000, 30]]))).toEqual(['right', 'right']);
   });
 
   it('⚠️ [Boundary] a neutral pose the child calibrated is the zero', () => {
@@ -214,6 +240,42 @@ describe('the eyes (ADR-0197 §4)', () => {
   it('🔴 [Right] looking up or down, held, commands up or down', () => {
     expect(correr(criarLeitorDosOlhos(), olhos([[0, 450, { eyeLookUpLeft: 0.8, eyeLookUpRight: 0.8 }]]))).toEqual(['up']);
     expect(correr(criarLeitorDosOlhos(), olhos([[0, 450, baixo]]))).toEqual(['down']);
+    expect(correr(criarLeitorDosOlhos(), olhos([[0, 2500, baixo]])), 'a held look repeated').toEqual(['down']);
+  });
+});
+
+describe('one group at a time (ADR-0197 errata)', () => {
+  const quadros = (n, q) => Array.from({ length: n }, (_, i) => [i * 33, q]);
+  const punho = { landmarks: mao({ dedos: [false, false, false, false] }), gesto: 'Closed_Fist' };
+
+  it('🔴 [Right] four groups, in the order the Dev named them', () => {
+    expect(GRUPOS_DA_CAMERA).toEqual(['dinamicos', 'rostoEOlhos', 'olhos', 'estaticos']);
+  });
+
+  it('🔴 [Zero] reading moving gestures, a held fist commands nothing; reading static gestures, it confirms', () => {
+    expect(correr(criarLeitorDaCamera('dinamicos'), quadros(30, punho))).toEqual([]);
+    expect(correr(criarLeitorDaCamera('estaticos'), quadros(30, punho))).toEqual(['confirm']);
+  });
+
+  it('🔴 [Zero] reading static gestures, a moving index and three fingers command nothing', () => {
+    const indice = [0, 50, 100, 150].map((ms, i) => { const m = mao({ dedos: [true, false, false, false] }); m[8] = { x: m[8].x, y: m[8].y - i * 0.03 }; return [ms, { landmarks: m }]; });
+    expect(correr(criarLeitorDaCamera('estaticos'), indice)).toEqual([]);
+    expect(correr(criarLeitorDaCamera('estaticos'), quadros(30, { landmarks: mao({ dedos: [true, true, true, false], polegarDobrado: true }) }))).toEqual([]);
+    expect(correr(criarLeitorDaCamera('dinamicos'), indice)).toEqual(['up']);
+  });
+
+  it('🔴 [Zero] reading the eyes, the head and the mouth command nothing, and no hand is read', () => {
+    expect(correr(criarLeitorDaCamera('olhos'), quadros(30, { blendshapes: { jawOpen: 0.9 }, matriz: rotacao(30, 0), ...punho }))).toEqual([]);
+    expect(correr(criarLeitorDaCamera('rostoEOlhos'), quadros(30, { blendshapes: {}, matriz: rotacao(0, 0), ...punho })), 'the face group read a hand').toEqual([]);
+  });
+
+  it('🔴 [Right] reading face and eyes, a mouth opened and a double blink both command', () => {
+    const f = { eyeBlinkLeft: 0.9, eyeBlinkRight: 0.9 };
+    const q = [];
+    for (let ms = 0; ms < 700; ms += 33) q.push([ms, { blendshapes: { jawOpen: 0.8 }, matriz: rotacao(0, 0) }]);
+    const piscadas = [[700, 1300, {}], [1300, 1450, f], [1450, 1600, {}], [1600, 1750, f], [1750, 2600, {}]];
+    for (const [a, b, bs] of piscadas) for (let ms = a; ms < b; ms += 33) q.push([ms, { blendshapes: bs, matriz: rotacao(0, 0) }]);
+    expect(correr(criarLeitorDaCamera('rostoEOlhos'), q)).toEqual(['confirm', 'confirm']);
   });
 });
 
@@ -229,3 +291,9 @@ describe('the eyes (ADR-0197 §4)', () => {
 //   G9 expressions read as absolute scores                     🔴 brows at rest · lids at rest
 //   G10 the eyes read while the head is off rest               🔴 head turned or tilted
 //   G11 the eyes' head check ignores the calibrated pose       🔴 head turned or tilted (rest is calibrated)
+//   G12 a held signal repeats (the last command forgotten)     🔴 held never twice · head held · look held · three fingers
+//   G13 a flicker counts as rest                               🔴 held never twice (flicker)
+//   G14 a motion re-arms without the hand stilling (or at once) 🔴 still falling
+//   G15 the moving group reads static gestures                 🔴 held fist
+//   G16 the eyes group reads the face                          🔴 head and mouth
+//   G17 the face group reads the hand readers                  🔴 face and eyes both command
