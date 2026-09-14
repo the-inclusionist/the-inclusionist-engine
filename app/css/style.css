@@ -644,7 +644,27 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 /* two or more lines of the footer showing at once: one line each, so the footer does not climb into the workspace */
 .rodape-da-tela:has(> :not([hidden]) ~ :not([hidden])) > *{-webkit-line-clamp:1}
 .pausa-legenda[hidden],.barra-explicacao[hidden],.legenda-de-som[hidden]{display:none}
-#game-region .overlay__card{max-height:94%;max-width:96%}
+/* A PANEL WEARS THE PAUSE CARD (interface log, 2026-09-13). The Dev: the settings submenu «mantém a mesma altura e identidade
+   visual», and every panel it opens had «outra identidade visual, com alturas menores, título maior e cores diferentes».
+   So a panel in the region takes `.screen-pause .pause-card` as it is: the whole height, the same dark card and gold border,
+   the gold title at the text size, items of `.pm-btn`'s colour, border and radius with the same 2 px gaps. It is at least
+   the pause card's width and grows only when a row needs it — a steps row never wraps (ADR-0130 erratum), and with the BDA
+   spacing (ADR-0149) «◀ Realce de contraste: desligado ▶» is wider than the pause list's 26rem. */
+#game-region .overlay__card{background:#0e1626;border:2px solid #ffd23f;border-radius:14px;padding:.25rem .7rem;width:auto;
+  max-width:94%;height:100%;max-height:100%;box-sizing:border-box;
+  scrollbar-gutter:stable both-edges;box-shadow:0 8px 30px rgba(0,0,0,.5);scroll-padding-bottom:var(--rodape-h,50px)}
+#game-region .overlay__card h2{font-size:1em;line-height:1.25;margin:0 0 .1rem;color:#ffd23f}
+#game-region .overlay__back{width:100%;margin:0 0 2px;justify-content:center;background:#1a2740;border:1px solid #6a7a96;border-radius:10px;color:#eaf2f8}
+#game-region .overlay__back:hover,#game-region .overlay__back:focus{background:#2a3a5e;border-color:#ffd23f;outline:2px solid #ffd23f;outline-offset:1px}
+#game-region .ctrl-list{gap:2px}
+/* the pause list's width is the floor, as `.pause-menu` declares it: the card follows with the same padding and scrollbar gutters */
+#game-region .overlay__back,#game-region .ctrl-list{min-width:26rem;max-width:100%}
+#game-region .ctrl-row{box-sizing:border-box;min-height:var(--alvo-min,44px);padding:.3rem .7rem;background:#1a2740;border:1px solid #6a7a96;border-radius:10px;color:#eaf2f8;font-weight:700}
+#game-region .overlay__card > .ctrl-row{margin-top:2px}
+#game-region .ctrl-row:hover,#game-region .ctrl-row:focus-within{background:#2a3a5e;border-color:#ffd23f}
+/* The card runs under the explanation band, as the pause card runs under its legend: the room at the end of the card and
+   the scroll padding let the last row, and the focused one, come to rest above the band. */
+#game-region .overlay__card::after{content:"";display:block;height:var(--rodape-h,50px)}
 /* Rodapé de explicação: branco sobre preto translúcido 0,82 → contraste do branco >7:1 mesmo sobre 100% branco
    (composição: 1-0,82=0,18 → L≈0,027 → ~13:1), sem ser 100% opaco. Fixo no rodapé do card. */
 .opt-explain{position:sticky;bottom:calc(-1 * var(--card-pad,1.5rem));margin:.8rem calc(-1 * var(--card-pad,1.5rem)) calc(-1 * var(--card-pad,1.5rem));padding:.6rem .9rem;min-height:2.8rem;text-align:left;
@@ -653,13 +673,13 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 /* ADR-0164 rule 1: a panel's explanation is a footer of the SCREEN, not of the card — «está ajustado ao menu, não ao
    canvas», the Dev on a screenshot. The card sets no position, so the overlay (the region's size) is the containing block:
-   the band lands at the region's lowest edge, side to side, and does not scroll with the card. The overlay keeps that
-   room free, so the card ends above the band instead of under it. */
+   the band lands at the region's lowest edge, side to side, and does not scroll with the card. The card runs under it,
+   the pause card's height (see the panel rules above). */
 #game-region .opt-explain{position:absolute;left:0;right:0;bottom:0;z-index:1;margin:0;padding:4px .6em;min-height:0;
   border:0;border-radius:0;text-align:center;line-height:1.3;font-size:var(--ui-fs,16px)}
-#game-region .overlay:has(.opt-explain){padding-bottom:calc(var(--rodape-h,50px) + .6rem)}
+#game-region .overlay{padding:2px 0}
 #game-region .overlay__actions{position:static;background:transparent;padding:.5rem 0 0;margin:0}
-#visual{background:rgba(0,0,0,.28);align-items:start;padding-top:3.5rem} /* cor: fundo translúcido p/ ver o efeito imediato no jogo */
+#visual{background:rgba(0,0,0,.28)} /* cor: fundo translúcido p/ ver o efeito imediato no jogo */
 
 /* Indicador de simulação (canto sup. dir.): branca=cegueira, verde=baixa visão. Duplo toque volta ao normal. */
 #viz-indicator{position:absolute;top:6px;right:6px;z-index:20;width:16px;height:16px;border-radius:50%;border:2px solid rgba(0,0,0,.6);padding:0;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.7)} /* DENTRO do canvas (game-region) — funciona como botão */

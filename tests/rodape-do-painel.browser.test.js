@@ -48,11 +48,18 @@ describe('the explanation of an open panel', () => {
     expect(getComputedStyle(painel.querySelector('.opt-explain')).backgroundColor).toBe('rgba(0, 0, 0, 0.82)');
   });
 
-  it('🔴 [Right] and the card ends ABOVE the band — no row of the menu under it', () => {
+  // The card runs under the band at the pause card's height (interface log, 2026-09-13); what must not happen is a row the
+  // child reaches staying hidden behind it — the last row, scrolled into view the way the cursor scrolls, rests above.
+  it('🔴 [Right] the last row, brought into view, rests ABOVE the band', () => {
     const painel = [...regiao.querySelectorAll('.overlay')].find((o) => !o.hidden);
-    const card = painel.querySelector('.overlay__card').getBoundingClientRect();
+    const card = painel.querySelector('.overlay__card');
+    const linhas = [...card.querySelectorAll('.ctrl-row, .overlay__actions button')].filter((e) => e.offsetParent);
+    const ultima = linhas[linhas.length - 1];
+    ultima.scrollIntoView({ block: 'nearest' });
     const faixa = painel.querySelector('.opt-explain').getBoundingClientRect();
-    expect(card.bottom, `the card ends at ${Math.round(card.bottom - faixa.top)} px into the band`).toBeLessThanOrEqual(faixa.top + 0.5);
+    const b = ultima.getBoundingClientRect();
+    expect(b.bottom, `the last row ends ${Math.round(b.bottom - faixa.top)} px into the band`).toBeLessThanOrEqual(faixa.top + 0.5);
+    card.scrollTop = 0;
   });
 
   it('⚠️ [Boundary] two lines at most, whatever the row explains', () => {
@@ -65,4 +72,4 @@ describe('the explanation of an open panel', () => {
 
 // ============================== MUTATIONS CHECKED ==============================
 //   R1 the band back inside the card (sticky)       🔴 both geometry cases
-//   R2 the overlay keeps no room for the band      🔴 the card ends inside the band
+//   R2 no room at the card's end (no `::after`)    🔴 the last row rests inside the band
