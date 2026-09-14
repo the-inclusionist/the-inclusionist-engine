@@ -282,7 +282,7 @@ export function criarLeitorDoRosto(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDe
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------
-// The eyes: blink patterns, and a blink while looking up or down
+// The eyes: a look and a blink pattern
 // ---------------------------------------------------------------------------------------------------------------------------
 
 /** A blink shorter than this is quick; one at least `PISCADA_LENTA_MS` long is slow; in between it is neither. */
@@ -297,11 +297,10 @@ const OLHAR_MINIMO = 0.5;
 type Olhar = 'cima' | 'baixo' | null;
 
 /**
- * ADR-0199 (supersedes ADR-0197 §4 in part): one quick blink while looking up → up, while looking down → down; two quick blinks →
- * confirm; one slow blink → back; two quick blinks while looking down → menu. A plain look commands nothing, and neither does one
- * quick blink with the eyes ahead — it is how people blink. A single blink is decided once the time for a second one has passed, so
- * a double never fires half-way. The look is the one the eyes held before the lids closed (closing lids read as a look down). The eyes
- * command only while the head rests: a head turned or tilted moves the eyes the other way — the head reader owns that moment.
+ * ADR-0202 (supersedes ADR-0199 in part): look up and blink twice → up, look down and blink twice → down; look up and blink slowly →
+ * confirm, look down → back, look ahead → menu. One quick blink commands nothing — it is how people blink — and neither do two looking
+ * ahead, nor a plain look. The look is the one the eyes held before the lids closed (closing lids read as a look down). The eyes command
+ * only while the head rests: a head turned or tilted moves the eyes the other way — the head reader owns that moment.
  */
 export function criarLeitorDosOlhos(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDeCamera<QuadroDoRosto> {
   let esperaAte = -Infinity;
@@ -334,15 +333,16 @@ export function criarLeitorDosOlhos(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorD
         const inicio = fechouEm;
         fechouEm = null;
         if (ms >= esperaAte) {
-          if (duracao >= PISCADA_LENTA_MS) return piscou(ms, 'back');
+          if (duracao >= PISCADA_LENTA_MS) return piscou(ms, olharAoFechar === 'cima' ? 'confirm' : olharAoFechar === 'baixo' ? 'back' : 'menu');
           if (duracao < PISCADA_RAPIDA_MS) rapidas.push({ ms: inicio, olhar: olharAoFechar });
         }
       }
-      if (rapidas.length >= 2) return piscou(ms, rapidas[0]!.olhar === 'baixo' && rapidas[1]!.olhar === 'baixo' ? 'menu' : 'confirm');
-      if (rapidas.length === 1 && ms - rapidas[0]!.ms > DUPLA_MS) {
-        const so = rapidas.shift()!;
-        if (so.olhar === 'cima') return piscou(ms, 'up');
-        if (so.olhar === 'baixo') return piscou(ms, 'down');
+      while (rapidas.length && ms - rapidas[0]!.ms > DUPLA_MS) rapidas.shift();
+      if (rapidas.length >= 2) {
+        const [a, b] = [rapidas[0]!.olhar, rapidas[1]!.olhar];
+        rapidas.length = 0;
+        if (a === b && a === 'cima') return piscou(ms, 'up');
+        if (a === b && a === 'baixo') return piscou(ms, 'down');
       }
       return null;
     },

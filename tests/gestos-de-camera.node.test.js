@@ -199,18 +199,23 @@ describe('the eyes (ADR-0197 §4)', () => {
   const fechadoBaixo = { ...fechado, ...baixo };
   const cima = { eyeLookUpLeft: 0.8, eyeLookUpRight: 0.8 };
 
-  it('🔴 [Right] two quick blinks → confirm', () => {
-    expect(correr(criarLeitorDosOlhos(), olhos([[0, 100, aberto], [100, 250, fechado], [250, 400, aberto], [400, 550, fechado], [550, 1500, aberto]])))
-      .toEqual(['confirm']);
+  /** Two quick blinks, or one slow one, with the eyes held at `olhar` (ADR-0202). */
+  const duas = (olhar) => olhos([[0, 100, olhar], [100, 250, { ...fechado, ...olhar }], [250, 400, olhar], [400, 550, { ...fechado, ...olhar }], [550, 1500, olhar]]);
+  const lenta = (olhar) => olhos([[0, 100, olhar], [100, 800, { ...fechado, ...olhar }], [800, 1500, olhar]]);
+
+  it('🔴 [Right] look up and blink twice → up; look down and blink twice → down; looking ahead, nothing (ADR-0202)', () => {
+    expect([correr(criarLeitorDosOlhos(), duas(cima)), correr(criarLeitorDosOlhos(), duas(baixo)), correr(criarLeitorDosOlhos(), duas(aberto))])
+      .toEqual([['up'], ['down'], []]);
   });
 
-  it('🔴 [Right] one slow blink → back', () => {
-    expect(correr(criarLeitorDosOlhos(), olhos([[0, 100, aberto], [100, 800, fechado], [800, 1500, aberto]]))).toEqual(['back']);
+  it('🔴 [Right] a slow blink looking up → confirm, looking down → back, looking ahead → menu (ADR-0202)', () => {
+    expect([correr(criarLeitorDosOlhos(), lenta(cima)), correr(criarLeitorDosOlhos(), lenta(baixo)), correr(criarLeitorDosOlhos(), lenta(aberto))])
+      .toEqual([['confirm'], ['back'], ['menu']]);
   });
 
-  it('🔴 [Right] two quick blinks while looking down → menu', () => {
-    expect(correr(criarLeitorDosOlhos(), olhos([[0, 100, baixo], [100, 250, fechadoBaixo], [250, 330, baixo], [330, 480, fechadoBaixo], [480, 520, baixo], [520, 1500, aberto]])))
-      .toEqual(['menu']);
+  it('⚠️ [Boundary] two quick blinks with the look changed between them are no command', () => {
+    expect(correr(criarLeitorDosOlhos(), olhos([[0, 100, cima], [100, 250, { ...fechado, ...cima }], [250, 400, baixo], [400, 550, { ...fechado, ...baixo }], [550, 1500, aberto]])))
+      .toEqual([]);
   });
 
   it('🔴 [Zero] one ordinary quick blink commands nothing — it is how people blink', () => {
@@ -227,13 +232,13 @@ describe('the eyes (ADR-0197 §4)', () => {
     const repouso = { eyeBlinkLeft: 0.6, eyeBlinkRight: 0.6 }, arregalado = { eyeBlinkLeft: 0.4, eyeBlinkRight: 0.4 };
     const tremor = olhos([[0, 100, repouso], [100, 250, arregalado], [250, 400, repouso], [400, 550, arregalado], [550, 1500, repouso]]);
     expect(correr(criarLeitorDosOlhos(neutro), tremor), 'resting lids read as two quick blinks').toEqual([]);
-    expect(correr(criarLeitorDosOlhos(neutro), olhos([[0, 100, repouso], [100, 250, fechado], [250, 400, repouso], [400, 550, fechado], [550, 1500, repouso]])))
-      .toEqual(['confirm']);
+    expect(correr(criarLeitorDosOlhos(neutro), olhos([[0, 100, repouso], [100, 800, fechado], [800, 1500, repouso]])), 'a real slow blink from rest')
+      .toEqual(['menu']);
   });
 
   it('🔴 [Zero] while the head is turned or tilted the eyes command nothing — they move against the head to keep the screen in view', () => {
     const cabeca = (matriz, trechos) => olhos(trechos).map(([ms, q]) => [ms, { ...q, matriz }]);
-    const olharEPiscar = [[0, 300, cima], [300, 450, { ...fechado, ...cima }], [450, 1500, cima]];
+    const olharEPiscar = [[0, 100, cima], [100, 250, { ...fechado, ...cima }], [250, 400, cima], [400, 550, { ...fechado, ...cima }], [550, 1500, cima]];
     expect(correr(criarLeitorDosOlhos(), cabeca(rotacao(0, -25), olharEPiscar)), 'the head tilted down, the eyes up').toEqual([]);
     expect(correr(criarLeitorDosOlhos(), cabeca(rotacao(-30, 0), [[0, 100, aberto], [100, 250, fechado], [250, 400, aberto], [400, 550, fechado], [550, 1500, aberto]])))
       .toEqual([]);
@@ -246,12 +251,9 @@ describe('the eyes (ADR-0197 §4)', () => {
     expect(correr(criarLeitorDosOlhos(), olhos([[0, 2500, baixo]]))).toEqual([]);
   });
 
-  it('🔴 [Right] one quick blink looking up → up, looking down → down — decided after the time for a second blink (ADR-0199)', () => {
-    const uma = (olhar) => olhos([[0, 300, olhar], [300, 450, { ...fechado, ...olhar }], [450, 1500, olhar]]);
-    expect([correr(criarLeitorDosOlhos(), uma(cima)), correr(criarLeitorDosOlhos(), uma(baixo))]).toEqual([['up'], ['down']]);
-    const l = criarLeitorDosOlhos();
-    const antes = uma(baixo).filter(([ms]) => ms < 300 + 700);
-    expect(correr(l, antes), 'the single blink fired before a double could come').toEqual([]);
+  it('🔴 [Zero] one quick blink looking up or down commands nothing — a single blink is not worth it (ADR-0202)', () => {
+    const uma = (olhar) => olhos([[0, 300, olhar], [300, 450, { ...fechado, ...olhar }], [450, 2500, olhar]]);
+    expect([correr(criarLeitorDosOlhos(), uma(cima)), correr(criarLeitorDosOlhos(), uma(baixo))]).toEqual([[], []]);
   });
 });
 
@@ -280,13 +282,13 @@ describe('one group at a time (ADR-0197 errata)', () => {
     expect(correr(criarLeitorDaCamera('rostoEOlhos'), quadros(30, { blendshapes: {}, matriz: rotacao(0, 0), ...punho })), 'the face group read a hand').toEqual([]);
   });
 
-  it('🔴 [Right] reading face and eyes, a mouth opened and a double blink both command', () => {
+  it('🔴 [Right] reading face and eyes, a mouth opened and a slow blink looking ahead both command', () => {
     const f = { eyeBlinkLeft: 0.9, eyeBlinkRight: 0.9 };
     const q = [];
     for (let ms = 0; ms < 700; ms += 33) q.push([ms, { blendshapes: { jawOpen: 0.8 }, matriz: rotacao(0, 0) }]);
-    const piscadas = [[700, 1300, {}], [1300, 1450, f], [1450, 1600, {}], [1600, 1750, f], [1750, 2600, {}]];
+    const piscadas = [[700, 1300, {}], [1300, 2000, f], [2000, 2600, {}]]; // a slow blink looking ahead → menu
     for (const [a, b, bs] of piscadas) for (let ms = a; ms < b; ms += 33) q.push([ms, { blendshapes: bs, matriz: rotacao(0, 0) }]);
-    expect(correr(criarLeitorDaCamera('rostoEOlhos'), q)).toEqual(['down', 'confirm']);
+    expect(correr(criarLeitorDaCamera('rostoEOlhos'), q)).toEqual(['down', 'menu']);
   });
 });
 
@@ -311,5 +313,7 @@ describe('one group at a time (ADR-0197 errata)', () => {
 //   G18 a tilt down commands down again                         🔴 turn and tilt up
 //   G19 the mouth back to confirm, the pucker unread            🔴 mouth open → down, pucker → confirm
 //   G20 a plain look commands                                   🔴 a plain look commands nothing
-//   G21 a single blink ignores the look                         🔴 one quick blink looking up/down
-//   G22 a single blink decided at once, before the double's time 🔴 one quick blink (decided after)
+//   G23 a single quick blink commands again                      🔴 one quick blink commands nothing
+//   G24 a double ignores the look (always up)                    🔴 blink twice · looking ahead · look changed
+//   G25 a slow blink ignores the look (always back)              🔴 slow blink looking up/down/ahead
+//   G26 two blinks with different looks still command            🔴 look changed between them
