@@ -59,6 +59,17 @@ A narração por voz roda **inteiramente no navegador/offline** graças ao traba
   material de laboratório (`docs/research/sherpa-wasm/`) e continuam creditadas por isso — crédito acompanha o que
   está no repositório, e não apenas o que é distribuído no pacote. O roster de entrega decidido é `en_US`, `pt_BR` e
   `es_MX` (ADR-0065, que supersede o ADR-0022).
+- **Licença das vozes do catálogo, lida no `MODEL_CARD` de cada uma em 2026-09-14** (`huggingface.co/diffusionstudio/piper-voices`):
+
+  | voz | dataset | licença do dataset |
+  |---|---|---|
+  | `pt_BR-faber-medium` | NabuCasa/voice-datasets | **CC0** |
+  | `es_MX-claude-high` | HirCoir/Piper-TTS-Spanish | **Apache-2.0** |
+  | `en_US-amy-medium` | MycroftAI/mimic3-voices («See URL») | **CC BY-SA 4.0** — a licença do repositório indicado; a voz `amy` não aparece na lista dele, então a procedência não está confirmada |
+  | `en_US-ryan-medium` | roholazandie/ryanspeech (Kaggle) | ⚠️ **CC BY-NC-SA 4.0 — uso NÃO comercial** |
+
+  ⚠️ **Ryan é não comercial**: distribuí-la numa entrega ou espelhá-la exige que todo uso fique fora de fins comerciais — decisão
+  do Dev antes de qualquer espelho (ADR-0203). Amy pede atribuição e compartilhamento pela mesma licença.
 
 > Os pesos das vozes são **baixados uma vez** (de um host público) e rodam **100% localmente** depois — nenhum áudio de
 > criança sai do dispositivo. Ver `the-inclusionist-docs · docs/2-Architecture/adr/ADR-0065-three-neural-voices-owned-by-the-engine-and-cached-on-first-use.yaml`.
