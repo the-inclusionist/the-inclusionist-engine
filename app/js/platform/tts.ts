@@ -11,6 +11,7 @@ import { t, bcp47 } from '../core/i18n.js';
 import { criarFalaInterrompivel } from './interruptible-speech.js';
 import { caminhoNaEntrega } from './pesados.js';
 import { vozesDoIdioma, type VozNeural } from './voice-plan.js';
+import { palavrasFaladas, segundosDeFala, taxaDaFala } from '../core/speech-rate.js';
 
 interface TtsEngine { id: string; speak: (text: string) => void; }
 
@@ -62,6 +63,13 @@ export interface TtsCtx {
    * Ausente = a narração cai na voz do navegador (Web Speech), que fala o idioma certo e não pesa nada.
    */
   carregarVozNeural?: CarregarVozNeural;
+  /** The child's speech rate, words a minute (ADR-0183 §1). Absent = each voice at its own rate. */
+  getSpeechPpm?: () => number;
+  /**
+   * Makes the element a neural utterance plays through. Injected so the rate can be measured; the default is the document's
+   * `<audio>`. An element, not an `AudioBufferSourceNode`: only a media element changes speed without changing pitch.
+   */
+  criarAudio?: () => HTMLAudioElement;
 }
 
 export interface Tts {
@@ -120,6 +128,14 @@ export function createTts(ctx: TtsCtx): Tts {
   // defaulting to Piper there would open every game without the engine on a «not bundled» alert.
   let ttsEngineSel = store.get(store.KEYS.ttsEngine, null) || (ctx.carregarVozNeural ? 'piper' : 'webspeech'); // webspeech | piper | kokoro | kitten | espeak
   let vozCarregada: string | null = null; // the voice the loaded engine speaks; another choice reloads it
+  // Each voice's words per minute, averaged over the utterances long enough to measure (`core/speech-rate`): what a short
+  // utterance («Voltar») is played against. Neural voices by id; browser voices by name.
+  const mediaDaVoz = new Map<string, number>();
+  const media = (voz: string, ppm: number | null): void => {
+    if (!ppm) return;
+    const antes = mediaDaVoz.get(voz);
+    mediaDaVoz.set(voz, antes ? antes * 0.7 + ppm * 0.3 : ppm);
+  };
 
   const vozes = (): readonly VozNeural[] => vozesDoIdioma(bcp47());
   function vozAtual(): VozNeural | null {
@@ -140,7 +156,21 @@ export function createTts(ctx: TtsCtx): Tts {
       // `u.lang` era 'pt-BR' fixo. Com o jogo em inglês ou espanhol isso pedia ao navegador uma voz
       // PORTUGUESA para um texto que não é português — e o resultado não é sotaque, é ininteligível: a
       // fonética errada aplicada às letras erradas. Segue o idioma do jogo.
-      const u = new SpeechSynthesisUtterance(text); u.lang = bcp47(); if (_ttsVoiceObj) u.voice = _ttsVoiceObj; u.rate = 1; u.volume = Math.min(1, ctx.getVolume() * 1.4); ss.speak(u); return true;
+      const u = new SpeechSynthesisUtterance(text); u.lang = bcp47(); if (_ttsVoiceObj) u.voice = _ttsVoiceObj; u.volume = Math.min(1, ctx.getVolume() * 1.4);
+      // ADR-0183 §1: the browser's `rate` is a multiplier. The voice's words a minute at rate 1 is measured on its own utterances
+      // (start to end, so the silent ends count — an approximation the neural path does not need); until one is measured, 1.
+      const vozDoNavegador = 'webspeech:' + (_ttsVoiceObj?.name ?? bcp47());
+      const palavras = palavrasFaladas(text);
+      const baseDaVoz = mediaDaVoz.get(vozDoNavegador) ?? null;
+      u.rate = ctx.getSpeechPpm && baseDaVoz ? taxaDaFala(0, 0, ctx.getSpeechPpm(), baseDaVoz).taxa : 1;
+      let inicio = 0;
+      u.onstart = () => { inicio = performance.now(); };
+      u.onend = () => {
+        const segundos = inicio ? (performance.now() - inicio) / 1000 : 0;
+        const medido = taxaDaFala(palavras, segundos, 150, null).ppmDaVoz;
+        if (medido) media(vozDoNavegador, medido / u.rate);
+      };
+      ss.speak(u); return true;
     } catch (e) { return false; }
   }
 
@@ -184,24 +214,36 @@ export function createTts(ctx: TtsCtx): Tts {
       // A política agora mora em `platform/interruptible-speech`, pura e testada com falsos. Aqui só se
       // diz COMO sintetizar, tocar e parar — o quando é lá, com a guarda de geração que impede uma síntese
       // lenta de atropelar a mais nova.
-      const fala = criarFalaInterrompivel<AudioBuffer, AudioBufferSourceNode>({
+      // ADR-0183 §1: every utterance is measured — its words over its speech time, silent ends trimmed — and played at the
+      // child's rate over the voice's, through a media element that keeps the pitch (`preservesPitch`).
+      const fala = criarFalaInterrompivel<{ url: string; taxa: number }, HTMLAudioElement>({
         sintetizar: async (texto) => {
           const wav = await session.predict(texto);
+          const bytes = await wav.arrayBuffer();
           const ac = ctx.ensureAC();
           if (!ac) throw new Error('AudioContext unavailable'); // o `catch` de lá trata: silêncio deste item, motor vivo
-          return ac.decodeAudioData(await wav.arrayBuffer());
+          let taxa = 1;
+          if (ctx.getSpeechPpm) {
+            const buf = await ac.decodeAudioData(bytes.slice(0));
+            const medida = taxaDaFala(palavrasFaladas(texto), segundosDeFala(buf.getChannelData(0), buf.sampleRate), ctx.getSpeechPpm(), mediaDaVoz.get(fonte.voice) ?? null);
+            media(fonte.voice, medida.ppmDaVoz);
+            taxa = medida.taxa;
+          }
+          return { url: URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' })), taxa };
         },
-        tocar: (buf, aoTerminar) => {
+        tocar: (som, aoTerminar) => {
           const ac = ctx.ensureAC();
-          if (!ac) return null;
-          const src = ac.createBufferSource();
-          src.buffer = buf;
-          src.connect(ctx.catNode('tts') || ctx.audioOut() || ac.destination);
-          src.onended = aoTerminar;
-          src.start();
-          return src;
+          if (!ac) { URL.revokeObjectURL(som.url); return null; }
+          const el = ctx.criarAudio ? ctx.criarAudio() : document.createElement('audio');
+          el.preservesPitch = true;
+          el.src = som.url;
+          el.playbackRate = som.taxa;
+          try { ac.createMediaElementSource(el).connect(ctx.catNode('tts') || ctx.audioOut() || ac.destination); } catch { /* already routed */ }
+          el.onended = () => { URL.revokeObjectURL(som.url); aoTerminar(); };
+          void el.play().catch(() => { URL.revokeObjectURL(som.url); aoTerminar(); });
+          return el;
         },
-        parar: (src) => { src.stop(); },
+        parar: (el) => { el.pause(); URL.revokeObjectURL(el.src); },
       });
       ttsEngine = { id: 'piper', speak: (text: string) => { fala.falar(text); } };
       ttsLoading = false;

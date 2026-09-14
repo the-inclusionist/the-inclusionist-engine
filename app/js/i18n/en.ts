@@ -368,6 +368,8 @@ const en: Record<string, string> = {
   'audio.ttsEngine.dica': 'The browser voice works right away; the neural ones sound better and download on first use.',
   'audio.ttsVoice': 'Voice',
   'audio.ttsVol': 'Narration volume',
+  'audio.ttsPpm': 'Speech rate',
+  'audio.ttsPpm.dica': 'How many words a minute the narration speaks.',
   'visual.captions': 'Captions',
   'visual.legenda.ritmo': 'Caption speed',
   'visual.legenda.ppm': '{n} WPM',

@@ -776,6 +776,7 @@ export function createGame(o: CreateGameOptions): Engine {
     srSay, srAlert, ensureAC, catNode, audioOut,
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
     carregarVozNeural: o.carregarVozNeural,
+    getSpeechPpm: () => state.speechPpm, // ADR-0183 §1: the child's speech rate
   });
   // 📌 A linha da voz neural mudou-se para `problemasDoCartucho()`: o declínio que a cala é do jogo.
 

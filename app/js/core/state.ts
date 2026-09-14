@@ -8,6 +8,7 @@
 
 import { velocidadeValida } from './game-speed.js';
 import { ritmoDaLegendaValido } from './caption-duration.js';
+import { ritmoDaFalaValido } from './speech-rate.js';
 
 /** The port the settings are read and written through. `platform/storage` has this shape; a test passes a double. */
 export interface PortaDoEstado {
@@ -80,6 +81,8 @@ export interface EventoDoJogo {
   gameSpeed: number;
   /** The child's caption reading rate, words a minute (ADR-0183 §4): 125, 145 or 175. */
   captionPpm: number;
+  /** The child's speech rate, words a minute (ADR-0183 §1): 150 to 500 by 35. */
+  speechPpm: number;
   /** The «no strength to hold» empathy simulation (ADR-0181): a held game key reads as one tap. */
   semForca: boolean;
 
@@ -232,6 +235,7 @@ export const DEFAULTS = Object.freeze({
   oneButton: false,
   gameSpeed: 1,
   captionPpm: 125,
+  speechPpm: 150, // the slowest step, as the caption rate starts at its slowest (interface log 2026-09-14, not yet seen by the Dev)
   semForca: false,
   easy: false,        // por jogador (Modo Fácil)
   toggleMove: false,  // por jogador (movimento por alternância)
@@ -475,6 +479,15 @@ export function setCaptionPpmValue(ppm: number): void {
   const p = armazem('setCaptionPpmValue'); p.set('incl_caption_ppm', valido); captionPpm = valido; emit('captionPpm', valido);
 }
 
+// --- speechPpm: the child's speech rate, words a minute (ADR-0183 §1; issue #179): each engine measures its voice and plays at
+//     the ratio (`core/speech-rate`). One of 150…500 by 35; anything else reads as 150. ---
+export let speechPpm: number = ritmoDaFalaValido(VAZIO.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
+export function setSpeechPpmValue(ppm: number): void {
+  const valido = ritmoDaFalaValido(ppm);
+  if (speechPpm === valido) return;
+  const p = armazem('setSpeechPpmValue'); p.set('incl_speech_ppm', valido); speechPpm = valido; emit('speechPpm', valido);
+}
+
 /* ===================== THE STORED SETTINGS, LOADED BY THE ROOT (ADR-0178, issue #174) ===================== */
 
 
@@ -507,4 +520,5 @@ export function carregarEstado(p: PortaDoEstado): void {
   gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
   semForca = p.getBool('incl_sem_forca', DEFAULTS.semForca);
   captionPpm = ritmoDaLegendaValido(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
+  speechPpm = ritmoDaFalaValido(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
 }

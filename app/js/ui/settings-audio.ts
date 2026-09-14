@@ -20,6 +20,7 @@ import { DEFAULTS } from '../core/state.js';
 // O módulo INTEIRO, e não os nomes soltos: `menuIndexOn` é ligação viva e `setMenuIndexOnValue` a muda — ler
 // pelo namespace deixa isso à vista em cada uso, em vez de parecer uma constante importada.
 import * as state from '../core/state.js';
+import { RITMOS_DA_FALA } from '../core/speech-rate.js';
 import { markChanged, markMenuChanged } from './changed-mark.js';
 import { defaultAudioCat } from '../platform/audio-mixer.js';
 import type { PlayerView } from '../core/entity.js';
@@ -81,8 +82,8 @@ function rotuloDaVoz(v: VozDoPainel): string {
   return (v.engine === 'piper' ? '🪶 ' : '') + nomeDaVoz(v);
 }
 
-/** The four rows a missing voice locks (ADR-0185 §4): narration, its volume, the spoken index, and the voice. */
-const LINHAS_DA_FALA: readonly string[] = ['#opt-tts', '#tts-vol', '#opt-menuindex', '#tts-voz'];
+/** The rows a missing voice locks (ADR-0185 §4): narration, its volume and rate, the spoken index, and the voice. */
+const LINHAS_DA_FALA: readonly string[] = ['#opt-tts', '#tts-vol', '#tts-ppm', '#opt-menuindex', '#tts-voz'];
 
 /**
  * Saída de áudio dedicada de um jogador: o id do dispositivo e o AudioContext/ganho que ele abriu.
@@ -316,6 +317,8 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
     { contentor: '@lista' }, // a lista da casca: sonar, guarda e guia
     { id: 'opt-tts', rotulo: t('audio.narracao'), dica: t('audio.tts.dica') },
     { id: 'tts-vol', rotulo: t('audio.ttsVol'), forma: 'cursor' },
+    // ADR-0183 §1: the speech rate, 150 to 500 by 35 — eleven positions, so a list (ADR-0130 erratum)
+    { id: 'tts-ppm', rotulo: t('audio.ttsPpm'), dica: t('audio.ttsPpm.dica'), forma: 'escolha' },
     // ADR-0185: the child picks the voice, among the voices that speak the language — a list, since English passes five
     { id: 'tts-voz', rotulo: t('audio.voz'), forma: 'escolha' },
     { id: 'opt-menuindex', rotulo: t('audio.menuindex'), dica: t('audio.menuindex.dica') },
@@ -516,6 +519,17 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
 
   const semVoz = (): boolean => !!ctx.tts.vozes && ctx.tts.vozes().length === 0;
 
+  /** The speech rate list: each step «N PPM», the stored one selected (ADR-0183 §1). */
+  function renderRitmo(): void {
+    const sel = ctx.$<HTMLSelectElement>('#tts-ppm');
+    if (!sel) return;
+    while (sel.firstChild) sel.removeChild(sel.firstChild);
+    for (const ppm of RITMOS_DA_FALA) {
+      const o = document.createElement('option'); o.value = String(ppm); o.textContent = t('visual.legenda.ppm', { n: ppm }); sel.appendChild(o);
+    }
+    sel.value = String(state.speechPpm);
+  }
+
   function renderVozes(): void {
     const sel = ctx.$<HTMLSelectElement>('#tts-voz');
     if (!sel || !ctx.tts.vozes) return;
@@ -623,6 +637,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     populateTtsEngines();
     populateTtsVoices();
     renderVozes();
+    renderRitmo();
     travarFala();
     const cd = ctx.$<HTMLSelectElement>('#cane-div');
     if (cd) cd.value = String(ctx.getCaneBlockDiv());
@@ -740,6 +755,7 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
       e.preventDefault();
       if (id === '#tts-vol') { const cat = ctx.getAudioCat(); if (cat?.tts) (el as HTMLInputElement).value = String(volPercent(cat.tts.vol)); }
       if (id === '#tts-voz') renderVozes();
+      if (id === '#tts-ppm') renderRitmo();
       ctx.srSay(el.dataset.motivo ?? t('audio.semVoz'));
     };
     for (const tipo of ['click', 'input', 'change']) el.addEventListener(tipo, recusar, true);
@@ -755,6 +771,13 @@ export function initSettingsAudio(ctx: SettingsAudioCtx): SettingsAudioApi {
     if (!ctx.tts.setVoz?.(vozSel.value)) { renderVozes(); return; }
     const v = ctx.tts.vozAtual?.();
     if (v) ctx.srSay(t('sr.audio.voz', { nome: nomeDaVoz(v) }));
+  });
+
+  const ritmoSel = ctx.$<HTMLSelectElement>('#tts-ppm');
+  if (ritmoSel) ritmoSel.addEventListener('change', () => {
+    state.setSpeechPpmValue(Number(ritmoSel.value));
+    renderRitmo();
+    ctx.srSay(`${t('audio.ttsPpm')}: ${t('visual.legenda.ppm', { n: state.speechPpm })}`);
   });
 
   const ttsBtn = ctx.$<HTMLButtonElement>('#opt-tts');

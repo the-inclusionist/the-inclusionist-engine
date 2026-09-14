@@ -230,6 +230,16 @@
     "screenBaseSize",
     "screenGrid"
   ],
+  "core/speech-rate.ts": [
+    "RITMOS_DA_FALA",
+    "RitmoDaFala",
+    "TAXA_MAXIMA",
+    "TAXA_MINIMA",
+    "palavrasFaladas",
+    "ritmoDaFalaValido",
+    "segundosDeFala",
+    "taxaDaFala"
+  ],
   "core/state.ts": [
     "DEFAULTS",
     "EventoDoJogo",
@@ -269,8 +279,10 @@
     "setOutlineFgValue",
     "setOwnerColorsValue",
     "setSemForcaValue",
+    "setSpeechPpmValue",
     "setVizModeValue",
     "setWheelchairValue",
+    "speechPpm",
     "vizMode",
     "wheelchair"
   ],

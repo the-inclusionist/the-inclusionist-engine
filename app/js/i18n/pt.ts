@@ -474,6 +474,8 @@ const pt: Record<string, string> = {
   'audio.ttsEngine.dica': 'A voz do navegador funciona logo; as neurais soam melhor e baixam no primeiro uso.',
   'audio.ttsVoice': 'Voz',
   'audio.ttsVol': 'Volume da narração',
+  'audio.ttsPpm': 'Ritmo da fala',
+  'audio.ttsPpm.dica': 'Quantas palavras por minuto a narração fala.',
   'visual.captions': 'Legendas',
   'visual.legenda.ritmo': 'Ritmo das legendas',
   'visual.legenda.ppm': '{n} PPM',
