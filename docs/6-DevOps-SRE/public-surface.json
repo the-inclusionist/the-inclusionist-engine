@@ -342,6 +342,23 @@
     "barraDe",
     "corDoSegmento"
   ],
+  "input/camera-gestures.ts": [
+    "CameraCommand",
+    "ESPERA_MS",
+    "FIRMEZA_MS",
+    "GESTOS_ESTATICOS",
+    "Landmark",
+    "LeitorDeCamera",
+    "PontuacoesDoRosto",
+    "QuadroDaMao",
+    "QuadroDoRosto",
+    "criarLeitorDaMao",
+    "criarLeitorDoRosto",
+    "criarLeitorDosOlhos",
+    "formaDaMao",
+    "poseDaCabeca",
+    "tresDedos"
+  ],
   "input/default-bindings.ts": [
     "Binding",
     "GAMEPAD_STANDARD",

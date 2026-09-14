@@ -107,7 +107,8 @@ describe('a neural utterance at the child\'s rate', () => {
   it('⚠️ [Boundary] a one-word utterance takes the voice\'s measured average instead of its own silent ends', async () => {
     const antes = tocados.length;
     motor.tts.ttsSpeak('voltar');
-    for (let i = 0; i < 80 && tocados.length === antes; i++) await new Promise((r) => setTimeout(r, 25));
+    // generous: under the whole suite's load a synthesis took over 2 s
+    for (let i = 0; i < 400 && tocados.length === antes; i++) await new Promise((r) => setTimeout(r, 25));
     // measured on the ten-word utterances: 300 PPM; one word over 2 s of tone would read as 30 PPM and hit the maximum
     expect(tocados.at(-1).playbackRate).toBeCloseTo(504 / 300, 4);
   });

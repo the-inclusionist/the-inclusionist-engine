@@ -488,6 +488,24 @@
     "type Segmento": "| 'azul' | 'verde' | 'vermelho'",
     "type CorDaBarra": "'nenhuma' | 'laranja' | 'roxa'"
   },
+  "input/camera-gestures.ts": {
+    "interface Landmark": [
+      "x"
+    ],
+    "interface QuadroDaMao": [
+      "gesto?",
+      "landmarks"
+    ],
+    "interface LeitorDeCamera": [
+      "quadro"
+    ],
+    "interface QuadroDoRosto": [
+      "blendshapes",
+      "matriz?"
+    ],
+    "type CameraCommand": "'up' | 'down' | 'left' | 'right' | 'confirm' | 'back' | 'menu'",
+    "type PontuacoesDoRosto": "Readonly<{ [expressao: string]: number }>"
+  },
   "input/default-bindings.ts": {
     "type Binding": "T | null"
   },
