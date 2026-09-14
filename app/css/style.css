@@ -99,10 +99,10 @@
 #title-overlay{background:transparent;font-size:var(--ui-fs,16px)} /* UI do splash escala com o k inteiro do canvas (igual pausa/diálogos) — NÃO fica fixa em 16px */
 body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:none} /* HUD do jogo não vaza no menu inicial (display: filhos não conseguem re-exibir) */
 .title-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;max-height:96%;}
-.game-title{color:#fff;font-size:2em;line-height:1.2;margin:0;text-align:center;letter-spacing:1px;text-shadow:2px 2px 0 #0d0d1a,-1px -1px 0 #0d0d1a}
+.game-title{color:#fff;font-size:2em;line-height:1.2;margin:0;text-align:center;letter-spacing:var(--ls);text-shadow:2px 2px 0 #0d0d1a,-1px -1px 0 #0d0d1a}
 .title-block{display:inline-block}
 .game-byline{color:#f6f5f0;font-size:1em;text-align:right;margin-top:2px;text-shadow:1px 1px 0 #0d0d1a}
-.game-version{color:#9999b3;font-size:1em;text-align:right;letter-spacing:1px;margin-top:2px;text-shadow:1px 1px 0 #0d0d1a}
+.game-version{color:#9999b3;font-size:1em;text-align:right;letter-spacing:var(--ls);margin-top:2px;text-shadow:1px 1px 0 #0d0d1a}
 .game-subtitle{color:#f6f5f0;font-size:1em;margin:0 0 4px;text-shadow:1px 1px 0 #0d0d1a;text-align:center}
 /* Splash DENTRO do canvas, SEM rolagem. GESTALT (José): a11y no CABEÇALHO · menu no ESPAÇO DE TRABALHO · legenda no RODAPÉ */
 .title-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;max-height:none}
@@ -152,7 +152,7 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 .tm-title{color:#fff;font-size:1em;margin:0 0 .1em;text-align:center;text-shadow:1px 1px 0 #0d0d1a} /* título do submenu */
 .title-btn{background:var(--accent);color:var(--accent-ink);border:3px solid #0d0d1a;font-family:inherit;font-weight:bold;font-size:1em;padding:.4em .6em;border-radius:6px;cursor:pointer;min-width:0;width:100%;min-height:2.3em} /* contorno PRETO grosso (3px) = mesma cor do texto (José) */
 .title-btn.ghost{background:#e8862b;color:#0d0d1a;border:2px solid #0d0d1a} /* Voltar = preenchimento LARANJA */
-.act-sub{display:block;font-size:1em;font-weight:600;opacity:.7;letter-spacing:.02em;margin-top:.06em;font-family:var(--font-math,inherit);white-space:nowrap} /* subtítulo de exemplo (2ª linha, NUNCA quebra — botão largo o bastante) */
+.act-sub{display:block;font-size:1em;font-weight:600;opacity:.7;letter-spacing:var(--ls);margin-top:.06em;font-family:var(--font-math,inherit);white-space:nowrap} /* subtítulo de exemplo (2ª linha, NUNCA quebra — botão largo o bastante) */
 /* Seletor VERMELHO fixo (piscar removido a pedido do José). Especificidade via #title-overlay. */
 #title-overlay .title-btn:focus-visible,#title-overlay .title-btn:focus{outline:4px solid #ff3b30;outline-offset:2px}
 #title-overlay .title-btn.act-fx{animation:titleAct .22s ease}         /* efeito de ATIVAÇÃO (antes de trocar de tela) */
@@ -182,7 +182,7 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 /* the padding stays when empty: the room `createGame` reserves under the bar reads it (issue #160) */
 #title-icons .pause-icons-cap:not(:empty){background:rgba(8,8,16,.92);border-radius:8px}
 /* Seletor de jogadores = UM botão só ("◀ Nº de jogadores: X ▶"); o lado clicado decide +1/−1 */
-#np-btn{letter-spacing:.02em}
+#np-btn{letter-spacing:var(--ls)}
 #np-btn #np-n{display:inline-block;min-width:1.1em;text-align:center}
 /* Fração VERTICAL: pilha número/traço/número em HTML puro (zero dependência) */
 .fv{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .1em}
@@ -211,6 +211,11 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
    zoom while the text held «mantendo o design muito bom»: 1 at the base, down to that quarter at the 20 px floor. */
 :root{--espaco-fixo:max(.25, 4 - 3 * var(--fonte-escala,1))}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:var(--lh);letter-spacing:var(--ls);word-spacing:var(--ws)}
+/* THE SPACING IS THE TEXT'S, WHEREVER THE TEXT IS (ADR-0149 erratum, issue #187): «Se dentro de um botão tem texto, as regras de
+   espaçamento valem para este texto, mesmo que seja uma única palavra.» The browser's own stylesheet gives controls
+   `letter-spacing: normal`, which beat the inheritance — measured: pause items and quiz options had none. Zero specificity, so a
+   rule that spaces a control on purpose still decides. */
+:where(button,select,option,input,textarea){letter-spacing:inherit;word-spacing:inherit}
 /* matemática em mono tabular (algarismos alinhados/legíveis) */
 .quiz-box--math .quiz-prob,.quiz-box--math .quiz-choice,#hud-coins,#hud-total{font-family:var(--font-math);font-variant-numeric:tabular-nums}
 /* espaçamento de parágrafo ≥2× só em blocos de leitura (não quebra HUD/menus) */
@@ -309,7 +314,7 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 #padwiz-demo.pw-swap,#padwiz-demo.pw-start{align-items:center}
 #padwiz-demo.pw-swap #padwiz-demo-fx{position:static;white-space:nowrap;font-size:1.7em;animation:pwIcons 4s linear infinite}
 #padwiz-demo.pw-especial #padwiz-demo-fx{animation:pwPulse .8s ease-in-out infinite}
-#padwiz-demo.pw-start #padwiz-demo-fx{position:static;font-weight:800;font-size:1.9em;letter-spacing:.1em;animation:pwBlink 1s steps(2,end) infinite}
+#padwiz-demo.pw-start #padwiz-demo-fx{position:static;font-weight:800;font-size:1.9em;letter-spacing:var(--ls);animation:pwBlink 1s steps(2,end) infinite}
 @keyframes pwSlideL{0%{translate:34px 0}100%{translate:-34px 0}}
 @keyframes pwSlideR{0%{translate:-34px 0}100%{translate:34px 0}}
 @keyframes pwClimbUp{0%{translate:0 22px}100%{translate:0 -22px}}
@@ -584,7 +589,7 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
 .pausa-rapida{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:12;pointer-events:none;
   color:#fff;-webkit-text-stroke:.08em #000;paint-order:stroke fill;
   text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px 2px #000,2px -2px #000,-2px -2px #000;
-  font-family:var(--font);font-weight:800;font-size:calc(var(--ui-fs,16px)*2);letter-spacing:.12em;white-space:nowrap}
+  font-family:var(--font);font-weight:800;font-size:calc(var(--ui-fs,16px)*2);letter-spacing:var(--ls);white-space:nowrap}
 .pausa-rapida[hidden]{display:none}
 /* A LEGENDA DO RODAPÉ da pausa rápida (errata do ADR-0155): as mesmas letras brancas contornadas, sem caixa, logo
    ACIMA da pílula START do pad — que continua à vista, porque é a saída de quem só tem dedo. ⚠️ `left`/`right` e não
@@ -839,7 +844,7 @@ select.vol:focus, .overlay__card select:focus{outline:3px solid var(--accent);ou
 #game-region:has(.overlay:not([hidden])) .touch{z-index:var(--z-menu-max)}
 .touch-sistema{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;gap:10px;pointer-events:none}
 .touch-sistema .touch-start,.touch-sistema .touch-select{position:static;transform:none}
-.touch-start,.touch-select{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--alvo-min,44px);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:1em;letter-spacing:.08em;background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
+.touch-start,.touch-select{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:auto;min-width:var(--alvo-min,44px);white-space:nowrap;min-height:calc(var(--pad-btn,66px)*.7);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;pointer-events:auto;border-radius:999px;padding:0 22px;font-weight:800;font-size:1em;letter-spacing:var(--ls);background:rgba(13,17,32,.92);color:#fff;border:2px solid rgba(255,255,255,.75);cursor:pointer;z-index:15}
 .touch-start:active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 /* joystick digital: base (círculo maior) + manopla (círculo menor) */
 /* Direcional (analógico/"alavanca"): base = superfície + deslocamento; manopla = superfície de contato. Ambos em mm (JS). */
