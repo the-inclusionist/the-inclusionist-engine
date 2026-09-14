@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { baixarPesados, pesoPorBaixar, PESADOS, CACHE_PESADOS, sha256Hex, caminhoNaEntrega } from '../app/js/platform/pesados.js';
+import { baixarPesados, pesoPorBaixar, PESADOS, CACHE_PESADOS, sha256Hex, caminhoNaEntrega, pesadosDoArranque } from '../app/js/platform/pesados.js';
 import { HOST_DOS_MODELOS } from '../app/js/platform/voice-plan.js';
 
 /** Uma Cache Storage de mentira, que CONTA o que lhe pedem. */
@@ -244,6 +244,21 @@ describe('the heavy files come from the delivery\'s own origin (ADR-0177, issue 
   });
 });
 
+describe('what a game\'s start fetches (ADR-0198 §5)', () => {
+  it('🔴 [Zero] without a Kokoro port, no Kokoro file — and nothing else is left out', () => {
+    const ids = pesadosDoArranque({ kokoro: false });
+    expect(ids.filter((id) => id.startsWith('voz:kokoro:')), 'a game that cannot speak Kokoro downloads its model').toEqual([]);
+    expect(ids).toEqual(PESADOS.map((p) => p.id).filter((id) => !id.startsWith('voz:kokoro:')));
+    expect(ids.length).toBeGreaterThan(0);
+  });
+
+  it('🔴 [Right] with the port, the whole catalogue — the model, the tokenizer and every voice', () => {
+    expect(pesadosDoArranque({ kokoro: true })).toEqual(PESADOS.map((p) => p.id));
+  });
+});
+
+// MUTATIONS CHECKED for ADR-0198 §5 (2026-09-14): Kokoro always fetched · every entry filtered out with the port · the start
+// passing no `apenas` (🔴 kokoro-na-voz.browser «a game without the port»).
 
 // MUTATIONS CHECKED for issue #168 (2026-09-13), 6 of 6 red: the check removed · an unverifiable body kept · SHA-1 for
 // SHA-256 · the cache name back to v1 · one entry without its hash · a broken default digest. Two first SURVIVED (an

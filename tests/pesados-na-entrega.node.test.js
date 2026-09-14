@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { levarPesadosParaEntrega } from '../scripts/pesados-na-entrega.mjs';
+import { levarPesadosParaEntrega, argumentosDaEntrega } from '../scripts/pesados-na-entrega.mjs';
 import { caminhoNaEntrega } from '../app/js/platform/pesados.js';
 
 const hash = (s) => createHash('sha256').update(s).digest('hex');
@@ -86,6 +86,12 @@ describe('the script, reachable by a cartridge', () => {
     } finally { rmSync(fora, { recursive: true, force: true }); }
   });
 
+  it('🔴 [Right] Kokoro enters a delivery only with `--kokoro`, in any position (ADR-0198 §5)', () => {
+    expect([argumentosDaEntrega(['dist']), argumentosDaEntrega(['--kokoro', 'dist']), argumentosDaEntrega(['dist', '--kokoro'])])
+      .toEqual([{ destino: 'dist', kokoro: false }, { destino: 'dist', kokoro: true }, { destino: 'dist', kokoro: true }]);
+    expect(argumentosDaEntrega(['--kokoro']).destino, 'the flag taken for the folder').toBeUndefined();
+  });
+
   it('📌 [Boundary] run as a program without a destination, it stops with the usage — and never starts downloading', () => {
     const fora = mkdtempSync(join(tmpdir(), 'cartucho-'));
     try {
@@ -107,3 +113,6 @@ describe('the script, reachable by a cartridge', () => {
 //   N3 the catalogue read from the caller's folder       🔴 beside itself
 //   N4 never runs as a program                           🔴 stops with the usage
 //   N5 run detection by the shim's name                  🔴 stops with the usage (a direct `node` run is not recognised)
+//   N6 `--kokoro` read as always on                      🔴 only with `--kokoro`
+//   N7 the flag taken as the folder                      🔴 only with `--kokoro`
+//   ⚠️ The filter's wiring in the program body is not run here: it would download the catalogue.

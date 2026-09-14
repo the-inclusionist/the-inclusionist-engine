@@ -744,6 +744,7 @@
     "baixarPesados",
     "caminhoNaEntrega",
     "chaveDaEntrega",
+    "pesadosDoArranque",
     "pesoPorBaixar",
     "sha256Hex"
   ],

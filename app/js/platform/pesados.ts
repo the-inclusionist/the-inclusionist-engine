@@ -53,6 +53,14 @@ export interface OpcoesDosPesados {
 }
 
 /**
+ * WHAT A GAME'S START FETCHES (ADR-0198 §5): the catalogue, less Kokoro when the game fills no Kokoro port. Its model and voices
+ * are read only through that port, so without it they are 327 MB taken from a school's link and a child's device for nothing.
+ */
+export function pesadosDoArranque(portas: { readonly kokoro: boolean }): readonly string[] {
+  return PESADOS.filter((p) => portas.kokoro || !p.id.startsWith('voz:kokoro:')).map((p) => p.id);
+}
+
+/**
  * WHERE THE DELIVERY SERVES A HEAVY FILE (ADR-0177, issue #173): `pesados/<host><path>` beside the page. The child's device
  * reads it from the game's own origin; the upstream address is only where the build fetched it from.
  * 📌 The upstream address stays the CACHE KEY: it is what the voice and vision libraries ask for, and the service worker answers

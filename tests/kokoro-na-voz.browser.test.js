@@ -40,6 +40,13 @@ function ttsCom(porta) {
   });
 }
 
+const declaracaoMinima = () => ({
+  topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => false, tick: 'player',
+  world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
+  nameAt: () => ({ text: 'a', gender: 'f', plural: false }), focusOf: () => null,
+  objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],
+});
+
 async function esperar(cond) { for (let i = 0; i < 200 && !cond(); i++) await new Promise((r) => setTimeout(r, 25)); }
 
 beforeAll(() => {
@@ -92,6 +99,27 @@ describe('a Kokoro voice speaks', () => {
   });
 });
 
+describe('what the start fetches (ADR-0198 §5)', () => {
+  it('🔴 [Zero] a game without the Kokoro port asks for no Kokoro file', async () => {
+    const pedidos = [];
+    const fetchOriginal = window.fetch;
+    window.fetch = async (u) => { pedidos.push(String(u)); return new Response('', { status: 404 }); };
+    try {
+      document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p><div id="game-region" tabindex="-1"></div>';
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { pesadosDoArranque, PESADOS } = await import('../app/js/platform/pesados.js');
+      createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, players: [{ ctrl: 0 }] });
+      const esperados = pesadosDoArranque({ kokoro: false }).filter((id) => PESADOS.find((p) => p.id === id).url).length; // an entry without a source is reported, not asked for
+      for (let i = 0; i < 400 && pedidos.filter((u) => u.includes('/pesados/')).length < esperados; i++) await new Promise((r) => setTimeout(r, 25));
+      const daEntrega = pedidos.filter((u) => u.includes('/pesados/'));
+      expect(daEntrega.length, 'the start did not ask for the catalogue').toBe(esperados);
+      expect(daEntrega.filter((u) => u.includes('Kokoro-82M'))).toEqual([]);
+    } finally {
+      window.fetch = fetchOriginal;
+    }
+  });
+});
+
 describe('the marks in the hearing panel (ADR-0198 §3)', () => {
   let motor;
   beforeAll(async () => {
@@ -99,13 +127,7 @@ describe('the marks in the hearing panel (ADR-0198 §3)', () => {
     document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
       + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
     const { createGame } = await import('../app/js/boot/create-game.js');
-    const declaracao = {
-      topology: () => ({ kind: 'hotspots', order: ['q1'] }), holdsAtOnce: () => 1, seguraTeclas: () => false, tick: 'player',
-      world: () => ({ kind: 'element', selector: '#game-region' }), roleAt: () => 'goal',
-      nameAt: () => ({ text: 'a', gender: 'f', plural: false }), focusOf: () => null,
-      objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],
-    };
-    motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao, host: { doc: document, win: window }, baixarPesados: false,
+    motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, baixarPesados: false,
       players: [{ ctrl: 0 }], carregarKokoro: portaFalsa({ gpuFala: true }).carregar });
     motor.pausa.mostrar(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
@@ -135,3 +157,4 @@ describe('the marks in the hearing panel (ADR-0198 §3)', () => {
 //   KV3 WebGPU kept without the test synthesis             🔴 noise falls back
 //   KV4 the voice phonemized with a fixed language         🔴 own language
 //   KV5 the heart on every Kokoro voice                    🔴 marks in English/Portuguese
+//   KV6 the start fetches the whole catalogue              🔴 without the port

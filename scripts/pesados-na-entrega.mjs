@@ -52,15 +52,24 @@ export async function levarPesadosParaEntrega({ destino, pesados, caminhoNaEntre
   return { ok: linhas.every((l) => l.estado !== 'falhou'), linhas };
 }
 
+/**
+ * The command's arguments: the delivery folder, and `--kokoro` for a game that fills the Kokoro port — without it Kokoro's model and
+ * voices stay out of the delivery, as they stay out of the start's download (ADR-0198 §5).
+ */
+export function argumentosDaEntrega(args) {
+  return { destino: args.find((a) => !a.startsWith('--')), kokoro: args.includes('--kokoro') };
+}
+
 // Run as a program (directly, or through the `inclusionist-pesados` shim, which may be a symlink): compare real paths.
 const executado = (() => { try { return realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
 if (executado) {
-  const destino = process.argv[2];
-  if (!destino) { console.error('usage: inclusionist-pesados <delivery folder, e.g. dist>'); process.exit(2); }
+  const { destino, kokoro } = argumentosDaEntrega(process.argv.slice(2));
+  if (!destino) { console.error('usage: inclusionist-pesados <delivery folder, e.g. dist> [--kokoro]'); process.exit(2); }
   const modulo = moduloDoPacote();
   if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/pesados.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
-  const { PESADOS, caminhoNaEntrega } = await import(modulo);
-  const { ok, linhas } = await levarPesadosParaEntrega({ destino, pesados: PESADOS, caminhoNaEntrega });
+  const { PESADOS, caminhoNaEntrega, pesadosDoArranque } = await import(modulo);
+  const ids = pesadosDoArranque({ kokoro });
+  const { ok, linhas } = await levarPesadosParaEntrega({ destino, pesados: PESADOS.filter((p) => ids.includes(p.id)), caminhoNaEntrega });
   for (const l of linhas) console.log(`${l.estado.padEnd(9)} ${l.id}${l.erro ? ` — ${l.erro}` : ''}`);
   if (!ok) { console.error('a heavy file failed: the delivery is incomplete, and nothing unchecked was written'); process.exit(1); }
 }

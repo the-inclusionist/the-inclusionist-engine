@@ -117,7 +117,7 @@ import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registrarMapeamentoDoTeclado, saveKB, setKB, fabricaComOJogo, type KBDefaults } from '../input/keyboard.js';
 import { registrarMapeamentoDoPad } from '../input/pad-defaults.js';
-import { baixarPesados, type RelatorioPesado } from '../platform/pesados.js';
+import { baixarPesados, pesadosDoArranque, type RelatorioPesado } from '../platform/pesados.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 
 /** O que o jogo empresta do documento. Tudo opcional menos `doc`/`win`: o que faltar vira `problems`. */
@@ -3452,7 +3452,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * queira mostrar «faltam 241 MB» ou «a voz não desceu» tem por onde; a engine não inventa uma superfície.
    */
   if (o.baixarPesados !== false) {
-    void baixarPesados({ aoProgredir: o.aoProgredirPesados })
+    void baixarPesados({ apenas: pesadosDoArranque({ kokoro: !!o.carregarKokoro }), aoProgredir: o.aoProgredirPesados })
       .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });
   }
 
