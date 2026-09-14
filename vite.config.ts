@@ -91,7 +91,9 @@ export default defineConfig({
         // Workbox e 2 MB: so acrescentar a extensao faria ele PULAR o arquivo com um aviso, e o sintoma seria
         // identico ao de antes. A troca e consciente: o precache passa de ~2 MB para ~28 MB, e a primeira visita
         // online passa a baixar tudo — que e exatamente o contrato de um PWA que precisa funcionar sem rede depois.
-        globPatterns: ['**/*.{js,css,html,png,svg,woff2,txt,json,webmanifest,wasm}'],
+        // `mjs`: onnxruntime's thread-worker script, which a game's Kokoro port points the workers at (ADR-0198, issue #181) —
+        // outside the precache the voice loses its threads offline.
+        globPatterns: ['**/*.{js,mjs,css,html,png,svg,woff2,txt,json,webmanifest,wasm}'],
         maximumFileSizeToCacheInBytes: 32 * 1024 * 1024, // 32 MB: cabe o runtime de 25,6 MB com folga
         cleanupOutdatedCaches: true,
         // The precache keeps a page's whole response, headers included (measured: COOP, COEP and CSP on the cached `quiz.html`);

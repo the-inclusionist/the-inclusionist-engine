@@ -340,6 +340,12 @@ export function bootQuiz(): void {
     // era o quiz que «não tinha pausa». Passou a ter — a engine monta o cartão e ele só oferece o que este
     // jogo acciona. Um botão a menos para uma criança encontrar é um ajuste a menos que ela alcança.
     declines: { semAssistenteDePad: true, semAtorDePausa: true },
+    // KOKORO IS TRIED HERE (ADR-0198 erratum: «Apenas teste neste quiz demo»): the phonemizer and the runtime load only when a child
+    // picks a Kokoro voice, and the start fetches the model and voices because this game fills the port.
+    carregarKokoro: async () => {
+      const { moduloKokoro } = await import('./kokoro-carregar.js');
+      return moduloKokoro;
+    },
     // Os ajustes deste jogo estão SEMPRE disponíveis; ele não precisa se declarar "pausado" para navegá-los.
     isNavigable: () => true,
     /*

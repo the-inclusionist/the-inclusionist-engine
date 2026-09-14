@@ -62,6 +62,9 @@ Nem tudo aqui é nosso, e o que não é **não muda de licença por estar neste 
 
 - **Código de terceiros** — Clarity (MIT), sherpa-onnx (Apache-2.0), Piper (MIT), eSpeak NG (GPL-3.0).
   Detalhe e atribuição em [`CREDITS.md`](CREDITS.md).
+  O quiz demo empacota, só no pedaço carregado quando a criança escolhe uma voz Kokoro (ADR-0198, issue #181), o
+  `espeak-ng` 1.0.2 do npm (eSpeak NG em WebAssembly, **GPL-3.0-or-later**, compatível com a AGPL-3.0-or-later) e o
+  `onnxruntime-web` 1.27.0 (**MIT**). A engine publicada não traz nenhum dos dois: quem os empacota é o jogo.
 - **Vozes** — licença por voz, no `MODEL_CARD` de cada pacote. **A confirmar por voz antes de distribuição
   formal** — está assim no `CREDITS.md` e continua verdade.
 - **Pictogramas** — a camada é decidida pela **LICENÇA e por mais nada** (**ADR-0028**): Mulberry,

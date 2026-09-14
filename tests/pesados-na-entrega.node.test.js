@@ -63,7 +63,8 @@ describe('the heavy files, put into the delivery by the build', () => {
 
   it('🎯 [Zero] package.json runs it after building the package', () => {
     const script = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')).scripts['pesados:entrega'];
-    expect(script).toBe('npm run build:pkg && node scripts/pesados-na-entrega.mjs dist');
+    // `--kokoro`: the engine's quiz demo fills the Kokoro port (ADR-0198 erratum)
+    expect(script).toBe('npm run build:pkg && node scripts/pesados-na-entrega.mjs dist --kokoro');
   });
 });
 

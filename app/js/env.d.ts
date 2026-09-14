@@ -16,6 +16,19 @@ declare module 'virtual:sprite-atlas' {
 }
 
 /**
+ * espeak-ng 1.0.2 ships no types: its default export is the Emscripten module factory the quiz's Kokoro port calls (ADR-0198). The
+ * shape is `FabricaEspeak` in `consumer-quiz/kokoro-porta`, widened here by the `instantiateWasm` hook the loader passes.
+ */
+declare module 'espeak-ng' {
+  const fabrica: (opcoes: {
+    arguments: readonly string[];
+    preRun: readonly ((m: { FS: import('./consumer-quiz/kokoro-porta.js').SistemaDeFicheirosDoEspeak }) => void)[];
+    instantiateWasm?: (importacoes: WebAssembly.Imports, pronto: (i: WebAssembly.Instance, m: WebAssembly.Module) => void) => object;
+  }) => Promise<{ FS: import('./consumer-quiz/kokoro-porta.js').SistemaDeFicheirosDoEspeak }>;
+  export default fabrica;
+}
+
+/**
  * OS GANCHOS DE TESTE PENDURADOS NA `window`, declarados porque o `main.ts` os cria e os estende.
  *
  * `__incl` é o objeto que o PROTOCOLO DE VERIFICAÇÃO deste projeto usa: conferir o boot é conferir que
