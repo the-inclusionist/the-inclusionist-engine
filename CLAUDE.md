@@ -51,7 +51,13 @@ de entrada e os ponteiros; a verdade detalhada vive no **código tipado** (`app/
   mapa** (`ARCHITECTURE.md`) quando muda onde algo vive. Concordar/discordar sem registrar = decisão perdida.
   📌 **PORTA DE MÃO ÚNICA × MÃO DUPLA (ADR-0172, 2026-09-13):** contrato, superfície pública, chaves guardadas, pacotes,
   licenças e privacidade → **registro**. Escolha de interface que um commit desfaz (layout, ordem, texto, espaçamento) →
-  **entrada datada** em `the-inclusionist-docs:docs/2-Architecture/interface-log.md`, no mesmo turno. Na dúvida, registro.
+  **entrada datada** em `the-inclusionist-docs:docs/2-Architecture/interface-log.md`, no mesmo turno.
+  🎯 **NA DÚVIDA, A PERGUNTA DECIDE (ADR-0209, 2026-09-14): «o que quebra se desfizermos isto na semana que vem?»** Um jogo, uma
+  chave guardada, uma dependência ou licença, a privacidade da criança, uma entrega → registro. Nada fora do laboratório ou da
+  interface → `interface-log` ou comentário na issue. **Experimento e veredito de teste NUNCA viram registro** (plano de teste,
+  candidatos, o que o Dev julgou numa rodada de laboratório → issue e documento de resultados); a escolha que sai deles pode ser.
+  Entrada leve que se revele de mão única é **promovida** a registro quando isso aparecer. 📏 A regra antiga («na dúvida,
+  registro») deu 28 registros em 13/09 e 14 em 14/09, metade deles mapeamentos e vereditos de laboratório corrigidos no mesmo dia.
 - 🔴 **UM REGISTO TEM DOIS TEMPOS: a DECISÃO antes, a CONFIRMAÇÃO depois** (ADR-0128, decisão do Dev em
   2026-09-09). A **decisão** — contexto medido, alternativas, o que se escolheu, o que a criança ganha ou perde
   — escreve-se ANTES do código e está completa no dia em que é escrita; um teste responde «funciona?», não «é
