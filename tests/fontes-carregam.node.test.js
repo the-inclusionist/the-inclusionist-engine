@@ -18,7 +18,7 @@ import { join } from 'node:path';
 import { FONT_GROUPS } from '../app/js/ui/fonts.js';
 
 /** The typographic catalogue's active families (ADR-0176): what may be packaged. */
-const ATIVAS = new Set(JSON.parse(readFileSync(join(process.cwd(), 'catalogo_tipografico.json'), 'utf8'))
+const ATIVAS = new Set(JSON.parse(readFileSync(join(process.cwd(), 'research', 'catalogo_tipografico.json'), 'utf8'))
   .fontes.filter((f) => f.status === 'ativo').map((f) => f.familia));
 
 const RAIZ_REPO = process.cwd().endsWith(join('app')) ? join(process.cwd(), '..') : process.cwd();

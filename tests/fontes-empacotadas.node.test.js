@@ -83,7 +83,7 @@ const AS_EMPACOTADAS = Object.freeze([...AS_OITO, ...AS_SETE_NOVAS]);
  * Since the ADR-0176 erratum («Engine empacota tudo por enquanto») the package is every `ativo` family of the typographic
  * catalogue, the Guides included; the fifteen above stay as the ones the reading menu grew from.
  */
-const ATIVAS_DO_CATALOGO = Object.freeze(new Set(JSON.parse(readFileSync(new URL('../catalogo_tipografico.json', import.meta.url), 'utf8'))
+const ATIVAS_DO_CATALOGO = Object.freeze(new Set(JSON.parse(readFileSync(new URL('../research/catalogo_tipografico.json', import.meta.url), 'utf8'))
   .fontes.filter((f) => f.status === 'ativo').map((f) => f.familia)));
 
 /** As três faces da ronde francesa. NENHUMA pode ser empacotada — são gratuitas só para uso PESSOAL. */

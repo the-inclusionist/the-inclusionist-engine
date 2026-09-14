@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FONT_GROUPS, OFERECIVEIS, papelDaFonte, escalaDaFace, BASE_EM_PX } from '../app/js/ui/fonts.js';
 
-const CATALOGO = JSON.parse(readFileSync(join(process.cwd(), 'catalogo_tipografico.json'), 'utf8'));
+const CATALOGO = JSON.parse(readFileSync(join(process.cwd(), 'research', 'catalogo_tipografico.json'), 'utf8'));
 const POR_ID = new Map(CATALOGO.fontes.map((f) => [f.id, f]));
 const TODAS = FONT_GROUPS.flatMap((g) => g.items);
 /**
