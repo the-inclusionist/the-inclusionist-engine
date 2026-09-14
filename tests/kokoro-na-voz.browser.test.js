@@ -123,7 +123,7 @@ describe('the marks in the hearing panel (ADR-0198 §3)', () => {
     document.querySelector('#audio .overlay__back')?.click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]')?.click();
     const r = rotulos();
-    expect(r.slice(0, 4)).toEqual(['🪶 Ryan', '🪶 Amy', '❤️ Heart', '❤️ Bella']);
+    expect(r.slice(0, 4), 'Amy first (ADR-0198 erratum), then Ryan, then Heart and Bella').toEqual(['🪶 Amy', '🪶 Ryan', '❤️ Heart', '❤️ Bella']);
     expect(r.filter((x) => x.startsWith('❤️')).length).toBe(2);
     expect(r.length).toBe(30);
   });

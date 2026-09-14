@@ -13,7 +13,7 @@ describe('the voices of a language', () => {
     expect(vozesDoIdioma('pt-BR').map((v) => v.voice)).toEqual(['pt_BR-faber-medium']);
   });
   it('🔴 [Right] English lists both English voices, Spanish its own — by the LANGUAGE, not the region', () => {
-    expect(vozesDoIdioma('en').map((v) => v.voice)).toEqual(['en_US-ryan-medium', 'en_US-amy-medium']);
+    expect(vozesDoIdioma('en').map((v) => v.voice), 'Amy speaks first in English (ADR-0198 erratum)').toEqual(['en_US-amy-medium', 'en_US-ryan-medium']);
     expect(vozesDoIdioma('es-ES').map((v) => v.voice), 'a Mexican voice reads Spanish from Spain too').toEqual(['es_MX-claude-high']);
   });
   it('🎯 [Zero] a language with no voice lists none', () => {

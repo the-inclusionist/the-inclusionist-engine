@@ -17,6 +17,10 @@
 // razão de a saída ser APAGAR a cópia e não desculpá-la — declarar duas vezes o mesmo endereço é precisamente
 // a cláusula que o `nada-de-cdn-a-mao` conta com um número.
 import { VOZES_NEURAIS, urlDoModelo, urlDaConfig, type VozNeural } from './voice-plan.js';
+import {
+  VOZES_KOKORO, URL_DO_MODELO_KOKORO, URL_DO_TOKENIZADOR_KOKORO, urlDaVozKokoro, SHA256_DAS_VOZES_KOKORO, BYTES_DA_VOZ_KOKORO,
+  SHA256_DO_MODELO_KOKORO, BYTES_DO_MODELO_KOKORO, SHA256_DO_TOKENIZADOR_KOKORO, BYTES_DO_TOKENIZADOR_KOKORO,
+} from './kokoro.js';
 
 /** Uma coisa pesada que a engine promete e que não cabe no pacote. */
 export interface Pesado {
@@ -169,9 +173,20 @@ const PIPER: readonly Pesado[] = Object.freeze([
     sha256: '29f1025eb23a5b5c192cd14a6efbce4509402ff265405072ee6f7d1a09b78f8c' },
 ]);
 
+/**
+ * KOKORO (ADR-0186, ADR-0198; the Dev: «Faça»): the fp32 model, its tokenizer vocabulary and a style table per voice of the engine's
+ * languages. The phonemizer and the runtime are the game's (ADR-0198 §5), bundled by it. Read by the port the quiz demo fills.
+ */
+const KOKORO: readonly Pesado[] = Object.freeze([
+  { id: 'voz:kokoro:modelo', url: URL_DO_MODELO_KOKORO, bytes: BYTES_DO_MODELO_KOKORO, sha256: SHA256_DO_MODELO_KOKORO },
+  { id: 'voz:kokoro:tokenizador', url: URL_DO_TOKENIZADOR_KOKORO, bytes: BYTES_DO_TOKENIZADOR_KOKORO, sha256: SHA256_DO_TOKENIZADOR_KOKORO },
+  ...VOZES_KOKORO.map((v) => ({ id: `voz:kokoro:${v.voice}`, url: urlDaVozKokoro(v.voice), bytes: BYTES_DA_VOZ_KOKORO, sha256: SHA256_DAS_VOZES_KOKORO[v.voice] })),
+]);
+
 export const PESADOS: readonly Pesado[] = Object.freeze([
   ...VOZES_NEURAIS.flatMap(entradasDaVoz),
   ...PIPER,
+  ...KOKORO,
 
   /*
    * 🔴 O RUNTIME DE VISÃO — decidido e SEM FONTE, e a ausência é medida.

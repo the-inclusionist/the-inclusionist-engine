@@ -714,13 +714,22 @@
     "criarFalaInterrompivel"
   ],
   "platform/kokoro.ts": [
+    "BYTES_DA_VOZ_KOKORO",
+    "BYTES_DO_MODELO_KOKORO",
+    "BYTES_DO_TOKENIZADOR_KOKORO",
     "DIMENSAO_DO_ESTILO",
+    "SHA256_DAS_VOZES_KOKORO",
+    "SHA256_DO_MODELO_KOKORO",
+    "SHA256_DO_TOKENIZADOR_KOKORO",
     "TOKENS_MAXIMOS",
+    "URL_DO_MODELO_KOKORO",
+    "URL_DO_TOKENIZADOR_KOKORO",
     "VOZES_KOKORO",
     "VozKokoro",
     "eFala",
     "estiloDaFrase",
     "tokenizar",
+    "urlDaVozKokoro",
     "wavDe"
   ],
   "platform/pesados-catalogo.ts": [

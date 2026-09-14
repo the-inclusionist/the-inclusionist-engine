@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import { VOZES_KOKORO, tokenizar, estiloDaFrase, eFala, wavDe, TOKENS_MAXIMOS, DIMENSAO_DO_ESTILO } from '../app/js/platform/kokoro.js';
 import { vozesDoIdioma } from '../app/js/platform/voice-plan.js';
+import { PESADOS } from '../app/js/platform/pesados-catalogo.js';
 
 describe('the Kokoro catalogue', () => {
   it('🔴 [Right] Portuguese and Spanish hold three voices each; English twenty-eight, American and British', () => {
@@ -28,6 +29,17 @@ describe('the Kokoro catalogue', () => {
 
   it('[Zero] no voice of a language the engine does not speak', () => {
     expect(VOZES_KOKORO.some((v) => /^[fhijz]/.test(v.voice)), 'French, Hindi, Italian, Japanese or Chinese leaked in').toBe(false);
+  });
+});
+
+describe('Kokoro in the heavy-file catalogue (ADR-0198 erratum: «Faça»)', () => {
+  it('🔴 [Right] the model, the tokenizer and every voice of the catalogue, each with its size and a 64-hex SHA-256', () => {
+    const k = PESADOS.filter((p) => p.id.startsWith('voz:kokoro:'));
+    expect(k.length, 'model + tokenizer + 34 voices').toBe(36);
+    const semPeso = k.filter((p) => !(p.bytes > 0) || !/^[0-9a-f]{64}$/.test(p.sha256 ?? '')).map((p) => p.id);
+    expect(semPeso, 'an entry the fetcher could not check').toEqual([]);
+    expect(k.find((p) => p.id === 'voz:kokoro:modelo')).toMatchObject({ bytes: 325_532_232, sha256: '8fbea51ea711f2af382e88c833d9e288c6dc82ce5e98421ea61c058ce21a34cb' });
+    expect(new Set(k.map((p) => p.url)).size, 'two entries fetch the same file').toBe(36);
   });
 });
 
@@ -87,3 +99,4 @@ describe('the WAV', () => {
 //   K4 `eFala` accepts any finite sample               🔴 WebGPU output
 //   K5 a third voice marked good                       🔴 Heart and Bella
 //   K6 British voices phonemized as American           🔴 own language
+//   K7 a voice without its SHA-256 in the catalogue    🔴 heavy-file catalogue

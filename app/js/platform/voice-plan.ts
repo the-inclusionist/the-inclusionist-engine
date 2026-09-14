@@ -10,8 +10,8 @@
 // the one she picks is the one the neural engine loads. The delivery carries all four (ADR-0177), and the provider the
 // games bundle knows all four.
 //
-// ⚠️ THE ORDER OF THIS ARRAY IS NOT A PREFERENCE — it is the order the Dev named them in (ADR-0110). Without a choice the
-// first voice of the language speaks because one has to; which English voice a child prefers is hers to pick.
+// 📌 THE ORDER IS THE FIRST VOICE OF EACH LANGUAGE: without a child's choice the first voice of the language speaks. In English it
+// is Amy — the Dev: «Piper amy-medium» (ADR-0198 erratum); the others are the child's to pick.
 
 /** Uma voz do catálogo. `voice` é o identificador no fornecedor; `engine` é o motor que a lê. */
 export interface VozNeural {
@@ -32,8 +32,8 @@ export interface VozNeural {
  */
 export const VOZES_NEURAIS: readonly VozNeural[] = Object.freeze([
   Object.freeze({ locale: 'pt-BR', engine: 'piper', voice: 'pt_BR-faber-medium' }),
+  Object.freeze({ locale: 'en-US', engine: 'piper', voice: 'en_US-amy-medium' }), // speaks first in English (ADR-0198 erratum)
   Object.freeze({ locale: 'en-US', engine: 'piper', voice: 'en_US-ryan-medium' }),
-  Object.freeze({ locale: 'en-US', engine: 'piper', voice: 'en_US-amy-medium' }),
   Object.freeze({ locale: 'es-MX', engine: 'piper', voice: 'es_MX-claude-high' }),
 ]);
 

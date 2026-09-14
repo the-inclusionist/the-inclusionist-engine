@@ -57,12 +57,12 @@ describe('English, where two voices speak', () => {
     lingua.tag = 'en';
     const pedidas = [];
     const tts = montar({ carregarVozNeural: porta(pedidas) });
-    expect(tts.vozes().map((v) => v.voice)).toEqual(['en_US-ryan-medium', 'en_US-amy-medium']);
-    expect(tts.setVoz('en_US-amy-medium')).toBe(true);
-    expect(tts.vozAtual()?.voice).toBe('en_US-amy-medium');
+    expect(tts.vozes().map((v) => v.voice), 'Amy first (ADR-0198 erratum)').toEqual(['en_US-amy-medium', 'en_US-ryan-medium']);
+    expect(tts.setVoz('en_US-ryan-medium')).toBe(true);
+    expect(tts.vozAtual()?.voice).toBe('en_US-ryan-medium');
     tts.narrate('hello');
     await assentar();
-    expect(pedidas, 'the first voice loaded instead of the pick').toEqual(['en_US-amy-medium']);
+    expect(pedidas, 'the first voice loaded instead of the pick').toEqual(['en_US-ryan-medium']);
   });
 
   it('🔴 [Right] a new pick after the engine loaded loads the new voice', async () => {
@@ -71,10 +71,10 @@ describe('English, where two voices speak', () => {
     const tts = montar({ carregarVozNeural: porta(pedidas) });
     tts.narrate('hello');
     await assentar();
-    expect(pedidas).toEqual(['en_US-ryan-medium']);
-    tts.setVoz('en_US-amy-medium');
+    expect(pedidas).toEqual(['en_US-amy-medium']);
+    tts.setVoz('en_US-ryan-medium');
     tts.narrate('hello again');
     await assentar();
-    expect(pedidas, 'the engine kept speaking the old voice').toEqual(['en_US-ryan-medium', 'en_US-amy-medium']);
+    expect(pedidas, 'the engine kept speaking the old voice').toEqual(['en_US-amy-medium', 'en_US-ryan-medium']);
   });
 });

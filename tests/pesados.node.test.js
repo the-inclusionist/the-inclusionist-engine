@@ -131,8 +131,9 @@ describe('o buscador das coisas pesadas', () => {
   it('📏 o peso por baixar é o das que TÊM fonte e ainda não desceram', async () => {
     const semNada = pesoPorBaixar([]);
     // ~241 MB: quatro modelos de ~60 MB. As duas sem fonte não somam, porque não há o que baixar.
-    // +18.7 MB since #173 (the voice's phonemizer); −11.8 MB since ADR-0184 (the voice runtime the game bundles)
-    expect(Math.round(semNada / 1024 / 1024), 'o total mudou — confira o catálogo').toBe(291);
+    // +18.7 MB since #173 (the voice's phonemizer); −11.8 MB since ADR-0184 (the voice runtime the game bundles);
+    // +327.4 MiB since ADR-0198 (Kokoro: the 325 532 232-byte model, its tokenizer and 34 voice tables of 522 240 bytes)
+    expect(Math.round(semNada / 1024 / 1024), 'o total mudou — confira o catálogo').toBe(619);
     const f = cacheFalsa();
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
     expect(pesoPorBaixar(r), 'depois de tudo descer não falta nada').toBe(0);

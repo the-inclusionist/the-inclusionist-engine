@@ -67,6 +67,13 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
  * mexer aqui e escrever porquê; descer exige actualizar o número, que é como o inventário encolhe.
  */
 const BUSCAS_A_MAO = {
+  'platform/kokoro.ts': {
+    urls: 1,
+    porque:
+      'ENDEREÇO DECLARADO, not a fetch: the Kokoro model repository (ADR-0186, ADR-0198), named once so the catalogue and a game\'s '
+      + 'port build the same paths; the module is pure. The build fetches the files into the delivery (ADR-0177); the page asks for '
+      + 'them at `pesados/`. A second host here would be a mirror chosen in silence',
+  },
   'platform/pesados-catalogo.ts': {
     urls: 4,
     porque:

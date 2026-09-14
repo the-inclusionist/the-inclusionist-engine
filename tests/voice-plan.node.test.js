@@ -97,7 +97,7 @@ describe('a ordem por que se busca', () => {
     // esperaria por duas vozes inglesas na rede de uma escola.
     expect(nomes(ordemDeBusca({}, 'pt-BR'))[0]).toBe('pt_BR-faber-medium');
     expect(nomes(ordemDeBusca({}, 'es-MX'))[0]).toBe('es_MX-claude-high');
-    expect(nomes(ordemDeBusca({}, 'en-US')).slice(0, 2)).toEqual(['en_US-ryan-medium', 'en_US-amy-medium']);
+    expect(nomes(ordemDeBusca({}, 'en-US')).slice(0, 2), 'Amy speaks first in English (ADR-0198 erratum)').toEqual(['en_US-amy-medium', 'en_US-ryan-medium']);
   });
 
   it('[Zero] quem está PRONTA ou EM CURSO não volta à fila', () => {
