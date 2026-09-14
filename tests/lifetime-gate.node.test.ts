@@ -58,7 +58,7 @@ const ARGUMENTOS: Record<string, readonly [unknown, unknown]> = {
   setCbSafeValue: [true, false], setOwnerColorsValue: [false, true],
   setOutlineFgValue: [2, 0], setOutlineBgValue: [2, 0], setCaneBlockDivValue: [4, 2],
   setWheelchairValue: [true, false], setOneButtonValue: [true, false], setGameSpeedValue: [0.5, 1], setSemForcaValue: [true, false], setCaptionPpmValue: [175, 125],
-  setSpeechPpmValue: [290, 150],
+  setSpeechPpmValue: [404, 254],
   setMenuIndexOnValue: [false, true],
 };
 

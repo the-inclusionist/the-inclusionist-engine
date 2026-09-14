@@ -1,24 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 /**
- * THE SPEECH RATE (ADR-0183 §1; issue #179): the child's words per minute, 150 to 500 by 35, mapped onto each engine by MEASURING
+ * THE SPEECH RATE (ADR-0183 §1, ADR-0196; issue #179): the child's words per minute, 254 to 504 by 50 — «velocidade normal é a
+ * mínima» (the Dev): no voice is played slower than it speaks — mapped onto each engine by MEASURING
  * the voice rather than assuming it — the record: «the mapping needs each voice's words per minute at rate 1, measured, not
  * assumed.» Measured in the lab on 2026-09-14, `pt_BR-faber-medium` speaks 255 words per minute of speech; another voice or
  * sentence differs, so every synthesised utterance is measured (its words over its speech time) and played at the ratio.
  *
  * Pure: no I/O, no audio — the engine hands in the samples it synthesised.
  */
-export const RITMOS_DA_FALA = [150, 185, 220, 255, 290, 325, 360, 395, 430, 465, 500] as const;
+export const RITMOS_DA_FALA = [254, 304, 354, 404, 454, 504] as const;
 export type RitmoDaFala = (typeof RITMOS_DA_FALA)[number];
 
-/** The playback-rate bounds: past them a measurement error would stop a voice or garble it. */
-export const TAXA_MINIMA = 0.5;
+/** The playback-rate bounds: never under the voice's own speed (ADR-0196), and a measurement error never garbles it. */
+export const TAXA_MINIMA = 1;
 export const TAXA_MAXIMA = 3;
 
 /** Below this an utterance is too short to measure («Voltar»): its silent ends and one stressed syllable dominate. */
 const PALAVRAS_PARA_MEDIR = 3;
 const SEGUNDOS_PARA_MEDIR = 0.8;
 
-/** A stored or passed rate that is not a step reads as the slowest: a typo must never make speech race. */
+/** A stored or passed rate that is not a step — the old 150…500 by 35 among them — reads as the normal speed, the first step. */
 export function ritmoDaFalaValido(ppm: number): RitmoDaFala {
   return (RITMOS_DA_FALA as readonly number[]).includes(ppm) ? (ppm as RitmoDaFala) : RITMOS_DA_FALA[0];
 }

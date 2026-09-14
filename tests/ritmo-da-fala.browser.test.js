@@ -54,26 +54,26 @@ afterAll(() => {
 });
 
 describe('the speech rate in the hearing panel', () => {
-  it('🔴 [Right] is a list of the eleven steps, «N PPM», starting at 150', () => {
+  it('🔴 [Right] is a list of the six steps, «N PPM», starting at the normal 254 (ADR-0196)', () => {
     const sel = document.querySelector('#audio #tts-ppm');
     expect(sel, 'no «Ritmo da fala» row in the hearing panel').not.toBeNull();
     motor.pausa.mostrar(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();
     expect(sel.tagName).toBe('SELECT');
-    expect([...sel.options].map((o) => o.value)).toEqual(['150', '185', '220', '255', '290', '325', '360', '395', '430', '465', '500']);
-    expect(sel.options[0].textContent).toMatch(/150 PPM/);
-    expect(sel.value).toBe('150');
+    expect([...sel.options].map((o) => o.value)).toEqual(['254', '304', '354', '404', '454', '504']);
+    expect(sel.options[0].textContent).toMatch(/254 PPM/);
+    expect(sel.value).toBe('254');
   });
 
   it('🔴 [Right] a choice is stored', () => {
     const sel = document.querySelector('#audio #tts-ppm');
-    sel.value = '290';
+    sel.value = '404';
     sel.dispatchEvent(new Event('change', { bubbles: true }));
-    expect(localStorage.getItem('incl_speech_ppm')).toBe('290');
-    sel.value = '150';
+    expect(localStorage.getItem('incl_speech_ppm')).toBe('404');
+    sel.value = '254';
     sel.dispatchEvent(new Event('change', { bubbles: true }));
-    expect(localStorage.getItem('incl_speech_ppm')).toBe('150');
+    expect(localStorage.getItem('incl_speech_ppm')).toBe('254');
   });
 
   it('🎯 [Zero] the language has a voice: the rate row is not locked', () => {
@@ -82,7 +82,7 @@ describe('the speech rate in the hearing panel', () => {
 });
 
 describe('a neural utterance at the child\'s rate', () => {
-  it('🔴 [Right] ten words in 2 s of speech (300 PPM) play at 150 PPM at half speed, the pitch kept', async () => {
+  it('🔴 [Right] ten words in 2 s of speech (300 PPM) at the normal 254 play at the voice\'s own speed, never slowed, the pitch kept', async () => {
     motor.tts.ttsSpeak('um dois três quatro cinco seis sete oito nove dez'); // starts loading the voice
     for (let i = 0; i < 80 && !motor.tts.getEngine(); i++) await new Promise((r) => setTimeout(r, 25));
     expect(motor.tts.getEngine(), 'the fake neural voice did not load').toBeTruthy();
@@ -91,17 +91,17 @@ describe('a neural utterance at the child\'s rate', () => {
     for (let i = 0; i < 80 && tocados.length === antes; i++) await new Promise((r) => setTimeout(r, 25));
     const el = tocados.at(-1);
     expect(el, 'nothing played').toBeTruthy();
-    expect([el.playbackRate, el.preservesPitch]).toEqual([0.5, true]);
+    expect([el.playbackRate, el.preservesPitch]).toEqual([1, true]);
   });
 
-  it('🔴 [Right] the rate follows the choice: at 500 PPM the same utterance plays faster than the voice', async () => {
+  it('🔴 [Right] the rate follows the choice: at 504 PPM the same utterance plays faster than the voice', async () => {
     const sel = document.querySelector('#audio #tts-ppm');
-    sel.value = '500';
+    sel.value = '504';
     sel.dispatchEvent(new Event('change', { bubbles: true }));
     const antes = tocados.length;
     motor.tts.ttsSpeak('um dois três quatro cinco seis sete oito nove dez');
     for (let i = 0; i < 80 && tocados.length === antes; i++) await new Promise((r) => setTimeout(r, 25));
-    expect(tocados.at(-1).playbackRate).toBeCloseTo(500 / 300, 4);
+    expect(tocados.at(-1).playbackRate).toBeCloseTo(504 / 300, 4);
   });
 
   it('⚠️ [Boundary] a one-word utterance takes the voice\'s measured average instead of its own silent ends', async () => {
@@ -109,7 +109,7 @@ describe('a neural utterance at the child\'s rate', () => {
     motor.tts.ttsSpeak('voltar');
     for (let i = 0; i < 80 && tocados.length === antes; i++) await new Promise((r) => setTimeout(r, 25));
     // measured on the ten-word utterances: 300 PPM; one word over 2 s of tone would read as 30 PPM and hit the maximum
-    expect(tocados.at(-1).playbackRate).toBeCloseTo(500 / 300, 4);
+    expect(tocados.at(-1).playbackRate).toBeCloseTo(504 / 300, 4);
   });
 });
 
@@ -117,6 +117,6 @@ describe('a neural utterance at the child\'s rate', () => {
 //   F1 the rate row removed from the panel               🔴 list · stored · not locked
 //   F2 `preservesPitch` not set                          🟢 SURVIVES: the HTML spec defaults it to true, so the line states what
 //                                                         Chromium already does; kept so the intent reaches every engine
-//   F3 the rate never applied (always 1)                 🔴 half speed · follows · short
-//   F4 `getSpeechPpm` not passed by the root             🔴 half speed · follows · short
+//   F3 the rate never applied (always 1)                 🔴 follows · short
+//   F4 `getSpeechPpm` not passed by the root             🔴 follows · short
 //   F5 the short utterance measured on itself            🔴 one word

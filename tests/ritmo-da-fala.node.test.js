@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE SPEECH RATE (ADR-0183 §1, issue #179): 150 to 500 words per minute by 35, each engine mapped by MEASURING the voice.
+// THE SPEECH RATE (ADR-0183 §1, ADR-0196; issue #179): 254 to 504 words per minute by 50, the voice's normal speed the minimum,
+// each engine mapped by MEASURING the voice.
 //
 // 📏 The record: «The Web Speech API's `rate` is a multiplier, not words per minute: the mapping needs each voice's words per minute
 // at rate 1, measured, not assumed.» Measured in the lab on 2026-09-14: `pt_BR-faber-medium` speaks 255 words per minute of speech.
@@ -12,12 +13,12 @@ import {
 } from '../app/js/core/speech-rate.js';
 
 describe('the speech rate steps', () => {
-  it('🔴 [Right] are 150 to 500 by 35 — eleven positions', () => {
-    expect(RITMOS_DA_FALA).toEqual([150, 185, 220, 255, 290, 325, 360, 395, 430, 465, 500]);
+  it('🔴 [Right] are 254 to 504 by 50 — six positions (ADR-0196: «velocidade normal é a mínima»)', () => {
+    expect(RITMOS_DA_FALA).toEqual([254, 304, 354, 404, 454, 504]);
   });
 
-  it('⚠️ [Boundary] a stored or passed rate that is not a step reads as the slowest', () => {
-    expect([ritmoDaFalaValido(290), ritmoDaFalaValido(300), ritmoDaFalaValido(NaN), ritmoDaFalaValido(9999)]).toEqual([290, 150, 150, 150]);
+  it('⚠️ [Boundary] a stored or passed rate that is not a step — the old 150…500 by 35 among them — reads as the normal 254', () => {
+    expect([ritmoDaFalaValido(354), ritmoDaFalaValido(290), ritmoDaFalaValido(NaN), ritmoDaFalaValido(9999)]).toEqual([354, 254, 254, 254]);
   });
 });
 
@@ -39,25 +40,31 @@ describe('measuring an utterance', () => {
 
 describe('the playback rate of an utterance', () => {
   it('🔴 [Right] is the chosen rate over the voice\'s own, measured on this utterance', () => {
-    // 10 words in 2 s of speech = 300 words a minute; the child chose 150 → play at half speed
-    expect(taxaDaFala(10, 2, 150, null)).toEqual({ taxa: 0.5, ppmDaVoz: 300 });
-    expect(taxaDaFala(10, 2, 500, null).taxa).toBeCloseTo(500 / 300, 5);
+    // 10 words in 3 s of speech = 200 words a minute; the child chose 404 → play at 2.02×
+    expect(taxaDaFala(10, 3, 404, null)).toEqual({ taxa: 2.02, ppmDaVoz: 200 });
+    expect(taxaDaFala(10, 2, 504, null).taxa).toBeCloseTo(504 / 300, 5);
   });
 
   it('⚠️ [Boundary] an utterance too short to measure takes the voice\'s average, or plays as is when there is none yet', () => {
-    expect(taxaDaFala(1, 0.4, 150, 250)).toEqual({ taxa: 0.6, ppmDaVoz: null });
-    expect(taxaDaFala(2, 0.5, 150, null)).toEqual({ taxa: 1, ppmDaVoz: null });
+    expect(taxaDaFala(1, 0.4, 404, 202)).toEqual({ taxa: 2, ppmDaVoz: null });
+    expect(taxaDaFala(2, 0.5, 404, null)).toEqual({ taxa: 1, ppmDaVoz: null });
   });
 
-  it('⚠️ [Boundary] held between the minimum and the maximum, so a wrong measure never stops or garbles the voice', () => {
-    expect(taxaDaFala(10, 20, 500, null).taxa).toBe(TAXA_MAXIMA);
-    expect(taxaDaFala(40, 2, 150, null).taxa).toBe(TAXA_MINIMA);
+  it('🔴 [Right] never under 1: a voice faster than the chosen step plays at its own speed (ADR-0196)', () => {
+    // 10 words in 2 s = 300 words a minute; 254 chosen would be 0.85× — the voice is not slowed
+    expect(TAXA_MINIMA).toBe(1);
+    expect(taxaDaFala(10, 2, 254, null).taxa).toBe(1);
+  });
+
+  it('⚠️ [Boundary] held under the maximum, so a wrong measure never garbles the voice', () => {
+    expect(taxaDaFala(10, 20, 504, null).taxa).toBe(TAXA_MAXIMA);
   });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
-//   R1 a step of 30 instead of 35                    🔴 steps
+//   R1 a step of 45 instead of 50                    🔴 steps
 //   R2 no trimming of the silent ends                🔴 speech time
 //   R3 the rate inverted (natural over chosen)       🔴 chosen over the voice's
-//   R4 no clamp                                      🔴 held
+//   R4 no clamp                                      🔴 never under 1 · held
+//   R6 the minimum back to 0.5                       🔴 never under 1
 //   R5 short utterance measured anyway               🔴 too short

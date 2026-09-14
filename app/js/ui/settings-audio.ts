@@ -317,7 +317,7 @@ export function montarInteriorDoAudio(ctx: PanelShellCtx, card: HTMLElement, lis
     { contentor: '@lista' }, // a lista da casca: sonar, guarda e guia
     { id: 'opt-tts', rotulo: t('audio.narracao'), dica: t('audio.tts.dica') },
     { id: 'tts-vol', rotulo: t('audio.ttsVol'), forma: 'cursor' },
-    // ADR-0183 §1: the speech rate, 150 to 500 by 35 — eleven positions, so a list (ADR-0130 erratum)
+    // ADR-0183 §1, ADR-0196: the speech rate, 254 to 504 by 50 — six positions, so a list (ADR-0130 erratum)
     { id: 'tts-ppm', rotulo: t('audio.ttsPpm'), dica: t('audio.ttsPpm.dica'), forma: 'escolha' },
     // ADR-0185: the child picks the voice, among the voices that speak the language — a list, since English passes five
     { id: 'tts-voz', rotulo: t('audio.voz'), forma: 'escolha' },
