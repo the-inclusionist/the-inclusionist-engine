@@ -94,7 +94,8 @@ describe('ADR-0110 · a engine BUSCA as vozes, não as embarca', () => {
   const ARVORE = arvoreDoPacote();
 
   it('🎯 [Zero] nenhum ficheiro de MODELO ou de RUNTIME de voz viaja no pacote', () => {
-    const presos = ARVORE.filter((p) => EXTENSOES_DE_MODELO.has(extensaoDe(p)) || NOMES_DE_MODELO.test(p));
+    // a module of CODE named after its engine (`platform/kokoro.js`, the pure half of ADR-0198) is not a model file
+    const presos = ARVORE.filter((p) => EXTENSOES_DE_MODELO.has(extensaoDe(p)) || (NOMES_DE_MODELO.test(p) && !/\.(m?js|d\.ts)$/.test(p)));
     expect(
       presos,
       'modelo ou runtime de voz dentro do que o `npm pack` leva. O ADR-0110 escolheu a entrega (b) — a engine '
