@@ -79,6 +79,8 @@ describe('owner colours and contrast outlines', () => {
   it('🔴 [Right] answered with a word, the two outline rows are steps that write their levels', () => {
     abrirVisual();
     expect(oferecida('opt-contorno-fg') && oferecida('opt-contorno-bg'), 'no outline rows').toBe(true);
+    // the explanation lives in the footer, never inside the row (CLAUDE.md §4)
+    for (const id of ['opt-contorno-fg', 'opt-contorno-bg']) expect(linha(id).querySelector('.opt-hint')?.textContent ?? '', id + ': the explanation is inside the row').toBe('');
     const fg = document.querySelector('#visual #opt-contorno-fg');
     state.setOutlineFgValue(0);
     fecharTudo();

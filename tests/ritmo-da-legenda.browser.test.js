@@ -52,7 +52,13 @@ describe('the caption rate', () => {
     const passos = document.querySelector('#visual #opt-legenda-ppm');
     expect(passos, 'no caption rate row').not.toBeNull();
     expect(passos.getAttribute('aria-label')).toBe('Ritmo das legendas');
-    expect(passos.getAttribute('aria-valuetext')).toBe('125 palavras por minuto');
+    expect(passos.getAttribute('aria-valuetext')).toBe('125 PPM');
+    // the Dev: «a explicação no lugar errado» and «Menu não é manual de instruções» — the explanation lives in the footer
+    // (CLAUDE.md §4), never inside the row; and the value is short
+    const linha = passos.closest('.ctrl-row');
+    expect(linha.querySelector('.opt-hint')?.textContent ?? '', 'the explanation is inside the row').toBe('');
+    expect(linha.dataset.explain ?? '', 'the explanation did not go to the footer').not.toBe('');
+    expect(passos.querySelector('.passo-valor').textContent).toBe('Ritmo das legendas: 125 PPM');
     fecharTudo();
   });
 
@@ -64,7 +70,7 @@ describe('the caption rate', () => {
     passos.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
     expect(state.captionPpm).toBe(175);
     expect(localStorage.getItem('incl_caption_ppm')).toBe('175');
-    expect(passos.getAttribute('aria-valuetext')).toBe('175 palavras por minuto');
+    expect(passos.getAttribute('aria-valuetext')).toBe('175 PPM');
     fecharTudo();
     expect(atrasoDaLegenda(OITO), 'the caption kept the old rate').toBe(2743);
   });

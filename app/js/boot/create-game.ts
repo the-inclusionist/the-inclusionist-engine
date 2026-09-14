@@ -1632,6 +1632,9 @@ export function createGame(o: CreateGameOptions): Engine {
         rotuloFechar: t('pause.pmback'),
       }),
       render: () => {
+        dicaDoRitmo.textContent = t('visual.legenda.ritmo.dica'); // before `visual.render()` runs `fillExplain`
+        contornoFg.escreverDica();
+        contornoBg.escreverDica();
         visual.render();
         oferecerDonoEContornos();
         rotularLinha(linhaDasLegendas, specDasLegendas()); // in the language of the opening
@@ -1663,6 +1666,9 @@ export function createGame(o: CreateGameOptions): Engine {
     const envelopeDoRitmo = doc.createElement('span');
     const dicaDoRitmo = doc.createElement('span');
     dicaDoRitmo.className = 'opt-hint';
+    // ⚠️ WRITTEN NOW, and again before the panel's render: `visual.render()` runs `fillExplain` on the whole card, and a row it
+    // meets with an empty hint is marked done and keeps its hint INSIDE — the Dev saw the explanation in the row.
+    dicaDoRitmo.textContent = t('visual.legenda.ritmo.dica');
     envelopeDoRitmo.appendChild(dicaDoRitmo);
     linhaDoRitmo.appendChild(envelopeDoRitmo);
     const passosDoRitmo = montarPassos(ctxDoPainel, specDoRitmo());
@@ -1731,11 +1737,13 @@ export function createGame(o: CreateGameOptions): Engine {
         atualizarPassos(passos, spec());
         srSay(`${t(`visual.contorno.${plano}`)}: ${t(NIVEIS_DE_CONTORNO[nova]!)}`);
       });
-      const refletir = (): void => {
-        atualizarPassos(passos, spec());
+      // the hint is written BEFORE the panel's render, which runs `fillExplain`: written after, it stays inside the row
+      const escreverDica = (): void => {
         dica.textContent = subjectWord(cartucho.acomodacoes, 'contrastOutlines')?.hint ?? t(`visual.contorno.${plano}.dica`);
       };
-      return { linha: linhaC, refletir };
+      escreverDica();
+      const refletir = (): void => { atualizarPassos(passos, spec()); };
+      return { linha: linhaC, refletir, escreverDica };
     };
     const contornoFg = contorno('fg');
     const contornoBg = contorno('bg');
