@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { chaveDaEntrega } from './app/js/platform/pesados.js'; // the `pesados/` route's cache key (issue #173)
+// a page's precache revision carries the hash of `_headers`, so a header change refreshes it (issue #186)
+import { hashDosCabecalhos, revisarPaginasPelosCabecalhos } from './scripts/revisao-das-paginas.mjs';
 // Plugin em .mjs puro (sem tipos): é ferramenta de BUILD, e tipá-la exigiria um segundo tsconfig para o
 // Node. O contrato dele é uma função que devolve o objeto de plugin, e o Vite valida isso na hora de usar.
 // ⚠️ O PLUGIN DO ATLAS SAIU COM O CARTUCHO (issue #111). Ele gera `virtual:sprite-atlas`, que so'
@@ -92,6 +94,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,png,svg,woff2,txt,json,webmanifest,wasm}'],
         maximumFileSizeToCacheInBytes: 32 * 1024 * 1024, // 32 MB: cabe o runtime de 25,6 MB com folga
         cleanupOutdatedCaches: true,
+        // The precache keeps a page's whole response, headers included (measured: COOP, COEP and CSP on the cached `quiz.html`);
+        // its revision hashed only the file, so a changed `_headers` never reached an install (ADR-0192, issue #186).
+        manifestTransforms: [async (entradas) => revisarPaginasPelosCabecalhos(entradas, hashDosCabecalhos(readFileSync(join(RAIZ_REPO, 'app', 'public', '_headers'), 'utf8')))],
         // ========================= A ROTA QUE FAZ OS 241 MB SERVIREM PARA ALGUMA COISA =========================
         // 🔴 MEDIDO EM 2026-09-09: o `platform/pesados` descia os quatro modelos de voz no primeiro
         // carregamento e guardava-os na Cache Storage `incl-pesados-v1` — e NINGUEM OS LIA. A Cache Storage
