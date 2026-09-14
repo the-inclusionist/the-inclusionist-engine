@@ -13,7 +13,12 @@
 #    service worker answers from the checked cache). The heavy files, the phonemizer included, come from this origin, so
 #    the catalogue's other hosts are contacted by the build alone.
 #  • style-src 'unsafe-inline': eight panel modules write `style="…"` through innerHTML (measured 2026-09-13).
+# CROSS-ORIGIN ISOLATION (ADR-0192, issue #186): onnxruntime's WASM runs the voices on threads only in an isolated page — a 3 s
+#  Kokoro sentence took 8.7 s on one thread and 2.7 s on threads (measured). The price: a subresource from another origin loads
+#  only by CORS or CORP, so the delivery carries its own. No narrower rule below may send or detach either header.
 /*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
   Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' https://huggingface.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
 
 /sw.js
