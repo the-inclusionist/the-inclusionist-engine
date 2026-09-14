@@ -5,18 +5,7 @@
 // muda por defeito encontrado. Juntos, cada correcção de uma URL mexeria no ficheiro que decide a ordem das
 // descargas, e cada correcção da ordem mexeria na lista que um registo governa.
 //
-// ========================= 🔴 A PRIMEIRA VERSÃO DESTE FICHEIRO COMETEU O DEFEITO QUE ELE SERVE =========================
-// Ela escrevia o host à mão (`const HF = 'https://huggingface.co/…'`), a lista das quatro vozes outra vez, e
-// uma segunda derivação do caminho `idioma/locale/nome/qualidade/…`. As três coisas JÁ EXISTEM no
-// `platform/voice-plan.ts`, que o ADR-0114 designou como o sítio ÚNICO onde o host é nomeado — e cujo próprio
-// comentário nomeia as três vezes que este repositório pagou por tabelas duplicadas (o `DomQuery`, os rótulos
-// de movimento reduzido, as chaves de armazenamento).
-//
-// 📏 QUEM APANHOU FOI O INVENTÁRIO, e não pela duplicação: o `nada-vem-de-fora` recusou uma URL nova sem razão
-// escrita. A URL era só a PROVA; declará-la teria feito o gate ficar verde com a duplicação lá dentro. ⚠️ É a
-// razão de a saída ser APAGAR a cópia e não desculpá-la — declarar duas vezes o mesmo endereço é precisamente
-// a cláusula que o `nada-de-cdn-a-mao` conta com um número.
-import { VOZES_NEURAIS, urlDoModelo, urlDaConfig, type VozNeural } from './voice-plan.js';
+// 📌 Every address is written ONCE, where its module owns it: Kokoro's in `platform/kokoro`, the vision runtime's here.
 import {
   VOZES_KOKORO, URL_DO_MODELO_KOKORO, URL_DO_TOKENIZADOR_KOKORO, urlDaVozKokoro, SHA256_DAS_VOZES_KOKORO, BYTES_DA_VOZ_KOKORO,
   SHA256_DO_MODELO_KOKORO, BYTES_DO_MODELO_KOKORO, SHA256_DO_TOKENIZADOR_KOKORO, BYTES_DO_TOKENIZADOR_KOKORO,
@@ -43,57 +32,14 @@ export interface Pesado {
 export const CACHE_PESADOS = 'incl-pesados-v2';
 
 /**
- * O PESO DE CADA VOZ, MEDIDO EM 2026-09-09 e não estimado — `Content-Length` do modelo e corpo da configuração.
- *
- * 📌 O PESO MORA AQUI E O ENDEREÇO MORA NO `voice-plan`, e a divisão não é arrumação: o `voice-plan` responde
- * «que vozes a engine garante e onde estão», que é decisão do ADR-0110; isto responde «quanto custa descê-las
- * hoje», que é uma medição com data e que muda quando o fornecedor recomprime um ficheiro.
- *
- * ⚠️ UMA VOZ NOVA NO `voice-plan` SEM MEDIÇÃO AQUI FICA SEM `bytes`, e o aviso de «faltam N MB» passaria a
- * sub-reportar em silêncio. É por isso que o gate exige `bytes > 0` em toda entrada de voz COM url: o buraco
- * é pequeno e mudo, que é a forma de defeito que este repositório persegue.
- */
-const PESO_MEDIDO: Readonly<Record<string, { readonly modelo: number; readonly config: number; readonly sha256Modelo: string; readonly sha256Config: string }>> = Object.freeze({
-  'pt_BR-faber-medium': { modelo: 63_201_294, config: 4_855,
-    sha256Modelo: '858555e3a064209c57088fe6bd70c4c3dc54d03eaa00c45d5ecaf43a33f95aa7', sha256Config: '7e694de195ae3fc36dd732c445eb04fb49b649854893cb5506b978f0d50a1d6f' },
-  'en_US-ryan-medium': { modelo: 63_201_294, config: 4_883,
-    sha256Modelo: 'abf4c274862564ed647ba0d2c47f8ee7c9b717d27bdad9219100eb310db4047a', sha256Config: '44034c056cb15681b2ad494307c7f3f2e4499d1253c700c711fa0a4607ffe78d' },
-  'en_US-amy-medium': { modelo: 63_201_294, config: 4_882,
-    sha256Modelo: 'b3a6e47b57b8c7fbe6a0ce2518161a50f59a9cdd8a50835c02cb02bdd6206c18', sha256Config: '95a23eb4d42909d38df73bb9ac7f45f597dbfcde2d1bf9526fdeaf5466977d77' },
-  'es_MX-claude-high': { modelo: 63_122_309, config: 4_963,
-    sha256Modelo: '3ef40a71ea63852cd8ab7e6fa7d2ecdcfa67a0b47c9c48e3f10e02ee02083ea0', sha256Config: '1afc81f703c0e4cb3b4d7c0dca096b8b54a98806807f0170cf5eb5557723c12d' },
-});
-
-/**
- * ⚠️ O `urlDoModelo` devolve `null` para um identificador que não se deixe ler, e a razão viaja com a entrada
- * em vez de a entrada desaparecer. Uma URL inventada dá 404 na escola; um `null` COM razão dá para reportar
- * antes de sair de casa, que é a regra que o `voice-plan` já escreve na própria função.
- */
-const RAZAO_ID_TORTO = 'o identificador da voz não tem a forma `locale-nome-qualidade`, então o caminho no '
-  + 'fornecedor não se deixa derivar. Corrija o identificador no `platform/voice-plan.ts`.';
-
-/**
- * AS DUAS ENTRADAS DE UMA VOZ. ⚠️ SÃO DUAS E NÃO UMA: o `.onnx` é o modelo e o `.onnx.json` é a configuração,
- * e o piper recusa-se a falar sem a segunda. Um catálogo que só trouxesse a primeira produziria uma voz
- * «baixada» que não fala — que é pior do que uma voz em falta, porque a primeira parece resolvida.
- */
-function entradasDaVoz(v: VozNeural): Pesado[] {
-  const peso = PESO_MEDIDO[v.voice];
-  return [
-    { id: `voz:${v.voice}`, url: urlDoModelo(v), bytes: peso?.modelo, sha256: peso?.sha256Modelo, porQueNaoTemFonte: RAZAO_ID_TORTO },
-    { id: `voz:${v.voice}:cfg`, url: urlDaConfig(v), bytes: peso?.config, sha256: peso?.sha256Config, porQueNaoTemFonte: RAZAO_ID_TORTO },
-  ];
-}
-
-/**
- * O RUNTIME DE VISÃO — **MediaPipe**, decidido pelo Dev em 2026-09-09 (ADR-0124): «piper-tts, mediapipe
+ * O RUNTIME DE VISÃO — **MediaPipe**, decidido pelo Dev em 2026-09-09 (ADR-0124): «… mediapipe
  * (webgazer não), e LPCP: devem acompanhar a engine».
  *
  * 🔴 ESTA ENTRADA DIZIA «a #129 ainda não escolheu o fornecedor» DEPOIS DE ELE TER ESCOLHIDO, e a linha
  * sobreviveu ao registo que a contradizia. Não era só trabalho em falta: era uma afirmação FALSA a dirigir
  * quem a lesse para uma issue já fechada. O Dev teve de perguntar três vezes.
  *
- * 📏 MEDIDO EM 2026-09-09, como as vozes e no mesmo minuto: os três ficheiros respondem 200 em jsDelivr com
+ * 📏 MEASURED 2026-09-09: the three files answer 200 on jsDelivr with
  * `Access-Control-Allow-Origin: *`, na versão FIXADA — 155 439 + 323 377 + 11 756 954 bytes.
  *
  * ⚠️ CDN FIXADA É PERMITIDA E O ADR-0116 DIZ PORQUÊ: o que o pilar 8 proíbe é depender da rede DEPOIS do
@@ -103,19 +49,16 @@ function entradasDaVoz(v: VozNeural): Pesado[] {
  * chegam por endereço diferente, e uma entrada fixada nunca congela.
  *
  * 🎯 SÃO OS TRÊS FICHEIROS E NÃO SÓ O `.wasm`: o `vision_bundle.mjs` é quem o carrega e o
- * `vision_wasm_internal.js` é a cola do Emscripten. Baixar o wasm sozinho é a mesma armadilha do `.onnx` sem
- * o `.onnx.json` — uma coisa «baixada» que não corre.
+ * `vision_wasm_internal.js` é a cola do Emscripten. The wasm alone is a «downloaded» thing that does not run.
  *
- * ⬜ O que continua por fazer é a FIAÇÃO (issue #11): estes bytes descem e ainda ninguém os lê. O
- * `tests/o-que-desce-tem-quem-leia.node.test.js` é onde essa dívida está declarada.
+ * ⬜ Still to do is the WIRING (issues #11, #189): these bytes come down and the camera reader does not read them yet.
  */
 const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1';
 const MP_MODELOS = 'https://storage.googleapis.com/mediapipe-models';
 
 /**
  * 🔴 A PRIMEIRA VERSÃO DESTA LISTA TRAZIA O RUNTIME E NENHUM MODELO, e o Dev apanhou-o ao perguntar o que
- * tinha ficado de fora. 11,7 MB de WebAssembly sem um `.task` não reconhecem coisa nenhuma — é o `.onnx` sem
- * o `.onnx.json` outra vez, no ficheiro que escreve essa lição doze linhas acima.
+ * tinha ficado de fora. 11.7 MB of WebAssembly without a `.task` recognise nothing.
  *
  * 📏 MEDIDOS EM 2026-09-09, todos 200 com CORS aberto. `float16` e não `float32`: metade do peso, e a precisão
  * que se perde é irrelevante para dizer onde está um íris num ecrã de 320×180.
@@ -156,24 +99,6 @@ const WEBGAZER: readonly Pesado[] = Object.freeze([
 ]);
 
 /**
- * THE VOICE FILES THE PROVIDER ASKS FOR, beside the models: its phonemizer. The runtime itself (`piper-tts-web` and
- * `onnxruntime-web`) is NOT here: the game bundles it and that bundle is what runs (ADR-0184, which supersedes the part of
- * ADR-0127 that put the runtime in this catalogue).
- */
-const FONEMIZADOR = 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize';
-const PIPER: readonly Pesado[] = Object.freeze([
-  /*
-   * The PHONEMIZER (issue #173): espeak-ng in WebAssembly, which turns the text into the phonemes the voice model reads, and
-   * its pronunciation data. At the provider's own default addresses (`TtsSession.WASM_LOCATIONS`); `platform/tts` asks for
-   * them at the delivery path. 📏 Measured 2026-09-13, sha256 equal to jsDelivr's package metadata.
-   */
-  { id: 'voz:fonemizador', url: `${FONEMIZADOR}.wasm`, bytes: 635_212,
-    sha256: 'b777cd107a91d2bcc6a1ea46f2c26a662a7407394fe84589198aeaa83dd7a9d6' },
-  { id: 'voz:fonemizador:dados', url: `${FONEMIZADOR}.data`, bytes: 18_077_249,
-    sha256: '29f1025eb23a5b5c192cd14a6efbce4509402ff265405072ee6f7d1a09b78f8c' },
-]);
-
-/**
  * KOKORO (ADR-0186, ADR-0198; the Dev: «Faça»): the fp32 model, its tokenizer vocabulary and a style table per voice of the engine's
  * languages. The phonemizer and the runtime are the game's (ADR-0198 §5), bundled by it. Read by the port the quiz demo fills.
  */
@@ -184,8 +109,6 @@ const KOKORO: readonly Pesado[] = Object.freeze([
 ]);
 
 export const PESADOS: readonly Pesado[] = Object.freeze([
-  ...VOZES_NEURAIS.flatMap(entradasDaVoz),
-  ...PIPER,
   ...KOKORO,
 
   /*

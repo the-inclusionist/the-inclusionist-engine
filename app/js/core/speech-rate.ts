@@ -3,7 +3,7 @@
  * THE SPEECH RATE (ADR-0183 §1, ADR-0196; issue #179): the child's words per minute, 254 to 504 by 50 — «velocidade normal é a
  * mínima» (the Dev): no voice is played slower than it speaks — mapped onto each engine by MEASURING
  * the voice rather than assuming it — the record: «the mapping needs each voice's words per minute at rate 1, measured, not
- * assumed.» Measured in the lab on 2026-09-14, `pt_BR-faber-medium` speaks 255 words per minute of speech; another voice or
+ * assumed.» Measured in the lab on 2026-09-14, a neural voice spoke 255 words per minute of speech; another voice or
  * sentence differs, so every synthesised utterance is measured (its words over its speech time) and played at the ratio.
  *
  * Pure: no I/O, no audio — the engine hands in the samples it synthesised.

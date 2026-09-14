@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// KOKORO SPEAKS THROUGH THE GAME'S PORT (ADR-0186, ADR-0198; issue #181): the voices listed after Piper's, marked by quality, and a
+// KOKORO SPEAKS THROUGH THE GAME'S PORT (ADR-0198, ADR-0207; issue #181): the voices of the language listed, marked by quality, and a
 // voice picked speaks on WebGPU only where a test synthesis is speech — WASM otherwise.
 //
 // 📏 Why the test synthesis: on 2026-09-14 WebGPU on an AMD gcn-5 ran Kokoro and returned samples up to 2×10⁷ — noise.
@@ -64,15 +64,15 @@ afterAll(async () => {
 });
 
 describe('the voice list with the Kokoro port', () => {
-  it('🔴 [Right] in Portuguese the Piper voice comes first, then the three Kokoro voices (ADR-0198 §2)', () => {
+  it('🔴 [Right] in Portuguese the three Kokoro voices, in the catalogue\'s order', () => {
     const tts = ttsCom(portaFalsa({ gpuFala: true }));
-    expect(tts.vozes().map((v) => v.voice)).toEqual(['pt_BR-faber-medium', 'pf_dora', 'pm_alex', 'pm_santa']);
+    expect(tts.vozes().map((v) => v.voice)).toEqual(['pf_dora', 'pm_alex', 'pm_santa']);
   });
 
   it('🔴 [Zero] without the port no Kokoro voice is listed', () => {
     const tts = createTts({ srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
       getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => null });
-    expect(tts.vozes().map((v) => v.engine)).toEqual(['piper']);
+    expect(tts.vozes(), 'a browser offering no voice and no port: nothing to list').toEqual([]);
   });
 });
 
@@ -140,24 +140,23 @@ describe('the marks in the hearing panel (ADR-0198 §3)', () => {
 
   const rotulos = () => [...document.querySelectorAll('#audio #tts-voz option')].map((o) => o.textContent);
 
-  it('🔴 [Right] in Portuguese: the feather on Faber, no mark on the Kokoro voices', () => {
-    expect(rotulos()).toEqual(['🪶 Faber', 'Dora', 'Alex', 'Santa']);
+  it('🔴 [Right] in Portuguese: no mark on the Kokoro voices', () => {
+    expect(rotulos()).toEqual(['Dora', 'Alex', 'Santa']);
   });
 
-  it('🔴 [Right] in English: the feather on the Piper voices and a heart on Heart and Bella only', async () => {
+  it('🔴 [Right] in English: a heart on Heart and Bella only, and they come first', async () => {
     await setLocale('en');
     document.querySelector('#audio .overlay__back')?.click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]')?.click();
     const r = rotulos();
-    expect(r.slice(0, 4), 'Amy first (ADR-0198 erratum), then Ryan, then Heart and Bella').toEqual(['🪶 Amy', '🪶 Ryan', '❤️ Heart', '❤️ Bella']);
+    expect(r.slice(0, 2)).toEqual(['❤️ Heart', '❤️ Bella']);
     expect(r.filter((x) => x.startsWith('❤️')).length).toBe(2);
-    expect(r.length).toBe(30);
+    expect(r.length).toBe(28);
   });
 });
 
 // ============================== MUTATIONS CHECKED ==============================
 //   KV1 Kokoro voices listed without the port              🔴 without the port
-//   KV2 Kokoro before Piper                                🔴 Piper first · marks
 //   KV3 WebGPU kept without the test synthesis             🔴 noise falls back
 //   KV4 the voice phonemized with a fixed language         🔴 own language
 //   KV5 the heart on every Kokoro voice                    🔴 marks in English/Portuguese

@@ -31,7 +31,7 @@
 // recebe "como sintetizar", "como tocar" e "como parar" — e o teste de node exercita a corrida e a
 // interrupção com falsos, em milissegundos.
 
-/** O que o chamador precisa fornecer. Nada aqui conhece PIPER, Web Audio ou o navegador. */
+/** What the caller provides. Nothing here knows the neural engine, Web Audio or the browser. */
 export interface MotorDeFala<Audio, Fonte> {
   /** Texto → áudio. ASSÍNCRONO de propósito: é onde a síntese neural gasta o tempo dela. */
   sintetizar(texto: string): Promise<Audio>;

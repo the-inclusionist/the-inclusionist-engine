@@ -101,23 +101,20 @@ describe('ui/settings-audio — parseCaneDiv / caneDivMessage', () => {
 });
 
 describe('ui/settings-audio — TTS_ENGINE_OPTIONS', () => {
-  it('[Interface] 5 motores, webspeech primeiro (padrão), valores únicos', () => {
-    expect(TTS_ENGINE_OPTIONS).toHaveLength(5);
+  it('[Interface] 4 engines, webspeech first (the default), unique values (ADR-0207)', () => {
+    expect(TTS_ENGINE_OPTIONS).toHaveLength(4);
     expect(TTS_ENGINE_OPTIONS[0][0]).toBe('webspeech');
     const values = TTS_ENGINE_OPTIONS.map(([v]) => v);
     expect(new Set(values).size).toBe(values.length);
   });
 
-  // ⚠️ O CATÁLOGO É DA ENGINE; O QUE SE PODE OFERECER É DA MONTAGEM (ADR-0094). Desde que o motor neural
-  // chega por porta, «o Piper existe» virou verdade sobre o JOGO, e um painel que o ofereça sem ele deixa
-  // quem escolheu à espera de um download que nunca começa — invisível para quem navega por escuta.
-  it('[Right] sem motor neural o Piper não é OFERECIDO, e o resto do catálogo fica intacto', () => {
+  // ⚠️ THE CATALOGUE IS THE ENGINE'S; WHAT CAN BE OFFERED IS THE ASSEMBLY'S (ADR-0094). The neural engine comes through the GAME's
+  // Kokoro port (ADR-0198), and a panel offering it without the port leaves whoever picks it waiting for a download that never starts.
+  it('[Right] without a neural engine Kokoro is not OFFERED, and the rest of the catalogue stays intact', () => {
     const sem = opcoesDeMotor(false).map(([v]) => v);
-    expect(sem).not.toContain('piper');
+    expect(sem).not.toContain('kokoro');
     expect(sem[0]).toBe('webspeech');
-    // Os que «ainda não entraram» continuam listados: são anteriores a este registro, e escondê-los aqui
-    // mudaria comportamento que ninguém pediu para mudar.
-    expect(sem).toEqual(['webspeech', 'kokoro', 'kitten', 'espeak']);
+    expect(sem).toEqual(['webspeech', 'kitten', 'espeak']);
   });
 
   it('[Right] com motor neural o catálogo sai inteiro — a porta ADICIONA, não substitui', () => {
@@ -126,7 +123,7 @@ describe('ui/settings-audio — TTS_ENGINE_OPTIONS', () => {
 
   it('[Zero] a filtragem não muda o catálogo original', () => {
     opcoesDeMotor(false);
-    expect(TTS_ENGINE_OPTIONS).toHaveLength(5);
+    expect(TTS_ENGINE_OPTIONS).toHaveLength(4);
   });
 });
 

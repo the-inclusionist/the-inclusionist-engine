@@ -3,10 +3,8 @@
 // narrate é gated por soundOn + audioCat.tts.on + texto não-vazio; o fallback Web Speech fala NO IDIOMA DO JOGO;
 // loadTTS avisa em motor que não fala o idioma. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (#38).
 //
-// ⚠️ O CABEÇALHO DIZIA «NÃO exercito o caminho Piper, que faz import() de CDN», E DEIXOU DE SER VERDADE com o
-// ADR-0094: o motor neural chega por PORTA (`ctx.carregarVozNeural`), então o caminho inteiro se exercita com um
-// falso, sem rede e sem fornecedor instalado. É o ganho de teste da inversão, e não um efeito colateral dela — o
-// caminho que carrega a voz era o único do módulo que ninguém conseguia percorrer.
+// The neural engine arrives through the game's Kokoro port (ADR-0198, ADR-0207), so its whole path runs with a fake — no network,
+// no provider installed. The fake browser offers one Portuguese voice: with none, narration is locked (ADR-0185 §4).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
 import { createTts } from '../app/js/platform/tts.js';
@@ -14,7 +12,7 @@ import { createTts } from '../app/js/platform/tts.js';
 let spoke, cancels;
 beforeEach(() => {
   spoke = []; cancels = 0;
-  globalThis.window = { speechSynthesis: { cancel: () => { cancels++; }, speak: (u) => spoke.push(u) } };
+  globalThis.window = { speechSynthesis: { cancel: () => { cancels++; }, speak: (u) => spoke.push(u), getVoices: () => [{ name: 'Luciana', lang: 'pt-BR' }] } };
   globalThis.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; this.lang = ''; this.rate = 0; this.volume = 0; this.voice = null; } };
 });
 afterEach(() => { delete globalThis.window; delete globalThis.SpeechSynthesisUtterance; });
@@ -28,16 +26,17 @@ function setup(over = {}) {
     getVolume: () => over.volume === undefined ? 0.6 : over.volume,
     getAudioCat: () => over.audioCat === undefined ? { tts: { on: true } } : over.audioCat,
   };
-  if (over.carregarVozNeural) ctx.carregarVozNeural = over.carregarVozNeural;
+  if (over.carregarKokoro) ctx.carregarKokoro = over.carregarKokoro;
   return { tts: createTts(ctx), said, alerted };
 }
 
-/** Um fornecedor de voz neural que não existe: as DUAS chamadas que a engine faz, e nada mais. */
-function fornecedorFalso(registro) {
+/** A Kokoro port that does not exist: the four calls the engine makes, and nothing more. WebGPU returns speech. */
+function fakeKokoroPort(registro) {
+  const tom = Float32Array.from({ length: 2400 }, (_, i) => Math.sin(i / 8) * 0.4);
   return () => Promise.resolve({
-    TtsSession: {
-      create: (o) => { registro.voiceId = o.voiceId; return Promise.resolve({ predict: () => Promise.reject(new Error('sem áudio no node')) }); },
-    },
+    fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }),
+    voz: async (id) => { registro.voz = id; return new Float32Array(256); },
+    sessao: async (dispositivo) => { registro.dispositivo = dispositivo; return { sintetizar: async () => tom }; },
   });
 }
 
@@ -89,8 +88,8 @@ describe('platform/tts', () => {
   it('[State] getEngineSel default webspeech; setEngineSel reflete', () => {
     const { tts } = setup();
     expect(tts.getEngineSel()).toBe('webspeech');
-    tts.setEngineSel('piper');
-    expect(tts.getEngineSel()).toBe('piper');
+    tts.setEngineSel('kokoro');
+    expect(tts.getEngineSel()).toBe('kokoro');
   });
 
   it('[State] set/getVoiceObj roundtrip', () => {
@@ -113,16 +112,14 @@ describe('platform/tts', () => {
 });
 
 // ===================================================================================================
-// A PORTA DA VOZ NEURAL (ADR-0094)
+// A PORTA DA VOZ NEURAL (ADR-0094, ADR-0198)
 // ===================================================================================================
-// A engine não nomeia o fornecedor: quem o nomeia é o jogo, por `ctx.carregarVozNeural`. O motivo é medido —
-// o fornecedor traz `onnxruntime-web` como peer NÃO-opcional (135,4 MB), e declará-lo em `devDependencies`
-// publicou uma engine que não compilava (ADR-0093). Estes casos prendem as duas metades: sem porta a criança
-// é AVISADA e a narração continua pela voz do navegador; com porta o caminho neural corre inteiro.
+// The engine names no provider: the game does, through the Kokoro port. These cases hold both halves: without the port the child is
+// TOLD and narration goes on in the browser's voice; with the port the neural path runs whole.
 describe('platform/tts — a porta da voz neural', () => {
   it('[Zero] sem porta: avisa, marca falha e NÃO diz que o problema é o idioma', () => {
     const { tts, alerted } = setup();
-    tts.setEngineSel('piper');
+    tts.setEngineSel('kokoro');
     tts.loadTTS();
     expect(alerted).toContain(pt['sr.tts.neuralNotBundled']);
     // ⚠️ A DISTINÇÃO É O PONTO, e não um detalhe de redação: «não há voz para este idioma» mandaria a criança
@@ -134,9 +131,8 @@ describe('platform/tts — a porta da voz neural', () => {
   });
 
   it('[Right] sem porta a narração NÃO emudece — cai na voz do navegador', () => {
-    // O que a issue #112 chama de recusa falsa, aqui: faltar o motor neural não pode calar o produto.
     const { tts } = setup();
-    tts.setEngineSel('piper');
+    tts.setEngineSel('kokoro');
     tts.narrate('bom dia');
     expect(spoke.length).toBe(1);
     expect(spoke[0].text).toBe('bom dia');
@@ -145,21 +141,21 @@ describe('platform/tts — a porta da voz neural', () => {
 
   it('[Happy] com porta o caminho neural corre inteiro e o motor fica de pé', async () => {
     const registro = {};
-    const { tts } = setup({ carregarVozNeural: fornecedorFalso(registro) });
+    const { tts } = setup({ carregarKokoro: fakeKokoroPort(registro) });
     expect(tts.neuralDisponivel).toBe(true);
-    tts.setEngineSel('piper');
+    tts.setEngineSel('kokoro');
     tts.loadTTS();
     expect(tts.loading, 'o carregamento começa de imediato').toBe(true);
     await assentar();
-    expect(registro.voiceId, 'a voz pedida vem de TTS_SOURCES, não do ponto de uso').toBe('pt_BR-faber-medium');
-    expect(tts.getEngine()?.id).toBe('piper');
+    expect(registro.voz, 'the first Kokoro voice of the language loads').toBe('pf_dora');
+    expect(tts.getEngine()?.id).toBe('kokoro');
     expect(tts.loading).toBe(false);
     expect(tts.failed).toBe(false);
   });
 
   it('[Boundary] porta que rejeita não derruba o jogo: falha marcada e voz do navegador segue', async () => {
-    const { tts, alerted } = setup({ carregarVozNeural: () => Promise.reject(new Error('offline')) });
-    tts.setEngineSel('piper');
+    const { tts, alerted } = setup({ carregarKokoro: () => Promise.reject(new Error('offline')) });
+    tts.setEngineSel('kokoro');
     tts.loadTTS();
     await assentar();
     expect(alerted).toContain(pt['sr.tts.loadFailed']);
@@ -169,62 +165,3 @@ describe('platform/tts — a porta da voz neural', () => {
     expect(spoke.length).toBe(1);
   });
 });
-
-// ===================================================================================================
-// WHERE THE VOICE RUNTIME COMES FROM (ADR-0177, issue #173)
-// ===================================================================================================
-// 📌 The provider sets `ort.env.wasm.wasmPaths` to cdnjs onnxruntime-web 1.18.0 unless told otherwise, while the games
-// bundle their own onnxruntime-web (1.29.0 in the platformer and the 15-puzzle) and Vite emits its `.wasm` next to the
-// game. The old default asked a host outside the policy for a runtime of another version.
-const LOCAIS_DO_FORNECEDOR = Object.freeze({
-  onnxWasm: 'https://cdnjs.cloudflare.com/ajax/libs/onnxruntime-web/1.18.0/',
-  piperData: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.data',
-  piperWasm: 'https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.wasm',
-});
-function fornecedorComLocais(registro, locais = LOCAIS_DO_FORNECEDOR) {
-  const TtsSession = { create: (o) => { registro.opcoes = o; return Promise.resolve({ predict: () => Promise.reject(new Error('sem áudio no node')) }); } };
-  if (locais) TtsSession.WASM_LOCATIONS = locais;
-  return () => Promise.resolve({ TtsSession });
-}
-
-describe('platform/tts — the voice runtime the game bundled', () => {
-  it('🔴 [Right] onnxruntime runs the wasm the game bundled, not the provider\'s cdnjs default', async () => {
-    const registro = {};
-    const { tts } = setup({ carregarVozNeural: fornecedorComLocais(registro) });
-    tts.setEngineSel('piper');
-    tts.loadTTS();
-    await assentar();
-    expect(registro.opcoes.wasmPaths, 'no wasmPaths: the provider falls back to cdnjs 1.18.0').toBeDefined();
-    expect('onnxWasm' in registro.opcoes.wasmPaths, 'the key must be present, or the provider keeps its default').toBe(true);
-    expect(registro.opcoes.wasmPaths.onnxWasm, 'an address here overrides the wasm Vite emitted next to the game').toBeUndefined();
-  });
-
-  it('🔴 [Right] the phonemizer is asked at the delivery path of the provider\'s own addresses, read from the module', async () => {
-    // ADR-0177: the delivery carries it in `pesados/<host><path>`; the service worker answers that path from the checked cache.
-    const registro = {};
-    const outros = { ...LOCAIS_DO_FORNECEDOR, piperData: 'https://example.test/x/p.data', piperWasm: 'https://example.test/x/p.wasm' };
-    const { tts } = setup({ carregarVozNeural: fornecedorComLocais(registro, outros) });
-    tts.setEngineSel('piper');
-    tts.loadTTS();
-    await assentar();
-    expect(registro.opcoes.wasmPaths.piperData, 'the phonemizer data goes to a third party').toBe('pesados/example.test/x/p.data');
-    expect(registro.opcoes.wasmPaths.piperWasm).toBe('pesados/example.test/x/p.wasm');
-  });
-
-  it('📌 [Boundary] a provider without `WASM_LOCATIONS` gets no wasmPaths, rather than a phonemizer with no address', async () => {
-    const registro = {};
-    const { tts } = setup({ carregarVozNeural: fornecedorComLocais(registro, null) });
-    tts.setEngineSel('piper');
-    tts.loadTTS();
-    await assentar();
-    expect(registro.opcoes.wasmPaths).toBeUndefined();
-    expect(tts.getEngine()?.id).toBe('piper');
-  });
-});
-
-// ============================== MUTATIONS CHECKED (the runtime block) ==============================
-//   W1 no wasmPaths passed                          🔴 bundled wasm
-//   W2 onnxWasm kept from the provider              🔴 bundled wasm
-//   W3 phonemizer addresses written in the engine   🔴 read from the module
-//   W5 phonemizer asked at the upstream address     🔴 delivery path
-//   W4 wasmPaths built without WASM_LOCATIONS       🔴 [Boundary]

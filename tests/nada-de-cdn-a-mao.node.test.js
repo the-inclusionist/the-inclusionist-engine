@@ -58,8 +58,8 @@ const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
  * este ficheiro tinha e que a sua própria entrada descrevia.
  *
  * O ADR-0114 pede que «o host dos modelos seja nomeado NUM SÍTIO SÓ». A lista, indexada por FICHEIRO,
- * afirmava isso à granularidade errada: plantei um segundo host no `platform/voice-plan.ts` —
- * `export const ESPELHO = 'https://cdn.jsdelivr.net/gh/rhasspy/piper-voices@main/'`, que é exactamente o
+ * afirmava isso à granularidade errada: I planted a second host in the module that named the models' host —
+ * an `export const ESPELHO` for a CDN, que é exactamente o
  * movimento de quem constrói o buscador e quer um espelho para a escola — e os CINCO casos ficaram verdes.
  * O ficheiro já estava desculpado, então tudo o que crescesse dentro dele estava desculpado com ele.
  *
@@ -75,37 +75,19 @@ const BUSCAS_A_MAO = {
       + 'them at `pesados/`. A second host here would be a mirror chosen in silence',
   },
   'platform/pesados-catalogo.ts': {
-    urls: 4,
+    urls: 3,
     porque:
-      'OS RUNTIMES QUE A ENGINE PASSOU A DESCER NA INSTALAÇÃO (ADR-0124, ADR-0127, ADR-0132, decisões do Dev ' +
+      'OS RUNTIMES QUE A ENGINE PASSOU A DESCER NA INSTALAÇÃO (ADR-0124, ADR-0132, decisões do Dev ' +
       'de 2026-09-09). ⚠️ CDN FIXADA É PERMITIDA e o ADR-0116 diz porquê: o pilar 8 proíbe depender da rede ' +
       'DEPOIS do primeiro dia, e isto desce com tudo o resto na instalação. ' +
-      '📌 O `5` são as CINCO ORIGENS, e cada uma tem de ser defensável sozinha: (1) `@mediapipe/tasks-vision` ' +
+      '📌 The `3` is THREE ORIGINS, each defensible on its own: (1) `@mediapipe/tasks-vision` ' +
       'em jsDelivr — o runtime de visão; (2) `storage.googleapis.com/mediapipe-models` — os modelos `.task`, ' +
       'que vivem noutro host porque o Google os publica assim, e sem eles o runtime não reconhece nada; ' +
-      'the voice runtime (`@mintplex-labs/piper-tts-web`, `onnxruntime-web`) LEFT with ADR-0184 — the game bundles it; ' +
       'and (3) `webgazer.cs.brown.edu`, que VOLTOU pelo ADR-0132 porque o MediaPipe dá a posição ' +
       'do íris e não o ponto no ecrã. ' +
       'The WebGazer lives here only since #169: `ui/webcam.ts` reads it from the checked cache instead of fetching it. ' +
-      '(4) `@diffusionstudio/piper-wasm` in jsDelivr — the voice provider\'s phonemizer at its own default address (#173), ' +
-      'fetched by the BUILD into the delivery; the device asks for it at `pesados/`. ' +
-      'A fifth origin is a new supplier entering without a decision. Sai desta lista quando os bytes forem ' +
+      'A fourth origin is a new supplier entering without a decision. It leaves this list when the bytes are ' +
       'servidos de origem própria',
-  },
-  'platform/voice-plan.ts': {
-    urls: 1,
-    porque:
-      'ENDEREÇO DECLARADO, e ainda não uma busca. O ADR-0114 exige que o host dos modelos seja nomeado num ' +
-      'sítio só, e este módulo é PURO — sem `fetch`, sem `import()`, sem `script.src`. Fica aqui porque o ' +
-      'crivo lê literais e não sabe a diferença; o `nada-vem-de-fora` faz essa distinção de forma estrutural, ' +
-      'e é lá que ela é afirmada. ⚠️ O `1` é a cláusula do registo: um segundo host aqui — um espelho, um ' +
-      'recuo — é a decisão da issue #129 a ser tomada em silêncio por quem estava a ligar o buscador. ' +
-      '⚠️ CORRIGIDO EM 2026-09-09: esta linha dizia «sai desta lista quando o buscador existir e a busca ' +
-      'passar a viver nele». O buscador existe (`platform/pesados`) e a entrada FICA — porque este crivo lê ' +
-      'LITERAIS, e o literal continua aqui. O buscador não escreve endereço nenhum: importa `urlDoModelo` ' +
-      'deste módulo, que é a metade que o ADR-0114 realmente pede. Deixada como estava, a frase mandaria o ' +
-      'próximo leitor apagar uma entrada ainda devida — e o `1` cairia com ela. Sai daqui quando o endereço ' +
-      'sair do código, não quando a busca nascer',
   },
   // `ui/webcam.ts` LEFT on 2026-09-13 (#169): it runs WebGazer from the sha256-checked cache the install filled,
   // and asks the network for nothing.
@@ -205,10 +187,10 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
   });
 
   /* 🎯 A REGRA DO ADR-0116 FEITA ESTRUTURAL: um ENDEREÇO não é uma BUSCA, e é a diferença entre o que se
-   * pré-cacheia e o que se busca com preguiça. `platform/voice-plan` NOMEIA o host e nunca o pede — é um
+   * pré-cacheia e o que se busca com preguiça. `platform/kokoro` NAMES the host and never asks it — a
    * módulo puro, e é essa pureza que deixa o buscador escolher o momento. `ui/webcam` pede, e pede tarde.
    *
-   * ⚠️ O CASO PRENDE OS DOIS LADOS, e é por isso que ele não é decorativo: se o `voice-plan` ganhar um
+   * ⚠️ THE CASE HOLDS BOTH SIDES, which is why it is not decorative: if `kokoro` gains a
    * `fetch`, deixa de ser endereço declarado e passa a ser a busca preguiçosa que a desculpa dele diz que não
    * é; se o `webcam` deixar de buscar, a desculpa dele passou a descrever um ficheiro que já não faz aquilo.
    *
@@ -218,7 +200,7 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
   const pede = (f) => REDE.test(semComentarios(readFileSync(join(RAIZ, f), 'utf8')));
 
   it('🎯 [Fronteira] endereço DECLARADO e busca PREGUIÇOSA são coisas diferentes, e o crivo sabe qual é qual', () => {
-    expect(pede('platform/voice-plan.ts'), 'o voice-plan ganhou uma busca — deixou de ser endereço declarado').toBe(false);
+    expect(pede('platform/kokoro.ts'), 'platform/kokoro gained a fetch — it is no longer a declared address').toBe(false);
     // #169: the webcam stopped fetching — it runs the bytes of the checked cache. Its only `.src =` is a `blob:` it makes
     // itself; what would reopen the lazy door is a network address in its code, or a `src` that is not an object URL.
     const webcam = semComentarios(readFileSync(join(RAIZ, 'ui/webcam.ts'), 'utf8'));

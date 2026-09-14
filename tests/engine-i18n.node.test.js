@@ -263,7 +263,7 @@ const CRU_CONHECIDO = {
                                    // literais pela razão das outras: a frase nomeia a saída (`host.pauseHost`
                                    // dentro de `#game-region`), o mecanismo e o que a criança perde.
                                    // ⚠️ 12 → 15 em 2026-09-08: a VOZ NEURAL ausente. Medido: três dos seis
-                                   // jogos não declaram `carregarVozNeural` e ficavam sem voz neural em
+                                   // jogos não declaram a porta da voz neural e ficavam sem voz neural em
                                    // silêncio — contra a promessa escrita do ADR-0065 §3 de que um cartucho
                                    // «não tem de saber que existe». Três linhas pela mesma razão das
                                    // anteriores: a frase nomeia a saída, o declínio E o que a criança perde.

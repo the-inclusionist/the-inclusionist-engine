@@ -342,7 +342,7 @@ describe('createGame em execução', () => {
     // ela, o `problems` acusaria — correctamente — e este caso deixaria de medir o que diz medir.
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      carregarVozNeural: () => Promise.resolve({}),
+      carregarKokoro: () => Promise.resolve({}),
       // ⚠️ O `preset` ENTRA AQUI em 2026-09-12 pela mesma razão que a porta da voz neural entrou em 08/09: a
       // ajuda passou a ser montada pela engine (ADR-0147 §4) e, sem as palavras do jogo, ela acusa — com
       // razão. Sem esta linha o caso deixaria de medir o que diz medir.
@@ -364,7 +364,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso();
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      carregarVozNeural: () => Promise.resolve({}),
+      carregarKokoro: () => Promise.resolve({}),
     });
     const daAjuda = motor.problems.filter((p) => /help screen/.test(p));
     expect(daAjuda, 'sem `preset` a ajuda sumiu e nada o disse').toHaveLength(1);
@@ -373,22 +373,16 @@ describe('createGame em execução', () => {
     expect(daAjuda[0]).toMatch(/preset/);
   });
 
-  it('⚠️ [Zero] SEM voz neural declarada, a engine DIZ — e TRÊS dos seis jogos estão assim', async () => {
-    // 📏 Medido em 2026-09-08: `carregarVozNeural` é declarado por `game-platformer`, `pixi-15-puzzle` e
-    // `2048`, e NÃO por `game-soccer`, `whackwhack` e `game-chess`. Nesses três não há voz neural nenhuma, e
-    // nada o dizia — `neuralDisponivel` é só `!!ctx.carregarVozNeural`.
-    //
-    // ⚠️ E ISSO CONTRADIZ UMA PROMESSA ESCRITA: o ADR-0065 §3 diz que as vozes «fazem parte da engine» e que
-    // um cartucho «não tem de saber que existe». O ADR-0094 — com razão, por 135 MB de WASM — passou a exigir
-    // uma linha do jogo. As duas coisas convivem, MAS só se quem esquece a linha for avisado.
+  it('⚠️ [Zero] with NO neural voice declared, the engine SAYS so', async () => {
+    // A game without the Kokoro port (ADR-0198, ADR-0207) has only the browser's voice, and nothing said so: the line is the warning.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     const linha = motor.problems.find((p) => /neural voice/.test(p));
     expect(linha, 'sem voz neural e a engine não disse nada').toBeTruthy();
-    expect(linha, 'não nomeia a saída').toMatch(/carregarVozNeural/);
-    expect(linha, 'não nomeia o declínio').toMatch(/semVozNeural/);
-    expect(linha, 'não diz o que a criança perde').toMatch(/cannot read|Portuguese/);
+    expect(linha, 'the way out is not named').toMatch(/carregarKokoro/);
+    expect(linha, 'the decline is not named').toMatch(/semVozNeural/);
+    expect(linha, 'what the child loses is not said').toMatch(/cannot read/);
   });
 
   it('⚠️ [Right] DECLARAR `semVozNeural` cala a linha — declinar é escolha, não declarar é omissão', async () => {
@@ -482,7 +476,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso();
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      carregarVozNeural: () => Promise.resolve({}),
+      carregarKokoro: () => Promise.resolve({}),
     });
     // O `nav` é montado com as respostas da PRÓPRIA engine — não com no-ops. `menuNavKey` é o tradutor de
     // teclado, e é por ele que o direcional chega à barra.
@@ -563,7 +557,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso({ mapa: { '#game-region': regiao, '#vp-pause-0': cartaoMapeado } });
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      carregarVozNeural: () => Promise.resolve({}),
+      carregarKokoro: () => Promise.resolve({}),
     });
 
     expect(typeof motor.pausa.mostrar, 'a engine monta e não sabe mostrar').toBe('function');

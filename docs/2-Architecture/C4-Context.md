@@ -23,7 +23,7 @@ cache), shipped as `dist/` on **Cloudflare Pages** (git-connected, builds on pus
 | PixiJS 7.4.2 | rendering | bundled (npm), tree-shaken |
 | VLibras | sign-language interpreter | online widget; read-only |
 | WebGazer | eye control | CDN, lazy-loaded on first use |
-| neural TTS (Piper) | speech | future; offline-capable |
+| neural TTS (Kokoro, through the game's port) | speech | offline-capable once fetched; Piper left (ADR-0207) |
 | Web Speech / Gamepad / Web Audio | assistive I/O | browser APIs |
 | Cloudflare Pages | hosting/CD | static; git-connected |
 

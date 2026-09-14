@@ -1,25 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A ROTA DO SERVICE WORKER APONTA PARA O QUE O CÓDIGO REALMENTE USA — senão os 241 MB descem para ninguém.
+// THE SERVICE WORKER'S ROUTES ON THE CHECKED CACHE SERVE WHAT THE FETCHER KEPT (ADR-0177, issue #168, #173).
 //
-// ========================= O DEFEITO QUE ISTO GUARDA, E ELE JÁ ACONTECEU =========================
-// 🔴 Em 2026-09-09 o `platform/pesados` passou a descer os quatro modelos de voz no primeiro carregamento, e
-// **ninguém os lia**. Duas causas, medidas: a engine buscava num espelho (`rhasspy`) e o único leitor lia
-// noutro (`diffusionstudio`), e — mesmo com a URL igual — a Cache Storage **não é consultada sozinha** por um
-// `fetch`. Sem uma rota do service worker o pedido vai direto à rede. Até 482 MB num link de escola por UMA voz.
-//
-// 🎯 O CONSERTO TEM DUAS METADES E NENHUMA BASTA SOZINHA: o `HOST_DOS_MODELOS` passou a apontar para onde o
-// leitor lê, e a `runtimeCaching` do `vite.config` serve esse host a partir da MESMA cache que o buscador
-// escreve. ⚠️ E é por serem duas metades em ficheiros diferentes que este crivo existe: mudar uma sem a outra
-// não dá erro em lado nenhum — dá uma rota que existe e não serve nada, ou uma cache que ninguém consulta.
-//
-// 📌 É a forma do `teste que lê pela ligação não falha`: os dois lados têm de ser lidos das suas FONTES
-// (o módulo e o ficheiro de configuração), nunca de um literal repetido aqui.
+// The Cache Storage is not consulted by a `fetch` on its own: without a route, a library's request goes to the network and
+// the bytes the fetcher checked sit unread. So the routes name the fetcher's own cache, read it and never write it, reach no
+// third party, and stay narrow — one package, never a whole domain. Read from the sources, never from a literal repeated here.
 //
 // MUTAÇÕES CONFERIDAS (no fim do ficheiro).
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { HOST_DOS_MODELOS } from '../app/js/platform/voice-plan.js';
 import { CACHE_PESADOS } from '../app/js/platform/pesados.js';
 
 const CONFIG = readFileSync(fileURLToPath(new URL('../vite.config.ts', import.meta.url)), 'utf8');
@@ -49,21 +38,9 @@ describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
       .toMatch(/runtimeCaching\s*:/);
   });
 
-  it('🔴 [Zero] a rota cobre o HOST que o código busca — lido do módulo, não de um literal', () => {
-    // `HOST_DOS_MODELOS` acaba em `/resolve/main/`; a rota escreve-o escapado numa RegExp. Compara-se o dono
-    // do repositório, que é a parte que muda quando alguém troca de espelho — e é a que já trocou uma vez.
-    const dono = HOST_DOS_MODELOS.match(/huggingface\.co\/([^/]+)\//)?.[1];
-    expect(dono, 'o host dos modelos deixou de ser um endereço do Hugging Face').toBeTruthy();
-    expect(
-      CONFIG_LIMPA,
-      `a rota do service worker não cobre «${dono}» — o buscador desce os modelos e a biblioteca volta a `
-      + 'descarregá-los, porque a Cache Storage não é consultada sozinha por um `fetch`.',
-    ).toContain(`huggingface\\.co\\/${dono}\\/`);
-  });
-
   it('🔴 [Zero] a rota usa a MESMA cache que o buscador escreve', () => {
     // ⚠️ Um nome diferente é o defeito mais silencioso dos dois: a rota funciona, guarda numa cache própria,
-    // e os 241 MB que já estavam no aparelho continuam a ser descarregados outra vez. Ninguém vê erro.
+    // and what the device already held is downloaded again. Nobody sees an error.
     expect(
       CONFIG_LIMPA,
       `a rota não nomeia \`${CACHE_PESADOS}\` — ela cacheia para si própria e ignora o que já desceu.`,
@@ -80,18 +57,13 @@ describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
     }
   });
 
-  it('📌 [Boundary] o alcance é ESTREITO — a rota não abre `huggingface.co` inteiro', () => {
-    // 🎯 A porta larga é a forma de defeito que a #119 já fechou noutro ponto: uma rota sobre o domínio
-    // inteiro passaria a guardar qualquer coisa que alguém viesse a buscar de lá, sem ninguém decidir.
-    // ⚠️ SÃO DUAS ROTAS DESDE 2026-09-09 e o caso lia só a primeira: os modelos de voz no Hugging Face, e os
-    // RUNTIMES fixados em jsDelivr (MediaPipe, piper, onnxruntime — ADR-0124/0127/0132). Ler `match` em vez
-    // de `matchAll` fazia o caso afirmar sobre uma e ignorar a outra, que é como uma porta larga entraria sem
-    // ninguém ver: bastava acrescentá-la em segundo lugar.
+  it('📌 [Boundary] the reach is NARROW — a third-party route opens one PACKAGE, never a whole domain', () => {
+    // 🎯 The wide door is the defect #119 already closed elsewhere: a route over a whole domain would keep whatever anyone later
+    // fetched from it, with nobody deciding. `matchAll` and not `match`: a wide route added second would otherwise walk past a case that reads only the first.
     const rotas = [...CONFIG_LIMPA.matchAll(/urlPattern:\s*\/([^\n]*?)\/,/g)].map((m) => m[1]);
-    expect(rotas.length, 'não achei os padrões das rotas').toBeGreaterThanOrEqual(2);
+    expect(rotas.length, 'no route patterns found').toBeGreaterThanOrEqual(1);
     for (const rota of rotas) {
-      expect(rota, `rota larga demais — abriu um domínio inteiro: ${rota}`)
-        .toMatch(/piper-voices|@mediapipe|@mintplex-labs|onnxruntime-web/);
+      expect(rota, `route too wide — it opened a whole domain: ${rota}`).toMatch(/@mediapipe\\\/tasks-vision@/);
     }
   });
 
@@ -111,14 +83,9 @@ describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
   });
 });
 
-// ================================ MUTAÇÕES CONFERIDAS ================================
-// 1. 🎯 `cacheName` mudado para outro nome → o [Zero] da cache reprova. É a mutação que mais importa: a rota
-//    continua a FUNCIONAR, guarda para si própria, e os 241 MB que já estavam no aparelho descem outra vez.
-//    Nada em produção dá erro; o que se perde é a razão inteira do buscador existir.
-// 2. `HOST_DOS_MODELOS` a voltar para `rhasspy` sem a rota mudar → o [Zero] do host reprova. É o par: as duas
-//    metades vivem em ficheiros diferentes e mover uma sozinha não acusa em lado nenhum.
-// 3. a rota alargada para `/^https:\/\/huggingface\.co\//` → o [Boundary] reprova. Uma porta larga entra a
-//    resolver um caso e fica a guardar tudo o que alguém buscar daquele domínio.
-// 4. `CacheFirst` → `NetworkFirst` → o [Right] reprova, e o defeito é o segundo dia sem rede.
-// #168 (2026-09-13): one route without the read-only plugin → 🔴 the new case. Measured in the rebuilt dist under the service
-// worker: a page fetch of a jsDelivr runtime was served and NOT stored; the cache held only what the fetcher had checked.
+// ================================ MUTATIONS CHECKED ================================
+// 1. 🎯 `cacheName` renamed → the cache [Zero] fails: the route still WORKS, keeps for itself, and what the device held comes down
+//    again.
+// 3. the route widened to the whole domain → the [Boundary] fails.
+// 4. `CacheOnly` → `NetworkFirst` → the [Right] fails, and the defect is the second day offline.
+// #168 (2026-09-13): one route without the read-only plugin → 🔴 the read-only case.

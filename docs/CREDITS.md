@@ -41,42 +41,25 @@ SOFTWARE.
 > Nota: confirmar o ano/linha exata de copyright no `LICENSE` do repositório do Clarity e alinhar aqui antes de
 > qualquer distribuição formal. MIT é compatível com AGPL-3.0 (as porções MIT mantêm seu aviso; o todo é AGPL-3.0).
 
-## Voz neural (TTS) — Next-gen Kaldi, Piper, eSpeak NG
+## Neural voice (TTS) — until 2026-09-14: Piper and sherpa-onnx (WITHDRAWN)
 
-A narração por voz roda **inteiramente no navegador/offline** graças ao trabalho excepcional de:
+🔴 **The Piper voices left the engine on 2026-09-14** (ADR-0207, issue #193) — see the public notice
+[`notices/2026-09-14-piper-voices-withdrawn.md`](notices/2026-09-14-piper-voices-withdrawn.md). `pt_BR-faber-medium`,
+`en_US-amy-medium` and `en_US-ryan-medium` start from the `lessac` voice («Finetuned from U.S. English lessac voice», in their
+`MODEL_CARD`s), trained on the **Blizzard 2013** dataset (CSTR, University of Edinburgh), whose licence limits use to research and
+forbids distributing the materials; `es_MX-claude-high` states no starting checkpoint. We could not show a licence for what the project
+does with them.
 
-- **[sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)** (projeto **Next-gen Kaldi / k2-fsa**, **Apache-2.0**) — o motor
-  de inferência TTS em WebAssembly. Um agradecimento especial a **Fangjun Kuang** ([@csukuangfj](https://github.com/csukuangfj)),
-  engenheiro-líder do Next-gen Kaldi (sherpa-onnx, k2, icefall, kaldi-native-fbank; coautor de trabalhos como
-  [ZipVoice](https://github.com/k2-fsa/ZipVoice)), que **empacotou as vozes Piper no formato ONNX/sherpa** (repositórios
-  `vits-piper-*`) — inclusive **portando a `dii` de pt-PT para pt-BR** — tornando este uso possível. Obrigado.
-- **[Piper](https://github.com/rhasspy/piper)** (Michael Hansen / rhasspy, **MIT**) — o sistema TTS VITS por trás das vozes.
-- **[eSpeak NG](https://github.com/espeak-ng/espeak-ng)** (**GPL-3.0**) — a fonemização (`espeak-ng-data`) usada pelas vozes.
-- **Vozes pt-BR** (`faber`, `jeff`, `miro`, `cadu`) e pt-PT (`dii`) — treinadas pela comunidade Piper a partir de datasets
-  de locutores; a licença de cada voz está no `MODEL_CARD` do respectivo pacote e deve ser confirmada por voz antes de
-  distribuição formal.
-  **O que o jogo de fato embarca hoje é uma voz:** `pt_BR-faber-medium`. As demais permanecem no repositório como
-  material de laboratório (`docs/research/sherpa-wasm/`) e continuam creditadas por isso — crédito acompanha o que
-  está no repositório, e não apenas o que é distribuído no pacote. O roster de entrega decidido é `en_US`, `pt_BR` e
-  `es_MX` (ADR-0065, que supersede o ADR-0022).
-- **Licença das vozes do catálogo, lida no `MODEL_CARD` de cada uma em 2026-09-14** (`huggingface.co/diffusionstudio/piper-voices`):
+Credit follows what was used. Until that date neural narration relied on:
 
-  | voz | dataset | licença do dataset |
-  |---|---|---|
-  | `pt_BR-faber-medium` | NabuCasa/voice-datasets | **CC0** |
-  | `es_MX-claude-high` | HirCoir/Piper-TTS-Spanish | **Apache-2.0** |
-  | `en_US-amy-medium` | MycroftAI/mimic3-voices («See URL») | **CC BY-SA 4.0** — a licença do repositório indicado; a voz `amy` não aparece na lista dele, então a procedência não está confirmada |
-  | `en_US-ryan-medium` | roholazandie/ryanspeech (Kaggle) | ⚠️ **CC BY-NC-SA 4.0 — uso NÃO comercial** |
-
-  ✅ **Ryan é não comercial, e o projeto também**: o Dev, 2026-09-14 — «nosso projeto não tem fins lucrativos». Amy pede
-  atribuição e compartilhamento pela mesma licença.
-
-  🔴 **Faber, Amy e Ryan partem da voz `lessac`** (cada `MODEL_CARD`, lido em 2026-09-14 em `huggingface.co/rhasspy/piper-voices`:
-  «Finetuned from U.S. English lessac voice»). A `lessac` foi treinada no conjunto **Blizzard 2013** (CSTR, Universidade de
-  Edimburgo), cuja licença limita o uso a pesquisa, proíbe distribuir o material e exclui o desenvolvimento de produtos ou serviços
-  de síntese de voz. Se uma voz ajustada a partir dela fica presa a essa licença não está resolvido aqui; por isso as três **não são
-  espelhadas** até decisão do Dev (errata do ADR-0203, issue #192). A `es_MX-claude-high` diz «See URL» sobre o treino: a origem
-  não foi verificada.
+- **[sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)** (Next-gen Kaldi / k2-fsa, **Apache-2.0**) — in the TTS lab; thanks to
+  **Fangjun Kuang** ([@csukuangfj](https://github.com/csukuangfj)), who packaged Piper voices in the sherpa format.
+- **[Piper](https://github.com/rhasspy/piper)** (Michael Hansen / rhasspy, **MIT**) and the `@mintplex-labs/piper-tts-web` runtime (MIT).
+- **[eSpeak NG](https://github.com/espeak-ng/espeak-ng)** (**GPL-3.0**) — the voices' phonemization (`piper_phonemize`).
+- **The voices and their dataset licences**, read on 2026-09-14: `pt_BR-faber-medium` (NabuCasa/voice-datasets, CC0),
+  `es_MX-claude-high` (HirCoir/Piper-TTS-Spanish, Apache-2.0), `en_US-amy-medium` (MycroftAI/mimic3-voices, «See URL»),
+  `en_US-ryan-medium` (roholazandie/ryanspeech, CC BY-NC-SA 4.0). The Dev's answer on Ryan — «nosso projeto não tem fins
+  lucrativos» — met its non-commercial clause; the `lessac` chain is what took them out.
 
 ## Kokoro-82M — hexgrad — Apache-2.0
 

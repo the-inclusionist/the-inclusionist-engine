@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/tts — narração por voz. Motor NEURAL pt-BR carregado LAZY pela PORTA que o jogo fornece (ADR-0094; modelo
-// em cache OPFS → a 2ª sessão fala offline), com FALLBACK imediato p/ a voz nativa do navegador (Web Speech) — que é
-// também o que se ouve quando não há porta nenhuma, e é por isso que a ausência dela não cala nada. narrate() é o
+// platform/tts — spoken narration. The browser's voice speaks first (Web Speech, ADR-0200); the neural fallback is Kokoro, loaded
+// lazily through the port the game fills (ADR-0198) — and without the port nothing goes silent, the browser's voice speaks. narrate() é o
 // ponto de entrada, gated pelo toggle 'Narração (TTS)' do mixer (audioCat.tts.on) — independe das legendas. As funções de
 // PAINEL (populateTTSEngines/Voices/reflectTTS) ficam no game.js (→ ui/settings-audio, #38→#54) e usam get/setEngineSel +
 // get/setVoiceObj daqui. Injeção por closure. Ver docs/plano-tts-fase-f5.md + docs/5-Refactoring/plano-modularizacao-mapa.md.
@@ -9,40 +8,11 @@
 import * as store from './storage.js';
 import { t, bcp47 } from '../core/i18n.js';
 import { criarFalaInterrompivel } from './interruptible-speech.js';
-import { caminhoNaEntrega } from './pesados.js';
 import { vozesDoIdioma, type VozNeural } from './voice-plan.js';
 import { palavrasFaladas, segundosDeFala, taxaDaFala } from '../core/speech-rate.js';
 import { VOZES_KOKORO, tokenizar, estiloDaFrase, eFala, wavDe } from './kokoro.js';
 
 interface TtsEngine { id: string; speak: (text: string) => void; }
-
-/**
- * O QUE A ENGINE PRECISA DE UM MOTOR NEURAL — e nada mais. Duas chamadas, escritas aqui em vez de importadas
- * do fornecedor, porque importar o TIPO obrigaria o pacote a estar instalado para o `tsc` do consumidor
- * correr: seria o mesmo defeito do ADR-0093 mudado de campo, do `dependencies` para o espaço de tipos.
- */
-export interface SessaoNeural {
-  predict: (texto: string) => Promise<{ arrayBuffer: () => Promise<ArrayBuffer> }>;
-}
-export interface LocaisDoRuntime {
-  onnxWasm: string;
-  piperData: string;
-  piperWasm: string;
-}
-export interface ModuloNeural {
-  TtsSession: {
-    create: (o: {
-      voiceId: string;
-      progress?: (p: { loaded: number; total: number }) => void;
-      logger?: (...a: unknown[]) => void;
-      wasmPaths?: LocaisDoRuntime;
-    }) => Promise<SessaoNeural>;
-    /** The provider's default runtime addresses; read so the engine overrides one of them and writes none (#173). */
-    WASM_LOCATIONS?: LocaisDoRuntime;
-  };
-}
-/** A PORTA (ADR-0094). Uma linha do lado do jogo: `() => import('@mintplex-labs/piper-tts-web')`. */
-export type CarregarVozNeural = () => Promise<ModuloNeural>;
 
 /** A Kokoro inference session on one device: token ids and a style row in, a 24 kHz waveform out. */
 export interface SessaoKokoro {
@@ -72,17 +42,9 @@ export interface TtsCtx {
   getVolume: () => number;
   getAudioCat: () => Record<string, { on: boolean }> | null; // narrate checa audioCat.tts.on
   /**
-   * COMO SE CARREGA O MOTOR NEURAL — fornecido pelo JOGO, ausente por omissão (ADR-0094).
-   *
-   * ⚠️ A engine NÃO NOMEIA O FORNECEDOR, e o motivo é medido: o `@mintplex-labs/piper-tts-web` traz
-   * `onnxruntime-web` como peer NÃO-opcional, que o npm instala sozinho — **135,4 MB** no `node_modules` de
-   * todo consumidor, incluindo um que nunca fale por voz neural. Nomeá-lo aqui obrigaria os 135 MB, e
-   * declará-lo em `devDependencies` (como estava até 06/09) publica um pacote que não compila.
-   *
-   * Ausente = a narração cai na voz do navegador (Web Speech), que fala o idioma certo e não pesa nada.
+   * How the Kokoro voices load (ADR-0198), filled by the game, absent by default: the engine names no phonemizer, runtime or model
+   * file, so a game that never speaks neurally carries none of them. Absent = no Kokoro voice is listed; the browser's voice speaks.
    */
-  carregarVozNeural?: CarregarVozNeural;
-  /** How the Kokoro voices load (ADR-0198). Absent = no Kokoro voice is listed. */
   carregarKokoro?: CarregarKokoro;
   /** The child's speech rate, words a minute (ADR-0183 §1). Absent = each voice at its own rate. */
   getSpeechPpm?: () => number;
@@ -107,7 +69,7 @@ export interface Tts {
   readonly failed: boolean;
   readonly narrateCount: number;
   /**
-   * ESTA MONTAGEM TEM MOTOR NEURAL? (ADR-0094) O painel de áudio pergunta antes de o oferecer: uma opção
+   * DOES THIS ASSEMBLY HAVE A NEURAL ENGINE? (ADR-0094, the Kokoro port) O painel de áudio pergunta antes de o oferecer: uma opção
    * que não pode funcionar é pior que uma opção a menos — quem a escolhe fica à espera de um download que
    * nunca começa, e quem navega por escuta não tem como ver que não começou.
    */
@@ -122,39 +84,23 @@ export interface Tts {
   setVoz: (id: string) => boolean;
 }
 
-// ⚠️ MIGRAÇÃO PENDENTE (ADR-0022): a implementação neural de hoje é o @mintplex-labs/piper-tts-web e será SUBSTITUÍDA
-// por sherpa-onnx-wasm (loader universal, modelos VITS/Piper + Kokoro-multi-lang carregados de qq URL R2 em runtime via
-// FS.writeFile; lazy-fetch; eSpeak/Web Speech de fallback).
-// 🔴 O MOTIVO ESCRITO AQUI ERA «@mintplex-labs foi descontinuado e só carrega 2 vozes pt-BR», E AS DUAS METADES
-// FORAM MEDIDAS FALSAS EM 2026-09-09 — não pela leitura de um registo, que é como elas se propagaram por seis
-// sítios, mas pelo registo npm e pelo pacote instalado:
-//   · DESCONTINUADO: nenhuma versão tem campo `deprecated`, e a 1.0.5 foi publicada em 2026-08-11 — depois de
-//     o ADR-0022 (2026-07-06) a dar por morta. A frase é de Julho e está atribuída ao Dev; o registo não a nega
-//     no passado, nega-a HOJE.
-//   · DUAS VOZES pt-BR: o `VoiceId` da 1.0.4 instalada traz 118 vozes, e entre elas as QUATRO exactas do
-//     ADR-0110 — `pt_BR-faber-medium`, `en_US-ryan-medium`, `en_US-amy-medium`, `es_MX-claude-high`.
-// ⚠️ O QUE CONTINUA VERDADEIRO, e é mais afiado do que o motivo velho: o bundle prende `HF_BASE` a
-// `huggingface.co/diffusionstudio/piper-voices` COM UMA GUARDA (`if (!url.match("https://huggingface.co")) return`),
-// logo nenhum espelho de escola é alcançável por ele; e ele busca o PRÓPRIO runtime de cdnjs/jsDelivr por
-// omissão, que é o que o ADR-0114 retira. A montante, o Piper mudou para `OHF-Voice/piper1-gpl` e a Open Home
-// Foundation procura mantenedores — o risco existe, mas está noutro sítio.
-// 📌 A ESCOLHA CONTINUA A SER A #129, e este comentário não a toma: descreve o que foi medido para que o
-// próximo leitor não herde o motivo velho como se fosse medição.
-// ⚠️ E DESDE O ADR-0094 ESTE MÓDULO NÃO NOMEIA FORNECEDOR NENHUM — quem o nomeia é o JOGO, por `ctx.carregarVozNeural`.
-// O nome estava aqui num `import()` e o pacote em `devDependencies`, o que publicou uma engine que não compilava
-// (ADR-0093); pô-lo em `dependencies` consertava o build e obrigava todo consumidor a 135,4 MB de `onnxruntime-web`,
-// que o fornecedor traz como peer não-opcional. A porta é o que faz a troca do ADR-0022 não ser um segundo abalo.
+// 📌 The only neural engine is Kokoro (ADR-0207): the engine's earlier neural engine left when the licence chain of its voices came
+// to light. The engine names no provider — the game fills the Kokoro port (ADR-0094's reason: a provider named here lands its runtime in every
+// consumer's `node_modules`).
+/** An engine the child may have stored before it left the engine (ADR-0207): read as no explicit choice, so the voice in use speaks. */
+const MOTORES_QUE_SAIRAM: readonly string[] = ['piper'];
 export function createTts(ctx: TtsCtx): Tts {
-  let ttsEngine: TtsEngine | null = null, ttsLoading = false, ttsFailed = false, _ttsPct = 0, _narrateCount = 0;
+  let ttsEngine: TtsEngine | null = null, ttsLoading = false, ttsFailed = false, _narrateCount = 0;
   let _ttsVoiceObj: SpeechSynthesisVoice | null = null; // voz do Web Speech selecionada
   // An engine set explicitly (stored, or by the panel) wins; otherwise the engine of the voice in use, which is the browser's when it
   // offers one for the language (ADR-0200) — measured on the device at every call, since the browser lists its voices late.
-  let ttsEngineSelExplicito: string | null = store.get(store.KEYS.ttsEngine, null) || null; // webspeech | piper | kokoro | kitten | espeak
+  const guardado: string | null = store.get(store.KEYS.ttsEngine, null) || null; // webspeech | kokoro | kitten | espeak
+  let ttsEngineSelExplicito: string | null = guardado && !MOTORES_QUE_SAIRAM.includes(guardado) ? guardado : null;
   const motorSel = (): string => {
     if (ttsEngineSelExplicito) return ttsEngineSelExplicito;
     const e = vozAtual()?.engine;
     // a fallback the game does not bundle is not the default: without its port, the browser's voice (no «not bundled» alert)
-    return (e === 'piper' && ctx.carregarVozNeural) || (e === 'kokoro' && ctx.carregarKokoro) ? e : 'webspeech';
+    return e === 'kokoro' && ctx.carregarKokoro ? e : 'webspeech';
   };
   let kokoroDispositivo: 'webgpu' | 'wasm' | null = null;
   let vozCarregada: string | null = null; // the voice the loaded engine speaks; another choice reloads it
@@ -169,14 +115,14 @@ export function createTts(ctx: TtsCtx): Tts {
 
   /**
    * WEB SPEECH FIRST (ADR-0200; issue #190): the browser's voices for the language lead the list, so where the device already speaks
-   * no neural voice is loaded; then Piper, then Kokoro's where the game hands in the Kokoro port (ADR-0198 §1–2) — the fallback.
+   * no neural voice is loaded; then Kokoro's where the game hands in the Kokoro port (ADR-0198 §1–2) — the fallback.
    */
   const vozesDoNavegador = (): readonly VozNeural[] => {
     let lista: readonly SpeechSynthesisVoice[] = [];
     try { lista = window.speechSynthesis?.getVoices() ?? []; } catch { /* no speech synthesis here */ }
     return vozesDoIdioma(bcp47(), lista.map((v) => ({ locale: v.lang.replace('_', '-'), engine: 'webspeech', voice: 'webspeech:' + v.name })));
   };
-  const vozes = (): readonly VozNeural[] => [...vozesDoNavegador(), ...vozesDoIdioma(bcp47()), ...(ctx.carregarKokoro ? vozesDoIdioma(bcp47(), VOZES_KOKORO) : [])];
+  const vozes = (): readonly VozNeural[] => [...vozesDoNavegador(), ...(ctx.carregarKokoro ? vozesDoIdioma(bcp47(), VOZES_KOKORO) : [])];
   /** The browser voice an entry names, or null. */
   const vozDoNavegador = (id: string | undefined): SpeechSynthesisVoice | null => {
     if (!id?.startsWith('webspeech:')) return null;
@@ -289,55 +235,20 @@ export function createTts(ctx: TtsCtx): Tts {
   function loadTTS(): void {
     if (ttsEngine || ttsLoading || ttsFailed) return;
     const sel = motorSel();
-    const escolhida = sel !== 'webspeech' ? vozAtual() : null;
-    if (escolhida?.engine === 'kokoro') { carregarMotorKokoro(escolhida); return; }
-    if (sel !== 'piper' && sel !== 'kokoro') { // Kitten/eSpeak NG ainda não entraram
+    if (sel !== 'kokoro') { // Kitten and eSpeak NG are not built
       if (sel !== 'webspeech') ctx.srAlert(t('sr.tts.engineNoLanguage'));
       return;
     }
     // ESTA MONTAGEM NÃO TRAZ MOTOR NEURAL (ADR-0094). Vem ANTES da pergunta do idioma de propósito: sem
     // porta, não há voz neural em idioma nenhum, e dizer «não há voz para o teu idioma» faria a criança
     // pensar que trocar de idioma resolveria. `ttsFailed` para não repetir a pergunta a cada fala.
-    const carregar = ctx.carregarVozNeural;
-    if (!carregar) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
-    // The voice in use for the current language (ADR-0185); a browser voice in use with Piper set explicitly gives way to the
-    // language's first Piper voice. None: another language's voice is NOT fetched — it would read this text with the wrong phonetics.
+    if (!ctx.carregarKokoro) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
+    // The voice in use for the current language (ADR-0185); a browser voice in use with Kokoro set explicitly gives way to the
+    // language's first Kokoro voice. None: another language's voice is NOT fetched — it would read this text with the wrong phonetics.
     const atual = vozAtual();
-    const fonte = atual?.engine === 'piper' ? atual : vozesDoIdioma(bcp47())[0] ?? null;
+    const fonte = atual?.engine === 'kokoro' ? atual : vozesDoIdioma(bcp47(), VOZES_KOKORO)[0] ?? null;
     if (!fonte) { ctx.srAlert(t('sr.tts.noNeuralForLanguage')); return; }
-    ttsLoading = true; vozCarregada = fonte.voice; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
-    carregar().then(async (mod) => { // o jogo é que sabe de onde; o Vite dele faz o code-split. Ver ADR-0021 e ADR-0094
-      // 🎯 onnxruntime runs the wasm the GAME bundled (ADR-0177, issue #173): the provider otherwise points
-      // `ort.env.wasm.wasmPaths` at cdnjs 1.18.0 — a host outside the policy, and not the version the game imports.
-      // `undefined` lets onnxruntime resolve the file Vite emitted next to it. The phonemizer is asked at the DELIVERY path
-      // of the provider's own addresses (read from the module, never written here): the delivery carries it in `pesados/`
-      // and the service worker answers from the checked cache. Without those addresses no wasmPaths goes, since a partial
-      // one would leave the phonemizer with none.
-      const locais = mod.TtsSession.WASM_LOCATIONS;
-      const wasmPaths = locais ? {
-        onnxWasm: undefined as unknown as string,
-        piperWasm: caminhoNaEntrega(locais.piperWasm),
-        piperData: caminhoNaEntrega(locais.piperData),
-      } : undefined;
-      const session = await mod.TtsSession.create({ voiceId: fonte.voice,
-        progress: (p: { loaded: number; total: number }) => { if (!p || !p.total) return; const pct = Math.round(p.loaded * 100 / p.total); if (pct >= _ttsPct + 25 && pct < 100) { _ttsPct = pct; ctx.srSay(t('sr.tts.progress', { pct })); } },
-        logger: () => {}, ...(wasmPaths ? { wasmPaths } : {}) });
-      // A FILA DE UM SAIU (ADR-0044, item 2). Ela era `if (busy) next = text; else speakNow(text)`, e o
-      // efeito, varrendo cinco itens de menu, era ouvir o PRIMEIRO inteiro e depois o ÚLTIMO — os três do
-      // meio sumiam, porque cada pedido sobrescrevia o `next`. Lento e lacunar, e quem não enxerga navega
-      // POR ESCUTA: a escuta ficava vários itens atrás do foco.
-      //
-      // A política agora mora em `platform/interruptible-speech`, pura e testada com falsos. Aqui só se
-      // diz COMO sintetizar, tocar e parar — o quando é lá, com a guarda de geração que impede uma síntese
-      // lenta de atropelar a mais nova.
-      // ADR-0183 §1: every utterance is measured — its words over its speech time, silent ends trimmed — and played at the
-      // child's rate over the voice's, through a media element that keeps the pitch (`preservesPitch`).
-      const fala = falaPorWav(fonte.voice, async (texto) => (await session.predict(texto)).arrayBuffer());
-      ttsEngine = { id: 'piper', speak: (text: string) => { fala.falar(text); } };
-      ttsLoading = false;
-      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) { /* noop */ }
-      narrate(t('sr.tts.ready', { s: ((performance.now() - t0) / 1000).toFixed(0) })); // já sai NA voz nova
-    }).catch(() => { ttsLoading = false; ttsFailed = true; ctx.srAlert(t('sr.tts.loadFailed')); });
+    carregarMotorKokoro(fonte);
   }
 
   function ttsSpeak(text: string): boolean {
@@ -362,7 +273,7 @@ export function createTts(ctx: TtsCtx): Tts {
     getEngineSel: motorSel, setEngineSel: (v) => { ttsEngineSelExplicito = v; },
     getEngine: () => ttsEngine, getVoiceObj: () => _ttsVoiceObj, setVoiceObj: (v) => { _ttsVoiceObj = v; },
     get loading() { return ttsLoading; }, get failed() { return ttsFailed; }, get narrateCount() { return _narrateCount; },
-    get neuralDisponivel() { return !!ctx.carregarVozNeural || !!ctx.carregarKokoro; },
+    get neuralDisponivel() { return !!ctx.carregarKokoro; },
     get kokoroDispositivo() { return kokoroDispositivo; },
     vozes, vozAtual, setVoz,
   };

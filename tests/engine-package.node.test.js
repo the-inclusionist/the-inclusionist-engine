@@ -136,7 +136,7 @@ describe('o pacote publicável não carrega construção que só o Vite entende 
 // ⚠️ O ACHADO QUE ESTE BLOCO EXISTE PARA IMPEDIR, e ele chegou de FORA: um consumidor real instalou
 // `@the-inclusionist/engine@6.36.1` do registro e o build dele parou em
 //
-//     Rolldown failed to resolve import "@mintplex-labs/piper-tts-web"
+//     Rolldown failed to resolve import "@example/neural-voice"
 //     from ".../@the-inclusionist/engine/dist-pkg/platform/tts.js"
 //
 // `platform/tts` é código EMBARCADO e nomeia esse pacote; o `package.json` o declarava em
@@ -144,7 +144,7 @@ describe('o pacote publicável não carrega construção que só o Vite entende 
 // ser compilada por ninguém — e nada aqui dentro tinha como saber, porque neste repositório o pacote
 // está presente (é devDependency da própria árvore) e tudo resolve.
 //
-// ⚠️ E O DEFEITO ESCONDEU-SE NA FORMA DINÂMICA. A linha é `import('@mintplex-labs/piper-tts-web')`
+// ⚠️ E O DEFEITO ESCONDEU-SE NA FORMA DINÂMICA. A linha é `import('@example/neural-voice')`
 // dentro de uma função, não um `from` no topo. Um crivo escrito só para `from '...'` ficaria verde por
 // cima dela para sempre. Por isso o `[Right]` abaixo prende as DUAS formas pelo nome.
 //
@@ -198,10 +198,10 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
   });
 
   it('[Right] o crivo enxerga a forma DINÂMICA, que é a forma em que o defeito veio', () => {
-    const dinamica = "    import('@mintplex-labs/piper-tts-web').then(async (mod) => {";
+    const dinamica = "    import('@example/neural-voice').then(async (mod) => {";
     const estatica = "import { Application } from 'pixi.js';";
     const lateral = "import 'algum-polyfill';";
-    expect(especificadoresNus(dinamica)).toEqual(['@mintplex-labs/piper-tts-web']);
+    expect(especificadoresNus(dinamica)).toEqual(['@example/neural-voice']);
     expect(especificadoresNus(estatica)).toEqual(['pixi.js']);
     expect(especificadoresNus(lateral)).toEqual(['algum-polyfill']);
   });
@@ -225,7 +225,7 @@ describe('todo pacote que o código embarcado NOMEIA é declarado como dependên
   });
 
   it('[Exception] prosa que MENCIONA o pacote não conta — este arquivo o menciona sete vezes', () => {
-    const comentada = "// a lib vem do npm: import('@mintplex-labs/piper-tts-web'), code-split pelo Vite";
+    const comentada = "// a lib vem do npm: import('@example/neural-voice'), code-split pelo Vite";
     expect(linhasDeCodigo(comentada)).toEqual([]);
   });
 });

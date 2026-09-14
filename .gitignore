@@ -24,10 +24,8 @@ assets-ref/
 # imagens de revisão (local, servidas para o José)
 _review/
 
-# MODELOS ONNX de TTS baixados para pesquisa: 484 MB em 1.091 arquivos, com tres
-# vozes piper de 60 MB cada (pt_BR-miro-high, pt_BR-faber-medium, pt_BR-jeff-medium)
-# e os wasm do sherpa. E artefato BAIXADO, nao fonte: reproduzivel pela URL,
-# pesado, e uma vez dentro da historia do git nao sai mais.
+# TTS ONNX models downloaded for research: 484 MB in 1,091 files, voices and the sherpa wasm. DOWNLOADED artefacts, not source:
+# reproducible from their URL, heavy, and once inside git history they never leave.
 docs/research/sherpa-wasm/
 
 # Vitest browser-mode artefatos (gerados por rodada, nao versionados)

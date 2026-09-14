@@ -122,7 +122,6 @@ const es: Record<string, string> = {
   'audio.sinksUnsupported': 'Este navegador no permite cambiar la salida (p. ej. Safari/iOS).',
   'audio.voiceSample': '¡Hola! Esta es la voz de la narración del Inclusionista. Uno, dos, tres, probando.',
   'tts.engine.webspeech': 'Voz del navegador (Web Speech)',
-  'tts.engine.piper': 'Piper (neuronal, sin conexión) — se descarga en el 1.er uso',
   'tts.engine.kokoro': 'Kokoro-82M (neuronal) — se descarga en el 1.er uso',
   'tts.engine.kitten': 'Kitten (neuronal) — se descarga en el 1.er uso',
   'tts.engine.espeak': 'eSpeak NG (integrado)',
@@ -279,11 +278,10 @@ const es: Record<string, string> = {
 
   // Narración por voz (TTS).
   'audio.noSystemVoices': '(sin voces del sistema)',
-  'sr.tts.engineNoLanguage': 'Este motor todavía no habla este idioma — por ahora, usa Piper (neuronal) o la voz del navegador.',
+  'sr.tts.engineNoLanguage': 'Este motor todavía no habla este idioma — por ahora, usa la voz del navegador.',
   'sr.tts.noNeuralForLanguage': 'Todavía no hay voz neuronal para este idioma — seguimos con la voz del navegador, que sí lo habla.',
   'sr.tts.neuralNotBundled': 'Esta versión del juego no trae voz neuronal — seguimos con la voz del navegador.',
   'sr.tts.downloading': 'Descargando la voz neuronal (necesita internet solo en el 1.er uso)…',
-  'sr.tts.progress': 'Voz neuronal: {pct} %.',
   'sr.tts.ready': 'Voz neuronal lista, en {s} segundos.',
   'sr.tts.loadFailed': 'No se pudo cargar la voz neuronal (necesita internet en el 1.er uso) — seguimos con la voz del navegador.',
 

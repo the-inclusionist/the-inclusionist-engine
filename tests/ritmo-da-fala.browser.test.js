@@ -12,21 +12,10 @@ const CHAVES = ['incl_speech_ppm', 'incl_tts_voz', 'incl_tts_engine'];
 const tocados = [];
 const playOriginal = HTMLMediaElement.prototype.play;
 
-/** A 16-bit mono WAV: `antes` s of silence, `fala` s of a tone, `depois` s of silence. */
-function wav(antes, fala, depois, taxa = 16000) {
-  const n = Math.round((antes + fala + depois) * taxa);
-  const buf = new ArrayBuffer(44 + n * 2);
-  const v = new DataView(buf);
-  const str = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
-  str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
-  v.setUint16(22, 1, true); v.setUint32(24, taxa, true); v.setUint32(28, taxa * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
-  str(36, 'data'); v.setUint32(40, n * 2, true);
-  for (let i = 0; i < n; i++) {
-    const t = i / taxa;
-    const s = t >= antes && t < antes + fala ? Math.sin(2 * Math.PI * 220 * t) * 0.5 : 0;
-    v.setInt16(44 + i * 2, Math.round(s * 32767), true);
-  }
-  return buf;
+/** A Kokoro waveform at 24 kHz: `antes` s of silence, `fala` s of a tone, `depois` s of silence. */
+function waveform(before, speech, after, rate = 24000) {
+  const n = Math.round((before + speech + after) * rate);
+  return Float32Array.from({ length: n }, (_, i) => { const t = i / rate; return t >= before && t < before + speech ? Math.sin(2 * Math.PI * 220 * t) * 0.5 : 0; });
 }
 
 const declaracao = () => ({
@@ -48,7 +37,10 @@ beforeAll(async () => {
   motor = createGame({
     acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, players: [{ ctrl: 0 }],
     // ten words in 2 s of speech between 0.5 s silent ends: the voice says 300 words a minute
-    carregarVozNeural: async () => ({ TtsSession: { create: async () => ({ predict: async () => ({ arrayBuffer: async () => wav(0.5, 2, 0.5) }) }) } }),
+    carregarKokoro: async () => ({
+      fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }), voz: async () => new Float32Array(256),
+      sessao: async () => ({ sintetizar: async () => waveform(0.5, 2, 0.5) }),
+    }),
   });
 });
 afterAll(() => {

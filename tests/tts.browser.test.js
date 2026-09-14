@@ -24,7 +24,8 @@ beforeEach(() => {
   // mínimo que `speakWebSpeech` toca, para poder LER o que foi pedido ao navegador.
   Object.defineProperty(window, 'speechSynthesis', {
     configurable: true,
-    value: { cancel: () => {}, speak: (u) => spoke.push(u), getVoices: () => [] },
+    // one browser voice per language: a language with no voice at all has narration locked (ADR-0185 §4, ADR-0207)
+    value: { cancel: () => {}, speak: (u) => spoke.push(u), getVoices: () => [{ name: 'A', lang: 'pt-BR' }, { name: 'B', lang: 'en-US' }, { name: 'C', lang: 'es-ES' }] },
   });
   globalThis.SpeechSynthesisUtterance = class {
     constructor(t) { this.text = t; this.lang = ''; this.rate = 0; this.volume = 0; this.voice = null; }

@@ -115,19 +115,12 @@
   },
   "comment:no-dependencies": [
     "⚠️ ESTE PACOTE NÃO TEM `dependencies`, E ISSO É UMA DECISÃO MEDIDA (ADR-0094), não um acaso.",
-    "A 6.36.1 saiu com `@mintplex-labs/piper-tts-web` em `devDependencies` enquanto `platform/tts` — código",
-    "EMBARCADO, alcançado por `createGame` — o nomeava num `import()`. O npm não instala devDependencies para",
-    "quem consome, então a versão publicada NÃO COMPILAVA para ninguém (ADR-0093).",
-    "O conserto óbvio era mover para `dependencies`, e ele foi feito e DESFEITO no mesmo dia, por uma medida",
-    "que faltava: o fornecedor traz `onnxruntime-web` como peer NÃO-opcional, que o npm instala sozinho —",
-    "**135,4 MB** no `node_modules` de todo consumidor, incluindo um jogo que nunca fale por voz neural.",
-    "⚠️ `optionalDependencies` NÃO resolveria: o npm as instala por omissão; só tolera a falha da instalação.",
-    "O motor neural passa a chegar por PORTA — `carregarVozNeural` em `CreateGameOptions`, uma linha do lado",
-    "do jogo. `main.ts` (o app DESTE repositório, que fica fora do pacote) é o único ponto da árvore que",
-    "nomeia o fornecedor, e é por isso que ele continua em `devDependencies` aqui.",
-    "O gate que prende as duas direções é `tests/engine-package.node.test.js`: nenhum módulo embarcado pode",
-    "nomear pacote não declarado, e nada declarado pode ficar sem quem o nomeie. É ele que faz a troca por",
-    "sherpa-onnx-wasm (ADR-0022) não reabrir o mesmo buraco em silêncio."
+    "Embedded code that names a package the consumer's npm does not install publishes an engine that does not compile (ADR-0093);",
+    "a neural provider in `dependencies` lands its runtime in every consumer, a game that never speaks neurally included.",
+    "So the neural voice arrives through a PORT — `carregarKokoro` in `CreateGameOptions` (ADR-0198, ADR-0207), filled by the game.",
+    "This repository's quiz demo, outside the package, fills it, which is why `espeak-ng` and `onnxruntime-web` are devDependencies here.",
+    "`tests/engine-package.node.test.js` holds both directions: no embedded module names an undeclared package, and nothing declared",
+    "is left without a module naming it."
   ],
   "comment:peerDependencies": [
     "PixiJS is a PEER, not a dependency. Measured on the emitted package (2026-09-05): exactly TWO shipped",
@@ -164,7 +157,6 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.0",
-    "@mintplex-labs/piper-tts-web": "^1.0.4",
     "@release-it/conventional-changelog": "^11.0.1",
     "@types/node": "^22.0.0",
     "@vitest/browser": "^4.0.0",

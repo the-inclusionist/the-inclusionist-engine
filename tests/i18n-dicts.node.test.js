@@ -96,7 +96,7 @@ describe('dicionários de locale — estrutura', () => {
       // ordem (ação antes da posição) precisa poder inverter — e só consegue se a ordem morar no dicionário.
       'sr.touch.slotSet',
       // 'Motor de voz: {motor}.' — "motor de voz" é a mesma expressão em pt-BR e es, palavra por palavra;
-      // e o nome do motor (Piper, Kokoro) é nome próprio e chega pelo parâmetro, já sem tradução.
+      // and the engine's name (Kokoro) is a proper noun that arrives through the parameter, untranslated.
       'sr.audio.engineSet',
       // 'Modo TEA: {v}.' — "TEA" (Transtorno do Espectro Autista / Trastorno del Espectro Autista) é a mesma
       // sigla nas duas línguas, e o nível chega pelo parâmetro, esse sim traduzido (calmo/calmado).

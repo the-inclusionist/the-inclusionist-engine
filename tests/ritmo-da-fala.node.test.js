@@ -3,7 +3,7 @@
 // each engine mapped by MEASURING the voice.
 //
 // 📏 The record: «The Web Speech API's `rate` is a multiplier, not words per minute: the mapping needs each voice's words per minute
-// at rate 1, measured, not assumed.» Measured in the lab on 2026-09-14: `pt_BR-faber-medium` speaks 255 words per minute of speech.
+// at rate 1, measured, not assumed.» Measured in the lab on 2026-09-14: a neural voice spoke 255 words per minute of speech.
 // So the engine measures every utterance it synthesises — words over speech time, silent ends trimmed — and plays it at the ratio.
 //
 // MUTATIONS CHECKED — at the end of the file.

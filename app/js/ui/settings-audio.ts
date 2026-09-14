@@ -54,9 +54,8 @@ export interface TtsPanel {
   loadTTS: () => void;
   narrate: (text: string) => void;
   /**
-   * ESTA MONTAGEM TEM MOTOR NEURAL? (ADR-0094) OPCIONAL, e a ausência vale `true`: um falso de teste
-   * escrito antes deste campo não tem opinião sobre motores neurais, e fazê-lo esconder o Piper mudaria o
-   * que esse teste afirma sem que ninguém tenha escrito a mudança.
+   * Does this assembly have a neural engine (the game's Kokoro port, ADR-0198)? Optional, absent reads `true`: a panel test
+   * fake written before this field has no opinion on neural engines.
    */
   neuralDisponivel?: boolean;
   /** The voices of the language (ADR-0185). Optional: a panel driven without them offers no «Voz» list and locks nothing. */
@@ -65,24 +64,23 @@ export interface TtsPanel {
   setVoz?: (id: string) => boolean;
 }
 
-/** A voice as this panel lists it: the provider's identifier, `locale-name-quality`. */
+/** A voice as this panel lists it: `webspeech:<name>` for the browser's, `xx_name` for Kokoro's. */
 export interface VozDoPainel { readonly voice: string; readonly engine?: string; readonly boa?: boolean }
 
-/** The name a child sees for a voice: the middle of its identifier — `pt_BR-faber-medium` is «Faber». */
+/** The name a child sees for a voice: the browser's name, or the name in a Kokoro identifier — `pf_dora` is «Dora». */
 function nomeDaVoz(v: VozDoPainel): string {
-  // a browser voice is named by the browser (ADR-0200); Piper ids read `locale-name-quality`; Kokoro ids read `xx_name` (`pf_dora`)
+  // a browser voice is named by the browser (ADR-0200); Kokoro ids read `xx_name` (`pf_dora`)
   // («Microsoft Maria - Portuguese (Brazil)» is «Microsoft Maria»: the language is already the list's, and no parentheses, ADR-0158)
   if (v.voice.startsWith('webspeech:')) return v.voice.slice('webspeech:'.length).replace(/\s*\([^)]*\)/g, '').split(' - ')[0]!.trim();
-  const nome = v.voice.includes('-') ? (v.voice.split('-')[1] ?? v.voice) : (v.voice.split('_')[1] ?? v.voice);
+  const nome = v.voice.split('_')[1] ?? v.voice;
   return nome.charAt(0).toUpperCase() + nome.slice(1);
 }
 /**
- * What the list SHOWS: a Piper voice carries a feather — the Dev: «uma vez que elas carregam bem menos dados de Kokoro para a
- * memória por vez» — and Kokoro's two good voices, Heart and Bella, a heart (ADR-0198 §3). Only shown: what is said is the name
- * alone (ADR-0159 rule 12, no glyph in a spoken name).
+ * What the list SHOWS: Kokoro's two good voices, Heart and Bella, carry a heart (ADR-0198 §3). Only shown: what is said is the
+ * name alone (ADR-0159 rule 12, no glyph in a spoken name).
  */
 function rotuloDaVoz(v: VozDoPainel): string {
-  return (v.engine === 'piper' ? '🪶 ' : v.boa ? '❤️ ' : '') + nomeDaVoz(v);
+  return (v.boa ? '❤️ ' : '') + nomeDaVoz(v);
 }
 
 /** The rows a missing voice locks (ADR-0185 §4): narration, its volume and rate, the spoken index, and the voice. */
@@ -210,25 +208,18 @@ export function caneDivMessage(div: number): string {
  *  put; what translates is the parenthetical that explains each one. Keys, not text — see input/devices. */
 export const TTS_ENGINE_OPTIONS: readonly (readonly [string, string])[] = [
   ['webspeech', 'tts.engine.webspeech'],
-  ['piper', 'tts.engine.piper'],
   ['kokoro', 'tts.engine.kokoro'],
   ['kitten', 'tts.engine.kitten'],
   ['espeak', 'tts.engine.espeak'],
 ];
 
 /**
- * Os motores que ESTA MONTAGEM pode de facto oferecer (ADR-0094).
- *
- * ⚠️ Desde que o motor neural passou a chegar por PORTA (`ctx.carregarVozNeural`), «o Piper existe» deixou
- * de ser verdade sobre a engine e passou a ser verdade sobre o JOGO. Oferecer uma opção que não pode
- * funcionar é pior que uma opção a menos: quem a escolhe fica à espera de um download que nunca começa, e
- * quem navega por escuta não tem como ver que não começou.
- *
- * Só o `piper` é filtrado. `kokoro`/`kitten`/`espeak` também não funcionam hoje — «ainda não entraram» —,
- * mas isso é anterior a este registro e escondê-los aqui mudaria comportamento que ninguém pediu para mudar.
+ * The engines THIS assembly can offer (ADR-0094): the neural one arrives through the game's Kokoro port (ADR-0198, ADR-0207), so
+ * without it Kokoro is not offered — a choice that cannot work leaves whoever picks it waiting for a download that never starts.
+ * `kitten`/`espeak` are not built and stay as they were.
  */
 export function opcoesDeMotor(neuralDisponivel: boolean): readonly (readonly [string, string])[] {
-  return neuralDisponivel ? TTS_ENGINE_OPTIONS : TTS_ENGINE_OPTIONS.filter(([v]) => v !== 'piper');
+  return neuralDisponivel ? TTS_ENGINE_OPTIONS : TTS_ENGINE_OPTIONS.filter(([v]) => v !== 'kokoro');
 }
 
 export interface VoiceLike { name: string; lang: string; }

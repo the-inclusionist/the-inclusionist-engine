@@ -2,13 +2,13 @@
 
 > The engine's voice, recognition and vision models, one section each: **role**, **where it comes from**, **how the engine uses
 > it**, **how to rebuild it from zero**, and **how to check it**. Decisions: ADR-0190, ADR-0193, ADR-0194, ADR-0197, ADR-0198,
-> ADR-0200, ADR-0201, ADR-0202, ADR-0203 (all in `the-inclusionist-docs`). Issues: #181, #184, #185, #189, #190.
+> ADR-0200, ADR-0201, ADR-0202, ADR-0203, ADR-0207 (all in `the-inclusionist-docs`). Issues: #181, #184, #185, #189, #190, #193.
 
 ## The order the engine tries
 
 | task | first | fallback (carried by the engine or the game) |
 |---|---|---|
-| speaking (TTS) | the browser's Web Speech voice for the language (ADR-0200) | Piper, then Kokoro through the game's port (ADR-0198) |
+| speaking (TTS) | the browser's Web Speech voice for the language (ADR-0200) | Kokoro through the game's port (ADR-0198; Piper left, ADR-0207) |
 | commands and menu names by voice | Web Speech recognition **on the device only** (ADR-0200 erratum) | Vosk small, the game's words as grammar (ADR-0193, ADR-0194) |
 | reading assessment (a child reads a text aloud) | Web Speech recognition on the device | Moonshine where it covers the language (en, es), Whisper for pt (ADR-0201) |
 | hands, face and eyes | — | MediaPipe Gesture Recognizer and Face Landmarker (ADR-0197, ADR-0199, ADR-0202) |
@@ -29,16 +29,6 @@ uploaded by the Dev to the project's **Cloudflare**, and move to **Hugging Face*
 Cloudflare address until then; the sha256 never changes with the move.
 
 ---
-
-## Piper voices — TTS fallback
-
-- **What:** `pt_BR-faber-medium`, `en_US-amy-medium`, `en_US-ryan-medium`, `es_MX-claude-high` (fp32 VITS). MIT (piper), voices per
-  their model cards.
-- **Source:** `huggingface.co/diffusionstudio/piper-voices` (`platform/voice-plan.HOST_DOS_MODELOS`), and the phonemizer
-  `@diffusionstudio/piper-wasm@1.0.0` (`piper_phonemize.wasm`/`.data`) — all in the catalogue with sha256.
-- **Engine use:** `CreateGameOptions.carregarVozNeural: () => import('@mintplex-labs/piper-tts-web')`. `platform/tts` speaks through a
-  media element at the child's rate (`core/speech-rate`, ADR-0196).
-- **Rebuild:** nothing to build — upstream files, pinned by sha256.
 
 ## Kokoro — TTS fallback, through the game's port
 

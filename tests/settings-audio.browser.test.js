@@ -238,12 +238,12 @@ describe('ui/settings-audio — modo cego / bengala', () => {
 });
 
 describe('ui/settings-audio — TTS', () => {
-  it('[Interface] renderAudio() preenche #tts-engine com os 5 motores e seleciona o atual', () => {
+  it('[Interface] renderAudio() fills #tts-engine with the 4 engines and selects the current one', () => {
     const { ctx } = fullCtx();
     const api = initSettingsAudio(ctx);
     api.renderAudio();
     const sel = document.querySelector('#tts-engine');
-    expect(sel.options.length).toBe(5);
+    expect(sel.options.length).toBe(4);
     expect(sel.value).toBe('webspeech');
   });
 
@@ -252,7 +252,7 @@ describe('ui/settings-audio — TTS', () => {
     const api = initSettingsAudio(ctx);
     api.renderAudio();
     api.renderAudio();
-    expect(document.querySelector('#tts-engine').options.length).toBe(5);
+    expect(document.querySelector('#tts-engine').options.length).toBe(4);
   });
 
   it('[Interface] com vozes pt-BR disponíveis, #tts-voice lista só elas e escolhe a 1ª', () => {
@@ -402,10 +402,10 @@ describe('ui/settings-audio — restaurar padrões DESTE menu (ADR-0028)', () =>
     // dela numa sala compartilhada, e trocar o motor de voz a deixaria sem a voz que ela entende.
     const players = [{ audioSink: 'fone-da-crianca' }];
     const { ctx, tts } = fullCtx({ players });
-    tts.setEngineSel('piper');
+    tts.setEngineSel('kokoro');
     initSettingsAudio(ctx);
     document.querySelector('#audio-reset').click();
-    expect(tts.getEngineSel()).toBe('piper');
+    expect(tts.getEngineSel()).toBe('kokoro');
     expect(players[0].audioSink).toBe('fone-da-crianca');
   });
 });
@@ -513,8 +513,8 @@ describe('ui/settings-audio — o modo cego ANUNCIA, como os cinco irmãos deste
 // ===================================================================================================
 // THE VOICE CHOICE AND THE LOCK (ADR-0185; issue #180)
 // ===================================================================================================
-const FABER = { locale: 'pt-BR', engine: 'piper', voice: 'pt_BR-faber-medium' };
-const OUTRA = { locale: 'pt-BR', engine: 'piper', voice: 'pt_BR-edresson-low' };
+const DORA = { locale: 'pt-BR', engine: 'kokoro', voice: 'pf_dora' };
+const OUTRA = { locale: 'pt-BR', engine: 'kokoro', voice: 'pm_alex' };
 function comVozes(vozes) {
   const r = fullCtx({});
   let escolhida = null;
@@ -529,48 +529,47 @@ const LINHAS_DA_FALA = ['#opt-tts', '#tts-vol', '#opt-menuindex', '#tts-voz'];
 
 describe('ui/settings-audio — the voice choice (ADR-0185)', () => {
   it('🔴 [Right] the «Voz» list holds the voices of the language, the one in use selected', () => {
-    const { ctx } = comVozes([FABER, OUTRA]);
+    const { ctx } = comVozes([DORA, OUTRA]);
     initSettingsAudio(ctx).renderAudio();
     const sel = document.querySelector('#tts-voz');
-    expect([...sel.options].map((o) => o.value)).toEqual(['pt_BR-faber-medium', 'pt_BR-edresson-low']);
-    expect(sel.value).toBe('pt_BR-faber-medium');
-    expect([...sel.options].map((o) => o.textContent), 'the option shows the identifier, not a name').toEqual(['🪶 Faber', '🪶 Edresson']);
+    expect([...sel.options].map((o) => o.value)).toEqual(['pf_dora', 'pm_alex']);
+    expect(sel.value).toBe('pf_dora');
+    expect([...sel.options].map((o) => o.textContent), 'the option shows the identifier, not a name').toEqual(['Dora', 'Alex']);
   });
 
-  it('🔴 [Right] a Piper voice carries a feather, and a Kokoro voice does not — Piper holds far less in memory at a time', () => {
-    // The Dev: «coloque o emoji de uma pena 🪶 antes dos nomes das vozes Piper, uma vez que elas carregam bem menos dados de
-    // Kokoro para a memória por vez.» Only in what is SEEN: the choice is said by the name alone (ADR-0159 rule 12).
-    const KOKORO = { locale: 'pt-BR', engine: 'kokoro', voice: 'pf_dora' };
-    const { ctx, said, tts } = comVozes([FABER, KOKORO]);
+  it('🔴 [Right] a good Kokoro voice carries a heart only where it is SEEN — the choice is said by the name alone', () => {
+    // ADR-0198 §3: Heart and Bella are marked; ADR-0159 rule 12: no glyph in a spoken name.
+    const HEART = { locale: 'en-US', engine: 'kokoro', voice: 'af_heart', boa: true };
+    const { ctx, said, tts } = comVozes([HEART, { locale: 'en-US', engine: 'kokoro', voice: 'am_adam' }]);
     initSettingsAudio(ctx).renderAudio();
     const sel = document.querySelector('#tts-voz');
-    expect([...sel.options].map((o) => o.textContent)).toEqual(['🪶 Faber', 'Dora']);
-    sel.value = 'pt_BR-faber-medium';
+    expect([...sel.options].map((o) => o.textContent)).toEqual(['❤️ Heart', 'Adam']);
+    sel.value = 'af_heart';
     sel.dispatchEvent(new Event('change', { bubbles: true }));
-    expect(tts.vozAtual().voice).toBe('pt_BR-faber-medium');
-    expect(said.at(-1) ?? '', 'the feather is spoken').not.toMatch(/🪶/);
+    expect(tts.vozAtual().voice).toBe('af_heart');
+    expect(said.at(-1) ?? '', 'the heart is spoken').not.toMatch(/❤️/);
   });
 
   it('🔴 [Right] the list opens on the voice in use, even when it is not the first', () => {
     // a <select> opens on its first option by itself, so only a pick further down shows the list was set
-    const { ctx, tts } = comVozes([FABER, OUTRA]);
-    tts.setVoz('pt_BR-edresson-low');
+    const { ctx, tts } = comVozes([DORA, OUTRA]);
+    tts.setVoz('pm_alex');
     initSettingsAudio(ctx).renderAudio();
-    expect(document.querySelector('#tts-voz').value).toBe('pt_BR-edresson-low');
+    expect(document.querySelector('#tts-voz').value).toBe('pm_alex');
   });
 
   it('🔴 [Right] picking a voice sets it and says it', () => {
-    const { ctx, tts, said } = comVozes([FABER, OUTRA]);
+    const { ctx, tts, said } = comVozes([DORA, OUTRA]);
     initSettingsAudio(ctx).renderAudio();
     const sel = document.querySelector('#tts-voz');
-    sel.value = 'pt_BR-edresson-low';
+    sel.value = 'pm_alex';
     sel.dispatchEvent(new Event('change', { bubbles: true }));
-    expect(tts.vozAtual().voice).toBe('pt_BR-edresson-low');
-    expect(said.at(-1) ?? '', 'the choice was silent').toMatch(/Edresson/);
+    expect(tts.vozAtual().voice).toBe('pm_alex');
+    expect(said.at(-1) ?? '', 'the choice was silent').toMatch(/Alex/);
   });
 
   it('🎯 [Zero] with a voice, nothing of the speech is locked', () => {
-    const { ctx } = comVozes([FABER]);
+    const { ctx } = comVozes([DORA]);
     initSettingsAudio(ctx).renderAudio();
     for (const id of LINHAS_DA_FALA) expect(document.querySelector(id).getAttribute('aria-disabled'), id).toBeNull();
   });

@@ -99,23 +99,9 @@ export default defineConfig({
         // The precache keeps a page's whole response, headers included (measured: COOP, COEP and CSP on the cached `quiz.html`);
         // its revision hashed only the file, so a changed `_headers` never reached an install (ADR-0192, issue #186).
         manifestTransforms: [async (entradas) => revisarPaginasPelosCabecalhos(entradas, hashDosCabecalhos(readFileSync(join(RAIZ_REPO, 'app', 'public', '_headers'), 'utf8')))],
-        // ========================= A ROTA QUE FAZ OS 241 MB SERVIREM PARA ALGUMA COISA =========================
-        // 🔴 MEDIDO EM 2026-09-09: o `platform/pesados` descia os quatro modelos de voz no primeiro
-        // carregamento e guardava-os na Cache Storage `incl-pesados-v1` — e NINGUEM OS LIA. A Cache Storage
-        // nao e consultada sozinha por um `fetch`: sem uma rota do service worker, o pedido da biblioteca de
-        // voz ia direto a rede e descarregava os mesmos 241 MB outra vez. Ate 482 MB num link de escola para
-        // UMA voz.
-        // 🎯 `CacheOnly` with the SAME cache name the fetcher writes (ADR-0177, issue #173): the library's request finds what
-        // descended from the delivery's own `pesados/` and never leaves the machine — not on a miss either, when a network
-        // fallback would reach the upstream host. Not there yet means no neural voice, and the download reports why.
-        // ⚠️ E o alcance e ESTREITO de proposito: so o host dos modelos, nomeado no
-        // `platform/voice-plan.HOST_DOS_MODELOS`. Uma rota larga sobre `huggingface.co` cacharia qualquer
-        // coisa que alguem viesse a buscar de la, o que e a porta larga que a #119 fechou noutro sitio.
-        // 📌 Um crivo prende os dois lados juntos (`tests/rota-dos-modelos.node.test.js`): a rota tem de
-        // nomear o mesmo host e o mesmo nome de cache que o codigo usa, senao ela existe e nao serve nada.
         runtimeCaching: [
-          // The delivery's own `pesados/` (ADR-0177, issue #173): what the engine asks at the delivery path — the voice's
-          // phonemizer — is answered from the checked cache, where the fetcher keeps it under the upstream address. On a miss
+          // The delivery's own `pesados/` (ADR-0177, issue #173): what a page asks at the delivery path — Kokoro's model
+          // and voices, through the game's port — is answered from the checked cache, where the fetcher keeps it under the upstream address. On a miss
           // the request goes to this origin, never a third party; the fetcher's own download passes through the same way.
           {
             urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.includes('/pesados/'),
@@ -127,7 +113,7 @@ export default defineConfig({
               plugins: [{ cacheWillUpdate: async () => null, cacheKeyWillBeUsed: chaveDaEntrega as unknown as (p: { request: Request }) => Promise<string> }],
             },
           },
-          // Os RUNTIMES fixados (MediaPipe e piper/onnxruntime), pela mesma razao e com a mesma cache: o
+          // O RUNTIME fixado (MediaPipe), pela mesma razao e com a mesma cache: o
           // buscador desce-os na instalacao e sem rota o `import()` deles iria a rede outra vez. ⚠️ O alcance
           // e por PACOTE e nao por dominio — `cdn.jsdelivr.net` inteiro seria a porta larga que a #119 fechou.
           {
@@ -139,20 +125,6 @@ export default defineConfig({
               // #168: the route READS the checked cache and never WRITES it — only `platform/pesados` writes, after the sha256.
               // Without this a library request that came first would be cached unchecked, and the fetcher would then trust it.
               plugins: [{ cacheWillUpdate: async () => null }],
-            },
-          },
-          {
-            urlPattern: /^https:\/\/huggingface\.co\/diffusionstudio\/piper-voices\/resolve\/main\//,
-            handler: 'CacheOnly',
-            options: {
-              cacheName: 'incl-pesados-v2',
-              // #168: the route READS the checked cache and never WRITES it — only `platform/pesados` writes, after the sha256.
-              // Without this a library request that came first would be cached unchecked, and the fetcher would then trust it.
-              plugins: [{ cacheWillUpdate: async () => null }],
-              // Sem isto o Workbox recusa guardar respostas opacas; as do Hugging Face vem com
-              // `Access-Control-Allow-Origin: *` (medido), entao 0 nao e necessario e seria pior — uma
-              // resposta opaca de 60 MB conta como muito mais no orcamento de quota do navegador.
-              cacheableResponse: { statuses: [200] },
             },
           },
         ],

@@ -24,6 +24,10 @@ executable code and models from four third-party hosts, by default, on the child
 📌 **B1–B3 run by default at every boot** (`createGame`'s `baixarPesados`, idempotent: what is cached is not fetched
 again), one download at a time, in the background.
 
+📌 **Since this pass:** the heavy files come from the delivery's own origin (ADR-0177), so B1–B3 are contacted by the build; and
+**B1's four Piper voices and B2's `piper-tts-web` left the engine on 2026-09-14** (ADR-0207) — the voices' training-data licence could
+not be shown. The only neural voice is Kokoro, through the game's port.
+
 ### Threats, what holds them, and what does not
 
 | STRIDE | Threat | Boundary | What holds it today | Gap |

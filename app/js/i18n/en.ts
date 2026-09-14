@@ -121,7 +121,6 @@ const en: Record<string, string> = {
   'audio.sinksUnsupported': 'This browser cannot switch audio output (e.g. Safari/iOS).',
   'audio.voiceSample': 'Hello! This is the Inclusionist narration voice. One, two, three, testing.',
   'tts.engine.webspeech': 'Browser voice (Web Speech)',
-  'tts.engine.piper': 'Piper (neural, offline) — downloads on first use',
   'tts.engine.kokoro': 'Kokoro-82M (neural) — downloads on first use',
   'tts.engine.kitten': 'Kitten (neural) — downloads on first use',
   'tts.engine.espeak': 'eSpeak NG (built in)',
@@ -279,11 +278,10 @@ const en: Record<string, string> = {
 
   // Voice narration (TTS).
   'audio.noSystemVoices': '(no system voices)',
-  'sr.tts.engineNoLanguage': 'This engine does not speak this language yet — for now, use Piper (neural) or the browser voice.',
+  'sr.tts.engineNoLanguage': 'This engine does not speak this language yet — for now, use the browser voice.',
   'sr.tts.noNeuralForLanguage': 'There is no neural voice for this language yet — carrying on with the browser voice, which speaks it.',
   'sr.tts.neuralNotBundled': 'This build of the game ships no neural voice — carrying on with the browser voice.',
   'sr.tts.downloading': 'Downloading the neural voice (needs the internet on the first use only)…',
-  'sr.tts.progress': 'Neural voice: {pct}%.',
   'sr.tts.ready': 'Neural voice ready, in {s} seconds.',
   'sr.tts.loadFailed': 'The neural voice could not be loaded (it needs the internet on the first use) — carrying on with the browser voice.',
 

@@ -18,7 +18,6 @@
       "aoProgredirPesados?",
       "baixarPesados?",
       "carregarKokoro?",
-      "carregarVozNeural?",
       "comIndice?",
       "controleNaTela?",
       "declaration",
@@ -1205,17 +1204,6 @@
     "type ComandoOuvido": "{ readonly tipo: 'palavra'"
   },
   "platform/tts.ts": {
-    "interface SessaoNeural": [
-      "predict"
-    ],
-    "interface LocaisDoRuntime": [
-      "onnxWasm",
-      "piperData",
-      "piperWasm"
-    ],
-    "interface ModuloNeural": [
-      "TtsSession"
-    ],
     "interface SessaoKokoro": [
       "sintetizar"
     ],
@@ -1228,7 +1216,6 @@
     "interface TtsCtx": [
       "audioOut",
       "carregarKokoro?",
-      "carregarVozNeural?",
       "catNode",
       "criarAudio?",
       "ensureAC",
@@ -1258,7 +1245,6 @@
       "vozAtual",
       "vozes"
     ],
-    "type CarregarVozNeural": "() => Promise<ModuloNeural>",
     "type CarregarKokoro": "() => Promise<ModuloKokoro>"
   },
   "platform/voice-plan.ts": {
@@ -1266,10 +1252,7 @@
       "engine",
       "locale",
       "voice"
-    ],
-    "type EstadoDaVoz": "'ausente' | 'a-buscar' | 'pronta' | 'falhou'",
-    "type EstadosDasVozes": "Readonly<Record<string, EstadoDaVoz | undefined>>",
-    "type VozEmUso": "| { readonly tipo: 'neural'"
+    ]
   },
   "render/camera.ts": {
     "interface Tamanho": [

@@ -1,14 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE VOICE'S PHONEMIZER COMES FROM THE DELIVERY, LIKE EVERY OTHER HEAVY FILE (ADR-0177, issue #173).
-//
-// 📌 `@mintplex-labs/piper-tts-web` turns text into phonemes with espeak-ng compiled to WebAssembly: `piper_phonemize.wasm`
-// and its `piper_phonemize.data` (the pronunciation rules). It fetched both from jsDelivr on every first sentence — a third
-// party the child's device contacted, and nothing to speak with offline. 📏 Measured on 2026-09-13: 635 212 and 18 077 249
-// bytes, the sha256 equal to jsDelivr's package metadata.
-//
-// Three halves that fail apart silently: the catalogue carries the provider's own addresses (read from the installed
-// library, not repeated here); the engine asks the provider to fetch them at the delivery path; and the service worker
-// answers a delivery path from the checked cache, where the fetcher keeps it under the upstream address.
+// A HEAVY FILE IS SERVED FROM THE DELIVERY'S OWN `pesados/` (ADR-0177, issue #173): a delivery path maps back to the upstream
+// address the fetcher keeps it under, and the service worker answers that path from the checked cache without writing it.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
@@ -16,37 +8,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PESADOS, caminhoNaEntrega, chaveDaEntrega } from '../app/js/platform/pesados.js';
 
-const LIB = readFileSync(join(process.cwd(), 'node_modules', '@mintplex-labs', 'piper-tts-web', 'dist', 'piper-tts-web.js'), 'utf8');
 const CONFIG = readFileSync(join(process.cwd(), 'vite.config.ts'), 'utf8');
 const CONFIG_LIMPA = CONFIG.split(/\r?\n/).filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
 
-/** The provider's default phonemizer addresses, as its bundle writes them. */
-function doFornecedor() {
-  const base = LIB.match(/const WASM_BASE = "([^"]+)"/)?.[1];
-  const usa = /piperData:\s*`\$\{WASM_BASE\}\.data`/.test(LIB) && /piperWasm:\s*`\$\{WASM_BASE\}\.wasm`/.test(LIB);
-  return base && usa ? { piperWasm: `${base}.wasm`, piperData: `${base}.data` } : null;
-}
-
-describe('the phonemizer, from the delivery', () => {
-  it('🔴 [Right] the catalogue pins both phonemizer files at the provider\'s own addresses, with size and sha256', () => {
-    const f = doFornecedor();
-    expect(f, 'the installed provider no longer writes its phonemizer addresses this way — measure it again').not.toBeNull();
-    for (const url of [f.piperWasm, f.piperData]) {
-      const e = PESADOS.find((p) => p.url === url);
-      expect(e, `${url} is not in the download catalogue: the voice fetches it from a third party`).toBeTruthy();
-      expect(e.sha256, `${e.id} pins no sha256`).toMatch(/^[0-9a-f]{64}$/);
-      expect(e.bytes).toBeGreaterThan(0);
-    }
-  });
-
-  it('🔴 [Zero] the voice runtime is not downloaded — the game\'s bundle is what runs (ADR-0184)', () => {
-    const runtime = PESADOS.filter((p) => p.url && /piper-tts-web|onnxruntime-web/.test(p.url)).map((p) => p.id);
-    expect(runtime, 'a voice-runtime file nothing reads is still downloaded').toEqual([]);
-    // the pair: what the provider asks for stays — the phonemizer and the voice models
-    expect(PESADOS.some((p) => p.id === 'voz:fonemizador')).toBe(true);
-    expect(PESADOS.filter((p) => p.url && p.url.includes('huggingface.co')).length).toBeGreaterThan(0);
-  });
-
+describe('heavy files, from the delivery', () => {
   it('🔴 [Right] a delivery path maps back to the upstream address the fetcher keeps it under', () => {
     for (const p of PESADOS.filter((x) => x.url)) {
       expect(chaveDaEntrega(`https://escola.example/jogo/${caminhoNaEntrega(p.url)}`)).toBe(p.url);
@@ -69,7 +34,6 @@ describe('the phonemizer, from the delivery', () => {
 });
 
 // ============================== MUTATIONS CHECKED ==============================
-//   P1 the phonemizer data entry removed from the catalogue     🔴 catalogue
 //   P2 the key keeps the delivery path                          🔴 maps back
 //   P3 any path gets a key                                      🔴 [Boundary]
 //   P4 the route writes the cache                               🔴 route

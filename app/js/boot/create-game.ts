@@ -74,7 +74,7 @@ import * as state from '../core/state.js';
 import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
-import { createTts, type CarregarVozNeural, type CarregarKokoro } from '../platform/tts.js';
+import { createTts, type CarregarKokoro } from '../platform/tts.js';
 import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain, setHearingLossGraph } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
@@ -208,17 +208,10 @@ export interface Declinios {
   /** Sem "ator da pausa" — quem apertou o botão que abriu o menu. */
   readonly semAtorDePausa?: boolean;
   /**
-   * Sem voz neural — este jogo não abre a porta do ADR-0094.
+   * No neural voice — this game does not fill the Kokoro port (ADR-0198).
    *
-   * ⚠️ EXISTE PORQUE A AUSÊNCIA ESTAVA A SER SILENCIOSA, e a medição de 2026-09-08 diz quanto: dos SEIS jogos
-   * do catálogo local, TRÊS declaram `carregarVozNeural` (platformer, 15-puzzle, 2048) e TRÊS não
-   * (`game-soccer`, `whackwhack`, `game-chess`). Nos três últimos não há voz neural nenhuma, e nada o dizia.
-   *
-   * ⚠️ E ISSO CONTRADIZ UMA PROMESSA ESCRITA. O ADR-0065 §3 diz que as vozes «fazem parte da engine, e não do
-   * jogo em si» e que um cartucho «não tem de saber que existe»; o ADR-0094 — com razão, e por 135 MB de WASM
-   * — passou a exigir UMA LINHA do jogo. As duas coisas podem ser verdade ao mesmo tempo (a engine é dona das
-   * VOZES, o jogo nomeia o FORNECEDOR), mas só se quem esquece a linha for avisado. Declinar é escolha; não
-   * declarar era omissão.
+   * Exists because the absence is otherwise silent: a game without the port has only the browser's voice, which a school
+   * Chromebook may not have for the child's language. Declining is a choice; not declaring is an omission, and `problems` says so.
    */
   readonly semVozNeural?: boolean;
 }
@@ -333,53 +326,37 @@ export interface CreateGameOptions {
    */
   readonly genero?: string;
   /**
-   * COMO SE CARREGA A VOZ NEURAL — uma linha do lado do jogo (ADR-0094):
-   *
-   *     carregarVozNeural: () => import('@mintplex-labs/piper-tts-web')
-   *
-   * ⚠️ AUSENTE POR OMISSÃO, E ISSO É A DECISÃO E NÃO UM DESCUIDO. A engine não pode nomear o fornecedor:
-   * ele traz `onnxruntime-web` como peer NÃO-opcional, que o npm instala sozinho — **135,4 MB** no
-   * `node_modules` de todo consumidor, incluindo um jogo que nunca fale por voz neural. E declará-lo em
-   * `devDependencies`, que era o estado até 06/09, publicou uma engine que NÃO COMPILAVA para ninguém
-   * (ADR-0093). A porta é a única forma que resolve as duas coisas ao mesmo tempo.
-   *
-   * Sem ela a narração cai na voz do navegador (Web Speech), que fala o idioma certo e não pesa nada — e o
-   * painel de áudio deixa de OFERECER o motor neural, em vez de o oferecer e nunca o carregar.
-   */
-  readonly carregarVozNeural?: CarregarVozNeural;
-  /**
-   * HOW THE KOKORO VOICES LOAD (ADR-0186, ADR-0198; issue #181) — filled by the game, like `carregarVozNeural`: it loads its own
-   * phonemizer (espeak-ng, GPL-3.0-or-later), runtime (onnxruntime) and model, and hands the engine four functions (`ModuloKokoro`).
-   * Absent = no Kokoro voice is listed; the Piper voices and the browser's stay.
+   * HOW THE NEURAL VOICE LOADS — Kokoro, the engine's only neural voice (ADR-0198, ADR-0207; issue #181), through a port the game
+   * fills: it loads its own phonemizer (espeak-ng, GPL-3.0-or-later), runtime (onnxruntime) and model, and hands the engine four
+   * functions (`ModuloKokoro`). The engine names no provider (ADR-0094: a provider named here lands its runtime in every consumer).
+   * Absent = no Kokoro voice is listed and the audio panel does not offer the neural engine; the browser's voice speaks.
    */
   readonly carregarKokoro?: CarregarKokoro;
   /**
-   * BAIXAR AS COISAS PESADAS NO PRIMEIRO CARREGAMENTO? Padrão **sim** (ADR-0110 (b), ADR-0116, ADR-0119).
+   * FETCH THE HEAVY FILES ON THE FIRST LOAD? Default **yes** (ADR-0110 (b), ADR-0116, ADR-0119).
    *
-   * As quatro vozes neurais são ~241 MB e descem em SEGUNDO PLANO, uma de cada vez, sem bloquear o jogo: a
-   * criança joga enquanto elas chegam, e o que não pode acontecer é ela voltar no segundo dia, sem rede, e
-   * descobrir que a voz nunca foi buscada. O pilar 8 é «primeiro dia ONLINE, depois offline-first», e o
-   * ADR-0116 tirou a contradição que travava isto — instalar já é um acto de rede.
+   * The vision runtime and models, and Kokoro's model and voices when the game fills the Kokoro port (327 MB), come down in the
+   * BACKGROUND, one at a time, without blocking the game: the child plays while they arrive, and what must not happen is a child
+   * back on the second day, offline, finding they were never fetched. Pillar 8 is «first day ONLINE, then offline-first», and
+   * ADR-0116 removed the contradiction that blocked this — installing is already a network act.
    *
-   * ⚠️ PÔR `false` É PARA QUEM TEM RAZÃO PARA O FAZER, e a razão que já existe é um TESTE: um caso que monte
-   * o arranque num navegador de verdade não pode disparar 241 MB contra o Hugging Face. Um jogo em produção
-   * que o desligue está a decidir que a criança dele fica sem voz neural offline.
+   * ⚠️ `false` IS FOR WHOEVER HAS A REASON, and the reason that exists is a TEST: a case that mounts the start in a real browser
+   * cannot fire hundreds of MB at the network. A game in production that turns it off decides its child has no neural voice offline.
    *
-   * 📌 E o ADR-0117 diz que quem devia pagar isto uma vez é a PLATAFORMA, não cada cartucho — a Cache Storage
-   * é particionada por origem, e num site só os 241 MB descem uma vez para todos os jogos. Enquanto a
-   * plataforma não os pede, é o jogo que os pede: melhor descer duas vezes do que nunca.
+   * 📌 ADR-0117 says the one who should pay this once is the PLATFORM, not each cartridge — the Cache Storage is partitioned by
+   * origin, and on one site the heavy files come down once for every game. Until the platform asks for them, the game does: better
+   * twice than never.
    */
   readonly baixarPesados?: boolean;
   /**
-   * O QUE ACONTECEU COM CADA COISA PESADA, à medida que acontece. Ausente = ninguém está a ver.
+   * WHAT HAPPENED TO EACH HEAVY FILE, as it happens. Absent = nobody is watching.
    *
-   * ⚠️ É AQUI E NÃO EM `problems` porque a descarga é de FUNDO: `problems` é devolvido sincronamente pelo
-   * `createGame`, e uma linha que chegue depois disso entra num vector que o leitor já leu. O ADR-0110 pede
-   * que uma busca falhada seja REPORTADA — reportar é ter um canal que existe quando a notícia chega, e não
-   * empurrar para uma lista que já foi entregue.
+   * ⚠️ HERE AND NOT IN `problems`, because the download runs in the BACKGROUND: `createGame` returns `problems` synchronously, and a
+   * line arriving later lands in an array its reader already read. ADR-0110 asks that a failed fetch be REPORTED — reporting is having
+   * a channel that exists when the news arrives, not pushing into a list already delivered.
    *
-   * 📌 A engine não inventa superfície nenhuma com isto: quem sabe onde cabe «faltam 241 MB» na tela de um
-   * jogo é o jogo. `pesoPorBaixar(relatorio)` dá o número para a frase.
+   * 📌 The engine invents no surface for this: where «N MB left» fits on a game's screen is the game's to know.
+   * `pesoPorBaixar(relatorio)` gives the number for the sentence.
    */
   readonly aoProgredirPesados?: (r: RelatorioPesado) => void;
   /**
@@ -753,13 +730,12 @@ export function createGame(o: CreateGameOptions): Engine {
     if (mundo.kind === 'element' && !$(mundo.selector)) {
       p.push(`the declared world ${mundo.selector} is not in the page: the colour correction and vision filters a child turns on reach nothing — fix \`world()\``);
     }
-    // ⚠️ MISTA, e fica deste lado por causa da segunda metade: a porta é do hospedeiro
-    // (`carregarVozNeural`), mas o declínio é do CARTUCHO — logo a linha pode aparecer ou calar-se ao
-    // trocar de jogo, com o mesmo hospedeiro.
-    if (!o.carregarVozNeural && !declines().semVozNeural) {
+    // ⚠️ MIXED, and it lives on this side for its second half: the port is the host's (`carregarKokoro`), but the decline is the
+    // CARTRIDGE's — so the line can appear or go quiet when the game changes under the same host.
+    if (!o.carregarKokoro && !declines().semVozNeural) {
       p.push(
         'there is no neural voice: a child who cannot read gets the system voice, which a school Chromebook may not have '
-        + 'for Portuguese — pass `carregarVozNeural` (ADR-0094) or declare `declines.semVozNeural`',
+        + 'for the child\'s language — pass `carregarKokoro` (ADR-0198) or declare `declines.semVozNeural`',
       );
     }
     const assentos = (cartucho.players ?? []).length;
@@ -781,7 +757,6 @@ export function createGame(o: CreateGameOptions): Engine {
   const tts = createTts({
     srSay, srAlert, ensureAC, catNode, audioOut,
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
-    carregarVozNeural: o.carregarVozNeural,
     carregarKokoro: o.carregarKokoro,
     getSpeechPpm: () => state.speechPpm, // ADR-0183 §1: the child's speech rate
   });
@@ -3432,9 +3407,9 @@ export function createGame(o: CreateGameOptions): Engine {
   /*
    * AS COISAS PESADAS COMEÇAM A DESCER AQUI, e a linha é deliberadamente a ÚLTIMA coisa do arranque.
    *
-   * ⚠️ SEM `await`. O arranque não espera por 241 MB — se esperasse, a primeira tela de uma escola com 3G
-   * ficaria em branco durante minutos e a criança concluiria que o jogo não abre. O `catch` vazio é a mesma
-   * regra escrita duas vezes: uma falha de rede aqui não pode derrubar um jogo que hoje nem usa a voz.
+   * ⚠️ NO `await`. The start does not wait for the heavy files — if it did, a 3G school's first screen would stay blank for minutes
+   * and the child would conclude the game does not open. The empty `catch` is the same rule written twice: a network failure here
+   * cannot bring down a game that may not even use the voice.
    *
    * 🔴 E O RELATÓRIO NÃO VAI PARA `problems`, embora a primeira versão o fizesse. Duas razões medidas, e a
    * primeira é a que importa:
@@ -3449,7 +3424,7 @@ export function createGame(o: CreateGameOptions): Engine {
    *     HOSPEDEIRO. A criança perde a barra de acessibilidade e a linha que o diz fica em nono lugar.
    *
    * 📌 O canal certo é o que a própria função já tem: `aoProgredir`, entregue a quem chama. Um consumidor que
-   * queira mostrar «faltam 241 MB» ou «a voz não desceu» tem por onde; a engine não inventa uma superfície.
+   * queira mostrar «faltam N MB» ou «a voz não desceu» tem por onde; a engine não inventa uma superfície.
    */
   if (o.baixarPesados !== false) {
     void baixarPesados({ apenas: pesadosDoArranque({ kokoro: !!o.carregarKokoro }), aoProgredir: o.aoProgredirPesados })

@@ -14,6 +14,9 @@ de sala hospedado não deveria a fonte a ninguém; a seção 13 da AGPL fecha is
 programa é o que a Lei 9.609 define, arte segue a Lei 9.610 e pertence a quem a fez. O que governa o quê
 está em [`docs/LICENSES.md`](docs/LICENSES.md); as atribuições, em [`docs/CREDITS.md`](docs/CREDITS.md).
 
+⚠️ **Notice (2026-09-14): the Piper voices were withdrawn from the engine** over a licence chain we could not show —
+see [`docs/notices/2026-09-14-piper-voices-withdrawn.md`](docs/notices/2026-09-14-piper-voices-withdrawn.md).
+
 Mecânicas de plataforma portadas do
 [Clarity, de Adam Brooks (dissimulate)](https://github.com/dissimulate/Clarity) (MIT).
 

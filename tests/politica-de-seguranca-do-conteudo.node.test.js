@@ -10,7 +10,6 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PESADOS } from '../app/js/platform/pesados.js';
-import { HOST_DOS_MODELOS } from '../app/js/platform/voice-plan.js';
 
 const HEADERS = readFileSync(join(process.cwd(), 'app', 'public', '_headers'), 'utf8');
 
@@ -28,14 +27,10 @@ const P = politica();
 const hostsDe = (fontes) => fontes.filter((f) => /^https:\/\//.test(f)).map((f) => new URL(f.replace('*.', 'wildcard.')).host.replace('wildcard.', '*.'));
 
 /**
- * The hosts a library on the page requests by itself, each with its requester.
- * · the voice models: `@mintplex-labs/piper-tts-web` hardcodes this host with a guard, so no delivery path can replace it;
- *   the service worker answers from the checked cache (`CacheOnly`), and the policy judges the address before that.
- * The phonemizer is not here: since issue #173 the engine asks for it at the delivery path (`platform/tts`).
+ * The hosts a library on the page requests by itself, each with its requester. None since ADR-0207: the voice provider that
+ * hardcoded its models' host left the engine, and every heavy file is asked at the delivery's own `pesados/`.
  */
-const PEDIDOS_PELAS_BIBLIOTECAS = new Map([
-  [new URL(HOST_DOS_MODELOS).host, 'voice models, hardcoded by the provider'],
-]);
+const PEDIDOS_PELAS_BIBLIOTECAS = new Map();
 
 describe('the Content-Security-Policy (issues #170, #173)', () => {
   it('🔴 [Right] every page gets a policy', () => {
@@ -74,7 +69,7 @@ describe('the Content-Security-Policy (issues #170, #173)', () => {
 //   C0 no policy                                          🔴 all five
 //   C1 `'unsafe-inline'` in script-src                    🔴 script
 //   C2 a script host (jsDelivr) back in script-src        🔴 script
-//   C3 the models host missing from connect-src           🔴 connect
+//   C3 a third-party host back in connect-src (ADR-0207)  🔴 connect
 //   C4 `blob:` removed (WebGazer from the cache)          🔴 script
 //   C5 `object-src` removed                               🔴 [Zero]
 //   C6 storage.googleapis.com back in connect-src         🔴 connect, build only

@@ -796,34 +796,15 @@
   ],
   "platform/tts.ts": [
     "CarregarKokoro",
-    "CarregarVozNeural",
-    "LocaisDoRuntime",
     "ModuloKokoro",
-    "ModuloNeural",
     "SessaoKokoro",
-    "SessaoNeural",
     "Tts",
     "TtsCtx",
     "createTts"
   ],
   "platform/voice-plan.ts": [
-    "EstadoDaVoz",
-    "EstadosDasVozes",
-    "HOST_DOS_MODELOS",
-    "VOZES_NEURAIS",
-    "VozEmUso",
     "VozNeural",
-    "caminhoDoModelo",
-    "estadoDe",
-    "ordemDeBusca",
-    "urlDaConfig",
-    "urlDoModelo",
-    "vozEmUso",
     "vozesDoIdioma"
-  ],
-  "platform/vozes-prontas.ts": [
-    "estadosDasVozes",
-    "idsDasVozes"
   ],
   "render/camera.ts": [
     "Camera",

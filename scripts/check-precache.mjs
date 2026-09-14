@@ -146,11 +146,9 @@ if (desprotegidas.length > 0) {
  *   · EXTENSION OUTSIDE `globPatterns` — COMPLETELY SILENT. A 2 KB `sonda.data` planted the same way reached
  *     `dist/`, stayed out of the manifest, and the build AND this gate both exited 0.
  *
- * ⚠️ AND THE SILENT ONE IS THE CASE THE NEXT COMMIT WILL HIT. The runtime ADR-0114 decided to vendor is, if
- * it is the piper/ort pair measured for issue #129, `ort-wasm-simd-threaded.wasm` (12.9 MB) plus
- * `piper_phonemize.data` (18.1 MB) — and `data` is not in `globPatterns`. The single biggest artefact of the
- * offline voice would land in `dist`, never enter the precache, and a school with no network would get a
- * child who presses the speech button and hears nothing, with every gate green.
+ * ⚠️ AND THE SILENT ONE IS THE DANGEROUS ONE: a voice runtime's data file (a `.data` beside its `.wasm`) would land in `dist`,
+ * never enter the precache, and a school with no network would get a child who presses the speech button and hears nothing,
+ * with every gate green.
  *
  * So the rule is stated as COMPLETENESS and not as a list of things to look for: every file the build emits
  * is either precached or EXCUSED HERE, in writing. A new extension, a narrowed `globPatterns` or a dropped
@@ -309,7 +307,7 @@ if (emFalta.length > 0) {
  * haver alarme quando alguma coisa pesada aterra no primeiro dia por acidente. O peso continua a ser MEDIDO e
  * IMPRESSO em toda corrida — o que deixou de existir é a reprovação.
  *
- * 📌 E O TECTO NUNCA FOI O QUE TRAVAVA OS RUNTIMES. O ADR-0124 põe o MediaPipe e o piper a chegar pelo
+ * 📌 E O TECTO NUNCA FOI O QUE TRAVAVA OS RUNTIMES. ADR-0124 has MediaPipe arrive through
  * `platform/pesados`, na INSTALAÇÃO, e não pelo manifesto de precache: 11,21 MB nunca iam caber aqui e nunca
  * precisaram de caber. O sujeito deste ficheiro é a DEMO (o quiz da engine); a unidade que uma criança instala
  * é o `the-inclusionist-site` (ADR-0117), e o primeiro dia do PRODUTO é um número que ainda não existe.

@@ -748,6 +748,32 @@ band. `ui/help-panel.helpListHtml` (the rows as settings-menu markup) left; `mon
 `mostrarSlide(el, rows, i, { criar, t, titulo })`. 📏 Measured on 2026-09-13: none of the seven game repositories imports
 `ui/help-panel`.
 
+## AF · Piper left the engine; Kokoro is the only neural voice (ADR-0207, issue #193)
+
+**Why.** Three of the four Piper voices are fine-tuned from `lessac`, trained on the Blizzard 2013 dataset, licensed for research only
+and not to be distributed; the fourth states no starting checkpoint. The public notice: `docs/notices/2026-09-14-piper-voices-withdrawn.md`.
+
+**What left.**
+
+| | |
+|---|---|
+| `CreateGameOptions.carregarVozNeural` · `TtsCtx.carregarVozNeural` | the Piper port; a game passing it no longer compiles against the typed options |
+| `platform/tts` types `CarregarVozNeural`, `ModuloNeural`, `SessaoNeural`, `LocaisDoRuntime` | the Piper provider's shape |
+| `platform/voice-plan` exports `VOZES_NEURAIS`, `HOST_DOS_MODELOS`, `caminhoDoModelo`, `urlDoModelo`, `urlDaConfig`, `EstadoDaVoz`, `EstadosDasVozes`, `estadoDe`, `ordemDeBusca`, `VozEmUso`, `vozEmUso` | the Piper catalogue and its readiness; `VozNeural` and `vozesDoIdioma` stay, and `vozesDoIdioma` now takes the catalogue as a required second argument |
+| `platform/vozes-prontas` | the whole module |
+| heavy-file catalogue entries `voz:pt_BR-faber-medium`, `voz:en_US-amy-medium`, `voz:en_US-ryan-medium`, `voz:es_MX-claude-high` (and `:cfg`), `voz:fonemizador`, `voz:fonemizador:dados` | no longer fetched by the start or copied by `inclusionist-pesados` |
+| `TTS_ENGINE_OPTIONS` row `piper` · i18n keys `tts.engine.piper`, `sr.tts.progress` | the engine list has four engines |
+| service-worker route for `huggingface.co/diffusionstudio/piper-voices` · `connect-src https://huggingface.co` | the page contacts no third party by itself |
+
+**Behaviour.** `Tts.neuralDisponivel` is `!!carregarKokoro`; without the Kokoro port the audio panel does not offer `kokoro`, and a
+language the browser has no voice for has no voice at all (narration locked with its reason, ADR-0185 §4). A stored engine choice of
+`piper` reads as no choice. The `problems` line for a missing neural voice names `carregarKokoro`.
+
+**What to do:** remove `carregarVozNeural` and the `@mintplex-labs/piper-tts-web` dependency; fill `carregarKokoro` for a neural voice
+(the quiz demo's `app/js/consumer-quiz/kokoro-porta.ts` is the example); rebuild the delivery. 📏 Measured on 2026-09-14: `game-platformer`
+(`app/js/main.ts`) and `pixi-15-puzzle` (`app/js/boot/standalone.ts`, with the dependency) pass the port; the other game repositories
+only mention it in comments.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

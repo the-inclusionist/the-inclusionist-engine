@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // WEB SPEECH FIRST (ADR-0200; issue #190): where the browser offers a voice for the language it leads the list and speaks, and no
-// neural voice loads; Piper and Kokoro stay in the list as the fallback, and a browser with no voice for the language falls back.
+// neural voice loads; Kokoro's voices stay in the list as the fallback (ADR-0207), and a browser with no voice for the language falls back.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -20,7 +20,7 @@ function montar({ vozesDoNavegador, comPorta = true }) {
   return createTts({
     srSay: () => {}, srAlert: () => {}, ensureAC: () => new AudioContext(), catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => ({ tts: { on: true } }),
-    ...(comPorta ? { carregarVozNeural: () => { portaChamada++; return new Promise(() => {}); } } : {}),
+    ...(comPorta ? { carregarKokoro: () => { portaChamada++; return new Promise(() => {}); } } : {}),
   });
 }
 
@@ -35,9 +35,9 @@ beforeEach(async () => {
 afterEach(() => { Object.assign(ss, originais); window.SpeechSynthesisUtterance = UtteranceOriginal; localStorage.removeItem('incl_tts_voz'); });
 
 describe('the browser speaks first where it offers a voice for the language', () => {
-  it('🔴 [Right] the browser\'s Portuguese voice leads the list, then Faber; the English one is not listed', () => {
+  it('🔴 [Right] the browser\'s Portuguese voice leads the list, then Kokoro\'s; the English one is not listed', () => {
     const tts = montar({ vozesDoNavegador: [vozFalsa('Samantha', 'en-US'), vozFalsa('Luciana', 'pt-BR')] });
-    expect(tts.vozes().map((v) => v.voice)).toEqual(['webspeech:Luciana', 'pt_BR-faber-medium']);
+    expect(tts.vozes().map((v) => v.voice)).toEqual(['webspeech:Luciana', 'pf_dora', 'pm_alex', 'pm_santa']);
     expect([tts.vozAtual()?.voice, tts.getEngineSel()]).toEqual(['webspeech:Luciana', 'webspeech']);
   });
 
@@ -50,16 +50,16 @@ describe('the browser speaks first where it offers a voice for the language', ()
 
   it('⚠️ [Boundary] a browser with no voice for the language falls back to the neural voice', () => {
     const tts = montar({ vozesDoNavegador: [vozFalsa('Samantha', 'en-US')] });
-    expect([tts.vozAtual()?.voice, tts.getEngineSel()]).toEqual(['pt_BR-faber-medium', 'piper']);
+    expect([tts.vozAtual()?.voice, tts.getEngineSel()]).toEqual(['pf_dora', 'kokoro']);
     tts.ttsSpeak('Pule a pedra.');
     expect(portaChamada).toBe(1);
   });
 
-  it('🔴 [Right] the fallback stays pickable: choosing Faber loads it, choosing the browser voice again speaks through it', () => {
+  it('🔴 [Right] the fallback stays pickable: choosing Dora loads it, choosing the browser voice again speaks through it', () => {
     const tts = montar({ vozesDoNavegador: [vozFalsa('Luciana', 'pt-BR')] });
-    expect(tts.setVoz('pt_BR-faber-medium')).toBe(true);
+    expect(tts.setVoz('pf_dora')).toBe(true);
     tts.ttsSpeak('Olá.');
-    expect([tts.getEngineSel(), portaChamada]).toEqual(['piper', 1]);
+    expect([tts.getEngineSel(), portaChamada]).toEqual(['kokoro', 1]);
     expect(tts.setVoz('webspeech:Luciana')).toBe(true);
     tts.ttsSpeak('Olá.');
     expect([tts.getEngineSel(), faladas.at(-1)?.voice?.name]).toEqual(['webspeech', 'Luciana']);
@@ -73,7 +73,7 @@ describe('the browser speaks first where it offers a voice for the language', ()
 
 // ============================== MUTATIONS CHECKED ==============================
 //   W1 browser voices not listed                                🔴 leads the list · speaks with that voice
-//   W2 browser voices listed after Piper                        🔴 leads the list
+//   W2 browser voices listed after Kokoro's                     🔴 leads the list
 //   W3 the voice of another language listed                     🔴 leads the list
 //   W4 the utterance without the chosen browser voice            🔴 speaks with that voice · pickable
-//   W5 a Piper voice the default without the port               🔴 no «not bundled»
+//   W5 a neural voice the default without the port              🔴 no «not bundled»
