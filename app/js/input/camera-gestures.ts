@@ -258,16 +258,21 @@ function cabecaForaDoRepouso(matriz: ArrayLike<number>, neutro: NeutroDoRosto): 
   return null;
 }
 
-/** ADR-0197 §3: turn → left/right, tilt → up/down, mouth open → confirm, smile → menu, brows up → back. */
+/**
+ * ADR-0199 (supersedes ADR-0197 §3 in part): turn → left/right, tilt up → up, open the mouth → down, pucker → confirm, smile → menu,
+ * brows up → back. A tilt down commands nothing: the Dev said «down» with the mouth, eyes on the screen.
+ */
 export function criarLeitorDoRosto(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDeCamera<QuadroDoRosto> {
   const sinal = sinalSegurado();
   return {
     quadro(ms, q) {
       if (!q.blendshapes) return sinal.ler(ms, null);
       const b = q.blendshapes;
-      let c: CameraCommand | null = q.matriz ? cabecaForaDoRepouso(q.matriz, neutro) : null;
+      const cabeca = q.matriz ? cabecaForaDoRepouso(q.matriz, neutro) : null;
+      let c: CameraCommand | null = cabeca === 'down' ? null : cabeca;
       if (!c) {
-        if (subida(b, neutro, 'jawOpen') >= EXPRESSAO_MINIMA) c = 'confirm';
+        if (subida(b, neutro, 'jawOpen') >= EXPRESSAO_MINIMA) c = 'down';
+        else if (subida(b, neutro, 'mouthPucker') >= EXPRESSAO_MINIMA) c = 'confirm';
         else if (subida(b, neutro, 'mouthSmileLeft', 'mouthSmileRight') >= EXPRESSAO_MINIMA) c = 'menu';
         else if (Math.max(subida(b, neutro, 'browInnerUp'), subida(b, neutro, 'browOuterUpLeft', 'browOuterUpRight')) >= EXPRESSAO_MINIMA) c = 'back';
       }
@@ -277,7 +282,7 @@ export function criarLeitorDoRosto(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDe
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------
-// The eyes: gaze up and down, and blink patterns
+// The eyes: blink patterns, and a blink while looking up or down
 // ---------------------------------------------------------------------------------------------------------------------------
 
 /** A blink shorter than this is quick; one at least `PISCADA_LENTA_MS` long is slow; in between it is neither. */
@@ -289,53 +294,57 @@ const DUPLA_MS = 700;
 const OLHO_FECHADO = 0.5;
 const OLHAR_MINIMO = 0.5;
 
+type Olhar = 'cima' | 'baixo' | null;
+
 /**
- * ADR-0197 §4: look up → up; look down → down; two quick blinks → confirm; one slow blink → back; two quick blinks while looking
- * down → menu. A single quick blink commands nothing — it is how people blink. A double is decided once the time for a second blink
- * has passed, so it never fires half-way. The eyes command only while the head rests: a head turned or tilted moves the eyes the
- * other way to keep the screen in view, and lowers or raises the lids — the head reader owns that moment.
+ * ADR-0199 (supersedes ADR-0197 §4 in part): one quick blink while looking up → up, while looking down → down; two quick blinks →
+ * confirm; one slow blink → back; two quick blinks while looking down → menu. A plain look commands nothing, and neither does one
+ * quick blink with the eyes ahead — it is how people blink. A single blink is decided once the time for a second one has passed, so
+ * a double never fires half-way. The look is the one the eyes held before the lids closed (closing lids read as a look down). The eyes
+ * command only while the head rests: a head turned or tilted moves the eyes the other way — the head reader owns that moment.
  */
 export function criarLeitorDosOlhos(neutro: NeutroDoRosto = SEM_NEUTRO): LeitorDeCamera<QuadroDoRosto> {
-  const olhar = sinalSegurado();
+  let esperaAte = -Infinity;
   let fechouEm: number | null = null;
-  let olhavaBaixoAoFechar = false;
-  const rapidas: { ms: number; baixo: boolean }[] = [];
+  let olharAntes: Olhar = null;
+  let olharAoFechar: Olhar = null;
+  const rapidas: { ms: number; olhar: Olhar }[] = [];
 
   const piscou = (ms: number, c: CameraCommand): CameraCommand => {
     rapidas.length = 0;
-    return olhar.comandou(ms, c);
+    esperaAte = ms + ESPERA_MS;
+    return c;
   };
 
   return {
     quadro(ms, q) {
-      if (!q.blendshapes) { fechouEm = null; olhar.suspender(); return null; }
-      if (q.matriz && cabecaForaDoRepouso(q.matriz, neutro)) { fechouEm = null; rapidas.length = 0; olhar.suspender(); return null; }
+      if (!q.blendshapes) { fechouEm = null; return null; }
+      if (q.matriz && cabecaForaDoRepouso(q.matriz, neutro)) { fechouEm = null; rapidas.length = 0; olharAntes = null; return null; }
       const b = q.blendshapes;
       const fechado = subida(b, neutro, 'eyeBlinkLeft', 'eyeBlinkRight') >= OLHO_FECHADO;
-      const olhaBaixo = subida(b, neutro, 'eyeLookDownLeft', 'eyeLookDownRight') >= OLHAR_MINIMO;
-      const olhaCima = subida(b, neutro, 'eyeLookUpLeft', 'eyeLookUpRight') >= OLHAR_MINIMO;
 
       if (fechado) {
-        if (fechouEm === null) { fechouEm = ms; olhavaBaixoAoFechar = olhaBaixo || olhar.segurando() === 'down'; }
-        olhar.suspender();
+        if (fechouEm === null) { fechouEm = ms; olharAoFechar = olharAntes; }
         return null;
       }
+      olharAntes = subida(b, neutro, 'eyeLookUpLeft', 'eyeLookUpRight') >= OLHAR_MINIMO ? 'cima'
+        : subida(b, neutro, 'eyeLookDownLeft', 'eyeLookDownRight') >= OLHAR_MINIMO ? 'baixo' : null;
       if (fechouEm !== null) {
         const duracao = ms - fechouEm;
         const inicio = fechouEm;
         fechouEm = null;
-        if (olhar.livre(ms)) {
+        if (ms >= esperaAte) {
           if (duracao >= PISCADA_LENTA_MS) return piscou(ms, 'back');
-          if (duracao < PISCADA_RAPIDA_MS) rapidas.push({ ms: inicio, baixo: olhavaBaixoAoFechar });
+          if (duracao < PISCADA_RAPIDA_MS) rapidas.push({ ms: inicio, olhar: olharAoFechar });
         }
       }
-      while (rapidas.length && ms - rapidas[0]!.ms > DUPLA_MS) rapidas.shift();
-      if (rapidas.length >= 2) {
-        const baixo = rapidas[0]!.baixo && rapidas[1]!.baixo;
-        return piscou(ms, baixo ? 'menu' : 'confirm');
+      if (rapidas.length >= 2) return piscou(ms, rapidas[0]!.olhar === 'baixo' && rapidas[1]!.olhar === 'baixo' ? 'menu' : 'confirm');
+      if (rapidas.length === 1 && ms - rapidas[0]!.ms > DUPLA_MS) {
+        const so = rapidas.shift()!;
+        if (so.olhar === 'cima') return piscou(ms, 'up');
+        if (so.olhar === 'baixo') return piscou(ms, 'down');
       }
-      if (rapidas.length) { olhar.suspender(); return null; }
-      return olhar.ler(ms, olhaCima ? 'up' : olhaBaixo ? 'down' : null);
+      return null;
     },
   };
 }

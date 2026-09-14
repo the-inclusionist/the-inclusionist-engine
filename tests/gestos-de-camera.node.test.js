@@ -152,15 +152,18 @@ describe('face and head (ADR-0197 §3)', () => {
     expect([Math.round(p.yaw), Math.round(p.pitch)]).toEqual([30, -10]);
   });
 
-  it('🔴 [Right] turn and tilt past the threshold, held, command the four directions', () => {
+  it('🔴 [Right] turn and tilt up past the threshold, held, command right, left and up; a tilt down commands nothing (ADR-0199)', () => {
     const cmd = (yaw, pitch) => correr(criarLeitorDoRosto(), Array.from({ length: 12 }, (_, i) => [i * 33, { blendshapes: {}, matriz: rotacao(yaw, pitch) }]));
-    expect([cmd(30, 0), cmd(-30, 0), cmd(0, 25), cmd(0, -25)]).toEqual([['right'], ['left'], ['up'], ['down']]);
+    expect([cmd(30, 0), cmd(-30, 0), cmd(0, 25), cmd(0, -25)]).toEqual([['right'], ['left'], ['up'], []]);
     expect(cmd(10, 5), 'a small movement of the head commands nothing').toEqual([]);
   });
 
-  it('🔴 [Right] mouth open → confirm, smile → menu, brows up → back', () => {
+  it('🔴 [Right] mouth open → down, pucker → confirm, smile → menu, brows up → back (ADR-0199)', () => {
     const cmd = (b) => correr(criarLeitorDoRosto(), Array.from({ length: 12 }, (_, i) => [i * 33, { blendshapes: b, matriz: rotacao(0, 0) }]));
-    expect([cmd({ jawOpen: 0.7 }), cmd({ mouthSmileLeft: 0.8, mouthSmileRight: 0.7 }), cmd({ browInnerUp: 0.6 })]).toEqual([['confirm'], ['menu'], ['back']]);
+    expect([cmd({ jawOpen: 0.7 }), cmd({ mouthPucker: 0.8 }), cmd({ mouthSmileLeft: 0.8, mouthSmileRight: 0.7 }), cmd({ browInnerUp: 0.6 })])
+      .toEqual([['down'], ['confirm'], ['menu'], ['back']]);
+    const inclinada = correr(criarLeitorDoRosto(), Array.from({ length: 12 }, (_, i) => [i * 33, { blendshapes: { jawOpen: 0.8 }, matriz: rotacao(0, -25) }]));
+    expect(inclinada, 'a mouth opened while the head tilts down still says down').toEqual(['down']);
     expect(cmd({ jawOpen: 0.3 }), 'a mouth slightly open commands nothing').toEqual([]);
   });
 
@@ -194,6 +197,7 @@ describe('the eyes (ADR-0197 §4)', () => {
   const fechado = { eyeBlinkLeft: 0.9, eyeBlinkRight: 0.9 };
   const baixo = { eyeLookDownLeft: 0.7, eyeLookDownRight: 0.7 };
   const fechadoBaixo = { ...fechado, ...baixo };
+  const cima = { eyeLookUpLeft: 0.8, eyeLookUpRight: 0.8 };
 
   it('🔴 [Right] two quick blinks → confirm', () => {
     expect(correr(criarLeitorDosOlhos(), olhos([[0, 100, aberto], [100, 250, fechado], [250, 400, aberto], [400, 550, fechado], [550, 1500, aberto]])))
@@ -229,18 +233,25 @@ describe('the eyes (ADR-0197 §4)', () => {
 
   it('🔴 [Zero] while the head is turned or tilted the eyes command nothing — they move against the head to keep the screen in view', () => {
     const cabeca = (matriz, trechos) => olhos(trechos).map(([ms, q]) => [ms, { ...q, matriz }]);
-    const cima = [[0, 450, { eyeLookUpLeft: 0.8, eyeLookUpRight: 0.8 }]];
-    expect(correr(criarLeitorDosOlhos(), cabeca(rotacao(0, -25), cima)), 'the head tilted down, the eyes up').toEqual([]);
+    const olharEPiscar = [[0, 300, cima], [300, 450, { ...fechado, ...cima }], [450, 1500, cima]];
+    expect(correr(criarLeitorDosOlhos(), cabeca(rotacao(0, -25), olharEPiscar)), 'the head tilted down, the eyes up').toEqual([]);
     expect(correr(criarLeitorDosOlhos(), cabeca(rotacao(-30, 0), [[0, 100, aberto], [100, 250, fechado], [250, 400, aberto], [400, 550, fechado], [550, 1500, aberto]])))
       .toEqual([]);
-    expect(correr(criarLeitorDosOlhos(), cabeca(rotacao(0, 0), cima)), 'the head at rest').toEqual(['up']);
-    expect(correr(criarLeitorDosOlhos({ yaw: 0, pitch: -25 }), cabeca(rotacao(0, -25), cima)), 'rest is the calibrated pose').toEqual(['up']);
+    expect(correr(criarLeitorDosOlhos(), cabeca(rotacao(0, 0), olharEPiscar)), 'the head at rest').toEqual(['up']);
+    expect(correr(criarLeitorDosOlhos({ yaw: 0, pitch: -25 }), cabeca(rotacao(0, -25), olharEPiscar)), 'rest is the calibrated pose').toEqual(['up']);
   });
 
-  it('🔴 [Right] looking up or down, held, commands up or down', () => {
-    expect(correr(criarLeitorDosOlhos(), olhos([[0, 450, { eyeLookUpLeft: 0.8, eyeLookUpRight: 0.8 }]]))).toEqual(['up']);
-    expect(correr(criarLeitorDosOlhos(), olhos([[0, 450, baixo]]))).toEqual(['down']);
-    expect(correr(criarLeitorDosOlhos(), olhos([[0, 2500, baixo]])), 'a held look repeated').toEqual(['down']);
+  it('🔴 [Zero] a plain look up or down commands nothing (ADR-0199)', () => {
+    expect(correr(criarLeitorDosOlhos(), olhos([[0, 2500, cima]]))).toEqual([]);
+    expect(correr(criarLeitorDosOlhos(), olhos([[0, 2500, baixo]]))).toEqual([]);
+  });
+
+  it('🔴 [Right] one quick blink looking up → up, looking down → down — decided after the time for a second blink (ADR-0199)', () => {
+    const uma = (olhar) => olhos([[0, 300, olhar], [300, 450, { ...fechado, ...olhar }], [450, 1500, olhar]]);
+    expect([correr(criarLeitorDosOlhos(), uma(cima)), correr(criarLeitorDosOlhos(), uma(baixo))]).toEqual([['up'], ['down']]);
+    const l = criarLeitorDosOlhos();
+    const antes = uma(baixo).filter(([ms]) => ms < 300 + 700);
+    expect(correr(l, antes), 'the single blink fired before a double could come').toEqual([]);
   });
 });
 
@@ -275,7 +286,7 @@ describe('one group at a time (ADR-0197 errata)', () => {
     for (let ms = 0; ms < 700; ms += 33) q.push([ms, { blendshapes: { jawOpen: 0.8 }, matriz: rotacao(0, 0) }]);
     const piscadas = [[700, 1300, {}], [1300, 1450, f], [1450, 1600, {}], [1600, 1750, f], [1750, 2600, {}]];
     for (const [a, b, bs] of piscadas) for (let ms = a; ms < b; ms += 33) q.push([ms, { blendshapes: bs, matriz: rotacao(0, 0) }]);
-    expect(correr(criarLeitorDaCamera('rostoEOlhos'), q)).toEqual(['confirm', 'confirm']);
+    expect(correr(criarLeitorDaCamera('rostoEOlhos'), q)).toEqual(['down', 'confirm']);
   });
 });
 
@@ -297,3 +308,8 @@ describe('one group at a time (ADR-0197 errata)', () => {
 //   G15 the moving group reads static gestures                 🔴 held fist
 //   G16 the eyes group reads the face                          🔴 head and mouth
 //   G17 the face group reads the hand readers                  🔴 face and eyes both command
+//   G18 a tilt down commands down again                         🔴 turn and tilt up
+//   G19 the mouth back to confirm, the pucker unread            🔴 mouth open → down, pucker → confirm
+//   G20 a plain look commands                                   🔴 a plain look commands nothing
+//   G21 a single blink ignores the look                         🔴 one quick blink looking up/down
+//   G22 a single blink decided at once, before the double's time 🔴 one quick blink (decided after)
