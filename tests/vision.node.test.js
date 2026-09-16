@@ -21,9 +21,13 @@ const fakeVision = ({ gpuCreate = true, gpuFrame = true, cpuCreate = true } = {}
     },
     close() { log.closed.push(delegate); },
   });
+  const c = (a, b) => [{ start: a, end: b }];
   const vision = {
     FilesetResolver: { forVisionTasks: async (base) => { log.wasmBase = base; return { base }; } },
     FaceLandmarker: {
+      FACE_LANDMARKS_LEFT_EYE: c(1, 2), FACE_LANDMARKS_RIGHT_EYE: c(3, 4), FACE_LANDMARKS_LEFT_IRIS: c(5, 6),
+      FACE_LANDMARKS_RIGHT_IRIS: c(7, 8), FACE_LANDMARKS_LEFT_EYEBROW: c(9, 10), FACE_LANDMARKS_RIGHT_EYEBROW: c(11, 12),
+      FACE_LANDMARKS_LIPS: c(13, 14), FACE_LANDMARKS_TESSELATION: c(15, 16),
       createFromOptions: async (_fileset, options) => {
         const d = options.baseOptions.delegate;
         log.created.push({ delegate: d, model: options.baseOptions.modelAssetPath, options });
@@ -62,6 +66,14 @@ describe('loading the face reader', () => {
     await loadFaceTracker({ base: BASE, hasFile: async (u) => { asked.push(u); return false; }, importBundle: fakeVision().importBundle });
     expect(FACE_VISION_FILES).toEqual(['visao:runtime', 'visao:runtime:cola', 'visao:runtime:wasm', 'visao:modelo:rosto']);
     expect(asked).toEqual(FACE_VISION_FILES.map(upstream));
+  });
+});
+
+describe('the lines drawn over the game', () => {
+  it('are the eyes with their irises and the brows the bundle ships — no lips, no mesh', async () => {
+    const r = await loadFaceTracker({ base: BASE, hasFile: all, importBundle: fakeVision().importBundle });
+    expect(r.tracker.eyeLines.eyes.map((l) => l.start)).toEqual([1, 3, 5, 7]);
+    expect(r.tracker.eyeLines.brows.map((l) => l.start)).toEqual([9, 11]);
   });
 });
 

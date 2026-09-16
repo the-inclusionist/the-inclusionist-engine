@@ -24,11 +24,20 @@ export interface FaceDetection {
 }
 
 interface Landmarker { detectForVideo(frame: unknown, ms: number): FaceDetection; close(): void }
+export type Connections = ReadonlyArray<{ readonly start: number; readonly end: number }>;
 /** The shape of the `tasks-vision` bundle this module uses. */
 export interface TasksVision {
   readonly FilesetResolver: { forVisionTasks(wasmBase: string): Promise<unknown> };
-  readonly FaceLandmarker: { createFromOptions(fileset: unknown, options: object): Promise<Landmarker> };
+  readonly FaceLandmarker: {
+    createFromOptions(fileset: unknown, options: object): Promise<Landmarker>;
+    readonly FACE_LANDMARKS_LEFT_EYE: Connections; readonly FACE_LANDMARKS_RIGHT_EYE: Connections;
+    readonly FACE_LANDMARKS_LEFT_IRIS: Connections; readonly FACE_LANDMARKS_RIGHT_IRIS: Connections;
+    readonly FACE_LANDMARKS_LEFT_EYEBROW: Connections; readonly FACE_LANDMARKS_RIGHT_EYEBROW: Connections;
+  };
 }
+
+/** The lines the eye control highlights (ADR-0213): the eyes with their irises, and the brows — never the camera's picture (ADR-0212). */
+export interface EyeLines { readonly eyes: Connections; readonly brows: Connections }
 
 export interface VisionDeps {
   /** The page's address, to make the delivery paths absolute. */
@@ -44,6 +53,8 @@ export interface FaceTracker {
   /** One frame; null while it has nothing to say (no face, or the CPU landmarker still being built after a GPU failure). */
   detect(frame: unknown, ms: number): FaceDetection | null;
   delegate(): Delegate;
+  /** The connection sets the bundle ships for the eyes, irises and brows, to draw over the game. */
+  readonly eyeLines: EyeLines;
   close(): void;
 }
 
@@ -72,6 +83,7 @@ export async function loadFaceTracker(deps: VisionDeps): Promise<FaceTrackerLoad
   const vision = await importBundle(at('visao:runtime'));
   const glue = at('visao:runtime:cola');
   const fileset = await vision.FilesetResolver.forVisionTasks(glue.slice(0, glue.lastIndexOf('/')));
+  const F = vision.FaceLandmarker;
   const create = (d: Delegate): Promise<Landmarker> => vision.FaceLandmarker.createFromOptions(fileset, OPTIONS(at('visao:modelo:rosto'), d));
 
   let delegate: Delegate = 'GPU', closed = false, failure: unknown = null;
@@ -95,6 +107,10 @@ export async function loadFaceTracker(deps: VisionDeps): Promise<FaceTrackerLoad
         }
       },
       delegate: () => delegate,
+      eyeLines: {
+        eyes: [...F.FACE_LANDMARKS_LEFT_EYE, ...F.FACE_LANDMARKS_RIGHT_EYE, ...F.FACE_LANDMARKS_LEFT_IRIS, ...F.FACE_LANDMARKS_RIGHT_IRIS],
+        brows: [...F.FACE_LANDMARKS_LEFT_EYEBROW, ...F.FACE_LANDMARKS_RIGHT_EYEBROW],
+      },
       close() { closed = true; current?.close(); current = null; },
     },
   };
