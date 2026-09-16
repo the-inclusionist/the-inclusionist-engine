@@ -130,7 +130,7 @@ import { t, idiomaPronto } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { menuIndexOn } from '../core/state.js';
 import { anunciarItem } from '../ui/item-announcement.js';
-import { createGame, type Engine } from '../boot/create-game.js';
+import { createGame, type Engine, type VirtualCommand } from '../boot/create-game.js';
 import type { GameDeclaration } from '../core/contract.js';
 
 /** Uma pergunta. Dado puro, do JOGO — o consumidor traz o seu conteúdo, como qualquer jogo deve trazer. */
@@ -245,36 +245,23 @@ function responder(i: number): void {
   setTimeout(render, 900); // deixa o anúncio ser lido antes de a tela mudar
 }
 
-function aoTeclado(e: KeyboardEvent): void {
+/**
+ * WHAT THE QUIZ EXECUTES FOR EACH VIRTUAL BUTTON (ADR-0111 and its erratum; issue #197): the engine takes the hardware — the keyboard by
+ * the child's scheme, the eyes, any transport — and carries the button's virtual name here; this is the quiz's map, the same one its
+ * `preset` names. ⚠️ It used to read raw key codes: its own arrows worked, the scheme's W and S did not, S rang the sonar, and a transport
+ * could only reach it by disguising itself as a keyboard.
+ */
+function aoComando(comando: VirtualCommand): void {
   const p = PERGUNTAS[atual];
-  if (!p) return;
-  // SONAR (achado 9). A posição do jogador é `atual` — a PERGUNTA em que ele está —, e não `foco`, que é a
-  // alternativa sob o cursor: a topologia declarada é a lista de PERGUNTAS, e misturar os dois índices faria
-  // a distância medir uma coisa na régua de outra.
-  //
-  // ⚠️ E AQUI O SONAR É CORRETO E INÚTIL, o que também é um achado. Num quiz linear de três perguntas não há
-  // para onde apontar: o alvo é sempre a pergunta em que a criança já está, e a resposta é sempre "bem
-  // perto". Apontar a ALTERNATIVA certa seria colar. O sonar serve a quem tem ESPAÇO — plataforma, top-down,
-  // Sokoban, um mapa de fases —, e o que este consumidor prova não é que ele ajuda todo gênero: é que ligá-lo
-  // não exige mais mentir para a engine. As duas coisas costumam ser confundidas.
-  // ⚠️ O `viz: 'cego'` SAIU daqui em 2026-09-08 (#104), e não foi substituído: era uma chave que nem sequer
-  // existe no catálogo (o modo chama-se `blind`) e nunca fez diferença nenhuma, porque `sonar()` não lê a
-  // visão de ninguém — quem a lia era o `needsAudioCues`, e este atalho de teclado não passa por ele. Uma
-  // propriedade inventada que ninguém consulta é a forma mais silenciosa de dívida: o `SonarPlayer` a
-  // recusar agora é o que a torna visível.
-  // 🔴 THE POSITIONS, NOT THE KEYS (2026-09-16): this read raw codes, so a key the child's scheme gives an action did something else —
-  // S, the scheme's first key for «down», rang the sonar, and the eye control (which presses the scheme's first key, stamped `olhos`)
-  // could neither move nor confirm. The action comes from the engine's keyboard, so any transport and any remap reach the quiz.
-  const acao = motor?.keyboard.actionOf(e.code, 0) ?? null;
-  if (e.code === 'KeyS' && !acao) { motor?.sonar.sonar({ i: 0, x: atual, y: 0 }); e.preventDefault(); return; }
+  if (!p || !comando.pressed) return;
   const total = p.alternativas.length;
-  if (acao === 'down' || acao === 'right' || e.code === 'ArrowDown' || e.code === 'ArrowRight') { foco = proximoFoco(foco, 1, total); render(); e.preventDefault(); }
-  else if (acao === 'up' || acao === 'left' || e.code === 'ArrowUp' || e.code === 'ArrowLeft') { foco = proximoFoco(foco, -1, total); render(); e.preventDefault(); }
-  else if (acao === 'action2') { motor?.cenas.input('confirm'); e.preventDefault(); }
-  // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se
-  // consumiu. Aqui só há uma cena, então o efeito é o mesmo — e é por ser o mesmo que a troca é conferível:
-  // se o comportamento mudasse junto, não daria para saber qual metade quebrou.
-  else if (e.code === 'Enter' || e.code === 'Space') { motor?.cenas.input('confirm'); e.preventDefault(); }
+  if (comando.action === 'down') { foco = proximoFoco(foco, 1, total); render(); }
+  else if (comando.action === 'up') { foco = proximoFoco(foco, -1, total); render(); }
+  // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se consumiu.
+  else if (comando.action === 'action2') motor?.cenas.input('confirm');
+  // THE SONAR on R1 (the Dev, 2026-09-16: «Tecla padrão para o sonar deve ser R1»). The player's place is `atual`, the QUESTION, not the
+  // option under the cursor: pointing at the right option would be cheating.
+  else if (comando.action === 'rightShoulder') motor?.sonar.sonar({ i: 0, x: atual, y: 0 });
 }
 
 /**
@@ -364,6 +351,7 @@ export function bootQuiz(): void {
      * HOW TO PLAY THIS QUIZ (ADR-0195): the cartridge tells it, the engine's help shows it before the buttons. The figures are drawn
      * here from shapes — a question bar and four options — and the second one moves the marked option down, which is the game.
      */
+    onCommand: aoComando,
     howToPlay: [
       {
         text: () => t('quiz.comoJogar.ler'),
@@ -379,6 +367,7 @@ export function bootQuiz(): void {
       down: { get label() { return t('quiz.pos.down'); } },
       action2: { get label() { return t('quiz.pos.confirm'); } },
       action3: { get label() { return t('quiz.pos.back'); } },
+      rightShoulder: { get label() { return t('quiz.pos.sonar'); } },
     },
     /*
      * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO (ADR-0153) — a resposta é obrigatória, e o arranque recusa sem ela.
@@ -415,7 +404,7 @@ export function bootQuiz(): void {
   // segundo consumidor deixa de carregar a correção do primeiro.
 
   // A PILHA DE CENAS (item 22, C3). Este quiz tem UMA cena, e ela não é inventada para o teste: `render()` já
-  // era o `draw` e `aoTeclado` já era o `input` — o que faltava era o lugar onde os dois se declaram juntos.
+  // era o `draw` e o ouvinte de teclas já era o `input` — o que faltava era o lugar onde os dois se declaram juntos.
   //
   // Uma cena só não prova pilha nenhuma, e não é o que ela está fazendo aqui. O que ela mostra é mais modesto
   // e é o que o item 22 precisa: que a forma (`nome`/`draw`/`input`) cabe num jogo que NÃO tem fases — sem
@@ -450,8 +439,6 @@ export function bootQuiz(): void {
   const botaoMenu = $<HTMLButtonElement>('#quiz-menu');
   if (botaoMenu) botaoMenu.addEventListener('click', () => motor?.pausa.mostrar(0));
 
-  const região = $<HTMLElement>('#game-region');
-  if (região) região.addEventListener('keydown', aoTeclado);
   // The first draw and the welcome wait for the boot language (study item E4): drawn in the gap, the first question was
   // grouped as «Alternativas» and read «Gato, 1 de 4» on an English page (measured). For pt it resolves at once.
   void idiomaPronto().then(() => {

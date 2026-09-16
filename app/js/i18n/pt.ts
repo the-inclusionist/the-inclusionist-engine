@@ -547,6 +547,7 @@ const pt: Record<string, string> = {
   'quiz.comoJogar.ler': 'Leia a pergunta no alto da tela.',
   'quiz.comoJogar.escolher': 'Escolha a resposta com as setas e confirme.',
   'quiz.pos.back': 'Voltar',
+  'quiz.pos.sonar': 'Sonar',
   'quiz.menu': 'Menu',
   'quiz.resposta.certa': 'Certo! {certa}.',
   'quiz.resposta.errada': 'Ainda não. A resposta certa é {certa}.',

@@ -437,6 +437,7 @@ const es: Record<string, string> = {
   'quiz.comoJogar.ler': 'Lee la pregunta arriba de la pantalla.',
   'quiz.comoJogar.escolher': 'Elige la respuesta con las flechas y confirma.',
   'quiz.pos.back': 'Volver',
+  'quiz.pos.sonar': 'Sonar',
   'quiz.menu': 'Menú',
   'quiz.resposta.certa': '¡Correcto! {certa}.',
   'quiz.resposta.errada': 'Todavía no. La respuesta correcta es {certa}.',
