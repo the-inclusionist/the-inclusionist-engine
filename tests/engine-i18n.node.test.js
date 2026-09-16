@@ -185,7 +185,8 @@ const CRU_CONHECIDO = {
                                // forma, e nenhum dos dois estava contado em lado nenhum.
   'ui/settings-visual.ts': 7,
   'ui/settings-caa.ts': 5,
-  'ui/caa-sets.ts': 3,             // descrições dos conjuntos de pictogramas (licença, origem cultural)
+  'ui/caa-sets.ts': 3,
+  'ui/locale-flags.ts': 2,       // each language named IN ITSELF, beside its flag: a child who cannot read the current language still finds theirs             // descrições dos conjuntos de pictogramas (licença, origem cultural)
   // ✅ `ui/hud.ts` SAIU DA LISTA em 2026-09-12, e é a SEGUNDA entrada que este livro-razão perde por conserto
   // em vez de por contagem. Era o selo «aperte um botão para entrar» da tela ainda sem dono — a única frase
   // que diz a uma criança COMO entrar, em português, num jogo em inglês. Virou `hud.waitBadge`.

@@ -48,8 +48,8 @@ function tts() {
 }
 
 describe('platform/tts — a narração fala o idioma do jogo', () => {
-  it('[Right] o idioma da fala SEGUE o locale: pt-BR · en · es', async () => {
-    for (const [loc, esperado] of [['pt', 'pt-BR'], ['en', 'en'], ['es', 'es']]) {
+  it('[Right] o idioma da fala SEGUE o locale: pt-BR · en-US · es-MX', async () => {
+    for (const [loc, esperado] of [['pt', 'pt-BR'], ['en', 'en-US'], ['es', 'es-MX']]) {
       await setLocale(loc);
       spoke.length = 0;
       tts().narrate('teste');
@@ -65,18 +65,18 @@ describe('platform/tts — a narração fala o idioma do jogo', () => {
     expect(spoke[0].lang).toBe(bcp47(getLocale()));
   });
 
-  it('[Boundary] só o português leva região; inglês e espanhol vão sem, para o navegador escolher a variante', async () => {
-    // Fixar 'en-US' imporia sotaque americano a quem estivesse na Índia ou na Nigéria. O português precisa da
-    // região porque pt-PT e pt-BR soam diferente o bastante para uma criança brasileira estranhar.
+  it('[Boundary] cada idioma leva a região da sua bandeira: pt-BR, en-US, es-MX', async () => {
+    // English and Spanish went without a region, for the browser to pick the variant. The language button names a place
+    // (the Dev, 2026-09-16: «Cada bandeira indica a localização para qual o app está configurado»), so the tag says it too.
     expect(bcp47('pt')).toBe('pt-BR');
-    expect(bcp47('en')).toBe('en');
-    expect(bcp47('es')).toBe('es');
+    expect(bcp47('en')).toBe('en-US');
+    expect(bcp47('es')).toBe('es-MX');
   });
 
   it('[Interface] `<html lang>` e a fala usam a MESMA etiqueta — uma regra, dois consumidores', async () => {
     await setLocale('es');
     tts().narrate('x');
-    expect(document.documentElement.lang).toBe('es');
+    expect(document.documentElement.lang).toBe('es-MX');
     expect(spoke[0].lang).toBe(document.documentElement.lang);
   });
 });

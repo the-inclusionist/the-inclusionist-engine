@@ -175,18 +175,15 @@ export function t(key: string, params?: Record<string, string | number>): string
 export function getLocale(): string { return locale; }
 
 /**
- * A etiqueta BCP-47 do idioma corrente — o que se escreve em `<html lang>` e o que se entrega a APIs do
- * navegador que falam (Web Speech) ou comparam idioma.
+ * THE BCP-47 TAG OF THE CURRENT LANGUAGE — what `<html lang>` says and what the browser's speech and recognition are given.
  *
- * Só o português precisa de região: 'pt' sozinho deixaria o navegador escolher entre pt-PT e pt-BR, e a
- * diferença de prosódia é audível para uma criança brasileira. Inglês e espanhol ficam sem região de
- * propósito — o navegador escolhe a variante local, que é o certo, e fixar 'en-US' imporia sotaque americano
- * a quem estivesse na Índia ou na Nigéria.
- *
- * `setLocale` calculava isto em linha, ao escrever `<html lang>`. Agora os dois leem daqui: uma regra, dois
- * consumidores — que é exatamente a forma que este projeto já viu divergir quatro vezes.
+ * Each language carries the REGION its flag stands for (the Dev, 2026-09-16: «Brasil, Estados Unidos e México. Cada bandeira indica a
+ * localização para qual o app está configurado»): pt-BR, en-US, es-MX. It was pt-BR with `en` and `es` bare, so the browser picked the
+ * variant; the language button now states the place. Voices are still matched on the language alone (`vozesDoIdioma`), so a region
+ * narrows nothing a child can hear.
  */
-export function bcp47(code: string = locale): string { return code === 'pt' ? 'pt-BR' : code; }
+const REGION_OF: Readonly<Record<string, string>> = { pt: 'pt-BR', en: 'en-US', es: 'es-MX' };
+export function bcp47(code: string = locale): string { return REGION_OF[code] ?? code; }
 export function availableLocales(): string[] { return AVAILABLE.slice(); }
 
 // Aplica as traduções declarativas do HTML: [data-i18n] → textContent; [data-i18n-aria] → aria-label.

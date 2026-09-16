@@ -17,7 +17,9 @@ describe('the hourglass icon', () => {
   it('📌 [Right] it is its own icon, an hourglass, after the eleven — never the finger icon', () => {
     const ampulheta = PAUSE_ICONS.find((ic) => ic.k === 'velocidade');
     expect(ampulheta?.e).toBe('⏳');
-    expect(PAUSE_ICONS.at(-1)?.k, 'a new icon displaces the ones children already learned').toBe('velocidade');
+    // after the eleven, before the language button that came after it (2026-09-16): a new icon goes at the end and moves none
+    expect(PAUSE_ICONS.at(-2)?.k, 'a new icon displaces the ones children already learned').toBe('velocidade');
+    expect(PAUSE_ICONS.at(-1)?.k).toBe('idioma');
     expect(PAUSE_ICONS.find((ic) => ic.k === 'altmove')?.e).toBe('☝️');
     expect(PAUSE_ICONS.some((ic) => /[🐌🐢🐇]/u.test(ic.e)), 'an animal stands for slowness').toBe(false);
   });

@@ -28,7 +28,8 @@
 
 import type { PlayerView } from '../core/entity.js';
 import type { NavKeys } from '../input/edges.js'; // a MESMA intenção que teclado, controle, olhar e fala montam
-import { t } from '../core/i18n.js';
+import { t, getLocale, setLocale } from '../core/i18n.js';
+import { flagOf, nextLocale, LANGUAGE_NAME, type CycleLocale } from './locale-flags.js';
 import { CONTRAST_LEVELS } from './settings-visual.js';
 import { CURTO_DO_TEMA, CURTO_DA_CORRECAO } from './visual-axes-panel.js';
 import {
@@ -156,6 +157,9 @@ export const PAUSE_ICONS: readonly PauseIcon[] = [
   // THE TWELFTH (ADR-0180): the game speed, its own button beside toggle keys, at the end for the same reason as the eleventh.
   // An hourglass and no animal: a snail, a turtle or a hare can read as an insult to the child who needs the slower game.
   { k: 'velocidade', e: '⏳', n: 'icon.velocidade' },
+  // THE LAST BUTTON, the language (the Dev, 2026-09-16): Brazil → United States → Mexico, each press; menus, the footer, speech and
+  // recognition follow it. Its glyph is a DRAWN flag (`ui/locale-flags`), since flag emoji show as letters on Windows.
+  { k: 'idioma', e: '🇧🇷', n: 'icon.idioma' },
 ];
 
 const ICON_BY_KEY: ReadonlyMap<string, PauseIcon> = new Map(PAUSE_ICONS.map((ic) => [ic.k, ic]));
@@ -253,6 +257,8 @@ export interface IconStateSnapshot {
   olhos?: EyeControlLevel;
   /** Playing with the face (ADR-0212 §3); absent reads as off. */
   rosto?: FaceControlLevel;
+  /** The current locale (`core/i18n`), for the language button. */
+  idioma?: string;
   /** False disables the blind/TTS icons: those need an audio output nobody else is listening to. */
   privateOutput: boolean;
   /**
@@ -335,6 +341,7 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   if (k === 'contrast') return rotulo(CURTO_DO_TEMA[s.visual.tema]);
   if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CURTO_DA_CORRECAO[s.visual.correcao]) });
   if (k === 'eyes') return rotulo(NOME_DOS_OLHOS[s.olhos ?? 'off']);
+  if (k === 'idioma') return t('icon.state', { nome: t(ic.n), v: LANGUAGE_NAME[(s.idioma ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt });
   if (k === 'face') return rotulo(NOME_DO_ROSTO[s.rosto ?? 'off']);
   if (k === 'velocidade') return t('icon.state', { nome: t(ic.n), v: t('icon.velocidade.valor', { pct: Math.round((s.velocidade ?? 1) * 100) }) });
   return t(ic.n);
@@ -386,7 +393,7 @@ export const ICON_STATE_CLASSES: readonly string[] = ['pi-calm', 'pi-cvd-protan'
  *  time and would otherwise ship the raw key to a screen reader. */
 export function iconBtnMarkup(ic: PauseIcon): string {
   return '<button class="pi-btn' + (ic.soon ? ' pi-soon' : '') + '" type="button" data-pi="' + ic.k +
-    '" aria-label="' + (ic.soon ? t('icon.soon', { nome: t(ic.n) }) : t(ic.n)) + '">' + ic.e + '</button>';
+    '" aria-label="' + (ic.soon ? t('icon.soon', { nome: t(ic.n) }) : t(ic.n)) + '">' + (ic.k === 'idioma' ? flagOf(getLocale()) : ic.e) + '</button>';
 }
 
 /**
@@ -1086,6 +1093,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       velocidade: gameSpeed,
       olhos: eyeControl,
       rosto: faceControl,
+      idioma: getLocale(),
       privateOutput: hasPrivateOutput(i),
       alternanciaExigida: recusaAgora(i) !== null,
       semVoz: !!ctx.semVoz?.(),
@@ -1182,6 +1190,12 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       setFaceControlValue(v);
       ctx.srSay(t('sr.icon.face', { v: t(NOME_DO_ROSTO[v]) }));
     },
+    // THE LANGUAGE (the Dev, 2026-09-16): the next flag; `setLocale` stores it and every surface redraws on `i18n:change`. Said in the NEW
+    // language, once it has loaded.
+    idioma: () => {
+      const v = nextLocale(getLocale());
+      void setLocale(v).then(() => ctx.srSay(t('sr.icon.idioma', { v: LANGUAGE_NAME[v] })));
+    },
     // THE GAME SPEED (ADR-0180): one step down, wrapping at 50%; stored, and felt on the next frame of `startLoop`.
     velocidade: () => {
       const v = proximaVelocidade(gameSpeed);
@@ -1231,6 +1245,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const k = b.dataset.pi || '';
     // the hourglass follows the CURRENT cartridge's clock (ADR-0180): a turn game mounted later hides it, a clock game shows it
     if (k === 'velocidade') b.hidden = !ctx.relogio?.();
+    if (k === 'idioma') { const bandeira = flagOf(getLocale()); if (b.innerHTML !== bandeira) b.innerHTML = bandeira; }
     const st = iconState(i);
     const v = computeIconVisual(k, st);
     b.classList.remove(...ICON_STATE_CLASSES);
