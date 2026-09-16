@@ -550,6 +550,22 @@
     "type EdgeFlag": "'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'",
     "type EdgeAction": "'action2' | 'action1' | 'left' | 'right' | 'action4' | 'action3'"
   },
+  "input/face-signals.ts": {
+    "interface HeadPose": [
+      "pitch",
+      "roll",
+      "tx",
+      "ty",
+      "tz",
+      "yaw"
+    ],
+    "interface EyeGaze": [
+      "h",
+      "v"
+    ],
+    "type EyeBlendshape": "(typeof EYE_BLENDSHAPES)[number]",
+    "type BlendshapeScores": "Partial<Readonly<Record<EyeBlendshape, number>>>"
+  },
   "input/gamepad.ts": {
     "interface PadButtonLike": [
       "pressed"
@@ -632,6 +648,80 @@
     "type PadMap": "Record<string, PadBinding | boolean | undefined>",
     "type ActionKey": "'left' | 'right' | 'up' | 'down' | 'action2' | 'action1' | 'action4' | 'action3'",
     "type GamepadPlayer": "PlayerView< 'pad' | 'quit' | 'waiting' | 'easy' | 'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge' >"
+  },
+  "input/gaze-cycle.ts": {
+    "interface GazeCycleOptions": [
+      "cancelFirst?",
+      "closeMs?",
+      "deadMs?",
+      "entryMs?",
+      "oppositeMs?",
+      "pulseMs?",
+      "repeat?",
+      "requireOpposite?",
+      "stepMs?"
+    ],
+    "interface GazeFrame": [
+      "cancel?",
+      "eyesClosed?",
+      "frozen?",
+      "zone?"
+    ],
+    "interface GazePreview": [
+      "zone"
+    ],
+    "interface GazeCycleOutput": [
+      "armed",
+      "closedMs",
+      "commanded",
+      "preparing",
+      "pressed",
+      "preview"
+    ],
+    "interface GazeCycle": [],
+    "type CycleItem": "Action | typeof CANCEL"
+  },
+  "input/gaze-keys.ts": {
+    "interface GazeKeyEvent": [
+      "type"
+    ]
+  },
+  "input/gaze-relative.ts": {
+    "interface GazeReaderOptions": [
+      "axisSwitch?",
+      "exit?",
+      "followMs?",
+      "headMaxDegPerSecond?",
+      "parkedFollowMs?",
+      "parkedMs?",
+      "restMs?",
+      "sideways?",
+      "tremorFloor?",
+      "tremorMax?",
+      "vertical?"
+    ],
+    "interface GazeSample": [
+      "h",
+      "pose?",
+      "v"
+    ],
+    "interface GazeReading": [
+      "displacement?",
+      "parked?",
+      "ready",
+      "reason",
+      "rest?",
+      "stillMs?",
+      "strength?",
+      "tremor?",
+      "zone"
+    ],
+    "interface GazeReader": [
+      "reset",
+      "state"
+    ],
+    "type GazeZone": "'up' | 'down' | 'left' | 'right'",
+    "type GazeReason": "'no-eyes' | 'gaze-moving' | 'measuring-rest' | 'rest-measured' | 'head-moving' | 'recentring' | null"
   },
   "input/keyboard-runtime.ts": {
     "interface KeyboardRuntimeCtx": [
@@ -1246,6 +1336,57 @@
       "vozes"
     ],
     "type CarregarKokoro": "() => Promise<ModuloKokoro>"
+  },
+  "platform/vision-loop.ts": {
+    "interface VisionLoopDeps": [
+      "cancelFrame",
+      "every",
+      "now",
+      "requestFrame",
+      "stopEvery"
+    ],
+    "interface VisionLoopOptions": [
+      "floorFps?",
+      "onError?",
+      "onFrame",
+      "onHealth?",
+      "stallMs?",
+      "watchMs?"
+    ],
+    "interface VisionLoop": [
+      "health",
+      "start",
+      "stop"
+    ],
+    "type LoopHealth": "'ok' | 'slow' | 'stalled'"
+  },
+  "platform/vision.ts": {
+    "interface FaceDetection": [
+      "faceBlendshapes?",
+      "faceLandmarks?",
+      "facialTransformationMatrixes?"
+    ],
+    "interface TasksVision": [
+      "FaceLandmarker",
+      "FilesetResolver"
+    ],
+    "interface EyeLines": [
+      "eyes"
+    ],
+    "interface VisionDeps": [
+      "base",
+      "hasFile?",
+      "importBundle?"
+    ],
+    "interface FaceTracker": [
+      "close",
+      "delegate",
+      "detect",
+      "eyeLines"
+    ],
+    "type Connections": "ReadonlyArray<{ readonly start: number",
+    "type Delegate": "'GPU' | 'CPU'",
+    "type FaceTrackerLoad": "| { readonly ok: true"
   },
   "platform/voice-plan.ts": {
     "interface VozNeural": [
@@ -1898,6 +2039,25 @@
       "dizer"
     ],
     "type GameOption": "| (GameOptionBase & { readonly kind: 'steps' | 'list'"
+  },
+  "ui/gaze-overlay.ts": {
+    "interface GazeView": [
+      "armed",
+      "preparing",
+      "preview",
+      "restLeftMs?",
+      "restReady",
+      "zone"
+    ],
+    "interface GazeOverlayOptions": [
+      "face?",
+      "level",
+      "say?"
+    ],
+    "type GazeOverlayLevel": "'off' | 'outlines' | 'hatched'",
+    "type GazeRegion": "GazeZone | 'middle'",
+    "type ButtonShape": "'triangle' | 'circle' | 'cross' | 'square'",
+    "type RegionShows": "| { readonly kind: 'nothing' } | { readonly kind: 'text'"
   },
   "ui/help-panel.ts": {
     "interface HelpRow": [

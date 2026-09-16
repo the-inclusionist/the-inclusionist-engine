@@ -398,6 +398,18 @@
     "edgeAllowed",
     "hasNavIntent"
   ],
+  "input/face-signals.ts": [
+    "BlendshapeScores",
+    "EYES_CLOSED_MARK",
+    "EYE_BLENDSHAPES",
+    "EyeBlendshape",
+    "EyeGaze",
+    "HeadPose",
+    "bothEyesClosed",
+    "eyeGazeFromScores",
+    "headPoseFromMatrix",
+    "scoresFromCategories"
+  ],
   "input/gamepad.ts": [
     "ActionKey",
     "Dirs",
@@ -419,6 +431,33 @@
     "padActions",
     "stdDirs",
     "umBotaoPorVez"
+  ],
+  "input/gaze-cycle.ts": [
+    "CANCEL",
+    "CycleItem",
+    "GAZE_CYCLE_DEFAULTS",
+    "GAZE_GROUPS",
+    "GazeCycle",
+    "GazeCycleOptions",
+    "GazeCycleOutput",
+    "GazeFrame",
+    "GazePreview",
+    "createGazeCycle"
+  ],
+  "input/gaze-keys.ts": [
+    "GazeKeyEvent",
+    "dispatchGazeKeys",
+    "gazeKeyEvents"
+  ],
+  "input/gaze-relative.ts": [
+    "GAZE_DEFAULTS",
+    "GazeReader",
+    "GazeReaderOptions",
+    "GazeReading",
+    "GazeReason",
+    "GazeSample",
+    "GazeZone",
+    "createGazeReader"
   ],
   "input/keyboard-runtime.ts": [
     "ControlsState",
@@ -801,6 +840,27 @@
     "Tts",
     "TtsCtx",
     "createTts"
+  ],
+  "platform/vision-loop.ts": [
+    "LoopHealth",
+    "VisionLoop",
+    "VisionLoopDeps",
+    "VisionLoopOptions",
+    "createVisionLoop"
+  ],
+  "platform/vision.ts": [
+    "Connections",
+    "Delegate",
+    "EyeLines",
+    "FACE_VISION_FILES",
+    "FaceDetection",
+    "FaceTracker",
+    "FaceTrackerLoad",
+    "TasksVision",
+    "VisionDeps",
+    "closeCamera",
+    "loadFaceTracker",
+    "openCamera"
   ],
   "platform/voice-plan.ts": [
     "VozNeural",
@@ -1302,6 +1362,21 @@
     "GameOptionsDrawCtx",
     "desenharOpcoesDoJogo",
     "gameOptionsProblems"
+  ],
+  "ui/gaze-overlay.ts": [
+    "ButtonShape",
+    "FACE_BUTTON",
+    "GAZE_REGIONS",
+    "GazeOverlayLevel",
+    "GazeOverlayOptions",
+    "GazeRegion",
+    "GazeView",
+    "LUCIDE_ARROWS",
+    "RegionShows",
+    "SHOULDER",
+    "drawGazeOverlay",
+    "gazeFontPx",
+    "whatRegionShows"
   ],
   "ui/help-panel.ts": [
     "FigureClock",
