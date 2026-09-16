@@ -552,6 +552,15 @@
     "type EdgeFlag": "'jumpEdge' | 'runEdge' | 'leftEdge' | 'rightEdge' | 'swapEdge' | 'specialEdge'",
     "type EdgeAction": "'action2' | 'action1' | 'left' | 'right' | 'action4' | 'action3'"
   },
+  "input/face-map.ts": {
+    "interface FaceRest": [
+      "scores"
+    ],
+    "type FaceExpression": "| 'browsUp' | 'frown' | 'headLeft' | 'headRight' | 'squeeze' | 'pressLips' | 'openMouth' | 'smile' | 'pucker' | 'lookRightThenLeft' | 'mouthLeft' | 'lookLeftThenRight' | 'mouthRight'",
+    "type FaceBlendshape": "(typeof FACE_BLENDSHAPES)[number]",
+    "type FaceScores": "Partial<Readonly<Record<FaceBlendshape, number>>>",
+    "type ExpressionLevels": "{ readonly [E in FaceExpression]?: number }"
+  },
   "input/face-signals.ts": {
     "interface HeadPose": [
       "pitch",

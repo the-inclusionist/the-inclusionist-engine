@@ -402,6 +402,28 @@
     "edgeAllowed",
     "hasNavIntent"
   ],
+  "input/face-map.ts": [
+    "ExpressionLevels",
+    "FACE_BLENDSHAPES",
+    "FACE_MAP",
+    "FULL_TURN",
+    "FaceBlendshape",
+    "FaceExpression",
+    "FaceRest",
+    "FaceScores",
+    "PUCKER_MARK",
+    "SQUEEZE_MARK",
+    "createCrossedLook",
+    "createFaceMapReader",
+    "createLongSqueeze",
+    "createMouthHold",
+    "faceLevels",
+    "faceRestFromSamples",
+    "faceScoresFromCategories",
+    "headTurn",
+    "ownMarks",
+    "resolveFace"
+  ],
   "input/face-signals.ts": [
     "BlendshapeScores",
     "EYES_CLOSED_MARK",

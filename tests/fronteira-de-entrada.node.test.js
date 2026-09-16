@@ -70,6 +70,8 @@ const PUBLICADOS = {
     + 'keys. Published by the wildcard, with no external consumer — and it should not gain one: a transport is the engine\'s',
   'gaze-keys': 'the eye control\'s presses as key events stamped `olhos` (ADR-0213, ADR-0109, issue #196); wired by the engine. '
     + 'Published by the wildcard, with no external consumer — and it should not gain one: a transport is the engine\'s',
+  'face-map': 'the face as a controller, the Dev\'s map (ADR-0210 erratum, issue #191); pure, and to be wired by the engine to stamped '
+    + 'keys. Published by the wildcard, with no external consumer — and it should not gain one: a transport is the engine\'s',
   'pointer-space': 'a conversão de um ponto de tela (#105); pura, e pode legitimamente servir um cartucho que desenhe',
   'pointer': 'a amostra do ponteiro (ADR-0112); é o que o controle virtual vai entregar, então sai desta lista quando ele existir',
   'vocabulary-migration': 'a tradução dos nomes antigos de acção; existe para uma migração e sai com ela',
