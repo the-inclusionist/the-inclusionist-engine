@@ -63,6 +63,7 @@ import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, sho
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
+import { createEyeControl } from '../ui/eye-control.js';
 import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from '../ui/pause-icons.js';
 import { anunciarItem } from '../ui/item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
@@ -1144,6 +1145,7 @@ export function createGame(o: CreateGameOptions): Engine {
     };
   }
 
+  const temCamera = typeof win.navigator?.mediaDevices?.getUserMedia === 'function';
   const pauseIcons = initPauseIcons({
     doc,
     /*
@@ -1163,6 +1165,8 @@ export function createGame(o: CreateGameOptions): Engine {
     seguraTeclas: () => cartucho.declaration.seguraTeclas(),
     // the hourglass is offered where time runs by itself (ADR-0180), read per cartridge
     relogio: () => cartucho.declaration.tick === 'clock',
+    // the 👀 is offered where there is a camera to ask for (ADR-0213); the eye control below follows its position
+    olhos: temCamera,
     // no voice speaks the current language: the narration icon locks like the panel's rows (ADR-0185)
     semVoz: () => tts.vozes().length === 0,
     /*
@@ -1371,6 +1375,8 @@ export function createGame(o: CreateGameOptions): Engine {
      * Os outros continuam a refletir-se ao clique, que é o caminho por onde hoje eles mudam.
      */
     state.on('modoCego', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
+    // the 👀 changes elsewhere too: the eye control puts it back to off when the camera or the files are missing (ADR-0213)
+    state.on('eyeControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
   }
 
   // 4d. QUEM ABRIU A PAUSA, quando há mais de um assento — o achado 3 da auditoria do `game-soccer`.
@@ -3525,6 +3531,27 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   }
 
   const problemasMedidos: string[] = [];
+
+  /*
+   * PLAYING WITH THE EYES (ADR-0213; issues #194, #196): the stored 👀 position drives `ui/eye-control` — the camera, the reading, the
+   * keys stamped `olhos` on `#game-region` for seat 0, and the regions drawn over the game. What cannot start is said, lands here in
+   * `problems`, and puts the 👀 back to off. A stored position opens the camera at start, which asks the child's permission.
+   */
+  const regiaoDoOlhar = $<HTMLElement>('#game-region');
+  if (temCamera && regiaoDoOlhar) {
+    const olhos = createEyeControl({
+      doc, region: regiaoDoOlhar, base: doc.baseURI,
+      loop: {
+        requestFrame: (cb) => win.requestAnimationFrame(cb), cancelFrame: (h) => win.cancelAnimationFrame(h),
+        now: () => win.performance.now(), every: (cb, ms) => win.setInterval(cb, ms), stopEvery: (h) => win.clearInterval(h),
+      },
+      scheme: () => keyboard.kbFor(0), say: srSay, alert: srAlert,
+      report: (linha) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
+      turnOff: () => state.setEyeControlValue('off'),
+    });
+    state.on('eyeControl', (nivel) => { void olhos.apply(nivel); });
+    void olhos.apply(state.eyeControl);
+  }
   const AMOSTRA_C = COLUNAS * 10;
   const AMOSTRA_L = LINHAS * 10;
   const linear = (v: number): number => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };

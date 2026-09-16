@@ -2006,6 +2006,27 @@
       "search?"
     ]
   },
+  "ui/eye-control.ts": {
+    "interface CameraFeed": [
+      "frame"
+    ],
+    "interface EyeControlDeps": [
+      "alert",
+      "base",
+      "doc",
+      "loadTracker?",
+      "loop",
+      "openFeed?",
+      "region",
+      "report",
+      "say",
+      "scheme",
+      "turnOff"
+    ],
+    "interface EyeControl": [
+      "apply"
+    ]
+  },
   "ui/focus-trap.ts": {
     "interface FocusTrapCtx": [
       "focaveisDe",
