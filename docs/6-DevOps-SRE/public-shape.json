@@ -433,6 +433,7 @@
       "captionPpm",
       "captionsOn",
       "cbSafe",
+      "eyeControl",
       "gameSpeed",
       "hcOutlineBg",
       "hcOutlineFg",
@@ -451,7 +452,8 @@
       "tx"
     ],
     "type LetterCase": "'mixed' | 'upper'",
-    "type OutlineLevel": "0 | 1 | 2"
+    "type OutlineLevel": "0 | 1 | 2",
+    "type EyeControlLevel": "'off' | 'outlines' | 'hatched'"
   },
   "core/visual-state.ts": {
     "interface VisualState": [
@@ -2054,7 +2056,7 @@
       "level",
       "say?"
     ],
-    "type GazeOverlayLevel": "'off' | 'outlines' | 'hatched'",
+    "type GazeOverlayLevel": "EyeControlLevel",
     "type GazeRegion": "GazeZone | 'middle'",
     "type ButtonShape": "'triangle' | 'circle' | 'cross' | 'square'",
     "type RegionShows": "| { readonly kind: 'nothing' } | { readonly kind: 'text'"
@@ -2334,6 +2336,7 @@
       "calmMode",
       "librasOn",
       "modoCego",
+      "olhos?",
       "privateOutput",
       "semVoz?",
       "toggleMove",
@@ -2350,6 +2353,7 @@
     ],
     "interface AccionaveisDoJogo": [
       "correcao",
+      "olhos?",
       "relogio?",
       "seguraTeclas",
       "tema",
@@ -2379,6 +2383,7 @@
       "getPlayers",
       "isLibrasOn",
       "jogoButtons?",
+      "olhos?",
       "optionsButtons?",
       "pmButtons?",
       "reflectTtsPanel",

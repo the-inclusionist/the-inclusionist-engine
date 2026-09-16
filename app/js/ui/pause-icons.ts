@@ -41,7 +41,10 @@ import { anunciarItem } from './item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
-import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue } from '../core/state.js';
+import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue, eyeControl, setEyeControlValue, nextEyeControl, type EyeControlLevel } from '../core/state.js';
+
+/** The word for each position of the 👀 cycle. */
+const NOME_DOS_OLHOS: { readonly [L in EyeControlLevel]: string } = { off: 'state.off', outlines: 'gaze.level.outlines', hatched: 'gaze.level.hatched' };
 import { proximaVelocidade } from '../core/game-speed.js';
 // ⚠️ IMPORT DIRETO DE `platform/storage`, e não uma peça a mais no `ctx`, e a escolha é sobre quem pode
 // esquecer: `initPauseIcons` é chamado pela raiz de composição de CADA jogo, e um `store` injetado é um
@@ -132,7 +135,7 @@ export const PAUSE_ICONS: readonly PauseIcon[] = [
   { k: 'contrast', e: '🌗', n: 'icon.contrast' },
   { k: 'cvd', e: '🚥', n: 'icon.cvd' },
   { k: 'face', e: '🧑', n: 'icon.face', soon: true },
-  { k: 'eyes', e: '👀', n: 'icon.eyes', soon: true },
+  { k: 'eyes', e: '👀', n: 'icon.eyes' }, // playing with the eyes (ADR-0213 §7): off · outlines · outlines + hatching
   { k: 'voice', e: '👄', n: 'icon.voice', soon: true },
   /*
    * O DÉCIMO PRIMEIRO (ADR-0149 §1), e ele entra no FIM por uma razão de ordem e não de importância: quem
@@ -240,6 +243,8 @@ export interface IconStateSnapshot {
   visual: VisualState;
   /** The game speed (ADR-0180), a step of `core/game-speed`; absent reads as 100%. */
   velocidade?: number;
+  /** Playing with the eyes (ADR-0213 §7); absent reads as off. */
+  olhos?: EyeControlLevel;
   /** False disables the blind/TTS icons: those need an audio output nobody else is listening to. */
   privateOutput: boolean;
   /**
@@ -321,6 +326,7 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   if (k === 'altmove') return rotulo(s.toggleMove ? 'state.on' : 'state.off');
   if (k === 'contrast') return rotulo(CURTO_DO_TEMA[s.visual.tema]);
   if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CURTO_DA_CORRECAO[s.visual.correcao]) });
+  if (k === 'eyes') return rotulo(NOME_DOS_OLHOS[s.olhos ?? 'off']);
   if (k === 'velocidade') return t('icon.state', { nome: t(ic.n), v: t('icon.velocidade.valor', { pct: Math.round((s.velocidade ?? 1) * 100) }) });
   return t(ic.n);
 }
@@ -349,6 +355,7 @@ export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   else if (k === 'altmove') { on = s.toggleMove; dis = !!s.alternanciaExigida; }
   else if (k === 'contrast') { on = temAltoContraste(s.visual); }
   else if (k === 'velocidade') { on = (s.velocidade ?? 1) < 1; }
+  else if (k === 'eyes') { on = (s.olhos ?? 'off') !== 'off'; }
   else if (k === 'cvd') {
     // ⚠️ O FUNDO DE DUAS CORES É O SINAL DE LIGADO deste ícone, e agora ele lê o EIXO da correção — que
     // continua a dizer o mesmo quando o tema também está ligado, coisa que a chave única não conseguia: com
@@ -425,6 +432,8 @@ export interface AccionaveisDoJogo {
    * que é exactamente o que o §5 do ADR-0106 quer. A assimetria é a mesma dos dois escritores visuais.
    */
   readonly tipografia?: boolean;
+  /** Can this device play with the eyes — is there a camera to ask for? Without it the 👀 is not mounted (ADR-0213). */
+  readonly olhos?: boolean;
 }
 
 /**
@@ -451,6 +460,7 @@ export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly Pause
         : ic.k === 'tipografia' ? escritores.tipografia
           // the hourglass exists where time runs by itself (ADR-0180): a turn game has nothing to slow
           : ic.k === 'velocidade' ? Boolean(escritores.relogio?.())
+              : ic.k === 'eyes' ? Boolean(escritores.olhos)
             : true));
 }
 
@@ -888,6 +898,8 @@ export interface PauseIconsCtx {
   seguraTeclas: () => boolean;
   /** Does the current game's time run by itself? (ADR-0180: the hourglass.) Optional; absent, no hourglass. */
   relogio?: () => boolean;
+  /** Can this device play with the eyes? (ADR-0213: the 👀 cycle.) Optional; absent, no 👀. */
+  olhos?: boolean;
   /** Does no voice speak the current language? (ADR-0185: the narration icon locks.) Optional; absent, a voice. */
   semVoz?: () => boolean;
 }
@@ -1005,6 +1017,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     tipografia: Boolean(ctx.ciclarTipografia),
     // mounted when the root can answer the clock question; shown or hidden per cartridge in `reflectIconBtn` (ADR-0142)
     relogio: () => Boolean(ctx.relogio),
+    olhos: Boolean(ctx.olhos),
   });
 
   /*
@@ -1055,6 +1068,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       // aqui, porque ela lê `DEFAULTS` e mais nada.
       visual: p.visual ?? PADRAO,
       velocidade: gameSpeed,
+      olhos: eyeControl,
       privateOutput: hasPrivateOutput(i),
       alternanciaExigida: recusaAgora(i) !== null,
       semVoz: !!ctx.semVoz?.(),
@@ -1137,6 +1151,12 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       if (!ctx.ciclarTipografia) return;
       const face = ctx.ciclarTipografia();
       if (face) ctx.srSay(t('sr.typo.font', { fam: face }));
+    },
+    // PLAYING WITH THE EYES (ADR-0213 §7): off → outlines → outlines + hatching → off; stored. The camera follows the stored level.
+    eyes: () => {
+      const v = nextEyeControl(eyeControl);
+      setEyeControlValue(v);
+      ctx.srSay(t('sr.icon.eyes', { v: t(NOME_DOS_OLHOS[v]) }));
     },
     // THE GAME SPEED (ADR-0180): one step down, wrapping at 50%; stored, and felt on the next frame of `startLoop`.
     velocidade: () => {

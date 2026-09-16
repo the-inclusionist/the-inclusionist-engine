@@ -13,11 +13,13 @@
 // What a region shows is decided by `whatRegionShows`, plain data; `drawGazeOverlay` only follows it. Places and colours: interface-log.
 
 import { t } from '../core/i18n.js';
+import type { EyeControlLevel } from '../core/state.js';
 import type { GazeZone } from '../input/gaze-relative.js';
 import { GAZE_GROUPS, CANCEL, type GazePreview } from '../input/gaze-cycle.js';
 import type { EyeLines } from '../platform/vision.js';
 
-export type GazeOverlayLevel = 'off' | 'outlines' | 'hatched';
+/** The toggle's three positions, the stored ones (`core/state.eyeControl`). */
+export type GazeOverlayLevel = EyeControlLevel;
 export type GazeRegion = GazeZone | 'middle';
 
 /** Centre x, centre y, width, height — fractions of the game region. */

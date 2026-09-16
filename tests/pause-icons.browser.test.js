@@ -81,6 +81,7 @@ function makeCtx(over = {}) {
     // vive no project node; sem esta linha ele mediria uma barra com um ícone a menos.
     ciclarTipografia: () => 'Atkinson Hyperlegible',
     relogio: () => true, // the hourglass (ADR-0180) mounts only where time runs by itself
+    olhos: true, // the 👀 (ADR-0213) mounts only where the root can play with the eyes
     ...over,
   };
   return { ctx, state, said, alerted };

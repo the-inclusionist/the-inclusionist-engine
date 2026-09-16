@@ -85,6 +85,8 @@ export interface EventoDoJogo {
   speechPpm: number;
   /** The «no strength to hold» empathy simulation (ADR-0181): a held game key reads as one tap. */
   semForca: boolean;
+  /** Playing with the eyes (ADR-0213 §7): off, on with the outlines, or on with the outlines and hatching. */
+  eyeControl: EyeControlLevel;
 
   /* --- JOGO: `game/state` AUMENTA esta interface com `cenario`, `activity`, `quizLevel` e `coins`.
      Ver a declaração de aumento no fim daquele arquivo. A engine não pode nomear a carga de `coins` — é um
@@ -237,7 +239,8 @@ export const DEFAULTS = Object.freeze({
   captionPpm: 125,
   speechPpm: 254, // the voice's normal speed, the minimum (ADR-0196)
   semForca: false,
-  easy: false,        // por jogador (Modo Fácil)
+  eyeControl: 'off' as EyeControlLevel,
+  easy: false,       // por jogador (Modo Fácil)
   toggleMove: false,  // por jogador (movimento por alternância)
   // A alternância do botão de CORRER nasce desligada de FÁBRICA — e liga sozinha no controle de tela, que é
   // contexto e não escolha. A distinção importa para a marca do ADR-0029: ver `refreshMarks` em
@@ -461,6 +464,21 @@ export function setSemForcaValue(on: boolean): void {
   const p = armazem('setSemForcaValue'); p.setBool('incl_sem_forca', v); semForca = v; emit('semForca', v);
 }
 
+// --- eyeControl: playing with the eyes, the three positions of the quick bar's 👀 (ADR-0213 §7): off · outlines and the eye lines ·
+//     outlines, hatching and the eye lines. Kept on the device (ADR-0212 §6); a stored value that is not one of them reads as off,
+//     because the camera must never switch itself on. ---
+export type EyeControlLevel = 'off' | 'outlines' | 'hatched';
+const EYE_CONTROL_LEVELS: readonly EyeControlLevel[] = ['off', 'outlines', 'hatched'];
+const nivelDosOlhos = (v: string | null): EyeControlLevel => ((EYE_CONTROL_LEVELS as readonly (string | null)[]).includes(v) ? v as EyeControlLevel : 'off');
+/** The next position of the 👀 cycle, wrapping back to off. */
+export const nextEyeControl = (v: EyeControlLevel): EyeControlLevel => EYE_CONTROL_LEVELS[(EYE_CONTROL_LEVELS.indexOf(v) + 1) % EYE_CONTROL_LEVELS.length]!;
+export let eyeControl: EyeControlLevel = nivelDosOlhos(VAZIO.get('incl_eye_control', DEFAULTS.eyeControl));
+export function setEyeControlValue(v: EyeControlLevel): void {
+  const valido = nivelDosOlhos(v);
+  if (eyeControl === valido) return;
+  const p = armazem('setEyeControlValue'); p.set('incl_eye_control', valido); eyeControl = valido; emit('eyeControl', valido);
+}
+
 // --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
 //     by it. Stored and carried between games; a stored value outside the steps reads as 100%. ---
 export let gameSpeed: number = velocidadeValida(VAZIO.getNum('incl_game_speed', DEFAULTS.gameSpeed));
@@ -519,6 +537,7 @@ export function carregarEstado(p: PortaDoEstado): void {
   oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
   gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
   semForca = p.getBool('incl_sem_forca', DEFAULTS.semForca);
+  eyeControl = nivelDosOlhos(p.get('incl_eye_control', DEFAULTS.eyeControl));
   captionPpm = ritmoDaLegendaValido(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
   speechPpm = ritmoDaFalaValido(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
 }
