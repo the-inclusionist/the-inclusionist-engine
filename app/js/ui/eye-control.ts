@@ -50,7 +50,7 @@ export interface EyeControl {
   apply(level: EyeControlLevel): Promise<void>;
 }
 
-function videoFeed(doc: Document, media: MediaDevices): () => Promise<CameraFeed> {
+export function videoFeed(doc: Document, media: MediaDevices): () => Promise<CameraFeed> {
   return async () => {
     const stream = await openCamera(media);
     const video = doc.createElement('video');

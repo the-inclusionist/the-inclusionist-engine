@@ -14,7 +14,7 @@ const make = ({ menu = false } = {}) => {
   const vc = createVirtualController({
     scheme: () => SCHEME, menuOpen: () => menuOpen,
     holdKey: (code, source) => log.push(['hold', code, source]), releaseKey: (code) => log.push(['release', code]),
-    menuKey: (code) => log.push(['menu', code]), deliver: (c) => log.push(['deliver', c]),
+    menuKey: (code, source) => log.push(['menu', code, source]), deliver: (c) => log.push(['deliver', c]),
   });
   return { vc, log, setMenu: (v) => { menuOpen = v; } };
 };
@@ -54,7 +54,7 @@ describe('with a menu open', () => {
   it('the position moves the menu by its key and the game hears nothing', () => {
     const { vc, log } = make({ menu: true });
     vc.press('down', 'olhos'); vc.release('down', 'olhos');
-    expect(log).toEqual([['menu', 'KeyS']]);
+    expect(log).toEqual([['menu', 'KeyS', 'olhos']]);
   });
   it('a press the game heard is released to it even if a menu opened meanwhile', () => {
     const { vc, log, setMenu } = make();

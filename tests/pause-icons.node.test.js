@@ -783,7 +783,7 @@ describe('initPauseIcons — ações dos ícones', () => {
 
   it('EXCEÇÃO: ícone em construção só ALERTA — nenhum estado é tocado', () => {
     const { ctx, state, said, alerted } = buildCtx();
-    initPauseIcons(ctx).iconAct('face', 0);
+    initPauseIcons(ctx).iconAct('voice', 0); // the 🧑 left construction (ADR-0212 §3); the 👄 is still there
     expect(alerted).toHaveLength(1);
     expect(alerted[0]).toContain('em construção');
     expect(said).toEqual([]);
@@ -962,9 +962,9 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
   // string que a marcação escreveria. A escrita passou a ser garantida em vez de dispensada.
   it('⚠️ [Right] um ícone EM CONSTRUÇÃO recebe do reflexo a MESMA string que a marcação lhe daria', () => {
     const { ctx } = buildCtx();
-    const b = fakeIconBtn('face');
+    const b = fakeIconBtn('voice');
     initPauseIcons(ctx).reflectIconBtn(b, 0);
-    expect(b.getAttribute('aria-label')).toBe('Webcam — rosto, em construção');
+    expect(b.getAttribute('aria-label')).toBe('Comando de voz, em construção');
     expect(b.getAttribute('aria-pressed')).toBe('false');
   });
 
@@ -1110,7 +1110,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // `soon` diz «ainda não construímos isto», e um botão a dizê-lo sobre o alto contraste mentiria: o alto
     // contraste está construído. O que falta é este jogo ter por onde o aplicar.
     for (const ic of iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true })) {
-      if (ic.k === 'face' || ic.k === 'voice') continue; // esses SÃO `soon`, e continuam (o 👀 deixou de ser: ADR-0213)
+      if (ic.k === 'voice') continue; // esse É `soon`, e continua (o 👀 e o 🧑 deixaram de ser: ADR-0213, ADR-0212)
       expect(ic.soon, `${ic.k} passou a soon`).toBeFalsy();
     }
   });
@@ -1150,7 +1150,8 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     expect(semNada).not.toContain('altmove');
     expect(semNada).not.toContain('tipografia');
     expect(semNada).not.toContain('eyes');
-    expect(semNada).toHaveLength(PAUSE_ICONS.length - 5);
+    expect(semNada).not.toContain('face');
+    expect(semNada).toHaveLength(PAUSE_ICONS.length - 6);
 
     const soAlternancia = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
     expect(soAlternancia).toContain('altmove');

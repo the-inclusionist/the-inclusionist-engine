@@ -189,6 +189,26 @@ export function createFaceMapReader({ rest, mark = 0.3, holdMs = 300 }: { rest: 
   };
 }
 
+/**
+ * THE FACE'S REST, MEASURED BY ITSELF (the Dev, 2026-09-16: «sozinho, quando o rosto fica parado olhando para o centro da tela por 3 s+»).
+ * Frames gather while the face stays still — every blendshape and the nose within `maxSpread` of their median — for `restMs` in a row;
+ * any movement restarts the count, so the rest is never taken from a child who is talking, reading or looking around.
+ */
+export function createFaceRest({ restMs = 3000, maxSpread = 0.08 }: { restMs?: number; maxSpread?: number } = {}) {
+  let since: number | null = null;
+  const samples: { scores: FaceScores; headX: number | null }[] = [];
+  const median = (xs: number[]): number => { const a = [...xs].sort((p, q) => p - q); return a[Math.floor(a.length / 2)] ?? 0; };
+  return (ms: number, scores: FaceScores, headX: number | null): { rest: FaceRest | null; stillMs: number } => {
+    since ??= ms;
+    samples.push({ scores, headX });
+    const moving = [...FACE_BLENDSHAPES.map((n) => samples.map((s) => s.scores[n] ?? 0)), samples.map((s) => s.headX ?? 0)]
+      .some((xs) => { const m = median(xs); return xs.some((x) => Math.abs(x - m) > maxSpread); });
+    if (moving) { samples.length = 0; samples.push({ scores, headX }); since = ms; return { rest: null, stillMs: 0 }; }
+    if (ms - since < restMs) return { rest: null, stillMs: ms - since };
+    return { rest: faceRestFromSamples(samples), stillMs: ms - since };
+  };
+}
+
 /** The rest from a few seconds of samples: each blendshape's median, and the nose's. */
 export function faceRestFromSamples(samples: ReadonlyArray<{ readonly scores: FaceScores; readonly headX: number | null }>): FaceRest {
   const median = (xs: number[]): number => { const a = [...xs].sort((p, q) => p - q); return a.length ? a[Math.floor(a.length / 2)]! : 0; };

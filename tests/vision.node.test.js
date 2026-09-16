@@ -89,6 +89,12 @@ describe('the lines drawn over the game', () => {
     expect(r.tracker.eyeLines.eyes.map((l) => l.start)).toEqual([1, 3, 5, 7]);
     expect(r.tracker.eyeLines.brows.map((l) => l.start)).toEqual([9, 11]);
   });
+  it('the face mode\'s lines add the lips, and still no mesh', async () => {
+    const r = await loadFaceTracker({ base: BASE, hasFile: all, importBundle: fakeVision().importBundle });
+    expect(r.tracker.faceLines.lips.map((l) => l.start)).toEqual([13]);
+    expect(r.tracker.faceLines.eyes).toEqual(r.tracker.eyeLines.eyes);
+    expect(JSON.stringify(r.tracker.faceLines)).not.toContain('"start":15');
+  });
 });
 
 describe('GPU first, CPU as the way out', () => {

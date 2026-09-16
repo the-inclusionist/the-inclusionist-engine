@@ -41,12 +41,15 @@ export interface TasksVision {
     readonly FACE_LANDMARKS_LEFT_EYE: Connections; readonly FACE_LANDMARKS_RIGHT_EYE: Connections;
     readonly FACE_LANDMARKS_LEFT_IRIS: Connections; readonly FACE_LANDMARKS_RIGHT_IRIS: Connections;
     readonly FACE_LANDMARKS_LEFT_EYEBROW: Connections; readonly FACE_LANDMARKS_RIGHT_EYEBROW: Connections;
+    readonly FACE_LANDMARKS_LIPS: Connections;
   };
   readonly GestureRecognizer: { createFromOptions(fileset: unknown, options: object): Promise<Recognizer> };
 }
 
 /** The lines the eye control highlights (ADR-0213): the eyes with their irises, and the brows — never the camera's picture (ADR-0212). */
 export interface EyeLines { readonly eyes: Connections; readonly brows: Connections }
+/** The face mode also draws the lips (ADR-0212 §3). */
+export interface FaceLines extends EyeLines { readonly lips: Connections }
 
 export interface VisionDeps {
   /** The page's address, to make the delivery paths absolute. */
@@ -64,6 +67,8 @@ export interface FaceTracker {
   delegate(): Delegate;
   /** The connection sets the bundle ships for the eyes, irises and brows, to draw over the game. */
   readonly eyeLines: EyeLines;
+  /** The same lines and the lips, for the face mode. */
+  readonly faceLines: FaceLines;
   close(): void;
 }
 
@@ -138,15 +143,17 @@ export async function loadFaceTracker(deps: VisionDeps): Promise<FaceTrackerLoad
   const o = await open(deps, FACE_VISION_FILES);
   if ('missing' in o) return { ok: false, missing: o.missing };
   const F = o.vision.FaceLandmarker;
+  const eyeLines: EyeLines = {
+    eyes: [...F.FACE_LANDMARKS_LEFT_EYE, ...F.FACE_LANDMARKS_RIGHT_EYE, ...F.FACE_LANDMARKS_LEFT_IRIS, ...F.FACE_LANDMARKS_RIGHT_IRIS],
+    brows: [...F.FACE_LANDMARKS_LEFT_EYEBROW, ...F.FACE_LANDMARKS_RIGHT_EYEBROW],
+  };
   const shell = await withFallback((d) => F.createFromOptions(o.fileset, OPTIONS(o.at('visao:modelo:rosto'), d)), (l, frame, ms) => l.detectForVideo(frame, ms));
   return {
     ok: true,
     tracker: {
       ...shell,
-      eyeLines: {
-        eyes: [...F.FACE_LANDMARKS_LEFT_EYE, ...F.FACE_LANDMARKS_RIGHT_EYE, ...F.FACE_LANDMARKS_LEFT_IRIS, ...F.FACE_LANDMARKS_RIGHT_IRIS],
-        brows: [...F.FACE_LANDMARKS_LEFT_EYEBROW, ...F.FACE_LANDMARKS_RIGHT_EYEBROW],
-      },
+      eyeLines,
+      faceLines: { ...eyeLines, lips: F.FACE_LANDMARKS_LIPS },
     },
   };
 }

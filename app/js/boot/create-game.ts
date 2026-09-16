@@ -63,7 +63,8 @@ import { presetActions, startClaimProblem, selectClaimProblem, labellerFrom, sho
 import type { KeyScheme } from '../core/entity.js';
 import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
-import { createEyeControl } from '../ui/eye-control.js';
+import { createEyeControl, videoFeed } from '../ui/eye-control.js';
+import { createFaceControl } from '../ui/face-control.js';
 import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from '../ui/pause-icons.js';
 import { anunciarItem } from '../ui/item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
@@ -1387,6 +1388,7 @@ export function createGame(o: CreateGameOptions): Engine {
     state.on('modoCego', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
     // the 👀 changes elsewhere too: the eye control puts it back to off when the camera or the files are missing (ADR-0213)
     state.on('eyeControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
+    state.on('faceControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); }); // the eyes turn the face off, and back (ADR-0197)
   }
 
   // 4d. QUEM ABRIU A PAUSA, quando há mais de um assento — o achado 3 da auditoria do `game-soccer`.
@@ -3558,13 +3560,13 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   const entregar = (comando: VirtualCommand): void => { cartucho.onCommand?.(comando); };
   const controleVirtual = createVirtualController({
     scheme: (i) => keyboard.kbFor(i), menuOpen: menuComDirecional,
-    holdKey: marcarTecla, releaseKey: soltarTecla, menuKey: (code) => teclaAoMenu(code, 'olhos'), deliver: entregar,
+    holdKey: marcarTecla, releaseKey: soltarTecla, menuKey: teclaAoMenu, deliver: entregar,
   });
   for (const tipo of ['keydown', 'keyup'] as const) {
     win.addEventListener(tipo, (e: KeyboardEvent) => {
       if (e.repeat || !cartucho.onCommand) return;
       const origem = origemDoEvento(e);
-      if (origem === 'toque' || origem === 'olhos') return; // those come as commands already, or went to a menu
+      if (origem === 'toque' || origem === 'olhos' || origem === 'rosto' || origem === 'gestos') return; // those come as commands already, or went to a menu
       const jogador = keyboard.whichPlayer(e.code);
       if (jogador < 0 || (tipo === 'keydown' && menuComDirecional())) return;
       const acao = keyboard.actionOf(e.code, jogador) as Action | null;
@@ -3586,6 +3588,21 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     });
     state.on('eyeControl', (nivel) => { void olhos.apply(nivel); });
     void olhos.apply(state.eyeControl);
+    // PLAYING WITH THE FACE (ADR-0210, ADR-0212 §3; issue #191): the same camera path, the Dev's face map, presses from `rosto`. The state
+    // keeps one camera group at a time (ADR-0197), so turning one on turns the other off before either opens the camera.
+    const rosto = createFaceControl({
+      doc, region: regiaoDoOlhar, base: doc.baseURI,
+      loop: {
+        requestFrame: (cb) => win.requestAnimationFrame(cb), cancelFrame: (h) => win.cancelAnimationFrame(h),
+        now: () => win.performance.now(), every: (cb, ms) => win.setInterval(cb, ms), stopEvery: (h) => win.clearInterval(h),
+      },
+      controller: controleVirtual, say: srSay, alert: srAlert,
+      report: (linha) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
+      turnOff: () => state.setFaceControlValue('off'),
+      openFeed: videoFeed(doc, win.navigator.mediaDevices),
+    });
+    state.on('faceControl', (nivel) => { void rosto.apply(nivel); });
+    void rosto.apply(state.faceControl);
   }
   const AMOSTRA_C = COLUNAS * 10;
   const AMOSTRA_L = LINHAS * 10;

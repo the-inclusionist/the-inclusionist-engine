@@ -435,6 +435,7 @@
       "captionsOn",
       "cbSafe",
       "eyeControl",
+      "faceControl",
       "gameSpeed",
       "hcOutlineBg",
       "hcOutlineFg",
@@ -454,7 +455,8 @@
     ],
     "type LetterCase": "'mixed' | 'upper'",
     "type OutlineLevel": "0 | 1 | 2",
-    "type EyeControlLevel": "'off' | 'outlines' | 'hatched'"
+    "type EyeControlLevel": "'off' | 'outlines' | 'hatched'",
+    "type FaceControlLevel": "'off' | 'on' | 'lines'"
   },
   "core/visual-state.ts": {
     "interface VisualState": [
@@ -1381,6 +1383,9 @@
     "interface EyeLines": [
       "eyes"
     ],
+    "interface FaceLines": [
+      "lips"
+    ],
     "interface VisionDeps": [
       "base",
       "hasFile?",
@@ -1390,7 +1395,8 @@
       "close",
       "delegate",
       "detect",
-      "eyeLines"
+      "eyeLines",
+      "faceLines"
     ],
     "interface HandTracker": [
       "close",
@@ -2039,6 +2045,24 @@
       "apply"
     ]
   },
+  "ui/face-control.ts": {
+    "interface FaceControlDeps": [
+      "alert",
+      "base",
+      "controller",
+      "doc",
+      "loadTracker?",
+      "loop",
+      "openFeed",
+      "region",
+      "report",
+      "say",
+      "turnOff"
+    ],
+    "interface FaceControl": [
+      "apply"
+    ]
+  },
   "ui/focus-trap.ts": {
     "interface FocusTrapCtx": [
       "focaveisDe",
@@ -2371,6 +2395,7 @@
       "modoCego",
       "olhos?",
       "privateOutput",
+      "rosto?",
       "semVoz?",
       "toggleMove",
       "ttsOn",

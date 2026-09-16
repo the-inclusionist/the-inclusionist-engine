@@ -26,8 +26,8 @@ export interface VirtualControllerDeps {
   readonly menuOpen: () => boolean;
   readonly holdKey: (code: string, source: Transporte) => void;
   readonly releaseKey: (code: string) => void;
-  /** A menu is moved by its key, as the touch pad does. */
-  readonly menuKey: (code: string) => void;
+  /** A menu is moved by its key, as the touch pad does, stamped with the transport that pressed it. */
+  readonly menuKey: (code: string, source: Transporte) => void;
   readonly deliver: (command: VirtualCommand) => void;
 }
 
@@ -43,7 +43,7 @@ export function createVirtualController(d: VirtualControllerDeps): VirtualContro
   return {
     press(action, source, player = 0) {
       const code = d.scheme(player)[action]?.[0];
-      if (d.menuOpen()) { if (code) d.menuKey(code); return; }
+      if (d.menuOpen()) { if (code) d.menuKey(code, source); return; }
       if (code) d.holdKey(code, source);
       held.set(`${player}:${action}`, code ?? null);
       d.deliver({ action, pressed: true, source, player });

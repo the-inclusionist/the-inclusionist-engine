@@ -87,6 +87,8 @@ export interface EventoDoJogo {
   semForca: boolean;
   /** Playing with the eyes (ADR-0213 §7): off, on with the outlines, or on with the outlines and hatching. */
   eyeControl: EyeControlLevel;
+  /** Playing with the face (ADR-0212 §3): off, on, or on with the eyes, brows and mouth lines. */
+  faceControl: FaceControlLevel;
 
   /* --- JOGO: `game/state` AUMENTA esta interface com `cenario`, `activity`, `quizLevel` e `coins`.
      Ver a declaração de aumento no fim daquele arquivo. A engine não pode nomear a carga de `coins` — é um
@@ -240,6 +242,7 @@ export const DEFAULTS = Object.freeze({
   speechPpm: 254, // the voice's normal speed, the minimum (ADR-0196)
   semForca: false,
   eyeControl: 'off' as EyeControlLevel,
+  faceControl: 'off' as FaceControlLevel,
   easy: false,       // por jogador (Modo Fácil)
   toggleMove: false,  // por jogador (movimento por alternância)
   // A alternância do botão de CORRER nasce desligada de FÁBRICA — e liga sozinha no controle de tela, que é
@@ -477,6 +480,22 @@ export function setEyeControlValue(v: EyeControlLevel): void {
   const valido = nivelDosOlhos(v);
   if (eyeControl === valido) return;
   const p = armazem('setEyeControlValue'); p.set('incl_eye_control', valido); eyeControl = valido; emit('eyeControl', valido);
+  if (valido !== 'off') setFaceControlValue('off'); // one camera group at a time (ADR-0197)
+}
+
+// --- faceControl: playing with the face, the three positions of the quick bar's 🧑 (ADR-0212 §3): off · on · on with the eyes, brows and
+//     mouth lines. Kept on the device; anything else stored reads as off. Turning it on turns the eyes off, and the eyes turn it off. ---
+export type FaceControlLevel = 'off' | 'on' | 'lines';
+const FACE_CONTROL_LEVELS: readonly FaceControlLevel[] = ['off', 'on', 'lines'];
+const nivelDoRosto = (v: string | null): FaceControlLevel => ((FACE_CONTROL_LEVELS as readonly (string | null)[]).includes(v) ? v as FaceControlLevel : 'off');
+/** The next position of the 🧑 cycle, wrapping back to off. */
+export const nextFaceControl = (v: FaceControlLevel): FaceControlLevel => FACE_CONTROL_LEVELS[(FACE_CONTROL_LEVELS.indexOf(v) + 1) % FACE_CONTROL_LEVELS.length]!;
+export let faceControl: FaceControlLevel = nivelDoRosto(VAZIO.get('incl_face_control', DEFAULTS.faceControl));
+export function setFaceControlValue(v: FaceControlLevel): void {
+  const valido = nivelDoRosto(v);
+  if (faceControl === valido) return;
+  const p = armazem('setFaceControlValue'); p.set('incl_face_control', valido); faceControl = valido; emit('faceControl', valido);
+  if (valido !== 'off') setEyeControlValue('off'); // one camera group at a time (ADR-0197)
 }
 
 // --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
@@ -538,6 +557,8 @@ export function carregarEstado(p: PortaDoEstado): void {
   gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
   semForca = p.getBool('incl_sem_forca', DEFAULTS.semForca);
   eyeControl = nivelDosOlhos(p.get('incl_eye_control', DEFAULTS.eyeControl));
+  faceControl = nivelDoRosto(p.get('incl_face_control', DEFAULTS.faceControl));
+  if (eyeControl !== 'off' && faceControl !== 'off') faceControl = 'off'; // stored from before the rule: the eyes keep the camera
   captionPpm = ritmoDaLegendaValido(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
   speechPpm = ritmoDaFalaValido(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
 }

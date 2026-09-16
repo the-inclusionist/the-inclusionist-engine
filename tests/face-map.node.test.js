@@ -6,7 +6,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   FACE_MAP, FACE_BLENDSHAPES, faceScoresFromCategories, headTurn, FULL_TURN, faceLevels, resolveFace, ownMarks, createCrossedLook,
-  createLongSqueeze, createMouthHold, createFaceMapReader, faceRestFromSamples, SQUEEZE_MARK, PUCKER_MARK,
+  createLongSqueeze, createMouthHold, createFaceMapReader, faceRestFromSamples, createFaceRest, SQUEEZE_MARK, PUCKER_MARK,
 } from '../app/js/input/face-map.js';
 
 const NO_REST = { scores: {}, headX: 0 };
@@ -164,6 +164,23 @@ describe('the whole reader', () => {
     const started = [0, 300, 600, 700].flatMap((ms) => read(ms, { mouthPressLeft: 0.6, mouthSmileLeft: 0.4 }).started);
     expect(started).toEqual(['action1']);
   });
+  it('the rest measures itself: three still seconds in a row, and any movement restarts the count', () => {
+    const rest = createFaceRest();
+    let out = null;
+    for (let ms = 0; ms <= 2000; ms += 100) out = rest(ms, { jawOpen: 0.1 + (ms % 200 ? 0.01 : 0) }, 0.02);
+    expect(out.rest).toBeNull(); expect(out.stillMs).toBe(2000);
+    out = rest(2100, { jawOpen: 0.6 }, 0.02); // the child talks
+    expect(out).toEqual({ rest: null, stillMs: 0 });
+    for (let ms = 2200; ms <= 5000; ms += 100) out = rest(ms, { jawOpen: 0.6 }, 0.02);
+    expect(out.rest).toBeNull();
+    out = rest(5100, { jawOpen: 0.6 }, 0.02);
+    expect(out.rest).toEqual({ scores: expect.objectContaining({ jawOpen: 0.6 }), headX: 0.02 });
+  });
+  it('a head that turns restarts the rest too', () => {
+    const rest = createFaceRest();
+    for (let ms = 0; ms <= 2500; ms += 100) rest(ms, {}, 0);
+    expect(rest(2600, {}, 0.3)).toEqual({ rest: null, stillMs: 0 });
+  });
   it('the rest from samples is each blendshape\'s median, and the nose\'s', () => {
     const rest = faceRestFromSamples([{ scores: { jawOpen: 0.1 }, headX: 0.02 }, { scores: { jawOpen: 0.3 }, headX: 0.04 }, { scores: { jawOpen: 0.2 }, headX: null }]);
     expect(rest).toEqual({ scores: { jawOpen: 0.2 }, headX: 0.04 });
@@ -183,3 +200,5 @@ describe('the whole reader', () => {
 //   · the first side's peak not required                        → «peaked at 0.5»
 //   · a turned head not cancelling                              → «head turned»
 //   · the reader skipping the exclusions                        → «the exclusions run inside it» (survived until that case existed)
+//   · the rest not restarted by a movement                   → «any movement restarts the count»
+//   · the rest ready at half the still time                   → «three still seconds in a row»
