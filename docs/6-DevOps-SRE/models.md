@@ -28,6 +28,10 @@ are staged in `the-inclusionist-lfs/` (one folder per artefact, laid out as its 
 uploaded by the Dev to the project's **Cloudflare**, and move to **Hugging Face** after the city's permission. The catalogue names the
 Cloudflare address until then; the sha256 never changes with the move.
 
+Third-party files the licence lets the project mirror (ADR-0203 erratum, issue #192) are staged the same way, unchanged, with their
+licence and notice: `kokoro-82m-v1.0-onnx/` (Apache-2.0, credits the CC BY training audio; ⚠️ 2 of the 34 voices so far) and
+`mediapipe-tasks-vision-1.0.1/` (Apache-2.0: the runtime and the face, gesture and hand models). Their sha256 are the catalogue's.
+
 ---
 
 ## Kokoro — TTS fallback, through the game's port
