@@ -217,9 +217,6 @@ export function fimTexto(acertou: number, total: number): string {
 function render(): void {
   const app = $<HTMLElement>('#quiz-app');
   if (!app) return;
-  // the menu button's word, resolved at each draw — the preferred language arrives after this boot
-  const botaoMenu = $<HTMLElement>('#quiz-menu');
-  if (botaoMenu) botaoMenu.textContent = t('quiz.menu');
   const p = PERGUNTAS[atual];
   if (!p) { app.innerHTML = `<h2 class="quiz-pergunta">${escaparHtml(fimTexto(acertos, PERGUNTAS.length))}</h2>`; return; }
   app.innerHTML = perguntaHtml(p, foco);
@@ -434,10 +431,8 @@ export function bootQuiz(): void {
   // TOUCH TARGETS are the engine's since ADR-0163: the options read `--alvo-min`, which `createGame` writes from the
   // resolution it forces. The quiz used to compute its own 9 mm, and the last option fell out of the region.
 
-  // THE MENU BUTTON (ADR-0166 erratum): this quiz asks for no on-screen pad — its options are touched directly — and
-  // «não faz sentido pausar um quiz», so the touch door to the menus is a button that opens them.
-  const botaoMenu = $<HTMLButtonElement>('#quiz-menu');
-  if (botaoMenu) botaoMenu.addEventListener('click', () => motor?.pausa.mostrar(0));
+  // THE TOUCH DOOR TO THE MENUS is the quick bar's ☰ (interface log 2026-09-16): the engine's, first on the bar, so the quiz
+  // no longer draws a Menu button of its own (ADR-0166 erratum: «não faz sentido pausar um quiz»).
 
   // The first draw and the welcome wait for the boot language (study item E4): drawn in the gap, the first question was
   // grouped as «Alternativas» and read «Gato, 1 de 4» on an English page (measured). For pt it resolves at once.

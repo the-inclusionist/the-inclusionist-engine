@@ -999,7 +999,8 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
       // dizia o contrário dele. Agora os dois concordam — e é essa concordância que apanha um ícone
       // encalhado no idioma da marcação.
       expect(lbl.trim().length, `${b.dataset.pi} ficou sem rótulo depois do reflexo`).toBeGreaterThan(0);
-      expect(['true', 'false']).toContain(b.getAttribute('aria-pressed'));
+      // the ☰ opens the menus and holds no state: it is the one button that must NOT announce itself as a toggle
+      expect(b.dataset.pi === 'menu' ? [null] : ['true', 'false'], b.dataset.pi).toContain(b.getAttribute('aria-pressed'));
     }
   });
 
@@ -1079,7 +1080,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // 📌 	ipografia: true desde 2026-09-12 (ADR-0149): o 11.o icone tem a mesma regra dos dois visuais, e
     // deixa-lo de fora aqui mediria DUAS ausencias em vez da que o caso nomeia.
     // `relogio: () => true` from ADR-0180 on: the hourglass mounts only in a clock game, and each case here measures its own absence.
-    const chaves = iconesQueAccionam({ relogio: () => true, tema: false, correcao: false, seguraTeclas: () => true, tipografia: true, olhos: true }).map((ic) => ic.k);
+    const chaves = iconesQueAccionam({ relogio: () => true, tema: false, correcao: false, seguraTeclas: () => true, tipografia: true, olhos: true, menus: true }).map((ic) => ic.k);
     expect(chaves).not.toContain('contrast');
     expect(chaves).not.toContain('cvd');
     expect(chaves).toContain('blind');
@@ -1088,7 +1089,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   });
 
   it('[Right] COM escritor visual, a barra é a lista inteira e na mesma ordem', () => {
-    expect(iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => true, tipografia: true, olhos: true })).toEqual(PAUSE_ICONS);
+    expect(iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => true, tipografia: true, olhos: true, menus: true })).toEqual(PAUSE_ICONS);
   });
 
   it('⚠️ [Boundary] com UM escritor só, aparece UM ícone só — e é o que funciona', () => {
@@ -1126,7 +1127,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
    * DESABILITADO com o motivo, porque o aparelho EXIGE a alternância. Aqui não há nada a travar, e explicar
    * por que um controle não faz nada continua a ser entregar um controle que não faz nada. */
   it('🎯 [Zero] um jogo que NÃO segura teclas não recebe o ícone `altmove`', () => {
-    const chaves = iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, tipografia: true, olhos: true }).map((ic) => ic.k);
+    const chaves = iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, tipografia: true, olhos: true, menus: true }).map((ic) => ic.k);
     expect(chaves, 'o `altmove` foi montado num jogo que não segura nada').not.toContain('altmove');
     expect(chaves).toHaveLength(PAUSE_ICONS.length - 1);
   });
@@ -1151,7 +1152,8 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     expect(semNada).not.toContain('tipografia');
     expect(semNada).not.toContain('eyes');
     expect(semNada).not.toContain('face');
-    expect(semNada).toHaveLength(PAUSE_ICONS.length - 6);
+    expect(semNada).not.toContain('menu');
+    expect(semNada).toHaveLength(PAUSE_ICONS.length - 7);
 
     const soAlternancia = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
     expect(soAlternancia).toContain('altmove');

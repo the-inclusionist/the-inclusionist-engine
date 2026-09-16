@@ -82,6 +82,7 @@ function makeCtx(over = {}) {
     ciclarTipografia: () => 'Atkinson Hyperlegible',
     relogio: () => true, // the hourglass (ADR-0180) mounts only where time runs by itself
     olhos: true, // the 👀 (ADR-0213) mounts only where the root can play with the eyes
+    abrirMenus: (i) => state.ran.push('menus:' + i), // the ☰ mounts only where there is a card to open
     ...over,
   };
   return { ctx, state, said, alerted };
@@ -155,6 +156,20 @@ describe('buildScreenPause — a árvore construída', () => {
     expect(grupo.getAttribute('role')).toBe('group');
     expect(grupo.getAttribute('aria-label')).toBe('Atalhos de acessibilidade');
     expect(grupo.querySelectorAll('.pi-btn')).toHaveLength(PAUSE_ICONS.length);
+  });
+
+  it('🔴 [Right] the ☰ is the FIRST icon: it opens the menus of ITS seat and does not announce itself as a toggle', () => {
+    const { bar, state } = mount(1);
+    const menu = bar.querySelector('.pi-btn');
+    expect(menu.dataset.pi).toBe('menu');
+    menu.click();
+    expect(state.ran).toContain('menus:1');
+    expect(menu.hasAttribute('aria-pressed'), 'the ☰ reads as a toggle').toBe(false);
+  });
+
+  it('🔴 [Zero] without a card to open there is no ☰ — a button that opens nothing is the dead button of ADR-0106 §5', () => {
+    const { bar } = mount(0, { abrirMenus: undefined });
+    expect(bar.querySelector('.pi-btn[data-pi="menu"]')).toBeNull();
   });
 
   it('INVARIANTE: todo .pi-btn tem aria-label NÃO-VAZIO, type=button e data-pi', () => {

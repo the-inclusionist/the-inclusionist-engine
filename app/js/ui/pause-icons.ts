@@ -130,6 +130,9 @@ export interface PauseIcon {
  *  VERBATIM from game.js in order and behaviour; the names became i18n keys in the Fase-5 pass. */
 // `n` é a CHAVE i18n do nome do ícone (o emoji `e` não traduz — é o mesmo glifo em toda língua).
 export const PAUSE_ICONS: readonly PauseIcon[] = [
+  // FIRST, the menus (the Dev, 2026-09-16: «Menu deve ser o primeiro ícone»): the SELECT door as an icon, for a hand with no
+  // SELECT under it. Mounted only where there is a card to open (`abrirMenus`).
+  { k: 'menu', e: '☰', n: 'icon.menu' },
   { k: 'blind', e: '🦯', n: 'icon.blind' },
   { k: 'tts', e: '🗨️', n: 'icon.tts' },
   { k: 'libras', e: '🦻', n: 'icon.libras' }, // 🦻 (the Dev, 2026-09-16): 🤟 is playing by hand gestures
@@ -441,6 +444,8 @@ export interface AccionaveisDoJogo {
   readonly tipografia?: boolean;
   /** Can this device play with the eyes — is there a camera to ask for? Without it the 👀 is not mounted (ADR-0213). */
   readonly olhos?: boolean;
+  /** Is there a card of menus to open? Without it the ☰ is not mounted. */
+  readonly menus?: boolean;
 }
 
 /**
@@ -468,6 +473,7 @@ export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly Pause
           // the hourglass exists where time runs by itself (ADR-0180): a turn game has nothing to slow
           : ic.k === 'velocidade' ? Boolean(escritores.relogio?.())
               : ic.k === 'eyes' || ic.k === 'face' ? Boolean(escritores.olhos)
+                : ic.k === 'menu' ? Boolean(escritores.menus)
             : true));
 }
 
@@ -907,6 +913,8 @@ export interface PauseIconsCtx {
   relogio?: () => boolean;
   /** Can this device play with the eyes? (ADR-0213: the 👀 cycle.) Optional; absent, no 👀. */
   olhos?: boolean;
+  /** Opens the menus of seat `i`, as SELECT does (the ☰). Optional; absent, no ☰. */
+  abrirMenus?: (i: number) => void;
   /** Does no voice speak the current language? (ADR-0185: the narration icon locks.) Optional; absent, a voice. */
   semVoz?: () => boolean;
 }
@@ -1025,6 +1033,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // mounted when the root can answer the clock question; shown or hidden per cartridge in `reflectIconBtn` (ADR-0142)
     relogio: () => Boolean(ctx.relogio),
     olhos: Boolean(ctx.olhos),
+    menus: Boolean(ctx.abrirMenus),
   });
 
   /*
@@ -1105,6 +1114,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   // --- icon actions (the dispatcher, as a table) ---------------------------------------------
 
   const ICON_ACTS: Record<string, (i: number) => void> = {
+    menu: (i) => { ctx.abrirMenus?.(i); },
     blind: () => {
       setModoCego(!ctx.getModoCego());
       ctx.srSay(t(ctx.getModoCego() ? 'sr.icon.blindOn' : 'sr.icon.blindOff'));
@@ -1239,7 +1249,9 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
      */
     if (v.dis) b.setAttribute('aria-disabled', 'true');
     else b.removeAttribute('aria-disabled');
-    b.setAttribute('aria-pressed', String(v.active));
+    // the ☰ opens something and holds no state: a pressed/unpressed button would announce a toggle
+    if (k === 'menu') b.removeAttribute('aria-pressed');
+    else b.setAttribute('aria-pressed', String(v.active));
     // ⚠️ TODO ÍCONE RECEBE RÓTULO, `soon` INCLUÍDO — e o guarda que aqui estava dizia por que não: «`soon`
     // buttons keep the label the markup gave them (same string)». A segunda metade continua certa (não há
     // estado a reportar), mas «mesma string» era verdade só enquanto a marcação e o reflexo corressem no

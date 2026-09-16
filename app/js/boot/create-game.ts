@@ -1178,6 +1178,8 @@ export function createGame(o: CreateGameOptions): Engine {
     relogio: () => cartucho.declaration.tick === 'clock',
     // the 👀 is offered where there is a camera to ask for (ADR-0213); the eye control below follows its position
     olhos: temCamera,
+    // the ☰, the bar's first icon (interface log 2026-09-16): the SELECT door, where there is a card to open. Hoisted, read at the press.
+    ...(pausaUsavel ? { abrirMenus: (i: number) => { abrirMenusDoAssento(i); } } : {}),
     // no voice speaks the current language: the narration icon locks like the panel's rows (ADR-0185)
     semVoz: () => tts.vozes().length === 0,
     /*

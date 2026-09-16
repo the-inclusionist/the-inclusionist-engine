@@ -42,18 +42,14 @@ describe('the quiz page', () => {
     expect(document.getElementById('q-cvd')).not.toBeNull();
   });
 
-  it('🔴 [Right] the quiz has a MENU button — a target of the engine\'s size, clear of the bar, that opens the menus (ADR-0166 erratum)', () => {
-    // The Dev: «crie um botão para menu (não faz sentido pausar um quiz)». Without the pad, it is the touch door to «Sair»
-    // and to the settings.
-    const botao = document.getElementById('quiz-menu');
-    expect(botao, 'no menu button').not.toBeNull();
-    expect(botao.textContent.trim(), 'the button has no word').toBe('Menu');
-    const r = botao.getBoundingClientRect();
-    const alvo = parseFloat(document.getElementById('game-region').style.getPropertyValue('--alvo-min'));
-    expect(Math.min(r.width, r.height), 'the menu button is under the target floor').toBeGreaterThanOrEqual(alvo - 0.5);
-    const barra = document.getElementById('title-icons').getBoundingClientRect();
-    const cruza = r.left < barra.right && barra.left < r.right && r.top < barra.bottom && barra.top < r.bottom;
-    expect(cruza, 'the menu button sits on the accessibility bar').toBe(false);
+  it('🔴 [Right] the touch door to the menus is the bar\'s FIRST icon, ☰ — and the quiz draws no Menu button of its own', () => {
+    // The Dev: «crie um botão para menu (não faz sentido pausar um quiz)» (ADR-0166 erratum), then «Menu deve ser o primeiro
+    // ícone» (interface log 2026-09-16). Without the pad, it is the touch door to «Sair» and to the settings.
+    expect(document.getElementById('quiz-menu'), 'the quiz still draws its own Menu button').toBeNull();
+    const icones = [...document.querySelectorAll('#title-icons .pi-btn')];
+    const botao = icones[0];
+    expect(botao?.dataset.pi, 'the bar does not open with Menu').toBe('menu');
+    expect(botao.getAttribute('aria-label')).toBe('Menu');
     const cartao = document.getElementById('vp-pause-0');
     expect(cartao.hidden, 'the card was already open').toBe(true);
     botao.click();
@@ -62,6 +58,16 @@ describe('the quiz page', () => {
     } finally {
       cartao.hidden = true;
     }
+  });
+
+  it('🔴 [Right] the bar\'s icons TOUCH — no gap between one and the next (interface log 2026-09-16)', () => {
+    const icones = [...document.querySelectorAll('#title-icons .pi-btn')].filter((b) => !b.hidden).map((b) => b.getBoundingClientRect());
+    expect(icones.length, 'no icons — the case would measure nothing').toBeGreaterThan(2);
+    for (let i = 1; i < icones.length; i++) expect(Math.abs(icones[i].left - icones[i - 1].right), `gap after icon ${i}`).toBeLessThan(0.5);
+    // and at the smallest screen the whole bar fits the region, with every icon this quiz mounts
+    const regiao = document.getElementById('game-region').getBoundingClientRect();
+    expect(icones[0].left).toBeGreaterThanOrEqual(regiao.left - 0.5);
+    expect(icones.at(-1).right).toBeLessThanOrEqual(regiao.right + 0.5);
   });
 
   it('🔴 [Right] every option is the ENGINE\'s target — `--alvo-min`, not a size the quiz computes (ADR-0163 rule 2)', () => {
@@ -178,6 +184,10 @@ describe('the quiz with a face whose floor is 20 px (issue #172)', () => {
 // ============================== MUTATIONS CHECKED ==============================
 //   Q1 `.quiz-app` loses the bar offset                 🔴 statement behind the bar
 //   Q2 the «Visão» select comes back to quiz.html       🔴 a control in the footer zone
+//   M1 the ☰ goes back to the end of PAUSE_ICONS         🔴 the bar does not open with Menu
+//   M2 `abrirMenus` not passed by createGame             🔴 the bar does not open with Menu
+//   M3 the ☰'s action does nothing                       🔴 did not open the menus
+//   M4 the bar's gap back to .3 of the text              🔴 gap after icon 1
 // the face with a 20 px floor (issue #172), with `settings-typo`'s scale case:
 //   F1 the root scales with the face again              🔴 the document grew (both files)
 //   F2 the options' padding back to `em`                🔴 padding grew · last option in the footer

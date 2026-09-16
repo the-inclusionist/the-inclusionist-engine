@@ -35,11 +35,11 @@ beforeAll(async () => {
 afterEach(() => { document.documentElement.removeAttribute('data-cursiva'); });
 
 describe('the BDA spacing in the text of controls', () => {
-  it('🔴 [Right] a quiz option and the quiz\'s Menu button carry 0.18 em between letters and 0.63 em between words', () => {
+  it('🔴 [Right] a quiz option carries 0.18 em between letters and 0.63 em between words', () => {
+    // the quiz's Menu button was measured here too; it left for the bar's ☰ (interface log 2026-09-16), a glyph with no words
     const opcao = document.querySelector('.quiz-alt');
-    const menu = document.querySelector('#quiz-menu');
-    expect(opcao && menu, 'no quiz option or Menu button — the case would measure nothing').toBeTruthy();
-    for (const el of [opcao, menu]) expect([razao(el, 'letterSpacing'), razao(el, 'wordSpacing')], el.className).toEqual([0.18, 0.63]);
+    expect(opcao, 'no quiz option — the case would measure nothing').toBeTruthy();
+    expect([razao(opcao, 'letterSpacing'), razao(opcao, 'wordSpacing')], opcao.className).toEqual([0.18, 0.63]);
   });
 
   it('🔴 [Right] a pause item, a panel\'s «Voltar» and a panel\'s select carry it too', async () => {

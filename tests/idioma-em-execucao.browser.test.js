@@ -84,7 +84,8 @@ describe('a language changed with a panel open', () => {
 
   it('🔴 [Right] the icon bar and the pause card speak the new language', () => {
     const barra = [...document.querySelectorAll('.pi-btn')].map((b) => b.getAttribute('aria-label'));
-    barra.forEach((nome, i) => { expect(nome, `bar icon ${i + 1} kept its old name`).not.toBe(antes.barraPt[i]); });
+    // «Menu» is the word in Portuguese AND in English: the ☰ (index 0) is the one name that rightly stays the same
+    barra.forEach((nome, i) => { if (i > 0) expect(nome, `bar icon ${i + 1} kept its old name`).not.toBe(antes.barraPt[i]); });
     const cartao = document.querySelector('.screen-pause:not([hidden]) .pause-card');
     expect(cartao.getAttribute('aria-label')).toBe(t('pause.cardAria', { n: 1 }));
   });

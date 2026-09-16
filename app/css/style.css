@@ -174,7 +174,7 @@ body.at-title #game-hud,body.at-title .start-tips,body.at-title .hud{display:non
 .title-legend .lg-row{display:flex;gap:1.1em;justify-content:center;flex-wrap:wrap}
 .title-legend .lg{display:inline-flex;align-items:center;gap:.35em}
 .title-legend .lg-ico{display:inline-flex;align-items:center;justify-content:center;min-width:1.35em;height:1.35em;padding:0 .2em;border-radius:.68em;font-weight:800;font-size:1em;color:#fff;background:rgba(13,13,26,.85);text-shadow:0 1px 1px rgba(0,0,0,.55)}
-#title-icons{position:absolute;top:0;left:50%;transform:translateX(-50%);display:flex;gap:calc(var(--ui-fs,16px) * .3);justify-content:center;flex-wrap:nowrap;white-space:nowrap} /* header: on the screen's top edge, giving that room to the game (interface log 2026-09-13), ONE row */
+#title-icons{position:absolute;top:0;left:50%;transform:translateX(-50%);display:flex;gap:0;justify-content:center;flex-wrap:nowrap;white-space:nowrap} /* header: on the screen's top edge, giving that room to the game (interface log 2026-09-13), ONE row */
 #title-icons.pause-icons{margin:0 0 calc(.35rem * var(--espaco-fixo,1))}
 /* The NAME of the pointed icon, just below the row. Absolute, so the bar's height — the band the game must not draw
    over (ADR-0148) — does not grow when a name appears; the explanation goes to the footer, not here. */
@@ -276,7 +276,7 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 .screen-pause .pause-menu{gap:2px}
 /* Atalhos de a11y = botões do menu em forma de ícone, DENTRO do card (sem barra/sombra própria).
    Navegáveis por teclado (cima a partir de Continuar) e por toque/clique. */
-.pause-icons{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;align-items:center;margin:.1rem 0 .35rem}
+.pause-icons{display:flex;flex-wrap:wrap;gap:0;justify-content:center;align-items:center;margin:.1rem 0 .35rem}
 /* ===================== A BARRA RÁPIDA NO HUD (ADR-0044, item 7) =====================
    Ela saiu do cartão de pausa e passou a viver na tela do jogador, disponível DURANTE a partida — que é
    quando uma criança precisa mudar um ajuste que está a atrapalhando, e não depois de pausar.
@@ -291,7 +291,7 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
    topo e se sobrepunham — o HUD lido por cima dos ícones, que foi o que o Dev viu e chamou de péssimo. */
 .player-screen{--a11y-h:calc(var(--alvo-min,44px) + .5rem)}
 .screen-a11y{position:absolute;left:0;right:0;top:0;height:var(--a11y-h);z-index:5;pointer-events:auto;font-family:var(--font);font-size:var(--ui-fs,16px)}
-.screen-a11y .pause-icons{flex-wrap:nowrap;white-space:nowrap;gap:.25rem;margin:0;height:100%}
+.screen-a11y .pause-icons{flex-wrap:nowrap;white-space:nowrap;gap:0;margin:0;height:100%}
 /* SÓ OS BOTÕES OCUPAM ESPAÇO. A explicação é ABSOLUTA e fica fora do fluxo — ela aparece por cima do jogo ao
    passar o mouse (ou quando o cursor do modo `accessibility` pousa num ícone) e some sem deixar buraco. Uma
    faixa de texto reservando altura na tela de jogo é o contrário do que uma barra de atalho serve. */
@@ -300,7 +300,7 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 /* O HUD desce para DEBAIXO da barra. É a mesma conta, e é por isso que ela mora num token: as duas medidas
    não podem divergir sem que uma tape a outra. */
 .screen-exp .vphud{top:var(--a11y-h)}
-.pi-btn{width:var(--alvo-min,44px);height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);min-height:var(--alvo-min,44px);border-radius:10px;border:2px solid var(--ink-soft);background:#1a2740;font-size:1.25em;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pi-btn{width:var(--alvo-min,44px);height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);min-height:var(--alvo-min,44px);border-radius:10px;border:2px solid var(--ink-soft);background:#1a2740;color:#f6f5f0;font-size:1.25em;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 /* Wizard de gamepad: demonstração com ANIMAÇÃO REAL (frames do jogo trocados via JS) + deslocamento CSS */
 #padwiz-demo{height:86px;display:flex;align-items:flex-end;justify-content:center;position:relative;margin:.15rem 0 .4rem;overflow:hidden}
 #padwiz-demo-img{height:64px;image-rendering:pixelated}
@@ -582,7 +582,6 @@ main{flex:1;display:flex;flex-direction:column;width:100%;margin:0 auto;padding:
    The spacing goes, not the targets or the 16 px floor: the statement keeps its size on a 1.25 line and no outer margins. */
 .quiz-pergunta{margin:0 0 calc(.25rem * var(--espaco-fixo,1));line-height:1.25}
 /* The quiz's MENU button (ADR-0166 erratum), in the top-left corner the bar leaves free: the engine's target size. */
-.quiz-menu{position:absolute;top:0;left:calc(10px * var(--espaco-fixo,1));z-index:5;min-height:var(--alvo-min,44px);min-width:var(--alvo-min,44px);padding:0 calc(var(--ui-fs,16px) * .8)}
 /* A PAUSA RÁPIDA (ADR-0155): PAUSADO ao centro da tela congelada — SÓ A PALAVRA, branca, com CONTORNO PRETO NAS
    LETRAS e nenhuma caixa: «Borda nas letras, não numa caixa» (Dev, errata do registo). O contorno é o que a mantém
    legível sobre um cenário claro; `paint-order` põe o traço POR BAIXO do preenchimento, para a letra não emagrecer, e
