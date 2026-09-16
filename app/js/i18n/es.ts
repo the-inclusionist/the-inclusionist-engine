@@ -35,6 +35,13 @@ const es: Record<string, string> = {
   'sr.eyes.loadFailed': 'WebGazer no cargó.',
   'sr.eyes.calibrate': 'Jugar con los ojos: mira por la pantalla y haz clic en algunos puntos para calibrar. Mirar izquierda y derecha camina; mirar arriba salta.',
   'sr.eyes.needsInternet': 'El control con la mirada todavía no llegó a este aparato: se descarga la primera vez que el juego se abre con internet.',
+  // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
+  'gaze.lookHere': 'Mira aquí',
+  'gaze.loading': 'Cargando...',
+  'gaze.prepare.up': '¡Baja!',
+  'gaze.prepare.right': '¡A la izquierda!',
+  'gaze.prepare.down': '¡Sube!',
+  'gaze.prepare.left': '¡A la derecha!',
   'sr.typo.font': 'Tipografía: {fam}.',
   'sr.icon.velocidade': 'Velocidad del juego: {pct} %.',
   'sr.visual.contrast': 'Alto contraste: {v}.',

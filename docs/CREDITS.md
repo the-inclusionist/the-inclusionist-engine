@@ -69,6 +69,28 @@ Os pesos são **Apache-2.0** (`huggingface.co/hexgrad/Kokoro-82M`), treinados s�
 > Os pesos das vozes são **baixados uma vez** (de um host público) e rodam **100% localmente** depois — nenhum áudio de
 > criança sai do dispositivo. Ver `the-inclusionist-docs · docs/2-Architecture/adr/ADR-0065-three-neural-voices-owned-by-the-engine-and-cached-on-first-use.yaml`.
 
+## Arrow icons — Lucide, derived from Feather (Cole Bemis) — MIT
+
+The eye control draws four arrows over the game (`app/js/ui/gaze-overlay.ts`): Lucide's `arrow-up`, `arrow-right`, `arrow-down` and
+`arrow-left` (lucide.dev). Lucide is ISC, but its LICENSE lists these four among the icons derived from the Feather project, which carry
+Feather's MIT notice:
+
+> The MIT License (MIT) (for the icons listed above)
+>
+> Copyright (c) 2013-present Cole Bemis
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the
+> "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish,
+> distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to
+> the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+> MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
+> ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
+> THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 ## Arte importada — CC0, CC BY 3.0, CC BY 4.0 ou OGA-BY
 
 A atribuição da arte que vem de fora é **por recurso**, e por isso não cabe nesta página em prosa: a autoria de um
