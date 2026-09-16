@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // PLAYING WITH THE EYES, PUT TOGETHER (ADR-0213; issues #194, #196). The camera and the face tracker are replaced by the synthetic face
 // (`tests/fixtures/synthetic-face.js`, checked against the engine's own readers), and frames arrive when the case says. What is measured is
-// what a child meets: nothing commands before the rest, the gesture presses the child's key stamped as the eyes, and what cannot start
+// what a child meets: nothing commands before the rest, the gesture presses the virtual controller with the eyes as its source (ADR-0111,
+// issue #197), and what cannot start
 // is said, reported, and puts the 👀 back to off.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createEyeControl } from '../app/js/ui/eye-control.js';
-import { origemDoEvento } from '../app/js/input/origem-sintetica.js';
 import { detection } from './fixtures/synthetic-face.js';
-
-const SCHEME = { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], action1: ['KeyJ'], action2: ['KeyK'], action3: ['KeyL'],
-  action4: ['KeyI'], leftShoulder: ['KeyQ'], leftTrigger: ['KeyZ'], rightShoulder: ['KeyE'], rightTrigger: ['KeyC'], start: ['Enter'], select: ['Tab'] };
 
 let region, keys, said, alerts, reports, offs, face, feedClosed, trackerClosed, frameCb, now;
 
@@ -24,7 +21,8 @@ const loop = {
 };
 const tracker = () => ({ detect: () => face, delegate: () => 'GPU', eyeLines: { eyes: [], brows: [] }, close: () => { trackerClosed = true; } });
 const make = (over = {}) => createEyeControl({
-  doc: document, region, base: location.href, loop, scheme: () => SCHEME,
+  doc: document, region, base: location.href, loop,
+  controller: { press: (action, source) => keys.push(['press', action, source]), release: (action, source) => keys.push(['release', action, source]) },
   say: (s) => said.push(s), alert: (s) => alerts.push(s), report: (l) => reports.push(l), turnOff: () => { offs++; },
   loadTracker: async () => ({ ok: true, tracker: tracker() }),
   openFeed: async () => ({ frame: {}, ready: () => true, close: () => { feedClosed = true; } }),
@@ -38,7 +36,6 @@ beforeEach(() => {
   Object.assign(region.style, { position: 'relative', width: '720px', height: '360px' });
   document.body.appendChild(region);
   keys = [];
-  for (const type of ['keydown', 'keyup']) region.addEventListener(type, (e) => keys.push([e.type, e.code, origemDoEvento(e)]));
   said = []; alerts = []; reports = []; offs = 0; face = null; feedClosed = false; trackerClosed = false; frameCb = null; now = 0;
 });
 afterEach(() => { region.remove(); });
@@ -59,14 +56,14 @@ describe('turning it on', () => {
     look({ closed: true }, 2500); // the rest needs 3 s, START needs 2 s
     expect(keys).toEqual([]);
   });
-  it('after three still seconds it says ready, and down-then-up presses the child\'s up key, stamped as the eyes', async () => {
+  it('after three still seconds it says ready, and down-then-up presses «up» on the virtual controller, from the eyes', async () => {
     await make().apply('outlines');
     look({}, 3200);
     expect(said).toContain('Pronto: já pode jogar com os olhos.');
     look({ v: 0.3 }, 300);   // the opposite zone: prepares
     look({ v: -0.3 }, 1900); // up, held past cancel onto «up»
     look({}, 600);           // back to the middle: leaving commands
-    expect(keys).toEqual([['keydown', 'KeyW', 'olhos'], ['keyup', 'KeyW', 'olhos']]);
+    expect(keys).toEqual([['press', 'up', 'olhos'], ['release', 'up', 'olhos']]);
   });
   it('only the RIGHT eye is read: the same gesture made by the left eye alone commands nothing', async () => {
     const oneEye = (gaze, which) => {
@@ -83,7 +80,7 @@ describe('turning it on', () => {
       return keys.map((k) => k[0]);
     };
     expect(await run('left')).toEqual([]);
-    expect(await run('right')).toEqual(['keydown', 'keyup']);
+    expect(await run('right')).toEqual(['press', 'release']);
   });
   it('the drawing\'s element carries the reading, so a child who is not answered can be diagnosed', async () => {
     await make().apply('outlines');
@@ -127,7 +124,7 @@ describe('turning it off', () => {
     await eyes.apply('off');
     expect(feedClosed).toBe(true); expect(trackerClosed).toBe(true);
     expect(region.querySelector('canvas')).toBeNull();
-    expect(keys.at(-1)).toEqual(['keyup', 'KeyW', 'olhos']);
+    expect(keys.at(-1)).toEqual(['release', 'up', 'olhos']);
     look({ v: 0.3 }, 300);
     expect(frameCb).toBeNull();
   });

@@ -96,6 +96,9 @@ import { duracaoDaLegenda, RITMOS_DA_LEGENDA } from '../core/caption-duration.js
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
 import { carimbarOrigem, origemDoEvento } from '../input/origem-sintetica.js';
+import type { Transporte } from '../input/transporte-em-uso.js';
+import { createVirtualController, type VirtualCommand } from '../input/virtual-controller.js';
+export type { VirtualCommand } from '../input/virtual-controller.js';
 import { montarPassos, atualizarPassos, passoSeguinte, linhaDeControle, rotularLinha } from '../ui/panel-widgets.js';
 import { PERSONAS_DO_PAD, personaMaisProxima } from '../input/touch.js';
 import { initSettingsTypo, type SettingsTypoApi } from '../ui/settings-typo.js';
@@ -306,6 +309,13 @@ export interface CreateGameOptions {
    * shows the buttons alone. A malformed list is refused at boot and at `mount`.
    */
   readonly howToPlay?: readonly HowToPlaySlide[];
+  /**
+   * THE VIRTUAL CONTROLLER'S COMMANDS, CARRIED TO THE GAME (ADR-0111 and its erratum; issue #197): «a engine lida com o hardware e passa
+   * para o jogo o nome virtual do botão». Each press and release of a position the child's hardware reached — the keyboard by the
+   * child's scheme, the eyes — with its source and seat. What it executes is the game's, named by its `preset`. Not called while a menu
+   * has the directional. Absent = the game hears commands only through what it reads itself.
+   */
+  readonly onCommand?: (command: VirtualCommand) => void;
   /**
    * AS ACOMODAÇÕES QUE TÊM ASSUNTO NESTE JOGO — a resposta do cartucho, OBRIGATÓRIA (ADR-0153).
    *
@@ -643,7 +653,7 @@ const SELETOR_BARRA_A11Y = '#title-icons';
 type MetadeDoJogo = Pick<CreateGameOptions,
   'declaration' | 'isNavigable' | 'comIndice' | 'naBarraDe' | 'navBar' | 'players' | 'setPhase'
   | 'sonarPlayers' | 'isBlindMode' | 'preset' | 'declines' | 'getPauseActs' | 'setPauseActor'
-  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud' | 'gameOptions' | 'howToPlay'>;
+  | 'setTemaDoJogador' | 'setCorrecaoDoJogador' | 'acomodacoes' | 'genero' | 'controleNaTela' | 'hud' | 'gameOptions' | 'howToPlay' | 'onCommand'>;
 
 export function createGame(o: CreateGameOptions): Engine {
   /*
@@ -2892,6 +2902,13 @@ export function createGame(o: CreateGameOptions): Engine {
     const c = $<HTMLElement>('#vp-pause-0');
     return !!c && c.hidden === false;
   };
+  /** A menu the directional moves is open: an overlay, the seat-0 card, or the quick pause (ADR-0157). */
+  const menuComDirecional = (): boolean => !!overlays.topVisibleOverlay() || cartaoDoAssento0Aberto() || emPausaRapida.has(0);
+  /** A position's key handed to the menus, which read keys — stamped with who produced it (ADR-0109). */
+  const teclaAoMenu = (code: string, origem: Transporte): void => {
+    const alvo = $<HTMLElement>('#game-region') ?? doc.body;
+    alvo.dispatchEvent(carimbarOrigem(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), origem));
+  };
   const acoesDoPreset = (): readonly { acao: string; rotulo: string }[] => {
     const preset = cartucho.preset;
     if (!preset) return [];
@@ -2997,14 +3014,10 @@ export function createGame(o: CreateGameOptions): Engine {
      */
     // O pad FICA à vista com o cartão aberto (ADR-0157): é o direccional dele que anda no cartão.
     abrirMenus: () => { abrirMenusDoAssento(0); },
-    emMenu: () => !!overlays.topVisibleOverlay() || cartaoDoAssento0Aberto() || emPausaRapida.has(0),
-    teclaDeMenu: (code) => {
-      const alvo = $<HTMLElement>('#game-region') ?? doc.body;
-      // CARIMBADA como toque (ADR-0109): quem ouve sabe que não foi um teclado — o «teclado esconde o pad» logo abaixo
-      // pergunta exactamente isso, e sem o carimbo o pad sumiria a cada seta que ele próprio entregou.
-      const ev = carimbarOrigem(new KeyboardEvent('keydown', { code, key: code, bubbles: true, cancelable: true }), 'toque');
-      alvo.dispatchEvent(ev);
-    },
+    emMenu: menuComDirecional,
+    // CARIMBADA como toque (ADR-0109): quem ouve sabe que não foi um teclado — o «teclado esconde o pad» logo abaixo
+    // pergunta exactamente isso, e sem o carimbo o pad sumiria a cada seta que ele próprio entregou.
+    teclaDeMenu: (code) => teclaAoMenu(code, 'toque'),
     getTouchMap: () => toque.getTouchMap(),
     // ✅ O DEFEITO QUE O `TouchBindingsCtx` GUARDAVA MORRE AQUI: no cartucho a linha era `touchMap.start` num
     // escopo onde `touchMap` não existia, e o START da tela estava quebrado. Esta raiz TEM o mapa.
@@ -3537,6 +3550,28 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * keys stamped `olhos` on `#game-region` for seat 0, and the regions drawn over the game. What cannot start is said, lands here in
    * `problems`, and puts the 👀 back to off. A stored position opens the camera at start, which asks the child's permission.
    */
+  /*
+   * THE VIRTUAL CONTROLLER CARRIES COMMANDS TO THE GAME (ADR-0111 erratum; issue #197). The keyboard reaches it by the child's scheme,
+   * in the window's capture after the menu navigation and the motor simulations (a key they refused stopped there); a transport that
+   * reads positions presses the controller directly.
+   */
+  const entregar = (comando: VirtualCommand): void => { cartucho.onCommand?.(comando); };
+  const controleVirtual = createVirtualController({
+    scheme: (i) => keyboard.kbFor(i), menuOpen: menuComDirecional,
+    holdKey: marcarTecla, releaseKey: soltarTecla, menuKey: (code) => teclaAoMenu(code, 'olhos'), deliver: entregar,
+  });
+  for (const tipo of ['keydown', 'keyup'] as const) {
+    win.addEventListener(tipo, (e: KeyboardEvent) => {
+      if (e.repeat || !cartucho.onCommand) return;
+      const origem = origemDoEvento(e);
+      if (origem === 'toque' || origem === 'olhos') return; // those come as commands already, or went to a menu
+      const jogador = keyboard.whichPlayer(e.code);
+      if (jogador < 0 || (tipo === 'keydown' && menuComDirecional())) return;
+      const acao = keyboard.actionOf(e.code, jogador) as Action | null;
+      if (acao) entregar({ action: acao, pressed: tipo === 'keydown', source: origem, player: jogador });
+    }, true);
+  }
+
   const regiaoDoOlhar = $<HTMLElement>('#game-region');
   if (temCamera && regiaoDoOlhar) {
     const olhos = createEyeControl({
@@ -3545,7 +3580,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
         requestFrame: (cb) => win.requestAnimationFrame(cb), cancelFrame: (h) => win.cancelAnimationFrame(h),
         now: () => win.performance.now(), every: (cb, ms) => win.setInterval(cb, ms), stopEvery: (h) => win.clearInterval(h),
       },
-      scheme: () => keyboard.kbFor(0), say: srSay, alert: srAlert,
+      controller: controleVirtual, say: srSay, alert: srAlert,
       report: (linha) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
       turnOff: () => state.setEyeControlValue('off'),
     });

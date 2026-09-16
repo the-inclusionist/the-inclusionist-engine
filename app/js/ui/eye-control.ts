@@ -3,7 +3,8 @@
 //
 // The pieces are each tested apart; this joins them for the root: the camera and the face tracker (platform/vision), a frame loop that
 // cannot stop in silence (platform/vision-loop), the right eye's gaze read from its own rest (input/gaze-relative), the cycle that turns
-// zones into actions (input/gaze-cycle), the presses as keys stamped `olhos` (input/gaze-keys), and the regions drawn over the game
+// zones into actions (input/gaze-cycle), the presses on the virtual controller with the source `olhos` (input/virtual-controller, ADR-0111:
+// never a disguised keyboard), and the regions drawn over the game
 // (ui/gaze-overlay). The stored 👀 position drives it: off lets the camera go.
 // · Nothing commands before the rest is measured: until then, and on a frame with no face or a head turning fast, the cycle is frozen.
 // · A reading that re-centres itself cancels the gesture in hand.
@@ -13,12 +14,11 @@
 
 import { t } from '../core/i18n.js';
 import type { EyeControlLevel } from '../core/state.js';
-import type { KeyScheme } from '../core/entity.js';
 import type { Action } from '../core/actions.js';
 import { headPoseFromMatrix, scoresFromCategories, eyeGazeFromScores, bothEyesClosed } from '../input/face-signals.js';
 import { createGazeReader, GAZE_DEFAULTS } from '../input/gaze-relative.js';
 import { createGazeCycle } from '../input/gaze-cycle.js';
-import { gazeKeyEvents, dispatchGazeKeys } from '../input/gaze-keys.js';
+import type { VirtualController } from '../input/virtual-controller.js';
 import { loadFaceTracker, openCamera, closeCamera, type FaceTracker, type FaceTrackerLoad, type VisionDeps } from '../platform/vision.js';
 import { createVisionLoop, type VisionLoopDeps, type LoopHealth } from '../platform/vision-loop.js';
 import { drawGazeOverlay } from './gaze-overlay.js';
@@ -28,13 +28,13 @@ export interface CameraFeed { readonly frame: unknown; ready(): boolean; close()
 
 export interface EyeControlDeps {
   readonly doc: Document;
-  /** Where the keys go and the regions are drawn: `#game-region`. */
+  /** Where the regions are drawn: `#game-region`. */
   readonly region: HTMLElement;
   /** The page's address, to reach `pesados/`. */
   readonly base: string;
   readonly loop: VisionLoopDeps;
-  /** The child's keys (`kbFor(0)`), read at every press so a remap counts at once. */
-  readonly scheme: () => KeyScheme;
+  /** Where the presses go: seat 0's virtual controller. */
+  readonly controller: VirtualController;
   readonly say: (text: string) => void;
   readonly alert: (text: string) => void;
   /** A line for `problems`. */
@@ -76,7 +76,7 @@ export function createEyeControl(d: EyeControlDeps): EyeControl {
   let reader = createGazeReader(), cycle = createGazeCycle();
   let loop: ReturnType<typeof createVisionLoop> | null = null;
 
-  const release = (): void => { dispatchGazeKeys(d.region, gazeKeyEvents(pressed, null, d.scheme())); pressed = null; };
+  const release = (): void => { if (pressed) d.controller.release(pressed, 'olhos'); pressed = null; };
 
   const frame = (ms: number): void => {
     if (!tracker || !feed || !canvas || !feed.ready()) return;
@@ -94,8 +94,11 @@ export function createEyeControl(d: EyeControlDeps): EyeControl {
       frozen: !reading.ready || !scores || reading.reason === 'head-moving',
       cancel: reading.reason === 'recentring',
     });
-    dispatchGazeKeys(d.region, gazeKeyEvents(pressed, out.pressed, d.scheme()));
-    pressed = out.pressed;
+    if (out.pressed !== pressed) {
+      if (pressed) d.controller.release(pressed, 'olhos');
+      if (out.pressed) d.controller.press(out.pressed, 'olhos');
+      pressed = out.pressed;
+    }
     // the reading, readable on the drawing's own element: when a child's eyes are not answered, this says at which step it stops
     const f2 = (n: number | undefined): string => (n === undefined ? '' : n.toFixed(2));
     Object.assign(canvas.dataset, {

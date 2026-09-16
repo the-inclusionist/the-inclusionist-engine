@@ -65,8 +65,9 @@ const PUBLICADOS = {
     + 'inside the engine. Published by the wildcard, with no external consumer — and it should not gain one: a transport is the engine\'s',
   'gaze-cycle': 'twelve actions and START from four gaze zones (ADR-0213, issue #194); pure, and to be wired by the engine to stamped '
     + 'keys. Published by the wildcard, with no external consumer — and it should not gain one: a transport is the engine\'s',
-  'gaze-keys': 'the eye control\'s presses as key events stamped `olhos` (ADR-0213, ADR-0109, issue #196); wired by the engine. '
-    + 'Published by the wildcard, with no external consumer — and it should not gain one: a transport is the engine\'s',
+  'virtual-controller': 'the engine carrying the virtual button to the game (ADR-0111 erratum, issue #197); wired by `boot/create-game`, '
+    + 'which gives the cartridge `onCommand`. Published by the wildcard, with no external consumer — and it should not gain one: a '
+    + 'cartridge receives commands, it does not press them',
   'face-map': 'the face as a controller, the Dev\'s map (ADR-0210 erratum, issue #191); pure, and to be wired by the engine to stamped '
     + 'keys. Published by the wildcard, with no external consumer — and it should not gain one: a transport is the engine\'s',
   'hand-map': 'the hands as a controller, the Dev\'s map (ADR-0210, issue #191); pure, and to be wired by the engine to stamped keys. '

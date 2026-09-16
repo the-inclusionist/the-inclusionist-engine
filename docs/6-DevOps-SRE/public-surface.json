@@ -446,11 +446,6 @@
     "GazePreview",
     "createGazeCycle"
   ],
-  "input/gaze-keys.ts": [
-    "GazeKeyEvent",
-    "dispatchGazeKeys",
-    "gazeKeyEvents"
-  ],
   "input/gaze-relative.ts": [
     "GAZE_DEFAULTS",
     "GazeReader",
@@ -691,6 +686,12 @@
     "holds",
     "reachable",
     "transportesPadrao"
+  ],
+  "input/virtual-controller.ts": [
+    "VirtualCommand",
+    "VirtualController",
+    "VirtualControllerDeps",
+    "createVirtualController"
   ],
   "input/vocabulary-migration.ts": [
     "EsquemaSalvo",

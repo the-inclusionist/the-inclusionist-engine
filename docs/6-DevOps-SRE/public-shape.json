@@ -33,6 +33,7 @@
       "isNavigable?",
       "naBarraDe?",
       "navBar?",
+      "onCommand?",
       "players?",
       "preset?",
       "setCorrecaoDoJogador?",
@@ -662,11 +663,6 @@
     "interface GazeCycle": [],
     "type CycleItem": "Action | typeof CANCEL"
   },
-  "input/gaze-keys.ts": {
-    "interface GazeKeyEvent": [
-      "type"
-    ]
-  },
   "input/gaze-relative.ts": {
     "interface GazeReaderOptions": [
       "axisSwitch?",
@@ -1053,6 +1049,26 @@
       "pedidas",
       "seguraPedidas",
       "serviriamSeLigados"
+    ]
+  },
+  "input/virtual-controller.ts": {
+    "interface VirtualCommand": [
+      "action",
+      "player",
+      "pressed",
+      "source"
+    ],
+    "interface VirtualControllerDeps": [
+      "deliver",
+      "holdKey",
+      "menuKey",
+      "menuOpen",
+      "releaseKey",
+      "scheme"
+    ],
+    "interface VirtualController": [
+      "press",
+      "release"
     ]
   },
   "input/vocabulary-migration.ts": {
@@ -2009,6 +2025,7 @@
     "interface EyeControlDeps": [
       "alert",
       "base",
+      "controller",
       "doc",
       "loadTracker?",
       "loop",
@@ -2016,7 +2033,6 @@
       "region",
       "report",
       "say",
-      "scheme",
       "turnOff"
     ],
     "interface EyeControl": [

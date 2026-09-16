@@ -785,6 +785,18 @@ only mention it in comments.
 `gesturesSeen`), the eyes with `input/gaze-relative` and `input/gaze-cycle`; all answer in the engine's fourteen actions. 📏 Measured on
 2026-09-16: no sibling repository imports `input/camera-gestures`.
 
+## AH · The eye control presses the virtual controller; `input/gaze-keys` left (ADR-0111 erratum, issue #197)
+
+**What left.** `input/gaze-keys` — `gazeKeyEvents`, `dispatchGazeKeys`, `GazeKeyEvent`. It turned the eye control's presses into synthetic
+key events, the disguise ADR-0111 §4 refuses. `ui/eye-control`'s `EyeControlDeps.scheme` became `controller: VirtualController`.
+
+**What entered (additive).** `CreateGameOptions.onCommand(command)`: the engine carries each press and release of a virtual button — the
+keyboard through the child's scheme, the eyes — with its source and seat; `input/virtual-controller` (`createVirtualController`,
+`VirtualCommand`, re-exported from `boot/create-game`).
+
+**What to do:** nothing for a game that does not use the eyes; a game that wants commands declares `onCommand` and maps the positions it
+names in its `preset`. 📏 Measured on 2026-09-16: no sibling repository imports `input/gaze-keys` or `ui/eye-control`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |
