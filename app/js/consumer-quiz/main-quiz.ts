@@ -262,10 +262,15 @@ function aoTeclado(e: KeyboardEvent): void {
   // visão de ninguém — quem a lia era o `needsAudioCues`, e este atalho de teclado não passa por ele. Uma
   // propriedade inventada que ninguém consulta é a forma mais silenciosa de dívida: o `SonarPlayer` a
   // recusar agora é o que a torna visível.
-  if (e.code === 'KeyS') { motor?.sonar.sonar({ i: 0, x: atual, y: 0 }); e.preventDefault(); return; }
+  // 🔴 THE POSITIONS, NOT THE KEYS (2026-09-16): this read raw codes, so a key the child's scheme gives an action did something else —
+  // S, the scheme's first key for «down», rang the sonar, and the eye control (which presses the scheme's first key, stamped `olhos`)
+  // could neither move nor confirm. The action comes from the engine's keyboard, so any transport and any remap reach the quiz.
+  const acao = motor?.keyboard.actionOf(e.code, 0) ?? null;
+  if (e.code === 'KeyS' && !acao) { motor?.sonar.sonar({ i: 0, x: atual, y: 0 }); e.preventDefault(); return; }
   const total = p.alternativas.length;
-  if (e.code === 'ArrowDown' || e.code === 'ArrowRight') { foco = proximoFoco(foco, 1, total); render(); e.preventDefault(); }
-  else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') { foco = proximoFoco(foco, -1, total); render(); e.preventDefault(); }
+  if (acao === 'down' || acao === 'right' || e.code === 'ArrowDown' || e.code === 'ArrowRight') { foco = proximoFoco(foco, 1, total); render(); e.preventDefault(); }
+  else if (acao === 'up' || acao === 'left' || e.code === 'ArrowUp' || e.code === 'ArrowLeft') { foco = proximoFoco(foco, -1, total); render(); e.preventDefault(); }
+  else if (acao === 'action2') { motor?.cenas.input('confirm'); e.preventDefault(); }
   // CONFIRMAR passa pela PILHA (item 22, C3): a cena do topo decide o que a intenção significa e devolve se
   // consumiu. Aqui só há uma cena, então o efeito é o mesmo — e é por ser o mesmo que a troca é conferível:
   // se o comportamento mudasse junto, não daria para saber qual metade quebrou.

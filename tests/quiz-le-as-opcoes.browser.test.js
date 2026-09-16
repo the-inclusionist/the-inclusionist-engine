@@ -48,6 +48,17 @@ describe('the quiz, heard', () => {
     expect(falas.slice(antes)).toEqual(['Galinha, 2 de 4']);
   });
 
+  it('🔴 [Right] the quiz reads POSITIONS, not keys: the scheme\'s first key for «down», stamped as the eyes, moves the option', () => {
+    // 📏 The Dev ran the eye control on 2026-09-16 and nothing moved: the control presses the scheme's first key for an action (S for «down»),
+    // and the quiz read raw arrow codes and rang the sonar on S.
+    const regiao = document.getElementById('game-region');
+    const antes = document.querySelector('.quiz-alt.is-on').textContent;
+    const ev = new KeyboardEvent('keydown', { code: 'KeyS', key: 'KeyS', bubbles: true, cancelable: true });
+    ev.__vpOrigem = 'olhos';
+    regiao.dispatchEvent(ev);
+    expect(document.querySelector('.quiz-alt.is-on').textContent).not.toBe(antes);
+  });
+
   it('🔴 [Zero] the quiz asks for NO on-screen pad — its options and its menu button are touched directly (ADR-0166 erratum)', () => {
     // The Dev, asked whether the quiz keeps the pad: «Sim» to taking it out, «e crie um botão para menu».
     expect(document.getElementById('touch-controls'), 'the quiz still draws an on-screen pad').toBeNull();
@@ -67,4 +78,5 @@ describe('the quiz, heard', () => {
 //   Q2 an option said without its number                     🔴 (this file and the node file)
 //   Q3 every draw re-reads the whole question                🔴 the arrow press says the statement again
 //   Q4 the narrated question is not remembered               🔴 the arrow press re-reads everything
+//   Q7 the quiz reading raw arrow codes again (no `actionOf`) 🔴 the scheme's «down» key moves the option
 //   (Q5, Q6 held the drawn number; ADR-0167 took it out — see the checks in `itens-sem-numero`)
