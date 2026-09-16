@@ -129,7 +129,7 @@ export interface PauseIcon {
 export const PAUSE_ICONS: readonly PauseIcon[] = [
   { k: 'blind', e: '🦯', n: 'icon.blind' },
   { k: 'tts', e: '🗨️', n: 'icon.tts' },
-  { k: 'libras', e: '🤟', n: 'icon.libras' },
+  { k: 'libras', e: '🦻', n: 'icon.libras' }, // 🦻 (the Dev, 2026-09-16): 🤟 is playing by hand gestures
   { k: 'tea', e: '🧩', n: 'icon.tea' },
   { k: 'altmove', e: '☝️', n: 'icon.altmove' }, // ☝️ e não 🦾: o gesto é UM DEDO tocando, que é o que a alternância pede (pedido do Dev)
   { k: 'contrast', e: '🌗', n: 'icon.contrast' },

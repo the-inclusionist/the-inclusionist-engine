@@ -429,7 +429,7 @@ export function bootQuiz(): void {
   // MODO PESSOA SURDA — ⚠️ ESTE BLOCO SAIU, e a ausência é o conserto (ADR-0106).
   //
   // Ele lia `#q-libras`, ligava o clique a `toggleLibras`, anunciava `sr.icon.librasOn/Off` e mantinha o
-  // `aria-pressed` por `setOnLibrasChange`. Todas as quatro coisas são agora feitas pelo ícone 🤟 da barra
+  // `aria-pressed` por `setOnLibrasChange`. Todas as quatro coisas são agora feitas pelo ícone 🦻 da barra
   // que o `createGame` monta — o mesmo `iconAct`, e um `aria-label` que diz o estado (o ida-e-volta que o
   // cabeçalho do `ui/pause-icons` descreve).
   //
