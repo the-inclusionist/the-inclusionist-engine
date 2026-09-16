@@ -774,6 +774,17 @@ language the browser has no voice for has no voice at all (narration locked with
 (`app/js/main.ts`) and `pixi-15-puzzle` (`app/js/boot/standalone.ts`, with the dependency) pass the port; the other game repositories
 only mention it in comments.
 
+## AG · `input/camera-gestures` left: the face and the hands read by the Dev's map (ADR-0210, ADR-0213, issue #191)
+
+**What left.** The whole module `input/camera-gestures` — `criarLeitorDaCamera`, `criarLeitorDoRosto`, `criarLeitorDosOlhos`,
+`criarLeitorDosGestosEstaticos`, `criarLeitorDosGestosDinamicos`, `formaDaMao`, `tresDedos`, `poseDaCabeca`, `GESTOS_ESTATICOS`,
+`GRUPOS_DA_CAMERA`, `ESPERA_MS`, `FIRMEZA_MS`, `REPOUSO_MS` and its types. It spoke a seven-command vocabulary
+(`up/down/left/right/confirm/back/menu`) the controller map replaced, and nothing wired it.
+
+**What to do:** read a face with `input/face-map` (`createFaceMapReader`), hands with `input/hand-map` (`createHandMapReader`,
+`gesturesSeen`), the eyes with `input/gaze-relative` and `input/gaze-cycle`; all answer in the engine's fourteen actions. 📏 Measured on
+2026-09-16: no sibling repository imports `input/camera-gestures`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

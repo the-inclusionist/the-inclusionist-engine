@@ -5,8 +5,7 @@
 // whether both eyes are closed. Nothing here knows where the screen is — the eye control measures how far the gaze moves from its own rest
 // (input/gaze-relative), and uses the pose only to notice a head that turns fast.
 //
-// ⚠️ THE SIGN OF PITCH IS NOT MEASURED against a real head. Only the pose's rate of change reaches a command, so the sign does not; the old
-// `poseDaCabeca` of `input/camera-gestures` uses the opposite sign and leaves with the old readers (issue #191).
+// ⚠️ THE SIGN OF PITCH IS NOT MEASURED against a real head. Only the pose's rate of change reaches a command, so the sign does not.
 
 export interface HeadPose {
   readonly yaw: number;

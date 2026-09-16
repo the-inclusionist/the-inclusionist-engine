@@ -117,7 +117,7 @@ Cloudflare address until then; the sha256 never changes with the move.
 ## MediaPipe — hands, face, eyes
 
 - **What:** `@mediapipe/tasks-vision` wasm and `gesture_recognizer.task`, `face_landmarker.task` (Apache-2.0), in the catalogue with
-  sha256. **Use:** `input/camera-gestures` reads their outputs (`criarLeitorDaCamera(grupo, neutro)`).
+  sha256. **Use:** `platform/vision` loads them; `input/face-signals`, `input/face-map` and `input/hand-map` read their outputs.
 - ⚠️ **Measured 2026-09-14:** the library tries to send logs to `odml.pa.googleapis.com`; the engine's `connect-src` blocks every
   attempt. Keep it blocked.
 
