@@ -79,7 +79,7 @@ said so. A document that describes the code has to be able to notice when it sto
 - ✅ As a **deaf player who signs**, I want a **sign-language interpreter**, so that spoken content reaches me.
   `app/js/ui/vlibras.ts` · `tests/vlibras.browser.test.js`
 - ✅ As a **player who cannot use hands**, I want to **play with my eyes**, so that a webcam replaces the pad.
-  `app/js/ui/webcam.ts` · `tests/webcam.browser.test.js`
+  `app/js/ui/eye-control.ts` · `tests/eye-control.browser.test.js`
 - ✅ As a **player**, I want **my own screen** when several of us play, so that nobody has to share half a view.
   `app/js/render/viewports.ts` · `tests/viewports.browser.test.js`
 - 🟡 As a **player**, I want to be **told before I start** which of my actions the controller in my hand cannot

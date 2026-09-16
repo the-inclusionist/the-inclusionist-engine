@@ -7,7 +7,7 @@
 # build.assetsDir do Vite). Antes tinha regras /js/* e /css/* — não existem mais (o Vite bundla p/ /assets/).
 
 # CONTENT-SECURITY-POLICY (issue #170; narrowed by ADR-0177, issue #173): which hosts may run script and be fetched.
-#  • script-src: this origin; `blob:` — WebGazer runs from the sha256-checked cache (#169); `'wasm-unsafe-eval'` — the
+#  • script-src: this origin; `'wasm-unsafe-eval'` — the
 #    voice and vision runtimes compile WebAssembly. No third-party host: the game bundles its runtimes.
 #  • connect-src: this origin only. The heavy files come from the delivery's own `pesados/` (ADR-0177), so the catalogue's
 #    hosts are contacted by the build alone; no library left in the engine requests a third party by itself (ADR-0207).
@@ -18,7 +18,7 @@
 /*
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'
 
 /sw.js
   Cache-Control: no-cache

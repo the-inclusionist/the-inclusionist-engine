@@ -541,16 +541,14 @@ export function initSettingsMotor(ctx: SettingsMotorCtx): SettingsMotorApi {
 
   // ---- restaurar os padrões DESTE menu (ADR-0028) ----
   //
-  // O alcance aqui é MENOR que a tela, e de propósito. A Acessibilidade motora hospeda quatro coisas: Modo
-  // Fácil, movimento por alternância, o controle pelos olhos (#opt-eyes) e o mapeamento de teclas (#map-hub).
-  // O reset devolve as duas PREFERÊNCIAS e não encosta nos dois MÉTODOS DE ENTRADA, por uma razão que vale
+  // O alcance aqui é MENOR que a tela, e de propósito. A Acessibilidade motora hospeda três coisas: Modo
+  // Fácil, movimento por alternância e o mapeamento de teclas (#map-hub); o controle pelos olhos passou à barra rápida (👀).
+  // O reset devolve as duas PREFERÊNCIAS e não encosta no MÉTODO DE ENTRADA, por uma razão que vale
   // mais que a simetria:
   //
   //   UM RESET SÓ PODE DESFAZER O QUE ELE TAMBÉM CONSEGUE REFAZER.
   //
-  // A criança que joga com os olhos aponta com os olhos. Desligar o controle pela webcam tira dela o ponteiro
-  // com que ela clicaria o botão de volta — o reset deixaria de remover uma armadilha para virar uma, e a
-  // saída passaria a depender de outra pessoa estar por perto. O mesmo vale para quem remapeou as teclas
+  // Quem remapeou as teclas
   // porque só alcança algumas: devolver o mapa de fábrica é devolver teclas que a mão dela não chega. Esse
   // mapeamento, aliás, já tem o reset dele (#ctrl-reset), onde a escolha é explícita e não um efeito colateral.
   //

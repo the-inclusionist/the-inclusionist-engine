@@ -29,8 +29,6 @@ const pt: Record<string, string> = {
   // de cima é para quem ESCUTA, esta diz QUAL botão, porque quem a lê tem outras pessoas à volta.
   'hud.waitBadge': 'Jogador {n}: aperte um botão do SEU teclado ou de um controle livre para entrar',
   'sr.libras.loading': 'Intérprete de Libras ainda carregando — tente de novo em instantes.',
-  'sr.eyes.loadFailed': 'WebGazer não carregou.',
-  'sr.eyes.calibrate': 'Jogar com os olhos: olhe pela tela e clique em alguns pontos para calibrar. Olhar esquerda/direita anda; olhar para cima pula.',
   'sr.eyes.needsInternet': 'O controle pelo olhar ainda não chegou a este aparelho: ele desce na primeira vez que o jogo abre com internet.',
   // the eye control's words over the game (ADR-0213 §6): a region tells a preparing look which way to go, the opposite of itself
   'gaze.lookHere': 'Olhe aqui',

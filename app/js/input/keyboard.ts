@@ -65,9 +65,9 @@ const vivo = (t: unknown): KeyScheme => JSON.parse(JSON.stringify(t)) as KeySche
  * são CÓPIAS VIVAS do que `input/default-bindings` declara, que é onde o ADR-0096 pôs a decisão.
  *
  * Antes eram duas listas paralelas com oito posições cada, e as oito «coincidiam» — menos uma. A `Space` do
- * jogador 1 em dupla estava numa e não na outra, e o custo era concreto: `ui/webcam.ts` sintetiza `Space`
- * para «olhar para cima = pular», então entrar um segundo jogador tirava o PULO de quem joga com os olhos e
- * deixava o andar. Nada errava em voz alta. Derivar em vez de repetir torna essa divergência impossível de
+ * jogador 1 em dupla estava numa e não na outra, e o custo era concreto: a webcam de então (WebGazer, que saiu no ADR-0214)
+ * sintetizava `Space` para «olhar para cima = pular», então entrar um segundo jogador tirava o PULO de quem jogava com os
+ * olhos e deixava o andar. Nada errava em voz alta. Derivar em vez de repetir torna essa divergência impossível de
  * voltar a existir, em vez de a apanhar depois de acontecer.
  */
 export const KB_DEFAULTS: KBDefaults = {

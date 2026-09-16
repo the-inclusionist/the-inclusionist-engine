@@ -8,7 +8,7 @@
 // Usage (after `npm run build`): `npm run pesados:entrega` — builds the package, then `node scripts/pesados-na-entrega.mjs dist`.
 // A cartridge, after its own build, runs the published command: `npx inclusionist-pesados dist`. The catalogue is read from the
 // package beside this script, never from the caller's folder.
-// ⚠️ It downloads about 300 MB from Hugging Face, jsDelivr, Google Storage and webgazer.cs.brown.edu: the build machine
+// ⚠️ It downloads about 300 MB from Hugging Face, jsDelivr and Google Storage: the build machine
 // contacts them once, and the child's device never does.
 
 import { mkdirSync, writeFileSync, readFileSync, existsSync, realpathSync } from 'node:fs';

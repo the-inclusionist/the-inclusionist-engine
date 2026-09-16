@@ -37,9 +37,11 @@ describe('the Content-Security-Policy (issues #170, #173)', () => {
     expect(P, 'no Content-Security-Policy on the `/*` rule of _headers').not.toBeNull();
   });
 
-  it('🔴 [Right] script runs only from this origin and the checked blob: — never inline, eval or a third-party host', () => {
+  it('🔴 [Right] script runs only from this origin — never a blob:, inline, eval or a third-party host', () => {
     const s = P['script-src'];
-    expect(s).toEqual(expect.arrayContaining(["'self'", 'blob:', "'wasm-unsafe-eval'"]));
+    expect(s).toEqual(expect.arrayContaining(["'self'", "'wasm-unsafe-eval'"]));
+    // `blob:` served WebGazer from the checked cache (#169); it left with WebGazer (ADR-0214), and no script runs from a blob now
+    expect(s, 'a script from a blob: URL').not.toEqual(expect.arrayContaining(['blob:']));
     expect(s, 'inline script or eval would undo the policy').not.toEqual(expect.arrayContaining(["'unsafe-inline'"]));
     expect(s).not.toEqual(expect.arrayContaining(["'unsafe-eval'"]));
     expect(hostsDe(s), 'a runtime from a third-party host: the delivery carries its runtimes (ADR-0177)').toEqual([]);
@@ -70,7 +72,7 @@ describe('the Content-Security-Policy (issues #170, #173)', () => {
 //   C1 `'unsafe-inline'` in script-src                    🔴 script
 //   C2 a script host (jsDelivr) back in script-src        🔴 script
 //   C3 a third-party host back in connect-src (ADR-0207)  🔴 connect
-//   C4 `blob:` removed (WebGazer from the cache)          🔴 script
+//   C4 `blob:` back in script-src (WebGazer left, ADR-0214) 🔴 script
 //   C5 `object-src` removed                               🔴 [Zero]
 //   C6 storage.googleapis.com back in connect-src         🔴 connect, build only
 //   C7 `*.hf.co` back in connect-src                      🔴 connect, build only

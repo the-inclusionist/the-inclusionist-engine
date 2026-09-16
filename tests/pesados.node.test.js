@@ -84,9 +84,10 @@ describe('o buscador das coisas pesadas', () => {
 
   it('📏 o peso por baixar é o das que TÊM fonte e ainda não desceram', async () => {
     const semNada = pesoPorBaixar([]);
-    // The vision runtime and models, WebGazer, and Kokoro (ADR-0198: the 325 532 232-byte model, its tokenizer and 34 voice tables
-    // of 522 240 bytes); ADR-0207 took out the earlier neural voices and their phonemizer (−258.9 MiB). What has no source adds nothing.
-    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(360);
+    // The vision runtime and models, and Kokoro (ADR-0198: the 325 532 232-byte model, its tokenizer and 34 voice tables
+    // of 522 240 bytes); ADR-0207 took out the earlier neural voices and their phonemizer (−258.9 MiB), ADR-0214 WebGazer (−1.8 MiB). What has
+    // no source adds nothing.
+    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(358);
     const f = cacheFalsa();
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
     expect(pesoPorBaixar(r), 'depois de tudo descer não falta nada').toBe(0);

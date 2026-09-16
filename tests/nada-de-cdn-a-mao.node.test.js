@@ -75,22 +75,18 @@ const BUSCAS_A_MAO = {
       + 'them at `pesados/`. A second host here would be a mirror chosen in silence',
   },
   'platform/pesados-catalogo.ts': {
-    urls: 3,
+    urls: 2,
     porque:
       'OS RUNTIMES QUE A ENGINE PASSOU A DESCER NA INSTALAÇÃO (ADR-0124, ADR-0132, decisões do Dev ' +
       'de 2026-09-09). ⚠️ CDN FIXADA É PERMITIDA e o ADR-0116 diz porquê: o pilar 8 proíbe depender da rede ' +
       'DEPOIS do primeiro dia, e isto desce com tudo o resto na instalação. ' +
-      '📌 The `3` is THREE ORIGINS, each defensible on its own: (1) `@mediapipe/tasks-vision` ' +
+      '📌 The `2` is TWO ORIGINS, each defensible on its own: (1) `@mediapipe/tasks-vision` ' +
       'em jsDelivr — o runtime de visão; (2) `storage.googleapis.com/mediapipe-models` — os modelos `.task`, ' +
-      'que vivem noutro host porque o Google os publica assim, e sem eles o runtime não reconhece nada; ' +
-      'and (3) `webgazer.cs.brown.edu`, que VOLTOU pelo ADR-0132 porque o MediaPipe dá a posição ' +
-      'do íris e não o ponto no ecrã. ' +
-      'The WebGazer lives here only since #169: `ui/webcam.ts` reads it from the checked cache instead of fetching it. ' +
-      'A fourth origin is a new supplier entering without a decision. It leaves this list when the bytes are ' +
+      'que vivem noutro host porque o Google os publica assim, e sem eles o runtime não reconhece nada. ' +
+      'WebGazer (`webgazer.cs.brown.edu`) left with ADR-0214. ' +
+      'A third origin is a new supplier entering without a decision. It leaves this list when the bytes are ' +
       'servidos de origem própria',
   },
-  // `ui/webcam.ts` LEFT on 2026-09-13 (#169): it runs WebGazer from the sha256-checked cache the install filled,
-  // and asks the network for nothing.
 };
 
 /**
@@ -188,11 +184,10 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
 
   /* 🎯 A REGRA DO ADR-0116 FEITA ESTRUTURAL: um ENDEREÇO não é uma BUSCA, e é a diferença entre o que se
    * pré-cacheia e o que se busca com preguiça. `platform/kokoro` NAMES the host and never asks it — a
-   * módulo puro, e é essa pureza que deixa o buscador escolher o momento. `ui/webcam` pede, e pede tarde.
+   * módulo puro, e é essa pureza que deixa o buscador escolher o momento.
    *
-   * ⚠️ THE CASE HOLDS BOTH SIDES, which is why it is not decorative: if `kokoro` gains a
-   * `fetch`, deixa de ser endereço declarado e passa a ser a busca preguiçosa que a desculpa dele diz que não
-   * é; se o `webcam` deixar de buscar, a desculpa dele passou a descrever um ficheiro que já não faz aquilo.
+   * ⚠️ If `kokoro` gains a `fetch`, deixa de ser endereço declarado e passa a ser a busca preguiçosa que a desculpa dele diz que não
+   * é. (The case's other side was `ui/webcam`, which left with WebGazer — ADR-0214.)
    *
    * 📌 A regex é DUPLICADA do `nada-vem-de-fora` de propósito, pela razão que aquele ficheiro escreve: um
    * gate tem de poder discordar do outro. */
@@ -201,12 +196,6 @@ describe('nenhum CDN escrito à mão · o inventário encolhe', () => {
 
   it('🎯 [Fronteira] endereço DECLARADO e busca PREGUIÇOSA são coisas diferentes, e o crivo sabe qual é qual', () => {
     expect(pede('platform/kokoro.ts'), 'platform/kokoro gained a fetch — it is no longer a declared address').toBe(false);
-    // #169: the webcam stopped fetching — it runs the bytes of the checked cache. Its only `.src =` is a `blob:` it makes
-    // itself; what would reopen the lazy door is a network address in its code, or a `src` that is not an object URL.
-    const webcam = semComentarios(readFileSync(join(RAIZ, 'ui/webcam.ts'), 'utf8'));
-    expect(webcam, 'ui/webcam names a network address again (#169)').not.toMatch(/https?:\/\//);
-    expect(webcam, 'ui/webcam fetches again (#169)').not.toMatch(/\bfetch\s*\(|\bimport\s*\(|XMLHttpRequest/);
-    expect(webcam, 'the script src of ui/webcam no longer comes from the checked bytes').toMatch(/URL\.createObjectURL\(/);
   });
 
   it('[Interface] `import()` dinâmico não traz especificador não-relativo', () => {

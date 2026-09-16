@@ -33,7 +33,7 @@ export const CACHE_PESADOS = 'incl-pesados-v2';
 
 /**
  * O RUNTIME DE VISÃO — **MediaPipe**, decidido pelo Dev em 2026-09-09 (ADR-0124): «… mediapipe
- * (webgazer não), e LPCP: devem acompanhar a engine».
+ * (webgazer não), e LPCP: devem acompanhar a engine». WebGazer, trazido de volta pelo ADR-0132, saiu de novo (ADR-0214).
  *
  * 🔴 ESTA ENTRADA DIZIA «a #129 ainda não escolheu o fornecedor» DEPOIS DE ELE TER ESCOLHIDO, e a linha
  * sobreviveu ao registo que a contradizia. Não era só trabalho em falta: era uma afirmação FALSA a dirigir
@@ -43,7 +43,7 @@ export const CACHE_PESADOS = 'incl-pesados-v2';
  * `Access-Control-Allow-Origin: *`, na versão FIXADA — 155 439 + 323 377 + 11 756 954 bytes.
  *
  * ⚠️ CDN FIXADA É PERMITIDA E O ADR-0116 DIZ PORQUÊ: o que o pilar 8 proíbe é depender da rede DEPOIS do
- * primeiro dia. Isto desce na INSTALAÇÃO, com o resto — e é a diferença inteira para o WebGazer, que busca
+ * primeiro dia. Isto desce na INSTALAÇÃO, com o resto — e é a diferença inteira para o WebGazer de antes, que buscava
  * quando a criança liga o controle por olhar, logo a máquina que nunca o ligou fica sem ele para sempre.
  * 📌 A versão vai na URL, que é o que o `check:precache` exige de qualquer entrada externa: bytes diferentes
  * chegam por endereço diferente, e uma entrada fixada nunca congela.
@@ -79,26 +79,6 @@ const MEDIAPIPE: readonly Pesado[] = Object.freeze([
 ]);
 
 /**
- * O WEBGAZER — **volta em 2026-09-09, ao lado do MediaPipe** (ADR-0132): «Traga o WebGazer de volta. Vamos
- * usar ambos.»
- *
- * 🎯 ELES NÃO SE SOBREPÕEM ONDE IMPORTA, e é essa medição que produziu a decisão: o MediaPipe diz ONDE O ÍRIS
- * ESTÁ — `FACE_LANDMARKS_LEFT_IRIS` são conjuntos de conexões sobre marcos —, e o WebGazer diz PARA ONDE A
- * CRIANÇA OLHA NO ECRÃ, que é um modelo de regressão com calibração. Nenhuma das quinze tarefas do
- * `tasks-vision` faz a segunda.
- *
- * ⚠️ E O DEFEITO DELE NUNCA FOI O FORNECEDOR: era ser PREGUIÇOSO. Buscado quando a criança liga o controle
- * por olhar, a máquina que nunca o ligou fica sem ele, e numa escola sem rede não acontece nada — sem erro e
- * sem explicação. Aqui desce na INSTALAÇÃO com tudo o resto, e o defeito desaparece com a capacidade intacta.
- * 📌 Fica a dívida que o ADR-0132 nomeia: o `<script src>` do `ui/webcam.ts` tem de sair no mesmo commit em
- * que a fiação o ler daqui, senão passam a existir dois caminhos para o mesmo ficheiro.
- */
-const WEBGAZER: readonly Pesado[] = Object.freeze([
-  { id: 'visao:olhar', url: 'https://webgazer.cs.brown.edu/webgazer.js', bytes: 1_895_169,
-    sha256: 'e276d085eb490b5ba65481c368371be03b1a358d12d95336af0a8239f643f8e0' },
-]);
-
-/**
  * KOKORO (ADR-0186, ADR-0198; the Dev: «Faça»): the fp32 model, its tokenizer vocabulary and a style table per voice of the engine's
  * languages. The phonemizer and the runtime are the game's (ADR-0198 §5), bundled by it. Read by the port the quiz demo fills.
  */
@@ -111,19 +91,8 @@ const KOKORO: readonly Pesado[] = Object.freeze([
 export const PESADOS: readonly Pesado[] = Object.freeze([
   ...KOKORO,
 
-  /*
-   * 🔴 O RUNTIME DE VISÃO — decidido e SEM FONTE, e a ausência é medida.
-   *
-   * A issue #11 diz «MediaPipe» e o `ui/webcam.ts` faz WebGazer, buscado de `webgazer.cs.brown.edu` por um
-   * `<script src>` com preguiça no PRIMEIRO USO — sem SRI, sem `crossorigin`, e a falhar em silêncio numa
-   * escola sem rede. `git grep -i mediapipe` em `app/js` devolve ZERO (ADR-0119).
-   *
-   * ⚠️ NÃO PONHO AQUI A URL DO WEBGAZER. Trocar o fornecedor é decisão da #129, e escrevê-la aqui seria
-   * decidi-la de lado — a mesma coisa que o ADR-0119 apanhou: um subsistema que a engine DECLARA possuir e
-   * que na prática é outra coisa.
-   */
+  // the vision runtime and its models: eye control reads the face (ADR-0213); WebGazer left (ADR-0214)
   ...MEDIAPIPE,
-  ...WEBGAZER,
 
   /*
    * 🔴 O ACERVO DE ARTE — a quarta coisa pesada do ADR-0119, e a única SEM FONTE. Medido: `art/` tem DOIS

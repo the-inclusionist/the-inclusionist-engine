@@ -797,6 +797,16 @@ keyboard through the child's scheme, the eyes — with its source and seat; `inp
 **What to do:** nothing for a game that does not use the eyes; a game that wants commands declares `onCommand` and maps the positions it
 names in its `preset`. 📏 Measured on 2026-09-16: no sibling repository imports `input/gaze-keys` or `ui/eye-control`.
 
+## AI · WebGazer left the engine (ADR-0214, issue #198)
+
+**What left.** `ui/webcam` — `eyeMode`, `setEyeMode`, `eyeSet`, `onGaze`, `startEyeControl`, `stopEyeControl`, `loadWebGazer`; the heavy-file
+catalogue entry `visao:olhar` (1 895 169 bytes), so the install and `inclusionist-pesados` no longer fetch it; `blob:` in the page's
+`script-src`; the i18n keys `sr.eyes.loadFailed` and `sr.eyes.calibrate`.
+
+**What to do:** remove the imports from `ui/webcam` and the eye button that used them; a child plays with the eyes through the 👀 on the
+engine's quick bar (ADR-0213), and a game that wants the commands declares `onCommand` (note AH). 📏 Measured on 2026-09-16:
+`game-platformer` imports five names from `ui/webcam` (`app/js/main.ts`) and has `#opt-eyes` (`app/index.html`); no other sibling does.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

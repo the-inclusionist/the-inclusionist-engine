@@ -4,8 +4,8 @@
 // ========================= O PONTO DIFÍCIL DA ARESTA, E ELE ESTAVA NOMEADO =========================
 // O crivo `tests/origem-da-tecla` carrega esta frase na entrada do `input/keydown` desde que o
 // estrangulamento começou: «a webcam despacha `KeyboardEvent` SINTÉTICO, entra pelo `keydown` e seria
-// carimbada `teclado` — a erasão a voltar pela porta da frente». O `ui/webcam` constrói um `KeyboardEvent` e
-// despacha-o na janela (`ui/webcam.ts`, `eyeSet`), e do lado de lá ele é indistinguível de uma tecla premida.
+// carimbada `teclado` — a erasão a voltar pela porta da frente». Hoje a única tecla sintética da engine é a de menu que o
+// pad e o controle virtual entregam aos menus (`boot/create-game`, `teclaAoMenu`); a webcam de WebGazer saiu (ADR-0214).
 //
 // `isTrusted` distingue PREMIDA de DESPACHADA — é a única propriedade que um script não consegue forjar — mas
 // não diz QUAL transporte assistido despachou. Isso tem de chegar DECLARADO, e é o que este módulo é.

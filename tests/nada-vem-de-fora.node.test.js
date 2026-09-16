@@ -71,7 +71,6 @@ const DECLARADAS = {
   'http://www.w3.org/2000/svg': 'NAMESPACE XML, não um endereço: o `createElementNS` exige-o para criar nós SVG, e ele nunca sai da máquina. Aparece no `render/cvd-matrices` e no `render/lq-filter`, que montam os filtros de daltonismo',
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1': 'O RUNTIME DE VISÃO (ADR-0124), fixado na versão e descido na INSTALAÇÃO pelo `platform/pesados`. Não é busca preguiçosa: é a instalação do PWA, que o ADR-0116 declarou ser um acto de rede legítimo. 📏 Medido: os três ficheiros respondem 200 com CORS aberto',
   'https://storage.googleapis.com/mediapipe-models': 'OS MODELOS `.task` do MediaPipe — rosto+íris, gestos e mãos. ⚠️ Host diferente do runtime porque é assim que o Google os publica, e sem eles os 11,7 MB de WebAssembly não reconhecem coisa nenhuma: é o `.onnx` sem o `.onnx.json` outra vez. 📏 Medidos em 2026-09-09, `float16`',
-  'https://webgazer.cs.brown.edu/webgazer.js': 'WEBGAZER (ADR-0132), downloaded at INSTALL by `platform/pesados` and kept only when its sha256 matches (#168). `ui/webcam` runs it from that checked cache and no longer fetches it on first use (#169), so it no longer breaks pillar 8. ⚠️ The request still tells brown.edu the school\'s IP address — the open decision of the STRIDE client pass',
 };
 
 /**
@@ -127,9 +126,6 @@ const TOCAM_NA_REDE = {
     + 'e é precisamente isso que este módulo conserta, porque hoje a voz nunca desce e a criança chega ao '
     + 'segundo dia sem ela. 📌 Ele não tem URL em código: os endereços vêm do `platform/voice-plan`, o sítio '
     + 'único do ADR-0114',
-  'ui/webcam.ts': '🔴 A BUSCA QUE VIOLA O PILAR 8, e continua por resolver. `<script src>` do WebGazer, '
-    + 'PREGUIÇOSO — dispara quando a criança liga o controle por olhar, logo a máquina que nunca o ligou não '
-    + 'o tem, e sem rede não acontece nada. Travado na #129. Sai daqui quando o runtime entrar no precache',
 };
 
 function tocaNaRede(modulo) {
@@ -150,8 +146,8 @@ describe('pilar 8 · nada chega de fora sem estar declarado', () => {
   });
 
   it('[Interface] a lista não tem órfãos — uma URL que saiu do código sai dela', () => {
-    // É por aqui que esta lista ENCOLHE: quando a #129 for decidida e o WebGazer sair, a entrada dele tem de
-    // sair também, senão o inventário reportaria uma dívida já paga.
+    // É por aqui que esta lista ENCOLHE: quando uma busca sai do código, a entrada dela sai também, senão o inventário reportaria
+    // uma dívida já paga — foi o que aconteceu ao WebGazer em 2026-09-16 (ADR-0214).
     const presentes = new Set(urlsEmCodigo().map((u) => u.url));
     expect(Object.keys(DECLARADAS).filter((u) => !presentes.has(u)), 'entrada de uma URL que já não existe').toEqual([]);
   });

@@ -1818,13 +1818,5 @@
     "vlTick",
     "vlibrasOpen",
     "vlibrasSay"
-  ],
-  "ui/webcam.ts": [
-    "eyeMode",
-    "loadWebGazer",
-    "onGaze",
-    "setEyeMode",
-    "startEyeControl",
-    "stopEyeControl"
   ]
 }

@@ -53,8 +53,8 @@
 //    mesmo lugar, quem lê "quando uma tecla entra em `keys`" tem de procurar a saída em outro arquivo. `attach()`
 //    instala os dois, na mesma ordem de antes.
 //  · `blur` NÃO veio. Parece irmão, mas não é: `keys` também recebe códigos INJETADOS pelos botões de toque
-//    (o `press`/`release` do game.js, que faz `keys.add(codeFor(act))`) e pelo controle por webcam
-//    (`ui/webcam.ts` despacha `KeyboardEvent` sintético). `blur -> keys.clear()` é uma rede de ciclo de vida da
+//    (o `press`/`release` do game.js, que faz `keys.add(codeFor(act))`) e pelo controle virtual, que segura a tecla de uma
+//    posição apertada pelos olhos (`input/virtual-controller`). `blur -> keys.clear()` é uma rede de ciclo de vida da
 //    JANELA sobre um conjunto que não é só do teclado; trazê-la para cá daria a este módulo a
 //    responsabilidade de limpar estado que ele não escreve. Fica no game.js, uma linha, ao lado do `resize`.
 //  · A cadeia de Escape, o registro de overlays e o `closeById` são de `ui/settings-panel.ts`. Este módulo

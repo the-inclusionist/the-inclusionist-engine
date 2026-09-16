@@ -26,8 +26,8 @@
 // ser, porque nestes transportes ela nunca foi um valor salvo — é uma propriedade do transporte.
 //
 // ⚠️ OS QUATRO AINDA NÃO EXISTEM COMO TRANSPORTE, e a regra fica escrita à mesma. Medido em 2026-09-08: o
-// `transportesPadrao` devolve três (gamepad, teclado, toque), e o `ui/webcam` sintetiza `KeyboardEvent` — do
-// ponto de vista da engine, ele É o teclado. Os três ícones da barra rápida dizem-no: `face`, `eyes` e
+// `transportesPadrao` devolve três (gamepad, teclado, toque), e a webcam de então sintetizava `KeyboardEvent` — do
+// ponto de vista da engine, ela ERA o teclado (os olhos passaram a apertar o controle virtual: ADR-0111, #197). Os três ícones da barra rápida dizem-no: `face`, `eyes` e
 // `voice` estão marcados `soon`. Escrever a regra agora custa nada e faz com que eles cheguem COBERTOS, em
 // vez de chegarem a uma excepção que alguém terá de se lembrar de abrir.
 //

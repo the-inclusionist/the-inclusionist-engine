@@ -214,10 +214,11 @@ describe('ADR-0109 · quem despachou este evento', () => {
     ).toEqual([]);
   });
 
-  it('⚠️ [Interface] e ESTE crivo também está vivo: a webcam ainda despacha, e carimbada', () => {
-    // Vácuo ao contrário do outro: aqui o perigo é a regex morrer e o caso acima passar por não achar nada.
-    const fonte = readFileSync(join(RAIZ, 'ui/webcam.ts'), 'utf8');
-    expect(fonte, 'a webcam deixou de despachar, ou o carimbo saiu').toMatch(/carimbarOrigem\([^\n]*KeyboardEvent/);
+  it('⚠️ [Interface] e ESTE crivo também está vivo: a raiz ainda despacha a tecla de menu, e carimbada', () => {
+    // Vácuo ao contrário do outro: aqui o perigo é a regex morrer e o caso acima passar por não achar nada. The webcam that used to
+    // anchor this left with WebGazer (ADR-0214); the one synthetic key left is the menu key the pad and the controller hand to menus.
+    const fonte = readFileSync(join(RAIZ, 'boot/create-game.ts'), 'utf8');
+    expect(fonte, 'a raiz deixou de despachar a tecla de menu, ou o carimbo saiu').toMatch(/carimbarOrigem\([^\n]*KeyboardEvent/);
   });
 });
 

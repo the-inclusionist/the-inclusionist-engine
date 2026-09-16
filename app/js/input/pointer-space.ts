@@ -11,7 +11,7 @@
 //     ponteiro de cada vez. Nada disso precisa de ser escrito outra vez.
 //   · O PONTO, ao contrário, é RECEBIDO E DEITADO FORA — e em quatro lugares, com duas convenções:
 //       `crossDirsAt`, `stickDirsAt` e `stickKnobOffset` reduzem-no a `dx,dy` do CENTRO e devolvem direções;
-//       `ui/webcam.onGaze` reduz o olhar a uma FRAÇÃO do elemento e a três limiares, emitindo teclas.
+//       o `ui/webcam.onGaze` de então reduzia o olhar a uma FRAÇÃO do elemento e a três limiares (saiu: ADR-0214).
 //
 // ⚠️ E É O MESMO DEFEITO NOS DOIS SÍTIOS: uma posição contínua chega, é comprimida em «esquerda/direita/cima»
 // antes de qualquer outro consumidor a ver, e não sobra nada para quem precisasse dela. O ponteiro não é
