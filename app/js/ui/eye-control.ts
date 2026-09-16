@@ -96,6 +96,14 @@ export function createEyeControl(d: EyeControlDeps): EyeControl {
     });
     dispatchGazeKeys(d.region, gazeKeyEvents(pressed, out.pressed, d.scheme()));
     pressed = out.pressed;
+    // the reading, readable on the drawing's own element: when a child's eyes are not answered, this says at which step it stops
+    const f2 = (n: number | undefined): string => (n === undefined ? '' : n.toFixed(2));
+    Object.assign(canvas.dataset, {
+      face: String(!!scores), ready: String(reading.ready), reason: reading.reason ?? '', zone: reading.zone ?? '',
+      tremorH: f2(reading.tremor?.h), tremorV: f2(reading.tremor?.v), dh: f2(reading.displacement?.h), dv: f2(reading.displacement?.v),
+      stillMs: String(Math.round(reading.stillMs ?? 0)), armed: String(out.armed), preparing: String(out.preparing), preview: out.preview?.item ?? '',
+      delegate: tracker.delegate(),
+    });
     const w = canvas.width = d.region.clientWidth, h = canvas.height = d.region.clientHeight;
     drawGazeOverlay(canvas.getContext('2d')!, w, h, {
       zone: reading.zone, armed: out.armed, preparing: out.preparing, preview: out.preview, restReady: reading.ready,

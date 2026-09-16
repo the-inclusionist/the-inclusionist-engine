@@ -85,6 +85,16 @@ describe('turning it on', () => {
     expect(await run('left')).toEqual([]);
     expect(await run('right')).toEqual(['keydown', 'keyup']);
   });
+  it('the drawing\'s element carries the reading, so a child who is not answered can be diagnosed', async () => {
+    await make().apply('outlines');
+    const c = region.querySelector('canvas.gaze-overlay');
+    look({}, 1000);
+    expect(c.dataset).toMatchObject({ face: 'true', ready: 'false', reason: 'measuring-rest' });
+    look({}, 2400);
+    look({ v: 0.3 }, 200);
+    expect(c.dataset).toMatchObject({ ready: 'true', zone: 'down', tremorV: '0.02' });
+    expect(Number(c.dataset.dv)).toBeGreaterThan(4);
+  });
   it('a frame with no face commands nothing', async () => {
     await make().apply('outlines');
     look({}, 3200);
