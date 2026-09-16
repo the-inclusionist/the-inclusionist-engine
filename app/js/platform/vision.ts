@@ -111,7 +111,7 @@ async function open(deps: VisionDeps, files: readonly string[]): Promise<Opened 
  * GPU first; a GPU that fails to create, or fails on a frame, gives way to the CPU once; the frame that failed reads nothing while the CPU
  * one is built; a CPU that cannot be built makes the next frame throw. Shared by the face and the hands.
  */
-async function withFallback<T extends { close(): void }, R>(create: (d: Delegate) => Promise<T>, run: (task: T, frame: unknown, ms: number) => R) {
+async function withFallback<T extends { close(): void }, R>(create: (d: Delegate) => Promise<T>, read: (task: T, frame: unknown, ms: number) => R) {
   let delegate: Delegate = 'GPU', closed = false, failure: unknown = null;
   let current: T | null;
   try { current = await create('GPU'); } catch { delegate = 'CPU'; current = await create('CPU'); }
@@ -123,7 +123,7 @@ async function withFallback<T extends { close(): void }, R>(create: (d: Delegate
     detect(frame: unknown, ms: number): R | null {
       if (failure) throw failure; // the CPU could not be built either: the frame loop says so on screen
       if (!current) return null;
-      try { return run(current, frame, ms); } catch (e) {
+      try { return read(current, frame, ms); } catch (e) {
         if (delegate === 'CPU') throw e;
         toCpu();
         return null;
