@@ -734,6 +734,12 @@
     "type GazeZone": "'up' | 'down' | 'left' | 'right'",
     "type GazeReason": "'no-eyes' | 'gaze-moving' | 'measuring-rest' | 'rest-measured' | 'head-moving' | 'recentring' | null"
   },
+  "input/hand-map.ts": {
+    "interface HandPoint": [
+      "x"
+    ],
+    "type HandGesture": "| 'indexUp' | 'indexDown' | 'indexLeft' | 'indexRight' | 'iLoveYou' | 'dog' | 'victory' | 'fist' | 'openPalm' | 'zero' | 'thumbUp' | 'thumbDown' | 'threeFingers' | 'fourFingers'"
+  },
   "input/keyboard-runtime.ts": {
     "interface KeyboardRuntimeCtx": [
       "getKB",

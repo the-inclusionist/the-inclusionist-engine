@@ -485,6 +485,15 @@
     "GazeZone",
     "createGazeReader"
   ],
+  "input/hand-map.ts": [
+    "CANNED_GESTURES",
+    "HAND_MAP",
+    "HandGesture",
+    "HandPoint",
+    "createHandMapReader",
+    "customGestures",
+    "gesturesSeen"
+  ],
   "input/keyboard-runtime.ts": [
     "ControlsState",
     "KeyboardConfig",
