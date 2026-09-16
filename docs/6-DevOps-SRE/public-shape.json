@@ -1353,9 +1353,14 @@
       "faceLandmarks?",
       "facialTransformationMatrixes?"
     ],
+    "interface HandDetection": [
+      "gestures?",
+      "landmarks?"
+    ],
     "interface TasksVision": [
       "FaceLandmarker",
-      "FilesetResolver"
+      "FilesetResolver",
+      "GestureRecognizer"
     ],
     "interface EyeLines": [
       "eyes"
@@ -1371,9 +1376,15 @@
       "detect",
       "eyeLines"
     ],
+    "interface HandTracker": [
+      "close",
+      "delegate",
+      "detect"
+    ],
     "type Connections": "ReadonlyArray<{ readonly start: number",
     "type Delegate": "'GPU' | 'CPU'",
-    "type FaceTrackerLoad": "| { readonly ok: true"
+    "type FaceTrackerLoad": "| { readonly ok: true",
+    "type HandTrackerLoad": "| { readonly ok: true"
   },
   "platform/voice-plan.ts": {
     "interface VozNeural": [

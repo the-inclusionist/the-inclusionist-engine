@@ -4,7 +4,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { loadFaceTracker, openCamera, closeCamera, FACE_VISION_FILES } from '../app/js/platform/vision.js';
+import { loadFaceTracker, loadHandTracker, openCamera, closeCamera, FACE_VISION_FILES, HAND_VISION_FILES } from '../app/js/platform/vision.js';
 import { PESADOS } from '../app/js/platform/pesados.js';
 
 const BASE = 'https://game.example/play/index.html';
@@ -33,6 +33,20 @@ const fakeVision = ({ gpuCreate = true, gpuFrame = true, cpuCreate = true } = {}
         log.created.push({ delegate: d, model: options.baseOptions.modelAssetPath, options });
         if ((d === 'GPU' && !gpuCreate) || (d === 'CPU' && !cpuCreate)) throw new Error(`${d} refused`);
         return make(d);
+      },
+    },
+    GestureRecognizer: {
+      createFromOptions: async (_fileset, options) => {
+        const d = options.baseOptions.delegate;
+        log.created.push({ delegate: d, model: options.baseOptions.modelAssetPath, options, hands: true });
+        if ((d === 'GPU' && !gpuCreate) || (d === 'CPU' && !cpuCreate)) throw new Error(`${d} refused`);
+        return {
+          recognizeForVideo(frame, ms) {
+            if (d === 'GPU' && !gpuFrame) throw new Error('GPU frame failed');
+            return { gestures: [[{ categoryName: 'Victory', score: 0.9 }]], landmarks: [[]], frame, ms, delegate: d };
+          },
+          close() { log.closed.push(`hands-${d}`); },
+        };
       },
     },
   };
@@ -107,6 +121,31 @@ describe('GPU first, CPU as the way out', () => {
     r.tracker.detect('f', 1); r.tracker.close();
     await tick();
     expect(v.log.closed).toEqual(['GPU', 'CPU']); expect(r.tracker.detect('f', 2)).toBeNull();
+  });
+});
+
+describe('the hands', () => {
+  it('load the Gesture Recognizer from pesados/, one hand, in video mode, and read a frame', async () => {
+    const v = fakeVision();
+    const r = await loadHandTracker({ base: BASE, hasFile: all, importBundle: v.importBundle });
+    expect(r.ok).toBe(true);
+    expect(v.log.created[0]).toMatchObject({ hands: true, model: 'https://game.example/play/pesados/storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task' });
+    expect(v.log.created[0].options).toMatchObject({ runningMode: 'VIDEO', numHands: 1 });
+    expect(r.tracker.detect('f', 1).gestures[0][0].categoryName).toBe('Victory');
+  });
+  it('need their own model: without it nothing loads, and the face\'s model is not asked', async () => {
+    const asked = [];
+    const r = await loadHandTracker({ base: BASE, hasFile: async (u) => { asked.push(u); return !u.includes('gesture_recognizer'); }, importBundle: fakeVision().importBundle });
+    expect(r).toEqual({ ok: false, missing: ['visao:modelo:gestos'] });
+    expect(HAND_VISION_FILES).toEqual(['visao:runtime', 'visao:runtime:cola', 'visao:runtime:wasm', 'visao:modelo:gestos']);
+    expect(asked.some((u) => u.includes('face_landmarker'))).toBe(false);
+  });
+  it('fall back from a failing GPU frame to the CPU like the face', async () => {
+    const v = fakeVision({ gpuFrame: false });
+    const r = await loadHandTracker({ base: BASE, hasFile: all, importBundle: v.importBundle });
+    expect(r.tracker.detect('f', 1)).toBeNull();
+    await tick();
+    expect(r.tracker.detect('f', 2).delegate).toBe('CPU'); expect(v.log.closed).toEqual(['hands-GPU']);
   });
 });
 

@@ -867,10 +867,15 @@
     "FaceDetection",
     "FaceTracker",
     "FaceTrackerLoad",
+    "HAND_VISION_FILES",
+    "HandDetection",
+    "HandTracker",
+    "HandTrackerLoad",
     "TasksVision",
     "VisionDeps",
     "closeCamera",
     "loadFaceTracker",
+    "loadHandTracker",
     "openCamera"
   ],
   "platform/voice-plan.ts": [

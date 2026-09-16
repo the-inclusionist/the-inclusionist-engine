@@ -15,6 +15,8 @@ import { PESADOS, CACHE_PESADOS, caminhoNaEntrega } from './pesados.js';
 
 /** The files the face reader needs, by catalogue id. */
 export const FACE_VISION_FILES = ['visao:runtime', 'visao:runtime:cola', 'visao:runtime:wasm', 'visao:modelo:rosto'] as const;
+/** The files the hand reader needs (ADR-0210 hands map: the Gesture Recognizer gives the canned gestures and the landmarks). */
+export const HAND_VISION_FILES = ['visao:runtime', 'visao:runtime:cola', 'visao:runtime:wasm', 'visao:modelo:gestos'] as const;
 
 /** The part of one detection the eye control reads. */
 export interface FaceDetection {
@@ -24,6 +26,12 @@ export interface FaceDetection {
 }
 
 interface Landmarker { detectForVideo(frame: unknown, ms: number): FaceDetection; close(): void }
+/** The part of one Gesture Recognizer result the hands map reads: each hand's categories, best first, and its landmarks. */
+export interface HandDetection {
+  readonly gestures?: ReadonlyArray<ReadonlyArray<{ readonly categoryName: string; readonly score: number }>>;
+  readonly landmarks?: ReadonlyArray<ReadonlyArray<{ readonly x: number; readonly y: number; readonly z: number }>>;
+}
+interface Recognizer { recognizeForVideo(frame: unknown, ms: number): HandDetection; close(): void }
 export type Connections = ReadonlyArray<{ readonly start: number; readonly end: number }>;
 /** The shape of the `tasks-vision` bundle this module uses. */
 export interface TasksVision {
@@ -34,6 +42,7 @@ export interface TasksVision {
     readonly FACE_LANDMARKS_LEFT_IRIS: Connections; readonly FACE_LANDMARKS_RIGHT_IRIS: Connections;
     readonly FACE_LANDMARKS_LEFT_EYEBROW: Connections; readonly FACE_LANDMARKS_RIGHT_EYEBROW: Connections;
   };
+  readonly GestureRecognizer: { createFromOptions(fileset: unknown, options: object): Promise<Recognizer> };
 }
 
 /** The lines the eye control highlights (ADR-0213): the eyes with their irises, and the brows — never the camera's picture (ADR-0212). */
@@ -62,7 +71,18 @@ export type FaceTrackerLoad =
   | { readonly ok: true; readonly tracker: FaceTracker }
   | { readonly ok: false; readonly missing: readonly string[] };
 
-const urlOf = (id: string): string => PESADOS.find((x) => x.id === id)!.url!; // the four entries are in the catalogue, with addresses
+export interface HandTracker {
+  /** One frame; null while it has nothing to say. */
+  detect(frame: unknown, ms: number): HandDetection | null;
+  delegate(): Delegate;
+  close(): void;
+}
+
+export type HandTrackerLoad =
+  | { readonly ok: true; readonly tracker: HandTracker }
+  | { readonly ok: false; readonly missing: readonly string[] };
+
+const urlOf = (id: string): string => PESADOS.find((x) => x.id === id)!.url!; // the vision entries are in the catalogue, with addresses
 
 const defaultHasFile = async (url: string): Promise<boolean> =>
   typeof caches !== 'undefined' && !!(await (await caches.open(CACHE_PESADOS)).match(url));
@@ -72,48 +92,72 @@ const OPTIONS = (modelAssetPath: string, delegate: Delegate): object => ({
   outputFaceBlendshapes: true, outputFacialTransformationMatrixes: true,
 });
 
-export async function loadFaceTracker(deps: VisionDeps): Promise<FaceTrackerLoad> {
+interface Opened { readonly vision: TasksVision; readonly fileset: unknown; readonly at: (id: string) => string }
+
+/** Checks the files in the checked cache and opens the bundle; the missing ids when any file is not there. */
+async function open(deps: VisionDeps, files: readonly string[]): Promise<Opened | { missing: string[] }> {
   const hasFile = deps.hasFile ?? defaultHasFile;
   const importBundle = deps.importBundle ?? ((u: string) => import(/* @vite-ignore */ u) as Promise<TasksVision>);
   const missing: string[] = [];
-  for (const id of FACE_VISION_FILES) if (!(await hasFile(urlOf(id)))) missing.push(id);
-  if (missing.length) return { ok: false, missing };
-
+  for (const id of files) if (!(await hasFile(urlOf(id)))) missing.push(id);
+  if (missing.length) return { missing };
   const at = (id: string): string => new URL(caminhoNaEntrega(urlOf(id)), deps.base).href;
   const vision = await importBundle(at('visao:runtime'));
   const glue = at('visao:runtime:cola');
-  const fileset = await vision.FilesetResolver.forVisionTasks(glue.slice(0, glue.lastIndexOf('/')));
-  const F = vision.FaceLandmarker;
-  const create = (d: Delegate): Promise<Landmarker> => vision.FaceLandmarker.createFromOptions(fileset, OPTIONS(at('visao:modelo:rosto'), d));
+  return { vision, fileset: await vision.FilesetResolver.forVisionTasks(glue.slice(0, glue.lastIndexOf('/'))), at };
+}
 
+/**
+ * GPU first; a GPU that fails to create, or fails on a frame, gives way to the CPU once; the frame that failed reads nothing while the CPU
+ * one is built; a CPU that cannot be built makes the next frame throw. Shared by the face and the hands.
+ */
+async function withFallback<T extends { close(): void }, R>(create: (d: Delegate) => Promise<T>, run: (task: T, frame: unknown, ms: number) => R) {
   let delegate: Delegate = 'GPU', closed = false, failure: unknown = null;
-  let current: Landmarker | null;
+  let current: T | null;
   try { current = await create('GPU'); } catch { delegate = 'CPU'; current = await create('CPU'); }
-
   const toCpu = (): void => {
     current?.close(); current = null; delegate = 'CPU';
     create('CPU').then((l) => { if (closed) l.close(); else current = l; }, (e: unknown) => { failure = e; });
   };
   return {
+    detect(frame: unknown, ms: number): R | null {
+      if (failure) throw failure; // the CPU could not be built either: the frame loop says so on screen
+      if (!current) return null;
+      try { return run(current, frame, ms); } catch (e) {
+        if (delegate === 'CPU') throw e;
+        toCpu();
+        return null;
+      }
+    },
+    delegate: (): Delegate => delegate,
+    close(): void { closed = true; current?.close(); current = null; },
+  };
+}
+
+export async function loadFaceTracker(deps: VisionDeps): Promise<FaceTrackerLoad> {
+  const o = await open(deps, FACE_VISION_FILES);
+  if ('missing' in o) return { ok: false, missing: o.missing };
+  const F = o.vision.FaceLandmarker;
+  const shell = await withFallback((d) => F.createFromOptions(o.fileset, OPTIONS(o.at('visao:modelo:rosto'), d)), (l, frame, ms) => l.detectForVideo(frame, ms));
+  return {
     ok: true,
     tracker: {
-      detect(frame, ms) {
-        if (failure) throw failure; // the CPU could not be built either: the frame loop says so on screen
-        if (!current) return null;
-        try { return current.detectForVideo(frame, ms); } catch (e) {
-          if (delegate === 'CPU') throw e;
-          toCpu();
-          return null;
-        }
-      },
-      delegate: () => delegate,
+      ...shell,
       eyeLines: {
         eyes: [...F.FACE_LANDMARKS_LEFT_EYE, ...F.FACE_LANDMARKS_RIGHT_EYE, ...F.FACE_LANDMARKS_LEFT_IRIS, ...F.FACE_LANDMARKS_RIGHT_IRIS],
         brows: [...F.FACE_LANDMARKS_LEFT_EYEBROW, ...F.FACE_LANDMARKS_RIGHT_EYEBROW],
       },
-      close() { closed = true; current?.close(); current = null; },
     },
   };
+}
+
+/** The Gesture Recognizer, one hand, in video mode — as the lab's map rounds ran it. */
+export async function loadHandTracker(deps: VisionDeps): Promise<HandTrackerLoad> {
+  const o = await open(deps, HAND_VISION_FILES);
+  if ('missing' in o) return { ok: false, missing: o.missing };
+  const options = (d: Delegate): object => ({ baseOptions: { modelAssetPath: o.at('visao:modelo:gestos'), delegate: d }, runningMode: 'VIDEO', numHands: 1 });
+  const shell = await withFallback((d) => o.vision.GestureRecognizer.createFromOptions(o.fileset, options(d)), (g, frame, ms) => g.recognizeForVideo(frame, ms));
+  return { ok: true, tracker: shell };
 }
 
 /** The camera, video only, at the size the readings were measured. */
