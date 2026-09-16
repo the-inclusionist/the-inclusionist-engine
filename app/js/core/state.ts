@@ -85,10 +85,8 @@ export interface EventoDoJogo {
   speechPpm: number;
   /** The «no strength to hold» empathy simulation (ADR-0181): a held game key reads as one tap. */
   semForca: boolean;
-  /** Playing with the eyes (ADR-0213 §7): off, on with the outlines, or on with the outlines and hatching. */
-  eyeControl: EyeControlLevel;
-  /** Playing with the face (ADR-0212 §3): off, on, or on with the eyes, brows and mouth lines. */
-  faceControl: FaceControlLevel;
+  /** Playing through the webcam (ADR-0215): off, hands, face or eyes — one mode at a time, each with its lines. */
+  cameraControl: CameraControl;
 
   /* --- JOGO: `game/state` AUMENTA esta interface com `cenario`, `activity`, `quizLevel` e `coins`.
      Ver a declaração de aumento no fim daquele arquivo. A engine não pode nomear a carga de `coins` — é um
@@ -241,8 +239,7 @@ export const DEFAULTS = Object.freeze({
   captionPpm: 125,
   speechPpm: 254, // the voice's normal speed, the minimum (ADR-0196)
   semForca: false,
-  eyeControl: 'off' as EyeControlLevel,
-  faceControl: 'off' as FaceControlLevel,
+  cameraControl: 'off' as CameraControl,
   easy: false,       // por jogador (Modo Fácil)
   toggleMove: false,  // por jogador (movimento por alternância)
   // A alternância do botão de CORRER nasce desligada de FÁBRICA — e liga sozinha no controle de tela, que é
@@ -467,35 +464,19 @@ export function setSemForcaValue(on: boolean): void {
   const p = armazem('setSemForcaValue'); p.setBool('incl_sem_forca', v); semForca = v; emit('semForca', v);
 }
 
-// --- eyeControl: playing with the eyes, the three positions of the quick bar's 👀 (ADR-0213 §7): off · outlines and the eye lines ·
-//     outlines, hatching and the eye lines. Kept on the device (ADR-0212 §6); a stored value that is not one of them reads as off,
-//     because the camera must never switch itself on. ---
-export type EyeControlLevel = 'off' | 'outlines' | 'hatched';
-const EYE_CONTROL_LEVELS: readonly EyeControlLevel[] = ['off', 'outlines', 'hatched'];
-const nivelDosOlhos = (v: string | null): EyeControlLevel => ((EYE_CONTROL_LEVELS as readonly (string | null)[]).includes(v) ? v as EyeControlLevel : 'off');
-/** The next position of the 👀 cycle, wrapping back to off. */
-export const nextEyeControl = (v: EyeControlLevel): EyeControlLevel => EYE_CONTROL_LEVELS[(EYE_CONTROL_LEVELS.indexOf(v) + 1) % EYE_CONTROL_LEVELS.length]!;
-export let eyeControl: EyeControlLevel = nivelDosOlhos(VAZIO.get('incl_eye_control', DEFAULTS.eyeControl));
-export function setEyeControlValue(v: EyeControlLevel): void {
-  const valido = nivelDosOlhos(v);
-  if (eyeControl === valido) return;
-  const p = armazem('setEyeControlValue'); p.set('incl_eye_control', valido); eyeControl = valido; emit('eyeControl', valido);
-  if (valido !== 'off') setFaceControlValue('off'); // one camera group at a time (ADR-0197)
-}
-
-// --- faceControl: playing with the face, the three positions of the quick bar's 🧑 (ADR-0212 §3): off · on · on with the eyes, brows and
-//     mouth lines. Kept on the device; anything else stored reads as off. Turning it on turns the eyes off, and the eyes turn it off. ---
-export type FaceControlLevel = 'off' | 'on' | 'lines';
-const FACE_CONTROL_LEVELS: readonly FaceControlLevel[] = ['off', 'on', 'lines'];
-const nivelDoRosto = (v: string | null): FaceControlLevel => ((FACE_CONTROL_LEVELS as readonly (string | null)[]).includes(v) ? v as FaceControlLevel : 'off');
-/** The next position of the 🧑 cycle, wrapping back to off. */
-export const nextFaceControl = (v: FaceControlLevel): FaceControlLevel => FACE_CONTROL_LEVELS[(FACE_CONTROL_LEVELS.indexOf(v) + 1) % FACE_CONTROL_LEVELS.length]!;
-export let faceControl: FaceControlLevel = nivelDoRosto(VAZIO.get('incl_face_control', DEFAULTS.faceControl));
-export function setFaceControlValue(v: FaceControlLevel): void {
-  const valido = nivelDoRosto(v);
-  if (faceControl === valido) return;
-  const p = armazem('setFaceControlValue'); p.set('incl_face_control', valido); faceControl = valido; emit('faceControl', valido);
-  if (valido !== 'off') setEyeControlValue('off'); // one camera group at a time (ADR-0197)
+// --- cameraControl: playing through the webcam, the quick bar's 📷 (ADR-0215): off · hands · face · eyes, in that order. ONE key, so one
+//     camera mode at a time holds by construction (ADR-0197); every playing position draws its lines. Kept on the device; a stored value
+//     that is not a position reads as off, because the camera must never switch itself on. ---
+export type CameraControl = 'off' | 'hands' | 'face' | 'eyes';
+const CAMERA_CONTROLS: readonly CameraControl[] = ['off', 'hands', 'face', 'eyes'];
+const modoDaCamera = (v: string | null): CameraControl => ((CAMERA_CONTROLS as readonly (string | null)[]).includes(v) ? v as CameraControl : 'off');
+/** The next position of the 📷 cycle, wrapping back to off. */
+export const nextCameraControl = (v: CameraControl): CameraControl => CAMERA_CONTROLS[(CAMERA_CONTROLS.indexOf(v) + 1) % CAMERA_CONTROLS.length]!;
+export let cameraControl: CameraControl = modoDaCamera(VAZIO.get('incl_camera_control', DEFAULTS.cameraControl));
+export function setCameraControlValue(v: CameraControl): void {
+  const valido = modoDaCamera(v);
+  if (cameraControl === valido) return;
+  const p = armazem('setCameraControlValue'); p.set('incl_camera_control', valido); cameraControl = valido; emit('cameraControl', valido);
 }
 
 // --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
@@ -556,9 +537,7 @@ export function carregarEstado(p: PortaDoEstado): void {
   oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
   gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
   semForca = p.getBool('incl_sem_forca', DEFAULTS.semForca);
-  eyeControl = nivelDosOlhos(p.get('incl_eye_control', DEFAULTS.eyeControl));
-  faceControl = nivelDoRosto(p.get('incl_face_control', DEFAULTS.faceControl));
-  if (eyeControl !== 'off' && faceControl !== 'off') faceControl = 'off'; // stored from before the rule: the eyes keep the camera
+  cameraControl = modoDaCamera(p.get('incl_camera_control', DEFAULTS.cameraControl));
   captionPpm = ritmoDaLegendaValido(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
   speechPpm = ritmoDaFalaValido(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
 }

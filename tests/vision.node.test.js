@@ -36,6 +36,7 @@ const fakeVision = ({ gpuCreate = true, gpuFrame = true, cpuCreate = true } = {}
       },
     },
     GestureRecognizer: {
+      HAND_CONNECTIONS: c(0, 1),
       createFromOptions: async (_fileset, options) => {
         const d = options.baseOptions.delegate;
         log.created.push({ delegate: d, model: options.baseOptions.modelAssetPath, options, hands: true });
@@ -138,6 +139,7 @@ describe('the hands', () => {
     expect(v.log.created[0]).toMatchObject({ hands: true, model: 'https://game.example/play/pesados/storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task' });
     expect(v.log.created[0].options).toMatchObject({ runningMode: 'VIDEO', numHands: 1 });
     expect(r.tracker.detect('f', 1).gestures[0][0].categoryName).toBe('Victory');
+    expect(r.tracker.handLines).toEqual([{ start: 0, end: 1 }]);
   });
   it('need their own model: without it nothing loads, and the face\'s model is not asked', async () => {
     const asked = [];

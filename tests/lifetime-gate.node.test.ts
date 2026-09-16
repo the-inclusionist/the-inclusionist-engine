@@ -57,7 +57,7 @@ const ARGUMENTOS: Record<string, readonly [unknown, unknown]> = {
   setLetterCaseValue: ['lower', 'upper'], setCaptionsOnValue: [false, true],
   setCbSafeValue: [true, false], setOwnerColorsValue: [false, true],
   setOutlineFgValue: [2, 0], setOutlineBgValue: [2, 0], setCaneBlockDivValue: [4, 2],
-  setWheelchairValue: [true, false], setOneButtonValue: [true, false], setGameSpeedValue: [0.5, 1], setSemForcaValue: [true, false], setEyeControlValue: ['hatched', 'off'], setFaceControlValue: ['lines', 'off'], setCaptionPpmValue: [175, 125],
+  setWheelchairValue: [true, false], setOneButtonValue: [true, false], setGameSpeedValue: [0.5, 1], setSemForcaValue: [true, false], setCameraControlValue: ['eyes', 'off'], setCaptionPpmValue: [175, 125],
   setSpeechPpmValue: [404, 254],
   setMenuIndexOnValue: [false, true],
 };

@@ -5,15 +5,14 @@
 // cannot stop in silence (platform/vision-loop), the right eye's gaze read from its own rest (input/gaze-relative), the cycle that turns
 // zones into actions (input/gaze-cycle), the presses on the virtual controller with the source `olhos` (input/virtual-controller, ADR-0111:
 // never a disguised keyboard), and the regions drawn over the game
-// (ui/gaze-overlay). The stored 👀 position drives it: off lets the camera go.
+// (ui/gaze-overlay). The 📷 at its eyes position drives it (ADR-0215); any other position lets the camera go.
 // · Nothing commands before the rest is measured: until then, and on a frame with no face or a head turning fast, the cycle is frozen.
 // · A reading that re-centres itself cancels the gesture in hand.
 // · Only the RIGHT eye is read (ADR-0213): the Dev's brain suppresses the left one, and a child's may too.
 // · What cannot work is said to the child and written in `problems`, once: the files not on the device, the camera refused, frames that
-//   stop or crawl. A 👀 that is on and does nothing is the defect this module exists not to ship.
+//   stop or crawl. A 📷 that is on and does nothing is the defect this module exists not to ship.
 
 import { t } from '../core/i18n.js';
-import type { EyeControlLevel } from '../core/state.js';
 import type { Action } from '../core/actions.js';
 import { headPoseFromMatrix, scoresFromCategories, eyeGazeFromScores, bothEyesClosed } from '../input/face-signals.js';
 import { createGazeReader, GAZE_DEFAULTS } from '../input/gaze-relative.js';
@@ -39,15 +38,15 @@ export interface EyeControlDeps {
   readonly alert: (text: string) => void;
   /** A line for `problems`. */
   readonly report: (line: string) => void;
-  /** Put the 👀 back to off: what cannot start must not show as on. */
+  /** Put the 📷 back to off: what cannot start must not show as on. */
   readonly turnOff: () => void;
   readonly loadTracker?: (deps: VisionDeps) => Promise<FaceTrackerLoad>;
   readonly openFeed?: () => Promise<CameraFeed>;
 }
 
 export interface EyeControl {
-  /** Follow the 👀 position: start the camera, change the drawing, or let everything go. */
-  apply(level: EyeControlLevel): Promise<void>;
+  /** Follow the 📷: on at its eyes position starts the camera and the drawing; off lets everything go. */
+  apply(on: boolean): Promise<void>;
 }
 
 export function videoFeed(doc: Document, media: MediaDevices): () => Promise<CameraFeed> {
@@ -69,8 +68,8 @@ export function createEyeControl(d: EyeControlDeps): EyeControl {
     d.alert(spoken);
   };
 
-  let level: EyeControlLevel = 'off', running = false, starting: Promise<void> | null = null;
-  const current = (): EyeControlLevel => level; // read through a call: `apply` awaits, and `level` can change meanwhile
+  let on = false, running = false, starting: Promise<void> | null = null;
+  const current = (): boolean => on; // read through a call: `apply` awaits, and `on` can change meanwhile
   let tracker: FaceTracker | null = null, feed: CameraFeed | null = null, canvas: HTMLCanvasElement | null = null;
   let pressed: Action | null = null, wasReady = false;
   let reader = createGazeReader(), cycle = createGazeCycle();
@@ -111,7 +110,7 @@ export function createEyeControl(d: EyeControlDeps): EyeControl {
     drawGazeOverlay(canvas.getContext('2d')!, w, h, {
       zone: reading.zone, armed: out.armed, preparing: out.preparing, preview: out.preview, restReady: reading.ready,
       restLeftMs: reading.ready ? undefined : Math.max(0, GAZE_DEFAULTS.restMs - (reading.stillMs ?? 0)),
-    }, { level, face: det?.faceLandmarks?.[0] ? { landmarks: det.faceLandmarks[0], lines: tracker.eyeLines } : null });
+    }, { face: det?.faceLandmarks?.[0] ? { landmarks: det.faceLandmarks[0], lines: tracker.eyeLines } : null });
   };
 
   const health = (h: LoopHealth, fps: number): void => {
@@ -156,13 +155,13 @@ export function createEyeControl(d: EyeControlDeps): EyeControl {
 
   return {
     async apply(next) {
-      level = next;
+      on = next;
       if (starting) await starting;
-      if (level === 'off') { if (running) stop(); return; }
+      if (!on) { if (running) stop(); return; }
       if (running) return;
       starting = start().finally(() => { starting = null; });
       await starting;
-      if (current() === 'off' && running) stop(); // turned off while the camera was opening
+      if (!current() && running) stop(); // turned off while the camera was opening
     },
   };
 }

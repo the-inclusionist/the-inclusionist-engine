@@ -3,15 +3,14 @@
 //
 // The camera and the face tracker (platform/vision), the frame loop (platform/vision-loop), the Dev's face map (input/face-map), the
 // presses on the virtual controller with the source `rosto` (input/virtual-controller, ADR-0111), and what is drawn over the game. The
-// stored 🧑 position drives it: off lets the camera go; on reads the face; lines also draws the eyes, brows and mouth — never the camera's
-// picture (ADR-0212).
+// 📷 at its face position drives it (ADR-0215): it reads the face and draws the eyes, brows and lips — never the camera's picture
+// (ADR-0212); any other position lets the camera go.
 // · The rest measures itself (the Dev, 2026-09-16): the face still, looking at the middle, for 3 s in a row; until then the middle asks for
 //   it and nothing commands.
 // · A frame with no face lets go of every held action: a face that left the camera is not holding anything.
-// · What cannot start is said, written once in `problems`, and puts the 🧑 back to off — the same promise as the eyes.
+// · What cannot start is said, written once in `problems`, and puts the 📷 back to off — the same promise as the eyes.
 
 import { t } from '../core/i18n.js';
-import type { FaceControlLevel } from '../core/state.js';
 import type { Action } from '../core/actions.js';
 import { faceScoresFromCategories, headTurn, createFaceMapReader, createFaceRest, type FaceRest } from '../input/face-map.js';
 import type { VirtualController } from '../input/virtual-controller.js';
@@ -34,7 +33,7 @@ export interface FaceControlDeps {
   readonly loadTracker?: (deps: VisionDeps) => Promise<FaceTrackerLoad>;
 }
 
-export interface FaceControl { apply(level: FaceControlLevel): Promise<void> }
+export interface FaceControl { apply(on: boolean): Promise<void> }
 
 const REST_MS = 3000;
 
@@ -65,8 +64,8 @@ export function createFaceControl(d: FaceControlDeps): FaceControl {
   const said = new Set<string>();
   const once = (kind: string, line: string, spoken: string): void => { if (!said.has(kind)) { said.add(kind); d.report(line); } d.alert(spoken); };
 
-  let level: FaceControlLevel = 'off', running = false, starting: Promise<void> | null = null;
-  const current = (): FaceControlLevel => level;
+  let on = false, running = false, starting: Promise<void> | null = null;
+  const current = (): boolean => on;
   let tracker: FaceTracker | null = null, feed: CameraFeed | null = null, canvas: HTMLCanvasElement | null = null;
   let loop: ReturnType<typeof createVisionLoop> | null = null;
   let rest: FaceRest | null = null, measure = createFaceRest({ restMs: REST_MS }), read: ReturnType<typeof createFaceMapReader> | null = null;
@@ -94,7 +93,7 @@ export function createFaceControl(d: FaceControlDeps): FaceControl {
       for (const a of held) if (!now.has(a)) { d.controller.release(a, 'rosto'); held.delete(a); }
       for (const a of now) if (!held.has(a)) { d.controller.press(a, 'rosto'); held.add(a); }
     }
-    draw(g, w, h, restLeft, level === 'lines' ? tracker.faceLines : null, landmarks, t);
+    draw(g, w, h, restLeft, tracker.faceLines, landmarks, t);
   };
 
   const health = (hh: LoopHealth, fps: number): void => {
@@ -139,13 +138,13 @@ export function createFaceControl(d: FaceControlDeps): FaceControl {
 
   return {
     async apply(next) {
-      level = next;
+      on = next;
       if (starting) await starting;
-      if (level === 'off') { if (running) stop(); return; }
+      if (!on) { if (running) stop(); return; }
       if (running) return;
       starting = start().finally(() => { starting = null; });
       await starting;
-      if (current() === 'off' && running) stop();
+      if (!current() && running) stop();
     },
   };
 }

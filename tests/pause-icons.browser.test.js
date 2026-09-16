@@ -81,7 +81,7 @@ function makeCtx(over = {}) {
     // vive no project node; sem esta linha ele mediria uma barra com um ícone a menos.
     ciclarTipografia: () => 'Atkinson Hyperlegible',
     relogio: () => true, // the hourglass (ADR-0180) mounts only where time runs by itself
-    olhos: true, // the 👀 (ADR-0213) mounts only where the root can play with the eyes
+    camera: true, // the 📷 (ADR-0215) mounts only where the root has a camera to ask for
     abrirMenus: (i) => state.ran.push('menus:' + i), // the ☰ mounts only where there is a card to open
     ...over,
   };
@@ -698,7 +698,7 @@ describe('reflectIconsIn — a barra do SPLASH (#title-icons) usa a mesma casca'
     api.reflectIconsIn(ti, 0);
     expect(ti.querySelector('.pi-btn[data-pi="cvd"]').classList.contains('pi-cvd-tritan')).toBe(true);
     expect(ti.querySelector('.pi-btn[data-pi="altmove"]').getAttribute('aria-pressed')).toBe('true');
-    expect(ti.querySelector('.pi-btn[data-pi="face"]').getAttribute('aria-pressed')).toBe('false');
+    expect(ti.querySelector('.pi-btn[data-pi="camera"]').getAttribute('aria-pressed')).toBe('false');
   });
 });
 

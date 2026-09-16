@@ -42,13 +42,10 @@ import { anunciarItem } from './item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
-import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue, eyeControl, setEyeControlValue, nextEyeControl, type EyeControlLevel,
-  faceControl, setFaceControlValue, nextFaceControl, type FaceControlLevel } from '../core/state.js';
+import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, type CameraControl } from '../core/state.js';
 
-/** The word for each position of the 👀 cycle. */
-const NOME_DOS_OLHOS: { readonly [L in EyeControlLevel]: string } = { off: 'state.off', outlines: 'gaze.level.outlines', hatched: 'gaze.level.hatched' };
-/** The word for each position of the 🧑 cycle. */
-const NOME_DO_ROSTO: { readonly [L in FaceControlLevel]: string } = { off: 'state.off', on: 'state.on', lines: 'face.level.lines' };
+/** The word for each position of the 📷 cycle (ADR-0215). */
+const NOME_DA_CAMERA: { readonly [M in CameraControl]: string } = { off: 'state.off', hands: 'camera.hands', face: 'camera.face', eyes: 'camera.eyes' };
 import { proximaVelocidade } from '../core/game-speed.js';
 // ⚠️ IMPORT DIRETO DE `platform/storage`, e não uma peça a mais no `ctx`, e a escolha é sobre quem pode
 // esquecer: `initPauseIcons` é chamado pela raiz de composição de CADA jogo, e um `store` injetado é um
@@ -141,8 +138,8 @@ export const PAUSE_ICONS: readonly PauseIcon[] = [
   { k: 'altmove', e: '☝️', n: 'icon.altmove' }, // ☝️ e não 🦾: o gesto é UM DEDO tocando, que é o que a alternância pede (pedido do Dev)
   { k: 'contrast', e: '🌗', n: 'icon.contrast' },
   { k: 'cvd', e: '🚥', n: 'icon.cvd' },
-  { k: 'face', e: '🧑', n: 'icon.face' }, // playing with the face (ADR-0212 §3): off · on · on with the eyes, brows and mouth lines
-  { k: 'eyes', e: '👀', n: 'icon.eyes' }, // playing with the eyes (ADR-0213 §7): off · outlines · outlines + hatching
+  // playing through the webcam, ONE icon (ADR-0215): off · hands · face · eyes, each with its lines; where 🧑 and 👀 were
+  { k: 'camera', e: '📷', n: 'icon.camera' },
   { k: 'voice', e: '👄', n: 'icon.voice', soon: true },
   /*
    * O DÉCIMO PRIMEIRO (ADR-0149 §1), e ele entra no FIM por uma razão de ordem e não de importância: quem
@@ -253,10 +250,8 @@ export interface IconStateSnapshot {
   visual: VisualState;
   /** The game speed (ADR-0180), a step of `core/game-speed`; absent reads as 100%. */
   velocidade?: number;
-  /** Playing with the eyes (ADR-0213 §7); absent reads as off. */
-  olhos?: EyeControlLevel;
-  /** Playing with the face (ADR-0212 §3); absent reads as off. */
-  rosto?: FaceControlLevel;
+  /** Playing through the webcam (ADR-0215); absent reads as off. */
+  camera?: CameraControl;
   /** The current locale (`core/i18n`), for the language button. */
   idioma?: string;
   /** False disables the blind/TTS icons: those need an audio output nobody else is listening to. */
@@ -340,9 +335,8 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   if (k === 'altmove') return rotulo(s.toggleMove ? 'state.on' : 'state.off');
   if (k === 'contrast') return rotulo(CURTO_DO_TEMA[s.visual.tema]);
   if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CURTO_DA_CORRECAO[s.visual.correcao]) });
-  if (k === 'eyes') return rotulo(NOME_DOS_OLHOS[s.olhos ?? 'off']);
+  if (k === 'camera') return rotulo(NOME_DA_CAMERA[s.camera ?? 'off']);
   if (k === 'idioma') return t('icon.state', { nome: t(ic.n), v: LANGUAGE_NAME[(s.idioma ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt });
-  if (k === 'face') return rotulo(NOME_DO_ROSTO[s.rosto ?? 'off']);
   if (k === 'velocidade') return t('icon.state', { nome: t(ic.n), v: t('icon.velocidade.valor', { pct: Math.round((s.velocidade ?? 1) * 100) }) });
   return t(ic.n);
 }
@@ -371,8 +365,7 @@ export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   else if (k === 'altmove') { on = s.toggleMove; dis = !!s.alternanciaExigida; }
   else if (k === 'contrast') { on = temAltoContraste(s.visual); }
   else if (k === 'velocidade') { on = (s.velocidade ?? 1) < 1; }
-  else if (k === 'eyes') { on = (s.olhos ?? 'off') !== 'off'; }
-  else if (k === 'face') { on = (s.rosto ?? 'off') !== 'off'; }
+  else if (k === 'camera') { on = (s.camera ?? 'off') !== 'off'; }
   else if (k === 'cvd') {
     // ⚠️ O FUNDO DE DUAS CORES É O SINAL DE LIGADO deste ícone, e agora ele lê o EIXO da correção — que
     // continua a dizer o mesmo quando o tema também está ligado, coisa que a chave única não conseguia: com
@@ -449,8 +442,8 @@ export interface AccionaveisDoJogo {
    * que é exactamente o que o §5 do ADR-0106 quer. A assimetria é a mesma dos dois escritores visuais.
    */
   readonly tipografia?: boolean;
-  /** Can this device play with the eyes — is there a camera to ask for? Without it the 👀 is not mounted (ADR-0213). */
-  readonly olhos?: boolean;
+  /** Can this device play through the webcam — is there a camera to ask for? Without it the 📷 is not mounted (ADR-0215). */
+  readonly camera?: boolean;
   /** Is there a card of menus to open? Without it the ☰ is not mounted. */
   readonly menus?: boolean;
 }
@@ -479,7 +472,7 @@ export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly Pause
         : ic.k === 'tipografia' ? escritores.tipografia
           // the hourglass exists where time runs by itself (ADR-0180): a turn game has nothing to slow
           : ic.k === 'velocidade' ? Boolean(escritores.relogio?.())
-              : ic.k === 'eyes' || ic.k === 'face' ? Boolean(escritores.olhos)
+              : ic.k === 'camera' ? Boolean(escritores.camera)
                 : ic.k === 'menu' ? Boolean(escritores.menus)
             : true));
 }
@@ -918,8 +911,8 @@ export interface PauseIconsCtx {
   seguraTeclas: () => boolean;
   /** Does the current game's time run by itself? (ADR-0180: the hourglass.) Optional; absent, no hourglass. */
   relogio?: () => boolean;
-  /** Can this device play with the eyes? (ADR-0213: the 👀 cycle.) Optional; absent, no 👀. */
-  olhos?: boolean;
+  /** Can this device play through the webcam? (ADR-0215: the 📷.) Optional; absent, no 📷. */
+  camera?: boolean;
   /** Opens the menus of seat `i`, as SELECT does (the ☰). Optional; absent, no ☰. */
   abrirMenus?: (i: number) => void;
   /** Does no voice speak the current language? (ADR-0185: the narration icon locks.) Optional; absent, a voice. */
@@ -1039,7 +1032,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     tipografia: Boolean(ctx.ciclarTipografia),
     // mounted when the root can answer the clock question; shown or hidden per cartridge in `reflectIconBtn` (ADR-0142)
     relogio: () => Boolean(ctx.relogio),
-    olhos: Boolean(ctx.olhos),
+    camera: Boolean(ctx.camera),
     menus: Boolean(ctx.abrirMenus),
   });
 
@@ -1091,8 +1084,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       // aqui, porque ela lê `DEFAULTS` e mais nada.
       visual: p.visual ?? PADRAO,
       velocidade: gameSpeed,
-      olhos: eyeControl,
-      rosto: faceControl,
+      camera: cameraControl,
       idioma: getLocale(),
       privateOutput: hasPrivateOutput(i),
       alternanciaExigida: recusaAgora(i) !== null,
@@ -1178,17 +1170,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       const face = ctx.ciclarTipografia();
       if (face) ctx.srSay(t('sr.typo.font', { fam: face }));
     },
-    // PLAYING WITH THE EYES (ADR-0213 §7): off → outlines → outlines + hatching → off; stored. The camera follows the stored level.
-    eyes: () => {
-      const v = nextEyeControl(eyeControl);
-      setEyeControlValue(v);
-      ctx.srSay(t('sr.icon.eyes', { v: t(NOME_DOS_OLHOS[v]) }));
-    },
-    // PLAYING WITH THE FACE (ADR-0212 §3): off → on → on with lines → off; stored; turning it on turns the eyes off (ADR-0197).
-    face: () => {
-      const v = nextFaceControl(faceControl);
-      setFaceControlValue(v);
-      ctx.srSay(t('sr.icon.face', { v: t(NOME_DO_ROSTO[v]) }));
+    // PLAYING THROUGH THE WEBCAM (ADR-0215): off → hands → face → eyes → off; stored in one key, so one mode at a time.
+    camera: () => {
+      const v = nextCameraControl(cameraControl);
+      setCameraControlValue(v);
+      ctx.srSay(t('sr.icon.camera', { v: t(NOME_DA_CAMERA[v]) }));
     },
     // THE LANGUAGE (the Dev, 2026-09-16): the next flag; `setLocale` stores it and every surface redraws on `i18n:change`. Said in the NEW
     // language, once it has loaded.

@@ -7,19 +7,15 @@
 // · a look that came from the opposite side walks its cycle: «Loading...» (settling, and the cancel step) → the direction's Lucide arrow →
 //   the face button, as the Xbox letter and the PlayStation shape each inside a circle → the shoulder inside a square → round again;
 // · the middle asks to be looked at, with the seconds left, while the rest is being measured.
-// Text is 16 px on a 720×360 game region and grows with it. The toggle has three levels (ADR-0213, superseding ADR-0212's eye cycle):
-// off · outlines and the eyes · outlines, hatching and the eyes. The eyes and brows are the landmark lines only — never the camera's picture
-// (ADR-0212) — mirrored, so they move the way the child moves.
+// Text is 16 px on a 720×360 game region and grows with it. The regions are outlined, never hatched (ADR-0215: the 📷's eyes position);
+// the eyes and brows are the landmark lines only — never the camera's picture (ADR-0212) — mirrored, so they move the way the child moves.
 // What a region shows is decided by `whatRegionShows`, plain data; `drawGazeOverlay` only follows it. Places and colours: interface-log.
 
 import { t } from '../core/i18n.js';
-import type { EyeControlLevel } from '../core/state.js';
 import type { GazeZone } from '../input/gaze-relative.js';
 import { GAZE_GROUPS, CANCEL, type GazePreview } from '../input/gaze-cycle.js';
 import type { EyeLines } from '../platform/vision.js';
 
-/** The toggle's three positions, the stored ones (`core/state.eyeControl`). */
-export type GazeOverlayLevel = EyeControlLevel;
 export type GazeRegion = GazeZone | 'middle';
 
 /** Centre x, centre y, width, height — fractions of the game region. */
@@ -75,17 +71,9 @@ export function whatRegionShows(region: GazeRegion, v: GazeView): RegionShows {
 /** 16 px on a 720×360 game region, in proportion to it, bounded by the tighter side. */
 export const gazeFontPx = (width: number, height: number): number => 16 * Math.min(width / 720, height / 360);
 
-const FAINT = 'rgba(234,242,248,0.35)', FAINT_HATCH = 'rgba(234,242,248,0.18)', PREPARE = '#ffd23f', ARMED = '#3ddc84', LINES = '#ffffff';
+const FAINT = 'rgba(234,242,248,0.35)', PREPARE = '#ffd23f', ARMED = '#3ddc84', LINES = '#ffffff';
 
 type Ctx = CanvasRenderingContext2D;
-
-function hatch(ctx: Ctx, x: number, y: number, w: number, h: number, colour: string, step: number): void {
-  ctx.save();
-  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-  ctx.strokeStyle = colour; ctx.lineWidth = 1;
-  for (let d = -h; d < w; d += step) { ctx.beginPath(); ctx.moveTo(x + d, y + h); ctx.lineTo(x + d + h, y); ctx.stroke(); }
-  ctx.restore();
-}
 
 function shape(ctx: Ctx, s: ButtonShape, x: number, y: number, r: number): void {
   ctx.beginPath();
@@ -97,15 +85,13 @@ function shape(ctx: Ctx, s: ButtonShape, x: number, y: number, r: number): void 
 }
 
 export interface GazeOverlayOptions {
-  readonly level: GazeOverlayLevel;
   /** The face of this frame, to highlight the eyes and brows. */
   readonly face?: { readonly landmarks: ReadonlyArray<{ readonly x: number; readonly y: number }>; readonly lines: EyeLines } | null;
   readonly say?: (key: string) => string;
 }
 
-export function drawGazeOverlay(ctx: Ctx, width: number, height: number, view: GazeView, { level, face = null, say = t }: GazeOverlayOptions): void {
+export function drawGazeOverlay(ctx: Ctx, width: number, height: number, view: GazeView, { face = null, say = t }: GazeOverlayOptions = {}): void {
   ctx.clearRect(0, 0, width, height);
-  if (level === 'off') return;
   const f = gazeFontPx(width, height);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   for (const region of Object.keys(GAZE_REGIONS) as GazeRegion[]) {
@@ -114,7 +100,6 @@ export function drawGazeOverlay(ctx: Ctx, width: number, height: number, view: G
     const shows = whatRegionShows(region, view);
     const active = shows.kind !== 'nothing';
     const colour = !active ? FAINT : view.armed && region !== 'middle' ? ARMED : PREPARE;
-    if (level === 'hatched') hatch(ctx, x, y, w, h, active ? colour : FAINT_HATCH, Math.max(6, f * 0.6));
     ctx.strokeStyle = colour; ctx.lineWidth = active ? 3 : 1; ctx.strokeRect(x, y, w, h);
     ctx.fillStyle = colour; ctx.lineWidth = Math.max(1.5, f / 8);
     ctx.shadowColor = '#000'; ctx.shadowBlur = 4;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // PLAYING WITH THE FACE, PUT TOGETHER (ADR-0210, ADR-0212 §3; issue #191). The camera and the tracker are replaced by a synthetic face whose
 // blendshapes a case chooses; frames arrive when the case says. Measured: the rest measures itself on a still face, nothing commands
-// before it, an expression presses its action on the virtual controller from `rosto`, a lost face lets go, what cannot start turns 🧑 off.
+// before it, an expression presses its action on the virtual controller from `rosto`, a lost face lets go, what cannot start turns the 📷 off.
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -31,37 +31,37 @@ afterEach(() => { region.remove(); });
 
 describe('the face control', () => {
   it('asks for the middle, measures the rest on a still face and says ready', async () => {
-    await make().apply('on');
+    await make().apply(true);
     expect(said[0]).toMatch(/rosto parado/);
     hold(RELAXED, 3100);
     expect(said).toContain('Pronto: já pode jogar com o rosto.');
   });
   it('nothing commands before the rest: an open mouth while it is measured presses nothing', async () => {
-    await make().apply('on');
+    await make().apply(true);
     hold({ jawOpen: 0.9 }, 1000);
     expect(presses).toEqual([]);
   });
   it('after the rest, an open mouth held presses action 2 from the face, and closing it releases', async () => {
-    await make().apply('on');
+    await make().apply(true);
     hold(RELAXED, 3100);
     hold({ ...RELAXED, jawOpen: 0.9 }, 800);
     hold(RELAXED, 200);
     expect(presses).toEqual([['press', 'action2', 'rosto'], ['release', 'action2', 'rosto']]);
   });
   it('a face that leaves the camera lets go of what it held', async () => {
-    await make().apply('on');
+    await make().apply(true);
     hold(RELAXED, 3100);
     hold({ ...RELAXED, jawOpen: 0.9 }, 800);
     hold(null, 100);
     expect(presses.at(-1)).toEqual(['release', 'action2', 'rosto']);
   });
-  it('files not on the device: reported and 🧑 back to off; turning it off removes the drawing', async () => {
-    await make({ loadTracker: async () => ({ ok: false, missing: ['visao:modelo:rosto'] }) }).apply('lines');
+  it('files not on the device: reported and the 📷 back to off; turning it off removes the drawing', async () => {
+    await make({ loadTracker: async () => ({ ok: false, missing: ['visao:modelo:rosto'] }) }).apply(true);
     expect(reports[0]).toMatch(/face control: visao:modelo:rosto/); expect(offs).toBe(1);
     const c = make();
-    await c.apply('lines');
+    await c.apply(true);
     expect(region.querySelector('canvas.face-overlay')).not.toBeNull();
-    await c.apply('off');
+    await c.apply(false);
     expect(region.querySelector('canvas.face-overlay')).toBeNull(); expect(frameCb).toBeNull();
   });
 });

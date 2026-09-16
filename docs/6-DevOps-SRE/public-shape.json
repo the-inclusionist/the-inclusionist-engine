@@ -430,12 +430,11 @@
       "setBool"
     ],
     "interface EventoDoJogo": [
+      "cameraControl",
       "caneBlockDiv",
       "captionPpm",
       "captionsOn",
       "cbSafe",
-      "eyeControl",
-      "faceControl",
       "gameSpeed",
       "hcOutlineBg",
       "hcOutlineFg",
@@ -455,8 +454,7 @@
     ],
     "type LetterCase": "'mixed' | 'upper'",
     "type OutlineLevel": "0 | 1 | 2",
-    "type EyeControlLevel": "'off' | 'outlines' | 'hatched'",
-    "type FaceControlLevel": "'off' | 'on' | 'lines'"
+    "type CameraControl": "'off' | 'hands' | 'face' | 'eyes'"
   },
   "core/visual-state.ts": {
     "interface VisualState": [
@@ -1401,7 +1399,8 @@
     "interface HandTracker": [
       "close",
       "delegate",
-      "detect"
+      "detect",
+      "handLines"
     ],
     "type Connections": "ReadonlyArray<{ readonly start: number",
     "type Delegate": "'GPU' | 'CPU'",
@@ -1995,6 +1994,11 @@
     ],
     "type CaaTier": "| 'bundled' | 'fetched' | 'negotiating'"
   },
+  "ui/camera-control.ts": {
+    "interface CameraModeControl": [
+      "apply"
+    ]
+  },
   "ui/debug-panel.ts": {
     "interface AmostraDoPersonagem": [
       "base",
@@ -2110,13 +2114,29 @@
     ],
     "interface GazeOverlayOptions": [
       "face?",
-      "level",
       "say?"
     ],
-    "type GazeOverlayLevel": "EyeControlLevel",
     "type GazeRegion": "GazeZone | 'middle'",
     "type ButtonShape": "'triangle' | 'circle' | 'cross' | 'square'",
     "type RegionShows": "| { readonly kind: 'nothing' } | { readonly kind: 'text'"
+  },
+  "ui/hand-control.ts": {
+    "interface HandControlDeps": [
+      "alert",
+      "base",
+      "controller",
+      "doc",
+      "loadTracker?",
+      "loop",
+      "openFeed",
+      "region",
+      "report",
+      "say",
+      "turnOff"
+    ],
+    "interface HandControl": [
+      "apply"
+    ]
   },
   "ui/help-panel.ts": {
     "interface HelpRow": [
@@ -2221,6 +2241,9 @@
     "interface Escala": [
       "kDev"
     ]
+  },
+  "ui/locale-flags.ts": {
+    "type CycleLocale": "(typeof LOCALE_CYCLE)[number]"
   },
   "ui/loop-crash.ts": {
     "interface AvisoDeQuedaCtx": [
@@ -2391,11 +2414,11 @@
     "interface IconStateSnapshot": [
       "alternanciaExigida?",
       "calmMode",
+      "camera?",
+      "idioma?",
       "librasOn",
       "modoCego",
-      "olhos?",
       "privateOutput",
-      "rosto?",
       "semVoz?",
       "toggleMove",
       "ttsOn",
@@ -2410,8 +2433,9 @@
       "on"
     ],
     "interface AccionaveisDoJogo": [
+      "camera?",
       "correcao",
-      "olhos?",
+      "menus?",
       "relogio?",
       "seguraTeclas",
       "tema",
@@ -2427,7 +2451,9 @@
       "t"
     ],
     "interface PauseIconsCtx": [
+      "abrirMenus?",
       "aoSairDaBarra?",
+      "camera?",
       "ciclarTipografia?",
       "doc?",
       "dynLabel?",
@@ -2441,7 +2467,6 @@
       "getPlayers",
       "isLibrasOn",
       "jogoButtons?",
-      "olhos?",
       "optionsButtons?",
       "pmButtons?",
       "reflectTtsPanel",

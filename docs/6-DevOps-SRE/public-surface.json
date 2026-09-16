@@ -251,14 +251,14 @@
     "taxaDaFala"
   ],
   "core/state.ts": [
+    "CameraControl",
     "DEFAULTS",
     "EventoDoJogo",
-    "EyeControlLevel",
-    "FaceControlLevel",
     "GateTile",
     "LetterCase",
     "OutlineLevel",
     "PortaDoEstado",
+    "cameraControl",
     "caneBlockDiv",
     "captionPpm",
     "captionsOn",
@@ -266,8 +266,6 @@
     "cbSafe",
     "defaultReducedMotion",
     "emit",
-    "eyeControl",
-    "faceControl",
     "gameSpeed",
     "hcOutlineBg",
     "hcOutlineFg",
@@ -275,19 +273,17 @@
     "letterCase",
     "menuIndexOn",
     "modoCego",
-    "nextEyeControl",
-    "nextFaceControl",
+    "nextCameraControl",
     "off",
     "on",
     "oneButton",
     "ownerColors",
     "semForca",
+    "setCameraControlValue",
     "setCaneBlockDivValue",
     "setCaptionPpmValue",
     "setCaptionsOnValue",
     "setCbSafeValue",
-    "setEyeControlValue",
-    "setFaceControlValue",
     "setGameSpeedValue",
     "setLetterCaseValue",
     "setMenuIndexOnValue",
@@ -1326,6 +1322,10 @@
     "caaMotivo",
     "caaRotulo"
   ],
+  "ui/camera-control.ts": [
+    "CameraModeControl",
+    "followCameraMode"
+  ],
   "ui/changed-mark.ts": [
     "CHANGED_CLASS",
     "markChanged",
@@ -1402,7 +1402,6 @@
     "ButtonShape",
     "FACE_BUTTON",
     "GAZE_REGIONS",
-    "GazeOverlayLevel",
     "GazeOverlayOptions",
     "GazeRegion",
     "GazeView",
@@ -1412,6 +1411,11 @@
     "drawGazeOverlay",
     "gazeFontPx",
     "whatRegionShows"
+  ],
+  "ui/hand-control.ts": [
+    "HandControl",
+    "HandControlDeps",
+    "createHandControl"
   ],
   "ui/help-panel.ts": [
     "FigureClock",
@@ -1472,6 +1476,14 @@
     "initLayout",
     "invasoresDaBarra",
     "layout"
+  ],
+  "ui/locale-flags.ts": [
+    "CycleLocale",
+    "FLAG_SVG",
+    "LANGUAGE_NAME",
+    "LOCALE_CYCLE",
+    "flagOf",
+    "nextLocale"
   ],
   "ui/loop-crash.ts": [
     "AVISO_DE_QUEDA_ID",

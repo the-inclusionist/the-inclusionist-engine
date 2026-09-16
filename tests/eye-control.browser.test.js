@@ -42,22 +42,22 @@ afterEach(() => { region.remove(); });
 
 describe('turning it on', () => {
   it('draws over the game region and asks for the middle', async () => {
-    await make().apply('outlines');
+    await make().apply(true);
     expect(region.querySelector('canvas.gaze-overlay')).not.toBeNull();
     expect(said[0]).toMatch(/meio da tela/);
   });
   it('nothing commands before the rest is measured, however the eyes move', async () => {
-    await make().apply('outlines');
+    await make().apply(true);
     for (let i = 0; i < 6; i++) { look({ v: 0.3 }, 300); look({ v: -0.3 }, 2000); look({}, 200); }
     expect(keys).toEqual([]);
   });
   it('not even START: both eyes closed for the whole close time before the rest is ready press nothing', async () => {
-    await make().apply('outlines');
+    await make().apply(true);
     look({ closed: true }, 2500); // the rest needs 3 s, START needs 2 s
     expect(keys).toEqual([]);
   });
   it('after three still seconds it says ready, and down-then-up presses «up» on the virtual controller, from the eyes', async () => {
-    await make().apply('outlines');
+    await make().apply(true);
     look({}, 3200);
     expect(said).toContain('Pronto: já pode jogar com os olhos.');
     look({ v: 0.3 }, 300);   // the opposite zone: prepares
@@ -74,7 +74,7 @@ describe('turning it on', () => {
     };
     const run = async (which) => {
       keys.length = 0; now = 0; face = null;
-      await make().apply('outlines');
+      await make().apply(true);
       const step = (gaze, ms) => { face = oneEye(gaze, which); for (const end = now + ms; now < end;) { now += 33; frameCb?.(now); } };
       step({}, 3200); step({ v: 0.3 }, 300); step({ v: -0.3 }, 1900); step({}, 600);
       return keys.map((k) => k[0]);
@@ -83,7 +83,7 @@ describe('turning it on', () => {
     expect(await run('right')).toEqual(['press', 'release']);
   });
   it('the drawing\'s element carries the reading, so a child who is not answered can be diagnosed', async () => {
-    await make().apply('outlines');
+    await make().apply(true);
     const c = region.querySelector('canvas.gaze-overlay');
     look({}, 1000);
     expect(c.dataset).toMatchObject({ face: 'true', ready: 'false', reason: 'measuring-rest' });
@@ -93,7 +93,7 @@ describe('turning it on', () => {
     expect(Number(c.dataset.dv)).toBeGreaterThan(4);
   });
   it('a frame with no face commands nothing', async () => {
-    await make().apply('outlines');
+    await make().apply(true);
     look({}, 3200);
     look({ v: 0.3 }, 300);
     look({ v: -0.3 }, 1900);
@@ -105,12 +105,12 @@ describe('turning it on', () => {
 describe('what cannot start', () => {
   it('files not on the device: said, reported, 👀 back to off, no camera and nothing drawn', async () => {
     let opened = false;
-    await make({ loadTracker: async () => ({ ok: false, missing: ['visao:modelo:rosto'] }), openFeed: async () => { opened = true; } }).apply('outlines');
+    await make({ loadTracker: async () => ({ ok: false, missing: ['visao:modelo:rosto'] }), openFeed: async () => { opened = true; } }).apply(true);
     expect(alerts).toHaveLength(1); expect(reports[0]).toMatch(/visao:modelo:rosto/); expect(offs).toBe(1);
     expect(opened).toBe(false); expect(region.querySelector('canvas')).toBeNull();
   });
   it('a camera that does not open: said, reported, 👀 back to off, the tracker let go', async () => {
-    await make({ openFeed: async () => { throw new Error('NotAllowedError'); } }).apply('hatched');
+    await make({ openFeed: async () => { throw new Error('NotAllowedError'); } }).apply(true);
     expect(reports[0]).toMatch(/camera did not open/); expect(offs).toBe(1); expect(trackerClosed).toBe(true);
     expect(region.querySelector('canvas')).toBeNull();
   });
@@ -119,9 +119,9 @@ describe('what cannot start', () => {
 describe('turning it off', () => {
   it('lets the camera and the tracker go, removes the drawing and releases a held key', async () => {
     const eyes = make();
-    await eyes.apply('outlines');
+    await eyes.apply(true);
     look({}, 3200); look({ v: 0.3 }, 300); look({ v: -0.3 }, 1900); look({}, 100); // pressed, pulse still on
-    await eyes.apply('off');
+    await eyes.apply(false);
     expect(feedClosed).toBe(true); expect(trackerClosed).toBe(true);
     expect(region.querySelector('canvas')).toBeNull();
     expect(keys.at(-1)).toEqual(['release', 'up', 'olhos']);

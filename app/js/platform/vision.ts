@@ -43,7 +43,7 @@ export interface TasksVision {
     readonly FACE_LANDMARKS_LEFT_EYEBROW: Connections; readonly FACE_LANDMARKS_RIGHT_EYEBROW: Connections;
     readonly FACE_LANDMARKS_LIPS: Connections;
   };
-  readonly GestureRecognizer: { createFromOptions(fileset: unknown, options: object): Promise<Recognizer> };
+  readonly GestureRecognizer: { createFromOptions(fileset: unknown, options: object): Promise<Recognizer>; readonly HAND_CONNECTIONS: Connections };
 }
 
 /** The lines the eye control highlights (ADR-0213): the eyes with their irises, and the brows — never the camera's picture (ADR-0212). */
@@ -77,6 +77,8 @@ export type FaceTrackerLoad =
   | { readonly ok: false; readonly missing: readonly string[] };
 
 export interface HandTracker {
+  /** The hand's bones, as the bundle ships them, to draw over the game (ADR-0215). */
+  readonly handLines: Connections;
   /** One frame; null while it has nothing to say. */
   detect(frame: unknown, ms: number): HandDetection | null;
   delegate(): Delegate;
@@ -164,7 +166,7 @@ export async function loadHandTracker(deps: VisionDeps): Promise<HandTrackerLoad
   if ('missing' in o) return { ok: false, missing: o.missing };
   const options = (d: Delegate): object => ({ baseOptions: { modelAssetPath: o.at('visao:modelo:gestos'), delegate: d }, runningMode: 'VIDEO', numHands: 1 });
   const shell = await withFallback((d) => o.vision.GestureRecognizer.createFromOptions(o.fileset, options(d)), (g, frame, ms) => g.recognizeForVideo(frame, ms));
-  return { ok: true, tracker: shell };
+  return { ok: true, tracker: { ...shell, handLines: o.vision.GestureRecognizer.HAND_CONNECTIONS } };
 }
 
 /** The camera, video only, at the size the readings were measured. */

@@ -65,6 +65,8 @@ import { t } from '../core/i18n.js';
 import { srSay, srAlert } from '../core/a11y-sr.js';
 import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
+import { createHandControl } from '../ui/hand-control.js';
+import { followCameraMode } from '../ui/camera-control.js';
 import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from '../ui/pause-icons.js';
 import { anunciarItem } from '../ui/item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
@@ -1176,8 +1178,8 @@ export function createGame(o: CreateGameOptions): Engine {
     seguraTeclas: () => cartucho.declaration.seguraTeclas(),
     // the hourglass is offered where time runs by itself (ADR-0180), read per cartridge
     relogio: () => cartucho.declaration.tick === 'clock',
-    // the 👀 is offered where there is a camera to ask for (ADR-0213); the eye control below follows its position
-    olhos: temCamera,
+    // the 📷 is offered where there is a camera to ask for (ADR-0215); the three camera controls below follow its position
+    camera: temCamera,
     // the ☰, the bar's first icon (interface log 2026-09-16): the SELECT door, where there is a card to open. Hoisted, read at the press.
     ...(pausaUsavel ? { abrirMenus: (i: number) => { abrirMenusDoAssento(i); } } : {}),
     // no voice speaks the current language: the narration icon locks like the panel's rows (ADR-0185)
@@ -1389,8 +1391,7 @@ export function createGame(o: CreateGameOptions): Engine {
      */
     state.on('modoCego', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
     // the 👀 changes elsewhere too: the eye control puts it back to off when the camera or the files are missing (ADR-0213)
-    state.on('eyeControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
-    state.on('faceControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); }); // the eyes turn the face off, and back (ADR-0197)
+    state.on('cameraControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); }); // a mode that cannot start puts the 📷 back to off
   }
 
   // 4d. QUEM ABRIU A PAUSA, quando há mais de um assento — o achado 3 da auditoria do `game-soccer`.
@@ -3578,33 +3579,26 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
 
   const regiaoDoOlhar = $<HTMLElement>('#game-region');
   if (temCamera && regiaoDoOlhar) {
-    const olhos = createEyeControl({
-      doc, region: regiaoDoOlhar, base: doc.baseURI,
-      loop: {
-        requestFrame: (cb) => win.requestAnimationFrame(cb), cancelFrame: (h) => win.cancelAnimationFrame(h),
-        now: () => win.performance.now(), every: (cb, ms) => win.setInterval(cb, ms), stopEvery: (h) => win.clearInterval(h),
-      },
-      controller: controleVirtual, say: srSay, alert: srAlert,
-      report: (linha) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
-      turnOff: () => state.setEyeControlValue('off'),
-    });
-    state.on('eyeControl', (nivel) => { void olhos.apply(nivel); });
-    void olhos.apply(state.eyeControl);
-    // PLAYING WITH THE FACE (ADR-0210, ADR-0212 §3; issue #191): the same camera path, the Dev's face map, presses from `rosto`. The state
-    // keeps one camera group at a time (ADR-0197), so turning one on turns the other off before either opens the camera.
-    const rosto = createFaceControl({
-      doc, region: regiaoDoOlhar, base: doc.baseURI,
-      loop: {
-        requestFrame: (cb) => win.requestAnimationFrame(cb), cancelFrame: (h) => win.cancelAnimationFrame(h),
-        now: () => win.performance.now(), every: (cb, ms) => win.setInterval(cb, ms), stopEvery: (h) => win.clearInterval(h),
-      },
-      controller: controleVirtual, say: srSay, alert: srAlert,
-      report: (linha) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
-      turnOff: () => state.setFaceControlValue('off'),
-      openFeed: videoFeed(doc, win.navigator.mediaDevices),
-    });
-    state.on('faceControl', (nivel) => { void rosto.apply(nivel); });
-    void rosto.apply(state.faceControl);
+    // PLAYING THROUGH THE WEBCAM (ADR-0215): one stored position, off · hands · face · eyes; `ui/camera-control` starts only the control at
+    // that position. Each control opens the camera itself and lets it go when the position moves on.
+    const laco = {
+      requestFrame: (cb: FrameRequestCallback) => win.requestAnimationFrame(cb), cancelFrame: (h: number) => win.cancelAnimationFrame(h),
+      now: () => win.performance.now(), every: (cb: () => void, ms: number) => win.setInterval(cb, ms), stopEvery: (h: number) => win.clearInterval(h),
+    };
+    const comum = {
+      doc, region: regiaoDoOlhar, base: doc.baseURI, loop: laco, controller: controleVirtual, say: srSay, alert: srAlert,
+      report: (linha: string) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
+      turnOff: () => state.setCameraControlValue('off'),
+    };
+    // the eyes: the relative reading and the four-zone cycle (ADR-0213), presses from `olhos`, the eye lines and the regions' outlines
+    const olhos = createEyeControl(comum);
+    // the face: the Dev's face map (ADR-0210), presses from `rosto`, the eyes, brows and lips lines
+    const rosto = createFaceControl({ ...comum, openFeed: videoFeed(doc, win.navigator.mediaDevices) });
+    // the hands: the Gesture Recognizer and the Dev's hands map (ADR-0210), presses from `gestos`, the hands' lines (issue #191)
+    const maos = createHandControl({ ...comum, openFeed: videoFeed(doc, win.navigator.mediaDevices) });
+    const controles = { eyes: olhos, face: rosto, hands: maos };
+    state.on('cameraControl', (modo) => { followCameraMode(modo, controles); });
+    followCameraMode(state.cameraControl, controles);
   }
   const AMOSTRA_C = COLUNAS * 10;
   const AMOSTRA_L = LINHAS * 10;
