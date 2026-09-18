@@ -31,6 +31,22 @@ Cloudflare address until then; the sha256 never changes with the move.
 Third-party files the licence lets the project mirror (ADR-0203 erratum, issue #192) are staged the same way, unchanged, with their
 licence and notice: `kokoro-82m-v1.0-onnx/` (Apache-2.0, credits the CC BY training audio; the model, tokenizer and all 34 voices) and
 `mediapipe-tasks-vision-1.0.1/` (Apache-2.0: the runtime and the face, gesture and hand models). Their sha256 are the catalogue's.
+Also staged, for the reading port that issue #185 still owes: `moonshine-streaming-small-onnx/` (English, MIT) and
+`whisper-small-onnx/` (Portuguese) — the latter **on hold**: `onnx-community/whisper-small` states no licence of its own (read
+2026-09-18), only its Apache-2.0 base `openai/whisper-small`, and ADR-0203's erratum allows a mirror only «se for legal».
+
+### Uploading the staging tree (the Dev runs it)
+
+```powershell
+rclone config create r2 s3 provider=Cloudflare `
+  access_key_id=<R2 access key> secret_access_key=<R2 secret> `
+  endpoint=https://<account id>.r2.cloudflarestorage.com acl=private
+pwsh scripts/models/upload-lfs-r2.ps1 -Remote r2 -Bucket <bucket>
+```
+
+The script uploads every staged folder **except** those whose `LICENSE.md` opens with «🔴 ON HOLD», then fetches each file from
+the public address and compares it with the folder's `SHA256SUMS` — the catalogue pins those bytes, so serving anything else
+would break the delivery. `-VerifyOnly` runs the second half alone. Credentials live in the rclone remote, never in the repo.
 
 ---
 
