@@ -32,8 +32,7 @@ Third-party files the licence lets the project mirror (ADR-0203 erratum, issue #
 licence and notice: `kokoro-82m-v1.0-onnx/` (Apache-2.0, credits the CC BY training audio; the model, tokenizer and all 34 voices) and
 `mediapipe-tasks-vision-1.0.1/` (Apache-2.0: the runtime and the face, gesture and hand models). Their sha256 are the catalogue's.
 Also staged, for the reading port that issue #185 still owes: `moonshine-streaming-small-onnx/` (English, MIT) and
-`whisper-small-onnx/` (Portuguese) — the latter **on hold**: `onnx-community/whisper-small` states no licence of its own (read
-2026-09-18), only its Apache-2.0 base `openai/whisper-small`, and ADR-0203's erratum allows a mirror only «se for legal».
+`whisper-small-onnx/` (Portuguese), the latter **exported here** — see its section below.
 
 ### Uploading the staging tree (the Dev runs it)
 
@@ -58,6 +57,27 @@ would break the delivery. `-VerifyOnly` runs the second half alone. Credentials 
   demo's port: `app/js/consumer-quiz/kokoro-porta.ts` (testable half) and `kokoro-carregar.ts` (espeak-ng 1.0.2, GPL-3.0-or-later;
   onnxruntime-web 1.27.0, whose thread workers are pointed at its own `.mjs` with `env.wasm.wasmPaths`).
 - **Rebuild:** upstream files, pinned by sha256 in `platform/kokoro.ts`.
+
+## Whisper small — Portuguese reading fallback (project-exported)
+
+- **What:** `openai/whisper-small` (Apache-2.0) exported to ONNX and quantized here: `onnx/encoder_model_quantized.onnx` (q8),
+  `onnx/decoder_model_quantized.onnx` and `onnx/decoder_with_past_model_quantized.onnx` (q8), plus the upstream tokenizer and
+  configs. 380 MiB.
+- **Why exported here:** the ready-made export the lab measured, `onnx-community/whisper-small`, states no licence of its own
+  (read 2026-09-18: only `base_model: openai/whisper-small`), and ADR-0203's erratum mirrors only «se for legal». The weights
+  are Apache-2.0, so the project exports them and the mirror carries a licence it can point at.
+- **Rebuild from zero** (the same venv as the Moonshine export):
+
+  ```powershell
+  .venv\Scripts\python scripts/models/export-whisper-small.py C:\Users\candi\Claude\the-inclusionist-lfs\whisper-small-onnx --check <a Portuguese recording>
+  ```
+
+  Two decoders, not a merged one — the shape this project knows how to export; the reader is the engine's own (#185).
+- 📏 **Measured on the Dev's reading, 52 words (2026-09-18)**, against the Dev's reference text: PyTorch fp32 1.9 %; this export
+  in **fp32 gives PyTorch's text exactly**; in q8, **5.8 %**, against 7.7 % for the third-party export on the same reading.
+  Quantizing either half alone costs one word, both cost two, so the smaller files were kept. One reader, one reading.
+- ⚠️ `--check` compares the TEXT, not the tokens: q8 parts from PyTorch by two words, and a token comparison would call that a
+  failure of the export when it is the quantization. The two suppression lists `generate` applies are in the check.
 
 ## Vosk for the browser — commands fallback (project-built)
 
