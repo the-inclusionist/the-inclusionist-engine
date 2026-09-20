@@ -13,13 +13,13 @@
   «se for legal»). Nothing here holds a credential — the rclone remote is configured by the Dev, once, with their own keys.
 
 .EXAMPLE
-  pwsh scripts/models/upload-lfs-r2.ps1 -Remote r2 -Bucket the-inclusionist-lfs
-  pwsh scripts/models/upload-lfs-r2.ps1 -Remote r2 -Bucket the-inclusionist-lfs -VerifyOnly
+  pwsh scripts/models/upload-lfs-r2.ps1
+  pwsh scripts/models/upload-lfs-r2.ps1 -VerifyOnly
 #>
 [CmdletBinding()]
 param(
   # The rclone remote the Dev configured for R2 (see models.md).
-  [string]$Remote = 'r2',
+  [string]$Remote = 'cloudflare-r2-the-inclusionist',
   [string]$Bucket = 'the-inclusionist-lfs',
   # Where the public domain serves the bucket from.
   [string]$PublicBase = 'https://lfs-oinclusionista.jrocha.dev.br',
