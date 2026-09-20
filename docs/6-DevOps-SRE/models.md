@@ -40,16 +40,18 @@ Also staged, for the reading port that issue #185 still owes: `moonshine-streami
 rclone config create cloudflare-r2-the-inclusionist s3 provider=Cloudflare `
   access_key_id=<R2 access key> secret_access_key=<R2 secret> region=auto `
   endpoint=https://<account id>.eu.r2.cloudflarestorage.com no_check_bucket=true
-pwsh scripts/models/upload-lfs-r2.ps1
+pwsh <the staging tree>/upload-to-r2.ps1
 ```
 
 A bucket with a jurisdiction answers only on that jurisdiction's endpoint (`.eu` here). `no_check_bucket` is what rclone's own
 documentation asks for with an **Object Read & Write** token: without bucket-level permission, the check before each upload
 fails. `acl` is not offered for the Cloudflare provider and is not needed.
 
-The script uploads every staged folder **except** those whose `LICENSE.md` opens with «🔴 ON HOLD», then fetches each file from
-the public address and compares it with the folder's `SHA256SUMS` — the catalogue pins those bytes, so serving anything else
-would break the delivery. `-VerifyOnly` runs the second half alone. Credentials live in the rclone remote, never in the repo.
+The script lives **in the staging tree**, not here: it uploads a folder from a machine to an account, while this repository keeps
+the recipes that rebuild a model from zero (ADR-0203 erratum: «receitas moram na ENGINE»). It uploads every staged folder
+**except** those whose `LICENSE.md` opens with «🔴 ON HOLD», then fetches each file from the public address and compares it with
+the folder's `SHA256SUMS` — the catalogue pins those bytes, so serving anything else would break the delivery. `-VerifyOnly`
+runs the second half alone. Credentials live in the rclone remote, never in a repository.
 
 ---
 
