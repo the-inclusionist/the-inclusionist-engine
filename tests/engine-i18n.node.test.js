@@ -312,6 +312,9 @@ const CRU_CONHECIDO = {
                                    // depois de eu escrever `4` por estimativa e o teto me apanhar: a
                                    // terceira razão é a do identificador de voz torto, que eu tinha
                                    // esquecido de contar.
+  'platform/kokoro-runtime.ts': 1, // «the catalogue has no address for …» — thrown at whoever BUILDS a game, when an id of the
+                                   // heavy catalogue is asked for and is not there. A child never reaches it: it fires before
+                                   // a voice exists, and the engine turns it into the refusal the caller reports (ADR-0169).
   'platform/pesados.ts': 1,        // «sem Cache Storage ou sem fetch» — o estado de um ambiente sem as duas
                                    // primitivas, que em produção é um navegador antigo e no gate é o caso do
                                    // vácuo. Vai no campo `erro` de um relatório, que a engine não mostra a

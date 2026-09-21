@@ -114,6 +114,13 @@ const TOCAM_NA_REDE = {
   'consumer-quiz/kokoro-carregar.ts': 'LOCAL. The quiz demo\'s Kokoro port (ADR-0198, #181): `fetch` of espeak-ng\'s WASM, an asset the '
     + 'build emitted beside the page, and of the model, tokenizer and voices at `pesados/` on the page\'s own origin (ADR-0177) — '
     + 'paths built by `caminhoNaEntrega`, never an upstream host',
+  'platform/kokoro-port.ts': 'LOCAL. `fetch` of the model, the tokenizer and the voice tables at `pesados/` on the page\'s own '
+    + 'origin (ADR-0177) — paths built by `caminhoNaEntrega`, never an upstream host. It was the quiz demo\'s port until ADR-0216 '
+    + 'moved it into the engine, so no game has to copy it',
+  'platform/kokoro-runtime.ts': 'LOCAL. `import()` of espeak-ng and onnxruntime, and `fetch` of their wasm, all at `pesados/` on '
+    + 'the page\'s own origin (ADR-0216): the addresses come from the catalogue, the build put the files in the delivery, and a '
+    + 'school with no network has them or the voice refuses. Nothing is imported from npm, so a game that never speaks neurally '
+    + 'carries none of it',
   'platform/vision.ts': 'LOCAL. `import()` of MediaPipe\'s `vision_bundle.mjs` (and, inside it, its wasm and the face model) at `pesados/` '
     + 'on the page\'s own origin (ADR-0177, ADR-0213, #196) — addresses built by `caminhoNaEntrega`, never an upstream host, and only '
     + 'after the checked cache holds every file',

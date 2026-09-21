@@ -1243,6 +1243,32 @@
       "falar"
     ]
   },
+  "platform/kokoro-port.ts": {
+    "interface EspeakFileSystem": [
+      "readFile",
+      "writeFile"
+    ],
+    "interface OnnxRuntime": [
+      "InferenceSession",
+      "Tensor"
+    ],
+    "interface KokoroPortDeps": [
+      "base",
+      "espeak",
+      "fetch",
+      "ort"
+    ],
+    "type EspeakFactory": "(options: { readonly arguments: readonly string[]"
+  },
+  "platform/kokoro-runtime.ts": {
+    "interface KokoroRuntimeDeps": [
+      "base",
+      "compileWasm?",
+      "fetch",
+      "importModule",
+      "instantiateWasm?"
+    ]
+  },
   "platform/kokoro.ts": {
     "interface VozKokoro": [
       "boa",

@@ -779,6 +779,7 @@
   ],
   "platform/heavy-mirror.ts": [
     "MIRROR_FOLDERS",
+    "NOT_MIRRORED",
     "baseIsRemote",
     "heavySourceOf",
     "mirrorPathOf"
@@ -787,6 +788,17 @@
     "FalaInterrompivel",
     "MotorDeFala",
     "criarFalaInterrompivel"
+  ],
+  "platform/kokoro-port.ts": [
+    "EspeakFactory",
+    "EspeakFileSystem",
+    "KokoroPortDeps",
+    "OnnxRuntime",
+    "createKokoroPort"
+  ],
+  "platform/kokoro-runtime.ts": [
+    "KokoroRuntimeDeps",
+    "loadKokoroRuntime"
   ],
   "platform/kokoro.ts": [
     "BYTES_DA_VOZ_KOKORO",
