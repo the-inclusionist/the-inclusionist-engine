@@ -79,6 +79,7 @@ import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
 import { createTts, type CarregarKokoro } from '../platform/tts.js';
+import { createReading, type Reading } from '../platform/reading.js';
 import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain, setHearingLossGraph } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
 // A raiz é a camada que PODE conhecer os dois eixos: `render/` está abaixo dela, e é dela a tarefa de
@@ -347,6 +348,13 @@ export interface CreateGameOptions {
    */
   readonly carregarKokoro?: CarregarKokoro;
   /**
+   * WHAT THIS GAME USES OF THE VOICE (ADR-0216 §3) — never how. `reading: true` says a child reads aloud to this game and it
+   * wants the text; the engine decides who hears her, and a delivery carries the reading model of her language because of
+   * this answer. Absent, `motor.reading.listen()` refuses and says which line is missing: a game that asks for a microphone
+   * it never declared would also be a delivery without the model, which is a silence in a school nobody can debug.
+   */
+  readonly uses?: { readonly reading?: boolean };
+  /**
    * FETCH THE HEAVY FILES ON THE FIRST LOAD? Default **yes** (ADR-0110 (b), ADR-0116, ADR-0119).
    *
    * The vision runtime and models, and Kokoro's model and voices when the game fills the Kokoro port (327 MB), come down in the
@@ -457,6 +465,13 @@ export interface Engine {
     readonly esconder: (i: number) => void;
   };
   readonly tts: ReturnType<typeof createTts>;
+  /**
+   * THE CHILD READS ALOUD AND THIS ANSWERS WITH TEXT (ADR-0216, issue #200; the Dev, 2026-09-21: «o jogo… apenas deve pedir
+   * para ouvir e receber o texto»). `listen()` ends when she goes quiet or the ceiling falls; `stop()` gives the microphone
+   * back; `ready()` says whether this device can hear her language at all. Which recogniser hears her is the engine's
+   * business — and never one that would send her voice to a server. A game that wants it declares `uses: { reading: true }`.
+   */
+  readonly reading: Reading;
   /**
    * THE SOUND CAPTION, hosted by the engine (study item D3; ADR-0014; ADR-0164 rules 4–5): a line for eyes that cannot
    * hear, in the screen footer above the explanation, at most two lines, gone after a moment. Written only while the
@@ -3549,6 +3564,36 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   }
 
   const problemasMedidos: string[] = [];
+  /*
+   * THE CHILD READS ALOUD, AND THE GAME RECEIVES TEXT (ADR-0216, issue #200). The engine owns the microphone, the route and
+   * the promise of privacy; the cartridge calls `listen()`. ⚠️ Recognition on the device or nothing: `platform/reading` only
+   * uses the browser's recogniser where it says it recognises locally, and refuses otherwise instead of quietly sending a
+   * child's voice to a server.
+   */
+  const reading: Reading = (() => {
+    const browserApis = win as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    const listener = createReading({
+      language: () => bcp47(),
+      api: (browserApis.SpeechRecognition ?? browserApis.webkitSpeechRecognition ?? null) as never,
+      now: () => win.performance.now(),
+      every: (fn, ms) => win.setInterval(fn, ms),
+      stopEvery: (h) => win.clearInterval(h as number),
+      report: (linha) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
+    });
+    const notDeclared = 'reading: this game called `reading.listen()` without declaring `uses: { reading: true }` — the child '
+      + 'speaks and nothing answers, because a delivery built from this declaration carries no reading model; declare it';
+    return {
+      ready: () => (o.uses?.reading ? listener.ready() : Promise.resolve({ can: false as const, why: 'no-model' as const })),
+      stop: () => listener.stop(),
+      listen: (options) => {
+        if (!o.uses?.reading) {
+          if (!problemasMedidos.includes(notDeclared)) problemasMedidos.push(notDeclared);
+          return Promise.reject(new Error('reading was not declared by this game: `uses: { reading: true }`'));
+        }
+        return listener.listen(options);
+      },
+    };
+  })();
 
   /*
    * PLAYING WITH THE EYES (ADR-0213; issues #194, #196): the stored 👀 position drives `ui/eye-control` — the camera, the reading, the
@@ -3674,6 +3719,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     unmount: desmontar,
     pausa,
     tts,
+    reading,
     legendarSom,
     velocidadeDoJogo: () => state.gameSpeed,
     medirFlashes,

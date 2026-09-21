@@ -32,6 +32,12 @@ export const BASELINE = join(raiz, 'docs/6-DevOps-SRE/language-debt.json');
 
 /** A declaration's name: what a reader of this repository has to read in English. */
 const DECL = /\b(?:const|let|var|function|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/g;
+/**
+ * ⚠️ IMPORTS ARE NOT DECLARATIONS, and this was measured: `import { type EstadoLocal }` matched `type X` and made
+ * `platform/reading` — written entirely in English — carry three Portuguese names belonging to the module it imports from.
+ * A file answers for the names it CREATES; the neighbour's names are the neighbour's debt.
+ */
+const semImports = (src) => src.replace(/^\s*import\b[^;]*;/gms, '');
 
 export const EXCEPTIONS = [
   ['app/js/i18n/', 'the dictionaries ARE Portuguese, English and Spanish — pilar 3 of ADR-0010'],
@@ -56,7 +62,7 @@ export function readLists() {
 export function inventory(lists = readLists()) {
   const debt = {}, unknown = new Map();
   for (const f of source()) {
-    const src = readFileSync(join(raiz, f), 'utf8');
+    const src = semImports(readFileSync(join(raiz, f), 'utf8'));
     const nomes = [];
     for (const m of src.matchAll(DECL)) {
       const ws = words(m[1]);
@@ -76,7 +82,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   if (arranque) {
     // every word a declaration uses and the Portuguese list does not claim is English, once — after that, a new word is unknown
     const todas = new Set();
-    for (const f of source()) for (const m of readFileSync(join(raiz, f), 'utf8').matchAll(DECL)) for (const w of words(m[1])) todas.add(w);
+    for (const f of source()) for (const m of semImports(readFileSync(join(raiz, f), 'utf8')).matchAll(DECL)) for (const w of words(m[1])) todas.add(w);
     const en = [...todas].filter((w) => !lists.pt.has(w)).sort();
     const atual = JSON.parse(readFileSync(LISTS, 'utf8'));
     writeFileSync(LISTS, `${JSON.stringify({ ...atual, english: en }, null, 2)}\n`);

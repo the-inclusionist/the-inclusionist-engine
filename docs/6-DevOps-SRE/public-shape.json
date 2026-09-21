@@ -40,7 +40,8 @@
       "setPauseActor?",
       "setPhase?",
       "setTemaDoJogador?",
-      "sonarPlayers?"
+      "sonarPlayers?",
+      "uses?"
     ],
     "interface MedicaoDeFlashes": [
       "lido",
@@ -64,6 +65,7 @@
       "overlays",
       "pausa",
       "problems",
+      "reading",
       "sonar",
       "tts",
       "unmount",
