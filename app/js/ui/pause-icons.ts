@@ -42,10 +42,68 @@ import { anunciarItem } from './item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
-import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, type CameraControl } from '../core/state.js';
+import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, switchScan, setSwitchScanValue, type CameraControl } from '../core/state.js';
 
 /** The word for each position of the 📷 cycle (ADR-0215). */
 const CAMERA_MODE_NAME: { readonly [M in CameraControl]: string } = { off: 'state.off', hands: 'camera.hands', face: 'camera.face', eyes: 'camera.eyes' };
+
+/**
+ * THE THREE POSITIONS OF ☝️ (ADR-0218): how the child's presses are read.
+ *
+ * They are not three settings but three READINGS of the same press, which is why one icon holds them and why they are shown as
+ * one position. `standard` is the press as it arrives; `sticky` makes a tap last until the next one (ADR-0113); `scan` offers
+ * the game's positions one at a time and lets any press take the one showing.
+ */
+export type InputMode = 'standard' | 'sticky' | 'scan';
+/** The word for each position, for the bar and for the panel row — one setting, one set of words. */
+export const INPUT_MODE_NAME: { readonly [M in InputMode]: string } = { standard: 'input.standard', sticky: 'input.sticky', scan: 'input.scan' };
+
+/**
+ * Which of the three is showing. The SCAN WINS over the latch on purpose: with one button there is nothing to hold, so a stored
+ * latch would otherwise make the icon claim a position the child is not in.
+ */
+export function inputModeOf(s: { readonly toggleMove?: boolean; readonly switchScan?: boolean }): InputMode {
+  return s.switchScan ? 'scan' : s.toggleMove ? 'sticky' : 'standard';
+}
+
+/**
+ * The next position. Two things take one away, and neither is an error to report — a cycle simply never stops where nothing
+ * would happen (ADR-0155), and a word that promised what this game cannot do would teach a child that her setting is broken
+ * (ADR-0106 §5):
+ *
+ * · A GAME THAT HOLDS NO KEY has nothing for the latch to hold, so the icon offers standard and one button.
+ * · A DEVICE THAT SENDS ONE COMMAND AT A TIME always latches and cannot be asked not to (ADR-0113 clause 3, ADR-0211), so
+ *   `standard` is unreachable there. 🔴 That used to grey the whole icon out, and with three positions that would have cost a
+ *   child playing with her eyes the one-button scan as well — the lock is the latch's, not the scan's.
+ */
+export function inputModeOrder(holdsKeys: boolean, latchRequired = false): readonly InputMode[] {
+  if (!holdsKeys) return ['standard', 'scan'];
+  return latchRequired ? ['sticky', 'scan'] : ['standard', 'sticky', 'scan'];
+}
+
+export function nextInputMode(m: InputMode, holdsKeys: boolean, latchRequired = false): InputMode {
+  const order = inputModeOrder(holdsKeys, latchRequired);
+  const i = order.indexOf(m);
+  return order[(i < 0 ? 0 : i + 1) % order.length]!;
+}
+
+/**
+ * WRITES A POSITION, through the two values behind it. Both surfaces of this setting call it — the bar's ☝️ and the motor
+ * panel's row — because two surfaces that write one setting in two ways are two surfaces that will disagree, which is the
+ * defect ADR-0113 and this file's own comments name over and over.
+ *
+ * 📌 Entering the scan LEAVES THE LATCH WHERE IT IS: `inputModeOf` gives the scan priority, so the position shown is never
+ * ambiguous, and a child who comes back out finds the choice she had made.
+ */
+export function applyInputMode(next: InputMode, w: {
+  readonly latched: boolean;
+  readonly setLatch: (on: boolean) => void;
+  readonly setScan: (on: boolean) => void;
+}): void {
+  w.setScan(next === 'scan');
+  if (next === 'scan') return;
+  if (w.latched !== (next === 'sticky')) w.setLatch(next === 'sticky');
+}
 import { proximaVelocidade } from '../core/game-speed.js';
 // ⚠️ IMPORT DIRETO DE `platform/storage`, e não uma peça a mais no `ctx`, e a escolha é sobre quem pode
 // esquecer: `initPauseIcons` é chamado pela raiz de composição de CADA jogo, e um `store` injetado é um
@@ -248,6 +306,8 @@ export interface IconStateSnapshot {
    * `nextCvd` existem desde sempre, separados); só não tinham onde guardar o resultado sem apagar o vizinho.
    */
   visual: VisualState;
+  /** Playing with ONE button (ADR-0218): the third position of ☝️, which wins over the latch when it is on. */
+  switchScan?: boolean;
   /** The game speed (ADR-0180), a step of `core/game-speed`; absent reads as 100%. */
   velocidade?: number;
   /** Playing through the webcam (ADR-0215); absent reads as off. */
@@ -332,7 +392,7 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   // repetir a lista de níveis do nome ("(calmo / silencioso)", "(protan/deutan/tritan)") a diria duas vezes.
   // Era assim antes da conversão, com o texto curto embutido — preservado, não reinventado.
   if (k === 'tea') return t('icon.state', { nome: t('icon.tea.short'), v: t(CALM_NAMES[s.calmMode]!) });
-  if (k === 'altmove') return rotulo(s.toggleMove ? 'state.on' : 'state.off');
+  if (k === 'altmove') return rotulo(INPUT_MODE_NAME[inputModeOf(s)]);
   if (k === 'contrast') return rotulo(CURTO_DO_TEMA[s.visual.tema]);
   if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CURTO_DA_CORRECAO[s.visual.correcao]) });
   if (k === 'camera') return rotulo(CAMERA_MODE_NAME[s.camera ?? 'off']);
@@ -362,7 +422,10 @@ export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   else if (k === 'tts') { on = s.ttsOn; dis = !s.privateOutput || !!s.semVoz; }
   else if (k === 'libras') { on = s.librasOn; }
   else if (k === 'tea') { on = s.calmMode === 2; calm = s.calmMode === 1; }
-  else if (k === 'altmove') { on = s.toggleMove; dis = !!s.alternanciaExigida; }
+  // ⚠️ AND IT IS NEVER GREYED OUT ANY MORE. `alternanciaExigida` says the DEVICE in use sends one command at a time and the latch
+  // cannot be turned off (ADR-0113 clause 3) — which is now told by the CYCLE, where `standard` simply does not appear. Greying
+  // the icon would have taken the one-button scan away from the child playing with her eyes, who is the likeliest to need it.
+  else if (k === 'altmove') { on = inputModeOf(s) !== 'standard'; }
   else if (k === 'contrast') { on = temAltoContraste(s.visual); }
   else if (k === 'velocidade') { on = (s.velocidade ?? 1) < 1; }
   else if (k === 'camera') { on = (s.camera ?? 'off') !== 'off'; }
@@ -430,6 +493,11 @@ export interface AccionaveisDoJogo {
    */
   readonly seguraTeclas: () => boolean;
   /**
+   * HOW MANY POSITIONS THIS GAME DECLARED (`CreateGameOptions.preset`, ADR-0162) — what a scan would have to offer (ADR-0218).
+   * A function like its neighbour, so a cartridge mounted later answers for itself (ADR-0142); absent reads as none.
+   */
+  readonly declaredPositions?: () => number;
+  /**
    * Does this game's time run by itself? (`tick: 'clock'`, ADR-0180.) Without it the hourglass is not mounted. A function,
    * like `seguraTeclas`, so a cartridge mounted later answers for itself (ADR-0142).
    */
@@ -466,7 +534,11 @@ export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly Pause
   // Um terceiro ramo, e não uma regra nova.
   return PAUSE_ICONS.filter((ic) => (ic.k === 'contrast' ? escritores.tema
     : ic.k === 'cvd' ? escritores.correcao
-      : ic.k === 'altmove' ? escritores.seguraTeclas()
+      // 🔴 AND THE THIRD BRANCH GREW A SECOND HALF (ADR-0218): the icon used to exist only where the game HOLDS a key, because
+      // the latch was all it held. «One button only» has a subject wherever the game declares a position to scan — which is why
+      // the quiz demo, holding no key, had no ☝️ at all. A game that declares nothing still has none: there would be nothing to
+      // offer, and a scan of one item is the dead button of ADR-0106 §5 paid for in seconds.
+      : ic.k === 'altmove' ? (escritores.seguraTeclas() || (escritores.declaredPositions?.() ?? 0) > 0)
         // 📌 O QUARTO RAMO, e é a mesma pergunta feita ao ciclo de tipografia (ADR-0149): o ícone existe
         // quando alguém sabe andar nele. Sem isso seria um botão que anuncia e não muda nada.
         : ic.k === 'tipografia' ? escritores.tipografia
@@ -909,6 +981,8 @@ export interface PauseIconsCtx {
    * por fora passa `() => this.declaration.seguraTeclas()` e não o resultado dela.
    */
   seguraTeclas: () => boolean;
+  /** How many positions the current game declared — what «one button only» would scan (ADR-0218). Absent reads as none. */
+  declaredPositions?: () => number;
   /** Does the current game's time run by itself? (ADR-0180: the hourglass.) Optional; absent, no hourglass. */
   relogio?: () => boolean;
   /** Can this device play through the webcam? (ADR-0215: the 📷.) Optional; absent, no 📷. */
@@ -1029,6 +1103,8 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // RESPOSTA que o jogo deu, e envolvê-la faria um `undefined` de um ctx mal montado virar `false` —
     // esconder o controle em silêncio, que é metade do defeito que este campo existe para não cometer.
     seguraTeclas: ctx.seguraTeclas,
+    // the same question the scan asks (ADR-0218): how many positions this game would give it to offer
+    declaredPositions: ctx.declaredPositions,
     tipografia: Boolean(ctx.ciclarTipografia),
     // mounted when the root can answer the clock question; shown or hidden per cartridge in `reflectIconBtn` (ADR-0142)
     relogio: () => Boolean(ctx.relogio),
@@ -1077,6 +1153,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       librasOn: ctx.isLibrasOn(),
       calmMode,
       toggleMove: !!p.toggleMove,
+      switchScan,
       // ⚠️ `DEFAULTS.viz` E NÃO `''` (issue #61). A cadeia vazia funcionava por ACIDENTE: não casa
       // `hc-direto` nem `fix-*`, então os dois ícones ficavam apagados pelo motivo certo por engano. O padrão
       // passou a ter nome em `core/state`, e `render/viz-modes` já declarava esse modo com `kind:'normal'` —
@@ -1137,9 +1214,34 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       applyCalm();
       ctx.srSay(t('sr.icon.tea', { v: t(CALM_NAMES[calmMode]!) }));
     },
+    /*
+     * ☝️ CYCLES THREE READINGS OF A PRESS (ADR-0218): standard · no holding needed · one button only.
+     *
+     * 📌 ENTERING THE SCAN LEAVES THE LATCH WHERE IT IS, and leaving it turns the latch off. The scan wins in `inputModeOf`, so
+     * the position shown is never ambiguous; and because the latch writer announces by itself, it is called ONLY where it
+     * changes something — otherwise the child would hear «no holding needed, off» when what ended was the scan.
+     */
     altmove: (i) => {
       // verbatim: `players[i].toggleMove` with no `||{}` guard (unlike contrast/cvd below).
-      setToggleMove(i, !P()[i].toggleMove);
+      const latched = !!P()[i].toggleMove;
+      const next = nextInputMode(inputModeOf({ toggleMove: latched, switchScan }), ctx.seguraTeclas(), recusaAgora(i) !== null);
+      // The latch writer speaks for itself, so the position is announced only when nothing spoke: otherwise the child would hear
+      // «no holding needed, off» when what ended was the scan.
+      let spoken = false;
+      applyInputMode(next, {
+        latched,
+        setScan: setSwitchScanValue,
+        setLatch: (on) => {
+          spoken = true;
+          // ⚠️ THE REFUSAL, kept where it always belonged: over the WRITE. The cycle above already skips `standard` on a device
+          // that always latches, so this should be unreachable — and it stays because `iconAct` is exported and the two rules
+          // could drift apart, which is the same reason the guards below give for not being belt and braces.
+          const recusa = recusaAgora(i);
+          if (recusa) { ctx.srAlert(t(recusa.chave)); return; }
+          setToggleMove(i, on);
+        },
+      });
+      if (!spoken) ctx.srSay(t('sr.icon.inputMode', { v: t(INPUT_MODE_NAME[next]) }));
     },
     // ⚠️ OS DOIS ÍCONES DEIXARAM DE SE APAGAR UM AO OUTRO (#104). Eles SEMPRE ciclaram dentro do seu eixo —
     // `nextContrast` e `nextCvd` existem separados desde sempre —, mas escreviam os dois no mesmo campo, e
@@ -1211,14 +1313,11 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       ctx.srAlert(t('sr.icon.needsPrivateOutput'));
       return;
     }
-    // ⚠️ A MESMA RECUSA DO PAINEL, na mesma forma que as duas acima: DIZER e voltar. Aceitar o clique e
-    // ignorá-lo é a outra metade do que o ADR-0076 proíbe, e aqui há um agravante — este ícone e o
-    // `#opt-altmove` escrevem o MESMO valor, logo um a aceitar enquanto o outro recusa daria à criança dois
-    // botões que discordam sobre o mesmo ajuste.
-    if (k === 'altmove') {
-      const recusa = recusaAgora(i);
-      if (recusa) { ctx.srAlert(t(recusa.chave)); return; }
-    }
+    // 🔴 A RECUSA EM BLOCO DO `altmove` SAIU DAQUI em 2026-09-21 (ADR-0218), e a razão é o que ela passou a custar: ela dizia
+    // «este aparelho exige a alternância» e devolvia sem fazer NADA — o que, com três posições, também trancava «um botão só»
+    // para quem joga com os olhos, que é quem mais precisa dele. Agora a trava vive no CICLO, que não passa pelo «padrão»
+    // nesse aparelho, e a recusa sobrevive dentro do acto, sobre a única coisa que ela sempre foi: a escrita da aderência.
+    // 📌 O motivo continua dito na LINHA DO PAINEL, que é a outra superfície do mesmo ajuste (ADR-0113 cláusula 3).
     const act = ICON_ACTS[k];
     if (act) act(i);
   }

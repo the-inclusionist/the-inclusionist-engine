@@ -9,6 +9,7 @@
     "createGame"
   ],
   "consumer-quiz/main-quiz.ts": [
+    "alternativaOuvida",
     "bootQuiz",
     "declararQuiz",
     "fimTexto",
@@ -286,9 +287,11 @@
     "setOwnerColorsValue",
     "setSemForcaValue",
     "setSpeechPpmValue",
+    "setSwitchScanValue",
     "setVizModeValue",
     "setWheelchairValue",
     "speechPpm",
+    "switchScan",
     "vizMode",
     "wheelchair"
   ],
@@ -605,6 +608,16 @@
     "soltarTecla",
     "soltarTodas"
   ],
+  "input/switch-scan.ts": [
+    "SCAN_CANCEL",
+    "SWITCH_SCAN_DEFAULTS",
+    "ScanFrame",
+    "ScanItem",
+    "ScanOutput",
+    "SwitchScan",
+    "SwitchScanOptions",
+    "createSwitchScan"
+  ],
   "input/touch-bindings.ts": [
     "CROSS_DEAD_FRACTION",
     "DirSet",
@@ -842,6 +855,7 @@
     "CACHE_PESADOS",
     "PESADOS",
     "Pesado",
+    "commandsLanguageOf",
     "readingLanguageOf"
   ],
   "platform/pesados.ts": [
@@ -1649,6 +1663,7 @@
     "ITENS_DA_ENGINE",
     "IconStateSnapshot",
     "IconVisual",
+    "InputMode",
     "PAUSE_ICONS",
     "PM_ITENS_VISIVEIS",
     "PauseIcon",
@@ -1668,6 +1683,7 @@
     "iconesQueAccionam",
     "iconsMarkup",
     "initPauseIcons",
+    "inputModeOf",
     "itensQueAccionam",
     "legendaDoIcone",
     "ligarLegendaDaBarra",
@@ -1676,6 +1692,7 @@
     "nextCalmMode",
     "nextContrast",
     "nextCvd",
+    "nextInputMode",
     "pauseIcon",
     "pauseMenuHtml",
     "pmBtnMarkup",

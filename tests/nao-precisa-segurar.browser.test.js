@@ -74,7 +74,12 @@ describe('the sticky-keys row a child can read', () => {
     expect(botao, 'a game that holds keys was not offered the option').not.toBeNull();
     const linha = botao.closest('.ctrl-row');
     expect(linha.hidden, 'a game that holds keys had the option hidden').toBe(false);
-    expect(linha.querySelector('strong').textContent).toBe(pt['motor.altmove']);
+    // 🔴 THE ROW IS A CYCLE OF THREE SINCE ADR-0218 — standard · no holding needed · one button only — so the name is on the
+    // control (`aria-label`) and the POSITION is what the child reads beside it. A `<strong>` with the name would say the
+    // subject twice to whoever listens, which is what `atualizarPassos` exists to avoid.
+    expect(botao.getAttribute('aria-label')).toBe(pt['motor.altmove']);
+    expect(botao.getAttribute('aria-valuemax'), 'a game that holds keys was not offered the three positions').toBe('2');
+    expect(botao.getAttribute('aria-valuetext')).toBe(pt['input.standard']);
     // 🔴 ONE SETTING, ONE NAME. The bar and the panel writing the same value under two names is how a child learns they are two
     // different things — and it was the state of this repository until today («Teclas de alternância» × «Movimento por
     // alternância»), both of them the mechanism's name and neither one hers.
@@ -83,17 +88,27 @@ describe('the sticky-keys row a child can read', () => {
     fechar();
   });
 
-  it('🔴 [Right] pressing it writes the SAME setting the bar\'s ☝️ writes', async () => {
+  it('🔴 [Right] walking the cycle writes the SAME two values the bar\'s ☝️ writes', async () => {
+    const state = await import('../app/js/core/state.js');
     const botao = await abrirMotora();
-    expect(botao.getAttribute('aria-pressed')).toBe('false');
-    botao.click();
-    expect(botao.getAttribute('aria-pressed'), 'the row did not turn it on').toBe('true');
+    const avancar = () => botao.dispatchEvent(new CustomEvent('passo', { detail: 1, bubbles: true }));
+
+    avancar(); // padrão → não precisa segurar
+    expect(botao.getAttribute('aria-valuetext')).toBe(pt['input.sticky']);
     // the two halves the bar writes too: the seat the cartridge passed, and the key that survives to tomorrow
     expect(assentos[0].toggleMove, 'the seat the cartridge passed did not receive the choice').toBe(true);
     expect(localStorage.getItem('incl_togglemove_p0'), 'the choice was not kept for the next day').toBe('1');
-    botao.click();
-    expect(botao.getAttribute('aria-pressed')).toBe('false');
-    expect(assentos[0].toggleMove).toBe(false);
+
+    avancar(); // não precisa segurar → um botão só
+    expect(botao.getAttribute('aria-valuetext')).toBe(pt['input.scan']);
+    expect(state.switchScan, 'the row did not enter one-button play').toBe(true);
+    expect(localStorage.getItem('incl_switch_scan'), 'one-button play was not kept for the next day').toBe('1');
+    // 📌 AND THE LATCH IS LEFT WHERE SHE PUT IT: the scan wins in the reading, so her choice is still there when she comes back.
+    expect(assentos[0].toggleMove, 'entering the scan threw away the latch she had chosen').toBe(true);
+
+    botao.dispatchEvent(new CustomEvent('passo', { detail: -1, bubbles: true })); // and the arrows walk both ways
+    expect(botao.getAttribute('aria-valuetext')).toBe(pt['input.sticky']);
+    expect(state.switchScan).toBe(false);
     fechar();
   });
 
@@ -216,8 +231,11 @@ describe('the sticky-keys row a child can read', () => {
     arestaDoJogador(0, 'olhos');
     expect(entradaDe(0).emUso, 'the eyes did not become the transport in use: the case would measure nothing').toBe('olhos');
     const botao = await abrirMotora();
-    expect(botao.getAttribute('aria-disabled'), 'the eyes are in use and the row still offers turning it off').toBe('true');
-    expect(botao.getAttribute('aria-pressed'), 'locked OFF would be a control that lies about the device').toBe('true');
+    // 🔴 THE LOCK IS NOW TOLD BY THE CYCLE (ADR-0218): “standard” is not among the positions on a device that always latches, so
+    // the child cannot walk to a place the device would not let her stay in. Disabling the whole row instead would have taken
+    // «um botão só» with it — and the child playing with her eyes is the likeliest of all to need it.
+    expect(botao.getAttribute('aria-valuemax'), 'the standard position was offered on a device that always latches').toBe('1');
+    expect(botao.getAttribute('aria-valuetext'), 'it did not open on the position the device forces').toBe(pt['input.sticky']);
     expect(botao.getAttribute('title'), 'locked without a reason is worse than not offering it').toBe(pt['alt.exigida.olhos']);
     fechar();
   });

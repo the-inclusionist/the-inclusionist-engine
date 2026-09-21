@@ -339,11 +339,20 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
     // one in the same document, and two nodes with one id is a query that answers whichever came first.
     // 📌 And the cool-down (ADR-0217) by the same rule: what it refuses is a second PRESS, and a game nobody presses twice has
     // none to refuse.
-    for (const sel of ['#opt-sticky', '#opt-cooldown']) {
-      const linha = painel.querySelector(sel);
-      expect(linha, `${sel} is not in the motor panel`).not.toBeNull();
-      expect(linha.closest('.ctrl-row').hidden, `a game that holds no key was offered ${sel} anyway`).toBe(true);
-    }
+    // 🔴 AND THE TWO ROWS PARTED WAYS IN 2026-09-21 (ADR-0218). The cool-down still hides here — what it refuses is a second
+    // PRESS, and a game nobody presses twice has none to refuse. The other row stopped being the latch's and became «jeito de
+    // apertar», whose third position is «um botão só»: that has a subject in EVERY game that declares a position, including this
+    // one. Hiding it would take one-button play away from the child who has one switch.
+    const cooldown = painel.querySelector('#opt-cooldown');
+    expect(cooldown, '#opt-cooldown is not in the motor panel').not.toBeNull();
+    expect(cooldown.closest('.ctrl-row').hidden, 'a game nobody presses twice was offered the cool-down').toBe(true);
+
+    const jeito = painel.querySelector('#opt-sticky');
+    expect(jeito, '#opt-sticky is not in the motor panel').not.toBeNull();
+    expect(jeito.closest('.ctrl-row').hidden, 'a game that declares positions was not offered «um botão só»').toBe(false);
+    // and the position that has no subject here is simply not among the ones offered
+    expect(jeito.getAttribute('aria-valuetext'), 'it did not open on the standard position').toBe('padrão');
+    expect(jeito.getAttribute('aria-valuemax'), 'the latch was offered in a game that holds no key').toBe('1');
     fechar();
   });
 

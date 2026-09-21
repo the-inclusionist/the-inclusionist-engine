@@ -431,6 +431,7 @@
       "ownerColors",
       "semForca",
       "speechPpm",
+      "switchScan",
       "vizMode",
       "wheelchair"
     ],
@@ -887,6 +888,22 @@
       "origem"
     ],
     "type BordaDoAperto": "'desceu' | 'subiu' | null"
+  },
+  "input/switch-scan.ts": {
+    "interface SwitchScanOptions": [
+      "pulseMs?",
+      "stepMs?"
+    ],
+    "interface ScanFrame": [
+      "press?"
+    ],
+    "interface ScanOutput": [
+      "commanded",
+      "pressed",
+      "showing"
+    ],
+    "interface SwitchScan": [],
+    "type ScanItem": "Action | typeof SCAN_CANCEL"
   },
   "input/touch-bindings.ts": {
     "interface EdgeRaise": [
@@ -2560,6 +2577,7 @@
       "modoCego",
       "privateOutput",
       "semVoz?",
+      "switchScan?",
       "toggleMove",
       "ttsOn",
       "velocidade?",
@@ -2575,6 +2593,7 @@
     "interface AccionaveisDoJogo": [
       "camera?",
       "correcao",
+      "declaredPositions?",
       "menus?",
       "relogio?",
       "seguraTeclas",
@@ -2595,6 +2614,7 @@
       "aoSairDaBarra?",
       "camera?",
       "ciclarTipografia?",
+      "declaredPositions?",
       "doc?",
       "dynLabel?",
       "explicarIcone?",
@@ -2648,6 +2668,7 @@
       "sairDaBarra",
       "setCalmMode"
     ],
+    "type InputMode": "'standard' | 'sticky' | 'scan'",
     "type PausePlayer": "PlayerView<'visual' | 'toggleMove' | 'walkDir' | 'audioSink' | 'rmWalk' | 'rmBreath' | 'rmFlavor'>",
     "type EscritoresVisuais": "AccionaveisDoJogo",
     "type PauseSub": "'raiz' | 'opcoes' | 'jogo'",

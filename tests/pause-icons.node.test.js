@@ -16,13 +16,15 @@ import pt from '../app/js/i18n/pt.js';
 import {
   PAUSE_ICONS, CALM_AUDIO_CATS, CVD_SEQ, CVD_NAMES,
   hasPrivateOutputIn, nextCalmMode, nextContrast, nextCvd, calmAudioPlan, calmMotionPlan,
-  computeIconLabel, computeIconVisual, ICON_STATE_CLASSES,
+  computeIconLabel, computeIconVisual, ICON_STATE_CLASSES, inputModeOf, nextInputMode,
   iconBtnMarkup, iconsMarkup, pmBtnMarkup, screenPauseMarkup,
   iconesQueAccionam,
   initPauseIcons,
 } from '../app/js/ui/pause-icons.js';
 import { CONTRAST_LEVELS } from '../app/js/ui/settings-visual.js';
 import { createRunState } from '../app/js/core/run-state.js';
+// ☝️ keeps ONE value for the whole engine (ADR-0218), so it is read and reset here as the module state it is.
+import * as estado from '../app/js/core/state.js';
 // A RODADA é local a este arquivo desde 2026-08-26 (ADR-0038, Fase B): `players`/`numPlayers` deixaram de
 // ser `let` de `core/state` e passaram a viver na instância que a raiz de composição possui. Aqui o teste
 // cria a sua, e os apelidos abaixo mantêm o corpo dos casos escrito como sempre esteve.
@@ -164,7 +166,9 @@ function setPlayers(list) {
   setNumPlayersValue(list.length || 1);
 }
 
-beforeEach(() => { setPlayers([{ viz: 'normal', visual: PADRAO }]); });
+// ⚠️ `switchScan` é estado de MÓDULO (uma chave para a engine toda, ADR-0218): sem o reposicionar, um caso que entra na
+// varredura deixa o seguinte a começar dentro dela — e um caso que depende da ordem dos vizinhos não mede o que diz.
+beforeEach(() => { setPlayers([{ viz: 'normal', visual: PADRAO }]); estado.setSwitchScanValue(false); });
 
 // =============================================================================================
 // PURO — saída privada de áudio (o portão dos ícones de som)
@@ -310,7 +314,7 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
       ['blind', 'modoCego', 'Modo cego'],
       ['tts', 'ttsOn', 'Narração por voz'],
       ['libras', 'librasOn', 'Modo pessoa surda'],
-      ['altmove', 'toggleMove', 'Não precisa segurar'],
+      // ☝️ LEFT THIS LIST in 2026-09-21: it stopped being a boolean and became three positions (ADR-0218). Its own case is below.
     ];
     for (const [k, flag, prefix] of cases) {
       // 'on'/'off' eram palavras INGLESAS dentro de uma frase em portugues — o defeito exato que a passada
@@ -318,6 +322,56 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
       expect(computeIconLabel(k, snap({ [flag]: false }))).toBe(prefix + ': desligado');
       expect(computeIconLabel(k, snap({ [flag]: true }))).toBe(prefix + ': ligado');
     }
+  });
+
+  /*
+   * ☝️ SAYS WHICH OF THE THREE READINGS IS IN USE (ADR-0218), and the name is the SUBJECT while the value is the position —
+   * the same shape as the camera's. A label of «on» would no longer answer the child's question, which is «on WHAT».
+   */
+  it('🔴 [Right] o ☝️ diz a POSIÇÃO — padrão, não precisa segurar, um botão só', () => {
+    expect(computeIconLabel('altmove', snap({ toggleMove: false }))).toBe('Jeito de apertar: padrão');
+    expect(computeIconLabel('altmove', snap({ toggleMove: true }))).toBe('Jeito de apertar: não precisa segurar');
+    expect(computeIconLabel('altmove', snap({ switchScan: true }))).toBe('Jeito de apertar: um botão só');
+    // 🔴 E A VARREDURA GANHA DA ADERÊNCIA: com um botão só não há o que segurar, e um valor guardado da aderência faria o
+    // ícone anunciar uma posição em que a criança não está.
+    expect(computeIconLabel('altmove', snap({ toggleMove: true, switchScan: true }))).toBe('Jeito de apertar: um botão só');
+  });
+
+  it('🔴 [Right] e ele só se acende fora do padrão — as outras duas posições são «ligado»', () => {
+    expect(computeIconVisual('altmove', snap({ toggleMove: false })).on).toBe(false);
+    expect(computeIconVisual('altmove', snap({ toggleMove: true })).on).toBe(true);
+    expect(computeIconVisual('altmove', snap({ switchScan: true })).on).toBe(true);
+    // 🔴 E NUNCA APAGADO: apagar o ícone num aparelho que exige a aderência levava «um botão só» junto, e quem joga com os
+    // olhos é quem mais precisa dele. A trava vive no ciclo (caso abaixo), não no aspecto.
+    expect(computeIconVisual('altmove', snap({ toggleMove: true, alternanciaExigida: true })).dis).toBe(false);
+  });
+
+  describe('nextInputMode — o ciclo de ☝️, e as duas coisas que lhe tiram uma posição (ADR-0218)', () => {
+    it('🔴 [Right] num jogo que segura tecla são três, na ordem que o Dev pediu', () => {
+      expect(nextInputMode('standard', true)).toBe('sticky');
+      expect(nextInputMode('sticky', true)).toBe('scan');
+      expect(nextInputMode('scan', true)).toBe('standard');
+    });
+
+    it('🔴 [Right] num jogo que NÃO segura tecla são duas: a aderência não teria o que segurar', () => {
+      expect(nextInputMode('standard', false)).toBe('scan');
+      expect(nextInputMode('scan', false)).toBe('standard');
+      // e uma posição que não existe neste ciclo devolve a primeira, em vez de ficar presa fora dele
+      expect(nextInputMode('sticky', false)).toBe('standard');
+    });
+
+    it('🔴 [Right] e num aparelho que EXIGE a aderência o «padrão» não aparece — mas a varredura continua lá', () => {
+      expect(nextInputMode('sticky', true, true)).toBe('scan');
+      expect(nextInputMode('scan', true, true)).toBe('sticky');
+      expect(nextInputMode('standard', true, true), 'o ciclo parou numa posição que o aparelho não permite').toBe('sticky');
+    });
+
+    it('📌 [Right] e a leitura da posição dá a varredura como vencedora da aderência', () => {
+      expect(inputModeOf({})).toBe('standard');
+      expect(inputModeOf({ toggleMove: true })).toBe('sticky');
+      expect(inputModeOf({ switchScan: true })).toBe('scan');
+      expect(inputModeOf({ toggleMove: true, switchScan: true })).toBe('scan');
+    });
   });
 
   it('TEA tem TRÊS estados no rótulo — não é booleano', () => {
@@ -669,18 +723,31 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(state.toggleMoveCalls, 'o ícone deixou de accionar quando não há recusa nenhuma').toHaveLength(1);
   });
 
-  // ⚠️ ESTE CASO NASCEU DE UMA MUTAÇÃO SOBREVIVENTE, e o buraco era real: os dois casos acima medem o ACTO
-  // (recusar, dizer) e nenhum media o ASPECTO. Tirar `dis = !!s.alternanciaExigida` passava — e o resultado
-  // seria um ícone que parece accionável, não responde, e só explica depois de a criança carregar.
-  it('🔴 [Right] com o olhar em uso, o ícone MOSTRA-SE desabilitado antes de ser tocado', () => {
-    setPlayers([{ viz: 'normal', toggleMove: false, walkDir: 0 }]);
-    const { ctx } = buildCtx();
+  /*
+   * 🔴 REESCRITO EM 2026-09-21, E A MUDANÇA É A DECISÃO (ADR-0218). Este caso nasceu de uma mutação sobrevivente e media o
+   * ASPECTO: com o olhar em uso, o ícone aparecia APAGADO, porque a alternância não se pode desligar nesse aparelho.
+   *
+   * Com três posições isso passou a custar caro demais: apagar o ícone inteiro tiraria a varredura de «um botão só» — e quem
+   * joga com os olhos é justamente quem mais precisa dela. A trava do ADR-0113 cláusula 3 continua inteira, dita pelo CICLO:
+   * o «padrão» simplesmente não aparece, e a criança nunca alcança uma posição em que o aparelho não a deixaria ficar.
+   */
+  it('🔴 [Right] com o olhar em uso, o ciclo PULA o padrão — e o ícone continua accionável', () => {
+    setPlayers([{ viz: 'normal', toggleMove: true, walkDir: 0 }]);
+    const { ctx, state } = buildCtx();
     ctx.transporteEmUso = () => 'olhos';
+    ctx.seguraTeclas = () => true; // senão a aderência não teria o que travar e o ciclo seria outro (o de duas posições)
+    const api = initPauseIcons(ctx);
     const b = fakeIconBtn('altmove');
-    initPauseIcons(ctx).reflectIconBtn(b, 0);
+    api.reflectIconBtn(b, 0);
+    expect(b.classList.contains('pi-dis'), 'o ícone foi apagado e levou a varredura com ele').toBe(false);
 
-    expect(b.classList.contains('pi-dis'), 'o ícone parece accionável e não é').toBe(true);
-    expect(b.getAttribute('aria-disabled'), 'e quem navega por ouvido não sabe disso').toBe('true');
+    // De «não precisa segurar» vai para «um botão só»…
+    api.iconAct('altmove', 0);
+    expect(estado.switchScan, 'não entrou na varredura').toBe(true);
+    // …e de lá volta para a aderência, nunca para o padrão: o aparelho manda um comando de cada vez e a aderência fica.
+    api.iconAct('altmove', 0);
+    expect(estado.switchScan).toBe(false);
+    expect(state.toggleMoveCalls, 'o padrão foi alcançado num aparelho que exige a alternância').toEqual([]);
   });
 
   // 🔴 A ISSUE #128, E ELA É DE UMA LINHA. `pi-dis` é CLASSE CSS: a criança que enxerga vê o ícone apagado,
@@ -753,11 +820,13 @@ describe('initPauseIcons — ações dos ícones', () => {
   });
 
   it('teclas de alternância invertem a flag do jogador CERTO', () => {
-    setPlayers([{ toggleMove: false }, { toggleMove: true }]);
+    // 📌 Os dois assentos partem do PADRÃO: desde o ADR-0218 uma pressão sobre um assento que já está na aderência leva-o para
+    // «um botão só», que não escreve aderência nenhuma — e o caso deixaria de medir o assento, que é o que ele existe para medir.
+    setPlayers([{ toggleMove: false }, { toggleMove: false }]);
     const { ctx, state } = buildCtx();
     const api = initPauseIcons(ctx);
     api.iconAct('altmove', 1);
-    expect(state.toggleMoveCalls).toEqual([[1, false]]);
+    expect(state.toggleMoveCalls).toEqual([[1, true]]);
   });
 
   it('⚠️ contraste e daltonismo ciclam CADA UM NO SEU EIXO, e um não apaga o outro (#104)', () => {
@@ -1023,9 +1092,9 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     setPlayers([{ viz: 'normal', toggleMove: false }]);
     const { ctx } = buildCtx();
     const api = initPauseIcons(ctx);
-    expect(api.iconLabel('altmove', 0)).toBe('Não precisa segurar: desligado');
+    expect(api.iconLabel('altmove', 0)).toBe('Jeito de apertar: padrão');
     players[0].toggleMove = true;
-    expect(api.iconLabel('altmove', 0)).toBe('Não precisa segurar: ligado');
+    expect(api.iconLabel('altmove', 0)).toBe('Jeito de apertar: não precisa segurar');
   });
 
   it('o ciclo COMPLETO (agir → refletir) mantém rótulo e classe em acordo', () => {
@@ -1126,10 +1195,24 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
    * ⚠️ E É UMA AUSÊNCIA DIFERENTE DA DO ADR-0113 cláusula 3, que vive no mesmo ficheiro: lá o controle fica
    * DESABILITADO com o motivo, porque o aparelho EXIGE a alternância. Aqui não há nada a travar, e explicar
    * por que um controle não faz nada continua a ser entregar um controle que não faz nada. */
-  it('🎯 [Zero] um jogo que NÃO segura teclas não recebe o ícone `altmove`', () => {
+  it('🎯 [Zero] um jogo que não segura teclas NEM declara posição não recebe o ícone `altmove`', () => {
     const chaves = iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, tipografia: true, camera: true, menus: true }).map((ic) => ic.k);
     expect(chaves, 'o `altmove` foi montado num jogo que não segura nada').not.toContain('altmove');
     expect(chaves).toHaveLength(PAUSE_ICONS.length - 1);
+  });
+
+  /*
+   * 🔴 E A OUTRA METADE, QUE ENTROU COM O ADR-0218 e que uma mutação sobrevivente mostrou não estar medida: o ícone existe
+   * também onde o jogo DECLARA POSIÇÃO sem segurar tecla nenhuma — que é o quiz, e que era o jogo sem ☝️ nenhum. A aderência
+   * não tem o que segurar lá; «um botão só» tem o que varrer.
+   */
+  it('🔴 [Right] mas um jogo que DECLARA POSIÇÃO recebe-o, mesmo sem segurar tecla — é o caso do quiz', () => {
+    const chaves = iconesQueAccionam({
+      relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, declaredPositions: () => 5,
+      tipografia: true, camera: true, menus: true,
+    }).map((ic) => ic.k);
+    expect(chaves, 'o jogo que declara cinco posições ficou sem «um botão só»').toContain('altmove');
+    expect(chaves).toHaveLength(PAUSE_ICONS.length);
   });
 
   it('⚠️ [Right] e o PAR: um jogo que segura recebe-o — senão «ausente» passaria por nunca montar nada', () => {

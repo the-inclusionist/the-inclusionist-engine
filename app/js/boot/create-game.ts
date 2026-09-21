@@ -67,7 +67,10 @@ import { createEyeControl, videoFeed } from '../ui/eye-control.js';
 import { createFaceControl } from '../ui/face-control.js';
 import { createHandControl } from '../ui/hand-control.js';
 import { followCameraMode } from '../ui/camera-control.js';
-import { initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS } from '../ui/pause-icons.js';
+import {
+  initPauseIcons, iconsMarkup, ligarLegendaDaBarra, mostrarSubmenuDaPausa, PM_ITENS_VISIVEIS,
+  inputModeOf, inputModeOrder, applyInputMode, INPUT_MODE_NAME, type InputMode,
+} from '../ui/pause-icons.js';
 import { anunciarItem } from '../ui/item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { itensNavegaveis } from '../ui/menu-items.js';
@@ -1195,6 +1198,8 @@ export function createGame(o: CreateGameOptions): Engine {
     // `reflectPauseIcons` — que existe porque a tabela de acções muda (ADR-0106 §5) — refrescava a partir
     // dela. Com vários cartuchos numa raiz de composição (ADR-0142) o ícone descrevia o primeiro deles.
     seguraTeclas: () => cartucho.declaration.seguraTeclas(),
+    // how many positions this cartridge declared — what «one button only» would have to offer (ADR-0218, issue #201)
+    declaredPositions: () => (cartucho.preset ? presetActions(cartucho.preset).length : 0),
     // the hourglass is offered where time runs by itself (ADR-0180), read per cartridge
     relogio: () => cartucho.declaration.tick === 'clock',
     // the 📷 is offered where there is a camera to ask for (ADR-0215); the three camera controls below follow its position
@@ -3429,36 +3434,72 @@ export function createGame(o: CreateGameOptions): Engine {
     // that follows the actor; this one follows the panel.
     const PANEL_SEAT = 0;
     const stickyOnForSeat = (): boolean => !!(players()[PANEL_SEAT] as { toggleMove?: boolean } | undefined)?.toggleMove;
-    const stickyRowSpec = () => ({ id: 'opt-sticky', rotulo: t('motor.altmove'), dica: t('motor.altmove.dica') });
-    const { linha: stickyRow, controle: stickyButton } = linhaDeControle(ctxDaMotora, stickyRowSpec());
+    /*
+     * 🔴 AND SINCE ADR-0218 THE ROW IS THE SAME CYCLE AS THE BAR'S ☝️: standard · no holding needed · one button only. It was a
+     * switch for the latch alone, and the moment the icon grew a third position the two surfaces would have been naming
+     * different things — which is the defect the case above this row exists to refuse («one setting, one name»).
+     * 📌 The ORDER and the WRITE come from `ui/pause-icons`, not from a second copy here: the positions a device or a game takes
+     * away are decided once, and both surfaces read that decision.
+     */
+    const latchRefusedNow = (): ReturnType<typeof recusaDaAlternancia> => recusaDaAlternancia(entradaDe(PANEL_SEAT).emUso);
+    const inputModes = (): readonly InputMode[] => inputModeOrder(cartucho.declaration.seguraTeclas(), latchRefusedNow() !== null);
+    const inputModeNow = (): InputMode => inputModeOf({ toggleMove: stickyOnForSeat(), switchScan: state.switchScan });
+    const stickySpec = () => ({
+      rotulo: t('motor.altmove'),
+      valores: inputModes().map((m) => t(INPUT_MODE_NAME[m])),
+      atual: Math.max(0, inputModes().indexOf(inputModeNow())),
+    });
+    // A row of STEPS is built by hand, like the caption rate's above: `linhaDeControle` always makes a control of its own, and a
+    // row with two of them would give the menu cursor two stops for one setting.
+    const stickyRow = doc.createElement('div');
+    stickyRow.className = 'ctrl-row ctrl-row--passos';
+    const stickyWrap = doc.createElement('span');
+    const stickyHint = doc.createElement('span');
+    stickyHint.className = 'opt-hint';
+    stickyHint.textContent = t('motor.altmove.dica');
+    stickyWrap.appendChild(stickyHint);
+    stickyRow.appendChild(stickyWrap);
+    const stickySteps = montarPassos(ctxDaMotora, stickySpec());
+    stickySteps.id = 'opt-sticky';
+    stickyRow.appendChild(stickySteps);
     painelDaMotora.casca.lista.appendChild(stickyRow);
     const reflectSticky = (): void => {
-      rotularLinha(stickyRow, stickyRowSpec());
-      const refusal = recusaDaAlternancia(entradaDe(PANEL_SEAT).emUso);
-      const held = stickyOnForSeat() || !!refusal;
-      toggleBtn(stickyButton, held);
-      stickyButton.textContent = toggleLabel(held);
-      stickyButton.setAttribute('aria-disabled', refusal ? 'true' : 'false');
-      if (refusal) stickyButton.setAttribute('title', t(refusal.chave));
-      else stickyButton.removeAttribute('title');
-      stickyRow.hidden = !cartucho.declaration.seguraTeclas();
+      stickyHint.textContent = t('motor.altmove.dica');
+      atualizarPassos(stickySteps, stickySpec());
+      const refusal = latchRefusedNow();
+      // 📌 The reason is still SAID here, and it is the only surface that can say it now: the cycle simply has no «standard» on
+      // such a device (ADR-0113 clause 3), and a position that is not offered explains nothing by itself.
+      if (refusal) stickySteps.setAttribute('title', t(refusal.chave));
+      else stickySteps.removeAttribute('title');
+      // ⚠️ HIDDEN ONLY WHERE THERE IS NOTHING AT ALL TO OFFER. It used to hide wherever the game holds no key, because the latch
+      // was all it held; one-button play has a subject in every game that declares a position (ADR-0218).
+      stickyRow.hidden = !cartucho.declaration.seguraTeclas() && !(cartucho.preset && presetActions(cartucho.preset).length > 0);
     };
-    stickyButton.addEventListener('click', () => {
-      if (stickyButton.getAttribute('aria-disabled') === 'true') return;
-      definirAlternanciaDeMarcha(
-        {
-          // ⚠️ The same cast the quick bar makes, and for the same reason: the contract types a seat as `{ ctrl }` (ADR-0143),
-          // and the motor fields are seeded onto it at boot. A second shape here would be a second opinion about one object.
-          players: players() as unknown as Parameters<typeof definirAlternanciaDeMarcha>[0]['players'],
-          store,
-          srSay,
-          getNumPlayers: () => players().length,
-          transporteEmUso: (i) => entradaDe(i).emUso,
-        },
-        PANEL_SEAT,
-        !stickyOnForSeat(),
-      );
+    stickySteps.addEventListener('passo', (ev) => {
+      const order = inputModes();
+      const current = stickySpec().atual;
+      const chosen = passoSeguinte(current, order.length, (ev as CustomEvent<number>).detail);
+      if (chosen === current) return;
+      const target = order[chosen]!;
+      applyInputMode(target, {
+        latched: stickyOnForSeat(),
+        setScan: state.setSwitchScanValue,
+        setLatch: (on) => definirAlternanciaDeMarcha(
+          {
+            // ⚠️ The same cast the quick bar makes, and for the same reason: the contract types a seat as `{ ctrl }` (ADR-0143),
+            // and the motor fields are seeded onto it at boot. A second shape here would be a second opinion about one object.
+            players: players() as unknown as Parameters<typeof definirAlternanciaDeMarcha>[0]['players'],
+            store,
+            srSay,
+            getNumPlayers: () => players().length,
+            transporteEmUso: (i) => entradaDe(i).emUso,
+          },
+          PANEL_SEAT,
+          on,
+        ),
+      });
       reflectSticky();
+      srSay(`${t('motor.altmove')}: ${t(INPUT_MODE_NAME[target])}`);
       if (a11yBar) pauseIcons.reflectIconsIn(a11yBar, 0); // the ☝️ and this row say the same thing about the same setting
     });
     reflectSticky();

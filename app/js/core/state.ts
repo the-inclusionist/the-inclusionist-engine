@@ -79,6 +79,8 @@ export interface EventoDoJogo {
   oneButton: boolean;
   /** The wait after an accepted key, in milliseconds (ADR-0217); 0 is off, which is how it leaves the factory. */
   inputCooldown: number;
+  /** Playing with ONE button: the machine offers each position and any press takes the one showing (ADR-0218). */
+  switchScan: boolean;
   /** The game speed, a step of `core/game-speed` (ADR-0180): 1 is 100%. */
   gameSpeed: number;
   /** The child's caption reading rate, words a minute (ADR-0183 §4): 125, 145 or 175. */
@@ -238,6 +240,7 @@ export const DEFAULTS = Object.freeze({
   wheelchair: false,
   oneButton: false,
   inputCooldown: 0,
+  switchScan: false,
   gameSpeed: 1,
   captionPpm: 125,
   speechPpm: 254, // the voice's normal speed, the minimum (ADR-0196)
@@ -477,6 +480,22 @@ export function setInputCooldownValue(ms: number): void {
   const p = armazem('setInputCooldownValue'); p.set('incl_input_cooldown', v); inputCooldown = v; emit('inputCooldown', v);
 }
 
+// --- switchScan: PLAYING WITH ONE BUTTON, the third position of the quick bar's ☝️ (ADR-0218, issue #201). The scan offers the
+//     game's declared positions one at a time and any press takes the one showing (`input/switch-scan`).
+//     📌 ONE KEY FOR THE WHOLE ENGINE, and not one per seat like the latch beside it: this describes the CHILD'S BODY and not
+//     the game — the switch she has in the platformer she also has in the quiz — while the latch answers «does THIS transport
+//     need me to hold», which is why that one is kept per seat and per transport (ADR-0113).
+//     ⚠️ NOT `oneButton` ABOVE, and the two names are a debt worth seeing: that one is the empathy SIMULATION «um botão por
+//     vez» (ADR-0181), which makes play harder on purpose, and this is the ACCOMMODATION of the same catalogue id. The Dev
+//     named the confusion on 2026-09-21; renaming the simulation crosses into a cartridge (`p.oneButton` in game-soccer) and
+//     waits for its own commit. ---
+export let switchScan: boolean = VAZIO.getBool('incl_switch_scan', DEFAULTS.switchScan);
+export function setSwitchScanValue(on: boolean): void {
+  const v = !!on;
+  if (switchScan === v) return;
+  const p = armazem('setSwitchScanValue'); p.setBool('incl_switch_scan', v); switchScan = v; emit('switchScan', v);
+}
+
 // --- cameraControl: playing through the webcam, the quick bar's 📷 (ADR-0215): off · hands · face · eyes, in that order. ONE key, so one
 //     camera mode at a time holds by construction (ADR-0197); every playing position draws its lines. Kept on the device; a stored value
 //     that is not a position reads as off, because the camera must never switch itself on. ---
@@ -550,6 +569,7 @@ export function carregarEstado(p: PortaDoEstado): void {
   oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
   gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
   semForca = p.getBool('incl_sem_forca', DEFAULTS.semForca);
+  switchScan = p.getBool('incl_switch_scan', DEFAULTS.switchScan);
   cameraControl = cameraModeOf(p.get('incl_camera_control', DEFAULTS.cameraControl));
   captionPpm = ritmoDaLegendaValido(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
   speechPpm = ritmoDaFalaValido(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
