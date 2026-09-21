@@ -145,6 +145,67 @@ describe('the sticky-keys row a child can read', () => {
   });
 
   /**
+   * 🔴 THE CAMERA ROW (issue #182; ADR-0215): «webcam (gestos/rosto/olhos)» was on the Dev's list of missing motor rows, and
+   * until the 📷 existed there was nothing to put in it. It is the SAME stored value the bar cycles — the panel's job is to say
+   * what each position does, which a bar of icons cannot.
+   *
+   * 📌 The microphone row of that same list is deliberately absent: the engine has no voice-command transport yet (issue #184),
+   * so it would switch nothing. The bar already says «em construção» with 👄, and a second surface saying it would be a second
+   * promise. This case holds that absence, so it stays a decision and not an oversight.
+   */
+  it('🔴 [Right] the camera is offered in the panel, as the SAME setting the 📷 cycles', async () => {
+    const state = await import('../app/js/core/state.js');
+    await abrirMotora();
+    const passos = document.querySelector('#motora #opt-camera');
+    expect(passos, 'the camera row the Dev listed in #182').not.toBeNull();
+    // ⚠️ and VISIBLE: this browser has a camera to ask for, so a hidden row here would be the case measuring nothing
+    expect(passos.closest('.ctrl-row').hidden).toBe(false);
+    expect(passos.getAttribute('aria-valuetext')).toBe(pt['state.off']);
+    // what the bar writes, this row shows: one value, two surfaces
+    state.setCameraControlValue('face');
+    expect(passos.getAttribute('aria-valuetext'), 'the bar changed it and the panel went on showing the old one')
+      .toBe(pt['camera.face']);
+    state.setCameraControlValue('off');
+    expect(document.querySelector('#motora #opt-microphone'), 'a row that would switch nothing (issue #184)').toBeNull();
+    fechar();
+  });
+
+  /**
+   * ⚠️ AND HIDDEN WHERE THERE IS NO CAMERA TO ASK FOR (ADR-0106 §5) — which THIS browser cannot show, because it has one: a
+   * mutation that made the row always visible survived every case above. So the rule is measured on a second engine, booted
+   * into a document of its own with a `navigator` that offers no `getUserMedia`, which is the school Chromebook with the
+   * camera disabled by the administrator.
+   */
+  it('🔴 [Zero] on a device with no camera the row is not offered at all', async () => {
+    const { createGame } = await import('../app/js/boot/create-game.js');
+    const outro = document.implementation.createHTMLDocument('sem camera');
+    outro.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
+      + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
+    // ⚠️ A METHOD READ THROUGH A PROXY IS CALLED ON THE PROXY, and `addEventListener` answers «Illegal invocation» to anything
+    // that is not the real window. Functions come back bound to it; everything else is the window's own.
+    const semCamera = new Proxy(window, {
+      get: (alvo, chave) => {
+        if (chave === 'navigator') {
+          return { language: navigator.language, languages: navigator.languages, userAgent: navigator.userAgent };
+        }
+        const valor = Reflect.get(alvo, chave);
+        return typeof valor === 'function' ? valor.bind(alvo) : valor;
+      },
+    });
+    const segundo = createGame({
+      acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: outro, win: semCamera },
+      baixarPesados: false, controleNaTela: true, players: [{ ctrl: 0 }], preset: PRESET,
+    });
+    try {
+      const passos = outro.querySelector('#motora #opt-camera');
+      expect(passos, 'the row must be BUILT even here — hidden, so the panel does not change shape between devices').not.toBeNull();
+      expect(passos.closest('.ctrl-row').hidden, 'a device with no camera was offered playing with one').toBe(true);
+    } finally {
+      segundo.unmount?.();
+    }
+  });
+
+  /**
    * ⚠️ ON THE EYES, THE FACE, GESTURES AND SPEECH IT CANNOT BE TURNED OFF (ADR-0104 §C): those devices send one command at a
    * time, so the latch is not a preference — it is the only way the control works. The row stays VISIBLE and locked with the
    * reason, because hiding it would hide why (ADR-0113 clause 3).
@@ -169,3 +230,8 @@ describe('the sticky-keys row a child can read', () => {
 //   · the click writing the seat and not the key   → «writes the SAME setting the bar's ☝️ writes»
 //   · the lock dropped on one-command devices      → «it is locked, and the reason is there to read»
 //   · the lock without its reason                  → same
+//   · the camera row built and never appended      → «the camera is offered in the panel»
+//   · the camera row shown where there is no camera → «on a device with no camera the row is not offered at all»
+//   · the row no longer following what the bar writes → «as the SAME setting the 📷 cycles»
+//   · the row writing one mode and showing another  → same
+//   · a microphone row that switches nothing        → «a row that would switch nothing (issue #184)»

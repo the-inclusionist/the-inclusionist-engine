@@ -452,6 +452,8 @@ const pt: Record<string, string> = {
   'motor.facil.dica': 'Gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais.',
   'motor.altmove': 'Não precisa segurar',
   'motor.espera': 'Esperar entre toques',
+  'motora.camera': 'Jogar com a câmera',
+  'motora.camera.dica': 'A câmera fica no aparelho: nada do que ela vê sai daqui. Escolha o que joga — as mãos, o rosto ou os olhos.',
   'motor.espera.dica': 'Depois de um toque, espera meio segundo antes de aceitar o próximo — para quando a mão treme e o toque sai dobrado.',
   'motor.altmove.dica': 'Um toque liga e outro desliga, em vez de manter o botão pressionado.',
   'motor.togglerun': 'Alternância do correr',

@@ -348,6 +348,8 @@ const en: Record<string, string> = {
   'motor.facil.dica': 'Lower gravity, higher jump, forgiving pickup, coins on the ground, no hazards and no accidental falls.',
   'motor.altmove': 'No holding needed',
   'motor.espera': 'Wait between presses',
+  'motora.camera': 'Play with the camera',
+  'motora.camera.dica': 'The camera stays on this device: nothing it sees leaves. Choose what plays — the hands, the face or the eyes.',
   'motor.espera.dica': 'After a press, waits half a second before taking the next one — for when a hand shakes and one press arrives twice.',
   'motor.altmove.dica': 'One tap turns it on and another turns it off, instead of keeping the button pressed.',
   'motor.togglerun': 'Run toggle',

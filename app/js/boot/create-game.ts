@@ -75,6 +75,7 @@ import { helpRows, montarSlides, mostrarSlide, animarFigura, howToPlayProblems, 
 import { keyName, initSettingsControls, type SettingsControlsApi } from '../ui/settings-controls.js';
 // O módulo INTEIRO: o on do barramento de eventos, para a barra montada continuar a dizer a verdade.
 import * as state from '../core/state.js';
+import type { CameraControl } from '../core/state.js';
 import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
@@ -3488,8 +3489,61 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     reflectCooldown();
 
+    /*
+     * PLAYING WITH THE CAMERA, IN THE PANEL (issue #182; ADR-0215): «webcam (gestos/rosto/olhos)» was one of the motor rows the
+     * Dev listed as missing, and until the 📷 existed there was nothing to put in it. Now there is, and this row is the same
+     * setting the bar's 📷 cycles — one stored value (`incl_camera_control`), two surfaces, the panel's being the one that says
+     * what each position does.
+     *
+     * ⚠️ HIDDEN WHERE THERE IS NO CAMERA TO ASK FOR, the same rule the icon uses: a row that offers a device the browser does
+     * not have is the dead button of ADR-0106 §5, and a child who picks it waits for a permission dialog that never comes.
+     *
+     * 📌 THE MICROPHONE ROW OF THE SAME LIST IS NOT HERE, and its absence is a decision: the engine has no voice-command
+     * transport yet (issue #184, waiting on the Vosk models), so a «microfone» row would switch nothing. The bar says as much
+     * with 👄 marked «em construção»; a second surface repeating it would be a second promise.
+     */
+    const CAMERA_MODES: readonly CameraControl[] = ['off', 'hands', 'face', 'eyes'];
+    const CAMERA_MODE_WORD: { readonly [M in CameraControl]: string } = {
+      off: 'state.off', hands: 'camera.hands', face: 'camera.face', eyes: 'camera.eyes',
+    };
+    const cameraRowSpec = () => ({
+      rotulo: t('motora.camera'),
+      valores: CAMERA_MODES.map((m) => t(CAMERA_MODE_WORD[m])),
+      atual: Math.max(0, CAMERA_MODES.indexOf(state.cameraControl)),
+    });
+    const cameraRow = doc.createElement('div');
+    cameraRow.className = 'ctrl-row ctrl-row--passos';
+    const cameraHint = doc.createElement('span');
+    cameraHint.className = 'opt-hint';
+    const cameraWrap = doc.createElement('span');
+    cameraWrap.appendChild(cameraHint);
+    cameraRow.appendChild(cameraWrap);
+    const cameraSteps = montarPassos(ctxDaMotora, cameraRowSpec());
+    cameraSteps.id = 'opt-camera';
+    cameraRow.appendChild(cameraSteps);
+    painelDaMotora.casca.lista.appendChild(cameraRow);
+    const reflectCamera = (): void => {
+      atualizarPassos(cameraSteps, cameraRowSpec());
+      cameraHint.textContent = t('motora.camera.dica');
+      cameraRow.hidden = !temCamera;
+    };
+    cameraSteps.addEventListener('passo', (ev) => {
+      const next = passoSeguinte(
+        Math.max(0, CAMERA_MODES.indexOf(state.cameraControl)), CAMERA_MODES.length, (ev as CustomEvent<number>).detail,
+      );
+      const mode = CAMERA_MODES[next]!;
+      if (mode === state.cameraControl) return; // at the end of the line nothing moved, and nothing is announced
+      state.setCameraControlValue(mode);
+      reflectCamera();
+      srSay(`${t('motora.camera')}: ${t(CAMERA_MODE_WORD[mode])}`);
+    });
+    // the 📷 and this row are one setting: whoever changes it, both show it
+    state.on('cameraControl', () => { reflectCamera(); });
+    reflectCamera();
+
     refletirTeclado = () => {
       refletirLinhasDoTeclado(); refletirLinhaDoControle(); refletirLinhaDoToque(); reflectSticky(); reflectCooldown();
+      reflectCamera();
     };
   }
   /*
