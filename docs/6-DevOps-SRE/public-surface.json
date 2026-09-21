@@ -91,7 +91,9 @@
   "core/constants.ts": [
     "ANIM",
     "EASY",
+    "LOGICAL_H",
     "LOGICAL_W",
+    "TILE",
     "TILE_COLOR",
     "TILE_TYPES",
     "TileType",
@@ -1022,8 +1024,10 @@
   ],
   "render/city-tex.ts": [
     "ADULT_COL",
+    "ADULT_H",
     "ADULT_SHAPES",
     "ADULT_W",
+    "CAR_H",
     "CAR_PALETTES",
     "CAR_W",
     "CREATURE_ART",
@@ -1180,10 +1184,12 @@
   ],
   "render/recycling-tex.ts": [
     "COR_DA_LIXEIRA",
+    "LIXEIRA_H",
     "LIXEIRA_W",
     "LIXO_ART",
     "Lixeira",
     "Material",
+    "PLACA_H",
     "PLACA_W",
     "RecyclingTextures",
     "createRecyclingTextures",
@@ -1231,6 +1237,7 @@
     "themeSkylineTexture"
   ],
   "render/scene-sky.ts": [
+    "NUVEM_H",
     "NUVEM_W",
     "NuvemDeTela",
     "SceneSky",
@@ -1272,6 +1279,7 @@
     "spriteToCanvas"
   ],
   "render/textures.ts": [
+    "PIP_H",
     "PIP_IDLE",
     "PIP_PAL",
     "PIP_W",

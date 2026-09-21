@@ -73,6 +73,26 @@ describe('a superfície pública do pacote só encolhe por declaração (docs/6-
     expect(Array.isArray(novos), 'nomes novos são informação, não reprovação').toBe(true);
   });
 
+  /*
+   * 🔴 O RETRATO VIA UM NOME POR LINHA, e uma linha publica quantos quiser. Achado em 2026-09-21 ao medir o que os jogos
+   * IMPORTAM da engine: `export const LOGICAL_W = 320, LOGICAL_H = 180, TILE = 16;` publica três nomes e o retrato guardava
+   * um. 📏 Oito assim, e dois deles — `LOGICAL_H` e `TILE` — são importados pelo game-platformer e pelo pixi-15-puzzle:
+   * apagá-los passava VERDE no crivo que existe justamente para reprovar quando um nome público desaparece.
+   *
+   * ⚠️ E O PAR QUE IMPEDE O CONSERTO DE EXAGERAR: um retrato que INVENTA um nome é pior do que um que perde, porque passa a
+   * exigir para sempre algo que nenhum módulo tem. A primeira versão do conserto contava só parênteses e chavetas, e a
+   * vírgula DENTRO de uma cadeia («'button:not([disabled]), select:not(…)'») publicou um export chamado `select`.
+   */
+  it('🔴 [Right] uma linha que declara vários nomes publica TODOS — e nenhuma vírgula de dentro de uma cadeia vira nome', () => {
+    const constantes = new Set(arvore['core/constants.ts'] ?? []);
+    for (const n of ['LOGICAL_W', 'LOGICAL_H', 'TILE']) {
+      expect(constantes.has(n), `${n} é público e o retrato não o vê — apagá-lo passaria verde`).toBe(true);
+    }
+    const itens = new Set(arvore['ui/menu-items.ts'] ?? []);
+    expect(itens.has('ITEM_SELECTOR')).toBe(true);
+    expect(itens.has('select'), 'a vírgula de dentro do selector CSS virou um nome público que não existe').toBe(false);
+  });
+
   it('⚠️ [Interface] o retrato guarda os oito que já saíram — a medição não se perde', () => {
     // As oito constantes de `core/constants.ts` saíram ANTES deste gate existir, e o retrato foi tirado
     // depois. Este caso afirma que elas continuam fora: se alguém as trouxer de volta sem pensar, o gate

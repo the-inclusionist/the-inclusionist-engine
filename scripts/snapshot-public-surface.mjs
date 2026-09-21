@@ -20,6 +20,52 @@ export const RETRATO = 'docs/6-DevOps-SRE/public-surface.json';
  *  o primeiro é indireção do mesmo nome, e este projeto não usa o segundo. */
 const RE = /^export\s+(?:declare\s+)?(?:async\s+)?(?:(function|const|let|var|class|interface|type|enum)\s+)([A-Za-z_$][\w$]*)/gm;
 
+/*
+ * 🔴 E OS DECLARADORES SEGUINTES DA MESMA LINHA, que o retrato não via — achado em 2026-09-21 ao medir o que os jogos
+ * IMPORTAM: `export const LOGICAL_W = 320, LOGICAL_H = 180, TILE = 16;` publicava três nomes e o retrato guardava um. Os
+ * outros dois são importados pelo game-platformer e pelo pixi-15-puzzle, e o crivo da superfície — que existe para reprovar
+ * quando um nome público DESAPARECE — não tinha como os proteger: apagá-los passava verde.
+ *
+ * 📏 Medidos oito assim: LOGICAL_H, TILE, ADULT_H, CAR_H, LIXEIRA_H, PLACA_H, NUVEM_H, PIP_H.
+ *
+ * ⚠️ SÓ SE LEEM OS NOMES AO NÍVEL DE VÍRGULA DO TOPO, porque um inicializador pode ele próprio ter vírgulas — em
+ * parênteses, chavetas e rectos, e TAMBÉM dentro de uma cadeia. 🔴 A primeira versão contava só os delimitadores e
+ * publicou um nome que não existe: `export const ITEM_SELECTOR = 'button:not([disabled]), select:not(…)'` entrou no
+ * retrato com um export chamado `select`. Um retrato que INVENTA um nome é pior do que um que perde: o crivo passaria a
+ * exigir para sempre um nome que nenhum módulo tem.
+ */
+const CONTINUA = /^export\s+(?:declare\s+)?(?:const|let|var)\s+[A-Za-z_$][\w$]*/;
+
+function declaradoresDaLinha(linha) {
+  if (!CONTINUA.test(linha)) return [];
+  const corpo = linha.replace(/^export\s+(?:declare\s+)?(?:const|let|var)\s+/, '');
+  const nomes = [];
+  let profundidade = 0, actual = '', aspas = '', escapado = false;
+  for (const ch of corpo) {
+    if (aspas) {
+      // dentro de uma cadeia nada é estrutura: nem vírgula, nem parêntese
+      if (escapado) escapado = false;
+      else if (ch === '\\') escapado = true;
+      else if (ch === aspas) aspas = '';
+      actual += ch;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') { aspas = ch; actual += ch; continue; }
+    if ('([{'.includes(ch)) profundidade += 1;
+    else if (')]}'.includes(ch)) profundidade -= 1;
+    if (ch === ',' && profundidade === 0) { nomes.push(actual); actual = ''; continue; }
+    actual += ch;
+  }
+  nomes.push(actual);
+  // de cada declarador, só o nome antes do `:` do tipo ou do `=`
+  // 📌 O PRIMEIRO ENTRA DUAS VEZES — por aqui e pelo `RE` — e isso foi MEDIDO como equivalente: o retrato passa por um
+  // `Set`, logo saltá-lo com um `slice(1)` dava exactamente o mesmo ficheiro. A mutação que o tirava sobreviveu, e um
+  // guarda que nenhum caso consegue distinguir é código inerte: sai, em vez de ficar a pedir um caso que não existe.
+  return nomes
+    .map((d) => /^\s*([A-Za-z_$][\w$]*)\s*(?::|=|$)/.exec(d)?.[1])
+    .filter((n) => typeof n === 'string');
+}
+
 function ficheiros(raiz, dir = raiz, fora = []) {
   for (const nome of readdirSync(dir)) {
     const p = join(dir, nome);
@@ -34,8 +80,9 @@ export function superficieDe(raizAppJs) {
   const fora = {};
   for (const rel of ficheiros(raizAppJs).sort()) {
     const txt = readFileSync(join(raizAppJs, rel), 'utf8');
-    const nomes = [...txt.matchAll(RE)].map((m) => m[2]).sort();
-    if (nomes.length) fora[rel] = [...new Set(nomes)];
+    const nomes = [...txt.matchAll(RE)].map((m) => m[2]);
+    for (const linha of txt.split(/\r?\n/)) nomes.push(...declaradoresDaLinha(linha));
+    if (nomes.length) fora[rel] = [...new Set(nomes)].sort();
   }
   return fora;
 }

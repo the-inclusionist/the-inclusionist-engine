@@ -2,6 +2,8 @@
   "about": "Exports no engine module, test or script imports (ADR-0170 §3, issue #164). cartridgeConsumers: the ones a sibling game repository imports, with the place. debt: the ones nothing imports — candidates to become internal; the list only shrinks. A new export with no importer in this repository names its cartridge here. Rewritten by `node scripts/exports-without-consumer.mjs --catalogue ..`; held by tests/exports-sem-consumidor.node.test.js.",
   "cartridgeConsumers": {
     "core/collision.ts isWcRampRiser": "game-platformer app/js/game/physics.ts",
+    "render/recycling-tex.ts LIXEIRA_H": "game-platformer app/js/main.ts",
+    "render/recycling-tex.ts PLACA_H": "game-platformer app/js/main.ts",
     "core/i18n.ts availableLocales": "game-soccer tests/i18n.node.test.ts",
     "core/state.ts emit": "game-platformer app/js/game/state.ts",
     "core/state.ts hcOutlineBg": "game-platformer app/js/main.ts",
