@@ -28,6 +28,15 @@ _review/
 # reproducible from their URL, heavy, and once inside git history they never leave.
 docs/research/sherpa-wasm/
 
+# 🔴 A RECORDED VOICE IS PERSONAL DATA, AND A COMMIT IS PUBLIC AND PERMANENT. The Dev records himself so the reading and the
+# command tests have real speech to measure (`research/`, ADR-0191); the files are read where they sit and never tracked.
+# ⚠️ Written on 2026-09-21 after a `git add -A` staged all six of them into a commit about something else and nothing objected.
+# `tests/no-voice-in-the-tree.node.test.js` is the second brake, for the `add -f`, the rename and the extension this list misses.
+research/*.m4a
+research/*.wav
+research/*.mp3
+research/*.ogg
+
 # Vitest browser-mode artefatos (gerados por rodada, nao versionados)
 .vitest-attachments/
 tests/__screenshots__/
