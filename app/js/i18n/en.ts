@@ -347,6 +347,8 @@ const en: Record<string, string> = {
   'motor.facil': 'Easy Mode',
   'motor.facil.dica': 'Lower gravity, higher jump, forgiving pickup, coins on the ground, no hazards and no accidental falls.',
   'motor.altmove': 'No holding needed',
+  'motor.espera': 'Wait between presses',
+  'motor.espera.dica': 'After a press, waits half a second before taking the next one — for when a hand shakes and one press arrives twice.',
   'motor.altmove.dica': 'One tap turns it on and another turns it off, instead of keeping the button pressed.',
   'motor.togglerun': 'Run toggle',
   'motor.togglerun.dica': 'The run button stays on with one tap, instead of having to be held down.',

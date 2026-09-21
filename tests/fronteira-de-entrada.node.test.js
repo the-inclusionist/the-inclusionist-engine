@@ -58,6 +58,10 @@ const PUBLICADOS = {
   'latch-sync': 'a alternância do transporte em uso posta no jogador (ADR-0113 cláusula 1, issue #127). Publicado pelo curinga, sem consumidor externo medido — e a fronteira NÃO se fecha sobre ele hoje por um facto do catálogo: quem lê `p.toggleMove` é o laço de física de um CARTUCHO (`game/physics.ts`, `game/run-toggle.ts`), noutro repositório, e a sincronização tem de acontecer onde as arestas chegam. Sai desta lista quando a aresta do teclado alimentar o autómato dentro da engine',
   'pad-wizard': 'the gamepad mapping wizard apart from any game (issue #182): mounted by `boot/create-game` in the motor panel and used by `initGamepad`, so a map saved by either is the one both read. Published by the wildcard, with no external consumer measured',
   'motor-simulation': 'the two motor empathy simulations as key decisions (ADR-0181); wired by `boot/create-game` before any cartridge hears a key. Published by the wildcard, with no external consumer — and it should not gain one: a simulation is the engine\'s, applied once for every game',
+  'input-cooldown': 'the wait after an accepted key, for a hand whose press arrives twice (ADR-0217, GAG Advanced/Motor); pure, '
+    + 'and wired by `boot/create-game` in the same capture pass as the simulations above. Published by the wildcard, with no '
+    + 'external consumer — and it should not gain one for the same reason as its neighbour: an accommodation of the INPUT is the '
+    + 'engine\'s, applied once for every game, and a cartridge that filtered keys itself would be deciding for a child twice',
   'face-signals': 'the head pose and the eye blendshapes read from one Face Landmarker detection (ADR-0213, issue #194); pure, and '
     + 'to be read by the eye control inside the engine. Published by the wildcard, with no external consumer — and it should not gain one: '
     + 'the eye control is a transport, and a transport is the engine\'s',

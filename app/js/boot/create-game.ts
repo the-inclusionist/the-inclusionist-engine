@@ -118,6 +118,7 @@ import { initSettingsAudio, montarInteriorDoAudio, montarInteriorDoSom, type Set
 import { AUDIO_CATS } from '../platform/audio-mixer.js';
 import { toggleBtn, toggleLabel } from '../ui/dom.js';
 import { criarFiltroMotor } from '../input/motor-simulation.js';
+import { createInputCooldown, COOLDOWN_MS } from '../input/input-cooldown.js';
 import { markChanged } from '../ui/changed-mark.js';
 import { mountHudBands, hudNumbersProblems, type HudNumber, type HudBandsMounted } from '../ui/hud-bands.js';
 import { gameOptionsProblems, desenharOpcoesDoJogo, type GameOption } from '../ui/game-options.js';
@@ -3461,8 +3462,34 @@ export function createGame(o: CreateGameOptions): Engine {
     });
     reflectSticky();
 
+    /*
+     * «ESPERAR ENTRE TOQUES» (ADR-0217; GAG Advanced/Motor, issue #182). The row beside the sticky keys, and the other half of
+     * the same problem: that one is for a hand that cannot HOLD, this one for a hand that cannot press ONCE.
+     *
+     * ⚠️ OFF BY DEFAULT and offered as a choice, because for a child with no tremor it is half a second lost between every two
+     * presses — in a game of reaction, the game. Hidden where the game holds no key, like its neighbour: what it refuses is a
+     * second press, and a game nobody presses twice has none to refuse.
+     */
+    const cooldownRowSpec = () => ({ id: 'opt-cooldown', rotulo: t('motor.espera'), dica: t('motor.cooldown.dica') });
+    const { linha: cooldownRow, controle: cooldownButton } = linhaDeControle(ctxDaMotora, cooldownRowSpec());
+    painelDaMotora.casca.lista.appendChild(cooldownRow);
+    const reflectCooldown = (): void => {
+      rotularLinha(cooldownRow, cooldownRowSpec());
+      const on = state.inputCooldown > 0;
+      toggleBtn(cooldownButton, on);
+      cooldownButton.textContent = toggleLabel(on);
+      markChanged(cooldownRow, on !== (state.DEFAULTS.inputCooldown > 0));
+      cooldownRow.hidden = !cartucho.declaration.seguraTeclas();
+    };
+    cooldownButton.addEventListener('click', () => {
+      state.setInputCooldownValue(state.inputCooldown > 0 ? 0 : COOLDOWN_MS);
+      reflectCooldown();
+      srSay(`${t('motor.espera')}: ${t(state.inputCooldown > 0 ? 'state.on' : 'state.off')}`);
+    });
+    reflectCooldown();
+
     refletirTeclado = () => {
-      refletirLinhasDoTeclado(); refletirLinhaDoControle(); refletirLinhaDoToque(); reflectSticky();
+      refletirLinhasDoTeclado(); refletirLinhaDoControle(); refletirLinhaDoToque(); reflectSticky(); reflectCooldown();
     };
   }
   /*
@@ -3471,10 +3498,22 @@ export function createGame(o: CreateGameOptions): Engine {
    * released at once by a synthetic keyup, which this filter lets through.
    */
   const filtroMotor = criarFiltroMotor();
+  /*
+   * AND THE COOL-DOWN, WHICH IS THE OPPOSITE OF THEM (ADR-0217): the simulations above make play harder so an adult can feel
+   * what a motor disability costs; this refuses the SECOND press of a hand that shakes, which is a child losing a turn she did
+   * not play. It sits in the same pass because the question is the same one — does this key reach the game — and it comes
+   * FIRST: a press the cool-down refuses never happened, so it must not teach the simulations that a key is held.
+   */
+  const cooldown = createInputCooldown();
+  state.on('inputCooldown', () => { cooldown.reset(); }); // turning it off must not leave a press refused by an old wait
   const soltasPeloFiltro = new WeakSet<Event>();
   const barrar = (e: Event): void => { e.preventDefault(); e.stopImmediatePropagation(); };
   win.addEventListener('keydown', (e: KeyboardEvent) => {
     if (keyboard.whichPlayer(e.code) < 0) return;
+    if (cooldown.keydown(e.code, win.performance.now(), state.inputCooldown, e.repeat || keys.has(e.code)) === 'refuse') {
+      barrar(e);
+      return;
+    }
     const decisao = filtroMotor.keydown(e.code, e.repeat, { umPorVez: state.oneButton, semForca: state.semForca });
     if (decisao === 'barrar') { barrar(e); return; }
     if (decisao === 'tocar') {

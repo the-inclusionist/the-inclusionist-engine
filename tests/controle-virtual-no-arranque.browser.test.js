@@ -337,9 +337,13 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
     // false`, so there is nothing to hold, nothing to relieve, and the row is built and HIDDEN rather than offered dead
     // (ADR-0106 §5). 📌 Its id is `opt-sticky` and not `opt-altmove`, which is the LEGACY panel's — a cartridge may mount that
     // one in the same document, and two nodes with one id is a query that answers whichever came first.
-    const aderencia = painel.querySelector('#opt-sticky');
-    expect(aderencia, 'the sticky-keys row is not in the motor panel').not.toBeNull();
-    expect(aderencia.closest('.ctrl-row').hidden, 'a game that holds no key was offered the option anyway').toBe(true);
+    // 📌 And the cool-down (ADR-0217) by the same rule: what it refuses is a second PRESS, and a game nobody presses twice has
+    // none to refuse.
+    for (const sel of ['#opt-sticky', '#opt-cooldown']) {
+      const linha = painel.querySelector(sel);
+      expect(linha, `${sel} is not in the motor panel`).not.toBeNull();
+      expect(linha.closest('.ctrl-row').hidden, `a game that holds no key was offered ${sel} anyway`).toBe(true);
+    }
     fechar();
   });
 

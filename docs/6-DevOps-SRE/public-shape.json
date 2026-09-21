@@ -422,6 +422,7 @@
       "gameSpeed",
       "hcOutlineBg",
       "hcOutlineFg",
+      "inputCooldown",
       "letterCase",
       "menuIndexOn",
       "modoCego",
@@ -689,6 +690,14 @@
       "x"
     ],
     "type HandGesture": "| 'indexUp' | 'indexDown' | 'indexLeft' | 'indexRight' | 'iLoveYou' | 'dog' | 'victory' | 'fist' | 'openPalm' | 'zero' | 'thumbUp' | 'thumbDown' | 'threeFingers' | 'fourFingers'"
+  },
+  "input/input-cooldown.ts": {
+    "interface InputCooldown": [
+      "keydown",
+      "keyup",
+      "reset"
+    ],
+    "type CooldownDecision": "'accept' | 'refuse'"
   },
   "input/keyboard-runtime.ts": {
     "interface KeyboardRuntimeCtx": [

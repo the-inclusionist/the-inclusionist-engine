@@ -30,7 +30,7 @@ const declaracao = () => ({
 });
 const PRESET = { up: { label: 'Cima' }, down: { label: 'Baixo' }, action2: { label: 'Pular' } };
 
-const CHAVES = ['incl_togglemove_p0', 'incl_togglemove_p0_teclado', 'incl_togglemove_p0_olhos'];
+const CHAVES = ['incl_togglemove_p0', 'incl_togglemove_p0_teclado', 'incl_togglemove_p0_olhos', 'incl_input_cooldown'];
 const guardadas = {};
 
 beforeAll(async () => {
@@ -95,6 +95,53 @@ describe('the sticky-keys row a child can read', () => {
     expect(botao.getAttribute('aria-pressed')).toBe('false');
     expect(assentos[0].toggleMove).toBe(false);
     fechar();
+  });
+
+  /**
+   * 🔴 THE OTHER HALF OF THE SAME PROBLEM (ADR-0217): the row above is for a hand that cannot HOLD, this one for a hand that
+   * cannot press ONCE. It is off from the factory — for a child with no tremor it would be half a second lost between every two
+   * presses — and what it refuses is measured in `input-cooldown.node`; here it is that she can find it and that it is kept.
+   */
+  it('🔴 [Right] «Esperar entre toques» is offered beside it, off, and the choice survives to the next day', async () => {
+    const state = await import('../app/js/core/state.js'); // a module of bindings, not a default export
+    await abrirMotora();
+    const botao = document.querySelector('#motora #opt-cooldown');
+    expect(botao, 'the cool-down the catalogue promised since the catalogue was written').not.toBeNull();
+    expect(botao.closest('.ctrl-row').querySelector('strong').textContent).toBe(pt['motor.espera']);
+    expect(botao.getAttribute('aria-pressed'), 'it does not leave the factory off').toBe('false');
+    botao.click();
+    expect(botao.getAttribute('aria-pressed')).toBe('true');
+    expect(state.inputCooldown, 'the rule reads milliseconds, and the row wrote something else').toBe(500);
+    expect(localStorage.getItem('incl_input_cooldown'), 'the choice was not kept for the next day').toBe('500');
+    botao.click();
+    expect(state.inputCooldown, 'turning it off left a wait behind').toBe(0);
+    fechar();
+  });
+
+  /**
+   * 🔴 AND THE ROOT APPLIES IT, which the row alone cannot show: a setting that is stored, announced and read by nobody is the
+   * whole class of defect this repository keeps finding. Two presses a few milliseconds apart, as a hand that bounces sends
+   * them — the first reaches the game and the second does not.
+   */
+  it('🔴 [Right] with it on, the second press of a bouncing hand never reaches the game', async () => {
+    const state = await import('../app/js/core/state.js');
+    const regiao = document.getElementById('game-region');
+    const ouvidas = [];
+    const escuta = (e) => ouvidas.push(e.code);
+    regiao.addEventListener('keydown', escuta);
+    const bater = (code) => regiao.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true, cancelable: true }));
+    try {
+      state.setInputCooldownValue(0);
+      bater('KeyW'); bater('KeyW');
+      expect(ouvidas, 'with the setting off, both presses must reach the game').toEqual(['KeyW', 'KeyW']);
+      ouvidas.length = 0;
+      state.setInputCooldownValue(500);
+      bater('KeyW'); bater('KeyW'); bater('KeyS');
+      expect(ouvidas, 'the bounce and the key after it reached the game').toEqual(['KeyW']);
+    } finally {
+      regiao.removeEventListener('keydown', escuta);
+      state.setInputCooldownValue(0);
+    }
   });
 
   /**

@@ -346,6 +346,8 @@ const es: Record<string, string> = {
   'motor.facil': 'Modo Fácil',
   'motor.facil.dica': 'Menos gravedad, salto más alto, recogida tolerante, monedas en el suelo, sin peligros ni caídas accidentales.',
   'motor.altmove': 'No hace falta mantener',
+  'motor.espera': 'Esperar entre pulsaciones',
+  'motor.espera.dica': 'Después de un toque, espera medio segundo antes de aceptar el siguiente — para cuando la mano tiembla y el toque sale doble.',
   'motor.altmove.dica': 'Un toque lo activa y otro lo desactiva, en vez de mantener el botón pulsado.',
   'motor.togglerun': 'Alternancia de correr',
   'motor.togglerun.dica': 'El botón de correr queda activado con un toque, en vez de tener que mantenerlo.',

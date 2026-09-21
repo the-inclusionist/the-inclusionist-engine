@@ -77,6 +77,8 @@ export interface EventoDoJogo {
   caneBlockDiv: number;
   wheelchair: boolean;
   oneButton: boolean;
+  /** The wait after an accepted key, in milliseconds (ADR-0217); 0 is off, which is how it leaves the factory. */
+  inputCooldown: number;
   /** The game speed, a step of `core/game-speed` (ADR-0180): 1 is 100%. */
   gameSpeed: number;
   /** The child's caption reading rate, words a minute (ADR-0183 §4): 125, 145 or 175. */
@@ -235,6 +237,7 @@ export const DEFAULTS = Object.freeze({
   // motora
   wheelchair: false,
   oneButton: false,
+  inputCooldown: 0,
   gameSpeed: 1,
   captionPpm: 125,
   speechPpm: 254, // the voice's normal speed, the minimum (ADR-0196)
@@ -462,6 +465,16 @@ export function setSemForcaValue(on: boolean): void {
   const v = !!on;
   if (semForca === v) return;
   const p = armazem('setSemForcaValue'); p.setBool('incl_sem_forca', v); semForca = v; emit('semForca', v);
+}
+
+// --- inputCooldown: a tremor is not a second press (ADR-0217, GAG Advanced/Motor). MILLISECONDS, and 0 is off — the rule reads
+//     the number, so «how long» and «whether» are one value and cannot disagree. Off by default: a child with no tremor would
+//     lose half a second between every two presses, which in a game of reaction is the game. ---
+export let inputCooldown: number = VAZIO.getNum('incl_input_cooldown', DEFAULTS.inputCooldown);
+export function setInputCooldownValue(ms: number): void {
+  const v = Number.isFinite(ms) && ms > 0 ? Math.round(ms) : 0;
+  if (inputCooldown === v) return;
+  const p = armazem('setInputCooldownValue'); p.set('incl_input_cooldown', v); inputCooldown = v; emit('inputCooldown', v);
 }
 
 // --- cameraControl: playing through the webcam, the quick bar's 📷 (ADR-0215): off · hands · face · eyes, in that order. ONE key, so one

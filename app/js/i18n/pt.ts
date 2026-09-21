@@ -451,6 +451,8 @@ const pt: Record<string, string> = {
   'motor.facil': 'Modo Fácil',
   'motor.facil.dica': 'Gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais.',
   'motor.altmove': 'Não precisa segurar',
+  'motor.espera': 'Esperar entre toques',
+  'motor.espera.dica': 'Depois de um toque, espera meio segundo antes de aceitar o próximo — para quando a mão treme e o toque sai dobrado.',
   'motor.altmove.dica': 'Um toque liga e outro desliga, em vez de manter o botão pressionado.',
   'motor.togglerun': 'Alternância do correr',
   'motor.togglerun.dica': 'O botão de correr fica ligado num toque, em vez de precisar ser segurado.',

@@ -260,6 +260,7 @@
     "hcOutlineBg",
     "hcOutlineFg",
     "initVizMode",
+    "inputCooldown",
     "letterCase",
     "menuIndexOn",
     "modoCego",
@@ -275,6 +276,7 @@
     "setCaptionsOnValue",
     "setCbSafeValue",
     "setGameSpeedValue",
+    "setInputCooldownValue",
     "setLetterCaseValue",
     "setMenuIndexOnValue",
     "setModoCegoValue",
@@ -455,6 +457,12 @@
     "createHandMapReader",
     "customGestures",
     "gesturesSeen"
+  ],
+  "input/input-cooldown.ts": [
+    "COOLDOWN_MS",
+    "CooldownDecision",
+    "InputCooldown",
+    "createInputCooldown"
   ],
   "input/keyboard-runtime.ts": [
     "ControlsState",
