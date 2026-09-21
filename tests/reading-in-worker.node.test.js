@@ -12,6 +12,8 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createReadingInWorker } from '../app/js/platform/reading-in-worker.js';
 import { serveReading } from '../app/js/platform/reading-worker.js';
 
@@ -100,6 +102,24 @@ describe('o cliente e o worker falam a mesma língua', () => {
     await expect(leitura.transcribe(amostras())).rejects.toThrow(/after the thread was let go/);
     leitura.close();
     expect(t.log.terminado, 'largar duas vezes matou duas vezes').toBe(1);
+  });
+
+  /*
+   * 🔴 E A RAIZ TEM DE PASSAR POR AQUI, senão tudo o que está acima mede um módulo que ninguém usa. O caminho de verdade só
+   * corre num `listen()` com microfone, que um caso não tem — então o que se afirma é a FONTE: o `createGame` alcança a
+   * transcrição pelo worker, e o carregador directo só existe no ramo do navegador sem `Worker`, com a linha de `problems`
+   * que diz à escola o que ela perde. É a mesma forma de crivo que impede alguém de importar o `kokoro-runtime` estaticamente.
+   */
+  it('🔴 [Right] o `createGame` alcança a transcrição pelo WORKER, e o caminho directo só existe onde não há thread', () => {
+    const raiz = readFileSync(join(process.cwd(), 'app', 'js', 'boot', 'create-game.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, ''); // comentários citam os dois nomes de propósito
+    expect(raiz, 'a raiz deixou de abrir a leitura numa thread').toContain('reading-in-worker.js');
+    const directo = raiz.indexOf('reading-runtime.js');
+    expect(directo, 'o carregador directo sumiu — o ramo sem `Worker` ficou sem leitura nenhuma').toBeGreaterThan(-1);
+    const guarda = raiz.lastIndexOf('Worker', directo);
+    expect(guarda, 'o carregador directo deixou de estar atrás da pergunta «este navegador tem thread?»').toBeGreaterThan(-1);
+    expect(raiz.slice(guarda, directo), 'o ramo sem thread deixou de dizer à escola o que ela perde')
+      .toMatch(/gaps of seconds|same thread/);
   });
 
   it('🎯 [Zero] pedir ao worker antes de o modelo abrir é RESPONDIDO, não ignorado', async () => {
