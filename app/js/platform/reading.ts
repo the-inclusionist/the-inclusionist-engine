@@ -13,10 +13,10 @@
 //   was heard so far is what the game gets — a child who stops mid-sentence is not an error.
 // · Asking twice does not open two microphones: the second caller waits on the same reading.
 
-import { rotaDoReconhecimento, criarReconhecimentoLocal, type ApiDeReconhecimento, type EstadoLocal, type InstanciaDeReconhecimento } from './speech-recognition.js';
+import { recognitionRoute, createOnDeviceRecognition, type RecognitionApi, type OnDeviceAvailability, type RecognitionInstance } from './speech-recognition.js';
 
 /** The browser's recognition object, with the parts a reading uses. Assigned handlers, as the API has them. */
-export interface ListeningSession extends InstanciaDeReconhecimento {
+export interface ListeningSession extends RecognitionInstance {
   start(): void;
   stop(): void;
   onresult: ((ev: { readonly results: ArrayLike<ArrayLike<{ readonly transcript: string }> & { readonly isFinal: boolean }> }) => void) | null;
@@ -36,7 +36,7 @@ export interface ReadingDeps {
   /** The BCP-47 tag of the child's language (`core/i18n.bcp47`). */
   readonly language: () => string;
   /** The browser's `SpeechRecognition` constructor, or nothing where there is none. */
-  readonly api?: ApiDeReconhecimento | null;
+  readonly api?: RecognitionApi | null;
   readonly now: () => number;
   readonly every: (fn: () => void, ms: number) => unknown;
   readonly stopEvery: (h: unknown) => void;
@@ -53,8 +53,8 @@ export interface ReadingDeps {
    * missing — never one that answers an empty sentence, which a game would show a child as «you read nothing».
    */
   readonly record?: (options: ListenOptions) => Promise<Float32Array>;
-  readonly route?: typeof rotaDoReconhecimento;
-  readonly createSession?: (api: ApiDeReconhecimento, language: string) => ListeningSession;
+  readonly route?: typeof recognitionRoute;
+  readonly createSession?: (api: RecognitionApi, language: string) => ListeningSession;
 }
 
 export interface ListenOptions {
@@ -70,28 +70,28 @@ export interface Reading {
   /** Gives the microphone back now; the reading in hand answers with what it has. */
   stop(): void;
   /** Can this device serve the child's language at all? Answers with the reason when it cannot. */
-  ready(): Promise<{ readonly can: boolean; readonly why: EstadoLocal | 'sem-api' | 'sem-processamento-local' | 'no-model' }>;
+  ready(): Promise<{ readonly can: boolean; readonly why: OnDeviceAvailability | 'sem-api' | 'sem-processamento-local' | 'no-model' }>;
 }
 
 const SILENCE_MS = 1500;
 const MAX_MS = 30_000;
 
 export function createReading(d: ReadingDeps): Reading {
-  const routeOf = d.route ?? rotaDoReconhecimento;
-  const make = d.createSession ?? ((api, language) => criarReconhecimentoLocal(api, language) as ListeningSession);
+  const routeOf = d.route ?? recognitionRoute;
+  const make = d.createSession ?? ((api, language) => createOnDeviceRecognition(api, language) as ListeningSession);
   const said = new Set<string>();
   const once = (key: string, line: string): void => { if (!said.has(key)) { said.add(key); d.report(line); } };
 
   let inFlight: Promise<Heard> | null = null;
   let askToStop: ((why: 'asked') => void) | null = null;
 
-  async function ready(): Promise<{ can: boolean; why: EstadoLocal | 'sem-api' | 'sem-processamento-local' | 'no-model' }> {
+  async function ready(): Promise<{ can: boolean; why: OnDeviceAvailability | 'sem-api' | 'sem-processamento-local' | 'no-model' }> {
     const { rota: route, estado: state } = await routeOf(d.language(), d.api);
     if (route === 'webspeech-local') return { can: true, why: state };
     return { can: !!d.model, why: d.model ? state : 'no-model' };
   }
 
-  function byBrowser(api: ApiDeReconhecimento, options: ListenOptions): Promise<Heard> {
+  function byBrowser(api: RecognitionApi, options: ListenOptions): Promise<Heard> {
     const silenceMs = options.silenceMs ?? SILENCE_MS;
     const maxMs = options.maxMs ?? MAX_MS;
     return new Promise<Heard>((resolve, reject) => {

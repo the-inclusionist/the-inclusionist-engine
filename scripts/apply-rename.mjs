@@ -58,9 +58,40 @@ const wholeWord = (name) => new RegExp(`(?<![\\w$])${name.replace(/[.*+?^${}()|[
  * backticks. Outside comments everything is renamed — INCLUDING inside strings, because an event's name («modoCego») IS the
  * public surface, and renaming the binding without the string would cut `emit`/`on` in half.
  */
+/*
+ * 🔴 AND THE SCANNER HAS TO KNOW WHAT A STRING IS. Measured on the second layer: `vite.config.ts` carries the glob
+ * `'**\/*.{js,mjs,css,…}'`, and a regex that only looks for `/*` read it as the start of a block comment and swallowed 1500
+ * characters of real code — so `chaveDaEntrega` on the line below was left behind while its import was renamed, and only the
+ * typecheck caught it. A file where that happened in code TypeScript does not check would have shipped broken.
+ */
 function commentRanges(text) {
   const ranges = [];
-  for (const m of text.matchAll(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g)) ranges.push([m.index, m.index + m[0].length]);
+  let i = 0, quote = '';
+  while (i < text.length) {
+    const c = text[i], d = text[i + 1];
+    if (quote) {
+      if (c === '\\') { i += 2; continue; }
+      if (c === quote) quote = '';
+      i += 1;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') { quote = c; i += 1; continue; }
+    if (c === '/' && d === '/') {
+      const nl = text.indexOf('\n', i);
+      const stop = nl < 0 ? text.length : nl;
+      ranges.push([i, stop]);
+      i = stop;
+      continue;
+    }
+    if (c === '/' && d === '*') {
+      const end = text.indexOf('*/', i + 2);
+      const stop = end < 0 ? text.length : end + 2;
+      ranges.push([i, stop]);
+      i = stop;
+      continue;
+    }
+    i += 1;
+  }
   return ranges;
 }
 

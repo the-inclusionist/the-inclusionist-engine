@@ -33,7 +33,7 @@ export const BASELINE = join(raiz, 'docs/6-DevOps-SRE/language-debt.json');
 /** A declaration's name: what a reader of this repository has to read in English. */
 const DECL = /\b(?:const|let|var|function|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/g;
 /**
- * ⚠️ IMPORTS ARE NOT DECLARATIONS, and this was measured: `import { type EstadoLocal }` matched `type X` and made
+ * ⚠️ IMPORTS ARE NOT DECLARATIONS, and this was measured: `import { type OnDeviceAvailability }` matched `type X` and made
  * `platform/reading` — written entirely in English — carry three Portuguese names belonging to the module it imports from.
  * A file answers for the names it CREATES; the neighbour's names are the neighbour's debt.
  */

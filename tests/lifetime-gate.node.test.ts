@@ -5,7 +5,7 @@
 // O ADR-0038 cortou o estado por TEMPO DE VIDA e escolheu de propósito um critério MECÂNICO, e não uma
 // definição:
 //
-//     persistido em chave `incl_*` compartilhada = PÁGINA · em `kJogo()` = JOGO · não persistido = RODADA
+//     persistido em chave `incl_*` compartilhada = PÁGINA · em `gameKey()` = JOGO · não persistido = RODADA
 //
 // Um critério mecânico existe para poder virar máquina. Enquanto ele mora só no texto do registro, o próximo
 // `export let` entra em `core/state` sem que nada pergunte de que tempo de vida ele é — foi assim que

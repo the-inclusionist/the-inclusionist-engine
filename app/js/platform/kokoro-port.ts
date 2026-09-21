@@ -9,8 +9,8 @@
 // answers from the checked cache.
 import type { KokoroModule, KokoroSession } from './kokoro.js';
 import type { OnnxRuntime } from './onnx-runtime.js';
-import { URL_DO_MODELO_KOKORO, URL_DO_TOKENIZADOR_KOKORO, urlDaVozKokoro } from './kokoro.js';
-import { caminhoNaEntrega } from './pesados.js';
+import { KOKORO_MODEL_URL, URL_DO_TOKENIZADOR_KOKORO, kokoroVoiceUrl } from './kokoro.js';
+import { deliveryPath } from './pesados.js';
 
 /** The file system espeak-ng's Emscripten module exposes — only what this uses. */
 export interface EspeakFileSystem {
@@ -37,7 +37,7 @@ const OUTPUT = 'fonemas.txt';
 
 export function createKokoroPort(d: KokoroPortDeps): KokoroModule {
   const fromDelivery = async (url: string): Promise<Response> => {
-    const path = caminhoNaEntrega(url);
+    const path = deliveryPath(url);
     const r = await d.fetch(new URL(path, d.base).href);
     if (!r.ok) throw new Error(`Kokoro: HTTP ${r.status} for ${path} — the delivery does not carry it (inclusionist-pesados --kokoro)`);
     return r;
@@ -61,10 +61,10 @@ export function createKokoroPort(d: KokoroPortDeps): KokoroModule {
       return vocabulary;
     },
     async voz(id) {
-      return new Float32Array(await (await fromDelivery(urlDaVozKokoro(id))).arrayBuffer());
+      return new Float32Array(await (await fromDelivery(kokoroVoiceUrl(id))).arrayBuffer());
     },
     async sessao(device) {
-      model ??= fromDelivery(URL_DO_MODELO_KOKORO).then(async (r) => new Uint8Array(await r.arrayBuffer()));
+      model ??= fromDelivery(KOKORO_MODEL_URL).then(async (r) => new Uint8Array(await r.arrayBuffer()));
       const s = await d.ort.InferenceSession.create(await model, { executionProviders: [device] });
       const session: KokoroSession = {
         async sintetizar(ids, style) {

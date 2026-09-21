@@ -41,7 +41,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"><div id="conteudo-do-jogo">a pergunta</div><button id="porta-do-cartucho" data-incl-menu>Menu</button><div id="title-icons"></div></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 afterEach(async () => { await simular('normal'); await voltarAoJogo(); });
 

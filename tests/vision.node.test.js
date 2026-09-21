@@ -5,10 +5,10 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { loadFaceTracker, loadHandTracker, openCamera, closeCamera, FACE_VISION_FILES, HAND_VISION_FILES } from '../app/js/platform/vision.js';
-import { PESADOS } from '../app/js/platform/pesados.js';
+import { HEAVY_FILES } from '../app/js/platform/pesados.js';
 
 const BASE = 'https://game.example/play/index.html';
-const upstream = (id) => PESADOS.find((p) => p.id === id).url;
+const upstream = (id) => HEAVY_FILES.find((p) => p.id === id).url;
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 /** A fake `tasks-vision`: records what it was asked, and fails the GPU as told. */

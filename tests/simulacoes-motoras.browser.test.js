@@ -39,7 +39,7 @@ beforeAll(async () => {
   document.addEventListener('keyup', (e) => jogo.push(`up:${e.code}`));
   state = await import('../app/js/core/state.js');
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 afterAll(() => {
   for (const k of CHAVES) { if (antes[k] === null) localStorage.removeItem(k); else localStorage.setItem(k, antes[k]); }

@@ -74,7 +74,7 @@ describe('o cartão de pausa fala o idioma do arranque', () => {
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(),
       host: { doc: document, win: window, a11yBarHost: raiz.querySelector('#title-icons') },
-      baixarPesados: false,
+      downloadHeavy: false,
       // ⚠️ DOIS ASSENTOS de propósito: o sufixo «· Jogador N» do título só existe em multijogador, e com um
       // jogador só o caso mediria um `<span>` vazio — que fica verde com o literal português de volta.
       players: [{ ctrl: {} }, { ctrl: {} }],

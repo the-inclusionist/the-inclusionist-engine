@@ -21,26 +21,26 @@
 //     arranque de um jogo por causa de um recurso que ele nem usa hoje.
 //  3. **IDEMPOTENTE.** O que já está na Cache Storage não é buscado outra vez — é o que torna isto seguro de
 //     chamar em todo arranque em vez de só «no primeiro», que ninguém sabe detectar com honestidade.
-import { CACHE_PESADOS, PESADOS, readingLanguageOf, commandsLanguageOf, type Pesado } from './pesados-catalogo.js';
+import { CACHE_HEAVY, HEAVY_FILES, readingLanguageOf, commandsLanguageOf, type HeavyFile } from './pesados-catalogo.js';
 
-export { CACHE_PESADOS, PESADOS };
-export type { Pesado };
+export { CACHE_HEAVY, HEAVY_FILES };
+export type { HeavyFile };
 
 /** O que aconteceu com cada entrada, para quem chama poder dizê-lo a uma pessoa. */
-export interface RelatorioPesado {
+export interface HeavyReport {
   readonly id: string;
   readonly estado: 'ja-tinha' | 'baixado' | 'falhou' | 'sem-fonte';
   readonly bytes?: number;
   readonly erro?: string;
 }
 
-export interface OpcoesDosPesados {
+export interface HeavyOptions {
   /** `caches` do navegador. Injectado para o gate não precisar de um. */
   readonly cacheStorage?: CacheStorage;
   /** `fetch`. Injectado pela mesma razão. */
   readonly buscar?: typeof fetch;
   /** Chamado a cada entrada resolvida — é o que deixa a interface dizer o que está a acontecer. */
-  readonly aoProgredir?: (r: RelatorioPesado) => void;
+  readonly aoProgredir?: (r: HeavyReport) => void;
   /**
    * The SHA-256 of a body, as lowercase hex (issue #168). Injected for the gate; by default `crypto.subtle`. `null`, or a
    * host without `crypto.subtle` (an insecure context), keeps NOTHING: unverifiable is not verified.
@@ -68,12 +68,12 @@ export interface OpcoesDosPesados {
  *   the game decides this — speaking instead of pressing is a way INTO the controller, and a cartridge does not get to close
  *   one (ADR-0111). What decides is the delivery: `inclusionist-pesados --commands pt` puts Portuguese in it.
  */
-export function pesadosDoArranque(
+export function heavyAtBoot(
   portas: { readonly kokoro: boolean; readonly reading?: string | null; readonly commands?: string | null },
 ): readonly string[] {
   const reading = portas.reading ? portas.reading.split('-')[0]!.toLowerCase() : null;
   const commands = portas.commands ? portas.commands.split('-')[0]!.toLowerCase() : null;
-  return PESADOS.filter((p) => {
+  return HEAVY_FILES.filter((p) => {
     const language = readingLanguageOf(p.id);
     if (language) return language === reading;
     // 📌 THE COMMAND MODELS ARE A TRANSPORT'S, not a game's: no cartridge declares them, because a child who speaks instead of
@@ -93,7 +93,7 @@ export function pesadosDoArranque(
  * 📌 The upstream address stays the CACHE KEY: it is what the voice and vision libraries ask for, and the service worker answers
  * them from the checked cache without a network request.
  */
-export function caminhoNaEntrega(url: string): string {
+export function deliveryPath(url: string): string {
   const u = new URL(url);
   return `pesados/${u.host}${u.pathname}`;
 }
@@ -104,7 +104,7 @@ export function caminhoNaEntrega(url: string): string {
  * takes Workbox's `{ request }`. Self-contained on purpose — the PWA plugin copies this function's SOURCE into `sw.js`, where
  * nothing else from this module exists.
  */
-export function chaveDaEntrega(pedido: string | { readonly request: { readonly url: string } }): string | null {
+export function deliveryCacheKey(pedido: string | { readonly request: { readonly url: string } }): string | null {
   const caminho = new URL(typeof pedido === 'string' ? pedido : pedido.request.url).pathname;
   const i = caminho.indexOf('/pesados/');
   return i < 0 ? null : 'https://' + caminho.slice(i + 9);
@@ -117,15 +117,15 @@ export function chaveDaEntrega(pedido: string | { readonly request: { readonly u
  * subsistema ainda não tem de onde vir» e «este subsistema está tratado», e é exactamente a distinção que o
  * ADR-0119 mediu em falta: a engine PROMETIA quatro coisas e entregava uma, sem nada a dizê-lo.
  */
-export async function baixarPesados(opcoes: OpcoesDosPesados = {}): Promise<RelatorioPesado[]> {
+export async function downloadHeavy(opcoes: HeavyOptions = {}): Promise<HeavyReport[]> {
   const cs = opcoes.cacheStorage ?? (typeof caches !== 'undefined' ? caches : undefined);
   const buscar = opcoes.buscar ?? (typeof fetch !== 'undefined' ? fetch : undefined);
   const alvos = opcoes.apenas
-    ? PESADOS.filter((p) => opcoes.apenas!.includes(p.id))
-    : PESADOS;
+    ? HEAVY_FILES.filter((p) => opcoes.apenas!.includes(p.id))
+    : HEAVY_FILES;
 
-  const out: RelatorioPesado[] = [];
-  const conta = (r: RelatorioPesado): void => { out.push(r); opcoes.aoProgredir?.(r); };
+  const out: HeavyReport[] = [];
+  const conta = (r: HeavyReport): void => { out.push(r); opcoes.aoProgredir?.(r); };
 
   if (!cs || !buscar) {
     for (const p of alvos) conta({ id: p.id, estado: 'falhou', erro: 'sem Cache Storage ou sem fetch' });
@@ -135,13 +135,13 @@ export async function baixarPesados(opcoes: OpcoesDosPesados = {}): Promise<Rela
   const digest = opcoes.digest === undefined ? (temSubtle() ? sha256Hex : null) : opcoes.digest;
   const base = opcoes.base ?? (globalThis as { location?: { href: string } }).location?.href;
 
-  const cache = await cs.open(CACHE_PESADOS);
+  const cache = await cs.open(CACHE_HEAVY);
   for (const p of alvos) {
     if (!p.url) { conta({ id: p.id, estado: 'sem-fonte', erro: p.porQueNaoTemFonte }); continue; }
     try {
       if (await cache.match(p.url)) { conta({ id: p.id, estado: 'ja-tinha' }); continue; }
       // from the delivery's own origin, never from the upstream host (ADR-0177)
-      const naEntrega = caminhoNaEntrega(p.url);
+      const naEntrega = deliveryPath(p.url);
       const resp = await buscar(base ? new URL(naEntrega, base).href : naEntrega);
       if (!resp.ok) { conta({ id: p.id, estado: 'falhou', erro: `HTTP ${resp.status}` }); continue; }
       /*
@@ -176,7 +176,7 @@ export async function sha256Hex(corpo: ArrayBuffer): Promise<string> {
 }
 
 /** O peso do que ainda falta, em bytes — para um aviso poder dizer «faltam 241 MB» antes de começar. */
-export function pesoPorBaixar(relatorio: readonly RelatorioPesado[]): number {
+export function bytesLeftToDownload(relatorio: readonly HeavyReport[]): number {
   const feitos = new Set(relatorio.filter((r) => r.estado === 'ja-tinha' || r.estado === 'baixado').map((r) => r.id));
-  return PESADOS.filter((p) => p.url && !feitos.has(p.id)).reduce((s, p) => s + (p.bytes ?? 0), 0);
+  return HEAVY_FILES.filter((p) => p.url && !feitos.has(p.id)).reduce((s, p) => s + (p.bytes ?? 0), 0);
 }

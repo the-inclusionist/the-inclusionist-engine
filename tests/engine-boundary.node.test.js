@@ -280,7 +280,7 @@ const MOEDA_CONHECIDA = new Set([
   /**
    * `platform/storage.ts` FICA, e o motivo é o contrário de dívida — vale escrever para ninguém "limpar".
    *
-   * A entrada é `quizlevel: kJogo('quizlevel')`, e `kJogo()` é exatamente o mecanismo da engine para chaves
+   * A entrada é `quizlevel: gameKey('quizlevel')`, e `gameKey()` é exatamente o mecanismo da engine para chaves
    * de ESCOPO DE JOGO (ADR-0028, dois escopos). `activity`, `cenario`, `tabsel` e `fracnot` moram no mesmo
    * registro pelo mesmo motivo e ninguém as acusa — elas só não contêm nenhuma palavra do casador.
    *
@@ -316,7 +316,7 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
     // deixou até de ler `collected` do jogador. Três asserções, uma por camada da mudança.
     expect(fonte('ui/hud.ts'), 'a dependência').not.toMatch(/from '\.\.\/core\/constants\.js'/);
     expect(fonte('ui/hud.ts'), 'o assunto').toMatch(/vphudHtml\(objetivo: Objective, icone: string\)/);
-    // Contra as LINHAS DE CÓDIGO, e não contra o arquivo: a prosa deste módulo explica que `collected` saiu,
+    // Contra as ROWS DE CÓDIGO, e não contra o arquivo: a prosa deste módulo explica que `collected` saiu,
     // e um crivo que confundisse a explicação com o uso reprovaria justamente quem documentou o conserto. É a
     // mesma armadilha que o `getPhase` já tinha armado uma vez.
     const usaCollected = linhasDeCodigo(fonte('ui/hud.ts')).some(([, ln]) => /collected/.test(ln));
@@ -348,7 +348,7 @@ describe('fronteira engine↔jogo — o vocabulário do ADR', () => {
 //    para o lugar certo pela razão errada é pior que gate nenhum: ele treina a pessoa a ignorá-lo.
 //
 //    ISSO CONTINUA VALENDO DEPOIS DA FASE B (2026-08-26), e a distinção ficou mais nítida: o VALOR escolhido
-//    (`cenario`) mudou-se para `game/state`, porque é persistido em chave `kJogo()` e viaja com o cartucho;
+//    (`cenario`) mudou-se para `game/state`, porque é persistido em chave `gameKey()` e viaja com o cartucho;
 //    o CATÁLOGO (`render/cenario-data.CENARIOS`) ficou onde estava, porque descrever céus e morros é trabalho
 //    de motor. Duas coisas com o mesmo nome e camadas diferentes — e é por isso que a regra fala de moeda e
 //    quiz, que não têm essa ambiguidade.
@@ -543,7 +543,7 @@ describe('fronteira engine↔jogo — os FIXTURES dos testes (ADR-0027, a prova 
     //   · `activities-menu.*` saiu com o próprio menu, que é do platformer (ADR-0174, issue #171).
     //   · `i18n-dicts` (3)          — as chaves `sr.quiz.*`. É o ACHADO 2 do segundo consumidor (peso morto
     //     no dicionário), e não acoplamento: um segundo jogo herda 253 chaves e usa um punhado.
-    //   · `storage-escopos` (2)     — a chave `quizlevel`, pelo mesmo motivo de `platform/storage`: `kJogo()`
+    //   · `storage-escopos` (2)     — a chave `quizlevel`, pelo mesmo motivo de `platform/storage`: `gameKey()`
     //     É o mecanismo de escopo de jogo, e a palavra é que chama a atenção do casador.
     // As duas últimas são o casador notando uma PALAVRA, não a fronteira notando um vazamento.
     expect(Object.keys(FIXTURES_CONHECIDOS)).toHaveLength(2);

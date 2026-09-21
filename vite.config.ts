@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { readFileSync } from 'node:fs';
-import { chaveDaEntrega } from './app/js/platform/pesados.js'; // the `pesados/` route's cache key (issue #173)
+import { deliveryCacheKey } from './app/js/platform/pesados.js'; // the `pesados/` route's cache key (issue #173)
 // a page's precache revision carries the hash of `_headers`, so a header change refreshes it (issue #186)
 import { hashDosCabecalhos, revisarPaginasPelosCabecalhos } from './scripts/revisao-das-paginas.mjs';
 // Plugin em .mjs puro (sem tipos): é ferramenta de BUILD, e tipá-la exigiria um segundo tsconfig para o
@@ -111,7 +111,7 @@ export default defineConfig({
               cacheName: 'incl-pesados-v2',
               cacheableResponse: { statuses: [200] },
               // the key is never null here: the pattern above already admits `pesados/` paths only
-              plugins: [{ cacheWillUpdate: async () => null, cacheKeyWillBeUsed: chaveDaEntrega as unknown as (p: { request: Request }) => Promise<string> }],
+              plugins: [{ cacheWillUpdate: async () => null, cacheKeyWillBeUsed: deliveryCacheKey as unknown as (p: { request: Request }) => Promise<string> }],
             },
           },
           // O RUNTIME fixado (MediaPipe), pela mesma razao e com a mesma cache: o

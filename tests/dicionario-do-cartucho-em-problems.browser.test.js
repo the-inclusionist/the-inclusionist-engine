@@ -20,7 +20,7 @@ describe('a cartridge dictionary under createGame', () => {
     document.body.innerHTML = '<p id="sr-status"></p><div id="game-region" tabindex="-1"></div>';
     registerDict('pt', { 'jogo.fixture.vitoria': 'Vitória' });
     registerDict('en', { 'jogo.fixture.vitoria': 'Victory' });
-    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false });
+    const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
     const linhas = () => motor.problems.filter((p) => p.includes('jogo.fixture.vitoria'));
     expect(linhas(), 'the missing es was not said').toHaveLength(1);
     expect(linhas()[0]).toMatch(/lacks es/);

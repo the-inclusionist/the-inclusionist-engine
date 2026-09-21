@@ -60,7 +60,7 @@ beforeAll(async () => {
   motor = createGame({ acomodacoes: SEM_ASSUNTO, controleNaTela: true,
     declaration: declaracao(),
     host: { doc: document, win: window },
-    baixarPesados: false,
+    downloadHeavy: false,
     preset: DUAS_ACOES,
     setPhase: (p) => fases.push(p),
   });

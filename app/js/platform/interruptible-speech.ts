@@ -32,7 +32,7 @@
 // interrupção com falsos, em milissegundos.
 
 /** What the caller provides. Nothing here knows the neural engine, Web Audio or the browser. */
-export interface MotorDeFala<Audio, Fonte> {
+export interface SpeechEngine<Audio, Fonte> {
   /** Texto → áudio. ASSÍNCRONO de propósito: é onde a síntese neural gasta o tempo dela. */
   sintetizar(texto: string): Promise<Audio>;
   /** Começa a tocar e devolve a fonte, para que ela possa ser parada. `null` = não deu para tocar agora. */
@@ -41,7 +41,7 @@ export interface MotorDeFala<Audio, Fonte> {
   parar(fonte: Fonte): void;
 }
 
-export interface FalaInterrompivel {
+export interface InterruptibleSpeech {
   /** Fala `texto`, CALANDO na hora o que estiver falando. Não enfileira: o último pedido é o que vale. */
   falar(texto: string): void;
   /** Cala e esquece. Usado ao fechar um menu ou ao desligar a narração. */
@@ -50,7 +50,7 @@ export interface FalaInterrompivel {
   falando(): boolean;
 }
 
-export function criarFalaInterrompivel<Audio, Fonte>(motor: MotorDeFala<Audio, Fonte>): FalaInterrompivel {
+export function createInterruptibleSpeech<Audio, Fonte>(motor: SpeechEngine<Audio, Fonte>): InterruptibleSpeech {
   let tocando: Fonte | null = null;
   let geracao = 0;
 

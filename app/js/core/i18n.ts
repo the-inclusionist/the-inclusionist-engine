@@ -179,7 +179,7 @@ export function getLocale(): string { return locale; }
  *
  * Each language carries the REGION its flag stands for (the Dev, 2026-09-16: «Brasil, Estados Unidos e México. Cada bandeira indica a
  * localização para qual o app está configurado»): pt-BR, en-US, es-MX. It was pt-BR with `en` and `es` bare, so the browser picked the
- * variant; the language button now states the place. Voices are still matched on the language alone (`vozesDoIdioma`), so a region
+ * variant; the language button now states the place. Voices are still matched on the language alone (`voicesForLocale`), so a region
  * narrows nothing a child can hear.
  */
 const REGION_OF: Readonly<Record<string, string>> = { pt: 'pt-BR', en: 'en-US', es: 'es-MX' };

@@ -32,7 +32,7 @@ beforeAll(async () => {
       objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],
     },
     host: { doc: document, win: window },
-    baixarPesados: false,
+    downloadHeavy: false,
     players: jogadores,
     // The CARTRIDGE corrects colour in its own render — the palette must follow it all the same.
     setCorrecaoDoJogador: (i, correcao) => {

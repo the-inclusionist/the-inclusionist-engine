@@ -7,12 +7,12 @@
 //
 // 📌 Every address is written ONCE, where its module owns it: Kokoro's in `platform/kokoro`, the vision runtime's here.
 import {
-  VOZES_KOKORO, URL_DO_MODELO_KOKORO, URL_DO_TOKENIZADOR_KOKORO, urlDaVozKokoro, SHA256_DAS_VOZES_KOKORO, BYTES_DA_VOZ_KOKORO,
-  SHA256_DO_MODELO_KOKORO, BYTES_DO_MODELO_KOKORO, SHA256_DO_TOKENIZADOR_KOKORO, BYTES_DO_TOKENIZADOR_KOKORO,
+  KOKORO_VOICES, KOKORO_MODEL_URL, URL_DO_TOKENIZADOR_KOKORO, kokoroVoiceUrl, KOKORO_VOICES_SHA256, KOKORO_VOICE_BYTES,
+  KOKORO_MODEL_SHA256, KOKORO_MODEL_BYTES, SHA256_DO_TOKENIZADOR_KOKORO, BYTES_DO_TOKENIZADOR_KOKORO,
 } from './kokoro.js';
 
 /** Uma coisa pesada que a engine promete e que não cabe no pacote. */
-export interface Pesado {
+export interface HeavyFile {
   readonly id: string;
   /** `null` = decidido que existe, mas ainda não há de onde vir. Ver `porQueNaoTemFonte`. */
   readonly url: string | null;
@@ -29,7 +29,7 @@ export interface Pesado {
 
 /** O nome da Cache Storage. Versionado: mudar o conteúdo do catálogo não deve servir bytes velhos. */
 // v2 since issue #168: what v1 kept was never checked against a hash, so it is not trusted — it is fetched again, checked.
-export const CACHE_PESADOS = 'incl-pesados-v2';
+export const CACHE_HEAVY = 'incl-pesados-v2';
 
 /**
  * O RUNTIME DE VISÃO — **MediaPipe**, decidido pelo Dev em 2026-09-09 (ADR-0124): «… mediapipe
@@ -63,7 +63,7 @@ const MP_MODELOS = 'https://storage.googleapis.com/mediapipe-models';
  * 📏 MEDIDOS EM 2026-09-09, todos 200 com CORS aberto. `float16` e não `float32`: metade do peso, e a precisão
  * que se perde é irrelevante para dizer onde está um íris num ecrã de 320×180.
  */
-const MEDIAPIPE: readonly Pesado[] = Object.freeze([
+const MEDIAPIPE: readonly HeavyFile[] = Object.freeze([
   { id: 'visao:runtime', url: `${MP}/vision_bundle.mjs`, bytes: 155_439,
     sha256: 'd885630c297c0b20b1fe86096cb06291c4c8080876f27852e724f24ac603713f' },
   { id: 'visao:runtime:cola', url: `${MP}/wasm/vision_wasm_internal.js`, bytes: 323_377,
@@ -97,7 +97,7 @@ const MEDIAPIPE: readonly Pesado[] = Object.freeze([
  */
 const ESPEAK = 'https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2';
 const ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0';
-const VOICE_RUNTIME: readonly Pesado[] = Object.freeze([
+const VOICE_RUNTIME: readonly HeavyFile[] = Object.freeze([
   { id: 'voz:runtime:fonemas', url: `${ESPEAK}/dist/espeak-ng.js`, bytes: 178_386,
     sha256: '406c6655a6cacf34d84fc69dc4478c81b71518809080ce2d05df1b706d76429d' },
   { id: 'voz:runtime:fonemas:wasm', url: `${ESPEAK}/dist/espeak-ng.wasm`, bytes: 18_485_010,
@@ -120,7 +120,7 @@ const VOICE_RUNTIME: readonly Pesado[] = Object.freeze([
  * with the licence of each beside it in `the-inclusionist-lfs`.
  *
  * ⚠️ AND THEY ARE BIG: 378 MiB for pt, 162 for en, 310 for es. Nobody downloads all three — the start asks only for the child's
- * language (`pesadosDoArranque`), and a game that does not declare `uses: { reading: true }` asks for none of them.
+ * language (`heavyAtBoot`), and a game that does not declare `uses: { reading: true }` asks for none of them.
  *
  * 📌 The ids are in English while their neighbours are not: what is here stays until the renaming of the whole catalogue (the
  * English plan, phase 2, a single BREAKING release), and nothing new arrives in Portuguese meanwhile.
@@ -128,7 +128,7 @@ const VOICE_RUNTIME: readonly Pesado[] = Object.freeze([
  * ⚠️ sha256 MEASURED on the mirror's own files, each checked against the `SHA256SUMS` its folder publishes.
  */
 const READING_MIRROR = 'https://lfs-oinclusionista.jrocha.dev.br';
-const READING: readonly Pesado[] = Object.freeze([
+const READING: readonly HeavyFile[] = Object.freeze([
   // pt — Whisper small, exported and quantized by this project
   { id: 'reading:pt:encoder', url: `${READING_MIRROR}/whisper-small-onnx/onnx/encoder_model_quantized.onnx`, bytes: 95_131_296,
     sha256: '25eae0fce49960d460d800c53a9df788afdf54baceee16ab6a6333869e2fc78f' },
@@ -197,7 +197,7 @@ export function readingLanguageOf(id: string): string | null {
  *
  * ⚠️ sha256 MEASURED on the mirror's own files (2026-09-21), each checked against the `SHA256SUMS` its folder publishes.
  */
-const COMMANDS: readonly Pesado[] = Object.freeze([
+const COMMANDS: readonly HeavyFile[] = Object.freeze([
   { id: 'commands:runtime', url: `${READING_MIRROR}/vosk-browser-dynamic-execution-0/vosk.wasm.js`, bytes: 10_288,
     sha256: 'a7ab48dcf72660ec79a493c37b9fd1d0b3c09c46968c6a1ebd06adb4d9a35ca6' },
   { id: 'commands:runtime:worker', url: `${READING_MIRROR}/vosk-browser-dynamic-execution-0/vosk.worker.js`, bytes: 194_710,
@@ -222,13 +222,13 @@ export function commandsLanguageOf(id: string): string | null {
   return parts[0] === 'commands' && parts[1] === 'model' && parts[2] ? parts[2] : null;
 }
 
-const KOKORO: readonly Pesado[] = Object.freeze([
-  { id: 'voz:kokoro:modelo', url: URL_DO_MODELO_KOKORO, bytes: BYTES_DO_MODELO_KOKORO, sha256: SHA256_DO_MODELO_KOKORO },
+const KOKORO: readonly HeavyFile[] = Object.freeze([
+  { id: 'voz:kokoro:modelo', url: KOKORO_MODEL_URL, bytes: KOKORO_MODEL_BYTES, sha256: KOKORO_MODEL_SHA256 },
   { id: 'voz:kokoro:tokenizador', url: URL_DO_TOKENIZADOR_KOKORO, bytes: BYTES_DO_TOKENIZADOR_KOKORO, sha256: SHA256_DO_TOKENIZADOR_KOKORO },
-  ...VOZES_KOKORO.map((v) => ({ id: `voz:kokoro:${v.voice}`, url: urlDaVozKokoro(v.voice), bytes: BYTES_DA_VOZ_KOKORO, sha256: SHA256_DAS_VOZES_KOKORO[v.voice] })),
+  ...KOKORO_VOICES.map((v) => ({ id: `voz:kokoro:${v.voice}`, url: kokoroVoiceUrl(v.voice), bytes: KOKORO_VOICE_BYTES, sha256: KOKORO_VOICES_SHA256[v.voice] })),
 ]);
 
-export const PESADOS: readonly Pesado[] = Object.freeze([
+export const HEAVY_FILES: readonly HeavyFile[] = Object.freeze([
   ...VOICE_RUNTIME,
   ...KOKORO,
 

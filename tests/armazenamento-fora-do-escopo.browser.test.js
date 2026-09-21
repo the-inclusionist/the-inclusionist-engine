@@ -2,7 +2,7 @@
 // A KEY STORED OUTSIDE THE ENGINE'S SCOPES DURING THE PAGE'S LIFE IS SAID IN `problems` (study item E2; ADR-0080, ADR-0027).
 //
 // 📏 Measured on 2026-09-13 across the six sibling games: the platformer, soccer and whack-whack store under the engine's
-// two scopes (`incl_*` for what belongs to the child, `incl.<game>.*` for what belongs to the game — `storage.kJogo`);
+// two scopes (`incl_*` for what belongs to the child, `incl.<game>.*` for what belongs to the game — `storage.gameKey`);
 // 2048 stores nothing; pinball stores `pinball:highscore:*`, `pinball:keymap`, `pinball:palette`, `pinball:vision` — outside
 // both — and chess keeps its game in `incl_chess_*`, the CHILD's shared scope.
 //
@@ -29,7 +29,7 @@ beforeAll(async () => {
   localStorage.setItem('fixture-outro-projeto', '1'); // there before boot: another project on the same origin
   document.body.innerHTML = '<p id="sr-status"></p><div id="game-region" tabindex="-1"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false });
+  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
 });
 afterAll(() => { for (const k of CRIADAS) { localStorage.removeItem(k); sessionStorage.removeItem(k); } });
 
@@ -44,7 +44,7 @@ describe('storage outside the engine\'s scopes', () => {
     localStorage.setItem('incl_fixture_ok', '1');
     expect(linhas(), 'no line, or more than one').toHaveLength(1);
     expect(linhas()[0]).toContain('fixture:keymap');
-    expect(linhas()[0]).toMatch(/kJogo/);
+    expect(linhas()[0]).toMatch(/gameKey/);
     for (const k of ['incl.fixture.nivel', 'incl_fixture_ok', 'fixture-outro-projeto']) expect(linhas()[0], k).not.toContain(k);
   });
 

@@ -10,7 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { loadKokoroRuntime } from '../app/js/platform/kokoro-runtime.js';
 import { URL_DO_TOKENIZADOR_KOKORO } from '../app/js/platform/kokoro.js';
-import { caminhoNaEntrega } from '../app/js/platform/pesados.js';
+import { deliveryPath } from '../app/js/platform/pesados.js';
 
 const BASE = 'https://escola.exemplo/jogo/';
 
@@ -43,7 +43,7 @@ function build({ espeakExport = 'default', ortExport = 'bare', ortBroken = false
   return { deps, imported, fetched, espeakRuns, ort };
 }
 
-const naEntrega = (url) => new URL(caminhoNaEntrega(url), BASE).href;
+const naEntrega = (url) => new URL(deliveryPath(url), BASE).href;
 
 describe('the neural voice, loaded by the engine', () => {
   it('🔴 [Right] every piece is loaded from the delivery on the page\'s own origin — never from a CDN', async () => {

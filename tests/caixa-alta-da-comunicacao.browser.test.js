@@ -27,7 +27,7 @@ const declaracao = () => ({
   objectiveOf: () => ({ name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 3 }),
   targetsOf: () => [{ x: 0, y: 0 }],
 });
-const abrir = () => createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false });
+const abrir = () => createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
 const icone = () => document.querySelector('#title-icons [data-pi="tipografia"]');
 /**
  * Presses the communication button as a child does, from the default position (c), until the case turns to capitals:

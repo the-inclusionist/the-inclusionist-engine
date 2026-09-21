@@ -6,21 +6,21 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PESADOS, caminhoNaEntrega, chaveDaEntrega } from '../app/js/platform/pesados.js';
+import { HEAVY_FILES, deliveryPath, deliveryCacheKey } from '../app/js/platform/pesados.js';
 
 const CONFIG = readFileSync(join(process.cwd(), 'vite.config.ts'), 'utf8');
 const CONFIG_LIMPA = CONFIG.split(/\r?\n/).filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
 
 describe('heavy files, from the delivery', () => {
   it('🔴 [Right] a delivery path maps back to the upstream address the fetcher keeps it under', () => {
-    for (const p of PESADOS.filter((x) => x.url)) {
-      expect(chaveDaEntrega(`https://escola.example/jogo/${caminhoNaEntrega(p.url)}`)).toBe(p.url);
+    for (const p of HEAVY_FILES.filter((x) => x.url)) {
+      expect(deliveryCacheKey(`https://escola.example/jogo/${deliveryPath(p.url)}`)).toBe(p.url);
     }
   });
 
   it('📌 [Boundary] an address outside `pesados/` has no key — the route leaves it alone', () => {
-    expect(chaveDaEntrega('https://escola.example/jogo/assets/index.js')).toBeNull();
-    expect(chaveDaEntrega('https://escola.example/pesadosx/cdn.jsdelivr.net/a.wasm')).toBeNull();
+    expect(deliveryCacheKey('https://escola.example/jogo/assets/index.js')).toBeNull();
+    expect(deliveryCacheKey('https://escola.example/pesadosx/cdn.jsdelivr.net/a.wasm')).toBeNull();
   });
 
   it('🔴 [Right] the service worker answers `pesados/` from the checked cache, through that mapping, and never writes it', () => {
@@ -28,7 +28,7 @@ describe('heavy files, from the delivery', () => {
     expect(rota, 'no service worker route for the delivery\'s `pesados/`').toBeTruthy();
     expect(rota).toMatch(/handler:\s*'CacheFirst'/);
     expect(rota).toMatch(/cacheName:\s*'incl-pesados-v2'/);
-    expect(rota).toMatch(/cacheKeyWillBeUsed:[^\n]*chaveDaEntrega/);
+    expect(rota).toMatch(/cacheKeyWillBeUsed:[^\n]*deliveryCacheKey/);
     expect(rota, 'the route would cache an unchecked body').toMatch(/cacheWillUpdate:\s*async \(\) => null/);
   });
 });

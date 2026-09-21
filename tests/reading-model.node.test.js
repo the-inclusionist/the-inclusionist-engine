@@ -19,7 +19,7 @@ import {
   READING_MODELS, READING_RATE, WHISPER_BANDS, WHISPER_FRAMES, WHISPER_SAMPLES,
   logMel, nextToken, readingModelFor, readingTextOf, suppressedTokens,
 } from '../app/js/platform/reading-model.js';
-import { PESADOS } from '../app/js/platform/pesados-catalogo.js';
+import { HEAVY_FILES } from '../app/js/platform/pesados-catalogo.js';
 
 const truth = JSON.parse(readFileSync('tests/fixtures/reading-ground-truth.json', 'utf8'));
 
@@ -56,7 +56,7 @@ function sinal() {
 
 describe('the reading models, and what the engine asks of each', () => {
   it('🔴 [Right] every file a model needs is in the catalogue, by id', () => {
-    const noCatalogo = new Set(PESADOS.map((p) => p.id));
+    const noCatalogo = new Set(HEAVY_FILES.map((p) => p.id));
     const faltam = [];
     for (const m of READING_MODELS) {
       for (const campo of ['encoder', 'decoder', 'decoderPast', 'tokenizer', 'generation', 'preprocessor']) {

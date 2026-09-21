@@ -5,7 +5,7 @@
 // game's port (`platform/kokoro`, ADR-0198). What stays here is the rule every list obeys — the browser's and Kokoro's.
 
 /** A voice a child may pick. `voice` is its identifier in its engine; `engine` is the engine that reads it. */
-export interface VozNeural {
+export interface NeuralVoice {
   readonly locale: string;
   readonly engine: string;
   readonly voice: string;
@@ -16,7 +16,7 @@ export interface VozNeural {
  * voice reads Spanish from Spain, and a Brazilian game tagged `pt` is still Portuguese. A voice reading another language
  * is not offered: Portuguese text through English phonemes is noise.
  */
-export function vozesDoIdioma(etiqueta: string, catalogo: readonly VozNeural[]): readonly VozNeural[] {
+export function voicesForLocale(etiqueta: string, catalogo: readonly NeuralVoice[]): readonly NeuralVoice[] {
   const idioma = (etiqueta.split('-')[0] ?? '').toLowerCase();
   return catalogo.filter((v) => (v.locale.split('-')[0] ?? '').toLowerCase() === idioma);
 }

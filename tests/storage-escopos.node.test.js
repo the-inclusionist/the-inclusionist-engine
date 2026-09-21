@@ -11,7 +11,7 @@
 // da PARTIDA fica no jogo. Se alguém um dia "padronizar" prefixando tudo, estes casos reprovam.
 import { describe, it, expect } from 'vitest';
 import * as store from '../app/js/platform/storage.js';
-import { KEYS, kJogo } from '../app/js/platform/storage.js';
+import { KEYS, gameKey } from '../app/js/platform/storage.js';
 
 /** O id do jogo de plataforma. Aqui ele é DADO DE TESTE, não verdade da engine: a engine deixou de o ter
  *  (ADR-0080), e o que estes casos guardam é que ele continua a produzir exatamente as chaves antigas. */
@@ -65,7 +65,7 @@ describe('escopo DO JOGO — o que é de uma partida', () => {
   });
 
   it('[Interface] a gravação da demonstração também é do jogo, e também herda', () => {
-    expect(KEYS.attract('xis', 'campo')).toBe(kJogo('xis', 'attract_campo'));
+    expect(KEYS.attract('xis', 'campo')).toBe(gameKey('xis', 'attract_campo'));
     expect(KEYS.attractLegado('campo')).toBe('incl_attract_campo'); // a legada NÃO leva id: é anterior ao escopo
   });
 });
@@ -96,8 +96,8 @@ describe('os dois escopos não se confundem', () => {
   });
 
   it('[Interface] o id entra pelo argumento, e é ele que aparece no prefixo', () => {
-    expect(kJogo('inclusionist', 'x')).toBe('incl.inclusionist.x');
-    expect(kJogo('15puzzle', 'x')).toBe('incl.15puzzle.x');
+    expect(gameKey('inclusionist', 'x')).toBe('incl.inclusionist.x');
+    expect(gameKey('15puzzle', 'x')).toBe('incl.15puzzle.x');
   });
 
   it('[Zero] ⚠️ a ENGINE não guarda id de jogo nenhum — era o achado 1 do ADR-0080', () => {

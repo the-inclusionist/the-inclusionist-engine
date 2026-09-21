@@ -60,7 +60,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   document.body.appendChild(raiz);
   fases = [];
-  motor = createGame({ declaration: declaracaoValida(), host: { doc: document, win: window }, baixarPesados: false, ...comGancho() });
+  motor = createGame({ declaration: declaracaoValida(), host: { doc: document, win: window }, downloadHeavy: false, ...comGancho() });
 });
 
 beforeEach(() => {

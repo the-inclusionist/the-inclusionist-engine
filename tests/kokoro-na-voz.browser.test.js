@@ -117,12 +117,12 @@ describe('what the start fetches (ADR-0198 §5)', () => {
     try {
       document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p><div id="game-region" tabindex="-1"></div>';
       const { createGame } = await import('../app/js/boot/create-game.js');
-      const { pesadosDoArranque, PESADOS } = await import('../app/js/platform/pesados.js');
+      const { heavyAtBoot, HEAVY_FILES } = await import('../app/js/platform/pesados.js');
       const { bcp47 } = await import('../app/js/core/i18n.js');
       createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, players: [{ ctrl: 0 }] });
       // ⚠️ The command model is asked for WITHOUT the game declaring anything (issue #184), so the expected list is the boot's own
       // question, language included — a number written here by hand would have to be rewritten every time the catalogue grows.
-      const esperados = pesadosDoArranque({ kokoro: false, commands: bcp47() }).filter((id) => PESADOS.find((p) => p.id === id).url).length; // an entry without a source is reported, not asked for
+      const esperados = heavyAtBoot({ kokoro: false, commands: bcp47() }).filter((id) => HEAVY_FILES.find((p) => p.id === id).url).length; // an entry without a source is reported, not asked for
       for (let i = 0; i < 400 && pedidos.filter((u) => u.includes('/pesados/')).length < esperados; i++) await new Promise((r) => setTimeout(r, 25));
       const daEntrega = pedidos.filter((u) => u.includes('/pesados/'));
       expect(daEntrega.length, 'the start did not ask for the catalogue').toBe(esperados);
@@ -141,7 +141,7 @@ describe('the marks in the hearing panel (ADR-0198 §3)', () => {
       + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
     const { createGame } = await import('../app/js/boot/create-game.js');
     doCreateGame = portaFalsa({ gpuFala: true }); // what the engine's loader answers in this case
-    motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, baixarPesados: false,
+    motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, downloadHeavy: false,
       players: [{ ctrl: 0 }], uses: { neuralVoice: true } });
     motor.pausa.mostrar(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();

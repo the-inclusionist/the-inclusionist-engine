@@ -74,7 +74,7 @@ describe('a barra da primeira tela fala o idioma do arranque', () => {
     createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(),
       host: { doc: document, win: window, a11yBarHost: raiz.querySelector('#title-icons') },
-      baixarPesados: false,
+      downloadHeavy: false,
       // ⚠️ SEM `semMenuDePausa`: o campo saiu do contrato (ADR-0122). O palco TEM `#game-region`, logo o
       // cartão de pausa passa a montar-se ali — e este caso continua a medir o que media, porque conta
       // `#title-icons .pi-btn` e o cartão traz `.pm-btn` noutro hospedeiro.

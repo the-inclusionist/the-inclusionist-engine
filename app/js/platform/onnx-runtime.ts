@@ -12,8 +12,8 @@
 // ⚠️ NOTHING HERE IS IMPORTED FROM npm: `import(url)` of an address on our own origin needs no bundler and puts no megabyte in
 // the chunk of a game that runs no graph at all.
 
-import { caminhoNaEntrega } from './pesados.js';
-import { PESADOS } from './pesados-catalogo.js';
+import { deliveryPath } from './pesados.js';
+import { HEAVY_FILES } from './pesados-catalogo.js';
 
 export interface OnnxTensor { readonly data: unknown; readonly dims?: readonly number[] }
 /** An open graph: the names it answers with, and one run. */
@@ -47,13 +47,13 @@ const ORT_WASM = 'voz:runtime:onnx:wasm';
  * fetched, and the page would ask for a file the delivery does not have.
  */
 function heavyUrlOf(id: string): string {
-  const heavy = PESADOS.find((p) => p.id === id);
+  const heavy = HEAVY_FILES.find((p) => p.id === id);
   if (!heavy?.url) throw new Error(`the heavy catalogue has no address for ${id}`);
   return heavy.url;
 }
 
 /** Where the delivery serves a catalogued file, from the page's own address. */
-export const atDelivery = (id: string, base: string): string => new URL(caminhoNaEntrega(heavyUrlOf(id)), base).href;
+export const atDelivery = (id: string, base: string): string => new URL(deliveryPath(heavyUrlOf(id)), base).href;
 
 export interface OnnxRuntimeDeps {
   /** The page's address, which `pesados/` is resolved against. */

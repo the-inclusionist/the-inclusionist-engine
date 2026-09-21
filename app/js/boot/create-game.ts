@@ -132,7 +132,7 @@ import type { NavKeys } from '../input/edges.js';
 import { initKeyboardRuntime, type KeyboardRuntime } from '../input/keyboard-runtime.js';
 import { kb, initKB, registrarMapeamentoDoTeclado, saveKB, setKB, fabricaComOJogo, type KBDefaults } from '../input/keyboard.js';
 import { registrarMapeamentoDoPad } from '../input/pad-defaults.js';
-import { baixarPesados, pesadosDoArranque, type RelatorioPesado } from '../platform/pesados.js';
+import { downloadHeavy, heavyAtBoot, type HeavyReport } from '../platform/pesados.js';
 import { installCvdFilters } from '../render/cvd-matrices.js';
 
 /** O que o jogo empresta do documento. Tudo opcional menos `doc`/`win`: o que faltar vira `problems`. */
@@ -376,7 +376,7 @@ export interface CreateGameOptions {
    * origin, and on one site the heavy files come down once for every game. Until the platform asks for them, the game does: better
    * twice than never.
    */
-  readonly baixarPesados?: boolean;
+  readonly downloadHeavy?: boolean;
   /**
    * WHAT HAPPENED TO EACH HEAVY FILE, as it happens. Absent = nobody is watching.
    *
@@ -385,9 +385,9 @@ export interface CreateGameOptions {
    * a channel that exists when the news arrives, not pushing into a list already delivered.
    *
    * 📌 The engine invents no surface for this: where «N MB left» fits on a game's screen is the game's to know.
-   * `pesoPorBaixar(relatorio)` gives the number for the sentence.
+   * `bytesLeftToDownload(relatorio)` gives the number for the sentence.
    */
-  readonly aoProgredirPesados?: (r: RelatorioPesado) => void;
+  readonly aoProgredirPesados?: (r: HeavyReport) => void;
   /**
    * Como se descobre que cada transporte está aqui. Ausente = a engine pergunta ao aparelho.
    *
@@ -3659,14 +3659,14 @@ export function createGame(o: CreateGameOptions): Engine {
    * 📌 O canal certo é o que a própria função já tem: `aoProgredir`, entregue a quem chama. Um consumidor que
    * queira mostrar «faltam N MB» ou «a voz não desceu» tem por onde; a engine não inventa uma superfície.
    */
-  if (o.baixarPesados !== false) {
+  if (o.downloadHeavy !== false) {
     // ⚠️ THE READING MODEL IS ASKED FOR BY LANGUAGE and not by a yes: the three together are 850 MiB, and the child is reading in
     // one of them. `bcp47()` is already the language the interface booted in (ADR-0031), so nothing new has to be decided here.
-    void baixarPesados({
+    void downloadHeavy({
       // 📌 AND THE COMMAND MODEL IS ASKED FOR WITHOUT ASKING THE GAME (issue #184): a child who says «menu» instead of pressing
       // it is reaching the controller, and no cartridge declares — or denies — a way in (ADR-0111). A delivery built without
       // `--commands` simply has none, this background fetch fails quietly, and the transport says so when she turns it on.
-      apenas: pesadosDoArranque({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47() }),
+      apenas: heavyAtBoot({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null, commands: bcp47() }),
       aoProgredir: o.aoProgredirPesados,
     })
       .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });
@@ -3758,11 +3758,11 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   const chavesNoArranque = chavesDoArmazenamento();
   function armazenamentoForaDoEscopo(): string[] {
     const novas = [...chavesDoArmazenamento()].filter((k) => !chavesNoArranque.has(k));
-    const fora = store.chavesForaDosEscopos(novas);
+    const fora = store.keysOutsideScopes(novas);
     if (!fora.length) return [];
     return [`the cartridge stored keys outside the engine's scopes (${fora.slice(0, 5).join(', ')}): a child's settings `
       + 'kept there do not follow them to the next game, and a game\'s own collide with other games\' — what belongs to '
-      + 'the child goes under incl_* through the engine\'s settings, what belongs to the game under incl.<game>.* (storage.kJogo)'];
+      + 'the child goes under incl_* through the engine\'s settings, what belongs to the game under incl.<game>.* (storage.gameKey)'];
   }
 
   const problemasMedidos: string[] = [];

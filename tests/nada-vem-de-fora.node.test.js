@@ -135,13 +135,13 @@ const TOCAM_NA_REDE = {
     + 'the reading because the root is what knows the page\'s address and the game\'s answers; the module it loads is what names '
     + 'the model files, so a game that never listens never reaches them',
   'platform/vosk-runtime.ts': 'LOCAL. A `<script src>` of the recogniser bundle and the model it fetches, both at `pesados/` on '
-    + 'the page\'s own origin (ADR-0177) — addresses built by `caminhoNaEntrega`, never an upstream host, and neither is loaded '
+    + 'the page\'s own origin (ADR-0177) — addresses built by `deliveryPath`, never an upstream host, and neither is loaded '
     + 'unless the install already checked it by sha256. ⚠️ A SCRIPT TAG and not an `import()`: the build is a UMD bundle that '
     + 'defines a global and finds its worker and its wasm beside itself, which is also why the three files travel together into '
     + 'one folder. It is the project\'s own build — every published `vosk-browser` evaluates text as code and the policy refuses '
     + 'it (ADR-0193)',
   'platform/kokoro-port.ts': 'LOCAL. `fetch` of the model, the tokenizer and the voice tables at `pesados/` on the page\'s own '
-    + 'origin (ADR-0177) — paths built by `caminhoNaEntrega`, never an upstream host. It was the quiz demo\'s port until ADR-0216 '
+    + 'origin (ADR-0177) — paths built by `deliveryPath`, never an upstream host. It was the quiz demo\'s port until ADR-0216 '
     + 'moved it into the engine, so no game has to copy it',
   'platform/kokoro-runtime.ts': 'LOCAL. `import()` of espeak-ng and `fetch` of its wasm, at `pesados/` on the page\'s own origin '
     + '(ADR-0216): the addresses come from the catalogue, the build put the files in the delivery, and a school with no network '
@@ -156,7 +156,7 @@ const TOCAM_NA_REDE = {
     + 'published at, finds nothing in a school with no network, and the session never opens — measured in the quiz demo (#181). '
     + 'The voice and the reading both load it from here, so the rule is written once',
   'platform/vision.ts': 'LOCAL. `import()` of MediaPipe\'s `vision_bundle.mjs` (and, inside it, its wasm and the face model) at `pesados/` '
-    + 'on the page\'s own origin (ADR-0177, ADR-0213, #196) — addresses built by `caminhoNaEntrega`, never an upstream host, and only '
+    + 'on the page\'s own origin (ADR-0177, ADR-0213, #196) — addresses built by `deliveryPath`, never an upstream host, and only '
     + 'after the checked cache holds every file',
   'platform/tts.ts': 'LOCAL. Two, and neither leaves the machine: `el.src = som.url`, a `blob:` URL of the WAV the neural voice just '
     + 'synthesised here, played through a media element so the speech rate keeps the pitch (ADR-0183 §1); and '

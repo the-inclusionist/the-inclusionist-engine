@@ -81,9 +81,9 @@
       "holds"
     ],
     "platform/audio-sonar.ts": [
-      "GUIA_HZ",
-      "ORCAMENTO_DA_ROTA",
-      "TAU_DO_GUIA"
+      "GUIDE_HZ",
+      "ROUTE_BUDGET",
+      "GUIDE_TAU"
     ],
     "render/minimap.ts": [
       "setMinimapCorner"

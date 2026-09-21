@@ -8,7 +8,7 @@
 // takes, whether a synthesis is speech, and the WAV the player plays.
 //
 // No I/O on import.
-import type { VozNeural } from './voice-plan.js';
+import type { NeuralVoice } from './voice-plan.js';
 
 /** A Kokoro inference session on one device: token ids and a style row in, a 24 kHz waveform out. */
 export interface KokoroSession {
@@ -33,14 +33,14 @@ export interface KokoroModule {
 export type LoadKokoro = () => Promise<KokoroModule>;
 
 /** A Kokoro voice of the engine's three languages. `boa` marks the two the Dev rated good (ADR-0198 §3). */
-export interface VozKokoro extends VozNeural {
+export interface KokoroVoice extends NeuralVoice {
   readonly engine: 'kokoro';
   /** The espeak-ng voice that phonemizes this voice's text. */
   readonly espeak: string;
   readonly boa: boolean;
 }
 
-const voz = (id: string, locale: string, espeak: string, boa = false): VozKokoro =>
+const voz = (id: string, locale: string, espeak: string, boa = false): KokoroVoice =>
   Object.freeze({ locale, engine: 'kokoro', voice: id, espeak, boa });
 
 /**
@@ -48,7 +48,7 @@ const voz = (id: string, locale: string, espeak: string, boa = false): VozKokoro
  * first letter is the language — `p` Brazilian Portuguese, `e` Spanish, `a` American and `b` British English — and the second the
  * voice's gender. The others (French, Hindi, Italian, Japanese, Chinese) are not the engine's languages.
  */
-export const VOZES_KOKORO: readonly VozKokoro[] = Object.freeze([
+export const KOKORO_VOICES: readonly KokoroVoice[] = Object.freeze([
   voz('pf_dora', 'pt-BR', 'pt-br'), voz('pm_alex', 'pt-BR', 'pt-br'), voz('pm_santa', 'pt-BR', 'pt-br'),
   voz('ef_dora', 'es', 'es-419'), voz('em_alex', 'es', 'es-419'), voz('em_santa', 'es', 'es-419'),
   voz('af_heart', 'en-US', 'en-us', true), voz('af_bella', 'en-US', 'en-us', true),
@@ -62,15 +62,15 @@ export const VOZES_KOKORO: readonly VozKokoro[] = Object.freeze([
  * delivery serves the same paths from its own origin (ADR-0177), and a game's port asks for them there.
  */
 const REPOSITORIO_KOKORO = 'https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main';
-export const URL_DO_MODELO_KOKORO = `${REPOSITORIO_KOKORO}/onnx/model.onnx`;
+export const KOKORO_MODEL_URL = `${REPOSITORIO_KOKORO}/onnx/model.onnx`;
 export const URL_DO_TOKENIZADOR_KOKORO = `${REPOSITORIO_KOKORO}/tokenizer.json`;
-export const urlDaVozKokoro = (id: string): string => `${REPOSITORIO_KOKORO}/voices/${id}.bin`;
+export const kokoroVoiceUrl = (id: string): string => `${REPOSITORIO_KOKORO}/voices/${id}.bin`;
 
 /**
  * Each voice file's SHA-256 and size, read from the repository's LFS metadata on 2026-09-14 (all 522 240 bytes); `pf_dora` also
  * measured on the downloaded file. The model: 325 532 232 bytes, measured on the file. Checked before anything is kept (#168).
  */
-export const SHA256_DAS_VOZES_KOKORO: Readonly<{ [id: string]: string }> = Object.freeze({
+export const KOKORO_VOICES_SHA256: Readonly<{ [id: string]: string }> = Object.freeze({
   pf_dora: '3da7b5b2d91847ebf5646f57631af6ececae3c29a89cd300f06edf9aa6cfe9ee',
   pm_alex: '0175c753f59c54e7fd5a995bedef0c5ff2fb67e0043dd3dcb2ae74ec2acbeb2a',
   pm_santa: '8b012db3185778afe2e45a62cbad69db73021774fe68dda634bcc748a982eede',
@@ -106,16 +106,16 @@ export const SHA256_DAS_VOZES_KOKORO: Readonly<{ [id: string]: string }> = Objec
   bm_george: 'c4b235a4c1f2cd3b939fed08b899ce9385638b763f7b73a59616c4fc9bd6c9bc',
   bm_lewis: 'b8f671cef828c30e66fdf0b0756a76bba58f6bb3398cbbf27058642acbcedb97',
 });
-export const BYTES_DA_VOZ_KOKORO = 522_240;
-export const SHA256_DO_MODELO_KOKORO = '8fbea51ea711f2af382e88c833d9e288c6dc82ce5e98421ea61c058ce21a34cb';
-export const BYTES_DO_MODELO_KOKORO = 325_532_232;
+export const KOKORO_VOICE_BYTES = 522_240;
+export const KOKORO_MODEL_SHA256 = '8fbea51ea711f2af382e88c833d9e288c6dc82ce5e98421ea61c058ce21a34cb';
+export const KOKORO_MODEL_BYTES = 325_532_232;
 export const SHA256_DO_TOKENIZADOR_KOKORO = '77a02c8e164413299b4b4c403b14f8e0e1c1b727db4d46a09d6327b861060a34';
 export const BYTES_DO_TOKENIZADOR_KOKORO = 3_497;
 
 /** The model's context: ids between the two pad tokens. A longer sentence is cut here (the caller splits text by sentence). */
-export const TOKENS_MAXIMOS = 510;
+export const MAX_KOKORO_TOKENS = 510;
 /** A voice file is a table of style rows, one per token count, 256 numbers each. */
-export const DIMENSAO_DO_ESTILO = 256;
+export const STYLE_DIMENSION = 256;
 const TAXA_KOKORO = 24_000;
 
 /** The token ids of a phoneme string: each symbol the vocabulary knows, in order, between two pad tokens (id 0). */
@@ -124,16 +124,16 @@ export function tokenizar(fonemas: string, vocabulario: Readonly<{ [simbolo: str
   for (const simbolo of fonemas) {
     const id = vocabulario[simbolo];
     if (id !== undefined) ids.push(id);
-    if (ids.length === TOKENS_MAXIMOS) break;
+    if (ids.length === MAX_KOKORO_TOKENS) break;
   }
   return [0, ...ids, 0];
 }
 
 /** The style row a sentence of `tokens` ids (pads excluded) takes from a voice table. */
-export function estiloDaFrase(tabela: Float32Array, tokens: number): Float32Array {
-  const linhas = Math.floor(tabela.length / DIMENSAO_DO_ESTILO);
+export function sentenceStyle(tabela: Float32Array, tokens: number): Float32Array {
+  const linhas = Math.floor(tabela.length / STYLE_DIMENSION);
   const linha = Math.max(0, Math.min(linhas - 1, tokens));
-  return tabela.slice(linha * DIMENSAO_DO_ESTILO, (linha + 1) * DIMENSAO_DO_ESTILO);
+  return tabela.slice(linha * STYLE_DIMENSION, (linha + 1) * STYLE_DIMENSION);
 }
 
 /**

@@ -945,6 +945,79 @@ renames itself from, so a name cannot be renamed without appearing here.
 | `velocidadeValida` | `isGameSpeed` |
 | `VeredictoDeFlashes` | `FlashVerdict` |
 
+## AM · The public surface of `platform` speaks English (ADR-0219, issue #202)
+
+**What this is.** The second layer of the rename. 📏 54 names, 92 files, 633 occurrences; the tree's Portuguese debt falls from
+1384 identifiers to 1328. No aliases: the old names are gone, and the table below is printed from the same map the engine
+renames itself from.
+
+**What to do.** Rename on your side by the table. 📌 Three of these are what a game touches most: `baixarPesados` is now
+`downloadHeavy` (and it is a field of `CreateGameOptions` too), `kJogo` is `gameKey`, and `getComLegado` /
+`getJSONComLegado` are `getWithLegacy` / `getJsonWithLegacy`.
+
+⚠️ **The delivery folder `pesados/` and the `bin` keep their names in this commit** and change in the next one, which is
+where the line about rebuilding the delivery belongs — the folder is a PATH a built `dist` already carries, and mixing it
+with a rename of identifiers would put two different migrations under one heading.
+
+**platform** — 54 names, applied 2026-09-21
+
+| was | is |
+|---|---|
+| `ApiDeReconhecimento` | `RecognitionApi` |
+| `baixarPesados` | `downloadHeavy` |
+| `BYTES_DA_VOZ_KOKORO` | `KOKORO_VOICE_BYTES` |
+| `BYTES_DO_MODELO_KOKORO` | `KOKORO_MODEL_BYTES` |
+| `CACHE_PESADOS` | `CACHE_HEAVY` |
+| `caminhoNaEntrega` | `deliveryPath` |
+| `chaveDaEntrega` | `deliveryCacheKey` |
+| `chavesForaDosEscopos` | `keysOutsideScopes` |
+| `ComandoOuvido` | `HeardCommand` |
+| `CORTE_LONGE` | `FAR_CUT` |
+| `CORTE_PERTO` | `NEAR_CUT` |
+| `criarFalaInterrompivel` | `createInterruptibleSpeech` |
+| `criarLeitorDeComandos` | `createCommandReader` |
+| `criarReconhecimentoLocal` | `createOnDeviceRecognition` |
+| `DIMENSAO_DO_ESTILO` | `STYLE_DIMENSION` |
+| `EstadoLocal` | `OnDeviceAvailability` |
+| `estiloDaFrase` | `sentenceStyle` |
+| `FalaInterrompivel` | `InterruptibleSpeech` |
+| `getComLegado` | `getWithLegacy` |
+| `getJSONComLegado` | `getJsonWithLegacy` |
+| `GUIA_HZ` | `GUIDE_HZ` |
+| `GUIA_TIPO` | `GUIDE_WAVE` |
+| `GUIA_VOL` | `GUIDE_VOL` |
+| `GuiaVivo` | `LiveGuide` |
+| `InstanciaDeReconhecimento` | `RecognitionInstance` |
+| `Intensidade` | `Intensity` |
+| `intensidadeDoGuia` | `guideIntensity` |
+| `kJogo` | `gameKey` |
+| `LeitorDeComandos` | `CommandReader` |
+| `MotorDeFala` | `SpeechEngine` |
+| `OpcoesDosPesados` | `HeavyOptions` |
+| `ORCAMENTO_DA_ROTA` | `ROUTE_BUDGET` |
+| `passoDoMundo` | `worldStep` |
+| `PASSOS_ATE_O_FUNDO` | `STEPS_TO_FLOOR` |
+| `Pesado` | `HeavyFile` |
+| `PESADOS` | `HEAVY_FILES` |
+| `pesadosDoArranque` | `heavyAtBoot` |
+| `pesoPorBaixar` | `bytesLeftToDownload` |
+| `QUADROS_ENTRE_ROTAS` | `FRAMES_BETWEEN_ROUTES` |
+| `RelatorioPesado` | `HeavyReport` |
+| `rotaDoReconhecimento` | `recognitionRoute` |
+| `RotaDoReconhecimento` | `RecognitionRoute` |
+| `SHA256_DAS_VOZES_KOKORO` | `KOKORO_VOICES_SHA256` |
+| `SHA256_DO_MODELO_KOKORO` | `KOKORO_MODEL_SHA256` |
+| `TAU_DO_GUIA` | `GUIDE_TAU` |
+| `textoFalado` | `spokenText` |
+| `TOKENS_MAXIMOS` | `MAX_KOKORO_TOKENS` |
+| `URL_DO_MODELO_KOKORO` | `KOKORO_MODEL_URL` |
+| `urlDaVozKokoro` | `kokoroVoiceUrl` |
+| `VOL_LONGE` | `FAR_VOL` |
+| `VOZES_KOKORO` | `KOKORO_VOICES` |
+| `vozesDoIdioma` | `voicesForLocale` |
+| `VozKokoro` | `KokoroVoice` |
+| `VozNeural` | `NeuralVoice` |
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

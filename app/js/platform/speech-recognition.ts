@@ -10,43 +10,43 @@
 // what it already holds and a name another item's name continues waiting for the end (ADR-0194 §3).
 
 /** What the browser answers about recognising a language on the device (Chrome's `SpeechRecognition.available`). */
-export type EstadoLocal = 'available' | 'downloadable' | 'downloading' | 'unavailable';
+export type OnDeviceAvailability = 'available' | 'downloadable' | 'downloading' | 'unavailable';
 
 /** The part of the browser's `SpeechRecognition` constructor this module reads. */
-export interface ApiDeReconhecimento {
-  new (): InstanciaDeReconhecimento;
+export interface RecognitionApi {
+  new (): RecognitionInstance;
   readonly prototype: object;
-  readonly available?: (opcoes: { langs: readonly string[]; processLocally: boolean }) => Promise<EstadoLocal>;
+  readonly available?: (opcoes: { langs: readonly string[]; processLocally: boolean }) => Promise<OnDeviceAvailability>;
 }
 
-export interface InstanciaDeReconhecimento {
+export interface RecognitionInstance {
   lang: string;
   processLocally?: boolean;
   continuous: boolean;
   interimResults: boolean;
 }
 
-export interface RotaDoReconhecimento {
+export interface RecognitionRoute {
   /** `webspeech-local`: the browser recognises on the device. `recuo`: the engine's own recogniser. */
   readonly rota: 'webspeech-local' | 'recuo';
   /** Why: the browser's answer, or what is missing. */
-  readonly estado: EstadoLocal | 'sem-api' | 'sem-processamento-local';
+  readonly estado: OnDeviceAvailability | 'sem-api' | 'sem-processamento-local';
 }
 
 /**
  * THE ROUTE, measured on the device (ADR-0200 §3). ⚠️ A browser whose recognition object has no `processLocally` would take the
  * flag as an unknown property and recognise on its servers — it is never the route, whatever it says about availability.
  */
-export async function rotaDoReconhecimento(lingua: string, api: ApiDeReconhecimento | null | undefined): Promise<RotaDoReconhecimento> {
+export async function recognitionRoute(lingua: string, api: RecognitionApi | null | undefined): Promise<RecognitionRoute> {
   if (!api) return { rota: 'recuo', estado: 'sem-api' };
   if (!('processLocally' in api.prototype) || typeof api.available !== 'function') return { rota: 'recuo', estado: 'sem-processamento-local' };
-  let estado: EstadoLocal;
+  let estado: OnDeviceAvailability;
   try { estado = await api.available({ langs: [lingua], processLocally: true }); } catch { return { rota: 'recuo', estado: 'unavailable' }; }
   return { rota: estado === 'available' ? 'webspeech-local' : 'recuo', estado };
 }
 
 /** A recognition object set to recognise on the device, continuously, with partial hypotheses. Refuses a browser that cannot. */
-export function criarReconhecimentoLocal(api: ApiDeReconhecimento, lingua: string): InstanciaDeReconhecimento {
+export function createOnDeviceRecognition(api: RecognitionApi, lingua: string): RecognitionInstance {
   if (!('processLocally' in api.prototype)) throw new Error('speech recognition on the device is not supported here: the voice would leave the device');
   const rec = new api();
   rec.lang = lingua;
@@ -57,27 +57,27 @@ export function criarReconhecimentoLocal(api: ApiDeReconhecimento, lingua: strin
 }
 
 /** A command heard: a direction word, or the name of an item of the open menu. */
-export type ComandoOuvido = { readonly tipo: 'palavra'; readonly palavra: string } | { readonly tipo: 'item'; readonly nome: string };
+export type HeardCommand = { readonly tipo: 'palavra'; readonly palavra: string } | { readonly tipo: 'item'; readonly nome: string };
 
 /** How a heard text is compared: lower case, letters and spaces only. */
-export const textoFalado = (t: string): string => t.toLowerCase().normalize('NFC').replace(/[^\p{L}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+export const spokenText = (t: string): string => t.toLowerCase().normalize('NFC').replace(/[^\p{L}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
 
-export interface LeitorDeComandos {
+export interface CommandReader {
   /** The menu's item names now on screen (already as spoken). */
   itens(nomes: readonly string[]): void;
   /**
    * One hypothesis of utterance `indice`: returns the commands it completes that were not returned before for that utterance. A
    * partial one holds back its last name while another item's name continues it («voltar» may become «voltar ao jogo»).
    */
-  ler(indice: number, texto: string, final: boolean): readonly ComandoOuvido[];
+  ler(indice: number, texto: string, final: boolean): readonly HeardCommand[];
 }
 
-export function criarLeitorDeComandos(palavras: readonly string[]): LeitorDeComandos {
-  const direcoes = palavras.map(textoFalado);
+export function createCommandReader(palavras: readonly string[]): CommandReader {
+  const direcoes = palavras.map(spokenText);
   let itens: readonly string[] = [];
   const disparadas = new Map<number, number>();
   const frasesDe = (texto: string): string[] => {
-    const p = textoFalado(texto).split(' ').filter(Boolean);
+    const p = spokenText(texto).split(' ').filter(Boolean);
     const achadas: string[] = [];
     for (let i = 0; i < p.length;) {
       let achou: string | null = null;
@@ -90,11 +90,11 @@ export function criarLeitorDeComandos(palavras: readonly string[]): LeitorDeComa
     return achadas;
   };
   return {
-    itens(nomes) { itens = nomes.map(textoFalado); },
+    itens(nomes) { itens = nomes.map(spokenText); },
     ler(indice, texto, final) {
       const achadas = frasesDe(texto);
       const ja = disparadas.get(indice) ?? 0;
-      const novos: ComandoOuvido[] = [];
+      const novos: HeardCommand[] = [];
       for (let i = ja; i < achadas.length; i++) {
         const f = achadas[i]!;
         if (!final && i === achadas.length - 1 && itens.some((o) => o !== f && o.startsWith(f + ' '))) break;

@@ -32,12 +32,12 @@ const sha256DoNode = (buf) => createHash('sha256').update(Buffer.from(buf)).dige
  * Fetches, checks and writes every entry with an address. Returns one line per entry; `ok` is false when any file failed.
  * Everything is injected so a gate can run it without the network.
  */
-export async function levarPesadosParaEntrega({ destino, pesados, caminhoNaEntrega, buscar = fetch, sha256 = sha256DoNode,
+export async function levarPesadosParaEntrega({ destino, pesados, deliveryPath, buscar = fetch, sha256 = sha256DoNode,
   base = '', fonteDe = (url) => url, lerLocal = (caminho) => readFileSync(caminho) }) {
   const linhas = [];
   for (const p of pesados) {
     if (!p.url) { linhas.push({ id: p.id, estado: 'sem-fonte' }); continue; }
-    const alvo = join(destino, caminhoNaEntrega(p.url));
+    const alvo = join(destino, deliveryPath(p.url));
     if (existsSync(alvo) && sha256(readFileSync(alvo)) === p.sha256) { linhas.push({ id: p.id, estado: 'ja-tinha' }); continue; }
     const fonte = fonteDe(p.url, base);
     const daRede = /^https?:\/\//i.test(fonte);
@@ -103,17 +103,17 @@ if (executado) {
   if (!destino) { console.error('usage: inclusionist-pesados <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]… [--commands pt|en|es]…'); process.exit(2); }
   const modulo = moduloDoPacote();
   if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/pesados.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
-  const { PESADOS, caminhoNaEntrega, pesadosDoArranque } = await import(modulo);
+  const { HEAVY_FILES, deliveryPath, heavyAtBoot } = await import(modulo);
   const { heavySourceOf } = await import(new URL('../dist-pkg/platform/heavy-mirror.js', import.meta.url).href);
   // one pass per language, because the start asks for ONE and the delivery may hold several
   const ids = [...new Set([
-    ...pesadosDoArranque({ kokoro }),
-    ...reading.flatMap((lingua) => pesadosDoArranque({ kokoro: false, reading: lingua })),
-    ...commands.flatMap((lingua) => pesadosDoArranque({ kokoro: false, commands: lingua })),
+    ...heavyAtBoot({ kokoro }),
+    ...reading.flatMap((lingua) => heavyAtBoot({ kokoro: false, reading: lingua })),
+    ...commands.flatMap((lingua) => heavyAtBoot({ kokoro: false, commands: lingua })),
   ])];
   if (base) console.log(`base: ${base}`);
   const { ok, linhas } = await levarPesadosParaEntrega({
-    destino, pesados: PESADOS.filter((p) => ids.includes(p.id)), caminhoNaEntrega, base, fonteDe: heavySourceOf,
+    destino, pesados: HEAVY_FILES.filter((p) => ids.includes(p.id)), deliveryPath, base, fonteDe: heavySourceOf,
   });
   for (const l of linhas) console.log(`${l.estado.padEnd(9)} ${l.id}${l.erro ? ` — ${l.erro}` : ''}`);
   if (!ok) { console.error('a heavy file failed: the delivery is incomplete, and nothing unchecked was written'); process.exit(1); }

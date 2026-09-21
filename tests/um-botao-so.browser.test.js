@@ -61,7 +61,7 @@ beforeAll(async () => {
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
     acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
-    baixarPesados: false, players: assentos, preset: PRESET,
+    downloadHeavy: false, players: assentos, preset: PRESET,
     onCommand: (c) => comandos.push(c),
   });
 });

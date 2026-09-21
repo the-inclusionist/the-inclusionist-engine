@@ -65,7 +65,7 @@ describe('the virtual pad speaks the boot language', () => {
     createGame({ acomodacoes: SEM_ASSUNTO, controleNaTela: true,
       declaration: declaracaoValida(),
       host: { doc: document, win: window },
-      baixarPesados: false,
+      downloadHeavy: false,
       preset: {
         up: { get label() { return t('menu.visual'); } }, down: { get label() { return t('menu.empathy'); } },
         action2: { get label() { return t('menu.close'); } }, action3: { get label() { return t('menu.back'); } },

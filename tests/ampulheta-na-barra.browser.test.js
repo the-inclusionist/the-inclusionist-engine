@@ -28,7 +28,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status"></p><div class="stage-wrap" style="width:1280px;height:720px;display:flex;flex:none">'
     + '<div id="game-region" tabindex="-1" style="position:relative"><div id="title-icons"></div></div></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao('clock'), host: { doc: document, win: window }, baixarPesados: false });
+  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao('clock'), host: { doc: document, win: window }, downloadHeavy: false });
   await new Promise((r) => setTimeout(r, 80));
 });
 afterAll(() => {

@@ -29,7 +29,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
-    acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false,
+    acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false,
     players: [{ ctrl: 0 }], preset: { left: { label: 'Esquerda' }, action2: { label: 'Pular' } },
   });
 });

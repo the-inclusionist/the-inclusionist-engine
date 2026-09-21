@@ -20,7 +20,7 @@ executable code and models from four third-party hosts, by default, on the child
 | B6 | page ↔ device storage | the child's settings (`incl_*`) and each game's data (`incl.<game>.*`) in `localStorage` / Cache Storage | `platform/storage`, `platform/pesados` |
 | B7 | host → page | the bundle and its service worker | Cloudflare Pages, `vite-plugin-pwa` |
 
-📌 **B1–B3 run by default at every boot** (`createGame`'s `baixarPesados`, idempotent: what is cached is not fetched
+📌 **B1–B3 run by default at every boot** (`createGame`'s `downloadHeavy`, idempotent: what is cached is not fetched
 again), one download at a time, in the background.
 
 📌 **Since this pass:** the heavy files come from the delivery's own origin (ADR-0177), so B1–B3 are contacted by the build; and

@@ -12,9 +12,9 @@
 // afirmar que ele viaja: se um gênero precisasse de um caso especial, o corte estaria no lugar errado.
 import { describe, it, expect } from 'vitest';
 import {
-  createAudioSonar, passoDoMundo, PAN_PACES, GUIA_TIPO, GUIA_VOL, QUADROS_ENTRE_ROTAS,
+  createAudioSonar, worldStep, PAN_PACES, GUIDE_WAVE, GUIDE_VOL, FRAMES_BETWEEN_ROUTES,
 } from '../app/js/platform/audio-sonar.js';
-import { CORTE_LONGE, CORTE_PERTO } from '../app/js/platform/guide-intensity.js';
+import { FAR_CUT, NEAR_CUT } from '../app/js/platform/guide-intensity.js';
 import { routeTo } from '../app/js/core/route.js';
 import { distance } from '../app/js/core/contract.js';
 
@@ -233,23 +233,23 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
     // com o eixo principal morto e só o volume a trabalhar, sem que nada falhasse. E a `sawtooth` é também o
     // que o separa do sonar e da bengala, que são `sine`.
     const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 60, y: 32 }] });
-    quadros(g.som, g, QUADROS_ENTRE_ROTAS);
-    expect(g.osciladores[0].type).toBe(GUIA_TIPO);
-    expect(GUIA_TIPO, 'uma senoide não tem o que filtrar').not.toBe('sine');
+    quadros(g.som, g, FRAMES_BETWEEN_ROUTES);
+    expect(g.osciladores[0].type).toBe(GUIDE_WAVE);
+    expect(GUIDE_WAVE, 'uma senoide não tem o que filtrar').not.toBe('sine');
     expect(g.filtros[0].type).toBe('lowpass');
   });
 
   it('⚠️ [Right] aproximar-se ABRE o filtro; afastar-se fecha-o, e nenhum dos dois cala', () => {
     const perto = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 32 + 16, y: 32 }] });      // 1 passo
     const longe = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 32 + 20 * 16, y: 32 }] }); // 20 passos
-    quadros(perto.som, perto, QUADROS_ENTRE_ROTAS + 2);
-    quadros(longe.som, longe, QUADROS_ENTRE_ROTAS + 2);
+    quadros(perto.som, perto, FRAMES_BETWEEN_ROUTES + 2);
+    quadros(longe.som, longe, FRAMES_BETWEEN_ROUTES + 2);
     expect(perto.filtros[0].frequency.value).toBeGreaterThan(longe.filtros[0].frequency.value);
     expect(perto.ganhos[0].gain.value).toBeGreaterThan(longe.ganhos[0].gain.value);
     // ⚠️ E longe NÃO É SILÊNCIO. Se fosse, «longe» ficaria indistinguível de «não há alvo».
     expect(longe.ganhos[0].gain.value, 'o guia calou ao longe').toBeGreaterThan(0);
-    expect(longe.filtros[0].frequency.value).toBeGreaterThanOrEqual(CORTE_LONGE);
-    expect(perto.filtros[0].frequency.value).toBeLessThanOrEqual(CORTE_PERTO);
+    expect(longe.filtros[0].frequency.value).toBeGreaterThanOrEqual(FAR_CUT);
+    expect(perto.filtros[0].frequency.value).toBeLessThanOrEqual(NEAR_CUT);
   });
 
   it('[Zero] categoria `guide` desligada: nenhum grafo nasce', () => {
@@ -267,7 +267,7 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
   });
 
   it('⚠️ [Zero] SEM ALVO o guia nem chega a acender — e nasceu vermelho a acender 60× por segundo', () => {
-    // Silêncio é a ÚNICA afirmação que o guia pode fazer, e ela quer dizer «não há alvo» (o `VOL_LONGE` do
+    // Silêncio é a ÚNICA afirmação que o guia pode fazer, e ela quer dizer «não há alvo» (o `FAR_VOL` do
     // `guide-intensity` existe para que «longe» nunca a faça). Mas a primeira escrita disto acendia o grafo
     // e só depois perguntava pelo alvo: sessenta osciladores criados e destruídos por segundo, inaudíveis e
     // caros. É o custo novo da PERMANÊNCIA — o bipe não podia ter este defeito porque nada nele durava.
@@ -282,11 +282,11 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
     // (não a categoria, não o modo visual) que o desliga.
     let alvos = [{ x: 60, y: 32 }];
     const g = setupGuia({ players: [pl({ vePouco: true })], targetsOf: () => alvos });
-    quadros(g.som, g, QUADROS_ENTRE_ROTAS + 2);
+    quadros(g.som, g, FRAMES_BETWEEN_ROUTES + 2);
     expect(g.osciladores.length).toBe(1);
     expect(g.osciladores[0].parouEm).toBe(null);
     alvos = [];
-    quadros(g.som, g, QUADROS_ENTRE_ROTAS + 1);
+    quadros(g.som, g, FRAMES_BETWEEN_ROUTES + 1);
     expect(g.osciladores[0].parouEm, 'o alvo sumiu e o guia continuou a apontar para ele').not.toBe(null);
     expect(g.osciladores.length, 'apagou e acendeu outro — o laço voltou a girar').toBe(1);
   });
@@ -305,15 +305,15 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
 
   it('[Interface] o volume MESTRE multiplica o guia, e não o desliga do grafo', () => {
     const g = setupGuia({ players: [pl({ vePouco: true })], alvos: [{ x: 48, y: 32 }], getVolume: () => 0 });
-    quadros(g.som, g, QUADROS_ENTRE_ROTAS + 2);
+    quadros(g.som, g, FRAMES_BETWEEN_ROUTES + 2);
     expect(g.ganhos[0].gain.value).toBe(0);
     expect(g.osciladores[0].parouEm, 'baixar o volume matou o grafo em vez de o silenciar').toBe(null);
   });
 
   it('[Simple] o ganho de base é MAIS BAIXO do que o do bipe que substitui', () => {
     // Um som que nunca para é percebido como mais alto do que um transiente do mesmo pico. O bipe usava 0,11.
-    expect(GUIA_VOL).toBeLessThan(0.11);
-    expect(GUIA_VOL, 'o piso de volume não pode ser zero').toBeGreaterThan(0);
+    expect(GUIDE_VOL).toBeLessThan(0.11);
+    expect(GUIDE_VOL, 'o piso de volume não pode ser zero').toBeGreaterThan(0);
   });
 });
 
@@ -322,14 +322,14 @@ describe('platform/audio-sonar · updateGuide, a PRESENÇA CONTÍNUA (#84 item 2
 //   · `let g = pl._guia` → `let g = null` (o grafo deixa de sobreviver ao quadro) → reprovam TRES: "O BIPE
 //     MORREU" (60 osciladores em vez de 1) e os dois casos de derrubada, que passam a olhar para o oscilador
 //     errado. E a mutacao produz literalmente o defeito que este item existe para tirar, sessenta vezes pior.
-//   · `GUIA_TIPO` de `sawtooth` para `sine` → reprova "o timbre tem HARMONICOS". O guia continuaria a soar e
+//   · `GUIDE_WAVE` de `sawtooth` para `sine` → reprova "o timbre tem HARMONICOS". O guia continuaria a soar e
 //     o filtro continuaria a mover-se; o que morreria em silencio e o EIXO PRINCIPAL, porque uma senoide nao
 //     tem harmonicos para um passa-baixo cortar.
 //   · tirando o `desligarGuia(pl)` da guarda de cima → reprova "desligar a categoria a MEIO". O oscilador
 //     fica vivo com o cursor no zero — um som que dura e um som que vaza.
 //   · `if (roleAt)` → `if (roleAt && false)` (tudo cai na reta) → reprova "a distancia e a que a crianca
 //     ANDA". O guia voltaria a dizer «quase la» de um alvo atras de uma parede.
-//   · `GUIA_VOL * i.volume * vol` → `GUIA_VOL * i.volume` → reprova "o volume MESTRE multiplica". O guia
+//   · `GUIDE_VOL * i.volume * vol` → `GUIDE_VOL * i.volume` → reprova "o volume MESTRE multiplica". O guia
 //     ignoraria o cursor de volume do jogo, e so esse.
 //   · tirando o `if (!alvoMaisProximo(pl)) continue` de antes de acender → reprovam DOIS: "SEM ALVO o guia
 //     nem chega a acender" e o caso do alvo que desaparece. E o defeito que esta bateria apanhou por si: a
@@ -350,8 +350,8 @@ describe('platform/audio-sonar · a rota, quando o jogo a permite (#84 item 2)',
       topology: GRADE_ORTO,
       players: [pl({ x: 4, y: 0, vePouco: true })], alvos: [{ x: 6, y: 0 }],
     });
-    quadros(comRota.som, comRota, QUADROS_ENTRE_ROTAS + 2);
-    quadros(semRota.som, semRota, QUADROS_ENTRE_ROTAS + 2);
+    quadros(comRota.som, comRota, FRAMES_BETWEEN_ROUTES + 2);
+    quadros(semRota.som, semRota, FRAMES_BETWEEN_ROUTES + 2);
     // A reta diz «2 casas» e abre o filtro quase todo; a rota sabe da parede e mantém-no fechado.
     expect(
       comRota.filtros[0].frequency.value,
@@ -482,11 +482,11 @@ describe('platform/audio-sonar — o pan na regua declarada (#121)', () => {
     }
   });
 
-  it('⚠️ [Interface] `passoDoMundo` responde pelas tres topologias, e a lista responde ZERO', () => {
-    expect(passoDoMundo(CONTINUO)).toBe(16);
-    expect(passoDoMundo(CAMPO)).toBe(1);
-    expect(passoDoMundo(GRADE)).toBe(1);
-    expect(passoDoMundo(LISTA)).toBe(0);
+  it('⚠️ [Interface] `worldStep` responde pelas tres topologias, e a lista responde ZERO', () => {
+    expect(worldStep(CONTINUO)).toBe(16);
+    expect(worldStep(CAMPO)).toBe(1);
+    expect(worldStep(GRADE)).toBe(1);
+    expect(worldStep(LISTA)).toBe(0);
     expect(PAN_PACES, '11 e a releitura de 176/16; mudar isto muda o que a crianca ja ouve').toBe(11);
   });
 });
@@ -497,6 +497,6 @@ describe('platform/audio-sonar — o pan na regua declarada (#121)', () => {
 //     #121 reproduzida, e o `[Cross-check]` ao lado confirma que o numero da issue estava certo.
 //   · trocando `PAN_PACES` de 11 para 12 → reprovam QUATRO, incluindo "[Right] a plataforma ouve EXATAMENTE
 //     o que ouvia". E o que impede o conserto de mexer, de passagem, no que ja funcionava para uma crianca.
-//   · fazendo `passoDoMundo` devolver 1 para `hotspots` → reprovam DOIS: "[Zero] `hotspots` nao tem lado" e o
+//   · fazendo `worldStep` devolver 1 para `hotspots` → reprovam DOIS: "[Zero] `hotspots` nao tem lado" e o
 //     "[Interface]". Um pan calculado sobre indices de lista aponta para um lado que nao existe.
 //   · tirando o `Math.max(-1, Math.min(1, ...))` → "[Boundary] o pan continua preso" reprova nas tres.

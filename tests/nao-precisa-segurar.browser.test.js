@@ -42,7 +42,7 @@ beforeAll(async () => {
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
     acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window },
-    baixarPesados: false, controleNaTela: true, players: assentos, preset: PRESET,
+    downloadHeavy: false, controleNaTela: true, players: assentos, preset: PRESET,
   });
 });
 afterAll(async () => {
@@ -220,7 +220,7 @@ describe('the sticky-keys row a child can read', () => {
     });
     const segundo = createGame({
       acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: outro, win: semCamera },
-      baixarPesados: false, controleNaTela: true, players: [{ ctrl: 0 }], preset: PRESET,
+      downloadHeavy: false, controleNaTela: true, players: [{ ctrl: 0 }], preset: PRESET,
     });
     try {
       const passos = outro.querySelector('#motora #opt-camera');

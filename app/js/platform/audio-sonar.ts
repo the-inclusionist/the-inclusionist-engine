@@ -45,7 +45,7 @@ import { t } from '../core/i18n.js';
 // parede, e a INTENSIDADE traduz esse número em brilho e volume. Nenhum dos dois toca no Web Audio; a fiação
 // — a única parte que toca — é o `updateGuide` lá em baixo, e é por isso que o desenho é conferível em `node`.
 import { routeTo } from '../core/route.js';
-import { intensidadeDoGuia, CORTE_LONGE, PASSOS_ATE_O_FUNDO } from './guide-intensity.js';
+import { guideIntensity, FAR_CUT, STEPS_TO_FLOOR } from './guide-intensity.js';
 
 export type SinkAC = AudioContext & { setSinkId?: (id: string) => Promise<void> };
 
@@ -69,7 +69,7 @@ export const PAN_PACES = 11;
  * Contínuo: o `unit` declarado. Grade: uma célula, por definição. Lista: nada — `hotspots` é uma ordem, não
  * uma geometria, e inventar-lhe uma largura de estéreo seria apontar para um lado que não existe.
  */
-export function passoDoMundo(topo: Topology): number {
+export function worldStep(topo: Topology): number {
   return topo.kind === 'continuous' ? topo.unit : topo.kind === 'grid' ? 1 : 0;
 }
 
@@ -88,7 +88,7 @@ export interface SonarPlayer extends PlayerAudioOut {
 }
 
 /** O grafo contínuo do guia: oscilador → passa-baixo → ganho → panorâmica → categoria `guide`. */
-export interface GuiaVivo {
+export interface LiveGuide {
   /** O contexto que o construiu — é dele que sai o `currentTime` de cada `setTargetAtTime`. */
   readonly ac: AudioContext;
   readonly osc: OscillatorNode;
@@ -115,7 +115,7 @@ export interface GuiaVivo {
  * E ela resolve, de graça, a outra restrição do plano: o sonar e a bengala usam `sine`. Um timbre diferente
  * era exigência de não colidirem no mesmo canal; aqui o timbre diferente É o mecanismo.
  */
-export const GUIA_TIPO: OscillatorType = 'sawtooth';
+export const GUIDE_WAVE: OscillatorType = 'sawtooth';
 
 /**
  * A fundamental do guia, fixa.
@@ -124,7 +124,7 @@ export const GUIA_TIPO: OscillatorType = 'sawtooth';
  * guia também subisse de tom, os dois estariam a dizer a mesma coisa pelo mesmo meio, e quem ouve os dois ao
  * mesmo tempo não teria como separá-los. O guia diz distância por brilho; o sonar, por altura.
  */
-export const GUIA_HZ = 220;
+export const GUIDE_HZ = 220;
 
 /**
  * Quantos quadros entre dois cálculos de rota.
@@ -134,14 +134,14 @@ export const GUIA_HZ = 220;
  * quadros são ~0,2 s a 60 fps — mais depressa do que a criança anda um passo, e o som não espera por eles: a
  * intensidade é reescrita TODO quadro, com o `passos` que a última rota deixou.
  */
-export const QUADROS_ENTRE_ROTAS = 12;
+export const FRAMES_BETWEEN_ROUTES = 12;
 
 /**
  * O tecto de pontos da rota do guia. Bem abaixo dos 4096 do `core/route`, e o próprio módulo diz porquê:
  * «uma pista por quadro tolera muito menos do que um cálculo ao carregar a fase». Estourar devolve `null`, que
  * é «não sei» — e o guia cai na reta, que ainda soa.
  */
-export const ORCAMENTO_DA_ROTA = 1024;
+export const ROUTE_BUDGET = 1024;
 
 /**
  * O ganho de base do guia, antes de a intensidade e o volume mestre o multiplicarem.
@@ -150,11 +150,11 @@ export const ORCAMENTO_DA_ROTA = 1024;
  * percebido como mais alto do que um transiente do mesmo pico, e cansa por permanência em vez de por
  * intensidade — exactamente o que o modo TEA existe para não fazer.
  */
-export const GUIA_VOL = 0.06;
+export const GUIDE_VOL = 0.06;
 
 /** Constante de tempo do `setTargetAtTime`. Curta o bastante para acompanhar o passo, longa o bastante para
  *  que a mudança seja um deslize e não um degrau — um degrau a cada rota seria um bipe outra vez. */
-export const TAU_DO_GUIA = 0.08;
+export const GUIDE_TAU = 0.08;
 
 /**
  * A SAÍDA DEDICADA de um jogador, e este módulo é o DONO dela: é aqui que os dois campos NASCEM
@@ -182,7 +182,7 @@ export interface PlayerAudioOut {
    * ⚠️ E É POR ISSO QUE `desligarGuia` EXISTE. Um campo que dura é um campo que vaza: sem alguém a pará-lo,
    * desligar a categoria `guide` no mixer deixaria o som a tocar.
    */
-  _guia?: GuiaVivo | null;
+  _guia?: LiveGuide | null;
 }
 
 export interface PlayerCtxOut { ac: AudioContext; out: GainNode; }
@@ -246,7 +246,7 @@ export interface SonarCtx {
   /**
    * @deprecated ⚠️ SEM LEITOR DESDE 2026-09-07 (#121). Era o denominador do pan, e era o defeito: media a
    * largura do estéreo em pixels de ecrã e dividia por ela uma distância de MUNDO. Agora a largura vem da
-   * topologia (`PAN_PACES * passoDoMundo`).
+   * topologia (`PAN_PACES * worldStep`).
    *
    * Ficou OPCIONAL em vez de removido — tornar um campo obrigatório em opcional é compatível para trás, e
    * quem já o injecta continua a compilar. Removê-lo de vez é candidato ao próximo major.
@@ -294,7 +294,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   }
 
   function panFor(wx: number, pl: SonarPlayer): number {
-    const passo = passoDoMundo(ctx.topology());
+    const passo = worldStep(ctx.topology());
     // `hotspots` não tem espaço, logo não tem lado. O `bearing` já responde `none` pelo mesmo motivo, e
     // centrar é a única resposta honesta — um pan calculado sobre índices de lista aponta para nada.
     if (!(passo > 0)) return 0;
@@ -416,7 +416,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
     const roleAt = ctx.roleAt;
     if (roleAt) {
       const rota = routeTo(
-        { topology: ctx.topology(), roleAt, orcamento: ORCAMENTO_DA_ROTA },
+        { topology: ctx.topology(), roleAt, orcamento: ROUTE_BUDGET },
         { x: pl.x, y: pl.y }, [alvo.at],
       );
       if (rota) return rota.passos;
@@ -425,16 +425,16 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
   }
 
   /** Acende o grafo contínuo deste jogador. `null` = não deu (sem contexto, ou motor sem Web Audio). */
-  function ligarGuia(pl: SonarPlayer): GuiaVivo | null {
+  function ligarGuia(pl: SonarPlayer): LiveGuide | null {
     const pc = playerCtx(pl);
     const ac = pc ? pc.ac : ctx.getAudioCtx();
     if (!ac) return null;
     try {
       const osc = ac.createOscillator(), filtro = ac.createBiquadFilter(), ganho = ac.createGain();
-      osc.type = GUIA_TIPO;
-      osc.frequency.value = GUIA_HZ;
+      osc.type = GUIDE_WAVE;
+      osc.frequency.value = GUIDE_HZ;
       filtro.type = 'lowpass';
-      filtro.frequency.value = CORTE_LONGE; // nasce no fundo da escala e sobe; nascer aberto seria um susto
+      filtro.frequency.value = FAR_CUT; // nasce no fundo da escala e sobe; nascer aberto seria um susto
       ganho.gain.value = 0;                 // e nasce calado, para não estalar ao ligar
       let saida: AudioNode = ganho;
       let panner: StereoPannerNode | null = null;
@@ -444,7 +444,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
       osc.start();
       // `desdeARota` nasce no tecto para que a PRIMEIRA volta já meça a rota, em vez de soar doze quadros
       // com um `passos` inventado.
-      return { ac, osc, filtro, ganho, panner, desdeARota: QUADROS_ENTRE_ROTAS, passos: PASSOS_ATE_O_FUNDO, pan: 0 };
+      return { ac, osc, filtro, ganho, panner, desdeARota: FRAMES_BETWEEN_ROUTES, passos: STEPS_TO_FLOOR, pan: 0 };
     } catch (e) { return null; }
   }
 
@@ -476,7 +476,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
    * para quem tem TEA». O que entra não dispara nada — o som já está lá, e muda de brilho.
    *
    * ⚠️ E CALAR CONTINUA A SER UMA AFIRMAÇÃO, com um significado só: NÃO HÁ ALVO. É por isso que «sem alvo»
-   * apaga o grafo e «longe» não: o piso do `guide-intensity` (`VOL_LONGE`) existe exactamente para que a
+   * apaga o grafo e «longe» não: o piso do `guide-intensity` (`FAR_VOL`) existe exactamente para que a
    * criança não confunda «está longe» com «não há nada para achar».
    */
   function updateGuide(): void {
@@ -498,7 +498,7 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
         if (!g) continue;
       }
 
-      if (++g.desdeARota >= QUADROS_ENTRE_ROTAS) {
+      if (++g.desdeARota >= FRAMES_BETWEEN_ROUTES) {
         g.desdeARota = 0;
         const alvo = alvoMaisProximo(pl);
         if (!alvo) { desligarGuia(pl); continue; }
@@ -507,12 +507,12 @@ export function createAudioSonar(ctx: SonarCtx): AudioSonar {
       }
 
       // TODO quadro, e não só quando a rota é nova: é isto que faz a mudança ser um deslize.
-      const i = intensidadeDoGuia(g.passos);
+      const i = guideIntensity(g.passos);
       try {
         const agora = g.ac.currentTime;
-        g.filtro.frequency.setTargetAtTime(i.corte, agora, TAU_DO_GUIA);
-        g.ganho.gain.setTargetAtTime(GUIA_VOL * i.volume * vol, agora, TAU_DO_GUIA);
-        g.panner?.pan.setTargetAtTime(g.pan, agora, TAU_DO_GUIA);
+        g.filtro.frequency.setTargetAtTime(i.corte, agora, GUIDE_TAU);
+        g.ganho.gain.setTargetAtTime(GUIDE_VOL * i.volume * vol, agora, GUIDE_TAU);
+        g.panner?.pan.setTargetAtTime(g.pan, agora, GUIDE_TAU);
       } catch (e) { /* noop */ }
       _guideCount++;
     }

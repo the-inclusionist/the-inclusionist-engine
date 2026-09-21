@@ -28,7 +28,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   state = await import('../app/js/core/state.js');
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, players: [{ ctrl: 0 }] });
+  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }] });
 });
 afterAll(() => {
   state.setCaptionsOnValue(true);

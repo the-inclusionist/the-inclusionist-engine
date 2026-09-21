@@ -28,7 +28,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, controleNaTela: true, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, players: [{ ctrl: 0 }], preset: PRESET });
+  motor = createGame({ acomodacoes: SEM_ASSUNTO, controleNaTela: true, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], preset: PRESET });
 });
 afterAll(() => { if (antes === null) localStorage.removeItem('incl_touchmap'); else localStorage.setItem('incl_touchmap', antes); });
 

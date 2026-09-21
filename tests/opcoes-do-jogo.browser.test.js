@@ -49,7 +49,7 @@ beforeAll(async () => {
   document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, players: [{ ctrl: 0 }], gameOptions: opcoes() });
+  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], gameOptions: opcoes() });
 });
 
 describe('the game options panel', () => {
@@ -130,7 +130,7 @@ describe('the game options panel', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     expect(() => motor.mount(declaracao(), { acomodacoes: SEM_ASSUNTO, players: [{ ctrl: 0 }], gameOptions: [{ id: 'x', kind: 'switch', label: 'X', read: () => true }] }))
       .toThrow(/gameOptions\[0\]\.write/);
-    expect(() => createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, players: [{ ctrl: 0 }], gameOptions: 'difficulty' }))
+    expect(() => createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, players: [{ ctrl: 0 }], gameOptions: 'difficulty' }))
       .toThrow(/gameOptions must be a list/);
   });
 });

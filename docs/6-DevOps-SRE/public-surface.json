@@ -754,21 +754,21 @@
   ],
   "platform/audio-sonar.ts": [
     "AudioSonar",
-    "GUIA_HZ",
-    "GUIA_TIPO",
-    "GUIA_VOL",
-    "GuiaVivo",
-    "ORCAMENTO_DA_ROTA",
+    "FRAMES_BETWEEN_ROUTES",
+    "GUIDE_HZ",
+    "GUIDE_TAU",
+    "GUIDE_VOL",
+    "GUIDE_WAVE",
+    "LiveGuide",
     "PAN_PACES",
     "PlayerAudioOut",
     "PlayerCtxOut",
-    "QUADROS_ENTRE_ROTAS",
+    "ROUTE_BUDGET",
     "SinkAC",
     "SonarCtx",
     "SonarPlayer",
-    "TAU_DO_GUIA",
     "createAudioSonar",
-    "passoDoMundo"
+    "worldStep"
   ],
   "platform/audio.ts": [
     "_footCount",
@@ -792,12 +792,12 @@
     "volume"
   ],
   "platform/guide-intensity.ts": [
-    "CORTE_LONGE",
-    "CORTE_PERTO",
-    "Intensidade",
-    "PASSOS_ATE_O_FUNDO",
-    "VOL_LONGE",
-    "intensidadeDoGuia"
+    "FAR_CUT",
+    "FAR_VOL",
+    "Intensity",
+    "NEAR_CUT",
+    "STEPS_TO_FLOOR",
+    "guideIntensity"
   ],
   "platform/heavy-mirror.ts": [
     "MIRROR_FOLDERS",
@@ -807,9 +807,9 @@
     "mirrorPathOf"
   ],
   "platform/interruptible-speech.ts": [
-    "FalaInterrompivel",
-    "MotorDeFala",
-    "criarFalaInterrompivel"
+    "InterruptibleSpeech",
+    "SpeechEngine",
+    "createInterruptibleSpeech"
   ],
   "platform/kokoro-port.ts": [
     "EspeakFactory",
@@ -822,25 +822,25 @@
     "loadKokoroRuntime"
   ],
   "platform/kokoro.ts": [
-    "BYTES_DA_VOZ_KOKORO",
-    "BYTES_DO_MODELO_KOKORO",
     "BYTES_DO_TOKENIZADOR_KOKORO",
-    "DIMENSAO_DO_ESTILO",
+    "KOKORO_MODEL_BYTES",
+    "KOKORO_MODEL_SHA256",
+    "KOKORO_MODEL_URL",
+    "KOKORO_VOICES",
+    "KOKORO_VOICES_SHA256",
+    "KOKORO_VOICE_BYTES",
     "KokoroModule",
     "KokoroSession",
+    "KokoroVoice",
     "LoadKokoro",
-    "SHA256_DAS_VOZES_KOKORO",
-    "SHA256_DO_MODELO_KOKORO",
+    "MAX_KOKORO_TOKENS",
     "SHA256_DO_TOKENIZADOR_KOKORO",
-    "TOKENS_MAXIMOS",
-    "URL_DO_MODELO_KOKORO",
+    "STYLE_DIMENSION",
     "URL_DO_TOKENIZADOR_KOKORO",
-    "VOZES_KOKORO",
-    "VozKokoro",
     "eFala",
-    "estiloDaFrase",
+    "kokoroVoiceUrl",
+    "sentenceStyle",
     "tokenizar",
-    "urlDaVozKokoro",
     "wavDe"
   ],
   "platform/microphone.ts": [
@@ -863,20 +863,20 @@
     "loadOnnxRuntime"
   ],
   "platform/pesados-catalogo.ts": [
-    "CACHE_PESADOS",
-    "PESADOS",
-    "Pesado",
+    "CACHE_HEAVY",
+    "HEAVY_FILES",
+    "HeavyFile",
     "commandsLanguageOf",
     "readingLanguageOf"
   ],
   "platform/pesados.ts": [
-    "OpcoesDosPesados",
-    "RelatorioPesado",
-    "baixarPesados",
-    "caminhoNaEntrega",
-    "chaveDaEntrega",
-    "pesadosDoArranque",
-    "pesoPorBaixar",
+    "HeavyOptions",
+    "HeavyReport",
+    "bytesLeftToDownload",
+    "deliveryCacheKey",
+    "deliveryPath",
+    "downloadHeavy",
+    "heavyAtBoot",
     "sha256Hex"
   ],
   "platform/reading-in-worker.ts": [
@@ -921,30 +921,30 @@
     "createReading"
   ],
   "platform/speech-recognition.ts": [
-    "ApiDeReconhecimento",
-    "ComandoOuvido",
-    "EstadoLocal",
-    "InstanciaDeReconhecimento",
-    "LeitorDeComandos",
-    "RotaDoReconhecimento",
-    "criarLeitorDeComandos",
-    "criarReconhecimentoLocal",
-    "rotaDoReconhecimento",
-    "textoFalado"
+    "CommandReader",
+    "HeardCommand",
+    "OnDeviceAvailability",
+    "RecognitionApi",
+    "RecognitionInstance",
+    "RecognitionRoute",
+    "createCommandReader",
+    "createOnDeviceRecognition",
+    "recognitionRoute",
+    "spokenText"
   ],
   "platform/speech.ts": [
     "gameSay"
   ],
   "platform/storage.ts": [
     "KEYS",
-    "chavesForaDosEscopos",
+    "gameKey",
     "get",
     "getBool",
-    "getComLegado",
     "getJSON",
-    "getJSONComLegado",
+    "getJsonWithLegacy",
     "getNum",
-    "kJogo",
+    "getWithLegacy",
+    "keysOutsideScopes",
     "remove",
     "set",
     "setBool",
@@ -989,8 +989,8 @@
     "startVoiceListening"
   ],
   "platform/voice-plan.ts": [
-    "VozNeural",
-    "vozesDoIdioma"
+    "NeuralVoice",
+    "voicesForLocale"
   ],
   "platform/vosk-runtime.ts": [
     "VOICE_RUNTIME_FILES",

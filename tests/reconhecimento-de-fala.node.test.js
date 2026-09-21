@@ -4,7 +4,7 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { rotaDoReconhecimento, criarReconhecimentoLocal, criarLeitorDeComandos, textoFalado } from '../app/js/platform/speech-recognition.js';
+import { recognitionRoute, createOnDeviceRecognition, createCommandReader, spokenText } from '../app/js/platform/speech-recognition.js';
 
 /** A fake `SpeechRecognition`: `local` says whether its objects know `processLocally`; `estado` what `available` answers. */
 function apiFalsa({ local = true, estado = 'available', semAvailable = false } = {}) {
@@ -18,30 +18,30 @@ function apiFalsa({ local = true, estado = 'available', semAvailable = false } =
 describe('the route: the browser only on the device (ADR-0200 erratum)', () => {
   it('🔴 [Right] recognition installed on the device → the browser, asked with processLocally', async () => {
     const { SR, pedidos } = apiFalsa();
-    expect(await rotaDoReconhecimento('pt-BR', SR)).toEqual({ rota: 'webspeech-local', estado: 'available' });
+    expect(await recognitionRoute('pt-BR', SR)).toEqual({ rota: 'webspeech-local', estado: 'available' });
     expect(pedidos).toEqual([{ langs: ['pt-BR'], processLocally: true }]);
   });
 
   it('🎯 [Zero] a browser that cannot recognise on the device is never the route, even if it says «available»', async () => {
     const { SR } = apiFalsa({ local: false });
-    expect(await rotaDoReconhecimento('pt-BR', SR)).toEqual({ rota: 'recuo', estado: 'sem-processamento-local' });
-    expect(() => criarReconhecimentoLocal(SR, 'pt-BR'), 'a server recogniser was created').toThrow(/leave the device/);
+    expect(await recognitionRoute('pt-BR', SR)).toEqual({ rota: 'recuo', estado: 'sem-processamento-local' });
+    expect(() => createOnDeviceRecognition(SR, 'pt-BR'), 'a server recogniser was created').toThrow(/leave the device/);
   });
 
   it('⚠️ [Boundary] a language still to download, no API, or no `available` → the engine\'s recogniser', async () => {
-    expect(await rotaDoReconhecimento('es', apiFalsa({ estado: 'downloadable' }).SR)).toEqual({ rota: 'recuo', estado: 'downloadable' });
-    expect(await rotaDoReconhecimento('es', null)).toEqual({ rota: 'recuo', estado: 'sem-api' });
-    expect((await rotaDoReconhecimento('es', apiFalsa({ semAvailable: true }).SR)).rota).toBe('recuo');
+    expect(await recognitionRoute('es', apiFalsa({ estado: 'downloadable' }).SR)).toEqual({ rota: 'recuo', estado: 'downloadable' });
+    expect(await recognitionRoute('es', null)).toEqual({ rota: 'recuo', estado: 'sem-api' });
+    expect((await recognitionRoute('es', apiFalsa({ semAvailable: true }).SR)).rota).toBe('recuo');
   });
 
   it('🔴 [Right] the recognition object is set to the device, continuous, with partial hypotheses', () => {
-    const rec = criarReconhecimentoLocal(apiFalsa().SR, 'es-MX');
+    const rec = createOnDeviceRecognition(apiFalsa().SR, 'es-MX');
     expect([rec.lang, rec.processLocally, rec.continuous, rec.interimResults]).toEqual(['es-MX', true, true, true]);
   });
 });
 
 describe('what a command is in what was heard (ADR-0194)', () => {
-  const leitor = () => { const l = criarLeitorDeComandos(['acima', 'abaixo', 'confirmar', 'voltar', 'menu']); l.itens(['Voltar ao jogo', 'Configurações de inclusão', 'Voltar']); return l; };
+  const leitor = () => { const l = createCommandReader(['acima', 'abaixo', 'confirmar', 'voltar', 'menu']); l.itens(['Voltar ao jogo', 'Configurações de inclusão', 'Voltar']); return l; };
 
   it('🔴 [Right] direction words and whole item names, the longest name first', () => {
     expect(leitor().ler(0, 'Acima, configurações de inclusão e abaixo', true)).toEqual([
@@ -67,7 +67,7 @@ describe('what a command is in what was heard (ADR-0194)', () => {
 
   it('[Zero] other words command nothing; punctuation and case do not matter', () => {
     expect(leitor().ler(0, 'o gato subiu no telhado', true)).toEqual([]);
-    expect(textoFalado('Ajuda — Como jogar!')).toBe('ajuda como jogar');
+    expect(spokenText('Ajuda — Como jogar!')).toBe('ajuda como jogar');
   });
 });
 

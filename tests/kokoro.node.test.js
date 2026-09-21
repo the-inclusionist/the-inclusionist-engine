@@ -6,35 +6,35 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
-import { VOZES_KOKORO, tokenizar, estiloDaFrase, eFala, wavDe, TOKENS_MAXIMOS, DIMENSAO_DO_ESTILO } from '../app/js/platform/kokoro.js';
-import { vozesDoIdioma } from '../app/js/platform/voice-plan.js';
-import { PESADOS } from '../app/js/platform/pesados-catalogo.js';
+import { KOKORO_VOICES, tokenizar, sentenceStyle, eFala, wavDe, MAX_KOKORO_TOKENS, STYLE_DIMENSION } from '../app/js/platform/kokoro.js';
+import { voicesForLocale } from '../app/js/platform/voice-plan.js';
+import { HEAVY_FILES } from '../app/js/platform/pesados-catalogo.js';
 
 describe('the Kokoro catalogue', () => {
   it('🔴 [Right] Portuguese and Spanish hold three voices each; English twenty-eight, American and British', () => {
-    const por = (tag) => vozesDoIdioma(tag, VOZES_KOKORO).map((v) => v.voice);
+    const por = (tag) => voicesForLocale(tag, KOKORO_VOICES).map((v) => v.voice);
     expect(por('pt-BR')).toEqual(['pf_dora', 'pm_alex', 'pm_santa']);
     expect(por('es-MX')).toEqual(['ef_dora', 'em_alex', 'em_santa']);
     expect(por('en').length).toBe(28);
   });
 
   it('🔴 [Right] exactly two voices are good: Heart and Bella (ADR-0198 §3)', () => {
-    expect(VOZES_KOKORO.filter((v) => v.boa).map((v) => v.voice)).toEqual(['af_heart', 'af_bella']);
+    expect(KOKORO_VOICES.filter((v) => v.boa).map((v) => v.voice)).toEqual(['af_heart', 'af_bella']);
   });
 
   it('⚠️ [Boundary] each voice is phonemized in its own language — British English is not American', () => {
-    const espeak = (id) => VOZES_KOKORO.find((v) => v.voice === id).espeak;
+    const espeak = (id) => KOKORO_VOICES.find((v) => v.voice === id).espeak;
     expect([espeak('pf_dora'), espeak('em_alex'), espeak('af_heart'), espeak('bm_george')]).toEqual(['pt-br', 'es-419', 'en-us', 'en-gb']);
   });
 
   it('[Zero] no voice of a language the engine does not speak', () => {
-    expect(VOZES_KOKORO.some((v) => /^[fhijz]/.test(v.voice)), 'French, Hindi, Italian, Japanese or Chinese leaked in').toBe(false);
+    expect(KOKORO_VOICES.some((v) => /^[fhijz]/.test(v.voice)), 'French, Hindi, Italian, Japanese or Chinese leaked in').toBe(false);
   });
 });
 
 describe('Kokoro in the heavy-file catalogue (ADR-0198 erratum: «Faça»)', () => {
   it('🔴 [Right] the model, the tokenizer and every voice of the catalogue, each with its size and a 64-hex SHA-256', () => {
-    const k = PESADOS.filter((p) => p.id.startsWith('voz:kokoro:'));
+    const k = HEAVY_FILES.filter((p) => p.id.startsWith('voz:kokoro:'));
     expect(k.length, 'model + tokenizer + 34 voices').toBe(36);
     const semPeso = k.filter((p) => !(p.bytes > 0) || !/^[0-9a-f]{64}$/.test(p.sha256 ?? '')).map((p) => p.id);
     expect(semPeso, 'an entry the fetcher could not check').toEqual([]);
@@ -51,13 +51,13 @@ describe('the ids and the style row', () => {
   });
 
   it('⚠️ [Boundary] a sentence past the model\'s context is cut at 510 ids', () => {
-    expect(tokenizar('p'.repeat(600), vocab).length).toBe(TOKENS_MAXIMOS + 2);
+    expect(tokenizar('p'.repeat(600), vocab).length).toBe(MAX_KOKORO_TOKENS + 2);
   });
 
   it('🔴 [Right] the style row is the token count\'s row of the voice table, held at its last row', () => {
-    const tabela = new Float32Array(DIMENSAO_DO_ESTILO * 3).map((_, i) => Math.floor(i / DIMENSAO_DO_ESTILO));
-    expect([estiloDaFrase(tabela, 1)[0], estiloDaFrase(tabela, 2)[255], estiloDaFrase(tabela, 99)[0]]).toEqual([1, 2, 2]);
-    expect(estiloDaFrase(tabela, 0).length).toBe(DIMENSAO_DO_ESTILO);
+    const tabela = new Float32Array(STYLE_DIMENSION * 3).map((_, i) => Math.floor(i / STYLE_DIMENSION));
+    expect([sentenceStyle(tabela, 1)[0], sentenceStyle(tabela, 2)[255], sentenceStyle(tabela, 99)[0]]).toEqual([1, 2, 2]);
+    expect(sentenceStyle(tabela, 0).length).toBe(STYLE_DIMENSION);
   });
 });
 

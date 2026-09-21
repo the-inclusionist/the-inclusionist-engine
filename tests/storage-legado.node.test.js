@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A HERANÇA DE CHAVE LEGADA — `getComLegado` / `getJSONComLegado`, que até hoje não tinham nenhum caso.
+// A HERANÇA DE CHAVE LEGADA — `getWithLegacy` / `getJsonWithLegacy`, que até hoje não tinham nenhum caso.
 //
 // Vale dizer o que se perde quando isto quebra, porque não é um valor: é a continuidade. A criança que já
 // jogava tem o nível 5, o cenário escolhido e a gravação da demonstração gravados nos NOMES ANTIGOS. Renomear
@@ -19,7 +19,7 @@
 // quer aferir é o módulo de persistência REAL no caminho. (No project node não existe `localStorage`, então
 // sem o stub toda leitura devolveria o padrão — silenciosa e inutilmente.)
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { get, set, setJSON, getComLegado, getJSONComLegado } from '../app/js/platform/storage.js';
+import { get, set, setJSON, getWithLegacy, getJsonWithLegacy } from '../app/js/platform/storage.js';
 
 const NOVA = 'incl.jogo.nivel';
 const LEGADA = 'incl_nivel';
@@ -38,21 +38,21 @@ afterEach(() => {
   if (localAntigo === undefined) delete globalThis.localStorage; else globalThis.localStorage = localAntigo;
 });
 
-describe('getComLegado — a chave nova ganha, a velha sustenta', () => {
+describe('getWithLegacy — a chave nova ganha, a velha sustenta', () => {
   it('[Right] com a NOVA presente, é ela que responde — mesmo havendo legada', () => {
     set(NOVA, '5');
     set(LEGADA, '2');
-    expect(getComLegado(NOVA, LEGADA, 'padrao')).toBe('5');
+    expect(getWithLegacy(NOVA, LEGADA, 'padrao')).toBe('5');
   });
 
   it('[Right] sem a nova, HERDA a legada — é assim que o nível 5 sobrevive à renomeação', () => {
     set(LEGADA, '5');
-    expect(getComLegado(NOVA, LEGADA, 'padrao')).toBe('5');
+    expect(getWithLegacy(NOVA, LEGADA, 'padrao')).toBe('5');
   });
 
   it('[Zero] sem nenhuma das duas, devolve o padrão', () => {
-    expect(getComLegado(NOVA, LEGADA, 'padrao')).toBe('padrao');
-    expect(getComLegado(NOVA, LEGADA)).toBe(null);
+    expect(getWithLegacy(NOVA, LEGADA, 'padrao')).toBe('padrao');
+    expect(getWithLegacy(NOVA, LEGADA)).toBe(null);
   });
 
   it('[Boundary] ⚠️ um valor FALSO herdado é um valor: `0` e `` não caem no padrão', () => {
@@ -60,9 +60,9 @@ describe('getComLegado — a chave nova ganha, a velha sustenta', () => {
     // reencontra ligada a coisa que ela desligou — o pior tipo de defeito de acessibilidade, porque parece
     // que o programa ignorou a escolha dela.
     set(LEGADA, '0');
-    expect(getComLegado(NOVA, LEGADA, '1')).toBe('0');
+    expect(getWithLegacy(NOVA, LEGADA, '1')).toBe('0');
     set(LEGADA, '');
-    expect(getComLegado(NOVA, LEGADA, 'padrao')).toBe('');
+    expect(getWithLegacy(NOVA, LEGADA, 'padrao')).toBe('');
   });
 
   it('[Boundary] ⚠️ e um valor falso na NOVA também ganha — é AQUI que `!== null` decide', () => {
@@ -74,48 +74,48 @@ describe('getComLegado — a chave nova ganha, a velha sustenta', () => {
     // linguagens sugere. Um caso escrito com `'0'` passaria sob a mutação e não provaria nada.
     set(NOVA, '');
     set(LEGADA, 'valor-abandonado');
-    expect(getComLegado(NOVA, LEGADA, 'padrao')).toBe('');
+    expect(getWithLegacy(NOVA, LEGADA, 'padrao')).toBe('');
   });
 
   it('[Interface] LER não migra — a legada continua lá e a nova continua ausente', () => {
     // A permanência da chave velha é o que torna um retorno possível. Se a leitura gravasse na nova, a
     // primeira leitura seria irreversível e uma migração errada não teria volta.
     set(LEGADA, '5');
-    getComLegado(NOVA, LEGADA, 'padrao');
+    getWithLegacy(NOVA, LEGADA, 'padrao');
     expect(get(NOVA, null), 'a leitura gravou na chave nova').toBe(null);
     expect(get(LEGADA, null), 'a leitura apagou a chave legada').toBe('5');
   });
 });
 
-describe('getJSONComLegado — a mesma herança, para o outro formato', () => {
+describe('getJsonWithLegacy — a mesma herança, para o outro formato', () => {
   it('[Right] a nova ganha; sem ela, herda a legada', () => {
     setJSON(NOVA, { nivel: 5 });
     setJSON(LEGADA, { nivel: 2 });
-    expect(getJSONComLegado(NOVA, LEGADA)).toEqual({ nivel: 5 });
+    expect(getJsonWithLegacy(NOVA, LEGADA)).toEqual({ nivel: 5 });
 
     globalThis.localStorage.removeItem(NOVA);
-    expect(getJSONComLegado(NOVA, LEGADA)).toEqual({ nivel: 2 });
+    expect(getJsonWithLegacy(NOVA, LEGADA)).toEqual({ nivel: 2 });
   });
 
   it('[Zero] sem nenhuma das duas, devolve o padrão', () => {
-    expect(getJSONComLegado(NOVA, LEGADA, { nivel: 1 })).toEqual({ nivel: 1 });
-    expect(getJSONComLegado(NOVA, LEGADA)).toBe(null);
+    expect(getJsonWithLegacy(NOVA, LEGADA, { nivel: 1 })).toEqual({ nivel: 1 });
+    expect(getJsonWithLegacy(NOVA, LEGADA)).toBe(null);
   });
 
   it('[Boundary] ⚠️ `false` e `0` herdados são valores — a metade JSON tem a mesma armadilha', () => {
     // Se a herança dos dois formatos não for a mesma, metade das chaves migra e a outra metade some, que é o
     // pior dos dois mundos: nem o dado antigo nem um erro que o denuncie.
     setJSON(LEGADA, false);
-    expect(getJSONComLegado(NOVA, LEGADA, true)).toBe(false);
+    expect(getJsonWithLegacy(NOVA, LEGADA, true)).toBe(false);
     setJSON(LEGADA, 0);
-    expect(getJSONComLegado(NOVA, LEGADA, 9)).toBe(0);
+    expect(getJsonWithLegacy(NOVA, LEGADA, 9)).toBe(0);
 
     // ⚠️ E o mesmo do lado da NOVA, que é o lado onde `!== null` de facto decide. Em JSON a armadilha é
     // maior do que em texto: `false`, `0`, `''` e `null` são todos falsos, então um `if (v)` aqui devolve o
     // ajuste ANTIGO a quem acabou de desligar a coisa no ajuste novo.
     setJSON(NOVA, false);
     setJSON(LEGADA, true);
-    expect(getJSONComLegado(NOVA, LEGADA)).toBe(false);
+    expect(getJsonWithLegacy(NOVA, LEGADA)).toBe(false);
   });
 
   it('[Error] JSON corrompido na nova cai para a legada em vez de derrubar o boot', () => {
@@ -123,6 +123,6 @@ describe('getJSONComLegado — a mesma herança, para o outro formato', () => {
     // truncado. Um `JSON.parse` que lança aqui derruba o boot inteiro, porque `core/state` lê no import.
     set(NOVA, '{isto nao e json');
     setJSON(LEGADA, { nivel: 5 });
-    expect(getJSONComLegado(NOVA, LEGADA)).toEqual({ nivel: 5 });
+    expect(getJsonWithLegacy(NOVA, LEGADA)).toEqual({ nivel: 5 });
   });
 });

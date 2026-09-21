@@ -11,7 +11,7 @@
 //
 // MUTAÇÕES CONFERIDAS (no fim do arquivo).
 import { describe, it, expect } from 'vitest';
-import { criarFalaInterrompivel } from '../app/js/platform/interruptible-speech.js';
+import { createInterruptibleSpeech } from '../app/js/platform/interruptible-speech.js';
 
 /**
  * Motor falso com síntese de duração CONTROLÁVEL — é o que permite encenar a corrida: um pedido lento
@@ -42,7 +42,7 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 describe('fala interrompível — o último pedido é o que vale', () => {
   it('[Right] fala o texto pedido', async () => {
     const { motor, log } = motorFalso();
-    const fala = criarFalaInterrompivel(motor);
+    const fala = createInterruptibleSpeech(motor);
     fala.falar('Continuar');
     await esperar(10);
     expect(log).toEqual(['sintetizar:Continuar', 'tocar:Continuar']);
@@ -53,7 +53,7 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     // A garantia 1, e é ela que dá o silêncio imediato. Parar só quando o áudio novo fica pronto deixaria a
     // voz velha falando durante a síntese — o item errado, com convicção.
     const { motor, log } = motorFalso();
-    const fala = criarFalaInterrompivel(motor);
+    const fala = createInterruptibleSpeech(motor);
     fala.falar('Continuar');
     await esperar(10);
     log.length = 0;
@@ -69,7 +69,7 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     // último. Agora toca UM: aquele em que o dedo parou.
     const { motor, log, demora } = motorFalso();
     for (const t of ['um', 'dois', 'três', 'quatro', 'cinco']) demora[t] = 20;
-    const fala = criarFalaInterrompivel(motor);
+    const fala = createInterruptibleSpeech(motor);
     for (const t of ['um', 'dois', 'três', 'quatro', 'cinco']) fala.falar(t);
     await esperar(80);
     expect(log.filter((l) => l.startsWith('tocar:')), 'só o último deve tocar').toEqual(['tocar:cinco']);
@@ -81,7 +81,7 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     // passou, por cima do atual.
     const { motor, log, demora } = motorFalso();
     demora['lento'] = 50; demora['rápido'] = 5;
-    const fala = criarFalaInterrompivel(motor);
+    const fala = createInterruptibleSpeech(motor);
     fala.falar('lento');
     await esperar(1);
     fala.falar('rápido');   // pedido depois, mas termina antes
@@ -92,7 +92,7 @@ describe('fala interrompível — o último pedido é o que vale', () => {
   it('[Inverse] `calar` silencia e invalida o que está sintetizando', async () => {
     const { motor, log, demora } = motorFalso();
     demora['longo'] = 30;
-    const fala = criarFalaInterrompivel(motor);
+    const fala = createInterruptibleSpeech(motor);
     fala.falar('longo');
     await esperar(1);
     fala.calar();
@@ -105,7 +105,7 @@ describe('fala interrompível — o último pedido é o que vale', () => {
     // Um menu que anuncia string vazia acontece (rótulo ainda não traduzido, item sem nome). Não vale
     // sintetizar silêncio, mas vale calar: o foco mudou.
     const { motor, log } = motorFalso();
-    const fala = criarFalaInterrompivel(motor);
+    const fala = createInterruptibleSpeech(motor);
     fala.falar('Continuar');
     await esperar(10);
     log.length = 0;
@@ -124,7 +124,7 @@ describe('fala interrompível — o último pedido é o que vale', () => {
       tocar: (audio) => { log.push('tocar:' + audio.texto); return { texto: audio.texto }; },
       parar: (f) => { log.push('parar:' + f.texto); },
     };
-    const fala = criarFalaInterrompivel(motor);
+    const fala = createInterruptibleSpeech(motor);
     fala.falar('quebra');
     await esperar(10);
     falhar = false;

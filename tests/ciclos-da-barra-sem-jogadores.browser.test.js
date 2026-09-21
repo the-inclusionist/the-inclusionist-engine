@@ -35,7 +35,7 @@ beforeAll(async () => {
       objectiveOf: () => ({ name: { text: 'a', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [],
     },
     host: { doc: document, win: window, cvdHost: document.getElementById('cvd-host') },
-    baixarPesados: false,
+    downloadHeavy: false,
   });
 });
 

@@ -8,10 +8,10 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { loadVoskRuntime, commandModelId, VOICE_RUNTIME_FILES } from '../app/js/platform/vosk-runtime.js';
-import { PESADOS, caminhoNaEntrega } from '../app/js/platform/pesados.js';
+import { HEAVY_FILES, deliveryPath } from '../app/js/platform/pesados.js';
 
 const BASE = 'https://escola.exemplo/jogo/';
-const urlOf = (id) => PESADOS.find((p) => p.id === id).url;
+const urlOf = (id) => HEAVY_FILES.find((p) => p.id === id).url;
 /** A cache that holds everything the runtime asks for, unless a id is named as absent. */
 const cacheCom = (semEstes = []) => async (url) => !semEstes.some((id) => urlOf(id) === url);
 
@@ -58,13 +58,13 @@ describe('nada é carregado sem ter sido conferido', () => {
     const [bundle, model] = api.pedidos;
     // 📌 A ENTREGA, e não o endereço de origem: `pesados/<host><path>` ao lado da página, que é o que o service worker responde
     // da cache conferida. Um endereço de terceiro aqui seria a criança a contactar um servidor para poder falar.
-    expect(bundle[1]).toBe(BASE + caminhoNaEntrega(urlOf('commands:runtime')));
-    expect(model[1]).toBe(BASE + caminhoNaEntrega(urlOf('commands:model:pt')));
+    expect(bundle[1]).toBe(BASE + deliveryPath(urlOf('commands:runtime')));
+    expect(model[1]).toBe(BASE + deliveryPath(urlOf('commands:model:pt')));
     expect(String(bundle[1]).startsWith(BASE), 'o runtime veio de fora da origem do jogo').toBe(true);
     // 🔴 E OS DOIS VIZINHOS QUE O BUNDLE PEDE, pelos endereços da entrega: o worker que ele abre e o wasm que esse worker
     // carrega. Sem isto ele resolve-os contra o próprio endereço e, num dia em que a pasta mude, abre um worker que não existe.
-    expect(model[3], 'o worker não veio da entrega').toBe(BASE + caminhoNaEntrega(urlOf('commands:runtime:worker')));
-    expect(model[4], 'o wasm não veio da entrega').toBe(BASE + caminhoNaEntrega(urlOf('commands:runtime:wasm')));
+    expect(model[3], 'o worker não veio da entrega').toBe(BASE + deliveryPath(urlOf('commands:runtime:worker')));
+    expect(model[4], 'o wasm não veio da entrega').toBe(BASE + deliveryPath(urlOf('commands:runtime:wasm')));
   });
 
   it('🎯 [Zero] um ficheiro que a entrega não carrega é RECUSADO pelo nome, em vez de servir o que estiver à mão', async () => {
@@ -95,7 +95,7 @@ describe('nada é carregado sem ter sido conferido', () => {
   it('📌 [Boundary] os três ficheiros do runtime são pedidos, e estão no catálogo', () => {
     expect(VOICE_RUNTIME_FILES.length).toBe(3);
     for (const id of VOICE_RUNTIME_FILES) {
-      expect(PESADOS.find((p) => p.id === id), `${id} não está no catálogo`).toBeTruthy();
+      expect(HEAVY_FILES.find((p) => p.id === id), `${id} não está no catálogo`).toBeTruthy();
       expect(urlOf(id), `${id} sem endereço`).toBeTruthy();
     }
   });

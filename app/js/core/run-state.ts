@@ -11,7 +11,7 @@
 // alguém se lembre de zerar. "Alguém se lembra" não é mecanismo.
 //
 // O ADR-0038 cortou o estado por TEMPO DE VIDA, e o critério é mecânico: persistido em chave `incl_*`
-// compartilhada = PÁGINA; em chave `kJogo()` = JOGO; NÃO persistido = RODADA. Estes cinco campos não são
+// compartilhada = PÁGINA; em chave `gameKey()` = JOGO; NÃO persistido = RODADA. Estes cinco campos não são
 // persistidos em lugar nenhum, e é por isso que estão aqui.
 //
 // ========================= POR QUE OS EXTRAS DE NÍVEL PRIMEIRO =========================

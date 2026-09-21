@@ -39,7 +39,7 @@ beforeAll(async () => {
   };
   requestAnimationFrame(desenhar);
   const { createGame } = await import('../app/js/boot/create-game.js');
-  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false });
+  motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false });
 });
 afterAll(() => { parar = true; });
 
@@ -92,7 +92,7 @@ describe('measuring what the world flashes', () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const sem = createGame({
       acomodacoes: SEM_ASSUNTO, declaration: { ...declaracao(), world: () => ({ kind: 'element', selector: '#sr-status' }) },
-      host: { doc: document, win: window }, baixarPesados: false,
+      host: { doc: document, win: window }, downloadHeavy: false,
     });
     const r = await sem.medirFlashes(100);
     expect(r.lido).toBe(false);

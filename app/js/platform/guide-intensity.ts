@@ -31,10 +31,10 @@
 // Módulo-folha: não importa nada.
 
 /** O que o guia soa, para uma dada distância. */
-export interface Intensidade {
+export interface Intensity {
   /** Corte do passa-baixo, em hertz. Grave e abafado longe; aberto e brilhante perto. */
   readonly corte: number;
-  /** Fator sobre o volume da categoria `guide`, entre `VOL_LONGE` e 1. NUNCA zero. */
+  /** Fator sobre o volume da categoria `guide`, entre `FAR_VOL` e 1. NUNCA zero. */
   readonly volume: number;
 }
 
@@ -45,12 +45,12 @@ export interface Intensidade {
  * e o `PAN_PACES` satura o estéreo em 11. O guia satura logo depois — a informação fina serve para quem já
  * está a chegar, e mais longe do que isso «longe» basta.
  */
-export const PASSOS_ATE_O_FUNDO = 12;
+export const STEPS_TO_FLOOR = 12;
 
 /** O corte no fundo da escala: abafado, presente, sem ser um som de alarme. */
-export const CORTE_LONGE = 320;
+export const FAR_CUT = 320;
 /** O corte no alvo: aberto. Acima disto o timbre passa a sibilar, e sibilar chama atenção como um bipe. */
-export const CORTE_PERTO = 3200;
+export const NEAR_CUT = 3200;
 
 /**
  * O fator de volume mais baixo.
@@ -59,7 +59,7 @@ export const CORTE_PERTO = 3200;
  * indistinguível de «não há alvo» — e a criança que depende dele concluiria que não há nada para achar,
  * exatamente quando há e está distante. Silêncio é uma afirmação, e aqui seria uma afirmação falsa.
  */
-export const VOL_LONGE = 0.55;
+export const FAR_VOL = 0.55;
 
 /**
  * A intensidade para `passos` de distância ao longo da rota.
@@ -72,13 +72,13 @@ export const VOL_LONGE = 0.55;
  * O volume interpola LINEARMENTE, e a assimetria é deliberada: ele é o eixo secundário, e uma curva também
  * exponencial ali faria os dois acelerarem no mesmo ponto, que é o oposto de ter dois eixos.
  */
-export function intensidadeDoGuia(passos: number): Intensidade {
-  if (!Number.isFinite(passos) || passos < 0) return { corte: CORTE_LONGE, volume: VOL_LONGE };
+export function guideIntensity(passos: number): Intensity {
+  if (!Number.isFinite(passos) || passos < 0) return { corte: FAR_CUT, volume: FAR_VOL };
   // 0 = em cima do alvo; 1 = no fundo da escala ou além.
-  const longe = Math.min(1, passos / PASSOS_ATE_O_FUNDO);
+  const longe = Math.min(1, passos / STEPS_TO_FLOOR);
   const perto = 1 - longe;
   return {
-    corte: CORTE_LONGE * Math.pow(CORTE_PERTO / CORTE_LONGE, perto),
-    volume: VOL_LONGE + (1 - VOL_LONGE) * perto,
+    corte: FAR_CUT * Math.pow(NEAR_CUT / FAR_CUT, perto),
+    volume: FAR_VOL + (1 - FAR_VOL) * perto,
   };
 }

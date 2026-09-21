@@ -46,7 +46,7 @@ const BARRAS = () => [
   { band: 'learning', name: nome('Leitura'), value: () => ({ segmentos: ['azul', 'vermelho', 'verde'], cor: 'nenhuma' }) },
 ];
 const abrir = (extra = {}) => createGame({
-  acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, ...extra,
+  acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, downloadHeavy: false, ...extra,
 });
 const caixa = (sel) => document.querySelector(sel).getBoundingClientRect();
 

@@ -870,13 +870,13 @@ describe('createGame em execução', () => {
    * jogo que não pede voz neural não pode pagar 372 MB de modelo, vozes e runtime no link de uma escola — e o contrário é pior
    * de ver, porque ninguém repara num download que acontece.
    *
-   * ⚠️ O `baixarPesados` é substituído aqui porque a lista só existe na CHAMADA: o que se mede é o argumento, que é a decisão.
+   * ⚠️ O `downloadHeavy` é substituído aqui porque a lista só existe na CHAMADA: o que se mede é o argumento, que é a decisão.
    */
   it('🔴 [Right] o arranque só baixa a voz neural do jogo que a pediu', async () => {
     const pedidos = [];
     vi.doMock('../app/js/platform/pesados.js', async (original) => ({
       ...(await original()),
-      baixarPesados: async ({ apenas }) => { pedidos.push(apenas); },
+      downloadHeavy: async ({ apenas }) => { pedidos.push(apenas); },
     }));
     vi.resetModules();
     try {
@@ -905,7 +905,7 @@ describe('createGame em execução', () => {
     const pedidos = [];
     vi.doMock('../app/js/platform/pesados.js', async (original) => ({
       ...(await original()),
-      baixarPesados: async ({ apenas }) => { pedidos.push(apenas); },
+      downloadHeavy: async ({ apenas }) => { pedidos.push(apenas); },
     }));
     vi.resetModules();
     try {

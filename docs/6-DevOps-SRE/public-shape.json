@@ -16,12 +16,12 @@
     "interface CreateGameOptions": [
       "acomodacoes",
       "aoProgredirPesados?",
-      "baixarPesados?",
       "comIndice?",
       "controleNaTela?",
       "declaration",
       "declines?",
       "disponibilidade?",
+      "downloadHeavy?",
       "gameOptions?",
       "genero?",
       "getPauseActs?",
@@ -1192,7 +1192,7 @@
       "x",
       "y"
     ],
-    "interface GuiaVivo": [
+    "interface LiveGuide": [
       "ac",
       "desdeARota",
       "filtro",
@@ -1242,18 +1242,18 @@
     "type SinkAC": "AudioContext & { setSinkId?: (id: string) => Promise<void> }"
   },
   "platform/guide-intensity.ts": {
-    "interface Intensidade": [
+    "interface Intensity": [
       "corte",
       "volume"
     ]
   },
   "platform/interruptible-speech.ts": {
-    "interface MotorDeFala": [
+    "interface SpeechEngine": [
       "parar",
       "sintetizar",
       "tocar"
     ],
-    "interface FalaInterrompivel": [
+    "interface InterruptibleSpeech": [
       "calar",
       "falando",
       "falar"
@@ -1291,7 +1291,7 @@
       "vocabulario",
       "voz"
     ],
-    "interface VozKokoro": [
+    "interface KokoroVoice": [
       "boa",
       "engine",
       "espeak"
@@ -1351,7 +1351,7 @@
     ]
   },
   "platform/pesados-catalogo.ts": {
-    "interface Pesado": [
+    "interface HeavyFile": [
       "bytes?",
       "id",
       "porQueNaoTemFonte?",
@@ -1360,13 +1360,13 @@
     ]
   },
   "platform/pesados.ts": {
-    "interface RelatorioPesado": [
+    "interface HeavyReport": [
       "bytes?",
       "erro?",
       "estado",
       "id"
     ],
-    "interface OpcoesDosPesados": [
+    "interface HeavyOptions": [
       "aoProgredir?",
       "apenas?",
       "base?",
@@ -1473,27 +1473,27 @@
     ]
   },
   "platform/speech-recognition.ts": {
-    "interface ApiDeReconhecimento": [
+    "interface RecognitionApi": [
       "available?",
       "new",
       "prototype"
     ],
-    "interface InstanciaDeReconhecimento": [
+    "interface RecognitionInstance": [
       "continuous",
       "interimResults",
       "lang",
       "processLocally?"
     ],
-    "interface RotaDoReconhecimento": [
+    "interface RecognitionRoute": [
       "estado",
       "rota"
     ],
-    "interface LeitorDeComandos": [
+    "interface CommandReader": [
       "itens",
       "ler"
     ],
-    "type EstadoLocal": "'available' | 'downloadable' | 'downloading' | 'unavailable'",
-    "type ComandoOuvido": "{ readonly tipo: 'palavra'"
+    "type OnDeviceAvailability": "'available' | 'downloadable' | 'downloading' | 'unavailable'",
+    "type HeardCommand": "{ readonly tipo: 'palavra'"
   },
   "platform/tts.ts": {
     "interface TtsCtx": [
@@ -1612,7 +1612,7 @@
     ]
   },
   "platform/voice-plan.ts": {
-    "interface VozNeural": [
+    "interface NeuralVoice": [
       "engine",
       "locale",
       "voice"

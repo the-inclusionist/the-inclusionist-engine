@@ -14,7 +14,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { levarPesadosParaEntrega, argumentosDaEntrega } from '../scripts/pesados-na-entrega.mjs';
-import { caminhoNaEntrega } from '../app/js/platform/pesados.js';
+import { deliveryPath } from '../app/js/platform/pesados.js';
 
 const hash = (s) => createHash('sha256').update(s).digest('hex');
 const ENTRADAS = [
@@ -29,10 +29,10 @@ describe('the heavy files, put into the delivery by the build', () => {
   it('🔴 [Right] each file is written where the page asks for it, and the run reports success', async () => {
     const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
     try {
-      const { ok, linhas } = await levarPesadosParaEntrega({ destino, pesados: ENTRADAS, caminhoNaEntrega, buscar: async (u) => resposta(CORPOS[u]) });
+      const { ok, linhas } = await levarPesadosParaEntrega({ destino, pesados: ENTRADAS, deliveryPath, buscar: async (u) => resposta(CORPOS[u]) });
       expect(ok).toBe(true);
-      expect(readFileSync(join(destino, caminhoNaEntrega(ENTRADAS[0].url)), 'utf8')).toBe('voz');
-      expect(readFileSync(join(destino, caminhoNaEntrega(ENTRADAS[1].url)), 'utf8')).toBe('visao');
+      expect(readFileSync(join(destino, deliveryPath(ENTRADAS[0].url)), 'utf8')).toBe('voz');
+      expect(readFileSync(join(destino, deliveryPath(ENTRADAS[1].url)), 'utf8')).toBe('visao');
       expect(linhas.find((l) => l.id === 'sem:fonte').estado).toBe('sem-fonte');
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
@@ -41,11 +41,11 @@ describe('the heavy files, put into the delivery by the build', () => {
     const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
     try {
       const buscar = async (u) => resposta(u.endsWith('voz.onnx') ? 'adulterado' : CORPOS[u]);
-      const { ok, linhas } = await levarPesadosParaEntrega({ destino, pesados: ENTRADAS, caminhoNaEntrega, buscar });
+      const { ok, linhas } = await levarPesadosParaEntrega({ destino, pesados: ENTRADAS, deliveryPath, buscar });
       expect(ok, 'an altered file let the delivery pass').toBe(false);
-      expect(existsSync(join(destino, caminhoNaEntrega(ENTRADAS[0].url))), 'the altered file was written').toBe(false);
+      expect(existsSync(join(destino, deliveryPath(ENTRADAS[0].url))), 'the altered file was written').toBe(false);
       expect(linhas.find((l) => l.id === 'voz:teste').erro).toMatch(/sha256 mismatch/);
-      expect(existsSync(join(destino, caminhoNaEntrega(ENTRADAS[1].url))), 'one bad file stopped the good ones').toBe(true);
+      expect(existsSync(join(destino, deliveryPath(ENTRADAS[1].url))), 'one bad file stopped the good ones').toBe(true);
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
 
@@ -56,13 +56,13 @@ describe('the heavy files, put into the delivery by the build', () => {
     try {
       const pedidos = [];
       const { ok } = await levarPesadosParaEntrega({
-        destino, pesados: ENTRADAS, caminhoNaEntrega, base: 'https://espelho.exemplo',
+        destino, pesados: ENTRADAS, deliveryPath, base: 'https://espelho.exemplo',
         fonteDe: (url, base) => `${base}/espelhado/${url.split('/').pop()}`,
         buscar: async (u) => { pedidos.push(u); return resposta(CORPOS[Object.keys(CORPOS).find((k) => k.endsWith(u.split('/').pop()))]); },
       });
       expect(ok).toBe(true);
       expect(pedidos).toEqual(['https://espelho.exemplo/espelhado/voz.onnx', 'https://espelho.exemplo/espelhado/visao.wasm']);
-      expect(readFileSync(join(destino, caminhoNaEntrega(ENTRADAS[0].url)), 'utf8'), 'the delivery path followed the mirror').toBe('voz');
+      expect(readFileSync(join(destino, deliveryPath(ENTRADAS[0].url)), 'utf8'), 'the delivery path followed the mirror').toBe('voz');
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
 
@@ -72,12 +72,12 @@ describe('the heavy files, put into the delivery by the build', () => {
     try {
       for (const [url, corpo] of Object.entries(CORPOS)) writeFileSync(join(espelho, url.split('/').pop()), corpo);
       const { ok, linhas } = await levarPesadosParaEntrega({
-        destino, pesados: ENTRADAS, caminhoNaEntrega, base: espelho,
+        destino, pesados: ENTRADAS, deliveryPath, base: espelho,
         fonteDe: (url, base) => join(base, url.split('/').pop()),
         buscar: async () => { throw new Error('the network was used with a local base'); },
       });
       expect(ok, linhas.map((l) => l.erro).join(' ')).toBe(true);
-      expect(readFileSync(join(destino, caminhoNaEntrega(ENTRADAS[1].url)), 'utf8')).toBe('visao');
+      expect(readFileSync(join(destino, deliveryPath(ENTRADAS[1].url)), 'utf8')).toBe('visao');
     } finally { rmSync(destino, { recursive: true, force: true }); rmSync(espelho, { recursive: true, force: true }); }
   });
 
@@ -85,23 +85,23 @@ describe('the heavy files, put into the delivery by the build', () => {
     const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
     try {
       const { ok, linhas } = await levarPesadosParaEntrega({
-        destino, pesados: ENTRADAS, caminhoNaEntrega, base: 'https://espelho.exemplo',
+        destino, pesados: ENTRADAS, deliveryPath, base: 'https://espelho.exemplo',
         fonteDe: (url, base) => `${base}/${url.split('/').pop()}`, buscar: async () => resposta('outra coisa'),
       });
       expect(ok).toBe(false);
       expect(linhas.find((l) => l.id === 'voz:teste').erro, 'the error does not say WHERE the bytes came from').toMatch(/espelho\.exemplo/);
-      expect(existsSync(join(destino, caminhoNaEntrega(ENTRADAS[0].url)))).toBe(false);
+      expect(existsSync(join(destino, deliveryPath(ENTRADAS[0].url)))).toBe(false);
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
 
   it('📌 [Boundary] a file already in the delivery with the right hash is not fetched again', async () => {
     const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
     try {
-      const ja = join(destino, caminhoNaEntrega(ENTRADAS[0].url));
+      const ja = join(destino, deliveryPath(ENTRADAS[0].url));
       mkdirSync(dirname(ja), { recursive: true });
       writeFileSync(ja, 'voz');
       const pedidos = [];
-      await levarPesadosParaEntrega({ destino, pesados: ENTRADAS, caminhoNaEntrega, buscar: async (u) => { pedidos.push(u); return resposta(CORPOS[u]); } });
+      await levarPesadosParaEntrega({ destino, pesados: ENTRADAS, deliveryPath, buscar: async (u) => { pedidos.push(u); return resposta(CORPOS[u]); } });
       expect(pedidos).toEqual([ENTRADAS[1].url]);
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });

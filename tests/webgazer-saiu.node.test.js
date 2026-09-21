@@ -8,7 +8,7 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PESADOS } from '../app/js/platform/pesados-catalogo.js';
+import { HEAVY_FILES } from '../app/js/platform/pesados-catalogo.js';
 
 const RAIZ = fileURLToPath(new URL('../app/js/', import.meta.url));
 const ficheiros = (dir = RAIZ) => readdirSync(dir).flatMap((n) => {
@@ -24,7 +24,7 @@ describe('WebGazer left', () => {
     expect(ficam.map((p) => p.slice(RAIZ.length)), 'code still names WebGazer').toEqual([]);
   });
   it('the heavy-file catalogue has no WebGazer entry, and ui/webcam is gone', () => {
-    expect(PESADOS.filter((p) => p.id === 'visao:olhar' || /webgazer/i.test(p.url ?? ''))).toEqual([]);
+    expect(HEAVY_FILES.filter((p) => p.id === 'visao:olhar' || /webgazer/i.test(p.url ?? ''))).toEqual([]);
     expect(existsSync(join(RAIZ, 'ui', 'webcam.ts'))).toBe(false);
   });
 });

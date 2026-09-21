@@ -45,7 +45,7 @@ const montar = (opcoes = {}) => createGame({
   acomodacoes: SEM_ASSUNTO,
   declaration: declaracao(),
   host: { doc: document, win: window },
-  baixarPesados: false,
+  downloadHeavy: false,
   ...opcoes,
 });
 

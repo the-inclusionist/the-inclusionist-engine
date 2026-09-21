@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { CACHE_PESADOS } from '../app/js/platform/pesados.js';
+import { CACHE_HEAVY } from '../app/js/platform/pesados.js';
 
 const CONFIG = readFileSync(fileURLToPath(new URL('../vite.config.ts', import.meta.url)), 'utf8');
 
@@ -43,14 +43,14 @@ describe('a rota dos modelos e o código apontam para o mesmo sítio', () => {
     // and what the device already held is downloaded again. Nobody sees an error.
     expect(
       CONFIG_LIMPA,
-      `a rota não nomeia \`${CACHE_PESADOS}\` — ela cacheia para si própria e ignora o que já desceu.`,
-    ).toContain(`cacheName: '${CACHE_PESADOS}'`);
+      `a rota não nomeia \`${CACHE_HEAVY}\` — ela cacheia para si própria e ignora o que já desceu.`,
+    ).toContain(`cacheName: '${CACHE_HEAVY}'`);
   });
 
   it('🔴 [Right] every route on the checked cache READS it and never WRITES it (issue #168)', () => {
     // 📏 Measured on 2026-09-13: `CacheFirst` stores a network response on a miss. A library request that came before the
     // fetcher would put unchecked bytes into the same cache, and the fetcher would then see them and say «already had».
-    const blocos = CONFIG_LIMPA.split(/urlPattern:/).slice(1).filter((b) => b.includes(`cacheName: '${CACHE_PESADOS}'`));
+    const blocos = CONFIG_LIMPA.split(/urlPattern:/).slice(1).filter((b) => b.includes(`cacheName: '${CACHE_HEAVY}'`));
     expect(blocos.length, 'no route on the checked cache — the case would measure nothing').toBeGreaterThanOrEqual(2);
     for (const b of blocos) {
       expect(b, 'a route on the checked cache can write to it').toMatch(/cacheWillUpdate:\s*async\s*\(\)\s*=>\s*null/);

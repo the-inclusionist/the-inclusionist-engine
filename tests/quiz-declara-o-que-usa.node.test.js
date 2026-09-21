@@ -49,7 +49,7 @@ describe('the quiz demo declares what it uses', () => {
   it('🎯 [Zero] no file of the demo names a phonemizer, a runtime or a delivery path', () => {
     // The three shapes the old port had: the npm packages, the `?url` assets only a Vite build understands, and the path under
     // `pesados/` that the engine alone is allowed to build (ADR-0177).
-    const acusados = ficheiros().filter((f) => /espeak-ng|onnxruntime|\?url|caminhoNaEntrega/.test(fonte(f)));
+    const acusados = ficheiros().filter((f) => /espeak-ng|onnxruntime|\?url|deliveryPath/.test(fonte(f)));
     expect(acusados, 'the delivery and the runtime are the engine\'s business, and a file of the demo took them back').toEqual([]);
   });
 });

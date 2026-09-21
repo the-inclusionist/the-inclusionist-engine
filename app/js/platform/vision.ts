@@ -11,7 +11,7 @@
 //   kept on purpose — nothing about the child's camera leaves the device.
 // · The camera is video only, 640×480: the lab's readings were measured at that size, and a larger capture changed them.
 
-import { PESADOS, CACHE_PESADOS, caminhoNaEntrega } from './pesados.js';
+import { HEAVY_FILES, CACHE_HEAVY, deliveryPath } from './pesados.js';
 
 /** The files the face reader needs, by catalogue id. */
 export const FACE_VISION_FILES = ['visao:runtime', 'visao:runtime:cola', 'visao:runtime:wasm', 'visao:modelo:rosto'] as const;
@@ -89,10 +89,10 @@ export type HandTrackerLoad =
   | { readonly ok: true; readonly tracker: HandTracker }
   | { readonly ok: false; readonly missing: readonly string[] };
 
-const urlOf = (id: string): string => PESADOS.find((x) => x.id === id)!.url!; // the vision entries are in the catalogue, with addresses
+const urlOf = (id: string): string => HEAVY_FILES.find((x) => x.id === id)!.url!; // the vision entries are in the catalogue, with addresses
 
 const defaultHasFile = async (url: string): Promise<boolean> =>
-  typeof caches !== 'undefined' && !!(await (await caches.open(CACHE_PESADOS)).match(url));
+  typeof caches !== 'undefined' && !!(await (await caches.open(CACHE_HEAVY)).match(url));
 
 const OPTIONS = (modelAssetPath: string, delegate: Delegate): object => ({
   baseOptions: { modelAssetPath, delegate }, runningMode: 'VIDEO', numFaces: 1,
@@ -108,7 +108,7 @@ async function open(deps: VisionDeps, files: readonly string[]): Promise<Opened 
   const missing: string[] = [];
   for (const id of files) if (!(await hasFile(urlOf(id)))) missing.push(id);
   if (missing.length) return { missing };
-  const at = (id: string): string => new URL(caminhoNaEntrega(urlOf(id)), deps.base).href;
+  const at = (id: string): string => new URL(deliveryPath(urlOf(id)), deps.base).href;
   const vision = await importBundle(at('visao:runtime'));
   const glue = at('visao:runtime:cola');
   return { vision, fileset: await vision.FilesetResolver.forVisionTasks(glue.slice(0, glue.lastIndexOf('/'))), at };

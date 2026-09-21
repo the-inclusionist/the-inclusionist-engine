@@ -21,7 +21,7 @@
 // neighbours by itself») had seven red mutations against a double built in the image of that belief. A double can only measure
 // the contract you think you have; the one that exists was three lines of the served file away.
 
-import { PESADOS, CACHE_PESADOS, caminhoNaEntrega } from './pesados.js';
+import { HEAVY_FILES, CACHE_HEAVY, deliveryPath } from './pesados.js';
 import { commandsLanguageOf } from './pesados-catalogo.js';
 
 /** The three files of the runtime. The model is chosen by language, below. */
@@ -30,7 +30,7 @@ export const VOICE_RUNTIME_FILES = ['commands:runtime', 'commands:runtime:worker
 /** The catalogue id of the model that hears THIS language, or `null` where the project has none. */
 export function commandModelId(language: string): string | null {
   const wanted = language.split('-')[0]!.toLowerCase();
-  const found = PESADOS.find((p) => commandsLanguageOf(p.id) === wanted);
+  const found = HEAVY_FILES.find((p) => commandsLanguageOf(p.id) === wanted);
   return found ? found.id : null;
 }
 
@@ -73,10 +73,10 @@ export type VoskLoad =
   /** The catalogue ids that are not in the checked cache — `language` when the project has no model for it. */
   | { readonly ok: false; readonly missing: readonly string[] };
 
-const urlOf = (id: string): string | null => PESADOS.find((x) => x.id === id)?.url ?? null;
+const urlOf = (id: string): string | null => HEAVY_FILES.find((x) => x.id === id)?.url ?? null;
 
 const defaultHasFile = async (url: string): Promise<boolean> =>
-  typeof caches !== 'undefined' && !!(await (await caches.open(CACHE_PESADOS)).match(url));
+  typeof caches !== 'undefined' && !!(await (await caches.open(CACHE_HEAVY)).match(url));
 
 /**
  * Puts the bundle in the page ONCE and answers with its global. A second call answers the same one: the bundle registers a
@@ -129,7 +129,7 @@ export async function loadVoskRuntime(d: VoskDeps): Promise<VoskLoad> {
   }
   if (missing.length) return { ok: false, missing };
 
-  const at = (id: string): string => new URL(caminhoNaEntrega(urlOf(id)!), d.base).href;
+  const at = (id: string): string => new URL(deliveryPath(urlOf(id)!), d.base).href;
   const api = await bundleOnce(d.loadBundle ?? moduleLoader, at('commands:runtime'));
   /*
    * WHERE THE BUNDLE'S TWO NEIGHBOURS LIVE, answered by us and never guessed. The logical names are the bundle's own

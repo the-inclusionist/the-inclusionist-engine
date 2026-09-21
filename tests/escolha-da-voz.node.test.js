@@ -4,23 +4,23 @@
 //
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { vozesDoIdioma } from '../app/js/platform/voice-plan.js';
-import { VOZES_KOKORO } from '../app/js/platform/kokoro.js';
+import { voicesForLocale } from '../app/js/platform/voice-plan.js';
+import { KOKORO_VOICES } from '../app/js/platform/kokoro.js';
 import { createTts } from '../app/js/platform/tts.js';
 import * as store from '../app/js/platform/storage.js';
 
 describe('the voices of a language', () => {
   it('🔴 [Right] Portuguese lists its Kokoro voices and no English one', () => {
-    expect(vozesDoIdioma('pt-BR', VOZES_KOKORO).map((v) => v.voice)).toEqual(['pf_dora', 'pm_alex', 'pm_santa']);
+    expect(voicesForLocale('pt-BR', KOKORO_VOICES).map((v) => v.voice)).toEqual(['pf_dora', 'pm_alex', 'pm_santa']);
   });
   it('🔴 [Right] by the LANGUAGE, not the region: `en` lists the US and GB voices, `es-MX` the voices tagged `es`', () => {
-    const ingles = vozesDoIdioma('en', VOZES_KOKORO).map((v) => v.voice);
+    const ingles = voicesForLocale('en', KOKORO_VOICES).map((v) => v.voice);
     expect(ingles[0], 'Heart speaks first in English (ADR-0198 §3)').toBe('af_heart');
     expect(ingles).toContain('bf_emma');
-    expect(vozesDoIdioma('es-MX', VOZES_KOKORO).map((v) => v.voice)).toEqual(['ef_dora', 'em_alex', 'em_santa']);
+    expect(voicesForLocale('es-MX', KOKORO_VOICES).map((v) => v.voice)).toEqual(['ef_dora', 'em_alex', 'em_santa']);
   });
   it('🎯 [Zero] a language with no voice lists none', () => {
-    expect(vozesDoIdioma('fr-FR', VOZES_KOKORO)).toEqual([]);
+    expect(voicesForLocale('fr-FR', KOKORO_VOICES)).toEqual([]);
   });
 });
 

@@ -164,7 +164,7 @@ export function emit<K extends keyof GameEvent>(evt: K, val: GameEvent[K]): void
 // ========================= `cenario` E `activity` SAÍRAM DAQUI (ADR-0038, Fase B) =========================
 // Os dois eram estado de JOGO morando na engine — a mesma exceção que o `coins` e o `quizLevel` já haviam
 // deixado no item 19. O corte por LIFETIME do ADR-0038 os classifica como GAME: ambos são persistidos em
-// chave `kJogo()`, que é o critério mecânico, e ambos viajam com o cartucho quando o jogo mudar de
+// chave `gameKey()`, que é o critério mecânico, e ambos viajam com o cartucho quando o jogo mudar de
 // repositório (ADR-0036).
 //
 // Moram agora em `game/state`, com a MESMA forma — binding vivo + setter que persiste e emite. O que mudou

@@ -89,6 +89,72 @@
         "Simulacao": "Simulation",
         "Tema": "Theme"
       }
+    },
+    "platform": {
+      "done": "2026-09-21",
+      "names": {
+        "GUIA_HZ": "GUIDE_HZ",
+        "GUIA_TIPO": "GUIDE_WAVE",
+        "GUIA_VOL": "GUIDE_VOL",
+        "GuiaVivo": "LiveGuide",
+        "ORCAMENTO_DA_ROTA": "ROUTE_BUDGET",
+        "QUADROS_ENTRE_ROTAS": "FRAMES_BETWEEN_ROUTES",
+        "TAU_DO_GUIA": "GUIDE_TAU",
+        "passoDoMundo": "worldStep",
+
+        "CORTE_LONGE": "FAR_CUT",
+        "CORTE_PERTO": "NEAR_CUT",
+        "Intensidade": "Intensity",
+        "PASSOS_ATE_O_FUNDO": "STEPS_TO_FLOOR",
+        "VOL_LONGE": "FAR_VOL",
+        "intensidadeDoGuia": "guideIntensity",
+
+        "FalaInterrompivel": "InterruptibleSpeech",
+        "MotorDeFala": "SpeechEngine",
+        "criarFalaInterrompivel": "createInterruptibleSpeech",
+
+        "BYTES_DA_VOZ_KOKORO": "KOKORO_VOICE_BYTES",
+        "BYTES_DO_MODELO_KOKORO": "KOKORO_MODEL_BYTES",
+        "DIMENSAO_DO_ESTILO": "STYLE_DIMENSION",
+        "SHA256_DAS_VOZES_KOKORO": "KOKORO_VOICES_SHA256",
+        "SHA256_DO_MODELO_KOKORO": "KOKORO_MODEL_SHA256",
+        "TOKENS_MAXIMOS": "MAX_KOKORO_TOKENS",
+        "URL_DO_MODELO_KOKORO": "KOKORO_MODEL_URL",
+        "VOZES_KOKORO": "KOKORO_VOICES",
+        "VozKokoro": "KokoroVoice",
+        "estiloDaFrase": "sentenceStyle",
+        "urlDaVozKokoro": "kokoroVoiceUrl",
+
+        "CACHE_PESADOS": "CACHE_HEAVY",
+        "PESADOS": "HEAVY_FILES",
+        "Pesado": "HeavyFile",
+        "OpcoesDosPesados": "HeavyOptions",
+        "RelatorioPesado": "HeavyReport",
+        "baixarPesados": "downloadHeavy",
+        "caminhoNaEntrega": "deliveryPath",
+        "chaveDaEntrega": "deliveryCacheKey",
+        "pesadosDoArranque": "heavyAtBoot",
+        "pesoPorBaixar": "bytesLeftToDownload",
+
+        "ApiDeReconhecimento": "RecognitionApi",
+        "ComandoOuvido": "HeardCommand",
+        "EstadoLocal": "OnDeviceAvailability",
+        "InstanciaDeReconhecimento": "RecognitionInstance",
+        "LeitorDeComandos": "CommandReader",
+        "RotaDoReconhecimento": "RecognitionRoute",
+        "criarLeitorDeComandos": "createCommandReader",
+        "criarReconhecimentoLocal": "createOnDeviceRecognition",
+        "rotaDoReconhecimento": "recognitionRoute",
+        "textoFalado": "spokenText",
+
+        "chavesForaDosEscopos": "keysOutsideScopes",
+        "getComLegado": "getWithLegacy",
+        "getJSONComLegado": "getJsonWithLegacy",
+        "kJogo": "gameKey",
+
+        "VozNeural": "NeuralVoice",
+        "vozesDoIdioma": "voicesForLocale"
+      }
     }
   }
 }

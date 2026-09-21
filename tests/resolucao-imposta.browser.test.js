@@ -70,7 +70,7 @@ describe('createGame applies it — the cartridge has no other', () => {
         objectiveOf: () => ({ name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [{ x: 0, y: 0 }],
       },
       host: { doc: document, win: window },
-      baixarPesados: false,
+      downloadHeavy: false,
     });
   });
 

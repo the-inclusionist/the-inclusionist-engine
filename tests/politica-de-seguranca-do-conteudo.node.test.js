@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PESADOS } from '../app/js/platform/pesados.js';
+import { HEAVY_FILES } from '../app/js/platform/pesados.js';
 
 const HEADERS = readFileSync(join(process.cwd(), 'app', 'public', '_headers'), 'utf8');
 
@@ -53,7 +53,7 @@ describe('the Content-Security-Policy (issues #170, #173)', () => {
 
   it('🔴 [Right] a host only the build contacts is not in the policy', () => {
     const naPolitica = new Set(Object.values(P).flatMap(hostsDe));
-    const soDoBuild = [...new Set(PESADOS.filter((p) => p.url).map((p) => new URL(p.url).host))].filter((h) => !PEDIDOS_PELAS_BIBLIOTECAS.has(h));
+    const soDoBuild = [...new Set(HEAVY_FILES.filter((p) => p.url).map((p) => new URL(p.url).host))].filter((h) => !PEDIDOS_PELAS_BIBLIOTECAS.has(h));
     expect(soDoBuild.length, 'the catalogue has hosts only the build contacts — the case below would be vacuous').toBeGreaterThan(0);
     for (const h of soDoBuild) expect(naPolitica.has(h), `${h} is contacted by the build only, and the policy still admits it`).toBe(false);
     expect([...naPolitica].some((h) => h.startsWith('*.')), 'a wildcard admits a redirect the service worker never follows').toBe(false);

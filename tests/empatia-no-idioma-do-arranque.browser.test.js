@@ -32,7 +32,7 @@ describe('the empathy panel speaks the boot language', () => {
         objectiveOf: () => ({ name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 1 }), targetsOf: () => [{ x: 0, y: 0 }],
       },
       host: { doc: document, win: window },
-      baixarPesados: false,
+      downloadHeavy: false,
     });
     await localeReady();
     expect(getLocale(), 'the en chunk did not load; the case would measure nothing').toBe('en');
