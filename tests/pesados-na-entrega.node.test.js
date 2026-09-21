@@ -49,6 +49,51 @@ describe('the heavy files, put into the delivery by the build', () => {
     } finally { rmSync(destino, { recursive: true, force: true }); }
   });
 
+  it('🔴 [Right] with a base, the bytes come from the mirror — and land where the page asks for them', async () => {
+    // the Dev, 2026-09-21: a `.env` pointing at a local copy while testing, at the project's bucket otherwise. The delivery
+    // path never moves, because it is what the child's page asks for; only where the build READS from does.
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
+    try {
+      const pedidos = [];
+      const { ok } = await levarPesadosParaEntrega({
+        destino, pesados: ENTRADAS, caminhoNaEntrega, base: 'https://espelho.exemplo',
+        fonteDe: (url, base) => `${base}/espelhado/${url.split('/').pop()}`,
+        buscar: async (u) => { pedidos.push(u); return resposta(CORPOS[Object.keys(CORPOS).find((k) => k.endsWith(u.split('/').pop()))]); },
+      });
+      expect(ok).toBe(true);
+      expect(pedidos).toEqual(['https://espelho.exemplo/espelhado/voz.onnx', 'https://espelho.exemplo/espelhado/visao.wasm']);
+      expect(readFileSync(join(destino, caminhoNaEntrega(ENTRADAS[0].url)), 'utf8'), 'the delivery path followed the mirror').toBe('voz');
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+
+  it('🔴 [Right] a base that is a FOLDER is read from the disk, with no network at all', async () => {
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
+    const espelho = mkdtempSync(join(tmpdir(), 'espelho-'));
+    try {
+      for (const [url, corpo] of Object.entries(CORPOS)) writeFileSync(join(espelho, url.split('/').pop()), corpo);
+      const { ok, linhas } = await levarPesadosParaEntrega({
+        destino, pesados: ENTRADAS, caminhoNaEntrega, base: espelho,
+        fonteDe: (url, base) => join(base, url.split('/').pop()),
+        buscar: async () => { throw new Error('the network was used with a local base'); },
+      });
+      expect(ok, linhas.map((l) => l.erro).join(' ')).toBe(true);
+      expect(readFileSync(join(destino, caminhoNaEntrega(ENTRADAS[1].url)), 'utf8')).toBe('visao');
+    } finally { rmSync(destino, { recursive: true, force: true }); rmSync(espelho, { recursive: true, force: true }); }
+  });
+
+  it('🔴 [Right] a mirror that serves OTHER bytes writes nothing — which is what makes a base safe to change', async () => {
+    const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
+    try {
+      const { ok, linhas } = await levarPesadosParaEntrega({
+        destino, pesados: ENTRADAS, caminhoNaEntrega, base: 'https://espelho.exemplo',
+        fonteDe: (url, base) => `${base}/${url.split('/').pop()}`, buscar: async () => resposta('outra coisa'),
+      });
+      expect(ok).toBe(false);
+      expect(linhas.find((l) => l.id === 'voz:teste').erro, 'the error does not say WHERE the bytes came from').toMatch(/espelho\.exemplo/);
+      expect(existsSync(join(destino, caminhoNaEntrega(ENTRADAS[0].url)))).toBe(false);
+    } finally { rmSync(destino, { recursive: true, force: true }); }
+  });
+
   it('📌 [Boundary] a file already in the delivery with the right hash is not fetched again', async () => {
     const destino = mkdtempSync(join(tmpdir(), 'entrega-'));
     try {
@@ -88,9 +133,24 @@ describe('the script, reachable by a cartridge', () => {
   });
 
   it('🔴 [Right] Kokoro enters a delivery only with `--kokoro`, in any position (ADR-0198 §5)', () => {
-    expect([argumentosDaEntrega(['dist']), argumentosDaEntrega(['--kokoro', 'dist']), argumentosDaEntrega(['dist', '--kokoro'])])
+    const semBase = (a) => { const { base, ...resto } = argumentosDaEntrega(a, {}); return resto; };
+    expect([semBase(['dist']), semBase(['--kokoro', 'dist']), semBase(['dist', '--kokoro'])])
       .toEqual([{ destino: 'dist', kokoro: false }, { destino: 'dist', kokoro: true }, { destino: 'dist', kokoro: true }]);
-    expect(argumentosDaEntrega(['--kokoro']).destino, 'the flag taken for the folder').toBeUndefined();
+    expect(argumentosDaEntrega(['--kokoro'], {}).destino, 'the flag taken for the folder').toBeUndefined();
+  });
+
+  it('🔴 [Right] the base comes from `--base`, from the environment, or from neither — and the flag wins', () => {
+    // the Dev, 2026-09-21: «Precisamos de um .env que aponte para local quando estivermos testando em local e [para a conta R2]
+    // quando estivermos usando estes recursos na minha conta.»
+    expect(argumentosDaEntrega(['dist'], {}).base, 'a base appeared where nobody asked for one').toBe('');
+    expect(argumentosDaEntrega(['dist'], { INCLUSIONIST_HEAVY_BASE: 'https://espelho.exemplo' }).base).toBe('https://espelho.exemplo');
+    const comFlag = argumentosDaEntrega(['dist', '--base', 'D:\\lfs', '--kokoro'], { INCLUSIONIST_HEAVY_BASE: 'https://espelho.exemplo' });
+    expect(comFlag, 'the flag must beat the environment, and the folder must not be eaten by it')
+      .toEqual({ destino: 'dist', kokoro: true, base: 'D:\\lfs' });
+    // ⚠️ AND WITH THE FLAG FIRST: the case above cannot see the value being taken for the folder, because the folder was read
+    // before it. A mutation that forgot to skip the value survived exactly here.
+    expect(argumentosDaEntrega(['--base', 'D:\\lfs', 'dist'], {}), 'the base\'s value was taken for the delivery folder')
+      .toEqual({ destino: 'dist', kokoro: false, base: 'D:\\lfs' });
   });
 
   it('📌 [Boundary] run as a program without a destination, it stops with the usage — and never starts downloading', () => {

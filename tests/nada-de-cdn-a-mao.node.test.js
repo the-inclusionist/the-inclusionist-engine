@@ -74,6 +74,14 @@ const BUSCAS_A_MAO = {
       + 'port build the same paths; the module is pure. The build fetches the files into the delivery (ADR-0177); the page asks for '
       + 'them at `pesados/`. A second host here would be a mirror chosen in silence',
   },
+  'platform/heavy-mirror.ts': {
+    urls: 3,
+    porque:
+      'ENDEREÇOS DECLARADOS, not fetches: the table that maps each address the catalogue already names to the folder a mirror '
+      + 'serves it under (the Dev, 2026-09-21: a base for local testing, for the project\'s bucket, or for a school\'s own '
+      + 'server). The module is pure — it returns a string. The three are the same three of `pesados-catalogo`, and a fourth '
+      + 'here would be a mirror of something nobody catalogued',
+  },
   'platform/pesados-catalogo.ts': {
     urls: 2,
     porque:

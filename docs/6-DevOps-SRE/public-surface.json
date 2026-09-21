@@ -777,6 +777,12 @@
     "VOL_LONGE",
     "intensidadeDoGuia"
   ],
+  "platform/heavy-mirror.ts": [
+    "MIRROR_FOLDERS",
+    "baseIsRemote",
+    "heavySourceOf",
+    "mirrorPathOf"
+  ],
   "platform/interruptible-speech.ts": [
     "FalaInterrompivel",
     "MotorDeFala",

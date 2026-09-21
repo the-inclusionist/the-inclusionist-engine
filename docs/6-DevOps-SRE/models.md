@@ -23,6 +23,19 @@ Every heavy file is in `app/js/platform/pesados-catalogo.ts` with its upstream a
 delivery (`npx inclusionist-pesados dist`, `--kokoro` for a game that fills the Kokoro port); the page asks for it at
 `pesados/<host><path>` on its own origin and the service worker answers from the checked cache.
 
+**Where the build reads from is a choice** (the Dev, 2026-09-21). Unset, it is upstream. With a base, each file comes from a
+mirror — the project's Cloudflare, a school's own server, or a folder on the build machine, which needs no network at all:
+
+```powershell
+npx inclusionist-pesados dist --base https://lfs-oinclusionista.jrocha.dev.br
+$env:INCLUSIONIST_HEAVY_BASE = 'C:\Users\<you>\Claude\the-inclusionist-lfs'   # or a .env beside the build (.env.example)
+```
+
+The flag beats the environment, and the environment beats the `.env`. The mapping from each upstream address to the folder a
+mirror serves it under is `platform/heavy-mirror`, written once. **The sha256 check does not move**: a base that serves other
+bytes writes nothing and the build fails naming the address — which is what makes pointing elsewhere safe, and why the base is
+not something anyone has to trust. The delivery path never changes, because it is what the child's page asks for.
+
 Files **the project builds** (the Vosk worker and wasm, the repacked Vosk models, the Spanish Moonshine ONNX) have no upstream: they
 are staged in `the-inclusionist-lfs/` (one folder per artefact, laid out as its future Hugging Face repository, with `SHA256SUMS`),
 uploaded by the Dev to the project's **Cloudflare**, and move to **Hugging Face** after the city's permission. The catalogue names the

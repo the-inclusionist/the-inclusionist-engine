@@ -35,3 +35,6 @@ tests/__screenshots__/
 # Python bytecode dos scripts de manutencao (scripts/*.py)
 __pycache__/
 *.pyc
+
+# the machine's own answer to «where do the heavy files come from» (.env.example is the versioned one)
+.env
