@@ -879,6 +879,12 @@
     "pesoPorBaixar",
     "sha256Hex"
   ],
+  "platform/reading-in-worker.ts": [
+    "ReadingInWorker",
+    "ReadingInWorkerDeps",
+    "ReadingWorkerLike",
+    "createReadingInWorker"
+  ],
   "platform/reading-model.ts": [
     "GenerationConfig",
     "READING_MODELS",
@@ -899,6 +905,12 @@
     "ReadingRuntimeDeps",
     "ReadingTranscriber",
     "loadReadingRuntime"
+  ],
+  "platform/reading-worker.ts": [
+    "ReadingAnswer",
+    "ReadingRequest",
+    "WorkerScope",
+    "serveReading"
   ],
   "platform/reading.ts": [
     "Heard",

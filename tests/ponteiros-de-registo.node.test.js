@@ -56,8 +56,14 @@ const RAIZ_DOS_REGISTOS = resolve(ADR, '..', '..', '..');
  */
 const existeAlgures = (c) => existsSync(join(RAIZ, c)) || existsSync(join(RAIZ_DOS_REGISTOS, c));
 
-/** Caminhos de repositório que um registo cita: `tests/x.node.test.js`, `scripts/y.mjs`. */
-const CAMINHO = /(?<![\w/])(?:tests|scripts)\/[A-Za-z0-9_.\-]+\.(?:m?js|py|ts)/g;
+/*
+ * Caminhos de repositório que um registo cita: `tests/x.node.test.js`, `scripts/y.mjs`.
+ *
+ * ⚠️ A EXTENSÃO TEM DE ACABAR ALI, e sem esse fecho o crivo INVENTA ficheiros: `scripts/rename-map.json` casava como
+ * `scripts/rename-map.js` (a parte gulosa recua, `.js` casa, e o `on` fica de fora), e o registo passava a ser acusado de
+ * apontar para um ficheiro que nunca nomeou. 📏 Achado em 2026-09-21 pelo ADR-0219, que cita um mapa `.json`.
+ */
+const CAMINHO = /(?<![\w/])(?:tests|scripts)\/[A-Za-z0-9_.\-]+\.(?:m?js|py|ts)(?![\w.])/g;
 
 /**
  * OS CAMINHOS QUE UM REGISTO CITA E QUE NÃO EXISTEM AQUI, e o porquê de cada um.
@@ -197,6 +203,15 @@ describe.skipIf(!TEM_ARVORE)('um registo não aponta para um gate que não exist
     expect(todos.length, 'a varredura não achou registo nenhum').toBeGreaterThan(100);
     const vivos = citados().filter((c) => existsSync(join(RAIZ, c)));
     expect(vivos.length, 'nenhum caminho citado existe — o detector está a casar com outra coisa').toBeGreaterThan(5);
+  });
+
+  it('🔴 [Zero] um `.json` citado NÃO é lido como um `.js` — o crivo não inventa ficheiros', () => {
+    // 🔴 Foi o que aconteceu com o ADR-0219, que cita `scripts/rename-map.json`: a extensão casava até ao `.js` e o registo
+    // era acusado de apontar para `scripts/rename-map.js`, um ficheiro que ninguém escreveu e que ele não nomeia. Um crivo
+    // que inventa o defeito é pior do que um que o perde: quem o lê vai procurar o que não existe.
+    const achados = [...'cita scripts/rename-map.json e tests/x.node.test.js e scripts/y.jsonl'.matchAll(CAMINHO)]
+      .map((m) => m[0]);
+    expect(achados, 'o casador leu uma extensão pela metade').toEqual(['tests/x.node.test.js']);
   });
 
   it('📌 [Right] e o mecanismo que resolve isto EXISTE e é conferido', () => {

@@ -3772,9 +3772,19 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * uses the browser's recogniser where it says it recognises locally, and refuses otherwise instead of quietly sending a
    * child's voice to a server.
    */
+  /*
+   * 📌 THE READING THREAD GOES WITH THE CARTRIDGE (issue #185), and the closer lives OUT HERE rather than on the `Reading`
+   * object: a root that mounts another game keeps the same reading object, and a worker holding a compiled model of up to
+   * 378 MiB for a cartridge that never listens is a school machine's memory spent on nothing. It is opened again at the next
+   * `listen()`, which is also the moment the child is willing to wait. ⚠️ Out here because `Reading` is the CARTRIDGE's
+   * vocabulary (ADR-0216): a method only this file calls has no business in a contract seven repositories read.
+   */
+  let closeReadingThread = (): void => {};
   const reading: Reading = (() => {
     const browserApis = win as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
     let microphone: { record(o: ListenOptions): Promise<Float32Array>; stop(): void } | null = null;
+    /** The reading thread, kept between readings (opening it compiles the model again) and let go with the game. */
+    let readingThread: { transcribe(samples: Float32Array): Promise<string>; close(): void } | null = null;
     const listener = createReading({
       language: () => bcp47(),
       api: (browserApis.SpeechRecognition ?? browserApis.webkitSpeechRecognition ?? null) as never,
@@ -3787,8 +3797,25 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
        * model files, so a game that never listens — and a child of a game that does, until the first `listen()` — loads none of
        * it. Only reached where the device's own recogniser cannot serve the language (ADR-0200 erratum).
        */
+      /*
+       * 🔴 AND IT RUNS IN A THREAD OF ITS OWN (issue #185). 📏 Measured in the lab: transcribing on the main thread cut the
+       * recording in gaps of 4 s — the child goes on reading and the words she says while the page is busy are not in the
+       * sound at all. In a worker the biggest gap was 264 ms.
+       * ⚠️ WHERE THERE IS NO `Worker` the reading still works, on this thread, and the LINE SAYS SO: an engine that quietly
+       * fell back would put the defect back exactly where nobody looks for it.
+       */
       model: o.uses?.reading
         ? async (language) => {
+          if (typeof (win as unknown as { Worker?: unknown }).Worker === 'function') {
+            const { createReadingInWorker } = await import('../platform/reading-in-worker.js');
+            readingThread?.close();
+            readingThread = createReadingInWorker({ base: doc.baseURI, language });
+            closeReadingThread = () => { readingThread?.close(); readingThread = null; };
+            return readingThread;
+          }
+          problemasMedidos.push('reading: this browser has no `Worker`, so the transcription runs on the same thread that '
+            + 'draws the game and feeds the microphone — measured, that cuts the recording in gaps of seconds and the child '
+            + 'loses the words she said meanwhile; serve the game where workers are available');
           const { loadReadingRuntime } = await import('../platform/reading-runtime.js');
           return loadReadingRuntime({ base: doc.baseURI, language });
         }
@@ -4000,6 +4027,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   }
 
   function desmontar(): void {
+    closeReadingThread();
     registrarMapeamentoDoTeclado(null);
     registrarMapeamentoDoPad(null);
     registrarAvisoDeQueda(null);

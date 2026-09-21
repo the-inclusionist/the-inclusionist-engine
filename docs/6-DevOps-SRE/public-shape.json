@@ -1375,6 +1375,23 @@
       "digest?"
     ]
   },
+  "platform/reading-in-worker.ts": {
+    "interface ReadingWorkerLike": [
+      "onerror?",
+      "onmessage",
+      "postMessage",
+      "terminate"
+    ],
+    "interface ReadingInWorkerDeps": [
+      "base",
+      "language",
+      "spawn?"
+    ],
+    "interface ReadingInWorker": [
+      "close",
+      "transcribe"
+    ]
+  },
   "platform/reading-model.ts": {
     "interface ReadingModelPlan": [
       "config",
@@ -1411,6 +1428,14 @@
       "maxTokens?",
       "ort?"
     ]
+  },
+  "platform/reading-worker.ts": {
+    "interface WorkerScope": [
+      "onmessage",
+      "postMessage"
+    ],
+    "type ReadingRequest": "| { readonly kind: 'load'",
+    "type ReadingAnswer": "| { readonly kind: 'ready' } | { readonly kind: 'text'"
   },
   "platform/reading.ts": {
     "interface ListeningSession": [
