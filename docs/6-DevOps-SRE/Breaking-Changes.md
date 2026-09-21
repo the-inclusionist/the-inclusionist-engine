@@ -42,7 +42,7 @@ publishes) at both revisions and diffs the exported names.
 > Fixing six footers means an interactive rebase across ~50 unpushed commits — a rewrite of shared history to
 > repair a generated changelog section. What the footers would have said is written in this file instead,
 > which is the reason this file exists. **Whether to rewrite is the Dev's call**, and the list above is what
-> he would need.
+> they would need.
 
 ## The fourteen breaking commits (five when this file was first written)
 

@@ -48,7 +48,7 @@ whose commits lack it.**
 ⚠️ **It transfers nothing, and that is deliberate.** The patrimonial owner of this software is the
 Município (Lei nº 9.609/1998, art. 4º), and publication is still a *pedido* in an administrative process —
 so there is no party a contributor agreement could assign rights to. A CLA assigning to the developer would
-have a public servant receive rights over his employer's work. See **ADR-0078**.
+have a public servant receive rights over their employer's work. See **ADR-0078**.
 
 ### 2 · Art: it is NOT free, and you should know that before you draw
 

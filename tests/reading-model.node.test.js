@@ -8,7 +8,7 @@
 // `fixtures/reading-ground-truth.json` by `scratchpad/verdade-da-leitura.py` (transformers 5.5.4, torch 2.14).
 //
 // ⚠️ THE FIXTURE CARRIES THE MEL FILTERS AND THE PIECES IT NAMES, so this runs where the Dev's staging tree is not — which is
-// everywhere but his machine. A case that skips when a folder is missing measures NOTHING and says so to nobody; it is how 36
+// everywhere but their machine. A case that skips when a folder is missing measures NOTHING and says so to nobody; it is how 36
 // gates of this repository once went quiet at the same time. What the tree does add is the case at the end: the copy here and
 // the file the catalogue fetches must still be the same bytes.
 //

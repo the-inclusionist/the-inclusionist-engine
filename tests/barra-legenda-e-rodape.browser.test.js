@@ -62,7 +62,7 @@ describe('the quick bar: name below, explanation in the footer', () => {
 
   it('🔴 [Right] the footer sits at the BOTTOM edge, over a DARK band, and holds at most TWO lines (ADR-0164)', () => {
     // The Dev: «O rodapé deve ocupar no máximo duas linhas de texto e estar na parte mais baixa da tela (canvas), na
-    // frente de uma faixa escurecida». Seen on his screenshot: three lines, mid-screen, over a quiz option, no background.
+    // frente de uma faixa escurecida». Seen on their screenshot: three lines, mid-screen, over a quiz option, no background.
     icone('tipografia').dispatchEvent(new MouseEvent('mouseenter')); // a long explanation (the 🚥 needs a filter host)
     const rodape = raiz.querySelector('#game-region .rodape-da-tela');
     const regiao = raiz.querySelector('#game-region').getBoundingClientRect();

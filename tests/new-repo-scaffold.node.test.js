@@ -41,7 +41,7 @@ describe('ADR-0067 · the scaffold of a new repository', () => {
   it('🔴 [Right] it REFUSES without a record identifier — §5, and the message says «name it», not «no»', () => {
     // The case that carries the erratum of 2026-09-11. §5 refuses accretion; it does not gate the Dev. The
     // refusal has to read as a missing field, because a message that reads as a prohibition is exactly how
-    // this section came to be quoted at him.
+    // this section came to be quoted at them.
     for (const falta of ['record', 'name', 'what', 'before']) {
       const opts = { ...OK, [falta]: '' };
       expect(() => buildScaffold(opts), `«${falta}» empty should refuse`).toThrow();

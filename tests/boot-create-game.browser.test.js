@@ -344,7 +344,7 @@ describe('createGame num documento de verdade', () => {
     });
 
     it('🔴 [Right] a game that declares NOTHING still gets the six root items and the seven of the submenu, in order (ADR-0161)', () => {
-      // The Dev found three items in the quiz and listed both menus in full. Order is literal, from his list.
+      // The Dev found three items in the quiz and listed both menus in full. Order is literal, from their list.
       const motor = abrir();
       motor.pausa.mostrar(0);
       const lista = (sub) => [...document.querySelectorAll(`#vp-pause-0 .pause-menu[data-sub="${sub}"] .pm-btn`)]

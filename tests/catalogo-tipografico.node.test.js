@@ -19,7 +19,7 @@ const POR_ID = new Map(CATALOGO.fontes.map((f) => [f.id, f]));
 const TODAS = FONT_GROUPS.flatMap((g) => g.items);
 /**
  * Offered for Portuguese with coverage NOT VERIFIED (`null`). Kept in the menu while the Dev decides: R3 asks `pt_br: true`,
- * and removing a face for dyslexia from the menu is his call, not a gate's (issue #172). Each line says what is missing.
+ * and removing a face for dyslexia from the menu is their call, not a gate's (issue #172). Each line says what is missing.
  */
 const COBERTURA_NAO_VERIFICADA = {
   quattro: 'iA Writer Quattro: GitHub source, coverage not measured in the catalogue',

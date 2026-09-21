@@ -2,7 +2,7 @@
 // THE SCAFFOLD OF A NEW REPOSITORY — the four files ADR-0067 §2 requires, written once instead of by hand.
 //
 // ========================= WHY THIS EXISTS =========================
-// The Dev asked, on 2026-09-11, why ADR-0067 obstructs him every time he creates a repository. Two answers
+// The Dev asked, on 2026-09-11, why ADR-0067 obstructs them every time they create a repository. Two answers
 // came out of reading it, and this script is the second one.
 //
 // The first is that §5 was being read as a permission gate and never said that — it is a scope limit on §1,
