@@ -3581,24 +3581,24 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   if (temCamera && regiaoDoOlhar) {
     // PLAYING THROUGH THE WEBCAM (ADR-0215): one stored position, off · hands · face · eyes; `ui/camera-control` starts only the control at
     // that position. Each control opens the camera itself and lets it go when the position moves on.
-    const laco = {
+    const visionLoop = {
       requestFrame: (cb: FrameRequestCallback) => win.requestAnimationFrame(cb), cancelFrame: (h: number) => win.cancelAnimationFrame(h),
       now: () => win.performance.now(), every: (cb: () => void, ms: number) => win.setInterval(cb, ms), stopEvery: (h: number) => win.clearInterval(h),
     };
-    const comum = {
-      doc, region: regiaoDoOlhar, base: doc.baseURI, loop: laco, controller: controleVirtual, say: srSay, alert: srAlert,
+    const cameraDeps = {
+      doc, region: regiaoDoOlhar, base: doc.baseURI, loop: visionLoop, controller: controleVirtual, say: srSay, alert: srAlert,
       report: (linha: string) => { if (!problemasMedidos.includes(linha)) problemasMedidos.push(linha); },
       turnOff: () => state.setCameraControlValue('off'),
     };
     // the eyes: the relative reading and the four-zone cycle (ADR-0213), presses from `olhos`, the eye lines and the regions' outlines
-    const olhos = createEyeControl(comum);
+    const eyes = createEyeControl(cameraDeps);
     // the face: the Dev's face map (ADR-0210), presses from `rosto`, the eyes, brows and lips lines
-    const rosto = createFaceControl({ ...comum, openFeed: videoFeed(doc, win.navigator.mediaDevices) });
+    const face = createFaceControl({ ...cameraDeps, openFeed: videoFeed(doc, win.navigator.mediaDevices) });
     // the hands: the Gesture Recognizer and the Dev's hands map (ADR-0210), presses from `gestos`, the hands' lines (issue #191)
-    const maos = createHandControl({ ...comum, openFeed: videoFeed(doc, win.navigator.mediaDevices) });
-    const controles = { eyes: olhos, face: rosto, hands: maos };
-    state.on('cameraControl', (modo) => { followCameraMode(modo, controles); });
-    followCameraMode(state.cameraControl, controles);
+    const hands = createHandControl({ ...cameraDeps, openFeed: videoFeed(doc, win.navigator.mediaDevices) });
+    const cameraControls = { eyes, face, hands };
+    state.on('cameraControl', (mode) => { followCameraMode(mode, cameraControls); });
+    followCameraMode(state.cameraControl, cameraControls);
   }
   const AMOSTRA_C = COLUNAS * 10;
   const AMOSTRA_L = LINHAS * 10;

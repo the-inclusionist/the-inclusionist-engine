@@ -469,14 +469,14 @@ export function setSemForcaValue(on: boolean): void {
 //     that is not a position reads as off, because the camera must never switch itself on. ---
 export type CameraControl = 'off' | 'hands' | 'face' | 'eyes';
 const CAMERA_CONTROLS: readonly CameraControl[] = ['off', 'hands', 'face', 'eyes'];
-const modoDaCamera = (v: string | null): CameraControl => ((CAMERA_CONTROLS as readonly (string | null)[]).includes(v) ? v as CameraControl : 'off');
+const cameraModeOf = (v: string | null): CameraControl => ((CAMERA_CONTROLS as readonly (string | null)[]).includes(v) ? v as CameraControl : 'off');
 /** The next position of the 📷 cycle, wrapping back to off. */
 export const nextCameraControl = (v: CameraControl): CameraControl => CAMERA_CONTROLS[(CAMERA_CONTROLS.indexOf(v) + 1) % CAMERA_CONTROLS.length]!;
-export let cameraControl: CameraControl = modoDaCamera(VAZIO.get('incl_camera_control', DEFAULTS.cameraControl));
+export let cameraControl: CameraControl = cameraModeOf(VAZIO.get('incl_camera_control', DEFAULTS.cameraControl));
 export function setCameraControlValue(v: CameraControl): void {
-  const valido = modoDaCamera(v);
-  if (cameraControl === valido) return;
-  const p = armazem('setCameraControlValue'); p.set('incl_camera_control', valido); cameraControl = valido; emit('cameraControl', valido);
+  const valid = cameraModeOf(v);
+  if (cameraControl === valid) return;
+  const p = armazem('setCameraControlValue'); p.set('incl_camera_control', valid); cameraControl = valid; emit('cameraControl', valid);
 }
 
 // --- gameSpeed: the game speed the quick bar's hourglass cycles (ADR-0180); `core/loop.startLoop` multiplies the frame time
@@ -537,7 +537,7 @@ export function carregarEstado(p: PortaDoEstado): void {
   oneButton = p.getBool('incl_onebtn', DEFAULTS.oneButton);
   gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
   semForca = p.getBool('incl_sem_forca', DEFAULTS.semForca);
-  cameraControl = modoDaCamera(p.get('incl_camera_control', DEFAULTS.cameraControl));
+  cameraControl = cameraModeOf(p.get('incl_camera_control', DEFAULTS.cameraControl));
   captionPpm = ritmoDaLegendaValido(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
   speechPpm = ritmoDaFalaValido(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
 }

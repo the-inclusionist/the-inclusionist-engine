@@ -73,7 +73,7 @@ const SEGUROS = [
   // document as text and no longer through markup (`ui/help-panel.mostrarSlide`).
   ['consumer-quiz/main-quiz.ts', 'if (!p) { app.innerHTML =', 'dois NÚMEROS interpolados'],
   ['render/viz-setters.ts', "tabs.innerHTML = '';", 'string vazia: limpa o elemento, nada entra'],
-  ['ui/pause-icons.ts', "if (k === 'idioma') { const bandeira = flagOf(getLoc", 'the language flag: one of three SVG constants of `ui/locale-flags`, chosen by the locale — nothing typed or fetched enters'],
+  ['ui/pause-icons.ts', "if (k === 'idioma') { const flag = flagOf(getLocale", 'the language flag: one of three SVG constants of `ui/locale-flags`, chosen by the locale — nothing typed or fetched enters'],
   ['render/viz-setters.ts', 'el.innerHTML = vizGroupHtml(modes, cur)', 'modos enumerados + i18n'],
   // ⚠️ OS DOIS EIXOS (#104). Mesma classe do de cima e pelo mesmo motivo: o `eixosHtml` interpola só valores
   // ENUMERADOS (`TEMAS`/`CORRECOES`, congelados no `viz-axes`) e texto que passou por `t()`. Nada aqui vem

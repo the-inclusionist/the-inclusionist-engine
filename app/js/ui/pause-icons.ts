@@ -45,7 +45,7 @@ import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-na
 import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, type CameraControl } from '../core/state.js';
 
 /** The word for each position of the 📷 cycle (ADR-0215). */
-const NOME_DA_CAMERA: { readonly [M in CameraControl]: string } = { off: 'state.off', hands: 'camera.hands', face: 'camera.face', eyes: 'camera.eyes' };
+const CAMERA_MODE_NAME: { readonly [M in CameraControl]: string } = { off: 'state.off', hands: 'camera.hands', face: 'camera.face', eyes: 'camera.eyes' };
 import { proximaVelocidade } from '../core/game-speed.js';
 // ⚠️ IMPORT DIRETO DE `platform/storage`, e não uma peça a mais no `ctx`, e a escolha é sobre quem pode
 // esquecer: `initPauseIcons` é chamado pela raiz de composição de CADA jogo, e um `store` injetado é um
@@ -335,7 +335,7 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   if (k === 'altmove') return rotulo(s.toggleMove ? 'state.on' : 'state.off');
   if (k === 'contrast') return rotulo(CURTO_DO_TEMA[s.visual.tema]);
   if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CURTO_DA_CORRECAO[s.visual.correcao]) });
-  if (k === 'camera') return rotulo(NOME_DA_CAMERA[s.camera ?? 'off']);
+  if (k === 'camera') return rotulo(CAMERA_MODE_NAME[s.camera ?? 'off']);
   if (k === 'idioma') return t('icon.state', { nome: t(ic.n), v: LANGUAGE_NAME[(s.idioma ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt });
   if (k === 'velocidade') return t('icon.state', { nome: t(ic.n), v: t('icon.velocidade.valor', { pct: Math.round((s.velocidade ?? 1) * 100) }) });
   return t(ic.n);
@@ -1174,7 +1174,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     camera: () => {
       const v = nextCameraControl(cameraControl);
       setCameraControlValue(v);
-      ctx.srSay(t('sr.icon.camera', { v: t(NOME_DA_CAMERA[v]) }));
+      ctx.srSay(t('sr.icon.camera', { v: t(CAMERA_MODE_NAME[v]) }));
     },
     // THE LANGUAGE (the Dev, 2026-09-16): the next flag; `setLocale` stores it and every surface redraws on `i18n:change`. Said in the NEW
     // language, once it has loaded.
@@ -1231,7 +1231,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     const k = b.dataset.pi || '';
     // the hourglass follows the CURRENT cartridge's clock (ADR-0180): a turn game mounted later hides it, a clock game shows it
     if (k === 'velocidade') b.hidden = !ctx.relogio?.();
-    if (k === 'idioma') { const bandeira = flagOf(getLocale()); if (b.innerHTML !== bandeira) b.innerHTML = bandeira; }
+    if (k === 'idioma') { const flag = flagOf(getLocale()); if (b.innerHTML !== flag) b.innerHTML = flag; }
     const st = iconState(i);
     const v = computeIconVisual(k, st);
     b.classList.remove(...ICON_STATE_CLASSES);
