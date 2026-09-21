@@ -783,7 +783,6 @@
     "EspeakFactory",
     "EspeakFileSystem",
     "KokoroPortDeps",
-    "OnnxRuntime",
     "createKokoroPort"
   ],
   "platform/kokoro-runtime.ts": [
@@ -811,6 +810,13 @@
     "tokenizar",
     "urlDaVozKokoro",
     "wavDe"
+  ],
+  "platform/onnx-runtime.ts": [
+    "OnnxRuntime",
+    "OnnxRuntimeDeps",
+    "OnnxSession",
+    "atDelivery",
+    "loadOnnxRuntime"
   ],
   "platform/pesados-catalogo.ts": [
     "CACHE_PESADOS",

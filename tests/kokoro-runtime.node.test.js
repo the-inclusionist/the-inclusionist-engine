@@ -14,7 +14,7 @@ import { caminhoNaEntrega } from '../app/js/platform/pesados.js';
 
 const BASE = 'https://escola.exemplo/jogo/';
 
-function build({ espeakExport = 'default', ortBroken = false } = {}) {
+function build({ espeakExport = 'default', ortExport = 'bare', ortBroken = false } = {}) {
   const imported = [], fetched = [];
   const espeakRuns = [];
   const factory = (options) => { espeakRuns.push(options); return Promise.resolve({ FS: { writeFile() {}, readFile: () => 'fonemas' } }); };
@@ -32,7 +32,10 @@ function build({ espeakExport = 'default', ortBroken = false } = {}) {
     importModule: async (url) => {
       imported.push(url);
       if (url.includes('espeak')) return espeakExport === 'default' ? { default: factory } : factory;
-      return ortBroken ? {} : ort;
+      if (ortBroken) return {};
+      // ⚠️ A bundle may hand its API back as the namespace or under `default`, and which one is not ours to choose: both are
+      // shapes a real `import()` of an ESM build returns.
+      return ortExport === 'default' ? { default: ort } : ort;
     },
     compileWasm: async () => ({ fake: 'module' }),
     instantiateWasm: async () => ({ fake: 'instance' }),
@@ -71,6 +74,15 @@ describe('the neural voice, loaded by the engine', () => {
     await kokoro.fonemizar('duas', 'pt-br');
     await kokoro.fonemizar('três', 'pt-br');
     expect(fetched.filter((u) => u.endsWith('espeak-ng.wasm')), 'the 18 MiB wasm was fetched again for each sentence').toHaveLength(1);
+  });
+
+  it('📌 [Right] onnxruntime loads whether the module default-exports its API or IS the API', async () => {
+    for (const ortExport of ['default', 'bare']) {
+      const { deps, ort } = build({ ortExport });
+      await loadKokoroRuntime(deps);
+      expect(ort.env.wasm.wasmPaths?.wasm, `as ${ortExport}: the runtime was not found, so its threads were never pointed`)
+        .toContain('/pesados/');
+    }
   });
 
   it('📌 [Right] espeak-ng loads whether it default-exports its factory or is the factory', async () => {

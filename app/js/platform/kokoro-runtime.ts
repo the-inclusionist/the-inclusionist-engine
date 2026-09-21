@@ -14,26 +14,13 @@
 // · onnxruntime's threads load their own glue and wasm; they are pointed at `pesados/` too, because a worker that goes looking for
 //   them on a CDN finds nothing in a school with no network, and the child hears silence (measured in the quiz demo, #181).
 
-import { createKokoroPort, type EspeakFactory, type OnnxRuntime } from './kokoro-port.js';
-import { caminhoNaEntrega } from './pesados.js';
-import { PESADOS } from './pesados-catalogo.js';
+import { createKokoroPort, type EspeakFactory } from './kokoro-port.js';
+import { atDelivery, loadOnnxRuntime } from './onnx-runtime.js';
 import type { KokoroModule } from './kokoro.js';
 
-/**
- * ⚠️ THE ADDRESSES ARE NOT WRITTEN HERE. They live once, in the catalogue, with the sha256 that is checked before anything is
- * written into a delivery (ADR-0114, ADR-0177): a second copy in this module would be a version that drifts from the one the
- * build fetched, and the page would ask for a file the delivery does not have.
- */
-const urlOf = (id: string): string => {
-  const heavy = PESADOS.find((p) => p.id === id);
-  if (!heavy?.url) throw new Error(`Kokoro: the catalogue has no address for ${id}`);
-  return heavy.url;
-};
+// The addresses are the catalogue's, reached by id through `platform/onnx-runtime` — never written twice (ADR-0114, ADR-0177).
 const ESPEAK_GLUE = 'voz:runtime:fonemas';
 const ESPEAK_WASM = 'voz:runtime:fonemas:wasm';
-const ORT_ESM = 'voz:runtime:onnx';
-const ORT_GLUE = 'voz:runtime:onnx:cola';
-const ORT_WASM = 'voz:runtime:onnx:wasm';
 
 export interface KokoroRuntimeDeps {
   /** The page's address, which `pesados/` is resolved against. */
@@ -48,10 +35,6 @@ export interface KokoroRuntimeDeps {
 
 /** What the loaded espeak-ng module looks like: a factory, default-exported or not. */
 type EspeakModule = { readonly default?: EspeakFactory } | EspeakFactory;
-/** What onnxruntime exports, plus the knob that tells its threads where their own files are. */
-type OrtModule = OnnxRuntime & { readonly env?: { readonly wasm?: { wasmPaths?: unknown } } } & { readonly default?: unknown };
-
-const atDelivery = (id: string, base: string): string => new URL(caminhoNaEntrega(urlOf(id)), base).href;
 
 /**
  * Builds the neural voice. Everything it needs is fetched from the delivery, so a device that never had a network day has it all
@@ -84,11 +67,8 @@ export async function loadKokoroRuntime(d: KokoroRuntimeDeps): Promise<KokoroMod
     } as Parameters<EspeakFactory>[0]);
   };
 
-  const ortModule = await loadModule(atDelivery(ORT_ESM, d.base)) as OrtModule;
-  const ort = ((ortModule as { default?: OrtModule }).default ?? ortModule) as OrtModule;
-  if (!ort?.InferenceSession) throw new Error('Kokoro: onnxruntime did not load from the delivery (voz:runtime:onnx)');
-  // ⚠️ THE THREADS LOOK FOR THEIR OWN FILES: left alone they ask a CDN, which a school without a network does not have.
-  if (ort.env?.wasm) ort.env.wasm.wasmPaths = { mjs: atDelivery(ORT_GLUE, d.base), wasm: atDelivery(ORT_WASM, d.base) };
+  // the runtime, and the rule about its threads, are `platform/onnx-runtime`'s — the reading loads the same one the same way
+  const ort = await loadOnnxRuntime({ base: d.base, importModule: loadModule });
 
   return createKokoroPort({ espeak, ort, fetch: get, base: d.base });
 }

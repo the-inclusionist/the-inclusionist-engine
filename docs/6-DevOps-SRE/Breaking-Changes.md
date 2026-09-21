@@ -819,6 +819,10 @@ Kokoro from the delivery at the first such utterance (`platform/kokoro-runtime`,
 longer the port, is what lists the Kokoro voices, offers the neural engine in the hearing panel and puts the model, the voices and
 the runtime (372 MB) in the delivery.
 
+**Also in this release, and in the same decision.** `OnnxRuntime` left `platform/kokoro-port` for `platform/onnx-runtime`, which is
+now the one place that loads the graph runner from the delivery and points its worker threads at it — the voice and the reading
+load the same one the same way, so the rule about those threads is written once (`OnnxSession` and `atDelivery` are new there).
+
 **What to do:** replace `carregarKokoro: …` with `uses: { neuralVoice: true }` and delete the loader, the port and the npm
 dependencies they needed (`espeak-ng`, `onnxruntime-web` — the engine reads both from `pesados/`, so nobody installs them). A game
 that does not want a neural voice declares `declines.semVozNeural`, as before. 📏 Measured on 2026-09-21: the only consumer of the

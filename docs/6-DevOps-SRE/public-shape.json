@@ -1230,10 +1230,6 @@
       "readFile",
       "writeFile"
     ],
-    "interface OnnxRuntime": [
-      "InferenceSession",
-      "Tensor"
-    ],
     "interface KokoroPortDeps": [
       "base",
       "espeak",
@@ -1267,6 +1263,21 @@
       "espeak"
     ],
     "type LoadKokoro": "() => Promise<KokoroModule>"
+  },
+  "platform/onnx-runtime.ts": {
+    "interface OnnxSession": [
+      "inputNames?",
+      "outputNames",
+      "run"
+    ],
+    "interface OnnxRuntime": [
+      "InferenceSession",
+      "Tensor"
+    ],
+    "interface OnnxRuntimeDeps": [
+      "base",
+      "importModule?"
+    ]
   },
   "platform/pesados-catalogo.ts": {
     "interface Pesado": [

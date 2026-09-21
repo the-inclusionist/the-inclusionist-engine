@@ -8,6 +8,7 @@
 // in the real ones, loaded from `pesados/` on the page's own origin, where the delivery put them (ADR-0177) and the service worker
 // answers from the checked cache.
 import type { KokoroModule, KokoroSession } from './kokoro.js';
+import type { OnnxRuntime } from './onnx-runtime.js';
 import { URL_DO_MODELO_KOKORO, URL_DO_TOKENIZADOR_KOKORO, urlDaVozKokoro } from './kokoro.js';
 import { caminhoNaEntrega } from './pesados.js';
 
@@ -22,18 +23,6 @@ export type EspeakFactory = (options: {
   readonly arguments: readonly string[];
   readonly preRun: readonly ((m: { FS: EspeakFileSystem }) => void)[];
 }) => Promise<{ FS: EspeakFileSystem }>;
-
-interface OnnxTensor { readonly data: unknown }
-/** The part of onnxruntime this uses. */
-export interface OnnxRuntime {
-  readonly Tensor: new (type: 'int64' | 'float32', data: BigInt64Array | Float32Array, shape: readonly number[]) => OnnxTensor;
-  readonly InferenceSession: {
-    create(model: Uint8Array, options: { executionProviders: readonly string[] }): Promise<{
-      readonly outputNames: readonly string[];
-      run(inputs: { readonly [name: string]: OnnxTensor }): Promise<{ readonly [name: string]: OnnxTensor }>;
-    }>;
-  };
-}
 
 export interface KokoroPortDeps {
   readonly espeak: EspeakFactory;

@@ -126,10 +126,14 @@ const TOCAM_NA_REDE = {
   'platform/kokoro-port.ts': 'LOCAL. `fetch` of the model, the tokenizer and the voice tables at `pesados/` on the page\'s own '
     + 'origin (ADR-0177) — paths built by `caminhoNaEntrega`, never an upstream host. It was the quiz demo\'s port until ADR-0216 '
     + 'moved it into the engine, so no game has to copy it',
-  'platform/kokoro-runtime.ts': 'LOCAL. `import()` of espeak-ng and onnxruntime, and `fetch` of their wasm, all at `pesados/` on '
-    + 'the page\'s own origin (ADR-0216): the addresses come from the catalogue, the build put the files in the delivery, and a '
-    + 'school with no network has them or the voice refuses. Nothing is imported from npm, so a game that never speaks neurally '
-    + 'carries none of it',
+  'platform/kokoro-runtime.ts': 'LOCAL. `import()` of espeak-ng and `fetch` of its wasm, at `pesados/` on the page\'s own origin '
+    + '(ADR-0216): the addresses come from the catalogue, the build put the files in the delivery, and a school with no network '
+    + 'has them or the voice refuses. Nothing is imported from npm, so a game that never speaks neurally carries none of it. The '
+    + 'graph runner is `platform/onnx-runtime`\'s, below',
+  'platform/onnx-runtime.ts': 'LOCAL. `import()` of onnxruntime-web at `pesados/` on the page\'s own origin, and the ONE place '
+    + 'that points its worker threads at the delivery too (ADR-0216): a worker left to itself asks the CDN the library was '
+    + 'published at, finds nothing in a school with no network, and the session never opens — measured in the quiz demo (#181). '
+    + 'The voice and the reading both load it from here, so the rule is written once',
   'platform/vision.ts': 'LOCAL. `import()` of MediaPipe\'s `vision_bundle.mjs` (and, inside it, its wasm and the face model) at `pesados/` '
     + 'on the page\'s own origin (ADR-0177, ADR-0213, #196) — addresses built by `caminhoNaEntrega`, never an upstream host, and only '
     + 'after the checked cache holds every file',
