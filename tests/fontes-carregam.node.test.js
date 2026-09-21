@@ -31,6 +31,42 @@ const DECLARADAS = new Set([...CSS.matchAll(/font-family:\s*['"]?([^;'"]+)/g)].m
 /** Todo item do catálogo, com a marca de quem é OFERECÍVEL (não está `.off`). */
 const ITENS = FONT_GROUPS.flatMap((g) => g.items.map((it) => ({ fam: it.fam, oferecivel: !it.off })));
 
+/**
+ * 🔴 E A FOLHA TEM DE PODER MUDAR DE IDEIA. Este ficheiro guarda que toda face oferecida no menu carrega; o caso abaixo guarda a
+ * outra metade, um dia depois de a criança ter aberto o jogo pela primeira vez: `vendor/fonts.css` é o ÍNDICE das 166 famílias e
+ * o seu nome nunca muda, então marcá-lo `immutable` por um ano congela a lista. Uma família acrescentada depois aparece no menu
+ * (o menu lê o catálogo), a criança escolhe-a, e o navegador desenha a fonte do sistema — sem erro em lado nenhum, que é a forma
+ * exacta do defeito que o `scripts/check-precache.mjs` existe para recusar, um andar acima.
+ *
+ * 📏 Medido em 2026-09-21: o service worker NÃO está exposto (o Workbox pede uma entrada com revisão sob `?__WB_REVISION__=…`,
+ * uma URL que a regra nunca apanhou). Quem está é todo cliente sem ele — uma janela privada, um navegador onde o worker não
+ * instala, o primeiro carregamento antes de instalar, e uma página consumidora que liga esta folha e não regista worker nenhum.
+ */
+describe('o índice das fontes pode mudar de ideia (issue #73, mesma classe)', () => {
+  const CABECALHOS = ler('app', 'public', '_headers');
+  /** A regra de cada caminho: `{'/vendor/fonts.css': 'public, no-cache', …}`. */
+  const REGRAS = Object.fromEntries([...CABECALHOS.matchAll(/^(\/\S+)\r?\n(?:\s+[^\r\n]+\r?\n)*?\s+Cache-Control:\s*([^\r\n]+)/gm)]
+    .map((m) => [m[1], m[2].trim()]));
+
+  it('🎯 [Interface] as regras foram lidas — sem isto o caso abaixo aprovaria um ficheiro vazio', () => {
+    expect(Object.keys(REGRAS).length, 'o `_headers` mudou de forma e este crivo deixou de ver as regras').toBeGreaterThan(3);
+    expect(REGRAS['/assets/*'], 'os bundles com hash no nome perderam o ano').toContain('immutable');
+  });
+
+  it('🔴 [Right] o índice revalida, e as fontes em si continuam imutáveis', () => {
+    expect(REGRAS['/vendor/fonts.css'], 'o índice das fontes não tem regra própria').toBeTruthy();
+    expect(REGRAS['/vendor/fonts.css'], 'o índice ficou congelado por um ano').not.toContain('immutable');
+    expect(REGRAS['/vendor/fonts.css']).toContain('no-cache');
+    expect(REGRAS['/vendor/fonts/*'], 'as 346 woff2 perderam o ano, e essas o nome identifica').toContain('immutable');
+  });
+
+  it('🔴 [Zero] nenhuma regra apanha a folha E as fontes ao mesmo tempo', () => {
+    // ⚠️ Um `/vendor/*` ao lado de uma regra mais estreita faria a resposta depender de qual a Cloudflare aplica primeiro —
+    // que não está escrito aqui e não se mede a partir deste repositório. Dois padrões que não se cruzam não têm essa pergunta.
+    expect(REGRAS['/vendor/*'], 'o padrão largo voltou, e com ele a dúvida sobre a precedência').toBeUndefined();
+  });
+});
+
 describe('uma fonte oferecida no menu carrega de verdade (ADR-0012)', () => {
   it('[Interface] o catálogo e a folha existem e têm tamanho de gente', () => {
     // ⚠️ O piso desceu de 15 para 12 em 2026-09-07: o roster perdeu quatro faces (issue #87, item 3 — duas

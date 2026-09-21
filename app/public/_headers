@@ -28,5 +28,18 @@
   Cache-Control: no-cache
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
-/vendor/*
+# 🔴 THE FONTS ARE IMMUTABLE; THE INDEX OF THEM IS NOT. `vendor/fonts.css` declares all 166 families and its NAME NEVER CHANGES,
+# so a year of `immutable` freezes the list itself: a browser that read it once offers last term's faces, and a family added
+# later is chosen in the menu and drawn by the system font, with nothing failing anywhere. It is the frozen-precache defect of
+# `scripts/check-precache.mjs` one layer up, at the edge.
+#  📏 Measured 2026-09-21: the SERVICE WORKER is not exposed — Workbox fetches a revisioned entry under `?__WB_REVISION__=…`
+#  (present in the built `workbox-*.js`), a URL the immutable rule never matched. What is exposed is every client without one:
+#  a private window, a browser where the worker never installs, the first load before it does, and a consumer page that links
+#  this stylesheet and registers no worker.
+#  📌 TWO PATTERNS THAT DO NOT OVERLAP, on purpose: a single `/vendor/*` plus a narrower rule would depend on which of them
+#  Cloudflare applies first, which is not written here and cannot be measured from this repository. The 346 woff2 live under
+#  `/vendor/fonts/` and keep the year; the index revalidates, which costs a 304 and never a stale menu.
+/vendor/fonts/*
   Cache-Control: public, max-age=31536000, immutable
+/vendor/fonts.css
+  Cache-Control: public, no-cache
