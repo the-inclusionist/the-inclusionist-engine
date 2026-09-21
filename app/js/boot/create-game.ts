@@ -3466,7 +3466,12 @@ export function createGame(o: CreateGameOptions): Engine {
    * queira mostrar «faltam N MB» ou «a voz não desceu» tem por onde; a engine não inventa uma superfície.
    */
   if (o.baixarPesados !== false) {
-    void baixarPesados({ apenas: pesadosDoArranque({ kokoro: !!o.uses?.neuralVoice }), aoProgredir: o.aoProgredirPesados })
+    // ⚠️ THE READING MODEL IS ASKED FOR BY LANGUAGE and not by a yes: the three together are 850 MiB, and the child is reading in
+    // one of them. `bcp47()` is already the language the interface booted in (ADR-0031), so nothing new has to be decided here.
+    void baixarPesados({
+      apenas: pesadosDoArranque({ kokoro: !!o.uses?.neuralVoice, reading: o.uses?.reading ? bcp47() : null }),
+      aoProgredir: o.aoProgredirPesados,
+    })
       .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });
   }
 

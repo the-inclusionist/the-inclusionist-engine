@@ -888,6 +888,34 @@ describe('createGame em execução', () => {
       expect(semVoz.some((id) => id.startsWith('voz:')), 'um jogo mudo baixou a voz neural que nunca vai usar').toBe(false);
       expect(comVoz.some((id) => id === 'voz:kokoro:modelo'), 'o jogo pediu a voz e o modelo dela não desce').toBe(true);
       expect(comVoz.some((id) => id === 'voz:runtime:onnx'), 'o modelo desce e quem o corre não').toBe(true);
+      expect(semVoz.concat(comVoz).filter((id) => id.startsWith('reading:')),
+        'nenhum destes dois jogos escuta, e um modelo de leitura desceu').toEqual([]);
+    } finally {
+      vi.doUnmock('../app/js/platform/pesados.js');
+      vi.resetModules();
+    }
+  });
+
+  /**
+   * 🔴 E A LEITURA DESCE NA LÍNGUA DA CRIANÇA (ADR-0216 §3; ADR-0201 erratum). 📏 Os três modelos somam 850 MiB — pt 378, en 162,
+   * es 310 —, então «este jogo escuta» não pode querer dizer «baixe os três». A língua não é uma pergunta nova: é a que a
+   * interface arrancou (ADR-0031).
+   */
+  it('🔴 [Right] o jogo que ESCUTA baixa o modelo de uma língua só, e é a da interface', async () => {
+    const pedidos = [];
+    vi.doMock('../app/js/platform/pesados.js', async (original) => ({
+      ...(await original()),
+      baixarPesados: async ({ apenas }) => { pedidos.push(apenas); },
+    }));
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      const { bcp47 } = await import('../app/js/core/i18n.js');
+      createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() }, uses: { reading: true } });
+      const leitura = pedidos[0].filter((id) => id.startsWith('reading:'));
+      expect(leitura.length, 'o jogo declarou que escuta e nenhum modelo de leitura desce').toBeGreaterThan(0);
+      const linguas = new Set(leitura.map((id) => id.split(':')[1]));
+      expect([...linguas], 'desceu mais de uma língua, ou a língua errada').toEqual([bcp47().split('-')[0].toLowerCase()]);
     } finally {
       vi.doUnmock('../app/js/platform/pesados.js');
       vi.resetModules();

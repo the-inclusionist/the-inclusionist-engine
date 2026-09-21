@@ -109,6 +109,77 @@ const VOICE_RUNTIME: readonly Pesado[] = Object.freeze([
   { id: 'voz:runtime:onnx:wasm', url: `${ORT}/dist/ort-wasm-simd-threaded.jsep.wasm`, bytes: 26_827_543,
     sha256: '78feeeb3d08f6bcee94d938ed322f69073bb8076b5f9d34697a574ffba8deb48' },
 ]);
+/**
+ * THE READING MODELS (ADR-0201 erratum, ADR-0203; issues #185, #200): what hears a child read aloud, ONE MODEL PER LANGUAGE —
+ * Whisper small for Portuguese, Moonshine streaming small for English and Spanish, the three the lab measured (pt 7.7 % WER,
+ * en 19.3 %, es 7.2 %).
+ *
+ * 🎯 THE ADDRESS IS THE PROJECT'S OWN, and it has to be: these two exports do not exist anywhere else. The Whisper one was made
+ * here (`scripts/models/export-whisper-small.py`) because the ready-made export states no licence, and the Spanish Moonshine was
+ * exported here from weights that ship no ONNX. The project mirrors them under ADR-0203 — «hospedar na Cloudflare do projeto» —
+ * with the licence of each beside it in `the-inclusionist-lfs`.
+ *
+ * ⚠️ AND THEY ARE BIG: 378 MiB for pt, 162 for en, 310 for es. Nobody downloads all three — the start asks only for the child's
+ * language (`pesadosDoArranque`), and a game that does not declare `uses: { reading: true }` asks for none of them.
+ *
+ * 📌 The ids are in English while their neighbours are not: what is here stays until the renaming of the whole catalogue (the
+ * English plan, phase 2, a single BREAKING release), and nothing new arrives in Portuguese meanwhile.
+ *
+ * ⚠️ sha256 MEASURED on the mirror's own files, each checked against the `SHA256SUMS` its folder publishes.
+ */
+const READING_MIRROR = 'https://lfs-oinclusionista.jrocha.dev.br';
+const READING: readonly Pesado[] = Object.freeze([
+  // pt — Whisper small, exported and quantized by this project
+  { id: 'reading:pt:encoder', url: `${READING_MIRROR}/whisper-small-onnx/onnx/encoder_model_quantized.onnx`, bytes: 95_131_296,
+    sha256: '25eae0fce49960d460d800c53a9df788afdf54baceee16ab6a6333869e2fc78f' },
+  { id: 'reading:pt:decoder', url: `${READING_MIRROR}/whisper-small-onnx/onnx/decoder_model_quantized.onnx`, bytes: 156_551_161,
+    sha256: '63e48cd0bef0f3367f4611728f38bf8f123af545212a2e744fe2ec28e0e887a3' },
+  { id: 'reading:pt:decoder:past', url: `${READING_MIRROR}/whisper-small-onnx/onnx/decoder_with_past_model_quantized.onnx`, bytes: 142_305_767,
+    sha256: '670b3e8b846f4e86dd3c26930bb671dec2df476b81c138c1864db37aa8bc92c0' },
+  { id: 'reading:pt:tokenizer', url: `${READING_MIRROR}/whisper-small-onnx/tokenizer.json`, bytes: 2_480_466,
+    sha256: '27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566' },
+  { id: 'reading:pt:config', url: `${READING_MIRROR}/whisper-small-onnx/config.json`, bytes: 1_967,
+    sha256: 'e6a2b489da1b5aed65a8eb8d1e7466fa867ad5643a8bc138ba708bd56b2875c4' },
+  // what the reading must NOT invent: the tokens Whisper suppresses, and the mel filterbank its features are built with
+  { id: 'reading:pt:generation', url: `${READING_MIRROR}/whisper-small-onnx/generation_config.json`, bytes: 3_868,
+    sha256: '71565b8ef50d0bf7a1193ed4bbed195b94e70c18894d81bba2f1233dcec3ab53' },
+  { id: 'reading:pt:preprocessor', url: `${READING_MIRROR}/whisper-small-onnx/preprocessor_config.json`, bytes: 184_990,
+    sha256: '9b5cd03a36fbb8a627c64d98a5b5b126ead95a77720723944487311f0110b666' },
+
+  // en — Moonshine streaming small, the Workmind ONNX export, copied unchanged (MIT)
+  { id: 'reading:en:encoder', url: `${READING_MIRROR}/moonshine-streaming-small-onnx/onnx/encoder_model_quantized.onnx`, bytes: 74_923_158,
+    sha256: '69c786908794eb9e2e50d7137c4e755abdde7b4bdebffd68fe0c292eee5ffc55' },
+  { id: 'reading:en:decoder', url: `${READING_MIRROR}/moonshine-streaming-small-onnx/onnx/decoder_model_merged_quantized.onnx`, bytes: 90_830_447,
+    sha256: '3bd2e7a7e94c608b1988fa035be1f1b1f2acdbe059f7fe5cc70d85201c2835f5' },
+  { id: 'reading:en:tokenizer', url: `${READING_MIRROR}/moonshine-streaming-small-onnx/tokenizer.json`, bytes: 3_761_754,
+    sha256: '7b913404bdd039af4756783218af4440bc07fb7d6d8258d677e34f95b3ec416f' },
+  { id: 'reading:en:config', url: `${READING_MIRROR}/moonshine-streaming-small-onnx/config.json`, bytes: 1_745,
+    sha256: '849ca79b5af5603b1e7b8eeebf67265f931c70117434446fca6f35a26fc03df1' },
+  { id: 'reading:en:generation', url: `${READING_MIRROR}/moonshine-streaming-small-onnx/generation_config.json`, bytes: 163,
+    sha256: 'fd54ad15ad0a14f68db3c58a8d8e5e8f3791ef95e1ea92ee46cd71b4a5d7528c' },
+
+  // es — Moonshine streaming small, exported here from the upstream weights. ⚠️ Its encoder is fp32 and the biggest file of the
+  // three: quantized to q8 it drifted in the lab, and a reading that mis-hears a child is worse than a bigger download.
+  { id: 'reading:es:encoder', url: `${READING_MIRROR}/moonshine-streaming-small-es-onnx/onnx/encoder_model.onnx`, bytes: 205_951_994,
+    sha256: 'e675a5cf070ed40da516f1648bea62eb21f77421f1c490cedfe0d16bdc77a090' },
+  { id: 'reading:es:decoder', url: `${READING_MIRROR}/moonshine-streaming-small-es-onnx/onnx/decoder_model_quantized.onnx`, bytes: 63_639_862,
+    sha256: '6775c2b74f429ae202e5a11cc0db7e291a0e593641364ddf416613d130528fcf' },
+  { id: 'reading:es:decoder:past', url: `${READING_MIRROR}/moonshine-streaming-small-es-onnx/onnx/decoder_with_past_model_quantized.onnx`, bytes: 55_504_894,
+    sha256: '9cddfa057c8b5d65d3e5057b748b6f6b58753306846dd0fa4d0e8639cb22bfd9' },
+  { id: 'reading:es:tokenizer', url: `${READING_MIRROR}/moonshine-streaming-small-es-onnx/tokenizer.json`, bytes: 476_245,
+    sha256: 'e8dae7af9c2b6e5a1f413819db1eb70837ff4cf53b5a482a37f2ffc608b8b977' },
+  { id: 'reading:es:config', url: `${READING_MIRROR}/moonshine-streaming-small-es-onnx/config.json`, bytes: 1_653,
+    sha256: 'bfd932c804df9cde662468a8f933763cd5174bfed2c043b2440b4daaa702efbd' },
+  { id: 'reading:es:generation', url: `${READING_MIRROR}/moonshine-streaming-small-es-onnx/generation_config.json`, bytes: 246,
+    sha256: '3e5f0aa2b32615a4023d0a08cccb7c1ec292aba9a8d8f6f4886df2a769af31b0' },
+]);
+
+/** The language a reading id serves, or `null` where the id is not a reading model's. */
+export function readingLanguageOf(id: string): string | null {
+  const parts = id.split(':');
+  return parts[0] === 'reading' && parts[1] ? parts[1] : null;
+}
+
 const KOKORO: readonly Pesado[] = Object.freeze([
   { id: 'voz:kokoro:modelo', url: URL_DO_MODELO_KOKORO, bytes: BYTES_DO_MODELO_KOKORO, sha256: SHA256_DO_MODELO_KOKORO },
   { id: 'voz:kokoro:tokenizador', url: URL_DO_TOKENIZADOR_KOKORO, bytes: BYTES_DO_TOKENIZADOR_KOKORO, sha256: SHA256_DO_TOKENIZADOR_KOKORO },
@@ -118,6 +189,9 @@ const KOKORO: readonly Pesado[] = Object.freeze([
 export const PESADOS: readonly Pesado[] = Object.freeze([
   ...VOICE_RUNTIME,
   ...KOKORO,
+
+  // what hears a child read aloud, one model per language (ADR-0216 §2); the runtime that runs them is the voice's, above
+  ...READING,
 
   // the vision runtime and its models: eye control reads the face (ADR-0213); WebGazer left (ADR-0214)
   ...MEDIAPIPE,

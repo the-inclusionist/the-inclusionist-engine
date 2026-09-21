@@ -21,7 +21,7 @@
 //     arranque de um jogo por causa de um recurso que ele nem usa hoje.
 //  3. **IDEMPOTENTE.** O que já está na Cache Storage não é buscado outra vez — é o que torna isto seguro de
 //     chamar em todo arranque em vez de só «no primeiro», que ninguém sabe detectar com honestidade.
-import { CACHE_PESADOS, PESADOS, type Pesado } from './pesados-catalogo.js';
+import { CACHE_PESADOS, PESADOS, readingLanguageOf, type Pesado } from './pesados-catalogo.js';
 
 export { CACHE_PESADOS, PESADOS };
 export type { Pesado };
@@ -53,12 +53,20 @@ export interface OpcoesDosPesados {
 }
 
 /**
- * WHAT A GAME'S START FETCHES (ADR-0198 §5, ADR-0216): the catalogue, less the neural voice when the game does not declare it.
- * Its model, its voices AND the runtime that speaks them are read only by a game that asked for them, so without that answer
- * they are 372 MB taken from a school's link and a child's device for nothing.
+ * WHAT A GAME'S START FETCHES (ADR-0216 §3): the catalogue, less what this game did not ask for.
+ *
+ * · The neural voice — its model, its voices AND the runtime that speaks them: without that answer they are 372 MB taken from a
+ *   school's link and a child's device for nothing.
+ * · The reading models: 850 MiB for the three languages, so `reading` is not a yes or no but a LANGUAGE — the child's, known at
+ *   boot. A delivery may carry more than one; a device downloads the one being read in. A game that never listens gets none.
  */
-export function pesadosDoArranque(portas: { readonly kokoro: boolean }): readonly string[] {
-  return PESADOS.filter((p) => portas.kokoro || !(p.id.startsWith('voz:kokoro:') || p.id.startsWith('voz:runtime:'))).map((p) => p.id);
+export function pesadosDoArranque(portas: { readonly kokoro: boolean; readonly reading?: string | null }): readonly string[] {
+  const reading = portas.reading ? portas.reading.split('-')[0]!.toLowerCase() : null;
+  return PESADOS.filter((p) => {
+    const language = readingLanguageOf(p.id);
+    if (language) return language === reading;
+    return portas.kokoro || !(p.id.startsWith('voz:kokoro:') || p.id.startsWith('voz:runtime:'));
+  }).map((p) => p.id);
 }
 
 /**

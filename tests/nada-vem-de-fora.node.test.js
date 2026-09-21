@@ -76,6 +76,20 @@ const DECLARADAS = {
   'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0': 'WHAT RUNS KOKORO\'S GRAPH (ADR-0216, issue #200), fetched the same way. '
     + 'The `jsep` pair is what onnxruntime\'s own threads load: a worker that cannot find them answers nothing and the child hears '
     + 'silence (measured in the quiz demo, #181)',
+  'https://lfs-oinclusionista.jrocha.dev.br': 'THE PROJECT\'S OWN MIRROR (ADR-0203), and the one supplier here that is not a third '
+    + 'party: the reading models (ADR-0201 erratum, issue #185) — Whisper small for pt, Moonshine streaming small for en and es. '
+    + 'Both ONNX exports were made by this project, so there is no upstream to point at: the ready-made Whisper export states no '
+    + 'licence and the Spanish Moonshine ships no ONNX. Fetched by the BUILD into the delivery with their sha256, and only for the '
+    + 'languages the build is told to carry; the page asks for them at `pesados/` on its own origin, never here. 850 MiB for the '
+    + 'three, which is why nothing downloads more than one',
+  // The same supplier, written folder by folder in `platform/heavy-mirror`: that is what lets a build read the 850 MiB from the
+  // staging tree on disk instead of over the link (`--base`), and each folder is one model.
+  'https://lfs-oinclusionista.jrocha.dev.br/whisper-small-onnx': 'THE MIRROR ABOVE, the Portuguese model\'s folder — the path a '
+    + 'local base serves it under, never a fetch: `heavy-mirror` is pure',
+  'https://lfs-oinclusionista.jrocha.dev.br/moonshine-streaming-small-onnx': 'THE MIRROR ABOVE, the English model\'s folder, same '
+    + 'reason',
+  'https://lfs-oinclusionista.jrocha.dev.br/moonshine-streaming-small-es-onnx': 'THE MIRROR ABOVE, the Spanish model\'s folder, '
+    + 'same reason',
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1': 'O RUNTIME DE VISÃO (ADR-0124), fixado na versão e descido na INSTALAÇÃO pelo `platform/pesados`. Não é busca preguiçosa: é a instalação do PWA, que o ADR-0116 declarou ser um acto de rede legítimo. 📏 Medido: os três ficheiros respondem 200 com CORS aberto',
   'https://storage.googleapis.com/mediapipe-models': 'OS MODELOS `.task` do MediaPipe — rosto+íris, gestos e mãos. ⚠️ Host diferente do runtime porque é assim que o Google os publica, e sem eles os 11,7 MB de WebAssembly não reconhecem coisa nenhuma: é o `.onnx` sem o `.onnx.json` outra vez. 📏 Medidos em 2026-09-09, `float16`',
 };

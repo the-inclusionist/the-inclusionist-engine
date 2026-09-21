@@ -20,6 +20,12 @@ export const MIRROR_FOLDERS: ReadonlyArray<readonly [string, string]> = [
   ['https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX/resolve/main', 'kokoro-82m-v1.0-onnx'],
   ['https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1', 'mediapipe-tasks-vision-1.0.1/tasks-vision@1.0.1'],
   ['https://storage.googleapis.com/mediapipe-models', 'mediapipe-tasks-vision-1.0.1/models'],
+  // 📌 The reading models have NO upstream: both exports were made by this project (ADR-0201 erratum, ADR-0203), so the address
+  // the catalogue pins is already the mirror's. They are listed all the same, and that is what lets a build read them from the
+  // staging tree on disk — 850 MiB that nobody should download twice.
+  ['https://lfs-oinclusionista.jrocha.dev.br/whisper-small-onnx', 'whisper-small-onnx'],
+  ['https://lfs-oinclusionista.jrocha.dev.br/moonshine-streaming-small-onnx', 'moonshine-streaming-small-onnx'],
+  ['https://lfs-oinclusionista.jrocha.dev.br/moonshine-streaming-small-es-onnx', 'moonshine-streaming-small-es-onnx'],
 ];
 
 /**

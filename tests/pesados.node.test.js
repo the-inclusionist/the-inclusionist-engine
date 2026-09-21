@@ -86,9 +86,12 @@ describe('o buscador das coisas pesadas', () => {
     const semNada = pesoPorBaixar([]);
     // The vision runtime and models, Kokoro (ADR-0198: the 325 532 232-byte model, its tokenizer and 34 voice tables of 522 240
     // bytes) and, since ADR-0216, the runtime that SPEAKS it — espeak-ng and onnxruntime-web, 45.5 MiB, which used to be a
-    // dependency of each game. ADR-0207 took out the earlier neural voices and their phonemizer (−258.9 MiB), ADR-0214 WebGazer
-    // (−1.8 MiB). What has no source adds nothing.
-    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(402);
+    // dependency of each game — plus the three reading models, 850 MiB (pt 378, en 162, es 310). ADR-0207 took out the earlier
+    // neural voices and their phonemizer (−258.9 MiB), ADR-0214 WebGazer (−1.8 MiB). What has no source adds nothing.
+    //
+    // ⚠️ THIS IS THE WHOLE CATALOGUE AND NOBODY EVER DOWNLOADS IT: it is the number a `problems` line would be lying about. What
+    // a device actually fetches is `pesadosDoArranque`, which asks for one language and for what the game declared.
+    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(1252);
     const f = cacheFalsa();
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
     expect(pesoPorBaixar(r), 'depois de tudo descer não falta nada').toBe(0);
@@ -188,18 +191,45 @@ describe('the heavy files come from the delivery\'s own origin (ADR-0177, issue 
   });
 });
 
-describe('what a game\'s start fetches (ADR-0198 §5)', () => {
+describe('what a game\'s start fetches (ADR-0216 §3)', () => {
+  const doIdioma = (lingua) => PESADOS.map((p) => p.id).filter((id) => id.startsWith(`reading:${lingua}:`));
+
   it('🔴 [Zero] without the neural voice declared, neither its model NOR the runtime that speaks it — and nothing else is left out', () => {
     // ADR-0216: the runtime moved from each game's dependencies into the catalogue, so it travels by the SAME answer as the
     // model. A game of shapes that downloaded 45.5 MiB of phonemizer would be the cost this filter exists to refuse.
     const ids = pesadosDoArranque({ kokoro: false });
     expect(ids.filter((id) => id.startsWith('voz:')), 'a game that cannot speak Kokoro downloads its model or its runtime').toEqual([]);
-    expect(ids).toEqual(PESADOS.map((p) => p.id).filter((id) => !id.startsWith('voz:')));
+    expect(ids).toEqual(PESADOS.map((p) => p.id).filter((id) => !id.startsWith('voz:') && !id.startsWith('reading:')));
     expect(ids.length).toBeGreaterThan(0);
   });
 
-  it('🔴 [Right] with the port, the whole catalogue — the model, the tokenizer and every voice', () => {
-    expect(pesadosDoArranque({ kokoro: true })).toEqual(PESADOS.map((p) => p.id));
+  it('🔴 [Right] with the neural voice declared, the whole voice — the model, the tokenizer and every voice', () => {
+    expect(pesadosDoArranque({ kokoro: true }))
+      .toEqual(PESADOS.map((p) => p.id).filter((id) => !id.startsWith('reading:')));
+  });
+
+  /**
+   * 🔴 THE READING MODEL IS ASKED FOR BY LANGUAGE, not by a yes (ADR-0216 §3; ADR-0201 erratum). 📏 The three are 850 MiB —
+   * pt 378, en 162, es 310 — so «the game listens» cannot mean «download all of them»: the child reads in one language, and
+   * it is the one the interface booted in.
+   */
+  it('🔴 [Right] the start asks for the model of the child\'s language, and of no other', () => {
+    const ids = pesadosDoArranque({ kokoro: false, reading: 'pt-BR' });
+    expect(ids.filter((id) => id.startsWith('reading:')), 'the child\'s language model is not asked for').toEqual(doIdioma('pt'));
+    expect(doIdioma('en').length, 'the fixture has no English model to leave out: the case would pass empty').toBeGreaterThan(0);
+    for (const outra of ['en', 'es']) {
+      expect(ids.some((id) => id.startsWith(`reading:${outra}:`)), `a child reading in Portuguese downloaded the ${outra} model`).toBe(false);
+    }
+  });
+
+  it('🔴 [Zero] a game that does not listen downloads no reading model, in any language', () => {
+    for (const portas of [{ kokoro: false }, { kokoro: true }, { kokoro: false, reading: null }]) {
+      expect(pesadosDoArranque(portas).filter((id) => id.startsWith('reading:')), `asked with ${JSON.stringify(portas)}`).toEqual([]);
+    }
+  });
+
+  it('📌 [Boundary] the region is not the language: `es-MX` asks for the Spanish model', () => {
+    expect(pesadosDoArranque({ kokoro: false, reading: 'es-MX' }).filter((id) => id.startsWith('reading:'))).toEqual(doIdioma('es'));
   });
 });
 

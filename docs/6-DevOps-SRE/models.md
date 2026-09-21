@@ -20,8 +20,18 @@ send the child's voice to a server is never built.
 ## Where the files live (ADR-0177, ADR-0203)
 
 Every heavy file is in `app/js/platform/pesados-catalogo.ts` with its upstream address and sha256. The **build** fetches it into the
-delivery (`npx inclusionist-pesados dist`, `--kokoro` for a game that fills the Kokoro port); the page asks for it at
-`pesados/<host><path>` on its own origin and the service worker answers from the checked cache.
+delivery; the page asks for it at `pesados/<host><path>` on its own origin and the service worker answers from the checked cache.
+
+**What goes into a delivery is what the game declared** (ADR-0216 §3), said to the build as flags:
+
+```powershell
+npx inclusionist-pesados dist                              # a game that neither speaks nor listens: vision only
+npx inclusionist-pesados dist --kokoro                     # uses: { neuralVoice: true }  → +372 MiB
+npx inclusionist-pesados dist --reading pt --reading en    # uses: { reading: true }      → +378 MiB, +162 MiB
+```
+
+`--reading` takes a language and repeats, because a reading model is **per language** (pt 378 MiB, en 162, es 310) and a school
+reads in one or two of them, not three. At run time the start asks for the one the interface booted in, and for nothing else.
 
 **Where the build reads from is a choice** (the Dev, 2026-09-21). Unset, it is upstream. With a base, each file comes from a
 mirror — the project's Cloudflare, a school's own server, or a folder on the build machine, which needs no network at all:
@@ -44,8 +54,11 @@ Cloudflare address until then; the sha256 never changes with the move.
 Third-party files the licence lets the project mirror (ADR-0203 erratum, issue #192) are staged the same way, unchanged, with their
 licence and notice: `kokoro-82m-v1.0-onnx/` (Apache-2.0, credits the CC BY training audio; the model, tokenizer and all 34 voices) and
 `mediapipe-tasks-vision-1.0.1/` (Apache-2.0: the runtime and the face, gesture and hand models). Their sha256 are the catalogue's.
-Also staged, for the reading port that issue #185 still owes: `moonshine-streaming-small-onnx/` (English, MIT) and
-`whisper-small-onnx/` (Portuguese), the latter **exported here** — see its section below.
+The three **reading** models are staged the same way and are now in the catalogue (`reading:<language>:*`), addressed at the
+project's own mirror because neither export has an upstream: `whisper-small-onnx/` (Portuguese, exported here),
+`moonshine-streaming-small-onnx/` (English, the Workmind export, MIT) and `moonshine-streaming-small-es-onnx/` (Spanish, exported
+here). 📏 Measured on 2026-09-21: a delivery with `--reading en --base <the staging tree>` wrote the 161.7 MiB of the English model
+from disk, with no network, each file checked against its sha256.
 
 ### Uploading the staging tree (the Dev runs it)
 

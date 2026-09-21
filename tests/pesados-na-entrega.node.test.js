@@ -132,11 +132,28 @@ describe('the script, reachable by a cartridge', () => {
     } finally { rmSync(fora, { recursive: true, force: true }); }
   });
 
-  it('🔴 [Right] Kokoro enters a delivery only with `--kokoro`, in any position (ADR-0198 §5)', () => {
+  it('🔴 [Right] Kokoro enters a delivery only with `--kokoro`, in any position (ADR-0216 §3)', () => {
     const semBase = (a) => { const { base, ...resto } = argumentosDaEntrega(a, {}); return resto; };
     expect([semBase(['dist']), semBase(['--kokoro', 'dist']), semBase(['dist', '--kokoro'])])
-      .toEqual([{ destino: 'dist', kokoro: false }, { destino: 'dist', kokoro: true }, { destino: 'dist', kokoro: true }]);
+      .toEqual([{ destino: 'dist', kokoro: false, reading: [] }, { destino: 'dist', kokoro: true, reading: [] },
+        { destino: 'dist', kokoro: true, reading: [] }]);
     expect(argumentosDaEntrega(['--kokoro'], {}).destino, 'the flag taken for the folder').toBeUndefined();
+  });
+
+  /**
+   * 🔴 A READING MODEL ENTERS BY LANGUAGE, and the flag repeats (ADR-0216 §3): a delivery for a school that reads in two
+   * languages carries two, and one that reads in none carries none — 378 MiB for pt, 162 for en, 310 for es.
+   *
+   * ⚠️ `--reading` eats the token after it, like `--base`: without that, `pt` would be read as the delivery folder, which is the
+   * defect a surviving mutation already caught once on the other flag.
+   */
+  it('🔴 [Right] each `--reading <language>` adds its model, and its value is never taken for the folder', () => {
+    expect(argumentosDaEntrega(['dist'], {}).reading, 'a language appeared where nobody asked for one').toEqual([]);
+    expect(argumentosDaEntrega(['dist', '--reading', 'pt'], {}).reading).toEqual(['pt']);
+    const duas = argumentosDaEntrega(['--reading', 'pt', '--reading', 'es', 'dist'], {});
+    expect(duas.reading, 'the second language was dropped').toEqual(['pt', 'es']);
+    expect(duas.destino, 'a language was taken for the delivery folder').toBe('dist');
+    expect(argumentosDaEntrega(['--reading', 'pt'], {}).destino, 'the value was taken for the folder').toBeUndefined();
   });
 
   it('🔴 [Right] the base comes from `--base`, from the environment, or from neither — and the flag wins', () => {
@@ -146,11 +163,11 @@ describe('the script, reachable by a cartridge', () => {
     expect(argumentosDaEntrega(['dist'], { INCLUSIONIST_HEAVY_BASE: 'https://espelho.exemplo' }).base).toBe('https://espelho.exemplo');
     const comFlag = argumentosDaEntrega(['dist', '--base', 'D:\\lfs', '--kokoro'], { INCLUSIONIST_HEAVY_BASE: 'https://espelho.exemplo' });
     expect(comFlag, 'the flag must beat the environment, and the folder must not be eaten by it')
-      .toEqual({ destino: 'dist', kokoro: true, base: 'D:\\lfs' });
+      .toEqual({ destino: 'dist', kokoro: true, reading: [], base: 'D:\\lfs' });
     // ⚠️ AND WITH THE FLAG FIRST: the case above cannot see the value being taken for the folder, because the folder was read
     // before it. A mutation that forgot to skip the value survived exactly here.
     expect(argumentosDaEntrega(['--base', 'D:\\lfs', 'dist'], {}), 'the base\'s value was taken for the delivery folder')
-      .toEqual({ destino: 'dist', kokoro: false, base: 'D:\\lfs' });
+      .toEqual({ destino: 'dist', kokoro: false, reading: [], base: 'D:\\lfs' });
   });
 
   it('📌 [Boundary] run as a program without a destination, it stops with the usage — and never starts downloading', () => {

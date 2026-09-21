@@ -2,7 +2,7 @@
 // platform/reading — THE CHILD READS ALOUD, AND THE GAME RECEIVES TEXT (ADR-0216, issue #200).
 //
 // The Dev, 2026-09-21: «a engine deve oferecer objetos de leitura e TTS. O jogo não deve precisar saber como isso funciona, apenas
-// deve pedir para hear e receber o text.» So this module answers ONE question — what did the child say — and keeps the rest:
+// deve pedir para ouvir e receber o texto.» So this module answers ONE question — what did the child say — and keeps the rest:
 // which recogniser heard it, in which language, and whether it may run at all.
 //
 // · ON THE DEVICE OR NOT AT ALL (ADR-0200 erratum). The browser's recogniser is used only where it says it recognises on the device

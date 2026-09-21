@@ -66,17 +66,23 @@ export async function levarPesadosParaEntrega({ destino, pesados, caminhoNaEntre
 }
 
 /**
- * The command's arguments: the delivery folder, and `--kokoro` for a game that fills the Kokoro port — without it Kokoro's model and
- * voices stay out of the delivery, as they stay out of the start's download (ADR-0198 §5).
+ * The command's arguments, which are the game's answers (ADR-0216 §3) said to the build:
+ *
+ * · `--kokoro` for a game that declares `uses: { neuralVoice: true }` — without it Kokoro's model, voices and runtime stay out of
+ *   the delivery, as they stay out of the start's download.
+ * · `--reading <pt|en|es>`, repeatable, for a game that declares `uses: { reading: true }`: each language named puts ITS model in
+ *   the delivery (pt 378 MiB, en 162, es 310). A delivery for a school that reads in one language carries one.
  */
 export function argumentosDaEntrega(args, ambiente = process.env) {
   // ⚠️ `--base <value>` eats the token after it: without that, the value was read as the delivery folder (caught by its case).
   let destino, base;
+  const reading = [];
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--base') { base = args[++i]; continue; }
+    if (args[i] === '--reading') { const v = args[++i]; if (v) reading.push(v); continue; }
     if (!args[i].startsWith('--') && destino === undefined) destino = args[i];
   }
-  return { destino, kokoro: args.includes('--kokoro'), base: base ?? ambiente.INCLUSIONIST_HEAVY_BASE ?? '' };
+  return { destino, kokoro: args.includes('--kokoro'), reading, base: base ?? ambiente.INCLUSIONIST_HEAVY_BASE ?? '' };
 }
 
 /** A `.env` beside the build, if there is one: Node reads it into `process.env`, and the command line still wins. */
@@ -88,13 +94,17 @@ export function carregarEnv(caminho = join(process.cwd(), '.env'), carregar = pr
 const executado = (() => { try { return realpathSync(process.argv[1] ?? '') === realpathSync(fileURLToPath(import.meta.url)); } catch { return false; } })();
 if (executado) {
   carregarEnv();
-  const { destino, kokoro, base } = argumentosDaEntrega(process.argv.slice(2));
-  if (!destino) { console.error('usage: inclusionist-pesados <delivery folder, e.g. dist> [--kokoro]'); process.exit(2); }
+  const { destino, kokoro, reading, base } = argumentosDaEntrega(process.argv.slice(2));
+  if (!destino) { console.error('usage: inclusionist-pesados <delivery folder, e.g. dist> [--kokoro] [--reading pt|en|es]…'); process.exit(2); }
   const modulo = moduloDoPacote();
   if (!existsSync(fileURLToPath(modulo))) { console.error('dist-pkg/platform/pesados.js is missing beside this script: in the engine repository, run `npm run build:pkg` first'); process.exit(2); }
   const { PESADOS, caminhoNaEntrega, pesadosDoArranque } = await import(modulo);
   const { heavySourceOf } = await import(new URL('../dist-pkg/platform/heavy-mirror.js', import.meta.url).href);
-  const ids = pesadosDoArranque({ kokoro });
+  // one pass per language, because the start asks for ONE and the delivery may hold several
+  const ids = [...new Set([
+    ...pesadosDoArranque({ kokoro }),
+    ...reading.flatMap((lingua) => pesadosDoArranque({ kokoro: false, reading: lingua })),
+  ])];
   if (base) console.log(`base: ${base}`);
   const { ok, linhas } = await levarPesadosParaEntrega({
     destino, pesados: PESADOS.filter((p) => ids.includes(p.id)), caminhoNaEntrega, base, fonteDe: heavySourceOf,

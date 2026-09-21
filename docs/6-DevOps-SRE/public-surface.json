@@ -815,7 +815,8 @@
   "platform/pesados-catalogo.ts": [
     "CACHE_PESADOS",
     "PESADOS",
-    "Pesado"
+    "Pesado",
+    "readingLanguageOf"
   ],
   "platform/pesados.ts": [
     "OpcoesDosPesados",
