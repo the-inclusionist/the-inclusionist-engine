@@ -166,9 +166,14 @@ function setPlayers(list) {
   setNumPlayersValue(list.length || 1);
 }
 
-// ⚠️ `switchScan` é estado de MÓDULO (uma chave para a engine toda, ADR-0218): sem o reposicionar, um caso que entra na
-// varredura deixa o seguinte a começar dentro dela — e um caso que depende da ordem dos vizinhos não mede o que diz.
-beforeEach(() => { setPlayers([{ viz: 'normal', visual: PADRAO }]); estado.setSwitchScanValue(false); });
+// ⚠️ `switchScan` e `voiceControl` são estado de MÓDULO (uma chave para a engine toda, ADR-0218 e issue #184): sem os
+// reposicionar, um caso que entra na varredura — ou que liga o microfone — deixa o seguinte a começar lá dentro, e um caso
+// que depende da ordem dos vizinhos não mede o que diz.
+beforeEach(() => {
+  setPlayers([{ viz: 'normal', visual: PADRAO }]);
+  estado.setSwitchScanValue(false);
+  estado.setVoiceControlValue(false);
+});
 
 // =============================================================================================
 // PURO — saída privada de áudio (o portão dos ícones de som)
@@ -401,12 +406,23 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
     expect(computeIconLabel('cvd', snap({ viz: 'sim-deuter' }))).toBe('Correção de daltonismo: desligado');
   });
 
-  it('ícone EM CONSTRUÇÃO diz que está em construção — e nunca diz on/off', () => {
-    for (const ic of PAUSE_ICONS.filter((x) => x.soon)) {
-      const lbl = computeIconLabel(ic.k, snap({ modoCego: true, ttsOn: true, calmMode: 2 }));
-      expect(lbl).toBe(pt[ic.n] + ', em construção'); // `n` e a chave i18n; o rotulo e o texto dela
-      expect(lbl).not.toMatch(/: on$/);
+  /*
+   * 🔴 «EM CONSTRUÇÃO» SAIU DA BARRA em 2026-09-21 (issue #184), e o caso que aqui estava media o que já não existe: ele
+   * percorria `PAUSE_ICONS.filter((x) => x.soon)`, que hoje é uma lista VAZIA — um laço sobre nada passa sempre, e teria
+   * continuado verde a dizer que media o rótulo de um ícone por construir.
+   *
+   * O que fica no lugar é a AUSÊNCIA, e ela tem criança dentro: enquanto o 👄 estava por construir, o rótulo dele dizia
+   * «Comando de voz, em construção» e nunca on/off. Agora ele COMANDA. Um rótulo que continuasse a dizer «em construção»
+   * sobre um ícone que age ensina a criança a não tentar — que é o mesmo defeito, virado do avesso.
+   */
+  it('🔴 [Zero] nenhum ícone da barra se anuncia EM CONSTRUÇÃO — e o 👄, que era o último, diz o estado', () => {
+    const tudoLigado = snap({ modoCego: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, voz: true });
+    for (const ic of PAUSE_ICONS) {
+      expect(ic, `${ic.k} trouxe o campo \`soon\` de volta sem mecanismo por trás`).not.toHaveProperty('soon');
+      expect(computeIconLabel(ic.k, tudoLigado), ic.k).not.toMatch(/em constru|under construction|en construcci/i);
     }
+    expect(computeIconLabel('voice', tudoLigado)).toBe('Comando de voz: ligado');
+    expect(computeIconLabel('voice', snap({ voz: false }))).toBe('Comando de voz: desligado');
   });
 
   it('EXCEÇÃO: chave desconhecida devolve string vazia (não lança, não inventa rótulo)', () => {
@@ -422,11 +438,15 @@ describe('computeIconVisual — o visual e o aria-pressed andam juntos', () => {
     for (const ic of PAUSE_ICONS) expect(computeIconVisual(ic.k, snap()).active).toBe(false);
   });
 
-  it('ícone EM CONSTRUÇÃO nunca mente dizendo que está ligado, nem com todo o resto ligado', () => {
-    const tudoLigado = snap({ modoCego: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, viz: 'fix-protan', privateOutput: false });
-    for (const ic of PAUSE_ICONS.filter((x) => x.soon)) {
-      expect(computeIconVisual(ic.k, tudoLigado)).toEqual({ on: false, dis: false, calm: false, cvd: '', active: false });
-    }
+  /*
+   * ⚠️ ESTE CASO MEDIA O 👄 ENQUANTO ELE ERA `soon`: com tudo o resto ligado, um ícone por construir tinha de continuar a
+   * responder «desligado», porque não havia estado nenhum por trás dele. Com o comando de voz construído (issue #184) o
+   * que tem de ser verdade é o oposto e é mais forte — o ícone responde ao ESTADO DELE, e só a ele.
+   */
+  it('🔴 [Right] o 👄 lê o próprio estado, e nada do resto da barra o liga', () => {
+    const tudoMenosAVoz = snap({ modoCego: true, ttsOn: true, librasOn: true, calmMode: 2, toggleMove: true, viz: 'fix-protan', privateOutput: false });
+    expect(computeIconVisual('voice', tudoMenosAVoz)).toEqual({ on: false, dis: false, calm: false, cvd: '', active: false });
+    expect(computeIconVisual('voice', snap({ voz: true }))).toMatchObject({ on: true, active: true });
   });
 
   it('blind/tts ficam DESABILITADOS sem saída de áudio privada — mas o `on` continua verdadeiro', () => {
@@ -507,11 +527,14 @@ describe('markup dos ícones e do menu', () => {
     for (const ic of PAUSE_ICONS) expect(html).toContain('data-pi="' + ic.k + '"');
   });
 
-  it('ícone em construção ganha .pi-soon E o sufixo no rótulo; os demais, nenhum dos dois', () => {
+  it('🔴 [Zero] nenhum botão nasce com a marca de «em construção» — nem a classe, nem o sufixo (issue #184)', () => {
+    // A marcação era o outro lado do mecanismo que saiu: `.pi-soon` apagava o botão a 55% e o `aria-label` levava o sufixo.
+    // Os dois saíram juntos, e a classe saiu também do `style.css` — uma classe que o CSS ainda pintasse voltaria a
+    // apagar um botão vivo no dia em que alguém a escrevesse por engano.
     for (const ic of PAUSE_ICONS) {
       const h = iconBtnMarkup(ic);
-      expect(h.includes('pi-soon')).toBe(!!ic.soon);
-      expect(h.includes(', em construção')).toBe(!!ic.soon);
+      expect(h, `${ic.k} nasceu com \`pi-soon\``).not.toContain('pi-soon');
+      expect(h, `${ic.k} nasceu «em construção»`).not.toContain(', em construção');
     }
   });
 
@@ -878,12 +901,22 @@ describe('initPauseIcons — ações dos ícones', () => {
     expect(players[1].visual).toEqual({ tema: 'hc3', correcao: 'protan', simulacao: null });
   });
 
-  it('EXCEÇÃO: ícone em construção só ALERTA — nenhum estado é tocado', () => {
+  /*
+   * 🔴 O 👄 DEIXOU DE SER A EXCEÇÃO (issue #184): este caso exigia que ele ALERTASSE «em construção» e não tocasse em
+   * estado nenhum, e era o último ícone da barra a fazê-lo. Agora ele escreve a resposta da criança e DIZ o que ficou —
+   * quem a recusa, e por quê, é o `ui/voice-control`, que devolve o ícone a desligado com o motivo falado.
+   */
+  it('🔴 [Right] o 👄 escreve a chave guardada e ANUNCIA o que ficou — já não há alerta de construção', () => {
     const { ctx, state, said, alerted } = buildCtx();
-    initPauseIcons(ctx).iconAct('voice', 0); // the 🧑 left construction (ADR-0212 §3); the 👄 is still there
-    expect(alerted).toHaveLength(1);
-    expect(alerted[0]).toContain('em construção');
-    expect(said).toEqual([]);
+    const api = initPauseIcons(ctx);
+    api.iconAct('voice', 0);
+    expect(estado.voiceControl, 'o comando de voz não foi ligado').toBe(true);
+    expect(said).toEqual(['Comando de voz: ligado.']);
+    expect(alerted, 'o ícone continuou a recusar-se em vez de comandar').toEqual([]);
+    api.iconAct('voice', 0);
+    expect(estado.voiceControl, 'o segundo toque não desligou').toBe(false);
+    expect(said[1]).toBe('Comando de voz: desligado.');
+    // e o acto do 👄 não escorrega para os vizinhos
     expect(state.modoCego).toBe(false);
     expect(state.vizCalls).toEqual([]);
   });
@@ -989,27 +1022,29 @@ describe('initPauseIcons — applyCalm', () => {
 });
 
 describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
-  // 🔴 O RÓTULO DE UM ÍCONE `soon` TAMBÉM TEM DE SER REESCRITO PELO REFLEXO, e a razão de isto não ser
-  // zelo é uma premissa que DEIXOU DE SER VERDADE. O guarda que existia aqui dizia: «`soon` buttons keep
-  // the label the markup gave them (same string) — no state to report». A segunda metade continua certa —
-  // não há estado a reportar —, mas «same string» era verdade só enquanto a marcação e o reflexo corressem
-  // no MESMO idioma.
+  // 🔴 UM ÍCONE SEM ESTADO TAMBÉM TEM DE SER REETIQUETADO PELO REFLEXO, e a razão de isto não ser zelo é uma premissa que
+  // DEIXOU DE SER VERDADE. O guarda que existia aqui dizia: «estes botões ficam com o rótulo que a marcação lhes deu (a
+  // mesma string) — não há estado a reportar». A segunda metade continua certa; «mesma string» era verdade só enquanto a
+  // marcação e o reflexo corressem no MESMO idioma.
   //
   // ⚠️ MEDIDO NUM NAVEGADOR EM 2026-09-08, na barra que o `createGame` passou a montar: o `initI18n` carrega
   // en/es de forma ASSÍNCRONA (são chunks próprios), a marcação da barra é gerada ANTES de o dicionário
   // chegar, e depois só os rótulos COM ESTADO se corrigem. Resultado servido pela página: cinco ícones a
-  // dizer «Blind mode… / Voice narration…» e três ainda a dizer «Webcam — rosto (em construção)».
+  // dizer «Blind mode… / Voice narration…» e três ainda em português, na mesma barra.
   //
   // 📌 É a MESMA forma do ACHADO 15: uma premissa que valia enquanto toda raiz fosse um `main.ts` que
   // montava depois do i18n, e que a engine invalidou ao passar a montar ela própria.
-  it('🔴 [Zero] um ícone `soon` recebe rótulo do reflexo — «mesma string» deixou de ser verdade', () => {
+  // 📌 O SUJEITO MUDOU em 2026-09-21 (issue #184): era o 👄, enquanto ele estava «em construção»; hoje o ícone sem estado
+  // é o ☰, que abre os menus e não guarda nada — e a regra é a mesma.
+  it('🔴 [Zero] um ícone SEM ESTADO recebe rótulo do reflexo — «mesma string» deixou de ser verdade', () => {
     const { ctx } = buildCtx();
     const api = initPauseIcons(ctx);
-    const b = fakeIconBtn('voice');
+    const b = fakeIconBtn('menu');
+    b.setAttribute('aria-label', 'Menu — written by a markup from another language');
     api.reflectIconBtn(b, 0);
     expect(b.getAttribute('aria-label'), 'o reflexo saltou o ícone e o rótulo ficou como a marcação o deixou')
-      .toBe('Comando de voz, em construção');
-    expect(b.getAttribute('aria-pressed'), 'um `soon` nunca se declara ligado').toBe('false');
+      .toBe(api.iconLabel('menu', 0));
+    expect(b.getAttribute('aria-pressed'), 'o ☰ abre algo e não guarda estado: não anuncia um interruptor').toBeNull();
   });
 
   it('UM botão: recebe classe, aria-pressed e aria-label coerentes com o estado', () => {
@@ -1057,12 +1092,24 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
   //
   // 📌 O que fica afirmado é o que não regride: quando o idioma NÃO mudou, o reflexo escreve exactamente a
   // string que a marcação escreveria. A escrita passou a ser garantida em vez de dispensada.
-  it('⚠️ [Right] um ícone EM CONSTRUÇÃO recebe do reflexo a MESMA string que a marcação lhe daria', () => {
+  it('⚠️ [Right] o reflexo ESCREVE em todo ícone: o rótulo com estado por cima do de repouso, e a mesma string onde não há estado', () => {
     const { ctx } = buildCtx();
-    const b = fakeIconBtn('voice');
-    initPauseIcons(ctx).reflectIconBtn(b, 0);
-    expect(b.getAttribute('aria-label')).toBe('Comando de voz, em construção');
-    expect(b.getAttribute('aria-pressed')).toBe('false');
+    const api = initPauseIcons(ctx);
+    const daMarcacao = (k) => /aria-label="([^"]*)"/.exec(iconBtnMarkup(PAUSE_ICONS.find((i) => i.k === k)))?.[1];
+    for (const ic of PAUSE_ICONS) {
+      const b = fakeIconBtn(ic.k);
+      api.reflectIconBtn(b, 0);
+      expect(b.getAttribute('aria-label'), `${ic.k} ficou sem rótulo do reflexo`).toBe(api.iconLabel(ic.k, 0));
+    }
+    // 🔴 E AS DUAS PONTAS DA MESMA REGRA, para «escreve sempre» não passar por «escreve o mesmo»: onde há estado, o rótulo
+    // do reflexo SUBSTITUI o de repouso que a marcação deu; onde não há, ele escreve exactamente a mesma string — e é por
+    // isso que o ☰ parecia dispensar a escrita, até a barra passar a nascer antes de o dicionário assíncrono chegar.
+    const comEstado = fakeIconBtn('blind');
+    api.reflectIconBtn(comEstado, 0);
+    expect(comEstado.getAttribute('aria-label'), 'o rótulo com estado não substituiu o de repouso').not.toBe(daMarcacao('blind'));
+    const semEstado = fakeIconBtn('menu');
+    api.reflectIconBtn(semEstado, 0);
+    expect(semEstado.getAttribute('aria-label')).toBe(daMarcacao('menu'));
   });
 
   it('ZERO telas: reflectPauseIcons não faz nada e não lança', () => {
@@ -1177,7 +1224,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     // 📌 	ipografia: true desde 2026-09-12 (ADR-0149): o 11.o icone tem a mesma regra dos dois visuais, e
     // deixa-lo de fora aqui mediria DUAS ausencias em vez da que o caso nomeia.
     // `relogio: () => true` from ADR-0180 on: the hourglass mounts only in a clock game, and each case here measures its own absence.
-    const chaves = iconesQueAccionam({ relogio: () => true, tema: false, correcao: false, seguraTeclas: () => true, tipografia: true, camera: true, menus: true }).map((ic) => ic.k);
+    const chaves = iconesQueAccionam({ relogio: () => true, tema: false, correcao: false, seguraTeclas: () => true, tipografia: true, camera: true, microfone: true, menus: true }).map((ic) => ic.k);
     expect(chaves).not.toContain('contrast');
     expect(chaves).not.toContain('cvd');
     expect(chaves).toContain('blind');
@@ -1186,7 +1233,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   });
 
   it('[Right] COM escritor visual, a barra é a lista inteira e na mesma ordem', () => {
-    expect(iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => true, tipografia: true, camera: true, menus: true })).toEqual(PAUSE_ICONS);
+    expect(iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => true, tipografia: true, camera: true, microfone: true, menus: true })).toEqual(PAUSE_ICONS);
   });
 
   it('⚠️ [Boundary] com UM escritor só, aparece UM ícone só — e é o que funciona', () => {
@@ -1204,13 +1251,14 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     expect(soCor).toContain('cvd');
   });
 
-  it('⚠️ [Right] os ícones que sobram NÃO viram `soon` — «este jogo não tem» não é «em breve»', () => {
-    // `soon` diz «ainda não construímos isto», e um botão a dizê-lo sobre o alto contraste mentiria: o alto
-    // contraste está construído. O que falta é este jogo ter por onde o aplicar.
-    for (const ic of iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true })) {
-      if (ic.k === 'voice') continue; // esse É `soon`, e continua (o 👀 e o 🧑 deixaram de ser: ADR-0213, ADR-0212)
-      expect(ic.soon, `${ic.k} passou a soon`).toBeFalsy();
-    }
+  it('⚠️ [Right] o ícone que sobra SOME — «este jogo não tem» nunca foi «em breve»', () => {
+    // «Em breve» dizia «ainda não construímos isto», e um botão a dizê-lo sobre o alto contraste mentiria: o alto
+    // contraste está construído. O que falta é este jogo ter por onde o aplicar — e a resposta a isso é a ausência.
+    // 📌 O mecanismo saiu inteiro em 2026-09-21 (issue #184); o que este caso guarda é que a ausência NÃO foi
+    // substituída por um botão apagado a dizer-se por construir.
+    const ficaram = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true });
+    for (const ic of ficaram) expect(ic, `${ic.k} voltou a anunciar-se em construção`).not.toHaveProperty('soon');
+    expect(ficaram.map((ic) => ic.k), 'o contraste sem escritor ficou na barra').not.toContain('contrast');
   });
 
   /* ===================== ADR-0115 · um jogo que não segura nada não OFERECE a alternância =====================
@@ -1224,7 +1272,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
    * DESABILITADO com o motivo, porque o aparelho EXIGE a alternância. Aqui não há nada a travar, e explicar
    * por que um controle não faz nada continua a ser entregar um controle que não faz nada. */
   it('🎯 [Zero] um jogo que não segura teclas NEM declara posição não recebe o ícone `altmove`', () => {
-    const chaves = iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, tipografia: true, camera: true, menus: true }).map((ic) => ic.k);
+    const chaves = iconesQueAccionam({ relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, tipografia: true, camera: true, microfone: true, menus: true }).map((ic) => ic.k);
     expect(chaves, 'o `altmove` foi montado num jogo que não segura nada').not.toContain('altmove');
     expect(chaves).toHaveLength(PAUSE_ICONS.length - 1);
   });
@@ -1237,7 +1285,7 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
   it('🔴 [Right] mas um jogo que DECLARA POSIÇÃO recebe-o, mesmo sem segurar tecla — é o caso do quiz', () => {
     const chaves = iconesQueAccionam({
       relogio: () => true, tema: true, correcao: true, seguraTeclas: () => false, declaredPositions: () => 5,
-      tipografia: true, camera: true, menus: true,
+      tipografia: true, camera: true, microfone: true, menus: true,
     }).map((ic) => ic.k);
     expect(chaves, 'o jogo que declara cinco posições ficou sem «um botão só»').toContain('altmove');
     expect(chaves).toHaveLength(PAUSE_ICONS.length);
@@ -1262,19 +1310,19 @@ describe('iconesQueAccionam — nenhuma etapa entrega botão morto (ADR-0106 §5
     expect(semNada).not.toContain('altmove');
     expect(semNada).not.toContain('tipografia');
     expect(semNada).not.toContain('camera');
+    expect(semNada, 'o 👄 apareceu num aparelho sem microfone por onde ouvir').not.toContain('voice');
     expect(semNada).not.toContain('menu');
-    expect(semNada).toHaveLength(PAUSE_ICONS.length - 6);
+    expect(semNada).toHaveLength(PAUSE_ICONS.length - 7);
 
     const soAlternancia = iconesQueAccionam({ tema: false, correcao: false, seguraTeclas: () => true, tipografia: true }).map((ic) => ic.k);
     expect(soAlternancia).toContain('altmove');
     expect(soAlternancia).not.toContain('contrast');
   });
 
-  it('📌 [Interface] e o `altmove` que sobra NÃO vira `soon` — «este jogo não tem» não é «em breve»', () => {
-    for (const ic of iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true })) {
-      if (ic.k !== 'altmove') continue;
-      expect(ic.soon, 'a alternância passou a anunciar-se como em construção').toBeFalsy();
-    }
+  it('📌 [Interface] e o ☝️ que FICA não se anuncia em construção — ele tem as três posições', () => {
+    const alt = iconesQueAccionam({ tema: true, correcao: true, seguraTeclas: () => true }).find((ic) => ic.k === 'altmove');
+    expect(alt, 'o ☝️ sumiu de um jogo que segura teclas').toBeTruthy();
+    expect(alt, 'a alternância passou a anunciar-se como em construção').not.toHaveProperty('soon');
   });
 
   // ⚠️ A BARRA MONTADA é caso do project BROWSER (`buildQuickBar` chama `document.createElement`), e está lá:

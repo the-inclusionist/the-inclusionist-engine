@@ -49,11 +49,18 @@ describe('panel labels carry no parentheses', () => {
     expect(achados, achados.join(' · ')).toEqual([]);
   });
 
-  it('🔴 [Right] an icon still under construction says so AFTER its name, not in parentheses (ADR-0159 rule 6)', () => {
-    // Measured in dist/quiz.html: «Webcam — face (under construction)» was the name of three bar icons.
+  it('🔴 [Right] the "under construction" tag is a word of its own, never a parenthesis after a label (ADR-0159 rule 6)', () => {
+    // Measured in dist/quiz.html: «Webcam — face (under construction)» was the name of three bar icons. The BAR's version of
+    // this («icon.soon») left with the `soon` mechanism on 2026-09-21 (issue #184); the tag that survives is the panels' one,
+    // added after the label by `motionRowHtml`, and the rule it has to keep obeying is the same one.
     for (const [lang, dic] of Object.entries(DICIONARIOS)) {
-      expect(dic['icon.soon'], `${lang} icon.soon missing`).toContain('{nome}');
-      expect(dic['icon.soon'], `${lang} «${dic['icon.soon']}»`).not.toMatch(/[()]/);
+      expect(dic['ui.soon'], `${lang} ui.soon missing`).toBeTruthy();
+      expect(dic['ui.soon'], `${lang} «${dic['ui.soon']}»`).not.toMatch(/[()]/);
+    }
+    // 🔴 AND THE BAR'S KEY MUST NOT COME BACK without the mechanism: a key nobody reads is a promise to a child that no
+    // code keeps — the icon would be labelled «under construction» and still act.
+    for (const [lang, dic] of Object.entries(DICIONARIOS)) {
+      expect(dic['icon.soon'], `${lang} icon.soon is back with no consumer`).toBeUndefined();
     }
   });
 

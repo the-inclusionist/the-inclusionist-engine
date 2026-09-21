@@ -289,10 +289,12 @@
     "setSpeechPpmValue",
     "setSwitchScanValue",
     "setVizModeValue",
+    "setVoiceControlValue",
     "setWheelchairValue",
     "speechPpm",
     "switchScan",
     "vizMode",
+    "voiceControl",
     "wheelchair"
   ],
   "core/tiles.ts": [
@@ -714,6 +716,13 @@
     "migrarMapaDeToque",
     "migrarSalvo"
   ],
+  "input/voice-map.ts": [
+    "VoiceCommands",
+    "VoiceWords",
+    "createVoiceCommands",
+    "voiceGrammar",
+    "voiceWordsFor"
+  ],
   "platform/audio-ambient.ts": [
     "AudioAmbient",
     "AudioAmbientCtx",
@@ -959,9 +968,26 @@
     "loadHandTracker",
     "openCamera"
   ],
+  "platform/voice-listener.ts": [
+    "VOICE_BLOCK",
+    "VoiceListener",
+    "VoiceListenerDeps",
+    "startVoiceListening"
+  ],
   "platform/voice-plan.ts": [
     "VozNeural",
     "vozesDoIdioma"
+  ],
+  "platform/vosk-runtime.ts": [
+    "VOICE_RUNTIME_FILES",
+    "VoskApi",
+    "VoskDeps",
+    "VoskHeard",
+    "VoskLoad",
+    "VoskModel",
+    "VoskRecognizer",
+    "commandModelId",
+    "loadVoskRuntime"
   ],
   "render/camera.ts": [
     "Camera",
@@ -1708,6 +1734,11 @@
     "linhasDoAviso",
     "mostrarAvisoDeAlcance"
   ],
+  "ui/scan-overlay.ts": [
+    "ScanOverlay",
+    "mountScanOverlay",
+    "scanItemText"
+  ],
   "ui/settings-audio.ts": [
     "AudioCatDef",
     "AudioCatState",
@@ -1923,5 +1954,11 @@
     "vlTick",
     "vlibrasOpen",
     "vlibrasSay"
+  ],
+  "ui/voice-control.ts": [
+    "VOICE_PULSE_MS",
+    "VoiceControl",
+    "VoiceControlDeps",
+    "createVoiceControl"
   ]
 }

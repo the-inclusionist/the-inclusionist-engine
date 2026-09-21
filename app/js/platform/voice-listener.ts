@@ -78,10 +78,10 @@ export async function startVoiceListening(d: VoiceListenerDeps): Promise<VoiceLi
   return {
     setGrammar(grammar) {
       if (stopped) return;
-      const antigo = recognizer;
+      const previous = recognizer;
       recognizer = new d.model.KaldiRecognizer(context.sampleRate, withUnknown(grammar));
       listen(recognizer);
-      try { antigo.remove(); } catch { /* an old recogniser that is already gone is not a failure */ }
+      try { previous.remove(); } catch { /* an old recogniser that is already gone is not a failure */ }
     },
     async stop() {
       if (stopped) return;

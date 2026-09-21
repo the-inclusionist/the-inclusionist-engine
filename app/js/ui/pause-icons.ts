@@ -42,7 +42,7 @@ import { anunciarItem } from './item-announcement.js';
 import { rotuloAcessivel } from '../core/rotulo-acessivel.js';
 import { passoNoAnel } from '../core/anel.js'; // da FOLHA, e não de ui/menu-nav: ver a nota lá
 // LIGAÇÃO VIVA (ESM): o índice pode ser desligado no menu, e o valor aqui acompanha sem assinatura.
-import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, switchScan, setSwitchScanValue, type CameraControl } from '../core/state.js';
+import { menuIndexOn, DEFAULTS, setModoCegoValue, gameSpeed, setGameSpeedValue, cameraControl, setCameraControlValue, nextCameraControl, voiceControl, setVoiceControlValue, switchScan, setSwitchScanValue, type CameraControl } from '../core/state.js';
 
 /** The word for each position of the 📷 cycle (ADR-0215). */
 const CAMERA_MODE_NAME: { readonly [M in CameraControl]: string } = { off: 'state.off', hands: 'camera.hands', face: 'camera.face', eyes: 'camera.eyes' };
@@ -164,14 +164,15 @@ export interface PauseIcon {
   k: string;
   /** The emoji glyph rendered inside the button. */
   e: string;
-  /** i18n KEY of the base name; also the `aria-label` when the icon carries no state (or is `soon`). */
+  /** i18n KEY of the base name; also the `aria-label` when the icon carries no state. */
   n: string;
-  /** Under construction: the button announces itself and does nothing else. */
-  soon?: boolean;
+  // 📌 `soon` LEFT THIS INTERFACE on 2026-09-21 (issue #184): the 👄 was the last icon using it, and a mechanism nobody uses is
+  // debt wearing the clothes of a feature. What remains is the narrower rule of ADR-0106 §5 — an icon is only mounted where
+  // something acts on it. Whoever needs «under construction» again takes it back out of git, with that day's reason written down.
 }
 
 /** The accessibility shortcut bar at the top of every pause screen (and of the splash `#title-icons`).
- *  Sound-bound icons (blind/TTS) require a private audio output; webcam/voice are still `soon`.
+ *  Sound-bound icons (blind/TTS) require a private audio output; the webcam and the voice require the device to have one.
  *  VERBATIM from game.js in order and behaviour; the names became i18n keys in the Fase-5 pass. */
 // `n` é a CHAVE i18n do nome do ícone (o emoji `e` não traduz — é o mesmo glifo em toda língua).
 export const PAUSE_ICONS: readonly PauseIcon[] = [
@@ -187,7 +188,10 @@ export const PAUSE_ICONS: readonly PauseIcon[] = [
   { k: 'cvd', e: '🚥', n: 'icon.cvd' },
   // playing through the webcam, ONE icon (ADR-0215): off · hands · face · eyes, each with its lines; where 🧑 and 👀 were
   { k: 'camera', e: '📷', n: 'icon.camera' },
-  { k: 'voice', e: '👄', n: 'icon.voice', soon: true },
+  // playing by SPEAKING (ADR-0189, issue #184): it left «em construção» on 2026-09-21, when the words, the recogniser, the
+  // microphone and the wiring existed — not a day before, because an icon that announces itself and changes nothing is the
+  // defect ADR-0106 §5 names.
+  { k: 'voice', e: '👄', n: 'icon.voice' },
   /*
    * O DÉCIMO PRIMEIRO (ADR-0149 §1), e ele entra no FIM por uma razão de ordem e não de importância: quem
    * navega a barra por teclado já aprendeu onde estão os dez, e inserir no meio deslocaria todos eles — o
@@ -295,6 +299,8 @@ export interface IconStateSnapshot {
    * `nextCvd` existem desde sempre, separados); só não tinham onde guardar o resultado sem apagar o vizinho.
    */
   visual: VisualState;
+  /** Playing by SPEAKING (ADR-0189): the 👄 of the bar, on or off. */
+  voz?: boolean;
   /** Playing with ONE button (ADR-0218): the third position of ☝️, which wins over the latch when it is on. */
   switchScan?: boolean;
   /** The game speed (ADR-0180), a step of `core/game-speed`; absent reads as 100%. */
@@ -372,7 +378,6 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   // O estado vira SEMPRE um parâmetro (`{v}`), nunca uma concatenação: 'on'/'off' eram palavras inglesas
   // presas numa frase em português, e uma língua que anteponha o estado ao nome precisa do dicionário para
   // reordenar. `nomeDoIcone: estado` é a moldura; o estado é o conteúdo, e ele também é traduzido.
-  if (ic.soon) return t('icon.soon', { nome: t(ic.n) });
   const rotulo = (v: string): string => t('icon.state', { nome: t(ic.n), v: t(v) });
   if (k === 'blind') return rotulo(s.modoCego ? 'state.on' : 'state.off');
   if (k === 'tts') return rotulo(s.ttsOn ? 'state.on' : 'state.off');
@@ -385,6 +390,7 @@ export function computeIconLabel(k: string, s: IconStateSnapshot): string {
   if (k === 'contrast') return rotulo(CURTO_DO_TEMA[s.visual.tema]);
   if (k === 'cvd') return t('icon.state', { nome: t('icon.cvd.short'), v: t(CURTO_DA_CORRECAO[s.visual.correcao]) });
   if (k === 'camera') return rotulo(CAMERA_MODE_NAME[s.camera ?? 'off']);
+  if (k === 'voice') return rotulo(s.voz ? 'state.on' : 'state.off');
   if (k === 'idioma') return t('icon.state', { nome: t(ic.n), v: LANGUAGE_NAME[(s.idioma ?? 'pt') as CycleLocale] ?? LANGUAGE_NAME.pt });
   if (k === 'velocidade') return t('icon.state', { nome: t(ic.n), v: t('icon.velocidade.valor', { pct: Math.round((s.velocidade ?? 1) * 100) }) });
   return t(ic.n);
@@ -404,7 +410,7 @@ export interface IconVisual {
   active: boolean;
 }
 
-/** Pure form of reflectIconBtn's branching. A `soon` icon lands on all-false — it never claims to be on. */
+/** Pure form of reflectIconBtn's branching. */
 export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   let on = false, dis = false, calm = false, cvd = '';
   if (k === 'blind') { on = s.modoCego; dis = !s.privateOutput; }
@@ -418,6 +424,7 @@ export function computeIconVisual(k: string, s: IconStateSnapshot): IconVisual {
   else if (k === 'contrast') { on = temAltoContraste(s.visual); }
   else if (k === 'velocidade') { on = (s.velocidade ?? 1) < 1; }
   else if (k === 'camera') { on = (s.camera ?? 'off') !== 'off'; }
+  else if (k === 'voice') { on = !!s.voz; }
   else if (k === 'cvd') {
     // ⚠️ O FUNDO DE DUAS CORES É O SINAL DE LIGADO deste ícone, e agora ele lê o EIXO da correção — que
     // continua a dizer o mesmo quando o tema também está ligado, coisa que a chave única não conseguia: com
@@ -432,13 +439,12 @@ export const ICON_STATE_CLASSES: readonly string[] = ['pi-calm', 'pi-cvd-protan'
 
 // --- markup (pure string builders; the DOM shell below just assigns them) ---
 
-/** One `.pi-btn`. `soon` icons get `.pi-soon` and the "under construction" suffix baked into the aria-label.
- *  The label is the RESTING one: reflectIconBtn overwrites it with the stateful label as soon as the bar is
+/** One `.pi-btn`. The label is the RESTING one: reflectIconBtn overwrites it with the stateful label as soon as the bar is
  *  reflected. `ic.n` is an i18n key, so it must be resolved here too — the markup is rendered once at build
  *  time and would otherwise ship the raw key to a screen reader. */
 export function iconBtnMarkup(ic: PauseIcon): string {
-  return '<button class="pi-btn' + (ic.soon ? ' pi-soon' : '') + '" type="button" data-pi="' + ic.k +
-    '" aria-label="' + (ic.soon ? t('icon.soon', { nome: t(ic.n) }) : t(ic.n)) + '">' + (ic.k === 'idioma' ? flagOf(getLocale()) : ic.e) + '</button>';
+  return '<button class="pi-btn" type="button" data-pi="' + ic.k +
+    '" aria-label="' + t(ic.n) + '">' + (ic.k === 'idioma' ? flagOf(getLocale()) : ic.e) + '</button>';
 }
 
 /**
@@ -454,7 +460,7 @@ export function iconBtnMarkup(ic: PauseIcon): string {
  * `getPowerups`, `rebuildCoins`, `worldSprite`…). O `createGame` não monta isso, e um quiz não tem nada
  * disso para montar. Então aqui a engine não pode oferecer um padrão — o que ela pode é **não fingir**.
  *
- * ⚠️ Isto NÃO é o mesmo que `soon`. `soon` é «ainda não construímos»; isto é «este jogo não tem por onde», e
+ * ⚠️ Isto é «este jogo não tem por onde», e
  * um botão que anuncia «em breve» diria a coisa errada.
  */
 export interface AccionaveisDoJogo {
@@ -501,6 +507,8 @@ export interface AccionaveisDoJogo {
   readonly tipografia?: boolean;
   /** Can this device play through the webcam — is there a camera to ask for? Without it the 📷 is not mounted (ADR-0215). */
   readonly camera?: boolean;
+  /** Is there a microphone to ask for? Without one the 👄 is not mounted. */
+  readonly microfone?: boolean;
   /** Is there a card of menus to open? Without it the ☰ is not mounted. */
   readonly menus?: boolean;
 }
@@ -534,6 +542,8 @@ export function iconesQueAccionam(escritores: AccionaveisDoJogo): readonly Pause
           // the hourglass exists where time runs by itself (ADR-0180): a turn game has nothing to slow
           : ic.k === 'velocidade' ? Boolean(escritores.relogio?.())
               : ic.k === 'camera' ? Boolean(escritores.camera)
+                // 👄 exists where there is a MICROPHONE to ask for, the same rule as the camera's (ADR-0106 §5)
+                : ic.k === 'voice' ? Boolean(escritores.microfone)
                 : ic.k === 'menu' ? Boolean(escritores.menus)
             : true));
 }
@@ -813,7 +823,7 @@ export interface PauseIconsCtx {
   // --- announcements (core/a11y-sr; injected because they reach `document` at call time) ---
   /** aria-live "polite" — every successful toggle announces its NEW state. */
   srSay: (text: string) => void;
-  /** aria-live "assertive" — the two refusals (`soon` icon, shared audio output). */
+  /** aria-live "assertive" — the refusals (a shared audio output, a device that always latches). */
   srAlert: (text: string) => void;
   /**
    * Chamado depois de TODA saída do modo barra, com a tela e se foi silenciosa. Ausente, não se faz nada.
@@ -976,6 +986,8 @@ export interface PauseIconsCtx {
   relogio?: () => boolean;
   /** Can this device play through the webcam? (ADR-0215: the 📷.) Optional; absent, no 📷. */
   camera?: boolean;
+  /** Can this device hear the child — is there a microphone to ask for? (issue #184: the 👄.) Absent, no 👄. */
+  microfone?: boolean;
   /** Opens the menus of seat `i`, as SELECT does (the ☰). Optional; absent, no ☰. */
   abrirMenus?: (i: number) => void;
   /** Does no voice speak the current language? (ADR-0185: the narration icon locks.) Optional; absent, a voice. */
@@ -1098,6 +1110,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // mounted when the root can answer the clock question; shown or hidden per cartridge in `reflectIconBtn` (ADR-0142)
     relogio: () => Boolean(ctx.relogio),
     camera: Boolean(ctx.camera),
+    microfone: Boolean(ctx.microfone),
     menus: Boolean(ctx.abrirMenus),
   });
 
@@ -1143,6 +1156,7 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       calmMode,
       toggleMove: !!p.toggleMove,
       switchScan,
+      voz: voiceControl,
       // ⚠️ `DEFAULTS.viz` E NÃO `''` (issue #61). A cadeia vazia funcionava por ACIDENTE: não casa
       // `hc-direto` nem `fix-*`, então os dois ícones ficavam apagados pelo motivo certo por engano. O padrão
       // passou a ter nome em `core/state`, e `render/viz-modes` já declarava esse modo com `kind:'normal'` —
@@ -1265,6 +1279,13 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
       setCameraControlValue(v);
       ctx.srSay(t('sr.icon.camera', { v: t(CAMERA_MODE_NAME[v]) }));
     },
+    // PLAYING BY SPEAKING (ADR-0189, issue #184): on or off, one stored key. What cannot start puts it back to off and says why,
+    // which is the control's own job (`ui/voice-control`) — this only writes the child's answer.
+    voice: () => {
+      const v = !voiceControl;
+      setVoiceControlValue(v);
+      ctx.srSay(t('sr.icon.voice', { v: t(v ? 'state.on' : 'state.off') }));
+    },
     // THE LANGUAGE (the Dev, 2026-09-16): the next flag; `setLocale` stores it and every surface redraws on `i18n:change`. Said in the NEW
     // language, once it has loaded.
     idioma: () => {
@@ -1286,11 +1307,6 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
   };
 
   function iconAct(k: string, i: number): void {
-    const ic = ICON_BY_KEY.get(k);
-    if (ic && ic.soon) {
-      ctx.srAlert(t('sr.icon.underConstruction', { nome: t(ic.n) }));
-      return;
-    }
     // locked like the panel's row (ADR-0185): the same reason, said, and nothing turned on
     if (k === 'tts' && ctx.semVoz?.()) {
       ctx.srAlert(t('audio.semVoz'));
@@ -1339,12 +1355,10 @@ export function initPauseIcons(ctx: PauseIconsCtx): PauseIconsApi {
     // the ☰ opens something and holds no state: a pressed/unpressed button would announce a toggle
     if (k === 'menu') b.removeAttribute('aria-pressed');
     else b.setAttribute('aria-pressed', String(v.active));
-    // ⚠️ TODO ÍCONE RECEBE RÓTULO, `soon` INCLUÍDO — e o guarda que aqui estava dizia por que não: «`soon`
-    // buttons keep the label the markup gave them (same string)». A segunda metade continua certa (não há
-    // estado a reportar), mas «mesma string» era verdade só enquanto a marcação e o reflexo corressem no
-    // MESMO IDIOMA — e desde que a engine passou a montar a barra (ADR-0106 etapa 2) deixam de correr.
-    // O `initI18n` carrega en/es de forma assíncrona; a marcação nasce em pt e só o reflexo a corrige.
-    // 📌 Medido num navegador: cinco ícones em inglês e três ainda em «(em construção)», na mesma barra.
+    // ⚠️ EVERY icon is relabelled here, including the ones that carry no state — because the markup and this reflection do not
+    // run in the same language. `initI18n` loads en/es asynchronously, so the markup is born in pt and only the reflection
+    // corrects it. 📌 Measured in a browser back when a guard skipped some of them: five icons in English and three still in
+    // Portuguese, on the same bar.
     b.setAttribute('aria-label', computeIconLabel(k, st));
   }
 

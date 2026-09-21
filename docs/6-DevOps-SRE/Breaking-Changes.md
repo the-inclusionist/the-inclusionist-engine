@@ -828,6 +828,31 @@ dependencies they needed (`espeak-ng`, `onnxruntime-web` — the engine reads bo
 that does not want a neural voice declares `declines.semVozNeural`, as before. 📏 Measured on 2026-09-21: the only consumer of the
 port was this repository's quiz demo, deleted in the same commit; no sibling repository names `carregarKokoro`.
 
+## AK · Playing by SPEAKING arrives, and «under construction» leaves the bar (ADR-0189, ADR-0193, ADR-0194; issue #184)
+
+**What left.** `PauseIcon.soon`. It marked an icon that announced itself «under construction» and did nothing else — the
+button was painted at 55% by `.pi-btn.pi-soon` and its `aria-label` carried the suffix from `icon.soon`. The 👄 was the last
+icon using it (the 👀 and the 🧑 left it with ADR-0213 and ADR-0212), and with the voice transport built nothing does. The
+class went out of `app/css/style.css` and the key `icon.soon` out of the three dictionaries in the same commit: a mechanism
+with no user is debt wearing the clothes of a feature, and a key nobody reads is a promise to a child that no code keeps.
+📏 Measured on 2026-09-21 across the seven game repositories: none names `pi-soon`, `icon.soon` or the field `soon` of a
+`PauseIcon` — the only hits are the English word in prose and the chess's own key `view.soon`. The panels' own tag (`ui.soon`,
+added after a label by `motionRowHtml`) is a different mechanism and stays.
+
+**What entered as required.** `EventoDoJogo.voiceControl` — the event a surface listens to in order to follow the child's
+answer, beside `switchScan` and `cameraControl`. Whoever writes their own map of the state's events adds this member.
+
+**What entered (additive).** `core/state.voiceControl` and `setVoiceControlValue` (stored under `incl_voice_control`, off by
+default, because it opens a MICROPHONE and nothing may do that by itself) · `AccionaveisDoJogo.microfone` and
+`PauseIconsCtx.microfone` — the 👄 is mounted where there IS a microphone to ask for, the same rule as the 📷's (ADR-0106 §5)
+· `ui/voice-control` (`createVoiceControl`, `VoiceControl`, `VoiceControlDeps`, `VOICE_PULSE_MS`), which joins the
+vocabulary (`input/voice-map`), the recogniser from the delivery (`platform/vosk-runtime`), the microphone that stays open
+(`platform/voice-listener`) and the virtual controller — a heard word is a press stamped `fala` and a release 400 ms later,
+because a spoken command is a tap and what holds a direction afterwards is the latch (ADR-0211).
+
+**What to do:** nothing, unless you read `PauseIcon.soon` or the key `icon.soon`. An icon that has nothing to act on is
+ABSENT from the bar, which is what ADR-0106 §5 asks for and what `iconesQueAccionam` already did.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

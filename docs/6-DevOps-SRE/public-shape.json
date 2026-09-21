@@ -433,6 +433,7 @@
       "speechPpm",
       "switchScan",
       "vizMode",
+      "voiceControl",
       "wheelchair"
     ],
     "interface GateTile": [
@@ -1091,6 +1092,13 @@
     ],
     "type EsquemaSalvo": "Record<string, readonly string[]>"
   },
+  "input/voice-map.ts": {
+    "interface VoiceCommands": [
+      "partial",
+      "reset"
+    ],
+    "type VoiceWords": "{ readonly [A in Action]?: readonly string[] }"
+  },
   "platform/audio-ambient.ts": {
     "interface AudioAmbientCtx": [
       "TILE",
@@ -1564,12 +1572,51 @@
     "type FaceTrackerLoad": "| { readonly ok: true",
     "type HandTrackerLoad": "| { readonly ok: true"
   },
+  "platform/voice-listener.ts": {
+    "interface VoiceListenerDeps": [
+      "createContext?",
+      "getUserMedia?",
+      "grammar",
+      "model",
+      "onFinal?",
+      "onPartial"
+    ],
+    "interface VoiceListener": [
+      "setGrammar",
+      "stop"
+    ]
+  },
   "platform/voice-plan.ts": {
     "interface VozNeural": [
       "engine",
       "locale",
       "voice"
     ]
+  },
+  "platform/vosk-runtime.ts": {
+    "interface VoskHeard": [
+      "result"
+    ],
+    "interface VoskRecognizer": [
+      "acceptWaveform",
+      "on",
+      "remove"
+    ],
+    "interface VoskModel": [
+      "KaldiRecognizer",
+      "terminate?"
+    ],
+    "interface VoskApi": [
+      "createModel"
+    ],
+    "interface VoskDeps": [
+      "base",
+      "doc?",
+      "hasFile?",
+      "language",
+      "loadScript?"
+    ],
+    "type VoskLoad": "| { readonly ok: true"
   },
   "render/camera.ts": {
     "interface Tamanho": [
@@ -2559,8 +2606,7 @@
     "interface PauseIcon": [
       "e",
       "k",
-      "n",
-      "soon?"
+      "n"
     ],
     "interface PauseMenuButton": [
       "act",
@@ -2581,7 +2627,8 @@
       "toggleMove",
       "ttsOn",
       "velocidade?",
-      "visual"
+      "visual",
+      "voz?"
     ],
     "interface IconVisual": [
       "active",
@@ -2595,6 +2642,7 @@
       "correcao",
       "declaredPositions?",
       "menus?",
+      "microfone?",
       "relogio?",
       "seguraTeclas",
       "tema",
@@ -2627,6 +2675,7 @@
       "getPlayers",
       "isLibrasOn",
       "jogoButtons?",
+      "microfone?",
       "optionsButtons?",
       "pmButtons?",
       "reflectTtsPanel",
@@ -2682,6 +2731,13 @@
       "t"
     ],
     "type Tradutor": "(chave: string, params?: Record<string, string | number>) => string"
+  },
+  "ui/scan-overlay.ts": {
+    "interface ScanOverlay": [
+      "hide",
+      "remove",
+      "showing"
+    ]
   },
   "ui/settings-audio.ts": {
     "interface AudioStore": [
@@ -3075,5 +3131,24 @@
     "type EixoVisual": "EixoVisualDeRender",
     "type Tradutor": "TradutorDeRender",
     "type EscolhaDeEixo": "EscolhaDeEixoDeRender"
+  },
+  "ui/voice-control.ts": {
+    "interface VoiceControlDeps": [
+      "after",
+      "alert",
+      "base",
+      "controller",
+      "language",
+      "listen?",
+      "loadRuntime?",
+      "menuWords",
+      "report",
+      "say",
+      "turnOff"
+    ],
+    "interface VoiceControl": [
+      "apply",
+      "refreshGrammar"
+    ]
   }
 }

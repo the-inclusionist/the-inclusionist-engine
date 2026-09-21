@@ -107,6 +107,7 @@ import type { Transporte } from '../input/transporte-em-uso.js';
 import { createVirtualController, type VirtualCommand } from '../input/virtual-controller.js';
 import { createSwitchScan, SWITCH_SCAN_DEFAULTS, type SwitchScan, type ScanItem } from '../input/switch-scan.js';
 import { mountScanOverlay, scanItemText } from '../ui/scan-overlay.js';
+import { createVoiceControl } from '../ui/voice-control.js';
 export type { VirtualCommand } from '../input/virtual-controller.js';
 import { montarPassos, atualizarPassos, passoSeguinte, linhaDeControle, rotularLinha } from '../ui/panel-widgets.js';
 import { PERSONAS_DO_PAD, personaMaisProxima } from '../input/touch.js';
@@ -1203,6 +1204,8 @@ export function createGame(o: CreateGameOptions): Engine {
     relogio: () => cartucho.declaration.tick === 'clock',
     // the 📷 is offered where there is a camera to ask for (ADR-0215); the three camera controls below follow its position
     camera: temCamera,
+    // and the 👄 where there is a MICROPHONE (issue #184) — the same door as the camera's, so the same answer
+    microfone: temCamera,
     // the ☰, the bar's first icon (interface log 2026-09-16): the SELECT door, where there is a card to open. Hoisted, read at the press.
     ...(pausaUsavel ? { abrirMenus: (i: number) => { abrirMenusDoAssento(i); } } : {}),
     // no voice speaks the current language: the narration icon locks like the panel's rows (ADR-0185)
@@ -3875,6 +3878,36 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
     const cameraControls = { eyes, face, hands };
     state.on('cameraControl', (mode) => { followCameraMode(mode, cameraControls); });
     followCameraMode(state.cameraControl, cameraControls);
+  }
+
+  /*
+   * PLAYING BY SPEAKING (ADR-0189, ADR-0193, ADR-0194; issue #184): the stored 👄 drives `ui/voice-control` — the recogniser
+   * from the delivery, the microphone that stays open, and presses stamped `fala` on the virtual controller.
+   *
+   * 📌 THE GRAMMAR FOLLOWS THE OPEN MENU: the names the child can see are the names she can say. They are read from the overlay
+   * on top, which is the same one the focus trap and the menu navigation already treat as «the menu that is open».
+   */
+  if (temCamera) {
+    const menuWords = (): readonly string[] => {
+      const card = overlays.topVisibleOverlay();
+      if (!card) return [];
+      return [...card.querySelectorAll<HTMLElement>('button, [data-passos]')]
+        .filter((el) => !el.hidden && el.getAttribute('aria-disabled') !== 'true')
+        .map((el) => rotuloAcessivel(el))
+        .filter((s) => s.length > 1);
+    };
+    const voice = createVoiceControl({
+      base: doc.baseURI, language: () => bcp47(), controller: controleVirtual, menuWords,
+      say: srSay, alert: srAlert,
+      report: (line) => { if (!problemasMedidos.includes(line)) problemasMedidos.push(line); },
+      turnOff: () => { state.setVoiceControlValue(false); },
+      after: (fn, ms) => { win.setTimeout(fn, ms); },
+    });
+    state.on('voiceControl', (on) => { void voice.apply(on); });
+    // the words change with the menu that is open, and a menu opens on a key or a touch — so they are re-read on every draw of
+    // the bar, which is what already happens whenever a card or a panel appears (ADR-0106 §5)
+    state.on('menuIndexOn', () => { voice.refreshGrammar(); });
+    void voice.apply(state.voiceControl);
   }
   const AMOSTRA_C = COLUNAS * 10;
   const AMOSTRA_L = LINHAS * 10;

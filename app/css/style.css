@@ -337,7 +337,6 @@ body:not(.dbg) .topbar{display:none} /* título da PÁGINA só em ?debug=true (o
 .pi-btn.pi-cvd-deuter{background:linear-gradient(90deg,#0000f2 0 50%,#aa61f2 50% 100%);border-color:var(--ink)}
 .pi-btn.pi-cvd-tritan{background:linear-gradient(90deg,#f23d00 0 50%,#1bb341 50% 100%);border-color:var(--ink)}
 .pi-btn.pi-dis{opacity:.35;cursor:not-allowed}
-.pi-btn.pi-soon{opacity:.55}
 .pi-btn.pi-sel,.pi-btn:focus,.pi-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
 .pause-icons-cap{text-align:center;margin:0 0 .3rem;font-size:1em;color:var(--ink-soft);min-height:1.1em}
 /* `scrollbar-gutter: stable both-edges` — MEDIDO no navegador depois do item 6: com a lista em 44 px o

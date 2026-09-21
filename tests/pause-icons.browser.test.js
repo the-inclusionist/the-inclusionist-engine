@@ -82,6 +82,7 @@ function makeCtx(over = {}) {
     ciclarTipografia: () => 'Atkinson Hyperlegible',
     relogio: () => true, // the hourglass (ADR-0180) mounts only where time runs by itself
     camera: true, // the 📷 (ADR-0215) mounts only where the root has a camera to ask for
+    microfone: true, // the 👄 (issue #184) mounts only where there is a microphone to ask for
     abrirMenus: (i) => state.ran.push('menus:' + i), // the ☰ mounts only where there is a card to open
     ...over,
   };
@@ -183,12 +184,16 @@ describe('buildScreenPause — a árvore construída', () => {
     }
   });
 
-  it('os ícones EM CONSTRUÇÃO se declaram como tal — no rótulo e na classe', () => {
+  // 🔴 A BARRA MONTADA JÁ NÃO TEM «EM CONSTRUÇÃO» (issue #184): o 👄 era o último ícone a anunciar-se assim, e o mecanismo
+  // inteiro saiu — o campo, a classe `.pi-soon`, o sufixo do rótulo e a regra no `style.css`. O que este caso passa a guardar
+  // é a ausência NA TELA, que é onde ela conta: um botão apagado a 55% com «em construção» no nome, sobre um ícone que age,
+  // ensina a criança a não tentar.
+  it('🔴 [Zero] nenhum ícone da barra montada se declara em construção — nem na classe, nem no rótulo', () => {
     const { sp, bar } = mount();
     for (const ic of PAUSE_ICONS) {
       const b = bar.querySelector(`.pi-btn[data-pi="${ic.k}"]`);
-      expect(b.classList.contains('pi-soon')).toBe(!!ic.soon);
-      expect(b.getAttribute('aria-label').includes(', em construção')).toBe(!!ic.soon);
+      expect(b.classList.contains('pi-soon'), `${ic.k} nasceu com \`pi-soon\``).toBe(false);
+      expect(b.getAttribute('aria-label'), `${ic.k} nasceu «em construção»`).not.toMatch(/em constru|under construction|en construcci/i);
     }
   });
 
@@ -413,14 +418,20 @@ describe('buildScreenPause — delegação de clique nos .pi-btn', () => {
     expect(b.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('EXCEÇÃO: clicar num ícone EM CONSTRUÇÃO alerta e NÃO o marca como ligado', () => {
-    const { sp, bar, alerted } = mount(0);
+  // 🔴 O 👄 COMANDA (issue #184): este caso exigia que clicar nele ALERTASSE «em construção» e não marcasse nada, porque era o
+  // último ícone por construir. Agora o clique liga o comando de voz, e o botão tem de DIZER que ligou — quem recusa, e por quê,
+  // é o `ui/voice-control`, que o devolve a desligado com o motivo falado.
+  it('🔴 [Right] clicar no 👄 liga o comando de voz, e o botão diz que ligou', () => {
+    const { sp, bar, said } = mount(0);
     const b = bar.querySelector('.pi-btn[data-pi="voice"]');
     b.click();
-    expect(alerted).toHaveLength(1);
+    expect(b.getAttribute('aria-pressed')).toBe('true');
+    expect(b.classList.contains('pi-on')).toBe(true);
+    expect(b.getAttribute('aria-label')).toBe('Comando de voz: ligado');
+    expect(said.at(-1)).toBe('Comando de voz: ligado.');
+    b.click();
     expect(b.getAttribute('aria-pressed')).toBe('false');
-    expect(b.classList.contains('pi-on')).toBe(false);
-    expect(b.getAttribute('aria-label')).toBe('Comando de voz, em construção'); // o reflexo não sobrescreve
+    expect(b.getAttribute('aria-label')).toBe('Comando de voz: desligado');
   });
 
   it('MUITAS telas: o clique numa tela reflete TODAS (o estado de daltonismo é por jogador)', () => {

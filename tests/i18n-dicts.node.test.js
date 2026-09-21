@@ -128,6 +128,11 @@ describe('dicionários de locale — estrutura', () => {
       // partes: número, a preposição `de`, número. Não sobra palavra para traduzir. O inglês DIFERE ('{n} of
       // {m}') e é justamente por isso que a moldura mora no dicionário em vez de ser concatenada no código.
       'sr.menu.index',
+      // 'Comando de voz: {v}.' — «comando» e «voz» escrevem-se e dizem-se igual em pt-BR e es, e o estado chega pelo
+      // parâmetro já traduzido («ligado» × «activado»). Mesmo caso do `sr.visual.contrast`: coincidência de verdade entre
+      // as duas línguas. 📌 E o anúncio repete o NOME do ícone de propósito (issue #184): a criança ouve a palavra que lê
+      // no botão — foi por não repetir que ele começou a dizer «Jogar falando» sobre um botão chamado «Comando de voz».
+      'sr.icon.voice',
     ]);
     for (const [nome, d] of Object.entries(TRADUZIDOS)) {
       const iguais = chavesSr.filter((k) => k in d && d[k] === pt[k] && !COINCIDEM_DE_PROPOSITO.has(k));

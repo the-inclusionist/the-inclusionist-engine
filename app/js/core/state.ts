@@ -81,6 +81,8 @@ export interface EventoDoJogo {
   inputCooldown: number;
   /** Playing with ONE button: the machine offers each position and any press takes the one showing (ADR-0218). */
   switchScan: boolean;
+  /** Playing by SPEAKING: the child says a word of the game and the position it names is pressed (ADR-0189, issue #184). */
+  voiceControl: boolean;
   /** The game speed, a step of `core/game-speed` (ADR-0180): 1 is 100%. */
   gameSpeed: number;
   /** The child's caption reading rate, words a minute (ADR-0183 §4): 125, 145 or 175. */
@@ -241,6 +243,7 @@ export const DEFAULTS = Object.freeze({
   oneButton: false,
   inputCooldown: 0,
   switchScan: false,
+  voiceControl: false,
   gameSpeed: 1,
   captionPpm: 125,
   speechPpm: 254, // the voice's normal speed, the minimum (ADR-0196)
@@ -496,6 +499,17 @@ export function setSwitchScanValue(on: boolean): void {
   const p = armazem('setSwitchScanValue'); p.setBool('incl_switch_scan', v); switchScan = v; emit('switchScan', v);
 }
 
+// --- voiceControl: PLAYING BY SPEAKING, the quick bar's 👄 (ADR-0189, ADR-0193; issue #184). The child says a word of the
+//     game and the position it names is pressed. ONE key for the whole engine, like the camera's: it describes the CHILD, and
+//     a voice she has in one game she has in the next. Off by default, because it opens a MICROPHONE and nothing may do that
+//     by itself; a stored value that is not a yes reads as off. ---
+export let voiceControl: boolean = VAZIO.getBool('incl_voice_control', DEFAULTS.voiceControl);
+export function setVoiceControlValue(on: boolean): void {
+  const v = !!on;
+  if (voiceControl === v) return;
+  const p = armazem('setVoiceControlValue'); p.setBool('incl_voice_control', v); voiceControl = v; emit('voiceControl', v);
+}
+
 // --- cameraControl: playing through the webcam, the quick bar's 📷 (ADR-0215): off · hands · face · eyes, in that order. ONE key, so one
 //     camera mode at a time holds by construction (ADR-0197); every playing position draws its lines. Kept on the device; a stored value
 //     that is not a position reads as off, because the camera must never switch itself on. ---
@@ -570,6 +584,7 @@ export function carregarEstado(p: PortaDoEstado): void {
   gameSpeed = velocidadeValida(p.getNum('incl_game_speed', DEFAULTS.gameSpeed));
   semForca = p.getBool('incl_sem_forca', DEFAULTS.semForca);
   switchScan = p.getBool('incl_switch_scan', DEFAULTS.switchScan);
+  voiceControl = p.getBool('incl_voice_control', DEFAULTS.voiceControl);
   cameraControl = cameraModeOf(p.get('incl_camera_control', DEFAULTS.cameraControl));
   captionPpm = ritmoDaLegendaValido(p.getNum('incl_caption_ppm', DEFAULTS.captionPpm));
   speechPpm = ritmoDaFalaValido(p.getNum('incl_speech_ppm', DEFAULTS.speechPpm));
