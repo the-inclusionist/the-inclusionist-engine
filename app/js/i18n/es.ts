@@ -190,6 +190,7 @@ const es: Record<string, string> = {
   'sr.icon.camera': 'Jugar con la cámara web: {v}.',
   'sr.voice.ready': 'Listo: ya puedes jugar hablando.',
   'sr.voice.noMicrophone': 'El control por voz necesita el micrófono, y no se abrió. Permite el micrófono para esta página.',
+  'sr.voice.failed': 'El comando de voz no pudo empezar en este aparato.',
   'sr.voice.needsInternet': 'El control por voz todavía no llegó a este aparato: baja la primera vez que el juego se abre con internet.',
   'sr.hands.ready': 'Listo: ya puedes jugar con gestos de las manos.',
   'sr.hands.noCamera': 'El control con gestos necesita la cámara, y no se abrió. Permite la cámara para esta página.',

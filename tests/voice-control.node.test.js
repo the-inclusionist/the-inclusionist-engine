@@ -162,6 +162,26 @@ describe('ui/voice-control — what cannot start is SAID, and the icon goes back
   });
 
   /*
+   * 🔴 THIS CASE WAS WRITTEN BY THE BROWSER, on 2026-09-21, and it is the one the first version of this module did not have: the
+   * delivery's bundle turned out to be an ES module, `loadVoskRuntime` THREW, nothing caught it — the rejection died as an
+   * unhandled promise and the 👄 stayed lit over a microphone that had never opened. Sixteen mutations were red and none of them
+   * could see this, because every double answered instead of throwing. A failure with no name is still one the child is told about.
+   */
+  it('🔴 [Zero] the recogniser THROWS on the way up: said, reported, and back to off — never a lit icon over silence', async () => {
+    const b = bench({ loadRuntime: async () => { throw new Error('the delivery has the wrong file'); } });
+    await b.control.apply(true);
+    expect(b.log.alerted).toEqual([pt['sr.voice.failed']]);
+    expect(b.log.off, 'the 👄 stayed on over a recogniser that never opened').toBe(1);
+    expect(b.log.listens, 'a microphone was opened after the recogniser failed').toBe(0);
+    expect(b.log.reported[0], 'the line does not carry what actually broke').toContain('the delivery has the wrong file');
+  });
+
+  it('⚠️ [Boundary] and it never reaches the caller as a rejection — `createGame` calls `apply` with `void`', async () => {
+    const b = bench({ loadRuntime: async () => { throw new Error('boom'); } });
+    await expect(b.control.apply(true)).resolves.toBeUndefined();
+  });
+
+  /*
    * 📌 `problems` IS READ ONCE, BY AN ADULT; the alert is for the CHILD, every time. So the line is written once per kind and the
    * sentence is said on every try — the opposite choice fills a diagnostic vector with the same line for as long as she keeps
    * pressing, and the one who needed to hear it hears nothing on the second press.

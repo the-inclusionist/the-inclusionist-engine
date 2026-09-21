@@ -20,7 +20,16 @@ const apiFalsa = () => {
   const modelo = { KaldiRecognizer: function KaldiRecognizer() {} };
   return {
     pedidos,
-    loadScript: async (u) => { pedidos.push(['script', u]); return { createModel: async (m, n) => { pedidos.push(['model', m, n]); return modelo; } }; },
+    /*
+     * 🔴 O DUBLE TEM A FORMA DO FICHEIRO SERVIDO, medida no navegador em 2026-09-21 e não suposta: o bundle é um MÓDULO que
+     * exporta `createModel(modelUrl, resolver, logLevel)` e pede os dois vizinhos pelo nome lógico — a primeira versão deste
+     * duble tinha a forma da minha crença («um script clássico que define um global e acha os vizinhos sozinho»), sete
+     * mutações ficaram vermelhas contra ela, e o que o Dev teria encontrado na rodada era um 👄 aceso sobre silêncio.
+     */
+    loadBundle: async (u) => {
+      pedidos.push(['bundle', u]);
+      return { createModel: async (m, resolve, n) => { pedidos.push(['model', m, n, resolve('npm/vosk/vosk.worker.js'), resolve('npm/vosk/vosk.wasm')]); return modelo; } };
+    },
     modelo,
   };
 };
@@ -46,12 +55,26 @@ describe('nada é carregado sem ter sido conferido', () => {
     const r = await loadVoskRuntime({ base: BASE, language: 'pt-BR', hasFile: cacheCom(), ...api });
     expect(r.ok).toBe(true);
     expect(r.model).toBe(api.modelo);
-    const [script, model] = api.pedidos;
+    const [bundle, model] = api.pedidos;
     // 📌 A ENTREGA, e não o endereço de origem: `pesados/<host><path>` ao lado da página, que é o que o service worker responde
     // da cache conferida. Um endereço de terceiro aqui seria a criança a contactar um servidor para poder falar.
-    expect(script[1]).toBe(BASE + caminhoNaEntrega(urlOf('commands:runtime')));
+    expect(bundle[1]).toBe(BASE + caminhoNaEntrega(urlOf('commands:runtime')));
     expect(model[1]).toBe(BASE + caminhoNaEntrega(urlOf('commands:model:pt')));
-    expect(String(script[1]).startsWith(BASE), 'o runtime veio de fora da origem do jogo').toBe(true);
+    expect(String(bundle[1]).startsWith(BASE), 'o runtime veio de fora da origem do jogo').toBe(true);
+    // 🔴 E OS DOIS VIZINHOS QUE O BUNDLE PEDE, pelos endereços da entrega: o worker que ele abre e o wasm que esse worker
+    // carrega. Sem isto ele resolve-os contra o próprio endereço e, num dia em que a pasta mude, abre um worker que não existe.
+    expect(model[3], 'o worker não veio da entrega').toBe(BASE + caminhoNaEntrega(urlOf('commands:runtime:worker')));
+    expect(model[4], 'o wasm não veio da entrega').toBe(BASE + caminhoNaEntrega(urlOf('commands:runtime:wasm')));
+  });
+
+  it('🎯 [Zero] um ficheiro que a entrega não carrega é RECUSADO pelo nome, em vez de servir o que estiver à mão', async () => {
+    // Um worker alimentado com o wasm (ou o contrário) falha lá dentro de uma thread, longe de qualquer frase que a criança ouça.
+    const api = apiFalsa();
+    let resolver = null;
+    api.loadBundle = async () => ({ createModel: async (m, resolve) => { resolver = resolve; return api.modelo; } });
+    // ⚠️ BASE PRÓPRIA: o memo é do módulo e vive o tempo da página — com a base dos outros casos este carregador nunca correria.
+    await loadVoskRuntime({ base: 'https://terceira.exemplo/jogo/', language: 'pt-BR', hasFile: cacheCom(), ...api });
+    expect(() => resolver('npm/vosk/outra-coisa.js')).toThrow(/outra-coisa/);
   });
 
   it('🔴 [Right] um ficheiro que não está na cache conferida NÃO é carregado, e é nomeado', async () => {
@@ -78,37 +101,28 @@ describe('nada é carregado sem ter sido conferido', () => {
   });
 
   /*
-   * 🔴 ESTE CASO MEDE O CARREGADOR DE VERDADE, com um DOCUMENTO de mentira em vez de um `loadScript` injetado — e a diferença
-   * é o caso: a promessa de «uma vez só» mora no carregador padrão, e um duble no lugar dele mediria o duble. O bundle regista
-   * um worker e compila um wasm; pô-lo na página de novo paga as duas coisas outra vez na máquina que menos pode.
+   * 🔴 O BUNDLE É CARREGADO UMA VEZ SÓ, e a promessa é do RUNTIME e não de uma forma de carregar: ela envolve também o
+   * carregador injetado, senão este caso mediria o duble. O bundle abre um worker e compila um wasm; pedi-lo de novo paga as
+   * duas coisas outra vez na máquina que menos pode.
    */
-  it('🔴 [Right] o bundle entra na página UMA vez, mesmo pedido duas', async () => {
-    const postos = [];
-    const modelo = { KaldiRecognizer: function KaldiRecognizer() {} };
-    const janela = { Vosk: { createModel: async () => modelo } };
-    const docFalso = {
-      defaultView: janela,
-      createElement: () => { const el = {}; postos.push(el); return el; },
-      head: { appendChild: (el) => { setTimeout(() => el.onload(), 0); } },
-    };
-    const deps = { base: BASE, language: 'pt-BR', hasFile: cacheCom(), doc: docFalso };
+  it('🔴 [Right] o bundle é carregado UMA vez, mesmo pedido duas', async () => {
+    const api = apiFalsa();
+    const deps = { base: 'https://uma.exemplo/jogo/', language: 'pt-BR', hasFile: cacheCom(), ...api };
     const um = await loadVoskRuntime(deps);
     const dois = await loadVoskRuntime(deps);
-    expect(um.ok && dois.ok, 'o carregador de verdade não abriu o modelo').toBe(true);
-    expect(postos.length, 'o bundle foi posto na página duas vezes').toBe(1);
-    expect(postos[0].src, 'o script foi posto sem endereço').toBe(BASE + caminhoNaEntrega(urlOf('commands:runtime')));
+    expect(um.ok && dois.ok, 'o carregador não abriu o modelo').toBe(true);
+    expect(api.pedidos.filter((p) => p[0] === 'bundle').length, 'o bundle foi carregado duas vezes').toBe(1);
   });
 
-  it('🎯 [Zero] um bundle que carrega e não define o global falha DIZENDO, em vez de devolver um modelo torto', async () => {
-    const docFalso = {
-      defaultView: {}, // carregou, e não há `Vosk`: a entrega tem o ficheiro errado
-      createElement: () => ({}),
-      head: { appendChild: (el) => { setTimeout(() => el.onload(), 0); } },
-    };
-    // ⚠️ OUTRA BASE de propósito: o memo do carregador é do MÓDULO e vive o tempo da página, então o caso acima já deixou
-    // este endereço carregado. Reusá-lo aqui mediria o memo, não o bundle — e foi assim que este caso falhou primeiro.
-    await expect(loadVoskRuntime({ base: 'https://outra.exemplo/jogo/', language: 'pt-BR', hasFile: cacheCom(), doc: docFalso }))
-      .rejects.toThrow(/global/);
+  it('🎯 [Zero] um bundle sem `createModel` falha DIZENDO, em vez de devolver um modelo torto', async () => {
+    // ⚠️ OUTRA BASE de propósito: o memo é do MÓDULO e vive o tempo da página, então o caso acima já deixou o endereço dele
+    // carregado. Reusá-lo aqui mediria o memo, não o bundle — e foi assim que este caso falhou primeiro.
+    const vazio = { loadBundle: async () => ({}) }; // carregou, e não exporta nada: a entrega tem o ficheiro errado
+    // 🔴 A FRASE DA ENGINE, e não a palavra `createModel` — a primeira versão deste caso pedia `/createModel/` e uma mutação
+    // sobreviveu por isso: sem o guarda, o que rebenta é «api.createModel is not a function», que TAMBÉM contém a palavra. A
+    // asserção media o acidente em vez da exigência, e quem lê `problems` ficaria com um erro de JavaScript no lugar do motivo.
+    await expect(loadVoskRuntime({ base: 'https://outra.exemplo/jogo/', language: 'pt-BR', hasFile: cacheCom(), ...vazio }))
+      .rejects.toThrow(/the delivery has the wrong file/);
   });
 });
 

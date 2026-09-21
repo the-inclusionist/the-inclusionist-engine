@@ -31,6 +31,24 @@ describe('the vocabulary is the one the Dev decided', () => {
     expect(voiceWordsFor('en').action2).toContain('pick up');
   });
 
+  /*
+   * 🔴 ESTE CASO FOI ESCRITO POR UM MODELO DE VERDADE, em 2026-09-21: com `acao` na mesa, o Vosk pt respondeu
+   * «Ignoring word missing in vocabulary: 'acao'» na consola e a primeira posição ficava MUDA — a criança dizia a palavra e
+   * nada acontecia, sem erro em lado nenhum. O vocabulário do reconhecedor guarda a palavra como a língua a escreve.
+   *
+   * ⚠️ E A OUTRA METADE É O QUE TORNA ISTO SEGURO: quem COMPARA não olha acentos (`wordsOf` tira-os dos dois lados), logo
+   * escrever certo na mesa não pode partir o reconhecimento de um recogniser que escreva sem acento.
+   */
+  it('🔴 [Right] a mesa escreve a palavra como a LÍNGUA a escreve, e o acento não decide o disparo', () => {
+    expect(voiceWordsFor('pt').action1, 'sem o cedilho o modelo pt ignora a palavra').toEqual(['ação']);
+    expect(voiceWordsFor('es').action1).toEqual(['acción']);
+    expect(voiceGrammar('pt'), 'a gramática pede ao modelo uma palavra que ele não tem').toContain('ação');
+    const comAcento = createVoiceCommands('pt');
+    expect(comAcento.partial('ação')).toBe('action1');
+    const semAcento = createVoiceCommands('pt');
+    expect(semAcento.partial('acao'), 'um reconhecedor que escreva sem acento deixou de ser entendido').toBe('action1');
+  });
+
   it('📌 [Boundary] a região não é a língua, e uma etiqueta desconhecida cai no português (pilar 3)', () => {
     expect(voiceWordsFor('pt-BR').up).toEqual(['acima']);
     expect(voiceWordsFor('es-MX').up).toEqual(['arriba']);

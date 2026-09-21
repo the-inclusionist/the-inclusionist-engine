@@ -73,12 +73,30 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
     void going?.stop();
   };
 
+  /** Nothing started: the child hears why, the adult reads it once, and the icon goes back to off. */
+  const failed = (kind: string, line: string, spoken: string): void => {
+    once(kind, line, spoken);
+    d.turnOff();
+  };
+
   const start = async (): Promise<void> => {
-    const load = await loadRuntime({ base: d.base, language: d.language() });
+    /*
+     * 🔴 THE LOAD IS INSIDE A `try` AND THIS WAS MEASURED, not foreseen: on 2026-09-21 the delivery's bundle turned out to be an
+     * ES module and the loader threw. Nothing here caught it, so the rejection died as an unhandled promise and the 👄 STAYED
+     * LIT over a microphone that had never opened — the exact defect this module exists to prevent, one layer above where it
+     * was being prevented. A failure that has no name is still a failure the child has to be told about.
+     */
+    let load: VoskLoad;
+    try {
+      load = await loadRuntime({ base: d.base, language: d.language() });
+    } catch (e) {
+      failed('runtime', `voice control: the recogniser did not open (${e instanceof Error ? e.message : String(e)}) — the child `
+        + 'cannot play by speaking; check that the delivery carries the command files', t('sr.voice.failed'));
+      return;
+    }
     if (!load.ok) {
-      once('files', `voice control: ${load.missing.join(', ')} not on this device — the child cannot play by speaking; open the `
+      failed('files', `voice control: ${load.missing.join(', ')} not on this device — the child cannot play by speaking; open the `
         + 'game once online so the install fetches them', t('sr.voice.needsInternet'));
-      d.turnOff();
       return;
     }
     commands = createVoiceCommands(d.language());
@@ -90,9 +108,8 @@ export function createVoiceControl(d: VoiceControlDeps): VoiceControl {
         onFinal: () => commands?.reset(),
       });
     } catch {
-      once('microphone', 'voice control: the microphone did not open — the child cannot play by speaking; allow the microphone '
+      failed('microphone', 'voice control: the microphone did not open — the child cannot play by speaking; allow the microphone '
         + 'for this page, or plug one in', t('sr.voice.noMicrophone'));
-      d.turnOff();
       return;
     }
     // ⚠️ TURNED OFF WHILE IT WAS STARTING: the microphone opened after the child let go of the icon, and a listener nobody asked

@@ -28,7 +28,12 @@ export type VoiceWords = { readonly [A in Action]?: readonly string[] };
 const PT: VoiceWords = {
   up: ['acima'], down: ['abaixo'], left: ['esquerda'], right: ['direita'],
   start: ['start'], select: ['select'],
-  action1: ['acao'], action2: ['confirma', 'pega', 'ativar', 'pulo'], action3: ['voltar', 'solta', 'cancelar', 'especial'],
+  // 🔴 «ação» COM O CEDILHO E O TIL, e isto foi medido num navegador em 2026-09-21: escrito `acao`, o modelo pt respondeu
+  // «Ignoring word missing in vocabulary: 'acao'» e a primeira posição ficava MUDA — a criança dizia a palavra e nada
+  // acontecia. A grafia aqui é a do VOCABULÁRIO do reconhecedor; quem compara já não olha acentos (`wordsOf`), então
+  // escrevê-la certa não custa nada ao lado de quem ouve. ⚠️ «boreste» continua fora do vocabulário do modelo pequeno
+  // (errata do ADR-0204) e fica na mesa de propósito: é a palavra do Dev, e um modelo maior ouve-a.
+  action1: ['ação'], action2: ['confirma', 'pega', 'ativar', 'pulo'], action3: ['voltar', 'solta', 'cancelar', 'especial'],
   action4: ['lista', 'troca'],
   leftShoulder: ['bombordo'], leftTrigger: ['mira', 'freia'],
   rightShoulder: ['estibordo', 'boreste'], rightTrigger: ['gatilho', 'acelera'],
@@ -37,7 +42,8 @@ const PT: VoiceWords = {
 const ES: VoiceWords = {
   up: ['arriba'], down: ['abajo'], left: ['izquierda'], right: ['derecha'],
   start: ['start'], select: ['select'],
-  action1: ['accion'], action2: ['confirma', 'recoger', 'activar', 'saltar'], action3: ['volver', 'soltar', 'cancelar', 'especial'],
+  // «acción» com o acento, pela mesma medição da linha do pt: o vocabulário do modelo guarda a palavra como a língua a escreve.
+  action1: ['acción'], action2: ['confirma', 'recoger', 'activar', 'saltar'], action3: ['volver', 'soltar', 'cancelar', 'especial'],
   action4: ['inventario', 'lista', 'cambiar'],
   leftShoulder: ['babor'], leftTrigger: ['apuntar', 'frenar'],
   rightShoulder: ['estribor'], rightTrigger: ['disparar', 'acelerar'],

@@ -1180,7 +1180,10 @@ export function createGame(o: CreateGameOptions): Engine {
     };
   }
 
-  const temCamera = typeof win.navigator?.mediaDevices?.getUserMedia === 'function';
+  // 📌 ONE DOOR FOR BOTH, and the name says so since 2026-09-21: getUserMedia is what a page has to ask the camera AND the
+  // microphone for. It used to be called «temCamera» and the 👄 read it anyway — a name that describes half of what it answers is
+  // how a device with a headset and no webcam would have lost the voice for a reason nobody could see in the code.
+  const canCaptureMedia = typeof win.navigator?.mediaDevices?.getUserMedia === 'function';
   const pauseIcons = initPauseIcons({
     doc,
     /*
@@ -1203,9 +1206,9 @@ export function createGame(o: CreateGameOptions): Engine {
     // the hourglass is offered where time runs by itself (ADR-0180), read per cartridge
     relogio: () => cartucho.declaration.tick === 'clock',
     // the 📷 is offered where there is a camera to ask for (ADR-0215); the three camera controls below follow its position
-    camera: temCamera,
+    camera: canCaptureMedia,
     // and the 👄 where there is a MICROPHONE (issue #184) — the same door as the camera's, so the same answer
-    microfone: temCamera,
+    microfone: canCaptureMedia,
     // the ☰, the bar's first icon (interface log 2026-09-16): the SELECT door, where there is a card to open. Hoisted, read at the press.
     ...(pausaUsavel ? { abrirMenus: (i: number) => { abrirMenusDoAssento(i); } } : {}),
     // no voice speaks the current language: the narration icon locks like the panel's rows (ADR-0185)
@@ -1418,6 +1421,10 @@ export function createGame(o: CreateGameOptions): Engine {
     state.on('modoCego', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
     // the 👀 changes elsewhere too: the eye control puts it back to off when the camera or the files are missing (ADR-0213)
     state.on('cameraControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); }); // a mode that cannot start puts the 📷 back to off
+    // 🔴 AND THE 👄 FOR THE SAME REASON, measured in a browser on 2026-09-21: with the microphone refused, the child heard «it did
+    // not open», the stored answer went back to off — and the button went on saying «ligado». A control that lies about its state
+    // is worse than a missing one (ADR-0106 §5), and the click path does not cover it, because this change comes from elsewhere.
+    state.on('voiceControl', () => { pauseIcons.reflectIconsIn(a11yBar, 0); });
   }
 
   // 4d. QUEM ABRIU A PAUSA, quando há mais de um assento — o achado 3 da auditoria do `game-soccer`.
@@ -3531,7 +3538,7 @@ export function createGame(o: CreateGameOptions): Engine {
     const reflectCamera = (): void => {
       atualizarPassos(cameraSteps, cameraRowSpec());
       cameraHint.textContent = t('motora.camera.dica');
-      cameraRow.hidden = !temCamera;
+      cameraRow.hidden = !canCaptureMedia;
     };
     cameraSteps.addEventListener('passo', (ev) => {
       const next = passoSeguinte(
@@ -3857,7 +3864,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
   }
 
   const regiaoDoOlhar = $<HTMLElement>('#game-region');
-  if (temCamera && regiaoDoOlhar) {
+  if (canCaptureMedia && regiaoDoOlhar) {
     // PLAYING THROUGH THE WEBCAM (ADR-0215): one stored position, off · hands · face · eyes; `ui/camera-control` starts only the control at
     // that position. Each control opens the camera itself and lets it go when the position moves on.
     const visionLoop = {
@@ -3887,7 +3894,7 @@ unstyled, so a child who plays by keyboard cannot see where focus is — link th
    * 📌 THE GRAMMAR FOLLOWS THE OPEN MENU: the names the child can see are the names she can say. They are read from the overlay
    * on top, which is the same one the focus trap and the menu navigation already treat as «the menu that is open».
    */
-  if (temCamera) {
+  if (canCaptureMedia) {
     const menuWords = (): readonly string[] => {
       const card = overlays.topVisibleOverlay();
       if (!card) return [];

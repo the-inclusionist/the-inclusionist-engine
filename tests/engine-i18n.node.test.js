@@ -155,11 +155,20 @@ function crus(m) {
  * depuração para três idiomas custaria manutenção e não alcançaria criança nenhuma, que é o que o pilar 3
  * protege.
  *
- * ⚠️ ESTA LISTA TEM UM ITEM, e a régua para entrar nela é estreita: o módulo tem de ser INALCANÇÁVEL sem uma
- * bandeira de desenvolvimento. Um painel que a criança possa abrir não entra aqui — entra na tabela abaixo,
- * com teto, como todos os outros.
+ * ⚠️ A RÉGUA PARA ENTRAR AQUI É ESTREITA, e são DUAS portas, ambas com o mesmo teste por trás: «traduzir isto
+ * alcançaria alguma criança?». Um painel que a criança possa abrir não entra — entra na tabela abaixo, com teto,
+ * como todos os outros.
+ *
+ * 1. O módulo é INALCANÇÁVEL sem uma bandeira de desenvolvimento (`ui/debug-panel.ts`).
+ * 2. 🔴 O texto cru NÃO É LIDO POR NINGUÉM — é DITO por uma criança e ouvido por um modelo (`input/voice-map.ts`,
+ *    2026-09-21, issue #184). As mesas de vocabulário são o que a criança fala em pt, es e en, e já são POR LÍNGUA:
+ *    a escolha que o `t()` faria está feita um nível acima, no `voiceWordsFor`. E a acentuação delas é DADO e não
+ *    prosa — 📏 medido num navegador: com «acao» em vez de «ação», o modelo pt respondeu «Ignoring word missing in
+ *    vocabulary» e a primeira posição do controle ficou muda, sem erro em lado nenhum. Pôr estas palavras no teto
+ *    obrigaria a escolher entre pagar dívida por escrever português CERTO e escrever uma palavra que o
+ *    reconhecedor não tem — e a segunda opção custa a criança.
  */
-const ISENTOS = new Set(['ui/debug-panel.ts']);
+const ISENTOS = new Set(['ui/debug-panel.ts', 'input/voice-map.ts']);
 
 const CRU_CONHECIDO = {
   // ⚠️ OS NÚMEROS SAEM DAQUI, e não de um script meu de fora. A primeira versão desta tabela foi preenchida

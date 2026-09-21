@@ -189,6 +189,7 @@ const en: Record<string, string> = {
   'sr.icon.camera': 'Playing through the webcam: {v}.',
   'sr.voice.ready': 'Ready: you can play by speaking.',
   'sr.voice.noMicrophone': 'Voice control needs the microphone, and it did not open. Allow the microphone for this page.',
+  'sr.voice.failed': 'Voice control could not start on this device.',
   'sr.voice.needsInternet': 'Voice control has not reached this device yet: it comes down the first time the game opens online.',
   'sr.hands.ready': 'Ready: you can play with hand gestures.',
   'sr.hands.noCamera': 'Gesture control needs the camera, and it did not open. Allow the camera for this page.',

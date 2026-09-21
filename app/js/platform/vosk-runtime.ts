@@ -10,9 +10,16 @@
 // this engine's policy refuses (ADR-0193 — never `'unsafe-eval'`, never a patch). It was rebuilt with `-s DYNAMIC_EXECUTION=0`
 // and runs under the policy as it is (`docs/6-DevOps-SRE/models.md`).
 //
-// ⚠️ IT IS A CLASSIC SCRIPT, not a module: the build is a UMD bundle that defines a global and finds its worker and its wasm
-// BESIDE ITSELF — which is why all three files travel together into one folder of the delivery. A `<script src>` of our own
-// origin is what `script-src 'self'` admits; an `import()` would ask a bundle with no exports for exports.
+// 🔴 IT IS AN ES MODULE THAT RESOLVES ITS OWN FILES THROUGH US, and this was MEASURED in a browser on 2026-09-21 after the
+// first version of this loader assumed the opposite. The real bundle of `vosk-browser-dynamic-execution-0` ends in
+// `export { createModel, Model, … }` and asks for the other two files by logical name:
+//     new Worker(resolver("npm/vosk/vosk.worker.js"), { type: "module" })   ·   wasmUrl: this.resolver("npm/vosk/vosk.wasm")
+// So it is loaded with `import()` (the same way `platform/vision` loads `tasks-vision`), and the resolver answers with the
+// DELIVERY path of each file — which is how the service worker gets to serve all three from the checked cache.
+//
+// ⚠️ THE LESSON IS ABOUT THE GATE AND NOT ABOUT THE FILE: the old shape («a classic script that defines a global and finds its
+// neighbours by itself») had seven red mutations against a double built in the image of that belief. A double can only measure
+// the contract you think you have; the one that exists was three lines of the served file away.
 
 import { PESADOS, CACHE_PESADOS, caminhoNaEntrega } from './pesados.js';
 import { commandsLanguageOf } from './pesados-catalogo.js';
@@ -42,19 +49,23 @@ export interface VoskModel {
   terminate?(): void;
 }
 
-/** The global the bundle defines. */
-export interface VoskApi { createModel(url: string, logLevel?: number): Promise<VoskModel> }
+/**
+ * What the bundle exports. `resolve` is how it asks US for the two files it needs beside the model — the worker it spawns and
+ * the wasm that worker loads — so nothing is ever guessed from the bundle's own address.
+ */
+export interface VoskApi {
+  createModel(url: string, resolve: (logicalPath: string) => string, logLevel?: number): Promise<VoskModel>;
+}
 
 export interface VoskDeps {
   /** The page's address, to make the delivery paths absolute. */
   readonly base: string;
   /** The child's language (`core/i18n.bcp47`): it chooses the model. */
   readonly language: string;
-  readonly doc?: Document;
   /** Whether a catalogue file (by its upstream address) is in the checked cache. */
   readonly hasFile?: (upstreamUrl: string) => Promise<boolean>;
-  /** Puts the bundle in the page and answers with the global it defines. Injected so a gate never touches a document. */
-  readonly loadScript?: (absoluteUrl: string) => Promise<VoskApi>;
+  /** Imports the bundle and answers with what it exports. Injected so a gate never imports 3 MiB of wasm loader. */
+  readonly loadBundle?: (absoluteUrl: string) => Promise<VoskApi>;
 }
 
 export type VoskLoad =
@@ -76,20 +87,26 @@ const defaultHasFile = async (url: string): Promise<boolean> =>
 // address, which is what identifies the bundle; a rejection is forgotten, so a load that failed on a bad minute can be retried.
 const loadedBundles = new Map<string, Promise<VoskApi>>();
 
-function scriptLoader(doc: Document, absoluteUrl: string): Promise<VoskApi> {
+// ⚠️ THE ADDRESS IS ABSOLUTE AND THE BUNDLER MUST NOT FOLLOW IT: these bytes are not ours, they arrive with the delivery at
+// runtime. The same `@vite-ignore` the vision runtime carries, for the same reason.
+const moduleLoader = async (absoluteUrl: string): Promise<VoskApi> =>
+  (await import(/* @vite-ignore */ absoluteUrl)) as VoskApi;
+
+/**
+ * ONCE PER ADDRESS, whoever the loader is — and it wraps the INJECTED loader too, because «once» is a promise of this runtime
+ * and not a detail of one way of loading. A gate that could only reach it through the default loader would be measuring the
+ * default loader; this way the rule is the same one the page runs.
+ */
+function bundleOnce(load: (url: string) => Promise<VoskApi>, absoluteUrl: string): Promise<VoskApi> {
   const alreadyAsked = loadedBundles.get(absoluteUrl);
   if (alreadyAsked) return alreadyAsked;
-  const pending = new Promise<VoskApi>((resolve, reject) => {
-    const el = doc.createElement('script');
-    el.src = absoluteUrl;
-    el.onload = () => {
-      const api = (doc.defaultView as unknown as { Vosk?: VoskApi } | null)?.Vosk;
-      if (api) resolve(api);
-      else reject(new Error('vosk-runtime: the bundle loaded and defined no global — the delivery has the wrong file'));
-    };
-    el.onerror = () => reject(new Error(`vosk-runtime: the bundle did not load from ${absoluteUrl}`));
-    doc.head.appendChild(el);
-  });
+  const pending = (async (): Promise<VoskApi> => {
+    const api = await load(absoluteUrl);
+    if (typeof api?.createModel !== 'function') {
+      throw new Error('vosk-runtime: the bundle exported no `createModel` — the delivery has the wrong file');
+    }
+    return api;
+  })();
   loadedBundles.set(absoluteUrl, pending);
   pending.catch(() => { loadedBundles.delete(absoluteUrl); });
   return pending;
@@ -112,11 +129,18 @@ export async function loadVoskRuntime(d: VoskDeps): Promise<VoskLoad> {
   }
   if (missing.length) return { ok: false, missing };
 
-  const doc = d.doc ?? (typeof document !== 'undefined' ? document : null);
-  const load = d.loadScript ?? (doc ? (u: string) => scriptLoader(doc, u) : null);
-  if (!load) return { ok: false, missing: ['document'] };
   const at = (id: string): string => new URL(caminhoNaEntrega(urlOf(id)!), d.base).href;
-  const api = await load(at('commands:runtime'));
+  const api = await bundleOnce(d.loadBundle ?? moduleLoader, at('commands:runtime'));
+  /*
+   * WHERE THE BUNDLE'S TWO NEIGHBOURS LIVE, answered by us and never guessed. The logical names are the bundle's own
+   * (`npm/vosk/…`), and an unknown one THROWS instead of falling back to a file that happens to be handy: a worker fed the
+   * wasm, or the other way round, fails deep inside a thread with no way back to the child.
+   */
+  const beside = (logicalPath: string): string => {
+    if (logicalPath.endsWith('.worker.js')) return at('commands:runtime:worker');
+    if (logicalPath.endsWith('.wasm')) return at('commands:runtime:wasm');
+    throw new Error(`vosk-runtime: the bundle asked for a file this delivery does not carry: ${logicalPath}`);
+  };
   // 📌 `-1` is the bundle's «say nothing»: a recogniser that logs every frame fills a school machine's console with noise.
-  return { ok: true, model: await api.createModel(at(modelId), -1) };
+  return { ok: true, model: await api.createModel(at(modelId), beside, -1) };
 }

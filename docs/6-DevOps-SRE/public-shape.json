@@ -1611,10 +1611,9 @@
     ],
     "interface VoskDeps": [
       "base",
-      "doc?",
       "hasFile?",
       "language",
-      "loadScript?"
+      "loadBundle?"
     ],
     "type VoskLoad": "| { readonly ok: true"
   },

@@ -197,6 +197,14 @@ describe('createGame num documento de verdade', () => {
     expect(dito, 'anunciou o estado que a criança acabou de deixar').not.toBe(rotuloAntes);
   });
 
+  /*
+   * 🔴 ESTE CASO NASCEU NO NAVEGADOR, em 2026-09-21, e o defeito estava servido numa página: com o microfone recusado, o
+   * `ui/voice-control` disse à criança «ele não abriu» e devolveu a chave guardada a desligado — e o botão continuou a dizer
+   * «Comando de voz: ligado». Um controle que mente o estado é pior do que um ícone a menos (ADR-0106 §5).
+   *
+   * ⚠️ E O CAMINHO DO CLIQUE NÃO COBRE ISTO: o `iconAct` reflecte a seguir a si próprio. O que faltava era a subscrição, que é
+   * por onde chega uma mudança vinda de FORA da barra — a mesma linha que o 📷 já tinha desde o ADR-0215.
+   */
   // 🎯 A RAIZ RESPONDE PELO APARELHO EM USO (ADR-0113), e este é o único caso que o mede de ponta a ponta.
   // Os casos do `ui/pause-icons` injectam o `transporteEmUso` deles, então a LINHA DA RAIZ — a que lê o
   // `input/state.entradaDe(i)` — ficava sem ninguém a afirmar. Duas mutações sobreviveram por isso, e é este
@@ -1256,6 +1264,34 @@ describe('createGame num documento de verdade', () => {
       expect(motor.problems.filter((p) => p.includes('#game-region') && p.includes('setas')),
         'acusou o escopo dos overlays com o hospedeiro no sítio certo').toEqual([]);
     });
+  });
+
+  /*
+   * 🔴 ESTE CASO NASCEU NO NAVEGADOR, em 2026-09-21, e o defeito estava servido numa página: com o microfone recusado, o
+   * `ui/voice-control` disse à criança «ele não abriu» e devolveu a chave guardada a desligado — e o botão continuou a dizer
+   * «Comando de voz: ligado». Um controle que mente o estado é pior do que um ícone a menos (ADR-0106 §5).
+   *
+   * ⚠️ E O CAMINHO DO CLIQUE NÃO COBRE ISTO: o `iconAct` reflecte logo a seguir a si próprio. O que faltava era a subscrição,
+   * que é por onde chega uma mudança vinda de FORA da barra — a mesma linha que o 📷 tem desde o ADR-0215.
+   *
+   * 📌 ESTÁ NO FIM DO FICHEIRO DE PROPÓSITO, e a razão é um achado sobre a SUÍTE e não sobre a voz: 📏 medido em 2026-09-21,
+   * acrescentar QUALQUER caso que abra mais uma raiz antes do «a locked item SAYS WHY» faz o cursor dele parar noutro item —
+   * as raízes acumulam-se dentro do ficheiro e o número delas mexe em quantos passos uma seta dá. Um caso cujo resultado
+   * depende de quantas raízes os vizinhos abriram não mede o que diz; fica NOMEADO aqui, e consertá-lo é trabalho à parte.
+   */
+  it('🔴 [Zero] ligado o 👄 onde nada consegue começar, o botão VOLTA a dizer desligado', async () => {
+    const estado = await import('../app/js/core/state.js');
+    abrir();
+    expect(document.querySelector('#title-icons [data-pi="voice"]'), 'o 👄 não está na barra desta raiz').not.toBeNull();
+    estado.setVoiceControlValue(true);
+    expect(document.querySelector('#title-icons [data-pi="voice"]').getAttribute('aria-pressed'),
+      'a barra não seguiu a escolha da criança').toBe('true');
+    // aqui não há entrega nem microfone: o `ui/voice-control` falha, diz porquê e devolve a chave a desligado
+    for (let i = 0; i < 120 && estado.voiceControl; i++) await new Promise((r) => { setTimeout(r, 10); });
+    expect(estado.voiceControl, 'o comando de voz ficou ligado sobre um reconhecedor que nunca abriu').toBe(false);
+    const depois = document.querySelector('#title-icons [data-pi="voice"]');
+    expect(depois.getAttribute('aria-pressed'), 'o botão ficou a dizer que o comando de voz está ligado').toBe('false');
+    expect(depois.getAttribute('aria-label')).toBe('Comando de voz: desligado');
   });
 });
 

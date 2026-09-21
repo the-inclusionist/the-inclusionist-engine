@@ -850,6 +850,12 @@ vocabulary (`input/voice-map`), the recogniser from the delivery (`platform/vosk
 (`platform/voice-listener`) and the virtual controller — a heard word is a press stamped `fala` and a release 400 ms later,
 because a spoken command is a tap and what holds a direction afterwards is the latch (ADR-0211).
 
+**And the recogniser's loader changed shape, one day after it landed.** `VoskDeps.doc` and `VoskDeps.loadScript` left, and
+`VoskDeps.loadBundle` entered; `VoskApi.createModel` takes the resolver as its second argument. 📏 The reason is a measurement
+and not a preference: the delivery's bundle is an ES module that ends in `export { createModel, … }` and asks for its worker
+and its wasm through a resolver we pass — the first version loaded it as a classic script and looked for a global, so the 👄
+could never start. Nothing outside this repository reads these names (they exist for the gate to inject a double).
+
 **What to do:** nothing, unless you read `PauseIcon.soon` or the key `icon.soon`. An icon that has nothing to act on is
 ABSENT from the bar, which is what ADR-0106 §5 asks for and what `iconesQueAccionam` already did.
 
