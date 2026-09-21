@@ -1,7 +1,7 @@
 {
   "measured": "2026-09-21",
   "what": "Declared identifiers carrying a Portuguese word, per file. The gate refuses any increase; run --bootstrap to record a decrease.",
-  "total": 1456,
+  "total": 1454,
   "files": {
     "app/js/boot/create-game.ts": 367,
     "app/js/core/accommodation-subjects.ts": 6,
@@ -59,7 +59,7 @@
     "app/js/platform/pesados.ts": 15,
     "app/js/platform/speech-recognition.ts": 19,
     "app/js/platform/storage.ts": 8,
-    "app/js/platform/tts.ts": 35,
+    "app/js/platform/tts.ts": 33,
     "app/js/platform/voice-plan.ts": 3,
     "app/js/render/camera.ts": 8,
     "app/js/render/cenario-data.ts": 8,

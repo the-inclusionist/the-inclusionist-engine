@@ -3,12 +3,34 @@
 //
 // Kokoro speaks by three steps, each measured in the lab on 2026-09-13/14: the text becomes phonemes (espeak-ng, the language's
 // voice), the phonemes become the model's token ids (its tokenizer vocabulary), and the model turns the ids and a voice's style row
-// into a 24 kHz waveform. The phonemizer, the runtime and the model come through the game's port (ADR-0198 §5) — the engine names
-// none of them; this module holds what the engine decides: which voices exist for a language and which two are good, how the ids
-// are built, which style row a sentence takes, whether a synthesis is speech, and the WAV the player plays.
+// into a 24 kHz waveform. The phonemizer, the runtime and the model arrive from the delivery (ADR-0216 §1); this module holds what
+// the engine decides: which voices exist for a language and which two are good, how the ids are built, which style row a sentence
+// takes, whether a synthesis is speech, and the WAV the player plays.
 //
 // No I/O on import.
 import type { VozNeural } from './voice-plan.js';
+
+/** A Kokoro inference session on one device: token ids and a style row in, a 24 kHz waveform out. */
+export interface KokoroSession {
+  readonly sintetizar: (ids: readonly number[], estilo: Float32Array) => Promise<Float32Array>;
+}
+/**
+ * WHAT SPEAKING NEEDS OF KOKORO — `platform/kokoro-runtime` fills it from the delivery (ADR-0216 §1).
+ * `fonemizar` is espeak-ng in the voice's language (`pt-br`, `es-419`, `en-us`, `en-gb`); `vocabulario` the model tokenizer's symbols;
+ * `voz` a voice's style table; `sessao` a session on WebGPU or WASM.
+ *
+ * 📌 IT LIVES IN THIS LEAF and not beside the speaking, so that the runtime that builds one can be reached from `platform/tts` by
+ * `import()` without the two naming each other — a cycle the direction gate (ADR-0173) refuses, and rightly: the loader must not
+ * have to load the speaker to be loaded by it.
+ */
+export interface KokoroModule {
+  readonly fonemizar: (texto: string, espeak: string) => Promise<string>;
+  readonly vocabulario: () => Promise<Readonly<{ [simbolo: string]: number }>>;
+  readonly voz: (id: string) => Promise<Float32Array>;
+  readonly sessao: (dispositivo: 'webgpu' | 'wasm') => Promise<KokoroSession>;
+}
+/** How the neural voice arrives. Until ADR-0216 every game wrote one of these; now the engine has its own. */
+export type LoadKokoro = () => Promise<KokoroModule>;
 
 /** A Kokoro voice of the engine's three languages. `boa` marks the two the Dev rated good (ADR-0198 §3). */
 export interface VozKokoro extends VozNeural {

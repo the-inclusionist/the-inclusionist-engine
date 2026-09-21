@@ -39,8 +39,9 @@ function montar(comPorta) {
     srSay: () => {}, srAlert: () => {}, ensureAC: () => null, catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 0.6, getAudioCat: () => ({ tts: { on: true } }),
   };
-  if (comPorta) {
-    ctx.carregarKokoro = () => Promise.resolve({
+  if (comPorta) { // the game declared `uses: { neuralVoice: true }` (ADR-0216 §3); the loader is only this case's stand-in
+    ctx.neuralVoice = true;
+    ctx.loadKokoro = () => Promise.resolve({
       fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }),
       voz: async (id) => { registro.voz = id; return new Float32Array(256); },
       sessao: async () => { throw new Error('no session here'); },

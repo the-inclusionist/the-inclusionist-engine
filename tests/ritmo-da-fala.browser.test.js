@@ -3,8 +3,17 @@
 // child's rate over the voice's own — measured on the utterance — through a media element that keeps the pitch.
 //
 // MUTATIONS CHECKED — at the end of the file (the measuring itself is `ritmo-da-fala.node`).
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+
+// The game declares `uses: { neuralVoice: true }` and the ENGINE loads the voice (ADR-0216 §1), so what a case replaces is the
+// loader and not a port. ten words in 2 s of speech between 0.5 s silent ends: the voice says 300 words a minute.
+vi.mock('../app/js/platform/kokoro-runtime.js', () => ({
+  loadKokoroRuntime: async () => ({
+    fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }), voz: async () => new Float32Array(256),
+    sessao: async () => ({ sintetizar: async () => waveform(0.5, 2, 0.5) }),
+  }),
+}));
 
 let motor;
 const guardados = {};
@@ -36,11 +45,7 @@ beforeAll(async () => {
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({
     acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, players: [{ ctrl: 0 }],
-    // ten words in 2 s of speech between 0.5 s silent ends: the voice says 300 words a minute
-    carregarKokoro: async () => ({
-      fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }), voz: async () => new Float32Array(256),
-      sessao: async () => ({ sintetizar: async () => waveform(0.5, 2, 0.5) }),
-    }),
+    uses: { neuralVoice: true },
   });
 });
 afterAll(() => {

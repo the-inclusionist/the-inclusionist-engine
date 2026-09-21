@@ -3,8 +3,9 @@
 // narrate é gated por soundOn + audioCat.tts.on + texto não-vazio; o fallback Web Speech fala NO IDIOMA DO JOGO;
 // loadTTS avisa em motor que não fala o idioma. Ver docs/5-Refactoring/plano-modularizacao-mapa.md (#38).
 //
-// The neural engine arrives through the game's Kokoro port (ADR-0198, ADR-0207), so its whole path runs with a fake — no network,
-// no provider installed. The fake browser offers one Portuguese voice: with none, narration is locked (ADR-0185 §4).
+// The neural engine is the ENGINE's since ADR-0216: the game only declares `uses: { neuralVoice: true }`, which arrives here as
+// `ctx.neuralVoice`. The loader stays injectable so the whole path runs with a fake — no network, no wasm engine. The fake browser
+// offers one Portuguese voice: with none, narration is locked (ADR-0185 §4).
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import pt from '../app/js/i18n/pt.js';
 import { createTts } from '../app/js/platform/tts.js';
@@ -26,11 +27,13 @@ function setup(over = {}) {
     getVolume: () => over.volume === undefined ? 0.6 : over.volume,
     getAudioCat: () => over.audioCat === undefined ? { tts: { on: true } } : over.audioCat,
   };
-  if (over.carregarKokoro) ctx.carregarKokoro = over.carregarKokoro;
+  // The declaration and the loader are two things since ADR-0216: a game answers the first and never the second.
+  if (over.neuralVoice || over.loadKokoro) ctx.neuralVoice = true;
+  if (over.loadKokoro) ctx.loadKokoro = over.loadKokoro;
   return { tts: createTts(ctx), said, alerted };
 }
 
-/** A Kokoro port that does not exist: the four calls the engine makes, and nothing more. WebGPU returns speech. */
+/** A Kokoro runtime that does not exist: the four calls the engine makes, and nothing more. WebGPU returns speech. */
 function fakeKokoroPort(registro) {
   const tom = Float32Array.from({ length: 2400 }, (_, i) => Math.sin(i / 8) * 0.4);
   return () => Promise.resolve({
@@ -116,8 +119,8 @@ describe('platform/tts', () => {
 // ===================================================================================================
 // The engine names no provider: the game does, through the Kokoro port. These cases hold both halves: without the port the child is
 // TOLD and narration goes on in the browser's voice; with the port the neural path runs whole.
-describe('platform/tts — a porta da voz neural', () => {
-  it('[Zero] sem porta: avisa, marca falha e NÃO diz que o problema é o idioma', () => {
+describe('platform/tts — a declaração da voz neural', () => {
+  it('[Zero] jogo que não a declarou: avisa, marca falha e NÃO diz que o problema é o idioma', () => {
     const { tts, alerted } = setup();
     tts.setEngineSel('kokoro');
     tts.loadTTS();
@@ -130,7 +133,7 @@ describe('platform/tts — a porta da voz neural', () => {
     expect(tts.neuralDisponivel).toBe(false);
   });
 
-  it('[Right] sem porta a narração NÃO emudece — cai na voz do navegador', () => {
+  it('[Right] sem a declaração a narração NÃO emudece — cai na voz do navegador', () => {
     const { tts } = setup();
     tts.setEngineSel('kokoro');
     tts.narrate('bom dia');
@@ -139,9 +142,26 @@ describe('platform/tts — a porta da voz neural', () => {
     expect(spoke[0].lang).toBe('pt-BR');
   });
 
-  it('[Happy] com porta o caminho neural corre inteiro e o motor fica de pé', async () => {
+  // 🎯 O QUE A ADR-0216 §1 TROCOU: o jogo declara, e quem carrega é a engine. Sem carregador injetado o `tts` tem de ir buscar o
+  // dela (`platform/kokoro-runtime`, por `import()`) — aqui, em node, isso rebenta por não haver `document`, e é justamente essa
+  // falha que prova que ele TENTOU: um `tts` que voltasse a exigir a porta do jogo diria «esta montagem não traz motor neural»
+  // sem tentar nada. A distinção entre os dois alertas é a asserção.
+  it('🔴 [Right] declarada e sem carregador injetado, a engine carrega a voz ELA MESMA — não diz «não vem no pacote»', async () => {
+    const { tts, alerted } = setup({ neuralVoice: true });
+    expect(tts.neuralDisponivel, 'quem responde é a declaração, não um carregador').toBe(true);
+    expect(tts.vozes().some((v) => v.engine === 'kokoro'), 'as vozes do idioma entram na lista').toBe(true);
+    tts.setEngineSel('kokoro');
+    tts.loadTTS();
+    expect(alerted, 'recusou sem sequer tentar o carregador da engine').not.toContain(pt['sr.tts.neuralNotBundled']);
+    // ⚠️ Não são microtasks: o carregador da engine IMPORTA um módulo, que é trabalho de verdade — esperar por ticks fixos
+    // media o relógio do carregamento e não a decisão. Espera-se pelo desfecho, com teto.
+    for (let i = 0; i < 200 && !tts.failed; i++) await new Promise((r) => setTimeout(r, 5));
+    expect(alerted, 'o carregador da engine correu e a falha dele é que foi dita').toContain(pt['sr.tts.loadFailed']);
+  });
+
+  it('[Happy] com carregador o caminho neural corre inteiro e o motor fica de pé', async () => {
     const registro = {};
-    const { tts } = setup({ carregarKokoro: fakeKokoroPort(registro) });
+    const { tts } = setup({ loadKokoro: fakeKokoroPort(registro) });
     expect(tts.neuralDisponivel).toBe(true);
     tts.setEngineSel('kokoro');
     tts.loadTTS();
@@ -153,8 +173,8 @@ describe('platform/tts — a porta da voz neural', () => {
     expect(tts.failed).toBe(false);
   });
 
-  it('[Boundary] porta que rejeita não derruba o jogo: falha marcada e voz do navegador segue', async () => {
-    const { tts, alerted } = setup({ carregarKokoro: () => Promise.reject(new Error('offline')) });
+  it('[Boundary] carregador que rejeita não derruba o jogo: falha marcada e voz do navegador segue', async () => {
+    const { tts, alerted } = setup({ loadKokoro: () => Promise.reject(new Error('offline')) });
     tts.setEngineSel('kokoro');
     tts.loadTTS();
     await assentar();

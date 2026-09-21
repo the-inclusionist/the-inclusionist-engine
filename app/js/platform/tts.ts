@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// platform/tts — spoken narration. The browser's voice speaks first (Web Speech, ADR-0200); the neural fallback is Kokoro, loaded
-// lazily through the port the game fills (ADR-0198) — and without the port nothing goes silent, the browser's voice speaks. narrate() é o
+// platform/tts — spoken narration. The browser's voice speaks first (Web Speech, ADR-0200); the neural fallback is Kokoro, which
+// THE ENGINE ITSELF loads from the delivery (ADR-0216 §1) the first time a child picks it — the game only says it wants one. narrate() é o
 // ponto de entrada, gated pelo toggle 'Narração (TTS)' do mixer (audioCat.tts.on) — independe das legendas. As funções de
 // PAINEL (populateTTSEngines/Voices/reflectTTS) ficam no game.js (→ ui/settings-audio, #38→#54) e usam get/setEngineSel +
 // get/setVoiceObj daqui. Injeção por closure. Ver docs/plano-tts-fase-f5.md + docs/5-Refactoring/plano-modularizacao-mapa.md.
@@ -10,27 +10,26 @@ import { t, bcp47 } from '../core/i18n.js';
 import { criarFalaInterrompivel } from './interruptible-speech.js';
 import { vozesDoIdioma, type VozNeural } from './voice-plan.js';
 import { palavrasFaladas, segundosDeFala, taxaDaFala } from '../core/speech-rate.js';
-import { VOZES_KOKORO, tokenizar, estiloDaFrase, eFala, wavDe } from './kokoro.js';
+import {
+  VOZES_KOKORO, tokenizar, estiloDaFrase, eFala, wavDe,
+  type LoadKokoro, type KokoroModule, type KokoroSession,
+} from './kokoro.js';
+
+// They were declared here until ADR-0216 and are answered from the leaf now; re-exported so the name a consumer imports is the same.
+export type { LoadKokoro, KokoroModule, KokoroSession };
 
 interface TtsEngine { id: string; speak: (text: string) => void; }
 
-/** A Kokoro inference session on one device: token ids and a style row in, a 24 kHz waveform out. */
-export interface SessaoKokoro {
-  readonly sintetizar: (ids: readonly number[], estilo: Float32Array) => Promise<Float32Array>;
-}
 /**
- * WHAT THE ENGINE NEEDS FROM KOKORO (ADR-0198 §5) — the game fills it; the engine names no phonemizer, runtime or model file.
- * `fonemizar` is espeak-ng in the voice's language (`pt-br`, `es-419`, `en-us`, `en-gb`); `vocabulario` the model tokenizer's symbols;
- * `voz` a voice's style table; `sessao` a session on WebGPU or WASM.
+ * THE ENGINE'S OWN LOADER (ADR-0216 §1 and §5) — the Dev, 2026-09-21: «O jogo não deve precisar saber como isso funciona».
+ *
+ * ⚠️ IMPORTED AT THE FIRST NEURAL UTTERANCE AND NOT BEFORE: `kokoro-runtime` is what names espeak-ng and the ONNX runtime, so a
+ * game that never speaks neurally never loads a byte of them — which is the whole reason this is an `import()` and not an import.
  */
-export interface ModuloKokoro {
-  readonly fonemizar: (texto: string, espeak: string) => Promise<string>;
-  readonly vocabulario: () => Promise<Readonly<{ [simbolo: string]: number }>>;
-  readonly voz: (id: string) => Promise<Float32Array>;
-  readonly sessao: (dispositivo: 'webgpu' | 'wasm') => Promise<SessaoKokoro>;
-}
-/** The Kokoro port (ADR-0198): one line on the game's side, loading its own phonemizer, runtime and model. */
-export type CarregarKokoro = () => Promise<ModuloKokoro>;
+const daEntrega: LoadKokoro = async () => {
+  const { loadKokoroRuntime } = await import('./kokoro-runtime.js');
+  return loadKokoroRuntime({ base: document.baseURI });
+};
 
 export interface TtsCtx {
   srSay: (t: string) => void;
@@ -42,10 +41,15 @@ export interface TtsCtx {
   getVolume: () => number;
   getAudioCat: () => Record<string, { on: boolean }> | null; // narrate checa audioCat.tts.on
   /**
-   * How the Kokoro voices load (ADR-0198), filled by the game, absent by default: the engine names no phonemizer, runtime or model
-   * file, so a game that never speaks neurally carries none of them. Absent = no Kokoro voice is listed; the browser's voice speaks.
+   * DOES THIS GAME SPEAK WITH A NEURAL VOICE (ADR-0216 §3)? The game's answer, not a loader: absent, no Kokoro voice is listed, the
+   * browser's voice speaks, and the delivery carries neither the model nor the runtime.
    */
-  carregarKokoro?: CarregarKokoro;
+  neuralVoice?: boolean;
+  /**
+   * How that voice is built. Injected so a case can hand in a module without a wasm engine; the default is the engine's own loader,
+   * which reads the delivery. A game never passes this — it says `uses: { neuralVoice: true }` and the engine does the rest.
+   */
+  loadKokoro?: LoadKokoro;
   /** The child's speech rate, words a minute (ADR-0183 §1). Absent = each voice at its own rate. */
   getSpeechPpm?: () => number;
   /**
@@ -69,7 +73,7 @@ export interface Tts {
   readonly failed: boolean;
   readonly narrateCount: number;
   /**
-   * DOES THIS ASSEMBLY HAVE A NEURAL ENGINE? (ADR-0094, the Kokoro port) O painel de áudio pergunta antes de o oferecer: uma opção
+   * DOES THIS GAME ASK FOR A NEURAL ENGINE? (ADR-0216 §3) O painel de áudio pergunta antes de o oferecer: uma opção
    * que não pode funcionar é pior que uma opção a menos — quem a escolhe fica à espera de um download que
    * nunca começa, e quem navega por escuta não tem como ver que não começou.
    */
@@ -85,8 +89,8 @@ export interface Tts {
 }
 
 // 📌 The only neural engine is Kokoro (ADR-0207): the engine's earlier neural engine left when the licence chain of its voices came
-// to light. The engine names no provider — the game fills the Kokoro port (ADR-0094's reason: a provider named here lands its runtime in every
-// consumer's `node_modules`).
+// to light. 📌 And ADR-0094's fear — «a provider named here lands its runtime in every consumer's `node_modules`» — is answered by the
+// delivery and not by a port: the runtime is catalogued, fetched by the build and read from `pesados/`, never imported from npm.
 /** An engine the child may have stored before it left the engine (ADR-0207): read as no explicit choice, so the voice in use speaks. */
 const MOTORES_QUE_SAIRAM: readonly string[] = ['piper'];
 export function createTts(ctx: TtsCtx): Tts {
@@ -99,8 +103,8 @@ export function createTts(ctx: TtsCtx): Tts {
   const motorSel = (): string => {
     if (ttsEngineSelExplicito) return ttsEngineSelExplicito;
     const e = vozAtual()?.engine;
-    // a fallback the game does not bundle is not the default: without its port, the browser's voice (no «not bundled» alert)
-    return e === 'kokoro' && ctx.carregarKokoro ? e : 'webspeech';
+    // a fallback this game did not ask for is not the default: undeclared, the browser's voice (no «not bundled» alert)
+    return e === 'kokoro' && ctx.neuralVoice ? e : 'webspeech';
   };
   let kokoroDispositivo: 'webgpu' | 'wasm' | null = null;
   let vozCarregada: string | null = null; // the voice the loaded engine speaks; another choice reloads it
@@ -115,14 +119,14 @@ export function createTts(ctx: TtsCtx): Tts {
 
   /**
    * WEB SPEECH FIRST (ADR-0200; issue #190): the browser's voices for the language lead the list, so where the device already speaks
-   * no neural voice is loaded; then Kokoro's where the game hands in the Kokoro port (ADR-0198 §1–2) — the fallback.
+   * no neural voice is loaded; then Kokoro's where the game declared it speaks neurally (ADR-0216 §3) — the fallback.
    */
   const vozesDoNavegador = (): readonly VozNeural[] => {
     let lista: readonly SpeechSynthesisVoice[] = [];
     try { lista = window.speechSynthesis?.getVoices() ?? []; } catch { /* no speech synthesis here */ }
     return vozesDoIdioma(bcp47(), lista.map((v) => ({ locale: v.lang.replace('_', '-'), engine: 'webspeech', voice: 'webspeech:' + v.name })));
   };
-  const vozes = (): readonly VozNeural[] => [...vozesDoNavegador(), ...(ctx.carregarKokoro ? vozesDoIdioma(bcp47(), VOZES_KOKORO) : [])];
+  const vozes = (): readonly VozNeural[] => [...vozesDoNavegador(), ...(ctx.neuralVoice ? vozesDoIdioma(bcp47(), VOZES_KOKORO) : [])];
   /** The browser voice an entry names, or null. */
   const vozDoNavegador = (id: string | undefined): SpeechSynthesisVoice | null => {
     if (!id?.startsWith('webspeech:')) return null;
@@ -202,22 +206,22 @@ export function createTts(ctx: TtsCtx): Tts {
   }
 
   /**
-   * KOKORO (ADR-0186, ADR-0198; issue #181): through the game's port, the voice's text becomes espeak-ng phonemes in its language,
-   * then the model's ids and a waveform. WebGPU only where a short test synthesis is speech — measured, WebGPU can run and return
-   * noise — and WASM with threads otherwise (ADR-0192).
+   * KOKORO (ADR-0186, ADR-0216; issues #181, #200): the voice's text becomes espeak-ng phonemes in its language, then the model's
+   * ids and a waveform. WebGPU only where a short test synthesis is speech — measured, WebGPU can run and return noise — and WASM
+   * with threads otherwise (ADR-0192).
    */
   function carregarMotorKokoro(fonte: VozNeural): void {
-    const carregar = ctx.carregarKokoro;
+    const carregar = ctx.loadKokoro ?? daEntrega;
     const kv = VOZES_KOKORO.find((v) => v.voice === fonte.voice);
-    if (!carregar || !kv) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
+    if (!kv) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
     ttsLoading = true; vozCarregada = fonte.voice; const t0 = performance.now(); ctx.srSay(t('sr.tts.downloading'));
     carregar().then(async (mod) => {
       const [vocabulario, tabela] = await Promise.all([mod.vocabulario(), mod.voz(kv.voice)]);
-      const sintetizarCom = async (sessao: SessaoKokoro, texto: string): Promise<Float32Array> => {
+      const sintetizarCom = async (sessao: KokoroSession, texto: string): Promise<Float32Array> => {
         const ids = tokenizar(await mod.fonemizar(texto, kv.espeak), vocabulario);
         return sessao.sintetizar(ids, estiloDaFrase(tabela, ids.length - 2));
       };
-      let sessao: SessaoKokoro | null = null;
+      let sessao: KokoroSession | null = null;
       try {
         const gpu = await mod.sessao('webgpu');
         if (eFala(await sintetizarCom(gpu, t('tts.kokoro.teste')))) { sessao = gpu; kokoroDispositivo = 'webgpu'; }
@@ -239,10 +243,10 @@ export function createTts(ctx: TtsCtx): Tts {
       if (sel !== 'webspeech') ctx.srAlert(t('sr.tts.engineNoLanguage'));
       return;
     }
-    // ESTA MONTAGEM NÃO TRAZ MOTOR NEURAL (ADR-0094). Vem ANTES da pergunta do idioma de propósito: sem
-    // porta, não há voz neural em idioma nenhum, e dizer «não há voz para o teu idioma» faria a criança
-    // pensar que trocar de idioma resolveria. `ttsFailed` para não repetir a pergunta a cada fala.
-    if (!ctx.carregarKokoro) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
+    // ESTE JOGO NÃO PEDIU VOZ NEURAL (ADR-0216 §3). Vem ANTES da pergunta do idioma de propósito: sem a
+    // declaração, não há voz neural em idioma nenhum — a entrega não traz o modelo —, e dizer «não há voz para
+    // o teu idioma» faria a criança pensar que trocar de idioma resolveria. `ttsFailed` para não repetir a cada fala.
+    if (!ctx.neuralVoice) { ttsFailed = true; ctx.srAlert(t('sr.tts.neuralNotBundled')); return; }
     // The voice in use for the current language (ADR-0185); a browser voice in use with Kokoro set explicitly gives way to the
     // language's first Kokoro voice. None: another language's voice is NOT fetched — it would read this text with the wrong phonetics.
     const atual = vozAtual();
@@ -273,7 +277,7 @@ export function createTts(ctx: TtsCtx): Tts {
     getEngineSel: motorSel, setEngineSel: (v) => { ttsEngineSelExplicito = v; },
     getEngine: () => ttsEngine, getVoiceObj: () => _ttsVoiceObj, setVoiceObj: (v) => { _ttsVoiceObj = v; },
     get loading() { return ttsLoading; }, get failed() { return ttsFailed; }, get narrateCount() { return _narrateCount; },
-    get neuralDisponivel() { return !!ctx.carregarKokoro; },
+    get neuralDisponivel() { return !!ctx.neuralVoice; },
     get kokoroDispositivo() { return kokoroDispositivo; },
     vozes, vozAtual, setVoz,
   };

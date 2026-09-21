@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// KOKORO SPEAKS THROUGH THE GAME'S PORT (ADR-0198, ADR-0207; issue #181): the voices of the language listed, marked by quality, and a
-// voice picked speaks on WebGPU only where a test synthesis is speech — WASM otherwise.
+// KOKORO SPEAKS, AND THE ENGINE LOADS IT (ADR-0216 §1; issues #181, #200): the voices of the language listed, marked by quality, and a
+// voice picked speaks on WebGPU only where a test synthesis is speech — WASM otherwise. The game says only that it wants a neural
+// voice; the loader that would read the delivery is replaced here, because this case has no wasm engine.
 //
 // 📏 Why the test synthesis: on 2026-09-14 WebGPU on an AMD gcn-5 ran Kokoro and returned samples up to 2×10⁷ — noise.
 //
 // MUTATIONS CHECKED — at the end of the file.
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { createTts } from '../app/js/platform/tts.js';
 import { setLocale } from '../app/js/core/i18n.ts';
 import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
@@ -13,7 +14,12 @@ import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
 const tom = (n = 24000) => Float32Array.from({ length: n }, (_, i) => Math.sin(i / 8) * 0.4);
 const ruido = () => { const o = tom(2400); o[9] = -20_561_670; return o; };
 
-/** A fake Kokoro port: `gpuFala` says whether WebGPU returns speech; every session and phonemization is recorded. */
+// The engine's own loader, for the case that goes through `createGame` and so cannot inject one: `vi.mock` is hoisted above every
+// import, so it reads the fake through this binding, set when that case builds the game.
+let doCreateGame = null;
+vi.mock('../app/js/platform/kokoro-runtime.js', () => ({ loadKokoroRuntime: async () => doCreateGame.carregar() }));
+
+/** A fake Kokoro runtime: `gpuFala` says whether WebGPU returns speech; every session and phonemization is recorded. */
 function portaFalsa({ gpuFala }) {
   const registo = { sessoes: [], fonemizados: [], vozes: [] };
   const modulo = {
@@ -36,7 +42,7 @@ function ttsCom(porta) {
   return createTts({
     srSay: () => {}, srAlert: () => {}, ensureAC: () => new AudioContext(), catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => ({ tts: { on: true } }),
-    carregarKokoro: porta.carregar, getSpeechPpm: () => 254,
+    neuralVoice: true, loadKokoro: porta.carregar, getSpeechPpm: () => 254,
   });
 }
 
@@ -131,8 +137,9 @@ describe('the marks in the hearing panel (ADR-0198 §3)', () => {
     document.body.innerHTML = '<p id="sr-status" role="status"></p><p id="sr-alert" role="alert"></p>'
       + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
     const { createGame } = await import('../app/js/boot/create-game.js');
+    doCreateGame = portaFalsa({ gpuFala: true }); // what the engine's loader answers in this case
     motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoMinima(), host: { doc: document, win: window }, baixarPesados: false,
-      players: [{ ctrl: 0 }], carregarKokoro: portaFalsa({ gpuFala: true }).carregar });
+      players: [{ ctrl: 0 }], uses: { neuralVoice: true } });
     motor.pausa.mostrar(0);
     document.querySelector('#vp-pause-0 .pm-btn[data-act="options"]').click();
     document.querySelector('#vp-pause-0 .pm-btn[data-act="audio"]').click();

@@ -78,7 +78,7 @@ import * as state from '../core/state.js';
 import { vlibrasOpen, toggleLibras } from '../ui/vlibras.js';
 import { conformanceProblems, type GameDeclaration } from '../core/contract.js';
 import { criarPilha, type SceneStack } from '../core/scenes.js';
-import { createTts, type CarregarKokoro } from '../platform/tts.js';
+import { createTts } from '../platform/tts.js';
 import { createReading, type Reading } from '../platform/reading.js';
 import { ensureAC, catNode, audioOut, soundOn, setSoundOn, volume, setVolume, audioCat, initAudioMixer, tonePan, audioCtx, setCatGain, setHearingLossGraph } from '../platform/audio.js';
 import { createAudioSonar, type AudioSonar, type SonarPlayer } from '../platform/audio-sonar.js';
@@ -216,9 +216,9 @@ export interface Declinios {
   /** Sem "ator da pausa" — quem apertou o botão que abriu o menu. */
   readonly semAtorDePausa?: boolean;
   /**
-   * No neural voice — this game does not fill the Kokoro port (ADR-0198).
+   * No neural voice — this game does not declare `uses: { neuralVoice: true }` (ADR-0216 §3).
    *
-   * Exists because the absence is otherwise silent: a game without the port has only the browser's voice, which a school
+   * Exists because the absence is otherwise silent: a game that does not ask for one has only the browser's voice, which a school
    * Chromebook may not have for the child's language. Declining is a choice; not declaring is an omission, and `problems` says so.
    */
   readonly semVozNeural?: boolean;
@@ -341,19 +341,19 @@ export interface CreateGameOptions {
    */
   readonly genero?: string;
   /**
-   * HOW THE NEURAL VOICE LOADS — Kokoro, the engine's only neural voice (ADR-0198, ADR-0207; issue #181), through a port the game
-   * fills: it loads its own phonemizer (espeak-ng, GPL-3.0-or-later), runtime (onnxruntime) and model, and hands the engine four
-   * functions (`ModuloKokoro`). The engine names no provider (ADR-0094: a provider named here lands its runtime in every consumer).
-   * Absent = no Kokoro voice is listed and the audio panel does not offer the neural engine; the browser's voice speaks.
+   * WHAT THIS GAME USES OF THE VOICE (ADR-0216 §3) — never how. Two answers, and each one is a sentence about the child, not
+   * about a library:
+   *
+   * · `neuralVoice: true` — a child who cannot read is read TO by this game, so it wants a voice even where the device has
+   *   none of its own. The engine loads Kokoro from the delivery at the first such utterance (ADR-0216 §1); the game names no
+   *   phonemizer, runtime or model. Absent, no Kokoro voice is listed, the audio panel does not offer the neural engine, and
+   *   the 372 MB of model, voices and runtime never enter the delivery.
+   * · `reading: true` — a child reads aloud TO this game and it wants the text; the engine decides who hears her, and a
+   *   delivery carries the reading model of her language because of this answer. Absent, `motor.reading.listen()` refuses and
+   *   says which line is missing: a game that asks for a microphone it never declared would also be a delivery without the
+   *   model, which is a silence in a school nobody can debug.
    */
-  readonly carregarKokoro?: CarregarKokoro;
-  /**
-   * WHAT THIS GAME USES OF THE VOICE (ADR-0216 §3) — never how. `reading: true` says a child reads aloud to this game and it
-   * wants the text; the engine decides who hears her, and a delivery carries the reading model of her language because of
-   * this answer. Absent, `motor.reading.listen()` refuses and says which line is missing: a game that asks for a microphone
-   * it never declared would also be a delivery without the model, which is a silence in a school nobody can debug.
-   */
-  readonly uses?: { readonly reading?: boolean };
+  readonly uses?: { readonly reading?: boolean; readonly neuralVoice?: boolean };
   /**
    * FETCH THE HEAVY FILES ON THE FIRST LOAD? Default **yes** (ADR-0110 (b), ADR-0116, ADR-0119).
    *
@@ -759,12 +759,12 @@ export function createGame(o: CreateGameOptions): Engine {
     if (mundo.kind === 'element' && !$(mundo.selector)) {
       p.push(`the declared world ${mundo.selector} is not in the page: the colour correction and vision filters a child turns on reach nothing — fix \`world()\``);
     }
-    // ⚠️ MIXED, and it lives on this side for its second half: the port is the host's (`carregarKokoro`), but the decline is the
-    // CARTRIDGE's — so the line can appear or go quiet when the game changes under the same host.
-    if (!o.carregarKokoro && !declines().semVozNeural) {
+    // ⚠️ MIXED, and it lives on this side for its second half: the answer is the host's (`uses.neuralVoice`), but the decline is
+    // the CARTRIDGE's — so the line can appear or go quiet when the game changes under the same host.
+    if (!o.uses?.neuralVoice && !declines().semVozNeural) {
       p.push(
         'there is no neural voice: a child who cannot read gets the system voice, which a school Chromebook may not have '
-        + 'for the child\'s language — pass `carregarKokoro` (ADR-0198) or declare `declines.semVozNeural`',
+        + 'for the child\'s language — declare `uses: { neuralVoice: true }` (ADR-0216) or `declines.semVozNeural`',
       );
     }
     const assentos = (cartucho.players ?? []).length;
@@ -786,7 +786,7 @@ export function createGame(o: CreateGameOptions): Engine {
   const tts = createTts({
     srSay, srAlert, ensureAC, catNode, audioOut,
     getSoundOn: () => soundOn, getVolume: () => volume, getAudioCat: () => audioCat,
-    carregarKokoro: o.carregarKokoro,
+    neuralVoice: !!o.uses?.neuralVoice, // ADR-0216 §3: the game says it wants one; the engine loads it
     getSpeechPpm: () => state.speechPpm, // ADR-0183 §1: the child's speech rate
   });
   // 📌 A linha da voz neural mudou-se para `problemasDoCartucho()`: o declínio que a cala é do jogo.
@@ -3466,7 +3466,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * queira mostrar «faltam N MB» ou «a voz não desceu» tem por onde; a engine não inventa uma superfície.
    */
   if (o.baixarPesados !== false) {
-    void baixarPesados({ apenas: pesadosDoArranque({ kokoro: !!o.carregarKokoro }), aoProgredir: o.aoProgredirPesados })
+    void baixarPesados({ apenas: pesadosDoArranque({ kokoro: !!o.uses?.neuralVoice }), aoProgredir: o.aoProgredirPesados })
       .catch(() => { /* uma descarga de fundo não derruba arranque nenhum */ });
   }
 

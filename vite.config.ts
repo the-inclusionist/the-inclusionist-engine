@@ -91,8 +91,9 @@ export default defineConfig({
         // Workbox e 2 MB: so acrescentar a extensao faria ele PULAR o arquivo com um aviso, e o sintoma seria
         // identico ao de antes. A troca e consciente: o precache passa de ~2 MB para ~28 MB, e a primeira visita
         // online passa a baixar tudo — que e exatamente o contrato de um PWA que precisa funcionar sem rede depois.
-        // `mjs`: onnxruntime's thread-worker script, which a game's Kokoro port points the workers at (ADR-0198, issue #181) —
-        // outside the precache the voice loses its threads offline.
+        // `mjs`: a module a worker loads by URL. onnxruntime's thread script is no longer one of them — since ADR-0216 it comes
+        // from `pesados/`, which the delivery fills and the rule below caches — but the extension stays: a page that emits one and
+        // leaves it outside the precache loses it offline, and the symptom is a feature that simply never starts.
         globPatterns: ['**/*.{js,mjs,css,html,png,svg,woff2,txt,json,webmanifest,wasm}'],
         maximumFileSizeToCacheInBytes: 32 * 1024 * 1024, // 32 MB: cabe o runtime de 25,6 MB com folga
         cleanupOutdatedCaches: true,
@@ -101,7 +102,7 @@ export default defineConfig({
         manifestTransforms: [async (entradas) => revisarPaginasPelosCabecalhos(entradas, hashDosCabecalhos(readFileSync(join(RAIZ_REPO, 'app', 'public', '_headers'), 'utf8')))],
         runtimeCaching: [
           // The delivery's own `pesados/` (ADR-0177, issue #173): what a page asks at the delivery path — Kokoro's model
-          // and voices, through the game's port — is answered from the checked cache, where the fetcher keeps it under the upstream address. On a miss
+          // and voices, and the runtime that speaks them (ADR-0216) — is answered from the checked cache, where the fetcher keeps it under the upstream address. On a miss
           // the request goes to this origin, never a third party; the fetcher's own download passes through the same way.
           {
             urlPattern: ({ sameOrigin, url }) => sameOrigin && url.pathname.includes('/pesados/'),

@@ -109,11 +109,6 @@ const REDE = /\bfetch\b|\bimport\s*\(|\.src\s*=|XMLHttpRequest|navigator\.sendBe
  * que deixe de tocar na rede também — que é como o inventário ENCOLHE quando a #129 for resolvida.
  */
 const TOCAM_NA_REDE = {
-  'consumer-quiz/main-quiz.ts': 'LOCAL. `import(\'./kokoro-carregar.js\')` — the quiz\'s own chunk, cut by Vite and loaded only when '
-    + 'a child picks a Kokoro voice (ADR-0198, #181)',
-  'consumer-quiz/kokoro-carregar.ts': 'LOCAL. The quiz demo\'s Kokoro port (ADR-0198, #181): `fetch` of espeak-ng\'s WASM, an asset the '
-    + 'build emitted beside the page, and of the model, tokenizer and voices at `pesados/` on the page\'s own origin (ADR-0177) — '
-    + 'paths built by `caminhoNaEntrega`, never an upstream host',
   'platform/kokoro-port.ts': 'LOCAL. `fetch` of the model, the tokenizer and the voice tables at `pesados/` on the page\'s own '
     + 'origin (ADR-0177) — paths built by `caminhoNaEntrega`, never an upstream host. It was the quiz demo\'s port until ADR-0216 '
     + 'moved it into the engine, so no game has to copy it',
@@ -124,8 +119,10 @@ const TOCAM_NA_REDE = {
   'platform/vision.ts': 'LOCAL. `import()` of MediaPipe\'s `vision_bundle.mjs` (and, inside it, its wasm and the face model) at `pesados/` '
     + 'on the page\'s own origin (ADR-0177, ADR-0213, #196) — addresses built by `caminhoNaEntrega`, never an upstream host, and only '
     + 'after the checked cache holds every file',
-  'platform/tts.ts': 'LOCAL. `el.src = som.url` — a `blob:` URL of the WAV the neural voice just synthesised on this machine, played '
-    + 'through a media element so the speech rate keeps the pitch (ADR-0183 §1). Nothing is fetched',
+  'platform/tts.ts': 'LOCAL. Two, and neither leaves the machine: `el.src = som.url`, a `blob:` URL of the WAV the neural voice just '
+    + 'synthesised here, played through a media element so the speech rate keeps the pitch (ADR-0183 §1); and '
+    + '`import(\'./kokoro-runtime.js\')`, a chunk of this same package, cut by Vite and loaded at the FIRST neural utterance '
+    + '(ADR-0216 §5) — a game that never speaks neurally never reaches the module that names espeak-ng',
   'core/i18n.ts': 'LOCAL. `import(\'../i18n/en.js\')` — os dicionários de en/es são chunks do próprio pacote, '
     + 'cortados pelo Vite e servidos pelo service worker. Nada sai da máquina; o `import()` está no crivo '
     + 'porque com um especificador absoluto ele SAI, e é por isso que o discriminador o inclui',

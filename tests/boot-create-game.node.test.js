@@ -14,7 +14,7 @@
 //
 // A segunda EXECUTA, num DOM de mentira. Ela existe porque a primeira metade é cega para o que importa
 // depois: se a ordem obrigatória é mesmo obrigatória, se declarar mal explode, se faltar marcação não explode.
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -338,12 +338,12 @@ describe('createGame em execução', () => {
   it('[Right] com o documento completo, `problems` só acusa o que de fato falta', async () => {
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
-    // ⚠️ A porta da voz neural entra aqui em 2026-09-08 porque um jogo REAL a abre (ADR-0094, uma linha). Sem
+    // ⚠️ A declaração da voz neural entra aqui em 2026-09-08 porque um jogo REAL a abre (ADR-0094, uma linha). Sem
     // ela, o `problems` acusaria — correctamente — e este caso deixaria de medir o que diz medir.
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      carregarKokoro: () => Promise.resolve({}),
-      // ⚠️ O `preset` ENTRA AQUI em 2026-09-12 pela mesma razão que a porta da voz neural entrou em 08/09: a
+      uses: { neuralVoice: true },
+      // ⚠️ O `preset` ENTRA AQUI em 2026-09-12 pela mesma razão que a declaração da voz neural entrou em 08/09: a
       // ajuda passou a ser montada pela engine (ADR-0147 §4) e, sem as palavras do jogo, ela acusa — com
       // razão. Sem esta linha o caso deixaria de medir o que diz medir.
       preset: { action2: { label: 'Confirmar' } },
@@ -364,7 +364,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso();
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      carregarKokoro: () => Promise.resolve({}),
+      uses: { neuralVoice: true },
     });
     const daAjuda = motor.problems.filter((p) => /help screen/.test(p));
     expect(daAjuda, 'sem `preset` a ajuda sumiu e nada o disse').toHaveLength(1);
@@ -374,13 +374,13 @@ describe('createGame em execução', () => {
   });
 
   it('⚠️ [Zero] with NO neural voice declared, the engine SAYS so', async () => {
-    // A game without the Kokoro port (ADR-0198, ADR-0207) has only the browser's voice, and nothing said so: the line is the warning.
+    // A game that does not ask for one (ADR-0216 §3) has only the browser's voice, and nothing said so: the line is the warning.
     const { createGame } = await import('../app/js/boot/create-game.js');
     const { doc, win } = domFalso();
     const motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { doc, win } });
     const linha = motor.problems.find((p) => /neural voice/.test(p));
     expect(linha, 'sem voz neural e a engine não disse nada').toBeTruthy();
-    expect(linha, 'the way out is not named').toMatch(/carregarKokoro/);
+    expect(linha, 'the way out is not named').toMatch(/neuralVoice/);
     expect(linha, 'the decline is not named').toMatch(/semVozNeural/);
     expect(linha, 'what the child loses is not said').toMatch(/cannot read/);
   });
@@ -476,7 +476,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso();
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      carregarKokoro: () => Promise.resolve({}),
+      uses: { neuralVoice: true },
     });
     // O `nav` é montado com as respostas da PRÓPRIA engine — não com no-ops. `menuNavKey` é o tradutor de
     // teclado, e é por ele que o direcional chega à barra.
@@ -557,7 +557,7 @@ describe('createGame em execução', () => {
     const { doc, win } = domFalso({ mapa: { '#game-region': regiao, '#vp-pause-0': cartaoMapeado } });
     const motor = createGame({ acomodacoes: SEM_ASSUNTO,
       declaration: declaracaoValida(), host: { doc, win },
-      carregarKokoro: () => Promise.resolve({}),
+      uses: { neuralVoice: true },
     });
 
     expect(typeof motor.pausa.mostrar, 'a engine monta e não sabe mostrar').toBe('function');
@@ -863,6 +863,35 @@ describe('createGame em execução', () => {
     expect(motor.declaration.objectiveOf(0)).toEqual({
       name: { text: 'perguntas', gender: 'f', plural: true }, have: 0, need: 3,
     });
+  });
+
+  /**
+   * 🎯 O QUE A DECLARAÇÃO CAUSA, e não só o que ela diz (ADR-0216 §3): a lista que o arranque baixa sai da resposta do jogo. Um
+   * jogo que não pede voz neural não pode pagar 372 MB de modelo, vozes e runtime no link de uma escola — e o contrário é pior
+   * de ver, porque ninguém repara num download que acontece.
+   *
+   * ⚠️ O `baixarPesados` é substituído aqui porque a lista só existe na CHAMADA: o que se mede é o argumento, que é a decisão.
+   */
+  it('🔴 [Right] o arranque só baixa a voz neural do jogo que a pediu', async () => {
+    const pedidos = [];
+    vi.doMock('../app/js/platform/pesados.js', async (original) => ({
+      ...(await original()),
+      baixarPesados: async ({ apenas }) => { pedidos.push(apenas); },
+    }));
+    vi.resetModules();
+    try {
+      const { createGame } = await import('../app/js/boot/create-game.js');
+      createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() } });
+      createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracaoValida(), host: { ...domFalso() }, uses: { neuralVoice: true } });
+      const [semVoz, comVoz] = pedidos;
+      expect(semVoz, 'a lista do arranque não foi pedida').toBeTruthy();
+      expect(semVoz.some((id) => id.startsWith('voz:')), 'um jogo mudo baixou a voz neural que nunca vai usar').toBe(false);
+      expect(comVoz.some((id) => id === 'voz:kokoro:modelo'), 'o jogo pediu a voz e o modelo dela não desce').toBe(true);
+      expect(comVoz.some((id) => id === 'voz:runtime:onnx'), 'o modelo desce e quem o corre não').toBe(true);
+    } finally {
+      vi.doUnmock('../app/js/platform/pesados.js');
+      vi.resetModules();
+    }
   });
 
   it('[Right] um jogo SEM FASES não precisa inventar uma — `isNavigable` ausente vale `true`', async () => {

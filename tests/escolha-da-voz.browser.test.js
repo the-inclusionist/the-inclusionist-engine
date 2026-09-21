@@ -1,11 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // THE VOICE CHOICE, MOUNTED (ADR-0185; issue #180): the hearing panel of a real `createGame` lists the voices of the page's
-// language, and the choice reaches the narration. The voices are Kokoro's, through a fake port (ADR-0198, ADR-0207), on a browser
-// that offers none of its own — where it offers one, it is listed first (ADR-0200).
+// language, and the choice reaches the narration. The voices are Kokoro's, on a browser that offers none of its own — where it
+// offers one, it is listed first (ADR-0200). The game declares `uses: { neuralVoice: true }` and nothing else (ADR-0216 §3); what
+// stands in for the delivery here is the engine's own loader, replaced by `vi.mock` — there is no wasm engine in this case.
 //
 // MUTATIONS CHECKED — at the end of the file (shared with `escolha-da-voz.node` and the panel cases in `settings-audio.browser`).
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { SEM_ASSUNTO } from './fixtures/respostas-de-acomodacao.js';
+
+vi.mock('../app/js/platform/kokoro-runtime.js', () => ({
+  loadKokoroRuntime: async () => ({
+    fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }), voz: async () => new Float32Array(256),
+    sessao: async () => { throw new Error('no session in this case'); },
+  }),
+}));
 
 let motor;
 let antes;
@@ -17,10 +25,6 @@ const declaracao = () => ({
 });
 
 const getVoicesOriginal = window.speechSynthesis.getVoices;
-const fakeKokoroPort = async () => ({
-  fonemizar: async () => 'a', vocabulario: async () => ({ a: 1 }), voz: async () => new Float32Array(256),
-  sessao: async () => { throw new Error('no session in this case'); },
-});
 
 beforeAll(async () => {
   window.speechSynthesis.getVoices = () => [];
@@ -30,7 +34,7 @@ beforeAll(async () => {
     + '<div id="game-region" tabindex="-1"></div><div id="title-icons"></div>';
   const { createGame } = await import('../app/js/boot/create-game.js');
   motor = createGame({ acomodacoes: SEM_ASSUNTO, declaration: declaracao(), host: { doc: document, win: window }, baixarPesados: false, players: [{ ctrl: 0 }],
-    carregarKokoro: fakeKokoroPort });
+    uses: { neuralVoice: true } });
 });
 afterAll(() => {
   window.speechSynthesis.getVoices = getVoicesOriginal;

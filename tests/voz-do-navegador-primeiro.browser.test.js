@@ -20,7 +20,9 @@ function montar({ vozesDoNavegador, comPorta = true }) {
   return createTts({
     srSay: () => {}, srAlert: () => {}, ensureAC: () => new AudioContext(), catNode: () => null, audioOut: () => null,
     getSoundOn: () => true, getVolume: () => 1, getAudioCat: () => ({ tts: { on: true } }),
-    ...(comPorta ? { carregarKokoro: () => { portaChamada++; return new Promise(() => {}); } } : {}),
+    // `comPorta` is now the GAME'S ANSWER (ADR-0216 §3): declared, the neural voice is listed and loadable — and the loader is
+    // replaced by one that never settles, so a case can measure that the browser's voice spoke without it.
+    ...(comPorta ? { neuralVoice: true, loadKokoro: () => { portaChamada++; return new Promise(() => {}); } } : {}),
   });
 }
 

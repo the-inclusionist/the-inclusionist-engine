@@ -807,6 +807,23 @@ catalogue entry `visao:olhar` (1 895 169 bytes), so the install and `inclusionis
 engine's quick bar (ADR-0213), and a game that wants the commands declares `onCommand` (note AH). 📏 Measured on 2026-09-16:
 `game-platformer` imports five names from `ui/webcam` (`app/js/main.ts`) and has `#opt-eyes` (`app/index.html`); no other sibling does.
 
+## AJ · The engine loads the neural voice; the Kokoro port left (ADR-0216, issue #200)
+
+**What left.** `CreateGameOptions.carregarKokoro`. It was the port a game filled with its own phonemizer, ONNX runtime and paths —
+about 200 lines each game copied, and the Dev, 2026-09-21: «O jogo não deve precisar saber como isso funciona». `TtsCtx.carregarKokoro`
+stays, as the seam a test injects; nothing in a game passes it. `ModuloKokoro`, `SessaoKokoro` and `CarregarKokoro` moved from
+`platform/tts` to `platform/kokoro` and are still re-exported from `platform/tts`, so an import of either path keeps working.
+
+**What entered (additive).** `CreateGameOptions.uses.neuralVoice` — the game says a child is read TO by it, and the engine loads
+Kokoro from the delivery at the first such utterance (`platform/kokoro-runtime`, `platform/kokoro-port`). The declaration, and no
+longer the port, is what lists the Kokoro voices, offers the neural engine in the hearing panel and puts the model, the voices and
+the runtime (372 MB) in the delivery.
+
+**What to do:** replace `carregarKokoro: …` with `uses: { neuralVoice: true }` and delete the loader, the port and the npm
+dependencies they needed (`espeak-ng`, `onnxruntime-web` — the engine reads both from `pesados/`, so nobody installs them). A game
+that does not want a neural voice declares `declines.semVozNeural`, as before. 📏 Measured on 2026-09-21: the only consumer of the
+port was this repository's quiz demo, deleted in the same commit; no sibling repository names `carregarKokoro`.
+
 ## E · What is ADDITIVE, listed so nobody migrates for nothing
 
 | | |

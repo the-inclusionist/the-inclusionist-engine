@@ -40,7 +40,7 @@ describe('a language no voice speaks', () => {
 
   it('🔴 [Right] no voice of another language is fetched', async () => {
     const pedidas = [];
-    const tts = montar({ carregarKokoro: porta(pedidas) });
+    const tts = montar({ neuralVoice: true, loadKokoro: porta(pedidas) });
     tts.setEngineSel('kokoro');
     tts.loadTTS();
     await assentar();
@@ -61,7 +61,7 @@ describe('English, where many voices speak', () => {
   it('🔴 [Right] the stored pick is the voice in use, not the first of the language', async () => {
     lingua.tag = 'en';
     const pedidas = [];
-    const tts = montar({ carregarKokoro: porta(pedidas) });
+    const tts = montar({ neuralVoice: true, loadKokoro: porta(pedidas) });
     expect(tts.vozes()[0]?.voice, 'Heart first (ADR-0198 §3)').toBe('af_heart');
     expect(tts.setVoz('af_bella')).toBe(true);
     expect(tts.vozAtual()?.voice).toBe('af_bella');
@@ -73,7 +73,7 @@ describe('English, where many voices speak', () => {
   it('🔴 [Right] a new pick after the engine loaded loads the new voice', async () => {
     lingua.tag = 'en';
     const pedidas = [];
-    const tts = montar({ carregarKokoro: porta(pedidas) });
+    const tts = montar({ neuralVoice: true, loadKokoro: porta(pedidas) });
     tts.narrate('hello');
     await assentar();
     expect(pedidas).toEqual(['af_heart']);

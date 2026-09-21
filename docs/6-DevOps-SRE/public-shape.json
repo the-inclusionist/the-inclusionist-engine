@@ -17,7 +17,6 @@
       "acomodacoes",
       "aoProgredirPesados?",
       "baixarPesados?",
-      "carregarKokoro?",
       "comIndice?",
       "controleNaTela?",
       "declaration",
@@ -72,23 +71,6 @@
       "velocidadeDoJogo"
     ],
     "type GanchosDoCartucho": "Omit<MetadeDoJogo, 'declaration'>"
-  },
-  "consumer-quiz/kokoro-porta.ts": {
-    "interface SistemaDeFicheirosDoEspeak": [
-      "readFile",
-      "writeFile"
-    ],
-    "interface RuntimeOnnx": [
-      "InferenceSession",
-      "Tensor"
-    ],
-    "interface DependenciasDaPortaKokoro": [
-      "base",
-      "buscar",
-      "espeak",
-      "ort"
-    ],
-    "type FabricaEspeak": "(opcoes: { readonly arguments: readonly string[]"
   },
   "core/accommodation-subjects.ts": {
     "interface SubjectInputs": [
@@ -1264,17 +1246,27 @@
     "interface KokoroRuntimeDeps": [
       "base",
       "compileWasm?",
-      "fetch",
-      "importModule",
+      "fetch?",
+      "importModule?",
       "instantiateWasm?"
     ]
   },
   "platform/kokoro.ts": {
+    "interface KokoroSession": [
+      "sintetizar"
+    ],
+    "interface KokoroModule": [
+      "fonemizar",
+      "sessao",
+      "vocabulario",
+      "voz"
+    ],
     "interface VozKokoro": [
       "boa",
       "engine",
       "espeak"
-    ]
+    ],
+    "type LoadKokoro": "() => Promise<KokoroModule>"
   },
   "platform/pesados-catalogo.ts": {
     "interface Pesado": [
@@ -1359,18 +1351,8 @@
     "type ComandoOuvido": "{ readonly tipo: 'palavra'"
   },
   "platform/tts.ts": {
-    "interface SessaoKokoro": [
-      "sintetizar"
-    ],
-    "interface ModuloKokoro": [
-      "fonemizar",
-      "sessao",
-      "vocabulario",
-      "voz"
-    ],
     "interface TtsCtx": [
       "audioOut",
-      "carregarKokoro?",
       "catNode",
       "criarAudio?",
       "ensureAC",
@@ -1378,6 +1360,8 @@
       "getSoundOn",
       "getSpeechPpm?",
       "getVolume",
+      "loadKokoro?",
+      "neuralVoice?",
       "srAlert",
       "srSay"
     ],
@@ -1399,8 +1383,7 @@
       "ttsSpeak",
       "vozAtual",
       "vozes"
-    ],
-    "type CarregarKokoro": "() => Promise<ModuloKokoro>"
+    ]
   },
   "platform/vision-loop.ts": {
     "interface VisionLoopDeps": [

@@ -93,6 +93,31 @@ describe('the neural voice, loaded by the engine', () => {
     const imports = [...src.matchAll(/^import[^;]*from '([^']+)'/gm)].map((m) => m[1]);
     expect(imports.every((s) => s.startsWith('./') || s.startsWith('../')), `a bare import entered: ${imports.join(' ')}`).toBe(true);
   });
+
+  /**
+   * 🔴 AND NOBODY MAY IMPORT IT STATICALLY (ADR-0216 §5: «everything heavy loads late»). This module is the one that names
+   * espeak-ng and onnxruntime, so a single `import … from './kokoro-runtime.js'` anywhere in the engine puts them in the chunk of
+   * every game that merely links it — the very cost the erratum measured away. Nothing in the reading of a `problems` line or a
+   * type check would show it: the page would just be 45 MiB heavier for a game that never speaks.
+   *
+   * ⚠️ It is asserted over the WHOLE tree and not over `platform/tts` alone, because the next module to want the voice would be
+   * the one to pay the cost, and it would not be reading this file.
+   */
+  it('🔴 [Zero] no module imports the runtime statically — it is reached by `import()` or not at all', async () => {
+    const { readFileSync, readdirSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const ficheiros = [];
+    const descer = (dir) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (e.isDirectory()) descer(join(dir, e.name));
+        else if (e.name.endsWith('.ts')) ficheiros.push(join(dir, e.name));
+      }
+    };
+    descer('app/js');
+    expect(ficheiros.length, 'the walk found nothing: a gate over an empty tree approves everything').toBeGreaterThan(100);
+    const estaticos = ficheiros.filter((f) => /^\s*import\s[^(]*from\s+'[^']*kokoro-runtime\.js'/m.test(readFileSync(f, 'utf8')));
+    expect(estaticos, 'a static import would bundle espeak-ng and onnxruntime into every game').toEqual([]);
+  });
 });
 
 // MUTATIONS CHECKED (2026-09-21) — `scratchpad/mutar-kokoro-runtime.py`:
@@ -101,3 +126,5 @@ describe('the neural voice, loaded by the engine', () => {
 //   · the wasm compiled per sentence                              → «compiled ONCE»
 //   · a missing runtime loaded as `undefined` instead of refusing → «REFUSES with its name»
 //   · `import 'espeak-ng'` put back                               → «nothing is imported from npm»
+//   · `platform/tts` importing this module statically             → «no module imports the runtime statically»
+//   · the walk stopped at the top folder (empty tree)             → «the walk found nothing»

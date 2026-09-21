@@ -17,7 +17,7 @@
 import { createKokoroPort, type EspeakFactory, type OnnxRuntime } from './kokoro-port.js';
 import { caminhoNaEntrega } from './pesados.js';
 import { PESADOS } from './pesados-catalogo.js';
-import type { ModuloKokoro } from './tts.js';
+import type { KokoroModule } from './kokoro.js';
 
 /**
  * ⚠️ THE ADDRESSES ARE NOT WRITTEN HERE. They live once, in the catalogue, with the sha256 that is checked before anything is
@@ -38,9 +38,10 @@ const ORT_WASM = 'voz:runtime:onnx:wasm';
 export interface KokoroRuntimeDeps {
   /** The page's address, which `pesados/` is resolved against. */
   readonly base: string;
-  readonly fetch: (url: string) => Promise<Response>;
+  /** Injected so a case can answer without a network; the default is the page's own `fetch`. */
+  readonly fetch?: (url: string) => Promise<Response>;
   /** `import()`, injected so a case can hand in the two modules without a network or a wasm engine. */
-  readonly importModule: (url: string) => Promise<unknown>;
+  readonly importModule?: (url: string) => Promise<unknown>;
   readonly compileWasm?: (bytes: ArrayBuffer) => Promise<WebAssembly.Module>;
   readonly instantiateWasm?: (module: WebAssembly.Module, imports: WebAssembly.Imports) => Promise<WebAssembly.Instance>;
 }
@@ -56,18 +57,20 @@ const atDelivery = (id: string, base: string): string => new URL(caminhoNaEntreg
  * Builds the neural voice. Everything it needs is fetched from the delivery, so a device that never had a network day has it all
  * or has none of it — and «none of it» is a refusal the caller reports, not a silence.
  */
-export async function loadKokoroRuntime(d: KokoroRuntimeDeps): Promise<ModuloKokoro> {
+export async function loadKokoroRuntime(d: KokoroRuntimeDeps): Promise<KokoroModule> {
   const compile = d.compileWasm ?? ((bytes) => WebAssembly.compile(bytes));
   const instantiate = d.instantiateWasm ?? ((module, imports) => WebAssembly.instantiate(module, imports));
+  const get = d.fetch ?? ((url: string) => fetch(url));
+  const loadModule = d.importModule ?? ((url: string) => import(/* @vite-ignore */ url) as Promise<unknown>);
 
-  const espeakModule = await d.importModule(atDelivery(ESPEAK_GLUE, d.base)) as EspeakModule;
+  const espeakModule = await loadModule(atDelivery(ESPEAK_GLUE, d.base)) as EspeakModule;
   const factory = (typeof espeakModule === 'function' ? espeakModule : espeakModule.default) as EspeakFactory | undefined;
   if (typeof factory !== 'function') throw new Error('Kokoro: espeak-ng did not load from the delivery (voz:runtime:fonemas)');
 
   // by BYTES and not by stream: a server that sends the file without `application/wasm` must not break the voice
   let compiled: Promise<WebAssembly.Module> | null = null;
   const espeak: EspeakFactory = (options) => {
-    compiled ??= d.fetch(atDelivery(ESPEAK_WASM, d.base)).then(async (r) => {
+    compiled ??= get(atDelivery(ESPEAK_WASM, d.base)).then(async (r) => {
       if (!r.ok) throw new Error(`Kokoro: HTTP ${r.status} for espeak-ng's wasm — the delivery does not carry it`);
       return compile(await r.arrayBuffer());
     });
@@ -81,11 +84,11 @@ export async function loadKokoroRuntime(d: KokoroRuntimeDeps): Promise<ModuloKok
     } as Parameters<EspeakFactory>[0]);
   };
 
-  const ortModule = await d.importModule(atDelivery(ORT_ESM, d.base)) as OrtModule;
+  const ortModule = await loadModule(atDelivery(ORT_ESM, d.base)) as OrtModule;
   const ort = ((ortModule as { default?: OrtModule }).default ?? ortModule) as OrtModule;
   if (!ort?.InferenceSession) throw new Error('Kokoro: onnxruntime did not load from the delivery (voz:runtime:onnx)');
   // ⚠️ THE THREADS LOOK FOR THEIR OWN FILES: left alone they ask a CDN, which a school without a network does not have.
   if (ort.env?.wasm) ort.env.wasm.wasmPaths = { mjs: atDelivery(ORT_GLUE, d.base), wasm: atDelivery(ORT_WASM, d.base) };
 
-  return createKokoroPort({ espeak, ort, fetch: d.fetch, base: d.base });
+  return createKokoroPort({ espeak, ort, fetch: get, base: d.base });
 }

@@ -7,7 +7,7 @@
 // The phonemizer and the ONNX runtime are INJECTED, so this half runs with no browser and no wasm: `platform/kokoro-runtime` hands
 // in the real ones, loaded from `pesados/` on the page's own origin, where the delivery put them (ADR-0177) and the service worker
 // answers from the checked cache.
-import type { ModuloKokoro, SessaoKokoro } from './tts.js';
+import type { KokoroModule, KokoroSession } from './kokoro.js';
 import { URL_DO_MODELO_KOKORO, URL_DO_TOKENIZADOR_KOKORO, urlDaVozKokoro } from './kokoro.js';
 import { caminhoNaEntrega } from './pesados.js';
 
@@ -46,7 +46,7 @@ export interface KokoroPortDeps {
 const INPUT = 'entrada.txt';
 const OUTPUT = 'fonemas.txt';
 
-export function createKokoroPort(d: KokoroPortDeps): ModuloKokoro {
+export function createKokoroPort(d: KokoroPortDeps): KokoroModule {
   const fromDelivery = async (url: string): Promise<Response> => {
     const path = caminhoNaEntrega(url);
     const r = await d.fetch(new URL(path, d.base).href);
@@ -77,7 +77,7 @@ export function createKokoroPort(d: KokoroPortDeps): ModuloKokoro {
     async sessao(device) {
       model ??= fromDelivery(URL_DO_MODELO_KOKORO).then(async (r) => new Uint8Array(await r.arrayBuffer()));
       const s = await d.ort.InferenceSession.create(await model, { executionProviders: [device] });
-      const session: SessaoKokoro = {
+      const session: KokoroSession = {
         async sintetizar(ids, style) {
           const out = await s.run({
             input_ids: new d.ort.Tensor('int64', BigInt64Array.from(ids, (id) => BigInt(id)), [1, ids.length]),
