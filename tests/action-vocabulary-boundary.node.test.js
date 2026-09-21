@@ -81,6 +81,13 @@ const DIVIDA = {
    *     que exigiu esta limpeza no mesmo minuto em que a migração acabou. --- */
 
   /* --- ⚠️ A QUARENTENA, de natureza diferente de tudo o mais nesta tabela. --- */
+  'input/voice-map.ts': 4,
+  // 🔴 ESTAS QUATRO NÃO SÃO POSIÇÕES — são PALAVRAS QUE UMA CRIANÇA DIZ. «jump», «swap», «drop» e «special» são o que o Dev
+  // escolheu em inglês para os botões 2, 4 e 3 (errata do ADR-0204), e calham de ser as mesmas cadeias dos nomes ANTIGOS das
+  // posições, que é tudo o que este crivo consegue ver. A fronteira que ele guarda fica inteira: o módulo MAPEIA palavra →
+  // `Action` do `core/actions`, e nenhuma destas cadeias atravessa para um cartucho nem para uma frase que alguém leia.
+  // ⚠️ Tirá-las do vocabulário para agradar ao crivo seria decidir, por conta do teste, que uma criança inglesa não pode
+  // dizer «jump» — que é exactamente a inversão que este ficheiro existe para impedir.
   'input/vocabulary-migration.ts': 4,
   // Este módulo TEM de dizer `jump`: traduzir o nome antigo é a função dele. Quando a tabela nasceu dentro
   // de `input/keyboard.ts`, este gate reprovou — e estava certo. A saída NÃO foi levantar o teto do

@@ -67,6 +67,11 @@ const PUBLICADOS = {
     + 'the eye control is a transport, and a transport is the engine\'s',
   'gaze-relative': 'where the gaze went, measured from its own rest (ADR-0213, issue #194); pure, and to be read by the eye control '
     + 'inside the engine. Published by the wildcard, with no external consumer — and it should not gain one: a transport is the engine\'s',
+  'voice-map': 'the words a child SAYS and the position each one presses (ADR-0204 erratum; issues #184, #190): the Dev\'s '
+    + 'vocabulary in three languages, the closed grammar built from it, and the rule that turns a growing partial into a press. '
+    + 'Pure, and to be wired by the engine behind the virtual controller like the gaze cycle. Published by the wildcard, with no '
+    + 'external consumer — and it should not gain one: speaking is a way INTO the controller, and a cartridge that recognised '
+    + 'speech itself would be offering a child words the engine never said it has',
   'switch-scan': 'the scan of «one button only» (ADR-0218, issue #201): it offers the game\'s declared positions one at a time '
     + 'and a single press takes the one showing. Pure, and to be wired by the engine behind the virtual controller, like the gaze '
     + 'cycle below it. Published by the wildcard, with no external consumer — and it should not gain one: a way INTO the '
