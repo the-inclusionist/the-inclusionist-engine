@@ -248,7 +248,7 @@ const pt: Record<string, string> = {
   'icon.tts': 'Narração por voz',
   'icon.libras': 'Modo pessoa surda',
   'icon.tea': 'Modo TEA',
-  'icon.altmove': 'Teclas de alternância',
+  'icon.altmove': 'Não precisa segurar',
   'icon.contrast': 'Alto contraste',
   'icon.cvd': 'Correção de daltonismo',
   'icon.voice': 'Comando de voz',
@@ -261,7 +261,7 @@ const pt: Record<string, string> = {
   'icon.tts.dica': 'O jogo lê em voz alta o que está escrito na tela.',
   'icon.libras.dica': 'Um intérprete de Libras mostra em sinais o que o jogo diz.',
   'icon.tea.dica': 'Deixa o jogo mais calmo ou em silêncio, para quem se sobrecarrega com estímulos.',
-  'icon.altmove.dica': 'Um toque liga a tecla e outro a desliga: não é preciso segurar.',
+  'icon.altmove.dica': 'Um toque liga e outro desliga: você não precisa ficar segurando o botão.',
   'icon.contrast.dica': 'Aumenta a diferença entre o que importa e o fundo: 3:1, 4,5:1 ou 7:1.',
   'icon.cvd.dica': 'Ajusta as cores para quem confunde vermelho e verde (protan, deutan) ou azul e amarelo (tritan).',
   'icon.idioma': 'Idioma',
@@ -450,8 +450,8 @@ const pt: Record<string, string> = {
   // redações da mesma escolha divergem, e quem ouve o anúncio depois de ler a linha merece reconhecê-la.
   'motor.facil': 'Modo Fácil',
   'motor.facil.dica': 'Gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais.',
-  'motor.altmove': 'Movimento por alternância',
-  'motor.altmove.dica': 'Toque a direção para andar sem segurar; toque de novo para parar. O pulo não interrompe a caminhada.',
+  'motor.altmove': 'Não precisa segurar',
+  'motor.altmove.dica': 'Um toque liga e outro desliga, em vez de manter o botão pressionado.',
   'motor.togglerun': 'Alternância do correr',
   'motor.togglerun.dica': 'O botão de correr fica ligado num toque, em vez de precisar ser segurado.',
   'motor.grupo.rotulo': 'Escolhas de movimento',
@@ -649,8 +649,8 @@ const pt: Record<string, string> = {
   // só consegue se a frase inteira morar no dicionário. O 'Jogador N: ' vem de `sr.player.prefix`.
   'sr.motor.easyOn': 'Modo Fácil ligado: gravidade menor, pulo mais alto, coleta tolerante, moedas no chão, sem perigos e sem quedas acidentais (segure ↓ para descer).',
   'sr.motor.easyOff': 'Modo Fácil desligado.',
-  'sr.motor.toggleMoveOn': 'Movimento por alternância ligado: toque a direção para andar sem segurar; toque de novo para parar; segure para ir mais rápido. O pulo não interrompe a caminhada.',
-  'sr.motor.toggleMoveOff': 'Movimento por alternância desligado.',
+  'sr.motor.toggleMoveOn': 'Não precisa segurar, ligado: um toque liga e outro desliga.',
+  'sr.motor.toggleMoveOff': 'Não precisa segurar, desligado.',
   // ⚠️ O MOTIVO É UM FACTO SOBRE O APARELHO, NUNCA UMA REPREENSÃO (ADR-0113 cláusula 3). Estas frases
   // dizem por que o botão não responde; «não desligue isto» repreenderia uma criança por mexer num ajuste
   // de que ela depende. QUATRO chaves e não uma com `{aparelho}`: «os gestos» é plural e «o olhar» não.

@@ -332,6 +332,14 @@ describe('the MOTOR panel sizes the pad by persona (ADR-0151 erratum)', () => {
     // 🔴 and the rows ADR-0151 removed are not in THIS panel
     const painel = document.getElementById('motora');
     for (const sel of ['#opt-facil', '#opt-altmove', '#opt-togglerun']) expect(painel.querySelector(sel), sel).toBeNull();
+    // ⚠️ THE STICKY-KEYS ROW CAME BACK (the Dev, 2026-09-21: «falta oferecê-la como opção para teclado e toque, com nome que a
+    // criança entenda»), and this cartridge is the case that shows the rule it came back under: it declares `seguraTeclas:
+    // false`, so there is nothing to hold, nothing to relieve, and the row is built and HIDDEN rather than offered dead
+    // (ADR-0106 §5). 📌 Its id is `opt-sticky` and not `opt-altmove`, which is the LEGACY panel's — a cartridge may mount that
+    // one in the same document, and two nodes with one id is a query that answers whichever came first.
+    const aderencia = painel.querySelector('#opt-sticky');
+    expect(aderencia, 'the sticky-keys row is not in the motor panel').not.toBeNull();
+    expect(aderencia.closest('.ctrl-row').hidden, 'a game that holds no key was offered the option anyway').toBe(true);
     fechar();
   });
 

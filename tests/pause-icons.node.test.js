@@ -310,7 +310,7 @@ describe('computeIconLabel — o rótulo tem de dizer o estado', () => {
       ['blind', 'modoCego', 'Modo cego'],
       ['tts', 'ttsOn', 'Narração por voz'],
       ['libras', 'librasOn', 'Modo pessoa surda'],
-      ['altmove', 'toggleMove', 'Teclas de alternância'],
+      ['altmove', 'toggleMove', 'Não precisa segurar'],
     ];
     for (const [k, flag, prefix] of cases) {
       // 'on'/'off' eram palavras INGLESAS dentro de uma frase em portugues — o defeito exato que a passada
@@ -1023,9 +1023,9 @@ describe('initPauseIcons — reflexo nos botões (DOM falso)', () => {
     setPlayers([{ viz: 'normal', toggleMove: false }]);
     const { ctx } = buildCtx();
     const api = initPauseIcons(ctx);
-    expect(api.iconLabel('altmove', 0)).toBe('Teclas de alternância: desligado');
+    expect(api.iconLabel('altmove', 0)).toBe('Não precisa segurar: desligado');
     players[0].toggleMove = true;
-    expect(api.iconLabel('altmove', 0)).toBe('Teclas de alternância: ligado');
+    expect(api.iconLabel('altmove', 0)).toBe('Não precisa segurar: ligado');
   });
 
   it('o ciclo COMPLETO (agir → refletir) mantém rótulo e classe em acordo', () => {

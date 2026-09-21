@@ -99,6 +99,8 @@ import { LOGICAL_W, LOGICAL_H } from '../core/constants.js';
 import { duracaoDaLegenda, RITMOS_DA_LEGENDA } from '../core/caption-duration.js';
 import { initSettingsPanel, type SettingsPanelApi } from '../ui/settings-panel.js';
 import { montarPainel } from '../ui/mount-panel.js';
+import { recusaDaAlternancia } from '../ui/latch-refusal.js';
+import { definirAlternanciaDeMarcha } from '../ui/settings-motor.js';
 import { carimbarOrigem, origemDoEvento } from '../input/origem-sintetica.js';
 import type { Transporte } from '../input/transporte-em-uso.js';
 import { createVirtualController, type VirtualCommand } from '../input/virtual-controller.js';
@@ -1006,7 +1008,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * `cartucho.setPhase ?? (() => {})` — um no-op. Antes disto ninguém reparava, porque nada ABRIA o cartão.
    *
    * ⚠️ ABRIR UMA PORTA SEM SAÍDA É PIOR DO QUE NÃO A ABRIR. É o §5 do ADR-0106 em tantas palavras — «uma
-   * barra que oferece um caminho e depois o recusa ensina-lhe que o caminho não é para ela» —, e a criança
+   * barra que oferece um caminho e depois o refusal ensina-lhe que o caminho não é para ela» —, e a criança
    * que ficasse presa no cartão seria precisamente a que navega sem ver, que não tem o rato por alternativa.
    *
    * 📌 E ISTO DESTRANCA UMA TERCEIRA COISA, que o campo `getPauseActs` já anotava como perda: `entrarNaBarra`
@@ -1055,7 +1057,7 @@ export function createGame(o: CreateGameOptions): Engine {
   /*
    * PRINT — «ver a tela sem menus», e qualquer botão volta.
    *
-   * 📌 O `ui/shell.printMode` já fazia isto no monólito e não vem com o `ui/shell`, que esta raiz recusa
+   * 📌 O `ui/shell.printMode` já fazia isto no monólito e não vem com o `ui/shell`, que esta raiz refusal
    * montar. Mas ele não precisa da máquina de fases: precisa dos cartões, da janela e do anúncio — os três
    * que a engine tem. Reescrito aqui com o MESMO comportamento, incluindo o adiamento.
    *
@@ -1894,7 +1896,7 @@ export function createGame(o: CreateGameOptions): Engine {
       const jogador = players()[i] as { visual?: VisualState; viz?: string } | undefined;
       const base = jogador?.visual ?? estadoDoMundo;
       const motivo = simulacao ? simulacaoIndisponivel(base) : null;
-      if (motivo) { srSay(t(`sim.indisponivel.${motivo}`)); return false; } // recusa VISÍVEL e explicada (ADR-0076)
+      if (motivo) { srSay(t(`sim.indisponivel.${motivo}`)); return false; } // refusal VISÍVEL e explicada (ADR-0076)
       const estado: VisualState = { ...base, simulacao };
       if (jogador) { jogador.visual = estado; jogador.viz = chave; }
       estadoDoMundo = estado;
@@ -2197,7 +2199,7 @@ export function createGame(o: CreateGameOptions): Engine {
      * Com a barra montada e estes dois em no-op, ela existiria e **não se conseguiria navegar por teclado nem
      * por controle**: alcançável só por ponteiro. Para uma criança cega, que navega por teclado, uma barra
      * que ela não alcança é o mesmo que barra nenhuma — e é exactamente o «oferece o caminho e depois
-     * recusa-o» que o §5 do ADR-0106 proíbe.
+     * refusal-o» que o §5 do ADR-0106 proíbe.
      *
      * A engine responde com a SUA instância, que é a mesma que montou a barra. Quem injecta continua a mandar.
      *
@@ -2600,7 +2602,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * CAPTURA com `stopPropagation()`, e o cabeçalho de `ui/menu-nav` guarda DOIS defeitos preservados sobre
    * isso — o comportamento correcto de hoje depende daquele `stopPropagation()` e não da cadeia registada.
    * Pôr um segundo significado na mesma fase seria mexer nessa rede de segurança acidental de lado. Em
-   * bolha, `menuNavKey` tem sempre a primeira recusa, e o ouvinte do PRÓPRIO jogo — que vive em
+   * bolha, `menuNavKey` tem sempre a primeira refusal, e o ouvinte do PRÓPRIO jogo — que vive em
    * `#game-region`, por baixo da janela — corre antes deste. Quem é dono da tecla continua dono dela.
    *
    * 📏 E `menuNavKey` NÃO come esta tecla: `menuKeyIntent` não tem ramo para «start» (só `action2`,
@@ -2609,7 +2611,7 @@ export function createGame(o: CreateGameOptions): Engine {
    * não é nossa. Cada um deles foi lido no código que o produz, não imaginado.
    *
    * ⚠️ A ENGINE ABRE O CARTÃO; QUEM PÁRA O MUNDO É O JOGO (ADR-0144 §2). `pausa.mostrar` faz duas coisas e
-   * só duas. Congelar a física e calar o ambiente eram do `ui/shell`, que esta raiz recusa montar de
+   * só duas. Congelar a física e calar o ambiente eram do `ui/shell`, que esta raiz refusal montar de
    * propósito — e por isso a segunda metade é um pedido, `setPhase('paused')`, e não uma ordem.
    */
   /** O assento dono de uma tecla, se ela for a posição `acao` DELE; senão `null`. */
@@ -3404,7 +3406,64 @@ export function createGame(o: CreateGameOptions): Engine {
       linhaDoToque.hidden = !cartucho.controleNaTela || acoesParaMapear().length === 0; // no pad, or nothing named
     };
     refletirLinhaDoToque();
-    refletirTeclado = () => { refletirLinhasDoTeclado(); refletirLinhaDoControle(); refletirLinhaDoToque(); };
+
+    /*
+     * «NÃO PRECISA SEGURAR» (ADR-0211; the Dev, 2026-09-21: «falta oferecê-la como opção para teclado e toque, com nome que a
+     * criança entenda»). The setting is not new — a tap holds the button down instead of a hand that cannot (`input/latch`), and
+     * the quick bar's ☝️ already writes it. What was missing is HERE: the place a child goes to read what an option does, where
+     * the bar can only say on or off.
+     *
+     * ⚠️ IT WRITES THROUGH THE SAME DOOR AS THE ICON (`setToggleMove` of the bar's context), because two surfaces of one setting
+     * that write it in two ways are two surfaces that disagree — and the child would see the bar and the panel say different
+     * things about the same thing.
+     *
+     * · HIDDEN where the game holds no key at all (`seguraTeclas`, ADR-0115): there is nothing to hold, so there is nothing to
+     *   relieve, and an option that changes nothing teaches a child that the setting she depends on is broken (ADR-0106 §5).
+     * · LOCKED WITH THE REASON on a device that can only ever send one command at a time — the eyes, the face, gestures, speech.
+     *   It is on there and cannot be turned off (ADR-0104 §C), and `hidden` would hide why (ADR-0113 clause 3).
+     */
+    // 📌 SEAT 0, like the rest of this panel and for the reason already written in `problems`: the panel edits the first child's
+    // controls, and a game with more than one child passes `setPauseActor` so the bar knows who pressed. The bar is the surface
+    // that follows the actor; this one follows the panel.
+    const PANEL_SEAT = 0;
+    const stickyOnForSeat = (): boolean => !!(players()[PANEL_SEAT] as { toggleMove?: boolean } | undefined)?.toggleMove;
+    const stickyRowSpec = () => ({ id: 'opt-sticky', rotulo: t('motor.altmove'), dica: t('motor.altmove.dica') });
+    const { linha: stickyRow, controle: stickyButton } = linhaDeControle(ctxDaMotora, stickyRowSpec());
+    painelDaMotora.casca.lista.appendChild(stickyRow);
+    const reflectSticky = (): void => {
+      rotularLinha(stickyRow, stickyRowSpec());
+      const refusal = recusaDaAlternancia(entradaDe(PANEL_SEAT).emUso);
+      const held = stickyOnForSeat() || !!refusal;
+      toggleBtn(stickyButton, held);
+      stickyButton.textContent = toggleLabel(held);
+      stickyButton.setAttribute('aria-disabled', refusal ? 'true' : 'false');
+      if (refusal) stickyButton.setAttribute('title', t(refusal.chave));
+      else stickyButton.removeAttribute('title');
+      stickyRow.hidden = !cartucho.declaration.seguraTeclas();
+    };
+    stickyButton.addEventListener('click', () => {
+      if (stickyButton.getAttribute('aria-disabled') === 'true') return;
+      definirAlternanciaDeMarcha(
+        {
+          // ⚠️ The same cast the quick bar makes, and for the same reason: the contract types a seat as `{ ctrl }` (ADR-0143),
+          // and the motor fields are seeded onto it at boot. A second shape here would be a second opinion about one object.
+          players: players() as unknown as Parameters<typeof definirAlternanciaDeMarcha>[0]['players'],
+          store,
+          srSay,
+          getNumPlayers: () => players().length,
+          transporteEmUso: (i) => entradaDe(i).emUso,
+        },
+        PANEL_SEAT,
+        !stickyOnForSeat(),
+      );
+      reflectSticky();
+      if (a11yBar) pauseIcons.reflectIconsIn(a11yBar, 0); // the ☝️ and this row say the same thing about the same setting
+    });
+    reflectSticky();
+
+    refletirTeclado = () => {
+      refletirLinhasDoTeclado(); refletirLinhaDoControle(); refletirLinhaDoToque(); reflectSticky();
+    };
   }
   /*
    * THE MOTOR EMPATHY SIMULATIONS REACH THE GAME HERE (ADR-0181): in the window's capture, after the menu navigation registered
