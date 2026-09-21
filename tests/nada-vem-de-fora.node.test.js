@@ -69,6 +69,13 @@ const DECLARADAS = {
     + 'and the voice tables, named once in `platform/kokoro` and fetched by the BUILD into the delivery with their sha256 (ADR-0177); '
     + 'the page asks for them at `pesados/` on its own origin. An address, not a fetch: the module is pure',
   'http://www.w3.org/2000/svg': 'NAMESPACE XML, não um endereço: o `createElementNS` exige-o para criar nós SVG, e ele nunca sai da máquina. Aparece no `render/cvd-matrices` e no `render/lq-filter`, que montam os filtros de daltonismo',
+  'https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2': 'THE PHONEMIZER OF THE NEURAL VOICE (ADR-0216, issue #200): espeak-ng turns a '
+    + 'sentence into phonemes in every language the project speaks. Fetched at BUILD time into the delivery like the vision runtime '
+    + '(ADR-0177) — the engine imports nothing from npm at run time, so a game that does not declare the neural voice carries none '
+    + 'of it. GPL-3.0-or-later, compatible with the AGPL (LICENSES.md)',
+  'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0': 'WHAT RUNS KOKORO\'S GRAPH (ADR-0216, issue #200), fetched the same way. '
+    + 'The `jsep` pair is what onnxruntime\'s own threads load: a worker that cannot find them answers nothing and the child hears '
+    + 'silence (measured in the quiz demo, #181)',
   'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1': 'O RUNTIME DE VISÃO (ADR-0124), fixado na versão e descido na INSTALAÇÃO pelo `platform/pesados`. Não é busca preguiçosa: é a instalação do PWA, que o ADR-0116 declarou ser um acto de rede legítimo. 📏 Medido: os três ficheiros respondem 200 com CORS aberto',
   'https://storage.googleapis.com/mediapipe-models': 'OS MODELOS `.task` do MediaPipe — rosto+íris, gestos e mãos. ⚠️ Host diferente do runtime porque é assim que o Google os publica, e sem eles os 11,7 MB de WebAssembly não reconhecem coisa nenhuma: é o `.onnx` sem o `.onnx.json` outra vez. 📏 Medidos em 2026-09-09, `float16`',
 };

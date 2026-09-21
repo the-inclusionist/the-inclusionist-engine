@@ -82,6 +82,33 @@ const MEDIAPIPE: readonly Pesado[] = Object.freeze([
  * KOKORO (ADR-0186, ADR-0198; the Dev: «Faça»): the fp32 model, its tokenizer vocabulary and a style table per voice of the engine's
  * languages. The phonemizer and the runtime are the game's (ADR-0198 §5), bundled by it. Read by the port the quiz demo fills.
  */
+/**
+ * THE VOICE RUNTIME (ADR-0216 and its erratum; issue #200): what SPEAKS a neural voice, fetched like the vision runtime and for the
+ * same reason — the engine imports nothing from npm at run time, so a game that never asks for this voice carries none of it, and
+ * the published package stays free of a bundler-only import.
+ *
+ * · espeak-ng turns a sentence into phonemes, in every language the project speaks. GPL-3.0-or-later, compatible with the engine's
+ *   AGPL-3.0 (LICENSES.md); the source travels beside the mirror (ADR-0203 erratum).
+ * · onnxruntime-web runs Kokoro's graph. The `jsep` pair is what its own threads load, which is why both are here: a worker that
+ *   cannot find them answers nothing, and the child hears silence (measured in the quiz demo, #181).
+ *
+ * ⚠️ sha256 MEASURED on the files the dev dependency already put on the build machine, not taken from a page; the first delivery run
+ * is what proves jsDelivr serves the same bytes, because it refuses to write anything else.
+ */
+const ESPEAK = 'https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2';
+const ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0';
+const VOICE_RUNTIME: readonly Pesado[] = Object.freeze([
+  { id: 'voz:runtime:fonemas', url: `${ESPEAK}/dist/espeak-ng.js`, bytes: 178_386,
+    sha256: '406c6655a6cacf34d84fc69dc4478c81b71518809080ce2d05df1b706d76429d' },
+  { id: 'voz:runtime:fonemas:wasm', url: `${ESPEAK}/dist/espeak-ng.wasm`, bytes: 18_485_010,
+    sha256: '10d24bb7e4124e983aa9cd8cd96c52c8ea4b607d81956ec70846684e2827d532' },
+  { id: 'voz:runtime:onnx', url: `${ORT}/dist/ort.webgpu.bundle.min.mjs`, bytes: 113_035,
+    sha256: '3a18c7f261e05d44a15b2eef18a28e5f53c044d5d140bcea6066baf1f09c8b53' },
+  { id: 'voz:runtime:onnx:cola', url: `${ORT}/dist/ort-wasm-simd-threaded.jsep.mjs`, bytes: 46_614,
+    sha256: '3ee381d20a80f51a788a1c4a5872f6f1d047538dd4342f4af00062de5f9ea4c6' },
+  { id: 'voz:runtime:onnx:wasm', url: `${ORT}/dist/ort-wasm-simd-threaded.jsep.wasm`, bytes: 26_827_543,
+    sha256: '78feeeb3d08f6bcee94d938ed322f69073bb8076b5f9d34697a574ffba8deb48' },
+]);
 const KOKORO: readonly Pesado[] = Object.freeze([
   { id: 'voz:kokoro:modelo', url: URL_DO_MODELO_KOKORO, bytes: BYTES_DO_MODELO_KOKORO, sha256: SHA256_DO_MODELO_KOKORO },
   { id: 'voz:kokoro:tokenizador', url: URL_DO_TOKENIZADOR_KOKORO, bytes: BYTES_DO_TOKENIZADOR_KOKORO, sha256: SHA256_DO_TOKENIZADOR_KOKORO },
@@ -89,6 +116,7 @@ const KOKORO: readonly Pesado[] = Object.freeze([
 ]);
 
 export const PESADOS: readonly Pesado[] = Object.freeze([
+  ...VOICE_RUNTIME,
   ...KOKORO,
 
   // the vision runtime and its models: eye control reads the face (ADR-0213); WebGazer left (ADR-0214)

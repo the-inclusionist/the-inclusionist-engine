@@ -84,10 +84,11 @@ describe('o buscador das coisas pesadas', () => {
 
   it('📏 o peso por baixar é o das que TÊM fonte e ainda não desceram', async () => {
     const semNada = pesoPorBaixar([]);
-    // The vision runtime and models, and Kokoro (ADR-0198: the 325 532 232-byte model, its tokenizer and 34 voice tables
-    // of 522 240 bytes); ADR-0207 took out the earlier neural voices and their phonemizer (−258.9 MiB), ADR-0214 WebGazer (−1.8 MiB). What has
-    // no source adds nothing.
-    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(358);
+    // The vision runtime and models, Kokoro (ADR-0198: the 325 532 232-byte model, its tokenizer and 34 voice tables of 522 240
+    // bytes) and, since ADR-0216, the runtime that SPEAKS it — espeak-ng and onnxruntime-web, 45.5 MiB, which used to be a
+    // dependency of each game. ADR-0207 took out the earlier neural voices and their phonemizer (−258.9 MiB), ADR-0214 WebGazer
+    // (−1.8 MiB). What has no source adds nothing.
+    expect(Math.round(semNada / 1024 / 1024), 'the total changed — check the catalogue').toBe(402);
     const f = cacheFalsa();
     const r = await baixarPesados({ cacheStorage: f.cacheStorage, buscar: buscarOk(), digest: digestPelaUrl });
     expect(pesoPorBaixar(r), 'depois de tudo descer não falta nada').toBe(0);
@@ -188,10 +189,12 @@ describe('the heavy files come from the delivery\'s own origin (ADR-0177, issue 
 });
 
 describe('what a game\'s start fetches (ADR-0198 §5)', () => {
-  it('🔴 [Zero] without a Kokoro port, no Kokoro file — and nothing else is left out', () => {
+  it('🔴 [Zero] without the neural voice declared, neither its model NOR the runtime that speaks it — and nothing else is left out', () => {
+    // ADR-0216: the runtime moved from each game's dependencies into the catalogue, so it travels by the SAME answer as the
+    // model. A game of shapes that downloaded 45.5 MiB of phonemizer would be the cost this filter exists to refuse.
     const ids = pesadosDoArranque({ kokoro: false });
-    expect(ids.filter((id) => id.startsWith('voz:kokoro:')), 'a game that cannot speak Kokoro downloads its model').toEqual([]);
-    expect(ids).toEqual(PESADOS.map((p) => p.id).filter((id) => !id.startsWith('voz:kokoro:')));
+    expect(ids.filter((id) => id.startsWith('voz:')), 'a game that cannot speak Kokoro downloads its model or its runtime').toEqual([]);
+    expect(ids).toEqual(PESADOS.map((p) => p.id).filter((id) => !id.startsWith('voz:')));
     expect(ids.length).toBeGreaterThan(0);
   });
 

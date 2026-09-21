@@ -9,7 +9,7 @@
 // MUTATIONS CHECKED — at the end of the file.
 import { describe, it, expect } from 'vitest';
 import { PESADOS } from '../app/js/platform/pesados-catalogo.js';
-import { MIRROR_FOLDERS, mirrorPathOf, heavySourceOf, baseIsRemote } from '../app/js/platform/heavy-mirror.js';
+import { MIRROR_FOLDERS, NOT_MIRRORED, mirrorPathOf, heavySourceOf, baseIsRemote } from '../app/js/platform/heavy-mirror.js';
 
 const BASE = 'https://lfs-oinclusionista.jrocha.dev.br';
 
@@ -22,9 +22,22 @@ describe('the base of the heavy files', () => {
     }
   });
 
-  it('🔴 [Right] with a base, every catalogued file has a path under it', () => {
-    const semEspelho = PESADOS.filter((p) => p.url && !mirrorPathOf(p.url)).map((p) => p.id);
-    expect(semEspelho, 'a heavy file the mirror does not hold: add its folder to MIRROR_FOLDERS').toEqual([]);
+  it('🔴 [Right] with a base, every catalogued file either has a path under it or is named as not mirrored, with a reason', () => {
+    const semEspelho = PESADOS.filter((p) => p.url && !mirrorPathOf(p.url))
+      .filter((p) => !NOT_MIRRORED.some(([prefix]) => p.url.startsWith(prefix)))
+      .map((p) => p.id);
+    expect(semEspelho, 'a heavy file the mirror does not hold: add its folder to MIRROR_FOLDERS, or say why not in NOT_MIRRORED').toEqual([]);
+    for (const [prefix, why] of NOT_MIRRORED) {
+      expect(PESADOS.some((p) => p.url?.startsWith(prefix)), `${prefix} is named as not mirrored and nothing uses it`).toBe(true);
+      expect(why.length, 'a file left out of the mirror without a reason is a hole').toBeGreaterThan(20);
+    }
+  });
+
+  it('🔴 [Zero] what is NOT mirrored goes on being fetched upstream, base or no base', () => {
+    // ⚠️ espeak-ng is GPL: serving the binary from the project's bucket obliges publishing the source beside it (issue #192).
+    const espeak = PESADOS.find((p) => p.id === 'voz:runtime:fonemas').url;
+    expect(mirrorPathOf(espeak)).toBeNull();
+    expect(heavySourceOf(espeak, BASE)).toBe(espeak);
   });
 
   it('🔴 [Right] the path is the one the staging tree uses, folder by folder', () => {

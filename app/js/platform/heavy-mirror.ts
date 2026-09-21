@@ -22,8 +22,19 @@ export const MIRROR_FOLDERS: ReadonlyArray<readonly [string, string]> = [
   ['https://storage.googleapis.com/mediapipe-models', 'mediapipe-tasks-vision-1.0.1/models'],
 ];
 
+/**
+ * Addresses the project does NOT mirror, each with why — they go on being fetched upstream even when a base is set.
+ * ⚠️ espeak-ng is GPL-3.0-or-later: mirroring the binary obliges the project to publish the matching SOURCE beside it
+ * (ADR-0203 erratum), which is a decision of issue #192 and not a side effect of adding a base.
+ */
+export const NOT_MIRRORED: ReadonlyArray<readonly [string, string]> = [
+  ['https://cdn.jsdelivr.net/npm/espeak-ng@1.0.2', 'GPL: a mirror obliges the project to publish the source beside it (issue #192)'],
+  ['https://cdn.jsdelivr.net/npm/onnxruntime-web@1.27.0', 'MIT, and mirrorable — it waits for the same decision as its neighbour, so the voice runtime moves as one'],
+];
+
 /** The path a mirror serves this upstream address under, or `null` when no mirror of this project holds it. */
 export function mirrorPathOf(url: string): string | null {
+  if (NOT_MIRRORED.some(([prefix]) => url.startsWith(prefix))) return null;
   for (const [upstream, folder] of MIRROR_FOLDERS) if (url.startsWith(`${upstream}/`)) return folder + url.slice(upstream.length);
   return null;
 }

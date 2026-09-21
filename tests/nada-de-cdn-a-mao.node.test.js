@@ -75,15 +75,17 @@ const BUSCAS_A_MAO = {
       + 'them at `pesados/`. A second host here would be a mirror chosen in silence',
   },
   'platform/heavy-mirror.ts': {
-    urls: 3,
+    urls: 5,
     porque:
       'ENDEREÇOS DECLARADOS, not fetches: the table that maps each address the catalogue already names to the folder a mirror '
       + 'serves it under (the Dev, 2026-09-21: a base for local testing, for the project\'s bucket, or for a school\'s own '
       + 'server). The module is pure — it returns a string. The three are the same three of `pesados-catalogo`, and a fourth '
-      + 'here would be a mirror of something nobody catalogued',
+      + 'here would be a mirror of something nobody catalogued. 📌 The other TWO are what the project does NOT mirror and why '
+      + '(the voice runtime: espeak-ng is GPL and a mirror obliges publishing its source, issue #192) — named so that «fetched '
+      + 'upstream even with a base» is a written decision and not an omission',
   },
   'platform/pesados-catalogo.ts': {
-    urls: 2,
+    urls: 4,
     porque:
       'OS RUNTIMES QUE A ENGINE PASSOU A DESCER NA INSTALAÇÃO (ADR-0124, ADR-0132, decisões do Dev ' +
       'de 2026-09-09). ⚠️ CDN FIXADA É PERMITIDA e o ADR-0116 diz porquê: o pilar 8 proíbe depender da rede ' +
@@ -92,7 +94,9 @@ const BUSCAS_A_MAO = {
       'em jsDelivr — o runtime de visão; (2) `storage.googleapis.com/mediapipe-models` — os modelos `.task`, ' +
       'que vivem noutro host porque o Google os publica assim, e sem eles o runtime não reconhece nada. ' +
       'WebGazer (`webgazer.cs.brown.edu`) left with ADR-0214. ' +
-      'A third origin is a new supplier entering without a decision. It leaves this list when the bytes are ' +
+      '📌 The other TWO are the voice runtime (ADR-0216): espeak-ng and onnxruntime-web, both on jsDelivr — the ' +
+      'same origin already defended above, and written here so the engine imports nothing from npm at run time. ' +
+      'A FIFTH address, or a new origin, is a supplier entering without a decision. They leave this list when the bytes are ' +
       'servidos de origem própria',
   },
 };

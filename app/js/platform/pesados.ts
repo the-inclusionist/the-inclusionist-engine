@@ -53,11 +53,12 @@ export interface OpcoesDosPesados {
 }
 
 /**
- * WHAT A GAME'S START FETCHES (ADR-0198 §5): the catalogue, less Kokoro when the game fills no Kokoro port. Its model and voices
- * are read only through that port, so without it they are 327 MB taken from a school's link and a child's device for nothing.
+ * WHAT A GAME'S START FETCHES (ADR-0198 §5, ADR-0216): the catalogue, less the neural voice when the game does not declare it.
+ * Its model, its voices AND the runtime that speaks them are read only by a game that asked for them, so without that answer
+ * they are 372 MB taken from a school's link and a child's device for nothing.
  */
 export function pesadosDoArranque(portas: { readonly kokoro: boolean }): readonly string[] {
-  return PESADOS.filter((p) => portas.kokoro || !p.id.startsWith('voz:kokoro:')).map((p) => p.id);
+  return PESADOS.filter((p) => portas.kokoro || !(p.id.startsWith('voz:kokoro:') || p.id.startsWith('voz:runtime:'))).map((p) => p.id);
 }
 
 /**
