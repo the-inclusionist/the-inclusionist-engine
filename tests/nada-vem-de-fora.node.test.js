@@ -134,6 +134,12 @@ const TOCAM_NA_REDE = {
     + 'loaded at the FIRST `listen()` of a game that declared `uses: { reading: true }` (ADR-0216 §5). It is here and not inside '
     + 'the reading because the root is what knows the page\'s address and the game\'s answers; the module it loads is what names '
     + 'the model files, so a game that never listens never reaches them',
+  'platform/vosk-runtime.ts': 'LOCAL. A `<script src>` of the recogniser bundle and the model it fetches, both at `pesados/` on '
+    + 'the page\'s own origin (ADR-0177) — addresses built by `caminhoNaEntrega`, never an upstream host, and neither is loaded '
+    + 'unless the install already checked it by sha256. ⚠️ A SCRIPT TAG and not an `import()`: the build is a UMD bundle that '
+    + 'defines a global and finds its worker and its wasm beside itself, which is also why the three files travel together into '
+    + 'one folder. It is the project\'s own build — every published `vosk-browser` evaluates text as code and the policy refuses '
+    + 'it (ADR-0193)',
   'platform/kokoro-port.ts': 'LOCAL. `fetch` of the model, the tokenizer and the voice tables at `pesados/` on the page\'s own '
     + 'origin (ADR-0177) — paths built by `caminhoNaEntrega`, never an upstream host. It was the quiz demo\'s port until ADR-0216 '
     + 'moved it into the engine, so no game has to copy it',

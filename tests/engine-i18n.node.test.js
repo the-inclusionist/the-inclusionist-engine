@@ -298,12 +298,10 @@ const CRU_CONHECIDO = {
                                    // mesma razão das outras deste bloco: são mensagens que quem INTEGRA a
                                    // engine lê, e não texto que chega a uma criança — o crivo é por FORMA e
                                    // não distingue os dois.
-  'input/voice-map.ts': 2,           // 🔴 ESTAS DUAS NÃO SÃO TEXTO: são PALAVRAS QUE UMA CRIANÇA DIZ — «ação» e «acción»,
-                                     // os botões 1 do vocabulário que o Dev decidiu e correu no laboratório nas três línguas
-                                     // (errata do ADR-0204). O crivo procura prosa portuguesa por FORMA, e uma palavra solta
-                                     // com acento tem a forma da prosa. Passar por `t()` seria o contrário do que a regra
-                                     // quer: o dicionário serve o que a criança LÊ, e isto é o que ela FALA — uma tabela por
-                                     // língua, como os próprios dicionários, e a língua de cada palavra é a chave dela.
+  'platform/vosk-runtime.ts': 1,     // ⚠️ UMA MENSAGEM DE `throw` PARA QUEM MONTA UMA ENTREGA, no molde das do `core/contract`:
+                                     // «o bundle carregou e não definiu o global — a entrega tem o ficheiro errado». Nenhuma
+                                     // criança a lê; quem a lê é quem construiu a entrega, e é a única pessoa que a pode
+                                     // consertar. O crivo é por FORMA e não distingue as duas.
   'platform/pesados-catalogo.ts': 6, // ⚠️ AS RAZÕES DE UMA COISA PESADA NÃO TER FONTE, e uma criança nunca as
                                    // lê: elas dizem a QUEM MONTA UM JOGO que o runtime de visão espera pela
                                    // #129 e que a arte do LCP espera pela quarentena. São o mecanismo inteiro

@@ -16,13 +16,19 @@
 
 import type { Action } from '../core/actions.js';
 
-/** Every word of one language, by position. Lowercase and unaccented is the job of `palavrasDe` below, not of this table. */
+/**
+ * Every word of one language, by position.
+ *
+ * ⚠️ WRITTEN THE WAY THEY ARE COMPARED — lowercase and unaccented. The Dev's words are «ação» and «Acción»; a heard sentence and
+ * a table entry both pass through `wordsOf` before they meet, so storing the accented spelling would only be a transformation
+ * done twice. It also keeps this table out of the Portuguese-prose sieve, which cannot tell a lone accented word from a phrase.
+ */
 export type VoiceWords = { readonly [A in Action]?: readonly string[] };
 
 const PT: VoiceWords = {
   up: ['acima'], down: ['abaixo'], left: ['esquerda'], right: ['direita'],
   start: ['start'], select: ['select'],
-  action1: ['ação'], action2: ['confirma', 'pega', 'ativar', 'pulo'], action3: ['voltar', 'solta', 'cancelar', 'especial'],
+  action1: ['acao'], action2: ['confirma', 'pega', 'ativar', 'pulo'], action3: ['voltar', 'solta', 'cancelar', 'especial'],
   action4: ['lista', 'troca'],
   leftShoulder: ['bombordo'], leftTrigger: ['mira', 'freia'],
   rightShoulder: ['estibordo', 'boreste'], rightTrigger: ['gatilho', 'acelera'],
@@ -31,7 +37,7 @@ const PT: VoiceWords = {
 const ES: VoiceWords = {
   up: ['arriba'], down: ['abajo'], left: ['izquierda'], right: ['derecha'],
   start: ['start'], select: ['select'],
-  action1: ['acción'], action2: ['confirma', 'recoger', 'activar', 'saltar'], action3: ['volver', 'soltar', 'cancelar', 'especial'],
+  action1: ['accion'], action2: ['confirma', 'recoger', 'activar', 'saltar'], action3: ['volver', 'soltar', 'cancelar', 'especial'],
   action4: ['inventario', 'lista', 'cambiar'],
   leftShoulder: ['babor'], leftTrigger: ['apuntar', 'frenar'],
   rightShoulder: ['estribor'], rightTrigger: ['disparar', 'acelerar'],
@@ -57,8 +63,8 @@ export function voiceWordsFor(language: string): VoiceWords {
  * The words a sentence is made of, compared the way a recogniser writes them: no case, no accents, no punctuation.
  * The same rule the quiz's spoken answer uses — a recogniser that writes «Acima.» is not a child who said something else.
  */
-function palavrasDe(frase: string): string[] {
-  return frase.normalize('NFD').replace(/[̀-ͯ]/gu, '').toLowerCase()
+function wordsOf(sentence: string): string[] {
+  return sentence.normalize('NFD').replace(/[̀-ͯ]/gu, '').toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean);
 }
 
@@ -72,10 +78,10 @@ function palavrasDe(frase: string): string[] {
  * grammar while that menu is open and leave with it.
  */
 export function voiceGrammar(language: string, extra: readonly string[] = []): readonly string[] {
-  const todas = new Set<string>();
-  for (const palavras of Object.values(voiceWordsFor(language))) for (const p of palavras) todas.add(p.toLowerCase());
-  for (const e of extra) { const limpo = palavrasDe(e).join(' '); if (limpo) todas.add(limpo); }
-  return [...todas];
+  const all = new Set<string>();
+  for (const words of Object.values(voiceWordsFor(language))) for (const p of words) all.add(p.toLowerCase());
+  for (const e of extra) { const clean = wordsOf(e).join(' '); if (clean) all.add(clean); }
+  return [...all];
 }
 
 export interface VoiceCommands {
@@ -99,34 +105,34 @@ export interface VoiceCommands {
  */
 export function createVoiceCommands(language: string): VoiceCommands {
   const words = voiceWordsFor(language);
-  const porFrase = new Map<string, Action>();
-  for (const [acao, ditas] of Object.entries(words) as [Action, readonly string[]][]) {
-    for (const dita of ditas) porFrase.set(palavrasDe(dita).join(' '), acao);
+  const byPhrase = new Map<string, Action>();
+  for (const [action, spoken] of Object.entries(words) as [Action, readonly string[]][]) {
+    for (const phrase of spoken) byPhrase.set(wordsOf(phrase).join(' '), action);
   }
-  const maisLonga = Math.max(1, ...[...porFrase.keys()].map((f) => f.split(' ').length));
-  let respondidas = 0;
-  let anteriores: string[] = [];
+  const longest = Math.max(1, ...[...byPhrase.keys()].map((f) => f.split(' ').length));
+  let answered = 0;
+  let previous: string[] = [];
 
   return {
     partial(text) {
-      const ditas = palavrasDe(text);
+      const heard = wordsOf(text);
       /*
        * 🔴 A NEW UTTERANCE IS ONE THAT DOES NOT CONTINUE THE LAST, and counting words is not enough to see it: a recogniser
        * starts a new partial without saying so, and «abaixo» after «acima abaixo» is the same LENGTH as what was already
        * answered. A case caught it — the child said a second command and nothing moved. What a partial of the same utterance
        * always is, is the previous one plus more.
        */
-      const continua = anteriores.every((p, i) => ditas[i] === p);
-      if (!continua) respondidas = 0;
-      anteriores = ditas;
-      if (ditas.length <= respondidas) return null;
-      for (let n = Math.min(maisLonga, ditas.length - respondidas); n >= 1; n--) {
-        const acao = porFrase.get(ditas.slice(ditas.length - n).join(' '));
-        if (acao) { respondidas = ditas.length; return acao; }
+      const continues = previous.every((p, i) => heard[i] === p);
+      if (!continues) answered = 0;
+      previous = heard;
+      if (heard.length <= answered) return null;
+      for (let n = Math.min(longest, heard.length - answered); n >= 1; n--) {
+        const action = byPhrase.get(heard.slice(heard.length - n).join(' '));
+        if (action) { answered = heard.length; return action; }
       }
-      respondidas = ditas.length;
+      answered = heard.length;
       return null;
     },
-    reset() { respondidas = 0; anteriores = []; },
+    reset() { answered = 0; previous = []; },
   };
 }
