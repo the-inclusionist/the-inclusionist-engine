@@ -1,0 +1,94 @@
+{
+  "about": "The public names that speak Portuguese, and what each one is called in English (ADR-0219, issue #202). The engine renames itself from this file (`node scripts/apply-rename.mjs`) and the migration table of docs/6-DevOps-SRE/Breaking-Changes.md is PRINTED from it, so a name cannot be renamed without being written down. One layer at a time, in the direction the dependencies run; `done` names the commit that applied each layer.",
+  "layers": {
+    "core": {
+      "done": "",
+      "names": {
+        "passoNoAnel": "stepInRing",
+
+        "LEGENDA_MINIMA_MS": "CAPTION_MIN_MS",
+        "RITMOS_DA_LEGENDA": "CAPTION_RATES",
+        "RitmoDaLegenda": "CaptionRate",
+        "duracaoDaLegenda": "captionDuration",
+        "ritmoDaLegendaValido": "isCaptionRate",
+
+        "ehPerigo": "isHazard",
+        "ehTrampolim": "isTrampoline",
+        "escaparHtml": "escapeHtml",
+
+        "COLUNAS": "COLUMNS",
+        "LINHAS": "ROWS",
+        "QuadroDeLuminancia": "LuminanceFrame",
+        "VeredictoDeFlashes": "FlashVerdict",
+        "analisarFlashes": "analyseFlashes",
+
+        "VELOCIDADES_DO_JOGO": "GAME_SPEEDS",
+        "proximaVelocidade": "nextGameSpeed",
+        "velocidadeValida": "isGameSpeed",
+
+        "GENEROS": "GENRES",
+        "Genero": "Genre",
+        "generoAviso": "genreWarning",
+        "generoProblems": "genreProblems",
+
+        "PortaDoIdioma": "LocalePort",
+        "carregarIdioma": "loadLocale",
+        "idiomaPronto": "localeReady",
+        "lacunasDosDicionarios": "dictionaryGaps",
+
+        "Direcao": "Direction",
+        "GradeDeLetras": "LetterGrid",
+        "OpcoesDaGrade": "LetterGridOptions",
+        "Posicao": "Position",
+        "criarGrade": "createLetterGrid",
+
+        "OpcoesDoLaco": "LoopOptions",
+        "registrarAvisoDeQueda": "registerCrashNotice",
+
+        "ALFABETO": "ALPHABET",
+        "CampoSenha": "PasswordField",
+        "CodecSenha": "PasswordCodec",
+        "criarCodec": "createPasswordCodec",
+        "formatar": "formatPassword",
+
+        "SEMENTE_PADRAO": "DEFAULT_SEED",
+        "rngDecoracao": "decorationRng",
+
+        "ElementoComRotulo": "LabelledElement",
+        "rotuloAcessivel": "accessibleLabel",
+
+        "PAPEIS_ATRAVESSAVEIS": "WALKABLE_ROLES",
+        "Rota": "Route",
+        "atravessavel": "isWalkable",
+        "rotaAte": "routeTo",
+
+        "ExtrasDoNivel": "LevelExtras",
+        "OpcoesDaRodada": "RunOptions",
+
+        "FatosDaCena": "SceneFacts",
+        "criarPilha": "createSceneStack",
+
+        "RITMOS_DA_FALA": "SPEECH_RATES",
+        "RitmoDaFala": "SpeechRate",
+        "TAXA_MAXIMA": "MAX_PLAYBACK_RATE",
+        "TAXA_MINIMA": "MIN_PLAYBACK_RATE",
+        "palavrasFaladas": "spokenWords",
+        "ritmoDaFalaValido": "isSpeechRate",
+        "segundosDeFala": "speechSeconds",
+        "taxaDaFala": "speechPlaybackRate",
+
+        "EventoDoJogo": "GameEvent",
+        "PortaDoEstado": "StatePort",
+        "carregarEstado": "loadState",
+        "modoCego": "blindMode",
+        "setModoCegoValue": "setBlindModeValue",
+        "semForca": "noGripStrength",
+        "setSemForcaValue": "setNoGripStrengthValue",
+
+        "Correcao": "Correction",
+        "Simulacao": "Simulation",
+        "Tema": "Theme"
+      }
+    }
+  }
+}
